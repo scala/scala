@@ -44,7 +44,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             && sym.isConstructor()
             && sym.owner().isClass()
             && !(sym.isJava() || sym.owner().isRoot())) {
-            return addValueParam(tp, outerSym(sym));
+            return addOuterValueParam(tp, sym);
         } else
             return tp;
     }
@@ -71,17 +71,25 @@ public class ExplicitOuterClassesPhase extends Phase {
      * Add the given value parameter to the type, which must be the
      * type of a method, as the first argument.
      */
-    protected Type addValueParam(Type oldType, Symbol newValueParam) {
+    protected Type addOuterValueParam(Type oldType, Symbol constr) {
         switch (oldType) {
         case MethodType(Symbol[] vparams, Type result): {
             Symbol[] newVParams = new Symbol[vparams.length + 1];
-            newVParams[0] = newValueParam;
+            newVParams[0] = outerSym(constr);
             System.arraycopy(vparams, 0, newVParams, 1, vparams.length);
             return new Type.MethodType(newVParams, result);
         }
 
         case PolyType(Symbol[] tparams, Type result):
-            return new Type.PolyType(tparams, addValueParam(result, newValueParam));
+            return new Type.PolyType(tparams,
+                                     addOuterValueParam(result, constr));
+
+        case OverloadedType(Symbol[] alts, Type[] altTypes): {
+            Type[] newAltTypes = new Type[altTypes.length];
+            for (int i = 0; i < newAltTypes.length; ++i)
+                newAltTypes[i] = addOuterValueParam(altTypes[i], alts[i]);
+            return new Type.OverloadedType(alts, newAltTypes);
+        }
 
         default:
             throw Global.instance.fail("invalid type", oldType);

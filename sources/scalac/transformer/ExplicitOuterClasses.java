@@ -179,6 +179,22 @@ public class ExplicitOuterClasses extends Transformer {
                                                newBody.toArray()));
         }
 
+        case DefDef(_, _, _, _, _, Tree rhs): {
+            Symbol sym = tree.symbol();
+            if (sym.isConstructor()) {
+                // Temporarily set the outer link to the one passed to
+                // that constructor, to transform RHS.
+                Symbol mainOuterLink = (Symbol)outerLinks.removeFirst();
+                outerLinks.addFirst(phase.outerSym(sym));
+                Tree newRhs = transform(rhs);
+                outerLinks.removeFirst();
+                outerLinks.addFirst(mainOuterLink);
+
+                return gen.DefDef(tree.pos, sym, newRhs);
+            } else
+                return super.transform(tree);
+        }
+
         case Ident(_): {
             if (! tree.symbol().name.isTermName())
                 return super.transform(tree);
@@ -228,7 +244,7 @@ public class ExplicitOuterClasses extends Transformer {
 
             Tree newFun = null, newArg = null;
 
-            if (realFun.hasSymbol() && realFun.symbol().isPrimaryConstructor()) {
+            if (realFun.hasSymbol() && realFun.symbol().isConstructor()) {
                 switch (transform(realFun)) {
                 case Select(Tree qualifier, _): {
                     if (! (qualifier.hasSymbol()
@@ -263,8 +279,7 @@ public class ExplicitOuterClasses extends Transformer {
                         finalFun = newFun;
 
                     finalFun.type =
-                        phase.addValueParam(finalFun.type,
-                                            phase.outerSym(realFun.symbol()));
+                        phase.addOuterValueParam(finalFun.type, realFun.symbol());
                     return copy.Apply(tree, finalFun, transform(newArgs));
                 } else
                     return super.transform(tree);
