@@ -55,6 +55,7 @@
 ##############################################################################
 # Defaults
 
+JC_CYGWIN		?= $(filter CYGWIN%,$(shell uname))
 JC_COMPILER		?= JAVAC
 JAVAC			?= javac
 
@@ -81,20 +82,22 @@ jc_FILES		 = $(call JC_LOOKUP,JC_FILES)
 jc			+= $(jc_compiler)
 jc			+= $(jc_compiler_flags)
 jc			+= $(jc_FLAGS)
-jc			+= $(jc_CLASSPATH:%=-classpath %)
-jc			+= $(jc_SOURCEPATH:%=-sourcepath %)
-jc			+= $(jc_BOOTCLASSPATH:%=-bootclasspath %)
-jc			+= $(jc_EXTDIRS:%=-extdirs %)
-jc			+= $(jc_OUTPUTDIR:%=-d %)
+jc			+= $(jc_CLASSPATH:%=-classpath $(call JC_CYGPATH,%))
+jc			+= $(jc_SOURCEPATH:%=-sourcepath $(call JC_CYGPATH,%))
+jc			+= $(jc_BOOTCLASSPATH:%=-bootclasspath $(call JC_CYGPATH,%))
+jc			+= $(jc_EXTDIRS:%=-extdirs $(call JC_CYGPATH,%))
+jc			+= $(jc_OUTPUTDIR:%=-d $(call JC_CYGFILE,%))
 jc			+= $(jc_ENCODING:%=-encoding %)
 jc			+= $(jc_SOURCE:%=-source %)
 jc			+= $(jc_TARGET:%=-target %)
-jc			+= $(jc_FILES)
+jc			+= $(jc_FILES:%=$(call JC_CYGFILE,%))
 
 ##############################################################################
 # Functions
 
 JC_LOOKUP		 = $(if $($(target)_$(1)),$($(target)_$(1)),$($(1)))
+JC_CYGPATH		 = $(if $(JC_CYGWIN),`cygpath -w -p $(1)`,$(1))
+JC_CYGFILE		 = $(if $(JC_CYGWIN),`cygpath -w    $(1)`,$(1))
 
 ##############################################################################
 # Rules
