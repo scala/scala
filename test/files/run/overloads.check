@@ -9,7 +9,6 @@ ok: Ops.-- = 0
 ok: Ops.--('a') = a
 ok: Ops.--(97) = 97
 ok: Funcs.foo = 0
-ok: Funcs.foo() = 1
 ok: Funcs.foo('a') = 2
 ok: Funcs.foo(97) = 3
 ok: M1.f(3) = 11

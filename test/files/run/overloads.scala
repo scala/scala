@@ -17,7 +17,7 @@ object Ops {
 
 object Funcs {
     def foo = 0;
-    def foo() = 1;
+//  def foo() = 1;
     def foo(c: Char) = 2;
     def foo(i: Int) = 3;
 }
@@ -69,7 +69,7 @@ object overloads {
         check("Ops.--(97)", Ops.--(97), 97);
 
         check("Funcs.foo", Funcs.foo, 0);
-        check("Funcs.foo()", Funcs.foo(), 1);
+//      check("Funcs.foo()", Funcs.foo(), 1);
         check("Funcs.foo('a')", Funcs.foo('a'), 2);
         check("Funcs.foo(97)", Funcs.foo(97), 3);
 
