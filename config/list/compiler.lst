@@ -100,15 +100,20 @@ transformer/matching/Autom2Scala.java
 transformer/matching/BerrySethi.java
 transformer/matching/CaseEnv.java
 transformer/matching/CodeFactory.java
+transformer/matching/CollectVariableTraverser.java
 transformer/matching/DetWordAutom.java
 transformer/matching/FiniteAutom.java
 transformer/matching/Label.java
+#transformer/matching/LeftTracerInScala.java
 transformer/matching/NondetWordAutom.java
 transformer/matching/PatternMatcher.java
 transformer/matching/PatternNode.java
 transformer/matching/PatternNodeCreator.java
 transformer/matching/PatternTool.java
+#transformer/matching/RightTracerInScala.java
+#transformer/matching/SequenceMatcher.java
 transformer/matching/StateSetComparator.java
+transformer/matching/VariableTraverser.java
 transformer/matching/WordAutomInScala.java
 
 typechecker/Analyzer.java
