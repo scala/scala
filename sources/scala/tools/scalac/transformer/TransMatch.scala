@@ -73,11 +73,11 @@ class TransMatch( global:scalac_Global )
         val z:Seq[Tree] = ps; z.elements.foreach( x => getNilVars( x ));
       }
       def getNilVars( p:Tree ):scala.Unit = p match {
-        case Tree$Alternative( _ )  => /* no bind allowed! */
-        case Tree$Bind( _, pat )     =>
+        case Tree$Alternative( _ )  =>  /* no bind allowed! */
+        case Tree$Bind( _, pat )    =>
+	  getNilVars(pat);
 	  if( TreeInfo.isEmptySequence( pat ) )
 	    res = p.symbol() :: res;
-	  getNilVars(pat);
 	case Tree$Ident(_)          =>
 	case Tree$Sequence( trees ) => getNilVars1( trees )
         case Tree$Apply( _,  args ) => getNilVars1( args )
@@ -90,6 +90,20 @@ class TransMatch( global:scalac_Global )
       res
     }
 
+    // 2do: remove binds from pattern
+    def handleNilVariables( cse: Tree$CaseDef ): Unit = {
+      val nilvars = nilVariables(cse.pat);
+      if( !nilvars.isEmpty ) {
+        val newBody = new Array[Tree]( nilvars.length );
+        var j=0;
+        for( val v <- nilvars.elements ) {
+          val n = gen.mkNil( cse.pos );
+          newBody( j ) = gen.ValDef( v, n );
+          j = j + 1;
+        }
+        cse.body = gen.mkBlock( newBody, cse.body );
+      }
+    }
 
     //val bsf = new scala.util.automaton.BerrySethi[ matching.PatternTest ]( pe );
 
@@ -111,18 +125,9 @@ class TransMatch( global:scalac_Global )
     var containsReg = false;
     var i = 0;
     while (i < cases.length) {
-      containsReg = isRegular(cases( i ).pat) || containsReg;
-
-      var nilvars = nilVariables(cases( i ).pat);
-      if( !nilvars.isEmpty ) {
-        val newBody = new Array[Tree]( nilvars.length );
-        var j=0;
-        for( val v <- nilvars.elements ) {
-          val n = gen.mkNil( cases( i ).pos );
-          newBody( j ) = gen.ValDef( v, n );
-          j = j + 1;
-        }
-        cases(i).body = gen.mkBlock( newBody, cases(i).body );
+      if(isRegular(cases( i ).pat)) {
+        containsReg = true;
+        handleNilVariables(cases( i ));
       }
       i = i+1;
     }
