@@ -141,7 +141,7 @@ public class ExpandMixins extends Transformer {
         return (Template)expansions.get(tree);
     }
 
-    protected Template expandMixins(Template tree, Symbol owner) {
+    protected Template expandMixins(Template tree, final Symbol owner) {
         Type templType = owner.info();
 
         List/*<Tree>*/ newBody = new ArrayList();
@@ -171,7 +171,7 @@ public class ExpandMixins extends Transformer {
         for (int bcIndex = tree.parents.length - 1; bcIndex > 0; --bcIndex) {
             Tree bc = tree.parents[bcIndex];
 
-            Symbol bcSym = baseTypes[bcIndex].symbol();
+            final Symbol bcSym = baseTypes[bcIndex].symbol();
 
             if ((bcSym.flags & Modifiers.INTERFACE) != 0)
                 continue;
@@ -189,7 +189,9 @@ public class ExpandMixins extends Transformer {
             assert tpFormals.length == tpActuals.length;
             Type.Map typeMap = new Type.Map() {
                     public Type apply(Type t) {
-                        return t.subst(tpFormals, tpActuals);
+                        Type t1 = t.asSeenFrom(owner.thisType(), bcSym);
+                        Type t2 = t1.subst(tpFormals, tpActuals);
+                        return t2;
                     }
                 };
 
@@ -252,7 +254,6 @@ public class ExpandMixins extends Transformer {
             }
 
             // Pass 2: copy members
-            treeCopier.pushThisTypeSubst(bcSym, owner);
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
 
@@ -260,9 +261,9 @@ public class ExpandMixins extends Transformer {
                     continue;
 
                 treeCopier.pushSymbolSubst(symbolMap);
-                treeCopier.pushTypeSubst(tpFormals, tpActuals);
+                treeCopier.setTypeMap(typeMap);
                 Tree newMember = treeCopier.copy(member);
-                treeCopier.popTypeSubst();
+                treeCopier.clearTypeMap();
                 treeCopier.popSymbolSubst();
 
                 newBody.add(newMember);
@@ -276,7 +277,6 @@ public class ExpandMixins extends Transformer {
                     mixedInSymbols.put(member.symbol(), newMember.symbol());
 		}
             }
-            treeCopier.popThisTypeSubst();
         }
 
 	// Modify mixin base classes to refer to interfaces instead of
