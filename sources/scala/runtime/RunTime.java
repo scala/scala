@@ -179,6 +179,60 @@ public abstract class RunTime {
     }
 
     //########################################################################
+    // Public Functions - Unboxing primitives
+
+    public static void    unbox(Unit    x) {        x.asUnit   (); }
+    public static boolean unbox(Boolean x) { return x.asBoolean(); }
+    public static byte    unbox(Byte    x) { return x.asByte   (); }
+    public static short   unbox(Short   x) { return x.asShort  (); }
+    public static char    unbox(Char    x) { return x.asChar   (); }
+    public static int     unbox(Int     x) { return x.asInt    (); }
+    public static long    unbox(Long    x) { return x.asLong   (); }
+    public static float   unbox(Float   x) { return x.asFloat  (); }
+    public static double  unbox(Double  x) { return x.asDouble (); }
+
+    /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
+    public static boolean[] unbox(Array xs) {
+        return xs == null ? null : xs.asBooleanArray();
+    }
+    /** @meta method (scala.Array[scala.Byte]) scala.Array[scala.Byte]; */
+    public static byte   [] unbox(Array xs) {
+        return xs == null ? null : xs.asByteArray   ();
+    }
+    /** @meta method (scala.Array[scala.Short]) scala.Array[scala.Short]; */
+    public static short  [] unbox(Array xs) {
+        return xs == null ? null : xs.asShortArray  ();
+    }
+    /** @meta method (scala.Array[scala.Char]) scala.Array[scala.Char]; */
+    public static char   [] unbox(Array xs) {
+        return xs == null ? null : xs.asCharArray   ();
+    }
+    /** @meta method (scala.Array[scala.Int]) scala.Array[scala.Int]; */
+    public static int    [] unbox(Array xs) {
+        return xs == null ? null : xs.asIntArray    ();
+    }
+    /** @meta method (scala.Array[scala.Long]) scala.Array[scala.Long]; */
+    public static long   [] unbox(Array xs) {
+        return xs == null ? null : xs.asLongArray   ();
+    }
+    /** @meta method (scala.Array[scala.Float]) scala.Array[scala.Float]; */
+    public static float  [] unbox(Array xs) {
+        return xs == null ? null : xs.asFloatArray  ();
+    }
+    /** @meta method (scala.Array[scala.Double]) scala.Array[scala.Double]; */
+    public static double [] unbox(Array xs) {
+        return xs == null ? null : xs.asDoubleArray ();
+    }
+    /** @meta method [?T < scala.AnyRef](scala.Array[?T]) scala.Array[?T]; */
+    public static Object [] unbox(Array xs) {
+        return xs == null ? null : xs.asObjectArray ();
+    }
+    /** @meta method [?T](scala.Array[?T]) scala.Array[?T]; */
+    public static Object    unbox(Array xs) {
+        return xs == null ? null : xs.asArray       ();
+    }
+
+    //########################################################################
     // Public Functions - Array primitives
 
     public static boolean[] zarray(int length) { return new boolean[length]; }
