@@ -297,7 +297,7 @@ public class SymbolTablePrinter {
 
     /** Returns the name of the given symbol. */
     public String getSymbolName(Symbol symbol) {
-        Name name = symbol.name;
+        Name name = symbol.simpleName();
         if (!global.debug) name = NameTransformer.decode(name);
         return name.toString();
     }

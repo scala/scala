@@ -434,16 +434,24 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Get the fully qualified name of this Symbol
      *  (this is always a normal name, never a type name)
      */
+
+    /** Get the simple name of this Symbol (this is always a term name)
+     */
+    public Name simpleName() {
+	return isConstructor() ? constructorClass().name.toTermName()
+	    : name.toTermName();
+    }
+
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
-	return name.toTermName();
+	return simpleName();
     }
 
     /** Get the mangled name of this Symbol
      *  (this is always a normal name, never a type name)
      */
     public Name mangledName() {
-        return name.toTermName();
+        return isConstructor() ? constructorClass().name.toTermName() : name.toTermName();
     }
 
     /** Get the fully qualified mangled name of this Symbol */
@@ -860,7 +868,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  $eq => =.
      */
     public String nameString() {
-	return NameTransformer.decode(name).toString();
+	return NameTransformer.decode(simpleName()).toString();
     }
 
     /** String representation of symbol's full name.
