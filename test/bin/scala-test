@@ -447,6 +447,12 @@ main() {
         esac;
     fi;
 
+    if [ -d "$OBJDIR" ]; then
+        OBJDIR=`cd "$OBJDIR"; pwd`;
+    else
+        abort "could not access directory '$OBJDIR'";
+    fi
+
     test_all;
 
     if [ $FAILURE_COUNT -eq 0 ]; then
