@@ -36,7 +36,7 @@ public class Unit {
      */
     public final boolean console;
 
-    /** is this unit only there for mixin expansion>
+    /** is this unit only there for mixin expansion?
      */
     public final boolean mixinOnly;
 
