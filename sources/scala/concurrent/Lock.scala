@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class Lock extends Monitor {
+class Lock with Monitor {
   var available = true;
   def acquire = {
     if (!available) wait();

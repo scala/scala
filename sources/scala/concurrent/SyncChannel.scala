@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class SyncChannel[a] extends Monitor {
+class SyncChannel[a] with Monitor {
   private var data: a = _;
   private var reading = false;
   private var writing = false;

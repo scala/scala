@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class MailBox extends Monitor {
+class MailBox with Monitor {
 
   type Message = AnyRef;
 

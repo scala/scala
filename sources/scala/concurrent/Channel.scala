@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-class Channel[a] extends Monitor {
+class Channel[a] with Monitor {
   private var written: LinkedList[a] = new LinkedList;
   private var lastWritten = written;
   private var nreaders = 0;
