@@ -103,8 +103,8 @@ public class TreeChecker {
             Symbol symbol = tree.symbol();
             assert symbol != null && symbol.isClass(): show(tree);
             assert vparams.length == 1: show(tree);
-            assert containSymbols(tparams, symbol.typeParams()): show(tree);
-            assert containSymbols(vparams[0],symbol.valueParams()): show(tree);
+            containSymbols(tparams, symbol.typeParams());
+            containSymbols(vparams[0],symbol.valueParams());
             registerSymbol(symbol);
             scopeInsertParametersOf(symbol);
             pushClass(symbol);
@@ -167,8 +167,8 @@ public class TreeChecker {
             Symbol symbol = tree.symbol();
             assert symbol != null && symbol.isMethod(): show(tree);
             assert vparams.length == 1: show(tree);
-            assert containSymbols(tparams, symbol.typeParams()): show(tree);
-            assert containSymbols(vparams[0],symbol.valueParams()): show(tree);
+            containSymbols(tparams, symbol.typeParams());
+            containSymbols(vparams[0],symbol.valueParams());
             assert symbol.isDeferred() == (rhs == Tree.Empty): show(tree);
             registerSymbol(symbol);
             scopeInsertParametersOf(symbol);
@@ -225,11 +225,11 @@ public class TreeChecker {
                 + format("params", Debug.show(params));
             for (int i = 0; i < idents.length; i++) {
                 location(idents[i]);
-                type(idents[i], definitions.ANY_TYPE(), params[i].type());
+                conforms(idents[i], definitions.ANY_TYPE(), params[i].type());
                 Symbol local = idents[i].symbol();
                 assert local != null && !local.isModule(): show(idents[i]);
             }
-            type(tree, symbol.resultType());
+            conforms(tree, symbol.resultType());
             scopeInsertLabel(symbol);
             expression(rhs, symbol.resultType());
             scopeRemoveLabel(symbol);
@@ -336,9 +336,9 @@ public class TreeChecker {
         for (int i = 0; i < args.length; i++) {
             Type expected = subst.apply(params[i].info());
             Type loBound = subst.apply(params[i].loBound());
-            type(args[i], expected, loBound);
+            conforms(args[i], expected, loBound);
         }
-        type(tree, subst.apply(function.resultType()));
+        conforms(tree, subst.apply(function.resultType()));
         return true;
     }
 
@@ -349,7 +349,7 @@ public class TreeChecker {
             + format("params", Debug.show(params));
         for (int i = 0; i < args.length; i++)
             expression(args[i], params[i].type());
-        type(tree, function.resultType());
+        conforms(tree, function.resultType());
         return true;
     }
 
@@ -419,38 +419,39 @@ public class TreeChecker {
     }
 
     //########################################################################
-    // Private Methods - Checking type
+    // Private Methods - Checking helpers
 
-    private boolean type(Tree tree, Type expected, Type loBound) {
+    /** Do the trees contain the given symbols? */
+    private void containSymbols(Tree[] trees, Symbol[] symbols) {
+        boolean ok = trees.length == symbols.length;
+        for (int i = 0; ok && i < trees.length; i++)
+            ok &= trees[i].symbol() == symbols[i];
+        assert ok: show() + format("trees", trees) + format("symbols",symbols);
+    }
+
+    /** Does the type conform to the expected type and lower bound? */
+    private void conforms(Tree tree, Type expected, Type loBound) {
+        conforms(tree, expected);
         if (false && !loBound.isSubType(tree.type())) { // !!! false &&
             Type.explainSwitch = true;
             assert loBound.isSubType(tree.type()): show(tree)
                 + format("loBound", expected);
             Type.explainSwitch = false;
         }
-        return type(tree, expected);
     }
 
-    private boolean type(Tree tree, Type expected) {
+    /** Does the type conform to the expected type? */
+    private void conforms(Tree tree, Type expected) {
         if (!tree.type().isSubType(expected)) {
             Type.explainSwitch = true;
             assert tree.type().isSubType(expected): show(tree)
                 + format("expected", expected);
             Type.explainSwitch = false;
         }
-        return true;
     }
 
     //########################################################################
     // Private Methods - Declaring symbols
-
-    /** Do the trees contain the given symbols? */
-    private boolean containSymbols(Tree[] trees, Symbol[] symbols) {
-        if (trees.length != symbols.length) return false;
-        for (int i = 0; i < trees.length; i++)
-            if (trees[i].symbol() != symbols[i]) return false;
-        return true;
-    }
 
     /** Remove parameters of symbol from current scope. */
     private void scopeInsertParametersOf(Symbol symbol) {
@@ -644,6 +645,7 @@ public class TreeChecker {
     /** Returns a string representation of the given value. */
     private String toString(Object value) {
         if (value instanceof Symbol) return Debug.show(value);
+        if (value instanceof Object[]) return Debug.show(value);
         return String.valueOf(value);
     }
 
