@@ -226,6 +226,16 @@ public class Scanner extends TokenData {
                     nextch();
                     getOperatorRest(index);
                     return;
+		case '\\':
+	          nextch();
+		  if (ch == '"') {
+		     getStringLit();
+		     token = IDENTIFIER;
+		  } else {
+		      syntaxError(pos, "illegal character");
+		  }
+		  return;
+
                 case '/':
                     nextch();
                     if (!skipComment()) {
@@ -250,17 +260,7 @@ public class Scanner extends TokenData {
                     getNumber(index, 10);
                     return;
                 case '\"':
-                    nextch();
-                    litlen = 0;
-                    while (ch != '\"' && ch != CR && ch != LF && ch != SU)
-                        getlitch();
-                    if (ch == '\"') {
-                        token = STRINGLIT;
-                        name = Name.fromSource(lit, 0, litlen);
-                        nextch();
-                    }
-                    else
-                        syntaxError("unclosed character literal");
+		    getStringLit();
                     return;
                 case '\'':
                     nextch();
@@ -495,6 +495,20 @@ public class Scanner extends TokenData {
             treatIdent(index, bp);
             return;
         }
+    }
+
+    private void getStringLit() {
+	nextch();
+	litlen = 0;
+	while (ch != '\"' && ch != CR && ch != LF && ch != SU)
+	    getlitch();
+	if (ch == '\"') {
+	    token = STRINGLIT;
+	    name = Name.fromSource(lit, 0, litlen);
+	    nextch();
+	}
+	else
+	    syntaxError("unclosed character literal");
     }
 
     /** returns true if argument corresponds to a keyword.

@@ -202,11 +202,12 @@ class Scanner(unit: Unit) extends TokenData {
 	nextch();
 	getOperatorRest(index);
 	return;
-      case `\\' =>
+      case '\\' =>
 	nextch();
-        if (ch == '"')//"
+        if (ch == '"') { //"
 	  getStringLit();
-        else
+	  token = IDENTIFIER;
+	} else
 	  syntaxError(pos, "illegal character");
 	return;
       case '/' =>

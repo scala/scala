@@ -1400,15 +1400,19 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		break;
 	    }
 	    if ((mode & EXPRmode) != 0) {
-		Symbol coerceMeth = tree.type.lookup(Names.coerce);
-		if (coerceMeth != Symbol.NONE) {
-		    Type coerceType = checkAccessible(
-			tree.pos, coerceMeth, tree.type.memberType(coerceMeth),
-			tree);
-		    tree = make.Select(tree.pos, tree, Names.coerce)
-			.setSymbol(coerceMeth)
-			.setType(coerceType);
-		    return adapt(tree, mode, pt);
+		if (pt.symbol() == definitions.UNIT_CLASS) {
+		    return gen.Block(new Tree[]{tree, gen.mkUnitLit(tree.pos)});
+		} else {
+		    Symbol coerceMeth = tree.type.lookup(Names.coerce);
+		    if (coerceMeth != Symbol.NONE) {
+			Type coerceType = checkAccessible(
+			    tree.pos, coerceMeth, tree.type.memberType(coerceMeth),
+			    tree);
+			tree = make.Select(tree.pos, tree, Names.coerce)
+			    .setSymbol(coerceMeth)
+			    .setType(coerceType);
+			return adapt(tree, mode, pt);
+		    }
 		}
 	    }
 	    if ((mode & CONSTRmode) == 0) {
@@ -2068,7 +2072,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    pattype, definitions.BOOLEAN_TYPE());
 			Tree applyVisitor = transformVisitor(tree, pattype, restype);
 			if (!infer.isFullyDefined(restype))
-			    restype = applyVisitor.type;
+			    restype = applyVisitor.type.deconst();
 			if (definitions.PARTIALFUNCTION_CLASS.isExternal())
 			    // need to load tree for mixins
 			    new SourceCompleter(global).complete(
@@ -2234,7 +2238,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		enterParams(vparams);
 		Tree.ValDef[] vparams1 = transform(vparams);
 		Tree body1 = transform(body, EXPRmode, restype);
-		if (!infer.isFullyDefined(restype)) restype = body1.type;
+		if (!infer.isFullyDefined(restype)) restype = body1.type.deconst();
 		popContext();
 		return gen.mkFunction(
 		    tree.pos, vparams1, body1, restype, context.owner);

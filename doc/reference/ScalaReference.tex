@@ -834,14 +834,6 @@ The erasure mapping is defined as follows.
 \section{Implicit Conversions}
 \label{sec:impl-conv}
 
-If $S \conforms T$, then values of type $S$ are implicitly {\em
-converted} to values type of $T$ in situations where a value of type
-$T$ is required. A conversion between two number types in \code{int},
-\code{long}, \code{float}, \code{double} creates a value of the target
-type representing the same number as the source.  When used in an
-expression, a value of type \code{byte}, \code{char}, \code{short} is
-always implicitly converted to a value of type \code{int}.
-
 The following implicit conversions are applied to expressions of
 method type that are used as values, rather than being applied to some
 arguments.
@@ -877,6 +869,16 @@ would violate the well-formedness rules for anonymous functions
 (\sref{sec:closures}). Hence, methods with call-by-name
 parameters always need to be applied to arguments immediately.
 \end{itemize}
+
+When used in an expression, a value of type \code{byte}, \code{char},
+\code{short} is always implicitly converted to a value of type
+\code{int}.
+
+If an expression $e$ has type $T$ where $T$ does not conform to the
+expected type $pt$ and $T$ has a member named \lstinline@coerce@, then
+the expression is typed and evaluated is if it was
+\listinline@$e$.coerce@.
+
 
 \chapter{Basic Declarations and Definitions}
 \label{sec:defs}
@@ -1174,6 +1176,9 @@ function definitions.  The most general form of a type parameter is
 and upper bounds that constrain possible type arguments for the
 parameter. $\pm$ is a {\em variance}, i.e.\ an optional prefix 
 of either \lstinline@+@, or \lstinline@-@.
+
+The upper bound $U$ in a type parameter clauses may denote be a final
+class. The lower bound may not denote a value type.
 
 The names of all type parameters in a type parameter clause must be
 pairwise different.  The scope of a type parameter includes in each

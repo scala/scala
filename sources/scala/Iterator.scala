@@ -34,12 +34,12 @@ object Iterator {
       else error("next on empty iterator");
   }
 
-  def range(lo: Int, hi: Int) = new Iterator[Int] {
+  def range(lo: Int, end: Int) = new Iterator[Int] {
     private var i = 0;
     def hasNext: Boolean =
-      i <= hi;
+      i < end;
     def next: Int =
-      if (i <= hi) { i = i + 1 ; i - 1 }
+      if (i < end) { i = i + 1 ; i - 1 }
       else error("next on empty iterator");
   }
 
