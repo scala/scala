@@ -4,6 +4,9 @@ package scala.xml;
 
 import scala.xml.javaAdapter.Map ;
 
+/** an XML representation text. Used in both generic and specific XML representation
+*/
+
 case class PCDATA( content:String ) extends Element  {
 
               def getName     = "PCDATA";
@@ -11,6 +14,9 @@ case class PCDATA( content:String ) extends Element  {
 	      def setChildren( l:Seq[ Element ] ):Unit = error("PCDATA.setChildren");
               def getAttribs  = error("PCDATA.getAttribs");
 	      def setAttribs( m:Map[ String, String ] ):Unit = error("PCDATA.setAttribs");
+
+  /** like toString, but escaping the characters &lt; &gt; &amp; and &quot; as demanded by XML standard.
+  */
 
               override def toXML:String = {
                 // new java.util.StringBuffer !!crashes!!

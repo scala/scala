@@ -13,11 +13,17 @@ object Generic {
 
           // utility functions
 
+  /** TEMPORARY converting Java iterators to scala List
+  */
+
     def iterToList[ a ]( iter:java.util.Iterator ):List[a] =
         if( !iter.hasNext() )
             Nil
         else
             (iter.next().asInstanceOf[ a ])::iterToList( iter ) ;
+
+  /** TEMPORARY converting Java maps to javaAdapter maps
+  */
 
     def mapToMap[a,b]( map:java.util.Map ):Map[a,b] = {
 
@@ -37,6 +43,9 @@ object Generic {
         res
     }
 
+  /** turns a Map that contains attributes into XML like att1="val1" att2="val2"
+  */
+
     def toXML( attrib:Map[ String, String ] ):String = {
 	def iterate( keys:Iterator[String] ) =
 	    if( keys.hasNext ) {
@@ -51,6 +60,9 @@ object Generic {
 
   //  attributes
 
+  /** this trait is mixed in with Labelled in order to provide attributes
+   */
+
   trait Attribbed {
 
     // only CDATA / String attributes for now
@@ -59,10 +71,17 @@ object Generic {
   }
   // functions for generic xml loading, saving
 
+  /** will load the given file and return a generic XML representation
+  */
+
   def load( filename:String ):Labelled = {
     val b = new GenericFactoryAdapter().loadXML( filename );
     b.asInstanceOf[Labelled]
   };
+
+  /** will save a generic XML representation doc to filename. Uses NIO classes of JDK 1.4 for character conversion,
+  *   encoding is fixed to ISO-8859-1 for now.
+  */
 
   def save( filename:String, doc:Any ):Unit = {
     import java.io.{FileOutputStream,Writer};
@@ -94,6 +113,11 @@ object Generic {
     w.close();
     fos.close();
   }
+
+  /** this class contains methods called back by the parser to create elements.
+  *   It implements hash-consing, i.e. identical elemens (same tag, same attributes, same children)
+  *   are only constructed once !
+  */
 
   class GenericFactoryAdapter extends FactoryAdapter()  {
 
