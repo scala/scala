@@ -141,7 +141,7 @@ public class PatternMatcher {
 	this.root.and = makeHeader/*mk.Header*/( _m.pos,
 				   _m.selector.type.widen(),
 				   gen.Ident( _m.pos, root.symbol() )
-				   .setType(_m.selector.type));
+				   .setType(_m.selector.type.widen()));
 
 	this.resultVar = new TermSymbol(_m.pos,
 					/*cf.*/fresh.newName( RESULT_N ),
