@@ -385,7 +385,8 @@ public abstract class Global {
 
         currentPhase = PHASE.INITIAL.phase();
         // apply successive phases and pray that it works
-        while (currentPhase.next != null && reporter.errors() == 0) {
+        // !!! remove NAMER test ?
+        while (currentPhase.next != null && ((currentPhase == PHASE.NAMER.phase()) || (reporter.errors() == 0))) {
             currentPhase = currentPhase.next;
             start();
             // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
