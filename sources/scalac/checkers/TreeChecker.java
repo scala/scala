@@ -264,24 +264,20 @@ public class TreeChecker {
         }
     }
 
-    //########################################################################
-    // Private Methods - Checking locations
-
     /** Checks the location. Returns true. */
-    public boolean location(Tree tree) {
+    private boolean location(Tree tree) {
+        Symbol symbol = tree.symbol();
+        assert symbol != null && symbol.isTerm(): show(tree);
+        assert !symbol.isMethod(): show(tree);
         switch (tree) {
 
         case Select(_, _):
-            Symbol symbol = tree.symbol();
-            assert symbol != null && symbol.isTerm(): show(tree);
-            assert !symbol.isMethod(): show(tree);
             return selection(tree);
 
         case Ident(_):
-            Symbol symbol = tree.symbol();
-            assert symbol != null && symbol.isTerm(): show(tree);
             if (symbol.isModule()) return true;
             assert vvars.contains(symbol): show(tree);
+            assert symbol.owner() == currentMember(): show(tree);
             return true;
 
         default:
@@ -293,7 +289,7 @@ public class TreeChecker {
     // Private Methods - Checking selection
 
     /** Checks the selection. Returns true. */
-    public boolean selection(Tree tree) {
+    private boolean selection(Tree tree) {
         switch (tree) {
 
         case Select(Tree qualifier, _):
@@ -301,9 +297,8 @@ public class TreeChecker {
             assert symbol != null && symbol.isTerm(): show(tree);
             Symbol owner = symbol.owner();
             assert owner.isClassType(): show(tree);
-            Type prefix = qualifier.type();
-            assert prefix.baseType(owner) != Type.NoType: show(tree);
-            return expression(qualifier, prefix);
+            assert qualifier.type().baseType(owner) != Type.NoType: show(tree);
+            return expression(qualifier, qualifier.type());
 
         default:
             throw Debug.abort("illegal case", tree);
