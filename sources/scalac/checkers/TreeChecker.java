@@ -8,6 +8,7 @@
 
 package scalac.checkers;
 
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -17,6 +18,7 @@ import ch.epfl.lamp.util.Position;
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.AbsTypeDef;
+import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.ast.Tree.ValDef;
 import scalac.symtab.Definitions;
@@ -208,9 +210,125 @@ public class TreeChecker {
     //########################################################################
     // Private Methods - Checking expressions
 
-    /** Checks the expression. Returns true. */
+    /** Checks the expression of given expected type. Returns true. */
     private boolean expression(Tree tree, Type expected) {
-        return true;
+        if ("".equals("")) return true; // !!!
+        type(tree, expected);
+        expected = tree.type();
+        switch (tree) {
+
+        case LabelDef(_, Ident[] idents, Tree rhs):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isLabel(): show(tree);
+            Symbol[] params = symbol.type().valueParams();
+            assert params.length == idents.length: show(tree)
+                + format("params", Debug.show(params));
+            for (int i = 0; i < idents.length; i++) {
+                location(idents[i]);
+                type(idents[i], definitions.ANY_TYPE(), params[i].type());
+                Symbol local = idents[i].symbol();
+                assert local != null && !local.isModule(): show(idents[i]);
+            }
+            type(tree, symbol.resultType());
+            scopeInsertLabel(symbol);
+            expression(rhs, symbol.resultType());
+            scopeRemoveLabel(symbol);
+            return true;
+
+        case Block(Tree[] statements):
+            Set locals = new HashSet();
+            for (int i = 0; i < statements.length - 1; i++)
+                statement(locals, statements[i]);
+            if (statements.length > 0)
+                expression(statements[statements.length - 1], expected);
+            for (Iterator i = locals.iterator(); i.hasNext(); )
+                scopeRemoveVVariable((Symbol)i.next());
+            return true;
+
+        case Assign(Tree lhs, Tree rhs):
+            location(lhs);
+            expression(rhs, lhs.type().widen());
+            return true;
+
+        case If(Tree cond, Tree thenp, Tree elsep):
+            expression(cond, definitions.BOOLEAN_TYPE());
+            expression(thenp, expected);
+            expression(elsep, expected);
+            return true;
+
+        case Switch(Tree test, _, Tree[] bodies, Tree otherwise):
+            expression(test, definitions.INT_TYPE());
+            for (int i = 0; i < bodies.length; i++)
+                expression(bodies[i], expected);
+            expression(otherwise, expected);
+            return true;
+
+        case Return(Tree value):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isMethod(): show(tree);
+            assert currentMember() == symbol: show(tree);
+            return expression(value, currentMember().resultType());
+
+        case Throw(Tree value):
+            return expression(value, definitions.JAVA_THROWABLE_TYPE());
+
+        case New(Template(Tree[] bases, Tree[] body)):
+            assert bases.length == 1 && body.length == 0: show(tree);
+            switch (bases[0]) {
+            case Apply(Tree fun, _):
+                assert fun instanceof Tree.Ident; show(tree);
+                Symbol symbol = fun.symbol();
+                assert symbol != null && symbol.isInitializer(): show(tree);
+                return expression(tree, definitions.UNIT_TYPE());
+            default:
+                throw Debug.abort("illegal case", bases[0]);
+            }
+
+        case Apply(Tree vfun, Tree[] vargs):
+            vapply(tree, vfun.type(), vargs);
+            switch (vfun) {
+            case TypeApply(Tree tfun, Tree[] targs):
+                Symbol symbol = tfun.symbol();
+                assert symbol != null && !symbol.isLabel(): show(tree);
+                tapply(tree, tfun.type(), targs);
+                return function(tfun);
+            default:
+                return function(vfun);
+            }
+
+        case Super(_, _):
+        case This(_):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isClass(): show(tree);
+            assert symbol == currentClass(): show(tree);
+            return true;
+
+        case Select(_, _):
+            return location(tree);
+
+        case Ident(_):
+            Symbol symbol = tree.symbol();
+            if (symbol == definitions.NULL) return true;
+            if (symbol == definitions.ZERO) return true;
+            return location(tree);
+
+        case Literal(Object value):
+            assert value != null: show(tree);
+            if (value instanceof Boolean  ) return true;
+            if (value instanceof Byte     ) return true;
+            if (value instanceof Short    ) return true;
+            if (value instanceof Character) return true;
+            if (value instanceof Integer  ) return true;
+            if (value instanceof Long     ) return true;
+            if (value instanceof Float    ) return true;
+            if (value instanceof Double   ) return true;
+            if (value instanceof String   ) return true;
+            assert false: show(tree) + format("value.class", value.getClass());
+            return true;
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
     }
 
     /** Checks the type application. Returns true. */
