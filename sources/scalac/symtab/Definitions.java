@@ -475,8 +475,8 @@ public class Definitions {
         ROOT_CLASS = ClassSymbol.newRootClass(new PackageParser(global));
 
         // the java and scala packages
-        JAVA_CLASS = getClass(Names.java);
-        SCALA_CLASS = getClass(Names.scala);
+        JAVA_CLASS = getModule(Names.java).moduleClass();
+        SCALA_CLASS = getModule(Names.scala).moduleClass();
 
         // the top and bottom classes
         ANY_CLASS = newClass(SCALA_CLASS, Names.Any, 0);
@@ -665,7 +665,7 @@ public class Definitions {
     /** Creates a new class */
     private Symbol newClass(Symbol owner, Name name, int flags) {
         name = name.toTypeName();
-        Symbol clasz = new ClassSymbol(Position.NOPOS, name, owner, flags);
+        Symbol clasz = owner.newClass(Position.NOPOS, flags, name);
         owner.members().enter(clasz);
         return clasz;
     }
