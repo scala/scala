@@ -466,10 +466,12 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                 ts.append( xScalaExpr );
               } else {
                 val str = new StringBuffer("{");
-                str.append( s.xText );
+                var text = s.xText;
+                if( !preserveWS ) text = trimWS( text );
+                str.append( text );
                 ts.append( makeText( s.pos, str.toString() ));
               }
-
+            // postcond: s.xScalaBlock == false!
             case '&' => // EntityRef or CharRef
               s.xNext;
               s.ch match {
@@ -489,6 +491,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
               if( !preserveWS ) text = trimWS( text );
               if( text.length() > 0 )
                 ts.append( makeText( s.pos, text ));
+            // here s.xScalaBlock might be true
+
           }
         }
       }
@@ -519,6 +523,14 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   }
 
 
+  def xScalaPatterns:Array[Tree] = {
+    s.xSync;
+    val b = p.patterns();
+    if( s.token != RBRACE )
+      s.xSyntaxError(" expected end of Scala patterns");
+    return b
+  }
+
 
   /** '<' xPattern  ::= Name [S] { xmlPattern | '{' pattern3 '}' } ETag
    *                  | Name [S] '/' '>'
@@ -529,12 +541,19 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
     val elemName = s.xName;
     s.xSpaceOpt;
     if( s.ch == '/' ) { // empty tag
-      s.xNext; s.xToken('>'); makeXMLpat( pos, elemName, Tree.EMPTY_ARRAY );
-    } else { // content
+      s.xNext;
       s.xToken('>');
-      val ts = new myTreeList();
-      var exit = false;
-      while( !exit ) {
+      return makeXMLpat( pos, elemName, Tree.EMPTY_ARRAY );
+    };
+
+     // else: tag with content
+    s.xToken('>');
+    val ts = new myTreeList();
+    var exit = false;
+    while( !exit ) {
+      if( s.xScalaBlock ) {
+        ts.append( xScalaPatterns );
+      } else
         s.ch match {
           case '<' => { // tag
             s.xNext;
@@ -546,22 +565,22 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
           }
           case '{' => // embedded Scala patterns
             while( s.ch == '{' ) {
-              s.nextToken();
-              s.nextToken();
-              val ps = p.patterns();
-              if( s.token != RBRACE ) {
-                s.xSyntaxError(" expected end of Scala block");
-              }
-              ts.append( ps );
+              ts.append( xScalaPatterns );
             }
+            // postcond: s.xScalaBlock = false;
+          if( s.xScalaBlock ) throw new ApplicationError(); // assert
           case _ => // text
-            val pos = s.pos;
-            ts.append( makeText( pos, s.xText ) );
+            val pos1 = s.pos;
+          var text = s.xText;
+          if( !preserveWS ) text = trimWS( text );
+          if( text.length() > 0 )
+            ts.append( makeText( pos1, text ));
+          // here  s.xScalaBlock might be true;
+          //if( s.xScalaBlock ) throw new ApplicationError("after:"+text); // assert
 	}
-      }
-      xEndTag( elemName );
-      makeXMLpat( pos, elemName, ts.toArray() );
     }
+    xEndTag( elemName );
+    makeXMLpat( pos, elemName, ts.toArray() );
   }
 
 } /* class MarkupParser */
