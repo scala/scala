@@ -1,0 +1,30 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
+package scalac.checkers;
+
+import scalac.Global;
+{#Imports#}
+
+/** Class to check tree nodes. */
+public class CheckTreeNodes {
+
+    //########################################################################
+    // Private Fields
+
+    private final Global global = Global.instance;
+
+    //########################################################################
+    // Public Methods
+
+    public void check(Tree tree) {
+        {#TreeSwitch#}
+    }
+
+    //########################################################################
+}
