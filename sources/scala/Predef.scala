@@ -5,6 +5,8 @@ package scala {
     val True = Boolean.True;
     val False = Boolean.False;
 
+    val List = scala.List;
+
     def List[a](x: a*): List[a] = {
       def mkList(elems: Iterator[a]): List[a] =
         if (elems.hasNext) elems.next :: mkList(elems)

@@ -1,18 +1,18 @@
-package scala with {
+package scala {
 
-  abstract class Option[a] with {
+  trait Option[a] {
 
-    abstract def isNone: Boolean;
-    abstract def get: a;
+    def isNone: Boolean;
+    def get: a;
 
-    def map[b](f: (a)b): Option[b] = this match {
-      case None => this.as[Option[b]]
+    def map[b](f: a => b): Option[b] = this match {
+      case None() => None()
       case Some(x) => Some(f(x))
     }
 
     def toList: List[a] = this match {
-      case None => []
-      case Some(x) => [x]
+      case None() => Predef.List()
+      case Some(x) => Predef.List(x)
     }
 
     def print: Unit =
