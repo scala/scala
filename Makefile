@@ -24,6 +24,15 @@ PROJECT_CLASSPATH	 = $(PROJECT_OUTPUTDIR)
 PROJECT_LISTDIR		 = $(PROJECT_ROOT)/config/list
 PROJECT_SOURCEDIR	 = $(PROJECT_ROOT)/sources
 
+# project java archive
+
+PROJECT_JAR_ARCHIVE	 = $(ROOT)/lib/$(PROJECT_NAME).jar
+PROJECT_JAR_MANIFEST	 = $(PROJECT_SOURCEDIR)/MANIFEST
+PROJECT_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
+PROJECT_JAR_FILES	+= scala
+PROJECT_JAR_FILES	+= scalac
+PROJECT_JAR_FILES	+= scalai
+
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_ROOT)/bin
 SCRIPTS_WRAPPER_NAME	 = .scala_wrapper
@@ -206,6 +215,7 @@ $(TUPLE_FILES): $(TUPLE_TEMPLATE) $(TUPLE_RULES)
 ##############################################################################
 
 include $(ROOT)/support/make/jc.mk
+include $(ROOT)/support/make/jar.mk
 include $(ROOT)/support/make/exec.mk
 include $(ROOT)/support/make/grep.mk
 include $(ROOT)/support/make/wc.mk
