@@ -17,6 +17,7 @@ import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolTablePrinter;
 import scalac.util.Debug;
+import scalac.util.SourceRepresentation;
 
 /** This class provides methods to print attributed trees. */
 public class ATreePrinter {
@@ -537,7 +538,7 @@ public class ATreePrinter {
         case DOUBLE(double value):
             return print(value);
         case STRING(String value):
-            return print('\"').print(value).print('\"');
+            return print('\"').print(SourceRepresentation.escape(value)).print('\"');
         case NULL:
             return print("null");
         case ZERO:
