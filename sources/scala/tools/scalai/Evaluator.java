@@ -164,9 +164,6 @@ public class Evaluator {
             return invoke(null, template.getConstructor(),
                 new Object[] {template.getHandler()});
 
-        case Box(Code value):
-            return box(evaluate(value));
-
         case IsScala(Code target, Symbol symbol):
             Object object = evaluate(target);
             if (object == null) return Boolean.FALSE;
@@ -446,65 +443,6 @@ public class Evaluator {
         if (trace.getCause() != exception) trace.reset(exception);
         trace.addScalaLeavePoint();
         throw trace;
-    }
-
-    //########################################################################
-    // Private Methods - box
-
-    // !!!
-    private final Class Boolean_class   = Boolean.class;
-    private final Class Byte_class      = Byte.class;
-    private final Class Short_class     = Short.class;
-    private final Class Character_class = Character.class;
-    private final Class Integer_class   = Integer.class;
-    private final Class Long_class      = Long.class;
-    private final Class Float_class     = Float.class;
-    private final Class Double_class    = Double.class;
-
-    // !!!
-    private final Class boolean_class   = Boolean.TYPE;
-    private final Class byte_class      = Byte.TYPE;
-    private final Class short_class     = Short.TYPE;
-    private final Class char_class      = Character.TYPE;
-    private final Class int_class       = Integer.TYPE;
-    private final Class long_class      = Long.TYPE;
-    private final Class float_class     = Float.TYPE;
-    private final Class double_class    = Double.TYPE;
-
-    private Object box(Object value) {
-        // !!! check
-        // !!! System.out.println("!!! box: ");
-        if (value == null) return null;
-        Class type = value.getClass();
-        if (type == Boolean_class)
-            return RunTime.box(((Boolean)value).booleanValue());
-        if (type == Byte_class)
-            return RunTime.box(((Byte)value).byteValue());
-        if (type == Short_class)
-            return RunTime.box(((Short)value).shortValue());
-        if (type == Character_class)
-            return RunTime.box(((Character)value).charValue());
-        if (type == Integer_class)
-            return RunTime.box(((Integer)value).intValue());
-        if (type == Long_class)
-            return RunTime.box(((Long)value).longValue());
-        if (type == Float_class)
-            return RunTime.box(((Float)value).floatValue());
-        if (type == Double_class)
-            return RunTime.box(((Double)value).doubleValue());
-        if (type.isArray()) {
-            type = type.getComponentType();
-            if (type == boolean_class) return RunTime.box((boolean[])value);
-            if (type == byte_class) return RunTime.box((byte[])value);
-            if (type == short_class) return RunTime.box((short[])value);
-            if (type == char_class) return RunTime.box((char[])value);
-            if (type == int_class) return RunTime.box((int[])value);
-            if (type == long_class) return RunTime.box((long[])value);
-            if (type == float_class) return RunTime.box((float[])value);
-            if (type == double_class) return RunTime.box((double[])value);
-            return RunTime.box((Object[])value);
-        }
-        return value;
     }
 
     //########################################################################

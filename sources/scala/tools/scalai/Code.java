@@ -26,8 +26,6 @@ public class Code {
     public case Load(Code target, Variable variable);
     public case Store(Code target, Variable variable, Code expression);
 
-    public case Box(Code value);
-
     public case If(Code cond, Code thenp, Code elsep);
     public case Or(Code lf, Code rg);
     public case And(Code lf, Code rg);
@@ -83,9 +81,6 @@ public class Code {
 
         case Store(Code target, Variable variable, Code expression):
             return "Store(" + target + "," + variable + "," + expression + ")";
-
-        case Box(Code value):
-            return "Box(" + value + ")";
 
         case If(Code cond, Code thenp, Code elsep):
             return "If(" + cond + "," + thenp + "," + elsep + ")";
