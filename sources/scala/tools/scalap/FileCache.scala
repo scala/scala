@@ -6,7 +6,7 @@
 **  $Id$
 */
 
-package scalap;
+package scala.tools.scalap;
 
 import scala.collection._;
 import java.io._;

@@ -6,7 +6,7 @@
 **  $Id$
 */
 
-package scalap;
+package scala.tools.scalap;
 
 
 class ByteArrayReader(content: Array[Byte]) {

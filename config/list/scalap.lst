@@ -1,5 +1,5 @@
 ############################################################-*-Makefile-*-####
-# scalap source files (paths are relative to ./sources/scalap)
+# scalap source files (paths are relative to ./sources/scala/tools/scalap)
 ##############################################################################
 # $Id$
 

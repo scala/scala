@@ -120,7 +120,7 @@ DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
 DTD2SCALA_SC_FILES	 = $(DTD2SCALA_SOURCES)
 
 # scalap
-SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scalap
+SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalap
 SCALAP_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalap.lst)
 SCALAP_SOURCES		+= $(SCALAP_LIST:%=$(SCALAP_ROOT)/%)
 SCALAP_SC_FILES	 	 = $(SCALAP_SOURCES)
@@ -140,7 +140,7 @@ TOOLS_JAR_FILES		+= scalac
 TOOLS_JAR_FILES		+= scala/tools/scaladoc
 TOOLS_JAR_FILES		+= scalai
 TOOLS_JAR_FILES		+= scala/tools/dtd2scala
-TOOLS_JAR_FILES		+= scalap
+TOOLS_JAR_FILES		+= scala/tools/scalap
 TOOLS_JAR_FILES		+= scala/tools/scalatest
 
 # java compilation
