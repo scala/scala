@@ -218,7 +218,13 @@ public class ExplicitOuterClassesPhase extends Phase {
                 prefix = apply(prefix);
                 targs = map(targs);
                 targs = Type.concat(getOuterTypeArgs(prefix, symbol), targs);
-                return Type.TypeRef(Type.localThisType, symbol, targs);
+                if (symbol.isClassType()) {
+                    // !!! add assertions ?
+                    prefix = Type.localThisType;
+                } else {
+                    // !!! replace outer ThisTypes by SingleTypes to outer link
+                }
+                return Type.TypeRef(prefix, symbol, targs);
             }
             return map(type);
         }

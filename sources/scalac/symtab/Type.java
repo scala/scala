@@ -1039,13 +1039,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    //System.out.println(t + ".toInstance(" + pre + "," + clazz + ") = " + t1);//DEBUG
 		    return t1;
 		} else {
-		    Type prefix1 = prefix;
-                    if (!local) {
-                        prefix1 = apply(prefix);
-                    } else if (sym.isAbstractType()) {
-                        prefix = sym.owner().thisType();
-                        prefix1 = prefix.asSeenFrom(pre, sym.owner());
-                    }
+		    Type prefix1 = apply(prefix);
 		    Type[] args1 = map(args);
 		    if (prefix1 == prefix && args1 == args) return t;
 		    Symbol sym1 = (sym.flags & MODUL) == 0 ? prefix1.rebind(sym) : sym;
@@ -1059,8 +1053,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         // outer), we can just replace args by the
                         // outer type params of sym1.
                         args1 = asSeenFrom(Symbol.type(sym1.owner().typeParams()), pre, sym1.owner());
+                        if (sym1.isClassType()) prefix1 = localThisType;
                     }
-                    if (local) prefix1 = localThisType;
 		    Type t1 = typeRef(prefix1, sym1, args1);
                     if (sym1 != sym) t1 = apply(t1.unalias());
                     return t1;
