@@ -250,6 +250,14 @@ public class Parser implements Tokens {
         return make.Select(pos, scalaDot(pos, Names.Boolean), name);
     }
 
+    Tree scalaXmlDot(int pos, Name name) {
+        return make.Select(pos, scalaDot(pos, Names.xml), name);
+    }
+
+    Tree scalaXmlNoBindingDot(int pos, Name name) {
+        return make.Select(pos, scalaXmlDot(pos, Names.nobinding), name);
+    }
+
     Tree scalaObjectConstr(int pos) {
         return make.Apply(
             pos, scalaDot(pos, Names.Object.toTypeName()), Tree.EMPTY_ARRAY);
@@ -624,7 +632,7 @@ public class Parser implements Tokens {
                 new Tree[]{make.Literal(s.pos, s.name.toString())});
             s.nextToken();
             if (s.token == LPAREN || s.token == LBRACE) {
-                Tree labt = scalaDot(s.pos, Names.Labelled);
+                Tree labt = scalaXmlNoBindingDot(s.pos, Names.Element);
                 if (isPattern) labt = convertToTypeId(labt);
                 Tree listt = isPattern ? scalaDot(s.pos, Names.List.toTypeName())
                     : make.Select(s.pos, scalaDot(s.pos, Names.Predef), Names.List);

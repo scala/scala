@@ -90,6 +90,7 @@ public class Names {
     public static final Name Boolean = Name.fromString("Boolean");
     public static final Name Do = Name.fromString("Do");
     public static final Name Double = Name.fromString("Double");
+    public static final Name Element = Name.fromString("Element");
     public static final Name Finally = Name.fromString("Finally");
     public static final Name Float = Name.fromString("Float");
     public static final Name Function = Name.fromString("Function");
@@ -138,11 +139,13 @@ public class Names {
     public static final Name length = Name.fromString("length");
     public static final Name match = Name.fromString("match");
     public static final Name map = Name.fromString("map");
+    public static final Name nobinding = Name.fromString("nobinding");
     public static final Name next = Name.fromString("next");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
+    public static final Name xml = Name.fromString("xml");
     public static final Name scala_COLONCOLON = Name.fromString("scala." + COLONCOLON);
     public static final Name scala_All = Name.fromString("scala.All");
     public static final Name scala_AllRef = Name.fromString("scala.AllRef");
