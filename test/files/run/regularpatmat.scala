@@ -668,6 +668,25 @@ object testNN {
   }
 }
 
+object testNO {   // this does not need to be run, only compiled
+
+  trait Operator;
+  case class Increment extends Operator;
+  case class Decrement extends Operator;
+
+  trait Expression {
+    def eval = match {
+      case Operation (v: Value, o: Increment) => v
+      case Operation (v: Value, d: Decrement) => v
+    }
+  }
+
+  case class Value extends Expression;
+  case class Operation (e: Expression, o: Operator) extends Expression;
+
+
+}
+
 object Test {
   def main(args: Array[String]): Unit = {
     Console.println("pretest");
