@@ -163,6 +163,31 @@ public class ATreeFromSTree {
     }
 
     //########################################################################
+    // Private Methods - Translating locations
+
+    /** Translates the location. */
+    private ALocation location(Tree tree) {
+        switch (tree) {
+
+        case Select(Tree qualifier, _):
+            Symbol symbol = tree.symbol();
+            if (symbol.isModule())
+                return ALocation.Module(symbol); // !!! qualifier is ignored !
+            if (symbol.isJava() && symbol.owner().isModuleClass())
+                return ALocation.Field(make.Void, symbol, true); // !!! qualifier is ignored !
+            return ALocation.Field(expression(qualifier), symbol, false);
+
+        case Ident(_):
+            Symbol symbol = tree.symbol();
+            if (symbol.isModule()) return ALocation.Module(symbol);
+            return ALocation.Local(symbol, symbol.isParameter());
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    //########################################################################
     // Private Methods - Translating constants
 
     /** Translates the constant. */
