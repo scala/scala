@@ -73,7 +73,8 @@ public interface Tokens {
         LARROW = 67,
         ARROW = 68,
         SUBTYPE = 69,
-        HASH = 70,
+        SUPERTYPE = 70,
+        HASH = 71,
 
         /* parenthesis */
         LPAREN = 90,

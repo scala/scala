@@ -27,6 +27,8 @@ public class Names {
     public static final Name AMPAMP = encode("&&");
     public static final Name COLONCOLON = encode("::");
 
+    public static final Name All = Name.fromString("All");
+    public static final Name AllRef = Name.fromString("AllRef");
     public static final Name Any = Name.fromString("Any");
     public static final Name AnyVal = Name.fromString("AnyVal");
     public static final Name AnyRef = Name.fromString("AnyRef");

@@ -146,7 +146,7 @@ public class ClassfileParser implements ClassfileConstants {
         if ((flags & 0x0010) != 0)
             res |= Modifiers.FINAL;
         if ((flags & 0x0200) != 0)
-            res |= Modifiers.INTERFACE | Modifiers.ABSTRACTCLASS;
+            res |= Modifiers.INTERFACE | Modifiers.TRAIT | Modifiers.ABSTRACTCLASS;
         return res | Modifiers.JAVA;
     }
 

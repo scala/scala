@@ -4,6 +4,7 @@
 
 \usepackage{fleqn,a4wide,vquote,modefs,math,prooftree,scaladefs}
 \newcommand{\exercise}{\paragraph{Exercise:}}
+\newcommand{\rewriteby}[1]{\mbox{\tab\tab\rm(#1)}}
 
 \title{Scala By Examples}
 
@@ -269,16 +270,16 @@ case class
 trait AuctionReply;
 case class
   Status(asked: int, expiration: Date),               \>// asked sum, expiration date
-  BestOffer(),                                        \>// yours is the best offer
+  BestOffer,                                        \>// yours is the best offer
   BeatenOffer(maxBid: int),                           \>// offer beaten by maxBid
   AuctionConcluded(seller: Actor, client: Actor),     \>// auction concluded
-  AuctionFailed(),                                    \>// failed with no bids
-  AuctionOver() extends AuctionReply;                 \>// bidding is closed
+  AuctionFailed,                                    \>// failed with no bids
+  AuctionOver extends AuctionReply;                 \>// bidding is closed
 \end{verbatim}
 
 \begin{figure}[htb]
 \begin{verbatim}
-class Auction(seller: Actor, minBid: int, closing: Date) extends Actor() {
+class Auction(seller: Actor, minBid: int, closing: Date) extends Actor {
   val timeToShutdown = 36000000; // msec
   val bidIncrement = 10;
   def execute {
@@ -290,7 +291,7 @@ class Auction(seller: Actor, minBid: int, closing: Date) extends Actor() {
 	case Offer(bid, client) =>
 	  if (bid >= maxBid + bidIncrement) { 
             if (maxBid >= minBid) maxBidder send BeatenOffer(bid);
-            maxBid = bid; maxBidder = client; client send BestOffer();
+            maxBid = bid; maxBidder = client; client send BestOffer;
           } else {
             client send BeatenOffer(maxBid);
           }
@@ -298,16 +299,16 @@ class Auction(seller: Actor, minBid: int, closing: Date) extends Actor() {
 	case Inquire(client) =>
 	  client send Status(maxBid, closing);
 
-	case TIMEOUT() =>
+	case TIMEOUT =>
 	  if (maxBid >= minBid) {
 	    val reply = AuctionConcluded(seller, maxBidder);
 	    maxBidder send reply; seller send reply;
 	  } else {
-	    seller send AuctionFailed();
+	    seller send AuctionFailed;
           }
           receiveWithin(timeToShutdown) {
-            case Offer(_, client) => client send AuctionOver()
-            case TIMEOUT() => running = false;
+            case Offer(_, client) => client send AuctionOver
+            case TIMEOUT => running = false;
           }}}}}
 \end{verbatim}
 \caption{\label{fig:simple-auction}Implementation of an Auction Service}
@@ -350,9 +351,9 @@ the first message in the mailbox which matches one of these patterns
 and applies the corresponding action to it.
 \item
 The last case of \verb@receiveWithin@ is guarded by a
-\verb@TIMEOUT()@ pattern. If no other messages are received in the meantime, this
+\verb@TIMEOUT@ pattern. If no other messages are received in the meantime, this
 pattern is triggered after the time span which is passed as argument
-to the enclosing \verb@receiveWithin@ method. \verb@TIMEOUT()@ is a
+to the enclosing \verb@receiveWithin@ method. \verb@TIMEOUT@ is a
 particular instance of class \verb@Message@, which is triggered by the
 \verb@Actor@ implementation itself.
 \item
@@ -1247,7 +1248,7 @@ The following are reserved words, they may not be used as identifiers:
 \begin{verbatim}
 abstract    case    class    def    do    else   
 extends    false    final    for    if    import    
-module    new    null    override    package    
+new    null    object    override    package    
 private    protected    super    this    trait
 true    type    val    var    with    yield
 \end{verbatim}
@@ -1320,8 +1321,6 @@ function definitions such as \verb@def square(x: int) = x * x@,
 \item
 value definitions such as \verb@val y = square(2)@.
 \end{itemize}
-\bibliography{examples}
-\end{document}
 
 \chapter{Classes and Objects}
 \label{chap:classes}
@@ -1351,11 +1350,11 @@ class Rational(n: int, d: int) with {
     new Rational(numer * that.denom, denom * that.numer);
 }
 \end{verbatim}
-This defines \verb@Rational@ as a class which takes two constructor arguments
-\verb@n@ and \verb@d@, containing the number's numerator and denominator.
-The class provides fields which return the number's numerator and
-denominator as well as methods for arithmetic over rational numbers.
-Each arithmetic method takes as parameter the right operand of the
+This defines \verb@Rational@ as a class which takes two constructor
+arguments \verb@n@ and \verb@d@, containing the number's numerator and
+denominator parts.  The class provides fields which return these parts
+as well as methods for arithmetic over rational numbers.  Each
+arithmetic method takes as parameter the right operand of the
 operation. The left operand of the operation is always the rational
 number of which the method is a member.
 
@@ -1381,7 +1380,9 @@ while (i <= 10) {
 }
 System.out.println(x.numer + "/" + x.denom);
 \end{verbatim}
-
+The \verb@+@ operation converts both its operands to strings and returns the
+concatenation of the result strings. It thus corresponds to \verb@+@ in Java. 
+  
 \paragraph{Inheritance and Overriding.}
 Every class in Scala has a superclass which it extends.
 Excepted is only the root class \verb@Object@, which does not have a
@@ -1408,7 +1409,7 @@ class Object {
 The implementation of \verb@toString@ in \verb@Object@
 forms a string consisting of the object's class name and a number. It
 makes sense to redefine this method for objects that are rational
-numbers in order to get a more useful behavior:
+numbers:
 \begin{verbatim}
 class Rational(n: int, d: int) extends Object with {
   ... // as before
@@ -1436,8 +1437,8 @@ var x: Object = new Rational(1,2);
 %System.out.println(r.toString());	// prints``1/2''
 %\end{verbatim}
 Also unlike in Java, methods in Scala do not necessarily take a
-parameter list. An example is \verb@square@; the method is invoked by
-simply mentioning its name. For instance:
+parameter list. An example is the \verb@square@ method below. This
+method is invoked by simply mentioning its name. 
 \begin{verbatim}
 class Rational(n: int, d: int) extends Object with {
   ... // as before
@@ -1457,37 +1458,60 @@ the implementer of a class. Often, a field in one version of a class
 becomes a computed value in the next version. Uniform access ensures
 that clients do not have to be rewritten because of that change.
 
-\pararagraph{Abstract Classes}
+\paragraph{Abstract Classes}
 
 Consider the task of writing a class for sets of integer numbers with
-operations as follows.
-
+two operations, \verb@incl@ and \verb@contains@. \verb@(s incl x)@
+should return a new set which contains the element \verb@x@ togther
+with all the elements of set \verb@s@. \verb@(s contains x)@ should
+return true if the set \verb@s@ contains the element \verb@x@, and
+should return \verb@false@ otherwise. The interface of such sets is
+given by:  
 \begin{verbatim}
 abstract class IntSet {
   def incl(x: int): IntSet;
   def contains(x: int): boolean;
 }
 \end{verbatim}
-\verb@IntSet@ is labelled as an \emph{abstract class}. This has two consequences. 
-First, absract classes may have abstract members which are declared
-but which do not have an implementation. In our case, both \verb@incl@
-and \verb@contains@ are such members. Second, if a class has
-unimplemented members, no objects of that class may be created using
-\verb@new@.
+\verb@IntSet@ is labeled as an \emph{abstract class}. This has two
+consequences.  First, abstract classes may have {\em deferred} members
+which are declared but which do not have an implementation. In our
+case, both \verb@incl@ and \verb@contains@ are such members. Second,
+because an abstract class might have unimplemented members, no objects
+of that class may be created using \verb@new@. By contrast, an
+abstract class may be used as a base class of some other class, which
+implements the deferred members.
 
-\paragraph{Subclasses}
+\paragraph{Traits.}
+
+Instead of ``\verb@abstract class@ one also often uses the keyword
+\verb@trait@ in Scala. A trait is an abstract class with no state, no
+constructor arguments, and no side effects during object
+initialization.  Since \verb@IntSet@'s fall in this category, one can
+alternatively define them as traits:
+\begin{verbatim}
+trait IntSet {
+  def incl(x: int): IntSet;
+  def contains(x: int): boolean;
+}
+\end{verbatim}
+A trait corresponds to an interface in Java, except
+that a trait can also define implemented methods.  
+
+\paragraph{Implementing Abstract Classes}
 
 Let's say, we plan to implement sets as binary trees.  There are two
 possible forms of trees. A tree for the empty set, and a tree
-consisting of an integer and two subtrees. Here are their implementations.
+consisting of an integer and two subtrees. Here are their
+implementations.
 
- \begin{verbatim}
+\begin{verbatim}
 class Empty extends IntSet {
   def contains(x: int): boolean = false;
-  def incl(x: int): IntSet = new NonEmpty(x, Empty, Empty);
+  def incl(x: int): IntSet = new NonEmpty(x, new Empty, new Empty);
 }
 \end{verbatim}
-\es\bs
+
 \begin{verbatim}
 class NonEmpty(elem:int, left:IntSet, right:IntSet) extends IntSet {
   def contains(x: int): boolean = 
@@ -1500,16 +1524,1414 @@ class NonEmpty(elem:int, left:IntSet, right:IntSet) extends IntSet {
     else this;
 }
 \end{verbatim}
-\redtext{Notes:}
-\bi
-\item Both \verb@Empty@ and \verb@NonEmpty@ \redtext{extend} class \verb@IntSet@.
-\item This means that 
-\bi
+Both \verb@Empty@ and \verb@NonEmpty@ extend class
+\verb@IntSet@.  This implies that types \verb@Empty@ and
+\verb@NonEmpty@ conform to type \verb@IntSet@ -- a value of type \verb@Empty@ or \verb@NonEmpty@ may be used wherever a value of type \verb@IntSet@ is required.
+
+\exercise Write methods \verb@union@ and \verb@intersection@ to form
+the union and intersection between two sets.
+
+\exercise Add a method 
+\begin{verbatim}
+def excl(x: int)
+\end{verbatim}
+to return the given set without the element \verb@x@. To accomplish this,
+it is useful to also implement a test method
+\begin{verbatim}
+def isEmpty: boolean
+\end{verbatim}
+for sets.
+
+\paragraph{Dynamic Binding}
+
+Object-oriented languages (Scala included) use \emph{dynamic dispatch}
+for method invocations.  That is, the code invoked for a method call
+depends on the run-time type of the object which contains the method.
+For example, consider the expression \verb@s contains 7@ where
+\verb@s@ is a value of declared type \verb@s: IntSet@. Which code for
+\verb@contains@ is executed depends on the type of value of \verb@s@ at run-time.
+If it is an \verb@Empty@ value, it is the implementation of \verb@contains@ in class \verb@Empty@ that is executed, and analogously for \verb@NonEmpty@ values. 
+This behavior is a direct consequence of our substitution model of evaluation.
+For instance,
+\begin{verbatim}
+    (new Empty).contains(7) 
+
+->  $\rewriteby{by replacing {\sl contains} by its body in class {\sl Empty}}$
+
+    false
+\end{verbatim}
+Or,
+\begin{verbatim}
+    new NonEmpty(7, new Empty, new Empty).contains(1)
+
+->  $\rewriteby{by replacing {\sl contains} by its body in class {\sl NonEmpty}}$
+
+    if (1 < 7) new Empty contains 1
+    else if (1 > 7) new Empty contains 1
+    else true
+
+->  $\rewriteby{by rewriting the conditional}$
+
+    new Empty contains 1
+
+->  $\rewriteby{by replacing {\sl contains} by its body in class {\sl Empty}}$
+
+    false .
+\end{verbatim}
+
+Dynamic method dispatch is analogous to higher-order function
+calls. In both cases, the identity of code to be executed is known
+only at run-time. This similarity is not just superficial. Indeed,
+Scala represents every function value as an object (see
+Section~\ref{sec:funs-are-objects}).
+
+
+\paragraph{Objects}
+
+In the previous implementation of integer sets, empty sets were
+expressed with \verb@new Empty@; so a new object was created every time
+an empty set value was required. We could have avoided unnecessary
+object creations by defining a value \verb@empty@ once and then using
+this value instead of every occurrence of \verb@new Empty@. E.g.
+\begin{verbatim}
+val empty = new Empty;
+\end{verbatim}
+One problem with this approach is that a value definition such as the
+one above is not a legal top-level definition in Scala; it has to be
+part of another class or object. Also, the definition of class
+\verb@Empty@ now seems a bit of an overkill -- why define a class of objects, 
+if we are only interested in a single object of this class? A more
+direct approach is to use an {\em object definition}. Here is
+a more streamlined alternative definition of the empty set:
+\begin{verbatim}
+object empty extends IntSet {
+  def contains(x: int): boolean = false;
+
+  def incl(x: int): IntSet = new NonEmpty(x, empty, empty);
+}
+\end{verbatim}
+The syntax of an object definition follows the syntax of a class
+definition; it has an optional extends clause as well as an optional
+body. As is the case for classes, the extends clause defines inherited
+members of the object whereas the body defines overriding or new
+members.  However, an object definition defines a single object only;
+it is not possible to create other objects with the same structure
+using \verb@new@.  Therefore, object definitions also lack constructor
+parameters, which might be present in class definitions.
+
+Object definitions can appear anywhere in a Scala program; including
+at top-level.  Since there is no fixed execution order of top-level
+entities in Scala, one might ask exactly when the object defined by an
+object definition is created and initialized. The answer is that the
+object is created the first time one of its members is accessed. This
+strategy is called {\em lazy evaluation}.
+
+\paragraph{Standard Classes}
+
+Scala is a pure object-oriented language. This means that every value
+in Scala can be regarded as an object.  In fact, even primitive types
+such as \verb@int@ or \verb@boolean@ are not treated specially. They
+are defined as type aliases of Scala classes in module \verb@Predef@:
+\begin{verbatim}
+type boolean = scala.Boolean;
+type int = scala.Int;
+type long = scala.Long;
+...
+\end{verbatim}
+For efficiency, the compiler usually represents values of type
+\verb@scala.Int@ by 32 bit integers, values of type
+\verb@scala.Boolean@ by Java's booleans, etc.  But it converts these
+specialized representations to objects when required, for instance
+when a primitive \verb@int@ value is passed to a function that with a
+parameter of type \verb@Object@.  Hence, the special representation of
+primitive values is just an optimization, it does not change the
+meaning of a program.
+
+Here is a specification of class \verb@Boolean@.
+\begin{verbatim}
+package scala;
+trait Boolean {
+  def && (def x: Boolean)\=: Boolean;
+  def || (def x: Boolean)\>: Boolean;
+  def !                  \>: Boolean;
+
+  def == (x: Boolean)\>: Boolean
+  def != (x: Boolean)\>: Boolean
+  def <  (x: Boolean)\>: Boolean
+  def >  (x: Boolean)\>: Boolean
+  def <= (x: Boolean)\>: Boolean
+  def >= (x: Boolean)\>: Boolean
+}
+\end{verbatim}
+Booleans can be defined using only classes and objects, without
+reference to a built-in type of booleans or numbers. A possible
+implementation of class \verb@Boolean@ is given below.  This is not
+the actual implementation in the standard Scala library. For
+efficiency reasons the standard implementation is built from built-in
+booleans.
+\begin{verbatim}
+package scala;
+trait Boolean {
+  def ifThenElse(def thenpart: Boolean, def elsepart: Boolean)
+
+  def && (def x: Boolean)\=: Boolean  =  ifThenElse(x, false);
+  def || (def x: Boolean)\>: Boolean  =  ifThenElse(true, x);
+  def !                  \>: Boolean  =  ifThenElse(false, true);
+
+  def == (x: Boolean)\>: Boolean  =  ifThenElse(x, x.!);
+  def != (x: Boolean)\>: Boolean  =  ifThenElse(x.!, x);
+  def <  (x: Boolean)\>: Boolean  =  ifThenElse(false, x);
+  def >  (x: Boolean)\>: Boolean  =  ifThenElse(x.!, false);
+  def <= (x: Boolean)\>: Boolean  =  ifThenElse(x, true);
+  def >= (x: Boolean)\>: Boolean  =  ifThenElse(true, x.!);
+}
+object True extends Boolean \={ def ifThenElse(def t: Boolean, def e: Boolean) = t }
+object False extends Boolean \>{ def ifThenElse(def t: Boolean, def e: Boolean) = e }
+\end{verbatim}
+Here is a partial specification of class \verb@Int@.
+
+\begin{verbatim}
+package scala;
+trait Int extends Long { 
+  def + (that: Double): Double;
+  def + (that: Float): Float;
+  def + (that: Long): Long;
+  def + (that: Int): Int;             \=/* analogous for -, *, /, %  */
+
+  def << (cnt: Int): Int;   \>/* analogous for >>, >>>  */
+
+  def & (that: Long): Long;
+  def & (that: Int): Int;   \>/* analogous for |, ^ */
+
+  def == (that: Double): Boolean;
+  def == (that: Float): Boolean;
+  def == (that: Long): Boolean;  \> /* analogous for !=, <, >, <=, >=  */
+}
+\end{verbatim}
+
+Class \verb@Int@ can in principle also be implemented using just
+objects and classes, without reference to a built in type of
+integers. To see how, we consider a slightly simpler problem, namely
+how to implement a type \verb@Nat@ of natural (i.e. non-negative)
+numbers. Here is the definition of a trait \verb@Nat@:
+\begin{verbatim}
+trait Nat {
+  def isZero: Boolean;
+  def predecessor: Nat;
+  def successor: Nat;
+  def + (that: Nat): Nat;
+  def - (that: Nat): Nat;
+}
+\end{verbatim}
+To implement the operations of class \verb@Nat@, we define a subobject
+\verb@Zero@ and a subclass \verb@Succ@ (for successor). Each number
+\verb@N@ is represented as \verb@N@ applications of the \verb@Succ@
+constructor to \verb@Zero@:
+\[
+\underbrace{\mbox{\sl new Succ( ... new Succ}}_{\mbox{$N$ times}}\mbox{\sl (Zero) ... )}
+\]
+The implementation of the \verb@Zero@ object is straightforward:
+\begin{verbatim}
+object Zero extends Nat {
+  def isZero: Boolean = true;
+  def predecessor: Nat = error("negative number");
+  def successor: Nat = new Succ(Zero);
+  def + (that: Nat): Nat = that;
+  def - (that: Nat): Nat = if (that.isZero) Zero else error("negative number")
+}
+\end{verbatim}
+
+The implementation of the predecessor and subtraction functions on
+\verb@Zero@ contains a call to the predefined \verb@error@
+function. This function aborts the program with the given error
+message.
+
+Here is the implementation of the successor class:
+\begin{verbatim}
+class Succ(x: Nat) extends Nat  {
+  def isZero: Boolean = false;
+  def predecessor: Nat = x;
+  def successor: Nat = new Succ(this);
+  def + (that: Nat): Nat = x.+(that.successor);
+  def - (that: Nat): Nat = x.-(that.predecessor)
+}
+\end{verbatim}
+Note the implementation of method \verb@successor@. To create the
+successor of a number, we need to pass the object itself as an
+argument to the \verb@Succ@ constructor.  The object itself is
+referenced by the reserved name \verb@this@.   
+
+The implementations of \verb@+@ and \verb@-@ each contain a recursive
+call with the constructor argument as receiver. The recursion will
+terminate once the receiver is the \verb@Zero@ object (which is
+guaranteed to happen eventually from the way numbers are formed).
+
+\exercise Write an implementation \verb@Integer@ of integer numbers
+The implementation should support all operations of class \verb@Nat@
+while adding two methods
+\begin{verbatim}
+def isPositive: Boolean
+def negate: Integer
+\end{verbatim}
+The first method should return \verb@true@ if the number is positive. The second method should negate the number.
+Do not use any of Scala's standard numeric classes in your
+implementation. (Hint: There are two possible ways to implement
+\verb@Integer@. One can either make use the existing implementation of
+\verb@Nat@, representing an integer as a natural number and a sign.
+Or one can generalize the given implementation of \verb@Nat@ to
+\verb@Integer@, using the three subclasses \verb@Zero@ for 0, 
+\verb@Succ@ for positive numbers and \verb@Pred@ for negative numbers.)
+
+
+
+\paragraph{Language Elements Introduced In This Chapter}
+
+\paragraph{Types:}
+\begin{verbatim}
+Type         \= = ...  |  ident
+\end{verbatim}
+
+Types can now be arbitrary identifiers which represent classes.
+
+\paragraph{Expressions:}
+\begin{verbatim}
+Expr         \= = ...  |  Expr `.' ident  |  new Expr  |  this
+\end{verbatim}
+
+An expression can now be an object creation, or
+a selection \verb@E.m@ of a member \verb@m@
+from an object-valued expression \verb@E@, or it can be the reserved name \verb@this@.
+
+\paragraph{Definitions and Declarations:}
+\begin{verbatim}
+Def                     \= = \=FunDef  |  ValDef  |  ClassDef  |  TraitDef  |  ObjectDef
+ClassDef     \> = \>[abstract] class ident [`(' [Parameters] `)'] 
+             \>   \>[extends Expr] [`{' {TemplateDef} `}']
+TraitDef     \> = \>trait ident [extends Expr] [`{' {TemplateDef} `}']
+ObjectDef    \> = \>object ident [extends Expr] [`{' {ObjectDef} `}']
+TemplateDef  \> = \>[Modifier] (Def | Dcl)
+ObjectDef    \> = \>[Modifier] Def
+Modifier     \> = \>private  |  override
+Dcl          \> = \>FunDcl | ValDcl
+FunDcl       \> = \>def ident {`(' [Parameters] `)'} `:' Type
+ValDcl       \> = \>val ident `:' Type
+\end{verbatim}
+
+A definition can now be a class, trait or object definition such as
+\begin{verbatim}
+class C(params) extends B { defs }
+trait T extends B { defs }
+object O extends B { defs }
+\end{verbatim}
+The definitions \verb@defs@ in a class, trait or object may be
+preceded by modifiers \verb@private@ or \verb@override@.
+
+Abstract classes and traits may also contain declarations. These
+introduce {\em deferred} functions or values with their types, but do
+not give an implementation. Deferred members have to be implemented in
+subclasses before objects of an abstract class or trait can be created.
+
+\chapter{Case Classes and Pattern Matching}
+
+Say, we want to write an interpreter for arithmetic expressions.  To
+keep things simple initially, we restrict ourselves to just numbers
+and \verb@+@ operations. Such expressions can be represented as a class hierarchy, with an abstract base class \verb@Expr@ as the root, and two subclasses \verb@Number@ and
+\verb@Sum@. Then, an expression \verb@1 + (3 + 7)@ would be represented as
+\begin{verbatim}
+new Sum(new Number(1), new Sum(new Number(3), new Number(7)))
+\end{verbatim}
+Now, an evaluator of an expression like this needs to know of what
+form it is (either \verb@Sum@ or \verb@Number@) and also needs to
+access the components of the expression.  The following
+implementation provides all necessary methods.
+\begin{verbatim}
+abstract class Expr {
+  def isNumber: boolean;
+  def isSum: boolean;
+  def numValue: int;
+  def leftOp: Expr;
+  def rightOp: Expr;
+}
+\end{verbatim}
+\begin{verbatim}
+class Number(n: int) extends Expr {
+  def isNumber: boolean = true;
+  def isSum: boolean = false;
+  def numValue: int = n;
+  def leftOp: Expr = error("Number.leftOp");
+  def rightOp: Expr = error("Number.rightOp");
+}
+\end{verbatim}
+\begin{verbatim}
+class Sum(e1: Expr, e2: Expr) extends Expr {
+  def isNumber: boolean = false;
+  def isSum: boolean = true;
+  def numValue: int = error("Sum.numValue");
+  def leftOp: Expr = e1;
+  def rightOp: Expr = e2;}
+\end{verbatim}
+With these classification and access methods, writing an evaluator function is simple:
+\begin{verbatim}
+def eval(e: Expr): int = {
+  if (e.isNumber) e.numValue
+  else if (e.isSum) eval(e.leftOp) + eval(e.rightOp)
+  else error("unrecognized expression kind")
+}
+\end{verbatim}
+However, defining all these methods in classes \verb@Sum@ and
+\verb@Number@ is rather tedious. Furthermore, the problem becomes worse 
+when we want to add new forms of expressions. For instance, consider
+adding a new expression form
+\verb@Prod@ for products. Not only do we have to implement a new class \verb@Prod@, with all previous classification and access methods; we also have to introduce a
+new abstract method \verb@isProduct@ in class \verb@Expr@ and
+implement that method in subclasses \verb@Number@, \verb@Sum@, and
+\verb@Prod@. Having to modify existing code when a system grows is always problematic, since it introduces versioning and maintenance problems. 
+
+The promise of object-oriented programming is that such modifications
+should be unnecessary, because they can be avoided by re-using
+existing, unmodified code through inheritance. Indeed, a more
+object-oriented decomposition of our problem solves the problem.  The
+idea is to make the ``high-level'' operation \verb@eval@ a method of
+each expression class, instead of implementing it as a function
+outside the expression class hierarchy, as we have done
+before. Because \verb@eval@ is now a member of all expression nodes,
+all classification and access methods become superfluous, and the implementation is simplified considerably:
+\begin{verbatim}
+abstract class Expr {
+  def eval: int;
+}
+class Number(n: int) extends Expr {
+  def eval: int = n;
+}
+class Sum(e1: Expr, e2: Expr) extends Expr {
+  def eval: int = e1.eval + e2.eval;
+}
+\end{verbatim}
+Furthermore, adding a new \verb@Prod@ class does not entail any changes to existing code:
+\begin{verbatim}
+class Prod(e1: Expr, e2: Expr) extends Expr {
+  def eval: int = e1.eval * e2.eval;
+}
+\end{verbatim}
+
+The conclusion we can draw from this example is that object-oriented
+decomposition is the technique of choice for constructing systems that
+should be extensible with new types of data. But there is also another
+possible way we might want to extend the expression example. We might
+want to add new {\em operations} on expressions.  For instance, we might
+want to add an operation that pretty-prints an expression tree to standard output.
+
+If we have defined all classification and access methods, such an
+operation can easily be written as an external function. Here is an
+implementation:
+\begin{verbatim}
+def print(e: Expr): unit = 
+  if (e.isNumber) System.out.print(e.numValue)
+  else if (e.isSum) {
+    System.out.print("("); 
+    print(e.leftOp); 
+    System.out.print("+");
+    print(e.rightOp);
+    System.out.print(")");
+  } else error("unrecognized expression kind");
+\end{verbatim}
+However, if we had opted for an object-oriented decomposition of
+expressions, we would need to add a new \verb@print@ method
+to each class:
+\begin{verbatim}
+abstract class Expr {
+  def eval: int;
+  def print: unit;
+}
+class Number(n: int) extends Expr {
+  def eval: int = n;
+  def print: unit = System.out.print(n);
+}
+class Sum(e1: Expr, e2: Expr) extends Expr {
+  def eval: int = e1.eval + e2.eval;
+  def print: unit = {
+    System.out.print("("); 
+    print(e1); 
+    System.out.print("+");
+    print(e2);
+    System.out.print(")");
+}
+\end{verbatim}
+Hence, classical object-oriented decomposition requires modification
+of all existing classes when a system is extended with new operations.
+
+As yet another way we might want to extend the interpreter, consider
+expression simplification. For instance, we might want to write a
+function which rewrites expressions of the form
+\verb@a * b + a * c@ to \verb@a * (b + c)@. This operation requires inspection of 
+more than a single node of the expression tree at the same
+time. Hence, it cannot be implemented by a method in each expression
+kind, unless that method can also inspect other nodes. So we are
+forced to have classification and access methods in this case. This
+seems to bring us back to square one, with all the problems of
+verbosity and extensibility.
+
+Taking a closer look, one observers that the only purpose of the
+classification and access functions is to {\em reverse} the data
+construction process.  They let us determine, first, which sub-class
+of an abstract base class was used and, second, what were the
+constructor arguments. Since this situation is quite common, Scala has
+a way to automate it with case classes. 
+
+\paragraph{Case Classes.}
+A {\em case class} is defined like a normal class, except that the definition
+is prefixed with the modifier \verb@case@.  For instance, the definitions
+\begin{verbatim}
+abstract class Expr;
+case class Number(n: int) extends Expr;
+case class Sum(e1: Expr, e2: Expr) extends Expr;
+\end{verbatim}
+introduce \verb@Number@ and \verb@Sum@ as case classes.
+The \verb@case@ modifier in front of a class definition has the following effects.
+\begin{enumerate}
+\item Case classes implicitly come with a constructor function, with the same name as the class. In our example, the two functions
+\begin{verbatim}
+def Number(n: int) = new Number(n);
+def Sum(e1: Expr, e2: Expr) = new Sum(e1, e2);
+\end{verbatim}
+would be added. Hence, one can now construct expression trees a bit more concisely, as in
+\begin{verbatim}
+Sum(Sum(Number(1), Number(2)), Number(3))
+\end{verbatim} 
+\item Case classes implicity come with implementations of methods
+\verb@toString@, \verb@equals@ and \verb@hashCode@, which override the
+methods with the same name in class \verb@Object@. The implementation
+of these methods takes in each case the structure of a member of a
+case class into account. The \verb@toString@ method represents an
+expression tree the way it was constructed. So,
+\begin{verbatim}
+Sum(Sum(Number(1), Number(2)), Number(3))
+\end{verbatim} 
+would be converted to exactly that string, whereas he default
+implementation in class \verb@Object@ would return a string consisting
+of the outermost constructor name \verb@Sum@ and a number.  The
+\verb@equals@ methods treats two case members of a case class as equal
+if they have been constructed with the same constructor and with
+arguments which are themselves pairwise equal. This also affects the
+implementation of \verb@==@ and \verb@!=@, which are implemented in
+terms of \verb@equals@ in Scala. So,
+\begin{verbatim}
+Sum(Number(1), Number(2)) == Sum(Number(1), Number(2))
+\end{verbatim}
+will yield \verb@true@. If \verb@Sum@ or \verb@Number@ were not case
+classes, the same expression would be \verb@false@, since the standard
+implementation of \verb@equals@ in class \verb@Object@ always treats
+objects created by different constructor calls as being different.
+The \verb@hashCode@ method follows the same principle as other two
+methods. It computes a hash code from the case class constructor name
+and the hash codes of the constructor arguments, instead of from the object's
+address, which is what the as the default implementation of \verb@hashCode@ does.
+\item 
+Case classes implicity come with nullary accessor methods which
+retrieve the constructor arguments.
+In our example, \verb@Number@ would obtain an accessor method
+\begin{verbatim}
+def n: int
+\end{verbatim}
+which returns the constructor parameter \verb@n@, whereas \verb@Sum@ would obtain two accessor methods
+\begin{verbatim}
+def e1: Expr, e2: Expr;
+\end{verbatim}
+Hence, if for a value \verb@s@ of type \verb@Sum@, say, one can now
+write \verb@s.e1@, to access the left operand. However, for a value
+\verb@e@ of type \verb@Expr@, the term \verb@e.e1@ would be illegal
+since \verb@e1@ is defined in \verb@Sum@; it is not a member of the
+base class \verb@Expr@. 
+So, how do we determine the constructor and access constructor
+arguments for values whose static type is the base class \verb@Expr@?
+This is solved by the fourth and final particularity of case classes.
+\item 
+Case classes allow the constructions of {\em patterns} which refer to
+the case class constructor.
+\end{enumerate}
+
+\paragraph{Pattern Matching.}
+
+Pattern matching is a generalization of C or Java's \verb@switch@
+statement to class hierarchies. Instead of a \verb@switch@ statement,
+there is a standard method \verb@match@, which is defined in Scala's
+root class \verb@Any@, and therefore is available for all objects.
+The \verb@match@ method takes as argument a number of cases. 
+For instance, here is an implementation of \verb@eval@ using 
+pattern matching.
+\begin{verbatim}
+def eval(e: Expr): int = e match { 
+  case Number(x) => x 
+  case Sum(l, r) => eval(l) + eval(r) 
+}
+\end{verbatim}
+In this example, there are two cases. Each case associates a pattern
+with an expression. Patterns are matched against the selector
+values \verb@e@.  The first pattern in our example,
+\verb@Number(n)@, matches all values of the form \verb@Number(v)@, 
+where \verb@v@ is an arbitrary value.  In that case, the {\em pattern
+variable} \verb@n@ is bound to the value \verb@v@. Similarly, the
+pattern \verb@Sum(l, r)@ matches all selector values of form
+\verb@Sum(v$_1$, v$_2$)@ and binds the pattern variables \verb@l@ and \verb@r@ 
+to \verb@v$_1$@ and \verb@v$_2$@, respectively. 
+
+In general, patterns are built from
+\begin{itemize}
+\item Case class constructors, e.g. \verb@Number@, \verb@Sum@, whose arguments
+      are again patterns,
+\item pattern variables, e.g. \verb@n@, \verb@e1@, \verb@e2@,
+\item the ``wildcard'' pattern \verb@_@,
+\item constants, e.g. \verb@1@, \verb@true@, "abc", \verb@MAXINT@.
+\end{itemize}
+Pattern variables always start with a lower-case letter, so that they
+can be distinguished from constant identifiers, which start with an
+upper case letter. The only exceptions to that rule are the reserved
+words \verb@null@, \verb@true@, \verb@false@, which are treated as constants.
+Each variable name may occur only once in a pattern. For instance,
+\verb@Sum(x, x)@ would be illegal as a pattern, since \verb@x@ occurs
+twice in it.
+
+\paragraph{Meaning of Pattern Matching.}
+A pattern matching expression 
+\begin{verbatim}
+e.match { case p$_1$ => e$_1$ ... case p$_n$ => e$_n$ }
+\end{verbatim}
+matches the patterns $p_1 \commadots p_n$ in the order they
+are written against the selector value \verb@e@.
+\begin{itemize}
 \item
-The types \verb@Empty@ and \verb@NonEmpty@ \redtext{conform} to type \verb@IntSet@. 
+A constructor pattern $C(p_1 \commadots p_n)$ matches all values that
+are of type \verb@C@ (or a subtype thereof) and that have been constructed with 
+\verb@C@-arguments matching patterns $p_1 \commadots p_n$.
+\item 
+A variable pattern \verb@x@ matches any value and binds the variable
+name to that value.  
+\item 
+The wildcard pattern `\verb@_@' matches any value but does not bind a name to that value. 
+\item A constant pattern \verb@C@ matches a value which is
+equal (in terms of \verb@==@) to \verb@C@.
+\end{itemize}
+The pattern matching expression rewrites to the right-hand-side of the
+first case whose pattern matches the selector value. References to
+pattern variables are replaced by corresponding constructor arguments.
+If none of the patterns matches, the pattern matching expression is
+aborted with a \verb@MatchError@ exception.
+
+\example Our substitution model of program evaluation extends quite naturally to pattern matching, For instance, here is how \verb@eval@ applied to a simple expression is re-written:
+\begin{verbatim}
+     \= eval(Sum(Number(1), Number(2)))
+
+->   \> $\mbox{\tab\tab\rm(by rewriting the application)}$
+
+     \> Sum(Number(1), Number(2)) match {
+     \>     case Number(n) => n
+     \>     case Sum(e1, e2) => eval(e1) + eval(e2)
+     \> }
+
+->   \> $\mbox{\tab\tab\rm(by rewriting the pattern match)}$
+
+     \> eval(Number(1)) + eval(Number(2))
+
+->   \> $\mbox{\tab\tab\rm(by rewriting the first application)}$
+
+     \> Number(1) match {
+     \>     case Number(n) => n
+     \>     case Sum(e1, e2) => eval(e1) + eval(e2)
+     \> } + eval(Number(2))
+
+->   \> $\mbox{\tab\tab\rm(by rewriting the pattern match)}$
+
+     \> 1 + eval(Number(2))
+
+->$^*$ \> 1 + 2 -> 3
+\end{verbatim}
+
+\paragraph{Pattern Matching and Methods.} In the previous example, we have used pattern
+matching in a function which was defined outside the class hierarchy
+over which it matches.  Of course, it is also possible to define a
+pattern matching function in that class hierarchy itself. For
+instance, we could have defined
+\verb@eval@ is a method of the base class \verb@Expr@, and still have used pattern matching in its implementation:
+\begin{verbatim}
+abstract class Expr { 
+  def eval: int = this match { 
+    case Number(n) => n
+    case Sum(e1, e2) => e1.eval + e2.eval 
+  } 
+}
+\end{verbatim}
+
+\exercise
+Consider the following three classes representing trees of integers. 
+These classes can be seen as an alternative representation of \verb@IntSet@:
+\begin{verbatim}
+trait IntTree;
+case class Empty extends IntTree;
+case class Node(elem: int, left: IntTree, right: IntTree) extends IntTree;
+\end{verbatim}
+Complete the following implementations of function \verb@contains@ and \verb@insert@ for 
+\verb@IntTree@'s.
+\begin{verbatim} 
+def contains(t: IntTree, v: int): boolean = t match { ... 
+  ...
+}
+def insert(t: IntTree, v: int): IntTree = t match { ... 
+  ...
+}
+\end{verbatim}
+
+\subsection*{Tuples}
+
+Sometimes, a function needs to return more than one result. For
+instance, take the function \verb@divmod@ which returns the quotient
+and rest of two given integer arguments.  Of course, one can
+define a class to hold the two results of \verb@divmod@, as in:
+\begin{verbatim}
+case class TwoInts(first: int, second: int);
+
+def divmod(x: int, y: int): TwoInts = new TwoInts(x / y, x % y)
+\end{verbatim}
+However, having to define a new class for every possible pair of
+result types is very tedious. It should also be unneccessary because
+all such classes have exactly the same structure. In Scala, the
+repetition can be avoided by defining a {\em generic class}:
+\begin{verbatim}
+case class Pair[a, b](first: a, second: b);
+
+def divmod(x: int, y: int): Pair[int, int] = new Pair[Int, Int](x / y, x % y)
+\end{verbatim}
+In this example, \verb@[a, b]@ are {\em type parameters} of class
+\verb@Pair@. In a \verb@Pair@ type, these parameters are replaced by
+concrete types. For instance, \verb@Pair[int, String]@ represents the
+type of pairs with \verb@int@ and \verb@String@ elements.
+
+Type arguments can be omitted in constructors, if the correct type can
+be inferred from the other constructor arguments or the constructor's
+expected result type. In our example, we could have omitted the type
+arguments in the body of \verb@divmod@, because they can be deduced
+from the two value parameters of type \verb@int@:
+\begin{verbatim}
+def divmod(x: int, y: int): Pair[int, int] = new Pair(x / y, x % y)
+\end{verbatim}
+Type parameters are never used in patterns. For instance, here is an
+expression in which \verb@divmod@'s result is decomposed:
+\begin{verbatim}
+divmod(x, y) match {
+  case Pair(n, d) => System.out.println("quotient: " + n + ", rest: " + d);
+}
+\end{verbatim}
+The idea of pairs is generalized in Scala to tuples of greater arity.
+There is a predefined case class \verb@Tuple$_n$@ for every \verb@n@
+from \verb@2@ to \verb@9@ in Scala's standard library. The
+definitions all follow the template
+\begin{verbatim}
+case class Tuple$_n$[a$_1$, ..., a$_n$](_1: a$_1$, ..., _n: a$_n$);
+\end{verbatim}
+Class \verb@Pair@ (as well as class \verb@Triple@) are also
+predefined, but not as classes of their own. Instead 
+\verb@Pair@ is an alias of \verb@Tuple2@ and \verb@Triple@ is an
+alias of \verb@Tuple3@. 
+
+\chapter{Lists}
+
+The list is an important data structure in many Scala programs.  
+A list with elements \verb@x$_1$, ..., x$_n$@ is written
+\verb@List(x$_1$, ..., x$_n$)@. Examples are:
+\begin{verbatim}
+val fruit  \= = List("apples", "oranges", "pears");
+val nums   \> = List(1, 2, 3, 4);
+val diag3  \> = List(List(1, 0, 0), List(0, 1, 0), List(0, 0, 1));
+val empty  \> = List();
+\end{verbatim}
+Lists are similar to arrays in languages such as C or Java, but there
+are also three important differences. First, lists are immutable. That
+is, elements of a list can not be changed by assignment. Second, 
+lists have a recursive structure, whereas arrays are flat. Third,
+lists support a much richer set of operations than arrays usually do.
+
+\paragraph{The list type.}
+Like arrays, lists are {\em homogeneous}. That is, the elements of a
+list all have the same type.  The type of a list with elements of type
+\verb@T@ is written \verb@List[T]@. (Compare to \verb@[]T@ for the
+type of arrays of type \verb@T@ in C or Java.). Therefore, the 
+definitions of list values above can be annotated with types as
+follows.
+\begin{verbatim}
+val fruit \= : List[String]       \= = List("apples", "oranges", "pears");
+val nums  \> : List[int]          \> = List(1, 2, 3, 4);
+val diag3 \> : List[List[int]]    \> = List(List(1, 0, 0), List(0, 1, 0), List(0, 0, 1));
+val empty \> : List[int]          \> = List();
+\end{verbatim}
+
+\paragraph{List constructors.}
+All lists are built from two more fundamental constructors, \verb@Nil@
+and \verb@::@ (pronounced ``cons''). \verb@Nil@ represents an empty
+list. The infix operator \verb@::@ expresses list extension. That is,
+\verb@x :: xs@ represents a list whose first element is \verb@x@,
+which is followed by (the elements of) list \verb@xs@.  Hence, the
+list values above could also have been defined as follows (in fact
+their previous definition is simply syntactic sugar for the definitions below).
+\begin{verbatim}
+val fruit  \= =  "apples" :: ("oranges" :: ("pears" :: Nil));
+val nums   \> =  1 :: (2 :: (3 :: (4 :: Nil)));
+val diag3  \> = \= (1 :: (0 :: (0 :: Nil))) ::
+           \>   \> (0 :: (1 :: (0 :: Nil))) ::
+           \>   \> (0 :: (0 :: (1 :: Nil))) :: Nil;
+val empty  \> =  Nil;
+\end{verbatim}
+The `\verb@::@' operation associates to the right: \verb@A :: B :: C@ is
+interpreted as \verb@A :: (B :: C)@.  Therefore, we can drop the
+parentheses in the definitions above. For instance, we can write
+shorter
+\begin{verbatim}
+val nums  =  1 :: 2 :: 3 :: 4 :: Nil;
+\end{verbatim}
+
+\paragraph{Basic operations on lists.}
+All operations on lists can be expressed in terms of the following three:
+
+\begin{tabular}{ll}
+\verb@head@  &  returns the first element of a list,\\
+\verb@tail@  &  returns the list consisting of all elements except the\\
+first element,
+\verb@isEmpty@ & returns \verb@true@ iff the list is empty
+\end{tabular}
+
+These operations are defined as methods of list objects. So we invoke
+them by selecting from the list that's operated on. Examples:
+\begin{verbatim}
+empty.isEmpty     \= = true
+fruit.isEmpty   \> = false
+fruit.head      \> = "apples"
+fruit.tail.head \> = "oranges"
+diag3.head      \> = List(1, 0, 0)
+\end{verbatim}
+Both \verb@head@ and \verb@tail@ are only defined for non-empty lists.
+When selected from an empty list, they cause an error instead.
+
+As an example of how lists can be processed, consider sorting the
+elements of a list of numbers into ascending order. One simple way to
+do so is {\em insertion sort}, which works as follows: To sort a
+non-empty list with first element \verb@x@ and rest \verb@xs@, sort
+the remainder \verb@xs@ and insert the element \verb@x@ at the right
+position in the result. Sorting an empty list will of course yield the
+empty list. Expressed as Scala code:
+\begin{verbatim}
+def isort(xs: List[int]): List[int] =
+  if (xs.isEmpty) Nil
+  else insert(xs.head, isort(xs.tail))
+\end{verbatim}
+
+\exercise Provide an implementation of the missing function
+\verb@insert@.
+
+\paragraph{List patterns.} In fact, both \verb@Nil@ and \verb@::@ are
+defined as case classes in Scala's standard library. Hence, it is
+possible to decompose lists by pattern matching, using patterns
+composed from the \verb@Nil@ and \verb@::@ constructors. For instance, \verb@isort@ can
+be written alternatively as follows.
+\begin{verbatim}
+def isort(xs: List[int]): List[int] = xs match {
+  case List() => List()
+  case x :: xs1 => insert(x, isort(xs1))
+}
+\end{verbatim}
+where
+\begin{verbatim}
+def insert(x: int, xs: List[int]): List[int] = xs match {
+  case List() => List(x)
+  case y :: ys => if (x <= y) x :: xs else y :: insert(x, ys)
+}
+\end{verbatim}
+
+\paragraph{Polymorphic functions.} Consider the problem of writing a
+  function \verb@concat@, which takes a list of element lists as
+  arguments. The result of \verb@concat@ should be the concatenation of all
+  element lists into a single list. 
+
+When trying to define such a function, we observe that we need to give
+a type for the list elements:
+\begin{verbatim}
+def concat(xss: List[List[ ?? ]]): List[ ?? ] = ...
+\end{verbatim}
+Clearly, one could replace \verb@??@ by \verb@int@, say, to obtain a
+function \verb@concat@ that works on lists of lists of integers. But then the
+same function could not be applied to other kinds of lists. This is a
+pity, since clearly the same algorithm of list concatenation can work
+for lists of any element type. Parameterization lets us generalize
+from a specific instance of a problem to a more general one. So far,
+we have used parameterization only for values, but it is available
+also for types. To arrive at a general version of \verb@concat@, we 
+equip it with a type parameter.
+\begin{verbatim}
+def concat[a](xs: List[List[a]]): List[a] = xs match {
+  case List() => xs
+  case List() :: yss => concat[a](yss)
+  case (x :: xs) :: yss => x :: concat[a](xs :: yss)
+}
+\end{verbatim}
+Type parameters are arbitrary names; they are enclosed in brackets
+instead of parentheses, so that they can be easily distinguished from
+value parameters. Functions like \verb@concat@ that take type
+parameters are called {\em polymorphic}. The term comes from the
+Greek, where it means ``having many forms''.
+
+To apply \verb@concat@, we pass type parameters as well as value
+parameters to it. For instance,
+\begin{verbatim}
+val diag3 = List(List(1, 0, 0), List(0, 1, 0), List(0, 0, 1));
+concat[int](diag3)
+\end{verbatim}
+yields \verb@List(1, 0, 0, 0, 1, 0, 0, 0, 1)@.
+
+\paragraph{Local Type Inference.}
+Passing type parameters such as \verb@[int]@ all the time can become
+tedious in applications where polymorphic functions are used a
+lot. Quite often, the information in a type parameter is redundant,
+because the correct parameter type can also be determined by
+inspecting the function's value parameters or expected result type.
+Taking \verb@concat[int](diag3)@ function as an example, we know that
+its value parameter is of type \verb@List[List[int]]@, so we can
+deduce that the type parameter must be \verb@int@. Scala has a
+fairly powerful type inferencer which allows one to omit type
+parameters to polymorphic functions and constructors in situations
+like these.  In the example above, the \verb@int@ type parameter would
+have been inferred if it was not given explicitly. In fact, the same
+principle applies in the definition of the value \verb@diag3@. 
+Here, type parameters have been inferred for the four calls of
+\verb@List@. 
+
+\paragraph{Definition of class \verb@List@}
+
+Lists are not built in in Scala; they are defined by an abstract class
+\verb@List@, which comes with two subclasses for \verb@::@ and \verb@Nil@.
+In the following we present a tour through class \verb@List@.
+\begin{verbatim}
+package scala;
+abstract class List[a] {
+\end{verbatim}
+\verb@List@ is an abstract class, so one cannot define elements by
+calling the empty \verb@List@ constructor (e.g. by \verb@new List).
+The class is situated in the package \verb@scala@. This is a package
+containing the most important standard classes of Scala. \verb@List@
+defines a number of methods, which are explained in the following.
+
+First, there are the three basic functions \verb@isEmpty@, 
+\verb@head@, \verb@tail@. Their implementation in terms of pattern
+matching is straightforward:
+\begin{verbatim}
+def isEmpty: boolean = match {
+  case Nil => true
+  case x :: xs => false 
+}   
+def head: a = match { 
+  case Nil => error("Nil.head") 
+  case x :: xs => x 
+}
+def tail: List[a] = match { 
+  case Nil => error("Nil.tail") 
+  case x :: xs => x 
+}
+\end{verbatim}
+
+The next function computes the length of a list.
+\begin{verbatim}
+def length = match {
+  case Nil => 0
+  case x :: xs => 1 + xs.length
+}
+\end{verbatim}
+
+\exercise Design a tail-recursive version of \verb@length@.
+
+The next two functions are the complements of \verb@head@ and
+\verb@tail@.
+\begin{verbatim}
+def last: a;
+def init: List[a];
+\end{verbatim}
+\verb@xs.last@ returns the last element of list \verb@xs@, whereas
+\verb@xs.init@ returns all elements of \verb@xs@ except the last.
+Both functions have to traverse the entire list, and are thus less
+efficient than their \verb@head@ and \verb@tail@ analogues.
+Here is the implementation of \verb@last@.
+\begin{verbatim}
+def last: a = match {
+  case Nil      \==> error("Nil.last")
+  case x :: Nil \>=> x
+  case x :: xs  \>=> xs.last
+}
+\end{verbatim}
+The implementation of \verb@init@ is analogous.
+
+The next three functions return a prefix of the list, or a suffix, or
+both.
+\begin{verbatim}
+def take(n: int): List[a] = 
+  if (n == 0 || isEmpty) Nil else head :: tail.take(n-1);
+
+def drop(n: int): List[a] = 
+  if (n == 0 || isEmpty) this else tail.drop(n-1);
+
+def split(n: int): Pair[List[a], List[a]] = 
+  if (n == 0 || isEmpty) Pair(Nil, this)
+  else tail.split(n - 1) match { case Pair(xs, ys) => (head :: xs, ys) }
+\end{verbatim}
+\verb@(xs take n)@ returns the first \verb@n@ elements of list
+\verb@xs@, or the whole list, if its length is smaller than \verb@n@.
+\verb@(xs drop n)@ returns all elements of \verb@xs@ except the
+\verb@n@ first ones. Finally, \verb@(xs split n)@ returns a pair
+consisting of the lists resulting from \verb@xs take n@ and
+\verb@xs drop n@, but the call is more efficient than performing the
+two calls separately. 
+
+The next function returns an element at a given index in a list.
+It is thus analogous to array subscripting. Indices start at 0.
+\begin{verbatim}   
+def at(n: int): a = drop(n).head;
+\end{verbatim}
+
+With \verb@take@ and \verb@drop@, we can extract sublists consisting
+of consecutive elements of the original list.  To extract the sublist
+$xs_m \commadots xs_{n-1}$ of a list \verb@xs@, use:
+
+\begin{verbatim}
+xs.drop(m).take(n - m)
+\end{verbatim}
+
+The next function combines two lists into a list of pairs.
+Given two lists 
+\begin{verbatim}
+xs = List(x$_1$, ..., x$_n$)   $\mbox{\rm, and}$
+ys = List(y$_1$, ..., y$_n$)   ,
+\end{verbatim}
+\verb@xs zip ys@ constructs the list \verb@Pair(x$_1$, y$_1$), ..., Pair(x$_n$, y$_n$)@.
+If the two lists have different lengths, the longer one of the two is
+truncated. Here is the definition of \verb@zip@ -- note that it is a
+polymorphic method.
+\begin{verbatim}
+def zip[b](that: List[b]): List[Pair[a,b]] = 
+  if (this.isEmpty || that.isEmpty) Nil
+  else Pair(this.head, that.head) :: (this.tail zip that.tail);
+\end{verbatim}
+
+Like any infix operator, \verb@::@
+is also implemented as a method of an object. In this case, the object
+is the list that is extended. This is possible, because operators
+ending with a `\verb@:@' character are treated specially in Scala.  
+All such operators are treated as methods of their right operand. E.g.,
+\begin{verbatim}
+    x :: y = y.::(x)       \=$\mbox{\rm whereas}$       x + y = x.+(y)                  
+\end{verbatim}
+Note, however, that operands of a binary operation are in each case
+evaluated from left to right.  So, if \verb@D@ and \verb@E@ are
+expressions with possible side-effects, \verb@D :: E@ is translated to
+\verb@{val x = D; E.::(x)}@ in order to maintain the left-to-right
+order of operand evaluation.
+
+Another difference between operators ending in a `\verb@:@' and other
+operators concerns their associativity.  Operators ending in
+`\verb@:@' are right-associative, whereas other operators are
+left-associative.  E.g.,
+\begin{verbatim}
+    x :: y :: z = x :: (y :: z)      \=$\mbox{\rm whereas}$       x + y + z = (x + y) + z
+\end{verbatim}
+With these conventions, the definition of \verb@::@ as a method in
+class \verb@List@ is straightforward:
+\begin{verbatim}
+def ::(x: a): List[a] = new scala.::(x, this);
+\end{verbatim}
+An operation similar to \verb@::@ is list concatenation, written
+`\verb@:::@'. The result of \verb@(xs ::: ys)@ is a list consisting of
+all elements of \verb@xs@, followed by all elements of \verb@ys@.
+Because it ends in a colon, \verb@:::@ is right-associative and is
+considered as a method of its right-hand operand. Therefore,
+\begin{verbatim}
+xs ::: ys ::: zs  \= =   xs ::: (ys ::: zs)
+                  \> =   zs.:::(ys).:::(xs)
+\end{verbatim}
+Here is the implementation of the \verb@:::@ method:
+\begin{verbatim}
+  def :::(prefix: List[a]): List[a] = prefix match {
+    case Nil => this
+    case p :: ps => this.:::(ps).::(p)
+  }
+\end{verbatim}
+
+\paragraph{Example: Reverse.} As another example of how to program with
+lists consider a list reversal. There is a method \verb@reverse@ in
+\verb@List@ to that effect, but let's implement it as a function
+outside the class. Here is the a possible implementation of
+\verb@reverse@:
+\begin{verbatim}
+def reverse[a](xs: List[a]): List[a] = xs match {
+  case List() => List()
+  case x :: xs => reverse(xs) ::: List(x)
+}
+\end{verbatim}
+The implementation is quite simple. However, it is not very efficient.
+Indeed, one concatenation is executed for every element in the
+list. List concatenation takes time proportional to the length
+of its first operand. Therefore, the complexity of \verb@reverse(xs)@ is 
+\[
+n + (n - 1) + ... + 1 = n(n+1)/2
+\]
+where $n$ is the length of \verb@xs@. Can \verb@reverse@ be
+implemented more efficiently? We will see later that there is exists
+another implementation which has only linear complexity.
+
+\paragraph{Example: Merge sort.}
+The insertion sort presented earlier in this chapter is simple to
+formulate, but also not very efficient. It's average complexity is
+proportional to the square of the length of the input list. We now
+design a program to sort the elements of a list which is more
+efficient than insertion sort. A good algorithm for this is {\em merge
+sort}, which works as follows.
+
+First, if the list has zero or one elements, it is already sorted, so
+one returns the list unchanged. Longer lists are split into two
+sub-lists, each containing about half the elements of the original
+list. Each sub-list is sorted by a recursive call to the sort
+function, and the resulting two sorted lists are then combined in a
+merge operation.
+
+For a general implementation of merge sort, we still have to specify
+the type of list elements to be sorted, as well as the function to be
+used for the comparison of elements. We obtain a function of maximal
+generality by passing these two items as parameters. This leads to the
+following implementation.
+\begin{verbatim}
+def msort[a](less: (a, a) => boolean)(xs: List[a]): List[a] = {
+  val n = xs.length/2;
+  if (n == 0) xs
+  else {
+    def merge(xs1: List[a], xs2: List[a]): List[a] = 
+      if (xs1.isEmpty) xs2
+      else if (xs2.isEmpty) xs1
+      else if (less(xs1.head, xs2.head)) xs1.head :: merge(xs1.tail, xs2)
+      else xs2.head :: merge(xs1, xs2.tail);
+
+    merge(msort(less)(xs take n), msort(less)(xs drop n))
+  }
+}
+\end{verbatim}
+The complexity of \verb@msort@ is $O(N;log(N))$, where $N$ is the
+length of the input list. To see why, note that splitting a list in
+two and merging two sorted lists each take time proportional to the
+length of the argument list(s). Each recursive call of \verb@msort@
+halves the number of elements in its input, so there are $O(log(N))$
+consecutive recursive calls until the base case of lists of length 1
+is reached.  However, for longer lists each call spawns off two
+further calls. Adding everything up we obtain that at each of the
+$O(log(N))$ call levels, every element of the original lists takes
+part in one split operation and in one merge operation. Hence, every
+call level has a total cost proportional to $O(N)$. Since there are
+$O(log(N))$ call levels, we obtain an overall cost of
+$O(N;log(N))$. That cost does not depend on the initial distribution
+of elements in the list, so the worst case cost is the same as the
+average case cost. This makes merge sort an attractive algorithm for
+sorting lists.
+
+Here is an example how \verb@msort@ is used.
+\begin{verbatim}
+def iless(x: int, y: int) = x < y
+msort(iless)(List(5, 7, 1, 3))
+\end{verbatim}
+The definition of \verb@msort@ is curried, to make it easy to specialize it with particular
+comparison functions. For instance,
+\begin{verbatim}
+val intSort = msort(iless)
+val reverseSort = msort(x: int, y: int => x > y)
+\end{verbatim}
+
+\bibliography{examples}
+\end{document}
+
+
+ 
+\paragrph{Higher Order Functions
+\bsh{Patterns of Computation over Lists}
+
+\bi
+\item The examples show that functions over lists often have similar
+      structures
+\item We can identify several patterns of computation like
+      \bi
+      \item Transform every element of a list in some way.
+      \item Extract from a list all elements satisfying a criterion.
+      \item Combine the elements of a list using some operator.
+      \ei
+\item Functional programming languages enable programmers to write
+      general functions which implement patterns like this
+\item These functions are \redtext{\em higher-order functions} which get
+      a transformation or an operator as one argument
+\ei
+\es
+
+Pairs, and tuples or greater arity are useful enough to 
+
+ 
 
 
 
+\chapter{Generic Types and Methods}
+
+Classes in Scala can have type parameters. We demonstrate the use of
+type parameters with iterators as an example. An iterator is an object
+which traverses a sequence of values, using two abstract methods.
+\begin{verbatim}
+abstract class Iterator[a] with {
+  def hasNext: boolean;
+  def next: a;
+\end{verbatim}
+Method \verb@next@ returns successive elements.  Method \verb@hasNext@
+indicates whether there are still more elements to be returned by
+\verb@next@. The type of the elements returned by an iterator is
+arbitrary. We express this by giving the class \verb@Iterator@ the
+type parameter \verb@a@. Type parameters are written in square
+brackets, in contrast to normal value parameters, which are written in
+parentheses.  Iterators also support other methods, which are
+explained later.
+
+Here's an iterator which traverses an interval of integer values.
+\begin{verbatim}
+class RangeIterator(start: int, end: int) extends Iterator[int] {
+  private var current = 0;
+  def hasNext = current < end;
+  def next = {
+    val r = current;
+    if (current < end) current = current + 1
+    else error("end of iterator");
+    r
+  }
+}
+\end{verbatim}
+The superclass of \verb@RangeIterator@ is \verb@Iterator[int]@,
+i.e. an iterator returning integer numbers. 
+
+Note that, unlike the classes we have seen so far,
+\verb@RangeIterator@ has internal state
+
+
+Here is a function that takes an iterator of arbitrary element type
+\verb@a@ and a procedure that maps \verb@a@-values to the trivial type \verb@unit@.
+It applies the given function to every value returned by the iterator.
+\begin{verbatim}
+  def forall[a](i: Iterator[a])(f: a => boolean): boolean =
+    !hasNext || { val x = next; f(x) && forall(i, f) }
+\end{verbatim}
+\verb@forEach@ can work with any type of iterator, 
+since the iterator's element type is passed as a type parameter \verb@a@.
+Functions that take type parameters are called {\em polymorphic}. The term
+comes from Greek, where it means ``having many forms''.
+
+Finally, here is an application which uses \verb@RangeIterator@ and
+\verb@foreach@ to test whether a given number is prime, i.e. whether it can be 
+divided only by 1 and itself.
+\begin{verbatim}
+def isPrime(x: int) =
+  forall[int](new RangeIterator(2, n)) { x => x % n != 0 }
+\end{verbatim}
+As always, the actual parameters of \verb@forEach@ correspond to its
+formal parameters.  First comes the type parameter \verb@int@, which
+determines the element type of the iterator which is passed next.
+
+\paragraph{Local Type Inference.}
+Passing type parameters such as \verb@[int]@ all the time can become
+tedious in applications where polymorphic functions are used a
+lot. Quite often, the information in a type parameter is redundant,
+because the correct parameter type can also be determined by
+inspecting the function's value parameters or expected result type.
+Taking the \verb@isPrime@ function as an example, we know that its
+first value parameter is of type \verb@Iterator[int]@, so we can
+determine the type parameter \verb@int@ from it. Scala contains a
+fairly powerful local type inferencer which allows one to omit type
+parameters to polymorphic functions and constructors in situations
+like these.  In the example above, the \verb@int@ type parameter would
+have been inferred  if it was not given explicitly.
+
+Here is another
+application which prints all prime numbers between 1 and 10000. 
+\begin{verbatim}
+forall(new RangeIterator(1, 10001)){ x => if (isPrime(x)) System.out.println(x) }
+\end{verbatim}
+This time, the type parameter for \verb@forEach@ was omitted (and was
+inferred to be \verb@int@).
+
+Method \verb@append@ constructs an iterator which resumes with the
+given iterator \verb@it@ after the current iterator has finished.
+\begin{verbatim}
+  def append(that: Iterator[a]): Iterator[a] = new Iterator[a] with {
+    def hasNext = outer.hasNext || that.hasNext;
+    def next = if (outer.hasNext) outer.next else that.next;
+  }
+\end{verbatim}
+The terms \verb@outer.next@ and \verb@outer.hasNext@ in the definition
+of \verb@append@ call the corresponding methods as they are defined in
+the enclosing \verb@Iterator@ class. Generally, an
+\verb@outer@ prefix in a selection indicates an identifier that is
+visible immediately outside the current class or template. If the
+\verb@outer@ prefix would have been missing,
+\verb@hasNext@ and \verb@next@ would have
+called recursively the methods being defined in the iterator
+constructed by \verb@append@, which is not what we want.
+
+Method \verb@filter@ constructs an iterator which returns all elements
+of the original iterator that satisfy a criterion \verb@p@.
+\begin{verbatim}
+  def filter(p: a => boolean) = new Iterator[a] with {
+    private class Cell[T](elem_: T) with { def elem = elem_; }
+    private var head: Cell[a] = null;
+    private var isAhead = false;
+    def hasNext: boolean =
+      if (isAhead) true
+      else if (outer.hasNext) {
+        head = Cell(outer.next); isAhead = p(head.elem); hasNext }
+      else false;
+    def next: a =
+      if (hasNext) { isAhead = false; head.elem }
+      else error("next on empty iterator");
+  }
+\end{verbatim}
+Method \verb@map@ constructs an iterator which returns all elements of
+the original iterator transformed by a given function \verb@f@.
+\begin{verbatim}
+  def map[b](f: a => b) = new Iterator[b] with {
+    def hasNext: boolean = outer.hasNext;
+    def next: b = f(outer.next);
+  }
+\end{verbatim}
+The return type of the transformation function \verb@f@ is
+arbitrary. This is expressed by a type parameter \verb@b@ in the
+signature of method \verb@map@, which represents the return type.
+We also say, \verb@map@ is a {\em polymorphic} function.
+
+Method \verb@flatMap@ is like method \verb@map@, except that the
+transformation function \verb@f@ now returns an iterator.
+The result of \verb@flatMap@ is the iterator resulting from appending
+together all iterators returned from successive calls of \verb@f@.
+\begin{verbatim}
+    private var cur: Iterator[b] = new EmptyIterator[b];
+    def hasNext: boolean =
+      if (cur.hasNext) true
+      else if (outer.hasNext) { cur = f(outer.next); hasNext }
+      else false;
+    def next: b =
+      if (cur.hasNext) cur.next
+      else if (outer.hasNext) { cur = f(outer.next); next }
+      else error("next on empty iterator");
+  }
+\end{verbatim}
+Finally, method \verb@zip@ takes another iterator and
+returns an iterator consisting of pairs of corresponding elements
+returned by the two iterators.
+\begin{verbatim}
+  def zip[b](that: Iterator[b]) = new Iterator[(a, b)] with {
+    def hasNext = outer.hasNext && that.hasNext;
+    def next = (outer.next, that.next);
+  }
+} //end iterator;
+\end{verbatim}
+Concrete iterators need to provide implementations for the two
+abstract methods \verb@next@ and \verb@hasNext@ in class
+\verb@Iterator@. The simplest iterator is \verb@EmptyIterator@
+which always returns an empty sequence:
+\begin{verbatim}
+class EmptyIterator[a] extends Iterator[a] with {
+  def hasNext = false;
+  def next: a = error("next on empty iterator");
+}
+\end{verbatim}
+A more interesting iterator enumerates all elements of an array.
+This iterator is formulated here as a polymorphic function. It could
+have also been written as a class, like \verb@EmptyIterator@. The
+difference between the two formulation is that classes also define new
+types, whereas functions do not.
+\begin{verbatim}
+def arrayIterator[a](xs: Array[a]) = new Iterator[a] with {
+  private var i = 0;
+  def hasNext: boolean =
+    i < xs.length;
+  def next: a =
+    if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
+    else error("next on empty iterator");
+}
+\end{verbatim}
+Another iterator enumerates an integer interval:
+\begin{verbatim}
+def range(lo: int, hi: int) = new Iterator[int] with {
+  private var i = lo;
+  def hasNext: boolean =
+    i <= hi;
+  def next: int =
+    if (i <= hi) { i = i + 1 ; i - 1 }
+    else error("next on empty iterator");
+}
+\end{verbatim}
+%In fact, enumerating integer intervals is so common that it is
+%supported by a method
+%\begin{verbatim}
+%def to(hi: int): Iterator[int]
+%\end{verbatim}
+%in class \verb@int@. Hence, one could also write \verb@l to h@ instead of
+%\verb@range(l, h)@.
+All iterators seen so far terminate eventually. It is also possible to
+define iterators that go on forever. For instance, the following
+iterator returns successive integers from some start
+value\footnote{Due to the finite representation of type \prog{int},
+numbers will wrap around at $2^31$.}.
+\begin{verbatim}
+def from(start: int) = new Iterator[int] with {
+  private var last = start - 1;
+  def hasNext = true;
+  def next = { last = last + 1; last }
+}
+\end{verbatim}
+Here are two examples how iterators are used. First, to print all
+elements of an array \verb@xs: Array[int]@, one can write:
+\begin{verbatim}
+  arrayIterator[int](xs) foreach (x => System.out.println(x))
+\end{verbatim}
+Here, \verb@[int]@ is a type argument clause, which matches the type
+parameter clause \verb@[a]@ of function \verb@arrayIterator@. It
+substitutes the formal argument \verb@int@ for the formal argument
+\verb@a@ in the type of the method that follows. Hence,
+\verb@arrayIterator[a]@ is a function that takes an \verb@Array[int]@
+and that returns an \verb@Iterator[int]@.
+
+In this example, the formal type argument \verb@int@ is redundant
+since it could also have been inferred from the value \verb@xs@, which
+is, after all, an array of \verb@int@. The Scala compiler contains a
+fairly powerful type inferencer which infers type arguments for
+methods and constructors from the types of value arguments and the
+expected return type. In our example, the \verb@[int]@ clause can be
+inferred, so that one can abbreviate to:
+\begin{verbatim}
+  arrayIterator(xs) foreach (x => System.out.println(x))
+\end{verbatim}
+%As a second example, consider the problem of finding the indices of
+%all the elements in an array of \verb@double@s greater than some
+%\verb@limit@. The indices should be returned as an iterator.
+%This is achieved by the following expression.
+%\begin{verbatim}
+%arrayIterator(xs)
+%  .zip(from(0))
+%  .filter(x, i => x > limit)
+%  .map(x, i => i)
+%\end{verbatim}
+%The first line in this expression iterates through all array elements,
+%the second lines pairs elements with their indices, the third line
+%selects all value/index pairs where the value is greater than
+%\verb@limit@, and the fourth line returns the index part of all
+%selected pairs.
+
+%Note that we have omitted the type arguments for the calls of
+%\verb@arrayIterator@, \verb@zip@ and \verb@map@. These are all
+%implicitly inserted by the type inferencer.
+
+
+
+\es
 \paragraph{Abstract Methods.}
 Classes can also omit some of the definitions of their members.  As an
 example, consider the following class \verb@Ord@ which provides the

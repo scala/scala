@@ -176,7 +176,9 @@ trait List[a] extends Seq[a] {
 
   /** Combines the elements of this list together using the binary
   * operator <code>op</code>, from left to right, and starting with
-  * the value <code>z</code>.
+  * the value <code>z</code>. Similar to <code>fold</code> but with
+  * a different order of the arguments, allowing to use nice constructions like
+  * <code>(z foldLeft l) { ... }</code>.
   * @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
   * is <code>[a0, a1, ..., an]</code>.
   */
@@ -185,20 +187,22 @@ trait List[a] extends Seq[a] {
     case x :: xs => xs.foldLeft[b](f(z, x))(f)
   }
 
+  def foldLeft_:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
+
   def foldRight[b](z: b)(f: (a, b) => b): b = match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   }
 
   def reduceLeft(f: (a, a) => a): a = this match {
-    case Nil => error("reduceLeft of empty list")
-    case x :: xs => xs.foldLeft(x)(f)
+    case Nil => error("Nil.reduceLeft")
+    case x :: xs => (xs foldLeft x)(f)
   }
 
   def reduceRight(f: (a, a) => a): a = match {
-    case Nil => error("reduceRight of empty list")
+    case Nil => error("Nil.reduceRight")
     case x :: Nil => x
-    case x :: xs => xs.foldRight(x)(f)
+    case x :: xs => f(x, xs.reduceRight(f))
   }
 
   /**
@@ -219,7 +223,7 @@ trait List[a] extends Seq[a] {
   * @return the elements of this list in reverse order.
   */
   def reverse: List[a] = {
-    foldLeft(Nil: List[a])((xs: List[a], x: a) => x :: xs)
+    foldLeft(Nil: List[a])((xs, x) => x :: xs)
   }
 
   /** Prints on standard output a raw textual representation of this list.

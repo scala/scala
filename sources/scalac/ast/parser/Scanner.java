@@ -113,7 +113,7 @@ public class Scanner extends TokenData {
 	    case YIELD:  case DO:
 	    case COMMA:  case SEMI:     case DOT:
 	    case COLON:  case EQUALS:   case ARROW:
-            case LARROW: case SUBTYPE:
+            case LARROW: case SUBTYPE:  case SUPERTYPE:
             case HASH:   case AS:       case IS:
 	    case RPAREN: case RBRACKET: case RBRACE:
 		break;
@@ -817,6 +817,7 @@ public class Scanner extends TokenData {
         enterKeyword("=>", ARROW);
         enterKeyword("<-", LARROW);
         enterKeyword("<:", SUBTYPE);
+        enterKeyword(">:", SUPERTYPE);
         enterKeyword("yield", YIELD);
         enterKeyword("do", DO);
         enterKeyword("#", HASH);

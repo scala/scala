@@ -618,7 +618,7 @@ public class Parser implements Tokens {
 	    if (s.token == HASH)
 		t = make.SelectFromType(s.skipToken(), t, ident().toTypeName());
 	    else if (s.token == LBRACKET)
-		t = make.AppliedType(pos, t, varTypeArgs());
+		t = make.AppliedType(pos, t, varTypeArgs());//todo: change to typeArgs
 	    else break;
 	}
 	return t;
@@ -768,7 +768,7 @@ public class Parser implements Tokens {
 		int pos = positions[sp];
 		Name postOp = operators[sp];
 		top = reduceStack(true, base, operands[sp], 0, true);
-		return make.Select(pos, top, postOp);
+		return make.Select(pos, top, NameTransformer.encode(postOp));
 	    }
 	}
 	return reduceStack(true, base, top, 0, true);
@@ -1204,29 +1204,49 @@ public class Parser implements Tokens {
         TreeList params = new TreeList();
 	if (s.token == LBRACKET) {
 	    s.nextToken();
-	    params.append(typeParam());
+	    params.append(typeSig(Modifiers.PARAM));
 	    while (s.token == COMMA) {
 		s.nextToken();
-		params.append(typeParam());
+		params.append(typeSig(Modifiers.PARAM));
 	    }
 	    accept(RBRACKET);
 	}
         return (TypeDef[])params.copyTo(new TypeDef[params.length()]);
     }
 
-    /** TypeSig   ::= Id [<: Type]
+    /** TypeSig   ::= [+ | -] Id TypeBounds
      */
-    Tree typeParam() {
-        int pos = s.pos;
-        Name name = ident();
-	Tree tp;
+    Tree typeSig(int mods) {
+	if (s.token == IDENTIFIER) {
+	    if (s.name == PLUS) {
+		s.nextToken();
+		mods |= Modifiers.COVARIANT;
+	    } else if (s.name == MINUS) {
+		s.nextToken();
+		mods |= Modifiers.CONTRAVARIANT;
+	    }
+	}
+	return typeBounds(s.pos, mods, ident());
+    }
+
+    /** TypeBounds ::= [>: Type] [<: Type]
+     */
+    Tree typeBounds(int pos, int mods, Name name) {
+	Tree lobound;
+	Tree hibound;
+	if (s.token == SUPERTYPE) {
+	    s.nextToken();
+	    lobound = type();
+	} else {
+	    lobound = scalaDot(pos, Names.All.toTypeName());
+	}
 	if (s.token == SUBTYPE) {
 	    s.nextToken();
-	    tp = type();
+	    hibound = type();
 	} else {
-	    tp = scalaDot(pos, Names.Any.toTypeName());
+	    hibound = scalaDot(pos, Names.Any.toTypeName());
 	}
-	return make.TypeDef(pos, Modifiers.PARAM, name.toTypeName(), tp);
+	return make.TypeDef(pos, mods, name.toTypeName(), hibound);
     }
 
 //////// DEFS ////////////////////////////////////////////////////////////////
@@ -1485,14 +1505,15 @@ public class Parser implements Tokens {
     }
 
     /** TypeDef ::= Id `=' Type
-     *  TypeSig ::= Id [`<:' Type]
+     *  TypeSig ::= [`+' | `-'] Id [`>:' Type] [`<:' Type]
      */
     Tree typeDefOrSig(int mods) {
         int pos = s.pos;
+	if (s.token == IDENTIFIER && (s.name == PLUS || s.name == MINUS))
+	    return typeSig(mods | Modifiers.DEFERRED);
         Name name = ident().toTypeName();
-	if (s.token == SUBTYPE) {
-	    s.nextToken();
-	    return make.TypeDef(pos, mods | Modifiers.DEFERRED, name, type());
+	if (s.token == SUPERTYPE || s.token == SUBTYPE) {
+	    return typeBounds(pos, mods | Modifiers.DEFERRED, name);
 	} else if (s.token == EQUALS) {
 	    s.nextToken();
             return make.TypeDef(pos, mods, name, type());
@@ -1501,7 +1522,7 @@ public class Parser implements Tokens {
 		pos, mods | Modifiers.DEFERRED, name,
 		scalaDot(pos, Names.Any.toTypeName()));
 	} else {
-	    return syntaxError("`=' or `<:' expected", true);
+	    return syntaxError("`=', `>:', or `<:' expected", true);
 	}
     }
 

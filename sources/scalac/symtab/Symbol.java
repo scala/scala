@@ -500,7 +500,8 @@ public abstract class Symbol implements Modifiers, Kinds {
             flags = flags & ~LOCKED;
 	    if (info instanceof SourceCompleter && (flags & SNDTIME) == 0) {
 		flags |= SNDTIME;
-		return info();
+		Type tp = info();
+		flags &= ~SNDTIME;
 	    } else {
 		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
 		flags |= INITIALIZED;

@@ -39,9 +39,9 @@ abstract class Lang2 extends Lang {
   class Show2(result: Ref[String]): visitor extends Visitor2 {
     def caseNum(n: int) = result.elem = n.toString();
     def casePlus(l: Exp, r: Exp) =
-	result.elem =
-	    "(" + { l.visit(this); result.elem } +
-            "+" + { r.visit(this); result.elem }+ ")";
+      result.elem =
+	"(" + { l.visit(this); result.elem } +
+        "+" + { r.visit(this); result.elem }+ ")";
   }
 }
 
