@@ -99,6 +99,12 @@ public class Definitions {
     public final Symbol OBJECT_CLASS;
     public final Type   OBJECT_TYPE;
 
+    private Symbol OBJECT_TAG;
+    public Symbol OBJECT_TAG() {
+        if (OBJECT_TAG == null) OBJECT_TAG = loadTerm(OBJECT_TYPE, Names.tag);
+        return OBJECT_TAG;
+    }
+
     /** the scala.All class
      */
     public final Symbol ALL_CLASS;
@@ -145,6 +151,31 @@ public class Definitions {
      */
     public final Symbol STRING_CLASS;
     public final Type   STRING_TYPE;
+
+    /** the scala.FunctionX classes
+     */
+    public final int  FUNCTION_count = 10;
+    public final Symbol[] FUNCTION_CLASS = new Symbol[FUNCTION_count];
+    public final Type[]   FUNCTION_TYPE = new Type[FUNCTION_count];
+
+    private final Symbol[] FUNCTION_APPLY = new Symbol[FUNCTION_count];
+    public Symbol FUNCTION_APPLY(int arity) {
+        assert arity < FUNCTION_count: arity;
+        if (FUNCTION_APPLY[arity] == null)
+            FUNCTION_APPLY[arity] = loadTerm(FUNCTION_TYPE[arity],Names.apply);
+        return FUNCTION_APPLY[arity];
+    }
+
+    /** the scala.Ref class
+     */
+    public final Symbol REF_CLASS;
+    public final Type   REF_TYPE;
+
+    private Symbol REF_ELEM;
+    public Symbol REF_ELEM() {
+        if (REF_ELEM == null) REF_ELEM = loadTerm(REF_TYPE, Names.elem);
+        return REF_ELEM;
+    }
 
     public final Symbol SEQ_CLASS;
 
@@ -295,6 +326,12 @@ public class Definitions {
 	STRING_TYPE = STRING_CLASS.typeConstructor();
 	STRING_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE));
 
+        for (int i = 0; i < FUNCTION_count; i++) {
+            FUNCTION_CLASS[i] = getClass(Names.scala_Function(i));
+            FUNCTION_TYPE[i] = FUNCTION_CLASS[i].typeConstructor();
+        }
+        REF_CLASS = getClass(Names.scala_Ref);
+        REF_TYPE = REF_CLASS.typeConstructor();
 	SEQ_CLASS = getClass(Names.scala_Seq);
 
 	/*
@@ -451,6 +488,12 @@ public class Definitions {
         Symbol booleanStatics = getModule(Names.scala_Boolean);
         BARBAR = BOOLEAN_TYPE.lookup(Names.BARBAR);
         AMPAMP = BOOLEAN_TYPE.lookup(Names.AMPAMP);
+    }
+
+    private Symbol loadTerm(Type type, Name name) {
+        Symbol sym = type.lookup(name);
+        assert sym.isTerm() && !sym.isOverloaded(): type+"."+name+" -> "+sym;
+        return sym;
     }
 
     public Type arrayType(Type elemtpe) {
