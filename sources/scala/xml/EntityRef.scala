@@ -15,11 +15,10 @@ package scala.xml;
  * @param text the text contained in this node
 **/
 
-case class Text( text:String ) extends Node {
-
-  /** the constant "#PCDATA"
+case class EntityRef( entityName:String ) extends Node {
+  /** the constant "#ENTITY"
   */
-  def label    = "#PCDATA";
+  def label    = "#ENTITY";
 
   /** always empty */
   final def attribute = Nil;
@@ -27,9 +26,9 @@ case class Text( text:String ) extends Node {
   /** always empty */
   final def child = Nil;
 
-  override def hashCode() = text.hashCode();
+  override def hashCode() = entityName.hashCode();
 
   /** returns text, with some characters escaped according to XML spec */
-  override def toString() = Utility.escape( text );
+  override def toString() = "&"+entityName+";";
 
 }
