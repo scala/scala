@@ -126,7 +126,7 @@ test_shell() {
 }
 
 test_compilation() {
-    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     classpath="$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
@@ -142,7 +142,7 @@ test_compilation() {
 }
 
 test_xml() {
-    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     dtdfile="`expr "$source" : "\(.*\)\\.scala"`.dtd";
     xmlfile="`expr "$source" : "\(.*\)\\.scala"`.xml";
     nsfile="`expr "$source" : "\(.*\)\\.scala"`.namespace";
@@ -169,7 +169,7 @@ test_disassembler() {
     else
         SCALAP_ARGS="";
     fi;
-    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     classpath="$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
@@ -185,7 +185,7 @@ test_disassembler() {
 }
 
 test_compilation_success() {
-    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     if $CYGWIN; then
 	os_output=`cygpath -w "$output"`;
     else
@@ -199,7 +199,7 @@ test_compilation_success() {
 
 test_compilation_failure() {
     (
-        OBJDIR="$OBJDIR/"`dirname "$source"`;
+        OBJDIR="$OBJDIR"`dirname "$source"`;
         cd `dirname "$source"`;
         source=`basename "$source"`;
         if test_compilation_success "$@"; then false; else
@@ -489,7 +489,7 @@ main() {
     SUCCESS_COUNT=0;
     FAILURE_COUNT=0;
     SRCDIR="$PREFIX/files";
-    OBJDIR=".";
+    OBJDIR="";
 
     TEST_ALL="true";
     TEST_TYPE="auto";
@@ -599,10 +599,12 @@ main() {
         esac;
     fi;
 
-    if [ -d "$OBJDIR" ]; then
-        OBJDIR=`cd "$OBJDIR"; pwd`;
-    else
-        abort "could not access directory '$OBJDIR'";
+    if [ -n "$OBJDIR" ]; then
+        if [ -d "$OBJDIR" ]; then
+            OBJDIR=`cd "$OBJDIR"; pwd`/;
+        else
+            abort "could not access directory '$OBJDIR'";
+        fi
     fi
 
     test_all;
