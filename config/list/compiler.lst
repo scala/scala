@@ -12,6 +12,7 @@ PhaseDescriptor.java
 PhaseRepository.java
 Unit.java
 
+ast/parser/PatternNormalizer.java
 ast/parser/Parser.java
 ast/parser/ParserPhase.java
 ast/parser/Scanner.java
