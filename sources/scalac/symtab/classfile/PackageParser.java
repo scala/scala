@@ -71,23 +71,25 @@ public class PackageParser extends Type.LazyType {
                 if (inclClasses && fname.endsWith(".class")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
-		    ClassSymbol clazz = new ClassSymbol(n, p, classCompletion);
-		    clazz.constructor().setInfo(
-			classCompletion.staticsParser(clazz));
-		    // enter class
-		    locals.enter(clazz);
-		    locals.enter(clazz.constructor());
-		    // enter module, except for scala.Object class
-		    // todo: why not there also?.
-		    if (!(n == Names.Object.toTypeName() &&
-			  p.fullName().toTermName() == Names.scala)) {
-			Scope.Entry e = locals.lookupEntry(clazz.module().name);
-			if (e != Scope.Entry.NONE) {
-			    // we already have a package of the same name; delete it
-			    locals.unlink(e);
-			}
-			locals.enter(clazz.module());
-		    }
+                    if (locals.lookup(n) == Symbol.NONE) {
+		        ClassSymbol clazz = new ClassSymbol(n, p, classCompletion);
+		        clazz.constructor().setInfo(
+			    classCompletion.staticsParser(clazz));
+		        // enter class
+		        locals.enter(clazz);
+		        locals.enter(clazz.constructor());
+		        // enter module, except for scala.Object class
+		        // todo: why not there also?.
+		        if (!(n == Names.Object.toTypeName() &&
+			      p.fullName().toTermName() == Names.scala)) {
+			    Scope.Entry e = locals.lookupEntry(clazz.module().name);
+			    if (e != Scope.Entry.NONE) {
+			        // we already have a package of the same name; delete it
+			        locals.unlink(e);
+			    }
+			    locals.enter(clazz.module());
+		        }
+                    }
                 } else if (fname.endsWith("/") && !fname.equals("META-INF/")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 1));
                     if (locals.lookup(n) == Symbol.NONE) {
@@ -97,7 +99,7 @@ public class PackageParser extends Type.LazyType {
                 } else if (fname.endsWith(".scala")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
-                    if (locals.lookup(n) == Symbol.NONE) {
+                    //if (locals.lookup(n) == Symbol.NONE) {
                         SourceCompleter completer = new SourceCompleter(global,
                             dir.getPath() + File.separatorChar + fname);
                         ClassSymbol clazz = new ClassSymbol(n, p, completer);
@@ -107,7 +109,7 @@ public class PackageParser extends Type.LazyType {
                         locals.enter(clazz);
 			locals.enter(clazz.constructor());
 			locals.enter(clazz.module());
-                    }
+                    //}
                 }
             }
         } catch (IOException e) {
