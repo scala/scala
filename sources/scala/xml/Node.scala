@@ -1,9 +1,9 @@
 package scala.xml ;
 
-/** superclass for specific representation of XML elements. These are created by
+/** trait for representation of XML elements. These are created by
 **  a xxx2scala binding tool
 **/
-abstract class Node {
+trait Node {
 
   def label:    String;
   def children: Seq[ Node ];
