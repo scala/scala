@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -63,7 +63,7 @@ package scala.collection.immutable;
  *  @author  Erik Stenman
  *  @version 1.0, 10/07/2003
  */
-abstract class Tree[A <% Ordered[A], B] {
+abstract class Tree[A <% Ordered[A], B] with java.io.Serializable {
   /* Data structure:
   ** - size:Int - the number of elements in the tree.
   ** - tree:T, which is composed of nodes of the form:
