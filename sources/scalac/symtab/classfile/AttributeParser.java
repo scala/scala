@@ -105,8 +105,12 @@ public class AttributeParser implements ClassfileConstants {
         switch (attr) {
         // class attributes
             case SCALA_ATTR:
-                new UnPickle(sym, in.nextBytes(attrLen), Name.fromString(in.path));
-                return;
+                try {
+                    UnPickle.parse(parser.global, in.nextBytes(attrLen), sym);
+                    return;
+                } catch (UnPickle.BadSignature exception) {
+                    throw new RuntimeException(exception.getMessage());
+                }
             case INNERCLASSES_ATTR:
                 int n = in.nextChar();
                 //System.out.println(sym + " has " + n + " innerclass entries");

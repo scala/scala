@@ -25,7 +25,7 @@ public class SymblParser extends ClassParser {
     public String doComplete(Symbol clasz) throws IOException {
         AbstractFile file = global.classPath.openFile(
             SourceRepresentation.externalizeFileName(clasz, ".symbl"));
-        new UnPickle(clasz, file.read(), Name.fromString(file.getPath()));
+        UnPickle.parse(global, file, clasz);
         return "symbol file '" + file.getPath() + "'";
     }
 }

@@ -9,6 +9,7 @@
 package scalac.symtab.classfile;
 
 import java.util.HashMap;
+import java.io.IOException;
 import java.io.PrintStream;
 import scalac.*;
 import scalac.atree.AConstant;
@@ -25,18 +26,34 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
  */
     static final boolean debug = true;
 
+    public static void parse(Global global, AbstractFile file, Symbol root)
+        throws IOException
+    {
+        try {
+            parse(global, file.read(), root);
+        } catch (BadSignature exception) {
+            throw new IOException("symbol file '" + file.getPath() + "' "
+                + "could not be loaded; " + exception.getMessage());
+        }
+    }
+
+    public static void parse(Global global, byte[] data, Symbol root)
+        throws BadSignature
+    {
+            new UnPickle(global, data, root);
+    }
+
     Symbol classroot;
     Symbol moduleroot;
     byte[] bytes;
     int bp;
-    Name sourceName;
     int[] index;
     Object[] entries;
     int paramFlags;
-    Global global;
+    final Global global;
 
-    UnPickle(Symbol root, byte[] data, Name sourceName) {
-	global = Global.instance;
+    private UnPickle(Global global, byte[] data, Symbol root) {
+	this.global = global;
 	if (root.isConstructor()) {
 	    this.classroot = root.constructorClass();
 	    this.moduleroot = classroot.dualClass().module();
@@ -56,7 +73,6 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		moduleroot.moduleClass() + " " + moduleroot.moduleClass().primaryConstructor());
 	this.bytes = data;
 	this.bp = 0;
-	this.sourceName = sourceName;
 	index = new int[readNat()];
 	for (int i = 0; i < index.length; i++) {
 	    index[i] = bp;
@@ -179,13 +195,13 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	    case EXTMODCLASSref:
 		Name name = readNameRef();
 		if (bp == end) {
-		    owner = Global.instance.definitions.ROOT_CLASS;
+		    owner = global.definitions.ROOT_CLASS;
 		} else {
 		    assert bp < end;
 		    owner = readSymbolRef();
 		}
 		if (name == Names.ROOT && owner == Symbol.NONE) {
-		    sym = Global.instance.definitions.ROOT_CLASS;
+		    sym = global.definitions.ROOT_CLASS;
                     if (tag == EXTref) sym = sym;
                     // !!! line above is usefull for the transition
                     // !!! after some time, replace it by the following line:
@@ -506,8 +522,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 
     public static class BadSignature extends java.lang.Error {
 	public BadSignature(UnPickle outer, String msg) {
-	    super("symbol data " + outer.sourceName +
-		  " could not be loaded; " + msg);
+	    super(msg);
 	}
 	public BadSignature(UnPickle outer) {
 	    this(outer, "malformed signature at " + outer.bp);
