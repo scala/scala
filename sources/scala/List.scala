@@ -9,9 +9,6 @@
 
 package scala;
 
-import java.io.Serializable;
-
-
 /** This object provides methods for creating specialized lists, and for
  *  transforming special kinds of lists (e.g. lists of lists).
  *
@@ -771,7 +768,7 @@ sealed trait List[+a] extends Seq[a] {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-case object Nil extends List[All] with Serializable {
+case object Nil extends List[All] with java.io.Serializable {
     private val serialVersionUID = 0 - 8256821097970055419L;
     def isEmpty = true;
     def head: All = error("head of empty list");
@@ -783,7 +780,7 @@ case object Nil extends List[All] with Serializable {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-final case class ::[b](hd: b, tl: List[b]) extends List[b] with Serializable {
+final case class ::[b](hd: b, tl: List[b]) extends List[b] with java.io.Serializable {
     private val serialVersionUID = 0 - 8476791151983527571L;
     def isEmpty: boolean = false;
     def head: b = hd;
