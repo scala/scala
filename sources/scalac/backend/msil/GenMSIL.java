@@ -1356,9 +1356,8 @@ public final class GenMSIL {
 	MSILType mtype = msilType(type);
 	switch (mtype) {
 	case REF(Type t):
-	    MSILType ptype = unboxValueType(mtype);
-	    return ptype != null ? ptype : msilType(t).asPrimitive();
-	    //case NULL:
+            return unboxValueType(mtype).asPrimitive();
+        //case NULL:
 	case ARRAY(_):
 	    throw Debug.abort("cannot convert " + mtype);
 	default:
