@@ -1,0 +1,19 @@
+<html>
+      <head>
+        <title>ModularFormatting</title>
+      </head>
+      <body>
+        <h2>Welcome</h2>
+        <p>
+          What follows is an example of modular formatting.
+        </p>
+        <p>
+          <table align="center"><b>hallo</b></table>
+        </p>
+        <hr></hr>
+        <p>
+          Complicated layout tasks can be encapsulated and outsourced.
+        </p>
+        <h2>Bye!</h2>
+      </body>
+    </html>
