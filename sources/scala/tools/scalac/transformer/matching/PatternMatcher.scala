@@ -633,6 +633,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
         node.match {
           case DefaultPat() =>
             return bodyToTree(node.and);
+          case _ =>
         }
         patNode = patNode.next();
       }
