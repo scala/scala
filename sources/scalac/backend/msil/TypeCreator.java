@@ -925,6 +925,7 @@ final class TypeCreator {
 	    switch (sym.info()) {
 	    case MethodType(Symbol[] vparams, scalac.symtab.Type result):
 		Type[] params = new Type[vparams.length];
+                Type resType = getType(result);
 		for (int i = 0; i < params.length; i++)
 		    params[i] = getType(vparams[i]);
 		if (sym.isInitializer()) {
@@ -936,7 +937,8 @@ final class TypeCreator {
 		} else {
 		    method = owner instanceof TypeBuilder
 			? findMethod(sym.owner(), sym)
-			: owner.GetMethod(getMethodName(sym.name, params), params);
+			: owner.GetMethod
+                        (getMethodName(sym.name, params), params, resType);
 		}
 		break;
 	    default:
