@@ -36,24 +36,17 @@ public class Compiler {
 
     //########################################################################
 
-    private final Symbol WRITER;
-    private final Symbol WRITER_WRITE;
-    private final Type   SYMBOL_TYPE;
-
-    //########################################################################
-
     private final Global global;
     private final Definitions definitions;
     private final Constants constants;
     private final ClassLoader loader;
     private final Environment environment;
     private final Evaluator evaluator; // !!! remove
-    private final SymbolWriter writer;
     private final Map any_methods;
 
     private boolean interactive;
 
-    public Compiler(Global global, Evaluator evaluator, SymbolWriter writer) {
+    public Compiler(Global global, Evaluator evaluator) {
         this.global = global;
         this.definitions = global.definitions;
         this.constants = new Constants();
@@ -62,16 +55,7 @@ public class Compiler {
         JavaMirror mirror = new JavaMirror(definitions, loader);
         this.environment = new Environment(this, mirror);
         this.evaluator = evaluator;
-        this.writer = writer;
         this.any_methods = new HashMap();
-
-        Name WRITER_N = Name.fromString(SymbolWriter.class.getName());
-        Type WRITER_TYPE = definitions.getType(WRITER_N);
-        this.WRITER = newGlobalVariable(WRITER_TYPE, writer);
-        this.WRITER_WRITE = WRITER_TYPE.lookup(Name.fromString("write2"));
-
-        Name SYMBOL_N = Name.fromString(Symbol.class.getName());
-        this.SYMBOL_TYPE = definitions.getType(SYMBOL_N);
 
         environment.insertFunction(definitions.STRING_PLUS_ANY, Function.StringPlus); // !!!
         // !!! ANY_PLUS_STRING is commented out in definitions
@@ -336,7 +320,7 @@ public class Compiler {
         case ValDef(_, _, _, Tree body):
             assert symbol.isModule() : Debug.show(symbol);
             environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, symbol, body)), null));
-            if (interactive && writer != null &&
+            if (interactive &&
                 symbol.name.toString().startsWith(global.CONSOLE_S)) // !!!
             {
                 global.prevPhase();

@@ -101,7 +101,7 @@ public class Interpreter {
         this.writer = writer;
         this.matcher = matcher();
         this.evaluator = new Evaluator();
-        this.compiler = new Compiler(global,evaluator,new SymbolWriter(writer)); // !!!
+        this.compiler = new Compiler(global, evaluator); // !!!
         this.lfiles = new String[0];
         this.ufiles = new String[0];
     }
