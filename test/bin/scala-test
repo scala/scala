@@ -127,7 +127,7 @@ test_compilation() {
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
     fi;
-    rm -rf "$output" &&
+    rm -rf "$output";
     mkdir -p "$output" &&
     $SOCOS -d "$output" $FLAGS "$source" &&
     java -classpath "$classpath" Test &&
@@ -135,8 +135,11 @@ test_compilation() {
 }
 
 test_compilation_success() {
-#    $SOCOS $FLAGS "$source" -nowarn -skip:genjava -target:java;
-    $SOCOS $FLAGS "$source" -nowarn -stop:expandmixins;
+    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`.obj;
+    rm -rf "$output";
+    mkdir -p "$output" &&
+    $SOCOS $FLAGS "$source" &&
+    rm -rf "$output";
 }
 
 test_compilation_failure() {
@@ -347,7 +350,7 @@ add_file() {
         *    ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
-        int | */int | */int/* | int/* ) FILES_RUN="$FILES_RUN $1";;
+        run | */run | */run/* | run/* ) FILES_RUN="$FILES_RUN $1";;
         pos | */pos | */pos/* | pos/* ) FILES_POS="$FILES_POS $1";;
         neg | */neg | */neg/* | neg/* ) FILES_NEG="$FILES_NEG $1";;
         * ) abort "don't known what to do with \`$1'";;
@@ -362,7 +365,7 @@ main() {
     ERRORS=0;
     SUCCESS_COUNT=0;
     FAILURE_COUNT=0;
-    SRCDIR="$PREFIX";
+    SRCDIR="$PREFIX/files";
     OBJDIR=".";
 
     TEST_ALL="true";
@@ -424,16 +427,16 @@ main() {
 
     if [ "$TEST_ALL" = "true" ]; then
         case "$TEST_TYPE" in
-            auto | run ) FILES_RUN="$FILES_RUN $SRCDIR/int";;
+            auto | run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-                   int ) FILES_INT="$FILES_INT $SRCDIR/int";;
+                   int ) FILES_INT="$FILES_INT $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-                   jvm ) FILES_JVM="$FILES_JVM $SRCDIR/int";;
+                   jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-            auto | pos ) FILES_POS="$FILES_POS $SRCDIR/pos $SRCDIR/cours";;
+            auto | pos ) FILES_POS="$FILES_POS $PREFIX/pos $PREFIX/cours";;
         esac;
         case "$TEST_TYPE" in
             auto | neg ) FILES_NEG="$FILES_NEG $SRCDIR/neg";;
