@@ -31,9 +31,6 @@ public class RightTracerInScala extends TracerInScala  {
 
     Matcher _m;
 
-    //      Symbol funSym;
-
-    Symbol elemSym;
     Symbol targetSym;
 
     HashMap helpMap2 ;
@@ -153,7 +150,7 @@ public class RightTracerInScala extends TracerInScala  {
 					0 )
 	    .setType( defs.INT_TYPE() ) ;
 
-	this.elemSym = new TermSymbol( pos,
+	this.curSym = new TermSymbol( pos,
 				       cf.fresh.newName("elem"),
 				       funSym,
 				       0)
@@ -165,17 +162,34 @@ public class RightTracerInScala extends TracerInScala  {
 					 0)
 	    .setType( defs.INT_TYPE() ) ;
 
-
 	funSym.setType( new Type.MethodType( new Symbol[] {
 	    iterSym, stateSym },  defs.UNIT_TYPE() ));
 
     }
 
-    // same as in LeftTracer
-    Tree code_fail() {
-	return cf.ThrowMatchError( _m.pos, defs.UNIT_TYPE() );
+    // load current elem and trace
+    Tree loadCurrentElem( Tree body ) {
+        return gen.mkBlock( new Tree[] {
+            gen.If( cf.isEmpty( _iter() ),
+                    run_finished( 0 ),
+                    gen.mkBlock( new Tree[] {
+                        gen.ValDef( this.targetSym,
+                                    cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
+                        gen.ValDef( this.curSym,
+                                    cf.SeqTrace_headElem( gen.Ident( pos, iterSym ))),
+                        body })
+                    )});
     }
 
+    // same as in LeftTracer
+    Tree code_fail() {
+	return gen.Block( new Tree[] {
+            gen.Console_print( pos, "System error during pattern matching. Please file bug report\n"),
+            cf.ThrowMatchError( _m.pos, defs.UNIT_TYPE() )
+        });
+    }
+
+    /*
     public Tree code_body() {
 
 	Tree body = code_fail(); // never reached at runtime.
@@ -192,13 +206,12 @@ public class RightTracerInScala extends TracerInScala  {
 			  gen.mkBlock( new Tree[] {
 			      gen.ValDef( targetSym,
 					  cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
-			      gen.ValDef( elemSym,
+			      gen.ValDef( curSym,
 					  cf.SeqTrace_headElem( gen.Ident( pos, iterSym))),
 
 			      body }));
 
-	/*
-	  t3 = gen.mkBlock( new Tree[] {
+		  t3 = gen.mkBlock( new Tree[] {
 	  cf.debugPrintRuntime("enter binderFun"),
 	  cf.debugPrintRuntime(" state:"),
 	  cf.debugPrintRuntime( gen.Ident( pos, stateSym )),
@@ -206,76 +219,110 @@ public class RightTracerInScala extends TracerInScala  {
 	  cf.debugPrintRuntime(_iter()),
 	  cf.debugPrintNewlineRuntime(""),
 	  t3 });
-	*/
+
 
 	//System.out.println("enter RightTracerInScala:code_body()");// DEBUG
 	//System.out.println("dfa.nstates"+dfa.nstates);// DEBUG
 	return t3;
     }
-
-    /** this one is special, we check the first element of the trace
-     *  and choose the next state depending only on the state part
+*/
+    /** see code_state0_NEW
      */
     Tree code_state0( Tree elseBody ) { // careful, map Int to Int
 
-	HashMap hmap    = (HashMap) dfa.deltaq( 0 ); // all the initial states
-
-	Tree stateBody = code_fail(); // never happens
-
-	for( Iterator it = hmap.keySet().iterator(); it.hasNext(); ) {
-	    Integer targetL  = (Integer) it.next();
-	    Integer targetR  = (Integer) hmap.get( targetL );
-
-	    stateBody = gen.If( cf.Equals( gen.Ident( pos, targetSym ),
-					   gen.mkIntLit( cf.pos, targetL )),
-			        callFun( new Tree[] {
-				    cf.SeqTrace_tail( _iter() ),
-				    gen.mkIntLit( cf.pos, targetR ) }),
-			        stateBody );
-	}
-
 	return gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, 0 )),
-		       stateBody ,
+		       code_state0_NEW(),
 		       elseBody );
 
     }
 
-    Tree code_state( int i, Tree elseBody ) {
+    /** this one is special, we check the first element of the trace
+     *  and choose the next state depending only on the state part
+     */
+    Tree code_state0_NEW() { // careful, map Int to Int
 
-	if( i == 0 )
-	    return code_state0( elseBody );
+	HashMap hmap    = (HashMap) dfa.deltaq( 0 ); // all the initial states
 
-	int  finalSwRes;
-	Tree stateBody ; // action(delta) for one particular label/test
+        int i = 0;
+        final int n = hmap.keySet().size(); // all transitions defined
 
-	// default action (fail if there is none)
+        TreeMap tmapTag = new TreeMap();
+        TreeMap tmapBody = new TreeMap();
+	for( Iterator it = hmap.keySet().iterator(); it.hasNext(); i++) {
 
-	stateBody = code_delta( i, Label.DefaultLabel);
+	    Integer targetL  = (Integer) it.next();
+	    Integer targetR  = (Integer) hmap.get( targetL );
 
-	if( stateBody == null )
-	    stateBody = code_fail();
+            Integer I = new Integer( i );
+            tmapTag.put( targetL, I );
+            tmapBody.put( I, callFun( new Tree[] {
+                cf.SeqTrace_tail( _iter() ),
+                gen.mkIntLit( cf.pos, targetR ) }));
 
-	// transitions of state i
+	}
+        i = 0;
+        int[]  tags    = new int[ n ];
+        Tree[] targets = new Tree[ n ];
+        for( Iterator it = tmapTag.keySet().iterator(); it.hasNext(); i++) {
+            Integer tagI = (Integer) it.next();
+            tags[ i ] = tagI.intValue();
+            Integer I = (Integer) tmapTag.get( tagI );
+            targets[ i ] = (Tree) tmapBody.get( I );
+        }
+        return gen.Switch( gen.Ident( pos, targetSym ), tags, targets, code_fail()/*cannot happen*/ );
 
+    }
+
+    Tree currentMatches( Label label ) {
+	switch( label ) {
+	case Pair( Integer target, Label theLab ):
+	    return cf.Equals( gen.mkIntLit( cf.pos, target ),
+			      current() );
+	}
+	throw new ApplicationError("expected Pair label");
+    }
+
+
+    Tree code_state_NEW( int i ) { // precondition i != 0
+	Tree stateBody = code_delta( i, Label.DefaultLabel );
+        if( stateBody == null )
+            stateBody = code_fail();
 	HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
 
-	for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
+        TreeMap tmapTag = new TreeMap();
+        TreeMap tmapBody = new TreeMap();
+	int j = 0;
+	for( Iterator labs = dfa.labels.iterator(); labs.hasNext(); j++) {
 	    Object label = labs.next();
 	    Integer next = (Integer) trans.get( label );
 
 	    Tree action = code_delta( i, (Label) label );
 
 	    if( action != null ) {
+                Integer J = new Integer( j );
+                tmapTag.put( ((Label.Pair) label).state, J );
+                tmapBody.put( J, action );
 
-		stateBody = gen.If( _cur_eq( _iter(), (Label) label ),
+		stateBody = gen.If( currentMatches((Label) label ),
 				    action,
 				    stateBody);
 	    }
 	}
-
-	return gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
-		       stateBody ,
-		       elseBody );
+        final int n = tmapTag.keySet().size();
+        j = 0;
+        int[]  tags    = new int[ n ];
+        Tree[] targets = new Tree[ n ];
+        for( Iterator it = tmapTag.keySet().iterator(); it.hasNext(); j++) {
+            Integer tagI = (Integer) it.next();
+            tags[ j ] = tagI.intValue();
+            Integer J = (Integer) tmapTag.get( tagI );
+            targets[ j ] = (Tree) tmapBody.get( J );
+        }
+        if( n > 0 ) {
+            actionsPresent = true;
+            return gen.Switch( gen.Ident( pos, targetSym ), tags, targets, code_fail()/*cannot happen*/ );
+        } else
+            return code_fail();
     }
 
     /** returns a Tree whose type is boolean.
@@ -357,7 +404,6 @@ public class RightTracerInScala extends TracerInScala  {
 	return  am.toTree();
     }
 
-
     /** returns translation of transition with label from i.
      *  returns null if there is no such transition(no translation needed)
      */
@@ -367,6 +413,7 @@ public class RightTracerInScala extends TracerInScala  {
 	Tree    algMatchTree = null;
 	if( ntarget == null )
 	    return null;
+
 	//System.out.println("delta("+i+","+label+")" );
 	Label theLab = null;
 	switch(label) {
@@ -401,7 +448,7 @@ public class RightTracerInScala extends TracerInScala  {
 	for( Iterator it = vars.iterator(); it.hasNext(); ) {
 	    Symbol var = (Symbol) it.next();
 
-	    Tree rhs = gen.Ident( pos, elemSym );
+	    Tree rhs = gen.Ident( pos, curSym );
 
 	    stms[ j++ ] = prependToHelpVar( var , rhs);
 	}
@@ -415,44 +462,56 @@ public class RightTracerInScala extends TracerInScala  {
 	return gen.mkBlock( pos, stms );
     }
 
+    Tree stateWrap(int i) {
+        if( i == 0 )
+            return code_state0_NEW();
+        return code_state_NEW( i );
+    }
+
+    boolean actionsPresent = false;
+
     /* returns statements that do the work of the right-transducer
      */
     Tree[] getStms( Tree trace ) {
 
-	//System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
+        //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
 
-	Vector v = new Vector();
+        Vector v = new Vector();
 
-	for( Iterator it = helpVarDefs.iterator(); it.hasNext(); )
-	    v.add( (Tree) it.next() );
+        for( Iterator it = helpVarDefs.iterator(); it.hasNext(); ) {
+            v.add( (Tree) it.next() );
+        }
+        Tree binderFunDef = gen.DefDef( this.funSym, code_body_NEW() );
+        if( actionsPresent ) {
+            //v.add( gen.DefDef( this.funSym, code_body() )  );
+            v.add( binderFunDef );
+            v.add( callFun( new Tree[] {  trace, gen.mkIntLit( cf.pos, 0 )  }  )  );
+        };
+        /*
+          for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
+          // DEBUG
+          Symbol var = (Symbol)it.next();
+          v.add( cf.debugPrintRuntime( var.name.toString() ));
+          v.add( cf.debugPrintRuntime( refHelpVar( var )) );
+          }
+        */
 
-	v.add( gen.DefDef( this.funSym, code_body() )  );
-	v.add( callFun( new Tree[] {  trace, gen.mkIntLit( cf.pos, 0 )  }  )  );
+        for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
+            v.add( bindVar( (Symbol) it.next() ) );
+        }
 
-	/*
-	  for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
-	  // DEBUG
-	  Symbol var = (Symbol)it.next();
-	  v.add( cf.debugPrintRuntime( var.name.toString() ));
-	  v.add( cf.debugPrintRuntime( refHelpVar( var )) );
-	  }
-	*/
+        Tree result[] = new Tree[ v.size() ];
+        int j = 0;
+        for( Iterator it = v.iterator(); it.hasNext(); ) {
+            result[ j++ ] = (Tree) it.next();
+        }
 
-	for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
-	    v.add( bindVar( (Symbol) it.next() ) );
-	}
+        // helpvarSEQ via _m.varMap
 
-	Tree result[] = new Tree[ v.size() ];
-	int j = 0;
-	for( Iterator it = v.iterator(); it.hasNext(); ) {
-	    result[ j++ ] = (Tree) it.next();
-	}
-
-	// helpvarSEQ via _m.varMap
-
-	return result;
-
+        return result;
     }
+
+
 
     /** return the accumulator. (same as in LeftTracerInScala)
      *  todo: move tree generation of Unit somewhere else
@@ -466,18 +525,7 @@ public class RightTracerInScala extends TracerInScala  {
     }
 
     Tree currentElem() {
-	return gen.Ident( pos, elemSym );
+	return gen.Ident( pos, curSym );
     }
-
-    Tree _cur_eq( Tree iter, Label label ) {
-	//System.out.println("_cur_eq, thelab: "+label);
-	switch( label ) {
-	case Pair( Integer target, Label theLab ):
-	    return cf.Equals( gen.mkIntLit( cf.pos, target ),
-			      current() );
-	}
-	throw new ApplicationError("expected Pair label");
-    }
-
 
 }

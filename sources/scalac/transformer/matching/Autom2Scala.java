@@ -59,7 +59,7 @@ public class Autom2Scala  {
 	  return new TermSymbol( pos,
 				 cf.fresh.newName( prefix ),
 				 owner,
-				 0);
+				 scalac.symtab.Modifiers.FINAL );
       }
 
       Symbol newParam( String prefix ) {
@@ -148,7 +148,7 @@ public class Autom2Scala  {
       Symbol curSym;
       Symbol hasnSym;
 
-    // overridden in TracerInScala
+    // overridden in XXTracerInScala
     Tree loadCurrentElem( Tree body ) {
 	return gen.mkBlock( new Tree[] {
 	    cf.gen.ValDef( this.hasnSym,
@@ -166,9 +166,9 @@ public class Autom2Scala  {
 	return gen.Ident(Position.FIRSTPOS, curSym);
     }
 
-      Tree currentMatches( Label label ) {
-            return _cur_eq( _iter(), label );
-      }
+    Tree currentMatches( Label label ) {
+        return _cur_eq( _iter(), label );
+    }
 
       //
       // translation of automata to scala code
@@ -191,29 +191,35 @@ public class Autom2Scala  {
 
       /** code to reference the iterator
        */
-      Tree _iter() {         return gen.Ident( pos, iterSym );  }
+      Tree _iter() {
+          return gen.Ident( pos, iterSym );
+      }
 
-      /** body of the matcherDefFun
-       */
+    Tree stateWrap(int i) {
+        if( dfa.isSink( i ))
+            return run_finished( i ); // state won't change! optimization
+        else
+            return gen.If( cf.Negate( gen.Ident( pos, hasnSym )),//cf._not_hasNext( _iter() ),
+                           run_finished( i ),
+                           code_state_NEW( i ));
+    }
+
+    /** body of the matcherDefFun
+     */
 
     public Tree code_body_NEW() {
 	int[] tags = new int[dfa.nstates];
 	Tree[] bodies = new Tree[dfa.nstates];
 	for( int i = 0; i<dfa.nstates; i++ ) {
 	    tags[ i ]   = i;
-	    if( dfa.isSink( i ))
-		bodies[ i ] = run_finished( i ); // state won't change!
-	    else
-		bodies[ i ] = gen.If( cf.Negate( gen.Ident( pos, hasnSym )),//cf._not_hasNext( _iter() ),
-				      run_finished( i ),
-				      code_state_NEW( i ));
+            bodies[ i ] = stateWrap( i );
 	}
 	if( optimize )
 	    return loadCurrentElem( gen.Switch( _state(),
-					       tags,
-					       bodies,
-					       gen.mkIntLit(cf.pos, -1 ),
-                                               funRetType()));
+                                                tags,
+                                                bodies,
+                                                code_fail(), // cannot happen
+                                                funRetType()));
 
 	Tree res = code_fail();
 	for( int i = dfa.nstates-2; i>= 0; i-- )
@@ -225,15 +231,15 @@ public class Autom2Scala  {
 
     }
 
-      Tree _cur_eq( Tree iter, Label label ) {
-            switch( label ) {
-            case TreeLabel( Tree pat ):
-                  return _cur_match( pat );
-            case SimpleLabel( Tree.Literal lit ):
-                  return cf.Equals( currentElem(), lit );
-            }
-            throw new ApplicationError("expected either algebraic or simple label:"+label);
-      }
+    private Tree _cur_eq( Tree iter, Label label ) {
+        switch( label ) {
+        case TreeLabel( Tree pat ):
+            return _cur_match( pat );
+        case SimpleLabel( Tree.Literal lit ):
+            return cf.Equals( currentElem(), lit );
+        }
+        throw new ApplicationError("expected either algebraic or simple label:"+label);
+    }
 
       AlgebraicMatcher am;
 
@@ -285,7 +291,9 @@ public class Autom2Scala  {
     */
 
     Tree code_state_NEW( int i ) {
-	Tree stateBody = code_delta(i, Label.DefaultLabel );
+	Tree stateBody = code_delta( i, Label.DefaultLabel );
+        if( stateBody == null )
+            stateBody = code_fail();
 	HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
 
 	for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
@@ -296,7 +304,7 @@ public class Autom2Scala  {
 	    Tree action = code_delta( i, (Label) label );
 
 	    if( action != null ) {
-
+		assert stateBody != null : "stateBody is null";
 		stateBody = gen.If( currentMatches((Label) label ),
 				    action,
 				    stateBody);

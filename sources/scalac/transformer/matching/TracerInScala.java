@@ -18,6 +18,7 @@ import ch.epfl.lamp.util.Position;
  */
 public class TracerInScala extends Autom2Scala {
 
+    protected boolean optimize = true;
 
     HashMap helpMap;
 

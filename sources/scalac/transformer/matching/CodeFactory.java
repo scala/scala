@@ -197,6 +197,16 @@ class CodeFactory extends PatternTool {
                              });
     }
 
+    protected Tree Error(int pos, Type type) {
+        return gen.mkApplyTV(
+			     gen.mkRef(pos, defs.MATCHERROR_FAIL()),
+                             new Tree[]{gen.mkType(pos, type)},
+                             new Tree[]{
+                                 gen.mkStringLit(pos, unit.toString()),
+                                 gen.mkIntLit(pos, Position.line(pos))
+                             });
+    }
+
 
     Type pairType( Type left, Type right ) {
 	return defs.TUPLE_TYPE(new Type[] { left, right } );

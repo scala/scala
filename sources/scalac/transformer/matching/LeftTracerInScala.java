@@ -143,6 +143,10 @@ public class LeftTracerInScala extends TracerInScala {
     }
 
 
+    Tree switchDefaultCase() {
+        return gen.Nil( cf.pos );
+    }
+
     public Tree code_body() {
 
         Tree body = code_fail(); // never reached at runtime.
@@ -203,7 +207,8 @@ public class LeftTracerInScala extends TracerInScala {
     Tree[] getTrace() {
 
         initializeSyms();
-        Tree tb = code_body();
+        //Tree tb = code_body();
+        Tree tb = code_body_NEW();
         theDefDef = gen.DefDef( this.funSym,
                                 tb );
 
