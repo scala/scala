@@ -315,6 +315,8 @@ public abstract class Global {
         assert clasz.isClass() && clasz.isStatic(): Debug.show(clasz);
         AbstractFile file = classPath.openFile(
             SourceRepresentation.externalizeFileName(clasz, ".scala"));
+        if (file == null) throw new FileNotFoundException(
+            "source file for " + clasz + " could not be found");
         return getSourceFile(file);
     }
 
