@@ -4,8 +4,9 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala.collection.mutable;
 
@@ -27,7 +28,7 @@ trait Map[A, B] with scala.collection.Map[A, B] {
     def +=(key: A): MapTo = new MapTo(key);
 
     def incl(mappings: Pair[A, B]*): Unit = {
-        val ys = mappings as List[Pair[A, B]];
+        val ys = mappings.asInstanceOf[List[Pair[A, B]]];
         ys foreach { case Pair(key, value) => update(key, value); };
     }
 
