@@ -9,8 +9,12 @@ object Test {
   import java.lang.System.out;
 
   /* I add a couple of Unicode identifier tests here temporarily */
+
   def \u03b1\u03c1\u03b5\u03c4\u03b7 = "alpha rho epsilon tau eta";
 
+  case class GGG(i:int) {
+    def \u21a1\u21a1( that:GGG ) = that;
+  }
   def check_success[a](name: String, def closure: a, expected: a): Unit = {
     out.print("test " + name);
     try {
@@ -121,6 +125,8 @@ object Test {
 
     out.println();
     check_success("\"\\u001a\".length()", "\u001a".length(), 1);
+    val ggg = GGG( 1 ) \u21a1\u21a1 GGG( 2 );
+    check_success("ggg == GGG( 2 )", ggg, GGG( 2 ));
   }
 }
 

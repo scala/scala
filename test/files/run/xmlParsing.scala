@@ -37,6 +37,15 @@ object Test with Application {
   val ent = <foo>
                  hello   &nbsp; character entities!
                  welcome &#0160; unicode characters!
-            </foo>
+            </foo>;
+
+
+  val foo = <a/><b/><c/>;
+
+  val foo2 = foo match {
+    case <a/><b/> => 1
+    case <a></a><b></b><c></c> => 2
+    case Seq(Elem("a"),Elem("b"),Elem("c")) => 3
+  };
 
 }

@@ -18,7 +18,7 @@ object Test {
           { headerMsg }
         </p>
         <p>
-          { ns }
+          { ns:_* }
         </p>
         <hr/>
         <p>
@@ -37,13 +37,13 @@ object Test {
    */
   def beautify( n:Node ):Node = n match {
     case <td>{ xs @ _* }</td> =>
-          <td bgcolor="#AAAAFF" color="#222255">{ xs }</td>
+          <td bgcolor="#AAAAFF" color="#222255">{ xs:_* }</td>
 
     case <table>{ xs @ _* }</table> =>
-          <table align="center">{ beautify( xs ) }</table>
+          <table align="center">{ beautify( xs ):_* }</table>
 
     case Elem( label, xs @ _* ) =>
-          Elem( label, (xs.toList.map { beautify }):_*)
+          Elem( label, beautify( xs ):_*)
 
     case _ => n
   }
