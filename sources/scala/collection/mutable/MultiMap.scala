@@ -31,7 +31,7 @@ trait MultiMap[A, B] extends scala.collection.mutable.Map[A, scala.collection.mu
         case Some(set) => set -= value;
     }
 
-    def exists(key: A, p: B => Boolean): Boolean = get(key) match {
+    def entryExists(key: A, p: B => Boolean): Boolean = get(key) match {
         case None => false
         case Some(set) => set exists p;
     }
