@@ -18,7 +18,7 @@ public class Traverser {
     // Public Methods
 
     public void traverse(Unit[] units) {
-        for (int i = 0; i < units.length; i++) traverse(unit.body);
+        for (int i = 0; i < units.length; i++) traverse(units[i].body);
     }
 
     public void traverse(Unit unit) {
