@@ -14,6 +14,7 @@ import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
+import scalac.symtab.Modifiers;
 import scalac.util.Name;
 
 import scala.runtime.InterpreterSupport;
@@ -146,7 +147,8 @@ public class Interpreter {
         Type result = definitions.UNIT_TYPE;
         if (erased) argument = argument.erasure();
         if (erased) result = result.fullErasure();
-        Symbol formal = new TermSymbol(0, ARGS_N, null, 0).setInfo(argument);
+        Symbol formal = new TermSymbol(0, ARGS_N, null, Modifiers.PARAM);
+        formal.setInfo(argument);
         return Type.MethodType(new Symbol[] {formal}, result);
     }
 
