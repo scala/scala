@@ -384,7 +384,9 @@ function website-build() {
     # copy old Scala examples
     run cp -a "$resourcesdir/examples/fors.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/patterns.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/random.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/sort.html" "$websitedir/examples/";
+    run cp -a "$resourcesdir/examples/timeofday.html" "$websitedir/examples/";
 }
 
 ##############################################################################
