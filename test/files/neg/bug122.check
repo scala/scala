@@ -1,0 +1,7 @@
+bug122.scala:2: recursive value v$ needs type
+  val List(v:int,2) = List(2,v:int); 
+      ^
+bug122.scala:3: recursive value ds$0$ needs type
+  val Pair(a:int,b:int) = Pair(1,a);
+      ^
+two errors found

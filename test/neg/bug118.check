@@ -1,0 +1,4 @@
+bug118.scala:3: return outside method definition
+    	return null;
+        ^
+one error found

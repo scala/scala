@@ -1,0 +1,19 @@
+overload.scala:15: x is already defined as value x in class Test
+  var x: int = 3;
+      ^
+overload.scala:5: foo is already defined in local scope
+    def foo() = 2;
+        ^
+overload.scala:11: ambiguous reference to overloaded definition,
+both method foo: ()scala.Int
+and  method foo: ()scala.Int
+match argument types ()
+  foo();
+     ^
+overload.scala:13: ambiguous reference to overloaded definition,
+both value x$: scala.Int
+and  variable x$: scala.Int
+match expected type scala.Int
+  val x: int = 1;
+      ^
+four errors found

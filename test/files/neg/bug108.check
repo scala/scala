@@ -1,0 +1,4 @@
+bug108.scala:3: x is already defined as value x
+    case x :: x => "first"
+              ^
+one error found
