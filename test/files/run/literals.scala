@@ -8,6 +8,9 @@
 object Test {
   import java.lang.System.out;
 
+  /* I add a couple of Unicode identifier tests here temporarily */
+  def \u03b1\u03c1\u03b5\u03c4\u03b7 = "alpha rho epsilon tau eta";
+
   def check_success[a](name: String, def closure: a, expected: a): Unit = {
     out.print("test " + name);
     try {
