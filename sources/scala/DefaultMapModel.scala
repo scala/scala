@@ -4,17 +4,19 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala;
 
 
 trait DefaultMapModel[A, B] extends MutableMap[A, B] {
 
-	protected def findEntry(key: A): Option[Entry];
+    protected def findEntry(key: A): Option[Entry];
 
-	protected def addEntry(e: Entry): Unit;
+    protected def addEntry(e: Entry): Unit;
 
     protected def removeEntry(key: A): Unit;
 
@@ -47,4 +49,5 @@ trait DefaultMapModel[A, B] extends MutableMap[A, B] {
         def toPair = Pair(k, value);
         override def toString() = k.toString() + " -> " + value;
     }
+
 }
