@@ -48,8 +48,8 @@ object Utility {
   /** for a Node n, returns string representation of n.attributes **/
   def attr2xml( attrib:Iterator[Pair[String, String]] ):String = {
     attrib.foldLeft ("") { (s:String,x:Pair[String,String]) => {
-        val t = new StringBuffer(" ");
-        t.append( s );
+        val t = new StringBuffer(s);
+        t.append( " " );
         t.append( x._1 );
         t.append("=\"");
         t.append( x._2 );
