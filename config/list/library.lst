@@ -3,7 +3,7 @@
 ##############################################################################
 # $Id$
 
-'$colon$colon.scala'
+$colon$colon.scala
 BufferedIterator.scala
 Cell.scala
 Except.scala
