@@ -1056,6 +1056,7 @@ case "$SCRIPT" in
     scala      ) scala_main "$@";;
     scala-*    ) scala_main "$@";;
     scalac*    ) compiler_start "" scala.tools.scalac.Main "$@";;
+    scalansc*  ) compiler_start "" scala.tools.nsc.Main "$@";;
     scalarun*  ) compiler_start "" scala.tools.scalai.Main "$@";;
     scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
     scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
