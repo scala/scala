@@ -160,6 +160,7 @@ public class Names {
     public static final Name box = Name.fromString("box");
     public static final Name caseArity = Name.fromString("caseArity");
     public static final Name caseElement = Name.fromString("caseElement");
+    public static final Name cur = Name.fromString("cur"); // used in translation of automata
     public static final Name checkCastability = Name.fromString("checkCastability");
     public static final Name coerce = Name.fromString("coerce");
     public static final Name defaultValue = Name.fromString("defaultValue");
@@ -217,6 +218,7 @@ public class Names {
     public static final Name view = Name.fromString("view");
     public static final Name wait = Name.fromString("wait");
     public static final Name xml = Name.fromString("xml");
+
 
     public static final Name
         ZNOT = encode("!"),

@@ -112,8 +112,8 @@
 ../../../scalac/transformer/TailCallPhase.java
 ../../../scalac/transformer/TypesAsValuesPhase.java
 
-../../../scalac/transformer/matching/AlgebraicMatcher.java
-../../../scalac/transformer/matching/Autom2Scala.java
+#../../../scalac/transformer/matching/AlgebraicMatcher.java
+#../../../scalac/transformer/matching/Autom2Scala.java
 ../../../scalac/transformer/matching/BindingBerrySethi.java
 ../../../scalac/transformer/matching/BerrySethi.java
 ../../../scalac/transformer/matching/CaseEnv.java
@@ -122,8 +122,8 @@
 ../../../scalac/transformer/matching/DetWordAutom.java
 ../../../scalac/transformer/matching/FreshVariableTraverser.java
 ../../../scalac/transformer/matching/Label.java
-../../../scalac/transformer/matching/TracerInScala.java
-../../../scalac/transformer/matching/LeftTracerInScala.java
+#../../../scalac/transformer/matching/TracerInScala.java
+#../../../scalac/transformer/matching/LeftTracerInScala.java
 ../../../scalac/transformer/matching/NondetWordAutom.java
 ../../../scalac/transformer/matching/NoSeqVariableTraverser.java
 ../../../scalac/transformer/matching/PartialMatcher.java
@@ -131,11 +131,11 @@
 ../../../scalac/transformer/matching/PatternNode.java
 ../../../scalac/transformer/matching/PatternNodeCreator.java
 ../../../scalac/transformer/matching/PatternTool.java
-../../../scalac/transformer/matching/RightTracerInScala.java
-../../../scalac/transformer/matching/SequenceMatcher.java
+#../../../scalac/transformer/matching/RightTracerInScala.java
+#../../../scalac/transformer/matching/SequenceMatcher.java
 ../../../scalac/transformer/matching/StateSetComparator.java
 ../../../scalac/transformer/matching/VariableTraverser.java
-../../../scalac/transformer/matching/WordAutomInScala.java
+#../../../scalac/transformer/matching/WordAutomInScala.java
 
 ../../../scalac/typechecker/AnalyzerPhase.java
 ../../../scalac/typechecker/Infer.java
@@ -182,6 +182,14 @@ transformer/TransMatch.scala
 transformer/TransMatchPhase.scala
 transformer/UnCurry.scala
 transformer/UnCurryPhase.scala
+transformer/matching/AlgebraicMatcher.scala
+transformer/matching/Autom2Scala.scala
+transformer/matching/TracerInScala.scala
+transformer/matching/LeftTracerInScala.scala
+transformer/matching/RightTracerInScala.scala
+transformer/matching/WordAutomInScala.scala
+transformer/matching/SequenceMatcher.scala
+
 #transformer/matching/FullRegularTranslator.scala 
 #transformer/matching/MutableGrammar.scala 
 #transformer/matching/NonTermFactory.scala 

@@ -28,7 +28,7 @@ case class Text( text:String ) extends SpecialNode {
   def label    = "#PCDATA";
 
   final override def equals(x:Any) = x match {
-    case s:String => text.equals( s );
+    case s:String  => text.equals( s );
     case Text( s ) => text.equals( s );
     case _ => false;
   }

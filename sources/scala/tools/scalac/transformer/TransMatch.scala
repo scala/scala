@@ -18,7 +18,7 @@ import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransfor
 
 import scalac.transformer.matching.PartialMatcher ;
 import scalac.transformer.matching.PatternMatcher ;
-import scalac.transformer.matching.AlgebraicMatcher ;
+//import scalac.transformer.matching.AlgebraicMatcher ;
 
 /** A transformer for expanding match expressions into
  *  flat sequences of .is and .as method calls
@@ -142,7 +142,7 @@ class TransMatch( global:scalac_Global )
         j = j + 1;
       } // TEST
       */
-      val am = new AlgebraicMatcher( cunit );
+      val am = new matching.AlgebraicMatcher( cunit );
       val matcher = new PartialMatcher( currentOwner, root, restpe );
       am.construct( matcher, cases.asInstanceOf[ Array[Tree] ] );
       matcher.tree
