@@ -336,6 +336,14 @@ public abstract class RunTime {
     public static void oarray_set(Object [] xs, int i, Object  x) { xs[i] = x;}
 
     //########################################################################
+    // Public Functions - Synchronization primitives
+
+    /** @meta method [?T](scala.AnyRef,?T) ?T; */
+    public static Object synchronised(Object lock, Object body) {
+        return body;
+    }
+
+    //########################################################################
 }
 
 // These classes may not be defined in class RunTime because inner
