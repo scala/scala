@@ -153,6 +153,8 @@ public class Evaluator {
                 args[i] = evaluate(arguments[i]);
             try {
                 return invoke(object, function, args);
+            } catch (StackOverflowError exception) {
+                return throw_(exception);
             } catch (EvaluatorException exception) {
                 exception.addScalaCall(stack.symbol, pos);
                 throw exception;
