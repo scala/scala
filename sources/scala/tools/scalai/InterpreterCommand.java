@@ -51,7 +51,6 @@ public class InterpreterCommand extends CompilerCommand {
 
         remove(outpath);
         remove(target);
-        remove(jaco);
 
         add(0, interactive);
         add(1, emacs);

@@ -44,8 +44,6 @@ public class  Global {
     public final String outpath;
     public final String target;
 
-    public final String jacoDebug;
-
     /** the message reporter
      */
     public final Reporter reporter;
@@ -110,13 +108,11 @@ public class  Global {
     /** compilation targets
      */
     public static final String TARGET_INT;
-    public static final String TARGET_JAVA;
     public static final String TARGET_JVM;
     public static final String TARGET_MSIL;
 
     public static final String[] TARGETS = new String[] {
         TARGET_INT  = "int".intern(),
-        TARGET_JAVA = "java".intern(),
         TARGET_JVM  = "jvm".intern(),
         TARGET_MSIL = "msil".intern(),
     };
@@ -153,7 +149,6 @@ public class  Global {
         this.classPath = args.classpath();
         this.outpath = args.outpath();
         this.target = interpret ? TARGET_INT : args.target.value.intern();
-        this.jacoDebug = args.jaco.value;
         this.uniqueID = new UniqueID();
         String printFile = args.printfile.value;
         try {

@@ -48,7 +48,6 @@ public class CompilerCommand extends CommandParser {
     public final ChoiceOptionParser target;
     public final BooleanOptionParser noimports;
     public final BooleanOptionParser nopredefs;
-    public final StringOptionParser jaco;
     public final PhaseSetOptionParser skip;
     public final PhaseSetOptionParser check;
     public final PrintOptionParser print;
@@ -136,10 +135,6 @@ public class CompilerCommand extends CommandParser {
         this.nopredefs = new BooleanOptionParser(this,
             "nopredefs", "Compile without any implicit predefined values",
             false),
-
-        this.jaco = new StringOptionParser(this,
-            "jaco", "Pass argument to jaco backend (debugging option)",
-            "argument", null),
 
         this.skip = new PhaseSetOptionParser(this,
             "skip", "Skip <phases> (see below)",

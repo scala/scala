@@ -48,7 +48,6 @@ public class Erasure extends Transformer implements Modifiers {
 
     private final Definitions definitions;
     private final Primitives primitives;
-    private final boolean noTyped;
 
     private Unit unit;
 
@@ -56,7 +55,6 @@ public class Erasure extends Transformer implements Modifiers {
         super(global);
 	this.definitions = global.definitions;
         this.primitives = global.primitives;
-        this.noTyped = global.target != global.TARGET_JAVA;
     }
 
     public void apply(Unit unit) {
@@ -183,7 +181,7 @@ public class Erasure extends Transformer implements Modifiers {
 	if (isSameAs(tree.type, pt)) {
 	    return tree;
 	} else if (isSubType(tree.type, pt)) {
-	    return noTyped ? tree : gen.Typed(tree, pt);
+	    return tree;
 	} else if (isUnboxed(tree.type) && !isUnboxed(pt)) {
 	    return cast(box(tree), pt);
 	} else if ((isUnboxedArray(tree.type)
@@ -406,8 +404,7 @@ public class Erasure extends Transformer implements Modifiers {
             // !!! More generally, we should never transform a tree
             // that represents a type. We should always transform
             // types and then reconstruct the corresponding tree.
-	    Tree expr1 = transform(expr, tpe1.type);
-	    return noTyped ? expr1 : copy.Typed(tree, expr1, tpe1).setType(owntype);
+	    return transform(expr, tpe1.type);
 
 	case TypeApply(Tree fun, Tree[] args):
             Symbol sym = fun.symbol();
