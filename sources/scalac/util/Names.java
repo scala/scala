@@ -14,6 +14,7 @@ public class Names {
     public static final Name WILDCARD = Name.fromString("_");
     public static final Name COMPOUND_NAME = Name.fromString("<ct>");
     public static final Name ANON_CLASS_NAME = Name.fromString("$class");
+    public static final Name OUTER_PREFIX = Name.fromString("outer");
 
     public static final Name _EQ = NameTransformer.encode(Name.fromString("_="));
     public static final Name MINUS = NameTransformer.encode(Name.fromString("-"));
