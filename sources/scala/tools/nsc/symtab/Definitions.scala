@@ -15,6 +15,7 @@ abstract class Definitions: SymbolTable {
     var RootClass: Symbol = _;
     var EmptyPackage: Symbol = _;
     var EmptyPackageClass: Symbol = _;
+    var emptypackagescope: Scope = null; //debug
 
     var JavaPackage: Symbol = _;
     var JavaLangPackage: Symbol = _;

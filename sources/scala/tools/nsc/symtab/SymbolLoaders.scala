@@ -45,8 +45,7 @@ abstract class SymbolLoaders {
             else "error while loading " + root.name + ", " + msg);
       }
       initRoot(root);
-      if (!root.isPackageClass)
-        initRoot(if (root.isModule) root.linkedClass else root.linkedModule);
+      if (!root.isPackageClass) initRoot(root.linkedSym);
     }
 
     private def initRoot(root: Symbol): unit = {
@@ -60,7 +59,7 @@ abstract class SymbolLoaders {
    */
   def packageLoader(directory: AbstractFile): SymbolLoader =
     new SymbolLoader(root => {
-      System.out.println("loading " + root);//debug
+      if (settings.debug.value) System.out.println("loading " + root);
       assert(root.isPackageClass, root);
       root.setInfo(new PackageClassInfoType(new Scope(), root));
 
@@ -109,7 +108,7 @@ abstract class SymbolLoaders {
       }
       for (val Pair(name, sfile) <- sources.elements) {
         classes.get(name) match {
-          case Some(cfile) if (cfile.lastModified() > sfile.lastModified()) => {}
+          case Some(cfile) if (cfile.lastModified() >= sfile.lastModified()) => {}
           case _ => enterClassAndModule(name, sourcefileLoader(sfile));
         }
       }

@@ -44,6 +44,13 @@ class Trees: Global {
 
     def duplicate: Tree =
       new Transformer(new StrictTreeCopier) transform this;
+
+    def copyAttrs(tree: Tree): this.type = {
+      pos = tree.pos;
+      tpe = tree.tpe;
+      if (hasSymbol) symbol = tree.symbol;
+      this
+    }
   }
 
   abstract class SymTree extends Tree {
@@ -317,81 +324,81 @@ class Trees: Global {
 
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
-      new ClassDef(mods, name, tparams, tpt, impl).setPos(tree.pos);
+      new ClassDef(mods, name, tparams, tpt, impl).copyAttrs(tree);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
-      new PackageDef(name, stats).setPos(tree.pos);
+      new PackageDef(name, stats).copyAttrs(tree);
     def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template) =
-      new ModuleDef(mods, name, impl).setPos(tree.pos);
+      new ModuleDef(mods, name, impl).copyAttrs(tree);
     def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree) =
-      new ValDef(mods, name, tpt, rhs).setPos(tree.pos);
+      new ValDef(mods, name, tpt, rhs).copyAttrs(tree);
     def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
-      new DefDef(mods, name, tparams, vparamss, tpt, rhs).setPos(tree.pos);
+      new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree);
     def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree) =
-      new AbsTypeDef(mods, name, lo, hi).setPos(tree.pos);
+      new AbsTypeDef(mods, name, lo, hi).copyAttrs(tree);
     def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
-      new AliasTypeDef(mods, name, tparams, rhs).setPos(tree.pos);
+      new AliasTypeDef(mods, name, tparams, rhs).copyAttrs(tree);
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
-      new LabelDef(name, params, rhs).setPos(tree.pos);
+      new LabelDef(name, params, rhs).copyAttrs(tree);
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
-      new Import(expr, selectors).setPos(tree.pos);
+      new Import(expr, selectors).copyAttrs(tree);
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) =
-      new Attributed(attribute, definition).setPos(tree.pos);
+      new Attributed(attribute, definition).copyAttrs(tree);
     def DocDef(tree: Tree, comment: String, definition: Tree) =
-      new DocDef(comment, definition).setPos(tree.pos);
+      new DocDef(comment, definition).copyAttrs(tree);
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) =
-      new Template(parents, body).setPos(tree.pos);
+      new Template(parents, body).copyAttrs(tree);
     def Block(tree: Tree, stats: List[Tree], expr: Tree) =
-      new Block(stats, expr).setPos(tree.pos);
+      new Block(stats, expr).copyAttrs(tree);
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) =
-      new CaseDef(pat, guard, body).setPos(tree.pos);
+      new CaseDef(pat, guard, body).copyAttrs(tree);
     def Sequence(tree: Tree, trees: List[Tree]) =
-      new Sequence(trees).setPos(tree.pos);
+      new Sequence(trees).copyAttrs(tree);
     def Alternative(tree: Tree, trees: List[Tree]) =
-      new Alternative(trees).setPos(tree.pos);
+      new Alternative(trees).copyAttrs(tree);
     def Bind(tree: Tree, name: Name, body: Tree) =
-      new Bind(name, body).setPos(tree.pos);
+      new Bind(name, body).copyAttrs(tree);
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
-      new Function(vparams, body).setPos(tree.pos);
+      new Function(vparams, body).copyAttrs(tree);
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
-      new Assign(lhs, rhs).setPos(tree.pos);
+      new Assign(lhs, rhs).copyAttrs(tree);
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
-      new If(cond, thenp, elsep).setPos(tree.pos);
+      new If(cond, thenp, elsep).copyAttrs(tree);
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
-      new Match(selector, cases).setPos(tree.pos);
+      new Match(selector, cases).copyAttrs(tree);
     def Return(tree: Tree, expr: Tree) =
-      new Return(expr).setPos(tree.pos);
+      new Return(expr).copyAttrs(tree);
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) =
-      new Try(block, catches, finalizer).setPos(tree.pos);
+      new Try(block, catches, finalizer).copyAttrs(tree);
     def Throw(tree: Tree, expr: Tree) =
-      new Throw(expr).setPos(tree.pos);
+      new Throw(expr).copyAttrs(tree);
     def New(tree: Tree, tpt: Tree) =
-      new New(tpt).setPos(tree.pos);
+      new New(tpt).copyAttrs(tree);
     def Typed(tree: Tree, expr: Tree, tpt: Tree) =
-      new Typed(expr, tpt).setPos(tree.pos);
+      new Typed(expr, tpt).copyAttrs(tree);
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
-      new TypeApply(fun, args).setPos(tree.pos);
+      new TypeApply(fun, args).copyAttrs(tree);
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
-      new Apply(fun, args).setPos(tree.pos);
+      new Apply(fun, args).copyAttrs(tree);
     def Super(tree: Tree, qual: Name, mixin: Name) =
-      new Super(qual, mixin).setPos(tree.pos);
+      new Super(qual, mixin).copyAttrs(tree);
     def This(tree: Tree, qual: Name) =
-      new This(qual).setPos(tree.pos);
+      new This(qual).copyAttrs(tree);
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
-      new Select(qualifier, selector).setPos(tree.pos);
+      new Select(qualifier, selector).copyAttrs(tree);
     def Ident(tree: Tree, name: Name) =
-      new Ident(name).setPos(tree.pos);
+      new Ident(name).copyAttrs(tree);
     def Literal(tree: Tree, value: Any) =
-      new Literal(value).setPos(tree.pos);
+      new Literal(value).copyAttrs(tree);
     def TypeTree(tree: Tree) =
-      new TypeTree().setPos(tree.pos);
+      new TypeTree().copyAttrs(tree);
     def SingletonTypeTree(tree: Tree, ref: Tree) =
-      new SingletonTypeTree(ref).setPos(tree.pos);
+      new SingletonTypeTree(ref).copyAttrs(tree);
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
-      new SelectFromTypeTree(qualifier, selector).setPos(tree.pos);
+      new SelectFromTypeTree(qualifier, selector).copyAttrs(tree);
     def CompoundTypeTree(tree: Tree, templ: Template) =
-      new CompoundTypeTree(templ).setPos(tree.pos);
+      new CompoundTypeTree(templ).copyAttrs(tree);
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =
-      new AppliedTypeTree(tpt, args).setPos(tree.pos)
+      new AppliedTypeTree(tpt, args).copyAttrs(tree)
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {

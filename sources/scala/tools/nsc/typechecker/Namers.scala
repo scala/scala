@@ -29,6 +29,7 @@ trait Namers: Analyzer {
         (if ((sym.rawflags & CASE) != 0) "case class " + sym.name else sym.toString()));
 
     private def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
+      if (settings.debug.value) System.out.println("overwriting " + sym);
       sym.pos = pos;
       val oldflags = sym.rawflags & (INITIALIZED | LOCKED);
       val newflags = mods & ~(INITIALIZED | LOCKED);
@@ -68,7 +69,7 @@ trait Namers: Analyzer {
 
     private def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
       val m: Symbol = context.scope.lookup(name);
-      if (m.isModule && !m.isPackage && m.isExternal && context.scope == m.owner.info.decls) {
+      if (m.isModule && !m.isPackage && m.isExternal && (context.scope == m.owner.info.decls)) {
         updatePosFlags(m, pos, mods)
       } else {
         val newm = context.owner.newModule(pos, name);
@@ -96,7 +97,8 @@ trait Namers: Analyzer {
 	if (settings.debug.value) log("entered " + tree.symbol);
 	val ltype = typer.typeCompleter(tree);
 	def makeParam(tparam: AbsTypeDef): Symbol =
-	  tree.symbol.newTypeParameter(tparam.pos, tparam.name);
+	  tree.symbol.newTypeParameter(tparam.pos, tparam.name)
+	    .setInfo(typer.typeCompleter(tparam));
 	tree.symbol.setInfo(
 	  if (tparams.isEmpty) ltype
 	  else new LazyPolyType(tparams map makeParam, ltype))
@@ -122,7 +124,7 @@ trait Namers: Analyzer {
 	    tree.symbol = enterClassSymbol(tree.pos, mods, name);
 	    finishWith(tparams)
 	  case ModuleDef(mods, name, _) =>
-	    tree.symbol = enterModuleSymbol(tree.pos, mods, name);
+	    tree.symbol = enterModuleSymbol(tree.pos, mods | MODULE | FINAL, name);
 	    tree.symbol.moduleClass.setInfo(typer.typeCompleter(tree));
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>

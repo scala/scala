@@ -94,6 +94,7 @@ trait Typers: Analyzer {
       val clazz = context.owner;
       val tparamSyms = enterTypeParams(clazz, tparams);
       if (!tpt.isEmpty) clazz.typeOfThis = selfTypeCompleter(tpt);
+      else tpt.tpe = NoType;
       makePolyType(tparamSyms, templateSig(impl))
     }
 
@@ -201,7 +202,8 @@ trait Typers: Analyzer {
 	  sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
 	unit.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
       if ((sym.flags & DEFERRED) != 0) {
-	if (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass) {
+	if (!sym.isValueParameter && !sym.isTypeParameter &&
+	    (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
 	  unit.error(sym.pos,
 	    "only classes can have declared but undefined members" +
 	    (if (!sym.isVariable) ""

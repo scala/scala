@@ -109,7 +109,7 @@ abstract class Symbols: SymbolTable {
     final def isModuleClass = isClass && (rawflags & MODULE) != 0;
     final def isPackageClass = isClass && (rawflags & PACKAGE) != 0;
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName;
-    final def isEmptyPackage = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName;
+    final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName;
 
     /** Does this symbol denote a stable value? */
     final def isStable =
@@ -250,7 +250,7 @@ abstract class Symbols: SymbolTable {
           phase = current;
           limit = current;
 	}
-	assert(infos != null, "info = null at " + this.name + " " + limit + " " + phase);//debug
+	assert(infos != null, name.toString() + " " + limit + " " + phase);//debug
 	infos.info
       } else {
 	var infos = this.infos;
@@ -414,6 +414,12 @@ abstract class Symbols: SymbolTable {
           sym => (sym hasFlag MODULE) && (sym.rawInfo != NoType));
       else NoSymbol;
 
+    /** For a module its linked class, for a class its linked module, NoSymbol otherwise */
+    final def linkedSym: Symbol =
+      if (isModule) linkedClass
+      else if (isClass) linkedModule
+      else NoSymbol;
+
     /** The module corresponding to this module class (note that this
      *  is not updated when a module is cloned).
      */
@@ -445,8 +451,8 @@ abstract class Symbols: SymbolTable {
     /** String representation of symbol's definition key word */
     final def keyString: String =
       if (isClass)
-        if (hasFlag(TRAIT))
-          if (hasFlag(JAVA)) "interface" else "trait"
+        if ((rawflags & TRAIT) != 0)
+          if ((rawflags & JAVA) != 0) "interface" else "trait"
         else "class"
       else if (isType && !hasFlag(PARAM)) "type"
       else if (isVariable) "var"
@@ -488,7 +494,7 @@ abstract class Symbols: SymbolTable {
      *  Never adds id.
      */
     final def fullNameString(separator: char): String =
-      if (owner.isRoot) simpleName.toString()
+      if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
       else owner.fullNameString(separator) + separator + simpleName;
 
     final def fullNameString: String = fullNameString('.');
@@ -551,7 +557,7 @@ abstract class Symbols: SymbolTable {
 
     /** String representation of symbol's definition */
     final def defString: String =
-      compose(List(flagsToString(rawflags & SOURCEFLAGS),
+      compose(List(flagsToString(rawflags & EXPLICITFLAGS),
 		   keyString,
 		   varianceString + nameString,
 		   infoString(rawInfo)));
@@ -589,9 +595,7 @@ abstract class Symbols: SymbolTable {
     override def tpe: Type = {
       if (valid != phase) {
         valid = phase;
-        val tparams = typeParams;
-        tpeCache = typeRef(owner.thisType, this, tparams map (.tpe));
-        if (!tparams.isEmpty) tpeCache = PolyType(tparams, tpeCache);
+        tpeCache = typeRef(owner.thisType, this, typeParams map (.tpe));
       }
       tpeCache
     }

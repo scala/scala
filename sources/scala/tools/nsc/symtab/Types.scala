@@ -321,15 +321,14 @@ abstract class Types: SymbolTable {
 	    val sym = entry.sym;
 	    val excl = sym.rawflags & excluded;
 	    if (excl == 0) {
-	      if (name.isTypeName)
+	      if (name.isTypeName) {
 		return sym
-	      else if (member == NoSymbol)
+	      } else if (member == NoSymbol) {
 		member = sym
-	      else if (members == null &&
-		       !(member.name == sym.name &&
-			 (memberType(member) matches memberType(sym))))
-		members = new Scope(List(member, sym))
-	      else {
+	      } else if (members == null) {
+                if (member.name != sym.name || !memberType(member).matches(memberType(sym)))
+		  members = new Scope(List(member, sym))
+	      } else {
 		var prevEntry = members lookupEntry sym.name;
 		while (prevEntry != null &&
 		       !(memberType(prevEntry.sym) matches memberType(sym)))
@@ -412,7 +411,7 @@ abstract class Types: SymbolTable {
     override def singleDeref: Type = sym.typeOfThis;
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this.";
-      else if (sym.isRoot) ""
+      else if (sym.isRoot || sym.isEmptyPackageClass) ""
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
       else if (sym.isPackageClass) sym.fullNameString('.') + "."
       else sym.nameString + ".this.";
@@ -544,8 +543,6 @@ abstract class Types: SymbolTable {
     override def toString(): String = base.toString() + "(" + value + ")";
   }
 
-  class ExtTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends TypeRef(pre, sym, args);
-
   /** A class for named types of the form <prefix>.<sym.name>[args]
    *  Cannot be created directly; one should always use `typeRef' for creation.
    */
@@ -633,13 +630,20 @@ abstract class Types: SymbolTable {
        extends Type {
 
     override def paramSectionCount: int = resultType.paramSectionCount;
-
     override def paramTypes: List[Type] = resultType.paramTypes;
 
+    override def parents: List[Type] = resultType.parents;
+    override def decls: Scope = resultType.decls;
+    override def symbol: Symbol = resultType.symbol;
+    override def closure: Array[Type] = resultType.closure;
+    override def baseClasses: List[Symbol] = resultType.baseClasses;
+    override def baseType(clazz: Symbol): Type = resultType.baseType(clazz);
+    override def narrow: Type = resultType.narrow;
     override def erasure = resultType.erasure;
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=> " else typeParams.mkString("[", ",", "]")) + resultType;
+
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = typeParams map (.cloneSymbol(owner));
@@ -712,7 +716,7 @@ abstract class Types: SymbolTable {
       sym1.resetFlag(LOCKED);
       result
     } else {
-      new ExtTypeRef(pre, sym1, args) {}
+      new TypeRef(pre, sym1, args) {}
     }
   }
 
@@ -740,8 +744,11 @@ abstract class Types: SymbolTable {
   /** A creator for type applications */
   def appliedType(tycon: Type, args: List[Type]): Type = tycon match {
     case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
-    case PolyType(tparams, restpe) => restpe.subst(tparams, args)
-    case ErrorType => tycon
+    case _ =>
+      tycon match {
+	case PolyType(tparams, restpe) => restpe.subst(tparams, args)
+	case ErrorType => tycon
+      }
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -1098,7 +1105,9 @@ abstract class Types: SymbolTable {
         sym2.isAbstractType && (tp1 <:< tp2.bounds.lo)
         ||
         sym2.isClass &&
-          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })//debug
+          ({ val base = tp1 baseType sym2;
+	     System.out.println("" + tp1 + " baseType " + sym2 + " = " + base);
+	    !(base eq tp1) && (base <:< tp2) })//debug
         ||
         sym1 == AllClass
         ||
@@ -1294,13 +1303,21 @@ abstract class Types: SymbolTable {
 
   /** Eliminate from list of types all elements which are a supertype
    *  of some other element of the list. */
-  private def elimSuper(ts: List[Type]): List[Type] =
-    ts filter (t => !(ts exists (t1 => t1 <:< t)));
+  private def elimSuper(ts: List[Type]): List[Type] = ts match {
+    case List() => List()
+    case t :: ts1 =>
+      val rest = ts1 filter (t1 => !(t <:< t1));
+      if (rest exists (t1 => t1 <:< t)) rest else t :: rest
+  }
 
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
-  private def elimSub(ts: List[Type]): List[Type] =
-    ts filter (t => !(ts exists (t1 => t <:< t1)));
+  private def elimSub(ts: List[Type]): List[Type] =  ts match {
+    case List() => List()
+    case t :: ts1 =>
+      val rest = ts1 filter (t1 => !(t1 <:< t));
+      if (rest exists (t1 => t <:< t1)) rest else t :: rest
+  }
 
   /** The least upper bound wrt <:< of a list of types */
   def lub(ts: List[Type]): Type = {

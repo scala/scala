@@ -1514,6 +1514,8 @@ abstract class Syntactic: ParserPhase {
           in.nextToken();
           parents += simpleType();
           if (in.token == LPAREN) args = argumentExprs();
+        } else {
+          parents += scalaAnyRefConstr
         }
 	parents += scalaScalaObjectConstr;
 	if ((mods & Flags.CASE)!= 0) parents += caseClassConstr;

@@ -134,7 +134,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
   val picklePhase = new pickles.PicklePhase(typeCheckPhase);
 
-  val terminalPhase = new StdPhase(typeCheckPhase) {
+  val terminalPhase = new StdPhase(picklePhase) {
     def name = "terminal";
     val global: Global.this.type = Global.this;
     def apply(unit: CompilationUnit): unit = {}
@@ -183,8 +183,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
 
     if (reporter.errors() == 0) {
-      for (val Pair(sym, pickled) <- symData.elements)
-	writeSymblFile(sym, pickled)
+      for (val Pair(sym, pickled) <- symData.elements.toList)
+	if (symData contains sym) {
+	  symData -= sym;
+	  symData -= sym.linkedSym;
+	  writeSymblFile(sym, pickled)
+	}
     } else {
       for (val Pair(sym, file) <- symSource.elements)
 	sym.reset(loaders.sourcefileLoader(file));
@@ -237,10 +241,12 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   /** Returns the file with the given suffix for the given class. */
-  private def getFile(clazz: Symbol, suffix: String) =
+  private def getFile(clazz: Symbol, suffix: String) = {
+    val outdir = settings.outdir.value;
     new File(
-      settings.outdir.value + File.separatorChar +
-      clazz.fullNameString(File.separatorChar) + suffix);
+      if (outdir == "") clazz.simpleName.toString() + suffix
+      else outdir + File.separatorChar + clazz.fullNameString(File.separatorChar) + suffix);
+  }
 
   private def writeSymblFile(clazz: Symbol, pickled: PickleBuffer) = {
     val file = getFile(clazz, ".symbl");

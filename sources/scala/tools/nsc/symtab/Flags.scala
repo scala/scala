@@ -60,12 +60,16 @@ object Flags {
   val IS_ERROR      = 0x200000000l; // symbol is an error symbol
   val OVERLOADED    = 0x400000000l; // symbol is overloaded
 
-  val TRANS_FLAG    = 0x1000000000l; // transient flag guaranteed to be reset after each phase.
+  val TRANS_FLAG    = 0x800000000l; // transient flag guaranteed to be reset after each phase.
   val LIFTED        = TRANS_FLAG;    // transient flag for lambdalift
   val INCONSTRUCTOR = TRANS_FLAG;    // transient flag for analyzer
+  val INITIALFLAGS  = 0x777777777l;
 
   // masks
   val SOURCEFLAGS   = 0x00077777;    // these modifiers can be set in source programs.
+  val EXPLICITFLAGS =                // these modifiers can be explcitly in source programs.
+    PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE;
+
   val ACCESSFLAGS   = PRIVATE | PROTECTED;
   val VARIANCES     = COVARIANT | CONTRAVARIANT;
   val CONSTRFLAGS   = JAVA;
@@ -74,7 +78,7 @@ object Flags {
   /** Flags already set by object creation and never set afterwards */
   val CREATIONFLAGS = ACCESSFLAGS | METHOD | MODULE | MUTABLE | PARAM | PACKAGE |
     COVARIANT | CONTRAVARIANT | SYNTHETIC | STABLE | ACCESSOR | PARAMACCESSOR | LOCAL |
-    IS_ERROR | OVERLOADED;
+    IS_ERROR | OVERLOADED | INCONSTRUCTOR;
 
   /** Module flags inherited by their module-class */
   val MODULE2CLASSFLAGS = ACCESSFLAGS | PACKAGE;
@@ -84,17 +88,54 @@ object Flags {
       .map(i => flagToString(flags & (1L << i)))
       .filter("" !=).mkString("", " ", "");
 
-  private def flagToString(flag: long): String = flag.asInstanceOf[int] match {
-    case PRIVATE   => "private"
-    case PROTECTED => "protected"
-    case ABSTRACT  => "abstract"
-    case FINAL     => "final"
-    case SEALED    => "sealed"
-    case TRAIT     => "trait"
-    case OVERRIDE  => "override"
-    case CASE      => "case"
-    case SYNTHETIC => "<synthetic>"
-    case LOCAL     => "<local>"
-    case _ => ""
+  private def flagToString(flag: long): String = {
+    if (flag == INTERFACE) "<interface>"
+    else if (flag == IS_ERROR) "<is_error>"
+    else if (flag == OVERLOADED) "<overloaded>"
+    else if (flag == TRANS_FLAG) "<transient>"
+    else flag.asInstanceOf[int] match {
+      case DEFERRED      => "<deferred>"
+      case FINAL         => "final"
+      case PRIVATE       => "private"
+      case PROTECTED     => "protected"
+
+      case SEALED        => "sealed"
+      case OVERRIDE      => "override"
+      case CASE          => "case"
+      case ABSTRACT      => "abstract"
+
+      case METHOD        => "<method>"
+      case TRAIT         => "<trait>"
+      case JAVA          => "<java>"
+      case MODULE        => "<module>"
+
+      case MUTABLE       => "<mutable>"
+      case PARAM         => "<param>"
+      case PACKAGE       => "<package>"
+      case DEPRECATED    => "<deprecated>"
+
+      case COVARIANT     => "<covariant>"
+      case CONTRAVARIANT => "<contravariant>"
+      case ABSOVERRIDE   => "<absoverride>"
+      case LOCAL         => "<local>"
+
+      case SYNTHETIC     => "<synthetic>"
+      case STABLE        => "<stable>"
+      case INITIALIZED   => "<initialized>"
+      case LOCKED        => "<locked>"
+
+      case ACCESSED      => "<accessed>"
+      case SELECTOR      => "<selector>"
+
+      case CAPTURED      => "<captured>"
+      case ACCESSOR      => "<accessor>"
+
+      case ACCESS_METHOD => "<access>"
+      case PARAMACCESSOR => "<paramaccessor>"
+      case LABEL         => "<label>"
+      case BRIDGE        => "<bridge>"
+
+      case _ => ""
+    }
   }
 }

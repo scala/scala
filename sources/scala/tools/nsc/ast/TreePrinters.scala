@@ -67,7 +67,7 @@ abstract class TreePrinters {
         }
       case AbsTypeDef(mods, name, lo, hi) =>
         print(symName(tree, name));
-        printOpt(">: ", lo); printOpt("<: ", hi);
+        printOpt(" >: ", lo); printOpt(" <: ", hi);
     }
 
     def printBlock(tree: Tree): unit = tree match {
@@ -148,7 +148,7 @@ abstract class TreePrinters {
 
         case Template(parents, body) =>
           printRow(parents, " with ");
-          if (!body.isEmpty) printColumn(body, "{", ";", "}")
+          if (!body.isEmpty) printColumn(body, " {", ";", "}")
 
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
@@ -215,7 +215,8 @@ abstract class TreePrinters {
           print("this");
 
         case Select(qualifier, name) =>
-          if (global.settings.debug.value || qualifier.symbol == null || !qualifier.symbol.isRoot) {
+          if (global.settings.debug.value || qualifier.symbol == null ||
+	      (!qualifier.symbol.isRoot && !qualifier.symbol.isEmptyPackageClass)) {
             print(qualifier); print(".");
           }
           print(symName(tree, name))

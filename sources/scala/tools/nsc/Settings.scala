@@ -22,7 +22,7 @@ class Settings(error: String => unit) {
                                      System.getProperty("sun.boot.class.path", ""));
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions",
                                      System.getProperty("java.ext.dirs", ""));
-  val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".");
+  val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", "");
   val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", "ISO-8859-1");
   val separate      = ChoiceSetting ("-separate", "Read symbol files for separate compilation", List("yes","no"), "default");
   val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm");

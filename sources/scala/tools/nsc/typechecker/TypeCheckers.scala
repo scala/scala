@@ -19,7 +19,7 @@ trait TypeCheckers: Analyzer {
     def name = "typechecker";
     val global: TypeCheckers.this.global.type = TypeCheckers.this.global;
     def apply(unit: CompilationUnit): unit =
-      new TypeChecker(startContext.make(unit)).transformExpr(unit.body)
+      unit.body = new TypeChecker(startContext.make(unit)).transformExpr(unit.body)
   }
 
   class TypeChecker(context: Context) {
@@ -211,8 +211,9 @@ trait TypeCheckers: Analyzer {
 	      }
 	    } else errorTree(tree,
                              clazz.toString() + " is neither a case class nor a sequence class")
-	  } else if ((mode & FUNmode) == 0 && !context.undetparams.isEmpty) { // (7)
-            context.undetparams = List();
+	  } else if ((mode & FUNmode) != 0) {
+	    tree
+	  } else if (tree.symbol != null && !tree.symbol.typeParams.isEmpty) { // (7)
             errorTree(tree, "" + clazz + " takes type parameters");
           } else tree match { // (6)
             case TypeTree() => tree
@@ -461,82 +462,76 @@ trait TypeCheckers: Analyzer {
 
     private def transform1(tree: Tree, mode: int, pt: Type): Tree = {
 
+      def funmode = mode & stickyModes | FUNmode | POLYmode;
+
       def transformCases(cases: List[CaseDef], pattp: Type): List[CaseDef] = {
         val tc1 = new TypeChecker(context.makeNewScope(tree, context.owner));
         cases mapConserve (cdef => tc1.transformCase(cdef, pattp, pt))
       }
 
-      def transformTypeApply(fun: Tree, args: List[Tree]): Tree = {
-        inferPolyAlternative(fun, args.length);
-        val args1 = args mapConserve (arg => transform(arg, TYPEmode, WildcardType));
-        val targs = args1 map (.tpe);
-        if (fun.tpe.isError || (targs exists (.isError)))
-          setError(tree)
-        else fun.tpe match {
-          case PolyType(tparams, restpe) =>
-            checkBounds(tree.pos, tparams, targs, "");
-            copy.TypeApply(tree, fun, args1) setType restpe.subst(tparams, targs)
-        }
-      }
-
-      def transformApply(fun: Tree, args: List[Tree]): Tree = {
-	// if function is overloaded, filter all alternatives that match
-	// number of arguments and expected result type.
+      def transformTypeApply(fun: Tree, args: List[Tree]): Tree =
 	if (fun.hasSymbol && fun.symbol.hasFlag(OVERLOADED)) {
-	  val argtypes = args map (arg => AllClass.tpe);
-	  val pre = fun.symbol.info.prefix;
-	  fun.symbol = fun.symbol filter (alt =>
-	    isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt));
-          fun.tpe = pre.memberType(fun.symbol)
-	}
-        fun.tpe match {
-          case OverloadedType(pre, alts) =>
-            val args1 = args mapConserve (arg =>
-              transform(arg, mode & stickyModes, WildcardType));
-            inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt);
-            transformApply(fun, args1);
-          case MethodType(formals0, restpe) =>
-            val formals = formalTypes(formals0, args.length);
-            if (formals.length != args.length) {
-              errorTree(tree, "wrong number of arguments for " + treeSymTypeMsg(fun))
-            } else {
-              val tparams = context.undetparams;
-              context.undetparams = List();
-              if (tparams.isEmpty) {
-                val args1 = List.map2(args, formals) ((arg, formal) =>
-                  transform(arg, mode & stickyModes, formal));
-                val tree1 = copy.Apply(tree, fun, args1).setType(restpe);
-                val tree2 = constfold(tree1);
-                if (tree1 == tree2) tree2 else transform(tree2, mode, pt)
-	      } else {
-		assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
-                val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt);
-                val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
-                  if (targ == WildcardType) tparam.tpe else targ);
-                def transformArg(tree: Tree, formal: Type): Tree = {
-	          val lenientPt = formal.subst(tparams, lenientTargs);
-	          val tree1 = transform(tree, mode & stickyModes | POLYmode, lenientPt);
-	          val argtparams = context.undetparams;
-	          context.undetparams = List();
-	          if (!argtparams.isEmpty) {
-	            val strictPt = formal.subst(tparams, strictTargs);
-	            inferArgumentInstance(tree1, argtparams, strictPt, lenientPt);
-	          }
-	          tree1
-                }
-                val args1 = List.map2(args, formals)(transformArg);
-                if (args1 exists (.tpe.isError)) setError(tree)
-                else {
-                  val undetparams = inferMethodInstance(fun, tparams, args1, pt);
-                  val result = transformApply(fun, args1);
-                  context.undetparams = undetparams;
-                  result
-                }
+          transformTypeApply(
+            adapt(inferPolyAlternative(fun, args.length), funmode, WildcardType))
+        } else {
+          val tparams = context.undetparams;
+          context.undetparams = List();
+          if (tparams.length == args.length) {
+            new TreeSubstituter(tparams, targs).traverse(fun); fun
+          } else if (tparams.length == 0) {
+            errorTree(tree, treeSymTypeMsg(tree, args) + " takes type parameters.");
+          } else {
+            errorTree(tree, "wrong number of type parameters for " + treeSymTypeMsg(fun))
+          }
+        }
+
+      def transformApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
+        case OverloadedType(pre, alts) =>
+          val args1 = args mapConserve (arg =>
+            transform(arg, mode & stickyModes, WildcardType));
+          inferMethodAlternative(fun, context.undetparams, args1 map (.tpe.deconst), pt);
+          transformApply(adapt(fun, funmode, WildcardType), args1);
+        case MethodType(formals0, restpe) =>
+          val formals = formalTypes(formals0, args.length);
+          if (formals.length != args.length) {
+            errorTree(tree, "wrong number of arguments for " + treeSymTypeMsg(fun))
+          } else {
+            val tparams = context.undetparams;
+            context.undetparams = List();
+            if (tparams.isEmpty) {
+              val args1 = List.map2(args, formals) ((arg, formal) =>
+                transform(arg, mode & stickyModes, formal));
+              val tree1 = copy.Apply(tree, fun, args1).setType(restpe);
+              val tree2 = constfold(tree1);
+              if (tree1 == tree2) tree2 else transform(tree2, mode, pt)
+	    } else {
+	      assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
+              val lenientTargs = protoTypeArgs(tparams, formals, restpe, pt);
+              val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
+                if (targ == WildcardType) tparam.tpe else targ);
+              def transformArg(tree: Tree, formal: Type): Tree = {
+	        val lenientPt = formal.subst(tparams, lenientTargs);
+	        val tree1 = transform(tree, mode & stickyModes | POLYmode, lenientPt);
+	        val argtparams = context.undetparams;
+	        context.undetparams = List();
+	        if (!argtparams.isEmpty) {
+	          val strictPt = formal.subst(tparams, strictTargs);
+	          inferArgumentInstance(tree1, argtparams, strictPt, lenientPt);
+	        }
+	        tree1
+              }
+              val args1 = List.map2(args, formals)(transformArg);
+              if (args1 exists (.tpe.isError)) setError(tree)
+              else {
+                val undetparams = inferMethodInstance(fun, tparams, args1, pt);
+                val result = transformApply(fun, args1);
+                context.undetparams = undetparams;
+                result
               }
             }
-          case ErrorType =>
-            setError(tree)
-        }
+          }
+        case ErrorType =>
+          setError(tree)
       }
 
       /** The qualifying class of a this or super with prefix `qual' */
@@ -683,7 +678,10 @@ trait TypeCheckers: Analyzer {
           copy.PackageDef(tree, name, stats1) setType NoType
 
         case cdef @ ClassDef(_, _, _, _, _) =>
-          new TypeChecker(context.makeNewScope(tree, sym)).transformClassDef(cdef)
+          val result = new TypeChecker(context.makeNewScope(tree, sym)).transformClassDef(cdef);
+	  System.out.println("entered: " + result.symbol);//debug
+	  result
+
 
         case mdef @ ModuleDef(_, _, _) =>
           transformModuleDef(mdef)
@@ -819,11 +817,22 @@ trait TypeCheckers: Analyzer {
           copy.Typed(tree, expr1, tpt1)
 
         case TypeApply(fun, args) =>
-	  transformTypeApply(transform(fun, mode & stickyModes | FUNmode, WildcardType), args);
+          transformTypeApply(transform(fun, funmode, WildcardType), args)
 
         case Apply(fun, args) =>
           val funpt = if ((mode & PATTERNmode) != 0) pt else WildcardType;
-          transformApply(transform(fun, mode & stickyModes | FUNmode | POLYmode, funpt), args)
+          var fun1 = transform(fun, funmode, funpt);
+          // if function is overloaded, filter all alternatives that match
+	  // number of arguments and expected result type.
+	  if (fun1.hasSymbol && fun1.symbol.hasFlag(OVERLOADED)) {
+	    val argtypes = args map (arg => AllClass.tpe);
+	    val pre = fun1.symbol.info.prefix;
+            val sym = fun1.symbol filter (alt =>
+	      isApplicable(context.undetparams, pre.memberType(alt), argtypes, pt));
+            if (sym != NoSymbol)
+              fun1 = adapt(fun1 setSymbol sym setType pre.memberType(sym), funmode, WildcardType)
+          }
+          transformApply(fun1, args)
 
         case Super(qual, mix) =>
           val clazz = qualifyingClass(qual);
@@ -883,8 +892,7 @@ trait TypeCheckers: Analyzer {
 
         case AppliedTypeTree(tpt, args) =>
           val tpt1 = transform(tpt, mode | FUNmode, WildcardType);
-          val tparams = context.undetparams;
-          context.undetparams = List();
+          val tparams = tpt.tpe.symbol.typeParams;
           val args1 = args mapConserve (arg => transform(arg, TYPEmode, WildcardType));
           if (tpt1.tpe.isError)
             setError(tree)
