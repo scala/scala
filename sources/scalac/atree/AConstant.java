@@ -270,6 +270,8 @@ public class AConstant {
         if (this == that) return true;
         if (null == that) return false;
         switch (this) {
+        case UNIT:
+            return false;
         case BOOLEAN(boolean ivalue):
             switch (that) {
             case BOOLEAN(boolean avalue):
@@ -333,6 +335,10 @@ public class AConstant {
             default:
                 return false;
             }
+        case NULL:
+            return false;
+        case ZERO:
+            return false;
         default:
             throw Debug.abort("unknown case", this);
         }
