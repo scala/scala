@@ -1431,7 +1431,7 @@ var x: AnyRef = new Rational(1,2);
 %by simply mentioning its name. For instance:
 %\begin{lstlisting}
 %val r = new Rational(1,2);
-%System.out.println(r.toString());	// prints``1/2''
+%System.out.println(r.toString());      // prints``1/2''
 %\end{lstlisting}
 Unlike in Java, methods in Scala do not necessarily take a
 parameter list. An example is the \code{square} method below. This
@@ -1442,7 +1442,7 @@ class Rational(n: int, d: int) extends AnyRef {
   def square = Rational(numer*numer, denom*denom);
 }
 val r = new Rational(3,4);
-System.out.println(r.square);		// prints``9/16''
+System.out.println(r.square);           // prints``9/16''
 \end{lstlisting}
 That is, parameterless methods are accessed just as value fields such
 as \code{numer} are. The difference between values and parameterless
@@ -5171,17 +5171,17 @@ will both be defined as methods of a \code{Parser} class.  We will
 also define constructors for the following primitive parsers:
 
 \begin{tabular}{ll}
-\code{empty}	& The parser that accepts the empty string
+\code{empty}    & The parser that accepts the empty string
 \\
 \code{fail}     & The parser that accepts no string
 \\
 \code{chr(c: char)}
-		& The parser that accepts the single-character string ``$c$''.
+                & The parser that accepts the single-character string ``$c$''.
 \\
 \code{chr(p: char => boolean)}
-		& The parser that accepts single-character strings
+                & The parser that accepts single-character strings
                   ``$c$'' \\
-	        & for which $p(c)$ is true.
+                & for which $p(c)$ is true.
 \end{tabular}
 
 There are also the two higher-order parser combinators \code{opt},
@@ -6094,7 +6094,6 @@ used as a monitor by calling one or more of the methods below.
   def notify(): unit;
   def notifyAll(): unit;
 \end{lstlisting}
-\begin{lstlisting}
 The \code{synchronized} method executes its argument computation
 \code{e} in mutual exclusive mode -- at any one time, only one thread
 can execute a \code{synchronized} argument of a given monitor.
@@ -6117,7 +6116,7 @@ blocks until some other thread has established the condition. It is
 the responsibility of this other thread to wake up waiting processes
 by issuing a \code{notify} or \code{notifyAll}. Note however, that
 there is no guarantee that a waiting process gets to run immediately
-when the call to notify is issued. It could be that other processes
+after the call to notify is issued. It could be that other processes
 get to run first which invalidate the condition again. Therefore, the
 correct form of waiting for a condition $C$ uses a while loop:
 \begin{lstlisting}
@@ -6127,7 +6126,7 @@ while (!$C$) wait();
 As an example of how monitors are used, here is is an implementation
 of a bounded buffer class.
 \begin{lstlisting}
-class BoundedBuffer[a](N: Int) extends Monitor() {
+class BoundedBuffer[a](N: Int) {
   var in = 0, out = 0, n = 0;
   val elems = new Array[a](N);
 
@@ -6148,7 +6147,7 @@ class BoundedBuffer[a](N: Int) extends Monitor() {
 And here is a program using a bounded buffer to communicate between a
 producer and a consumer process.
 \begin{lstlisting}
-import concurrent.ops._;
+import scala.concurrent.ops._;
 ...
 val buf = new BoundedBuffer[String](10)
 spawn { while (true) { val s = produceString ; buf.put(s) } }
@@ -6176,7 +6175,7 @@ blocks until the variable has been defined.
 Logic variables can be implemented as follows.
 
 \begin{lstlisting}
-class LVar[a] extends Monitor {
+class LVar[a] {
   private val defined = new Signal
   private var isDefined: boolean = false
   private var v: a
@@ -6201,7 +6200,7 @@ resets the variable to undefined state.
 Here's the standard implementation of synchronized variables.
 \begin{lstlisting}
 package scala.concurrent;
-class SyncVar[a] with Monitor {
+class SyncVar[a] {
   private var isDefined: Boolean = false;
   private var value: a = _;
   def get = synchronized {
@@ -6211,8 +6210,9 @@ class SyncVar[a] with Monitor {
   def set(x: a) = synchronized {
     value = x ; isDefined = true ; notifyAll();
   }
-  def isSet: Boolean = 
+  def isSet: Boolean = synchronized {
     isDefined;
+  }
   def unset = synchronized { 
     isDefined = false; 
   }
@@ -6311,7 +6311,7 @@ A common mechanism for process synchronization is a {\em lock} (or:
 \begin{lstlisting}
 package scala.concurrent;
 
-class Lock with Monitor {
+class Lock {
   var available = true;
   def acquire = synchronized {
     if (!available) wait();
@@ -6345,7 +6345,7 @@ import scala.concurrent._;
 
 class ReadersWriters {
   val m = new MailBox;
-  private case class Writers(n: int), Readers(n: int);
+  private case class Writers(n: int), Readers(n: int) { m send this; };
   Writers(0); Readers(0);
   def startRead = m receive {
     case Writers(n) if n == 0 => m receive {
@@ -6389,7 +6389,7 @@ incrementing the \code{nreaders} field and waiting to be notified.
 \begin{lstlisting}
 package scala.concurrent;
 
-class Channel[a] with Monitor {
+class Channel[a] {
   class LinkedList[a] {
     var elem: a = _;
     var next: LinkedList[a] = null;
@@ -6425,7 +6425,7 @@ three signals are used to coordinate reader and writer processes.
 \begin{lstlisting}
 package scala.concurrent;
 
-class SyncChannel[a] with Monitor {
+class SyncChannel[a] {
   private var data: a = _;
   private var reading = false;
   private var writing = false;
