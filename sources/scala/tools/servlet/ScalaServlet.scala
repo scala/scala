@@ -4,15 +4,11 @@ import java.io.IOException;
 import scala.xml._;
 import scala.collection.mutable.HashMap ;
 import http.HttpOutputStream;
-// import scala.collection.mutable.HashMap
-// val x = new HashMap[String,String]
-// x.update("key","value");
-// x.get("key") match {
-//   case Some( value ) => ...
-//   case None          => ...
-// } x("key")
 
+/** subclasses can be registered with the servlet engine to handle requests
+ */
 abstract class ScalaServlet {
+
   var output:HttpOutputStream = null;
   // HashMap[String,String]
   def doGetXML(info: HashMap[String,String]): scala.xml.Node ;
@@ -22,18 +18,23 @@ abstract class ScalaServlet {
       out.write( doGetXML( info ).toString() );
     }
     catch {
-      case sException:ServletException => ReturnException( sException.returnType(),sException.returnInfo());
-      case ex:Exception => ReturnException(30,"");
+      case ServletException(status, msg) =>
+        showError( status, msg );
+      case ex:Exception =>
+        showError(Status.INTERNAL_ERROR, ex.getMessage());
     }
   }
 
-  final def ReturnException(code:int, detail :String):unit={
-    var info = new HashMap[String,String];
-    info.update("code", SERVLET.getCodeMessage(code) );
-    info.update("detail", detail);
-    new ExcepServlet().doGet(output, info);
-    return null;
-
+  final def showError(status:int, msg :String): scala.xml.Node = {
+  <html>
+    <head>
+      <title>SERVLET ERROR</title>
+    </head>
+    <body>
+      <big>Attention,erreur dans la servlet</big>
+      <br/>type de l erreur: { Status.getMessage(status) }<br/>{ msg }
+    </body>
+  </html>
   }
 }
 
