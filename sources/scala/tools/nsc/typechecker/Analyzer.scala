@@ -9,9 +9,14 @@ import scala.tools.util.Position;
 
 /** The main attribution phase.
  */
-abstract class Analyzer extends Contexts with Namers with Typers with TypeCheckers {
+abstract class Analyzer
+	 extends Contexts
+	 with Namers
+	 with Typers
+	 with TypeCheckers
+	 with Infer
+	 with Variances {
   val global: Global;
-
   import global._;
 
   case class ImportType(tree: Import) extends Type;

@@ -34,13 +34,6 @@ trait Typers: Analyzer {
 	sym.setInfo(typechecker.transformType(tree).tpe)
     }
 
-    private def constrType(constr: Tree): Type = constr match {
-      case Apply(fn, args) =>
-        val ctp = constrType(fn);
-	if (ctp.typeParams.isEmpty) ctp else typechecker.transformConstr(constr).tpe
-      case _ => typechecker.transformType(constr).tpe
-    }
-
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
       if (sym.isVariable || !sym.hasFlag(FINAL)) tpe.deconst else tpe;
 
@@ -71,7 +64,11 @@ trait Typers: Analyzer {
 
     private def templateSig(clazz: Symbol, templ: Template): Type = {
       // determine parent types
-      val parents = templ.parents map constrType;
+      val parents =
+        if (templ.parents.isEmpty) List()
+        else
+          typechecker.transformSuperType(templ.parents.head).tpe ::
+          (templ.parents.tail map (p => typechecker.transformType(p).tpe));
       if (!parents.isEmpty && parents.head.symbol.hasFlag(INTERFACE)
 			   && parents.head.symbol.hasFlag(JAVA))
 	unit.error(templ.parents.head.pos, "cannot extend a Java interface");
@@ -102,7 +99,6 @@ trait Typers: Analyzer {
         typechecker.checkNoEscape(tpt.pos,
 	  deconstIfNotFinal(meth,
 	    if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-	    else if (tpt.tpe != null) tpt.tpe
 	    else if (tpt.isEmpty) { tpt.tpe = typechecker.transformExpr(rhs).tpe; tpt.tpe }
 	    else typechecker.transformType(tpt).tpe));
       def mkMethodType(vparams: List[Symbol], restpe: Type) =
@@ -135,8 +131,7 @@ trait Typers: Analyzer {
 
 	  case ValDef(_, _, tpt, rhs) =>
             deconstIfNotFinal(sym,
-	      if (tpt.tpe != null) tpt.tpe
-              else if (tpt.isEmpty)
+              if (tpt.isEmpty)
                 if (rhs.isEmpty) {
 		  unit.error(tpt.pos, "missing parameter type");
                   ErrorType

@@ -103,10 +103,6 @@ class Trees: Global {
   case class Import(expr: Tree, selectors: List[Pair[Name, Name]])
        extends SymTree;
 
-  /** Pattern definition, eliminated by Analyzer */
-  case class PatDef(mods: int, pat: Tree, rhs: Tree)
-       extends Tree;
-
   /** Attribuetd definition */
   case class Attributed(attribute: Tree, definition: Tree)
        extends Tree;
@@ -156,10 +152,6 @@ class Trees: Global {
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree;
 
-  /** For comprehension */
-  case class For(enumerators: List[Tree], body: Tree, isForYield: boolean)
-       extends TermTree;
-
   /** Switch, introduced by refcheck */
   case class Switch(test: Tree, tags: List[int], bodies: List[Tree],
 		    default: Tree)
@@ -179,7 +171,7 @@ class Trees: Global {
   /** Object instantiation
    *   @param init   either a constructor or a template
    */
-  case class New(init: Tree)
+  case class New(typeOrTempl: Tree)
        extends TermTree;
 
   /** Type annotation, eliminated by explicit outer */
@@ -222,7 +214,7 @@ class Trees: Global {
 
   /** General type term, introduced by RefCheck. */
   case class EmptyTypeTree() extends TypeTree {
-    override def isEmpty = true;
+    override def isEmpty = tpe == null;
   }
 
   /** Singleton type, eliminated by RefCheck */
@@ -232,10 +224,6 @@ class Trees: Global {
   /** Type selection, eliminated by RefCheck */
   case class SelectFromTypeTree(qualifier: Tree, selector: Name)
        extends TypeTree with SymTree;
-
-  /** Function type, eliminated by RefCheck */
-  case class FunctionTypeTree(argtpes: List[Tree], restpe: Tree)
-       extends TypeTree;
 
   /** Intersection type, eliminated by RefCheck */
   case class IntersectionTypeTree(parents: List[Tree])
@@ -253,33 +241,31 @@ class Trees: Global {
   case EmptyTree =>
   case ClassDef(mods, name, tparams, tp, impl) =>
   case PackageDef(name, stats) =>
-  case ModuleDef(mods, name, tp, impl) =>
+  case ModuleDef(mods, name, tp, impl) =>                         (eliminated by refcheck)
   case ValDef(mods, name, tp, rhs) =>
   case DefDef(mods, name, tparams, vparams, tp, rhs) =>
-  case AbsTypeDef(mods, name, lo, hi) =>
-  case AliasTypeDef(mods, name, tparams, rhs) =>
+  case AbsTypeDef(mods, name, lo, hi) =>                          (eliminated by erasure)
+  case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
   case LabelDef(name, params, rhs) =>
-  case Import(expr, selectors) =>
-  case PatDef(mods, pat, rhs) =>
-  case Attributed(attribute, definition) =>
-  case DocDef(comment, definition) =>
+  case Import(expr, selectors) =>                                 (eliminated by typecheck)
+  case Attributed(attribute, definition) =>                       (eliminated by typecheck)
+  case DocDef(comment, definition) =>                             (eliminated by typecheck)
   case Template(parents, body) =>
   case Block(stats, expr) =>
-  case Visitor(cases) =>
-  case CaseDef(pat, guard, body) =>
-  case Sequence(trees) =>
-  case Alternative(trees) =>
-  case Bind(name, rhs) =>
-  case Function(vparams, body) =>
+  case Visitor(cases) =>                                          (eliminated by transmatch)
+  case CaseDef(pat, guard, body) =>                               (eliminated by transmatch)
+  case Sequence(trees) =>                                         (eliminated by transmatch)
+  case Alternative(trees) =>                                      (eliminated by transmatch)
+  case Bind(name, rhs) =>                                         (eliminated by transmatch)
+  case Function(vparams, body) =>                                 (eliminated by typecheck)
   case Assign(lhs, rhs) =>
-  case For(enumerators, body, isForYield) =>
   case If(cond, thenp, elsep) =>
-  case Switch(test, tags, bodies, default) =>
+  case Switch(test, tags, bodies, default) =>                     (introduced by refcheck, transmatch)
   case Return(expr) =>
   case Try(block, catcher, finalizer) =>
   case Throw(expr) =>
-  case New(init) =>
-  case Typed(expr, tp) =>
+  case New(typeOrTempl) =>
+  case Typed(expr, tp) =>                                         (eliminated by erasure)
   case TypeApply(fun, args) =>
   case Apply(fun, args) =>
   case Super(qual, mixin) =>
@@ -287,13 +273,12 @@ class Trees: Global {
   case Select(qualifier, selector) =>
   case Ident(name) =>
   case Literal(value) =>
-  case EmptyTypeTree() =>
-  case SingletonTypeTree(ref) =>
-  case SelectFromTypeTree(qualifier, selector) =>
-  case FunctionTypeTree(argtpes, restpe) =>
-  case IntersectionTypeTree(parents) =>
-  case RefinementTypeTree(base, decls) =>
-  case AppliedTypeTree(tp, args) =>
+  case EmptyTypeTree() =>                                         (eliminated by typecheck)
+  case SingletonTypeTree(ref) =>                                  (eliminated by typecheck)
+  case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by typecheck)
+  case IntersectionTypeTree(parents) =>                           (eliminated by typecheck)
+  case RefinementTypeTree(base, decls) =>                         (eliminated by typecheck)
+  case AppliedTypeTree(tp, args) =>                               (eliminated by typecheck)
 */
 
   trait TreeCopier {
@@ -306,7 +291,6 @@ class Trees: Global {
     def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef;
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef;
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]): Import;
-    def PatDef(tree: Tree, mods: int, pat: Tree, rhs: Tree): PatDef;
     def Attributed(tree: Tree, attribute: Tree, definition: Tree): Attributed;
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef;
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template;
@@ -319,12 +303,11 @@ class Trees: Global {
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function;
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign;
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If;
-    def For(tree: Tree, enumerators: List[Tree], body: Tree, isForYield: boolean): For;
     def Switch(tree: Tree, test: Tree, tags: List[int], bodies: List[Tree], default: Tree): Switch;
     def Return(tree: Tree, expr: Tree): Return;
     def Try(tree: Tree, block: Tree, catcher: Tree, finalizer: Tree): Try;
     def Throw(tree: Tree, expr: Tree): Throw;
-    def New(tree: Tree, init: Tree): New;
+    def New(tree: Tree, typeOrTempl: Tree): New;
     def Typed(tree: Tree, expr: Tree, tp: Tree): Typed;
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply;
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply;
@@ -336,7 +319,6 @@ class Trees: Global {
     def EmptyTypeTree(tree: Tree): EmptyTypeTree;
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree;
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree;
-    def FunctionTypeTree(tree: Tree, argtpes: List[Tree], restpe: Tree): FunctionTypeTree;
     def IntersectionTypeTree(tree: Tree, parents: List[Tree]): IntersectionTypeTree;
     def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]): RefinementTypeTree;
     def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]): AppliedTypeTree;
@@ -361,8 +343,6 @@ class Trees: Global {
       { val t = new LabelDef(name, params, rhs); t.setPos(tree.pos); t }
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
       { val t = new Import(expr, selectors); t.setPos(tree.pos); t }
-    def PatDef(tree: Tree, mods: int, pat: Tree, rhs: Tree) =
-      { val t = new PatDef(mods, pat, rhs); t.setPos(tree.pos); t }
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) =
       { val t = new Attributed(attribute, definition); t.setPos(tree.pos); t }
     def DocDef(tree: Tree, comment: String, definition: Tree) =
@@ -387,8 +367,6 @@ class Trees: Global {
       { val t = new Assign(lhs, rhs); t.setPos(tree.pos); t }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       { val t = new If(cond, thenp, elsep); t.setPos(tree.pos); t }
-    def For(tree: Tree, enumerators: List[Tree], body: Tree, isForYield: boolean) =
-      { val t = new For(enumerators, body, isForYield); t.setPos(tree.pos); t }
     def Switch(tree: Tree, test: Tree, tags: List[int], bodies: List[Tree], default: Tree) =
       { val t = new Switch(test, tags, bodies, default); t.setPos(tree.pos); t }
     def Return(tree: Tree, expr: Tree) =
@@ -397,8 +375,8 @@ class Trees: Global {
       { val t = new Try(block, catcher, finalizer); t.setPos(tree.pos); t }
     def Throw(tree: Tree, expr: Tree) =
       { val t = new Throw(expr); t.setPos(tree.pos); t }
-    def New(tree: Tree, init: Tree) =
-      { val t = new New(init); t.setPos(tree.pos); t }
+    def New(tree: Tree, typeOrTempl: Tree) =
+      { val t = new New(typeOrTempl); t.setPos(tree.pos); t }
     def Typed(tree: Tree, expr: Tree, tp: Tree) =
       { val t = new Typed(expr, tp); t.setPos(tree.pos); t }
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
@@ -421,8 +399,6 @@ class Trees: Global {
       { val t = new SingletonTypeTree(ref); t.setPos(tree.pos); t }
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
       { val t = new SelectFromTypeTree(qualifier, selector); t.setPos(tree.pos); t }
-    def FunctionTypeTree(tree: Tree, argtpes: List[Tree], restpe: Tree) =
-      { val t = new FunctionTypeTree(argtpes, restpe); t.setPos(tree.pos); t }
     def IntersectionTypeTree(tree: Tree, parents: List[Tree]) =
       { val t = new IntersectionTypeTree(parents); t.setPos(tree.pos); t }
     def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]) =
@@ -477,11 +453,6 @@ class Trees: Global {
       case t @ Import(expr0, selectors0)
       if (expr0 == expr && selectors0 == selectors) => t
       case _ => copy.Import(tree, expr, selectors)
-    }
-    def PatDef(tree: Tree, mods: int, pat: Tree, rhs: Tree) = tree match {
-      case t @ PatDef(mods0, pat0, rhs0)
-      if (mods0 == mods && pat0 == pat && rhs0 == rhs) => t
-      case _ => copy.PatDef(tree, mods, pat, rhs)
     }
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) = tree match {
       case t @ Attributed(attribute0, definition0)
@@ -543,11 +514,6 @@ class Trees: Global {
       if (cond0 == cond && thenp0 == thenp && elsep0 == elsep) => t
       case _ => copy.If(tree, cond, thenp, elsep)
     }
-    def For(tree: Tree, enumerators: List[Tree], body: Tree, isForYield: boolean) = tree match {
-      case t @ For(enumerators0, body0, isForYield0)
-      if (enumerators0 == enumerators && body0 == body && isForYield0 == isForYield) => t
-      case _ => copy.For(tree, enumerators, body, isForYield)
-    }
     def Switch(tree: Tree, test: Tree, tags: List[int], bodies: List[Tree], default: Tree) = tree match {
       case t @ Switch(test0, tags0, bodies0, default0)
       if (test0 == test && tags0 == tags && bodies0 == bodies && default0 == default) => t
@@ -568,10 +534,10 @@ class Trees: Global {
       if (expr0 == expr) => t
       case _ => copy.Throw(tree, expr)
     }
-    def New(tree: Tree, init: Tree) = tree match {
-      case t @ New(init0)
-      if (init0 == init) => t
-      case _ => copy.New(tree, init)
+    def New(tree: Tree, typeOrTempl: Tree) = tree match {
+      case t @ New(typeOrTempl0)
+      if (typeOrTempl0 == typeOrTempl) => t
+      case _ => copy.New(tree, typeOrTempl)
     }
     def Typed(tree: Tree, expr: Tree, tp: Tree) = tree match {
       case t @ Typed(expr0, tp0)
@@ -627,11 +593,6 @@ class Trees: Global {
       if (qualifier0 == qualifier && selector0 == selector) => t
       case _ => copy.SelectFromTypeTree(tree, qualifier, selector)
     }
-    def FunctionTypeTree(tree: Tree, argtpes: List[Tree], restpe: Tree) = tree match {
-      case t @ FunctionTypeTree(argtpes0, restpe0)
-      if (argtpes0 == argtpes && restpe0 == restpe) => t
-      case _ => copy.FunctionTypeTree(tree, argtpes, restpe)
-    }
     def IntersectionTypeTree(tree: Tree, parents: List[Tree]) = tree match {
       case t @ IntersectionTypeTree(parents0)
       if (parents0 == parents) => t
@@ -672,8 +633,6 @@ class Trees: Global {
         copy.LabelDef(tree, name, transformIdents(params), transform(rhs))
       case Import(expr, selectors) =>
         copy.Import(tree, transform(expr), selectors)
-      case PatDef(mods, pat, rhs) =>
-        copy.PatDef(tree, mods, transform(pat), transform(rhs))
       case Attributed(attribute, definition) =>
         copy.Attributed(tree, transform(attribute), transform(definition))
       case DocDef(comment, definition) =>
@@ -696,8 +655,6 @@ class Trees: Global {
         copy.Function(tree, transformValDefs(vparams), transform(body))
       case Assign(lhs, rhs) =>
         copy.Assign(tree, transform(lhs), transform(rhs))
-      case For(enumerators, body: Tree, isForYield) =>
-        copy.For(tree, transformTrees(enumerators), transform(body), isForYield)
       case If(cond, thenp, elsep) =>
         copy.If(tree, transform(cond), transform(thenp), transform(elsep))
       case Switch(test, tags, bodies, default) =>
@@ -708,8 +665,8 @@ class Trees: Global {
         copy.Try(tree, transform(block), transform(catcher), transform(finalizer))
       case Throw(expr) =>
         copy.Throw(tree, transform(expr))
-      case New(init) =>
-        copy.New(tree, transform(init))
+      case New(typeOrTempl) =>
+        copy.New(tree, transform(typeOrTempl))
       case Typed(expr, tp) =>
         copy.Typed(tree, transform(expr), transform(tp))
       case TypeApply(fun, args) =>
@@ -732,8 +689,6 @@ class Trees: Global {
         copy.SingletonTypeTree(tree, transform(ref))
       case SelectFromTypeTree(qualifier, selector) =>
         copy.SelectFromTypeTree(tree, transform(qualifier), selector)
-      case FunctionTypeTree(argtpes, restpe) =>
-        copy.FunctionTypeTree(tree, transformTrees(argtpes), transform(restpe))
       case IntersectionTypeTree(parents) =>
         copy.IntersectionTypeTree(tree, transformTrees(parents))
       case RefinementTypeTree(base, decls) =>
@@ -778,8 +733,6 @@ class Trees: Global {
         traverseTrees(params); traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
-      case PatDef(mods, pat, rhs) =>
-        traverse(pat); traverse(rhs)
       case Attributed(attribute, definition) =>
         traverse(attribute); traverse(definition)
       case DocDef(comment, definition) =>
@@ -802,8 +755,6 @@ class Trees: Global {
         traverseTrees(vparams); traverse(body)
       case Assign(lhs, rhs) =>
         traverse(lhs); traverse(rhs)
-      case For(enumerators, body: Tree, isForYield) =>
-        traverseTrees(enumerators); traverse(body)
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
       case Switch(test, tags, bodies, default) =>
@@ -814,8 +765,8 @@ class Trees: Global {
         traverse(block); traverse(catcher); traverse(finalizer)
       case Throw(expr) =>
         traverse(expr)
-      case New(init) =>
-        traverse(init)
+      case New(typeOrTempl) =>
+        traverse(typeOrTempl)
       case Typed(expr, tp) =>
         traverse(expr); traverse(tp)
       case TypeApply(fun, args) =>
@@ -828,8 +779,6 @@ class Trees: Global {
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>
         traverse(qualifier)
-      case FunctionTypeTree(argtpes, restpe) =>
-        traverseTrees(argtpes); traverse(restpe)
       case IntersectionTypeTree(parents) =>
         traverseTrees(parents)
       case RefinementTypeTree(base, decls) =>

@@ -70,12 +70,17 @@ abstract class TreePrinters {
         printOpt(">: ", lo); printOpt("<: ", hi);
     }
 
+    def printBlock(tree: Tree): unit = tree match {
+      case Block(_, _) | Visitor(_) => print(tree)
+      case _ => printColumn(List(tree), "{", ";", "}")
+    }
+
     def symName(tree: Tree, name: Name): String =
       if (tree.symbol != null && tree.symbol != NoSymbol) tree.symbol.nameString
       else name.toString();
 
     def printOpt(prefix: String, tree: Tree): unit =
-      if (tree != EmptyTree) { print(prefix); print(tree) }
+      if (!tree.isEmpty) { print(prefix); print(tree) }
 
     def printModifiers(flags: int): unit = {
       val s = flagsToString(flags);
@@ -109,7 +114,7 @@ abstract class TreePrinters {
           printOpt(": ", tp);
           if ((mods & DEFERRED) == 0) {
             print(" = ");
-            if (rhs == EmptyTree) print("_") else print(rhs)
+            if (rhs.isEmpty) print("_") else print(rhs)
           }
 
         case DefDef(mods, name, tparams, vparams, tp, rhs) =>
@@ -126,22 +131,14 @@ abstract class TreePrinters {
           printTypeParams(tparams); printOpt(" = ", rhs);
 
         case LabelDef(name, params, rhs) =>
-          print(symName(tree, name)); printRow(params, "(", ",", ")"); print(rhs);
+          print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs);
 
         case Import(expr, selectors) =>
-          def printSelectors(ss: List[Pair[Name, Name]]): unit = ss match {
-            case List(Pair(nme.WILDCARD, _)) => print("_");
-            case Pair(s1, s2) :: ss1 =>
-              print(s1);
-              if (s1 != s2) print("=>" + s2);
-              if (!ss1.isEmpty) {
-                print(", "); printSelectors(ss1);
-              }
-          }
-          print("import "); print(expr); print(".{"); printSelectors(selectors); print("}");
-
-        case PatDef(mods, pat, rhs) =>
-          print(flagsToString(mods) + " val "); print(pat); printOpt(" = ", rhs);
+          def selectorToString(s: Pair[Name, Name]): String =
+            if (s._1 == nme.WILDCARD || s._1 == s._2) s._1.toString()
+            else s._1.toString() + "=>" + s._2.toString();
+          print("import "); print(expr);
+          print(selectors.map(selectorToString).mkString(".{", ", ", "}"))
 
         case Attributed(attr, definition) =>
           print("["); print(attr); print("]"); println; print(definition);
@@ -177,15 +174,10 @@ abstract class TreePrinters {
         case Assign(lhs, rhs) =>
           print(lhs); print(" = "); print(rhs)
 
-        case For(enumerators, body, isForYield) =>
-          printRow(enumerators, "for(", "; ", ") ");
-          if (isForYield) print("yield ");
-          print(body)
-
         case If(cond, thenp, elsep) =>
           print("if ("); print(cond); print(")"); indent; println;
           print(thenp); undent;
-          if (elsep != EmptyTree) {
+          if (!elsep.isEmpty) {
             println; print("else"); indent; println; print(elsep); undent
           }
 
@@ -199,8 +191,9 @@ abstract class TreePrinters {
           print("return "); print(expr)
 
         case Try(block, catcher, finalizer) =>
-          print("try "); print(block); print(" catch "); print(catcher);
-          print(" finally "); print(finalizer)
+          print("try "); printBlock(block);
+	  printOpt(" catch ", catcher);
+          printOpt(" finally ", finalizer)
 
         case Throw(expr) =>
           print("throw "); print(expr)
@@ -239,6 +232,7 @@ abstract class TreePrinters {
           print(obj match {
             case null => "null"
             case s: String => "\"" + s + "\""
+            case c: char => "\'" + c + "\'"
             case _ => obj.toString()
           })
 
@@ -251,9 +245,6 @@ abstract class TreePrinters {
         case SelectFromTypeTree(qualifier, selector) =>
           print(qualifier); print("#"); print(symName(tree, selector))
 
-        case FunctionTypeTree(argtpes, restpe) =>
-          printRow(argtpes, "(", ", ", ") => "); print(restpe)
-
         case IntersectionTypeTree(parents) =>
           printRow(parents, " with ")
 
@@ -263,7 +254,7 @@ abstract class TreePrinters {
         case AppliedTypeTree(tp, args) =>
           print(tp); printRow(args, "[", ", ", "]")
       }
-      if (global.settings.printtypes.value && tree.isTerm && tree != EmptyTree) {
+      if (global.settings.printtypes.value && tree.isTerm && !tree.isEmpty) {
         print("{"); print(if (tree.tpe == null) "<null>" else tree.tpe.toString()); print("}")
       }
     }

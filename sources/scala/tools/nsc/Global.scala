@@ -17,10 +17,7 @@ import ast._;
 import ast.parser._;
 import typechecker._;
 
-class Global(val settings: Settings, val reporter: Reporter)
- extends SymbolTable
-    with Trees
-    with CompilationUnits {
+class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable with Trees with TreeCheckers with CompilationUnits {
 
 // sub-components --------------------------------------------------
 
@@ -47,6 +44,7 @@ class Global(val settings: Settings, val reporter: Reporter)
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);
   def inform(msg: String) = reporter.info(null, msg, true);
+
 
   def log(msg: String) =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
@@ -115,15 +113,10 @@ class Global(val settings: Settings, val reporter: Reporter)
 
   definitions.init; // needs firstPhase to be defined, that's why it is placed here.
 
-  object deSugarizePhase extends DeSugarizePhase(parserPhase) {
-    val global: Global.this.type = Global.this
-  }
-
   object analyzer extends Analyzer {
     val global: Global.this.type = Global.this;
   }
-
-  val namerPhase = new analyzer.NamerPhase(deSugarizePhase);
+  val namerPhase = new analyzer.NamerPhase(parserPhase);
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
 
   val terminalPhase = new StdPhase(typeCheckPhase) {
@@ -159,11 +152,13 @@ class Global(val settings: Settings, val reporter: Reporter)
     reporter.resetCounters();
     for (val source <- sources)
       addUnit(new CompilationUnit(source));
+
     phase = NoPhase.next;
     while (phase != terminalPhase && reporter.errors() == 0) {
       val startTime = System.currentTimeMillis();
       if (!(settings.skip contains phase.name)) phase.run;
       if (settings.print contains phase.name) treePrinter.printAll();
+      if (settings.check contains phase.name) checkTrees;
       informTime(phase.description, startTime);
       phase = if (settings.stop contains phase.name) terminalPhase else phase.next;
     }
@@ -198,6 +193,10 @@ class Global(val settings: Settings, val reporter: Reporter)
     } catch {
       case ex: IOException => error(ex.getMessage());
     }
+
+  def checkTrees: unit =
+    for (val unit <- units; val tree <- unit.body)
+      treeChecker.traverse(tree);
 
   def showDef(name: Name, module: boolean): unit = {
     def getSym(name: Name, module: boolean): Symbol = {

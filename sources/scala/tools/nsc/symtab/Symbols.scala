@@ -325,10 +325,22 @@ abstract class Symbols: SymbolTable {
       if (hasFlag(OVERLOADED)) info.asInstanceOf[OverloadedType].alternatives
       else List(this);
 
-    def suchThat(cond: Symbol => boolean): Symbol =
-      if (hasFlag(OVERLOADED)) uniqueSymbolIn(alternatives.elements, cond)
-      else if (cond(this)) this
+    def filter(cond: Symbol => boolean): Symbol =
+      if (hasFlag(OVERLOADED)) {
+	val alts = alternatives;
+	val alts1 = alts filter cond;
+	if (alts1 eq alts) this
+	else if (alts1.isEmpty) NoSymbol
+	else if (alts1.tail.isEmpty) alts1.head
+	else owner.newOverloaded(info.prefix, alts1)
+      } else if (cond(this)) this
       else NoSymbol;
+
+    def suchThat(cond: Symbol => boolean): Symbol = {
+      val result = filter(cond);
+      assert(!result.hasFlag(OVERLOADED));
+      result
+    }
 
 // Cloneing -------------------------------------------------------------------
 
@@ -538,7 +550,7 @@ abstract class Symbols: SymbolTable {
 
     /** String representation of symbol's definition */
     final def defString: String =
-      compose(List(flagsToString(flags & SOURCEFLAGS),
+      compose(List(flagsToString(rawflags & SOURCEFLAGS),
 		   keyString,
 		   varianceString + nameString,
 		   infoString(rawInfo)));
@@ -647,16 +659,4 @@ abstract class Symbols: SymbolTable {
 
   /** A class for type histories */
   private class TypeHistory(val start: Phase, val info: Type, val prev: TypeHistory);
-
-
-  /** Return unique element in list of symbols satisfying condition,
-   *  or NoSymbol if no element satisfies condition,
-   *  pre: at most one element satisfies condition.
-   */
-  def uniqueSymbolIn(syms: Iterator[Symbol], cond: Symbol => boolean): Symbol =
-    if (syms.hasNext) {
-      val sym = syms.next;
-      if (cond(sym)) { assert(!syms.exists(cond)); sym }
-      else uniqueSymbolIn(syms, cond)
-    } else NoSymbol;
 }

@@ -63,6 +63,16 @@ abstract class Definitions: SymbolTable {
     def TupleClass(i: int): Symbol = getClass("scala.Tuple" + i);
     def FunctionClass(i: int): Symbol = getClass("scala.Function" + i);
 
+    def tupleType(elems: List[Type]) = {
+      val sym = TupleClass(elems.length);
+      typeRef(sym.info.prefix, sym, elems)
+    }
+
+    def functionType(formals: List[Type], restpe: Type) = {
+      val sym = FunctionClass(formals.length);
+      typeRef(sym.info.prefix, sym, formals ::: List(restpe))
+    }
+
     // members of class scala.Any
     var Any_==          : Symbol = _;
     var Any_!=          : Symbol = _;
@@ -95,8 +105,9 @@ abstract class Definitions: SymbolTable {
         i = j + 1;
         j = fullname.pos('.', i)
       }
-      val result = sym.info.nonPrivateMember(fullname.subName(i, j).toTypeName)
-	.suchThat(.hasFlag(MODULE));
+      val result =
+        if (module) sym.info.nonPrivateMember(fullname.subName(i, j)).suchThat(.hasFlag(MODULE));
+        else sym.info.nonPrivateMember(fullname.subName(i, j).toTypeName);
       if (result == NoSymbol)
 	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
       result
@@ -175,7 +186,16 @@ abstract class Definitions: SymbolTable {
       MatchErrorModule = getModule("scala.MatchError");
       NilModule = getModule("scala.Nil");
       ConsClass = getClass("scala.$colon$colon");
-      RepeatedParamClass = newClass(ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME, List(SeqClass.tpe));
+      RepeatedParamClass = newClass(ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME, List());
+	{ val tparam = newTypeParam(RepeatedParamClass, 0);
+	  RepeatedParamClass.setInfo(
+	    PolyType(
+	      List(tparam),
+	      ClassInfoType(
+		List(typeRef(SeqClass.tpe.prefix, SeqClass, List(tparam.typeConstructor))),
+		new Scope(),
+		RepeatedParamClass)))
+       }
 
       // members of class scala.Any
       Any_==           = newMethod(AnyClass, "==")

@@ -21,10 +21,10 @@ trait TypeCheckers: Analyzer {
 
   class TypeChecker(context: Context) extends Transformer {
 
-    import global._;
     import context.unit;
 
-    def error(pos: int, msg: String) = unit.error(pos, msg);
+    val infer = new Inferencer(context);
+    import infer._;
 
     def reportTypeError(pos: int, ex: TypeError): unit = {
       if (settings.debug.value) ex.printStackTrace();
@@ -43,6 +43,33 @@ trait TypeCheckers: Analyzer {
       }
     }
 
+    /** Mode constants
+    */
+    val NOmode        = 0x000;
+    val EXPRmode      = 0x001;  // these 3 modes are mutually exclusive.
+    val PATTERNmode   = 0x002;
+    val TYPEmode      = 0x004;
+
+    val FUNmode       = 0x10;   // orthogonal to above. When set
+                                // we are looking for a method or constructor
+
+    val POLYmode      = 0x020;  // orthogonal to above. When set
+                                // expression types can be polymorphic.
+
+    val QUALmode      = 0x040;  // orthogonal to above. When set
+                                // expressions may be packages and
+                                // Java statics modules.
+
+    val SUPERmode     = 0x080;  // Goes with CONSTRmode. When set
+                                // we are checking a superclass
+                                // constructor invocation.
+
+    val baseModes: int  = EXPRmode | PATTERNmode;
+
+    val SEQUENCEmode  = 0x1000;  // only for PATTERNmode, otherwise orthogonal to above. When set
+                                 // we turn "x" into "x@_"
+                                 // and allow args to be of type Seq( a) instead of a
+
     def reenterValueParams(tree: Tree): unit = tree match {
       case DefDef(_, _, _, vparamss, _, _) =>
 	for (val vparams <- vparamss; val vparam <- vparams) context.scope enter vparam.symbol
@@ -54,23 +81,24 @@ trait TypeCheckers: Analyzer {
     def transformConstr(tree: Tree): Tree = tree;
     def transformExpr(tree: Tree): Tree = tree;
     def transformType(tree: Tree): Tree = tree;
-
-    abstract class ResolveError extends TermSymbol(NoSymbol, Position.NOPOS, nme.EMPTY) {
-      setFlag(IS_ERROR);
-      def msg(qual: Tree, name: Name): String;
-    }
-
-    object NotFoundError extends ResolveError {
-      def msg(qual: Tree, name: Name) = name.decode + " is not a member of " + qual;
-    }
-
-    object NotAccessibleError extends TermSymbol(NoSymbol, Position.NOPOS, nme.EMPTY) {
-      def msg(qual: Tree, name: Name) = name.decode + " is not accessible in " + qual;
-    }
+    def transformSuperType(tree: Tree): Tree = tree;
 
     def transform(tree: Tree, mode: int, pt: Type): Tree = {
 
-      def stabilize(tree: Tree, pre: Type): Tree = tree;
+      /** Turn tree type into stable type if possible and required by context. */
+      def stabilize(tree: Tree, pre: Type): Tree = tree.tpe match {
+        case ConstantType(base, value) =>
+          Literal(value) setPos tree.pos setType tree.tpe
+        case PolyType(List(), restp @ ConstantType(base, value)) =>
+          Literal(value) setPos tree.pos setType restp
+        case _ =>
+          if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
+            inferExprAlternative(tree, pt);
+          if (tree.symbol.isStable && pre.isStable &&
+              (pt.isStable  || (mode & QUALmode) != 0 || tree.symbol.isModule))
+            tree.tpe = singleType(pre, tree.symbol);
+          tree
+      }
 
       /** Attribute an identifier consisting of a simple name or an outer reference.
        *  @param tree      The tree representing the identifier.
@@ -166,81 +194,260 @@ trait TypeCheckers: Analyzer {
 	    qual = importTree(impSym).expr.duplicate;
 	    pre = qual.tpe;
 	  } else {
-	    error(tree.pos, "not found: " + name.decode);
+	    error(tree.pos, "not found: " + decode(name));
 	    sym = context.owner.newErrorSymbol(name);
 	  }
 	}
-	val symtype = pre.memberType(sym);
-	if (symtype == NoType) error(tree.pos, "not found: " + name.decode);
-	if (qual == EmptyTree) stabilize(tree.setSymbol(sym).setType(symtype), pre)
-	else transform(Select(qual, name) setPos tree.pos, mode, pt)
+	stabilize(checkAccessible(tree, sym, pre, qual), pre);
       }
-      tree//for now
-    }
-  }
-}
 
-/*
-      def resolveSymbol(pos: int, qual: Tree, name: Name): Symbol = {
-	def chekFeasible(sym: Symbol): Symbol = {
-
-
-	var best: Symbol = notFoundError;
-	var multiple = false;
-	var alts = pre.lookupAll(name);
-	while (alts.hasNext) {
-	  val alt = checkFeasible(alts.next);
-	  if (!improves(best, alt)) {
-	    multiple = !best.isError;
-	    best = alt;
-	  }
-	}
-	if (multiple) {
-	  alts = pre.lookupAll(name);
-	  while (alts.hasNext) {
-	    val alt = checkFeasible(alts.next);
-	    if (!improves(best, alt)) {
-	      error(pos,
-		    "ambiguous reference to overloaded definition,\n" +
-		    "both " + sym1 + ": " + pre.memberType(sym1) + "\n" +
-		    "and  " + sym2 + ": " + pre.memberTyoe(sym2) + "\nmatch" +
-		    context.resolveContext);
-	    }
-	  }
-	}
-	best match {
-	  case err: ResolveError => error(pos, err.msg);
-	  case _ => best
-	}
-	}
+      def applyPoly(tree: Tree, tparams: List[Symbol], restpe: Type): Tree = {
+        val tparams1 = tparams map (.cloneSymbol);
+        val targs = context.undetparams map (tparam => EmptyTypeTree().setType(tparam.tpe));
+        context.undetparams = context.undetparams ::: tparams1;
+        (if (qual0.isType) AppliedTypeTree(tree, targs) else TypeApply(tree, targs))
+          .setType(restpe.subst(tparams, tparams1))
+      }
 
       /** Attribute a selection where `tree' is `qual.name'.
        *  `qual' is already attributed.
        */
       def transformSelect(tree: Tree, qual0: Tree, name: Name): Tree = {
-	val qual = qual0;
-	var uninst: List[Symbol] = List();
-	qual.tpe match {
+	val qual = qual0.tpe match {
 	  case PolyType(tparams, restpe) =>
-	    qual = mkTypeApply(qual, tparams, restype, tparams map (.tpe));
-	    uninst = tparams;
+	    assert(context.undetparams.isEmpty);
+            applyPoly(qual, tparams, restpe);
+	  case _ =>
+	    qual0
+	}
+	val sym = qual.tpe.member(name);
+	// if (sym == NoSymbol) try to insert view.
+        val pre = qual match {
+          case Super(_, _) => context.enclClass.owner.thisType
+          case _ => qual.tpe
+        }
+	val tree1 = tree match {
+	  case Select(_, name) => copy.Select(tree, qual, name);
+	  case SelectFromTypeTree(_, name) => copy.SelectFromTypeTree(tree, qual, name)
+	}
+	stabilize(checkAccessible(tree1, sym, pre, qual), pre);
+      }
+
+      /** Attribute an argument list.
+       *  @param pos      Position for error reporting
+       *  @param meth     The symbol of the called method, or `null' if none exists.
+       *  @param tparams  The type parameters that need to be instantiated
+       *  @param methtype The method's type w/o type parameters
+       *  @param argMode  The argument mode (either EXPRmode or PATTERNmode)
+       *  @param args     The actual arguments
+       *  @param pt       The proto-resulttype.
+       *  @return         The vector of instantiated argument types, or null if error.
+       */
+      def transformArgs(pos: int, meth: Symbol, tparams: Array[Symbol], methtype: Type, argMode: int, args: Array[Tree], pt: Type): Array[Tree] = {
+	val argtypes = new Array[Type](args.length);
+	methtype match {
+	  case Type$MethodType(params, restp) =>
+	    val formals = infer.formalTypes(params, args.length);
+	    if (formals.length != args.length) {
+	      error(pos, "wrong number of arguments for " +
+		  (if (meth == null) "<function>" else meth) +
+		  ArrayApply.toString(formals.asInstanceOf[Array[Object]], "(", ",", ")"));
+	      return null;
+	    }
+	    if (tparams.isEmpty) {
+	      List.map2(args, formals) ((arg, formal) => transform(arg, argMode, formal))
+	    } else {
+	      val targs = protoTypeArgs(tparams, params, restp, pt);
+	      val argpts = formals map (.subst(tparams, targs));
+	      val args1 = List.map2(args, argpts)((arg, argpt) =>
+		transform(arg, argMode | POLYmode, argpt));
+	      // targs1: same as targs except that every WildcardType is mapped to
+	      // formal parameter type.
+	      val targs1 = List.map2(targs, tparams)((targ, tparam) =>
+		if (targ == WildcardType) tparam.tpe else targ);
+
+
+	  { var i = 0; while (i < args.length) {
+	    argtypes(i) = args(i).getType().deconst();
+	    argtypes(i) match {
+	      case Type$PolyType(tparams1, restype1) =>
+		argtypes(i) = infer.argumentTypeInstance(
+		  tparams1, restype1,
+		  formals(i).subst(tparams, targs1),
+		  argpts(i));
+	      case _ =>
+	    }
+	    i = i + 1
+	  }}
+	}
+	//   desugarizing ident patterns
+	if (params.length > 0 && (params(params.length-1).flags & REPEATED) != 0) {
+	  if ((mode & PATTERNmode) != 0) {
+	    def desug_allIdentPatterns(trees: Array[Tree], currentOwner: Symbol): unit = {
+	      var i = 0; while (i < trees.length) {
+		trees(i) match {
+		  case Tree.Ident(name) =>
+		    if (name != Names.PATTERN_WILDCARD) {
+		      val vble: Symbol = context.scope.lookup(name);
+		      trees(i) = desugarize.IdentPattern(trees(i)).setSymbol(vble)
+			.setType(vble.getType());
+		    } else {
+                      trees(i) = gen.Ident(trees(i).pos, definitions.PATTERN_WILDCARD);
+                    }
+		  case _ =>
+		}
+		i = i + 1
+	      }
+	    }
+    	    desug_allIdentPatterns(args, context.owner);
+	  } else {
+	    assert(args.length != params.length ||
+		   !(args(params.length-1).isInstanceOf[Tree.Sequence]));
+	  }
+	}
+	argtypes;
+
+      case Type$PolyType(tparams1, restp) =>
+	var tparams2: Array[Symbol] = tparams1;
+	if (tparams.length != 0) {
+	  tparams2 = new Array[Symbol](tparams.length + tparams1.length);
+	  System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
+	  System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
+	}
+	transformArgs(pos, meth, tparams2,
+		      infer.skipViewParams(tparams2, restp), argMode, args, pt)
+
+      case Type.ErrorType =>
+	var i = 0; while (i < args.length) {
+	  args(i) = transform(args(i), argMode, Type.ErrorType);
+	  argtypes(i) = args(i).getType().deconst();
+	  i = i + 1
+	}
+	argtypes
+
+      case Type.OverloadedType(alts, alttypes) if (alts.length == 1) =>
+        transformArgs(pos, alts(0), tparams, alttypes(0), argMode, args, pt)
+
+      case _ =>
+	var i = 0; while (i < args.length) {
+	  args(i) = transform(args(i), argMode, Type.AnyType);
+	  argtypes(i) = args(i).getType().deconst();
+	  i = i + 1
+	}
+	argtypes
+    }
+  }
+
+
+
+/*      tree
+    }
+  }
+}
+*/
+
+      def transformApply(tree: Tree, fn: Tree, args: List[Tree]): Tree = {
+        var fn1 =
+          if ((mode & PATTERNmode) != 0) transform(fn, mode | FUNmode & ~SEQUENCEmode, pt)
+          else transform(fn, mode | FUNmode, WildcardType);
+
+	// if function is overloaded filter all alternatives that match
+	// number of arguments and expected result type.
+	if (fn1.hasSymbol && fn1.symbol.hasFlag(OVERLOADED)) {
+	  val sym1 = fn1.symbol filter (alt =>
+	    isApplicable(fn1.symbol.info.prefix.memberType(alt), argtypes, pt));
+	  fn1.setSymbol(sym1).setType(fn1.symbol.info.prefix.memberType(sym1));
+	}
+
+	// handle the case of application of match to a visitor specially
+	args match {
+	  case List(Visitor(_)) if (treeInfo.methSymbol(fn1) == Any_match) =>
+	    return transformMatch(fn1, args.head);
 	  case _ =>
 	}
-	val sym = resolveSymbol(qual, name);
-	// if (sym == NoSymbol) try to insert view.
-	if (!uninst.isEmpty) {
-	  def polymorphize(tp: Type): Type = tp match {
-            case PolyType(tparams, restpe) => PolyType(tparams, polymorphize(restpe))
-            case _ => PolyType(uninst, tp)
-	  }
-	  symtype = polymorphize(symtype);
-	}
-	//System.out.println(qual.getType() + ".member: " + sym + ":" + symtype);//DEBUG
-	val tree1: Tree = tree match {
-	  case Select(_, _) => copy.Select(tree, sym, qua);
-	  case SelectFromType(_, _) => copy.SelectFromType(tree, sym, qual)
-	}
- 	mkStable(tree1.setType(symtype), qualtype)
       }
+
+      def transformApply(fn: Tree, args: List[Tree]): Tree = {
+	fn.tpe match {
+	  case OverloadedType(pre, alts) =>
+            val args1 = args map (arg => transform(arg, argMode, WildcardType));
+	    inferMethodAlternative(fn, args1 map (.tpe.deconst), pt);
+            transformApply(fn, args1);
+          case PolyType(tparams, restpe) =>
+            transformApply(applyPoly(fn, tparams, restpe));
+          case MethodType(formals0, restpe) =>
+	    val formals = formalTypes(formals, args.length);
+	    if (formals.length != args.length) {
+	      error(pos, "wrong number of arguments for " + treeSymTypeMsg(fn1));
+              setError(tree)
+            }
+            val tparams = context.undetparams;
+	    if (tparams.isEmpty) {
+	      val args1 = List.map2(args, formals) ((arg, formal) =>
+                transform(arg, argMode, formal));
+
+	    } else {
+	      val targs = protoTypeArgs(tparams, formals, restp, pt);
+	      val argpts = formals map (.subst(tparams, targs));
+	      val args1 = List.map2(args, argpts1)((arg, argpt) =>
+		transform(arg, argMode | POLYmode, argpt));
+	      // targs1: same as targs except that every WildcardType is mapped to
+	      // formal parameter type.
+	      val targs1 = List.map2(targs, tparams)((targ, tparam) =>
+		if (targ == WildcardType) tparam.tpe else targ);
+              val argpts1 = formals map (.subst(tparams, targs1));
+              val argtpes = List.map3(args, argpts, argpts1)(inferArgumentTypeInstance);
+              inferMethodInstance(fn, argtpes, pt);
+              transformApply(fn, args1)
+            }
+
+
+
+            val tparams1 = tparams map (.cloneSymbol);
+            val restpe1 = restpe.substSym(tparams, tparams1);
+
+
+            copy.Apply(tree, fn1, args1).setType(???)
+          case MethodType(formals, restpe) =>
+            transformMonoApply(fn1, formals, restpe, args)
+
+
+
+	// type arguments with formals as prototypes if they exist.
+	val argtypes = transformArgs(tree.pos, fn1.symbol, fn1.tpe,
+				     mode & (PATTERNmode | EXPRmode), args, pt);
+	if (argtypes == null || argtypes exists (.isError)) return setError(tree);
+
+        var args1 = null;
+	// resolve overloading
+
+
+
+	      pt);
+	  case _ =>
+	}
+
+	// infer method instance
+
+
+	  val pattp: Type = matchQualType(fn1);
+	  if (pattp.isError()) {
+		return setError(tree)
+	      } else if (pattp != Type.NoType) {
+		if (infer.isFullyDefined(pattp) &&
+		    !(fn1.getType().isInstanceOf[Type$PolyType] &&
+		      pattp.containsSome(fn1.getType().typeParams()))) {
+		  val fn2: Tree = desugarize.postMatch(fn1, context.enclClass.owner);
+		  val arg1: Tree = transformVisitor(args(0), pattp, pt);
+		  return copy.Apply(tree, fn2, NewArray.Tree(arg1))
+			.setType(arg1.getType());
+		} else {
+                  error(tree.pos, "expected pattern type of cases could not be determined");
+                  return errorTermTree(tree)
+		}
+	      }
+	    }
+
+
 
 */

@@ -24,7 +24,7 @@ abstract class UnPickle {
   private var bytes: Array[byte] = _;
   private var bp: int = _;
   private var index: Array[int] = _;
-  private var entries: Array[Any] = _;
+  private var entries: Array[AnyRef] = _;
 
   def parse(bytes: Array[byte], clazz: Symbol, module: Symbol): unit = {
     warning("cannot yet unpickle: " + clazz.fullNameString('.'));

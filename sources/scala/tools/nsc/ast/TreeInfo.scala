@@ -114,7 +114,11 @@ abstract class TreeInfo {
     case _ => firstConstructor(stats.tail)
   }
 
-  /** Is name a variable name */
+  /** Is name a left-associative operator? */
+  def isLeftAssoc(operator: Name): boolean =
+    operator.length > 0 && operator(operator.length - 1) != ':';
+
+  /** Is name a variable name? */
   def isVariableName(name: Name): boolean = {
     val first = name(0);
     (('a' <= first && first <= 'z') || first == '_')

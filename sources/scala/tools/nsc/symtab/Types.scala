@@ -8,6 +8,24 @@ package scala.tools.nsc.symtab;
 import scala.tools.util.Position;
 import Flags._;
 
+/* A standard type pattern match:
+  case ErrorType =>
+  case WildcardType =>
+  case NoType =>
+  case NoPrefix =>
+  case ThisType(_) =>
+  case SingleType(pre, sym) =>
+  case ConstantType(base, value) =>
+  case TypeRef(pre, sym, args) =>
+  case TypeBounds(lo, hi) =>
+  case RefinedType(parents, defs) =>
+  case ClassInfoType(parents, defs, clazz) =>
+  case MethodType(paramtypes, result) =>
+  case PolyType(tparams, result) =>
+  case OverloadedType(pre, tparams, alts) =>
+  case TypeVar(_, _) =>
+*/
+
 abstract class Types: SymbolTable {
   import definitions._;
 
@@ -32,10 +50,8 @@ abstract class Types: SymbolTable {
 
     /** Map to a this type which is a subtype of this type.
      */
-    def narrow: Type = {
-      val reftpe = refinedType(List(this), commonOwner(this), EmptyScope);
-      ThisType(reftpe.symbol);
-    }
+    def narrow: Type =
+      refinedType(List(this), commonOwner(this), EmptyScope).narrow;
 
     /** Map a constant type to its underlying base type,
      *  identity for all other types */
@@ -83,7 +99,7 @@ abstract class Types: SymbolTable {
     def typeParams: List[Symbol] = List();
 
     /** Is this type produced as a repair for an error? */
-    def isError: boolean = this == ErrorType || symbol.isError;
+    def isError: boolean = symbol.isError;
 
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: boolean = false;
@@ -212,8 +228,8 @@ abstract class Types: SymbolTable {
 
     def baseClasses: List[Symbol] = List();
 
-    /** The index of given class symbol in the closure of this type, -1
-     *  of no base type with gien class symbol exists */
+    /** The index of given class symbol in the closure of this type,
+     *  or -1 if no base type with given class symbol exists */
     def closurePos(sym: Symbol): int = {
       val cl = closure;
       var lo = 0;
@@ -249,13 +265,15 @@ abstract class Types: SymbolTable {
      *  by `owner'. Identity for all other types. */
     def cloneInfo(owner: Symbol) = this;
 
-    /** The representation of this type used as a prefix */
+    /** The string representation of this type used as a prefix */
     def prefixString = toString() + ".";
 
-    /** Get type of `this' symbol corresponding to this class typeref, extend
-     *  homomorphically to results of function types and poly types.
-     *  Identity for all other types. */
-    def instanceType = this;
+    /** The string representation of this type, with singletypes explained */
+    def toLongString = {
+      val str = toString();
+      if (str.endsWith(".type")) str + " (with underlying type " + widen + ")";
+      else str
+    }
 
     /** Is this type completed (i.e. not a lazy type)?
      */
@@ -267,7 +285,7 @@ abstract class Types: SymbolTable {
     private def findDecl(name: Name, excludedFlags: int): Symbol = {
       var alts: List[Symbol] = List();
       var sym: Symbol = NoSymbol;
-      var e = decls.lookupEntry(name);
+      var e: ScopeEntry = decls.lookupEntry(name);
       while (e != null) {
 	if ((e.sym.rawflags & excludedFlags) == 0) {
 	  if (sym == NoSymbol) sym = e.sym
@@ -283,6 +301,7 @@ abstract class Types: SymbolTable {
     }
 
     protected def findMember(name: Name, excludedFlags: int): Symbol = {
+      //System.out.println("find member " + name.decode + " in " + this.baseClasses);//DEBUG
       var members: Scope = null;
       var member: Symbol = NoSymbol;
       var excluded = excludedFlags | DEFERRED;
@@ -357,6 +376,7 @@ abstract class Types: SymbolTable {
   /** An object representing an erroneous type */
   case object ErrorType extends Type {
     // todo see whether we can do without
+    override def isError: boolean = true;
     override def decls: Scope = new ErrorScope(NoSymbol);
     override def findMember(name: Name, excludedFlags: int): Symbol = decls lookup name;
     override def baseType(clazz: Symbol): Type = this;
@@ -432,17 +452,19 @@ abstract class Types: SymbolTable {
     private var validBaseClasses: Phase = null;
 
     override def closure: Array[Type] = {
-      if (validClosure != phase) {
-        validClosure = phase;
-        closureCache = null;
+      def computeClosure: Array[Type] =
 	try {
-          closureCache = addClosure(symbol.tpe, glbArray(parents map (.closure)));
+          addClosure(symbol.tpe, glbArray(parents map (.closure)));
 	} catch {
           case ex: MalformedClosure =>
             throw new MalformedType(
 	      "the type intersection " + this + " is malformed" +
               "\n --- because ---\n" + ex.getMessage())
 	}
+      if (validClosure != phase) {
+        validClosure = phase;
+        closureCache = null;
+        closureCache = computeClosure;
       }
       if (closureCache == null)
         throw new TypeError("illegal cyclic reference involving " + symbol);
@@ -457,7 +479,7 @@ abstract class Types: SymbolTable {
 	  val mixins = parents.tail;
 	  def isNew(limit: List[Type])(clazz: Symbol): boolean = {
 	    var ms = mixins;
-	    while (!(ms eq limit) && !(ms.head.symbol isSubClass clazz)) ms = ms.tail;
+	    while (!(ms eq limit) && ms.head.closurePos(clazz) < 0) ms = ms.tail;
 	    ms eq limit
 	  }
 	  var ms = mixins;
@@ -467,7 +489,6 @@ abstract class Types: SymbolTable {
 	  }
 	  symbol :: bcs
 	}
-
       if (validBaseClasses != phase) {
 	validBaseClasses = phase;
 	baseClassCache = null;
@@ -509,8 +530,7 @@ abstract class Types: SymbolTable {
   class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
 
   /** A class representing a constant type */
-  case class ConstantType(base: Type, value: Any)
-       extends SingletonType {
+  case class ConstantType(base: Type, value: Any) extends SingletonType {
     override def symbol: Symbol = base.symbol;
     override def singleDeref: Type = base;
     override def deconst: Type = base;
@@ -523,10 +543,10 @@ abstract class Types: SymbolTable {
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
     assert(!sym.isAbstractType || pre.isStable || pre.isError);
 
-    private def transform(tp: Type): Type =
+    def transform(tp: Type): Type =
       tp.asSeenFrom(pre, sym.owner).subst(sym.typeParams, args);
 
-    private def transform(cl: Array[Type]): Array[Type] = {
+    def transform(cl: Array[Type]): Array[Type] = {
       val cl1 = new Array[Type](cl.length);
       var i = 0;
       while (i < cl.length) { cl1(i) = transform(cl(i)); i = i + 1 }
@@ -556,14 +576,10 @@ abstract class Types: SymbolTable {
       else pre.memberInfo(sym).baseType(clazz);
 
     override def closure: Array[Type] =
-      if (sym.isAbstractType) addClosure(this, bounds.hi.closure)
+      if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
       else transform(sym.info.closure);
 
     override def baseClasses: List[Symbol] = sym.info.baseClasses;
-
-    override def instanceType: Type =
-      if (sym.thisSym != sym) transform(sym.typeOfThis)
-      else this;
 
     override def erasure: Type =
       if (sym.isAbstractType || sym.isAliasType) sym.info.erasure
@@ -587,11 +603,6 @@ abstract class Types: SymbolTable {
 
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
-    override def instanceType: Type = {
-      val res = resultType.instanceType;
-      if (res eq resultType) this else MethodType(paramTypes, res)
-    }
-
     override def erasure = {
       val pts = List.transform(paramTypes)(.erasure);
       val res = resultType.erasure;
@@ -602,25 +613,22 @@ abstract class Types: SymbolTable {
     override def toString(): String = paramTypes.mkString("(", ",", ")") + resultType;
   }
 
+  class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt);
+
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
    */
-  case class PolyType(override val typeParams: List[Symbol], override val resultType: Type) extends Type {
+  case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
+       extends Type {
 
     override def paramSectionCount: int = resultType.paramSectionCount;
 
     override def paramTypes: List[Type] = resultType.paramTypes;
 
-    override def instanceType: Type = {
-      val res = resultType.instanceType;
-      if (res eq resultType) this else PolyType(typeParams, res)
-    }
-
     override def erasure = resultType.erasure;
 
     override def toString(): String =
-      (if (typeParams.isEmpty) "=> " else typeParams.mkString("[", ",", "]"))
-      + resultType;
+      (if (typeParams.isEmpty) "=> " else typeParams.mkString("[", ",", "]")) + resultType;
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = typeParams map (.cloneSymbol(owner));
@@ -642,7 +650,10 @@ abstract class Types: SymbolTable {
 
   /** A class containing the alternatives and type prefix of an overloaded symbol
    */
-  case class OverloadedType(pre: Type, val alternatives: List[Symbol]) extends Type;
+  case class OverloadedType(pre: Type, alternatives: List[Symbol]) extends Type {
+    override def prefix: Type = pre;
+    override def toString() = (alternatives map pre.memberType).mkString("", " <and> ", "")
+  }
 
   /** A class representing an as-yet unevaluated type.
    */
@@ -718,8 +729,7 @@ abstract class Types: SymbolTable {
   /** A creator for type applications */
   def appliedType(tycon: Type, args: List[Type]): Type = tycon match {
     case TypeRef(pre, sym, args1) =>
-      if (args eq args1) tycon
-      else typeRef(pre, sym, args)
+      if (args eq args1) tycon else typeRef(pre, sym, args)
     case ErrorType => tycon
   }
 
@@ -745,7 +755,7 @@ abstract class Types: SymbolTable {
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = tp match {
-      case ErrorType | WildcardType | NoType | NoPrefix | TypeVar(_, _) | ThisType(_) =>
+      case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) =>
         tp
       case SingleType(pre, sym) =>
         val pre1 = this(pre);
@@ -787,9 +797,16 @@ abstract class Types: SymbolTable {
         else MethodType(paramtypes1, result1)
       case PolyType(tparams, result) =>
         val tparams1 = mapOver(tparams);
-        val result1 = this(result);
+        var result1 = this(result);
         if ((tparams1 eq tparams) && (result1 eq result)) tp
-        else PolyType(tparams1, result1)
+        else PolyType(tparams1, result1.substSym(tparams, tparams1))
+      case OverloadedType(pre, alts) =>
+        val pre1 = this(pre);
+        if (pre1 eq pre) tp
+        else OverloadedType(pre1, alts)
+      case TypeVar(_, constr) =>
+	if (constr.inst != NoType) this(constr.inst)
+	else tp
       case _ =>
         throw new Error("mapOver inapplicable for " + tp);
     }

@@ -160,7 +160,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   val baseModes     = EXPRmode | PATTERNmode | CONSTRmode;
 
-  val SEQUENCEmode  = 0x1000;  // orthogonal to above. When set
+  val SEQUENCEmode  = 0x1000;  // only for PATTERNmode, otherwise orthogonal to above. When set
                                // we turn "x" into "x@_"
                                // and allow args to be of type Seq( a) instead of a
 

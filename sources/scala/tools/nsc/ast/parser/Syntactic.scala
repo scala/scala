@@ -10,6 +10,34 @@ import scala.collection.mutable.ListBuffer;
 import symtab.Flags;
 import Tokens._;
 
+/** Performs the following context-free rewritings:
+ *  (1) Places all pattern variables in Bind nodes. In a pattern, for identifiers `x':
+ *                 x  => x @ _
+ *               x:T  => x @ (_ : T)
+ *
+ *  (2) Removes pattern definitions (PatDef's) as follows:
+ *      If pattern is a simple (typed) identifier:
+ *        val x = e     ==>  val x = e
+ *        val x: T = e  ==>  val x: T = e
+ *
+ *      if there are no variables in pattern
+ *        val p = e  ==>  e.match (case p => ())
+ *
+ *      if there is exactly one variable in pattern
+ *        val x_1 = e.match (case p => (x_1))
+ *
+ *      if there is more than one variable in pattern
+ *        val p = e  ==>  private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
+ *                        val x_1 = t$._1
+ *                        ...
+ *                        val x_N = t$._N
+ *
+ *  (3) Removes function types as follows:
+ *        (argtpes) => restpe   ==>   scala.Function_n[argtpes, restpe]
+ *
+ *  (4) Wraps naked case definitions in a match as follows:
+ *        { cases }   ==>   (x => x.match {cases}), except when already argument to match
+ */
 abstract class Syntactic: ParserPhase {
 
   import global._;
@@ -26,6 +54,12 @@ abstract class Syntactic: ParserPhase {
     /** The current nesting depths of while and do loops.
      */
     var loopNestingDepth = 0;
+
+    object treeBuilder extends TreeBuilder {
+      val global: Syntactic.this.global.type = Syntactic.this.global;
+      def freshName(): Name = unit.fresh.newName("x$");
+    }
+    import treeBuilder._;
 
     /** this is the general parse method
      */
@@ -134,85 +168,14 @@ abstract class Syntactic: ParserPhase {
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
 
-    def fresh(): Name = unit.fresh.newName("x");
-
-    /** Create a tree representing a packaging
-    */
-    def makePackaging(pkg: Tree, stats: List[Tree]): Tree =
-      atPos(in.pos) {
-	pkg match {
-	  case Ident(name) =>
-	    PackageDef(name, stats)
-	  case Select(qual, name) =>
-	    makePackaging(qual, List(PackageDef(name, stats)))
-	}
-      }
-
-    /** Create tree representing binary operation expression or pattern.
-    */
-    def makeBinop(isExpr: boolean, left: Tree, op: Name, right: Tree): Tree = {
-      if (isExpr) {
-	if (isLeftAssoc(op)) {
-	  Apply(Select(left, op.encode), List(right))
-	} else {
-	  val x: Name = fresh();
-	  Block(
-	    List(ValDef(0, x, EmptyTypeTree(), left)),
-	    Apply(Select(right, op.encode), List(Ident(x))))
-	}
-      } else {
-	Apply(Ident(op.encode.toTypeName), List(left, right))
-      }
-    }
-    def makeAlternative(ts: List[Tree]): Tree = {
-      def alternatives(t: Tree): List[Tree] = t match {
-	case Alternative(ts) => ts
-	case _ => List(t)
-      }
-      Alternative(for (val t <- ts; val a <- alternatives(t)) yield a)
-    }
-
-    def makeSequence(ts: List[Tree]): Tree = {
-      def elements(t: Tree): List[Tree] = t match {
-	case Sequence(ts) => ts
-	case _ => List(t)
-      }
-      Sequence(for (val t <- ts; val e <- elements(t)) yield e)
-    }
-
     def scalaDot(name: Name): Tree =
       Select(Ident(nme.scala), name);
-    def scalaRuntimeDot(name: Name): Tree =
-      Select(scalaDot(nme.runtime), name);
-    def ScalaRunTimeDot(name: Name): Tree =
-      Select(scalaRuntimeDot(nme.ScalaRunTime), name);
-    def scalaBooleanDot(name: Name): Tree =
-      Select(scalaDot(nme.Boolean), name);
-    def scalaAnyRefConstr(): Tree =
-      Apply(scalaDot(nme.AnyRef.toTypeName), List());
-    def scalaObjectConstr(): Tree =
-      Apply(scalaDot(nme.ScalaObject.toTypeName), List());
-    def caseClassConstr(): Tree =
-      Apply(scalaDot(nme.CaseClass.toTypeName), List());
-
-    def makeWhile(lname: Name, cond: Tree, body: Tree): Tree = {
-      val continu = Apply(Ident(lname), List());
-      val rhs = If(cond, Block(List(body), continu), Literal(()));
-      LabelDef(lname, Nil, rhs)
-    }
-
-    def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree = {
-      val continu = Apply(Ident(lname), List());
-      val rhs = Block(List(body), If(cond, continu, Literal(())));
-      LabelDef(lname, Nil, rhs)
-    }
-
-    def makeBlock(stats: List[Tree]): Tree = {
-      if (stats.isEmpty) Literal(())
-      else if (!stats.last.isTerm) Block(stats, Literal(()));
-      else if (stats.length == 1) stats(0)
-      else Block(stats.init, stats.last)
-    }
+    def scalaAnyRefConstr: Tree =
+      scalaDot(nme.AnyRef.toTypeName);
+    def scalaScalaObjectConstr: Tree =
+      scalaDot(nme.ScalaObject.toTypeName);
+    def caseClassConstr: Tree =
+      scalaDot(nme.CaseClass.toTypeName);
 
     /** Convert tree to formal parameter list
     */
@@ -265,7 +228,7 @@ abstract class Syntactic: ParserPhase {
 
     /** make closure from tree */
     def makeClosure(tree: Tree): Tree = {
-      val pname = fresh();
+      val pname = freshName();
       def insertParam(tree: Tree): Tree = tree match {
 	case Ident(name) =>
 	  Select(Ident(pname), name)
@@ -310,14 +273,11 @@ abstract class Syntactic: ParserPhase {
 	  }
       }
 
-    def isLeftAssoc(operator: Name): boolean =
-      operator.length > 0 && operator(operator.length - 1) != ':';
-
     def reduceStack(isExpr: boolean, base: List[OpInfo], top0: Tree, prec: int, leftAssoc: boolean): Tree = {
       var top = top0;
       if (opstack != base &&
 	  precedence(opstack.head.operator) == prec &&
-	  isLeftAssoc(opstack.head.operator) != leftAssoc) {
+	  treeInfo.isLeftAssoc(opstack.head.operator) != leftAssoc) {
 	syntaxError(
 	  opstack.head.pos,
 	  "left- and right-associative operators with same precedence may not be mixed",
@@ -514,14 +474,14 @@ abstract class Syntactic: ParserPhase {
 	  in.nextToken();
 	  if (in.token == RPAREN) {
 	    in.nextToken();
-	    atPos(accept(ARROW)) { FunctionTypeTree(List(), typ()) }
+	    atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
 	  } else {
 	    val t0 = typ();
 	    if (in.token == COMMA) {
 	      in.nextToken();
 	      val ts = new ListBuffer[Tree] + t0 ++ types();
 	      accept(RPAREN);
-	      atPos (accept(ARROW)) { FunctionTypeTree(ts.toList, typ()) }
+	      atPos (accept(ARROW)) { makeFunctionTypeTree(ts.toList, typ()) }
 	    } else {
 	      accept(RPAREN); t0
 	    }
@@ -530,7 +490,7 @@ abstract class Syntactic: ParserPhase {
 	  type1()
 	}
       if (in.token == ARROW) atPos(in.skipToken()) {
-	FunctionTypeTree(List(t), typ()) }
+	makeFunctionTypeTree(List(t), typ()) }
       else t
     }
 
@@ -687,8 +647,8 @@ abstract class Syntactic: ParserPhase {
 	  val enums = enumerators();
 	  accept(RPAREN);
 	  if (in.token == YIELD) {
-	    in.nextToken(); For(enums, expr(), true)
-	  } else For(enums, expr(), false)
+	    in.nextToken(); makeForYield(enums, expr())
+	  } else makeFor(enums, expr())
 	}
       } else if (in.token == RETURN) {
 	atPos(in.skipToken()) {
@@ -745,7 +705,7 @@ abstract class Syntactic: ParserPhase {
       var top = prefixExpr();
       while (in.token == IDENTIFIER) {
 	top = reduceStack(
-	  true, base, top, precedence(in.name), isLeftAssoc(in.name));
+	  true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
 	opstack = OpInfo(top, in.name, in.pos) :: opstack;
 	ident();
 	if (isExprIntro) {
@@ -783,7 +743,7 @@ abstract class Syntactic: ParserPhase {
      *                | StableRef
      *                | `(' [Expr] `)'
      *                | BlockExpr
-     *                | new Template
+     *                | new SimpleType [`(' [Exprs] `)'] {`with' SimpleType} [TemplateBody]
      *                | SimpleExpr `.' Id
      *                | SimpleExpr TypeArgs
      *                | SimpleExpr ArgumentExprs
@@ -822,9 +782,19 @@ abstract class Syntactic: ParserPhase {
 	  t = blockExpr()
 	case NEW =>
 	  t = atPos(in.skipToken()) {
-	    val templ = template();
-	    New(if (templ.parents.length == 1 && templ.body.isEmpty) templ.parents.head
-	        else templ)
+            val parents = new ListBuffer[Tree] + simpleType();
+            var args: List[Tree] = List();
+            if (in.token == LPAREN) args = argumentExprs();
+            while (in.token == WITH) {
+	      in.nextToken();
+	      parents += simpleType()
+            }
+            val stats = if (in.token == LBRACE) templateBody() else List();
+            val ps = parents.toList;
+            if (ps.length == 1 && stats.isEmpty)
+              Apply(Select(New(ps.head), nme.CONSTRUCTOR), args)
+            else
+              New(Template(ps, makeSuperCall(args) :: stats))
           }
 	case _ =>
 	  syntaxError("illegal start of simple expression", true);
@@ -896,7 +866,7 @@ abstract class Syntactic: ParserPhase {
 	val guard =
 	  if (in.token == IF) { in.nextToken(); postfixExpr() }
 	  else EmptyTree;
-	CaseDef(pat, guard, atPos(accept(ARROW))(block()))
+	makeCaseDef(pat, guard, atPos(accept(ARROW))(block()))
       }
 
     /** Enumerators ::= Generator {`;' Enumerator}
@@ -916,7 +886,7 @@ abstract class Syntactic: ParserPhase {
      */
     def generator(): Tree =
       atPos(accept(VAL)) {
-	PatDef(0, pattern1(false), { accept(LARROW); expr() })
+	makeGenerator(pattern1(false), { accept(LARROW); expr() })
       }
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
@@ -960,9 +930,12 @@ abstract class Syntactic: ParserPhase {
 	atPos(in.pos) { Sequence(List()) }
       } else {
 	val p = pattern2(seqOK);
-	if (in.token == COLON && treeInfo.isVarPattern(p))
-	  atPos(in.skipToken()) { Typed(p, type1()) }
-	else p
+	p match {
+	  case Ident(name) if (treeInfo.isVariableName(name) && in.token == COLON) =>
+	    atPos(in.skipToken()) { Typed(p, type1()) }
+	  case _ =>
+	    p
+	}
       }
 
     /*   Pattern2    ::=  varid [ @ Pattern3 ]
@@ -997,31 +970,16 @@ abstract class Syntactic: ParserPhase {
       val base = opstack;
       var top = simplePattern(seqOK);
       if (seqOK && in.token == IDENTIFIER) {
-	if (in.name == STAR) {    /*         p*  becomes  z@( |(p,z))       */
-	  return atPos(in.skipToken()) {
-            val zname = fresh();
-            Bind(
-	      zname,
-	      makeAlternative(List(
-		Sequence(List()), makeSequence(List(top, Ident(zname))))))
-	  }
-	} else if (in.name == PLUS) {    /*    p+   becomes   z@(p,(z| ))    */
-          return atPos(in.skipToken()) {
-	    val zname = fresh();
-            Bind(
-	      zname,
-	      makeSequence(List(
-		top, makeAlternative(List(Ident(zname), Sequence(List()))))))
-	  }
-	} else if (in.name == OPT) { /*    p?   becomes   (p| )            */
-	  return atPos(in.skipToken()) {
-	    makeAlternative(List(top, Sequence(List())))
-	  }
-	}
+	if (in.name == STAR)
+	  return atPos(in.skipToken())(makeStar(top))
+	else if (in.name == PLUS)
+          return atPos(in.skipToken())(makePlus(top))
+	else if (in.name == OPT)
+	  return atPos(in.skipToken())(makeOpt(top))
       }
       while (in.token == IDENTIFIER && in.name != BAR) {
 	top = reduceStack(
-          false, base, top, precedence(in.name), isLeftAssoc(in.name));
+          false, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name));
 	opstack = OpInfo(top, in.name, in.pos) :: opstack;
 	ident();
 	top = simplePattern(seqOK)
@@ -1182,7 +1140,7 @@ abstract class Syntactic: ParserPhase {
      */
     def paramType(): Tree =
       if (in.token == ARROW)
-        atPos(in.skipToken()) { FunctionTypeTree(List(), typ()) }
+        atPos(in.skipToken()) { makeFunctionTypeTree(List(), typ()) }
       else {
         val t = typ();
         if (in.token == IDENTIFIER && in.name == STAR) {
@@ -1369,24 +1327,19 @@ abstract class Syntactic: ParserPhase {
           newmods = newmods | Flags.DEFERRED;
           EmptyTree
         }
-      for (val p <- lhs.toList) yield {
-	atPos(p.pos) {
-	  p match {
-	    case Ident(name) =>
-	      ValDef(mods, name, tp.duplicate, rhs.duplicate)
-	    case _ =>
-	      if (rhs == EmptyTree) {
-		syntaxError(p.pos, "cannot defer pattern definition", false);
-		errorPatternTree
-	      } else {
-		PatDef(
-		  mods,
-		  if (tp == EmptyTree) p else Typed(p, tp),
-		  rhs.duplicate)
-	      }
+      def mkDefs(p: Tree): List[Tree] = {
+	val trees =
+	  makePatDef(newmods, if (tp == EmptyTree) p else Typed(p, tp), rhs.duplicate)
+	    map atPos(p.pos);
+	if (rhs == EmptyTree) {
+	  trees match {
+	    case List(ValDef(_, _, _, EmptyTree)) =>
+	    case _ => syntaxError(p.pos, "pattern definition may not be abstract", false);
 	  }
 	}
+	trees
       }
+      for (val p <- lhs.toList; val d <- mkDefs(p)) yield d
     }
 
     /** VarDef ::= Id {`,' Id} [`:' Type] `=' Expr
@@ -1525,22 +1478,26 @@ abstract class Syntactic: ParserPhase {
         lhs += Tuple4(in.skipToken(),
 	             ident().toTypeName,
 		     typeParamClauseOpt(true),
-		     paramClauses(true))
+		     if ((mods & Flags.TRAIT) != 0) List() else paramClauses(true))
       } while (in.token == COMMA);
       val thistpe = simpleTypedOpt();
-      val Template(parents, body) = classTemplate((mods & Flags.CASE) != 0);
+      val Template(parents, body) = classTemplate(mods);
       for (val Tuple4(pos, name, tparams, vparamss) <- lhs.toList) yield
 	atPos(pos) {
-	  val vparamss1 = vparamss map (.map (vd =>
-	    ValDef(Flags.PARAM, vd.name, vd.tp.duplicate, EmptyTree)));
-	  val constr: Tree = DefDef(
-	    mods & Flags.CONSTRFLAGS | Flags.SYNTHETIC, nme.CONSTRUCTOR, List(),
-	    if (vparamss1.isEmpty) List(List()) else vparamss1,
-	    EmptyTypeTree(), EmptyTree);
-	  val vparams: List[Tree] =
-            for (val vparams <- vparamss; val vparam <- vparams) yield vparam;
-	  ClassDef(mods, name, tparams, thistpe.duplicate,
-		   Template(parents, vparams ::: constr :: body))
+	  val body1 =
+	    if ((mods & Flags.TRAIT) != 0) body
+	    else {
+	      val vparamss1 = vparamss map (.map (vd =>
+		ValDef(Flags.PARAM, vd.name, vd.tp.duplicate, EmptyTree)));
+	      val constr: Tree = DefDef(
+		mods & Flags.CONSTRFLAGS | Flags.SYNTHETIC, nme.CONSTRUCTOR, List(),
+		if (vparamss1.isEmpty) List(List()) else vparamss1,
+		EmptyTypeTree(), EmptyTree);
+	      val vparams: List[Tree] =
+		for (val vparams <- vparamss; val vparam <- vparams) yield vparam;
+	      vparams ::: constr :: body
+	    }
+	  ClassDef(mods, name, tparams, thistpe.duplicate, Template(parents, body1))
 	}
     }
 
@@ -1552,7 +1509,7 @@ abstract class Syntactic: ParserPhase {
 	lhs += Pair(in.skipToken(), ident());
       } while (in.token == COMMA);
       val thistpe = simpleTypedOpt();
-      val template = classTemplate((mods & Flags.CASE)!= 0);
+      val template = classTemplate(mods);
       for (val Pair(pos, name) <- lhs.toList) yield
 	atPos(pos) {
 	  ModuleDef(mods, name, thistpe.duplicate,
@@ -1560,46 +1517,36 @@ abstract class Syntactic: ParserPhase {
 	}
     }
 
-    /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
+    /** ClassTemplate ::= [`extends' SimpleType [`(' [Exprs] `)']] {`with' SimpleType} [TemplateBody]
      */
-    def classTemplate(isCaseClass:boolean): Template = {
+    def classTemplate(mods: int): Template =
       atPos(in.pos) {
-	val parents = new ListBuffer[Tree];
-	if (in.token == EXTENDS) {
+        val parents = new ListBuffer[Tree];
+        var args: List[Tree] = List();
+        if (in.token == EXTENDS) {
           in.nextToken();
-          parents += constr()
-	} else {
-          parents += scalaAnyRefConstr()
-	}
-	parents += scalaObjectConstr();
-	if (isCaseClass) parents += caseClassConstr();
-	if (in.token == WITH) {
-	  in.nextToken();
-	  template(parents)
-	} else if (in.token == LBRACE) {
-	  Template(parents.toList, templateBody())
-	} else {
-	  if (!(in.token == SEMI || in.token == COMMA || in.token == RBRACE))
-            syntaxError("`extends' or `{' expected", true);
-          Template(parents.toList, List())
-	}
+          parents += simpleType();
+          if (in.token == LPAREN) args = argumentExprs();
+        }
+	parents += scalaScalaObjectConstr;
+	if ((mods & Flags.CASE)!= 0) parents += caseClassConstr;
+        while (in.token == WITH) {
+          in.nextToken(); parents += simpleType();
+        }
+        val ps = parents.toList;
+	var body =
+	  if (in.token == LBRACE) {
+	    templateBody()
+	  } else {
+	    if (!(in.token == SEMI || in.token == COMMA || in.token == RBRACE))
+              syntaxError("`extends' or `{' expected", true);
+            List()
+	  }
+	if ((mods & Flags.TRAIT) == 0) body = makeSuperCall(args) :: body;
+	Template(ps, body)
       }
-    }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
-    /** Template  ::= Constr {`with' Constr} [TemplateBody]
-     */
-    def template(): Template = template(new ListBuffer[Tree]);
-
-    def template(parents: ListBuffer[Tree]): Template = {
-      parents += constr();
-      while (in.token == WITH) {
-	in.nextToken();
-	parents += constr()
-      }
-      val stats = if (in.token == LBRACE) templateBody() else List();
-      Template(parents.toList, stats)
-    }
 
     /** Constr ::= StableId [TypeArgs] [`(' [Exprs] `)']
      */
@@ -1617,7 +1564,7 @@ abstract class Syntactic: ParserPhase {
     def templateBody(): List[Tree] = {
       accept(LBRACE);
       var body = templateStatSeq();
-      if (body.length == 0) body = List(EmptyTree);
+      if (body.isEmpty) body = List(EmptyTree);
       accept(RBRACE);
       body
     }
@@ -1799,5 +1746,7 @@ abstract class Syntactic: ParserPhase {
     }
   }
 }
+
+
 
 //  LocalWords:  SOcos

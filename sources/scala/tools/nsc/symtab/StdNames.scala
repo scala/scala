@@ -113,7 +113,7 @@ abstract class StdNames: SymbolTable {
     val report = newTermName("report");
     val false_ = newTermName("false");
     val filter = newTermName("filter");
-    val flatmap = newTermName("flatMap");
+    val flatMap = newTermName("flatMap");
     val foreach = newTermName("foreach");
     val getClass_ = newTermName("getClass");
     val hasAsInstance = newTermName("hasAsInstance");

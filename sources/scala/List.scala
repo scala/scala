@@ -204,11 +204,23 @@ object List {
    *  @param f function to apply to each pair of elements.
    *  @return <code>[f(a0,b0), ..., f(an,bn)]</code> if the lists are
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
-   *          <code>m = min(k,l)</code>
+   *          <code>n = min(k,l)</code>
    */
   def map2[a,b,c](xs: List[a], ys: List[b])(f: (a, b) => c): List[c] =
     if (xs.isEmpty || ys.isEmpty) Nil
     else f(xs.head, ys.head) :: map2(xs.tail, ys.tail)(f);
+
+  /** Returns the list resulting from applying the given function <code>f</code> to
+   *  corresponding elements of the argument lists.
+   *
+   *  @param f function to apply to each pair of elements.
+   *  @return <code>[f(a0,b0,c0), ..., f(an,bn,cn)]</code> if the lists are
+   *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code>, <code>[c0, ..., cm]</code> and
+   *          <code>n = min(k,l,m)</code>
+   */
+  def map3[a,b,c, d](xs: List[a], ys: List[b], zs: List[c])(f: (a, b, c) => d): List[d] =
+    if (xs.isEmpty || ys.isEmpty || zs.isEmpty) Nil
+    else f(xs.head, ys.head, zs.head) :: map3(xs.tail, ys.tail, zs.tail)(f);
 
   /** Tests whether the given predicate <code>p</code> holds
    *  for all corresponding elements of the argument lists.

@@ -234,7 +234,9 @@ class Names {
     }
 
     /** Replace $op_name by corresponding operator symbol */
-    def decode: String = NameTransformer.decode(toString())
+    def decode: String =
+      NameTransformer.decode(toString()) +
+      (if (isTypeName) "!" else "");//debug
   }
 
   private class TermName(index: int, len: int, hash: int) extends Name(index, len) {

@@ -18,7 +18,7 @@ class Contexts: Analyzer {
     def addImport(pkg: Symbol): unit = {
       sc = sc.make(sc.tree, sc.owner, new Scope(sc.scope));
       val impTree = Import(gen.mkGlobalRef(pkg), List(Pair(nme.WILDCARD, null)));
-      impTree.setSymbol(NoSymbol.newImport(Position.NOPOS)).setType(ImportType(impTree));
+      impTree.setSymbol(NoSymbol.newImport(Position.NOPOS)).setType(this.ImportType(impTree));
       sc.scope.enter(impTree.symbol)
     }
     if (!settings.noimports.value) {
@@ -32,14 +32,15 @@ class Contexts: Analyzer {
 
   class Context {
     var unit: CompilationUnit = _;
-    var tree: Tree = _;                 // Tree associated with this context
-    var owner: Symbol = _;              // The current owner
-    var scope: Scope = _;               // The current scope
-    var outer: Context = _;             // The next outer context
-    var enclClass: Context = this;      // The next outer context whose tree
-					// is a class template
-    var variance: int = _;              // Variance relative to enclosing class.
-    var constructorClass: Symbol = _;   // Class for auxiliary constructor
+    var tree: Tree = _;                     // Tree associated with this context
+    var owner: Symbol = _;                  // The current owner
+    var scope: Scope = _;                   // The current scope
+    var outer: Context = _;                 // The next outer context
+    var enclClass: Context = this;          // The next outer context whose tree
+					    // is a class template
+    var variance: int = _;                  // Variance relative to enclosing class.
+    var undetparams: List[Symbol] = List(); // Undetermined type parameters
+    var constructorClass: Symbol = _;       // Class for auxiliary constructor
     var depth: int = 0;
     val imports: List[Tree] = List();
 
