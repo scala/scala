@@ -340,15 +340,6 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         public Tree transform(Tree tree) {
-            try {
-                return transform0(tree);
-            } catch (Error e) {
-                System.out.println("tree: " + tree);
-                throw e;
-            }
-        }
-
-        public Tree transform0(Tree tree) {
             switch (tree) {
             case ClassDef(int mods, //:
                           Name name,
@@ -357,9 +348,6 @@ public class TypesAsValuesPhase extends Phase {
                           Tree tpe,
                           Tree.Template impl):
                 Symbol sym = tree.symbol();
-
-//                 if (impl.symbol().isNone())
-//                     throw new Error("no symbol for " + tree);
 
                 TreeList newBody = new TreeList();
                 // Add members (accessors and instantiators)
@@ -658,13 +646,6 @@ public class TypesAsValuesPhase extends Phase {
                               new Tree[] { gen.mkNullLit(pos) });
             Tree thenP = gen.mkLocalRef(pos, instVal);
 
-            Tree instFun =
-                gen.Select(pos,
-                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
-                           defs.TYPECONSTRUCTOR_INSTANTIATE());
-            Tree[] instArgs = new Tree[] { gen.mkLocalRef(pos, vparams[0]) };
-            Tree instCall = gen.mkApply_V(pos, instFun, instArgs);
-
             final HashMap varMap = new HashMap();
             Symbol[] tparams = clsSym.typeParams();
             for (int i = 0; i < tparams.length; ++i)
@@ -689,22 +670,36 @@ public class TypesAsValuesPhase extends Phase {
             TreeList parentTypes = new TreeList();
             for (int i = 0; i < parents.length; ++i) {
                 Type parent = parents[i];
-                if (!parent.symbol().isJava()) {
-                    Tree parentType =
-                        typeAsValue(pos, parent, insSym, tEnv);
-                    parentTypes.append(parentType);
-                }
+                if (!parent.symbol().isJava())
+                    parentTypes.append(typeAsValue(pos, parent, insSym, tEnv));
             }
-            Tree parentsArray = gen.mkNewArray(pos,
-                                               defs.SCALACLASSTYPE_TYPE(),
-                                               parentTypes.toArray(),
-                                               insSym);
+            boolean emptyParents = (parentTypes.length() == 0);
+            Tree parentsArray = emptyParents
+                ? gen.mkGlobalRef(pos, defs.SCALACLASSTYPE_EMPTYARRAY())
+                : gen.mkNewArray(pos,
+                                 defs.SCALACLASSTYPE_TYPE(),
+                                 parentTypes.toArray(),
+                                 insSym);
+            Tree instFun =
+                gen.Select(pos,
+                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
+                           defs.TYPECONSTRUCTOR_INSTANTIATE());
+            Tree[] instArgs = new Tree[] {
+                gen.mkLocalRef(pos, vparams[0]),
+                emptyParents ? parentsArray : gen.mkNullLit(pos)
+            };
+            Tree instCall = gen.mkApply_V(pos, instFun, instArgs);
 
-            Tree setParentsFun =
-                gen.Select(pos, instCall, defs.SCALACLASSTYPE_SETPARENTS());
+            Tree elseP;
+            if (!emptyParents) {
+                Tree setParentsFun =
+                    gen.Select(pos, instCall, defs.SCALACLASSTYPE_SETPARENTS());
 
-            Tree elseP =
-                gen.mkApply_V(pos, setParentsFun, new Tree[] { parentsArray });
+                elseP = gen.mkApply_V(pos,
+                                      setParentsFun,
+                                      new Tree[] { parentsArray });
+            } else
+                elseP = instCall;
 
             Tree ifExpr =
                 gen.If(pos, cond, thenP, elseP, defs.SCALACLASSTYPE_TYPE());
@@ -756,6 +751,7 @@ public class TypesAsValuesPhase extends Phase {
             return sym == defs.ARRAY_CLASS;
         }
 
+        /** Return true iff type tp refers to class symbol classSym. */
         /**
          * Transform a type into a tree representing it.
          */
