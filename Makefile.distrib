@@ -36,7 +36,7 @@ TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
 ##############################################################################
 
 INSTALL_VERSION		 = install-test
-INSTALL_PREFIX		 = $(PROJECT_ROOT)/distribs/scala-test
+INSTALL_PREFIX		 = $(PROJECT_ROOT)/distribs/scala-$(INSTALL_VERSION)
 INSTALL_BINDIR		 = $(INSTALL_PREFIX)/bin
 INSTALL_DOCDIR		 = $(INSTALL_PREFIX)/doc
 INSTALL_APIDOCDIR	 = $(INSTALL_DOCDIR)/api
@@ -177,7 +177,37 @@ install-windows		:
 
 ##############################################################################
 
-DISTRIB_REPOSITORY	 = $(PROJECT_ROOT)/distribs
+IA_PROJECTFILE		 = $(PROJECT_CONFIGDIR)/ia/$(PROJECT_NAME).iap_xml
+IA_CUSTOMFILE_FR	 = $(PROJECT_CONFIGDIR)/ia/custom_fr
+
+IA_BUILD_PREFIX		 = /tmp/IA_Build_$(PROJECT_NAME)
+IA_BUILD_LOCALESDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)locales
+IA_BUILD_ARCHIVE_TGZ	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).tar.gz
+IA_BUILD_ARCHIVE_ZIP	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).zip
+IA_BUILD_OUTPUTDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)_Build_Output
+
+IA_INSTALL_PREFIX	 = $(INSTALL_PREFIX).ia
+
+ia-build		:
+	$(RM) -r $(IA_BUILD_PREFIX)
+	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
+	$(INSTALL) -m 644 -p $(IA_PROJECTFILE) $(IA_BUILD_PREFIX)
+	$(INSTALL) -m 755 -d $(IA_BUILD_LOCALESDIR)
+	$(INSTALL) -m 644 -p $(IA_CUSTOMFILE_FR) $(IA_BUILD_LOCALESDIR)
+	$(INSTALL) -m 644 -p $(PROJECT_ROOT)/LICENSE $(IA_BUILD_PREFIX)
+	$(INSTALL) -m 644 -p $(INSTALL_PREFIX).tar.gz $(IA_BUILD_ARCHIVE_TGZ)
+	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
+	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
+	    $(ZIP) -q -r ../$(PROJECT_NAME).zip .)
+	$(RM) -r $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION)
+	$(IA) $(IA_BUILD_PREFIX)/$(notdir $(IA_PROJECTFILE))
+	$(INSTALL) -m 755 -d $(IA_INSTALL_PREFIX)
+	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers | \
+	    $(TAR) xf - -C $(IA_INSTALL_PREFIX))
+
+##############################################################################
+
+DISTRIB_REPOSITORY	?= $(PROJECT_ROOT)/distribs
 DISTRIB_VERSION		:= $(shell $(DATE) -u "+%Y%m%d-%H%M%S")
 DISTRIB_NAME		 = $(PROJECT_NAME)-$(DISTRIB_VERSION)
 DISTRIB_PREFIX		 = $(DISTRIB_REPOSITORY)/$(DISTRIB_NAME)
@@ -205,6 +235,10 @@ distrib-build-windows	:
 	cd $(DISTRIB_REPOSITORY); \
 	    $(ZIP) -q -r $(DISTRIB_NAME).zip $(DISTRIB_NAME)
 
+distrib-build-ia	:
+	@$(make) INSTALL_PREFIX=$(DISTRIB_PREFIX) \
+	    INSTALL_VERSION=$(DISTRIB_VERSION) ia-build
+
 distrib-clean		:
 	$(RM) -rf $(DISTRIB_PREFIX)
 
@@ -219,6 +253,7 @@ distrib-windows 	: distrib-clean
 
 distrib-all-oses	: distrib-build-unix
 distrib-all-oses	: distrib-build-windows
+distrib-all-oses	: distrib-build-ia
 distrib-all-oses	: distrib-clean
 
 distrib			:
