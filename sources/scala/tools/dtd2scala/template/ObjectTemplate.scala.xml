@@ -5,7 +5,7 @@
   <!ENTITY elementContentModel   '<string ref="elementContentModel"/>'> 
   <!ENTITY attributeName   '<string ref="attributeName"/>'> 
   <!ENTITY qAttributeName  '<qstring ref="attributeName"/>'> 
-  <!ENTITY ccAttributeName '<ccstring ref="attributeName"/>'> 
+  <!ENTITY cAttributeName '<cstring ref="attributeName"/>'> 
   <!ENTITY space '<![CDATA[ ]]>'> 
   <!ENTITY br '<br/>'> 
 ]>
@@ -22,7 +22,7 @@ import scala.collection.mutable.HashMap ;<br/>
   /** the following elements are bound
   <elementBinding>
     * &elementName; : &elementContentModel; { 
-      <attributeBinding>&attributeName;</attributeBinding>
+      <attributeBinding>&attributeName;</attributeBinding>&space;
     }
   </elementBinding>
   **/
@@ -35,19 +35,20 @@ import scala.collection.mutable.HashMap ;<br/>
 
     <elementBinding>
       def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = 
-    new &ccElementName;(ch:_*) {
+    new &ccElementName;(ch:_*) { <inc/><br/>
+      override def attributes : Map[String,String] = attrs; <br/>   
       <attributeAssign>    
-      override def attributes = attrs;    
-      override val &ccAttributeName; = attrs.get(&qAttributeName;);
+      override val &cAttributeName; = attrs.get(&qAttributeName;); <br/>
       </attributeAssign>
-    };
+    };<dec/><br/>
       case class &ccElementName;( ch:Node* ) extends scala.xml.Node {<inc/><br/>
           def label = &qElementName;; <br/>
           def children = ch;<br/>
-          def attributes : Map[String,String] = null; /*o'ridden at parse time */<br/>
-          val attribHashCode: int = 0 ; /*     overridden at parse time */<br/>
+          /* these methods are overridden at parse time */<br/>
+          def attributes : Map[String,String] = new HashMap[String,String](); <br/>
+          val attribHashCode: int = 0 ;<br/>
       <attributeBinding>
-        val &ccAttributeName; : scala.Option[String] = scala.None;  
+        val &cAttributeName; : scala.Option[String] = scala.None;  
         /*     overridden at parse time */
       </attributeBinding><dec/><br/>
       }
