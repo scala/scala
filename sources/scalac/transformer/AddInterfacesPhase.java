@@ -35,6 +35,10 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         new AddInterfaces(global, this).apply();
     }
 
+    public void apply(Unit unit) {
+        new AddInterfaces(unit.global, this).apply(unit);
+    }
+
     public Type transformInfo(Symbol sym, Type tp) {
         if (sym.isConstructor()
             && needInterface(sym.primaryConstructorClass())) {

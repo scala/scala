@@ -27,7 +27,11 @@ public class RefCheckPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-	new RefCheck(global).apply();
+        new RefCheck(global).apply();
+    }
+
+	public void apply(Unit unit) {
+        new RefCheck(unit.global).apply(unit);
     }
 
     public Checker[] postCheckers(Global global) {
@@ -35,7 +39,7 @@ public class RefCheckPhase extends PhaseDescriptor {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-	    new CheckNames(global)
+            new CheckNames(global)
         };
     }
 }

@@ -148,7 +148,7 @@ public class  Global {
         //this.optimize = args.optimize.optimize;
         this.debug = args.debug.value;
         this.uniqid = args.uniqid.value;
-	this.explaintypes = args.explaintypes.value;
+        this.explaintypes = args.explaintypes.value;
         this.printtypes = args.types.value;
         this.printtokens = args.print.tokens;
         this.classPath = args.classpath();
@@ -183,7 +183,7 @@ public class  Global {
         phases.add(PHASE.ANALYZER);
         phases.add(PHASE.REFCHECK);
         phases.add(PHASE.UNCURRY);
-	/*
+        /*
         if (optimize) {
             phases.add(PHASE.OPTIMIZE);
         } */
@@ -194,7 +194,7 @@ public class  Global {
         phases.add(PHASE.ADDINTERFACES);
         phases.add(PHASE.EXPANDMIXIN);
         phases.add(PHASE.ERASURE);
-	if (target == TARGET_INT || target == TARGET_MSIL || target == TARGET_JVM) {
+        if (target == TARGET_INT || target == TARGET_MSIL || target == TARGET_JVM) {
             phases.add(PHASE.ADDCONSTRUCTORS);
         }
         if (target == TARGET_MSIL) phases.add(PHASE.GENMSIL);
@@ -208,20 +208,20 @@ public class  Global {
             phase.initialize(this, i);
             assert phase.id == i;
         }
-	assert PHASE.PARSER.id == START_PHASE_ID;
-	assert PHASE.ANALYZER.id + 1 == POST_ANALYZER_PHASE_ID;
+        assert PHASE.PARSER.id == START_PHASE_ID;
+        assert PHASE.ANALYZER.id + 1 == POST_ANALYZER_PHASE_ID;
     }
 
     /** Move to next phase
      */
     public void nextPhase() {
-	currentPhase = phases[currentPhase.id + 1];
+        currentPhase = phases[currentPhase.id + 1];
     }
 
     /** Move to previous phase
      */
     public void prevPhase() {
-	currentPhase = phases[currentPhase.id - 1];
+        currentPhase = phases[currentPhase.id - 1];
     }
 
     /** the top-level compilation process
@@ -282,16 +282,41 @@ public class  Global {
             if (currentPhase == PHASE.ANALYZER) fix2();
         }
         if (reporter.errors() != 0) {
-	    imports.clear();
-	    for (Iterator it = compiledNow.keySet().iterator(); it.hasNext();) {
-		Symbol sym = (Symbol) it.next();
-		SourceFile f = (SourceFile) compiledNow.get(sym);
-		sym.reset(new SourceCompleter(this, f.name()));
-	    }
-	}
-	compiledNow.clear();
+            imports.clear();
+            for (Iterator it = compiledNow.keySet().iterator(); it.hasNext();) {
+                Symbol sym = (Symbol) it.next();
+                SourceFile f = (SourceFile) compiledNow.get(sym);
+                sym.reset(new SourceCompleter(this, f.name()));
+            }
+        }
+        compiledNow.clear();
         printer.end();
     }
+
+    /** transform a unit and stop at the current compilation phase
+     */
+    public void transformUnit(Unit unit) {
+       	PhaseDescriptor oldCurrentPhase = currentPhase;
+    	int i = PHASE.REFCHECK.id; // or PHASE.UNCURRY.id?
+        while ((i < oldCurrentPhase.id) && (reporter.errors() == 0)) {
+            currentPhase = phases[i];
+            if ((currentPhase.flags & PhaseDescriptor.SKIP) != 0) {
+                operation("skipping phase " + currentPhase.name());
+            } else {
+                start();
+                currentPhase.apply(unit);
+                stop(currentPhase.taskDescription());
+            }
+            if ((currentPhase.flags & PhaseDescriptor.PRINT) != 0)
+                currentPhase.print(this);
+            if ((currentPhase.flags & PhaseDescriptor.GRAPH) != 0)
+                currentPhase.graph(this);
+            if ((currentPhase.flags & PhaseDescriptor.CHECK) != 0)
+                currentPhase.check(this);
+        }
+        currentPhase = oldCurrentPhase;
+    }
+
     // !!! <<< Interpreter stuff
     public static final String CONSOLE_S = "$console$";
     private static final Name
@@ -515,8 +540,8 @@ public class  Global {
      */
     // the boolean return value is here to let one write "assert log( ... )"
     public boolean log(String message) {
-	if (log()) {
-	    reporter.report("[log " + currentPhase.name() + "] " + message);
+        if (log()) {
+            reporter.report("[log " + currentPhase.name() + "] " + message);
         }
         return true;
     }
@@ -524,7 +549,7 @@ public class  Global {
     /** return true if logging is switched on for the current phase
      */
     public boolean log() {
-	return (currentPhase.flags & PhaseDescriptor.LOG) != 0;
+        return (currentPhase.flags & PhaseDescriptor.LOG) != 0;
     }
 
     /** start a new timer

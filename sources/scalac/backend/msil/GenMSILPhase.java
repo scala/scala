@@ -40,4 +40,7 @@ public class GenMSILPhase extends PhaseDescriptor {
         new GenMSIL(global, this).apply();
     }
 
+    public void apply(Unit unit) {
+        new GenMSIL(unit.global, this).apply(unit);
+    }
 }

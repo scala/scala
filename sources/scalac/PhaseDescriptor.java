@@ -33,9 +33,11 @@ public abstract class PhaseDescriptor {
             return "initializing compiler";
         }
 
-	/** apply phase to all compilation units
-	 */
-	public void apply(Global global) {}
+        /** apply phase to all compilation units
+         */
+        public void apply(Global global) {}
+
+        public void apply(Unit unit) {}
     }
 
     private static class TerminalPhaseDescriptor extends PhaseDescriptor {
@@ -48,9 +50,11 @@ public abstract class PhaseDescriptor {
             return "compilation terminated ";
         }
 
-	/** apply phase to all compilation units
-	 */
-	public void apply(Global global) {}
+        /** apply phase to all compilation units
+         */
+        public void apply(Global global) {}
+
+        public void apply(Unit unit) {}
     }
 
     public static PhaseDescriptor INITIAL = new InitialPhaseDescriptor();
@@ -93,12 +97,16 @@ public abstract class PhaseDescriptor {
      *  Return the info of `sym' after the phase.
      */
     public Type transformInfo(Symbol sym, Type tp) {
-	return tp;
+        return tp;
     }
 
     /** apply phase to all compilation units
      */
     public abstract void apply(Global global);
+
+    /** apply this phase to a compilation unit
+     */
+    public abstract void apply(Unit unit);
 
     /** check all compilation units
      */
@@ -111,7 +119,6 @@ public abstract class PhaseDescriptor {
      */
     public void print(Global global) {
         TreePrinter printer = global.printer;
-
         printer.beginSection(1, "Trees after phase " + name());
         for (int i = 0; i < global.units.length; i++)
             printer.print(global.units[i]);
@@ -141,10 +148,10 @@ public abstract class PhaseDescriptor {
     /** graph the result of this phase for the given compilation unit
      */
     public void graph(Unit unit) {
-	/* todo: uncomment
+        /* todo: uncomment
         new scala.compiler.gdl.TreePrinter().printInFile(
             unit, unit.source + "-" + name() + ".gdl");
-	*/
+        */
     }
 
     public String toString() {

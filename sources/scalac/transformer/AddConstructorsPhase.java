@@ -10,10 +10,9 @@
 package scalac.transformer;
 
 import java.util.HashMap;
-
+import scalac.*;
 import scalac.checkers.*;
-import scalac.Global;
-import scalac.PhaseDescriptor;
+
 
 public class AddConstructorsPhase extends PhaseDescriptor {
 
@@ -22,19 +21,23 @@ public class AddConstructorsPhase extends PhaseDescriptor {
     HashMap constructors = new HashMap();
 
     public String name() {
-	return "addconstructors";
+        return "addconstructors";
     }
 
     public String description() {
-	return "add explicit constructor for each class";
+        return "add explicit constructor for each class";
     }
 
     public String taskDescription() {
-	return "added constructors";
+        return "added constructors";
     }
 
     public void apply(Global global) {
-	new AddConstructors(global, constructors).apply();
+        new AddConstructors(global, constructors).apply();
+    }
+
+    public void apply(Unit unit) {
+        new AddConstructors(unit.global, constructors).apply(unit);
     }
 
     public Checker[] postCheckers(Global global) {
@@ -42,7 +45,7 @@ public class AddConstructorsPhase extends PhaseDescriptor {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-	    new CheckNames(global)
+            new CheckNames(global)
         };
     }
 }

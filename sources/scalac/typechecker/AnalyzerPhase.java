@@ -28,11 +28,11 @@ public class AnalyzerPhase extends PhaseDescriptor {
         super.initialize(global, id);
         Definitions definitions = global.definitions;
         this.startContext = new Context(
-	    Tree.Empty,
-	    definitions.ROOT_CLASS,
-	    definitions.ROOT_CLASS.members(),
-	    Context.NONE);
-	this.startContext.enclClass = this.startContext;
+            Tree.Empty,
+            definitions.ROOT_CLASS,
+            definitions.ROOT_CLASS.members(),
+            Context.NONE);
+        this.startContext.enclClass = this.startContext;
 
         if (!global.noimports) {
             TreeFactory make = global.make;
@@ -43,47 +43,47 @@ public class AnalyzerPhase extends PhaseDescriptor {
                 .setSymbol(definitions.JAVALANG)
                 .setType(Type.singleType(java.type, definitions.JAVALANG));
             Tree importjavalang = make.Import(
-		Position.NOPOS, javalang, new Name[]{Names.WILDCARD})
+                Position.NOPOS, javalang, new Name[]{Names.WILDCARD})
                 .setSymbol(definitions.JAVALANG)
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
-		importjavalang, startContext.scope, startContext.imports);
+                importjavalang, startContext.scope, startContext.imports);
 
             Tree scala = make.Ident(Position.NOPOS, Names.scala)
                 .setSymbol(definitions.SCALA)
                 .setType(Type.singleType(definitions.ROOT_TYPE, definitions.SCALA));
             Tree importscala = make.Import(
-		Position.NOPOS, scala, new Name[]{Names.WILDCARD})
+                Position.NOPOS, scala, new Name[]{Names.WILDCARD})
                 .setSymbol(definitions.SCALA)
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
-		importscala, new Scope(), startContext.imports);
+                importscala, new Scope(), startContext.imports);
         }
 
         if (!global.noimports && !global.nopredefs) {
             TreeFactory make = global.make;
 
-	    Tree scala = make.Ident(Position.NOPOS, Names.scala)
+            Tree scala = make.Ident(Position.NOPOS, Names.scala)
                 .setSymbol(definitions.SCALA)
                 .setType(Type.singleType(definitions.ROOT_TYPE, definitions.SCALA));
-	    Symbol scalaPredefSym = definitions.getModule(Names.scala_Predef);
-	    Tree scalaPredef = make.Select(Position.NOPOS, scala, Names.Predef)
-		.setSymbol(scalaPredefSym)
-		.setType(Type.singleType(scala.type, scalaPredefSym));
+            Symbol scalaPredefSym = definitions.getModule(Names.scala_Predef);
+            Tree scalaPredef = make.Select(Position.NOPOS, scala, Names.Predef)
+                .setSymbol(scalaPredefSym)
+                .setType(Type.singleType(scala.type, scalaPredefSym));
 
-	    Tree importscalaPredef = make.Import(
-		Position.NOPOS, scalaPredef, new Name[]{Names.WILDCARD})
-		.setSymbol(scalaPredefSym)
+            Tree importscalaPredef = make.Import(
+                Position.NOPOS, scalaPredef, new Name[]{Names.WILDCARD})
+                .setSymbol(scalaPredefSym)
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
-		importscalaPredef, new Scope(), startContext.imports);
+                importscalaPredef, new Scope(), startContext.imports);
         }
 
         this.consoleContext = new Context(
-	    Tree.Empty,
-	    definitions.ROOT_CLASS,
-	    definitions.ROOT_CLASS.members(),
-	    startContext);
+            Tree.Empty,
+            definitions.ROOT_CLASS,
+            definitions.ROOT_CLASS.members(),
+            startContext);
     }
 
     public void addConsoleImport(Global global, Symbol module) {
@@ -115,7 +115,11 @@ public class AnalyzerPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-	new Analyzer(global, this).apply();
+        new Analyzer(global, this).apply();
+    }
+
+    public void apply(Unit unit) {
+        new Analyzer(unit.global, this).apply(unit);
     }
 
     public void lateEnter(Global global, Unit unit, Symbol symbol) {
@@ -127,7 +131,7 @@ public class AnalyzerPhase extends PhaseDescriptor {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-	    new CheckNames(global)
+            new CheckNames(global)
         };
     }
 }

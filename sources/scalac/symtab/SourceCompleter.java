@@ -32,24 +32,24 @@ public class SourceCompleter extends Type.LazyType {
     /** complete class symbol c by loading the class
      */
     public void complete(Symbol c) {
-	if (completed) {
-	    c.setInfo(Type.ErrorType);
-	} else if (filename != null) {
-	    try {
-		String fname = filename;
-		long msec = System.currentTimeMillis();
-		Unit unit = new Unit(global, new SourceFile(filename), false);
-		filename = null;
-		global.PHASE.PARSER.apply(unit);
-		global.PHASE.ANALYZER.lateEnter(global, unit, c);
-		global.operation("added " + fname + " in " +
-			(System.currentTimeMillis() - msec) + "ms");
-	    } catch (IOException e) {
-		e.printStackTrace();
-		global.error("i/o error while loading " + c);
-		c.setInfo(Type.ErrorType);
-	    }
-	    completed = true;
-	}
+        if (completed) {
+            c.setInfo(Type.ErrorType);
+        } else if (filename != null) {
+            try {
+                String fname = filename;
+                long msec = System.currentTimeMillis();
+                Unit unit = new Unit(global, new SourceFile(filename), false);
+                filename = null;
+                global.PHASE.PARSER.apply(unit);
+                global.PHASE.ANALYZER.lateEnter(global, unit, c);
+                global.operation("added " + fname + " in " +
+                        (System.currentTimeMillis() - msec) + "ms");
+            } catch (IOException e) {
+                e.printStackTrace();
+                global.error("i/o error while loading " + c);
+                c.setInfo(Type.ErrorType);
+            }
+            completed = true;
+        }
     }
 }

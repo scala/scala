@@ -31,6 +31,10 @@ public class AddAccessorsPhase extends PhaseDescriptor {
         new AddAccessors(global).apply();
     }
 
+    public void apply(Unit unit) {
+        new AddAccessors(unit.global).apply(unit);
+    }
+
     public Checker[] postCheckers(Global global) {
         return new Checker[] {
             new CheckSymbols(global),

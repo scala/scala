@@ -30,9 +30,11 @@ public class GenJVMPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-        for (int i = 0; i < global.units.length; i++) {
-            new GenJVM(global).translate(global.units[i]);
-        }
+        for (int i = 0; i < global.units.length; i++)
+            apply(global.units[i]);
     }
 
+    public void apply(Unit unit) {
+        new GenJVM(unit.global).translate(unit);
+    }
 }

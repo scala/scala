@@ -10,7 +10,7 @@
 package scalac.transformer;
 
 import scalac.Global;
-import scalac.PhaseDescriptor;
+import scalac.*;
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
 import scalac.checkers.Checker;
@@ -41,22 +41,28 @@ public class ErasurePhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-	this.definitions = global.definitions;
-	this.primitives = global.primitives;
+        this.definitions = global.definitions;
+        this.primitives = global.primitives;
         new Erasure(global).apply();
     }
 
-    private Type eraseParams(Type tp) {
-	switch (tp) {
-	case PolyType(_, Type result):
-	    return eraseParams(result);
-	case MethodType(Symbol[] params, Type result):
-	    Symbol[] params1 = Type.erasureMap.map(params);
-	    if (params1 == params) return tp;
-	    else return Type.MethodType(params1, result);
-	default:
-	    return tp;
+	public void apply(Unit unit) {
+		this.definitions = unit.global.definitions;
+        this.primitives = unit.global.primitives;
+        new Erasure(unit.global).apply(unit);
 	}
+
+    private Type eraseParams(Type tp) {
+        switch (tp) {
+        case PolyType(_, Type result):
+            return eraseParams(result);
+        case MethodType(Symbol[] params, Type result):
+            Symbol[] params1 = Type.erasureMap.map(params);
+            if (params1 == params) return tp;
+            else return Type.MethodType(params1, result);
+        default:
+            return tp;
+        }
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
@@ -76,7 +82,7 @@ public class ErasurePhase extends PhaseDescriptor {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-	    new CheckNames(global)
+            new CheckNames(global)
         };
     }
 }
