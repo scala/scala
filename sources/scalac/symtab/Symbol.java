@@ -1338,7 +1338,7 @@ public final class ErrorSymbol extends Symbol {
 
     /** Constructor */
     public ErrorSymbol() {
-        super(Kinds.ERROR, Position.NOPOS, Name.fromString("<error>"), null,
+        super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null,
 	      INITIALIZED);
         this.setOwner(this);
         this.setInfo(Type.ErrorType);
