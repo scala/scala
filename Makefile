@@ -143,6 +143,7 @@ all		: library
 force		:
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
+	$(RM) .latest-runtime
 	@$(make) all
 
 clean		:
