@@ -1,7 +1,19 @@
 // Burak's test suite for regular pattern matching
 
-// contains 17 visitors
+// contains 17 visitors plus X
 
+// analyzer related (no execution)
+object bug179 {
+  case class One();
+  object Foo with Executable {
+    def test(xs: List[Any]) = xs match {
+      case List(((((One(), One())*) | (One(), One())), One())) =>
+	Console.println("case")
+      case _ =>
+	Console.println("default");
+    }
+  }
+}
 // testW? are for recognition only ( no variables )
 // testB? are for variables binding
 
