@@ -808,7 +808,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (sym.kind == VAL && (sym.flags & (PRIVATE | SEALED)) == 0 &&
 		    owner != null && owner.kind == CLASS &&
 		    (owner.flags & FINAL) != 0) {
-		    System.out.println(sym + " is final");
 		    sym.flags |= FINAL;
 		}
 		sym = enterInScope(sym);
