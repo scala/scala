@@ -235,18 +235,16 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
       }
     }
 
-    protected def isSeqApply( tree: Tree.Apply  ): Boolean = {
-      if(( tree.args.length == 1 )
-         && (tree.getType().symbol().flags & Modifiers.CASE) == 0)
-            tree.args(0).match {
-              case Sequence( _ ) =>
-                true;
-              case _ =>
-                false;
-            }
-      else
-        false;
-    }
+  /** returns true if apply is a "sequence apply". analyzer inserts Sequence nodes if something is a
+   *
+   *  - last update: discussion with Martin 2005-02-18
+   *
+   *  - if true, tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
+   *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
+   *    but may have different flags etc.
+   */
+  protected def isSeqApply( tree: Tree.Apply  ): Boolean =
+    (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence]);
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //Console.println("patternNode("+tree+","+header+")");
@@ -372,16 +370,21 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
   }
 
   private def newHeader(pos: Int, casted: Symbol, index: Int): Header = {
+    //Console.println("newHeader(pos,"+casted+","+index+")");
+    //Console.println("  casted.getType()"+casted.getType());
     val ident = gen.Ident( pos, casted );
     if (casted.pos == Position.FIRSTPOS) {
+      //Console.println("FIRSTPOS");
       val t = gen.mkApply_V(
         gen.Select( ident, defs.FUNCTION_APPLY( 1 )),
         Predef.Array[Tree]( gen.mkIntLit( pos, index ) ));
       val seqType = t.getType();
       mk.Header( pos, seqType, t );
     } else {
+      //Console.println("NOT FIRSTPOS");
       val ts = casted.getType().symbol().asInstanceOf[ClassSymbol]
         .caseFieldAccessor(index);
+      //Console.println("ts="+ts);
       val accType = casted.getType().memberType(ts);
       val accTree = gen.Select( ident, ts);
       accType.match {
@@ -913,3 +916,85 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
     }
 }
 }
+
+/* idea::
+
+  case class BooleanTree(x:Tree) {
+    def &&&(z:BooleanTree) = new BooleanTree(cf.And(x,z.x));
+    def |||(z:BooleanTree) = new BooleanTree(cf.Or(x,z.x));
+  }
+  def view(x:Tree): BooleanTree = new BooleanTree(x);
+  def view(x:BooleanTree): Tree = x.x;
+
+  def view(x:Symbol): AssignableTree = new AssignableTree(x);
+  case class AssignableTree(x:Symbol) {
+    def := (z:Tree) = gen.Assign(gen.Ident(z.pos, x), z);
+  }
+
+  def view(x:Tree): TestableTree = new TestableTree(x);
+  case class TestableTree(x:Tree) {
+    def __isOf__ (z:Type) = gen.mkIsInstanceOf(x, z)
+  }
+
+  def view(x:Tree): CastableTree = new CastableTree(x);
+  case class CastableTree(x:Tree) {
+    def __castTo__ (z:Type) = gen.mkAsInstanceOf(x, z)
+  }
+
+  def view(x:Tree): EquatableTree = new EquatableTree(x);
+  case class EquatableTree(x:Tree) {
+    def === (z:Tree) = cf.Equals(x,z)
+  }
+
+  def view(x:Tree): SelectableTree = new SelectableTree(x);
+  case class SelectableTree(x:Tree) {
+    def __dot__ (z:Symbol) = gen.Select(x, z)
+  }
+
+  def view(x:Symbol): ValDefableTree = new ValDefableTree(x);
+  case class ValDefableTree(x:Symbol) {
+    def __valdef__ (z:Tree) = gen.ValDef(x,z);
+  }
+
+  protected def toTree(node:PatternNode , _selector:Tree ): Tree = {
+
+    def selector() = _selector.duplicate();
+    def pos() = _selector.pos;
+
+      //System.err.println("pm.toTree("+node+","+selector+")");
+      if (node == null)
+        return gen.mkBooleanLit(pos(), false);
+      else
+        node.match {
+          case DefaultPat() =>
+            return toTree(node.and);
+
+          case ConstrPat(casted) =>
+            return gen.If(selector() __isOf__ node.getTpe(),
+                          gen.mkBlock(casted __valdef__ (selector() __castTo__ node.getTpe()),
+                                      toTree(node.and)),
+                          toTree(node.or, selector()));
+
+          case SequencePat(casted, len) =>
+            return gen.If((selector() __isOf__ node.getTpe()) &&&
+                          (gen.mkApply__(selector() __castTo__ node.getTpe() __dot__ (defs.SEQ_LENGTH())) === gen.mkIntLit(pos(), len)),
+                          gen.mkBlock(casted __valdef__ (selector() __castTo__ node.getTpe()),
+                                      toTree(node.and)),
+                          toTree(node.or, selector()));
+          case ConstantPat(value) =>
+            return gen.If(selector() === gen.Literal(pos(), value),
+                          toTree(node.and),
+                          toTree(node.or, selector()));
+          case VariablePat(tree) =>
+            return gen.If(selector() === tree,
+                          toTree(node.and),
+                          toTree(node.or, selector()));
+          case AltPat(header) =>
+            return gen.If(toTree(header),
+                          toTree(node.and),
+                          toTree(node.or, selector()));
+          case _ =>
+            throw new ApplicationError();
+        }
+    }
+*/
