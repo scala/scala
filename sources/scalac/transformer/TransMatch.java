@@ -89,11 +89,27 @@ public class TransMatch extends OwnerTransformer {
     protected Tree transform(Tree root, CaseDef[] cases, Type restpe) {
         boolean containsReg = false;
         int i = 0;
-        while(!containsReg && (i < cases.length))
-            containsReg = TestRegTraverser.apply(cases[i++]);
+        while (i < cases.length) {
+            containsReg = TestRegTraverser.apply(cases[i]) || containsReg;
+	    Set nilvars = TestRegTraverser.getNilVariables();
+	    if(!nilvars.isEmpty()) {
+		//System.err.println("nilvars present");
+		Tree[] newBody = new Tree[ nilvars.size() + 1 ];
+		int j=0;
+		for( Iterator it = nilvars.iterator(); it.hasNext(); ) {
+		    Symbol v = (Symbol) it.next();
+		    newBody[ j++ ] = unit.global.treeGen.ValDef(v,
+								unit.global.treeGen.Nil(cases[i].pos));
+		}
+		newBody[ newBody.length - 1 ] = cases[i].body;
+		cases[i].body = unit.global.treeGen.mkBlock( newBody );
+	    }
+	    i++;
+	}
+
         if (containsReg) {
-        	AlgebraicMatcher am = new AlgebraicMatcher( unit );
-            Matcher matcher = new Matcher( currentOwner, root, restpe );
+	    AlgebraicMatcher am = new AlgebraicMatcher( unit );
+	    Matcher matcher = new Matcher( currentOwner, root, restpe );
             am.construct( matcher, cases );
             return matcher.tree;
         } else {
