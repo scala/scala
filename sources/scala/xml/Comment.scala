@@ -19,6 +19,8 @@ import scala.collection.immutable ;
 
 case class Comment( text:String ) extends Node {
 
+  final override def typeTag$:Int = -3;
+
   if( text.indexOf("--" ) != -1 )
     throw new IllegalArgumentException("text containts \"--\"");
 

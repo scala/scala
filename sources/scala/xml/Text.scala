@@ -18,6 +18,8 @@ import scala.collection.immutable ;
 
 case class Text( text:String ) extends Node {
 
+  final override def typeTag$:Int = -1;
+
   /** the constant "#PCDATA"
   */
   def label    = "#PCDATA";

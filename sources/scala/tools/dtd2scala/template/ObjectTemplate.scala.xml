@@ -43,9 +43,29 @@
 
     abstract class <string ref="objectName"/>Node$ extends scala.xml.Node;
 
+    def tagIterator(ch:Seq[scala.xml.Node]):Iterator[Int] = new Iterator[Int] {
+      val it = ch.elements.buffered;
+      def hasNext = { 
+        while (it.hasNext &amp;&amp; it.head.typeTag$ &lt; 0) it.next; 
+        it.hasNext
+      }
+      def next = {
+        if( hasNext ) {
+          val n = it.next;
+          val i = n.typeTag$;
+          if( i > 0 ) i else $tagMap.get( n.label ) match {
+            case Some( j ) => j
+            case None      => 0
+          }
+        } else {
+          error("internal error");
+        }
+      }
+    }
+    private val $tagMap = new mutable.HashMap[String,Int];
     <elementBinding>
      val $TagOf&ccElementName;:int = <elementTag/>;
-    
+     $tagMap.update( &qElementName;, $TagOf&ccElementName; );
      def constr_&ccElementName;( attrs:aT, ch:cT ) = &ccElementName;(attrs,ch:_*);
 
      case class &ccElementName;( attrs:Map[String,String], ch:scala.xml.Node* ) extends <string ref="objectName"/>Node$ {
@@ -53,10 +73,10 @@
 
     final override def typeTag$ = $TagOf&ccElementName;;
 
-    def shallowValidate&ccElementName;Children( ch:Seq[scala.xml.Node] ) = 
+    final def shallowValidate&ccElementName;Children( ch:Seq[scala.xml.Node] ) = 
       <shallowContentRegExp/>;
 
-    def validateAttributes( attrs:Map[String,String] ):aT = {
+    final def validateAttributes( attrs:Map[String,String] ):aT = {
         var req = 0;
         var map = scala.xml.Node.NoAttributes;
         <initAttributes/>
@@ -75,10 +95,16 @@
     if( !shallowValidate&ccElementName;Children( ch ) )
        error("trying to construct invalid &elementName;");
 
-     def label = &qElementName;;
-     def child = ch;
+     final def label = &qElementName;;
+     final def child = ch;
 
-      protected var hmap:aT = validateAttributes( attrs );
+      protected var hmap:aT = _;
+      try {
+        hmap = validateAttributes( attrs );
+        } catch {
+        case e:java.lang.Error => 
+          error("trying to construct invalid &elementName;\n"+e.getMessage());
+      }
       final def attribute:aT = hmap;
 
       <attributeBinding>

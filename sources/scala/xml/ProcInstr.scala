@@ -18,6 +18,8 @@ package scala.xml;
 
 case class ProcInstr( target:String, text:Option[String] ) extends Node {
 
+  final override def typeTag$:Int = -2;
+
   val z:Seq[Char] = target; z match {
     case Seq('X'|'x','M'|'m','L'|'l') =>
       throw new IllegalArgumentException(target+" is reserved");

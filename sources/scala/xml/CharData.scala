@@ -18,15 +18,17 @@ import scala.collection.immutable ;
 
 case class CharData( text:String ) extends Node {
 
+  final override def typeTag$:Int = -4;
+
   if( text.indexOf( "]]>" ) != -1 )
     throw new IllegalArgumentException(" CDATA text may not contain \"]]>\" ");
 
-  /** the constant "#PCDATA"
+  /** the constant "#CDATA"
   */
-  def label    = "#PI";
+  def label    = "#CDATA";
 
   /** always empty */
-  final def attribute = immutable.TreeMap.Empty[String,String];
+  final def attribute = Node.NoAttributes;
 
   /** always empty */
   final def child = Nil;

@@ -17,6 +17,9 @@ import scala.collection.immutable ;
 **/
 
 case class EntityRef( entityName:String ) extends Node {
+
+  final override def typeTag$:Int = -5;
+
   /** the constant "#ENTITY"
   */
   def label    = "#ENTITY";

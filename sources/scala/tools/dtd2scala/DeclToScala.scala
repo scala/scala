@@ -50,7 +50,7 @@ class DeclToScala(fOut:PrintWriter,
               sb.append( key );
               sb.append("\", \"");
               sb.append(attValue); /* quotes??? */
-              sb.append("\")");
+              sb.append("\");");
           }
           sb.append('\n');
         }
@@ -81,15 +81,15 @@ class DeclToScala(fOut:PrintWriter,
           sb.append(") =>");
           df match {
             case DEFAULT( true, attValue ) =>
-              sb.append("if( b._2 != \"+");
+              sb.append("if( b._2 != \"");
               sb.append( attValue );
-              sb.append("+\" ) error_FixedAttribute(b._1,");
+              sb.append("\" ) error_FixedAttribute(b._1,\"");
               sb.append( attValue );
-              sb.append(")");
+              sb.append("\") else {};");
             case REQUIRED =>
-              sb.append(" req = req - 1; map = map.update( b._1, b._2 )");
+              sb.append(" req = req - 1; map = map.update( b._1, b._2 );");
             case _ =>
-              sb.append(" map = map.update( b._1, b._2 )");
+              sb.append(" map = map.update( b._1, b._2 );");
           }
         }
         sb.append('\n');
@@ -129,44 +129,23 @@ class DeclToScala(fOut:PrintWriter,
       case ANY_ => "true";
       case Eps  => "ch.length == 0"
       case PCDATA_ | Sequ( PCDATA_ ) =>
-        val sb = new StringBuffer("ch.elements.forall( x:scala.xml.Node => x match {\n");
-        sb.append("                          case _:scala.xml.Text      => true \n");
-        sb.append("                          case _:scala.xml.EntityRef => true \n");
-        sb.append("                          case _:scala.xml.CharData  => true \n");
-        sb.append("                          case _:scala.xml.Comment   => true \n");
-        sb.append("                          case _:scala.xml.ProcInstr  => true \n");
-        sb.append("case _ => false })");
+        val sb = new StringBuffer("tagIterator( ch ).forall( x => x < 0 )");
         sb.toString();
       case Star(Alt(PCDATA_, alts @ _*)) => {
-        val sb = new StringBuffer("ch.elements.forall( x:scala.xml.Node => x match {\n");
-        sb.append("                          case _:scala.xml.Text      => true \n");
-        sb.append("                          case _:scala.xml.EntityRef => true \n");
-        sb.append("                          case _:scala.xml.CharData  => true \n");
-        sb.append("                          case _:scala.xml.Comment   => true \n");
-        sb.append("                          case _:scala.xml.ProcInstr  => true \n");
-        // classes created with mixin composition... types won't work
-        sb.append("                          case _ => x.typeTag$ match {\n");
-        // no type tag -> is scala.xml.Elem
-        sb.append("                            case 0  => x.label match {");
-        for( val alt <- alts.elements ) {
-          sb.append("                          case \"");
-          alt match { case RNode( name ) => sb.append( name );}
-          sb.append("\" => true \n");
-        }
-        sb.append("case _ =>  Console.println(\"ELEM\"); for( val z <- ch ) { Console.println( z.getClass() ); Console.println( z.label ); Console.println( z.toString() )}; false}\n");
+        val sb = new StringBuffer("tagIterator( ch ).forall( x:Int => x match {");
         for( val alt <- alts.elements ) {
           sb.append("                          case $TagOf");
           alt match { case RNode( name ) => sb.append( cookedCap( name ));}
           sb.append(" => true \n");
         }
-        sb.append("case _ => Console.println(ch.toList); for( val z <- ch ) { Console.println( z.getClass() ); Console.println( z.label ); Console.println( z.toString() )};  false }})");
+        sb.append("case _ => false })");
         sb.toString();
       }
-        case _ =>  val sb = new StringBuffer("(ch.elements.foldLeft (Nil:List[Int]) { (e:List[Int],x:scala.xml.Node) => val i = x.typeTag$; if( i!=0 ) i::e else e }).reverse match {");
+      case _ =>  val sb = new StringBuffer("tagIterator( ch ).toList.match {");
         sb.append("         case Seq( ");
         sb.append( shallowContentModel( r ) );
-        sb.append( ") => true ");
-        sb.append( "case _ => Console.println(\"reg match fails for \"+ch.elements.foldLeft (Nil:List[Int]) { (e:List[Int],x:scala.xml.Node) => val i = x.typeTag$; if( i!=0 ) i::e else e }); false}");
+        sb.append( ") => true \n");
+        sb.append( "case _ => false }\n");
         sb.toString();
       }
     }

@@ -2,7 +2,7 @@
 <!DOCTYPE html SYSTEM "xhtml.dtd">
 <html>
   <head>
-    <base/>
+    <base href="here.com"/>
     <title>a basic xhtml page</title>
   </head>
   <body>
