@@ -27,7 +27,7 @@ public abstract class Checker extends Traverser {
             System.err.println("ERROR: Condition '" + name + "' violated (after "
                                + global.currentPhase + ")!");
             System.err.println(message);
-            global.debugPrinter.print(tree);
+            System.err.println(tree);
             System.err.println();
         }
     }

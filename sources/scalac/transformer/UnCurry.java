@@ -279,7 +279,7 @@ public class UnCurry extends OwnerTransformer
 		    assert name == Names.apply && args1.length == 0;
 		    return qual;
 		default:
-		    global.debugPrinter.print(arg1).flush();//debug
+		    System.err.println(arg1);//debug
 		    throw new ApplicationError();
 		}
 	    }
