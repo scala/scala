@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2005, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -240,7 +240,7 @@ public class CompilerCommand extends CommandParser {
 
         this.version = new VersionOptionParser(this,
             "version", "Print product version and exit",
-            product() + " " + version() + " -- (c) 2002-04 LAMP/EPFL"),
+            product() + " " + version() + " -- (c) 2002-05 LAMP/EPFL"),
 
         this.help = new HelpOptionParser(this,
             "help", "Print a synopsis of standard options"),
