@@ -24,7 +24,8 @@ public class ClassfileParser implements ClassfileConstants {
                                  | SYNTHETIC_ATTR
                                  | DEPRECATED_ATTR
                                  | META_ATTR
-                                 | SCALA_ATTR;
+                                 | SCALA_ATTR
+                                 | JACO_ATTR;
     static final int METH_ATTR   = CODE_ATTR
                                  | EXCEPTIONS_ATTR
                                  | SYNTHETIC_ATTR
@@ -52,7 +53,7 @@ public class ClassfileParser implements ClassfileConstants {
         this.global = global;
         this.in = in;
         this.c = c;
-	this.ctype = c.typeConstructor();
+        this.ctype = c.typeConstructor();
         this.make = new JavaTypeCreator(global);
         this.sigs = new Signatures(global, make);
         this.pool = new ConstantPool(in, sigs);
@@ -84,8 +85,8 @@ public class ClassfileParser implements ClassfileConstants {
                                       "' contains wrong class " + name);
             // todo: correct flag transition
             c.flags = transFlags(flags);
-	    if ((c.flags & Modifiers.DEFERRED) != 0)
-		c.flags = c.flags & ~Modifiers.DEFERRED | Modifiers.ABSTRACTCLASS;
+            if ((c.flags & Modifiers.DEFERRED) != 0)
+                c.flags = c.flags & ~Modifiers.DEFERRED | Modifiers.ABSTRACTCLASS;
             Type supertpe = readClassType(in.nextChar());
             Type[] basetpes = new Type[in.nextChar() + 1];
             this.locals = new Scope();
@@ -94,13 +95,13 @@ public class ClassfileParser implements ClassfileConstants {
             Type classType = Type.compoundType(basetpes, locals, c);
             c.setFirstInfo(classType);
             // set type of statics
-	    Symbol staticsClass = c.module().moduleClass();
-	    if (staticsClass.isModuleClass()) {
-		Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
-		staticsClass.setFirstInfo(staticsInfo);
-		c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
-					    staticsClass, Type.EMPTY_ARRAY));
-	    }
+            Symbol staticsClass = c.module().moduleClass();
+            if (staticsClass.isModuleClass()) {
+                Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
+                staticsClass.setFirstInfo(staticsInfo);
+                c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
+                                            staticsClass, Type.EMPTY_ARRAY));
+            }
             basetpes[0] = supertpe;
             for (int i = 1; i < basetpes.length; i++)
                 basetpes[i] = readClassType(in.nextChar());
@@ -111,18 +112,18 @@ public class ClassfileParser implements ClassfileConstants {
             for (int i = 0; i < methodCount; i++)
                 parseMethod();
 
-	    Symbol constr = c.primaryConstructor();
-	    if (!constr.isInitialized()) {
-		constr.setFirstInfo(
-		    Type.MethodType(Symbol.EMPTY_ARRAY, ctype));
-		if ((c.flags & Modifiers.INTERFACE) == 0)
-		    constr.flags |= Modifiers.PRIVATE;
-	    }
+            Symbol constr = c.primaryConstructor();
+            if (!constr.isInitialized()) {
+                constr.setFirstInfo(
+                    Type.MethodType(Symbol.EMPTY_ARRAY, ctype));
+                if ((c.flags & Modifiers.INTERFACE) == 0)
+                    constr.flags |= Modifiers.PRIVATE;
+            }
             attrib.readAttributes(c, classType, CLASS_ATTR);
-	    //System.out.println("dynamic class: " + c);
-	    //System.out.println("statics class: " + staticsClass);
-	    //System.out.println("module: " + c.module());
-	    //System.out.println("modules class: " + c.module().type().symbol());
+            //System.out.println("dynamic class: " + c);
+            //System.out.println("statics class: " + staticsClass);
+            //System.out.println("module: " + c.module());
+            //System.out.println("modules class: " + c.module().type().symbol());
         } catch (RuntimeException e) {
             if (global.debug) e.printStackTrace();
             String s = e.getMessage() == null ? "" : " (" +e.getMessage()+ ")";
@@ -178,16 +179,16 @@ public class ClassfileParser implements ClassfileConstants {
         int flags = in.nextChar();
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
-	int mods = transFlags(flags);
-	if ((flags & 0x0010) == 0)
-	    mods |= Modifiers.MUTABLE;
-	Symbol owner = c;
-	if ((flags & 0x0008) != 0)
-	    owner = c.module().moduleClass();
+        int mods = transFlags(flags);
+        if ((flags & 0x0010) == 0)
+            mods |= Modifiers.MUTABLE;
+        Symbol owner = c;
+        if ((flags & 0x0008) != 0)
+            owner = c.module().moduleClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
         s.setFirstInfo(type);
         attrib.readAttributes(s, type, FIELD_ATTR);
-	((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+        ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
     }
 
     /** read a method
@@ -206,27 +207,27 @@ public class ClassfileParser implements ClassfileConstants {
                 return;
             }
             switch (type) {
-	    case MethodType(Symbol[] vparams, _):
-		type = Type.MethodType(vparams, ctype);
-		break;
-	    default:
-		throw new ApplicationError();
-	    }
-	    s.setFirstInfo(type);
+            case MethodType(Symbol[] vparams, _):
+                type = Type.MethodType(vparams, ctype);
+                break;
+            default:
+                throw new ApplicationError();
+            }
+            s.setFirstInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
-	    Symbol constr = c.primaryConstructor();
-	    if (constr.isInitialized()) constr = c.addConstructor();
-	    s.copyTo(constr);
-	    //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
+            Symbol constr = c.primaryConstructor();
+            if (constr.isInitialized()) constr = c.addConstructor();
+            s.copyTo(constr);
+            //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
             //System.out.println("-- enter " + s);
         } else {
-	    Symbol s = new TermSymbol(
-		Position.NOPOS,	name,
-		((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
-		transFlags(flags));
-	    s.setFirstInfo(type);
-	    attrib.readAttributes(s, type, METH_ATTR);
-	    ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
-	}
+            Symbol s = new TermSymbol(
+                Position.NOPOS, name,
+                ((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
+                transFlags(flags));
+            s.setFirstInfo(type);
+            attrib.readAttributes(s, type, METH_ATTR);
+            ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+        }
     }
 }

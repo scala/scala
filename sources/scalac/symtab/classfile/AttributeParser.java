@@ -57,6 +57,8 @@ public class AttributeParser implements ClassfileConstants {
             return META_ATTR;
         if (name == SCALA_N)
             return SCALA_ATTR;
+        if (name == JACO_N)
+        	return JACO_ATTR;
         return BAD_ATTR;
     }
 
@@ -82,8 +84,7 @@ public class AttributeParser implements ClassfileConstants {
         // class attributes
             case SCALA_ATTR:
                 new UnPickle(sym, in.nextBytes(attrLen), Name.fromString(in.path));
-		return;
-
+                return;
             case INNERCLASSES_ATTR:
                 /* int n = in.nextChar();
                 for (int i = 0; i < n; i++) {
@@ -99,12 +100,10 @@ public class AttributeParser implements ClassfileConstants {
                 } */
                 in.skip(attrLen);
                 return;
-
         // method attributes
             case CODE_ATTR:
                 in.skip(attrLen);
                 return;
-
             case EXCEPTIONS_ATTR:
                 //int nexceptions = in.nextChar();
                 //Type[] thrown = new Type[nexceptions];
@@ -113,39 +112,42 @@ public class AttributeParser implements ClassfileConstants {
                 //((MethodType)def.type).thrown = thrown;
                 in.skip(attrLen);
                 return;
-
             case LINE_NUM_TABLE_ATTR:
                 in.skip(attrLen);
                 return;
-
             case LOCAL_VAR_TABLE_ATTR:
                 in.skip(attrLen);
                 return;
-
         // general attributes
             case SYNTHETIC_ATTR:
                 sym.flags |= Modifiers.SYNTHETIC;
                 return;
-
             case DEPRECATED_ATTR:
                 sym.flags |= Modifiers.DEPRECATED;
                 return;
-
             case CONSTANT_VALUE_ATTR:
                 // Type ctype = (Type)reader.readPool(in.nextChar());
                 // def.type = types.coerce(ctype, def.type);
                 in.skip(attrLen);
                 return;
-
             case META_ATTR:
                 //System.out.println("parsing meta data for " + sym);
                 String meta = pool.readPool(in.nextChar()).toString().trim();
                 sym.setFirstInfo(
-		    new MetaParser(meta, tvars, sym, type).parse());
+                    new MetaParser(meta, tvars, sym, type).parse());
                 return;
-
-	    default:
-		in.skip(attrLen);
+       		case JACO_ATTR:
+       		    // this attribute is present in all PiCo generated classfiles
+       		    int mods = in.nextChar();
+     			mods |= (in.nextChar() << 16);
+     			boolean algebraicClass = (mods & 0x00100000) != 0;
+     			boolean caseClass = (mods & 0x00200000) != 0;
+     			if (caseClass)
+     			    sym.flags |= Modifiers.CASE | Modifiers.JAVA;
+				in.skip(attrLen - 4);
+                return;
+            default:
+                in.skip(attrLen);
                 return;
         }
     }
@@ -175,22 +177,22 @@ public class AttributeParser implements ClassfileConstants {
 
         private Symbol getTVar(String name, Symbol owner) {
             if (name.startsWith("?")) {
-            	Symbol s = ((locals != null) ? locals : tvars)
-            		.lookup(Name.fromString(name).toTypeName());
-               	if (s != Symbol.NONE)
-            		return s;
-            	else if (locals != null) {
-					s = tvars.lookup(Name.fromString(name).toTypeName());
-					if (s != Symbol.NONE)
-            			return s;
-            	}
+                Symbol s = ((locals != null) ? locals : tvars)
+                        .lookup(Name.fromString(name).toTypeName());
+                if (s != Symbol.NONE)
+                        return s;
+                else if (locals != null) {
+                                        s = tvars.lookup(Name.fromString(name).toTypeName());
+                                        if (s != Symbol.NONE)
+                                return s;
+                }
                 s = new AbsTypeSymbol(
-             		Position.NOPOS,
-                	Name.fromString(token).toTypeName(),
-             		owner,
-             		Modifiers.PARAM);
-         		s.setFirstInfo(parser.defs.ANY_TYPE);
-     			tvars.enter(s);
+                        Position.NOPOS,
+                        Name.fromString(token).toTypeName(),
+                        owner,
+                        Modifiers.PARAM);
+                        s.setFirstInfo(parser.defs.ANY_TYPE);
+                        tvars.enter(s);
                 return s;
             } else
                 return Symbol.NONE;
@@ -254,17 +256,17 @@ public class AttributeParser implements ClassfileConstants {
                     Symbol[] smbls = (Symbol[])syms.toArray(new Symbol[syms.size()]);
                     //System.out.println("*** " + syms);//DEBUG
                     Type clazztype = Type.appliedType(
-			parser.ctype, Symbol.type(smbls));
-		    Symbol constr = parser.c.primaryConstructor();
-		    switch (constr.rawInfo()) {
-		    case MethodType(Symbol[] vparams, _):
-			constr.setFirstInfo(
-			    Type.PolyType(
-				smbls, Type.MethodType(vparams, clazztype)));
-			break;
-		    default:
-			throw new ApplicationError(constr.rawInfo());
-		    }
+                        parser.ctype, Symbol.type(smbls));
+                    Symbol constr = parser.c.primaryConstructor();
+                    switch (constr.rawInfo()) {
+                    case MethodType(Symbol[] vparams, _):
+                        constr.setFirstInfo(
+                            Type.PolyType(
+                                smbls, Type.MethodType(vparams, clazztype)));
+                        break;
+                    default:
+                        throw new ApplicationError(constr.rawInfo());
+                    }
                 } catch (NoSuchElementException e) {
                 }
             }
@@ -324,12 +326,12 @@ public class AttributeParser implements ClassfileConstants {
                             break;
                         assert token.startsWith("?");
                         Symbol s = new AbsTypeSymbol(
-             				Position.NOPOS,
-                			Name.fromString(token).toTypeName(),
-             				owner,
-             				Modifiers.PARAM);
-         					s.setFirstInfo(parser.defs.ANY_TYPE);
-     					locals.enter(s);
+                                        Position.NOPOS,
+                                        Name.fromString(token).toTypeName(),
+                                        owner,
+                                        Modifiers.PARAM);
+                                                s.setFirstInfo(parser.defs.ANY_TYPE);
+                                        locals.enter(s);
                         nextToken();
                         if (token.equals("<")) {
                             nextToken();

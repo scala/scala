@@ -41,6 +41,7 @@ public interface ClassfileConstants {
     int INNERCLASSES_ATTR = 0x08000;
     int META_ATTR = 0x10000;
     int SCALA_ATTR = 0x20000;
+    int JACO_ATTR = 0x40000;
 
     Name SOURCEFILE_N = Name.fromString("SourceFile");
     Name SYNTHETIC_N = Name.fromString("Synthetic");
@@ -53,5 +54,6 @@ public interface ClassfileConstants {
     Name INNERCLASSES_N = Name.fromString("InnerClasses");
     Name META_N = Name.fromString("JacoMeta");
     Name SCALA_N = Name.fromString("ScalaSignature");
+    Name JACO_N = Name.fromString("JacoInterface");
     Name CONSTR_N = Name.fromString("<init>");
 }

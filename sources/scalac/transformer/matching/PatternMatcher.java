@@ -473,22 +473,27 @@ public class PatternMatcher extends PatternTool {
                 Symbol ts = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
 				Type accType = casted.type().memberType(ts);
-                target.and = curHeader = mk.Header(
-                    pat.pos,
-                    accType.resultType(),
-                    make.Apply(
-                        pat.pos,
-                        make.Select(
-                            pat.pos,
-                            make.Ident(pat.pos, casted.name)
-                                .setType(casted.type())
-                                .setSymbol(casted),
-                            ts.name)
-                            .setType(Type.MethodType(
-                                      Symbol.EMPTY_ARRAY,
-                                      accType.resultType()))
-                            .setSymbol(ts),
-                        Tree.EMPTY_ARRAY).setType(accType.resultType()));
+				Tree accTree = make.Select(
+                            	pat.pos,
+                            	make.Ident(pat.pos, casted.name)
+                                	.setType(casted.type()).setSymbol(casted),
+                            	ts.name)
+                               		.setType(accType).setSymbol(ts);
+               	switch (accType) {
+               		// scala case accessor
+               		case MethodType(_, _):
+						target.and = curHeader = mk.Header(
+							pat.pos,
+							accType.resultType(),
+							make.Apply(
+								pat.pos,
+								accTree,
+								Tree.EMPTY_ARRAY).setType(accType.resultType()));
+						break;
+					// jaco case accessor
+					default:
+						target.and = curHeader = mk.Header(pat.pos, accType, accTree);
+				}
             }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);

@@ -1226,7 +1226,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (clazz.isCaseClass()) {
 		    // set type to instantiated case class constructor
 		    tree.type = tree.type.prefix().memberType(
-			clazz.primaryConstructor());
+				clazz.primaryConstructor());
+			// MZ: this is a hack, but I didn't know how to do it better
+			if ((clazz.flags & (JAVA | CASE)) == (JAVA | CASE)) {
+				tree.type = tree.type.prefix().memberType(
+					clazz.allConstructors().alternativeSymbols()[1]);
+			}
 		    switch (tree.type) {
 		    case PolyType(Symbol[] tparams, Type restp):
 			try {
