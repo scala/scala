@@ -304,8 +304,7 @@ public class LeftTracerInScala extends TracerInScala {
     Tree run_finished( int state ) {
         Tree hd = cf.newPair( gen.mkIntLit( cf.pos, state ),
                               gen.mkDefaultValue(cf.pos,
-                                                 elementType)
-                              /*cf.ignoreValue( elementType )*/);
+                                                 elementType));
         //System.err.println(hd.type);
         return gen.Cons(  cf.pos,
                           hd.type(),

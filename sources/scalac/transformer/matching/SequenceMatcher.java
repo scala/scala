@@ -145,7 +145,6 @@ public class SequenceMatcher extends PatternTool {
                              Tree[] body,
                              Tree defaultCase,
                              boolean doBinding ) {
-	  //System.err.println("SequenceMatcher::construct");
             this.pat  = pat;
             this.body = body;
             assert body.length == pat.length;
