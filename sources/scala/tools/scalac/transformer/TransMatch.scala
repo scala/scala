@@ -17,7 +17,6 @@ import scalac.util._;       // Names
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
 
 
-import scalac.transformer.matching.PartialMatcher ;
 //import scalac.transformer.matching.PatternMatcher ;
 //import scalac.transformer.matching.AlgebraicMatcher ;
 
@@ -30,6 +29,7 @@ import scalac.transformer.matching.PartialMatcher ;
 package scala.tools.scalac.transformer {
 
   import matching.PatternMatcher ;
+  import matching.PartialMatcher ;
 //import matching.FullRegularTranslator ;
 
 class TransMatch( global:scalac_Global )
