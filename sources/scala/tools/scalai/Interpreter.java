@@ -14,6 +14,7 @@ import java.util.HashMap;
 
 import scala.tools.util.Position;
 
+import scalac.CompilationUnit;
 import scalac.Global;
 import scalac.Phase;
 import scalac.symtab.Definitions;
@@ -70,14 +71,14 @@ public class Interpreter {
 
     public EvaluatorResult interpret(String input, boolean interactive) {
         if (input.trim().length() == 0) return EvaluatorResult.Void;
-        global.compile("<console>", input + ";", interactive);
-        return interpret(interactive);
+        return interpret(
+            global.compile("<console>", input + ";", interactive),
+            interactive);
     }
 
     public EvaluatorResult interpret(String[] files, boolean interactive) {
         if (files.length == 0) return EvaluatorResult.Void;
-        global.compile(files, interactive);
-        return interpret(interactive);
+        return interpret(global.compile(files, interactive), interactive);
     }
 
     public EvaluatorResult toString(Object object, String type) {
@@ -91,10 +92,12 @@ public class Interpreter {
     //########################################################################
     // Private Methods
 
-    private EvaluatorResult interpret(boolean interactive) {
+    private EvaluatorResult interpret(CompilationUnit[] units,
+        boolean interactive)
+    {
         try {
             if (global.reporter.errors() != 0) return EvaluatorResult.Void;
-            compiler.compile(global.units);
+            compiler.compile(units);
             if (interactive) {
                 Variable console = compiler.getModule(global.console);
                 evaluator.evaluate(console);

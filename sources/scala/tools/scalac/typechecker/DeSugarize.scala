@@ -630,10 +630,9 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   //debug
   def print(tree: Tree, conv: String, result: Tree): unit = {
     if (global.log()) {
-      new TextTreePrinter(global)
-      .print(tree).println()
-      .print(" --" + conv + "--> ").println()
-      .print(result).println().end();
+      System.out.println(tree);
+      System.out.println(" --" + conv + "--> ");
+      System.out.println(tree);
     }
   }
 }

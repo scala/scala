@@ -31,4 +31,6 @@ public abstract class AnalyzerPhase extends Phase {
 
     public abstract void lateEnter(CompilationUnit unit);
 
+    public abstract CompilationUnit[] getUnits();
+
 }

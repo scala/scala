@@ -239,15 +239,10 @@ public class ATreePrinter {
     //########################################################################
     // Public Methods - Printing trees
 
-    /** Prints all global units. */
-    public ATreePrinter printGlobal(Global global) {
-        Phase phase = global.currentPhase;
-        println("[[attributed trees at "+phase+" (after "+phase.prev+")]]");
-        return printUnits(global.units);
-    }
-
     /** Prints the units. */
     public ATreePrinter printUnits(CompilationUnit[] units) {
+        Phase phase = global.currentPhase;
+        println("[[attributed trees at "+phase+" (after "+phase.prev+")]]");
         for (int i = 0; i < units.length; i++) printUnit(units[i]);
         return this;
     }

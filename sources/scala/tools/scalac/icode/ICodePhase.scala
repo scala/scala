@@ -9,7 +9,7 @@
 import scalac.symtab._;
 import scalac.transformer.{ICodePhase => scalac_ICodePhase}
 import scalac.{Global => scalac_Global}
-import scalac.{CompilationUnit => scalac_CompilationUnit}
+import scalac.CompilationUnit;
 import scalac.PhaseDescriptor;
 import scalac.Phase;
 import scalac.atree._;
@@ -31,22 +31,20 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
   // ##################################################
   // Public methods
 
-  /* Apply the icode phase to the given units */
-  override def apply(units: Array[scalac_CompilationUnit]) = {
-    val units_it = Iterator.fromArray(units);
+  /** Applies this phase to the given compilation units. */
+  override def apply(units: Array[CompilationUnit]): Unit =
+    Iterator.fromArray(units).foreach(translate);
 
-    units_it.foreach(translate);
-  }
-
-  /* Return a CodePrinter for the ICode */
-  override def getPrinter(cp: CodePrinter) = new ICodePrinter(cp);
+  /** Prints the given compilation units. */
+  override def print(units: Array[CompilationUnit], printer: CodePrinter):Unit=
+    new ICodePrinter(global, printer).printUnits(units);
 
   // ##################################################
   // Private methods
 
   /** This method translates a single unit, it traverses all methods and
     * generates ICode for each of them */
-  private def translate(u: scalac_CompilationUnit) : unit = {
+  private def translate(u: CompilationUnit) : unit = {
     def genClass(c: AClass) : unit = {
       val nestedClasses_it = Iterator.fromArray(c.classes());
       nestedClasses_it.foreach(genClass);

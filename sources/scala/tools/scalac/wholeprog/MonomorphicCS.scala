@@ -15,7 +15,7 @@
 ** [iuli]   2.05.2004                                                   */
 
 import scalac.{Global => scalac_Global}
-import scalac.{CompilationUnit => scalac_CompilationUnit}
+import scalac.CompilationUnit;
 import scalac.symtab._;
 import scalac.util._;
 import scala.collection.mutable._;
@@ -85,7 +85,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
   }
 
   /** Identify and print monomoprhic callsites */
-  def monomorphicCallsites: Unit = {
+  def monomorphicCallsites(units: Array[CompilationUnit]): Unit = {
     val cg = callGraph;
     var nr: int = 0;
     var views: Int = 0;
@@ -122,7 +122,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     Logger.setFile("inlining.log");
 
     Console.println("[start build callgraph]"); StopWatch.start;
-    buildCallGraph;
+    buildCallGraph(units);
     Console.println("[end build callgraph] " + StopWatch.stop + " ms");
 
     if (global.args.Xrta.value) {
@@ -158,7 +158,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     if (global.args.Xinline.value) {
       Console.println("[start inlining]"); StopWatch.start;
 
-      doInline(inlinable);
+      doInline(units, inlinable);
       Console.println("[end inlining] " + StopWatch.stop + " ms");
     }
   }
@@ -207,10 +207,10 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
   }
 
   /** perform inlines */
-  def doInline(sites: InlinableCollection): Unit = {
+  def doInline(units: Array[CompilationUnit], sites: InlinableCollection): Unit = {
     val transformer: Transformer = new InlineMethods(sites, global);
 
-    global.units.foreach( (u) => {
+    units.foreach( (u) => {
       u.body = transformer.transform(u.body);
     });
 
@@ -223,9 +223,9 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
   var viewsTotal = 0; // calls to "view" methods
 
 
-  def buildCallGraph: Unit = {
-    createNodes(callGraph);
-    createEdges(callGraph);
+  def buildCallGraph(units: Array[CompilationUnit]): Unit = {
+    createNodes(units, callGraph);
+    createEdges(units, callGraph);
 
     // print call graph size
     var nodes = 0;
@@ -249,16 +249,16 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     file.flush();
   }
 
-  def createNodes(cg: CallGraph): Unit = {
+  def createNodes(units: Array[CompilationUnit], cg: CallGraph): Unit = {
     val trav: Traverser = new MethodNodeCreator(cg);
 
-    global.units.foreach( (u) => trav.traverse(u.body) );
+    units.foreach( (u) => trav.traverse(u.body) );
   }
 
-  def createEdges(cg: CallGraph): Unit = {
+  def createEdges(units: Array[CompilationUnit], cg: CallGraph): Unit = {
     val trav: Traverser = new CallGraphEdgeTraverser(cg);
 
-    global.units.foreach( (u) => trav.traverse(u.body) );
+    units.foreach( (u) => trav.traverse(u.body) );
   }
 
   /** Walk the nodes in the AST tree and creates nodes in the callgraph

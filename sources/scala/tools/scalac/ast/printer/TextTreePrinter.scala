@@ -31,8 +31,14 @@ import java.util.ArrayList;
 class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   with TreePrinter
 {
-  val global = global0;
-  val out = out0;
+  //##########################################################################
+  // Public Fields
+
+  val global: scalac_Global = global0;
+  val out: PrintWriter = out0;
+
+  //##########################################################################
+  // Public Constructors
 
   def this(global0: scalac_Global, out0: Writer) =
     this(global0, new PrintWriter(out0));
@@ -53,12 +59,8 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   def end(): Unit = flush();
   def flush(): Unit = out.flush();
 
-  def print(global: scalac_Global): Unit = printUnitsOf(global);
-  def print(unit: CompilationUnit): Unit = printUnit(unit);
-
-  def print(tree: Tree): TreePrinter = { printTree(tree); this }
-  def print(str: String) = { out.print(str); this }
-  def println() = { out.println(); this }
+  def print(units: Array[CompilationUnit]): Unit = printUnits(units);
+  def print(tree: Tree): Unit = printTree(tree);
 
   //##########################################################################
 
@@ -73,6 +75,10 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   protected def undent() = {
     indentMargin = indentMargin - Math.max(0, INDENT_STEP);
+  }
+
+  protected def print(str: String): Unit = {
+    out.print(str);
   }
 
   protected def printString(str: String) = {
@@ -205,11 +211,11 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   //##########################################################################
   // Public Methods - Printing Units
 
-  def printUnitsOf(global: scalac_Global): Unit = {
+  def printUnits(units: Array[CompilationUnit]): Unit = {
     val phase: Phase = global.currentPhase;
     beginSection(1, "syntax trees at "+phase+" (after "+phase.prev+")");
-    for (val i <- Iterator.range(0, global.units.length))
-      print(global.units(i));
+    for (val i <- Iterator.range(0, units.length))
+      printUnit(units(i));
   }
 
   def printUnit(unit: CompilationUnit): Unit = {

@@ -14,6 +14,7 @@ import java.io.PrintWriter;
 import scala.tools.util.Position;
 
 import scalac.Global;
+import scalac.ast.printer.TreePrinter;
 import scalac.checkers.CheckTreeNodes;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
@@ -111,8 +112,10 @@ public class Tree {
     /** Returns the string representation of this tree. */
     public String toString() {
 	StringWriter buffer = new StringWriter();
-        Global global = Global.instance;
-	global.newTextTreePrinter(new PrintWriter(buffer)).print(this).flush();
+        TreePrinter printer =
+            Global.instance.newTextTreePrinter(new PrintWriter(buffer));
+	printer.print(this);
+        printer.flush();
 	return buffer.toString();
     }
 

@@ -23,10 +23,6 @@ public interface TreePrinter {
     public void end();
     public void flush();
 
-    public void print(Global global);
-    public void print(CompilationUnit unit);
-
-    public TreePrinter print(Tree tree);
-    public TreePrinter print(String str);
-    public TreePrinter println();
+    public void print(CompilationUnit[] units);
+    public void print(Tree tree);
 }

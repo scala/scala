@@ -60,30 +60,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/ ;
 
   override def apply(units: Array[CompilationUnit]): unit = {
-    var i = 0; while (i <  units.length) {
-      enterUnit(units(i));
-      i = i + 1
-    }
-    super.apply(units);
+    {var i = 0; while (i <  units.length) { lateEnter(units(i)); i = i + 1; }}
+
     val mixinOnly = global.target != Global.TARGET_INT;
     List.range(0, definitions.FUNCTION_COUNT).foreach(
       i => loadCode(definitions.FUNCTION_CLASS(i), mixinOnly));
-    var n = descr.newSources.size();
-    while (n > 0) { // this calls apply(u) for every unit `u'.
-      val l = global.units.length;
-      val newUnits = new Array[CompilationUnit](l + n);
-      System.arraycopy(global.units, 0, newUnits, 0, l);
-      var i = 0; while (i < n) {
-        newUnits(i + l) = descr.newSources.get(i).asInstanceOf[CompilationUnit];
-	i = i + 1
-      }
-      global.units = newUnits;
-      descr.newSources.clear();
-      var j = l; while (j < newUnits.length) {
-        apply(newUnits(j));
-	j = j + 1
-      }
-      n = descr.newSources.size();
+
+    var n = 0;
+    while (n < descr.newSources.size()) {
+      apply(descr.newSources.get(n).asInstanceOf[CompilationUnit]);
+      n = n + 1;
     }
   }
 

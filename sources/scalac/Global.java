@@ -42,6 +42,7 @@ import scalac.symtab.classfile.PackageParser;
 import scalac.symtab.classfile.CLRPackageParser;
 import scalac.typechecker.AnalyzerPhase;
 import scalac.typechecker.Infer;
+import scalac.transformer.ICodePhase;
 import scalac.util.*;
 
 /** The global environment of a compiler run
@@ -94,10 +95,6 @@ public abstract class Global {
      */
     private final SourceReader reader;
 
-    /** all compilation units
-     */
-    public CompilationUnit[] units;
-
     /** the class path
      */
     public final ClassPath classPath;
@@ -142,7 +139,7 @@ public abstract class Global {
 
     /** The set of already compiled sourcefiles
      */
-    public HashSet/*<SourceFile>*/ compiledUnits = new HashSet();
+    private HashSet/*<SourceFile>*/ compiledUnits = new HashSet();
 
     /** the current phase
      */
@@ -348,7 +345,7 @@ public abstract class Global {
 
     /** the top-level compilation process
      */
-    public void compile(String[] files, boolean console) {
+    public CompilationUnit[] compile(String[] files, boolean console) {
         reporter.resetCounters();
         // parse files
         List units = new ArrayList(files.length);
@@ -361,8 +358,8 @@ public abstract class Global {
                 error(exception.getMessage());
             }
         }
-        this.units = (CompilationUnit[])units.toArray(new CompilationUnit[units.size()]);
-        compile();
+        CompilationUnit[] array = new CompilationUnit[units.size()];
+        return compile((CompilationUnit[])units.toArray(array));
     }
 
     /**
@@ -372,17 +369,17 @@ public abstract class Global {
      * @param input
      * @param console
      */
-    public void compile(String filename, String input, boolean console) {
+    public CompilationUnit[] compile(String filename, String input, boolean console) {
         reporter.resetCounters();
         SourceFile source = getSourceFile(filename, input);
 	compiledUnits.add(source);
-        units = new CompilationUnit[]{new CompilationUnit(this, source, console)};
-        compile();
+        CompilationUnit[] units = {new CompilationUnit(this, source, console)};
+        return compile(units);
     }
 
     /** compile all compilation units
      */
-    private void compile() {
+    private CompilationUnit[] compile(CompilationUnit[] units) {
         treePrinter.begin();
 
         currentPhase = PHASE.INITIAL.phase();
@@ -393,11 +390,13 @@ public abstract class Global {
             // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
-            if (currentPhase.descriptor.hasPrintFlag()) print();
+            if (currentPhase == PHASE.ANALYZER.phase())
+                units = ((AnalyzerPhase)currentPhase).getUnits();
+            if (currentPhase.descriptor.hasPrintFlag()) print(units);
             // if (currentPhase.descriptor.hasGraphFlag()) // !!!
             // if (currentPhase.descriptor.hasCheckFlag()) // !!!
-            if (currentPhase == PHASE.PARSER.phase()) fix1();
-            if (currentPhase == PHASE.ANALYZER.phase()) fix2();
+            if (currentPhase == PHASE.PARSER.phase()) fix1(units);
+            if (currentPhase == PHASE.ANALYZER.phase()) fix2(units);
         }
         if (reporter.errors() != 0) {
             imports.clear();
@@ -411,6 +410,7 @@ public abstract class Global {
         symdata.clear();
         compiledNow.clear();
         treePrinter.end();
+        return units;
     }
 
     /** Compiles an additional source file. */
@@ -429,30 +429,31 @@ public abstract class Global {
 	}
     }
 
-    private void print() {
+    private void print(CompilationUnit[] units) {
         if (currentPhase.id == PHASE.MAKEBOXINGEXPLICIT.id()) {
             boolean html = args.printer.value.equals(PRINTER_HTML);
             if (html) writer.println("<pre>");
             ATreePrinter printer = new ATreePrinter(new CodePrinter(writer));
             boolean next = currentPhase.next != null;
             if (next) currentPhase = currentPhase.next;
-            printer.printGlobal(this);
+            printer.printUnits(units);
             if (next) currentPhase = currentPhase.prev;
             if (html) writer.println("</pre>");
         } else if (currentPhase.id == PHASE.ICODE.id()) {
+            Phase phase = currentPhase;
             boolean html = args.printer.value.equals(PRINTER_HTML);
             if (html) writer.println("<pre>");
-	    ATreePrinter printer = ((scalac.transformer.ICodePhase)currentPhase).getPrinter(new CodePrinter(writer)); // Oh !!
+
             boolean next = currentPhase.next != null;
             if (next) currentPhase = currentPhase.next;
-            printer.printGlobal(this);
+            ((ICodePhase)phase).print(units, new CodePrinter(writer));
             if (next) currentPhase = currentPhase.prev;
             if (html) writer.println("</pre>");
         } else {
             // go to next phase to print symbols with their new type
             boolean next = currentPhase.next != null;
             if (next) currentPhase = currentPhase.next;
-            treePrinter.print(this);
+            treePrinter.print(units);
             if (next) currentPhase = currentPhase.prev;
         }
     }
@@ -498,7 +499,7 @@ public abstract class Global {
     private List imports = new ArrayList();
     public Symbol console;
 
-    private void fix1() {
+    private void fix1(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
         }
@@ -524,7 +525,7 @@ public abstract class Global {
         module++;
     }
 
-    private void fix2() {
+    private void fix2(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix2(units[i]);
         }

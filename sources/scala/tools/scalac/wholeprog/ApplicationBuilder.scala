@@ -1,7 +1,7 @@
 // $Id$
 
 import scalac.{Global => scalac_Global}
-import scalac.{CompilationUnit => scalac_CompilationUnit}
+import scalac.CompilationUnit;
 import scalac.atree._;
 import scalac.symtab._;
 import scalac.util.Name;
@@ -29,7 +29,7 @@ class ApplicationBuilder(globall: scalac_Global) {
   var worklist: Set[Symbol] = new HashSet[Symbol];
   var app: Set[Symbol]      = new HashSet[Symbol];
 
-  def finalClasses(app: Set[Symbol], units: Array[scalac_CompilationUnit]): Unit = {
+  def finalClasses(app: Set[Symbol], units: Array[CompilationUnit]): Unit = {
     val m = new MonomorphicCallSites(global, app);
     m.buildClassHierarchy;
 
@@ -46,12 +46,12 @@ class ApplicationBuilder(globall: scalac_Global) {
 //       u.body.foreach( (b) => transf.transform(b) );
 //     });
 
-    m.monomorphicCallsites;
+    m.monomorphicCallsites(units);
   }
 
 
   /** find the whole application that is referenced by the root class  */
-  def buildApplication(root: String, units: Array[scalac_CompilationUnit]): unit = {
+  def buildApplication(root: String, units: Array[CompilationUnit]): unit = {
     rootClassName = Name.fromString(root);
 
     var rootClass: Symbol = null;
@@ -82,7 +82,7 @@ class ApplicationBuilder(globall: scalac_Global) {
     finalClasses(app, units);
   }
   // where
-    def buildCodeMap(units: Array[scalac_CompilationUnit]): Unit = {
+    def buildCodeMap(units: Array[CompilationUnit]): Unit = {
       //val map = new SymbolMap();
 
       def mapTree(t: Tree): unit = {
@@ -105,7 +105,7 @@ class ApplicationBuilder(globall: scalac_Global) {
 	};
       }
 
-      units.foreach( (u: scalac_CompilationUnit) =>
+      units.foreach( (u: CompilationUnit) =>
 	u.body.foreach( (b) => mapTree(b) ));
     }
 

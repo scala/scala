@@ -39,20 +39,22 @@ package scala.tools.scalac.ast.printer {
  * @author Iulian Dragos
  * @version 0.2
  */
-class SwingTreePrinter extends TreePrinter {
+class SwingTreePrinter(global0: scalac_Global) extends TreePrinter {
+  val global = global0;
+
   def begin() = ();
   def end()   = ();
   def flush() = ();
 
 
   /** print the whole program */
-  def print(global: scalac_Global): Unit = {
+  def print(units: Array[CompilationUnit]): Unit = {
     val phase: Phase = global.currentPhase;
 
     val tm = new ASTTreeModel();
 
-   for (val i <- Iterator.range(0, global.units.length))
-     tm.addUnit(global.units(i));
+   for (val i <- Iterator.range(0, units.length))
+     tm.addUnit(units(i));
 
     val frame = new WindowFrame();
     frame.setTreeModel(tm);
@@ -64,15 +66,7 @@ class SwingTreePrinter extends TreePrinter {
     lock.acquire;
   }
 
-  /** print one compilation unit*/
-  def print(unit: CompilationUnit): Unit = {
-  }
-
-  def print(tree: Tree) = this;
-
-  def print(str: String) = this;
-  def println() = this;
-
+  def print(tree: Tree): Unit = ();
 
 }
 

@@ -52,6 +52,13 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
   val contexts = new HashMap/*<CompilationUnit,Context>*/();
   val newSources = new ArrayList/*<CompilationUnit>*/();
 
+  override def getUnits(): Array[CompilationUnit] = {
+    val array = new Array[CompilationUnit](newSources.size());
+    newSources.toArray(array.asInstanceOf[Array[Object]]);
+    newSources.clear();
+    array
+  }
+
   override def addConsoleImport(module: Symbol): unit =
     consoleContext = addImport(consoleContext, module);
 

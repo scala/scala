@@ -4,47 +4,43 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-
 // $Id$
 
 import ch.epfl.lamp.util.CodePrinter;
 
 import scalac.CompilationUnit;
 import scalac.{Global => scalac_Global}
-import scalac.atree._;
-
-import scalac.symtab._;
 
 package scala.tools.scalac.icode {
 
+/** This class implements a Printer for the ICode. */
+class ICodePrinter(global0: scalac_Global, printer0: CodePrinter) {
 
+  //##########################################################################
+  // Public Fields
 
-/* This class implements a Printer for the ICode */
-class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePrinter) {
+  val global: scalac_Global = global0;
+  val printer: CodePrinter = printer0;
 
-  // ##################################################
-  // Public methods
+  //##########################################################################
+  // Public Methods
 
-  /* This method print all ICode produced after the ICode phase */
-  override def printGlobal(global: scalac_Global) : ATreePrinter = { // !!! Extends ATree !!!
+  /** Prints the ICode of the given units. */
+  def printUnits(units: Array[CompilationUnit]): Unit = {
     val phase = global.currentPhase;
-
     printer.println("[[ICode at "+phase+" (after "+phase.prev+")]]");
-    val units_it = Iterator.fromArray(global.units);
-    units_it.foreach(printAnUnit);
-
-    this;
+    Iterator.fromArray(units).foreach(printUnit);
   }
 
-  /* This method print a single unit. */
-  def printAnUnit(unit: CompilationUnit) = { // ??? Private
+  /** Prints the ICode of the given unit. */
+  def printUnit(unit: CompilationUnit): Unit = {
     printer.println ("// Scala source: "+unit.source);
     val classes_it = Iterator.fromArray(unit.repository.classes());
-    classes_it.foreach((c: AClass) => {
+    classes_it.foreach(c => {
       printer.println ("");
       printer.println ("// ICode for class <"+c.symbol().name+">");
       val methods_it = Iterator.fromArray(c.methods());
-      methods_it.foreach((m: AMethod) => {
+      methods_it.foreach(m => {
 	val icode : ICode = m.icode.asInstanceOf[ICode];
 	printer.println ("// ::"+m.symbol().name);
 	icode.icTraverse((bb: IBasicBlock) => {
@@ -52,7 +48,7 @@ class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePri
 	  printer.println("Initial stack -> "+bb.initialStack);
 	  printer.println("Substituable variables : ");
 	  if (bb.substituteVars != null)
-	    bb.substituteVars.foreach((s: Symbol) => printer.print(s.name.toString()));
+	    bb.substituteVars.foreach(s => printer.print(s.name.toString()));
 	  else
 	    printer.println(" {Empty} ");
 	  printer.println("Instructions:");
@@ -68,8 +64,8 @@ class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePri
 	});
       });
     });
-
-
   }
+
+  //##########################################################################
 }
 }
