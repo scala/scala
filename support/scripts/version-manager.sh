@@ -68,7 +68,7 @@ function version-manager() {
     args-loop "$@";
 
     # get file name and command name
-    [ ${#args[0]} -ge 2 ] || { $program-usage 1>&2; exit 1; }
+    [ ${#args[@]} -ge 2 ] || { $program-usage 1>&2; exit 1; }
     local file="${args[0]}";
     local command="${args[1]}";
 
