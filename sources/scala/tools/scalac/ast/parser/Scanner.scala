@@ -18,8 +18,8 @@ import ch.epfl.lamp.util.SourceFile;
 
 /** A scanner for the programming language Scala.
  *
- *  @author     Matthias Zenger, Martin Odersky
- *  @version    1.0
+ *  @author     Matthias Zenger, Martin Odersky, Burak Emir
+ *  @version    1.1
  */
 class Scanner(_unit: Unit) extends TokenData {
 
@@ -661,7 +661,7 @@ class Scanner(_unit: Unit) extends TokenData {
 
   def xml_syntaxError(s:String) = {
     syntaxError("in XML literal: "+s);
-    xml_nextch();
+    nextch();
   }
 
   /* this helper functions updates ccol and cline, only necessary in whitespace
@@ -757,7 +757,7 @@ class Scanner(_unit: Unit) extends TokenData {
     val index = bp;
     while ( ch != endch ) {
       if(( ch == '<' )||( ch == '&' ))
-        syntaxError(ch.asInstanceOf[char]+" not allowed here");
+        xml_syntaxError(ch.asInstanceOf[char]+" not allowed here");
       xml_nextch();
     };
     pos = Position.encode(cline, ccol);

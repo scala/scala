@@ -25,7 +25,7 @@ package scala.tools.scalac.ast.parser {
 /** A recursive descent parser for the programming language Scala.
  *
  *  @author     Martin Odersky, Matthias Zenger, Burak Emir
- *  @version    1.2
+ *  @version    1.3
  */
 class Parser(unit: Unit) {
 
@@ -1041,21 +1041,20 @@ class Parser(unit: Unit) {
     null;//dummy
   }
 
-  /** xmlExpr ::= '<' ident '>' { xmlExpr | '{' simpleExpr '}' } '<''/'ident'>'
+  /** '<' xmlExpr ::= STag  { xmlExpr | '{' simpleExpr '}' } ETag
+   ** '<' xmlExpr ::= EmptyElemTag
    */
   def xmlExpr():Tree = {
     val pos = s.pos;
-
     var empty = false;
 
-    /* [40] STag	   ::=   	'<' Name (S Attribute)* S? '>'
+    /* [40] STag         ::= '<' Name (S Attribute)* S? '>'
+     * [41] Attribute    ::= Name Eq AttValue
+    *  [44] EmptyElemTag ::= '<' Name (S Attribute)* S? '/>'
     */
     val elemName = s.xmlName();
     s.xmlSpaceOpt();
     var attrMap = ListMap.Empty[Name,String];
-    /* [41] Attribute    ::=    Name Eq AttValue
-    *  [44] EmptyElemTag ::=          '<' Name (S Attribute)* S? '/>'
-    */
     while(( s.ch != '>' )&&( !empty )) {
       if( s.ch == '/' ) {
         s.nextch();
@@ -1085,18 +1084,18 @@ class Parser(unit: Unit) {
       }
     }
     s.xmlToken('>');
-    /* Console.println("startTag of:"+elemName); */
+    /* Console.println("startTag of:"+elemName);*/
     s.xmlSpaceOpt();
     if( empty ) {
       makeXML( pos, elemName, Tree.EMPTY_ARRAY );
-    } else {
+    } else {                                             /* possible XML content: */
 
       val ts = new myTreeList();
-
       var exit = false;
       while( !exit ) {
+        /* Console.println("read '"+s.ch.asInstanceOf[char]+"'"); */
         s.ch match {
-          case '<' => {
+          case '<' => {                                  /* tag */
             s.nextch();
             if( s.ch != '/' ) { /* search end tag */
               ts.append( xmlExpr() );
@@ -1104,7 +1103,21 @@ class Parser(unit: Unit) {
               exit = true
             }
           }
-          case _ => {
+          case '{' => {                                 /* Scala block */
+            while( s.ch == '{' ) {
+              s.nextToken();
+              /* Console.println("{"); */
+              s.nextToken();
+              val bs = new myTreeList();
+              val b = block( s.pos );
+              if( s.token != RBRACE ) {
+                s.xml_syntaxError(" expected end of Scala block");
+              }
+              /* Console.println("}"); */
+              ts.append( b );
+            }
+        }
+          case _ => {                                   /* text  */
             val pos = s.pos;
             val str = s.xmlText();/* text node */
             ts.append( gen.mkStringLit( pos, str ));
@@ -1113,7 +1126,7 @@ class Parser(unit: Unit) {
         }
       }
 
-      /* [42]           ETag       ::=          '</' Name S? '>' */
+      /* [42]   ETag ::=  '</' Name S? '>' */
       s.xmlToken('/');
       if( elemName != s.xmlName() )
         s.xml_syntaxError("expected closing tag of "+elemName);
