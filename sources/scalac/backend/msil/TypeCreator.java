@@ -151,6 +151,14 @@ public final class TypeCreator
 	translateMethod(defs.JAVA_OBJECT_CLASS, "notifyAll",
 			scalac.symtab.Type.EMPTY_ARRAY,
 			MONITOR, "PulseAll", OBJECT_1);
+
+	final Type ObjectImpl = Type.GetType("com.ms.vjsharp.lang.ObjectImpl");
+	//final MethodInfo getClass = ObjectImpl.GetMethod("getClass", OBJECT_1);
+
+	translateMethod(defs.JAVA_OBJECT_CLASS, "getClass",
+			scalac.symtab.Type.EMPTY_ARRAY,
+			ObjectImpl, "getClass", OBJECT_1);
+	//System.err.println("URAAAA: " + getClass);
     }
 
     // looks up a method according to the signature
@@ -301,6 +309,9 @@ public final class TypeCreator
 // 	return type;
 //     }
 
+    /**
+     * Return the System.Type object corresponding to the type of the symbol
+     */
     public Type getType(Symbol sym) {
 	if (sym == null) return null;
 	Type type = (Type) symbols2types.get(sym);
@@ -316,7 +327,7 @@ public final class TypeCreator
 // 	    }
 	    type = getJavaType(sym.fullNameString());
 	}
-	else
+	else {
 	    switch (sym.info()) {
 	    case CompoundType(_, _):
 		String fullname = sym.type().symbol().fullNameString();
@@ -339,6 +350,7 @@ public final class TypeCreator
 		//log("getType: Going through the type: " + dumpSym(sym));
 		type = getTypeFromType(sym.type());
 	    }
+	}
 	assert type != null : "Unable to find type: " + dumpSym(sym);
 	map(sym, type);
 	return type;
@@ -348,13 +360,19 @@ public final class TypeCreator
     /** Creates a  TypeBuilder object corresponding to the symbol
      */
     public TypeBuilder createType(Symbol sym) {
-	assert !symbols2types.containsKey(sym);
-	TypeBuilder type = null;
-	final String name = sym.fullNameString();
+	TypeBuilder type = (TypeBuilder)symbols2types.get(sym);
+	assert type == null : "Type " + type +
+	    " already defined for symbol: " + dumpSym(sym);
+
+	//log("TypeCreator.getType: creating type for " + dumpSym(sym));
+	final Symbol owner = sym.owner();
+	final String typeName =
+	    (owner.isClass() ? sym.nameString() : sym.fullNameString()) +
+	    (sym.isModuleClass() ? "$" : "");
 	final ModuleBuilder module = gen.currModule;
+	//log("createType: " + dumpSym(sym) + "\n");
 	switch (sym.info()) {
 	case CompoundType(scalac.symtab.Type[] baseTypes, _):
-	    final Symbol owner = sym.owner();
 	    Type superType = null;
 	    Type[] interfaces = null;
 	    int inum = baseTypes.length;
@@ -371,18 +389,15 @@ public final class TypeCreator
 	    }
 
 	    // i.e. top level class
-	    if (owner.isRoot()) {
-		type = module.DefineType(name,
-					 translateTypeAttributes(sym.flags, false),
-					 superType,
-					 interfaces);
+	    if (owner.isRoot() || owner.isPackage()) {
+		type = module.DefineType
+		    (typeName, translateTypeAttributes(sym.flags, false),
+		     superType, interfaces);
 	    } else {
-		TypeBuilder outerType = (TypeBuilder) getType(owner);
-		type = outerType.
-		    DefineNestedType(sym.nameString(),
-				     translateTypeAttributes(sym.flags, true),
-				     superType,
-				     interfaces);
+		final TypeBuilder outerType = (TypeBuilder) getType(owner);
+		type = outerType.DefineNestedType
+		    (typeName, translateTypeAttributes(sym.flags, true),
+		     superType, interfaces);
 	    }
 	    break;
 
@@ -447,10 +462,12 @@ public final class TypeCreator
 	    Type[] params = new Type[vparams.length];
 	    for (int i = 0; i < params.length; i++)
 		params[i] = getType(vparams[i]);
-	    if ( sym.isConstructor() ) {
+// 	    if ( sym.isConstructor() ) {
+	    if (sym.name == Names.CONSTRUCTOR) {
 		// The owner of a constructor is the outer class
 		// so get the result type of the constructor
-		Type type = getTypeFromType(result);
+		//log("Resolving constructor: " + dumpSym(sym));
+		Type type = getType(sym.owner());
 		method = type.GetConstructor(params);
 	    } else {
 		String name = sym.name.toString();
@@ -465,8 +482,16 @@ public final class TypeCreator
 	default:
 	    global.fail("Symbol doesn't have a method type: " + Debug.show(sym));
 	}
+	if (method == null) {
+	    Type owner = getType(sym.owner());
+	    log("Mehtods of class " + owner);
+	    MethodInfo[] methods = owner.GetMethods();
+	    for (int i = 0; i < methods.length; i++)
+		log("\t" + methods[i]);
+	}
 	assert method != null : "Cannot find method: " + dumpSym(sym);
 	symbols2methods.put(sym, method);
+	//log("method found: " + method);
 	return method;
     }
 
@@ -497,8 +522,8 @@ public final class TypeCreator
 		sym.flags | Modifiers.STATIC :
 		sym.flags;
 
-	    if (sym.isConstructor()) {
-
+// 	    if (sym.isConstructor()) {
+	    if (sym.name == Names.CONSTRUCTOR) {
 		Type type = getTypeFromType(result);
 		ConstructorBuilder constructor =
 		    ((TypeBuilder)type).DefineConstructor
@@ -676,16 +701,12 @@ public final class TypeCreator
 	long attr = MethodAttributes.HideBySig;
 	if (!constructor) {
 	    attr |= MethodAttributes.Virtual;
-	    if (Modifiers.Helper.isFinal(mods))
-		attr |= MethodAttributes.Final;
+// 	    if (Modifiers.Helper.isFinal(mods))
+// 		attr |= MethodAttributes.Final;
 	    if (Modifiers.Helper.isAbstract(mods))
 		attr |= MethodAttributes.Abstract;
 	}
 
-	if (Modifiers.Helper.isStatic(mods)) {
-	    attr |= MethodAttributes.Static;
-	    attr &= ~MethodAttributes.Virtual;
-	}
 	if (Modifiers.Helper.isPrivate(mods))
 	    attr |= MethodAttributes.Private;
 	//else if (Modifiers.Helper.isProtected(mods))
@@ -721,12 +742,14 @@ public final class TypeCreator
 	return "symbol = " + Debug.show(sym) +
 	    "; owner = " + Debug.show(sym.owner()) +
 	    //"; type = " + Debug.show(sym.type()) +
-	    //"; info = " + Debug.show(sym.info()) +
+	    "; info = " + Debug.show(sym.info()) +
 	    "; kind = " + sym.kind +
 	    "; flags = " + Integer.toHexString(sym.flags);
     }
 
     void log(String message) {
+	//System.out.println(message);
+	//log(1, message);
         global.reporter.printMessage(message);
     }
 
