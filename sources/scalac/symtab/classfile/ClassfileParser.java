@@ -197,22 +197,22 @@ public class ClassfileParser implements ClassfileConstants {
         Type type = readType(in.nextChar());
         if (CONSTR_N.equals(name)) {
             Symbol s = TermSymbol.newConstructor(c, transFlags(flags));
-            // kick out package visible or
-            // private constructors
+            // kick out package visible or private constructors
             if (((flags & 0x0002) != 0) ||
                 ((flags & 0x0007) == 0)) {
                 attrib.readAttributes(s, type, METH_ATTR);
                 return;
             }
             switch (type) {
-            case MethodType(Symbol[] vparams, _):
-                type = Type.MethodType(vparams, ctype);
-                break;
-            default:
-                throw new ApplicationError();
+				case MethodType(Symbol[] vparams, _):
+					type = Type.MethodType(vparams, ctype);
+					break;
+				default:
+					throw new ApplicationError();
             }
             Symbol constr = c.primaryConstructor();
-            if (constr.isInitialized()) constr = c.addConstructor();
+            if (constr.isInitialized())
+                constr = c.addConstructor();
             s.copyTo(constr);
             setParamOwners(type, constr);
             constr.setFirstInfo(type);
@@ -233,14 +233,15 @@ public class ClassfileParser implements ClassfileConstants {
 
     private void setParamOwners(Type type, Symbol owner) {
         switch (type) {
-        case PolyType(Symbol[] params, Type result):
-            for (int i = 0; i < params.length; i++) params[i].setOwner(owner);
-            setParamOwners(result, owner);
-            return;
-        case MethodType(Symbol[] params, Type result):
-            for (int i = 0; i < params.length; i++) params[i].setOwner(owner);
-            setParamOwners(result, owner);
-            return;
-        }
+            case PolyType(Symbol[] params, Type result):
+				for (int i = 0; i < params.length; i++)
+					params[i].setOwner(owner);
+				setParamOwners(result, owner);
+				break;
+			case MethodType(Symbol[] params, Type result):
+				for (int i = 0; i < params.length; i++) params[i].setOwner(owner);
+				setParamOwners(result, owner);
+				break;
+		}
     }
 }
