@@ -2,14 +2,10 @@ package scala.xml ;
 
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
-//import scala.xml.javaAdapter.Map ;
-//import scala.xml.javaAdapter.HashMap ;
 
-/** a Scala specific dtd2scala.FactoryAdapter, which plays the SAX content
-*   handler for the SAX parser. It implements the three callback methods
-*   elementContainsText, createNode and createPCDATA. DTDs imported with
-*   the dtd2scala tool all use this class as interface to the SAX XML parser,
-*   by giving concrete values for the factory maps f and g.
+/** a FactoryAdapter that creates instances of classes that bind XML types.
+**   DTDs imported with the dtd2scala tool all use this class as interface
+**   to the SAX XML parser, by giving concrete values for the factory maps f and g.
 */
 
 abstract class BindingFactoryAdapter extends FactoryAdapter() {
