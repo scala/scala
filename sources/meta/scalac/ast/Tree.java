@@ -100,8 +100,7 @@ public class Tree {
         n_SelectFromType = node("SelectFromType", Type, HasSym),
         n_FunType        = node("FunType"       , Type, NoSym),
         n_CompoundType   = node("CompoundType"  , Type, NoSym),
-        n_AppliedType    = node("AppliedType"   , Type, NoSym),
-        n_CovariantType  = node("CovariantType" , Type, NoSym);
+        n_AppliedType    = node("AppliedType"   , Type, NoSym);
 
     public final TreeNode[] nodes;
     public int arrays;
@@ -322,11 +321,6 @@ public class Tree {
             setRange(Phase.PARSER, Phase.ANALYZER).
             addField(t_TypeTree, "tpe").
             addField(t_TypeTrees, "args");
-
-        n_CovariantType.
-            setDescription("Covariant type").
-            setRange(Phase.PARSER, Phase.ANALYZER).
-            addField(t_TypeTree, "tpe");
 
     }
 

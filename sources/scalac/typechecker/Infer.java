@@ -220,15 +220,7 @@ public class Infer implements Modifiers, Kinds {
     private boolean isWithinBounds(Symbol[] tparams, Type[] targs) {
 	// check that covariant types do not appear in F-bounds.
 	for (int i = 0; i < targs.length; i++) {
-	    if (targs[i].isCovarType()) {
-		for (int j = 0; j < tparams.length; j++)
-		    if (tparams[j].info().contains(tparams[i]))
-			return false;
-	    }
-	}
-	for (int i = 0; i < targs.length; i++) {
-	    if (!targs[i].dropVariance().isSubType(
-		    tparams[i].info().subst(tparams, targs)))
+	    if (!targs[i].isSubType(tparams[i].info().subst(tparams, targs)))
 		return false;
 	}
 	return true;
@@ -458,16 +450,15 @@ public class Infer implements Modifiers, Kinds {
 	return true;
     }
 
-    /** Does given `tparam' occur only covariantly in argument types?
+    /** Does given `tvar' occur only covariantly in argument types `tps' for formal
+     *  type parameetrs `tparams'?
      */
-    private boolean isCovariantArgs(Symbol tparam, Type[] tps) {
+    private boolean isCovariantArgs(Symbol tvar, Type[] tps, Symbol[] tparams) {
 	for (int i = 0; i < tps.length; i++) {
-	    switch (tps[i]) {
-	    case CovarType(Type t):
-		if (!isCovariant(tparam, t)) return false;
-		break;
-	    default:
-		if (tps[i].contains(tparam)) return false;
+	    if ((tparams[i].flags & COVARIANT) != 0) {
+		if (!isCovariant(tvar, tps[i])) return false;
+	    } else {
+		if (tps[i].contains(tvar)) return false;
 	    }
 	}
 	return true;
@@ -483,7 +474,7 @@ public class Infer implements Modifiers, Kinds {
 	case ThisType(Symbol sym):
 	    return true;
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    return isCovariant(tparam, pre) && isCovariantArgs(tparam, args);
+	    return isCovariant(tparam, pre) && isCovariantArgs(tparam, args, sym.typeParams());
 	case SingleType(Type pre, Symbol sym):
 	    return !pre.contains(tparam);
 	case CompoundType(Type[] parts, Scope members):

@@ -509,7 +509,7 @@ public class PatternMatcher {
             if (casted.pos == Position.NOPOS) {
                 Symbol atSym = casted.type().lookup(AT_N);
                 //System.out.println("casted type = " + typeOf(casted));
-                Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0].dropVariance();
+                Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
                 Tree t = make.Select(
                             pat.pos,
                             make.Ident(pat.pos, casted.name)

@@ -527,11 +527,6 @@ public class TextTreePrinter implements TreePrinter {
 	    print(TXT_RIGHT_BRACKET);
             break;
 
-        case CovariantType(Tree tpe):
-	    print(TXT_PLUS);
-	    print(tpe);
-            break;
-
         case Template(Tree[] parents, Tree[] body):
             Debug.abort("unexpected case", tree);
             break;

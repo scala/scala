@@ -268,8 +268,6 @@ class AddInterfaces extends SubstTransformer {
                 return new Type.PolyType(tparams, apply(result));
             case OverloadedType(Symbol[] alts, Type[] alttypes):
                 return new Type.OverloadedType(alts, apply(alttypes));
-            case CovarType(Type t):
-                return new Type.CovarType(apply(t));
             case NoType:
                 return tp;
             default:

@@ -38,7 +38,7 @@ public class MetaFunction extends AbstractJavaExpander {
     public void printClassScalaTParams() {
         for (int i = 0; i < arity; i++)
             writer.print("?A").print(i).print(", ");
-        writer.print("?R");
+        writer.print("+ ?R");
     }
 
     public void printApplyScalaSignature() {

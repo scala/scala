@@ -41,12 +41,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public case PolyType(Symbol[] tparams, Type result);
     public case OverloadedType(Symbol[] alts, Type[] alttypes);
 
-    /** Type such as +T. Only used as type arguments.
-     */
-    public case CovarType(Type tp) {
-	assert !(tp instanceof CovarType);
-    }
-
     /** Hidden case to implement delayed evaluation of types.
      *  No need to pattern match on this type; it will never come up.
      */
@@ -98,11 +92,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	default:
 	    throw new ApplicationError();
 	}
-    }
-
-    public static CovarType covarType(Type tp) {
-	if (tp instanceof CovarType) return (CovarType)tp;
-	else return CovarType(tp);
     }
 
     public static CompoundType compoundType(Type[] parts, Scope members,
@@ -445,19 +434,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return this;
     }
 
-    /** If this is a covariant type, its underlying type, otherwise the type itself.
-     */
-    public Type dropVariance() {
-	switch (this) {
-	case CovarType(Type tp): return tp;
-	default: return this;
-	}
-    }
-
-    public static Map dropVarianceMap = new Map() {
-	public Type apply(Type t) { return t.dropVariance(); }
-    };
-
 // Tests --------------------------------------------------------------------
 
     /** Is this type a this type or singleton type?
@@ -504,17 +480,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    /** Is this type a covariant type?
-     */
-    public boolean isCovarType() {
-	switch (this) {
-	case CovarType(_):
-	    return true;
-	default:
-	    return false;
-	}
-    }
-
     /** Is this type of the form scala.FunctionN[T_1, ..., T_n, +T] or
      *  scala.Object with scala.FunctionN[T_1, ..., T_n, +T]?
      */
@@ -522,9 +487,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	switch (this) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym.fullName().startsWith(Names.scala_Function)) {
-		for (int i = 0; i < args.length - 1; i++)
-		    if (args[i].isCovarType()) return false;
-		return args.length > 0; // !!! && args[args.length - 1].isCovarType();
+		return args.length > 0;
 	    }
 	    break;
 	case CompoundType(Type[] parents, Scope members):
@@ -626,8 +589,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public abstract static class Map {
 
-	boolean covariantOK = true;
-
 	public abstract Type apply(Type t);
 
 	/** Apply map to all top-level components of this type.
@@ -677,16 +638,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		}
 
 	    case MethodType(Symbol[] vparams, Type result):
-		covariantOK = false;
 		Symbol[] vparams1 = map(vparams);
-		covariantOK = true;
 		Type result1 = apply(result);
 		if (vparams1 == vparams && result1 == result) return tp;
 		else return MethodType(vparams1, result1);
 	    case PolyType(Symbol[] tparams, Type result):
-		covariantOK = false;
 		Symbol[] tparams1 = map(tparams);
-		covariantOK = true;
 		Type result1 = apply(result);
 		if (tparams1 != tparams) result1 = result1.subst(tparams, tparams1);
 		if (tparams1 == tparams && result1 == result) return tp;
@@ -695,10 +652,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		Type[] alttypes1 = map(alttypes);
 		if (alttypes1 == alttypes) return tp;
 		else return OverloadedType(alts, alttypes1);
-	    case CovarType(Type t):
-		Type t1 = apply(t);
-		if (t1 == t) return tp;
-		else return covarType(t1);
 	    case UnboxedArrayType(Type elemtp):
 		Type elemtp1 = apply(elemtp);
 		if (elemtp1 == elemtp) return tp;
@@ -831,8 +784,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	private Type pre;
 	private Symbol clazz;
-	private Type illegalType = NoType;
-	private boolean typeArg = false;
 
 	AsSeenFromMap(Type pre, Symbol clazz) {
 	    this.pre = pre; this.clazz = clazz;
@@ -858,24 +809,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    assert sym.kind == TYPE;
 		    Type t1 = t.toInstance(pre, clazz);
 		    //System.out.println(t + ".toInstance(" + pre + "," + clazz + ") = " + t1);//DEBUG
-		    switch (t1) {
-		    case CovarType(Type tp):
-			if (!covariantOK) {
-			    if (illegalType == NoType) illegalType = t1;
-			} else if (!typeArg) {
-			    t1 = tp;
-			}
-		    }
 		    return t1;
 		} else {
 		    //Type prefix1 = prefix.toPrefix(pre, clazz);
 		    Type prefix1 = apply(prefix);
 		    Symbol sym1 = (prefix1 == prefix || (sym.flags & MODUL) != 0)
 			? sym : prefix1.rebind(sym);
-		    boolean prevTypeArg = typeArg;
-		    typeArg = true;
 		    Type[] args1 = map(args);
-		    typeArg = prevTypeArg;
 		    if (prefix1 == prefix && args1 == args) return t;
 		    else return typeRef(prefix1, sym1, args1);
 		}
@@ -891,14 +831,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	    default:
 		return map(t);
-	    }
-	}
-
-	void checkLegal(Type tp) {
-	    if (illegalType != NoType) {
-		throw new ApplicationError(
-		    "malformed type: " + tp + "; " +
-		    illegalType + " does not occur in covariant position");
 	    }
 	}
     }
@@ -944,20 +876,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public Type asSeenFrom(Type pre, Symbol clazz) {
 	//System.out.println("computing asseenfrom of " + this + " with " + pre + "," + clazz);//DEBUG
-	AsSeenFromMap f = new AsSeenFromMap(pre, clazz);
-	Type t = f.apply(this);
-	f.checkLegal(t);
-	return t;
+	return new AsSeenFromMap(pre, clazz).apply(this);
     }
 
     /** Types `these' as seen from prefix `pre' and class `clazz'.
      */
     public static Type[] asSeenFrom(Type[] these, Type pre, Symbol clazz) {
-	AsSeenFromMap f = new AsSeenFromMap(pre, clazz);
-	Type[] these1 = f.map(these);
-	for (int i = 0; i < these1.length; i++)
-	    f.checkLegal(these1[i]);
-	return these1;
+	return new AsSeenFromMap(pre, clazz).map(these);
     }
 
     /** The info of `sym', seen as a member of this type.
@@ -1337,7 +1262,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    //todo: should we test for equality with origin?
 	    if (constr.inst != NoType) {
 		return this.isSubType(constr.inst);
-	    } else if (!this.isCovarType()) {
+	    } else {
 		constr.lobounds = new List(this, constr.lobounds);
 		return true;
 	    }
@@ -1358,8 +1283,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    if (constr.inst != NoType) {
 		return constr.inst.isSubType(that);
 	    } else {
-		constr.hibounds = new List(that.dropVariance(), constr.hibounds);
-		assert that.dropVariance().symbol() != Global.instance.definitions.ALL_CLASS;//debug
+		constr.hibounds = new List(that, constr.hibounds);
 		return true;
 	    }
 
@@ -1412,23 +1336,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
     static boolean isSubArgs(Type[] these, Type[] those, Symbol[] tparams) {
 	if (these.length != those.length) return false;
 	for (int i = 0; i < these.length; i++) {
-	    switch (those[i]) {
-	    case CovarType(Type tp1):
-		switch (these[i]) {
-		case CovarType(Type tp):
-		    if (!tp.isSubType(tp1)) return false;
-		    break;
-		default:
-		    if (!these[i].isSubType(tp1)) return false;
-		}
-		break;
-	    default:
-		if (these[i].isCovarType()) return false;
-		if ((tparams[i].flags & COVARIANT) != 0) {
-		    if (!these[i].isSubType(those[i])) return false;
-		} else {
-		    if (!these[i].isSameAs(those[i])) return false;
-		}
+	    if ((tparams[i].flags & COVARIANT) != 0) {
+		if (!these[i].isSubType(those[i])) return false;
+	    } else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
+		if (!those[i].isSubType(these[i])) return false;
+	    } else {
+		if (!these[i].isSameAs(those[i])) return false;
 	    }
 	}
 	return true;
@@ -1539,7 +1452,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    switch (that) {
 	    case TypeRef(Type pre1, Symbol sym1, Type[] args1):
-		if (sym == sym1 && pre.isSameAs(pre1) && isSameArgs(args, args1))
+		if (sym == sym1 && pre.isSameAs(pre1) && isSameAs(args, args1))
 		    return true;
 	    }
 	    break;
@@ -1610,23 +1523,19 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case NoType:
 	    return false;
 	case TypeVar(Type origin, Constraint constr):
-	    if (constr.inst != NoType)
-		return constr.inst.isSameAs(this);
-	    else if (!this.isCovarType())
-		return constr.instantiate(this.any2typevar());
+	    if (constr.inst != NoType) return constr.inst.isSameAs(this);
+	    else return constr.instantiate(this.any2typevar());
 	}
 
 	switch (this) {
 	case NoType:
 	    return false;
-	case TypeVar(Type origin, Constraint constr):
-	    if (constr.inst != NoType)
-		return constr.inst.isSameAs(that);
-	    else if (!that.isCovarType())
-		return constr.instantiate(that.any2typevar());
-	    break;
 	case TypeRef(_, Symbol sym, _):
 	    if (sym.kind == ALIAS) return this.unalias().isSameAs(that);
+	    break;
+	case TypeVar(Type origin, Constraint constr):
+	    if (constr.inst != NoType) return constr.inst.isSameAs(that);
+	    else return constr.instantiate(that.any2typevar());
 	}
 
 	switch (that) {
@@ -1637,35 +1546,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return false;
     }
 
-    /** Is this type argument that same as `that'?
-     */
-    public boolean isSameArg(Type that) {
-	switch (this) {
-	case CovarType(Type tp):
-	    switch (that) {
-	    case CovarType(Type tp1):
-		return tp.isSameAs(tp1);
-	    }
-	}
-	return this.isSameAs(that);
-    }
-
     /** Are types `these' the same as corresponding types `those'?
      */
     public static boolean isSameAs(Type[] these, Type[] those) {
 	if (these.length != those.length) return false;
 	for (int i = 0; i < these.length; i++) {
 	    if (!these[i].isSameAs(those[i])) return false;
-	}
-	return true;
-    }
-
-    /** Are type arguments `these' the same as corresponding types `those'?
-     */
-    public static boolean isSameArgs(Type[] these, Type[] those) {
-	if (these.length != those.length) return false;
-	for (int i = 0; i < these.length; i++) {
-	    if (!these[i].isSameArg(those[i])) return false;
 	}
 	return true;
     }
@@ -1852,14 +1738,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    }
 	}
 	for (int j = 0; j < args.length; j++) {
-	    if ((tparams[j].flags & COVARIANT) != 0) {
-		args[j] = commonType(argss[j]);
-		if (args[j] == NoType)
-		    args[j] = lub(argss[j]);
-	    } else { //todo: test if all same, return notype otherwise.
-		args[j] = commonType(argss[j]);
-		if (args[j] == NoType)
-		    args[j] = CovarType(lub(argss[j]));
+	    args[j] = commonType(argss[j]);
+	    if (args[j] == NoType) {
+		if ((tparams[j].flags & COVARIANT) != 0) args[j] = lub(argss[j]);
+		else return NoType;
 	    }
 	}
 	return typeRef(pre, sym, args);
@@ -2139,8 +2021,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case CompoundType(Type[] parents, _):
 	    if (parents.length > 0) return parents[0].erasure();
 	    else return this;
-	case CovarType(Type tp):
-	    return tp.erasure();  // note: needed because of UnboxedArrayType
 	case MethodType(Symbol[] params, Type tp):
 	    Symbol[] params1 = erasureMap.map(params);
 	    Type tp1 = tp.fullErasure();
@@ -2198,7 +2078,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Type[] params = new Type[args.length - 1];
 		    System.arraycopy(args, 0, params, 0, params.length);
 		    return ArrayApply.toString(params, "(", ",", ") => ") +
-			args[params.length].dropVariance();
+			args[params.length];
 		} else if (sym.isAnonymousClass()) {
 		    return "<template: " +
 			ArrayApply.toString(
@@ -2245,8 +2125,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case PolyType(Symbol[] tparams, Type result):
 	    return ArrayApply.toString(Symbol.defString(tparams), "[", ",", "]") +
 		result;
-	case CovarType(Type tp):
-	    return "+" + tp;
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    return ArrayApply.toString(alttypes, "", " <and> ", "");
 	case TypeVar(Type origin, Constraint constr):
@@ -2344,9 +2222,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return POLYtpe
 		^ (hashCode(tparams) * 41)
 		^ (result.hashCode() * (41 * 41));
-	case CovarType(Type tp):
-	    return COVARtpe
-		^ (tp.hashCode() * (41));
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    return OVERLOADEDtpe
 		^ (hashCode(alts) * 41)
@@ -2426,12 +2301,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		switch (that) {
 		case PolyType(Symbol[] tparams1, Type result1):
 		    return equals(tparams, tparams1) && result.equals(result1);
-		default: return false;
-		}
-	    case CovarType(Type tp):
-		switch (that) {
-		case CovarType(Type tp1):
-		    return tp.equals(tp1);
 		default: return false;
 		}
 	    case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -2559,6 +2428,5 @@ public class Type implements Modifiers, Kinds, TypeTags {
     case MethodType(Symbol[] vparams, Type result):
     case PolyType(Symbol[] tparams, Type result):
     case OverloadedType(Symbol[] alts, Type[] alttypes):
-    case CovarType(Type tp):
 */
 

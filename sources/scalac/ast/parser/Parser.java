@@ -616,7 +616,7 @@ public class Parser implements Tokens {
 	    if (s.token == HASH)
 		t = make.SelectFromType(s.skipToken(), t, ident().toTypeName());
 	    else if (s.token == LBRACKET)
-		t = make.AppliedType(pos, t, varTypeArgs());//todo: change to typeArgs
+		t = make.AppliedType(pos, t, typeArgs());
 	    else break;
 	}
 	return t;
@@ -629,30 +629,6 @@ public class Parser implements Tokens {
 	Tree[] ts = types();
 	accept(RBRACKET);
 	return ts;
-    }
-
-    /**  VarTypeArgs ::= `[' VarType {`,' VarType} `]'
-     */
-    Tree[] varTypeArgs() {
-        int pos = accept(LBRACKET);
-        TreeList ts = new TreeList();
-	ts.append(varType());
-        while (s.token == COMMA) {
-	    s.nextToken();
-	    ts.append(varType());
-	}
-	accept(RBRACKET);
-	return ts.toArray();
-    }
-
-    /** VarType ::= [`+'] Type
-     */
-    Tree varType() {
-	int pos = s.pos;
-	if (s.token == IDENTIFIER && s.name == PLUS)
-	    return make.CovariantType(s.skipToken(), type());
- 	else
-	    return type();
     }
 
 //////// EXPRESSIONS ////////////////////////////////////////////////////////

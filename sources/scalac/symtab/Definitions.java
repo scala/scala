@@ -424,7 +424,7 @@ public class Definitions {
     public Type functionType(Type[] argtps, Type restp) {
 	Type[] argtps1 = new Type[argtps.length + 1];
 	System.arraycopy(argtps, 0, argtps1, 0, argtps.length);
-	argtps1[argtps.length] = Type.covarType(restp);
+	argtps1[argtps.length] = restp;
 	return Type.appliedType(
 	    getType(Name.fromString("scala.Function" + argtps.length)),
 	    argtps1);
@@ -433,7 +433,7 @@ public class Definitions {
     public Type partialFunctionType(Type argtpe, Type restpe) {
 	Type[] argtps1 = new Type[2];
 	argtps1[0] = argtpe;
-	argtps1[1] = Type.covarType(restpe);
+	argtps1[1] = restpe;
 	return Type.appliedType(PARTIALFUNCTION_CLASS.typeConstructor(), argtps1);
     }
 

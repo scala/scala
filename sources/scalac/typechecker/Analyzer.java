@@ -743,9 +743,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    break;
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    validateVariance(base, all, alttypes, variance);
-	    break;
-	case CovarType(Type tp1):
-	    validateVariance(base, all, tp1, CoVariance);
 	}
     }
 
@@ -1741,7 +1738,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		} else if (clazz.isSubClass(definitions.SEQ_CLASS)) {
 		    // set type to instantiated sequence class constructor
-		    Type seqtp = dropVarArgs(pt.baseType(clazz));
+		    Type seqtp = pt.baseType(clazz);
 		    if (seqtp != Type.NoType) {
 			tree.type = seqConstructorType(seqtp, pt);
 		    } else {
@@ -1823,26 +1820,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return !(restpe instanceof Type.MethodType);
 	    default:
 		return false;
-	    }
-	}
-
-	Type dropVarArgs(Type tp) {
-	    switch (tp) {
-	    case TypeRef(Type pre, Symbol sym, Type[] targs):
-		Type[] targs1 = targs;
-		for (int i = 0; i < targs.length; i++) {
-		    Type targ = targs[i];
-		    Type targ1 = targ.dropVariance();
-		    if (targ != targ1 && targs1 == targs) {
-			targs1 = new Type[targs.length];
-			System.arraycopy(targs, 0, targs1, 0, i);
-		    }
-		    targs1[i] = targ1;
-		}
-		if (targs1 == targs) return tp;
-		else return Type.TypeRef(pre, sym, targs1);
-	    default:
-		return tp;
 	    }
 	}
 
@@ -2019,8 +1996,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Tree tree1 = transformVisitor(tree, pattpe, restpe);
 			if (!infer.isFullyDefined(restpe)) restpe = tree1.type;
 			return transform(
-			    desugarize.partialFunction(
-				tree, pattpe, restpe.dropVariance()));
+			    desugarize.partialFunction(tree, pattpe, restpe));
 		    } else {
 			return error(tree.pos, "expected pattern type of cases could not be determined");
 		    }
@@ -2139,8 +2115,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (!infer.isFullyDefined(restype)) restype = body1.type;
 		popContext();
 		Tree tree1 = copy.Function(tree, vparams, body1);
-		Tree tree2 = transform(desugarize.Function(tree1, restype));
-		return desugarize.postFunction(tree2);
+		return transform(desugarize.Function(tree1, restype));
 
 	    case TypeApply(Tree fn, Tree[] args):
 		Tree fn1 = transform(fn, EXPRmode | FUNmode, Type.AnyType);
@@ -2316,11 +2291,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 		return make.TypeTerm(tree.pos).setType(owntype);
-
-	    case CovariantType(Tree tpe):
-		Tree tpe1 = transform(tpe, TYPEmode);
-		return make.TypeTerm(tree.pos)
-		    .setType(Type.covarType(tpe1.type));
 
 	    case FunType(_, _):
 		return transform(desugarize.FunType(tree));

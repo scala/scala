@@ -110,7 +110,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	case FunType(Tree[] argtpes, Tree restpe):
 	    Tree[] types = new Tree[argtpes.length + 1];
 	    System.arraycopy(argtpes, 0, types, 0, argtpes.length);
-	    types[argtpes.length] = make.CovariantType(restpe.pos, restpe);
+	    types[argtpes.length] = restpe;
 	    return make.AppliedType(tree.pos,
 		make.Select(tree.pos,
 		    make.Ident(tree.pos, Names.scala),
@@ -151,7 +151,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		ptargs.length == vparams.length + 1) {
 		for (int i = 0; i < vparams.length; i++)
 		    assignType(vparams[i], ptargs[i]);
-		return ptargs[vparams.length].dropVariance();
+		return ptargs[vparams.length];
 	    }
 	}
 	return Type.AnyType;
@@ -171,7 +171,6 @@ public class DeSugarize implements Kinds, Modifiers {
      *  T_i's might be missing in the original tree.
      */
     public Tree Function(Tree tree, Type restype) {
-	assert !restype.isCovarType();
 	switch (tree) {
 	case Function(ValDef[] vparams, Tree body):
 	    int length = vparams.length;
@@ -213,30 +212,11 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
     }
 
-    /** e of type FunctionN[T_1,...,T_N, T] -->
-     *            (e: FunctionN[T_1,...,T_n, +T])
-     */
-    Tree postFunction(Tree tree) {
-	Type[] targs = tree.type.typeArgs();
-	if (targs.length >= 1) {
-	    Type[] targs1 = new Type[targs.length - 1];
-	    System.arraycopy(targs, 0, targs1, 0, targs1.length);
-	    Tree result = gen.Typed(
-		tree,
-		global.definitions.functionType(targs1, targs[targs1.length]));
-	    print(tree, "postfun", result);
-	    return result;
-	} else {
-	    print(tree, "postfun", tree);
-	    return tree;
-	}
-    }
-
     /** Cases, Argtpe, Restpe ==>
-     *     (new scala.PartialFunction[Argtpe, Restpe]() {
+     *     new scala.PartialFunction[Argtpe, Restpe]() {
      *        def apply(x: Argtpe): Restpe = x match {Cases}
      *        def isDefinedAt(x: Argtpe): scala.Boolean = x match {Cases'}
-     *      }: scala.PartialFunction[Argtpe, +Restpe])
+     *     }
      *  WHERE
      *    case P1 if G1 => E1, ..., Pn if Gn => En) = Cases
      *    Cases' = case P1 if G1 => True, ..., Pn if Gn => True, _ => False
@@ -278,10 +258,6 @@ public class DeSugarize implements Kinds, Modifiers {
 	    make.Template(
 		tree.pos, new Tree[]{constr}, new Tree[]{applyDef, isDefinedAtDef}));
 
-	//Tree result = make.Typed(tree.pos,
-	//    newTree,
-	//    gen.mkType(tree.pos,
-        //        global.definitions.partialFunctionType(targs[0], targs[1])));
 	print(tree, "partialfun", result);
 	return result;
     }

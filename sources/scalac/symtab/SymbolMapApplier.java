@@ -71,9 +71,6 @@ public class SymbolMapApplier {
         case OverloadedType(Symbol[] alts, Type[] alttypes):
             return new Type.OverloadedType(apply(alts), apply(alttypes));
 
-	case CovarType(Type result):
-	    return Type.CovarType(apply(result));
-
         default:
             throw new ApplicationError("unknown type " + type);
         }

@@ -385,12 +385,6 @@ public class DebugType extends DebugAbstractHandler {
             buffer.append(')');
             return;
 
-        case CovarType(Type tp):
-            buffer.append("CovarType(");
-            Debug.append(buffer, tp);
-            buffer.append(')');
-            return;
-
         case LazyType():
             buffer.append("LazyType()");
             return;

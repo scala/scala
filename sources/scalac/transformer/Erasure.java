@@ -485,7 +485,6 @@ public class Erasure extends Transformer implements Modifiers {
         case FunType(_,_):
         case CompoundType(_,_):
         case AppliedType(_, _):
-        case CovariantType(_):
             throw Debug.abort("illegal case", tree);
 
 	default:

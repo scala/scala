@@ -232,10 +232,19 @@ public class AttributeParser implements ClassfileConstants {
                     Vector syms = new Vector();
                     do {
                         nextToken();
+			int vflag = 0;
+			if (token.equals("+")) {
+			    nextToken();
+			    vflag = Modifiers.COVARIANT;
+			} else if (token.equals("-")) {
+			    nextToken();
+			    vflag = Modifiers.CONTRAVARIANT;
+			}
                         assert token.startsWith("?");
                         Symbol s = getTVar(token);
                         if (s == Symbol.NONE)
                             return defaultType;
+			s.flags |= vflag;
                         nextToken();
                         //System.out.println("new var " + s + ", " + token);//DEBUG
                         if (token.equals("<")) {
