@@ -118,9 +118,9 @@ object testBM  {
                 test[List[Char],List[Char]]( doit1, s6, Nil);
 
                 val t7:List[Char] = 'a'::'a'::'a'::'b'::'b'::'b'::Nil;
-                val t7ex:List[Char] = 'a'::'a'::'b'::Nil;
+                //val t7ex:List[Char] = 'a'::'a'::'b'::Nil; // with longest match policy
 
-                test[List[Char],List[Char]]( doit1, t7, t7ex );
+                test[List[Char],List[Char]]( doit1, t7, List('a') );
                 ()
     };
 
@@ -206,7 +206,7 @@ object testBO  {
         /** first longest match policy -> the star is greedy/hungry/...
          */
 
-        def searchLastJohn( db:List[ Person ] ):String = {
+        def searchFirstJohn( db:List[ Person ] ):String = {
 
            db.match {
 
@@ -227,9 +227,9 @@ object testBO  {
 
            db.match {
 
-                case List( before @ (_ *), Person( "John", lastname  ), _ * )
+                case List( _ *, Person( "John", lastname  ), rest@(_ *) )
                         => { //System.out.print("before is : "+before );
-                             lastname::searchJohns( before )
+                             lastname::searchJohns( rest )
                                 }
 
                 case _
@@ -261,13 +261,13 @@ object testBO  {
                         ( onlyJohn, db2, "Le Carre"::Nil );
 
                 test[ List[Person], String ]
-                        ( searchLastJohn, db, "Smith" );
+                        ( searchFirstJohn, db, "Le Carre" );
 
                 test[ List[Person], String ]
-                        ( searchLastJohn, db2, "Le Carre" );
+                        ( searchFirstJohn, db2, "Le Carre" );
 
                 test[ List[Person], List[ String ]]
-                        ( searchJohns, db, "Smith"::"Le Carre"::Nil );
+                        ( searchJohns, db, "Le Carre"::"Smith"::Nil );
 
                 test[ List[Person], List[ String ]]
                         ( searchJohns, db2, "Le Carre"::Nil );
