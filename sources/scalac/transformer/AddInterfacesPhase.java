@@ -136,10 +136,8 @@ public class AddInterfacesPhase extends Phase {
             return new Type.MethodType(Symbol.EMPTY_ARRAY, result);
         case PolyType(Symbol[] tps, Type result):
             return new Type.PolyType(tps, removeValueParams(result));
-        case OverloadedType(_, Type[] altTypes):
-            return removeValueParams(altTypes[0]);
         default:
-            return tp;
+            throw Debug.abort("illegal case", tp);
         }
     }
 
@@ -208,6 +206,15 @@ public class AddInterfacesPhase extends Phase {
             classSym = ifaceSym.cloneSymbol(ifaceSym.owner());
             classSym.name = className(ifaceSym.name);
             classSym.flags &= ~Modifiers.INTERFACE;
+
+            // Remove non-primary constructors from interface
+            if (ifaceSym.allConstructors().isOverloaded()) {
+                Symbol primary = ifaceSym.primaryConstructor();
+                Symbol[] altsyms = { primary };
+                Type[] alttypes = { primary.nextType() };
+                Type allType = Type.OverloadedType(altsyms, alttypes);
+                ifaceSym.allConstructors().updateInfo(allType);
+            }
 
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);
