@@ -272,7 +272,7 @@ public final class CLRTypes {
 	typesMap = new HashMap();
 	namespacesSet = new LinkedHashSet();
 
-	String namespace = pakage.isRoot() ? "" : snw.toString(pakage) + ".";
+	String namespace = getNameSpaceOf(pakage);
 	int nl = namespace.length();
 	for (int i = findFirst(namespace);
 	     i < types.length && types[i].FullName.startsWith(namespace);
@@ -306,6 +306,12 @@ public final class CLRTypes {
     Set getNamespaces(Symbol pakage) {
 	enumerateMembers(pakage);
 	return namespacesSet;
+    }
+
+    /** Returns the namespace of the given package */
+    String getNameSpaceOf(Symbol pakage) {
+        assert pakage.hasPackageFlag() || pakage.isRoot(): Debug.show(pakage);
+        return pakage.isRoot() ? "" : snw.toString(pakage) + ".";
     }
 
     //##########################################################################
