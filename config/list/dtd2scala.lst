@@ -4,7 +4,6 @@
 # $Id$
 
 DeclToScala.scala
-DeclToSQL.scala
 Main.scala
 MainHandler.scala
 MyElemDecl.scala

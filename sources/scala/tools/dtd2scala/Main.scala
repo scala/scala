@@ -28,7 +28,7 @@ object Main {
     List.fromArray(argv, 0, argv.length) match {
       case Seq( "-d", outdir, sysID, objName ) =>
         continue( new File( outdir ), sysID, objName );
-      case Seq( "-sql", sysID ) => dosql( sysID );
+      //case Seq( "-sql", sysID ) => dosql( sysID );
       case Seq( sysID, objName ) =>
         continue( new File( sysID ).getParentFile(), sysID, objName );
       case _ =>
@@ -46,17 +46,16 @@ object Main {
     new DeclToScala( p, objName, myH.elemMap ).run;
   }
 
+  /*
   private def dosql( sysID:String ) = {
     val myH:MainHandler  = new MainHandler();
     parse( sysID, myH );
-    /*
-    val q = new PrintWriter(new FileWriter(new File(outdir,
-                                                    objName+".sql" )));
-    */
+    //val q = new PrintWriter(new FileWriter(new File(outdir,
+    //                                                objName+".sql" )));
     val q = new PrintWriter(System.out);
     new DeclToSQL( q, null:String, myH.elemMap ).run;
   }
-
+*/
 
   private def inputsrc( sysID:String ):InputSource = {
     // create isrc for a fake doc referencing the DTD
