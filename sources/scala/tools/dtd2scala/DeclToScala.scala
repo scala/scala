@@ -35,7 +35,7 @@ class DeclToScala(fOut:PrintWriter,
         x match {
           case Text(text) =>
             fOut.print( text );
-          case n:Symbol =>
+          case n:Elem =>
             n.label match {
               case "template" => {
                 lookup.update("objectName", objectName);
