@@ -295,6 +295,25 @@ object Bug250Test {
 }
 
 //############################################################################
+// Bug 257
+
+object Bug257Test {
+  def sayhello(): Unit = { System.out.println("hello"); };
+
+  def f1(x: Unit): Unit = ();
+  def f2(x: Unit)(y: Unit): Unit = ();
+
+  def f(def x: Unit) = {
+    f1(x);
+    f2(x);
+  }
+
+  def main(args: Array[String]): Unit = {
+    f(sayhello())
+  }
+}
+
+//############################################################################
 // Bug 266
 
 // version - A
@@ -388,6 +407,7 @@ object Test  {
     test(226, Bug226Test.main(args));
     test(233, Bug233Test.main(args));
     test(250, Bug250Test.main(args));
+    test(257, Bug257Test.main(args));
     test(266, Bug266Test.main(args));
 
     if (errors > 0) {
