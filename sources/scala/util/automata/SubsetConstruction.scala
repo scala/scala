@@ -1,9 +1,9 @@
 package scala.util.automata ;
 
-class SubsetConstruction(val nfa: NondetWordAutom) {
+class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
 
-  import nfa.{ _labelT, labels };
-
+  //import nfa.{ _labelT, labels };
+  import nfa.labels ;
   import scala.collection.{immutable, mutable, Map} ;
 
   import immutable.{ BitSet, TreeMap, TreeSet } ;
@@ -36,7 +36,7 @@ class SubsetConstruction(val nfa: NondetWordAutom) {
     mintag
   }
 
-  def determinize: DetWordAutom[_labelT] = {
+  def determinize: DetWordAutom[ T ] = {
 
     // for assigning numbers to bitsets
     var indexMap    = new TreeMap[ BitSet, Int ];
@@ -46,7 +46,7 @@ class SubsetConstruction(val nfa: NondetWordAutom) {
     // we compute the dfa with states = bitsets
     var states   = new TreeSet[BitSet]();
     val delta    = new mutable.HashMap[BitSet,
-                                       mutable.HashMap[_labelT, BitSet]];
+                                       mutable.HashMap[T, BitSet]];
     var deftrans = new TreeMap[BitSet, BitSet];
     var finals   = new TreeMap[BitSet, Int];
 
@@ -80,7 +80,7 @@ class SubsetConstruction(val nfa: NondetWordAutom) {
       ix = ix + 1;
 
       // make transitiion map
-      val Pdelta = new mutable.HashMap[_labelT, BitSet];
+      val Pdelta = new mutable.HashMap[T, BitSet];
       delta.update( P, Pdelta );
 
       val it = labels.elements; while(it.hasNext) {
@@ -101,7 +101,7 @@ class SubsetConstruction(val nfa: NondetWordAutom) {
 
     // create DetWordAutom, using indices instead of sets
     val nstatesR = states.size;
-    val deltaR = new Array[Map[_labelT,Int]](nstatesR);
+    val deltaR = new Array[Map[T,Int]](nstatesR);
     val defaultR = new Array[Int](nstatesR);
     val finalsR = new Array[Int](nstatesR);
 
@@ -111,7 +111,7 @@ class SubsetConstruction(val nfa: NondetWordAutom) {
       val trans = delta(Q);
       val transDef = deftrans(Q);
       val qDef = indexMap(transDef);
-      val ntrans = new mutable.HashMap[_labelT,Int]();
+      val ntrans = new mutable.HashMap[T,Int]();
       val it = trans.keys; while(it.hasNext) {
         val label = it.next;
         val p = indexMap(trans(label));
@@ -131,7 +131,7 @@ class SubsetConstruction(val nfa: NondetWordAutom) {
       finalsR(indexMap(fQ)) = finals(fQ);
     }
 
-    new DetWordAutom [ _labelT ] {
+    new DetWordAutom [ T ] {
 
       //type _labelT = SubsetConstruction.this.nfa._labelT;
       val nstates = nstatesR;

@@ -9,7 +9,7 @@ import scala.collection.{ Set, Map };
  *  All states are reachable. Accepting states are those for which
  *  the partial function 'finals' is defined.
  */
-abstract class DetWordAutom[T] {
+abstract class DetWordAutom[T <: AnyRef] {
 
   val nstates:  Int;
   val finals:   Array[Int] ;

@@ -9,15 +9,15 @@ import scala.collection.{ immutable, mutable, Set, Map };
  *  All states are reachable. Accepting states are those for which
  *  the partial function 'finals' is defined.
  */
-abstract class NondetWordAutom {
+abstract class NondetWordAutom[T <: AnyRef] {
 
-  type _labelT;
+  //type _labelT <: AnyRef ;
 
   val nstates:  Int;
-  val labels: Seq[_labelT];
+  val labels: Seq[T];
 
   val finals:   Array[Int] ; // 0 means not final
-  val delta:    Array[Map[_labelT, immutable.BitSet]];
+  val delta:    Array[Map[T, immutable.BitSet]];
   val default:  Array[immutable.BitSet];
 
   /** returns true if the state is final */
@@ -46,7 +46,7 @@ abstract class NondetWordAutom {
   }
 
   /** returns a bitset with the next states for given state and label */
-  def next(q:Int, a: _labelT): immutable.BitSet = {
+  def next(q:Int, a: T): immutable.BitSet = {
     delta(q).get(a).match {
       case Some(bs) => bs
       case _        => default(q)
@@ -54,7 +54,7 @@ abstract class NondetWordAutom {
   }
 
   /** returns a bitset with the next states for given state and label */
-  def next(Q:immutable.BitSet, a: _labelT): immutable.BitSet = {
+  def next(Q:immutable.BitSet, a: T): immutable.BitSet = {
     val x = new mutable.BitSet(nstates);
     for(val q <- Q.toSet(true)) {
       for(val i <- next(q,a).toSet(true)) {

@@ -4,7 +4,7 @@ package scala.util.automata ;
  *  inspired by the AMoRE automata library
  *  @author Burak
  */
-trait Inclusion[A] {
+trait Inclusion[A <: AnyRef] {
 
   val labels: Seq[A];
 

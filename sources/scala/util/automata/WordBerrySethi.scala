@@ -143,7 +143,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     }
   }
 
-  def automatonFrom(pat: RegExp, finalTag: Int): NondetWordAutom = {
+  def automatonFrom(pat: RegExp, finalTag: Int): NondetWordAutom[_labelT] = {
     this.finalTag = finalTag;
 
     pat match {
@@ -217,7 +217,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         }
       }
 
-      new NondetWordAutom {
+      new NondetWordAutom[_labelT] {
 	type _labelT = WordBerrySethi.this._labelT;
         val nstates  = pos;
         val labels   = WordBerrySethi.this.labels.toList;
