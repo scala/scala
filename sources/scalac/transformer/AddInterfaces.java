@@ -91,9 +91,11 @@ class AddInterfaces extends SubstTransformer {
     }
 
     protected Name uniqueName(Symbol sym) {
+        boolean isTypeName = sym.name.isTypeName();
         StringBuffer buf = new StringBuffer();
         uniqueName(sym, buf);
-        return Name.fromString(buf.toString());
+        Name newName = Name.fromString(buf.toString());
+        return (isTypeName ? newName.toTypeName() : newName);
     }
 
     protected final static String CLASS_SUFFIX = "$class";
@@ -110,7 +112,8 @@ class AddInterfaces extends SubstTransformer {
     }
 
     // Modifiers for which we do not create interfaces.
-    protected int NO_INTERFACE_MODS = (Modifiers.MODUL | Modifiers.SYNTHETIC);
+    protected int NO_INTERFACE_MODS =
+        (Modifiers.MODUL | Modifiers.SYNTHETIC | Modifiers.JAVA);
 
     protected boolean needInterface(Symbol sym) {
         return (sym.enclClass().flags & NO_INTERFACE_MODS) == 0;
@@ -166,14 +169,8 @@ class AddInterfaces extends SubstTransformer {
 
                 Name ifaceName = ifaceSym.enclClass().fullName();
                 classSym = global.definitions.getClass(className(ifaceName));
-                if (ifaceSym.isPrimaryConstructor()) {
+                if (ifaceSym.isPrimaryConstructor())
                     classSym = classSym.constructor();
-                }
-
-                if (classSym == Symbol.NONE && (ifaceSym.flags & Modifiers.JAVA) != 0) {
-                    // Java symbols do not have corresponding classes
-                    return ifaceSym;
-                }
 
                 assert classSym != Symbol.NONE : ifaceSym;
 
@@ -250,7 +247,6 @@ class AddInterfaces extends SubstTransformer {
         for (int i = 0; i < body.length; ++i) {
             Tree elem = body[i];
             if (elem.hasSymbol() && elem.symbol().owner() == ifaceSym) {
-                Symbol sym = elem.symbol();
                 if (memberGoesInInterface(elem.symbol()))
                     ifaceBody.add(mkAbstract(elem));
             }
@@ -289,7 +285,10 @@ class AddInterfaces extends SubstTransformer {
         case Type.NoType:
             return type;
         case ThisType(Symbol sym):
-            return new Type.ThisType(getClassSym(sym));
+            if (sym == Symbol.NONE)
+                return type;
+            else
+                return new Type.ThisType(getClassSym(sym));
         case TypeRef(Type pre, Symbol sym, Type[] args):
             return new Type.TypeRef(fixClassSymbols(pre), getClassSym(sym), args);
         case SingleType(Type pre, Symbol sym):
