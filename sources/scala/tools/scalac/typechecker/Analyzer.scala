@@ -1110,8 +1110,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    vparamSyms1(1) = Symbol.EMPTY_ARRAY;
 	    vparamSyms = vparamSyms1
 	  }
-	  if ((mods & CASE) != 0 && vparams.length > 0)
-	    templ.body = desugarize.addCaseElements(
+	  if (vparams.length > 0)
+	    templ.body = desugarize.addParamAccessors(
 	      templ.body, vparams(vparams.length - 1));
 
 	  val constrtype: Type = makeMethodType(
@@ -1162,8 +1162,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    restype = context.enclClass.owner.getType();/*.subst(
 	      context.enclClass.owner.typeParams(), tparamSyms)*/;
 	  } else {
-	    rhs = transform(rhs, EXPRmode);
-	    (tree.asInstanceOf[Tree$DefDef]).rhs = rhs;
+	    if ((sym.flags & PARAMACCESSOR) != 0) {
+	      rhs.setType(rhs.symbol().getType());
+	    } else {
+	      rhs = transform(rhs, EXPRmode);
+	      (tree.asInstanceOf[Tree$DefDef]).rhs = rhs;
+            }
 	    restype = rhs.getType();
 	    if (!sym.isFinal())	restype = restype.deconst();
 	  }
@@ -1198,12 +1202,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		owntype = Type.ErrorType;
 	      }
 	    } else {
-	      if ((sym.flags & CASEACCESSOR) != 0) {
-		rhs.setType(rhs.symbol().getType());
-	      } else {
-		rhs = transform(rhs, EXPRmode);
-		(tree.asInstanceOf[Tree$ValDef]).rhs = rhs;
-	      }
+	      rhs = transform(rhs, EXPRmode);
+	      (tree.asInstanceOf[Tree$ValDef]).rhs = rhs;
 	      owntype = rhs.getType();
 	      if (sym.isVariable() || !sym.isFinal())
 		owntype = owntype.deconst();
@@ -1651,7 +1651,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       } else {
 	nextcontext = nextcontext.enclClass;
 	if (nextcontext != Context.NONE) {
-	  sym = nextcontext.owner.thisSym().info().lookup(name);
+	  sym = nextcontext.owner.typeOfThis().lookup(name);
 	  if (sym.kind != NONE) {
 	    stopPos = nextcontext.owner.pos;
 	  } else {
@@ -2239,8 +2239,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  val vparams1 = transform(vparams);
 	  checkNoEscapeParams(vparams1);
 	  val tpe1: Tree = transform(tpe, TYPEmode);
-	  if ((sym.flags & CASE) != 0 && vparams.length > 0 && templ.getType() == null)
-	    templ.body = desugarize.addCaseElements(
+	  if (vparams.length > 0 && templ.getType() == null)
+	    templ.body = desugarize.addParamAccessors(
 	      templ.body, vparams(vparams.length - 1));
 
 	  val templ1: Tree$Template = transformTemplate(templ, sym);

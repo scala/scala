@@ -89,7 +89,7 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             sym => { sym match {
                 case s: ValSymbol if
                     (s.tpe.isInstanceOf[OverloadedType] ||
-                    (Flags.is(Flags.CASEACCESSOR, s.flags) &&
+                    (Flags.is(Flags.PARAMACCESSOR, s.flags) &&
                     !s.tpe.isInstanceOf[PolyType])) =>
                 case _ =>
                     if (!ignoreDef(sym)) {
@@ -292,7 +292,7 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
         (Flags.is(Flags.PRIVATE, s.flags) &&
          !((args != null) && (args contains "-private"))) ||
         (s.name == "<init>") ||
-        Flags.is(Flags.CASEACCESSOR, s.flags) ||
+        Flags.is(Flags.PARAMACCESSOR, s.flags) ||
         (Flags.is(Flags.CASE, s.flags) &&
          (s match {
             case sym: ValSymbol => true

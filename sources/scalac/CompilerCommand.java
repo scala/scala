@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import scala.tools.util.ClassPath;
+import scala.tools.util.Reporter;
 
-import scalac.util.Reporter;
 import scalac.util.CommandParser;
 import scalac.util.ArgumentParser;
 import scalac.util.OptionParser;

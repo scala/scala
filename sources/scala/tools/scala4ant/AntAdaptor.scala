@@ -1,6 +1,6 @@
 
 import scalac._;
-import scalac.util.Reporter;
+import scala.tools.util.Reporter;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;

@@ -91,7 +91,7 @@ object M1 {
 
 object M2 {
 
-  def While(def condition: Boolean)(def command: Unit): Unit =
+  def While(condition: => Boolean)(command: => Unit): Unit =
     if (condition) {
       command; While(condition)(command)
     } else {

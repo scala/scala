@@ -10,7 +10,7 @@
 package scala.tools.scalai;
 
 import scala.tools.scalac.CompilerPhases$class;
-import scalac.util.Reporter;
+import scala.tools.util.Reporter;
 
 public class Main {
 

@@ -2124,7 +2124,7 @@ public class ClassSymbol extends TypeSymbol {
             for (int i = 0; i <= index; i++) {
                 do {
                     sym = it.next();
-                } while (sym != NONE && sym.kind != VAL || (sym.flags & CASEACCESSOR) == 0 || !sym.isMethod());
+                } while (sym != NONE && sym.kind != VAL || (sym.flags & PARAMACCESSOR) == 0 || !sym.isMethod());
             }
             //System.out.println(this + ", case field[" + index + "] = " + sym);//DEBUG
         } else {

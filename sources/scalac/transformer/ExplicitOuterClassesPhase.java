@@ -309,6 +309,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** Transforms the given tree. */
         public Tree transform(Tree tree) {
+            if (global.debug) global.log("transforming " + tree);//debug
             switch (tree) {
 
             case ClassDef(_, _, _, _, _, Template impl):

@@ -92,7 +92,7 @@ object Test1Test {
 
 object Test  {
   var errors: Int = 0;
-  def test(bug: String, def test: Unit): Unit = {
+  def test(bug: String, test: => Unit): Unit = {
     System.out.println("<<< bug " + bug);
     try {
       test;

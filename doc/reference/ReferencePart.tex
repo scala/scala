@@ -487,9 +487,8 @@ Method types associate to the right: $(\Ts_1)(\Ts_2)U$ is treated as
 $(\Ts_1)((\Ts_2)U)$.
 
 A special case are types of methods without any parameters. They are
-written here $[]T$, following the syntax for polymorphic method types
-(\sref{sec:poly-types}). Parameterless methods name expressions that
-are re-evaluated each time the parameterless method name is
+written here \lstinline@=> T@. Parameterless methods name expressions
+that are re-evaluated each time the parameterless method name is
 referenced.
 
 Method types do not exist as types of values. If a method name is used
@@ -504,7 +503,7 @@ def c (x: Int) (y: String, z: String): String
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}
-a: [] Int
+a: => Int
 b: (Int) Boolean
 c: (Int) (String, String) String
 \end{lstlisting}
@@ -554,7 +553,7 @@ def println[a](x: a)(tostring: a => String): unit = $\ldots$
 define a single function \code{println} which has an overloaded
 type.
 \begin{lstlisting}
-println:  [] unit $\overload$
+println:  => unit $\overload$
           (String) unit $\overload$
           (float) unit $\overload$
           (float, int) unit $\overload$
@@ -850,7 +849,7 @@ method type that are used as values, rather than being applied to some
 arguments.
 \begin{itemize}
 \item
-A parameterless method $m$ of type $[] T$
+A parameterless method $m$ of type \lstinline@=> $T$@
 is converted to type $T$ by evaluating the expression to which $m$ is bound.
 \item
 An expression $e$ of polymorphic type 
@@ -875,7 +874,7 @@ parameter section consisting of parameters with fresh names of types $\Ts_i$:
 (val $x$ = $e$ ; $(ps_1) \ldots \Arrow \ldots \Arrow (ps_n) \Arrow x(ps_1)\ldots(ps_n)$)
 \end{lstlisting}
 This conversion is not applicable to functions with call-by-name
-parameters \lstinline@def $x$: $T$@ or repeated parameters
+parameters \lstinline@$x$: => $T$@ or repeated parameters
 \lstinline@x: T*@, (\sref{sec:parameters}), because its result would
 violate the well-formedness rules for anonymous functions
 (\sref{sec:closures}). Hence, methods with such parameters
@@ -1384,7 +1383,7 @@ FunDef             ::=  FunSig {`,' FunSig} [`:' Type] `=' Expr
 FunSig             ::=  id [FunTypeParamClause] {ParamClause} 
 FunTypeParamClause ::= `[' TypeParam {`,' TypeParam} `]' 
 ParamClause        ::= `(' [Param {`,' Param}] `)' 
-Param              ::=  [def] id `:' Type [`*']
+Param              ::=  id `:' [`=>'] Type [`*']
 \end{lstlisting}
 
 A function declaration has the form ~\lstinline@def $f \psig$: $T$@, where
@@ -1411,22 +1410,18 @@ value parameter name $x$ is the function body, if one is
 given. Both type parameter names and value parameter names must be
 pairwise distinct.
 
-Value parameters may be prefixed by \code{def}, e.g.\
-~\lstinline@def $x$:$T$@. The type of such a parameter is then the
-parameterless method type ~\lstinline@[]$T$@. This indicates that the
+The type of a value parameter may be prefixed by \code{=>}, e.g.\
+~\lstinline@$x$: => $T$@. The type of such a parameter is then the
+parameterless method type ~\lstinline@=> $T$@. This indicates that the
 corresponding argument is not evaluated at the point of function
 application, but instead is evaluated at each use within the
 function. That is, the argument is evaluated using {\em call-by-name}.
 
 \example The declaration
 \begin{lstlisting}
-def whileLoop (def cond: Boolean) (def stat: Unit): Unit
+def whileLoop (cond: => Boolean) (stat: => Unit): Unit
 \end{lstlisting}
-produces the typing
-\begin{lstlisting}
-whileLoop: (cond: [] Boolean) (stat: [] Unit) Unit
-\end{lstlisting}
-which indicates that both parameters of \code{while} are evaluated using
+indicates that both parameters of \code{while} are evaluated using
 call-by-name.
 
 The last value parameter of a parameter section may be suffixed by
@@ -2068,10 +2063,13 @@ definition in Java:
 \section{Class Definitions}
 \label{sec:classes}
 
-\syntax\begin{lstlisting} TmplDef ::= class ClassDef ClassDef ::=
-  ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate ClassSig ::=
-  id [TypeParamClause] [ParamClause] ClassTemplate ::= extends
-  Template | TemplateBody |
+\syntax\begin{lstlisting} 
+  TmplDef          ::= class ClassDef 
+  ClassDef         ::= ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate 
+  ClassSig         ::= id [TypeParamClause] [ClassParamClause] 
+  ClassTemplate    ::= extends Template | TemplateBody |
+  ClassParamClause ::= `(' [ClassParam {`,' ClassParam}] `)'
+  ClassParam       ::= [{Modifier} `val'] Param
 \end{lstlisting}
 
 The most general form of class definition is 
@@ -2095,6 +2093,12 @@ part of the types of any of the parent classes or members of $t$.
 It is illegal to define two formal value parameters with the same name.
 The formal parameter section \lstinline@($ps\,$)@ may be omitted, in which case
 an empty parameter section \lstinline@()@ is assumed.
+
+If a formal parameter declaration $x: T$ is preceded by a \code{val}
+keyword, an accessor definition for this parameter is implicitly added
+to the class. The accessor introduces a value member $x$ of $c$ that is
+defined as alias of the parameter. The formal paremter declaration may
+contain modifiers, which then carry over to the accessor definition.
 \item[] 
 $s$ is the {\em self type} of the class. Inside the
 class, the type of \code{this} is assumed to be $s$.  The self
@@ -2224,6 +2228,10 @@ def c[$\tps\,$]($ps\,$): $s$ = new $c$[$\tps\,$]($ps\,$)
 If a type parameter section
 is missing in the class, it is also missing in the factory
 definition).  
+
+All formal value parameters of a case class are implicitly prefixed
+with a \code{val} keyword. Therefore, accessor definitions
+(\sref{sec:classes}) for such parameters are generated.
 
 Also implicitly defined are accessor member definitions
 in the class that return its value parameters. Every binding
@@ -2479,6 +2487,7 @@ module FileSystem {
                     |  [SimpleExpr `.'] id `=' Expr
                     |  SimpleExpr ArgumentExprs `=' Expr
                     |  PostfixExpr [`:' Type1]
+                    |  MethodClosure
   PostfixExpr     ::=  InfixExpr [id]
   InfixExpr       ::=  PrefixExpr
                     |  InfixExpr id PrefixExpr
@@ -2494,6 +2503,7 @@ module FileSystem {
                     |  XmlExpr
   ArgumentExprs   ::=  `(' [Exprs] ')'
                     |  BlockExpr
+  MethodClosure   ::=  `.' Id {`.' Id | TypeArgs | ArgumentExprs}
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
   Block           ::=  {BlockStat `;'} [ResultExpr]
@@ -2718,8 +2728,8 @@ with actual arguments substituted for formal parameters.  The result
 of evaluating the rewritten right-hand side is finally converted to
 the function's declared result type, if one is given.
 
-The case of a formal \code{def}-parameter with a parameterless
-method type \lstinline@[]$T$@ is treated specially. In this case, the
+The case of a formal parameter with a parameterless
+method type \lstinline@=> $T$@ is treated specially. In this case, the
 corresponding actual argument expression is not evaluated before the
 application. Instead, every use of the formal parameter on the
 right-hand side of the rewrite rule entails a re-evaluation of the
@@ -3031,6 +3041,27 @@ the expression is the value of $e$ converted to type $T$.
   // 1: string         // illegal
 \end{lstlisting}
 
+\section{Method closures}
+\syntax\begin{lstlisting}
+  MethodClosure   ::=  `.' Id {`.' Id | TypeArgs | ArgumentExprs}
+\end{lstlisting}
+
+A method closure $.id$ starts with a period and an identifier, which
+may be followed by selections and type- and value-arguments. This
+expression is equivalenet to an anonymous function
+\lstinline@$x$ => $x.id$@ where $x$ is a fresh parameter name. No type
+for $x$ is given; hence this type needs to be inferrable from the
+context of the expression.
+
+\example The following method returns the $n$'th column of a given
+list of row-lists $xss$, using methods \lstlistinline@map@,
+\lstlistinline@drop@ and \lstlistinline@head@ defined in class
+\lstlinline@scala.List@.
+\begin{lstlisting}
+def column[T](xss: List[List[T]], n: int): List[T] = 
+  xss.map(.drop(i)).map(.head)
+\end{lstlisting}
+ 
 \section{Assignments}
 
 \syntax\begin{lstlisting}

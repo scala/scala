@@ -7,7 +7,7 @@
 // $Id$
 
 import scala.tools.scalac.Global;
-import scalac.util.Reporter;
+import scala.tools.util.Reporter;
 
 package scala.tools.scaladoc {
 

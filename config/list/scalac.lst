@@ -157,7 +157,6 @@
 ../../../scalac/util/Names.java
 ../../../scalac/util/OptionParser.java
 ../../../scalac/util/PrefixMatcher.java
-../../../scalac/util/Reporter.java
 ../../../scalac/util/SourceRepresentation.java
 ../../../scalac/util/Strings.java
 ../../../scalac/util/TermName.java

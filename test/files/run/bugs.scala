@@ -300,7 +300,7 @@ object Bug257Test {
   def f1(x: Unit): Unit = ();
   def f2(x: Unit)(y: Unit): Unit = ();
 
-  def f(def x: Unit) = {
+  def f(x: => Unit) = {
     f1(x);
     f2(x);
   }
@@ -404,7 +404,7 @@ object Bug328Test {
 
 object Test  {
   var errors: Int = 0;
-  def test(bug: Int, def test: Unit): Unit = {
+  def test(bug: Int, test: => Unit): Unit = {
     System.out.println("<<< bug " + bug);
     try {
       test;

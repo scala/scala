@@ -9,6 +9,7 @@
 package scalac.util;
 
 import scala.tools.util.Position;
+import scala.tools.util.Reporter;
 
 import java.text.Format;
 import java.text.MessageFormat;

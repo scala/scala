@@ -223,7 +223,7 @@ class Parser(s: String) {
 
   def syntaxError(msg: String): Unit = error(msg + ", but " + token + " found");
 
-  def rep[a](def p: a): List[a] = {
+  def rep[a](p: => a): List[a] = {
     val t = p;
     if (token == ",") { token = it.next; t :: rep(p) } else List(t)
   }

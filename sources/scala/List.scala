@@ -137,8 +137,6 @@ object List {
     res
   }
 
-
-
   /** Parses a string which contains substrings separated by a
    *
    *  separator character and returns a list of all substrings.

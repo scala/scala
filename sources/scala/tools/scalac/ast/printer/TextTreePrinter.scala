@@ -710,6 +710,9 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 
     case Tree$ValDef(mods, name, tpe, Tree.Empty) =>
       printModifiers(mods);
+      if ((mods & Modifiers.PARAMACCESSOR) != 0) {
+        print(KW_VAL); print(Space);
+      }
       printSymbolDefinition(tree.symbol(), name);
       printOpt(TXT_COLON, tpe, false);
 

@@ -190,7 +190,7 @@ class TailCall[S](s: S) {
 object Test {
   import java.lang.System;
 
-  def check_success(name: String, def closure: Int, expected: Int): Unit = {
+  def check_success(name: String, closure: => Int, expected: Int): Unit = {
     System.out.print("test " + name);
     try {
       val actual: Int = closure;

@@ -1462,27 +1462,28 @@ class Parser(unit: CompilationUnit) {
   def paramClauses(): Array[Array[Tree$ValDef]] = {
     val ts = new ArrayList();
     while (s.token == LPAREN)
-      ts.add(paramClause());
+      ts.add(paramClause(false));
     ts.toArray(new Array[Array[Tree$ValDef]](ts.size()).asInstanceOf[Array[java.lang.Object]])
       .asInstanceOf[Array[Array[Tree$ValDef]]]
   }
 
   /** ParamClauseOpt ::= [ParamClause]
   */
-  def paramClauseOpt(): Array[Array[Tree$ValDef]] =
-    if (s.token == LPAREN) NewArray.ValDefArray(paramClause())
+  def paramClauseOpt(ofPrimaryConstructor: boolean): Array[Array[Tree$ValDef]] =
+    if (s.token == LPAREN) NewArray.ValDefArray(paramClause(ofPrimaryConstructor))
     else Tree.ValDef_EMPTY_ARRAY_ARRAY;
 
   /** ParamClause ::= `(' [Param {`,' Param}] `)'
-  */
-  def paramClause(): Array[Tree$ValDef] = {
+   *  ClassParamClause ::= `(' [ClassParam {`,' ClassParam}] `)'
+   */
+  def paramClause(ofPrimaryConstructor: boolean): Array[Tree$ValDef] = {
     val pos = accept(LPAREN);
     val params = new myTreeList();
     if (s.token != RPAREN) {
-      params.append(param());
+      params.append(param(ofPrimaryConstructor));
       while (s.token == COMMA) {
         s.nextToken();
-        params.append(param());
+        params.append(param(ofPrimaryConstructor));
       }
     }
     accept(RPAREN);
@@ -1490,17 +1491,31 @@ class Parser(unit: CompilationUnit) {
       .asInstanceOf[Array[Tree$ValDef]]
   }
 
-  /** Param ::= [def] Id `:' Type [`*']
-  */
-  def param(): Tree$ValDef = {
+  /** Param ::= Id `:' [`=>'] Type [`*']
+   *  ClassParam ::= [[modifiers] val] Param
+   */
+  def param(ofPrimaryConstructor: boolean): Tree$ValDef = {
     val pos = s.pos;
-    var mods = Modifiers.PARAM;
+    var mods = if (ofPrimaryConstructor) modifiers() | Modifiers.PARAM else Modifiers.PARAM;
+    if (s.token == VAL) {
+      s.nextToken(); mods = mods | Modifiers.PARAMACCESSOR;
+    } else if (mods != Modifiers.PARAM) {
+      accept(VAL);
+    }
     if (s.token == DEF) {
       mods = mods | Modifiers.DEF;
+      /* notyet
+      s.unit.warning(s.pos, "def-parameter syntax  `def x: T'  is deprecated \n" +
+                     "use `x: => T' instead");
+      */
       s.nextToken();
     }
     val name = ident();
     accept(COLON);
+    if (s.token == ARROW) {
+      mods = mods | Modifiers.DEF;
+      s.nextToken();
+    }
     var tp = typ();
     if (s.token == IDENTIFIER && s.name == STAR) {
       s.nextToken();
@@ -1793,7 +1808,7 @@ class Parser(unit: CompilationUnit) {
     if (s.token == THIS) {
       val pos = s.pos;
       s.nextToken();
-      val vparams = NewArray.ValDefArray(paramClause());
+      val vparams = NewArray.ValDefArray(paramClause(false));
       accept(EQUALS);
       ts.append(
       	make.DefDef(
@@ -1878,7 +1893,7 @@ class Parser(unit: CompilationUnit) {
     }
   }
 
-  /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
+  /** ClassDef ::= Id [TypeParamClause] [ClassParamClause] [`:' SimpleType] ClassTemplate
    */
   def classDef(mods: int): Array[Tree] = {
     val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
@@ -1887,7 +1902,7 @@ class Parser(unit: CompilationUnit) {
       lhs.append(Tuple4(s.pos,
 	                ident().toTypeName(),
 		        typeParamClauseOpt(true),
-		        paramClauseOpt()));
+		        paramClauseOpt(true)));
     } while (s.token == COMMA);
     val thistpe = simpleTypedOpt();
     val template = classTemplate( (mods & Modifiers.CASE)!= 0 );

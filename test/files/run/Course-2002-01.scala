@@ -41,7 +41,7 @@ object M0 {
 
   def loop: Int = loop;
   def first(x: Int, y: Int) = x;
-  def constOne(x: Int, def y: Int) = 1;
+  def constOne(x: Int, y: => Int) = 1;
 
   java.lang.System.out.println(constOne(1, loop));
 

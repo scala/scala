@@ -17,6 +17,7 @@ StringBufferWriter.java
 VirtualDirectory.java
 VirtualFile.java
 ZipArchive.java
+Reporter.java
 
 debug/AbortError.java
 debug/ArrayDebugger.java

@@ -6,7 +6,7 @@
 ** $Id$
 \*                                                                      */
 
-import scalac.util.Reporter;
+import scala.tools.util.Reporter;
 import scalac.{CompilerCommand, Global => scalac_Global};
 import scalac.symtab.classfile.CLRPackageParser;
 

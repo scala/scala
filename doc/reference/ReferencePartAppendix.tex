@@ -76,6 +76,7 @@ grammar.
                     |  [SimpleExpr `.'] id `=' Expr
                     |  SimpleExpr ArgumentExprs `=' Expr
                     |  PostfixExpr [`:' Type1]
+                    |  MethodClosure
   PostfixExpr     ::=  InfixExpr [id]
   InfixExpr       ::=  PrefixExpr
                     |  InfixExpr id PrefixExpr
@@ -89,8 +90,9 @@ grammar.
                     |  SimpleExpr TypeArgs
                     |  SimpleExpr ArgumentExprs
                     |  XmlExpr
-  ArgumentExprs    ::=  `(' [Exprs] ')'
+  ArgumentExprs   ::=  `(' [Exprs] ')'
                     |  BlockExpr
+  MethodClosure   ::=  `.' Id {`.' Id | TypeArgs | ArgumentExprs}
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
   Block           ::=  {BlockStat `;'} [ResultExpr]
@@ -132,7 +134,9 @@ grammar.
   VarTypeParam    ::=  [`+' | `-'] TypeParam
   TypeParam       ::=  id [>: Type] [<: Type | <% Type]
   ParamClause     ::=  `(' [Param {`,' Param}] `)'
-  Param           ::=  [def] id `:' Type [`*']
+  ClassParamClause::=  `(' [ClassParam {`,' ClassParam}] `)'
+  Param           ::=  id `:' [`=>' Type [`*']
+  ClassParam      ::=  [{Modifier} `val'] Param
   Bindings        ::=  id [`:' Type1]
                     |  `(' Binding {`,' Binding `)'
   Binding         ::=  id [`:' Type]

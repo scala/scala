@@ -422,7 +422,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     case Tree$ValDef(mods, name, tpe, rhs) =>
       val valname: Name = Name.fromString("" + name + "$");
       val valdef1: Tree = copy.ValDef(
-	tree, (mods & (DEFERRED | MUTABLE | CASEACCESSOR | MODUL)) | PRIVATE,
+	tree, (mods & (DEFERRED | MUTABLE | PARAMACCESSOR | MODUL)) | PRIVATE,
 	valname, tpe, rhs).setType(null);
       var mods1: int = mods | ACCESSOR;
       if ((mods1 & MUTABLE) == 0) mods1 = mods1 | STABLE;
@@ -600,24 +600,31 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   /** Build value element definition name for case parameter.
   */
-  def addCaseElement(ts: TreeList, vparam: Tree$ValDef): unit = {
-    //vparam.symbol().initialize();
-    ts.append(
-      make.ValDef(
-	vparam.pos, CASEACCESSOR, vparam.name, Tree.Empty,
-	make.Ident(vparam.pos, vparam.name)
-	.setSymbol(vparam.symbol())));
+  def addParamAccessor(ts: TreeList, vparam: Tree$ValDef): unit = {
+    if ((vparam.symbol().owner().constructorClass().flags & CASE) != 0)
+      vparam.mods = vparam.mods | PARAMACCESSOR;
+    if ((vparam.mods & PARAMACCESSOR) != 0)
+      ts.append(
+        make.DefDef(
+	  vparam.pos, (vparam.mods & ~PARAM) | STABLE, vparam.name,
+          Tree.AbsTypeDef_EMPTY_ARRAY, Tree.ValDef_EMPTY_ARRAY_ARRAY,
+          Tree.Empty,
+	  make.Ident(vparam.pos, vparam.name)
+	  .setSymbol(vparam.symbol())))
   }
 
   /** add case constructor, definitions value and access functions.
   */
-  def addCaseElements(body: Array[Tree], vparams: Array[Tree$ValDef]): Array[Tree] = {
+  def addParamAccessors(body: Array[Tree], vparams: Array[Tree$ValDef]): Array[Tree] = {
     val stats: TreeList = new TreeList();
     for (val i <- Iterator.range(0, vparams.length)) {
-      addCaseElement(stats, vparams(i));
+      addParamAccessor(stats, vparams(i));
     }
-    stats.append(body);
-    stats.toArray();
+    if (stats.length() == 0) body
+    else {
+      stats.append(body);
+      stats.toArray()
+    }
   }
 
   //debug

@@ -11,7 +11,7 @@ package scala.tools.scalai;
 
 import scalac.CompilerPhases;
 import scalac.CompilerCommand;
-import scalac.util.Reporter;
+import scala.tools.util.Reporter;
 import scalac.util.StringOptionParser;
 import scalac.util.BooleanOptionParser;
 import scalac.util.ScalaProgramArgumentParser;

@@ -181,12 +181,12 @@ object M5 {
 
 object M6 {
   trait Boolean {
-    def ifThenElse[a](def t: a)(def e: a): a;
+    def ifThenElse[a](t: => a)(e: => a): a;
 
     def ! : Boolean = ifThenElse[Boolean](new False())(new True());
 
-    def && (def x: Boolean): Boolean = ifThenElse[Boolean](x)(new False());
-    def || (def x: Boolean): Boolean = ifThenElse[Boolean](new True())(x);
+    def && (x: => Boolean): Boolean = ifThenElse[Boolean](x)(new False());
+    def || (x: => Boolean): Boolean = ifThenElse[Boolean](new True())(x);
 
     // !!! def == (x: Boolean): Boolean = ifThenElse[Boolean](x)(x.!);
     // !!! def != (x: Boolean): Boolean = ifThenElse[Boolean](x.!)(x);
@@ -196,9 +196,9 @@ object M6 {
     def >= (x: Boolean): Boolean = ifThenElse[Boolean](new True())(x.!);
   }
   class True() extends Boolean { // !!! class -> object
-    def ifThenElse[a](def t: a)(def e: a): a = t }
+    def ifThenElse[a](t: => a)(e: => a): a = t }
   class False() extends Boolean { // !!! class -> object
-    def ifThenElse[a](def t: a)(def e: a): a = e }
+    def ifThenElse[a](t: => a)(e: => a): a = e }
 }
 
 //############################################################################

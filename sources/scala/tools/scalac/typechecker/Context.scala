@@ -9,6 +9,7 @@ import scalac.symtab._;
 import scalac.ast._;
 import scalac.util.Names;
 import scalac.util.Name;
+import scalac.{Global => scalac_Global}
 
 package scala.tools.scalac.typechecker {
 
@@ -122,7 +123,13 @@ class Context {
 
     if (viewCache == null) {
       viewCache = outer.viewMeths;
-      if (scope != outer.scope) {
+      if (enclClass == this) {
+        val sym = owner.typeOfThis().lookup(Names.view);
+        if (sym.kind == VAL) {
+          addView(sym, owner.thisType().memberType(sym),
+                  scalac_Global.instance.treeGen.This(owner.pos, owner));
+        }
+      } else if (scope != outer.scope) {
         val e = scope.lookupEntry(Names.view);
         if (e.owner == scope && e.sym.kind == VAL)
 	  addView(e.sym, e.sym.getType(), Tree.Empty);

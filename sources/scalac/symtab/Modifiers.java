@@ -46,7 +46,8 @@ public interface Modifiers {
     int CAPTURED      = 0x01000000;   // variables is accessed from
                                       // nested function. Set by LambdaLift
     int INCONSTRUCTOR = 0x01000000;   // transient flag for Analyzer
-    int CASEACCESSOR  = 0x02000000;   // function is a case constructor
+    int PARAMACCESSOR = 0x02000000;   // for methods: is an access method for a val parameter
+                                      // for parameters: is a val parameter
 
     int ACCESSOR      = 0x04000000;   // function is an access function for a
                                       // value or variable
@@ -102,7 +103,7 @@ public interface Modifiers {
         }
 
         public static boolean isCaseAccessor(int flags) {
-            return (flags & CASEACCESSOR) != 0;
+            return (flags & PARAMACCESSOR) != 0;
         }
 
         public static boolean isInterface(int flags) {

@@ -3580,7 +3580,7 @@ abstract class BarYIf[Y] { class I        ; def f: I = {bar; null}; f; }
 
 object Test {
   var errors: Int = 0;
-  def test(name: String, def test: Any, count: Int, value: String) = {
+  def test(name: String, test: => Any, count: Int, value: String) = {
     try {
       Help.init;
       test;

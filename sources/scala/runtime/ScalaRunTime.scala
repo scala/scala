@@ -15,19 +15,19 @@ object ScalaRunTime {
 	if (r.exc == null) r.result.asInstanceOf[a] else throw r.exc;
     }
 
-    def Try[a](def block: a): Try[a] =
+    def Try[a](def/*!!!*/ block: a): Try[a] =
         new Try(ResultOrException.tryBlock(block));
 
-    def While(def cond: Boolean)(def body: Unit): Unit =
+    def While(def/*!!!*/ cond: Boolean)(def/*!!!*/ body: Unit): Unit =
       NativeLoop.loopWhile(cond, body);
 
     trait DoWhile {
-      def While(def condition: Boolean): Unit;
+      def While(def/*!!!*/ condition: Boolean): Unit;
     }
 
-    def Do(def command: Unit): DoWhile =
+    def Do(def/*!!!*/ command: Unit): DoWhile =
       new DoWhile {
-	def While(def condition: Boolean): Unit = {
+	def While(def/*!!!*/ condition: Boolean): Unit = {
 	  command;
           NativeLoop.loopWhile(condition, command);
         }

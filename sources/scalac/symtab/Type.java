@@ -2171,10 +2171,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     this.singleDeref().isSameAs(that)
                     ||
                     that.singleDeref().isSingletonType() &&
-                    this.isSameAs(that.singleDeref())
-                    ||
-                    deAlias(that) != that &&
-                    this.isSameAs(deAlias(that));
+                    this.isSameAs(that.singleDeref());
             default:
                 if (deAlias(this) != this)
                     return deAlias(this).isSameAs(that);
@@ -2190,10 +2187,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     this.singleDeref().isSameAs(that)
                     ||
                     that.singleDeref().isSingletonType() &&
-                    this.isSameAs(that.singleDeref())
-                    ||
-                    (deAlias(this) != this || deAlias(that) != that) &&
-                    deAlias(this).isSameAs(deAlias(that));
+                    this.isSameAs(that.singleDeref());
             case ThisType(Symbol sym1):
                 return sym.isModule()
                     && sym.moduleClass() == sym1
@@ -2203,10 +2197,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     this.singleDeref().isSameAs(that)
                     ||
                     that.singleDeref().isSingletonType() &&
-                    this.isSameAs(that.singleDeref())
-                    ||
-                    deAlias(this) != this &&
-                    deAlias(this).isSameAs(that);
+                    this.isSameAs(that.singleDeref());
             default:
                 if (deAlias(this) != this)
                     return deAlias(this).isSameAs(that);

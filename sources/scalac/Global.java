@@ -27,6 +27,7 @@ import scala.tools.util.ClassPath;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 import scala.tools.util.SourceReader;
+import scala.tools.util.Reporter;
 
 import scalac.ast.*;
 import scalac.ast.parser.*;

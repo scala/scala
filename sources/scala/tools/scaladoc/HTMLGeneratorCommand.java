@@ -15,11 +15,11 @@ import ch.epfl.lamp.util.HTMLPrinter;
 import ch.epfl.lamp.util.HTMLRepresentation;
 
 import scala.tools.util.ClassPath;
+import scala.tools.util.Reporter;
 
 import scalac.CompilerCommand;
 import scalac.util.BooleanOptionParser;
 import scalac.util.OptionParser;
-import scalac.util.Reporter;
 import scalac.util.StringOptionParser;
 import scalac.util.ScalaProgramArgumentParser;
 import scalac.util.Strings;

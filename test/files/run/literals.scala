@@ -15,7 +15,7 @@ object Test {
   case class GGG(i:int) {
     def \u21a1\u21a1( that:GGG ) = that;
   }
-  def check_success[a](name: String, def closure: a, expected: a): Unit = {
+  def check_success[a](name: String, closure: => a, expected: a): Unit = {
     out.print("test " + name);
     try {
       val actual: a = closure;

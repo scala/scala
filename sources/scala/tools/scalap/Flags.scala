@@ -38,7 +38,8 @@ object Flags {
     final val PARAM        = 0x00008000; // a (type) parameter of a method
     final val PACKAGE      = 0x00100000; // a java package
 
-    final val CASEACCESSOR = 0x02000000; // a case constructor
+    final val PARAMACCESSOR= 0x02000000; // for methods: is an access method for a val parameter
+                                         // for parameters: is a val parameter
     final val ACCESSOR     = 0x04000000; // an access function for a value/variable
     final val BRIDGE       = 0x08000000; // a bridge method.
 
