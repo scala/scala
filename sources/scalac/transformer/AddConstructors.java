@@ -51,14 +51,11 @@ import scalac.util.Debug;
 */
 
 public class AddConstructors extends Transformer {
-    public final static Name CTOR_N = Names.CONSTRUCTOR;
 
     // True iff we generate code for INT backend.
     protected final boolean forINT;
     // True iff we generate code for JVM backend.
     protected final boolean forJVM;
-    // True iff we generate code for MSIL backend.
-    protected final boolean forMSIL;
 
 
     protected final HashMap/*<Symbol, Symbol>*/ constructors;
@@ -69,50 +66,37 @@ public class AddConstructors extends Transformer {
         this.forINT = global.target == global.TARGET_INT;
         this.forJVM = (global.target == global.TARGET_JVM
                        || global.target == global.TARGET_JVM_BCEL);
-        this.forMSIL = global.target == global.TARGET_MSIL;
     }
 
     /** return new constructor symbol if it isn't already defined
      */
     Symbol getConstructor(Symbol classConstr) {
-	return getConstructor(classConstr,
-			      (((Type.MethodType)classConstr.info()).vparams),
-			      classConstr.constructorClass());
-    }
-
-    Symbol getConstructor(Symbol classConstr, Symbol[] paramSyms, Symbol owner) {
    	assert classConstr.isConstructor() :
    	    "Class constructor expected: " + Debug.show(classConstr);
-
+        Symbol owner = classConstr.constructorClass();
+        Symbol[] tparamSyms = classConstr.typeParams();
+        Symbol[] paramSyms = classConstr.valueParams();
 	Symbol constr = (Symbol) constructors.get(classConstr);
 	if (constr == null) {
 	    assert !owner.isInterface() : Debug.show(owner) + " is interface";
-            int flags = forJVM || forMSIL
-                ? classConstr.flags & (Modifiers.PRIVATE | Modifiers.PROTECTED)
-                : classConstr.flags;
+            int flags =
+                classConstr.flags & (Modifiers.PRIVATE | Modifiers.PROTECTED);
 	    constr =
-                new TermSymbol(classConstr.pos, CTOR_N, owner, flags);
+                new TermSymbol(classConstr.pos, classConstr.name, owner, flags);
 
 	    Type constrType = Type.MethodType
 		(paramSyms, forJVM ?
-		 global.definitions.UNIT_TYPE : owner.type()).erasure();
+		 global.definitions.UNIT_TYPE : owner.type());
+            if (tparamSyms.length != 0)
+                constrType = Type.PolyType(tparamSyms, constrType);
 
-	    constr.setInfo(constrType.erasure());
+	    constr.setInfo(constrType);
 	    constructors.put(classConstr, constr);
 	    constructors.put(constr, constr);
+            owner.members().enterOrOverload(constr);
 	}
 
 	return constr;
-    }
-
-    /** Return an array of symbols corresponding to the
-     *  parameters definitions.
-     */
-    Symbol[] getParamsSymbols(ValDef[] vparams) {
-	Symbol[] paramSyms = new Symbol[vparams.length];
-	for (int i = 0; i < paramSyms.length; i++)
-	    paramSyms[i] = vparams[i].symbol();
-	return paramSyms;
     }
 
     /** process the tree
@@ -120,10 +104,7 @@ public class AddConstructors extends Transformer {
     public Tree transform(Tree tree) {
 	final Symbol treeSym = tree.symbol();
 	switch (tree) {
-	case ClassDef(_, _, _, ValDef[][] vparams, _, Template impl):
-
-	    assert treeSym.name.isTypeName();
-
+	case ClassDef(_, _, _, _, _, Template impl):
 	    if (treeSym.isInterface())
 		return super.transform(tree);
 
@@ -136,17 +117,9 @@ public class AddConstructors extends Transformer {
 	    // the body of the class after the transformation
 	    final ArrayList classBody = new ArrayList();
 
-	    // the symbols of the parameters of the primary class constructor
-	    final Symbol[] paramSyms = getParamsSymbols(vparams[0]);
-
 	    // the Symbol of the new primary constructor
 	    final Symbol constrSym =
-		getConstructor(treeSym.primaryConstructor(), paramSyms, treeSym);
-
-	    // the scope of the class after the transformation
-	    final Scope classScope = new Scope();
-
-	    classScope.enterOrOverload(constrSym);
+		getConstructor(treeSym.primaryConstructor());
 
 	    assert constrSym.owner() == treeSym :
 		"Wrong owner of the constructor: \n\tfound: " +
@@ -175,19 +148,20 @@ public class AddConstructors extends Transformer {
 			break;
 
 		    // assign new symbols to the alternative constructors
-		    case DefDef(_, Name name, _,
-				ValDef[][] defvparams, _, Tree rhs):
-			assert sym.name == name;
+		    case DefDef(_, _, _, _, _, Tree rhs):
 			if (sym.isConstructor()) {
-			    sym = getConstructor
-				(sym, getParamsSymbols(defvparams[0]), treeSym);
-			    t = gen.DefDef(sym, rhs);
+                            // add result expression consistent with the
+                            // result type of the constructor
+                            Tree result = forJVM
+                                ? gen.mkUnitLit(t.pos)
+                                : gen.This(t.pos, treeSym);
+                            rhs = gen.mkBlock(new Tree[] { rhs, result });
+			    t = gen.DefDef(getConstructor(sym), rhs);
 			}
 			break;
 		    }
 		    // do not transform(t). It will be done at the end
 		    classBody.add(t);
-		    classScope.enterOrOverload(sym);
 		} else {
 		    // move class-level expressions into the constructor
 		    constrBody2.add(transform(impl.body[i]));
@@ -197,12 +171,19 @@ public class AddConstructors extends Transformer {
 	    // inline the call to the super constructor
             if ( !forINT || !treeSym.parents()[0].symbol().isJava()) {
 		switch (impl.parents[0]) {
+		case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] args):
+		    int pos = impl.parents[0].pos;
+		    Tree superConstr = gen.Select
+			(gen.Super(pos, treeSym),
+			 getConstructor(fun.symbol()));
+		    constrBody.add(gen.mkApplyTV(superConstr, transform(targs), transform(args)));
+		    break;
 		case Apply(Tree fun, Tree[] args):
 		    int pos = impl.parents[0].pos;
 		    Tree superConstr = gen.Select
 			(gen.Super(pos, treeSym),
 			 getConstructor(fun.symbol()));
-		    constrBody.add(gen.Apply(superConstr, transform(args)));
+		    constrBody.add(gen.mkApply_V(superConstr, transform(args)));
 		    break;
 		default:
                     throw Debug.abort("illegal case", impl.parents[0]);
@@ -224,7 +205,7 @@ public class AddConstructors extends Transformer {
                     assert module != Symbol.NONE :Debug.show(treeSym.module());
                     if (owner.isModuleClass() && owner.module().isStable()) {
                         constrBody.add(
-                            gen.Apply(
+                            gen.mkApply_V(
                                 gen.mkRef(tree.pos, module_eq),
                                 new Tree[] {gen.This(tree.pos, treeSym)}));
                     } else {
@@ -240,6 +221,8 @@ public class AddConstructors extends Transformer {
 	    // result type of the constructor
             if (! forJVM)
                 constrBody.add(gen.This(tree.pos, treeSym));
+            else
+                constrBody.add(gen.mkUnitLit(tree.pos));
             Tree constrTree = constrBody.size() > 1 ?
                 gen.Block((Tree[])constrBody.
 			  toArray(new Tree[constrBody.size()])):
@@ -247,18 +230,6 @@ public class AddConstructors extends Transformer {
 
 	    classBody.add(gen.DefDef(constrSym, constrTree));
 
-	    // strip off the class constructor from parameters
-	    switch (treeSym.primaryConstructor().info()) {
-	    case MethodType(_, Type result):
-		treeSym.primaryConstructor().
-		    updateInfo(Type.MethodType(Symbol.EMPTY_ARRAY, result));
-		break;
-	    default : assert false;
-	    }
-
-	    Type classType =
-		Type.compoundType(treeSym.parents(), classScope, treeSym);
-	    Symbol classSym = treeSym.updateInfo(classType);
 	    Tree[] newBody = (Tree[]) classBody.toArray(Tree.EMPTY_ARRAY);
 
 	    // transform the bodies of all members in order to substitute
@@ -266,18 +237,27 @@ public class AddConstructors extends Transformer {
 	    for (int i = 0; i < newBody.length - 1; i ++)
 		newBody[i] = transform(newBody[i]);
 
-	    return gen.ClassDef(classSym, impl.parents, impl.symbol(), newBody);
+	    return gen.ClassDef(treeSym, newBody);
 
 	// Substitute the constructor into the 'new' expressions
 	case New(Template(Tree[] baseClasses, _)):
 	    Tree base = baseClasses[0];
 	    switch (base) {
+	    case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] args):
+                return gen.New(
+                    tree.pos,
+                    gen.mkApplyTV(
+                        base.pos,
+                        gen.Ident(fun.pos, getConstructor(fun.symbol())),
+                        transform(targs),
+                        transform(args)));
 	    case Apply(Tree fun, Tree[] args):
-                return gen.New(copy.Apply
-			       (base,
-				gen.Ident(base.pos,
-					  getConstructor(fun.symbol())),
-				transform(args)));
+                return gen.New(
+                    tree.pos,
+                    gen.mkApply_V(
+                        base.pos,
+                        gen.Ident(fun.pos, getConstructor(fun.symbol())),
+                        transform(args)));
 	    default:
 		assert false;
 	    }
@@ -286,14 +266,22 @@ public class AddConstructors extends Transformer {
 	// Substitute the constructor aplication;
 	// this only occurs within constructors that terminate
 	// by a call to another constructor of the same class
+	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] args):
+	    Symbol constr = (Symbol)constructors.get(fun.symbol());
+	    if (constr != null)
+		return gen.mkApplyTV(
+                    tree.pos,
+                    gen.Select(fun.pos, gen.This(fun.pos, constr.owner()), constr),
+                    transform(targs),
+                    transform(args));
+	    break;
 	case Apply(Tree fun, Tree[] args):
 	    Symbol constr = (Symbol)constructors.get(fun.symbol());
 	    if (constr != null)
-		return gen.Apply(tree.pos,
-				 gen.Select(fun.pos,
-					    gen.This(fun.pos, constr.owner()),
-					    constr),
-				 transform(args));
+		return gen.mkApply_V(
+                    tree.pos,
+                    gen.Select(fun.pos, gen.This(fun.pos, constr.owner()), constr),
+                    transform(args));
 	    break;
 
 	} // switch(tree)

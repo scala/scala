@@ -34,8 +34,8 @@ public class CompilerPhases {
     public final PhaseDescriptor TAILCALL;
     public final PhaseDescriptor ADDINTERFACES;
     public final PhaseDescriptor EXPANDMIXIN;
-    public final PhaseDescriptor ERASURE;
     public final PhaseDescriptor ADDCONSTRUCTORS;
+    public final PhaseDescriptor ERASURE;
     public final PhaseDescriptor GENMSIL;
     public final PhaseDescriptor GENJVM;
     public final PhaseDescriptor GENJVM_BCEL;
@@ -119,16 +119,16 @@ public class CompilerPhases {
                 "expand mixins by code copying",
                 "expanded mixins",
                 scalac.transformer.ExpandMixinsPhase.class),
-            this.ERASURE = new PhaseDescriptor(
-                "erasure",
-                "type eraser",
-                "erased types",
-                scalac.transformer.ErasurePhase.class),
             this.ADDCONSTRUCTORS = new PhaseDescriptor(
                 "addconstructors",
                 "add explicit constructor for each class",
                 "added constructors",
                 scalac.transformer.AddConstructorsPhase.class),
+            this.ERASURE = new PhaseDescriptor(
+                "erasure",
+                "type eraser",
+                "erased types",
+                scalac.transformer.ErasurePhase.class),
             this.GENMSIL = new PhaseDescriptor(
                 "genmsil",
                 "generate MSIL code",

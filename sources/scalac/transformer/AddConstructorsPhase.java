@@ -15,7 +15,9 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.Unit;
-import scalac.checkers.*;
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
+import scalac.util.Debug;
 
 public class AddConstructorsPhase extends Phase {
 
@@ -36,19 +38,26 @@ public class AddConstructorsPhase extends Phase {
     //########################################################################
     // Public Methods
 
+    /** Applies this phase to the given type for the given symbol. */
+    public Type transformInfo(Symbol symbol, Type type) {
+        if (symbol.isConstructor()) {
+            switch (type) {
+            case PolyType(Symbol[] tparams, MethodType(_, Type result)):
+                result = Type.MethodType(Symbol.EMPTY_ARRAY, result);
+                return Type.PolyType(tparams, result);
+            case MethodType(_, Type result):
+                return Type.MethodType(Symbol.EMPTY_ARRAY, result);
+            default:
+                throw Debug.abort("illegal case", type);
+            }
+        }
+        return type;
+    }
+
     /** Applies this phase to the given compilation units. */
     public void apply(Unit[] units) {
         for (int i = 0; i < units.length; i++)
             new AddConstructors(global, constructors).apply(units[i]);
-    }
-
-    public Checker[] postCheckers(Global global) {
-        return new Checker[] {
-            new CheckSymbols(global),
-            new CheckTypes(global),
-            new CheckOwners(global),
-            new CheckNames(global)
-        };
     }
 
     //########################################################################
