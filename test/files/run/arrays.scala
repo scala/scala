@@ -108,8 +108,8 @@ object Test {
     if (!test0 || !test1) {
       val s0 = if (test0) "ok" else "KO";
       val s1 = if (test1) "ok" else "KO";
-      val s2 = String.valueOf(actual);
-      val s3 = String.valueOf(expected);
+      val s2 = actual.toString();
+      val s3 = expected.toString();
       throw new Error(s0 + " - " + s1 + ": " + s2 + " != " + s3);
     }
     checks = checks + 1;
