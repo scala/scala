@@ -3,6 +3,7 @@
 ##############################################################################
 # $Id$
 
+MLType.scala
 Comment.java
 DocModule.java
 HTMLGenerator.java
