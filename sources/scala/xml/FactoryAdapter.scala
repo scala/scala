@@ -94,6 +94,8 @@ abstract class FactoryAdapter
   def startDocument():Unit = {}
   */
 
+  val normalizeWhitespace = false;
+
   /** Characters.
   * @param ch
   * @param offset
@@ -101,20 +103,26 @@ abstract class FactoryAdapter
   */
    override def characters( ch:Array[char] , offset:int , length:int ):Unit = {
 
-        var ws:boolean = false;
         if (capture) {
-	  var i:int = offset;
-	  while (i < offset + length) {
-            if ( Character.isWhitespace( ch(i) ) ) {
-              if (!ws) {
-                buffer.append(' ');
-                ws = true;
+          if( normalizeWhitespace ) { // normalizing whitespace is not compliant, but useful */
+	    var i:int = offset;
+            var ws:boolean = false;
+	    while (i < offset + length) {
+              if ( Character.isWhitespace( ch(i) ) ) {
+                if (!ws) {
+                  buffer.append(' ');
+                  ws = true;
+                }
+              } else {
+                buffer.append(ch(i));
+                ws = false;
               }
-            } else {
-              buffer.append(ch(i));
-              ws = false;
+	      i = i+1;
             }
-	    i = i+1;
+          } else { // compliant:report every character
+
+              buffer.append( ch, offset, length );
+
           }
 	}
         //System.err.println( "after \""+buffer+"\"" );
