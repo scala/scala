@@ -10,11 +10,21 @@
 package scala.collection.immutable;
 
 
+object ListSet {
+	def Empty[A] = new ListSet[A];
+}
+
+/** This class implements immutable sets using a list-based data
+ *  structure. Instances of <code>ListSet</code> represent
+ *  empty sets; they can be either created by calling the constructor
+ *  directly, or by applying the function <code>ListSet.Empty</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 09/07/2003
+ */
 class ListSet[A] with Set[A, ListSet[A]] {
 
 	def size: Int = 0;
-
-    override def isEmpty: Boolean = true;
 
 	def contains(elem: A): Boolean = false;
 
@@ -32,7 +42,7 @@ class ListSet[A] with Set[A, ListSet[A]] {
 		override def contains(e: A) = (e == elem) || ListSet.this.contains(e);
 		override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e);
 		override def -(e: A): ListSet[A] = if (e == elem) ListSet.this else {
-			val y = ListSet.this - e; (new y.Node(e)) : ListSet[A]
+			val y = ListSet.this - e; (new y.Node(elem)): ListSet[A]
 		}
 		override def toList: List[A] = elem :: ListSet.this.toList;
 	}
