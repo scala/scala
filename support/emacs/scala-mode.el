@@ -2,17 +2,20 @@
 ;;; $Id$
 
 ;;; TODO
+;;; - make automatic indentation work in all cases
+;;; - support more Emacs variants (especially XEmacs)
 
 (require 'easymenu)
-;;(require 'newcomment)
 (require 'cl)
 (require 'regexp-opt)
 
 (defconst scala-mode-version "0.3 ($Revision$)")
 (defconst scala-bug-e-mail "Michel.Schinz@epfl.ch")
-(defconst scala-web-url "http://lamp.epfl.ch/scala/")
+(defconst scala-web-url "http://scala.epfl.ch/")
 
 ;; XEmacs compatibility
+;; (note that XEmacs is not supported currently, the function below
+;; only works around a single incompatibility).
 
 (defun scala-regexp-opt-charset (cset)
   (regexp-opt-charset (if (integerp ?a)
