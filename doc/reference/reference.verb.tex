@@ -189,6 +189,8 @@ inherited abstract members.
 translated to method calls of their operand.
 }
 
+% 16 Jul 2003 Regular pattern matching (Chapter 8)
+
 \subsection*{Status of This Document}
 
 The present document defines slightly more than what is implemented in
@@ -3066,18 +3068,6 @@ SimplePattern  \=::= \> varid [ '@' SimplePattern ]
 
  Patterns      \>::= \> Pattern {`,' Pattern}
 \end{verbatim}
-%% \syntax\begin{verbatim}
-%%   Pattern                 \=::= \= SimplePattern {Id SimplePattern}
-%% 			  \> |  \> varid `:' Type
-%% 			  \> |  \> `_' `:' Type
-%%   SimplePattern \>::= \> varid
-%%   	\>  | \> `_'
-%% 	\>  | \> literal
-%%       \>  | \> StableId {`(' [Patterns] `)'}
-%% 	\>  | \> `(' [Patterns] `)'
-%% 	\>  | \> `[' [Patterns] `]'
-%%   Patterns \>::= \> Pattern {`,' Pattern}
-%% \end{verbatim}
 
 A pattern is built from constants, constructors, variables and regular
 operators. Pattern matching tests whether a given value (sequence
@@ -4272,15 +4262,21 @@ grammar.
 
   Constr          \>::=\> StableId [TypeArgs] [`(' [Exprs] `)']  
 
-  Pattern         \>::=\> varid `:' Type1
-	          \>  |\> `_' `:' Type1
-		  \>  |\> SimplePattern {Id SimplePattern}
-  SimplePattern   \>::=\> varid
-                  \>  |\> `_'
-                  \>  |\> literal
-                  \>  |\> StableId [`(' [Patterns] `)']
-	          \>  |\> `(' [Pattern] `)'
-  Patterns        \>::=\> Pattern {`,' Pattern}
+  Pattern         \>::=  \= TreePattern { `|' TreePattern }
+
+  TreePattern     \>::=  \> varid `:' Type
+                  \> |   \> `_' `:' Type
+                  \> |   \> SimplePattern [ '*' | '?' | '+' ]
+                  \> |   \> SimplePattern { Id SimplePattern }
+
+  SimplePattern   \>::= \> varid [ '@' SimplePattern ]
+                  \> |  \> `_'
+                  \> |  \> literal
+                  \> |  \> StableId [ `(' [Patterns] `)' ]
+                  \> |  \> `(' Patterns `)'
+                  \> |  \> 
+
+  Patterns        \>::= \> Pattern {`,' Pattern}
 
   TypeParamClause    \>::=\> `[' TypeParam {`,' TypeParam} `]'
   FunTypeParamClause \>::=\> `[' TypeDcl {`,' TypeDcl} `]'
