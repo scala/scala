@@ -2,6 +2,7 @@
 .latest-*
 Makefile.private
 classes
+distribs
 lib
 objects
 tmp
