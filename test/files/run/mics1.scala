@@ -7,9 +7,9 @@ abstract class IntMap[a] {
 
 case class Empty[a]() extends IntMap[a];
 
-object mics1 {
+object Test {
 
-    def main(args: Array[String]) = {
+    def main(args: Array[String]): Unit = {
         val key = 2000;
         val map: IntMap[String] = new Empty[String];
 
