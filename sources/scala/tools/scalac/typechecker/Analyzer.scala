@@ -104,8 +104,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     if (sym.rawFirstInfo().isInstanceOf[SourceCompleter]) {
       sym.setInfo(Type.ErrorType);
       val kind = if (sym.name.isTermName()) "object " else "class ";
+      val prefix = if (sym.owner().isRoot()) "" else sym.owner().`type`().toString() + ".";
       throw new Type$Error("file " + unit.source + " does not define public " +
-			   kind + sym.fullName());
+			   kind + prefix + sym.name);
     } else {
       descr.newSources.add(unit);
     }

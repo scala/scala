@@ -437,8 +437,10 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	printType(tree);
 
       case Tree$Apply(fun, vargs) =>
-	if (fun.isInstanceOf[Tree$TypeTerm])
-	  print(fun.`type`.resultType().symbol().fullName().toString());
+	if (fun.isInstanceOf[Tree$TypeTerm]) {
+          val result = fun.`type`.resultType();
+	  print(Type.appliedType(result, Type.EMPTY_ARRAY).toString());
+        }
 	else
 	  print(fun);
 	printArray(vargs, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
