@@ -720,7 +720,7 @@ public class Definitions {
         SEQ_CLASS = getClass("scala.Seq");
         LIST_CLASS = getClass("scala.List");
         ARRAY_CLASS = getClass("scala.Array");
-        TYPE_CLASS = getClass("scala.Type");
+        TYPE_CLASS = getJVMClass("scala.Type");
 
         CLASSTYPE_CLASS = getJVMClass("scala.runtime.types.ClassType");
         JAVACLASSTYPE_CLASS = getJVMClass("scala.runtime.types.JavaClassType");
