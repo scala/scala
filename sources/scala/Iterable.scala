@@ -4,11 +4,12 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala;
 
 trait Iterable[+A] {
-	def elements: Iterator[A];
+    def elements: Iterator[A];
 }
