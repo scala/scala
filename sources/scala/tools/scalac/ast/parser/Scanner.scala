@@ -707,7 +707,8 @@ class Scanner(_unit: Unit) extends TokenData {
 	} else {
 	  bp = bp - 1; ch = CR
 	}
-      case _ => //Console.print(ch.asInstanceOf[char]);
+      case _ =>
+        //Console.print(ch.asInstanceOf[char]); // DEBUG
     }
     pos = Position.encode(cline, ccol);
   }
@@ -819,20 +820,17 @@ class Scanner(_unit: Unit) extends TokenData {
     xNext;
     xCheckScalaBlock
   }
-  /* return true if next character  starts a scala block */
+  /* return true and moves forward if next character starts a scala block */
   def xCheckScalaBlock:boolean = {
-    if( ch == '{' ) {
-      xNext;
-      xScalaBlock = ( ch != '{' );
-      //xSyntaxError("block detected, xScalaBlock = "+xScalaBlock);
-    }
+    xScalaBlock = ( ch == '{' ) && { xNext;( ch != '{' ) };
     return xScalaBlock;
   }
 
-  /** character data.
+  /** parse character data.
+  *   precondition: xScalaBlock == false
   */
   def xText:String = {
-
+    if( xScalaBlock ) throw new ApplicationError();
     //Console.println( "xScalaBlock="+xScalaBlock+" bp="+bp+" + ch="+ch);
     if( xCheckScalaBlock )
       return ""
