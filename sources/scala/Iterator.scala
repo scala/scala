@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -41,20 +41,94 @@ object Iterator {
     def next = { val c = str charAt i; i = i + 1; c };
   }
 
-  def range(lo: Int, end: Int) = new Iterator[Int] {
+  /** Create an iterator with elements
+   *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
+   *  where <code>e<sub>0</sub> = lo</code>
+   *  and <code>e<sub>i</sub> &lt; end</code>.
+   *
+   *  @param lo the start value of the iterator
+   *  @param end the end value of the iterator
+   *  @return the iterator starting at value <code>lo</code>.
+   */
+  def range(lo: Int, end: Int): Iterator[Int] =
+    range(lo, end, 1);
+
+  /** Create an iterator with elements
+   *  <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
+   *  where <code>e<sub>0</sub> = lo</code>
+   *  and <code>e<sub>i</sub> &lt; end</code>.
+   *
+   *  @param lo the start value of the iterator
+   *  @param end the end value of the iterator
+   *  @param step the increment value of the iterator
+   *  @return the iterator starting at value <code>lo</code>.
+   */
+  def range(lo: Int, end: Int, step: Int) = new Iterator[Int] {
     private var i = lo;
     def hasNext: Boolean =  i < end;
     def next: Int =
-      if (i < end) { i = i + 1 ; i - 1 } else error("next on empty iterator");
+      if (i < end) { val j = i; i = i + step; j } else error("next on empty iterator");
     def head: Int =
       if (i < end) i else error("head on empty iterator");
   }
 
-  def from(lo: Int) = new Iterator[Int] {
+  /** Create an iterator with elements
+   *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
+   *  where <code>e<sub>0</sub> = lo</code>
+   *  and <code>e<sub>i</sub> &lt; end</code>.
+   *
+   *  @param lo the start value of the iterator
+   *  @param end the end value of the iterator
+   *  @param step the increment function of the iterator
+   *  @return the iterator starting at value <code>lo</code>.
+   */
+  def range(lo: Int, end: Int, step: Int => Int) = new Iterator[Int] {
+    private var i = lo;
+    def hasNext: Boolean =  i < end;
+    def next: Int =
+      if (i < end) { val j = i; i = step(i); j } else error("next on empty iterator");
+    def head: Int =
+      if (i < end) i else error("head on empty iterator");
+  }
+
+  /** Create an iterator with elements
+   *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
+   *  where <code>e<sub>0</sub> = lo</code>.
+   *
+   *  @param lo the start value of the iterator
+   *  @return the iterator starting at value <code>lo</code>.
+   */
+  def from(lo: Int): Iterator[Int] =
+    from(lo, 1);
+
+  /** Create an iterator with elements
+   * <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
+   *  where <code>e<sub>0</sub> = lo</code>.
+   *
+   *  @param lo the start value of the iterator
+   *  @param step the increment value of the iterator
+   *  @return the iterator starting at value <code>lo</code>.
+   */
+  def from(lo: Int, step: Int) = new Iterator[Int] {
     private var i = 0;
     def hasNext: Boolean = true;
-    def next: Int = { i = i + 1 ; i - 1 }
+    def next: Int = { val j = i; i = i + step; j }
   }
+
+  /** Create an iterator with elements
+   *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
+   *  where <code>e<sub>0</sub> = lo</code>.
+   *
+   *  @param lo the start value of the iterator
+   *  @param step the increment function of the iterator
+   *  @return the iterator starting at value <code>lo</code>.
+   */
+  def from(lo: Int, step: Int => Int) = new Iterator[Int] {
+    private var i = 0;
+    def hasNext: Boolean = true;
+    def next: Int = { val j = i; i = step(i); j }
+  }
+
 }
 
 /** Iterators are data structures that allow to iterate over a sequence
