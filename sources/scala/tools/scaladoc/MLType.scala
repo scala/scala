@@ -1,7 +1,8 @@
 import scalac.symtab.Symbol;
-import scalac.symtab.Type;
+import scalac.symtab._;
 import scalac.symtab.Definitions;
 import scalac.Global;
+import scalac.util.Names;
 
 package scala.tools.scaladoc {
 
@@ -356,48 +357,109 @@ package scala.tools.scaladoc {
 
     type TC = ScalaTC;
 
+    /** Build a product type from a list of types. */
     def mkProd(l: List[MLType]): MLType = l match {
       case List() => UnitType
       case t :: List() => t
       case t :: ts => ProdType(t, mkProd(ts))
     }
 
-    def isUnit(t: Type) = t.isSameAs(global.definitions.UNIT_TYPE());
+    ////////////////////// TESTS /////////////////////
+
+    /** Test if this type represent the root prefix. */
+    def is_root_prefix(t: Type): boolean = t match {
+      case Type$ThisType(sym) => sym.isRoot()
+      case _ => false
+    }
+
+    /** Test if this type is the "scala" prefix. */
+    def is_scala_prefix(t: Type): boolean = t.widen() match {
+      case Type$TypeRef(pre, sym, args) =>
+        is_root_prefix(pre) && (sym.name == Names.scala)
+      case _ => false
+    }
+
+    /** Test if this type is "scala.Unit". */
+    def is_scala_Unit(t: Type): boolean = t.widen() match {
+      case Type$TypeRef(pre, sym, args) =>
+        is_scala_prefix(pre) && (sym.name == Names.Unit)
+      case _ => false
+    }
+
+    /** Test if this type is "scala.Tuple_n[T_1, ..., T_n]". */
+    def is_scala_Tuple(t: Type): boolean = t.widen() match {
+      case Type$TypeRef(pre, sym, args) =>
+        is_scala_prefix(pre) && (sym.name.startsWith(Names.Tuple))
+      case _ => false
+    }
+
+    /** Test if this type is "scala.Function_n[T_1, ..., T_n, T]". */
+    def is_scala_Function(t: Type): boolean = t.widen() match {
+      case Type$TypeRef(pre, sym, args) =>
+        is_scala_prefix(pre) && (sym.name.startsWith(Names.Function))
+      case _ => false
+    }
+
+    /** Test if this type is a local variable */
+    def is_localVariable(t: Type): boolean =
+      t.symbol().isAbstractType() && t.symbol().isParameter();
 
     case object TranslateExc extends Exception;
 
-//     def translate(t: Type): Option[MLType] = {
-//       def trans(env: Map[Symbol, int], t: Type): Option[MLType] = {
-//         t match {
-//           // scala.Unit
-//           case Type$TypeRef(pre, sym, args) if (isUnit(t)) =>
+    /** Try to translate a Scala type into an ML type. */
+    def translate(t: Type): Option[MLType] = {
 
-//           // scala.Tuple_n[T_1, ..., T_n]
-//           case Type$TypeRef(pre, sym, args) => ProdType(, )
+      // global renaming
+      var renaming: Map[Symbol, int] = ListMap.Empty;
+      def renamed(sym: Symbol) =
+        if (renaming.contains(sym))
+          renaming(sym)
+        else {
+          val len = renaming.size;
+          renaming = renaming.incl(Pair(sym, len));
+          len
+        }
 
-//           // scala.Function_n[T_1, ..., T_n, T]
-//           case Type$TypeRef(pre, sym, args) => FunType(, )
+      def listOfArray[a](r: Array[a]): List[a] =
+        List.fromArray(r, 0, r.length);
 
-//           // a (type parameter)
-//           case Type$TypeRef(pre, sym, args)
-//           if (sym.isAbstractType() && sym.isParameter()) => TypeVar(env(sym))
-
-//           // (T_1, ..., T_n) => T
-//           case Type$MethodType(vparams, result) =>
-//             FunType(mkProd(vparams map { x => trans(x.getType()) }), trans(result))
-
-//           // [a_1, ..., a_n] T
-//           case Type$PolyType(tparams, result) =>  trans(result)
-//           case _ => throw TranslateExc
-//         }
-//         try {
-//           Some(trans(ListMap.Empty, t))
-//         }
-//         catch {
-//           case _ => None
-//         }
-//     }
-
+      def trans(t: Type): MLType =
+        // scala.Unit
+        if (is_scala_Unit(t))
+          UnitType
+      // scala.Tuple_n[T_1, ..., T_n]
+        else if (is_scala_Tuple(t))
+          t match {
+            case Type$TypeRef(_, _, args) => mkProd(listOfArray(args) map trans)
+          }
+      // scala.Function_n[T_1, ..., T_n, T]
+        else if (is_scala_Function(t))
+          t match {
+            case Type$TypeRef(_, _, args) => {
+              val params = listOfArray(args);
+              FunType(mkProd(params.init map trans), trans(params.last))
+            }
+          }
+      // local variable
+        else if (is_localVariable(t))
+          TypeVar(renamed(t.symbol()))
+        else
+          t match {
+            // [a_1, ..., a_n] T
+            case Type$PolyType(tparams, result) => trans(result)
+            // (T_1, ..., T_n) => T
+            case Type$MethodType(vparams, result) =>
+              FunType(mkProd(listOfArray(vparams) map { x => trans(x.getType()) }), trans(result))
+            // Types that do not have ML equivalents.
+            case _ => throw TranslateExc
+          };
+      try {
+        Some(trans(t))
+      }
+      catch {
+        case _ => None
+      }
+    }
   }
 
   object stringML extends ML with Application {
@@ -411,24 +473,6 @@ package scala.tools.scaladoc {
     type TC = StringTC;
 
     val list = new TC("List");
-//     val t = unt -> (x(1) * at(list, x(2))) -> (x(3) * x(4) * unt);
-//     Console.println(t.toString());
-//     Console.println(normalForm(t).toString());
-//     Console.println(splitRewrite(0, t).toString());
-//     val u = t;
-//     Console.println(iso(unt)(unt).toString());
-//     Console.println(iso(t)(u).toString());
-//     Console.println(iso(t)(normalForm(t)).toString());
-//     val f1 = x(1);
-//     val f2 = x(1) -> x(2);
-//     val f3 = x(1) -> (x(2) -> x(3));
-//     Console.println(f1.toString());
-//     Console.println(flatten(f1).toString());
-//     Console.println(f2.toString());
-//     Console.println(flatten(f2).toString());
-//     Console.println(f3.toString());
-//     Console.println(flatten(f3).toString());
-//     Console.println(perms(List(1,2,3,4)).toString());
     val t = (at(list, x(11)) * (x(11) -> x(12))) -> at(list, x(12));
     val u = (x(13) -> x(14)) -> (at(list, x(13)) -> at(list, x(14)));
     printIso(t, u);

@@ -146,7 +146,7 @@ public class ScalaSearch {
     /** Function from Symbol to void.
      */
     public static abstract class SymFun {
-	abstract void apply(Symbol sym);
+	public abstract void apply(Symbol sym);
     }
 
     /** Apply a given function to all symbols below the given symbol
@@ -256,7 +256,7 @@ public class ScalaSearch {
 	final List packagesAcc = new LinkedList();
 	foreach(root,
 		new SymFun() {
-		    void apply(Symbol sym) {
+		    public void apply(Symbol sym) {
 			if (sym.isPackage())
 			    packagesAcc.add(sym);
 		    }
@@ -272,7 +272,7 @@ public class ScalaSearch {
 	final List classesAcc = new LinkedList();
 	foreach(root,
 		new SymFun() {
-		    void apply(Symbol sym) {
+		    public void apply(Symbol sym) {
 			if (sym.isTrait() && !sym.isModuleClass())
 			    traitsAcc.add(sym);
 			else if (sym.isClass() && !sym.isModuleClass())
@@ -329,7 +329,7 @@ public class ScalaSearch {
      */
     public static Map subTemplates(Symbol root, SymbolBooleanFunction isDocumented) {
 	final Map subs = new HashMap();
-	foreach(root, new SymFun() { void apply(Symbol sym) {
+	foreach(root, new SymFun() { public void apply(Symbol sym) {
 	    if (sym.isClass() || sym.isModule()) {
 		Type[] parents = sym.moduleClass().parents();
 		for (int i = 0; i < parents.length; i++) {
@@ -359,7 +359,7 @@ public class ScalaSearch {
     public static Pair index(Symbol root, final SymbolBooleanFunction isDocumented) {
 	final Map index = new HashMap();
 	// collecting
-	foreach(root, new SymFun() { void apply(Symbol sym) {
+	foreach(root, new SymFun() { public void apply(Symbol sym) {
 	    String name = sym.nameString();
 	    if (name.length() > 0) {
 		char ch = Character.toUpperCase(name.charAt(0));

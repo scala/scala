@@ -369,17 +369,10 @@ public class HTMLGenerator {
      * Generates the HTML pages.
      */
     protected void apply() {
+
         if (! checkOutpath())
             return;
-        /*
-        // xhtml DTD for validating comments (could be removed after).
-        for(int i = 0; i < HTML_DTD.length; i++)
-            createResource(HTML_DTD[i], "resources");
-        // HTML validator creation
-        String dtdFile =
-            directory.getAbsolutePath() + File.separator +
-            "resources" + File.separator + HTML_DTD[0];
-        */
+
         this.xhtml = new HTMLValidator(getResourceURL(HTML_DTD[0]));
 
         // page with list of packages
@@ -430,6 +423,7 @@ public class HTMLGenerator {
                 System.out.println(e);
             }
         }
+
     }
 
     /**

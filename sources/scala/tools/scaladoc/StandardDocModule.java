@@ -39,8 +39,7 @@ public class StandardDocModule {
      * ..
      */
     public void apply() {
-	HTMLGenerator.apply(global);
-	//Query.apply(global);
+        HTMLGenerator.apply(global);
     }
 
     /**
