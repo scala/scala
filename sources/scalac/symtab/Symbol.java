@@ -496,6 +496,11 @@ public abstract class Symbol implements Modifiers, Kinds {
              owner.isLocalClass());
     }
 
+    /** Is this symbol an instance initializer? */
+    public boolean isInitializer() {
+        return false;
+    }
+
     /** Is this symbol a constructor? */
     public boolean isConstructor() {
         return false;
@@ -1333,9 +1338,14 @@ public class TermSymbol extends Symbol {
         else return super.fullName();
     }
 
+    /** Is this symbol an instance initializer? */
+    public boolean isInitializer() {
+        return clazz == null && name == Names.CONSTRUCTOR;
+    }
+
     /** Is this symbol a constructor? */
     public boolean isConstructor() {
-        return name == Names.CONSTRUCTOR;
+        return clazz != null && name == Names.CONSTRUCTOR;
     }
 
     /** Return a fresh symbol with the same fields as this one.
