@@ -9,7 +9,7 @@
 
 package scala.xml;
 
-
+import scala.collection.immutable ;
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML
  *  representations
  * @author Burak Emir
@@ -23,11 +23,12 @@ case class Text( text:String ) extends Node {
   def label    = "#PCDATA";
 
   /** always empty */
-  final def attribute = Nil;
+  final def attribute = immutable.TreeMap.Empty[String,String];
 
   /** always empty */
   final def child = Nil;
 
+  /** hashcode for this Text */
   override def hashCode() = text.hashCode();
 
   /** returns text, with some characters escaped according to XML spec */

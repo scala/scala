@@ -7,32 +7,19 @@
 ** $Id$
 \*                                                                      */
 
-
 package scala.xml;
 
-import scala.collection.mutable.HashMap;
+import scala.collection.immutable;
 
-
-/** The case class <code>Elem</code> implements...
+/** The case class <code>Elem</code> implements the Node trait,
+ *  providing an immutable data object representing an XML element.
  *
  *  @author  Burak Emir
  *  @version 1.0, 26/04/2004
  */
-case class Elem(label: String, child: Node*) extends Node {
+case class Elem( label: String, attribute:immutable.Map[String,String], child: Node*) extends Node {
 
-  def similar(x: Any) = x match {
-    case that: Node => (label == that.label) && child.equals(that.child)
-    // sameElements
-    case _ => false
-  }
-
-  def `@` = new HashMap[String, String]();
-
-  /** the attributes axis - default is Nil
-   *
-   *  @return a list
-   */
-  def attribute: Seq[Pair[String, String]] = `@`.toList;
+  def this(label: String, child: Node*) = this(label,immutable.ListMap.Empty[String,String],child:_*);
 
   /** Return a new element with updated attributes
    *
@@ -40,13 +27,14 @@ case class Elem(label: String, child: Node*) extends Node {
    *  @return a new symbol with updated attributes
    */
   final def %(attrs: Seq[Pair[String, String]]): Elem = {
-    val newmap = new HashMap[String, String]();
-    for ( val p <- `@`.elements ) { newmap += p._1 -> p._2 };
-    for ( val p <- attrs )        { newmap += p._1 -> p._2 };
-    new Elem(label, child:_*) {
-      override def `@` = newmap;
-      override def attribute = `@`.toList;
+    var newmap = new immutable.TreeMap[String, String]();
+    for ( val p <- attribute.elements ) {
+      newmap = newmap.update( p._1, p._2 )
     }
+    for ( val p <- attrs ) {
+      newmap = newmap.update( p._1, p._2 )
+    }
+    return Elem( label, newmap, child:_* )
   }
 
   /** Return a new symbol with updated attribute
@@ -55,13 +43,12 @@ case class Elem(label: String, child: Node*) extends Node {
    *  @return a new symbol with updated attribute
    */
   final def %(attr: Pair[String, String]): Elem = {
-    val newmap = new HashMap[String, String]();
-    for ( val p <- `@`.elements ) { newmap += p._1 -> p._2 };
-    newmap += attr._1 -> attr._2;
-    new Elem(label, child:_*) {
-      override def `@` = newmap;
-      override def attribute = `@`.toList;
+    var newmap = new immutable.TreeMap[String, String]();
+    for ( val p <- attribute.elements ) {
+      newmap = newmap.update( p._1, p._2 )
     }
+    newmap = newmap.update( attr._1, attr._2 );
+    return Elem( label, newmap, child:_* )
   }
 
 }

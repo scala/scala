@@ -19,26 +19,27 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
    *  of all elements of this sequence that are labelled with "foo".
    *  Use /'_ as a wildcard. The document order is preserved.
    */
-  def \(that: Symbol):NodeSeq = {
-    that.name match {
+  def \ (that: String):NodeSeq = {
+    that match {
       case "_" =>
         val it = elements.flatMap { x:Node => x.child.elements };
         new NodeSeq( it.toList );
     case _   =>
         val list = elements.flatMap( y =>
-          y.child.elements.filter{ z:Node => z.label == that.name }).toList;
+          y.child.elements.filter{ z:Node => z.label == that }).toList;
       new NodeSeq( list );
     }
   }
 
-  def \\( that:Symbol ):NodeSeq = {
-    val it = elements.flatMap { x:Node => x.child.elements };
+  def \\ ( that:String ):NodeSeq = {
     val list = (elements.flatMap { x:Node => x.descendant_or_self.elements }).toList;
-    that.name match {
+    that match {
       case "_" => new NodeSeq( list );
-      case _ => new NodeSeq( list.filter { z:Node => z.label == that.name });
+      case _ => new NodeSeq( list.filter { z:Node => z.label == that });
     }
   }
 
-  override def toString() = theSeq.elements.foldLeft ("") { (s:String,x:Node) => s + x.toString() }
+  override def toString() = theSeq.elements.foldLeft ("") {
+    (s:String,x:Node) => s + x.toString()
+  }
 }

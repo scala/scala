@@ -333,4 +333,29 @@ abstract class FactoryAdapter
     } // loadXML
 
 
+
+  /** loads XML from given file */
+  def loadFile( file:File ):Node = loadXML( new InputSource(
+      FileInputStream( file )
+  ));
+
+  /** loads XML from given file descriptor */
+  def loadFile( fileDesc:FileDescriptor ):Node = loadXML( new InputSource(
+      FileInputStream( fileDesc )
+  ));
+
+  /** loads XML from given file */
+  def loadFile( fileName:String ):Node = loadXML( new InputSource(
+    FileInputStream( fileName )
+  ));
+
+  /** loads XML from given InputStream */
+  def load( is:InputStream ):Node = loadXML( new InputSource( is ));
+
+  /** loads XML from given Reader */
+  def load( reader:Reader ):Node = loadXML( new InputSource( reader ));
+
+  /** loads XML from given sysID */
+  def load( sysID:String ):Node = loadXML( new InputSource( sysID ));
+
 }

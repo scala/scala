@@ -10,26 +10,31 @@
 package scala.xml;
 
 import scala.collection.immutable ;
-/** an XML node for text (PCDATA). Used in both non-bound and bound XML
- *  representations
+
+/** an XML node for comments.
+ *
  * @author Burak Emir
- * @param text the text contained in this node
+ * @param text text contained in this node, may not contain "--"
 **/
 
-case class EntityRef( entityName:String ) extends Node {
-  /** the constant "#ENTITY"
-  */
-  def label    = "#ENTITY";
+case class Comment( text:String ) extends Node {
+
+  if( text.indexOf("--" ) != -1 )
+    throw new IllegalArgumentException("text containts \"--\"");
+
+  /** the constant "#REM" */
+  def label    = "#REM";
 
   /** always empty */
-  final def attribute = immutable.TreeMap.Empty[String,String];
+  final def attribute = Node.NoAttributes;
 
   /** always empty */
   final def child = Nil;
 
-  override def hashCode() = entityName.hashCode();
+  /** hashcode for this Comment */
+  override def hashCode() = text.hashCode();
 
-  /** returns text, with some characters escaped according to XML spec */
-  final override def toString():String = "&"+entityName+";";
+  /** returns "<!--"+text+"-->" */
+  final override def toString() = "<!--"+text+"-->";
 
 }
