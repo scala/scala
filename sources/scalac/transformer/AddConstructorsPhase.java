@@ -12,7 +12,7 @@ package scalac.transformer;
 
 import java.util.HashMap;
 
-//import scala.compiler.*;
+import scalac.checkers.*;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
@@ -37,5 +37,14 @@ public class AddConstructorsPhase extends PhaseDescriptor {
 
     public Phase createPhase(Global global) {
 	return new AddConstructors(global, this, constructors);
+    }
+
+    public Checker[] postCheckers(Global global) {
+        return new Checker[] {
+            new CheckSymbols(global),
+            new CheckTypes(global),
+            new CheckOwners(global),
+	    new CheckNames(global)
+        };
     }
 }

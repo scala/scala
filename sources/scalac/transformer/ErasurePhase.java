@@ -19,6 +19,7 @@ import scalac.checkers.Checker;
 import scalac.checkers.CheckOwners;
 import scalac.checkers.CheckSymbols;
 import scalac.checkers.CheckTypes;
+import scalac.checkers.CheckNames;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
@@ -84,7 +85,8 @@ public class ErasurePhase extends PhaseDescriptor {
         return new Checker[] {
             new CheckSymbols(global),
             new CheckTypes(global),
-            new CheckOwners(global)
+            new CheckOwners(global),
+	    new CheckNames(global)
         };
     }
 }

@@ -36,7 +36,8 @@ public class AddAccessorsPhase extends PhaseDescriptor {
         return new Checker[] {
             new CheckSymbols(global),
             new CheckTypes(global),
-            new CheckOwners(global)
+            new CheckOwners(global),
+	    new CheckNames(global)
         };
     }
 }

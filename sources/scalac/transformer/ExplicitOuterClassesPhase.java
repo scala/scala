@@ -11,6 +11,7 @@
 package scalac.transformer;
 
 import scalac.*;
+import scalac.checkers.*;
 
 public class ExplicitOuterClassesPhase extends PhaseDescriptor {
     public String name () {
@@ -29,11 +30,12 @@ public class ExplicitOuterClassesPhase extends PhaseDescriptor {
         return new ExplicitOuterClasses(global, this);
     }
 
-//     public Checker[] postCheckers(Global global) {
-//         return new Checker[] {
-//             new CheckSymbols(global),
-//             new CheckTypes(global),
-//             new CheckOwners(global)
-//         };
-//     }
+    public Checker[] postCheckers(Global global) {
+        return new Checker[] {
+            new CheckSymbols(global),
+            new CheckTypes(global),
+            new CheckOwners(global),
+	    new CheckNames(global)
+        };
+    }
 }

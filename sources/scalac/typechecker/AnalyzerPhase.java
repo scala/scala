@@ -97,11 +97,10 @@ public class AnalyzerPhase extends PhaseDescriptor {
 
     public Checker[] postCheckers(Global global) {
         return new Checker[] {
-	    /* todo: uncomment
             new CheckSymbols(global),
             new CheckTypes(global),
-            new CheckOwners(global)
-	    */
+            new CheckOwners(global),
+	    new CheckNames(global)
         };
     }
 }
