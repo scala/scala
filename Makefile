@@ -53,8 +53,7 @@ FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.java.tmpl
 
 TUPLE_PREFIX		 = $(LIBRARY_ROOT)
 TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_FILES))
-TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.tmpl
-TUPLE_RULES		 = $(TUPLE_PREFIX)/Tuple.scm
+TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.scala.tmpl
 
 # meta programming
 META_ROOT		 = $(PROJECT_SOURCEDIR)/meta
@@ -199,7 +198,6 @@ clean		: fastclean
 
 distclean	: clean
 	$(RM) .latest-*
-	$(RM) $(TUPLE_FILES)
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
 	$(RM) $(PROJECT_JAR_ARCHIVE)
@@ -279,8 +277,9 @@ $(FUNCTION_FILES)	: .latest-meta $(FUNCTION_TEMPLATE)
 	$(RM) .latest-generate
 	@$(make) generate
 
-$(TUPLE_FILES): $(TUPLE_TEMPLATE) $(TUPLE_RULES)
-	$(TEMPLATE_EXPANDER) $(TUPLE_RULES) $(TUPLE_TEMPLATE) $@
+$(TUPLE_FILES)		: .latest-meta $(TUPLE_TEMPLATE)
+	$(RM) .latest-generate
+	@$(make) generate
 
 %			: .latest-meta %.tmpl
 	$(RM) .latest-generate
