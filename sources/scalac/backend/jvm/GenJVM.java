@@ -292,6 +292,7 @@ class GenJVM {
                 case NOT: case OR : case XOR: case AND:
                 case LSL: case LSR: case ASR:
                     Tree[] allArgs = extractPrimitiveArgs((Tree.Apply)tree);
+                    allArgs[0] = unbox(allArgs[0]);
                     JType resType = typeStoJ(tree.type);
                     genArithPrim(ctx, prim, allArgs, resType, expectedType);
                     generatedType = resType;
@@ -668,14 +669,28 @@ class GenJVM {
                 Tree[] allArgs = extractPrimitiveArgs((Tree.Apply)tree);
 
                 switch (prim) {
-                case ID: case EQ: case NE: case LT: case LE: case GE: case GT:
+                case ID: case EQ: case NE:
                     assert allArgs.length == 2;
+                    Tree unbox1 = unbox(allArgs[0]);
+                    Tree unbox2 = unbox(allArgs[1]);
+                    if (!getMaxType(unbox1, unbox2).isReferenceType()) {
+                        allArgs[0] = unbox1;
+                        allArgs[1] = unbox2;
+                        genCompPrim(ctx, prim, allArgs, target, when);
+                    } else {
+                        genEqPrim(ctx, prim, allArgs, target, when);
+                    }
+                    return;
+
+                case LT: case LE: case GE: case GT:
+                    assert allArgs.length == 2;
+                    allArgs[0] = unbox(allArgs[0]);
                     genCompPrim(ctx, prim, allArgs, target, when);
                     return;
 
                 case ZNOT:
                     assert allArgs.length == 1;
-                    genCond(ctx, allArgs[0], target, !when);
+                    genCond(ctx, unbox(allArgs[0]), target, !when);
                     return;
 
                 case ZOR:
@@ -683,11 +698,11 @@ class GenJVM {
                     JCode.Label afterLabel = ctx.code.newLabel();
                     if (when ^ (prim == Primitive.ZAND)) {
                         // x || y jump if true  -or-  x && y jump if false
-                        genCond(ctx, allArgs[0], target, when);
+                        genCond(ctx, unbox(allArgs[0]), target, when);
                         genCond(ctx, allArgs[1], target, when);
                     } else {
                         // x || y jump if false  -or-  x && y jump if true
-                        genCond(ctx, allArgs[0], afterLabel, !when);
+                        genCond(ctx, unbox(allArgs[0]), afterLabel, !when);
                         genCond(ctx, allArgs[1], target, when);
                     }
                     afterLabel.anchorToNext();
@@ -789,49 +804,23 @@ class GenJVM {
     protected JLocalVariable eqEqTempVar;
 
     /**
-     * Generate code for the given comparison primitive, applied on
-     * the given arguments.
+     * Generate code for the given equality primitive, applied on the
+     * given arguments.
      */
-    protected void genCompPrim(Context ctx,
-                               Primitive prim,
-                               Tree[] args,
-                               JCode.Label target,
-                               boolean when) {
+    protected void genEqPrim(Context ctx,
+                             Primitive prim,
+                             Tree[] args,
+                             JCode.Label target,
+                             boolean when) {
         JType maxType = getMaxType(args);
-        int maxTypeIdx = getTypeIndex(maxType);
-        int intTypeIdx = getTypeIndex(JType.INT);
-        boolean intCompareWithZero = false;
-        // Generate code for all arguments, while detecting
-        // comparisons with 0, which can be optimised.
-        for (int i = 0; i < args.length; ++i) {
-            boolean isIntZero = false;
-            if (maxTypeIdx <= intTypeIdx) {
-                switch (args[i]) {
-                case Literal(Object val):
-                    int intVal;
-                    if (val instanceof Number)
-                        intVal = ((Number)val).intValue();
-                    else if (val instanceof Character)
-                        intVal = ((Character)val).charValue();
-                    else if (val instanceof Boolean)
-                        intVal = ((Boolean)val).booleanValue() ? 1 : 0;
-                    else
-                        throw Debug.abort("unknown literal", val);
-                    if (intVal == 0) {
-                        isIntZero = true;
-                        if (i == 0) prim = prim.swap();
-                    }
-                }
-            }
-            if (intCompareWithZero || !isIntZero)
-                genLoad(ctx, args[i], maxType);
-            intCompareWithZero |= isIntZero;
-        }
+        assert maxType.isReferenceType(): args[0]+" - "+args[1]+" : "+maxType;
+        // Generate code for all arguments
+        for (int i = 0; i < args.length; ++i) genLoad(ctx, args[i], maxType);
 
         if (prim == Primitive.ID) {
             if (when) ctx.code.emitIF_ACMPEQ(target);
             else ctx.code.emitIF_ACMPNE(target);
-        } else if (maxType.isReferenceType()) {
+        } else {
             // Comparison between two references. We inline the code
             // for the predefined (and final) "=="/"!=" operators,
             // which check for null values and then forward the call
@@ -869,7 +858,51 @@ class GenJVM {
             else
                 ctx.code.emitIFEQ(target);
             afterLabel.anchorToNext();
-        } else if (maxTypeIdx <= intTypeIdx && !intCompareWithZero) {
+        }
+    }
+
+    /**
+     * Generate code for the given comparison primitive, applied on
+     * the given arguments.
+     */
+    protected void genCompPrim(Context ctx,
+                               Primitive prim,
+                               Tree[] args,
+                               JCode.Label target,
+                               boolean when) {
+        JType maxType = getMaxType(args);
+        assert !maxType.isReferenceType(): args[0]+" - "+args[1]+" : "+maxType;
+        int maxTypeIdx = getTypeIndex(maxType);
+        int intTypeIdx = getTypeIndex(JType.INT);
+        boolean intCompareWithZero = false;
+        // Generate code for all arguments, while detecting
+        // comparisons with 0, which can be optimised.
+        for (int i = 0; i < args.length; ++i) {
+            boolean isIntZero = false;
+            if (maxTypeIdx <= intTypeIdx) {
+                switch (args[i]) {
+                case Literal(Object val):
+                    int intVal;
+                    if (val instanceof Number)
+                        intVal = ((Number)val).intValue();
+                    else if (val instanceof Character)
+                        intVal = ((Character)val).charValue();
+                    else if (val instanceof Boolean)
+                        intVal = ((Boolean)val).booleanValue() ? 1 : 0;
+                    else
+                        throw Debug.abort("unknown literal", val);
+                    if (intVal == 0) {
+                        isIntZero = true;
+                        if (i == 0) prim = prim.swap();
+                    }
+                }
+            }
+            if (intCompareWithZero || !isIntZero)
+                genLoad(ctx, args[i], maxType);
+            intCompareWithZero |= isIntZero;
+        }
+
+        if (maxTypeIdx <= intTypeIdx && !intCompareWithZero) {
             // Comparison between ints, no zeros involved
             switch (maybeNegatedPrim(prim, !when)) {
             case LT: ctx.code.emitIF_ICMPLT(target); break;
@@ -1117,9 +1150,8 @@ class GenJVM {
      * represented by the given function call.
      */
     protected Tree[] extractPrimitiveArgs(Tree.Apply call) {
-        Tree[] allArgs = new Tree[call.args.length + 1];
-        allArgs[0] = unbox(((Tree.Select)(call.fun)).qualifier);
-        System.arraycopy(call.args, 0, allArgs, 1, call.args.length);
+        Tree[] allArgs = Tree.cloneArray(1, call.args);
+        allArgs[0] = ((Tree.Select)(call.fun)).qualifier;
         return allArgs;
     }
 
@@ -1421,6 +1453,11 @@ class GenJVM {
             }
         }
         return maxType;
+    }
+    protected JType getMaxType(Tree tree1, Tree tree2) {
+        JType type1 = typeStoJ(tree1.type);
+        JType type2 = typeStoJ(tree2.type);
+        return getTypeIndex(type1) > getTypeIndex(type2) ? type1 : type2;
     }
 
     /// Line numbers
