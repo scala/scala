@@ -78,6 +78,11 @@ public class Position {
         return position & COLUMN_MASK;
     }
 
+    /** Returns a string representation of the encoded position. */
+    public static String toString(int position) {
+        return line(position) + ":" + column(position);
+    }
+
     //########################################################################
     // Private Fields
 
