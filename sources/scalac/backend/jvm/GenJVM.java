@@ -8,24 +8,24 @@
 
 package scalac.backend.jvm;
 
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.*;
+
+import ch.epfl.lamp.fjbg.*;
+import ch.epfl.lamp.util.Pair;
 import ch.epfl.lamp.util.Position;
 
 import scalac.*;
-import scalac.backend.*;
-import scalac.util.*;
-import scalac.ast.*;
+import scalac.ast.Tree;
 import scalac.atree.AConstant;
+import scalac.backend.*;
 import scalac.symtab.*;
 import scalac.symtab.classfile.ClassfileConstants;
 import scalac.symtab.classfile.Pickle;
 import scalac.transformer.*;
+import scalac.util.*;
 
-import ch.epfl.lamp.util.Pair;
-
-import ch.epfl.lamp.fjbg.*;
-
-import java.util.*;
-import java.io.*;
 
 /* Several things which are done here should in fact be done in
  * previous phases, namely:
@@ -59,6 +59,9 @@ class GenJVM {
     protected final static String JAVA_LANG_OBJECT = "java.lang.Object";
     protected final static String JAVA_LANG_STRING = "java.lang.String";
     protected final static String JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
+    protected final static String JAVA_RMI_REMOTE = "java.rmi.Remote";
+    protected final static String JAVA_RMI_REMOTEEXCEPTION = "java.rmi.RemoteException";
+
     protected final static String SCALA_RUNTIME_RUNTIME = "scala.runtime.RunTime";
     protected final static String SCALA_UNIT = "scala.Unit";
     protected final static String SCALA_UNIT_VALUE = "UNIT_VAL";
@@ -81,6 +84,8 @@ class GenJVM {
     protected final JObjectType SCALA_UNIT_T =
         new JObjectType(SCALA_UNIT);
 
+    protected final Symbol JAVA_RMI_REMOTE_CLASS;
+
     protected final Global global;
     protected final Definitions defs;
     protected final Primitives prims;
@@ -96,6 +101,8 @@ class GenJVM {
 
         initTypeMap();
         initArithPrimMap();
+
+        JAVA_RMI_REMOTE_CLASS = defs.getClass(Name.fromString(JAVA_RMI_REMOTE));
     }
 
     /// Code generation
@@ -1620,7 +1627,9 @@ class GenJVM {
                                         interfaceNames,
                                         ctx.sourceFileName);
 
-        return ctx.withClass(cls, cSym.isModuleClass() && ctx.clazz == null);
+        return ctx.withClass(cls,
+                             cSym.isModuleClass() && ctx.clazz == null,
+                             cSym.isSubClass(JAVA_RMI_REMOTE_CLASS));
     }
 
     protected HashSet seenClasses = new HashSet();
@@ -1679,6 +1688,26 @@ class GenJVM {
                                                             "Bridge",
                                                             new byte[]{}));
 
+        if (ctx.isRemote && mSym.isPublic()) {
+            // (see http://java.sun.com/docs/books/vmspec/html/ClassFile.doc.html#3129)
+            // Exceptions_attribute {
+            // ..
+            // u2 number_of_exceptions;
+    	    // u2 exception_index_table[number_of_exceptions];
+            // }
+            JConstantPool cp = ctx.clazz.getConstantPool();
+            int reInx = cp.addClass(JAVA_RMI_REMOTEEXCEPTION);
+            ByteBuffer contents = ByteBuffer.allocate(4); // u2 + u2[1]
+            contents.putShort((short) 1);
+            contents.putShort((short) reInx);
+            global.log("adding 'Exceptions_attribute' " + contents.toString()
+                       + " for remote method " + mSym.name.toString());
+            method.addAttribute(fjbgContext.JOtherAttribute(ctx.clazz,
+                                                            method,
+                                                            "Exceptions",
+                                                            contents.array()));
+        }
+
         return ctx.withMethod(method, locals, useWideJumps);
     }
 
@@ -1729,9 +1758,10 @@ class Context {
     public final Map/*<Symbol,Pair<JCode.Label,Tree[]>>*/ labels;
     public final boolean useWideJumps;
     public final boolean isModuleClass;
+    public final boolean isRemote;
 
     public final static Context EMPTY =
-        new Context(null, null, null, null, null, false, false);
+        new Context(null, null, null, null, null, false, false, false);
 
     private Context(String sourceFileName,
                     JClass clazz,
@@ -1739,7 +1769,8 @@ class Context {
                     Map locals,
                     Map labels,
                     boolean useWideJumps,
-                    boolean isModuleClass) {
+                    boolean isModuleClass,
+                    boolean isRemote) {
         this.sourceFileName = sourceFileName;
         this.clazz = clazz;
         this.method = method;
@@ -1751,20 +1782,29 @@ class Context {
         this.labels = labels;
         this.useWideJumps = useWideJumps;
         this.isModuleClass = isModuleClass;
+        this.isRemote = isRemote;
     }
 
     public Context withSourceFileName(String sourceFileName) {
-        return new Context(sourceFileName, null, null, null, null, false, false);
+        return new Context(sourceFileName,
+                           null,
+                           null,
+                           null,
+                           null,
+                           false,
+                           false,
+                           false);
     }
 
-    public Context withClass(JClass clazz, boolean isModuleClass) {
+    public Context withClass(JClass clazz, boolean isModuleClass, boolean isRemote) {
         return new Context(this.sourceFileName,
                            clazz,
                            null,
                            null,
                            null,
                            false,
-                           isModuleClass);
+                           isModuleClass,
+                           isRemote);
     }
 
     public Context withMethod(JMethod method, Map locals, boolean useWideJumps) {
@@ -1775,6 +1815,7 @@ class Context {
                            locals,
                            new HashMap(),
                            useWideJumps,
-                           this.isModuleClass);
+                           this.isModuleClass,
+                           this.isRemote);
     }
 }
