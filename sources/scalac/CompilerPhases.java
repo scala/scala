@@ -32,6 +32,7 @@ public abstract class CompilerPhases {
     public final PhaseDescriptor ADDACCESSORS;
     public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDCONSTRUCTORS;
+    public final PhaseDescriptor TYPESASVALUES;
     public final PhaseDescriptor TAILCALL;
     public final PhaseDescriptor WHOLEPROG;
     public final PhaseDescriptor ADDINTERFACES;
@@ -61,6 +62,7 @@ public abstract class CompilerPhases {
     protected Class EXPLICITOUTER_PHASE() { return scalac.transformer.ExplicitOuterClassesPhase.class; }
     protected Class ADDACCESSORS_PHASE() { return scalac.transformer.AddAccessorsPhase.class; }
     protected Class ADDCONSTRUCTORS_PHASE() { return scalac.transformer.AddConstructorsPhase.class; }
+    protected Class TYPESASVALUES_PHASE() { return scalac.transformer.TypesAsValuesPhase.class; }
     protected Class TAILCALL_PHASE() { return scalac.transformer.TailCallPhase.class; }
     protected Class WHOLEPROG_PHASE() { return scalac.util.EmptyPhase.class; } // No java version
     protected Class ADDINTERFACES_PHASE() { return scalac.transformer.AddInterfacesPhase.class; }
@@ -118,6 +120,11 @@ public abstract class CompilerPhases {
                 "lambda lifter",
                 "lambda lifting",
                 LAMBDALIFT_PHASE()),
+            this.TYPESASVALUES = new PhaseDescriptor(
+                "typesasvalues",
+                "represent types as values",
+                "represented types as values",
+                TYPESASVALUES_PHASE()),
             this.ADDACCESSORS = new PhaseDescriptor(
                 "addaccessors",
                 "add accessors for constructor arguments",
