@@ -98,7 +98,7 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_DOCDIR)
 	$(INSTALL) -m 644 -p $(DOCUMENTS_FILES) $(INSTALL_DOCDIR)
 	$(INSTALL) -m 755 -d $(INSTALL_APIDOCDIR)
-	$(make) \
+	@$(make) \
 	    target=LIBRARY \
 	    SCALADOC=$(INSTALL_BINDIR)/scaladoc \
 	    PROJECT_SOURCEDIR=$(INSTALL_SRCDIR) \
