@@ -246,6 +246,7 @@ public class AddInterfacesPhase extends Phase {
                 if (memberGoesInInterface(ifaceMemberSym)) {
                     if (ifaceMemberSym.isPrivate()) {
                         ifaceMemberSym.name = uniqueName(ifaceMemberSym);
+			ifaceMemberSym.flags |= Modifiers.FINAL;
                         ifaceMemberSym.flags ^= Modifiers.PRIVATE;
                     } else if (ifaceMemberSym.isProtected())
                         ifaceMemberSym.flags ^= Modifiers.PROTECTED;
