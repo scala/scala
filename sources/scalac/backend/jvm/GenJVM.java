@@ -613,7 +613,7 @@ class GenJVM {
     }
 
     protected byte genLoadModule(Symbol sym) {
-        String javaSymName = javaName(sym);
+        String javaSymName = javaName(sym.moduleClass());
         if (javaSymName.equals(currClassName))
             currIL.append(ic.THIS);
         else {
@@ -1416,19 +1416,18 @@ class GenJVM {
     }
 
     protected String javaName(Symbol sym) {
+        assert sym.isClass() : Debug.show(sym);
         if (sym == defs.ANY_CLASS || sym == defs.ANYREF_CLASS)
             return JAVA_LANG_OBJECT;
         else {
             StringBuffer buf = new StringBuffer(sym.name.toString());
             if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
                 buf.append('$');
-            for (sym = sym.owner();
-                 !(sym.isAnonymousClass() || sym.isPackage());
-                 sym = sym.owner()) {
+            for (sym = sym.owner(); !sym.isPackage(); sym = sym.owner()) {
                 buf.insert(0, '$');
                 buf.insert(0, sym.name);
             }
-            if (!sym.isAnonymousClass()) {
+            if (!sym.isRoot()) {
                 buf.insert(0, '.');
                 buf.insert(0, sym.fullName());
             }

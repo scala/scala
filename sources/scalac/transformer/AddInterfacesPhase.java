@@ -40,8 +40,9 @@ public class AddInterfacesPhase extends PhaseDescriptor {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-        if (sym.isConstructor()
-            && needInterface(sym.primaryConstructorClass())) {
+        if (sym.isConstructor()) {
+            Symbol clazz =sym.primaryConstructorClass();
+            if (clazz.isPackage() || !needInterface(clazz)) return tp;
             // The symbol is a constructor of a class which needs
             // an interface. All its value arguments have to be
             // removed.
@@ -183,6 +184,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             : Debug.toString(classSym) + " is not a class (kind " + classSym.kind + ")";
         return !(classSym.isJava()
                  || classSym.isModuleClass()
+                 || classSym.isAnonymousClass()
                  || hasInterfaceSymbol(classSym)
                  || classSym == Global.instance.definitions.ANY_CLASS
                  || classSym == Global.instance.definitions.ANYREF_CLASS

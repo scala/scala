@@ -222,9 +222,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /* Does this symbol denote an anonymous class? */
     public final boolean isAnonymousClass() {
-	return kind == CLASS &&
-	    (name == Names.EMPTY.toTypeName() ||
-	     name == Names.ANON_CLASS_NAME.toTypeName());
+	return isClass() && name.startsWith(Names.ANON_CLASS_NAME);
     }
 
     /** Does this symbol denote the root class or root module?
@@ -262,7 +260,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a class? */
     public final boolean isClass() {
-        return kind == CLASS;
+        return kind == CLASS && (flags & PACKAGE) == 0;
     }
 
     /** Does this symbol denote a case class?
@@ -342,9 +340,8 @@ public abstract class Symbol implements Modifiers, Kinds {
      *   - it is defined within a local class
      */
     public final boolean isLocalClass() {
-	return kind == CLASS &&
-	    !isPackage() &&
-	    (name == Names.EMPTY.toTypeName() ||
+	return isClass() &&
+	    (isAnonymousClass() ||
 	     owner.isValue() ||
 	     owner.isLocalClass());
     }
