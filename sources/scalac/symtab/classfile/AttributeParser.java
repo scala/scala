@@ -82,11 +82,11 @@ public class AttributeParser implements ClassfileConstants {
         // class attributes
             case SCALA_ATTR:
                 in.skip(attrLen);
-		/* not yet
+                /* not yet
                 Name sourcefile = (Name)pool.readPool(in.nextChar());
                 new UnPickle(
-		    (JavaClassSymbol) sym, in.nextBytes(attrLen - 2), sourcefile);
-		*/
+                    (JavaClassSymbol) sym, in.nextBytes(attrLen - 2), sourcefile);
+                */
                 return;
 
             case SOURCEFILE_ATTR:
@@ -181,21 +181,22 @@ public class AttributeParser implements ClassfileConstants {
 
         private Symbol getTVar(String name, Symbol owner) {
             if (name.startsWith("?")) {
-                if (locals != null) {
-                    Symbol s = locals.lookup(Name.fromString(name).toTypeName());
-                    if (s != Symbol.NONE)
-                        return s;
-                }
-                Symbol s = tvars.lookup(Name.fromString(name).toTypeName());
-                if (s == Symbol.NONE) {
-                    s = new AbsTypeSymbol(
-                                       Position.NOPOS,
-                                       Name.fromString(token).toTypeName(),
-                                       owner,
-                                       Modifiers.PARAM);
-                    s.setInfo(parser.defs.ANY_TYPE, parser.phaseId);
-                    tvars.enter(s);
-                }
+            	Symbol s = ((locals != null) ? locals : tvars)
+            		.lookup(Name.fromString(name).toTypeName());
+               	if (s != Symbol.NONE)
+            		return s;
+            	else if (locals != null) {
+					s = tvars.lookup(Name.fromString(name).toTypeName());
+					if (s != Symbol.NONE)
+            			return s;
+            	}
+                s = new AbsTypeSymbol(
+             		Position.NOPOS,
+                	Name.fromString(token).toTypeName(),
+             		owner,
+             		Modifiers.PARAM);
+         		s.setInfo(parser.defs.ANY_TYPE, parser.phaseId);
+     			tvars.enter(s);
                 return s;
             } else
                 return Symbol.NONE;
@@ -233,19 +234,19 @@ public class AttributeParser implements ClassfileConstants {
                     Vector syms = new Vector();
                     do {
                         nextToken();
-			int vflag = 0;
-			if (token.equals("+")) {
-			    nextToken();
-			    vflag = Modifiers.COVARIANT;
-			} else if (token.equals("-")) {
-			    nextToken();
-			    vflag = Modifiers.CONTRAVARIANT;
-			}
+                        int vflag = 0;
+                        if (token.equals("+")) {
+                            nextToken();
+                            vflag = Modifiers.COVARIANT;
+                        } else if (token.equals("-")) {
+                            nextToken();
+                            vflag = Modifiers.CONTRAVARIANT;
+                        }
                         assert token.startsWith("?");
                         Symbol s = getTVar(token);
                         if (s == Symbol.NONE)
                             return defaultType;
-			s.flags |= vflag;
+                        s.flags |= vflag;
                         nextToken();
                         //System.out.println("new var " + s + ", " + token);//DEBUG
                         if (token.equals("<")) {
@@ -258,39 +259,39 @@ public class AttributeParser implements ClassfileConstants {
                     nextToken();
                     Symbol[] smbls = (Symbol[])syms.toArray(new Symbol[syms.size()]);
                     //System.out.println("*** " + syms);//DEBUG
-		    Type constrtype = Type.appliedType(
-			parser.ctype, Symbol.type(smbls));
+                    Type constrtype = Type.appliedType(
+                        parser.ctype, Symbol.type(smbls));
 
                     if ((parser.c.flags & Modifiers.INTERFACE) != 0) {
                         parser.c.constructor().setInfo(
-			    Type.PolyType(
-				smbls, Type.MethodType(Symbol.EMPTY_ARRAY, constrtype)),
-			    parser.phaseId);
+                            Type.PolyType(
+                                smbls, Type.MethodType(Symbol.EMPTY_ARRAY, constrtype)),
+                            parser.phaseId);
                         //System.out.println("info = " + parser.c.constructor().info());//DEBUG
                     }
-		    Symbol[] constrs;
-		    switch (parser.c.constructor().rawInfo()) {
-		    case OverloadedType(Symbol[] alts, _):
-			constrs = alts;
-			break;
-		    default:
-			constrs = new Symbol[]{parser.c.constructor()};
-		    }
-		    for (int i = 0; i < constrs.length; i++) {
+                    Symbol[] constrs;
+                    switch (parser.c.constructor().rawInfo()) {
+                    case OverloadedType(Symbol[] alts, _):
+                        constrs = alts;
+                        break;
+                    default:
+                        constrs = new Symbol[]{parser.c.constructor()};
+                    }
+                    for (int i = 0; i < constrs.length; i++) {
                         //System.out.println("info = " + e.sym.info());
                         switch (constrs[i].rawInfo()) {
-			case MethodType(Symbol[] vparams, _):
-			    constrs[i].setInfo(
-				Type.PolyType(
-				    smbls, Type.MethodType(vparams, constrtype)),
-				parser.phaseId);
-			    break;
+                        case MethodType(Symbol[] vparams, _):
+                            constrs[i].setInfo(
+                                Type.PolyType(
+                                    smbls, Type.MethodType(vparams, constrtype)),
+                                parser.phaseId);
+                            break;
                         }
                         //System.out.println("*** constructor " + e.sym + ": " + e.sym.info());//DEBUG
                     }
                 } catch (NoSuchElementException e) {
                 }
-	    }
+            }
             Type res = defaultType;
             if ("extends".equals(token)) {
                 Vector basetpes = new Vector();
@@ -302,8 +303,8 @@ public class AttributeParser implements ClassfileConstants {
                     case CompoundType(_, Scope scope):
                         res = Type.compoundType(
                             (Type[])basetpes.toArray(new Type[basetpes.size()]),
-			    scope,
-			    defaultType.symbol());
+                            scope,
+                            defaultType.symbol());
                 }
             }
             assert ";".equals(token);
@@ -316,22 +317,22 @@ public class AttributeParser implements ClassfileConstants {
             nextToken();
             if (s != Symbol.NONE)
                 return s.type();
-	    Symbol clazz = parser.defs.getClass(Name.fromString(name));
+            Symbol clazz = parser.defs.getClass(Name.fromString(name));
             if (token.equals("[")) {
-		Vector types = new Vector();
+                Vector types = new Vector();
                 do {
                     nextToken();
                     types.add(parseType());
                 } while (token.equals(","));
                 assert "]".equals(token);
                 nextToken();
-		Type[] args = new Type[types.size()];
-		types.toArray(args);
-		return Type.TypeRef(clazz.owner().thisType(), clazz, args).unalias();
-	    } else {
-		return clazz.typeConstructor().unalias();
-	    }
-	}
+                Type[] args = new Type[types.size()];
+                types.toArray(args);
+                return Type.TypeRef(clazz.owner().thisType(), clazz, args).unalias();
+            } else {
+                return clazz.typeConstructor().unalias();
+            }
+        }
 
         protected Type parseMetaMethod() {
             locals = new Scope();
@@ -346,11 +347,14 @@ public class AttributeParser implements ClassfileConstants {
                         if ("]".equals(token))
                             break;
                         assert token.startsWith("?");
-                        Symbol s = getTVar(token, owner);
-                        if (s == Symbol.NONE)
-                            return defaultType;
+                        Symbol s = new AbsTypeSymbol(
+             				Position.NOPOS,
+                			Name.fromString(token).toTypeName(),
+             				owner,
+             				Modifiers.PARAM);
+         					s.setInfo(parser.defs.ANY_TYPE, parser.phaseId);
+     					locals.enter(s);
                         nextToken();
-                        //System.out.println("new var " + s + ", " + token);
                         if (token.equals("<")) {
                             nextToken();
                             s.setInfo(parseType(), parser.phaseId);
@@ -368,11 +372,11 @@ public class AttributeParser implements ClassfileConstants {
                         nextToken();
                         if (")".equals(token))
                             break;
-			int flags = Modifiers.PARAM;
-			if ("def".equals(token)) {
-			    nextToken();
-			    flags |= Modifiers.DEF;
-			}
+                        int flags = Modifiers.PARAM;
+                        if ("def".equals(token)) {
+                            nextToken();
+                            flags |= Modifiers.DEF;
+                        }
                         params.add(new TermSymbol(
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
@@ -437,8 +441,8 @@ public class AttributeParser implements ClassfileConstants {
                     nextToken();
                     assert ";".equals(token);
                     return Type.MethodType(
-			(Symbol[])params.toArray(new Symbol[params.size()]),
-			parser.ctype);
+                        (Symbol[])params.toArray(new Symbol[params.size()]),
+                        parser.ctype);
                 } else {
                     assert ";".equals(token);
                     return Type.PolyType(Symbol.EMPTY_ARRAY, parser.ctype);
