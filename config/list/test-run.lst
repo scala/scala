@@ -6,9 +6,9 @@
 dis/List.scala
 
 jvm/JavaInteraction.scala
-jvm/xmlstuff.scala
-jvm/xmlLiterals.scala
 jvm/matching.scala
+jvm/xmlLiterals.scala
+jvm/xmlstuff.scala
 
 run/Course-2002-01.scala
 run/Course-2002-02.scala
@@ -42,6 +42,5 @@ run/tailcalls.scala
 shl/basic.scala
 
 xml/lnk.scala
-#xml/xhtml.scala
 
 ##############################################################################

@@ -43,6 +43,7 @@ pos/bug245.scala
 pos/bug267.scala
 pos/bug289.scala
 pos/bug29.scala
+pos/bug295.scala
 pos/bug30.scala
 pos/bug304.scala
 pos/bug31.scala
@@ -97,6 +98,7 @@ pos/modules1.scala
 pos/moduletrans.scala
 pos/nested.scala
 pos/null.scala
+pos/orderedpoints.scala
 pos/override.scala
 pos/partialfun.scala
 pos/patterns.scala
@@ -133,5 +135,6 @@ pos/traits.scala
 pos/valdefs.scala
 pos/viewtest1.scala
 pos/viewtest2.scala
+pos/viewtest3.scala
 
 ##############################################################################
