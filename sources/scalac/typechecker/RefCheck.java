@@ -64,11 +64,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      */
     void checkAllOverrides(int pos, Symbol clazz) {
 	Type[] closure = clazz.closure();
-	HashMap/*<Symbol,Symbol>*/ overrides = new HashMap();
 	for (int i = 0; i < closure.length; i++) {
 	    for (Scope.SymbolIterator it = closure[i].members().iterator(true);
 		 it.hasNext();) {
-		checkOverride(pos, clazz, it.next(), overrides);
+		checkOverride(pos, clazz, it.next());
 	    }
 	}
 
@@ -83,24 +82,20 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (i < 0) {
 		    unit.error(sym.pos, sym + " overrides nothing");
 		    sym.flags &= ~OVERRIDE;
+		} else if (clazz.kind == CLASS &&
+			   (clazz.flags & ABSTRACTCLASS) == 0) {
+		    Symbol sup = sym.overriddenSymbol(parents[0]);
+		    if (sup.kind != NONE && (sup.flags & DEFERRED) != 0) {
+			abstractClassError(
+			    clazz, sym + sym.locationString() +
+			    " is marked `override', but overrides an abstract member of the superclass " + parents[0]);
+		    }
 		}
-	    }
-	}
-
-	for (Iterator/*<Symbol>*/ it = overrides.keySet().iterator();
-	     it.hasNext();) {
-	    Symbol member = (Symbol) it.next();
-	    Symbol other = (Symbol) overrides.get(member);
-	    if ((other.flags & DEFERRED) != 0) {
-		abstractClassError(
-		    clazz, member + member.locationString() +
-		    " is marked `override' and overrides only abstract members" + other + other.locationString());
 	    }
 	}
     }
 
-    void checkOverride(int pos, Symbol clazz, Symbol other,
-		       HashMap/*<Symbol,Symbol>*/ overrides) {
+    void checkOverride(int pos, Symbol clazz, Symbol other) {
 	Symbol member = other;
 	if ((other.flags & PRIVATE) == 0) {
 	    Symbol member1 = clazz.info().lookup(other.name);
@@ -146,11 +141,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    member + member.locationString() + " is not defined" +
 		    (((member.flags & MUTABLE) == 0) ? ""
 		     : "\n(Note that variables need to be initialized to be defined)"));
-	    } else if (member != other &&
-		       (member.flags & OVERRIDE) != 0 &&
-		       ((other.flags & DEFERRED) == 0 ||
-			overrides.get(member) == null))
-		overrides.put(member, other);
+	    }
 	}
     }
     //where

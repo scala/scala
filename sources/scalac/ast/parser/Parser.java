@@ -2026,13 +2026,13 @@ public class Parser implements Tokens {
 	    } else if (isDefIntro()) {
 		stats.append(defOrDcl(0));
 		accept(SEMI);
-		if (s.token == RBRACE) {
+		if (s.token == RBRACE || s.token == CASE) {
 		    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
 		}
 	    } else if (isLocalModifier()) {
 		stats.append(clsDef(localClassModifiers()));
 		accept(SEMI);
-		if (s.token == RBRACE) {
+		if (s.token == RBRACE || s.token == CASE) {
 		    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
 		}
 	    } else if (s.token == SEMI) {

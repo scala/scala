@@ -1763,12 +1763,13 @@ words \code{this} and
 which contains the access.
 \item
 The \code{override} modifier applies to class member definitions.  It
-is mandatory for member definitions that override some other
-non-abstract member definition in a super- or mixin-class. If an
-\code{override} modifier is given, there must be at least one
-overridden member definition.  Furthermore, at least one overridden
-definition must be concrete (\sref{sec:members}), unless the class
-containing the overriding member is abstract.
+is mandatory for member definitions that override some other concrete
+member definition in a super- or mixin-class. If an \code{override}
+modifier is given, there must be at least one overridden member
+definition.  Furthermore, if the class containing the overriding
+member is not abstract, and one of the overridden definitions is a
+member of its superclass, that definition must be concrete
+(\sref{sec:members}).
 \item
 The \code{abstract} modifier is used in class definitions. It is
 mandatory if the class has abstract members, or if the class has
@@ -1984,7 +1985,7 @@ $x$ that defines $x$ to be an alias of the parameter.
 
 Every case class implicitly overrides some method definitions of class
 \lstinline@scala.Object@ (\sref{sec:cls-object}) unless a definition of the same
-method is already given in the case class itself or a non-abstract
+method is already given in the case class itself or a concrete
 definition of the same method is given in some base class of the case
 class different from \code{Object}. In particular:
 \begin{itemize}
@@ -2283,7 +2284,9 @@ argument $x$ is also the ``null'' object.
 \item
 \lstinline@isInstanceOf[$T\,$]@ always returns \code{false}.
 \item
-\lstinline@asInstanceOf[$T\,$]@ always returns the ``null'' object itself.
+\lstinline@asInstanceOf[$T\,$]@ returns the ``null'' object itself if
+$T$ conforms to \lstinline@scala.AnyRef@, and throws a
+\lstinline@NullPointerExcetpion@ otherwise.
 \item
 \code{toString()} returns the string ``null''.
 \end{itemize}

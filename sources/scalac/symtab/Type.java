@@ -6,7 +6,7 @@
 ** $Id$
 \*                                                                      */
 //todo: T {} == T
-
+//todo: ELiminate phase dependency in AsSeenFromMap
 
 package scalac.symtab;
 
@@ -997,12 +997,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  or `sym' itself if none exists.
      */
     public Symbol rebind(Symbol sym) {
-	Symbol sym1 = lookupNonPrivate(sym.name);
-	if (sym1.kind != NONE) {
-	    if ((sym1.flags & LOCKED) != 0)
-		throw new Type.Error("illegal cyclic reference involving " + sym1);
-	    //System.out.println("rebinding " + sym + " to " + sym1);//DEBUG
-	    return sym1;
+	if ((sym.flags & (PRIVATE | MODUL)) == 0) {
+	    Symbol sym1 = lookupNonPrivate(sym.name);
+	    if (sym1.kind != NONE) {
+		if ((sym1.flags & LOCKED) != 0)
+		    throw new Type.Error("illegal cyclic reference involving " + sym1);
+		//System.out.println("rebinding " + sym + " to " + sym1);//DEBUG
+		return sym1;
+	    }
 	}
 	return sym;
     }
@@ -1042,7 +1044,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    Type prefix1 = apply(prefix);
 		    Type[] args1 = map(args);
 		    if (prefix1 == prefix && args1 == args) return t;
-		    Symbol sym1 = (sym.flags & MODUL) == 0 ? prefix1.rebind(sym) : sym;
+		    Symbol sym1 = prefix1.rebind(sym);
                     if (local && sym != sym1) {
                         // Here what we should do is remove the outer
                         // type links of sym from args and then add
@@ -1110,7 +1112,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
 
     /** This type as seen from prefix `pre' and class `clazz'. This means:
-     *  Replace all thistypes of `clazz' or one of its superclasses by `pre'
+     *  Replace all thistypes of `clazz' or one of its subclasses by `pre'
      *  and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes.
      */

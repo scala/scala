@@ -1388,7 +1388,7 @@ public abstract class TypeSymbol extends Symbol {
     public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags) {
         super(kind, pos, name, owner, flags);
         assert name.isTypeName() : this;
-        this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
+        this.constructor = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
     }
 
     protected void update(int pos, int flags) {
@@ -1443,7 +1443,7 @@ public abstract class TypeSymbol extends Symbol {
     /** add a constructor
      */
     public Symbol addConstructor() {
-        Symbol constr = TermSymbol.newConstructor(this, flags & ~MODUL);
+        Symbol constr = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
         constructor = constructor.overloadWith(constr);
         return constr;
     }
