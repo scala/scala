@@ -124,14 +124,14 @@ object M2 {
     System.out.println("trn(m2)   = " + transpose(m2));
     System.out.println();
 
-    System.out.println("[v1] * id = " + matrixTimesMatrix(List(v1),id));
-    System.out.println("[v1] * m1 = " + matrixTimesMatrix(List(v1),m1));
-    System.out.println("[v1] * m2 = " + matrixTimesMatrix(List(v1),m2));
+    System.out.println("List(v1) * id = " + matrixTimesMatrix(List(v1),id));
+    System.out.println("List(v1) * m1 = " + matrixTimesMatrix(List(v1),m1));
+    System.out.println("List(v1) * m2 = " + matrixTimesMatrix(List(v1),m2));
     System.out.println();
 
-    System.out.println("id * [v1] = " + matrixTimesMatrix(id,List(v1)));
-    System.out.println("m1 * [v1] = " + matrixTimesMatrix(m1,List(v1)));
-    System.out.println("m2 * [v1] = " + matrixTimesMatrix(m2,List(v1)));
+    System.out.println("id * List(v1) = " + matrixTimesMatrix(id,List(v1)));
+    System.out.println("m1 * List(v1) = " + matrixTimesMatrix(m1,List(v1)));
+    System.out.println("m2 * List(v1) = " + matrixTimesMatrix(m2,List(v1)));
     System.out.println();
 
     System.out.println("id * id   = " + matrixTimesMatrix(id,id));

@@ -28,7 +28,7 @@ y withdraw 20 -> 10
 2^3 = 8.0
 
 1 2 3 
-[1,2,3]
+List(1,2,3)
 
 out   0 new-value = false
 *** simulation started ***

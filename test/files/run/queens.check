@@ -1,4 +1,4 @@
-Solutions to 1 queens: [[1]]
-Solutions to 2 queens: []
-Solutions to 3 queens: []
-Solutions to 4 queens: [[3,1,4,2],[2,4,1,3]]
+Solutions to 1 queens: List(List(1))
+Solutions to 2 queens: List()
+Solutions to 3 queens: List()
+Solutions to 4 queens: List(List(3,1,4,2),List(2,4,1,3))

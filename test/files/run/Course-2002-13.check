@@ -1,13 +1,13 @@
-[S = jean,V = mange,A = le,D = grand,N = table]
-[S = jean,V = mange,A = le,D = grand,N = cheval]
+List(S = jean,V = mange,A = le,D = grand,N = table)
+List(S = jean,V = mange,A = le,D = grand,N = cheval)
 
-[S = jean,V = mange,A = le,D = grand,N = cheval]
-[S = jean,V = mange,A = la,D = belle,N = table]
+List(S = jean,V = mange,A = le,D = grand,N = cheval)
+List(S = jean,V = mange,A = la,D = belle,N = table)
 
-[S = jean,V = mange,A = le,D = nil,N = cheval]
-[S = jean,V = mange,A = le,D = cons(grand,nil),N = cheval]
-[S = jean,V = mange,A = le,D = cons(grand,cons(grand,nil)),N = cheval]
-[S = jean,V = mange,A = la,D = nil,N = table]
+List(S = jean,V = mange,A = le,D = nil,N = cheval)
+List(S = jean,V = mange,A = le,D = cons(grand,nil),N = cheval)
+List(S = jean,V = mange,A = le,D = cons(grand,cons(grand,nil)),N = cheval)
+List(S = jean,V = mange,A = la,D = nil,N = table)
 yes
 yes
 no
