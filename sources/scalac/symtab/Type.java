@@ -1727,36 +1727,23 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	return result;
     }
 
-    public boolean specializes0(Symbol sym1) {
-	Symbol sym = lookup(sym1.name);
-	switch (sym.info()) {
-	case NoType:
-	    return false;
-	case OverloadedType(Symbol[] alts, Type[] alttypes):
-	    for (int i = 0; i < alts.length; i++) {
-		if (specializes0(alts[i], sym1)) return true;
-	    }
-	    return false;
-	default:
-	    return specializes0(sym, sym1);
-	}
-    }
-
-    private boolean specializes0(Symbol sym, Symbol sym1) {
+    private boolean specializes0(Symbol sym1) {
 	Type self = narrow();
 	Symbol[] tparams = symbol().typeParams();
 	Type[] targs = typeArgs();
+	Symbol sym = lookup(sym1.name);
 	return
-	    sym == sym1
-	    ||
-	    (sym.kind == sym1.kind || sym1.kind == TYPE) &&
-	    self.memberInfo(sym).subst(tparams, targs)
-	    .isSubType(sym1.info().substThis(sym1.owner(), self)) &&
-	    sym1.loBound().substThis(sym1.owner(), self)
-	    .isSubType(self.memberLoBound(sym).subst(tparams, targs))
-	    ||
-	    (sym.kind == TYPE && sym1.kind == ALIAS &&
-	     sym1.info().unalias().isSameAs(sym.type()));
+	    sym.kind != NONE &&
+	    (sym == sym1
+	     ||
+	     (sym.kind == sym1.kind || sym1.kind == TYPE) &&
+	     self.memberInfo(sym).subst(tparams, targs)
+	     .isSubType(sym1.info().substThis(sym1.owner(), self)) &&
+	     sym1.loBound().substThis(sym1.owner(), self)
+	     .isSubType(self.memberLoBound(sym).subst(tparams, targs))
+	     ||
+	     (sym.kind == TYPE && sym1.kind == ALIAS &&
+	      sym1.info().unalias().isSameAs(sym.type())));
     }
 
     /** Is this type the same as that type?
@@ -2163,7 +2150,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    if (tps[i] == ErrorType) {
 		return new Type[]{ErrorType};
 	    } else {
-		assert tps[i].isObjectType() : tps[i];
+		assert tps[i].isObjectType(): tps[i];
 		for (int j = 0; j < i && !redundant[i]; j++) {
 		    if (!redundant[j]) {
 			if (tps[i].isSubType(tps[j])) {
@@ -2196,6 +2183,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
 
 	if (tps.length == 0) return Global.instance.definitions.ALL_TYPE;
+
+	//If all types are method types with same parameters,
+	//compute lub of their result types.
 
 	// remove types that are subtypes of some other type.
 	tps = elimRedundant(tps, true);
@@ -2231,8 +2221,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    while (j < tps.length) {
 			rsyms[j] = tps[j].lookupNonPrivate(name);
 			if (rsyms[j] == sym) break;
-			if (rsyms[j].isMethod()) break; // since methods cannot
-			                                // appear in refinements.
 			rtps[j] = memberTp(tps[j], rsyms[j])
 			    .substThis(tps[j].symbol(), lubThisType);
 			rlbs[j] = tps[j].memberLoBound(rsyms[j])
@@ -2311,7 +2299,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		if (!members.isEmpty())
 		    comptl = new Type.List(tps[i], comptl);
 		for (int j = 0; j < parents.length; j++)
-		    treftl = new Type.List(parents[i], treftl);
+		    treftl = new Type.List(parents[j], treftl);
 		break;
 	    case ThisType(_):
 	    case SingleType(_, _):

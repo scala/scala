@@ -1117,7 +1117,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
 	    tree.type = Type.ErrorType;
-            if (tree.hasSymbol() && tree.symbol() == null) tree.setSymbol(Symbol.ERROR);
+            if (tree.hasSymbol()) {
+		if (tree.symbol() != null) tree.symbol().setInfo(Type.ErrorType);
+		else tree.setSymbol(Symbol.ERROR);
+	    }
 	}
 
         this.unit = savedUnit;
@@ -1235,7 +1238,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 		if (clazz.isCaseClass()) {
 		    // set type to instantiated case class constructor
-		    tree.type = clazz.primaryConstructor().type();
+		    tree.type = tree.type.prefix().memberType(
+			clazz.primaryConstructor());
 		    switch (tree.type) {
 		    case PolyType(Symbol[] tparams, Type restp):
 			try {
@@ -2031,7 +2035,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    return error(tree.pos, "method with return needs result type");
 		} else {
 		    Symbol enclFun = context.owner.enclMethod();
-		    if (enclFun.kind == VAL) {
+		    if (enclFun.kind == VAL && !enclFun.isConstructor()) {
 			Tree expr1 = transform(
 			    expr, EXPRmode, enclFun.type().resultType());
 			return copy.Return(tree, expr1)
@@ -2178,7 +2182,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			assert tsym.isType() : tsym;
 			switch (fn1.type.unalias()) {
 			case TypeRef(Type pre, Symbol c, Type[] argtypes):
-			    if (c.kind == CLASS) {
+			    if (c.kind != CLASS) {
+				error(tree.pos,
+				      tsym + " is not a class; cannot be instantiated");
+			    } else if (!pre.isStable()) {
+				error(tree.pos, pre + " is not a legal prefix for a constructor");
+			    } else {
 				c.initialize();
 				Symbol constr = c.allConstructors();
 				Tree fn0 = fn1;
@@ -2206,9 +2215,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				}
 				//System.out.println(TreeInfo.methSymbol(fn1) + ":" + tp + " --> " + fn1.type + " of " + fn1);//DEBUG
 				selfcc = TreeInfo.isSelfConstrCall(fn0);
-			    } else {
-				error(tree.pos,
-				      tsym + " is not a class; cannot be instantiated");
 			    }
 			    break;
 			default:
@@ -2475,7 +2481,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
 	    tree.type = Type.ErrorType;
-            if (tree.hasSymbol() && tree.symbol() == null) tree.setSymbol(Symbol.ERROR);
+            if (tree.hasSymbol()) {
+		if (tree.symbol() != null) tree.symbol().setInfo(Type.ErrorType);
+		else tree.setSymbol(Symbol.ERROR);
+	    }
 	    return tree;
 	}
     }

@@ -78,8 +78,8 @@ public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
 
         case TreeType.Name(TreeKind kind):
             if (kind != TreeKind.Any && kind != TreeKind.Test) {
-                writer.println("assert " + (kind == TreeKind.Type ? "" : "!")+
-                    name +".isTypeName() :").indent();
+                writer.println("assert " + name + ".is" + kind + "Name() :")
+                    .indent();
                 printWrongKind(node, name, kind);
                 writer.println(";").undent();
             }

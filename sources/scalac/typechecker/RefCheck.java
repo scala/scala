@@ -58,53 +58,75 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 // Override checking ------------------------------------------------------------
 
     /** 1. Check all members of class `clazz' for overriding conditions.
-     *  2. Check that only abstract classes have deferred members
+     *  2. Check that only abstract classes have deferred members*
      *  3. Check that every member with an `override' modifier
      *     overrides a concrete member.
      */
     void checkAllOverrides(int pos, Symbol clazz) {
 	Type[] closure = clazz.closure();
-	HashMap/*<Symbol,Symbol>*/ overrides = null;
+	HashMap/*<Symbol,Symbol>*/ overrides = new HashMap();
 	for (int i = 0; i < closure.length; i++) {
 	    for (Scope.SymbolIterator it = closure[i].members().iterator(true);
 		 it.hasNext();) {
-		Symbol other = it.next();
-		Symbol member = ((other.flags & PRIVATE) != 0) ? other
-		    : clazz.info().lookup(other.name);
-		if (member.owner() == other.owner())
-		    member = other;
-		else if (member.type() instanceof Type.OverloadedType)
-		    member = findOverriding(pos, clazz, member, other);
-		if (member.kind != NONE && member != other)
-		    checkOverride(pos, clazz, member, other);
-		if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
-		    if ((member.flags & DEFERRED) != 0) {
-			abstractClassError(
-			    clazz,
-			    member + member.locationString() + " is not defined" +
-			    (((member.flags & MUTABLE) == 0) ? ""
-			     : "\n(Note that variables need to be initialized to be defined)"));
-		    } else if ((member.flags & OVERRIDE) != 0) {
-			if (overrides == null)
-			    overrides = new HashMap();
-			if ((other.flags & DEFERRED) == 0 ||
-			    overrides.get(member) == null)
-			    overrides.put(member, other);
+		checkOverride(pos, clazz, it.next(), overrides);
+	    }
+	}
+	for (Iterator/*<Symbol>*/ it = overrides.keySet().iterator();
+	     it.hasNext();) {
+	    Symbol member = (Symbol) it.next();
+	    Symbol other = (Symbol) overrides.get(member);
+	    if ((other.flags & DEFERRED) != 0) {
+		abstractClassError(
+		    clazz, member + member.locationString() +
+		    " is marked `override' and overrides only abstract members" + other + other.locationString());
+	    }
+	}
+    }
+
+    void checkOverride(int pos, Symbol clazz, Symbol other,
+		       HashMap/*<Symbol,Symbol>*/ overrides) {
+	Symbol member = other;
+	if ((other.flags & PRIVATE) == 0) {
+	    Symbol member1 = clazz.info().lookup(other.name);
+	    if (member1.kind != NONE && member1.owner() != other.owner()) {
+		switch (member1.info()) {
+		case OverloadedType(Symbol[] alts, _):
+		    Type self = clazz.thisType();
+		    Type otherinfo = normalizedInfo(self, other);
+		    for (int i = 0; i < alts.length; i++) {
+			if (normalizedInfo(self, alts[i]).isSubType(otherinfo)) {
+			    if (member == other)
+				member = alts[i];
+			    else
+				unit.error(
+				    pos,
+				    "ambiguous override: both " +
+				    member + ":" + normalizedInfo(self, member) +
+				    "\n and " + alts[i] + ":" + normalizedInfo(self, alts[i]) +
+				    "\n override " + other + ":" + otherinfo +
+				    other.locationString());
+			}
 		    }
+		    break;
+		default:
+		    member = member1;
 		}
 	    }
 	}
-	if (overrides != null) {
-	    for (Iterator/*<Symbol>*/ it = overrides.keySet().iterator();
-		 it.hasNext();) {
-		Symbol member = (Symbol) it.next();
-		Symbol other = (Symbol) overrides.get(member);
-		if ((other.flags & DEFERRED) != 0) {
-		    abstractClassError(
-			clazz, member + member.locationString() +
-			" is marked `override' and overrides only abstract members" + other + other.locationString());
-		}
-	    }
+	if (member != other) {
+	    checkOverride(pos, clazz, member, other);
+	}
+	if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
+	    if ((member.flags & DEFERRED) != 0) {
+		abstractClassError(
+		    clazz,
+		    member + member.locationString() + " is not defined" +
+		    (((member.flags & MUTABLE) == 0) ? ""
+		     : "\n(Note that variables need to be initialized to be defined)"));
+	    } else if ((member.flags & OVERRIDE) != 0 &&
+		       ((other.flags & DEFERRED) == 0 ||
+			overrides.get(member) == null))
+		overrides.put(member, other);
 	}
     }
     //where
@@ -116,32 +138,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    clazz.flags |= ABSTRACTCLASS;
 	}
 
-    Symbol findOverriding(int pos, Symbol clazz, Symbol members, Symbol other) {
-	Type self = clazz.thisType();
-	Symbol member = members;
-	Type memberinfo = normalizedInfo(self, member);
-	Type otherinfo = normalizedInfo(self, other);
-	switch (memberinfo) {
-	case OverloadedType(Symbol[] alts, Type[] alttypes):
-	    for (int i = 0; i < alts.length; i++) {
-		if (alttypes[i].isSubType(otherinfo)) {
-		    if (member == members) {
-			member = alts[i];
-			memberinfo = alttypes[i];
-		    } else {
-			unit.error(
-			    pos,
-			    "ambiguous override: both " +
-			    member + ":" + memberinfo +
-			    "\n and " + alts[i] + ":" + alttypes[i] +
-			    "\n override " + other + ":" + otherinfo +
-			    other.locationString());
-		    }
-		}
-	    }
-	}
-	return member;
-    }
 
     /** Check that all conditions for overriding `other' by `member' are met.
      *  That is for overriding member M and overridden member O:
@@ -232,7 +228,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     Type normalizedInfo(Type site, Symbol sym) {
 	Type tp = site.memberInfo(sym);
-	if (sym.kind == VAL && (sym.flags & STABLE) != 0) tp = tp.resultType();
+	switch (tp) {
+	case PolyType(Symbol[] tparams, Type restp):
+	    if (tparams.length == 0) return restp;
+	}
 	return tp;
     }
 

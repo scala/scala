@@ -546,6 +546,7 @@ empty : [a >: All <: Any] List[a]
 union : [a >: All <: Comparable[a]] (x: Set[a], xs: Set[a]) Set[a]  .
 \end{lstlisting}
 
+\comment{
 \subsection{Overloaded Types}
 \label{sec:overloaded-types}
 \newcommand{\overload}{\la\mbox{\sf and}\ra}
@@ -581,6 +582,7 @@ def f(x: T): T = $\ldots$;
 val f = 0
 \end{lstlisting}
 define a function \code{f} which has type ~\lstinline@(x: T)T $\overload$ Int@.
+}
 
 \section{Base Classes and Member Definitions}
 \label{sec:base-classes}
@@ -1351,14 +1353,12 @@ determined from the type of the function body.
 
 An overloaded definition is a set of $n > 1$ value or function
 definitions in the same statement sequence that define the same name,
-binding it to types ~\lstinline@$T_1 \commadots T_n$@, respectively.  The
-individual definitions are called {\em alternatives}.  Alternatives
-always need to specify the type of the defined entity completely.  All
-alternatives must have the same modifiers. It is an error if the types
-of two alternatives $T_i$ and $T_j$ have the same
-erasure (\sref{sec:erasure}).  An overloaded definition defines a
-single entity, of type $T_1 \overload \ldots \overload T_n$ 
-(\sref{sec:overloaded-types}).
+binding it to types ~\lstinline@$T_1 \commadots T_n$@, respectively.
+The individual definitions are called {\em alternatives}.  Overloaded
+definitions may only appear in the statement sequence of a template.
+Alternatives always need to specify the type of the defined entity
+completely.  It is an error if the types of two alternatives $T_i$ and
+$T_j$ have the same erasure (\sref{sec:erasure}).
 
 \todo{Say something about bridge methods.}
 %This must be a well-formed
@@ -2100,7 +2100,7 @@ trait Ord[t <: Ord[t]]: t {
 \end{lstlisting}
 
 An object definition defines a single object of a new class. Its 
-most general is
+most general form is
 ~\lstinline@object $m$: $s$ extends $t$@. Here,
 \begin{itemize}
 \item[]
@@ -2603,15 +2603,15 @@ new $sc$ with $mc_1$ with $\ldots$ with $mc_n$ {$stats\,$}
 \end{lstlisting}
 where $n \geq 0$, $sc$ as well as $mc_1 \commadots mc_n$ are
 constructor invocations (of types $S, T_1 \commadots T_n$, say) and
-$stats$ is a statement sequence containing initializer statements
-and member definitions (\sref{sec:members}). The type of such an
-instance creation expression is then the compound type
-\lstinline@$S$ with $T_1$ with $\ldots$ with $T_n$ {$R\,$}@, where \lstinline@{$R\,$}@ is a
-refinement (\sref{sec:compound-types}) which declares exactly those
-members of $stats$ that override a member of $S$ or
-$T_1 \commadots T_n$. For this type to be well-formed, $R$
-may not reference types defined in $stats$ which do not
-themselves form part of $R$.
+$stats$ is a statement sequence containing initializer statements and
+member definitions (\sref{sec:members}). The type of such an instance
+creation expression is then the compound type \lstinline@$S$ with
+$T_1$ with $\ldots$ with $T_n$ {$R\,$}@, where \lstinline@{$R\,$}@ is
+a refinement (\sref{sec:compound-types}) which declares exactly those
+members of $stats$ that override a member of $S$ or $T_1 \commadots
+T_n$. \todo{what about methods and overloaded defs?}  For this type to
+be well-formed, $R$ may not reference types defined in $stats$ which
+do not themselves form part of $R$.
 
 The instance creation expression is evaluated by creating a fresh
 object, which is initialized by evaluating the expression template.
@@ -3161,16 +3161,15 @@ by expression $e$. The scope of each formal parameter
 $x_i$ is $e$.
 
 If the expected type of the anonymous function is of the form
-~\lstinline@scala.Function$n$[$S_1 \commadots S_n$, $R\,$]@, the expected type
-of $e$ is $R$ and the type $T_i$ of any of the
-parameters $x_i$ can be omitted, in which case
-~\lstinline@$T_i$ = $S_i$@~ is assumed. If the expected type of the anonymous
-function is some other type, all formal parameter types must be
-explicitly given, and the expected type of $e$ is missing. The
-type of the anonymous function is
-~\lstinline@scala.Function$n$[$S_1 \commadots S_n$, $T\,$]@, where $T$ is
-the type of $e$. $T$ must be equivalent to a type which does
-not refer to any of the formal parameters $x_i$.
+~\lstinline@scala.Function$n$[$S_1 \commadots S_n$, $R\,$]@, the
+expected type of $e$ is $R$ and the type $T_i$ of any of the
+parameters $x_i$ can be omitted, in which case ~\lstinline@$T_i$ =
+$S_i$@~ is assumed. If the expected type of the anonymous function is
+some other type, all formal parameter types must be explicitly given,
+and the expected type of $e$ is missing. The type of the anonymous
+function is ~\lstinline@scala.Function$n$[$S_1 \commadots S_n$,
+$T\,$]@, where $T$ is the type of $e$. $T$ must be equivalent to a
+type which does not refer to any of the formal parameters $x_i$.
 
 The anonymous function is evaluated as the instance creation expression
 \begin{lstlisting}
