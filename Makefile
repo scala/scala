@@ -18,6 +18,7 @@ PROJECT_NAME		 = scala
 PROJECT_ROOT		 = $(ROOT)
 PROJECT_SOURCES		+= $(RUNTIME_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
+PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_OUTPUTDIR	 = $(PROJECT_ROOT)/classes
 PROJECT_CLASSPATH	 = $(PROJECT_OUTPUTDIR)
 PROJECT_LISTDIR		 = $(PROJECT_ROOT)/config/list
@@ -58,7 +59,13 @@ COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
 COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
 COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
 COMPILER_JC_COMPILER	 = PICO
-COMPILER_JC_CLASSPATH    = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE)
+COMPILER_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE)
+
+# scala interpreter
+INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scalai
+INTERPRETER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/interpreter.lst)
+INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
+INTERPRETER_JC_COMPILER	 = PICO
 
 # scala library
 
@@ -130,13 +137,16 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 all		: scripts
 all		: runtime
 all		: compiler
+all		: interpreter
 all		: library
 
 force		:
+	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	@$(make) all
 
 clean		:
+	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
 	$(RM) -r $(PROJECT_OUTPUTDIR)
@@ -150,6 +160,7 @@ distclean	: clean
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 runtime		: .latest-runtime
 compiler	: .latest-compiler
+interpreter	: .latest-interpreter
 library		: .latest-library
 
 .PHONY		: all
@@ -159,6 +170,7 @@ library		: .latest-library
 .PHONY		: scripts
 .PHONY		: runtime
 .PHONY		: compiler
+.PHONY		: interpreter
 .PHONY		: library
 
 ##############################################################################
@@ -170,6 +182,10 @@ library		: .latest-library
 
 .latest-compiler	: $(COMPILER_SOURCES)
 	@$(make) .do-jc source=COMPILER JC_FILES='$?'
+	touch $@
+
+.latest-interpreter	: $(INTERPRETER_SOURCES)
+	@$(make) .do-jc source=INTERPRETER JC_FILES='$?'
 	touch $@
 
 .latest-library		: $(LIBRARY_FILES)
