@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-04, LAMP/EPFL               **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -54,7 +54,7 @@ object List {
   def tabulate[a](n: int, maker: int => a): List[a] = {
     def loop(i: int): List[a] =
       if (i == n) Nil
-      else maker(i) :: loop(i+1);
+      else maker(i) :: loop(i + 1);
     loop(0)
   }
 
@@ -68,6 +68,7 @@ object List {
   }
 
   /** Transform a list of pair into a pair of lists.
+   *
    *  @param l the list of pairs to unzip
    *  @return a pair of lists: the first list in the pair contains the list
    */
@@ -79,8 +80,9 @@ object List {
   }
 
   /** Converts an iterator to a list
+   *
    *  @param it the iterator to convert
-   *  @returns a list that contains the elements returned by successive
+   *  @return a list that contains the elements returned by successive
    *  calls to <code>it.next</code>
    */
   def fromIterator[a](it: Iterator[a]): List[a] =
@@ -88,10 +90,11 @@ object List {
     else Nil;
 
   /** Converts a range of an array into a list.
+   *
    *  @param arr the array to convert
    *  @param start the first index to consider
    *  @param len the lenght of the range to convert
-   *  @returns a list that contains the same elements than <code>arr</code>
+   *  @return a list that contains the same elements than <code>arr</code>
    *           in the same order
    */
   def fromArray[a](arr: Array[a], start: Int, len: Int): List[a] = {
@@ -105,6 +108,7 @@ object List {
   }
 
   /** Parses a string which contains substrings separated by a
+   *
    *  separator character and returns a list of all substrings.
    *  @param str the string to parse
    *  @param separator the separator character
@@ -125,6 +129,7 @@ object List {
   }
 
   /** Returns the given string as a list of characters.
+   *
    *  @param str the string to convert.
    *  @return the string as a list of characters.
    */
@@ -139,6 +144,7 @@ object List {
   }
 
   /** Returns the given list of characters as a string.
+   *
    *  @param xs the list to convert.
    *  @return the list in form of a string.
    */
@@ -172,13 +178,13 @@ trait List[+a] extends Seq[a] {
 
   /** Returns this first element of the list.
    *  @return the first element of this list.
-   *  @throws java.lang.RuntimeException if the list is empty.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
   def head: a;
 
   /** Returns this list without its first element.
    *  @return this list without its first element.
-   *  @throws java.lang.RuntimeException if the list is empty.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
   def tail: List[a];
 
@@ -218,6 +224,7 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Returns the number of elements in the list.
+   *
    *  @return the number of elements in the list.
    */
   def length: Int = match {
@@ -239,21 +246,24 @@ trait List[+a] extends Seq[a] {
   }
 
   /** Returns the elements in the list as an iterator
+   *
+   *  @return an iterator on the list elements.
    */
   def elements: Iterator[a] = new Iterator[a] {
     var current = List.this;
     def hasNext: Boolean = !current.isEmpty;
     def next: a =
       if (!hasNext)
-	error("next on empty Iterator")
+        error("next on empty Iterator")
       else {
         val result = current.head; current = current.tail; result
       };
   };
 
   /** Returns the list without its last element.
+   *
    *  @return the list without its last element.
-   *  @throws java.lang.RuntimeException if the list is empty.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
   def init: List[a] = match {
     case Nil => error("Nil.init")
@@ -262,8 +272,9 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Returns the last element of this list.
+   *
    *  @return the last element of the list.
-   *  @throws java.lang.RuntimeException if the list is empty.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is empty.
    */
   def last: a = match {
     case Nil => error("Nil.last")
@@ -272,27 +283,30 @@ trait List[+a] extends Seq[a] {
   }
 
   /** Returns the <code>n</code> first elements of this list.
+   *
    *  @param n the number of elements to take.
    *  @return the <code>n</code> first elements of this list.
-   *  @throws java.lang.RuntimeException if the list is too short.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def take(n: Int): List[a] =
     if (n == 0) Nil
     else head :: (tail take (n-1));
 
   /** Returns the list without its <code>n</code> first elements.
+   *
    *  @param n the number of elements to drop.
    *  @return the list without its <code>n</code> first elements.
-   *  @throws java.lang.RuntimeException if the list is too short.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def drop(n: Int): List[a] =
     if (n == 0) this
     else (tail drop (n-1));
 
   /** Returns the rightmost <code>n</code> elements from this list.
+   *
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
-   *  @throws java.lang.RuntimeException if the list is too short.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def takeRight(n: Int): List[a] = {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {
@@ -302,10 +316,11 @@ trait List[+a] extends Seq[a] {
     loop(drop(n), this)
   };
 
-  /** Return the list wihout its rightmost <code>n</code> elements.
+  /** Returns the list wihout its rightmost <code>n</code> elements.
+   *
    *  @param n the number of elements to take
    *  @return the suffix of length <code>n</code> of the list
-   *  @throws java.lang.RuntimeException if the list is too short.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def dropRight(n: Int): List[a] = {
     def loop(lead: List[a], lag: List[a]): List[a] = lead match {
@@ -317,9 +332,10 @@ trait List[+a] extends Seq[a] {
 
   /** Split the list at a given point and return the two parts thus
    *  created.
+   *
    *  @param n the position at which to split
    *  @return a pair of lists composed of the first <code>n</code>
-   *  elements, and the other elements.
+   *          elements, and the other elements.
    */
   def splitAt(n: Int): Pair[List[a], List[a]] =
     if (n == 0) Pair(Nil, this)
@@ -330,6 +346,7 @@ trait List[+a] extends Seq[a] {
 
   /** Returns the longest prefix of this list whose elements satisfy
    *  the predicate <code>p</code>.
+   *
    *  @param p the test predicate.
    *  @return the longest prefix of this list whose elements satisfy
    *  the predicate <code>p</code>.
@@ -338,11 +355,12 @@ trait List[+a] extends Seq[a] {
     if (isEmpty || !p(head)) Nil
     else head :: (tail takeWhile p);
 
-  /** Returns the longest suffix of this list whose first element does not satisfy
-   *  the predicate <code>p</code>.
+  /** Returns the longest suffix of this list whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
    *  @param p the test predicate.
-   *  @return the longest suffix of the list whose first element does not satisfy
-   *  the predicate <code>p</code>.
+   *  @return the longest suffix of the list whose first element
+   *          does not satisfy the predicate <code>p</code>.
    */
   def dropWhile(p: a => Boolean): List[a] =
     if (isEmpty || !p(head)) this
@@ -350,6 +368,7 @@ trait List[+a] extends Seq[a] {
 
   /** Returns the longest prefix of the list whose elements all satisfy
    *  the given predicate, and the rest of the list.
+   *
    *  @param p the test predicate
    *  @return a pair consisting of the longest prefix of the list whose
    *  elements all satisfy <code>p</code>, and the rest of the list.
@@ -370,14 +389,16 @@ trait List[+a] extends Seq[a] {
 
   /** Returns the <code>n</code>-th element of this list. The first element
    *  (head of the list) is at position 0.
+   *
    *  @param n index of the element to return
    *  @return the element at position <code>n</code> in this list.
-   *  @throws java.lang.RuntimeException if the list is too short.
+   *  @throws <code>java.lang.RuntimeException</code> if the list is too short.
    */
   def apply(n: Int): a = drop(n).head;
 
   /** Returns the list resulting from applying the given function <code>f</code> to each
    *  element of this list.
+   *
    *  @param f function to apply to each element.
    *  @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
    */
@@ -389,6 +410,7 @@ trait List[+a] extends Seq[a] {
   /** Apply a function to all the elements of the list, and return the
    *  reversed list of results. This is equivalent to a call to <code>map</code>
    *  followed by a call to <code>reverse</code>, but more efficient.
+   *
    *  @param f the function to apply to each elements.
    *  @return the reversed list of results.
    */
@@ -402,6 +424,7 @@ trait List[+a] extends Seq[a] {
 
   /** Apply the given function <code>f</code> to each element of this list
    *  (while respecting the order of the elements).
+   *
    *  @param f the treatment to apply to each element.
    */
   override def foreach(f: a => Unit): Unit = match {
@@ -411,6 +434,7 @@ trait List[+a] extends Seq[a] {
 
   /** Returns all the elements of this list that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
+   *
    *  @param p the redicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
@@ -423,6 +447,7 @@ trait List[+a] extends Seq[a] {
   /** Remove all elements of the list which satisfy the predicate
    *  <code>p</code>. This is like <code>filter</code> with the
    *  predicate inversed.
+   *
    *  @param p the predicate to use to test elements
    *  @return the list without all elements which satisfy <code>p</code>
    */
@@ -433,6 +458,7 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Partition the list in two sub-lists according to a predicate.
+   *
    *  @param p the predicate on which to partition
    *  @return a pair of lists: the list of all elements which satisfy
    *  <code>p</code> and the list of all elements which do not. The
@@ -448,10 +474,13 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Sort the list according to the comparison function
-   *  &lt;(e1: a, e2: a) => Boolean,
+   *  <code>&lt;(e1: a, e2: a) =&gt; Booleani</code>,
    *  which should be true iff e1 is smaller than e2.
    *  Note: The current implementation is inefficent for
    *  already sorted lists.
+   *
+   *  @return a list sorted according to the comparison function
+   *          <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
    */
   def sort(lt : (a,a) => Boolean): List[a] = {
     def sort_1(smaller: List[a], acc: List[a]): List[a] =
@@ -502,16 +531,18 @@ trait List[+a] extends Seq[a] {
 
 
   /** Count the number of elements in the list which satisfy a predicate.
+   *
    *  @param p the predicate for which to count
-   *  @return the number of elements satisfying <code>p</code>.
+   *  @return the number of elements satisfying the predicate <code>p</code>.
    */
   def count(p: a => Boolean): Int = match {
     case Nil => 0
     case head :: tail => if (p(head)) 1 + (tail count p) else (tail count p)
   };
 
-  /** Tests if the predicate <code>p</code> is satisfied by all elements in this
-   *  list.
+  /** Tests if the predicate <code>p</code> is satisfied by all elements
+   *  in this list.
+   *
    *  @param p the test predicate.
    *  @return True iff all elements of this list satisfy the predicate <code>p</code>.
    */
@@ -520,6 +551,7 @@ trait List[+a] extends Seq[a] {
 
   /** Tests the existence in this list of an element that satisfies the predicate
    * <code>p</code>.
+   *
    *  @param p the test predicate.
    *  @return true iff there exists an element in this list that satisfies
    *  the predicate <code>p</code>.
@@ -529,6 +561,7 @@ trait List[+a] extends Seq[a] {
 
   /** Find and return the first element of the list satisfying a
    *  predicate, if any.
+   *
    *  @param p the predicate
    *  @return the first element in the list satisfying <code>p</code>,
    *  or <code>None</code> if none exists.
@@ -541,6 +574,7 @@ trait List[+a] extends Seq[a] {
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from left to right, and starting with
    *  the value <code>z</code>.
+   *
    *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
@@ -552,6 +586,7 @@ trait List[+a] extends Seq[a] {
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from rigth to left, and starting with
    *  the value <code>z</code>.
+   *
    *  @return <code>a0 op (... op (an op z)...)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
@@ -573,6 +608,7 @@ trait List[+a] extends Seq[a] {
 
   /** Applies the given function <code>f</code> to each element of
    *  this list, then concatenates the results.
+   *
    *  @param f the function to apply on each element.
    *  @return <code>f(a0) ::: ... ::: f(an)</code> if this list is
    *  <code>[a0, ..., an]</code>.
@@ -586,6 +622,7 @@ trait List[+a] extends Seq[a] {
    *  <p/>
    *  Ex: <br/>
    *  <code>[1, 2, 3] reverse = [3, 2, 1]</code>.
+   *
    *  @return the elements of this list in reverse order.
    */
   def reverse: List[a] =
@@ -594,6 +631,7 @@ trait List[+a] extends Seq[a] {
   /** Fills the given array <code>xs</code> with the elements of
    *  this list starting at position <code>start</code>. Does not
    *  work with empty lists.
+   *
    *  @param xs the array to fill.
    *  @param start starting index.
    *  @return the given array <code>xs</code> filled with this list.
@@ -612,6 +650,7 @@ trait List[+a] extends Seq[a] {
    *  <p/>
    *  Ex: <br/>
    *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+   *
    *  @param start starting string.
    *  @param sep separator string.
    *  @param end ending string.
@@ -628,6 +667,7 @@ trait List[+a] extends Seq[a] {
   /** Return a list formed from this list and the specified list
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
+   *
    *  @param that must have the same length as the self list.
    *  @return <code>[(a0,b0), ..., (an,bn)]</code> when
    *  <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
@@ -638,6 +678,7 @@ trait List[+a] extends Seq[a] {
     else Pair(this.head, that.head) :: this.tail.zip(that.tail);
 
   /** Tests if the given value <code>elem</code> is a member of this list.
+   *
    *  @param elem element whose membership has to be tested.
    *  @return True iff there is an element of this list which is
    *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
@@ -646,6 +687,7 @@ trait List[+a] extends Seq[a] {
 
   /** Computes the union of this list and the given list
    *  <code>that</code>.
+   *
    *  @param that the list of elements to add to the list.
    *  @return a list without doubles containing the elements of this
    *  list and those of the given list <code>that</code>.
@@ -659,6 +701,7 @@ trait List[+a] extends Seq[a] {
 
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
+   *
    *  @param that the list of elements to remove from this list.
    *  @return this list without the elements of the given list <code>that</code>.
    */
@@ -671,6 +714,7 @@ trait List[+a] extends Seq[a] {
 
   /** Computes the intersection between this list and the given list
    *  <code>that</code>.
+   *
    *  @param that the list to intersect.
    *  @return the list of elements contained both in this list and
    *          in the given list <code>that</code>.
@@ -679,6 +723,7 @@ trait List[+a] extends Seq[a] {
 
   /** Removes redundant elements from the list. Uses the method <code>==</code>
    *  to decide if two elements are identical.
+   *
    *  @return the list without doubles.
    */
   def removeDuplicates: List[a] = match {
@@ -687,5 +732,6 @@ trait List[+a] extends Seq[a] {
       if (tail contains head) tail.removeDuplicates
       else head :: tail.removeDuplicates
   }
+
 }
 
