@@ -1,0 +1,2894 @@
+\documentclass[11pt]{report}
+
+\usepackage{fleqn,a4wide,vquote,modefs,math,prooftree,funneldefs}
+\newcommand{\exercise}{\paragraph{Exercise:}}
+
+\title{Scala By Examples}
+
+\author{
+Martin Odersky
+}
+
+\sloppy
+\begin{document}
+\maketitle
+
+\chapter{\label{sec:example-one}A First Example}
+
+As a first example, here is an implementation of Quicksort in Scala.
+\begin{verbatim}
+def sort(a: Array[Int]): Unit = {
+
+  def swap(i: Int, j: Int): Unit = {
+    val t = a(i); a(i) = a(j); a(j) = t;
+  }
+
+  def sort1(l: Int, r: Int): Unit = {
+    val pivot = a((l + r) / 2);
+    var i = l, j = r;
+    while (i <= j) {
+      while (a(i) < pivot) { i = i + 1 }
+      while (a(j) > pivot) { j = j - 1 }
+      if (i <= j) {
+        swap(i, j);
+        i = i + 1;
+        j = j - 1;
+      }
+    }
+    if (l < j) sort1(l, j);
+    if (j < r) sort1(i, r);
+  }
+
+  sort1(0, a.length - 1);
+}
+\end{verbatim}
+The implementation looks quite similar to what one would write in
+Java or C.  In particular, we use the same operators and similar control
+structures.  There are also some minor syntactical differences. In particular:
+\begin{itemize}
+\item
+Definitions start with a reserved word. Function definitions start
+with \verb@def@, variable definitions start with \verb@var@ and
+definitions of values (i.e. read only variables) start with \verb@val@.
+\item
+The declared type of a symbol is given after the symbol and a colon.
+The declared type can often be omitted, because the compiler can infer
+it from the context.
+\item
+We use \verb@Unit@ instead of \verb@void@ to define the result type of
+a procedure.
+\item
+Array types are written \verb@Array[$T$]@ rather than \verb@$T$[]@.
+\item
+Functions can be nested inside other functions. Nested functions can
+access parameters and local variables of enclosing functions. For
+instance, the name of the array \verb@a@ is visible in functions
+\verb@swap@ and \verb@sort1@, and therefore need not be passed as a
+parameter to them.
+\end{itemize}
+So far, Scala looks like a fairly conventional language with some
+syntactic quirks. In fact it is possible to write programs in a
+conventional imperative or object-oriented style. This is important
+because it is one of the things that makes it easy to combine Scala
+components with components written in mainstream languages such as
+Java, C\# or Visual Basic.
+
+However, it is also possible to write programs in a style which looks
+completely different. Here is Quicksort again, this time written in
+functional style.
+
+\begin{verbatim}
+def sort(a: Array[Int]): Array[Int] = {
+  val pivot = a(a.length / 2);
+  sort(a.filter(x => x < pivot))
+    append  a.filter(x => x == pivot)
+    append  sort(a.filter(x => x > pivot))
+}
+\end{verbatim}
+
+The functional program captures the essence of the quicksort algorithm
+in a concise way:
+\begin{itemize}
+\item Pick an element in the middle of the array as a pivot.
+\item Partition the array into two sub-arrays containing elements that
+are less than, respectively greater than the pivot element, and a
+third array which contains elements equal to privot.
+\item Sort the first two sub-arrays by a recursive invocation of
+the sort function\footnote{This is not quite what the imperative algorithm does;
+the latter partitions the array into two subarrays containing elements
+less than or greater or equal to pivot.}
+\item The result is obtained by appending the three sub-arrays together.
+\end{itemize}
+Both the imperative and the functional implementation have the same
+asymptotic complexity -- $O(N;log(N))$ in the average case and
+$O(N^2)$ in the worst case. But where the imperative implementation
+operates in place by modifying the argument array, the functional
+implementation returns a new sorted array and leaves the argument
+array unchanged. The functional implementation thus requires more
+transient memory than the imperative one.
+
+The functional implementation makes it look like Scala is a language
+that's specialized for functional operations on arrays. In fact, it
+is not; all of the operations used in the example are simple library
+methods of a class \verb@Array[t]@ which is part of the standard
+Scala library, and which itself is implemented in Scala.
+
+In particular, there is the method \verb@filter@ which takes as
+argument a {\em predicate function} that maps array elements to
+Boolean values. The result of \verb@filter@ is an array consisting of
+all the elements of the original array for which the given predicate
+function is true.  The \verb@filter@ method of an object of type
+\verb@Array[t]@ thus has the signature
+\begin{verbatim}
+  def filter(p: (t)Boolean): Array[t]  .
+\end{verbatim}
+Here, \verb@(t)Boolean@ is the type of functions that take an element
+of type \verb@t@ and return a \verb@Boolean@.  Functions like
+\verb@filter@ that take another function as argument or return one as
+result are called {\em higher-order} functions.
+
+In the quicksort program, \verb@filter@ is applied three times to an
+anonymous function argument.  The first argument,
+\verb@x => x <= pivot@ represents the function that maps its parameter
+\verb@x@ to the Boolean value \verb@x <= pivot@. That is, it yields
+true if \verb@x@ is smaller or equal than \verb@pivot@, false
+otherwise. The function is anonymous, i.e.\ it is not defined with a
+name. The type of the \verb@x@ parameter is omitted because a Scala
+compiler can infer it automatically from the context where the
+function is used. To summarize, \verb@a.filter(x => x <= pivot)@
+returns an array consisting of all elements of the array \verb@a@ that are
+smaller than \verb@pivot@.
+
+It is also possible to apply higher-order functions such as
+\verb@filter@ to named function arguments. Here is functional
+quicksort again, where the two anonymous functions are replaced by
+named auxiliary functions that compare the argument to the
+\verb@pivot@ value.
+
+\begin{verbatim}
+def sort (a: Array[Int]): Array[Int] = {
+  val pivot = a(a.length / 2);
+  def leqPivot(x: Int) = x <= pivot;
+  def gtPivot(x: Int) = x > pivot;
+  def eqPivot(x: Int) = x == pivot;
+  sort(a filter leqPivot)
+    append sort(a filter eqPivot)
+    append sort(a filter gtPivot)
+}
+\end{verbatim}
+
+An object of type \verb@Array[t]@ also has an \verb@append@ method
+which takes an another array and returns the result of appending this
+array to itself. This method has the signature
+\begin{verbatim}
+  def append(that: Array[t]): Array[t] .
+\end{verbatim}
+\verb@append@ is used in the Quicksort example as a binary infix
+operator that connects the two sub-arrays resulting from the
+partition. In fact, any method can be used as an operator in Scala.
+The binary operation $E;op;E'$ is always interpreted as the method
+call $E.op(E')$. In the Quicksort example, we could have written
+equivalently
+\begin{verbatim}
+  sort(a.filter(leqPivot))
+    .append(sort(a.filter(eqPivot)))
+    .append(sort(a.filter(gtPivot))) .
+\end{verbatim}
+
+Looking again in detail at the first, imperative implementation of
+Quicksort, we find that many of the language constructs used in the
+second solution are also present, albeit in a disguised form.
+
+For instance, ``standard'' binary operators such as \verb@+@,
+\verb@-@, or \verb@<@ are not treated in any special way. Like
+\verb@append@, they are methods of their left operand. Consequently,
+the expression \verb@i + 1@ is regarded as the invocation
+\verb@i.+(1)@ of the \verb@+@ method of the integer value \verb@x@.
+Of course, a compiler is free (if it is moderately smart, even expected)
+to recognize the special case of calling the \verb@+@ method over
+integer arguments and to generate efficient inline code for it.
+
+Control constructs such as \verb@while@ are also not primitive but are
+predefined functions in the standard Scala library. Here is the
+definition of \verb@while@ in Scala.
+\begin{verbatim}
+def while (def p: Boolean) (def s: Unit): Unit = if (p) { s ; while(p)(s) }
+\end{verbatim}
+The \verb@while@ function takes as first parameter a test function,
+which takes no parameters and yields a Boolean value. As second
+parameter it takes an action function which also takes no parameters
+and yields a trivial result. \verb@while@ invokes the action function
+as long as the test function yields true. Again, compilers are free to
+pick specialized implementations of \verb@while@ that have the same
+behavior as the invocation of the function given above.
+
+\chapter{\label{sec:ex-auction}Programming with Actors and Messages}
+
+Here's an example that shows an application area for which Scala is
+particularly well suited. Consider the task of implementing an
+electronic auction service. We will use an Erlang-style actor process
+model to implement the participants of the auction. Actors are
+objects to which messages are sent. Every process has a ``mailbox'' of
+its incoming messages which is represented as a queue. It can work
+sequentially through the messages in its mailbox, or search for
+messages matching some pattern.
+
+For every traded item there is an auctioneer process that publishes
+information about the traded item, that accepts offers from clients
+and that communicates with the seller and winning bidder to close the
+transaction. We present an overview of a simple implementation
+here.
+%More detailed explanations are given in Chapter~\ref{sec:actors}
+%where the implementation of actor primitives is discussed.
+
+As a first step, we define the messages that are exchanged during
+an auction. There are two base classes: \verb@AuctionMessage@ for messages
+from clients to the auction service, and \verb@AuctionReply@ for
+replies from the service to the clients. These are defined as follows.
+\begin{verbatim}
+abstract class AuctionMessage;
+case class Offer(bid: Int, client: Actor) extends AuctionMessage;
+case class Inquire(client: Actor) extends AuctionMessage;
+
+abstract class AuctionReply;
+case class Status(asked: Int, expiration: Date) extends AuctionReply;
+case class BestOffer extends AuctionReply;
+case class BeatenOffer(maxBid: Int) extends AuctionReply;
+case class AuctionConcluded(seller: Actor, client: Actor) extends AuctionReply;
+case class AuctionFailed extends AuctionReply;
+case class AuctionOver extends AuctionReply;
+\end{verbatim}
+
+\begin{figure}[h]
+\begin{verbatim}
+class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor with {
+
+  val timeToShutdown = 36000000; \=// msec
+  val increment = 10;                \>// bid increment
+
+  def run = {
+    var maxBid = minBid - increment;
+    var maxBidder: Actor;
+    while (True) {
+      receiveWithin ((closing - Date.currentDate).msec) {
+	case Offer(bid, client) =>
+	  if (bid >= askedBid) {
+            if (maxBid >= minBid) maxBidder send BeatenOffer(bid);
+            maxBid = bid;
+            maxBidder = client;
+            client send BestOffer;
+          } else {
+            client send BeatenOffer(maxBid);
+          }
+
+	case Inquire(client) =>
+	  client send Status(askedBid, closing);
+
+	case TIMEOUT =>
+	  if (maxBid >= minBid) {
+	    val reply = AuctionConcluded(seller, maxBidder);
+	    maxBidder send reply;
+	    seller send reply;
+	  } else {
+	    seller send AuctionFailed;
+          }
+          receiveWithin(timeToShutdown) {
+            case Offer(_, client) => client send AuctionOver
+            case TIMEOUT => stop
+          }
+      }
+    }
+  }
+\end{verbatim}
+\caption{\label{fig:simple-auction}Implementation of an Auction Service}
+\end{figure}
+
+These messages might well be ultimately implemented as small XML
+documents. We expect automatic tools to exist that convert between XML
+documents and internal data structures like the ones defined above.
+
+Figure~\ref{fig:simple-auction} presents a Scala implementation of a
+class \verb@Auction@ for auction processes that coordinate the bidding
+on one item. Objects of this class are created by indicating
+\begin{itemize}
+\item
+a seller process which needs to be notified when the auction is over,
+\item
+a minimal bid,
+\item
+the date when the auction is to be closed.
+\end{itemize}
+The process behavior is defined by its \verb@run@ method. That method
+repeatedly selects (using \verb@receiveWithin@) a message and reacts to it,
+until the auction is closed, which is signalled by a \verb@TIMEOUT@
+message. Before finally stopping, it stays active for another period
+determined by the \verb@timeToShutdown@ constant and replies to
+further offers that the auction is closed.  Here are some further
+explanations of the constructs used in this program:
+\begin{itemize}
+\item
+The \verb@receiveWithin@ method of class \verb@Actor@ takes as
+parameters a time span given in milliseconds and a function that
+processes messages in the mailbox. The function is given by a sequence
+of cases that each specify a pattern and an action to perform for
+messages matching the pattern. The \verb@receiveWithin@ method selects
+the first message in the mailbox which matches one of these patterns
+and applies the corresponding action to it.
+\item
+The last case of \verb@receiveWithin@ is guarded by a
+\verb@TIMEOUT@ pattern. If no other messages are received in the meantime, this
+pattern is triggered after the time span which is passed as argument
+to the enclosing \verb@receiveWithin@ method. \verb@TIMEOUT@ is a
+particular instance of class \verb@Message@, which is triggered by the
+\verb@Actor@ implementation itself.
+\item
+Reply messages are sent using syntax of the form
+\verb@destination send SomeMessage@. \verb@send@ is used here as a
+binary operator with a process and a message as arguments. This is
+equivalent in Scala to the method call
+\verb@destination.send(SomeMessage)@, i.e. the invocation of
+the \verb@send@ of the destination process with the given message as
+parameter.
+\end{itemize}
+The preceding discussion gave a flavor of distributed programming in
+Scala. It might seem that Scala has a rich set of language constructs
+that support actor processes, message sending and receiving,
+programming with timeouts, etc. In fact, the opposite is true. All the
+constructs discussed above are offered as methods in the library class
+\verb@Actor@. That class is itself implemented in Scala; it is based
+on the more low-level process model of functional nets, and is thus
+closely related to modern foundational process calculi. The
+implementation of all features of class \verb@Actor@ used here is
+given in Section~\ref{sec:actors}.
+
+The advantages of this approach are relative simplicity of the core
+language and flexibility for library designers. Because the core
+language need not specify details of high-level process communication,
+it can be kept simpler and more general. Because the particular model
+of messages in a mailbox is a library module, it can be freely
+modified if a different model is needed in some applications.  The
+approach requires however that the core language is expressive enough
+to provide the necessary language abstractions in a convenient
+way. Scala has been designed with this in mind; one of its major
+design goals was that it should be flexible enough to act as a
+convenient host language for domain specific languages implemented by
+library modules. For instance, the actor communication constructs
+presented above can be regarded as one such domain specific language,
+which conceptually extends the Scala core.
+
+\chapter{Classes and Objects}
+\label{chap:classes}
+
+Scala does not have a built-in type of rational numbers, but it is
+easy to define one, using a class. Here's a possible
+implementation.
+
+\begin{verbatim}
+class Rational(n: Int, d: Int) with {
+  private def gcd(x: Int, y: Int): Int = {
+    if (x == 0) y
+    else if (x < 0) gcd(-x, y)
+    else if (y < 0) -gcd(x, -y)
+    else gcd(y % x, x);
+  }
+  private val g = gcd(n, d);
+
+  val numer: Int = n/g;
+  val denom: Int = d/g;
+  def +(that: Rational) =
+    new Rational(numer * that.denom + that.numer * denom, denom * that.denom);
+  def -(that: Rational) =
+    new Rational(numer * that.denom - that.numer * denom, denom * that.denom);
+  def *(that: Rational) =
+    new Rational(numer * that.numer, denom * that.denom);
+  def /(that: Rational) =
+    new Rational(numer * that.denom, denom * that.numer);
+}
+\end{verbatim}
+This defines \verb@Rational@ as a class which takes two constructor arguments
+\verb@n@ and \verb@d@, containing the number's numerator and denominator.
+The class provides fields which return the number's numerator and
+denominator as well as methods for arithmetic over rational numbers.
+Each arithmetic method takes as parameter the right operand of the
+operation. The left operand of the operation is always the rational
+number of which the method is a member.
+
+\paragraph{Private members.}
+The implementation of rational numbers defines a private method
+\verb@gcd@ which computes the greatest common denominator of two
+integers, as well as a private field \verb@g@ which contains the
+\verb@gcd@ of the constructor arguments. These members are inaccessible
+outside class \verb@Rational@. They are used in the implementation of
+the class to eliminate common factors in the constructor arguments in
+order to ensure that nominator and denominator are always in
+normalized form.
+
+\paragraph{Creating and Accessing Objects.}
+As an example of how rational numbers can be used, here's a program
+that prints the sum of all numbers $1/i$ where $i$ ranges from 1 to 10.
+\begin{verbatim}
+var i = 1;
+var x = Rational(0, 1);
+while (i <= 10) {
+  x = x + Rational(1,i);
+  i = i + 1;
+}
+System.out.println(x.numer + "/" + x.denom);
+\end{verbatim}
+
+\paragraph{Inheritance and Overriding.}
+Every class in Scala has a superclass which it extends.
+Excepted is only the root class \verb@Object@, which does not have a
+superclass, and which is indirectly extended by every other class.
+If a class does not mention a superclass in its definition, the root
+class \verb@Object@ is implicitly assumed. For instance, class
+\verb@Rational@ could equivalently be defined as
+\begin{verbatim}
+class Rational(n: Int, d: Int) extends Object with {
+  ... // as before
+}
+\end{verbatim}
+A class inherits all members from its superclass. It may also redefine
+(or: {\em override}) some inherited members. For instance, class
+\verb@Object@ defines
+a method
+\verb@toString@ which returns a representation of the object as a string:
+\begin{verbatim}
+class Object {
+  ...
+  def toString(): String = ...
+}
+\end{verbatim}
+The implementation of \verb@toString@ in \verb@Object@
+forms a string consisting of the object's class name and a number. It
+makes sense to redefine this method for objects that are rational
+numbers in order to get a more useful behavior:
+\begin{verbatim}
+class Rational(n: Int, d: Int) extends Object with {
+  ... // as before
+  override def toString() = numer + "/" + denom;
+}
+\end{verbatim}
+Note that, unlike in Java, redefining definitions need to be preceded
+by an \verb@override@ modifier.
+
+If class $A$ extends class $B$, then objects of type $A$ may be used
+whereever objects of type $B$ are expected. We say in this case that
+type $A$ {\em conforms} to type $B$.  For instance, \verb@Rational@
+conforms to \verb@Object@, so it is legal to assign a \verb@Rational@
+value to a variable of type \verb@Object@:
+\begin{verbatim}
+var x: Object = new Rational(1,2);
+\end{verbatim}
+
+\paragraph{Parameterless Methods.}
+%Also unlike in Java, methods in Scala do not necessarily take a
+%parameter list. An example is \verb@toString@; the method is invoked
+%by simply mentioning its name. For instance:
+%\begin{verbatim}
+%val r = new Rational(1,2);
+%System.out.println(r.toString());	// prints``1/2''
+%\end{verbatim}
+Also unlike in Java, methods in Scala do not necessarily take a
+parameter list. An example is \verb@square@; the method is invoked by
+simply mentioning its name. For instance:
+\begin{verbatim}
+class Rational(n: Int, d: Int) extends Object with {
+  ... // as before
+  def square = Rational(numer*numer, denom*denom);
+}
+val r = new Rational(3,4);
+System.out.println(r.square);		// prints``9/16''
+\end{verbatim}
+That is, parameterless methods are accessed just as value fields such
+as \verb@numer@ are. The difference between values and parameterless
+methods lies in their definition. The right-hand side of a value is
+evaluated when the object is created, and the value does not change
+afterwards. A right-hand side of a parameterless method, on the other
+hand, is evaluated each time the method is called.  The uniform access
+of fields and parameterless methods gives increased flexibility for
+the implementer of a class. Often, a field in one version of a class
+becomes a computed value in the next version. Uniform access ensures
+that clients do not have to be rewritten because of that change.
+
+\paragraph{Abstract Methods.}
+Classes can also omit some of the definitions of their members.  As an
+example, consider the following class \verb@Ord@ which provides the
+comparison operators \verb@<, >, <=, >=@.
+%\begin{verbatim}
+%abstract class Ord with {
+%  abstract def <(that: this);
+%  def <=(that: this)  =  this < that || this == that;
+%  def >(that: this)  =  that < this;
+%  def >=(that: this)  =  that <= this;
+%}
+%\end{verbatim}
+\begin{verbatim}
+abstract class Ord with {
+  def <(that: this): Boolean;
+  def <=(that: this)  =  this < that || this == that;
+  def >(that: this)  =  that < this;
+  def >=(that: this)  =  that <= this;
+}
+\end{verbatim}
+Since we want to leave open which objects are compared, we are unable
+to give an implementation for the \verb@<@ method. However, once
+\verb@<@ is given, we can define the other three comparison operators
+in terms of \verb@<@ and the equality test \verb@==@ (which is defined
+in class \verb@Object@).  This is expressed by having in \verb@Ord@ an
+{\em abstract} method \verb@<@ to which the implementations of the
+other methods refer.
+
+\paragraph{Self References.} The name \verb@this@ refers in this class
+to the current object. The type of \verb@this@ is also called
+\verb@this@ (generally, every name in Scala can have a definition as a
+term and another one as a type).  When used as a type, \verb@this@
+refers to the type of the current object. This type is always
+compatible with the class being defined (\verb@Ord@ in this case).
+
+\paragraph{Mixin Composition.}
+We can now define a class of \verb@Rational@ numbers that
+support comparison operators.
+\begin{verbatim}
+final class OrderedRational(n: Int, d: Int)
+ extends Rational(n, d) with Ord with {
+  override def ==(that: OrderedRational) =
+    numer == that.numer && denom == that.denom;
+  def <(that: OrderedRational): Boolean =
+    numer * that.denom < that.numer * denom;
+}
+\end{verbatim}
+Class \verb@OrderedRational@ redefines method \verb@==@, which is
+defined as reference equality in class \verb@Object@. It also
+implements the abstract method \verb@<@ from class \verb@Ord@.  In
+addition, it inherits all members of class \verb@Rational@ and all
+non-abstract members of class \verb@Ord@. The implementations of
+\verb@==@ and \verb@<@ replace the definition of \verb@==@ in class
+\verb@Object@ and the abstract declaration of \verb@<@ in class
+\verb@Ord@. The other inherited comparsion methods then refer to this
+implementation in their body.
+
+The clause ``\verb@Rational(d, d) with Ord@'' is an instance of {\em
+mixin composition}. It describes a template for an object that is
+compatible with both \verb@Rational@ and \verb@Ord@ and that contains
+all members of either class. \verb@Rational@ is called the {\em
+superclass} of \verb@OrderedRational@ while \verb@Ord@ is called a
+{\em mixin class}. The type of this template is the {\em compound
+type} ``\verb@Rational with Ord@''.
+
+On the surface, mixin composition looks much like multiple
+inheritance. The difference between the two becomes apparent if we
+look at superclasses of inherited classes. With multiple inheritance,
+both \verb@Rational@ and \verb@Ord@ would contribute a superclass
+\verb@Object@ to the template. We therefore have to answer some
+tricky questions, such as whether members of \verb@Object@ are present
+once or twice and whether the initializer of \verb@Object@ is called
+once or twice. Mixin composition avoids these complications.  In the
+mixin composition \verb@Rational with Ord@, class
+\verb@Rational@ is treated as actual superclass of class \verb@Ord@.
+A mixin composition \verb@C with M@ is well-formed as long as the
+first operand \verb@C@ conforms to the declared superclass of the
+second operand \verb@M@. This holds in our example, because
+\verb@Rational@ conforms to \verb@Object@. In a sense, mixin composition
+amounts to overriding the superclass of a class.
+
+\paragraph{Final Classes.}
+Note that class \verb@OrderedRational@ was defined
+\verb@final@. This means that no classes extending \verb@OrderedRational@
+may be defined in other parts of the program.
+%Within final classes the
+%type \verb@this@ is an alias of the defined class itself. Therefore,
+%we could define our \verb@<@ method with an argument of type
+%\verb@OrderedRational@ as a well-formed implementation of the abstract class
+%\verb@less(that: this)@ in class \verb@Ord@.
+
+
+\chapter{Generic Types and Methods}
+
+Classes in Scala can have type parameters. We demonstrate the use of
+type parameters with iterators as an example. An iterator is an object
+which traverses a sequence of values, using two abstract methods.
+\begin{verbatim}
+abstract class Iterator[a] with {
+  def hasNext: Boolean;
+  def next: a;
+\end{verbatim}
+Method \verb@next@ returns succesive elements.  Method \verb@hasNext@
+indicates whether there are still more elements to be returned by
+\verb@next@. The type of elements returned by an iterator is
+arbitrary. We express that by giving the class \verb@Iterator@ the
+type parameter \verb@a@. Type parameters are written in square
+brackets, in contrast to normal value parameters, which are written in
+parentheses.  Iterators also support other methods, which are
+explained in the following.
+
+Method \verb@foreach@ applies a procedure (i.e. a function
+returning \verb@Unit@ to each element returned by the iterator:
+\begin{verbatim}
+  def foreach(f: (a)Unit): Unit =
+    while (hasNext) { f(next) }
+\end{verbatim}
+
+Method \verb@append@ constructs an iterator which resumes with the
+given iterator \verb@it@ after the current iterator has finished.
+\begin{verbatim}
+  def append(that: Iterator[a]): Iterator[a] = new Iterator[a] with {
+    def hasNext = outer.hasNext || that.hasNext;
+    def next = if (outer.hasNext) outer.next else that.next;
+  }
+\end{verbatim}
+The terms \verb@outer.next@ and \verb@outer.hasNext@ in the definition
+of \verb@append@ call the corresponding methods as they are defined in
+the enclosing \verb@Iterator@ class. Generally, an
+\verb@outer@ prefix in a selection indicates an identifer that is
+visible immediately outside the current class or template. If the
+\verb@outer@ prefix would have been missing,
+\verb@hasNext@ and \verb@next@ would have
+called recursively the methods being defined in the iterator
+constructed by \verb@append@, which is not what we want.
+
+Method \verb@filter@ constructs an iterator which returns all elements
+of the original iterator that satisfy a criterion \verb@p@.
+\begin{verbatim}
+  def filter(p: (a)Boolean) = new Iterator[a] with {
+    private class Cell[T](elem_: T) with { def elem = elem_; }
+    private var head: Cell[a] = null;
+    private var isAhead = False;
+    def hasNext: Boolean =
+      if (isAhead) True
+      else if (outer.hasNext) {
+        head = Cell(outer.next); isAhead = p(head.elem); hasNext }
+      else False;
+    def next: a =
+      if (hasNext) { isAhead = False; head.elem }
+      else error("next on empty iterator");
+  }
+\end{verbatim}
+Method \verb@map@ constructs an iterator which returns all elements of
+the original iterator transformed by a given function \verb@f@.
+\begin{verbatim}
+  def map[b](f: (a)b) = new Iterator[b] with {
+    def hasNext: Boolean = outer.hasNext;
+    def next: b = f(outer.next);
+  }
+\end{verbatim}
+The return type of the transformation function \verb@f@ is
+arbitrary. This is expressed by a type parameter \verb@b@ in the
+signature of method \verb@map@, which represents the return type.
+We also say, \verb@map@ is a {\em polymorphic} function.
+
+Method \verb@flatMap@ is like method \verb@map@, except that the
+transformation function \verb@f@ now returns an iterator.
+The result of \verb@flatMap@ is the iterator resulting from appending
+together all iterators returned from successive calls of \verb@f@.
+\begin{verbatim}
+    private var cur: Iterator[b] = new EmptyIterator[b];
+    def hasNext: Boolean =
+      if (cur.hasNext) True
+      else if (outer.hasNext) { cur = f(outer.next); hasNext }
+      else False;
+    def next: b =
+      if (cur.hasNext) cur.next
+      else if (outer.hasNext) { cur = f(outer.next); next }
+      else error("next on empty iterator");
+  }
+\end{verbatim}
+Finally, method \verb@zip@ takes another iterator and
+returns an iterator consisting of pairs of corresponding elements
+returned by the two iterators.
+\begin{verbatim}
+  def zip[b](that: Iterator[b]) = new Iterator[(a, b)] with {
+    def hasNext = outer.hasNext && that.hasNext;
+    def next = (outer.next, that.next);
+  }
+} //end iterator;
+\end{verbatim}
+Concrete iterators need to provide implementations for the two
+abstract methods \verb@next@ and \verb@hasNext@ in class
+\verb@Iterator@. The simplest iterator is \verb@EmptyIterator@
+which always returns an empty sequence:
+\begin{verbatim}
+class EmptyIterator[a] extends Iterator[a] with {
+  def hasNext = False;
+  def next: a = error("next on empty iterator");
+}
+\end{verbatim}
+A more interesting iterator enumerates all elements of an array.
+This iterator is formulated here as a polymorphic function. It could
+have also been written as a class, like \verb@EmptyIterator@. The
+difference between the two formulation is that classes also define new
+types, whereas functions do not.
+\begin{verbatim}
+def arrayIterator[a](xs: Array[a]) = new Iterator[a] with {
+  private var i = 0;
+  def hasNext: Boolean =
+    i < xs.length;
+  def next: a =
+    if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
+    else error("next on empty iterator");
+}
+\end{verbatim}
+Another iterator enumerates an integer interval:
+\begin{verbatim}
+def range(lo: Int, hi: Int) = new Iterator[Int] with {
+  private var i = lo;
+  def hasNext: Boolean =
+    i <= hi;
+  def next: Int =
+    if (i <= hi) { i = i + 1 ; i - 1 }
+    else error("next on empty iterator");
+}
+\end{verbatim}
+%In fact, enumerating integer intervals is so common that it is
+%supported by a method
+%\begin{verbatim}
+%def to(hi: Int): Iterator[Int]
+%\end{verbatim}
+%in class \verb@Int@. Hence, one could also write \verb@l to h@ instead of
+%\verb@range(l, h)@.
+All iterators seen so far terminate eventually. It is also possible to
+define iterators that go on forever. For instance, the following
+iterator returns successive integers from some start
+value\footnote{Due to the finite representation of type \prog{Int},
+numbers will wrap around at $2^31$.}.
+\begin{verbatim}
+def from(start: Int) = new Iterator[Int] with {
+  private var last = start - 1;
+  def hasNext = True;
+  def next = { last = last + 1; last }
+}
+\end{verbatim}
+Here are two examples how iterators are used. First, to print all
+elements of an array \verb@xs: Array[Int]@, one can write:
+\begin{verbatim}
+  arrayIterator[Int](xs) foreach (x => System.out.println(x))
+\end{verbatim}
+Here, \verb@[Int]@ is a type argument clause, which matches the type
+parameter clause \verb@[a]@ of function \verb@arrayIterator@. It
+substitutes the formal argument \verb@Int@ for the formal argument
+\verb@a@ in the type of the method that follows. Hence,
+\verb@arrayIterator[a]@ is a function that takes an \verb@Array[Int]@
+and that returns an \verb@Iterator[Int]@.
+
+In this example, the formal type argument \verb@Int@ is redundant
+since it could also have been inferred from the value \verb@xs@, which
+is, after all, an array of \verb@Int@. The Scala compiler contains a
+fairly powerful type inferencer which infers type arguments for
+methods and constructors from the types of value arguments and the
+expected return type. In our example, the \verb@[Int]@ clause can be
+inferred, so that one can abbreviate to:
+\begin{verbatim}
+  arrayIterator(xs) foreach (x => System.out.println(x))
+\end{verbatim}
+%As a second example, consider the problem of finding the indices of
+%all the elements in an array of \verb@Double@s greater than some
+%\verb@limit@. The indices should be returned as an iterator.
+%This is achieved by the following expression.
+%\begin{verbatim}
+%arrayIterator(xs)
+%  .zip(from(0))
+%  .filter(x, i => x > limit)
+%  .map(x, i => i)
+%\end{verbatim}
+%The first line in this expression iterates through all array elements,
+%the second lines pairs elements with their indices, the third line
+%selects all value/index pairs where the value is greater than
+%\verb@limit@, and the fourth line returns the index part of all
+%selected pairs.
+
+%Note that we have omitted the type arguments for the calls of
+%\verb@arrayIterator@, \verb@zip@ and \verb@map@. These are all
+%implicitly inserted by the type inferencer.
+
+\chapter{\label{sec:for-notation}For-Comprehensions}
+
+The last chapter has demonstrated that the use of higher-order
+functions over sequences can lead to very concise programs. But
+sometimes the level of abstraction required by these functions makes a
+program hard to understand.
+
+Here, Scala's \verb@for@ notation can help. For instance, say we are
+given a sequence \verb@persons@ of persons with \verb@name@ and
+\verb@age@ fields.  That sequence could be an array, or a list, or an
+iterator, or some other type implementing the sequence abstraction
+(this will be made more precise below). To print the names of all
+persons in the sequence which are aged over 20, one writes:
+\begin{verbatim}
+for { val p <- persons; p.age > 20 } yield p.name
+\end{verbatim}
+This is equivalent to the following expression , which uses
+higher-order functions \verb@filter@ and \verb@map@:
+\begin{verbatim}
+persons filter (p => p.age > 20) map (p => p.name)
+\end{verbatim}
+The for-expression looks a bit like a for-loop in imperative languages,
+except that it constructs a list of the results of all iterations.
+
+Generally, a for-comprehension is of the form
+\begin{verbatim}
+for ( s ) yield e
+\end{verbatim}
+(Instead of parentheses, braces may also be used.)
+Here, \verb@s@ is a sequence of {\em generators} and {\em filters}.
+\begin{itemize}
+\item A {\em generator} is of the form \verb@val x <- e@,
+where \verb@e@ is a list-valued expression. It binds \verb@x@ to
+successive values in the list.
+\item A {\em filter} is an expression \verb@f@ of type \verb@Boolean@.
+It omits from consideration all bindings for which \verb@f@ is \verb@False@.
+\end{itemize}
+The sequence must start with a generator.
+If there are several generators in a sequence, later generators vary
+more rapidly than earlier ones.
+
+Here are two examples that show how for-comprehensions are used.
+
+First, given a positive integer \verb@n@, find all pairs of positive
+integers
+\verb@i@, \verb@j@, where \verb@1 <= j < i <= n@ such that \verb@i + j@ is prime.
+\begin{verbatim}
+for \={ \=val i <- range(1, n);
+    \>  \>val j <- range(1, i-1);
+    \>  \>isPrime(i+j)
+} yield (i, j)
+\end{verbatim}
+
+As second example, the scalar product of two vectors \verb@xs@ and
+\verb@ys@ can now be written as
+follows.
+\begin{verbatim}
+  sum (for { val (x, y) <- xs zip ys } yield x * y)
+\end{verbatim}
+The for-notation is essentially equivalent to common operations of
+database query languages.  For instance, say we are given a book
+database \verb@books@, represented as a list of books, where
+\verb@Book@ is defined as follows.
+\begin{verbatim}
+abstract class Book with {
+  val title: String;
+  val authors: List[String]
+}
+\end{verbatim}
+\begin{verbatim}
+val books: List[Book] = [
+  new Book with {
+    val title = "Structure and Interpretation of Computer Programs";
+    val authors = ["Abelson, Harald", "Sussman, Gerald J."];
+  },
+  new Book with {
+    val title = "Principles of Compiler Design";
+    val authors = ["Aho, Alfred", "Ullman, Jeffrey"];
+  },
+  new Book with {
+    val title = "Programming in Modula-2";
+    val authors = ["Wirth, Niklaus"];
+  }
+];
+\end{verbatim}
+Then, to find the titles of all books whose author's last name is ``Ullman'':
+\begin{verbatim}
+for { val b <- books; val a <- b.authors; a startsWith "Ullman"
+} yield b.title
+\end{verbatim}
+(Here, \verb@startsWith@ is a method in \verb@java.lang.String@).  Or,
+to find the titles of all books that have the string ``Program'' in
+their title:
+\begin{verbatim}
+for { val b <- books; (b.title indexOf "Program") >= 0
+} yield b.title
+\end{verbatim}
+Or, to find the names of all authors that have written at least two
+books in the database.
+\begin{verbatim}
+for { \=val b1 <- books;
+      \>val b2 <- books;
+      \>b1 != b2;
+      \>val a1 <- b1.authors;
+      \>val a2 <- b2.authors;
+      \>a1 == a2 } yield a1
+\end{verbatim}
+The last solution is not yet perfect, because authors will appear
+several times in the list of results.  We still need to remove
+duplicate authors from result lists.  This can be achieved with the
+following function.
+\begin{verbatim}
+def removeDuplicates[a](xs: List[a]): List[a] =
+  if (xs.isEmpty) xs
+  else xs.head :: removeDuplicates(xs.tail filter (x => x != xs.head));
+\end{verbatim}
+The last expression can be equivalently expressed as follows.
+\begin{verbatim}
+xs.head :: removeDuplicates(for (val x <- xs.tail; x != xs.head) yield x)
+\end{verbatim}
+
+\subsection*{Translation of \prog{for}}
+
+Every for-comprehensions can be expressed in terms of the three
+higher-order functions \verb@map@, \verb@flatMap@ and \verb@filter@.
+Here is the translation scheme, which is also used by the Scala compiler.
+\begin{itemize}
+\item
+A simple for-comprehension
+\begin{verbatim}
+for (val x <- e) yield e'
+\end{verbatim}
+is translated to
+\begin{verbatim}
+e.map(x => e')
+\end{verbatim}
+\item
+A for-comprehension
+\begin{verbatim}
+for (val x <- e; f; s) yield e'
+\end{verbatim}
+where \verb@f@ is a filter and \verb@s@ is a (possibly empty)
+sequence of generators or filters
+is translated to
+\begin{verbatim}
+for (val x <- e.filter(x => f); s) yield e'
+\end{verbatim}
+and then translation continues with the latter expression.
+\item
+A for-comprehension
+\begin{verbatim}
+for (val x <- e; y <- e'; s) yield e''
+\end{verbatim}
+where \verb@s@ is a (possibly empty)
+sequence of generators or filters
+is translated to
+\begin{verbatim}
+e.flatMap(x => for (y <- e'; s) yield e'')
+\end{verbatim}
+and then translation continues with the latter expression.
+\end{itemize}
+For instance, taking our "pairs of integers whose sum is prime" example:
+\begin{verbatim}
+for \= { \= val i <- range(1, n);
+    \>   \> val j <- range(1, i-1);
+    \>   \> isPrime(i+j)
+} yield (i, j)
+\end{verbatim}
+Here is what we get when we translate this expression:
+\begin{verbatim}
+range(1, n)
+  .flatMap(i =>
+    range(1, i-1)
+      .filter(j => isPrime(i+j))
+      .map(j => (i, j)))
+\end{verbatim}
+
+\exercise
+Define the following function in terms of \verb@for@.
+\begin{verbatim}
+def concat(xss: List[List[a]]): List[a] =
+  (xss foldr []) { xs, ys => xs ::: ys }
+\end{verbatim}
+\exercise
+Translate
+\begin{verbatim}
+for { val b <- books; val a <- b.authors; a startsWith "Bird" } yield b.title
+for { val b <- books; (b.title indexOf "Program") >= 0 } yield b.title
+\end{verbatim}
+to higher-order functions.
+
+We have seen that the for-translation only relies on the presence of
+methods \verb@map@,
+\verb@flatMap@, and \verb@filter@.
+This gives programmers the possibility to have for-syntax for
+other types as well -- one only needs to define \verb@map@,
+\verb@flatMap@, and \verb@filter@ for these types.
+That's also why we were able to define \verb@for@ at the same time for
+arrays, iterators, and lists -- all these types have the required
+three methods \verb@map@,\verb@flatMap@, and \verb@filter@ as members.
+Of course, it is also possible for users and librariy designers to
+define other types with these methods. There are many examples where
+this is useful: Databases, XML trees, optional values. We will see in
+Chapter~\ref{sec:parsers-results} how for-comprehesnions can be used in the
+definition of parsers for context-free grammars that construct
+abstract syntax trees.
+
+\chapter{\label{sec:simple-examples}Pattern Matching}
+
+\todo{Complete}
+
+Consider binary trees whose leafs contain integer arguments. This can
+be described by a class for trees, with subclasses for leafs and
+branch nodes:
+\begin{verbatim}
+abstract class Tree;
+case class Branch(left: Tree, right: Tree) extends Tree;
+case class Leaf(x: Int) extends Tree;
+\end{verbatim}
+Note that the class \verb@Tree@ is not followed by an extends
+clause or a body. This defines \verb@Tree@ to be an empty
+subclass of \verb@Object@, as if we had written
+\begin{verbatim}
+class Tree extends Object with {}
+\end{verbatim}
+Note also that the two subclasses of \verb@Tree@ have a \verb@case@
+modifier.  That modifier has two effects. First, it lets us construct
+values of a case class by simply calling the constructor, without
+needing a preceding \verb@new@. Example:
+\begin{verbatim}
+val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
+\end{verbatim}
+Second, it lets us use constructors for these classes in patterns, as
+is illustrated in the following example.
+\begin{verbatim}
+def sumLeaves(t: Tree): Int = t match {
+  case Branch(l, r) => sumLeaves(l) + sumLeaves(r)
+  case Leaf(x) => x
+}
+\end{verbatim}
+The function \verb@sumLeaves@ sums up all the integer values in the
+leaves of a given tree \verb@t@. It is is implemented by calling the
+\verb@match@ method of \verb@t@ with a {\em choice expression} as
+argument (\verb@match@ is a predefined method in class \verb@Object@).
+The choice expression consists of two cases which both
+relate a pattern with an expression. The pattern of the first case,
+\verb@Branch(l, r)@ matches all instances of class \verb@Branch@
+and binds the {\em pattern variables} \verb@l@ and \verb@r@ to the
+constructor arguments, i.e.\ the left and right subtrees of the
+branch.  Pattern variables always start with a lower case letter; to
+avoid ambiguities, constructors in patterns should start with an upper
+case letter.
+
+The effect of the choice expression is to select the first alternative
+whose pattern matches the given select value, and to evaluate the body
+of this alternative in a context where pattern variables are bound to
+corresponding parts of the selector. For instance, the application
+\verb@sumLeaves(tree1)@ would select the first alternative with the
+\verb@Branch(l,r)@ pattern, and would evaluate the expression
+\verb@sumLeaves(l) + sumLeaves(r)@ with bindings
+\begin{verbatim}
+l = Branch(Leaf(1), Leaf(2)), r = Branch(Leaf(3), Leaf(4)).
+\end{verbatim}
+As another example, consider the following class
+\begin{verbatim}
+abstract final class Option[a];
+case class None[a] extends Option[a];
+case class Some[a](item: a) extends Option[a];
+\end{verbatim}
+...
+
+%\todo{Several simple and intermediate examples needed}.
+
+\begin{verbatim}
+def find[a,b](it: Iterator[(a, b)], x: a): Option[b] = {
+  var result: Option[b] = None;
+  while (it.hasNext && result == None) {
+    val (x1, y) = it.next;
+    if (x == x1) result = Some(y)
+  }
+  result
+}
+find(xs, x) match {
+  case Some(y) => System.out.println(y)
+  case None => System.out.println("no match")
+}
+\end{verbatim}
+
+\comment{
+
+
+class MaxCounter with {
+  var maxVal: Option[Int] = None;
+  def set(x: Int) = maxVal match {
+    case None => maxVal = Some(x)
+    case Some(y) => maxVal = Some(Math.max(x, y))
+  }
+}
+\end{verbatim}
+}
+\comment{
+\begin{verbatim}
+class Stream[a] = List[a]
+
+module Stream with {
+  def concat(xss: Stream[Stream[a]]): Stream[a] = {
+    let result: Stream[a] = xss match {
+      case [] => []
+      case [] :: xss1 => concat(xss1)
+      case (x :: xs) :: xss1 => x :: concat(xs :: xss1)
+    }
+    result
+  }
+}
+\end{verbatim}
+}
+\comment{
+\chapter{Implementing Abstract Types: Search Trees}
+
+This chapter presents unbalanced binary search trees, implemented in
+three different styles: algebraic, object-oriented, and imperative.
+In each case, a search tree package is seen as an implementation
+of a class {\em MapStruct}.
+\begin{verbatim}
+abstract class MapStruct[kt, vt] with {
+  abstract type Map extends (kt)vt with {
+    def apply(key: kt): vt;
+    def extend(key: kt, value: vt): Map;
+    def remove(key: kt): Map;
+    def domain: Stream[kt];
+    def range: Stream[vt];
+  }
+  def empty: Map;
+}
+\end{verbatim}
+The \verb@MapStruct@ class is parameterized with a type of keys
+\verb@kt@ and a type of values \verb@vt@. It
+specifies an abstract type \verb@Map@ and an abstract value
+\verb@empty@, which represents empty maps.  Every implementation
+\verb@Map@ needs to conform to that abstract type, which
+extends the function type \verb@(kt)vt@
+with four new
+methods. The method \verb@domain@ yields a stream that enumerates the
+map's domain, i.e. the set of keys that are mapped to non-null values.
+The method \verb@range@ yields a stream that enumerates the function's
+range, i.e.\ the values obtained by applying the function to arguments
+in its domain.  The method
+\verb@extend@ extends the map with a given key/value binding, whereas
+\verb@remove@ removes a given key from the map's domain. Both
+methods yield a new map value as result, which has the same
+representation as the receiver object.
+
+\begin{figure}[t]
+\begin{verbatim}
+class AlgBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] with {
+  private case
+    Empty extends Map,
+    Node(key: kt, value: vt, l: Map, r: Map) extends Map
+
+  final class Map extends (kt)vt with {
+    def apply(key: kt): vt = this match {
+      case Empty => null
+      case Node(k, v, l, r) =>
+	if (key < k) l.apply(key)
+	else if (key > k) r.apply(key)
+	else v
+    }
+
+    def extend(key: kt, value: vt): Map = this match {
+      case Empty => Node(k, v, Empty, Empty)
+      case Node(k, v, l, r) =>
+	if (key < k) Node(k, v, l.extend(key, value), r)
+	else if (key > k) Node(k, v, l, r.extend(key, value))
+	else Node(k, value, l, r)
+    }
+
+    def remove(key: kt): Map = this match {
+      case Empty => Empty
+      case Node(k, v, l, r) =>
+	if (key < k) Node(k, v, l.remove(key), r)
+	else if (key > k) Node(k, v, l, r.remove(key))
+	else if (l == Empty) r
+	else if (r == Empty) l
+	else {
+	  val midKey = r.domain.head
+	  Node(midKey, r.apply(midKey), l, r.remove(midKey))
+	}
+    }
+
+    def domain: Stream[kt] = this match {
+      case Empty => []
+      case Node(k, v, l, r) => Stream.concat([l.domain, [k], r.domain])
+    }
+    def range: Stream[vt] = this match {
+      case Empty => []
+      case Node(k, v, l, r) => Stream.concat([l.range, [v], r.range])
+    }
+  }
+  def empty: Map = Empty
+}
+\end{verbatim}
+\caption{\label{fig:algbintree}Algebraic implementation of binary
+search trees}
+\end{figure}
+We now present three implementations of \verb@Map@, which are all
+based on binary search trees. The \verb@apply@ method of a map is
+implemented in each case by the usual search function over binary
+trees, which compares a given key with the key stored in the topmost
+tree node, and depending on the result of the comparison, searches the
+left or the right hand sub-tree. The type of keys must implement the
+\verb@Ord@ class, which contains comparison methods
+(see Chapter~\ref{chap:classes} for a definition of class \verb@Ord@).
+
+The first implementation, \verb@AlgBinTree@, is given in
+Figure~\ref{fig:algbintree}. It represents a map with a
+data type \verb@Map@ with two cases, \verb@Empty@ and \verb@Node@.
+
+Every method of \verb@AlgBinTree[kt, vt].Map@ performs a pattern
+match on the value of
+\verb@this@ using the \verb@match@ method which is defined as postfix
+function application in class \verb@Object@ (\sref{sec:class-object}).
+
+The functions \verb@domain@ and \verb@range@ return their results as
+lazily constructed lists. The \verb@Stream@ class is an alias of
+\verb@List@ which should be used to indicate the fact that its values
+are constructed lazily.
+
+\begin{figure}[thb]
+\begin{verbatim}
+class OOBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] with {
+  abstract class Map extends (kt)vt with {
+    def apply(key: kt): v
+    def extend(key: kt, value: vt): Map
+    def remove(key: kt): Map
+    def domain: Stream[kt]
+    def range: Stream[vt]
+  }
+  module empty extends Map with {
+    def apply(key: kt) = null
+    def extend(key: kt, value: vt) = Node(key, value, empty, empty)
+    def remove(key: kt) = empty
+    def domain = []
+    def range = []
+  }
+  private class Node(k: kt, v: vt, l: Map, r: Map) extends Map with {
+    def apply(key: kt): vt =
+      if (key < k) l.apply(key)
+      else if (key > k) r.apply(key)
+      else v
+    def extend(key: kt, value: vt): Map =
+      if (key < k) Node(k, v, l.extend(key, value), r)
+      else if (key > k) Node(k, v, l, r.extend(key, value))
+      else Node(k, value, l, r)
+    def remove(key: kt): Map =
+      if (key < k) Node(k, v, l.remove(key), r)
+      else if (key > k) Node(k, v, l, r.remove(key))
+      else if (l == empty) r
+      else if (r == empty) l
+      else {
+	val midKey = r.domain.head
+	Node(midKey, r(midKey), l, r.remove(midKey))
+      }
+    def domain: Stream[kt] = Stream.concat([l.domain, [k], r.domain]	)
+    def range: Stream[vt] = Stream.concat([l.range, [v], r.range])
+  }
+}
+\end{verbatim}
+\caption{\label{fig:oobintree}Object-oriented implementation of binary
+search trees}
+\end{figure}
+
+The second implementation of maps is given in
+Figure~\ref{fig:oobintree}.  Class \verb@OOBinTree@ implements the
+type \verb@Map@ with a module \verb@empty@ and a class
+\verb@Node@, which define the behavior of empty and non-empty trees,
+respectively.
+
+Note the different nesting structure of \verb@AlgBinTree@ and
+\verb@OOBinTree@. In the former, all methods form part of the base
+class \verb@Map@. The different behavior of empty and non-empty trees
+is expressed using a pattern match on the tree itself. In the
+latter, each subclass of \verb@Map@ defines its own set of
+methods, which override the methods in the base class. The pattern
+matches of the algebraic implementation have been replaced by the
+dynamic binding that comes with method overriding.
+
+Which of the two schemes is preferable depends to a large degree on
+which extensions of the type are anticipated. If the type is later
+extended with a new alternative, it is best to keep methods in each
+alternative, the way it was done in \verb@OOBinTree@.  On the other
+hand, if the type is extended with additional methods, then it is
+preferable to keep only one implementation of methods and to rely on
+pattern matching, since this way existing subclasses need not be
+modified.
+
+\begin{figure}
+\begin{verbatim}
+class MutBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] with {
+  class Map(key: kt, value: vt) extends (kt)vt with {
+    val k = key
+    var v = value
+    var l = empty, r = empty
+
+    def apply(key: kt): vt =
+      if (this eq empty) null
+      else if (key < k) l.apply(key)
+      else if (key > k) r.apply(key)
+      else v
+
+    def extend(key: kt, value: vt): Map =
+      if (this eq empty) Map(key, value)
+      else {
+	if (key < k) l = l.extend(key, value)
+	else if (key > k) r = r.extend(key, value)
+	else v = value
+	this
+      }
+
+    def remove(key: kt): Map =
+      if (this eq empty) this
+      else if (key < k) { l = l.remove(key) ; this }
+      else if (key > k) { r = r.remove(key) ; this }
+      else if (l eq empty) r
+      else if (r eq empty) l
+      else {
+	var mid = r
+	while (!(mid.l eq empty)) { mid = mid.l }
+	mid.r = r.remove(mid.k)
+	mid.l = l
+	mid
+      }
+
+    def domain: Stream[kt] = Stream.concat([l.domain, [k], r.domain])
+    def range: Stream[vt] = Stream.concat([l.range, [v], r.range])
+  }
+  let empty = new Map(null, null)
+}
+\end{verbatim}
+\caption{\label{fig:impbintree}Side-effecting implementation of binary
+search trees}
+\end{figure}
+
+The two versions of binary trees presented so far are {\em
+persistent}, in the sense that maps are values that cannot be changed
+by side effects. By contrast, in the next implementation of binary
+trees, the implementations of \verb@extend@ and
+\verb@remove@ do have an effect on the state of their receiver
+object. This corresponds to the way binary trees are usually
+implemented in imperative languages. The new implementation can lead
+to some savings in computing time and memory allocation, but care is
+required not to use the original tree after it has been modified by a
+side-effecting operation.
+
+In this implementation, \verb@value@, \verb@l@ and \verb@r@ are
+variables that can be affected by method calls.  The
+class \verb@MutBinTree[kt, vt].Map@ takes two instance parameters
+which define the \verb@key@ value and the initial value of the
+\verb@value@ variable. Empty trees are represented by a
+value \verb@empty@, which has \verb@null@ (signifying undefined) in
+both its key and value fields. Note that this value needs to be
+defined lazily using \verb@let@ since its definition involves the
+creation of a
+\verb@Map@ object,
+which accesses \verb@empty@ recursively as part of its initialization.
+All methods test first whether the current tree is empty using the
+reference equality operator \verb@eq@ (\sref{sec:class-object}).
+
+As a program using the \verb@MapStruct@ abstraction, consider a function
+which creates a map from strings to integers and then applies it to a
+key string:
+\begin{verbatim}
+def mapTest(def mapImpl: MapStruct[String, Int]): Int = {
+  val map: mapImpl.Map = mapImpl.empty.extend("ab", 1).extend("bx", 3)
+  val x = map("ab")             // returns 1
+}
+\end{verbatim}
+The function is parameterized with the particular implementation of
+\verb@MapStruct@. It can be applied to any one of the three implementations
+described above. E.g.:
+\begin{verbatim}
+mapTest(AlgBinTree[String, Int])
+mapTest(OOBinTree[String, Int])
+mapTest(MutBinTree[String, Int])
+\end{verbatim}
+}
+\chapter{Programming with Higher-Order Functions: Combinator Parsing}
+
+In this chapter we describe how to write combinator parsers in
+Scala. Such parsers are constructed from predefined higher-order
+functions, so called parser combinators, that closely model the
+constructions of an EBNF grammar \cite{ebnf}.
+
+As running example, we consider parsers for arithmetic expressions
+described by the following context-free grammar.
+\bda{p{3cm}cp{10cm}}
+letter &::=& /* all letters */ \\
+digit  &::=& /* all digits */ \\[0.5em]
+ident  &::=& letter \{letter $|$ digit \}\\
+number &::=& digit \{digit\}\\[0.5em]
+
+expr &::=& expr1 \{`+' expr1 $|$ `$-$' expr1\}\\
+expr1 &::=& expr2 \{`*' expr2 $|$ `/' expr2\}\\
+expr2 &::=& ident $|$ number $|$ `(' expr `)'
+\eda
+
+\section{Simple Combinator Parsing}
+
+In this section we will only be concerned with the task of recognizing
+input strings, not with processing them. So we can describe parsers
+by the sets of input strings they accept.  There are two
+fundamental operators over parsers:
+\verb@&&&@ expresses the sequential composition of a parser with
+another, while \verb@|||@ expresses an alternative. These operations
+will both be defined as methods of a \verb@Parser@ class.  We will
+also define constructors for the following primitive parsers:
+
+\begin{quote}\begin{tabular}{ll}
+\verb@empty@	& The parser that accepts the empty string
+\\
+\verb@fail@     & The parser that accepts no string
+\\
+\verb@chr@      & The parser that accepts any character.
+\\
+\verb@chr(c: Char)@
+		& The parser that accepts the single-character string ``$c$''.
+\\
+\verb@chrWith(p: (Char)Boolean)@
+		& The parser that accepts single-character strings
+                  ``$c$'' \\
+	        & for which $p(c)$ is true.
+\end{tabular}\end{quote}
+
+There are also the two higher-order parser combinators \verb@opt@,
+expressing optionality and \verb@rep@, expressing repetition.
+For any parser $p$, \verb@opt($p$)@ yields a parser that
+accepts the strings accepted by $p$ or else the empty string, while
+\verb@rep($p$)@ accepts arbitrary sequences of the strings accepted by
+$p$. In EBNF, \verb@opt($p$)@ corresponds to $[p]$ and \verb@rep($p$)@
+corresponds to $\{p\}$.
+
+The central idea of parser combinators is that parsers can be produced
+by a straightforward rewrite of the grammar, replacing \verb@::=@ with
+\verb@=@, sequencing with
+\verb@&&&@, choice
+\verb@|@ with \verb@|||@, repetition \verb@{...}@ with
+\verb@rep(...)@ and optional occurrence with \verb@[...]@.
+Applying this process to the grammar of arithmetic
+expressions yields:
+\begin{verbatim}
+module ExprParser with {
+  import Parse;
+
+  def letter   \= =  \= chrWith(c => c.isLetter);
+  def digit    \= =  \> chrWith(c => c.isDigit);
+
+  def ident    \> =  \> letter &&& rep(letter ||| digit);
+  def number   \> =  \> digit &&& rep(digit);
+
+  def expr:Parser\> =  expr1 &&& rep((chr('+') &&& expr1) ||| (chr('-') &&& expr1));
+  def expr1    \> =  expr2 &&& rep((chr('*') &&& expr2) ||| (chr('/') &&& expr2));
+  def expr2    \> =  ident ||| number ||| (chr('(') &&& expr &&& chr(')'));
+}
+\end{verbatim}
+It remains to explain how to implement a library with the combinators
+described above. We will pack combinators and their underlying
+implementation in a module \verb@Parse@.  The first question to decide
+is which underlying representation type to use for a parser. We treat
+parsers here as functions that take a list of characters as input
+parameter and that yield a parse result.
+\begin{verbatim}
+module Parse with {
+
+  type Result = Option[List[Char]];
+
+  abstract class Parser extends Function1[List[Char],Result] with {
+\end{verbatim}
+\comment{
+The \verb@Option@ type is predefined as follows.
+\begin{verbatim}
+abstract final class Option[a];
+case class None[a] extends Option[a];
+case class Some[a](x: a) extends Option[a];
+\end{verbatim}
+}
+A parser returns either the constant \verb@None@, which
+signifies that the parser did not recognize a legal input string, or
+it returns a value \verb@Some(in1)@ where \verb@in1@ represents that
+part of the input list that the parser did not consume.
+
+Parsers are instances of functions from \verb@List[Char]@ to
+\verb@Parse.Result@, which also implement the combinators
+for sequence and alternative. This is modelled by
+defining \verb@Parser@ as a class that extends type
+\verb@Function1[List[Char],Result]@ and that defines an \verb@apply@
+method, as well as methods \verb@&&&@ and \verb@|||@.
+\begin{verbatim}
+    abstract def apply(in: List[Char]): Result;
+\end{verbatim}
+\begin{verbatim}
+    def &&& (def p: Parser) = new Parser with {
+      def apply(in: List[Char]) = outer.apply(in) match {
+        case Some(in1) => p(in1)
+        case n => n
+      }
+    }
+
+    def ||| (def p: Parser) = new Parser with {
+      def apply(in: List[Char]) = outer.apply(in) match {
+        case None => p(in)
+        case s => s
+      }
+    }
+  }
+\end{verbatim}
+The implementations of the primitive parsers \verb@empty@, \verb@fail@,
+\verb@chrWith@ and \verb@chr@ are as follows.
+\begin{verbatim}
+
+  def empty = new Parser with { def apply(in: List[Char]) = Some(in) }
+
+  def fail = new Parser with { def apply(in: List[Char]) = None[List[Char]] }
+
+  def chrWith(p: (Char)Boolean) = new Parser with {
+    def apply(in: List[Char]) = in match {
+      case [] => None[List[Char]]
+      case (c :: in1) => if (p(c)) Some(in1) else None[List[Char]]
+    }
+  }
+
+  def chr(c: Char): Parser = chrWith(d => d == c);
+\end{verbatim}
+The higher-order parser combinators \verb@opt@ and \verb@rep@ can be
+defined in terms of the combinators for sequence and alternative:
+\begin{verbatim}
+  def opt(p: Parser): Parser = p ||| empty;
+  def rep(p: Parser): Parser = opt(rep1(p));
+  def rep1(p: Parser): Parser = p &&& rep(p);
+} // end Parser
+\end{verbatim}
+This is all that's needed. Parsers such as the one for arithmetic
+expressions given above can now be composed from these building
+blocks.  These parsers need not refer to the underlying implementation of
+parsers as functions from input lists to parse results.
+
+The presented combinator parsers use backtracking to change from one
+alternative to another.  If one restricts the focus to LL(1) grammars,
+a non-backtracking implementation of parsers is also possible. This
+implementation can then be based on iterators instead of lists.
+
+\section{\label{sec:parsers-results}Parsers that Return Results}
+
+The combinator library of the previous section does not support the
+generation of output from parsing. But usually one does not just want
+to check whether a given string belongs to the defined language, one
+also wants to convert the input string into some internal
+representation such as an abstract syntax tree.
+
+In this section, we modify our parser library to build parsers that
+produce results. We will make use of the for-comprehensions introduced
+in Chapter~\ref{sec:for-notation}.  The basic combinator of sequential
+composition, formerly \verb@p &&& q@, now becomes
+\begin{verbatim}
+for (val x <- p; val y <- q) yield e
+\end{verbatim}.
+Here, the names \verb@x@ and \verb@y@ are bound to the results of
+executing the parsers \verb@p@ and \verb@q@. \verb@e@ is an expression
+that uses these results to build the tree returned by the composed
+parser.
+
+Before describing the implementation of the new parser combinators, we
+explain how the new building blocks are used. Say we want to modify
+our arithmetic expression parser so that it returns an abstract syntax
+tree of the parsed expression. The class of syntax trees is given by:
+\begin{verbatim}
+abstract class Tree;
+case class Var(n: String) extends Tree;
+case class Num(n: Int) extends Tree;
+case class Binop(op: Char, l: Tree, r: Tree) extends Tree;
+\end{verbatim}
+That is, a syntax tree is a named variable, an integer number, or a
+binary operation with two operand trees and a character indicating the
+operation.
+
+As a first step towards parsers that produce syntax trees, we need to
+modify the ``micro-syntax'' parsers \verb@letter@, \verb@digit@,
+\verb@ident@ and \verb@number@ so that they return representations of
+the parsed input:
+\begin{verbatim}
+def letter: Parser[Char] = chrWith(c => c.isLetter);
+def digit : Parser[Char] = chrWith(c => c.isDigit);
+
+def ident: Parser[String] =
+  for (val c <- letter; val cs <- rep(letter ||| digit))
+  yield ((c :: cs) foldr "") {c, s => c+ s};
+
+def number: Parser[Int] =
+  for (val d <- digit; val ds <- rep(digit))
+  yield ((d - '0') :_foldl ds) {x, y => x * 10 + (y - '0')};
+\end{verbatim}
+The \verb@letter@ and \verb@digit@ parsers simply return the letter
+that was parsed. The \verb@ident@ and \verb@number@ parsers return the
+string, respectively integer number that was parsed.  In both cases,
+sub-parsers are applied in a for-comprehension and their results are
+embedded in the result of the calling parser.  The remainder of the
+parser for arithmetic expressions follows the same scheme.
+\begin{verbatim}
+def expr: Parser[Tree] =
+  for {
+    val e1 <- expr1;
+    val es <- rep (
+      for {
+        val op <- chr('+') ||| chr('-');
+	val e <- expr1
+      } yield (x => Binop(op, x, e)) : (Tree)Tree
+    )
+  } yield applyAll(es, e1);
+\end{verbatim}
+\begin{verbatim}
+def expr1: Parser[Tree] =
+  for {
+    val e1 <- expr2;
+    val es <- rep (
+      for {
+        val op <- chr('*') ||| chr('/');
+        val e <- expr2
+      } yield (x => Binop(op, x, e)) : (Tree)Tree
+    )
+  } yield applyAll(es, e1);
+\end{verbatim}
+\begin{verbatim}
+def expr2: Parser[Tree] = {
+    \= ( for { val n <- ident } yield Var(n) : Tree )
+  |||\> ( for { val n <- number } yield Num(n) : Tree )
+  |||\> ( for { val _ <- chr('('); val e <- expr; val _ <- chr(')') } yield e );
+}
+\end{verbatim}
+Note the treatment of the repetitions in \verb@expr@ and
+\verb@expr1@. The parser for an expression suffix $op;e$ consisting of an
+operator $op$ and an expression $e$ returns a function, which, given a
+left operand expression $d$, constructs a \verb@Binop@ node that
+represents $d;op;e$. The \verb@rep@ parser combinator forms a list of
+all these functions. The final \verb@yield@ part applies all functions
+to the first operand in the sequence, which is represented by
+\verb@e1@. Here \verb@applyAll@ applies the list of functions passed as its first
+argument to its second argument. It is defined as follows.
+\begin{verbatim}
+def applyAll[a](fs: List[(a)a], e: a): a =
+  (e :_foldl fs) { x, f => f(x) }
+\end{verbatim}
+We now present the parser combinators that support the new
+scheme. Parsers that succeed now return a parse result besides the
+un-consumed input.
+\begin{verbatim}
+module Parse with {
+
+  type Result[a] = Option[(a, List[Char])]
+\end{verbatim}
+Parsers are parameterized with the type of their result. The class
+\verb@Parser[a]@ now defines new methods \verb@map@, \verb@flatMap@
+and \verb@filter@. The \verb@for@ expressions are mapped by the
+compiler to calls of these functions using the scheme described in
+Chapter~\ref{sec:for-notation}.
+
+Here is the complete definition of the new \verb@Parser@ class.
+\begin{verbatim}
+  abstract class Parser[a] extends Function1[List[Char],Result[a]] with {
+
+    def apply(in: List[Char]): Result[a];
+
+    def filter(p: (a)Boolean) = new Parser[a] with {
+      def apply(in: List[Char]): Result[a] = outer.apply(in) match {
+        case Some((x, in1)) => if (p(x)) Some((x, in1)) else None
+        case None => None
+      }
+    }
+
+    def map[b](f: (a)b) = new Parser[b] with {
+      def apply(in: List[Char]): Result[b] = outer.apply(in) match {
+	case Some((x, in1)) => Some((f(x), in1))
+        case None => None
+      }
+    }
+
+    def flatMap[b](f: (a)Parser[b]) = new Parser[b] with {
+      def apply(in: List[Char]): Result[b] = outer.apply(in) match {
+	case Some((x, in1)) => f(x)(in1)
+        case None => None
+      }
+    }
+
+    def ||| (def p: Parser[a]) = new Parser[a] with {
+      def apply(in: List[Char]): Result[a] = outer.apply(in) match {
+	case None => p(in)
+	case s => s
+      }
+    }
+
+    def &&& [b](def p: Parser[b]): Parser[b] =
+      for (val _ <- this; val result <- p) yield result;
+  }
+\end{verbatim}
+
+The \verb@filter@ method takes as parameter a predicate $p$ which it
+applies to the results of the current parser. If the predicate is
+false, the parser fails by returning \verb@None@; otherwise it returns
+the result of the current parser.  The \verb@map@ method takes as
+parameter a function $f$ which it applies to the results of the
+current parser. The \verb@flatMap@ tales as parameter a function
+\verb@f@ which returns a parser.  It applies \verb@f@ to the result of
+the current parser and then continues with the resulting parser.  The
+\verb@|||@ method is essentially defined as before.  The
+\verb@&&&@ method can now be defined in terms of \verb@for@.
+
+% Here is the code for fail, chrWith and chr
+%
+%\begin{verbatim}
+%  def fail[a] = new Parser[a] with { def apply(in: List[Char]) = None[(a,List[Char])] }
+%
+%  def chrWith(p: (Char)Boolean) = new Parser[Char] with {
+%    def apply(in: List[Char]) = in match {
+%      case [] => None[(Char,List[Char])]
+%      case (c :: in1) => if (p(c)) Some((c,in1)) else None[(Char,List[Char])]
+%    }
+%  }
+%
+%  def chr(c: Char): Parser[Char] = chrWith(d => d == c);
+%\end{verbatim}
+The primitive parser \verb@succeed@ replaces \verb@empty@. It consumes
+no input and returns its parameter as result.
+\begin{verbatim}
+  def succeed[a](x: a) = new Parser[a] with {
+    def apply(in: List[Char]) = Some((x, in))
+  }
+\end{verbatim}
+The \verb@fail@ parser is as before.  The parser combinators
+\verb@rep@ and \verb@opt@ now also return results. \verb@rep@ returns
+a list which contains as elements the results of each iteration of its
+sub-parser. \verb@opt@ returns an
+\verb@Option@ type which indicates whether something was recognized by
+its sub-parser.
+\begin{verbatim}
+  def rep[a](p: Parser[a]): Parser[List[a]] =
+    rep1(p) ||| succeed([]);
+
+  def rep1[a](p: Parser[a]): Parser[List[a]] =
+    for (val x <- p; val xs <- rep(p)) yield x :: xs;
+
+  def opt[a](p: Parser[a]): Parser[Option [a]] =
+    { for (val x <- p) yield (Some(x): Option[a]) } ||| succeed((None: Option[a]));
+} // end Parse
+\end{verbatim}
+
+\chapter{\label{sec:hm}Programming with Patterns: Hindley/Milner Type Inference}
+
+This chapter demonstrates Scala's data types and pattern matching by
+developing a type inference system in the Hindley/Milner style. The
+source language for the type inferencer is lambda calculus with a let
+construct. Abstract syntax trees for the source language are
+represented by the following data type of \verb@Terms@.
+\begin{verbatim}
+abstract class Term;
+case class Var(x: String) extends Term;
+case class Lam(x: String, e: Term) extends Term;
+case class App(f: Term, e: Term) extends Term;
+case class Let(x: String, e: Term, f: Term) extends Term;
+\end{verbatim}
+There are four tree constructors: \verb@Var@ for variables, \verb@Lam@
+for function abstractions, \verb@App@ for function applications, and
+\verb@Let@ for let expressions. Note that these tree constructors are
+defined outside the \verb@Term@ class. It would also be possible
+to define further constructors for this type in other parts of the
+program.
+
+The next data type describes the form of types that are
+computed by the inference system.
+\begin{verbatim}
+module Types with {
+  abstract final class Type;
+  case class Tyvar(a: String) extends Type;
+  case class Arrow(t1: Type, t2: Type) extends Type;
+  case class Tycon(k: String, ts: List[Type]) extends Type;
+  private var n: Int = 0;
+  def newTyvar: Type = { n = n + 1 ; Tyvar("a" + n) }
+}
+import Types;
+\end{verbatim}
+There are three type constructors: \verb@Tyvar@ for type variables,
+\verb@Arrow@ for function types and \verb@Tycon@ for type
+constructors such as \verb@Boolean@ or \verb@List@. Type constructors
+have as component a list of their type parameters. This list is empty
+for type constants such as \verb@Boolean@. The data type is packaged
+in a module \verb@Types@. Also contained in that module is a function
+\verb@newTyvar@ which creates a fresh type variable each time it is
+called. The module definition is followed by an import clause
+\verb@import Types@, which makes the non-private members of
+this module available without qualification in the code that follows.
+
+Note that \verb@Type@ is a \verb@final@ class. This means that no
+subclasses or data constructors that extend \verb@Type@ can be formed
+except for the three constructors that follow the class.  This makes
+\verb@Type@ into a {\em closed} algebraic data type with a fixed
+number of alternatives. By contrast, type \verb@Term@ is an {\em open}
+algebraic type for which further alternatives can be defined.
+
+The next data type describes type schemes, which consist of a type and
+a list of names of type variables which appear universally quantified
+in the type scheme. For instance, the type scheme $\forall a\forall
+b.a \arrow b$ would be represented in the type checker as:
+\begin{verbatim}
+TypeScheme(["a", "b"], Arrow(Tyvar("a"), Tyvar("b"))) .
+\end{verbatim}
+The data type definition of type schemes does not carry an extends
+clause; this means that type schemes extend directly class
+\verb@Object@.
+Even though there is only one possible way to construct a type scheme,
+a \verb@case class@ representation was chosen since it offers a convenient
+way to decompose a type scheme into its parts using pattern matching.
+\begin{verbatim}
+case class TypeScheme(ls: List[String], t: Type) with {
+  def newInstance: Type = {
+    val instSubst =
+      ((EmptySubst: Subst) :_foldl ls) { s, a => s.extend(Tyvar(a), newTyvar) }
+    instSubst(t)
+  }
+}
+\end{verbatim}
+Type scheme objects come with a method \verb@newInstance@, which
+returns the type contained in the scheme after all universally type
+variables have been renamed to fresh variables.
+
+The next class describes substitutions. A substitution is an
+idempotent function from type variables to types. It maps a finite
+number of given type variables to given types, and leaves all other
+type variables unchanged. The meaning of a substitution is extended
+point-wise to a mapping from types to types.
+
+\begin{verbatim}
+abstract class Subst extends Function1[Type,Type] with {
+  def lookup(x: Tyvar): Type;
+  def apply(t: Type): Type = t match {
+    case Tyvar(a) => val u = lookup(Tyvar(a)); if (t == u) t else apply(u);
+    case Arrow(t1, t2) => Arrow(apply(t1), apply(t2))
+    case Tycon(k, ts) => Tycon(k, ts map apply)
+  }
+  def extend(x: Tyvar, t: Type) = new Subst with {
+    def lookup(y: Tyvar): Type = if (x == y) t else outer.lookup(y);
+  }
+}
+case class EmptySubst extends Subst with { def lookup(t: Tyvar): Type = t }
+\end{verbatim}
+We represent substitutions as functions, of type
+\verb@(Type)Type@. To be an instance of this type, a
+substitution \verb@s@ has to implement an \verb@apply@ method that takes a
+\verb@Type@ as argument and yields another \verb@Type@ as result. A function
+application \verb@s(t)@ is then interpreted as \verb@s.apply(t)@.
+
+The \verb@lookup@ method is abstract in class \verb@Subst@.  Concrete
+substitutions are defined by the case class \verb@EmptySubst@ and the
+method \verb@extend@ in class \verb@Subst@.
+
+The next class gives a naive implementation of sets using lists as the
+implementation type. It implements methods \verb@contains@ for
+membership tests as well as \verb@union@ and \verb@diff@ for set union
+and difference. Alternatively, one could have used a more efficient
+implementation of sets in some standard library.
+\begin{verbatim}
+class ListSet[a](xs: List[a]) with {
+  val elems: List[a] = xs;
+
+  def contains(y: a): Boolean = xs match {
+    case [] => False
+    case x :: xs1 => (x == y) || (xs1 contains y)
+  }
+
+  def union(ys: ListSet[a]): ListSet[a] = xs match {
+    case [] => ys
+    case x :: xs1 =>
+      if (ys contains x) ListSet(xs1) union ys
+      else ListSet(x :: (ListSet(xs1) union ys).elems)
+  }
+
+  def diff(ys: ListSet[a]): ListSet[a] = xs match {
+    case [] => ListSet([])
+    case x :: xs1 =>
+      if (ys contains x) ListSet(xs1) diff ys
+      else ListSet(x :: (ListSet(xs1) diff ys).elems)
+  }
+}
+\end{verbatim}
+
+We now present the type checker module. The type checker
+computes a type for a given term in a given environment. Environments
+associate variable names with type schemes. They are represented by a
+type alias \verb@Env@ in module \verb@TypeChecker@:
+\begin{verbatim}
+module TypeChecker with {
+
+  /** Type environments are lists of bindings that associate a
+   * name with a type scheme.
+   */
+  type Env = List[(String, TypeScheme)];
+\end{verbatim}
+There is also an exception \verb@TypeError@, which is thrown when type
+checking fails. Exceptions are modelled as case classes that inherit
+from the predefined \verb@Exception@ class.
+\begin{verbatim}
+  case class TypeError(msg: String) extends Exception(msg);
+\end{verbatim}
+The \verb@Exception@ class defines a \verb@throw@ method which causes
+the exception to be thrown.
+
+The \verb@TypeChecker@ module contains several utility
+functions. Function
+\verb@tyvars@ yields the set of free type variables of a type,
+of a type scheme, of a list of types, or of an environment. Its
+implementation is as four overloaded functions, one for each type of
+argument.
+\begin{verbatim}
+  def tyvars(t: Type): ListSet[String] = t match {
+    case Tyvar(a) => new ListSet([a])
+    case Arrow(t1, t2) => tyvars(t1) union tyvars(t2)
+    case Tycon(k, ts) => tyvars(ts)
+  }
+  def tyvars(ts: TypeScheme): ListSet[String] = ts match {
+    case TypeScheme(as, t) => tyvars(t) diff new ListSet(as)
+  }
+  def tyvars(ts: List[Type]): ListSet[String] = ts match {
+    case [] => new ListSet[String]([])
+    case t :: ts1 => tyvars(t) union tyvars(ts1)
+  }
+  def tyvars(env: Env): ListSet[String] = env match {
+    case [] => new ListSet[String]([])
+    case (x, t) :: env1 => tyvars(t) union tyvars(env1)
+  }
+\end{verbatim}
+The next utility function, \verb@lookup@, returns the type scheme
+associated with a given variable name in the given environment, or
+returns \verb@null@ if no binding for the variable exists in the environment.
+\begin{verbatim}
+  def lookup(env: Env, x: String): TypeScheme = env match {
+    case [] => null
+    case (y, t) :: env1 => if (x == y) t else lookup(env1, x)
+  }
+\end{verbatim}
+The next utility function, \verb@gen@, returns the type scheme that
+results from generalizing a given type in a given environment. This
+means that all type variables that occur in the type but not in the
+environment are universally quantified.
+\begin{verbatim}
+  def gen(env: Env, t: Type): TypeScheme =
+    TypeScheme((tyvars(t) diff tyvars(env)).elems, t);
+\end{verbatim}
+The next utility function, \verb@mgu@, computes the most general
+unifier of two given types $t$ and $u$ under a pre-existing
+substitution $s$.  That is, it returns the most general
+substitution $s'$ which extends $s$, and which makes $s'(t)$ and
+$s'(u)$ equal types. The function throws a \verb@TypeError@ exception
+if no such substitution exists. This can happen because the two types
+have different type constructors at corresponding places, or because
+a type variable is unified with a type that contains the type variable
+itself.
+\begin{verbatim}
+  def mgu(t: Type, u: Type)(s: Subst): Subst = (s(t), s(u)) match {
+    case (Tyvar( a), Tyvar(b)) if a == b =>
+      s
+    case (Tyvar(a), _) =>
+      if (tyvars(u) contains a)
+         TypeError("unification failure: occurs check").throw
+      else s.extend(Tyvar(a), u)
+    case (_, Tyvar(a)) =>
+      mgu(u, t)(s)
+    case (Arrow(t1, t2), Arrow(u1, u2)) =>
+      mgu(t1, u1)(mgu(t2, u2)(s))
+    case (Tycon(k1, ts), Tycon(k2, us)) if k1 == k2 =>
+      (s :_foldl ((ts zip us) map (case (t,u) => mgu(t,u)))) { s, f => f(s) }
+    case _ => TypeError("unification failure").throw
+  }
+\end{verbatim}
+The main task of the type checker is implemented by function
+\verb@tp@. This function takes as first parameters an environment $env$, a
+term $e$ and a proto-type $t$. As a second parameter it takes a
+pre-existing substitution $s$.  The function yields a substitution
+$s'$ that extends $s$ and that
+turns $s'(env) \ts e: s'(t)$ into a derivable type judgement according
+to the derivation rules of the Hindley/Milner type system \cite{hindley-milner}.  A
+\verb@TypeError@ exception is thrown if no such substitution exists.
+\begin{verbatim}
+  def tp(env: Env, e: Term, t: Type)(s: Subst): Subst = e match {
+    case Var(x) => {
+      val u = lookup(env, x);
+      if (u == null) TypeError("undefined: x").throw
+      else mgu(u.newInstance, t)(s)
+    }
+    case Lam(x, e1) => {
+      val a = newTyvar, b = newTyvar;
+      val s1 = mgu(t, Arrow(a, b))(s);
+      val env1 = (x, TypeScheme([], a)) :: env;
+      tp(env1, e1, b)(s1)
+    }
+    case App(e1, e2) => {
+      val a = newTyvar;
+      val s1 = tp(env, e1, Arrow(a, t))(s);
+      tp(env, e2, a)(s1)
+    }
+    case Let(x, e1, e2) => {
+      val a = newTyvar;
+      val s1 = tp(env, e1, a)(s);
+      tp((x, gen(env, s1(a))) :: env, e2, t)(s1)
+    }
+  }
+\end{verbatim}
+The next function, \verb@typeOf@ is a simplified facade for
+\verb@tp@. It computes the type of a given term $e$ in a given
+environment $env$. It does so by creating a fresh type variable \verb$a$,
+computing a typing substitution that makes \verb@env $\ts$ e: a@ into
+a derivable type judgement, and finally by returning the result of
+applying the substitution to $a$.
+\begin{verbatim}
+  def typeOf(env: Env, e: Term): Type = {
+    val a = newTyvar;
+    tp(env, e, a)(EmptySubst)(a)
+  }
+}
+\end{verbatim}
+This concludes the presentation of the type inference system.
+To apply the system, it is convenient to have a predefined environment
+that contains bindings for commonly used constants. The module
+\verb@Predefined@ defines an environment \verb@env@ that contains
+bindings for booleans, numbers and lists together with some primitive
+operations over these types. It also defines a fixed point operator
+\verb@fix@, which can be used to represent recursion.
+\begin{verbatim}
+module Predefined with {
+  val booleanType = Tycon("Boolean", []);
+  val intType = Tycon("Int", []);
+  def listType(t: Type) = Tycon("List", [t]);
+
+  private def gen(t: Type): TypeScheme = TypeChecker.gen([], t);
+  private val a = newTyvar;
+  val env = [
+    ("true", gen(booleanType)),
+    ("false", gen(booleanType)),
+    ("$\mbox{\prog{if}}$", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
+    ("zero", gen(intType)),
+    ("succ", gen(Arrow(intType, intType))),
+    ("$\mbox{\prog{nil}}$", gen(listType(a))),
+    ("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
+    ("isEmpty", gen(Arrow(listType(a), booleanType))),
+    ("head", gen(Arrow(listType(a), a))),
+    ("tail", gen(Arrow(listType(a), listType(a)))),
+    ("fix", gen(Arrow(Arrow(a, a), a)))
+  ];
+}
+\end{verbatim}
+Here's an example how the type inferencer is used.
+Let's define a function \verb@showType@ which returns the type of
+a given term computed in the predefined environment
+\verb@Predefined.env@:
+\begin{verbatim}
+> def showType(e: Term) = TypeChecker.typeOf(Predefined.env, e);
+\end{verbatim}
+Then the application
+\begin{verbatim}
+> showType(Lam("x", App(App(Var("cons"), Var("x")), Var("$\mbox{\prog{nil}}$"))));
+\end{verbatim}
+would give the response
+\begin{verbatim}
+> TypeScheme([a0], Arrow(Tyvar(a0), Tycon("List", [Tyvar(a0)])));
+\end{verbatim}
+
+\paragraph{Exercise:}
+Add \verb@toString@ methods to the data constructors of class
+\verb@Type@ and \verb@TypeScheme@ which represent types in a more
+natural way.
+
+\chapter{Abstractions for Concurrency}\label{sec:ex-concurrency}
+
+This section reviews common concurrent programming patterns and shows
+how they can be implemented in Scala.
+
+\section{Signals and Monitors}
+
+\example Th {\em monitor} provides the basic means for mutual exclusion
+of processes in Scala. It is defined as follows.
+\begin{verbatim}
+class Monitor with {
+  def synchronized [a] (def e: a): a;
+}
+\end{verbatim}
+The \verb@synchronized@ method in class \verb@Monitor@ executes its
+argument computation \verb@e@ in mutual exclusive mode -- at any one
+time, only one thread can execute a \verb@synchronized@ argument of a
+given monitor.
+
+Threads can suspend inside a monitor by waiting on a signal.  The
+\verb@Signal@ class offers two methods \verb@send@ and
+\verb@wait@.  Threads that call the \verb@wait@ method wait until a
+\verb@send@ method of the same signal is called subsequently by some
+other thread. Calls to \verb@send@ with no threads waiting for the
+signal are ignored. Here is the specification of the \verb@Signal@
+class.
+\begin{verbatim}
+class Signal with {
+  def wait: Unit;
+  def wait(msec: Long): Unit;
+  def notify: Unit;
+  def notifyAll: Unit;
+}
+\end{verbatim}
+A signal also implements a timed form of \verb@wait@, which blocks
+only as long as no signal was recieved or the specified amount of time
+(given in milliseconds) has elaosed. Furthermore, there is a
+\verb@notifyAll@ method which unblocks all threads which wait for the
+signal. \verb@Signal@ and \verb@Monitor@ are primitive classes in
+Scala which are implemented in terms of the underlying runtime system.
+
+As an example of how monitors and signals are used, here is is an
+implementation of a bounded buffer class.
+\begin{verbatim}
+class BoundedBuffer[a](N: int) extends Monitor with {
+  var in = 0, out = 0, n = 0;
+  val elems = new Array[a](N);
+  val nonEmpty = new Signal;
+  val nonFull = new Signal;
+\end{verbatim}
+\begin{verbatim}
+  def put(x: a) = synchronized {
+    if (n == N) nonFull.wait;
+    elems(in) = x ; in = (in + 1) % N ; n = n + 1;
+    if (n == 1) nonEmpty.send;
+  }
+\end{verbatim}
+\begin{verbatim}
+  def get: a = synchronized {
+    if (n == 0) nonEmpty.wait
+    val x = elems(out) ; out = (out + 1) % N ; n = n - 1;
+    if (n == N - 1) nonFull.send;
+    x
+  }
+}
+\end{verbatim}
+And here is a program using a bounded buffer to communicate between a
+producer and a consumer process.
+\begin{verbatim}
+val buf = new BoundedBuffer[String](10)
+fork { while (True) { val s = produceString ; buf.put(s) } }
+fork { while (True) { val s = buf.get ; consumeString(s) } }
+\end{verbatim}
+The \verb@fork@ method spawns a new thread which executes the
+expression given in the parameter. It can be defined as follows.
+\begin{verbatim}
+def fork(def e: Unit) = {
+  val p = new Thread with { def run = e; }
+  p.run
+}
+\end{verbatim}
+
+\comment{
+\section{Logic Variable}
+
+A logic variable (or lvar for short) offers operations \verb@:=@
+and \verb@value@ to define the variable and to retrieve its value.
+Variables can be \verb@define@d only once. A call to \verb@value@
+blocks until the variable has been defined.
+
+Logic variables can be implemented as follows.
+
+\begin{verbatim}
+class LVar[a] extends Monitor with {
+  private val defined = new Signal
+  private var isDefined: Boolean = False
+  private var v: a
+  def value = synchronized {
+    if (!isDefined) defined.wait
+    v
+  }
+  def :=(x: a) = synchronized {
+    v = x ; isDefined = True ; defined.send
+  }
+}
+\end{verbatim}
+}
+
+\section{SyncVars}
+
+A synchronized variable (or syncvar for short) offers \verb@get@ and
+\verb@put@ operations to read and set the variable. \verb@get@ operations
+block until the variable has been defined. An \verb@unset@ operation
+resets the variable to undefined state.
+
+Synchronized variables can be implemented as follows.
+\begin{verbatim}
+class SyncVar[a] extends Monitor with {
+  private val defined = new Signal;
+  private var isDefined: Boolean = False;
+  private var value: a;
+  def get = synchronized {
+    if (!isDefined) defined.wait;
+    value
+  }
+  def set(x: a) = synchronized {
+    value = x ; isDefined = True ; defined.send;
+  }
+  def isSet: Boolean =
+    isDefined;
+  def unset = synchronized {
+    isDefined = False;
+  }
+}
+\end{verbatim}
+
+\section{Futures}
+\label{sec:futures}
+
+A {\em future} is a value which is computed in parallel to some other
+client thread, to be used by the client thread at some future time.
+Futures are used in order to make good use of parallel processing
+resources.  A typical usage is:
+
+\begin{verbatim}
+val x = future(someLengthyComputation);
+anotherLengthyComputation;
+val y = f(x()) + g(x());
+\end{verbatim}
+
+Futures can be implemented in Scala as follows.
+
+\begin{verbatim}
+def future[a](def p: a): (Unit)a = {
+  val result = new SyncVar[a];
+  fork { result.set(p) }
+  (=> result.get)
+}
+\end{verbatim}
+
+The \verb@future@ method gets as parameter a computation \verb@p@ to
+be performed. The type of the computation is arbitrary; it is
+represented by \verb@future@'s type parameter \verb@a@.  The
+\verb@future@ method defines a guard \verb@result@, which takes a
+parameter representing the result of the computation. It then forks
+off a new thread that computes the result and invokes the
+\verb@result@ guard when it is finished. In parallel to this thread,
+the function returns an anonymous function of type \verb@a@.
+When called, this functions waits on the result guard to be
+invoked, and, once this happens returns the result argument.
+At the same time, the function reinvokes the \verb@result@ guard with
+the same argument, so that future invocations of the function can
+return the result immediately.
+
+\section{Parallel Computations}
+
+The next example presents a function \verb@par@ which takes a pair of
+computations as parameters and which returns the results of the computations
+in another pair. The two computations are performed in parallel.
+
+\begin{verbatim}
+def par[a, b](def xp: a, def yp: b): (a, b) = {
+  val y = new SyncVar[a];
+  fork { y.set(yp) }
+  (xp, y)
+}
+\end{verbatim}
+
+The next example presents a function \verb@replicate@ which performs a
+number of replicates of a computation in parallel. Each
+replication instance is passed an integer number which identifies it.
+
+\begin{verbatim}
+def replicate(start: Int, end: Int)(def p: (Int)Unit): Unit = {
+  if (start == end) {
+  } else if (start + 1 == end) {
+    p(start)
+  } else {
+    val mid = (start + end) / 2;
+    par ( replicate(start, mid)(p), replicate(mid, end)(p) )
+  }
+}
+\end{verbatim}
+
+The next example shows how to use \verb@replicate@ to perform parallel
+computations on all elements of an array.
+
+\begin{verbatim}
+def parMap[a,b](f: (a)b, xs: Array[a]): Array[b] = {
+  val results = new Array[b](xs.length);
+  replicate(0, xs.length) { i => results(i) = f(xs(i)) }
+  results
+}
+\end{verbatim}
+
+\section{Semaphores}
+
+A common mechanism for process synchronization is a {\em lock} (or:
+{\em semaphore}). A lock offers two atomic actions: \prog{acquire} and
+\prog{release}. Here's the implementation of a lock in Scala:
+
+\begin{verbatim}
+class Lock extends Monitor with Signal with {
+  var available = True;
+  def acquire = {
+    if (!available) wait;
+    available = False
+  }
+  def release = {
+    available = True;
+    notify
+  }
+}
+\end{verbatim}
+
+\section{Readers/Writers}
+
+A more complex form of synchronization distinguishes between {\em
+readers} which access a common resource without modifying it and {\em
+writers} which can both access and modify it. To synchronize readers
+and writers we need to implement operations \prog{startRead}, \prog{startWrite},
+\prog{endRead}, \prog{endWrite}, such that:
+\begin{itemize}
+\item there can be multiple concurrent readers,
+\item there can only be one writer at one time,
+\item pending write requests have priority over pending read requests,
+but don't preempt ongoing read operations.
+\end{itemize}
+The following implementation of a readers/writers lock is based on the
+{\em message space} concept (see Section~\ref{sec:messagespace}).
+
+\begin{verbatim}
+class ReadersWriters with {
+  val m = new MessageSpace;
+  private case class Writers(n: Int), Readers(n: Int);
+  Writers(0); Readers(0);
+  def startRead = m receive {
+    case Writers(n) if n == 0 => m receive {
+      case Readers(n) => Writers(0) ; Readers(n+1);
+    }
+  }
+  def startWrite = m receive {
+    case Writers(n) =>
+      Writers(n+1);
+      m receive { case Readers(n) if n == 0 => }
+  }
+\end{verbatim}
+\begin{verbatim}
+  def endRead = receive {
+    case Readers(n) => Readers(n-1)
+  }
+  def endWrite = receive {
+    case Writers(n) => Writers(n-1) ; if (n == 0) Readers(0)
+  }
+}
+\end{verbatim}
+
+\section{Asynchronous Channels}
+
+A fundamental way of interprocess comunication is the asynchronous
+channel. Its implementation makes use the following class for linked
+lists:
+\begin{verbatim}
+class LinkedList[a](x: a) with {
+  val elem: a = x;
+  var next: LinkedList[a] = null;
+}
+\end{verbatim}
+To facilite insertion and deletion of elements into linked lists,
+every reference into a linked list points to the node which precedes
+the node which conceptually forms the top of the list.
+Empty linked lists start with a dummy node, whose successor is \verb@null@.
+
+The channel class uses a linked list to store data that has been sent
+but not read yet. In the opposite direction, a signal \verb@moreData@ is
+used to wake up reader threads that wait for data.
+\begin{verbatim}
+class Channel[a] with {
+  private val written = new LinkedList[a](null);
+  private var lastWritten = written;
+  private val moreData = new Signal;
+
+  def write(x: a) = {
+    lastWritten.next = new LinkedList(x);
+    lastWritten = lastWritten.next;
+    moreData.notify;
+  }
+
+  def read: a = {
+    if (written.next == null) moreData.wait;
+    written = written.next;
+    written.elem;
+  }
+}
+\end{verbatim}
+
+\section{Synchronous Channels}
+
+Here's an implementation of synchronous channels, where the sender of
+a message blocks until that message has been received. Synchronous
+channels only need a single variable to store messages in transit, but
+three signals are used to coordinate reader and writer processes.
+\begin{verbatim}
+class SyncChannel[a] with {
+  val data = new SyncVar[a];
+
+  def write(x: a): Unit = synchronized {
+    val empty = new Signal, full = new Signal, idle = new Signal;
+    if (data.isSet) idle.wait;
+    data.put(x);
+    full.send;
+    empty.wait;
+    data.unset;
+    idle.send;
+  }
+
+  def read: a = synchronized {
+    if (!(data.isSet)) full.wait;
+    x = data.get;
+    empty.send;
+    x
+  }
+}
+\end{verbatim}
+
+\section{Workers}
+
+Here's an implementation of a {\em compute server} in Scala. The
+server implements a \verb@future@ method which evaluates a given
+expression in parallel with its caller. Unlike the implementation in
+Section~\ref{sec:futures} the server computes futures only with a
+predefined number of threads. A possible implementation of the server
+could run each thread on a separate processor, and could hence avoid
+the overhead inherent in context-switching several threads on a single
+processor.
+
+\begin{verbatim}
+class ComputeServer(n: Int) {
+  private abstract class Job with {
+    abstract type t;
+    def task: t;
+    def return(x: t): Unit;
+  }
+
+  private val openJobs = new Channel[Job]
+
+  private def processor: Unit = {
+    while (True) {
+      val job = openJobs.read;
+      job.return(job.task)
+    }
+  }
+\end{verbatim}
+\begin{verbatim}
+  def future[a](def p: a): ()a = {
+    val reply = new SyncVar[a];
+    openJobs.write(
+      new Job with {
+	type t = a;
+	def task = p;
+	def return(x: a) = reply.set(x);
+      }
+    )
+    (=> reply.get)
+  }
+
+  replicate(n){processor};
+}
+\end{verbatim}
+
+Expressions to be computed (i.e. arguments
+to calls of \verb@future@) are written to the \verb@openJobs@
+channel. A {\em job} is an object with
+\begin{itemize}
+\item
+An abstract type \verb@t@ which describes the result of the compute
+job.
+\item
+A parameterless \verb@task@ method of type \verb@t@ which denotes
+the expression to be computed.
+\item
+A \verb@return@ method which consumes the result once it is
+computed.
+\end{itemize}
+The compute server creates $n$ \verb@processor@ processes as part of
+its initialization.  Every such process repeatedly consumes an open
+job, evaluates the job's \verb@task@ method and passes the result on
+to the job's
+\verb@return@ method. The polymorphic \verb@future@ method creates
+a new job where the \verb@return@ method is implemented by a guard
+named \verb@reply@ and inserts this job into the set of open jobs by
+calling the \verb@isOpen@ guard. It then waits until the corresponding
+\verb@reply@ guard is called.
+
+The example demonstrates the use of abstract types. The abstract type
+\verb@t@ keeps track of the result type of a job, which can vary
+between different jobs. Without abstract types it would be impossible
+to implement the same class to the user in a statically type-safe
+way, without relying on dynamic type tests and type casts.
+
+\section{Message Spaces}
+\label{sec:messagespace}
+
+Message spaces are high-level, flexible constructs for process
+synchronization and communication. A {\em message} in this context is
+an arbitrary object.  There is a special message \verb@TIMEOUT@ which
+is used to signal a time-out.
+\begin{verbatim}
+case class TIMEOUT;
+\end{verbatim}
+Message spaces implement the following signature.
+\begin{verbatim}
+class MessageSpace with {
+  def send(msg: Any): Unit;
+  def receive[a](f: PartialFunction[Any, a]): a;
+  def receiveWithin[a](msec: Long)(f: PartialFunction[Any, a]): a;
+}
+\end{verbatim}
+The state of a message space consists of a multi-set of messages.
+Messages are added to the space using the \verb@send@ method. Messages
+are removed using the \verb@receive@ method, which is passed a message
+processor \verb@f@ as argument, which is a partial function from
+messages to some arbitrary result type. Typically, this function is
+implemented as a pattern matching expression. The \verb@receive@
+method blocks until there is a message in the space for which its
+message processor is defined.  The matching message is then removed
+from the space and the blocked thread is restarted by applying the
+message processor to the message. Both sent messages and receivers are
+ordered in time. A receiver $r$ is applied to a matching message $m$
+only if there is no other (message, receiver) pair which precedes $(m,
+r)$ in the partial ordering on pairs that orders each component in
+time.
+
+As a simple example of how message spaces are used, consider a
+one-place buffer:
+\begin{verbatim}
+class OnePlaceBuffer with {
+  private val m = new MessageSpace;        \=// An internal message space
+  private case class Empty, Full(x: Int);    \>// Types of messages we deal with
+
+  m send Empty;                           \>// Initialization
+
+  def write(x: Int): Unit =
+    m receive { case Empty => m send Full(x) }
+
+  def read: Int =
+    m receive { case Full(x) => m send Empty ; x }
+}
+\end{verbatim}
+Here's how the message space class can be implemented:
+\begin{verbatim}
+class MessageSpace with {
+
+  private abstract class Receiver extends Signal with {
+    def isDefined(msg: Any): Boolean;
+    var msg = null;
+  }
+\end{verbatim}
+We define an internal class for receivers with a test method
+\verb@isDefined@, which indicates whether the receiver is
+defined for a given message.  The receiver inherits from class
+\verb@Signal@ a \verb@notify@ method which is used to wake up a
+receiver thread. When the receiver thread is woken up, the message it
+needs to be applied to is stored in the \verb@msg@ variable of
+\verb@Receiver@.
+\begin{verbatim}
+  private val sent = new LinkedList[Any](null) ;
+  private var lastSent = sent;
+  private var receivers = new LinkedList[Receiver](null);
+  private var lastReceiver = receivers;
+\end{verbatim}
+The message space class maintains two linked lists,
+one for sent but unconsumed messages, the other for waiting receivers.
+\begin{verbatim}
+  def send(msg: Any): Unit = synchronized {
+    var r = receivers, r1 = r.next;
+    while (r1 != null && !r1.elem.isDefined(msg)) {
+      r = r1; r1 = r1.next;
+    }
+    if (r1 != null) {
+      r.next = r1.next; r1.elem.msg = msg; r1.elem.notify;
+    } else {
+      l = new LinkedList(msg); lastSent.next = l; lastSent = l;
+    }
+  }
+\end{verbatim}
+The \verb@send@ method first checks whether a waiting receiver is
+
+applicable to the sent message. If yes, the receiver is notified.
+Otherwise, the message is appended to the linked list of sent messages.
+\begin{verbatim}
+  def receive[a](f: PartialFunction[Any, a]): a = {
+    val msg: Any = synchronized {
+      var s = sent, s1 = s.next;
+      while (s1 != null && !f.isDefined(s1.elem)) {
+	s = s1; s1 = s1.next
+      }
+      if (s1 != null) {
+        s.next = s1.next; s1.elem
+      } else {
+	val r = new LinkedList(
+          new Receiver with {
+            def isDefined(msg: Any) = f.isDefined(msg);
+          });
+	lastReceiver.next = r; lastReceiver = r;
+	r.elem.wait;
+	r.elem.msg
+      }
+    }
+    f(msg)
+  }
+\end{verbatim}
+The \verb@receive@ method first checks whether the message processor function
+\verb@f@ can be applied to a message that has already been sent but that
+was not yet consumed. If yes, the thread continues immediately by
+applying \verb@f@ to the message. Otherwise, a new receiver is created
+and linked into the \verb@receivers@ list, and the thread waits for a
+notification on this receiver. Once the thrad is woken up again, it
+continues by applying \verb@f@ to the message that was stored in te receiver.
+
+The message space class also offers a method \verb@receiveWithin@
+which blocks for only a specified maximal amount of time.  If no
+message is received within the specified time interval (given in
+milliseconds), the message processor argument $f$ will be unblocked
+with the special \verb@TIMEOUT@ message.  The implementation of
+\verb@receiveWithin@ is quite similar to \verb@receive@:
+\begin{verbatim}
+  def receiveWithin[a](msec: Long)(f: PartialFunction[Any, a]): a = {
+    val msg: Any = synchronized {
+      var s = sent, s1 = s.next;
+      while (s1 != null && !f.isDefined(s1.elem)) {
+	s = s1; s1 = s1.next ;
+      }
+      if (s1 != null) {
+        s.next = s1.next; s1.elem
+      } else {
+	val r = new LinkedList(
+          new Receiver with {
+            def isDefined(msg: Any) = f.isDefined(msg);
+          }
+        )
+	lastReceiver.next = r; lastReceiver = r;
+	r.elem.wait(msec);
+        if (r.elem.msg == null) r.elem.msg = TIMEOUT;
+	r.elem.msg
+      }
+    }
+    f(msg)
+  }
+} // end MessageSpace
+\end{verbatim}
+The only differences are the timed call to \verb@wait@, and the
+statement following it.
+
+\section{Actors}
+\label{sec:actors}
+
+Chapter~\ref{sec:ex-auction} sketched as a program example the
+implementation of an electronic auction service. This service was
+based on high-level actor processes, that work by inspecting messages
+in their mailbox using pattern matching. An actor is simply a thread
+whose communication primitives are those of a message space.
+Actors are therefore defined by a mixin composition of threads and message spaces.
+\begin{verbatim}
+abstract class Actor extends Thread with MessageSpace;
+\end{verbatim}
+
+\comment{
+As an extended example of an application that uses actors, we come
+back to the auction server example of Section~\ref{sec:ex-auction}.
+The following code implements:
+
+\begin{figure}[h]
+\begin{verbatim}
+class AuctionMessage;
+case class
+  \=Offer(bid: Int, client: Process),                             \=// make a bid
+     \>Inquire(client: Process) extends AuctionMessage  \>// inquire status
+
+class AuctionReply;
+case class
+  \=Status(asked; Int, expiration: Date),   \>// asked sum, expiration date
+     \>BestOffer,                                       \>// yours is the best offer
+     \>BeatenOffer(maxBid: Int),                        \>// offer beaten by maxBid
+     \>AuctionConcluded(seller: Process, client: Process), \>// auction concluded
+     \>AuctionFailed                                     \>// failed with no bids
+     \>AuctionOver extends AuctionReply                  \>// bidding is closed
+\end{verbatim}
+\end{figure}
+
+\begin{verbatim}
+class Auction(seller: Process, minBid: Int, closing: Date)
+ extends Process with {
+
+  val timeToShutdown = 36000000 // msec
+  val delta = 10                // bid increment
+\end{verbatim}
+\begin{verbatim}
+  def run = {
+    var askedBid = minBid
+    var maxBidder: Process = null
+    while (True) {
+      receiveWithin ((closing - Date.currentDate).msec) {
+	case Offer(bid, client) => {
+	  if (bid >= askedBid) {
+            if (maxBidder != null && maxBidder != client) {
+              maxBidder send BeatenOffer(bid)
+            }
+            maxBidder = client
+            askedBid = bid + delta
+            client send BestOffer
+          } else {
+            client send BeatenOffer(maxBid)
+          }
+        }
+\end{verbatim}
+\begin{verbatim}
+	case Inquire(client) => {
+	  client send Status(askedBid, closing)
+        }
+\end{verbatim}
+\begin{verbatim}
+	case TIMEOUT => {
+	  if (maxBidder != null) {
+	    val reply = AuctionConcluded(seller, maxBidder)
+	    maxBidder send reply
+	    seller send reply
+	  } else {
+	    seller send AuctionFailed
+          }
+          receiveWithin (timeToShutdown) {
+            case Offer(_, client) => client send AuctionOver ; discardAndContinue
+            case _ => discardAndContinue
+            case TIMEOUT => stop
+          }
+        }
+\end{verbatim}
+\begin{verbatim}
+        case _ => discardAndContinue
+      }
+    }
+  }
+\end{verbatim}
+\begin{verbatim}
+  def houseKeeping: Int = {
+    val Limit = 100
+    var nWaiting: Int = 0
+    receiveWithin(0) {
+      case _ =>
+        nWaiting = nWaiting + 1
+        if (nWaiting > Limit) {
+	  receiveWithin(0) {
+            case Offer(_, _) => continue
+            case TIMEOUT =>
+            case _ => discardAndContinue
+          }
+        } else continue
+      case TIMEOUT =>
+    }
+  }
+}
+\end{verbatim}
+\begin{verbatim}
+class Bidder (auction: Process, minBid: Int, maxBid: Int)
+ extends Process with {
+  val MaxTries = 3
+  val Unknown = -1
+
+  var nextBid = Unknown
+\end{verbatim}
+\begin{verbatim}
+  def getAuctionStatus = {
+    var nTries = 0
+    while (nextBid == Unknown && nTries < MaxTries) {
+      auction send Inquiry(this)
+      nTries = nTries + 1
+      receiveWithin(waitTime) {
+        case Status(bid, _) => bid match {
+          case None => nextBid = minBid
+          case Some(curBid) => nextBid = curBid + Delta
+        }
+        case TIMEOUT =>
+        case _ => continue
+      }
+    }
+    status
+  }
+\end{verbatim}
+\begin{verbatim}
+  def bid: Unit = {
+    if (nextBid < maxBid) {
+      auction send Offer(nextBid, this)
+      receive {
+        case BestOffer =>
+          receive {
+            case BeatenOffer(bestBid) =>
+              nextBid = bestBid + Delta
+              bid
+            case AuctionConcluded(seller, client) =>
+     	      transferPayment(seller, nextBid)
+            case _ => continue
+	  }
+
+        case BeatenOffer(bestBid) =>
+          nextBid = nextBid + Delta
+          bid
+
+        case AuctionOver =>
+
+        case _ => continue
+      }
+    }
+  }
+\end{verbatim}
+\begin{verbatim}
+  def run = {
+    getAuctionStatus
+    if (nextBid != Unknown) bid
+  }
+
+  def transferPayment(seller: Process, amount: Int)
+}
+\end{verbatim}
+}
+%\todo{We also need some XML examples.}
+\end{document}
+
+
+
+  case ([], _) => ys
+  case (_, []) => xs
+  case (x :: xs1, y :: ys1) =>
+    if (x < y) x :: merge(xs1, ys) else y :: merge(xs, ys1)
+}
+
+def split (xs: List[a]): (List[a], List[a]) = xs match {
+  case [] => ([], [])
+  case [x] => (x, [])
+  case y :: z :: xs1 => val (ys, zs) = split(xs1) ; (y :: ys, z :: zs)
+}
+
+def sort(xs: List[a]): List[a] = {
+  val (ys, zs) = split(xs)
+  merge(sort(ys), sort(zs))
+}
+
+
+def sort(a:Array[String]): Array[String] = {
+  val pivot = a(a.length / 2)
+  sort(a.filter(x => x < pivot)) ++
+       a.filter(x => x == pivot) ++
+  sort(a.filter(x => x > pivot))
+}
+
+def sort(a:Array[String]): Array[String] = {
+
+  def swap (i: Int, j: Int): unit = {
+    val t = a(i) ; a(i) = a(j) ; a(j) = t
+  }
+
+  def sort1(l: int, r: int): unit = {
+    val pivot = a((l + r) / 2)
+    var i = l, j = r
+    while (i <= r) {
+      while (i < r && a(i) < pivot) { i = i + 1 }
+      while (j > l && a(j) > pivot) { j = j - 1 }
+      if (i <= j) {
+        swap(i, j)
+        i = i + 1
+        j = j - 1
+      }
+    }
+    if (l < j) sort1(l, j)
+    if (j < r) sort1(i, r)
+  }
+
+  sort1(0, a.length - 1)
+}
+
+class Array[a] with {
+
+  def copy(to: Array[a], src: int, dst: int, len: int): unit
+  val length: int
+  val apply(i: int): a
+  val update(i: int, x: a): unit
+
+  def filter (p: a => Boolean): Array[a] = {
+    val temp = new Array[a](a.length)
+    var i = 0, j = 0
+    for (i < a.length, i = i + 1) {
+      val x = a(i)
+      if (p(x)) { temp(j) = x; j = j + 1 }
+    }
+    val res = new Array[a](j)
+    temp.copy(res, 0, 0, j)
+  }
+
+  def ++ (that: Array[a]): Array[a] = {
+    val a = new Array[a](this.length + that.length)
+    this.copy(a, 0, 0, this.length)
+    that.copy(a, 0, this.length, that.length)
+  }
+
+static
+
+  def concat [a] (as: List[Array[a]]) = {
+    val l = (as map (a => a.length)).sum
+    val dst = new Array[a](l)
+    var j = 0
+    as forall {a => { a.copy(dst, j, a.length) ; j = j + a.length }}
+    dst
+  }
+
+}
+
+module ABT extends AlgBinTree[kt, vt]
+ABT.Map
