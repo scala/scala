@@ -60,6 +60,7 @@ public class TestRegTraverser extends Traverser {
 		break;
 
                 // Matthias PatternMatcher cannot handle this case
+                /*
 	    case Apply( Tree fn, Tree[] trees ):
                 if( trees.length == 1 )
                     switch (trees[ 0 ]) {
@@ -79,6 +80,7 @@ public class TestRegTraverser extends Traverser {
                         super.traverse( tree );
                     }
 		break;
+                */
 	    default:
 		super.traverse( tree );
 	    }
