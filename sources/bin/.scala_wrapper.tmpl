@@ -567,7 +567,7 @@ test_print_help() {
     echo "";
     echo "--auto          use filenames to select the test to run";
     echo "--run           next files test the interpreter and all backends";
-    echo "--jvm           next files test the jvm backend";
+    echo "--jvm           next files test the JVM backend";
     echo "--int           next files test the interpreter";
     echo "--shl           next files test the interpreter shell";
     echo "--xml           next files test the dtd2scala tool";
@@ -625,208 +625,231 @@ test_print_failure() {
 }
 
 
-
-
-test_check_interpretation() {
-    $SURUS $TEST_FLAGS $FLAGS "$source" -- Test "int";
+# Tests a compilation success.
+test_run_pos() {
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    rm -rf "$dstbase".obj;
 }
 
-test_check_shell() {
-    cat "$source" | $SURUS -interactive -nologo $TEST_FLAGS $FLAGS;
+# Tests a compilation failure.
+test_run_neg() {
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    ( cd "$srcdir" && $SOCOS -d "$os_dstbase".obj "$@" "$testname".scala; );
+    status=$?;
+    rm -rf "$dstbase".obj;
+    if [ "$status" = 0 ]; then return 1; else return 0; fi;
 }
 
-test_check_compilation() {
-    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
-    classpath=`get_os_pathlist "$output"`;
-    os_output=`get_os_filename "$output"`;
-    rm -rf "$output";
-    mkdir -p "$output" &&
-    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
-    $SCALA -classpath "$classpath" Test "jvm" &&
-    rm -rf "$output";
+# Tests the JVM backend.
+test_run_jvm() {
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    $SCALA -classpath "$os_dstbase".obj Test "jvm" &&
+    rm -rf "$dstbase".obj;
 }
 
-test_check_xml() {
-    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
-    dtdfile="`expr "$source" : "\(.*\)\\.scala"`.dtd";
-    xmlfile="`expr "$source" : "\(.*\)\\.scala"`.xml";
-    nsfile="`expr "$source" : "\(.*\)\\.scala"`.namespace";
-    objfile="$output/dtd.scala";
-    classpath=`get_os_pathlist "$output"`;
-    os_output=`get_os_filename "$output"`;
-    rm -rf "$output";
-    mkdir -p "$output" &&
-    $DTD2SCALA -d "$os_output" "$dtdfile" dtd `cat $nsfile` &&
-    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
-    $SCALA -classpath "$classpath" Test "$xmlfile" &&
-    rm -rf "$output";
+# Tests the interpreter.
+test_run_int() {
+    $SURUS "$@" "$os_srcbase".scala -- Test "int";
 }
 
-test_check_disassembler() {
-    scalapargs="`expr "$source" : "\(.*\)\\.scala"`.args";
-    if [ -f "$scalapargs" ]; then
-        SCALAP_ARGS=`cat "$scalapargs"`;
+# Tests the interpreter shell.
+test_run_shl() {
+    cat "$os_srcbase".scala | $SURUS -interactive -nologo "$@";
+}
+
+# Test the disassemblers.
+test_run_dis() {
+    argsfile="$srcbase".args;
+    if [ ! -f "$argsfile" ]; then
+        argsfile=/dev/null;
+    fi;
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    $SOCOS -d "$os_dstbase".obj "$@" "$os_srcbase".scala &&
+    $SCALAP -classpath "$os_dstbase".obj `cat "$argsfile"` &&
+    rm -rf "$dstbase".obj;
+}
+
+# Tests the dtd2scala tool.
+test_run_xml() {
+    argsfile="$srcbase".namespace;
+    if [ ! -f "$argsfile" ]; then
+        argsfile=/dev/null;
+    fi;
+    rm -rf "$dstbase".obj &&
+    mkdir -p "$dstbase".obj &&
+    $DTD2SCALA -d "$os_dstbase".obj "$os_srcbase".dtd dtd `cat "$argsfile"` &&
+    $SOCOS -d "$os_dstbase".obj "$@" "$os_dstbase".obj/dtd.scala \
+        "$os_srcbase".scala &&
+    $SCALA -classpath "$os_dstbase".obj Test "$os_srcbase".xml &&
+    rm -rf "$dstbase".obj;
+}
+
+# Tests the .NET backend.
+test_run_msil() {
+    assemblies={#TEST_ASSEMBLIES#};
+    rm -f "$dstbase".il &&
+    rm -f "$dstbase".EXE &&
+    $SOCOS -nowarn -target:msil -o "$os_dstbase" $assemblies "$@" \
+        "$os_srcbase".scala &&
+    case "$UNAME" in
+        CYGWIN* )
+            ilasm /qui /nol /out="$os_dstbase".EXE "$os_dstbase".il \
+                > /dev/null &&
+#             peverify /il "$os_dstbase".EXE > /dev/null &&
+            "$dstbase".EXE "msil";;
+        * )
+            cat "$checkfile";;
+    esac &&
+    rm -f "$dstbase".EXE &&
+    rm -f "$dstbase".il;
+}
+
+
+# Checks the specified test.
+test_check_test() {
+    [ $# = 1 ] || abort "internal error";
+    testfile="$1"; shift 1;
+    # compute test name
+    testname=`basename "$testfile" .scala`;
+
+    # compute source and destination directories (absolute paths)
+    srcdir=`dirname "$testfile"`;
+    srcdir=`cd "$srcdir"; pwd`;
+    dstdir="$OBJDIR""$srcdir";
+
+    # compute source and destination base names
+    srcbase="$srcdir"/"$testname";
+    dstbase="$dstdir"/"$testname"-$kind;
+    os_srcbase=`get_os_filename "$srcbase"`;
+    os_dstbase=`get_os_filename "$dstbase"`;
+
+    # compute flags file
+    flagsfile="$srcbase".flags;
+    if [ ! -f "$flagsfile" ]; then
+        flagsfile=/dev/null;
+    fi;
+
+    # compute check file
+    checkfile="$srcbase"-$kind.check;
+    if [ ! -f "$checkfile" ]; then
+        checkfile="$srcbase".check;
+    fi;
+    if [ ! -f "$checkfile" ]; then
+        checkfile=/dev/null;
+    fi;
+
+    # compute log file
+    logfile="$dstbase".log;
+
+    # if we are testing only failed tests, skip successful tests
+    if [ "$FAILED" = "true" -a ! -f "$logfile" ]; then
+        return 0;
+    fi;
+
+    # if that's the first file of the section print section header
+    if [ -n "$header" ]; then
+        printf_outline "$header\\n";
+        unset header;
+    fi;
+
+    # print tested file
+    test_print_testing "$testfile";
+
+    # run test
+    if [ "$NORUN" = "true" ]; then
+        [ ! -f "$logfile" ];
     else
-        SCALAP_ARGS="";
+        rm -f "$logfile";
+        { [ -d "$dstdir" ] || mkdir -p "$dstdir"; } &&
+        ( test_run_$kind `cat "$flagsfile"` $FLAGS 1> "$logfile" 2>&1; ) &&
+        $DIFF "$logfile" "$checkfile" 1> /dev/null 2>&1 &&
+        rm -f "$logfile";
     fi;
-    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
-    classpath=`get_os_pathlist "$output"`;
-    os_output=`get_os_filename "$output"`;
-    rm -rf "$output";
-    mkdir -p "$output" &&
-    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
-    $SCALAP -classpath "$classpath" $SCALAP_ARGS &&
-    rm -rf "$output";
-}
 
-test_check_compilation_success() {
-    output="$OBJDIR"`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
-    os_output=`get_os_filename "$output"`;
-    rm -rf "$output";
-    mkdir -p "$output" &&
-    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
-    rm -rf "$output";
-}
-
-test_check_compilation_failure() {
-    (
-        OBJDIR="$OBJDIR"`dirname "$source"`;
-        cd `dirname "$source"`;
-        source=`basename "$source"`;
-        if test_check_compilation_success "$@"; then false; else
-            rm -rf "$output";
-        fi;
-    )
-}
-
-test_check_msil() {
-    ASSEM="Test"
-    IL_FILE=${ASSEM}".il"
-    PE_FILE=${ASSEM}".EXE"
-
-    ILASM=ilasm
-    ILASM_ARGS="/qui /nol /out=${PE_FILE}"
-
-    PEVERIFY=peverify
-    PEVERIFY_ARGS="/il"
-
-    rm -f $IL_FILE
-    rm -f $PE_FILE
-
-    $SOCOS -nowarn -target:msil -o ${ASSEM} $FLAGS "$source" &&
-
-    ${ILASM} ${ILASM_ARGS} ${IL_FILE} > /dev/null &&
-    if [ ! $? ] ; then
-	echo "'$ILASM' failed!"
-	return 1
-    fi
-
-#    $PEVERIFY $PEVERIFY_ARGS $PE_FILE > /dev/null
-#    if [ ! $? ] ; then
-#	echo "'$PEVERIFY' failed!"
-#	rm -rf $PE_FILE
-#	return 1
-#    fi
-
-    eval ./$PE_FILE "msil"
-}
-
-test_check_output() {
-    if [ -f "$expect" ]; then
-        $DIFF "$actual" "$expect";
-    else
-        cat /dev/null | $DIFF "$actual" -;
-    fi;
-}
-
-test_check_file() {
-    source="$FILE";
-    flags="`expr "$source" : "\(.*\)\\.scala"`.flags";
-    expect="`expr "$source" : "\(.*\)\\.scala"`-$KIND.check";
-    if [ ! -f $expect ]; then
-	expect="`expr "$source" : "\(.*\)\\.scala"`.check";
-    fi;
-    actual="$OBJDIR""`expr "$source" : "\(.*\)\\.scala"`-$KIND.log";
-    if [ -f "$flags" ]; then
-        TEST_FLAGS=`cat $flags`;
-    else
-        TEST_FLAGS="";
-    fi;
-    if [ "$FAILED" = "true" -a ! -f "$actual" ]; then
-        continue;
-    fi;
-    if [ "$HEAD" != "true" ]; then
-        printf_outline "$TEXT\\n";
-        HEAD="true";
-    fi;
-    test_print_testing "$FILE";
-    if [ "$NORUN" != "true" ]; then
-        rm -f "$actual";
-        "$TEST" 1> "$actual" 2>&1 && test_check_output 1> /dev/null 2>&1;
-    else
-        test ! -f "$actual";
-    fi;
+    # print result
     if [ "$?" = 0 ]; then
         SUCCESS_COUNT=`echo "$SUCCESS_COUNT+1" | bc`;
         test_print_success;
-        rm -f "$actual";
     else
         FAILURE_COUNT=`echo "$FAILURE_COUNT+1" | bc`;
         test_print_failure;
-    fi;
-    if [ -f "$actual" ]; then
+        if [ ! -f "$logfile" ]; then
+            logfile=/dev/null;
+        fi;
         if [ "$SHOWLOG" = "true" ]; then
-            cat "$actual";
+            cat "$logfile";
         fi;
         if [ "$SHOWDIFF" = "true" ]; then
-            test_check_output;
+            $DIFF "$logfile" "$checkfile";
         fi;
     fi;
 }
 
-test_check_one() {
-    HEAD="false";
-    TEXT="$1"; shift 1;
-    TEST="$1"; shift 1;
-    KIND="$1"; shift 1;
+# Checks the specified file
+test_check_file() {
+    [ $# = 1 ] || abort "internal error";
+    file="$1"; shift 1;
+    for testfile in "" `find "$file" -name "*.obj" -prune -o -name "*.scala" -a -type f -print`; do
+        [ -z "$testfile" ] && continue;
+        test_check_test "$testfile";
+    done;
+}
 
-    for FROM do
-        if [ -d "$FROM" -o -f "$FROM" ]; then
-            for FILE in . `find "$FROM" -name "*.obj" -prune -o -name "*.scala" -print`; do
-                if [ "$FILE" = "." ]; then continue; fi;
-                test_check_file;
-            done;
-        fi;
+# Checks all files of the specified kind.
+test_check_kind() {
+    [ $# -ge 2 ] || abort "internal error";
+    header="$1"; shift 1;
+    kind="$1"; shift 1;
+    for file in "" "$@"; do
+        [ -z "$file" ] && continue;
+        test_check_file "$file";
     done
-
-    if [ "$HEAD" = "true" ]; then
+    if [ -z "$header" ]; then
         echo "";
     fi;
 }
 
+# Checks everything.
 test_check_all() {
-    test_check_one "Testing jvm backend" \
-        test_check_compilation "jvm" $FILES_RUN $FILES_JVM;
-    test_check_one "Testing interpreter shell" \
-        test_check_shell "shl" $FILES_SHL;
-    test_check_one "Testing disassembler" \
-        test_check_disassembler "dis" $FILES_DIS;
-    test_check_one "Testing dtd2scala tool" \
-        test_check_xml "xml" $FILES_XML;
-    test_check_one "Testing compiler (on files whose compilation should succeed)" \
-        test_check_compilation_success "pos" $FILES_POS;
-    test_check_one "Testing compiler (on files whose compilation should fail)" \
-        test_check_compilation_failure "neg" $FILES_NEG;
-    test_check_one "Testing msil backend" \
-	test_check_msil "msil" $FILES_MSIL;
-    test_check_one "Testing interpreter" \
-        test_check_interpretation "int" $FILES_RUN $FILES_INT;
+    [ $# = 0 ] || abort "internal error";
+    test_check_kind "Testing JVM backend" \
+        "jvm" $FILES_RUN $FILES_JVM;
+    test_check_kind "Testing interpreter shell" \
+        "shl" $FILES_SHL;
+    test_check_kind "Testing disassembler" \
+        "dis" $FILES_DIS;
+    test_check_kind "Testing dtd2scala tool" \
+        "xml" $FILES_XML;
+    test_check_kind "Testing compiler (on files whose compilation should succeed)" \
+        "pos" $FILES_POS;
+    test_check_kind "Testing compiler (on files whose compilation should fail)" \
+        "neg" $FILES_NEG;
+    test_check_kind "Testing .NET backend" \
+	"msil" $FILES_MSIL;
+    test_check_kind "Testing interpreter" \
+        "int" $FILES_RUN $FILES_INT;
 }
 
 
-
+# Adds a new file to the appropriate file list(s).
 test_add_file() {
-    TEST_ALL="false";
+    [ $# = 1 ] || abort "internal error";
+    case "$1" in
+        *.scala )
+            if [ ! \( -d "$1" -o -f "$1" \) ]; then
+                abort "don't know what to do with '$1'";
+            fi;;
+        * )
+            if [ ! -d "$1" ]; then
+                abort "don't know what to do with '$1'";
+            fi;;
+    esac;
     case "$TEST_TYPE" in
         auto ) ;;
         run  ) FILES_RUN="$FILES_RUN $1"; return;;
@@ -852,6 +875,7 @@ test_add_file() {
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
         * ) abort "don't known what to do with \`$1'";;
     esac;
+    TEST_ALL="false";
 }
 
 # Implements "scalatest ...".
@@ -968,7 +992,7 @@ test_main() {
 
     if [ -n "$OBJDIR" ]; then
         if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
-            OBJDIR=`cd "$OBJDIR"; pwd`/;
+            OBJDIR=`cd "$OBJDIR"; pwd`;
         else
             abort "could not create directory '$OBJDIR'";
         fi
