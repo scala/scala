@@ -56,7 +56,7 @@ public class AddInterfacesPhase extends Phase {
                     && (member.isInitializer() || !memberGoesInInterface(member)))
                     continue;
 
-                if (member.isPrivate()) {
+                if (member.isPrivate() && !member.isClass()) {
                     member.name = uniqueName(member);
                     member.flags ^= Modifiers.PRIVATE;
                 } else if (member.isProtected())
@@ -96,6 +96,9 @@ public class AddInterfacesPhase extends Phase {
             }
 
             return Type.compoundType(newParents, newMembers, sym);
+        } else if (sym.owner().isClass() || sym.isParameter()) {
+            getClassSymbol(sym.enclClass());
+            return sym.info();
         } else
             return tp;
     }
@@ -205,6 +208,18 @@ public class AddInterfacesPhase extends Phase {
                     // Member doesn't go in interface, we just make it
                     // owned by the class.
                     classMemberSym = ifaceMemberSym;
+
+                    // [HACK] the following forces the evaluation of
+                    // the type of all value parameters, which might
+                    // otherwise become invalid once the owner is
+                    // changed.
+                    classMemberSym.info();
+                    if (classMemberSym.isMethod()) {
+                        Symbol[] vp = classMemberSym.valueParams();
+                        for (int i = 0; i < vp.length; ++i)
+                            vp[i].info();
+                    }
+
                     classMemberSym.setOwner(classSym);
                     classMemberSym.updateInfo(
                         thisTypeMap.apply(
