@@ -394,8 +394,7 @@ public abstract class Global {
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
             if (currentPhase.descriptor.hasPrintFlag()) print();
-            if (currentPhase.descriptor.hasGraphFlag())
-                currentPhase.graph(this);
+            // if (currentPhase.descriptor.hasGraphFlag()) // !!!
             // if (currentPhase.descriptor.hasCheckFlag()) // !!!
             if (currentPhase == PHASE.PARSER.phase()) fix1();
             if (currentPhase == PHASE.ANALYZER.phase()) fix2();

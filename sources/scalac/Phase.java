@@ -65,17 +65,6 @@ public abstract class Phase {
     /** Applies this phase to the given compilation units. */
     public abstract void apply(CompilationUnit[] units);
 
-    /** Graphs all compilation units. */
-    public void graph(Global global) {
-        for (int i = 0; i < global.units.length; i++) graph(global.units[i]);
-    }
-
-    /** Graphs the result of this phase for the given compilation unit. */
-    public void graph(CompilationUnit unit) {
-        // !!! new scala.compiler.gdl.TreePrinter().printInFile(
-        // !!!     unit, unit.source + "-" + name() + ".gdl");
-    }
-
     /** Returns the name of this phase. */
     public final String toString() {
         return descriptor.name();
