@@ -9,11 +9,21 @@
 
 package scala;
 
-/** I promise, there will be some documentation soon! :-) Matthias
- */
-class HashMap[A, B] extends MutableMap[A, B]
-                    with HashTable[A]
+
+class ListMap[A, B] extends MutableMap[A, B]
                     with MapImpl[A, B] {
 
-    protected def entryKey(e: Entry) = e.key;
+	var xs: List[Entry] = Nil;
+
+    def size: Int = xs.length;
+
+    def clear: Unit = { xs = Nil; }
+
+ 	protected def findEntry(key: A) = xs find {e => e.key == key};
+
+	protected def addEntry(e: Entry) = { xs = e :: xs; }
+
+    protected def removeEntry(key: A) = { xs = xs filter {e => e.key != key}; }
+
+	protected def entries = xs.elements;
 }
