@@ -743,9 +743,6 @@ public final class GenMSIL {
 		return items.StaticItem(MSILType.REF(tc.SCALA_UNIT),
 					tc.RUNTIME_UNIT_VAL);
 	    }
- 	    if (sym == primitives.AS_UVALUE) {
- 		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
- 	    }
 	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
 	    }

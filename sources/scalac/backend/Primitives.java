@@ -117,27 +117,6 @@ public class Primitives {
     private static final Name UNBOX_OARRAY_N = Name.fromString("unbox_oarray");
     private static final Name UNBOX__ARRAY_N = Name.fromString("unbox__array");
 
-    private static final Name AS_UVALUE_N = Name.fromString("asUnit");
-    private static final Name AS_ZVALUE_N = Name.fromString("asBoolean");
-    private static final Name AS_BVALUE_N = Name.fromString("asByte");
-    private static final Name AS_SVALUE_N = Name.fromString("asShort");
-    private static final Name AS_CVALUE_N = Name.fromString("asChar");
-    private static final Name AS_IVALUE_N = Name.fromString("asInt");
-    private static final Name AS_LVALUE_N = Name.fromString("asLong");
-    private static final Name AS_FVALUE_N = Name.fromString("asFloat");
-    private static final Name AS_DVALUE_N = Name.fromString("asDouble");
-
-    private static final Name AS_ZARRAY_N = Name.fromString("asBooleanArray");
-    private static final Name AS_BARRAY_N = Name.fromString("asByteArray");
-    private static final Name AS_SARRAY_N = Name.fromString("asShortArray");
-    private static final Name AS_CARRAY_N = Name.fromString("asCharArray");
-    private static final Name AS_IARRAY_N = Name.fromString("asIntArray");
-    private static final Name AS_LARRAY_N = Name.fromString("asLongArray");
-    private static final Name AS_FARRAY_N = Name.fromString("asFloatArray");
-    private static final Name AS_DARRAY_N = Name.fromString("asDoubleArray");
-    private static final Name AS_OARRAY_N = Name.fromString("asObjectArray");
-    private static final Name AS__ARRAY_N = Name.fromString("asArray");
-
     private static final Name B2B_N = Name.fromString("b2b");
     private static final Name B2S_N = Name.fromString("b2s");
     private static final Name B2C_N = Name.fromString("b2c");
@@ -278,27 +257,6 @@ public class Primitives {
     public final Symbol UNBOX_DARRAY;
     public final Symbol UNBOX_OARRAY;
     public final Symbol UNBOX__ARRAY;
-
-    public final Symbol AS_UVALUE;
-    public final Symbol AS_ZVALUE;
-    public final Symbol AS_BVALUE;
-    public final Symbol AS_SVALUE;
-    public final Symbol AS_CVALUE;
-    public final Symbol AS_IVALUE;
-    public final Symbol AS_LVALUE;
-    public final Symbol AS_FVALUE;
-    public final Symbol AS_DVALUE;
-
-    public final Symbol AS_ZARRAY;
-    public final Symbol AS_BARRAY;
-    public final Symbol AS_SARRAY;
-    public final Symbol AS_CARRAY;
-    public final Symbol AS_IARRAY;
-    public final Symbol AS_LARRAY;
-    public final Symbol AS_FARRAY;
-    public final Symbol AS_DARRAY;
-    public final Symbol AS_OARRAY;
-    public final Symbol AS__ARRAY;
 
     public final Symbol B2B;
     public final Symbol B2S;
@@ -481,25 +439,6 @@ public class Primitives {
         this.D2L = getUniqueTerm(RUNTIME, D2L_N);
         this.D2F = getUniqueTerm(RUNTIME, D2F_N);
         this.D2D = getUniqueTerm(RUNTIME, D2D_N);
-        this.AS_UVALUE = getUniqueTerm(definitions.UNIT_CLASS, AS_UVALUE_N);
-        this.AS_ZVALUE = getUniqueTerm(definitions.BOOLEAN_CLASS, AS_ZVALUE_N);
-        this.AS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_BVALUE_N);
-        this.AS_SVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_SVALUE_N);
-        this.AS_CVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_CVALUE_N);
-        this.AS_IVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_IVALUE_N);
-        this.AS_LVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_LVALUE_N);
-        this.AS_FVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_FVALUE_N);
-        this.AS_DVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_DVALUE_N);
-        this.AS_ZARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_ZARRAY_N);
-        this.AS_BARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_BARRAY_N);
-        this.AS_SARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_SARRAY_N);
-        this.AS_CARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_CARRAY_N);
-        this.AS_IARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_IARRAY_N);
-        this.AS_LARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_LARRAY_N);
-        this.AS_FARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_FARRAY_N);
-        this.AS_DARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_DARRAY_N);
-        this.AS_OARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_OARRAY_N);
-        this.AS__ARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS__ARRAY_N);
         initPrimitives();
     }
 
@@ -538,7 +477,6 @@ public class Primitives {
         addAll(defs.UNIT_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.UNIT_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.UNIT_CLASS, Names.toString, Primitive.TOSTRING, 1);
-        addPrimitive(AS_UVALUE, Primitive.AS_UVALUE);
         // !!! addAll(defs.UNIT_CLASS, Names.ADD, Primitive.CONCAT, 1);
 
         // scala.Boolean
@@ -547,7 +485,6 @@ public class Primitives {
         addAll(defs.BOOLEAN_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.BOOLEAN_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.BOOLEAN_CLASS, Names.toString, Primitive.TOSTRING, 1);
-        addPrimitive(AS_ZVALUE, Primitive.AS_ZVALUE);
         addAll(defs.BOOLEAN_CLASS, Names.ZNOT, Primitive.ZNOT, 1);
         addAll(defs.BOOLEAN_CLASS, Names.OR, Primitive.OR, 1);
         addAll(defs.BOOLEAN_CLASS, Names.XOR, Primitive.XOR, 1);
@@ -639,13 +576,6 @@ public class Primitives {
         //addAll(defs.DOUBLE_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.DOUBLE_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.DOUBLE_CLASS, Names.toString, Primitive.TOSTRING, 1);
-        addPrimitive(AS_BVALUE, Primitive.AS_BVALUE);
-        addPrimitive(AS_SVALUE, Primitive.AS_SVALUE);
-        addPrimitive(AS_CVALUE, Primitive.AS_CVALUE);
-        addPrimitive(AS_IVALUE, Primitive.AS_IVALUE);
-        addPrimitive(AS_LVALUE, Primitive.AS_LVALUE);
-        addPrimitive(AS_FVALUE, Primitive.AS_FVALUE);
-        addPrimitive(AS_DVALUE, Primitive.AS_DVALUE);
         addAdd(defs.DOUBLE_CLASS, 1);
         addSub(defs.DOUBLE_CLASS, 1);
         addAll(defs.DOUBLE_CLASS, Names.MUL, Primitive.MUL, 1);
@@ -662,16 +592,6 @@ public class Primitives {
         // !!! addAll(defs.ARRAY_CLASS, Names.equals, Primitive.EQUALS, 1);
         // !!! addAll(defs.ARRAY_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         // !!! addAll(defs.ARRAY_CLASS, Names.toString, Primitive.TOSTRING, 1);
-        addPrimitive(AS_ZARRAY, Primitive.AS_ZARRAY);
-        addPrimitive(AS_BARRAY, Primitive.AS_BARRAY);
-        addPrimitive(AS_SARRAY, Primitive.AS_SARRAY);
-        addPrimitive(AS_CARRAY, Primitive.AS_CARRAY);
-        addPrimitive(AS_IARRAY, Primitive.AS_IARRAY);
-        addPrimitive(AS_LARRAY, Primitive.AS_LARRAY);
-        addPrimitive(AS_FARRAY, Primitive.AS_FARRAY);
-        addPrimitive(AS_DARRAY, Primitive.AS_DARRAY);
-        addPrimitive(AS_OARRAY, Primitive.AS_OARRAY);
-        addPrimitive(AS__ARRAY, Primitive.AS__ARRAY);
         addAll(defs.ARRAY_CLASS, Names.length, Primitive.LENGTH, 1);
         addAll(defs.ARRAY_CLASS, Names.apply, Primitive.APPLY, 2);
         addAll(defs.ARRAY_CLASS, Names.update, Primitive.UPDATE, 1);

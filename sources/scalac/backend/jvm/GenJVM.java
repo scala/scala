@@ -376,12 +376,6 @@ class GenJVM {
                     generatedType = JType.INT;
                     break;
 
-                case AS_UVALUE :
-                    assert args.length == 0;
-                    gen(ctx, ((Tree.Select)fun).qualifier);
-                    generatedType = JType.VOID;
-                    break;
-
                 default:
                     throw Debug.abort("unknown primitive ", prim);
                 }
@@ -1174,16 +1168,8 @@ class GenJVM {
             case IS : case AS : case ID :
             case CONCAT :
             case THROW :
-            case AS_UVALUE :
                 return true;
 
-            case AS_ZVALUE : case AS_BVALUE : case AS_SVALUE :
-            case AS_CVALUE : case AS_IVALUE : case AS_LVALUE :
-            case AS_FVALUE : case AS_DVALUE :
-            case AS_ZARRAY : case AS_BARRAY : case AS_SARRAY :
-            case AS_CARRAY : case AS_IARRAY : case AS_LARRAY :
-            case AS_FARRAY : case AS_DARRAY : case AS_OARRAY :
-            case AS__ARRAY :
             case EQUALS  :
             case HASHCODE :
             case TOSTRING :

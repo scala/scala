@@ -67,27 +67,6 @@ public class Primitive {
     public case APPLY           { tag = 25; } // x(y)
     public case UPDATE          { tag = 26; } // x(y) = z
 
-    // Conversion operations
-    public case AS_UVALUE       { tag = 27; } // x.asUnit()
-    public case AS_ZVALUE       { tag = 28; } // x.asBoolean()
-    public case AS_BVALUE       { tag = 29; } // x.asByte()
-    public case AS_SVALUE       { tag = 30; } // x.asShort()
-    public case AS_CVALUE       { tag = 31; } // x.asChar()
-    public case AS_IVALUE       { tag = 32; } // x.asInt()
-    public case AS_LVALUE       { tag = 33; } // x.asLong()
-    public case AS_FVALUE       { tag = 34; } // x.asFloat()
-    public case AS_DVALUE       { tag = 35; } // x.asDouble()
-    public case AS_ZARRAY       { tag = 36; } // x.asBooleanArray()
-    public case AS_BARRAY       { tag = 37; } // x.asByteArray()
-    public case AS_SARRAY       { tag = 38; } // x.asShortArray()
-    public case AS_CARRAY       { tag = 39; } // x.asCharArray()
-    public case AS_IARRAY       { tag = 40; } // x.asIntArray()
-    public case AS_LARRAY       { tag = 41; } // x.asLongArray()
-    public case AS_FARRAY       { tag = 42; } // x.asFloatArray()
-    public case AS_DARRAY       { tag = 43; } // x.asDoubleArray()
-    public case AS_OARRAY       { tag = 44; } // x.asObjectArray()
-    public case AS__ARRAY       { tag = 44; } // x.asArray()
-
     // Any operations
     public case IS              { tag = 45; } // x.is[y]
     public case AS              { tag = 46; } // x.as[y]

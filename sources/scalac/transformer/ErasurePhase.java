@@ -89,8 +89,6 @@ public class ErasurePhase extends Phase {
         case Primitive.AS : return tp;
         case Primitive.BOX: return eraseBoxMethodType(tp);
         case Primitive.UNBOX: return eraseUnboxMethodType(tp);
-        case Primitive.AS__ARRAY:
-            return Type.MethodType(Symbol.EMPTY_ARRAY, definitions.ANY_CLASS.nextType());
         default           : return tp.erasure();
         }
     }
