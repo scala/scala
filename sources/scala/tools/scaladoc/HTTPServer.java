@@ -8,7 +8,7 @@ import java.util.regex.*;
 /**
  * A Java server that can be invoked via HTTP.
  */
-public abstract class Servlet {
+abstract class Servlet {
 
     /**
      * Name of the servlet.
@@ -25,7 +25,7 @@ public abstract class Servlet {
 /**
  * A servlet that echoes the query to its sender.
  */
-public class EchoServlet extends Servlet {
+class EchoServlet extends Servlet {
 
     public String name() {
         return "echoServlet";
@@ -153,7 +153,7 @@ public class HTTPServer extends Thread {
     }
 }
 
-public class RequestProcessor implements Runnable {
+class RequestProcessor implements Runnable {
 
     private static List pool = new LinkedList();
     private File documentRootDirectory;
