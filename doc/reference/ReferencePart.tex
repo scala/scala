@@ -2021,7 +2021,7 @@ object; it is not possible for clients to create objects of class
 Attributes associate meta-information with definitions.  A simple
 attribute clause has the form $[C]$ or $[C(a_1 \commadots a_n)]$.
 Here, $c$ is a constructor of a class $C$, which must comform to the
-class \lstinline@scala. Attribute@. All given constructor arguments
+class \lstinline@scala.Attribute@. All given constructor arguments
 $a_1 \commadots a_n$ must be constant expressions. An attribute clause
 applies to the first definition or declaration following it. More than
 one attribute clause may precede a definition and declaration. The
@@ -2049,7 +2049,7 @@ modifier in Java.
 
 \lstinline@Serializable@
 \begin{quote}Marks a class to be serializable; this is
-equivalent to inheritingfrom the 
+equivalent to inheriting from the 
 \lstinline@java.io.Serializable@ interface
 in Java.
 \end{quote}
@@ -2059,7 +2059,7 @@ in Java.
 \lstinline@long@ constant) to a class.
 This is equivalent to a the following field
 definition in Java:
-\begin{lstlisting}[language=ScalaJava]
+\begin{lstlisting}[language=Java]
   private final static SerialVersionUID = <longlit>;
 \end{lstlisting}
 \end{quote}
