@@ -3,9 +3,11 @@
 ##############################################################################
 # $Id$
 
-$colon$colon.scala
+'$colon$colon.scala'
 BufferedIterator.scala
 Cell.scala
+Except.scala
+Interpreter.scala
 Iterator.scala
 Labelled.scala
 LinkedList.scala
@@ -30,5 +32,14 @@ Tuple6.scala
 Tuple7.scala
 Tuple8.scala
 Tuple9.scala
+
+concurrent/Actor.scala
+concurrent/Channel.scala
+concurrent/Lock.scala
+concurrent/MailBox.scala
+concurrent/SyncChannel.scala
+concurrent/SyncVar.scala
+concurrent/TIMEOUT.scala
+concurrent/ops.scala
 
 ##############################################################################
