@@ -257,6 +257,10 @@ class Parser(unit: Unit) {
     make.Apply(
       pos, scalaDot(pos, Names.ScalaObject.toTypeName()), Tree.EMPTY_ARRAY);
 
+  def caseClassConstr(pos: int): Tree =
+    make.Apply(
+      pos, scalaDot(pos, Names.CaseClass.toTypeName()), Tree.EMPTY_ARRAY);
+
   /** Create tree for for-comprehension <for (enums) do body> or
   *   <for (enums) yield body> where mapName and flatmapName are chosen
   *  corresponding to whether this is a for-do or a for-yield.
@@ -1859,7 +1863,7 @@ class Parser(unit: Unit) {
 		        paramClauseOpt()));
     } while (s.token == COMMA);
     val thistpe = simpleTypedOpt();
-    val template = classTemplate();
+    val template = classTemplate( mods );
     val ts = new myTreeList();
 	lhs foreach { case Tuple4(p, n, tp, vp) =>
 		ts.append(
@@ -1879,7 +1883,7 @@ class Parser(unit: Unit) {
 	  lhs.append(Pair(s.pos, ident()));
     } while (s.token == COMMA);
 	val thistpe = simpleTypedOpt();
-    val template = classTemplate();
+    val template = classTemplate( mods );
     val ts = new myTreeList();
 	lhs foreach { case Pair(p, n) =>
 		ts.append(
@@ -1892,7 +1896,7 @@ class Parser(unit: Unit) {
 
   /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
    */
-  def classTemplate(): Tree$Template = {
+  def classTemplate( mods:int ): Tree$Template = {
     val pos = s.pos;
     val parents = new myTreeList();
     if (s.token == EXTENDS) {
@@ -1902,6 +1906,9 @@ class Parser(unit: Unit) {
       parents.append(scalaAnyRefConstr(pos));
     }
     parents.append(scalaObjectConstr(pos));
+    if( (mods & Modifiers.CASE) != 0 ) {
+          parents.append(caseClassConstr(pos));
+    }
     if (s.token == WITH) {
       s.nextToken();
       template(parents)

@@ -106,6 +106,7 @@ public class Names {
     public static final Name AnyRef = Name.fromString("AnyRef");
     public static final Name Array = Name.fromString("Array");
     public static final Name Byte = Name.fromString("Byte");
+    public static final Name CaseClass = Name.fromString("CaseClass");
     public static final Name Catch = Name.fromString("Catch");
     public static final Name Char = Name.fromString("Char");
     public static final Name Boolean = Name.fromString("Boolean");
@@ -164,9 +165,11 @@ public class Names {
     public static final Name length = Name.fromString("length");
     public static final Name match = Name.fromString("match");
     public static final Name map = Name.fromString("map");
+    public static final Name n = Name.fromString("n");
     public static final Name nobinding = Name.fromString("nobinding");
     public static final Name next = Name.fromString("next");
     public static final Name newArray = Name.fromString("newArray");
+    public static final Name numberOfElements = Name.fromString("numberOfElements");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
     public static final Name print = Name.fromString("print");
@@ -176,6 +179,7 @@ public class Names {
     public static final Name synchronized_ = Name.fromString("synchronized");
     public static final Name eq = Name.fromString("eq");
     public static final Name equals = Name.fromString("equals");
+    public static final Name selectElement = Name.fromString("selectElement");
     public static final Name tail = Name.fromString("tail");
     public static final Name toString = Name.fromString("toString");
     public static final Name that = Name.fromString("that");

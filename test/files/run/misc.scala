@@ -229,6 +229,19 @@ System.out.println(new O(1).foo)
 
 System.out.println();
 
+  case class Bar();
+
+  case class Foo(i:int, j:char, c:Bar) ;
+
+  Console.println(
+    Foo(3,'a',Bar()).selectElement( 0 ) == null
+    && Foo(3,'a',Bar()).selectElement( 1 ) == 3
+    && Foo(3,'a',Bar()).selectElement( 2 ) == 'a'
+    && Foo(3,'a',Bar()).selectElement( 3 ) == Bar()
+    && Foo(3,'a',Bar()).selectElement( 4 ) == null
+    && Bar().numberOfElements() == 0
+    && Foo(3,'a',Bar()).numberOfElements() == 3);
+
 //############################################################################
 
   def main(args: Array[String]): Unit = {

@@ -609,7 +609,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	.setSymbol(vparam.symbol())));
   }
 
-  /** add case constructor, defintiions value and access functions.
+  /** add case constructor, definitions value and access functions.
   */
   def addCaseElements(body: Array[Tree], vparams: Array[Tree$ValDef]): Array[Tree] = {
     val stats: TreeList = new TreeList();

@@ -276,7 +276,7 @@ public class Tree {
 
         n_Switch.
             setDescription("Switch").
-            setRange(Phase.TRANSMATCH, Phase.END).
+            setRange(Phase.REFCHECK, Phase.END).
             addField(t_TermTree, "test").
             addField(t_ints, "tags").
             addField(t_TermTrees, "bodies").

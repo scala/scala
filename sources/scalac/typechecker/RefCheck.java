@@ -29,8 +29,9 @@ import Tree.*;
  *  It preforms the following transformations.
  *
  *   - Local modules are replaced by variables and classes
- *   - toString, equals, and hashCode methods are added to case classes, unless
- *     they are defined in the class or a baseclass different from java.lang.Object
+ *   - equals, and hashCode, selectElement and toString methods are added to
+ *     case classes, unless they are defined in the class or a baseclass
+ *     different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
  *   - Type nodes are replaced by TypeTerm nodes.
  *   - Eliminate constant definitions
@@ -687,6 +688,39 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return gen.DefDef(toStringSym, body);
     }
 
+    private Tree selectElementMethod( ClassSymbol clazz ) {
+	Symbol seSym = clazz.newMethod( clazz.pos, OVERRIDE, Names.selectElement );
+	Symbol seParam = seSym.newVParam(
+            clazz.pos, 0, Names.n, defs.INT_TYPE());
+        seSym.setInfo(
+            Type.MethodType( new Symbol[]{ seParam }, defs.ANY_TYPE() ));
+	clazz.info().members().enter( seSym );
+	Tree[] fields = caseFields( clazz );
+        Tree body;
+        if( fields.length > 0) {        // switch< n >
+            int tags[] = new int[ fields.length ];
+            int i = 0; while( i < fields.length ) { tags[i] = ++i; };
+            body = gen.Switch( gen.mkLocalRef( clazz.pos, seParam ),
+                               tags,
+                               fields,
+                               gen.mkNullLit( clazz.pos ),
+                               defs.ANY_TYPE() );
+        }
+        else
+            body = gen.mkNullLit( clazz.pos );
+	return gen.DefDef(seSym, body);
+    }
+
+    private Tree numberOfElementsMethod( ClassSymbol clazz ) {
+	Symbol seSym = clazz.newMethod( clazz.pos, OVERRIDE, Names.numberOfElements );
+        seSym.setInfo(
+            Type.MethodType( Symbol.EMPTY_ARRAY, defs.INT_TYPE() ));
+	clazz.info().members().enter( seSym );
+	Tree[] fields = caseFields( clazz );
+	return gen.DefDef(seSym, gen.mkIntLit( clazz.pos, fields.length ));
+    }
+
+
     private Tree equalsMethod(ClassSymbol clazz) {
 	Symbol equalsSym = clazz.newMethod(clazz.pos, OVERRIDE, Names.equals);
 	Symbol equalsParam = equalsSym.newVParam(
@@ -823,6 +857,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    ts.append(equalsMethod(clazz));
 	if (!hasImplementation(clazz, Names.hashCode))
 	    ts.append(hashCodeMethod(clazz));
+
+        ts.append(selectElementMethod(clazz));
+        ts.append(numberOfElementsMethod(clazz));
 	ts.append(tagMethod(clazz));
 	if (ts.length() > 0) {
 	    Tree[] stats1 = new Tree[stats.length + ts.length()];
