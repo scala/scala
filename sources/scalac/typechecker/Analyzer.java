@@ -660,9 +660,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     Symbol packageSymbol(int pos, Symbol base, Name name) {
 	Symbol p = base.members().lookup(name);
 	if (p.kind == NONE) {
-	    p = TermSymbol.newModule(
-		Position.NOPOS, name, base.moduleClass(), JAVA | PACKAGE);
-	    p.moduleClass().setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), p));
+	    p = TermSymbol.newJavaPackageModule(name, base.moduleClass(), null);
 	    base.members().enter(p);
 	} else if (!p.isPackage()) {
 	    error(pos, "package and class with same name");

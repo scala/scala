@@ -978,7 +978,7 @@ public class TermSymbol extends Symbol {
     public static TermSymbol newJavaPackageModule(Name name, Symbol owner, Type.LazyType parser) {
         TermSymbol sym = newModule(Position.NOPOS, name, owner, JAVA | PACKAGE);
         sym.clazz.flags |= SYNTHETIC;
-        sym.clazz.setInfo(parser);
+        sym.clazz.setInfo(parser != null ? parser : Type.compoundType(Type.EMPTY_ARRAY, new Scope(), sym));
 	return sym;
     }
 
@@ -1260,28 +1260,24 @@ public class ClassSymbol extends TypeSymbol {
     public ClassSymbol(Name name, Symbol owner, SourceCompleter parser) {
 	this(Position.NOPOS, name, owner, 0);
 	this.module = TermSymbol.newCompanionModule(this, 0, parser);
-        this.mangled = name;
         this.setInfo(parser);
     }
 
     /** Constructor for classes to load as class files.
      */
     public ClassSymbol(Name name, Symbol owner, ClassParser parser) {
-	super(CLASS, Position.NOPOS, name, owner, JAVA);
-        this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
+	this(Position.NOPOS, name, owner, JAVA);
 	this.module = TermSymbol.newCompanionModule(this, JAVA, parser.staticsParser(this));
-        this.mangled = name;
         this.setInfo(parser);
     }
 
     /** Return a fresh symbol with the same fields as this one.
      */
     public Symbol cloneSymbol() {
-        ClassSymbol other = new ClassSymbol(pos, name, owner(), flags);
+        ClassSymbol other = new ClassSymbol(pos, name, owner(), flags, module);
         other.setInfo(info());
 	other.constructor.setInfo(constructor.info());
 	other.mangled = mangled;
-	other.module = module;
 	if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
     }
