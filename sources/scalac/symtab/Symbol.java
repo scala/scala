@@ -125,12 +125,10 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     public Symbol updateInfo(Type info) {
 	// Global.instance.currentPhase.setInfo(this, info);
-	if (infos.limit <= Global.instance.currentPhase.id) {
-	    infos = new TypeIntervalList(infos);
-	    infos.limit = Global.instance.currentPhase.id + 1;
-	} else {
-	    assert infos.limit == Global.instance.currentPhase.id + 1 : this;
-	}
+        assert infos.limit <= Global.instance.currentPhase.id + 1 : this;
+	if (infos.limit > Global.instance.currentPhase.id) infos.limit--;
+        infos = new TypeIntervalList(infos);
+        infos.limit = Global.instance.currentPhase.id + 1;
 	infos.info = info;
 	return this;
     }
