@@ -687,7 +687,7 @@ TOOLS_JAR_FILES		+= .
 $(latest)tools		: $(latest)lamplib
 $(latest)tools		: $(latest)util
 $(latest)tools		: $(latest)scalac
-$(latest)tools		: $(latest)nsc
+#$(latest)tools		: $(latest)nsc
 $(latest)tools		: $(latest)scalai
 $(latest)tools		: $(latest)scaladoc
 $(latest)tools		: $(latest)scalap
