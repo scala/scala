@@ -40,10 +40,9 @@ public class PackageParser extends Type.LazyType {
         long msec = System.currentTimeMillis();
         Scope members = new Scope();
         String dirname = null;
-        Name name = p.fullName();
 	HashMap/*<Symbol, AbstractFile>*/ symFile = new HashMap();
-        if (name.length() != 0) {
-            dirname = SourceRepresentation.externalizeFileName(name);
+        if (!p.isRoot()) {
+            dirname = SourceRepresentation.externalizeFileName(p.fullName());
             if (!dirname.endsWith("/"))
                 dirname += "/";
         }
