@@ -169,8 +169,16 @@ install-windows		: install
 	$(FIND) $(INSTALL_SUPPORTDIR) -type f -exec $(UNIX2DOS) "{}" ";"
 	$(RM) -r $(INSTALL_TESTDIR)
 
+install-addons			:
+	$(RM) -r $(DISTRIB_ARCHIVE).addons
+	$(INSTALL) -d $(DISTRIB_ARCHIVE).addons
+	$(INSTALL) -d $(DISTRIB_ARCHIVE).addons/doc
+	$(INSTALL) $(DOCUMENTS_ROOT)/reference/ProgrammingInScala.pdf \
+	    $(DISTRIB_ARCHIVE).addons/doc
+
 .PHONY			: install
 .PHONY			: install-windows
+.PHONY			: install-addons
 
 ##############################################################################
 
@@ -230,6 +238,7 @@ distrib			: distrib-build-all
 distrib-build-all	: distrib-build-unix
 distrib-build-all	: distrib-build-windows
 distrib-build-all	: distrib-build-ia
+distrib-build-all	: distrib-build-addons
 
 distrib-build-unix	: install
 	$(RM) $(DISTRIB_ARCHIVE).tar
@@ -254,6 +263,8 @@ distrib-build-windows	: install-windows
 	fi
 
 distrib-build-ia	: ia-build
+
+distrib-build-addons	: install-addons
 
 distrib-official	: version-update
 	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
