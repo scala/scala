@@ -187,10 +187,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    CyclicReference cyc = (CyclicReference) ex;
 	    if (cyc.info instanceof LazyTreeType) {
 		switch (((LazyTreeType) cyc.info).tree) {
-		case ValDef(_, _, _, _):
+		case ValDef(_, _, Tree.Empty, _):
 		    error(pos, "recursive " + cyc.sym + " needs type");
 		    break;
-		case DefDef(_, _, _, _, _, _):
+		case DefDef(_, _, _, _, Tree.Empty, _):
 		    error(pos, "recursive function " + cyc.sym.name + " needs result type");
 		}
 	    }
@@ -471,6 +471,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case CompoundType(Type[] parents, Scope members):
 	    for (int i = 0; i < parents.length; i++) {
 		checkNonCyclic(pos, parents[i]);
+	    }
+	    break;
+	case SingleType(Type pre, Symbol sym):
+	    sym.initialize();
+	    if ((sym.flags & LOCKED) != 0) {
+		error(pos, "cyclic aliasing or subtyping involving " + sym);
 	    }
 	}
     }
@@ -829,7 +835,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	try {
 	    Symbol sym = tree.symbol();
-	    if (global.debug) System.out.println("defining " + sym);//debug
+	    if (global.debug) global.log("defining " + sym);
 	    Type owntype;
 	    switch (tree) {
 	    case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
@@ -896,6 +902,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}  else {
 		    owntype = transform(tpe, TYPEmode).type;
 		}
+		checkNonCyclic(tree.pos, owntype);
 		break;
 
 	    case DefDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
@@ -911,6 +918,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    restpe = checkNoEscape(
 			tpe.pos, transform(tpe, TYPEmode).type);
 		}
+		checkNonCyclic(tree.pos, restpe);
 		popContext();
 		owntype = makeMethodType(tparamSyms, vparamSyms, restpe);
 		//System.out.println("methtype " + name + ":" + owntype);//DEBUG
@@ -944,7 +952,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    sym.setInfo(owntype);
 	    validate(sym);
-	    if (global.debug) System.out.println("defined " + sym);//debug
+	    if (global.debug) global.log("defined " + sym);//debug
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
 	    tree.type = Type.ErrorType;
@@ -1258,7 +1266,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** Attribute a template
      */
     public Tree.Template transformTemplate(Tree.Template templ, Symbol owner) {
-	//System.out.println("transforming " + owner);//DEBUG
+	if (global.debug) global.log("transforming " + owner);//debug
 	//System.out.println(owner.info());//DEBUG
 	Tree[] parents1 = transformConstrInvocations(
 	    templ.pos, templ.parents, false, Type.AnyType);
@@ -1662,8 +1670,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     public Tree transform(Tree tree) {
 	Symbol sym = tree.symbol();
 	if (sym != null && !sym.isInitialized()) sym.initialize();
-	if (global.debug && TreeInfo.isDefinition(tree))
-	    System.out.println("transforming " + sym);
+	if (global.debug && TreeInfo.isDefinition(tree)) global.log("transforming " + sym);
 	try {
 	    switch (tree) {
 

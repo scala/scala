@@ -851,7 +851,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    default:
 		if (symtype.isSubType(sym1type)) return sym1;
 		else {
-		    System.out.println(this + locationString() + " does not override " + sym1 + sym1.locationString() + ", since " + symtype + " !<= " + sym1type);//DEBUG
+		    if (Type.debugSwitch) System.out.println(this + locationString() + " does not override " + sym1 + sym1.locationString() + ", since " + symtype + " !<= " + sym1type);//DEBUG
 		    return Symbol.NONE;
 		}
 	    }
