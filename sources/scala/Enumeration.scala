@@ -42,7 +42,7 @@ abstract class Enumeration(initial: Int, names: String*) {
     def this(names: String*) = this(0, names: _*);
 
     def name = {
-        val cname = getClass().getName();
+        val cname = scala.runtime.compat.Platform.getClassName(this);
         if (cname.endsWith("$"))
             cname.substring(0, cname.length() - 1);
         else if (cname.endsWith("$class"))
