@@ -110,22 +110,29 @@ public class ExplicitOuterClasses extends Transformer {
                              (Template)transform((Tree)classDef.impl));
     }
 
+    // Return the number of outer links to follow to find the given
+    // symbol.
+    protected int outerLevel(Symbol sym) {
+        Iterator classIt = classStack.iterator();
+        for (int level = 0; classIt.hasNext(); ++level) {
+            Symbol classSym = (Symbol)classIt.next();
+            if (classSym.closurePos(sym) != -1)
+                return level;
+        }
+        return -1;
+    }
+
     // Return a tree referencing the "level"th outer class.
     protected Tree outerRef(int level) {
-        assert level > 0 : level;
+        assert level >= 0 : level;
 
-        Tree root = null;
+        Symbol thisSym = (Symbol)classStack.getFirst();
+        Tree root = gen.This(thisSym.pos, thisSym);
 
         Iterator outerIt = outerLinks.iterator();
-        while (level > 0) {
+        for (int l = 1; l <= level; ++l) {
             Symbol outerSym = (Symbol)outerIt.next();
-
-            if (root == null)
-                root = gen.mkStable(gen.Ident(outerSym));
-            else
-                root = gen.mkStable(gen.Select(root, outerSym));
-
-            --level;
+            root = gen.mkStable(gen.Select(root, outerSym));
         }
 
         return root;
@@ -157,22 +164,10 @@ public class ExplicitOuterClasses extends Transformer {
                 return super.transform(tree);
 
             // Follow "outer" links to fetch data in outer classes.
-            Symbol sym = tree.symbol();
-            Symbol owner = sym.classOwner();
-
-            Iterator classIt = classStack.iterator();
-            boolean found = false;
-            int level = -1;
-            while (!found && classIt.hasNext()) {
-                Symbol classSym = (Symbol)classIt.next();
-                if (classSym.closurePos(owner) != -1)
-                    found = true;
-                ++level;
-            }
-
-            if (found && level > 0) {
+            int level = outerLevel(tree.symbol().classOwner());
+            if (level > 0) {
                 Tree root = outerRef(level);
-                return gen.mkStable(gen.Select(root, sym));
+                return gen.mkStable(gen.Select(root, tree.symbol()));
             } else {
                 return super.transform(tree);
             }
@@ -205,13 +200,10 @@ public class ExplicitOuterClasses extends Transformer {
                 } break;
 
                 case Ident(Name name): {
-                    Symbol owner = realFun.symbol().owner();
-
-                    if (!classStack.isEmpty()
-                        && ((Symbol)classStack.getFirst()).closurePos(owner) != -1) {
-                        Symbol thisSym = (Symbol)classStack.getFirst();
+                    int level = outerLevel(realFun.symbol().owner());
+                    if (level >= 0) {
                         newFun = realFun;
-                        newArg = gen.This(realFun.pos, thisSym);
+                        newArg = outerRef(level);
                     }
                 } break;
 
