@@ -14,7 +14,10 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import java.io.File;
 import scala.tools.util.AbstractFile;
@@ -24,6 +27,7 @@ import ch.epfl.lamp.compiler.msil.*;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.Scope;
+import scalac.symtab.SymbolNameWriter;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.NameTransformer;
@@ -58,23 +62,23 @@ public class CLRPackageParser extends SymbolLoader {
 
     protected CLRClassParser completer;
 
+    private final SymbolNameWriter snw = new SymbolNameWriter();
+
     private CLRPackageParser(Global global) {
 	super(global);
     }
 
     public static CLRPackageParser instance;
     public static CLRPackageParser instance(Global global) {
-	if (instance != null)
-	    return instance;
-	instance = new CLRPackageParser(global);
-	instance.completer = new CLRClassParser(global, instance);
-	instance.init();
+	if (instance == null) {
+	    instance = new CLRPackageParser(global);
+	    instance.completer = new CLRClassParser(global, instance);
+	    instance.init();
+	}
 	return instance;
     }
 
-    Type[] types;
-
-    public Type[] getTypes() { return types; }
+    private Type[] types;
 
     private boolean initialized = false;
     public void init() {
@@ -117,6 +121,7 @@ public class CLRPackageParser extends SymbolLoader {
 	    Type[] atypes = ((Assembly)as.next()).GetTypes();
 	    int j = 0;
 	    for (int i = 0; i < atypes.length; i++)
+		// skip nested types
 		if (/*atypes[i].IsPublic && */atypes[i].DeclaringType == null)
 		    atypes[j++] = atypes[i];
 	    Type[] btypes = new Type[types.length + j];
@@ -124,15 +129,25 @@ public class CLRPackageParser extends SymbolLoader {
 	    System.arraycopy(atypes, 0, btypes, types.length, j);
 	    types = btypes;
 	}
+	 Comparator typeNameComparator = new Comparator() {
+		 public int compare(Object o1, Object o2) {
+		     Type t1 = (Type)o1;
+		     Type t2 = (Type)o2;
+		     return t1.FullName.compareTo(t2.FullName);
+		 }
+	     };
+
+	Arrays.sort(types, typeNameComparator);
 	this.types = types;
 	initialized = true;
     }
 
+    //##########################################################################
 
     private java.util.Map syms2members = new HashMap();
     private java.util.Map members2syms = new HashMap();
 
-    //##########################################################################
+    public Type[] getTypes() { return types; }
 
     public void map(Symbol sym, MemberInfo m) {
 	syms2members.put(sym, m);
@@ -164,7 +179,7 @@ public class CLRPackageParser extends SymbolLoader {
     protected final java.util.List assemblies = new LinkedList();
 
     // a set of all directories and assembly files
-    protected final java.util.Set/*<File>*/ assemrefs = new LinkedHashSet();
+    protected final Set/*<File>*/ assemrefs = new LinkedHashSet();
 
     /** Load the assembly with the given name
      */
@@ -226,81 +241,175 @@ public class CLRPackageParser extends SymbolLoader {
     }
 
     //##########################################################################
+    // collect the members contained in a given namespace
+
+    private Symbol pakage;
+    private HashMap/*<String,Type>*/ typesMap;
+    private Set/*<String>*/ namespacesSet;
+
+    private static final String[] BANNED = new String[] {
+	"scala.AnyVal", "scala.Array", "scala.Boolean", "scala.Byte",
+	"scala.Char", "scala.Double", "scala.Float", "scala.Function0",
+	"scala.Function1", "scala.Function2", "scala.Function3",
+	"scala.Function4", "scala.Function5", "scala.Function6",
+	"scala.Function7", "scala.Function8", "scala.Function9", "scala.Int",
+	"scala.Long", "scala.MatchError", "scala.Ref", "scala.ScalaObject",
+	"scala.Short", "scala.Type", "scala.Unit", "scala.runtime.NativeLoop",
+	"scala.runtime.ResultOrException", "scala.runtime.RunTime",
+	"java.lang.Object", "java.lang.String", "java.lang.CharSequence",
+	"java.lang.StringBuffer", "java.lang.Byte", "java.lang.Float",
+	"java.lang.Double", "java.lang.Cloneable"
+    };
+    private static final Set BANNED_TYPES = new HashSet();
+    static {
+	for (int i = 0; i < BANNED.length; i++) {
+	    BANNED_TYPES.add(BANNED[i]);
+	}
+    }
+
+//     private void testFind(String prefix) {
+// 	System.out.println("test find for " + prefix);
+// 	int i = findFirst(prefix);
+// 	if (i > 0)
+// 	    System.out.println(types[i - 1]);
+// 	if (i < types.length)
+// 	    System.out.println("> " + types[i]);
+// 	if (i < types.length - 1)
+// 	    System.out.println(types[i + 1]);
+//     }
+
+    /** Find the position of the first type whose name starts with
+     *  the given prefix; return the length of the types array if no match
+     *  is found so the result can be used to terminate loop conditions
+     */
+    private int findFirst(String prefix) {
+	int m = 0, n = types.length - 1;
+	while (m < n) {
+	    int l = (m + n) / 2;
+	    int res = types[l].FullName.compareTo(prefix);
+	    if (res < 0) m = l + 1;
+	    else n = l;
+	}
+	return types[m].FullName.startsWith(prefix) ? m : types.length;
+    }
+
+    /** Collects the members contained in the given Scala package (namespace)
+     */
+    private void enumerateMembers(Symbol pakage) {
+	if (this.pakage == pakage)
+	    return;
+	this.pakage = pakage;
+	typesMap = new HashMap();
+	namespacesSet = new LinkedHashSet();
+
+	String namespace = pakage.isRoot() ? "" : snw.toString(pakage) + ".";
+	int nl = namespace.length();
+	for (int i = findFirst(namespace);
+	     i < types.length && types[i].FullName.startsWith(namespace);
+	     i++)
+	{
+	    Type type = types[i];
+	    if (BANNED_TYPES.contains(type.FullName)) {
+		//System.out.println("Skipping CLR type " + type);
+		continue;
+	    }
+	    int k = type.FullName.indexOf(".", nl);
+	    if (k < 0) {
+		typesMap.put(type.Name, type);
+	    } else {
+		namespacesSet.add(type.Namespace.substring(nl, k));
+	    }
+	}
+    }
+
+    /** return a mapping from type names to types contained
+     *  in the given Scala package (namespace)
+     */
+    HashMap getTypes(Symbol pakage) {
+	enumerateMembers(pakage);
+	return typesMap;
+    }
+
+    /** Returns a set of the namespaces contained
+     *  in the given Scala package (namespace)
+     */
+    Set getNamespaces(Symbol pakage) {
+	enumerateMembers(pakage);
+	return namespacesSet;
+    }
+
+    boolean shouldLoadClassfile(Symbol pakage, String name) {
+	String fullname = snw.toString(pakage) + "." + name;
+	return BANNED_TYPES.contains(fullname);
+    }
+
+    //##########################################################################
     // main functionality
 
     protected String doComplete(Symbol root) {
-        assert root.isRoot() || root.isPackage(): Debug.show(root);
-        Symbol p = root.isRoot() ? root : root.moduleClass();
+        assert !root.isRoot() && root.isPackage() : Debug.show(root);
+        Symbol pakage = root.isRoot() ? root : root.moduleClass();
 	Scope members = new Scope();
-	importCLRTypes(p, members);
-        p.setInfo(scalac.symtab.Type.compoundType
-		  (scalac.symtab.Type.EMPTY_ARRAY, members, p));
-        return "namespace " + Debug.show(p);
+
+	// import the types contained in the namespace
+	for (Iterator i = getTypes(pakage).values().iterator(); i.hasNext(); ) {
+	    Type type = (Type)i.next();
+	    importType(type, pakage, members);
+	}
+
+	// import the namespaces contained in the namespace
+	for (Iterator i = getNamespaces(pakage).iterator(); i.hasNext(); ) {
+	    String namespace = (String)i.next();
+	    importNamespace(namespace, pakage, members);
+	}
+
+        pakage.setInfo(scalac.symtab.Type.compoundType
+		       (scalac.symtab.Type.EMPTY_ARRAY, members, pakage));
+        return "namespace " + Debug.show(pakage);
     }
 
-    /**
+    /** Imports a CLR type in a scala package (only called from PackageParser)
      */
-    public void importCLRTypes(Symbol p, Scope members) {
-	if (p.isRoot()) {
-	    for (int i = 0; i < types.length; i++) {
-		int j = types[i].FullName.indexOf('.');
-		if (j < 0) continue;
-		String namespace = types[i].FullName.substring(0, j);
-		importCLRNamespace(namespace, p, members);
-	    }
+    void importType(Type type, Symbol pakage, Scope members) {
+	// discard top level types
+	if (type.Namespace.equals("")) {
 	    return;
 	}
-        String n1 = "";
-        for (Symbol q = p; !q.isRoot(); q = q.owner()) {
-            n1 = NameTransformer.decode(q.name) + "." + n1;
-            if (q == global.definitions.JAVA.moduleClass()
-                || q == global.definitions.SCALA.moduleClass())
-                return;
-        }
-	for (int i = 0; i < types.length; i++) {
-	    final Type type = types[i];
-	    final String fullname = type.FullName;
-	    if (!fullname.startsWith(n1) /*|| fullname.endsWith("$class")*/)
-		continue;
-	    int j = n1.length();
-	    int k = fullname.indexOf('.', j);
-	    String name = fullname.substring(j, k < 0 ? fullname.length() : k);
-	    Name n = Name.fromString(name).toTypeName();
-	    if (k < 0) {
-		// it's a class
-		Object[] symtab_attr =
-		    type.GetCustomAttributes(SCALA_SYMTAB_ATTR, false);
-		AbstractFile symtab = null;
-		for (int l = 0; l < symtab_attr.length; l++) {
-		    MemberInfo.Attribute a = (MemberInfo.Attribute)symtab_attr[l];
-		    if (a.GetType() == SCALA_SYMTAB_ATTR) {
-			symtab = new ByteArrayFile
-			    (fullname, type.Assembly.GetName().toString(),
-			     a.getValue());
-			break;
-		    }
-		}
-		SymbolLoader loader = symtab == null ? this.completer
-		    : new SymblParser(global, symtab);
 
-                Symbol clazz = p.newLoadedClass(JAVA, n, loader, members);
-		map(clazz, types[i]);
-	    } else {
-		importCLRNamespace(name, p, members);
+	assert snw.toString(pakage).equals(type.Namespace)
+	    : Debug.show(pakage) + " << " + type.FullName;
+	Object[] symtab_attr=type.GetCustomAttributes(SCALA_SYMTAB_ATTR, false);
+	AbstractFile symtab = null;
+	for (int l = 0; l < symtab_attr.length; l++) {
+	    MemberInfo.Attribute a = (MemberInfo.Attribute)symtab_attr[l];
+	    if (a.GetType() == SCALA_SYMTAB_ATTR) {
+		symtab = new ByteArrayFile
+		    (type.FullName, type.Assembly.GetName().toString(),
+		     a.getValue());
+		break;
 	    }
 	}
+	SymbolLoader loader = symtab == null ? this.completer
+	    : new SymblParser(global, symtab);
+
+	Name classname = Name.fromString(type.Name).toTypeName();
+	Symbol clazz = pakage.newLoadedClass(JAVA, classname, loader, members);
+	Type moduleType = getType(type.FullName + "$");
+// 	if (moduleType != null)
+// 	    System.out.println("Module implementation class: " + moduleType);
+	map(clazz, type);
+// 	map(clazz, moduleType != null ? moduleType : type);
     }
 
-    /** Imports a CLR namespace as a scala package.
+    /** Imports a CLR namespace as a scala package
+     *  (only called from PackageParser)
      */
-    protected void importCLRNamespace(String namespace, Symbol p,
-				   Scope members)
-    {
-	Name n = Name.fromString(namespace);
-	if (members.lookup(n) == Symbol.NONE) {
-	    p.newLoadedPackage(n, this, members);
+    void importNamespace(String namespace, Symbol p, Scope members) {
+	Name name = Name.fromString(namespace);
+	if (members.lookup(name) == Symbol.NONE) {
+	    p.newLoadedPackage(name, this, members);
 	}
     }
 
     //##########################################################################
-}
+} // CLRPackageParser
