@@ -6,6 +6,15 @@
 import java.lang.System; // to avoid name clash with .NET's library
 
 //############################################################################
+// serves as an entry point with the MSIL backend
+
+object TestMain {
+  def main(args: Array[String]): Unit = {
+    Test.main(args);
+  }
+}
+
+//############################################################################
 // Bug 98
 
 object Bug98Test {
@@ -413,6 +422,7 @@ object Test  {
         val name: String = Thread.currentThread().getName();
         System.out.print("Exception in thread \"" + name + "\" ");
         exception.printStackTrace();
+        //Console.println(exception.StackTrace); // with -target:msil
         System.out.println();
         errors = errors + 1;
       }
@@ -442,7 +452,8 @@ object Test  {
     test(250, Bug250Test.main(args));
     test(257, Bug257Test.main(args));
     test(266, Bug266Test.main(args));
-    test(281, if (args(0) == "int") () else Bug281Test.main(args)); // !!!
+    test(281, if (args.length > 0 && args(0) == "int") ()
+              else Bug281Test.main(args)); // !!!
     test(316, Bug316Test.main(args));
     test(328, Bug328Test.main(args));
 
