@@ -210,7 +210,7 @@ public class CompilerCommand extends CommandParser {
 
         this.version = new VersionOptionParser(this,
             "version", "Print product version and exit",
-            product() + " " + version() + " -- (c) 2002-03 LAMP/EPFL"),
+            product() + " " + version() + " -- (c) 2002-04 LAMP/EPFL"),
 
         this.help = new HelpOptionParser(this,
             "help", "Print a synopsis of standard options"),
