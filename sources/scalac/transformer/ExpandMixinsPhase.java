@@ -418,47 +418,10 @@ public class ExpandMixinsPhase extends Phase {
             case TypeRef(Type prefix, Symbol symbol, Type[] args):
                 Type inline = (Type)inlines.get(symbol);
                 if (inline != null) return inline;
+                prefix = apply(prefix);
+                symbol = prefix.rebind(symbol);
                 args = map(args);
-                if (!symbol.isClassType()) {
-                    Type oldpre = prefix; // !!!
-                    prefix = apply(prefix);
-                    Symbol rebind = prefix.rebind(symbol);
-                    if (rebind != symbol) {
-                        // !!! System.out.println("!!! prefix: " + Debug.show(oldpre, " -> ", prefix, " - ", clasz));
-                        // !!! System.out.println("!!! symbol: " + Debug.show(symbol, " -> ", rebind));
-                        symbol = rebind;
-                        if (rebind.isClassType()) {
-                            // !!! Same thing as in AsSeenFromMap => factorize
-                            args = Type.asSeenFrom(
-                                Symbol.type(symbol.owner().nextTypeParams()),
-                                prefix,
-                                symbol.owner());
-                            {
-                                Type p = prefix;
-                                Symbol s = symbol.owner();
-                                while (true) {
-                                    if (s.isPackage()) break;
-                                    if (s.isModuleClass()) {
-                                        s = s.owner();
-                                        p = p.prefix().baseType(s);
-                                    } else {
-                                        args = Type.cloneArray(args, 1);
-                                        args[args.length - 1] = p;
-                                        break;
-                                    }
-                                }
-                            }
-                            prefix = Type.localThisType;
-                        }
-                    }
-                    else prefix = oldpre; // !!!
-                    // !!! else is needed for following example:
-                    // trait Outer {
-                    //   type visitor;
-                    //   class Inner: visitor  { def fun = 0; }
-                    // }
-                }
-                return Type.TypeRef(prefix, symbol, args);
+                return Type.TypeRef(prefix, symbol, args).unalias();
             case SingleType(Type prefix, Symbol symbol):
                 // !!! prefix = apply(prefix);
                 // !!! symbol = prefix.rebind(symbol);

@@ -6,7 +6,6 @@
 ** $Id$
 \*                                                                      */
 //todo: T {} == T
-//todo: ELiminate phase dependency in AsSeenFromMap
 
 package scalac.symtab;
 
@@ -1253,13 +1252,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  or `sym' itself if none exists.
      */
     public Symbol rebind(Symbol sym) {
-        if (sym.kind != CLASS && (sym.flags & (PRIVATE | MODUL)) == 0) {
+        if (sym.kind != CLASS && sym.owner().isClass() && (sym.flags & (PRIVATE | MODUL)) == 0) {
             Symbol sym1 = lookupNonPrivate(sym.name);
             if (sym1.kind != NONE) {
                 if ((sym1.flags & LOCKED) != 0)
                     throw new Type.Error("illegal cyclic reference involving " + sym1);
                 //System.out.println("rebinding " + sym + " to " + sym1);//DEBUG
-                return sym1;
+                return sym1.rebindSym();
             }
         }
         return sym;
@@ -1271,65 +1270,30 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         private final Type pre;
         private final Symbol clazz;
-        private final boolean local;
 
         AsSeenFromMap(Type pre, Symbol clazz) {
-            this.pre = pre; this.clazz = clazz;
-            Global global = Global.instance;
-            this.local =global.PHASE.EXPLICITOUTER.id()<global.currentPhase.id;
+            this.pre = pre;
+            this.clazz = clazz;
         }
 
         public Type apply(Type t) {
             //System.out.println(t + " as seen from " + pre + "," + clazz);//DEBUG
-            if (pre == NoType || clazz.kind != CLASS)
-                return t;
+            if (pre == NoType || clazz.kind != CLASS) return t;
             switch (t) {
             case ThisType(Symbol sym):
                 return t.toPrefix(sym, pre, clazz);
-
             case TypeRef(Type prefix, Symbol sym, Type[] args):
                 if (sym.kind == ALIAS && sym.typeParams().length == args.length) {
-                    return apply(
-                        sym.info().subst(sym.typeParams(), args)
+                    return apply(sym.info().subst(sym.typeParams(), args)
                         .asSeenFrom(prefix, sym.owner()));
                 } else if (sym.owner().isPrimaryConstructor()) {
                     assert sym.kind == TYPE;
-                    Type t1 = t.toInstance(sym, pre, clazz);
-                    //System.out.println(t + ".toInstance(" + pre + "," + clazz + ") = " + t1);//DEBUG
-                    return t1;
+                    return t.toInstance(sym, pre, clazz);
                 } else {
                     Type prefix1 = apply(prefix);
                     Type[] args1 = map(args);
                     if (prefix1 == prefix && args1 == args) return t;
                     Symbol sym1 = prefix1.rebind(sym);
-                    if (local && sym != sym1 && sym1.isClassType()) {
-                        // Here what we should do is remove the outer
-                        // type links of sym from args and then add
-                        // the outer type links of sym1 to
-                        // args. However, as currently type symbols
-                        // that can be rebound can't have type
-                        // arguments (excepted those added by explicit
-                        // outer), we can just replace args by the
-                        // outer type params of sym1.
-                        args1 = asSeenFrom(Symbol.type(sym1.owner().typeParams()), pre, sym1.owner());
-                        {
-                            // we need also to add the type of the outer link
-                            Type p = prefix1;
-                            Symbol s = sym1.owner();
-                            while (true) {
-                                if (s.isPackage()) break;
-                                if (s.isModuleClass()) {
-                                    s = s.owner();
-                                    p = p.prefix().baseType(s);
-                                } else {
-                                    args1 = cloneArray(args1, 1);
-                                    args1[args1.length - 1] = p;
-                                    break;
-                                }
-                            }
-                        }
-                        if (sym1.isClassType()) prefix1 = localThisType;
-                    }
                     Type t1 = typeRef(prefix1, sym1, args1);
                     if (sym1 != sym) t1 = apply(t1.unalias());
                     return t1;
