@@ -190,6 +190,7 @@ runtime/types/TypeAll.java
 runtime/types/TypeAllRef.java
 runtime/types/TypeAny.java
 runtime/types/TypeAnyVal.java
+runtime/types/Statistics.java
 
 testing/UnitTest.scala
 testing/SUnit.scala
