@@ -22,13 +22,17 @@ object sorter {
       if (j < r) sort1(i, r);
     }
 
-    sort1(0, a.length - 1);
+    if (a.length > 0)
+      sort1(0, a.length - 1);
   }
 
   def println(ar: Array[Int]) = {
-    def iter(i: Int): String =
-      ar(i) + (if (i < ar.length-1) "," + iter(i+1) else "]");
-    Console.println("[" + iter(0));
+    def print1 = {
+      def iter(i: Int): String =
+        ar(i) + (if (i < ar.length-1) "," + iter(i+1) else "");
+      if (ar.length == 0) "" else iter(0)
+    }
+    Console.println("[" + print1 + "]");
   }
 
   def main(args: Array[String]) = {
