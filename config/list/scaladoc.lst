@@ -6,9 +6,9 @@
 Anchors.java
 Comment.java
 HTMLGenerator.java
-Html.java
+#Html.java
 OneTree.java
-Page.java
+#Page.java
 ScalaSearch.java
 StandardDocModule.java
 SymbolTablePrinter.java
