@@ -4,77 +4,188 @@
 // $Id$
 
 //############################################################################
+// Calibration
 
-object Object {
-
-  def fun1(n: Int, v: Int): Int =
-    if (n == 0) v else fun1(n - 1, v - 1);
-
-  def fun2[T](n: Int, v: Int): Int =
-    if (n == 0) v else fun2[T](n - 1, v - 1);
-
-  def fun3[T](n: Int, v: Int, ls: List[T]): Int =
-    if (n == 0) v else fun3(n - 1, v - 1, ls);
-
-  // !!! return in non-tail-call position
-  // !!! local functions
-  // !!! functions in objects in classes
-  // !!! non-same-instance calls
-  // !!! non-same-type calls
-
+class Calibrator {
+  def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
 }
 
 //############################################################################
-
-final class Final {
-
-  def fun1(n: Int, v: Int): Int =
-    if (n == 0) v else fun1(n - 1, v - 1);
-
-}
-
-//############################################################################
+// Tail calls in different contexts
 
 class Class {
-
-  final def fun1(n: Int, v: Int): Int =
-    if (n == 0) v else fun1(n - 1, v - 1);
-
-  def fun2(n: Int, v: Int): Int = funA(n, v);
-  private def funA(n: Int, v: Int): Int =
-    if (n == 0) v else funA(n - 1, v - 1);
-
-  def fun3(n: Int, v: Int): Int = fun4(n, v);
-
-  def fun4(n: Int, v: Int): Int =
-    if (n == 0) v else fun4(n - 1, v - 1);
-
+  def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
 }
 
 class SubClass extends Class {
-
-  override def fun4(n: Int, v: Int): Int = v;
-
+  override def f(n: Int, v: Int): Int = v;
 }
-
-//############################################################################
 
 sealed class Sealed {
+  def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+}
 
-  def fun1(n: Int, v: Int): Int =
-    if (n == 0) v else fun1(n - 1, v - 1);
+class SubSealed extends Sealed {
+  override def f(n: Int, v: Int): Int = v;
+}
+
+final class Final {
+  def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+}
+
+object Object {
+  def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+}
+
+//############################################################################
+// Tail calls in nested objects/classes
+
+object O {
+  final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+  object O {
+    final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+    object O {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    class C {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    val c: C = new C;
+  }
+  class C {
+    final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+    object O {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    class C {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    val c: C = new C;
+  }
+  val c: C = new C;
+}
+
+class C {
+  final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+  object O {
+    final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+    object O {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    class C {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    val c: C = new C;
+  }
+  class C {
+    final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+    object O {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    class C {
+      final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      object O {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      class C {
+        final def f(n: Int, v: Int): Int = if (n == 0) v else f(n - 1, v - 1);
+      }
+      val c: C = new C;
+    }
+    val c: C = new C;
+  }
+  val c: C = new C;
+}
+
+//############################################################################
+// Tail calls with different signatures
+
+class TailCall[S](s: S) {
+  def getS: S = s;
+
+  final def f1(n: Int, v: Int): Int =
+    if (n == 0) v else f1(n - 1, v - 1);
+  final def f2[T](n: Int, v: Int): Int =
+    if (n == 0) v else f2[T](n - 1, v - 1);
+  final def f3[T](n: Int, v: Int, ls: List[T]): Int =
+    if (n == 0) v else f3(n - 1, v - 1, ls);
+
+  final def g1(x: Int, y: Int): Int = {
+    def aux(n: Int, v: Int): Int =
+      if (n == 0) v else aux(n - 1, v - 1);
+    aux(x, y);
+  }
+  final def g2[T](x: Int, y: Int): Int = {
+    def aux[U](n: Int, v: Int): Int =
+      if (n == 0) v else aux[U](n - 1, v - 1);
+    aux[T](x, y);
+  }
+  final def g3[T](x: Int, y: Int, zs: List[T]): Int = {
+    def aux[U](n: Int, v: Int, ls: List[Pair[T,U]]): Int =
+      if (n == 0) v else aux(n - 1, v - 1, ls);
+    aux(x, y, Nil);
+  }
+
+  def h1(n: Int, v: Int): Int = hP(n, v);
+  private def hP(n: Int, v: Int): Int = if (n == 0) v else hP(n - 1, v - 1);
+
+  // !!! test return in non-tail-call position
+  // !!! test non-same-instance calls
+  // !!! test non-same-type calls
 
 }
 
 //############################################################################
-
-// class SubSealed extends Sealed {
-
-//   override def fun1(n: Int, v: Int): Int = v;
-
-// }
-
-//############################################################################
+// Test code
 
 object Test {
 
@@ -96,32 +207,85 @@ object Test {
     System.out.println();
   }
 
-  def main(args: Array[String]) = {
-    if (args.length < 1) throw new Error("missing target argument");
-    val min = 16;
-    val max = args(0) match {
-      case "jvm"  => 2 * 1024 * 1024
-      case "int"  =>       64 * 1024
-      case "msil" => 2 * 1024 * 1024
-      case target => throw new Error("unknown target '" + target + "'")
+  def calibrate: Int = {
+    val calibrator = new Calibrator();
+    var stop = false;
+    var n = 1;
+    while (!stop) {
+      try {
+        calibrator.f(n, n);
+        if (n >= Integer.MAX_VALUE / 2) throw new Error("calibration failure");
+        n = 2 * n;
+      } catch {
+        case exception: StackOverflowError => stop = true
+      }
     }
-    check_success("Object.fun1", Object.fun1(max, max), 0);
-    check_success("Object.fun2", Object.fun2(max, max), 0);
-    check_success("Object.fun3", Object.fun3(max, max, List(1)), 0);
+    4 * n;
+  }
 
-    val f: Final = new Final;
-    check_success("Class.fun1", f.fun1(max, max), 0);
+  def main(args: Array[String]): Unit = {
+    // compute min and max iteration number
+    val min = 16;
+    val max = calibrate;
 
-    val c: Class = new SubClass;
-    check_success("Class.fun1", c.fun1(max, max), 0);
-    check_success("Class.fun2", c.fun2(max, max), 0);
-    check_success("Class.fun3", c.fun3(min, min), min);
-    check_success("Class.fun4", c.fun4(min, min), min);
+    // test tail calls in different contexts
+    val Final     = new Final();
+    val Class     = new Class();
+    val SubClass  = new SubClass();
+    val Sealed    = new Sealed();
+    val SubSealed = new SubSealed();
+    check_success("Object   .f", Object   .f(max, max), 0);
+    check_success("Final    .f", Final    .f(max, max), 0);
+    check_success("Class    .f", Class    .f(max, max), 0);
+    check_success("SubClass .f", SubClass .f(max, max), max);
+    check_success("Sealed   .f", Sealed   .f(max, max), 0);
+    check_success("SubSealed.f", SubSealed.f(max, max), max);
+    System.out.println();
 
-// !!!
-//     val s: Sealed = new SubSealed;
-//     check_success("Sealed.fun1", s.fun1(min, min), min);
+    // test tail calls in nested classes/objects
+    val c: C = new C;
+    check_success("O      .f", O      .f(max, max), 0);
+    check_success("c      .f", c      .f(max, max), 0);
+    check_success("O.O    .f", O.O    .f(max, max), 0);
+    check_success("O.c    .f", O.c    .f(max, max), 0);
+    check_success("c.O    .f", c.O    .f(max, max), 0);
+    check_success("c.c    .f", c.c    .f(max, max), 0);
+    check_success("O.O.O  .f", O.O.O  .f(max, max), 0);
+    check_success("O.O.c  .f", O.O.c  .f(max, max), 0);
+    check_success("O.c.O  .f", O.c.O  .f(max, max), 0);
+    check_success("O.c.c  .f", O.c.c  .f(max, max), 0);
+    check_success("c.O.O  .f", c.O.O  .f(max, max), 0);
+    check_success("c.O.c  .f", c.O.c  .f(max, max), 0);
+    check_success("c.c.O  .f", c.c.O  .f(max, max), 0);
+    check_success("c.c.c  .f", c.c.c  .f(max, max), 0);
+    check_success("O.O.O.O.f", O.O.O.O.f(max, max), 0);
+    check_success("O.O.O.c.f", O.O.O.c.f(max, max), 0);
+    check_success("O.O.c.O.f", O.O.c.O.f(max, max), 0);
+    check_success("O.O.c.c.f", O.O.c.c.f(max, max), 0);
+    check_success("O.c.O.O.f", O.c.O.O.f(max, max), 0);
+    check_success("O.c.O.c.f", O.c.O.c.f(max, max), 0);
+    check_success("O.c.c.O.f", O.c.c.O.f(max, max), 0);
+    check_success("O.c.c.c.f", O.c.c.c.f(max, max), 0);
+    check_success("c.O.O.O.f", c.O.O.O.f(max, max), 0);
+    check_success("c.O.O.c.f", c.O.O.c.f(max, max), 0);
+    check_success("c.O.c.O.f", c.O.c.O.f(max, max), 0);
+    check_success("c.O.c.c.f", c.O.c.c.f(max, max), 0);
+    check_success("c.c.O.O.f", c.c.O.O.f(max, max), 0);
+    check_success("c.c.O.c.f", c.c.O.c.f(max, max), 0);
+    check_success("c.c.c.O.f", c.c.c.O.f(max, max), 0);
+    check_success("c.c.c.c.f", c.c.c.c.f(max, max), 0);
+    System.out.println();
 
+    // test tail calls with different signatures
+    val TailCall = new TailCall("S");
+    check_success("TailCall.f1", TailCall.f1(max, max     ), 0);
+    check_success("TailCall.f2", TailCall.f2(max, max     ), 0);
+    check_success("TailCall.f3", TailCall.f3(max, max, Nil), 0);
+    check_success("TailCall.g1", TailCall.g1(max, max     ), 0);
+    check_success("TailCall.g2", TailCall.g2(max, max     ), 0);
+    check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0);
+    check_success("TailCall.h1", TailCall.h1(max, max     ), 0);
+    System.out.println();
   }
 }
 
