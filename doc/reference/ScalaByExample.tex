@@ -470,7 +470,7 @@ simplification steps.
 \item apply the operator to the operand values.
 \end{itemize}
 A name defined by \code{def}\ is evaluated by replacing the name by the
-definition's right hand side. A name defined by \code{val} is
+(unevaluated) definition's right hand side. A name defined by \code{val} is
 evaluated by replacing the name by the value of the definitions's
 right-hand side.  The evaluation process stops once we have reached a
 value. A value is some data item such as a string, a number, an array,
@@ -599,8 +599,9 @@ constOne(x: int, def y: int): int
 Scala's \code{if-else} lets one choose between two alternatives.  Its
 syntax is like Java's \code{if-else}. But where Java's \code{if-else}
 can be used only as an alternative of statements, Scala allows the
-same syntax to choose between two expressions. Scala's \code{if-else}
-hence also replaces Java's conditional expression \code{ ... ? ... : ...}.
+same syntax to choose between two expressions. That's why Scala's
+\code{if-else} serves also as a substitute for Java's conditional
+expression \code{ ... ? ... : ...}.
 
 \example\ 
 
@@ -627,10 +628,10 @@ which computes the square root of \code{x}.
 A common way to compute square roots is by Newton's method of
 successive approximations. One starts with an initial guess \code{y}
 (say: \code{y = 1}). One then repeatedly improves the current guess
-\code{y} by taking the average of \code{y} and \code{x/y}.
-As an example, the next three columns indicate the guess \code{y}, the
+\code{y} by taking the average of \code{y} and \code{x/y}.  As an
+example, the next three columns indicate the guess \code{y}, the
 quotient \code{x/y}, and their average for the first approximations of
-$\sqrt 2$. 
+$\sqrt 2$.
 \begin{lstlisting}
 1            2/1 = 2               1.5
 1.5          2/1.5 = 1.3333        1.4167
@@ -830,13 +831,10 @@ both functions. Such calls are called ``tail calls''. In principle,
 tail calls can always re-use the stack frame of the calling function.
 However, some run-time environments (such as the Java VM) lack the
 primititives to make stack frame re-use for tail calls efficient.  A
-production quality Scala implementation is therefore only required to re-use
-the stack frame of a directly tail-recursive function whose last
-action is a call to itself.  Other tail calls might be optimized also,
-but one should not rely on this across
-implementations\footnote{The current Scala implementation is not yet
-production quality; it never optimizes tail calls, not even directly
-recursive ones}.
+production quality Scala implementation is therefore only required to
+re-use the stack frame of a directly tail-recursive function whose
+last action is a call to itself.  Other tail calls might be optimized
+also, but one should not rely on this across implementations.
 
 \exercise Design a tail-recursive version of
 \code{factorial}.

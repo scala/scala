@@ -262,6 +262,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a reference corresponding to given symbol. */
     public Tree mkRef(int pos, Symbol sym) {
+	//System.out.println("mkref " + sym.owner().thisType() + " . " + sym);//DEBUG
 	return mkRef(pos, sym.owner().thisType(), sym);
     }
 
@@ -405,7 +406,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         global.prevPhase();
         return mkApplyTV(pos, mkRef(pos, constr), targs, vargs);
     }
-    public Tree mkPrimaryConstr(int pos, Symbol clazz,Type[]targs,Tree[]vargs){
+    public Tree mkPrimaryConstr(int pos, Symbol clazz, Type[]targs, Tree[]vargs){
         return mkPrimaryConstr(pos,clazz.owner().thisType(),clazz,targs,vargs);
     }
 

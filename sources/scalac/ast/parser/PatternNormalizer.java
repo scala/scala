@@ -200,7 +200,7 @@ public class PatternNormalizer {
      */
 
     // apply `flattenAlternative' to each tree in ts
-    Tree[] flattenAlternatives( Tree[] ts ) {
+    public Tree[] flattenAlternatives( Tree[] ts ) {
 	Tree[] res = new Tree[ ts.length ];
 	for( int i = 0; i < ts.length; i++ )
 	    res[ i ] = flattenAlternative( ts[ i ] );
@@ -208,7 +208,7 @@ public class PatternNormalizer {
     }
 
     // main algo for (1)
-    Tree flattenAlternative( Tree tree ) {
+    public Tree flattenAlternative( Tree tree ) {
 	switch( tree ) {
 	case Alternative( Tree[] choices ):
 	    TreeList cs = new TreeList();
@@ -244,7 +244,7 @@ public class PatternNormalizer {
     }
 
     // main algo for (1), precondition: choices are children of an Alternative node
-    TreeList flattenAlternativeChildren( Tree[] choices ) {
+    public TreeList flattenAlternativeChildren( Tree[] choices ) {
 	boolean allEmpty = true;
 	TreeList cs = new TreeList();
 	for( int j = 0; j < choices.length; j++ ) {
@@ -275,14 +275,14 @@ public class PatternNormalizer {
      */
 
     // apply `flattenSequence' to each tree in trees
-    Tree[] flattenSequences( Tree[] trees ) {
+    public Tree[] flattenSequences( Tree[] trees ) {
 	Tree[] res = new Tree[ trees.length ];
 	for( int i = 0; i < trees.length; i++ )
 	    res[ i ] = flattenSequence( trees[ i ] );
 	return res;
     }
     // main algo for (2)
-    Tree flattenSequence( Tree tree ) {
+    public Tree flattenSequence( Tree tree ) {
 	//System.out.println("flattenSequence of "+tree);
 	switch( tree ) {
 	    /*
@@ -347,14 +347,14 @@ public class PatternNormalizer {
 
     /** applies `elimSequence' to each tree is ts
      */
-    Tree[] elimSequences( Tree[] ts ) {
+    public Tree[] elimSequences( Tree[] ts ) {
 	Tree[] res = new Tree[ ts.length ];
 	for( int i = 0; i < ts.length; i++ )
 	    res[ i ] = elimSequence( ts[ i ] );
 	return res;
     }
 
-    Tree elimSequence( Tree tree ) {
+    public Tree elimSequence( Tree tree ) {
 	switch( tree ) {
 	case Sequence( Tree[] trees ):
 	    // might be empty ...
@@ -457,7 +457,7 @@ public class PatternNormalizer {
 
     /** applies `warpAlternative' to each tree is ts
      */
-    Tree[] wrapAlternatives( Tree[] trees ) {
+    public Tree[] wrapAlternatives( Tree[] trees ) {
 	Tree[] newts = new Tree[ trees.length ];
 	for( int i = 0; i < trees.length; i++ )
 	    newts[ i ] = wrapAlternative( trees[ i ] );
@@ -466,7 +466,7 @@ public class PatternNormalizer {
 
     /** main algo for (4)
      */
-      Tree wrapAlternative( Tree tree ) {
+     public Tree wrapAlternative( Tree tree ) {
             switch( tree ) {
             case Alternative( Tree[] choices ):
                   return make.Alternative( tree.pos, wrapAlternativeChildren( choices ));

@@ -152,21 +152,21 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     private static Type value2type(Object value) {
-        if (value instanceof Character)
-            return Global.instance.definitions.CHAR_TYPE();
-        else if (value instanceof Integer)
-            return Global.instance.definitions.INT_TYPE();
-        else if (value instanceof Long)
-            return Global.instance.definitions.LONG_TYPE();
-        else if (value instanceof Float)
-            return Global.instance.definitions.FLOAT_TYPE();
-        else if (value instanceof Double)
-            return Global.instance.definitions.DOUBLE_TYPE();
-        else if (value instanceof String)
-            return Global.instance.definitions.JAVA_STRING_TYPE();
-        else if (value instanceof Boolean)
-            return Global.instance.definitions.BOOLEAN_TYPE();
-        else throw new ApplicationError();
+	if (value instanceof Character)
+	    return Global.instance.definitions.CHAR_CLASS.typeConstructor();
+	else if (value instanceof Integer)
+	    return Global.instance.definitions.INT_CLASS.typeConstructor();
+	else if (value instanceof Long)
+	    return Global.instance.definitions.LONG_CLASS.typeConstructor();
+	else if (value instanceof Float)
+	    return Global.instance.definitions.FLOAT_CLASS.typeConstructor();
+	else if (value instanceof Double)
+	    return Global.instance.definitions.DOUBLE_CLASS.typeConstructor();
+	else if (value instanceof String)
+	    return Global.instance.definitions.JAVA_STRING_CLASS.typeConstructor();
+	else if (value instanceof Boolean)
+	    return Global.instance.definitions.BOOLEAN_CLASS.typeConstructor();
+	else throw new ApplicationError();
     }
 
     public static Type singleTypeMethod(Type pre, Symbol sym) {

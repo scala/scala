@@ -337,13 +337,15 @@ public class Infer implements Modifiers, Kinds {
 	Type[] result;
 	if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
 	    Type[] formals = new Type[length];
-	    Type ft = params[0].type().typeArgs()[0];
-  	       // params[0] has type Seq[T], we need T here
-	    for (int i = 0; i < length; i++) formals[i] = ft;
-	    return formals;
-	} else {
-	    return Symbol.type(params);
+	    Type[] args = params[0].type().typeArgs();
+	    if (args.length == 1) {
+		Type ft = args[0];
+		// params[0] has type Seq[T], we need T here
+		for (int i = 0; i < length; i++) formals[i] = ft;
+		return formals;
+	    }
 	}
+	return Symbol.type(params);
     }
 
     /** Is type fully defined, i.e. no embedded anytypes or typevars in it?

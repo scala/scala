@@ -24,7 +24,7 @@ public class Scanner extends TokenData {
 
     /** buffer for the documentation comment
      */
-    protected StringBuffer docBuffer = null;
+    public StringBuffer docBuffer = null;
 
     /** add the given character to the documentation buffer
      */
