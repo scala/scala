@@ -11,15 +11,26 @@ package scala.xml ;
 
 import scala.collection.mutable ;
 
-abstract class NodeTraverser[A](handle: parsing.MarkupHandler[A]) {
+class NodeTraverser[A](handle: parsing.MarkupHandler[A]) {
 
-  def traverse(n: Node): Iterable[A] = {
-    val nb = new mutable.ArrayBuffer[A]();
-    val it = n.child.elements;
-    while(it.hasNext) {
-      nb.appendAll(traverse(it.next));
-    }
+  def traverse(n: Node): Iterable[A] = n match {
+    case Text(t)          => handle.text(0,t);
+    case ProcInstr(ta,te) => handle.procInstr(0,ta,te);
+    case Comment(t)       => handle.comment(0,t);
+    case CharData(cd)     => handle.charData(0,cd);
+    case EntityRef(n)     => handle.entityRef(0,n);
+    case _ =>
+      val nb = new mutable.ArrayBuffer[A]();
+      val it = n.child.elements;
+      while(it.hasNext) {
+        nb.appendAll(traverse(it.next));
+      }
     handle.element(0, n.namespace, n.label, n.attributes.toMap, nb)
   }
 
+}
+
+class NodeSubstitution(handle: parsing.ConstructingHandler)
+  extends NodeTraverser[Node](handle) with Function1[Node,Iterable[Node]] {
+    def apply(n: Node) = traverse(n);
 }

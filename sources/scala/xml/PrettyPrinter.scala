@@ -102,10 +102,32 @@ class PrettyPrinter( width:Int, step:Int ) {
     sb.toString();
   }
 
+  protected def rootStartTag(n: Node) = {
+    val sb = new StringBuffer("<");
+    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
+    Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
+    if(( pmap.size != 1 )|| !pmap.contains(""))
+      for( val c <- pmap.elements ) {
+        sb.append(" xmlns:");
+        sb.append(c._2);
+        sb.append("=\"");
+        sb.append(c._1);
+        sb.append('"');
+      }
+    sb.append('>');
+    sb.toString();
+  }
   protected def startTag(n: Node) = {
     val sb = new StringBuffer("<");
     Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
     Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
+    sb.append('>');
+    sb.toString();
+  }
+
+  protected def endTag(n: Node) = {
+    val sb = new StringBuffer("</");
+    Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
     sb.append('>');
     sb.toString();
   }
@@ -119,7 +141,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   def format(n: Node, pmap: Map[String,String], sb: StringBuffer ): Unit = {
     reset();
     this.pmap = pmap;
-    traverse( n, 0 );
+    traverse1( n, 0 );
     var cur = 0;
     //Console.println( items.reverse );
     for( val b <- items.reverse ) b match {
@@ -154,35 +176,111 @@ class PrettyPrinter( width:Int, step:Int ) {
           makeBox( ind, node.toString() );
 
         case _:Node =>
-          val test = node.toString();
-
-        if( ( test.length() < width - cur ) // all ?
-          &&( !breakable( node ))) {
+          val sb = new StringBuffer();
+          val test = { Utility.toXML1(node,pmap,sb); sb.toString()};
+          if(( test.length() < width - cur )&&( !breakable( node ))){ // all ?
             makeBox( ind, test );
           } else {  // start tag + content + end tag
             //Console.println(node.label+" ind="+ind);
             val stg    = startTag( node );
-            val endTag = "</"+node.label+">";
-            val len2   = node.label.length() + 1;
+            val etg    = endTag( node );
+            val len2   = pmap(node.namespace).length() + node.label.length() + 2;
 
             if( stg.length() < width - cur ) { // start tag fits
 
               makeBox( ind, stg );
               makeBreak();
               traverse( node.child.elements, ind + step );
-              makeBox( ind, endTag );
+              makeBox( ind, etg );
 
             } else if( len2 < width - cur ) {
               // <start label + attrs + tag + content + end tag
               makeBox( ind, stg.substring( 0,    len2 ));
               makeBreak();
+              /*{ //@todo
+               val sq:Seq[String] = stg.split(" ");
+               val it = sq.elements;
+               it.next;
+               for( val c <- it ) {
+               makeBox( ind+len2-2, c );
+               makeBreak();
+               }
+               }*/
               makeBox( ind, stg.substring( len2, stg.length() ));
               makeBreak();
               traverse( node.child.elements, ind + step );
-              makeBox( cur, endTag );
+              makeBox( cur, etg );
+            } else {
+            makeBox( ind, test );
+            makeBreak();
             }
           }
+      }
+    }
+
+    /** @param tail: what we'd like to sqeeze in */
+    protected def traverse1( node:Node, ind:int ):Unit = {
+      node match {
+
+        case _:Text | _:CharData | _:Comment | _:EntityRef | _:ProcInstr =>
+          makeBox( ind, node.toString() );
+
+        case _:Node => {
+          // start tag + content + end tag
+            //Console.println(node.label+" ind="+ind);
+            val stg    = rootStartTag( node );
+            val etg    = endTag( node );
+            val len2   = pmap(node.namespace).length() +node.label.length() + 2;
+
+            if( stg.length() < width - cur ) { // start tag fits
+
+              makeBox( ind, stg );
+              makeBreak();
+              traverse( node.child.elements, ind + step );
+              makeBox( ind, etg );
+
+            } else if( len2 < width - cur ) {
+              val sq:Seq[String] = stg.split(" ");
+              val it = sq.elements;
+              var tmp    = it.next;
+              makeBox( ind, tmp );
+              var curlen = cur + tmp.length();
+              while( it.hasNext ) {
+                var tmp    = it.next;
+                if( tmp.length() + curlen + 1 < width ) {
+                  makeBox( ind, " " );
+                  makeBox( ind, tmp );
+                  curlen = curlen + tmp.length() + 1;
+                } else {
+                  makeBreak();
+                  makeBox( len2+1, tmp );
+                  curlen = len2+1;
+                }
+              }
+              // <start label + attrs + tag + content + end tag
+              //makeBox( ind, stg.substring( 0,    len2 ));
+              //makeBreak();
+              /*{ //@todo
+                val sq:Seq[String] = stg.split(" ");
+                val it = sq.elements;
+                it.next;
+                for( val c <- it ) {
+                  makeBox( ind+len2-2, c );
+                  makeBreak();
+                }
+              }*/
+              //makeBox( ind, stg.substring( len2, stg.length() ));
+              makeBreak();
+              traverse( node.child.elements, ind + step );
+              makeBox( cur, etg );
+            } else { // it does not fit, dump everything
+              val sb = new StringBuffer();
+              val tmp = { Utility.toXML1(node,pmap,sb); sb.toString()};
+              makeBox( ind, tmp );
+              makeBreak();
+            }
         }
+      }
     }
 
   protected def traverse( it:Iterator[Node], ind:int ):unit = {

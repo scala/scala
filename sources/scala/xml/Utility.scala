@@ -131,59 +131,67 @@ object Utility {
   **  with the given namespace prefix mapping
   *   @param n the root node
   */
-  def toXML( x:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = x match {
-    case Text( t ) =>
-      sb.append( escape( t ) );
-    case _ if x.typeTag$ < 0 =>
-      sb.append( x.toString() );
-    case _ => {
-      sb.append('<');
-      appendPrefixedName( x.namespace, x.label, pmap, sb );
-      if( x.attributes.length != 0 ) {
-        attr2xml( x.namespace, x.attributes.elements, pmap, sb )
+  def toXML( x:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = {
+    x match {
+      case Text( t ) =>
+        sb.append( escape( t ) );
+      case _ if x.typeTag$ < 0 =>
+        sb.append( x.toString() );
+      case _ => {
+        sb.append('<');
+        appendPrefixedName( x.namespace, x.label, pmap, sb );
+        if( x.attributes.length != 0 ) {
+          attr2xml( x.namespace, x.attributes.elements, pmap, sb )
+        }
+        if( (pmap.size != 1)||pmap.get("").isEmpty) {
+          for( val Pair(ns,pref) <- pmap.elements ) {
+            sb.append(' ');
+            sb.append("xmlns");
+            if( pref.length() > 0 ) sb.append(':');
+            sb.append(pref);
+            sb.append("=\"");
+            sb.append(ns);
+            sb.append('"')
+          }
+        }
+        sb.append('>');
+        for( val c <- x.child.elements ) {
+          toXML1( c, pmap, sb );
+        }
+        sb.append("</");
+        appendPrefixedName( x.namespace, x.label, pmap, sb );
+        sb.append('>');
       }
-    if( (pmap.size != 1)||pmap.get("").isEmpty) {
-      for( val Pair(ns,pref) <- pmap.elements ) {
-        sb.append(' ');
-        sb.append("xmlns");
-        if( pref.length() > 0 ) sb.append(':');
-        sb.append(pref);
-        sb.append("=\"");
-        sb.append(ns);
-        sb.append('"')
-      }
-    }
-      sb.append('>');
-      for( val c <- x.child.elements ) {
-        toXML1( c, pmap, sb );
-      }
-      sb.append("</");
-      appendPrefixedName( x.namespace, x.label, pmap, sb );
-      sb.append('>');
     }
   }
   /** serializes a tree to the given stringbuffer
   **  with the given namespace prefix mapping
   *   @param n the root node
   */
-  def toXML1( x:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = x match {
-    case Text( t ) =>
-      sb.append( escape( t ) );
-    case _ if x.typeTag$ < 0 =>
-      sb.append( x.toString() );
-    case _ => {
-      sb.append('<');
-      appendPrefixedName( x.namespace, x.label, pmap, sb );
-      if( x.attributes.length != 0 ) {
-        attr2xml( x.namespace, x.attributes.elements, pmap, sb )
+  def toXML1( x:Node, pmap:Map[String,String], sb:StringBuffer ):Unit = {
+    //Console.print("toString: "+x.toString());
+    x match {
+      case Text( t ) =>
+        //Console.println("case Text");
+        sb.append( escape( t ) );
+      case _ if x.typeTag$ < 0 =>
+        //Console.println("case _ if tag");
+        sb.append( x.toString() );
+      case _ => {
+        //Console.println("case _, class"+x.getClass());
+        sb.append('<');
+        appendPrefixedName( x.namespace, x.label, pmap, sb );
+        if( x.attributes.length != 0 ) {
+          attr2xml( x.namespace, x.attributes.elements, pmap, sb )
+        }
+        sb.append('>');
+        for( val c <- x.child.elements ) {
+          toXML1( c, pmap, sb );
+        }
+        sb.append("</");
+        appendPrefixedName( x.namespace, x.label, pmap, sb );
+        sb.append('>');
       }
-      sb.append('>');
-      for( val c <- x.child.elements ) {
-        toXML1( c, pmap, sb );
-      }
-      sb.append("</");
-      appendPrefixedName( x.namespace, x.label, pmap, sb );
-      sb.append('>');
     }
   }
 
