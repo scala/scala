@@ -22,8 +22,10 @@ public class MetaStrictTreeCopier extends AbstractTreeMethodExpander {
         writer.print(node.getType(0)).print(" t = make.");
         node.printCall(writer, "tree.pos", withSymbol).println(";");
         writer.println("t.type = tree.type;");
-        if (!withSymbol && node.hasSymbol() && !node.hasLinkedFields())
-            writer.println("t.setSymbol(tree.symbol());");
+        if (!withSymbol && node.hasSymbol() && !node.hasLinkedFields()) {
+            symbol.print(writer, true).println(" = tree.symbol();");
+            writer.println("if ("+symbol+" != null) t.setSymbol("+symbol+");");
+        }
         writer.println("return t;");
         writer.rbrace();
 
