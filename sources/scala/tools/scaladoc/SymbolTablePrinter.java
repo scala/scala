@@ -107,10 +107,12 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      */
     public String getSymbolInnerString(Symbol symbol) {
         if (symbol.kind == Kinds.TYPE)
-            return "&lt;:"; // HTML encoded "<:" symbol
+            return INNER_LT; // HTML encoded "<:" symbol
         else
             return super.getSymbolInnerString(symbol);
     }
+    // where
+    protected String INNER_LT = "&lt;:";
 
     /**
      * Prints the name of the given symbol usage.
@@ -334,8 +336,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param inner
      */
     public SymbolTablePrinter printType(Type type, String inner) {
-	if ("<:".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
-	    ">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
+	if ((INNER_LT.equals(inner) && type.symbol() == global.definitions.ANY_CLASS) ||
+	    (">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS))
 	    return this;
         else
 	    return printType0(getTypeToPrintForType(type), inner);
