@@ -55,6 +55,7 @@ class Queue[A] with MutableList[A] {
         else {
             val res = first.elem;
             first = first.next;
+	    len = len - 1;
             res;
         }
     }
