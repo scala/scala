@@ -2,6 +2,8 @@ Test01Literals
 passed ok
 passed ok
 passed ok
+ws trimming in patterns
+passed ok
 passed ok
 <testTag ab="bkla" value="This is a test."></testTag>
 <testTag bla="foo" value="42"></testTag>

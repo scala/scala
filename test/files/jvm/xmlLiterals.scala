@@ -41,17 +41,25 @@ object Test  {
     assertEquals( <hello></hello>.toString(),
                   noWS(<hello  >   </hello>.toString()));
 
-    val x3 = <hello>
+    val xx3 = <hello>
     <world></world>
     <test/>
-    <mars></mars></hello>.toString();          /* ws in element content */
+    <mars></mars></hello>;
 
+    val x3 = xx3.toString();          /* ws in element content */
 
     assertEquals( noWS( x3 ),
                   Elem(0,"hello",e,
                        Elem(0,"world",e),
                        Elem(0,"test",e),
                        Elem(0,"mars",e)).toString() );
+
+
+    Console.println("ws trimming in patterns");
+
+    assertEquals( true, <hello> <world/>    </hello> match {
+      case <hello>    <world/> </hello>     => true;
+      case _ => false;} );
 
 
   /*                                                === attributes === */
