@@ -14,8 +14,10 @@ import java.util.ArrayList;
 
 import scalac.ast.Tree;
 import scalac.atree.AConstant;
-import scalac.symtab.Symbol;
+import scalac.backend.Primitives;
 import scalac.symtab.Definitions;
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 import scalac.util.Debug;
 import scalac.util.Name;
 
@@ -25,14 +27,16 @@ public class ExpressionCompiler {
     // Private Fields
 
     private final Definitions definitions;
+    private final Primitives primitives;
     private final Constants constants;
     private final ExpressionContext context;
 
     //########################################################################
     // Public Constructors
 
-    public ExpressionCompiler(Definitions definitions, Constants constants, ExpressionContext context, Symbol[] params) {
+    public ExpressionCompiler(Definitions definitions, Primitives primitives, Constants constants, ExpressionContext context, Symbol[] params) {
         this.definitions = definitions;
+        this.primitives = primitives;
         this.constants = constants;
         this.context = context;
         for (int i = 0; i < params.length; i++)
@@ -166,8 +170,7 @@ public class ExpressionCompiler {
             return code;
 
         case Apply(TypeApply(Tree tfun, Tree[] targs), Tree[] vargs):
-            assert vargs.length == 0 : Debug.show(tree);
-            return tapply(tfun, tfun.symbol(), targs);
+            return tapply(tfun, tfun.symbol(), targs, vargs);
 
         case Apply(Tree vfun, Tree[] vargs):
             return vapply(vfun, vfun.symbol(), vargs);
@@ -228,32 +231,21 @@ public class ExpressionCompiler {
     //########################################################################
     // Private Methods - apply
 
-    private Code tapply(Tree target, Symbol symbol, Tree[] trees) {
+    private Code tapply(Tree target, Symbol symbol, Tree[] targs, Tree[]vargs){
         Code object = object(target);
-        if (symbol == definitions.ANY_AS) {
-            assert trees.length == 1 : Debug.show(trees);
-            // !!! some AS should be kept; they might fail
-            return object;
+        if (symbol == definitions.ANY_IS || symbol == definitions.ANY_AS) {
+            assert targs.length == 1: Debug.show(targs);
+            assert vargs.length == 0 : Debug.show(vargs);
+            boolean cast = symbol == definitions.ANY_AS;
+            Type type = targs[0].type();
+            return Code.IsAs(object, type, context.getClass(type), cast);
         }
-        if (symbol == definitions.ANY_IS) {
-            assert trees.length == 1 : Debug.show(trees);
-            //assert trees[0].hasSymbol() : trees[0];
-            Symbol expect = trees[0].getType().symbol();
-            // !!! BUG: expect is null for .is[Int]
-            assert expect != null : trees[0];
-            // !!! System.out.println("!!! IS " + expect);
-            Template template = context.lookupTemplate(expect);
-            switch (template) {
-
-            case Global(_) :
-                return Code.IsScala(object, expect);
-
-            case JavaClass(Class clasz):
-                return Code.IsJava(object, clasz);
-
-            default:
-                throw Debug.abort("illegal template", template);
-            }
+        if (symbol == primitives.NEW_OARRAY) {
+            assert object == Code.Null: object;
+            assert targs.length == 1: Debug.show(targs);
+            assert vargs.length == 1 : Debug.show(vargs);
+            Class component = context.getClass(targs[0].type());
+            return Code.CreateArray(component, compute(vargs[0]));
         }
         throw Debug.abort("unknown method", symbol);
     }

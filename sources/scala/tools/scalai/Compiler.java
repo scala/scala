@@ -45,11 +45,12 @@ public class Compiler {
     private final Constants constants;
     private final ClassLoader loader;
     private final Environment environment;
+    private final Map/*<Class,Set<ScalaTemplate>>*/ templates;
     private final Evaluator evaluator; // !!! remove
     private final Map any_methods;
     private final Map sources;
 
-    public Compiler(Global global, Evaluator evaluator) {
+    public Compiler(Global global, Map templates, Evaluator evaluator) {
         this.global = global;
         this.definitions = global.definitions;
         this.constants = new Constants();
@@ -57,6 +58,7 @@ public class Compiler {
         scala.runtime.RunTime.setClassLoader(loader);
         JavaMirror mirror = new JavaMirror(definitions, loader);
         this.environment = new Environment(this, mirror);
+        this.templates = templates;
         this.evaluator = evaluator;
         this.any_methods = new HashMap();
         this.sources = new HashMap();
@@ -232,7 +234,12 @@ public class Compiler {
         for (int i = 0; i < body.length; i++) {
             addTemplateMember(source, methods, fields, body[i]);
         }
-        return new ScalaTemplate(evaluator, symbol, constructor, methods, fields.toArray());
+        ScalaTemplate template = new ScalaTemplate(
+            evaluator, symbol, proxy, constructor, methods, fields.toArray());
+        Set set = (Set)templates.get(proxy);
+        if (set == null) templates.put(proxy, set = new HashSet());
+        set.add(template);
+        return template;
     }
 
     //########################################################################
@@ -260,7 +267,7 @@ public class Compiler {
 
     public CodeContainer compile(SourceFile source, Symbol owner, Tree tree, Symbol[] params) {
         ExpressionContext context = new ExpressionContext(environment, source, owner);
-        ExpressionCompiler worker = new ExpressionCompiler(definitions, constants, context, params);
+        ExpressionCompiler worker = new ExpressionCompiler(definitions, global.primitives, constants, context, params);
         return worker.compile(tree);
     }
 

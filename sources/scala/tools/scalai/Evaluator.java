@@ -9,6 +9,11 @@
 
 package scala.tools.scalai;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Constructor;
@@ -21,6 +26,7 @@ import ch.epfl.lamp.util.SourceFile;
 import scala.runtime.RunTime;
 
 import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 import scalac.util.Debug;
 
 public class Evaluator {
@@ -68,13 +74,15 @@ public class Evaluator {
     //########################################################################
     // Private Fields
 
+    private final Map/*<Class,Set<ScalaTemplate>>*/ templates;
     private final EvaluatorException trace;
     private EvaluationStack stack;
 
     //########################################################################
     // Public Constructors
 
-    public Evaluator() {
+    public Evaluator(Map templates) {
+        this.templates = templates;
         this.trace = new EvaluatorException();
         this.stack = null;
     }
@@ -192,15 +200,18 @@ public class Evaluator {
             return invoke(null, template.getConstructor(),
                 new Object[] {template.getHandler()});
 
-        case IsScala(Code target, Symbol symbol):
-            Object object = evaluate(target);
-            if (object == null || !isScalaObject(object)) return Boolean.FALSE;
-            Symbol actual = getScalaObject(object).template.getSymbol();
-            return new Boolean(actual.isSubClass(symbol));
+        case CreateArray(Class component, Code size):
+            Object length = evaluate(size);
+            assert length instanceof Integer : length.getClass();
+            return Array.newInstance(component, ((Integer)length).intValue());
 
-        case IsJava(Code target, Class clasz):
+        case IsAs(Code target, Type type, Class clasz, boolean cast):
             Object object = evaluate(target);
-            return new Boolean(clasz.isInstance(object));
+            if (object == null) return cast ? null : Boolean.FALSE;
+            boolean test = isInstanceOf(object, type, clasz);
+            return cast
+                ? (test ? object : throw_(getCastException(object, type)))
+                : (test ? Boolean.TRUE : Boolean.FALSE);
 
         case Or(Code lf, Code rg):
             Object object = evaluate(lf);
@@ -298,11 +309,11 @@ public class Evaluator {
 
         case HashCode:
             assert args.length == 0 : Debug.show(args);
-            return new Integer(getHandlerObject(object).hashCode());
+            return new Integer(getScalaObject(object).hashCode());
 
         case ToString:
             assert args.length == 0 : Debug.show(args);
-            return getHandlerObject(object).toString();
+            return getScalaObject(object).toString();
 
         default:
             throw Debug.abort("illegal function", function);
@@ -480,20 +491,83 @@ public class Evaluator {
     //########################################################################
     // Private Methods - !!!
 
-    private boolean isScalaObject(Object object) {
-        return Proxy.isProxyClass(object.getClass()); // !!! add more checks ?
-    }
-
     private ScalaObject getScalaObject(Object object) {
-        Object handler = getHandlerObject(object);
-        assert handler instanceof ScalaObject : handler.getClass();
+        assert object instanceof Proxy: object.getClass();
+        Object handler = object == null
+            ? throw_(new NullPointerException())
+            : Proxy.getInvocationHandler(object);
+        assert handler instanceof ScalaObject: handler.getClass();
         return (ScalaObject)handler;
     }
 
-    private Object getHandlerObject(Object object) {
-        if (object == null) return throw_(new NullPointerException());
-        assert object instanceof Proxy : object.getClass();
-        return Proxy.getInvocationHandler(object);
+    private Symbol getScalaSymbol(Object object) {
+        Class clasz = object.getClass();
+        if (!(object instanceof Proxy)) return null;
+        Object handler = Proxy.getInvocationHandler(object);
+        if (!(handler instanceof ScalaObject)) return null;
+        return ((ScalaObject)handler).template.getSymbol();
+    }
+
+    private boolean isInstanceOf(Object object, Type type, Class base) {
+        Class clasz = object.getClass();
+        switch (type) {
+        case TypeRef(_, Symbol symbol, _):
+            Symbol scala = getScalaSymbol(object);
+            if (scala != null) return scala.isSubClass(symbol);
+            return base.isAssignableFrom(clasz);
+        case UnboxedArrayType(Type element):
+            return base.isAssignableFrom(clasz);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }
+
+    private String getSignature(Object object) {
+        Symbol symbol = getScalaSymbol(object);
+        if (symbol != null) return symbol.toString();
+        Class clasz = object.getClass();
+        if (!clasz.isArray()) return clasz.toString();
+        return "class " + getClassName(clasz);
+    }
+
+    private String getSignature(Type type) {
+        return "class " + getTypeName(type);
+    }
+
+    private String getClassName(Class clasz) {
+        if (clasz.isArray())
+            return getClassName(clasz.getComponentType()) + "[]";
+        Set scalas = (Set)templates.get(clasz);
+        if (scalas == null) return clasz.getName();
+        StringBuffer buffer = new StringBuffer();
+        boolean separator = false;
+        if (scalas.size() != 1) buffer.append('(');
+        for (Iterator i = scalas.iterator(); i.hasNext(); separator = true) {
+            if (separator) buffer.append(" | ");
+            ScalaTemplate scala = (ScalaTemplate)i.next();
+            buffer.append(scala.getSymbol().fullName());
+        }
+        if (scalas.size() != 1) buffer.append(')');
+        return buffer.toString();
+    }
+
+    private String getTypeName(Type type) {
+        switch (type) {
+        case TypeRef(_, Symbol symbol, _):
+            return symbol.fullNameString();
+        case UnboxedArrayType(Type element):
+            return getTypeName(element) + "[]";
+        case UnboxedType(_):
+            return type.toString();
+        default:
+            throw Debug.abort("illegal case");
+        }
+    }
+
+    private ClassCastException getCastException(Object object, Type type) {
+        String from = getSignature(object);
+        String to = getSignature(type);
+        return new ClassCastException(from + " is not an instance of " + to);
     }
 
     //########################################################################

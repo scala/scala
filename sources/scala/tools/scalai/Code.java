@@ -10,6 +10,7 @@
 package scala.tools.scalai;
 
 import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 import scalac.util.Debug;
 
 public class Code {
@@ -22,6 +23,7 @@ public class Code {
     public case Label(Symbol symbol, Variable[] variables, Code expression);
 
     public case Create(ScalaTemplate template);
+    public case CreateArray(Class component, Code size);
     public case Invoke(Code target, Function function, Code[] arguments, int pos);
     public case Load(Code target, Variable variable);
     public case Store(Code target, Variable variable, Code expression);
@@ -32,8 +34,7 @@ public class Code {
     public case And(Code lf, Code rg);
     public case Switch(Code test, int[] tags, Code[] bodies, Code otherwise);
 
-    public case IsScala(Code target, Symbol symbol);
-    public case IsJava(Code target, Class clasz);
+    public case IsAs(Code target, Type type, Class base, boolean cast);
 
     public case Literal(Object value);
     public case Self;
@@ -67,6 +68,9 @@ public class Code {
 
         case Create(ScalaTemplate template):
             return "Create(" + template + ")";
+
+        case CreateArray(Class component, Code size):
+            return "CreateArray(" + component.getName() + "," + size + ")";
 
         case Invoke(Code target, Function function, Code[] arguments, int pos):
             StringBuffer buffer = new StringBuffer();
@@ -104,11 +108,8 @@ public class Code {
             buffer.append(")");
             return buffer.toString();
 
-        case IsScala(Code target, Symbol symbol):
-            return "IsScala(" + target + "," +  symbol + ")";
-
-        case IsJava(Code target, Class clasz):
-            return "IsJava(" + target + "," + clasz + ")";
+        case IsAs(Code target, Type type, Class base, boolean cast):
+            return "IsAs(" + type + "," +  type + "," + base + "," + cast +")";
 
         case Literal(Object value):
             return "Literal(" + value + ")";

@@ -9,6 +9,9 @@
 
 package scala.tools.scalai;
 
+import java.util.Map;
+import java.util.HashMap;
+
 import scalac.Global;
 import scalac.Phase;
 import scalac.symtab.Definitions;
@@ -41,8 +44,9 @@ public class Interpreter {
 
     public Interpreter(Global global) {
         this.global = global;
-        this.evaluator = new Evaluator();
-        this.compiler = new Compiler(global, evaluator); // !!!
+        Map templates = new HashMap();
+        this.evaluator = new Evaluator(templates);
+        this.compiler = new Compiler(global, templates, evaluator); // !!!
     }
 
     //########################################################################
