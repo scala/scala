@@ -77,18 +77,19 @@ public class Scope {
 
 	/** The owner of the entry;
 	 */
-	public Scope owner;
+	public final Scope owner;
 
 	Entry(Symbol sym, Scope owner) {
-	    if (sym == null) throw new ApplicationError();
 	    this.sym = sym;
 	    this.owner = owner;
 	    this.next = owner.elems;
+	    if (sym == null) throw new ApplicationError();
 	    owner.elems = this;
 	}
 
 	private Entry() {
 	    this.sym = Symbol.NONE;
+            this.owner = null;
 	}
 
 	public Entry setSymbol(Symbol sym) {
@@ -152,6 +153,16 @@ public class Scope {
 	this();
 	for (int i = 0; i < members.length; i++)
 	    enter(members[i]);
+    }
+
+    /** Returns a new scope with the same content as this one. */
+    public Scope cloneScope() {
+        int size = 0;
+        Scope clone = new Scope();
+        for (Entry e = elems; e != Entry.NONE; e = e.next, size++)
+            new Entry(e.sym, clone);
+        if (size >= MIN_HASH) clone.createHash();
+        return clone;
     }
 
     /** the number of entries in this scope
