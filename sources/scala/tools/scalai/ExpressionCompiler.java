@@ -262,9 +262,9 @@ public class ExpressionCompiler {
         // !!! remove this hack, and argument "from"
         if (symbol.isMethod()) { // !!! Kinds.
             // !!!
-            if (symbol == definitions.NULL) return Code.Null;
             return vapply(target, symbol, Tree.EMPTY_ARRAY);
         }
+        if (symbol == definitions.NULL) return Code.Null;
 
         // !!! return something ? raise exception ?
         if (!symbol.isValue()) return Code.Null;
