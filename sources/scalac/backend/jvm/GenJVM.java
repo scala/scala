@@ -336,6 +336,13 @@ class GenJVM {
                     generatedType = expectedType;
                     break;
 
+                case SYNCHRONIZED: {
+                    assert args.length == 1;
+                    Tree qual = ((Tree.Select)fun).qualifier;
+                    genSynchronized(ctx, qual, args[0], expectedType);
+                    generatedType = expectedType;
+                } break;
+
                 case NEW_OARRAY: {
                     assert args.length == 2;
                     genRefArrayCreate(ctx, args[0], args[1]);
@@ -982,6 +989,25 @@ class GenJVM {
         ctx.code.emitATHROW();
     }
 
+    /**
+     * Generate code to throw the value returned by the argument.
+     */
+    protected void genSynchronized(Context ctx,
+                                   Tree object,
+                                   Tree code,
+                                   JType expectedType)
+        throws JCode.OffsetTooBigException {
+        JLocalVariable monitorVar =
+            ctx.method.addNewLocalVariable(JAVA_LANG_OBJECT_T, "monitor");
+        genLoad(ctx, object, JAVA_LANG_OBJECT_T);
+        ctx.code.emitSTORE(monitorVar);
+        ctx.code.emitLOAD(monitorVar);
+        ctx.code.emitMONITORENTER();
+        genLoad(ctx, code, expectedType);
+        ctx.code.emitLOAD(monitorVar);
+        ctx.code.emitMONITOREXIT();
+    }
+
     /// Arrays
     //////////////////////////////////////////////////////////////////////
 
@@ -1160,8 +1186,7 @@ class GenJVM {
             case CARRAY_LENGTH : case IARRAY_LENGTH : case LARRAY_LENGTH :
             case FARRAY_LENGTH : case DARRAY_LENGTH : case OARRAY_LENGTH :
             case IS : case AS : case ID :
-            case CONCAT :
-            case THROW :
+            case CONCAT : case THROW : case SYNCHRONIZED:
             case B2B: case B2S: case B2C: case B2I: case B2L: case B2F: case B2D:
             case S2B: case S2S: case S2C: case S2I: case S2L: case S2F: case S2D:
             case C2B: case C2S: case C2C: case C2I: case C2L: case C2F: case C2D:
