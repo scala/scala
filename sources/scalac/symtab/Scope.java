@@ -189,7 +189,7 @@ public class Scope {
     /** enter a symbol
      */
     public Scope enter(Symbol sym) {
-	assert !sym.isConstructor();
+	// assert !sym.isConstructor();
 	return enter(new Entry(sym, this));
     }
 

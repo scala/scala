@@ -6,16 +6,12 @@
 
 // $Id$
 
-// todo: (0) propagate target type in cast.
 // todo: eliminate Typed nodes.
 // todo: use SELECTOR flag to avoid access methods for privates
 // todo: use mangled name or drop.
 // todo: emit warnings for unchecked.
 // todo: synchronize on module instantiation.
-// todo: implement EQ
-// todo: for (Tuplen(...) <- ...)
 // todo: empty package
-// todo: this for package?
 
 package scalac.typechecker;
 
@@ -737,7 +733,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	case DefDef(int mods, Name name, _, _, _, _):
 	    Symbol sym;
-	    if (name == Names.this_.toTypeName()) {
+	    if (name == Names.CONSTRUCTOR) {
 		Symbol clazz = context.enclClass.owner;
 		if (!(context.tree instanceof Template) ||
 		    clazz.isModuleClass() ||
@@ -746,7 +742,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    clazz.isPackage()) {
 		    error(tree.pos, "constructor definition not allowed here");
 		}
-		((DefDef) tree).name = clazz.name;
 		sym = context.enclClass.owner.addConstructor();
 	    } else {
 		sym = TermSymbol.define(tree.pos, name, owner, mods, context.scope);
@@ -987,7 +982,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Symbol[] tparamSyms;
 		Symbol[][] vparamSyms;
 		Type restype;
-		if (name.isTypeName()) {
+		if (name == Names.CONSTRUCTOR) {
 		    Context prevContext = context;
 		    Symbol clazz = context.enclClass.owner;
 		    context = context.enclClass.outer.outer;
@@ -1804,8 +1799,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case DefDef(_, Name name, Tree.AbsTypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
 		Context prevContext = context;
-		if (name.isTypeName()) {
-		    Symbol clazz = context.enclClass.owner;
+		Symbol enclClass = context.enclClass.owner;
+		if (name == Names.CONSTRUCTOR) {
 		    context = context.enclClass.outer.outer;
 		}
 		pushContext(tree, sym, new Scope(context.scope));
@@ -1816,8 +1811,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    ? gen.mkType(tree.pos, sym.type().resultType())
 		    : transform(tpe, TYPEmode);
 		Tree rhs1 = rhs;
-		if (name.isTypeName())
+		if (name == Names.CONSTRUCTOR) {
+		    context.constructorClass = enclClass;
 		    rhs1 = transform(rhs, CONSTRmode, tpe1.type);
+		}
 		else if (rhs != Tree.Empty)
 		    rhs1 = transform(rhs, EXPRmode, tpe1.type);
 		context = prevContext;
@@ -2106,6 +2103,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		mode = mode & ~SEQUENCEmode;
 		Tree fn1;
 		int argMode;
+		boolean selfcc = false;
 		//todo: Should we pass in both cases a methodtype with
 		// AnyType's for args as a prototype?
 		if ((mode & EXPRmode) != 0) {
@@ -2128,8 +2126,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			case TypeRef(Type pre, Symbol c, Type[] argtypes):
 			    if (c.kind == CLASS) {
 				c.initialize();
-				Tree fn0 = fn1;
 				Symbol constr = c.allConstructors();
+				Tree fn0 = fn1;
 				fn1 = gen.mkRef(fn1.pos, pre, constr);
 				switch (fn1) {
 				case Select(Tree fn1qual, _):
@@ -2151,6 +2149,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 					    tsym.typeParams(), fn1.type);
 				}
 				//System.out.println(TreeInfo.methSymbol(fn1) + ":" + tp + " --> " + fn1.type + " of " + fn1);//DEBUG
+				selfcc = TreeInfo.isSelfConstrCall(fn0);
 			    } else {
 				error(tree.pos,
 				      tsym + " is not a class; cannot be instantiated");
@@ -2236,6 +2235,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 
+		// check that self constructors go backwards.
+		if (selfcc) {
+		    Symbol constr = TreeInfo.methSymbol(fn1);
+		    if (constr != null && constr.kind == VAL &&
+			!(constr.type() instanceof Type.OverloadedType) &&
+			constr.pos > tree.pos)
+			error(tree.pos,
+			      "illegal forward reference to self constructor");
+		}
+
 		switch (fn1.type) {
 		case PolyType(Symbol[] tparams, Type restp):
 		    // if method is polymorphic,
@@ -2307,13 +2316,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tree, adapt(qual1, qualmode, Type.AnyType), name);
 
 	    case Ident(Name name):
-		if (name == Names.this_.toTypeName()) {
-		    Tree tree1 = transform(make.Ident(tree.pos, pt.symbol().name));
-		    Symbol constr = tree1.symbol();
-		    if (constr != null && constr.kind == VAL && constr.pos > tree.pos)
-			error(tree.pos,
-			      "illegal forward reference to self constructor");
-		    return tree1;
+		if (name == Names.CONSTRUCTOR) {
+		    assert (mode & CONSTRmode) != 0 : tree;
+		    return gen.Ident(tree.pos, context.constructorClass);
+		    /*
+		    */
 		} else if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) &&
 			     name.isVariable()) {
 

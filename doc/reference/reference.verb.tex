@@ -2,7 +2,7 @@
 
 \documentclass[11pt]{report}
 
-\usepackage{fleqn,a4wide,modefs,math,prooftree,scaladefs,vquote}
+\usepackage{fleqn,a4,modefs,math,prooftree,scaladefs,vquote}
 
 \newcommand{\ifqualified}[1]{}
 \newcommand{\iflet}[1]{}
@@ -20,10 +20,11 @@
 Martin Odersky \\
 Philippe Altherr \\
 Vincent Cremet \\
-Burak Emir \\ \\
-St\'ephane Micheloud
+Burak Emir \\ 
+St\'ephane Micheloud \\
 Nikolay Mihaylov \\
 Michel Schinz \\
+Erik Stenman \\
 Matthias Zenger
 \\ \ 
 \\
@@ -3052,28 +3053,15 @@ methods can be implemented in different ways for different carrier
 types.  As an example, an implementation of these methods for lists is
 given in \sref{cls-list}.
 
-The translation scheme is by repeated applications of the following
-rules, until all comprehensions have been eliminated.
-
-First, a definition: A pattern \verb@p@ is a {\em irrefutable} if \verb@p@ is a
-variable pattern or a pattern \verb@scala.Tuple$\,n$(x$_1$, ..., x$_n$)@ where
-\verb@x$_1$, ..., x$_n$@ are variable patterns. 
-In the following, we let \verb@p@ range over patterns, 
-let \verb@q@ range over refutable patterns, and
-let \verb@e, f@ range over expressions.
-
-\begin{itemize}
-\item
-For a refutable pattern \verb@p@ with free variables
-\verb@x$_1$, ..., x$_n$@, 
-the generator \verb@val p <- e@ is translated to:
+The translation scheme is as follows. 
+In a first step, every generator \verb@val p <- e@, where \verb@p@ is not
+a pattern variable, is replaced by
 \begin{verbatim}
-val Scala.Tuple$\,n$(x$_1$, ..., x$_n$) <- 
-  e\=.filter { case p => True case _ => False }
-   \>.map{ case p => Tuple$\,n$(x$_1$, ..., x$_n$) } .
+val p <- e.filter { case p => true; case _ => false }
 \end{verbatim}
-This yields a generator with an irrefutable pattern.
-
+Then, the following
+rules are applied repeatedly until all comprehensions have been eliminated.
+\begin{itemize}
 \item
 A generator \verb@q <- e@ followed by a filter \verb@f@ is translated to
 a single generator \verb@q <- e.filter(x$_1$, ..., x$_n$ => f)@ where
@@ -3081,37 +3069,37 @@ a single generator \verb@q <- e.filter(x$_1$, ..., x$_n$ => f)@ where
 
 \item
 A for-comprehension 
-\verb@for (val q <- e) yield e'@
+\verb@for (val p <- e) yield e'@
 is translated to
-\verb@e.map { case q => e' }@.
+\verb@e.map { case p => e' }@.
 
 \item
 A for-comprehension
-\verb@for (val q <- e) do e'@
+\verb@for (val p <- e) do e'@
 is translated to
-\verb@e.foreach { case q => e' }@.
+\verb@e.foreach { case p => e' }@.
 
 \item
 A for-comprehension
 \begin{verbatim}
-for (val q <- e; val q' <- e' ...) yield e'' ,
+for (val p <- e; val p' <- e' ...) yield e'' ,
 \end{verbatim}
 where \verb@...@ is a (possibly empty)
 sequence of generators or filters,
 is translated to
 \begin{verbatim}
-e.flatmap { case q => for (val q' <- e' ...) yield e'' } .
+e.flatmap { case p => for (val p' <- e' ...) yield e'' } .
 \end{verbatim}
 \item
 A for-comprehension
 \begin{verbatim}
-for (val q <- e; val q' <- e' ...) do e'' .
+for (val p <- e; val p' <- e' ...) do e'' .
 \end{verbatim}
 where \verb@...@ is a (possibly empty)
 sequence of generators or filters,
 is translated to
 \begin{verbatim}
-e.foreach { case q => for (val q' <- e'...) do e'' } .
+e.foreach { case p => for (val p' <- e'...) do e'' } .
 \end{verbatim}
 \end{itemize}
 

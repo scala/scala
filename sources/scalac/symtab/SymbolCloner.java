@@ -85,7 +85,10 @@ public class SymbolCloner {
         assert !clones.containsKey(symbol) :
             Debug.show(symbol) + " -> " + Debug.show(clones.get(symbol));
         Symbol clone = symbol.cloneSymbol(getOwnerFor(symbol));
-        if (rename) clone.name = renamer.newName(symbol.name);
+        if (rename) {
+	    assert !symbol.isConstructor(): symbol;
+	    clone.name = renamer.newName(symbol.name);
+	}
         clones.put(symbol, clone);
         return clone;
     }

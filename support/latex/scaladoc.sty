@@ -1,5 +1,5 @@
 \usepackage{fourier}
-\usepackage[scaled]{luximono}
+\usepackage[scaled=0.8]{luximono}
 \usepackage{helvet}
 
 \usepackage{color}
@@ -130,9 +130,7 @@
     sensitive,%
     morecomment=[l]//,%
     morecomment=[s]{/*}{*/},%
-    morestring=[b]",%
-    morestring=[b]',%
-}[keywords,comments,strings]%
+}[keywords,comments]%
 
 % activate the language and predefine settings
 \lstset{
@@ -141,11 +139,11 @@
     aboveskip=3mm,%
     belowskip=3mm,%
     fontadjust=true,%
-    columns=[c]flexible,%
+    columns=[c]fixed,%
     keepspaces=true,%
-    basewidth={0.5em, 0.425em},%
+    basewidth={0.58em, 0.53em},%
     tabsize=2,%
-    basicstyle=\small\renewcommand{\baselinestretch}{0.95}\ttfamily,%
+    basicstyle=\renewcommand{\baselinestretch}{0.95}\ttfamily,%
     commentstyle=\itshape,%
     keywordstyle=\bfseries,%
     mathescape=true,%
@@ -167,7 +165,7 @@
     keepspaces=true,%
     basewidth={0.5em, 0.425em},%
     tabsize=2,%
-    basicstyle=\small\renewcommand{\baselinestretch}{0.95}\ttfamily,%
+    basicstyle=\renewcommand{\baselinestretch}{0.95}\ttfamily,%
     commentstyle=\rm,%
     keywordstyle=\bfseries,%
     mathescape=true,%
@@ -185,9 +183,12 @@
 } % to define: caption, label
 
 \newcommand{\code}[1]{%
-    \lstinline[keywordstyle=,%
+    \lstinline[%keywordstyle=,%
                flexiblecolumns=true,%
-               basicstyle=\small\ttfamily]£#1£}
+               basicstyle=\ttfamily]£#1£}
+
+
+
 
 \newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
 

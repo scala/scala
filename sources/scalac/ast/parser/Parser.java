@@ -284,20 +284,24 @@ public class Parser implements Tokens {
 
     //where
 	Tree makeFor1(int pos, Name name, Tree pat, Tree rhs, Tree body) {
-	    Tree cont;
+	    return make.Apply(
+		pos, make.Select(pos, rhs, name),
+		new Tree[]{makeForCont(pos, pat, body)});
+	}
+        Tree makeForCont(int pos, Tree pat, Tree body) {
 	    switch (pat) {
 	    case Ident(Name name1):
-		cont = make.Function(pos,
-		    new Tree.ValDef[]{
-			(ValDef)
-			make.ValDef(pat.pos, Modifiers.PARAM, name1, Tree.Empty, Tree.Empty)},
-		    body);
-		break;
-	    default:
-		cont = make.Visitor(pos, new Tree.CaseDef[]{
-		    (CaseDef)make.CaseDef(pos, pat, Tree.Empty, body)});
+		if (name1.isVariable())
+		    return make.Function(
+			pos,
+			new Tree.ValDef[]{
+			    (ValDef) make.ValDef(
+				pat.pos, Modifiers.PARAM,
+				name1, Tree.Empty, Tree.Empty)},
+			body);
 	    }
-	    return make.Apply(pos, make.Select(pos, rhs, name), new Tree[]{cont});
+	    return make.Visitor(pos, new Tree.CaseDef[]{
+		(CaseDef)make.CaseDef(pos, pat, Tree.Empty, body)});
 	}
 
     Tree makeTry(int pos, Tree body, Tree catcher, Tree finalizer) {
@@ -433,7 +437,7 @@ public class Parser implements Tokens {
 	    switch (fn) {
 	    case This(TypeNames.EMPTY):
 		return make.Apply(
-		    t.pos, make.Ident(t.pos, Names.this_.toTypeName()), args);
+		    t.pos, make.Ident(t.pos, Names.CONSTRUCTOR), args);
 	    }
 	}
 	return syntaxError(t.pos, "class constructor expected", false);
@@ -1729,7 +1733,7 @@ public class Parser implements Tokens {
 	    ValDef[][] vparams = new ValDef[][]{paramClause()};
 	    accept(EQUALS);
 	    return make.DefDef(
-		pos, mods, Names.this_.toTypeName(),
+		pos, mods, Names.CONSTRUCTOR,
 		Tree.AbsTypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
 		convertToSelfConstr(expr()));
 	} else {

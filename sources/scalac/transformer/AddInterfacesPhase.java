@@ -209,7 +209,7 @@ public class AddInterfacesPhase extends Phase {
 
             Symbol ifaceConstrSym = ifaceSym.primaryConstructor();
             Symbol classConstrSym = classSym.primaryConstructor();
-            classConstrSym.name = className(ifaceConstrSym.name);
+            // classConstrSym.name = className(ifaceConstrSym.name);
 
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);

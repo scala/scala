@@ -60,8 +60,6 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Generic symbol constructor */
     public Symbol(int kind, int pos, Name name, Symbol owner, int flags) {
-	assert (!isTerm() || !name.isTypeName()) && (!isType() || name.isTypeName());
-
         this.kind = kind;
         this.pos = pos;
         this.name = name;
@@ -1023,6 +1021,7 @@ public class TermSymbol extends Symbol {
     /** Constructor */
     public TermSymbol(int pos, Name name, Symbol owner, int flags) {
         super(VAL, pos, name, owner, flags);
+	assert !name.isTypeName() : this;
     }
 
     public static TermSymbol define(
@@ -1039,7 +1038,7 @@ public class TermSymbol extends Symbol {
 
     public static TermSymbol newConstructor(Symbol clazz, int flags) {
         TermSymbol sym = new TermSymbol(
-	    clazz.pos, clazz.name, clazz.owner(), flags | FINAL);
+	    clazz.pos, Names.CONSTRUCTOR, clazz.owner(), flags | FINAL);
 	sym.clazz = clazz;
 	return sym;
     }
@@ -1098,7 +1097,7 @@ public class TermSymbol extends Symbol {
 
     /** Is this symbol a constructor? */
     public boolean isConstructor() {
-	return name.isTypeName();
+	return name == Names.CONSTRUCTOR;
     }
 
     /** Return a fresh symbol with the same fields as this one.
@@ -1155,6 +1154,7 @@ public abstract class TypeSymbol extends Symbol {
     /** Constructor */
     public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags) {
         super(kind, pos, name, owner, flags);
+	assert name.isTypeName() : this;
 	if (kind != TYPE)
 	    this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
     }

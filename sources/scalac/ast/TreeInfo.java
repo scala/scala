@@ -127,6 +127,21 @@ public class TreeInfo {
 	}
     }
 
+    /** Is tree a self constructor call?
+     */
+    public static boolean isSelfConstrCall(Tree tree) {
+	switch (tree) {
+	case Ident(Name name):
+	    return name == Names.CONSTRUCTOR;
+	case TypeApply(Tree constr, _):
+	    return isSelfConstrCall(constr);
+	case Apply(Tree constr, _):
+	    return isSelfConstrCall(constr);
+	default:
+	    return false;
+	}
+    }
+
     /** Is tree a variable pattern
      */
     public static boolean isVarPattern(Tree pat) {

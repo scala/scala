@@ -264,7 +264,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    case VALsym:
 			if (bp < end) {
 			    Symbol tsym = readSymbolRef();
-			    if (name.isTypeName()) {
+			    if (name == Names.CONSTRUCTOR) {
 				entries[n] = sym = tsym.primaryConstructor();
 				sym.flags = flags;
 			    } else {

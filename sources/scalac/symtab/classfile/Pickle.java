@@ -80,8 +80,10 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
      */
     private boolean isLocal(Symbol sym) {
 	return
-	    sym.name.toTermName() == rootname &&
-	    sym.owner() == rootowner ||
+	    sym.name.toTermName() == rootname && sym.owner() == rootowner
+	    ||
+	    sym.isConstructor() && isLocal(sym.primaryConstructorClass())
+	    ||
 	    (sym.kind != NONE && isLocal(sym.owner()));
     }
 
@@ -333,6 +335,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    } else {
 		writeByte(EXTref);
 		writeByte(0); // space for length
+		assert !sym.isConstructor() : sym;
 		writeRef(sym.name);
 	    }
 	    if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
