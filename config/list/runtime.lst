@@ -1,0 +1,27 @@
+################################################################-*-text-*-####
+# scala runtime source files (paths are relative to ./sources/scala)
+##############################################################################
+# $Id$
+
+AnyVal.java
+Array.java
+Boolean.java
+Byte.java
+Char.java
+Double.java
+Float.java
+Function0.java
+Function1.java
+Function2.java
+Function3.java
+Function4.java
+Function5.java
+Function6.java
+Function7.java
+Function8.java
+Function9.java
+Int.java
+Long.java
+Object.java
+Short.java
+Unit.java
