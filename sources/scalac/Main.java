@@ -19,7 +19,7 @@ import scalac.util.Reporter;
 public class Main {
 
     public static final String PRODUCT =
-        System.getProperty("scala.product", "socos");
+        System.getProperty("scala.product", "socos") + " bootstrap"; // !!!
     public static final String VERSION =
         System.getProperty("scala.version", "unknown version");
 
