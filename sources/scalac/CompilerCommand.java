@@ -55,6 +55,7 @@ public class CompilerCommand extends CommandParser {
     public final StringOptionParser bootclasspath;
     public final StringOptionParser extdirs;
     public final StringOptionParser outpath;
+    public final StringOptionParser encoding;
     public final StringOptionParser assemrefs;
     public final ChoiceOptionParser target;
     public final BooleanOptionParser noimports;
@@ -160,6 +161,11 @@ public class CompilerCommand extends CommandParser {
         this.outpath = new StringOptionParser(this,
             "d", "Specify where to place generated class files",
             "directory", "."),
+
+        this.encoding = new StringOptionParser(this,
+            "encoding", "Specify character encoding used by source files",
+            // !!! is there a way to get the platform default charset name
+            "encoding", "ISO-8859-1"),
 
         this.assemrefs = new StringOptionParser(this,
             "r", "Assemblies referenced by the source program",

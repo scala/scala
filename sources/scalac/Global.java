@@ -59,6 +59,7 @@ public abstract class Global {
     public final boolean printtokens;
 
     public final String outpath;
+    public final String encoding;
     public final String target;
 
     /** the message reporter
@@ -193,6 +194,7 @@ public abstract class Global {
         this.printtokens = args.print.tokens;
         this.classPath = args.classpath();
         this.outpath = args.outpath();
+        this.encoding = args.encoding.value;
         this.target = interpret ? TARGET_INT : args.target.value.intern();
         this.separate = args.separate.value.equals("yes") ||
             args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
