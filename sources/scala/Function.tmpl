@@ -12,22 +12,14 @@
 
 package scala;
 
-/** @meta class [#type-params#] extends scala.Object;
+/** @meta class [#type-params#];
  */
-public interface Function[#n#] extends Object {
-    /** @meta method [#scala-params#];
+abstract public class Function[#n#] {
+    /** @meta constr;
      */
-    public java.lang.Object apply([#java-params#]);
-}
-
-/** @meta class [#type-params#] extends scala.Object$class with scala.Function[#n#][#type-params#];
- */
-public abstract class Function[#n#]$class extends Object$class implements Function[#n#] {
-    /** @meta constr();
-     */
-    public Function[#n#]$class() {}
+    public Function[#n#]() {}
 
     /** @meta method [#scala-params#];
      */
-    public abstract java.lang.Object apply([#java-params#]);
+    abstract public java.lang.Object apply([#java-params#]);
 }

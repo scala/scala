@@ -11,13 +11,7 @@
 
 package scala;
 
-
 /** @meta class extends scala.AnyRef;
  */
-public interface Object {
-}
-
-/** @meta class extends scala.AnyRef;
- */
-public class Object$class implements Object {
+public class Object {
 }

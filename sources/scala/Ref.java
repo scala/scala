@@ -13,7 +13,7 @@ package scala;
 
 /** @meta class [?T] extends scala.Object;
  */
-public class Ref extends scala.Object$class {
+public class Ref extends scala.Object {
 
     /** @meta field ?T;
      */
