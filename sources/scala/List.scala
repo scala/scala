@@ -1,18 +1,40 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
 package scala;
 
-/* An abstract class representing an ordered collection of elements
-* of type <code>a</code>.
-* This class comes with two implementing case classes {link scala.Nil/} and
-* {@link scala.::_class/} that implement the abstract members <code>isEmpty</code>,
-* <code>head</code> and <code>tail</code>. But instead of this
-*
-* @arg a the type of the elements contained in the list.
-*/
+
+/** This object provides methods for creating specialized lists.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 15/07/2003
+ */
+object List {
+  def range(from: Int, end: Int): List[Int] =
+    if (from >= end) scala.Predef.List()
+    else from :: range(from + 1, end);
+}
+
+/** A trait representing an ordered collection of elements of type
+ *  <code>a</code>. This class comes with two implementing case
+ *  classes <code>scala.Nil</code> and <code>scala.::</code> that
+ *  implement the abstract members <code>isEmpty</code>,
+ *  <code>head</code> and <code>tail</code>.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 16/07/2003
+ */
 trait List[+a] extends Seq[a] {
 
   /** Tests if this list is empty.
-  * @return True iff the list contains no element.
-  */
+   *  @returns true, iff the list contains no element.
+   */
   def isEmpty: Boolean;
 
   /** Returns this first element of the list.
@@ -360,13 +382,4 @@ trait List[+a] extends Seq[a] {
       if (rest contains head) rest else head :: rest
     }
 }
-
-object List {
-
-  def range(from: Int, end: Int): List[Int] =
-    if (from >= end) scala.Predef.List()
-    else from :: range(from + 1, end);
-
-}
-
 

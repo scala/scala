@@ -9,7 +9,56 @@
 
 package scala;
 
-trait Iterator[+a] {
+
+/** The <code>Iterator</code> object provides various functions for
+ *  creating specialized iterators.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 16/07/2003
+ */
+object Iterator {
+
+  def empty[a] = new Iterator[a] {
+    def hasNext = false;
+    def next: a = error("next on empty iterator");
+  }
+
+  def fromArray[a](xs: Array[a]) = new Iterator[a] {
+    private var i = 0;
+    def hasNext: Boolean =
+      i < xs.length;
+    def next: a =
+      if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
+      else error("next on empty iterator");
+  }
+
+  def range(lo: Int, hi: Int) = new Iterator[Int] {
+    private var i = 0;
+    def hasNext: Boolean =
+      i <= hi;
+    def next: Int =
+      if (i <= hi) { i = i + 1 ; i - 1 }
+      else error("next on empty iterator");
+  }
+
+  def from(lo: Int) = new Iterator[Int] {
+    private var i = 0;
+    def hasNext: Boolean =
+      true;
+    def next: Int =
+      { i = i + 1 ; i - 1 }
+  }
+}
+
+/** Iterators are data structures that allow to iterate over a sequence
+ *  of elements. They have a <code>hasNext</code> method for checking
+ *  if there is a next element available, and a <code>next</code> method
+ *  which returns the next element and discards it from the iterator.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 16/07/2003
+ */
+trait Iterator[+a] with Iterable[a] {
   def hasNext: Boolean;
   def next: a;
 
@@ -75,41 +124,7 @@ trait Iterator[+a] {
       ahead || Iterator.this.hasNext;
     override def buffered: BufferedIterator[a] = this;
   }
+
+  def elements: Iterator[a] = this;
 }
-
-object Iterator {
-
-  def empty[a] = new Iterator[a] {
-    def hasNext = false;
-    def next: a = error("next on empty iterator");
-  }
-
-  def fromArray[a](xs: Array[a]) = new Iterator[a] {
-    private var i = 0;
-    def hasNext: Boolean =
-      i < xs.length;
-    def next: a =
-      if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
-      else error("next on empty iterator");
-  }
-
-  def range(lo: Int, hi: Int) = new Iterator[Int] {
-    private var i = 0;
-    def hasNext: Boolean =
-      i <= hi;
-    def next: Int =
-      if (i <= hi) { i = i + 1 ; i - 1 }
-      else error("next on empty iterator");
-  }
-
-  def from(lo: Int) = new Iterator[Int] {
-    private var i = 0;
-    def hasNext: Boolean =
-      true;
-    def next: Int =
-      { i = i + 1 ; i - 1 }
-  }
-}
-
-
 

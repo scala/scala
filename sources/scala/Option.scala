@@ -1,6 +1,23 @@
-package scala {
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2003, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 
-  trait Option[+a] {
+package scala;
+
+
+/** This class represents optional values. Instances of <code>Option</code>
+ *  are either instances of case class <code>Some</code> or it is case
+ *  object <code>None</code>.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 16/07/2003
+ */
+trait Option[+a] {
 
     def get: a = this match {
       case None => error("None.get")
@@ -31,8 +48,4 @@ package scala {
       case None => Predef.List()
       case Some(x) => Predef.List(x)
     }
-
-    def print: Unit =
-      System.out.println(this.toString())
-  }
 }

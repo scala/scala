@@ -1,12 +1,22 @@
-package scala {
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 
-  /* An empty list. Scala provides <code>[]</code> as syntactic sugar
-  * for <code>Nil</code>.
-  */
-  case object Nil extends List[All] {
+package scala;
+
+
+/** The empty list.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 15/07/2003
+ */
+case object Nil extends List[All] {
     def isEmpty = true;
     def head: All = error("head of empty list");
     def tail: List[All] = error("tail of empty list");
-  }
 }
-
