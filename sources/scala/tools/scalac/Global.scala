@@ -13,6 +13,7 @@ package scala.tools.scalac {
 
 import ast.printer._;
 import java.io.PrintWriter;
+import typechecker.Infer;
 
 /** The global environment of a compiler run
  *
@@ -21,9 +22,11 @@ class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(ar
 
   def this(args: CompilerCommand) = this(args, false);
 
-  protected override def newTextTreePrinter(writer: PrintWriter): TreePrinter =
+  override def newInfer(): Infer =
+    new Infer(this, treeGen, make);
+  override def newTextTreePrinter(writer: PrintWriter): TreePrinter =
     new TextTreePrinter(writer);
-  protected override def newHTMLTreePrinter(writer: PrintWriter): TreePrinter =
+  override def newHTMLTreePrinter(writer: PrintWriter): TreePrinter =
     new HTMLTreePrinter(writer);
 
 }

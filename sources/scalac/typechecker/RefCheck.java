@@ -43,7 +43,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     private Unit unit;
     private Definitions defs = global.definitions;
-    private Infer infer = new Infer(this);
+    private Infer infer = global.newInfer();
     private Symbol enclClass;
 
     public void apply(Unit unit) {

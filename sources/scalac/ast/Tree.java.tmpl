@@ -8,6 +8,9 @@
 
 package scalac.ast;
 
+import java.io.StringWriter;
+import java.io.PrintWriter;
+
 import ch.epfl.lamp.util.Position;
 
 import scalac.Global;
@@ -15,8 +18,6 @@ import scalac.checkers.CheckTreeNodes;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
-import java.io.StringWriter;
-import scalac.ast.printer.TextTreePrinter;
 {#Imports#}
 
 public class Tree {
@@ -117,15 +118,12 @@ public class Tree {
     //########################################################################
     // Public Methods - tree to string
 
-    /**
-     * Get string corresponding to this tree only implemented for
-     * prefix trees, maybe we should generalize this; the PatternMatch
-     * phase needs support for Apply, so this case got added
-     */
+    /** Returns the string representation of this tree. */
     public String toString() {
-	StringWriter out = new StringWriter();
-	new TextTreePrinter(out).print(this).flush();
-	return out.toString();
+	StringWriter buffer = new StringWriter();
+        Global global = Global.instance;
+	global.newTextTreePrinter(new PrintWriter(buffer)).print(this).flush();
+	return buffer.toString();
     }
 
     //########################################################################

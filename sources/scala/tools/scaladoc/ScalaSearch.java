@@ -33,7 +33,7 @@ import scalac.util.NameTransformer;
 import java.io.*;
 import scalac.ast.printer.*;
 import ch.epfl.lamp.util.SourceFile;
-import scalac.ast.parser.Parser;
+import scala.tools.scalac.ast.parser.Parser$class;
 import scalac.Unit;
 
 /**
@@ -499,7 +499,7 @@ public class ScalaSearch {
             sourceFile = new SourceFile("tmp.scala", in);
         } catch(IOException e) { }
         Unit tmpUnit = new Unit(global, sourceFile, false);
-        tmpUnit.body = new Parser(tmpUnit).parse();
+        tmpUnit.body = new Parser$class(tmpUnit).parse();
         //TreePrinter treePrinter = new TextTreePrinter(System.out);
         //treePrinter.print(tmpUnit);
         global.PHASE.ANALYZER.phase().apply(new Unit[]{ tmpUnit });

@@ -9,6 +9,7 @@
 import java.lang.Object;
 
 import scalac.{Global => scalac_Global}
+import scalac.typechecker.{Infer => scalac_Infer}
 import scalac.ApplicationError;
 import scalac.util._;
 import scalac.ast._;
@@ -18,7 +19,7 @@ import scala.tools.scalac.util.NewArray;
 
 package scala.tools.scalac.typechecker {
 
-class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
+class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scalac_Infer {
 
   import Modifiers._, Kinds._;
 

@@ -106,8 +106,8 @@ class Parser(unit: Unit) {
       val errpos = if ((s.pos >>> Position.COLUMN_BITS) >
                     (s.lastpos >>> Position.COLUMN_BITS)) s.lastpos
                    else s.pos;
-      syntaxError(errpos, s.token2string(token) + " expected but " +
-                  s.token2string(s.token) + " found.", true);
+      syntaxError(errpos, Tokens.token2string(token) + " expected but " +
+                  Tokens.token2string(s.token) + " found.", true);
     }
     if (s.token == token) s.nextToken();
     pos

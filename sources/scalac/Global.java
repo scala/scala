@@ -29,6 +29,7 @@ import scalac.backend.Primitives;
 import scalac.symtab.*;
 // !!! >>> Interpreter stuff
 import scalac.symtab.Definitions;
+import scalac.typechecker.Infer;
 import scalac.util.*;
 
 /** The global environment of a compiler run
@@ -36,7 +37,7 @@ import scalac.util.*;
  *  @author     Matthias Zenger
  *  @version    1.0
  */
-public class Global {
+public abstract class Global {
 
     public static Global instance;
 
@@ -166,12 +167,9 @@ public class Global {
 
     /** hooks for installing printers
      */
-    protected TreePrinter newTextTreePrinter(PrintWriter writer) {
-        return new TextTreePrinter(writer);
-    }
-    protected TreePrinter newHTMLTreePrinter(PrintWriter writer) {
-        return new HTMLTreePrinter(writer);
-    }
+    public abstract Infer newInfer();
+    public abstract TreePrinter newTextTreePrinter(PrintWriter writer);
+    public abstract TreePrinter newHTMLTreePrinter(PrintWriter writer);
 
     /**
      * Creates an instance variable.

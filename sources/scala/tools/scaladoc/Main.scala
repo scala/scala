@@ -6,7 +6,7 @@
 
 // $Id$
 
-import scalac.Global;
+import scala.tools.scalac.Global$class;
 import scalac.util.Reporter;
 
 package scala.tools.scaladoc {
@@ -30,7 +30,7 @@ object Main {
     val command = new HTMLGeneratorCommand(
       PRODUCT, VERSION, reporter, new HTMLGeneratorPhases());
     if (command.parse(args) && command.files.list.size() > 0) {
-      val global = new Global(command);
+      val global = new Global$class(command);
       global.compile(command.files.toArray(), false);
       global.stop("total");
       global.reporter.printSummary();

@@ -46,16 +46,6 @@ class Scanner(_unit: Unit) extends TokenData {
   val CR = SourceFile.CR;
   val SU = SourceFile.SU;
 
-  /** the names of all tokens
-  */
-  var tokenName = new Array[Name](128);
-  var numToken = 0;
-
-    /** keyword array; maps from name indices to tokens
-     */
-  var key: Array[byte] = _;
-  var maxKey = 0;
-
   /** we need one token lookahead
   */
   val next = new TokenData();
@@ -93,7 +83,7 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   token = EMPTY;
   nextch();
-  init();
+  Tokens; // initialize tokens
   nextToken();
 
   def nextch(): unit = {
@@ -459,14 +449,9 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  /** returns true if argument corresponds to a keyword.
-  *  Used in dtd2scala tool.
-  */
-  def isKeyword(str: String) = Name.fromString(str).index <= maxKey;
-
   def treatIdent(start: int, end: int) = {
     name = Name.fromAscii(buf, start, end - start);
-    token = if (name.index <= maxKey) key(name.index) else IDENTIFIER;
+    token = name2token(name);
   }
 
   /** generate an error at the given position
@@ -787,61 +772,6 @@ class Scanner(_unit: Unit) extends TokenData {
   }
   /* end XML tokenizing */
 
-  def name2token(name: Name): int =
-    if (name.index <= maxKey) key(name.index) else IDENTIFIER;
-
-  def token2string(token: int): String = token match {
-    case IDENTIFIER =>
-      "identifier"/* + \""+name+"\""*/
-    case CHARLIT =>
-      "character literal"
-    case INTLIT =>
-      "integer literal"
-    case LONGLIT =>
-      "long literal"
-    case FLOATLIT =>
-      "float literal"
-    case DOUBLELIT =>
-      "double literal"
-    case STRINGLIT =>
-      "string literal"
-    case SYMBOLLIT =>
-      "symbol literal"
-    case LPAREN =>
-      "'('"
-    case RPAREN =>
-      "')'"
-    case LBRACE =>
-      "'{'"
-    case RBRACE =>
-      "'}'"
-    case LBRACKET =>
-      "'['"
-    case RBRACKET =>
-      "']'"
-    case EOF =>
-      "eof"
-    case ERROR =>
-      "something"
-    case SEMI =>
-      "';'"
-    case COMMA =>
-      "','"
-    case CASECLASS =>
-      "case class"
-    case CASEOBJECT =>
-      "case object"
-    case _ =>
-      try {
-        "'" + tokenName(token).toString() + "'"
-      } catch {
-	case _: ArrayIndexOutOfBoundsException =>
-          "'<" + token + ">'"
-	case _: NullPointerException =>
-          "'<(" + token + ")>'"
-      }
-  }
-
   override def toString() = token match {
     case IDENTIFIER =>
       "id(" + name + ")"
@@ -863,75 +793,6 @@ class Scanner(_unit: Unit) extends TokenData {
       ","
     case _ =>
       token2string(token)
-  }
-
-  protected def enterKeyword(s: String, tokenId: int) = {
-    while (tokenId > tokenName.length) {
-      val newTokName = new Array[Name](tokenName.length * 2);
-      System.arraycopy(tokenName, 0, newTokName, 0, newTokName.length);
-      tokenName = newTokName;
-    }
-    val n = Name.fromString(s);
-    tokenName(tokenId) = n;
-    if (n.index > maxKey) maxKey = n.index;
-    if (tokenId >= numToken) numToken = tokenId + 1;
-  }
-
-  protected def init() = {
-    initKeywords();
-    key = new Array[byte](maxKey+1);
-    for (val i <- Iterator.range(0, maxKey))
-      key(i) = IDENTIFIER;
-    for (val j <- Iterator.range(0, numToken))
-      if (tokenName(j) != null) key(tokenName(j).index) = j.asInstanceOf[byte];
-  }
-
-  protected def initKeywords() = {
-    enterKeyword("abstract", ABSTRACT);
-    enterKeyword("case", CASE);
-    enterKeyword("class", CLASS);
-    enterKeyword("catch", CATCH);
-    enterKeyword("def", DEF);
-    enterKeyword("do", DO);
-    enterKeyword("else", ELSE);
-    enterKeyword("extends", EXTENDS);
-    enterKeyword("false", FALSE);
-    enterKeyword("final", FINAL);
-    enterKeyword("finally", FINALLY);
-    enterKeyword("for", FOR);
-    enterKeyword("if", IF);
-    enterKeyword("import", IMPORT);
-    enterKeyword("new", NEW);
-    enterKeyword("null", NULL);
-    enterKeyword("object", OBJECT);
-    enterKeyword("override", OVERRIDE);
-    enterKeyword("package", PACKAGE);
-    enterKeyword("private", PRIVATE);
-    enterKeyword("protected", PROTECTED);
-    enterKeyword("return", RETURN);
-    enterKeyword("sealed", SEALED);
-    enterKeyword("super", SUPER);
-    enterKeyword("this", THIS);
-    enterKeyword("throw", THROW);
-    enterKeyword("trait", TRAIT);
-    enterKeyword("true", TRUE);
-    enterKeyword("try", TRY);
-    enterKeyword("type", TYPE);
-    enterKeyword("val", VAL);
-    enterKeyword("var", VAR);
-    enterKeyword("with", WITH);
-    enterKeyword("while", WHILE);
-    enterKeyword("yield", YIELD);
-    enterKeyword(".", DOT);
-    enterKeyword("_", USCORE);
-    enterKeyword(":", COLON);
-    enterKeyword("=", EQUALS);
-    enterKeyword("=>", ARROW);
-    enterKeyword("<-", LARROW);
-    enterKeyword("<:", SUBTYPE);
-    enterKeyword(">:", SUPERTYPE);
-    enterKeyword("#", HASH);
-    enterKeyword("@", AT);
   }
 }
 }

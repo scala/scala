@@ -8,14 +8,14 @@
 
 package scala.tools.scaladoc;
 
-import scalac.CompilerPhases;
+import scala.tools.scalac.CompilerPhases$class;
 import scalac.PhaseDescriptor;
 
 /**
  * The class <code>HTMLGeneratorPhases</code> defines the set
  * of processing phases belonging the the HTML generator tool.
  */
-public class HTMLGeneratorPhases extends CompilerPhases {
+public class HTMLGeneratorPhases extends CompilerPhases$class {
 
     //########################################################################
     // Public Fields

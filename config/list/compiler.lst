@@ -7,18 +7,12 @@ ApplicationError.java
 CompilerCommand.java
 CompilerPhases.java
 Global.java
-Main.java
 Phase.java
 PhaseDescriptor.java
 Unit.java
 
 ast/parser/PatternNormalizer.java
-ast/parser/Parser.java
-ast/parser/ParserPhase.java
-ast/parser/Scanner.java
 ast/parser/SourceRepresentation.java
-ast/parser/TokenData.java
-ast/parser/Tokens.java
 
 ast/DefaultTreeFactory.java
 ast/LazyTreeCopier.java
@@ -34,8 +28,6 @@ ast/TreeInfo.java
 ast/TreeList.java
 ast/TreeSymbolCloner.java
 
-ast/printer/HTMLTreePrinter.java
-ast/printer/TextTreePrinter.java
 ast/printer/TreePrinter.java
 
 atree/AArithmeticOp.java
@@ -151,12 +143,8 @@ transformer/matching/TestRegTraverser.java
 transformer/matching/VariableTraverser.java
 transformer/matching/WordAutomInScala.java
 
-typechecker/Analyzer.java
 typechecker/AnalyzerPhase.java
 typechecker/ConstantFolder.java
-typechecker/Context.java
-typechecker/DeSugarize.java
-typechecker/ImportList.java
 typechecker/Infer.java
 typechecker/RefCheck.java
 typechecker/RefCheckPhase.java

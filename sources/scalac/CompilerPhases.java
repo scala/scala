@@ -15,7 +15,7 @@ import java.util.List;
  * This class defines all compiler phases and maintains a list of
  * active phases.
  */
-public class CompilerPhases {
+public abstract class CompilerPhases {
 
     //########################################################################
     // Public Fields
@@ -51,8 +51,8 @@ public class CompilerPhases {
 
     /** Phase names, can be overridden to install .
      */
-    protected Class PARSER_PHASE() { return scalac.ast.parser.ParserPhase.class; }
-    protected Class ANALYZER_PHASE() { return scalac.typechecker.AnalyzerPhase.class; }
+    protected abstract Class PARSER_PHASE();
+    protected abstract Class ANALYZER_PHASE();
     protected Class REFCHECK_PHASE() { return scalac.typechecker.RefCheckPhase.class; }
     protected Class UNCURRY_PHASE() { return scalac.transformer.UnCurryPhase.class; }
     protected Class TRANSMATCH_PHASE() { return scalac.transformer.TransMatchPhase.class; }

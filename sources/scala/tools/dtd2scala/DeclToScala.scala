@@ -1,5 +1,5 @@
 import scalac.util.Name ;
-import scalac.ast.parser.Scanner ; /* for keywords */
+import scala.tools.scalac.ast.parser.Tokens ; /* for keywords */
 
 package scala.tools.dtd2scala {
 
@@ -127,7 +127,7 @@ private def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
     };
   };
 
-  if( toy.isKeyword(raw)) {
+  if( Tokens.isKeyword(raw)) {
     val _ = ckd.append('$');
   };
   ckd.toString()
@@ -149,7 +149,7 @@ private def cookedCap( raw:String ):String = {
   cooked( ckd, raw, 1);
 }
 
-  private val toy:Scanner = new Scanner();
+  Tokens; // initialize tokens
 
 }
 
