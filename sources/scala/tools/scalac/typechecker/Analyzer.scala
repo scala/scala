@@ -1827,7 +1827,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     computeParams(owner.primaryConstructor().getType());
     pushContext(templ, owner.primaryConstructor(), params);
     */
-    templ.setSymbol(TermSymbol.newLocalDummy(owner));
+    templ.setSymbol(owner.newLocalDummy());
     val body1 = transformStatSeq(templ.body, templ.symbol());
     /*
     popContext();

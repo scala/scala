@@ -105,6 +105,17 @@ public abstract class Symbol implements Modifiers, Kinds {
         return new TermSymbol(pos, name, this, 0, IS_LABEL);
     }
 
+    /**
+     * Creates a new initialized dummy symbol for template of this
+     * class.
+     */
+    public final TermSymbol newLocalDummy() {
+        assert isClass(): Debug.show(this);
+        TermSymbol local = new TermSymbol(pos, Names.LOCAL(this), this, 0);
+        local.setInfo(Type.NoType);
+        return local;
+    }
+
     /** Creates a new module owned by this symbol. */
     public final TermSymbol newModule(int pos, int flags, Name name) {
         ClassSymbol clasz = newModuleClass(pos, flags, name.toTypeName());
@@ -1445,7 +1456,11 @@ public abstract class Symbol implements Modifiers, Kinds {
  */
 public class TermSymbol extends Symbol {
 
-    private Symbol clazz;
+    /**
+     * The module class if this is a module, the constructed class if
+     * this is a constructor and null otherwise
+     */
+    private final Symbol clasz;
 
     /** Constructor */
     public TermSymbol(int pos, Name name, Symbol owner, int flags) {
@@ -1456,25 +1471,18 @@ public class TermSymbol extends Symbol {
     }
     TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol clasz) {
         super(VAL, pos, name, owner, flags, attrs);
-        this.clazz = clasz;
+        this.clasz = clasz;
         assert name.isTermName(): Debug.show(this);
-    }
-
-    /** Dummy symbol for template of given class
-     */
-    public static Symbol newLocalDummy(Symbol clazz) {
-        return new TermSymbol(clazz.pos, Names.LOCAL(clazz), clazz, 0)
-            .setInfo(Type.NoType);
     }
 
     /** Is this symbol an instance initializer? */
     public boolean isInitializer() {
-        return clazz == null && name == Names.CONSTRUCTOR;
+        return clasz == null && name == Names.INITIALIZER;
     }
 
     /** Is this symbol a constructor? */
     public boolean isConstructor() {
-        return clazz != null && name == Names.CONSTRUCTOR;
+        return clasz != null && name == Names.CONSTRUCTOR;
     }
 
     public Symbol[] typeParams() {
@@ -1486,16 +1494,16 @@ public class TermSymbol extends Symbol {
     }
 
     public Symbol constructorClass() {
-        return isConstructor() && clazz != null ? clazz : this;
+        return isConstructor() ? clasz : this;
     }
 
     public Symbol moduleClass() {
-        return (flags & MODUL) != 0 ? clazz : this;
+        return isModule() ? clasz : this;
     }
 
     protected final Symbol cloneSymbolImpl(Symbol owner, int attrs) {
         assert !isPrimaryConstructor() : Debug.show(this);
-        return new TermSymbol(pos, name, owner, flags, attrs, clazz);
+        return new TermSymbol(pos, name, owner, flags, attrs, clasz);
     }
 
 }
