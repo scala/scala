@@ -233,24 +233,20 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                 new Type.SubstThisMap(ifaceSym, classSym);
 
             // Clone type and value parameters of constructor.
-            Map classSubst = newClassSubst(classSym);
+            SymbolSubstTypeMap classSubst = newClassSubst(classSym);
             Symbol[] tparams = classConstrSym.typeParams();
             for (int i = 0; i < tparams.length; ++i) {
                 Symbol newParam = tparams[i].cloneSymbol(classConstrSym);
-                classSubst.put(tparams[i], newParam);
+                classSubst.insertSymbol(tparams[i], newParam);
             }
-
-            SymbolSubstTypeMap paramsSubst =
-                new SymbolSubstTypeMap(classSubst, Collections.EMPTY_MAP);
-            // Play it safe and make sure that classSubst won't be
-            // modified anymore.
-            classSubst = Collections.unmodifiableMap(classSubst);
 
             Symbol[] vparams = classConstrSym.valueParams();
             for (int i = 0; i < vparams.length; ++i) {
                 vparams[i].setOwner(classConstrSym);
-                vparams[i].updateInfo(paramsSubst.apply(vparams[i].info()));
+                vparams[i].updateInfo(classSubst.apply(vparams[i].info()));
             }
+
+
 
             // Clone all members, entering them in the class scope.
             Map classMembersMap = newClassMemberMap(classSym);
@@ -275,7 +271,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                     classMemberSym = ifaceMemberSym.cloneSymbol(classSym);
                     classMemberSym.setInfo(
                         thisTypeMap.applyParams(
-                            paramsSubst.applyParams(
+                            classSubst.applyParams(
                                 classMemberSym.info().cloneType(
                                     ifaceMemberSym, classMemberSym))));
                     classMembersMap.put(ifaceMemberSym, classMemberSym);
@@ -288,7 +284,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                     classMemberSym.setOwner(classSym);
                     classMemberSym.updateInfo(
                         thisTypeMap.apply(
-                            paramsSubst.apply(
+                            classSubst.apply(
                                 classMemberSym.info())));
                 }
 
@@ -307,13 +303,13 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                 switch (oldClassParents[i]) {
                 case TypeRef(Type pre, Symbol sym, Type[] args):
                     Type newTp = Type.typeRef(pre, getClassSymbol(sym), args);
-                    newClassParents[i] = paramsSubst.apply(newTp);
+                    newClassParents[i] = classSubst.apply(newTp);
                     break;
                 default:
                     throw Debug.abort("unexpected type for parent", oldClassParents[i]);
                 }
             }
-            newClassParents[oldParentsCount] = paramsSubst.apply(ifaceSym.type());
+            newClassParents[oldParentsCount] = classSubst.apply(ifaceSym.type());
             // TODO setInfo cannot be used here because the type then
             // goes through transformInfo. Maybe setInfo should behave
             // like updateInfo.
@@ -321,10 +317,9 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                                                   classMembers,
                                                   classSym));
             classConstrSym.updateInfo(substResType(substParams(classConstrSym.info(),
-                                                               paramsSubst),
+                                                               classSubst),
                                                    ifaceSym,
                                                    classSym));
-
             ifaceToClass.put(ifaceSym, classSym);
             classToIFace.put(classSym, ifaceSym);
         }
@@ -339,9 +334,9 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         return (Symbol)classToIFace.get(classSym);
     }
 
-    HashMap/*<Symbol,HashMap>*/ classSubstitutions = new HashMap();
-    protected HashMap newClassSubst(Symbol classSym) {
-        HashMap subst = new HashMap();
+    HashMap/*<Symbol,SymbolSubstTypeMap>*/ classSubstitutions = new HashMap();
+    protected SymbolSubstTypeMap newClassSubst(Symbol classSym) {
+        SymbolSubstTypeMap subst = new SymbolSubstTypeMap();
         classSubstitutions.put(classSym, subst);
         return subst;
     }
@@ -349,8 +344,8 @@ public class AddInterfacesPhase extends PhaseDescriptor {
     /** Return symbol substitution for the class (a mapping from the
      * interface's type and value parameters to the class' equivalent)
      */
-    public Map getClassSubst(Symbol classSym) {
-        Map classSubst = (Map)classSubstitutions.get(classSym);
+    public SymbolSubstTypeMap getClassSubst(Symbol classSym) {
+        SymbolSubstTypeMap classSubst = (SymbolSubstTypeMap)classSubstitutions.get(classSym);
         assert classSubst != null;
         return classSubst;
     }

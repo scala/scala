@@ -52,8 +52,7 @@ class AddInterfaces extends Transformer {
     protected LinkedList/*<Pair<Symbol,Symbol>>*/ ownerSubstStack =
         new LinkedList();
     protected Pair/*<Symbol,Symbol>*/ ownerSubst = null;
-    protected StackedHashMap identSubst = new StackedHashMap();
-    protected SymbolSubstTypeMap typeSubst = new SymbolSubstTypeMap();
+    protected SymbolSubstTypeMap typeSubst = null;
     protected Type.SubstThisMap thisTypeSubst = null;
 
     protected LinkedList/*<List<Tree>>*/ bodyStack = new LinkedList();
@@ -74,11 +73,10 @@ class AddInterfaces extends Transformer {
     public Tree transform(Tree tree) {
         // Update tree type, to take into account the new (type)
         // symbols of enclosing classes / methods.
-        Type newTp = typeSubst.apply(tree.type());
-        if (thisTypeSubst != null)
-            tree.setType(thisTypeSubst.apply(newTp));
-        else
-            tree.setType(newTp);
+        Type newTp = tree.type();
+        if (typeSubst != null) newTp = typeSubst.apply(newTp);
+        if (thisTypeSubst != null) newTp = thisTypeSubst.apply(newTp);
+        tree.setType(newTp);
 
         if (tree.definesSymbol() && !(tree instanceof ClassDef)) {
             // Update symbol's owner, if needed.
@@ -105,12 +103,9 @@ class AddInterfaces extends Transformer {
                 List/*<Tree>*/ enclosingBody = (List)bodyStack.getFirst();
                 enclosingBody.add(makeInterface(classDef));
 
-                Map classSubst = phase.getClassSubst(classSym);
-                identSubst.push(classSubst);
-                typeSubst.insertSymbol(classSubst);
+                typeSubst = phase.getClassSubst(classSym);
                 Tree newTree = makeClass(classDef);
-                typeSubst.removeSymbol(classSubst.keySet());
-                identSubst.pop();
+                typeSubst = null;
 
                 return newTree;
             } else
@@ -135,17 +130,16 @@ class AddInterfaces extends Transformer {
 
                 global.nextPhase();
                 typeSubst.insertSymbol(sym.typeParams(), newSym.typeParams());
-                identSubst.putAll(sym.valueParams(), newSym.valueParams());
+                typeSubst.insertSymbol(sym.valueParams(), newSym.valueParams());
                 global.prevPhase();
 
-                identSubst.push();
                 pushOwnerSubst(sym, newSym);
 
                 newTree = gen.DefDef(newSym, transform(rhs));
 
                 popOwnerSubst();
-                identSubst.pop();
 
+                typeSubst.removeSymbol(sym.valueParams());
                 typeSubst.removeSymbol(sym.typeParams());
             } else
                 newTree = super.transform(tree);
@@ -196,12 +190,14 @@ class AddInterfaces extends Transformer {
                     return gen.Ident(phase.getClassSymbol(clsSym).constructor());
                 else
                     return super.transform(tree);
-            } else {
-                Symbol newSym = (Symbol)identSubst.get(tree.symbol());
+            } else if (typeSubst != null) {
+                Symbol newSym = (Symbol)typeSubst.lookupSymbol(tree.symbol());
                 if (newSym != null)
                     return gen.Ident(newSym);
                 else
                     return super.transform(tree);
+            } else {
+                return super.transform(tree);
             }
         }
 
