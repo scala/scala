@@ -270,7 +270,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         public ExtCompoundType(Symbol owner, Type[] parts, Scope members) {
             super(parts, members);
             this.clasz = owner.newCompoundClass(this);
-	    assert !owner.isPackageClass() : ArrayApply.toString(parts);
         }
         public ExtCompoundType(Type[] parts, Scope members, Symbol clasz) {
             super(parts, members);
