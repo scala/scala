@@ -640,22 +640,28 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     /** Builds an instance test with given value and type. */
-    public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
-        Symbol sym = global.currentPhase.id >= global.PHASE.TYPESASVALUES.id()
-            ? definitions.ANY_IS_ERASED
-            : definitions.ANY_IS;
+    public Tree mkIsInstanceOf(int pos, Tree value, Type type, boolean erased) {
+        Symbol sym = erased ? definitions.ANY_IS_ERASED : definitions.ANY_IS;
         return mkApplyT_(pos, Select(value, sym), new Type[]{type});
+    }
+    public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
+        boolean afterTAV =
+            global.currentPhase.id >= global.PHASE.TYPESASVALUES.id();
+        return mkIsInstanceOf(pos, value, type, afterTAV);
     }
     public Tree mkIsInstanceOf(Tree value, Type type) {
         return mkIsInstanceOf(value.pos, value, type);
     }
 
     /** Builds a cast with given value and type. */
-    public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
-        Symbol sym = global.currentPhase.id >= global.PHASE.TYPESASVALUES.id()
-            ? definitions.ANY_AS_ERASED
-            : definitions.ANY_AS;
+    public Tree mkAsInstanceOf(int pos, Tree value, Type type, boolean erased) {
+        Symbol sym = erased ? definitions.ANY_AS_ERASED : definitions.ANY_AS;
         return mkApplyT_(pos, Select(value, sym), new Type[]{type});
+    }
+    public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
+        boolean afterTAV =
+            global.currentPhase.id >= global.PHASE.TYPESASVALUES.id();
+        return mkAsInstanceOf(pos, value, type, afterTAV);
     }
     public Tree mkAsInstanceOf(Tree value, Type type) {
         return mkAsInstanceOf(value.pos, value, type);

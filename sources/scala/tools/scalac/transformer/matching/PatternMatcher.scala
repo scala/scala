@@ -897,7 +897,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
           case ConstrPat(casted) =>
             return gen.If(gen.mkIsInstanceOf(selector.duplicate(), node.getTpe()),
                           gen.mkBlock(gen.ValDef(casted,
-                                                 gen.mkAsInstanceOf(selector.duplicate(), node.getTpe())),
+                                                 gen.mkAsInstanceOf(selector.pos, selector.duplicate(), node.getTpe(), true)),
                                       toTree(node.and)),
                           toTree(node.or, selector.duplicate()));
           case SequencePat(casted, len) =>
@@ -905,11 +905,11 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
           cf.Or(
             cf.And(
               cf.And(gen.mkIsInstanceOf(selector.duplicate(), node.getTpe()),
-                     cf.Equals(gen.mkApply__(gen.Select(gen.mkAsInstanceOf(selector.duplicate(), node.getTpe()),
+                     cf.Equals(gen.mkApply__(gen.Select(gen.mkAsInstanceOf(selector.pos, selector.duplicate(), node.getTpe(), true),
                                                         defs.SEQ_LENGTH())),
                                gen.mkIntLit(selector.pos, len))),
               gen.mkBlock(gen.ValDef(casted,
-                                     gen.mkAsInstanceOf(selector.duplicate(), node.getTpe())),
+                                     gen.mkAsInstanceOf(selector.pos, selector.duplicate(), node.getTpe(), true)),
                           toTree(node.and))),
             toTree(node.or, selector.duplicate()));
           case ConstantPat(value) =>
