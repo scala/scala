@@ -442,7 +442,7 @@ main() {
             auto | pos ) FILES_POS="$FILES_POS $PREFIX/pos $PREFIX/cours";;
         esac;
         case "$TEST_TYPE" in
-            auto | neg ) FILES_NEG="$FILES_NEG $SRCDIR/neg";;
+            auto | neg ) FILES_NEG="$FILES_NEG $PREFIX/neg";;
         esac;
     fi;
 
