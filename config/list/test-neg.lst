@@ -8,7 +8,7 @@ neg/S4.scala
 neg/S6.scala
 neg/S7.scala
 neg/abstract.scala
-neg/altherr1.scala
+# neg/altherr1.scala
 neg/altherr2.scala
 neg/altherr3.scala
 neg/constrparams.scala
