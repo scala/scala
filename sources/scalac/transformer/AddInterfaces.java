@@ -73,7 +73,7 @@ class AddInterfaces extends Transformer {
     public Tree transform(Tree tree) {
         // Update tree type, to take into account the new (type)
         // symbols of enclosing classes / methods.
-        Type newTp = tree.type();
+        Type newTp = tree.getType();
         if (typeSubst != null) newTp = typeSubst.apply(newTp);
         if (thisTypeSubst != null) newTp = thisTypeSubst.apply(newTp);
         tree.setType(newTp);
@@ -201,7 +201,7 @@ class AddInterfaces extends Transformer {
                     && owner != defs.ANY_CLASS
                     && owner != defs.ANYREF_CLASS
                     && owner != defs.JAVA_OBJECT_CLASS) {
-                    Type qualifierType = qualifier.type().bound();
+                    Type qualifierType = qualifier.getType().bound();
                     if (phase.needInterface(qualifierType.symbol())) {
                         Type castType = qualifierType.baseType(owner);
                         qualifier = gen.mkAsInstanceOf(qualifier, castType);

@@ -923,6 +923,9 @@ public abstract class Symbol implements Modifiers, Kinds {
     public Type type() {
         return info();
     }
+    public Type getType() {
+        return info();
+    }
 
     /** Get type at start of next phase
      */
@@ -1512,6 +1515,9 @@ public abstract class TypeSymbol extends Symbol {
 
     /** Get type */
     public Type type() {
+        return primaryConstructor().type().resultType();
+    }
+    public Type getType() {
         return primaryConstructor().type().resultType();
     }
 

@@ -54,7 +54,7 @@ public class TracerInScala extends Autom2Scala {
             else
                   return gen.ValDef( realVar, hv );
 	    */
-	    if( realVar.type().isSameAs( hv.type())) {
+	    if( realVar.type().isSameAs( hv.getType())) {
 		return gen.ValDef( realVar, hv ); // e.g. x @ _*
 	    }
 	    return gen.ValDef( realVar, cf.SeqList_head( hv ));

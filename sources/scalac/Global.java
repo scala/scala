@@ -445,7 +445,7 @@ public class Global {
                             new Tree[] {
                                 last,
                                 make.Literal(last.pos,
-                                    show(last.type())).setType(
+                                    show(last.getType())).setType(
                                         definitions.JAVA_STRING_TYPE())});
                 }
                 TreeList body = new TreeList();

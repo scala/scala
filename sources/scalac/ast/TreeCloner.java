@@ -74,7 +74,7 @@ public class TreeCloner extends Transformer {
      * type map to the given tree's type.
      */
     public Type getTypeFor(Tree tree) {
-        return types.apply(tree.type());
+        return types.apply(tree.getType());
     }
 
     /** Traverses the given tree and returns a deeply cloned one. */

@@ -20,6 +20,7 @@ import scalac.ast._;
 import Tree._;
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
+import scala.tools.scalac.util.NewArray;
 
 /** A recursive descent parser for the programming language Scala.
  *
@@ -55,53 +56,6 @@ class Parser(unit: Unit) {
     ts
   }
 
-/////// HELPER FUNCTIONS ////////////////////////////////////////////////////
-
-  def newTreeArray(trees: Tree*): Array[Tree] = {
-    val arr = new Array[Tree](trees.length);
-    var i = 0;
-    for (val t <- trees.elements) do {
-      arr(i) = t; i = i + 1;
-    }
-    arr
-  }
-
-  def newValDefArray(trees: Tree$ValDef*): Array[Tree$ValDef] = {
-    val arr = new Array[Tree$ValDef](trees.length);
-    var i = 0;
-    for (val t <- trees.elements) do {
-      arr(i) = t; i = i + 1;
-    }
-    arr
-  }
-
-  def newValDefArrayArray(trees: Array[Tree$ValDef]*): Array[Array[Tree$ValDef]] = {
-    val arr = new Array[Array[Tree$ValDef]](trees.length);
-    var i = 0;
-    for (val t <- trees.elements) do {
-      arr(i) = t; i = i + 1;
-    }
-    arr
-  }
-
-  def newCaseDefArray(trees: Tree$CaseDef*): Array[Tree$CaseDef] = {
-    val arr = new Array[Tree$CaseDef](trees.length);
-    var i = 0;
-    for (val t <- trees.elements) do {
-      arr(i) = t; i = i + 1;
-    }
-    arr
-  }
-
-  def newNameArray(trees: Name*): Array[Name] = {
-    val arr = new Array[Name](trees.length);
-    var i = 0;
-    for (val t <- trees.elements) do {
-      arr(i) = t; i = i + 1;
-    }
-    arr
-  }
-
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
   private def skip(): unit = {
@@ -124,6 +78,7 @@ class Parser(unit: Unit) {
           nparens = nparens + 1;
         case LBRACE =>
           nbraces = nbraces + 1;
+	case _ =>
       }
       s.nextToken();
     }
@@ -245,23 +200,23 @@ class Parser(unit: Unit) {
         make.Apply(
 	  pos,
 	  make.Select(pos, left, NameTransformer.encode(op)),
-	  newTreeArray(right));
+	  NewArray.Tree(right));
       } else {
         val x: Name = fresh();
         make.Block(
 	  pos,
-	  newTreeArray(
+	  NewArray.Tree(
             make.ValDef(pos, 0, x, Tree.Empty, left),
             make.Apply(
 	      pos,
               make.Select(pos, right, NameTransformer.encode(op)),
-              newTreeArray(make.Ident(left.pos, x)))));
+              NewArray.Tree(make.Ident(left.pos, x)))));
       }
     } else {
       make.Apply(
 	pos,
         make.Ident(pos, NameTransformer.encode(op).toTypeName()),
-        newTreeArray(left, right));
+        NewArray.Tree(left, right));
     }
 
   def scalaDot(pos: int, name: Name): Tree =
@@ -289,7 +244,7 @@ class Parser(unit: Unit) {
     def makeFor1(pos: int, name: Name, pat: Tree, rhs: Tree, body: Tree): Tree =
       make.Apply(
         pos, make.Select(pos, rhs, name),
-        newTreeArray(makeForCont(pos, pat, body)));
+        NewArray.Tree(makeForCont(pos, pat, body)));
 
     def makeForCont(pos: int, pat: Tree, body: Tree): Tree = {
       pat match {
@@ -297,12 +252,13 @@ class Parser(unit: Unit) {
           if (name1.isVariable())
             make.Function(
               pos,
-              newValDefArray(
+              NewArray.ValDef(
                 make.ValDef(
                   pat.pos, Modifiers.PARAM, name1, Tree.Empty, Tree.Empty)),
               body);
+	case _ =>
       }
-      make.Visitor(pos, newCaseDefArray(
+      make.Visitor(pos, NewArray.CaseDef(
         make.CaseDef(pos, pat, Tree.Empty, body)));
     }
 
@@ -339,18 +295,18 @@ class Parser(unit: Unit) {
         make.Select(
           pos,
           make.Apply(
-            pos, ScalaRunTimeDot(pos, Names.Try), newTreeArray(t)),
+            pos, ScalaRunTimeDot(pos, Names.Try), NewArray.Tree(t)),
           Names.Catch),
-        newTreeArray(catcher));
+        NewArray.Tree(catcher));
     if (finalizer != Tree.Empty)
       t = make.Apply(
         pos,
         make.Select(
           pos,
           make.Apply(
-            pos, ScalaRunTimeDot(pos, Names.Try), newTreeArray(t)),
+            pos, ScalaRunTimeDot(pos, Names.Try), NewArray.Tree(t)),
           Names.Finally),
-        newTreeArray(finalizer));
+        NewArray.Tree(finalizer));
     t
   }
 
@@ -360,7 +316,7 @@ class Parser(unit: Unit) {
     val rhs = make.If(
       pos,
       cond,
-      make.Block(body.pos, newTreeArray(body, continu)),
+      make.Block(body.pos, NewArray.Tree(body, continu)),
       make.Block(pos, Tree.EMPTY_ARRAY));
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs);
   }
@@ -370,7 +326,7 @@ class Parser(unit: Unit) {
       pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
     val rhs = make.Block(
       body.pos,
-      newTreeArray(
+      NewArray.Tree(
         body,
         make.If(
           cond.pos,
@@ -387,9 +343,10 @@ class Parser(unit: Unit) {
       case Tree$Function(params, Tree.Empty) =>
         params
       case Tree$Ident(_) | Tree$Typed(Tree$Ident(_), _) =>
-        newValDefArray(convertToParam(t));
+        NewArray.ValDef(convertToParam(t));
       case Tree$Block(stats) =>
         if (stats.length == 0) Tree.ValDef_EMPTY_ARRAY;
+      case _ =>
     }
     syntaxError(t.pos, "malformed formal parameter list", false);
     Tree.ValDef_EMPTY_ARRAY;
@@ -620,7 +577,7 @@ class Parser(unit: Unit) {
         var symt = scalaDot(s.pos, Names.Symbol);
 	if (isPattern) symt = convertToTypeId(symt);
 	make.Apply(
-	  s.pos, symt, newTreeArray(make.Literal(s.pos, s.name.toString())));
+	  s.pos, symt, NewArray.Tree(make.Literal(s.pos, s.name.toString())));
       case _ =>
         syntaxError("illegal literal", true)
     }
@@ -634,7 +591,7 @@ class Parser(unit: Unit) {
       val listt = if (isPattern) scalaDot(s.pos, Names.List.toTypeName())
 		  else make.Select(s.pos, scalaDot(s.pos, Names.Predef), Names.List);
       make.Apply(
-	s.pos, labt, newTreeArray(t, make.Apply(s.pos, listt, argumentExprs())));
+	s.pos, labt, NewArray.Tree(t, make.Apply(s.pos, listt, argumentExprs())));
     }
     t
   }
@@ -702,7 +659,7 @@ class Parser(unit: Unit) {
     } else {
       val t = type1();
       if (s.token == ARROW)
-	make.FunType(s.skipToken(), newTreeArray(t), typ())
+	make.FunType(s.skipToken(), NewArray.Tree(t), typ())
       else
         t
     }
@@ -876,6 +833,7 @@ class Parser(unit: Unit) {
         t match {
           case Tree$Ident(_) | Tree$Select(_, _) | Tree$Apply(_, _) =>
             t = make.Assign(s.skipToken(), t, expr());
+	  case _ =>
         }
       } else if (s.token == COLON) {
         val pos = s.skipToken();
@@ -1012,7 +970,7 @@ class Parser(unit: Unit) {
   def argumentExprs(): Array[Tree] = {
     var ts = Tree.EMPTY_ARRAY;
     if (s.token == LBRACE) {
-      ts = newTreeArray(blockExpr());
+      ts = NewArray.Tree(blockExpr());
     } else {
       accept(LPAREN);
       if (s.token != RPAREN)
@@ -1090,10 +1048,10 @@ class Parser(unit: Unit) {
       rhs = make.Apply(
         rhs.pos,
         make.Select(rhs.pos, rhs, Names.filter),
-        newTreeArray(
+        NewArray.Tree(
           make.Visitor(
             rhs.pos,
-            newCaseDefArray(
+            NewArray.CaseDef(
               make.CaseDef(
                 rhs.pos, pat.duplicate(),
 		Tree.Empty, make.Literal(s.pos, java.lang.Boolean.TRUE)),
@@ -1181,6 +1139,7 @@ class Parser(unit: Unit) {
       p match {
         case Tree$Ident(name) =>
           if (name == Names.PATTERN_WILDCARD) return pattern3()
+	case _ =>
       }
       make.Bind(s.skipToken(), p.asInstanceOf[Tree$Ident].name, pattern3());
     } else {
@@ -1202,9 +1161,9 @@ class Parser(unit: Unit) {
         return make.Bind(
 	  s.pos, zname,
 	  pN.flattenAlternative(
-            make.Alternative(s.pos, newTreeArray(
+            make.Alternative(s.pos, NewArray.Tree(
               make.Sequence(s.pos, Tree.EMPTY_ARRAY),
-              pN.flattenSequence(make.Sequence(s.pos, newTreeArray(
+              pN.flattenSequence(make.Sequence(s.pos, NewArray.Tree(
                 top, zvar)))))));
       } else if (s.name == PLUS) {    /*    p+   becomes   z@(p,(z| ))    */
         s.nextToken();
@@ -1212,13 +1171,13 @@ class Parser(unit: Unit) {
         val zvar = make.Ident(s.pos, zname);
         return make.Bind(
 	  s.pos, zname,
-          pN.flattenSequence(make.Sequence(s.pos, newTreeArray(
+          pN.flattenSequence(make.Sequence(s.pos, NewArray.Tree(
             top,
-            pN.flattenAlternative(make.Alternative(s.pos, newTreeArray(
+            pN.flattenAlternative(make.Alternative(s.pos, NewArray.Tree(
               zvar, make.Sequence(s.pos, Tree.EMPTY_ARRAY))))))));
       } else if (s.name == OPT) { /*    p?   becomes   (p| )            */
         s.nextToken();
-        return pN.flattenAlternative(make.Alternative(s.pos, newTreeArray(
+        return pN.flattenAlternative(make.Alternative(s.pos, NewArray.Tree(
           top,
           make.Sequence(s.pos, Tree.EMPTY_ARRAY))));
       }
@@ -1362,7 +1321,7 @@ class Parser(unit: Unit) {
   /** ParamClauseOpt ::= [ParamClause]
   */
   def paramClauseOpt(): Array[Array[Tree$ValDef]] =
-    if (s.token == LPAREN) newValDefArrayArray(paramClause())
+    if (s.token == LPAREN) NewArray.ValDefArray(paramClause())
     else Tree.ValDef_EMPTY_ARRAY_ARRAY;
 
   /** ParamClause ::= `(' [Param {`,' Param}] `)'
@@ -1400,7 +1359,7 @@ class Parser(unit: Unit) {
       tp = make.AppliedType(
 	tp.pos,
         scalaDot(tp.pos, Names.Seq.toTypeName()),
-        newTreeArray(tp));
+        NewArray.Tree(tp));
     }
     make.ValDef(pos, mods, name, tp, Tree.Empty)
   }
@@ -1492,7 +1451,7 @@ class Parser(unit: Unit) {
     while (true) {
       if (s.token == USCORE) {
         s.nextToken();
-        return make.Import(startpos, t, newNameArray(Names.IMPORT_WILDCARD));
+        return make.Import(startpos, t, NewArray.Name(Names.IMPORT_WILDCARD));
       } else if (s.token == LBRACE) {
         return make.Import(startpos, t, importSelectors());
       } else {
@@ -1501,7 +1460,7 @@ class Parser(unit: Unit) {
           t = make.Select(pos, t, name);
           pos = accept(DOT);
         } else {
-          return make.Import(startpos, t, newNameArray(name, name));
+          return make.Import(startpos, t, NewArray.Name(name, name));
         }
       }
     }
@@ -1614,7 +1573,7 @@ class Parser(unit: Unit) {
         } while (s.token == COMMA);
 	ts.toArray()
       case _ =>
-        newTreeArray(syntaxError("illegal start of definition", true))
+        NewArray.Tree(syntaxError("illegal start of definition", true))
     }
   }
 
@@ -1664,7 +1623,7 @@ class Parser(unit: Unit) {
     val pos = s.pos;
     if (s.token == THIS) {
       s.nextToken();
-      val vparams = newValDefArrayArray{paramClause()};
+      val vparams = NewArray.ValDefArray(paramClause());
       accept(EQUALS);
       make.DefDef(
         pos, mods, Names.CONSTRUCTOR,
@@ -1763,12 +1722,12 @@ class Parser(unit: Unit) {
       template(parents)
     } else if (s.token == LBRACE) {
       make.Template(
-        pos, newTreeArray(scalaObjectConstr(pos)), templateBody());
+        pos, NewArray.Tree(scalaObjectConstr(pos)), templateBody());
     } else {
       if (!(s.token == SEMI || s.token == COMMA || s.token == RBRACE))
         syntaxError("`extends' or `{' expected", true);
       make.Template(
-        pos, newTreeArray(scalaObjectConstr(pos)), Tree.EMPTY_ARRAY);
+        pos, NewArray.Tree(scalaObjectConstr(pos)), Tree.EMPTY_ARRAY);
     }
   }
 
@@ -1808,7 +1767,7 @@ class Parser(unit: Unit) {
     accept(LBRACE);
     var body = templateStatSeq();
     if (body.length == 0)
-      body = newTreeArray(Tree.Empty);
+      body = NewArray.Tree(Tree.Empty);
     accept(RBRACE);
     body
   }
@@ -1949,7 +1908,7 @@ class Parser(unit: Unit) {
       val pkg = qualId();
       if (s.token == SEMI) {
         s.nextToken();
-        newTreeArray(
+        NewArray.Tree(
           make.PackageDef(
             pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, topStatSeq())));
       } else {

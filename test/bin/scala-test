@@ -126,10 +126,13 @@ test_compilation() {
     classpath="$SCALA:$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
+	os_output=`cygpath -w "$output"`;
+    else
+	os_output="$output";
     fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$source" &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
     java -classpath "$classpath" Test &&
     rm -rf "$output";
 }
@@ -143,20 +146,28 @@ test_xml() {
     classpath="$SCALA:$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
+	os_output=`cygpath -w "$output"`;
+    else
+	os_output="$output";
     fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $DTD2SCALA -d "$output" "$dtdfile" dtd &&
-    $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
+    $DTD2SCALA -d "$os_output" "$dtdfile" dtd &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
     java -classpath "$classpath" Test "$xmlfile" &&
     rm -rf "$output";
 }
 
 test_compilation_success() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    if $CYGWIN; then
+	os_output=`cygpath -w "$output"`;
+    else
+	os_output="$output";
+    fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$source" &&
+    $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
     rm -rf "$output";
 }
 

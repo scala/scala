@@ -693,7 +693,7 @@ class Scanner(_unit: Unit) extends TokenData {
     case ERROR =>
       "something"
     case SEMI =>
-      "''"
+      "';'"
     case COMMA =>
       "','"
     case CASECLASS =>

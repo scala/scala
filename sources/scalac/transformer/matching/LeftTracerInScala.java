@@ -67,11 +67,11 @@ public class LeftTracerInScala extends TracerInScala {
                             cf.fresh.newName(Name.fromString( helpName )),
                             owner,
                             0)
-            .setType( defs.LIST_TYPE( pat.type() )) ;
+            .setType( defs.LIST_TYPE( pat.getType() )) ;
 
         Tree varDef = gen.ValDef( helpVar,
                                   gen.mkDefaultValue( cf.pos,
-                                                      defs.LIST_TYPE( pat.type() ))
+                                                      defs.LIST_TYPE( pat.getType() ))
                                   //cf.ignoreValue( )
                                   );
         helpVarDefs.add( varDef );
@@ -231,7 +231,7 @@ public class LeftTracerInScala extends TracerInScala {
 
         Tree run = callFun( new Tree[] {
             gen.Ident( pos, emptyAccSym ),
-            cf.newIterator( selector, selector.type() ),
+            cf.newIterator( selector, selector.getType() ),
             gen.mkIntLit( cf.pos, 0 )  });
 
         run = gen.ValDef( resultSym, run );

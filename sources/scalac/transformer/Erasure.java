@@ -141,11 +141,11 @@ public class Erasure extends GenTransformer implements Modifiers {
 
         case New(Template(Tree[] base, Tree[] body)):
             assert base.length == 1 && body.length == 0: tree;
-            if (tree.type().symbol() == definitions.ARRAY_CLASS) {
+            if (tree.getType().symbol() == definitions.ARRAY_CLASS) {
                 switch (base[0]) {
                 case Apply(_, Tree[] args):
                     assert args.length == 1: tree;
-                    Type element = getArrayElementType(tree.type()).erasure();
+                    Type element = getArrayElementType(tree.getType()).erasure();
                     Tree size = transform(args[0]);
                     return genNewUnboxedArray(tree.pos, element, size);
                 default:
@@ -160,7 +160,7 @@ public class Erasure extends GenTransformer implements Modifiers {
             Symbol symbol = fun.symbol();
             if (symbol == definitions.ANY_AS) {
                 assert targs.length == 1 && vargs.length == 0: tree;
-                return coerce(getQualifier(fun), targs[0].type().erasure());
+                return coerce(getQualifier(fun), targs[0].getType().erasure());
             }
             if (symbol == definitions.ANY_IS) {
                 assert targs.length == 1 && vargs.length == 0: tree;
@@ -203,7 +203,7 @@ public class Erasure extends GenTransformer implements Modifiers {
             qualifier = transform(qualifier);
             qualifier = coerce(qualifier, symbol.owner().type().erasure());
             // Might end up with "box(unbox(...))". That's needed by backend.
-            if (isUnboxedType(qualifier.type())) qualifier = box(qualifier);
+            if (isUnboxedType(qualifier.getType())) qualifier = box(qualifier);
 	    return gen.Select(tree.pos, qualifier, symbol);
 
 	case Ident(_):
@@ -214,7 +214,7 @@ public class Erasure extends GenTransformer implements Modifiers {
         case Block(_):
 	case If(_, _, _):
         case Switch(_, _, _, _):
-            return transform(tree, tree.type().fullErasure());
+            return transform(tree, tree.getType().fullErasure());
 
         default:
             return super.transform(tree);
@@ -295,8 +295,8 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Coerces the given tree to the given type. */
     private Tree coerce(Tree tree, Type pt) {
-        if (isSubType(tree.type(), pt)) return tree;
-        if (isUnboxedType(tree.type())) {
+        if (isSubType(tree.getType(), pt)) return tree;
+        if (isUnboxedType(tree.getType())) {
             if (!isUnboxedType(pt)) return coerce(box(tree), pt);
         } else if (isUnboxedType(pt)) {
             if (tree.type.symbol() == definitions.ARRAY_CLASS
@@ -307,9 +307,9 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Boxes the given tree. */
     private Tree box(Tree tree) {
-        Symbol symbol = primitives.getBoxValueSymbol(tree.type());
+        Symbol symbol = primitives.getBoxValueSymbol(tree.getType());
 	Tree boxtree = gen.mkRef(tree.pos, symbol);
-        return tree.type().equals(UNBOXED_UNIT)
+        return tree.getType().equals(UNBOXED_UNIT)
             ? gen.Block(new Tree[]{tree, gen.mkApply__(boxtree)})
             : gen.mkApply_V(boxtree, new Tree[]{tree});
     }
@@ -335,7 +335,7 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Generates an application with given function and arguments. */
     private Tree genApply(int pos, Tree fun, Tree[] args) {
-        switch (fun.type()) {
+        switch (fun.getType()) {
         case MethodType(Symbol[] params, Type result):
             Tree[] args1 = args;
             for (int i = 0; i < args.length; i++) {
@@ -349,7 +349,7 @@ public class Erasure extends GenTransformer implements Modifiers {
             }
             return gen.mkApply_V(pos, fun, args1);
         default:
-            throw Debug.abort("illegal type " + fun.type() + " for " + fun);
+            throw Debug.abort("illegal type " + fun.getType() + " for " + fun);
         }
     }
 
@@ -389,16 +389,16 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Generates an unboxed array length operation. */
     private Tree genUnboxedArrayLength(int pos, Tree array) {
-        assert isUnboxedArrayType(array.type()): array;
-        Symbol symbol = primitives.getArrayLengthSymbol(array.type());
+        assert isUnboxedArrayType(array.getType()): array;
+        Symbol symbol = primitives.getArrayLengthSymbol(array.getType());
         Tree[] args = { array };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
     }
 
     /** Generates an unboxed array get operation. */
     private Tree genUnboxedArrayGet(int pos, Tree array, Tree index) {
-        assert isUnboxedArrayType(array.type()): array;
-        Symbol symbol = primitives.getArrayGetSymbol(array.type());
+        assert isUnboxedArrayType(array.getType()): array;
+        Symbol symbol = primitives.getArrayGetSymbol(array.getType());
         index = coerce(index, UNBOXED_INT);
         Tree[] args = { array, index };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
@@ -406,10 +406,10 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Generates an unboxed array set operation. */
     private Tree genUnboxedArraySet(int pos, Tree array,Tree index,Tree value){
-        assert isUnboxedArrayType(array.type()): array;
-        Symbol symbol = primitives.getArraySetSymbol(array.type());
+        assert isUnboxedArrayType(array.getType()): array;
+        Symbol symbol = primitives.getArraySetSymbol(array.getType());
         index = coerce(index, UNBOXED_INT);
-        value = coerce(value, getArrayElementType(array.type()));
+        value = coerce(value, getArrayElementType(array.getType()));
         Tree[] args = { array, index, value };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
     }

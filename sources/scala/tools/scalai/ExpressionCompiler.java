@@ -136,7 +136,7 @@ public class ExpressionCompiler {
             Symbol symbol = new scalac.symtab.TermSymbol(tree.pos, Name.fromString("new"), Symbol.NONE, 0); // !!!
             Variable variable = Variable.Local(context.push());
             Code code = compute(bases[0]);
-            switch (context.lookupTemplate(tree.type().symbol())) {
+            switch (context.lookupTemplate(tree.getType().symbol())) {
             case Global(ScalaTemplate template):
                 assert code instanceof Code.Invoke : Debug.show(code);
                 Code.Invoke invoke = (Code.Invoke)code;
@@ -200,7 +200,7 @@ public class ExpressionCompiler {
         if (symbol == definitions.ANY_IS) {
             assert trees.length == 1 : Debug.show(trees);
             //assert trees[0].hasSymbol() : trees[0];
-            Symbol expect = trees[0].type().symbol();
+            Symbol expect = trees[0].getType().symbol();
             // !!! BUG: expect is null for .is[Int]
             assert expect != null : trees[0];
             // !!! System.out.println("!!! IS " + expect);

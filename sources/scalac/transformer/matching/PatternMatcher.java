@@ -510,9 +510,9 @@ public class PatternMatcher extends PatternTool {
 */
                 target.and = curHeader = mk.Header(pat.pos, seqType, t);
             } else {
-                Symbol ts = ((ClassSymbol) casted.type().symbol())
+                Symbol ts = ((ClassSymbol) casted.getType().symbol())
                     .caseFieldAccessor(index);
-				Type accType = casted.type().memberType(ts);
+				Type accType = casted.getType().memberType(ts);
 				Tree accTree = gen.Select(gen.Ident(pat.pos, casted), ts);
                	switch (accType) {
                		// scala case accessor
@@ -738,7 +738,7 @@ public class PatternMatcher extends PatternTool {
     public Tree intSwitchToTree() {
     	//print();
     	int ncases = numCases(root.and);
-    	Tree matchError = cf.ThrowMatchError(selector.pos, resultVar.type());
+    	Tree matchError = cf.ThrowMatchError(selector.pos, resultVar.getType());
     	// without a case, we return a match error if there is no default case
     	if (ncases == 0)
     		return defaultBody(root.and, matchError);
@@ -785,9 +785,9 @@ public class PatternMatcher extends PatternTool {
     				patNode = patNode.next();
     			}
     			if (defaultBody == null)
-    				defaultBody = cf.ThrowMatchError(selector.pos, resultVar.type());
+    				defaultBody = cf.ThrowMatchError(selector.pos, resultVar.getType());
     			if (mappings == null) {
-    				return gen.Switch(selector, new int[0], new Tree[0], defaultBody, resultVar.type());
+    				return gen.Switch(selector, new int[0], new Tree[0], defaultBody, resultVar.getType());
     			} else {
     				int n = mappings.length();
     				int[] tags = new int[n];
@@ -798,7 +798,7 @@ public class PatternMatcher extends PatternTool {
     					bodies[n++] = mappings.body;
     					mappings = mappings.next;
     				}
-    				return gen.Switch(selector, tags, bodies, defaultBody, resultVar.type());
+    				return gen.Switch(selector, tags, bodies, defaultBody, resultVar.getType());
     			}
             default:
             	throw new ApplicationError();
@@ -821,13 +821,13 @@ public class PatternMatcher extends PatternTool {
     public Tree generalSwitchToTree() {
         TreeList ts = new TreeList();
         ts.append(gen.ValDef(root.symbol(), selector));
-        ts.append(gen.ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.type())));
+        ts.append(gen.ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.getType())));
         ts.append(
             gen.If(
                 selector.pos,
                 toTree(root.and),
                 gen.Ident(selector.pos, resultVar),
-                cf.ThrowMatchError(selector.pos, resultVar.type())));
+                cf.ThrowMatchError(selector.pos, resultVar.getType())));
         return gen.mkBlock(selector.pos, ts.toArray());
     }
 

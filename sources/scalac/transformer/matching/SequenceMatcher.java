@@ -35,7 +35,7 @@ public class SequenceMatcher extends PatternTool {
      */
       Tree addBinderToBody( Tree pat, Tree body ) {
 
-            Type elementType = cf.getElemType_Sequence( pat.type() );
+            Type elementType = cf.getElemType_Sequence( pat.getType() );
 
             BindingBerrySethi build = new BindingBerrySethi();
             NondetWordAutom left =  build.automatonFrom( pat, new Integer(0) );
@@ -152,7 +152,7 @@ public class SequenceMatcher extends PatternTool {
 
             this.cf = new CodeFactory( unit, _m.pos );
 
-            Type seqType = pat[ 0 ].type();
+            Type seqType = pat[ 0 ].getType();
 
             elementType = cf.getElemType_Sequence( seqType );
 

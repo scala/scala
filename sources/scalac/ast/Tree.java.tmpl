@@ -60,7 +60,7 @@ public class Tree {
     // Public Methods - tree type
 
     /** Get the type of the node. */
-    public Type type() {
+    public Type getType() {
         assert type != null : Debug.show(this);
         return type;
     }
@@ -75,7 +75,7 @@ public class Tree {
     /** Get types attached to array of nodes. */
     public static Type[] typeOf(Tree[] trees) {
 	Type[] types = new Type[trees.length];
-	for (int i = 0; i < trees.length; i++) types[i] = trees[i].type();
+	for (int i = 0; i < trees.length; i++) types[i] = trees[i].getType();
 	return types;
     }
 

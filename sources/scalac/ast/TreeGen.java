@@ -690,9 +690,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds an If node with given condition and branches. */
     public If If(int pos, Tree cond, Tree thenpart, Tree elsepart) {
         global.nextPhase();
-        Type type = thenpart.type().isSameAs(elsepart.type())
+        Type type = thenpart.getType().isSameAs(elsepart.getType())
             ? thenpart.type
-            : Type.lub(new Type[] {thenpart.type(), elsepart.type()});
+            : Type.lub(new Type[] {thenpart.getType(), elsepart.getType()});
         global.prevPhase();
         return If(pos, cond, thenpart, elsepart, type);
     }
@@ -722,8 +722,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Tree otherwise)
     {
         Type[] types = new Type[bodies.length + 1];
-        for (int i = 0; i < bodies.length; i++) types[i] = bodies[i].type();
-        types[bodies.length] = otherwise.type();
+        for (int i = 0; i < bodies.length; i++) types[i] = bodies[i].getType();
+        types[bodies.length] = otherwise.getType();
         global.nextPhase();
         Type type = Type.lub(types);
         global.prevPhase();
@@ -938,7 +938,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds an CaseDef node with given pattern, guard and body. */
     public CaseDef CaseDef(Tree pattern, Tree guard, Tree body) {
         CaseDef tree = make.CaseDef(pattern.pos, pattern, guard, body);
-        tree.setType(body.type());
+        tree.setType(body.getType());
         return tree;
     }
 
@@ -969,9 +969,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Asserts type of given tree is a subtype of given type. */
     private boolean assertTreeSubTypeOf(Tree tree, Type expected) {
         global.nextPhase();
-        assert tree.type().isSubType(expected):
+        assert tree.getType().isSubType(expected):
             "\ntree    : " + tree +
-            "\ntype    : " + tree.type() +
+            "\ntype    : " + tree.getType() +
             "\nexpected: " + expected;
         global.prevPhase();
         return true;
@@ -1134,8 +1134,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     public Tree Cons(int pos, Type elemtpe, Tree hd, Tree tl) {
-        assert hd.type().isSubType(elemtpe): elemtpe + " -- " + hd;
-        assert tl.type().isSubType(definitions.LIST_TYPE(elemtpe)):
+        assert hd.getType().isSubType(elemtpe): elemtpe + " -- " + hd;
+        assert tl.getType().isSubType(definitions.LIST_TYPE(elemtpe)):
             elemtpe + " -- " + tl;
 	return New(mkPrimaryConstr(pos,
 				   global.definitions

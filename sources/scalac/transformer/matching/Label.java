@@ -32,7 +32,7 @@ public class Label {
             case TreeLabel( Tree pat ):
 		switch( pat ) {
 		    case Apply( Tree fun, Tree[] args ):
-			return pat.type().hashCode() + args.hashCode();
+			return pat.getType().hashCode() + args.hashCode();
 		}
 		return pat.hashCode();
             case TypeLabel( Type type ):
@@ -102,7 +102,7 @@ public class Label {
                   case SimpleLabel( Literal lit ):
                         return lit.toString()+":p"+p;
                   case TreeLabel( Tree pat ):
-                        return pat.type()+":p"+p;
+                        return pat.getType()+":p"+p;
 
                   }
             }

@@ -308,7 +308,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 return gen.Ident(tree.pos, symbol);
 
             case TypeTerm():
-                Type type = typeTransformer.apply(tree.type());
+                Type type = typeTransformer.apply(tree.getType());
                 if (context != null) type = context.subst.apply(type);
                 return gen.TypeTerm(tree.pos, type);
 
@@ -330,7 +330,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     vargs = Tree.cloneArray(1, vargs);
                     vargs[0] = qualifier;
                 }
-                Type[] types = getOuterTypeArgs(qualifier.type(), symbol);
+                Type[] types = getOuterTypeArgs(qualifier.getType(), symbol);
                 if (types.length != 0) {
                     targs = Tree.cloneArray(types.length, targs);
                     for (int i = 0; i < types.length; i++)

@@ -265,7 +265,7 @@ public class AddConstructors extends GenTransformer {
             return gen.Ident(tree.pos, symbol);
 
         case TypeTerm():
-            return gen.TypeTerm(tree.pos, subst.apply(tree.type()));
+            return gen.TypeTerm(tree.pos, subst.apply(tree.getType()));
 
         default:
             return super.transform(tree);

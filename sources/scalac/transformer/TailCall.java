@@ -126,7 +126,7 @@ public class TailCall extends Transformer {
 		// The LabelDef needs identifiers as parameters.
 		Ident [] args = to_ident(newVparams[0]);
 		// Create a new LabelDef with the new body of the function as the rhs
-		Tree labelDef = new ExtLabelDef(newLabel,args,newRhs).setType(newRhs.type());
+		Tree labelDef = new ExtLabelDef(newLabel,args,newRhs).setType(newRhs.getType());
 		// Create a new function node with the LabelDef as the rhs.
 		return copy.DefDef(tree,tree.symbol(), newTparams,
 				   newVparams, newTpe, labelDef);
@@ -156,7 +156,7 @@ public class TailCall extends Transformer {
 
 				Tree[] newArgs = tail_transform(args,false);
 				// Redirect the call to the LabelDef.
-				Tree newTarget = new ExtIdent(state.newLabel).setType(fun.type());
+				Tree newTarget = new ExtIdent(state.newLabel).setType(fun.getType());
 				// Indicate that we have inserted a tail call.
 				state.needLabelDef = true;
 				return copy.Apply(tree,newTarget,newArgs);
@@ -348,13 +348,13 @@ public class TailCall extends Transformer {
 	    switch (tree[i]) {
 	    case AbsTypeDef(int mods, Name name, Tree bound, Tree lobound):
 		Ident arg = new ExtIdent(tree[i].symbol());
-		arg.setType(tree[i].type());
+		arg.setType(tree[i].getType());
 		ids[i]= arg;
 		break;
 
 	    case ValDef(int mods, Name name, Tree tpe, Tree.Empty):
 		Ident arg = new ExtIdent(tree[i].symbol());
-		arg.setType(tree[i].type());
+		arg.setType(tree[i].getType());
 		ids[i]= arg;
 		break;
 

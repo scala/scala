@@ -40,9 +40,9 @@ object Predef {
     	if (!assertion)
     		throw new Error("assertion failed");
     }
-    def assert(assertion: Boolean, message: String): Unit = {
+    def assert(assertion: Boolean, message: Any): Unit = {
     	if (!assertion)
-    		throw new Error(message);
+    		throw new Error("assertion failed: " + message);
     }
 
     type Pair[+p, +q] = Tuple2[p, q];

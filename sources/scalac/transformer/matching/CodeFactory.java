@@ -65,14 +65,14 @@ class CodeFactory extends PatternTool {
      *  the parameter needs to have type attribute `Sequence[<elemType>]'
      */
     Tree newIterator( Tree seqObj ) {
-	return newIterator( seqObj, getElemType_Sequence( seqObj.type() ));
+	return newIterator( seqObj, getElemType_Sequence( seqObj.getType() ));
     }
 
     // EXPERIMENTAL
     Tree newRef( Tree init ) {
 	//System.out.println( "hello:"+refSym().type() );
 	return gen.New(gen.mkPrimaryConstr(pos, defs.REF_CLASS,
-			                    new Type[] { init.type() },
+			                    new Type[] { init.getType() },
 			                    new Tree[] { init } ));
     }
 
@@ -204,7 +204,7 @@ class CodeFactory extends PatternTool {
 
     Tree newPair( Tree left, Tree right ) {
  	return gen.New(gen.mkPrimaryConstr(pos, defs.TUPLE_CLASS[2],
-			                   new Type[] { left.type(), right.type() },
+			                   new Type[] { left.getType(), right.getType() },
 			                   new Tree[] { left, right }));
 
     }
