@@ -61,6 +61,7 @@ object List extends scala.AnyRef with scala.ScalaObject {
     final def fromString(java.lang.String, scala.Char): scala.List[java.lang.String];
     final def fromString(java.lang.String): scala.List[scala.Char];
     final def toString(scala.List[scala.Char]): java.lang.String;
+    final def transform[a](scala.List[a])(a => a): scala.List[a];
     final def map2[a, b, c](scala.List[a], scala.List[b])((a, b) => c): scala.List[c];
     final def forall2[a, b](scala.List[a], scala.List[b])((a, b) => scala.Boolean): scala.Boolean;
     final def exists2[a, b](scala.List[a], scala.List[b])((a, b) => scala.Boolean): scala.Boolean;
