@@ -213,7 +213,7 @@ public class TreeChecker {
 
     /** Checks the expression of given expected type. Returns true. */
     private boolean expression(Tree tree, Type expected) {
-        // !!! type(tree, expected);
+        // !!! conforms(tree, expected);
         expected = tree.type();
         switch (tree) {
 
