@@ -121,10 +121,10 @@ trait Stream[+a] extends Seq[a] {
     else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail));
 
   def print: unit =
-    if (isEmpty) System.out.println("Stream.empty")
+    if (isEmpty) Console.println("Stream.empty")
     else {
-      System.out.print(head.asInstanceOf[java.lang.Object]);
-      System.out.print(", ");
+      Console.print(head.asInstanceOf[java.lang.Object]);
+      Console.print(", ");
       tail.print
     }
 
