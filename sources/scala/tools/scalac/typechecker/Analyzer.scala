@@ -101,14 +101,21 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   def lateEnter(unit: Unit, sym: Symbol): unit = {
     //System.out.println("late enter: " + sym + " " + sym.isModule());//DEBUG
     enterUnit(unit);
-    if (sym.rawFirstInfo().isInstanceOf[SourceCompleter]) {
-      sym.setInfo(Type.ErrorType);
-      val kind = if (sym.name.isTermName()) "object " else "class ";
-      val prefix = if (sym.owner().isRoot()) "" else sym.owner().`type`().toString() + ".";
-      throw new Type$Error("file " + unit.source + " does not define public " +
-			   kind + prefix + sym.name);
-    } else {
-      descr.newSources.add(unit);
+    descr.newSources.add(unit);
+  }
+
+  def loadMixinCode(pos: Int, clasz: Symbol): unit = {
+    assert(clasz.isClass() && !clasz.isModuleClass(), Debug.show(clasz));
+    if (clasz.isExternal()) {
+      try {
+        val filename = SourceRepresentation.externalizeFileName(clasz, ".scala");
+        val file = global.classPath.openJavaFile(filename);
+        new SourceCompleter(global).complete(clasz);
+      } catch {
+        case exception: java.io.IOException =>
+          if (global.debug) exception.printStackTrace();
+          unit.error(pos, "source file for " + clasz + " not found; it is needed because class is used as a mixin");
+      }
     }
   }
 
@@ -1672,10 +1679,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	val c: Symbol = f.constructorClass();
 	if (c.kind == CLASS) {
 	  c.initialize();//to detect cycles
-	  if (i > 0 && (c.flags & JAVA) == 0 && c.isExternal()) {
-	    // need to load tree for mixins
-	    new SourceCompleter(global, true).complete(c);
-	  }
+	  if (i > 0 && (c.flags & JAVA) == 0) loadMixinCode(pos, c);
 	}
       }
       i = i + 1
@@ -2205,10 +2209,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      val applyVisitor: Tree = transformVisitor(tree, pattype, restype);
 	      if (!infer.isFullyDefined(restype))
 		restype = applyVisitor.getType().deconst();
-	      if (definitions.PARTIALFUNCTION_CLASS.isExternal())
-		// need to load tree for mixins
-		new SourceCompleter(global, true).complete(
-		  definitions.PARTIALFUNCTION_CLASS);
+              loadMixinCode(tree.pos, definitions.PARTIALFUNCTION_CLASS);
 	      gen.mkPartialFunction(
 		tree.pos, applyVisitor, isDefinedAtVisitor,
 		pattype, restype, context.owner);

@@ -38,19 +38,18 @@ public class CLRClassParser extends ClassParser {
 	this.importer = importer;
     }
 
-    protected void doComplete(Symbol clazz) {
-	try { doComplete0(clazz); }
+    protected String doComplete(Symbol clazz) {
+	try { return doComplete0(clazz); }
 	catch (Throwable e) {
 	    System.err.println("\nWhile processing " + Debug.show(clazz));
 	    e.printStackTrace();
 	    System.exit(1);
+            return null; // !!!
 	}
     }
 
-    protected void doComplete0(Symbol clazz) {
+    protected String doComplete0(Symbol clazz) {
 	clazz.owner().initialize(); //???
-
-	long msec = System.currentTimeMillis();
 
 	if (make == null)
 	    make = new JavaTypeCreator(global.definitions);
@@ -100,8 +99,8 @@ public class CLRClassParser extends ClassParser {
 	    AliasTypeSymbol alias =
 		new AliasTypeSymbol(Position.NOPOS, aliasname, clazz.module(),
 				    translateAttributes(ntype));
-	    nclazz.allConstructors().setInfo(staticsParser(nclazz));
-	    nclazz.module().setInfo(staticsParser(nclazz));
+	    nclazz.allConstructors().setInfo(this);
+	    nclazz.module().setInfo(this);
 	    //
 	    alias.setInfo(scalac.symtab.Type
 			  .typeRef(clazz.owner().thisType(),
@@ -233,9 +232,7 @@ public class CLRClassParser extends ClassParser {
 		constr.flags |= Modifiers.PRIVATE;
 	}
 
-	global.operation("loaded class " + Debug.show(clazz) +
-			 " from [" + type.Assembly.GetName().Name + "]" + type +
-			 " in " + (System.currentTimeMillis() - msec) + "ms");
+	return "assembly [" + type.Assembly.GetName().Name + "]" + type;
     }
 
     /** Return a method type for */

@@ -14,35 +14,17 @@ import scalac.util.*;
 import java.io.*;
 
 
-public class ClassParser extends MetadataParser {
+public class ClassParser extends SymbolLoader {
 
     public ClassParser(Global global) {
         super(global);
     }
 
-    protected void doComplete(Symbol c) {
-	c.owner().initialize();
-	//System.out.println("loading " + c);//DEBUG
-	try {
-	    long msec = System.currentTimeMillis();
-	    String filename = SourceRepresentation.externalizeFileName(
-		c, ".class");
-	    AbstractFile f = global.classPath.openFile(filename);
-	    if (f == null)
-		global.error("could not read class " + c);
-	    else {
-		new ClassfileParser(global, new AbstractFileReader(f), c).parse();
-		global.operation("loaded " + f.getPath() + " in " +
-				 (System.currentTimeMillis() - msec) + "ms");
-		//for (Definition e = c.locals().elems; e != null; e = e.sibling)
-		//  if (e.def.kind == TYP)
-                //      e.def.complete();
-	    }
-	} catch (IOException e) {
-	    if (global.debug) e.printStackTrace();
-	    global.error("i/o error while loading " + c);
-	    c.setInfo(Type.ErrorType);
-	}
+    protected String doComplete(Symbol clasz) throws IOException {
+        AbstractFile file = global.classPath.openFile(
+            SourceRepresentation.externalizeFileName(clasz, ".class"));
+        new ClassfileParser(global,new AbstractFileReader(file),clasz).parse();
+        return "class file '" + file.getPath() + "'";
     }
 
     public Type.LazyType staticsParser(Symbol clazz) {

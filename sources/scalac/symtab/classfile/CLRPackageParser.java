@@ -259,8 +259,8 @@ public class CLRPackageParser extends MetadataParser {
 	    if (k < 0) {
 		// it's a class
 		ClassSymbol clazz = new ClassSymbol(n.toTypeName(), p, completer);
-		clazz.allConstructors().setInfo(completer.staticsParser(clazz));
-		clazz.module().setInfo(completer.staticsParser(clazz));
+		clazz.allConstructors().setInfo(completer);
+		clazz.module().setInfo(completer);
 		members.enter(clazz);
 		Scope.Entry e = members.lookupEntry(clazz.module().name);
 		if (e != Scope.Entry.NONE)

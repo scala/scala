@@ -22,30 +22,10 @@ public class SymblParser extends ClassParser {
 
     /** complete class symbol c by loading the class
      */
-    public void doComplete(Symbol c) {
-	//System.out.println("loading " + c);//DEBUG
-	try {
-	    long msec = System.currentTimeMillis();
-	    String filename = SourceRepresentation.externalizeFileName(
-		c, ".symbl");
-	    AbstractFile f = global.classPath.openFile(filename);
-	    if (f == null)
-		global.error("could not read class " + c);
-	    else {
-		byte[] data = f.read();
-		new UnPickle(c, data, Name.fromString(filename));
-		global.operation("loaded " + f.getPath() + " in " +
-				 (System.currentTimeMillis() - msec) + "ms");
-		/*
-		  if (!global.separate)
-		    new SourceCompleter(global).complete(c);//for now
-		*/
-	    }
-	} catch (IOException e) {
-	    if (global.debug) e.printStackTrace();
-	    global.error("i/o error while loading " + c);
-	    c.setInfo(Type.ErrorType);
-        }
+    public String doComplete(Symbol clasz) throws IOException {
+        AbstractFile file = global.classPath.openFile(
+            SourceRepresentation.externalizeFileName(clasz, ".symbl"));
+        new UnPickle(clasz, file.read(), Name.fromString(file.getPath()));
+        return "symbol file '" + file.getPath() + "'";
     }
 }
-

@@ -15,7 +15,7 @@ import scalac.util.*;
 import java.io.*;
 import java.util.HashMap;
 
-public class PackageParser extends MetadataParser {
+public class PackageParser extends SymbolLoader {
 
     /** the class parser
      */
@@ -36,8 +36,7 @@ public class PackageParser extends MetadataParser {
 
     /** complete package type symbol p by loading all package members
      */
-    protected void doComplete(Symbol p) {
-        long msec = System.currentTimeMillis();
+    protected String doComplete(Symbol p) {
         Scope members = new Scope();
         String dirname = null;
 	HashMap/*<Symbol, AbstractFile>*/ symFile = new HashMap();
@@ -53,10 +52,7 @@ public class PackageParser extends MetadataParser {
  	if (global.target == global.TARGET_MSIL)
  	    importer.importCLRTypes(p, members, this);
         p.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, p));
-        if (dirname == null)
-            dirname = "anonymous package";
-        global.operation("scanned " + dirname + " in " +
-                    (System.currentTimeMillis() - msec) + "ms");
+        return dirname == null ? "anonymous package" : "package '"+dirname+"'";
     }
 
     private boolean isMostRecent(AbstractFile f, Symbol previous, HashMap symFile) {
@@ -95,10 +91,8 @@ public class PackageParser extends MetadataParser {
 		    if (isMostRecent(f, locals.lookup(n), symFile)) {
 		        ClassSymbol clazz = new ClassSymbol(n, p, classCompletion);
 			// todo: needed?
-		        clazz.allConstructors().setInfo(
-			    classCompletion.staticsParser(clazz));
-			clazz.module().setInfo(
-			    classCompletion.staticsParser(clazz));
+		        clazz.allConstructors().setInfo(classCompletion);
+			clazz.module().setInfo(classCompletion);
 		        // enter class
 		        locals.enter(clazz);
 		        // enter module
