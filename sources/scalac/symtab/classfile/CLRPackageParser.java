@@ -33,23 +33,24 @@ public class CLRPackageParser extends SymbolLoader {
 
     //##########################################################################
 
-    Type BYTE;
-    Type UBYTE;
-    Type CHAR;
-    Type SHORT;
-    Type USHORT;
-    Type INT;
-    Type UINT;
-    Type LONG;
-    Type ULONG;
-    Type FLOAT;
-    Type DOUBLE;
-    Type BOOLEAN;
-    Type VOID;
+    public Type BYTE;
+    public Type UBYTE;
+    public Type CHAR;
+    public Type SHORT;
+    public Type USHORT;
+    public Type INT;
+    public Type UINT;
+    public Type LONG;
+    public Type ULONG;
+    public Type FLOAT;
+    public Type DOUBLE;
+    public Type BOOLEAN;
+    public Type VOID;
+    public Type ENUM;
 
-    Type OBJECT;
-    Type STRING;
-    Type STRING_ARRAY;
+    public Type OBJECT;
+    public Type STRING;
+    public Type STRING_ARRAY;
 
     protected CLRClassParser completer;
 
@@ -93,7 +94,7 @@ public class CLRPackageParser extends SymbolLoader {
 	DOUBLE  = getType("System.Double");
 	BOOLEAN = getType("System.Boolean");
 	VOID    = getType("System.Void");
-	//ENUM    = getType("System.Enum");
+	ENUM    = getType("System.Enum");
 
 	OBJECT = getType("System.Object");
 	STRING = getType("System.String");
