@@ -27,7 +27,7 @@ public class ScalaTemplate {
     private final Evaluator evaluator;
     private final Symbol symbol;
     private final Function constructor;
-    private final Map/*<Method|Symbol,XYScalaFunction>*/ vtable;
+    private final Map/*<Method|Symbol,CodePromise>*/ vtable;
     private final Object[] fields;
 
     //########################################################################
