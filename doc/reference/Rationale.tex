@@ -1,0 +1,125 @@
+%% $Id$
+
+There are hundreds of programming languages in active use, and many more are
+being designed each year. It is therefore very hard to justify the development
+of yet another language. Nevertheless, this is what I attempt to do here. My
+argument rests on two claims:
+\begin{itemize}
+\item[] {\em Claim 1:} The raise in importance of web services and
+other distributed software is a fundamental paradigm
+shift in programming. It is comparable in scale to the shift 20 years ago
+from character-oriented to graphical user interfaces.
+\item[] {\em Claim 2:} That paradigm shift will provide demand
+for new programming languages, just as graphical user interfaces
+promoted the adoption of object-oriented languages.
+\end{itemize}
+To back up the first claim, one observes that web services and other
+distributed software increasingly tend to communicate using structured or
+semi-structured data. A typical example is the use of XML to describe data
+managed by applications as well as the messages between applications. This
+tends to affect the role of a program in a fundamental way. Previously,
+programs could be seen as objects that reacted to method calls and in turn
+called methods of other objects. Some of these method calls might originate
+from users while others might originate from other computers via remote
+invocations.  These method calls have simple unstructured parameters or object
+references as arguments.  Web services, on the other hand, communicate with
+each other by transmitting asynchronous messages that carry structured
+documents, usually in XML format. Programs then conceptually become {\em tree
+transformers} that consume incoming message documents and produce outgoing
+ones.
+
+To back up the second claim, one notes that today's object-oriented languages
+are not very good tools for analyzing and transforming the trees which
+conceptually model XML data. Because these trees usually contain data but no
+methods, they have to be decomposed and constructed from the ``outside'', that is
+from code which is external to the tree definition itself. In an
+object-oriented language, the ways of doing so are limited. The most common
+solution is to represent trees in a generic way, where all tree nodes are
+values of a common type.  This approach is used in DOM, for instance. It
+facilitates the implementation of generic traversal functions, but forces
+applications to operate on a very low conceptual level, which often loses
+important semantic distinctions that are present in the XML data. A
+semantically more precise alternative would be to use different internal types
+to model different kinds of nodes.  But then tree decompositions require the use
+of run-time type tests and type casts to adapt the treatment to the kind of
+node encountered. Such type tests and type casts are generally not considered
+good object-oriented style. They are rarely efficient, nor easy to use.  By
+contrast, tree transformation is the natural domain of functional
+languages. Their algebraic data types, pattern matching and higher-order
+functions make these languages ideal for the task. It's no wonder, then, that
+specialized languages for transforming XML data such as XSLT are
+functional.
+
+Web services can be constructed using such a transformation language
+together with some middleware framework such as Corba to handle
+distribution and an object-oriented language for the ``application
+logic''.  The downside of this approach is that the necessary amount
+of cross-language glue can make applications cumbersome to write,
+verify, and maintain.  Better productivity and trustworthiness is
+achievable using a single notation and conceptual framework that would
+express object-oriented, concurrent, as well as functional aspects of
+an application.  Hence, a case for so called ``multi-paradigm''
+languages can be made. But one needs to be careful not to simply
+replace cross-language glue by awkward interfaces between different
+paradigms within the language itself. The benefits of integration are
+realized fully only if the common language achieves a meaningful
+unification of concepts rather than being merely an agglutination of
+different programming paradigms.  This is what we try to achieve with
+Scala\footnote{Scala stands for ``Scalable Language''.}.
+
+Scala is both an an object-oriented and functional language.  It is a
+pure object-oriented language in the sense that every value is an
+object. Types and behavior of objects are described by
+classes. Classes can be composed using mixin composition.  Scala is
+designed to interact well with mainstream object-oriented languages,
+in particular Java and C\#.
+
+Scala is also a functional language in the sense that every function
+is a value. Nesting of function definitions and higher-order functions
+are naturally supported. Scala also supports a general notion of
+pattern matching which can model the algebraic types used in many
+functional languages. Furthermore, this notion of pattern matching
+naturally extends to the processing of XML data.
+
+The design of Scala is driven by the desire to unify object-oriented
+and functional elements. Here are three examples how this is achieved:
+\begin{itemize}
+\item
+Since every function is a value and every value is an object, it
+follows that every function in Scala is an object. Indeed, there is a
+root class for functions which is specialized in the Scala standard
+library to data structures such as arrays and hash tables.
+\item
+Data structures in many functional languages are defined using
+algebraic data types. They are decomposed using pattern matching.
+Object-oriented languages, on the other hand, describe data with class
+hierarchies. Algebraic data types are usually closed, in that the
+range of alternatives of a type is fixed when the type is defined.  By
+contrast, class hierarchies can be extended by adding new leaf
+classes.  Scala adopts the object-oriented class hierarchy scheme for
+data definitions, but allows pattern matching against values coming
+from a whole class hierarchy, not just values of a single type.
+This can express both closed and extensible data types, and also
+provides a convenient way to exploit run-time type information in
+cases where static typing is too restrictive.
+\item
+Module systems of functional languages such as SML or Caml excel in
+abstraction; they allow very precise control over visibility of names
+and types, including the ability to partially abstract over types.  By
+contrast, object-oriented languages excel in composition; they offer
+several composition mechanisms lacking in module systems, including
+inheritance and unlimited recursion between objects and classes.
+Scala unifies the notions of object and module, of module signature
+and interface, as well as of functor and class. This combines the
+abstraction facilities of functional module systems with the
+composition constructs of object-oriented languages. The unification
+is made possible by means of a new type system based on path-dependent
+types \cite{odersky-et-al:fool10}.
+\end{itemize}
+
+%The rest of this report is structured as follows. Chapters
+%\ref{sec:simple-examples} to \ref{sec:concurrency} give an informal overview of
+%Scala by means of a sequence of program examples.  The remaining
+%chapters contain the language definition. The definition is formulated
+%in prose but tries to be precise.
+

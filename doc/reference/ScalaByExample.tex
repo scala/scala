@@ -1,3 +1,4 @@
+% $Id$
 \documentclass[a4paper,12pt,twoside,titlepage]{book}
 
 \usepackage{scaladoc}
@@ -21,7 +22,7 @@
 \newcommand{\rewriteby}[1]{\mbox{\tab\tab\rm(#1)}}
 
 \renewcommand{\doctitle}{Scala By Example\\[33mm]\ }
-\renewcommand{\docauthor}{Martin Odersky}
+\renewcommand{\docauthor}{Martin Odersky\\[53mm]\ }
 
 \begin{document}
 
@@ -34,7 +35,7 @@
 
 \chapter{\label{chap:intro}Introduction}
 
-\input{rationale-chapter.tex}
+\input{Rationale}
 
 The rest of this document is structured as
 follows. Chapters~\ref{chap:example-one} and
@@ -5416,6 +5417,10 @@ class Bidder (auction: Process, minBid: int, maxBid: int)
 \end{lstlisting}
 }
 %\todo{We also need some XML examples.}
+
+\bibliographystyle{alpha}
+\bibliography{Scala}
+
 \end{document}
 
 

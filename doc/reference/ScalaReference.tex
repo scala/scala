@@ -2,7 +2,11 @@
 \documentclass[a4paper,12pt,twoside,titlepage]{book}
 
 \usepackage{scaladoc}
-\usepackage{fleqn,modefs,math,scaladefs}
+\usepackage{fleqn}
+\usepackage{modefs}
+\usepackage{math}
+\usepackage{scaladefs}
+
 \newcommand{\tps}{\mbox{\sl tps}}
 \newcommand{\psig}{\mbox{\sl psig}}
 \newcommand{\args}{\mbox{\sl args}}
@@ -14,9 +18,9 @@
 \ifpdf
     \pdfinfo {
         /Author   (Martin Odersky, Philippe Altherr, Vincent Cremet,
-    Burak Emir, St\'ephane Micheloud, Nikolay Mihaylov, Michel Schinz,
-    Erik Stenman, Matthias Zenger)
-        /Title    (Report on the Programming Language Scala)
+                   Burak Emir, Stephane Micheloud, Nikolay Mihaylov,
+                   Michel Schinz, Erik Stenman, Matthias Zenger)
+        /Title    (The Scala Language Specification)
         /Keywords (Scala)
         /Subject  ()
         /Creator  (TeX)
@@ -33,8 +37,8 @@
 \renewcommand{\todo}[1]{{$\clubsuit$\bf todo: #1$\spadesuit$}}
 \newcommand{\notyet}{\footnote{not yet implemented.}}
 
-\renewcommand{\doctitle}{\LARGE The Scala Language \\ Specification}
-\renewcommand{\docauthor}{\normalsize Martin Odersky \\
+\renewcommand{\doctitle}{The Scala Language \\ Specification \\ \ }
+\renewcommand{\docauthor}{Martin Odersky \\
 Philippe Altherr \\
 Vincent Cremet \\
 Burak Emir \\ 
@@ -42,7 +46,7 @@ St\'ephane Micheloud \\
 Nikolay Mihaylov \\
 Michel Schinz \\
 Erik Stenman \\
-Matthias Zenger}
+Matthias Zenger \\[25mm]\ }
 
 \begin{document}
 
@@ -58,7 +62,7 @@ Matthias Zenger}
 
 \chapter{Rationale}
 
-\input{rationale-chapter}
+\input{Rationale}
 
 \subsection*{Status of This Document}
 

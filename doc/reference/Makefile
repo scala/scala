@@ -21,15 +21,13 @@ LATEX_FORMATS		+= dvi
 LATEX_FORMATS		+= ps
 LATEX_FORMATS		+= pdf
 
-LATEX_TARGETS		+= $(LATEX_FORMATS:%=rationale.%)
-LATEX_TARGETS		+= $(LATEX_FORMATS:%=reference.%)
-LATEX_TARGETS		+= $(LATEX_FORMATS:%=examples.%)
+LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaReference.%)
+LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaByExample.%)
 
-LATEX_SOURCES		+= examples.tex
-LATEX_SOURCES		+= examples.bib
-LATEX_SOURCES		+= rationale.tex
-LATEX_SOURCES		+= reference.tex
-LATEX_SOURCES		+= rationale-chapter.tex
+LATEX_SOURCES		+= ScalaByExample.tex
+LATEX_SOURCES       += ScalaReference.tex
+LATEX_SOURCES		+= Scala.bib
+LATEX_SOURCES		+= Rationale.tex
 
 # latex
 TEXINPUTS		:= $(PROJECT_SUPPORTDIR)/latex:$(TEXINPUTS):
