@@ -10,7 +10,7 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.dtd._;
+import scala.xml.dtd.AttrDecl;
 import scala.xml.nobinding.XML ;
 
 /** transforms a set of DTD declaraion to a scala source file.
