@@ -223,7 +223,7 @@ public class Definitions {
     /** The scala.Type class & its subclasses */
     public final Symbol TYPE_CLASS;
     public final Type   TYPE_TYPE() {
-        return TYPE_TYPE.type().resultType();
+        return TYPE_CLASS.staticType();
     }
 
     public final Symbol CONSTRUCTEDTYPE_CLASS;
@@ -571,7 +571,6 @@ public class Definitions {
     private final Symbol FLOAT_TYPE;
     private final Symbol DOUBLE_TYPE;
     private final Symbol ARRAY_TYPE;
-    private final Symbol TYPE_TYPE;
 
     //########################################################################
     // Public Constructor
@@ -657,7 +656,6 @@ public class Definitions {
         DOUBLE_TYPE  = newTypeMethod(Names.Double ,DOUBLE_CLASS .staticType());
         ARRAY_TYPE   = newTypeMethod(Names.Array  ,
             ARRAY_CLASS.staticType(new Type[]{ANYREF_TYPE()}));
-        TYPE_TYPE    = newTypeMethod(Names.Type   , TYPE_CLASS.type   ());
 
         // add members to scala.Any
         ANY_EQ       = newMethod(ANY_CLASS,Names.eq          , 0);
