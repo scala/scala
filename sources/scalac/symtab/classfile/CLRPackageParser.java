@@ -118,7 +118,7 @@ public class CLRPackageParser {
 	    int j = 0;
 	    for (int i = 0; i < atypes.length; i++)
 		// skip nested types
-		if (!atypes[i].IsNotPublic() && atypes[i].DeclaringType == null)
+		if (atypes[i].DeclaringType == null)
 		    atypes[j++] = atypes[i];
 	    Type[] btypes = new Type[types.length + j];
 	    System.arraycopy(types, 0, btypes, 0, types.length);
@@ -343,7 +343,7 @@ public class CLRPackageParser {
 	    MemberInfo.Attribute a = (MemberInfo.Attribute)symtab_attr[l];
 	    if (a.GetType() == SCALA_SYMTAB_ATTR) {
 		symtab = new ByteArrayFile
-		    (type.FullName, type.Assembly.GetName().toString(),
+		    (type.FullName, "[" + type.Assembly.GetName() + "]",
 		     a.getValue());
 		break;
 	    }
