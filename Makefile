@@ -104,7 +104,8 @@ INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
 SCALADOC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scaladoc
 SCALADOC_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scaladoc.lst)
 SCALADOC_SOURCES	+= $(SCALADOC_LIST:%=$(SCALADOC_ROOT)/%)
-SCALADOC_JC_FILES	 = $(SCALADOC_SOURCES)
+SCALADOC_JC_FILES	 = $(filter %.java,$(SCALADOC_SOURCES))
+SCALADOC_SC_FILES	 = $(filter %.scala,$(SCALADOC_SOURCES))
 SCALADOC_RSRC_LIST	 = resources/style.css resources/script.js
 SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_RSRC_OUTPUTDIR = $(SCALADOC_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
@@ -176,6 +177,7 @@ fastclean	:
 	$(RM) .latest-dtd2scala-rsrc
 	$(RM) .latest-scalap-sc
 	$(RM) .latest-scaladoc-jc
+	$(RM) .latest-scaladoc-sc
 	$(RM) .latest-scaladoc-rsrc
 	$(RM) .latest-interpreter-jc
 	$(RM) .latest-library-sc
@@ -219,6 +221,7 @@ library		: .latest-$(boot)library-jc
 library		: .latest-$(boot)library-sc
 interpreter	: .latest-interpreter-jc
 scaladoc	: .latest-scaladoc-jc
+scaladoc	: .latest-scaladoc-sc
 scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala-sc
 dtd2scala	: .latest-dtd2scala-rsrc
@@ -344,6 +347,10 @@ cvs-fix-perms		:
 	@$(make) jc target=SCALADOC SCALADOC_JC_FILES='$?'
 	touch $@
 
+.latest-scaladoc-sc		: $(SCALADOC_SC_FILES)
+	@$(make) sc target=SCALADOC SCALADOC_SC_FILES='$?'
+	touch $@
+
 .latest-scaladoc-rsrc		: $(SCALADOC_RSRC_FILES)
 	$(strip $(MIRROR) -m 644 -C $(SCALADOC_ROOT) $(SCALADOC_RSRC_LIST) \
 	    $(SCALADOC_RSRC_OUTPUTDIR))
@@ -428,6 +435,7 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-compiler-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-compiler-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-rsrc

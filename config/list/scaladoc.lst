@@ -9,7 +9,7 @@ HTMLGenerator.java
 HTMLGeneratorCommand.java
 HTMLGeneratorPhase.java
 HTMLGeneratorPhases.java
-Main.java
+Main.scala
 OneTree.java
 ScalaSearch.java
 StandardDocModule.java

@@ -322,6 +322,26 @@ exec_dtd2scala() {
         "$@";
 }
 
+# Starts a program using scaladoc. The given arguments are passed to
+# exec_java. They must, at least, contain the name of the main class.
+exec_scaladoc() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # compute Java classpath
+    append_path JAVA_CLASSPATH RUNTIME_CLASSES;
+    append_path JAVA_CLASSPATH TOOLS_CLASSES;
+
+    # compute Scala classpath and bootclasspath
+    compute_scala_classpath;
+    compute_scala_bootclasspath;
+
+    # invoke Java
+    exec_java \
+        -Dscala.class.path=`get_os_pathlist "$SCALA_CLASSPATH"` \
+        -Dscala.boot.class.path=`get_os_pathlist "$SCALA_BOOTCLASSPATH"` \
+        "$@";
+}
+
 # Starts a program using scalap. The given arguments are passed to
 # exec_java. They must, at least, contain the name of the main class.
 exec_scalap() {
@@ -520,7 +540,7 @@ case "$SCRIPT" in
     scala      ) scala "$@";;
     scala-info ) scala_info "$@";;
     scalac*    ) exec_compile scalac.Main "$@";;
-    scaladoc*  ) exec_compile scala.tools.scaladoc.Main "$@";;
+    scaladoc*  ) exec_scaladoc scala.tools.scaladoc.Main "$@";;
     scalarun*  ) exec_interpret scala.tools.scalai.Main "$@";;
     scalaint*  ) exec_interpret scala.tools.scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala scala.tools.dtd2scala.Main "$@";;
