@@ -193,6 +193,7 @@ public class Names {
     public static final Name scala_Unit = Name.fromString("scala.Unit");
     public static final Name scala_runtime = Name.fromString("scala.runtime");
     public static final Name scala_runtime_RunTime = Name.fromString("scala.runtime.RunTime");
+    public static final Name synchronized_ = Name.fromString("synchronized");
     public static final Name eq = Name.fromString("eq");
     public static final Name equals = Name.fromString("equals");
     public static final Name tail = Name.fromString("tail");
