@@ -484,8 +484,10 @@ public class Primitives {
         // !!! addAll(defs.UNIT_CLASS, Names.ADD, Primitive.CONCAT, 1);
 
         // scala.Boolean
-        addAll(defs.BOOLEAN_CLASS, Names.EQ, Primitive.EQ, 2);
-        addAll(defs.BOOLEAN_CLASS, Names.NE, Primitive.NE, 2);
+        //addAll(defs.BOOLEAN_CLASS, Names.EQ, Primitive.EQ, 2);
+        addAllPrimitive(defs.BOOLEAN_CLASS, Names.EQ, Primitive.EQ, 1);
+        //addAll(defs.BOOLEAN_CLASS, Names.NE, Primitive.NE, 2);
+        addAllPrimitive(defs.BOOLEAN_CLASS, Names.NE, Primitive.NE, 1);
         addAll(defs.BOOLEAN_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.BOOLEAN_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.BOOLEAN_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -499,8 +501,10 @@ public class Primitives {
 
         // scala.Byte
         addAll(defs.BYTE_CLASS, Names.coerce, Primitive.COERCE, 5);
-        addAll(defs.BYTE_CLASS, Names.EQ, Primitive.EQ, 5);
-        addAll(defs.BYTE_CLASS, Names.NE, Primitive.NE, 5);
+        //addAll(defs.BYTE_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAllPrimitive(defs.BYTE_CLASS, Names.EQ, Primitive.EQ, 4);
+        //addAll(defs.BYTE_CLASS, Names.NE, Primitive.NE, 5);
+        addAllPrimitive(defs.BYTE_CLASS, Names.NE, Primitive.NE, 4);
         //addAll(defs.BYTE_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.BYTE_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.BYTE_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -523,8 +527,10 @@ public class Primitives {
 
         // scala.Short
         addAll(defs.SHORT_CLASS, Names.coerce, Primitive.COERCE, 4);
-        addAll(defs.SHORT_CLASS, Names.EQ, Primitive.EQ, 5);
-        addAll(defs.SHORT_CLASS, Names.NE, Primitive.NE, 5);
+        //addAll(defs.SHORT_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAllPrimitive(defs.SHORT_CLASS, Names.EQ, Primitive.EQ, 4);
+        //addAll(defs.SHORT_CLASS, Names.NE, Primitive.NE, 5);
+        addAllPrimitive(defs.SHORT_CLASS, Names.NE, Primitive.NE, 4);
         //addAll(defs.SHORT_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.SHORT_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.SHORT_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -547,8 +553,10 @@ public class Primitives {
 
         // scala.Char
         addAll(defs.CHAR_CLASS, Names.coerce, Primitive.COERCE, 4);
-        addAll(defs.CHAR_CLASS, Names.EQ, Primitive.EQ, 5);
-        addAll(defs.CHAR_CLASS, Names.NE, Primitive.NE, 5);
+        //addAll(defs.CHAR_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAllPrimitive(defs.CHAR_CLASS, Names.EQ, Primitive.EQ, 4);
+        //addAll(defs.CHAR_CLASS, Names.NE, Primitive.NE, 5);
+        addAllPrimitive(defs.CHAR_CLASS, Names.NE, Primitive.NE, 4);
         //addAll(defs.CHAR_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.CHAR_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.CHAR_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -571,8 +579,10 @@ public class Primitives {
 
         // scala.Int
         addAll(defs.INT_CLASS, Names.coerce, Primitive.COERCE, 3);
-        addAll(defs.INT_CLASS, Names.EQ, Primitive.EQ, 5);
-        addAll(defs.INT_CLASS, Names.NE, Primitive.NE, 5);
+        //addAll(defs.INT_CLASS, Names.EQ, Primitive.EQ, 5);
+        addAllPrimitive(defs.INT_CLASS, Names.EQ, Primitive.EQ, 4);
+        //addAll(defs.INT_CLASS, Names.NE, Primitive.NE, 5);
+        addAllPrimitive(defs.INT_CLASS, Names.NE, Primitive.NE, 4);
         //addAll(defs.INT_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.INT_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.INT_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -595,8 +605,10 @@ public class Primitives {
 
         // scala.Long
         addAll(defs.LONG_CLASS, Names.coerce, Primitive.COERCE, 2);
-        addAll(defs.LONG_CLASS, Names.EQ, Primitive.EQ, 4);
-        addAll(defs.LONG_CLASS, Names.NE, Primitive.NE, 4);
+        //addAll(defs.LONG_CLASS, Names.EQ, Primitive.EQ, 4);
+        addAllPrimitive(defs.LONG_CLASS, Names.EQ, Primitive.EQ, 3);
+        //addAll(defs.LONG_CLASS, Names.NE, Primitive.NE, 4);
+        addAllPrimitive(defs.LONG_CLASS, Names.NE, Primitive.NE, 3);
         //addAll(defs.LONG_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.LONG_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.LONG_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -619,8 +631,10 @@ public class Primitives {
 
         // scala.Float
         addAll(defs.FLOAT_CLASS, Names.coerce, Primitive.COERCE, 1);
-        addAll(defs.FLOAT_CLASS, Names.EQ, Primitive.EQ, 3);
-        addAll(defs.FLOAT_CLASS, Names.NE, Primitive.NE, 3);
+        //addAll(defs.FLOAT_CLASS, Names.EQ, Primitive.EQ, 3);
+        addAllPrimitive(defs.FLOAT_CLASS, Names.EQ, Primitive.EQ, 2);
+        //addAll(defs.FLOAT_CLASS, Names.NE, Primitive.NE, 3);
+        addAllPrimitive(defs.FLOAT_CLASS, Names.NE, Primitive.NE, 2);
         //addAll(defs.FLOAT_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.FLOAT_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.FLOAT_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -635,8 +649,10 @@ public class Primitives {
         addAll(defs.FLOAT_CLASS, Names.GE, Primitive.GE, 2);
 
         // scala.Double
-        addAll(defs.DOUBLE_CLASS, Names.EQ, Primitive.EQ, 2);
-        addAll(defs.DOUBLE_CLASS, Names.NE, Primitive.NE, 2);
+        //addAll(defs.DOUBLE_CLASS, Names.EQ, Primitive.EQ, 2);
+        addAllPrimitive(defs.DOUBLE_CLASS, Names.EQ, Primitive.EQ, 1);
+        //addAll(defs.DOUBLE_CLASS, Names.NE, Primitive.NE, 2);
+        addAllPrimitive(defs.DOUBLE_CLASS, Names.NE, Primitive.NE, 1);
         //addAll(defs.DOUBLE_CLASS, Names.equals, Primitive.EQUALS, 1);
         addAll(defs.DOUBLE_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         addAll(defs.DOUBLE_CLASS, Names.toString, Primitive.TOSTRING, 1);
@@ -858,6 +874,31 @@ public class Primitives {
         Symbol[] alts = symbol.alternativeSymbols();
         assert count == alts.length : count + " != " + alts.length;
         for (int i = 0; i < alts.length; i++) addPrimitive(alts[i], primitive);
+    }
+
+    private void addAllPrimitive(Symbol clasz, Name name, Primitive primitive, int count) {
+        Symbol symbol = clasz.lookup(name);
+        assert symbol != Symbol.NONE : Debug.show(clasz) + "." + name;
+        Symbol[] alts = symbol.alternativeSymbols();
+        int cnt = 0;
+        loop:
+        for (int i = 0; i < alts.length; i++) {
+            switch (alts[i].info()) {
+            case MethodType(Symbol[] vparams, _):
+                for (int j = 0; j < vparams.length; j++) {
+                    if (!isValueType(vparams[j].info()))
+                        continue loop;
+                }
+                addPrimitive(alts[i], primitive);
+                cnt++;
+                break;
+            }
+        }
+        assert cnt == count : "" + cnt + " != " + count;
+    }
+
+    private boolean isValueType(Type t) {
+        return t.isSubType(definitions.ANYVAL_TYPE());
     }
 
     private void addPrimitive(Symbol symbol, Primitive primitive) {
