@@ -2,40 +2,59 @@ package scala ;
 
 object UnitTest {
 
-            def test[b,a]( doit:b => a,
-                              input: b,
-                              expectedResult:a ):Unit = {
+	    def message_passedOK:Unit = {
+		  System.out.println("passed ok")
+	    }
 
-                if( doit(input) == expectedResult )
+	    def message_failed( actual:String, expected:String ):Unit = {
+   		  System.out.print("failed! we got");
+		  System.out.print( "\""+ actual +"\"" );
+                  System.out.println(" but expected " + expected)
+	    }
+
+	    def testEquals[a]( actual: a, expected: a ):Unit = {
+
+	      if( actual == expected )
                         {
-                         System.out.println("passed ok")
+                         message_passedOK
                         }
                 else
                         {
-                         System.out.print("failed! we got");
-                         System.out.print( "\""+doit(input).toString()+"\"" );
-                         System.out.println(" but expected "+expectedResult)
+			 message_failed( actual.toString(), expected.toString() )
                         }
 
-            } // testAlg
+	    } // testEquals
+
+            def test[b,a]( doit:b => a,
+                              input: b,
+                              expected:a ):Unit = {
+		val actual = doit( input );
+                if( actual == expected )
+                        {
+                         message_passedOK
+                        }
+                else
+                        {
+			 message_failed( actual.toString(), expected.toString() )
+                        }
+
+            } // test
 
             def test2[c,b,a]( doit:(c,b) => a,
                               in1: c,
                               in2: b,
-                              expectedResult:a ):Unit = {
-
-                if( doit(in1,in2) == expectedResult )
+                              expected:a ):Unit = {
+		val actual = doit( in1, in2 );
+                if( actual == expected )
                         {
-                         System.out.println("passed ok")
+                         message_passedOK;
                         }
                 else
                         {
-                         System.out.print("failed! we got");
-                         System.out.print( "\""+doit(in1,in2).toString()+"\"" );
-                         System.out.println(" but expected "+expectedResult)
+			 message_failed( actual.toString(), expected.toString() )
                         }
 
-            } // testAlg
+            } // test2
 
 } // unitTest
 
