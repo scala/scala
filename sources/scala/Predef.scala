@@ -60,6 +60,12 @@ object Predef {
     array;
   }
 /*
+  def Array[A <: AnyRef](xs: A*): Array[A] = {
+    val array = new Array[A](xs.length);
+    var i = 0;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
   def Array(x: boolean, xs: boolean*): Array[boolean] = {
     val array = new Array[boolean](xs.length + 1);
     array(0) = x;

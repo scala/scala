@@ -40,6 +40,9 @@ object Stream {
     }
   }
 
+  def fromIterator[a](it: Iterator[a]): Stream[a] =
+    if (it.hasNext) cons(it.next, fromIterator(it)) else empty;
+
   def concat[a](xs: Seq[Stream[a]]): Stream[a] = concat(xs.elements);
 
   def concat[a](xs: Iterator[Stream[a]]): Stream[a] = {

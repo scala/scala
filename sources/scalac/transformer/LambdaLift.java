@@ -209,6 +209,10 @@ public class LambdaLift extends OwnerTransformer
 			!excluded.contains(sym))
 			markFree(sym, currentOwner);
 		    break;
+		case SingleType(NoPrefix, Symbol sym):
+		    if (isLocal(sym, currentOwner))
+			markFree(sym, currentOwner);
+		    break;
 		case PolyType(Symbol[] tparams, Type restp):
 		    for (int i = 0; i < tparams.length; i++)
 			excluded = excluded.incl(tparams[i]);

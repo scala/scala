@@ -4462,6 +4462,8 @@ class AnyRef extends Any {
 trait ScalaObject extends AnyRef;
 \end{lstlisting}
 
+\todo{isinstanceof not permitted on numeric types}
+
 The type cast operation \verb@asInstanceOf@ has a special meaning (not
 expressed in the code above) when its type parameter is a numeric
 type.  For any type \lstinline@T <: Double@, and any numeric value

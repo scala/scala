@@ -4,18 +4,18 @@ object parsers1 {
 
   abstract class Parsers {
 
-    type intype;
+    type inputType;
 
     abstract class Parser {
 
-      type Result = Option[intype];
+      type Result = Option[inputType];
 
-      def apply(in: intype): Result;
+      def apply(in: inputType): Result;
 
       /*** p &&& q applies first p, and if that succeeds, then q
        */
       def &&& (def q: Parser) = new Parser {
-        def apply(in: intype): Result = Parser.this.apply(in) match {
+        def apply(in: inputType): Result = Parser.this.apply(in) match {
           case None => None
           case Some(in1)  => q(in1)
         }
@@ -24,7 +24,7 @@ object parsers1 {
       /*** p ||| q applies first p, and, if that fails, then q.
        */
       def ||| (def q: Parser) = new Parser {
-        def apply(in: intype): Result = Parser.this.apply(in) match {
+        def apply(in: inputType): Result = Parser.this.apply(in) match {
           case None => q(in)
           case s => s
         }
@@ -32,11 +32,11 @@ object parsers1 {
     }
 
     val empty = new Parser {
-      def apply(in: intype): Result = Some(in)
+      def apply(in: inputType): Result = Some(in)
     }
 
     val fail = new Parser {
-      def apply(in: intype): Result = None
+      def apply(in: inputType): Result = None
     }
 
     def opt(p: Parser): Parser = p ||| empty;    // p? = (p | <empty>)
@@ -69,7 +69,7 @@ object parsers1 {
   }
 
   class ParseString(s: String) extends Parsers {
-    type intype = int;
+    type inputType = int;
     val input = 0;
     def chr(p: char => boolean) = new Parser {
       def apply(in: int): Parser#Result =
