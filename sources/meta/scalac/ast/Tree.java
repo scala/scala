@@ -81,7 +81,7 @@ public class Tree {
         n_Template       = node("Template"      , None, HasSym),
         n_LabelDef       = node("LabelDef"      , Term, DefSym),
         n_Block          = node("Block"         , Term, NoSym),
-        n_Tuple          = node("Tuple"         , Term, NoSym),
+        n_Sequence       = node("Sequence"      , Term, NoSym),
         n_Visitor        = node("Visitor"       , Term, NoSym),
         n_Function       = node("Function"      , Term, NoSym),
         n_Assign         = node("Assign"        , Term, NoSym),
@@ -209,8 +209,8 @@ public class Tree {
             setRange(Phase.PARSER, Phase.END).
             addField(t_Trees, "stats");
 
-        n_Tuple.
-            setDescription("Tuple of expressions (comma separated expressions)").
+        n_Sequence.
+            setDescription("Sequence of expressions (comma separated expressions)").
             setRange(Phase.UNCURRY, Phase.LAMBDALIFT).
             addField(t_TermTrees, "trees");
 

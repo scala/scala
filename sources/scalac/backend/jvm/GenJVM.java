@@ -465,7 +465,7 @@ class GenJVM {
         case AppliedType(_,_):
             break;
 
-        case Tuple(_):
+        case Sequence(_):
         case Super(_):
         case ModuleDef(_,_,_,_):
         case PatDef(_,_,_):
