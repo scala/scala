@@ -23,6 +23,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.*;
 
 import scala.tools.util.AbstractFile;
+import scala.tools.util.ClassPath;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 import scala.tools.util.SourceReader;
@@ -299,7 +300,7 @@ public abstract class Global {
 
     /** Reads and returns the source file in file with given name. */
     public SourceFile getSourceFile(String filename) throws IOException {
-        AbstractFile file = AbstractFile.open(null, filename);
+        AbstractFile file = AbstractFile.getFile(filename);
         if (file == null) throw new FileNotFoundException(
             "source file '" + filename + "' could not be found");
         return getSourceFile(file);
@@ -307,16 +308,14 @@ public abstract class Global {
 
     /** Reads and returns the source file in given abstract file. */
     public SourceFile getSourceFile(AbstractFile file) throws IOException {
-        if (!file.exists()) throw new FileNotFoundException(
-            "source file '" + file + "' could not be found");
         return new SourceFile(file, reader.read(file));
     }
 
     /** Reads and returns the source file of given clasz. */
     public SourceFile getSourceFile(Symbol clasz) throws IOException {
         assert clasz.isClass() && clasz.isStatic(): Debug.show(clasz);
-        AbstractFile file = classPath.openFile(
-            SourceRepresentation.externalizeFileName(clasz, ".scala"));
+        AbstractFile file = classPath.getRoot().lookupPath(
+            SourceRepresentation.externalizeFileName(clasz, ".scala"), false);
         if (file == null) throw new FileNotFoundException(
             "source file for " + clasz + " could not be found");
         return getSourceFile(file);
@@ -324,7 +323,7 @@ public abstract class Global {
 
     /** Returns the root symbol loader. */
     public SymbolLoader getRootLoader() {
-        return new PackageParser(this);
+        return new PackageParser(this, classPath.getRoot());
     }
 
     /** the top-level compilation process

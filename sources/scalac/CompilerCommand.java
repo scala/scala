@@ -12,7 +12,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import scalac.util.ClassPath;
+import scala.tools.util.ClassPath;
+
 import scalac.util.Reporter;
 import scalac.util.CommandParser;
 import scalac.util.ArgumentParser;

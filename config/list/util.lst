@@ -4,9 +4,16 @@
 # $Id$
 
 AbstractFile.java
+CharArrayFile.java
+ClassPath.java
+DirectoryPath.java
 EmptyIterator.java
+PlainFile.java
 Position.java
 SourceFile.java
 SourceReader.java
+VirtualFile.java
+VirtualDirectory.java
+ZipArchive.java
 
 ##############################################################################

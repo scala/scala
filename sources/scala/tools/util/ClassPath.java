@@ -6,17 +6,13 @@
 
 // $Id$
 
-package scalac.util;
+package scala.tools.util;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
-import scala.tools.util.AbstractFile;
-
 
 /** This class represents a Java/Scala class path. */
 public class ClassPath {
@@ -100,14 +96,11 @@ public class ClassPath {
         return scala == null ? java : java + PATH_SEPARATOR + scala;
     }
 
-    /** the various class path roots
-     */
-    protected String[] root;
+    //########################################################################
+    // Private Fields
 
-    /** print searches in the class path
-     */
-    public boolean printSearch;
-
+    /** The abstract directory represented by this class path */
+    private final AbstractFile root;
 
     //########################################################################
     // Public Constructors
@@ -124,7 +117,6 @@ public class ClassPath {
     public ClassPath(String classpath) {
         this(classpath, SOURCEPATH, BOOTCLASSPATH, EXTDIRS);
     }
-
 
     /** Initializes this instance with the specified paths. */
     public ClassPath(String classpath, String sourcepath, String bootclasspath,
@@ -146,47 +138,24 @@ public class ClassPath {
         addFilesInPath(files, sourcepath);
         ArrayList dirs = new ArrayList(files.size());
         for (Iterator i = files.iterator(); i.hasNext(); ) {
-            File file = (File)i.next();
-            if (file.exists()) dirs.add(file.getPath());
+            AbstractFile dir = AbstractFile.getDirectory((File)i.next());
+            if (dir != null) dirs.add(dir);
         }
-        this.root = (String[])dirs.toArray(new String[dirs.size()]);
+        Object[] array = dirs.toArray(new AbstractFile[dirs.size()]);
+        this.root = DirectoryPath.fromArray("<root>", (AbstractFile[])array);
     }
 
     //########################################################################
     // Public Methods
 
-    /** find file with given name in class path and return an abstract
-     *  file representation
-     */
-    public AbstractFile openFile(String name) throws FileNotFoundException {
-        if (printSearch)
-            System.out.println("looking for " + name);
-        for (int i = 0; i < root.length; i++) {
-            if (printSearch)
-                System.out.println("  in " + root[i]);
-            AbstractFile f = AbstractFile.open(root[i], name);
-            if (f != null)
-                return f;
-        }
-        throw new FileNotFoundException("file '" + name +
-                                        "' not found in classpath");
-    }
-
-    public String[] components() {
+    /** Returns the root of this class path. */
+    public AbstractFile getRoot() {
         return root;
     }
 
-    /** return a textual representation of this class path
-     */
+    /** Returns a string representation of this class path. */
     public String toString() {
-        if (root.length == 0)
-            return "";
-        else if (root.length == 1)
-            return root[0];
-        String path = root[0];
-        for (int i = 1; i < root.length; i++)
-            path += PATH_SEPARATOR + root[i];
-        return path;
+        return root.toString();
     }
 
     //########################################################################

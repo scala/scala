@@ -8,10 +8,8 @@
 
 package scalac.symtab.classfile;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
@@ -23,7 +21,6 @@ import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.Type;
 import scalac.util.Name;
-import scalac.util.SourceRepresentation;
 
 /**
  * This class implements a package member loader. It can be used to
@@ -34,12 +31,16 @@ public class PackageParser extends SymbolLoader {
     //########################################################################
     // Private Fields
 
+    /** The directory to read */
+    private final AbstractFile directory;
+
     //########################################################################
     // Public Constructors
 
     /** Initializes this instance. */
-    public PackageParser(Global global) {
+    public PackageParser(Global global, AbstractFile directory) {
         super(global);
+        this.directory = directory;
     }
 
     //########################################################################
@@ -47,43 +48,27 @@ public class PackageParser extends SymbolLoader {
 
     /** Completes the package symbol by loading all its members. */
     protected String doComplete(Symbol peckage) {
-	boolean isRoot = peckage.isRoot();
-        String dirname = isRoot ? null
-            : SourceRepresentation.externalizeFileName(peckage, "/");
-
         // collect JVM and source members
+	boolean isRoot = peckage.isRoot();
         HashMap sources = new HashMap();
         HashMap classes = new HashMap();
-        HashSet packages = new HashSet();
-        String[] base = global.classPath.components();
-        for (int i = 0; i < base.length; i++) {
-            AbstractFile dir = AbstractFile.open(base[i], dirname);
-            if (dir == null) continue;
-            try {
-                String[] filenames = dir.list();
-                if (filenames == null) continue;
-                for (int j = 0; j < filenames.length; j++) {
-                    String fname = filenames[j];
-                    if (fname.endsWith("/") && !fname.equals("META-INF/")) {
-                        String name = fname.substring(0, fname.length() - 1);
-                        packages.add(name);
-                        continue;
-                    }
-                    if (!isRoot && fname.endsWith(".class")) {
-                        String name = fname.substring(0, fname.length() - 6);
-                        if (!classes.containsKey(name))
-                            classes.put(name, dir.open(fname));
-                        continue;
-                    }
-                    if (!isRoot && fname.endsWith(".scala")) {
-                        String name = fname.substring(0, fname.length() - 6);
-                        if (!sources.containsKey(name))
-                            sources.put(name, dir.open(fname));
-                        continue;
-                    }
-                }
-            } catch (IOException exception) {
-                if (global.debug) exception.printStackTrace();
+        HashMap packages = new HashMap();
+        for (Iterator i = directory.list(); i.hasNext(); ) {
+            AbstractFile file = (AbstractFile)i.next();
+            String filename = file.getName();
+            if (file.isDirectory()) {
+                if (filename.equals("META-INF")) continue;
+                packages.put(filename, file);
+                continue;
+            }
+            if (!isRoot && filename.endsWith(".class")) {
+                String name = filename.substring(0, filename.length() - 6);
+                if (!classes.containsKey(name)) classes.put(name, file);
+                continue;
+            }
+            if (!isRoot && filename.endsWith(".scala")) {
+                String name = filename.substring(0, filename.length() - 6);
+                if (!sources.containsKey(name)) sources.put(name, file);
                 continue;
             }
 	}
@@ -115,9 +100,12 @@ public class PackageParser extends SymbolLoader {
             SymbolLoader loader = new ClassParser(global, cfile);
             peckage.newLoadedClass(JAVA, classname, loader, members);
         }
-        for (Iterator i = packages.iterator(); i.hasNext(); ) {
-            String name = (String)i.next();
-            peckage.newLoadedPackage(Name.fromString(name), this, members);
+        for (Iterator i = packages.entrySet().iterator(); i.hasNext(); ) {
+            HashMap.Entry entry = (HashMap.Entry)i.next();
+            String name = (String)entry.getKey();
+            AbstractFile dfile = (AbstractFile)entry.getValue();
+            SymbolLoader loader = new PackageParser(global, dfile);
+            peckage.newLoadedPackage(Name.fromString(name), loader, members);
         }
 
         // collect and create CLR members
@@ -126,7 +114,7 @@ public class PackageParser extends SymbolLoader {
 
         // initialize package
         peckage.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, peckage));
-        return dirname == null ? "anonymous package" : "package '"+dirname+"'";
+        return "directory path '" + directory + "'";
     }
 
     //########################################################################

@@ -151,7 +151,6 @@ typechecker/RefCheckPhase.java
 
 util/AbstractFileReader.java
 util/ArrayApply.java
-util/ClassPath.java
 util/Debug.java
 util/EmptyPhase.java
 util/FreshNameCreator.java

@@ -75,7 +75,7 @@ public class CLRPackageParser extends SymbolLoader {
     private boolean initialized = false;
     public void init() {
 	if (initialized) return;
-	scalac.util.ClassPath.addFilesInPath(
+	scala.tools.util.ClassPath.addFilesInPath(
             assemrefs, global.args.assemrefs.value);
 	Assembly mscorlib = findAssembly("mscorlib.dll");
 	Type.initMSCORLIB(mscorlib);

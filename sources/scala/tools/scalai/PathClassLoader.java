@@ -9,24 +9,23 @@
 
 package scala.tools.scalai;
 
+import java.io.File;
 import java.io.IOException;
 
 import scala.tools.util.AbstractFile;
-
-import scalac.util.ClassPath;
 
 public class PathClassLoader extends ClassLoader {
 
     //########################################################################
     // PathClassLoader state
 
-    private final ClassPath classpath;
+    private final AbstractFile root;
 
     //########################################################################
     // PathClassLoader constructors
 
-    public PathClassLoader(ClassPath classpath) {
-        this.classpath = classpath;
+    public PathClassLoader(AbstractFile root) {
+        this.root = root;
     }
 
     //########################################################################
@@ -34,8 +33,8 @@ public class PathClassLoader extends ClassLoader {
 
     public Class findClass(String name) throws ClassNotFoundException {
         try {
-            String filename = name.replace('.', '/') + ".class";
-            AbstractFile file = classpath.openFile(filename);
+            String filename = name.replace('.', File.separatorChar) + ".class";
+            AbstractFile file = root.lookupPath(filename, false);
             byte[] bytes = file.read();
             return defineClass(name, bytes, 0, bytes.length);
         } catch (IOException exception) {

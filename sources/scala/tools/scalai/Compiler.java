@@ -54,7 +54,7 @@ public class Compiler {
         this.global = global;
         this.definitions = global.definitions;
         this.constants = new Constants();
-        this.loader = new PathClassLoader(global.classPath);
+        this.loader = new PathClassLoader(global.classPath.getRoot());
         scala.runtime.RunTime.setClassLoader(loader);
         JavaMirror mirror = new JavaMirror(definitions, loader);
         this.environment = new Environment(this, mirror);

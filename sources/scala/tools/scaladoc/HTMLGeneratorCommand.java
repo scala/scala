@@ -14,9 +14,10 @@ import java.util.List;
 import ch.epfl.lamp.util.HTMLPrinter;
 import ch.epfl.lamp.util.HTMLRepresentation;
 
+import scala.tools.util.ClassPath;
+
 import scalac.CompilerCommand;
 import scalac.util.BooleanOptionParser;
-import scalac.util.ClassPath;
 import scalac.util.OptionParser;
 import scalac.util.Reporter;
 import scalac.util.StringOptionParser;
