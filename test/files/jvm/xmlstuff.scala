@@ -29,20 +29,20 @@ object Test with Application {
     def attribute = List();
   };
 
-  assertSimilar( List( 3 ), List( 3 ));
+  assertSameElements( List( 3 ), List( 3 ));
 
   Console.println("equality");
   assertEquals( c, parsedxml11 );
   assertEquals( parsedxml1, parsedxml11 );
-  assertSimilar( List(parsedxml1), List(parsedxml11));
-  assertSimilar( Iterator.fromArray(Predef.Array(parsedxml1)).toSeq(1), List(parsedxml11));
+  assertSameElements( List(parsedxml1), List(parsedxml11));
+  assertSameElements( Iterator.fromArray(Predef.Array(parsedxml1)).toSeq(1), List(parsedxml11));
 
   val x2 = "<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>";
 
   val i = new InputSource( new StringReader( x2 ));
   val x2p = XML.load( i );
 
-  assertSimilar(x2p, Elem("book",
+  assertEquals(x2p, Elem("book",
                           Elem("author",Text("Peter Buneman")),
                           Elem("author",Text("Dan Suciu")),
                           Elem("title",Text("Data on ze web"))));
@@ -55,11 +55,11 @@ object Test with Application {
   Console.println("xpath \\");
 
 
-  //assertSimilar( parsedxml1 \ '_ ,    List( 'world() ) );
-  assertSimilar( parsedxml1 \ '_ ,    List( Elem("world") ) );
+  //assertSameElements( parsedxml1 \ '_ ,    List( 'world() ) );
+  assertSameElements( parsedxml1 \ '_ ,    List( Elem("world") ) );
 
-  //assertSimilar( parsedxml1 \ 'world, List( 'world() ) );
-  assertSimilar( parsedxml1 \ 'world, List( Elem("world") ) );
+  //assertSameElements( parsedxml1 \ 'world, List( 'world() ) );
+  assertSameElements( parsedxml1 \ 'world, List( Elem("world") ) );
 
 /*
   Console.println( parsedxml2 \ '_ );
@@ -68,7 +68,7 @@ object Test with Application {
     Console.println( i );
     };
   */
-  assertSimilar(
+  assertSameElements(
       parsedxml2 \ '_ ,
 
       List(
@@ -82,7 +82,7 @@ object Test with Application {
   );
   assertEquals( (parsedxml2 \ 'author).length, 0 );
 
-  assertSimilar(
+  assertSameElements(
       parsedxml2 \ 'book,
 
       List(
@@ -96,7 +96,7 @@ object Test with Application {
       )
   );
 
-  assertSimilar(
+  assertSameElements(
 
       parsedxml2 \ '_ \ '_,
 
@@ -109,7 +109,7 @@ object Test with Application {
     )
   );
 
-  assertSimilar(
+  assertSameElements(
 
       parsedxml2 \ '_ \ 'author,
 
@@ -121,11 +121,11 @@ object Test with Application {
 
   );
 
-  assertSimilar( (parsedxml2 \ '_ \ '_ \ 'author), List() );
+  assertSameElements( (parsedxml2 \ '_ \ '_ \ 'author), List() );
 
   Console.println("xpath \\\\ DESCENDANTS");
 
-  assertSimilar(
+  assertSameElements(
 
       parsedxml2 \\ 'author,
 
@@ -137,7 +137,7 @@ object Test with Application {
 
  );
 
-  assertSimilar(
+  assertSameElements(
 
       new NodeSeq(List( parsedxml2 ))\\ '_,
 
@@ -171,7 +171,7 @@ object Test with Application {
   );
 
 
-  assertSimilar(
+  assertSameElements(
 
       parsedxml2 \\ 'title,
 
