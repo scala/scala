@@ -25,13 +25,13 @@ trait Node {
    *  of all children of this node that are labelled with "foo".
    *  The document order is preserved.
    */
-    def /(that:Symbol): NodeSeq = new NodeSeq({
+    def |(that:Symbol): NodeSeq = new NodeSeq({
       val iter = children.elements;
-      if( "_" == that.label ) {
+      if( "_" == that.name ) {
         List.fromIterator( iter );
       } else {
         var res:List[Node] = Nil;
-        for( val x <- iter; x.label == that.label ) {
+        for( val x <- iter; x.label == that.name ) {
           res = x::res;
         }
         res.reverse
@@ -43,13 +43,13 @@ trait Node {
    *  Use /'_ as a wildcard.
    *  The document order is preserved.
    */
-    def /#(that:Symbol): NodeSeq = new NodeSeq({
+    def ||(that:Symbol): NodeSeq = new NodeSeq({
       var res:List[Node] = Nil;
       var tmp:List[Node] = Nil;
       for( val x <- children.elements ) {
-        if ( x.label == that.label || "_" == that.label )
+        if ( x.label == that.name || "_" == that.name )
           tmp = x::tmp;
-        tmp = tmp:::(x/#(that)).toList;
+        tmp = tmp:::(x||(that)).toList;
         res = res:::tmp;
         tmp = Nil
       }
@@ -66,26 +66,26 @@ class NodeSeq(theList:List[Node]) extends Seq[Node] {
    *  of all elements of this sequence that are labelled with "foo".
    *  Use /'_ as a wildcard. The document order is preserved.
    */
-  def /(that: Symbol) = if( "_" == that.label ) {
+  def |(that: Symbol) = if( "_" == that.name ) {
     new NodeSeq( res )
   } else {
-    new NodeSeq( res.filter( y => y.label == that.label ))
+    new NodeSeq( res.filter( y => y.label == that.name ))
   }
 
 
   /** projection function. Similar to XPath, use this./'foo to get a list
    *  of all children of this node that are labelled with "foo"
-   *  Use /#'_ as a wildcard. The document order is preserved.
+   *  Use ||'_ as a wildcard. The document order is preserved.
    */
-    def /#(that: Symbol): NodeSeq = new NodeSeq(
-      if ( "_" == that.label ) {
-        theList.flatMap ( x => (x/#'_).toList )
+    def ||(that: Symbol): NodeSeq = new NodeSeq(
+      if ( "_" == that.name ) {
+        theList.flatMap ( x => (x||'_).toList )
       } else {
         theList.flatMap ( x => {
-          if( x.label == that.label )
-            x::(x/#(that)).toList;
+          if( x.label == that.name )
+            x::(x||(that)).toList;
           else
-            (x/#(that)).toList;
+            (x||(that)).toList;
         })
       });
 

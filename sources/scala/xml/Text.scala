@@ -25,14 +25,15 @@ case class Text( text:String ) extends Node {
   */
   final def children = Nil;
 
-  /** returns PCDATA text, with some characters escaped according to XML spec
-  */
-  override def toXML = Utility.escape( text );
 
   override def hashCode() = text.hashCode();
 
   /** returns "Text("+raw text+")"
   */
-  override def toString() = "Text("+text+")";
+  override def toString() = Utility.escape( text );
+
+  /** returns PCDATA text, with some characters escaped according to XML spec
+  */
+  override def toXML = Utility.escape( text );
 
 }
