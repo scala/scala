@@ -483,6 +483,25 @@ class GenJVM {
             generatedType = finalType;
         } break;
 
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise): {
+            JLabel[] labels = new JLabel[bodies.length];
+            for (int i = 0; i < labels.length; ++i) labels[i] = new JLabel();
+            JLabel defaultLabel = new JLabel();
+            JLabel afterLabel = new JLabel();
+
+            genLoad(ctx, test, JType.INT);
+            ctx.code.emitSWITCH(tags, labels, defaultLabel, 0.9F);
+            for (int i = 0; i < bodies.length; ++i) {
+                ctx.code.anchorLabelToNext(labels[i]);
+                genLoad(ctx, bodies[i], expectedType);
+                ctx.code.emitGOTO(afterLabel);
+            }
+            ctx.code.anchorLabelToNext(defaultLabel);
+            genLoad(ctx, otherwise, expectedType);
+            ctx.code.anchorLabelToNext(afterLabel);
+            generatedType = expectedType;
+        } break;
+
         case This(_):
         case Super(_, _):
             ctx.code.emitALOAD_0();
