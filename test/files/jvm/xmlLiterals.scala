@@ -266,6 +266,22 @@ object Test03Servlet {
     Console.println( x2 );
   }
 
+    def test06 = {
+
+      val foo =
+        <bar:foo xmlns:bar="www.bar.com" xmlns="www.baz.com">
+          <baz/>
+      </bar:foo>;
+
+      Console.println( foo );
+      val h = new scala.collection.mutable.HashMap[String,String]();
+      h("www.bar.com") = "bar";
+      h("www.baz.com") = "";
+      Console.println( Utility.toXML(foo, h) );
+
+    }
+
+
   def main( args:Array[String] ):Unit = {
     Console.println("Test01Literals");
     Test01Literals;
@@ -276,7 +292,9 @@ object Test03Servlet {
     Console.println("Test04");
     Test04;
     Console.println("Test05Ref");
-    test05main;{
+    test05main;
+    Console.println("namespace");
+    test06;{
     }
   }
 

@@ -49,3 +49,6 @@ passed ok
 Test05Ref
 <foo>{</foo>
 <foo>&nbsp;{<bar><baz></baz></bar><bar></bar></foo>
+namespace
+<foo xmlns="www.bar.com" xmlns:ns0="www.baz.com"><ns0:baz></ns0:baz></foo>
+<bar:foo xmlns:bar="www.bar.com" xmlns="www.baz.com"><baz></baz></bar:foo>
