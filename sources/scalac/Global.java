@@ -162,10 +162,10 @@ public class Global {
     /** hooks for installing printers
      */
     protected TreePrinter newTextTreePrinter(OutputStream printStream) {
-	return new TextTreePrinter(printStream);
+        return new TextTreePrinter(printStream);
     }
     protected TreePrinter newHTMLTreePrinter(OutputStream printStream) {
-	return new HTMLTreePrinter(printStream);
+        return new HTMLTreePrinter(printStream);
     }
 
     /**
@@ -195,7 +195,7 @@ public class Global {
         this.outpath = args.outpath();
         this.target = interpret ? TARGET_INT : args.target.value.intern();
         this.separate = args.separate.value.equals("yes") ||
-	    args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
+            args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
         this.uniqueID = new UniqueID();
         String printFile = args.printfile.value;
         try {
@@ -216,7 +216,7 @@ public class Global {
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
-	// TODO: Enable TailCall for other backends when they handle LabelDefs
+        // TODO: Enable TailCall for other backends when they handle LabelDefs
         if (target != TARGET_JVM) args.phases.TAILCALL.addSkipFlag();
         if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
         if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
@@ -321,7 +321,7 @@ public class Global {
                 sym.reset(new SourceCompleter(this));
             }
         }
-	symdata.clear();
+        symdata.clear();
         compiledNow.clear();
         printer.end();
     }
@@ -329,7 +329,7 @@ public class Global {
     /** transform a unit and stop at the current compilation phase
      */
     public void transformUnit(Unit unit) {
-       	Phase oldCurrentPhase = currentPhase;
+        Phase oldCurrentPhase = currentPhase;
         currentPhase = PHASE.ANALYZER.phase().next; // or REFCHECK.next?
         while ((currentPhase.id < oldCurrentPhase.id) && (reporter.errors() == 0)) {
             start();
@@ -554,6 +554,18 @@ public class Global {
      */
     public Error fail(Object value) {
         throw new ApplicationError(value);
+    }
+
+    /** stop the compilation process immediately
+     */
+    public Error fail(String message, Throwable cause) {
+        throw new ApplicationError(message, cause);
+    }
+
+    /** stop the compilation process immediately
+     */
+    public Error fail(Throwable cause) {
+        throw new ApplicationError(cause);
     }
 
     /** issue a global error
