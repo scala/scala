@@ -62,31 +62,22 @@ public class HTMLGenerator {
     public static final String VERSION =
         System.getProperty("scala.version", "unknown version");
 
-    public static final String DEFAULT_DOCTITLE = "";
-    public static final String DEFAULT_WINDOWTITLE = "Generated Documentation";
-
     /*
      * Names of predefined page names.
      */
-    protected final String PAGE_DEFAULT_SUFFIX = ".html";
-    protected final String PAGE_OBJECT_SUFFIX  = "-object" + PAGE_DEFAULT_SUFFIX;
-
-    protected final String FRAME_PAGE_NAME = "index.html";
-    protected final String INDEX_PAGE_NAME = "all.html";
-    protected final String PAGE_HELP             = "help-doc.html";
-    protected final String PACKAGE_LIST_PAGE     = "packageList.html";
-    protected final String ROOT_PAGE             = "root.html";
-    protected final String PAGE_PACKAGE_FRAME    = "package-frame.html";
-    protected final String PAGE_PACKAGE_SUMMARY  = "package-summary.html";
-    protected final String PACKAGE_SUMMARY       = "summary.html";
-    protected final String PAGE_ALLCLASSES_FRAME = PACKAGE_SUMMARY;
+    protected final String FRAME_PAGE            = "index.html";
+    protected final String ROOT_PAGE             = Location.ROOT_NAME + ".html";
+    protected final String PACKAGE_LIST_PAGE     = "package-list-page.html";
+    protected final String HELP_PAGE             = "help-page.html";
+    protected final String INDEX_PAGE            = "index-page.html";
+    protected final String PACKAGE_PAGE          = "package-page.html";
 
     /*
      * Names of frames.
      */
-    protected final String ROOT_FRAME_NAME     = "rootFrame";
-    protected final String PACKAGES_FRAME_NAME = "packagesFrame";
-    protected final String CLASSES_FRAME_NAME  = "classesFrame";
+    protected final String ROOT_FRAME     = "rootFrame";
+    protected final String PACKAGES_FRAME = "packagesFrame";
+    protected final String CLASSES_FRAME  = "classesFrame";
 
     /*
      * HTML meta information.
@@ -223,14 +214,16 @@ public class HTMLGenerator {
      */
     protected final Stack stack = new Stack();
 
-    /**
-     * Dummy symbols used as markers for the generation of special HTML pages
-     */
-    protected final Symbol indexPage = new NoSymbol();
-    protected final Symbol helpPage  = new NoSymbol();
-
     private final Symbol JAVALANG; // !!! remove ?
     private final Type ROOT_TYPE; // !!! remove ?
+
+    /**
+     * Navigation context.
+     */
+    private final int ROOT_NAV_CONTEXT   = 0; // on the root page
+    private final int INDEX_NAV_CONTEXT  = 1; // on the index page
+    private final int HELP_NAV_CONTEXT   = 2; // on the help page
+    private final int CONTAINER_NAV_CONTEXT = 3; // on a container page different from the root.
 
     /**
      * Creates a new instance.
@@ -303,11 +296,11 @@ public class HTMLGenerator {
             else
                 page = new HTMLPrinter(out, title, representation, stylesheet);
 	    symtab = new SymbolTablePrinter(this, page.getCodePrinter());
-	} catch (IOException exception) {
-	    throw Debug.abort(exception); // !!! reporting an error would be wiser
+	    uri = new URI(".");
+	} catch (Exception e) {
+	    throw Debug.abort(e); // !!! reporting an error would be wiser
 	}
     }
-
 
     /**
      * Closes the Writer object associated with both printer objects.
@@ -396,17 +389,6 @@ public class HTMLGenerator {
 	return anchors.containsKey(OneTree.symbol(sym));
     }
 
-
-    /**
-     * Give the HTML label of this symbol.
-     *
-     * @param sym
-     */
-    protected String label(Symbol sym) {
-	String anchor = (String) anchors.get(OneTree.symbol(sym));
-	return anchor.substring(anchor.indexOf('#') + 1);
-    }
-
     /**
      * Returns the comment associated with a given symbol.
      *
@@ -429,7 +411,8 @@ public class HTMLGenerator {
      */
     protected Tree[][] members(Tree tree) {
 	switch (tree) {
-	case ClassDef(int mods, Name name, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(int mods, Name name, AbsTypeDef[] tparams, ValDef[][] vparams,
+		      Tree tpe, Template impl):
             return members(impl.body);
 	case ModuleDef(int mods, Name name, Tree tpe, Template impl):
             return members(impl.body);
@@ -484,7 +467,10 @@ public class HTMLGenerator {
         page.printOpenBody(new XMLAttribute[]{
             new XMLAttribute("onload", "setWindowTitle('" + windowTitle + "');")
         });
-        addNavigationBar(sym);
+	if (sym.isRoot())
+	    addNavigationBar(ROOT_NAV_CONTEXT);
+	else
+	    addNavigationBar(CONTAINER_NAV_CONTEXT);
         page.printlnHLine();
 
         addTitle(sym);
@@ -504,7 +490,10 @@ public class HTMLGenerator {
             addMemberDetail(members[i], titles[i] + " Detail");
 
         page.printlnHLine();
-        addNavigationBar(sym);
+	if (sym.isRoot())
+	    addNavigationBar(ROOT_NAV_CONTEXT);
+	else
+	    addNavigationBar(CONTAINER_NAV_CONTEXT);
         if (validate)
             addValidationBar();
         page.printFootpage();
@@ -537,11 +526,11 @@ public class HTMLGenerator {
      *
      * @param sym
      */
-    protected void addNavigationBar(Symbol sym) {
+    protected void addNavigationBar(int navigationContext) {
 	try {
 	    String overviewLink = Location.asSeenFrom(new URI(ROOT_PAGE), uri).toString();
-	    String indexLink = Location.asSeenFrom(new URI(INDEX_PAGE_NAME), uri).toString();
-	    String helpLink = Location.asSeenFrom(new URI(PAGE_HELP), uri).toString();
+	    String indexLink = Location.asSeenFrom(new URI(INDEX_PAGE), uri).toString();
+	    String helpLink = Location.asSeenFrom(new URI(HELP_PAGE), uri).toString();
 
 	    page.printlnOTag("table", ATTRS_NAVIGATION).indent();
 	    page.printlnOTag("tr").indent();
@@ -549,28 +538,29 @@ public class HTMLGenerator {
 	    page.printlnOTag("table").indent();
 	    page.printlnOTag("tr").indent();
 
+
 	    // overview link
-	    if (sym.isRoot())
+	    if (navigationContext == ROOT_NAV_CONTEXT)
 		page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Overview");
 	    else {
 		page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-		page.printAhref(overviewLink, ROOT_FRAME_NAME, "Overview");
+		page.printAhref(overviewLink, ROOT_FRAME, "Overview");
 		page.printlnCTag("td");
 	    }
 	    // index link
-	    if (sym == indexPage)
+	    if (navigationContext == INDEX_NAV_CONTEXT)
 		page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Index");
 	    else {
 		page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-		page.printAhref(indexLink, ROOT_FRAME_NAME, "Index");
+		page.printAhref(indexLink, ROOT_FRAME, "Index");
 		page.printlnCTag("td");
 	    }
 	    // help link
-	    if (sym == helpPage)
+	    if (navigationContext == HELP_NAV_CONTEXT)
 		page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Help");
 	    else {
 		page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-		page.printAhref(helpLink, ROOT_FRAME_NAME, "Help");
+		page.printAhref(helpLink, ROOT_FRAME, "Help");
 		page.printlnCTag("td");
 	    }
 
@@ -602,7 +592,7 @@ public class HTMLGenerator {
         page.printlnOTag("div", ATTRS_VALIDATION);
         page.indent();
         page.printlnAhref(
-			  "http://validator.w3.org/check/referer", ROOT_FRAME_NAME,
+			  "http://validator.w3.org/check/referer", ROOT_FRAME,
 			  "validate html");
         page.undent();
         page.printlnCTag("div");
@@ -626,9 +616,7 @@ public class HTMLGenerator {
         } else {
 	    // in
 	    page.print("in ");
-	    String ownerName = removeHtmlSuffix(Location.getURI(sym.owner()).toString());
-	    String target = ref(sym.owner());
-	    page.printlnAhref(target, ROOT_FRAME_NAME, ownerName);
+	    printPath(sym.owner());
 
             // kind and name
 	    page.printlnOTag("div", ATTRS_ENTITY).indent();
@@ -642,7 +630,7 @@ public class HTMLGenerator {
 
 	    // complete signature
 	    // !!! page.println(printer().printTemplateHtmlSignature(sym, false).toString());
-	    symtab.printTemplateHtmlSignature(sym, sym.owner(), false);
+	    symtab.printTemplateHtmlSignature(sym, false);
 
 	    // implementing classes or modules
 	    if (sym.isClass()) {
@@ -658,10 +646,11 @@ public class HTMLGenerator {
 			Symbol sub = (Symbol) p.fst;
 			Type tipe = (Type) p.snd;
 			page.printlnOTag("dd");
-			defString(sub, sym, true /*addLink*/);
+
+			defString(sub, true /*addLink*/);
 			if (sub.owner() != sym.owner()) {
                             page.print(" in ");
-                            page.printlnAhref(ref(sub.owner()), ROOT_FRAME_NAME,
+                            page.printlnAhref(ref(sub.owner()), ROOT_FRAME,
 			                      sub.owner().fullNameString());
                         }
 			page.printlnCTag("dd");
@@ -745,7 +734,7 @@ public class HTMLGenerator {
 		// signature
 		page.printlnOTag("td", ATTRS_SIGNATURE).indent();
 		page.printOTag("code");
-                defString(sym, Symbol.NONE, true /*addLink*/);
+                defString(sym, true /*addLink*/);
                 page.printlnCTag("code");
 
                 // short description
@@ -807,7 +796,7 @@ public class HTMLGenerator {
 	    page.printlnOTag("pre");
 	    String mods = Modifiers.Helper.toString(sym.flags);
 	    if (mods.length() > 0) page.print(mods + " ");
-	    symtab.printSignature(sym, Symbol.NONE, false /*addLink*/);
+	    symtab.printSignature(sym, false /*addLink*/);
 	    page.printlnCTag("pre");
 
             // comment
@@ -833,13 +822,9 @@ public class HTMLGenerator {
 		// owner
                 page.printlnOTag("tr").indent();
                 page.printlnOTag("td", new XMLAttribute[]{
-                   new XMLAttribute("class", "inherited-owner")}).indent();
+		    new XMLAttribute("class", "inherited-owner")}).indent();
                 page.print(inheritedMembers + " inherited from ");
-                String ownerName = owners[i].fullNameString();
-		if (isReferenced(owners[i]))
-                    page.printlnAhref(ref(owners[i]), ROOT_FRAME_NAME, ownerName);
-		else
-		    page.println(ownerName);
+		printPath(owners[i]);
                 page.undent();
                 page.printlnCTag("td").undent();
                 page.printlnCTag("tr");
@@ -851,11 +836,7 @@ public class HTMLGenerator {
 		Symbol[] members = (Symbol[]) group.get(owners[i]);
 		for (int j = 0; j < members.length; j++) {
 		    if (j > 0) page.print(", ");
-                    String memberName = members[j].nameString();
-		    if (isReferenced(members[j]))
-			page.printAhref(ref(members[j]), ROOT_FRAME_NAME, memberName);
-		    else
-			page.print(memberName);
+		    printSymbol(members[j], true);
 		}
                 page.undent();
                 page.printlnCTag("td").undent();
@@ -873,15 +854,15 @@ public class HTMLGenerator {
      * @param addLink Generates an hypertext reference if the parameter
      *        <code>addLink</code> is <code>true</code>
      */
-    void defString(Symbol sym, Symbol user, boolean addLink) {
+    void defString(Symbol sym, boolean addLink) {
 	if (sym.isRoot())
 	    page.print("Root class");
 	else if (sym.isClass() || sym.isModule())
-	    symtab.printTemplateSignature(sym, user, addLink);
+	    symtab.printTemplateSignature(sym, addLink);
 	else if (sym.isType() && !sym.isParameter())
-	    symtab.printShortSignature(sym, user, addLink);
+	    symtab.printShortSignature(sym, addLink);
 	else
-	    symtab.printSignature(sym, user, addLink);
+	    symtab.printSignature(sym, addLink);
     }
 
     /**
@@ -942,7 +923,7 @@ public class HTMLGenerator {
      * @param title The page title
      */
     protected void createFramePage(String title) {
-        createPrinters(FRAME_PAGE_NAME, title);
+        createPrinters(FRAME_PAGE, title);
 
         page.printHeader(ATTRS_META, getGenerator());
 	page.printlnOTag("frameset", new XMLAttribute[] {
@@ -952,14 +933,14 @@ public class HTMLGenerator {
 
 	page.printlnOTag("frame", new XMLAttribute[] {
             new XMLAttribute("src", PACKAGE_LIST_PAGE),
-            new XMLAttribute("name", PACKAGES_FRAME_NAME)});
+            new XMLAttribute("name", PACKAGES_FRAME)});
 	page.printlnOTag("frame", new XMLAttribute[] {
-            new XMLAttribute("src", PAGE_ALLCLASSES_FRAME),
-            new XMLAttribute("name", CLASSES_FRAME_NAME)}).undent();
+            new XMLAttribute("src", PACKAGE_PAGE),
+            new XMLAttribute("name", CLASSES_FRAME)}).undent();
 	page.printlnCTag("frameset");
 	page.printlnOTag("frame", new XMLAttribute[] {
             new XMLAttribute("src", ROOT_PAGE),
-            new XMLAttribute("name", ROOT_FRAME_NAME)});
+            new XMLAttribute("name", ROOT_FRAME)});
 
         page.printlnOTag("noframes").indent();
         page.printlnSTag("p");
@@ -1010,10 +991,10 @@ public class HTMLGenerator {
     /** Returns the summary page attached to a package symbol. */
     private String packageSummaryPage(Symbol sym) {
 	if (sym.isRoot())
-	    return PACKAGE_SUMMARY;
+	    return PACKAGE_PAGE;
 	else {
 	    String packagePage = Location.getURI(sym).toString();
-	    return removeHtmlSuffix(packagePage) + File.separator + PACKAGE_SUMMARY;
+	    return removeHtmlSuffix(packagePage) + File.separator + PACKAGE_PAGE;
 	}
     }
 
@@ -1034,7 +1015,7 @@ public class HTMLGenerator {
 	        Symbol sym = trees[i].symbol();
                 page.printAhref(
                     packageSummaryPage(sym),
-                    CLASSES_FRAME_NAME,
+                    CLASSES_FRAME,
                     sym.fullNameString());
 	        page.printlnSTag("br");
 	    }
@@ -1064,10 +1045,10 @@ public class HTMLGenerator {
                 if (! sym.isRoot()) {
                     String name = sym.nameString();
                     if (sym.isPackage())
-                        page.printAhref(ref(sym), CLASSES_FRAME_NAME, name);
+                        page.printAhref(ref(sym), CLASSES_FRAME, name);
                     else {
                         Symbol user = (useFullName) ? global.definitions.ROOT : Symbol.NONE;
-                        page.printAhref(ref(sym), ROOT_FRAME_NAME, name);
+                        page.printAhref(ref(sym), ROOT_FRAME, name);
                     }
 	            page.printlnSTag("br");
                 }
@@ -1094,7 +1075,7 @@ public class HTMLGenerator {
 	page.printOpenBody();
         addDocumentationTitle(new XMLAttribute[]{
             new XMLAttribute("class", "doctitle-larger")});
-        page.printAhref(PACKAGE_SUMMARY, CLASSES_FRAME_NAME, "All objects, traits and classes");
+        page.printAhref(PACKAGE_PAGE, CLASSES_FRAME, "All objects, traits and classes");
         page.printlnSTag("p");
         printPackagesTable(packages, "Packages");
         if (validate)
@@ -1126,7 +1107,7 @@ public class HTMLGenerator {
 	    page.printlnOTag("tr").indent();
 	    page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
 
-            page.printlnAhref(ref(sym), ROOT_FRAME_NAME, sym.fullNameString());
+            page.printlnAhref(ref(sym), ROOT_FRAME, sym.fullNameString());
 
             page.printlnCTag("td");
             page.printlnCTag("tr");
@@ -1151,14 +1132,14 @@ public class HTMLGenerator {
      * @param title The page title
      */
     protected void createIndexPage(String title) {
-	createPrinters(INDEX_PAGE_NAME, title);
+	createPrinters(INDEX_PAGE, title);
 
         page.printHeader(ATTRS_META, getGenerator());
         String windowTitle = title + " (" + doctitle.replaceAll("<.*>", " ") + ")";
         page.printOpenBody(new XMLAttribute[]{
             new XMLAttribute("onload", "setWindowTitle('" + windowTitle + "');")
         });
-        addNavigationBar(indexPage);
+        addNavigationBar(INDEX_NAV_CONTEXT);
         page.printlnHLine();
 
         page.printlnOTag("table", ATTRS_MEMBER).indent();
@@ -1174,7 +1155,7 @@ public class HTMLGenerator {
 	Character[] chars = (Character[]) index.fst;
 	Map map = (Map) index.snd;
 	for (int i  = 0; i < chars.length; i++)
-	    page.printlnAhref("#" + i, ROOT_FRAME_NAME, HTMLPrinter.encode(chars[i]));
+	    page.printlnAhref("#" + i, ROOT_FRAME, HTMLPrinter.encode(chars[i]));
 	page.printlnHLine();
 	for (int i  = 0; i < chars.length; i++) {
 	    Character car = chars[i];
@@ -1187,7 +1168,6 @@ public class HTMLGenerator {
 	    for (int j  = 0; j < trees.length; j++) {
 		page.printOTag("dt");
                 addIndexEntry(trees[j].symbol());
-		//		page.printlnTag("em", Location.getURI(trees[j].symbol()).toString()); // for debugging
                 page.printlnCTag("dt");
 		page.printlnTag("dd", firstSentence(getComment(trees[j].symbol())));
 	    }
@@ -1195,7 +1175,7 @@ public class HTMLGenerator {
 	}
 
         page.printlnHLine();
-        addNavigationBar(indexPage);
+        addNavigationBar(INDEX_NAV_CONTEXT);
         if (validate)
             addValidationBar();
         page.printFootpage();
@@ -1209,14 +1189,14 @@ public class HTMLGenerator {
      * @param title The page title
      */
     protected void createHelpPage(String title) {
-	createPrinters(PAGE_HELP, title);
+	createPrinters(HELP_PAGE, title);
 
         page.printHeader(ATTRS_META, getGenerator());
         String windowTitle = title + " (" + doctitle.replaceAll("<.*>", " ") + ")";
         page.printOpenBody(new XMLAttribute[]{
             new XMLAttribute("onload", "setWindowTitle('" + windowTitle + "');")
         });
-        addNavigationBar(helpPage);
+        addNavigationBar(HELP_NAV_CONTEXT);
         page.printlnHLine();
 
         XMLAttribute[] h3 = new XMLAttribute[]{
@@ -1235,7 +1215,7 @@ public class HTMLGenerator {
         page.printlnTag("div", h3, "Overview");
         page.printlnOTag("blockquote").indent();
         page.print("The ");
-        page.printAhref(ROOT_PAGE, ROOT_FRAME_NAME, "Overview");
+        page.printAhref(ROOT_PAGE, ROOT_FRAME, "Overview");
         page.println(" page is the front page of this API document and "
 	    + "provides a list of all top-level packages, classes, traits "
 	    + "and objects with a summary for each. "
@@ -1288,7 +1268,7 @@ public class HTMLGenerator {
         page.printlnTag("div", h3, "Index");
         page.printlnOTag("blockquote").indent();
         page.print("The ");
-        page.printAhref(INDEX_PAGE_NAME, ROOT_FRAME_NAME, "Index");
+        page.printAhref(INDEX_PAGE, ROOT_FRAME, "Index");
         page.print(" contains an alphabetic list of all classes, interfaces, "
             + "constructors, methods, and fields.");
         page.printlnCTag("blockquote");
@@ -1299,12 +1279,45 @@ public class HTMLGenerator {
         page.printlnCTag("div");
 
         page.printlnHLine();
-        addNavigationBar(helpPage);
+        addNavigationBar(HELP_NAV_CONTEXT);
         if (validate)
             addValidationBar();
         page.printFootpage();
 
         closePrinters();
+    }
+
+    /**
+     * Adds to the current page an hyperlinked path leading to a given
+     * symbol (including itself).
+     */
+    protected void printPath(Symbol sym) {
+	String name = removeHtmlSuffix(Location.getURI(sym).toString());
+	if (isReferenced(sym)) {
+	    String target = ref(sym);
+	    page.printlnAhref(target, ROOT_FRAME, name);
+	}
+	else
+	    page.println(name);
+    }
+
+    /**
+     * Adds to the current page an hyperlink leading to a given
+     * symbol.
+     */
+    protected void printSymbol(Symbol sym, boolean addLink) {
+	String name = sym.nameString();
+	if (global.debug) name = sym.name.toString();
+	if (isReferenced(sym))
+	    if (addLink)
+		page.printAhref(ref(sym), ROOT_FRAME, name);
+	    else {
+		page.printOTag("em");
+		page.print(name);
+		page.printCTag("em");
+	    }
+	else
+	    page.print(name);
     }
 
     /**
@@ -1317,12 +1330,11 @@ public class HTMLGenerator {
 	String keyword = symtab.getSymbolKeyword(symbol);
         if (keyword != null) page.print(keyword).space();
 	// name
-	symtab.printDefinedSymbolName(symbol, Symbol.NONE, true);
+	symtab.printDefinedSymbolName(symbol, true);
 	// owner
 	if (!symbol.isRoot()) {
 	    page.print(" in ");
-	    page.printAhref(ref(symbol.owner()), ROOT_FRAME_NAME, //true),
-		              ScalaSearch.getOwnersString(symbol.owner()));
+	    printPath(symbol.owner());
 	}
     }
 
@@ -1396,7 +1408,7 @@ public class HTMLGenerator {
 	    }
 	    else {
 		String labl = label.equals("") ? sym.nameString() : label;
-		return ahref(ref(sym), ROOT_FRAME_NAME, labl);
+		return ahref(ref(sym), ROOT_FRAME, labl);
 	    }
 	default:
 	    throw Debug.abort("illegal case", tag);

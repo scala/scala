@@ -414,7 +414,8 @@ public class ScalaSearch {
 	    Symbol member = thistype.lookup(names[i]);
 	    if (member != Symbol.NONE)
 		if (!member.isConstructor())
-		    members.add(member);
+		    if (!isGenerated(member))
+			members.add(member);
 	}
 	List unloadedMembers = new LinkedList();
 	Iterator it = members.iterator();

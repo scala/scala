@@ -78,7 +78,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             if (first) print("{").indent(); else print(", ");
             first = false;
             line();
-            printSignature(member, Symbol.NONE, false);
+            printSignature(member, false);
         }
         if (!first)
             line().undent().print("}");
@@ -116,16 +116,9 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * Prints the name of the given symbol usage.
      *
      * @param symbol
-     * @param user
      */
-    public SymbolTablePrinter printUsedSymbolName(Symbol symbol, Symbol user) {
-        Name name = symbol.name;
-        if (!global.debug) name = NameTransformer.decode(name);
-        String s = name.toString();
-        if (htmlGenerator.isReferenced(symbol))
-            htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), s);
-	else
-	    htmlGenerator.page.print(s);
+    public SymbolTablePrinter printUsedSymbolName(Symbol symbol) {
+	htmlGenerator.printSymbol(symbol, true);
         printSymbolUniqueId(symbol);
         return this;
     }
@@ -134,20 +127,10 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * Prints the name of the given symbol definition.
      *
      * @param symbol
-     * @param user
      * @param addLink
      */
-    public SymbolTablePrinter printDefinedSymbolName(Symbol symbol, Symbol user, boolean addLink) {
-        Name name = symbol.name;
-        if (!global.debug) name = NameTransformer.decode(name);
-        String s = name.toString();
-        if (htmlGenerator.isReferenced(symbol))
-            if (addLink)
-                htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), s);
-            else
-	        htmlGenerator.page.printBold(s);
-	else
-	    htmlGenerator.page.print(s);
+    public SymbolTablePrinter printDefinedSymbolName(Symbol symbol, boolean addLink) {
+	htmlGenerator.printSymbol(symbol, addLink);
         printSymbolUniqueId(symbol);
         return this;
     }
@@ -158,7 +141,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param symbol
      * @param inner
      */
-    public SymbolTablePrinter printSymbolType(Symbol symbol, String inner, Symbol user) {
+    public SymbolTablePrinter printSymbolType(Symbol symbol, String inner) {
         Type type = symbol.rawFirstInfo();
         if (!(type instanceof Type.LazyType)) type = symbol.info();
         boolean star = false;
@@ -169,7 +152,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             type = type.typeArgs()[0];
             star = true;
         }
-	printType(type, inner, user);
+	printType(type, inner);
         if (star) print("*");
         return this;
     }
@@ -180,17 +163,13 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param symbol
      * @param addLink
      */
-    public SymbolTablePrinter printSignature(Symbol symbol, Symbol user, boolean addLink) {
+    public SymbolTablePrinter printSignature(Symbol symbol, boolean addLink) {
         String keyword = getSymbolKeyword(symbol);
         if (keyword != null) print(keyword).space();
         String inner = getSymbolInnerString(symbol);
-        String name = symbol.nameString();
-        if (addLink)
-	    htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), name);
-	else
-            htmlGenerator.page.print(name);
-        return printType(symbol.loBound(), ">:", user)
-	    .printSymbolType(symbol, inner, user);
+	htmlGenerator.printSymbol(symbol, addLink);
+        return printType(symbol.loBound(), ">:")
+	    .printSymbolType(symbol, inner);
     }
 
     /**
@@ -199,16 +178,11 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param symbol
      * @param addLink
      */
-    public SymbolTablePrinter printShortSignature(Symbol symbol, Symbol user, boolean addLink) {
+    public SymbolTablePrinter printShortSignature(Symbol symbol, boolean addLink) {
         String keyword = getSymbolKeyword(symbol);
         if (keyword != null) print(keyword).space();
-        String inner = getSymbolInnerString(symbol);
-        String name = symbol.nameString();
-        if (addLink)
-	    htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), name);
-        else
-            htmlGenerator.page.print(name);
-        return printType(symbol.loBound(), ">:", user);
+	htmlGenerator.printSymbol(symbol, addLink);
+        return printType(symbol.loBound(), ">:");
     }
 
     /**
@@ -218,14 +192,14 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param addLink
      * @return the current symbol table printer
      */
-    public SymbolTablePrinter printTemplateSignature(Symbol symbol, Symbol user, boolean addLink) {
+    public SymbolTablePrinter printTemplateSignature(Symbol symbol, boolean addLink) {
         // kind
 	String keyword = getSymbolKeyword(symbol);
         if (keyword != null) print(keyword).space();
         String inner = getSymbolInnerString(symbol);
 
 	// name
-	printDefinedSymbolName(symbol, user, addLink);
+	printDefinedSymbolName(symbol, addLink);
 	if (symbol.isClass()) {
 	    // type parameters
 	    Symbol[] tparams = symbol.typeParams();
@@ -233,7 +207,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 		print('[');
 		for (int i = 0; i < tparams.length; i++) {
 		    if (i > 0) print(",");
-		    printSignature(tparams[i], user, false);
+		    printSignature(tparams[i], false);
 		}
 		print(']');
 	    }
@@ -243,7 +217,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 	    for (int i = 0; i < vparams.length; i++) {
 		if (i > 0) print(", "); // vincent
 		if (vparams[i].isDefParameter()) print("def ");
-		htmlGenerator.defString(vparams[i], user, false);
+		htmlGenerator.defString(vparams[i], false);
 	    }
 	    print(')');
 	}
@@ -261,7 +235,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param symbol
      * @param addLink
      */
-    public SymbolTablePrinter printTemplateHtmlSignature(Symbol symbol, Symbol user, boolean addLink) {
+    public SymbolTablePrinter printTemplateHtmlSignature(Symbol symbol, boolean addLink) {
 	// modifiers
         String mods = Modifiers.Helper.toString(symbol.flags);
 	htmlGenerator.page.printlnOTag("dl");
@@ -274,7 +248,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         String inner = getSymbolInnerString(symbol);
 
         // name
-	printDefinedSymbolName(symbol, user, addLink);
+	printDefinedSymbolName(symbol, addLink);
 	if (symbol.isClass()) {
 	    // type parameters
 	    Symbol[] tparams = symbol.typeParams();
@@ -282,7 +256,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 		print('[');
 		for (int i = 0; i < tparams.length; i++) {
 		    if (i > 0) print(",");
-		    printSignature(tparams[i], user, false);
+		    printSignature(tparams[i], false);
 		}
 		print(']');
 	    }
@@ -292,7 +266,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 	    for (int i = 0; i < vparams.length; i++) {
 		if (i > 0) print(", ");
 		if (vparams[i].isDefParameter()) print("def ");
-		htmlGenerator.defString(vparams[i], user, false);
+		htmlGenerator.defString(vparams[i], false);
 	    }
 	    print(')');
 	}
@@ -303,7 +277,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         for (int i = 0; i < parts.length; i++) {
             htmlGenerator.page.printOTag("dd");
             print((i == 0) ? "extends " : "with ");
-            printType(parts[i], symbol);
+            printType(parts[i]);
 	    htmlGenerator.page.printlnCTag("dd");
 	}
 	htmlGenerator.page.printCTag("dl");
@@ -319,10 +293,10 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param types
      * @param infix
      */
-    public SymbolTablePrinter printTypes(Type[] types, String infix, Symbol user) {
+    public SymbolTablePrinter printTypes(Type[] types, String infix) {
         for (int i = 0; i < types.length; i++) {
             if (i > 0) print(infix);
-            printType(types[i], user);
+            printType(types[i]);
         }
         return this;
     }
@@ -331,20 +305,18 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * Prints the given type.
      *
      * @param type
-     * @param user The symbol using the type <code>type</code>
      */
-    public SymbolTablePrinter printType(Type type, Symbol user) {
-        return printType0(getTypeToPrintForType(type), user);
+    public SymbolTablePrinter printType(Type type) {
+        return printType0(getTypeToPrintForType(type));
     }
 
     /**
      * ..
      *
      * @param type
-     * @param user
      */
-    public SymbolTablePrinter printType0(Type type, Symbol user) {
-        printCommonPart(type, user);
+    public SymbolTablePrinter printType0(Type type) {
+        printCommonPart(type);
         switch (type) {
         case ThisType(_):
         case SingleType(_,_):
@@ -361,12 +333,12 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param type
      * @param inner
      */
-    public SymbolTablePrinter printType(Type type, String inner, Symbol user) {
+    public SymbolTablePrinter printType(Type type, String inner) {
 	if ("<:".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
 	    ">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
 	    return this;
         else
-	    return printType0(getTypeToPrintForType(type), inner, user);
+	    return printType0(getTypeToPrintForType(type), inner);
     }
 
     /**
@@ -375,35 +347,35 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param type
      * @param inner
      */
-    public SymbolTablePrinter printType0(Type type, String inner, Symbol user) {
+    public SymbolTablePrinter printType0(Type type, String inner) {
         switch (type) {
         case MethodType(Symbol[] vparams, Type result):
             print('(');
             for (int i = 0; i < vparams.length; i++) {
                 if (i > 0) print(", ");
 		if (vparams[i].isDefParameter()) print("def ");
-		htmlGenerator.defString(vparams[i], user, false);
+		htmlGenerator.defString(vparams[i], false);
 		//print(NameTransformer.decode(vparams[i].name.toString()) + ": ");// vincent
                 //printSymbolType(vparams[i], null);
             }
             print(')');
-            return printType(result, inner, user);
+            return printType(result, inner);
         case PolyType(Symbol[] tparams, Type result):
             if (tparams.length != 0 || global.debug) {
                 print('[');
                 for (int i = 0; i < tparams.length; i++) {
                     if (i > 0) print(",");
-                    printSignature(tparams[i], user, false);
+                    printSignature(tparams[i], false);
                 }
                 print(']');
             }
-            return printType(result, inner, user);
+            return printType(result, inner);
         default:
             if (inner != null) {
                 if (!inner.startsWith(":")) space();
                 print(inner).space();
             }
-            return printType0(type, user);
+            return printType0(type);
         }
     }
 
@@ -416,9 +388,9 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         Type[] args = new Type[types.length - 1];
         for (int i = 0; i < args.length; i++) args[i] = types[i];
         print('(');
-        printTypes(args, ", ", Symbol.NONE);
+        printTypes(args, ", ");
         print(") => ");
-        printType(types[types.length - 1], Symbol.NONE);
+        printType(types[types.length - 1]);
         return this;
     }
 
@@ -429,7 +401,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      */
     public SymbolTablePrinter printTemplateType(Type[] types) {
         print("<template: ");
-        printTypes(types, " with ", Symbol.NONE);
+        printTypes(types, " with ");
         print(" {...}>");
         return this;
     }
@@ -438,9 +410,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * Prints the type and prefix common part of the given type.
      *
      * @param type
-     * @param user The symbol using the type <code>type</code>
      */
-    public SymbolTablePrinter printCommonPart(Type type, Symbol user) {
+    public SymbolTablePrinter printCommonPart(Type type) {
         switch (type) {
 	case ErrorType:
 	    print("<error>");
@@ -458,7 +429,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             if (sym == Symbol.NONE) print("<local>.this");
             if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
 		print("this");
-            printUsedSymbolName(sym, user);
+            printUsedSymbolName(sym);
             print(".this"); // vincent
             return this;
 
@@ -472,42 +443,42 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
                     printTemplateType(pre.memberInfo(sym).parents());
             }
             printPrefix(pre, sym);
-            printUsedSymbolName(sym, user);
+            printUsedSymbolName(sym);
 	    if (args.length != 0) {
                 print('[');
-                printTypes(args, ",", user);
+                printTypes(args, ",");
                 print(']');
             }
             return this;
 
 	case SingleType(Type pre, Symbol sym):
             printPrefix(pre, sym);
-            printUsedSymbolName(sym, user);
+            printUsedSymbolName(sym);
             return this;
 
 	case ConstantType(Type base, Object value):
-	    printType(base, user);
+	    printType(base);
 	    print("(");
 	    print(value.toString());
 	    print(")");
 	    return this;
 
 	case CompoundType(Type[] parts, Scope members):
-	    printTypes(parts," with ", user);
+	    printTypes(parts," with ");
             space();
             return printScope(members, true); // vincent
 
 	case MethodType(_, _):
-	    return printType0(type, user);
+	    return printType0(type);
 
 	case PolyType(_, _):
-	    return printType0(type, user);
+	    return printType0(type);
 
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
-            return printTypes(alttypes, " <and> ", user);
+            return printTypes(alttypes, " <and> ");
 
 	case TypeVar(Type origin, Constraint constr):
-            printType(origin, user);
+            printType(origin);
             print("?");
             return this;
 
@@ -516,7 +487,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             return this;
 
 	case UnboxedArrayType(Type elemtp):
-	    printType(elemtp, user);
+	    printType(elemtp);
             print("[]");
             return this;
 
@@ -586,7 +557,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param prefix
      */
     public SymbolTablePrinter printPrefix0(Type prefix) {
-        printCommonPart(prefix, Symbol.NONE);
+        printCommonPart(prefix);
         switch (prefix) {
         case ThisType(_):
         case SingleType(_,_):

@@ -22,6 +22,10 @@ import scalac.util.Debug;
  */
 public class Location {
 
+    static public final String ROOT_NAME    = "root-page";
+    static public final String HTML_SUFFIX  = ".html";
+    static public final String CLASS_SUFFIX = "-class";
+
     /////////////////// AS SEEN FROM //////////////////////
 
     /**
@@ -32,7 +36,6 @@ public class Location {
      *   "A/B#R"  as seen from "A"      is  "A/B#R"
     */
     static public URI asSeenFrom(URI u, URI v) {
-	assert u != null : "HOUSTON, we have ...";
 	File f_u = new File(u.getPath());
 	File f_v = new File(v.getPath());
 	try {
@@ -57,7 +60,7 @@ public class Location {
 
     /////////////////// UNIQUE URL //////////////////////
 
-    /** Returns the URL of a given symbol. */
+    /** Returns the URI of a given symbol. */
     static private final Map/*<Symbol, URI>*/ uris = new HashMap();
     static public URI getURI(Symbol sym) {
 	if (uris.get(sym) == null) {
@@ -66,11 +69,9 @@ public class Location {
 		if (sym.isModuleClass())
 		    uri = getURI(sym.module());
 		else if (sym.isRoot() || sym.isClass() || sym.isModule() || sym.isPackage())
-		    uri = new URI(getPath(sym).toString() + ".html");
+		    uri = new URI(getPath(sym).toString() + HTML_SUFFIX);
 		else if (sym.isParameter())
 		    uri = getURI(sym.classOwner());
-		//		else if (sym.isConstructor())
-		//uri = getURI(sym.owner());
 		else
 		    uri = new URI(getURI(sym.owner()).toString() + "#" + nextFreeId(sym.owner()));
 		uris.put(sym, uri);
@@ -81,17 +82,19 @@ public class Location {
     // where
     static private URI getPath(Symbol sym) {
 	try {
-	    if (sym.isRoot())
-		return new URI("root");
+	    if (sym.isModuleClass())
+		return getPath(sym.module());
+	    else if (sym.isRoot())
+		return new URI(ROOT_NAME);
 	    else if (sym.owner().isRoot())
 		return new URI(getName(sym));
 	    else
-		return new URI(getPath(sym.owner()).toString() + "/" + getName(sym));
+		return new URI(getPath(sym.owner()).toString() + File.separator + getName(sym));
 	} catch(Exception e) { return null; }
     }
     // where
     static public String getName(Symbol sym) {
-	return sym.isClass() ? sym.nameString() + "-class" : sym.nameString();
+	return sym.isClass() ? sym.nameString() + CLASS_SUFFIX : sym.nameString();
     }
     // where
     static private final Map/*<Symbol, Integer>*/ ids = new HashMap();
@@ -101,10 +104,6 @@ public class Location {
 	int i = ((Integer) ids.get(sym)).intValue();
 	ids.put(sym, new Integer(i + 1));
 	return i;
-    }
-
-    /** Tests the function defined in this class. */
-    public static void main(String[] args) {
     }
 
 }
