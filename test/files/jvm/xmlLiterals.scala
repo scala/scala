@@ -170,6 +170,12 @@ object Test03Servlet {
         <p>
           { ns }
         </p>
+        <p>
+          { 1 } {'a'} { 23.23 }
+        </p>
+        <p>
+          { for(val n <- ns.toList)  yield { n::n::Nil } }
+        </p>
         <hr/>
         <p>
           {footerMsg}
