@@ -1192,12 +1192,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    Type[] parts1 = new Type[parts.length + 1];
 	    System.arraycopy(parts, 0, parts1, 0, parts.length);
 	    parts1[parts.length] = clazz.type();
-	    sym.setInfo(Type.compoundType(parts1, members));
+	    sym.setInfo(Type.compoundTypeWithOwner(clazz.owner().enclClass(), parts1, members));
 	    break;
 	default:
 	    sym.setInfo(
-		Type.compoundType(
-		    new Type[]{selftype, clazz.type()}, Scope.EMPTY));
+		Type.compoundTypeWithOwner(
+		    clazz.owner().enclClass(), new Type[]{selftype, clazz.type()}, Scope.EMPTY));
 	}
 
 	this.unit = savedUnit;
@@ -2184,7 +2184,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			// compute template's type with new refinement scope.
 			Type[] parentTypes = clazz.info().parents();
 			Scope refinement = new Scope();
-			Type base = Type.compoundType(parentTypes, Scope.EMPTY);
+			Type base = Type.compoundTypeWithOwner(context.enclClass.owner, parentTypes, Scope.EMPTY);
 			Type owntype = Type.compoundType(
 			    parentTypes, refinement, clazz);
 			Scope.SymbolIterator it = clazz.members().iterator();
@@ -2625,7 +2625,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree[] parents1 = transform(parents, TYPEmode);
 		Type[] ptypes = Tree.typeOf(parents);
 		Scope members = new Scope();
-		Type self = Type.compoundType(ptypes, members);
+		Type self = Type.compoundTypeWithOwner(context.enclClass.owner, ptypes, members);
 		Symbol clazz = self.symbol();
 		pushContext(tree, clazz, members);
 		for (int i = 0; i < refinements.length; i++) {

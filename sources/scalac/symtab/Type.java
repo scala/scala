@@ -213,10 +213,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return res;
     }
 
-    public static CompoundType compoundType(Type[] parts, Scope members) {
+    public static CompoundType compoundTypeWithOwner(Symbol owner, Type[] parts, Scope members) {
         ExtCompoundType res = new ExtCompoundType(parts, members);
         res.tsym = new ClassSymbol(
-            Position.FIRSTPOS, Names.COMPOUND_NAME.toTypeName(), Symbol.NONE,
+            Position.FIRSTPOS, Names.COMPOUND_NAME.toTypeName(), owner,
             SYNTHETIC | ABSTRACT);
         res.tsym.setInfo(res);
         res.tsym.primaryConstructor().setInfo(
@@ -1039,7 +1039,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 } else {
                     Scope members2 = new Scope();
                     //Type tp1 = compoundType(parts1, members2);
-                    Type tp1 = (tp.symbol().isCompoundSym()) ? compoundType(parts1, members2)
+                    Type tp1 = (tp.symbol().isCompoundSym()) ? compoundTypeWithOwner(tp.symbol().owner(), parts1, members2)
                         : compoundType(parts1, members2, tp.symbol());
                     Symbol[] syms1 = members1.elements();
                     Symbol[] syms2 = new Symbol[syms1.length];
@@ -2578,7 +2578,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         // add refinements where necessary
         Scope members = new Scope();
-        Type lubType = compoundType(leastBaseTypes, members);
+        Type lubType = compoundTypeWithOwner(Symbol.NONE, leastBaseTypes, members); // !!! NONE
 	/*
         Type lubThisType = lubType.narrow();
         //System.out.println("lubtype = " + lubType);//DEBUG
@@ -2751,7 +2751,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             }
         }
 
-        CompoundType glbType = compoundType(Type.EMPTY_ARRAY, new Scope());
+        CompoundType glbType = compoundTypeWithOwner(Symbol.NONE, Type.EMPTY_ARRAY, new Scope()); // !!! NONE
         Type glbThisType = glbType.narrow();
 
         // step 3: compute glb of all refinements.
