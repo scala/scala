@@ -765,6 +765,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & ACCESSOR) != 0;
     }
 
+    /** Does this symbol denote an accessor to a val parameter? */
+    public final boolean isParamAccessor() {
+        return (flags & PARAMACCESSOR) != 0;
+    }
+
     /** Does this symbol denote an access method? (a method to access
      * private of protected members from inner classes) */
     public final boolean isAccessMethod() {
@@ -2154,7 +2159,7 @@ public class ClassSymbol extends TypeSymbol {
             for (int i = 0; i <= index; i++) {
                 do {
                     sym = it.next();
-                } while (sym != NONE && sym.kind != VAL || (sym.flags & PARAMACCESSOR) == 0 || !sym.isMethod());
+                } while (sym != NONE && sym.kind != VAL || !sym.isParamAccessor() || !sym.isMethod());
             }
             //System.out.println(this + ", case field[" + index + "] = " + sym);//DEBUG
         } else {
