@@ -1572,51 +1572,61 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *   - TypeRef(_, D, _)  ->  TypeRef(_, Int, _)
      */
     private static class ThisTypeMap extends Map {
-        private final HashMap/*<Symbol,Type>*/ subst;
 
-        public ThisTypeMap(Symbol clasz, Type type) {
-            this.subst = new HashMap();
-            initialize(clasz, type);
+        private static Map create(Symbol clasz, Type type) {
+            HashMap subst = getSubst(clasz, type, 0);
+            return subst == null ? IdMap : new ThisTypeMap(subst);
         }
 
-        private void initialize(Symbol clasz, Type type) {
+        private static HashMap getSubst(Symbol clasz, Type type, int capacity){
             switch (type) {
             case NoPrefix:
-                return;
+                return getSubst(capacity);
             case ThisType(Symbol symbol):
-                if (symbol == clasz) return;
+                if (symbol == clasz) return getSubst(capacity);
             }
-            subst.put(clasz, type);
             Type base = type.baseType(clasz);
             switch (base) {
             case TypeRef(Type prefix, Symbol symbol, Type[] args):
+                capacity += 1 + args.length;
+                HashMap subst = getSubst(clasz.owner(), prefix, capacity);
+                subst.put(clasz, type);
                 Symbol[] params = clasz.typeParams();
                 assert symbol == clasz && args.length == params.length:
-                    type + "@" + Debug.show(clasz) + " -> " + base;
+                    type + " @ " + Debug.show(clasz) + " -> " + base;
                 for (int i = 0; i < params.length; i++) {
                     assert params[i].isParameter(): Debug.show(params[i]);
                     subst.put(params[i], args[i]);
                 }
-                initialize(clasz.owner(), prefix);
-                break;
+                return subst;
             default:
                 throw Debug.abort("illegal case",
-                    type + "@" + Debug.show(clasz) + " -> " + base);
+                    type + " @ " + Debug.show(clasz) + " -> " + base);
             }
+        }
+
+        private static HashMap getSubst(int capacity) {
+            return capacity == 0 ? null : new HashMap(capacity);
+        }
+
+        private final HashMap/*<Symbol,Type>*/ subst;
+
+        private ThisTypeMap(HashMap subst) {
+            this.subst = subst;
         }
 
         public Type apply(Type type) {
             switch (type) {
             case ThisType(Symbol symbol):
-                Type lookup = (Type)subst.get(symbol);
+                Object lookup = subst.get(symbol);
                 if (lookup == null) break;
-                return lookup;
-            case TypeRef(Type prefix, Symbol symbol, Type[] args):
+                return (Type)lookup;
+            case TypeRef(NoPrefix, Symbol symbol, Type[] args):
                 if (!symbol.isParameter()) break;
                 assert args.length == 0: type;
-                Type lookup = (Type)subst.get(symbol);
+                Object lookup = subst.get(symbol);
                 if (lookup == null) break;
-                return lookup;
+                return (Type)lookup;
             }
             return map(type);
         }
@@ -1629,7 +1639,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     /** Returns a ThisTypeMap of given class and type. */
     public static Map getThisTypeMap(Symbol clasz, Type type) {
-        return new ThisTypeMap(clasz, type);
+        return ThisTypeMap.create(clasz, type);
     }
 
     /** A map for substitutions of thistypes.
