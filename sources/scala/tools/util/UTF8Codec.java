@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id: UTF8Codec.java
+// $Id$
 
 package scala.tools.util;
 
