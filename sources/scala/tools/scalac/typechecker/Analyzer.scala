@@ -1183,8 +1183,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	reportTypeError(tree.pos, ex);
 	tree.setType(Type.ErrorType);
 	if (tree.hasSymbol()) {
-	  if (tree.symbol() != null) tree.symbol().setInfo(Type.ErrorType);
-	  else tree.setSymbol(Symbol.ERROR);
+	  tree.symbol().setInfo(Type.ErrorType);
 	}
     }
 
@@ -1318,7 +1317,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    case Type$OverloadedType(_, _) =>
 	      // overload resolution failed bcs no alternative matched prototype.
 	      typeError(tree.pos, tree.getType(), pt);
-	      tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType);
+	      return errorTermTree(tree);
 	    case _ =>
 	  }
 	  return adapt(tree, mode, pt);
@@ -1552,7 +1551,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       if (sym.kind == NONE) {
 	//System.out.println(name);//DEBUG
 	error(tree.pos, "not found: " + decode(name));
-	return tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType);
+	return errorTree(tree);
       } else {
 	if (sym.owner().kind == CLASS) {
 	  pre = nextcontext.enclClass.owner.thisType();
@@ -2021,12 +2020,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } catch {
       case ex: Type$Error =>
 	reportTypeError(tree.pos, ex);
-	tree.setType(Type.ErrorType);
-	if (tree.hasSymbol()) {
-	  if (tree.symbol() != null) tree.symbol().setInfo(Type.ErrorType);
-	  else tree.setSymbol(Symbol.ERROR);
-	}
-	tree;
+        errorTree(tree)
     }
   }
 
