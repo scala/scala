@@ -2027,6 +2027,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		return pre.memberInfo(sym).erasure();
 
 	    case CLASS:
+                if (Global.instance.definitions.UNIT_CLASS == sym) return this;
 		if (sym.fullName() == Names.java_lang_Object ||
 		    sym.fullName() == Names.scala_AnyRef ||
 		    sym.fullName() == Names.scala_AnyVal)
@@ -2047,7 +2048,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return tp.erasure();  // note: needed because of UnboxedArrayType
 	case MethodType(Symbol[] params, Type tp):
 	    Symbol[] params1 = erasureMap.map(params);
-	    Type tp1 = tp.erasure();
+	    Type tp1 = tp.fullErasure();
 	    switch (tp1) {
 	    case MethodType(Symbol[] params2, Type tp2):
 		Symbol[] newparams = new Symbol[params1.length + params2.length];
@@ -2070,7 +2071,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
      * the "void" type.
      */
     public Type fullErasure() {
-        if (Global.instance.definitions.UNIT_TYPE.equals(this))
+        if (Global.instance.definitions.UNIT_CLASS == symbol())
             return unbox();
         else
             return erasure();
