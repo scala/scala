@@ -21,9 +21,9 @@ LATEX_FORMATS		+= dvi
 LATEX_FORMATS		+= ps
 LATEX_FORMATS		+= pdf
 
-LATEX_TARGETS		+= $(LATEX_FORMATS:%=tutorial.%)
+LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaTutorial.%)
 
-LATEX_SOURCES		+= tutorial.tex
+LATEX_SOURCES		+= ScalaTutorial.tex
 
 ##############################################################################
 # Includes
