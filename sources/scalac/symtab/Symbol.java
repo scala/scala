@@ -39,12 +39,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Attribues -------------------------------------------------------------
 
-    public static final int IS_ROOT        = 0x00000001;
-    public static final int IS_ANONYMOUS   = 0x00000002;
-    public static final int IS_LABEL       = 0x00000010;
-    public static final int IS_THISTYPE    = 0x20000000;
-    public static final int IS_LOCALDUMMY  = 0x40000000;
-    public static final int IS_COMPOUND    = 0x80000000;
+    public static final int IS_ROOT         = 0x00000001;
+    public static final int IS_ANONYMOUS    = 0x00000002;
+    public static final int IS_LABEL        = 0x00000010;
+    public static final int IS_ACCESSMETHOD = 0x00000100;
+    public static final int IS_THISTYPE     = 0x20000000;
+    public static final int IS_LOCALDUMMY   = 0x40000000;
+    public static final int IS_COMPOUND     = 0x80000000;
 
 // Fields -------------------------------------------------------------
 
@@ -106,6 +107,13 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final Symbol newMethod(int pos, int flags, Name name) {
         assert isClass(): Debug.show(this);
         return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new access method owned by this symbol. */
+    public final Symbol newAccessMethod(int pos, Name name) {
+        assert isClass(): Debug.show(this);
+        int flags = PRIVATE | FINAL | SYNTHETIC;
+        return newTerm(pos, flags, name, IS_ACCESSMETHOD);
     }
 
     /** Creates a new function owned by this symbol. */
@@ -722,6 +730,12 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote an accessor? */
     public final boolean isAccessor() {
         return (flags & ACCESSOR) != 0;
+    }
+
+    /** Does this symbol denote an access method? (a method to access
+     * private of protected members from inner classes) */
+    public final boolean isAccessMethod() {
+        return (attrs & IS_ACCESSMETHOD) != 0;
     }
 
     /** Is this symbol locally defined? I.e. not a member of a class or module */
