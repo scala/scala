@@ -392,6 +392,14 @@ object Bug316Test {
 }
 
 //############################################################################
+// Bug 328
+
+object Bug328Test {
+  def test(f: Function1[Int,String]): Unit = ();
+  def main(args: Array[String]): Unit = test(args);
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -436,6 +444,7 @@ object Test  {
     test(266, Bug266Test.main(args));
     test(281, if (args(0) == "int") () else Bug281Test.main(args)); // !!!
     test(316, Bug316Test.main(args));
+    test(328, Bug328Test.main(args));
 
     if (errors > 0) {
       System.out.println();
