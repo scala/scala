@@ -137,6 +137,8 @@ xml/Text.scala
 xml/BindingFactoryAdapter.scala
 
 xml/nobinding/Element.scala
+xml/nobinding/NoBindingFactoryAdapter.scala
+xml/nobinding/XML.scala
 
 xml/path/Expression.scala
 xml/path/Tokens.scala
