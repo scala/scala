@@ -16,7 +16,7 @@ abstract class NodeFactory {
 
   def makeText( s:String )                 = Text( s );
   def makeComment( s:String ):Seq[Comment] =
-    if(config.ignodeComments) Nil else List( Comment( s ) );
+    if(config.ignoreComments) Nil else List( Comment( s ) );
   def makeProcInstr( t:String, s:String )  = ProcInstr( t, s );
   def makeCharData( s:String )             = CharData( s );
 
