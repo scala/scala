@@ -87,6 +87,7 @@ symtab/classfile/SymblParser.java
 symtab/classfile/Pickle.java
 symtab/classfile/UnPickle.java
 
+symtab/ClosureHistory.java
 symtab/Definitions.java
 symtab/EntryTags.java
 symtab/Kinds.java
