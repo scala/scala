@@ -37,6 +37,8 @@ public class PackageParser extends Type.LazyType {
     /** complete package type symbol p by loading all package members
      */
     public void complete(Symbol p) {
+        Phase phase = global.currentPhase;
+        global.currentPhase = global.getFirstPhase();
         long msec = System.currentTimeMillis();
         Scope members = new Scope();
         String dirname = null;
@@ -57,6 +59,7 @@ public class PackageParser extends Type.LazyType {
             dirname = "anonymous package";
         global.operation("scanned " + dirname + " in " +
                     (System.currentTimeMillis() - msec) + "ms");
+        global.currentPhase = phase;
     }
 
     private boolean isMostRecent(AbstractFile f, Symbol previous, HashMap symFile) {

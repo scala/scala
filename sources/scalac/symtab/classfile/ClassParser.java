@@ -29,7 +29,7 @@ public class ClassParser extends Type.LazyType {
      */
     public void complete(Symbol c) {
         Phase phase = global.currentPhase;
-        global.currentPhase = global.PHASE.INITIAL.phase();
+        global.currentPhase = global.getFirstPhase();
 	c.owner().initialize();
 	//System.out.println("loading " + c);//DEBUG
 	try {
@@ -87,6 +87,8 @@ public class ClassParser extends Type.LazyType {
         }
 
         public void complete(Symbol c) {
+            Phase phase = global.currentPhase;
+            global.currentPhase = global.getFirstPhase();
             try {
                 long msec = System.currentTimeMillis();
                 String filename = SourceRepresentation.externalizeFileName(
@@ -104,6 +106,7 @@ public class ClassParser extends Type.LazyType {
                 global.error("i/o error while loading " + c);
                 c.setInfo(Type.ErrorType);
             }
+            global.currentPhase = phase;
         }
     }
 }
