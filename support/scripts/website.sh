@@ -348,7 +348,7 @@ function website-build() {
     $program-link  "$installdir/doc/api" "$websitedir/doc";
 
     # link PDF documents and create PostScript versions
-    local addonsdir="$archivedir/scala-$current"
+    local addonsdir="$archivedir/scala-$current.addons"
     $program-pdf-link "$installdir/doc" "ScalaReference" "$websitedir/doc";
     $program-pdf-link "$installdir/doc" "ScalaByExample" "$websitedir/doc";
     $program-pdf-link "$installdir/doc" "ScalaTutorial" "$websitedir/doc";
