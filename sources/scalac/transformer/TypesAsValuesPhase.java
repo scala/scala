@@ -790,6 +790,9 @@ public class TypesAsValuesPhase extends Phase {
             case SingleType(Type pre, Symbol sym):
                 return singleType(pos, (Type.SingleType)tp);
 
+            case ThisType(Symbol sym):
+                return thisType(pos, sym);
+
             case CompoundType(Type[] parts, Scope members):
                 return compoundType(pos, parts, members, owner, env);
 
@@ -816,6 +819,13 @@ public class TypesAsValuesPhase extends Phase {
                                                   defs.JAVACLASSTYPE_CLASS);
             Tree nameLit = gen.mkStringLit(pos, prims.getJREClassName(sym));
             Tree[] args = new Tree[] { nameLit };
+            return gen.New(pos, gen.mkApply_V(constr, args));
+        }
+
+        private Tree thisType(int pos, Symbol sym) {
+            Tree constr =
+                gen.mkPrimaryConstructorGlobalRef(pos, defs.SINGLETYPE_CLASS);
+            Tree[] args = new Tree[] { gen.This(pos, sym) };
             return gen.New(pos, gen.mkApply_V(constr, args));
         }
 
