@@ -411,21 +411,19 @@ public class Type implements Modifiers, Kinds, TypeTags {
         }
     }
 
-    /** Get type parameters of polymorphic method or class
-     *  or EMPTY_ARRAY if not applicable.
+    /** Get type parameters of polymorphic method or EMPTY_ARRAY if
+     * not applicable.
      */
     public Symbol[] typeParams() {
         switch (this) {
 	case PolyType(Symbol[] tparams, _):
 	    return tparams;
-	case TypeRef(_, Symbol sym, _):
-	    if (sym.kind == CLASS) return sym.typeParams();
-	    else return sym.info().typeParams();
+        default:
+            return Symbol.EMPTY_ARRAY;
 	}
-	return Symbol.EMPTY_ARRAY;
     }
 
-    /** Get value parameters of method or class or EMPTY_ARRAY if not
+    /** Get value parameters of method or EMPTY_ARRAY if not
      * applicable.
      */
     public Symbol[] valueParams() {
@@ -434,9 +432,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return result.valueParams();
         case MethodType(Symbol[] vparams, _):
             return vparams;
-	case TypeRef(_, Symbol sym, _):
-	    if (sym.kind == CLASS) return sym.valueParams();
-	    else return sym.info().valueParams();
         default:
             return Symbol.EMPTY_ARRAY;
 	}

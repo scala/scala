@@ -2204,8 +2204,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Type[] argtypes = Tree.typeOf(args);
 		//todo: this needs to be refined.
 		Symbol[] tparams =
-		    (Type.isSameAs(tpe1.type.typeArgs(), Symbol.type(tpe1.type.typeParams())))
-		    ? tpe1.type.typeParams()
+		    (Type.isSameAs(tpe1.type.typeArgs(), Symbol.type(tpe1.type.unalias().symbol().typeParams())))
+		    ? tpe1.type.unalias().symbol().typeParams()
 		    : Symbol.EMPTY_ARRAY;
 		Type owntype = Type.ErrorType;
 		if (tpe1.type != Type.ErrorType) {
