@@ -91,6 +91,15 @@ public final class TypeCreator
 	MONITOR.GetMethod("Wait", new Type[] {SYSTEM_OBJECT, INT});
 
 
+    static final Type SCALA_BYTE    = getJavaType("scala.Byte");
+    static final Type SCALA_SHORT   = getJavaType("scala.Short");
+    static final Type SCALA_INT     = getJavaType("scala.Int");
+    static final Type SCALA_LONG    = getJavaType("scala.Long");
+    static final Type SCALA_FLOAT   = getJavaType("scala.Float");
+    static final Type SCALA_DOUBLE  = getJavaType("scala.Double");
+    static final Type SCALA_CHAR    = getJavaType("scala.Char");
+    static final Type SCALA_BOOLEAN = getJavaType("scala.Boolean");
+
     public static Type getJavaType(String name) {
 	try { return JavaType.fromString(name); }
 	catch (ClassNotFoundException e) {
@@ -330,7 +339,9 @@ public final class TypeCreator
 	else {
 	    switch (sym.info()) {
 	    case CompoundType(_, _):
-		String fullname = sym.type().symbol().fullNameString();
+		String fullname = sym.type().symbol().fullNameString() +
+		    (sym.isModuleClass() ? "$" : "");;
+
 		type = Type.GetType(fullname);
 		if (type == null)
 		    type = createType(sym);
@@ -377,9 +388,18 @@ public final class TypeCreator
 	    Type[] interfaces = null;
 	    int inum = baseTypes.length;
 	    if (sym.isInterface()) {
+//  		log("interface " + sym.fullNameString() +
+//  		    " extends " + dumpSym(baseTypes[0].symbol()));
+		int baseIndex = 0;
+		if (baseTypes[0].symbol() == defs.ANY_CLASS) {
+		    --inum;
+		    baseIndex = 1;
+		}
 		interfaces = new Type[inum];
-		for (int i = 0; i < inum; i++)
-		    interfaces[i] = getType(baseTypes[i].symbol());
+		for (int i = 0; i < inum; i++) {
+		    assert baseTypes[i + baseIndex].symbol().isInterface();
+		    interfaces[i] = getType(baseTypes[i + baseIndex].symbol());
+		}
 	    } else {
 		superType = getType(baseTypes[0].symbol());
 		assert inum > 0;
@@ -390,10 +410,18 @@ public final class TypeCreator
 
 	    // i.e. top level class
 	    if (owner.isRoot() || owner.isPackage()) {
+// 		log("createType():");
+// 		log("\ttypeName = " + typeName);
+// 		log("\tsuperType = " + superType);
+// 		log("\tinterfaces: ");
+// 		for (int i = 0; i < interfaces.length; i++)
+// 		    log("\t\t" + interfaces[i]);
 		type = module.DefineType
 		    (typeName, translateTypeAttributes(sym.flags, false),
 		     superType, interfaces);
 	    } else {
+		final Type oT = getType(owner);
+		//log("createType: owner type = " + oT);
 		final TypeBuilder outerType = (TypeBuilder) getType(owner);
 		type = outerType.DefineNestedType
 		    (typeName, translateTypeAttributes(sym.flags, true),
@@ -431,6 +459,8 @@ public final class TypeCreator
 	    // force the creation of the type
 	    //log("UnboxedArrayType: " + elemtp + "[]");
 	    return Type.GetType(getTypeFromType(elemtp) + "[]");
+	case NoType:
+	    return VOID;
 
 	default:
 	    global.fail("getTypeFromType: " + Debug.show(type));
