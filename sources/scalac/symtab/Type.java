@@ -121,7 +121,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     public static Type typeRef(Type pre, Symbol sym, Type[] args) {
-	if (pre.isStable() || pre == ErrorType)
+	if (pre.isLegalPrefix() || pre == ErrorType)
 	    return TypeRef(pre, sym, args);
 	else if (sym.kind == ALIAS)
 	    return pre.memberInfo(sym);
@@ -453,6 +453,22 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case ThisType(_):
 	case SingleType(_, _):
 	    return true;
+	default:
+	    return false;
+	}
+    }
+
+    /** Is this type a legal prefix?
+     */
+    public boolean isLegalPrefix() {
+	switch (unalias()) {
+	case ThisType(_):
+	case SingleType(_, _):
+	    return true;
+	case TypeRef(_, Symbol sym, _):
+	    return sym.kind == CLASS &&
+		((sym.flags & JAVA) != 0 ||
+		 (sym.flags & (TRAIT | ABSTRACTCLASS)) == 0);
 	default:
 	    return false;
 	}
@@ -895,7 +911,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	Type toPrefix(Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    else if (pre.widen().symbol().isSubClass(symbol()))
+	    else if (symbol().isSubClass(clazz) &&
+		     pre.widen().symbol().isSubClass(symbol()))
 		return pre;
 	    else
 		return toPrefix(pre.baseType(clazz).prefix(), clazz.owner());
@@ -1218,15 +1235,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case NoType:
 	    return false;
 
-	case ThisType(Symbol sym1):
-	    switch (this) {
-	    case ThisType(Symbol sym):
-		return sym.isSubClass(sym1);
-	    case SingleType(_, _):
-		return this.isSameAs(that);
-	    }
-	    break;
-
+	case ThisType(_):
 	case SingleType(_, _):
 	    switch (this) {
 	    case ThisType(_):
@@ -1238,7 +1247,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
        	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		if (sym == sym1 && pre.isSubType(pre1) && isSubArgs(args, args1))
+		if (sym == sym1 && pre.isSameAs(pre1) && isSubArgs(args, args1))
 		    return true;
 		break;
 	    }

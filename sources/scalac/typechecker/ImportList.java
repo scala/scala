@@ -49,12 +49,18 @@ class ImportList {
 	switch (tree) {
 	case Import(Tree expr, Name[] selectors):
 	    for (int i = 0; i < selectors.length; i = i + 2) {
-		if (i + 1 < selectors.length && name == selectors[i + 1])
-		    return t.lookupNonPrivate(selectors[i]);
-		else if (name == selectors[i])
+		if (i + 1 < selectors.length && name.toTermName() == selectors[i + 1]) {
+		    if (name.isTypeName())
+			return t.lookupNonPrivate(selectors[i].toTypeName());
+		    else if (name.isConstrName())
+			return t.lookupNonPrivate(selectors[i].toConstrName());
+		    else
+			return t.lookupNonPrivate(selectors[i]);
+		} else if (name.toTermName() == selectors[i]) {
 		    renamed = true;
-		else if (selectors[i] == Names.WILDCARD && !renamed)
+		} else if (selectors[i] == Names.WILDCARD && !renamed) {
 		    return t.lookupNonPrivate(name);
+		}
 	    }
 	    return Symbol.NONE;
 	default:

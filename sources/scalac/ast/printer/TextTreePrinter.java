@@ -324,6 +324,7 @@ public class TextTreePrinter implements TreePrinter {
             print(KW_IMPORT);
             print(Text.Space);
             print(expr);
+	    print(TXT_DOT);
 	    print(TXT_LEFT_BRACE);
 	    for (int i = 0; i < selectors.length; i = i + 2) {
 		if (i > 0) print(TXT_COMMA_SP);

@@ -7,12 +7,7 @@ module Predef {
 
   val List = scala.List;
 
-  def List[a](x: a*): List[a] = {
-    def mkList(elems: Iterator[a]): List[a] =
-      if (elems.hasNext) elems.next :: mkList(elems)
-      else Nil();
-    mkList(x.elements);
-  }
+  def List[a](x: a*): List[a] = x as List[a];
 
   def error[err](x: String):err = new java.lang.RuntimeException(x).throw;
 
@@ -48,14 +43,6 @@ module Predef {
   def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
 }
 
-class Except[a](r: scala.runtime.ResultOrException[a]) {
-  def except(handler: PartialFunction[Throwable, a]): a =
-    if (r.exc == null) r.result as a
-    else if (handler isDefinedAt r.exc) handler(r.exc)
-    else r.exc.throw;
-  def finally(def handler: Unit): a =
-    if (r.exc == null) r.result as a else { handler; r.exc.throw }
-}
 
 
 

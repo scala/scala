@@ -481,16 +481,17 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	try {
 	    return checkNoEscapeMap.apply(tp);
 	} catch (Type.Error ex) {
-	    error(pos, ex.msg);
+	    error(pos, ex.msg + " as part of " + tp.unalias());
 	    return Type.ErrorType;
 	}
     }
     //where
 	private Type.Map checkNoEscapeMap = new Type.Map() {
 	    public Type apply(Type t) {
-		switch (t.unalias()) {
-		case TypeRef(ThisType(_), Symbol sym, Type[] args):
-		    checkNoEscape(t, sym);
+		switch (t) {
+		case TypeRef(Type pre, Symbol sym, Type[] args):
+		    if (sym.kind == ALIAS) return apply(t.unalias());
+		    else if (pre instanceof Type.ThisType) checkNoEscape(t, sym);
 		    break;
 		case SingleType(ThisType(_), Symbol sym):
 		    checkNoEscape(t, sym);
@@ -636,6 +637,36 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 // Entering Symbols ----------------------------------------------------------
 
+    Tree transformPackageId(Tree tree) {
+	switch (tree) {
+	case Ident(Name name):
+	    return tree
+		.setSymbol(packageSymbol(tree.pos, definitions.ROOT, name))
+	        .setType(tree.symbol().type());
+	case Select(Tree qual, Name name):
+	    Tree qual1 = transformPackageId(qual);
+	    return copy.Select(tree, qual1, name)
+		.setSymbol(packageSymbol(tree.pos, qual1.symbol(), name))
+	        .setType(tree.symbol().type());
+	default:
+	    return transform(tree);
+	}
+    }
+
+    Symbol packageSymbol(int pos, Symbol base, Name name) {
+	Symbol p = base.members().lookup(name);
+	if (p.kind == NONE) {
+	    p = TermSymbol.newModule(
+		Position.NOPOS, name, base.moduleClass(), JAVA | PACKAGE);
+	    p.moduleClass().setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), p));
+	    base.members().enter(p);
+	} else if (!p.isPackage()) {
+	    error(pos, "package and class with same name");
+	    p = Symbol.ERROR;
+	}
+	return p;
+    }
+
     /** If `tree' is a definition, create a symbol for it with a lazily
      *  constructed type, and enter into current scope.
      */
@@ -648,8 +679,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Template(_, Tree[] body):
 		pushContext(tree, context.owner, context.scope);
 		context.imports = null;
-		((PackageDef) tree).packaged = packaged =
-		    transform(packaged, QUALmode);
+		((PackageDef) tree).packaged = packaged = transformPackageId(packaged);
 		popContext();
 		Symbol pkg = checkStable(packaged).symbol();
 		if (pkg != null && pkg.kind != ERROR) {

@@ -9,5 +9,5 @@
 */
 class S1() {
     def foo[T <: this.type](x: T) = x;
-    foo(this);
+    foo[this.type](this);
 }
