@@ -654,7 +654,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a this symbol? */
     public final boolean isThisSym() {
-        return owner.isClass() && owner.thisSym() == this;
+        return (attrs & IS_THISTYPE) != 0;
     }
 
     /** Does this symbol denote an interface? */
