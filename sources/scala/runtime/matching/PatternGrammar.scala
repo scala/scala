@@ -126,7 +126,7 @@ object PatternGrammar {
  *  following pre-order of occurrence in pattern
  *  @caseVars an array, field i holding the number of variables in case i
  */
-abstract class PatternGrammar extends scala.util.grammar.ImmutableTreeHedgeGrammar[TestAlphabet] {
+abstract class PatternGrammar extends scala.util.grammar.ImmutableTreeHedgeGrammar {
 
   val vars:Array[Int];
 

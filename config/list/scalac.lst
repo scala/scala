@@ -189,11 +189,11 @@ transformer/TransMatch.scala
 transformer/TransMatchPhase.scala
 transformer/UnCurry.scala
 transformer/UnCurryPhase.scala
-transformer/matching/FullRegularTranslator.scala 
-transformer/matching/MutableGrammar.scala 
-transformer/matching/NonTermFactory.scala 
-transformer/matching/PatternExp.scala 
-transformer/matching/PatternTest.scala 
+#transformer/matching/FullRegularTranslator.scala 
+#transformer/matching/MutableGrammar.scala 
+#transformer/matching/NonTermFactory.scala 
+#transformer/matching/PatternExp.scala 
+#transformer/matching/PatternTest.scala 
 #transformer/matching/PatternInfo.scala 
 
 typechecker/Analyzer.scala

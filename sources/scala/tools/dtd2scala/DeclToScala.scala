@@ -12,7 +12,7 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.dtd.{AttrDecl, ContentModel, ElemName, ElemDecl};
+import scala.xml.dtd.{AttrDecl, ContentModel, ElemDecl};
 
 import ContentModel._ ;
 import scala.xml.dtd.{REQUIRED,IMPLIED,DEFAULT};

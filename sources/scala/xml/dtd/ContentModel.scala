@@ -1,12 +1,13 @@
 package scala.xml.dtd ;
 
-abstract class ElemNames          extends scala.util.alphabet.Alphabet;
-case class ElemName(name: String) extends ElemNames {
-  override def toString() = "ElemName(\""+name+"\")";
-}
 
-object ContentModel extends scala.util.regexp.WordExp[ElemNames] {
+object ContentModel extends scala.util.regexp.WordExp {
+  type T_label = ElemName;
   type regexp = RegExp;
+
+  case class ElemName(name: String) extends Label {
+    override def toString() = "ElemName(\""+name+"\")";
+  }
 
   case object PCDATA_ extends RegExp {
     final val isNullable = false;

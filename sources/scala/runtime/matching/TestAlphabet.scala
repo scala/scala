@@ -1,13 +1,9 @@
 package scala.runtime.matching ;
 
-import scala.util.alphabet.{ AlphabetPlusWildcard, WildcardLabel };
-
-trait TestAlphabet extends AlphabetPlusWildcard ;
+trait TestAlphabet;
 
 case class TestLabel(i: Int) extends TestAlphabet ;
 
-case object AnyNode extends TestAlphabet with WildcardLabel ;
-
-object TestAlphabetView {
+case object AnyNode extends TestAlphabet {
   def view(x: Int): TestLabel = TestLabel(x);
 }

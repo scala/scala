@@ -190,9 +190,6 @@ testing/UnitTest.scala
 testing/SUnit.scala
 testing/Benchmark.scala
 
-util/alphabet/Alphabet.scala
-util/alphabet/AlphabetPlusWildcard.scala
-util/alphabet/WildcardLabel.scala
 util/automata/BaseBerrySethi.scala
 util/automata/NondetWordAutom.scala
 util/automata/WordBerrySethi.scala
@@ -206,6 +203,8 @@ util/regexp/PointedHedgeExp.scala
 util/regexp/SyntaxError.scala
 util/regexp/WildcardBase.scala
 util/regexp/WordExp.scala
+#util/logging/Logged.scala
+#util/logging/ConsoleLogger.scala
 
 xml/Attribute.scala
 xml/AttributeSeq.scala
@@ -217,6 +216,7 @@ xml/Elem.scala
 xml/EntityRef.scala
 xml/ExternalID.scala
 xml/FactoryAdapter.scala
+#xml/LoggedNodeFactory.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeFactory.scala

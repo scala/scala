@@ -1,6 +1,5 @@
 package scala.util.grammar;
 
-import scala.util.alphabet.Alphabet ;
 import scala.collection.immutable ;
 
 /** a mutable representation of hedge grammars. A hedge grammar over an
@@ -9,7 +8,7 @@ import scala.collection.immutable ;
  *  can derive the empty hedge are called "nullable". initials tree
  *  or hedge nonterminals.
  */
-abstract class ImmutableTreeHedgeGrammar[ A <: Alphabet ] extends TreeHedgeGrammar {
+abstract class ImmutableTreeHedgeGrammar extends TreeHedgeGrammar {
 
   /** number of tree nonterminals*/
   val nTreeNT: Int;

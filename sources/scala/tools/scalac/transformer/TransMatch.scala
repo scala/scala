@@ -28,8 +28,7 @@ import scalac.transformer.matching.AlgebraicMatcher ;
  */
 package scala.tools.scalac.transformer {
 
-
-import matching.FullRegularTranslator ;
+//import matching.FullRegularTranslator ;
 
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
@@ -112,14 +111,14 @@ class TransMatch( global:scalac_Global )
   def  transform( root:Tree, cases:Array[CaseDef], restpe:Type ):Tree = {
 
     if( global.newMatch ) {
-      val fm = new FullRegularTranslator( global );
-      val gram = fm.MakeGrammar( scala.Iterator.fromArray( cases ) );
-      Console.println("writing out the grammar to /tmp/encodedGrammar.bin");
-      //val f = new FileOutputStream(new File("/tmp/encodedGrammar.bin"));
-      //f.write( gram.encode );
-      //f.close();
-      // val gram = Predef.decode( Predef.Array[] );
-      Console.println( gram.encode);
+      //val fm = new FullRegularTranslator( global );
+      //val gram = fm.MakeGrammar( scala.Iterator.fromArray( cases ) );
+      //Console.println("writing out the grammar to /tmp/encodedGrammar.bin");
+      ////val f = new FileOutputStream(new File("/tmp/encodedGrammar.bin"));
+      ////f.write( gram.encode );
+      ////f.close();
+      //// val gram = Predef.decode( Predef.Array[] );
+      //Console.println( gram.encode);
 
       throw new ApplicationError("not impl.");
     };

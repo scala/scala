@@ -6,7 +6,7 @@ package scala.util.regexp ;
 
 trait WildcardBase extends Base {
   type regexp <: RegExp;
-  case object Wildcard                       extends RegExp {
+  case object Wildcard extends RegExp {
     final val isNullable = false;
   }
 }

@@ -16,6 +16,7 @@ trait Base {
   case class  Alt(rs: regexp*)  extends RegExp {
 
     // check rs \in R,R,R*
+    // @todo: flattening
     if({ val it = rs.elements; !it.hasNext || {it.next; !it.hasNext }})
       throw new SyntaxError("need at least 2 branches in Alt");
 
@@ -26,6 +27,7 @@ trait Base {
     }
   }
   case class  Sequ(rs: regexp*) extends RegExp {
+    // @todo: flattening
     // check rs \in R,R*
     if({ val it = rs.elements; !it.hasNext })
       throw new SyntaxError("need at least 1 item in Sequ");

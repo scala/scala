@@ -2,8 +2,6 @@
 
 package scala.util.regexp ;
 
-import scala.util.alphabet.Alphabet ;
-
 /** regular word expressions. use them with an alphabet: <pre>
 abstract class IntLabels extends Alphabet;
 object IntWordExp extends WordExp[IntLabels] {
@@ -11,9 +9,14 @@ object IntWordExp extends WordExp[IntLabels] {
 };
  * </pre>
  */
-trait WordExp[ A <: Alphabet ] extends Base {
+trait WordExp extends Base {
 
-  case class Letter(a: A)    extends RegExp {
+  trait Label;
+
+  type T_label <: Label;
+  type regexp <: RegExp ;
+
+  case class Letter(a: T_label)    extends RegExp {
     final val isNullable = false;
   }
 
