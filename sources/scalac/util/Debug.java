@@ -90,7 +90,7 @@ public abstract class Debug {
     }
 
     public static boolean logAll(Object[] args) {
-        return Global.instance.log(showAll(args));
+        return Global.instance.log(showAll(args, true));
     }
 
     //########################################################################
@@ -193,9 +193,14 @@ public abstract class Debug {
     }
 
     public static String showAll(Object[] args) {
+        return showAll(args, false);
+    }
+
+    public static String showAll(Object[] args, boolean nosep) {
         if (args == null) return "null";
         StringBuffer buffer = new StringBuffer();
-        for (int i = 0; i < args.length; i++) append(buffer, args[i]);
+        for (int i = 0; i < args.length; i++)
+            append(nosep || i == 0 ? buffer : buffer.append(" - "), args[i]);
         return buffer.toString();
     }
 
@@ -389,15 +394,6 @@ public interface DebugHandler {
 }
 
 public abstract class DebugAbstractHandler implements DebugHandler {
-
-    //########################################################################
-    // DebugAbstractHandler interface
-
-    public String show(Object that) {
-        return Debug.show(that, this);
-    }
-
-    //########################################################################
 }
 
 public class DebugDefaultHandler extends DebugAbstractHandler {

@@ -100,7 +100,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             tparams = Type.symbol(self.typeArgs());
             for (int i = 0; i < tparams.length; i++)
                 assert tparams[i].isParameter() && tparams[i].owner() == symbol:
-                    Debug.show(symbol, " -- ", clasz, " -- ", self);
+                    Debug.show(symbol, clasz, self);
             type = Type.MethodType(vparams, result);
             if (tparams.length != 0) type = Type.PolyType(tparams, type);
         } else {
@@ -548,7 +548,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     ? context.clasz == member.owner()
                     // !!! This is incorrect without static access methods
                     : context.clasz.isSubClass(member.owner())) break;
-            assert context != null: Debug.show(this.context, " - ", member);
+            assert context != null: Debug.show(this.context, member);
             if (context == this.context) return member;
             Map table = svper != null ? context.supers : context.selfs;
             Symbol access = (Symbol)table.get(member);
@@ -601,9 +601,9 @@ public class ExplicitOuterClassesPhase extends Phase {
             for (int i = 0; i < context.context.outers.length; i++)
                 if (context.context.outers[i].clasz == clasz)
                     tcontext = context.context.outers[i];
-            assert tcontext != null: Debug.show(clasz, " -- ", context.clasz);
+            assert tcontext != null: Debug.show(clasz, context.clasz);
             if (tcontext.isStable) {
-                throw Debug.abort(Debug.show(clasz, " - ", context.clasz));
+                throw Debug.abort(Debug.show(clasz, context.clasz));
                 /*
                 if (!clasz.owner().isPackageClass()) {
                     Tree qualifier = genOuterRef(pos,tcontext.outers[0].clasz);
@@ -615,7 +615,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 */
             } else {
                 assert context.context.vlink != null:
-                    Debug.show(clasz, " -- ", context.clasz);
+                    Debug.show(clasz, context.clasz);
                 Tree tree = context.method == null || context.method.isConstructor()
                     ? gen.Ident(pos, context.context.vlink)
                     : gen.Select(gen.This(pos, context.clasz), context.context.context.vfield);
@@ -623,11 +623,11 @@ public class ExplicitOuterClassesPhase extends Phase {
                 while (true) {
                     context = context.outer;
                     assert context != null:
-                        Debug.show(clasz, " -- ", this.context.clasz);
+                        Debug.show(clasz, this.context.clasz);
                     while (context.context.isStable) {
                         context = context.outer;
                         assert context != null:
-                            Debug.show(clasz, " -- ", this.context.clasz);
+                            Debug.show(clasz, this.context.clasz);
                     }
                     if (context.clasz == clasz) return tree;
                     Symbol access = getAccessSymbol(context.context.context.vfield, null);

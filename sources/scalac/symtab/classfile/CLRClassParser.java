@@ -344,7 +344,7 @@ public class CLRClassParser extends SymbolLoader {
             return AConstant.DOUBLE(((Number)value).doubleValue());
         if (base == global.definitions.STRING_CLASS)
             return AConstant.STRING((String)value);
-    	throw Debug.abort("illegal value", Debug.show(value, " - ", base));
+    	throw Debug.abort("illegal value", Debug.show(value, base));
     }
 
     protected static int translateAttributes(Type type) {

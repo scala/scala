@@ -150,7 +150,7 @@ public class JavaMirror {
         try {
             return Class.forName(name, false, loader);
         } catch (ClassNotFoundException exception) {
-            throw Debug.abort("no such class", Debug.show(symbol," - ",name));
+            throw Debug.abort("no such class", Debug.show(symbol, name));
         }
     }
 

@@ -218,10 +218,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             if (args.length == params.length)
                 return pre.memberInfo(sym).subst(params, args);
             assert args.length == 0 || args.length == params.length:
-                Debug.show(pre, " - ", sym, " - ", args, " - ", params);
+                Debug.show(pre, sym, args, params);
         }
         assert isLegalTypeRef(pre, sym, args):
-            Debug.show(pre, " - ", sym, " - ", args, " - ", sym.typeParams());
+            Debug.show(pre, sym, args, sym.typeParams());
         return new ExtTypeRef(pre, sym, args);
     }
     private static boolean isLegalTypeRef(Type pre, Symbol sym, Type[] args) {

@@ -895,7 +895,7 @@ public class Definitions {
      */
     private Symbol loadTerm(Symbol clasz, Name name, Type[] vargs) {
         Symbol sym = clasz.lookup(name);
-        assert sym.isTerm(): Debug.show(clasz,"."+name+" - ",vargs," -> ",sym);
+        assert sym.isTerm(): Debug.show(clasz, name, vargs, sym);
         Symbol[] alts = sym.alternativeSymbols();
         for (int i = 0; i < alts.length; i++) {
             switch (alts[i].type()) {
@@ -907,7 +907,7 @@ public class Definitions {
                 continue;
             }
         }
-        throw Debug.abort(Debug.show(clasz,"."+name+" - ",vargs," -> ",alts));
+        throw Debug.abort(Debug.show(clasz, name, vargs, alts));
     }
 
     //########################################################################

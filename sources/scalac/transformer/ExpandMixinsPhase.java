@@ -259,11 +259,10 @@ public class ExpandMixinsPhase extends Phase {
                 Symbol override = member.overridingSymbol(parents[i]);
                 global.prevPhase();
                 assert !override.isNone():
-                    Debug.show(member, " -- ", clasz, " -- ", parents[i]);
+                    Debug.show(member, clasz, parents[i]);
                 if (i == 0) return override;
                 Symbol clone = (Symbol)clones.get(override);
-                assert clone != null:
-                    Debug.show(member, " -- ", override, " -- ", clasz);
+                assert clone != null: Debug.show(member, override, clasz);
                 return clone;
             }
             // !!! double loop
@@ -273,14 +272,13 @@ public class ExpandMixinsPhase extends Phase {
                 Symbol override = member.overridingSymbol(parents[i]);
                 //global.prevPhase();
                 assert !override.isNone():
-                    Debug.show(member, " -- ", clasz, " -- ", parents[i]);
+                    Debug.show(member, clasz, parents[i]);
                 if (i == 0) return override;
                 Symbol clone = (Symbol)clones.get(override);
-                assert clone != null:
-                    Debug.show(member, " -- ", override, " -- ", clasz);
+                assert clone != null: Debug.show(member, override, clasz);
                 return clone;
             }
-            throw Debug.abort(Debug.show(member, " -- ", clasz));
+            throw Debug.abort(Debug.show(member, clasz));
         }
         public Tree transform(Tree tree) {
             switch (tree) {

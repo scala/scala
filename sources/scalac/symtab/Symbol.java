@@ -1330,7 +1330,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final Type staticType(Type[] args) {
         Type prefix = owner.staticPrefix();
         if (isType()) return Type.typeRef(prefix, this, args);
-        assert args.length == 0: Debug.show(this, " - ", args);
+        assert args.length == 0: Debug.show(this, args);
         return prefix.memberType(this);
     }
 

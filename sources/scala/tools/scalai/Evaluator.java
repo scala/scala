@@ -454,7 +454,7 @@ public class Evaluator {
             Symbol clasz = template.getSymbol();
             Symbol initializer = clasz.lookup(Names.INITIALIZER);
             CodePromise promise = template.getMethod(initializer);
-            assert promise != null: Debug.show(clasz, " - ", initializer);
+            assert promise != null: Debug.show(clasz, initializer);
             evaluate(promise, value, new Object[0]);
             return value;
 

@@ -252,7 +252,7 @@ public class AddInterfaces extends GenTransformer {
     private Symbol getClassVParam(Symbol vparam) {
         if (paramSubst == null) return vparam;
         Symbol clone = (Symbol)paramSubst.lookupSymbol(vparam);
-        assert clone != null: Debug.show(vparam, " - ", clasz, " - ", member);
+        assert clone != null: Debug.show(vparam, clasz, member);
         return clone;
     }
 
