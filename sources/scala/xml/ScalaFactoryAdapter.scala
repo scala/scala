@@ -16,7 +16,7 @@ abstract class ScalaFactoryAdapter
         if( !iter.hasNext() )
             Nil
         else
-            (iter.next() as a )::iterToList( iter ) ;
+            (iter.next().asInstanceOf[a])::iterToList( iter ) ;
 
 
     def mapToMap[a,b]( map:java.util.Map ):Map[a,b] = {
@@ -27,8 +27,8 @@ abstract class ScalaFactoryAdapter
          def iterToMap:Unit =
          if( keys.hasNext() ) {
               val key   = keys.next();
-              val value = map.get( key ) as b ;
-              res.put( key as a , value as b );
+              val value = map.get( key ).asInstanceOf[b] ;
+              res.put( key.asInstanceOf[a] , value.asInstanceOf[b] );
               iterToMap
          } else
               () ;
@@ -66,14 +66,14 @@ abstract class ScalaFactoryAdapter
 	  } else { // do hash-consing
 
 	    val h = Element.hashValue( elemName, attribs, _children );
-	    val el_cache = cache.get( h as scala.All ) as scala.Object;
+	    val el_cache = cache.get( h.asInstanceOf[scala.All] ).asInstanceOf[scala.Object];
 	    if ( el_cache != null ) {  // return cached elem
 	      el_cache
 	    } else {
 	      val c = f.get( elemName ); // get constructor
               val el = c( _children );
               el.setAttribs( mapToMap[String,String]( attribs ) );
-	      cache.put( h as scala.All, el as scala.All );
+	      cache.put( h.asInstanceOf[scala.All], el.asInstanceOf[scala.All] );
 	      el
 	    }
 	  }

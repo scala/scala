@@ -9,7 +9,7 @@ object Generic {
 
   def load( filename:String ):Labelled = {
     val b = new GenericFactoryAdapter().loadXML( filename );
-    b as Labelled
+    b.asInstanceOf[Labelled]
   };
 
   class GenericFactoryAdapter extends dtd2scala.FactoryAdapter()  {
@@ -21,7 +21,7 @@ object Generic {
         if( !iter.hasNext() )
             Nil
         else
-            (iter.next() as a )::iterToList( iter ) ;
+            (iter.next().asInstanceOf[a])::iterToList( iter ) ;
 
     def   elementContainsText( name:java.lang.String ):boolean = true;
 
@@ -33,12 +33,12 @@ object Generic {
                          children:java.util.Iterator ):scala.Object = {
 
           val el = Labelled( Symbol( elemName), iterToList[ Any ]( children ));
-	  val el_cache = cache.get( el as scala.All ) as scala.Object;
+	  val el_cache = cache.get( el.asInstanceOf[scala.All]).asInstanceOf[scala.Object];
 	  if ( el_cache != null ) {
 	    System.err.println("[using cached elem!]");
 	    el_cache
 	  } else {
-	    cache.put( el as scala.All, el as scala.All );
+	    cache.put( el.asInstanceOf[scala.All], el.asInstanceOf[scala.All] );
 	    el
 	  }
 
