@@ -622,6 +622,24 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } else vapp
   }
 
+  private def checkLegalView(pos: int, tparams: Array[Symbol], vparam: Symbol, restype: Type): boolean = {
+    var i = 0;
+    while (i < tparams.length && tparams(i) != vparam.getType().symbol())
+      i = i + 1;
+    if (i < tparams.length) {
+      val vb = tparams(i).vuBound();
+      if (vb != Global.instance.definitions.ANY_TYPE()) {
+	val vb1 = vb.subst(tparams, infer.freshVars(tparams));
+	if (restype.isSubType(vb1)) {
+	  error(pos, "view is potentially self-referential since its result type " + restype +
+		     " is a subtype of its type parameter view bound " + vb1);
+	  return false;
+	}
+      }
+    }
+    true
+  }
+
 // Contexts -------------------------------------------------------------------
 
   /** Push new context associated with given tree, owner, and scope on stack.
@@ -823,18 +841,21 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  context.scope.unlink(e);
 	  context.scope.enter(sym);
         }
-      } else if (context.owner.kind == CLASS && sym.kind == VAL && other.kind == VAL && ((sym.flags & ACCESSOR) == 0 || (other.flags & ACCESSOR) == 0)) {
-		    e.setSymbol(other.overloadWith(sym));
-       } else {
-	 if (context.owner.kind == CLASS)
-	   error(sym.pos,
-		 sym.nameString() + " is already defined as " +
-		 other + other.locationString());
-	 else
-	   error(sym.pos,
-		 sym.nameString() +
-		 " is already defined in local scope");
-       }
+      } else if (context.owner.kind == CLASS &&
+		 sym.kind == VAL && other.kind == VAL &&
+		 ((sym.flags & ACCESSOR) == 0 || (other.flags & ACCESSOR) == 0)
+		 ||
+		 (sym.name == Names.view &&
+		  (sym.flags & (PARAM | SYNTHETIC)) == (PARAM | SYNTHETIC))) {
+	e.setSymbol(other.overloadWith(sym));
+      } else if (context.owner.kind == CLASS)
+	error(sym.pos,
+	      sym.nameString() + " is already defined as " +
+	      other + other.locationString());
+      else
+	error(sym.pos,
+	      sym.nameString() +
+	      " is already defined in local scope");
     } else {
       context.scope.enter(sym);
     }
@@ -1051,7 +1072,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    vsyms(i).name = vparams(i).name;
             //necessary since vsyms might have been unpickled
 	    vparams(i).setSymbol(vsyms(i));
-	    context.scope.enter(vsyms(i));
+	    //potential overload in case this is a view parameter
+	    context.scope.enterOrOverload(vsyms(i));
 	    i = i + 1
 	  }
 	  rest = restp;
@@ -1154,6 +1176,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  popContext();
 	  owntype = makeMethodType(tparamSyms, vparamSyms, restype);
 	  //System.out.println("methtype " + name + ":" + owntype);//DEBUG
+
+	  if (name == Names.view &&
+	      infer.isViewBounded(tparamSyms) &&
+	      vparamSyms.length == 2 && vparamSyms(1).length == 1 &&
+	      !checkLegalView(tree.pos, tparamSyms, vparamSyms(1)(0), restype))
+	    owntype = makeMethodType(tparamSyms, vparamSyms, Type.ErrorType);
 
 	case Tree$ValDef(mods, name, _tpe, _rhs) =>
 	  var tpe = _tpe;
@@ -1576,6 +1604,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       }
       if ((mode & CONSTRmode) == 0) {
+	System.out.println(tree);
 	typeError(tree.pos, owntype, pt);
 	Type.explainTypes(owntype, pt);
 	setError(tree);
@@ -1642,7 +1671,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	c = c.outer
       }
       if (lastc != Context.NONE) {
-	//System.out.println("revising stop to [" + lastc.tree + "]; symbol = " + sym + ", context = " + nextcontext);//debug
+	//System.out.println("revising stop to [" + lastc.tree + "]; symbol = " + sym + ", context = " + nextcontext);//DEBUG
 	stopPos = lastc.tree.pos;
       }
     }
@@ -1727,10 +1756,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     var sym: Symbol = qual.getType().lookup(name);
     if (sym.kind == NONE) {
       if (name != Names.view) {
-	val v = infer.bestView(qual.getType(), Type.AnyType, name);
+	val qtype = qual.getType().singleDeref();
+	val v = infer.bestView(qtype, Type.AnyType, name);
 	if (v != null) {
-	  qual = applyView(
-	    v, qual.setType(qual.getType().singleDeref()), EXPRmode, Type.AnyType);
+	  qual = applyView(v, qual.setType(qtype), EXPRmode, Type.AnyType);
 	  sym = qual.getType().lookup(name);
 	  assert(sym.kind != NONE);
 	} else {
@@ -2114,7 +2143,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   */
   override def transform(tree: Tree): Tree = {
 
-    //System.out.println("transforming " + tree);//DEBUG
+    //System.out.println("transforming " + tree + ":" + pt);//DEBUG
     if (tree.getType() != null) {
       checkDefined.all = tree; checkDefined.traverse(tree);//debug
       return tree;

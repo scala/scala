@@ -304,12 +304,15 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 		var i = alttypes.length - 1;
 		var vs: List[View] = List();
 		while (i >= 0) {
-		  vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
+		  if (alttypes(i).resultType() != Type.ErrorType)
+		    vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
 		  i = i - 1
 		}
 		vs
 	      case viewtype =>
-		List(View(viewsym, viewtype, qual, Context.NONE))
+		if (viewtype.resultType() != Type.ErrorType)
+		  List(View(viewsym, viewtype, qual, Context.NONE))
+		else List()
 	    }
 	  } else List()
 	} else List()
@@ -648,7 +651,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   /** Generate an array of fresh type variables corresponding to parameters
   *  `tparams'
   */
-  private def freshVars(tparams: Array[Symbol]): Array[Type] = {
+  def freshVars(tparams: Array[Symbol]): Array[Type] = {
     val tvars: Array[Type] = new Array[Type](tparams.length);
     { var i = 0; while (i < tvars.length) {
       tvars(i) = new Type$TypeVar(tparams(i).getType(), new Type$Constraint());
@@ -1119,24 +1122,30 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       isCompatible(restpe, pt, regularValue) &&
       (fieldName == Names.EMPTY || restpe.lookup(fieldName).kind != NONE)
     case Type$PolyType(tparams, Type$MethodType(params, restpe)) =>
-      try {
-	val targs: Array[Type] = methTypeArgsSkipViews(
-	  tparams, params, argtypes, restpe, pt, false, regularValue);
-	if (targs != null) {
-	  val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams, restpe);
-	  val restpe1 = skipViewParams(tparams, restpe);
-	  isWithinBounds(tparams, targs) &&
-	  exprTypeArgs(uninstantiated,
-		       restpe1.subst(tparams, targs), pt,
-		       regularValue) != null &&
-	  (fieldName == Names.EMPTY ||
-	   restpe1.subst(tparams, targs).lookup(fieldName).kind != NONE)
-	} else {
-	  false
+      var i = 0;
+      while (i < argtypes.length && !argtypes(i).containsSome(tparams))
+	i = i + 1;
+      if (i < argtypes.length)
+	isApplicable(freshInstance(ftpe), argtypes, pt, fieldName, regularValue);
+      else
+	try {
+	  val targs: Array[Type] = methTypeArgsSkipViews(
+	    tparams, params, argtypes, restpe, pt, false, regularValue);
+	  if (targs != null) {
+	    val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams, restpe);
+	    val restpe1 = skipViewParams(tparams, restpe);
+	    isWithinBounds(tparams, targs) &&
+	    exprTypeArgs(uninstantiated,
+			 restpe1.subst(tparams, targs), pt,
+			 regularValue) != null &&
+	    (fieldName == Names.EMPTY ||
+	     restpe1.subst(tparams, targs).lookup(fieldName).kind != NONE)
+	  } else {
+	    false
+	  }
+	} catch {
+	  case ex: NoInstance => false
 	}
-      } catch {
-	case ex: NoInstance => false
-      }
     case _ =>
       if (!regularValue) {
 	val ftpe1 = applyType(ftpe);
@@ -1293,7 +1302,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   def bestView(tp: Type, pt: Type, name: Name): View = {
     var best: View = null;
     var viewMeths = getViews(tp);
-    //System.out.println("best view for " + tp + "/" + pt + " in " + viewMeths);//DEBUG
+    //System.out.println("best view for " + tp + "/" + pt + "/" + name + " in " + viewMeths);//DEBUG
     val argtypes = NewArray.Type(tp);
     while (!viewMeths.isEmpty) {
       if (isApplicable(viewMeths.head.symtype, argtypes, pt, name, false) &&

@@ -1505,7 +1505,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
         assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
         assert this.isConstructor() == that.isConstructor();
-        int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS | DEFERRED)) |
+        int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS | DEFERRED | PARAM | SYNTHETIC)) |
             ((this.flags | that.flags) & ACCESSOR);
         Symbol overloaded = (this.isConstructor())
             ? this.constructorClass().newConstructor(this.constructorClass().pos, overflags)

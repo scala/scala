@@ -3485,7 +3485,8 @@ value (or sequence of values).  The same variable name may not be
 bound more than once in a pattern.
 
 Pattern matching is always done in a context which supplies an
-expected type of the pattern. We distinguish the following kinds of patterns.
+expected type of the pattern. We distinguish the following kinds of
+patterns.
 
 A {\em variable pattern} $x$ is a simple identifier which starts with
 a lower case letter.  It matches any value, and binds the variable
@@ -3755,6 +3756,12 @@ def length [a] (xs: List[a]) = xs match {
   case x :: xs1  =>  1 + length (xs1)
 }
 \end{lstlisting}
+
+In an application of \code{match} such as the one above, the expected
+type of all patterns is the type of the qualifier of \code{match}.
+In the example above, the expected type of the patterns \code{Nil} and
+\code{x :: xs1} would be \code{List[a]}, the type of \code{xs}.
+
 
 \chapter{Top-Level Definitions}
 \label{sec:topdefs}

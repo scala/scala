@@ -82,9 +82,10 @@ class Context {
 	def isUnShadowed(view: View) =
 	  view.context == this || !infer.specializes(view.symtype, symtype);
         */
-	if (viewCache.forall(v => v.sym != sym)) {
+	if (viewCache.forall(v => v.sym != sym) &&
+	    symtype.resultType() != Type.ErrorType) {
 	  val v = View(sym, symtype, qual, this);
-	  //System.out.println("VIEW " + sym + ":" + symtype + " " + qual);//
+	  //System.out.println("VIEW " + sym + ":" + symtype + " " + qual);//DEBUG
 	  viewCache = v :: viewCache;//.filter(isUnShadowed);
 	}
     }
@@ -94,6 +95,7 @@ class Context {
       val e = scope.lookupEntry(Names.view);
       if (e.owner == scope && e.sym.kind == VAL)
 	addView(e.sym, e.sym.getType(), Tree.Empty);
+
       var imp = imports;
       while (imp != outer.imports) {
 	val sym = imp.importedSymbol(Names.view);

@@ -69,7 +69,7 @@ public class Scope {
 
 	/** the next entry in the hash bucket
 	 */
-	private Entry tail;
+	public Entry tail;
 
 	/** the next entry in this scope
 	 */
