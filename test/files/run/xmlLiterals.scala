@@ -66,9 +66,9 @@ object Test with Application {
               Elem("h1",Text("Hello World")),
               Elem("p",Text("Check the "),
                    Elem("a", Text("scala"))
-                     % ('href <= "scala.epfl.ch" ),
+                     % Pair("href","scala.epfl.ch"),
                    Text("page!"))
-            ) %('background <= "#FFFFFF")
+            ) % Pair("background","#FFFFFF")
            ).toString()
   ));
 
