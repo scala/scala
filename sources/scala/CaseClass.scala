@@ -15,7 +15,7 @@ package scala;
  */
 trait CaseClass {
 
-  /** for a case class A(x_0,...,x_(k-1)), returns x_i for 0 <= i < k,
+  /** for a case class A(x_0,...,x_(k-1)), returns x_i for 0 &lt;= i &lt; k,
   **  null otherwise
   */
   def caseElement(n:int):Any ;

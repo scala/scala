@@ -61,7 +61,7 @@ class Matcher( pgram:Grammar )  {
 
   /** given set of tree nonterms initialNTs and input tree t, returns
   **  { T | T in initialNTs,
-  **        T -> a<H> in rules,
+  **        T -> a&lt;H> in rules,
   **        isApplicable( H, t.children ) }
   */
   protected def isApplicableTree( initialNTs:Set[TreeNT],
@@ -110,7 +110,7 @@ class Matcher( pgram:Grammar )  {
 
   /** given set of hedge nonterms initialNTs and input hedge h, returns
   **  { H | H in initialNTs,
-  **        T -> a<H> in rules,
+  **        T -> a&lt;H> in rules,
   **        isApplicable( H, t.children )
   */
   def isApplicableHedge( initialNTs:Set[HedgeNT],
