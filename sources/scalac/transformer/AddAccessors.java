@@ -92,13 +92,9 @@ public class AddAccessors extends Transformer {
             }
 
             // Update class type with new values/accessors.
-            switch (clsSym.info()) {
-            case CompoundType(Type[] basetypes, Scope members):
-                clsSym.updateInfo(Type.compoundType(basetypes, newMembers, clsSym));
-                break;
-            default:
-                Debug.abort("unexpected type", clsSym.info());
-            }
+            clsSym.updateInfo(Type.compoundType(clsSym.parents(),
+                                                newMembers,
+                                                clsSym));
 
             assert inClassContext;
             inClassContext = false;
