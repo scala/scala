@@ -19,7 +19,7 @@ import Tree.*;
 /** A transformer for removing syntactic sugar. This transformer does
  *  not need any type or symbol-table information.
  *
- *  @author     Christine Roeckl, Martin Odersky
+ *  @author     Martin Odersky
  *  @version    2.0
  */
 public class DeSugarize implements Kinds, Modifiers {
@@ -84,7 +84,7 @@ public class DeSugarize implements Kinds, Modifiers {
     void getVariables(Tree tree, ArrayList vars) {
 	switch(tree) {
 	case Ident(Name name):
-	    if (name.isVariable()) vars.add(name);
+	    if (name.isVariable() && name != Names.WILDCARD) vars.add(name);
 	    break;
 	case Typed(Tree expr, Tree type):
 	    getVariables(expr, vars);
