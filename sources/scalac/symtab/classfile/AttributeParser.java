@@ -60,7 +60,11 @@ public class AttributeParser implements ClassfileConstants {
         if (name == SCALA_N)
             return SCALA_ATTR;
         if (name == JACO_N)
-        	return JACO_ATTR;
+            return JACO_ATTR;
+        if (name == BRIDGE_N)
+            return BRIDGE_ATTR;
+        if (name == SIG_N)
+            return SIG_ATTR;
         return BAD_ATTR;
     }
 
@@ -128,6 +132,9 @@ public class AttributeParser implements ClassfileConstants {
         // general attributes
             case SYNTHETIC_ATTR:
                 sym.flags |= Modifiers.SYNTHETIC;
+                return;
+            case BRIDGE_ATTR:
+                sym.flags |= Modifiers.BRIDGE;
                 return;
             case DEPRECATED_ATTR:
                 sym.flags |= Modifiers.DEPRECATED;

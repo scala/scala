@@ -42,9 +42,12 @@ public interface ClassfileConstants {
     int META_ATTR = 0x10000;
     int SCALA_ATTR = 0x20000;
     int JACO_ATTR = 0x40000;
+    int BRIDGE_ATTR = 0x80000;
+    int SIG_ATTR = 0x100000;
 
     Name SOURCEFILE_N = Name.fromString("SourceFile");
     Name SYNTHETIC_N = Name.fromString("Synthetic");
+    Name BRIDGE_N = Name.fromString("Bridge");
     Name DEPRECATED_N = Name.fromString("Deprecated");
     Name CODE_N = Name.fromString("Code");
     Name EXCEPTIONS_N = Name.fromString("Exceptions");
@@ -55,5 +58,6 @@ public interface ClassfileConstants {
     Name META_N = Name.fromString("JacoMeta");
     Name SCALA_N = Name.fromString("ScalaSignature");
     Name JACO_N = Name.fromString("JacoInterface");
+    Name SIG_N = Name.fromString("Signature");
     Name CONSTR_N = Name.fromString("<init>");
 }

@@ -25,16 +25,20 @@ public class ClassfileParser implements ClassfileConstants {
                                  | DEPRECATED_ATTR
                                  | META_ATTR
                                  | SCALA_ATTR
-                                 | JACO_ATTR;
+                                 | JACO_ATTR
+                                 | SIG_ATTR;
     static final int METH_ATTR   = CODE_ATTR
                                  | EXCEPTIONS_ATTR
                                  | SYNTHETIC_ATTR
                                  | DEPRECATED_ATTR
-                                 | META_ATTR;
+                                 | META_ATTR
+                                 | SIG_ATTR
+                                 | BRIDGE_ATTR;
     static final int FIELD_ATTR  = CONSTANT_VALUE_ATTR
                                  | SYNTHETIC_ATTR
                                  | DEPRECATED_ATTR
-                                 | META_ATTR;
+                                 | META_ATTR
+                                 | SIG_ATTR;
 
     protected Global global;
     protected AbstractFileReader in;
@@ -204,11 +208,11 @@ public class ClassfileParser implements ClassfileConstants {
                 return;
             }
             switch (type) {
-				case MethodType(Symbol[] vparams, _):
-					type = Type.MethodType(vparams, ctype);
-					break;
-				default:
-					throw new ApplicationError();
+		case MethodType(Symbol[] vparams, _):
+		    type = Type.MethodType(vparams, ctype);
+		    break;
+		default:
+		    throw new ApplicationError();
             }
             Symbol constr = c.primaryConstructor();
             if (constr.isInitialized())
@@ -227,7 +231,8 @@ public class ClassfileParser implements ClassfileConstants {
             setParamOwners(type, s);
             s.setFirstInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
-            ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+            if ((s.flags & Modifiers.BRIDGE) == 0)
+                ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
         }
     }
 
