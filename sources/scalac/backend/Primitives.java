@@ -98,14 +98,6 @@ public class Primitives {
     private static final Name AS_OARRAY_N = Name.fromString("asObjectArray");
     private static final Name AS__ARRAY_N = Name.fromString("asArray");
 
-    private static final Name IS_BVALUE_N = Name.fromString("isByte");
-    private static final Name IS_SVALUE_N = Name.fromString("isShort");
-    private static final Name IS_CVALUE_N = Name.fromString("isChar");
-    private static final Name IS_IVALUE_N = Name.fromString("isInt");
-    private static final Name IS_LVALUE_N = Name.fromString("isLong");
-    private static final Name IS_FVALUE_N = Name.fromString("isFloat");
-    private static final Name IS_DVALUE_N = Name.fromString("isDouble");
-
     //########################################################################
     // Primitives state
 
@@ -197,14 +189,6 @@ public class Primitives {
     public final Symbol AS_OARRAY;
     public final Symbol AS__ARRAY;
 
-    public final Symbol IS_BVALUE;
-    public final Symbol IS_SVALUE;
-    public final Symbol IS_CVALUE;
-    public final Symbol IS_IVALUE;
-    public final Symbol IS_LVALUE;
-    public final Symbol IS_FVALUE;
-    public final Symbol IS_DVALUE;
-
     //########################################################################
     // Primitives constructor
 
@@ -288,13 +272,6 @@ public class Primitives {
         this.AS_DARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_DARRAY_N);
         this.AS_OARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_OARRAY_N);
         this.AS__ARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS__ARRAY_N);
-        this.IS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_BVALUE_N);
-        this.IS_SVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_SVALUE_N);
-        this.IS_CVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_CVALUE_N);
-        this.IS_IVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_IVALUE_N);
-        this.IS_LVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_LVALUE_N);
-        this.IS_FVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_FVALUE_N);
-        this.IS_DVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_DVALUE_N);
         initPrimitives();
     }
 
@@ -788,29 +765,6 @@ public class Primitives {
         case TypeTags.LONG   : return AS_LARRAY;
         case TypeTags.FLOAT  : return AS_FARRAY;
         case TypeTags.DOUBLE : return AS_DARRAY;
-        default              : throw Debug.abort("illegal kind " + kind);
-        }
-    }
-
-    /** Return instance testing symbol for given (unboxed) type. */
-    public Symbol getInstanceTestSymbol(Type type) {
-        switch (type) {
-        case UnboxedType(int kind):
-            return getInstanceTestSymbol(kind);
-        default:
-            throw Debug.abort("illegal case", type);
-        }
-    }
-
-    public Symbol getInstanceTestSymbol(int kind) {
-        switch(kind) {
-        case TypeTags.BYTE   : return IS_BVALUE;
-        case TypeTags.SHORT  : return IS_SVALUE;
-        case TypeTags.CHAR   : return IS_CVALUE;
-        case TypeTags.INT    : return IS_IVALUE;
-        case TypeTags.LONG   : return IS_LVALUE;
-        case TypeTags.FLOAT  : return IS_FVALUE;
-        case TypeTags.DOUBLE : return IS_DVALUE;
         default              : throw Debug.abort("illegal kind " + kind);
         }
     }

@@ -20,18 +20,6 @@ public abstract class Double extends AnyVal {
     public abstract short asShort();
     public abstract byte asByte();
 
-    // The following definitions are *default* definitions for the
-    // "is" methods, and *not* the correct definitions for the
-    // "Double" class. The correct definitions for the real "Double"
-    // class are to be found in "RunTime.java".
-    public boolean isDouble() { return true; }
-    public boolean isFloat() { return true; }
-    public boolean isLong() { return true; }
-    public boolean isInt() { return true; }
-    public boolean isChar() { return true; }
-    public boolean isShort() { return true; }
-    public boolean isByte() { return true; }
-
     /** @meta method []scala.Double;
      */
     public double $plus() { return asDouble(); }
