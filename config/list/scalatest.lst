@@ -1,0 +1,13 @@
+############################################################-*-Makefile-*-####
+# scalatest source files (paths are relative to ./sources/scala/tools/scalatest)
+##############################################################################
+# $Id$
+
+Console.java
+Diff.java
+DiffPrint.java
+FileUtils.java
+Main.java
+Test.java
+
+##############################################################################
