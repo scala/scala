@@ -16,6 +16,7 @@ import scalac.util.*;
 import scalac.ast.*;
 import scalac.symtab.*;
 import scalac.symtab.classfile.ClassfileConstants;
+import scalac.symtab.classfile.Pickle;
 import scalac.transformer.*;
 
 import ch.epfl.lamp.util.Pair;
@@ -60,6 +61,8 @@ class GenJVM {
     protected final static String SCALA_RUNTIME_RUNTIME = "scala.runtime.RunTime";
     protected final static String SCALA_UNIT = "scala.Unit";
     protected final static String SCALA_UNIT_VALUE = "UNIT_VAL";
+
+    protected final static String SCALA_ATTR = ClassfileConstants.SCALA_N.toString();
 
     protected final static String MODULE_INSTANCE_FIELD_NAME = "MODULE$";
 
@@ -1206,8 +1209,16 @@ class GenJVM {
      * symbol table is saved.
      */
     protected void addScalaAttr(JClass cls) {
-//         JOtherAttribute scalaAttr = new JOtherAttribute(...);
-//         cls.addAttribute(scalaAttr);
+        Name className = Name.fromString(cls.getName());
+
+        if (global.symdata.containsKey(className)) {
+            Pickle pickle = (Pickle)global.symdata.get(className);
+            JOtherAttribute scalaAttr = new JOtherAttribute(cls,
+                                                            SCALA_ATTR,
+                                                            pickle.bytes,
+                                                            pickle.size());
+            cls.addAttribute(scalaAttr);
+        }
     }
 
     /// Names
