@@ -12,8 +12,12 @@ package scala.xml ;
 import java.lang.StringBuffer ; /* Java dependency! */
 import scala.collection.Map ;
 
-/** Utility functions for processing instances of bound and not bound XML
-**  classes, as well as escaping text nodes
+/** Class for pretty printing. After instantiating, you can use the
+ *  toPrettyXML methods to convert XML to a formatted string. The class
+ *  can be reused to pretty print any number of XML nodes.
+ *
+ * @param width the width to fit the output into
+ * @step  indentation
 **/
 
 class PrettyPrinter( width:Int, step:Int ) {
@@ -36,7 +40,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     items = Nil;
   }
 
-  /** try to cut at whitespace */
+  /* try to cut at whitespace */
   def cut( s:String, ind:Int ):List[Item] = {
     val tmp = width - cur;
     if( s.length() < tmp )
@@ -105,7 +109,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     sb.toString();
   }
 
-  /* serializes an instance of Node to a string that contains well-formed XML
+  /* returns a formatted string containing well-formed XML
   **/
   def toPrettyXML( n:Node ):String = {
     reset();
@@ -129,13 +133,15 @@ class PrettyPrinter( width:Int, step:Int ) {
     sb.toString();
   }
 
-//     def toLastWS( len:Int, s:String ) = {
-//       val sb = new StringBuffer();
-//       while( len
-//       attr2xml(  attribute.elements, sb );
-//       sb.append('>');
-//       sb.toString();
-//     }
+  /* returns a formatted string containing well-formed XML nodes.
+  **/
+  def toPrettyXML( ns:Seq[Node] ):String = {
+    var sb2 = new StringBuffer();
+    for( val n <- ns.elements ) {
+      sb2.append( toPrettyXML( n ))
+    }
+    sb2.toString();
+  }
 
   def breakable( n:Node ):boolean = {
     val it = n.child.elements;
