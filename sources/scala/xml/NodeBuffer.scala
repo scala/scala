@@ -14,6 +14,9 @@ package scala.xml;
  * of nodes <code>Seq[Node]</code>, it must be ensured that no updates
  * occur after that point, because <code>scala.xml.Node</code> is assumed
  * to be immutable.
+ *
+ * Despite this being a sequence, don't use it as key in a hashtable.
+ * Calling the hashcode function will result in a runtime error.
  */
 class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
 

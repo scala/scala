@@ -59,6 +59,16 @@ abstract class BitSet with Function1[Int,Boolean] {
     };
 
   /**
+   * returns an immutable bitset with same information
+   */
+  def makeImmutable: immutable.BitSet;
+
+  /**
+   * returns a mutable bitset with same information
+   */
+  def makeMutable: mutable.BitSet;
+
+  /**
    * Returns a string representation of this bitset in hexadecimal form,
    * e.g. the bitset 001100000001 (12 bits) is represented as "{0, 8, 9}".
    *

@@ -21,7 +21,37 @@ package scala.collection.immutable;
  *  @author  Burak Emir
  *  @version 1.0
  */
-class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet {
+class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet with Ordered[BitSet] {
+
+  /** lexicographic ordering */
+  def compareTo [b >: BitSet <% Ordered[b]](other: b): int = other match {
+    case that:BitSet =>
+      val it1 = this.toSet(true).elements;
+      val it2 = that.toSet(true).elements;
+      var res = 0;
+      while((0==res) && it1.hasNext) {
+        while((0==res) && it2.hasNext) {
+          if(!it1.hasNext)
+            res = -1
+          else {
+            val i1 = it1.next;
+            val i2 = it2.next;
+            if(i1<i2)
+              res = -1
+            else if(i1>i2)
+              res = 1
+          }
+        }
+        if(it1.hasNext)
+          res = 1
+      }
+      if(it2.hasNext)
+        res = -1;
+      res
+
+    case _ => -(other.compareTo(this))
+  }
+
 
   final def size = n;
 
@@ -66,6 +96,17 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet {
     val j    = (i >>> 5);
     val mask = (1 << (i & 0x1F));
     (array(j) & mask) != 0;
+  }
+
+  def makeImmutable = this;
+
+  def makeMutable = {
+    val rbs = new mutable.BitSet(size) ;
+    val it = this.toSet(true).elements;
+    while(it.hasNext) {
+      rbs.set(it.next)
+    }
+    rbs
   }
 
   def toArray: Array[Int] = {
