@@ -141,7 +141,7 @@ FJBG_HOME		?= /home/linuxsoft/apps/fjbg/
 FJBG_JARFILE             = $(FJBG_HOME)/jars/fjbg.jar
 
 # XERCES
-XERCES_HOME		?= /home/linuxsoft/apps/xerces-j/
+XERCES_HOME		?= /home/linuxsoft/apps/xerces/
 XERCES_JARFILE		 = $(XERCES_HOME)/xercesImpl.jar
 XERCES_LICENSE		 = $(XERCES_HOME)/LICENSE
 
