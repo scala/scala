@@ -161,6 +161,27 @@ test_xml() {
     rm -rf "$output";
 }
 
+test_xmlParse() {
+    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
+    classpath="$output";
+    if $CYGWIN; then
+        classpath=`cygpath -w -p "$classpath"`;
+	os_output=`cygpath -w "$output"`;
+    else
+	os_output="$output";
+    fi;
+    rm -rf "$output";
+    case "$source" in
+        *neg* ) mkdir -p "$output" &&
+                if( $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" ) then \
+                    false; else rm -rf "$output"; fi ;;
+        *     ) mkdir -p "$output" &&
+                $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
+                $SCALA -classpath "$classpath" Test "jvm" &&
+                rm -rf "$output";;
+    esac
+}
+
 test_compilation_success() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     if $CYGWIN; then
@@ -305,6 +326,8 @@ test_all() {
         test_shell "shl" $FILES_SHL;
     test_one "Testing dtd2scala tool" \
         test_xml "xml" $FILES_XML;
+    test_one "Testing xml parsing" \
+        test_xmlParse "xmlParse" $FILES_XMLPARSE;
     test_one "Testing compiler (on files whose compilation should succeed)" \
         test_compilation_success "pos" $FILES_POS;
     test_one "Testing compiler (on files whose compilation should fail)" \
@@ -432,6 +455,7 @@ add_file() {
         int  ) FILES_INT="$FILES_INT $1"; return;;
         shl  ) FILES_SHL="$FILES_SHL $1"; return;;
         xml  ) FILES_XML="$FILES_XML $1"; return;;
+        xmlParse  ) FILES_XMLPARSE="$FILES_XMLPARSE $1"; return;;
         pos  ) FILES_POS="$FILES_POS $1"; return;;
         neg  ) FILES_NEG="$FILES_NEG $1"; return;;
 	msil ) FILES_MSIL="$FILES_MSIL $1"; return;;
@@ -443,6 +467,7 @@ add_file() {
         int  | */int  | */int/*  | int/*  ) FILES_INT="$FILES_INT $1";;
         shl  | */shl  | */shl/*  | shl/*  ) FILES_SHL="$FILES_SHL $1";;
         xml  | */xml  | */xml/*  | xml/*  ) FILES_XML="$FILES_XML $1";;
+        xmlParse  | */xmlParse  | */xmlParse/*  | xmlParse/*  ) FILES_XMLPARSE="$FILES_XMLPARSE $1";;
         pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
         neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
@@ -469,6 +494,7 @@ main() {
     FILES_INT="";
     FILES_SHL="";
     FILES_XML="";
+    FILES_XMLPARSE="";
     FILES_POS="";
     FILES_NEG="";
     FILES_MSIL="";
@@ -491,6 +517,7 @@ main() {
             --int        ) TEST_TYPE="int"; shift 1;;
             --shl        ) TEST_TYPE="shl"; shift 1;;
             --xml        ) TEST_TYPE="xml"; shift 1;;
+            --xmlParse        ) TEST_TYPE="xmlParse"; shift 1;;
             --pos        ) TEST_TYPE="pos"; shift 1;;
             --neg        ) TEST_TYPE="neg"; shift 1;;
             --msil       ) TEST_TYPE="msil"; shift 1;;
@@ -553,6 +580,9 @@ main() {
         esac;
         case "$TEST_TYPE" in
             auto | xml ) FILES_XML="$FILES_XML $SRCDIR/xml";;
+        esac;
+        case "$TEST_TYPE" in
+            auto | xmlParse ) FILES_XMLPARSE="$FILES_XMLPARSE $SRCDIR/xmlParse";;
         esac;
         case "$TEST_TYPE" in
             auto | pos ) FILES_POS="$FILES_POS $SRCDIR/pos";;
