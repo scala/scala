@@ -72,9 +72,15 @@ public class JavaTypeCreator implements JavaTypeFactory {
         for (int i = 0; i < args.length; i++) {
             args[i] = new TermSymbol(
                 Position.NOPOS, Name.fromString("x" + i), Symbol.NONE, Modifiers.PARAM);
-            args[i].setInfo(argtpes[i]);
+            args[i].setInfo(objToAny(argtpes[i]));
         }
         return new MethodType(args, restpe);
+    }
+    private Type objToAny(Type tp) {
+	if (tp.isSameAs(global.definitions.JAVA_OBJECT_TYPE))
+	    return global.definitions.ANY_TYPE;
+	else
+	    return tp;
     }
 
     public Type packageType(Name packagename) {

@@ -212,20 +212,44 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     /** Check that `sym' is accessible as a member of tree `site' in current context.
      */
-    void checkAccessible(int pos, Symbol sym, Tree site) {
-	if (!isAccessible(sym, site)) {
-	    error(pos, sym + " cannot be accessed in " + site.type);
-	}
-	if (site instanceof Tree.Super && (sym.flags & DEFERRED) != 0) {
-	    Symbol sym1 = context.enclClass.owner.thisSym().info().lookup(sym.name);
-	    if ((sym1.flags & OVERRIDE) == 0 || (sym1.flags & DEFERRED) != 0)
-		error(pos, "symbol accessed from super may not be abstract");
+    Type checkAccessible(int pos, Symbol sym, Type symtype, Tree site) {
+	switch (symtype) {
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    int nacc = 0;
+	    for (int i = 0; i < alts.length; i++) {
+		if (isAccessible(alts[i], site)) {
+		    nacc++;
+		}
+	    }
+	    if (nacc == 0) {
+		error(pos, sym + " cannot be accessed in " + site.type.widen());
+		return Type.ErrorType;
+	    } else {
+		Symbol[] alts1 = new Symbol[nacc];
+		Type[] alttypes1 = new Type[nacc];
+		nacc = 0;
+		for (int i = 0; i < alts.length; i++) {
+		    if (isAccessible(alts[i], site)) {
+			alts1[nacc] = alts[i];
+			alttypes1[nacc] = alttypes[i];
+			nacc++;
+		    }
+		}
+		return Type.OverloadedType(alts1, alttypes1);
+	    }
+	default:
+	    if (isAccessible(sym, site)) {
+		return symtype;
+	    } else {
+		error(pos, sym + " cannot be accessed in " + site.type.widen());
+		return Type.ErrorType;
+	    }
 	}
     }
 
     /** Is `sym' accessible as a member of tree `site' in current context?
      */
-    boolean isAccessible(Symbol sym, Tree site) {
+    private boolean isAccessible(Symbol sym, Tree site) {
 	return
 	    (sym.flags & (PRIVATE | PROTECTED)) == 0
 	    ||
@@ -783,8 +807,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Symbol owner = sym.owner();
 		if (sym.kind == VAL && (sym.flags & (PRIVATE | SEALED)) == 0 &&
 		    owner != null && owner.kind == CLASS &&
-		    (owner.flags & FINAL) != 0)
+		    (owner.flags & FINAL) != 0) {
+		    System.out.println(sym + " is final");
 		    sym.flags |= FINAL;
+		}
 		sym = enterInScope(sym);
 	    }
 	    tree.setSymbol(sym);
@@ -835,6 +861,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    context.scope.enter(sym);
 		} else if (sym.kind == VAL && other.kind == VAL) {
 		    // it's an overloaded definition
+		    /*
 		    if (((sym.flags ^ other.flags) & SOURCEFLAGS) != 0) {
 			// todo: refine, DEFERRED, MUTABLE and OVERRIDE should be
 			// treated specially; maybe only PRIVATE and PROTECTED?
@@ -843,9 +870,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			      ": modifier lists differ in " +
 			      Modifiers.Helper.toString(
 				  (sym.flags ^ other.flags) & SOURCEFLAGS));
-		    } else {
-			e.setSymbol(other.overloadWith(sym));
-		    }
+		    */
+		    e.setSymbol(other.overloadWith(sym));
 		} else {
 		    error(sym.pos,
 			  sym.nameString() + " is already defined as " +
@@ -1247,11 +1273,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (tree.type.isObjectType()) {
 		    // insert apply method
 		    Symbol applyMeth = tree.type.lookup(Names.apply);
-		    if (applyMeth != Symbol.NONE && isAccessible(applyMeth, tree)) {
-			applyMeth.flags |= (ACCESSED | SELECTOR);
+		    if (applyMeth != Symbol.NONE) {
+			Type applyType = checkAccessible(
+			    tree.pos, applyMeth, tree.type.memberType(applyMeth),
+			    tree);
 			tree = make.Select(tree.pos, tree, Names.apply)
 			    .setSymbol(applyMeth)
-			    .setType(tree.type.memberType(applyMeth));
+			    .setType(applyType);
 			return adapt(tree, mode, pt);
 		    }
 		}
@@ -1362,14 +1390,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		//System.out.println(name);//DEBUG
 		return error(tree.pos, "not found: " + decode(name));
 	    } else {
-		sym.flags |= ACCESSED;
 		if (sym.owner().kind == CLASS) {
 		    pre = nextcontext.enclClass.owner.thisType();
 		    if (!sym.owner().isPackage()) {
 			Tree qual1 = makeStableId(tree.pos, pre);
 			tree = make.Select(tree.pos, qual1, name);
-			if (context.enclClass != nextcontext.enclClass)
-			    sym.flags |= SELECTOR;
 			//System.out.println(name + " :::> " + tree + " " + qual1.symbol());//DEBUG
 		    }
 		} else {
@@ -1395,15 +1420,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		nextimports = nextimports.prev;
 	    }
 	    sym = sym1;
-	    sym.flags |= (ACCESSED | SELECTOR);
 	    qual = lastimports.importPrefix().duplicate();
 	    pre = qual.type;
 	    //new TextTreePrinter().print(name + " => ").print(lastimports.tree).print("." + name).println().end();//DEBUG
 	    tree = make.Select(tree.pos, qual, name);
 	}
-	if (qual != Tree.Empty) checkAccessible(tree.pos, sym, qual);
 	Type symtype = (sym.isType() ? sym.typeConstructor() : sym.type())
 	    .asSeenFrom(pre, sym.owner());
+	if (qual != Tree.Empty)
+	    symtype = checkAccessible(tree.pos, sym, symtype, qual);
 	if (symtype == Type.NoType)
 	    return error(tree.pos, "not found: " + decode(name));
 	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) && sym.isStable()) {
@@ -1430,14 +1455,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    return error(tree.pos,
 			 decode(name) + " is not a member of " + qual.type.widen());
 	} else {
-	    checkAccessible(tree.pos, sym, qual);
-	    sym.flags |= ACCESSED;
-	    if (!TreeInfo.isSelf(qual, context.enclClass.owner))
-		sym.flags |= SELECTOR;
 	    Type symtype = (sym.isType() ? sym.typeConstructor() : sym.type())
 		.asSeenFrom(qual.type, sym.owner());
 	    if (symtype == Type.NoType)
 		return error(tree.pos, "not found: " + decode(name));
+	    else
+		symtype = checkAccessible(tree.pos, sym, symtype, qual);
 	    //System.out.println(sym.name + ":" + symtype);//DEBUG
 	    if (uninst.length != 0) {
 		switch (symtype) {
@@ -2144,8 +2167,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    Symbol tsym = TreeInfo.methSymbol(fn1);
 		    if (tsym.kind != ERROR) {
 			assert tsym.isType() : tsym;
-			Type tp = fn1.type.unalias();
-			switch (tp) {
+			switch (fn1.type.unalias()) {
 			case TypeRef(Type pre, Symbol c, Type[] argtypes):
 			    if (c.kind == CLASS) {
 				c.initialize();
@@ -2154,7 +2176,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				fn1 = gen.mkRef(fn1.pos, pre, constr);
 				switch (fn1) {
 				case Select(Tree fn1qual, _):
-				    checkAccessible(fn1.pos, constr, fn1qual);
+				    fn1.type = checkAccessible(
+					fn1.pos, constr, fn1.type, fn1qual);
 				}
 				if (tsym == c) {
 				    switch (fn0) {

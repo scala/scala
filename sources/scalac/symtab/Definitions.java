@@ -361,13 +361,13 @@ public class Definitions {
 
         EQUALS = new TermSymbol(
 	    Position.NOPOS, Names.equals, ANY_CLASS, 0);
-        EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, JAVA_OBJECT_TYPE)},
+        EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, ANY_TYPE)},
 				     BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQUALS);
 
 	EQ = new TermSymbol(
 	    Position.NOPOS, Names.eq, ANY_CLASS, 0);
-        EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, JAVA_OBJECT_TYPE)},
+        EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, ANY_TYPE)},
 				   BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQ);
 

@@ -34,7 +34,7 @@ class SetWrapper[A](set: Set[A]) extends Set[A]
 
     override def intersect(that: Set[A]): Unit = set.intersect(that);
 
-    override def clear: Unit = set.clear;
+    def clear: Unit = set.clear;
 
     override def filter(p: A => Boolean): Unit =  set.filter(p);
 }

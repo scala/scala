@@ -487,6 +487,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	Global.instance.nextPhase();
 	Type symtype = qual.type.memberType(sym);
 	Global.instance.prevPhase();
+	sym.flags |= ACCESSED | SELECTOR;
 	return make.Select(pos, sym, qual).setType(deref(symtype));
     }
 
@@ -506,6 +507,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	Global.instance.nextPhase();
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
+	sym.flags |= ACCESSED;
 	return make.Ident(pos, sym).setType(deref(symtype));
     }
 

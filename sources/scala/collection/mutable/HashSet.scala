@@ -31,7 +31,7 @@ class HashSet[A] extends scala.collection.mutable.Set[A] with HashTable[A] {
 
     def elements = entries;
 
-    override def clear = {
+    def clear = {
         initTable(table);
         tableSize = 0;
     }

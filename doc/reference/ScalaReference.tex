@@ -2253,7 +2253,7 @@ by the type, then the number is converted to type $\proto$ and the
 expression's type is $\proto$.  A floating point literal denotes a
 single-precision or double precision IEEE floating point number. A
 character literal denotes a Unicode character. A string literal
-denotes a member of \lstinline@java.lang.String@.
+denotes a member of \lstinline@scala.Predef.String@.
 
 A symbol literal ~\lstinline@'$x$@~ is a shorthand for the expression
 ~\lstinline@scala.Symbol("$x$")@. If the symbol literal is followed by an
@@ -2292,7 +2292,7 @@ argument $x$ is also the ``null'' object.
 \code{toString()} returns the string ``null''.
 \end{itemize}
 A reference to any other member of the \code{null} object causes a
-\code{NullPointerException} to be thrown. 
+\code{scala.Predef.NullPointerException} to be thrown. 
 
 \section{Designators}
 \label{sec:designators}
@@ -3072,7 +3072,41 @@ The code above makes use of the fact that \code{map}, \code{flatmap},
 \code{filter}, and \code{foreach} are defined for members of class
 \lstinline@scala.Array@.
 
-\section{Try Expressions}
+\section{Return Expressions}
+
+\syntax\begin{lstlisting}
+  Expr       ::=  return [Expr]
+\end{lstlisting}
+
+A return expression ~\lstinline@return $e$@~ must occur inside the
+body of some enclosing named method or function $f$. This function
+must have an explicitly declared result type, and the type of $e$ must
+conform to it. The return expression evaluates the expression $e$ and
+returns its value as the result of $f$ \nyi{Returns from anonymous
+functions and def parameters are}. The evaluation of any statements or
+expressions following the return expression is omitted. The type of 
+a return expression is \code{scala.All}.
+
+
+
+\section{Throw Expressions}
+
+\syntax\begin{lstlisting}
+  Expr       ::=  throw Expr
+\end{lstlisting}
+
+A throw expression ~\lstinline@throw $e$@~ evaluates the expression
+$e$. The type of this expression must conform to
+\code{scala.Predef.Throwable}@.  If $e$ evaluates to an exception
+reference, evaluation is aborted with the thrown exception. If $e$
+evaluates to \code{null}, evaluation is instead aborted with a
+\code{scala.Predef.NullPointerException}. If there is an active
+\code{try} expression (\sref{sec:try}) which handles the thrown
+exception, evaluation resumes with the handler; otherwise the thread
+executing the \code{throw} is aborted.  The type of a throw expression
+is \code{scala.All}.
+
+\section{Try Expressions}\label{sec:try}
 
 \syntax\begin{lstlisting}
   Expr       ::=  try `{' block `}' [catch Expr] [finally Expr]
@@ -3107,6 +3141,9 @@ type \code{unit}.
 
 A try expression ~\lstinline@try { $b$ } catch $e_1$ finally $e_2$@~ is a shorthand
 for  ~\lstinline@try { try { $b$ } catch $e_1$ } finally $e_2$@.
+
+
+
 
 \section{Anonymous Functions}
 \label{sec:closures}
@@ -4373,7 +4410,7 @@ underlying run-time system. We postulate a predefined
 class \code{Thread} for run-time threads,
 \code{fork} function to spawn off a new thread,
 as well as \code{Monitor} and \code{Signal} classes. These are
-specified as follows\nyi{Concurrentcy constructs are}.
+specified as follows\nyi{Concurrency constructs are}.
 
 
 \begin{lstlisting}

@@ -43,6 +43,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private Unit unit;
     private Definitions defs = global.definitions;
     private Infer infer = new Infer(this);
+    private Symbol enclClass;
 
     public void apply(Unit unit) {
 	this.unit = unit;
@@ -65,13 +66,17 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Type[] closure = clazz.closure();
 	HashMap/*<Symbol,Symbol>*/ overrides = null;
 	for (int i = 0; i < closure.length; i++) {
-	    for (Scope.SymbolIterator it = closure[i].members().iterator();
+	    for (Scope.SymbolIterator it = closure[i].members().iterator(true);
 		 it.hasNext();) {
 		Symbol other = it.next();
-		Symbol member = ((other.flags & PRIVATE) != 0) ? other
+		Symbol members = ((other.flags & PRIVATE) != 0) ? other
 		    : clazz.info().lookup(other.name);
-		if (member != other && member.kind != NONE)
-		    checkOverride(pos, clazz, member, other);
+		Symbol member = Symbol.NONE;
+		if (members.kind != NONE &&
+		    members.owner() != other.owner() &&
+		    (members.owner() == clazz ||
+		     !members.owner().isSubClass(other.owner())))
+		    member = checkOverride(pos, clazz, members, other);
 		if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
 		    if ((member.flags & DEFERRED) != 0) {
 			abstractClassError(
@@ -97,7 +102,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if ((other.flags & DEFERRED) != 0) {
 		    abstractClassError(
 			clazz, member + member.locationString() +
-			" is marked `override' and overrides only abstract members");
+			" is marked `override' and overrides only abstract members" + other + other.locationString());
 		}
 	    }
 	}
@@ -125,10 +130,33 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *    7. If O and M are values, then M's type is a subtype of O's type.
      *    8. If O is an immutable value, then so is M.
      */
-    void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
+    Symbol checkOverride(int pos, Symbol clazz, Symbol members, Symbol other) {
+	Type self = clazz.thisType();
+	Symbol member = members;
+	Type memberinfo = normalizedInfo(self, member);
+	Type otherinfo = normalizedInfo(self, other);
+	switch (memberinfo) {
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    for (int i = 0; i < alts.length; i++) {
+		if (alttypes[i].isSubType(otherinfo)) {
+		    if (member == members) {
+			member = alts[i];
+			memberinfo = alttypes[i];
+		    } else {
+			unit.error(
+			    pos,
+			    "ambiguous override: both " +
+			    member + ":" + memberinfo +
+			    "\n and " + alts[i] + ":" + alttypes[i] +
+			    "\n override " + other + ":" + otherinfo +
+			    other.locationString());
+		    }
+		}
+	    }
+	    if (member == members) {
+	    }
+	}
 	if (member.owner() == clazz) pos = member.pos;
-	else if (member.owner().isSubClass(other.owner()))
-	    return; // everything was already checked elsewhere
 
 	if ((member.flags & PRIVATE) != 0) {
 	    overrideError(pos, member, other, "has weaker access privileges; it should not be private");
@@ -149,7 +177,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		       ":\n both are inherited from mixin classes; " +
 		       "\n an overriding definition in the current template is required");
 	} else {
-	    Type self = clazz.thisType();
 	    switch (other.kind) {
 	    case CLASS:
  		overrideError(pos, member, other, "cannot override a class");
@@ -162,9 +189,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (other.isConstructor())
 		    overrideError(pos, member, other,
 				  "cannot override a class constructor");
-		Type selftype = normalizedInfo(self, member);
-		Type othertype = normalizedInfo(self, other);
-		if (!selftype.isSubType(othertype))
+		if (!memberinfo.isSubType(otherinfo))
 		    overrideTypeError(pos, member, other, self, false);
 		if (member.kind == TYPE &&
 		    !self.memberLoBound(other).isSubType(
@@ -173,6 +198,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	    }
 	}
+	return member;
     }
 
     void overrideError(int pos, Symbol member, Symbol other, String msg) {
@@ -842,10 +868,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol sym = tree.symbol();
 	switch (tree) {
 	case ClassDef(_, _, Tree.AbsTypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
+	    Symbol enclClassPrev = enclClass;
+	    enclClass = sym;
 	    validateVariance(sym, sym.info(), CoVariance);
 	    validateVariance(sym, sym.typeOfThis(), CoVariance);
-	    return super.transform(
+	    Tree tree1 = super.transform(
 		copy.ClassDef(tree, tree.symbol(), tparams, vparams, tpe, addCaseMethods(templ, tree.symbol())));
+	    enclClass = enclClassPrev;
+	    return tree1;
 
 	case DefDef(_, _, _, _, _, _):
 	    validateVariance(sym, sym.type(), CoVariance);
@@ -933,10 +963,23 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    maxindex[i] = symindex;
 		}
 	    }
+	    sym.flags |= ACCESSED;
 	    return elimTypeNode(tree);
+
+	case Select(Tree qual, Name name):
+	    sym.flags |= ACCESSED;
+	    if (!TreeInfo.isSelf(qual, enclClass))
+		sym.flags |= SELECTOR;
+	    if (qual instanceof Tree.Super && (sym.flags & DEFERRED) != 0) {
+		Symbol sym1 = enclClass.thisSym().info().lookup(sym.name);
+		if ((sym1.flags & OVERRIDE) == 0 || (sym1.flags & DEFERRED) != 0)
+		    unit.error(tree.pos,
+		        "symbol accessed from super may not be abstract");
+	    }
+	    return elimTypeNode(super.transform(tree));
+
 	default:
 	    return elimTypeNode(super.transform(tree));
 	}
-
     }
 }

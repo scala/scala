@@ -977,13 +977,8 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert isTerm() : Debug.show(this);
 	assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
 	assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
-	assert (this.flags & that.flags & JAVA) != 0 ||
-	    (this.flags & OVERLOADFLAGS) == (that.flags & OVERLOADFLAGS)
-	    : Integer.toHexString(this.flags) + "@" + Debug.show(this) + " <> " + Integer.toHexString(that.flags) + "@" + Debug.show(that);
 	assert this.isConstructor() == that.isConstructor();
-	int overflags =
-	    ((this.flags | that.flags) & (JAVA | OVERLOADFLAGS)) |
-	    (this.flags & that.flags & ACCESSFLAGS);
+	int overflags = this.flags & that.flags & (JAVA | ACCESSFLAGS);
 	TermSymbol overloaded = (this.isConstructor())
 	    ? TermSymbol.newConstructor(this.constructorClass(), overflags)
 	    : new TermSymbol(pos, name, owner, overflags);
@@ -1062,8 +1057,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 	}
     }
 
-    /** The symbol which is overridden by this symbol in base class `base'
-     *  `base' must be a superclass of this.owner().
+    /** The symbol which overrides this symbol in subclass `sub'
+     *  `sub' must be a subclass of this.owner().
      */
     public Symbol overridingSymbol(Type sub) {
 	assert !isOverloaded() : this;

@@ -1447,7 +1447,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		for (int i = 0; i < ps.length; i++) {
 		    Symbol p1 = ps1[i];
 		    Symbol p = ps[i];
-		    if (!p1.type().isSubType(p.type()) ||
+		    if (!p1.type().isSameAs(p.type()) ||
 			(p1.flags & (Modifiers.DEF | Modifiers.REPEATED)) !=
 			(p.flags & (Modifiers.DEF | Modifiers.REPEATED)))
 			return false;
@@ -1461,8 +1461,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    case PolyType(Symbol[] ps, Type res):
 		if (ps.length != ps1.length) return false;
 		for (int i = 0; i < ps.length; i++)
-		    if (!ps1[i].info().subst(ps1, ps).isSubType(ps[i].info()) ||
-			!ps[i].loBound().isSubType(ps1[i].loBound().subst(ps1, ps)))
+		    if (!ps1[i].info().subst(ps1, ps).isSameAs(ps[i].info()) ||
+			!ps[i].loBound().isSameAs(ps1[i].loBound().subst(ps1, ps)))
 			return false;
 		return res.isSubType(res1.subst(ps1, ps));
 	    }
