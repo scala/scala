@@ -10,7 +10,7 @@
 > List(): scala.Nil
 > List(1,2,3): scala.List[scala.Int]
 > > Exception in thread "main" java.lang.Error: error
-        at $console$15.$console$15(<console>:1)
+        at $console$15.<init>(<console>:1)
         at <root>.$console$15(<console>:1)
 > > | val x: scala.Int(5) = 5
 5: scala.Int(5)
@@ -38,7 +38,7 @@ length(Nil)
 > false: scala.Boolean
 > string: java.lang.String("string")
 > Exception in thread "main" java.lang.ClassCastException: class java.lang.String is not an instance of class scala.Int
-        at $console$31.$console$31(<console>:1)
+        at $console$31.<init>(<console>:1)
         at <root>.$console$31(<console>:1)
 > > > 
 [Leaving scalarun]
