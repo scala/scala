@@ -66,8 +66,8 @@ intro/upbounds.html
 intro/variances.html
 intro/xml.html
 
-js/decls.js
-js/decls_fr.js
-js/index.html
+#js/decls.js
+#js/decls_fr.js
+#js/index.html
 
 ##############################################################################
