@@ -20,7 +20,7 @@ public class AbstractFileReader {
      */
     public int bp;
 
-    /** the file path name
+    /** the abstract file
      */
     public final AbstractFile file;
 
