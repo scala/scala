@@ -12,6 +12,8 @@ package scala;
 
 module Interpreter {
 
+  def initialize: Boolean = true;
+
   def printValue(value: Any): Unit = {
     if (value == null)
       java.lang.System.out.print("null");

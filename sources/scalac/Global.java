@@ -325,8 +325,6 @@ public class  Global {
     private List imports = new ArrayList();
 
     private void fix1() {
-        // make sure that Interpreter.scala is compiled
-        if (target == TARGET_INT) SHOW_DEFINITION();
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
         }

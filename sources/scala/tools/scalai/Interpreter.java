@@ -113,9 +113,9 @@ public class Interpreter {
         if (interactive) showBanner();
         if (program.length > 0) load(lfiles = program);
         if (global.reporter.errors() == 0 && main != null) call(main, args);
-        // Compute something to start compiler and force loading of Predef
+        // Compute something to force loading of Predef & Interpreter
         if (interactive && program.length == 0 && main == null)
-            load("module $init$ {}");
+            load("module $init$ { Interpreter.initialize }");
         if (interactive) while (handle(read()));
         global.stop("total");
         if (!interactive) global.reporter.printSummary();
