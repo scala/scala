@@ -862,10 +862,8 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       }
 
       // the following report error if impl exists
-      if (!clazz.isModuleClass()) {
-        ts.append(caseElementMethod(clazz));
-        ts.append(caseArityMethod(clazz));
-      }
+      ts.append(caseElementMethod(clazz));
+      ts.append(caseArityMethod(clazz));
       ts.append(tagMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
       ts.append(tagMethod(clazz));

@@ -1886,7 +1886,7 @@ class Parser(unit: CompilationUnit) {
 	  lhs.append(Pair(s.pos, ident()));
     } while (s.token == COMMA);
     val thistpe = simpleTypedOpt();
-    val template = classTemplate( false );
+    val template = classTemplate( (mods & Modifiers.CASE)!= 0 );
     val ts = new myTreeList();
     lhs foreach { case Pair(p, n) =>
       ts.append(
