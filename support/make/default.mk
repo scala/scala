@@ -18,7 +18,7 @@ default.force		:
 default.clean		:
 	$(RM) core *~
 
-default.distclean	: default.clean
+default.distclean	: clean
 
 
 .PHONY			: all
