@@ -60,12 +60,10 @@ public class Transformer {
     }
 
     public void apply() {
-        for (int i = 0; i < global.units.length; i++) {
-            apply(global.units[i]);
-        }
+        apply(global.units);
     }
 
-    public void apply_(Unit[] units) {
+    public void apply(Unit[] units) {
         for (int i = 0; i < units.length; i++) apply(units[i]);
     }
 
