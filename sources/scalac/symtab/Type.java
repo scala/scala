@@ -871,16 +871,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      * look up overridden and overriding symbols.
      */
     public Symbol lookup(Symbol sym, Type pre, Relation relation) {
-        // !!! when we find a concrete method, then it is the right
-        // one, but if we find an abstract one, then we need maybe to
-        // search a bit further to see if a concrete one is available
-        // like in lookupNonPrivate. Do we need that ?
         assert !sym.isOverloaded(): Debug.show(sym);
         if (sym.isPrivate() || sym.isStatic() || sym.isInitializer())
             return symbol().isSubClass(sym.owner()) ? sym : Symbol.NONE;
         Type symtype = pre.memberType(sym).derefDef();
         Symbol[] classes = classes();
+        Symbol deferred = null;
         for (int i = 0; i < classes.length; i++) {
+            if (deferred != null && deferred.isSubClass(classes[i])) continue;
             Symbol sym1 = classes[i].members().lookup(sym.name);
             switch (sym1.type()) {
             case NoType:
@@ -888,16 +886,20 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 continue;
             case OverloadedType(Symbol[] alts, _):
                 for (int j = 0; j < alts.length; j++)
-                    if (areRelated(sym, symtype, relation, pre, alts[j],false))
-                        return alts[j];
+                    if (areRelated(sym, symtype, relation, pre,alts[j],false)){
+                        if (!alts[j].isDeferred()) return alts[j];
+                        if (deferred == null) deferred = alts[j];
+                    }
                 continue;
             default:
-                if (areRelated(sym, symtype, relation, pre, sym1, true))
-                    return sym1;
+                if (areRelated(sym, symtype, relation, pre, sym1, true)) {
+                    if (!sym1.isDeferred()) return sym1;
+                    if (deferred == null) deferred = sym1;
+                }
                 continue;
             }
         }
-        return Symbol.NONE;
+        return deferred == null ? Symbol.NONE : deferred;
     }
     //where
     private static boolean areRelated(
