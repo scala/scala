@@ -22,6 +22,7 @@ docu/rationale.html
 docu/related.html
 docu/clr/index.html
 docu/clr/quirks.html
+docu/eclipse/index.html
 
 downloads/changes.html
 downloads/history.html
@@ -43,6 +44,10 @@ images/bz2.gif
 images/classhierarchy.png
 images/colpoint2d.png
 images/colpoint3d.png
+images/eclipse_run_config.jpg
+images/eclipse_run_hello.jpg
+images/eclipse_scala_wizards.jpg
+images/eclipse_update_site.jpg
 images/html1.gif
 images/index.html
 images/small_pdf.png
