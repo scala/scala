@@ -14,30 +14,41 @@ package scala.testing;
 */
 object UnitTest {
 
-  import java.lang.System;
-
-  def message_passedOK:Unit = {
-    System.out.println("passed ok")
+  class Report( report_ok:()=>Unit, report_fail:(String,String)=>Unit ) {
+    def ok:Unit = report_ok();
+    def fail( actual:String, expected:String ):Unit =
+      report_fail( actual, expected );
   }
 
-  def message_failed( actual:String, expected:String ):Unit = {
-    System.out.print("failed! we got");
-    System.out.print( "\""+ actual +"\"" );
-    System.out.println(" but expected " + expected)
+  var report = new Report(
+    { () => Console.println("passed ok") },
+    { (actual:String, expected:String) =>
+        Console.print("failed! we got");
+         Console.print( "\""+ actual +"\"" );
+         Console.println(" but expected \"" + expected + "\"") });
+
+  def setReporter( r:Report ) = {
+    this.report = r;
   }
+
+  def assertSimilar( actual:Similarity , expected: Similarity ):Unit =
+    if( actual.similar( expected ) )
+        report.ok
+    else
+	report.fail( actual.toString(), expected.toString() );
 
   def assertEquals[a]( actual: a, expected: a ):Unit =
     if( actual == expected )
-        message_passedOK
+        report.ok
     else
-	message_failed( actual.toString(), expected.toString() );
+	report.fail( actual.toString(), expected.toString() );
 
   def assertNotEquals[a]( actual: a, expected: a ):Unit =
     if( actual != expected )
-        message_passedOK
+        report.ok
     else
-	message_failed( actual.toString(), "something != "+expected.toString() );
+	report.fail( actual.toString(), "x != "+expected.toString() );
 
-  def test[a]( def doit: a, expected: a ):Unit = assertEquals( doit, expected );
+  //def test[a]( def doit: a, expected: a ):Unit = assertEquals( doit, expected );
 
 } // unitTest
