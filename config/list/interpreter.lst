@@ -19,6 +19,7 @@ ExpressionContext.java
 Function.java
 Interpreter.java
 InterpreterCommand.java
+InterpreterPrinter.java
 InterpreterShell.java
 JavaMirror.java
 Main.java
