@@ -129,12 +129,7 @@ public class TypesAsValuesPhase extends Phase {
         membersToAdd.put(defs.ARRAY_CLASS, new Symbol[0]);
         paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
 
-        ancestorCache.put(defs.OBJECT_CLASS,
-                          new Ancestor[][] {
-                              new Ancestor[] {
-                                  new Ancestor(defs.OBJECT_CLASS, -1, -1)
-                              }
-                          });
+        ancestorCache.put(defs.OBJECT_CLASS, new Ancestor[0][]);
     }
 
     /**
@@ -347,9 +342,9 @@ public class TypesAsValuesPhase extends Phase {
                 }
                 newBody.append(transformStatements(impl.body, impl.symbol()));
 
-                Symbol pConst = clsSym.primaryConstructor();
                 return gen.ClassDef(clsSym,
-                                    transform(impl.parents, pConst),
+                                    transform(impl.parents,
+                                              clsSym.primaryConstructor()),
                                     impl.symbol(),
                                     newBody.toArray());
 
@@ -427,7 +422,7 @@ public class TypesAsValuesPhase extends Phase {
                     //   e.asInstanceOf[T]
                     // becomes:
                     //   asValue(T).cast(e).asInstanceOf[T]
-                    // unless T is a "simple" type for which a Java
+                    // unless T is a trivial type for which a Java
                     // instance test is sufficient, in which case the
                     // expression is left as is.
                     assert targs.length == 1 && vargs.length == 0;
@@ -760,6 +755,10 @@ public class TypesAsValuesPhase extends Phase {
             }
         }
 
+        /**
+         * Return true iff the given type is strongly trivial, that is
+         * if it and all its ancestors are trivial.
+         */
         private boolean isStronglyTrivial(Type tp) {
             if (isTrivial(tp)) {
                 Type[] parents = tp.parents();
@@ -968,22 +967,18 @@ public class TypesAsValuesPhase extends Phase {
                 for (int l = 0; l < parentAncestors.length; ++l) {
                     ArrayList/*<Ancestor>*/ myRow = ancestor[l];
                     Ancestor[] parentRow = parentAncestors[l];
+                    parentRowLoop:
                     for (int i = 0; i < parentRow.length; ++i) {
                         Symbol sym = parentRow[i].symbol;
-
-                        if (isTrivial(sym.type()))
-                            continue;
+                        assert !isTrivial(sym.type()) : sym;
 
                         Iterator myRowIt = myRow.iterator();
-                        boolean alreadyExists = false;
-                        while (!alreadyExists && myRowIt.hasNext()) {
+                        while (myRowIt.hasNext()) {
                             Ancestor myAncestor = (Ancestor)myRowIt.next();
                             if (myAncestor.symbol == sym)
-                                alreadyExists = true;
+                                continue parentRowLoop;
                         }
-
-                        if (!alreadyExists)
-                            myRow.add(new Ancestor(sym, p, i));
+                        myRow.add(new Ancestor(sym, p, i));
                     }
                 }
             }
@@ -1015,7 +1010,7 @@ public class TypesAsValuesPhase extends Phase {
         /** Return the parents which are not strongly trivial. */
         private Symbol[] notStronglyTrivialParents(Symbol classSym) {
             Type[] parentTypes = classSym.parents();
-            ArrayList nstParents = new ArrayList();
+            ArrayList nstParents = new ArrayList(parentTypes.length);
             for (int i = 0; i < parentTypes.length; ++i) {
                 if (!isStronglyTrivial(parentTypes[i]))
                     nstParents.add(parentTypes[i].symbol());
