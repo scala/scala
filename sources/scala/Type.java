@@ -39,7 +39,7 @@ import scala.runtime.PearsonHash;
 
 abstract public class Type implements java.io.Serializable {
     public Type() {
-        assert Statistics.incInstances(getClass().getName());
+        assert Statistics.incInstances(getClass().getName(), this);
     }
 
     /** @meta method [?T](scala.Int) scala.Array[?T]; */

@@ -14,7 +14,11 @@ import java.io.PrintStream;
 import java.io.FileOutputStream;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.ArrayList;
+
+import scala.Type;
 
 /**
  * Collect various statistics about run time types, and output them to
@@ -85,12 +89,14 @@ public class Statistics {
         return true;
     }
 
-    public static synchronized boolean incInstances(String className) {
-        Integer currCount = (Integer)instances.get(className);
-        if (currCount == null)
-            instances.put(className, new Integer(1));
-        else
-            instances.put(className, new Integer(currCount.intValue() + 1));
+    public static synchronized boolean incInstances(String className,
+                                                    Type tp) {
+        ArrayList currInst = (ArrayList)instances.get(className);
+        if (currInst == null) {
+            currInst = new ArrayList();
+            instances.put(className, currInst);
+        }
+        currInst.add(tp);
         return true;
     }
 
@@ -106,7 +112,8 @@ public class Statistics {
      */
     public static boolean writeToFile() throws java.io.FileNotFoundException {
         String fileName = System.getProperty("scala.runtime.types.statfile");
-        assert fileName != null;
+        assert fileName != null
+            : "property scala.runtime.types.statfile not set";
 
         System.out.println("Writing RTT statistics to file " + fileName);
 
@@ -132,8 +139,13 @@ public class Statistics {
         Iterator instIt = instances.entrySet().iterator();
         while (instIt.hasNext()) {
             Map.Entry entry = (Map.Entry)instIt.next();
-            stream.println("(\"" + entry.getKey() + "\" . "
-                           + entry.getValue() + ")");
+            String name = (String)entry.getKey();
+            ArrayList instances = (ArrayList)entry.getValue();
+            HashSet uniqueInstances = new HashSet(instances);
+            stream.println("(\"" + name + "\" . "
+                           + instances.size() + ")");
+            stream.println("(\"Unique" + name + "\" . "
+                           + uniqueInstances.size() + ")");
         }
         stream.print("))");
         stream.println(")");
