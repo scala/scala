@@ -10,14 +10,11 @@
 
 package scalac.symtab;
 
-import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
-
 import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
 import scalac.Global;
 import scalac.Phase;
+import scalac.framework.History;
 import scalac.util.ArrayApply;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -1474,9 +1471,8 @@ public class TermSymbol extends Symbol {
  */
 public abstract class TypeSymbol extends Symbol {
 
-     /** A cache for closures
-     */
-    private ClosureIntervalList closures;
+     /** The history of closures of this symbol */
+    private final History/*<Type[]>*/ closures;
 
     /** A cache for type constructors
      */
@@ -1488,6 +1484,7 @@ public abstract class TypeSymbol extends Symbol {
     /** Constructor */
     public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags, int attrs) {
         super(kind, pos, name, owner, flags, attrs);
+        this.closures = new ClosureHistory();
         assert name.isTypeName() : this;
         this.constructor = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
     }
@@ -1606,72 +1603,12 @@ public abstract class TypeSymbol extends Symbol {
      */
     public final Type[] closure() {
         if (kind == ALIAS) return info().symbol().closure();
-        if (closures == null) computeClosureAt(rawFirstInfoStartPhase());
-        Phase phase = Global.instance.currentPhase;
-        if (closures.limit().id <= phase.id) {
-            while (closures.limit() != phase) {
-                Phase limit = closures.limit();
-                Type[] closure = closures.closure;
-                for (int i = 0; i < closure.length; i++) {
-                    Symbol symbol = closure[i].symbol();
-                    if (symbol.infoAt(limit) != symbol.infoAt(limit.next)) {
-                        computeClosureAt(limit.next);
-                        break;
-                    }
-                }
-                closures.setLimit(limit.next);
-            }
-            return closures.closure;
-        } else {
-            ClosureIntervalList closures = this.closures;
-            // !!! && closures.prev != null
-            while (phase.id < closures.start.id && closures.prev != null)
-                closures = closures.prev;
-            return closures.closure;
-        }
+        return (Type[])closures.getValue(this);
     }
-
-    /** Compute closure at start of given phase. */
-    private final void computeClosureAt(Phase phase) {
-        Phase current = Global.instance.currentPhase;
-        Global.instance.currentPhase = phase;
-        Map parents = inclClosure(new TreeMap(comparator), info());
-        Type[] closure = new Type[parents.size() + 1];
-        closures = new ClosureIntervalList(closures, closure, phase);
-        // the next put needs a defined closure size because of isLess
-        parents.put(this, type());
-        parents.values().toArray(closure);
-        Global.instance.currentPhase = current;
-    }
-    //where
-        private static Map inclClosure(Map closure, Type type) {
-            switch (type) {
-            case ErrorType:
-                return closure;
-            case TypeRef(_, Symbol symbol, _):
-                Type.Map map = Type.getThisTypeMap(symbol, type);
-                Type[] parents = symbol.closure();
-                for (int i = 0; i < parents.length; i++)
-                    closure.put(parents[i].symbol(), map.apply(parents[i]));
-                return closure;
-            case CompoundType(Type[] parents, _):
-                for (int i = 0; i < parents.length; i++)
-                    inclClosure(closure, parents[i]);
-                return closure;
-            default:
-                throw Debug.abort("illegal case", type);
-            }
-        }
-        private static Comparator comparator = new Comparator() {
-            public int compare(Object lf, Object rg) {
-                if (lf == rg) return 0;
-                return ((Symbol)lf).isLess((Symbol)rg) ? -1 : 1;
-            }
-        };
 
     public void reset(Type completer) {
         super.reset(completer);
-        closures = null;
+        closures.reset();
         tycon = null;
     }
 }
@@ -2121,23 +2058,6 @@ class TypeIntervalList extends IntervalList {
         this.prev = prev;
         this.info = info;
         assert info != null;
-    }
-
-}
-
-/** A class for closures indexed by phases. */
-class ClosureIntervalList extends IntervalList {
-
-    /** Previous interval */
-    public final ClosureIntervalList prev;
-    /** Closure valid during this interval */
-    public final Type[] closure;
-
-    public ClosureIntervalList(ClosureIntervalList prev, Type[] closure, Phase start){
-        super(prev, start);
-        this.prev = prev;
-        this.closure = closure;
-        assert closure != null;
     }
 
 }
