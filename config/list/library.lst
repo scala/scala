@@ -54,7 +54,7 @@ concurrent/ops.scala
 
 xml/Element.scala
 
-xml/java/HashMap.scala
-xml/java/Map.scala
+xml/javaAdapter/HashMap.scala
+xml/javaAdapter/Map.scala
 
 ##############################################################################
