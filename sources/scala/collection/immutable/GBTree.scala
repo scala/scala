@@ -402,11 +402,13 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
   */
   private val p = 2; // It seems that p = 2 is optimal for sorted keys */
   private def pow(a:int, b:int):int =
+  	if (a == 2) a * a else if (a == 1) a else a * pow(a, b - 1);
+  	/*
     a.match {
       case 2 => a * a;
       case 1 => a;
       case x if x > 0 => a * pow(a, b-1);
-    };
+    }; */
   private def div2(x:int) = x >> 1;
   private def mul2(x:int) = x << 1;
   private def max(x:int, y:int) = if(x < y) y; else x;

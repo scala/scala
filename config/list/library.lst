@@ -11,7 +11,9 @@ BufferedIterator.scala
 Byte.java
 Cell.scala
 Char.java
+Console.scala
 Double.java
+Executable.scala
 Float.java
 Function0.java
 Function1.java
