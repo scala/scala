@@ -177,6 +177,14 @@ public class Erasure extends Transformer implements Modifiers {
 //////////////////////////////////////////////////////////////////////////////////
 // Box/Unbox and Coercions
 /////////////////////////////////////////////////////////////////////////////////
+    private boolean hasBoxing(Tree tree) {
+        switch (tree) {
+        case Apply(Tree fun, _):
+            return primitives.getPrimitive(fun.symbol()) == Primitive.BOX;
+        default:
+            return false;
+        }
+    }
 
     /**
      * Return the unboxed version of the given tree.
@@ -200,7 +208,7 @@ public class Erasure extends Transformer implements Modifiers {
 	}
     }
 
-    private boolean isUnboxedValueType(Type type) {
+    private boolean isUnboxedSimpleType(Type type) {
 	switch (type) {
 	case UnboxedType(_)     : return true;
 	default                 : return false;
@@ -612,97 +620,53 @@ public class Erasure extends Transformer implements Modifiers {
             // types and then reconstruct the corresponding tree.
 	    return transform(expr, tpe1.type);
 
-	case TypeApply(Tree fun, Tree[] args):
-            Symbol sym = fun.symbol();
-            if (sym == definitions.AS || sym == definitions.IS) {
-                Type tp = args[0].type.erasure();
-                if (isUnboxed(tp) && (sym != definitions.IS || (!isUnboxedArray(tp) && !tp.isSameAs(Type.UnboxedType(TypeTags.BOOLEAN))))) {
-                    Tree qual1 = transform(getQualifier(currentClass, fun));
-                    if (isUnboxed(qual1.type)) qual1 = box(qual1);
-                    Symbol primSym = (sym == definitions.AS)
-                        ? primitives.getUnboxValueSymbol(tp)
-                        : primitives.getInstanceTestSymbol(tp);
-                    qual1 = coerce(qual1, primSym.owner().type());
-                    return gen.Select(qual1, primSym);
-                } else
-                    return copy.TypeApply(tree, transform(fun), tp.isSameAs(Type.UnboxedType(TypeTags.BOOLEAN)) ? args : transform(args)).setType(owntype);
-            } else
-                return transform(fun);
+	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
+            fun = transform(fun);
+            vargs = transform(vargs);
+            Symbol symbol = fun.symbol();
+            if (symbol == definitions.AS) {
+                assert targs.length == 1 && vargs.length == 0: tree;
+                return coerce(getQualifier(fun), targs[0].type().erasure());
+            }
+            if (symbol == definitions.IS) {
+                assert targs.length == 1 && vargs.length == 0: tree;
+                Type type = targs[0].type.erasure();
+                if (isUnboxedSimpleType(type)) type = targs[0].type;
+                return gen.mkIsInstanceOf(tree.pos, getQualifier(fun), type);
+            }
+            return genApply(tree.pos, fun, vargs);
 
-	case Apply(Tree fun, Tree[] args):
-	    Type isSelectorType = Type.NoType;
-	    Tree isQualTree = Tree.Empty;
+	case Apply(Tree fun, Tree[] vargs):
+            fun = transform(fun);
+            vargs = transform(vargs);
             switch (fun) {
-            case Select(Tree array, _):
-                if (isUnboxedArray(array.type().erasure())) {
-                    switch (primitives.getPrimitive(fun.symbol())) {
-                    case LENGTH:
-                        assert args.length == 0: tree;
-                        array = transform(array);
-                        return genUnboxedArrayLength(tree.pos, array);
-                    case APPLY:
-                        assert args.length == 1: tree;
-                        array = transform(array);
-                        Tree index = transform(args[0]);
-                        return genUnboxedArrayGet(tree.pos, array, index);
-                    case UPDATE:
-                        assert args.length == 2: tree;
-                        array = transform(array);
-                        Tree index = transform(args[0]);
-                        Tree value = transform(args[1]);
-                        return genUnboxedArraySet(tree.pos,array,index,value);
-                    }
+            case Select(Tree qualifier, _):
+                if (!hasBoxing(qualifier)) break;
+                switch (primitives.getPrimitive(fun.symbol())) {
+                case LENGTH:
+                    assert vargs.length == 0: tree;
+                    Tree array = removeBoxing(qualifier);
+                    return genUnboxedArrayLength(tree.pos, array);
+                case APPLY:
+                    assert vargs.length == 1: tree;
+                    Tree array = removeBoxing(qualifier);
+                    Tree index = vargs[0];
+                    return genUnboxedArrayGet(tree.pos, array, index);
+                case UPDATE:
+                    assert vargs.length == 2: tree;
+                    Tree array = removeBoxing(qualifier);
+                    Tree index = vargs[0];
+                    Tree value = vargs[1];
+                    return genUnboxedArraySet(tree.pos, array, index, value);
                 }
-		break;
-	    case TypeApply(Tree poly, Tree[] targs):
-		if (poly.symbol() == definitions.IS) {
-		    isSelectorType = targs[0].type.erasure();
-                    if (isSelectorType.isSameAs(Type.UnboxedType(TypeTags.BOOLEAN)))
-                        isSelectorType = targs[0].type;
-		    isQualTree = poly;
-		}
-	    }
-	    Tree fun1 = transform(fun);
-
-            if (fun1.symbol() == definitions.NULL) return fun1.setType(owntype);
-	    if (global.debug) global.log("fn: " + fun1.symbol() + ":" + fun1.type);//debug
-
-                Tree result = genApply(tree.pos, fun1, transform(args));
-		if (isUnboxed(isSelectorType) && !isUnboxedArray(isSelectorType)) {
-		    Symbol primSym = primitives.getInstanceTestSymbol(isSelectorType);
-		    Symbol ampAmpSym = definitions.BOOLEAN_AND();
-		    result = make.Apply(
-			result.pos,
-			make.Select(
-			    result.pos,
-			    box(
-				make.Apply(
-				    fun.pos,
-				    make.TypeApply(
-					fun.pos,
-					transform(isQualTree),
-					new Tree[]{
-					    gen.mkType(tree.pos, primSym.owner().type())}
-					).setType(Type.MethodType(Symbol.EMPTY_ARRAY, result.type)),
-				    Tree.EMPTY_ARRAY
-				    ).setType(result.type)),
-			    ampAmpSym.name
-			    ).setSymbol(ampAmpSym)
-			.setType(ampAmpSym.type().erasure()),
-			new Tree[]{result}
-			).setType(result.type);
-		    //new scalac.ast.printer.TextTreePrinter().print("IS: ").print(result).println().end();//debug
-		}
-
-		return result;
-
+            }
+            return genApply(tree.pos, fun, vargs);
 
 	case Select(Tree qualifier, _):
             Symbol symbol = tree.symbol();
             qualifier = transform(qualifier);
             qualifier = coerce(qualifier, symbol.owner().type().erasure());
-            if (isUnboxedValueType(qualifier.type())) // !!! Value
-                qualifier = box(qualifier);
+            if (isUnboxedType(qualifier.type())) qualifier = box(qualifier);
 	    return gen.Select(tree.pos, qualifier, symbol);
 
 	case Ident(_):
@@ -717,7 +681,6 @@ public class Erasure extends Transformer implements Modifiers {
 	    }
 
 	    return copy.LabelDef(tree, new_params, transform(body)).setType(owntype);
-
 
 
 
@@ -794,6 +757,15 @@ public class Erasure extends Transformer implements Modifiers {
         return exprs;
     }
 
+    private Tree getQualifier(Tree tree) {
+        switch (tree) {
+        case Select(Tree qual, _):
+            return qual;
+        default:
+            throw Debug.abort("no qualifier for tree", tree);
+        }
+    }
+
     private Tree getQualifier(Symbol currentClass, Tree tree) {
         switch (tree) {
         case Select(Tree qual, _):
@@ -823,3 +795,4 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
 }
+

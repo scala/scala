@@ -54,7 +54,7 @@ public class ErasurePhase extends Phase {
     public Type transformInfo(Symbol sym, Type tp) {
         if (sym.isClass()) return Type.erasureMap.map(tp);
         if (sym.isType()) return tp;
-        if (sym == definitions.NULL) return tp.resultType().erasure();
+        // if (sym == definitions.NULL) return tp.resultType().erasure();
         switch (primitives.getPrimitive(sym)) {
         case Primitive.IS : return Type.PolyType(tp.typeParams(), Type.MethodType(tp.valueParams(), tp.resultType().erasure()));
         case Primitive.AS : return tp;
