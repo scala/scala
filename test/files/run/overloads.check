@@ -13,5 +13,3 @@ ok: Funcs.foo('a') = 2
 ok: Funcs.foo(97) = 3
 ok: M1.f(3) = 11
 ok: M2.f(3) = 22
-ok: M1.f(Stack()) = 12
-ok: M2.f(Stack()) = 21
