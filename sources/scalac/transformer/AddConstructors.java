@@ -124,11 +124,11 @@ public class AddConstructors extends GenTransformer {
     }
 
     private Tree transform(Tree tree, boolean inNew) {
-	final Symbol treeSym = tree.symbol();
 	switch (tree) {
 	case ClassDef(_, _, _, _, _, Template impl):
-	    if (treeSym.isInterface())
-		return gen.ClassDef(treeSym, transform(impl.body));
+            Symbol clasz = tree.symbol();
+	    if (clasz.isInterface())
+		return gen.ClassDef(clasz, transform(impl.body));
 
 	    // expressions that go before the call to the super constructor
 	    final ArrayList constrBody = new ArrayList();
@@ -139,33 +139,28 @@ public class AddConstructors extends GenTransformer {
 	    // the body of the class after the transformation
 	    final ArrayList classBody = new ArrayList();
 
+            Symbol local = impl.symbol();
 	    for (int i = 0; i < impl.body.length; i++) {
-		Tree t = impl.body[i];
-		if (t.definesSymbol()) {
-		    Symbol sym = t.symbol();
-		    switch (t) {
-		    // for ValDefs move the initialization code to the constructor
+                Tree member = impl.body[i];
+		if (member.definesSymbol() && member.symbol().owner()!=local) {
+		    switch (member) {
 		    case ValDef(_, _, _, Tree rhs):
-			if (rhs != Tree.Empty) {
-			    Tree lhs =
-			        gen.Select(gen.This(t.pos, treeSym), sym);
-			    Tree assign =
-				gen.Assign(t.pos, lhs, rhs);
-			    t = gen.ValDef(sym, Tree.Empty);
-			    if (rhs.hasSymbol() && rhs.symbol().isParameter()) {
-				constrBody.add(assign);
-			    } else {
-				constrBody2.add(assign);
-			    }
-			}
-			break;
-
+                        // move initialization code into initializer
+                        Symbol field = member.symbol();
+			if (rhs == Tree.Empty) break;
+                        member = gen.ValDef(field, Tree.Empty);
+                        Tree assign = gen.Assign(
+                            gen.Select(gen.This(member.pos, clasz),field),rhs);
+                        if (rhs.hasSymbol() && rhs.symbol().isParameter()) {
+                            constrBody.add(assign);
+                        } else {
+                            constrBody2.add(assign);
+                        }
 		    }
-		    // do not transform(t). It will be done at the end
-		    classBody.add(t);
-		} else {
-		    // move class-level expressions into the constructor
-		    constrBody2.add(impl.body[i]);
+		    classBody.add(member);
+                } else {
+		    // move class-level code into initializer
+		    constrBody2.add(member);
 		}
 	    }
 
@@ -177,7 +172,7 @@ public class AddConstructors extends GenTransformer {
                 if (fun.symbol().constructorClass().isInterface()) continue;
                 int pos = impl.parents[i].pos;
                 Tree superConstr = gen.Select
-                    (gen.Super(pos, treeSym), getInitializer(fun.symbol()));
+                    (gen.Super(pos, clasz), getInitializer(fun.symbol()));
                 constrBody.add(gen.mkApply_V(superConstr, args));
                 break;
             case Apply(Tree fun, Tree[] args):
@@ -185,7 +180,7 @@ public class AddConstructors extends GenTransformer {
                 if (fun.symbol().constructorClass().isInterface()) continue;
                 int pos = impl.parents[i].pos;
                 Tree superConstr = gen.Select
-                    (gen.Super(pos, treeSym), getInitializer(fun.symbol()));
+                    (gen.Super(pos, clasz), getInitializer(fun.symbol()));
                 constrBody.add(gen.mkApply_V(superConstr, args));
                 break;
             default:
@@ -194,23 +189,23 @@ public class AddConstructors extends GenTransformer {
             }
 
 	    // inline initialization of module values
-            if (forINT && treeSym.isModuleClass()) {
-                Symbol module = treeSym.module();
+            if (forINT && clasz.isModuleClass()) {
+                Symbol module = clasz.module();
                 if (module.isGlobalModule()) {
                     constrBody.add(
                         gen.Assign(
                             gen.mkRef(tree.pos, module),
-                            gen.This(tree.pos, treeSym)));
+                            gen.This(tree.pos, clasz)));
                 } else {
                     Symbol owner = module.owner();
                     Name module_eqname = module.name.append(Names._EQ);
                     Symbol module_eq = owner.lookup(module_eqname);
-                    assert module != Symbol.NONE :Debug.show(treeSym.module());
+                    assert module != Symbol.NONE :Debug.show(clasz.module());
                     if (owner.isModuleClass() && owner.module().isStable()) {
                         constrBody.add(
                             gen.mkApply_V(
                                 gen.mkRef(tree.pos, module_eq),
-                                new Tree[] {gen.This(tree.pos, treeSym)}));
+                                new Tree[] {gen.This(tree.pos, clasz)}));
                     } else {
                         // !!! module_eq must be accessed via some outer field
                     }
@@ -225,13 +220,13 @@ public class AddConstructors extends GenTransformer {
 			  toArray(new Tree[constrBody.size()])):
                 (Tree) constrBody.get(0);
 
-	    classBody.add(gen.DefDef(treeSym.primaryConstructor(),constrTree));
+	    classBody.add(gen.DefDef(clasz.primaryConstructor(),constrTree));
 
 	    Tree[] newBody = (Tree[]) classBody.toArray(Tree.EMPTY_ARRAY);
 
 	    // transform the bodies of all members in order to substitute
 	    // the constructor references with the new ones
-	    return gen.ClassDef(treeSym, transform(newBody));
+	    return gen.ClassDef(clasz, transform(newBody));
 
         case DefDef(_, _, _, _, _, Tree rhs):
             if (!tree.symbol().isConstructor()) return super.transform(tree);
