@@ -327,7 +327,7 @@ public class Erasure extends GenTransformer implements Modifiers {
                 return unbox(coerce(tree, boxUnboxedType(pt)), pt);
         } else if (isUnboxedArrayType(pt)) {
             if (tree.type.symbol() == definitions.ARRAY_CLASS)
-                return unbox(tree, pt);
+                return coerce(unbox(tree, pt), pt);
         } else if (pt.symbol() == definitions.ARRAY_CLASS) {
             Tree boxtree = gen.mkGlobalRef(tree.pos, primitives.BOX__ARRAY);
             return gen.mkApply_V(boxtree, new Tree[]{tree});

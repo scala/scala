@@ -75,7 +75,7 @@ public abstract class RunTime {
     // Public Functions - Boxing primitives
 
     public static Unit    box_uvalue(         ) {
-	return uvalue;
+        return uvalue;
     }
 
     public static Boolean box_zvalue(boolean x) {
@@ -120,47 +120,47 @@ public abstract class RunTime {
 
     /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
     public static Array   box_zarray(boolean[] xs) {
-	return new ZArray(xs);
+        return new ZArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Byte]) scala.Array[scala.Byte]; */
     public static Array   box_barray(byte   [] xs) {
-	return new BArray(xs);
+        return new BArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Short]) scala.Array[scala.Short]; */
     public static Array   box_sarray(short  [] xs) {
-	return new SArray(xs);
+        return new SArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Char]) scala.Array[scala.Char]; */
     public static Array   box_carray(char   [] xs) {
-	return new CArray(xs);
+        return new CArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Int]) scala.Array[scala.Int]; */
     public static Array   box_iarray(int    [] xs) {
-	return new IArray(xs);
+        return new IArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Long]) scala.Array[scala.Long]; */
     public static Array   box_larray(long   [] xs) {
-	return new LArray(xs);
+        return new LArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Float]) scala.Array[scala.Float]; */
     public static Array   box_farray(float  [] xs) {
-	return new FArray(xs);
+        return new FArray(xs);
     }
 
     /** @meta method (scala.Array[scala.Double]) scala.Array[scala.Double]; */
     public static Array   box_darray(double [] xs) {
-	return new DArray(xs);
+        return new DArray(xs);
     }
 
     /** @meta method [?T < scala.AnyRef](scala.Array[?T]) scala.Array[?T]; */
     public static Array   box_oarray(Object [] xs) {
-	return new OArray(xs);
+        return new OArray(xs);
     }
 
     /** @meta method [?T](scala.Array[?T]) scala.Array[?T]; */
@@ -193,43 +193,43 @@ public abstract class RunTime {
 
     /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
     public static boolean[] unbox_zarray(Array xs) {
-        return xs == null ? null : xs.asBooleanArray();
+        return xs == null ? null : ((ZArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Byte]) scala.Array[scala.Byte]; */
     public static byte   [] unbox_barray(Array xs) {
-        return xs == null ? null : xs.asByteArray   ();
+        return xs == null ? null : ((BArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Short]) scala.Array[scala.Short]; */
     public static short  [] unbox_sarray(Array xs) {
-        return xs == null ? null : xs.asShortArray  ();
+        return xs == null ? null : ((SArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Char]) scala.Array[scala.Char]; */
     public static char   [] unbox_carray(Array xs) {
-        return xs == null ? null : xs.asCharArray   ();
+        return xs == null ? null : ((CArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Int]) scala.Array[scala.Int]; */
     public static int    [] unbox_iarray(Array xs) {
-        return xs == null ? null : xs.asIntArray    ();
+        return xs == null ? null : ((IArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Long]) scala.Array[scala.Long]; */
     public static long   [] unbox_larray(Array xs) {
-        return xs == null ? null : xs.asLongArray   ();
+        return xs == null ? null : ((LArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Float]) scala.Array[scala.Float]; */
     public static float  [] unbox_farray(Array xs) {
-        return xs == null ? null : xs.asFloatArray  ();
+        return xs == null ? null : ((FArray)xs).value;
     }
     /** @meta method (scala.Array[scala.Double]) scala.Array[scala.Double]; */
     public static double [] unbox_darray(Array xs) {
-        return xs == null ? null : xs.asDoubleArray ();
+        return xs == null ? null : ((DArray)xs).value;
     }
-    /** @meta method [?T < scala.AnyRef](scala.Array[?T]) scala.Array[?T]; */
+    /** @meta method [?T < scala.AnyRef](scala.Array[?T]) scala.Array[scala.AnyRef]; */
     public static Object [] unbox_oarray(Array xs) {
-        return xs == null ? null : xs.asObjectArray ();
+        return xs == null ? null : ((OArray)xs).value;
     }
-    /** @meta method [?T](scala.Array[?T]) scala.Array[?T]; */
+    /** @meta method [?T](scala.Array[?T]) scala.AnyRef; */
     public static Object    unbox__array(Array xs) {
-        return xs == null ? null : xs.asArray       ();
+        return xs == null ? null : xs.value();
     }
 
     //########################################################################
@@ -342,111 +342,111 @@ public abstract class RunTime {
 // classes confuse pico which then attributes the metadata to the
 // wrong members.
 
-class UValue extends Unit    { public UValue(         ) { super( ); } }
-class ZValue extends Boolean { public ZValue(boolean x) { super(x); } }
-class BValue extends Byte    { public BValue(byte    x) { super(x); } }
-class SValue extends Short   { public SValue(short   x) { super(x); } }
-class CValue extends Char    { public CValue(char    x) { super(x); } }
-class IValue extends Int     { public IValue(int     x) { super(x); } }
-class LValue extends Long    { public LValue(long    x) { super(x); } }
-class FValue extends Float   { public FValue(float   x) { super(x); } }
-class DValue extends Double  { public DValue(double  x) { super(x); } }
+final class UValue extends Unit    { public UValue(         ) { super( ); } }
+final class ZValue extends Boolean { public ZValue(boolean x) { super(x); } }
+final class BValue extends Byte    { public BValue(byte    x) { super(x); } }
+final class SValue extends Short   { public SValue(short   x) { super(x); } }
+final class CValue extends Char    { public CValue(char    x) { super(x); } }
+final class IValue extends Int     { public IValue(int     x) { super(x); } }
+final class LValue extends Long    { public LValue(long    x) { super(x); } }
+final class FValue extends Float   { public FValue(float   x) { super(x); } }
+final class DValue extends Double  { public DValue(double  x) { super(x); } }
 
-class ZArray extends Array {
-    private final boolean[] xs;
-    public ZArray(boolean[] xs) { this.xs = xs; }
-    public boolean[] asBooleanArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_zvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Boolean)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Boolean]; */
+final class ZArray extends Array {
+    public final boolean[] value;
+    public ZArray(boolean[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_zvalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Boolean)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class BArray extends Array {
-    private final byte[] xs;
-    public BArray(byte[] xs) { this.xs = xs; }
-    public byte[] asByteArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_bvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Byte)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Byte]; */
+final class BArray extends Array {
+    public final byte[] value;
+    public BArray(byte[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_bvalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Byte)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class SArray extends Array {
-    private final short[] xs;
-    public SArray(short[] xs) { this.xs = xs; }
-    public short[] asShortArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_svalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Short)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Short]; */
+final class SArray extends Array {
+    public final short[] value;
+    public SArray(short[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_svalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Short)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class CArray extends Array {
-    private final char[] xs;
-    public CArray(char[] xs) { this.xs = xs; }
-    public char[] asCharArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_cvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Char)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf((Object)xs); }
+/** @meta class extends scala.Array[scala.Char]; */
+final class CArray extends Array {
+    public final char[] value;
+    public CArray(char[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_cvalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Char)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf((Object)value); }
 }
 
-class IArray extends Array {
-    private final int[] xs;
-    public IArray(int[] xs) { this.xs = xs; }
-    public int[] asIntArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_ivalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Int)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Int]; */
+final class IArray extends Array {
+    public final int[] value;
+    public IArray(int[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_ivalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Int)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class LArray extends Array {
-    private final long[] xs;
-    public LArray(long[] xs) { this.xs = xs; }
-    public long[] asLongArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_lvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Long)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Long]; */
+final class LArray extends Array {
+    public final long[] value;
+    public LArray(long[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_lvalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Long)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class FArray extends Array {
-    private final float[] xs;
-    public FArray(float[] xs) { this.xs = xs; }
-    public float[] asFloatArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_fvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Float)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Float]; */
+final class FArray extends Array {
+    public final float[] value;
+    public FArray(float[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_fvalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Float)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class DArray extends Array {
-    private final double[] xs;
-    public DArray(double[] xs) { this.xs = xs; }
-    public double[] asDoubleArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return RunTime.box_dvalue(xs[i]); }
-    public void update(int i, Object x) { xs[i] = ((Double)x).value; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class extends scala.Array[scala.Double]; */
+final class DArray extends Array {
+    public final double[] value;
+    public DArray(double[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return RunTime.box_dvalue(value[i]); }
+    public void update(int i, Object x) { value[i] = ((Double)x).value; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
 
-class OArray extends Array {
-    private final Object[] xs;
-    public OArray(Object[] xs) { this.xs = xs; }
-    public Object[] asObjectArray() { return xs; }
-    public Object asArray() { return xs; }
-    public Object apply(int i) { return xs[i]; }
-    public void update(int i, Object x) { xs[i] = x; }
-    public int length() { return xs.length; }
-    public String toString() { return String.valueOf(xs); }
+/** @meta class [?T < scala.AnyRef] extends scala.Array[?T]; */
+final class OArray extends Array {
+    public final Object[] value;
+    public OArray(Object[] value) { this.value = value; }
+    public Object value() { return value; }
+    public Object apply(int i) { return value[i]; }
+    public void update(int i, Object x) { value[i] = x; }
+    public int length() { return value.length; }
+    public String toString() { return String.valueOf(value); }
 }
