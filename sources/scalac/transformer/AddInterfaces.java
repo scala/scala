@@ -119,18 +119,25 @@ class AddInterfaces extends Transformer {
                     Tree tpe,
                     Tree rhs): {
             Symbol sym = tree.symbol();
-            Symbol owner = sym.owner();
             Tree newTree;
+
+            Symbol owner;
+            if (sym.isConstructor())
+                owner = sym.constructorClass();
+            else
+                owner = sym.owner();
 
             if (owner.isClass() && phase.needInterface(owner)) {
                 Symbol classOwner = phase.getClassSymbol(owner);
                 Map ownerMemberMap = phase.getClassMemberMap(classOwner);
                 Symbol newSym = (Symbol)ownerMemberMap.get(sym);
-                assert newSym != null;
+                assert newSym != null
+                    : Debug.show(sym) + " not in " + ownerMemberMap;
 
                 global.nextPhase();
                 typeSubst.insertSymbol(sym.typeParams(), newSym.typeParams());
-                typeSubst.insertSymbol(sym.valueParams(), newSym.valueParams());
+                if (!sym.isConstructor())
+                    typeSubst.insertSymbol(sym.valueParams(), newSym.valueParams());
                 global.prevPhase();
 
                 pushOwnerSubst(sym, newSym);
