@@ -27,7 +27,7 @@ import Tree.*;
  *
  *  It preforms the following transformations.
  *
- *   - Local modules are replaces by variables and classes
+ *   - Local modules are replaced by variables and classes
  *   - toString, equals, and hashCode methods are added to case classes, unless
  *     they are defined in the class or a baseclass different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
@@ -903,7 +903,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	    //System.out.println("name: "+name);
 	    Scope.Entry e = scopes[level].lookupEntry(name);
+<<<<<<< RefCheck.java
+            //System.out.println("sym: "+sym);
+	    if (sym == null) unit.error(tree.pos, "sym is null");
+=======
 	    //System.out.println("sym: "+sym);
+>>>>>>> 1.27
 	    if (sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;

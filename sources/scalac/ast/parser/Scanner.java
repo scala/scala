@@ -114,6 +114,7 @@ public class Scanner extends TokenData {
 	    int prevpos = pos;
 	    fetchToken();
 	    switch (token) {
+	    case CONSTR:
 	    case ELSE:   case EXTENDS:  case WITH:
 	    case YIELD:  case CATCH:    case FINALLY:
 	    case COMMA:  case SEMI:     case DOT:
@@ -152,7 +153,7 @@ public class Scanner extends TokenData {
 	    } else if (token == SEMI) {
 		prev.copyFrom(this);
 		fetchToken();
-		if (token != ELSE) {
+		if (token != ELSE || token == CONSTR) {
 		    next.copyFrom(this);
 		    this.copyFrom(prev);
 		}

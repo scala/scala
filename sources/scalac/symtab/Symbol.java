@@ -187,8 +187,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final boolean isStable() {
 	return kind == VAL &&
 	    ((flags & STABLE) != 0 ||
-	     (flags & MUTABLE) == 0 && type().isObjectType()) &&
-	    !owner.isPrimaryConstructor();
+	     (flags & MUTABLE) == 0 && type().isObjectType());
     }
 
     /** Does this symbol denote a variable? */
@@ -560,13 +559,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    info.complete(this);
             flags = flags & ~LOCKED;
 	    if (info instanceof SourceCompleter && (flags & SNDTIME) == 0) {
-		flags |= SNDTIME;
-		Type tp = info();
-		flags &= ~SNDTIME;
-	    } else {
-		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
-		flags |= INITIALIZED;
-	    }
+ 		flags |= SNDTIME;
+ 		Type tp = info();
+ 		flags &= ~SNDTIME;
+ 	    } else {
+ 		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
+ 		flags |= INITIALIZED;
+ 	    }
 	    //System.out.println("done: " + this.name);//DEBUG
 	}
 	return rawInfoAt(id);

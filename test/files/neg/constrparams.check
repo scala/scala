@@ -1,4 +1,9 @@
-constrparams.scala:4: stable identifier required, but x found.
+constrparams.scala:4: type mismatch;
+ found   : scala.AllRef
+ required: x.t
   private val z: x.t = null; //error
-                 ^
-one error found
+                       ^
+constrparams.scala:1: type x.type escapes its defining scope as part of scala.Object { type t,  val y$: x.type,  def y: x.type,  val z$: x.t,  def z: x.t }
+abstract class C(x: C) {
+               ^
+two errors found

@@ -1,6 +1,6 @@
-vincent1.scala:7: stable identifier required, but x found.
+vincent1.scala:7: type x.type escapes its defining scope as part of scala.Object { type T = x.T }
   class Functor(x: A) { type T = x.T }
-                                 ^
+        ^
 vincent1.scala:9: type x.type escapes its defining scope as part of test.B { type T = x.T }
   def functor(x: A): B { type T = x.T } =
                      ^

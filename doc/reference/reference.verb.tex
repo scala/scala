@@ -996,12 +996,10 @@ value of type \verb@p.type@ if the context requires it.
   Dcl             \=::=\= val ValDcl {`,' ValDcl}
                   \>  |\> var VarDcl {`,' VarDcl}
                   \>  |\> def FunDcl {`,' FunDcl}
-		  \>  |\> constr ConstrDcl {`,' ConstrDcl}
                   \>  |\> type TypeDcl {`,' TypeDcl}
   Def             \>::=\> val PatDef {`,' PatDef}
 		  \>  |\> var VarDef {`,' VarDef}
   	          \>  |\> def FunDef {`,' FunDef}
-		  \>  |\> constr ConstrDef {`,' ConstrDef}
                   \>  |\> type TypeDef {`,' TypeDef}
 	          \>  |\> ClsDef
 \end{verbatim}
@@ -1462,16 +1460,15 @@ constructor invocation \verb@sc@ which defines the template's {\em
 superclass}, constructor invocations \verb@mc$_1$ \commadots mc$_n$@
 $(n \geq 0)$, which define the template's {\em mixin classes}, and a
 statement sequence \verb@stats@ which contains additional member
-definitions for the template.  The superclass of a template must be a
-subtype of the superclass of each mixin class.  The {\em least proper
-supertype} of a template is the class type or compound type
-(\sref{sec:compound-types}) consisting of its superclass and mixin
-classes.
+definitions for the template.  Superclass and mixin classes together
+are called the {\em parent classes} of a template.  The superclass of
+a template must be a subtype of the superclass of each mixin class.
+The {\em least proper supertype} of a template is the class type or
+compound type (\sref{sec:compound-types}) consisting of the its parent classes.
 
 Member definitions define new members or overwrite members in the
-superclass and the mixin classes.  If the template forms part of a
-class definition, \verb@stats@ may also contain declarations of abstract
-members. 
+parent classes.  If the template forms part of a class definition,
+\verb@stats@ may also contain declarations of abstract members.
 %The type of each non-private definition or declaration of a
 %template must be equivalent to a type which does not refer to any
 %private members of that template.
@@ -1737,7 +1734,7 @@ that defines them.
 %packagings (\sref{sec:topdefs}) other than the one containing the
 %definition. 
 Private members are not inherited by subclasses and they
-may not override definitions in superclasses.
+may not override definitions in parent classes.
 \verb@private@ may not be applied to abstract members, and it
 may not be combined in one modifier list with
 \verb@protected@, \verb@final@ or \verb@override@.
@@ -1765,7 +1762,7 @@ overriding member is abstract.
 The \verb@abstract@ modifier is used in class definitions. It is
 mandatory if the class has abstract members, or if the class has
 members labelled \verb@override@ which override only abstract members
-in a superclass or mixin class.  Classes with \verb@abstract@ members
+in a parent class.  Classes with \verb@abstract@ members
 cannot be instantiated (\sref{sec:inst-creation}) with a constructor
 invocation unless followed by mixin constructors or statements which
 override all abstract members of the class.
@@ -1819,7 +1816,8 @@ object; it is not possible for clients to create objects of class
 
 \syntax\begin{verbatim}
   ClsDef          \=::=\= class ClassDef {`,' ClassDef}
-  ClassDef        \=::=\= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
+  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] 
+                  \>   \> ClassTemplate {[`;'] ConstrDef}
   ClassTemplate   \>::=\> extends Template
 	          \>  |\> TemplateBody
 		  \>  |\>
@@ -1841,9 +1839,11 @@ called {\em polymorphic}, otherwise it is called {\em monomorphic}.
 \item[] 
 \verb@ps@ is a formal parameter clause for the {\em primary
 constructor} of the class. The scope of a formal parameter includes
-the template \verb@t@.  It is illegal to define two formal parameters
-with the same name.  The formal parameter section \verb@(ps)@ may be omitted
-in which case an empty parameter section \verb@()@ is assumed.
+the template \verb@t@. However, the formal parameter may not form 
+part of the types of any of the parent classes or members of \verb@t@.
+It is illegal to define two formal parameters with the same name.
+The formal parameter section \verb@(ps)@ may be omitted in which case
+an empty parameter section \verb@()@ is assumed.
 \item[] 
 \verb@s@ is the {\em self type} of the class. Inside the
 class, the type of \verb@this@ is assumed to be \verb@s@.  The self
@@ -1863,41 +1863,81 @@ can be omitted, in which case
 \verb@{}@ is assumed.
 \end{itemize}
 This class definition defines both a type \verb@c[tps]@ and a constructor
-with signature \verb@constr c[tps](ps)@
-which when applied
-initializes instances of \verb@c[tps]@ type by evaluating the template \verb@t@.
+which when applied to parameters conforming to typles \verb@ps@
+initializes instances of type \verb@c[tps]@ by evaluating the template \verb@t@.
+
+\subsection{Constructor Definitions}
+
+\syntax\begin{verbatim}
+  ConstrDef       \=::=\= constr [ParamClause] `=' ConstrExpr
+  ConstrExpr      \>::=\> this ArgumentExpr
+                  \>  |\>  `{' { BlockStat `;' } ConstrExpr `}'
+\end{verbatim}
+
+A class definition may be followed by additional constructor
+definitions.  Each of these takes the form \verb@constr (ps) = e@.
+This defines an additional constructor for the preceding class, with
+parameters as given in the formal parameter list \verb@ps@, and whose
+evaluation is defined by the constructor expression \verb@e@.  The
+formal parameter list \verb@(ps)@ may be omitted, in which case
+\verb@()@ is assumed. The scope of each formal parameter is the
+constructor expression \verb@e@.  A constructor expression is either a
+self constructor invocation \verb@this(args)@ or a block which ends in
+a constructor expression. 
+
+If there are auxilary constructors of a class \verb@C@, they define
+together with \verb@C@'s primary constructor an overloaded constructor
+value. The usual rules for overloading resolution
+\sref{sec:overloading} apply for constructor invocations of \verb@C@,
+including the self constructor invocations in the constructor
+expressions themselves. To prevent infinite cycles of constructor
+invocations there is the restriction that every self constructor
+invocation must refer to a constructor definition which precedes it
+(i.e. it must refer to either a preceding auxiliary constructor or the
+primary constructor of the class).  The type of a constructor
+expression must be always so that a generic instance of the class is
+constructed.  I.e. if the class in question has name \verb@C@ and type
+parameters \verb@[tps]@, then each constructor must construct an
+instance of \verb@C[tps]@; it is not permitted to instantiate formal
+type parameters.
 
 \subsection{Case Classes}
 \label{sec:case-classes}
 
-\syntax\begin{verbatim}
-  ClsDef          \=::=\= case class ClassDef {`,' ClassDef}
+\syntax\begin{verbatim} ClsDef \=::=\= case class ClassDef {`,'
+  ClassDef}
 \end{verbatim}
 
 If a class definition is prefixed with \verb@case@, the class is said
 to be a {\em case class}.  The primary constructor of a case class may
-be used in a constructor pattern (\sref{sec:patterns}).  None of the
-base classes of a case class may be a case class. Furthermore, no type
-may have two different case classes among its basetypes.
+be used in a constructor pattern (\sref{sec:patterns}).  That
+constructor make not have any value parameters which are prefixed by
+\verb@def@.  None of the base classes of a case class may be a case
+class. Furthermore, no type may have two different case classes among
+its basetypes.
 
 A case class definition of \verb@c[tps](ps)@ with type
 parameters \verb@tps@ and value parameters \verb@ps@ implicitly
-generates the function definition
+generates the a function definition of a {\em case class factory}
 \begin{verbatim}
 def c[tps](ps): c[tps] = new c[tps](ps)
 \end{verbatim}
-together with the class definition itself.  Also implicity defined are
-accessor member definitions in the class that return its value
-parameters. Every binding \verb@x: T@ in the parameter section leads
-to a value definition of \verb@x@ that defines \verb@x@
-to be an alias of the parameter.  Every parameterless function binding
-\verb@def x: T@ leads to a parameterless function definition of
-\verb@x@ which returns the result of invoking the parameter function.
-The case class may not contain a directly bound member with the same
-simple name as one of its value parameters.
+together with the class definition itself (if a type parameter section
+is missing in the class, it is also missing in the factory
+definition).  Also implicity defined are accessor member definitions
+in the class that return its value parameters. Every binding
+\verb@x: T@ in the parameter section leads to a value definition of
+\verb@x@ that defines \verb@x@ to be an alias of the parameter.  
+%Every
+%parameterless function binding \verb@def x: T@ leads to a
+%parameterless function definition of \verb@x@ which returns the result
+%of invoking the parameter function.  
+%The case class may not contain a
+%directly bound member with the same simple name as one of its value
+%parameters.
 
 Every case class implicitly overrides some method definitions of class
-\verb@Object@ (\sref{sec:cls-object}) unless a definition of the same
+\verb@scala.Object@ (\sref{sec:cls-object}) unless a definition of the same
 method is already given in the case class itself or a non-abstract
 definition of the same method is given in some base class of the case
 class different from \verb@Object@. In particular:
@@ -1918,9 +1958,9 @@ calculus:
 \begin{verbatim}
 class Expr;
 case class
-  Var (x: String) extends Expr,
-  Apply (f: Expr, e: Expr) extends Expr,
-  Lambda (x: String, e: Expr) extends Expr;
+  Var       \=(x: String)              \=extends Expr,
+  Apply     \>(f: Expr, e: Expr)       \>extends Expr,
+  Lambda    \>(x: String, e: Expr)     \>extends Expr;
 \end{verbatim}
 This defines a class \verb@Expr@ with case classes
 \verb@Var@, \verb@Apply@ and \verb@Lambda@. A call-by-value evaluator for lambda
@@ -1948,119 +1988,132 @@ It is possible to define further case classes that extend type
 case class Number(x: Int) extends Expr;
 \end{verbatim}
 
-This form of extensibility can be excluded by declaring the case class \verb@sealed@; in this case, only 
+This form of extensibility can be excluded by declaring the base class
+\verb@Expr@ \verb@sealed@; in this case, the only classes permitted to
+extend \verb@Expr@ are those which are nested inside \verb@Expr@, or
+which appear in the same statement sequence as the definition of
+\verb@Expr@.
 
-\section{Interface Classes}
+\section{Traits}
 
-\label{sec:interfaces}
+\label{sec:traits}
 
 \syntax\begin{verbatim}
-  ClassDef        \=::= \= Id [TypeParamClause] ClassTemplate
+  ClsDef          \=::=\= trait ClassDef {`,' ClassDef}
 \end{verbatim}
 
-A class definition whose constructor does not have value parameters
-defines an {\em interface class}. The template of an interface classes
-must satisfy the following two restrictions.
+A class definition which starts with the reserved word \verb@trait@
+instead of \verb@class@ defines a trait. A trait is a specific
+instance of an abstract class, so the \verb@abstract@ modifier is
+redundant for it.  The template of a trait must satisfy the following
+four restrictions.
 \begin{enumerate}
-\item All base classes of the template are interface classes.
-\item All non-empty statements are either declarations or method definitions.
+\item All base classes of the trait are traits.
+\item All parent class constructors of a template
+      must be primary constructors with empty value
+      parameter lists. 
+\item None of the statements in the template may be a variable definition.
+\item For every value definition \verb@val x: T = e@ among the statements 
+      of the template, the defining expression \verb@e@ must {\em pure}.      
 \end{enumerate}
+A pure expression is a literal, or an occurrence of \verb@this@,
+or a stable identifier, or a typed expression \verb@e: T@ where
+\verb@e@ is a pure expression.
+
 These restrictions ensure that the evaluation of the mixin constructor
-of an interface type has no effect. Therefore, interface classes can be
-used in two constellations where other classes cannot. Namely:
-\begin{itemize}
-\item The same interface class may appear several times in the base class
-sequence of a template.
-\item Packagings may add interface classes as new base classes to an
-existing class or modulee.
-\end{itemize}
+of a trait has no effect. Therefore, traits may appear several times 
+in the base class sequence of a template, whereas other classes cannot.
+%\item Packagings may add interface classes as new base classes to an
+%existing class or modulee.
 
 \example\label{ex:comparable}
-The following interface class defines the property of being
-comparable to objects of some type. It contains an abstract method
+The following trait class defines the property of being
+ordered, i.e. comparable to objects of some type. It contains an abstract method
 \verb@<@ and default implementations of the other comparison operators
 \verb@<=@, \verb@>@, and \verb@>=@.
 
 \begin{verbatim}
-abstract class Comparable[a] with {
-  def <(that: a)
-  def <= (that: a)  =  this < that || this == that
-  def > (that: a)  =  that < this
-  def >= (that: a)  =  that <= this
+trait Ord[t <: Ord[t]]: t {
+  def < (that: t): Boolean;
+  def <=(that: t): Boolean = this < that || this == that;
+  def > (that: t): Boolean = that < this;
+  def >=(that: t): Boolean = that <= this;
 }
 \end{verbatim}
 
-\section{Modules}
+\section{Object Definitions}
 \label{sec:modules}
+\label{sec:object-defs}
 
 \syntax\begin{verbatim}
-  ModuleDef     \=::= \= Id [`:' Type] ClassTemplate
+  ObjectDef       \=::=\= Id [`:' SimpleType] ClassTemplate
 \end{verbatim}
 
-A module definition is of the form \verb@\MODULE;m;\EXTENDS;t@ where \verb@t@ is
-a template (\sref{sec:templates})
-\verb@sc;\WITH;mc_1;\WITH;\ldots;\WITH;mc_n;\WITH;(stats)@.  The extends
-clause \verb@\EXTENDS;sc@ can be omitted, in which case
-\verb@extends scala.Object@ is assumed.
-The module body \verb@\WITH;(stats)@ may also be omitted, in which case the
-empty body \verb@\WITH;\{\}@ is assumed.
-
-The module definition defines a single object conforming to the
-template \verb@t@.  It is almost equivalent to a triple of a class
-definition,
-a type definition and a value definition that creates an object of the class:
+An object definition defines a single object of a new class. Its 
+most general is
+\verb@object m: s extends t@. Here,
+\begin{itemize}
+\item[]
+\verb@m@ is the name of the object to be defined.
+\item[] \verb@s@ is the {\em self type} of the object. References to
+\verb@m@ are assumed to have type \verb@s@. Furthermore, inside the
+template \verb@t@, the type of \verb@this@ is also assumed to be \verb@s@.
+The self type must conform to the self types of all classes which are
+inherited by the template \verb@t@. The self type declaration
+\verb@:s@ may be omitted, in which case the self type of the class is
+assumed to be equal to the anonymous class defined by \verb@t@.
+\item[] 
+\verb@t@ is a
+template (\sref{sec:templates}) of the form
+\verb@sc with mc$_1$ with ... with mc$_n$ { stats }@
+which defines the base classes, behavior and initial state of \verb@m@.
+The extends clause \verb@extends sc with ... with mc$_n$@
+can be omitted, in which case
+\verb@extends scala.Object@ is assumed.  The class body
+\verb@{stats}@ may also be omitted, in which case the empty body
+\verb@{}@ is assumed.
+\end{itemize}
+The object definition defines a single object (or: {\em module} 
+conforming to the template \verb@t@.  It is almost equivalent to a class
+definition and a value definition that creates an object of the class:
 \begin{verbatim}
-final class m$\Dollar$class extends t;
-final type m = m$\Dollar$class;
-final val m = new m$\Dollar$class;
+final class m$\Dollar$class: s extends t;
+final val m: s = new m$\Dollar$class;
 \end{verbatim}
 (The \verb@final@ modifiers are omitted if the definition occurs as
-part of a block).  The class name \verb@m$\Dollar$class@ is not
+part of a block). The class name \verb@m$\Dollar$class@ is not
 accessible for user programs.
-However, unlike value definitions, modules are instantiated lazily.
+Unlike value definitions, object definitions may appear
+as top-level definitions in a compilation unit.
+Also, unlike for value definitions, modules are instantiated lazily.
 The \verb@new m$\Dollar$class@ constructor is evaluated not at the
-point of the let definition, but is instead evaluated the first time
+point of the value definition, but is instead evaluated the first time
 $m$ is dereferenced during execution of the program (which might be
 never at all). An attempt to dereference $m$ again in the course of
-evaluation of the constructor leads to a run-time error.  Other
+evaluation of the constructor leads to a infinite loop or run-time error.  
+Other
 threads trying to dereference $m$ while the constructor is being
 evaluated block until evaluation is complete.
 
-A module definition may also mention a type $T$ which represents the
-externally visible interface of a module. The definition $\MODULE;m:
-T;\EXTENDS;t$ then corresponds to:
-\begin{verbatim}
-final class m$\Dollar$class extends t;
-final type m = m$\Dollar$class;
-final val m: T = new m$\Dollar$class;
-\end{verbatim}
-
 \example
 Classes in Scala do not have static members; however, an equivalent
-effect can be achieved by defining a module:
+effect can be achieved by an accompanying object definition
 E.g.
 \begin{verbatim}
-module Points with {
-  abstract class Point() with {
-    val x: Double;
-    val y: Double;
-    def isOrigin = x == 0,0 && y == 0.0;
-  }
+abstract class Point {
+  val x: Double;
+  val y: Double;
+  def isOrigin = (x == 0.0 && y == 0.0);
+}
+object Point {
   val origin = new Point() with { val x = 0.0, y = 0.0 }
 }
-type Point = Points.Point
-def Point(): class Point = Points.Point()
-val Point = Points
 \end{verbatim}
-This defines a type \verb@Point@, a constructor \verb@Point@, and a
-value \verb@Point@ which contains \verb@origin@ as a member.  Hence,
-Note that the double definition of \verb@Point@ in the term namespace
-is a legal overloaded definition (\sref{sec:overloaded-defs}), since
-\verb@Point@ exists both as a unary constructor function and as a
-value. Therefore the name \verb@Point@ used in isolation identifies
-the \verb@Point@ module, the expression \verb@Point.origin@ selects
-its \verb@origin@ field, but \verb@new Point()@ is an invocation of
-the \verb@Point@ constructor.
+This defines a type \verb@Point@, a constructor \verb@Point()@, and an
+object \verb@Point@ which contains \verb@origin@ as a member.  
+Note that the double use of the name \verb@Point@ is lgel, since the class
+definition defines the name \verb@Point@ in the type and constructor name spaces,
+whereas the object definition defines a name only in the term namespace.
 
 \comment{
 \example Here's an outline of a module definition for a file system.
@@ -4195,8 +4248,6 @@ grammar.
   CaseClause      \>::=\> case Pattern [`if' PostfixExpr] `=>' Block 
 
   Constr          \>::=\> StableId [TypeArgs] [`(' [Exprs] `)']  
-  ConstrExpr      \>::=\> this [ArgumentExpr]
-                  \>  |\> `{' {BlockStat `;'} this [ArgumentExpr] `}'
 
   Pattern         \>::=\> varid `:' Type1
 	          \>  |\> `_' `:' Type1
@@ -4244,33 +4295,33 @@ grammar.
   Dcl             \>::=\> val ValDcl {`,' ValDcl}
                   \>  |\> var VarDcl {`,' VarDcl}
                   \>  |\> def FunDcl {`,' FunDcl}
-		  \>  |\> constr ConstrDcl {`,' ConstrDcl}
                   \>  |\> type TypeDcl {`,' TypeDcl}
   ValDcl          \>::=\> Id `:' Type
   VarDcl          \>::=\> Id `:' Type
   FunDcl          \>::=\> Id [FunTypeParamClause] {ParamClause} `:' Type
-  ConstrDcl       \>::=\> Id [FunTypeParamClause] [ParamClause] `:' Type
   TypeDcl         \>::=\> Id [`>:' Type] [`<:' Type]
 
   Def             \>::=\> val PatDef {`,' PatDef}
 		  \>  |\> var VarDef {`,' VarDef}
   	          \>  |\> def FunDef {`,' FunDef}
-		  \>  |\> constr ConstrDef {`,' ConstrDef}
                   \>  |\> type TypeDef {`,' TypeDef}
 	          \>  |\> ClsDef
   PatDef          \>::=\> Pattern `=' Expr
   VarDef          \>::=\> Id [`:' Type] `=' Expr
                   \>  |\> Id `:' Type `=' `_'
   FunDef          \>::=\> Id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
-  ConstrDef       \>::=\> this [ParamClause] `=' ConstrExpr
   TypeDef         \>::=\> Id `=' Type
   ClsDef          \>::=\> ([case] class | trait) ClassDef {`,' ClassDef}
                   \>  |\> [case] object ObjectDef {`,' ObjectDef}
-  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
+  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] 
+                  \>   \> ClassTemplate {[`;'] ConstrDef}
   ObjectDef       \>::=\> Id [`:' SimpleType] ClassTemplate
   ClassTemplate   \>::=\> extends Template
 	          \>  |\> TemplateBody
 		  \>  |\>
+  ConstrDef       \>::=\> constr [ParamClause] `=' ConstrExpr
+  ConstrExpr      \>::=\> this ArgumentExpr
+                  \>  |\>  `{' { BlockStat `;' } ConstrExpr `}'
 
   CompilationUnit \>::=\> [package QualId `;'] [{TopStat `;'} TopStat]
   TopStat         \>::=\> {Modifier} ClsDef

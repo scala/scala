@@ -96,6 +96,10 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < args.length; i++)
 		getVariables(args[i], vars);
 	    break;
+	case Sequence(Tree[] elems):
+	    for (int i = 0; i < elems.length; i++)
+		getVariables(elems[i], vars);
+	    break;
 	default:
 	    throw new ApplicationError ("illegal pattern", tree);
 	}
@@ -474,11 +478,13 @@ public class DeSugarize implements Kinds, Modifiers {
 
 	    if (vars.length == 0) {
 		// e.match (case p => ())
+		print(pat, "patdef", match);
 		return new Tree[]{match};
 	    } else if (vars.length == 1) {
 		// val x_1 = e.match (case p => x_1)
-		return new Tree[]{
-		    make.ValDef(pos, mods, vars[0], Tree.Empty, match)};
+		Tree valdef = make.ValDef(pos, mods, vars[0], Tree.Empty, match);
+		print(pat, "patdef", valdef);
+		return new Tree[]{valdef};
 	    } else {
 		// t$
 		Name var = getvar();
@@ -493,7 +499,7 @@ public class DeSugarize implements Kinds, Modifiers {
 			pos, mods, vars[i], Tree.Empty,
 			make.Select(pos, make.Ident(pos, var), tupleSelectorName(i + 1)));
 		}
-		print(pat, " -> ", new Block(res));//debug
+		print(pat, "patdef", new Block(res));//debug
 		return res;
 	    }
 	default:
@@ -684,12 +690,12 @@ public class DeSugarize implements Kinds, Modifiers {
     /** Build value element definition name for case parameter.
      */
     void addCaseElement(TreeList ts, ValDef vparam) {
-	vparam.symbol().initialize();
+	//vparam.symbol().initialize();
 	ts.append(
 	    make.ValDef(
 		vparam.pos, CASEACCESSOR, vparam.name, vparam.tpe,
 		make.Ident(vparam.pos, vparam.name)
-		.setSymbol(vparam.symbol()).setType(vparam.symbol().type())));
+		.setSymbol(vparam.symbol())));
     }
 
     /** add case constructor, value defintiions and access functions.

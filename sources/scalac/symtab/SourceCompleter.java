@@ -33,7 +33,7 @@ public class SourceCompleter extends Type.LazyType {
      */
     public void complete(Symbol c) {
         if (completed) {
-            c.setInfo(Type.ErrorType);
+            c.setInfo(Type.NoType);
         } else if (filename != null) {
             try {
                 String fname = filename;

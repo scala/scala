@@ -112,10 +112,8 @@ public class TreeInfo {
     public static boolean isPureConstr(Tree tree) {
 	switch (tree) {
 	case Ident(_):
+	case Select(_, _):
  	    return tree.symbol() != null && tree.symbol().isPrimaryConstructor();
-	case Select(Tree qual, _):
-	    return isPureExpr(qual) &&
-		tree.symbol() != null && tree.symbol().isPrimaryConstructor();
 	case TypeApply(Tree constr, _):
 	    return isPureConstr(constr);
 	case Apply(Tree fn, Tree[] args):

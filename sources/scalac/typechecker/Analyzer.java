@@ -11,9 +11,7 @@
 // todo: use SELECTOR flag to avoid access methods for privates
 // todo: use mangled name or drop.
 // todo: emit warnings for unchecked.
-// todo: qualified super.
-// todo: pattern definitions with 0 or 1 bound variable.
-// todo: phase sync
+// todo: synchronize on module instantiation.
 
 package scalac.typechecker;
 
@@ -417,6 +415,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		error(pos, "cyclic aliasing or subtyping involving " + sym);
 	    } else if (sym.kind == ALIAS || sym.kind == TYPE) {
 		sym.flags |= LOCKED;
+		//System.out.println("checking " + sym);//DEBUG
 		checkNonCyclic(
 		    pos, pre.memberInfo(sym).subst(sym.typeParams(), args));
 		if (sym.kind == TYPE)
@@ -444,7 +443,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	try {
 	    return checkNoEscapeMap.apply(tp);
 	} catch (Type.Error ex) {
-	    if (infer.isFullyDefined(pt)) return pt;
+	    if ((mode & EXPRmode) != 0 && infer.isFullyDefined(pt)) return pt;
 	    error(pos, ex.msg + " as part of " + tp.unalias());
 	    return Type.ErrorType;
 	}
@@ -612,14 +611,17 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
             Symbol constr = tree.symbol().constructor();
 	    Type constrtype = constr.type().instanceType();
             constrtype = constrtype.cloneType(constr, sym);
+	    /* todo: remove
 	    switch (tree) {
 	    case ClassDef(_, _, _, ValDef[][] vparams, _, _):
 		if (vparams.length == 0) {
 		    constrtype = removeMethod(constrtype);
 		}
 	    }
+	    */
 	    sym.setInfo(constrtype);
 	}
+	/* todo: remove
 	private Type removeMethod(Type tp) {
 	    switch (tp) {
 	    case MethodType(_, Type restp):
@@ -630,6 +632,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return tp;
 	    }
 	}
+	*/
     }
 
     /** A lazy type for self types
@@ -707,9 +710,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    enterSym(tree, clazz.constructor());
 	    if ((mods & CASE) != 0) {
+		/* todo: remove
 		if (vparams.length == 0) {
 		    error(tree.pos, "case class needs () parameter section");
-		} else if ((mods & ABSTRACTCLASS) == 0) {
+		}
+		else */
+		if ((mods & ABSTRACTCLASS) == 0) {
 		    // enter case constructor method.
 		    enterInScope(
 			new TermSymbol(
@@ -964,8 +970,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (tpe != Tree.Empty) {
 		    ((DefDef) tree).tpe = tpe = transform(tpe, TYPEmode);
 		} else {
-		    int rhsmode = name.isConstrName() ? CONSTRmode : EXPRmode;
-		    ((DefDef) tree).rhs = rhs = transform(rhs, rhsmode);
+		    ((DefDef) tree).rhs = rhs = transform(rhs, EXPRmode);
 		    ((DefDef) tree).tpe = tpe = gen.mkType(tree.pos, rhs.type);
 		}
 		Type restype = checkNoEscape(tpe.pos, tpe.type);
@@ -1002,7 +1007,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			tp.lookup(selectors[i]) == Symbol.NONE &&
 			tp.lookup(selectors[i].toTypeName()) == Symbol.NONE &&
 			tp.lookup(selectors[i].toConstrName()) == Symbol.NONE)
-			error(tree.pos, selectors[i] + " is not a member of " + expr);
+			error(tree.pos, NameTransformer.decode(selectors[i]) + " is not a member of " + expr);
 		}
 		break;
 
@@ -1317,6 +1322,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    checkAccessible(tree.pos, sym, qual);
 	}
 	symtype = pre.memberType(sym);
+	if (symtype == Type.NoType)
+	    return error(tree.pos, "not found: " + decode(name));
 	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) && sym.isStable()) {
 	    //System.out.println("making single " + sym + ":" + symtype);//DEBUG
 	    symtype = Type.singleType(pre, sym);
@@ -1346,6 +1353,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (!TreeInfo.isSelf(qual, context.enclClass.owner))
 		sym.flags |= SELECTOR;
 	    Type symtype = qual.type.memberType(sym);
+	    if (symtype == Type.NoType)
+		return error(tree.pos, "not found: " + decode(name));
 	    //System.out.println(sym.name + ":" + symtype);//DEBUG
 	    if (uninst.length != 0) {
 		switch (symtype) {
@@ -1370,7 +1379,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *  results.
      */
     Tree transformVisitor(Tree tree, Type pattpe, Type pt) {
-	//System.out.println("trans visitor with " + pt);//DEBUG
+	//System.out.println("trans visitor with " + pattpe + "," + pt);//DEBUG
 	switch (tree) {
 	case Visitor(Tree.CaseDef[] cases):
 	    Tree.CaseDef[] cases1 = cases;
@@ -1569,6 +1578,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    return transformArgs(pos, meth, tparams2, restp, argMode, args, pt);
 
+	case Type.ErrorType:
+	    for (int i = 0; i < args.length; i++) {
+		args[i] = transform(args[i], argMode, Type.ErrorType);
+		argtypes[i] = args[i].type;
+	    }
+	    return argtypes;
+
 	default:
 	    for (int i = 0; i < args.length; i++) {
 		args[i] = transform(args[i], argMode, Type.AnyType);
@@ -1589,6 +1605,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	this.mode = mode;
 	this.pt = pt;
 	Tree tree1 = adapt(transform(tree), mode, pt);
+
+	assert tree.type != Type.AnyType : tree;//debug
 
 	//new TextTreePrinter().print(tree1).print(": " + tree1.type).println().end();//DEBUG
 
@@ -1670,6 +1688,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree tpe1 = transform(tpe);
 		Tree.Template templ1 = transformTemplate(templ, sym);
+		checkNoEscape(tree.pos, sym.info());
 		popContext();
 		return copy.ClassDef(tree, sym, tparams1, vparams1, tpe1, templ1)
 		    .setType(definitions.UNIT_TYPE);
@@ -1683,7 +1702,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree rhs1 = rhs;
 		if (rhs != Tree.Empty) {
 		    pushContext(tree, sym, context.scope);
-		    rhs1 = transform(rhs, EXPRmode, tpe.type);
+		    if ((sym.flags & CASEACCESSOR) != 0)
+			rhs1.type = rhs1.symbol().type();
+		    else
+			rhs1 = transform(rhs, EXPRmode, tpe.type);
 		    popContext();
 		}
 		sym.flags |= LOCKED;
