@@ -112,8 +112,6 @@ transformer/LambdaLiftPhase.java
 transformer/MakeBoxingExplicitPhase.java
 transformer/OwnerTransformer.java
 transformer/TailCallPhase.java
-transformer/TransMatch.java
-transformer/TransMatchPhase.java
 transformer/TypesAsValuesPhase.java
 transformer/UnCurry.java
 transformer/UnCurryPhase.java
@@ -132,6 +130,7 @@ transformer/matching/TracerInScala.java
 transformer/matching/LeftTracerInScala.java
 transformer/matching/NondetWordAutom.java
 transformer/matching/NoSeqVariableTraverser.java
+transformer/matching/PartialMatcher.java
 transformer/matching/PatternMatcher.java
 transformer/matching/PatternNode.java
 transformer/matching/PatternNodeCreator.java
