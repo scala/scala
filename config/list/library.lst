@@ -118,6 +118,8 @@ concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
 concurrent/ops.scala
 concurrent/pilib.scala
+concurrent/Process.scala
+concurrent/NameServer.scala
 
 runtime/InterpreterSupport.java
 runtime/NativeLoop.java
