@@ -20,6 +20,8 @@ import Tree.*;
 public class PatternMatcher extends PatternTool {
 
     protected boolean optimize = true;
+    protected boolean delegateSequenceMatching = false;
+    protected boolean doBinding = true;
 
     /** the owner of the pattern matching expression
      */
@@ -50,7 +52,7 @@ public class PatternMatcher extends PatternTool {
     public PatternMatcher(Unit unit, Tree selector,
                           Symbol owner, Type resultType) {
         super(unit);
-		initialize(selector, owner, resultType);
+	initialize(selector, owner, resultType, true);
     }
 
     /** constructor, used in subclass ALgebraicMatcher
@@ -61,7 +63,7 @@ public class PatternMatcher extends PatternTool {
 
     /** init method, also needed in subclass AlgebraicMatcher
      */
-    protected void initialize(Tree selector, Symbol owner, Type resultType) {
+    protected void initialize(Tree selector, Symbol owner, Type resultType,  boolean doBinding) {
         this.mk = new PatternNodeCreator(unit, owner);
         this.cf = new CodeFactory(unit, selector.pos);
         this.root = mk.ConstrPat(selector.pos, selector.type.widen());
@@ -73,9 +75,10 @@ public class PatternMatcher extends PatternTool {
                                         owner,
                                         Modifiers.MUTABLE);
         this.resultVar.setType(resultType);
-		this.owner = owner;
+	this.owner = owner;
         this.selector = selector;
         this.optimize &= (unit.global.target == Global.TARGET_JVM);
+	this.doBinding = doBinding;
     }
 
     /** pretty printer
@@ -254,7 +257,7 @@ public class PatternMatcher extends PatternTool {
         	case Bind(_, Tree pat):
         		return patternArgs(pat);
             case Apply(_, Tree[] args):
-                if (args.length == 1  && (tree.type.symbol().flags & Modifiers.CASE) == 0)
+                if ( isSeqApply((Apply) tree) )// && !delegateSequenceMatching)
                     switch (args[0]) {
                         case Sequence(Tree[] ts):
                             return ts;
@@ -267,6 +270,11 @@ public class PatternMatcher extends PatternTool {
         }
     }
 
+    protected boolean isSeqApply( Tree.Apply tree ) {
+	return (tree.args.length == 1  &&
+		(tree.type.symbol().flags & Modifiers.CASE) == 0);
+    }
+
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         switch (tree) {
             case Bind(Name name, Tree pat):
@@ -277,12 +285,25 @@ public class PatternMatcher extends PatternTool {
 									header.selector);
 				return node;
 			case Apply(Tree fn, Tree[] args):             // pattern with args
-				if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
-					switch (args[0]) {
-						case Sequence(Tree[] ts):
-							return mk.SequencePat( tree.pos, tree.type, ts.length );
-					}
-				return mk.ConstrPat(tree.pos, tree.type);
+			    if( isSeqApply((Apply) tree ) ) {
+				//System.err.println( "isSeqApply!"+tree);
+				//System.err.println( "deleg ?"+delegateSequenceMatching);
+
+				if ( !delegateSequenceMatching ) {
+				    switch (args[0]) {
+				    case Sequence(Tree[] ts):
+					return mk.SequencePat( tree.pos, tree.type, ts.length );
+				    }
+				} else {
+				    //System.err.println( "CONTAIN");
+
+				    PatternNode res = mk.ConstrPat(tree.pos, tree.type);
+				    res.and = mk.Header(tree.pos, header.type, header.selector);
+				    res.and.and = mk.SeqContainerPat( tree.pos, tree.type, args[ 0 ] );
+				    return res;
+				}
+			    }
+			    return mk.ConstrPat(tree.pos, tree.type);
 			case Typed(Ident ident, Tree tpe):       // variable pattern
 				PatternNode node =
 					(header.type.isSubType(tpe.type)) ?
@@ -325,7 +346,11 @@ public class PatternMatcher extends PatternTool {
 			case Literal(Object value):
 				return mk.ConstantPat(tree.pos, tree.type, value);
 			case Sequence(Tree[] ts):
-				return mk.SequencePat(tree.pos, tree.type, ts.length);
+				if ( !delegateSequenceMatching ) {
+				    return mk.SequencePat(tree.pos, tree.type, ts.length);
+				} else {
+				    return mk.SeqContainerPat(tree.pos, tree.type, tree);
+				}
 			case Alternative(Tree[] ts): // CAN THIS WORK ?
 				assert ts.length > 0;
 				PatternNode res = patternNode( ts[ 0 ], header, env );
@@ -427,9 +452,10 @@ public class PatternMatcher extends PatternTool {
                              PatternNode target,
                              Symbol casted,
                              CaseEnv env) {
-        //System.out.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
+        //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
         // get pattern arguments
         Tree[] patArgs = patternArgs(pat);
+        //System.err.println("patArgs.length = " +patArgs.length);
         // advance one step in pattern
         Header curHeader = (Header)target.and;
         // check if we have to add a new header
@@ -785,6 +811,7 @@ public class PatternMatcher extends PatternTool {
                     node = next;
                     break;
                 case Body(ValDef[][] bound, Tree[] guard, Tree[] body):
+		    if (!doBinding) bound = new ValDef[][] { new ValDef[] {} };
                     for (int i = guard.length - 1; i >= 0; i--) {
                         Tree[] ts = new Tree[bound[i].length + 1];
                         System.arraycopy(bound[i], 0, ts, 0, bound[i].length);
@@ -864,6 +891,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected Tree toOptTree(PatternNode node, Tree selector) {
+	//System.err.println("pm.toOptTree called"+node);
     	TagNodePair cases = null;
     	PatternNode defaultCase = null;
     	while (node != null)
@@ -898,6 +926,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {
+	//System.err.println("pm.toTree called"+node);
         if (node == null)
             return gen.mkBooleanLit(selector.pos, false);
         switch (node) {
