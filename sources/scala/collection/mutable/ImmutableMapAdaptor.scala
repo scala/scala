@@ -58,8 +58,6 @@ class ImmutableMapAdaptor[A, B, C <: scala.collection.immutable.Map[A, B, C]]
 
     override def filter(p: (A, B) => Boolean): Unit = { imap = imap.filter(p); }
 
-    override def toString() = imap.toString();
-
     override def mappingToString(p: Pair[A, B]) = imap.mappingToString(p);
 
     protected def empty: C = m;
