@@ -113,7 +113,6 @@ public class Primitives {
     private final Map/*<Symbol,Primitive>*/ primitives;
 
     public final Symbol RUNTIME;
-    public final Type   RUNTIME_TYPE;
 
     public final Symbol NEW_ZARRAY;
     public final Symbol NEW_BARRAY;
@@ -211,8 +210,6 @@ public class Primitives {
         this.definitions = global.definitions;
         this.primitives = new HashMap();
         this.RUNTIME = definitions.getModule(Names.scala_runtime_RunTime);
-        this.RUNTIME_TYPE =
-            Type.singleType(definitions.SCALARUNTIME_TYPE, RUNTIME);
         this.NEW_ZARRAY = getUniqueTerm(RUNTIME, ZARRAY_N);
         this.NEW_BARRAY = getUniqueTerm(RUNTIME, BARRAY_N);
         this.NEW_SARRAY = getUniqueTerm(RUNTIME, SARRAY_N);
