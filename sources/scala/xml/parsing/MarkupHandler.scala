@@ -5,7 +5,7 @@ import scala.collection.mutable ;
 import scala.collection.Map ;
 
 /** class that handles markup - provides callback methods to MarkupParser */
-abstract class MarkupHandler[A] {
+abstract class MarkupHandler[A <: AnyRef] {
 
   /** a stack of prefix namespace mappings */
   protected val prefixStack =

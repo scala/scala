@@ -11,7 +11,7 @@ package scala.xml ;
 
 import scala.collection.mutable ;
 
-class NodeTraverser[A](handle: parsing.MarkupHandler[A]) {
+class NodeTraverser[A <: AnyRef](handle: parsing.MarkupHandler[A]) {
 
   def traverse(n: Node): Iterable[A] = n match {
     case Text(t)          => handle.text(0,t);

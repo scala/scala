@@ -17,7 +17,7 @@ import scala.collection.immutable.ListMap;
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser[MarkupType] {
+abstract class MarkupParser[MarkupType <: AnyRef] {
 
   /** the handler of the markup */
   val handle: MarkupHandler[MarkupType];
