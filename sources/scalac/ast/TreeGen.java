@@ -710,12 +710,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             Symbol sym = fun.symbol();
             if (sym == null || sym.isConstructor()) break;
             Type[] args = Tree.typeOf(targs);
-            tree.setType(Type.appliedType(sym.owner().typeConstructor(),args));
+            tree.setType(Type.appliedType(sym.owner().nextType(), args));
             break;
         case Apply(Tree fun, _):
             Symbol sym = fun.symbol();
             if (sym == null || sym.isConstructor()) break;
-            tree.setType(sym.owner().typeConstructor());
+            tree.setType(sym.owner().nextType());
             break;
         }
         return tree;
@@ -811,7 +811,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             clazz,
             mkTypeParamsOf(clazz),
             mkParamsOf(clazz),
-            Tree.Empty,
+            clazz.thisSym() != clazz
+            ? mkType(clazz.pos, clazz.typeOfThis())
+            : Tree.Empty,
             template);
         tree.setType(Type.NoType);
         return tree;
