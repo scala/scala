@@ -120,7 +120,6 @@ transformer/LambdaLift.java
 transformer/LambdaLiftPhase.java
 transformer/MakeBoxingExplicitPhase.java
 transformer/OwnerTransformer.java
-transformer/TailCall.java
 transformer/TailCallPhase.java
 transformer/TransMatch.java
 transformer/TransMatchPhase.java
