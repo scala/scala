@@ -2,7 +2,7 @@ package examples;
 
 import concurrent.ops._;
 
-class BoundedBuffer[a](N: Int) extends Monitor() with {
+class BoundedBuffer[a](N: Int) extends Monitor() {
   var in = 0, out = 0, n = 0;
   val elems = new Array[a](N);
 

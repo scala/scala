@@ -4,7 +4,7 @@ module Parse {
 
   type Result = Option[List[Char]];
 
-  trait Parser extends Function1[List[Char],Result] with {
+  trait Parser with Function1[List[Char],Result] {
     def &&& (def p: Parser) = new Parser {
       def apply(in: List[Char]) = Parser.this.apply(in) match {
         case Some(in1) => p(in1)

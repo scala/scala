@@ -30,7 +30,7 @@ module ops {
     }
   }
 
-  def parMap[a,b](f: a => b, xs: Array[a]): Array[b] {
+  def parMap[a,b](f: a => b, xs: Array[a]): Array[b] = {
     val results = new Array[b](xs.length);
     replicate(0, xs.length) { i => results(i) = f(xs(i)) }
     results

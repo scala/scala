@@ -11,16 +11,16 @@ class ComputeServer(n: Int) {
 
   private val openJobs = new Channel[Job]();
 
-  private def processor(i: Int): Unit {
+  private def processor(i: Int): Unit = {
     while (True) {
       val job = openJobs.read;
       job.return(job.task)
     }
   }
-  def future[a](def p: a): () => a {
+  def future[a](def p: a): () => a = {
     val reply = new SyncVar[a]();
     openJobs.write{
-      new Job with {
+      new Job {
 	type t = a;
 	def task = p;
 	def return(x: a) = reply.set(x);

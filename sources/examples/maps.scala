@@ -1,7 +1,7 @@
 module maps {
 
   trait MapStruct[kt, vt] {
-    trait Map extends Function1[kt, vt] with {
+    trait Map with Function1[kt, vt] {
       def extend(key: kt, value: vt): Map;
       def remove(key: kt): Map;
       def domain: Stream[kt];
@@ -65,7 +65,7 @@ module maps {
   class OOBinTree[kt <: Ord[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
     type map = OOMap;
 
-    trait OOMap extends Map with {
+    trait OOMap extends Map {
       def apply(key: kt): vt;
       def extend(key: kt, value: vt): map;
       def remove(key: kt): map;
@@ -79,7 +79,7 @@ module maps {
       def domain: Stream[kt] = Stream.empty;
       def range: Stream[vt] = Stream.empty;
     }
-    private class Node(k: kt, v: vt, l: map, r: map) extends OOMap with {
+    private class Node(k: kt, v: vt, l: map, r: map) extends OOMap {
       def apply(key: kt): vt =
 	if (key < k) l.apply(key)
 	else if (key > k) r.apply(key)
@@ -104,7 +104,7 @@ module maps {
 
   class MutBinTree[kt <: Ord[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
     type map = MutMap;
-    class MutMap(key: kt, value: vt) extends Map with {
+    class MutMap(key: kt, value: vt) extends Map {
       val k = key;
       var v = value;
       var l = empty, r = empty;

@@ -40,7 +40,7 @@ case class ListSet[a](elems: List[a]) {
 
 module typeInfer {
 
-  trait Subst extends Function1[Type,Type] {
+  trait Subst with Function1[Type,Type] {
     def lookup(x: Tyvar): Type;
     def apply(t: Type): Type = t match {
       case Tyvar(a) => val u = lookup(Tyvar(a)); if (t == u) t else apply(u);

@@ -35,7 +35,7 @@ class MailBox() extends Monitor() {
     }
   }
 
-  def scanSentMsgs[a](r: Receiver with { type t = a }): Unit = synchronized {
+  def scanSentMsgs[a](r: Receiver { type t = a }): Unit = synchronized {
     var ss = sent, ss1 = ss.next;
     while (ss1 != null && !r.receiver.isDefinedAt(ss1.elem)) {
       ss = ss1; ss1 = ss1.next
