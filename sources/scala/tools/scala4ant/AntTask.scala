@@ -21,6 +21,7 @@ class AntTask extends Javac {
   private val fileUtils:FileUtils  = FileUtils.newFileUtils();
 
   var force : boolean = false;
+  var xmarkup : boolean = false;
 
   override def execute():unit = try {
 
@@ -37,6 +38,9 @@ class AntTask extends Javac {
 
   def setForce( b:boolean ) = this.force = b;
   def getForce() = force;
+
+  def setXmarkup( b:boolean ) = this.xmarkup = b;
+  def getXmarkup() = xmarkup;
 
   override protected def scanDir(srcDir:File, destDir:File, files:Array[String] ):unit = {
     if( force ) {

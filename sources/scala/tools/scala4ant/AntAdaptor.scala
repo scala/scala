@@ -31,26 +31,16 @@ package scala.tools.scala4ant {
 
     def runCompiler( args:Array[String] ) = {
       var result = true;
-      val reporter = new Reporter();
-      val command = new CompilerCommand(PRODUCT,
-                                        VERSION,
-                                        reporter,
-                                        new CompilerPhases());
-      if( command.parse( args ) && command.files.list.size() > 0 ) {
-        val global = new Global(command);
-	try {
-	  global.compile(command.files.toArray(), false);
-	} catch {
-          case e:Throwable => {
-            /* e.printStackTrace(); */
-            result = false;
-            throw new BuildException(e.getMessage());
-          }
+      try {
+        scala.tools.scalac.Main.main1( false, args );
+      } catch {
+        case e:Throwable => {
+          /* e.printStackTrace(); */
+          result = false;
+          throw new BuildException(e.getMessage());
         }
-        global.stop("total");
-        global.reporter.printSummary();
       }
-        result;
+      result;
     }
 
     def compilerName() = "scalac";
@@ -65,23 +55,63 @@ package scala.tools.scala4ant {
       runCompiler( setupScalacCommand().getArguments() );
     }
 
+    def inferScalaPath( paths:Array[String] ) = {
+      var x:List[String] = Nil;
+      for( val p <- new IterableArray( paths ).elements ) {
+        val z = p.lastIndexOf("lib/scala.jar");
+        if( z > -1 ) {
+          val p1 = new StringBuffer( p.substring( 0, z ) );
+          x = p1.append("src").toString() :: p :: x ;
+          x = p::x;
+        } else {
+          val z2 = p.lastIndexOf("scala/classes");
+          if( z2 > -1 ) {
+            val p1 = new StringBuffer( p.substring( 0, z2 + 6 ) );
+            x = p :: p1.append("sources").toString() :: x ;
+          }
+        }
+      }
+      x
+    };
+
     def setupScalacCommand() = {
       val cmd = new Commandline();
+      val cp = new Path( getProject() );
+      if( attributes.asInstanceOf[AntTask].xmarkup ) {
+        cmd.createArgument().setValue("-Xmarkup");
+      }
 
       if( destDir != null ) {
-        cmd.createArgument().setValue("-d");
-        cmd.createArgument().setFile(destDir);
+        cmd.createArgument().setValue( "-d" );
+        cmd.createArgument().setFile( destDir );
+        cp.setLocation( destDir );
       }
 
-      this.includeJavaRuntime = true;
+      /* cp.addExisting( Path.systemClasspath );*/
+      /* cp.addJavaRuntime(); */
 
       if( compileClasspath != null ) {
-        cmd.createArgument().setValue("-classpath");
-        cmd.createArgument().setPath( getCompileClasspath() );
+        cp.add( compileClasspath );
       }
 
-      cmd.createArgument().setValue("-sourcepath");
+      cmd.createArgument().setValue("-classpath");
+      cmd.createArgument().setPath( cp );
 
+      /*
+      var bcp = inferScalaPath(Path.systemClasspath.list());
+      val bcps:String = (bcp./: ("") { (x:String,y:String) => x+":"+y })
+        + ":" + System.getProperty("sun.boot.class.path");
+        + { val z = System.getProperty("scala.boot.class.path");
+           if( z != null ) z else "" };
+      */
+
+      var bcp = inferScalaPath(Path.systemClasspath.list());
+      val bcps = (bcp./: (":") { (x:String,y:String) => x+":"+y });
+
+      cmd.createArgument().setValue("-bootclasspath");
+      cmd.createArgument().setValue( bcps );
+
+      cmd.createArgument().setValue("-sourcepath");
       cmd.createArgument().setPath(
         if (compileSourcepath != null) {
           compileSourcepath;
@@ -89,6 +119,7 @@ package scala.tools.scala4ant {
           src;
         }
       );
+
 
       if (bootclasspath != null && bootclasspath.size() > 0) {
         cmd.createArgument().setValue("-bootclasspath");
