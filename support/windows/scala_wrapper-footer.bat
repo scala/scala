@@ -1,6 +1,6 @@
 
-if '%SCALA_HOME%' == '' goto error1
-if not exist %SCALA_HOME%\VERSION-%VERSION% goto error2
+if "%SCALA_HOME%" == "" goto error1
+if not exist "%SCALA_HOME%\VERSION-%VERSION%" goto error2
 
 set ARGS=
 

@@ -150,7 +150,7 @@ install-windows		: install
 	    winfile="$(INSTALL_PREFIX)/bin/$$file.bat"; \
 	    nixexec=`SCALA_EXEC=echo $$nixfile`; \
 	    winexec="$$nixexec"; \
-	    winexec=`echo "$$winexec" | sed -es"#$$root#%SCALA_HOME%#g"`; \
+	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%SCALA_HOME%\"#g"`; \
 	    winexec=`echo "$$winexec" | tr '/' '\\\\' | tr ':' ';'`; \
 	    winexec=`echo "$$winexec" | sed -es"#Xbootclasspath.a;#Xbootclasspath/a:#g"`; \
 	    $(RM) -f "$$winfile"; \
