@@ -31,6 +31,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
     protected final Type BOOLEAN_TYPE;
     protected final Type UNIT_TYPE;
     protected final Type OBJECT_TYPE;
+    protected final Type STRING_TYPE;
     protected final Type ARRAY_TYPE;
 
     public JavaTypeCreator(Definitions definitions) {
@@ -46,6 +47,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         this.BOOLEAN_TYPE = definitions.BOOLEAN_CLASS.typeConstructor();
         this.UNIT_TYPE = definitions.UNIT_CLASS.typeConstructor();
         this.OBJECT_TYPE = definitions.OBJECT_CLASS.typeConstructor();
+        this.STRING_TYPE = definitions.STRING_CLASS.typeConstructor();
         this.ARRAY_TYPE = definitions.ARRAY_CLASS.typeConstructor();
     }
 
@@ -87,6 +89,14 @@ public class JavaTypeCreator implements JavaTypeFactory {
 
     public Type voidType() {
         return UNIT_TYPE;
+    }
+
+    public Type objectType() {
+        return OBJECT_TYPE;
+    }
+
+    public Type stringType() {
+        return STRING_TYPE;
     }
 
     public Type classType(Name classname) {
@@ -163,7 +173,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         else if (value instanceof Double)
             return doubleType();
         else if (value instanceof String)
-            return definitions.STRING_CLASS.typeConstructor();
+            return stringType();
         else if (value instanceof Boolean)
             return booleanType();
         else

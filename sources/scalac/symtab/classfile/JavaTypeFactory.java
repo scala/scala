@@ -23,6 +23,8 @@ public interface JavaTypeFactory {
     Type doubleType();
     Type booleanType();
     Type voidType();
+    Type objectType();
+    Type stringType();
     Type classType(Name classname);
     Type classType(Symbol clasz);
     Type arrayType(Type elemtpe);
