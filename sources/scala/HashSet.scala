@@ -11,7 +11,7 @@ package scala;
 
 /** I promise, there will be some documentation soon! :-) Matthias
  */
-class HashSet[A] extends Set[A] with HashTable[A] {
+class HashSet[A] extends MutableSet[A] with HashTable[A] {
 
     def contains(elem: A): Boolean = findEntry(elem) match {
         case None => false
@@ -24,6 +24,11 @@ class HashSet[A] extends Set[A] with HashTable[A] {
     }
 
     def elements = entries;
+
+    override def clear = {
+        initTable(table.length - 1);
+        tableSize = 0;
+    }
 
     protected type Entry = A;
 

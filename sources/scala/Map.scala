@@ -11,11 +11,12 @@ package scala;
 
 /** I promise, there will be some documentation soon! :-) Matthias
  */
-trait Map[A, +B] with Function1[A, B]
-                 with PartialFunction[A, B]
+trait Map[A, +B] with PartialFunction[A, B]
                  with Iterable[Pair[A, B]] {
 
     def size: Int;
+
+    def get(key: A): Option[B];
 
     def isEmpty: Boolean = (size == 0);
 
@@ -24,18 +25,12 @@ trait Map[A, +B] with Function1[A, B]
         case Some(value) => value
     }
 
-    def get(key: A): Option[B];
-
-    def remove(key: A): Unit;
-
     def contains(key: A): Boolean = get(key) match {
         case None => false
         case Some(_) => true
     }
 
     def isDefinedAt(key: A) = contains(key);
-
-    def clear: Unit;
 
     def keys: Iterator[A] = new Iterator[A] {
         val iter = elements;
@@ -55,10 +50,6 @@ trait Map[A, +B] with Function1[A, B]
             val Pair(key, value) = iter.next;
             f(key, value);
         }
-    }
-
-    def filter(p: (A, B) => Boolean): Unit = toList foreach {
-        case Pair(key, value) => if (p(key, value)) { val old = remove(key); }
     }
 
     def toList: List[Pair[A, B]] = {

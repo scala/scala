@@ -16,7 +16,7 @@ class ListMap[A, B] extends MutableMap[A, B] with DefaultMapModel[A, B] {
 
     def size: Int = xs.length;
 
-    def clear: Unit = { xs = Nil; }
+    override def clear: Unit = { xs = Nil; }
 
  	protected def findEntry(key: A) = xs find {e => e.key == key};
 

@@ -65,11 +65,6 @@ abstract class HashTable[A] {
         }
     }
 
-    def clear = {
-        initTable(table.length - 1);
-        tableSize = 0;
-    }
-
     protected type Entry;
 
     protected def entryKey(e: Entry): A;
@@ -95,7 +90,7 @@ abstract class HashTable[A] {
 
     private def entryFor(key: A) = (e: Entry => elemEquals(entryKey(e), key));
 
-    private def initTable(n: Int): Unit = {
+    protected def initTable(n: Int): Unit = {
         table(n) = Nil;
         if (n > 0) initTable(n - 1);
     }

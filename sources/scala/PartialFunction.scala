@@ -4,13 +4,12 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
+** $Id$
 \*                                                                      */
 
-// $Id$
+package scala;
 
-package scala {
-  trait PartialFunction[-A, +B] {
-    def apply(x: A): B;
-    def isDefinedAt(x: A): scala.Boolean;
-  }
+
+trait PartialFunction[-A, +B] with Function1[A, B] {
+    def isDefinedAt(x: A): Boolean;
 }

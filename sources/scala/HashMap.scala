@@ -16,4 +16,9 @@ class HashMap[A, B] extends MutableMap[A, B]
                     with DefaultMapModel[A, B] {
 
     protected def entryKey(e: Entry) = e.key;
+
+    override def clear = {
+        initTable(table.length - 1);
+        tableSize = 0;
+    }
 }

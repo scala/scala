@@ -10,8 +10,8 @@
 package scala;
 
 
-trait MultiMap[A, B] extends MutableMap[A, Set[B]] {
-    protected def makeSet: Set[B] = new HashSet[B];
+trait MultiMap[A, B] extends MutableMap[A, MutableSet[B]] {
+    protected def makeSet: MutableSet[B] = new HashSet[B];
 
     def add(key: A, value: B): Unit = get(key) match {
         case None => val set = makeSet;

@@ -15,6 +15,15 @@ trait MutableMap[A, B] with Map[A, B] {
 
     def update(key: A, value: B): Unit;
 
+    def remove(key: A): Unit;
+
+    def clear: Unit = {
+    	val iter = keys;
+    	while (iter.hasNext) {
+            remove(iter.next);
+        }
+    }
+
     def put(key: A, value: B): B = {
         val old = apply(key);
         update(key, value);
@@ -32,6 +41,10 @@ trait MutableMap[A, B] with Map[A, B] {
 
     def map(f: (A, B) => B): Unit = elements foreach {
         case Pair(key, value) => update(key, f(key, value));
+    }
+
+    def filter(p: (A, B) => Boolean): Unit = toList foreach {
+        case Pair(key, value) => if (p(key, value)) remove(key);
     }
 
     override def toString() =

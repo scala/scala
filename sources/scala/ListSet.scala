@@ -11,7 +11,7 @@ package scala;
 
 /** I promise, there will be some documentation soon! :-) Matthias
  */
-class ListSet[A] extends Set[A] {
+class ListSet[A] extends MutableSet[A] {
 	protected var elems: List[A] = Nil;
 
 	def size: Int = elems.length;

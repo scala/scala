@@ -14,7 +14,7 @@ package scala;
  *  to all registered subscribers.
  */
 class Publisher[A, This <: Publisher[A, This]]: This {
-    private val filters = new HashMap[Subscriber[A, This], Set[A => Boolean]]
+    private val filters = new HashMap[Subscriber[A, This], MutableSet[A => Boolean]]
                             with MultiMap[Subscriber[A, This], A => Boolean];
     private val suspended = new HashSet[Subscriber[A, This]];
 

@@ -9,9 +9,8 @@
 
 package scala;
 
-/** I promise, there will be some documentation soon! :-) Matthias
- */
-trait SynchronizedSet[A] extends Set[A] with Monitor {
+
+trait SynchronizedSet[A] extends MutableSet[A] with Monitor {
 
     override def size: Int = synchronized {
         super.size
