@@ -1131,6 +1131,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     public Tree Cons(int pos, Type elemtpe, Tree hd, Tree tl) {
+        assert hd.type().isSubType(elemtpe): elemtpe + " -- " + hd;
+        assert tl.type().isSubType(definitions.LIST_TYPE(elemtpe)):
+            elemtpe + " -- " + tl;
 	return New(mkPrimaryConstr(pos,
 				   global.definitions
 				   .getClass( Names.scala_COLONCOLON ),
