@@ -22,16 +22,14 @@ import scalac.util.Debug;
 import scala.tools.util.Position;
 import ch.epfl.lamp.compiler.msil.*;
 
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
+import java.util.Iterator;
+
 public class CLRClassParser extends SymbolLoader {
 
-    protected JavaTypeFactory make;
-
-    protected final CLRPackageParser importer;
-
-    public CLRClassParser(Global global, CLRPackageParser importer) {
-	super(global);
-	this.importer = importer;
-    }
+    //##########################################################################
 
     private static Name[] ENUM_CMP_NAMES = new Name[]
 	{ Names.EQ, Names.NE, Names.LT, Names.LE, Names.GT, Names.GE };
@@ -39,51 +37,63 @@ public class CLRClassParser extends SymbolLoader {
     private static Name[] ENUM_BIT_LOG_NAMES = new Name[]
 	{ Names.OR, Names.AND, Names.XOR };
 
-    protected String doComplete(Symbol root) {
-        assert root.isClassType(): Debug.show(root);
-	try { return doComplete0(root); }
-	catch (Throwable e) {
-            // !!! doComplete may throw an IOException which is then
-            // caught by SymbolLoader and reported to the user as
-            // normal error message
-	    System.err.println("\nWhile processing " + Debug.show(root));
-	    e.printStackTrace();
-	    System.exit(1);
-            return null; // !!!
-	}
+    private static JavaTypeFactory make;
+
+    private static final CLRPackageParser clrParser =
+	CLRPackageParser.instance();
+
+    private final Type type;
+
+    public CLRClassParser(Global global, Type type) {
+	super(global);
+	this.type = type;
     }
 
-    protected String doComplete0(Symbol clazz) {
+//     protected String doComplete(Symbol root) {
+//         assert root.isClassType(): Debug.show(root);
+// 	try { return doComplete0(root); }
+// 	catch (Throwable e) {
+//             // !!! doComplete may throw an IOException which is then
+//             // caught by SymbolLoader and reported to the user as
+//             // normal error message
+// 	    System.err.println("\nWhile processing " + Debug.show(root));
+// 	    e.printStackTrace();
+// 	    System.exit(1);
+//             return null; // !!!
+// 	}
+//     }
+
+    private Symbol clazz;
+    private Scope members;
+    private Symbol staticsClass;
+    private Scope statics;
+    scalac.symtab.Type clazzType;
+
+    protected String doComplete(Symbol root) {
+	clazz = root;
 	clazz.owner().initialize(); //???
 
 	if (make == null)
 	    make = new JavaTypeCreator(global.definitions);
 
-	Type type = (Type)importer.getMember(clazz);
-	if (type == null)
-	    type = Type.GetType(global.primitives.getCLRClassName(clazz));
-	assert type != null : Debug.show(clazz);
-
 	clazz.flags = translateAttributes(type);
 	Type[] ifaces = type.getInterfaces();
 	scalac.symtab.Type[] baseTypes = new scalac.symtab.Type[ifaces.length+1];
-	baseTypes[0] = type.BaseType == null ? global.definitions.ANYREF_TYPE()
+	baseTypes[0] = type.BaseType == null ? make.anyType()
 	    : getCLRType(type.BaseType);
 	for (int i = 0; i < ifaces.length; i++)
 	    baseTypes[i + 1] = getCLRType(ifaces[i]);
-	Scope members = new Scope();
-	Scope statics = new Scope();
-	scalac.symtab.Type classInfo =
-	    scalac.symtab.Type.compoundType(baseTypes, members, clazz);
-	clazz.setInfo(classInfo);
+	members = new Scope();
+	statics = new Scope();
+	clazz.setInfo(scalac.symtab.Type.compoundType(baseTypes, members, clazz));
         Symbol staticsModule = clazz.linkedModule();
-	Symbol staticsClass = staticsModule.moduleClass();
+	staticsClass = staticsModule.moduleClass();
         assert staticsClass.isModuleClass(): Debug.show(staticsClass);
         scalac.symtab.Type staticsInfo = scalac.symtab.Type.compoundType
             (scalac.symtab.Type.EMPTY_ARRAY, statics, staticsClass);
         staticsClass.setInfo(staticsInfo);
         staticsModule.setInfo(make.classType(staticsClass));
-        scalac.symtab.Type ctype = make.classType(clazz);
+        clazzType = make.classType(clazz);
 
 	// import nested types
 	Type[] nestedTypes = type.getNestedTypes();
@@ -99,8 +109,10 @@ public class CLRClassParser extends SymbolLoader {
 	    Name aliasname = Name.fromString(ntype.Name).toTypeName();
 	    // put the class at the level of its outermost class
 	    // the owner of a class is always its most specific package
-	    Symbol nclazz = clazz.owner().newLoadedClass(JAVA, classname, this, null);
-	    importer.map(nclazz, ntype);
+	    CLRClassParser loader = new CLRClassParser(global, ntype);
+	    Symbol nclazz =
+		clazz.owner().newLoadedClass(JAVA, classname, loader, null);
+	    clrParser.map(nclazz, ntype);
 	    // create an alias in the module of the outer class
 	    Symbol alias = staticsClass.newTypeAlias(Position.NOPOS,
                 translateAttributes(ntype), aliasname, make.classType(nclazz));
@@ -122,79 +134,80 @@ public class CLRClassParser extends SymbolLoader {
 	    Symbol field = owner.newField(Position.NOPOS, mods, name);
 	    field.setInfo(fieldType);
 	    (fields[i].IsStatic() ? statics : members).enterOrOverload(field);
-	    importer.map(field, fields[i]);
+	    clrParser.map(field, fields[i]);
 	}
+
+	Set methodsSet = new HashSet(Arrays.asList(type.getMethods()));
 
 	PropertyInfo[] props = type.getProperties();
 	for (int i = 0; i < props.length; i++) {
-	    MethodInfo getter = props[i].GetGetMethod(true);
-	    MethodInfo setter = props[i].GetSetMethod(true);
-	    if (getter == null || getter.GetParameters().length > 0)
-		continue;
-	    assert props[i].PropertyType == getter.ReturnType;
 	    scalac.symtab.Type proptype = getCLSType(props[i].PropertyType);
 	    if (proptype == null)
 		continue;
-	    Name n = Name.fromString(props[i].Name);
-	    scalac.symtab.Type mtype =
-		scalac.symtab.Type.PolyType(Symbol.EMPTY_ARRAY, proptype);
-	    int mods = translateAttributes(getter);
-	    Symbol owner = getter.IsStatic() ? staticsClass : clazz;
-	    Symbol method = owner.newMethod(Position.NOPOS, mods, n);
-	    setParamOwners(mtype, method);
-	    method.setInfo(mtype);
-	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
-	    importer.map(method, getter);
 
-	    if (setter == null)
+	    MethodInfo getter = props[i].GetGetMethod(true);
+	    MethodInfo setter = props[i].GetSetMethod(true);
+	    if (getter == null)
 		continue;
-	    assert getter.IsStatic() == setter.IsStatic();
-	    assert setter.ReturnType == importer.VOID;
-	    mtype = methodType(setter, getCLSType(importer.VOID));
-	    if (mtype == null)
-		continue;
-	    n = Name.fromString(n.toString() + Names._EQ);
-	    mods = translateAttributes(setter);
+	    assert props[i].PropertyType == getter.ReturnType;
+	    Name n;
+	    Symbol method;
+	    scalac.symtab.Type mtype;
+
+	    ParameterInfo[] gparams = getter.GetParameters();
+	    if (gparams.length == 0) {
+		n = Name.fromString(props[i].Name);
+		mtype =
+		    scalac.symtab.Type.PolyType(Symbol.EMPTY_ARRAY, proptype);
+	    } else {
+		n = Names.apply;
+		mtype = methodType(getter, getter.ReturnType);
+	    }
+	    Symbol owner = getter.IsStatic() ? staticsClass : clazz;
+	    int mods = translateAttributes(getter);
 	    method = owner.newMethod(Position.NOPOS, mods, n);
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
-	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
-	    importer.map(method, setter);
-	}
+	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
+	    clrParser.map(method, getter);
+	    assert methodsSet.contains(getter) : "" + getter;
+	    methodsSet.remove(getter);
 
-	MethodInfo[] methods = type.getMethods();
-	for (int i = 0; i < methods.length; i++) {
-	    if ((importer.getSymbol(methods[i]) != null)
-		|| methods[i].IsPrivate()
-		|| methods[i].IsAssembly()
-		|| methods[i].IsFamilyAndAssembly())
+	    if (setter == null)
 		continue;
-	    scalac.symtab.Type rettype = getCLSType(methods[i].ReturnType);
-	    if (rettype == null)
-		continue;
-	    scalac.symtab.Type mtype = methodType(methods[i], rettype);
-	    if (mtype == null)
-		continue;
-	    String name = methods[i].Name;
-	    Name n;
-	    if (name.equals("GetHashCode")) n = Names.hashCode;
-	    else if (name.equals("Equals")) n = Names.equals;
-	    else if (name.equals("ToString")) n = Names.toString;
-	    else n = Name.fromString(name);
-	    int mods = translateAttributes(methods[i]);
-	    Symbol owner = methods[i].IsStatic() ? staticsClass : clazz;
-	    Symbol method = owner.newMethod(Position.NOPOS, mods, n);
+	    ParameterInfo[] sparams = setter.GetParameters();
+	    assert getter.IsStatic() == setter.IsStatic();
+	    assert setter.ReturnType == clrParser.VOID;
+	    assert sparams.length == gparams.length + 1 : "" + getter + "; " + setter;
+
+	    if (gparams.length == 0)
+		n = Name.fromString(n.toString() + Names._EQ);
+	    else n = Names.update;
+
+	    mods = translateAttributes(setter);
+	    method = owner.newMethod(Position.NOPOS, mods, n);
+	    mtype = methodType(setter, global.definitions.UNIT_TYPE());
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
-	    (methods[i].IsStatic() ? statics : members).enterOrOverload(method);
-	    importer.map(method, methods[i]);
+	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
+	    clrParser.map(method, setter);
+	    assert methodsSet.contains(setter) : "" + setter;
+	    methodsSet.remove(setter);
+	}
+
+	for (Iterator i = methodsSet.iterator(); i.hasNext(); ) {
+	    MethodInfo method = (MethodInfo)i.next();
+	    if ((clrParser.getSymbol(method) != null) || method.IsPrivate()
+		|| method.IsAssembly() || method.IsFamilyAndAssembly())
+		continue;
+	    createMethod(method);
 	}
 
 	// for enumerations introduce comparison and bitwise logical operations;
 	// the backend should recognize and replace them with comparison or
 	// bitwise logical operations on the primitive underlying type
 	if (type.IsEnum()) {
-	    scalac.symtab.Type[] argTypes = new scalac.symtab.Type[] {ctype};
+	    scalac.symtab.Type[] argTypes = new scalac.symtab.Type[] {clazzType};
 	    int mods = Modifiers.JAVA | Modifiers.FINAL;
 	    for (int i = 0; i < ENUM_CMP_NAMES.length; i++) {
 		scalac.symtab.Type enumCmpType =
@@ -209,7 +222,7 @@ public class CLRClassParser extends SymbolLoader {
 	    }
 	    for (int i = 0; i < ENUM_BIT_LOG_NAMES.length; i++) {
 		scalac.symtab.Type enumBitLogType = make.methodType
-		    (argTypes, ctype, scalac.symtab.Type.EMPTY_ARRAY);
+		    (argTypes, clazzType, scalac.symtab.Type.EMPTY_ARRAY);
 		Symbol enumBitLog = clazz.newMethod
 		    (Position.NOPOS, mods, ENUM_BIT_LOG_NAMES[i]);
 		setParamOwners(enumBitLogType, enumBitLog);
@@ -223,26 +236,13 @@ public class CLRClassParser extends SymbolLoader {
 	    if (constrs[i].IsStatic() || constrs[i].IsPrivate()
 		|| constrs[i].IsAssembly() || constrs[i].IsFamilyAndAssembly())
 		continue;
-	    scalac.symtab.Type mtype = methodType(constrs[i], ctype);
-	    if (mtype == null)
-		continue;
-	    Symbol constr = clazz.primaryConstructor();
-	    int mods = translateAttributes(constrs[i]);
-	    if (constr.isInitialized()) {
-                clazz.addConstructor(
-                    constr = clazz.newConstructor(Position.NOPOS, mods));
-            } else {
-                constr.flags = mods;
-            }
-	    setParamOwners(mtype, constr);
-	    constr.setInfo(mtype);
-	    importer.map(constr, constrs[i]);
+	    createConstructor(constrs[i]);
 	}
 
 	Symbol constr = clazz.primaryConstructor();
 	if (!constr.isInitialized()) {
 	    constr.setInfo(scalac.symtab.Type.MethodType
-				(Symbol.EMPTY_ARRAY, ctype));
+				(Symbol.EMPTY_ARRAY, clazzType));
 	    if ((clazz.flags & Modifiers.INTERFACE) == 0)
 		constr.flags |= Modifiers.PRIVATE;
 	}
@@ -250,20 +250,100 @@ public class CLRClassParser extends SymbolLoader {
 	return type + " from assembly " + type.Assembly;
     }
 
-    /** Return a method type for */
-    protected scalac.symtab.Type methodType(MethodBase method,
-					    scalac.symtab.Type rettype) {
+
+    private void createConstructor(ConstructorInfo constructor) {
+	scalac.symtab.Type mtype = methodType(constructor, clazzType);
+	if (mtype == null)
+	    return;
+	Symbol constr = clazz.primaryConstructor();
+	int mods = translateAttributes(constructor);
+	if (constr.isInitialized()) {
+	    constr = clazz.newConstructor(Position.NOPOS, mods);
+	    clazz.addConstructor(constr);
+	} else {
+	    constr.flags = mods;
+	}
+	setParamOwners(mtype, constr);
+	constr.setInfo(mtype);
+	clrParser.map(constr, constructor);
+    }
+
+    private void createMethod(MethodInfo method) {
+	scalac.symtab.Type mtype =
+	    methodType(method, method.ReturnType);
+	if (mtype == null)
+	    return;
+	int mods = translateAttributes(method);
+	Symbol owner = method.IsStatic() ? staticsClass : clazz;
+	Symbol methodSym =
+	    owner.newMethod(Position.NOPOS, mods, getName(method.Name));
+	setParamOwners(mtype, methodSym);
+	methodSym.setInfo(mtype);
+	(method.IsStatic() ? statics : members).enterOrOverload(methodSym);
+	clrParser.map(methodSym, method);
+    }
+
+    private Name getName(String name) {
+	if (name.equals("GetHashCode")) return Names.hashCode;
+	else if (name.equals("Equals")) return Names.equals;
+	else if (name.equals("ToString")) return Names.toString;
+	else if (name.equals("Finalize")) return Names.finalize;
+	return Name.fromString(name);
+    }
+
+    //##########################################################################
+
+//     private static class Method {
+// 	public final String name;
+// 	public final Type[] argTypes;
+// 	public final Type retType;
+//     }
+
+    private String initializeJavaLangObject(Symbol sym) {
+	MethodInfo[] methods = type.getMethods();
+	return "java.lang.Object from internal data";
+    }
+
+    private String initializeJavaLangString(Symbol sym) {
+	return "java.lang.String from internal data";
+    }
+
+    //##########################################################################
+
+    private Type[] getParamTypes(MethodBase method) {
 	ParameterInfo[] params = method.GetParameters();
-	scalac.symtab.Type[] ptypes = new scalac.symtab.Type[params.length];
-	for (int j = 0; j < params.length; j++) {
-	    ptypes[j] = getCLSType(params[j].ParameterType);
-	    if (ptypes[j] == null)
+	Type[] paramTypes = new Type[params.length];
+	for (int i = 0; i < params.length; i++)
+	    paramTypes[i] = params[i].ParameterType;
+	return paramTypes;
+    }
+
+    private scalac.symtab.Type methodType(MethodBase method, Type rettype) {
+	scalac.symtab.Type rtype = getCLSType(rettype);
+	return rtype == null ? null : methodType(method, rtype);
+    }
+
+    /** Return a method type for the given method. */
+    private scalac.symtab.Type methodType(MethodBase method,
+					    scalac.symtab.Type rettype)
+    {
+	return methodType(getParamTypes(method), rettype);
+    }
+
+    /** Return a method type for the provided argument types and return type. */
+    private scalac.symtab.Type methodType(Type[] argtypes,
+					  scalac.symtab.Type rettype)
+    {
+	scalac.symtab.Type[] ptypes = new scalac.symtab.Type[argtypes.length];
+	for (int i = 0; i < argtypes.length; i++) {
+	    ptypes[i] = getCLSType(argtypes[i]);
+	    if (ptypes[i] == null)
 		return null;
 	}
 	return make.methodType(ptypes, rettype, scalac.symtab.Type.EMPTY_ARRAY);
     }
 
-    protected void setParamOwners(scalac.symtab.Type type, Symbol owner) {
+    private void setParamOwners(scalac.symtab.Type type, Symbol owner) {
 	switch (type) {
 	case PolyType(Symbol[] params, scalac.symtab.Type restype):
 	    for (int i = 0; i < params.length; i++) params[i].setOwner(owner);
@@ -276,7 +356,9 @@ public class CLRClassParser extends SymbolLoader {
 	}
     }
 
-    protected scalac.symtab.Type getClassType(Type type) {
+    //##########################################################################
+
+    private scalac.symtab.Type getClassType(Type type) {
 	assert type != null;
 	scalac.symtab.Type res =
 	    make.classType(type.FullName.replace('+', '.'));
@@ -285,43 +367,43 @@ public class CLRClassParser extends SymbolLoader {
 	return res;
     }
 
-    protected scalac.symtab.Type getCLSType(Type type) {
-	if (type == importer.BYTE || type == importer.USHORT
-	    || type == importer.UINT || type == importer.ULONG
+    private scalac.symtab.Type getCLSType(Type type) {
+	if (type == clrParser.BYTE || type == clrParser.USHORT
+	    || type == clrParser.UINT || type == clrParser.ULONG
 	    || type.IsPointer()
 	    || (type.IsArray() && getCLSType(type.GetElementType()) == null))
 	    return null;
-	//Symbol s = importer.getSymbol(type);
+	//Symbol s = clrParser.getSymbol(type);
 	//scalac.symtab.Type t = s != null ? make.classType(s) : getCLRType(type);
 	return getCLRType(type);
     }
 
-    protected scalac.symtab.Type getCLRType(Type type) {
-	if (type == importer.OBJECT)
+    private scalac.symtab.Type getCLRType(Type type) {
+	if (type == clrParser.OBJECT)
 	    return make.objectType();
-	if (type == importer.STRING)
+	if (type == clrParser.STRING)
 	    return make.stringType();
-	if (type == importer.VOID)
+	if (type == clrParser.VOID)
 	    return make.voidType();
-	if (type == importer.BOOLEAN)
+	if (type == clrParser.BOOLEAN)
 	    return make.booleanType();
-	if (type == importer.CHAR)
+	if (type == clrParser.CHAR)
 	    return make.charType();
-	if (type == importer.BYTE || type == importer.UBYTE)
+	if (type == clrParser.BYTE || type == clrParser.UBYTE)
 	    return make.byteType();
-	if (type == importer.SHORT || type == importer.USHORT)
+	if (type == clrParser.SHORT || type == clrParser.USHORT)
 	    return make.shortType();
-	if (type == importer.INT || type == importer.UINT)
+	if (type == clrParser.INT || type == clrParser.UINT)
 	    return make.intType();
-	if (type == importer.LONG || type == importer.ULONG)
+	if (type == clrParser.LONG || type == clrParser.ULONG)
 	    return make.longType();
-	if (type == importer.FLOAT)
+	if (type == clrParser.FLOAT)
 	    return make.floatType();
-	if (type == importer.DOUBLE)
+	if (type == clrParser.DOUBLE)
 	    return make.doubleType();
 	if (type.IsArray())
 	    return make.arrayType(getCLRType(type.GetElementType()));
-	Symbol s = importer.getSymbol(type);
+	Symbol s = clrParser.getSymbol(type);
 	return s != null ? make.classType(s) : getClassType(type);
     }
 
@@ -347,7 +429,7 @@ public class CLRClassParser extends SymbolLoader {
     	throw Debug.abort("illegal value", Debug.show(value, base));
     }
 
-    protected static int translateAttributes(Type type) {
+    private static int translateAttributes(Type type) {
 	int mods = Modifiers.JAVA;
 	if (type.IsNotPublic() || type.IsNestedPrivate()
 	    || type.IsNestedAssembly() || type.IsNestedFamANDAssem())
@@ -364,7 +446,7 @@ public class CLRClassParser extends SymbolLoader {
 	return mods;
     }
 
-    protected static int translateAttributes(FieldInfo field) {
+    private static int translateAttributes(FieldInfo field) {
 	int mods = Modifiers.JAVA;
 	if (field.IsPrivate() || field.IsAssembly() || field.IsFamilyAndAssembly())
 	    mods |= Modifiers.PRIVATE;
@@ -378,7 +460,7 @@ public class CLRClassParser extends SymbolLoader {
 	return mods;
     }
 
-    protected static int translateAttributes(MethodBase method) {
+    private static int translateAttributes(MethodBase method) {
 	int mods = Modifiers.JAVA;
 	if (method.IsPrivate() || method.IsAssembly() || method.IsFamilyAndAssembly())
 	    mods |= Modifiers.PRIVATE;
