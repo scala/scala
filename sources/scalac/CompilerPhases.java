@@ -35,6 +35,7 @@ public class CompilerPhases {
     public final PhaseDescriptor ADDINTERFACES;
     public final PhaseDescriptor EXPANDMIXIN;
     public final PhaseDescriptor ADDCONSTRUCTORS;
+    public final PhaseDescriptor MAKEBOXINGEXPLICIT;
     public final PhaseDescriptor ERASURE;
     public final PhaseDescriptor GENMSIL;
     public final PhaseDescriptor GENJVM;
@@ -141,6 +142,11 @@ public class CompilerPhases {
                 "add explicit constructor for each class",
                 "added constructors",
                 ADDCONSTRUCTORS_PHASE()),
+            this.MAKEBOXINGEXPLICIT = new PhaseDescriptor(
+                "boxing",
+                "makes boxing explicit",
+                "made boxing explicit",
+                scalac.transformer.MakeBoxingExplicitPhase.class),
             this.ERASURE = new PhaseDescriptor(
                 "erasure",
                 "type eraser",
