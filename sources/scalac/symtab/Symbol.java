@@ -1860,7 +1860,13 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Get dual class */
     public Symbol dualClass() {
-        return dual;
+        // !!! temporary hack, replace all this by: "return dual;"
+        if (isModuleClass()) {
+            Symbol symbol = owner().lookup(name.toTypeName());
+            return symbol.isClassType() ? symbol : NONE;
+        } else {
+            return module.isNone() ? NONE : module.moduleClass();
+        }
     }
 
     /** Set module; only used internally from TermSymbol
