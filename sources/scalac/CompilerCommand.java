@@ -78,6 +78,7 @@ public class CompilerCommand extends CommandParser {
      * are subject to change without notice.
      */
     public final BooleanOptionParser Xshortname;
+    public final BooleanOptionParser Xmarkup;
 
     //########################################################################
     // Public Constructors
@@ -217,6 +218,10 @@ public class CompilerCommand extends CommandParser {
 
         this.Xshortname = new BooleanOptionParser(this,
             "Xshortname", "Display short file names in error reports",
+            false),
+
+        this.Xmarkup = new BooleanOptionParser(this,
+            "Xmarkup", "Allow XML markup in expressions and patterns",
             false),
 
         this.unknown_options = new UnknownOptionParser(this),
