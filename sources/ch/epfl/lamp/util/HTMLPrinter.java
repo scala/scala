@@ -376,6 +376,16 @@ public class HTMLPrinter {
     }
 
     /**
+     * Prints <code>n</code> HTML blank spaces followed by a new line.
+     *
+     * @param n The parameter <code>n</code> gives the number
+     *          of printed blank spaces
+     */
+    public HTMLPrinter printlnNbsp(int n) {
+        return printNbsp(n).line();
+    }
+
+    /**
      * Prints an horizontal line separator followed by a new line.
      */
     public HTMLPrinter printlnHLine() {
