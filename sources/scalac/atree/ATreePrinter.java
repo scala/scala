@@ -360,7 +360,7 @@ public class ATreePrinter {
         case ArrayItem(ACode array, ACode index):
             return printCode(array).print('(').printCode(index).print(')');
         default:
-            throw Debug.abort("illegal case", location);
+            throw Debug.abort("unknown case", location);
         }
     }
 
