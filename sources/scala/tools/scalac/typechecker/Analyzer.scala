@@ -903,6 +903,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
             context.owner.newAnonymousClass(templ.pos, name)
           else
             classSymbol(tree.pos, name, owner, mods, context.scope);
+        clazz.setOrigin(SymbolOrigin.ScalaUnit(unit));
 	if (!clazz.primaryConstructor().isInitialized())
 	  clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
 	if ((mods & CASE) != 0) {
@@ -921,6 +922,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
       case Tree.ModuleDef(mods, name, _, _) =>
 	var modul = moduleSymbol(tree.pos, name, owner, mods, context.scope);
+        if (!modul.isPackage() || modul.getOrigin() == SymbolOrigin.Unknown)
+          modul.moduleClass().setOrigin(SymbolOrigin.ScalaUnit(unit));
 	val clazz: Symbol = modul.moduleClass();
 	if (!clazz.isInitialized()) {
           val info = new LazyTreeType(tree);
