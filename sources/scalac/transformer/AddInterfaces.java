@@ -257,7 +257,7 @@ class AddInterfaces extends SubstTransformer {
         }
 
         Tree[] parentConstr =
-            gen.mkParentConstrs(impl.pos, ifaceSym.nextInfo().parents(), null);
+            gen.mkParentConstrs(impl.pos, ifaceSym.nextInfo().parents());
         Template ifaceTmpl =
             make.Template(impl.pos,
                           parentConstr,
@@ -420,7 +420,7 @@ class AddInterfaces extends SubstTransformer {
 
                 Tree[] newParents = new Tree[parents.length + 1];
                 newParents[0] = parents[0];
-                newParents[1] = gen.mkParentConstr(impl.pos, interfaceBaseType, null);
+                newParents[1] = gen.mkParentConstr(impl.pos, interfaceBaseType);
                 for (int i = 2; i < newParents.length; ++i)
                     newParents[i] = parents[i-1];
 

@@ -292,9 +292,7 @@ public class ExpandMixins extends Transformer {
                 }
 
                 newBaseClasses[i] =
-                    gen.mkParentConstr(tree.pos,
-                                       new Type.TypeRef(pre, sym, args),
-                                       null);
+                    gen.mkParentConstr(tree.pos, new Type.TypeRef(pre, sym, args));
 		newBaseTypes[i] = new Type.TypeRef(pre, sym, args);
 	    } break;
 
