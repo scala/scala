@@ -670,15 +670,12 @@ public class Infer implements Modifiers, Kinds {
 	    try {
 		targs = methTypeArgs(tparams, params, argtypes1, restpe, pt, true);
 	    } catch (NoInstance ex) {
-		throw ex;
-/*
 		throw new Type.Error(
 		    applyErrorMsg(
 			"no type parameters for ", tree,
 			" exist so that it can be applied to arguments ",
 			argtypes1, Type.AnyType) +
 		    "\n --- because ---\n" + ex.getMessage());
-*/
 	    }
 	    Symbol[] uninstantiated = normalizeArgs(targs, tparams);
 	    checkBounds(tparams, targs, "inferred ");
