@@ -28,18 +28,4 @@ object ScalaRunTime {
     def Try[a](def/*!!!*/ block: a): Try[a] =
         new Try(ResultOrException.tryBlock(block));
 
-    def While(def/*!!!*/ cond: Boolean)(def/*!!!*/ body: Unit): Unit =
-      NativeLoop.loopWhile(cond, body);
-
-    trait DoWhile {
-      def While(def/*!!!*/ condition: Boolean): Unit;
-    }
-
-    def Do(def/*!!!*/ command: Unit): DoWhile =
-      new DoWhile {
-	def While(def/*!!!*/ condition: Boolean): Unit = {
-	  command;
-          NativeLoop.loopWhile(condition, command);
-        }
-      }
 }
