@@ -18,6 +18,7 @@ import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Debug;
 import scalac.ast.Tree;
+import scalac.ast.TreeList;
 import scalac.atree.AConstant;
 import Tree.*;
 import scalac.symtab.Symbol;
@@ -44,7 +45,7 @@ import java.util.Iterator;
 import java.io.IOException;
 
 /**
- * Generates MS IL code via the Reflection.Emit API
+ * Generates MS IL code via Reflection.Emit-like API
  * (ch.epfl.lamp.compiler.msil.emit package)
  *
  * @author Nikolay Mihaylov
@@ -53,67 +54,64 @@ public final class GenMSIL {
 
     //################################################################
 
-    final Map assemblies;
-
     // The position of the paramater in the parameter list
-    final Map/*<Symbol, Integer>*/ params = new HashMap();
+    private final Map/*<Symbol, Integer>*/ params = new HashMap();
 
     // The LocalBuilder corresponding to the local variable symbol
-    final Map/*<Symbol, LocalBuilder>*/ locals = new HashMap();
+    private final Map/*<Symbol, LocalBuilder>*/ locals = new HashMap();
 
-    final Map/*<Symbol, Label>*/ sym2label = new HashMap();
+    // mapping from LabelDef symbols to labels
+    private final Map/*<Symbol, Label>*/ sym2label = new HashMap();
 
-    AssemblyBuilder defaultAssembly, currAssembly;
-    ModuleBuilder currModule;
+    // the Assembly the program is compiled into.
+    private AssemblyBuilder currAssembly;
 
-    ILGenerator code;
+    // the main module of the assembly
+    private ModuleBuilder currModule;
 
-    final Global global;
-    final TypeCreator tc;
-    final Definitions defs;
-    final Primitives primitives;
-    final ItemFactory items;
+    // used by TypeCreator.createType()
+    ModuleBuilder getCurrentModule() { return currModule; }
 
-    static final Item TRUE_ITEM  = Item.CondItem(Test.True, null, null);
-    static final Item FALSE_ITEM = Item.CondItem(Test.False, null, null);
+    // the code generator for the current method
+    private ILGenerator code;
+
+    private final Global global;
+    private final TypeCreator tc;
+    private final Definitions defs;
+    private final Primitives primitives;
+    private final ItemFactory items;
+
+    private static final Item TRUE_ITEM  = Item.CondItem(Test.True, null, null);
+    private static final Item FALSE_ITEM = Item.CondItem(Test.False, null, null);
 
     /**
+     * The public constructor of the code generator.
      */
     public GenMSIL(Global global, GenMSILPhase phase) {
         this.global = global;
 	this.defs = global.definitions;
 	this.primitives = global.primitives;
-	this.assemblies = phase.assemblies;
-	this.tc = new TypeCreator(this, phase);
+	this.tc = new TypeCreator(global, this, phase);
 	this.items = new ItemFactory(this);
     }
 
-
-   /** Generate .NET assembly */
-    ModuleBuilder getPackage(String name) {
-	AssemblyBuilder assem = (AssemblyBuilder) assemblies.get(name);
-	if (assem == null) {
-	    AssemblyName an = new AssemblyName();
-	    an.Name = name;
-	    assem = AssemblyBuilder.DefineDynamicAssembly(an);
-	}
-	ModuleBuilder module = (ModuleBuilder) assem.GetModule(name);
-	if (module == null) {
-	    module = assem.DefineDynamicModule(name, name + ".dll");
-	}
-	assemblies.put(name, assem);
-	return module;
-    }
-
-
-    /** Initialize the code generator
+    /**
+     * Initialize the code generator. Called from GenMSILPhase
+     * before processing any compilation unit.
      */
-    public void initGen() {
+    void initGen() {
 	tc.init();
-	currModule = getPackage("prog");
+	AssemblyName an = new AssemblyName();
+	an.Name = "prog";
+	currAssembly = AssemblyBuilder.DefineDynamicAssembly(an);
+	currModule = (ModuleBuilder) currAssembly.GetModule(an.Name);
+	if (currModule == null) {
+	    currModule = currAssembly.DefineDynamicModule(an.Name, an.Name + "Module");
+	}
     }
 
-    /** Finilize the code generation
+    /** Finilize the code generation. Called from GenMSILPhase
+     *  after processing all compilation units.
      */
     public void finalizeGen() {
 	if (mainObjectField != null && mainMethod != null) {
@@ -131,35 +129,26 @@ public final class GenMSIL {
 	    code.Emit(OpCodes.Ret);
 	}
 	tc.createTypes();
-	try {
-	    Iterator iter = assemblies.values().iterator();
-	    while (iter.hasNext()) {
-		AssemblyBuilder assem = (AssemblyBuilder) iter.next();
-// 		log("Types defined in assembly: " + assem.FullName);
-// 		Type[] types = assem.GetTypes();
-// 		for (int i = 0; i < types.length; i++)
-// 		    log("\t" + types[i]);
-		assem.Save(assem.GetName().Name + ".il");
-	    }
-	}
+	try { currAssembly.Save(currAssembly.GetName().Name + ".il"); }
 	catch (IOException e) {
-	    if (global.debug) e.printStackTrace();
+	    if (global.debug) e.printStackTrace(); // FIXME
 	}
     }
 
 
-    FieldInfo mainObjectField = null;
-    MethodInfo mainMethod = null;
+    private FieldInfo mainObjectField = null;
+    private MethodInfo mainMethod = null;
 
-    /** Check if the given method is a main function
+    /*
+     * Check if the given method is a main function
      */
-    void checkMain(MethodBase method) {
-	//log("checking method: " + method);
-	if ( ! currentClass.isModuleClass() )
+    private void checkMain(MethodBase method) {
+	if ( !currentClass.isModuleClass() )
 	    return;
+	// do not consider nested objects' main methods
 	if (method.DeclaringType.DeclaringType != null)
 	    return;
-	if (method.IsConstructor || method.IsAbstract ||
+	if (method.IsConstructor() || method.IsAbstract() ||
 	    !method.Name.equals("main"))
 	    return;
 	ParameterInfo[] params = method.GetParameters();
@@ -169,72 +158,77 @@ public final class GenMSIL {
 	mainMethod = (MethodInfo) method;
     }
 
-
-    Unit currUnit;
+    // keeps track of the current compilation unit for better error reporting
+    private Unit currUnit;
 
     /**
+     * The main entry point into the code generator. Called from GenMSILPhase
+     * for every compilation unit.
      */
     public void apply(Unit unit) {
 	currUnit = unit;
-	for (int i = 0; i < unit.body.length; i++) {
-	    Tree tree = unit.body[i];
-	    Symbol sym = tree.symbol();
-	    switch (tree) {
-	    case Empty: break;
-	    case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
-		genClass(sym, body);
-		break;
-	    case PackageDef(Tree packaged, Template impl):
-		//String packageName = packaged.symbol().fullNameString();
-		//log("Package: " + dumpSym(packaged.symbol()));// +
-		//"; symbol.fullName() = " + packaged.symbol().fullName());
-		//currModule = getPackage(packageName);
-		genPackage(currAssembly, impl.body);
-		break;
-	    default:
-		throw new ApplicationError
-		    ("Illegal top-level definition: " + Debug.show(tree));
+	try {
+	    for (int i = 0; i < unit.body.length; i++) {
+		Tree tree = unit.body[i];
+		Symbol sym = tree.symbol();
+		switch (tree) {
+		case Empty: break;
+		case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
+		    genClass(sym, body);
+		    break;
+		case PackageDef(_, Template(_ , Tree[] body)):
+		    genPackage(body);
+		    break;
+		default:
+		    throw new ApplicationError
+			("Illegal top-level definition: " + Debug.show(tree));
+		}
 	    }
+	} catch (Throwable e) {
+	    e.printStackTrace();
+	    finalizeGen();
+	    System.exit(1);
 	}
     }
 
-
-    /** Generate the code for Package definition
+    /**
+     * Generate the code for a Package definition.
      */
-    void genPackage(AssemblyBuilder assembly, Tree[] body) {
+    private void genPackage(Tree[] body) {
 	for (int i = 0; i < body.length; i++) {
 	    Symbol sym = body[i].symbol();
-	    //log("genPackage: " + dumpSym(body[i].symbol()));
 	    switch (body[i]) {
 	    case Empty:
 		break;
 
 	    case ClassDef(_, _, _, _, _, Template(_, Tree[] classBody)):
 		Type type = tc.getType(sym);
+		assert type instanceof TypeBuilder;
 		if (type instanceof TypeBuilder)
 		    genClass(sym, classBody);
 		break;
 
-	    case PackageDef(Tree packaged, Template(_ , Tree[] body2)):
-		//log("genPackage: nested package: " + dumpSym(sym));
-		genPackage(currAssembly, body2);
+	    case PackageDef(_, Template(_ , Tree[] body2)):
+		genPackage(body2);
 		break;
 
 	    default:
-		log("genPackage: Only class definitions expected in a package!: Found instead: " +
-		    dumpSym(sym));
+		throw new ApplicationError("Class definition expected: " +
+					   Debug.show(sym));
 	    }
 	}
     }
 
     /** The symbol of the class that is currently being compiled. */
-    Symbol currentClass;
+    private Symbol currentClass;
 
     /** The method that is currently being compiled. */
-    MethodBase currentMethod;
+    private MethodBase currentMethod;
 
-
-    protected void emitSymtab(Symbol clazz) {
+    /*
+     * Emit the symbol table for the class given class as an MSIL attribute.
+     */
+    private void emitSymtab(Symbol clazz) {
 	TypeBuilder type = (TypeBuilder) tc.getType(clazz);
 	Pickle pickle = (Pickle)global.symdata.get(clazz.fullName());
         if (pickle != null) {
@@ -249,18 +243,13 @@ public final class GenMSIL {
 	}
     }
 
-    /** Generate the code for a class definition
+    /*
+     * Generate the code for a class definition
      */
-    void genClass(Symbol clazz, Tree[] body) {
-	//log("genClass: " + dumpSym(clazz));
-	//log("\tsym.isExternal() = " + clazz.isExternal());
-	//log("\tfullName = " + clazz.fullName());
-	//log("\tqualifier = " + Debug.show(clazz.qualifier()));
-	//log("class members: " + clazz.members());
+    private void genClass(Symbol clazz, Tree[] body) {
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
 	if ( clazz.isModule() || clazz.isModuleClass() ) {
-	    //log("genClass: initializing module field for module " + dumpSym(clazz));
 	    tc.getModuleField(clazz);
 	}
 	emitSymtab(clazz);
@@ -281,12 +270,10 @@ public final class GenMSIL {
 		break;
 
 	    case DefDef(_, _, _, ValDef[][] vparams, Tree tpe, Tree rhs):
-		//log("genClass.DefDef: " + dumpSym(sym));
-		//log("DefDef: type = " + Debug.show(tpe.type));
 		currentMethod = tc.getMethod(sym);
-		if (!currentMethod.IsAbstract) {
+		if (!currentMethod.IsAbstract()) {
 		    checkMain(currentMethod);
-		    genDef(sym, vparams[0], rhs, type2MSILType(tpe.type));
+		    genDef(sym, vparams[0], rhs, msilType(tpe.type));
 		}
 		break;
 
@@ -299,40 +286,68 @@ public final class GenMSIL {
     } //genClass()
 
 
-    boolean lastStatement;
-    static final boolean enableTailCalls = true;
-
-    /** Generate the code for Methods
+    /*
+     * Specifies if the currently processed tree node is the last expression
+     * in a function so the generated code can be optimized: emitting ret
+     * instead of branch, emitting tailcalls, etc.
      */
-    void genDef(Symbol sym, ValDef[] parameters, Tree rhs, MSILType toType) {
+    private boolean lastExpr;
+
+    /*
+     * Specifies if the control flow may come through the current point
+     * in the instruction sequence.
+     */
+    private boolean willReturn;
+
+    private boolean enableTailCalls = true;
+
+    /*
+     * Generate code for constructors and methods.
+     */
+    private void genDef(Symbol sym, ValDef[] parameters, Tree rhs, MSILType toType) {
 	MethodBase method = tc.getMethod(sym);
-	//log("genDef: " + method.getSignature());
 
 	params.clear();
 	locals.clear();
-	int argOffset = method.IsStatic ? 0 : 1;
+	int argOffset = method.IsStatic() ? 0 : 1;
 	for (int i = 0; i < parameters.length; i++) {
 	    params.put(parameters[i].symbol(), new Integer(i + argOffset));
 	}
-	if (method.IsConstructor) {
-	    //log("genDef: " + method);
+	if (method.IsConstructor()) {
 	    ConstructorInfo ctor = (ConstructorInfo) method;
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
 	    FieldInfo moduleField = tc.getModuleField(currentClass);
 	    if (moduleField != null
 		&& moduleField.DeclaringType.DeclaringType == null) {
-// 		log("genDef: initializing " + moduleField +
-// 		    " for class " + method.DeclaringType);
-
-		// emit the call to the superconstructor
+		Tree[] cstats = null;
 		switch (rhs) {
-		case Block(Tree[] stats, _):
-		    // this is the call to the super constructor
-		    drop(gen(stats[0], MSILType.VOID));
+		case Block(Tree[] stats, Tree value):
+		    TreeList stms = new TreeList();
+		    for (int i = 0; i < stats.length; i++) {
+			switch (stats[i]) {
+			case Block(Tree[] stats2, Tree value2):
+			    stms.append(stats2);
+			    stms.append(value2);
+			    break;
+			default:
+			    stms.append(stats[i]);
+			}
+		    }
+		    switch (value) {
+		    case Block(Tree[] stats2, Tree value2):
+			stms.append(stats2);
+			stms.append(value2);
+			break;
+		    }
+		    cstats = stms.toArray();
 		    break;
 		default:
-		    drop(gen(rhs, MSILType.VOID));
+		    cstats = new Tree[]{rhs};
 		}
+
+		// emit the call to the superconstructor
+		drop(gen(cstats[0], MSILType.VOID));
+		code.Emit(OpCodes.Ret); // conclude the instance constructor
 
 		ConstructorBuilder cctor = ((TypeBuilder)(method.DeclaringType)).
 		    DefineConstructor((short)(MethodAttributes.Static
@@ -340,54 +355,49 @@ public final class GenMSIL {
 				      CallingConventions.Standard,
 				      Type.EmptyTypes);
 		currentMethod = cctor;
-		ILGenerator ctorCode = code;
 		code = cctor.GetILGenerator();
 		// initialize the static module reference
 		code.Emit(OpCodes.Newobj, ctor);
 		code.Emit(OpCodes.Stsfld, moduleField);
-		switch (rhs) {
-		case Block(Tree[] stats, Tree value):
-		    int n = stats.length;
-		    assert n > 0;
-		    for (int i = 1; i < n; i++)
-			drop(gen(stats[i], MSILType.VOID));
-                    drop(gen(value, MSILType.VOID));
-		    break;
+		for (int i = 1; i < cstats.length; i++) {
+		    drop(gen(cstats[i], MSILType.VOID));
 		}
-		code.Emit(OpCodes.Ret);
-		code = ctorCode;
-	    } else
+		code.Emit(OpCodes.Ret); // conclude the static constructor
+	    } else {
 		drop(gen(rhs, MSILType.VOID));
-	    code.Emit(OpCodes.Ret);
-	} else if (!method.IsAbstract) {
-	    lastStatement = true;
+		code.Emit(OpCodes.Ret);
+	    }
+	} else if (!method.IsAbstract()) {
+	    lastExpr = true;
 	    code = ((MethodBuilder)method).GetILGenerator();
 	    Item item = gen(rhs, toType);
 	    if (returnsVoid(method))
 		drop(item);
 	    else
-		coerce(load(item), toType); // coerce???
+		coerce(load(item), toType); // FIXME: coerce???
 	    code.Emit(OpCodes.Ret);
 	}
 
-	lastStatement = false;
+	lastExpr = false;
 	code = null;
     } // genDef();
 
 
-    /** check if the result type of a method is void
+    /*
+     * Check if the result type of a method is void
      */
-    boolean returnsVoid(MethodBase method) {
-	return method.IsConstructor ||
+    private boolean returnsVoid(MethodBase method) {
+	return method.IsConstructor() ||
 	    (((MethodInfo)method).ReturnType == tc.VOID);
     }
 
 
-    /** emit the code for this'
+    /*
+     * Emit the code for this.
      */
-    void emitThis() {
-	if (currentMethod.IsStatic) {
-	    if (currentMethod.IsConstructor) {
+    private void emitThis() {
+	if (currentMethod.IsStatic()) {
+	    if (currentMethod.IsConstructor()) {
 		code.Emit(OpCodes.Ldsfld, tc.getModuleField(currentClass));
 	    } else
 		throw new ApplicationError
@@ -397,190 +407,163 @@ public final class GenMSIL {
     }
 
 
-    Item gen(Tree tree) {
-	return gen(tree, type2MSILType(tree.type));
+    /*
+     * Generate code for array of trees
+     */
+    private Item gen(Tree[] trees, MSILType toType) {
+	int n = trees.length;
+	if (n == 0)
+	    return items.VoidItem();
+	boolean tmpLastExpr = lastExpr; lastExpr = false;
+	for (int i = 0; i < n-1; i++) {
+	    drop(gen(trees[i], MSILType.VOID));
+	}
+	lastExpr = tmpLastExpr;
+	return gen(trees[n-1], toType);
     }
 
-    /** Check if the Item is != null. */
-    Item check(Item i) {
-	assert i != null;
-	return i;
+    /*
+     * Sanity checks for items.
+     */
+    private Item check(Item item) {
+	assert item != null && item.type != null : "" + item;
+	return item;
+    }
+
+    /*
+     *
+     */
+    private Item genLoad(Tree tree, MSILType toType) {
+	return load(gen(tree, toType));
     }
 
     /** the position of the treenode which is currently being processed. */
-    int pos;
+    private int pos;
 
-    /** The main generator function. It keeps track of
-     *	the current position in the tree for better error messages
+    /*
+     * The main generator function. It keeps track of
+     * the current position in the tree for better error messages
      */
-    Item gen(Tree tree, MSILType toType) {
+    private Item gen(Tree tree, MSILType toType) {
+	willReturn = true;
 	int tmpPos = pos;
 	pos = tree.pos;
 	Item i = null;
 	//i = gen2(tree, toType);
-	try { i = gen2(tree, toType); }
+	try { i = check(gen2(tree, toType)); }
 	catch (Throwable e) {
-	    logErr(tree.pos, "GenMSIL.gen(): Exception caught!");
-	    /*if (global.debug)*/ e.printStackTrace();
-	    log("" + tree);
+	    logErr(tree.pos, "Exception caught: " + e.getMessage()
+		   + (global.debug ? "; Use -debug to get a stack trace." : ""));
+	    if (global.debug)
+		e.printStackTrace();
 	    System.exit(1);
-	    throw (Error) e;
 	}
 	pos = tmpPos;
 	return i;
     }
 
-    /** Generate the code corresponding to a tree node
+    /*
+     * Generate the code corresponding to the given tree node
      */
-    Item gen2(Tree tree, MSILType toType) {
+    private Item gen2(Tree tree, MSILType toType) {
 	Symbol sym = tree.hasSymbol() ? tree.symbol() : null;
+	Item item = null;
 	switch (tree) {
 	case Empty:
 	    return items.VoidItem();
 
 	case Block(Tree[] stats, Tree value):
-            boolean tmpLastStatement = lastStatement; lastStatement = false;
+            boolean tmpLastExpr = lastExpr; lastExpr = false;
             for (int i = 0; i < stats.length; i++) {
                 drop(gen(stats[i], MSILType.VOID));
             }
-            lastStatement = tmpLastStatement;
-            return gen(value, type2MSILType(value.type));
+            lastExpr = tmpLastExpr;
+            return gen(value, toType);
 
 	case ValDef(_, Name name, Tree tpe, Tree rhs):
 	    LocalBuilder local = code.DeclareLocal(tc.getType(sym));
-	    local.SetLocalSymInfo(name.toString());
+	    //local.SetLocalSymInfo(name.toString());
+	    local.SetLocalSymInfo(tree.symbol().name.toString());
 	    locals.put(sym, local);
 	    if (rhs == Tree.Empty)
 		return items.VoidItem();
-	    MSILType type = type2MSILType(tpe.type);
-	    load(coerce(gen(rhs, type), type));
-	    return check(store(items.LocalItem(type, local)));
+	    MSILType type = msilType(tpe.type);
+	    genLoad(rhs, type);
+	    return check(store(items.LocalItem(local)));
 
-	case Ident(Name name):
-	    //log("Ident: " + Debug.show(tree));
-	    MSILType type = type2MSILType(sym.type());
-	    if ( sym.isModule() ) // ???
- 		return load(items.StaticItem
-			    (type2MSILType(tree.type), tc.getModuleField(sym)));
-	    else {
+	case Ident(_):
+	    if (sym.isModule()) {
+		FieldInfo field = tc.getModuleField(sym);
+		// force the loading of the module
+ 		item = load(items.StaticItem(field));
+	    } else {
+		MSILType type = msilType(sym.info());
 		Integer slot = (Integer) params.get(sym);
 		if (slot != null) {
-		    return items.ArgItem(type, slot.intValue());
+		    item = items.ArgItem(type, slot.intValue());
 		} else {
 		    LocalBuilder local = (LocalBuilder) locals.get(sym);
 		    if (local != null)
-			return items.LocalItem(type, local);
+			item = items.LocalItem(local);
+		    else
+			throw new ApplicationError("Ident = " + Debug.show(sym));
 		}
-		return items.SelectItem(type,
-					items.SelfItem(tc.getType(currentClass)),
-					tc.getField(sym));
 	    }
+	    return coerce(item, toType);
 
-	case Select(Tree qualifier, Name selector):
+	case Select(Tree qualifier, _):
 	    if (sym.isModule()) {
-		//log("gen: Select from a module: " + sym);
-		if (sym.isJava())
-		    logErr("gen.Select: Cannot treat Java class '" +
-			   sym.fullNameString() + "' as value:\n\t" +
-			   dumpSym(sym));
-		else { // scala module
-		    Type module = tc.getType(sym);
-		    return items.StaticItem(MSILType.REF(module),
-					    tc.getModuleField(sym));
-		}
+		assert !sym.isJava() : "Cannot treat Java class '" +
+		    Debug.show(sym) + "' as value.";
+		return coerce(load(items.StaticItem(tc.getModuleField(sym))), toType);
 	    }
-	    if (!qualifier.hasSymbol()) {
-// 		log("gen2(): " + Debug.show(tree));
-// 		log("\tqualifier =  " + Debug.show(qualifier));
-		return items.SelectItem(type2MSILType(tree.type),
-					gen(qualifier), tc.getField(sym));
-	    }
-//??? 	    if ((qualifier.symbol().flags & NOVAL) == NOVAL) {
-// 		log("gen.Select: owner NOVAL");
-// 		return items.StaticItem(type2MSILType(tree.type), tc.getField(sym));
-// 	    }
+
 	    // check if the tree corresponds to a static Java field
-	    if (qualifier.symbol().isModule() && sym.isJava()) {
-		//log("gen.Select: static Java field");
-		return items.StaticItem
-		    (type2MSILType(tree.type), tc.getField(sym));
-	    }
-	    if ( qualifier.symbol().isModule() ) { // ?????
-		//log("gen: Select from a non-Java module: " + qualifier.symbol() + "::" + selector);
-		return items.SelectItem
-		    (type2MSILType(tree.type), gen(qualifier), tc.getField(sym));
+	    if (sym.isStatic()) {
+		return items.StaticItem(tc.getField(sym));
 	    }
 
-	    if ( sym.isValue() || sym.isVariable() ) {
- 		return items.SelectItem
-		    (type2MSILType(sym.type()),
-		     gen(qualifier, type2MSILType(qualifier.type)),
-		     tc.getField(sym));
-	    }
-
-	    log("gen.Select: Dunno what to do with: " + dumpSym(sym));
-	    break;
-
+	    return items.SelectItem(genLoad(qualifier, msilType(qualifier)),
+				    tc.getField(sym));
 
 	case Apply(Tree fun, Tree[] args):
-	    return check(genApply(fun, args, type2MSILType(tree.type)));
+	    return check(genApply(fun, args, toType));
 
 	case Assign(Tree lhs, Tree rhs):
-	    boolean tmpLastStatement = lastStatement; lastStatement = false;
-	    MSILType type = type2MSILType(lhs.type);
+	    boolean tmpLastExpr = lastExpr; lastExpr = false;
+	    MSILType type = msilType(lhs.type);
 	    Item var = gen(lhs, type);
-	    load(gen(rhs, type));
-	    lastStatement = tmpLastStatement;
+	    genLoad(rhs, type);
+	    lastExpr = tmpLastExpr;
 	    return check(store(var));
-
-        // !!! all Typed nodes are removed by phase ExplicitOuter
-	case Typed(Literal(AConstant value), Tree tpe):
-	    log("Typed.Literal: " + Debug.show(tree));
-	    return items.LiteralItem(type2MSILType(tpe.type), value);
-
-        // !!! all Typed nodes are removed by phase ExplicitOuter
-	case Typed(Tree expr, Tree tpe):
-	    //log("gen.Typed: processing node: " + Debug.show(tree));
-	    return gen(expr, type2MSILType(tpe.type));
 
 	case New(Template(Tree[] baseClasses, Tree[] body)):
 	    assert body.length == 0 : "Template should not have a body!";
 	    switch (baseClasses[0]) {
 	    case Apply(Tree fun, Tree[] args):
-		//MethodBase mctor = tc.getMethod(fun.symbol());
-		//log("GenMSIL.New: " + dumpSym(fun.symbol()));
-		//log("\t" + mctor);
 		ConstructorInfo ctor = (ConstructorInfo) tc.getMethod(fun.symbol());
 		loadArgs(args, ctor.GetParameters());
 		code.Emit(OpCodes.Newobj, ctor);
-		return items.StackItem(MSILType.REF(ctor.DeclaringType));
+		return coerce(items.StackItem(msilType(ctor.DeclaringType)), toType);
 	    default:
-		throw new ApplicationError("Dunno what to do!");
+		throw new ApplicationError("Incorrect tree: "
+					   + baseClasses[0].getClass());
 	    }
 
 	case This(_):
 	    return items.SelfItem(tc.getType(currentClass));
 
 	case Super(_, _):
-	    //logErr("Not implemented yet: Super(" + Debug.show(sym) + ")");
-	    //log("gen.Super(_): Super.symbol() = " + dumpSym(sym));
-	    //log("gen.Super(tpe): tpe.symbol() = " + dumpSym(tpe.symbol()));
-	    //log("gen.Super(tpe): tpe = " + Debug.show(tpe));
-	    //log("gen.Super(tpe): tpe.type() = " + Debug.show(tpe.type()));
-	    //return items.VoidItem();
 	    Item retItem = items.SelfItem(tc.getType(currentClass));
-	    //log("gen.Super: generated item: " + retItem);
 	    return retItem;
 
 	case Literal(AConstant value):
-	    //log("Literal: " + Debug.show(tree));
-	    //log("\ttype = " + Debug.show(tree.type));
-	    MSILType t = type2MSILType(tree.type);
-	    //log("\tmsil type = " + t);
-	    return items.LiteralItem(t, value);
+	    if (toType == MSILType.VOID)
+		return items.VoidItem();
+	    return items.LiteralItem(toType, value);
 
 	case If(Tree cond, Tree thenp, Tree elsep):
-	    Item item = genIf(cond, thenp, elsep, toType);
+	    item = genIf(cond, thenp, elsep, toType);
 	    return check(item);
 
 	case LabelDef(_, Ident[] params, Tree rhs):
@@ -591,12 +574,11 @@ public final class GenMSIL {
 
 	case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
 	    LocalBuilder testLoc = code.DeclareLocal(tc.INT);
-	    Item loc = items.LocalItem(MSILType.I4, testLoc);
-	    boolean tmpLastStatement = lastStatement;
-	    lastStatement = false;
-	    load(gen(test));
+	    Item loc = items.LocalItem(testLoc);
+	    boolean tmpLastExpr = lastExpr; lastExpr = false;
+	    genLoad(test, MSILType.I4);
 	    store(loc);
-	    lastStatement = tmpLastStatement;
+	    lastExpr = tmpLastExpr;
 	    Label exit = code.DefineLabel();
 	    Label nextCase = code.DefineLabel();
 	    assert tags.length == bodies.length;
@@ -604,43 +586,38 @@ public final class GenMSIL {
 		load(loc);
 		loadI4(tags[i]);
 		code.Emit(OpCodes.Bne_Un, nextCase);
-		load(gen(bodies[i]));
-		if (lastStatement)
-		    code.Emit(OpCodes.Ret);
-		else
+		genLoad(bodies[i], toType);
+// 		if (lastExpr)
+// 		    code.Emit(OpCodes.Ret);
+// 		else
+		if (willReturn)
 		    code.Emit(OpCodes.Br, exit);
 		code.MarkLabel(nextCase);
 		nextCase = code.DefineLabel();
 	    }
-	    Item i = load(gen(otherwise));
+	    Item i = genLoad(otherwise, toType);
 	    code.MarkLabel(exit);
 	    return i;
 
 	default:
 	    throw new ApplicationError("Dunno what to do: " + tree.getClass());
 	}
-	throw new ApplicationError
-	    ("Dunno what to do with tree node: " + Debug.show(tree));
 
     } //gen()
 
-    /**
-     * Generate code for conditional expressions.
+    /* Generate code for conditional expressions.
      */
-    Item genIf(Tree condp, Tree thenp, Tree elsep, MSILType toType) {
+    private Item genIf(Tree condp, Tree thenp, Tree elsep, MSILType toType) {
 	Item iThen = null;
-	//log("genIf: coerce to type: " + toType);
-	//log("       thenTree = " + Debug.show(thenp));
-	//log("       elseTree = " + Debug.show(elsep));
 	if (elsep == Tree.Empty && toType == MSILType.VOID) {
-	    boolean tmpLastStatement = lastStatement; lastStatement = false;
-	    Item condi = gen(condp, type2MSILType(condp.type));
-	    Item.CondItem cond = mkCond(condi); //gen(cond, type2MSILType(cond.type)));
-	    lastStatement = tmpLastStatement;
+	    boolean tmpLastExpr = lastExpr; lastExpr = false;
+	    Item condi = gen(condp, msilType(condp.type));
+	    Item.CondItem cond = mkCond(condi);
+	    lastExpr = tmpLastExpr;
 	    if (cond.success == null) {
 		Chain success = new Chain(code.DefineLabel(), null);
 		branch(cond.test, success);
-		iThen = coerce(load(gen(thenp, toType)), toType);
+		iThen = genLoad(thenp, toType);
 		resolve(success);
 		resolve(cond.failure);
 	    } else {
@@ -648,14 +625,14 @@ public final class GenMSIL {
 		    cond.failure : new Chain(code.DefineLabel(), null);
 		branch(cond.test, fail);
 		resolve(cond.success);
-		iThen = coerce(load(gen(thenp, toType)), toType);
+		iThen = genLoad(thenp, toType);
 		resolve(fail);
 	    }
 	} else {
-	    boolean tmpLastStatement = lastStatement; lastStatement = false;
-	    Item condi = gen(condp, type2MSILType(condp.type));
-	    Item.CondItem cond = mkCond(condi); //gen(cond, type2MSILType(cond.type)));
-	    lastStatement = tmpLastStatement;
+	    boolean tmpLastExpr = lastExpr; lastExpr = false;
+	    Item condi = gen(condp, msilType(condp.type));
+	    Item.CondItem cond = mkCond(condi);
+	    lastExpr = tmpLastExpr;
 
 	    Chain fail = cond.failure != null ?
 		cond.failure : new Chain(code.DefineLabel(), null);
@@ -664,34 +641,26 @@ public final class GenMSIL {
 	    Item thenItem = gen(thenp, toType);
 	    iThen = load(coerce(thenItem, toType));
 	    Label exit = null;
-	    if (lastStatement)
+	    /*if (lastExpr) {
 		code.Emit(OpCodes.Ret);
-	    else {
-		if (lastStatement)
-		    code.Emit(OpCodes.Ret);
-		else {
-		    exit = code.DefineLabel();
-		    code.Emit(OpCodes.Br, exit);
-		}
+		} else */
+
+	    if (willReturn) {
+		exit = code.DefineLabel();
+		code.Emit(OpCodes.Br, exit);
 	    }
 	    resolve(fail);
-	    Item iElse= null;
-	    if (elsep == Tree.Empty) {
-		iElse = items.StaticItem(MSILType.REF(tc.SCALA_UNIT),
-					 tc.RUNTIME_UNIT_VAL);
-		iElse = coerce(iElse, toType);
-	    } else
-		iElse = load(coerce(gen(elsep, toType), toType));
+	    Item iElse = load(gen(elsep, toType));
 	    resolve(exit);
-	    //log("\tgenIf: 'then' item = " + iThen + "; 'else' item" + iElse);
 	}
 	return iThen;
     } //genIf
 
-
-    Item coerce(Item item, MSILType toType) {
-	//log("coerce(): coercing item " + item + " to " + toType);
-	assert toType != null;
+    /* Coerce the item to the specified type. */
+    private Item coerce(Item item, MSILType toType) {
+	assert item != null && toType != null : "" + item + " => " + toType;
+	if (item.type.equals(toType))
+	    return item;
 	if (toType == MSILType.VOID)
 	    return drop(item);
 	switch (item) {
@@ -699,28 +668,33 @@ public final class GenMSIL {
 	case SelfItem():
 	    return item;
 	case StackItem():
-	    if (item.type == MSILType.BOOL && toType == MSILType.I4) //?????????
-		return items.StackItem(toType);
-	    if (item.type != toType) {
-		emitConvert(toType);
-		return items.StackItem(toType);
-	    }
+	    emitConvert(item.type, toType);
+	    item.type = toType;
 	    return item;
 	case LiteralItem(MSILType type, AConstant value):
-	    //log("coercing Literal " + type + " -> " + toType);
 	    switch (type) {
-	    case REF(_): return item;
-	    default:
-		return (type == toType) ? item : items.LiteralItem(toType, value);
+	    case REF(Type t):
+		assert type.isSubtypeOf(toType);
 	    }
-	    //return (type == toType) ? item : items.LiteralItem(toType, value);
-
-	default:
-	    return coerce(load(item), toType);
+	    item.type = toType;
+	    return item;
+	case ArgItem(_):
+	case LocalItem(_):
+	    if (item.type.isSubtypeOf(toType))
+		return item;
+	    break;
+	case CondItem(_, _, _):
+	    if (item.type == MSILType.BOOL)
+		return item;
+	    break;
 	}
+	return coerce(load(item), toType);
     }
 
-    void emitConvert(MSILType toType) {
+    /***/
+    private void emitConvert(MSILType fromType, MSILType toType) {
+	if (fromType.isSubtypeOf(toType))
+	    return;
 	switch (toType) {
 	case BOOL: code.Emit(OpCodes.Conv_I4); break; // TODO: is this correct/best?
 	case I1: code.Emit(OpCodes.Conv_I1); break;
@@ -730,63 +704,65 @@ public final class GenMSIL {
 	case R4: code.Emit(OpCodes.Conv_R4); break;
 	case R8: code.Emit(OpCodes.Conv_R8); break;
 	case CHAR: code.Emit(OpCodes.Conv_U2); break;
-	case REF(_): break;
-	case ARRAY(_): break;
 	default:
-	    logErr("emitConvert: " + toType);
+	    logErr("emitConvert: " + fromType + " => " + toType
+		   + "; fromType.isSubtypeOf(toType) = "
+		   + fromType.isSubtypeOf(toType));
 	}
     }
 
 
     /** Generate the code for an Apply node */
-    Item genApply(Tree fun, Tree[] args, MSILType resType) {
-	boolean tmpLastStatement = lastStatement; lastStatement = false;
+    private Item genApply(Tree fun, Tree[] args, MSILType resType) {
+	boolean tmpLastExpr = lastExpr; lastExpr = false;
 	Symbol sym = fun.symbol();
 	switch (fun) {
 	case Ident(_):
 	    Label l = (Label)sym2label.get(sym);
 	    if (l != null) {
-		lastStatement = false;
+		lastExpr = false;
 		for (int i = 0; i < args.length; i++)
-		    load(gen(args[i]));
+		    genLoad(args[i], msilType(args[i].type));
 		for (int i = args.length; i > 0; i--)
 		    code.Emit(OpCodes.Starg_S, i);
 		code.Emit(OpCodes.Br, l);
+		willReturn = false;
 		return items.VoidItem();
 	    }
-	    lastStatement = tmpLastStatement;
+	    lastExpr = tmpLastExpr;
 	    emitThis();
 	    return check(invokeMethod(sym, args, resType, true));
 
-	case Select(Tree qualifier, Name selector):
-//    	    log("\tfun: " + Debug.show(fun));
-//    	    log("\tqualifier: " + Debug.show(qualifier));
-//    	    log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
-//  	    log("\tqualifier.type: " + Debug.show(qualifier.type));
+	case Select(Tree qualifier, _):
+	    // scala.Any.==
 	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
 	    }
+	    // scala.Any.!=
 	    if (sym == defs.ANY_BANGEQ) {
 		return negate(genEq(qualifier, args[0]));
 	    }
+	    // java.lang.String.substring(int, int)
+	    // needs emulation due to diffenerent semantics
+	    // from System.String.Substring
 	    if (sym == tc.SYM_SUBSTRING_INT_INT) {
 		assert args.length == 2;
-		load(gen(qualifier));
-		load(gen(args[0]));
+		genLoad(qualifier, MSILType.STRING);
+		genLoad(args[0], MSILType.I4);
 		code.Emit(OpCodes.Dup);
 		code.Emit(OpCodes.Neg);
-		load(gen(args[1]));
+		genLoad(args[1], MSILType.I4);
 		code.Emit(OpCodes.Add);
 		code.Emit(OpCodes.Call, tc.SUBSTRING_INT_INT);
-		return items.StackItem(MSILType.STRING_REF);
+		return items.StackItem(MSILType.STRING);
 	    }
 	    if (sym == tc.SYM_COMPARE_TO_IGNORE_CASE) {
 		assert args.length == 1;
-		load(gen(qualifier));
-		load(gen(args[0]));
+		genLoad(qualifier, MSILType.STRING);
+		genLoad(args[0], MSILType.STRING);
 		code.Emit(OpCodes.Ldc_I4_1);
 		code.Emit(OpCodes.Call, tc.COMPARE_TO_IGNORE_CASE);
-		return items.StackItem(MSILType.STRING_REF);
+		return items.StackItem(MSILType.STRING);
 	    }
 	    if (isPrimitiveArrayOp(sym)) {
 		Primitive prim = primitives.getPrimitive(sym);
@@ -808,7 +784,7 @@ public final class GenMSIL {
 		case NEW_DARRAY:
 		    //case NEW_OARRAY:
 		    code.Emit(OpCodes.Newarr, elemType);
-		    return items.StackItem(MSILType.ARRAY(type2MSILType(elemType)));
+		    return items.StackItem(MSILType.ARRAY(msilType(elemType)));
 		case ZARRAY_GET: case BARRAY_GET: case SARRAY_GET:
 		case CARRAY_GET: case IARRAY_GET: case LARRAY_GET:
 		case FARRAY_GET: case DARRAY_GET: case OARRAY_GET:
@@ -827,77 +803,61 @@ public final class GenMSIL {
 		Tree right = args.length > 0 ? args[0] : Tree.Empty;
 		return primitiveOp(qualifier, sym, right, resType);
  	    }
-
+	    MSILType convTo = primitiveConvert(sym);
+	    if (convTo != null) {
+		assert args.length == 1;
+		genLoad(args[0], convTo);
+		return items.StackItem(convTo);
+	    }
 	    switch (qualifier.type) {
 	    case TypeRef(_, _, _):
 	    case SingleType(_, _):
 	    case ThisType(_):
 
-// 		log("genApply.Select: " + dumpSym(sym));
-// 		log("\tfun: " + Debug.show(fun));
-// 		log("\tqualifier: " + Debug.show(qualifier));
-// 		log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
-// 		log("\tqualifier.type: " + Debug.show(qualifier.type));
-
 		MethodBase method = tc.getMethod(sym);
-		//log("genApply: method = " + method);
 		boolean virtualCall = false;
-		if (!method.IsStatic || becomesStatic(sym)) {
-		    //log("genApply.Select: qualifier = " + Debug.show(qualifier));
-		    //log("genApply.Select: qualifier.type() = " +
-		    //Debug.show(qualifier.type()));
-		    /// FIXME after the Super attribution is correct
+		if (!method.IsStatic() || becomesStatic(sym)) {
+		    // FIXME: after the Super attribution is correct
 		    switch (qualifier) {
 		    case Super(_, _):
 			load(items.SelfItem(tc.getType(currentClass)));
 			break;
 		    default:
-			load(gen(qualifier));
+			genLoad(qualifier, msilType(qualifier));
 			virtualCall = true;
 		    }
-		    //load(gen(qualifier));
 		}
-		lastStatement = tmpLastStatement;
+		lastExpr = tmpLastExpr;
 		return check(invokeMethod(sym, args, resType, virtualCall));
 
 	    default:
-		log("\tfun: " + Debug.show(fun));
-		log("\tqualifier: " + Debug.show(qualifier));
-		log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
-		log("\tqualifier.type: " + Debug.show(qualifier.type));
-		throw new ApplicationError();
+		throw new ApplicationError(Debug.show(fun));
 	    } // switch(qualifier.type)
 
  	case TypeApply(Tree tfun, Tree[] targs):
 	    final Symbol tsym = tfun.symbol();
 	    if (primitives.isPrimitive(tsym)) {
-// 		log("genApply.TypeApply: primitive " + primitives.getPrimitive(tsym).tag +
-// 		    " = " + dumpSym(tsym));
-		return primitiveOp(((Select)tfun).qualifier, tsym, targs[0], resType);
+		return primitiveOp(((Select)tfun).qualifier,
+				   tsym, targs[0], resType);
 	    }
-	    log("genApply.TypeApply.Select: Dunno how to process TypeApply: "
-		+ Debug.show(fun));
-	    log("\tTypeApply.fun: " + Debug.show(tfun));
-	    log("\tTypeApply.fun.symbol(): " + tsym);
-	    throw new ApplicationError();
+	    throw new ApplicationError(Debug.show(fun));
 
 	default:
-	    throw new ApplicationError
-		("genApply: Unknown function node: " + Debug.show(fun));
+	    throw new ApplicationError(Debug.show(fun));
 	} // switch (fun)
     } //genApply()
 
 
     /** Generate code for scala's '==' */
-    Item genEq(Tree left, Tree right) {
+    private Item genEq(Tree left, Tree right) {
 	LocalBuilder tmpLocal = (LocalBuilder)locals.get(defs.ANY_EQEQ);
 	if (tmpLocal == null) {
 	    tmpLocal = code.DeclareLocal(tc.OBJECT);
 	    locals.put(defs.ANY_EQEQ, tmpLocal);
 	}
 	Label l1 = code.DefineLabel(), l2 = code.DefineLabel();
-	load(gen(left));
-	load(gen(right));
+	genLoad(left, MSILType.OBJECT);
+	genLoad(right, MSILType.OBJECT);
 	code.Emit(OpCodes.Stloc, tmpLocal);
 	code.Emit(OpCodes.Dup);
 	code.Emit(OpCodes.Ldnull);
@@ -917,7 +877,7 @@ public final class GenMSIL {
      * @param t2
      * @return the arithmetic coercion type for types t1 and t2
      */
-    MSILType arithmCoercion(MSILType t1, MSILType t2) {
+    private MSILType arithmCoercion(MSILType t1, MSILType t2) {
 	if (t1 == t2) return t1;
 	int i, j, n = MSILType.ARITHM_PRECISION.length;
 	for (i = 0; i < n; i++)
@@ -934,7 +894,8 @@ public final class GenMSIL {
 	return null;
     }
 
-    boolean isPrimitiveOp(Symbol sym) {
+    /** Is it a primitive (bot not an array) operation*/
+    private boolean isPrimitiveOp(Symbol sym) {
 	switch (primitives.getPrimitive(sym)) {
 	case POS: case NEG: case NOT:
 	case ADD: case SUB: case MUL: case DIV: case MOD:
@@ -952,7 +913,8 @@ public final class GenMSIL {
 	}
     }
 
-    boolean isPrimitiveArrayOp(Symbol sym) {
+    /* Is this a primitive Array operation. */
+    private boolean isPrimitiveArrayOp(Symbol sym) {
 	switch (primitives.getPrimitive(sym)) {
 	case NEW_ZARRAY: case NEW_BARRAY: case NEW_SARRAY:
 	case NEW_CARRAY: case NEW_IARRAY: case NEW_LARRAY:
@@ -972,13 +934,33 @@ public final class GenMSIL {
 	}
     }
 
-    //------------------------------------------------------------------------
-    Item primitiveOp(Tree left, Symbol opSym, Tree right, MSILType resType)
+    /* Is this a primitive conversion operation. */
+    private MSILType primitiveConvert(Symbol sym) {
+	switch (primitives.getPrimitive(sym)) {
+	case B2B: case S2B: case C2B: case I2B: case L2B: case F2B: case D2B:
+	    return MSILType.I1;
+	case B2S: case S2S: case C2S: case I2S: case L2S: case F2S: case D2S:
+	    return MSILType.I2;
+	case B2C: case S2C: case C2C: case I2C: case L2C: case F2C: case D2C:
+	    return MSILType.CHAR;
+	case B2I: case S2I: case C2I: case I2I: case L2I: case F2I: case D2I:
+	    return MSILType.I4;
+	case B2L: case S2L: case C2L: case I2L: case L2L: case F2L: case D2L:
+	    return MSILType.I8;
+	case B2F: case S2F: case C2F: case I2F: case L2F: case F2F: case D2F:
+	    return MSILType.R4;
+	case B2D: case S2D: case C2D: case I2D: case L2D: case F2D: case D2D:
+	    return MSILType.R8;
+	default:
+	    return null;
+	}
+    }
+
+    /* Generate code for primitive operations. */
+    private Item primitiveOp(Tree left, Symbol opSym, Tree right, MSILType resType)
     {
 	assert primitives.isPrimitive(opSym);
 	Primitive op = primitives.getPrimitive(opSym);
-// 	log("primaryOp(): primitive index = " + op.tag);
-// 	log("\t" + dumpSym(opSym));
 
 	// treat some special cases
 	switch (op) {
@@ -986,78 +968,70 @@ public final class GenMSIL {
 	    return invokeMethod(opSym, new Tree[]{right}, resType, false);
 
 	case CONCAT:
-	    load(gen(left));
-	    load(gen(right));
+	    genLoad(left, MSILType.OBJECT);
+	    genLoad(right, MSILType.OBJECT);
 	    code.Emit(OpCodes.Call, tc.CONCAT_OBJECT_OBJECT);
-	    return items.StackItem(MSILType.STRING_REF);
+	    return items.StackItem(MSILType.STRING);
 
 	case ADD:
 	    if (tc.getType(right.type) == tc.STRING) {
 		log("primaryOp().ADD: string concat!");
-		load(gen(left));
-		load(gen(right));
+		genLoad(left, MSILType.OBJECT);
+		genLoad(right, MSILType.OBJECT);
 		code.Emit(OpCodes.Call, tc.CONCAT_OBJECT_OBJECT);
-		return items.StackItem(MSILType.STRING_REF);
+		return items.StackItem(MSILType.STRING);
 	    }
 	    break;
 
 	case IS:
-// 	    log("primitiveOp(): Any.is");
-	    load(gen(left));
+	    genLoad(left, MSILType.OBJECT);
 	    final Type type = tc.getType(right.type);
 	    code.Emit(OpCodes.Isinst, type);
-	    return mkCond(items.StackItem(MSILType.REF(type)));
+	    return mkCond(items.StackItem(msilType(type)));
 
 	case AS:
-// 	    log("primitiveOp(): Any.as");
-	    Item i = load(gen(left));
+	    Item i = genLoad(left, MSILType.OBJECT);
 	    final Type type = tc.getType(right.type);
 	    if (!i.type.isType(type) && type != tc.OBJECT) {
-		//log("genApply: casting item: " + i + " to type: " + type);
 		code.Emit(OpCodes.Castclass, type);
 	    }
-	    return items.StackItem(MSILType.REF(type));
+	    return items.StackItem(msilType(type));
 
 	case SYNCHRONIZED:
 	    // TODO: reuse temporary local variable whenever possible
 	    LocalBuilder tmp = code.DeclareLocal(tc.OBJECT);
-	    load(gen(left));
-	    //code.Emit(OpCodes.Dup);
+	    genLoad(left, MSILType.OBJECT);
 	    code.Emit(OpCodes.Stloc, tmp);
 	    code.Emit(OpCodes.Ldloc, tmp);
 	    code.Emit(OpCodes.Call, tc.MONITOR_ENTER);
-	    load(gen(right));
+	    genLoad(right, MSILType.OBJECT);
 	    code.Emit(OpCodes.Ldloc, tmp);
 	    code.Emit(OpCodes.Call, tc.MONITOR_EXIT);
 	    return items.StackItem(MSILType.OBJECT);
 	}
 
 	Item iLeft = null;
-
+	MSILType tleft = msilType(left);
 	switch (left) {
 	case Apply(Tree fun , Tree[] args):
 	    Primitive p = primitives.getPrimitive(fun.symbol());
-	    //log("primitiveOp: primitive.tag = " + p.tag);
 	    switch (p) {
 	    case BOX:
 		assert args.length == 1;
-		iLeft = gen(args[0]);
+		iLeft = gen(args[0], msilType(args[0]));
 		break;
-	    default:
-		iLeft = gen(left);
 	    }
 	    break;
 	default:
-	    iLeft = gen(left);
+	    iLeft = gen(left, tleft);
 	}
 
 	switch (op) {
 	case THROW:
-	    //log("primitiveOp().THROW: " + Debug.show(left));
 	    load(iLeft);
 	    code.Emit(OpCodes.Throw);
 	    code.Emit(OpCodes.Ldnull);
-	    return items.StackItem(MSILType.NULL_REF);
+	    return items.StackItem(MSILType.OBJECT);
 
 	case POS: return load(coerce(iLeft, resType));
 	case NEG:
@@ -1121,74 +1095,80 @@ public final class GenMSIL {
 				   merge(failure, rcond.failure));
 	    return rcond;
 	}
-	MSILType toType = arithmCoercion(primitiveType(left.type),
-					 primitiveType(right.type));
+
+	MSILType toType = arithmCoercion(iLeft.type, primitiveType(right.type));
 	load(coerce(iLeft, toType));
-	load(coerce(gen(right, toType), toType));
+	genLoad(right, toType);
+	Item res = null;
 	switch (op) {
-	case ADD: code.Emit(OpCodes.Add); return items.StackItem(resType);
-	case SUB: code.Emit(OpCodes.Sub); return items.StackItem(resType);
-	case MUL: code.Emit(OpCodes.Mul); return items.StackItem(resType);
-	case DIV: code.Emit(OpCodes.Div); return items.StackItem(resType);
-	case MOD: code.Emit(OpCodes.Rem); return items.StackItem(resType);
+	case ADD: code.Emit(OpCodes.Add); res = items.StackItem(toType); break;
+	case SUB: code.Emit(OpCodes.Sub); res = items.StackItem(toType); break;
+	case MUL: code.Emit(OpCodes.Mul); res = items.StackItem(toType); break;
+	case DIV: code.Emit(OpCodes.Div); res = items.StackItem(toType); break;
+	case MOD: code.Emit(OpCodes.Rem); res = items.StackItem(toType); break;
 
-	case OR:  code.Emit(OpCodes.Or);  return items.StackItem(resType);
-	case XOR: code.Emit(OpCodes.Xor); return items.StackItem(resType);
-	case AND: code.Emit(OpCodes.And); return items.StackItem(resType);
+	case OR:  code.Emit(OpCodes.Or);  res = items.StackItem(toType); break;
+	case XOR: code.Emit(OpCodes.Xor); res = items.StackItem(toType); break;
+	case AND: code.Emit(OpCodes.And); res = items.StackItem(toType); break;
 
-	case LSL: code.Emit(OpCodes.Shl); return items.StackItem(resType);
-	case LSR: code.Emit(OpCodes.Shr); return items.StackItem(resType);
-	case ASR: code.Emit(OpCodes.Shr_Un); return items.StackItem(resType);
+	case LSL: code.Emit(OpCodes.Shl); res = items.StackItem(toType); break;
+	case LSR: code.Emit(OpCodes.Shr); res = items.StackItem(toType); break;
+	case ASR: code.Emit(OpCodes.Shr_Un); res = items.StackItem(toType); break;
 
-	case EQ: return items.CondItem(Test.Binary(Test.EQ, toType), null, null);
-	case NE: return items.CondItem(Test.Binary(Test.NE, toType), null, null);
-	case LT: return items.CondItem(Test.Binary(Test.LT_IS, toType), null, null);
-	case LE: return items.CondItem(Test.Binary(Test.LE_IS, toType), null, null);
-	case GT: return items.CondItem(Test.Binary(Test.GT_IS, toType), null, null);
-	case GE: return items.CondItem(Test.Binary(Test.GE_IS, toType), null, null);
-
+	case EQ:
+	    res =  items.CondItem(Test.Binary(Test.EQ, toType), null, null);
+	    break;
+	case NE:
+	    res = items.CondItem(Test.Binary(Test.NE, toType), null, null);
+	    break;
+	case LT:
+	    res = items.CondItem(Test.Binary(Test.LT_IS, toType), null, null);
+	    break;
+	case LE:
+	    res = items.CondItem(Test.Binary(Test.LE_IS, toType), null, null);
+	    break;
+	case GT:
+	    res = items.CondItem(Test.Binary(Test.GT_IS, toType), null, null);
+	    break;
+	case GE:
+	    res = items.CondItem(Test.Binary(Test.GE_IS, toType), null, null);
+	    break;
+	default:
+	    throw new ApplicationError(Debug.show(op));
 	}
 
-	log("primitiveOp(): dunno what to do with primitive: " + Debug.show(op));
-	return items.StackItem(resType);
+	return coerce(res, resType);
     }
 
-
-    void loadArgs(Tree[] args, ParameterInfo[] params) {
-	boolean tmpLastStatement = lastStatement;
-	lastStatement = false;
+    /*
+     * Load function arguments on the stack.
+     */
+    private void loadArgs(Tree[] args, ParameterInfo[] params) {
+	boolean tmpLastExpr = lastExpr; lastExpr = false;
 	for (int i = 0; i < args.length; i++) {
-	    MSILType toType = type2MSILType(params[i].ParameterType); //type2MSILType(args[i].type);
-	    load(coerce(gen(args[i], toType), toType));
+	    MSILType toType = msilType(params[i].ParameterType); //msilType(args[i].type);
+	    genLoad(args[i], toType);
 	}
-	lastStatement = tmpLastStatement;
+	lastExpr = tmpLastExpr;
     }
 
-    boolean isStaticMember(Symbol sym) {
-	return sym.owner().isModuleClass() && sym.owner().isJava();
-    }
-
+    /*
+     * Tells if a non-static method is translated to a static one.
+     */
     private boolean becomesStatic(Symbol sym) {
 	MethodBase method = tc.getMethod(sym);
-	//return method.IsStatic && method.DeclaringType == tc.MONITOR;
-	boolean becomesStatic = !isStaticMember(sym) && method.IsStatic;
-// 	if (becomesStatic) {
-// 	    log("method becomes static from: " + dumpSym(sym));
-// 	    log("the new method is " + method);
-// 	}
-	return becomesStatic;
+	return !sym.isStatic() && method.IsStatic();
     }
 
-    /** Generate code for method invocation
+    /*
+     * Generate code for method invocation
      */
-    Item invokeMethod(Symbol fun, Tree[] args, MSILType resType,
+    private Item invokeMethod(Symbol fun, Tree[] args, MSILType resType,
 		      boolean virtualCall) {
-	//log("invokeMethod: " + dumpSym(fun));
 	MethodBase method = tc.getMethod(fun);
-	assert method != null : "Coudn't resolve method: " + dumpSym(fun);
-	//log("\tmethod found: " + method);
+	assert method != null : "Coudn't resolve method: " + Debug.show(fun);
 	Item res = null;
-	if (method.IsStatic) {
+	if (method.IsStatic()) {
 	    ParameterInfo[] params = method.GetParameters();
 	    if (becomesStatic(fun)) {
 		assert params.length == args.length + 1;
@@ -1201,7 +1181,7 @@ public final class GenMSIL {
 	    code.Emit(OpCodes.Call, (MethodInfo)method);
 	    res = returnsVoid(method) ? items.VoidItem() :
 		items.StackItem(resType);
-	} else if (method.IsConstructor) {
+	} else if (method.IsConstructor()) {
 	    // used only for calls to super constructor
 	    //emitThis();
 	    loadArgs(args, method.GetParameters());
@@ -1209,7 +1189,7 @@ public final class GenMSIL {
 	    res = items.VoidItem();
 	} else {
 	    loadArgs(args, method.GetParameters());
-	    if (enableTailCalls && lastStatement && method == currentMethod)
+	    if (enableTailCalls && lastExpr && method == currentMethod)
 		code.Emit(OpCodes.Tailcall);
 	    code.Emit(virtualCall ? OpCodes.Callvirt : OpCodes.Call,
 		      (MethodInfo)method);
@@ -1218,32 +1198,17 @@ public final class GenMSIL {
 	return check(res);
     }
 
-    /**
+    /*
+     * Returns the MSILType that corresponds to the given scala.symtab.Type
      */
-    MSILType type2MSILType(scalac.symtab.Type type) {
-	switch (type) {
-	case UnboxedType(int kind):
-	    return MSILType.fromKind(kind);
-	case TypeRef(_, Symbol s, _):
-	    //log("TypeRef: " + dumpSym(s));
-	    return MSILType.REF(tc.getType(s));
-	case ThisType(Symbol s):
-	    //log("TypeRef: " + dumpSym(s));
-	    return MSILType.REF(tc.getType(s));
-	case UnboxedArrayType(scalac.symtab.Type t):
-	    return MSILType.ARRAY(type2MSILType(t));
-	default:
-	    log("type2MSILType: don't know how to convert type " + Debug.show(type));
-	    //return MSILType.NULL_REF;
-	    return MSILType.OBJECT;
-	    //logErr("type2MSILType: " + Debug.show(type));
-	    //throw new ApplicationError();
-	}
+    private MSILType msilType(scalac.symtab.Type type) {
+	return msilType(tc.getType(type));
     }
 
-    /**
+    /*
+     * Also used from class ItemFactory.
      */
-    MSILType type2MSILType(Type type) {
+    MSILType msilType(Type type) {
 	if (type == tc.BYTE)   return MSILType.I1;
 	if (type == tc.SHORT)  return MSILType.I2;
 	if (type == tc.INT)    return MSILType.I4;
@@ -1251,17 +1216,26 @@ public final class GenMSIL {
 	if (type == tc.FLOAT)  return MSILType.R4;
 	if (type == tc.DOUBLE) return MSILType.R8;
 	if (type == tc.CHAR)   return MSILType.CHAR;
+	if (type == tc.VOID)   return MSILType.VOID;
 	if (type == tc.BOOLEAN)return MSILType.BOOL;
-	if (type == tc.STRING) return MSILType.STRING_REF;
-	MSILType mtype =  MSILType.REF(type);
-	//log("type2MSILType: convert " + type + " to " + mtype);
-	return mtype;
+	if (type == tc.STRING) return MSILType.STRING;
+	if (type.IsArray())
+	    return MSILType.ARRAY(msilType(type.GetElementType()));
+	return MSILType.REF(type);
     }
 
-    /**
+    /*
+     * Returns the MSILType from the type atribute of a tree node
      */
-    MSILType primitiveType(scalac.symtab.Type type) {
-	MSILType mtype = type2MSILType(type);
+    private MSILType msilType(Tree t) {
+	return msilType(t.type);
+    }
+
+    /*
+     * Treat the scala boxed types as a primitive type
+     */
+    private MSILType primitiveType(scalac.symtab.Type type) {
+	MSILType mtype = msilType(type);
 	switch (mtype) {
 	case REF(Type t):
 	    if (t == tc.SCALA_BYTE)    return MSILType.I1;
@@ -1271,17 +1245,19 @@ public final class GenMSIL {
 	    if (t == tc.SCALA_FLOAT)   return MSILType.R4;
 	    if (t == tc.SCALA_DOUBLE)  return MSILType.R8;
 	    if (t == tc.SCALA_CHAR)    return MSILType.CHAR;
+	    if (t == tc.SCALA_UNIT)    return MSILType.VOID;
 	    if (t == tc.SCALA_BOOLEAN) return MSILType.BOOL;
-	    return type2MSILType(t);
+	    return msilType(t);
 	case ARRAY(_): log("primitiveType: cannot convert " + mtype); return null;
 	default: return mtype;
 	}
     }
 
-    /**
+    /*
+     * Provides a translation for some types when used as array elements.
      */
-    MSILType MSILArrayElemType(Type type) {
-	MSILType mtype = type2MSILType(type);
+    private MSILType MSILArrayElemType(Type type) {
+	MSILType mtype = msilType(type);
 	switch (mtype) {
 	case BOOL: return MSILType.I1;
 	case CHAR: return MSILType.I4;
@@ -1289,9 +1265,10 @@ public final class GenMSIL {
 	}
     }
 
-    /**
+    /*
+     *
      */
-    Type getArrayElemType(Primitive p) {
+    private Type getArrayElemType(Primitive p) {
 	switch (p) {
 	case NEW_ZARRAY: case ZARRAY_LENGTH: case ZARRAY_GET: case ZARRAY_SET:
 	    return tc.BOOLEAN;
@@ -1316,9 +1293,10 @@ public final class GenMSIL {
 	return null;
     }
 
-    /**
+    /*
+     * Emit code to load an array elemnt of the given type on the stack.
      */
-    Item emitLdelem(MSILType type) {
+    private Item emitLdelem(MSILType type) {
 	switch (type) {
 	case I1: code.Emit(OpCodes.Ldelem_I1); break;
 	case I2: code.Emit(OpCodes.Ldelem_I2); break;
@@ -1333,9 +1311,11 @@ public final class GenMSIL {
 	return items.StackItem(type);
     }
 
-    /**
+    /*
+     * Emit code to strore the value at the top of the stack from the given type
+     * to an array.
      */
-    Item emitStelem(MSILType type) {
+    private Item emitStelem(MSILType type) {
 	switch (type) {
 	case I1: code.Emit(OpCodes.Stelem_I1); break;
 	case I2: code.Emit(OpCodes.Stelem_I2); break;
@@ -1350,9 +1330,10 @@ public final class GenMSIL {
 	return items.StackItem(type);
     }
 
-    /** load an item onto the stack
+    /*
+     * Load the value of an item on the stack.
      */
-    Item load(Item that) {
+    private Item load(Item that) {
 	switch (that) {
  	case VoidItem():
  	    return that;
@@ -1361,7 +1342,7 @@ public final class GenMSIL {
 	    return (StackItem) that;
 
 	case LiteralItem(_, AConstant value):
-	    return loadLiteral(value);
+	    return loadLiteral(value, that.type);
 
 	case SelfItem():
 	    emitThis();
@@ -1385,28 +1366,13 @@ public final class GenMSIL {
 	    return items.StackItem(that.type);
 
 	case StaticItem(FieldInfo field):
-	    if (field.IsLiteral)
-		loadLiteral(that.type, field.getValue());
-	    else
-		code.Emit(OpCodes.Ldsfld, field);
+	    assert !field.IsLiteral();
+	    code.Emit(OpCodes.Ldsfld, field);
 	    return items.StackItem(that.type);
 
 	case SelectItem(Item qual, FieldInfo field):
 	    Item i = load(qual);
-// 	    switch (i.type) {
-// 	    case REF(Type t):
-// 		if (t.IsInterface) {
-// 		    Symbol s = tc.getSymbol(t);
-// 		    s = (Symbol) global.PHASE.ADDINTERFACES.interfaceToClass.get(s);
-// 		    Type classType = tc.getType(s);
-// 		    log("load.SelectItem: warning: inserting class cast from " + t + " to " + classType);
-// 		    code.Emit(OpCodes.Castclass, classType);
-// 		}
-// 		break;
-// 	    default:
-// 	    }
 	    code.Emit(OpCodes.Ldfld, field);
-	    //log("load(Item): SelectItem; type = " + that.type);
 	    return items.StackItem(that.type);
 
 	case CondItem(Test test, Chain success, Chain failure):
@@ -1414,11 +1380,11 @@ public final class GenMSIL {
 	    switch (test) {
 	    case Or(_):
 	    case And(_):
-		//log("Loading " + that);
 		Label exit = null;
-		if (lastStatement)
+		/*if (lastExpr)
 		    code.Emit(OpCodes.Ret);
-		else {
+		    else */
+		if (willReturn) {
 		    exit = code.DefineLabel();
 		    code.Emit(OpCodes.Br, exit);
 		}
@@ -1426,9 +1392,10 @@ public final class GenMSIL {
 		    resolve(failure);
 		    load(FALSE_ITEM);
 		    if (success != null) {
-			if (lastStatement)
+			/*if (lastExpr)
 			    code.Emit(OpCodes.Ret);
-			else
+			    else*/
+			if (willReturn)
 			    code.Emit(OpCodes.Br, exit);
 		    }
 		}
@@ -1437,7 +1404,6 @@ public final class GenMSIL {
 		    load(TRUE_ITEM);
 		}
 		resolve(exit);
-		//log("Loading " + that);
 		break;
 	    }
 	    return items.StackItem(MSILType.BOOL);
@@ -1448,9 +1414,10 @@ public final class GenMSIL {
     }
 
 
-    /**
+    /*
+     * Load the value of a test on the stack.
      */
-    void load(Test test) {
+    private void load(Test test) {
 	switch (test) {
 	case False:
 	    code.Emit(OpCodes.Ldc_I4_0);
@@ -1476,48 +1443,10 @@ public final class GenMSIL {
 	}
     }
 
-    /**
-     * Generate the code for a literal
+    /*
+     * Load the value of an ALiteral on the stack.
      */
-    Item.StackItem loadLiteral(MSILType type, Object obj) {
-	switch (type) {
-	case I1:
-	case I2:
-	case I4:
-	case CHAR:
-	    return loadI4((obj instanceof Character) ?
-		(int)((Character) obj).charValue() :
-		((Number)obj).intValue());
-// 	    return loadI4((type == MSILType.CHAR) ?
-// 		(int)((Character) obj).charValue() :
-// 		((Number)obj).intValue());
-	case I8:
-	    return loadI8(((Number)obj).longValue());
-	case R4:
-	    return loadR4(((Number)obj).floatValue());
-	case R8:
-	    return loadR8(((Number)obj).doubleValue());
- 	case BOOL:
-	    return loadBool(((Boolean)obj).booleanValue());
-	case VOID:
-            return loadUnit();
-	case REF(Type refType):
-	    if (obj == null) {
-                return loadNull();
-	    } else if (refType == tc.STRING) {
-		return loadString(obj.toString());
-	    } else {
-		throw new ApplicationError
-		    ("loadLiteral(): unexpected literal type: " + refType +
-		     "; value = " + obj);
-	    }
-	default:
-	    throw new ApplicationError
-		("loadLiteral(): Unknown literal type: " + type);
-	}
-    } // genLiteral()
-
-    Item.StackItem loadLiteral(AConstant constant) {
+    private Item.StackItem loadLiteral(AConstant constant) {
         switch (constant) {
         case UNIT:
             return loadUnit();
@@ -1546,17 +1475,43 @@ public final class GenMSIL {
         }
     }
 
-    Item.StackItem loadUnit() {
-        code.Emit(OpCodes.Ldsfld, tc.RUNTIME_UNIT_VAL);
-        return items.StackItem(MSILType.VOID);
+    /*
+     * Load the value of an ALiteral coerced to the given type.
+     */
+    private Item.StackItem loadLiteral(AConstant constant, MSILType ofType) {
+	switch (ofType) {
+	case I1:
+	case I2:
+	case I4:
+	case CHAR: loadI4(constant.intValue()); return items.StackItem(MSILType.I4);
+	case I8: loadI8(constant.longValue()); return items.StackItem(MSILType.I8);
+	case R4: loadR4(constant.floatValue()); return items.StackItem(MSILType.R4);
+	case R8: loadR8(constant.doubleValue()); return items.StackItem(MSILType.R8);
+	default:
+	    return loadLiteral(constant);
+	}
     }
 
-    Item.StackItem loadBool(boolean value) {
+    /*
+     * Load boxed scala.Unit on the stack.
+     */
+    private Item.StackItem loadUnit() {
+        code.Emit(OpCodes.Call, tc.RUNTIME_BOX_UNIT);
+	return items.StackItem(msilType(tc.RUNTIME_BOX_UNIT.ReturnType));
+    }
+
+    /*
+     * Load a boolean value on the stack.
+     */
+    private Item.StackItem loadBool(boolean value) {
         code.Emit(value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
         return items.StackItem(MSILType.BOOL);
     }
 
-    Item.StackItem loadI4(int value) {
+    /*
+     * Load a 32-bit integer literal on the stack.
+     */
+    private Item.StackItem loadI4(int value) {
         switch (value) {
         case -1:code.Emit(OpCodes.Ldc_I4_M1); break;
         case 0: code.Emit(OpCodes.Ldc_I4_0); break;
@@ -1577,34 +1532,50 @@ public final class GenMSIL {
         return items.StackItem(MSILType.I4);
     }
 
-    Item.StackItem loadI8(long value) {
+    /*
+     * Load a 64-bit integer value on the stack.
+     */
+    private Item.StackItem loadI8(long value) {
         code.Emit(OpCodes.Ldc_I8, value);
         return items.StackItem(MSILType.I8);
     }
 
-    Item.StackItem loadR4(float value) {
+    /*
+     * Load a single precision floating point value on the stack.
+     */
+    private Item.StackItem loadR4(float value) {
         code.Emit(OpCodes.Ldc_R4, value);
         return items.StackItem(MSILType.R4);
     }
 
-    Item.StackItem loadR8(double value) {
+    /*
+     * Load a double precision floating point value on the stack.
+     */
+    private Item.StackItem loadR8(double value) {
         code.Emit(OpCodes.Ldc_R8, value);
         return items.StackItem(MSILType.R8);
     }
 
-    Item.StackItem loadString(String value) {
-        code.Emit(OpCodes.Ldstr, value);
-        return items.StackItem(MSILType.STRING_REF);
-    }
-
-    Item.StackItem loadNull() {
-        code.Emit(OpCodes.Ldnull);
-        return items.StackItem(MSILType.NULL_REF);
-    }
-
-    /**
+    /*
+     * Load a string reference on the stack.
      */
-    Item store(Item that) {
+    private Item.StackItem loadString(String value) {
+        code.Emit(OpCodes.Ldstr, value);
+        return items.StackItem(MSILType.STRING);
+    }
+
+    /*
+     * Load the 'null' reference on the stack.
+     */
+    private Item.StackItem loadNull() {
+        code.Emit(OpCodes.Ldnull);
+        return items.StackItem(MSILType.OBJECT);
+    }
+
+    /*
+     * Store the value on the stack to the location specified by the item.
+     */
+    private Item store(Item that) {
 	switch (that) {
 	case ArgItem(int slot):
 	    code.Emit(OpCodes.Starg, slot);
@@ -1615,7 +1586,7 @@ public final class GenMSIL {
 	    break;
 
 	case StaticItem(FieldInfo field):
-	    assert !field.IsLiteral;
+	    assert !field.IsLiteral();
 	    code.Emit(OpCodes.Stsfld, field);
 	    break;
 
@@ -1630,9 +1601,11 @@ public final class GenMSIL {
 	return items.VoidItem();
     }
 
-    /**
+
+    /*
+     * Discard the item.
      */
-    Item drop(Item that) {
+    private Item drop(Item that) {
 	switch (that) {
 	case VoidItem():
 	case SelfItem():
@@ -1670,12 +1643,13 @@ public final class GenMSIL {
 	default:
 	    drop(load(that));
 	}
-	return Item.VoidItem();
+	return items.VoidItem();
     }
 
-    /**
+    /*
+     * Generate a condition corresponding to the given item.
      */
-    Item.CondItem mkCond(Item that) {
+    private Item.CondItem mkCond(Item that) {
 	switch (that) {
 	case CondItem(_, _, _): return (Item.CondItem) that;
 	default:
@@ -1684,24 +1658,27 @@ public final class GenMSIL {
 	}
     }
 
-    /**
+    /*
+     * Negate a condition.
      */
-    Item.CondItem negate(Item item) {
+    private Item.CondItem negate(Item item) {
 	Item.CondItem cond = mkCond(item);
 	// swap the failure and success chains
 	return items.CondItem(negate(cond.test), cond.success, cond.failure);
     }
 
-    /**
+    /*
+     * Emit code to negate a boolean value on the stack.
      */
-    void negate_load() {
+    private void negate_load() {
 	code.Emit(OpCodes.Ldc_I4_1);
 	code.Emit(OpCodes.Xor);
     }
 
-    /**
+    /*
+     * Negate a test.
      */
-    Test negate(Test that) {
+    private Test negate(Test that) {
         switch (that) {
 
         case False:
@@ -1727,9 +1704,10 @@ public final class GenMSIL {
         }
     }
 
-    /**
+    /*
+     * Emit code for the appropriate branch.
      */
-    Label branch(Test test, Chain chain) {
+    private Label branch(Test test, Chain chain) {
 	assert chain != null;
 	Label label = chain.label;
 	switch (test) {
@@ -1753,9 +1731,10 @@ public final class GenMSIL {
 	}
     }
 
-    /**
+    /*
+     * Merge two label chains.
      */
-    static Chain merge(Chain c1, Chain c2) {
+    private static Chain merge(Chain c1, Chain c2) {
 	if (c1 == null) return c2;
 	if (c2 == null) return c1;
 	Chain c = c1;
@@ -1764,23 +1743,26 @@ public final class GenMSIL {
 	return c1;
     }
 
-    /**
+    /*
+     * Resolve all labels int the chain to the current position in the code.
      */
-    void resolve(Chain c) {
+    private void resolve(Chain c) {
 	for (; c != null; c = c.next)
 	    code.MarkLabel(c.label);
     }
 
-    /**
+    /*
+     * Resolve a label to the current position in the code.
      */
-    void resolve(Label l) {
+    private void resolve(Label l) {
 	if (l != null)
 	    code.MarkLabel(l);
     }
 
-    /**
+    /*
+     *
      */
-    static boolean negate_load(int opcode) {
+    private static boolean negate_load(int opcode) {
         switch (opcode) {
         case Test.LT_IS: return false;
         case Test.LE_IS: return true;
@@ -1804,9 +1786,10 @@ public final class GenMSIL {
         }
     }
 
-    /**
+    /*
+     *
      */
-    static OpCode load(int opcode) {
+    private static OpCode load(int opcode) {
         switch (opcode) {
         case Test.LT_IS: return OpCodes.Clt;
         case Test.LE_IS: return OpCodes.Cgt;    // negate
@@ -1830,9 +1813,10 @@ public final class GenMSIL {
         }
     }
 
-    /**
+    /*
+     *
      */
-    static int negate(int opcode) {
+    private static int negate(int opcode) {
         switch (opcode) {
         case Test.LT_IS: return Test.GE_IS;
         case Test.LE_IS: return Test.GT_IS;
@@ -1856,9 +1840,10 @@ public final class GenMSIL {
         }
     }
 
-    /**
+    /*
+     *
      */
-    static OpCode branch(int opcode) {
+    private static OpCode branch(int opcode) {
         switch (opcode) {
         case Test.LT_IS:
         case Test.LT_RO: return OpCodes.Blt;
@@ -1884,31 +1869,23 @@ public final class GenMSIL {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    static String dumpSym(Symbol sym) {
-	if (sym == null) return "<null>";
-	if (sym == Symbol.NONE) return "NoSymbol";
-	return "symbol = " + Debug.show(sym) +
-	    "; owner = " + Debug.show(sym.owner()) +
-	    "; info = " + Debug.show(sym.info()) +
-	    "; kind = " + sym.kind +
-	    "; flags = " + Integer.toHexString(sym.flags);
-    }
-
-    /**
+    /*
+     * Print a message
      */
-    void log(String message) {
+    private void log(String message) {
         global.reporter.printMessage(message);
     }
 
-    /**
+    /*
+     *
      */
-    void logErr(int pos, String message) {
+    private void logErr(int pos, String message) {
         global.reporter.printMessage(currUnit.position(pos), message);
     }
 
     /**
      */
-    void logErr(String message) {
+    private void logErr(String message) {
 	System.err.println(message);
 	throw new ApplicationError();
 	//log(1, message);
@@ -1921,19 +1898,12 @@ public final class GenMSIL {
 	    global.log(message);
     }
 
-    /**
-     */
-    void emitComment(String str) {
-	code.Emit(OpCodes.Ldstr, str);
-	code.Emit(OpCodes.Pop);
-    }
-
 } // class GenMSIL
 
-
+/**
+ * Represents the supported types of the CLR.
+ */
 class MSILType {
-    public case BOOL;
-    public case CHAR;
     public case I1;
     public case I2;
     public case U2;
@@ -1941,15 +1911,18 @@ class MSILType {
     public case I8;
     public case R4;
     public case R8;
-    public case REF(Type t);
-    public case ARRAY(MSILType t);
+    public case BOOL;
+    public case CHAR;
     public case VOID;
+    public case REF(Type t) { assert !t.IsArray(); }
+    public case ARRAY(MSILType t) { assert t != null; }
 
-    public static final MSILType NULL_REF = REF(null);
-    public static final MSILType OBJECT = REF(Type.GetType("System.Object"));
-    public static final MSILType STRING_REF = REF(Type.GetType("System.String"));
+    private static final Type SYSTEM_OBJECT = Type.GetType("System.Object");
+    public static final MSILType OBJECT = REF(SYSTEM_OBJECT);
+    public static final MSILType STRING = REF(Type.GetType("System.String"));
     public static final MSILType [] ARITHM_PRECISION =
 	new MSILType[] {I1, I2, CHAR, I4, I8, R4, R8};
+
 
     public static MSILType fromKind(int kind) {
 	switch (kind) {
@@ -1962,17 +1935,56 @@ class MSILType {
 	case TypeTags.DOUBLE: return R8;
 	case TypeTags.BOOLEAN: return BOOL;
 	case TypeTags.UNIT: return VOID;
-	case TypeTags.STRING: return STRING_REF;
+	case TypeTags.STRING: return STRING;
 	default:
 	    throw new ApplicationError("Unknown kind: " + kind);
 
 	}
     }
 
+    public boolean isReferenceType() {
+	switch (this) {
+	case REF(_):
+	case ARRAY(_):
+	    return true;
+	default:
+	    return false;
+	}
+    }
 
     public boolean isType(Type type) {
 	switch (this) {
 	case REF(Type t): return (type == t);
+	case ARRAY(MSILType t):
+	    return type.IsArray() && t.isType(type.GetElementType());
+	default:
+	    return false;
+	}
+    }
+
+    /** Is this type is a subtype of that. */
+    public boolean isSubtypeOf(MSILType that) {
+	if (this == that
+	    || (this.isReferenceType() && that.isType(SYSTEM_OBJECT)))
+	    return true;
+	if (that == null)
+	    return false;
+	switch (this) {
+	case BOOL: return that == I4;
+	case REF(Type t1):
+	    switch (that) {
+	    case REF(Type t2):
+		return t1.isSubtypeOf(t2);
+	    default:
+		return false;
+	    }
+	case ARRAY(MSILType t1):
+	    switch (that) {
+	    case ARRAY(MSILType t2):
+		return t1.isSubtypeOf(t2);
+	    default:
+		return false;
+	    }
 	default:
 	    return false;
 	}
@@ -1998,7 +2010,8 @@ class MSILType {
 }
 
 
-/** class representing the items
+/**
+ * The items used for deferred code generation.
  */
 class Item {
     public MSILType type;
@@ -2018,20 +2031,27 @@ class Item {
 	case VoidItem(): return "VoidItem: " + type;
 	case StackItem(): return "StackItem: " + type ;
 	case SelfItem(): return "this: " + type;
-	case LiteralItem(_, AConstant value): return "LiteralItem(" + value + "): " + type;
-	case ArgItem( int slot): return "ArgItem(" + slot + "): " + type;
-	case LocalItem( LocalBuilder local): return "LocalItem(" + local + "): " + type;
-	case StaticItem( FieldInfo field): return "StaticItem(" + field + "): " + type;
-	case SelectItem(_, FieldInfo field): return "SelectItem(" + field + "): " +type;
+	case LiteralItem(_, AConstant value):
+	    return "LiteralItem(" + value + "): " + type;
+	case ArgItem( int slot):
+	    return "ArgItem(" + slot + "): " + type;
+	case LocalItem( LocalBuilder local):
+	    return "LocalItem(" + local + "): " + type;
+	case StaticItem( FieldInfo field):
+	    return "StaticItem(" + field + "): " + type;
+	case SelectItem(_, FieldInfo field):
+	    return "SelectItem(" + field + "): " +type;
 	case CondItem(Test test, Chain success, Chain failure):
-	    return "CondItem(" + test + ", " + success + ", " + failure + "): " + type;
+	    return "CondItem(" + test + ", " + success
+		+ ", " + failure + "): " + type;
 	}
 	return "??Item??";
     }
 }
 
 
-/** class implementing a chain (list) of labels
+/**
+ * Class implementing a chain (list) of labels.
  */
 class Chain {
     Label label;
@@ -2040,6 +2060,9 @@ class Chain {
 }
 
 
+/**
+ * Factory class for items.
+ */
 class ItemFactory {
     GenMSIL coder;
     private static final Item.VoidItem VOID = Item.VoidItem();
@@ -2054,38 +2077,45 @@ class ItemFactory {
     public Item.StackItem StackItem(MSILType type) {
 	Item.StackItem item =  Item.StackItem();
 	item.type = type;
+	assert item.type != null;
 	return item;
     }
     public Item.SelfItem SelfItem(Type t) {
 	Item.SelfItem item = Item.SelfItem();
-	item.type = MSILType.REF(t);
+	item.type = coder.msilType(t);
+	assert item.type != null;
 	return item;
     }
     public Item.LiteralItem LiteralItem(MSILType type, AConstant value) {
 	Item.LiteralItem item = Item.LiteralItem(type, value);
 	item.type = type;
+	assert item.type != null;
 	return item;
     }
     public Item.ArgItem ArgItem(MSILType type, int slot) {
 	Item.ArgItem item = Item.ArgItem(slot);
 	item.type = type;
+	assert item.type != null;
 	return item;
     }
-    public Item.LocalItem LocalItem(MSILType type, LocalBuilder local) {
+    public Item.LocalItem LocalItem(LocalBuilder local) {
 	Item.LocalItem item = Item.LocalItem(local);
-	item.type = type;
+	item.type = coder.msilType(local.LocalType);
+	assert item.type != null;
 	return item;
     }
-    public Item.StaticItem StaticItem(MSILType type, FieldInfo field) {
-	assert field.IsStatic;
+    public Item.StaticItem StaticItem(FieldInfo field) {
+	assert field.IsStatic();
 	Item.StaticItem item = Item.StaticItem(field);
-	item.type = type;
+	item.type = coder.msilType(field.FieldType);
+	assert item.type != null;
 	return item;
     }
-    public Item.SelectItem SelectItem(MSILType type, Item qualifier, FieldInfo field) {
-	assert !field.IsStatic;
-	Item.SelectItem item =  Item.SelectItem(coder.load(qualifier), field);
-	item.type = type;
+    public Item.SelectItem SelectItem(Item qualifier, FieldInfo field) {
+	assert !field.IsStatic();
+	Item.SelectItem item =  Item.SelectItem(qualifier, field);
+	item.type = coder.msilType(field.FieldType);
+	assert item.type != null;
 	return item;
     }
     public Item.CondItem CondItem(Test test, Chain success, Chain failure) {
@@ -2095,7 +2125,8 @@ class ItemFactory {
     }
 }
 
-/** class representing the possible tests in conditional item
+/**
+ * Class representing the possible tests in conditional item
  */
 class Test {
 

@@ -23,8 +23,6 @@ public class GenMSILPhase extends Phase {
     /** The tree to code translator */
     private final GenMSIL translator;
 
-    final HashMap assemblies = new HashMap();
-
     final HashMap types2symbols = new HashMap();
     final HashMap symbols2types = new HashMap();
     final HashMap symbols2fields = new HashMap();

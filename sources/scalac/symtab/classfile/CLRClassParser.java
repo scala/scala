@@ -12,8 +12,10 @@ import scalac.Global;
 import scalac.symtab.Symbol;
 import scalac.symtab.TermSymbol;
 import scalac.symtab.ClassSymbol;
+import scalac.symtab.AliasTypeSymbol;
 import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
+import scalac.symtab.Type.*;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Debug;
@@ -27,6 +29,10 @@ public class CLRClassParser extends ClassParser {
 
     protected final CLRPackageParser importer;
 
+//     private static final int bindingFlags = BindingFlags.DeclaredOnly
+// 	| BindingFlags.Instance | BindingFlags.Static
+// 	| BindingFlags.Public | BindingFlags.NonPublic;
+
     public CLRClassParser(Global global, CLRPackageParser  importer) {
 	super(global);
 	this.importer = importer;
@@ -34,23 +40,26 @@ public class CLRClassParser extends ClassParser {
 
     protected void doComplete(Symbol clazz) {
 	try { doComplete0(clazz); }
-	catch (AssertionError e) {
-	    System.err.println("While processing " + Debug.show(clazz));
-	    throw e;
+	catch (Throwable e) {
+	    System.err.println("\nWhile processing " + Debug.show(clazz));
+	    e.printStackTrace();
+	    System.exit(1);
 	}
     }
 
     protected void doComplete0(Symbol clazz) {
 	clazz.owner().initialize(); //???
 
+	long msec = System.currentTimeMillis();
+
 	if (make == null)
 	    make = new JavaTypeCreator(global.definitions);
 
-	Type type = Type.GetType(clazz.fullNameString());
-// 	System.out.println("completing class " + clazz.fullNameString()
-// 			   + " from type " + type);
+	Type type = (Type)importer.getMember(clazz);
+	if (type == null)
+	    type = Type.GetType(clazz.fullNameString());
 	clazz.flags = translateAttributes(type);
-	Type[] ifaces = type.GetInterfaces(); // FIXME: ensure only the declared interfaces are taken into account
+	Type[] ifaces = type.getInterfaces();
 	scalac.symtab.Type[] baseTypes = new scalac.symtab.Type[ifaces.length+1];
 	baseTypes[0] = type.BaseType == null ? global.definitions.ANYREF_TYPE()
 	    : getCLRType(type.BaseType);
@@ -71,23 +80,66 @@ public class CLRClassParser extends ClassParser {
 				    staticsClass, scalac.symtab.Type.EMPTY_ARRAY));
 	}
         scalac.symtab.Type ctype = clazz.typeConstructor();
+
+	// import nested types
+	Type[] nestedTypes = type.getNestedTypes();
+	for (int i = 0; i < nestedTypes.length; i++) {
+	    Type ntype = nestedTypes[i];
+	    if (ntype.IsNestedPrivate() || ntype.IsNestedAssembly()
+		|| ntype.IsNestedFamANDAssem())
+		continue;
+	    int j = ntype.FullName.lastIndexOf('.');
+	    String n = (j < 0 ? ntype.FullName : ntype.FullName.substring(j + 1))
+		.replace('+', '#');
+	    Name classname = Name.fromString(n).toTypeName();
+	    Name aliasname = Name.fromString(ntype.Name).toTypeName();
+	    // put the class at the level of its outermost class
+	    ClassSymbol nclazz = new ClassSymbol(classname, clazz.owner(), this);
+	    importer.map(nclazz, ntype);
+	    // create an alias in the module of the outer class
+	    AliasTypeSymbol alias =
+		new AliasTypeSymbol(Position.NOPOS, aliasname, clazz.module(),
+				    translateAttributes(ntype));
+	    nclazz.allConstructors().setInfo(staticsParser(nclazz));
+	    nclazz.module().setInfo(staticsParser(nclazz));
+	    //
+	    alias.setInfo(scalac.symtab.Type
+			  .typeRef(clazz.owner().thisType(),
+				   nclazz, scalac.symtab.Type.EMPTY_ARRAY));
+	    alias.allConstructors()
+		.setInfo(MethodType(Symbol.EMPTY_ARRAY, nclazz.info()));
+// 	    statics.enter(nclazz);
+// 	    Scope.Entry e = statics.lookupEntry(clazz.module().name);
+// 	    if (e != Scope.Entry.NONE)
+// 		statics.unlink(e);
+// 	    statics.enter(nclazz.module());
+
+ 	    Scope.Entry e = statics.lookupEntry(alias.name); // Why is this ???
+ 	    if (e != Scope.Entry.NONE)
+ 		statics.unlink(e);
+	    statics.enter(alias);
+	}
+
 	// read field information
-	int bindingFlags = BindingFlags.DeclaredOnly
-	    | BindingFlags.Instance | BindingFlags.Static
-	    | BindingFlags.Public | BindingFlags.NonPublic;
-	FieldInfo[] fields = type.GetFields(bindingFlags);
+	FieldInfo[] fields = type.getFields();
 	for (int i = 0; i < fields.length; i++) {
+	    if (fields[i].IsPrivate() || fields[i].IsAssembly()
+		|| fields[i].IsFamilyAndAssembly())
+		continue;
 	    int mods = translateAttributes(fields[i]);
 	    Name name = Name.fromString(fields[i].Name);
 	    scalac.symtab.Type fieldType = getCLRType(fields[i].FieldType);
-	    Symbol owner = fields[i].IsStatic ? staticsClass : clazz;
+	    if (fields[i].IsLiteral())
+		fieldType = make.constantType(fieldType, fields[i].getValue());
+	    Symbol owner = fields[i].IsStatic() ? staticsClass : clazz;
 	    Symbol field = new TermSymbol(Position.NOPOS, name, owner, mods);
 	    field.setFirstInfo(fieldType);
-	    (fields[i].IsStatic ? statics : members).enterOrOverload(field);
+	    (fields[i].IsStatic() ? statics : members).enterOrOverload(field);
 	    importer.map(field, fields[i]);
 	}
 
-	PropertyInfo[] props = type.GetProperties(bindingFlags);
+	//PropertyInfo[] props = type.GetProperties(bindingFlags);
+	PropertyInfo[] props = type.getProperties();
 	for (int i = 0; i < props.length; i++) {
 	    MethodInfo getter = props[i].GetGetMethod(true);
 	    MethodInfo setter = props[i].GetSetMethod(true);
@@ -97,22 +149,20 @@ public class CLRClassParser extends ClassParser {
 	    scalac.symtab.Type proptype = getCLSType(props[i].PropertyType);
 	    if (proptype == null)
 		continue;
-// 	    if (type.FullName.equals("System.Collections.ArrayList"))
-// 		System.out.println("getter found: " + getter);
 	    Name n = Name.fromString(props[i].Name);
 	    scalac.symtab.Type mtype =
 		scalac.symtab.Type.PolyType(Symbol.EMPTY_ARRAY, proptype);
 	    int mods = translateAttributes(getter);
-	    Symbol owner = getter.IsStatic ? staticsClass : clazz;
+	    Symbol owner = getter.IsStatic() ? staticsClass : clazz;
 	    Symbol method = new TermSymbol(Position.NOPOS, n, owner, mods);
 	    setParamOwners(mtype, method);
 	    method.setFirstInfo(mtype);
-	    (getter.IsStatic ? statics : members).enterOrOverload(method);
+	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
 	    importer.map(method, getter);
 
 	    if (setter == null)
 		continue;
-	    assert getter.IsStatic == setter.IsStatic;
+	    assert getter.IsStatic() == setter.IsStatic();
 	    assert setter.ReturnType == importer.VOID;
 	    mtype = methodType(setter, getCLSType(importer.VOID));
 	    if (mtype == null)
@@ -122,13 +172,17 @@ public class CLRClassParser extends ClassParser {
 	    method = new TermSymbol(Position.NOPOS, n, owner, mods);
 	    setParamOwners(mtype, method);
 	    method.setFirstInfo(mtype);
-	    (setter.IsStatic ? statics : members).enterOrOverload(method);
+	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
 	    importer.map(method, setter);
 	}
 
-	MethodInfo[] methods = type.GetMethods(bindingFlags);
+	//MethodInfo[] methods = type.GetMethods(bindingFlags);
+	MethodInfo[] methods = type.getMethods();
 	for (int i = 0; i < methods.length; i++) {
-	    if (importer.getSymbol(methods[i]) != null)
+	    if ((importer.getSymbol(methods[i]) != null)
+		|| methods[i].IsPrivate()
+		|| methods[i].IsAssembly()
+		|| methods[i].IsFamilyAndAssembly())
 		continue;
 	    scalac.symtab.Type rettype = getCLSType(methods[i].ReturnType);
 	    if (rettype == null)
@@ -143,25 +197,26 @@ public class CLRClassParser extends ClassParser {
 	    else if (name.equals("ToString")) n = Names.toString;
 	    else n = Name.fromString(name);
 	    int mods = translateAttributes(methods[i]);
-	    Symbol owner = methods[i].IsStatic ? staticsClass : clazz;
+	    Symbol owner = methods[i].IsStatic() ? staticsClass : clazz;
 	    Symbol method = new TermSymbol(Position.NOPOS, n, owner, mods);
 	    setParamOwners(mtype, method);
 	    method.setFirstInfo(mtype);
-	    (methods[i].IsStatic ? statics : members).enterOrOverload(method);
+	    (methods[i].IsStatic() ? statics : members).enterOrOverload(method);
 	    importer.map(method, methods[i]);
 	}
 
-	ConstructorInfo[] constrs = type.GetConstructors(bindingFlags);
+	//ConstructorInfo[] constrs = type.GetConstructors(bindingFlags);
+	ConstructorInfo[] constrs = type.getConstructors();
 	for (int i = 0; i < constrs.length; i++) {
-	    if (constrs[i].IsStatic || constrs[i].IsPrivate
-		|| constrs[i].IsAssembly || constrs[i].IsFamilyAndAssembly)
+	    if (constrs[i].IsStatic() || constrs[i].IsPrivate()
+		|| constrs[i].IsAssembly() || constrs[i].IsFamilyAndAssembly())
 		continue;
 	    scalac.symtab.Type mtype = methodType(constrs[i], ctype);
 	    if (mtype == null)
 		continue;
 	    Symbol constr = clazz.primaryConstructor();
 	    if (constr.isInitialized()) constr = clazz.addConstructor();
-	    int mods = translateAttributes(methods[i]);
+	    int mods = translateAttributes(constrs[i]);
 	    TermSymbol.newConstructor(clazz, mods).copyTo(constr);
 	    setParamOwners(mtype, constr);
 	    constr.setFirstInfo(mtype);
@@ -178,19 +233,9 @@ public class CLRClassParser extends ClassParser {
 		constr.flags |= Modifiers.PRIVATE;
 	}
 
-	// import nested types
-	Type[] nestedTypes = type.GetNestedTypes();
-	for (int i = 0; i < nestedTypes.length; i++) {
-	    Name n = Name.fromString(nestedTypes[i].Name).toTypeName();
-	    ClassSymbol nclazz = new ClassSymbol(n, clazz, this);
-	    nclazz.allConstructors().setInfo(staticsParser(nclazz));
-	    nclazz.module().setInfo(staticsParser(nclazz));
-	    members.enter(nclazz);
-	    Scope.Entry e = members.lookupEntry(clazz.module().name);
-	    if (e != Scope.Entry.NONE)
-		members.unlink(e);
-	    members.enter(nclazz.module());
-	}
+	global.operation("loaded class " + Debug.show(clazz) +
+			 " from [" + type.Assembly.GetName().Name + "]" + type +
+			 " in " + (System.currentTimeMillis() - msec) + "ms");
     }
 
     /** Return a method type for */
@@ -221,7 +266,8 @@ public class CLRClassParser extends ClassParser {
 
     protected scalac.symtab.Type getClassType(Type type) {
 	assert type != null;
-	scalac.symtab.Type res = make.classType(Name.fromString(type.FullName));
+	scalac.symtab.Type res =
+	    make.classType(Name.fromString(type.FullName.replace('+', '.')));
 	if (res == scalac.symtab.Type.ErrorType)
 	    global.error("unknown class reference " + type.FullName);
 	return res;
@@ -230,9 +276,11 @@ public class CLRClassParser extends ClassParser {
     protected scalac.symtab.Type getCLSType(Type type) {
 	if (type == importer.BYTE || type == importer.USHORT
 	    || type == importer.UINT || type == importer.ULONG
-	    || type.IsPointer
-	    || (type.IsArray && getCLSType(type.GetElementType()) == null))
+	    || type.IsPointer()
+	    || (type.IsArray() && getCLSType(type.GetElementType()) == null))
 	    return null;
+	//Symbol s = importer.getSymbol(type);
+	//scalac.symtab.Type t = s != null ? s.typeConstructor() : getCLRType(type);
 	return getCLRType(type);
     }
 
@@ -259,51 +307,52 @@ public class CLRClassParser extends ClassParser {
 	    return make.floatType();
 	if (type == importer.DOUBLE)
 	    return make.doubleType();
-	if (type.IsArray)
+	if (type.IsArray())
 	    return make.arrayType(getCLRType(type.GetElementType()));
-	return getClassType(type);
+	Symbol s = importer.getSymbol(type);
+	return s != null ? s.typeConstructor() : getClassType(type);
     }
 
     protected static int translateAttributes(Type type) {
-	int mods = 0;
-	if (type.IsNotPublic || type.IsNestedPrivate
-	    || type.IsNestedAssembly || type.IsNestedFamANDAssem)
+	int mods = Modifiers.JAVA;
+	if (type.IsNotPublic() || type.IsNestedPrivate()
+	    || type.IsNestedAssembly() || type.IsNestedFamANDAssem())
 	    mods |= Modifiers.PRIVATE;
-	else if (type.IsNestedFamily || type.IsNestedFamORAssem)
+	else if (type.IsNestedFamily() || type.IsNestedFamORAssem())
 	    mods |= Modifiers.PROTECTED;
-	if (type.IsAbstract)
+	if (type.IsAbstract())
 	    mods |= Modifiers.ABSTRACT;
-	if (type.IsSealed)
+	if (type.IsSealed())
 	    mods |= Modifiers.FINAL;
-	if (type.IsInterface)
+	if (type.IsInterface())
 	    mods |= Modifiers.INTERFACE | Modifiers.TRAIT | Modifiers.ABSTRACT;
 
-	return mods | Modifiers.JAVA;
+	return mods;
     }
 
     protected static int translateAttributes(FieldInfo field) {
-	int mods = 0;
-	if (field.IsPrivate || field.IsAssembly || field.IsFamilyAndAssembly)
+	int mods = Modifiers.JAVA;
+	if (field.IsPrivate() || field.IsAssembly() || field.IsFamilyAndAssembly())
 	    mods |= Modifiers.PRIVATE;
-	else if (field.IsFamily || field.IsFamilyOrAssembly)
+	else if (field.IsFamily() || field.IsFamilyOrAssembly())
 	    mods |= Modifiers.PROTECTED;
-	if (field.IsInitOnly)
+	if (field.IsInitOnly())
 	    mods |= Modifiers.FINAL;
 	else
 	    mods |= Modifiers.MUTABLE;
 
-	return mods | Modifiers.JAVA;
+	return mods;
     }
 
-    protected static int translateAttributes(MethodInfo method) {
-	int mods = 0;
-	if (method.IsPrivate || method.IsAssembly || method.IsFamilyAndAssembly)
+    protected static int translateAttributes(MethodBase method) {
+	int mods = Modifiers.JAVA;
+	if (method.IsPrivate() || method.IsAssembly() || method.IsFamilyAndAssembly())
 	    mods |= Modifiers.PRIVATE;
-	else if (method.IsFamily || method.IsFamilyOrAssembly)
+	else if (method.IsFamily() || method.IsFamilyOrAssembly())
 	    mods |= Modifiers.PROTECTED;
-	if (method.IsAbstract)
+	if (method.IsAbstract())
 	    mods |= Modifiers.DEFERRED;
 
-	return mods | Modifiers.JAVA;
+	return mods;
     }
 }

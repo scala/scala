@@ -78,27 +78,28 @@ public class CLRPackageParser extends MetadataParser {
 	Assembly mscorlib = findAssembly("mscorlib.dll");
 	Type.initMSCORLIB(mscorlib);
 
-	BYTE    = Type.GetType("System.SByte");
-	UBYTE   = Type.GetType("System.Byte");
-	CHAR    = Type.GetType("System.Char");
-	SHORT   = Type.GetType("System.Int16");
-	USHORT  = Type.GetType("System.UInt16");
-	INT     = Type.GetType("System.Int32");
-	UINT    = Type.GetType("System.UInt32");
-	LONG    = Type.GetType("System.Int64");
-	ULONG   = Type.GetType("System.UInt64");
-	FLOAT   = Type.GetType("System.Single");
-	DOUBLE  = Type.GetType("System.Double");
-	BOOLEAN = Type.GetType("System.Boolean");
-	VOID    = Type.GetType("System.Void");
+	BYTE    = getType("System.SByte");
+	UBYTE   = getType("System.Byte");
+	CHAR    = getType("System.Char");
+	SHORT   = getType("System.Int16");
+	USHORT  = getType("System.UInt16");
+	INT     = getType("System.Int32");
+	UINT    = getType("System.UInt32");
+	LONG    = getType("System.Int64");
+	ULONG   = getType("System.UInt64");
+	FLOAT   = getType("System.Single");
+	DOUBLE  = getType("System.Double");
+	BOOLEAN = getType("System.Boolean");
+	VOID    = getType("System.Void");
+	//ENUM    = getType("System.Enum");
 
-	OBJECT = Type.GetType("System.Object");
-	STRING = Type.GetType("System.String");
-	STRING_ARRAY = Type.GetType("System.String[]");
+	OBJECT = getType("System.Object");
+	STRING = getType("System.String");
+	STRING_ARRAY = getType("System.String[]");
 
  	findAssembly("vjslib.dll");
    	findAssembly("scala.dll");
-   	findAssembly("scalalib.dll");
+   	//findAssembly("scalalib.dll");
 	findAllAssemblies();
 
 	Type[] types = Type.EmptyTypes;
@@ -115,22 +116,19 @@ public class CLRPackageParser extends MetadataParser {
 	    types = btypes;
 	}
 	this.types = types;
-
-// 	for (int i = 0; i < types.length; i++)
-// 	    System.out.println(types[i]);
-
 	initialized = true;
     }
 
 
-    java.util.Map syms2members = new HashMap();
-    java.util.Map members2syms = new HashMap();
+    private java.util.Map syms2members = new HashMap();
+    private java.util.Map members2syms = new HashMap();
 
     //##########################################################################
 
     public void map(Symbol sym, MemberInfo m) {
 	syms2members.put(sym, m);
 	members2syms.put(m, sym);
+	//System.out.println("" + sym + " => " + m);
     }
 
     public MemberInfo getMember(Symbol sym) {
@@ -142,7 +140,9 @@ public class CLRPackageParser extends MetadataParser {
     }
 
     public Type getType(String name) {
-	return Type.GetType(name);
+	Type t = Type.GetType(name);
+	//assert t != null : name;
+	return t;
     }
 
     public Type mkArrayType(Type elemType) {
@@ -158,31 +158,43 @@ public class CLRPackageParser extends MetadataParser {
 
     /** Load the assembly with the given name
      */
-    Assembly findAssembly(String name) {
+    private Assembly findAssembly(String name) {
 	// see if the assembly is referenced directly
+	File file = null;
+	Assembly assem = null;
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
 	    String assemname = (String)assems.next();
-	    File f = new File(assemname);
-	    if (!f.getName().equals(name))
+	    file = new File(assemname);
+	    if (!file.getName().equals(name))
 		continue;
-	    Assembly assem = Assembly.LoadFrom(f.getPath());
+	    assem = Assembly.LoadFrom(file.getPath());
 	    if (assem != null) {
 		assems.remove();
 		assemblies.add(assem);
 		return assem;
 	    }
 	}
+	// look in directories specified with the '-r' option
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
 	    File d = new File((String)assems.next());
 	    if (!d.isDirectory())
 		continue;
-	    File f = new File(d, name);
-	    if (f.exists()) {
-		Assembly assem = Assembly.LoadFrom(f.getPath());
+	    file = new File(d, name);
+	    if (file.exists()) {
+		assem = Assembly.LoadFrom(file.getPath());
 		if (assem != null) {
 		    assemblies.add(assem);
 		    return assem;
 		}
+	    }
+	}
+	// try in the current directory
+	file = new File(".", name);
+	if (file.exists()) {
+	    assem = Assembly.LoadFrom(file.getPath());
+	    if (assem != null) {
+		assemblies.add(assem);
+		return assem;
 	    }
 	}
 	global.fail("Cannot find assembly " + name
@@ -192,7 +204,7 @@ public class CLRPackageParser extends MetadataParser {
 
     /** Load the rest of the assemblies specified with the '-r' option
      */
-    void findAllAssemblies() {
+    private void findAllAssemblies() {
 	//System.out.println("assembly references left: " + assemrefs);
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
 	    File f = new File((String)assems.next());
@@ -250,6 +262,7 @@ public class CLRPackageParser extends MetadataParser {
 		if (e != Scope.Entry.NONE)
 		    members.unlink(e);
 		members.enter(clazz.module());
+		map(clazz, types[i]);
 	    } else {
 		importCLRNamespace(name, p, members, pp);
 	    }
