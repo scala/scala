@@ -721,14 +721,16 @@ public class Definitions {
         LIST_CLASS = getClass("scala.List");
         ARRAY_CLASS = getClass("scala.Array");
         TYPE_CLASS = getClass("scala.Type");
-        CLASSTYPE_CLASS = getClass("scala.runtime.types.ClassType");
-        JAVACLASSTYPE_CLASS = getClass("scala.runtime.types.JavaClassType");
-        SCALACLASSTYPE_CLASS = getClass("scala.runtime.types.ScalaClassType");
-        SINGLETYPE_CLASS = getClass("scala.runtime.types.SingleType");
-        TYPECONSTRUCTOR_CLASS = getClass("scala.runtime.types.TypeConstructor");
-        COMPOUNDTYPE_CLASS = getClass("scala.runtime.types.CompoundType");
-        METHODTYPE_CLASS = getClass("scala.runtime.types.MethodType");
-        REFINEMENT_CLASS = getClass("scala.runtime.types.Refinement");
+
+        CLASSTYPE_CLASS = getJVMClass("scala.runtime.types.ClassType");
+        JAVACLASSTYPE_CLASS = getJVMClass("scala.runtime.types.JavaClassType");
+        SCALACLASSTYPE_CLASS = getJVMClass("scala.runtime.types.ScalaClassType");
+        SINGLETYPE_CLASS = getJVMClass("scala.runtime.types.SingleType");
+        TYPECONSTRUCTOR_CLASS = getJVMClass("scala.runtime.types.TypeConstructor");
+        COMPOUNDTYPE_CLASS = getJVMClass("scala.runtime.types.CompoundType");
+        METHODTYPE_CLASS = getJVMClass("scala.runtime.types.MethodType");
+        REFINEMENT_CLASS = getJVMClass("scala.runtime.types.Refinement");
+
         PREDEF = getModule("scala.Predef");
         CONSOLE = getModule("scala.Console");
         MATCHERROR = getModule("scala.MatchError");
@@ -956,6 +958,11 @@ public class Definitions {
         Symbol sym = scope.lookup(name.toTypeName());
         assert sym.kind != Kinds.NONE : "no class '" + fullname + "'";
         return sym;
+    }
+
+    private Symbol getJVMClass(String fullname) {
+        return Global.instance.target == Global.TARGET_MSIL ? null :
+            getClass(fullname);
     }
 
     //########################################################################
