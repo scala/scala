@@ -95,13 +95,14 @@ public class SequenceMatcher extends PatternTool {
             //System.out.println( rtis.helpMap2 );
 
             items[ stms.length + stms2.length ] = treeCloner.transform( body );
+            /*
             for( Iterator it = rtis.helpMap2.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry e = (Map.Entry)it.next();
                 Symbol key = (Symbol)e.getKey();
                 Symbol val = (Symbol)e.getValue();
                 val.setInfo( key.type() ); // !!! ?
             }
-
+            */
             return gen.mkBlock( body.pos, items );
       }
 
@@ -177,7 +178,8 @@ public class SequenceMatcher extends PatternTool {
 
             DetWordAutom dfa = new DetWordAutom( nfa );
 
-            WordAutomInScala scalaAut = new WordAutomInScala( dfa,
+            WordAutomInScala scalaAut = new WordAutomInScala( _m.pos,
+                                                              dfa,
                                                               elementType,
                                                               _m.owner,
                                                               cf,
