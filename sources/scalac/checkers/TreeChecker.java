@@ -496,11 +496,10 @@ public class TreeChecker {
 
     /** Returns the current position. */
     private String show() {
-        return
-            format("unit", currentUnit()) +
-            format("clasz", currentClass()) +
-            format("member", currentMember()) +
-            format("owner", currentOwner());
+        return format("unit", currentUnit())
+            + format("clasz", currentClass())
+            + format("member", currentMember())
+            + format("owner", currentOwner());
     }
 
     /** Returns the current position and given header and value. */
@@ -519,7 +518,7 @@ public class TreeChecker {
     private String show(Tree tree) {
         return show("tree", tree)
             + format("tree.pos", Position.toString(tree.pos))
-            + (tree.hasSymbol() ? format("tree.symbol", tree.symbol()) : "")
+            + format("tree.symbol", tree.symbol())
             + format("tree.type", tree.type());
     }
 
