@@ -28,6 +28,7 @@ files/run/map_test.scala
 files/run/misc.scala
 files/run/overloads.scala
 files/run/regularpatmat.scala
+files/run/runtime.scala
 
 files/xml/lnk.scala
 files/xml/xhtml.scala
