@@ -289,6 +289,7 @@ print_help() {
     echo "--xml           next files test the dtd2scala tool";
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
+    echo "--boot          use bootstrap compiler";
     echo "--no-run        run no test, use results of last run";
     echo "--show-log      show output of failed tests";
     echo "--show-diff     show differences between actual and expected output";
@@ -400,6 +401,7 @@ add_file() {
 }
 
 main() {
+    BOOT="false";
     NORUN="false";
     SHOWLOG="false";
     SHOWDIFF="false";
@@ -437,6 +439,7 @@ main() {
             --xml        ) TEST_TYPE="xml"; shift 1;;
             --pos        ) TEST_TYPE="pos"; shift 1;;
             --neg        ) TEST_TYPE="neg"; shift 1;;
+            --boot       ) BOOT="true"; shift 1;;
             --no-run     ) NORUN="true"; shift 1;;
             --show-log   ) SHOWLOG="true"; shift 1;;
             --show-diff  ) SHOWDIFF="true"; shift 1;;
@@ -475,6 +478,10 @@ main() {
     find_runtime SCALA $SOCOS;
     find_program DTD2SCALA dtd2scala;
     find_program SCALA_INFO scala-info;
+
+    if [ "$BOOT" = true ]; then
+        SOCOS=${SOCOS}boot;
+    fi;
 
     if [ "$TEST_ALL" = "true" ]; then
         case "$TEST_TYPE" in
