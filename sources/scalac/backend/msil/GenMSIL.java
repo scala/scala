@@ -1116,7 +1116,7 @@ public final class GenMSIL {
 
 	}
 
-	log("primitiveOp(): dunno what to do with primitive: " + op.tag);
+	log("primitiveOp(): dunno what to do with primitive: " + Debug.show(op));
 	return items.StackItem(resType);
     }
 
@@ -1279,7 +1279,7 @@ public final class GenMSIL {
 	case NEW_OARRAY: case OARRAY_LENGTH: case OARRAY_GET: case OARRAY_SET:
 	    return tc.OBJECT;
 	}
-	log("getArrayElemType(): unknown primitive " + p.tag);
+	log("getArrayElemType(): unknown primitive " + Debug.show(p));
 	return null;
     }
 

@@ -822,11 +822,6 @@ public class Primitives {
         return value == null ? Primitive.NOT_A_PRIMITIVE : (Primitive)value;
     }
 
-    /** Return index of primitive identified by the symbol. */
-    public int getPrimitiveIndex(Symbol symbol) {
-        return getPrimitive(symbol).tag;
-    }
-
     //########################################################################
     // Primitives interface - array creation primitives
 
