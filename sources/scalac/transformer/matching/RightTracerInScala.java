@@ -443,11 +443,8 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
         Tree binderFunDef = gen.DefDef( this.funSym, code_body_NEW() );
         if( actionsPresent ) {
             //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
-            for( Iterator it = helpVarDefs.iterator(); it.hasNext(); ) {
-                v.add( (Tree) it.next() );
-            }
+            v.addAll( helpVarDefs );
 
-            //v.add( gen.DefDef( this.funSym, code_body() )  );
             v.add( binderFunDef );
             v.add( callFun( new Tree[] {  trace, gen.mkIntLit( cf.pos, 0 )  }  )  );
 
@@ -457,13 +454,6 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
             }
 
         };
-
-        /*
-        for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
-            System.out.println( "helpMap" );
-            System.out.println( it.next() );
-        }
-        */
 
         Transformer treeCloner = new Transformer(unit.global) {
                 public Tree transform(Tree tree) {
@@ -475,11 +465,8 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
                     return tree;
                 }
             };
-        //System.out.println("helpmap");
-        //System.out.println( rtis.helpMap2 );
 
         v.add( treeCloner.transform( body ) );
-
 
         Tree result[] = new Tree[ v.size() ];
         int j = 0;
