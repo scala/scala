@@ -418,8 +418,10 @@ public class ExpandMixinsPhase extends Phase {
             case TypeRef(Type prefix, Symbol symbol, Type[] args):
                 Type inline = (Type)inlines.get(symbol);
                 if (inline != null) return inline;
-                prefix = apply(prefix);
-                symbol = prefix.rebind(symbol);
+                if (!symbol.isClassType()) { // !!! why do we need that ?
+                    prefix = apply(prefix);
+                    symbol = prefix.rebind(symbol);
+                }
                 args = map(args);
                 return Type.TypeRef(prefix, symbol, args).unalias();
             case SingleType(Type prefix, Symbol symbol):
