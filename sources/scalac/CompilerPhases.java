@@ -23,6 +23,7 @@ public abstract class CompilerPhases {
     /** The compiler phases. */
     public final PhaseDescriptor INITIAL;
     public final PhaseDescriptor PARSER;
+    public final PhaseDescriptor NAMER;
     public final PhaseDescriptor ANALYZER;
     public final PhaseDescriptor REFCHECK;
     public final PhaseDescriptor UNCURRY;
@@ -51,6 +52,7 @@ public abstract class CompilerPhases {
     /** Phase names, can be overridden to install .
      */
     protected abstract Class PARSER_PHASE();
+    protected abstract Class NAMER_PHASE();
     protected abstract Class ANALYZER_PHASE();
     protected abstract Class REFCHECK_PHASE();
     protected abstract Class UNCURRY_PHASE();
@@ -84,6 +86,11 @@ public abstract class CompilerPhases {
                 "parse source files",
                 "parsed",
                 PARSER_PHASE()),
+            this.NAMER = new PhaseDescriptor(
+                "namer",
+                "create symbols",
+                "symbols created",
+                NAMER_PHASE()),
             this.ANALYZER = new PhaseDescriptor(
                 "analyze",
                 "name and type analysis",

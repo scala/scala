@@ -423,8 +423,8 @@ public abstract class Global {
 	    // !!! add code to print/skip/graph as in compile
 	    currentPhase = PHASE.PARSER.phase();
 	    PHASE.PARSER.phase().apply(unit);
-	    currentPhase = PHASE.ANALYZER.phase();
-	    ((AnalyzerPhase)PHASE.ANALYZER.phase()).apply(unit);
+	    currentPhase = PHASE.NAMER.phase();
+	    PHASE.NAMER.phase().apply(unit);
 	    // !!! add code for later phases?
 	    currentPhase = backup;
 	}

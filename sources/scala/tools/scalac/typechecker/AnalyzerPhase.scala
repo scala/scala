@@ -19,6 +19,19 @@ import scalac.{Global => scalac_Global}
 
 package scala.tools.scalac.typechecker {
 
+class NamerPhase(global0: scalac_Global, descriptor0: PhaseDescriptor)
+  extends Phase(global0, descriptor0)
+{
+  override def apply(unit: CompilationUnit): Unit = {
+    // change phase to make sure that no setInfo occurs before phase ANALYZER
+    val analyzer = global.PHASE.ANALYZER.phase().asInstanceOf[AnalyzerPhase];
+    val backup = global.currentPhase;
+    global.currentPhase = analyzer;
+    new Analyzer(global, analyzer).lateEnter(unit);
+    global.currentPhase = backup;
+  }
+}
+
 class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends scalac_AnalyzerPhase(global, descriptor) {
 
   var startContext = new Context(
@@ -80,8 +93,7 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
     c
   }
 
-  override def apply(unit: CompilationUnit): Unit =
-    new Analyzer(global, this).lateEnter(unit);
+  override def apply(unit: CompilationUnit): Unit = ();
 
 }
 }

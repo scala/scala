@@ -18,6 +18,8 @@ class CompilerPhases extends scalac_CompilerPhases {
 
   protected override def PARSER_PHASE(): Class =
     Class.forName("scala.tools.scalac.ast.parser.ParserPhase$class");
+  protected override def NAMER_PHASE(): Class =
+    Class.forName("scala.tools.scalac.typechecker.NamerPhase$class");
   protected override def ANALYZER_PHASE(): Class =
     Class.forName("scala.tools.scalac.typechecker.AnalyzerPhase$class");
   protected override def REFCHECK_PHASE(): Class =
