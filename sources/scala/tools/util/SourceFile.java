@@ -96,6 +96,15 @@ public class SourceFile {
         return file.toString();
     }
 
+    public int hashCode() {
+	return file.hashCode();
+    }
+
+    public boolean equals(Object that) {
+	return that instanceof SourceFile &&
+	    file.equals(((SourceFile) that).file);
+    }
+
     //########################################################################
     // Private Functions
 

@@ -122,15 +122,26 @@ public abstract class Global {
      */
     public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
 
+    /** views associated with (upper-bounded) type parameters
+     */
+    public final Map/*<Symbol, Symbol>*/ viewOfTypeParam = new HashMap();
+
+    /** Pickled info of top-level symbols
+     */
     public final Map/*<Symbol, Pickle>*/ symdata = new HashMap();
+
 
     /** The compiler command arguments
      */
     public final CompilerCommand args;
 
-    /** The set of currenttly compiled top-level symbols
+    /** The set of currently compiled top-level symbols
      */
     public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();
+
+    /** The set of already compiled sourcefiles
+     */
+    public HashSet/*<SourceFile>*/ compiledUnits = new HashSet();
 
     /** the current phase
      */
@@ -334,7 +345,9 @@ public abstract class Global {
         List units = new ArrayList(files.length);
         for (int i = 0; i < files.length; i++) {
             try {
-                units.add(new Unit(this, getSourceFile(files[i]), console));
+		SourceFile source = getSourceFile(files[i]);
+                units.add(new Unit(this, source, console));
+		compiledUnits.add(source);
             } catch (IOException exception) {
                 error(exception.getMessage());
             }
@@ -353,6 +366,7 @@ public abstract class Global {
     public void compile(String filename, String input, boolean console) {
         reporter.resetCounters();
         SourceFile source = getSourceFile(filename, input);
+	compiledUnits.add(source);
         units = new Unit[]{new Unit(this, source, console)};
         compile();
     }
@@ -394,15 +408,18 @@ public abstract class Global {
 
     /** Compiles an additional source file. */
     public void compileLate(SourceFile source, boolean mixinOnly) {
-        Unit unit = new Unit(this, source, false, mixinOnly);
-        Phase backup = currentPhase;
-        // !!! add code to print/skip/graph as in compile
-        currentPhase = PHASE.PARSER.phase();
-        PHASE.PARSER.phase().apply(new Unit[] {unit});
-        currentPhase = PHASE.ANALYZER.phase();
-        ((AnalyzerPhase)PHASE.ANALYZER.phase()).lateEnter(unit);
-        // !!! add code for later phases?
-        currentPhase = backup;
+	if (!compiledUnits.contains(source)) {
+	    compiledUnits.add(source);
+	    Unit unit = new Unit(this, source, false, mixinOnly);
+	    Phase backup = currentPhase;
+	    // !!! add code to print/skip/graph as in compile
+	    currentPhase = PHASE.PARSER.phase();
+	    PHASE.PARSER.phase().apply(new Unit[] {unit});
+	    currentPhase = PHASE.ANALYZER.phase();
+	    ((AnalyzerPhase)PHASE.ANALYZER.phase()).lateEnter(unit);
+	    // !!! add code for later phases?
+	    currentPhase = backup;
+	}
     }
 
     private void print() {

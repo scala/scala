@@ -66,6 +66,25 @@ public class PlainFile extends AbstractFile {
         return file;
     }
 
+
+    public int hashCode() {
+	try {
+	    return file.getCanonicalPath().hashCode();
+	} catch (IOException ex) {
+	    return 0;
+	}
+    }
+
+    public boolean equals(Object that) {
+	try {
+	    return that instanceof PlainFile &&
+		file.getCanonicalPath().equals(((PlainFile) that).file.getCanonicalPath());
+	} catch (IOException ex) {
+	    return that instanceof PlainFile &&
+		file.getAbsolutePath().equals(((PlainFile) that).file.getAbsolutePath());
+	}
+    }
+
     /** Is this abstract file a directory? */
     public boolean isDirectory() {
         return file.isDirectory();

@@ -1370,7 +1370,8 @@ public abstract class Symbol implements Modifiers, Kinds {
         if (owner.kind == CLASS &&
             !owner.isAnonymousClass() && !owner.isCompoundSym() ||
             Global.instance.debug)
-            return " in " + owner;
+            return " in " +
+		(owner.isModuleClass() ? ((ClassSymbol) owner).module() : owner);
         else
             return "";
     }

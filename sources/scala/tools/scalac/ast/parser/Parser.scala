@@ -1491,15 +1491,23 @@ class Parser(unit: Unit) {
     typeBounds(s.pos, mods, ident())
   }
 
-  /** TypeBounds ::= [`>:' Type] [`<:' Type]
+  /** TypeBounds ::= [`>:' Type] [`<:' Type | `<+' Type]
   */
-  def typeBounds(pos: int, mods: int, name: Name): Tree = {
+  def typeBounds(pos: int, _mods: int, name: Name): Tree = {
+    var mods = _mods;
     val lobound =
       if (s.token == SUPERTYPE) { s.nextToken(); typ() }
       else scalaDot(pos, Names.All.toTypeName());
     val hibound =
-      if (s.token == SUBTYPE) { s.nextToken(); typ() }
-      else scalaDot(pos, Names.Any.toTypeName());
+      if (s.token == SUBTYPE) {
+	s.nextToken();
+	typ()
+      } else if ((mods & Modifiers.PARAM) != 0 && s.token == VIEWBOUND) {
+	mods = mods | Modifiers.VIEWBOUND;
+	s.nextToken();
+	typ()
+      } else
+	scalaDot(pos, Names.Any.toTypeName());
     make.AbsTypeDef(pos, mods, name.toTypeName(), hibound, lobound)
   }
 
@@ -1804,7 +1812,7 @@ class Parser(unit: Unit) {
       case EQUALS =>
         s.nextToken();
         make.AliasTypeDef(pos, mods, name, Tree.AbsTypeDef_EMPTY_ARRAY, typ())
-      case SUPERTYPE | SUBTYPE | SEMI | COMMA | RBRACE =>
+      case SUPERTYPE | SUBTYPE | VIEWBOUND | SEMI | COMMA | RBRACE =>
         typeBounds(pos, mods | Modifiers.DEFERRED, name)
       case _ =>
         syntaxError("`=', `>:', or `<:' expected", true)

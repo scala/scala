@@ -3180,7 +3180,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return UNBOXEDARRAYtpe
                 ^ (elemtp.hashCode() * 41);
         default:
-            throw new ApplicationError();
+            throw new ApplicationError("bad type for hashCode: " + this);
         }
     }
 

@@ -48,7 +48,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   val definitions = global.definitions;
   val infer = new scala.tools.scalac.typechecker.Infer(this) {
-    override def getCoerceMeths = { context.coerceMeths; }
+    override def getContextViewMeths = { context.viewMeths; }
   }
   val desugarize = new DeSugarize(make, copy, gen, infer, global);
   val constfold = new ConstantFolder(global);
@@ -632,6 +632,35 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     sym.getType().isInstanceOf[Type$PolyType] &&
     sym.typeParams().length == 0;
 
+// Views -----------------------------------------------------------------------
+
+  private def applyView(v: View, tree: Tree): Tree = {
+    val viewFn = {
+      val qual1 = v.qual.duplicate();
+      qual1.pos = tree.pos;
+      val viewType = checkAccessible(
+	tree.pos, v.sym, v.symtype, qual1, qual1.getType());
+      make.Select(tree.pos, qual1, v.sym.name)
+	.setSymbol(v.sym).setType(viewType)
+    }
+    gen.Apply(viewFn, NewArray.Tree(tree.setType(tree.getType().singleDeref())))
+  }
+
+  def addView(tparam: Symbol): unit = {
+    if (tparam.info().symbol() != definitions.ANY_CLASS) {
+      val viewSym =
+	context.owner.newTerm(tparam.pos, SYNTHETIC | PARAM, Names.view);
+      val viewParam =
+	viewSym.newTerm(tparam.pos, SYNTHETIC | PARAM, desugarize.getvar());
+      viewParam.setInfo(tparam.getType());
+      viewSym.setInfo(
+	new Type$MethodType(NewArray.Symbol(viewParam), tparam.info()));
+      global.viewOfTypeParam.put(tparam, viewSym);
+      context.scope.enterOrOverload(viewSym);
+      System.out.println("view: " + viewSym + ":" + viewSym.getType());//debug
+    }
+  }
+
 // Contexts -------------------------------------------------------------------
 
   /** Push new context associated with given tree, owner, and scope on stack.
@@ -645,7 +674,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   def popContext(): unit =
     context = context.outer;
 
-  // Lazy Types ------------------------------------------------------------------
+// Lazy Types ------------------------------------------------------------------
 
   /** A lazy type which, when forced returns the type of a symbol defined
   *  in `tree'.
@@ -1036,6 +1065,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       //necessary since tsyms might have been unpickled
       tparams(i).setSymbol(tsyms(i));
       context.scope.enter(tsyms(i));
+      //addView(tsyms(i));
       i = i + 1
     }
   }
@@ -1524,25 +1554,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (pt.symbol() == definitions.UNIT_CLASS) {
 	  return gen.mkUnitBlock(tree);
 	} else if (infer.isCompatible(tree.getType(), pt)) {
-	  val coerce = infer.bestCoerce(tree.getType(), pt);
-	  if (coerce != null) {
-	    val coerceFn =
-	      if (coerce.qual == Tree.Empty) {
-		make.Ident(tree.pos, Names.view)
-		  .setSymbol(coerce.sym).setType(coerce.symtype)
-	      } else {
-		val coercetype = checkAccessible(
-		  tree.pos, coerce.sym, coerce.symtype, coerce.qual, coerce.qual.getType());
-		make.Select(tree.pos, coerce.qual, Names.view)
-		  .setSymbol(coerce.sym).setType(coercetype)
-	      }
-	    val tree1 = gen.Apply(coerceFn, NewArray.Tree(tree));
-	    return adapt(tree1, mode, pt);
-	  }
+	  val v = infer.bestView(tree.getType(), pt);
+	  if (v != null) return adapt(applyView(v, tree), mode, pt);
 	  // todo: remove
  	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
  	  if (coerceMeth != Symbol.NONE) {
- 	    val coerceType: Type = checkAccessible(
+ 	    val coerceType = checkAccessible(
  	      tree.pos, coerceMeth, tree.getType().memberType(coerceMeth),
  	      tree, tree.getType());
  	    val tree1 = make.Select(tree.pos, tree, Names.coerce)
@@ -1676,40 +1693,49 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	uninst = tparams;
       case _ =>
     }
-    val sym: Symbol = qual.getType().lookup(name);
+    var sym: Symbol = qual.getType().lookup(name);
     if (sym.kind == NONE) {
-      //System.out.println(qual.getType() + " has members " + qual.getType().members());//DEBUG
-      error(tree.pos,
+      if (name != Names.view) {
+	val v = infer.bestView(qual.getType(), name);
+	if (v != null) {
+	  qual = applyView(v, qual);
+	  sym = qual.getType().lookup(name);
+	  assert(sym.kind != NONE);
+	} else {
+	  //System.out.println(qual.getType() + " has members " + qual.getType().members());//DEBUG
+	  return error(
+	    tree.pos,
 	    decode(name) + " is not a member of " + qual.getType().widen());
-    } else {
-      val qualtype =
-	if (qual.isInstanceOf[Tree$Super]) context.enclClass.owner.thisType()
-	else qual.getType();
-      var symtype: Type =
-	(if (sym.isType()) sym.typeConstructor() else sym.getType())
-	.asSeenFrom(qualtype, sym.owner());
-      if (symtype == Type.NoType)
-	return error(tree.pos, "not found: " + decode(name));
-      else
-	symtype = checkAccessible(tree.pos, sym, symtype, qual, qualtype);
-      //System.out.println(sym.name + ":" + symtype);//DEBUG
-      if (uninst.length != 0) {
-	symtype match {
-	  case Type$PolyType(tparams, restype) =>
-	    symtype = new Type$PolyType(tparams, new Type$PolyType(uninst, restype));
-	  case _ =>
-	    symtype = new Type$PolyType(uninst, symtype);
 	}
       }
-      //System.out.println(qual.getType() + ".member: " + sym + ":" + symtype);//DEBUG
-      val tree1: Tree = tree match {
-	case Tree$Select(_, _) =>
-	  copy.Select(tree, sym, qual)
-	case Tree$SelectFromType(_, _) =>
-	  copy.SelectFromType(tree, sym, qual)
-      }
-      mkStable(tree1.setType(symtype), qualtype, mode, pt)
     }
+    val qualtype =
+      if (qual.isInstanceOf[Tree$Super]) context.enclClass.owner.thisType()
+      else qual.getType();
+    var symtype: Type =
+      (if (sym.isType()) sym.typeConstructor() else sym.getType())
+      .asSeenFrom(qualtype, sym.owner());
+    if (symtype == Type.NoType)
+      return error(tree.pos, "not found: " + decode(name));
+    else
+      symtype = checkAccessible(tree.pos, sym, symtype, qual, qualtype);
+    //System.out.println(sym.name + ":" + symtype);//DEBUG
+    if (uninst.length != 0) {
+      symtype match {
+	case Type$PolyType(tparams, restype) =>
+	  symtype = new Type$PolyType(tparams, new Type$PolyType(uninst, restype));
+	case _ =>
+	  symtype = new Type$PolyType(uninst, symtype);
+      }
+    }
+    //System.out.println(qual.getType() + ".member: " + sym + ":" + symtype);//DEBUG
+    val tree1: Tree = tree match {
+      case Tree$Select(_, _) =>
+	copy.Select(tree, sym, qual)
+      case Tree$SelectFromType(_, _) =>
+	copy.SelectFromType(tree, sym, qual)
+    }
+    mkStable(tree1.setType(symtype), qualtype, mode, pt)
   }
 
   /** Attribute a pattern matching expression where `pattpe' is the

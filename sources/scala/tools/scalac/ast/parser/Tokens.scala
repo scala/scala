@@ -91,6 +91,7 @@ object Tokens {
   val SUPERTYPE = 70;
   val HASH = 71;
   val AT = 72;
+  val VIEWBOUND = 73;
 
   /** parenthesis */
   val LPAREN = 90;
@@ -204,6 +205,7 @@ object Tokens {
   enterKeyword("<-", LARROW);
   enterKeyword("<:", SUBTYPE);
   enterKeyword(">:", SUPERTYPE);
+  enterKeyword("<+", VIEWBOUND);
   enterKeyword("#", HASH);
   enterKeyword("@", AT);
 

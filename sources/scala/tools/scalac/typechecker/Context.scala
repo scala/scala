@@ -13,7 +13,7 @@ package scala.tools.scalac.typechecker {
 
 object Context {
   val NONE = new Context();
-  NONE.coerceCache = List();
+  NONE.viewCache = List();
 }
 
 class Context {
@@ -29,7 +29,7 @@ class Context {
                                       // is a class template
   var variance: int = _;              // Variance relative to enclosing class.
   var constructorClass: Symbol = _;   // Class for auxiliary constructor
-  var coerceCache: List[Coerce] = null;   // Coerce symbols visible in scope
+  var viewCache: List[View] = null;   // View symbols visible in scope
   var infer: Infer = null;            // Type inferencer
 
   def this(tree: Tree, owner: Symbol, scope: Scope, outer: Context) = {
@@ -68,37 +68,41 @@ class Context {
       outer.isTopLevel()
   }
 
-  def coerceMeths: List[Coerce] = {
+  def viewMeths: List[View] = {
 
-    def addCoerce(sym: Symbol, symtype: Type, qual: Tree): unit = symtype match {
+    def addView(sym: Symbol, symtype: Type, qual: Tree): unit = symtype match {
       case Type$OverloadedType(alts, alttypes) =>
-	var i = 0;
-	while (i < alts.length) {
-	  addCoerce(alts(i), alttypes(i), qual);
-	  i = i + 1;
+	var i = alts.length - 1;
+	while (i >= 0) {
+	  addView(alts(i), alttypes(i), qual);
+	  i = i - 1;
 	}
       case _ =>
-	def isUnShadowed(coerce: Coerce) =
-	  coerce.context == this || !infer.specializes(coerce.symtype, symtype);
-	val coerce = new Coerce(sym, symtype, qual, this);
-	System.out.println("COERCE " + symtype + " " + qual);
-	coerceCache = coerce :: coerceCache.filter(isUnShadowed);
+	/*
+	def isUnShadowed(view: View) =
+	  view.context == this || !infer.specializes(view.symtype, symtype);
+        */
+	if (viewCache.forall(v => v.sym != sym)) {
+	  val v = View(sym, symtype, qual, this);
+	  System.out.println("VIEW " + sym + ":" + symtype + " " + qual);//debug
+	  viewCache = v :: viewCache;//.filter(isUnShadowed);
+	}
     }
 
-    if (coerceCache == null) {
-      coerceCache = outer.coerceMeths;
+    if (viewCache == null) {
+      viewCache = outer.viewMeths;
       val e = scope.lookupEntry(Names.view);
       if (e.owner == scope && e.sym.kind == VAL)
-	addCoerce(e.sym, e.sym.getType(), Tree.Empty);
+	addView(e.sym, e.sym.getType(), Tree.Empty);
       var imp = imports;
       while (imp != outer.imports) {
 	val sym = imp.importedSymbol(Names.view);
 	if (sym.kind == VAL)
-	  addCoerce(sym, imp.importType().memberType(sym), imp.importPrefix());
+	  addView(sym, imp.importType().memberType(sym), imp.importPrefix());
 	imp = imp.prev;
       }
     }
-    coerceCache
+    viewCache
   }
 }
 }

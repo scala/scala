@@ -31,7 +31,7 @@ typechecker/DeSugarize.scala
 typechecker/ImportList.scala
 typechecker/Infer.scala
 typechecker/Substituter.scala
-typechecker/Coerce.scala
+typechecker/View.scala
 
 util/NewArray.scala
 

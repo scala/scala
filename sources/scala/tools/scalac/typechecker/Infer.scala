@@ -14,6 +14,8 @@ import scalac.ApplicationError;
 import scalac.util._;
 import scalac.ast._;
 import scalac.symtab._;
+import scala.collection.mutable.HashMap;
+import scala.tools.util.Position;
 
 import scala.tools.scalac.util.NewArray;
 
@@ -28,9 +30,66 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
   def this(trans: Transformer) = this(trans.global, trans.gen, trans.make);
 
-// Coerce generator, overridable */
+// View generator, overridable */
 
-  def getCoerceMeths: List[Coerce] = List();
+  def getContextViewMeths: List[View] = List();
+
+  private def getViews(tp: Type): List[View] = {
+    memberViews(tp) ::: getContextViewMeths;
+  }
+
+  val memberViewCache = new HashMap[Symbol, List[View]];
+
+//  private def memberViews(tp: Type): List[View] = List();
+
+  private def memberViews(tp: Type): List[View] = {
+    val tpsym = tp.widen().symbol();
+    memberViewCache.get(tpsym) match {
+      case Some(vs) => vs
+      case None =>
+	var vs = companionObjViews(tp, tpsym);
+	val ps = tpsym.parents();
+	var i = ps.length - 1; while (i >= 0) {
+	  vs = memberViews(ps(i)) ::: vs;
+	  i = i - 1
+	}
+      memberViewCache.update(tpsym, vs);
+      vs
+    }
+  }
+
+  private def companionObjViews(tp: Type, clazz: Symbol): List[View] = {
+    if (clazz.kind == CLASS && !clazz.isModuleClass() && !clazz.isCaseClass()) {
+      var obj = clazz.owner().info().lookupNonPrivate(clazz.name.toTermName());
+      //System.out.println("comp obj view " + tp + " " + obj);//DEBUG
+      obj.getType() match {
+	case Type$OverloadedType(alts, alttypes) =>
+	  var i = 0; while (i < alts.length) {
+	    if (alts(i).isModule()) obj = alts(i);
+	    i = i + 1
+	  }
+	case _ =>
+      }
+      if (obj.isModule()) {
+	val qual = gen.mkRef(Position.NOPOS, tp.prefix(), obj);
+	val viewsym = obj.info().lookupNonPrivate(Names.view);
+	if (viewsym.kind == VAL) {
+	  obj.getType().memberType(viewsym) match {
+	    case Type$OverloadedType(alts, alttypes) =>
+	      var i = alttypes.length - 1;
+	      var vs: List[View] = List();
+	      while (i >= 0) {
+		vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
+		i = i - 1
+	      }
+	      vs
+	    case viewtype =>
+	      List(View(viewsym, viewtype, qual, Context.NONE))
+	  }
+	} else List()
+      } else List()
+    } else List()
+  }
 
 // Error messages -------------------------------------------------------------
 
@@ -455,11 +514,14 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
   /** Is normalized type `tp' a subtype of prototype `pt'?
   */
-  def isCompatible(tp: Type, pt: Type): boolean = {
-    def canCoerce(tp: Type): boolean = tp match {
+  def isCompatible(tp: Type, pt: Type): boolean =
+    isCompatible(tp, pt, true);
+
+  def isCompatible(tp: Type, pt: Type, coercible: boolean): boolean = {
+    def canView(tp: Type): boolean = tp match {
       case Type$OverloadedType(_, alttypes) =>
 	var i = 0;
-	while (i < alttypes.length && !canCoerce(alttypes(i))) i = i + 1;
+	while (i < alttypes.length && !canView(alttypes(i))) i = i + 1;
 	i < alttypes.length
       case Type$PolyType(tparams, restype) if tparams.length == 0 =>
 	restype.isSubType(pt)
@@ -468,25 +530,28 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
     val tp1 = normalize(tp);
     if (tp1.isSubType(pt)) true
-    else {
+    else if (coercible) {
       val argtypes = NewArray.Type(tp1);
-      var coerceMeths = getCoerceMeths;
-      while (!coerceMeths.isEmpty && !isApplicable(coerceMeths.head.symtype, argtypes, pt, false))
-	coerceMeths = coerceMeths.tail;
-      if (!coerceMeths.isEmpty) true
+      var viewMeths = getViews(tp1);
+      while (!viewMeths.isEmpty && !isApplicable(viewMeths.head.symtype, argtypes, pt, false))
+	viewMeths = viewMeths.tail;
+      if (!viewMeths.isEmpty) true
       // todo: remove
       else {
 	val coerceMeth: Symbol = tp1.lookup(Names.coerce);
-        coerceMeth.kind != NONE && canCoerce(tp1.memberType(coerceMeth));
+        coerceMeth.kind != NONE && canView(tp1.memberType(coerceMeth));
       }
-    }
+    } else false;
   }
 
-  def isCompatible(tps: Array[Type], pts: Array[Type]): boolean = {
-    { var i = 0; while (i < tps.length) {
-      if (!isCompatible(tps(i), pts(i))) return false;
+  def isCompatible(tps: Array[Type], pts: Array[Type]): boolean =
+    isCompatible(tps, pts, true);
+
+  def isCompatible(tps: Array[Type], pts: Array[Type], coercible: boolean): boolean = {
+    var i = 0; while (i < tps.length) {
+      if (!isCompatible(tps(i), pts(i), coercible)) return false;
       i = i + 1
-    }}
+    }
     true
   }
 
@@ -511,10 +576,14 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   *  If no minimal type variables exist that make the
   *  instantiated type a subtype of `pt', return `null'.
   */
-  private def exprTypeArgs(tparams: Array[Symbol], restype: Type, pt: Type): Array[Type] = {
+  private def exprTypeArgs(tparams: Array[Symbol], restype: Type, pt: Type): Array[Type] =
+    exprTypeArgs(tparams, restype, pt, true);
+
+  private def exprTypeArgs(tparams: Array[Symbol], restype: Type,
+			   pt: Type, coercible: boolean): Array[Type] = {
     val tvars: Array[Type] = freshVars(tparams);
     val insttype: Type = restype.subst(tparams, tvars);
-    if (isCompatible(insttype, pt)) {
+    if (isCompatible(insttype, pt, coercible)) {
       try {
 	val restype1 = normalize(restype);
 	{ var i = 0; while (i < tvars.length) {
@@ -572,7 +641,10 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   *  Undetermined type arguments are represented by `definitions.ALL_TYPE'.
   *  No check that inferred parameters conform to their bounds is made here.
   */
-  private def methTypeArgs(tparams: Array[Symbol], params: Array[Symbol], argtypes: Array[Type], restp: Type, pt: Type, needToSucceed: boolean): Array[Type] = {
+  private def methTypeArgs(tparams: Array[Symbol], params: Array[Symbol],
+			   argtypes: Array[Type], restp: Type,
+			   pt: Type,
+			   needToSucceed: boolean, coercible: boolean): Array[Type] = {
     //System.out.println("methTypeArgs, tparams = " + ArrayApply.toString(tparams) + ", params = " + ArrayApply.toString(params) + ", type(params) = " + ArrayApply.toString(Symbol.type(params)) + ", argtypes = " + ArrayApply.toString(argtypes));//DEBUG
 
     val tvars: Array[Type] = freshVars(tparams);
@@ -585,7 +657,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
     // check first whether type variables can be fully defined from
     // expected result type.
-    if (!isCompatible(restp.subst(tparams, tvars), pt)) {
+    if (!isCompatible(restp.subst(tparams, tvars), pt, coercible)) {
       if (needToSucceed)
 	throw new NoInstance("result type " + restp +
 			     " is incompatible with expected type " + pt);
@@ -600,7 +672,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     // Then define remaining type variables from argument types.
     var i = 0;
     while (i < argtypes.length) {
-      if (!isCompatible(argtypes(i).widen().subst(tparams, tvars), formals(i).subst(tparams, tvars))) {
+      if (!isCompatible(argtypes(i).widen().subst(tparams, tvars),
+			formals(i).subst(tparams, tvars),
+		        coercible)) {
 	if (needToSucceed) {
 	  if (global.explaintypes) {
 	    Type.explainSwitch = true;
@@ -728,7 +802,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       case Type$MethodType(params, restpe) =>
 	var targs: Array[Type] = _;
 	try {
-	  targs = methTypeArgs(tparams, params, argtypes, restpe, pt, true);
+	  targs = methTypeArgs(tparams, params, argtypes, restpe, pt, true, false);
 	} catch {
 	  case ex: NoInstance =>
 	    throw new Type$Error(
@@ -808,16 +882,46 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       // sequences ? List( a* )
       val formals: Array[Type] = formalTypes(params, argtypes.length);
       formals.length == argtypes.length &&
-      (if (coercible) isCompatible(argtypes, formals) && isCompatible(restpe, pt)
-       else Type.isSubType(argtypes, formals) && restpe.isSubType(pt));
+      isCompatible(argtypes, formals, coercible) &&
+      isCompatible(restpe, pt, coercible);
     case Type$PolyType(tparams, Type$MethodType(params, restpe)) =>
       try {
 	val targs: Array[Type] = methTypeArgs(
-	  tparams, params, argtypes, restpe, pt, false);
+	  tparams, params, argtypes, restpe, pt, false, coercible);
 	if (targs != null) {
 	  val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams);
 	  isWithinBounds(tparams, targs) &&
-	  exprTypeArgs(uninstantiated, restpe.subst(tparams, targs), pt) != null;
+	  exprTypeArgs(uninstantiated,
+		       restpe.subst(tparams, targs), pt,
+		       coercible) != null;
+	} else {
+	  false
+	}
+      } catch {
+	case ex: NoInstance => false
+      }
+    case _ =>
+      false
+  }
+
+  /** Is function type `ftpe' applicable to `argtypes' and
+  *  does its result contain a member with name `name'?
+  */
+  def isApplicable(ftpe: Type, argtypes: Array[Type], name: Name, coercible: boolean): boolean = ftpe match {
+    case Type$MethodType(params, restpe) =>
+      // sequences ? List( a* )
+      val formals: Array[Type] = formalTypes(params, argtypes.length);
+      formals.length == argtypes.length &&
+      isCompatible(argtypes, formals, coercible) &&
+      restpe.lookup(name).kind != NONE;
+    case Type$PolyType(tparams, Type$MethodType(params, restpe)) =>
+      try {
+	val targs: Array[Type] = methTypeArgs(
+	  tparams, params, argtypes, restpe, Type.AnyType, false, coercible);
+	if (targs != null) {
+	  val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams);
+	  isWithinBounds(tparams, targs) &&
+	  restpe.subst(tparams, targs).lookup(name) != NONE;
 	} else {
 	  false
 	}
@@ -961,31 +1065,61 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
   }
 
-  /** return coerce which best matches argument type `tp' and expected type `pt'.
+  /** return view which best matches argument type `tp' and has `name' as member.
   */
-  def bestCoerce(tp: Type, pt: Type): Coerce = {
-    var best: Coerce = null;
-    var coerceMeths = getCoerceMeths;
+  def bestView(tp: Type, name: Name): View = {
+    var best: View = null;
+    var viewMeths = getViews(tp);
     val argtypes = NewArray.Type(tp);
-    while (!coerceMeths.isEmpty) {
-      if (isApplicable(coerceMeths.head.symtype, argtypes, pt, false) &&
-	  (best == null || specializes(coerceMeths.head.symtype, best.symtype)))
-	best = coerceMeths.head;
-      coerceMeths = coerceMeths.tail
+    while (!viewMeths.isEmpty) {
+      if (isApplicable(viewMeths.head.symtype, argtypes, name, false) &&
+	  (best == null || specializes(viewMeths.head.symtype, best.symtype)))
+	best = viewMeths.head;
+      viewMeths = viewMeths.tail
     }
     if (best != null) {
-      coerceMeths = getCoerceMeths;
-      while (!coerceMeths.isEmpty) {
-	if (coerceMeths.head != best &&
-	    isApplicable(coerceMeths.head.symtype, argtypes, pt, false) &&
-	    !(specializes(best.symtype, coerceMeths.head.symtype) &&
-	      !specializes(coerceMeths.head.symtype, best.symtype)))
+      viewMeths = getViews(tp);
+      while (!viewMeths.isEmpty) {
+	if (viewMeths.head != best &&
+	    isApplicable(viewMeths.head.symtype, argtypes, name, false) &&
+	    !(specializes(best.symtype, viewMeths.head.symtype) &&
+	      !specializes(viewMeths.head.symtype, best.symtype)))
 	  throw new Type$Error(
-	    "ambiguous coerce,\n" +
-	    "both " + coerceMeths.head.sym + ": " + coerceMeths.head.symtype + coerceMeths.head.sym.locationString() + "\n" +
+	    "ambiguous view,\n" +
+	    "both " + viewMeths.head.sym + ": " + viewMeths.head.symtype + viewMeths.head.sym.locationString() + "\n" +
+            "and  " + best.sym + ": " + best.symtype + best.sym.locationString() + "\nadd member `" +
+	    name + "' to argument type " + tp.widen());
+	viewMeths = viewMeths.tail;
+      }
+    }
+    best
+  }
+
+  /** return view which best matches argument type `tp' and expected type `pt'.
+  */
+  def bestView(tp: Type, pt: Type): View = {
+    var best: View = null;
+    var viewMeths = getViews(tp);
+    val argtypes = NewArray.Type(tp);
+    while (!viewMeths.isEmpty) {
+      if (isApplicable(viewMeths.head.symtype, argtypes, pt, false) &&
+	  (best == null || specializes(viewMeths.head.symtype, best.symtype)))
+	best = viewMeths.head;
+      viewMeths = viewMeths.tail
+    }
+    if (best != null) {
+      viewMeths = getViews(tp);
+      while (!viewMeths.isEmpty) {
+	if (viewMeths.head != best &&
+	    isApplicable(viewMeths.head.symtype, argtypes, pt, false) &&
+	    !(specializes(best.symtype, viewMeths.head.symtype) &&
+	      !specializes(viewMeths.head.symtype, best.symtype)))
+	  throw new Type$Error(
+	    "ambiguous view,\n" +
+	    "both " + viewMeths.head.sym + ": " + viewMeths.head.symtype + viewMeths.head.sym.locationString() + "\n" +
             "and  " + best.sym + ": " + best.symtype + best.sym.locationString() + "\nmap argument type " +
-	    tp + " to expected type " + pt);
-	coerceMeths = coerceMeths.tail;
+	    tp.widen() + " to expected type " + pt);
+	viewMeths = viewMeths.tail;
       }
     }
     best

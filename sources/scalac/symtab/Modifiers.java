@@ -31,6 +31,7 @@ public interface Modifiers {
     int JAVA          = 0x00001000;   // symbol was defined by a Java class
     int MODUL         = 0x00002000;   // symbol is module or class implementing a module
     int MUTABLE       = 0x00004000;   // symbol is a mutable variable.
+    int VIEWBOUND     = 0x00004000;   // type symbol has a <+ bound.
     int PARAM         = 0x00008000;   // symbol is a (type) parameter to a method
 
     int INITIALIZED   = 0x00010000;   // symbol's definition is complete
