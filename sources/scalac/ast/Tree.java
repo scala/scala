@@ -903,7 +903,7 @@ public class Tree {
         }
 
 	public boolean definesSymbol() {
-	    return true;
+	    return false;
 	}
     }
 
