@@ -698,10 +698,13 @@ public class Infer implements Modifiers, Kinds {
     public Tree mkTypeApply(Tree tree, Symbol[] tparams, Type restype, Type[] targs) {
 	Tree tree1 = tree;
 	Symbol sym = tree.symbol();
+	if (sym != null && sym.isCaseFactory())
+	    sym = sym.type().resultType().symbol().constructor();
 	int i = 0;
 	while (i < tparams.length && tparams[i].owner() == sym)
 	    i++;
 	if (i < tparams.length) {
+	    //System.out.println("tpar " + tparams[i] + " of " + tparams[i].owner() + " <> " + sym);//DEBUG
 	    //new Printer().print(tree1);//DEBUG
 	    //System.out.println(ArrayApply.toString(targs) + "/" + i + "/" + ArrayApply.toString(tparams));//DEBUG
 	    Symbol[] tparams1 = new Symbol[tparams.length - i];

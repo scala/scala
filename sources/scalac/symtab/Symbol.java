@@ -211,12 +211,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return isInitializedMethod();
     }
 
-    /*
-    public final boolean caseClassOfFactory() {
-	if (isMethod() && !isConstructor() && (flags & CASE) != 0)
-	    return owner.info().lookup(name.toTypeName()).constructor();
+    public final boolean isCaseFactory() {
+	return isMethod() && !isConstructor() && (flags & CASE) != 0;
     }
-    */
 
     public final boolean isAbstractClass() {
 	return (flags & ABSTRACTCLASS) != 0 &&

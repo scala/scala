@@ -871,8 +871,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    if (fsym != null && fsym.isMethod() && !fsym.isConstructor() &&
 		(fsym.flags & CASE) != 0) {
 		// convert case methods to new's
-		Symbol constr = fsym.owner().info()
-		    .lookup(fsym.name.toTypeName()).constructor();
+		Symbol constr = fsym.type().resultType().symbol().constructor();
 		tree = gen.New(toConstructor(tree, constr));
 	    }
 	    return super.transform(tree);
