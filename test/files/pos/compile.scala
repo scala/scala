@@ -19,7 +19,7 @@ object Test0Test {
 //############################################################################
 // Test 1 - Single types in lambda lift
 
-object Test {
+object Test1 {
   def main(args: Array[String]): Unit = {
     List[args.type](args);
   }
@@ -27,6 +27,106 @@ object Test {
     def bar(x: X) = List(x);
     0
   }
+}
+
+//############################################################################
+// Test 2 - Local variables owned by other local variables
+
+class Test2_1(i: Int) {
+  val t = {
+    val x = {
+      val y = {
+        val z = i;
+        z;
+      };
+    };
+  };
+  val x = {
+    val y = {
+      val z = i;
+      z;
+    };
+  };
+  val y = {
+    val z = i;
+    z;
+  };
+  val z = i;
+}
+
+class Test2_2(i: Int) {
+  {
+    val t = {
+      val x = {
+        val y = {
+          val z = i;
+          z;
+        };
+      };
+    };
+    val x = {
+      val y = {
+        val z = i;
+        z;
+      };
+    };
+    val y = {
+      val z = i;
+      z;
+    };
+    val z = i;
+    0
+  }
+}
+
+class Test2_3() {
+
+  def this(i: Int) = {
+    this();
+    val t = {
+      val x = {
+        val y = {
+          val z = i;
+          z;
+        };
+      };
+    };
+    val x = {
+      val y = {
+        val z = i;
+        z;
+      };
+    };
+    val y = {
+      val z = i;
+      z;
+    };
+    val z = i;
+  }
+
+  def test(i: Int): Int = {
+    val t = {
+      val x = {
+        val y = {
+          val z = i;
+          z;
+        };
+      };
+    };
+    val x = {
+      val y = {
+        val z = i;
+        z;
+      };
+    };
+    val y = {
+      val z = i;
+      z;
+    };
+    val z = i;
+    0
+  }
+
 }
 
 //############################################################################
