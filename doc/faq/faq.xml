@@ -3,19 +3,58 @@
 <!DOCTYPE faq PUBLIC "-//lamp.epfl.ch//DTD Scala FAQ//EN"
 	             "scala-faq.dtd">
 
+<!-- This file is a collection of frequently asked questions on Scala -->
+
+<!-- You can link to entries in this document by using id attributes. -->
+<!-- Within the document, use the 'seealso' tag for this              -->
+
+<!-- You can validate this file using C-c C-v. in [X]Emacs -->
+
 <faq>
+
+  <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
+  <!--                   General                                      -->
+  <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
 
   <section title="General">
     <entry id="why">
-      <question>Why another programming language </question>
-      <answer>Read the rational on the <a
+      <question>Why another programming language ?</question>
+      <answer>Read the rationale available on the <a
       href="http://scala.epfl.ch">Scala homepage</a></answer>
     </entry>
+    <entry>
+      <question>How can I get an executable program ?</question>
+      <answer><p><em>First option</em>: use the Application mixin. Example:<code>
+class Foo with Application {
+   ... // the code
+}
+</code></p>
+
+        <p><em>Second option</em>: use an object that has a main method. E.g.
+<code><![CDATA[
+object Foo {
+  def main(args:Array[String]):Unit = {
+      ... //the code
+  }
+}]]></code>
+Of course you can leave away the specification of the result type. In
+that case you should take care that your main function does not return
+something else. The latter would result in the virtual machine not finding
+your function
+</p>
+</answer>
+
+    </entry>
+
   </section>
+
+  <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
+  <!--                  Less General                                  -->
+  <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
 
   <section title="Less General">
     <entry>
-      <question>Why is feature XYZ not integrated</question>
+      <question>Why is feature XYZ not integrated ?</question>
       <answer>Convince us that it is useful. Make sure you read 
            <seealso ref="why"/> before </answer>
     </entry>

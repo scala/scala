@@ -25,7 +25,7 @@
 
 <!ELEMENT em           (#PCDATA)>
 
-<!ELEMENT p            (#PCDATA|a|em|ul)*>
+<!ELEMENT p            (#PCDATA|a|em|ul|code)*>
 
 <!ELEMENT ul           (li+)>
 <!ELEMENT li           (#PCDATA|a|em)*>

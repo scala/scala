@@ -6,6 +6,7 @@
 
   <xsl:template match="/">
     <html>
+      <h1>The Scala F.A.Q.</h1>
       <body bgcolor="#FFFFFF">
         <xsl:apply-templates/>
       </body>
@@ -48,23 +49,23 @@
   <xsl:template match="section">
     <p/><p/>
   <xsl:param name="id"/>
-  <a>
+  <b><a>
     <xsl:attribute name="name">
       <xsl:value-of select="generate-id()"/>
     </xsl:attribute>
     <xsl:number/>. <xsl:value-of select="@title"/>
-  </a>
+  </a></b>
   <xsl:apply-templates/>
   </xsl:template>
 
   <xsl:template match="entry">
-    <p>
+    <p><b>
       <a>
         <xsl:attribute name="name">
           <xsl:call-template name="entry.getId"/> 
         </xsl:attribute>
         <xsl:call-template name="entry.fullName"/>
-      </a>
+      </a></b>
       <br/>
       <xsl:apply-templates select="./answer"/>
     </p>
@@ -79,6 +80,10 @@
         <xsl:call-template name="entry.fullName"/>
       </xsl:for-each>
     </a>
+  </xsl:template>
+
+  <xsl:template match="code">
+    <pre><xsl:value-of select="."/></pre>
   </xsl:template>
 
   <xsl:template name="entry.fullName">
