@@ -19,6 +19,8 @@ package scala.xml ;
  */
 case class Attribute(namespace:String, key:String, value:String) with Ordered[Attribute] {
 
+  def intValue: Int = Integer.parseInt(value);
+
   def compareTo [b >: Attribute <% Ordered[b]](that: b): int = that match {
     case z:Attribute =>
       val i = key.compareTo( z.key );
@@ -26,4 +28,9 @@ case class Attribute(namespace:String, key:String, value:String) with Ordered[At
     case _ => -(that.compareTo(this));
   }
 
+}
+
+class IntAttribute(namespace:String, key:String, theIntValue:Int)
+extends Attribute(namespace, key, theIntValue.toString()) {
+  final override def intValue = theIntValue;
 }

@@ -6,21 +6,24 @@ import scala.collection.mutable ;
 /** */
 class ConstructingHandler extends MarkupHandler[Node] {
 
-  def attributeCDataValue(pos: int, str:String) = CDataValue(str);
+  //def attributeCDataValue(pos: int, str:String) = CDataValue(str);
 
-  def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
+  //def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
 
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],AttribValue], args: mutable.Buffer[Node]) = {
+  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],Attribute], args: mutable.Buffer[Node]) = {
 
     var attrs = new Array[Attribute](attrMap1.size);
     {
       var i = 0;
       val it = attrMap1.elements;
       while( it.hasNext ) {
-        val Pair(Pair(uri:String, key:String), va: AttribValue) = it.next;
+        val Pair(Pair(uri:String, key:String), va: Attribute) = it.next;
+        attrs( i ) = va;
+        /*
         va match {
           case CDataValue(str) => attrs( i ) = Attribute(uri, key, str);
         }
+        */
         i = i + 1;
       }
     }

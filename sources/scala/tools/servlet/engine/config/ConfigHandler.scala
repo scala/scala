@@ -2,22 +2,16 @@ package scala.tools.servlet.engine.config ;
 
 import scala.collection.mutable;
 
-import scala.xml.{ Attribute, AttributeSeq, Elem };
+import scala.xml.{ Attribute, IntAttribute, AttributeSeq, Elem };
 import scala.xml.parsing._;
 
 class ConfigHandler extends MarkupHandler[Config] {
 
   final val config_namespace = "http://scala.epfl.ch/scala.tools.servlet.engine/config";
 
-  def attributeCDataValue(pos: int, str:String) = CDataValue(str);
-
-  def attributeIntValue(pos: int, value:Int) = IntValue(value);
-
-  def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
-
-  override def attribute(pos: int, uri:String, key: String, value:String): AttribValue =
+  override def attribute(pos: int, uri:String, key: String, value:String): Attribute =
     if( key == "port" )
-      attributeIntValue(pos, Integer.parseInt(value));
+      new IntAttribute(uri, key, Integer.parseInt(value));
     else
       super.attribute(pos, uri, key, value);
 
@@ -26,7 +20,7 @@ class ConfigHandler extends MarkupHandler[Config] {
   /** be careful to copy everything from attrMap1, as it will change
    *  @param attrMap1 the attribute map.
    */
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],AttribValue], args: mutable.Buffer[Config]): Option[Config] = {
+  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],Attribute], args: mutable.Buffer[Config]): Option[Config] = {
     if( uri == config_namespace ) {
       label match {
 
@@ -39,13 +33,13 @@ class ConfigHandler extends MarkupHandler[Config] {
           }
           Some(EngineConfig( list ));
 
-        case "connector" if attrMap1(Pair(config_namespace,"protocol")).asString == "http" =>
-          val res = HttpConnectorConfig( attrMap1(Pair(config_namespace,"port")).asInt, hmap );
+        case "connector" if attrMap1(Pair(config_namespace,"protocol")).value == "http" =>
+          val res = HttpConnectorConfig( attrMap1(Pair(config_namespace,"port")).intValue, hmap );
           hmap = new mutable.HashMap[String,String];
           Some(res)
 
         case "map"       =>
-          hmap.update(attrMap1(Pair(config_namespace,"url")).asString, attrMap1(Pair(config_namespace,"to")).asString);
+          hmap.update(attrMap1(Pair(config_namespace,"url")).value, attrMap1(Pair(config_namespace,"to")).value);
           None
       }
     } else None

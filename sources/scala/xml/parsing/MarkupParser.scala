@@ -9,6 +9,7 @@
 
 package scala.xml.parsing;
 
+import scala.xml.Attribute;
 import scala.collection.{ mutable, Map };
 import scala.collection.immutable.ListMap;
 
@@ -39,10 +40,10 @@ abstract class MarkupParser[MarkupType] {
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c);
 
-  protected var aMap: mutable.Map[String,AttribValue] = _;
+  protected var aMap: mutable.Map[String,Attribute] = _;
 
   final val noChildren = new mutable.ListBuffer[MarkupType];
-  final val noAttribs  = new mutable.HashMap[Pair[String,String], AttribValue];
+  final val noAttribs  = new mutable.HashMap[Pair[String,String], Attribute];
 
   //var xEmbeddedBlock = false;
 
@@ -132,7 +133,7 @@ abstract class MarkupParser[MarkupType] {
     }
     // @todo, iterate over attributes, replace prefix, call handleAttribute.
     handle.internal_startPrefixMapping;
-    val aMap1 = new mutable.HashMap[Pair[String,String],AttribValue];
+    val aMap1 = new mutable.HashMap[Pair[String,String],Attribute];
     val it = aMap.elements;
     while( it.hasNext ) {
       val x @ Pair(Pair(pref,key),Pair(pos,value)) = it.next;
@@ -169,11 +170,11 @@ abstract class MarkupParser[MarkupType] {
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  protected def xTag: Pair[String, mutable.Map[Pair[String,String],AttribValue]] = {
+  protected def xTag: Pair[String, mutable.Map[Pair[String,String],Attribute]] = {
     val elemqName = xName;
 
     xSpaceOpt;
-    val aMap: mutable.Map[Pair[String,String],AttribValue] =
+    val aMap: mutable.Map[Pair[String,String],Attribute] =
       if(xml.Parsing.isNameStart( ch )) {
         xAttributes;
       } else {
