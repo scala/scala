@@ -6,7 +6,7 @@
 dis/List.scala
 
 jvm/JavaInteraction.scala
-jvm/matching.scala
+#jvm/matching.scala
 jvm/xmlLiterals.scala
 jvm/xmlstuff.scala
 
