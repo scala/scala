@@ -202,8 +202,8 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
     def count = Info(1,0);
     def is_defined(key:KEY) = false;
     def get(_key:KEY) = None;
-    def apply(key:KEY) = error("key " + key + "not found");
-    def update(key:KEY, value:Entry) = error("key " + key + "not found");
+    def apply(key:KEY) = error("key " + key + " not found");
+    def update(key:KEY, value:Entry) = error("key " + key + " not found");
     def insert(key:KEY, value:Entry, s:int):anInsertTree =
       if (s == 0) INode(GBNode(value, GBNil, GBNil), 1, 1);
       else ITree(GBNode(value, GBNil, GBNil));
@@ -280,8 +280,8 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
     def merge(larger:aNode) = {
       if(larger==GBNil) this;
       else {
-	val Pair(value,larger1) = larger.take_smallest;
-	GBNode(value,smaller,larger1);
+	val Pair(value1,larger1) = larger.take_smallest;
+	GBNode(value1,this,larger1);
       }
     }
 
