@@ -184,19 +184,6 @@ public class Scope {
 
     public Scope enterOrOverload(Symbol sym) {
 	Entry e = lookupEntry(sym.name);
-        /* !!!
-        if (e == Entry.NONE) {
-            return enter(sym);
-        } else {
-            sym = e.sym.overloadWith(sym);
-            if (e.owner == this) {
-                e.setSymbol(sym);
-                return this;
-            } else {
-                return enter(new Entry(sym, this));
-            }
-        }
-        */
 	if (e.owner == this && (sym.flags & Modifiers.PRIVATE) == 0) {
 	    e.setSymbol(e.sym.overloadWith(sym));
 	    return this;
