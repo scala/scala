@@ -6,10 +6,11 @@
 \documentclass[a4paper,12pt]{article}
 
 \usepackage{palatino}
+\usepackage{alltt}
 \usepackage{xspace}
 \usepackage{url}
 
-\newcommand{\langname}[1]{\textsf{#1}\xspace}
+\newcommand{\langname}[1]{#1\xspace}
 
 \newcommand{\Scala}{\langname{Scala}}
 \newcommand{\Java}{\langname{Java}}
@@ -102,7 +103,7 @@ the \java command. However, a compiled \Scala program needs to access
 some support classes at run-time, which should be available through
 \Java's class path. These support classes are distributed in a JAR
 file called \url{scala.jar}, which lives in the directory
-\url{SCALA_HOME/lib}. Here \url{SCALA_HOME} is a placeholder for the
+\url{SCALA_HOME/lib}. Here \url{SCALA_HOME} is a place-holder for the
 name of the directory where the \Scala distribution was installed.
 
 The example above can therefore be executed using the command below,
@@ -125,7 +126,7 @@ call to \Java's \ident{println} method on the (\Java) object
 All \Java code is accessible as easily from \Scala. Of course, it is
 sometimes necessary to import classes, as one does in \Java, in order
 to be able to use them. All classes in the \ident{java.lang} packages
-are imported by default, others need to be imported explicitely.
+are imported by default, others need to be imported explicitly.
 
 Let's look at another example to see this. The aim of this example is
 to compute and print the factorial of 100 using \Java big integers
@@ -221,12 +222,12 @@ when some event occurs.
 
 In the following program, the timer function is called
 \ident{oncePerSecond}, and it gets a call-back function as argument.
-The type of this function is written \ident{() => unit} and is the
-type of all functions which have no arguments and return a value of
-type \ident{unit}. The main function of this program simply calls this
-timer function with a call-back whose only action is to print a
-sentence on the terminal. In other words, this program endlessly
-prints the sentence \emph{time flies like an arrow} every second.
+The type of this function is written \verb|() => unit| and is the type
+of all functions which have no arguments and return a value of type
+\ident{unit}. The main function of this program simply calls this
+timer function with a call-back which prints a sentence on the
+terminal. In other words, this program endlessly prints the sentence
+\emph{time flies like an arrow} every second.
 
 \begin{scalaprogram}{Timer}
 object Timer {
@@ -241,14 +242,126 @@ object Timer {
 }
 \end{scalaprogram}
 
-% TODO fonctions anonymes
+\subsubsection{Anonymous functions}
+\label{sec:anonymous-functions}
+
+While this program is easy to understand, it can be refined a bit.
+First of all, notice that the function \ident{timeFlies} is only
+defined in order to be passed later to the \ident{oncePerSecond}
+function. Having to give a name to that function, which is only used
+once, might seem unnecessary, and it would in fact be nice to be able
+to construct this function just as it is passed to
+\ident{oncePerSecond}. This is possible in \Scala using
+\emph{anonymous functions}, which are exactly that: functions without
+a name. The revised version of our timer program using an anonymous
+function instead of \ident{timeFlies} looks like that:
+\begin{scalaprogram}{TimerAnonymous}
+object TimerAnonymous {
+  def oncePerSecond(callback: () => unit): unit =
+    while (true) { callback(); Thread sleep 1000 };
+
+  def main(args: Array[String]): unit =
+    oncePerSecond(() =>
+      System.out.println("time flies like an arrow..."));
+}
+\end{scalaprogram}
+The presence of an anonymous function in this example is revealed by
+the right arrow `\verb|=>|' which separates the function's argument
+list from its body. In this example, the argument list is empty, as
+witnessed by the empty pair of parenthesis on the left of the arrow.
+The body of the function is the same as the one of \ident{timeFlies}
+above.
+
 % TODO fonctions avec environnement
 
 \section{Classes}
 \label{sec:classes}
 
+As we have seen above, \Scala is an object-oriented language, and as
+such it has a concept of class.\footnote{For the sake of completeness,
+  it should be noted that some object-oriented languages do not have
+  the concept of class, but \Scala is not one of them.}
+Classes in \Scala are declared using a syntax which is close to
+\Java's syntax. One important difference is that classes in \Scala can
+have parameters. This is illustrated in the following definition of
+complex numbers.
+\begin{scalaprogram}{Complex}
+class Complex(real: double, imaginary: double) {
+  def re() = real;
+  def im() = imaginary;
+}
+\end{scalaprogram}
+This complex class takes two arguments, which are the real and
+imaginary part of the complex. It then defines two methods, called
+\ident{re} and \ident{im} which give access to these two parts.
+
+It should be noted that the return type of these two methods is not
+given explicitly. It will be inferred automatically by the compiler,
+which looks at the right-hand side of these methods and deduces that
+both return a value of type \ident{double}.
+
+The compiler is not always able to infer types like it does here, and
+there is unfortunately no simple rule to know exactly when it will be,
+and when not. In practice, this is usually not a problem since the
+compiler complains when it is not able to infer a type which was not
+given explicitly. As a simple rule, beginner \Scala programmers
+should try to omit type declarations which seem superfluous to them,
+because they are easily deduced from the context, and see whether the
+compiler agrees with them. After some time, they should get a good
+feeling about when to omit types, and when to specify them
+explicitly.
+
+\subsection{Methods without arguments}
+\label{sec:meth-wo-args}
+
+A small problem of the methods \ident{re} and \ident{im} is that, in
+order to call them, one has to put an empty pair of parenthesis after
+their name, as the following example shows:
+\begin{alltt}
+val c = new Complex(1.2, 3.4);
+System.out.println("imaginary part: " + \underline{c.im()});
+\end{alltt}
+It would be nicer to be able to access the real and imaginary parts
+like if they were fields, without putting the empty pair of
+parenthesis. This is perfectly doable in \Scala, simply by defining
+the methods as methods \emph{without arguments}. These differ from
+methods with zero arguments in that they don't have parenthesis after
+their name, neither in their definition nor in their use. Our
+\ident{Complex} class can be rewritten as follows:
+\begin{scalaprogram}{Complex2}
+class Complex(real: double, imaginary: double) {
+  def re = real;
+  def im = imaginary;
+}
+\end{scalaprogram}
+
+\subsection{Inheritance and overriding}
+\label{sec:inheritance}
+
+All classes in \Scala inherit from a super-class. When no super-class
+is specified, as in the \ident{Complex} example of previous section,
+\ident{scala.Object} is implicitly used.
+
+It is possible to override methods inherited from a super-class in
+\Scala. It is however mandatory to explicitly specify that a method
+overrides another one using the \ident{override} modifier, in order to
+avoid accidental overriding. As an example, our \ident{Complex} class
+can be augmented with a redefinition of the \ident{toString} method
+inherited from \ident{Object}.
+\begin{scalaprogram}{Complex3}
+class Complex(real: double, imaginary: double) {
+  def re = real;
+  def im = imaginary;
+  override def toString() =
+    "" + re + (if (im < 0) "-" else "+") + im + "i";
+}
+\end{scalaprogram}
+
 \section{Mixins}
 \label{sec:mixins}
+
+Apart from inheriting code from a super-class, a \Scala class can also
+import code from one or several \emph{mixins}.
 
 \section{Case classes and pattern matching}
 \label{sec:case-classes-pattern}
