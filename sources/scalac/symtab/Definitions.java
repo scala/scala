@@ -301,12 +301,12 @@ public class Definitions {
 	*/
 
         STRING_PLUS_ANY = new TermSymbol(
-	    Position.NOPOS, Names.PLUS, STRING_CLASS, Modifiers.FINAL);
+	    Position.NOPOS, Names.PLUS, JAVA_STRING_CLASS, Modifiers.FINAL);
         STRING_PLUS_ANY.setInfo(
 	    Type.MethodType(
 		new Symbol[]{newParameter(STRING_PLUS_ANY, ANY_TYPE)},
 		STRING_TYPE));
-        STRING_CLASS.members().enter(STRING_PLUS_ANY);
+        JAVA_STRING_CLASS.members().enter(STRING_PLUS_ANY);
 
         // add members to class scala.Any
         MATCH = new TermSymbol(
