@@ -68,7 +68,7 @@ class Auction(seller: Actor, minBid: int, closing: Date) extends Actor {
 
 // ---- Test -------------------------------------------------------------
 
-object testAuction {
+object auction {
 
   val random = new java.util.Random();
 
@@ -82,7 +82,7 @@ object testAuction {
 
   def client(i: int, increment: int, top: int) = new Actor {
     val name = "Client " + i;
-    def log(msg: String) = System.out.println(name + ": " + msg);
+    def log(msg: String) = Console.println(name + ": " + msg);
     var running = true;
     var max: int = _;
     var current: int = 0;
