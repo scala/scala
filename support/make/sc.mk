@@ -29,7 +29,7 @@
 # normal value. Those values are specified by variables whose name is
 # prefixed with the target name. For example, to override the value of
 # the variable SC_CLASSPATH with target LIBRARY, one may define the
-# variable LIBRARY_SC_CLASSPATH
+# variable LIBRARY_SC_CLASSPATH.
 #
 ##############################################################################
 # Examples
@@ -58,7 +58,7 @@
 SC_COMPILER		?= SCALAC
 CYGWIN_PATH		?= $(1)
 CYGWIN_FILE		?= $(1)
-SCALAC			?= socos
+SCALAC			?= scalac
 
 ##############################################################################
 # Values
