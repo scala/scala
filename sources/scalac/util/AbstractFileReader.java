@@ -73,35 +73,35 @@ public class AbstractFileReader {
 
     /** extract a character at position bp from buf
      */
-    public char getChar(int bp) {
-        return (char)(((buf[bp] & 0xff) << 8) + (buf[bp+1] & 0xff));
+    public char getChar(int mybp) {
+        return (char)(((buf[mybp] & 0xff) << 8) + (buf[mybp+1] & 0xff));
     }
 
     /** extract an integer at position bp from buf
      */
-    public int getInt(int bp) {
-        return  ((buf[bp  ] & 0xff) << 24) +
-                ((buf[bp+1] & 0xff) << 16) +
-                ((buf[bp+2] & 0xff) << 8) +
-                 (buf[bp+3] & 0xff);
+    public int getInt(int mybp) {
+        return  ((buf[mybp  ] & 0xff) << 24) +
+                ((buf[mybp+1] & 0xff) << 16) +
+                ((buf[mybp+2] & 0xff) << 8) +
+                 (buf[mybp+3] & 0xff);
     }
 
     /** extract a long integer at position bp from buf
      */
-    public long getLong(int bp) {
-        return ((long)(getInt(bp)) << 32) + (getInt(bp + 4) & 0xffffffffL);
+    public long getLong(int mybp) {
+        return ((long)(getInt(mybp)) << 32) + (getInt(mybp + 4) & 0xffffffffL);
     }
 
     /** extract a float at position bp from buf
      */
-    public strictfp float getFloat(int bp) {
-        return Float.intBitsToFloat(getInt(bp));
+    public strictfp float getFloat(int mybp) {
+        return Float.intBitsToFloat(getInt(mybp));
     }
 
     /** extract a double at position bp from buf
      */
-    public strictfp double getDouble(int bp) {
-        return Double.longBitsToDouble(getLong(bp));
+    public strictfp double getDouble(int mybp) {
+        return Double.longBitsToDouble(getLong(mybp));
     }
 
    /** skip next 'n' bytes

@@ -91,25 +91,24 @@ public class TransMatch extends OwnerTransformer {
         int i = 0;
         while (i < cases.length) {
             containsReg = TestRegTraverser.apply(cases[i]) || containsReg;
-	    Set nilvars = TestRegTraverser.getNilVariables();
-	    if(!nilvars.isEmpty()) {
-		//System.err.println("nilvars present");
-		Tree[] newBody = new Tree[ nilvars.size() + 1 ];
-		int j=0;
-		for( Iterator it = nilvars.iterator(); it.hasNext(); ) {
-		    Symbol v = (Symbol) it.next();
-		    newBody[ j++ ] = unit.global.treeGen.ValDef(v,
-								unit.global.treeGen.Nil(cases[i].pos));
-		}
-		newBody[ newBody.length - 1 ] = cases[i].body;
-		cases[i].body = unit.global.treeGen.mkBlock( newBody );
-	    }
-	    i++;
-	}
-
+            Set nilvars = TestRegTraverser.getNilVariables();
+            if(!nilvars.isEmpty()) {
+                //System.err.println("nilvars present");
+                Tree[] newBody = new Tree[ nilvars.size() + 1 ];
+                int j=0;
+                for( Iterator it = nilvars.iterator(); it.hasNext(); ) {
+                    Symbol v = (Symbol) it.next();
+                    newBody[ j++ ] = unit.global.treeGen.ValDef(v,
+                                                                unit.global.treeGen.Nil(cases[i].pos));
+                }
+                newBody[ newBody.length - 1 ] = cases[i].body;
+                cases[i].body = unit.global.treeGen.mkBlock( newBody );
+            }
+            i++;
+        }
         if (containsReg) {
-	    AlgebraicMatcher am = new AlgebraicMatcher( unit );
-	    Matcher matcher = new Matcher( currentOwner, root, restpe );
+            AlgebraicMatcher am = new AlgebraicMatcher( unit );
+            Matcher matcher = new Matcher( currentOwner, root, restpe );
             am.construct( matcher, cases );
             return matcher.tree;
         } else {
@@ -117,7 +116,7 @@ public class TransMatch extends OwnerTransformer {
                                                    currentOwner, restpe);
             pm.enter(cases);
             if (global.log()) {
-            	global.log("internal pattern matching structure");
+                global.log("internal pattern matching structure");
                 pm.print();
             }
             return pm.toTree();

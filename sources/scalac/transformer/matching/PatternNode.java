@@ -14,9 +14,9 @@ import scalac.ast.*;
 import scalac.symtab.*;
 import scalac.typechecker.*;
 
-/** intermediary data structure for algebraic matching
- */
 
+/** Intermediate data structure for algebraic matcher
+ */
 public class PatternNode {
     public int pos = Position.FIRSTPOS;
     public Type type;
@@ -27,11 +27,11 @@ public class PatternNode {
     public case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body);
     public case DefaultPat();
     public case ConstrPat(Symbol casted);
-    public case SequencePat(Symbol casted, int len); // only used in PatternMatcher
-    public case SeqContainerPat(Symbol casted, Tree seqpat); //   in AlgebraicMatcher
     public case ConstantPat(Object value);
     public case VariablePat(Tree tree);
-
+    public case AltPat(Header subheader);
+    public case SequencePat(Symbol casted, int len); // only used in PatternMatcher
+    public case SeqContainerPat(Symbol casted, Tree seqpat); //   in AlgebraicMatcher
 
     public PatternNode dup() {
     	PatternNode res;
@@ -59,6 +59,9 @@ public class PatternNode {
 				break;
 			case VariablePat(Tree tree):
 				res = VariablePat(tree);
+				break;
+			case AltPat(Header subheader):
+				res = AltPat(subheader);
 				break;
 			default:
 				throw new ApplicationError();

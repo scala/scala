@@ -53,6 +53,10 @@ public class AlgebraicMatcher extends PatternMatcher {
             for( int i = 0; i < cases.length; i++ ) {
                 enter( cases[ i ] );//(CaseDef) cases[i], i);
             }
+            if (unit.global.log()) {
+                unit.global.log("internal pattern matching structure");
+                print();
+            }
             _m.tree = toTree();
       }
 

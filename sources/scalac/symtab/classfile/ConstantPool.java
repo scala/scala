@@ -97,14 +97,11 @@ public class ConstantPool implements ClassfileConstants {
             case CONSTANT_UTF8:
                 poolObj[i] = Name.fromAscii(in.buf, index + 3, in.getChar(index + 1));
                 break;
-
             case CONSTANT_UNICODE:
                 throw new RuntimeException("can't read unicode strings in classfiles");
-
             case CONSTANT_CLASS:
                 poolObj[i] = classOrType(readExternal(in.getChar(index + 1)));
                 break;
-
             case CONSTANT_FIELDREF: {
                 //Symbol owner = (Symbol)readPool(in.getChar(index + 1));
                 //NameAndType nt = (NameAndType)readPool(in.getChar(index + 3));
@@ -112,7 +109,6 @@ public class ConstantPool implements ClassfileConstants {
                 //    .type(sigparser.sigToType(Name.names, nt.sig.index, nt.sig.length()));
                 throw new RuntimeException("can't read constant_fieldrefs in classfiles");
             }
-
             case CONSTANT_METHODREF:
             case CONSTANT_INTFMETHODREF: {
                 //Symbol owner = (Symbol)readPool(in.getChar(index + 1));
@@ -121,19 +117,25 @@ public class ConstantPool implements ClassfileConstants {
                 //        .type(sigparser.sigToType(Name.names, nt.sig.index, nt.sig.length()));
                 throw new RuntimeException("can't read constant_methodrefs in classfiles");
             }
-
             case CONSTANT_NAMEANDTYPE:
                 poolObj[i] = new NameAndType((Name)readPool(in.getChar(index + 1)),
                                              readExternal(in.getChar(index + 3)));
                 break;
-
             case CONSTANT_STRING:
+            	poolObj[i] = ((Name)readPool(in.getChar(index + 1))).toString();
+            	break;
             case CONSTANT_INTEGER:
+            	poolObj[i] = new Integer(in.getInt(index + 1));
+            	break;
             case CONSTANT_FLOAT:
+            	poolObj[i] = new Float(in.getFloat(index + 1));
+            	break;
             case CONSTANT_LONG:
+            	poolObj[i] = new Long(in.getLong(index + 1));
+            	break;
             case CONSTANT_DOUBLE:
-                throw new RuntimeException("can't read constants in classfiles");
-
+                poolObj[i] = new Double(in.getDouble(index + 1));
+            	break;
             default:
                 throw new RuntimeException("bad constant pool tag: " + in.byteAt(index));
         }
