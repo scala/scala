@@ -663,6 +663,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == CLASS && (flags & PACKAGE) != 0;
     }
 
+    /** Does this symbol have the PACKAGE flag? */
+    public final boolean hasPackageFlag() {
+        return (flags & PACKAGE) != 0;
+    }
+
     /** Does this symbol denote a module? */
     public final boolean isModule() {
         return kind == VAL && (flags & MODUL) != 0;
