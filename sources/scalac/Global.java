@@ -626,42 +626,6 @@ public abstract class Global {
 
     // !!! >>> Interpreter stuff
 
-    /** stop the compilation process immediately
-     */
-    public static Error fail() {
-        throw new ApplicationError();
-    }
-
-    /** stop the compilation process immediately
-     */
-    public static Error fail(String message) {
-        throw new ApplicationError(message);
-    }
-
-    /** stop the compilation process immediately
-     */
-    public static Error fail(String message, Object object) {
-        throw new ApplicationError(message, object);
-    }
-
-    /** stop the compilation process immediately
-     */
-    public static Error fail(Object value) {
-        throw new ApplicationError(value);
-    }
-
-    /** stop the compilation process immediately
-     */
-    public static Error fail(String message, Throwable cause) {
-        throw new ApplicationError(message, cause);
-    }
-
-    /** stop the compilation process immediately
-     */
-    public static Error fail(Throwable cause) {
-        throw new ApplicationError(cause);
-    }
-
     /** issue a global error
      */
     public void error(String message) {

@@ -771,7 +771,7 @@ public class TypesAsValuesPhase extends Phase {
                 return methodType(pos, vparams, result, owner, env);
 
             default:
-                throw global.fail("unexpected type: ", tp);
+                throw Debug.abortIllegalCase(tp);
             }
         }
 

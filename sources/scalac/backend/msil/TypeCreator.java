@@ -427,7 +427,7 @@ final class TypeCreator {
 		translateMethod(alts[i], newClazz, newName);
 	    return;
 	default:
-	    global.fail(Debug.show(sym) + " : " + Debug.show(sym.info()));
+	    throw Debug.abort(Debug.show(sym, sym.info()));
 	}
     }
 
@@ -793,8 +793,7 @@ final class TypeCreator {
 	    break;
 
 	default:
-	    global.fail("Symbol does not have a CompoundType: " +
-			Debug.show(clazz));
+	    throw Debug.abort("Symbol does not have a CompoundType", clazz);
 	}
 	typeBuilders.add(type);
 	map(clazz, type);
@@ -940,7 +939,7 @@ final class TypeCreator {
 		}
 		break;
 	    default:
-		global.fail("Symbol doesn't have a method type: " + Debug.show(sym));
+		throw Debug.abort("Symbol doesn't have a method type", sym);
 	    }
 	    assert method != null
 		: Debug.show(owner) + " => Cannot find method: " + methodSignature(sym);
