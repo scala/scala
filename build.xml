@@ -1,0 +1,21 @@
+<project name="scala" default="scala.xml" basedir=".">
+
+  <!-- the bootstrap compiler jar archive -->
+  <property name="bootstrap.jar" value="lib/jaco.jar"/>
+
+  <!-- task definitions for pico -->
+  <taskdef name="pico"
+           classname="jaco.pizza.AntTask">
+    <classpath path="${bootstrap.jar}"/>
+  </taskdef>
+
+  <property name="sources" value="sources" />  <!-- the target directory -->
+  <property name="classes" value="classes" />  <!-- the target directory -->
+
+  <target name="scala.xml">
+      <pico srcdir="${sources}" destdir="${classes}" source="1.4" classpath="${classes}">
+         <include name="scala/xml/*.java"/>
+      </pico>
+  </target>
+
+</project>
