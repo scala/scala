@@ -3173,6 +3173,12 @@ associativity of operators in patterns is the same as in expressions
 (\sref{sec:infix-operations}). The operands may not be empty sequence
 patterns.
 
+Regular expressions that contain variable bindings may be ambiguous,
+i.e. there might be several ways to match a sequence against the
+pattern. In these cases, the \emph{shortest-match policy} applies:
+patterns that appear before other, overlapping patterns match
+as little as possible.
+
 \example Some examples of patterns are:
 \begin{enumerate}
 \item
@@ -3183,9 +3189,22 @@ The pattern \verb@(x, _)@ matches pairs of values, binding \verb@x@ to
 the first component of the pair. The second component is matched
 with a wildcard pattern.
 \item
-The pattern \verb@List( x, y, xs @ \_ * )@ matches lists of length $\geq 2$,
+The pattern \verb+List( x, y, xs @ _ * )+ matches lists of length $\geq 2$,
 binding \verb@x@ to the lists's first element, \verb@y@ to the list's
-second element, and \verb@xs@ to the remainder.
+second element, and \verb@xs@ to the remainder, which may be empty.
+\item
+The pattern \verb=List( 1, x@(( 'a' | 'b' )+),y,_ )= matches a list that
+contains 1 as its first element, continues with a non-empty sequence of 
+\verb@'a'@s and \verb@'b'@s, followed by two more elements. The sequence 'a's and 'b's
+is bound to \verb@x@, and the next to last element is bound to \verb@y@.
+\item
+The pattern \verb=List( x@( 'a'* ), 'a'+ )= matches a non-empty list of
+\verb@'a'@s. Because of the shortest match policy, \verb@x@ will always be bound to
+the empty sequence.
+\item
+The pattern \verb=List( x@( 'a'+ ), 'a'* )= also matches a non-empty list of
+\verb@'a'@s. Here, \verb@x@ will always be bound to
+the sequence containing one \verb@'a'@
 \end{enumerate}
 
 \subsection{Pattern Matching Expressions}
