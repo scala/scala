@@ -1,7 +1,17 @@
-// $Id$
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 
 package scala.testing;
 
+/** some simple methods to support unit testing with assertions
+**  to contain more JUnit style assertions which use Scala's features.
+*/
 object UnitTest {
 
   import java.lang.System;
@@ -16,55 +26,18 @@ object UnitTest {
     System.out.println(" but expected " + expected)
   }
 
-  def testEquals[a]( actual: a, expected: a ):Unit = {
-
+  def assertEquals[a]( actual: a, expected: a ):Unit =
     if( actual == expected )
-      {
         message_passedOK
-      }
     else
-      {
-	message_failed( actual.toString(), expected.toString() )
-      }
+	message_failed( actual.toString(), expected.toString() );
 
-  } // testEquals
-
-  def testNotEquals[a]( actual: a, expected: a ):Unit = {
-
+  def assertNotEquals[a]( actual: a, expected: a ):Unit =
     if( actual != expected )
-      {
         message_passedOK
-      }
     else
-      {
-	message_failed( actual.toString(), "something != "+expected.toString() )
-      }
+	message_failed( actual.toString(), "something != "+expected.toString() );
 
-  } // testNotEquals
-
-  def test[b,a]( doit:b => a, input: b, expected:a ):Unit = {
-    val actual = doit( input );
-    if( actual == expected )
-      {
-        message_passedOK
-      }
-    else
-      {
-	message_failed( actual.toString(), expected.toString() )
-      }
-  } // test
-
-  def test2[c,b,a]( doit:(c,b) => a, in1: c, in2: b, expected:a ): Unit = {
-    val actual = doit( in1, in2 );
-    if( actual == expected )
-      {
-        message_passedOK;
-      }
-    else
-      {
-	message_failed( actual.toString(), expected.toString() )
-      }
-
-  } // test2
+  def test[a]( def doit: a, expected: a ):Unit = assertEquals( doit, expected );
 
 } // unitTest
