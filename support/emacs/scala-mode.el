@@ -42,7 +42,7 @@
           "\\|" "\\(" scala-char-re "\\)" "\\)")
   "Regular expression matching any Scala literal.")
 
-(defconst scala-most-special-chars (mapcar 'identity "<>+-*/|@#%&!?$^'`~\\")
+(defconst scala-most-special-chars (mapcar 'identity "<>+-*/|@#%&!?$^`~")
   "List of almost all Scala special characters.
 Not included in this list are the special characters which are
 reserved keywords when used alone.")
@@ -60,11 +60,11 @@ reserved keywords when used alone.")
   "Regular expression matching a single Scala special character")
 
 (defconst scala-keywords-re
-  (regexp-opt '("abstract" "case" "catch" "class" "def" "do" "else"
-                "extends" "final" "for" "if" "import" "new" "object"
-                "override" "package" "private" "protected"
-                "sealed" "super" "this" "trait" "try" "val" "var"
-                "while" "with" "yield")
+  (regexp-opt '("abstract" "case" "class" "catch" "def" "do" "else"
+                "extends" "final" "finally" "for" "if" "import" "new" "object"
+                "override" "package" "private" "protected" "return"
+                "sealed" "super" "this" "throw" "trait" "try" "val" "var"
+                "with" "while" "yield")
 	      'words))
 
 (defconst scala-constants-re
@@ -668,6 +668,7 @@ When started, run `scala-mode-hook'.
 ;; strings and character literals
 (modify-syntax-entry ?\" "\"" scala-mode-syntax-table)
 (modify-syntax-entry ?\' "\"" scala-mode-syntax-table)
+(modify-syntax-entry ?\\ "\\" scala-mode-syntax-table)
 
 ;; different kinds of "parenthesis"
 (modify-syntax-entry ?\( "()" scala-mode-syntax-table)
