@@ -950,9 +950,9 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Symbol accessed() {
         assert (flags & ACCESSOR) != 0;
-        Name name1 = name;
-        if (name1.toString().endsWith(Names._EQ.toString()))
-            name1 = name1.subName(0, name1.length() - Names._EQ.length());
+        String name1 = name.toString();
+        if (name1.endsWith(Names._EQ.toString()))
+            name1 = name1.substring(0, name1.length() - Names._EQ.length());
         return owner.info().lookup(Name.fromString(name1 + "$"));
     }
 

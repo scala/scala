@@ -26,7 +26,7 @@ public interface JavaTypeFactory {
     Type voidType();
     Type objectType();
     Type stringType();
-    Type classType(Name classname);
+    Type classType(String classname);
     Type classType(Symbol clasz);
     Type arrayType(Type elemtpe);
     Type methodType(Type[] argtpes, Type restpe, Type[] thrown);

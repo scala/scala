@@ -109,7 +109,7 @@ class GenJVM {
         initTypeMap();
         initArithPrimMap();
 
-        JAVA_RMI_REMOTE_CLASS = defs.getClass(Name.fromString(JAVA_RMI_REMOTE));
+        JAVA_RMI_REMOTE_CLASS = defs.getClass(JAVA_RMI_REMOTE);
     }
 
     /// Code generation

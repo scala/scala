@@ -2394,21 +2394,18 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  .setType(owntype.instanceType());
 	      } else {
 		pushContext(tree, context.owner, new Scope(context.scope));
+                val clazz: Symbol = context.owner.newAnonymousClass(templ.pos);
 		val cd: Tree = make.ClassDef(
 		  templ.pos,
-		  0,
-		  Names.ANON_CLASS_NAME.toTypeName(),
+		  clazz,
 		  Tree.AbsTypeDef_EMPTY_ARRAY,
 		  NewArray.ValDefArray(Tree.ValDef_EMPTY_ARRAY),
 		  Tree.Empty,
 		  templ);
+                defineSym(cd, unit, context);
 		//new TextTreePrinter().print(cd).println().end();//DEBUG
-		enterSym(cd);
 		val cd1 = transform(cd);
-		val clazz: Symbol = cd1.symbol();
-		if (clazz.kind != CLASS)
-		  errorTree(tree.pos)
-		else {
+		{
 		  // compute template's type with new refinement scope.
 		  val parentTypes = clazz.info().parents();
 		  val refinement: Scope = new Scope();

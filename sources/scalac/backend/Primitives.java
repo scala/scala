@@ -320,7 +320,7 @@ public class Primitives {
         this.primitives = new HashMap();
         this.jreNameWriter = new SymbolNameWriter().setClassSeparator('$');
         this.clrNameWriter = new SymbolNameWriter().setNameDecoding(false/*true*/);
-        this.RUNTIME = definitions.getModule(Names.scala_runtime_RunTime);
+        this.RUNTIME = definitions.getModule("scala.runtime.RunTime");
         this.NEW_ZARRAY = getUniqueTerm(RUNTIME, ZARRAY_N);
         this.NEW_BARRAY = getUniqueTerm(RUNTIME, BARRAY_N);
         this.NEW_SARRAY = getUniqueTerm(RUNTIME, SARRAY_N);

@@ -351,8 +351,6 @@ public abstract class Global {
     // !!! <<< Interpreter stuff
     public static final String CONSOLE_S = "$console$";
     private static final Name
-        CONSOLE_N               = Name.fromString(CONSOLE_S),
-        INTERPRETER_N           = Name.fromString("scala.runtime.InterpreterSupport"),
         SHOW_DEFINITION_N       = Name.fromString("showDefinition"),
         SHOW_VALUE_DEFINITION_N = Name.fromString("showValueDefinition"),
         SET_EVALUATION_RESULT_N = Name.fromString("setEvaluationResult");
@@ -365,7 +363,7 @@ public abstract class Global {
 
     private Symbol INTERPRETER() {
         if (INTERPRETER == null)
-            INTERPRETER = definitions.getModule(INTERPRETER_N);
+            INTERPRETER = definitions.getModule("scala.runtime.InterpreterSupport");
         return INTERPRETER;
     }
 

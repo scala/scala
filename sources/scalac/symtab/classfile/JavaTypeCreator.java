@@ -99,7 +99,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         return STRING_TYPE;
     }
 
-    public Type classType(Name classname) {
+    public Type classType(String classname) {
         return classType(definitions.getClass(classname));
     }
 

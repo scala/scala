@@ -19,8 +19,6 @@ public class Names {
     private static final String SUPER_PREFIX = "super$";
     private static final String TUPLE_FIELD_PREFIX = "_";
     private static final String TYPE_PREFIX = "type$";
-    private static final String scala_Tuple_PREFIX = "scala.Tuple";
-    private static final String scala_Function_PREFIX = "scala.Function";
 
     public static Name ALIAS(ClassSymbol clasz) {
         return Name.fromString(ALIAS_PREFIX + clasz.name).toTypeName();
@@ -63,14 +61,6 @@ public class Names {
 
     public static Name TYPE(Symbol sym) {
         return Name.fromString(TYPE_PREFIX + sym.name);
-    }
-
-    public static Name scala_Tuple(int arity) {
-        return Name.fromString(scala_Tuple_PREFIX + arity);
-    }
-
-    public static Name scala_Function(int arity) {
-        return Name.fromString(scala_Function_PREFIX + arity);
     }
 
     public static final Name ERROR = Name.ERROR;
@@ -161,10 +151,6 @@ public class Names {
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
     public static final Name isEmpty = Name.fromString("isEmpty");
     public static final Name java = Name.fromString("java");
-    public static final Name java_lang = Name.fromString("java.lang");
-    public static final Name java_lang_Object = Name.fromString("java.lang.Object");
-    public static final Name java_lang_String = Name.fromString("java.lang.String");
-    public static final Name java_lang_Throwable = Name.fromString("java.lang.Throwable");
     public static final Name lang = Name.fromString("lang");
     public static final Name length = Name.fromString("length");
     public static final Name match = Name.fromString("match");
@@ -178,43 +164,6 @@ public class Names {
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
     public static final Name xml = Name.fromString("xml");
-    public static final Name scala_COLONCOLON = Name.fromString("scala." + COLONCOLON);
-    public static final Name scala_All = Name.fromString("scala.All");
-    public static final Name scala_AllRef = Name.fromString("scala.AllRef");
-    public static final Name scala_Any = Name.fromString("scala.Any");
-    public static final Name scala_AnyRef = Name.fromString("scala.AnyRef");
-    public static final Name scala_AnyVal = Name.fromString("scala.AnyVal");
-    public static final Name scala_Array = Name.fromString("scala.Array");
-    public static final Name scala_Boolean = Name.fromString("scala.Boolean");
-    public static final Name scala_Byte = Name.fromString("scala.Byte");
-    public static final Name scala_Case = Name.fromString("scala.Case");
-    public static final Name scala_Char = Name.fromString("scala.Char");
-    public static final Name scala_Console = Name.fromString("scala.Console");
-    public static final Name scala_Double = Name.fromString("scala.Double");
-    public static final Name scala_Float = Name.fromString("scala.Float");
-    public static final Name scala_Function = Name.fromString(scala_Function_PREFIX);
-    public static final Name scala_Int = Name.fromString("scala.Int");
-
-    public static final Name scala_Iterable = Name.fromString("scala.Iterable");
-    public static final Name scala_Iterator = Name.fromString("scala.Iterator");
-    public static final Name scala_List = Name.fromString("scala.List");
-    public static final Name scala_Long = Name.fromString("scala.Long");
-    public static final Name scala_MatchError = Name.fromString("scala.MatchError");
-    public static final Name scala_Nil = Name.fromString("scala.Nil");
-    public static final Name scala_ScalaObject = Name.fromString("scala.ScalaObject");
-    public static final Name scala_PartialFunction = Name.fromString("scala.PartialFunction");
-    public static final Name scala_Predef = Name.fromString("scala.Predef");
-    public static final Name scala_Ref = Name.fromString("scala.Ref");
-    public static final Name scala_Seq = Name.fromString("scala.Seq");
-    public static final Name scala_Short = Name.fromString("scala.Short");
-    public static final Name scala_Symbol = Name.fromString("scala.Symbol");
-    public static final Name scala_Tuple = Name.fromString("scala.Tuple");
-    public static final Name scala_Type = Name.fromString("scala.Type");
-    public static final Name scala_ConstructedType = Name.fromString("scala.ConstructedType");
-    public static final Name scala_SingleType = Name.fromString("scala.SingleType");
-    public static final Name scala_Unit = Name.fromString("scala.Unit");
-    public static final Name scala_runtime = Name.fromString("scala.runtime");
-    public static final Name scala_runtime_RunTime = Name.fromString("scala.runtime.RunTime");
     public static final Name synchronized_ = Name.fromString("synchronized");
     public static final Name eq = Name.fromString("eq");
     public static final Name equals = Name.fromString("equals");

@@ -244,8 +244,8 @@ public class CLRPackageParser extends SymbolLoader {
         String n1 = "";
         for (Symbol q = p; !q.isRoot(); q = q.owner()) {
             n1 = NameTransformer.decode(q.name) + "." + n1;
-            if (q == global.definitions.JAVA_CLASS
-                || q == global.definitions.SCALA_CLASS)
+            if (q.module() == global.definitions.JAVA
+                || q.module() == global.definitions.SCALA)
                 return;
         }
 	for (int i = 0; i < types.length; i++) {

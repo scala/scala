@@ -26,16 +26,19 @@ public class Definitions {
     public final ATreeTyper atyper;
 
     //########################################################################
-    // Public Fields & Methods - Root, java and scala packages
+    // Public Fields & Methods - Root class and some standard packages
 
-    /** The root package */
+    /** The root class */
     public final Symbol ROOT_CLASS;
 
     /** The java package */
-    public final Symbol JAVA_CLASS;
+    public final Symbol JAVA;
+
+    /** The java.lang package */
+    public final Symbol JAVALANG;
 
     /** The scala package */
-    public final Symbol SCALA_CLASS;
+    public final Symbol SCALA;
 
     //########################################################################
     // Public Fields & Methods - Top and bottom classes
@@ -581,59 +584,61 @@ public class Definitions {
         // create attributed tree typer
         atyper = new ATreeTyper(global, this);
 
-        // the root package
+        // the root class
         ROOT_CLASS = ClassSymbol.newRootClass(new PackageParser(global));
 
-        // the java and scala packages
-        JAVA_CLASS = getModule(Names.java).moduleClass();
-        SCALA_CLASS = getModule(Names.scala).moduleClass();
+        // the java, java.lang and scala packages
+        JAVA = getModule("java");
+        JAVALANG = getModule("java.lang");
+        SCALA = getModule("scala");
 
         // the top and bottom classes
+        Symbol SCALA_CLASS = SCALA.moduleClass();
         ANY_CLASS = newClass(SCALA_CLASS, Names.Any, 0);
-        ANYVAL_CLASS = getClass(Names.scala_AnyVal);
+        ANYVAL_CLASS = getClass("scala.AnyVal");
         ANYREF_CLASS = newAlias(SCALA_CLASS, Names.AnyRef, 0);
         ALLREF_CLASS = newClass(SCALA_CLASS, Names.AllRef, 0);
         ALL_CLASS = newClass(SCALA_CLASS, Names.All, 0);
 
         // the java classes
-        OBJECT_CLASS = getClass(Names.java_lang_Object);
-        THROWABLE_CLASS = getClass(Names.java_lang_Throwable);
-        STRING_CLASS = getClass(Names.java_lang_String);
+        OBJECT_CLASS = getClass("java.lang.Object");
+        THROWABLE_CLASS = getClass("java.lang.Throwable");
+        STRING_CLASS = getClass("java.lang.String");
 
         // the scala value classes
-        UNIT_CLASS = getClass(Names.scala_Unit);
-        BOOLEAN_CLASS = getClass(Names.scala_Boolean);
-        BYTE_CLASS = getClass(Names.scala_Byte);
-        SHORT_CLASS = getClass(Names.scala_Short);
-        CHAR_CLASS = getClass(Names.scala_Char);
-        INT_CLASS = getClass(Names.scala_Int);
-        LONG_CLASS = getClass(Names.scala_Long);
-        FLOAT_CLASS = getClass(Names.scala_Float);
-        DOUBLE_CLASS = getClass(Names.scala_Double);
+        UNIT_CLASS = getClass("scala.Unit");
+        BOOLEAN_CLASS = getClass("scala.Boolean");
+        BYTE_CLASS = getClass("scala.Byte");
+        SHORT_CLASS = getClass("scala.Short");
+        CHAR_CLASS = getClass("scala.Char");
+        INT_CLASS = getClass("scala.Int");
+        LONG_CLASS = getClass("scala.Long");
+        FLOAT_CLASS = getClass("scala.Float");
+        DOUBLE_CLASS = getClass("scala.Double");
 
         // the scala reference classes
-        SCALAOBJECT_CLASS = getClass(Names.scala_ScalaObject);
-        REF_CLASS = getClass(Names.scala_Ref);
+        SCALAOBJECT_CLASS = getClass("scala.ScalaObject");
+        REF_CLASS = getClass("scala.Ref");
         for (int i = 1; i < TUPLE_COUNT; i++) {
-            TUPLE_CLASS[i] = getClass(Names.scala_Tuple(i));
+            TUPLE_CLASS[i] = getClass("scala.Tuple" + i);
             TUPLE_FIELD[i] = new Symbol[i];
         }
         for (int i = 0; i < FUNCTION_COUNT; i++)
-            FUNCTION_CLASS[i] = getClass(Names.scala_Function(i));
-        PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
-        ITERABLE_CLASS = getClass(Names.scala_Iterable);
-        ITERATOR_CLASS = getClass(Names.scala_Iterator);
-        SEQ_CLASS = getClass(Names.scala_Seq);
-        LIST_CLASS = getClass(Names.scala_List);
-        NIL = getModule(Names.scala_Nil);
-        CONS_CLASS = getClass(Names.scala_COLONCOLON);
-        ARRAY_CLASS = getClass(Names.scala_Array);
-        TYPE_CLASS = getClass(Names.scala_Type);
-        CONSTRUCTEDTYPE_CLASS = getClass(Names.scala_ConstructedType);
-        SINGLETYPE_CLASS = getClass(Names.scala_SingleType);
-        PREDEF = getModule(Names.scala_Predef);
-        CONSOLE = getModule(Names.scala_Console);
-        MATCHERROR = getModule(Names.scala_MatchError);
+            FUNCTION_CLASS[i] = getClass("scala.Function" + i);
+        PARTIALFUNCTION_CLASS = getClass("scala.PartialFunction");
+        ITERABLE_CLASS = getClass("scala.Iterable");
+        ITERATOR_CLASS = getClass("scala.Iterator");
+        SEQ_CLASS = getClass("scala.Seq");
+        LIST_CLASS = getClass("scala.List");
+        NIL = getModule("scala.Nil");
+        CONS_CLASS = getClass("scala.$colon$colon");
+        ARRAY_CLASS = getClass("scala.Array");
+        TYPE_CLASS = getClass("scala.Type");
+        CONSTRUCTEDTYPE_CLASS = getClass("scala.ConstructedType");
+        SINGLETYPE_CLASS = getClass("scala.SingleType");
+        PREDEF = getModule("scala.Predef");
+        CONSOLE = getModule("scala.Console");
+        MATCHERROR = getModule("scala.MatchError");
 
         // initialize generated classes and aliases
         initClass(ANY_CLASS, Type.EMPTY_ARRAY);
@@ -732,16 +737,18 @@ public class Definitions {
     // Public Methods
 
     /** Returns the symbol of the module with the given fullname. */
-    public Symbol getModule(Name fullname, boolean fail) {
+    public Symbol getModule(String fullname, boolean fail) {
         Scope scope = ROOT_CLASS.members();
         int i = 0;
         int j = fullname.indexOf('.', i);
         while (j >= 0) {
-            scope = scope.lookup(fullname.subName(i, j)).members();
+            Name name = Name.fromString(fullname.substring(i, j));
+            scope = scope.lookup(name).members();
             i = j + 1;
             j = fullname.indexOf('.', i);
         }
-        Symbol sym = scope.lookup(fullname.subName(i, fullname.length()));
+        Name name = Name.fromString(fullname.substring(i, fullname.length()));
+        Symbol sym = scope.lookup(name);
         if (!sym.isModule()) {
             switch (sym.type()) {
             case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -755,21 +762,23 @@ public class Definitions {
     }
 
     /** Returns the symbol of the module with the given fullname. */
-    public Symbol getModule(Name fullname) {
+    public Symbol getModule(String fullname) {
         return getModule(fullname, true);
     }
 
     /** Returns the symbol of the class with the given fullname. */
-    public Symbol getClass(Name fullname) {
+    public Symbol getClass(String fullname) {
         Scope scope = ROOT_CLASS.members();
         int i = 0;
         int j = fullname.indexOf('.', i);
         while (j >= 0) {
-            scope = scope.lookup(fullname.subName(i, j)).members();
+            Name name = Name.fromString(fullname.substring(i, j));
+            scope = scope.lookup(name).members();
             i = j + 1;
             j = fullname.indexOf('.', i);
         }
-        Symbol sym = scope.lookup(fullname.subName(i, fullname.length()).toTypeName());
+        Name name = Name.fromString(fullname.substring(i, fullname.length()));
+        Symbol sym = scope.lookup(name.toTypeName());
         assert sym.kind != Kinds.NONE : "no class '" + fullname + "'";
         return sym;
     }

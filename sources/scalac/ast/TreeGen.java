@@ -1200,10 +1200,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     public Tree Console_print(int pos, Tree arg) {
-        Symbol sym = global.definitions.getModule( Names.scala_Console );
         return Apply( Select( pos,
-                              mkGlobalRef( pos, sym),
-                              global.definitions.CONSOLE_PRINT()),
+                              mkGlobalRef(pos, definitions.CONSOLE),
+                              definitions.CONSOLE_PRINT()),
                       new Tree[] {
                           arg
                       });

@@ -299,9 +299,9 @@ public abstract class HTMLGenerator {
     protected Symbol[] getPackages(ScalaProgramArgumentParser option) {
 	if (option.main != null) {
 	    Symbol[] packages = new Symbol[option.args.length + 1];
-	    packages[0] = global.definitions.getModule(Name.fromString(option.main));
+	    packages[0] = global.definitions.getModule(option.main);
 	    for(int i = 0; i < option.args.length; i++)
-		packages[i+1] = global.definitions.getModule(Name.fromString(option.args[i]));
+		packages[i+1] = global.definitions.getModule(option.args[i]);
 	    return packages;
 	}
 	else

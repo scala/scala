@@ -249,17 +249,17 @@ final class TypeCreator {
 	translateMethod(JSTRING, "replace",     jChar2, STRING, "Replace");
 	translateMethod(JSTRING, "toCharArray", STRING, "ToCharArray");
 
-	translateMethod(defs.getModule(Name.fromString("java.lang.Byte")).moduleClass()
+	translateMethod(defs.getModule("java.lang.Byte").moduleClass()
 			, "parseByte", jString1, BYTE, "Parse");
-	translateMethod(defs.getModule(Name.fromString("java.lang.Short")).moduleClass()
+	translateMethod(defs.getModule("java.lang.Short").moduleClass()
 			, "parseShort", jString1, SHORT, "Parse");
-	translateMethod(defs.getModule(Name.fromString("java.lang.Integer")).moduleClass()
+	translateMethod(defs.getModule("java.lang.Integer").moduleClass()
 			, "parseInt", jString1, INT, "Parse");
-	translateMethod(defs.getModule(Name.fromString("java.lang.Long")).moduleClass()
+	translateMethod(defs.getModule("java.lang.Long").moduleClass()
 			, "parseLong", jString1, LONG, "Parse");
-	translateMethod(defs.getModule(Name.fromString("java.lang.Float")).moduleClass()
+	translateMethod(defs.getModule("java.lang.Float").moduleClass()
 			, "parseFloat", jString1, FLOAT, "Parse");
-	translateMethod(defs.getModule(Name.fromString("java.lang.Double")).moduleClass()
+	translateMethod(defs.getModule("java.lang.Double").moduleClass()
 			, "parseDouble", jString1, DOUBLE, "Parse");
 
 	SYM_SUBSTRING_INT_INT = lookupMethod(JSTRING, "substring", jInt2);

@@ -343,7 +343,7 @@ public class AttributeParser implements ClassfileConstants {
             nextToken();
             if (s != Symbol.NONE)
                 return s.type();
-            Type clazztype = parser.make.classType(Name.fromString(name)).unalias();
+            Type clazztype = parser.make.classType(name).unalias();
             if (token.equals("[")) {
                 Vector types = new Vector();
                 do {

@@ -30,12 +30,12 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
   startContext.enclClass = startContext;
 
   if (!global.noimports) {
-    addImport(startContext, global.definitions.getModule(Names.java_lang));
-    addImport(startContext, global.definitions.getModule(Names.scala));
+    addImport(startContext, global.definitions.JAVALANG);
+    addImport(startContext, global.definitions.SCALA);
   }
 
   if (!global.noimports && !global.nopredefs) {
-    addImport(startContext, global.definitions.getModule(Names.scala_Predef));
+    addImport(startContext, global.definitions.PREDEF);
   }
 
   val consoleContext = new Context(

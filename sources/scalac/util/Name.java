@@ -125,12 +125,6 @@ public final class Name {
         return string.lastIndexOf(c);
     }
 
-/** returns the subName starting at position start, excluding position end
- */
-    public Name subName(int start, int end) {
-        return fromString(string.substring(start, end));
-    }
-
 /** returns the concatenation of this name and n
  */
     public Name append(Name n) {
