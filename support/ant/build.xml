@@ -1,55 +1,16 @@
-<project name="scala.tools.scalac4ant" default="build.jar" basedir=".">
-
-  <!-- the bootstrap compiler jar archive -->
-  <property name="bootstrap.jar" value="/home/linuxsoft/apps/jaco/lib/jaco.jar"/>
-  <property name="pizza.jar" value="/home/linuxsoft/apps/pizza/lib/pizza.jar" />
-
-  <property name="jar.file" value="scalac4ant.jar"/>
-  <property name="sources" value="src.java" />            <!-- the source directory -->
-  <property name="classes" value="../../classes" />       <!-- the target directory -->
-
-  <!-- task definitions for pico                                       -->
-  <!-- your classpath must contain "jaco.jar"                          -->
-  <taskdef name="pico"
-           classname="jaco.pizza.AntTask"/>
-
-  <!-- compiling the ant task -->
-
-  <target name="build.anttask">
-      <pico srcdir="${sources}" destdir="${classes}" 
-            source="1.4" classpath="${classes}">
-         <include name="scala/tools/scalac4ant/*.java"/>
-      </pico>
-  </target>
-
-  <!-- building jar -->
-
-  <target name="build.jar" depends="build.anttask">
-    <!-- Create war file  -->
-    <jar jarfile="${jar.file}" basedir="${classes}">
-	 <include name="scala/tools/scalac4ant/**"/>
-    </jar>
-  </target>
-
-  <!-- testing scalac4ant.jar -->
+<project name="scala.tools.scala4ant" default="test" basedir=".">
   
   <target name="test">
   <!-- your classpath must contain                                    -->
-  <!--    "scalac4ant.jar", "tools.jar", scala.jar", "fjbg.jar"       -->
+  <!--                      "tools.jar", scala.jar", "fjbg.jar"       -->
   <!--                                                                -->
   <taskdef name="scalac"
-	   classname="scala.tools.scalac4ant.AntTask"/>
+	   classname="scala.tools.scala4ant.AntTask$class"/>
     <scalac srcdir="src.scala" destdir="/tmp/classes" force="true"
-	    scalaClasspath="/tmp/classes" 
-	    scalaBootClasspath="/tmp/classes:/home/buraq/scala/sources">
+	    scalaClasspath="/home/buraq/scala/classes" 
+	    scalaBootClasspath="/home/buraq/scala/classes:/home/buraq/scala/sources">
 	    <include name="**/*.scala"/>
       </scalac>
     </target>
 
-  <!-- clean up -->
-
-  <target name="clean">
-    <delete file="${jar.file}"/>
-    <delete dir="${classes}/scala/tools/scalac4ant"/>
-  </target>
 </project>
