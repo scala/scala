@@ -40,7 +40,6 @@ public class StandardDocModule {
      * ..
      */
     public void apply() {
-	//Query.startLoop(global);
 	Tree tree = OneTree.apply(global);
 	HTMLGenerator.apply(tree, global);
     }

@@ -32,7 +32,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
     // Private Fields
 
     /** The global environment */
-    private final Global global;
+    protected final Global global;
 
     //########################################################################
     // Public Constructors

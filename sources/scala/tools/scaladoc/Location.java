@@ -26,40 +26,11 @@ public class Location {
     static public final String HTML_SUFFIX  = ".html";
     static public final String CLASS_SUFFIX = "-class";
 
-    /////////////////// AS SEEN FROM //////////////////////
-
-    /**
-     * Returns a representation of the URL u1 relative to u2.
-     * Examples:
-     *   "A/B/C"  as seen from "A"      is  "A/B/C"
-     *   "A"      as seen from "A/B/C"  is  "../../A"
-     *   "A/B#R"  as seen from "A"      is  "A/B#R"
-    */
-    static public URI asSeenFrom(URI u, URI v) {
-	File f_u = new File(u.getPath());
-	File f_v = new File(v.getPath());
-	try {
-	    return
-		new URI(asSeenFrom(f_u, f_v).getPath()
-			+ (u.getFragment() != null ? "#" + u.getFragment() : ""))
-		.normalize();
-	} catch(Exception e) { return null; }
-    }
-    // where
-    static private File asSeenFrom(File f1, File f2) {
-	    return new File(pathToRoot(f2), f1.getPath());
-    }
-    // where
-    static private File pathToRoot(File f) {
-	File parent = f.getParentFile();
-	if (parent == null)
-	    return new File(".");
-	else
-	    return new File(pathToRoot(parent), "..");
-    }
-
     /////////////////// UNIQUE URL //////////////////////
 
+    static public String get(Symbol sym) {
+	return getURI(sym).toString();
+    }
     /** Returns the URI of a given symbol. */
     static private final Map/*<Symbol, URI>*/ uris = new HashMap();
     static public URI getURI(Symbol sym) {
@@ -106,4 +77,9 @@ public class Location {
 	return i;
     }
 
+    static protected URI makeURI(String uri) {
+	try {
+	    return new URI(uri);
+	} catch(Exception e) { throw Debug.abort(e); }
+    }
 }

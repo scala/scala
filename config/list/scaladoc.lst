@@ -17,5 +17,7 @@ SymbolTablePrinter.java
 Tag.java
 Location.java
 TreeSymbols.java
+Page.java
+SymbolTablePrinterFactory.java
 
 ##############################################################################
