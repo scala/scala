@@ -61,10 +61,10 @@ public class Tree {
 
     /** Get the type of the node. */
     public final Type getType() {
-        return type();
+        return type;
     }
 
-    /** Get the type of the node. */
+    /** Get the type of the node, which must be non-null. */
     public Type type() {
         assert type != null : Debug.show(this);
         return type;
