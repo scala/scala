@@ -868,6 +868,24 @@ public abstract class Symbol implements Modifiers, Kinds {
         return name;
     }
 
+// Symbol origin --------------------------------------------------------------
+
+    /** Returns the origin of this symbol. */
+    public SymbolOrigin getOrigin() {
+        if (isModule())
+            return moduleClass().getOrigin();
+        if (isConstructor())
+            return constructorClass().getOrigin();
+        if (isCaseFactory())
+            return type().resultType().symbol().getOrigin();
+        return owner().getOrigin();
+    }
+
+    /** Sets the origin of this symbol. */
+    public void setOrigin(SymbolOrigin origin) {
+        throw Debug.abort("not a class", this);
+    }
+
 // Acess to related symbols -----------------------------------------------------
 
     /** Get type parameters */
@@ -2079,6 +2097,9 @@ final class AbsTypeSymbol extends TypeSymbol {
 /** A class for class symbols. */
 public class ClassSymbol extends TypeSymbol {
 
+    /** The origin of this symbol */
+    private SymbolOrigin origin;
+
     /** The given type of self, or NoType, if no explicit type was given.
      */
     private Symbol thisSym = this;
@@ -2133,6 +2154,16 @@ public class ClassSymbol extends TypeSymbol {
     /** Creates the this-type symbol associated to this class. */
     private final Symbol newThisType() {
         return newTerm(pos, SYNTHETIC, Names.this_, IS_THISTYPE);
+    }
+
+    /** Returns the origin of this symbol. */
+    public SymbolOrigin getOrigin() {
+        return origin != null ? origin : super.getOrigin();
+    }
+
+    /** Sets the origin of this symbol. */
+    public void setOrigin(SymbolOrigin origin) {
+        this.origin = origin;
     }
 
     public Type thisType() {
@@ -2314,6 +2345,11 @@ final class NoSymbol extends Symbol {
     public NoSymbol() {
         super(Kinds.NONE, null, Position.NOPOS, 0, Names.NOSYMBOL, 0);
         super.setInfo(Type.NoType);
+    }
+
+    /** Returns the origin of this symbol. */
+    public SymbolOrigin getOrigin() {
+        return SymbolOrigin.Unknown;
     }
 
     /** Set type */
