@@ -5,14 +5,13 @@ import java.io.*;
 public class verbfilterScala {
 
     static String[] reserved = {
-      "abstract", "as", "case", "catch", "class",
-      "def", "do", "else", "extends", "false",
-      "final", "finally", "for", "if", "import",
-      "is", "new", "null", "object", "override",
-      "package", "private", "protected", "return",
-      "sealed", "super", "this", "trait", "try",
-      "true", "type", "val", "var", "with",
-      "while", "yield"};
+      "abstract", "case", "catch", "class", "def",
+      "do", "else", "extends", "false", "final",
+      "finally", "for", "if", "import", "new",
+      "null", "object", "override", "package", "private",
+      "protected", "return", "sealed", "super", "this",
+      "trait", "try",  "true", "type", "val",
+      "var", "with", "while", "yield"};
 
     static final int TABINC = 8;
 

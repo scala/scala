@@ -39,10 +39,6 @@ public final class Name {
  */
     private static Name[] typeHashtable = new Name[HASH_SIZE];
 
-/** hashtable for finding constructor names quickly
- */
-    private static Name[] constrHashtable = new Name[HASH_SIZE];
-
 /** Constructor
  */
     Name(int index, int len, Name[] table, int hash) {
@@ -163,16 +159,6 @@ public final class Name {
 	return n == this;
     }
 
-/** is this name a type name?
- */
-    public boolean isConstrName() {
-	int  h = hashValue(names, index, len) & HASH_MASK;
-	Name n = constrHashtable[h];
-        while (n != null && n != this)
-	    n = n.next;
-	return n == this;
-    }
-
 /** create a term name corresponding to this name
  */
     public Name toTermName() {
@@ -195,19 +181,6 @@ public final class Name {
             n = n.next;
 	if (n == null) {
 	    n = new Name(index, len, typeHashtable, h);
-	}
-	return n;
-    }
-
-/** create a constructor name corresponding to this name
- */
-    public Name toConstrName() {
-	int  h = hashValue(names, index, len) & HASH_MASK;
-        Name n = constrHashtable[h];
-        while (n != null && n.index != index)
-            n = n.next;
-	if (n == null) {
-	    n = new Name(index, len, constrHashtable, h);
 	}
 	return n;
     }

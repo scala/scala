@@ -124,7 +124,6 @@ public class Scanner extends TokenData {
 	    int prevpos = pos;
 	    fetchToken();
 	    switch (token) {
-	    case CONSTR:
 	    case ELSE:   case EXTENDS:  case WITH:
 	    case YIELD:  case CATCH:    case FINALLY:
 	    case COMMA:  case SEMI:     case DOT:
@@ -163,7 +162,7 @@ public class Scanner extends TokenData {
 	    } else if (token == SEMI) {
 		prev.copyFrom(this);
 		fetchToken();
-		if (token != ELSE || token == CONSTR) {
+		if (token != ELSE) {
 		    next.copyFrom(this);
 		    this.copyFrom(prev);
 		}
@@ -237,7 +236,7 @@ public class Scanner extends TokenData {
 		    break;
 		case '_':
 		    nextch();
-		    getIdentOrOperatorRest(index);
+		    getIdentRest(index);
 		    return;
 		case '0':
 		    nextch();
@@ -815,7 +814,6 @@ public class Scanner extends TokenData {
         enterKeyword("case", CASE);
         enterKeyword("class", CLASS);
         enterKeyword("catch", CATCH);
-        enterKeyword("constr", CONSTR);
         enterKeyword("def", DEF);
         enterKeyword("do", DO);
         enterKeyword("else", ELSE);

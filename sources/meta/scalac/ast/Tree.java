@@ -271,7 +271,7 @@ public class Tree {
         n_TypeApply.
             setDescription("Type application").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_TermTree, "fun").
+            addField(t_Tree, "fun").
             addField(t_TypeTrees, "args");
 
         n_Apply.

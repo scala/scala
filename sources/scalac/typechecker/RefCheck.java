@@ -395,7 +395,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol sym = null;
 	switch (stat) {
 	case ClassDef(_, _, _, _, _, _):
-	    sym = stat.symbol().constructor();
+	    sym = stat.symbol().primaryConstructor();
 	    break;
 	case DefDef(_, _, _, _, _, _):
 	case ModuleDef(_, _, _, _):
@@ -403,7 +403,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    sym = stat.symbol();
 	}
 	if (sym != null && sym.isLocal()) {
-	    scopes[level].enter(sym);
+	    scopes[level].enter(new Scope.Entry(sym, scopes[level]));
 	    symIndex.put(sym, new Integer(index));
 	}
     }
@@ -522,7 +522,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private Tree[] caseFields(ClassSymbol clazz) {
-	Symbol[] vparams = clazz.constructor().type().firstParams();
+	Symbol[] vparams = clazz.primaryConstructor().type().firstParams();
 	Tree[] fields = new Tree[vparams.length];
 	for (int i = 0; i < fields.length; i++) {
 	    fields[i] = gen.mkRef(
@@ -874,12 +874,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	case Apply(Tree fn, Tree[] args):
 	    Symbol fsym = TreeInfo.methSymbol(fn);
+	    assert fsym != Symbol.NONE : tree;
 	    if (fsym != null && fsym.isMethod() && !fsym.isConstructor() &&
 		(fsym.flags & CASE) != 0) {
 		// convert case methods to new's
-		Symbol constr = fsym.type().resultType().symbol().constructor();
+		Symbol constr = fsym.type().resultType().symbol().primaryConstructor();
 		tree = gen.New(toConstructor(tree, constr));
 	    }
+
 	    return super.transform(tree);
 
 	case AppliedType(Tree tpe, Tree[] args):

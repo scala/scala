@@ -62,7 +62,7 @@ public class OwnerTransformer extends Transformer {
     public Template transform(Template templ, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	if (owner.kind == Kinds.CLASS)
-	    currentOwner = owner.constructor();
+	    currentOwner = owner.primaryConstructor();
 	Tree[] parents1 = transform(templ.parents);
 	currentOwner = owner;
 	Tree[] body1 = transformTemplateStats(templ.body, templ.symbol());
@@ -99,8 +99,8 @@ public class OwnerTransformer extends Transformer {
             Symbol symbol = tree.symbol();
 	    return copy.ClassDef(
 		tree, symbol,
-		transform(tparams, symbol.constructor()),
-		transform(vparams, symbol.constructor()),
+		transform(tparams, symbol.primaryConstructor()),
+		transform(vparams, symbol.primaryConstructor()),
 		transform(tpe),
 		transform(impl, symbol));
 

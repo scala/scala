@@ -41,7 +41,6 @@ public class ClassfileParser implements ClassfileConstants {
     protected Type ctype;
     protected Scope locals;
     protected Scope statics;
-    protected Scope constr;
     protected JavaTypeFactory make;
     protected Signatures sigs;
     protected ConstantPool pool;
@@ -93,16 +92,16 @@ public class ClassfileParser implements ClassfileConstants {
             Type[] basetpes = new Type[in.nextChar() + 1];
             this.locals = new Scope();
             this.statics = new Scope();
-            this.constr = new Scope();
             // set type of class
             Type classType = Type.compoundType(basetpes, locals, c);
-            c.setInfo(classType, phaseId);
+            c.setInfo(classType, Symbol.FIRST_ID);
             // set type of statics
 	    Symbol staticsClass = c.module().moduleClass();
 	    Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
-            staticsClass.setInfo(staticsInfo, phaseId);
+            staticsClass.setInfo(staticsInfo, Symbol.FIRST_ID);
 	    c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
 					    staticsClass, Type.EMPTY_ARRAY));
+
             basetpes[0] = supertpe;
             for (int i = 1; i < basetpes.length; i++)
                 basetpes[i] = readClassType(in.nextChar());
@@ -112,16 +111,14 @@ public class ClassfileParser implements ClassfileConstants {
             int methodCount = in.nextChar();
             for (int i = 0; i < methodCount; i++)
                 parseMethod();
-            // set constructor type to the declared type
-	    Symbol[] constrs = constr.elements();
-	    if (constrs.length != 0) {
-		assert constrs.length == 1;
-		c.constructor().setInfo(constrs[0].info(), phaseId);
-	    } else {
-		Symbol[] cparams = ((c.flags & Modifiers.INTERFACE) != 0) ? Symbol.EMPTY_ARRAY
-		    : new Symbol[]{Symbol.NONE};
-		c.constructor().setInfo(Type.MethodType(cparams, ctype), phaseId);
-            }
+
+	    Symbol constr = c.primaryConstructor();
+	    if (!constr.isInitialized()) {
+		constr.setInfo(
+		    Type.MethodType(Symbol.EMPTY_ARRAY, ctype), Symbol.FIRST_ID);
+		if ((c.flags & Modifiers.INTERFACE) == 0)
+		    constr.flags |= Modifiers.PRIVATE;
+	    }
             attrib.readAttributes(c, classType, CLASS_ATTR);
 	    //System.out.println("dynamic class: " + c);
 	    //System.out.println("statics class: " + staticsClass);
@@ -188,7 +185,7 @@ public class ClassfileParser implements ClassfileConstants {
 	if ((flags & 0x0008) != 0)
 	    owner = c.module().moduleClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
-        s.setInfo(type, phaseId);
+        s.setInfo(type, Symbol.FIRST_ID);
         attrib.readAttributes(s, type, FIELD_ATTR);
 	((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
     }
@@ -215,16 +212,19 @@ public class ClassfileParser implements ClassfileConstants {
 	    default:
 		throw new ApplicationError();
 	    }
-	    s.setInfo(type, phaseId);
+	    s.setInfo(type, Symbol.FIRST_ID);
             attrib.readAttributes(s, type, METH_ATTR);
+	    Symbol constr = c.primaryConstructor();
+	    if (constr.isInitialized()) constr = c.addConstructor();
+	    s.copyTo(constr);
+	    //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
             //System.out.println("-- enter " + s);
-            constr.enterOrOverload(s);
         } else {
 	    Symbol s = new TermSymbol(
 		Position.NOPOS,	name,
 		((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
 		transFlags(flags));
-	    s.setInfo(type, phaseId);
+	    s.setInfo(type, Symbol.FIRST_ID);
 	    attrib.readAttributes(s, type, METH_ATTR);
 	    ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
 	}

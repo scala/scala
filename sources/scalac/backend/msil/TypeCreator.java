@@ -175,7 +175,7 @@ public final class TypeCreator
 			scalac.symtab.Type[] paramTypes)
     {
 	Symbol[] methods = clazz.members().
-	    lookup(Name.fromString(name)).alternatives();
+	    lookup(Name.fromString(name)).alternativeSymbols();
 	search:
 	for (int i = 0; i < methods.length; i++) {
 	    switch (methods[i].info()) {

@@ -58,7 +58,7 @@ public class LambdaLift extends OwnerTransformer
      *  otherwise current symbol itself
      */
     static Symbol asFunction(Symbol sym) {
-	return sym.kind == CLASS ? sym.constructor() : sym;
+	return sym.kind == CLASS ? sym.primaryConstructor() : sym;
     }
 
     /** `asFunction' applied to the next enclosing function or class owner.
@@ -174,7 +174,7 @@ public class LambdaLift extends OwnerTransformer
 	    Name newname = global.freshNameCreator.newName(sym.name);
 	    sym.name = newname;
 	    if (sym.kind == CLASS)
-		sym.constructor().name = newname.toConstrName();
+		sym.primaryConstructor().name = newname.toTypeName();
 	}
 
 	private Type.Map traverseTypeMap = new Type.Map() {
@@ -327,9 +327,9 @@ public class LambdaLift extends OwnerTransformer
 		((ClassDef) tree).mods &= ~LIFTED;
 		Tree tree1 = copy.ClassDef(
 		    tree, sym,
-		    addTypeParams(transform(tparams, sym), newtparams(sym.constructor())),
+		    addTypeParams(transform(tparams, sym), newtparams(sym.primaryConstructor())),
 		    new ValDef[][]{
-			addParams(transform(vparams, sym)[0], newparams(sym.constructor()))},
+			addParams(transform(vparams, sym)[0], newparams(sym.primaryConstructor()))},
 		    transform(tpe, sym),
 		    transform(impl, sym));
 		liftedDefs.append(tree1);
@@ -488,7 +488,7 @@ public class LambdaLift extends OwnerTransformer
 	    ((ClassDef) tree).mods |= LIFTED;
 	    Symbol sym = tree.symbol();
 	    assert sym.isLocal() : sym;
-	    liftSymbol(sym, ftvsParams(sym.constructor()), fvsParams(sym.constructor()));
+	    liftSymbol(sym, ftvsParams(sym.primaryConstructor()), fvsParams(sym.primaryConstructor()));
 	    break;
 
 	case DefDef(_, _, _, _, _, _):
@@ -502,7 +502,7 @@ public class LambdaLift extends OwnerTransformer
     void liftSymbol(Symbol sym, Symbol[] newtparams, Symbol[] newparams) {
 	Symbol enclClass = sym.owner().enclClass();
 	if (!sym.isPrimaryConstructor()) sym.setOwner(enclClass);
-	enclClass.members().enter(sym);
+	if (!sym.isConstructor()) enclClass.members().enter(sym);
 	if (sym.isMethod()) {
 	    if (newtparams.length != 0 || newparams.length != 0) {
 		sym.updateInfo(
@@ -513,7 +513,7 @@ public class LambdaLift extends OwnerTransformer
 		    global.log(sym + " has now type " + sym.typeAt(descr.nextPhase));
 	    }
 	} else if (sym.kind == CLASS) {
-	    liftSymbol(sym.constructor(), newtparams, newparams);
+	    liftSymbol(sym.primaryConstructor(), newtparams, newparams);
 	} else {
 	    throw new ApplicationError();
 	}
@@ -609,7 +609,7 @@ public class LambdaLift extends OwnerTransformer
 		gen.TypeApply(
 		    gen.mkRef(
 			pos,
-			global.definitions.getClass(Names.scala_COLONCOLON).constructor()),
+			global.definitions.getClass(Names.scala_COLONCOLON).primaryConstructor()),
 		    new Tree[]{gen.mkType(pos, elemtpe)}),
 		new Tree[]{hd, tl}));
     }

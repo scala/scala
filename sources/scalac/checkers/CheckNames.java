@@ -35,12 +35,12 @@ public class CheckNames extends Checker {
 		   "class " + Debug.show(tree.symbol()) +
 		   "should have a type name");
 
-	    Symbol constr = tree.symbol().constructor();
+	    Symbol constr = tree.symbol().primaryConstructor();
 	    verify(tree,
-		   constr.name.isConstrName(),
+		   constr.name.isTypeName(),
 		   "name kinds",
 		   "the class constructor " + Debug.show(constr)
-		   + " should have a constructor name");
+		   + " should have a type name");
 	    break;
 	}
     }

@@ -189,6 +189,16 @@ inherited abstract members.
 translated to method calls of their operand.
 }
 
+class List[a <: AnyRef](x: a, xs: List[a]) {
+  def head = x;
+  def tail = xs;
+  def this(x: a) = { ... ; this(x, Nil); ... }
+  def this()     = this(null, Nil);
+}
+
+
+
+
 % 16 Jul 2003 Regular pattern matching (Chapter 8)
 
 \subsection*{Status of This Document}
@@ -254,13 +264,13 @@ The following names are reserved words instead of being members of the
 syntactic class \verb@id@ of lexical identifiers.
 
 \begin{verbatim}
-abstract    as    case    class    constr
-def    do    else    extends    final    
-false    for    if    is    import
-new    null    object    override    package    
-private    protected    sealed    super    this    
-trait    true    type    val    var    
-with   yield
+abstract    case    catch    class    def    
+do    else    extends    false    final    
+finally    for    if    import    new    
+null    object    override    package    private    
+protected    return    sealed    super    this    
+trait    try    true    type    val    
+var    while    with   yield
 _    :    =    =>    <-    <:    >:    #    @
 \end{verbatim}
 
@@ -343,13 +353,9 @@ are collectively called {\em entities}.  Names are introduced by
 definitions, declarations (\sref{sec:defs}) or import clauses
 (\sref{sec:import}), which are collectively called {\em binders}.
 
-There are three different name spaces, one each for types
-(\sref{sec:types}), terms (\sref{sec:exprs}), and constructors
-(\sref{sec:constrs}).  The same name may designate a type, a term, and
-a constructor, depending on the context where the name is used.  A
-class definition (\sref{sec:classes}) defines conceptually both a type
-and a constructor, so its defined name is introduced in both name
-spaces.
+There are two different name spaces, one for types (\sref{sec:types})
+and one for terms (\sref{sec:exprs}).  The same name may designate a
+type and a term, depending on the context where the name is used.  
 
 A definition or declaration has a {\em scope} in which the entity
 defined by a single name can be accessed using a simple name. Scopes
@@ -362,24 +368,25 @@ bindings introduced by other import clauses in outer blocks.
 
 \todo{Examples}
 
-A reference to an unqualified identifier $x$ of kind $K$ where $K$ is
-either term, type or constructor, is bound by the unique binder, which
+A reference to an unqualified (type- or term-) identifier $x$ is bound
+by the unique binder, which
 \begin{itemize}
-\item defines an entity $x$ with name $x$ and kind $K$, and
-\item shadows all other binders that define entities with name $x$
-and kind $K$.
+\item defines an entity with name $x$ in the same namespace as the
+identifier, and
+\item shadows all other binders that define entities with name $x$ in that namespace.
 \end{itemize}
 It is an error if no such binder exists.  If $x$ is bound by an import
 clause, then the simple name $x$ is taken to be equivalent to the
 qualified name to which $x$ is mapped by the import clause. If $x$ is bound by a definition or declaration,
-then $x$ refers to the entity of kind $K$ introduced by that
+then $x$ refers to the entity introduced by that
 binder. In that case, the type of $x$ is the type of the referenced
 entity.
 
-A reference to a qualified identifier $e.x$ of kind $K$ refers to the
-member of kind $K$ of the type $T$ of $e$. It is an error if $T$ is
-not an object type (\sref{def:object-type}). The type of $e.x$ is the
-member type of the referenced entity in $T$.
+A reference to a qualified (type- or term-) identifier $e.x$ refers to
+the member of the type $T$ of $e$ which has the name $x$ in the same
+namespace as the identifier. It is an error if $T$ is not an object type
+(\sref{def:object-type}). The type of $e.x$ is the member type of the
+referenced entity in $T$.
 
 \chapter{\label{sec:types}Types}
 
@@ -1391,12 +1398,11 @@ makes available each member \verb@p.x$_i$@ under the unqualified name
 \verb@p@ other than \verb@x$_1$, ..., x$_n$@ are also made available
 under their own unqualfied names.
 
-Import selectors work in the same way for members in all three name
-spaces.  For instance, an import clause \verb@import p.{x => y}@
-renames the term name \verb@p.x@ to the term name \verb@y@, the type
-name \verb@p.x@ to the type name \verb@y@, and the constructor name
-\verb@p.x@ to the type name \verb@y@. At least one of these three
-names must reference a member of \verb@p@.
+Import selectors work in the same way for type and term members. For
+instance, an import clause \verb@import p.{x => y}@ renames the term
+name \verb@p.x@ to the term name \verb@y@ and the type name \verb@p.x@
+to the type name \verb@y@. At least one of these three names must
+reference a member of \verb@p@.
 
 If the destination in an import selector is a wildcard, the import
 selector hides access to the source member. For instance, the import
@@ -1489,12 +1495,14 @@ Java interface as a superclass.
 Constructor invocations define the type, members, and initial state of
 objects created by an instance creation expression, or of parts of an
 object's definition which are inherited by a class or module
-definition. A constructor invocation is a function application 
+definition. A constructor invocation is a function application
 \verb@x.c(args)@, where \verb@x@ is a stable identifier
-\sref{sec:stable-ids}), \verb@c@ is a constructor name, and
-\verb@(args)@ is an argument list. The prefix \verb@x.@ can be
-omitted. The argument list \verb@(args)@ can also be omitted, in which
-case an empty argument list \verb@()@ is implicitly added.
+\sref{sec:stable-ids}), \verb@c@ is a type name which either
+designates a class or defines an alias type for one, and \verb@(args)@
+is an argument list, which matches one of the constructors of that
+class. The prefix \verb@x.@ can be omitted. The argument list
+\verb@(args)@ can also be omitted, in which case an empty argument
+list \verb@()@ is implicitly added.
 
 \subsection{Base Classes}
 \label{sec:base-classes}
@@ -1509,14 +1517,14 @@ concatenating, for each $i = 1 \commadots n$, the mixin base classes
 of the mixin \verb@mc_i@. The mixin base classes of a class type \verb@C@ are
 the mixin base classes of the template represented by \verb@C@, followed by
 \verb@C@ itself. The mixin base classes of a constructor invocation of type
-\verb@class T@ are the mixin base classes of class \verb@T@.
+\verb@T@ are the mixin base classes of class \verb@T@.
 
 The {\em base classes} of a template consist of the base classes of
 its superclass, followed by the template's mixin base classes.  The
 base classes of class \verb@scala.Any@ consist of just the
 class itself. The base classes of some other class type \verb@C@ are the
 base classes of the template represented by \verb@C@, followed by \verb@C@
-itself.  The base classes of a constructor invocation of type \verb@class T@
+itself.  The base classes of a constructor invocation of type \verb@T@
 are the base classes of \verb@T@.
 
 The notions of mixin base classes and base classes are extended from
@@ -1662,20 +1670,17 @@ in addition to the members inherited from class \verb@Any@.
 \subsection{Overriding}
 \label{sec:overriding}
 
-A template member
-\verb@M@ that has the same \ifqualified{qualified} 
-name as a non-private member \verb@M'@
-of a base class (and that belongs to the same namespace) is said to
-{\em override} that member.  In this case the binding of the
-overriding member
-\verb@M@ must be more specific (\sref{sec:subtyping}) than the 
-binding of the overridden member \verb@M'@.
-Furthermore, the overridden definition may not be a class or class
-constructor definition.  Method definitions may only override other
-method definitions (or the methods implicitly defined by a variable
-definition). They may not override value let definitions.  Finally,
-the following restrictions on modifiers apply to
-\verb@M@ and \verb@M'@:
+A template member \verb@M@ that has the same \ifqualified{qualified}
+name as a non-private member \verb@M'@ of a base class (and that
+belongs to the same namespace) is said to {\em override} that member.
+In this case the binding of the overriding member \verb@M@ must be
+more specific (\sref{sec:subtyping}) than the binding of the
+overridden member \verb@M'@.  Furthermore, the overridden definition
+may not be a class definition.  Method definitions may only override
+other method definitions (or the methods implicitly defined by a
+variable definition). They may not override value let definitions.
+Finally, the following restrictions on modifiers apply to \verb@M@ and
+\verb@M'@:
 \begin{itemize}
 \item
 \verb@M'@ must not be labelled \verb@final@.
@@ -1819,7 +1824,7 @@ object; it is not possible for clients to create objects of class
 \syntax\begin{verbatim}
   ClsDef          \=::=\= class ClassDef {`,' ClassDef}
   ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] 
-                  \>   \> ClassTemplate {[`;'] ConstrDef}
+                  \>   \> ClassTemplate
   ClassTemplate   \>::=\> extends Template
 	          \>  |\> TemplateBody
 		  \>  |\>
@@ -1864,28 +1869,31 @@ can be omitted, in which case
 \verb@{stats}@ may also be omitted, in which case the empty body
 \verb@{}@ is assumed.
 \end{itemize}
-This class definition defines both a type \verb@c[tps]@ and a constructor
+This class definition defines a type \verb@c[tps]@ and a constructor
 which when applied to parameters conforming to typles \verb@ps@
-initializes instances of type \verb@c[tps]@ by evaluating the template \verb@t@.
+initializes instances of type \verb@c[tps]@ by evaluating the template
+\verb@t@.
 
 \subsection{Constructor Definitions}
 
 \syntax\begin{verbatim}
-  ConstrDef       \=::=\= constr [ParamClause] `=' ConstrExpr
+  FunDef          \=::=\= this ParamClause `=' ConstrExpr
   ConstrExpr      \>::=\> this ArgumentExpr
-                  \>  |\>  `{' { BlockStat `;' } ConstrExpr `}'
+                  \>  |\>  `{' {BlockStat `;'} ConstrExpr {`;' Blockstat} `}'
 \end{verbatim}
 
-A class definition may be followed by additional constructor
-definitions.  Each of these takes the form \verb@constr (ps) = e@.
-This defines an additional constructor for the preceding class, with
-parameters as given in the formal parameter list \verb@ps@, and whose
-evaluation is defined by the constructor expression \verb@e@.  The
-formal parameter list \verb@(ps)@ may be omitted, in which case
-\verb@()@ is assumed. The scope of each formal parameter is the
-constructor expression \verb@e@.  A constructor expression is either a
-self constructor invocation \verb@this(args)@ or a block which ends in
-a constructor expression. 
+A class may have additional constructors besides the primary
+constructor.  These are defined by constructor definitions of the form
+\verb@def this(ps) = e@.  Such a definition introduces an additional
+constructor for the enclosing class, with parameters as given in the
+formal parameter list \verb@ps@, and whose evaluation is defined by
+the constructor expression \verb@e@.  The scope of each formal
+parameter is the constructor expression \verb@e@.  A constructor
+expression is either a self constructor invocation \verb@this(args)@
+or a block which contains a constructor expression as one of its
+statements.  A constructor expression may not refer to \verb@this@,
+nor to any of the value parameters or members of the object being
+constructed, until after the self constructor has been called.
 
 If there are auxilary constructors of a class \verb@C@, they define
 together with \verb@C@'s primary constructor an overloaded constructor
@@ -1893,7 +1901,7 @@ value. The usual rules for overloading resolution
 \sref{sec:overloading} apply for constructor invocations of \verb@C@,
 including the self constructor invocations in the constructor
 expressions themselves. To prevent infinite cycles of constructor
-invocations there is the restriction that every self constructor
+invocations, there is the restriction that every self constructor
 invocation must refer to a constructor definition which precedes it
 (i.e. it must refer to either a preceding auxiliary constructor or the
 primary constructor of the class).  The type of a constructor
@@ -1920,7 +1928,7 @@ its basetypes.
 
 A case class definition of \verb@c[tps](ps)@ with type
 parameters \verb@tps@ and value parameters \verb@ps@ implicitly
-generates the a function definition of a {\em case class factory}
+generates a function definition for a {\em case class factory}
 \begin{verbatim}
 def c[tps](ps): c[tps] = new c[tps](ps)
 \end{verbatim}
@@ -2083,19 +2091,21 @@ final class m$\Dollar$class: s extends t;
 final val m: s = new m$\Dollar$class;
 \end{verbatim}
 (The \verb@final@ modifiers are omitted if the definition occurs as
-part of a block). The class name \verb@m$\Dollar$class@ is not
-accessible for user programs.
-Unlike value definitions, object definitions may appear
-as top-level definitions in a compilation unit.
-Also, unlike for value definitions, modules are instantiated lazily.
-The \verb@new m$\Dollar$class@ constructor is evaluated not at the
-point of the value definition, but is instead evaluated the first time
-$m$ is dereferenced during execution of the program (which might be
-never at all). An attempt to dereference $m$ again in the course of
-evaluation of the constructor leads to a infinite loop or run-time error.  
-Other
-threads trying to dereference $m$ while the constructor is being
-evaluated block until evaluation is complete.
+part of a block. The class name \verb@m$\Dollar$class@ is not
+accessible for user programs.)
+
+There are however two differences between a module definition and a
+pair of class and value definition as the one given above.  First,
+object definitions may appear as top-level definitions in a
+compilation unit, whereas value definitions cannot.  Second, modules
+are instantiated lazily.  The \verb@new m$\Dollar$class@ constructor
+is evaluated not at the point of the value definition, but is instead
+evaluated the first time $m$ is dereferenced during execution of the
+program (which might be never at all). An attempt to dereference $m$
+again in the course of evaluation of the constructor leads to a
+infinite loop or run-time error.  Other threads trying to dereference
+$m$ while the constructor is being evaluated block until evaluation is
+complete. 
 
 \example
 Classes in Scala do not have static members; however, an equivalent
@@ -2111,11 +2121,11 @@ object Point {
   val origin = new Point() with { val x = 0.0, y = 0.0 }
 }
 \end{verbatim}
-This defines a type \verb@Point@, a constructor \verb@Point()@, and an
-object \verb@Point@ which contains \verb@origin@ as a member.  
-Note that the double use of the name \verb@Point@ is lgel, since the class
-definition defines the name \verb@Point@ in the type and constructor name spaces,
-whereas the object definition defines a name only in the term namespace.
+This defines a class \verb@Point@ and an object \verb@Point@ which
+contains \verb@origin@ as a member.  Note that the double use of the
+name \verb@Point@ is lgel, since the class definition defines the name
+\verb@Point@ in the type name space, whereas the object definition
+defines the name in the term namespace.
 
 \comment{
 \example Here's an outline of a module definition for a file system.
@@ -2141,109 +2151,32 @@ module FileSystem with {
 \label{sec:exprs}
 
 \syntax\begin{verbatim}
-  Expr            \=::=\= if `(' Expr `)' Expr [[`;'] else Expr]
-		  \>  |\> for `(' Enumerator `)' [do | yield] Expr
-                  \>  |\> Designator `=' Expr
+  Expr            \=::=\= [Bindings `=>'] Expr
+		  \>  |\> if `(' Expr `)' Expr [[`;'] else Expr]
+		  \>  |\> try Expr [`;'] (except Expr | finally Expr)
+		  \>  |\> while '(' Expr ')' Expr
+		  \>  |\> do Expr [`;'] while `(' Expr ')'
+		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
+                  \>  |\> [SimpleExpr `.'] Id `=' Expr
 		  \>  |\> SimpleExpr ArgumentExpr `=' Expr
-                  \>  |\> Expr1
-  Expr1           \>::=\> Expr2 [`:' Type]
-  Expr2           \>::=\> Expr3 [Id]
-  Expr3           \>::=\> Expr4
-		  \>  |\> Expr3 Id Expr3
-  Expr4           \>::=\> SimpleExpr
-		  \>  |\> op Expr4
-                  \>  |\> new Template
-  SimpleExpr      \>::=\> Designator
-                  \>  |\> literal
-		  \>  |\> null
-		  \>  |\> this
-		  \>  |\> super `.' Id
-		  \>  |\> outer `.' Id
-	          \>  |\> outer `.' this
-                  \>  |\> `[' [Exprs] `]'
-                  \>  |\> ArgumentExpr
-                  \>  |\> BlockExpr
-                  \>  |\> SimpleExpr ArgumentExpr
-                  \>  |\> SimpleExpr BlockExpr
-                  \>  |\> SimpleExpr TypeArgs
-  Exprs          \>::= \> Expr {`,' Expr}
+                  \>  |\> PostfixExpr [`:' Type1 | as Type1 | is Type1]
+  PostfixExpr     \>::=\> InfixExpr [Id]
+  InfixExpr       \>::=\> PrefixExpr
+		  \>  |\> InfixExpr Id InfixExpr
+  PrefixExpr      \>::=\> [`-' | `+' | `~' | `!'] SimpleExpr 
+  SimpleExpr      \>::=\> literal
+		  \>  |\> Path
+		  \>  |\> `(' [Expr] `)'
+		  \>  |\> BlockExpr
+		  \>  |\> new Template 
+		  \>  |\> SimpleExpr `.' Id 
+		  \>  |\> SimpleExpr TypeArgs
+		  \>  |\> SimpleExpr ArgumentExpr
+  Exprs           \>::= \> Expr {`,' Expr}
 \end{verbatim}
 
 Expressions are composed of operators and operands. Expression forms are
 discussed subsequently in decreasing order of precedence.
-
-\section{Designators}
-\label{sec:designators}
-
-\syntax\begin{verbatim}
-  Designator    \=::= \= Id
-	\>  | \> SimpleExpr `.' Id
-\end{verbatim}
-
-A designator refers to a named term. It can be a {\em simple name} or
-a {\em selection}.
-
-A {\em potential term binder} of an occurrence of simple name $x$ is:
-\begin{enumerate}
-\item A parameter named $x$ which has the identifer use in scope,
-\item a term definition or declaration of $x$ in some enclosing block,
-\item a term member of an enclosing module or class which is identified
-      by the simple name $x$ (\sref{sec:names}),
-\item an import clause in an enclosing block or template that introduces
-      a term alias for $x$ and that textually precedes the identifier use.
-\end{enumerate}
-A simple name $x$ is {\em bound} by a potential term binder of $x$
-which shadows (\sref{sec:names}) all other potential term binders of
-$x$.  It is an error if no such binder exists.
-
-If $x$ is bound by an import clause whose right hand side is the
-stable identifier (\sref{sec:stableids}) $r$, then the simple name $x$
-refers to the same entity as $r.x$. If $x$ is bound by a declaration
-or definition of a class member, then $x$ refers to the same entity as
-\verb@this.x@. If $x$ is bound by some other term binder, then $x$
-refers to the value, function, or class introduced by that binder.
-Evaluation of $x$ is immediate.
-
-\comment{
-A simple name $x$ refers to one of the following:
-\begin{itemize}
-\item A parameter named $x$ which has the identifer use in scope.
-\item A definition or declaration of $x$ in some enclosing block.
-\item A term member of some enclosing module or class $M$ identified
-by the simple name $x$ (\sref{sec:names}).
-\end{itemize}
-In each case, it is required that there is no other scope
-which also defines an entity with simple name $x$
-and which is nested between
-the reference to $x$ and the scope defining $x$.
-The type of $x$ is the declared type of the referenced
-entity. Evaluation of $x$ is immediate.
-}
-
-If $r$ is a stable identifier of type $T$, the
-selection $r.x$ refers to the term member of $r$ that is identified in
-$T$ by the simple name $x$.  For other expressions $e$, $e.x$ is typed
-as if it was $(\VAL;x=e\semi x.a)$ for some fresh name $x$.
-
-The selection $e.x$ is evaluated by first evaluating the qualifier
-expression $e$. Then, if the value of $e$ is an as yet completely
-unevaluated \verb@let@-bound object, the value's definition is
-evaluated (\sref{sec:letdef}). The selection's result is the value to
-which the selector identifier is bound in the selected object
-designated by $e$.
-
-\section{Stable Identifiers}
-\label{sec:stableids}
-
-\syntax\begin{verbatim}
-  StableId       \=::= \= QualId
-\end{verbatim}
-
-A stable identifier is an expression that is known to evaluate to the
-same object each time it is evaluated. Formally, a qualified
-identifier $x_1.;\ldots;.x_n$ is a stable identifier if for each $i =
-1 \commadots n$ the prefix $x_1.; \ldots ;.x_i$ identifies a value
-(i.e.\ it does not have an overloaded type or method type).
 
 \section{Literals}
 
@@ -2252,6 +2185,26 @@ identifier $x_1.;\ldots;.x_n$ is a stable identifier if for each $i =
 \end{verbatim}
 
 Typing and evaluation of literals are analogous to Java.
+
+\section{Designators}
+\label{sec:designators}
+
+\syntax\begin{verbatim}
+  Designator    \=::= \= Path
+	\>  | \> SimpleExpr `.' Id
+\end{verbatim}
+
+A designator refers to a named term. It can be a {\em simple name} or
+a {\em selection}. If $r$ is a stable identifier of type $T$, the
+selection $r.x$ refers to the term member of $r$ that is identified in
+$T$ by the name $x$.  For other expressions $e$, $e.x$ is typed as if
+it was $(\VAL;y=e\semi y.x)$ for some fresh name $y$. The typing rules
+for blocks implies that in that case $x$'s type may not refer to any
+abstract type member of \verb@e@.
+
+The selection $e.x$ is evaluated by first evaluating the qualifier
+expression $e$. The selection's result is then the value to which the
+selector identifier is bound in the selected object designated by $e$.
 
 \section{The $\NULL$ Reference}
 
@@ -4348,18 +4301,17 @@ grammar.
   VarDef          \>::=\> Id [`:' Type] `=' Expr
                   \>  |\> Id `:' Type `=' `_'
   FunDef          \>::=\> Id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
+                      |   this ParamClause `=' ConstrExpr
   TypeDef         \>::=\> Id `=' Type
   ClsDef          \>::=\> ([case] class | trait) ClassDef {`,' ClassDef}
                   \>  |\> [case] object ObjectDef {`,' ObjectDef}
-  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] 
-                  \>   \> ClassTemplate {[`;'] ConstrDef}
+  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
   ObjectDef       \>::=\> Id [`:' SimpleType] ClassTemplate
   ClassTemplate   \>::=\> extends Template
 	          \>  |\> TemplateBody
 		  \>  |\>
-  ConstrDef       \>::=\> constr [ParamClause] `=' ConstrExpr
   ConstrExpr      \>::=\> this ArgumentExpr
-                  \>  |\>  `{' { BlockStat `;' } ConstrExpr `}'
+                  \>  |\>  `{' {BlockStat `;'} this ArgumentExpr {`;' BlockStat} `}'
 
   CompilationUnit \>::=\> [package QualId `;'] [{TopStat `;'} TopStat]
   TopStat         \>::=\> {Modifier} ClsDef

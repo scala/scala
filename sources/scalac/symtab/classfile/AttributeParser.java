@@ -150,7 +150,9 @@ public class AttributeParser implements ClassfileConstants {
             case META_ATTR:
                 //System.out.println("parsing meta data for " + sym);
                 String meta = pool.readPool(in.nextChar()).toString().trim();
-                sym.setInfo(new MetaParser(meta, tvars, sym, type).parse(), parser.phaseId);
+                sym.setInfo(
+		    new MetaParser(meta, tvars, sym, type).parse(),
+		    Symbol.FIRST_ID);
                 return;
         }
         throw new RuntimeException("unknown classfile attribute");
@@ -176,7 +178,7 @@ public class AttributeParser implements ClassfileConstants {
         }
 
         private Symbol getTVar(String name) {
-            return getTVar(name, parser.c.constructor());
+            return getTVar(name, parser.c.primaryConstructor());
         }
 
         private Symbol getTVar(String name, Symbol owner) {
@@ -195,7 +197,7 @@ public class AttributeParser implements ClassfileConstants {
                 	Name.fromString(token).toTypeName(),
              		owner,
              		Modifiers.PARAM);
-         		s.setInfo(parser.defs.ANY_TYPE, parser.phaseId);
+         		s.setInfo(parser.defs.ANY_TYPE, Symbol.FIRST_ID);
      			tvars.enter(s);
                 return s;
             } else
@@ -251,7 +253,7 @@ public class AttributeParser implements ClassfileConstants {
                         //System.out.println("new var " + s + ", " + token);//DEBUG
                         if (token.equals("<")) {
                             nextToken();
-                            s.setInfo(parseType(), parser.phaseId);
+                            s.setInfo(parseType(), Symbol.FIRST_ID);
                         }
                         syms.add(s);
                     } while (token.equals(","));
@@ -259,36 +261,19 @@ public class AttributeParser implements ClassfileConstants {
                     nextToken();
                     Symbol[] smbls = (Symbol[])syms.toArray(new Symbol[syms.size()]);
                     //System.out.println("*** " + syms);//DEBUG
-                    Type constrtype = Type.appliedType(
-                        parser.ctype, Symbol.type(smbls));
-
-                    if ((parser.c.flags & Modifiers.INTERFACE) != 0) {
-                        parser.c.constructor().setInfo(
-                            Type.PolyType(
-                                smbls, Type.MethodType(Symbol.EMPTY_ARRAY, constrtype)),
-                            parser.phaseId);
-                        //System.out.println("info = " + parser.c.constructor().info());//DEBUG
-                    }
-                    Symbol[] constrs;
-                    switch (parser.c.constructor().rawInfo()) {
-                    case OverloadedType(Symbol[] alts, _):
-                        constrs = alts;
-                        break;
-                    default:
-                        constrs = new Symbol[]{parser.c.constructor()};
-                    }
-                    for (int i = 0; i < constrs.length; i++) {
-                        //System.out.println("info = " + e.sym.info());
-                        switch (constrs[i].rawInfo()) {
-                        case MethodType(Symbol[] vparams, _):
-                            constrs[i].setInfo(
-                                Type.PolyType(
-                                    smbls, Type.MethodType(vparams, constrtype)),
-                                parser.phaseId);
-                            break;
-                        }
-                        //System.out.println("*** constructor " + e.sym + ": " + e.sym.info());//DEBUG
-                    }
+                    Type clazztype = Type.appliedType(
+			parser.ctype, Symbol.type(smbls));
+		    Symbol constr = parser.c.primaryConstructor();
+		    switch (constr.rawInfo()) {
+		    case MethodType(Symbol[] vparams, _):
+			constr.setInfo(
+			    Type.PolyType(
+				smbls, Type.MethodType(vparams, clazztype)),
+			    Symbol.FIRST_ID);
+			break;
+		    default:
+			throw new ApplicationError(constr.rawInfo());
+		    }
                 } catch (NoSuchElementException e) {
                 }
             }
@@ -352,12 +337,12 @@ public class AttributeParser implements ClassfileConstants {
                 			Name.fromString(token).toTypeName(),
              				owner,
              				Modifiers.PARAM);
-         					s.setInfo(parser.defs.ANY_TYPE, parser.phaseId);
+         					s.setInfo(parser.defs.ANY_TYPE, Symbol.FIRST_ID);
      					locals.enter(s);
                         nextToken();
                         if (token.equals("<")) {
                             nextToken();
-                            s.setInfo(parseType(), parser.phaseId);
+                            s.setInfo(parseType(), Symbol.FIRST_ID);
                         }
                         syms.add(s);
                     } while (token.equals(","));
@@ -381,7 +366,7 @@ public class AttributeParser implements ClassfileConstants {
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            flags).setInfo(parseType(), parser.phaseId));
+                            flags).setInfo(parseType(), Symbol.FIRST_ID));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);
@@ -434,7 +419,7 @@ public class AttributeParser implements ClassfileConstants {
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            Modifiers.PARAM).setInfo(parseType(), parser.phaseId));
+                            Modifiers.PARAM).setInfo(parseType(), Symbol.FIRST_ID));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);

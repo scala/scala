@@ -1,0 +1,4 @@
+bug71.scala:3: class ga2 needs to be abstract, since method foo in class gu.ga1 is not defined
+object ga2 extends gu.ga1() {
+       ^
+one error found

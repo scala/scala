@@ -53,6 +53,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public case TypeRef(Type pre, Symbol sym, Type[] args) {
 	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
+	assert sym.kind == ERROR || sym.isType() : pre + "#" + sym;
     }
 
     /** parts_1 with ... with parts_n { members }
@@ -159,7 +160,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    Position.NOPOS, Names.COMPOUND_NAME.toTypeName(), Symbol.NONE,
 	    SYNTHETIC | ABSTRACTCLASS);
 	res.tsym.setInfo(res);
-	res.tsym.constructor().setInfo(
+	res.tsym.primaryConstructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, Type.NoType));
 	return res;
     }
@@ -419,7 +420,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    if (sym.kind == ALIAS)
 		return unalias().parents();
 	    else if (sym.kind == CLASS) {
-		assert sym.typeParams().length == args.length : sym + " " + ArrayApply.toString(args);//debug
+		assert sym.typeParams().length == args.length : sym + " " + ArrayApply.toString(args) + " " + sym.primaryConstructor().info();//debug
 		return subst(asSeenFrom(sym.info().parents(), pre, sym.owner()),
 			     sym.typeParams(), args);
 	    } else
@@ -508,12 +509,24 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** If this type is overloaded, its alternative types,
      *  otherwise an array consisting of this type itself.
      */
-    public Type[] alternatives() {
+    public Type[] alternativeTypes() {
         switch (this) {
         case OverloadedType(_, Type[] alttypes):
 	    return alttypes;
 	default:
 	    return new Type[]{this};
+	}
+    }
+
+    /** If this type is overloaded, its alternative symbols,
+     *  otherwise an empty array.
+     */
+    public Symbol[] alternativeSymbols() {
+        switch (this) {
+        case OverloadedType(Symbol[] alts, _):
+	    return alts;
+	default:
+	    return Symbol.EMPTY_ARRAY;
 	}
     }
 
@@ -2440,7 +2453,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     else return sym.typeConstructor();
 		}
 
-	    default: throw new ApplicationError();
+	    default: throw new ApplicationError(sym + " has wrong kind: " + sym.kind);
 	    }
 	case CompoundType(Type[] parents, _):
 	    if (parents.length > 0) return parents[0].erasure();

@@ -95,7 +95,7 @@ public class ClassExpander {
         switch (parents[i]) {
         case TypeRef(Type prefix, Symbol mixin, Type[] args):
             map.insertSymbol(mixin, clasz);
-            cloner.owners.put(mixin.constructor(), clasz);
+            cloner.owners.put(mixin.primaryConstructor(), clasz);
             inlineMixinTParams(type);
             Tree.Apply constr = (Tree.Apply)template.parents[i];
             inlineMixinVParams(mixin.valueParams(), constr.args);

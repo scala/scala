@@ -43,7 +43,6 @@ public class FreshNameCreator {
     public Name newName(Name prefixName, char separator) {
 	Name name = newName(prefixName.toString(), separator);
 	if (prefixName.isTypeName()) return name.toTypeName();
-	else if (prefixName.isConstrName()) return name.toConstrName();
 	else return name;
     }
 

@@ -58,8 +58,6 @@ class ImportList {
 		if (i + 1 < selectors.length && name.toTermName() == selectors[i + 1]) {
 		    if (name.isTypeName())
 			return t.lookupNonPrivate(selectors[i].toTypeName());
-		    else if (name.isConstrName())
-			return t.lookupNonPrivate(selectors[i].toConstrName());
 		    else
 			return t.lookupNonPrivate(selectors[i]);
 		} else if (name.toTermName() == selectors[i]) {

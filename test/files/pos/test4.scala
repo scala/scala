@@ -10,7 +10,7 @@ object test {
 
 import test._;
 
-trait S extends o.I[D] {
+trait S extends ooo.I[D] {
     def bar: E = foo(c,d);
 }
 
@@ -22,14 +22,14 @@ class O[X]() {
     val j:I[X] = null;
 }
 
-object o extends O[C]() {
+object ooo extends O[C]() {
 
   def main = {
     val s: S = null;
     import s._;
     foo(c,d);
-    o.i.foo(c,e);
-    o.j.foo(c,c);
+    ooo.i.foo(c,e);
+    ooo.j.foo(c,c);
     bar
   }
 }
@@ -38,8 +38,8 @@ class Main() {
   val s: S = null;
   import s._;
   foo(c,d);
-  o.i.foo(c,e);
-  o.j.foo(c,c);
+  ooo.i.foo(c,e);
+  ooo.j.foo(c,c);
   bar;
 }
 

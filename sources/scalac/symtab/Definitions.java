@@ -205,7 +205,7 @@ public class Definitions {
         SCALA_CLASS.members().enter(ANY_CLASS);
         ANY_TYPE = ANY_CLASS.typeConstructor();
         ANY_CLASS.setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), ANY_CLASS));
-        ANY_CLASS.constructor().setInfo(
+        ANY_CLASS.primaryConstructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, ANY_TYPE));
 
         // the java.lang.OBJECT class
@@ -238,7 +238,7 @@ public class Definitions {
         SCALA_CLASS.members().enter(ALL_CLASS);
         ALL_TYPE = ALL_CLASS.typeConstructor();
         ALL_CLASS.setInfo(Type.compoundType(new Type[]{ANY_TYPE}, new Scope(), ALL_CLASS));
-        ALL_CLASS.constructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALL_TYPE));
+        ALL_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALL_TYPE));
 
         // the scala.ALLREF class
         ALLREF_CLASS = new ClassSymbol(
@@ -246,7 +246,7 @@ public class Definitions {
         SCALA_CLASS.members().enter(ALLREF_CLASS);
         ALLREF_TYPE = ALLREF_CLASS.typeConstructor();
         ALLREF_CLASS.setInfo(Type.compoundType(new Type[]{ANYREF_TYPE}, new Scope(), ALLREF_CLASS));
-        ALLREF_CLASS.constructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALLREF_TYPE));
+        ALLREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALLREF_TYPE));
 
         // the primitive types
         DOUBLE_CLASS = getClass(Names.scala_Double);

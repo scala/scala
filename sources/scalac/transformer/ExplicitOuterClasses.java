@@ -117,7 +117,7 @@ public class ExplicitOuterClasses extends Transformer {
             } else {
                 // Add the outer parameter to the tree (it is added to
                 // the type by transformInfo).
-                Symbol constSym = classSym.constructor();
+                Symbol constSym = classSym.primaryConstructor();
                 Symbol outerSym = phase.outerSym(constSym);
                 assert (outerSym.owner() == constSym) : outerSym;
                 outerLinks.addFirst(outerSym);

@@ -441,8 +441,8 @@ public class AlgebraicMatcher extends PatternTool {
     protected int nCaseComponents(Tree tree) {
         switch (tree) {
             case Apply(Tree fn, _):
-                Type tpe = typeOf(tree.type.symbol().constructor());
-                //System.out.println("~~~ " + tree.type() + ", " + tree.type().symbol().constructor());
+                Type tpe = typeOf(tree.type.symbol().primaryConstructor());
+                //System.out.println("~~~ " + tree.type() + ", " + tree.type().symbol().primaryConstructor());
                 switch (tpe) {
                     // I'm not sure if this is a good idea, but obviously, currently all case classes
                     // without constructor arguments have type NoType

@@ -143,45 +143,38 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
      *  another symbol.
      */
     private void putSymbol(Symbol sym) {
-	switch (sym.info()) {
-	case OverloadedType(Symbol[] alts, _):
-	    for (int i = 0; i < alts.length; i++)
-		putSymbol(alts[i]);
-	    break;
-	default:
-	    if (putEntry(sym)) {
-		//System.out.println("put sym " + sym);//DEBUG
-		if (isLocal(sym)) {
-		    putEntry(sym.name);
-		    putSymbol(sym.owner());
-		    putType(sym.info());
-		    switch (sym.kind) {
-		    case TYPE:
-			putType(sym.loBound());
-			break;
-		    case ALIAS:
-			break;
-		    case CLASS:
-			putType(sym.typeOfThis());
-			putSymbol(sym.constructor());
-			for (Scope.SymbolIterator it = sym.members().iterator();
-			     it.hasNext();)
-			    putSymbol(it.next());
-			break;
-		    case VAL:
-			if (sym.isPrimaryConstructor())
-			    putSymbol(sym.primaryConstructorClass());
-			else if (sym.isModule())
-			    putSymbol(sym.moduleClass());
-			break;
-		    default:
-			throw new ApplicationError();
-		    }
-		} else if (sym.kind != NONE) {
-		    putEntry(sym.name);
-		    if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
-			putSymbol(sym.owner());
+	if (putEntry(sym)) {
+	    //System.out.println("put sym " + sym);//DEBUG
+	    if (isLocal(sym)) {
+		putEntry(sym.name);
+		putSymbol(sym.owner());
+		putType(sym.info());
+		switch (sym.kind) {
+		case TYPE:
+		    putType(sym.loBound());
+		    break;
+		case ALIAS:
+		    break;
+		case CLASS:
+		    putType(sym.typeOfThis());
+		    putSymbol(sym.allConstructors());
+		    for (Scope.SymbolIterator it = sym.members().iterator();
+			 it.hasNext();)
+			putSymbol(it.next());
+		    break;
+		case VAL:
+		    if (sym.isPrimaryConstructor())
+			putSymbol(sym.primaryConstructorClass());
+		    else if (sym.isModule())
+			putSymbol(sym.moduleClass());
+		    break;
+		default:
+		    throw new ApplicationError();
 		}
+	    } else if (sym.kind != NONE) {
+		putEntry(sym.name);
+		if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
+		    putSymbol(sym.owner());
 	    }
 	}
     }
@@ -229,7 +222,8 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		putSymbols(tparams);
 		break;
 	    case OverloadedType(Symbol[] alts, Type[] alttypes):
-		assert false : tp;
+		for (int i = 0; i < alts.length; i++)
+		    putSymbol(alts[i]);
 		break;
 	    default:
 		throw new ApplicationError();
@@ -308,7 +302,6 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
      */
     private void writeName(Name name) {
 	if (name.isTermName()) writeByte(TERMname);
-	else if (name.isConstrName()) writeByte(CONSTRname);
 	else writeByte(TYPEname);
 	writeByte(0); // space for length
 	while (bp + name.length() > bytes.length) resizeTo(bytes.length * 2);
@@ -350,7 +343,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		break;
 	    case CLASS:
 		writeRef(sym.typeOfThis());
-		writeRef(sym.constructor());
+		writeRef(sym.allConstructors());
 		break;
 	    case VAL:
 		if (sym.isPrimaryConstructor())
@@ -363,8 +356,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeByte(NONEsym);
 	    writeByte(0); // space for length
 	} else {
-	    writeByte(((sym.flags & (MODUL | PACKAGE)) == MODUL)
-		      ? EXTMODCLASSsym : EXTsym);
+	    writeByte((sym.isTerm() || sym.isModuleClass()) ? TERMref : TYPEref);
 	    writeByte(0); // space for length
 	    writeRef(sym.name);
 	    if (sym.owner() != Global.instance.definitions.ROOT_CLASS)

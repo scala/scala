@@ -117,10 +117,10 @@ public class MetaTree extends AbstractTreeExpander {
             writer.indent().print("return ");
             switch (kind) {
             case TreeKind.Type:
-                writer.print("name.isTypeName() || name == Name.ERROR");
+                writer.print("name.isTypeName() && (symbol() == null || !symbol().isConstructor()) || name == Name.ERROR");
                 break;
             case TreeKind.Term:
-                writer.print("!name.isTypeName()");
+                writer.print("name.isTermName() || (symbol() != null && symbol().isConstructor())");
                 break;
             default:
                 throw new Error("unexpected kind " + kind);

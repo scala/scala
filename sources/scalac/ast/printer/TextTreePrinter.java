@@ -149,7 +149,6 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text KW_ABSTRACT  = Text.Keyword("abstract");
     protected static final Text KW_CASE      = Text.Keyword("case");
     protected static final Text KW_CLASS     = Text.Keyword("class");
-    protected static final Text KW_CONSTR    = Text.Keyword("constr");
     protected static final Text KW_DEF       = Text.Keyword("def");
     protected static final Text KW_DO        = Text.Keyword("do");
     protected static final Text KW_ELSE      = Text.Keyword("else");
@@ -322,9 +321,10 @@ public class TextTreePrinter implements TreePrinter {
                     Tree tpe,
                     Tree rhs):
             printModifiers(mods);
-            if (name.isConstrName()) print(KW_CONSTR); else print(KW_DEF);
+            print(KW_DEF);
             print(Text.Space);
-            printSymbolDefinition(tree.symbol(), name);
+	    if (name.isTypeName()) print(KW_THIS);
+            else printSymbolDefinition(tree.symbol(), name);
             printParams(tparams);
             printParams(vparams);
             printOpt(TXT_COLON, tpe, false);

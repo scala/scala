@@ -172,8 +172,8 @@ class AddInterfaces extends Transformer {
                 // constructor, use the class constructor instead.
                 Symbol clsSym = sym.primaryConstructorClass();
                 if (phase.needInterface(clsSym))
-                    return gen.Select(transform(qualifier),
-                                      phase.getClassSymbol(clsSym).constructor());
+                    return gen.Select(qualifier,
+                                      phase.getClassSymbol(clsSym).primaryConstructor());
                 else
                     return super.transform(tree);
             } else {
@@ -207,7 +207,7 @@ class AddInterfaces extends Transformer {
                 // constructor, use the class constructor instead.
                 Symbol clsSym = sym.primaryConstructorClass();
                 if (phase.needInterface(clsSym))
-                    return gen.Ident(phase.getClassSymbol(clsSym).constructor());
+                    return gen.Ident(phase.getClassSymbol(clsSym).primaryConstructor());
                 else
                     return super.transform(tree);
             } else if (typeSubst != null) {
@@ -228,7 +228,7 @@ class AddInterfaces extends Transformer {
                 Map clsMap = new HashMap();
                 Symbol classSym = phase.getClassSymbol(ifaceSym);
                 clsMap.put(ifaceSym, classSym);
-                clsMap.put(ifaceSym.constructor(), classSym.constructor());
+                clsMap.put(ifaceSym.primaryConstructor(), classSym.primaryConstructor());
 
                 SymbolSubstTypeMap clsSubst =
                     new SymbolSubstTypeMap(clsMap, Collections.EMPTY_MAP);

@@ -1,0 +1,4 @@
+bug25.scala:5: constructor javax.rmi.PortableRemoteObject cannot be accessed in javax.rmi.type
+class A extends javax.rmi.PortableRemoteObject();
+                         ^
+one error found

@@ -130,7 +130,7 @@ public class Parser implements Tokens {
 
     boolean isDefIntro() {
 	switch (s.token) {
-	case VAL: case VAR: case DEF: case CONSTR: case TYPE:
+	case VAL: case VAR: case DEF: case TYPE:
 	case OBJECT: case CASEOBJECT: case CLASS: case CASECLASS: case TRAIT:
 	    return true;
 	default:
@@ -140,7 +140,7 @@ public class Parser implements Tokens {
 
     boolean isDclIntro() {
 	switch (s.token) {
-	case VAL: case VAR: case DEF: case CONSTR: case TYPE:
+	case VAL: case VAR: case DEF: case TYPE:
 	    return true;
 	default:
 	    return false;
@@ -247,7 +247,7 @@ public class Parser implements Tokens {
 
     Tree scalaObjectConstr(int pos) {
 	return make.Apply(
-	    pos, scalaDot(pos, Names.Object.toConstrName()), Tree.EMPTY_ARRAY);
+	    pos, scalaDot(pos, Names.Object.toTypeName()), Tree.EMPTY_ARRAY);
     }
 
     /** Create tree for for-comprehension <for (enums) do body> or
@@ -403,9 +403,9 @@ public class Parser implements Tokens {
     Tree convertToConstr(Tree t) {
 	switch (t) {
 	case Ident(Name name):
-	    return make.Ident(t.pos, name.toConstrName());
+	    return make.Ident(t.pos, name.toTypeName());
 	case Select(Tree qual, Name name):
-	    return make.Select(t.pos, qual, name.toConstrName());
+	    return make.Select(t.pos, qual, name.toTypeName());
 	default:
 	    return syntaxError(t.pos, "class constructor expected", false);
 	}
@@ -413,12 +413,11 @@ public class Parser implements Tokens {
 
     /** Convert this(...) application to constructor invocation
      */
-    Tree convertToSelfConstr(Tree t, Name constrname) {
+    Tree convertToSelfConstr(Tree t) {
 	switch (t) {
 	case Block(Tree[] stats):
 	    if (stats.length > 0) {
-		stats[stats.length - 1] = convertToSelfConstr(
-		    stats[stats.length - 1], constrname);
+		stats[stats.length - 1] = convertToSelfConstr(stats[stats.length - 1]);
 		return t;
 	    }
 	    break;
@@ -426,7 +425,7 @@ public class Parser implements Tokens {
 	    switch (fn) {
 	    case This(TypeNames.EMPTY):
 		return make.Apply(
-		    t.pos, make.Ident(t.pos, constrname), args);
+		    t.pos, make.Ident(t.pos, Names.this_.toTypeName()), args);
 	    }
 	}
 	return syntaxError(t.pos, "class constructor expected", false);
@@ -928,6 +927,7 @@ public class Parser implements Tokens {
      *                 | BlockExpr
      *                 | new Template
      *                 | SimpleExpr `.' Id
+     *                 | Id `#' Id
      *                 | SimpleExpr TypeArgs
      *                 | SimpleExpr ArgumentExprs
      */
@@ -988,6 +988,16 @@ public class Parser implements Tokens {
             switch (s.token) {
 	    case DOT:
 		t = make.Select(s.skipToken(), t, ident());
+		break;
+	    case HASH:
+		switch (t) {
+		case Ident(Name name):
+		    t = make.SelectFromType(
+			s.skipToken(), convertToTypeId(t), ident());
+		    break;
+		default:
+		    return t;
+		}
 		break;
 	    case LBRACKET:
 		switch (t) {
@@ -1581,7 +1591,6 @@ public class Parser implements Tokens {
      *  Dcl    ::= val ValDcl {`,' ValDcl}
      *           | var ValDcl {`,' ValDcl}
      *           | def FunDcl {`,' FunDcl}
-     *           | constr ConstrDcl {`,' ConstrDcl}
      *           | type TypeDcl {`,' TypeDcl}
      */
     Tree[] defOrDcl(int mods) {
@@ -1696,41 +1705,31 @@ public class Parser implements Tokens {
     }
 
     /** FunDef ::= Id [FunTypeParamClause] {ParamClauses} [`:' Type] `=' Expr
+     *           | this ParamClause `=' ConstrExpr
      *  FunDcl ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
      */
     Tree funDefOrDcl(int mods) {
         int pos = s.pos;
-        Name name = ident();
-        TypeDef[] tparams = typeParamClauseOpt(false);
-        ValDef[][] vparams = paramClauses();
-        Tree restype = typedOpt();
-	if (s.token == EQUALS || restype == Tree.Empty)
-            return make.DefDef(pos, mods, name, tparams, vparams,
-                               restype, equalsExpr());
-        else
-            return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
-                               tparams, vparams, restype, Tree.Empty);
-    }
-
-    /*  ConstrDef ::= [ParamClause] `=' ConstrExpr
-     *  ConstrExpr ::= this `(' [Exprs] `)'
-     *              |  `{' { BlockStat `;' } ConstrExpr `}'
-     */
-    Tree constrDef(int mods, Name clazzname, TypeDef[] tparams) {
-	Name constrname = clazzname.toConstrName();
-        int pos = s.pos;
-	ValDef[][] vparams = paramClauseOpt();
-	accept(EQUALS);
-	Tree restype = make.Ident(pos, clazzname.toTypeName());
-	if (tparams.length != 0) {
-	    Tree[] targs = new Tree[tparams.length];
-	    for (int i = 0; i < tparams.length; i++)
-		targs[i] = make.Ident(pos, ((TypeDef) tparams[i]).name);
-	    restype = make.AppliedType(pos, restype, targs);
+	if (s.token == THIS) {
+	    s.nextToken();
+	    ValDef[][] vparams = new ValDef[][]{paramClause()};
+	    accept(EQUALS);
+	    return make.DefDef(
+		pos, mods, Names.this_.toTypeName(),
+		Tree.TypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
+		convertToSelfConstr(expr()));
+	} else {
+	    Name name = ident();
+	    TypeDef[] tparams = typeParamClauseOpt(false);
+	    ValDef[][] vparams = paramClauses();
+	    Tree restype = typedOpt();
+	    if (s.token == EQUALS || restype == Tree.Empty)
+		return make.DefDef(pos, mods, name, tparams, vparams,
+				   restype, equalsExpr());
+	    else
+		return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
+				   tparams, vparams, restype, Tree.Empty);
 	}
-	return make.DefDef(
-	    pos, mods | Modifiers.FINAL, constrname,
-	    tparams, vparams, restype, convertToSelfConstr(expr(), constrname));
     }
 
     /** TypeDef ::= Id `=' Type
@@ -1754,23 +1753,16 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType]
-     *               ClassTemplate { [`;'] constr ConstrDef }
+    /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
      */
-    Tree[] classDef(int mods) {
+    Tree classDef(int mods) {
 	int pos = s.pos;
 	Name clazzname = ident().toTypeName();
 	TypeDef[] tparams = typeParamClauseOpt(true);
 	ValDef[][] params = paramClauseOpt();
 	TreeList result = new TreeList();
-        result.append(
-	    popComment(make.ClassDef(pos, mods, clazzname, tparams, params,
-			  simpleTypedOpt(), classTemplate())));
-	while (s.token == CONSTR) {
-	    s.nextToken();
-	    result.append(popComment(constrDef(mods, clazzname, tparams)));
-	}
-	return result.toArray();
+	return popComment(make.ClassDef(pos, mods, clazzname, tparams, params,
+					simpleTypedOpt(), classTemplate()));
     }
 
     /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate

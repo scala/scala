@@ -122,7 +122,7 @@ public class AddConstructors extends Transformer {
 	    ArrayList constrBody2 = new ArrayList();
 	    ArrayList classBody = new ArrayList();
 	    Symbol constrSym =
-		getConstructor(treeSym.constructor(), paramSyms, treeSym);
+		getConstructor(treeSym.primaryConstructor(), paramSyms, treeSym);
 	    Scope classScope = new Scope();
 	    classScope.enter(constrSym);
 
@@ -216,9 +216,9 @@ public class AddConstructors extends Transformer {
 	    classBody.add(gen.DefDef(tree.pos, constrSym, constrTree));
 
 	    // strip off the class constructor from parameters
-	    switch (treeSym.constructor().info()) {
+	    switch (treeSym.primaryConstructor().info()) {
 	    case MethodType(_, Type result):
-		treeSym.constructor().
+		treeSym.primaryConstructor().
 		    updateInfo(Type.MethodType(Symbol.EMPTY_ARRAY, result));
 		break;
 	    default : assert false;
@@ -235,6 +235,7 @@ public class AddConstructors extends Transformer {
 	    Tree base = baseClasses[0];
 	    switch (base) {
 	    case Apply(Tree fun, Tree[] args):
+		//System.out.println(tree + " new " + fun.symbol());//DEBUG
                 return gen.New(copy.Apply
 			       (base,
 				gen.Ident(base.pos, getConstructor(fun.symbol())),

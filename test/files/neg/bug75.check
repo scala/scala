@@ -1,0 +1,5 @@
+bug75.scala:6: value tree of type F.this.Nil[A]
+ cannot override value tree in class F of type scala.AllRef
+	new F[A](){ override val tree=t;};
+                                 ^
+one error found

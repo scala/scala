@@ -200,7 +200,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		make.Select(
 		    tree.pos,
 		    make.Ident(tree.pos, Names.scala),
-		    Names.Object.toConstrName()),
+		    Names.Object.toTypeName()),
 		Tree.EMPTY_ARRAY);
 	    Tree constr = make.Apply(
 		tree.pos,
@@ -209,7 +209,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		    make.Select(
 			tree.pos,
 			make.Ident(tree.pos, Names.scala),
-			Name.fromString("Function" + length).toConstrName()),
+			Name.fromString("Function" + length).toTypeName()),
 		    argtpes),
 		Tree.EMPTY_ARRAY);
 

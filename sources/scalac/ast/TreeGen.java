@@ -188,7 +188,12 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree mkParentConstr(int pos, Type parentType, Tree[] parentArgs) {
 	switch (parentType) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Tree ref = mkRef(pos, pre, sym.constructor());
+	    Tree ref = mkRef(pos, pre, sym.allConstructors());
+	    switch (ref.type) {
+	    case OverloadedType(Symbol[] alts, Type[] alttypes):
+		infer.methodAlternative(
+		    ref, alts, alttypes, Tree.typeOf(parentArgs), Type.AnyType);
+	    }
 	    Tree constr = (args.length == 0) ? ref
 		: TypeApply(ref, mkTypes(sym.pos, args));
 	    return Apply(constr, parentArgs);
@@ -206,14 +211,14 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree[] mkParentConstrs(int pos, Type[] parents, Tree[][] parentArgs) {
         Tree[] constrs = new Tree[parents.length];
         for (int i = 0; i < parents.length; ++i)
-	    constrs[i] = (parentArgs == null ?
+	    constrs[i] = (parentArgs.length == 0 ?
                           mkParentConstr(pos, parents[i])
-                          : mkParentConstr(pos, parents[i],  parentArgs[i]));
+                          : mkParentConstr(pos, parents[i], parentArgs[i]));
         return constrs;
     }
 
     public Tree[] mkParentConstrs(int pos, Type[] parents) {
-        return mkParentConstrs(pos, parents, null);
+        return mkParentConstrs(pos, parents, new Tree[][]{});
     }
 
     /** Build parameter sections corresponding to type.
@@ -344,7 +349,7 @@ public class TreeGen implements Kinds, Modifiers {
      */
     public Tree New(int pos, Type pre, Symbol clazz,
 		    Type[] targs, Tree[] args) {
-	Tree constr = mkRef(pos, pre, clazz.constructor());
+	Tree constr = mkRef(pos, pre, clazz.primaryConstructor());
 	if (targs.length != 0)
 	    constr = TypeApply(constr, mkTypes(pos, targs));
 	Tree base = Apply(constr, args);
@@ -511,7 +516,7 @@ public class TreeGen implements Kinds, Modifiers {
      */
     public Tree ClassDef(int pos, Symbol clazz, Template template) {
 	Global.instance.nextPhase();
-	Type constrtype = clazz.constructor().info();
+	Type constrtype = clazz.primaryConstructor().info();
 	Global.instance.prevPhase();
         return make.ClassDef(
             pos,
@@ -615,7 +620,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
 	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, ft},
                                         new Scope(), clazz));
-	clazz.constructor().setInfo(
+	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
 	Symbol applyMeth = new TermSymbol(pos, Names.apply, clazz, FINAL)
@@ -639,7 +644,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
 	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, pft},
                                         new Scope(), clazz));
-	clazz.constructor().setInfo(
+	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
 	Tree classDef = ClassDef(clazz, new Tree[]{

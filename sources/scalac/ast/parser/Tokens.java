@@ -52,7 +52,7 @@ public interface Tokens {
         FALSE = 42,
         OBJECT = 43,
         CLASS = 44,
-        CONSTR = 45,
+
         IMPORT = 46,
         PACKAGE = 47,
         AS = 48,

@@ -249,7 +249,7 @@ public class Primitives {
         this.FARRAY_SET = getUniqueTerm(RUNTIME, FARRAY_SET_N);
         this.DARRAY_SET = getUniqueTerm(RUNTIME, DARRAY_SET_N);
         this.OARRAY_SET = getUniqueTerm(RUNTIME, OARRAY_SET_N);
-        Symbol[] boxes = getTerm(RUNTIME, BOX_N).alternatives();
+        Symbol[] boxes = getTerm(RUNTIME, BOX_N).alternativeSymbols();
         this.BOX_UVALUE = getBoxUnit(boxes);
         this.BOX_ZVALUE = getBoxValue(boxes, definitions.BOOLEAN_TYPE);
         this.BOX_BVALUE = getBoxValue(boxes, definitions.BYTE_TYPE);
@@ -560,7 +560,7 @@ public class Primitives {
         Name name = Names.ADD;
         Symbol symbol = clasz.lookup(name);
         assert symbol != Symbol.NONE : Debug.show(clasz) + "." + name;
-        Symbol[] alts = symbol.alternatives();
+        Symbol[] alts = symbol.alternativeSymbols();
         // !!! assert count + 2 == alts.length : (count + 2) + " != " + alts.length;
         boolean pos = false;
         boolean concat = false;
@@ -597,7 +597,7 @@ public class Primitives {
         Name name = Names.SUB;
         Symbol symbol = clasz.lookup(name);
         assert symbol != Symbol.NONE : Debug.show(clasz) + "." + name;
-        Symbol[] alts = symbol.alternatives();
+        Symbol[] alts = symbol.alternativeSymbols();
         // !!! assert count + 1 == alts.length : (count + 1) + " != " + alts.length;
         boolean pos = false;
         for (int i = 0; i < alts.length; i++) {
@@ -626,7 +626,7 @@ public class Primitives {
     private void addAll(Symbol clasz,Name name,Primitive primitive,int count) {
         Symbol symbol = clasz.lookup(name);
         assert symbol != Symbol.NONE : Debug.show(clasz) + "." + name;
-        Symbol[] alts = symbol.alternatives();
+        Symbol[] alts = symbol.alternativeSymbols();
         assert count == alts.length : count + " != " + alts.length;
         for (int i = 0; i < alts.length; i++) addPrimitive(alts[i], primitive);
     }

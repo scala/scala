@@ -40,8 +40,8 @@ public class AddInterfacesPhase extends PhaseDescriptor {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-        if (sym.isConstructor()) {
-            Symbol clazz =sym.primaryConstructorClass();
+        if (sym.isPrimaryConstructor()) {
+            Symbol clazz = sym.primaryConstructorClass();
             if (clazz.isPackage() || !needInterface(clazz)) return tp;
             // The symbol is a constructor of a class which needs
             // an interface. All its value arguments have to be
@@ -165,7 +165,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         uniqueName(sym, buf);
         Name newName = Name.fromString(buf.toString());
         if (sym.name.isTypeName()) return newName.toTypeName();
-        else if (sym.name.isConstrName()) return newName.toConstrName();
         else return newName;
     }
 
@@ -192,7 +191,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
     protected Name className(Name ifaceName) {
         Name className = Name.fromString(ifaceName.toString() + CLASS_SUFFIX);
         if (ifaceName.isTypeName()) return className.toTypeName();
-        else if (ifaceName.isConstrName()) return className.toConstrName();
         else return className;
     }
 
@@ -206,7 +204,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
     protected Symbol getClassSymbol(Symbol ifaceSym) {
         if (ifaceSym.isPrimaryConstructor())
             return getClassSymbol(ifaceSym.primaryConstructorClass())
-                .constructor();
+                .primaryConstructor();
 
         if (!needInterface(ifaceSym))
             return ifaceSym;
@@ -217,13 +215,13 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             classSym.name = className(ifaceSym.name);
             classSym.flags &= ~Modifiers.INTERFACE;
 
-            Symbol ifaceConstrSym = ifaceSym.constructor();
-            Symbol classConstrSym = classSym.constructor();
+            Symbol ifaceConstrSym = ifaceSym.primaryConstructor();
+            Symbol classConstrSym = classSym.primaryConstructor();
             classConstrSym.name = className(ifaceConstrSym.name);
 
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);
-            ifaceOwnerMembers.enter(classConstrSym);
+            // ifaceOwnerMembers.enter(classConstrSym);
 
             Type.SubstThisMap thisTypeMap =
                 new Type.SubstThisMap(ifaceSym, classSym);
@@ -278,7 +276,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                 classMembersMap.put(ifaceMemberSym, classMemberSym);
                 classMembers.enterOrOverload(classMemberSym);
                 if (classMemberSym.isClass())
-                    classMembers.enterOrOverload(classMemberSym.constructor());
+                    classMembers.enterOrOverload(classMemberSym.primaryConstructor());
             }
 
             // Give correct type to the class symbol by using class

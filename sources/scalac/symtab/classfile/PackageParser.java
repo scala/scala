@@ -77,11 +77,11 @@ public class PackageParser extends Type.LazyType {
 			.toTypeName();
                     if (locals.lookup(n) == Symbol.NONE) {
 		        ClassSymbol clazz = new ClassSymbol(n, p, classCompletion);
-		        clazz.constructor().setInfo(
+			// todo: needed?
+		        clazz.allConstructors().setInfo(
 			    classCompletion.staticsParser(clazz));
 		        // enter class
 		        locals.enter(clazz);
-		        locals.enter(clazz.constructor());
 		        // enter module, except for scala.Object class
 		        // todo: why not there also?.
 		        if (!(n == Names.Object.toTypeName() &&
@@ -110,10 +110,10 @@ public class PackageParser extends Type.LazyType {
 			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
 			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
 			ClassSymbol clazz = new ClassSymbol(n, p, symblCompletion);
-			clazz.constructor().setInfo(symblCompletion);
+			//todo: needed
+			clazz.allConstructors().setInfo(symblCompletion);
 			clazz.module().setInfo(symblCompletion);
 			locals.enter(clazz);
-			locals.enter(clazz.constructor());
 			locals.enter(clazz.module());
 		    }
                 } else if (inclClasses && fname.endsWith(".scala")) {
@@ -126,11 +126,11 @@ public class PackageParser extends Type.LazyType {
                         SourceCompleter completer = new SourceCompleter(global,
                             dir.getPath() + File.separatorChar + fname);
                         ClassSymbol clazz = new ClassSymbol(n, p, completer);
-                        clazz.constructor().setInfo(completer);
+			//todo: needed?
+                        clazz.allConstructors().setInfo(completer);
 			clazz.module().setInfo(completer);
                         // enter class
                         locals.enter(clazz);
-			locals.enter(clazz.constructor());
 			locals.enter(clazz.module());
                     }
                 }

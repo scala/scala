@@ -1,0 +1,4 @@
+bug74.scala:2: Int is not an enclosing class
+  def f = Int.super.hashCode;
+          ^
+one error found

@@ -62,7 +62,6 @@ public class AddAccessors extends Transformer {
                       Tree tpe,
                       Tree.Template impl): {
             Symbol clsSym = tree.symbol();
-            Symbol constrSym = clsSym.constructor();
 
             LinkedList/*<Tree>*/ newBody =
                 new LinkedList(Arrays.asList(transform(impl.body)));

@@ -119,7 +119,10 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert symbol != Symbol.NONE;
         assert symbol != Symbol.ERROR;
         if (symbol.isModule()) setOwner(symbol.moduleClass(), owner);
-        if (symbol.isClass()) setOwner(symbol.constructor(), owner);
+        if (symbol.isClass()) {
+	    Symbol[] alts = symbol.allConstructors().alternativeSymbols();
+	    for (int i = 0; i < alts.length; i++) setOwner(alts[i], owner);
+	}
         symbol.owner = owner;
     }
 
@@ -132,19 +135,22 @@ public abstract class Symbol implements Modifiers, Kinds {
     public Symbol setInfo(Type info, int limit) {
 	assert !isConstructor()
 	    || info instanceof Type.LazyType
+	    || info == Type.NoType
 	    || info == Type.ErrorType
 	    || info instanceof Type.MethodType
 	    || info instanceof Type.OverloadedType
 	    || info instanceof Type.PolyType &&
    	       ((Type.PolyType)info).result instanceof Type.MethodType
 	    : "illegal type for " + this + ": " + info;
-	if ((flags & (INITIALIZED | LOCKED)) != (INITIALIZED | LOCKED)) {
+	//if ((flags & (INITIALIZED | LOCKED)) != (INITIALIZED | LOCKED)) {
 	    if (infos == TypeIntervalList.EMPTY) {
 		infos = new TypeIntervalList(TypeIntervalList.EMPTY);
 	    }
 	    infos.limit = limit;
 	    infos.info = info;
-	}
+	    if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
+	    else flags |= INITIALIZED;
+	    //}
         return this;
     }
 
@@ -173,11 +179,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	throw new ApplicationError("setLoBound inapplicable for " + this);
     }
 
-// Symbol classification ----------------------------------------------------
-
-    public final boolean isDefined() {
-	return !(rawInfoAt(FIRST_ID) instanceof Type.LazyType);
+    /** Add an auxiliary constructor to class; return created symbol.
+     */
+    public Symbol addConstructor() {
+	throw new ApplicationError("addConstructor inapplicable for " + this);
     }
+
+// Symbol classification ----------------------------------------------------
 
     /** Does this symbol denote a type? */
     public final boolean isType() {
@@ -377,13 +385,13 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /** Is this symbol a constructor? */
-    public final boolean isConstructor() {
-	return name.isConstrName();
+    public boolean isConstructor() {
+	return false;
     }
 
     /** Is this symbol the primary constructor of a type? */
     public final boolean isPrimaryConstructor() {
-	return isConstructor() && this == primaryConstructorClass().constructor();
+	return isConstructor() && this == primaryConstructorClass().primaryConstructor();
     }
 
     public boolean isGenerated() {
@@ -451,8 +459,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return EMPTY_ARRAY;
     }
 
+    /** Get all constructors of class */
+    public Symbol allConstructors() {
+        return NONE;
+    }
+
     /** Get primary constructor of class */
-    public Symbol constructor() {
+    public Symbol primaryConstructor() {
         return NONE;
     }
 
@@ -474,7 +487,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public Symbol classOwner() {
 	Symbol owner = owner();
 	Symbol clazz = owner.primaryConstructorClass();
-	if (clazz.constructor() == owner) return clazz;
+	if (clazz.primaryConstructor() == owner) return clazz;
 	else return owner;
     }
 
@@ -501,11 +514,40 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return this;
     }
 
+    /** Return first alternative if this has a (possibly lazy)
+     *  overloaded type, otherwise symbol itself.
+     *  Needed only in ClassSymbol.primaryConstructor()
+     */
+    Symbol firstAlternative() {
+	if (infos.info instanceof Type.OverloadedType)
+	    return infos.info.alternativeSymbols()[0];
+	else if (infos.info instanceof LazyOverloadedType)
+	    return ((LazyOverloadedType) infos.info).sym1.firstAlternative();
+	else
+	    return this;
+    }
+
      /* If this is a module, return its class.
      *  Otherwise return the symbol itself.
      */
     public Symbol moduleClass() {
 	return this;
+    }
+
+    /** if type is a (possibly lazy) overloaded type, return its alternatves
+     *  else return array consisting of symbol itself
+     */
+    public Symbol[] alternativeSymbols() {
+	Symbol[] alts = type().alternativeSymbols();
+	if (alts.length == 0) return new Symbol[]{this};
+	else return alts;
+    }
+
+    /** if type is a (possibly lazy) overloaded type, return its alternatves
+     *  else return array consisting of type itself
+     */
+    public Type[] alternativeTypes() {
+	return type().alternativeTypes();
     }
 
     /** The symbol accessed by this accessor function.
@@ -598,7 +640,7 @@ public abstract class Symbol implements Modifiers, Kinds {
  		flags &= ~SNDTIME;
  	    } else {
  		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
- 		flags |= INITIALIZED;
+ 		//flags |= INITIALIZED;
  	    }
 	    //System.out.println("done: " + this.name);//DEBUG
 	}
@@ -624,8 +666,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** get info at phase #id, without forcing lazy types.
      */
     public Type rawInfoAt(int id) {
-	int nextid = infos.limit;
 	assert infos != TypeIntervalList.EMPTY : this;
+	int nextid = infos.limit;
 	if (nextid < id) {
 	    PhaseDescriptor curphase = Global.instance.currentPhase;
 	    do {
@@ -868,57 +910,41 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** A lazy type which, when forced computed the overloaded type
      *  of symbols `sym1' and `sym2'. It also checks that this type is well-formed.
      */
-    private static class LazyOverloadedType extends Type.LazyType {
+    public static class LazyOverloadedType extends Type.LazyType {
 	Symbol sym1;
 	Symbol sym2;
 	LazyOverloadedType(Symbol sym1, Symbol sym2) {
 	    this.sym1 = sym1;
 	    this.sym2 = sym2;
 	}
-	private Symbol[] alts(Symbol sym) {
-	    if (sym == null) return Symbol.EMPTY_ARRAY;
-	    switch (sym.type()) {
-	    case OverloadedType(Symbol[] alts, _): return alts;
-	    default: return new Symbol[]{sym};
-	    }
-	}
-	private Type[] alttypes(Symbol sym) {
-	    if (sym == null) return Type.EMPTY_ARRAY;
-	    switch (sym.type()) {
-	    case OverloadedType(_, Type[] alttypes): return alttypes;
-	    default: return new Type[]{sym.type()};
-	    }
-	}
-	public void complete(Symbol overloaded) {
-	    if (sym1 != null) sym1.initialize();
-	    if (sym2 != null) sym2.initialize();
 
-	    Symbol[] alts1 = alts(sym1);
-	    Symbol[] alts2 = alts(sym2);
+	public Symbol[] alternativeSymbols() {
+	    Symbol[] alts1 = sym1.alternativeSymbols();
+	    Symbol[] alts2 = sym2.alternativeSymbols();
 	    Symbol[] alts3 = new Symbol[alts1.length + alts2.length];
 	    System.arraycopy(alts1, 0, alts3, 0, alts1.length);
 	    System.arraycopy(alts2, 0, alts3, alts1.length, alts2.length);
-
-	    Type[] alttypes1 = alttypes(sym1);
-	    Type[] alttypes2 = alttypes(sym2);
-	    Type[] alttypes3 = new Type[alttypes1.length + alttypes2.length];
-	    System.arraycopy(alttypes1, 0, alttypes3, 0, alttypes1.length);
-	    System.arraycopy(alttypes2, 0, alttypes3, alttypes1.length, alttypes2.length);
-	    overloaded.setInfo(Type.OverloadedType(alts3, alttypes3));
+	    return alts3;
 	}
+
+	public Type[] alternativeTypes() {
+	    Type[] alts1 = sym1.alternativeTypes();
+	    Type[] alts2 = sym2.alternativeTypes();
+	    Type[] alts3 = new Type[alts1.length + alts2.length];
+	    System.arraycopy(alts1, 0, alts3, 0, alts1.length);
+	    System.arraycopy(alts2, 0, alts3, alts1.length, alts2.length);
+	    return alts3;
+	}
+
+	public void complete(Symbol overloaded) {
+	    overloaded.setInfo(
+		Type.OverloadedType(
+		    alternativeSymbols(), alternativeTypes()));
+	}
+
 	public String toString() {
 	    return "LazyOverloadedType(" + sym1 + "," + sym2 + ")";
 	}
-    }
-
-    /** All the alternatives of this symbol if it's overloaded, the
-     * symbol alone otherwise.
-     */
-    public Symbol[] alternatives() {
-	switch (type()) {
-	case OverloadedType(Symbol[] alts, _): return alts;
-	default: return new Symbol[]{this};
-        }
     }
 
     /** The symbol which is overridden by this symbol in base class `base'
@@ -985,8 +1011,7 @@ public class TermSymbol extends Symbol {
 
     public static TermSymbol newConstructor(Symbol clazz, int flags) {
         TermSymbol sym = new TermSymbol(
-	    clazz.pos, clazz.name.toConstrName(), clazz.owner(),
-	    flags | FINAL);
+	    clazz.pos, clazz.name, clazz.owner(), flags | FINAL);
 	sym.clazz = clazz;
 	return sym;
     }
@@ -1008,7 +1033,7 @@ public class TermSymbol extends Symbol {
 				       int flags) {
         ClassSymbol clazz = new ClassSymbol(
 	    pos, name.toTypeName(), owner, flags | MODUL | FINAL);
-        clazz.constructor().setInfo(
+        clazz.primaryConstructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
 	return newModule(pos, name, owner, flags, clazz);
@@ -1042,6 +1067,11 @@ public class TermSymbol extends Symbol {
     public Name fullName() {
 	if (clazz != null) return clazz.fullName();
 	else return super.fullName();
+    }
+
+    /** Is this symbol a constructor? */
+    public boolean isConstructor() {
+	return name.isTypeName();
     }
 
     /** Return a fresh symbol with the same fields as this one.
@@ -1127,6 +1157,16 @@ public class TypeSymbol extends Symbol {
 
     public Symbol[] typeParams() {
 	return type().unalias().typeParams();
+    }
+
+    /** Get all constructors of class */
+    public Symbol allConstructors() {
+        return type().unalias().symbol().allConstructors();
+    }
+
+    /** Get primary constructor of class */
+    public Symbol primaryConstructor() {
+        return type().unalias().symbol().primaryConstructor();
     }
 
     public Type[] closure() {
@@ -1257,6 +1297,16 @@ public class AbsTypeSymbol extends TypeSymbol {
 	return Symbol.EMPTY_ARRAY;
     }
 
+    /** Get all constructors of class */
+    public Symbol allConstructors() {
+        return Symbol.NONE;
+    }
+
+    /** Get primary constructor of class */
+    public Symbol primaryConstructor() {
+        return Symbol.NONE;
+    }
+
     public Type loBound() {
 	initialize();
 	return lobound == null ? Global.instance.definitions.ALL_TYPE : lobound;
@@ -1279,7 +1329,7 @@ public class ClassSymbol extends TypeSymbol {
     private Type template;
 
     /** The primary constructor of this type */
-    public final Symbol constructor;
+    private Symbol constructor;
 
     /** The module belonging to the class. This means:
      *  For Java classes, its statics parts.
@@ -1328,27 +1378,38 @@ public class ClassSymbol extends TypeSymbol {
         ClassSymbol other = new ClassSymbol(pos, name, owner, flags);
 	other.module = module;
         other.setInfo(info());
-	other.constructor.setInfo(
-            fixClonedConstrType(
-                constructor.info().cloneType(constructor, other.constructor),
-                other));
+	other.primaryConstructor().setInfo(
+	    fixConstrType(
+		primaryConstructor().info().cloneType(
+		    primaryConstructor(), other.primaryConstructor()),
+		other));
+	Symbol[] alts = allConstructors().alternativeSymbols();
+	for (int i = 1; i < alts.length; i++) {
+	    Symbol constr = other.addConstructor();
+	    constr.setInfo(
+		fixConstrType(
+		    alts[i].info().cloneType(alts[i], constr),
+		    other));
+	}
 	other.mangled = mangled;
 	if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
     }
-    private Type fixClonedConstrType(Type type, Symbol clone) {
+    private Type fixConstrType(Type type, Symbol clone) {
         switch (type) {
         case MethodType(Symbol[] vparams, Type result):
-            result = fixClonedConstrType(result, clone);
+            result = fixConstrType(result, clone);
             return new Type.MethodType(vparams, result);
         case PolyType(Symbol[] tparams, Type result):
-            result = fixClonedConstrType(result, clone);
+            result = fixConstrType(result, clone);
             return new Type.PolyType(tparams, result);
         case TypeRef(Type pre, Symbol sym, Type[] args):
             assert sym == this : Debug.show(sym) + " != " + Debug.show(this);
             return new Type.TypeRef(pre, clone, args);
+	case LazyType():
+	    return type;
         default:
-            throw Debug.abort("unexpected constructor type");
+            throw Debug.abort("unexpected constructor type:" + clone + ":" + type);
         }
     }
 
@@ -1356,6 +1417,9 @@ public class ClassSymbol extends TypeSymbol {
      */
     public void copyTo(Symbol sym) {
 	super.copyTo(sym);
+	Symbol symconstr = ((ClassSymbol) sym).constructor;
+	constructor.copyTo(symconstr);
+	symconstr.setInfo(fixConstrType(symconstr.rawInfo(), sym));
 	if (thisSym != this) sym.setTypeOfThis(typeOfThis());
     }
 
@@ -1404,21 +1468,11 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Get type parameters */
     public Symbol[] typeParams() {
-        // !!! For some Java classes, constructor() returns an
-        // Overloaded symbol. This is wrong as constructor() should
-        // return the primary constructor. Once this problem is
-        // solved, the following switch can be removed.
-        Type constrtype = constructor.info();
-        switch (constrtype) {
-        case OverloadedType(_, _):
-            return Symbol.EMPTY_ARRAY;
-        default:
-            return constrtype.typeParams();
-        }
+	return primaryConstructor().info().typeParams();
     }
 
     public Symbol[] valueParams() {
-	return constructor.info().valueParams();
+	return primaryConstructor().info().valueParams();
     }
 
     /** Get type */
@@ -1453,9 +1507,22 @@ public class ClassSymbol extends TypeSymbol {
 	return this;
     }
 
+    /** add a constructor
+     */
+    public Symbol addConstructor() {
+	Symbol constr = TermSymbol.newConstructor(this, flags & ~MODUL);
+	constructor = constructor.overloadWith(constr);
+	return constr;
+    }
+
     /** Get primary constructor */
-    public Symbol constructor() {
-        return constructor;
+    public Symbol primaryConstructor() {
+        return constructor.firstAlternative();
+    }
+
+    /** Get all constructors */
+    public Symbol allConstructors() {
+	return constructor;
     }
 
     /** Return the next enclosing class */
@@ -1479,7 +1546,6 @@ public class ClassSymbol extends TypeSymbol {
 
     public void reset(Type completer) {
 	super.reset(completer);
-	constructor().reset(completer);
 	module().reset(completer);
 	template = null;
 	thisSym = this;
@@ -1520,7 +1586,7 @@ public final class ErrorSymbol extends Symbol {
     }
 
     /** Get primary constructor */
-    public Symbol constructor() {
+    public Symbol primaryConstructor() {
 	return TermSymbol.newConstructor(this, 0).setInfo(Type.ErrorType);
     }
 

@@ -407,7 +407,7 @@ public class  Global {
                     make.Apply(0,
                         make.Select(0,
                             make.Ident(0, Names.scala),
-                            Names.Object.toConstrName()),
+                            Names.Object.toTypeName()),
                         new Tree[0])},
                     unit.body))};
         module++;

@@ -54,7 +54,7 @@ public class CheckOwners extends Checker {
     protected void traverse(Template templ, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	if (owner.kind == Kinds.CLASS)
-	    currentOwner = owner.constructor();
+	    currentOwner = owner.primaryConstructor();
 	traverse(templ.parents);
 	currentOwner = owner;
 
@@ -103,8 +103,8 @@ public class CheckOwners extends Checker {
 		      Tree tpe,
                       Template impl): {
             check(tree);
-            traverse(tparams, tree.symbol().constructor());
-            traverse(vparams, tree.symbol().constructor());
+            traverse(tparams, tree.symbol().primaryConstructor());
+            traverse(vparams, tree.symbol().primaryConstructor());
 	    traverse(tpe);
             traverse(impl, tree.symbol());
         } break;
@@ -151,7 +151,7 @@ public class CheckOwners extends Checker {
             if (sym != null && sym != Symbol.NONE) {
                 checkOwner(tree, sym);
                 if (sym.kind == Kinds.CLASS)
-                    checkOwner(tree, sym.constructor());
+                    checkOwner(tree, sym.primaryConstructor());
             }
         }
     }

@@ -79,7 +79,7 @@ public class Scope {
 	 */
 	public final Scope owner;
 
-	Entry(Symbol sym, Scope owner) {
+	public Entry(Symbol sym, Scope owner) {
 	    this.sym = sym;
 	    this.owner = owner;
 	    this.next = owner.elems;
@@ -173,7 +173,7 @@ public class Scope {
 	return s;
     }
 
-    private Scope enter(Entry e) {
+    public Scope enter(Entry e) {
 	elems = e;
 	elemsCache = null;
 	if (hashtable != null) {
@@ -189,6 +189,7 @@ public class Scope {
     /** enter a symbol
      */
     public Scope enter(Symbol sym) {
+	assert !sym.isConstructor();
 	return enter(new Entry(sym, this));
     }
 
