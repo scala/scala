@@ -203,20 +203,22 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected void updateBody(Body tree, ValDef[] bound, Tree guard, Tree body) {
-        if (tree.guard[tree.guard.length - 1] == Tree.Empty)
-            unit.error(body.pos, "unreachable code");
-        ValDef[][] bd = new ValDef[tree.bound.length + 1][];
-        Tree[] ng = new Tree[tree.guard.length + 1];
-        Tree[] nb = new Tree[tree.body.length + 1];
-        System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length);
-        System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length);
-        System.arraycopy(tree.body, 0, nb, 0, tree.body.length);
-        bd[bd.length - 1] = bound;
-        ng[ng.length - 1] = guard;
-        nb[nb.length - 1] = body;
-        tree.bound = bd;
-        tree.guard = ng;
-        tree.body = nb;
+        if (tree.guard[tree.guard.length - 1] == Tree.Empty) {
+            //unit.error(body.pos, "unreachable code");
+        } else {
+			ValDef[][] bd = new ValDef[tree.bound.length + 1][];
+			Tree[] ng = new Tree[tree.guard.length + 1];
+			Tree[] nb = new Tree[tree.body.length + 1];
+			System.arraycopy(tree.bound, 0, bd, 0, tree.bound.length);
+			System.arraycopy(tree.guard, 0, ng, 0, tree.guard.length);
+			System.arraycopy(tree.body, 0, nb, 0, tree.body.length);
+			bd[bd.length - 1] = bound;
+			ng[ng.length - 1] = guard;
+			nb[nb.length - 1] = body;
+			tree.bound = bd;
+			tree.guard = ng;
+			tree.body = nb;
+		}
     }
 
     /*
