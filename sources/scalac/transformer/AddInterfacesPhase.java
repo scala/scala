@@ -193,6 +193,7 @@ public class AddInterfacesPhase extends Phase {
         if (classSym == null) {
             classSym = ifaceSym.cloneSymbol(ifaceSym.owner());
             classSym.name = className(ifaceSym.name);
+            ifaceSym.flags &= ~Modifiers.FINAL;
             classSym.flags &= ~Modifiers.INTERFACE;
 
             // Remove non-primary constructors from interface
@@ -253,6 +254,7 @@ public class AddInterfacesPhase extends Phase {
                         ifaceMemberSym.flags ^= Modifiers.PROTECTED;
 
                     classMemberSym = ifaceMemberSym.cloneSymbol(classSym);
+                    ifaceMemberSym.flags &= ~Modifiers.FINAL;
                     classMemberSym.setInfo(
                         thisTypeMap.applyParams(
                             classSubst.applyParams(
