@@ -55,6 +55,7 @@ public class CompilerCommand extends CommandParser {
     public final StringOptionParser bootclasspath;
     public final StringOptionParser extdirs;
     public final StringOptionParser outpath;
+    public final StringOptionParser assemrefs;
     public final ChoiceOptionParser target;
     public final BooleanOptionParser noimports;
     public final BooleanOptionParser nopredefs;
@@ -158,6 +159,10 @@ public class CompilerCommand extends CommandParser {
         this.outpath = new StringOptionParser(this,
             "d", "Specify where to place generated class files",
             "directory", "."),
+
+        this.assemrefs = new StringOptionParser(this,
+            "r", "Assemblies referenced by the source program",
+            "assembly files", "."),
 
         this.target = new ChoiceOptionParser(this,
             "target", "Specify which bakend to use (jvm, msil)",
