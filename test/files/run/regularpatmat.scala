@@ -591,6 +591,26 @@ object testMZ {
 
 }
 
+object testNN {
+ import scala.testing.UnitTest._ ;
+  abstract class K;
+  case class F(x:K*) extends K;
+  case class G() extends K;
+
+  def mtch(k:K):boolean = k.match {
+      case F(F(G()*),G(),F(G()*)) => true;
+      case _ => false;
+  }
+
+  def main:Unit = {
+                System.out.println("testNN");
+    test[K,boolean](mtch, F(F(G()),G(),F(G())), true);
+    test[K,boolean](mtch, F(F(),G(),F(G(),G(),G(),G())), true);
+    test[K,boolean](mtch, G(), false);
+    test[K,boolean](mtch, F(G()), false);
+  }
+}
+
 object Test {
   def main(args: Array[String]): Unit = {
     testWR.main( args );
@@ -604,6 +624,7 @@ object Test {
     testBN.main( args );
     testBO.main( args );
     testMZ.main;
+    testNN.main;
     ()
   }
 }
