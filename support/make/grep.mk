@@ -6,7 +6,7 @@
 ##############################################################################
 # Usage
 #
-#   make grep [FLAGS=<flags>] REGEX=<regex> [FILES=<files>]"
+#   make grep [FLAGS=<flags>] REGEX=<regex> [FILES=<files>]
 #
 ##############################################################################
 # Examples
