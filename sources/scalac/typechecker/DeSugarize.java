@@ -124,8 +124,7 @@ public class DeSugarize implements Kinds, Modifiers {
     public Tree mkTuple(int pos, Tree[] trees) {
 	Name n = trees.length == 0 ? Names.Unit
 	    : Name.fromString("Tuple" + trees.length);
-	Tree select = make.Select(pos,
-	    make.Ident(pos, Names.scala), n.toConstrName());
+	Tree select = make.Select(pos, make.Ident(pos, Names.scala), n);
 	return make.Apply(pos, select, trees);
     }
 
