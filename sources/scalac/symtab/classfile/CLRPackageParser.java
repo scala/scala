@@ -23,6 +23,7 @@ import scalac.symtab.ClassSymbol;
 import scalac.symtab.Scope;
 import scalac.util.Debug;
 import scalac.util.Name;
+import scalac.util.NameTransformer;
 import scalac.Global;
 
 /**
@@ -230,9 +231,6 @@ public class CLRPackageParser extends MetadataParser {
     /**
      */
     public void importCLRTypes(Symbol p, Scope members, PackageParser pp) {
-	if (p.fullNameString().startsWith("scala")
-	    || p.fullNameString().startsWith("java"))
-	    return;
 	if (p.isRoot()) {
 	    for (int i = 0; i < types.length; i++) {
 		int j = types[i].FullName.indexOf('.');
@@ -242,7 +240,13 @@ public class CLRPackageParser extends MetadataParser {
 	    }
 	    return;
 	}
-	String n1 = p.fullNameString() + ".";
+        String n1 = "";
+        for (Symbol q = p; !q.isRoot(); q = q.owner()) {
+            n1 = NameTransformer.decode(q.name) + "." + n1;
+            if (q == global.definitions.JAVA_CLASS
+                || q == global.definitions.SCALA_CLASS)
+                return;
+        }
 	for (int i = 0; i < types.length; i++) {
 	    String fullname = types[i].FullName;
 	    if (!fullname.startsWith(n1))
