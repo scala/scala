@@ -34,12 +34,11 @@ object sorter {
         ar(i) + (if (i < ar.length-1) "," + iter(i+1) else "");
       if (ar.length == 0) "" else iter(0)
     }
-    Console.println("[" + print1 + "]");
+    Console.println("[" + print1 + "]")
   }
 
   def main(args: Array[String]) = {
-    val xs = List(6, 2, 8, 5, 1);
-    val ar = xs.copyToArray(new Array[Int](xs.length), 0);
+    val ar = Array(6, 2, 8, 5, 1);
     println(ar);
     sort(ar);
     println(ar)

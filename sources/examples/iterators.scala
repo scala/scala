@@ -12,8 +12,7 @@ object iterators {
       .map{case Pair(x, i) => i}
 
   def main(args: Array[String]) = {
-    val xs: List[Double] = List(6, 2, 8, 5, 1);
-    val ar = xs.copyToArray(new Array[Double](xs.length), 0);
+    val ar = Array[Double](6, 2, 8, 5, 1);
     printArray(ar);
     Console.println("Elements greater than 3.0:");
     findGreater(ar, 3.0) foreach { x => Console.println(ar(x)); }
