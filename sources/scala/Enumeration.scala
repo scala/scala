@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2003, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,7 +11,32 @@ package scala;
 
 import scala.collection.mutable._;
 
-
+/**
+ * <p>The class <code>Enumeration</code> provides the same functionality as the
+ * <code>enum</code> construct found in C-like languages like C++ or Java.
+ * Here is an example:</p>
+ * <pre>
+ * object Main with Application {
+ *
+ *   val days = List("Monday", "Tuesday", "Wednesday", "Thuesday",
+ *                   "Friday", "Saturday", "Sunday");
+ *
+ *   object WeekDays extends Enumeration(0, days:_*)  {
+ *     val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
+ *   }
+ *
+ *   def isWorkingDay(d: WeekDays.Value) =
+ *     ! (d == WeekDays.Sat || d == WeekDays.Sun);
+ *
+ *   WeekDays filter (isWorkingDay) foreach { d =&gt; System.out.println(d) }
+ * }
+ * </pre>
+ *
+ * @param initial the initial integer value associated with the first element
+ * @param names the sequence of element names of the enumeration
+ * @author  Matthias Zenger
+ * @version 1.0, 10/02/04
+ */
 abstract class Enumeration(initial: Int, names: String*) {
 
     def this() = this(0, null);
@@ -28,12 +53,14 @@ abstract class Enumeration(initial: Int, names: String*) {
             cname;
     }
 
-    /** A mapping between the enumeration value id and the enumeration
-     *  object.
+    /**
+     * A mapping between the enumeration value id and the enumeration
+     * object.
      */
     private var values: Map[Int, Value] = new HashMap;
 
-    /** A cache listing all values of this enumeration.
+    /**
+     * A cache listing all values of this enumeration.
      */
     private var vcache: List[Value] = null;
 
@@ -52,11 +79,13 @@ abstract class Enumeration(initial: Int, names: String*) {
 
     final def maxId = topId;
 
-    /** Returns the enumeration value for the given id.
+    /**
+     * Returns the enumeration value for the given id.
      */
     final def apply(x: Int): Value = values(x);
 
-    /** Returns all values of this enumeration.
+    /**
+     * Returns all values of this enumeration.
      */
     final def elements: Iterator[Value] = updateCache.elements;
 
