@@ -187,8 +187,8 @@ public class ExpressionCompiler {
         }
         if (symbol == definitions.IS) {
             assert trees.length == 1 : Debug.show(trees);
-            assert trees[0].hasSymbol() : trees[0];
-            Symbol expect = trees[0].symbol();
+            //assert trees[0].hasSymbol() : trees[0];
+            Symbol expect = trees[0].type().symbol();
             // !!! BUG: expect is null for .is[Int]
             assert expect != null : trees[0];
             // !!! System.out.println("!!! IS " + expect);
