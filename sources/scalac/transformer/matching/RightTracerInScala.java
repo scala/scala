@@ -14,8 +14,6 @@ import scalac.transformer.TransMatch.Matcher ;
 import java.util.* ;
 import Scope.SymbolIterator;
 
-import scalac.ast.printer.TextTreePrinter ;
-
 import scalac.util.Name ;
 import scalac.util.Names ;
 

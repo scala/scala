@@ -9,7 +9,6 @@ import Tree.* ;
 
 import java.util.* ;
 
-import scalac.ast.printer.TextTreePrinter ;
 //import scala.compiler.printer.XMLTreePrinter ;
 //import scala.compiler.printer.XMLAutomPrinter ;
 
