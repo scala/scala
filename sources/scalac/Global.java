@@ -271,12 +271,48 @@ public class  Global {
                 operation("stopped after phase " + currentPhase.name());
                 break;
             }
+            if (currentPhase == PHASE.PARSER) fix1();
         }
 
         printer.end();
     }
     // !!! <<< Interpreter stuff
     public static final String CONSOLE_S = "$console$";
+    private static final Name
+        INTERPRETER_N           = Name.fromString("Interpreter"),
+        SHOW_DEFINITION_N       = Name.fromString("showDefinition"),
+        SHOW_VALUE_DEFINITION_N = Name.fromString("showValueDefinition"),
+        SHOW_VALUE_N            = Name.fromString("showValue");
+
+    private int module = 0;
+
+    private void fix1() {
+        for (int i = 0; i < units.length; i++) {
+            if (units[i].console) fix1(units[i]);
+        }
+    }
+
+    private void fix1(Unit unit) {
+        if (unit.body.length > 0 && unit.body[unit.body.length - 1].isTerm()) {
+            unit.body[unit.body.length - 1] =
+                make.Apply(0,
+                    make.Select(0,
+                        make.Select(0,
+                            make.Ident(0, Names.scala),
+                            INTERPRETER_N),
+                        SHOW_VALUE_N),
+                    new Tree[] {
+                        unit.body[unit.body.length - 1]});
+        }
+        unit.body = new Tree[] {
+            make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
+                make.Template(0, new Tree[]{
+                    make.Select(0,
+                        make.Ident(0, Names.scala),
+                        Names.Object.toConstrName())},
+                    unit.body))};
+        module++;
+    }
     // !!! >>> Interpreter stuff
 
     /** stop the compilation process immediately
