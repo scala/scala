@@ -9,14 +9,16 @@
 import scalac.ast._;
 import scalac.atree.AConstant;
 import scalac._;
-import scalac.util._;
+import scalac.symtab.Modifiers;
+import scalac.util.{ Name, Names, TypeNames };
 import scala.tools.util.Position;
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
 import scala.collection.immutable.ListMap ;
 import scala.collection.mutable.Buffer;
-import scalac.symtab.Modifiers;
+import scala.xml.{Text,TextBuffer};
+
 package scala.tools.scalac.ast.parser {
 
 class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
@@ -52,6 +54,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   /** the tree generator
   */
   val gen: TreeGen = unit.global.treeGen;
+
+  var mode:boolean = false;
+  final val PATTERN = true;
+  final val EXPR    = false;
 
   // convenience methods
   private def _scala( pos: int, name: Name ) =
@@ -181,6 +187,17 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   // create scala.xml.Text here <: scala.xml.Node
   def makeText( pos: int, isPattern:Boolean, txt:String ):Tree =  {
     makeText( pos, isPattern, gen.mkStringLit( pos, txt ));
+  }
+
+  def appendTrimmed(pos: int, ts:myTreeList, txt:String) = {
+    var textNodes =
+      if( !preserveWS )
+        new TextBuffer().append( txt ).toText;
+      else
+        List( Text( txt ));
+
+    for( val t <- textNodes )
+      ts.append( makeText( s.pos, mode, t.text ));
   }
 
   // create scala.xml.Text here <: scala.xml.Node
@@ -349,35 +366,12 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
     }
   }
 
-  def trimWS( str:String ) = {
-    val sb = new StringBuffer();
-    val z:Seq[Char] = str;
-    var ws = false;
-    for( val c <- z ) {
-      if( s.xIsSpace( c ) ) {
-        if( !ws ) {
-          ws = true; sb.append( ' ' )
-        }
-      } else {
-        ws = false;
-        sb.append( c );
-      }
-    }
-    if( ' ' == sb.charAt( 0 ) ) {
-      sb.deleteCharAt( 0 )
-    }
-    val len = sb.length();
-    if( len > 0 && s.xIsSpace( sb.charAt( len-1 ) )) {
-      sb.setLength( len - 1 )
-    }
-    sb.toString();
-  }
-
   /** xLiteral = xExpr { xExpr }
    * @return Scala representation of this xml literal
    * precondition: s.xStartsXML == true
   */
   def xLiteral:Tree = {
+    mode = EXPR;
     val pos = s.pos;
     var tree = xExpr; s.token = EMPTY; s.nextToken();
     if( s.xStartsXML )  {
@@ -497,10 +491,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                 ts.append( xScalaExpr );
               } else {
                 val str = new StringBuffer("{");
-                var text = s.xText;
-                if( !preserveWS ) text = trimWS( text );
-                str.append( text );
-                ts.append( makeText( s.pos, false, str.toString() ));
+                str.append( s.xText );
+                appendTrimmed( pos, ts, str.toString() )
               }
             // postcond: s.xScalaBlock == false!
             case '&' => // EntityRef or CharRef
@@ -510,7 +502,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                   s.xNext;
                   val theChar = makeText( s.pos, false, s.xCharRef );
                   s.xToken(';');
-                  ts.append( theChar);
+                  ts.append( theChar );
                 case _ => // EntityRef
                   val pos = s.pos;
                   val n = s.xName ;
@@ -518,10 +510,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                   ts.append( makeEntityRef( s.pos, n ));
               }
             case _ => // text content
-              var text = s.xText;
-              if( !preserveWS ) text = trimWS( text );
-              if( text.length() > 0 )
-                ts.append( makeText( s.pos, false, text ));
+              appendTrimmed( s.pos, ts, s.xText );
             // here s.xScalaBlock might be true
 
           }
@@ -543,6 +532,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
    * precondition: s.xStartsXML == true
   */
   def xLiteralPattern:Tree = {
+    val oldMode = mode;
+    mode = PATTERN;
     val pos = s.pos;
     var tree = xPattern; s.token = EMPTY; s.nextToken();
     if( s.xStartsXML )  {
@@ -550,6 +541,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
       while( s.xStartsXML ) { ts.append( xPattern ); s.nextToken(); }
       tree = makeXMLseqPat( pos, ts.toArray() );
     }
+    mode = oldMode;
     tree
   }
 
@@ -604,11 +596,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
             // postcond: s.xScalaBlock = false;
           if( s.xScalaBlock ) throw new ApplicationError(); // assert
           case _ => // text
-            val pos1 = s.pos;
-          var text = s.xText;
-          if( !preserveWS ) text = trimWS( text );
-          if( text.length() > 0 )
-            ts.append( makeText( pos1, true, text ));
+            appendTrimmed( pos, ts, s.xText );
           // here  s.xScalaBlock might be true;
           //if( s.xScalaBlock ) throw new ApplicationError("after:"+text); // assert
 	}

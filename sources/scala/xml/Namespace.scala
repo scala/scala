@@ -9,4 +9,6 @@
 package scala.xml ;
 
 /** an XML namespace URI */
-case class Namespace( uri:String ) ;
+case class Namespace( uri:String ) {
+  final val code = NamespaceRegistry.getCode( uri );
+}

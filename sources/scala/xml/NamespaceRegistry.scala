@@ -27,9 +27,6 @@ object NamespaceRegistry {
     d
   }
 
-  /* returns a code for the argument namespace. Registers it if needed */
-  //def getCode(ns: Namespace):Int = getCode( ns.uri );
-
   /* returns a code for the argument namespace uri. Registers it if needed */
   def getCode(uri: String):Int = synchronized {
     val c = nmap.get( uri );

@@ -15,7 +15,13 @@ package scala.xml ;
  */
 class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
 
+  /** append a single node to this buffer */
   override def +(n:Node):NodeBuffer = { super.+( n ); this }
+
+  /** append a sequence of nodes to this buffer */
   def +(ns:Seq[Node]):NodeBuffer = { super.++( ns ); this }
+
+  /** append given string as a scala.xml.Text node to this buffer */
+  def +(t:String):NodeBuffer = { super.+( Text( t ) ); this }
 
 }
