@@ -650,7 +650,9 @@ public class Definitions {
         OBJECT_CLASS = getClass(global.target != Global.TARGET_MSIL ?
 				"java.lang.Object" : "System.Object");
         THROWABLE_CLASS = getClass("java.lang.Throwable");
-	STRING_CLASS = getClass("java.lang.String");
+	//STRING_CLASS = getClass("java.lang.String");
+	STRING_CLASS = getClass(global.target != Global.TARGET_MSIL
+				? "java.lang.String": "System.String");
 
         // the scala value classes
         UNIT_CLASS = getClass("scala.Unit");
@@ -777,11 +779,82 @@ public class Definitions {
 	    Symbol NOTIFY_ALL =
 		newMethod(OBJECT_CLASS, Names.notifyAll, Modifiers.FINAL);
 	    initMethod(NOTIFY_ALL, Type.EMPTY_ARRAY, UNIT_TYPE());
+
+	    Symbol JLOA = newAlias(JAVALANG, Names.Object, 0);
+	    initAlias(JLOA, OBJECT_TYPE());
 	}
 
         // add members to java.lang.String
         STRING_PLUS = newMethod(STRING_CLASS, Names.PLUS, Modifiers.FINAL);
         initMethod(STRING_PLUS, new Type[]{ANY_TYPE()}, STRING_TYPE());
+
+	if (global.target == Global.TARGET_MSIL) {
+	    Symbol s = newMethod(STRING_CLASS, Name.fromString("length"), 0);
+	    initMethod(s, Type.EMPTY_ARRAY, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("compareTo"), 0);
+	    initMethod(s, new Type[] {STRING_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("charAt"), 0);
+	    initMethod(s, new Type[] {INT_TYPE()}, CHAR_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("concat"), 0);
+	    initMethod(s, new Type[] {STRING_TYPE()}, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("indexOf"), 0);
+	    initMethod(s, new Type[] {INT_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("indexOf"), 0);
+	    initMethod(s, new Type[] {INT_TYPE(), INT_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("indexOf"), 0);
+	    initMethod(s, new Type[] {STRING_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("indexOf"), 0);
+	    initMethod(s, new Type[] {STRING_TYPE(), INT_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("lastIndexOf"), 0);
+	    initMethod(s, new Type[] {INT_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("lastIndexOf"), 0);
+	    initMethod(s, new Type[] {INT_TYPE(), INT_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("lastIndexOf"), 0);
+	    initMethod(s, new Type[] {STRING_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("lastIndexOf"), 0);
+	    initMethod(s, new Type[] {STRING_TYPE(), INT_TYPE()}, INT_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("toLowerCase"), 0);
+	    initMethod(s, Type.EMPTY_ARRAY, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("toUpperCase"), 0);
+	    initMethod(s, Type.EMPTY_ARRAY, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("startsWith"), 0);
+	    initMethod(s, new Type[]{STRING_TYPE()}, BOOLEAN_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("endsWith"), 0);
+	    initMethod(s, new Type[]{STRING_TYPE()}, BOOLEAN_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("substring"), 0);
+	    initMethod(s, new Type[]{INT_TYPE()}, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("substring"), 0);
+	    initMethod(s, new Type[]{INT_TYPE(), INT_TYPE()}, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("intern"), 0);
+	    initMethod(s, Type.EMPTY_ARRAY, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("replace"), 0);
+	    initMethod(s, new Type[]{CHAR_TYPE(), CHAR_TYPE()}, STRING_TYPE());
+
+	    s = newMethod(STRING_CLASS, Name.fromString("toCharArray"), 0);
+	    initMethod(s, Type.EMPTY_ARRAY, array_TYPE(CHAR_TYPE()));
+
+	    Symbol JLSA = newAlias(JAVALANG, Names.String, 0);
+	    initAlias(JLSA, STRING_TYPE());
+	}
 
         // add members to java.lang.Throwable
         THROWABLE_THROW =
