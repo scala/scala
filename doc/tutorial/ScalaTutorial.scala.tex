@@ -3,12 +3,26 @@
 
 %% $Id$
 
-\documentclass[a4paper,12pt]{article}
+\documentclass[a4paper,12pt,twoside,titlepage]{article}
 
-\usepackage{palatino}
-\usepackage{alltt}
+\usepackage{scaladoc}
 \usepackage{xspace}
 \usepackage{url}
+
+\ifpdf
+    \pdfinfo {
+        /Author   (Michel Schinz)
+        /Title    (Scala Tutorial)
+        /Keywords (Scala)
+        /Subject  ()
+        /Creator  (TeX)
+        /Producer (PDFLaTeX)
+    }
+\fi
+
+\renewcommand{\doctitle}{Scala Tutorial}
+\renewcommand{\docsubtitle}{for Java programmers}
+\renewcommand{\docauthor}{Michel Schinz}
 
 \newcommand{\langname}[1]{#1\xspace}
 
@@ -20,13 +34,10 @@
 \newcommand{\scalac}{\toolname{scalac}}
 \newcommand{\java}{\toolname{java}}
 
-\newcommand{\ident}[1]{\url{#1}\xspace}
+\newcommand{\ident}[1]{\code{#1}\xspace}
 
 \begin{document}
-
-\title{An introduction to \Scala\\[.5em]\normalsize(for \Java programmers)}
-\author{Michel Schinz}
-\maketitle
+\makedoctitle
 
 \section{Introduction}
 \label{sec:introduction}
@@ -102,13 +113,13 @@ Once compiled, a \Scala program can be run like a \Java program, using
 the \java command. However, a compiled \Scala program needs to access
 some support classes at run-time, which should be available through
 \Java's class path. These support classes are distributed in a JAR
-file called \url{scala.jar}, which lives in the directory
-\url{SCALA_HOME/lib}. Here \url{SCALA_HOME} is a place-holder for the
+file called \path{scala.jar}, which lives in the directory
+\path{SCALA_HOME/lib}. Here \path{SCALA_HOME} is a place-holder for the
 name of the directory where the \Scala distribution was installed.
 
 The example above can therefore be executed using the command below,
 if we assume that the \Scala distribution was installed in
-\url{/usr/local}:
+\path{/usr/local}:
 \begin{verbatim}
 > java -classpath /usr/local/lib/scala.jar:. HelloWorld
 \end{verbatim}
@@ -158,18 +169,34 @@ class \ident{java.math.BigInteger}, and then all the names it
 contains. This makes the static fields \ident{ZERO} and \ident{ONE}
 directly visible.
 
+While we're talking about \ident{ZERO}, something must be said about
+the condition of the \ident{if} expression in method \ident{fact}. Is
+it really correct to check that \ident{x} is null by using the
+\ident{==} operator? A \Java programmer would say no, because in that
+language the \ident{==} operator compares objects by physical
+equality, and this is not what we want here. What we want to know is
+whether \ident{x} is \emph{some} big integer object representing zero,
+and there might be several of them. So a \Java programmer would use
+the \ident{equals} method to perform the comparison.
+
+The \Scala programmer, on the other hand, can use \ident{==} here
+because that operator compares objects according to the \ident{equals}
+method. Is \ident{==} just an alias for \ident{equals} then? Well,
+almost, but \ident{==} has one advantage over \ident{equals} in that
+it works also when the selector is the \ident{null} constant.
+
 The \ident{fact} method also shows some characteristics of \Scala's
 syntax. The first one is that the method body does not have to be
 surrounded by curly braces if it consists of a single expression.
 The second one is that methods taking one argument can be used with an
 infix syntax. That is, the expression
-\begin{verbatim}
+\begin{lstlisting}
 x subtract ONE
-\end{verbatim}
+\end{lstlisting}
 is just another, slightly less verbose way of writing the expression
-\begin{verbatim}
+\begin{lstlisting}
 x.subtract(ONE)
-\end{verbatim}
+\end{lstlisting}
 This might seem like a minor syntactic detail, but it has important
 consequences, one of which will be explored in the next section.
 
@@ -191,15 +218,15 @@ values.
 
 Since numbers are objects, they also have methods. And in fact, an
 arithmetic expression like the following:
-\begin{verbatim}
+\begin{lstlisting}
 1 + 2 * 3 / x
-\end{verbatim}
+\end{lstlisting}
 consists exclusively of method calls, because it is equivalent to the
 following expression, as we saw in the previous section:
-\begin{verbatim}
+\begin{lstlisting}
 1.+(2.*(3./(x)))
-\end{verbatim}
-This also means that \ident{+}, \ident{*}, etc. are legal identifiers
+\end{lstlisting}
+This also means that \ident{+}, \ident{*}, etc. are valid identifiers
 in \Scala.
 
 \subsection{Functions are objects}
@@ -248,13 +275,13 @@ object Timer {
 While this program is easy to understand, it can be refined a bit.
 First of all, notice that the function \ident{timeFlies} is only
 defined in order to be passed later to the \ident{oncePerSecond}
-function. Having to give a name to that function, which is only used
-once, might seem unnecessary, and it would in fact be nice to be able
-to construct this function just as it is passed to
-\ident{oncePerSecond}. This is possible in \Scala using
-\emph{anonymous functions}, which are exactly that: functions without
-a name. The revised version of our timer program using an anonymous
-function instead of \ident{timeFlies} looks like that:
+function. Having to name that function, which is only used once, might
+seem unnecessary, and it would in fact be nice to be able to construct
+this function just as it is passed to \ident{oncePerSecond}. This is
+possible in \Scala using \emph{anonymous functions}, which are exactly
+that: functions without a name. The revised version of our timer
+program using an anonymous function instead of \ident{timeFlies} looks
+like that:
 \begin{scalaprogram}{TimerAnonymous}
 object TimerAnonymous {
   def oncePerSecond(callback: () => unit): unit =
@@ -317,10 +344,10 @@ explicitly.
 A small problem of the methods \ident{re} and \ident{im} is that, in
 order to call them, one has to put an empty pair of parenthesis after
 their name, as the following example shows:
-\begin{alltt}
+\begin{lstlisting}[escapechar=\#]
 val c = new Complex(1.2, 3.4);
-System.out.println("imaginary part: " + \underline{c.im()});
-\end{alltt}
+System.out.println("imaginary part: " + c.im());
+\end{lstlisting}
 It would be nicer to be able to access the real and imaginary parts
 like if they were fields, without putting the empty pair of
 parenthesis. This is perfectly doable in \Scala, simply by defining
@@ -357,14 +384,116 @@ class Complex(real: double, imaginary: double) {
 }
 \end{scalaprogram}
 
+\section{Case classes and pattern matching}
+\label{sec:case-classes-pattern}
+
 \section{Mixins}
 \label{sec:mixins}
 
 Apart from inheriting code from a super-class, a \Scala class can also
 import code from one or several \emph{mixins}.
 
-\section{Case classes and pattern matching}
-\label{sec:case-classes-pattern}
+Maybe the easiest way for a \Java programmer to understand what mixins
+are is to view them as interfaces which can also contain code. In
+\Scala, when a class inherits from a mixin, it implements that mixin's
+interface, and inherits all the code contained in the mixin.
+
+To see the usefulness of mixins, let's look at a classical example:
+ordered objects. It is often useful to be able to compare objects of a
+given class among themselves, for example to sort them. In \Java,
+objects which are comparable implement the \ident{Comparable}
+interface. In \Scala, we can do a bit better than in \Java by defining
+our equivalent of \ident{Comparable} as a mixin, which we will call
+\ident{Ord}.
+
+When comparing objects, six different predicates can be useful:
+smaller, smaller or equal, equal, not equal, greater or equal, and
+greater. However, defining all of them is fastidious, especially since
+four out of these six can be expressed using the remaining two. That
+is, given the equal and smaller predicates (for example), one can
+express the other ones. In \Scala, all these observations can be
+nicely captured by the following mixin declaration:
+\beginscalaprogram{Ord}
+\begin{scalacode}
+ abstract class Ord {
+  def < (that: Any): boolean;
+  def <=(that: Any): boolean = (this < that) || (this == that);
+  def > (that: Any): boolean = !(this <= that);
+  def >=(that: Any): boolean = !(this < that);
+} 
+\end{scalacode}
+This definition both creates a new type called \ident{Ord}, which
+plays the same role as \Java's \ident{Comparable} interface, and
+default implementations of three predicates in terms of a fourth,
+abstract one. The predicates for equality and inequality do not appear
+here since they are by default present in all objects.
+
+To make objects of a class comparable, it is therefore sufficient to
+define the predicates which test equality and inferiority, and mix in
+the \ident{Ord} class above. As an example, let's define a
+\ident{Date} class representing dates in the Gregorian calendar. Such
+dates are composed of a day, a month and a year, which we will all
+represent as integers. We therefore start the definition of the
+\ident{Date} class as follows:
+\begin{scalacode}
+class Date(y: int, m: int, d: int) with Ord {
+  def year = y;
+  def month = m;
+  def day = d;
+
+  override def toString(): String = year + "-" + month + "-" + day;
+\end{scalacode}
+The important part here is the \code{with Ord} declaration which
+follows the class name and parameters. It declares that the
+\ident{Date} class inherits from the \ident{Ord} class as a mixin.
+
+Then, we redefine the \ident{equals} method, inherited from
+\ident{Object}, so that it correctly compares dates by comparing their
+individual fields. The default implementation of \ident{equals} is not
+usable, because as in \Java it compares object physically. We arrive
+at the following definition:
+\begin{scalacode}
+  override def equals(that: Any): boolean = {
+    that.isInstanceOf[Date] && {
+      val o = that.asInstanceOf[Date];
+      o.day == day && o.month == month && o.year == year
+    }
+  }
+\end{scalacode}
+This method makes use of the predefined methods \ident{isInstanceOf}
+and \ident{asInstanceOf}. The first one, \ident{isInstanceOf},
+corresponds to \Java's \ident{instanceof} operator, and returns true
+if and only if the object on which it is applied is an instance of the
+given type. The second one, \ident{AsInstanceOf}, corresponds to
+\Java's cast operator: If the object is an instance of the given type,
+it is viewed as such, and otherwise a \ident{ClassCastException} is
+thrown.
+
+Finally, the last method to define is the predicate which tests for
+inferiority, as follows. It makes use of another predefined method,
+\ident{error}, which throws an exception with the given error message.
+\begin{scalacode}
+  def <(that: Any): boolean = {
+    if (!that.isInstanceOf[Date])
+      error("cannot compare " + that + " with a Date");
+
+    val o = that.asInstanceOf[Date];
+    (year < o.year)
+      || (year == o.year && (month < o.month
+                               || (month == o.month && day < o.day)))
+  }
+}
+\end{scalacode}
+This completes the definition of the \ident{Date} class. Instances of
+this class can be seen either as dates or as comparable objects.
+Moreover, they all define the six comparison predicates mentioned
+above: \ident{equals} and \ident{<} because they appear directly in
+the definition of the \ident{Date} class, and the others because they
+are inherited from the \ident{Ord} mixin.
+
+Mixins are useful in other situations than the one shown here, of
+course, but discussing their applications in length is outside the
+scope of this document.
 
 
 \section{Genericity}
@@ -381,3 +510,5 @@ reading the companion document \textit{Scala By Example\/} and consult
 the \textit{Scala Language Specification\/} when needed.
 
 \end{document}
+
+% LocalWords:  mixins mixin mixin's
