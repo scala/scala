@@ -262,7 +262,7 @@ public class Infer implements Modifiers, Kinds {
 	case CompoundType(Type[] parts, Scope members):
 	    return variance(tparam, parts) & variance(tparam, members.elements());
 	default:
-	    throw new ApplicationError();
+	    throw new ApplicationError(tp.toString());
 	}
     }
 
@@ -591,6 +591,7 @@ public class Infer implements Modifiers, Kinds {
 	Type insttype = restype.subst(tparams, tvars);
 	if (isCompatible(insttype, pt)) {
 	    try {
+	    	restype = normalize(restype);
 		for (int i = 0; i < tvars.length; i++) {
 		    solve(tparams, false, variance(tparams, restype), tvars, i);
 		}
