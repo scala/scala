@@ -12,7 +12,7 @@ object Generic {
     b.asInstanceOf[Labelled]
   };
 
-  class GenericFactoryAdapter extends dtd2scala.FactoryAdapter()  {
+  class GenericFactoryAdapter extends FactoryAdapter()  {
 
     import scala.xml.javaAdapter.Map ;
     import scala.xml.javaAdapter.HashMap ;

@@ -10,7 +10,7 @@ import scala.xml.javaAdapter.HashMap ;
  */
 
 abstract class ScalaFactoryAdapter
-    extends dtd2scala.FactoryAdapter()  {
+    extends FactoryAdapter() {
 
     def iterToList[ a ]( iter:java.util.Iterator ):List[a] =
         if( !iter.hasNext() )
