@@ -38,7 +38,6 @@ public class CompilerPhases {
     public final PhaseDescriptor ERASURE;
     public final PhaseDescriptor GENMSIL;
     public final PhaseDescriptor GENJVM;
-    public final PhaseDescriptor GENJVM_BCEL;
     public final PhaseDescriptor TERMINAL;
 
     //########################################################################
@@ -139,11 +138,6 @@ public class CompilerPhases {
                 "generate JVM bytecodes",
                 "generated JVM code",
                 scalac.backend.jvm.GenJVMPhase.class),
-            this.GENJVM_BCEL = new PhaseDescriptor(
-                "genjvm-bcel",
-                "generate JVM bytecodes",
-                "generated JVM code",
-                scalac.backend.jvm.GenJVMBCELPhase.class),
             this.TERMINAL = new PhaseDescriptor(
                 "terminal",
                 "compilation terminated",

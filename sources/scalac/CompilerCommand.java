@@ -160,7 +160,7 @@ public class CompilerCommand extends CommandParser {
             "directory", "."),
 
         this.target = new ChoiceOptionParser(this,
-            "target", "Specify which bakend to use (jvm, jvm-bcel, msil)",
+            "target", "Specify which bakend to use (jvm, msil)",
             "target", Global.TARGETS, Global.TARGET_JVM),
 
         this.noimports = new BooleanOptionParser(this,

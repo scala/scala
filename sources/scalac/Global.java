@@ -132,13 +132,11 @@ public class Global {
      */
     public static final String TARGET_INT;
     public static final String TARGET_JVM;
-    public static final String TARGET_JVM_BCEL;
     public static final String TARGET_MSIL;
 
     public static final String[] TARGETS = new String[] {
         TARGET_INT      = "int".intern(),
         TARGET_JVM      = "jvm".intern(),
-        TARGET_JVM_BCEL = "jvm-bcel".intern(),
         TARGET_MSIL     = "msil".intern(),
     };
 
@@ -213,7 +211,6 @@ public class Global {
         if (target != TARGET_JVM) args.phases.TAILCALL.addSkipFlag();
         if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
         if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
-        if (target != TARGET_JVM_BCEL) args.phases.GENJVM_BCEL.addSkipFlag();
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
         this.firstPhase = descriptors[0].create(this);

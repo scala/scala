@@ -64,8 +64,7 @@ public class AddConstructors extends Transformer {
 	super(global);
         this.constructors = constructors;
         this.forINT = global.target == global.TARGET_INT;
-        this.forJVM = (global.target == global.TARGET_JVM
-                       || global.target == global.TARGET_JVM_BCEL);
+        this.forJVM = (global.target == global.TARGET_JVM);
     }
 
     /** return new constructor symbol if it isn't already defined

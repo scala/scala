@@ -61,11 +61,6 @@ configure() {
     # This variable must refer a directory or a zip or jar file.
     MSIL_CLASSES={#MSIL_CLASSES#};
 
-    # Location of the compiled bcel library. This library may be found
-    # at http://jakarta.apache.org/bcel/.
-    # This variable must refer a directory or a zip or jar file.
-    BCEL_CLASSES={#BCEL_CLASSES#};
-
     # Command to start the Java VM.
     JAVA_EXEC="java";
 
@@ -241,7 +236,6 @@ compute_variable() {
         TOOLS_CLASSES       ) configure_path_variable "$1";;
         FJBG_CLASSES        ) configure_path_variable "$1";;
         MSIL_CLASSES        ) configure_path_variable "$1";;
-        BCEL_CLASSES        ) configure_path_variable "$1";;
         JAVA_EXEC           ) configure_variable "$1";;
         JAVA_ARGS           ) configure_variable "$1";;
         EXEC                ) configure_variable "$1";;
@@ -286,7 +280,6 @@ exec_compile() {
 
     # compute Java classpath
     append_path JAVA_CLASSPATH TOOLS_CLASSES;
-    append_path JAVA_CLASSPATH BCEL_CLASSES;
     append_path JAVA_CLASSPATH FJBG_CLASSES;
     append_path JAVA_CLASSPATH MSIL_CLASSES;
 
@@ -416,7 +409,6 @@ scala_info_option_x_variable() {
         TOOLS_CLASSES       ) variable=$2;;
         FJBG_CLASSES        ) variable=$2;;
         MSIL_CLASSES        ) variable=$2;;
-        BCEL_CLASSES        ) variable=$2;;
         JAVA_EXEC           ) variable=$2;;
         JAVA_ARGS           ) variable=$2;;
         EXEC                ) variable=$2;;
@@ -442,7 +434,6 @@ scala_info_option_help() {
     echo "  TOOLS_CLASSES         Location of the Scala tools";
     echo "  FJBG_CLASSES          Location of the fjbg library";
     echo "  MSIL_CLASSES          Location of the msil library";
-    echo "  BCEL_CLASSES          Location of the bcel library";
     echo "  JAVA_EXEC             Command to start the Java VM";
     echo "  JAVA_ARGS             Additional arguments to pass to the Java VM";
     echo "  EXEC                  Command to start subprocesses";
