@@ -45,10 +45,13 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     /** Pickle all symbols descending from `root'.
      */
     public void add(Symbol root) {
-	if (index.get(root) == null) {
-	    this.rootname = root.name.toTermName();
-	    this.rootowner = root.owner();
-	    putSymbol(root);
+	if (root.kind != NONE) {
+	    if (debug) System.out.println("adding " + root);//debug
+	    if (index.get(root) == null) {
+		this.rootname = root.name.toTermName();
+		this.rootowner = root.owner();
+		putSymbol(root);
+	    }
 	}
     }
 
@@ -138,13 +141,11 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     }
 
     /** Store symbol in index. If symbol is local, also store
-     *  everything it refers to. Excepted are local primary
-     *  constructors; their information is stored together with
-     *  another symbol.
+     *  everything it refers to.
      */
     private void putSymbol(Symbol sym) {
 	if (putEntry(sym)) {
-	    //System.out.println("put sym " + sym);//DEBUG
+	    if (debug) System.out.println("put " + sym);
 	    if (isLocal(sym)) {
 		putEntry(sym.name);
 		putSymbol(sym.owner());
@@ -172,7 +173,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    throw new ApplicationError();
 		}
 	    } else if (sym.kind != NONE) {
-		putEntry(sym.name);
+		putEntry(sym.isModuleClass() ? sym.name.toTermName() : sym.name);
 		if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
 		    putSymbol(sym.owner());
 	    }
@@ -222,8 +223,9 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		putSymbols(tparams);
 		break;
 	    case OverloadedType(Symbol[] alts, Type[] alttypes):
-		for (int i = 0; i < alts.length; i++)
-		    putSymbol(alts[i]);
+		for (int i = 0; i < alts.length; i++) alts[i].flags |= ALTERNATIVE;
+		putSymbols(alts);
+		putTypes(alttypes);
 		break;
 	    default:
 		throw new ApplicationError();
@@ -301,8 +303,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     /** Write a name entry. Names are stored in Utf8 format.
      */
     private void writeName(Name name) {
-	if (name.isTermName()) writeByte(TERMname);
-	else writeByte(TYPEname);
+	writeByte(name.isTermName() ? TERMname : TYPEname);
 	writeByte(0); // space for length
 	while (bp + name.length() > bytes.length) resizeTo(bytes.length * 2);
 	name.copyAscii(bytes, bp);
@@ -313,6 +314,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     /** Write a symbol entry.
      */
     private void writeSymbol(Symbol sym) {
+	if (debug) System.out.println("write " + sym);
 	if (isLocal(sym)) {
 	    switch (sym.kind) {
 	    case TYPE:
@@ -356,12 +358,19 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeByte(NONEsym);
 	    writeByte(0); // space for length
 	} else {
-	    writeByte((sym.isTerm() || sym.isModuleClass()) ? TERMref : TYPEref);
-	    writeByte(0); // space for length
-	    writeRef(sym.name);
+	    if (sym.isModuleClass()) {
+		writeByte(EXTMODCLASSref);
+		writeByte(0); // space for length
+		writeRef(sym.name.toTermName());
+	    } else {
+		writeByte(EXTref);
+		writeByte(0); // space for length
+		writeRef(sym.name);
+	    }
 	    if (sym.owner() != Global.instance.definitions.ROOT_CLASS)
 		writeRef(sym.owner());
 	}
+	sym.flags &= ~ALTERNATIVE;
     }
 
     /** Write a type entry.

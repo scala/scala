@@ -124,17 +124,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    switch (stats[i]) {
 	    case ClassDef(_, _, _, _, _, _):
 	    case ModuleDef(_, _, _, _):
-	    case ValDef(_, _, _, _):
 		Symbol sym = stats[i].symbol();
-		Name fullname = sym.kind == VAL
-		    ? Name.fromString(sym.owner().fullName() + "." + sym.name)
-		    : sym.fullName();
+		Name fullname = sym.fullName();
 		Pickle pickle = (Pickle) unit.symdata.get(fullname);
 		if (pickle == null) {
 		    pickle = new Pickle();
 		    unit.symdata.put(fullname, pickle);
 		}
-		pickle.add(sym);
+		pickle.add(sym.owner().info().lookup(sym.name.toTermName()));
+		pickle.add(sym.owner().info().lookup(sym.name.toTypeName()));
 		break;
 	    case PackageDef(Tree packaged, Tree.Template templ):
 		genSymData(symdata, templ.body);
@@ -1436,7 +1434,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		tree1 = copy.Select(tree, sym, qual);
 		break;
 	    case SelectFromType(_, _):
-		tree1 = copy.Select(tree, sym, qual);
+		tree1 = copy.SelectFromType(tree, sym, qual);
 		break;
 	    default:
 		throw new ApplicationError();

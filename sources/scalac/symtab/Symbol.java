@@ -516,9 +516,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Return first alternative if this has a (possibly lazy)
      *  overloaded type, otherwise symbol itself.
-     *  Needed only in ClassSymbol.primaryConstructor()
+     *  Needed in ClassSymbol.primaryConstructor() and in UnPickle.
      */
-    Symbol firstAlternative() {
+    public Symbol firstAlternative() {
 	if (infos.info instanceof Type.OverloadedType)
 	    return infos.info.alternativeSymbols()[0];
 	else if (infos.info instanceof LazyOverloadedType)
@@ -1419,7 +1419,8 @@ public class ClassSymbol extends TypeSymbol {
 	super.copyTo(sym);
 	Symbol symconstr = ((ClassSymbol) sym).constructor;
 	constructor.copyTo(symconstr);
-	symconstr.setInfo(fixConstrType(symconstr.rawInfo(), sym));
+	if (constructor.isInitialized())
+	    symconstr.setInfo(fixConstrType(symconstr.type(), sym));
 	if (thisSym != this) sym.setTypeOfThis(typeOfThis());
     }
 

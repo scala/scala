@@ -34,8 +34,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
     Global global;
 
     UnPickle(Symbol root, byte[] data, Name sourceName) {
+	assert !root.isInitialized();
 	global = Global.instance;
-	assert root.rawInfoAt(Symbol.FIRST_ID) instanceof LazyType;
 	if (root.isConstructor()) {
 	    this.classroot = root.primaryConstructorClass();
 	    this.moduleroot = classroot.module();
@@ -82,7 +82,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	    if (isSymbolEntry(i)) getSymbol(i);
 	}
 	if (global.debug) global.log("unpickled " + root);//debug
-	if (root.rawInfoAt(Symbol.FIRST_ID) instanceof LazyType)
+	if (!root.isInitialized())
 	    throw new BadSignature(this, "it does not define " + root);
     }
 
@@ -159,15 +159,28 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
     }
 
     void enterSymbol(Symbol sym) {
-	Symbol owner = sym.owner();
-	Scope scope = owner.info().members();
-	Symbol other = scope.lookup(sym.name);
-	if (other == Symbol.NONE) {
-	    if (global.debug)
-		global.log("entering " + sym + ":" + sym.type() + " in " + owner);//debug
-	    scope.enter(sym);
+	/*
+	if (global.debug) {
+	    global.log("entering " + sym + ":" + sym.type() + " in " + sym.owner());//debug
+	    if (sym.kind == CLASS)
+		global.log("primconstr = " + sym.primaryConstructor());
+	}
+	*/
+	if ((sym.flags & ALTERNATIVE) != 0) {
+	    sym.flags &= ~ALTERNATIVE;
 	} else {
-	    assert sym.rawInfo() instanceof Type.OverloadedType : sym;
+	    Symbol owner = sym.owner();
+	    if (owner.kind == CLASS &&
+		!sym.isConstructor() && !sym.isModuleClass()) {
+		Scope scope = owner.info().members();
+		Symbol other = scope.lookup(sym.name);
+		if (other == Symbol.NONE) {
+		    scope.enter(sym);
+		} else {
+		    assert sym == other
+			: "double enter: " + other + ":" + other.rawInfoAt(Symbol.FIRST_ID) + "," + sym + ":" + sym.rawInfoAt(Symbol.FIRST_ID);
+		}
+	    }
 	}
     }
 
@@ -183,8 +196,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	    case NONEsym:
 		entries[n] = sym = Symbol.NONE;
 		break;
-	    case TERMref:
-	    case TYPEref:
+	    case EXTref:
+	    case EXTMODCLASSref:
 		Name name = readNameRef();
 		if (bp == end) {
 		    owner = Global.instance.definitions.ROOT_CLASS;
@@ -194,18 +207,17 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		}
 		if (name.length() == 0 && owner == Symbol.NONE) {
 		    sym = Global.instance.definitions.ROOT_CLASS;
-		} else if (tag == TERMref && name.isTypeName()) {
-		    Symbol module = owner.info().lookup(name.toTermName());
-		    switch (module.type()) {
-		    case OverloadedType(Symbol[] alts, _):
-			for (int i = 0; i < alts.length; i++)
-			    if (alts[i].isModule()) module = alts[i];
-		    }
-		    assert module.isModule();
-		    sym = module.moduleClass();
 		} else {
-		    assert (tag == TYPEref) == name.isTypeName();
 		    sym = owner.info().lookup(name);
+		    if (tag == EXTMODCLASSref) {
+			switch (sym.type()) {
+			case OverloadedType(Symbol[] alts, _):
+			    for (int i = 0; i < alts.length; i++)
+				if (alts[i].isModule()) sym = alts[i];
+			}
+			assert sym.isModule();
+			sym = sym.moduleClass();
+		    }
 		}
 		entries[n] = sym;
 		if (sym.kind == NONE) {
@@ -252,20 +264,10 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			sym.setInfo(getType(inforef));
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
-			constr.copyTo(sym.allConstructors());
-			if (sym.isCaseClass()) {
-			    Symbol cf = new TermSymbol(
-				Position.NOPOS, name.toTermName(),
-				owner, flags | CASE);
-			    cf.setInfo(setOwner(constr.type(), cf));
-			    if (name == classroot.name && owner == classroot.owner()) {
-				if (global.debug)
-				    global.log("overwriting " + moduleroot);//debug
-				cf.copyTo(moduleroot);
-				cf = moduleroot;
-			    } else {
-				enterSymbol(sym);
-			    }
+			if (constr != sym.primaryConstructor()) {
+			    assert constr.type() instanceof Type.OverloadedType
+				: sym + " " + constr + ":" + constr.type();
+			    constr.copyTo(sym.allConstructors());
 			}
 			break;
 
@@ -273,22 +275,22 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			if (bp < end) {
 			    ClassSymbol clazz = (ClassSymbol) readSymbolRef();
 			    if (name.isTypeName()) {
-				entries[n] = sym = TermSymbol.newConstructor(
-				    clazz, flags);
+				entries[n] = sym = clazz.primaryConstructor();
+				sym.flags = flags;
 			    } else {
 				assert (flags & MODUL) != 0 : name;
 				entries[n] = sym = TermSymbol.newModule(
 				    Position.NOPOS, name, owner, flags, clazz);
-				if (name == moduleroot.name && owner == moduleroot.owner()) {
-				    if (global.debug)
-					global.log("overwriting " + moduleroot);//debug
-				    sym.copyTo(moduleroot);
-				    entries[n] = sym = moduleroot;
-				}
 			    }
 			} else {
 			    entries[n] = sym = new TermSymbol(
 				Position.NOPOS, name, owner, flags);
+			}
+			if (name == moduleroot.name && owner == moduleroot.owner()) {
+			    if (global.debug)
+				global.log("overwriting " + moduleroot);//debug
+			    sym.copyTo(moduleroot);
+			    entries[n] = sym = moduleroot;
 			}
 			Type tp = getType(inforef);
 			sym.setInfo(setOwner(tp, sym));
@@ -298,8 +300,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			throw new BadSignature(this);
 		    }
 
-		    if (owner.kind == CLASS)
-			enterSymbol(sym);
+		    enterSymbol(sym);
 		}
 	    }
 	    bp = savedBp;

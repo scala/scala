@@ -49,6 +49,7 @@ public interface Modifiers {
                                       // value or variable
     int BRIDGE        = 0x08000000;    // function is a bridge method.
     int LIFTED        = BRIDGE;        // transient flag for lambdalift
+    int ALTERNATIVE   = BRIDGE;        // transient flag for pickle/unpickle
     int SNDTIME       = BRIDGE;        // debug
 
     int INTERFACE     = 0x10000000;   // symbol is a Java interface

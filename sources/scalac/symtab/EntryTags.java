@@ -20,8 +20,8 @@ public interface EntryTags {
  *                  | 5 ALIASsym len_Nat SymbolInfo
  *                  | 6 CLASSsym len_Nat SymbolInfo thistype_Ref constrsym_Ref
  *                  | 7 VALsym len_Nat SymbolInfo [classsym_Ref]
- *                  | 8 TERMref len_Nat name_Ref [owner_Ref]
- *                  | 9 TYPEref len_Nat name_Ref [owner_Ref]
+ *                  | 8 EXTref len_Nat name_Ref [owner_Ref]
+ *                  | 9 EXTMODCLASSref len_Nat name_Ref [owner_Ref]
  *                  | 10 NOtpe len_Nat
  *                  | 11 THIStpe len_Nat sym_Ref
  *                  | 12 SINGLEtpe len_Nat type_Ref sym_Ref
@@ -45,8 +45,8 @@ public interface EntryTags {
 	ALIASsym = 5,
 	CLASSsym = 6,
 	VALsym = 7,
-	TERMref = 8,
-	TYPEref = 9,
+	EXTref = 8,
+	EXTMODCLASSref = 9,
 	NOtpe = 10,
 	THIStpe = 11,
 	SINGLEtpe = 12,

@@ -47,8 +47,10 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 	}
 
     public Type transformInfo(Symbol sym, Type tp) {
+	/*
         if (global.debug)
             global.log("transform info for " + sym + ":" + tp + sym.locationString());
+	*/
         Type tp1 = tp;
         if (sym != Symbol.NONE) {
             switch (tp) {
