@@ -130,6 +130,10 @@ public class ExpressionCompiler {
                 // !!! can we remove this test ?
                 elsep == Tree.Empty ? Code.Literal(constants.literal()) : compute(elsep));
 
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+            return Code.Switch(
+                compute(test), tags, compute(bodies), compute(otherwise));
+
         case New(Tree.Template(Tree[] bases, Tree[] body)): // !!!
             assert bases.length == 1 : Debug.show(tree);
             assert body.length == 0 : Debug.show(tree);

@@ -158,6 +158,14 @@ public class Evaluator {
             assert value instanceof Boolean : value.getClass();
             return evaluate(((Boolean)value).booleanValue() ? thenp : elsep);
 
+        case Switch(Code test, int[] tags, Code[] bodies, Code otherwise):
+            Object value = evaluate(test);
+            assert value instanceof Integer : value.getClass();
+            int tag = ((Integer)value).intValue();
+            for (int i = 0; i < tags.length; i++)
+                if (tags[i] == tag) return evaluate(bodies[i]);
+            return evaluate(otherwise);
+
         case Literal(Object value):
             return value;
 
