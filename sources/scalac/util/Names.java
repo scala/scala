@@ -52,6 +52,7 @@ public class Names {
     public static final Name ANON_CLASS_NAME = Name.fromString("$anon");
     public static final Name ZERO = Name.fromString("<zero>");
     public static final Name STAR = Name.fromString("*");
+    public static final Name ROOT = Name.fromString("<root>");
 
     public static final Name CONSTRUCTOR = Name.fromString("<init>");
 
