@@ -1471,6 +1471,7 @@ public abstract class TypeSymbol extends Symbol {
         Symbol[] alts = allConstructors().alternativeSymbols();
         for (int i = 1; i < alts.length; i++) {
             Symbol constr = other.addConstructor();
+	    constr.flags = other.flags;
             constr.setInfo(
                 fixConstrType(
                     alts[i].info().cloneType(alts[i], constr),

@@ -192,6 +192,25 @@ class Parser(unit: Unit) {
     n
   }
 
+  /** Create a tree representing a packaging
+  */
+  def makePackaging(pos: int, pkg0: Tree, stats0: Array[Tree]): Tree = {
+    var pkg = pkg0;
+    var stats = stats0;
+    while (true) {
+      val templ = make.Template(pos, Tree.EMPTY_ARRAY, stats);
+      pkg match {
+	case Tree$Select(qual, name) =>
+	  stats = NewArray.Tree(
+		    make.PackageDef(pos, make.Ident(pkg.pos, name), templ));
+	  pkg = qual;
+	case _ =>
+	  return make.PackageDef(pos, pkg, templ);
+      }
+    }
+    null//dummy
+  }
+
   /** Create tree representing binary operation expression or pattern.
   */
   def makeBinop(isExpr: boolean, pos: int, left: Tree, op: Name, right: Tree): Tree =
@@ -728,9 +747,8 @@ class Parser(unit: Unit) {
   /** Exprs ::= Expr {`,' Expr}
   *          | Expr `:' `_' `*'
   */
-  def exprs(): Array[Tree] = {
-    val ts = new TreeList();
-    ts.append(expr(true));
+  def exprs(): Array[Tree] = {    val ts = new TreeList();
+    ts.append(expr(true, false));
     while (s.token == COMMA) {
       s.nextToken();
       ts.append(expr());
@@ -738,26 +756,29 @@ class Parser(unit: Unit) {
     ts.toArray()
   }
 
-  /** Expr     ::= Bindings `=>' Expr
-   *             | if `(' Expr `)' Expr [[`;'] else Expr]
-   *             | try `{' block `}' [catch Expr] [finally Expr]
-   *             | while `(' Expr `)' Expr
-   *             | do Expr [`;'] while `(' Expr `)'
-   *             | for `(' Enumerators `)' (do | yield) Expr
-   *             | throw Expr
-   *             | return [Expr]
-   *             | [SimpleExpr `.'] Id `=' Expr
-   *             | SimpleExpr ArgumentExprs `=' Expr
-   *             | PostfixExpr [`:' Type1]
-   *  Bindings ::= Id [`:' Type1]
-   *             | `(' [Binding {`,' Binding}] `)'
-   *  Binding  ::= Id [`:' Type]
+  /** Expr       ::= Bindings `=>' Expr
+   *               | Expr1
+   *  ResultExpr ::= Bindings `=>' Block
+   *               | Expr1
+   *  Expr1      ::= (' Expr `)' Expr [[`;'] else Expr]
+   *          	   | try `{' block `}' [catch Expr] [finally Expr]
+   *          	   | while `(' Expr `)' Expr
+   *          	   | do Expr [`;'] while `(' Expr `)'
+   *          	   | for `(' Enumerators `)' (do | yield) Expr
+   *          	   | throw Expr
+   *          	   | return [Expr]
+   *          	   | [SimpleExpr `.'] Id `=' Expr
+   *          	   | SimpleExpr ArgumentExprs `=' Expr
+   *          	   | PostfixExpr [`:' Type1]
+   *  Bindings	 ::= Id [`:' Type1]
+   *          	   | `(' [Binding {`,' Binding}] `)'
+   *  Binding 	 ::= Id [`:' Type]
    */
 
   def expr(): Tree =
-    expr(false);
+    expr(false, false);
 
-  def expr(isArgument: boolean): Tree = {
+  def expr(isArgument: boolean, isInBlock: boolean): Tree = {
     if (s.token == IF) {
       val pos = s.skipToken();
       accept(LPAREN);
@@ -845,7 +866,9 @@ class Parser(unit: Unit) {
         }
       }
       if (s.token == ARROW) {
-        t = make.Function(s.skipToken(), convertToParams(t), expr());
+	val arrowpos = s.skipToken();
+        t = make.Function(arrowpos, convertToParams(t),
+			  if (isInBlock) block(arrowpos) else expr());
       }
       t
     }
@@ -1784,7 +1807,7 @@ class Parser(unit: Unit) {
     accept(LBRACE);
     val stats = topStatSeq();
     accept(RBRACE);
-    make.PackageDef(pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, stats));
+    makePackaging(pos, pkg, stats);
   }
 
   /** TopStatSeq ::= [TopStat {`;' TopStat}]
@@ -1870,7 +1893,7 @@ class Parser(unit: Unit) {
         stats.append(importClause());
         accept(SEMI);
       } else if (isExprIntro()) {
-        stats.append(expr());
+        stats.append(expr(false, true));
         if (s.token != RBRACE && s.token != CASE) accept(SEMI);
       } else if (isDefIntro()) {
         stats.append(defOrDcl(0));
@@ -1901,15 +1924,11 @@ class Parser(unit: Unit) {
       val pkg = qualId();
       if (s.token == SEMI) {
         s.nextToken();
-        NewArray.Tree(
-          make.PackageDef(
-            pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, topStatSeq())));
+        NewArray.Tree(makePackaging(pos, pkg, topStatSeq()));
       } else {
         val stats = new TreeList();
         accept(LBRACE);
-        stats.append(
-          make.PackageDef(
-            pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, topStatSeq())));
+        stats.append(makePackaging(pos, pkg, topStatSeq()));
         accept(RBRACE);
         stats.append(topStatSeq());
         stats.toArray()

@@ -58,8 +58,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     while (n > 0) { // this calls apply(u) for every unit `u'.
       val l = global.units.length;
       val newUnits = new Array[Unit](l + n);
-      System.arraycopy(
-	global.units.asInstanceOf[Array[Object]], 0, newUnits.asInstanceOf[Array[Object]], 0, l);
+      System.arraycopy(global.units, 0, newUnits, 0, l);
       var i = 0; while (i < n) {
         newUnits(i + l) = descr.newSources.get(i).asInstanceOf[Unit];
 	i = i + 1
@@ -213,7 +212,8 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 
   /** Check that `sym' is accessible as a member of tree `site' in current context.
   */
-  def checkAccessible(pos: int, sym: Symbol, symtype: Type, site: Tree): Type = {
+  def checkAccessible(pos: int, sym: Symbol, symtype: Type, site: Tree, sitetype: Type): Type = {
+    //System.out.println("check acc " + sym);//DEBUG
     if ((sym.owner().flags & INCONSTRUCTOR) != 0 &&
 	!(sym.kind == TYPE && sym.isParameter()) &&
 	site.isInstanceOf[Tree$This]) {
@@ -224,19 +224,19 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	case Type$OverloadedType(alts, alttypes) =>
 	  var nacc: int = 0;
 	  var i = 0; while (i < alts.length) {
-	    if (isAccessible(alts(i), site))
+	    if (isAccessible(alts(i), site, sitetype))
 	      nacc = nacc + 1;
 	    i = i + 1
 	  }
 	  if (nacc == 0) {
-	    error(pos, "" + sym + " cannot be accessed in " + site.getType().widen());
+	    error(pos, "" + sym + " cannot be accessed in " + sitetype.widen());
 	    Type.ErrorType
 	  } else {
 	    val alts1: Array[Symbol] = new Array[Symbol](nacc);
 	    val alttypes1: Array[Type] = new Array[Type](nacc);
 	    nacc = 0;
 	    var i = 0; while (i < alts.length) {
-	      if (isAccessible(alts(i), site)) {
+	      if (isAccessible(alts(i), site, sitetype)) {
 		alts1(nacc) = alts(i);
 		alttypes1(nacc) = alttypes(i);
 		nacc = nacc + 1;
@@ -246,10 +246,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	    new Type$OverloadedType(alts1, alttypes1)
 	  }
 	case _ =>
-	  if (isAccessible(sym, site)) {
+	  if (isAccessible(sym, site, sitetype)) {
 	    symtype
 	  } else {
-	    error(pos, "" + sym + " cannot be accessed in " + site.getType().widen());
+	    error(pos, "" + sym + " cannot be accessed in " + sitetype.widen());
 	    Type.ErrorType
 	  }
       }
@@ -258,7 +258,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 
   /** Is `sym' accessible as a member of tree `site' in current context?
   */
-  private def isAccessible(sym: Symbol, site: Tree): boolean = {
+  private def isAccessible(sym: Symbol, site: Tree, sitetype: Type): boolean = {
 
     /** Are we inside definition of `owner'?
     */
@@ -282,13 +282,14 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 
     (sym.flags & (PRIVATE | PROTECTED)) == 0
     ||
-    accessWithin(sym.owner())
-    ||
-    ((sym.flags & PRIVATE) == 0) &&
-    site.getType().symbol().isSubClass(
-      if (sym.isConstructor()) sym.constructorClass() else sym.owner()) &&
-    (site.isInstanceOf[Tree$Super] ||
-     isSubClassOfEnclosing(site.getType().symbol()))
+    {val owner = if (sym.isConstructor()) sym.constructorClass()
+		  else sym.owner();
+     accessWithin(owner)
+     ||
+     ((sym.flags & PRIVATE) == 0) &&
+     sitetype.symbol().isSubClass(owner) &&
+     (site.isInstanceOf[Tree$Super] || isSubClassOfEnclosing(sitetype.symbol()))
+    }
   }
 
 // Checking methods ----------------------------------------------------------
@@ -840,6 +841,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	       error(tree.pos, "constructor definition not allowed here");
 	    }
 	    sym = context.enclClass.owner.addConstructor();
+	    sym.flags = sym.flags | mods;
 	} else {
 	  sym = TermSymbol.define(tree.pos, name, owner, mods, context.scope);
 	}
@@ -1172,8 +1174,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     selftype match {
       case Type$CompoundType(parts, members) =>
 	val parts1 = new Array[Type](parts.length + 1);
-	System.arraycopy(parts.asInstanceOf[Array[Object]], 0,
-			 parts1.asInstanceOf[Array[Object]], 0, parts.length);
+	System.arraycopy(parts, 0, parts1, 0, parts.length);
 	parts1(parts.length) = clazz.getType();
 	sym.setInfo(Type.compoundType(parts1, members));
 
@@ -1345,7 +1346,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  if (applyMeth != Symbol.NONE) {
 	    val applyType: Type = checkAccessible(
 	      tree.pos, applyMeth, tree.getType().memberType(applyMeth),
-	      tree);
+	      tree, tree.getType());
 	    val tree1 = make.Select(tree.pos, tree, Names.apply)
 	      .setSymbol(applyMeth)
 	      .setType(applyType);
@@ -1399,7 +1400,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  if (coerceMeth != Symbol.NONE) {
 	    val coerceType: Type = checkAccessible(
 	      tree.pos, coerceMeth, tree.getType().memberType(coerceMeth),
-	      tree);
+	      tree, tree.getType());
 	    val tree1 = make.Select(tree.pos, tree, Names.coerce)
 	      .setSymbol(coerceMeth)
 	      .setType(coerceType);
@@ -1510,7 +1511,9 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
       (if (sym.isType()) sym.typeConstructor() else sym.getType())
       .asSeenFrom(pre, sym.owner());
     if (qual != Tree.Empty)
-      symtype = checkAccessible(tree.pos, sym, symtype, qual);
+      symtype = checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
+    else if (sym.owner().isPackage())
+      symtype = checkAccessible(tree.pos, sym, symtype, qual, sym.owner().getType());
     if (symtype == Type.NoType)
       return error(tree.pos, "not found: " + decode(name));
     //System.out.println(name + ":" + symtype);//DEBUG
@@ -1541,7 +1544,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
       if (symtype == Type.NoType)
 	return error(tree.pos, "not found: " + decode(name));
       else
-	symtype = checkAccessible(tree.pos, sym, symtype, qual);
+	symtype = checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
       //System.out.println(sym.name + ":" + symtype);//DEBUG
       if (uninst.length != 0) {
 	symtype match {
@@ -1619,8 +1622,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
       // find out why
       if (stat1 != stat && stats1 == stats) {
 	stats1 = new Array[Tree](stats.length);
-	System.arraycopy(stats.asInstanceOf[Array[Object]], 0,
-			 stats1.asInstanceOf[Array[Object]], 0, i);
+	System.arraycopy(stats, 0, stats1, 0, i);
       }
       stats1(i) = stat1;
       i = i + 1
@@ -1793,12 +1795,8 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	var tparams2: Array[Symbol] = tparams1;
 	if (tparams.length != 0) {
 	  tparams2 = new Array[Symbol](tparams.length + tparams1.length);
-	  System.arraycopy(tparams.asInstanceOf[Array[Object]], 0,
-			   tparams2.asInstanceOf[Array[Object]], 0,
-			   tparams.length);
-	  System.arraycopy(tparams1.asInstanceOf[Array[Object]], 0,
-			   tparams2.asInstanceOf[Array[Object]], tparams.length,
-			   tparams1.length);
+	  System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
+	  System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	}
 	transformArgs(pos, meth, tparams2, restp, argMode, args, pt)
 
@@ -2402,8 +2400,11 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 		    fn1 match {
 		      case Tree$Select(fn1qual, _) =>
 			fn1.setType(checkAccessible(
-			  fn1.pos, constr, fn1.getType(), fn1qual));
+			  fn1.pos, constr, fn1.getType(), fn1qual, fn1qual.getType()));
 		      case _ =>
+			if (constr.owner().isPackage())
+			  fn1.setType(checkAccessible(
+			    fn1.pos, constr, fn1.getType(), Tree.Empty, constr.owner().getType()));
 		    }
 		    if (tsym == c) {
 		      fn0 match {

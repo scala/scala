@@ -85,8 +85,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer
   def FunType(tree: Tree): Tree = tree match {
     case Tree$FunType(argtpes, restpe) =>
       val types = new Array[Tree](argtpes.length + 1);
-      System.arraycopy(argtpes.asInstanceOf[Array[Object]], 0,
-		       types.asInstanceOf[Array[Object]], 0, argtpes.length);
+      System.arraycopy(argtpes, 0, types, 0, argtpes.length);
       types(argtpes.length) = restpe;
       make.AppliedType(
 	tree.pos,
@@ -228,8 +227,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer
       // e.update
       val update: Tree = make.Select(fn.pos, fn, Names.update);
       val args1 = new Array[Tree](args.length + 1);
-      System.arraycopy(args.asInstanceOf[Array[Object]], 0,
-		       args1.asInstanceOf[Array[Object]], 0, args.length);
+      System.arraycopy(args, 0, args1, 0, args.length);
       args1(args.length) = rhs;
       make.Apply(tree.pos, update, args1);
   }
@@ -437,8 +435,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer
 	val tree1: Tree = liftout(tree, defs);
 	if (tree1 != tree && trees1 == trees) {
 	  trees1 = new Array[Tree](trees.length);
-	  System.arraycopy(trees.asInstanceOf[Array[Object]], 0,
-			   trees1.asInstanceOf[Array[Object]], 0, trees.length);
+	  System.arraycopy(trees, 0, trees1, 0, trees.length);
 	}
 	trees1(i) = tree1;
       }

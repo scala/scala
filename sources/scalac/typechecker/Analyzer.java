@@ -1276,6 +1276,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		try {
 		    tree = infer.exprInstance(tree, tparams, restp, pt);
 		} catch (Type.Error ex) {
+		    Context c = context;
+		    while (c != Context.NONE) {
+			System.out.println("context: " + c.owner);
+			c = c.outer;
+		    }
 		    tree = error(tree.pos, ex.msg);
 		}
 		return adapt(tree, mode, pt);

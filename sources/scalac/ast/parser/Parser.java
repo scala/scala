@@ -209,6 +209,23 @@ public class Parser implements Tokens {
         return Name.fromString("x$" + (fresh++));
     }
 
+    /** Create a tree representing a packaging
+     */
+    Tree makePackaging(int pos, Tree pkg, Tree[] stats) {
+	while (true) {
+	    Template templ = make.Template(pos, Tree.EMPTY_ARRAY, stats);
+	    switch (pkg) {
+	    case Select(Tree qual, Name name):
+		stats = new Tree[]{
+		    make.PackageDef(pos, make.Ident(pkg.pos, name), templ)};
+		pkg = qual;
+		break;
+	    default:
+		return make.PackageDef(pos, pkg, templ);
+	    }
+	}
+    }
+
     /** Create tree representing binary operation expression or pattern.
      */
     Tree makeBinop(boolean isExpr, int pos, Tree left, Name op, Tree right) {
@@ -1938,8 +1955,7 @@ public class Parser implements Tokens {
         accept(LBRACE);
         Tree[] stats = topStatSeq();
         accept(RBRACE);
-        return
-            make.PackageDef(pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, stats));
+	return makePackaging(pos, pkg, stats);
     }
 
     /** TopStatSeq ::= [TopStat {`;' TopStat}]
@@ -2057,15 +2073,11 @@ public class Parser implements Tokens {
             Tree pkg = qualId();
             if (s.token == SEMI) {
                 s.nextToken();
-                return new Tree[]{
-                    make.PackageDef(
-                        pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, topStatSeq()))};
+		return new Tree[]{makePackaging(pos, pkg, topStatSeq())};
             } else {
                 TreeList stats = new TreeList();
                 accept(LBRACE);
-                stats.append(
-                    make.PackageDef(
-                        pos, pkg, make.Template(pos, Tree.EMPTY_ARRAY, topStatSeq())));
+                stats.append(makePackaging(pos, pkg, topStatSeq()));
                 accept(RBRACE);
                 stats.append(topStatSeq());
                 return stats.toArray();

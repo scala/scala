@@ -946,6 +946,30 @@ the type definition
 ~\lstinline@type T, U <: B@~ expands to
 ~\lstinline@type T; type U <: B@.
 
+If an element in such a sequence introduces only the defined name,
+possibly with some type or value parameters, but leaves out any
+aditional parts in the definition, then those parts are implicitly
+copied from the next subsequent sequence element which consists of
+more than just a defined name and parameters. Examples:
+\begin{itemize}
+\item[]
+The variable declaration ~\lstinline@var x, y: int@~ 
+expands to ~\lstinline@var x: int; var y: int@.
+\item[]
+The value definition ~\lstinline@val x, y: int = 1@~ 
+expands to ~\lstinline@val x: int = 1; val y: int = 1@.
+\item[]
+The class definition ~\lstinline@case class X(), Y(n: int) extends Z@~ expands to
+~\lstinline@case class X extends Z; case class Y(n: int) extends Z@.
+\item
+The object definition ~\lstinline@case object Red, Green, Blue extends Color@~
+expands to  
+\begin{\lstlisting}
+case object Red extends Color; 
+case object Green extends Color;
+case object Blue extends Color .
+\end{lstisting}
+
 \section{Value Declarations and Definitions}
 \label{sec:valdef}
 
@@ -1022,6 +1046,11 @@ val xs = x$\Dollar$._2;
   VarDef         ::=  id [`:' Type] `=' Expr
                    |  id `:' Type `=' `_'
 \end{lstlisting}
+
+A sequence of variable declarations \listinline@var x$_1$, ..., x$_n$: T@
+is equivalent to 
+
+
 
 A variable declaration ~\lstinline@var $x$: $T$@~ is equivalent to declarations
 of a {\em getter function} $x$ and a {\em setter function}
@@ -2228,7 +2257,8 @@ module FileSystem with {
 
 \syntax\begin{lstlisting}
   Expr            ::=  [Bindings `=>'] Expr
-                    |  if `(' Expr `)' Expr [[`;'] else Expr]
+                    |  Expr1
+  Expr1           ::=  if `(' Expr `)' Expr [[`;'] else Expr]
                     |  try `{' block `}' [catch Expr] [finally Expr]
                     |  while '(' Expr ')' Expr
                     |  do Expr [`;'] while `(' Expr ')'
@@ -2254,7 +2284,9 @@ module FileSystem with {
                     |  BlockExpr
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
-  Block           ::=  {BlockStat `;'} [Expr]
+  Block           ::=  {BlockStat `;'} [ResultExpr]
+  ResultExpr      ::=  Expr1
+                    |  Bindings `=>' Block
   Exprs           ::=  Expr {`,' Expr}
 \end{lstlisting}
 
@@ -2677,7 +2709,7 @@ override a member of $C$.
 
 \syntax\begin{lstlisting}
   BlockExpr   ::=  `{' Block `}'
-  Block       ::=  [{BlockStat `;'} Expr]
+  Block       ::=  [{BlockStat `;'} ResultExpr]
 \end{lstlisting}
 
 A block expression ~\lstinline@{$s_1$; $\ldots$; $s_n$; $e\,$}@~ is constructed from a
@@ -2796,7 +2828,7 @@ where $x$ is a fresh name.
 \section{Typed Expressions}
 
 \syntax\begin{lstlisting}
-  Expr               ::=  PostfixExpr [`:' Type1]
+  Expr1              ::=  PostfixExpr [`:' Type1]
 \end{lstlisting}
 
 The typed expression $e: T$ has type $T$. The type of
@@ -2814,7 +2846,7 @@ the expression is the value of $e$ converted to type $T$.
 \section{Assignments}
 
 \syntax\begin{lstlisting}
-  Expr         ::=  Designator `=' Expr
+  Expr1        ::=  Designator `=' Expr
                  |  SimpleExpr ArgumentExpr `=' Expr
 \end{lstlisting}
 
@@ -2886,7 +2918,7 @@ def matmul(xss: Array[Array[double]], yss: Array[Array[double]]) = {
 \section{Conditional Expressions}
 
 \syntax\begin{lstlisting}
-  Expr           ::=  if `(' Expr `)' Expr [[`;'] else Expr]
+  Expr1          ::=  if `(' Expr `)' Expr [[`;'] else Expr]
 \end{lstlisting}
 
 The conditional expression ~\lstinline@if ($e_1$) $e_2$ else $e_3$@~ chooses
@@ -2913,7 +2945,7 @@ $e_2$ is also expected to conform to type \code{unit}.
 \section{While Loop Expressions}
 
 \syntax\begin{lstlisting}
-  Expr           ::=  while `(' Expr ')' Expr
+  Expr1          ::=  while `(' Expr ')' Expr
 \end{lstlisting}
 
 The while loop expression ~\lstinline@while ($e_1$) $e_2$@~ is typed and
@@ -2941,7 +2973,7 @@ expression ~\lstinline@(y = 1/x)@~ will be evaluated in the body of
 \section{Do Loop Expressions}
 
 \syntax\begin{lstlisting}
-  Expr           ::=  do Expr [`;'] while `(' Expr ')'
+  Expr1          ::=  do Expr [`;'] while `(' Expr ')'
 \end{lstlisting}
 
 The do loop expression ~\lstinline@do $e_1$ while ($e_2$)@~ is typed and
@@ -2951,7 +2983,7 @@ A semicolon preceding the \code{while} symbol of a do loop expression is ignored
 \section{Comprehensions}
 
 \syntax\begin{lstlisting}
-  Expr           ::=  for `(' Enumerators `)' [yield] Expr
+  Expr1          ::=  for `(' Enumerators `)' [yield] Expr
   Enumerator     ::=  Generator {`;' Enumerator}
   Enumerator     ::=  Generator
                    |  Expr
@@ -3115,7 +3147,7 @@ The code above makes use of the fact that \code{map}, \code{flatmap},
 \section{Return Expressions}
 
 \syntax\begin{lstlisting}
-  Expr       ::=  return [Expr]
+  Expr1      ::=  return [Expr]
 \end{lstlisting}
 
 A return expression ~\lstinline@return $e$@~ must occur inside the
@@ -3132,7 +3164,7 @@ a return expression is \code{scala.All}.
 \section{Throw Expressions}
 
 \syntax\begin{lstlisting}
-  Expr       ::=  throw Expr
+  Expr1      ::=  throw Expr
 \end{lstlisting}
 
 A throw expression ~\lstinline@throw $e$@~ evaluates the expression
@@ -3149,7 +3181,7 @@ is \code{scala.All}.
 \section{Try Expressions}\label{sec:try}
 
 \syntax\begin{lstlisting}
-  Expr       ::=  try `{' block `}' [catch Expr] [finally Expr]
+  Expr1       ::=  try `{' Block `}' [catch Expr] [finally Expr]
 \end{lstlisting}
 
 A try expression ~\lstinline@try { $b$ } catch $e$@~ evaluates the block
@@ -3189,7 +3221,8 @@ for  ~\lstinline@try { try { $b$ } catch $e_1$ } finally $e_2$@.
 \label{sec:closures}
 
 \syntax\begin{lstlisting}
-  Expr            ::=  [Bindings `=>'] Expr
+  Expr1           ::=  Bindings `=>' Expr
+  ResultExpr      ::=  Bindings `=>' Block
   Bindings        ::=  `(' Binding {`,' Binding `)'
                     |  id [`:' Type1]
   Binding         ::=  id [`:' Type]
@@ -4191,8 +4224,9 @@ grammar.
 
   Exprs           ::=  Expr {`,' Expr}
   Expr            ::=  Bindings `=>' Expr
-                    |  if `(' Expr `)' Expr [[`;'] else Expr]
-                    |  try `{' block `}' [catch Expr] [finally Expr]
+                    |  Expr1
+  Expr1           ::=  if `(' Expr1 `)' Expr [[`;'] else Expr]
+                    |  try `{' Block `}' [catch Expr] [finally Expr]
                     |  do Expr [`;'] while `(' Expr ')'
                     |  for `(' Enumerators `)' (do | yield) Expr
 		    |  return [Expr]
@@ -4217,12 +4251,14 @@ grammar.
                     |  BlockExpr
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
-  Block           ::=  {BlockStat `;'} [Expr]
+  Block           ::=  {BlockStat `;'} [ResultExpr]
   BlockStat       ::=  Import
                     |  Def
                     |  {LocalModifier} ClsDef
-                    |  Expr
+                    |  Expr1
                     |
+  ResultExpr      ::=  Expr1
+                    |  Bindings `=>' Block
 
   Enumerators     ::=  Generator {`;' Enumerator}
   Enumerator      ::=  Generator
@@ -4994,3 +5030,5 @@ package scala.List[a extends Comparable[a]] with Comparable[List[a]] with {
 }
 \end{lstlisting}
 }
+
+

@@ -601,11 +601,9 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
       //new Printer().print(tree1);//DEBUG
       //System.out.println(ArrayApply.toString(targs) + "/" + i + "/" + ArrayApply.toString(tparams));//DEBUG
       val tparams1: Array[Symbol] = new Array[Symbol](tparams.length - i);
-      System.arraycopy(tparams.asInstanceOf[Array[Object]], i,
-		       tparams1.asInstanceOf[Array[Object]], 0, tparams1.length);
+      System.arraycopy(tparams, i, tparams1, 0, tparams1.length);
       val targs1: Array[Type] = new Array[Type](tparams.length - i);
-      System.arraycopy(targs.asInstanceOf[Array[Object]], i,
-		       targs1.asInstanceOf[Array[Object]], 0, targs1.length);
+      System.arraycopy(targs, i, targs1, 0, targs1.length);
       tree1 = substituter.apply(tree1, tparams1, targs1);
     }
     if (0 < i) {
@@ -631,10 +629,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     restype match {
       case Type$PolyType(tparams1, restype1) =>
 	val tparams2: Array[Symbol] = new Array[Symbol](tparams.length + tparams1.length);
-	System.arraycopy(tparams.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], 0, tparams.length);
-	System.arraycopy(tparams1.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], tparams.length, tparams1.length);
+	System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
+	System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	argumentTypeInstance(tparams2, restype1, pt1, pt2);
 
       case _ =>
@@ -662,10 +658,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     restype match {
       case Type$PolyType(tparams1, restype1) =>
 	val tparams2: Array[Symbol] = new Array[Symbol](tparams.length + tparams1.length);
-	System.arraycopy(tparams.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], 0, tparams.length);
-	System.arraycopy(tparams1.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], tparams.length, tparams1.length);
+	System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
+	System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	exprInstance(tree, tparams2, restype1, pt)
       case _ =>
 	val targs: Array[Type] = exprTypeArgs(tparams, restype, pt);
@@ -686,10 +680,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     restype match {
       case Type$PolyType(tparams1, restype1) =>
 	val tparams2: Array[Symbol] = new Array[Symbol](tparams.length + tparams1.length);
-	System.arraycopy(tparams.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], 0, tparams.length);
-	System.arraycopy(tparams1.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], tparams.length, tparams1.length);
+	System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
+	System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	methodInstance(tree, tparams2, restype1, argtypes, pt)
 
       case Type$MethodType(params, restpe) =>
@@ -726,10 +718,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     restype match {
       case Type$PolyType(tparams1, restype1) =>
 	val tparams2: Array[Symbol] = new Array[Symbol](tparams.length + tparams1.length);
-	System.arraycopy(tparams.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], 0, tparams.length);
-	System.arraycopy(tparams1.asInstanceOf[Array[Object]], 0,
-			 tparams2.asInstanceOf[Array[Object]], tparams.length, tparams1.length);
+	System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
+	System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	constructorInstance(tree, tparams2, restype1, pt)
 
       case _ =>
