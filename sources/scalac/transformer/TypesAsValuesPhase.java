@@ -265,27 +265,22 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol symbol = getSymbolFor(tree);
                 return gen.ValDef(symbol, transform(rhs, symbol));
 
-            case New(Tree.Template(Tree[] parents, Tree[] body)):
-                switch (parents[0]) {
-                case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
-                    if (fun.symbol() == ARRAY_CONSTRUCTOR) {
-                        // Transform array creations:
-                        //   new Array[T](size)
-                        // becomes
-                        //   asValue(T).newArray[T](size)
-                        assert targs.length == 1;
-                        assert vargs.length == 1;
-                        Tree newArrayfun = gen.mkRef(tree.pos,
-                                                     typeAsValue(targs[0].pos,
-                                                                 targs[0].type,
-                                                                 currentOwner),
-                                                     defs.TYPE_NEWARRAY());
-                        return gen.mkApplyTV(newArrayfun, targs, vargs);
-                    } else
-                        return super.transform(tree);
-                default:
+            case New(Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs)):
+                if (fun.symbol() == ARRAY_CONSTRUCTOR) {
+                    // Transform array creations:
+                    //   new Array[T](size)
+                    // becomes
+                    //   asValue(T).newArray[T](size)
+                    assert targs.length == 1;
+                    assert vargs.length == 1;
+                    Tree newArrayfun = gen.mkRef(tree.pos,
+                                                 typeAsValue(targs[0].pos,
+                                                             targs[0].type,
+                                                             currentOwner),
+                                                 defs.TYPE_NEWARRAY());
+                    return gen.mkApplyTV(newArrayfun, targs, vargs);
+                } else
                     return super.transform(tree);
-                }
 
             case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
                 Symbol funSym = fun.symbol();

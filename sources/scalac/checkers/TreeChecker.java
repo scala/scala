@@ -263,14 +263,13 @@ public class TreeChecker {
         case Throw(Tree value):
             return expression(value, definitions.THROWABLE_TYPE());
 
-        case New(Template(Tree[] bases, Tree[] body)):
-            assert bases.length == 1 && body.length == 0: show(tree);
-            Tree fun = TreeInfo.methPart(bases[0]);
+        case New(Tree init):
+            Tree fun = TreeInfo.methPart(init);
             assert fun instanceof Tree.Ident: show(tree);
             Symbol symbol = fun.symbol();
             assert symbol != null && !symbol.isLabel(): show(tree);
             assert symbol.isInitializer(): show(tree);
-            return expression(bases[0], definitions.UNIT_TYPE());
+            return expression(init, definitions.UNIT_TYPE());
 
         case Apply(Tree vfun, Tree[] vargs):
             vapply(tree, vfun.type(), vargs);

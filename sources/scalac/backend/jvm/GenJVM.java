@@ -267,16 +267,13 @@ class GenJVM {
             generatedType = expectedType;
             break;
 
-        case New(Tree.Template templ): {
-            assert templ.body.length == 0;
-            assert templ.parents.length == 1;
-
+        case New(Tree init):
             String className = javaName(tree.type.symbol());
             ctx.code.emitNEW(className);
             ctx.code.emitDUP();
-            gen(ctx, templ.parents[0]);
+            gen(ctx, init);
             generatedType = new JObjectType(className);
-        } break;
+            break;
 
         case Apply(TypeApply(Tree fun, Tree[] args), _): {
             genLoadQualifier(ctx, fun);

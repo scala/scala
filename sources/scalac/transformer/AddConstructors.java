@@ -217,8 +217,8 @@ public class AddConstructors extends GenTransformer {
                     tree.symbol().setOwner(primaryInitializer);
             return super.transform(tree);
 
-        case New(Template(Tree[] parents, _)):
-            return gen.New(transform(parents[0], true));
+        case New(Tree init):
+            return gen.New(transform(init, true));
 
  	case TypeApply(Tree fun, Tree[] args):
             if (!inNew && fun.symbol().isConstructor()) return transform(fun);

@@ -137,12 +137,10 @@ public class ExpressionCompiler {
             return Code.Switch(
                 compute(test), tags, compute(bodies), compute(otherwise));
 
-        case New(Tree.Template(Tree[] bases, Tree[] body)): // !!!
-            assert bases.length == 1 : Debug.show(tree);
-            assert body.length == 0 : Debug.show(tree);
+        case New(Tree init): // !!!
             Symbol symbol = Symbol.NONE.newTerm(tree.pos, 0, Name.fromString("new")); // !!! should be newVariable
             Variable variable = Variable.Local(context.push());
-            Code code = compute(bases[0]);
+            Code code = compute(init);
             switch (context.lookupTemplate(tree.getType().symbol())) {
             case Global(ScalaTemplate template):
                 assert code instanceof Code.Invoke : Debug.show(code);

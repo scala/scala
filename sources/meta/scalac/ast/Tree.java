@@ -299,7 +299,7 @@ public class Tree {
         n_New.
             setDescription("Instantiation").
             setRange(Phase.PARSER, Phase.END).
-            addField(n_Template.getType(0), "templ");
+            addField(t_TermTree, "init");
 
         n_Typed.
             setDescription("Type annotation").

@@ -569,17 +569,15 @@ public final class GenMSIL {
 	    lastExpr = tmpLastExpr;
 	    return check(store(var));
 
-	case New(Template(Tree[] baseClasses, Tree[] body)):
-	    assert body.length == 0 : "Template should not have a body!";
-	    switch (baseClasses[0]) {
+	case New(Tree init):
+	    switch (init) {
 	    case Apply(Tree fun, Tree[] args):
 		ConstructorInfo ctor = (ConstructorInfo) tc.getMethod(fun.symbol());
 		loadArgs(args, ctor.GetParameters());
 		code.Emit(OpCodes.Newobj, ctor);
 		return coerce(items.StackItem(msilType(ctor.DeclaringType)), toType);
 	    default:
-		throw new ApplicationError("Incorrect tree: "
-					   + baseClasses[0].getClass());
+		throw Debug.abort("Incorrect tree", init);
 	    }
 
 	case This(_):

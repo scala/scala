@@ -117,10 +117,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
                             _scala_xml_EntityRef( pos ),
                             Predef.Array[Tree]( gen.mkStringLit( pos, n.toString() )));
 
-    make.New( pos,
-             make.Template( pos,
-                           Predef.Array[Tree] ( constr ),
-                           Tree.EMPTY_ARRAY ));
+    make.New( pos, constr );
   };
   // create scala.xml.Text here <: scala.xml.Node
   def makeText( pos: int, txt:String ):Tree =
@@ -130,10 +127,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     val constr = make.Apply( pos,
                            _scala_xml_Text( pos ),
                            Predef.Array[Tree] ( txt ));
-    make.New( pos,
-             make.Template( pos,
-                            Predef.Array[Tree] ( constr ),
-                            Tree.EMPTY_ARRAY ));
+    make.New( pos, constr );
   }
 
   def makeXMLpat(pos:int, n:Name, args:Array[Tree]):Tree =
@@ -170,10 +164,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     val n = p.fresh();
     val nIdent = make.Ident(pos, n);
     blocArr( 0 ) = make.ValDef(pos, Modifiers.MUTABLE, n, Tree.Empty,
-                               make.New( pos,
-                                        make.Template( pos,
-                                                      Predef.Array[Tree] ( constr ),
-                                                      Tree.EMPTY_ARRAY )));
+                               make.New( pos, constr ));
 
     var i = 0; while( i < args.length ) {
       val ipos = args(i).pos;

@@ -236,9 +236,8 @@ public class GenTransformer {
 
         // case Throw(Tree expr):
 
-        case New(Template(Tree[] base, Tree[] body)):
-            assert base.length == 1 && body.length == 0: tree;
-            return gen.New(tree.pos, transform(base[0]));
+        case New(Tree init):
+            return gen.New(tree.pos, transform(init));
 
         case Typed(Tree expr, Tree tpe):
             return gen.Typed(tree.pos, transform(expr), transform(tpe));

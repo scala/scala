@@ -422,8 +422,10 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	print(Space);
 	print(expr);
 
-      case Tree$New(templ) =>
-	printTemplate(null, KW_NEW, templ, false);
+      case Tree$New(init) =>
+        print(KW_NEW);
+	print(Space);
+	print(init);
 	printType(tree);
 
       case Tree$Typed(expr, tpe) =>

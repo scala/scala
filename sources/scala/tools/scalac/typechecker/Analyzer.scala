@@ -847,7 +847,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
         sym
 
       case Tree$ClassDef(mods, name, tparams, vparams, _, templ) =>
-	val clazz = classSymbol(tree.pos, name, owner, mods, context.scope);
+	val clazz =
+          if (mods == SYNTHETIC && name == Names.ANON_CLASS_NAME.toTypeName())
+            context.owner.newAnonymousClass(templ.pos)
+          else
+            classSymbol(tree.pos, name, owner, mods, context.scope);
 	if (!clazz.primaryConstructor().isInitialized())
 	  clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
 	if ((mods & CASE) != 0) {
@@ -2301,67 +2305,35 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    }
 	  }
 
-	case Tree$New(templ) =>
-	  templ match {
-	    case Tree$Template(parents, body) =>
-	      if (parents.length == 1 && body.length == 0) {
-		val parent1: Tree = transform(parents(0), CONSTRmode, pt);
-		val owntype: Type = parent1.getType();
-		val templ1: Tree$Template =
-		  copy.Template(templ, Symbol.NONE, NewArray.Tree(parent1), body)
-		  .setType(owntype).asInstanceOf[Tree$Template];
-		checkInstantiatable(tree.pos, owntype);
-		copy.New(tree, templ1)
-		  .setType(owntype.instanceType());
-	      } else {
-		pushContext(tree, context.owner, new Scope(context.scope));
-                val clazz: Symbol = context.owner.newAnonymousClass(templ.pos);
-		val cd: Tree = make.ClassDef(
-		  templ.pos,
-		  clazz,
-		  Tree.AbsTypeDef_EMPTY_ARRAY,
-		  NewArray.ValDefArray(Tree.ValDef_EMPTY_ARRAY),
-		  Tree.Empty,
-		  templ);
-                defineSym(cd, unit, context);
-		//new TextTreePrinter().print(cd).println().end();//DEBUG
-		val cd1 = transform(cd);
-		{
-		  // compute template's type with new refinement scope.
-		  val parentTypes = clazz.info().parents();
-		  val refinement: Scope = new Scope();
-		  val base: Type = Type.compoundTypeWithOwner(context.enclClass.owner, parentTypes, Scope.EMPTY);
-		  val it: Scope$SymbolIterator = clazz.members().iterator();
-		  while (it.hasNext()) {
-		    val sym1: Symbol = it.next();
-		    val basesym1: Symbol = base.lookupNonPrivate(sym1.name);
-		    if (basesym1.kind != NONE &&
-			!base.symbol().thisType().memberType(basesym1)
-			.isSameAs(sym1.getType()))
-		      refinement.enter(sym1);
-		  }
-		  val owntype =
-		    if (refinement.isEmpty() && parentTypes.length == 1)
-		      parentTypes(0)
-		    else
-		      checkNoEscape(
-			tree.pos,
-			Type.compoundTypeWithOwner(
-                          context.enclClass.owner, parentTypes, refinement));
-		  val alloc: Tree =
-		    gen.New(
-		      gen.Apply(
-			gen.mkLocalRef(
-			  tree.pos,
-			  clazz.primaryConstructor()),
-			Tree.EMPTY_ARRAY))
-		    .setType(owntype);
-		  popContext();
-		  make.Block(tree.pos, NewArray.Tree(cd1), alloc)
-		    .setType(owntype);
-		}
-	      }
-	  }
+	case Tree$New(init) =>
+	  val init1: Tree = transform(init, CONSTRmode, pt);
+	  checkInstantiatable(tree.pos, init1.getType());
+	  val tree1 = gen.New(tree.pos, init1);
+          val clazz = tree1.getType().symbol();
+          if (clazz.isAnonymousClass()) {
+	    val parentTypes = clazz.info().parents();
+	    val refinement: Scope = new Scope();
+	    val base: Type = Type.compoundTypeWithOwner(context.enclClass.owner, parentTypes, Scope.EMPTY);
+	    val it: Scope$SymbolIterator = clazz.members().iterator();
+	    while (it.hasNext()) {
+	      val sym1: Symbol = it.next();
+	      val basesym1: Symbol = base.lookupNonPrivate(sym1.name);
+	      if (!basesym1.isNone() &&
+                  !base.symbol().thisType().memberType(basesym1)
+		  .isSameAs(sym1.getType()))
+		refinement.enter(sym1);
+	    }
+	    val owntype =
+	      if (refinement.isEmpty() && parentTypes.length == 1)
+		parentTypes(0)
+	      else
+		checkNoEscape(
+		  tree.pos,
+		  Type.compoundTypeWithOwner(
+                    context.enclClass.owner, parentTypes, refinement));
+            gen.Typed(tree1, owntype)
+          } else
+            tree1
 
 	case Tree$Typed(expr, tpe) =>
 	  expr match {

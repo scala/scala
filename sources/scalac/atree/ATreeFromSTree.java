@@ -227,8 +227,8 @@ public class ATreeFromSTree {
         case Throw(Tree value):
             return make.Throw(tree, expression(value));
 
-        case New(Template(Tree[] bases, _)):
-            return expression(bases[0]);
+        case New(Tree init):
+            return expression(init);
 
         case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
             return apply(tree, fun, targs, vargs);

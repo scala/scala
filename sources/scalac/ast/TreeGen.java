@@ -458,6 +458,33 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     //########################################################################
+    // Public Methods - Building new instances
+
+    /** Builds a New node corresponding to "new <init>". */
+    public New New(int pos, Tree init) {
+	New tree = make.New(pos, init);
+        tree.setType(init.type);
+        // after AddConstructor use type of symbol
+        switch (init) {
+        case Apply(TypeApply(Tree fun, Tree[] targs), _):
+            Symbol sym = fun.symbol();
+            if (sym == null || sym.isConstructor()) break;
+            Type[] args = Tree.typeOf(targs);
+            tree.setType(Type.appliedType(sym.owner().nextType(), args));
+            break;
+        case Apply(Tree fun, _):
+            Symbol sym = fun.symbol();
+            if (sym == null || sym.isConstructor()) break;
+            tree.setType(sym.owner().nextType());
+            break;
+        }
+        return tree;
+    }
+    public New New(Tree init) {
+        return New(init.pos, init);
+    }
+
+    //########################################################################
     // Public Methods - Building expressions - Simple nodes
 
     /** Flattens the given tree array by inlining Block nodes. */
@@ -688,32 +715,6 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
     public Return Return(Symbol method, Tree value) {
         return Return(value.pos, method, value);
-    }
-
-    /** Builds a New node corresponding to "new <constr>". */
-    public Tree New(int pos, Tree constr) {
-        Tree[] constrs = { constr };
-	Template templ = Template(pos, Symbol.NONE, constrs, Tree.EMPTY_ARRAY);
-	New tree = make.New(pos, templ);
-        tree.setType(constr.type);
-        // after AddConstructor use type of symbol
-        switch (constr) {
-        case Apply(TypeApply(Tree fun, Tree[] targs), _):
-            Symbol sym = fun.symbol();
-            if (sym == null || sym.isConstructor()) break;
-            Type[] args = Tree.typeOf(targs);
-            tree.setType(Type.appliedType(sym.owner().nextType(), args));
-            break;
-        case Apply(Tree fun, _):
-            Symbol sym = fun.symbol();
-            if (sym == null || sym.isConstructor()) break;
-            tree.setType(sym.owner().nextType());
-            break;
-        }
-        return tree;
-    }
-    public Tree New(Tree constr) {
-        return New(constr.pos, constr);
     }
 
     /** Builds a Typed nodes with given value and type. */
@@ -1130,9 +1131,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	changeOwner(body, owner, applyMeth);
         Tree[] memberTrees = { DefDef(applyMeth, body) };
         Tree classDef = ClassDef(clazz, memberTrees);
-	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)))
-            .setType(parentTypes[1]); // !!!
-	return mkBlock(classDef, alloc);
+	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)));
+	return mkBlock(classDef, Typed(alloc, parentTypes[1])); // !!! Typed
     }
 
 
@@ -1151,9 +1151,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
                               pattype, definitions.BOOLEAN_TYPE(), clazz, owner)};
         Tree classDef = ClassDef(clazz, memberTrees);
-	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)))
-	    .setType(parentTypes[1]); // !!!
-	return mkBlock(classDef, alloc);
+	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)));
+	return mkBlock(classDef, Typed(alloc, parentTypes[1])); // !!! Typed
     }
     //where
 	private Tree makeVisitorMethod(int pos, Name name, Tree visitor,

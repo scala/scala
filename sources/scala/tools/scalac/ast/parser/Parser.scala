@@ -1012,7 +1012,26 @@ class Parser(unit: Unit) {
       case LBRACE =>
         t = blockExpr();
       case NEW =>
-        t = make.New(s.skipToken(), template());
+        val pos = s.skipToken();
+        val templ = template();
+        if (templ.parents.length == 1 && templ.body.length == 0) {
+          t = make.New(pos, templ.parents(0));
+        } else {
+          // flags == SYNTHETIC and name = ANON indicate an anonymous class
+          val flags = Modifiers.SYNTHETIC;
+          val name = Names.ANON_CLASS_NAME.toTypeName();
+	  val cd: Tree = make.ClassDef(
+		  templ.pos,
+                  flags,
+		  name,
+		  Tree.AbsTypeDef_EMPTY_ARRAY,
+		  NewArray.ValDefArray(Tree.ValDef_EMPTY_ARRAY),
+		  Tree.Empty,
+		  templ);
+          t = make.Block(
+            pos, Predef.Array[Tree](cd), make.New(
+              pos, make.Apply(pos, make.Ident(pos, name), Tree.EMPTY_ARRAY)));
+        }
       case _ =>
         return syntaxError("illegal start of expression", true);
     }

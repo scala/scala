@@ -143,10 +143,9 @@ public class Erasure extends GenTransformer implements Modifiers {
             Type type = method.nextType().resultType();
 	    return gen.Return(tree.pos, method, transform(expr, type));
 
-        case New(Template(Tree[] base, Tree[] body)):
-            assert base.length == 1 && body.length == 0: tree;
+        case New(Tree init):
             if (tree.getType().symbol() == definitions.ARRAY_CLASS) {
-                switch (base[0]) {
+                switch (init) {
                 case Apply(_, Tree[] args):
                     assert args.length == 1: tree;
                     Type element = getArrayElementType(tree.getType()).erasure();
@@ -156,7 +155,7 @@ public class Erasure extends GenTransformer implements Modifiers {
                     throw Debug.abort("illegal case", tree);
                 }
             }
-	    return gen.New(tree.pos, transform(base[0]));
+	    return gen.New(tree.pos, transform(init));
 
 	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
             fun = transform(fun);
