@@ -8,8 +8,8 @@
 
 package scalac;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class defines all compiler phases and maintains a list of
@@ -170,17 +170,19 @@ public class CompilerPhases {
     }
 
     /** Activates phase "phase" by placing it before phase "where". */
-    public void insertBefore(PhaseDescriptor phase, PhaseDescriptor where) {
+    public int insertBefore(PhaseDescriptor phase, PhaseDescriptor where) {
         int index = phases.indexOf(where);
         assert index >= 0 : "could not find phase " + where;
         phases.add(index, phase);
+        return index;
     }
 
     /** Activates phase "phase" by placing it after phase "where". */
-    public void insertAfter(PhaseDescriptor phase, PhaseDescriptor where) {
+    public int insertAfter(PhaseDescriptor phase, PhaseDescriptor where) {
         int index = phases.indexOf(where);
         assert index >= 0 : "could not find phase " + where;
         phases.add(index + 1, phase);
+        return index + 1;
     }
 
     //########################################################################
