@@ -156,10 +156,15 @@ public class GenTransformer {
 
         case ClassDef(_, _, _, _, _, Template impl):
             Symbol symbol = getSymbolFor(tree);
-            Symbol impl_symbol = getSymbolFor(impl);
-            Tree[] parents = transform(impl.parents);
-            Tree[] body = transform(impl.body);
-            return gen.ClassDef(symbol, parents, impl_symbol, body);
+            if (global.currentPhase.id < global.PHASE.ADDCONSTRUCTORS.id()) {
+                Symbol impl_symbol = getSymbolFor(impl);
+                Tree[] parents = transform(impl.parents);
+                Tree[] body = transform(impl.body);
+                return gen.ClassDef(symbol, parents, impl_symbol, body);
+            } else {
+                Tree[] body = transform(impl.body);
+                return gen.ClassDef(symbol, body);
+            }
 
         case PackageDef(Tree packaged, Template(Tree[] parents, Tree[] body)):
             Symbol symbol = getSymbolFor(packaged);
