@@ -1718,7 +1718,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 /** A class for term symbols
  */
-class TermSymbol extends Symbol {
+public class TermSymbol extends Symbol {
 
     /** Constructor */
     TermSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
@@ -1809,7 +1809,7 @@ public class ModuleSymbol extends TermSymbol {
  *
  * @see Symbol#linkedModule()
  */
-final class LinkedModuleSymbol extends ModuleSymbol {
+public final class LinkedModuleSymbol extends ModuleSymbol {
 
     /** The linked class */
     private final LinkedClassSymbol clasz;
@@ -1830,7 +1830,7 @@ final class LinkedModuleSymbol extends ModuleSymbol {
 /** A base class for all type symbols.
  *  It has AliasTypeSymbol, AbsTypeSymbol, ClassSymbol as subclasses.
  */
-abstract class TypeSymbol extends Symbol {
+public abstract class TypeSymbol extends Symbol {
 
      /** The history of closures of this symbol */
     private final History/*<Type[]>*/ closures;
@@ -1967,7 +1967,7 @@ abstract class TypeSymbol extends Symbol {
     protected abstract TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs);
 }
 
-final class AliasTypeSymbol extends TypeSymbol {
+public final class AliasTypeSymbol extends TypeSymbol {
 
     /** Initializes this instance. */
     AliasTypeSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
@@ -2176,7 +2176,7 @@ public final class ModuleClassSymbol extends ClassSymbol {
  *
  * @see Symbol#linkedModule()
  */
-final class LinkedClassSymbol extends ClassSymbol {
+public final class LinkedClassSymbol extends ClassSymbol {
 
     /** The linked module */
     private final LinkedModuleSymbol module;
@@ -2195,7 +2195,7 @@ final class LinkedClassSymbol extends ClassSymbol {
 
 /** The class of Symbol.NONE
  */
-final class NoSymbol extends Symbol {
+public final class NoSymbol extends Symbol {
 
     /** Constructor */
     public NoSymbol() {
@@ -2249,7 +2249,7 @@ public class CyclicReference extends Type.Error {
 }
 
 /** A base class for values indexed by phases. */
-abstract class IntervalList {
+public abstract class IntervalList {
 
     /** Interval starts at start of phase "start" (inclusive) */
     public final Phase start;
@@ -2279,7 +2279,7 @@ abstract class IntervalList {
 }
 
 /** A class for types indexed by phases. */
-class TypeIntervalList extends IntervalList {
+public class TypeIntervalList extends IntervalList {
 
     /** Previous interval */
     public final TypeIntervalList prev;
