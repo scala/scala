@@ -15,7 +15,7 @@ object maps {
     val empty: map;
   }
 
-  class AlgBinTree[kt <: Ord[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
+  class AlgBinTree[kt <: Ordered[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
     type map = AlgMap;
 
     val empty: AlgMap = Empty();
@@ -26,47 +26,47 @@ object maps {
 
     trait AlgMap extends Map {
       def apply(key: kt): vt = this match {
-	case Empty() => null
-	case Node(k, v, l, r) =>
-	  if (key < k) l.apply(key)
-	  else if (key > k) r.apply(key)
-	  else v
+        case Empty() => null
+        case Node(k, v, l, r) =>
+          if (key < k) l.apply(key)
+          else if (key > k) r.apply(key)
+          else v
       }
 
       def extend(key: kt, value: vt): map = this match {
-	case Empty()=> Node(key, value, empty, empty)
-	case Node(k, v, l, r) =>
-	  if (key < k) Node(k, v, l.extend(key, value), r)
-	  else if (key > k) Node(k, v, l, r.extend(key, value))
-	  else Node(k, value, l, r)
+        case Empty()=> Node(key, value, empty, empty)
+        case Node(k, v, l, r) =>
+          if (key < k) Node(k, v, l.extend(key, value), r)
+          else if (key > k) Node(k, v, l, r.extend(key, value))
+          else Node(k, value, l, r)
       }
 
       def remove(key: kt): map = this match {
-	case Empty()=> empty
-	case Node(k, v, l, r) =>
-	  if (key < k) Node(k, v, l.remove(key), r)
-	  else if (key > k) Node(k, v, l, r.remove(key))
-	  else if (l == empty) r
-	  else if (r == empty) l
-	  else {
-	    val midKey = r.domain.head;
-	    Node(midKey, r.apply(midKey), l, r.remove(midKey))
-	  }
+        case Empty()=> empty
+        case Node(k, v, l, r) =>
+          if (key < k) Node(k, v, l.remove(key), r)
+          else if (key > k) Node(k, v, l, r.remove(key))
+          else if (l == empty) r
+          else if (r == empty) l
+          else {
+          val midKey = r.domain.head;
+          Node(midKey, r.apply(midKey), l, r.remove(midKey))
+        }
       }
 
       def domain: Stream[kt] = this match {
-	case Empty()=> Stream.empty
-	case Node(k, v, l, r) => l.domain append Stream.cons(k, r.domain)
+        case Empty()=> Stream.empty
+        case Node(k, v, l, r) => l.domain append Stream.cons(k, r.domain)
       }
 
       def range: Stream[vt] = this match {
-	case Empty()=> Stream.empty
-	case Node(k, v, l, r) => l.range append Stream.cons(v, r.range)
+        case Empty()=> Stream.empty
+        case Node(k, v, l, r) => l.range append Stream.cons(v, r.range)
       }
     }
   }
 
-  class OOBinTree[kt <: Ord[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
+  class OOBinTree[kt <: Ordered[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
     type map = OOMap;
 
     trait OOMap extends Map {
@@ -106,7 +106,7 @@ object maps {
     }
   }
 
-  class MutBinTree[kt <: Ord[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
+  class MutBinTree[kt <: Ordered[kt], vt <: AnyRef]() extends MapStruct[kt, vt] {
     type map = MutMap;
     class MutMap(key: kt, value: vt) extends Map {
       val k = key;
@@ -114,52 +114,64 @@ object maps {
       var l, r = empty;
 
       def apply(key: kt): vt =
-	if (this == empty) null
-	else if (key < k) l.apply(key)
-	else if (key > k) r.apply(key)
-	else v;
+        if (this == empty) null
+        else if (key < k) l.apply(key)
+        else if (key > k) r.apply(key)
+        else v;
 
       def extend(key: kt, value: vt): map =
-	if (this == empty) new MutMap(key, value)
-	else {
-	  if (key < k) l = l.extend(key, value)
-	  else if (key > k) r = r.extend(key, value)
-	  else v = value;
-	  this
-	}
+        if (this == empty) new MutMap(key, value)
+        else {
+          if (key < k) l = l.extend(key, value)
+          else if (key > k) r = r.extend(key, value)
+          else v = value;
+          this
+        }
 
       def remove(key: kt): map =
-	if (this == empty) this
-	else if (key < k) { l = l.remove(key) ; this }
-	else if (key > k) { r = r.remove(key) ; this }
-	else if (l == empty) r
-	else if (r == empty) l
-	else {
-	  var mid = r;
-	  while (!(mid.l == empty)) { mid = mid.l }
-	  mid.r = r.remove(mid.k);
-	  mid.l = l;
-	  mid
-	}
+        if (this == empty) this
+        else if (key < k) { l = l.remove(key) ; this }
+        else if (key > k) { r = r.remove(key) ; this }
+        else if (l == empty) r
+        else if (r == empty) l
+        else {
+          var mid = r;
+          while (!(mid.l == empty)) { mid = mid.l }
+          mid.r = r.remove(mid.k);
+          mid.l = l;
+          mid
+        }
+
       def domain: Stream[kt] =
-	if (this == empty) Stream.empty;
-	else l.domain append Stream.cons(k, r.domain);
+        if (this == empty) Stream.empty;
+        else l.domain append Stream.cons(k, r.domain);
+
       def range: Stream[vt] =
-	if (this == empty) Stream.empty;
-	else l.range append Stream.cons(v, r.range);
+        if (this == empty) Stream.empty;
+        else l.range append Stream.cons(v, r.range);
     }
     val empty = new MutMap(null, null);
   }
 
-  class Date(y: Int, m: Int, d: Int) with Ord[Date] {
+  class Date(y: Int, m: Int, d: Int) with Ordered[Date] {
     def year = y;
     def month = m;
     def day = d;
 
-    def <(that: Date): Boolean = {
-      (year < that.year) ||
-      (year == that.year && month < that.month) ||
-      (month == that.month && day < that.day)
+    def compareTo[b >: Date <% Ordered[b]](that: b): int = that match {
+      case other: Date =>
+        if ((year == other.year) &&
+            (month == other.month) &&
+            (day == other.day))
+           0
+        else if ((year < other.year) ||
+                 (year == other.year && month < other.month) ||
+                 (month == other.month && day < other.day))
+          -1
+        else
+          1
+      case _ =>
+        -(that compareTo this)
     }
 
     override def equals(that: Any): Boolean =
