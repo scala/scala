@@ -130,6 +130,7 @@ all		: library
 all		: interpreter
 all		: scaladoc
 all		: dtd2scala
+all		: library-doc
 
 force		: fastclean
 	@$(make) all
@@ -165,10 +166,10 @@ generate	: .latest-generate
 compiler	: .latest-compiler
 library		: .latest-library-jc
 library		: .latest-library-sc
-library		: .latest-library-sdc
 interpreter	: .latest-interpreter
 scaladoc	: .latest-scaladoc
 dtd2scala	: .latest-dtd2scala
+library-doc	: .latest-library-sdc
 
 .PHONY		: fastclean
 .PHONY		: scripts
@@ -180,6 +181,7 @@ dtd2scala	: .latest-dtd2scala
 .PHONY		: interpreter
 .PHONY		: scaladoc
 .PHONY		: dtd2scala
+.PHONY		: library-doc
 
 ##############################################################################
 # Targets
@@ -301,5 +303,20 @@ include $(PROJECT_SUPPORTDIR)/make/jc.mk
 include $(PROJECT_SUPPORTDIR)/make/jar.mk
 include $(PROJECT_SUPPORTDIR)/make/sc.mk
 include $(PROJECT_SUPPORTDIR)/make/sdc.mk
+
+##############################################################################
+# Beta code
+
+show-missing		:
+	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
+	@for filename in $(LIBRARY_SC_FILES:%='%'); do \
+	  echo $$filename | $(TR) " " "\n" >> /tmp/check.tmp.log; \
+	done
+	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
+	@$(FIND) $(LIBRARY_ROOT) -name '*.scala' | $(SORT) > /tmp/check.lst.log
+	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log 
+	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
+
+.PHONY			: show-missing
 
 ##############################################################################
