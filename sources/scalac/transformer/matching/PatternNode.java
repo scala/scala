@@ -11,6 +11,7 @@ package scalac.transformer.matching;
 import ch.epfl.lamp.util.Position;
 import scalac.*;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 import scalac.typechecker.*;
 
@@ -27,7 +28,7 @@ public class PatternNode {
     public case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body);
     public case DefaultPat();
     public case ConstrPat(Symbol casted);
-    public case ConstantPat(Object value);
+    public case ConstantPat(AConstant value);
     public case VariablePat(Tree tree);
     public case AltPat(Header subheader);
     public case SequencePat(Symbol casted, int len); // only used in PatternMatcher
@@ -54,7 +55,7 @@ public class PatternNode {
 			case SeqContainerPat(Symbol casted, Tree seqpat):
 				res = SeqContainerPat(casted, seqpat);
 				break;
-			case ConstantPat(Object value):
+			case ConstantPat(AConstant value):
 				res = ConstantPat(value);
 				break;
 			case VariablePat(Tree tree):
@@ -149,9 +150,9 @@ public class PatternNode {
                 return (plen == qlen) && q.type.isSubType(this.type);
             }
             return false;
-        case ConstantPat(Object pval):
+        case ConstantPat(AConstant pval):
             switch (q) {
-            case ConstantPat(Object qval):
+            case ConstantPat(AConstant qval):
                 return pval.equals(qval);
             }
             return false;
@@ -182,7 +183,7 @@ public class PatternNode {
                 return "SequencePat(" + casted + ", " + len + "...)";
             case SeqContainerPat(Symbol casted, Tree seqpat):
                 return "SeqContainerPat(" + casted + ", " + seqpat + ")";
-            case ConstantPat(Object value):
+            case ConstantPat(AConstant value):
                 return "ConstantPat(" + value + ")";
             case VariablePat(Tree tree):
                 return "VariablePat";

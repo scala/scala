@@ -1,5 +1,5 @@
 bug45.scala:4: type mismatch;
- found   : scala.AllRef
+ found   : scala.AllRef(null)
  required: Int
         def foo[Int](x: Int): Int = null;
                                     ^

@@ -11,6 +11,7 @@ package scalac.transformer.matching;
 import ch.epfl.lamp.util.Position;
 import scalac.*;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.util.*;
 import scalac.symtab.*;
 import PatternNode.*;
@@ -134,7 +135,7 @@ public class PatternMatcher extends PatternTool {
                 if (patNode.or != null)
                     print(patNode.or, indent);
                 break;
-            case ConstantPat(Object value):
+            case ConstantPat(AConstant value):
                 String  s = "-- CONST(" + value + ") -> ";
                 String  ind = indent;
                 indent = (patNode.or != null) ?
@@ -376,7 +377,7 @@ public class PatternMatcher extends PatternTool {
                 return mk.ConstrPat(tree.pos, tree.type);
             else
                 return mk.VariablePat(tree.pos, tree);
-        case Literal(Object value):
+        case Literal(AConstant value):
             return mk.ConstantPat(tree.pos, tree.type, value);
         case Sequence(Tree[] ts):
             if ( !delegateSequenceMatching ) {
@@ -691,10 +692,10 @@ public class PatternMatcher extends PatternTool {
         // for one case we use a normal if-then-else instruction
         else if (ncases == 1) {
             switch (root.and.or) {
-            case ConstantPat(Object value):
+            case ConstantPat(AConstant value):
                 return gen.If(
                               cf.Equals(selector,
-                                        gen.mkLit(root.and.or.pos, value)),
+                                        gen.Literal(root.and.or.pos, value)),
                               bodyToTree(root.and.or.and),
                               defaultBody(root.and, matchError));
             default:
@@ -717,9 +718,9 @@ public class PatternMatcher extends PatternTool {
                         defaultBody = bodyToTree(node.and);
                         node = node.or;
                         break;
-                    case ConstantPat(Object value):
+                    case ConstantPat(INT(int value)):
                         mappings = insert(
-                                          ((Integer)value).intValue(),
+                                          value,
                                           bodyToTree(node.and),
                                           mappings);
                         node = node.or;
@@ -943,10 +944,10 @@ public class PatternMatcher extends PatternTool {
                                                      gen.mkAsInstanceOf(selector.duplicate(), node.type)),
                                           toTree(node.and)}),
                           toTree(node.or, selector.duplicate()));
-        case ConstantPat(Object value):
+        case ConstantPat(AConstant value):
             return gen.If(
                           cf.Equals(selector.duplicate(),
-                                    gen.mkLit(selector.pos, value)),
+                                    gen.Literal(selector.pos, value)),
                           toTree(node.and),
                           toTree(node.or, selector.duplicate()));
         case VariablePat(Tree tree):

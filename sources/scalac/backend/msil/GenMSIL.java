@@ -18,6 +18,7 @@ import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Debug;
 import scalac.ast.Tree;
+import scalac.atree.AConstant;
 import Tree.*;
 import scalac.symtab.Symbol;
 import scalac.symtab.Scope;
@@ -554,10 +555,12 @@ public final class GenMSIL {
 	    lastStatement = tmpLastStatement;
 	    return check(store(var));
 
-	case Typed(Literal(Object value), Tree tpe):
+        // !!! all Typed nodes are removed by phase ExplicitOuter
+	case Typed(Literal(AConstant value), Tree tpe):
 	    log("Typed.Literal: " + Debug.show(tree));
 	    return items.LiteralItem(type2MSILType(tpe.type), value);
 
+        // !!! all Typed nodes are removed by phase ExplicitOuter
 	case Typed(Tree expr, Tree tpe):
 	    //log("gen.Typed: processing node: " + Debug.show(tree));
 	    return gen(expr, type2MSILType(tpe.type));
@@ -591,7 +594,7 @@ public final class GenMSIL {
 	    //log("gen.Super: generated item: " + retItem);
 	    return retItem;
 
-	case Literal(Object value):
+	case Literal(AConstant value):
 	    //log("Literal: " + Debug.show(tree));
 	    //log("\ttype = " + Debug.show(tree.type));
 	    MSILType t = type2MSILType(tree.type);
@@ -621,7 +624,7 @@ public final class GenMSIL {
 	    assert tags.length == bodies.length;
 	    for (int i = 0; i < tags.length; i++) {
 		load(loc);
-		loadLiteral(MSILType.I4, new Integer(tags[i]));
+		loadI4(tags[i]);
 		code.Emit(OpCodes.Bne_Un, nextCase);
 		load(gen(bodies[i]));
 		if (lastStatement)
@@ -725,7 +728,7 @@ public final class GenMSIL {
 		return items.StackItem(toType);
 	    }
 	    return item;
-	case LiteralItem(MSILType type, Object value):
+	case LiteralItem(MSILType type, AConstant value):
 	    //log("coercing Literal " + type + " -> " + toType);
 	    switch (type) {
 	    case REF(_): return item;
@@ -1379,8 +1382,8 @@ public final class GenMSIL {
 	case StackItem():
 	    return (StackItem) that;
 
-	case LiteralItem(MSILType type, Object value):
-	    return loadLiteral(type, value);
+	case LiteralItem(_, AConstant value):
+	    return loadLiteral(value);
 
 	case SelfItem():
 	    emitThis();
@@ -1504,66 +1507,122 @@ public final class GenMSIL {
 	case I2:
 	case I4:
 	case CHAR:
-	    int i = (obj instanceof Character) ?
+	    return loadI4((obj instanceof Character) ?
 		(int)((Character) obj).charValue() :
-		((Number)obj).intValue();
-// 	    int i = (type == MSILType.CHAR) ?
+		((Number)obj).intValue());
+// 	    return loadI4((type == MSILType.CHAR) ?
 // 		(int)((Character) obj).charValue() :
-// 		((Number)obj).intValue();
-	    switch (i) {
-	    case -1:code.Emit(OpCodes.Ldc_I4_M1); break;
-	    case 0: code.Emit(OpCodes.Ldc_I4_0); break;
-	    case 1: code.Emit(OpCodes.Ldc_I4_1); break;
-	    case 2: code.Emit(OpCodes.Ldc_I4_2); break;
-	    case 3: code.Emit(OpCodes.Ldc_I4_3); break;
-	    case 4: code.Emit(OpCodes.Ldc_I4_4); break;
-	    case 5: code.Emit(OpCodes.Ldc_I4_5); break;
-	    case 6: code.Emit(OpCodes.Ldc_I4_6); break;
-	    case 7: code.Emit(OpCodes.Ldc_I4_7); break;
-	    case 8: code.Emit(OpCodes.Ldc_I4_8); break;
-	    default:
-		if (i >= -128 && i <= 127)
-		    code.Emit(OpCodes.Ldc_I4_S, i);
-		else
-		    code.Emit(OpCodes.Ldc_I4, i);
-	    }
-	    break;
+// 		((Number)obj).intValue());
 	case I8:
-	    code.Emit(OpCodes.Ldc_I8, ((Number)obj).longValue());
-	    break;
+	    return loadI8(((Number)obj).longValue());
 	case R4:
-	    code.Emit(OpCodes.Ldc_R4, ((Number)obj).floatValue());
-	    break;
+	    return loadR4(((Number)obj).floatValue());
 	case R8:
-	    code.Emit(OpCodes.Ldc_R8, ((Number)obj).doubleValue());
-	    break;
+	    return loadR8(((Number)obj).doubleValue());
  	case BOOL:
-	    if (((Boolean)obj).booleanValue())
-		code.Emit(OpCodes.Ldc_I4_1);
-	    else
-		code.Emit(OpCodes.Ldc_I4_0);
-	    break;
+	    return loadBool(((Boolean)obj).booleanValue());
 	case VOID:
-	    code.Emit(OpCodes.Ldsfld, tc.RUNTIME_UNIT_VAL);
-	    break;
+            return loadUnit();
 	case REF(Type refType):
 	    if (obj == null) {
-		code.Emit(OpCodes.Ldnull);
+                return loadNull();
 	    } else if (refType == tc.STRING) {
-		code.Emit(OpCodes.Ldstr, obj.toString());
+		return loadString(obj.toString());
 	    } else {
 		throw new ApplicationError
 		    ("loadLiteral(): unexpected literal type: " + refType +
 		     "; value = " + obj);
 	    }
-	    break;
 	default:
 	    throw new ApplicationError
 		("loadLiteral(): Unknown literal type: " + type);
 	}
-	return items.StackItem(type);
     } // genLiteral()
 
+    Item.StackItem loadLiteral(AConstant constant) {
+        switch (constant) {
+        case UNIT:
+            return loadUnit();
+        case BOOLEAN(boolean value):
+            return loadBool(value);
+        case BYTE(byte value):
+            return loadI4(value);
+        case SHORT(short value):
+            return loadI4(value);
+        case CHAR(char value):
+            return loadI4(value);
+        case INT(int value):
+            return loadI4(value);
+        case LONG(long value):
+            return loadI8(value);
+        case FLOAT(float value):
+            return loadR4(value);
+        case DOUBLE(double value):
+            return loadR8(value);
+        case STRING(String value):
+            return loadString(value);
+        case NULL:
+            return loadNull();
+        default:
+            throw Debug.abort("illegal case", constant);
+        }
+    }
+
+    Item.StackItem loadUnit() {
+        code.Emit(OpCodes.Ldsfld, tc.RUNTIME_UNIT_VAL);
+        return items.StackItem(MSILType.VOID);
+    }
+
+    Item.StackItem loadBool(boolean value) {
+        code.Emit(value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
+        return items.StackItem(MSILType.BOOL);
+    }
+
+    Item.StackItem loadI4(int value) {
+        switch (value) {
+        case -1:code.Emit(OpCodes.Ldc_I4_M1); break;
+        case 0: code.Emit(OpCodes.Ldc_I4_0); break;
+        case 1: code.Emit(OpCodes.Ldc_I4_1); break;
+        case 2: code.Emit(OpCodes.Ldc_I4_2); break;
+        case 3: code.Emit(OpCodes.Ldc_I4_3); break;
+        case 4: code.Emit(OpCodes.Ldc_I4_4); break;
+        case 5: code.Emit(OpCodes.Ldc_I4_5); break;
+        case 6: code.Emit(OpCodes.Ldc_I4_6); break;
+        case 7: code.Emit(OpCodes.Ldc_I4_7); break;
+        case 8: code.Emit(OpCodes.Ldc_I4_8); break;
+        default:
+            if (value >= -128 && value <= 127)
+                code.Emit(OpCodes.Ldc_I4_S, value);
+            else
+                code.Emit(OpCodes.Ldc_I4, value);
+        }
+        return items.StackItem(MSILType.I4);
+    }
+
+    Item.StackItem loadI8(long value) {
+        code.Emit(OpCodes.Ldc_I8, value);
+        return items.StackItem(MSILType.I8);
+    }
+
+    Item.StackItem loadR4(float value) {
+        code.Emit(OpCodes.Ldc_R4, value);
+        return items.StackItem(MSILType.R4);
+    }
+
+    Item.StackItem loadR8(double value) {
+        code.Emit(OpCodes.Ldc_R8, value);
+        return items.StackItem(MSILType.R8);
+    }
+
+    Item.StackItem loadString(String value) {
+        code.Emit(OpCodes.Ldstr, value);
+        return items.StackItem(MSILType.STRING_REF);
+    }
+
+    Item.StackItem loadNull() {
+        code.Emit(OpCodes.Ldnull);
+        return items.StackItem(MSILType.NULL_REF);
+    }
 
     /**
      */
@@ -1969,7 +2028,7 @@ class Item {
     public case VoidItem();
     public case StackItem();
     public case SelfItem();
-    public case LiteralItem(MSILType typ, Object value);
+    public case LiteralItem(MSILType typ, AConstant value);
     public case ArgItem(int slot);
     public case LocalItem(LocalBuilder local);
     public case StaticItem(FieldInfo field);
@@ -1981,7 +2040,7 @@ class Item {
 	case VoidItem(): return "VoidItem: " + type;
 	case StackItem(): return "StackItem: " + type ;
 	case SelfItem(): return "this: " + type;
-	case LiteralItem(_, Object value): return "LiteralItem(" + value + "): " + type;
+	case LiteralItem(_, AConstant value): return "LiteralItem(" + value + "): " + type;
 	case ArgItem( int slot): return "ArgItem(" + slot + "): " + type;
 	case LocalItem( LocalBuilder local): return "LocalItem(" + local + "): " + type;
 	case StaticItem( FieldInfo field): return "StaticItem(" + field + "): " + type;
@@ -2024,7 +2083,7 @@ class ItemFactory {
 	item.type = MSILType.REF(t);
 	return item;
     }
-    public Item.LiteralItem LiteralItem(MSILType type, Object value) {
+    public Item.LiteralItem LiteralItem(MSILType type, AConstant value) {
 	Item.LiteralItem item = Item.LiteralItem(type, value);
 	item.type = type;
 	return item;

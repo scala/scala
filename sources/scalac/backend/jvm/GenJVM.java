@@ -14,6 +14,7 @@ import scalac.*;
 import scalac.backend.*;
 import scalac.util.*;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 import scalac.symtab.classfile.ClassfileConstants;
 import scalac.symtab.classfile.Pickle;
@@ -530,37 +531,52 @@ class GenJVM {
             generatedType = JAVA_LANG_OBJECT_T;
             break;
 
-        case Literal(Object value):
-            if (value instanceof Integer) {
-                generatedType = JType.INT;
-                ctx.code.emitPUSH((Integer)value);
-            } else if (value instanceof Short) {
-                generatedType = JType.SHORT;
-                ctx.code.emitPUSH((Short)value);
-            } else if (value instanceof Byte) {
-                generatedType = JType.BYTE;
-                ctx.code.emitPUSH((Byte)value);
-            } else if (value instanceof Long) {
-                generatedType = JType.LONG;
-                ctx.code.emitPUSH((Long)value);
-            } else if (value instanceof Float) {
-                generatedType = JType.FLOAT;
-                ctx.code.emitPUSH((Float)value);
-            } else if (value instanceof Double) {
-                generatedType = JType.DOUBLE;
-                ctx.code.emitPUSH((Double)value);
-            } else if (value instanceof Character) {
-                generatedType = JType.CHAR;
-                ctx.code.emitPUSH((Character)value);
-            } else if (value instanceof String) {
-                generatedType = JAVA_LANG_STRING_T;
-                ctx.code.emitPUSH((String)value);
-            } else if (value instanceof Boolean) {
-                generatedType = JType.BOOLEAN;
-                ctx.code.emitPUSH((Boolean)value);
-            } else
-                throw global.fail("unknown literal " + value);
+        case Literal(UNIT):
+            maybeGenLoadUnit(ctx, expectedType);
+            generatedType = expectedType;
             break;
+        case Literal(BOOLEAN(boolean value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.BOOLEAN;
+            break;
+        case Literal(BYTE(byte value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.BYTE;
+            break;
+        case Literal(SHORT(short value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.SHORT;
+            break;
+        case Literal(CHAR(char value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.CHAR;
+            break;
+        case Literal(INT(int value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.INT;
+            break;
+        case Literal(LONG(long value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.LONG;
+            break;
+        case Literal(FLOAT(float value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.FLOAT;
+            break;
+        case Literal(DOUBLE(double value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JType.DOUBLE;
+            break;
+        case Literal(STRING(String value)):
+            ctx.code.emitPUSH(value);
+            generatedType = JAVA_LANG_STRING_T;
+            break;
+        case Literal(NULL):
+            if (expectedType != JType.VOID) ctx.code.emitACONST_NULL();
+            generatedType = expectedType;
+            break;
+        case Literal(AConstant value):
+            throw Debug.abort("unknown literal", value);
 
         case Empty:
         case AbsTypeDef(_, _, _, _):
@@ -925,16 +941,27 @@ class GenJVM {
             boolean isIntZero = false;
             if (maxTypeIdx <= intTypeIdx) {
                 switch (args[i]) {
-                case Literal(Object val):
+                case Literal(AConstant constant):
                     int intVal;
-                    if (val instanceof Number)
-                        intVal = ((Number)val).intValue();
-                    else if (val instanceof Character)
-                        intVal = ((Character)val).charValue();
-                    else if (val instanceof Boolean)
-                        intVal = ((Boolean)val).booleanValue() ? 1 : 0;
-                    else
-                        throw Debug.abort("unknown literal", val);
+                    switch (constant) {
+                    case BOOLEAN(boolean value):
+                        intVal = value ? 1 : 0;
+                        break;
+                    case BYTE(byte value):
+                        intVal = value;
+                        break;
+                    case SHORT(short value):
+                        intVal = value;
+                        break;
+                    case CHAR(char value):
+                        intVal = value;
+                        break;
+                    case INT(int value):
+                        intVal = value;
+                        break;
+                    default:
+                        throw Debug.abort("unknown literal", constant);
+                    }
                     if (intVal == 0) {
                         isIntZero = true;
                         if (i == 0) prim = prim.swap();
@@ -1056,7 +1083,7 @@ class GenJVM {
 
         String className;
         switch (classNameLit) {
-        case Literal(Object name): className = (String)name; break;
+        case Literal(STRING(String name)): className = name; break;
         default: throw global.fail("invalid argument for oarray " + classNameLit);
         }
 

@@ -26,6 +26,7 @@ import scalac.ast.Tree.AliasTypeDef;
 import scalac.ast.Tree.ValDef;
 import scalac.ast.TreeList;
 import scalac.ast.GenTransformer;
+import scalac.atree.AConstant;
 import scalac.symtab.Definitions;
 import scalac.symtab.Kinds;
 import scalac.symtab.Type;
@@ -221,6 +222,9 @@ public class Erasure extends GenTransformer implements Modifiers {
 	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
             return gen.Ident(tree.pos, symbol);
 
+        case Literal(AConstant.ZERO):
+	    return gen.mkNullLit(tree.pos);
+
         case Block(_):
 	case If(_, _, _):
         case Switch(_, _, _, _):
@@ -275,9 +279,6 @@ public class Erasure extends GenTransformer implements Modifiers {
         case Return(_):
             Tree value = transform(gen.mkDefaultValue(tree.pos, pt), pt);
             return gen.mkBlock(new Tree[] {transform(tree), value});
-
-	case Typed(Tree expr, _): // !!!
-	    return transform(expr, pt);
 
         case LabelDef(_, _, _):
 	case Assign(_, _):

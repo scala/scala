@@ -213,7 +213,7 @@ public class RightTracerInScala extends TracerInScala  {
             tmapTag.put( targetL, I );
             tmapBody.put( I, callFun( new Tree[] {
                 cf.SeqTrace_tail( _iter() ),
-                gen.mkIntLit( cf.pos, targetR ) }));
+                gen.mkIntLit( cf.pos, targetR.intValue() ) }));
         }
         i = 0;
         int[]  tags    = new int[ n ];
@@ -234,7 +234,7 @@ public class RightTracerInScala extends TracerInScala  {
     Tree currentMatches( Label label ) {
         switch( label ) {
         case Pair( Integer target, Label theLab ):
-            return cf.Equals( gen.mkIntLit( cf.pos, target ),
+            return cf.Equals( gen.mkIntLit( cf.pos, target.intValue() ),
                               current() );
         }
         throw new ApplicationError("expected Pair label");
@@ -431,7 +431,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
             stms[ j++ ] = algMatchTree ;
 
         stms[ j ] = callFun( new Tree[] { cf.SeqTrace_tail( _iter() ),
-                                          gen.mkIntLit( cf.pos, ntarget ) } );
+                                          gen.mkIntLit( cf.pos, ntarget.intValue() ) } );
 
         return gen.mkBlock( pos, stms );
     }

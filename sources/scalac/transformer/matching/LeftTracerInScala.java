@@ -134,7 +134,7 @@ public class LeftTracerInScala extends TracerInScala {
                                      gen.Ident( cf.pos, accumSym ));
 
         //return callFun( new Tree[] { newAcc , _iter(), gen.mkIntLit( cf.pos, target )} );
-        return callFun( new Tree[] { gen.mkIntLit( cf.pos, target ), newAcc } );
+        return callFun( new Tree[] { gen.mkIntLit( cf.pos, target.intValue() ), newAcc } );
     }
 
 

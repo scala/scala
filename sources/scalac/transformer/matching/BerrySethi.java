@@ -379,7 +379,7 @@ class BerrySethi {
 
                   return ;
 
-            case Literal( Object val ):
+            case Literal( _ ):
                   Label label = new Label.SimpleLabel( (Literal) pat );
                   seenLabel( pat, label ) ;
 
@@ -624,7 +624,7 @@ class BerrySethi {
                  it.hasNext(); ) {
                   Tree t = (Tree) it.next();
                   switch(t) {
-                  case Literal( Object value ):
+                  case Literal( _ ):
                         System.out.print( "(" + t.toString() + " -> ");
                         String s2 = ((Integer) posMap.get(t)).toString();
                         System.out.print( s2 +") ");

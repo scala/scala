@@ -16,6 +16,9 @@ public class ATypeKind {
     //########################################################################
     // Public Cases
 
+    /** The unit value */
+    public case UNIT;
+
     /** A boolean value */
     public case BOOL;
 
@@ -55,12 +58,19 @@ public class ATypeKind {
     /** A string reference */
     public case STR;
 
+    /** The null reference */
+    public case NULL;
+
+    /** The zero value */
+    public case ZERO;
+
     //########################################################################
     // Public Methods
 
     /** Returns a string representation of this type kind. */
     public String toString() {
         switch (this) {
+        case UNIT: return "UNIT";
         case BOOL: return "BOOL";
         case U1  : return "U1";
         case U2  : return "U2";
@@ -74,6 +84,8 @@ public class ATypeKind {
         case R8  : return "R8";
         case REF : return "REF";
         case STR : return "STR";
+        case NULL: return "NULL";
+        case ZERO: return "ZERO";
         default  : throw Debug.abort("unknown case", this);
         }
     }

@@ -20,6 +20,7 @@ import ch.epfl.lamp.util.Pair;
 import scalac.*;
 import scalac.util.*;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.ast.printer.*;
 import scalac.symtab.*;
 import scalac.symtab.classfile.*;
@@ -41,7 +42,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
         this.definitions = global.definitions;
 	this.descr = descr;
 	this.infer = new Infer(this);
-	this.constfold = new ConstantFolder(this);
+	this.constfold = new ConstantFolder(global);
 	this.desugarize = new DeSugarize(this, global);
     }
 
@@ -1209,13 +1210,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      */
     Tree mkStable(Tree tree, Type pre, int mode, Type pt) {
 	switch (tree.type) {
-	case ConstantType(_, Object value):
-	    return make.Literal(tree.pos, value).setType(tree.type);
+	case ConstantType(_, AConstant value):
+	    return gen.Literal(tree.pos, value);
 	case PolyType(Symbol[] tparams, Type restp):
 	    if (tparams.length == 0) {
 		switch (restp) {
-		case ConstantType(_, Object value):
-		    return make.Literal(tree.pos, value).setType(tree.type);
+		case ConstantType(_, AConstant value):
+		    return gen.Literal(tree.pos, value);
 		}
 	    }
 	}
@@ -1386,25 +1387,24 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	}
 	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt))) {
 	    switch (tree) {
-	    case Literal(Object value):
+	    case Literal(AConstant constant):
 		int n = Integer.MAX_VALUE;
-		if (value instanceof Integer)
-		    n = ((Integer) value).intValue();
-		else if (value instanceof Character)
-		    n = ((Character) value).charValue();
-		Object value1 = null;
+                switch (constant) {
+                case INT(int value): n = value; break;
+                case CHAR(char value): n = value; break;
+                }
+		AConstant value1 = null;
 		if (pt.symbol() == definitions.BYTE_CLASS &&
 		    -128 <= n && n <= 127)
-		    value1 = new Byte((byte) n);
+		    value1 = AConstant.BYTE((byte) n);
 		else if (pt.symbol() == definitions.SHORT_CLASS &&
 			 -32768 <= n && n <= 32767)
-		    value1 = new Short((short) n);
+		    value1 = AConstant.SHORT((short) n);
 		else if (pt.symbol() == definitions.CHAR_CLASS &&
 			 0 <= n && n <= 65535)
-		    value1 = new Character((char) n);
+		    value1 = AConstant.CHAR((char) n);
 		if (value1 != null)
-		    return make.Literal(tree.pos, value1)
-			.setType(Type.ConstantType(pt, value1));
+		    return gen.Literal(tree.pos, value1);
 		break;
 	    }
 	    if ((mode & EXPRmode) != 0) {
@@ -2286,17 +2286,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			// constant fold asInstanceOf calls.
 			switch (fn1) {
 			case Select(Tree qual, Name name):
-			    if (fn1.symbol() == definitions.ANY_AS &&
-				qual.type instanceof Type.ConstantType) {
-				Type restp1 = constfold.foldAsInstanceOf(
-				    tree.pos,
-				    (Type.ConstantType)qual.type,
-				    argtypes[0]);
-				switch (restp1) {
-				case ConstantType(_, Object value):
-				    return make.Literal(tree.pos, value)
-					.setType(restp1);
-				}
+			    if (fn1.symbol() == definitions.ANY_AS) {
+                                switch (qual.type()) {
+                                case ConstantType(_, AConstant value):
+                                    value = constfold.cast(value, argtypes[0]);
+                                    if (value != null)
+                                        return gen.Literal(tree.pos, value);
+                                }
 			    }
 			}
 			return constfold.tryToFold(
@@ -2592,7 +2588,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    return transformIdent(tree, name);
 		}
 
-	    case Literal(Object value):
+	    case Literal(AConstant value):
 		return tree.setType(Type.constantType(value));
 
 	    case LabelDef(Name name, Ident[] params, Tree body):

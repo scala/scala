@@ -308,18 +308,7 @@ public class TreeChecker {
             if (symbol == definitions.ZERO) return true;
             return location(tree);
 
-        case Literal(Object value):
-            assert value != null: show(tree);
-            if (value instanceof Boolean  ) return true;
-            if (value instanceof Byte     ) return true;
-            if (value instanceof Short    ) return true;
-            if (value instanceof Character) return true;
-            if (value instanceof Integer  ) return true;
-            if (value instanceof Long     ) return true;
-            if (value instanceof Float    ) return true;
-            if (value instanceof Double   ) return true;
-            if (value instanceof String   ) return true;
-            assert false: show(tree) + format("value.class", value.getClass());
+        case Literal(_):
             return true;
 
         default:

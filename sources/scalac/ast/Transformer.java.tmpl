@@ -265,8 +265,8 @@ public class GenTransformer {
             Symbol symbol = getSymbolFor(tree);
             return gen.Ident(tree.pos, symbol);
 
-        case Literal(Object value):
-            return gen.mkLit(tree.pos, value);
+        case Literal(AConstant value):
+            return gen.Literal(tree.pos, value);
 
         case TypeTerm():
             return gen.mkType(tree.pos, transform(tree.type()));

@@ -10,6 +10,7 @@ package scalac.transformer.matching;
 
 import scalac.*;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 
 import PatternNode.*;
@@ -86,9 +87,9 @@ public class AlgebraicMatcher extends PatternMatcher {
                         return q.type.isSubType(p.type);
                 }
                 return false;
-           case ConstantPat( Object pval ):
+           case ConstantPat( AConstant pval ):
                 switch (q) {
-                    case ConstantPat( Object qval ):
+                    case ConstantPat( AConstant qval ):
                         return pval.equals(qval);
                 }
                 return false;

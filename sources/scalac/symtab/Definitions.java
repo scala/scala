@@ -11,12 +11,19 @@ package scalac.symtab;
 import ch.epfl.lamp.util.Position;
 
 import scalac.Global;
+import scalac.atree.ATreeTyper;
 import scalac.symtab.classfile.PackageParser;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
 
 public class Definitions {
+
+    //########################################################################
+    // Public Fields - Root module
+
+    /** The attributed tree typer */
+    public final ATreeTyper atyper;
 
     //########################################################################
     // Public Fields & Methods - Root module
@@ -461,6 +468,8 @@ public class Definitions {
         global.definitions = this;
         // force initialization of class Type
         Type.localThisType.symbol();
+        // create attributed tree typer
+        atyper = new ATreeTyper(global, this);
 
         // the root module
         ROOT = TermSymbol.newJavaPackageModule(
@@ -520,7 +529,6 @@ public class Definitions {
         initAlias(ANYREF_CLASS, JAVA_OBJECT_TYPE());
         initClass(ALLREF_CLASS, new Type[]{ANYREF_TYPE()});
         initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
-        initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
         // create type symbols
         UNIT_TYPE    = newTypeSymbol(Names.Unit   , UNIT_CLASS.type   ());
@@ -534,6 +542,9 @@ public class Definitions {
         DOUBLE_TYPE  = newTypeSymbol(Names.Double , DOUBLE_CLASS.type ());
         ARRAY_TYPE   = newTypeSymbol(Names.Array  ,
             Type.appliedType(ARRAY_CLASS.type(), new Type[]{ANYREF_TYPE()}));
+
+        // initialize generated classes and aliases
+        initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
         // add members to scala.Any
 	ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);

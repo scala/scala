@@ -13,6 +13,7 @@ import java.io.StringWriter;
 import ch.epfl.lamp.util.CodePrinter;
 
 import scalac.Global;
+import scalac.atree.AConstant;
 import scalac.symtab.Type.Constraint;
 import scalac.symtab.Scope.SymbolIterator;
 import scalac.util.Name;
@@ -526,7 +527,7 @@ public class SymbolTablePrinter {
             return this;
         case SingleType(Type pre, Symbol sym):
             return printPrefix(pre).printSymbolName(sym);
-	case ConstantType(Type base, Object value):
+	case ConstantType(Type base, AConstant value):
 	    return printType(base)
 		.print("(").print(value.toString()).print(")");
         case CompoundType(Type[] parts, Scope members):

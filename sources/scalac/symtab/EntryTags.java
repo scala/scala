@@ -26,13 +26,25 @@ public interface EntryTags {
  *                  | 11 NOtpe len_Nat
  *                  | 12 THIStpe len_Nat sym_Ref
  *                  | 13 SINGLEtpe len_Nat type_Ref sym_Ref
- *                  | 14 CONSTANTtpe len_Nat type_Ref value_Ref
+ *                  | 14 CONSTANTtpe len_Nat type_Ref constant_Ref
  *                  | 15 TYPEREFtpe len_Nat type_Ref sym_Ref {targ_Ref}
  *                  | 16 COMPOUNDtpe len_Nat classsym_Ref {tpe_Ref}
  *                  | 17 METHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 18 POLYTtpe len_Nat tpe_Ref {sym_Ref}
  *                  | 19 OVERLOADEDtpe len_Nat {sym_Ref} {tpe_Ref}
  *                  | 22 FLAGGEDtpe len_Nat flags_Nat tpe_Ref
+ *                  | 24 LITERALunit len_Nat
+ *                  | 25 LITERALboolean len_Nat value_Byte
+ *                  | 26 LITERALbyte len_Nat value_Long
+ *                  | 27 LITERALshort len_Nat value_Long
+ *                  | 28 LITERALchar len_Nat value_Long
+ *                  | 29 LITERALint len_Nat value_Long
+ *                  | 30 LITERALlong len_Nat value_Long
+ *                  | 31 LITERALfloat len_Nat value_Long
+ *                  | 32 LITERALdouble len_Nat value_Long
+ *                  | 33 LITERALstring len_Nat name_Ref
+ *                  | 34 LITERALnull len_Nat
+ *                  | 35 LITERALzero len_Nat
  *   SymbolInfo     = name_Ref owner_Ref flags_Nat info_Ref
  *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
  *   NumInfo        = <len_Nat-byte signed number in big endian format>
@@ -43,7 +55,6 @@ public interface EntryTags {
 
     int TERMname = 1,
 	TYPEname = 2,
-	NUMBER = 3,
 	NONEsym = 4,
 	TYPEsym = 5,
 	ALIASsym = 6,
@@ -63,7 +74,19 @@ public interface EntryTags {
 	UNBOXEDtpe = 20,
         UNBOXEDARRAYtpe = 21,
 	FLAGGEDtpe = 22,
-	ERRORtpe = 23;
+	ERRORtpe = 23,
+        LITERALunit = 24,
+        LITERALboolean = 25,
+        LITERALbyte = 26,
+        LITERALshort = 27,
+        LITERALchar = 28,
+        LITERALint = 29,
+        LITERALlong = 30,
+        LITERALfloat = 31,
+        LITERALdouble = 32,
+        LITERALstring = 33,
+        LITERALnull = 34,
+        LITERALzero = 35;
 
     int firstSymTag = NONEsym, lastSymTag = VALsym;
     int firstTypeTag = NOtpe, lastTypeTag = FLAGGEDtpe;

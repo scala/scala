@@ -32,7 +32,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
   private val fjbgContext = new FJBGContext();
 
-  private val typer = new ATreeTyper(global);
+  private val typer = defs.atyper;
 
   // ##################################################
   // Private fields - Data

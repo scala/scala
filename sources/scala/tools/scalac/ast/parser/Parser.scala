@@ -37,6 +37,10 @@ class Parser(unit: Unit) {
   */
   val make: TreeFactory = unit.global.make;
 
+  /** the tree generator
+  */
+  val gen: TreeGen = unit.global.treeGen;
+
   /** pattern checker and normalizer
   */
   val pN = new PatternNormalizer(unit);
@@ -571,23 +575,23 @@ class Parser(unit: Unit) {
   def literal(isPattern: boolean): Tree = {
     def litToTree() = s.token match {
       case CHARLIT =>
-        make.Literal(s.pos, new Character(s.intVal.asInstanceOf[char]))
+        gen.mkCharLit(s.pos, s.intVal.asInstanceOf[char])
       case INTLIT =>
-        make.Literal(s.pos, new Integer(s.intVal.asInstanceOf[int]))
+        gen.mkIntLit(s.pos, s.intVal.asInstanceOf[int])
       case LONGLIT =>
-        make.Literal(s.pos, new Long(s.intVal))
+        gen.mkLongLit(s.pos, s.intVal)
       case FLOATLIT =>
-        make.Literal(s.pos, new Float(s.floatVal.asInstanceOf[float]))
+        gen.mkFloatLit(s.pos, s.floatVal.asInstanceOf[float])
       case DOUBLELIT =>
-        make.Literal(s.pos, new Double(s.floatVal))
+        gen.mkDoubleLit(s.pos, s.floatVal)
       case STRINGLIT | SYMBOLLIT =>
-        make.Literal(s.pos, s.name.toString())
+        gen.mkStringLit(s.pos, s.name.toString())
       case TRUE =>
-        make.Literal(s.pos, java.lang.Boolean.TRUE)
+        gen.mkBooleanLit(s.pos, true)
       case FALSE =>
-        make.Literal(s.pos, java.lang.Boolean.FALSE)
+        gen.mkBooleanLit(s.pos, false)
       case NULL =>
-        make.Ident(s.pos, Names.null_)
+        gen.mkNullLit(s.pos)
       case _ =>
         syntaxError("illegal literal", true)
     }
@@ -1083,10 +1087,10 @@ class Parser(unit: Unit) {
             NewArray.CaseDef(
               make.CaseDef(
                 rhs.pos, pat.duplicate(),
-		Tree.Empty, make.Literal(s.pos, java.lang.Boolean.TRUE)),
+		Tree.Empty, gen.mkBooleanLit(s.pos, true)),
               make.CaseDef(
                 rhs.pos, make.Ident(rhs.pos, Names.PATTERN_WILDCARD),
-		Tree.Empty, make.Literal(s.pos, java.lang.Boolean.FALSE))))));
+		Tree.Empty, gen.mkBooleanLit(s.pos, false))))));
     make.PatDef(pos, 0, pat, rhs)
   }
 

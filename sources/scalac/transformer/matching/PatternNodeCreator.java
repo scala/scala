@@ -4,6 +4,7 @@ import ch.epfl.lamp.util.Position;
 
 import scalac.*;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.util.*;
 import scalac.symtab.*;
 import PatternNode.*;
@@ -56,7 +57,7 @@ public class PatternNodeCreator extends PatternTool {
 		return node;
     }
 
-    public static ConstantPat ConstantPat(int pos, Type type, Object value) {
+    public static ConstantPat ConstantPat(int pos, Type type, AConstant value) {
 		ConstantPat node = new ConstantPat( value );
 		node.pos = pos;
 		node.type = type;

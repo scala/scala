@@ -19,6 +19,9 @@ import scalac._;
 import scalac.util._;
 import scalac.ast._;
 import scalac.ast.printer._;
+import scalac.atree.AConstant;
+import scalac.atree.AConstant$CHAR;
+import scalac.atree.AConstant$INT;
 import scalac.symtab._;
 import scalac.symtab.classfile._;
 import Tree._;
@@ -39,7 +42,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   val definitions = global.definitions;
   val infer = new scala.tools.scalac.typechecker.Infer(this);
   val desugarize = new DeSugarize(make, copy, gen, infer, global);
-  val constfold = new ConstantFolder(this);
+  val constfold = new ConstantFolder(global);
 
   var unit: Unit = _;
 
@@ -1400,22 +1403,22 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
     if (!(owntype.isInstanceOf[Type$PolyType] || owntype.isSubType(pt))) {
       tree match {
-	case Tree$Literal(value) =>
-	  var n: int = Integer.MAX_VALUE;
-	  if (value.isInstanceOf[Integer])
-	    n = value.asInstanceOf[Integer].intValue();
-	  else if (value.isInstanceOf[Character])
-	    n = value.asInstanceOf[Character].charValue();
-	  val value1: Object =
+	case Tree$Literal(constant) =>
+	  var n: int = constant match {
+            case AConstant$INT(value) => value
+            case AConstant$CHAR(value) => value
+            case _ => Integer.MAX_VALUE
+          }
+	  val value1: AConstant =
 	    if (pt.symbol() == definitions.BYTE_CLASS && -128 <= n && n <= 127)
-	      new Byte(n.asInstanceOf[byte])
+	      AConstant.BYTE(n.asInstanceOf[byte])
 	    else if (pt.symbol() == definitions.SHORT_CLASS && -32768 <= n && n <= 32767)
-	      new Short(n.asInstanceOf[short])
+	      AConstant.SHORT(n.asInstanceOf[short])
 	    else if (pt.symbol() == definitions.CHAR_CLASS && 0 <= n && n <= 65535)
-	      new Character(n.asInstanceOf[char])
+	      AConstant.CHAR(n.asInstanceOf[char])
 	    else null;
 	  if (value1 != null)
-	    return make.Literal(tree.pos, value1).setType(new Type$ConstantType(pt, value1));
+	    return gen.Literal(tree.pos, value1);
 	case _ =>
       }
       if ((mode & EXPRmode) != 0) {

@@ -1,5 +1,5 @@
 constrparams.scala:4: type mismatch;
- found   : scala.AllRef
+ found   : scala.AllRef(null)
  required: x.t
   private val z: x.t = null; //error
                        ^

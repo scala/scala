@@ -471,12 +471,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	printType(tree);
 
       case Tree$Literal(obj) =>
-	val str = obj match {
-	  case s: String    => "\"" + s + "\"";
-	  case c: Character => "\'" + c + "\'";
-	  case _            => String.valueOf(obj);
-	}
-	print(Literal(str));
+	print(Literal(obj.toString()));
 	printType(tree);
 
       case Tree$TypeTerm() =>

@@ -13,6 +13,7 @@ import java.util.HashMap;
 
 import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
+import scalac.atree.AConstant;
 import scalac.util.*;
 import scalac.Global;
 
@@ -38,14 +39,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     /** Type for a numeric or string constant.
      */
-    public case ConstantType(Type base, Object value) {
-        if (base.symbol() == Global.instance.definitions.BYTE_CLASS)
-            assert value instanceof Byte;
-        if (base.symbol() == Global.instance.definitions.CHAR_CLASS)
-            assert value instanceof Character;
-        if (base.symbol() == Global.instance.definitions.SHORT_CLASS)
-            assert value instanceof Short;
-    }
+    public case ConstantType(Type base, AConstant value);
 
     /** pre.sym[args]
      *  sym represents a type
@@ -168,26 +162,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
-    public static ConstantType constantType(Object value) {
-        return new ConstantType(value2type(value), value);
-    }
-
-    private static Type value2type(Object value) {
-	if (value instanceof Character)
-	    return Global.instance.definitions.CHAR_CLASS.typeConstructor();
-	else if (value instanceof Integer)
-	    return Global.instance.definitions.INT_CLASS.typeConstructor();
-	else if (value instanceof Long)
-	    return Global.instance.definitions.LONG_CLASS.typeConstructor();
-	else if (value instanceof Float)
-	    return Global.instance.definitions.FLOAT_CLASS.typeConstructor();
-	else if (value instanceof Double)
-	    return Global.instance.definitions.DOUBLE_CLASS.typeConstructor();
-	else if (value instanceof String)
-	    return Global.instance.definitions.JAVA_STRING_CLASS.typeConstructor();
-	else if (value instanceof Boolean)
-	    return Global.instance.definitions.BOOLEAN_CLASS.typeConstructor();
-	else throw new ApplicationError();
+    public static Type constantType(AConstant value) {
+        return Global.instance.definitions.atyper.type(value);
     }
 
     public static Type singleTypeMethod(Type pre, Symbol sym) {
@@ -690,62 +666,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return this;
     }
 
-    /** Numeric values
-     */
-    public int intValue() {
-        switch (this) {
-        case ConstantType(_, Object value):
-            return toNumber(value).intValue();
-        default:
-            throw new ApplicationError();
-        }
-    }
-    public long longValue() {
-        switch (this) {
-        case ConstantType(_, Object value):
-            return toNumber(value).longValue();
-        default:
-            throw new ApplicationError();
-        }
-    }
-    public float floatValue() {
-        switch (this) {
-        case ConstantType(_, Object value):
-            return toNumber(value).floatValue();
-        default:
-            throw new ApplicationError();
-        }
-    }
-    public double doubleValue() {
-        switch (this) {
-        case ConstantType(_, Object value):
-            return toNumber(value).doubleValue();
-        default:
-            throw new ApplicationError();
-        }
-    }
-    public boolean booleanValue() {
-        switch (this) {
-        case ConstantType(_, Object value):
-            return ((Boolean)value).booleanValue();
-        default:
-            throw new ApplicationError();
-        }
-    }
-    public String stringValue() {
-        switch (this) {
-        case ConstantType(_, Object value):
-            return value.toString();
-        default:
-            throw new ApplicationError();
-        }
-    }
-    private static Number toNumber(Object value) {
-        return (value instanceof Character)
-            ? new Integer(((Character)value).charValue())
-            : (Number)value;
-    }
-
 // Tests --------------------------------------------------------------------
 
     /** Is this type a this type or singleton type?
@@ -1098,7 +1018,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 Type pre1 = apply(pre);
                 if (pre1 == pre) return tp;
                 else return singleType(pre1, sym);
-            case ConstantType(Type base, Object value):
+            case ConstantType(Type base, AConstant value):
                 Type base1 = apply(base);
                 if (base1 == base) return tp;
                 else return new ConstantType(base1, value);
@@ -1961,12 +1881,17 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         case ThisType(_):
         case SingleType(_, _):
-        case ConstantType(_, _):
             switch (this) {
             case ThisType(_):
             case SingleType(_, _):
-            case ConstantType(_, _):
                 return this.isSameAs(that);
+            }
+            break;
+
+        case ConstantType(_, _):
+            switch (this) {
+            case ConstantType(Type base, _):
+                return this.isSameAs(that) || base.isSubType(that);
             }
             break;
 
@@ -2062,7 +1987,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case SingleType(_, _):
             if (this.singleDeref().isSubType(that)) return true;
             break;
-        case ConstantType(_, Object value):
+        case ConstantType(_, _):
             if (this.singleDeref().isSubType(that)) return true;
             break;
         case TypeVar(Type origin, Constraint constr):
@@ -2251,9 +2176,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             }
             break;
 
-        case ConstantType(Type base, Object value):
+        case ConstantType(Type base, AConstant value):
             switch (that) {
-            case ConstantType(Type base1, Object value1):
+            case ConstantType(Type base1, AConstant value1):
                 return base.isSameAs(base1) && value.equals(value1);
             }
             break;
@@ -3278,7 +3203,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return SINGLEtpe
                 ^ (pre.hashCode() * 41)
                 ^ (sym.hashCode() * (41*41));
-        case ConstantType(Type base, Object value):
+        case ConstantType(Type base, AConstant value):
             return CONSTANTtpe
                 ^ (base.hashCode() * 41)
                 ^ (value.hashCode() * (41*41));
@@ -3350,9 +3275,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     return pre.equals(pre1) && sym == sym1;
                 default: return false;
                 }
-            case ConstantType(Type base, Object value):
+            case ConstantType(Type base, AConstant value):
                 switch (that) {
-                case ConstantType(Type base1, Object value1):
+                case ConstantType(Type base1, AConstant value1):
                     return base.equals(base1) && value.equals(value1);
                 default: return false;
                 }

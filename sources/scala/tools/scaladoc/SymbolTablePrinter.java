@@ -14,6 +14,7 @@ import ch.epfl.lamp.util.CodePrinter;
 import ch.epfl.lamp.util.HTMLPrinter;
 
 import scalac.Global;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 import scalac.symtab.Scope.SymbolIterator;
 import scalac.symtab.Type.Constraint;
@@ -401,7 +402,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
             printUsedSymbolName(sym);
             return this;
 
-	case ConstantType(Type base, Object value):
+	case ConstantType(Type base, AConstant value):
 	    printType(base);
 // 	    print("(");
 // 	    print(value.toString());

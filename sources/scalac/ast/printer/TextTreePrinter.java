@@ -10,6 +10,7 @@
 package scalac.ast.printer;
 
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 import scalac.util.Debug;
 import scalac.Global;
@@ -558,15 +559,8 @@ public class TextTreePrinter implements TreePrinter {
             printType(tree);
             break;
 
-        case Literal(Object obj):
-            String str;
-            if (obj instanceof String)
-                str = "\"" + obj + "\"";
-            else if (obj instanceof Character)
-                str = "\'" + obj + "\'";
-            else
-                str = String.valueOf(obj);
-            print(Text.Literal(str));
+        case Literal(AConstant value):
+            print(Text.Literal(value.toString()));
             printType(tree);
             break;
 

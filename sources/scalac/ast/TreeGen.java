@@ -10,6 +10,7 @@ package scalac.ast;
 
 import scalac.Global;
 import scalac.ast.Tree.*;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 import scalac.typechecker.Infer;
 import scalac.util.*;
@@ -94,154 +95,64 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
     // Public Methods - Building constants
 
-    /** Builds a literal. */
-    public Tree mkLit(int pos, Object value) {
-        if (value instanceof Boolean) return mkBooleanLit(pos, (Boolean)value);
-        if (value instanceof Byte) return mkByteLit(pos, (Byte)value);
-        if (value instanceof Short) return mkShortLit(pos, (Short)value);
-        if (value instanceof Character) return mkCharLit(pos,(Character)value);
-        if (value instanceof Integer) return mkIntLit(pos, (Integer)value);
-        if (value instanceof Long) return mkLongLit(pos, (Long)value);
-        if (value instanceof Float) return mkFloatLit(pos, (Float)value);
-        if (value instanceof Double) return mkDoubleLit(pos, (Double)value);
-        if (value instanceof String) return mkStringLit(pos, (String)value);
-        throw Debug.abort("unknown literal class " + value.getClass(), value);
-    }
-
     /** Builds a unit literal. */
     public Tree mkUnitLit(int pos) {
-        return Block(pos, Tree.EMPTY_ARRAY);
+        return Literal(pos, AConstant.UNIT);
     }
 
     /** Builds a boolean literal. */
     public Tree mkBooleanLit(int pos, boolean value) {
-        return mkBooleanLit(pos, value ? Boolean.TRUE : Boolean.FALSE);
-    }
-
-    /** Builds a boolean literal. */
-    public Tree mkBooleanLit(int pos, Boolean value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.BOOLEAN_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.BOOLEAN(value));
     }
 
     /** Builds a byte literal. */
     public Tree mkByteLit(int pos, byte value) {
-        return mkByteLit(pos, new Byte(value));
-    }
-
-    /** Builds a byte literal. */
-    public Tree mkByteLit(int pos, Byte value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.BYTE_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.BYTE(value));
     }
 
     /** Builds a short literal. */
     public Tree mkShortLit(int pos, short value) {
-        return mkShortLit(pos, new Short(value));
-    }
-
-    /** Builds a short literal. */
-    public Tree mkShortLit(int pos, Short value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.SHORT_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.SHORT(value));
     }
 
     /** Builds a character literal. */
     public Tree mkCharLit(int pos, char value) {
-        return mkCharLit(pos, new Character(value));
-    }
-
-    /** Builds a character literal. */
-    public Tree mkCharLit(int pos, Character value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.CHAR_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.CHAR(value));
     }
 
     /** Builds an integer literal */
     public Tree mkIntLit(int pos, int value) {
-        return mkIntLit(pos, new Integer(value));
-    }
-
-    /** Builds an integer literal */
-    public Tree mkIntLit(int pos, Integer value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.INT_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.INT(value));
     }
 
     /** Builds a long literal. */
     public Tree mkLongLit(int pos, long value) {
-        return mkLongLit(pos, new Long(value));
-    }
-
-    /** Builds a long literal. */
-    public Tree mkLongLit(int pos, Long value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.LONG_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.LONG(value));
     }
 
     /** Builds a float literal. */
     public Tree mkFloatLit(int pos, float value) {
-        return mkFloatLit(pos, new Float(value));
-    }
-
-    /** Builds a float literal. */
-    public Tree mkFloatLit(int pos, Float value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.FLOAT_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.FLOAT(value));
     }
 
     /** Builds a double literal. */
     public Tree mkDoubleLit(int pos, double value) {
-        return mkDoubleLit(pos, new Double(value));
-    }
-
-    /** Builds a double literal. */
-    public Tree mkDoubleLit(int pos, Double value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.DOUBLE_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.DOUBLE(value));
     }
 
     /** Builds a string literal. */
     public Tree mkStringLit(int pos, String value) {
-        Tree tree = make.Literal(pos, value);
-        global.nextPhase();
-        tree.setType(definitions.STRING_TYPE());
-        global.prevPhase();
-        return tree;
+        return Literal(pos, AConstant.STRING(value));
     }
 
     /** Builds a null literal. */
     public Tree mkNullLit(int pos) {
-        return Ident(pos, definitions.NULL);
+        return Literal(pos, AConstant.NULL);
     }
 
     /** Builds a zero literal. */
     public Tree mkZeroLit(int pos) {
-        return Ident(pos, definitions.ZERO);
+        return Literal(pos, AConstant.ZERO);
     }
 
     /** Builds a default zero value according to given type tag. */
@@ -267,6 +178,15 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         case UnboxedType(int tag): return mkDefaultValue(pos, tag);
         }
         return mkZeroLit(pos);
+    }
+
+    /** Builds a Literal node of given value. */
+    public Literal Literal(int pos, AConstant value) {
+        Literal tree = make.Literal(pos, value);
+        global.nextPhase();
+        tree.setType(definitions.atyper.type(value));
+        global.prevPhase();
+        return tree;
     }
 
     //########################################################################

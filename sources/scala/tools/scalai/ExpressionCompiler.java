@@ -13,6 +13,7 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 
 import scalac.ast.Tree;
+import scalac.atree.AConstant;
 import scalac.symtab.Symbol;
 import scalac.symtab.Definitions;
 import scalac.util.Debug;
@@ -166,8 +167,33 @@ public class ExpressionCompiler {
         case This(_):
             return Code.Self;
 
-        case Literal(Object value):
-            return Code.Literal(value);
+        case Literal(AConstant constant):
+            switch (constant) {
+            case UNIT:
+                return Code.Literal(constants.literal());
+            case BOOLEAN(boolean value):
+                return Code.Literal(new Boolean(value));
+            case BYTE(byte value):
+                return Code.Literal(new Byte(value));
+            case SHORT(short value):
+                return Code.Literal(new Short(value));
+            case CHAR(char value):
+                return Code.Literal(new Character(value));
+            case INT(int value):
+                return Code.Literal(new Integer(value));
+            case LONG(long value):
+                return Code.Literal(new Long(value));
+            case FLOAT(float value):
+                return Code.Literal(new Float(value));
+            case DOUBLE(double value):
+                return Code.Literal(new Double(value));
+            case STRING(String value):
+                return Code.Literal(new String(value));
+            case NULL:
+                return Code.Null;
+            default:
+                throw Debug.abort("illegal case", constant);
+            }
 
         default:
             return load(tree, tree.symbol());

@@ -150,32 +150,32 @@ class CodeFactory extends PatternTool {
      // unused
        public Tree Negate(Tree tree) {
        switch (tree) {
-       case Literal(Object value):
-       return gen.mkBooleanLit(tree.pos, !((Boolean)value).booleanValue());
+       case Literal(BOOLEAN(boolean value)):
+       return gen.mkBooleanLit(tree.pos, !value);
        }
        return gen.mkApply__(gen.Select(tree, defs.BOOLEAN_NOT()));
        }
 
     protected Tree And(Tree left, Tree right) {
         switch (left) {
-	case Literal(Object value):
-	    return ((Boolean)value).booleanValue() ? right : left;
+	case Literal(BOOLEAN(boolean value)):
+	    return value ? right : left;
         }
         switch (right) {
-	case Literal(Object value):
-	    if (((Boolean)value).booleanValue()) return left;
+	case Literal(BOOLEAN(boolean value)):
+	    if (value) return left;
         }
         return gen.mkApply_V(gen.Select(left, defs.BOOLEAN_AND()), new Tree[]{right});
     }
 
     protected Tree Or(Tree left, Tree right) {
         switch (left) {
-	case Literal(Object value):
-	    return ((Boolean)value).booleanValue() ? left : right;
+	case Literal(BOOLEAN(boolean value)):
+	    return value ? left : right;
         }
         switch (right) {
-	case Literal(Object value):
-	    if (!((Boolean)value).booleanValue()) return left;
+	case Literal(BOOLEAN(boolean value)):
+	    if (!value) return left;
         }
         return gen.mkApply_V(gen.Select(left, defs.BOOLEAN_OR()), new Tree[]{right});
     }

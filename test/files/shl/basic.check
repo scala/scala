@@ -1,12 +1,12 @@
 > > > > > > (): scala.Unit
 > false: scala.Boolean(false)
-> 1: scala.Char(1)
+> 1: scala.Char('1')
 > 2: scala.Int(2)
 > 3: scala.Long(3)
 > 4.0: scala.Float(4.0)
 > 5.0: scala.Double(5.0)
-> null: scala.AllRef
-> hello: java.lang.String(hello)
+> null: scala.AllRef(null)
+> hello: java.lang.String("hello")
 > List(): scala.Nil
 > List(1,2,3): scala.List[scala.Int]
 > > Exception in thread "main" java.lang.Error: error

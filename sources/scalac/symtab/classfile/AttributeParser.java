@@ -10,6 +10,7 @@ package scalac.symtab.classfile;
 
 import ch.epfl.lamp.util.Position;
 import scalac.*;
+import scalac.atree.AConstant;
 import scalac.symtab.*;
 import scalac.util.*;
 import java.util.*;
@@ -169,13 +170,28 @@ public class AttributeParser implements ClassfileConstants {
     /** return the constant type for the given constant.
      */
     Type constantType(Type base, Object value) {
+        return Type.constantType(constantValue(base, value));
+    }
+    AConstant constantValue(Type base, Object value) {
+        if (base.symbol() == parser.global.definitions.BOOLEAN_CLASS)
+            return AConstant.BOOLEAN(((Number)value).intValue() != 0);
         if (base.symbol() == parser.global.definitions.BYTE_CLASS)
-            value = new Byte(((Number)value).byteValue());
-        if (base.symbol() == parser.global.definitions.CHAR_CLASS)
-            value = new Character((char)((Number)value).intValue());
+            return AConstant.BYTE(((Number)value).byteValue());
         if (base.symbol() == parser.global.definitions.SHORT_CLASS)
-            value = new Short(((Number)value).shortValue());
-    	return Type.ConstantType(base, value);
+            return AConstant.SHORT(((Number)value).shortValue());
+        if (base.symbol() == parser.global.definitions.CHAR_CLASS)
+            return AConstant.CHAR((char)((Number)value).intValue());
+        if (base.symbol() == parser.global.definitions.INT_CLASS)
+            return AConstant.INT(((Number)value).intValue());
+        if (base.symbol() == parser.global.definitions.LONG_CLASS)
+            return AConstant.LONG(((Number)value).longValue());
+        if (base.symbol() == parser.global.definitions.FLOAT_CLASS)
+            return AConstant.FLOAT(((Number)value).floatValue());
+        if (base.symbol() == parser.global.definitions.DOUBLE_CLASS)
+            return AConstant.DOUBLE(((Number)value).doubleValue());
+        if (base.symbol() == parser.global.definitions.JAVA_STRING_CLASS)
+            return AConstant.STRING((String)value);
+    	throw Debug.abort("illegal value", value + " - " + base);
     }
 
     /** return the type of a given constant.

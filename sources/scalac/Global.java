@@ -452,9 +452,8 @@ public class Global {
                                 SET_EVALUATION_RESULT()),
                             new Tree[] {
                                 last,
-                                make.Literal(last.pos,
-                                    show(last.getType())).setType(
-                                        definitions.JAVA_STRING_TYPE())});
+                                treeGen.mkStringLit(
+                                    last.pos, show(last.getType()))});
                 }
                 TreeList body = new TreeList();
                 for (int j = 0; j < impl.body.length; j++)
@@ -484,8 +483,7 @@ public class Global {
                         treeGen.mkRef(tree.pos, INTERPRETER()),
                         SHOW_DEFINITION()),
                     new Tree[] {
-                        make.Literal(tree.pos, show(tree.symbol())).setType(
-                            definitions.JAVA_STRING_TYPE())}));
+                        treeGen.mkStringLit(tree.pos, show(tree.symbol()))}));
             return;
         case ValDef(_, _, _, _):
             if (!mustShow(tree.symbol())) return;
@@ -495,8 +493,7 @@ public class Global {
                         treeGen.mkRef(tree.pos, INTERPRETER()),
                         SHOW_VALUE_DEFINITION()),
                     new Tree[] {
-                        make.Literal(tree.pos, show(tree.symbol())).setType(
-                            definitions.JAVA_STRING_TYPE()),
+                        treeGen.mkStringLit(tree.pos, show(tree.symbol())),
                         treeGen.Ident(tree.pos, tree.symbol())}));
             return;
         default:

@@ -25,6 +25,9 @@ public class ATreeTyper {
     //########################################################################
     // Private Fields
 
+    /** The global environment */
+    public final Global global;
+
     /** The global definitions */
     private final Definitions definitions;
 
@@ -32,8 +35,9 @@ public class ATreeTyper {
     // Public Constructors
 
     /** Initializes this instance. */
-    public ATreeTyper(Global global) {
-        this.definitions = global.definitions;
+    public ATreeTyper(Global global, Definitions definitions) {
+        this.global = global;
+        this.definitions = definitions;
     }
 
     //########################################################################
@@ -176,8 +180,15 @@ public class ATreeTyper {
 
     /** Returns the type of the given constant. */
     public Type type(AConstant constant) {
+        Type base = basetype(constant);
+        if (global.currentPhase.id > global.PHASE.ERASURE.id()) return base;
+        return Type.ConstantType(base, constant);
+    }
+
+    /** Returns the base type of the given constant. */
+    public Type basetype(AConstant constant) {
         switch (constant) {
-        case UNIT      : return definitions.UNIT_CLASS.type();
+        case UNIT      : return definitions.UNIT_TYPE();
         case BOOLEAN(_): return definitions.BOOLEAN_TYPE();
         case BYTE(_)   : return definitions.BYTE_TYPE();
         case SHORT(_)  : return definitions.SHORT_TYPE();
@@ -199,6 +210,7 @@ public class ATreeTyper {
     /** Returns the type of the given type kind. */
     public Type type(ATypeKind kind) {
         switch (kind) {
+        case UNIT: return definitions.UNIT_TYPE();
         case BOOL: return definitions.BOOLEAN_TYPE();
  // !!! case U1  : return ?;
         case U2  : return definitions.CHAR_TYPE();
@@ -212,12 +224,15 @@ public class ATreeTyper {
         case R8  : return definitions.DOUBLE_TYPE();
         case REF : return definitions.ANYREF_TYPE();
         case STR : return definitions.STRING_TYPE();
+        case NULL: return definitions.ALLREF_TYPE();
+        case ZERO: return definitions.ALL_TYPE();
         default  : throw Debug.abort("unknown case", kind);
         }
     }
 
     //########################################################################
-    // Public Methods - aliases of type() for scala
+    // Public Methods - Aliases for scala
+
     public Type[] computeType(ACode[] codes) {
 	return type(codes);
     }

@@ -11,6 +11,7 @@ package scalac.symtab.classfile;
 import java.util.HashMap;
 import java.io.PrintStream;
 import scalac.*;
+import scalac.atree.AConstant;
 import scalac.util.*;
 import ch.epfl.lamp.util.Position;
 import scalac.symtab.*;
@@ -338,7 +339,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		break;
 	    case CONSTANTtpe:
 		Type base = readTypeRef();
-		Object value = readValueRef(base);
+		AConstant value = readConstantRef();
 		tpe = new Type.ConstantType(base, value);
 		break;
 	    case TYPEREFtpe:
@@ -445,43 +446,46 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	return flags;
     }
 
-    long getNumber(int n) {
+    AConstant readConstant() {
+	int tag = bytes[bp++];
+        int len = readNat();
+        switch (tag) {
+        case LITERALunit:
+            return AConstant.UNIT;
+        case LITERALboolean:
+            return AConstant.BOOLEAN(readByte() == 0 ? false : true);
+        case LITERALbyte:
+            return AConstant.BYTE((byte)readLong(len));
+        case LITERALshort:
+            return AConstant.SHORT((short)readLong(len));
+        case LITERALchar:
+            return AConstant.CHAR((char)readLong(len));
+        case LITERALint:
+            return AConstant.INT((int)readLong(len));
+        case LITERALlong:
+            return AConstant.LONG(readLong(len));
+        case LITERALfloat:
+            return AConstant.FLOAT(Float.intBitsToFloat((int)readLong(len)));
+        case LITERALdouble:
+            return AConstant.DOUBLE(Double.longBitsToDouble(readLong(len)));
+        case LITERALstring:
+            return AConstant.STRING(readNameRef().toString());
+        case LITERALnull:
+            return AConstant.NULL;
+        case LITERALzero:
+            return AConstant.ZERO;
+        default:
+            throw Debug.abort("illegal tag: " + tag);
+        }
+    }
+
+    AConstant readConstantRef() {
+        int n = readNat();
 	int savedBp = bp;
 	bp = index[n];
-	int tag = bytes[bp++];
-	long x = readLong(readNat());
-	bp = savedBp;
-	return x;
-    }
-
-    long readNumberRef() {
-	return getNumber(readNat());
-    }
-
-    Object readValueRef(Type base) {
-	switch (base.unbox()) {
-	case UnboxedType(BYTE):
-	    return new Byte((byte)readNumberRef());
-	case UnboxedType(SHORT):
-	    return new Short((short)readNumberRef());
-	case UnboxedType(INT):
-	    return new Integer((int)readNumberRef());
-	case UnboxedType(CHAR):
-	    return new Character((char)readNumberRef());
-	case UnboxedType(LONG):
-	    return new Long(readNumberRef());
-	case UnboxedType(FLOAT):
-	    return new Float(Float.intBitsToFloat((int)readNumberRef()));
-	case UnboxedType(DOUBLE):
-	    return new Float(Double.longBitsToDouble(readNumberRef()));
-	case UnboxedType(BOOLEAN):
-	    return new Boolean(readNumberRef() == 0 ? false : true);
-	default:
-	    if (base.symbol() == Global.instance.definitions.JAVA_STRING_CLASS)
-		return readNameRef().toString();
-	    else
-		throw new ApplicationError("bad constant base type: " + base);
-	}
+        AConstant constant = readConstant();
+        bp = savedBp;
+        return constant;
     }
 
     public static class BadSignature extends java.lang.Error {
@@ -519,6 +523,18 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
         case UNBOXEDARRAYtpe: return "UNBOXEDARRAYtpe";
 	case FLAGGEDtpe: return "FLAGGEDtpe";
 	case ERRORtpe: return "ERRORtpe";
+        case LITERALunit: return "LITERALunit";
+        case LITERALboolean: return "LITERALboolean";
+        case LITERALbyte: return "LITERALbyte";
+        case LITERALshort: return "LITERALshort";
+        case LITERALchar: return "LITERALchar";
+        case LITERALint: return "LITERALint";
+        case LITERALlong: return "LITERALlong";
+        case LITERALfloat: return "LITERALfloat";
+        case LITERALdouble: return "LITERALdouble";
+        case LITERALstring: return "LITERALstring";
+        case LITERALnull: return "LITERALnull";
+        case LITERALzero: return "LITERALzero";
 	default: return "***BAD TAG***(" + tag + ")";
 	}
     }

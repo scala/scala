@@ -35,6 +35,7 @@ public class Tree {
         t_Global    = TreeType.Reference("scalac", "Global"),
         t_Unit      = TreeType.Reference("scalac", "Unit"),
         t_TreeGen   = TreeType.Reference("scalac.ast", "TreeGen"),
+        t_AConstant = TreeType.Reference("scalac.atree", "AConstant"),
         t_Symbol    = TreeType.Reference("scalac.symtab", "Symbol"),
         t_Type      = TreeType.Reference("scalac.symtab", "Type"),
         t_Name      = TreeType.Name(Any),
@@ -335,7 +336,7 @@ public class Tree {
         n_Literal.
             setDescription("Literal").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_Object, "value");
+            addField(t_AConstant, "value");
 
         n_TypeTerm.
             setDescription("TypeTerm").

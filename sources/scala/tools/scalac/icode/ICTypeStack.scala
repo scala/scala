@@ -22,9 +22,9 @@ class ICTypeStack() {
 
   private val global = Global.instance;
 
-  private val typer = new ATreeTyper(global); // !!! Using atree typer !
-
   private val definitions = global.definitions;
+
+  private val typer = definitions.atyper; // !!! Using atree typer !
 
   // ##################################################
   // Private constructor

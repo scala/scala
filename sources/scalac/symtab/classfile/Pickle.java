@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.io.*;
 import scalac.Global;
 import scalac.ApplicationError;
+import scalac.atree.AConstant;
 import scalac.util.*;
 import scalac.symtab.*;
 import Symbol.*;
@@ -169,9 +170,9 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		putType(pre);
 		putSymbol(sym);
 		break;
-	    case ConstantType(Type base, Object value):
+	    case ConstantType(Type base, AConstant value):
 		putType(base);
-		putEntry(value);
+                putConstant(value);
 		break;
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
 		putType(pre);
@@ -210,6 +211,16 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     private void putTypes(Type[] tps) {
 	for (int i = 0; i < tps.length; i++)
 	    putType(tps[i]);
+    }
+
+    private void putConstant(AConstant constant) {
+        if (putEntry(constant)) {
+            switch (constant) {
+            case STRING(String value):
+                putEntry(Name.fromString(value));
+                return;
+            }
+        }
     }
 
 /* **************************************************
@@ -292,15 +303,6 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	name.copyAscii(bytes, bp);
 	if (debug) System.out.print(name);
 	bp = bp + name.length();
-    }
-
-    /** Write a long number in big endian format, base 128.
-     *  All but the last digits have bit 0x80 set.
-     */
-    private void writeNumber(long x) {
-	writeByte(NUMBER);
-	writeByte(0); // space for length
-	writeLong(x);
     }
 
     /** Write a symbol entry.
@@ -390,7 +392,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeRef(sym);
 	    break;
 
-	case ConstantType(Type base, Object value):
+	case ConstantType(Type base, AConstant value):
 	    writeByte(CONSTANTtpe);
 	    writeByte(0); // space for length
 	    writeRef(base);
@@ -452,6 +454,72 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	writeRef(ft.type);
     }
 
+    /** Write a constant entry.
+     */
+    private void writeConstant(AConstant constant) {
+        switch (constant) {
+        case UNIT:
+	    writeByte(LITERALunit);
+	    writeByte(0); // space for length
+            return;
+        case BOOLEAN(boolean value):
+	    writeByte(LITERALboolean);
+	    writeByte(0); // space for length
+	    writeByte(value ? 1 : 0);
+            return;
+        case BYTE(byte value):
+	    writeByte(LITERALbyte);
+	    writeByte(0); // space for length
+	    writeLong(value);
+            return;
+        case SHORT(short value):
+	    writeByte(LITERALshort);
+	    writeByte(0); // space for length
+	    writeLong(value);
+            return;
+        case CHAR(char value):
+	    writeByte(LITERALchar);
+	    writeByte(0); // space for length
+	    writeLong(value);
+            return;
+        case INT(int value):
+	    writeByte(LITERALint);
+	    writeByte(0); // space for length
+	    writeLong(value);
+            return;
+        case LONG(long value):
+	    writeByte(LITERALlong);
+	    writeByte(0); // space for length
+	    writeLong(value);
+            return;
+        case FLOAT(float value):
+	    writeByte(LITERALfloat);
+	    writeByte(0); // space for length
+	    writeLong(Float.floatToIntBits(value));
+            return;
+        case DOUBLE(double value):
+	    writeByte(LITERALdouble);
+	    writeByte(0); // space for length
+	    writeLong(Double.doubleToLongBits(value));
+            return;
+        case STRING(String value):
+	    writeByte(LITERALstring);
+	    writeByte(0); // space for length
+	    writeRef(Name.fromString(value));
+            return;
+        case NULL:
+	    writeByte(LITERALnull);
+	    writeByte(0); // space for length
+            return;
+        case ZERO:
+	    writeByte(LITERALzero);
+	    writeByte(0); // space for length
+            return;
+        default:
+            throw Debug.abort("unknown case", constant);
+        }
+    }
+
     private void writeEntry(Object e) {
 	int startpos = bp;
 	if (e instanceof Symbol)
@@ -462,24 +530,8 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeName((Name) e);
 	else if (e instanceof FlagsAndType)
 	    writeFlagsAndType((FlagsAndType) e);
-	else if (e instanceof String)
-	    writeName(Name.fromString((String)e));
-	else if (e instanceof Double)
-	    writeNumber(Double.doubleToLongBits(((Double)e).doubleValue()));
-	else if (e instanceof Float)
-	    writeNumber(Float.floatToIntBits(((Float)e).floatValue()));
-	else if (e instanceof Long)
-	    writeNumber(((Long)e).longValue());
-	else if (e instanceof Integer)
-	    writeNumber(((Integer)e).intValue());
-	else if (e instanceof Short)
-	    writeNumber(((Short)e).intValue());
-	else if (e instanceof Byte)
-	    writeNumber(((Byte)e).intValue());
-	else if (e instanceof Character)
-	    writeNumber(((Character)e).charValue());
-	else if (e instanceof Boolean)
-	    writeNumber(((Boolean)e).booleanValue() ? 1 : 0);
+        else if (e instanceof AConstant)
+            writeConstant((AConstant)e);
 	else
 	    throw new ApplicationError(e);
 	patchNat(startpos + 1, bp - (startpos + 2));

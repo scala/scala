@@ -32,6 +32,10 @@ public class Parser implements Tokens {
      */
     TreeFactory make;
 
+    /** the tree generator
+     */
+    TreeGen gen;
+
     /** pattern checker and normalizer
      */
     PatternNormalizer pN;
@@ -43,6 +47,7 @@ public class Parser implements Tokens {
     public Parser(Unit unit) {
         s = new Scanner(unit);
         make = unit.global.make;
+        gen = unit.global.treeGen;
         pN = new PatternNormalizer( unit );
         mapTreeComment = unit.global.mapTreeComment;
         loopNestingDepth = 0;
@@ -620,38 +625,38 @@ public class Parser implements Tokens {
         Tree t;
         switch (s.token) {
         case CHARLIT:
-            t = make.Literal(s.pos, new Character((char)s.intVal));
+            t = gen.mkCharLit(s.pos, (char)s.intVal);
             break;
         case INTLIT:
-            t = make.Literal(s.pos, new Integer((int)s.intVal));
+            t = gen.mkIntLit(s.pos, (int)s.intVal);
             break;
         case LONGLIT:
-            t = make.Literal(s.pos, new Long(s.intVal));
+            t = gen.mkLongLit(s.pos, s.intVal);
             break;
         case FLOATLIT:
-            t = make.Literal(s.pos, new Float((float)s.floatVal));
+            t = gen.mkFloatLit(s.pos, (float)s.floatVal);
             break;
         case DOUBLELIT:
-            t = make.Literal(s.pos, new Double(s.floatVal));
+            t = gen.mkDoubleLit(s.pos, s.floatVal);
             break;
         case STRINGLIT:
-            t = make.Literal(s.pos, s.name.toString());
+            t = gen.mkStringLit(s.pos, s.name.toString());
             break;
         case TRUE:
-            t = make.Literal(s.pos, Boolean.TRUE);
+            t = gen.mkBooleanLit(s.pos, true);
             break;
         case FALSE:
-            t = make.Literal(s.pos, Boolean.FALSE);
+            t = gen.mkBooleanLit(s.pos, false);
             break;
         case NULL:
-            t = make.Ident(s.pos, Names.null_);
+            t = gen.mkNullLit(s.pos);
             break;
         case SYMBOLLIT:
 	    int pos = s.pos;
             Tree symt = scalaDot(s.pos, Names.Symbol);
             if (isPattern) symt = convertToTypeId(symt);
 	    TreeList ts = new TreeList();
-	    ts.append(make.Literal(s.pos, s.name.toString()));
+	    ts.append(gen.mkStringLit(s.pos, s.name.toString()));
 	    s.nextToken();
             if (s.token == LPAREN || s.token == LBRACE)
                 ts.append(argumentExprs());
@@ -1171,10 +1176,10 @@ public class Parser implements Tokens {
                         new Tree.CaseDef[]{
                             (CaseDef)make.CaseDef(
                                 rhs.pos, pat.duplicate(), Tree.Empty,
-                                make.Literal(s.pos, Boolean.TRUE)),
+                                gen.mkBooleanLit(s.pos, true)),
                             (CaseDef)make.CaseDef(
                                 rhs.pos, make.Ident(rhs.pos, Names.PATTERN_WILDCARD), Tree.Empty,
-                                make.Literal(s.pos, Boolean.FALSE))})});
+                                gen.mkBooleanLit(s.pos, false))})});
         return make.PatDef(pos, 0, pat, rhs);
     }
 

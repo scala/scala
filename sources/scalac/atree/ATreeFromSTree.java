@@ -231,8 +231,8 @@ public class ATreeFromSTree {
                 return make.Constant(tree, make.ZERO);
             return make.Load(tree, location(tree));
 
-        case Literal(Object value):
-            return make.Constant(tree, constant(value));
+        case Literal(AConstant value):
+            return make.Constant(tree, value);
 
         default:
             throw Debug.abort("illegal case", tree);
@@ -308,23 +308,6 @@ public class ATreeFromSTree {
         default:
             throw Debug.abort("illegal case", tree);
         }
-    }
-
-    //########################################################################
-    // Private Methods - Translating constants
-
-    /** Translates the constant. */
-    private AConstant constant(Object value) {
-        if (value instanceof Boolean  ) return make.BOOLEAN((Boolean  )value);
-        if (value instanceof Byte     ) return make.BYTE   (((Byte    )value));
-        if (value instanceof Short    ) return make.SHORT  ((Short    )value);
-        if (value instanceof Character) return make.CHAR   ((Character)value);
-        if (value instanceof Integer  ) return make.INT    ((Integer  )value);
-        if (value instanceof Long     ) return make.LONG   ((Long     )value);
-        if (value instanceof Float    ) return make.FLOAT  ((Float    )value);
-        if (value instanceof Double   ) return make.DOUBLE ((Double   )value);
-        if (value instanceof String   ) return make.STRING ((String   )value);
-        throw Debug.abort("illegal constant", value +" -- "+ value.getClass());
     }
 
     //########################################################################
