@@ -14,43 +14,75 @@ x4 = <na>
 y4 = <na>
 x4(2): 4 - y4(2): 4
 
-x1 = List((buffers,20),(layers,2),(title,3))
-y1 = List((buffers,20),(layers,2),(title,3))
-x1 equals y1: true - y1 equals x1: true
+x = List((buffers,20),(layers,2),(title,3))
+y = List((buffers,20),(layers,2),(title,3))
+x equals y: true - y equals x: true
 
-x2 = {buffers -> 20, layers -> 2, title -> 3}
-y2 = {buffers -> 20, layers -> 2, title -> 3}
-x2 equals y2: true - y2 equals x2: true
+x = {buffers -> 20, layers -> 2, title -> 3}
+y = {buffers -> 20, layers -> 2, title -> 3}
+x equals y: true - y equals x: true
 
-x3 = {1}
-y3 = {1}
-x3 equals y3: true - y3 equals x3: true
+x = {1}
+y = {1}
+x equals y: true - y equals x: true
 
-x1 = {title -> 3, buffers -> 20, layers -> 2}
-y1 = {title -> 3, buffers -> 20, layers -> 2}
-x1 equals y1: true - y1 equals x1: true
+x = {5, 3}
+y = {5, 3}
+x equals y: true - y equals x: true
 
-x2 = {0, 8, 9}
-y2 = {0, 8, 9}
-x2 equals y2: true - y2 equals x2: true
+x = Queue(a,b,c)
+y = Queue(a,b,c)
+x equals y: true - y equals x: true
 
-x1 = Tim
-y1 = Tim
-x1 equals y1: true - y1 equals x1: true
+x = Seq(c, b, a)
+y = Seq(c, b, a)
+x equals y: true - y equals x: true
 
-x2 = Bob
-y2 = Bob
-x2 equals y2: true - y2 equals x2: true
+x = {title -> 3, buffers -> 20, layers -> 2}
+y = {title -> 3, buffers -> 20, layers -> 2}
+x equals y: true - y equals x: true
 
-x1 = John
-y1 = John
-x1 equals y1: true - y1 equals x1: true
+x = {0, 8, 9}
+y = {0, 8, 9}
+x equals y: true - y equals x: true
 
-x2 = Bill
-y2 = Bill
-x2 equals y2: true - y2 equals x2: true
+x = {title, buffers, layers}
+y = {title, buffers, layers}
+x equals y: true - y equals x: true
 
-x3 = Paul
-y3 = Paul
-x3 equals y3: true - y3 equals x3: true
+x = Seq(2, 3)
+y = Seq(2, 3)
+x equals y: false - y equals x: false
+
+x = Queue(20, 2, 3)
+y = Queue(20, 2, 3)
+x equals y: true - y equals x: true
+
+x = Stack(20, 2, 3)
+y = Stack(20, 2, 3)
+x equals y: true - y equals x: true
+
+x = <html><title>title</title><body></body></html>
+y = <html><title>title</title><body></body></html>
+x equals y: true - y equals x: true
+
+x = Tim
+y = Tim
+x equals y: true - y equals x: true
+
+x = Bob
+y = Bob
+x equals y: true - y equals x: true
+
+x = John
+y = John
+x equals y: true - y equals x: true
+
+x = Bill
+y = Bill
+x equals y: true - y equals x: true
+
+x = Paul
+y = Paul
+x equals y: true - y equals x: true
 
