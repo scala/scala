@@ -274,7 +274,7 @@ public class Definitions {
         JAVA_THROWABLE_TYPE = JAVA_THROWABLE_CLASS.typeConstructor();
         THROW = new TermSymbol(
 	    Position.NOPOS, Names.throw_, JAVA_THROWABLE_CLASS, Modifiers.FINAL);
-        THROW.setInfo(ALL_TYPE);
+        THROW.setInfo(Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE));
         JAVA_THROWABLE_CLASS.members().enter(THROW);
 
         // add the java.lang.String class to the scala package
