@@ -131,21 +131,23 @@ public class ScalaClassType extends ClassType {
 
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        if (constr.outer != null)
-            buf.append(constr.outer).append(".");
 
         int firstM = constr.zCount;
         int firstP = firstM + constr.mCount;
-        buf.append(constr).append("[");
-        for (int i = 0; i < inst.length; ++i) {
-            if (i > 0) buf.append(", ");
-            if (i >= firstP)
-                buf.append('+');
-            else if (i >= firstM)
-                buf.append('-');
-            buf.append(inst[i]);
+        buf.append(constr);
+        if (inst.length > 0) {
+            buf.append("[");
+            for (int i = 0; i < inst.length; ++i) {
+                if (i > 0) buf.append(", ");
+                if (i >= firstP)
+                    buf.append('+');
+                else if (i >= firstM)
+                    buf.append('-');
+                buf.append(inst[i]);
+            }
+            buf.append("]");
         }
-        return buf.append("]").toString();
+        return buf.toString();
     }
 
     public int hashCode() {

@@ -27,11 +27,10 @@ public class TypeConstructor implements java.io.Serializable {
     public final static TypeConstructor[] EMPTY_ARRAY =
         new TypeConstructor[0];
 
+    public final static Object FUNCTION_OUTER = new Object();
+
     /** Java class corresponding to this constructor. */
     public Class clazz;
-
-    /** Enclosing class for this type constructor */
-    public final Object outer;
 
     /**
      * Number of invariant (z), contravariant (m) and covariant (p)
@@ -47,7 +46,8 @@ public class TypeConstructor implements java.io.Serializable {
 
     /**
      * Indication of triviality: a constructor is trivial iff it has
-     * no enclosing class, and no type arguments.
+     * no enclosing class, and no type arguments. It is strongly
+     * trivial if all its ancestors, itself included, are trivial.
      */
     public final boolean isTrivial;
     public final boolean isStronglyTrivial;
@@ -61,12 +61,15 @@ public class TypeConstructor implements java.io.Serializable {
      * l1 n1 p1,0 o1,0 p1,1 o1,1 ... l2 n2 p2,0 o2,0 ...
      *
      * where all l, n, p and o are integers. ni gives the number of
-     * additional entries to add to the ancestors of the super-class
+     * additional entries to add to the ancestors of the first parent
      * at level li. pi gives the index of the parent in which to pick
      * this additional entry, and oi gives the offset of this entry in
      * the parent's ancestors.
      */
     public final int[] ancestorCode;
+
+    /** Enclosing class for this type constructor */
+    private final Object outer;
 
     private final InstantiationMap instMapModule = new InstantiationMap();
     private final AtomicReference/*<InstantiationMap.T>*/ instances =
@@ -105,7 +108,12 @@ public class TypeConstructor implements java.io.Serializable {
     }
 
     public String toString() {
-        return clazz.getName();
+        if (outer == null)
+            return clazz.getName();
+        else if (outer == FUNCTION_OUTER)
+            return "<function>." + clazz.getName();
+        else
+            return outer.toString() + "." + clazz.getName();
     }
 
     public ScalaClassType getInstantiation(Type[] args) {
