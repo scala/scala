@@ -158,6 +158,8 @@ runtime/ResultOrException.java
 runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
+runtime/compat/Platform.scala
+
 runtime/matching/Address.scala
 #runtime/matching/Matcher.scala 
 runtime/matching/NonTerm.scala
