@@ -1,8 +1,10 @@
-module patterns {
+package examples;
 
-  trait Tree {}
-  case class Branch(left: Tree, right: Tree) extends Tree {}
-  case class Leaf(x: Int) extends Tree {}
+object patterns {
+
+  trait Tree;
+  case class Branch(left: Tree, right: Tree) extends Tree;
+  case class Leaf(x: Int) extends Tree;
 
   val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)));
 
@@ -12,17 +14,22 @@ module patterns {
   }
 
   def find[a,b](it: Iterator[Pair[a, b]], x: a): Option[b] = {
-    var result: Option[b] = None();
-    while (it.hasNext && result.isNone) {
+    var result: Option[b] = _;
+    while (it.hasNext && result == null) {
       val Pair(x1, y) = it.next;
       if (x == x1) result = Some(y)
     }
-    result
+    if (result == null) None else result
   }
 
   def printFinds[a](xs: List[Pair[a, String]], x: a) =
     find(xs.elements, x) match {
       case Some(y) => System.out.println(y)
-      case None() => System.out.println("no match")
+      case None => System.out.println("no match")
     }
+
+  def main(args: Array[String]): Unit = {
+    Console.println("sum of leafs=" + sumLeaves(tree1));
+    printFinds(List(Pair(3, "three"), Pair(4, "four")), 4)
+  }
 }
