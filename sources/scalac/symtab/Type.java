@@ -1061,7 +1061,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         args1 = asSeenFrom(Symbol.type(sym1.owner().typeParams()), pre, sym1.owner());
                     }
                     if (local) prefix1 = localThisType;
-		    return typeRef(prefix1, sym1, args1);
+		    Type t1 = typeRef(prefix1, sym1, args1);
+                    if (sym1 != sym) t1 = apply(t1.unalias());
+                    return t1;
 		}
 
 	    case SingleType(Type prefix, Symbol sym):
