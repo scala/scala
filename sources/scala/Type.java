@@ -19,7 +19,6 @@ import scala.runtime.RunTime;
  * @version 1.0
  */
 
-/** @meta class extends java.lang.Object; */
 abstract public class Type {
     public static final Type[] EMPTY_ARRAY = new Type[]{};
 
