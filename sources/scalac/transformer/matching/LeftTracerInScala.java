@@ -71,6 +71,7 @@ public class LeftTracerInScala extends TracerInScala {
      */
     Tree code_delta( int i, Label label ) {
         Integer target = dfa.delta( i, label );
+
         /*
           System.out.println("LeftTracer:calling dfa.delta("+i+","+label+")");
           System.out.println("result: "+target);
@@ -159,8 +160,8 @@ public class LeftTracerInScala extends TracerInScala {
     Tree[] getTrace() {
 
         initializeSyms();
-        //Tree tb = code_body();
-        Tree tb = code_body_NEW();
+        Tree tb = code_body();
+        //Tree tb = code_body_NEW(); BUG! ONLY FIRST ELEMENT GETS BOUND ?!!?
         Tree theDefDef = gen.DefDef( this.funSym,
                                      tb );
 
