@@ -45,7 +45,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
                    children:List[Node] ):Node = {
 
       val uri$ = uri.intern();
-      val attribs1 = AttributeSeq.fromHashMap(attribs);
+      val attribs1 = AttributeSeq.fromMap(attribs);
       // 2do:optimize
       if( !compress ) {
         // get constructor

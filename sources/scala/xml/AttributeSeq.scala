@@ -9,20 +9,20 @@
 
 package scala.xml ;
 
-import scala.collection.mutable.HashMap ;
+import scala.collection.Map ;
 import scala.collection.immutable.TreeSet ;
 
 object AttributeSeq {
   final val Empty = new AttributeSeq { final def sortedSeq = new TreeSet[Attribute] }
 
-  final def fromHashMap(as:HashMap[Pair[String,String],String]) = {
+  final def fromMap(as:Map[Pair[String,String],String]) = {
     AttributeSeq.fromAttrs( {
       for( val a <- as.keys.toList )
       yield Attribute(a._1,a._2.intern(), as(a))
     }:_* )
   }
 
-  final def fromHashMap(ns:String, as:HashMap[Pair[String,String],String]) = {
+  final def fromMap(ns:String, as:Map[Pair[String,String],String]) = {
     AttributeSeq.fromAttrs( {
       for( val a <- as.keys.toList )
       yield {

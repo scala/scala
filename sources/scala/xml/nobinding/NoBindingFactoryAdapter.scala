@@ -40,7 +40,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
     } else {
       uri.intern();
     }
-    val attrSeq = AttributeSeq.fromHashMap( uri$, attrs );
+    val attrSeq = AttributeSeq.fromMap( uri$, attrs );
     val elHashCode =
       Utility.hashCode( uri$, label, attrSeq.hashCode(), children ) ;
     cache.get( elHashCode ).match{
