@@ -1110,7 +1110,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  e.g., "class Foo", "function Bar".
      */
     public String toString() {
-        return new SymbolTablePrinter().printSymbol(this).toString();
+        return new SymbolTablePrinter().printSymbolKindAndName(this).toString();
     }
 
     /** String representation of location.

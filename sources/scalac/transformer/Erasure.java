@@ -592,7 +592,7 @@ public class Erasure extends GenTransformer implements Modifiers {
         SymbolTablePrinter printer = new SymbolTablePrinter(" ");
         printer.print("overlapping overloaded alternatives;").space();
         printer.print("the two following alternatives of").space();
-        printer.printSymbol(symbol1).space();
+        printer.printSymbolKindAndName(symbol1).space();
         printer.print("have the same erasure:").space();
         printer.printType(symbol1.nextType());
         Phase phase = global.currentPhase;

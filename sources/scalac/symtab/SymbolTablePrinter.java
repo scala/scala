@@ -303,13 +303,6 @@ public class SymbolTablePrinter {
         return name;
     }
 
-    /** Returns the full name of the given symbol. */
-    public String getSymbolFullName(Symbol symbol) {
-        String name = symbol.fullName().toString();
-        if (!global.debug) name = NameTransformer.decode(name);
-        return name;
-    }
-
     /** Returns the inner string of the given symbol. */
     public String getSymbolInnerString(Symbol symbol) {
         switch (symbol.kind) {
@@ -335,11 +328,16 @@ public class SymbolTablePrinter {
         return printSymbolUniqueId(symbol);
     }
 
-    /** Prints the full name of the given symbol */
-    public SymbolTablePrinter printSymbolFullName(Symbol symbol) {
-        print(getSymbolFullName(symbol));
-        //print("{" + symbol.owner() + "}");//DEBUG
-        return printSymbolUniqueId(symbol);
+    /** Prints the kind and the name of the given symbol. */
+    public SymbolTablePrinter printSymbolKindAndName(Symbol symbol) {
+        if (symbol.isAnonymousClass()) {
+            print("<template>");
+            return printSymbolUniqueId(symbol);
+        } else {
+            String kind = getSymbolKind(symbol);
+            if (kind != null) print(kind).space();
+            return printSymbolName(symbol);
+        }
     }
 
     /** Prints the type of the given symbol with the given inner string. */
@@ -357,18 +355,6 @@ public class SymbolTablePrinter {
         printType(type, inner);
         if (star) print("*");
         return this;
-    }
-
-    /** Prints the given symbol. */
-    public SymbolTablePrinter printSymbol(Symbol symbol) {
-        if (symbol.isAnonymousClass()) {
-            print("<template>");
-            return printSymbolUniqueId(symbol);
-        } else {
-            String kind = getSymbolKind(symbol);
-            if (kind != null) print(kind).space();
-            return printSymbolFullName(symbol);
-        }
     }
 
     /** Prints the signature of the given symbol. */

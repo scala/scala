@@ -515,14 +515,6 @@ public abstract class Global {
             }
             return string;
         }
-        public String getSymbolFullName(Symbol symbol) {
-            String string = super.getSymbolFullName(symbol);
-            if (!debug) {
-                int index = string.indexOf('$');
-                if (index > 0) string = string.substring(0, index);
-            }
-            return string;
-        }
     }
 
     // !!! >>> Interpreter stuff
