@@ -23,9 +23,7 @@ public class LeftTracerInScala extends TracerInScala {
 
 
       Type _accumType( Type elemType ) {
-            return new Type.TypeRef( defs.SCALA_TYPE,
-                                     cf.seqTraceSym(),
-                                     new Type[] { elemType });
+            return cf.SeqTraceType( elemType );
       }
 
 

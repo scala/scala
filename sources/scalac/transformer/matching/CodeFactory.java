@@ -22,6 +22,10 @@ class CodeFactory extends PatternTool {
 
     private int pos = Position.FIRSTPOS ;
 
+      static final Name TUPLE2_N       = Name.fromString("scala.Tuple2");
+
+    static final Name LEFT_N = Name.fromString("_1");
+    static final Name RIGHT_N = Name.fromString("_2");
       static final Name HEAD_N       = Name.fromString("head");
 
       static final Name TAIL_N       = Name.fromString("tail");
@@ -40,6 +44,14 @@ class CodeFactory extends PatternTool {
 
     Symbol seqSym() {
 	return defs.getType( Names.scala_Seq ).symbol() ;
+    }
+
+    Symbol intSym() {
+	return defs.getType( Names.scala_Int ).symbol() ;
+    }
+
+    Symbol tuple2Sym() {
+	return defs.getType( TUPLE2_N ).symbol() ;
     }
 
     Symbol iteratorSym() {
@@ -140,11 +152,14 @@ class CodeFactory extends PatternTool {
                                  new Type[] { elemType });
       }
 
-    /** returns  `SeqTrace[ elemType ]' */
+    /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
       Type SeqTraceType( Type elemType ) {
-            return Type.TypeRef( defs.SCALA_TYPE,
-                                 seqTraceSym(),
-                                 new Type[] { elemType });
+	  Type t = Type.TypeRef( defs.SCALA_TYPE,
+                                 seqListSym(),
+                                 new Type[] { pairType( defs.INT_TYPE,
+							elemType ) });
+	  //System.err.println("CodeFactory::SeqTraceType -"+ t );
+	  return t;
       }
 
     /**  returns `Iterator[ elemType ]' */
@@ -213,11 +228,10 @@ class CodeFactory extends PatternTool {
 	    //throw new ApplicationError("don't know how to handle "+asType);
       }
 
-    /** FIX ME FOR THE NEW VERSION
+    /** code `null'
      */
     Tree Null( Type asType ) {
-	return gen.Ident(pos, defs.NULL );/*gen.TypeApply(pos, gen.Ident(pos, defs.NULL ),
-					    new Tree[] { gen.mkType(pos, asType) } );*/
+	return gen.Ident(pos, defs.NULL );
     }
 
     // the caller needs to set the type !
@@ -225,14 +239,11 @@ class CodeFactory extends PatternTool {
 	return make.Apply(Position.FIRSTPOS, arg, Tree.EMPTY_ARRAY );
     }
 
-    /** code `new SeqTraceNil[ elemType ]()'
+    /** code `Nil'
      */
 
     Tree _seqTraceNil( Type elemType ) {
-	assert elemType != null : "elemType = null??";
-	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqTraceNilSym(),
-			new Type[] { elemType },
-			new Tree[] {});
+	return newSeqNil( null );
     }
 
 
@@ -251,22 +262,8 @@ class CodeFactory extends PatternTool {
       /** code `new SeqTraceCons[ elemType ]( state, head, tail )'
        */
       Tree newSeqTraceCons(  Integer state, Tree head, Tree tail ) {
-	  assert head != null : "head null";
-	  assert tail != null : "tail null";
-	  assert state != null : "state null";
-            return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqTraceConsSym(),
-                            new Type[] { head.type() },
-                            new Tree[] { Int( state ), head, tail });
+	  return newSeqCons( newPair( Int(state),head ),tail );
       }
-
-
-      /*
-      Type _seqTraceConsType( Type elemType ) {
-            return Type.TypeRef( defs.SCALA_TYPE,
-                                 seqTraceConsSym,
-                                 new Type[] { elemType });
-      }
-      */
 
       //                       `SeqCons[ elemType ]'
 
@@ -277,12 +274,6 @@ class CodeFactory extends PatternTool {
       }
 
     Tree newSeqNil( Type tpe ) {
-	/*
-	assert tpe != null :"tpe = null !?";
-	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqNilSym(),
-			new Type[] { tpe },
-			new Tree[] {});
-	*/
 	return gen.Select(gen.Ident(Position.FIRSTPOS, defs.SCALA), Names.Nil/*seqNilSym()*/);
     }
 
@@ -292,11 +283,6 @@ class CodeFactory extends PatternTool {
 	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, refSym(),
 			new Type[] { init.type() },
 			new Tree[] { init } );
-	/*
-	return gen.Apply( gen.TypeApply(Position.FIRSTPOS, gen.Select(gen.Ident(Position.FIRSTPOS, defs.SCALA), Names.Ref),
-					new Tree[] { gen.mkType(Position.FIRSTPOS, init.type() ) } ),
-			  new Tree[] { init } );
-	*/
     }
 
     Tree newSeqCons( Tree head, Tree tail ) {
@@ -360,32 +346,45 @@ class CodeFactory extends PatternTool {
       /** `trace.isEmpty'
        */
       public Tree isEmpty( Tree iter ) {
-            Scope scp = seqTraceSym().members();
+	  Scope scp = seqListSym()/*TraceSym()*/.members();
             Symbol isEmptySym = scp.lookup ( ISEMPTY_N );
             return _applyNone( gen.Select( iter, isEmptySym ))
                   .setType( defs.BOOLEAN_TYPE );
       }
 
-      Tree SeqTrace_headElem( Tree arg ) {
-            Scope scp = seqTraceSym().members();
-            Symbol headSym = scp.lookup ( HEADELEM_N );
+      Tree SeqTrace_headElem( Tree arg ) { // REMOVE SeqTrace
+            Scope scp = seqListSym().members();
+	    Symbol headSym = scp.lookup ( HEAD_N );
             assert headSym != Symbol.NONE;
-            return gen.Apply( gen.Select( pos, arg, headSym ),
+            scp = tuple2Sym().members();
+	    Symbol leftSym = scp.lookup ( RIGHT_N );
+            assert leftSym != Symbol.NONE;
+            Tree t =  gen.Apply( gen.Select( pos, arg, headSym ),
+				 Tree.EMPTY_ARRAY );
+	    return gen.Apply( gen.Select( pos, t, leftSym ),
                               Tree.EMPTY_ARRAY );
       }
 
-      Tree SeqTrace_headState( Tree arg ) {
-            Scope scp = seqTraceSym().members();
-            Symbol headSym = scp.lookup ( HEADSTATE_N );
+      Tree SeqTrace_headState( Tree arg ) { // REMOVE SeqTrace
+            Scope scp = seqListSym().members();
+	    Symbol headSym = scp.lookup ( HEAD_N );
             assert headSym != Symbol.NONE;
-            return gen.Apply( gen.Select( pos, arg, headSym ),
+            scp = tuple2Sym().members();
+	    Symbol leftSym = scp.lookup ( LEFT_N );
+            assert leftSym != Symbol.NONE;
+            Tree t =  gen.Apply( gen.Select( pos, arg, headSym ),
+				 Tree.EMPTY_ARRAY );
+	    t =  gen.Apply( gen.Select( pos, t, leftSym ),
                               Tree.EMPTY_ARRAY );
+	    return t;
+
       }
 
       Tree SeqTrace_tail( Tree arg ) {
-            Scope scp = seqTraceSym().members();
+	  Scope scp = seqListSym()/*seqTraceSym()*/.members(); // REMOVE SeqTrace
             Symbol tailSym = scp.lookup ( TAIL_N );
             assert tailSym != Symbol.NONE;
+	    //System.err.println( "CodeFactory::SeqTrace_tail " + tailSym +" "+ tailSym.type() );
             return gen.Apply( gen.Select( pos, arg, tailSym ),
                               Tree.EMPTY_ARRAY );
       }
@@ -569,6 +568,20 @@ class CodeFactory extends PatternTool {
 			   make.Literal(pos, unit.toString()).setType(defs.STRING_TYPE),
 			   make.Literal(pos, new Integer(Position.line(pos))).setType(defs.INT_TYPE)
 		       }).setType(type);
+    }
+
+
+    Type pairType( Type left, Type right ) {
+	return Type.TypeRef( defs.SCALA_TYPE,
+			     tuple2Sym() ,
+			     new Type[] { left, right } );
+    }
+
+    Tree newPair( Tree left, Tree right ) {
+ 	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, tuple2Sym(),
+			new Type[] { left.type(), right.type() },
+			new Tree[] { left, right });
+
     }
 
 }
