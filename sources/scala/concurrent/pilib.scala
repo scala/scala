@@ -80,9 +80,7 @@ object pilib with Monitor {
   case class Sum(gs: List[GP]) with Monitor {
 
     /** Continuation of the sum. */
-    var fun: Any => unit = _;
-    /** Argument of the continuation of the sum. */
-    var arg: Any = _;
+    var cont: () => unit = _;
 
     var initialized = false;
 
@@ -92,13 +90,12 @@ object pilib with Monitor {
     */
     def continue = synchronized {
       if (!initialized) wait();
-      fun(arg)
+      cont()
     }
 
     /** Set the values of parameters and awake the sleeping sum. */
-    def set(f: Any => unit, x: Any) = synchronized {
-      fun = f;
-      arg = x;
+    def set(f: () => unit) = synchronized {
+      cont = f;
       initialized = true;
       notify()
     }
@@ -134,8 +131,8 @@ object pilib with Monitor {
       case s2 :: rest => matches(s1.gs, s2.gs) match {
 	case None => s2 :: compare(s1, rest)
 	case Some(Tuple4(v1, c1, v2, c2)) => {
-	  s1.set(c1, v2);
-	  s2.set(c2, v1);
+	  s1.set(() => c1(v2));
+	  s2.set(() => c2(v1));
 	  rest
 	}
       }
