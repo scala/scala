@@ -15,11 +15,9 @@ Iterator.scala
 Labelled.scala
 LinkedList.scala
 List.scala
-ListBuffer.scala
 ListMap.scala
 ListSet.scala
 Map.scala
-MapImpl.scala
 Monitor.scala
 MutableMap.scala
 Nil.scala
