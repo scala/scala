@@ -1,16 +1,17 @@
 package scala.xml.nobinding;
 
 import scala.collection.Map ;
-import scala.xml.Node ;
+import scala.collection.immutable.ListMap ;
+import scala.xml.{AttributedNode,Node} ;
 
 /** an XML node. use this when data binding is not desired.
 **/
-case class Element( symbol: Symbol, ch: List[Node] ) extends Node {
+case class Element( symbol: Symbol, ch: List[Node] ) extends AttributedNode {
 
   def label = symbol.name;
   def children = ch;
 
-  def attributes : Map[String,String] = null ; /* overriden at parse time */
-
+  override def attributes : Map[String,String] = ListMap.Empty[String,String] ;
+  override val attribHashCode:int = 0;
 }
 

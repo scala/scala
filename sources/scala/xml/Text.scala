@@ -11,9 +11,6 @@ case class Text( text:String ) extends Node {
   def label    = "#PCDATA";
 
   def children = Nil;
-  def attributes = null;
-
-  protected override val attribHashCode = 0;
 
   override def toXML = Utility.escape( text );
 

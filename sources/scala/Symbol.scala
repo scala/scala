@@ -9,6 +9,9 @@
 
 package scala;
 
+import scala.xml.{Node,Text};
+import scala.xml.nobinding.Element;
+import scala.collection.immutable.ListMap ;
 
 /** Instances of <code>Symbol</code> can be created easily with
  *  Scala's built-in quote mechanism. For instance, the Scala term
@@ -20,5 +23,21 @@ package scala;
  *  @version 1.0, 08/08/2003
  */
 case class Symbol(name: String) {
+  var map : ListMap[String,String] = ListMap.Empty;
   override def toString() = "'" + name;
+  def % (ch:Node*) = new Element(this, List.fromIterator(ch.elements)) {
+    override def attributes = map;
+  };
+  //def > (s:String) = new Element(this, Text(s)::Nil);
+  def % (as:Attribute*) =  {
+    for( val a <- as.elements ) {
+      map = map.update(a.name, a.value);
+    }
+    this
+  }
+
+  def -> (value:String) = new Attribute( name, value );
+
+  case class Attribute( name:String, value:String ) ;
+
 }

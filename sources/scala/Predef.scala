@@ -55,4 +55,6 @@ object Predef {
     def fst[a](x: a, y: Any): a = x;
     def scd[a](x: Any, y: a): a = y;
 
+  val Text = scala.xml.Text;
+
 }

@@ -26,17 +26,17 @@ object Utility {
   /** serializes an instance of Node to a string that contains well-formed XML **/
   def toXML( n:Node ):String = n match {
     case Text( t ) => escape( t );
-    case _ =>
+    case x:AttributedNode =>
     val s = new StringBuffer();
     s.append("<");
-    s.append( n.label );
-    if( null != n.attributes ) {
-      s.append( attr2xml( n.attributes.elements ) );{}
+    s.append( x.label );
+    if( null != x.attributes ) {
+      s.append( attr2xml( x.attributes.elements ) );{}
     }
     s.append(">");
-    s.append( toXML( n.children.elements ) );
+    s.append( toXML( x.children.elements ) );
     s.append("</");
-    s.append( n.label );
+    s.append( x.label );
     s.append(">");
     s.toString()
   }
