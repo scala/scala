@@ -521,37 +521,37 @@ public abstract class Global {
 
     /** stop the compilation process immediately
      */
-    public Error fail() {
+    public static Error fail() {
         throw new ApplicationError();
     }
 
     /** stop the compilation process immediately
      */
-    public Error fail(String message) {
+    public static Error fail(String message) {
         throw new ApplicationError(message);
     }
 
     /** stop the compilation process immediately
      */
-    public Error fail(String message, Object object) {
+    public static Error fail(String message, Object object) {
         throw new ApplicationError(message, object);
     }
 
     /** stop the compilation process immediately
      */
-    public Error fail(Object value) {
+    public static Error fail(Object value) {
         throw new ApplicationError(value);
     }
 
     /** stop the compilation process immediately
      */
-    public Error fail(String message, Throwable cause) {
+    public static Error fail(String message, Throwable cause) {
         throw new ApplicationError(message, cause);
     }
 
     /** stop the compilation process immediately
      */
-    public Error fail(Throwable cause) {
+    public static Error fail(Throwable cause) {
         throw new ApplicationError(cause);
     }
 
