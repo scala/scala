@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
@@ -696,18 +696,18 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
   }
 
   private def caseElementMethod(clazz: ClassSymbol): Tree = {
-    val seSym =
-      clazz.newMethod( clazz.pos, FINAL|OVERRIDE, Names.caseElement );
+    val method =
+      clazz.newMethod(clazz.pos, FINAL | OVERRIDE, Names.caseElement);
     val seParam =
-      seSym.newVParam( clazz.pos, 0, Names.n, defs.int_TYPE() );
-    seSym.setInfo(
-      Type.MethodType( NewArray.Symbol(seParam), defs.ANY_TYPE() ));
-    clazz.info().members().enter( seSym );
-    val fields: Array[Tree] = caseFields( clazz );
+      method.newVParam(clazz.pos, 0, Names.n, defs.int_TYPE());
+    method.setInfo(
+      Type.MethodType(NewArray.Symbol(seParam), defs.ANY_TYPE()));
+    clazz.info().members().enter(method);
+    val fields: Array[Tree] = caseFields(clazz);
     var body: Tree = null;
     if (fields.length > 0) {        // switch< n >
       val tags: Array[int] = new Array[int](fields.length);
-      var i = 0; while( i < fields.length ) { tags(i) = i; i = i + 1 }
+      var i = 0; while (i < fields.length) { tags(i) = i; i = i + 1 }
       body = gen.Switch(
         gen.mkLocalRef(clazz.pos, seParam),
         tags,
@@ -715,20 +715,30 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
         gen.mkNullLit(clazz.pos),
         defs.ANY_TYPE());
     } else
-      body = gen.mkNullLit( clazz.pos );
-    gen.DefDef(seSym, body)
+      body = gen.mkNullLit(clazz.pos);
+    gen.DefDef(method, body)
   }
 
   private def caseArityMethod(clazz: ClassSymbol): Tree = {
-    val seSym =
-      clazz.newMethod( clazz.pos, FINAL|OVERRIDE, Names.caseArity );
-    seSym.setInfo(
-      Type.PolyType( Symbol.EMPTY_ARRAY, defs.int_TYPE() ));
-    clazz.info().members().enter( seSym );
-    val fields: Array[Tree] = caseFields( clazz );
-    gen.DefDef(seSym, gen.mkIntLit( clazz.pos, fields.length ))
+    val method =
+      clazz.newMethod(clazz.pos, FINAL | OVERRIDE, Names.caseArity);
+    method.setInfo(
+      Type.PolyType(Symbol.EMPTY_ARRAY, defs.int_TYPE()));
+    clazz.info().members().enter(method);
+    val fields: Array[Tree] = caseFields(clazz);
+    gen.DefDef(method, gen.mkIntLit(clazz.pos, fields.length))
   }
 
+  private def readResolveMethod(clazz: ClassSymbol): Tree = {
+    // !!! the synthetic method "readResolve" should be private,
+    // but then it is renamed !!!
+    val method =
+      clazz.newMethod(clazz.pos, PROTECTED | SYNTHETIC, Names.readResolve);
+    method.setInfo(
+      Type.MethodType(Symbol.EMPTY_ARRAY, defs.OBJECT_TYPE()));
+    clazz.info().members().enter(method);
+    gen.DefDef(method, gen.mkLocalRef(clazz.pos, clazz.sourceModule()))
+  }
 
   private def equalsMethod(clazz: ClassSymbol): Tree = {
     val equalsSym = clazz.newMethod(clazz.pos, OVERRIDE, Names.equals);
@@ -850,7 +860,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     gen.DefDef(hashCodeSym, body)
   }
 
-  private def addCaseMethods(templ: Template, clazz: ClassSymbol): Template = {
+  private def addSyntheticMethods(templ: Template, clazz: ClassSymbol): Template = {
     val ts = new TreeList();
     if (clazz.isCaseClass()) {
       if (!hasImplementation(clazz, Names.toString)) {
@@ -869,6 +879,13 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       ts.append(tagMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
       ts.append(tagMethod(clazz));
+    }
+    if (clazz.isModuleClass() && clazz.isSubClass(defs.SERIALIZABLE_CLASS)) {
+      // If you serialize a singleton and then deserialize it twice,
+      // you will have two instances of your singleton, unless you implement
+      // the readResolve() method (see http://www.javaworld.com/javaworld/
+      // jw-04-2003/jw-0425-designpatterns_p.html)
+      ts.append(readResolveMethod(clazz));
     }
     copy.Template(
       templ, templ.parents,
@@ -1009,8 +1026,10 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
         validateVariance(sym, sym.info(), CoVariance);
         validateVariance(sym, sym.typeOfThis(), CoVariance);
         val tree1 = super.transform(
-	  copy.ClassDef(tree, tree.symbol(), tparams, vparams, tpe,
-                        addCaseMethods(templ, tree.symbol().asInstanceOf[ClassSymbol])));
+	  copy.ClassDef(
+            tree, tree.symbol(), tparams, vparams, tpe,
+            addSyntheticMethods(
+              templ, tree.symbol().asInstanceOf[ClassSymbol])));
         enclClass = enclClassPrev;
         tree1
 
