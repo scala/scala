@@ -58,6 +58,13 @@ public class PackageParser extends SymbolLoader {
     //########################################################################
     // Protected Methods
 
+    /** Is the given name a valid input file base name? */
+    protected boolean isValidName(String name) {
+        return name.length() > 0
+            &&!name.endsWith("$class")
+            && name.indexOf("$$anon") == -1;
+    }
+
     /** Returns a new package parser for the given directory. */
     protected PackageParser newPackageParser(AbstractFile directory) {
         return new PackageParser(global, directory);
@@ -78,16 +85,19 @@ public class PackageParser extends SymbolLoader {
             }
             if (filename.endsWith(".class")) {
                 String name = filename.substring(0, filename.length() - 6);
+                if (!isValidName(name)) continue;
                 if (!classes.containsKey(name)) classes.put(name, file);
                 continue;
             }
             if (filename.endsWith(".symbl")) {
                 String name = filename.substring(0, filename.length() - 6);
+                if (!isValidName(name)) continue;
                 if (!symbols.containsKey(name)) symbols.put(name, file);
                 continue;
             }
             if (filename.endsWith(".scala")) {
                 String name = filename.substring(0, filename.length() - 6);
+                if (!isValidName(name)) continue;
                 if (!sources.containsKey(name)) sources.put(name, file);
                 continue;
             }
