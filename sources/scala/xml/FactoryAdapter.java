@@ -57,7 +57,7 @@ public abstract class FactoryAdapter
 
     /** Default constructor. */
     public FactoryAdapter() {
-        buffer = new StringBuffer();FactoryAdapter
+        buffer = new StringBuffer();
         attribStack = new Stack();
         hStack = new Stack();
         tagStack = new Stack();
@@ -79,12 +79,25 @@ public abstract class FactoryAdapter
 
     // these are defined in a scala class
 
+    /** Tests if an XML element contains text.
+     * @return true if element named <code>localName</code> contains text.
+     */
     abstract boolean elementContainsText(String localName);
 
+    /** Creates an new XML element.
+     * @param elemName
+     * @param attribs
+     * @param chIter
+     * @return a new XML element.
+     */
     abstract scala.Object createElement(String elemName,
-                                          Map attribs,
-                                          Iterator chIter);
+                                        Map attribs,
+                                        Iterator chIter);
 
+    /** Creates an PCDATA element.
+     * @param text
+     * @return a new PCDATA element.
+     */
     abstract scala.Object createPCDATA(String text);
 
     //
@@ -92,17 +105,23 @@ public abstract class FactoryAdapter
     //
 
     /** Set document locator.
+     * @param locator
      */
     public void setDocumentLocator(Locator locator) {
     }
 
     /** Start document.
+     * @throws org.xml.sax.SAXException if ..
      */
     public void startDocument() throws SAXException {
     }
 
 
-    /** Characters. */
+    /** Characters.
+     * @param ch
+     * @param offset
+     * @param length
+     */
     public void characters(char[] ch, int offset, int length)
             throws SAXException {
 
@@ -196,6 +215,10 @@ public abstract class FactoryAdapter
     }
 
     /** End element.
+     * @param uri
+     * @param localName
+     * @param qname
+     * @throws org.xml.sax.SAXException if ..
      */
     public void endElement(String uri, String localName, String qname)
             throws SAXException {
@@ -297,6 +320,8 @@ public abstract class FactoryAdapter
     //
 
     /** load XML document
+     * @param fileName
+     * @return a new XML document object
      */
     public scala.Object loadXML(String fileName) {
 
