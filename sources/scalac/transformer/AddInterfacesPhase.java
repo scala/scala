@@ -144,9 +144,7 @@ public class AddInterfacesPhase extends Phase {
         .setAllSeparators('$')
         .setRootSeparator('\0');
     protected Name uniqueName(Symbol sym) {
-        Name name =
-            Name.fromString(uniqueNameWriter.toString(sym));
-        uniqueNameWriter.setStringBuffer(null);
+        Name name = Name.fromString(uniqueNameWriter.toString(sym));
         return sym.name.isTypeName() ? name.toTypeName() : name;
     }
 

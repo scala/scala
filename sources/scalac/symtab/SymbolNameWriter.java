@@ -188,22 +188,34 @@ public class SymbolNameWriter {
 
     /** Returns the string formed by the symbol. */
     public String toString(Symbol symbol) {
-        return appendSymbol(symbol).toString();
+        assert buffer == null;
+        String string = appendSymbol(symbol).toString();
+        setStringBuffer(null);
+        return string;
     }
 
     /** Returns the string formed by the prefix and symbol. */
     public String toString(String prefix, Symbol symbol) {
-        return appendSymbol(prefix, symbol).toString();
+        assert buffer == null;
+        String string = appendSymbol(prefix, symbol).toString();
+        setStringBuffer(null);
+        return string;
     }
 
     /** Returns the string formed by the symbol and suffix. */
     public String toString(Symbol symbol, String suffix) {
-        return appendSymbol(symbol, suffix).toString();
+        assert buffer == null;
+        String string = appendSymbol(symbol, suffix).toString();
+        setStringBuffer(null);
+        return string;
     }
 
     /** Returns the string formed by the prefix, symbol and suffix. */
     public String toString(String prefix, Symbol symbol, String suffix) {
-        return appendSymbol(prefix, symbol, suffix).toString();
+        assert buffer == null;
+        String string = appendSymbol(prefix, symbol, suffix).toString();
+        setStringBuffer(null);
+        return string;
     }
 
     //########################################################################
