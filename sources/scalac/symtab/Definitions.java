@@ -26,11 +26,16 @@ public class Definitions {
     public final ATreeTyper atyper;
 
     //########################################################################
-    // Public Fields & Methods - Root module
+    // Public Fields & Methods - Root, java and scala packages
 
-    /** The root module */
+    /** The root package */
     public final Symbol ROOT_CLASS;
-    public final Type   ROOT_TYPE() {return ROOT_CLASS.type();}
+
+    /** The java package */
+    public final Symbol JAVA_CLASS;
+
+    /** The scala package */
+    public final Symbol SCALA_CLASS;
 
     //########################################################################
     // Public Fields & Methods - Top and bottom classes
@@ -467,15 +472,16 @@ public class Definitions {
         // the root package
         ROOT_CLASS = ClassSymbol.newRootClass(new PackageParser(global));
 
-        // the scala package
-        Symbol SCALA_PACKAGE = getClass(Names.scala);
+        // the java and scala packages
+        JAVA_CLASS = getClass(Names.java);
+        SCALA_CLASS = getClass(Names.scala);
 
         // the top and bottom classes
-        ANY_CLASS = newClass(SCALA_PACKAGE, Names.Any, 0);
+        ANY_CLASS = newClass(SCALA_CLASS, Names.Any, 0);
         ANYVAL_CLASS = getClass(Names.scala_AnyVal);
-        ANYREF_CLASS = newAlias(SCALA_PACKAGE, Names.AnyRef, 0);
-        ALLREF_CLASS = newClass(SCALA_PACKAGE, Names.AllRef, 0);
-        ALL_CLASS = newClass(SCALA_PACKAGE, Names.All, 0);
+        ANYREF_CLASS = newAlias(SCALA_CLASS, Names.AnyRef, 0);
+        ALLREF_CLASS = newClass(SCALA_CLASS, Names.AllRef, 0);
+        ALL_CLASS = newClass(SCALA_CLASS, Names.All, 0);
 
         // the java classes
         JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
@@ -495,7 +501,7 @@ public class Definitions {
 
         // the scala reference classes
         OBJECT_CLASS = getClass(Names.scala_ScalaObject);
-        STRING_CLASS = newAlias(SCALA_PACKAGE, Names.String, 0);
+        STRING_CLASS = newAlias(SCALA_CLASS, Names.String, 0);
         REF_CLASS = getClass(Names.scala_Ref);
         for (int i = 1; i < TUPLE_COUNT; i++) {
             TUPLE_CLASS[i] = getClass(Names.scala_Tuple(i));
