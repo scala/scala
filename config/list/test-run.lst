@@ -19,12 +19,13 @@ files/run/Course-2002-10.scala
 files/run/Course-2002-13.scala
 files/run/NestedClasses.scala
 files/run/arrays.scala
+files/run/bugs.scala
 files/run/exceptions.scala
 files/run/imports.scala
 files/run/iq.scala
 files/run/lisp.scala
-files/run/misc.scala
 files/run/map_test.scala
+files/run/misc.scala
 files/run/overloads.scala
 files/run/regularpatmat.scala
 
