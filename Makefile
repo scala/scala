@@ -21,18 +21,21 @@ meta_PREFIX		 = meta
 meta_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(meta_PREFIX)
 meta_JC_OUTPUTDIR	 = $(meta_OBJECTDIR)/classes
 meta_JC_CLASSPATH	 = $(meta_JC_OUTPUTDIR)
+meta_SC_BOOTCLASSPATH	 =
 meta_SCALAC		 = $(SCALAC)
 
 boot_PREFIX		 = boot
 boot_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(boot_PREFIX)
 boot_INSTALLDIR		 = $(boot_OBJECTDIR)
 boot_BINARYDIR		 = $(boot_OBJECTDIR)/bin
-boot_LIBRARY_CLASSDIR	 = $(boot_OBJECTDIR)/library
+boot_LIBRARY_CLASSDIR	 = $(main_LIBRARY_CLASSDIR)
 boot_TOOLS_CLASSDIR	 = $(boot_OBJECTDIR)/tools
 boot_JC_OUTPUTDIR	 = $(boot_TOOLS_CLASSDIR)
 boot_JC_CLASSPATH	 = $(boot_JC_OUTPUTDIR):$(boot_LIBRARY_CLASSDIR)
+boot_SC_BOOTCLASSPATH	 =
 boot_SCALAC		 = $(SCALAC)
 boot_SCALADOC		 = $(SCALADOC)
+boot_SCALA_CMD		 = $(SCALA)
 
 main_PREFIX		 = main
 main_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(main_PREFIX)
@@ -42,8 +45,10 @@ main_LIBRARY_CLASSDIR	 = $(main_OBJECTDIR)/library
 main_TOOLS_CLASSDIR	 = $(main_OBJECTDIR)/tools
 main_JC_OUTPUTDIR	 = $(main_TOOLS_CLASSDIR)
 main_JC_CLASSPATH	 = $(main_JC_OUTPUTDIR):$(main_LIBRARY_CLASSDIR)
+main_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
 main_SCALAC		 = $(boot_BINARYDIR)/scalac
 main_SCALADOC		 = $(main_BINARYDIR)/scaladoc
+main_SCALA_CMD		 = $(main_BINARYDIR)/scala
 
 test_PREFIX		 = test
 test_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(test_PREFIX)
@@ -53,8 +58,10 @@ test_LIBRARY_CLASSDIR	 = $(test_OBJECTDIR)/library
 test_TOOLS_CLASSDIR	 = $(test_OBJECTDIR)/tools
 test_JC_OUTPUTDIR	 = $(test_TOOLS_CLASSDIR)
 test_JC_CLASSPATH	 = $(test_JC_OUTPUTDIR):$(test_LIBRARY_CLASSDIR)
+test_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
 test_SCALAC		 = $(main_BINARYDIR)/scalac
 test_SCALADOC		 = $(test_BINARYDIR)/scaladoc
+test_SCALA_CMD		 = $(test_BINARYDIR)/scala
 
 ##############################################################################
 # Variables
@@ -68,7 +75,7 @@ JC_CLASSPATH		 = $($(prefix)_JC_CLASSPATH)
 SC_COMPILER		 = $(prefix)_SCALAC
 SC_OUTPUTDIR		 = $(JC_OUTPUTDIR)
 SC_CLASSPATH		 = $(JC_CLASSPATH):$(PROJECT_SOURCEDIR)
-SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
+SC_BOOTCLASSPATH	 = $($(prefix)_SC_BOOTCLASSPATH)
 
 # scala documentation compilation defaults
 SDC_COMPILER		 = $(prefix)_SCALADOC
@@ -239,7 +246,6 @@ endif
 ifeq ($(prefix),boot)
 $(latest)all		: $(latest)scripts
 $(latest)all		: $(latest)lamplib
-$(latest)all		: $(latest)library
 $(latest)all		: $(latest)util
 $(latest)all		: $(latest)scalac
 endif
@@ -312,7 +318,7 @@ $(SCRIPTS_WRAPPER_FILE)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_CMD          ?= java
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_ARGS         ?= -enableassertions
-$(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_CMD         ?= $$PREFIX/bin/scala
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_CMD         ?= $($(prefix)_SCALA_CMD)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_ARGS        ?=
 $(SCRIPTS_WRAPPER_FILE)	: $(VERSION_FILE)
 $(SCRIPTS_WRAPPER_FILE)	: $(PROJECT_ROOT)/Makefile
