@@ -25,7 +25,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
 	  cache.get( el ).match{
 	    case Some(cachedElem) =>
-	      System.err.println("[using cached elem +"+cachedElem.toXML+" instead of "+el.toXML+"!]");
+	      //System.err.println("[using cached elem +"+cachedElem.toXML+"!]");
 	      cachedElem
 	    case None =>
 	      cache.update( el, el );
