@@ -11,25 +11,28 @@ package scalac;
 import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.SourceFile;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
-import scalac.util.*;
+
 import scalac.ast.*;
 import scalac.ast.parser.*;
-import scalac.symtab.Definitions;
 import scalac.ast.printer.*;
 import scalac.backend.Primitives;
 // !!! <<< Interpreter stuff
 import scalac.symtab.*;
 // !!! >>> Interpreter stuff
-
+import scalac.symtab.Definitions;
+import scalac.util.*;
 
 /** The global environment of a compiler run
  *
  *  @author     Matthias Zenger
  *  @version    1.0
  */
-public class  Global {
+public class Global {
 
     public static Global instance;
 
@@ -97,11 +100,9 @@ public class  Global {
 
     public final Map/*<FullName, Pickle>*/ symdata = new HashMap();
 
-    /** scaladoc option (with docmodule and docmodulepath)
+    /** The compiler command arguments
      */
-    public final boolean doc;
-    public final String docmodule;
-    public final String docmodulePath;
+    public final CompilerCommand args;
 
     /** The set of currenttly compiled top-level symbols
      */
@@ -151,16 +152,28 @@ public class  Global {
         PRINTER_HTML = "html".intern(),
     };
 
+    /**
+     * Creates an instance variable.
+     *
+     * @param args
+     */
     public Global(CompilerCommand args) {
         this(args, false);
     }
 
+    /**
+     * Creates an instance variable.
+     *
+     * @param args
+     * @param interpret
+     */
     public Global(CompilerCommand args, boolean interpret) {
         if (Global.instance != null) { // jaco bug: can't use assert here
             new Error("Duplicate creation of Global").printStackTrace();
             System.exit(1);
         };
         Global.instance = this;
+        this.args = args;
         this.reporter = args.reporter();
         this.start(); // timestamp to compute the total time
         this.noimports = args.noimports.value;
@@ -192,9 +205,6 @@ public class  Global {
         else
             this.printer = new HTMLTreePrinter(printStream);
         this.debugPrinter = new TextTreePrinter(System.err, true);
-	this.doc = args.doc.value;
-	this.docmodule = args.docmodule.value;
-	this.docmodulePath = args.docmodulePath.value;
         this.freshNameCreator = new FreshNameCreator();
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
@@ -221,7 +231,8 @@ public class  Global {
         return firstPhase;
     }
 
-    /** Move to next phase
+    /**
+     * Moves to next phase.
      */
     public void nextPhase() {
         assert currentPhase.next != null;
@@ -255,7 +266,12 @@ public class  Global {
         compile();
     }
 
-    /** the top-level compilation process
+    /**
+     * The top-level compilation process.
+     *
+     * @param filename
+     * @param input
+     * @param console
      */
     public void compile(String filename, String input, boolean console) {
         reporter.resetCounters();
@@ -284,11 +300,6 @@ public class  Global {
                 currentPhase.check(this);
             if (currentPhase == PHASE.PARSER.phase()) fix1();
             if (currentPhase == PHASE.ANALYZER.phase()) fix2();
-            if (currentPhase == PHASE.ANALYZER.phase() && doc) {
-		DocModule.apply(this);
-		operation("stopped after phase " + currentPhase);
-                break;
-	    }
         }
         if (reporter.errors() != 0) {
             imports.clear();
@@ -566,11 +577,15 @@ public class  Global {
         startTimes.push(new Long(System.currentTimeMillis()));
     }
 
-    /** issue timing information
+    /**
+     * issue timing information
+     *
+     * @param message
      */
     public void stop(String message) {
         long start = ((Long)startTimes.pop()).longValue();
         reporter.inform("[" + message + " in " +
                 (System.currentTimeMillis() - start) + "ms]");
     }
+
 }
