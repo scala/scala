@@ -443,7 +443,6 @@ public class SymbolTablePrinter {
     public SymbolTablePrinter printType0(Type type) {
         printCommonPart(type);
         switch (type) {
-        case NoPrefix:
         case ThisType(_):
         case SingleType(_,_):
             return print(".type");
