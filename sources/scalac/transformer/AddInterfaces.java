@@ -248,6 +248,52 @@ class AddInterfaces extends SubstTransformer {
         }
     }
 
+    protected static class ThisTypeSubst {
+        Symbol fromSym;
+        Type toType;
+        ThisTypeSubst outer;
+        public ThisTypeSubst(Symbol fromSym, Type toType, ThisTypeSubst outer) {
+            this.fromSym = fromSym;
+            this.toType = toType;
+            this.outer = outer;
+        }
+        public Type apply(Type tp) {
+            switch (tp) {
+            case ThisType(Symbol sym):
+                if (sym == fromSym)
+                    return toType;
+                else if (outer != null)
+                    return outer.apply(tp);
+                else
+                    return tp;
+            case TypeRef(Type pre, Symbol sym, Type[] args):
+                return new Type.TypeRef(apply(pre), sym, apply(args));
+            case SingleType(Type pre, Symbol sym):
+                return Type.singleType(apply(pre), sym);
+            case CompoundType(Type[] parts, Scope members):
+                return Type.compoundType(apply(parts), members, tp.symbol());
+            case MethodType(Symbol[] vparams, Type result):
+                return new Type.MethodType(vparams, apply(result));
+            case PolyType(Symbol[] tparams, Type result):
+                return new Type.PolyType(tparams, apply(result));
+            case OverloadedType(Symbol[] alts, Type[] alttypes):
+                return new Type.OverloadedType(alts, apply(alttypes));
+            case CovarType(Type t):
+                return new Type.CovarType(apply(t));
+            case NoType:
+                return tp;
+            default:
+                throw Debug.abort("unknown type",tp);
+            }
+        }
+        public Type[] apply(Type[] tps) {
+            Type[] newTps = new Type[tps.length];
+            for (int i = 0; i < newTps.length; ++i)
+                newTps[i] = apply(tps[i]);
+            return newTps;
+        }
+    }
+
     // Return the interface corresponding to the given class.
     protected Tree classInterface(ClassDef classDef) {
         Template impl = classDef.impl;
@@ -295,9 +341,8 @@ class AddInterfaces extends SubstTransformer {
     protected Type fixClassSymbols(Type type) {
         switch (type) {
         case Type.NoType:
+        case ThisType(_):
             return type;
-        case ThisType(Symbol sym):
-            return new Type.ThisType(getClassSym(sym));
         case TypeRef(Type pre, Symbol sym, Type[] args):
             return new Type.TypeRef(fixClassSymbols(pre), getClassSym(sym), args);
         case SingleType(Type pre, Symbol sym):
@@ -342,6 +387,7 @@ class AddInterfaces extends SubstTransformer {
     }
 
     protected LinkedList/*<List<Tree>>*/ bodyStack = new LinkedList();
+    protected ThisTypeSubst thisTypeSubst = null;
 
     public Tree[] transform(Tree[] trees) {
         List newTrees = new ArrayList();
@@ -361,6 +407,9 @@ class AddInterfaces extends SubstTransformer {
     }
 
     public Tree transform(Tree tree) {
+        if (thisTypeSubst != null)
+            tree.setType(thisTypeSubst.apply(tree.type()));
+
         switch (tree) {
         case ClassDef(int mods,
                       Name name,
@@ -414,6 +463,9 @@ class AddInterfaces extends SubstTransformer {
 
                 // 2. modify tree accordingly
                 pushSymbolSubst(tparamsMap);
+                thisTypeSubst = new ThisTypeSubst(interfaceSym,
+                                                  classSym.thisType(),
+                                                  thisTypeSubst);
                 Tree[] parents = transform(impl.parents);
 
                 Tree[] newParents = new Tree[parents.length + 1];
@@ -460,6 +512,7 @@ class AddInterfaces extends SubstTransformer {
                                   newImpl)
                     .setSymbol(classSym);
 
+                thisTypeSubst = thisTypeSubst.outer;
                 popSymbolSubst();
 
                 return newTree;
@@ -477,7 +530,7 @@ class AddInterfaces extends SubstTransformer {
                 .setType(fixClassSymbols(tree.type));
         }
 
-        case DefDef(_, _, _, _, _, _): {
+        case DefDef(_, _, _, _, Tree tpe, _): {
             Symbol sym = tree.symbol();
             if (funParamsMaps.containsKey(sym)) {
                 Map funParamsMap = (Map)funParamsMaps.get(sym);
@@ -498,6 +551,14 @@ class AddInterfaces extends SubstTransformer {
                 global.log("new owner for " + Debug.show(sym) + " => " + newOwner);
             }
             return super.transform(tree);
+        }
+
+        case This(Ident qualifier): {
+            Symbol qualSym = qualifier.symbol();
+            if (needInterface(qualSym))
+                return gen.This(tree.pos, getClassSym(qualSym));
+            else
+                return super.transform(tree);
         }
 
         case Select(Super(_), Name selector): {
