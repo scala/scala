@@ -780,8 +780,10 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public final Type info() {
         //if (isModule()) moduleClass().initialize();
-        Phase phase = Global.instance.currentPhase;
         if ((flags & INITIALIZED) == 0) {
+            Global global = Global.instance;
+            Phase current = global.currentPhase;
+            global.currentPhase = rawFirstInfoStartPhase();
             Type info = rawFirstInfo();
             assert info != null : this;
             if ((flags & LOCKED) != 0) {
@@ -798,12 +800,13 @@ public abstract class Symbol implements Modifiers, Kinds {
                 Type tp = info();
                 flags &= ~SNDTIME;
             } else {
-                assert !(rawInfoAt(phase) instanceof Type.LazyType) : this;
+                assert !(rawInfo() instanceof Type.LazyType) : this;
                 //flags |= INITIALIZED;
             }
             //System.out.println("done: " + this);//DEBUG
+            global.currentPhase = current;
         }
-        return rawInfoAt(phase);
+        return rawInfo();
     }
 
     /** Get info at start of next phase
@@ -848,6 +851,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert infos != null : this;
         assert phase != null : this;
         if (infos.limit().precedes(phase)) {
+            switch (infos.info) {
+            case LazyType():
+                // don't force lazy types
+                return infos.info;
+            }
             while (infos.limit().next != phase) {
                 Phase next = infos.limit().next;
                 Type info = transformInfo(next, infos.info);
