@@ -331,9 +331,17 @@ public class Infer implements Modifiers, Kinds {
 			    solveUpper(tparams, tvars, j);
 			}
 		    }
-		    if (!cyclic)
+		    if (!cyclic) {
 			constr.hibounds = new Type.List(
 			    bound.subst(tparams, tvars), constr.hibounds);
+			for (int j = 0; j < tvars.length; j++) {
+			    if (tparams[j].loBound().isSameAs(tparams[i].type())) {
+				constr.hibounds = new Type.List(
+				    tparams[j].type().subst(tparams, tvars),
+				    constr.hibounds);
+			    }
+			}
+		    }
 		    maximizeVar(tvar);
 		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
 		}
@@ -345,7 +353,6 @@ public class Infer implements Modifiers, Kinds {
     private void solveLower(Symbol[] tparams, Type[] tvars, int i)
         throws NoInstance {
 	if (tvars[i] != Type.NoType) {
-	    //System.out.println("solve lower " + tparams[i]);//DEBUG
 	    switch (tvars[i]) {
 	    case TypeVar(Type origin, Type.Constraint constr):
 		if (constr.inst != Type.NoType) {
@@ -364,12 +371,30 @@ public class Infer implements Modifiers, Kinds {
 			    }
 			}
 			assert !cyclic;
-			if (!cyclic)
+			if (!cyclic) {
 			    constr.lobounds = new Type.List(
 				bound.subst(tparams, tvars), constr.lobounds);
+			    for (int j = 0; j < tvars.length; j++) {
+				if (tparams[j].info().isSameAs(tparams[i].type())) {
+				    constr.lobounds = new Type.List(
+					tparams[j].type().subst(tparams, tvars),
+					constr.lobounds);
+				}
+			    }
+			}
+			for (int j = 0; j < tvars.length; j++) {
+			    if (bound.contains(tparams[j]) ||
+				tparams[j].info().isSameAs(tparams[i].type())) {
+				cyclic |= tvars[j] == Type.NoType;
+				solveLower(tparams, tvars, j);
+			    }
+			}
+
+
 		    }
 		    minimizeVar(tvar);
 		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
+		    //System.out.println("solve lower " + tparams[i] + "=" + tvars[i]);//DEBUG
 		}
 	    }
 	}
