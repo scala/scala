@@ -29,6 +29,7 @@ public class Code {
     public case If(Code cond, Code thenp, Code elsep);
     public case Or(Code lf, Code rg);
     public case And(Code lf, Code rg);
+    public case Switch(Code test, int[] tags, Code[] bodies, Code otherwise);
 
     public case IsScala(Code target, Symbol symbol);
     public case IsJava(Code target, Class clasz);
@@ -90,6 +91,17 @@ public class Code {
 
         case And(Code lf, Code rg):
             return "And(" + lf + "," + rg + ")";
+
+        case Switch(Code test, int[] tags, Code[] bodies, Code otherwise):
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("Switch(" + test + ",\n");
+            for (int i = 0; i < bodies.length; i++) {
+                buffer.append(tags[i]).append(" => ").append(bodies[i]);
+                buffer.append(",\n");
+            }
+            buffer.append("_  => ").append(otherwise);
+            buffer.append(")");
+            return buffer.toString();
 
         case IsScala(Code target, Symbol symbol):
             return "IsScala(" + target + "," +  symbol + ")";
