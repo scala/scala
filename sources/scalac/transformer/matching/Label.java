@@ -2,6 +2,7 @@ package scalac.transformer.matching ;
 
 import scalac.ast.Tree ;
 import scalac.ast.TreeInfo ;
+import scalac.symtab.Symbol ;
 import scalac.symtab.Type ;
 import Tree.Literal ;
 
@@ -30,10 +31,10 @@ public class Label {
                   return lit.value.hashCode();
             case TreeLabel( Tree pat ):
 		switch( pat ) {
-		    case Apply( _, Tree[] args ):
-			return TreeInfo.methSymbol( pat ).hashCode() + args.hashCode(); // incorrect?
+		    case Apply( Tree fun, Tree[] args ):
+			return pat.type().hashCode() + args.hashCode(); // incorrect?
 		}
-                  return pat.hashCode();
+		return pat.hashCode();
             case TypeLabel( Type type ):
                   return type.hashCode();
             default:
