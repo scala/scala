@@ -1285,12 +1285,20 @@ public abstract class Symbol implements Modifiers, Kinds {
         this.setInfo(completer);
     }
 
+    /**
+     * Returns the symbol to use in case of a rebinding due to a more
+     * precise type prefix.
+     */
+    public Symbol rebindSym() {
+        return this;
+    }
+
     /** return a tag which (in the ideal case) uniquely identifies
      *  class symbols
      */
-        public int tag() {
-                return name.toString().hashCode();
-        }
+    public int tag() {
+        return name.toString().hashCode();
+    }
 }
 
 /** A class for term symbols
@@ -1510,7 +1518,9 @@ public abstract class TypeSymbol extends Symbol {
             result = fixConstrType(result, clone);
             return new Type.PolyType(tparams, result);
         case TypeRef(Type pre, Symbol sym, Type[] args):
-            assert sym == this : Debug.show(sym) + " != " + Debug.show(this);
+            if (sym != this && isTypeAlias() && owner().isCompoundSym())
+                return type;
+            assert sym == this: Debug.show(sym) + " != " + Debug.show(this);
             return new Type.TypeRef(pre, clone, args);
         case LazyType():
             return type;
@@ -1773,11 +1783,34 @@ public class ClassSymbol extends TypeSymbol {
      */
     final private Type thistp = Type.ThisType(this);
 
+    private final Symbol rebindSym;
+
     /** Principal Constructor
      */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
         super(CLASS, pos, name, owner, flags);
         this.mangled = name;
+        this.rebindSym = new AliasTypeSymbol(pos, Names.ALIAS(this), owner, 0);
+        Type rebindType = new ClassAliasLazyType();
+        this.rebindSym.setInfo(rebindType);
+        this.rebindSym.primaryConstructor().setInfo(rebindType);
+    }
+
+    private class ClassAliasLazyType extends Type.LazyType {
+        public void complete(Symbol ignored) {
+            Symbol clasz = ClassSymbol.this;
+            Symbol alias = rebindSym;
+            Type prefix = clasz.owner().thisType();
+            Type constrtype = Type.TypeRef(prefix, alias,Type.EMPTY_ARRAY);
+            constrtype = Type.MethodType(Symbol.EMPTY_ARRAY, constrtype);
+            constrtype = Type.PolyType(clasz.typeParams(), constrtype);
+            constrtype = constrtype.cloneType(
+                clasz.primaryConstructor(), alias.primaryConstructor());
+            alias.primaryConstructor().setInfo(constrtype);
+            Symbol[] tparams = constrtype.typeParams();
+            Type info = Type.TypeRef(prefix, clasz, Symbol.type(tparams));
+            alias.setInfo(info);
+        }
     }
 
     public static ClassSymbol define(
@@ -1912,6 +1945,10 @@ public class ClassSymbol extends TypeSymbol {
 		}
 		assert sym != null : this;
 		return sym;
+    }
+
+    public final Symbol rebindSym() {
+        return rebindSym;
     }
 
     public void reset(Type completer) {
