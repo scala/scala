@@ -1,2 +1,0 @@
-#needs to be run in scalac directory.
-pico -d $HOME/classes -source 1.4 *.java */*.java ast/printer/*.java symtab/classfile/*.java
