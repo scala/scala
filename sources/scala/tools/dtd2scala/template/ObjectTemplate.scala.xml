@@ -1,0 +1,85 @@
+<!DOCTYPE template [ 
+  <!ENTITY elementName   '<string ref="elementName"/>'> 
+  <!ENTITY qElementName  '<qstring ref="elementName"/>'> 
+  <!ENTITY ccElementName '<ccstring ref="elementName"/>'> 
+  <!ENTITY elementContentModel   '<string ref="elementContentModel"/>'> 
+  <!ENTITY attributeName   '<string ref="attributeName"/>'> 
+  <!ENTITY qAttributeName  '<qstring ref="attributeName"/>'> 
+  <!ENTITY ccAttributeName '<ccstring ref="attributeName"/>'> 
+  <!ENTITY space '<![CDATA[ ]]>'> 
+  <!ENTITY br '<br/>'> 
+]>
+<!-- generalize to abstract syntax instead of concrete ? -->
+<!-- the formatting should be done by a code beautifier -->
+<template>
+  /* this file is generated from a DTD using ObjectTemplate.scala.xml */
+  <br/>
+  <!-- package/ -->
+import scala.xml._ ;&br;
+import scala.collection.Map ;<br/>
+import scala.collection.mutable.HashMap ;<br/>
+  <br/>
+  /** the following elements are bound
+  <elementBinding>
+    * &elementName; : &elementContentModel; { 
+      <attributeBinding>&attributeName;</attributeBinding>
+    }
+  </elementBinding>
+  **/
+  <br/>
+  object <string ref="objectName"/> {<inc/><br/>
+
+    type childrenT = scala.Seq[scala.xml.Node];
+    type attribMapT = HashMap[String,String];<br/>
+    type NodeConstructorType = (childrenT,attribMapT) =&gt; scala.xml.Node;<br/>
+
+    <elementBinding>
+      def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = 
+    new &ccElementName;(ch:_*) {
+      <attributeAssign>    
+      override def attributes = attrs;    
+      override val &ccAttributeName; = attrs.get(&qAttributeName;);
+      </attributeAssign>
+    };
+      case class &ccElementName;( ch:Node* ) extends scala.xml.Node {<inc/><br/>
+          def label = &qElementName;; <br/>
+          def children = ch;<br/>
+          def attributes : Map[String,String] = null; /*o'ridden at parse time */<br/>
+          val attribHashCode: int = 0 ; /*     overridden at parse time */<br/>
+      <attributeBinding>
+        val &ccAttributeName; : scala.Option[String] = scala.None;  
+        /*     overridden at parse time */
+      </attributeBinding><dec/><br/>
+      }
+    </elementBinding>
+    <br/>
+
+    def load( filename:String ):Node = 
+       load( filename, <string ref="compressDefault"/> );<br/>
+<br/>
+    def load( filename:String, _compress:boolean ):scala.xml.Node = {<inc/><br/>
+
+  val fAdapter = new BindingFactoryAdapter  {<inc/><br/>
+
+  val f = { <inc/><br/>
+    val res = new HashMap[String, NodeConstructorType] ;<br/>
+    <elementBinding>
+    res.update( &qElementName;, 
+    (x:childrenT,aMap:attribMapT) => constr_&ccElementName;(x,aMap));
+    </elementBinding><br/>
+    res;<dec/><br/>
+  }<br/>
+
+  val g = { <inc/><br/>
+    val res = new HashMap[scala.String, boolean] ;
+    <elementBinding>
+    res.update( &qElementName;, <string ref="elementContainsText"/>);<br/>
+  </elementBinding><br/>
+    res;<dec/><br/>
+  }<br/>
+  val compress = _compress ; <dec/><br/>
+  };<dec/><br/>
+  fAdapter.loadXML( filename );<br/>
+  };<dec/><br/>    
+}
+</template>

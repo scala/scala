@@ -21,7 +21,7 @@ class DeclToScala(fOut:PrintWriter,
     val objectName : String = "myXML"; /* DEFAULT MODULE NAME */
     val package_ : String = "";
     val compress : boolean = true;
-    final val tmplFile = "scala/tools/dtd2scala/template/CommentTemplate.scala.xml";
+    final val tmplFile = "scala/tools/dtd2scala/template/ObjectTemplate.scala.xml";
     final val tmpl:Node = XML.load( ClassLoader.getSystemResource(tmplFile) );
 
     val lookup : HashMap[String,String] = new HashMap[String,String]();
