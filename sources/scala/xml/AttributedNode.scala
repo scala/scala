@@ -16,9 +16,13 @@ trait AttributedNode extends Node {
      */
     def attributes: Map[String, String];
 
-    /** Destructively updated attributes.
+    /** Returns a new AttributedNode with updated attributes.
      */
     def %(attrs: List[Pair[String, String]]): AttributedNode;
+
+    /** Returns a new AttributedNode with updated attribute.
+     */
+    def %(attr: Pair[String, String]): AttributedNode;
 
     /** Returns the hashcode for this node.
      */
