@@ -26,7 +26,6 @@ ast/SubstTransformer.java
 ast/Transformer.java
 ast/Traverser.java
 ast/Tree.java
-ast/TreeCopier.java
 ast/TreeCopyFactory.java
 ast/TreeCreator.java
 ast/TreeFactory.java
