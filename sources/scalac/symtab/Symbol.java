@@ -131,17 +131,31 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Set type -- this is an alias for setInfo(Type info) */
     public final Symbol setType(Type info) { return setInfo(info); }
 
-    /** Set initial information valid from start of current phase. */
+    /**
+     * Set initial information valid from start of current phase. This
+     * information is visible in the current phase and will be
+     * transformed by the current phase (except if current phase is
+     * the first one).
+     */
     public Symbol setInfo(Type info) {
         return setInfoAt(info, Global.instance.currentPhase);
     }
 
-    /** Set initial information valid from start of first phase. */
+    /**
+     * Set initial information valid from start of first phase. This
+     * information is visible in the first phase and will be
+     * transformed by all phases excepted the first one.
+     */
     public final Symbol setFirstInfo(Type info) {
         return setInfoAt(info, Global.instance.getFirstPhase());
     }
 
-    /** Set initial information valid from start of given phase. */
+    /**
+     * Set initial information valid from start of given phase. This
+     * information is visible in the given phase and will be
+     * transformed by the given phase (except if it is the first
+     * phase).
+     */
     private final Symbol setInfoAt(Type info, Phase phase) {
         assert phase != null : this;
         assert !isConstructor()
@@ -159,12 +173,21 @@ public abstract class Symbol implements Modifiers, Kinds {
         return this;
     }
 
-    /** Set new information valid from start of next phase */
+    /**
+     * Set new information valid from start of next phase. This
+     * information is only visible in next phase or through
+     * "nextInfo". It will not be transformed by the current phase.
+     */
     public final Symbol updateInfo(Type info) {
         return updateInfoAt(info, Global.instance.currentPhase);
     }
 
-    /** Set new information valid from start of given phase */
+    /**
+     * Set new information valid from start of phase after given
+     * phase. This information is only visible from the start of the
+     * phase after the given phase. It will not be tranformed by the
+     * given phase.
+     */
     private final Symbol updateInfoAt(Type info, Phase phase) {
         assert infos != null : this;
         assert !phase.precedes(infos.limit()) :
