@@ -37,7 +37,8 @@ abstract class Node extends NodeSeq {
   final def apply(i: Int) = if( i==0 ) this else error("singleton sequence");
   */
 
-  /** used internally. Text = -1 PI = -2 Comment = -3 CDATA = -4 EntityRef = -5 */
+  /** used internally. Text = -1 PI = -2 Comment = -3 CDATA = -4 EntityRef = -5
+   */
   def typeTag$:Int = 0;
 
   /** QName (the label of this node). I.e. "foo" for &lt;foo/&gt;) */
