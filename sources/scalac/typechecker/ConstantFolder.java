@@ -29,13 +29,41 @@ class ConstantFolder implements /*imports*/ TypeTags {
      */
     Type foldBinary(int pos, ConstantType left, ConstantType right, Name op) {
 	try {
-	    Type optype = left.deconst();
-	    if (optype.symbol() == ana.definitions.BYTE_CLASS ||
-		optype.symbol() == ana.definitions.CHAR_CLASS ||
-		optype.symbol() == ana.definitions.SHORT_CLASS)
-		optype = ana.definitions.INT_TYPE();
-	    if (optype.isSubType(right.deconst()))
-		optype = right.deconst();
+            Type ltype = left.deconst();
+            Symbol lsymbol = left.symbol();
+	    if (lsymbol == ana.definitions.BYTE_CLASS ||
+		lsymbol == ana.definitions.CHAR_CLASS ||
+		lsymbol == ana.definitions.SHORT_CLASS) {
+		ltype = ana.definitions.INT_TYPE();
+                lsymbol = ana.definitions.INT_CLASS;
+            }
+            Type rtype = right.deconst();
+            Symbol rsymbol = right.symbol();
+	    if (rsymbol == ana.definitions.BYTE_CLASS ||
+		rsymbol == ana.definitions.CHAR_CLASS ||
+		rsymbol == ana.definitions.SHORT_CLASS) {
+		rtype = ana.definitions.INT_TYPE();
+                rsymbol = ana.definitions.INT_CLASS;
+            }
+	    Type optype;
+            if (ltype.isSameAs(rtype)) {
+                optype = ltype;
+            } else {
+                if (lsymbol == ana.definitions.INT_CLASS)
+                    optype = rtype;
+                else if (rsymbol == ana.definitions.INT_CLASS)
+                    optype = ltype;
+                else if (lsymbol == ana.definitions.LONG_CLASS)
+                    optype = rtype;
+                else if (rsymbol == ana.definitions.LONG_CLASS)
+                    optype = ltype;
+                else if (lsymbol == ana.definitions.FLOAT_CLASS)
+                    optype = rtype;
+                else if (rsymbol == ana.definitions.FLOAT_CLASS)
+                    optype = ltype;
+                else
+                    throw Debug.abort("illegal case", ltype + " - " + rtype);
+            }
 	    Object value = null;
 	    switch (optype.unbox()) {
 	    case UnboxedType(INT):

@@ -25,13 +25,41 @@ class ConstantFolder(ana: Analyzer) {
   */
   def foldBinary(pos: int, left: Type$ConstantType, right: Type$ConstantType, op: Name): Type = {
     try {
-      var optype: Type = left.deconst();
-      if (optype.symbol() == ana.definitions.BYTE_CLASS ||
-	  optype.symbol() == ana.definitions.CHAR_CLASS ||
-	  optype.symbol() == ana.definitions.SHORT_CLASS)
-	optype = ana.definitions.INT_TYPE();
-      if (optype.isSubType(right.deconst()))
-	optype = right.deconst();
+      var ltype: Type = left.deconst();
+      var lsymbol: Symbol = left.symbol();
+      if (lsymbol == ana.definitions.BYTE_CLASS ||
+	  lsymbol == ana.definitions.CHAR_CLASS ||
+	  lsymbol == ana.definitions.SHORT_CLASS) {
+	    ltype = ana.definitions.INT_TYPE();
+            lsymbol = ana.definitions.INT_CLASS;
+          }
+      var rtype: Type = right.deconst();
+      var rsymbol: Symbol = right.symbol();
+      if (rsymbol == ana.definitions.BYTE_CLASS ||
+	  rsymbol == ana.definitions.CHAR_CLASS ||
+	  rsymbol == ana.definitions.SHORT_CLASS) {
+	    rtype = ana.definitions.INT_TYPE();
+            rsymbol = ana.definitions.INT_CLASS;
+          }
+      val optype: Type =
+        if (ltype.isSameAs(rtype)) {
+          ltype;
+        } else {
+          if (lsymbol == ana.definitions.INT_CLASS)
+            rtype;
+          else if (rsymbol == ana.definitions.INT_CLASS)
+            ltype;
+          else if (lsymbol == ana.definitions.LONG_CLASS)
+            rtype;
+          else if (rsymbol == ana.definitions.LONG_CLASS)
+            ltype;
+          else if (lsymbol == ana.definitions.FLOAT_CLASS)
+            rtype;
+          else if (rsymbol == ana.definitions.FLOAT_CLASS)
+            ltype;
+          else
+            throw Debug.abort("illegal case", ltype.toString() +" - "+ rtype);
+        }
       var value: Object = null;
       optype.unbox() match {
 	case Type$UnboxedType(INT) =>
