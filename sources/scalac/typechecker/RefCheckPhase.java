@@ -39,7 +39,6 @@ public class RefCheckPhase extends Phase {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-            new CheckNames(global)
         };
     }
 }

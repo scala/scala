@@ -30,7 +30,6 @@ class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
       a.update(0, new CheckSymbols(global) );
       a.update(1, new CheckTypes(global) );
       a.update(2, new CheckOwners(global) );
-      a.update(3, new CheckNames(global) );
       a
     }
   }

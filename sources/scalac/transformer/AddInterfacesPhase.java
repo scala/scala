@@ -123,7 +123,6 @@ public class AddInterfacesPhase extends Phase {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-	    new CheckNames(global)
         };
     }
 

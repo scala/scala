@@ -68,8 +68,7 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
     NewArray.Checker(
       new CheckSymbols(global),
       new CheckTypes(global),
-      new CheckOwners(global),
-      new CheckNames(global)
+      new CheckOwners(global)
     );
 }
 }

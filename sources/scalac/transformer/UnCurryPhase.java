@@ -102,7 +102,6 @@ public class UnCurryPhase extends Phase implements Modifiers {
             new CheckSymbols(global),
             new CheckTypes(global),
             new CheckOwners(global),
-	    new CheckNames(global)
         };
     }
 }
