@@ -194,7 +194,7 @@ public class Definitions {
         ANY_TYPE = ANY_CLASS.typeConstructor();
         ANY_CLASS.setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), ANY_CLASS));
         ANY_CLASS.constructor().setInfo(
-	    Type.PolyType(Symbol.EMPTY_ARRAY, ANY_TYPE));
+	    Type.MethodType(Symbol.EMPTY_ARRAY, ANY_TYPE));
 
         // the java.lang.OBJECT class
         JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);

@@ -104,6 +104,14 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public Symbol setInfo(Type info, int limit) {
+	assert !isConstructor()
+	    || info instanceof Type.LazyType
+	    || info == Type.ErrorType
+	    || info instanceof Type.MethodType
+	    || info instanceof Type.OverloadedType
+	    || info instanceof Type.PolyType &&
+   	       ((Type.PolyType)info).result instanceof Type.MethodType
+	    : "illegal type for " + this + ": " + info;
 	if ((flags & (INITIALIZED | LOCKED)) != (INITIALIZED | LOCKED)) {
 	    if (infos == TypeIntervalList.EMPTY)
 		infos = new TypeIntervalList(TypeIntervalList.EMPTY);
@@ -748,7 +756,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    if ((flags & TRAIT) != 0)
 		return "trait";
 	    else if ((flags & MODUL) != 0 && Global.instance.debug)
-		return "module class";
+		return "object class";
 	    else
 		return "class";
 	case TYPE:
@@ -756,7 +764,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    return "type";
         case VAL:
 	    if (isVariable()) return "variable";
-	    else if (isModule()) return "module";
+	    else if (isModule()) return "object";
 	    else if (isConstructor()) return "constructor";
 	    else if (isInitializedMethod() &&
 		     (Global.instance.debug || (flags & STABLE) == 0) )
@@ -775,7 +783,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         case ALIAS: return "type";
         case VAL:
 	    if (isVariable()) return "var";
-	    else if (isModule()) return "module";
+	    else if (isModule()) return "object";
 	    else if (isInitializedMethod()) return "def";
 	    else return "val";
 	default: return "";

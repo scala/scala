@@ -1457,6 +1457,59 @@ the implementer of a class. Often, a field in one version of a class
 becomes a computed value in the next version. Uniform access ensures
 that clients do not have to be rewritten because of that change.
 
+\pararagraph{Abstract Classes}
+
+Consider the task of writing a class for sets of integer numbers with
+operations as follows.
+
+\begin{verbatim}
+abstract class IntSet {
+  def incl(x: int): IntSet;
+  def contains(x: int): boolean;
+}
+\end{verbatim}
+\verb@IntSet@ is labelled as an \emph{abstract class}. This has two consequences. 
+First, absract classes may have abstract members which are declared
+but which do not have an implementation. In our case, both \verb@incl@
+and \verb@contains@ are such members. Second, if a class has
+unimplemented members, no objects of that class may be created using
+\verb@new@.
+
+\paragraph{Subclasses}
+
+Let's say, we plan to implement sets as binary trees.  There are two
+possible forms of trees. A tree for the empty set, and a tree
+consisting of an integer and two subtrees. Here are their implementations.
+
+ \begin{verbatim}
+class Empty extends IntSet {
+  def contains(x: int): boolean = false;
+  def incl(x: int): IntSet = new NonEmpty(x, Empty, Empty);
+}
+\end{verbatim}
+\es\bs
+\begin{verbatim}
+class NonEmpty(elem:int, left:IntSet, right:IntSet) extends IntSet {
+  def contains(x: int): boolean = 
+    if (x < elem) left contains x
+    else if (x > elem) right contains x
+    else true;
+  def incl(x: int): IntSet = 
+    if (x < elem) new NonEmpty(elem, left incl x, right)
+    else if (x > elem) new NonEmpty(elem, left, right incl x)
+    else this;
+}
+\end{verbatim}
+\redtext{Notes:}
+\bi
+\item Both \verb@Empty@ and \verb@NonEmpty@ \redtext{extend} class \verb@IntSet@.
+\item This means that 
+\bi
+\item
+The types \verb@Empty@ and \verb@NonEmpty@ \redtext{conform} to type \verb@IntSet@. 
+
+
+
 \paragraph{Abstract Methods.}
 Classes can also omit some of the definitions of their members.  As an
 example, consider the following class \verb@Ord@ which provides the

@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-module M0 {
+object M0 {
 
   trait Expr {
     def isNumber: boolean;
@@ -66,7 +66,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
 
   trait Expr {
     def eval: int;
@@ -93,7 +93,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
 
   trait Expr;
   case class Number(n: int) extends Expr;
@@ -117,7 +117,7 @@ module M2 {
 
 //############################################################################
 
-module M3 {
+object M3 {
 
   trait Expr {
     def eval: int = this match {
@@ -142,7 +142,7 @@ module M3 {
 
 //############################################################################
 
-module M4 {
+object M4 {
 
   def concat[a](xss: List[List[a]]): List[a] = xss match {
     case List() => List()
@@ -180,7 +180,7 @@ module M4 {
 
 //############################################################################
 
-module M5 {
+object M5 {
 
   def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = Pair(xs,ys) match {
     case Pair(List(), _) => List()
@@ -215,7 +215,7 @@ module M5 {
 
 //############################################################################
 
-module M6 {
+object M6 {
 
   def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = Pair(xs,ys) match {
     // !!! case Pair(List(), _), Pair(_, List()) => List()
@@ -248,7 +248,7 @@ module M6 {
 
 //############################################################################
 
-module M7 {
+object M7 {
 
   def heads[a](xss: List[List[a]]): List[a] = xss flatMap {
     case x :: xs => List(x)
@@ -292,7 +292,7 @@ module M7 {
 
 //############################################################################
 
-module M8 {
+object M8 {
 
   def heads[a](xss: List[List[a]]): List[a] = xss.flatMap {
     y => y match {
@@ -338,7 +338,7 @@ module M8 {
 
 //############################################################################
 
-module M9 {
+object M9 {
 
   trait Expr {
     def derive(v: Var): Expr = match {
@@ -374,7 +374,7 @@ module M9 {
 
 //############################################################################
 
-module MA {
+object MA {
 
   def lookup[k,v](xs: List[Pair[k,v]], k: k): v = xs match {
     case List() => error("no value for " + k)
@@ -449,7 +449,7 @@ module MA {
 
 //############################################################################
 
-module Utils {
+object Utils {
 
   private def power0(x: int, y: int): int =
     if (y == 1) x else if (y % 2 == 0) power0(x*x,y/2) else x*power0(x, y-1);
@@ -482,7 +482,7 @@ module Utils {
 
 }
 
-module MB {
+object MB {
 
   import Utils._;
 
@@ -703,7 +703,7 @@ module MB {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): unit = {
     M0.test;
     M1.test;

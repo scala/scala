@@ -1,4 +1,4 @@
-module test {
+object test {
 
   trait A { type T; }
 

@@ -7,7 +7,7 @@ class O[X]() {
     val j:I[X] = null;
 }
 
-module o extends O[C]() {
+object o extends O[C]() {
   def c: C = c;
   def main = {
     o.j.foo(c);

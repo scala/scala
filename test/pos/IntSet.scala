@@ -4,8 +4,8 @@ trait IntSet {
   def foreach(f: Int => Unit): Unit;
   def union(that: IntSet): IntSet;
 }
-module Empty extends IntSet {
-  def contains(x: Int): Boolean = false;
+object Empty extends IntSet {
+  def contains(x: Int): Boolean = Boolean.False;
   def incl(x: Int): IntSet = new NonEmpty(x, Empty, Empty);
   def foreach(f: Int => Unit): Unit = ();
   def union(that: IntSet): IntSet = that;
@@ -26,7 +26,7 @@ class NonEmpty(elem: Int, left: IntSet, right: IntSet) extends IntSet {
   }
   def union(that: IntSet): IntSet = (left union (right union that)) incl elem;
 }
-module test {
+object test {
   def main = {
     val x = Empty incl 1 incl 2;
     val y = Empty incl 2 incl 3;

@@ -1,4 +1,4 @@
-module test {
+object test {
 
   def size = 2;
   def pi = 3.14159;

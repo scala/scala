@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-module M0 {
+object M0 {
   def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b);
   def factorial(n: Int): Int = if (n == 0) 1 else n * factorial(n - 1);
 
@@ -14,7 +14,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
   def cube(x: Int): Double = x * x * x;
 
   def sumInts(a: Int, b: Int): Double =
@@ -47,7 +47,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
   def id(x: Int): Double = x;
   def cube(x: Int): Double = x * x * x;
   def reciprocal(x: Int): Double = 1.0/x;
@@ -74,7 +74,7 @@ module M2 {
 
 //############################################################################
 
-module M3 {
+object M3 {
   def sum(f: Int => Double, a: Int, b: Int): Double =
     if (a > b) 0
     else f(a) + sum(f, a + 1, b);
@@ -94,7 +94,7 @@ module M3 {
 
 //############################################################################
 
-module M4 {
+object M4 {
   def sum(f: Int => Double) = {
     def sumF(a: Int, b: Int): Double =
       if (a > b) 0
@@ -117,7 +117,7 @@ module M4 {
 
 //############################################################################
 
-module M5 {
+object M5 {
   def sum(f: Int => Double): (Int, Int) => Double = { (a, b) =>
     if (a > b) 0
     else f(a) + sum(f)(a + 1, b)
@@ -138,7 +138,7 @@ module M5 {
 
 //############################################################################
 
-module M6 {
+object M6 {
   def sum(f: Int => Double)(a: Int, b: Int): Double =
     if (a > b) 0
     else f(a) + sum(f)(a + 1, b);
@@ -158,7 +158,7 @@ module M6 {
 
 //############################################################################
 
-module M7 {
+object M7 {
   def sum(f: Int => Double)(a: Int, b: Int): Double = {
     def iter(a: Int, result: Double): Double =
       if (a > b) result
@@ -181,7 +181,7 @@ module M7 {
 
 //############################################################################
 
-module M8 {
+object M8 {
   def product(f: Int => Double)(a: Int, step: Int, b: Int): Double =
     if (a > b) 1
     else f(a) * product(f)(a + step, step, b);
@@ -197,7 +197,7 @@ module M8 {
 
 //############################################################################
 
-module M9 {
+object M9 {
   def accumulate[t](combiner: (t, t) => t, nullValue: t, f: Int => t, next: Int => Int)
       (a: Int, b: Int): t =
     if (a > b) nullValue
@@ -231,7 +231,7 @@ module M9 {
 
 //############################################################################
 
-module MA {
+object MA {
   val tolerance = 0.0001;
   def abs(x: Double) = if (x < 0) -x else x;
   def isCloseEnough(x: Double, y: Double) = abs((x - y) / x) < tolerance;
@@ -252,7 +252,7 @@ module MA {
 
 //############################################################################
 
-module MB {
+object MB {
   val tolerance = 0.0001;
   def abs(x: Double) = if (x < 0) -x else x;
   def isCloseEnough(x: Double, y: Double) = abs((x - y) / x) < tolerance;
@@ -274,7 +274,7 @@ module MB {
 
 //############################################################################
 
-module MC {
+object MC {
   def sum(f: Int => Double)(a: Int, b: Int): Double = {
     def iter(a: Int, result: Double): Double = {
       if (a > b) result
@@ -322,7 +322,7 @@ module MC {
 
 //############################################################################
 
-module MD {
+object MD {
   def reduce(op: (Double,Double) => Double, zero:Double)
     (f: Int => Double)(a: Int,b: Int): Double = {
     def iter(a: Int, result: Double): Double = {
@@ -366,7 +366,7 @@ module MD {
 
 //############################################################################
 
-module ME {
+object ME {
   def reduce(op: (Double,Double) => Double, zero:Double)
     (f: Int => Double)(a: Int,b: Int): Double = {
     def iter(a: Int, result: Double): Double = {
@@ -410,7 +410,7 @@ module ME {
 
 //############################################################################
 
-module MF {
+object MF {
   def fib(x: Int): Int =
     if (x <= 1) x
     else fib(x - 2) + fib(x - 1);
@@ -429,7 +429,7 @@ module MF {
 
 //############################################################################
 
-module MG {
+object MG {
   def fib(x: Int) = {
     def loop(n: Int, prev: Int, fibn: Int): Int =
       if (n == x) fibn
@@ -451,7 +451,7 @@ module MG {
 
 //############################################################################
 
-module MH {
+object MH {
   def power(x: Double, y: Int): Double =
     if (y <= 0) 1
     else if (y % 2 == 0) power(x * x, y / 2)
@@ -527,7 +527,7 @@ module MH {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0;
     M1;

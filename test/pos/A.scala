@@ -1,6 +1,6 @@
 trait A extends scala.Object {}
 
-module test {
+object test {
 
   def x: A = x;
 

@@ -1,4 +1,4 @@
-module test {
+object test {
 
   def abs(x: Double) = if (x >= 0) x else 0 - x;
 

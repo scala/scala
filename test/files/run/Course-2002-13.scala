@@ -82,7 +82,7 @@ class Interpreter {
 
 }
 
-module Terms {
+object Terms {
 
   val debug = false;
 
@@ -159,7 +159,7 @@ module Terms {
 
 import Terms._;
 
-module Programs {
+object Programs {
 
   case class Clause(lhs: Term, rhs: List[Term]) {
     def tyvars =
@@ -262,7 +262,7 @@ class Parser(s: String) {
   def all: List[Clause] = if (token equals "") List() else line :: all;
 }
 
-module Prolog {
+object Prolog {
 
   def processor: String => Unit = {
     var program: List[Clause] = List();
@@ -304,7 +304,7 @@ module Prolog {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     Prolog.process(
       "sujet(jean).\n" +

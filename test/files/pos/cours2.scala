@@ -1,4 +1,4 @@
-module m1 {
+object m1 {
 
     def id(x: Int): Double = x;
     def cube(x: Int): Double = x * x * x;
@@ -18,7 +18,7 @@ module m1 {
 
 }
 
-module m2 {
+object m2 {
 
     def id(x: Int): Double = x;
     def cube(x: Int): Double = x * x * x;
@@ -33,7 +33,7 @@ module m2 {
     def sumReciprocals(a: Int, b: Int): Double = sum(reciprocal, a, b);
 }
 
-module m3 {
+object m3 {
 
     def sum(f: Int => Double, a: Int, b: Int): Double =
       if (a > b) 0
@@ -44,7 +44,7 @@ module m3 {
     def sumReciprocals(a: Int, b: Int): Double = sum((x => 1.0/x), a, b);
 }
 
-module m4 {
+object m4 {
 
     def sum(f: Int => Double) = {
       def sumF(a: Int, b: Int): Double =
@@ -60,7 +60,7 @@ module m4 {
     sumCubes(1, 10) + sumReciprocals(10, 20);
 }
 
-module m5 {
+object m5 {
 
     def sum(f: Int => Double): (Int, Int) => Double = (a, b) =>
       if (a > b) 0
@@ -73,7 +73,7 @@ module m5 {
     sumCubes(1, 10) + sumReciprocals(10, 20);
 }
 
-module m6 {
+object m6 {
 
     def sum(f: Int => Double)(a: Int, b: Int): Double =
       if (a > b) 0
@@ -86,7 +86,7 @@ module m6 {
     sumCubes(1, 10) + sumReciprocals(10, 20);
 }
 
-module m7 {
+object m7 {
 
     def sum(f: Int => Double)(a: Int, b: Int): Double = {
       def iter(a: Int, result: Double): Double =
@@ -102,7 +102,7 @@ module m7 {
     sumCubes(1, 10) + sumReciprocals(10, 20);
 }
 
-module m8 {
+object m8 {
 
   def product(f: Int => Double)(a: Int, step: Int, b: Int): Double =
     if (a > b) 1
@@ -111,7 +111,7 @@ module m8 {
   val pi = 8 * product(x => x * x)(4, 2, 40) / product(x => x * x)(3, 2, 40);
 }
 
-module m9 {
+object m9 {
 
   def accumulate[t](combiner: (t, t) => t, nullValue: t, f: Int => t, next: Int => Int)
 		   (a: Int, b: Int): t =

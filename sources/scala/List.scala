@@ -275,6 +275,8 @@ trait List[a] extends Seq[a] {
    else if (tail.isEmpty) head.toString() + end
    else head.toString().concat(sep).concat(tail.mkString("", sep, end)));
 
+  override def toString() = mkString("[", ",", "]");
+
   /** Return a list formed from this list and the specified list
   * <code>that</code> by associating each element of the former with
   * the element at the same position in the latter.
@@ -343,7 +345,7 @@ trait List[a] extends Seq[a] {
     }
 }
 
-module List {
+object List {
 
   def range(from: Int, end: Int): List[Int] =
     if (from >= end) scala.Predef.List()

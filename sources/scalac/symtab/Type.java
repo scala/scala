@@ -26,7 +26,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     public case ThisType(Symbol sym);
 
-    public case TypeRef(Type pre, Symbol sym, Type[] args);
+    public case TypeRef(Type pre, Symbol sym, Type[] args) {
+	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
+    }
 
     public case SingleType(Type pre, Symbol sym) {
 	assert this instanceof ExtSingleType;
@@ -80,11 +82,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public static final Type[] NO_ARRAY  = new Type[0];
 
     public static SingleType singleType(Type pre, Symbol sym) {
-	if (pre.isStable() || pre == ErrorType)
+	if (pre.isStable() || pre == ErrorType) {
 	    return new ExtSingleType(pre, sym);
-	else
+	} else {
 	    throw new Type.Error(
-		"malformed type: " + pre + "." + sym.nameString() + ".type");
+		"malformed type: " + pre + "#" + sym.nameString() + ".type");
+	}
     }
 
     public static TypeRef appliedType(Type tycon, Type[] args) {
@@ -116,7 +119,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    SYNTHETIC | ABSTRACTCLASS);
 	res.tsym.setInfo(res);
 	res.tsym.constructor().setInfo(
-	    Type.PolyType(Symbol.EMPTY_ARRAY, Type.NoType));
+	    Type.MethodType(Symbol.EMPTY_ARRAY, Type.NoType));
 	return res;
     }
 
@@ -127,7 +130,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return pre.memberInfo(sym);
 	else // todo: handle Java-style inner classes
 	    throw new Type.Error(
-		"malformed type: " + pre + "." + sym.nameString());
+		"malformed type: " + pre + "#" + sym.nameString());
     }
 
     static class ExtSingleType extends SingleType {
@@ -634,7 +637,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		Type pre1 = apply(pre);
 		Type[] args1 = map(args);
 		if (pre1 == pre && args1 == args) return tp;
-		else return TypeRef(pre1, sym, args1);
+		else return typeRef(pre1, sym, args1);
 	    case SingleType(Type pre, Symbol sym):
 		Type pre1 = apply(pre);
 		if (pre1 == pre) return tp;
@@ -866,7 +869,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Type[] args1 = map(args);
 		    typeArg = prevTypeArg;
 		    if (prefix1 == prefix && args1 == args) return t;
-		    else return TypeRef(prefix1, sym1, args1);
+		    else return typeRef(prefix1, sym1, args1);
 		}
 
 	    case SingleType(Type prefix, Symbol sym):
@@ -1075,7 +1078,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	protected Type replacement(int i, Type fromtp) {
 	    switch (fromtp) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		return TypeRef(pre, to[i], args);
+		return typeRef(pre, to[i], args);
 	    case SingleType(Type pre, Symbol sym):
 		return singleType(pre, to[i]);
 	    default:
@@ -1822,7 +1825,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    if (args[j] == NoType)
 		args[j] = CovarType(lub(argss[j]));
 	}
-	return TypeRef(pre, sym, args);
+	return typeRef(pre, sym, args);
     }
 
     /** The frontier of a closure C is the minimal set of types such that
@@ -2050,7 +2053,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Type this1 = unbox();
 		    if (this1 != this) return this1;
 		    else if (args.length == 0) return this;
-		    else return TypeRef(pre, sym, Type.EMPTY_ARRAY);
+		    else return typeRef(pre, sym, Type.EMPTY_ARRAY);
 		}
 
 	    default: throw new ApplicationError();
@@ -2104,6 +2107,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case ThisType(Symbol sym):
 	    if (sym.isRoot()) return "<root>.this.type";
 	    else if (this == localThisType) return "<local>.this.type";
+	    else if (sym.isAnonymousClass()) return "this.type";
 	    else {
 		Type this1 = (Global.instance.debug) ? this : expandModuleThis();
 		if (this1 == this) return sym.nameString() + ".this.type";
@@ -2195,7 +2199,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    else if (spre.endsWith(".type"))
 		return spre.substring(0, spre.length() - 4);
 	    else
-		return spre + "@";
+		return spre + "#";
 	}
     }
 

@@ -138,6 +138,8 @@ public class Scanner extends TokenData {
 		fetchToken();
 		if (token == CLASS) {
 		    token = CASECLASS;
+		} else if (token == OBJECT) {
+		    token = CASEOBJECT;
 		} else {
 		    next.copyFrom(this);
 		    this.copyFrom(prev);
@@ -479,8 +481,10 @@ public class Scanner extends TokenData {
 
     void treatIdent(int start, int end) {
 	name = Name.fromAscii(buf, start, end - start);
-	if (name.index <= maxKey)
+	if (name.index <= maxKey) {
 	    token = key[name.index];
+	    if (token == OBJECT1) token = OBJECT; //todo: elim
+	}
 	else
 	    token = IDENTIFIER;
     }
@@ -716,6 +720,8 @@ public class Scanner extends TokenData {
                 return "','";
 	    case CASECLASS:
 		return "case class";
+	    case CASEOBJECT:
+		return "case object";
             default:
                 try {
                     return "'" + tokenName[token].toString() + "'";
@@ -796,7 +802,8 @@ public class Scanner extends TokenData {
         enterKeyword("def", DEF);
         enterKeyword("type", TYPE);
         enterKeyword("extends", EXTENDS);
-        enterKeyword("module", MODULE);
+        enterKeyword("object", OBJECT);
+        enterKeyword("module", OBJECT1);
         enterKeyword("class",CLASS);
         enterKeyword("constr",CONSTR);
         enterKeyword("import", IMPORT);

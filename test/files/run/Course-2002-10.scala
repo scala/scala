@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-module M0 {
+object M0 {
 
   def addStream (s1: Stream[int], s2: Stream[int]): Stream[int] =
     Stream.cons(s1.head + s2.head, addStream(s1.tail, s2.tail));
@@ -20,7 +20,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
 
   def scale(x: double, s: Stream[double]): Stream[double] =
     s map (e: double => e*x);
@@ -92,7 +92,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
 
   class IntIterator(start: int) extends Iterator[int] {
     var current: int = start;
@@ -120,7 +120,7 @@ module M2 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     M1.test;

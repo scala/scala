@@ -13,7 +13,7 @@ class S8() {
     class A() extends a.B() {}
     class B() {}
 }
-module M {
+object M {
     val x = new S8();
     val y: x.a.B = new x.A(); //correct?
 }

@@ -10,7 +10,7 @@
 
 package scala;
 
-module Interpreter {
+object Interpreter {
 
   def initialize: Boolean = true;
 

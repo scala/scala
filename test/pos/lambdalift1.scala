@@ -1,6 +1,6 @@
 import scala._;
 
-module test {
+object test {
 
   def f[a <: java.lang.Object](x: a) = {
     def print() = java.lang.System.out.println(x);

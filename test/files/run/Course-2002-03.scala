@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-module M0 {
+object M0 {
   class Rational(x: Int, y: Int) {
     def numer = x;
     def denom = y;
@@ -28,7 +28,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
   class Rational(x: Int, y: Int) {
     def numer = x;
     def denom = y;
@@ -55,7 +55,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
   class Rational(x: Int, y: Int) {
     private def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b);
     private val g = gcd(x, y);
@@ -92,7 +92,7 @@ module M2 {
 
 //############################################################################
 
-module M3 {
+object M3 {
   class Rational(x: Int, y: Int) {
     private def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b);
     def numer = x / gcd(x, y);
@@ -114,7 +114,7 @@ module M3 {
 
 //############################################################################
 
-module M4 {
+object M4 {
   class Rational(x: Int, y: Int) {
     private def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b);
     private val g = gcd(x, y);
@@ -147,7 +147,7 @@ module M4 {
 
 //############################################################################
 
-module M5 {
+object M5 {
   trait IntSet {
     def incl(x: Int): IntSet;
     def contains(x: Int): Boolean;
@@ -179,7 +179,7 @@ module M5 {
 
 //############################################################################
 
-module M6 {
+object M6 {
   trait Boolean {
     def ifThenElse[a](def t: a)(def e: a): a;
 
@@ -195,15 +195,15 @@ module M6 {
     def <= (x: Boolean): Boolean = ifThenElse[Boolean](x)(new True());
     def >= (x: Boolean): Boolean = ifThenElse[Boolean](new True())(x.!);
   }
-  class True() extends Boolean { // !!! class -> module
+  class True() extends Boolean { // !!! class -> object
     def ifThenElse[a](def t: a)(def e: a): a = t }
-  class False() extends Boolean { // !!! class -> module
+  class False() extends Boolean { // !!! class -> object
     def ifThenElse[a](def t: a)(def e: a): a = e }
 }
 
 //############################################################################
 
-module M7 {
+object M7 {
   trait Nat {
     def isZero(): Boolean;
     def predecessor: Nat;
@@ -215,7 +215,7 @@ module M7 {
 
 //############################################################################
 
-module M8 {
+object M8 {
 
   trait IntSet {
     def incl(x: Int): IntSet;
@@ -244,7 +244,7 @@ module M8 {
     }
   }
 
-  class Empty extends IntSet { // !!! class Empty() -> module Empty
+  class Empty extends IntSet { // !!! class Empty() -> object Empty
     def contains(x: Int): Boolean = false;
     def incl(x: Int): IntSet = new NonEmpty(x, new Empty, new Empty);
     def map(f: Int => Int): IntSet = this;
@@ -337,7 +337,7 @@ module M8 {
 
 //############################################################################
 
-module M9 {
+object M9 {
   class Rational(x: Int, y: Int) {
     private def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b);
     private val g = gcd(x, y);
@@ -373,7 +373,7 @@ module M9 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0;
     M1;

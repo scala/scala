@@ -2,7 +2,7 @@ trait C {}
 trait D {}
 trait E {}
 
-module test {
+object test {
   def c: C = c;
   def d: D = d;
   def e: E = e;
@@ -22,7 +22,7 @@ class O[X]() {
     val j:I[X] = null;
 }
 
-module o extends O[C]() {
+object o extends O[C]() {
 
   def main = {
     val s: S = null;

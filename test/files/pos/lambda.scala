@@ -1,4 +1,4 @@
-module test {
+object test {
 
   def apply[a,b](f: a => b): a => b  =  x: a => f(x);
 

@@ -3,16 +3,6 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
-
-// $Id$
-
-// todo: Any cannot be inherited.
-// todo: check that only stable defs override stable defs
-// todo: admit vardefs w/o rhs
-// ClassTemplate   ::= [extends Constr {with Constr}]
-//                     [with `(' TemplateStatSeq `)']
-// todo: pretty printer prints wrong precedence for `new' (-> lambdalift.scala).
-
 package scalac.typechecker;
 
 import java.util.HashMap;
@@ -126,6 +116,18 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return stats;
     }
 
+    public Tree nullTree(int pos, Type tp) {
+	return gen.TypeApply(
+	    gen.Ident(pos, global.definitions.NULL),
+	    new Tree[]{gen.mkType(pos, tp)});
+    }
+
+    private boolean isGlobalModule(Symbol sym) {
+	return
+	    sym.isModule() &&
+	    (sym.owner().isPackage() || isGlobalModule(sym.owner().module()));
+    }
+
     /** The main checking functions
      */
     public Tree[] transformStat(Tree tree, int index) {
@@ -133,38 +135,55 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	switch (tree) {
 	case ModuleDef(int mods, Name name, Tree tpe, Tree.Template templ):
 	    Symbol sym = tree.symbol();
-            // local modules are not yet supported but the interpreter
-            // accepts modules at the console level
-	    if (sym.isLocal()) unit.error("local modules are not yet supported");
-
-	    Tree[] result = new Tree[2];
-	    result[0] = make.ClassDef(
+	    Tree cdef = make.ClassDef(
 		tree.pos,
 		mods | FINAL | MODUL,
 		name.toTypeName(),
-		new Tree.TypeDef[0],
-		new Tree.ValDef[][]{{}},
+		Tree.ExtTypeDef.EMPTY_ARRAY,
+		Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
 		Tree.Empty,
 		templ)
 		.setSymbol(sym.moduleClass()).setType(tree.type);
-	    result[1] = make.ValDef(
+	    Tree alloc = gen.New(
 		tree.pos,
-		mods | MODUL,
-		name,
-		(tpe == Tree.Empty) ? gen.mkType(tree.pos, sym.type()) : tpe,
-		gen.New(
-		    tree.pos,
-		    sym.type().prefix(),
-		    sym.moduleClass(),
-		    Tree.EMPTY_ARRAY))
-		.setSymbol(sym).setType(tree.type);
+		sym.type().prefix(),
+		sym.moduleClass(),
+		Tree.EMPTY_ARRAY);
+	    Tree[] result;
+	    if (isGlobalModule(sym)) {
+		Tree vdef = gen.ValDef(sym, alloc);
+		result = new Tree[]{cdef, vdef};
+	    } else {
+		// var m$: T = null[T];
+		Name varname = Name.fromString(name + "$");
+		Symbol mvar = new TermSymbol(
+		    tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
+		    .setInfo(sym.type());
+		Tree vdef = gen.ValDef(mvar, nullTree(tree.pos, sym.type()));
+
+		// { if (m$ == null[T]) m$ = new m$class; m$ }
+		Tree body = gen.Block(new Tree[]{
+		    gen.If(
+			gen.Apply(
+			    gen.Select(gen.mkRef(tree.pos, mvar), global.definitions.EQEQ),
+			    new Tree[]{nullTree(tree.pos, sym.type())}),
+			gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
+			gen.Block(tree.pos, Tree.EMPTY_ARRAY)),
+		    gen.mkRef(tree.pos, mvar)});
+
+		// def m: T = { if (m$ == null[T]) m$ = new m$class; m$ }
+		sym.updateInfo(Type.PolyType(Symbol.EMPTY_ARRAY, sym.type()));
+		sym.flags |= STABLE;
+		Tree ddef = gen.DefDef(sym, body);
+		result = new Tree[]{cdef, vdef, ddef};
+	    }
 	    return transform(result);
 
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
 	    resultTree = transform(tree);
 	    //todo: handle variables
-	    if (sym.isLocal() && index <= maxindex[level]) {
+	    if (sym.isLocal() && !sym.isModule() && index <= maxindex[level]) {
 		if (Global.instance.debug)
 		    System.out.println(refsym[level] + ":" + refsym[level].type());
 		unit.error(
@@ -180,6 +199,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     public Tree transform(Tree tree) {
+	Tree tree1;
 	switch (tree) {
 	case Template(Tree[] bases, Tree[] body):
 	    Tree[] bases1 = transform(bases);
@@ -188,6 +208,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	case Block(Tree[] stats):
 	    Tree[] stats1 = transformStats(stats);
 	    return copy.Block(tree, stats1);
+	case This(_):
+	    return tree;
+	case PackageDef(Tree pkg, Template packaged):
+	    return copy.PackageDef(tree, pkg, super.transform(packaged));
 	case Ident(Name name):
 	    Scope.Entry e = scopes[level].lookupEntry(name);
 	    Symbol sym = tree.symbol();
@@ -202,10 +226,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    maxindex[i] = symindex;
 		}
 	    }
-	    return tree;
+	    tree1 = tree;
+	    break;
 	default:
-	    return super.transform(tree);
+	    tree1 = super.transform(tree);
 	}
+	if (tree1.isType() && !tree1.isMissing())
+	    tree1 = gen.mkType(tree1.pos, tree1.type);
+	return tree1;
     }
 }
 

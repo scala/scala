@@ -1,6 +1,6 @@
 package scala;
 
-module Predef {
+object Predef {
 
   type byte = scala.Byte;
   type short = scala.Short;

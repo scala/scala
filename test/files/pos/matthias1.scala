@@ -3,7 +3,7 @@ class A() {
          def foo(x: B) = 0
      }
 }
-module test {
+object test {
   def main = {
     val a = new A();
     val b = new a.B();

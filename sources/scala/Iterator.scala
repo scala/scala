@@ -68,7 +68,7 @@ trait Iterator[a] {
   }
 }
 
-module Iterator {
+object Iterator {
 
   def empty[a] = new Iterator[a] {
     def hasNext = false;

@@ -1,4 +1,4 @@
-module test {
+object test {
 
     abstract class Base() {
       val x: String;

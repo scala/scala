@@ -164,7 +164,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
 
     /** (x_1: T_1, ..., x_n: T_N) => e  ==>
-     *  new scala.Function[T_1, ..., T_N, T] with {
+     *  new new scala.Object() with scala.Function[T_1, ..., T_N, T]() {
      *    def apply(x_1: T_1, ..., x_N: T_N): T = e
      *  }
      *  where T = `restpe'
@@ -182,14 +182,23 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < length; i++)
 		argtpes[i] = vparams[i].tpe;
 	    argtpes[vparams.length] = restpe;
-            Tree objConstr = make.Select(tree.pos,
-                                         make.Ident(tree.pos, Names.scala),
-                                         Names.Object.toConstrName());
-	    Tree constr = make.TypeApply(tree.pos,
-		make.Select(tree.pos,
-			    make.Ident(tree.pos, Names.scala),
-			    Name.fromString("Function" + length).toConstrName()),
-		argtpes);
+            Tree objConstr = make.Apply(
+		tree.pos,
+		make.Select(
+		    tree.pos,
+		    make.Ident(tree.pos, Names.scala),
+		    Names.Object.toConstrName()),
+		Tree.EMPTY_ARRAY);
+	    Tree constr = make.Apply(
+		tree.pos,
+		make.TypeApply(
+		    tree.pos,
+		    make.Select(
+			tree.pos,
+			make.Ident(tree.pos, Names.scala),
+			Name.fromString("Function" + length).toConstrName()),
+		    argtpes),
+		Tree.EMPTY_ARRAY);
 
 	    Tree applyDef = make.DefDef(
 		tree.pos, 0, Names.apply,
@@ -225,7 +234,7 @@ public class DeSugarize implements Kinds, Modifiers {
     }
 
     /** Cases, Argtpe, Restpe ==>
-     *     (new scala.PartialFunction[Argtpe, Restpe] {
+     *     (new scala.PartialFunction[Argtpe, Restpe]() {
      *        def apply(x: Argtpe): Restpe = x match {Cases}
      *        def isDefinedAt(x: Argtpe): scala.Boolean = x match {Cases'}
      *      }: scala.PartialFunction[Argtpe, +Restpe])
@@ -236,12 +245,18 @@ public class DeSugarize implements Kinds, Modifiers {
      *    Restpe = targs[1]
      */
     public Tree partialFunction(Tree tree, Type pattpe, Type restpe) {
-	Tree constr = make.TypeApply(tree.pos,
-	    make.Select(tree.pos,
-		make.Ident(tree.pos, Names.scala),
-		Names.PartialFunction.toConstrName()),
-		new Tree[]{gen.mkType(tree.pos, pattpe),
-			   gen.mkType(tree.pos, restpe)});
+	Tree constr =
+	    make.Apply(
+		tree.pos,
+		make.TypeApply(
+		    tree.pos,
+		    make.Select(
+			tree.pos,
+			make.Ident(tree.pos, Names.scala),
+			Names.PartialFunction.toConstrName()),
+		    new Tree[]{gen.mkType(tree.pos, pattpe),
+			       gen.mkType(tree.pos, restpe)}),
+		Tree.EMPTY_ARRAY);
 	Name x = getvar();
 	ValDef param = (ValDef) make.ValDef(
 	    tree.pos, PARAM, x, gen.mkType(tree.pos, pattpe), Tree.Empty);
@@ -547,9 +562,17 @@ public class DeSugarize implements Kinds, Modifiers {
     public Tree toConstructor(Tree tree, Symbol constr) {
 	switch (tree) {
 	case Apply(Tree fn, Tree[] args):
-	    return copy.Apply(tree, toConstructor(fn, constr), args);
+	    return toConstructor1(tree, constr);
+	default:
+	    return make.Apply(tree.pos, toConstructor1(tree, constr), Tree.EMPTY_ARRAY);
+	}
+    }
+    private Tree toConstructor1(Tree tree, Symbol constr) {
+	switch (tree) {
+	case Apply(Tree fn, Tree[] args):
+	    return copy.Apply(tree, toConstructor1(fn, constr), args);
 	case TypeApply(Tree fn, Tree[] args):
-	    return copy.TypeApply(tree, toConstructor(fn, constr), args);
+	    return copy.TypeApply(tree, toConstructor1(fn, constr), args);
 	case Ident(Name name):
 	    return copy.Ident(tree, constr.name).setSymbol(constr);
 	case Select(Tree qual, Name name):

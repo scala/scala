@@ -25,6 +25,6 @@ abstract class N() {
         // module body of N
     }
 }
-module O {
+object O {
     val system = new M() with N() {}
 }

@@ -1,14 +1,14 @@
 package scala {
 
-  module a {
+  object a {
 
-    module b {
+    object b {
 
       trait c {}
       def foo(x: c): c = bar(x)
 
     }
 
-    def bar(x: b.c): a.b.c = x
+    def bar(x: b.c): a.b.c = { b.foo(x); x }
   }
 }

@@ -1,4 +1,4 @@
-module lists {
+object lists {
 
   trait List[a] {
       def isEmpty: Boolean;

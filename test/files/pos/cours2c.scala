@@ -1,4 +1,4 @@
-module m1  {
+object m1  {
 
   def average(x: Double, y: Double) = (x + y)/2;
   def abs(x: Double): Double = if (x < 0) - x else x;
@@ -25,7 +25,7 @@ module m1  {
   }
 }
 
-module m2 {
+object m2 {
 
   def abs(x: Double): Double = if (x < 0) - x else x;
   def isCloseEnough(x: Double, y: Double) = abs((x - y) / x) < 0.001;

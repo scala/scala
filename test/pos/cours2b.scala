@@ -1,4 +1,4 @@
-module m1 {
+object m1 {
 
   def gcd(x: Int, y: Int): Int =
     if (y == 0) x

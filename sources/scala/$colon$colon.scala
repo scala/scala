@@ -7,6 +7,5 @@ package scala {
     def isEmpty = false;
     def head = hd;
     def tail = tl;
-    override def toString(): String = mkString("[", ",", "]");
   }
 }

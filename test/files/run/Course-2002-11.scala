@@ -5,7 +5,7 @@
 
 import List._;
 
-module Lisp {
+object Lisp {
 
   trait Data {
     def elemsToString(): String = toString();
@@ -17,7 +17,7 @@ module Lisp {
       case _     => " " + cdr.elemsToString();
     })
   }
-  case class NIL() extends Data { // !!! use case module
+  case class NIL() extends Data { // !!! use case object
     override def toString() = "()";
   }
   case class SYM(name: String) extends Data {
@@ -237,7 +237,7 @@ class LispTokenizer(s: String) extends Iterator[String] {
 
 //############################################################################
 
-module M0 {
+object M0 {
 
   def test = {
     import Lisp._;
@@ -288,7 +288,7 @@ module M0 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     ()

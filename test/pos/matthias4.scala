@@ -1,19 +1,19 @@
 /*
-module A requires B {
+object A requires B {
     B.X getX() {
         return B.getX();
     }
     void setX(B.X x) {}
 }
-module B {
+object B {
     class X {}
     X getX() {
         return new X();
     }
     void setX(X x) {}
 }
-module C requires B {
-    module A;
+object C requires B {
+    object A;
     void test() {
         A.setX(B.getX());
     }
@@ -23,8 +23,8 @@ module C requires B {
 trait _a extends Object with _b {
     val a: _a;
     val A: A;
-    type A <: a.AModule;
-    trait AModule {
+    type A <: a.AObject;
+    trait AObject {
         def getX(): B.X;
         def setX(x: B.X): Unit;
     }
@@ -32,7 +32,7 @@ trait _a extends Object with _b {
 abstract class a() extends Object with _a with _b {
     val a: this.type = this;
     val A: A = new A();
-    class A() extends AModule {
+    class A() extends AObject {
         def getX(): B.X = B.getX();
         def setX(x: B.X) = B.setX(x);
     }
@@ -41,8 +41,8 @@ abstract class a() extends Object with _a with _b {
 trait _b {
     val b: _b;
     val B: B;
-    type B <: b.BModule;
-    trait BModule {
+    type B <: b.BObject;
+    trait BObject {
         type X;
         def getX(): X;
         def setX(x: X): Unit;
@@ -51,7 +51,7 @@ trait _b {
 abstract class b() extends Object with _b {
     val b: this.type = this;
     val B: B = new B();
-    class B() extends BModule {
+    class B() extends BObject {
         class X() {}
         def getX(): X = new X();
         def setX(x: X) = ();
@@ -61,13 +61,13 @@ abstract class b() extends Object with _b {
 trait _m {
     val m: _m;
     val M: M;
-    type M <: m.MModule;
-    trait MModule {}
+    type M <: m.MObject;
+    trait MObject {}
 }
 abstract class m() extends Object with _m with _b {
     val m: this.type = this;
     val M: M = new M();
-    class M() extends MModule with a() with Linker() {
+    class M() extends MObject with a() with Linker() {
         def test() = {
             val x: B.X = B.getX();
             A.setX(x);

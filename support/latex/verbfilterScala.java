@@ -7,7 +7,7 @@ public class verbfilterScala {
     static String[] reserved = {
       "abstract", "case", "class", "def", "do", "else",
       "extends", "false", "final", "for", "if", "import",
-      "module", "new", "null", "override", "package",
+      "module", "new", "null", "object", "override", "package",
       "private", "protected", "super", "this", "trait",
       "true", "type", "val", "var", "with", "yield"};
 

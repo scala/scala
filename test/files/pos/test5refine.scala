@@ -1,6 +1,6 @@
 import scala._;
 
-module test {
+object test {
 
   abstract trait F { type If; }
 

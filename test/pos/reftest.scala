@@ -1,4 +1,4 @@
 import scala._;
-module test {
+object test {
   val x: Ref[Int] = new Ref(1);
 }

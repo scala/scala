@@ -11,18 +11,17 @@ case class
 trait AuctionReply;
 case class
   Status(asked: Int, expiration: Date),               // asked sum, expiration date
-  BestOffer(),                                        // yours is the best offer
+  BestOffer,                                          // yours is the best offer
   BeatenOffer(maxBid: Int),                           // offer beaten by maxBid
   AuctionConcluded(seller: Actor, client: Actor),     // auction concluded
-  AuctionFailed(),                                    // failed with no bids
-  AuctionOver() extends AuctionReply;                 // bidding is closed
+  AuctionFailed,                                    // failed with no bids
+  AuctionOver extends AuctionReply;                 // bidding is closed
 
-class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
+class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor {
 
   val timeToShutdown = 36000000; // msec
   val bidIncrement = 10;
-  override def run() = execute;
-  def execute = {
+  override def run() = {
     var maxBid = minBid - bidIncrement;
     var maxBidder: Actor = _;
     var running = true;
@@ -33,7 +32,7 @@ class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
             if (maxBid >= minBid) maxBidder send BeatenOffer(bid);
             maxBid = bid;
             maxBidder = client;
-            client send BestOffer();
+            client send BestOffer;
           } else {
             client send BeatenOffer(maxBid);
           }
@@ -41,17 +40,17 @@ class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
 	case Inquire(client) =>
 	  client send Status(maxBid, closing);
 
-	case TIMEOUT() =>
+	case TIMEOUT =>
 	  if (maxBid >= minBid) {
 	    val reply = AuctionConcluded(seller, maxBidder);
 	    maxBidder send reply;
 	    seller send reply;
 	  } else {
-	    seller send AuctionFailed();
+	    seller send AuctionFailed;
           }
           receiveWithin(timeToShutdown) {
-            case Offer(_, client) => client send AuctionOver()
-            case TIMEOUT() => running = false;
+            case Offer(_, client) => client send AuctionOver
+            case TIMEOUT => running = false;
           }
       }
     }

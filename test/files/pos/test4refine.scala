@@ -2,7 +2,7 @@ trait C {}
 trait D {}
 trait E {}
 
-module test {
+object test {
   def c: C = c;
   def d: D = d;
   def e: E = e;
@@ -25,7 +25,7 @@ abstract class O() {
     val j:I { type Y = X } = null;
 }
 
-module o extends O() {
+object o extends O() {
   type X = C;
 
   def main = {

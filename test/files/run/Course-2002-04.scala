@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-module M0 {
+object M0 {
 
   def quicksort[a] (less : (a,a) => Boolean) (xs : List[a]) : List[a] = {
     if (xs.isEmpty)
@@ -41,7 +41,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
 
   def horner (x : Double, coefs : List[Double]) : Double = {
     if (coefs.isEmpty)
@@ -63,7 +63,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
 
   def dotproduct (v : List[Double], w : List[Double]) : Double = {
     if (v.isEmpty)
@@ -149,7 +149,7 @@ module M2 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     M1.test;

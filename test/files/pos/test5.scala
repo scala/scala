@@ -1,6 +1,6 @@
 import scala._;
 
-module test {
+object test {
 
   trait F[If] {}
 

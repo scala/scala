@@ -145,7 +145,7 @@ class PostScript (filename: String, _width: Double, _height: Double)
 
 //############################################################################
 
-module M0 {
+object M0 {
 
   /** Define the type of a painter as a function that takes a frame,
    *  draws itself onto it and returns nothing
@@ -254,7 +254,7 @@ module M0 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     ()

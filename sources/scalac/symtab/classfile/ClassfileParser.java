@@ -117,10 +117,9 @@ public class ClassfileParser implements ClassfileConstants {
 		assert constrs.length == 1;
 		c.constructor().setInfo(constrs[0].info(), phaseId);
 	    } else {
-		Type constrtype = ((c.flags & Modifiers.INTERFACE) != 0)
-		    ? Type.PolyType(Symbol.EMPTY_ARRAY, ctype)
-		    : Type.MethodType(new Symbol[]{Symbol.NONE}, ctype);
-		c.constructor().setInfo(constrtype, phaseId);
+		Symbol[] cparams = ((c.flags & Modifiers.INTERFACE) != 0) ? Symbol.EMPTY_ARRAY
+		    : new Symbol[]{Symbol.NONE};
+		c.constructor().setInfo(Type.MethodType(cparams, ctype), phaseId);
             }
             attrib.readAttributes(c, classType, CLASS_ATTR);
 	    //System.out.println("dynamic class: " + c);
@@ -214,10 +213,7 @@ public class ClassfileParser implements ClassfileConstants {
             }
             switch (type) {
 	    case MethodType(Symbol[] vparams, _):
-		if (c == defs.OBJECT_CLASS)
-		    type = Type.PolyType(Symbol.EMPTY_ARRAY, ctype);
-		else
-		    type = Type.MethodType(vparams, ctype);
+		type = Type.MethodType(vparams, ctype);
 		break;
 	    default:
 		throw new ApplicationError();

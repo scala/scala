@@ -7,7 +7,7 @@
 **         def t = foo(x, y);
 **                    ^
 */
-module M {
+object M {
     def foo[T](x: T, y: T): T = x;
     class S2() {
         class Inner() extends S2() {}

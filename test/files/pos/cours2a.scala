@@ -1,10 +1,10 @@
-module m1 {
+object m1 {
   def factorial(n: Int): Int =
     if (n == 0) 1
     else n * factorial(n-1);
 }
 
-module m2 {
+object m2 {
 
   def factorial(n: Int): Int = {
     def factIter(n: Int, acc: Int): Int = {

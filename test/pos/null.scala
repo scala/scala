@@ -1,3 +1,3 @@
-module M {
+object M {
   val x: Boolean = null == null;
 }

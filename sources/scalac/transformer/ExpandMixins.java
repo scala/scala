@@ -345,9 +345,10 @@ public class ExpandMixins extends Transformer {
             case Apply(Select(Tree qualifier, Name selector), Tree[] args): {
                 Tree fun = ((Tree.Apply)newTree).fun;
                 Symbol funOwnerSym = fun.symbol().owner();
-                Symbol qualSym = qualifier.type.symbol();
+                Symbol qualSym = qualifier.type.symbol().moduleClass();
                 if (! (qualifier instanceof Tree.Super
                        || qualSym.isSubClass(funOwnerSym))) {
+		    global.log("inserting cast from " + qualSym + " to " + funOwnerSym);//debug
                     Type ownerTp = funOwnerSym.type();
                     Tree castQualifier =
                         gen.Apply(gen.TypeApply(gen.Select(qualifier, defs.AS),

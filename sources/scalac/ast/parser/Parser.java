@@ -124,7 +124,7 @@ public class Parser implements Tokens {
     boolean isDefIntro() {
 	switch (s.token) {
 	case VAL: case VAR: case DEF: case CONSTR: case TYPE:
-	case MODULE: case CLASS: case CASECLASS: case TRAIT:
+	case OBJECT: case CASEOBJECT: case CLASS: case CASECLASS: case TRAIT:
 	    return true;
 	default:
 	    return false;
@@ -191,6 +191,15 @@ public class Parser implements Tokens {
 
     Tree scalaDot(int pos, Name name) {
 	return make.Select(pos, make.Ident(pos, Names.scala), name);
+    }
+
+    Tree scalaBooleanDot(int pos, Name name) {
+	return make.Select(pos, scalaDot(pos, Names.Boolean), name);
+    }
+
+    Tree scalaObjectConstr(int pos) {
+	return make.Apply(
+	    pos, scalaDot(pos, Names.Object.toConstrName()), Tree.EMPTY_ARRAY);
     }
 
     /** Create tree for for-comprehension <for (enums) do body> or
@@ -310,6 +319,17 @@ public class Parser implements Tokens {
 	}
     }
 
+    /** Complete unapplied constructor with `()' arguments
+     */
+    Tree applyConstr(Tree t) {
+	switch (t) {
+	case Apply(_, _):
+	    return t;
+	default:
+	    return make.Apply(t.pos, t, Tree.EMPTY_ARRAY);
+	}
+    }
+
 /////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
 
     Tree[] operands = new Tree[8];
@@ -383,6 +403,9 @@ public class Parser implements Tokens {
 	    t = make.This(s.skipToken(), Tree.Empty);
 	    if (!thisOK || s.token == DOT)
 		t = selectors(accept(DOT), t, typeOK);
+	} else if (s.token == SUPER) {
+	    t = make.Super(s.skipToken(), Tree.Empty);
+	    t = selectors(accept(DOT), t, typeOK);
 	} else {
 	    t = make.Ident(s.pos, ident());
 	    if (s.token == DOT) {
@@ -413,7 +436,7 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** StableId ::= [[Ident `.'] this `.'] {Id `.'} Id
+    /** StableId ::= [[Ident `.'] this `.' | super] {Id `.'} Id
      */
     Tree stableId() {
 	return stableRef(false, false);
@@ -493,6 +516,17 @@ public class Parser implements Tokens {
         if (s.token == COLON) {
             s.nextToken();
             return type();
+        } else {
+            return Tree.Empty;
+	}
+    }
+
+    /** SimpleTypedOpt ::= [`:' Type]
+     */
+    Tree simpleTypedOpt() {
+        if (s.token == COLON) {
+            s.nextToken();
+            return simpleType();
         } else {
             return Tree.Empty;
 	}
@@ -894,7 +928,8 @@ public class Parser implements Tokens {
 	switch (res) {
 	case Block(Tree[] stats):
 	    if (stats.length > 0)
-		stats[stats.length - 1] = convertToConstr(stats[stats.length - 1]);
+		stats[stats.length - 1] = applyConstr(
+		    convertToConstr(stats[stats.length - 1]));
 	    else
 		syntaxError(res.pos, "class constructor expected", false);
 	}
@@ -1337,9 +1372,7 @@ public class Parser implements Tokens {
     }
 
     /**  TopDef ::= ([case] class | trait) ClassDef {`,' ClassDef}
-     *            | module ModuleDef {`,' ModuleDef}
-     *   LocalTopDef ::= class ClassDef {`,' ClassDef}//todo: keep?
-     *            | module ModuleDef {`,' ModuleDef}
+     *            | [case] object ModuleDef {`,' ModuleDef}
      */
     Tree[] topDef(int mods) {
         TreeList ts = new TreeList();
@@ -1354,7 +1387,8 @@ public class Parser implements Tokens {
 		ts.append(classDef(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
-	case MODULE:
+	case OBJECT:
+	case CASEOBJECT:
 	    do {
 		s.nextToken();
 		ts.append(moduleDef(mods));
@@ -1441,10 +1475,7 @@ public class Parser implements Tokens {
         TypeDef[] tparams = typeParamClauseOpt();
         ValDef[][] vparams = new ValDef[][]{paramClause()};
         Tree restype = typedOpt();
-	if (s.token == LBRACE)
-	    return make.DefDef(pos, mods, name, tparams, vparams,
-                               restype, blockConstr());
-	else if (s.token == EQUALS || restype == Tree.Empty) {
+	if (s.token == EQUALS || restype == Tree.Empty) {
 	    accept(EQUALS);
             return make.DefDef(pos, mods, name, tparams, vparams,
                                restype, (s.token == LBRACE) ? blockConstr() : constr());
@@ -1474,24 +1505,23 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** ClassDef ::= Id [TypeParamClause] [`:' Type] ClassTemplate
+    /** ClassDef ::= Id [TypeParamClause] [`:' SimpleType] ClassTemplate
      */
     Tree classDef(int mods) {
 	int pos = s.pos;
 	Name name = ident();
 	TypeDef[] tparams = typeParamClauseOpt();
-	ValDef[][] params;
-	if (s.token == LPAREN) params = new ValDef[][]{paramClause()};
-	else params = Tree.ExtValDef.EMPTY_ARRAY_ARRAY;
+	ValDef[][] params = (s.token == LPAREN) ? new ValDef[][]{paramClause()}
+	    : Tree.ExtValDef.EMPTY_ARRAY_ARRAY;
         return make.ClassDef(pos, mods, name.toTypeName(), tparams, params,
-			     typedOpt(), classTemplate());
+			     simpleTypedOpt(), classTemplate());
     }
 
-    /** ModuleDef       ::= Id [`:' Type] ClassTemplate
+    /** ModuleDef       ::= Id [`:' SimpleType] ClassTemplate
      */
     Tree moduleDef(int mods) {
         return make.ModuleDef(
-	    s.pos, mods, ident(), typedOpt(), classTemplate());
+	    s.pos, mods, ident(), simpleTypedOpt(), classTemplate());
     }
 
     /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
@@ -1504,21 +1534,16 @@ public class Parser implements Tokens {
 	} else if (s.token == WITH) {
 	    s.nextToken();
 	    TreeList parents = new TreeList();
-	    parents.append(scalaDot(pos, Names.Object.toConstrName()));
+	    parents.append(scalaObjectConstr(pos));
 	    return template(parents);
 	} else if (s.token == LBRACE) {
-	    return (Template)make.Template(pos,
-		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
-		templateBody());
-	} else if (s.token == SEMI || s.token == COMMA || s.token == RBRACE) {
-	    return (Template)make.Template(pos,
-		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
-		Tree.EMPTY_ARRAY);
+	    return (Template)make.Template(
+		pos, new Tree[]{scalaObjectConstr(pos)}, templateBody());
 	} else {
-	    syntaxError("`extends' or `{' expected", true);
-	    return (Template)make.Template(pos,
-		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
-		Tree.EMPTY_ARRAY);
+	    if (!(s.token == SEMI || s.token == COMMA || s.token == RBRACE))
+		syntaxError("`extends' or `{' expected", true);
+	    return (Template)make.Template(
+		pos, new Tree[]{scalaObjectConstr(pos)}, Tree.EMPTY_ARRAY);
 	}
     }
 
@@ -1550,7 +1575,7 @@ public class Parser implements Tokens {
 	    t = make.TypeApply(s.pos, t, typeArgs());
 	if (s.token == LPAREN)
 	    t = make.Apply(s.pos, t, argumentExprs());
-	return t;
+	return applyConstr(t);
     }
 
     /** TemplateBody ::= `{' [TemplateStat {`;' TemplateStat}] `}'
@@ -1601,11 +1626,12 @@ public class Parser implements Tokens {
 	    } else if (s.token == CLASS ||
 		       s.token == CASECLASS ||
 		       s.token == TRAIT ||
-		       s.token == MODULE ||
+		       s.token == OBJECT ||
+		       s.token == CASEOBJECT ||
 		       isModifier()) {
 		stats.append(topDef(modifiers()));
 	    } else if (s.token != SEMI) {
-		syntaxError("illegal start of class or module definition", true);
+		syntaxError("illegal start of class or object definition", true);
 	    }
 	    if (s.token != RBRACE && s.token != EOF) accept(SEMI);
 	}
@@ -1658,7 +1684,7 @@ public class Parser implements Tokens {
     /** BlockStatSeq ::= { BlockStat `;' } [Expr]
      *  BlockStat    ::= Import
      *                 | Def
-     *                 | LocalClassModifiers LocalTopDef
+     *                 | LocalClassModifiers TopDef
      *	               | Expr
      *                 |
      */

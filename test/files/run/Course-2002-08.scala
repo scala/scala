@@ -5,7 +5,7 @@
 
 import List._;
 
-module M0 {
+object M0 {
 
   var x: String = "abc";
   var count = 111;
@@ -23,7 +23,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
 
   class BankAccount() {
     private var balance = 0;
@@ -87,7 +87,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
 
   def while(def condition: Boolean)(def command: Unit): Unit =
     if (condition) {
@@ -113,7 +113,7 @@ module M2 {
 
 //############################################################################
 
-module M3 {
+object M3 {
 
   def power (x: Double, exp: Int): Double = {
     var r = 1.0;
@@ -133,7 +133,7 @@ module M3 {
 
 //############################################################################
 
-module M4 {
+object M4 {
 
   def test = {
     for (val i <- range(1, 4)) do { System.out.print(i + " ") };
@@ -145,7 +145,7 @@ module M4 {
 
 //############################################################################
 
-module M5 {
+object M5 {
 
   type Action = () => Unit;
 
@@ -579,7 +579,7 @@ class Main() extends CircuitSimulator() {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     M1.test;

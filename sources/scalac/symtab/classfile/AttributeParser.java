@@ -253,7 +253,9 @@ public class AttributeParser implements ClassfileConstants {
 
                     if ((parser.c.flags & Modifiers.INTERFACE) != 0) {
                         parser.c.constructor().setInfo(
-			    Type.PolyType(smbls, constrtype), parser.phaseId);
+			    Type.PolyType(
+				smbls, Type.MethodType(Symbol.EMPTY_ARRAY, constrtype)),
+			    parser.phaseId);
                         //System.out.println("info = " + parser.c.constructor().info());//DEBUG
                     }
 		    Symbol[] constrs;
@@ -269,13 +271,9 @@ public class AttributeParser implements ClassfileConstants {
                         switch (constrs[i].rawInfo()) {
 			case MethodType(Symbol[] vparams, _):
 			    constrs[i].setInfo(
-				Type.PolyType(smbls,
-					      Type.MethodType(
-						  vparams, constrtype)), parser.phaseId);
-                                break;
-			case PolyType(_, _):
-			    constrs[i].setInfo(
-				Type.PolyType(smbls, constrtype), parser.phaseId);
+				Type.PolyType(
+				    smbls, Type.MethodType(vparams, constrtype)),
+				parser.phaseId);
 			    break;
                         }
                         //System.out.println("*** constructor " + e.sym + ": " + e.sym.info());//DEBUG

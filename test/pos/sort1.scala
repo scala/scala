@@ -1,4 +1,4 @@
-module test {
+object test {
 
   type String = java.lang.String;
 

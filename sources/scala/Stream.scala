@@ -116,7 +116,7 @@ trait Stream[a] {
     }
 }
 
-module Stream {
+object Stream {
 
   def empty[c]: Stream[c] = new Stream[c] {
     def isEmpty = true;

@@ -150,7 +150,7 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text KW_IMPORT    = Text.Keyword("import");
     protected static final Text KW_INTERFACE = Text.Keyword("interface");
     protected static final Text KW_LET       = Text.Keyword("let");
-    protected static final Text KW_MODULE    = Text.Keyword("module");
+    protected static final Text KW_OBJECT    = Text.Keyword("object");
     protected static final Text KW_NEW       = Text.Keyword("new");
     protected static final Text KW_NULL      = Text.Keyword("null");
     protected static final Text KW_OUTER     = Text.Keyword("outer");
@@ -171,8 +171,8 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text TXT_ERROR   = Text.Simple("<error>");
     protected static final Text TXT_UNKNOWN = Text.Simple("<unknown>");
     protected static final Text TXT_NULL    = Text.Simple("<null>");
-    protected static final Text TXT_MODULE_COMMENT
-                                            = Text.Simple("/*module*/ ");
+    protected static final Text TXT_OBJECT_COMMENT
+                                            = Text.Simple("/*object*/ ");
     protected static final Text TXT_EMPTY   = Text.Simple("<empty>");
 
     protected static final Text TXT_QUOTE         = Text.Simple("\"");
@@ -192,10 +192,6 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text TXT_LEFT_BRACKET  = Text.Simple("[");
     protected static final Text TXT_RIGHT_BRACKET = Text.Simple("]");
 
-    protected static final Text TXT_WITH_BLOCK_BEGIN =
-        Text.Sequence(new Text[] {
-            Text.Space, KW_WITH, Text.Space, TXT_LEFT_BRACE, Text.Newline
-        });
     protected static final Text TXT_WITH_SP =
         Text.Sequence(new Text[]{ Text.Space, KW_WITH, Text.Space });
     protected static final Text TXT_BLOCK_BEGIN =
@@ -271,7 +267,7 @@ public class TextTreePrinter implements TreePrinter {
                        Tree tpe,
                        Tree.Template impl):
             printModifiers(mods);
-            print(KW_MODULE);
+            print(KW_OBJECT);
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
             printOpt(TXT_COLON, tpe, false);
@@ -282,7 +278,7 @@ public class TextTreePrinter implements TreePrinter {
             printModifiers(mods);
 	    if ((mods & Modifiers.MUTABLE) != 0) print(KW_VAR);
 	    else {
-		if ((mods & Modifiers.MODUL) != 0) print(TXT_MODULE_COMMENT);
+		if ((mods & Modifiers.MODUL) != 0) print(TXT_OBJECT_COMMENT);
 		print(KW_VAL);
 	    }
             print(Text.Space);
@@ -506,7 +502,7 @@ public class TextTreePrinter implements TreePrinter {
 
         case CompoundType(Tree[] baseTypes, Tree[] refinements):
             printArray(baseTypes, Text.None, Text.None, TXT_WITH_SP);
-            printArray(refinements, TXT_WITH_BLOCK_BEGIN, TXT_BLOCK_END, Text.Newline);
+            printArray(refinements, TXT_BLOCK_BEGIN, TXT_BLOCK_END, Text.Newline);
             break;
 
         case AppliedType(Tree tpe, Tree[] args):
@@ -649,8 +645,10 @@ public class TextTreePrinter implements TreePrinter {
             printArray(templ.parents, Text.None, Text.None, TXT_WITH_SP);
         }
 
-        if (templ.body.length > 0)
-            printArray(templ.body, TXT_WITH_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
+        if (templ.body.length > 0) {
+	    print(Text.Space);
+            printArray(templ.body, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
+	}
     }
 
     protected void printParams(Tree.TypeDef[] tparams) {

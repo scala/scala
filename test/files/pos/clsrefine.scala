@@ -15,7 +15,7 @@ trait B extends A {
   def g() = f(y1, this);
 }
 
-module test {
+object test {
   val b: B { type Y = Int } = new B {
     type Y = Int;
     val y1 = 1, y2 = 1;

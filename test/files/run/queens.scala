@@ -1,6 +1,6 @@
 // $Id$
 
-module M0 {
+object M0 {
   type Placement = List[Int];
 
   def range(lo: Int, hi: Int): List[Int] =
@@ -41,7 +41,7 @@ module M0 {
   }
 }
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     ()

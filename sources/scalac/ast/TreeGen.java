@@ -165,13 +165,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    Tree ref = mkRef(pos, pre, sym.constructor());
 	    Tree constr = (args.length == 0) ? ref
 		: TypeApply(ref, mkTypes(sym.pos, args));
-	    switch (parentType) {
-	    case MethodType(Symbol[] params, Type restpe):
-		assert params.length == 0 : parentType;
-		return Apply(constr, Tree.EMPTY_ARRAY);
-	    default:
-		return constr;
-	    }
+	    return Apply(constr, Tree.EMPTY_ARRAY);
 	default:
 	    throw global.fail("invalid parent type", parentType);
 	}
@@ -357,9 +351,17 @@ public class TreeGen implements Kinds, Modifiers {
       return TypeApply(fn.pos, fn, args);
     }
 
+    public Tree If(int pos, Tree cond, Tree thenpart, Tree elsepart) {
+	return
+	    make.If(pos, cond, thenpart, elsepart).setType(thenpart.type);
+    }
+
+    public Tree If(Tree cond, Tree thenpart, Tree elsepart) {
+	return If(cond.pos, cond, thenpart, elsepart);
+    }
+
     /** Build and applied type node with given function
      *  and argument trees.
-     */
     public Tree AppliedType(int pos, Tree fn, Tree[] args) {
 	return make.AppliedType(pos, fn, args)
 	    .setType(Type.appliedType(fn.type, Tree.typeOf(args)));
@@ -368,6 +370,7 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree AppliedType(Tree fn, Tree[] args) {
 	return AppliedType(fn.pos, fn, args);
     }
+     */
 
     /** Build and attribute select node of given symbol.
      *  It is assumed that the prefix is not empty.

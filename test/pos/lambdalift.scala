@@ -1,6 +1,6 @@
 import scala._;
 
-module test {
+object test {
 
   def f(x: Int) = {
     def g() = h();

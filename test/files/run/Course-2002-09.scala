@@ -12,7 +12,7 @@ trait Constraint {
   def dropValue: Unit
 }
 
-module NoConstraint extends Constraint {
+object NoConstraint extends Constraint {
   def newValue: Unit = error("NoConstraint.newValue");
   def dropValue: Unit = error("NoConstraint.dropValue");
 }
@@ -168,7 +168,7 @@ class Quantity() {
 
 //############################################################################
 
-module M0 {
+object M0 {
 
   def CFconverter(c: Quantity, f: Quantity) = {
     val u = new Quantity();
@@ -209,7 +209,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
 
   def constant(x: double): Quantity = {
     val q = new Quantity();
@@ -250,7 +250,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
 
   val a = new Quantity();
   val b = new Quantity();
@@ -298,7 +298,7 @@ module M2 {
 
 //############################################################################
 
-module M3 {
+object M3 {
 
   def test = {
     val a = new Quantity();
@@ -324,7 +324,7 @@ module M3 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): Unit = {
     M0.test;
     M1.test;

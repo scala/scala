@@ -139,7 +139,9 @@ public class AddConstructors extends Transformer {
 			 getConstructor(fun.symbol()));
 		    constrBody.add(gen.Apply(superConstr, transform(args)));
 		    break;
-		default: assert false;
+		default:
+		    new scalac.ast.printer.TextTreePrinter().print(baseClasses[0]).println().end();
+		    assert false;
 		}
 	    }
 

@@ -29,12 +29,12 @@ case class D6() extends C() {}
 case class D7() extends C() with U;
 case class D8() extends C() with U {}
 
-module M1;
-module M2 {}
-module M5 extends C();
-module M6 extends C() {}
-module M7 extends C() with U;
-module M8 extends C() with U {}
+object M1;
+object M2 {}
+object M5 extends C();
+object M6 extends C() {}
+object M7 extends C() with U;
+object M8 extends C() with U {}
 
 
 

@@ -146,7 +146,7 @@ public class Tree {
     /**
      * Import declaration
      * - introduced by: parser
-     * - eliminated by: !!! ?
+     * - eliminated by: analyzer
      */
     public case Import(Tree expr, Name[] selectors) {
 	if (!expr.isTerm())
@@ -204,8 +204,8 @@ public class Tree {
 
     /**
      * Tuple of expressions (comma separated expressions)
-     * - introduced by: !!! ?
-     * - eliminated by: !!! ?
+     * - introduced by: uncurry
+     * - eliminated by: lambdalift
      */
     public case Tuple(Tree[] trees) {
 	if (trees != null) {
@@ -219,14 +219,14 @@ public class Tree {
     /**
      * Visitor (a sequence of cases)
      * - introduced by: parser
-     * - eliminated by: !!! ?
+     * - eliminated by: transmatch
      */
     public case Visitor(CaseDef[] cases);
 
     /**
      * Anonymous function
      * - introduced by: parser
-     * - eliminated by: !!! ?
+     * - eliminated by: analyzer
      */
     public case Function(ValDef[] vparams,
                          Tree body) {
@@ -237,7 +237,7 @@ public class Tree {
     /**
      * Assignment
      * - introduced by: parser
-     * - eliminated by: !!! ?
+     * - eliminated by: -
      */
     public case Assign(Tree lhs,
                        Tree rhs) {
@@ -283,7 +283,7 @@ public class Tree {
     /**
      * Type application
      * - introduced by: parser
-     * - eliminated by: !!! ?
+     * - eliminated by: erasure
      */
     public case TypeApply(Tree fun,
                           Tree[] args) {
@@ -422,7 +422,7 @@ public class Tree {
     /**
      * Applied type
      * - introduced by: parser
-     * - eliminated by: Analyzer
+     * - eliminated by: analyzer
      */
     public case AppliedType(Tree tpe, Tree[] args) {
 	assert tpe.isType() : this;
@@ -487,6 +487,17 @@ public class Tree {
 	    return name.isTypeName();
 	case Select(_, Name name):
 	    return name.isTypeName();
+	default:
+	    return false;
+	}
+    }
+
+    /** Returns true if this tree is empty or error. */
+    public boolean isMissing() {
+	switch(this) {
+        case Bad():
+	case Empty:
+	    return true;
 	default:
 	    return false;
 	}

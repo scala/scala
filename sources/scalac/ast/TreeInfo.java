@@ -115,6 +115,8 @@ public class TreeInfo {
 		tree.symbol() != null && tree.symbol().isPrimaryConstructor();
 	case TypeApply(Tree constr, _):
 	    return isPureConstr(constr);
+	case Apply(Tree fn, Tree[] args):
+	    return args.length == 0 && isPureConstr(fn);
 	default:
 	    return false;
 	}

@@ -1,4 +1,4 @@
-module test {
+object test {
 
   def f() = 5;
 

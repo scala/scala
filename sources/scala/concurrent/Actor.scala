@@ -1,10 +1,10 @@
 package scala.concurrent;
 
-abstract class Actor() extends Thread() {
+abstract class Actor extends Thread {
 
   type Message = AnyRef;
 
-  private val mb = new MailBox();
+  private val mb = new MailBox;
 
   def send(msg: Message): Unit =
     mb.send(msg);
@@ -13,3 +13,8 @@ abstract class Actor() extends Thread() {
   def receiveWithin[a](msec: Long)(f: PartialFunction[Message, a]): a =
     mb.receiveWithin(msec)(f);
 }
+
+
+
+
+

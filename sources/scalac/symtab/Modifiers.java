@@ -55,7 +55,7 @@ public interface Modifiers {
     int SNDTIME       = 0x40000000;   //debug
 
     // masks
-    int SOURCEFLAGS   = 0x00000077 | PARAM | TRAIT;  // these modifiers can be set in source programs.
+    int SOURCEFLAGS   = 0x00000077 | DEF | REPEATED | MODUL | MUTABLE | PACKAGE | PARAM | TRAIT;  // these modifiers can be set in source programs.
     int ACCESSFLAGS = PRIVATE | PROTECTED;
 
     public static class Helper {

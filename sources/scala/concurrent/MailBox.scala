@@ -1,10 +1,10 @@
 package scala.concurrent;
 
-class MailBox() extends Monitor() {
+class MailBox extends Monitor {
 
   type Message = AnyRef;
 
-  private abstract class Receiver() extends Monitor() {
+  private abstract class Receiver extends Monitor {
     type t;
     val receiver: PartialFunction[Message, t];
     var msg: Message = _;
@@ -18,9 +18,9 @@ class MailBox() extends Monitor() {
     }
   }
 
-  private val sent = new LinkedList[Message]();
+  private val sent = new LinkedList[Message];
   private var lastSent = sent;
-  private var receivers = new LinkedList[Receiver]();
+  private var receivers = new LinkedList[Receiver];
   private var lastReceiver = receivers;
 
   def send(msg: Message): Unit = synchronized {
@@ -48,13 +48,13 @@ class MailBox() extends Monitor() {
   }
 
   def receive[a](f: PartialFunction[Message, a]): a = {
-    val r = new Receiver() { type t = a; val receiver = f }
+    val r = new Receiver { type t = a; val receiver = f }
     scanSentMsgs(r);
     r.receive()
   }
 
   def receiveWithin[a](msec: Long)(f: PartialFunction[Message, a]): a = {
-    val r = new Receiver() { type t = a; val receiver = f }
+    val r = new Receiver { type t = a; val receiver = f }
     scanSentMsgs(r);
     r.receiveWithin(msec)
   }

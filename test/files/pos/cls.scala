@@ -8,7 +8,7 @@ class B[Y](y1: Y, y2: Y) extends A[Y, Y](y1, y2) {
   def g() = f(y1, this);
 }
 
-module test {
+object test {
   val b: B[Int] = new B[Int](1, 2);
   val a: A[Int, Int] = b;
   val a1 = new A(1, "hello");
