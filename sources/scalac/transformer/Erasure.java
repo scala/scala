@@ -247,7 +247,7 @@ public class Erasure extends Transformer implements Modifiers {
 	}
 	Symbol bridgeSym = sym.cloneSymbol();
 	bridgeSym.flags |= (SYNTHETIC | BRIDGE);
-	bridgeSym.flags &= ~JAVA;
+	bridgeSym.flags &= ~(JAVA | DEFERRED);
 	bridgesOfSym = bridgesOfSym.incl(bridgeSym);
 	bridgeSyms.put(sym, bridgesOfSym);
         bridgeSym.setOwner(owner);
@@ -410,7 +410,9 @@ public class Erasure extends Transformer implements Modifiers {
 	case Return(Tree expr):
 	    Tree expr1 = transform(expr,
                                    tree.symbol().type().resultType().fullErasure());
-	    return copy.Return(tree, expr1).setType(owntype);
+            Tree zero = gen.Ident(tree.pos, definitions.NULL);
+	    return make.Block(tree.pos, new Tree[] {
+                copy.Return(tree, expr1).setType(owntype), zero}).setType(zero.type());
 
         case New(Template templ):
             if (tree.type.symbol() == definitions.UNIT_CLASS)
