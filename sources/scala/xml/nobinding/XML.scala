@@ -18,11 +18,41 @@ import scala.xml.Utility ;
 /** functions to load and save XML elements. use this when data binding is not
 **  desired, i.e. when XML is handled using Symbol nodes
 **/
-object XML {
+object XML with Function1[InputStream,Elem] with Function1[String,Elem] with Function1[Reader,Elem] with Function1[InputSource,Elem] {
 
   // functions for generic xml loading, saving
 
-  /** loads XML from a given file*/
+  /** loads XML from given file */
+  def loadFile( file:File ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource(
+      FileInputStream( file )
+    ));
+
+  /** loads XML from given file descriptor */
+  def loadFile( fileDesc:FileDescriptor ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource(
+      FileInputStream( fileDesc )
+    ));
+
+  /** loads XML from given file */
+  def loadFile( fileName:String ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource(
+      FileInputStream( fileName )
+    ));
+
+  /** loads XML from given InputStream */
+  def load( is:InputStream ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource( is ));
+
+  /** loads XML from given Reader */
+  def load( reader:Reader ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource( reader ));
+
+  /** loads XML from given sysID */
+  def load( sysID:String ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource( sysID ));
+
+  /** loads XML from a given input source*/
   def load( source:InputSource ):scala.xml.Elem =
     new NoBindingFactoryAdapter().loadXML( source );
 
@@ -41,5 +71,21 @@ object XML {
     w.close();
     fos.close();
   }
+
+  /** loads XML from given InputStream */
+  def apply( is:InputStream ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource( is ));
+
+  /** loads XML from given Reader */
+  def apply( reader:Reader ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource( reader ));
+
+  /** loads XML from given sysID */
+  def apply( sysID:String ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( new InputSource( sysID ));
+
+  /** loads XML from a given input source*/
+  def apply( source:InputSource ):scala.xml.Elem =
+    new NoBindingFactoryAdapter().loadXML( source );
 
 }

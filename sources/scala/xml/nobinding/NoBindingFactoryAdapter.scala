@@ -8,8 +8,8 @@
 \*                                                                      */
 package scala.xml.nobinding;
 
-import scala.collection.mutable.HashMap ;
-import scala.collection.immutable.ListMap ;
+import scala.collection.mutable ;
+import scala.collection.immutable ;
 import scala.xml.{Elem, Node,Text,FactoryAdapter,Utility} ;
 import org.xml.sax.InputSource;
 
@@ -27,31 +27,23 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
   def nodeContainsText( label:java.lang.String ):boolean = true;
 
   /* default behaviour is to use hash-consing */
-  val cache = new HashMap[int,Elem]();
+  val cache = new mutable.HashMap[int,Elem]();
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
-  def createNode( label: String, attrs: HashMap[String,String], children: List[Node] ):Elem = {
+  def createNode( label: String, attrs: mutable.HashMap[String,String], children: List[Node] ):Elem = {
 
     val elHashCode = Utility.hashCode( label, attrs, children ) ;
 
-    val attrList = attrs.toList;
+    val attrMap = immutable.TreeMap.Empty[String,String] incl attrs;
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
         cachedElem
       case None => val el = if( children.isEmpty ) {
-        new Elem( label ) {
-          override def `@` = attrs;
-          override def attribute = `@`.toList;
-          override def hashCode() = elHashCode;
-        };
+        Elem( label, attrMap )
       } else {
-        new Elem( label, children:_* ) {
-          override def `@` = attrs;
-          override def attribute = `@`.toList;
-          override def hashCode() = elHashCode;
-        };
+        Elem( label, attrMap, children:_* ) ;
       }
       cache.update( elHashCode, el );
       el
