@@ -409,9 +409,12 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     init;
     handle.isPattern = false;
     val pos = s.pos;
-    var tree = element; xSpaceOpt;
+    var tree = element;
+    xSpaceOpt;
+    // parse more XML ?
     if( ch=='<' )  {
-      val ts = new mutable.ArrayBuffer[Tree](); ts.append( tree );
+      val ts = new mutable.ArrayBuffer[Tree]();
+      ts.append( tree );
       while( ch == '<' ) {
         nextch;
         ts.append( element );
