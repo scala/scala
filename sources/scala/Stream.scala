@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -41,9 +41,51 @@ object Stream {
     else empty;
   }
 
-  def range(start: int, end: int): Stream[int] =
-    if (start >= end) empty
-    else cons(start, range(start + 1, end));
+  /** Create a stream with element values
+   *  <code>v<sub>n+1</sub> = v<sub>n</sub> + 1</code>
+   *  where <code>v<sub>0</sub> = start</code>
+   *  and <code>v<sub>i</sub> &lt; end</code>.
+   *
+   *  @param start the start value of the stream
+   *  @param end the end value of the stream
+   *  @return the stream starting at value <code>start</code>.
+   */
+  def range(start: Int, end: Int): Stream[Int] =
+    range(start, end, 1);
+
+  /** Create a stream with element values
+   *  <code>v<sub>n+1</sub> = v<sub>n</sub> + step</code>
+   *  where <code>v<sub>0</sub> = start</code>
+   *  and <code>v<sub>i</sub> &lt; end</code>.
+   *
+   *  @param start the start value of the stream
+   *  @param end the end value of the stream
+   *  @param step the increment value of the stream
+   *  @return the stream starting at value <code>start</code>.
+   */
+  def range(start: Int, end: Int, step: Int): Stream[Int] = {
+    def loop(lo: Int): Stream[Int] =
+      if (lo >= end) empty
+      else cons(lo, loop(lo + step));
+    loop(start)
+  }
+
+  /** Create a stream with element values
+   *  <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
+   *  where <code>v<sub>0</sub> = start</code>
+   *  and <code>v<sub>i</sub> &lt; end</code>.
+   *
+   *  @param start the start value of the stream
+   *  @param end the end value of the stream
+   *  @param step the increment function of the stream
+   *  @return the stream starting at value <code>start</code>.
+   */
+  def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
+    def loop(lo: Int): Stream[Int] =
+      if (lo >= end) empty
+      else cons(lo, loop(step(lo)));
+    loop(start)
+  }
 }
 
 trait Stream[+a] extends Seq[a] {
