@@ -44,10 +44,6 @@ object rwlock {
 
     private var waiting: List[Signal] = Nil;
 
-    def synchronized[a](def s: a): a = {
-      lock.get; val result = s; lock.release; result
-    }
-
     def Wait = {
       val s = new Signal;
       waiting = s :: waiting;
