@@ -358,7 +358,7 @@ public class SymbolTablePrinter {
         return this;
     }
 
-    /** Prints the given symbol */
+    /** Prints the given symbol. */
     public SymbolTablePrinter printSymbol(Symbol symbol) {
         if (symbol.isAnonymousClass()) {
             print("<template>");
@@ -370,7 +370,7 @@ public class SymbolTablePrinter {
         }
     }
 
-    /** Prints the signature of the given symbol */
+    /** Prints the signature of the given symbol. */
     public SymbolTablePrinter printSignature(Symbol symbol) {
         String keyword = getSymbolKeyword(symbol);
         if (keyword != null) print(keyword).space();
@@ -378,6 +378,28 @@ public class SymbolTablePrinter {
         return printSymbolName(symbol)
             .printType(symbol.loBound(), ">:")
             .printSymbolType(symbol, inner);
+    }
+
+
+    /** Prints the given type parameter section. */
+    public SymbolTablePrinter printTypeParams(Symbol[] tparams) {
+        print('[');
+        for (int i = 0; i < tparams.length; i++) {
+            if (i > 0) print(",");
+            printSignature(tparams[i]);
+        }
+        return print(']');
+    }
+
+    /** Prints the given value parameter section. */
+    public SymbolTablePrinter printValueParams(Symbol[] vparams) {
+        print('(');
+        for (int i = 0; i < vparams.length; i++) {
+            if (i > 0) print(",");
+            if ((vparams[i].flags & Modifiers.DEF) != 0) print("def ");
+            printSymbolType(vparams[i], null);
+        }
+        return print(')');
     }
 
     //########################################################################
@@ -448,26 +470,11 @@ public class SymbolTablePrinter {
     }
     public SymbolTablePrinter printType0(Type type, String inner) {
         switch (type) {
-        case MethodType(Symbol[] vparams, Type result):
-            print('(');
-            for (int i = 0; i < vparams.length; i++) {
-                if (i > 0) print(",");
-                if ((vparams[i].flags & Modifiers.DEF) != 0)
-                    print("def ");
-                printSymbolType(vparams[i], null);
-            }
-            print(')');
-            return printType(result, inner);
         case PolyType(Symbol[] tparams, Type result):
-            if (tparams.length != 0 || global.debug) {
-                print('[');
-                for (int i = 0; i < tparams.length; i++) {
-                    if (i > 0) print(",");
-                    printSignature(tparams[i]);
-                }
-                print(']');
-            }
+            if (tparams.length != 0 || global.debug) printTypeParams(tparams);
             return printType(result, inner);
+        case MethodType(Symbol[] vparams, Type result):
+            return printValueParams(vparams).printType(result, inner);
         default:
             if (inner != null) {
                 if (!inner.startsWith(":")) space();
