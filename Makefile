@@ -104,10 +104,10 @@ SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_RSRC_OUTPUTDIR	 = $(PROJECT_OUTPUTDIR)/scaladoc
 
 # dtd2scala
-DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/dtd2scala
+DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
 DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
-DTD2SCALA_JC_FILES	 = $(DTD2SCALA_SOURCES)
+DTD2SCALA_SC_FILES	 = $(DTD2SCALA_SOURCES)
 
 # scalap
 SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scalap
@@ -257,8 +257,8 @@ library-doc	: .latest-library-sdc
 	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
-	@$(make) jc target=DTD2SCALA DTD2SCALA_JC_FILES='$?'
+.latest-dtd2scala	: $(DTD2SCALA_SC_FILES)
+	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
 	touch $@
 
 .latest-scalap	: $(SCALAP_SC_FILES)
