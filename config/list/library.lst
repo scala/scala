@@ -138,5 +138,8 @@ xml/PCDATA.scala
 xml/ScalaFactoryAdapter.scala
 
 xml/path/Expression.scala
+xml/path/Tokens.scala
+xml/path/Scanner.scala
+xml/path/Parser.scala
 
 ##############################################################################
