@@ -1,0 +1,78 @@
+<project name="predef">
+ 
+  <!-- Redefine accordingly to where you checked out your scala files -->
+  <!-- scala.home should point to the directory that contains the     -->
+  <!-- "benchmark" directory                                          -->
+  <property name="scala.home" value="${user.home}/scala"/>
+
+  <!-- Define some basic paths  -->
+  <property name="benchmark.home" value="${scala.home}/test/benchmark"/>
+  <property name="benchmark.sources.dir"
+            value="${benchmark.home}/sources"/>	 
+  <property name="benchmark.classes.dir"
+            value="${benchmark.home}/classes"/>
+  <property name="log.file"
+            value="${benchmark.home}/times/times.log"/>
+
+  <!-- Define the scalac task -->
+  <taskdef name="scalac"
+    classname="scala.tools.scala4ant.ScalacTask$class"/>
+
+  <!--  Define a <run-benchmark> element that can be used to run   -->
+  <!--    benchmarks                                               -->
+  <!--  It accepts these attributes:                               -->
+  <!--    count - how many times to run each benchmark (default:3) -->
+  <!--    classname - the name of the class to be ran  (default:   -->
+  <!--                the name of the ant project                  -->
+  <!--    logfile - the location of the file where running times   -->
+  <!--              are logged (default: ${log.file} property)     -->
+  <!--    location - the location of the classfiles: it will end   -->
+  <!--               up as head of the current classpath (default: -->
+  <!--               benchmark classes dir/project name            -->
+  <macrodef name="run-benchmark">
+    <attribute name="count" default="3"/>
+    <attribute name="classname" default="benchmarks.${ant.project.name}"/>
+    <attribute name="logfile" default="${log.file}"/>
+    <attribute name="location" default="${benchmark.classes.dir}/${ant.project.name}"/>
+
+    <sequential>
+      <echo>** Running benchmark @{classname} in @{location}..</echo>
+      <exec executable="scala" failonerror="true">
+        <arg line="-cp @{location}:${java.class.path}"/>
+	<arg line="@{classname} @{count} @{logfile}"/>
+      </exec>
+      <echo>Done</echo>
+    </sequential>
+  </macrodef>
+
+  <!--  Define a <compile-benchmark> element that can be used to   -->
+  <!--    compile benchmarks                                       -->
+  <!--  It accepts these attributes:                               -->
+  <!--    compiler - the name of the scalac compiler to use. It is -->
+  <!--            useful in case you have multiple compilers       -->
+  <!--            installed (default: scalac)                      -->
+  <!--    additionalArgs - additional arguments to pass to scalac  -->
+  <!--            (default: none)                                  -->
+  <!--    destination - the location where class files should be   -->
+  <!--            created (default: benchmark classes dir/project  -->
+  <!--            name)                                            -->
+  <!--    files - the source files to be compiled                  -->
+  <macrodef name="compile-benchmark">
+    <attribute name="compiler" default="myscalac"/>
+    <attribute name="additionalArgs" default=""/>
+    <attribute name="destination" default="${benchmark.classes.dir}/${ant.project.name}"/>
+    <attribute name="files"/>
+
+    <sequential>
+      <echo>
+** Building project ${ant.project.name} to @{destination}</echo>
+
+      <exec executable="@{compiler}" failonerror="true">
+        <arg line="-d @{destination}"/>
+	<arg line="@{additionalArgs}"/>
+        <arg line="@{files}"/>
+      </exec>
+    </sequential>
+  </macrodef>
+
+</project>

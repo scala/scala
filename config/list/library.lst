@@ -184,6 +184,7 @@ runtime/types/JavaTypeRepository.java
 
 testing/UnitTest.scala
 testing/SUnit.scala
+testing/Benchmark.scala
 
 util/alphabet/Alphabet.scala
 util/alphabet/AlphabetPlusWildcard.scala

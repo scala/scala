@@ -1,0 +1,22 @@
+<project name="benchmark" default="run.benchmark">
+
+  <import file="predef.xml"/>
+
+  <target name="init" depends="clean.benchmark">
+    <mkdir dir="${benchmark.classes.dir}"/>
+  </target>
+
+  <target name="clean.benchmark" 
+          description="Clean the files generated for the benchmark classes">
+    <delete dir="${benchmark.classes.dir}"/>
+  </target>
+
+  <target name="run.benchmark"
+          description="Run the benchmark suite">
+
+    <subant inheritAll="false">
+      <fileset dir="${benchmark.sources.dir}" includes="*/build.xml"/>
+    </subant>
+  </target> 
+
+</project>
