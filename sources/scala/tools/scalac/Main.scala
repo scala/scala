@@ -9,7 +9,6 @@
 import scalac.util.Reporter;
 import scalac.{CompilerCommand, Global => scalac_Global};
 import scalac.symtab.classfile.CLRPackageParser;
-//import scala.tools.scalac.MyCompilerPhases;
 
 package scala.tools.scalac {
 
@@ -31,7 +30,7 @@ object Main {
   def main1( exitOnError:boolean, args: Array[String] ):unit = {
     val reporter = new Reporter();
     val command = new CompilerCommand(
-      PRODUCT, VERSION, reporter, new CompilerPhases()); // !! MyCompilerPhases
+      PRODUCT, VERSION, reporter, new CompilerPhases());
     var ok = true;
     if (command.parse(args) && command.files.list.size() > 0) {
       if (command.target.value == scalac_Global.TARGET_MSIL) {
