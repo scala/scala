@@ -36,6 +36,8 @@ typechecker/Context.scala
 typechecker/DeSugarize.scala
 # typechecker/ImportList.scala
 typechecker/Infer.scala
+typechecker/RefCheck.scala
+typechecker/RefCheckPhase.scala
 typechecker/Substituter.scala
 typechecker/View.scala
 
