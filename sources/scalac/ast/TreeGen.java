@@ -329,12 +329,18 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build and attribute new B, given constructor expression B.
      */
-    public Tree New(Tree constr) {
+    public Tree New(int pos, Tree constr) {
 	Template templ = make.Template(
-	    constr.pos, new Tree[]{constr}, Tree.EMPTY_ARRAY);
+            pos, new Tree[]{constr}, Tree.EMPTY_ARRAY);
 	templ.setType(constr.type);
-        templ.setSymbol(localDummy(constr.pos, Symbol.NONE));
-	return make.New(constr.pos, templ).setType(constr.type);	    }
+        templ.setSymbol(localDummy(pos, Symbol.NONE));
+	return make.New(pos, templ).setType(constr.type);
+    }
+
+    public Tree New(Tree constr) {
+        return New(constr.pos, constr);
+    }
+
 
     /** Build an allocation   new P.C[TARGS](ARGS)
      *  given a (singleton) type P, class C, type arguments TARGS and arguments ARGS
@@ -511,30 +517,51 @@ public class TreeGen implements Kinds, Modifiers {
 	return DefDef(sym.pos, sym, rhs);
     }
 
-    /** Generate class definition from class symbol, parent constructors, and body.
+    /** Generate class definition from class symbol, and template.
      */
-    public Tree ClassDef(int pos, Symbol clazz, Tree[] constrs, Tree[] body) {
+    public Tree ClassDef(int pos, Symbol clazz, Template template) {
 	Global.instance.nextPhase();
 	Type clazzinfo = clazz.info();
 	Type constrtype = clazz.constructor().info();
+	Global.instance.prevPhase();
+        return make.ClassDef(
+            pos,
+            clazz.flags & SOURCEFLAGS,
+            clazz.name,
+            mkTypeParams(pos, constrtype.typeParams()),
+            mkParams(pos, constrtype),
+            Tree.Empty,
+            template)
+            .setSymbol(clazz).setType(definitions.UNIT_TYPE);
+    }
+
+    public Tree ClassDef(Symbol clazz, Template template) {
+        return ClassDef(clazz.pos, clazz, template);
+    }
+
+    /** Generate class definition from class symbol, parent constructors, and body.
+     */
+    public Tree ClassDef(int pos, Symbol clazz, Tree[] constrs, Symbol local, Tree[] body) {
+	Global.instance.nextPhase();
+	Type clazzinfo = clazz.info();
 	Global.instance.prevPhase();
 	switch (clazzinfo) {
 	case CompoundType(Type[] parents, Scope members):
 	    Template templ = make.Template(pos, constrs, body);
 	    templ.setType(clazzinfo);
-	    templ.setSymbol(localDummy(pos, clazz.owner()));
-	    return make.ClassDef(
-		pos,
-		clazz.flags & SOURCEFLAGS,
-		clazz.name,
-		mkTypeParams(pos, constrtype.typeParams()),
-		mkParams(pos, constrtype),
-		Tree.Empty,
-		templ)
-		.setSymbol(clazz).setType(definitions.UNIT_TYPE);
+	    templ.setSymbol(local);
+	    return ClassDef(pos, clazz, templ);
 	default:
 	    throw new ApplicationError();
 	}
+    }
+
+    public Tree ClassDef(int pos, Symbol clazz, Tree[] constrs, Tree[] body) {
+	return ClassDef(pos, clazz, constrs, localDummy(pos, clazz), body);
+    }
+
+    public Tree ClassDef(Symbol clazz, Tree[] constrs, Symbol local, Tree[] body) {
+	return ClassDef(clazz.pos, clazz, constrs, local, body);
     }
 
     public Tree ClassDef(Symbol clazz, Tree[] constrs, Tree[] body) {
@@ -546,11 +573,19 @@ public class TreeGen implements Kinds, Modifiers {
     /** Generate class definition from class symbol and body.
      *  All parents must by parameterless, or take unit parameters.
      */
-    public Tree ClassDef(int pos, Symbol clazz, Tree[] body) {
+    public Tree ClassDef(int pos, Symbol clazz, Symbol local, Tree[] body) {
 	Global.instance.nextPhase();
 	Type clazzinfo = clazz.info();
 	Global.instance.prevPhase();
-	return ClassDef(pos, clazz, mkParentConstrs(pos, clazzinfo.parents()), body);
+	return ClassDef(pos, clazz, mkParentConstrs(pos, clazzinfo.parents()), local, body);
+    }
+
+    public Tree ClassDef(int pos, Symbol clazz, Tree[] body) {
+	return ClassDef(pos, clazz, localDummy(pos, clazz), body);
+    }
+
+    public Tree ClassDef(Symbol clazz, Symbol local, Tree[] body) {
+	return ClassDef(clazz.pos, clazz, local, body);
     }
 
     public Tree ClassDef(Symbol clazz, Tree[] body) {
