@@ -18,6 +18,9 @@ ast/parser/Tokens.scala
 ast/printer/HTMLPrinter.scala
 ast/printer/TextTreePrinter.scala
 
+transformer/TransMatch.scala 
+transformer/TransMatchPhase.scala 
+
 typechecker/Analyzer.scala
 typechecker/AnalyzerPhase.scala
 typechecker/ConstantFolder.scala
