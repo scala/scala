@@ -14,6 +14,8 @@ import scalac.ast.*;
 import scalac.symtab.*;
 import scalac.typechecker.*;
 
+/** intermediary data structure for algebraic matching
+ */
 
 public class PatternNode {
     public int pos = Position.NOPOS;

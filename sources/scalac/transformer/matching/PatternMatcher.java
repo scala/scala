@@ -18,6 +18,7 @@ import scalac.typechecker.*;
 import PatternNode.*;
 import Tree.*;
 
+import scalac.transformer.TransMatch.Matcher ;
 
 public class PatternMatcher {
 
@@ -77,17 +78,21 @@ public class PatternMatcher {
 
     /** the statics of class Boolean
      */
-    Symbol statics;
+    //Symbol statics;
 
+    /** container
+     */
+    Matcher _m;
 
     /** constructor
      */
-    public PatternMatcher(Unit unit, Infer infer, Symbol owner, Tree selector, Type tpe) {
+    public PatternMatcher(Unit unit, Infer infer/*, Symbol owner, Tree selector, Type tpe*/) {
         this.unit = unit;
         this.fresh = unit.global.freshNameCreator;
         this.make = unit.global.make;
         this.gen = unit.global.treeGen;
         this.defs = unit.global.definitions;
+	/*
         this.owner = owner;
         this.selector = selector;
         this.root = makeConstrPat(selector.pos,
@@ -103,9 +108,52 @@ public class PatternMatcher {
                                         owner,
                                         Modifiers.MUTABLE);
         this.resultVar.setType(tpe);
-        this.statics = defs.getModule(Names.scala_Boolean);
+	*/
+        //this.statics = defs.getModule(Names.scala_Boolean);
         this.infer = infer;
     }
+
+
+    /** constructs an algebraic pattern matcher from cases
+     */
+    public void construct( Matcher m, Tree[] cases /*, boolean doBinding*/) {
+	//this.doBinding = doBinding;
+	this._m = m;
+	initialize();
+	for( int i = 0; i < cases.length; i++ ) {
+	    enter( (CaseDef) cases[i]/*, i*/ );
+	}
+	_m.tree = toTree();
+    }
+
+    /** initializes this AlgebraicMatcher, see Matcher.initialize
+     */
+    protected void initialize() {
+
+	//this.mk = new PatternNodeCreator( unit, infer, _m.owner/*_m.clazzOwner*/ );
+	//this.cf = new CodeFactory( unit, infer, _m.pos );
+	this.owner = _m.owner;
+	this.selector = _m.selector;
+
+	this.root = makeConstrPat/*mk.ConstrPat*/( _m.pos,
+				  _m.selector.type.widen() );
+
+	this.root.and = makeHeader/*mk.Header*/( _m.pos,
+				   _m.selector.type.widen(),
+				   gen.Ident( _m.pos, root.symbol() )
+				   .setType(_m.selector.type));
+
+	this.resultVar = new TermSymbol(_m.pos,
+					/*cf.*/fresh.newName( RESULT_N ),
+					_m.owner,
+					Modifiers.MUTABLE );
+	//this.resultType = resultType;
+	this.resultVar.setType( _m.resultType );
+
+	//System.out.println(" constructed matcherDefs ");
+    }
+
+
 
     /** return the analyzed type
      */
