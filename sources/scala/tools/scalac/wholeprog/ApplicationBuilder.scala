@@ -26,8 +26,6 @@ class ApplicationBuilder(globall: scalac_Global) {
   var worklist: Set[Symbol] = new HashSet[Symbol];
   var app: Set[Symbol]      = new HashSet[Symbol];
 
-  val chGraph = new ClassHierarchy(global);
-
   def finalClasses(app: Set[Symbol], units: Array[scalac_Unit]): Unit = {
     val m = new MonomorphicCallSites(global, app);
     m.buildClassHierarchy;
@@ -135,7 +133,7 @@ class ApplicationBuilder(globall: scalac_Global) {
     // parents
     addTypesToWorklist(List.fromArray(clsSym.parents(), 0, clsSym.parents().length));
 
-    updateClassHierarchy(clsSym);
+//    updateClassHierarchy(clsSym);
 
     // members
     clsSym.members().elements().foreach( (s: Symbol) => {
@@ -177,7 +175,7 @@ class ApplicationBuilder(globall: scalac_Global) {
 
     val parents = clsSym.parents();
 
-    updateClassHierarchy(clsSym);
+//    updateClassHierarchy(clsSym);
 
     // superclasses
     addTypesToWorklist(List.fromArray[Type](parents, 0, parents.length));
@@ -185,7 +183,7 @@ class ApplicationBuilder(globall: scalac_Global) {
     addReferences(cls);
   }
   // where
-    def updateClassHierarchy(cls: Symbol): Unit = {
+/*    def updateClassHierarchy(cls: Symbol): Unit = {
       val parents = cls.parents();
       var i = 1;
       val subclass: Node = chGraph.getNode(cls);
@@ -207,7 +205,7 @@ class ApplicationBuilder(globall: scalac_Global) {
       }
     }
 
-
+*/
     /**
      * Walk the tree and add to the worklist any class symbol that is
      * referenced from this tree.
