@@ -96,6 +96,8 @@ class GenJVM {
 
     protected final FJBGContext fjbgContext;
 
+    protected final ArrayList pickles = new ArrayList();
+
     public GenJVM(Global global) {
         this.global = global;
         this.defs = global.definitions;
@@ -128,6 +130,13 @@ class GenJVM {
             if (global.debug) e.printStackTrace();
             global.error(e.getMessage());
         }
+        // write .symbl files (must be generated after .class files)
+        for (int i = 0; i < pickles.size() / 2; i++) {
+            JClass clazz = (JClass)pickles.get(2 * i + 0);
+            Pickle pickle = (Pickle)pickles.get(2 * i + 1);
+            writeSymblFile(clazz, pickle);
+        }
+        pickles.clear();
     }
 
     /**
@@ -1366,6 +1375,8 @@ class GenJVM {
      * symbol table is saved.
      */
     protected void addScalaAttr(JClass cls, Pickle pickle) {
+        pickles.add(cls);
+        pickles.add(pickle);
         JOtherAttribute scalaAttr =
             fjbgContext.JOtherAttribute(cls,
                                         cls,
