@@ -9,13 +9,16 @@
 
 package scala;
 
+import java.io.Serializable;
+
 
 /** The empty list.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-case object Nil extends List[All] {
+case object Nil extends List[All] with Serializable {
+    private val serialVersionUID = 0 - 8256821097970055419L;
     def isEmpty = true;
     def head: All = error("head of empty list");
     def tail: List[All] = error("tail of empty list");
