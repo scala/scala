@@ -25,13 +25,16 @@ object Test1Test {
   val hedgeTrans = new immutable.TreeMap[Int,Set[HRule]]()
     .update( 1, immutable.ListSet.Empty[HRule] + hr1 );
 
-  val gram = new Grammar( treeTrans, hedgeTrans, null ) { val
-    treeInitials = immutable.ListSet.Empty[TreeNT] + t2; val
-    hedgeInitials = immutable.ListSet.Empty[HedgeNT]; def test( i:Int,
-    inp:Any ) = { if( i==1 ) inp.isInstanceOf[List[Int]] else false; } }
+  val gram = new Grammar( treeTrans, hedgeTrans, null ) {
+    val treeInitials = immutable.ListSet.Empty[TreeNT] + t2;
+    val hedgeInitials = immutable.ListSet.Empty[HedgeNT];
+    def test( i:Int, inp:Any ) = {
+      if( i==1 ) inp.isInstanceOf[List[Int]] else false;
+    }
+  }
 
   def main(args:Array[String]): Unit =
-    Console.println( new Matcher(gram).matches( List(1,2,3) ));
+    Console.println( new Matcher( gram ).matchesT( List(1,2,3) ).toList );
 }
 
 //############################################################################
