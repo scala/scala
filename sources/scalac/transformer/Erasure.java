@@ -428,6 +428,7 @@ public class Erasure extends Transformer implements Modifiers {
             case Select(Tree array, _):
                 if (isUnboxedArray(array.type().erasure())) {
                     switch (primitives.getPrimitive(fun.symbol())) {
+                    case LENGTH: return transformLength(tree);
                     case APPLY: return transformApply(tree);
                     case UPDATE: return transformUpdate(tree);
                     }
@@ -553,6 +554,22 @@ public class Erasure extends Transformer implements Modifiers {
      */
     Tree transform(Tree expr, Type pt) {
 	return coerce(transform(expr), pt);
+    }
+
+    /** Transform an array length */
+    Tree transformLength(Tree tree) {
+        switch (tree) {
+        case Apply(Select(Tree array, _), Tree[] args):
+            assert args.length == 0 : Debug.show(args);
+            Type finalType = tree.type().erasure();
+            array = transform(array);
+            Symbol symbol = primitives.getArrayLengthSymbol(array.type());
+            Tree method = gen.mkRef(tree.pos,primitives.RUNTIME_TYPE,symbol);
+            args = new Tree[] { array };
+            return coerce(gen.Apply(tree.pos, method, args), finalType);
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
     }
 
     /** Transform an array apply */

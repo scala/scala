@@ -632,7 +632,9 @@ class GenJVM {
             case ZARRAY_SET : case BARRAY_SET : case SARRAY_SET :
             case CARRAY_SET : case IARRAY_SET : case LARRAY_SET :
             case FARRAY_SET : case DARRAY_SET : case OARRAY_SET :
-            case LENGTH :
+            case ZARRAY_LENGTH : case BARRAY_LENGTH : case SARRAY_LENGTH :
+            case CARRAY_LENGTH : case IARRAY_LENGTH : case LARRAY_LENGTH :
+            case FARRAY_LENGTH : case DARRAY_LENGTH : case OARRAY_LENGTH :
             case IS : case AS :
             case CONCAT :
             case THROW :
@@ -650,7 +652,7 @@ class GenJVM {
             case HASHCODE :
             case TOSTRING :
             case BOX :
-            case APPLY : case UPDATE :
+            case APPLY : case UPDATE : case LENGTH :
                 return false;
             default:
                 throw Debug.abort("unknown primitive", sym);
@@ -695,11 +697,13 @@ class GenJVM {
         case ZARRAY_GET : case BARRAY_GET : case SARRAY_GET :
         case CARRAY_GET : case IARRAY_GET : case LARRAY_GET :
         case FARRAY_GET : case DARRAY_GET : case OARRAY_GET :
-            assert args.length == 3;
+            assert args.length == 3 : "get - " + args.length;
             return genArrayAccess(args[1], args[2]);
-        case LENGTH:
-            assert args.length == 1;
-            return genArrayLength(args[0]);
+        case ZARRAY_LENGTH : case BARRAY_LENGTH : case SARRAY_LENGTH :
+        case CARRAY_LENGTH : case IARRAY_LENGTH : case LARRAY_LENGTH :
+        case FARRAY_LENGTH : case DARRAY_LENGTH : case OARRAY_LENGTH :
+            assert args.length == 2 : args.length;
+            return genArrayLength(args[1]);
         case AS_UVALUE :
             assert args.length == 1;
             gen(args[0], cst.T_VOID);
