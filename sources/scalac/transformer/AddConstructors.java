@@ -95,11 +95,14 @@ public class AddConstructors extends GenTransformer {
 	if (initializer == null) {
 	    assert !constructor.constructorClass().isInterface():
                 "found interface constructor " + Debug.show(constructor);
+	    int flags = constructor.isPrivate()
+		? (constructor.flags & ~Modifiers.PRIVATE) | Modifiers.PROTECTED
+		: constructor.flags;
 	    initializer = new TermSymbol(
                 constructor.pos,
                 constructor.name,
                 constructor.constructorClass(),
-                constructor.flags & Modifiers.ACCESSFLAGS);
+                flags & Modifiers.ACCESSFLAGS);
 	    initializer.setInfo(
                 Type.MethodType(
                     constructor.valueParams(),
