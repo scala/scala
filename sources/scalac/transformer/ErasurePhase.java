@@ -76,16 +76,10 @@ public class ErasurePhase extends Phase {
             }
         }
         if (sym.isTerm() && sym.isParameter()) {
-            if (primitives.getPrimitive(sym.owner()) == Primitive.BOX) {
-                switch (tp) {
-                case TypeRef(Type prefix, Symbol clasz, Type[] args):
-                    if (args.length > 0 && args[0].symbol().isAbstractType())
-                        return definitions.ANYREF_CLASS.nextType();
-                    break;
-                default:
-                    throw Debug.abort("illegal case", tp);
-                }
-            }
+            if (primitives.getPrimitive(sym.owner()) == Primitive.BOX)
+                return eraseUnboxMethodType(tp);
+            if (primitives.getPrimitive(sym.owner()) == Primitive.UNBOX)
+                return eraseBoxMethodType(tp);
         }
         if (sym.isType()) return tp;
         if (sym.isThisSym()) return sym.owner().nextType();
@@ -94,6 +88,7 @@ public class ErasurePhase extends Phase {
         case Primitive.IS : return Type.PolyType(tp.typeParams(), Type.MethodType(tp.valueParams(), tp.resultType().erasure()));
         case Primitive.AS : return tp;
         case Primitive.BOX: return eraseBoxMethodType(tp);
+        case Primitive.UNBOX: return eraseUnboxMethodType(tp);
         case Primitive.AS__ARRAY:
             return Type.MethodType(Symbol.EMPTY_ARRAY, definitions.ANY_CLASS.nextType());
         default           : return tp.erasure();
@@ -120,6 +115,25 @@ public class ErasurePhase extends Phase {
             return Type.MethodType(params, eraseBoxMethodType(result));
         case TypeRef(Type prefix, Symbol clasz, Type[] args):
             return Type.TypeRef(prefix, clasz, Type.EMPTY_ARRAY);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }
+
+    private Type eraseUnboxMethodType(Type type) {
+        switch (type) {
+        case PolyType(_, Type result):
+            return eraseUnboxMethodType(result);
+        case MethodType(Symbol[] params, Type result):
+            return Type.MethodType(params, eraseUnboxMethodType(result));
+        case TypeRef(_, Symbol clasz, Type[] args):
+            if (clasz == definitions.ARRAY_CLASS) {
+                Symbol element = args[0].symbol();
+                if (element.isAbstractType())
+                    if (element.info().symbol() == definitions.ANY_CLASS)
+                        return definitions.ANYREF_CLASS.nextType();
+            }
+            return type.erasure();
         default:
             throw Debug.abort("illegal case", type);
         }
