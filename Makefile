@@ -235,8 +235,6 @@ library		: .latest-library
 
 .latest-meta		: $(META_JC_FILES)
 	@$(MAKE) jc target=META META_JC_FILES='$?'
-	$(RM) .latest-compiler
-	$(JAVA) -cp $(JC_OUTPUTDIR) meta.GenerateAll $(PROJECT_SOURCEDIR) $@
 	touch $@
 
 .latest-runtime		: $(RUNTIME_JC_FILES)
@@ -271,6 +269,10 @@ $(FUNCTION_FILES): $(FUNCTION_TEMPLATE) $(FUNCTION_RULES)
 
 $(TUPLE_FILES): $(TUPLE_TEMPLATE) $(TUPLE_RULES)
 	$(TEMPLATE_EXPANDER) $(TUPLE_RULES) $(TUPLE_TEMPLATE) $@
+
+%			: %.tmpl .latest-meta
+	$(RM) .latest-compiler
+	$(JAVA) -cp $(JC_OUTPUTDIR) meta.GenerateAll $(PROJECT_SOURCEDIR) $@
 
 $(PROJECT_JAR_ARCHIVE)	: .latest-runtime
 $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
