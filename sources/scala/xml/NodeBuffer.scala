@@ -19,7 +19,7 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
   override def +(n:Node):NodeBuffer = { super.+( n ); this }
 
   /** append a sequence of nodes to this buffer, returns reference on this NodeBuffer for convenience. */
-  def +(ns:Seq[Node]):NodeBuffer = { super.++( ns ); this }
+  def +(ns:Iterable[Node]):NodeBuffer = { super.++( ns ); this }
 
   /** append given string as a scala.xml.Text node to this buffer, returns reference on this NodeBuffer for convenience. */
   def +(t:String):NodeBuffer = { super.+( Text( t ) ); this }
