@@ -1,4 +1,4 @@
-S4.scala:5: stable identifier required, but a found.
-    def foo(x: a.Inner) = x;
-               ^
+S4.scala:4: stable identifier required, but a found.
+class S4(a: Other) extends a.Inner() {
+                           ^
 one error found

@@ -2168,7 +2168,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Select(Tree qual, Name name):
 		int qualmode = EXPRmode | POLYmode | QUALmode;
 		Tree qual1 = transform(qual, qualmode);
-		if (name.isTypeName()) qual1 = checkStable(qual1);
+		if (name.isTypeName() || name.isConstrName())
+		    qual1 = checkStable(qual1);
 		return transformSelect(
 		    tree, adapt(qual1, qualmode, Type.AnyType), name);
 

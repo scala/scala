@@ -4,6 +4,8 @@ object test {
 
   trait B { type T; }
 
+  class Functor(x: A) { type T = x.T }
+
   def functor(x: A): B { type T = x.T } =
     new B {
       type T = x.T;
