@@ -68,7 +68,7 @@ There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
 letters and digits. This may be followed by an underscore
 `\lstinline@_@' character and another string of characters that by
-themselves make up an identifier.  Second, an identifier can be started
+themselves make up an identifier.  Second, an identifier can start
 with a special character followed by an arbitrary sequence of special
 characters.  Finally, an identifier may also be formed by an arbitrary
 string between back-quotes (host systems may impose some restrictions
@@ -124,7 +124,7 @@ The tokens which cannot legally start a statement
 are the following delimiters and reserved words:
 \begin{lstlisting}
 catch    else    extends    finally    with    yield
-,    .    ;    :    =    =>    <-    <:    >:    #    @    )    ]    }
+,    .    ;    :    =    =>    <-    <:    <%    >:    #    @    )    ]    }
 \end{lstlisting}
 
 \section{Literals}
@@ -885,11 +885,13 @@ When used in an expression, a value of type \code{byte}, \code{char},
 or \code{short} is always implicitly converted to a value of type
 \code{int}.
 
-If an expression $e$ has type $T$ where $T$ does not conform to the
-expected type $pt$ and $T$ has a member named \lstinline@coerce@ of type
-$[]U$ where $U$ does conform to $pt$, then the expression is typed and evaluated is if it was
-\lstinline@$e$.coerce@.
+%If an expression $e$ has type $T$ where $T$ does not conform to the
+%expected type $pt$ and $T$ has a member named \lstinline@coerce@ of type
+%$[]U$ where $U$ does conform to $pt$, then the expression is typed and evaluated is if it was
+%\lstinline@$e$.coerce@.
 
+Implicit conversions can also be user-defined. This is expained in
+Chapter~\ref{sec:views}.
 
 \chapter{Basic Declarations and Definitions}
 \label{sec:defs}
@@ -1228,8 +1230,9 @@ new Pair[Int, Int](1, 2) .
 \section{Type Parameters}
 
 \syntax\begin{lstlisting}
-  TypeParamClause  ::=  `[' TypeParam {`,' TypeParam} `]'
-  TypeParam        ::=  [`+' | `-'] TypeDcl
+  TypeParamClause  ::=  `[' VarTypeParam {`,' VarTypeParam} `]'
+  VarTypeParam     ::=  [`+' | `-'] TypeParam
+  TypeParam        ::=  id [>: Type] [<: Type | <% Type]
 \end{lstlisting}
 
 
@@ -1378,7 +1381,7 @@ FunDcl             ::=  FunSig {`,' FunSig} `:' Type
 Def                ::=  def FunDef
 FunDef             ::=  FunSig {`,' FunSig} [`:' Type] `=' Expr 
 FunSig             ::=  id [FunTypeParamClause] {ParamClause} 
-FunTypeParamClause ::= `[' TypeDcl {`,' TypeDcl} `]' 
+FunTypeParamClause ::= `[' TypeParam {`,' TypeParam} `]' 
 ParamClause        ::= `(' [Param {`,' Param}] `)' 
 Param              ::=  [def] id `:' Type [`*']
 \end{lstlisting}
@@ -3761,6 +3764,183 @@ In an application of \code{match} such as the one above, the expected
 type of all patterns is the type of the qualifier of \code{match}.
 In the example above, the expected type of the patterns \code{Nil} and
 \code{x :: xs1} would be \code{List[a]}, the type of \code{xs}.
+
+\chapter{Views}\label{sec:views}
+
+Views are user-defined, implicit coercions that are automatically
+inserted by the compiler. 
+
+\section{View Definition}
+
+A view definition is a normal function definition with one value
+parameter where the name of the defined function is \code{view}.
+
+\example
+
+\begin{lstlisting}
+def view(xs: String): List[char] = 
+  if (xs.length() == 0) List()
+  else xs.charAt(0) :: xs.substring(1);
+\end{lstlisting}
+
+This defines an implicit coercion function from strings to lists of
+characters.
+
+\section{View Application}
+
+View applications are inserted implicitly in two situations.
+\begin{enumerate}
+\item
+Around an expression $e$ of type $T$, if $T$ does not conform to the
+expression's expected type $PT$.
+\item
+In a selection $e.m$ with $e$ of type $T$, if the selector $m$ does not
+denote a member of $T$.
+\end{enumerate}
+In the first case, a view method \code{view} is searched which is
+applicable to $e$ and whose result type conforms to $PT$.
+If such a method is found, the expression $e$ is converted to 
+\lstinline@view($e$)@.
+
+In the second case, a view method \code{view} is searched which is
+applicable to $e$ and whose result contains a member named $m$.
+If such a method is found, the selection $e.m$ is converted to 
+\lstinline@view($e$).m@
+
+\section{Finding Views}\label{sec:finding-views}
+
+Searching a view which is applicable to an expression $e$ of type $T$
+is a three-step process.
+\begin{enumerate}
+\item
+First, the set $\VV$ of available views is determined. $\VV$ is the
+smallest set such that:
+\begin{enumerate}
+\item
+If a unary method called \code{view} is accessible without qualifier
+anywhere on the path of the program tree that leads from $e$ to the
+root of the tree (describing the whole compilation unit), then that
+method is in the set $\AA$. Methods are accessible without qualifier
+because they are locally defined in an enclosing scope, or imported
+into an enclosing scope, or inherited by an enclosing class.
+\item
+If a unary method called \code{view} is a member of an object $C$ such
+that there is a base class $C$ of $T$ with the same name as the object
+and defined in the same scope, then that method is in the set $\AA$.
+\end{enumerate}
+\item
+Then, among all the methods in $\AA$ the set of all applicable views
+$\BB$ is determined. A view method is applicable if it can be applied
+to values of type $T$, and another condition is satisfied which
+depends on the context of the view application:
+\begin{enumerate}
+\item
+If the view is a conversion to a given prototype $PT$, then the view's
+result type must conform to $PT$.
+\item
+If the view is a conversion in a selection with member $m$, then the
+view's result type must contain a member named $m$.
+\end{enumerate}
+Note that in the determining of view applicability, we do not permit
+further views to be inserted. I.e.\ a view is applicable to an
+expression $e$ of type $T$ if it can be applied to $e$, without a
+further view conversion of $e$ to the view's formal parameter type.
+Likewise, a view's result type must conform to a given prototype
+directly, no second view conversion is allowed.
+\item
+It is an error is the set of applicable views $\BB$ is empty.  For
+non-empty $\BB$, the view method which is most specific
+(\sref{sec:overloaded-refs}) in $\BB$ is selected.  It is an error if
+no most specific view exists, or if it is not unique.
+\end{enumerate}
+
+\example
+
+Consider the following situation.
+\begin{lstlisting}
+class A;
+class B extends A;
+class C;
+object B {
+  def view(x: B): C = ...
+}
+object Test with Application {
+  def view(x: A): C = ...
+  val x: C = new B;
+}
+\end{lstlisting}
+For the expression ~\code{new B}~ there are two available views. The
+view defined in object \code{B} is available since its associated
+class is (a superclass of) the expression's type \code{B}. The view
+defined in object \code{Test} is available since it is accessible
+without qualification at the point of the expression ~\code{new
+B}. Both views are also applicable since they map values of type
+\code{B} to results of type \code{C}. However, the view defined in
+object \code{B} is more specific than the view defined in object
+\code{Test}.  Hence, the last statement in the example above is
+implicitly augmented to
+\begin{lstlisting}
+val x: C = B.view(new B)
+\end{lstlisting}
+
+\section{View-Bounds}
+
+\syntax\begin{lstlisting}
+  TypeParam       ::=  id [>: Type] [<% Type]
+\end{lstlisting}
+
+A type parameter \code{a} may have a view bound \lstlisting@a <% T@
+instead of a regular upper bound \lstlisting@a <: T@. In that case the
+type parameter may be instantiated to any type \code{S} which is
+convertible by application of a view method to the view bound
+\code{T}. Here, we assume there exists an always available identity
+view method
+\begin{lstlisting}
+def view[a](x: a): a = x .
+\end{lstlisting}
+Hence, the type parameter \code{a} can always be instantiated to
+subtypes of the view bound \code{T}, just as if \code{T} was a regular
+upper bound.
+
+Methods or classes with view-bounded type parameters implicitly take
+view functions as parameters. For every view-bounded type parameter
+\lstinline@a <% T@ one adds an implicit value parameter
+\lstinline@view: a => T@. When instantiating the type parameter
+\code{a} to some type \code{S}, the most specific applicable view
+method from type \code{S} to type \code{T} is selected, according to
+the rules of \sref{sec:finding-views}. This method is then passed as
+actual argument to the corresponding view parameter.
+
+Implicit view parameters of a method or class are then taken as
+available view methods in its body.
+
+\example
+trait Comparable[a] {
+  def < (x: a)
+}
+def view(x: String): Comparable[String] {
+}
+
+
+
+
+
+
+
+
+
+There is one such view function
+parameter for every view bounded type parameter. 
+
+
+
+In that case, the regular upper
+bound of the
+
+
+
+If $C$ is a base class of $T$ and there exists
+
 
 
 \chapter{Top-Level Definitions}

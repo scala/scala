@@ -1604,7 +1604,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       }
       if ((mode & CONSTRmode) == 0) {
-	System.out.println(tree);
 	typeError(tree.pos, owntype, pt);
 	Type.explainTypes(owntype, pt);
 	setError(tree);

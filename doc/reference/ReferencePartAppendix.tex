@@ -127,9 +127,10 @@ grammar.
                     |  XmlPattern
   Patterns        ::=  Pattern {`,' Pattern}
 
-  TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
-  FunTypeParamClause ::=  `[' TypeDcl {`,' TypeDcl} `]'
-  TypeParam       ::=  [`+' | `-'] TypeDcl
+  TypeParamClause ::=  `[' VarTypeParam {`,' VarTypeParam} `]'
+  FunTypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
+  VarTypeParam    ::=  [`+' | `-'] TypeParam
+  TypeParam       ::=  id [>: Type] [<: Type | <% Type]
   ParamClause     ::=  `(' [Param {`,' Param}] `)'
   Param           ::=  [def] id `:' Type [`*']
   Bindings        ::=  id [`:' Type1]
@@ -200,55 +201,6 @@ grammar.
                     |
   Packaging       ::=  package QualId `{' {TopStat `;'} TopStat `}'
   QualId          ::=  id {`.' id}
-
-  XmlExpr         ::=  Element {Element}
-
-  XmlPattern      ::=  ElementPattern {ElementPattern}
-  Element         ::=  EmptyElemTag
-                    |  STag Content ETag                                       
-
-  EmptyElemTag    ::=  `<' Name {S Attribute} [S] `/>'                         
-
-  STag            ::=  `<' Name {S Attribute} [S] `>'                          
-  ETag            ::=  `</' Name [S] '>'                                        
-  Content         ::=  [CharData] {Content1 [CharData]}
-  Content1        ::=  Element
-                    |  Reference
-                    |  Comment
-                    |  ScalaExpr
-  Attribute       ::=  Name Eq AttValue	                                 
-  AttValue        ::=  `"' {CharQ | CharRef} `"'
-                    |  `'' {CharA | CharRef} `''
-                    |  ScalaExp
-
-  ScalaExpr       ::=  `{' expr `}'
-
-  CharData        ::=  { CharNoRef } 
-                       $\mbox{\rm\em without}$ {CharNoRef}`{'CharB {CharNoRef} 
-                       $\mbox{\rm\em and without}$ {CharNoRef}`]]>'{CharNoRef}
-
-  BaseChar, Char, Comment, CombiningChar, Ideographic, NameChar, S, Reference
-                  ::=  $\mbox{\rm\em ``as in W3C XML''}$
-
-  Char1           ::=  Char $\mbox{\rm\em without}$ `<' | `&'
-  CharQ           ::=  Char1 $\mbox{\rm\em without}$ `"'
-  CharA           ::=  Char1 $\mbox{\rm\em without}$ `''
-  CharB           ::=  Char1 $\mbox{\rm\em without}$ '{'
-
-  Name            ::=  XNameStart {NameChar}
-
-  XNameStart      ::= `_' | BaseChar | Ideographic 
-                      $\mbox{\rm\em (as in W3C XML, but without }$ `:'
-
-  ElemPattern       ::=  EmptyElemTagP
-                    |    STagP ContentP ETagP                                 
-
-  EmptyElemTagP     ::=  '<' Name [S] '/>'
-  STagP             ::=  '<' Name [S] '>'                          
-  ETagP             ::=  '</' Name [S] '>'                                   
-  ContentP          ::=  [CharData] {(ElemPattern|ScalaPatterns) [CharData]}
-  ScalaPatterns     ::=  '{' patterns '}'
-
 \end{lstlisting}
 
 \chapter{Implementation Status}
