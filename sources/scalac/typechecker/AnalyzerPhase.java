@@ -19,6 +19,7 @@ import java.util.ArrayList;
 public class AnalyzerPhase extends PhaseDescriptor {
 
     /* final */ Context startContext;
+    /* final */ Context consoleContext;
     HashMap/*<Unit,Context>*/ contexts = new HashMap();
     ArrayList/*<Unit>*/ newSources = new ArrayList();
 
@@ -77,6 +78,28 @@ public class AnalyzerPhase extends PhaseDescriptor {
             startContext.imports = new ImportList(
 		importscalaPredef, new Scope(), startContext.imports);
         }
+
+        this.consoleContext = new Context(
+	    Tree.Empty,
+	    definitions.ROOT_CLASS,
+	    definitions.ROOT_CLASS.members(),
+	    startContext);
+    }
+
+    public void addConsoleImport(Global global, Symbol module) {
+        Definitions definitions = global.definitions;
+        TreeFactory make = global.make;
+
+        Tree console = make.Ident(Position.NOPOS, module.name)
+            .setSymbol(module)
+            .setType(Type.singleType(definitions.ROOT_TYPE, module));
+
+        Tree importConsole = make.Import(
+            Position.NOPOS, console, new Name[]{Names.WILDCARD})
+            .setSymbol(module)
+            .setType(definitions.UNIT_TYPE);
+        consoleContext.imports = new ImportList(
+            importConsole, new Scope(), consoleContext.imports);
     }
 
     public String name() {
