@@ -91,12 +91,13 @@ transformer/LambdaLiftPhase.java
 transformer/OwnerTransformer.java
 transformer/UnCurry.java
 transformer/UnCurryPhase.java
-transformer/PatternMatcher.java
-transformer/PatternNode.java
 transformer/TransMatch.java
 transformer/TransMatchPhase.java
 transformer/AddConstructors.java
 transformer/AddConstructorsPhase.java
+
+transformer/matching/PatternMatcher.java
+transformer/matching/PatternNode.java
 
 typechecker/Analyzer.java
 typechecker/AnalyzerPhase.java
