@@ -754,10 +754,16 @@ public final class GenMSIL {
 		    : items.StackItem(retType);
 		return coerce(i, resType);
 	    }
-	    //throw Debug.abort("" + Debug.show(sym));
 	    assert sym.isStatic() : Debug.show(sym);
 	    lastExpr = tmpLastExpr;
-	    //emitThis();
+
+	    MSILType convTo = primitiveConvert(sym);
+	    if (convTo != null) {
+		assert args.length == 1;
+		genLoad(args[0], convTo);
+		return items.StackItem(convTo);
+	    }
+
 	    return check(invokeMethod(sym, args, resType, true));
 
 	case Select(Tree qualifier, _):
@@ -769,9 +775,8 @@ public final class GenMSIL {
 	    if (sym == defs.ANY_BANGEQ) {
 		return negate(genEq(qualifier, args[0]));
 	    }
-	    // java.lang.String.substring(int, int)
-	    // needs emulation due to diffenerent semantics
-	    // from System.String.Substring
+	    // java.lang.String.substring(int start, int end) needs conversion
+	    // to System.String.Substring(int start, int length)
 	    if (sym == tc.SYM_SUBSTRING_INT_INT) {
 		assert args.length == 2;
 		genLoad(qualifier, MSILType.STRING);
@@ -853,13 +858,6 @@ public final class GenMSIL {
 		    assert args.length == 1;
 		    return primitiveOp(enumOp, qualifier, args[0], resType);
 		}
-	    }
-
-	    MSILType convTo = primitiveConvert(sym);
-	    if (convTo != null) {
-		assert args.length == 1;
-		genLoad(args[0], convTo);
-		return items.StackItem(convTo);
 	    }
 
 	    switch (qualifier.type) {
@@ -1277,7 +1275,7 @@ public final class GenMSIL {
 	    return msilType(t).asPrimitive();
 	    //case NULL:
 	case ARRAY(_):
-	    throw Debug.abort("primitiveType: cannot convert " + mtype);
+	    throw Debug.abort("cannot convert " + mtype);
 	default:
 	    return mtype;
 	}
@@ -2073,6 +2071,15 @@ final class MSILType {
 
     public boolean isValueType() {
 	return !isReferenceType();
+    }
+
+    public boolean isEnum() {
+	switch (this) {
+	case REF(Type t):
+	    return t.BaseType == pp.ENUM;
+	default:
+	    return false;
+	}
     }
 
     public boolean isType(Type type) {
