@@ -21,4 +21,7 @@ public class Pair {
         this.fst = fst;
         this.snd = snd;
     }
+    public String toString() {
+        return "Pair(" + fst + ", " + snd + ")";
+    }
 }
