@@ -871,34 +871,66 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      * look up overridden and overriding symbols.
      */
     public Symbol lookup(Symbol sym, Type pre, Relation relation) {
+        // !!! when we find a concrete method, then it is the right
+        // one, but if we find an abstract one, then we need maybe to
+        // search a bit further to see if a concrete one is available
+        // like in lookupNonPrivate. Do we need that ?
         assert !sym.isOverloaded(): Debug.show(sym);
-        Symbol sym1 = lookupNonPrivate(sym.name);
-        if (sym1.kind == Kinds.NONE || sym1.isStatic()) {
-            return Symbol.NONE;
-        } else {
-            //System.out.println(sym1 + ":" + sym1.type() + sym1.locationString() + " is" + relation + " to " + sym + ":" + sym.type() + sym.locationString() + " in " + pre + " ?"); //DEBUG
-
-            Type symtype = pre.memberType(sym).derefDef();
-            Type sym1type = pre.memberType(sym1).derefDef();
-	    if (sym1.isJava()) symtype = symtype.objParamToAny();
-            switch (sym1type) {
-            case OverloadedType(Symbol[] alts, Type[] alttypes):
-                for (int i = 0; i < alts.length; i++) {
-                    if (alttypes[i].derefDef().compareTo(symtype, relation))
-                        return alts[i];
-                }
-                return Symbol.NONE;
+        if (sym.isPrivate() || sym.isStatic() || sym.isInitializer())
+            return symbol().isSubClass(sym.owner()) ? sym : Symbol.NONE;
+        Type symtype = pre.memberType(sym).derefDef();
+        Symbol[] classes = classes();
+        for (int i = 0; i < classes.length; i++) {
+            Symbol sym1 = classes[i].members().lookup(sym.name);
+            switch (sym1.type()) {
+            case NoType:
+            case ErrorType:
+                continue;
+            case OverloadedType(Symbol[] alts, _):
+                for (int j = 0; j < alts.length; j++)
+                    if (areRelated(sym, symtype, relation, pre, alts[j],false))
+                        return alts[j];
+                continue;
             default:
-                if (sym1type.compareTo(symtype, relation)) return sym1;
-                else {
-                    if (Global.instance.debug) System.out.println(sym1 + sym1.locationString() + " is not" + relation + "to " + sym + sym.locationString() + " as seen from " + pre + ", since " + sym1type + relation.toString(true) + symtype);//DEBUG
-                    return Symbol.NONE;
-                }
+                if (areRelated(sym, symtype, relation, pre, sym1, true))
+                    return sym1;
+                continue;
             }
         }
+        return Symbol.NONE;
     }
     //where
-    static Map objToAnyMap = new Map() {
+    private static boolean areRelated(
+        Symbol sym, Type symtype, Relation relation, Type pre, Symbol sym1,
+        boolean warn)
+    {
+        if (sym == sym1) return true;
+        if (sym1.isPrivate() || sym1.isStatic() || sym1.isInitializer())
+            return false;
+        //System.out.println(sym1 + ":" + sym1.type() + sym1.locationString() + " is" + relation + " to " + sym + ":" + sym.type() + sym.locationString() + " in " + pre + " ?"); //DEBUG
+        Type sym1type = pre.memberType(sym1).derefDef();
+        if (sym1.isJava()) symtype = symtype.objParamToAny();
+        if (sym1type.compareTo(symtype, relation)) return true;
+        if (warn && Global.instance.debug) System.out.println(sym1 + sym1.locationString() + " is not" + relation + "to " + sym + sym.locationString() + " as seen from " + pre + ", since " + sym1type + relation.toString(true) + symtype);//DEBUG
+        return false;
+    }
+    private Symbol[] classes() {
+        switch (this) {
+        case ErrorType:
+            return new Symbol[] {Symbol.ERROR};
+        case ThisType(_):
+        case SingleType(_, _):
+        case ConstantType(_, _):
+            return singleDeref().classes();
+        case TypeRef(_, Symbol sym, _):
+            return sym.info().classes();
+        case CompoundType(Type[] parts, Scope members):
+            return symbol(symbol().closure());
+        default:
+            return Symbol.EMPTY_ARRAY;
+        }
+    }
+    static private Map objToAnyMap = new Map() {
 	public Type apply(Type t) {
 	    if (t.symbol() == Global.instance.definitions.JAVA_OBJECT_CLASS)
 		return Global.instance.definitions.ANY_TYPE();
