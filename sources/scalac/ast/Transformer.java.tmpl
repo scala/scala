@@ -222,25 +222,27 @@ public class GenTransformer {
             cond = transform(cond);
             thenp = transform(thenp);
             elsep = transform(elsep);
-            Type type = tree.type();
-            global.nextPhase();
-            boolean reuse = type.isSameAs(global.definitions.ANY_TYPE());
-            global.prevPhase();
-            return reuse
-                ? gen.If(tree.pos, cond, thenp, elsep, type)
-                : gen.If(tree.pos, cond, thenp, elsep);
+            if (tree.type().isSameAs(global.definitions.ANY_TYPE())) {
+                global.nextPhase();
+                Type type = global.definitions.ANY_TYPE();
+                global.prevPhase();
+                return gen.If(tree.pos, cond, thenp, elsep, type);
+            } else {
+                return gen.If(tree.pos, cond, thenp, elsep);
+            }
 
         case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
             test = transform(test);
             bodies = transform(bodies);
             otherwise = transform(otherwise);
-            Type type = tree.type();
-            global.nextPhase();
-            boolean reuse = type.isSameAs(global.definitions.ANY_TYPE());
-            global.prevPhase();
-            return reuse
-                ? gen.Switch(tree.pos, test, tags, bodies, otherwise, type)
-                : gen.Switch(tree.pos, test, tags, bodies, otherwise);
+            if (tree.type().isSameAs(global.definitions.ANY_TYPE())) {
+                global.nextPhase();
+                Type type = global.definitions.ANY_TYPE();
+                global.prevPhase();
+                return gen.Switch(tree.pos, test, tags, bodies,otherwise,type);
+            } else {
+                return gen.Switch(tree.pos, test, tags, bodies, otherwise);
+            }
 
         case Return(Tree expr):
             Symbol symbol = getSymbolFor(tree);
