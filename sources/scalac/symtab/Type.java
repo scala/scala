@@ -287,8 +287,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public Symbol symbol() {
         switch (this) {
-        case ErrorType:
-            return Symbol.ERROR;
         case ThisType(Symbol sym):
             return sym;
         case TypeRef(_, Symbol sym, _):
@@ -776,7 +774,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public Symbol lookup(Name name) {
         switch (this) {
         case ErrorType:
-            return Symbol.ERROR;
+            return new ErrorScope(Symbol.NONE).lookup(name);
         case ThisType(_):
         case SingleType(_, _):
         case ConstantType(_, _):
@@ -798,7 +796,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public Symbol lookupNonPrivate(Name name) {
         switch (this) {
         case ErrorType:
-            return Symbol.ERROR;
+            return new ErrorScope(Symbol.NONE).lookup(name);
         case ThisType(_):
         case SingleType(_, _):
         case ConstantType(_, _):
@@ -906,8 +904,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
     private Symbol[] classes() {
         switch (this) {
-        case ErrorType:
-            return new Symbol[] {Symbol.ERROR};
         case ThisType(_):
         case SingleType(_, _):
         case ConstantType(_, _):

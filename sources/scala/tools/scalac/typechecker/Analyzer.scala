@@ -216,6 +216,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     unit.error(pos, msg);
 
   def typeError(pos: int, found: Type, req: Type): unit = {
+    if (found.isError() || req.isError()) return;
     var msg: String = infer.typeErrorMsg("type mismatch", found, req);
     val foundResult: Type = found.resultType();
     if (foundResult != found && infer.isCompatible(foundResult, req))
