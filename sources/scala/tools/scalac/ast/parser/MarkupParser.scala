@@ -10,13 +10,22 @@ import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
 import scala.collection.immutable.ListMap ;
 import scala.collection.mutable.Buffer;
-
+import scalac.symtab.Modifiers;
 package scala.tools.scalac.ast.parser {
 
 class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
 
   import Tokens.{EMPTY, RBRACE} ;
   import scala.tools.scalac.ast.{TreeList => myTreeList}
+
+  val  _AppendBuffer = Name.fromString("AppendBuffer");
+  val  _collection = Name.fromString("collection");
+  val  _Elem = Name.fromString("Elem");
+  val  _mutable = Name.fromString("mutable");
+  val  _append = Name.fromString("append");
+  val  _xml = Name.fromString("xml");
+  val  _Node = Name.fromString("Node");
+  val  _Text = Name.fromString("Text");
 
   /** the tree factory
    */
@@ -26,9 +35,41 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   */
   val gen: TreeGen = unit.global.treeGen;
 
-  /** convenience method */
-  def scalaDot(pos: int, name: Name): Tree =
-    make.Select(pos, make.Ident(pos, Names.scala), name);
+  // convenience methods
+  private def _scala( pos: int, name: Name ) =
+    make.Select( pos, make.Ident( pos, Names.scala ), name );
+
+  private def _scala_xml( pos: int, name: Name ) =
+    make.Select( pos, _scala( pos, _xml ), name );
+
+  private def _scala_xml_Node( pos: int ) =
+    _scala_xml( pos, _Node );
+
+  private def _scala_xml_Text( pos: int ) =
+    p.convertToConstr(_scala_xml( pos, _Text ));
+
+  private def _scala_collection( pos: int, name: Name ) =
+    make.Select( pos, _scala( pos, _collection ), name );
+
+  private def _scala_collection_mutable( pos: int, name: Name ) =
+    make.Select(pos, _scala_collection(pos, _mutable ), name);
+
+  private def _scala_collection_mutable_AppendBuffer( pos: int ) =
+    make.Apply( pos,
+               make.AppliedType(pos,
+                                p.convertToConstr(
+                                  _scala_collection_mutable(pos, _AppendBuffer )),
+                                Predef.Array[Tree](
+                                  convertToTypeId(
+                                    _scala_xml_Node( pos ) ))
+                              ),
+               Tree.EMPTY_ARRAY );
+
+  private def _scala_Tuple2( pos:int ) =
+    _scala( pos, Names.Tuple2 );
+
+  private def _scala_xml_Elem( pos:int ) =
+    _scala_xml( pos, _Elem );
 
   /** convenience method */
   def convertToTypeId(t: Tree): Tree = t match {
@@ -43,12 +84,36 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   // create scala xml tree
 
   def mkXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
-    var symt = scalaDot( pos, Names.Symbol );
-    if( isPattern ) symt = convertToTypeId(symt);
-    val ts = new myTreeList();
-    ts.append(t);
-    ts.append(args);
-    make.Apply(pos, symt, ts.toArray());
+    if( isPattern ) {
+      val ts = new myTreeList();
+      ts.append( t );
+      ts.append( convertToText( args ) );
+      make.Apply(pos,
+                 convertToTypeId( _scala_xml_Elem( pos ) ),
+                 ts.toArray())
+    } else {
+      val constrArgs = if( 0 == args.length ) {
+        Predef.Array[Tree]( t )
+      } else {
+        Predef.Array[Tree]( t, make.Typed(
+          pos, makeXMLseq(pos, args), make.Ident(pos, TypeNames.WILDCARD_STAR)))
+      };
+      make.Apply( pos, _scala_xml_Elem( pos ), constrArgs )
+    }
+  }
+
+  // create scala.xml.Text here <: scala.xml.Node
+  def makeText( pos: int, txt:String ):Tree =
+    makeText( pos, gen.mkStringLit( pos, txt ));
+
+  def makeText( pos: int, txt:Tree ):Tree = {
+    val constr = make.Apply( pos,
+                           _scala_xml_Text( pos ),
+                           Predef.Array[Tree] ( txt ));
+    make.New( pos,
+             make.Template( pos,
+                            Predef.Array[Tree] ( constr ),
+                            Tree.EMPTY_ARRAY ));
   }
 
   def makeXMLpat(pos:int, n:Name, args:Array[Tree]):Tree =
@@ -57,8 +122,48 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   def makeXML(pos:int, n:Name, args:Array[Tree]):Tree =
     mkXML(pos, false, gen.mkStringLit( pos, n.toString() ), args);
 
+  def convertToText( t:Tree ) = t match {
+    case _:Tree$Literal => makeText( t.pos, t );
+    case _ => t
+  }
+
+  def convertToText( ts:Array[Tree] ) = {
+    var res:Array[Tree] = null;
+    var i = 0; while( i < ts.length ) {
+      ts( i ) match {
+        case _:Tree$Literal =>
+          if( null == res ) {  // lazy copy
+            res = new Array[Tree]( ts.length );
+            System.arraycopy( ts, 0, res, 0, i );
+          }
+          res( i ) = makeText( ts( i ).pos, ts( i ) );
+        case _ =>
+      }
+      i = i + 1
+    }
+    if( null == res ) ts else res;
+  }
+
   def makeXMLseq( pos:int, args:Array[Tree] ) = {
-    make.Apply(pos, scalaDot(s.pos, Names.List), args);
+    val blocArr = new Array[Tree] ( 1 + args.length );
+    val constr = _scala_collection_mutable_AppendBuffer( pos );
+    val n = p.fresh();
+    val nIdent = make.Ident(pos, n);
+    blocArr( 0 ) = make.ValDef(pos, Modifiers.MUTABLE, n, Tree.Empty,
+                               make.New( pos,
+                                        make.Template( pos,
+                                                      Predef.Array[Tree] ( constr ),
+                                                      Tree.EMPTY_ARRAY )));
+
+    var i = 0; while( i < args.length ) {
+      val ipos = args(i).pos;
+      val t = make.Apply( ipos,
+                          make.Select( ipos, nIdent, _append ),
+                          Predef.Array[Tree]( convertToText( args( i ) )));
+      i = i + 1;
+      blocArr( i ) = t
+    }
+    make.Block( pos, blocArr, nIdent );
   }
 
   def makeXML(pos:int,n:Name,args:Array[Tree],attrMap:ListMap[Name,Tree]):Tree = {
@@ -70,17 +175,18 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       var i = 0;
       for( val Pair( key, value ) <- attrMap.elements ) {
 	attrs( i ) = make.Apply(pos,
-                                scalaDot(s.pos, Names.Tuple2),
+                                _scala_Tuple2( s.pos ),
                                 Predef.Array(gen.mkStringLit( pos, key.toString() ),
                                              value));
 	i = i + 1;
       };
       make.Apply(pos,
                  make.Select( pos, t, Names.PERCENT ),
-	         Predef.Array( make.Apply(pos, scalaDot(s.pos, Names.List),
+	         Predef.Array( make.Apply(pos, _scala(s.pos, Names.List),
                             attrs)));
     }
   }
+
 
   /** xLiteral = xExpr { xExpr }
    * @return Scala representation of this xml literal
@@ -191,12 +297,12 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
               ts.append( b );
             }
           case _ => // text content
-            ts.append( gen.mkStringLit( s.pos, s.xText ));
+            ts.append( makeText( s.pos, s.xText ));
         }
       }
       xEndTag( elemName );
       val t2 = makeXML( pos, elemName, ts.toArray(), attrMap );
-        Console.println("parsed:"+t2);
+        //Console.println("parsed:"+t2);
         t2
     }
   }
@@ -242,7 +348,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
             }
           case _ => // text
             val pos = s.pos;
-            ts.append( gen.mkStringLit( pos, s.xText ) );
+            ts.append( makeText( pos, s.xText ) );
 	}
       }
       xEndTag( elemName );

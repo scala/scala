@@ -225,7 +225,7 @@ class Parser(unit: Unit) {
           pos,
           NewArray.Tree(
             make.ValDef(pos, 0, x, Tree.Empty, left)),
-            make.Apply(
+          make.Apply(
               pos,
               make.Select(pos, right, NameTransformer.encode(op)),
               NewArray.Tree(make.Ident(left.pos, x))));
@@ -412,6 +412,7 @@ class Parser(unit: Unit) {
     case Tree$Select(qual, name) =>
       make.Select(t.pos, qual, name.toTypeName())
     case _ =>
+      Console.println( "class instead "+t.getClass() );
       syntaxError(t.pos, "class constructor expected", false)
   }
 
@@ -601,9 +602,12 @@ class Parser(unit: Unit) {
     if (isSymLit) {
       val pos = s.pos;
       if (s.token == LPAREN || s.token == LBRACE)
-        xmlp.mkXML( pos, isPattern, t, argumentExprs() );
-      else
-        xmlp.mkXML( pos, isPattern, t, Tree.EMPTY_ARRAY );
+        xmlp.mkXML( pos, isPattern, t, argumentExprs() ); // xml shorthand
+      else { // Symbol("name")
+        var symT = scalaDot( pos, Names.Symbol );
+        if( isPattern ) { symT = convertToTypeId( symT ) };
+        make.Apply( pos, symT, Predef.Array[Tree]( t ) )
+      }
     } else {
       t
     }
