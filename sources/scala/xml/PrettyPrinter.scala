@@ -107,7 +107,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     Utility.appendPrefixedName( n.namespace, n.label, pmap, sb );
     Utility.attr2xml( n.namespace, n.attributes.elements, pmap, sb );
     if(( pmap.size != 1 )|| !pmap.contains(""))
-      for( val c <- pmap.elements ) {
+      for( val c <- pmap.elements; c._2 != "xml" ) {
         sb.append(" xmlns:");
         sb.append(c._2);
         sb.append("=\"");
