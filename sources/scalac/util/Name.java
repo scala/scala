@@ -126,7 +126,4 @@ public final class Name {
             this != Names.false_;
     }
 
-    public static final Name ERROR = Name.fromString("<error>");
-    static { ERROR.type = ERROR; }
-
 }

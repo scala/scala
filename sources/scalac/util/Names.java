@@ -63,7 +63,7 @@ public class Names {
         return Name.fromString(TYPE_PREFIX + sym.name);
     }
 
-    public static final Name ERROR = Name.ERROR;
+    public static final Name ERROR = Name.fromString("<error>");
     public static final Name NOSYMBOL = Name.fromString("<none>");
     public static final Name EMPTY = Name.fromString("");
     public static final Name IMPORT_WILDCARD = Name.fromString("_");

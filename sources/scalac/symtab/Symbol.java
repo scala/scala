@@ -1918,7 +1918,7 @@ final class ErrorSymbol extends Symbol {
 
     /** Constructor */
     public ErrorSymbol() {
-        super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null, 0, 0);
+        super(Kinds.ERROR, Position.NOPOS, Names.ERROR, null, 0, 0);
         super.setInfo(Type.ErrorType);
     }
 
