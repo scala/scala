@@ -36,6 +36,14 @@ class ListSet[A] with Set[A, ListSet[A]] {
 
 	override def toList: List[A] = Nil;
 
+	override def equals(obj: Any): Boolean =
+		if (obj is ListSet[A]) {
+			toList.equals(obj.
+			val set = obj as ListSet[A];
+
+		} else
+			false;
+
 	protected class Node(elem: A) extends ListSet[A] {
 		override def size = ListSet.this.size + 1;
 		override def isEmpty: Boolean = false;
