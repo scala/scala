@@ -152,6 +152,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == VAL && !(isModule() && isJava()) && !isPackage();
     }
 
+    /** Does this symbol denote a stable value? */
+    public final boolean isStable() {
+	return kind == VAL && (flags & MUTABLE) == 0 && type().isObjectType();
+    }
+
     /** Does this symbol denote a variable? */
     public final boolean isVariable() {
         return kind == VAL && (flags & MUTABLE) != 0;

@@ -63,6 +63,21 @@ public class TreeGen implements Kinds, Modifiers {
 	    .setInfo(Type.NoType);
     }
 
+    public Tree mkStable(Tree tree) {
+	Symbol sym = tree.symbol();
+	if (sym.isStable()) {
+	    switch (tree) {
+	    case Ident(_):
+		tree.setType(Type.singleType(sym.owner().thisType(), sym));
+		break;
+	    case Select(Tree qual, _):
+		if (qual.type.isStable())
+		    tree.setType(Type.singleType(qual.type, sym));
+	    }
+	}
+	return tree;
+    }
+
     public Tree mkRef(int pos, Type pre, Symbol sym) {
 	if (pre.isSameAs(Type.localThisType) || pre.symbol().isRoot())
 	    return Ident(pos, sym);
@@ -81,7 +96,7 @@ public class TreeGen implements Kinds, Modifiers {
 	case ThisType(Symbol sym):
 	    return make.This(pos, Ident(pos, sym)).setType(pre);
         case SingleType(Type pre1, Symbol sym):
-	    return mkRef(pos, pre1, sym);
+	    return mkStable(mkRef(pos, pre1, sym));
         default:
             throw new ApplicationError();
         }
@@ -361,8 +376,6 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type symtype = qual.type.memberType(sym);
 	Global.instance.prevPhase();
-	if (sym.kind == VAL && qual.type.isStable() && symtype.isObjectType())
-	    symtype = Type.singleType(qual.type, sym);
 	return make.Select(pos, qual, sym.name)
 	    .setSymbol(sym).setType(symtype);
     }
@@ -383,8 +396,6 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
-	if (sym.kind == VAL && symtype.isObjectType())
-	    symtype = Type.singleType(sym.owner().thisType(), sym);
 	return make.Ident(pos, sym.name)
 	    .setSymbol(sym).setType(symtype);
     }

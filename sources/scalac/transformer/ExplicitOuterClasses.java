@@ -121,9 +121,9 @@ public class ExplicitOuterClasses extends Transformer {
             Symbol outerSym = (Symbol)outerIt.next();
 
             if (root == null)
-                root = gen.Ident(outerSym);
+                root = gen.mkStable(gen.Ident(outerSym));
             else
-                root = gen.Select(root, outerSym);
+                root = gen.mkStable(gen.Select(root, outerSym));
 
             --level;
         }
@@ -172,7 +172,7 @@ public class ExplicitOuterClasses extends Transformer {
 
             if (found && level > 0) {
                 Tree root = outerRef(level);
-                return gen.Select(root, sym);
+                return gen.mkStable(gen.Select(root, sym));
             } else {
                 return super.transform(tree);
             }

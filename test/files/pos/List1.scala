@@ -8,7 +8,7 @@ module lists {
   }
 
   def Nil[a] = new List[a] {
-    def isEmpty: True.type = True;
+    def isEmpty: Boolean = True;
     def head = error[a]("head of Nil");
     def tail = error[List[a]]("tail of Nil");
   }
@@ -32,7 +32,7 @@ module lists {
   class IntList() extends List[Int] {
     def isEmpty: Boolean = False;
     def head: Int = 1;
-    def foo: List[Int] with { def isEmpty: True.type; def head: Int; def tail: List[Int] } = Nil[Int];
+    def foo: List[Int] with { def isEmpty: Boolean; def head: Int; def tail: List[Int] } = Nil[Int];
     def tail0: List[Int] = foo.prepend(1).prepend(1+1);
     def tail: List[Int] = Nil[Int].prepend(1).prepend(1+1);
   }

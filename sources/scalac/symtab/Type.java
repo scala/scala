@@ -417,7 +417,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	switch (unalias()) {
 	case ThisType(_):
 	case SingleType(_, _):
-	case ErrorType:
 	    return true;
 	default:
 	    return false;
@@ -861,7 +860,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		return this;
 	    if (symbol().isSubClass(clazz) &&
 		pre.symbol().isSubClass(symbol())) {
-		if (!pre.isStable()) {
+		if (!pre.isStable() && pre != ErrorType) {
 		    throw new Type.Error (
 			"malformed type: " + pre + "." + symbol().nameString());
 		}
@@ -2097,7 +2096,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    if (!first) buf.append("}");
 	    return buf.toString();
 	case MethodType(Symbol[] vparams, Type result):
-	    return ArrayApply.toString(Symbol.type(vparams), "(", ",", ")") + result;
+	    return ArrayApply.toString(paramTypeString(vparams), "(", ",", ")") + result;
 	case PolyType(Symbol[] tparams, Type result):
 	    return ArrayApply.toString(Symbol.defString(tparams), "[", ",", "]") +
 		result;
@@ -2137,6 +2136,20 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    else
 		return spre + "@";
 	}
+    }
+
+    private String[] paramTypeString(Symbol[] vparams) {
+	String[] ss = new String[vparams.length];
+	for (int i = 0; i < ss.length; i++) {
+	    Type tp = vparams[i].type();
+	    if ((vparams[i].flags & REPEATED) != 0 &&
+		tp.symbol() == Global.instance.definitions.SEQ_CLASS &&
+		tp.typeArgs().length == 1)
+		ss[i] = tp.typeArgs()[0].toString() + "*";
+	    else
+		ss[i] = tp.toString();
+	}
+	return ss;
     }
 
     public int hashCode() {
