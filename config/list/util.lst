@@ -5,20 +5,24 @@
 
 AbstractFile.java
 AbstractFileReader.java
+AbstractTimer.java
 ByteArrayFile.java
 CharArrayFile.java
 ClassPath.java
 DirectoryPath.java
+DummyTimer.java
 EmptyIterator.java
 PlainFile.java
 Position.java
+Reporter.java
+ReporterTimer.java
 SourceFile.java
 SourceReader.java
 StringBufferWriter.java
+Timer.java
 VirtualDirectory.java
 VirtualFile.java
 ZipArchive.java
-Reporter.java
 
 debug/AbortError.java
 debug/ArrayDebugger.java
