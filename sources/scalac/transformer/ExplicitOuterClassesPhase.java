@@ -187,7 +187,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             if (outers[i].isStable) continue;
             Name tname = Names.OUTER(constructor, outers[i].clasz);
             tlinks[i] = constructor.newTParam(
-                constructor.pos, tflags, tname, outers[i].clasz.type());
+                constructor.pos, tflags, tname, outers[i].clasz.typeOfThis());
         }
 
         // create outer value link
