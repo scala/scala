@@ -63,6 +63,15 @@ trait Set[A] with Iterable[A] {
         elem => if (p(elem)) remove(elem);
     }
 
+    def exists(p: A => Boolean): Boolean = {
+    	val iter = elements;
+    	var res = false;
+        while (!res && iter.hasNext) {
+            if (p(iter.next)) { res = true; }
+        }
+        res;
+    }
+
     def toList: List[A] = {
         var res: List[A] = Nil;
         val iter = elements;

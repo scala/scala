@@ -29,14 +29,14 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
 
     def at(n: Int): A = apply(n);
 
-    protected def prependElem(elem: A) = {
+    protected def prependElem(elem: A): Unit = {
     	first = new LinkedList[A](elem, first);
         if (len == 0)
             last = first;
         len = len + 1;
     }
 
-    protected def appendElem(elem: A) = {
+    protected def appendElem(elem: A): Unit = {
         if (len == 0)
             prependElem(elem);
         else {

@@ -33,7 +33,7 @@ object Predef {
         set;
     }
 
-    def Map[A, B](mappings: Pair[A, B]*): Map[A, B] = {
+    def Map[A, B](mappings: Pair[A, B]*): MutableMap[A, B] = {
         val map = new HashMap[A, B];
         map.putMap(mappings);
         map;

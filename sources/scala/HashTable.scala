@@ -53,7 +53,7 @@ abstract class HashTable[A] {
             resize(2 * table.length);
     }
 
-    protected def removeEntry(key: A): Unit = {
+    def remove(key: A): Unit = {
         val old = findEntry(key);
         old match {
             case None =>

@@ -20,13 +20,13 @@ trait Map[A, +B] with Function1[A, B]
     def isEmpty: Boolean = (size == 0);
 
     def apply(key: A): B = get(key) match {
-        case None => null
+        case None => error("key not found")
         case Some(value) => value
     }
 
     def get(key: A): Option[B];
 
-    def remove(key: A): B;
+    def remove(key: A): Unit;
 
     def contains(key: A): Boolean = get(key) match {
         case None => false

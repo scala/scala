@@ -14,11 +14,9 @@ package scala;
 
 trait DefaultMapModel[A, B] extends MutableMap[A, B] {
 
-    protected def findEntry(key: A): Option[Entry];
+	protected def findEntry(key: A): Option[Entry];
 
-    protected def addEntry(e: Entry): Unit;
-
-    protected def removeEntry(key: A): Unit;
+	protected def addEntry(e: Entry): Unit;
 
     protected def entries: Iterator[Entry];
 
@@ -30,11 +28,6 @@ trait DefaultMapModel[A, B] extends MutableMap[A, B] {
     def update(key: A, value: B) = findEntry(key) match {
         case None => addEntry(new Entry(key, value));
         case Some(e) => e.value = value;
-    }
-
-    def remove(key: A) = findEntry(key) match {
-    	case None => null;
-    	case Some(e) => removeEntry(key); e.value;
     }
 
     def elements = new Iterator[Pair[A, B]] {

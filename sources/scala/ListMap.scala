@@ -10,8 +10,7 @@
 package scala;
 
 
-class ListMap[A, B] extends MutableMap[A, B]
-                    with DefaultMapModel[A, B] {
+class ListMap[A, B] extends MutableMap[A, B] with DefaultMapModel[A, B] {
 
 	var xs: List[Entry] = Nil;
 
@@ -23,7 +22,7 @@ class ListMap[A, B] extends MutableMap[A, B]
 
 	protected def addEntry(e: Entry) = { xs = e :: xs; }
 
-    protected def removeEntry(key: A) = { xs = xs filter {e => e.key != key}; }
+    def remove(key: A) = { xs = xs filter {e => e.key != key}; }
 
 	protected def entries = xs.elements;
 }

@@ -23,8 +23,6 @@ class HashSet[A] extends Set[A] with HashTable[A] {
         case Some(_) =>
     }
 
-    def remove(elem: A): Unit = removeEntry(elem);
-
     def elements = entries;
 
     protected type Entry = A;
