@@ -13,6 +13,7 @@ import scala.tools.util.SourceFile;
 
 import scalac.ast.Tree;
 import scalac.atree.ARepository;
+import scalac.util.FreshNameCreator;
 import java.util.HashMap;
 
 
@@ -39,6 +40,10 @@ public class Unit {
      */
     public final boolean mixinOnly;
 
+    /** the fresh name creator
+     */
+    public final FreshNameCreator fresh;
+
     /** the content of the compilation unit in tree form
      */
     public Tree[] body;
@@ -50,6 +55,7 @@ public class Unit {
         this.source = source;
         this.console = console;
 	this.mixinOnly = mixinOnly;
+        this.fresh = new FreshNameCreator();
     }
 
     public Unit(Global global, SourceFile source, boolean console) {

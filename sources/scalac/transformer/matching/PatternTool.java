@@ -40,7 +40,7 @@ abstract class PatternTool {
     // constructor
     public PatternTool( Unit unit ) {
 	this.unit = unit;
-	this.fresh = unit.global.freshNameCreator;
+	this.fresh = unit.fresh;
 	this.gen = unit.global.treeGen;
 	this.defs = unit.global.definitions;
     }

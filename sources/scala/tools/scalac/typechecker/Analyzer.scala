@@ -1184,7 +1184,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
     // enter all members
     pushContext(templ, clazz, members);
-    templ.body = desugarize.Statements(templ.body, false);
+    templ.body = desugarize.Statements(unit, templ.body, false);
     enterSyms(templ.body);
     popContext();
     templ.setType(Type.compoundType(parents, members, clazz));
@@ -2154,7 +2154,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       tree match {
 	case Tree$Block(stats, value) =>
 	  pushContext(tree, context.owner, new Scope(context.scope));
-	  val stats1 = desugarize.Statements(stats, true);
+	  val stats1 = desugarize.Statements(unit, stats, true);
 	  enterSyms(stats1);
 	  context.imports = context.outer.imports;
 	  val curmode: int = mode;
@@ -2245,7 +2245,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      error(tree.pos, "expected pattern type of cases could not be determined");
 	    }
 	  } else {
-	    transform(desugarize.Visitor(tree))
+	    transform(desugarize.Visitor(unit, tree))
 	  }
 
 	case Tree$Assign(Tree$Apply(_, _), _) =>

@@ -196,7 +196,7 @@ public class LambdaLift extends OwnerTransformer
 	 *  If symbol is a class assign same name to its primary constructor.
 	 */
 	private void makeUnique(Symbol sym) {
-	    sym.name = global.freshNameCreator.newName(sym.name);
+	    sym.name = unit.fresh.newName(sym.name);
 	}
 
 	private Type.Map traverseTypeMap = new Type.Map() {

@@ -101,10 +101,6 @@ public abstract class Global {
      */
     public final TreeFactory make;
 
-    /** the fresh name creator
-     */
-    public final FreshNameCreator freshNameCreator;
-
     /** the tree generator
      */
     public final TreeGen treeGen;
@@ -264,7 +260,6 @@ public abstract class Global {
                 error("unknown printer kind: " +  args.printer.value);
             this.treePrinter = newTextTreePrinter(writer);
         }
-        this.freshNameCreator = new FreshNameCreator();
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);

@@ -1050,7 +1050,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     private Symbol newLocal(Symbol owner, int pos, int flags, String prefix,
         Type type)
     {
-        Name name = global.freshNameCreator.newName(prefix);
+        Name name = Names.LOCAL(owner);  // !!! create unique names ?
         flags |= Modifiers.SYNTHETIC;
         Symbol local = owner.newVariable(pos, flags, name);
         global.nextPhase();

@@ -14,7 +14,7 @@ import scalac.util._;
 import scalac.symtab._;
 import scalac.ast._;
 import scalac.typechecker.Infer;
-import scalac.{Global => scalac_Global}
+import scalac.{Global => scalac_Global, Unit => scalac_Unit}
 
 import scala.tools.scalac.ast.printer.TextTreePrinter;
 import scala.tools.scalac.util.NewArray;
@@ -32,8 +32,6 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   import Kinds._, Modifiers._;
   import scalac.ast.TreeList;
 
-  protected final val freshNameCreator = global.freshNameCreator;
-
   def this(analyzer: Analyzer, global: scalac_Global) =
     this(analyzer.make, analyzer.copy, analyzer.gen, analyzer.infer, global);
 
@@ -41,7 +39,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   /** introduce fresh variable of the form "ds$56"
   */
-  def getvar(): Name = freshNameCreator.newName("ds", '$');
+  def getvar(unit: scalac_Unit): Name = unit.fresh.newName("ds", '$');
 
   def setterName(name: Name): Name = Name.fromString(name.toString() + Names._EQ);
 
@@ -201,9 +199,9 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     *  only called when match has to be added
   *  no type for parameter x
   */
-  def Visitor(tree: Tree): Tree = tree match {
+  def Visitor(unit: scalac_Unit, tree: Tree): Tree = tree match {
     case Tree$Visitor(cases) =>
-      val x: Name = getvar();
+      val x: Name = getvar(unit);
       val param: Tree$ValDef = make.ValDef(
 	tree.pos, PARAM, x, Tree.Empty, Tree.Empty);
       val xuse: Tree = make.Ident(tree.pos, x);
@@ -260,7 +258,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   /** expand pattern definitions and variable definitions in templates.
   */
-  def Statements(stats: Array[Tree], isLocal: boolean): Array[Tree] = {
+  def Statements(unit: scalac_Unit, stats: Array[Tree], isLocal: boolean): Array[Tree] = {
     var change: boolean = false;
     var i = 0;
     while (i < stats.length && !change) {
@@ -279,7 +277,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
         val stat = unboxDocDef(stats(i));
 	stat match {
 	  case Tree$PatDef(_, _, _) =>
-	    ts.append(boxDocDef(Statements(this.PatDef(stat), isLocal), stats(i)));
+	    ts.append(boxDocDef(Statements(unit, this.PatDef(unit, stat), isLocal), stats(i)));
 	  case Tree$ValDef(_, _, _, _) =>
 	    if (isLocal) ts.append(stats(i))
 	    else ts.append(boxDocDef(this.ValDef(stat), stats(i)));
@@ -355,7 +353,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   *                  val x_N = t$._N
   *
   */
-  def PatDef(tree: Tree): Array[Tree] = tree match {
+  def PatDef(unit: scalac_Unit, tree: Tree): Array[Tree] = tree match {
     case Tree$PatDef(mods, Tree$Ident(name), rhs) =>
       // val x = e     ==>  val x = e
       NewArray.Tree(make.ValDef(tree.pos, mods, name, Tree.Empty, rhs))
@@ -397,7 +395,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	NewArray.Tree(valdef)
       } else {
 	// t$
-	val vble: Name = getvar();
+	val vble: Name = getvar(unit);
 
 	// private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
 	val res = new Array[Tree](vars.length + 1);
