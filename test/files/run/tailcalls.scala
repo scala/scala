@@ -218,7 +218,6 @@ object Test {
         n = 2 * n;
       } catch {
         case exception: StackOverflowError => stop = true
-        //case exception: System.StackOverflowException => stop = true
       }
     }
     4 * n;
