@@ -66,7 +66,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     }
 
     public void enterUnit(Unit unit) {
-	enter(new Context(Tree.Empty, descr.startContext), unit);
+	enter(new Context(Tree.Empty, unit.console ? descr.consoleContext : descr.startContext), unit);
     }
 
     public void enter(Context context, Unit unit) {
