@@ -19,7 +19,7 @@ public abstract class Strings {
     //########################################################################
     // Strings constants
 
-    final public static String[] NONE = new String[0];
+    final public static String[] EMPTY_ARRAY = new String[0];
 
     //########################################################################
     // Strings interface
