@@ -51,11 +51,13 @@
    {\thesection}
    {1em}
    {}
+\titlespacing{\section}{0pt}{*4}{*2}
 \titleformat{name=\subsection}
    {\sffamily\bfseries\normalsize}
    {\thesubsection}
    {0.666em}
    {}
+\titlespacing{\subsection}{0pt}{*2}{*1}
 \titleformat{name=\subsubsection}
    {\sffamily\bfseries\normalsize}
    {\thesubsubsection}
@@ -202,15 +204,15 @@
   \begin{tabular}{p{0.6\textwidth}>{\columncolor[gray]{.82}[\tabcolsep]}p{0.327\textwidth}}%
   \rowcolor[gray]{.82}\ & \  \\%
   \  & \  \\[35mm]%
-  \hspace*{4mm}{\sffamily\huge\bfseries\parbox{0.55\textwidth}{\doctitle}} & \  \\[42mm]%
-  \  & {\sffamily\large \docsubtitle} \\[.5ex]%
-  \  & {\sffamily\large \docdate} \\[16mm]%
-  \  & {\sffamily\large\bfseries\parbox{0.31\textwidth}{\docauthor}} \\[55mm]%
+  \hspace*{4mm}{\sffamily\LARGE\bfseries\parbox{0.55\textwidth}{\doctitle}} & \  \\[42mm]%
+  \  & {\sffamily\normalsize \docsubtitle} \\[.5ex]%
+  \  & {\sffamily\normalsize \docdate} \\[16mm]%
+  \  & {\sffamily\normalsize\bfseries\parbox{0.31\textwidth}{\docauthor}} \\%
   \rowcolor[gray]{.82} \  & \  \\%
   \multicolumn{2}{>{\columncolor[gray]{.82}[\tabcolsep]}r}{%
     \small\sc Programming Methods Laboratory}\\[-.2ex]%
   \multicolumn{2}{>{\columncolor[gray]{.82}[\tabcolsep]}r}{%
-    \small\sc Swiss Federal Institute of Technology, Lausanne}\\[-.2ex]%
+    \small\sc EPFL}\\[-.2ex]%
   \multicolumn{2}{>{\columncolor[gray]{.82}[\tabcolsep]}r}{%
     \small\sc Switzerland}\\[-.6ex]%
   \rowcolor[gray]{.82} \  & \  %
