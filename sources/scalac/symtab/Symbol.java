@@ -241,6 +241,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & INTERFACE) != 0;
     }
 
+    /** Does this symbol denote a synthetic symbol? */
+    public final boolean isSynthetic() {
+        return (flags & SYNTHETIC) != 0;
+    }
+
     /** Does this symbol denote a static member? */
     public final boolean isStatic() {
         return (flags & STATIC) != 0;
