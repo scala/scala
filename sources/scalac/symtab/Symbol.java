@@ -671,6 +671,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return NONE;
     }
 
+    /** Get dual class */
+    public Symbol dualClass() {
+        return NONE;
+    }
+
     /** Get owner */
     public Symbol owner() {
         return owner;
@@ -1851,6 +1856,11 @@ public class ClassSymbol extends TypeSymbol {
     public Symbol module() {
         assert !isRoot(): this + ".module()";
         return module;
+    }
+
+    /** Get dual class */
+    public Symbol dualClass() {
+        return dual;
     }
 
     /** Set module; only used internally from TermSymbol
