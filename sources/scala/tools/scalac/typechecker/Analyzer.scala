@@ -1330,6 +1330,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	clazz.getType()
       else if (selftype.isSubType(clazz.getType()))
 	selftype
+      else if (selftype.isSingletonType() && selftype.singleDeref().symbol().isSubClass(clazz))
+	selftype
       else
 	selftype match {
 	  case Type$CompoundType(parts, members) =>
@@ -1342,6 +1344,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    Type.compoundTypeWithOwner(
 	      clazz.owner().enclClass(), NewArray.Type(selftype, clazz.getType()), Scope.EMPTY);
 	}
+    if (global.debug) global.log("assigning self type " + selftype1);
     sym.setInfo(selftype1);
 
     this.unit = savedUnit;
@@ -1367,7 +1370,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       case _ =>
     }
-    if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) &&
+    if ((pt != null && pt.isStable() ||
+         (mode & QUALmode) != 0 ||
+         tree.getType().symbol().isModuleClass()) &&
 	(pre != null) && pre.isStable()) {
       var sym: Symbol = tree.symbol();
       tree.getType() match {
@@ -1566,7 +1571,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
 
     var owntype: Type = tree.getType();
-    if ((mode & (CONSTRmode | FUNmode)) == (CONSTRmode)) {
+    if ((mode & (CONSTRmode | FUNmode)) == (CONSTRmode) && pt != Type.AnyType) {
       owntype = owntype.instanceType();
       // this works as for superclass constructor calls the expected
       // type `pt' is always AnyType (see transformConstrInvocations).
@@ -1917,7 +1922,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     transformConstrInvocationArgs(parents);
     if (!owner.isError()) {
       validateParentClasses(
-	parents, owner.info().parents(), owner.typeOfThis());
+	parents, owner.info().parents(), owner.thisType());
     }
     val prevContext = pushContext(templ, owner, owner.members());
     /*

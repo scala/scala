@@ -4385,11 +4385,8 @@ following definitions.
 package scala;
 abstract class Any {
 
-  /** Reference equality */
-  final def eq(that: Any): boolean = $\ldots$
-
-  /** Defined equality */
-  def equals(that: Any): boolean = this eq that;
+  /** Defined equality; abstract here */
+  def equals(that: Any): boolean;
 
   /** Semantic equality between values of same type */
   final def == (that: Any): boolean  =  this equals that
@@ -4420,7 +4417,10 @@ abstract class Any {
   def match[a, b](cases: a => b): b = cases(this);
 }
 final class AnyVal extends Any;
-class AnyRef extends Any;
+class AnyRef extends Any {
+  def equals(that: Any): boolean     = this eq that;
+  final def eq(that: Any): boolean   = $\ldots$; // reference equality
+}
 trait ScalaObject extends AnyRef;
 \end{lstlisting}
 

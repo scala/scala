@@ -591,7 +591,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   *  It is assumed that all symbols are term symbols  ==>  make.Ident().
   */
   def toIdents(symbols: Array[Symbol]): Array[Tree] = {
-    val idents = new Array[Tree$Ident](symbols.length);
+    val idents = new Array[Tree](symbols.length);
     for (val i <- Iterator.range(0, symbols.length)) {
       idents(i) = make.Ident(symbols(i).pos, symbols(i).name);
     }

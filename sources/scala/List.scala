@@ -180,6 +180,49 @@ object List {
     sb.toString()
   }
 
+  /** Returns the list resulting from applying the given function <code>f</code> to
+   *  corresponding elements of the argument lists.
+   *
+   *  @param f function to apply to each pair of elements.
+   *  @return <code>[f(a0,b0), ..., f(an,bn)]</code> if the lists are
+   *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
+   *          <code>m = min(k,l)</code>
+   */
+  def map2[a,b,c](xs: List[a], ys: List[b], f: (a, b) => c): List[c] =
+    if (xs.isEmpty || ys.isEmpty) Nil
+    else f(xs.head, ys.head) :: map2(xs.tail, ys.tail, f);
+
+  /** Tests whether the given predicate <code>p</code> holds
+   *  for all corresponding elements of the argument lists.
+   *
+   *  @param p function to apply to each pair of elements.
+   *  @return <code>n == 0 || (p(a0,b0) && ... && p(an,bn))]</code> if the lists are
+   *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
+   *          <code>m = min(k,l)</code>
+   */
+  def forall2[a,b](xs: List[a], ys: List[b], f: (a, b) => boolean): boolean =
+    if (xs.isEmpty || ys.isEmpty) true
+    else f(xs.head, ys.head) && forall2(xs.tail, ys.tail, f);
+
+  /** Tests whether the given predicate <code>p</code> holds
+   *  for some corresponding elements of the argument lists.
+   *
+   *  @param p function to apply to each pair of elements.
+   *  @return <code>n != 0 && (p(a0,b0) || ... || p(an,bn))]</code> if the lists are
+   *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
+   *          <code>m = min(k,l)</code>
+   */
+  def exists2[a,b](xs: List[a], ys: List[b], f: (a, b) => boolean): boolean =
+    if (xs.isEmpty || ys.isEmpty) false
+    else f(xs.head, ys.head) || exists2(xs.tail, ys.tail, f);
+
+  /** Transposes a list of lists.
+   *  pre: All element lists have the same length.
+   */
+  def transpose[a](xss: List[List[a]]): List[List[a]] =
+    if (xss.head.isEmpty) List()
+    else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail));
+
   /** Lists with ordered elements are ordered
    */
   def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
@@ -445,7 +488,7 @@ sealed trait List[+a] extends Seq[a] {
   def map[b](f: a => b): List[b] = match {
     case Nil => Nil
     case head :: tail => f(head) :: (tail map f)
-  };
+  }
 
   /** Apply a function to all the elements of the list, and return the
    *  reversed list of results. This is equivalent to a call to <code>map</code>

@@ -239,6 +239,7 @@ class Parser(unit: CompilationUnit) {
         NewArray.Tree(left, right));
     }
 
+
   def scalaDot(pos: int, name: Name): Tree =
     make.Select(pos, make.Ident(pos, Names.scala), name);
 
@@ -431,6 +432,29 @@ class Parser(unit: CompilationUnit) {
       t
     case _ =>
       make.Apply(t.pos, t, Tree.EMPTY_ARRAY)
+  }
+
+  /** make closure from tree */
+  def makeClosure(pos: int, tree: Tree): Tree = {
+    val pname = fresh();
+    def insertParam(tree: Tree): Tree = tree match {
+      case Tree$Ident(name) =>
+        make.Select(tree.pos, make.Ident(pos, pname), name)
+      case Tree$Select(qual, name) =>
+        make.Select(tree.pos, insertParam(qual), name)
+      case Tree$Apply(fn, args) =>
+        make.Apply(tree.pos, insertParam(fn), args)
+      case Tree$TypeApply(fn, args) =>
+        make.TypeApply(tree.pos, insertParam(fn), args)
+      case _ =>
+        syntaxError(pos, "cannot concert to closure", false);
+        gen.mkZeroLit(s.pos)
+    }
+    make.Function(
+      pos,
+      NewArray.ValDef(
+        make.ValDef(pos, Modifiers.PARAM, pname, Tree.Empty, Tree.Empty)),
+      insertParam(tree))
   }
 
 /////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
@@ -818,6 +842,7 @@ class Parser(unit: CompilationUnit) {
    *               | return [Expr]
    *               | [SimpleExpr `.'] Id `=' Expr
    *               | SimpleExpr ArgumentExprs `=' Expr
+   *               | `.' SimpleExpr
    *               | PostfixExpr [`:' Type1]
    *  Bindings   ::= Id [`:' Type1]
    *               | `(' [Binding {`,' Binding}] `)'
@@ -890,6 +915,14 @@ class Parser(unit: CompilationUnit) {
     } else if (s.token == THROW) {
       val pos = s.skipToken();
       make.Throw(pos, expr())
+    } else if (s.token == DOT) {
+      val pos = s.skipToken();
+      if (s.token == IDENTIFIER)
+        makeClosure(pos, simpleExpr())
+      else {
+        syntaxError("identifier expected", true);
+        gen.mkZeroLit(pos);
+      }
     } else {
       var t = postfixExpr();
       if (s.token == EQUALS) {
@@ -927,7 +960,7 @@ class Parser(unit: CompilationUnit) {
     }
   }
 
-  /** PostfixExpr   ::= InfixExpr [Id]
+  /** PostfixExpr   ::= [`.'] InfixExpr [Id]
    *  InfixExpr     ::= PrefixExpr
    *                  | InfixExpr Id InfixExpr
    */

@@ -66,6 +66,10 @@ public class ClosureHistory extends History {
             for (int i = 0; i < parents.length; i++)
                 addParents(table, parents[i]);
             return;
+	case SingleType(_, _):
+	case ThisType(_):
+	    addParents(table, type.singleDeref());
+	    return;
         default:
             throw Debug.abort("illegal case", type);
         }

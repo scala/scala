@@ -698,6 +698,15 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
+    /** Is this type a s thistype or singletype?
+     */
+    public boolean isSingletonType() {
+        switch (this) {
+        case ThisType(_): case SingleType(_, _): return true;
+        default: return false;
+        }
+    }
+
     /** Is this type a reference to an object type?
      *  todo: replace by this.isSubType(global.definitions.ANY_TYPE())?
      */
@@ -2155,6 +2164,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     && sym == sym1.moduleClass()
                     && sym.owner().thisType().isSameAs(pre1)
                     ||
+                    this.singleDeref().isSingletonType() &&
+                    this.singleDeref().isSameAs(that)
+                    ||
+                    that.singleDeref().isSingletonType() &&
+                    this.isSameAs(that.singleDeref())
+                    ||
                     deAlias(that) != that &&
                     this.isSameAs(deAlias(that));
             }
@@ -2165,12 +2180,24 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             case SingleType(Type pre1, Symbol sym1):
                 return sym == sym1 && pre.isSameAs(pre1)
                     ||
+                    this.singleDeref().isSingletonType() &&
+                    this.singleDeref().isSameAs(that)
+                    ||
+                    that.singleDeref().isSingletonType() &&
+                    this.isSameAs(that.singleDeref())
+                    ||
                     (deAlias(this) != this || deAlias(that) != that) &&
                     deAlias(this).isSameAs(deAlias(that));
             case ThisType(Symbol sym1):
                 return sym.isModule()
                     && sym.moduleClass() == sym1
                     && pre.isSameAs(sym1.owner().thisType())
+                    ||
+                    this.singleDeref().isSingletonType() &&
+                    this.singleDeref().isSameAs(that)
+                    ||
+                    that.singleDeref().isSingletonType() &&
+                    this.isSameAs(that.singleDeref())
                     ||
                     deAlias(this) != this &&
                     deAlias(this).isSameAs(that);
@@ -2280,6 +2307,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return false;
     }
     //where
+
         Type deAlias(Type tp) {
             switch (tp) {
             case SingleType(_, _):
