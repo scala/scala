@@ -1,5 +1,5 @@
 ############################################################-*-Makefile-*-####
-# scaladoc source files (paths are relative to ./sources/scaladoc)
+# scaladoc source files (paths are relative to ./sources/scala/tools/scaladoc)
 ##############################################################################
 # $Id$
 
