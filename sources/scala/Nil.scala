@@ -3,10 +3,10 @@ package scala {
   /* An empty list. Scala provides <code>[]</code> as syntactic sugar
   * for <code>Nil</code>.
   */
-  final case class Nil[c] extends List[c] {
+  case object Nil extends List[All] {
     def isEmpty = true;
-    def head: c = error("head of empty list");
-    def tail: List[c] = error("tail of empty list");
+    def head: All = error("head of empty list");
+    def tail: List[All] = error("tail of empty list");
   }
 }
 

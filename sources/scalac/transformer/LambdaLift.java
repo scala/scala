@@ -541,25 +541,19 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
+    //todo: remove type parameters
     Tree mkList(int pos, Type tpe, Tree[] args) {
 	return mkList(pos, tpe.typeArgs()[0], args, 0);
     }
 
     Tree mkList(int pos, Type elemtpe, Tree[] args, int start) {
-	if (start == args.length) return mkNil(pos, elemtpe);
+	if (start == args.length) return mkNil(pos);
 	else return mkCons(pos, elemtpe, args[start],
 			   mkList(pos, elemtpe, args, start + 1));
     }
 
-    Tree mkNil(int pos, Type elemtpe) {
-	return gen.New(
-	    gen.Apply(
-		gen.TypeApply(
-		    gen.mkRef(
-			pos,
-			global.definitions.getClass(Names.scala_Nil).constructor()),
-		    new Tree[]{gen.mkType(pos, elemtpe)}),
-		new Tree[]{}));
+    Tree mkNil(int pos) {
+	return gen.mkRef(pos, global.definitions.getModule(Names.scala_Nil));
     }
 
     Tree mkCons(int pos, Type elemtpe, Tree hd, Tree tl) {
@@ -569,7 +563,7 @@ public class LambdaLift extends OwnerTransformer
 		    gen.mkRef(
 			pos,
 			global.definitions.getClass(Names.scala_COLONCOLON).constructor()),
-		    new Tree[]{gen.mkType(pos, elemtpe)}),
+		    new Tree[]{gen.mkType(pos, elemtpe), gen.mkType(pos, elemtpe)}),
 		new Tree[]{hd, tl}));
     }
 }

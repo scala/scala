@@ -1,3 +1,2 @@
-package scala {
-  case class Cell[T](elem: T)
-}
+package scala;
+case class Cell[+T](elem: T);

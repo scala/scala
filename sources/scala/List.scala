@@ -8,7 +8,7 @@ package scala;
 *
 * @arg a the type of the elements contained in the list.
 */
-trait List[a] extends Seq[a] {
+trait List[+a] extends Seq[a] {
 
   /** Tests if this list is empty.
   * @return True iff the list contains no element.
@@ -34,8 +34,8 @@ trait List[a] extends Seq[a] {
   * @param x the element to append.
   * @return the list with <code>x</code> appended at the beginning.
   */
-  def ::(x: a): List[a] =
-    new scala.::[a](x, this);
+  def ::[b >: a](x: b): List[b] =
+    new scala.::[b, a](x, this);
 
   /** Returns a list resulting from the concatenation of the given
   * list <code>prefix</code> and this list.
@@ -45,9 +45,9 @@ trait List[a] extends Seq[a] {
   * @param prefix the list to concatenate at the beginning of this list.
   * @return the concatenation of the two lists.
   */
-  def :::(prefix: List[a]): List[a] =
+  def :::[b >: a](prefix: List[b]): List[b] =
     if (prefix.isEmpty) this
-    else prefix.head :: (prefix.tail ::: this);
+    else prefix.head :: prefix.tail ::: this;
 
   /** Returns the number of elements in the list.
   * @return the number of elements in the list.
@@ -127,9 +127,9 @@ trait List[a] extends Seq[a] {
    * @return the element at position <code>n</code> in this list.
    * @throws java.lang.RuntimeException if the list is too short.
    */
-  def apply(n: Int) = drop(n).head;
+  def apply(n: Int): a = drop(n).head;
 
-  def at(n: Int) = drop(n).head;
+  def at(n: Int): a = drop(n).head;
 
   /** Returns the list resulting from applying the given function <code>f</code> to each
   * element of this list.
@@ -187,21 +187,22 @@ trait List[a] extends Seq[a] {
     case x :: xs => xs.foldLeft[b](f(z, x))(f)
   }
 
-  def foldLeft_:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
-
   def foldRight[b](z: b)(f: (a, b) => b): b = match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   }
 
-  def reduceLeft(f: (a, a) => a): a = this match {
+  def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
+  def :/[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
+
+  def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => error("Nil.reduceLeft")
-    case x :: xs => (xs foldLeft x)(f)
+    case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
   }
 
-  def reduceRight(f: (a, a) => a): a = match {
+  def reduceRight[b >: a](f: (b, b) => b): b = match {
     case Nil => error("Nil.reduceRight")
-    case x :: Nil => x
+    case x :: Nil => x: b
     case x :: xs => f(x, xs.reduceRight(f))
   }
 
@@ -254,7 +255,7 @@ trait List[a] extends Seq[a] {
   * @return the given array <code>xs</code> filled with this list.
   * @throws error if the list is empty.
   */
-  def copyToArray(xs: Array[a], start: Int): Array[a] = match {
+  def copyToArray[b >: a](xs: Array[b], start: Int): Array[b] = match {
     case Nil => xs
     case y :: ys => xs(start) = y; ys.copyToArray(xs, start + 1)
   }
@@ -298,7 +299,7 @@ trait List[a] extends Seq[a] {
   * @return True iff there is an element of this list which is
   * equal (w.r.t. <code>==</code>) to <code>elem</code>.
   */
-  def contains(elem: a) = exists(
+  def contains(elem: Any): boolean = exists(
      new Object with Function1[a, Boolean] {
        def apply(x: a): Boolean = x == elem;
      });
@@ -309,11 +310,12 @@ trait List[a] extends Seq[a] {
   * @return a list without doubles containing the elements of this
   * list and those of the given list <code>that</code>.
   */
-  def union(that: List[a]): List[a] =
+  def union[b >: a](that: List[b]): List[b] =
     if (this.isEmpty) that
     else {
       val result = this.tail union that;
-      if (that contains this.head) result else this.head :: result;
+      if (that contains this.head) result
+      else this.head :: result
     }
 
   /** Computes the difference between this list and the given list
@@ -321,11 +323,12 @@ trait List[a] extends Seq[a] {
   * @param that the list of elements to remove from this list.
   * @return this list without the elements of the given list <code>that</code>.
   */
-  def diff(that: List[a]): List[a] =
-    if (this.isEmpty || that.isEmpty) this
+  def diff[b >: a](that: List[b]): List[b] =
+    if (this.isEmpty || that.isEmpty) this: List[b]
     else {
       val result = this.tail diff that;
-      if (that contains this.head) result else this.head :: result;
+      if (that contains this.head) result: List[b]
+      else this.head :: result: List[b]
     }
 
   /** Computes the intersection between this list and the given list
@@ -334,7 +337,7 @@ trait List[a] extends Seq[a] {
   * @return the list of elements contained both in this list and
   * in the given list <code>that</code>.
   */
-  def intersect(that: List[a]): List[a] = filter(x => that contains x);
+  def intersect[b >: a](that: List[b]): List[b] = filter(x => that contains x);
 
   /** Removes redundant elements from the list. Uses the method <code>==</code>
   * to decide if two elements are identical.

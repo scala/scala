@@ -213,9 +213,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 // Name resolution -----------------------------------------------------------
 
     String decode(Name name) {
-	if (name.isTypeName()) return "type " + name;
-	else if (name.isConstrName()) return "constructor " + name;
-	else return "value " + name.toString();
+	if (name.isTypeName()) return "type " + NameTransformer.decode(name);
+	else if (name.isConstrName()) return "constructor " + NameTransformer.decode(name);
+	else return "value " + NameTransformer.decode(name);
     }
 
     /** Is `sym' accessible as a member of tree `site' in current context?
@@ -692,9 +692,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      */
     int flip(Symbol base, Symbol tvar) {
 	Symbol clazz = tvar.owner().primaryConstructorClass();
-	Symbol sym = clazz;
+	Symbol sym = base;
 	int flip = CoVariance;
 	while (sym != clazz && flip != AnyVariance) {
+	    //System.out.println("flip: " + sym + " " + sym.isParameter());//DEBUG
 	    if (sym.isParameter()) flip = -flip;
 	    else if (sym.owner().kind != CLASS) flip = AnyVariance;
 	    else if (sym.kind == ALIAS) flip = NoVariance;
@@ -723,10 +724,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (sym.variance() != 0) {
 		int f = flip(base, sym);
 		if (f != AnyVariance && sym.variance() != f * variance) {
-		    error(sym.pos,
+		    //System.out.println("flip(" + base + "," + sym + ") = " + f);//DEBUG
+		    error(base.pos,
 			  varianceString(sym.variance()) + " " + sym +
-			  " occurs in " + f * variance +
-			  " position in type " + all);
+			  " occurs in " + varianceString(f * variance) +
+			  " position in type " + all + " of " + base);
 		}
 	    }
 	    validateVariance(base, all, pre, variance);
@@ -753,7 +755,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     void validateVariance(Symbol base, Type all, Type[] tps, int variance, Symbol[] tparams) {
 	for (int i = 0; i < tps.length; i++)
-	    validateVariance(base, all, tps[i], variance * tparams[i].variance());
+	    if (tps[i] != tparams[i].type())
+		validateVariance(base, all, tps[i], variance * tparams[i].variance());
     }
 
 // Entering Symbols ----------------------------------------------------------
@@ -1108,8 +1111,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	// enter all members
 	Scope members = new Scope();
 	pushContext(templ, clazz, members);
-	if ((clazz.flags & CASE) != 0)
-	    templ.body = desugarize.addCaseMethods(templ.body, clazz, parents);
 	templ.body = desugarize.Statements(templ.body, false);
 	enterSyms(templ.body);
 	popContext();
@@ -1954,11 +1955,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case TypeDef(_, _, Tree rhs, Tree lobound):
 		pushContext(tree, sym, new Scope(context.scope));
 		int mode = TYPEmode;
-		if (sym.kind == ALIAS) mode |= FUNmode;
+		int variance = CoVariance;
+		if (sym.kind == ALIAS) {
+		    mode |= FUNmode;
+		    variance = NoVariance;
+		}
 		Tree rhs1 = transform(rhs, mode);
 		Tree lobound1 = transform(lobound, TYPEmode);
 		popContext();
-		validateVariance(sym, sym.info(), NoVariance);
+		validateVariance(sym, sym.info(), variance);
 		return copy.TypeDef(tree, sym, rhs1, lobound1)
 		    .setType(definitions.UNIT_TYPE);
 

@@ -214,7 +214,6 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
 
-
     /** Do type arguments `targs' conform to formal parameters `tparams'?
      */
     private boolean isWithinBounds(Symbol[] tparams, Type[] targs) {
@@ -298,11 +297,44 @@ public class Infer implements Modifiers, Kinds {
     private void minimizeVar(Type tp) {
 	switch (tp) {
 	case TypeVar(Type origin, Type.Constraint constr):
-	    if (constr.inst == Type.NoType && constr.lobounds != Type.List.EMPTY)
-		constr.inst = Type.lub(constr.lobounds.toArray());
+	    if (constr.inst == Type.NoType)
+		if (constr.lobounds != Type.List.EMPTY) {
+		    constr.inst = Type.lub(constr.lobounds.toArray());
+		} else {
+		    constr.inst = global.definitions.ALL_TYPE;
+		}
 	    return;
 	default:
 	    throw new ApplicationError();
+	}
+    }
+
+    private void maximizeVars(Symbol[] tparams, Type[] tvars, int i)
+        throws NoInstance {
+	if (tvars[i] != Type.NoType) {
+	    switch (tvars[i]) {
+	    case TypeVar(Type origin, Type.Constraint constr):
+		if (constr.inst != Type.NoType) {
+		    constr.inst = tvars[i] = instantiate(constr.inst);
+		} else {
+		    Type tvar = tvars[i];
+		    tvars[i] = Type.NoType;
+		    Type bound = tparams[i].info();
+		    boolean cyclic = false;
+		    for (int j = 0; j < tvars.length; j++) {
+			if (bound.contains(tparams[j])) {
+			    cyclic |= tvars[j] == Type.NoType;
+			    maximizeVars(tparams, tvars, j);
+			}
+		    }
+		    if (!cyclic)
+			constr.hibounds = new Type.List(
+			    bound.subst(tparams, tvars), constr.hibounds);
+		    maximizeVar(tvar);
+		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
+		}
+		if (tvars[i] == Type.AnyType) tvars[i] = definitions.ANY_TYPE;
+	    }
 	}
     }
 
@@ -373,7 +405,7 @@ public class Infer implements Modifiers, Kinds {
      *  If no maximal type variables exists that make the
      *  instantiated type a subtype of `pt' and `lastTry' is true, return `null'.
      */
-    private Type[] instTypeArgs(Symbol[] tparams, Type restype, Type pt) {
+    private Type[] exprTypeArgs(Symbol[] tparams, Type restype, Type pt) {
 	Type[] tvars = freshVars(tparams);
 	// add all bounds except F-bounds to upper bounds of type variable.
 	for (int i = 0; i < tvars.length; i++) {
@@ -389,7 +421,7 @@ public class Infer implements Modifiers, Kinds {
 	    try {
 		Type[] targs = new Type[tvars.length];
 		for (int i = 0; i < tvars.length; i++) {
-		    maximizeVar(tvars[i]);
+		    minimizeVar(tvars[i]);
 		    targs[i] = instantiate(tvars[i]);
 		}
 		return targs;
@@ -399,7 +431,7 @@ public class Infer implements Modifiers, Kinds {
 	return null;
     }
 
-    /** As before, but: don't maximize. Instead map all unistantiated
+    /** As before, but: don't minimize. Instead map all unistantiated
      *  type vars to AnyType.
      */
     public Type[] protoTypeArgs(Symbol[] tparams, Type restype, Type pt,
@@ -556,7 +588,8 @@ public class Infer implements Modifiers, Kinds {
 	Type[] targs = new Type[tvars.length];
 	for (int i = 0; i < tvars.length; i++) {
 	    minimizeVar(tvars[i]);
-	    targs[i] = (((Type.TypeVar) tvars[i]).constr.inst == Type.NoType)
+	    Type instType = ((Type.TypeVar) tvars[i]).constr.inst;
+	    targs[i] = (instType == Type.NoType || instType == global.definitions.ALL_TYPE)
 		? Type.NoType
 		: instantiate(tvars[i]);
 	}
@@ -611,9 +644,9 @@ public class Infer implements Modifiers, Kinds {
 	    return argumentTypeInstance(tparams2, restype1, pt1, pt2);
 	default:
 	    if (tparams.length != 0) {
-		Type[] targs = instTypeArgs(tparams, restype, pt1);
+		Type[] targs = exprTypeArgs(tparams, restype, pt1);
 		if (targs == null)
-		    targs = instTypeArgs(tparams, restype, pt2);
+		    targs = exprTypeArgs(tparams, restype, pt2);
 		if (targs == null)
 		    throw new Type.Error(
 			typeErrorMsg(
@@ -639,7 +672,7 @@ public class Infer implements Modifiers, Kinds {
 	    System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	    return exprInstance(tree, tparams2, restype1, pt);
 	}
-	Type[] targs = instTypeArgs(tparams, restype, pt);
+	Type[] targs = exprTypeArgs(tparams, restype, pt);
 	if (targs == null)
 	    throw new Type.Error(
 		"polymorphic expression of type " + tree.type +
@@ -703,23 +736,20 @@ public class Infer implements Modifiers, Kinds {
 	Type restype1 = restype.subst(tparams, tvars);
 	Type ctpe1 = restype1.resultType();
 	if (ctpe1.isSubType(pt)) {
-	    Type[] targs = new Type[tparams.length];
-	    for (int i = 0; i < tvars.length; i++) {
-		try {
-		    targs[i] = instantiateUpper(tvars[i], true);
-		    if (targs[i] == Type.AnyType)
-			targs[i] = definitions.ANY_TYPE;
-		} catch (NoInstance ex) {
-		    throw new Type.Error(
-			"constructor of type " + ctpe1 +
-			" can be instantiated in more than one way to expected type " +
-			pt +
-			"\n --- because ---\n" + ex.getMessage());
+	    try {
+		for (int i = 0; i < tvars.length; i++) {
+		    maximizeVars(tparams, tvars, i);
 		}
+		checkBounds(tparams, tvars, "inferred ");
+		tree.setType(restype.subst(tparams, tvars));
+		//System.out.println("inferred constructor type: " + tree.type);//DEBUG
+	    } catch (NoInstance ex) {
+		throw new Type.Error(
+		    "constructor of type " + ctpe1 +
+		    " can be instantiated in more than one way to expected type " +
+		    pt +
+		    "\n --- because ---\n" + ex.getMessage());
 	    }
-	    checkBounds(tparams, targs, "inferred ");
-	    tree.setType(restype.subst(tparams, targs));
-	    //System.out.println("inferred constructor type: " + tree.type);//DEBUG
 	} else {
 	    throw new Type.Error(
 		typeErrorMsg(
@@ -749,7 +779,7 @@ public class Infer implements Modifiers, Kinds {
 		    Symbol[] uninstantiated = normalizeArgs(targs, tparams);
 		    return
 			isWithinBounds(tparams, targs) &&
-			instTypeArgs(uninstantiated, restpe.subst(tparams, targs), pt)
+			exprTypeArgs(uninstantiated, restpe.subst(tparams, targs), pt)
 			    != null;
 		}
 	    } catch (NoInstance ex) {

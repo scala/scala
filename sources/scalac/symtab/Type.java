@@ -1337,8 +1337,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	for (int i = 0; i < these.length; i++) {
 	    if ((tparams[i].flags & COVARIANT) != 0) {
 		if (!these[i].isSubType(those[i])) return false;
-	    } else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
-		if (!those[i].isSubType(these[i])) return false;
+		//} else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
+		//if (!those[i].isSubType(these[i])) return false;
 	    } else {
 		if (!these[i].isSameAs(those[i])) return false;
 	    }
@@ -1701,7 +1701,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    }
 	    if (agree) {
 		Type mintype;
-		mintype = commonType(mintypes);
+	        mintype = commonType(mintypes);
 		if (mintype == NoType)
 		    mintype = arglub(mintypes);
 		if (mintype.symbol().kind == CLASS) {
@@ -1715,6 +1715,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return result;
     }
 
+    /** same as lub, but all types are instances of the same class,
+     *  possibly with different prefixes and arguments.
+     */
     //todo: catch lubs not within bounds.
     static Type arglub(Type[] types) {
 	Type pre = types[0].prefix();
@@ -1730,6 +1733,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		if (!pre.isSameAs(pre1)) return NoType;
 		for (int j = 0; j < args1.length; j++)
 		    argss[j][i] = args1[j];
+		break;
 	    case ErrorType:
 		return ErrorType;
 	    default:
@@ -1768,45 +1772,45 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     /** Return the least upper bound of non-empty array of types `tps'.
-     *  todo: do we need to consider refinements as well?
      */
     public static Type lub(Type[] tps) {
 	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
 
-	// remove All and AllRef types
-	boolean all = false;
-	boolean allref = false;
+	// remove types that are subtypes of some other type.
+	Type.List tl = Type.List.EMPTY;
+	int nredundant = 0;
+	boolean[] redundant = new boolean[tps.length];
 	for (int i = 0; i < tps.length; i++) {
-	    if (!tps[i].isObjectType()) {
+	    if (tps[i] == ErrorType)
+		return ErrorType;
+	    else if (!tps[i].isObjectType()) {
 		System.out.println("not an object type");
 		return Type.NoType;//todo: change
-	    }
-	    all |= tps[i].symbol() == Global.instance.definitions.ALL_CLASS;
-	    allref |= tps[i].symbol() == Global.instance.definitions.ALLREF_CLASS;
-	}
-
-	if (all | allref) {
-	    Type.List tl = Type.List.EMPTY;
-	    for (int i = 0; i < tps.length; i++) {
-		if (tps[i].symbol() != Global.instance.definitions.ALL_CLASS &&
-		    tps[i].symbol() != Global.instance.definitions.ALLREF_CLASS) {
-		    if (allref &&
-			!tps[i].isSubType(Global.instance.definitions.ANYREF_TYPE))
-			return Global.instance.definitions.ANY_TYPE;
-		    else
-			tl = new Type.List(tps[i], tl);
+	    } else {
+		for (int j = 0; j < i && !redundant[i]; j++) {
+		    if (!redundant[j]) {
+			if (tps[i].isSubType(tps[j])) {
+			    redundant[i] = true;
+			    nredundant++;
+			} else if (tps[j].isSubType(tps[i])) {
+			    redundant[j] = true;
+			    nredundant++;
+			}
+		    }
 		}
 	    }
-	    if (tl == Type.List.EMPTY) {
-		return allref ? Global.instance.definitions.ALLREF_TYPE
-		    : Global.instance.definitions.ALL_TYPE;
-	    }
-	    tps = tl.toArrayReverse();
 	}
 
-	// fast path if all types agree.
-	Type lubType = commonType(tps);
-	if (lubType != NoType) return lubType;
+	if (nredundant != 0) {
+	    Type[] tps1 = new Type[tps.length - nredundant];
+	    int n = 0;
+	    for (int i = 0; i < tps.length; i++) {
+		if (!redundant[i]) tps1[n++] = tps[i];
+	    }
+	    tps = tps1;
+	}
+
+	if (tps.length == 1) return tps[0];
 
 	// intersect closures and build frontier.
 	Type[][] closures = new Type[tps.length][];
@@ -1822,7 +1826,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	// add refinements where necessary
 	Scope members = new Scope();
-	lubType = compoundType(leastBaseTypes, members);
+	Type lubType = compoundType(leastBaseTypes, members);
 	Type lubThisType = lubType.narrow();
 	//System.out.println("lubtype = " + lubType);//DEBUG
 
@@ -1862,8 +1866,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
     private static Type commonType(Type[] tps) {
 	Type tp = tps[0];
 	if (tp.isSameAsAll(tps)) return tp;
-	tp = tp.widen();
-	if (tp.isSameAsAll(widen(tps))) return tp;
+	//tp = tp.widen();
+	//if (tp.isSameAsAll(widen(tps))) return tp;
 	return NoType;
     }
 

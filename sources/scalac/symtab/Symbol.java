@@ -712,7 +712,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Get base types of this symbol */
     public Type[] parents() {
-        return type().parents();
+        return info().parents();
     }
 
 // ToString -------------------------------------------------------------------

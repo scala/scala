@@ -9,7 +9,7 @@
 // $Id$
 
 package scala {
-  trait PartialFunction[A, +B] {
+  trait PartialFunction[-A, +B] {
     def apply(x: A): B;
     def isDefinedAt(x: A): scala.Boolean;
   }

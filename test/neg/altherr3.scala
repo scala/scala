@@ -4,7 +4,7 @@ object bug {
 
   //##########################################################################
 
-  trait Foo[a];
+  trait Foo[+a];
 
   def foo0[a](x: a*): Foo[a] = foo0();
 
@@ -85,7 +85,7 @@ object bug {
   //##########################################################################
 
   bar3(foo0());
-  bar3(foo0(foo0()));                            // error 19 (inference fails)
+  bar3(foo0(foo0()));
   bar3(foo0(foo0(foo0())));
   bar3(foo0(foo0(foo0(foo0()))));
 

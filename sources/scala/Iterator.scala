@@ -1,6 +1,6 @@
 package scala;
 
-trait Iterator[a] {
+trait Iterator[+a] {
   def hasNext: Boolean;
   def next: a;
 

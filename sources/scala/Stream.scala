@@ -1,6 +1,6 @@
 package scala;
 
-trait Stream[a] {
+trait Stream[+a] {
 
   def isEmpty: Boolean;
   def head: a;
@@ -59,24 +59,25 @@ trait Stream[a] {
   def exists(p: a => Boolean): Boolean =
     !isEmpty && (p(head) || tail.exists(p));
 
-  // the next four functions are obsolete!
-
-  def reduce(op: (a, a) => a): a =
-    if (isEmpty) error("reduce of empty stream")
-    else tail.fold(op)(head);
-
-  def reduceRight(op: (a, a) => a): a =
-    if (isEmpty) error("reduce of empty stream")
-    else if (tail.isEmpty) head
-    else op(head, tail.reduceRight(op));
-
-  def fold[b](op: (b, a) => b)(z: b): b =
+  def foldLeft[b](z: b)(f: (b, a) => b): b =
     if (isEmpty) z
-    else tail.fold(op)(op(z, head));
+    else tail.foldLeft[b](f(z, head))(f);
 
-  def foldRight[b](op: (a, b) => b)(z: b): b =
+  def foldRight[b](z: b)(f: (a, b) => b): b =
     if (isEmpty) z
-    else op(head, tail.foldRight(op)(z));
+    else f(head, tail.foldRight(z)(f));
+
+  def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
+  def :/[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
+
+  def reduceLeft[b >: a](f: (b, b) => b): b =
+    if (isEmpty) error("Stream.empty.reduceLeft")
+    else ((tail: Stream[b]) foldLeft (head: b))(f);
+
+  def reduceRight[b >: a](f: (b, b) => b): b =
+    if (isEmpty) error("Stream.empty.reduceRight")
+    else if (tail.isEmpty) head: b
+    else f(head, tail.reduceRight(f));
 
   def flatMap[b](f: a => Stream[b]): Stream[b] =
     if (isEmpty) Stream.empty[b]
@@ -84,7 +85,7 @@ trait Stream[a] {
 
   def reverse: Stream[a] = {
     def snoc(xs: Stream[a], x: a): Stream[a] = Stream.cons(x, xs);
-    fold(snoc)(Stream.empty[a])
+    foldLeft(Stream.empty[a])(snoc)
   }
 
   // The following method is not compilable without run-time type
@@ -96,7 +97,7 @@ trait Stream[a] {
   //         xs
   //       }
 
-  def copyToArray(xs: Array[a], start: Int): Int = {
+  def copyToArray[b >: a](xs: Array[b], start: Int): Int = {
     xs(start) = head;
     tail.copyToArray(xs, start + 1)
   }

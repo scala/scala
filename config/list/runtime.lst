@@ -3,7 +3,6 @@
 ##############################################################################
 # $Id$
 
-Algebraic.java
 AnyVal.java
 Array.java
 Boolean.java

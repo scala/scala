@@ -701,31 +701,6 @@ public class DeSugarize implements Kinds, Modifiers {
 	return stats.toArray();
     }
 
-    /** Does list of types inherit from class scala.Algebraic?
-     */
-    boolean inheritsAlgebraic(Type[] tps) {
-	Type algebraic = global.definitions.getType(Names.scala_Algebraic);
-	for (int i = 0; i < tps.length; i++) {
-	    if (tps[i].isSubType(algebraic)) return true;
-	}
-	return false;
-    }
-
-    /** Add toString, hashCode and == if class inherts from scala.Algebraic.
-     */
-    Tree[] addCaseMethods(Tree[] body, Symbol clazz, Type[] parents) {
-	if (inheritsAlgebraic(parents)) {
-	    /* todo uncomment and implement
-	    TreeList stats = new TreeList(body);
-	    Symbol[] params = clazz.constructor().firstParams();
-	    stats.append(toStringMethod(clazz, params));
-	    stats.append(hashcodeMethod(clazz, params));
-	    stats.append(equalsMethod(clazz, params));
-	    */
-	}
-	return body;
-    }
-
     //debug
     void print(Tree tree, String conv, Tree result) {
 	if (global.log()) {
