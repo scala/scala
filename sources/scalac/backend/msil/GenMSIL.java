@@ -389,21 +389,6 @@ public final class GenMSIL {
 
 
     /*
-     * Generate code for array of trees
-     */
-    private Item gen(Tree[] trees, MSILType toType) {
-	int n = trees.length;
-	if (n == 0)
-	    return items.VoidItem();
-	boolean tmpLastExpr = lastExpr; lastExpr = false;
-	for (int i = 0; i < n-1; i++) {
-	    drop(gen(trees[i], MSILType.VOID));
-	}
-	lastExpr = tmpLastExpr;
-	return gen(trees[n-1], toType);
-    }
-
-    /*
      * Sanity checks for items.
      */
     private Item check(Item item) {
@@ -538,10 +523,12 @@ public final class GenMSIL {
 
 	case Assign(Tree lhs, Tree rhs):
 	    boolean tmpLastExpr = lastExpr; lastExpr = false;
+            Label tmpExitLabel = exitLabel; exitLabel = null;
 	    MSILType type = msilType(lhs.type);
 	    Item var = gen(lhs, type);
 	    genLoad(rhs, type);
 	    lastExpr = tmpLastExpr;
+            exitLabel = tmpExitLabel;
 	    return check(store(var));
 
 	case New(Tree init):
@@ -588,11 +575,17 @@ public final class GenMSIL {
 	    return gen(rhs, toType);
 
 	case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
-	    LocalBuilder testLoc = code.DeclareLocal(tc.INT);
-	    Item loc = items.LocalItem(testLoc);
 	    boolean tmpLastExpr = lastExpr; lastExpr = false;
-	    genLoad(test, MSILType.I4);
-	    store(loc);
+	    Item loc = gen(test, MSILType.I4);
+            switch (loc) {
+            case ArgItem(_):
+            case LocalItem(_):
+            case LiteralItem(_):
+                break;
+            default:
+                loc = items.LocalItem(code.DeclareLocal(tc.INT));
+                store(loc);
+            }
 	    lastExpr = tmpLastExpr;
             Label tmpExitLabel = exitLabel;
             if (exitLabel == null)
