@@ -335,6 +335,25 @@ exec_dtd2scala() {
         "$@";
 }
 
+# Starts a program using dtd2scala. The given arguments are passed to
+# exec_java. They must, at least, contain the name of the main class.
+exec_scalap() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # compute Java classpath
+    append_path JAVA_CLASSPATH TOOLS_CLASSES;
+
+    # compute Scala classpath and bootclasspath
+    compute_scala_classpath;
+    compute_scala_bootclasspath;
+
+    # invoke Java
+    exec_java \
+        -Dscala.class.path=`get_os_pathlist "$SCALA_CLASSPATH"` \
+        -Dscala.boot.class.path=`get_os_pathlist "$SCALA_BOOTCLASSPATH"` \
+        "$@";
+}
+
 ##############################################################################
 # Implementation of scala-info
 
@@ -476,6 +495,7 @@ case "$SCRIPT" in
     scalarun*  ) exec_interpret scalai.Main "$@";;
     scalaint*  ) exec_interpret scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala dtd2scala.Main "$@";;
+    scalap*    ) exec_scalap scalap.Main "$@";;
     socos*     )
         warning "Deprecated command, use scalac${SCRIPT#socos} instead.";
         exec_compile scalac.Main "$@";;

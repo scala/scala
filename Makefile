@@ -21,6 +21,7 @@ PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
 PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
+PROJECT_SOURCES		+= $(SCALAP_SOURCES)
 
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
@@ -42,6 +43,7 @@ SCRIPTS_WRAPPER_ALIASES	+= siris-debug
 SCRIPTS_WRAPPER_ALIASES	+= surus
 SCRIPTS_WRAPPER_ALIASES	+= surus-debug
 SCRIPTS_WRAPPER_ALIASES	+= dtd2scala
+SCRIPTS_WRAPPER_ALIASES += scalap
 SCRIPTS_WRAPPER_MACRO	 = -es@{\#$(1)\#}@'"$(MACRO_$(1):$(INSTALL_PREFIX)/%=$$PREFIX/%)"'@g
 
 # automatic generation of Function<n>.java and Tuple<n>.scala files
@@ -107,6 +109,11 @@ DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
 DTD2SCALA_JC_FILES	 = $(DTD2SCALA_SOURCES)
 
+# scalap
+SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scalap
+SCALAP_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalap.lst)
+SCALAP_SOURCES	+= $(SCALAP_LIST:%=$(SCALAP_ROOT)/%)
+
 # tools archive
 TOOLS_NAME		 = tools
 TOOLS_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(TOOLS_NAME).jar
@@ -116,6 +123,7 @@ TOOLS_JAR_FILES		+= scalac
 TOOLS_JAR_FILES		+= scaladoc
 TOOLS_JAR_FILES		+= scalai
 TOOLS_JAR_FILES		+= dtd2scala
+TOOLS_JAR_FILES		+= scalap
 
 # java compilation
 JC_COMPILER		 = PICO
@@ -139,6 +147,7 @@ all		: library
 all		: interpreter
 all		: scaladoc
 all		: dtd2scala
+all		: scalap
 all		: library-doc
 
 force		: fastclean
@@ -148,6 +157,7 @@ fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
 	$(RM) .latest-dtd2scala
+	$(RM) .latest-scalap
 	$(RM) .latest-scaladoc-jc
 	$(RM) .latest-scaladoc-rsrc
 	$(RM) .latest-interpreter
@@ -181,6 +191,7 @@ interpreter	: .latest-interpreter
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala
+scalap	: .latest-scalap
 library-doc	: .latest-library-sdc
 
 .PHONY		: fastclean
@@ -193,6 +204,7 @@ library-doc	: .latest-library-sdc
 .PHONY		: interpreter
 .PHONY		: scaladoc
 .PHONY		: dtd2scala
+.PHONY		: scalap
 .PHONY		: library-doc
 
 ##############################################################################
@@ -246,6 +258,10 @@ library-doc	: .latest-library-sdc
 
 .latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
 	@$(make) jc target=DTD2SCALA DTD2SCALA_JC_FILES='$?'
+	touch $@
+	
+.latest-scalap	: $(SCALAP_FILES)
+	@$(make) sc target=SCALAP SCALAP_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
 ##############################################################################
@@ -314,6 +330,7 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-interpreter
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalap
 $(TOOLS_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=TOOLS
 
