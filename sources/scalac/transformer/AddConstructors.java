@@ -8,26 +8,18 @@
 
 package scalac.transformer;
 
+import java.util.HashMap;
+import java.util.ArrayList;
+
 import scalac.Global;
-import scalac.util.Name;
-import scalac.util.Names;
-
 import scalac.ast.Tree;
-import Tree.*;
+import scalac.ast.Tree.Template;
 import scalac.ast.GenTransformer;
-
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolSubstTypeMap;
 import scalac.symtab.TermSymbol;
-import scalac.symtab.Scope;
-import scalac.symtab.Kinds;
 import scalac.symtab.Modifiers;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.ArrayList;
-
 import scalac.util.Debug;
 
 /**
@@ -72,9 +64,6 @@ import scalac.util.Debug;
  */
 public class AddConstructors extends GenTransformer {
 
-    /** True iff we generate code for INT backend. */
-    private final boolean forINT;
-
     /** A constructor to initializer map */
     private final HashMap/*<Symbol,Symbol>*/ initializers;
 
@@ -87,7 +76,6 @@ public class AddConstructors extends GenTransformer {
     public AddConstructors(Global global, HashMap initializers) {
 	super(global);
         this.initializers = initializers;
-        this.forINT = global.target == global.TARGET_INT;
         this.subst = new SymbolSubstTypeMap();
     }
 
@@ -186,30 +174,6 @@ public class AddConstructors extends GenTransformer {
             default:
                 throw Debug.abort("illegal case", impl.parents[i]);
             }
-            }
-
-	    // inline initialization of module values
-            if (forINT && clasz.isModuleClass()) {
-                Symbol module = clasz.module();
-                if (module.isGlobalModule()) {
-                    constrBody.add(
-                        gen.Assign(
-                            gen.mkRef(tree.pos, module),
-                            gen.This(tree.pos, clasz)));
-                } else {
-                    Symbol owner = module.owner();
-                    Name module_eqname = module.name.append(Names._EQ);
-                    Symbol module_eq = owner.lookup(module_eqname);
-                    assert module != Symbol.NONE :Debug.show(clasz.module());
-                    if (owner.isModuleClass() && owner.module().isStable()) {
-                        constrBody.add(
-                            gen.mkApply_V(
-                                gen.mkRef(tree.pos, module_eq),
-                                new Tree[] {gen.This(tree.pos, clasz)}));
-                    } else {
-                        // !!! module_eq must be accessed via some outer field
-                    }
-                }
             }
 
 	    // add valdefs and class-level expression to the constructorr body

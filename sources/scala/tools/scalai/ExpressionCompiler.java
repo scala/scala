@@ -149,9 +149,17 @@ public class ExpressionCompiler {
                 assert invoke.target == Code.Self | invoke.target == Code.Null : Debug.show(code);
                 invoke.target = Code.Load(Code.Null, variable);
                 context.insertVariable(symbol, variable);
+                Code module = template.getSymbol().isModuleClass()
+                    && template.getSymbol().module().isGlobalModule()
+                    ? Code.Store(
+                        Code.Null,
+                        context.lookupVariable(template.getSymbol().module()),
+                        Code.Load(Code.Null, variable))
+                    : Code.Null;
                 code = Code.Block(
                     new Code[] {
                         Code.Store(Code.Null, variable, Code.Create(template)),
+                        module,
                         invoke},
                     Code.Load(Code.Null, variable));
             }
