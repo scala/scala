@@ -159,6 +159,7 @@ runtime/matching/TestAlphabet.scala
 runtime/matching/Matcher.scala 
 runtime/matching/NonTerm.scala
 runtime/matching/PatternGrammar.scala
+runtime/matching/PatternTests.scala
 #runtime/matching/Pebble.scala
 runtime/matching/Rule.scala
 

@@ -668,6 +668,12 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == CLASS && (flags & CASE) != 0;
     }
 
+    /** Does this symbol denote a case object?
+     */
+    public final boolean isCaseObject() {
+        return isModuleClass() && (sourceModule().flags & CASE) != 0;
+    }
+
     /** Does this symbol denote a uniform (i.e. parameterless) class? */
     public final boolean isTrait() {
         //preInitialize(); todo: enable, problem is that then we cannot print

@@ -30,7 +30,6 @@ package scala.tools.scalac.transformer {
 
 
 import matching.FullRegularTranslator ;
-import matching.GrammarTool ; //DEBUG
 
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
@@ -104,7 +103,7 @@ class TransMatch( global:scalac_Global )
       //f.write( gram.encode );
       //f.close();
       // val gram = Predef.decode( Predef.Array[] );
-      Console.println( GrammarTool.encode( gram ));
+      Console.println( gram.encode);
 
       throw new ApplicationError("not impl.");
     };

@@ -474,7 +474,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
                 nextch(); addCharToDoc(ch);
                 openComments = openComments + 1;
               }
-            } else if (ch != SU) {
+            } else if ((ch != '*')&&(ch != SU)) {
               nextch(); addCharToDoc(ch);
             }
           } while ((ch != '*') && (ch != SU));

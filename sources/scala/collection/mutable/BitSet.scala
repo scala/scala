@@ -10,6 +10,7 @@
 package scala.collection.mutable ;
 
 /** mutable, resizable bit sets, to represent dense sets of small integers
+ *  Bit indices are between 0..(size-1) inclusive
  *  @author  Burak Emir
  *  @param initSize: initial size in nbits
  */
@@ -18,14 +19,14 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
   /** default constructor, initial size of 16 bits */
   def this() = this( 16 );
 
-  final def byteSize(size:Int) = { (size >>> 5) + (if( (size & 0x1F)!= 0 ) 1 else 0) };
+  final def intSize(size:Int) = { (size >>> 5) + (if( (size & 0x1F)!= 0 ) 1 else 0) };
 
   class ByteArray with ResizableArray[Int] {
-    override protected val initialSize: Int = byteSize( initSize );
+    override protected val initialSize: Int = intSize( initSize );
     override protected var array: Array[Int] = new Array[Int](initialSize);
 
     /** size of this bitset in nbits */
-    def ensureBits(nbits: Int): Unit = ensureSize( byteSize( nbits ));
+    def ensureBits(nbits: Int): Unit = ensureSize( intSize( nbits ));
 
     final def and(j: Int, mask:Int): Unit = {
       array.update( j, array(j) & mask );

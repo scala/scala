@@ -1877,7 +1877,7 @@ class Parser(unit: CompilationUnit) {
 	ts.toArray()
   }
 
-  /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate
+  /** ObjectDef       ::= Id { , Id } [`:' SimpleType] ClassTemplate
    */
   def objectDef(mods: int): Array[Tree] = {
     val lhs = new ListBuffer[Pair[Int, Name]];
@@ -1885,16 +1885,16 @@ class Parser(unit: CompilationUnit) {
 	  s.nextToken();
 	  lhs.append(Pair(s.pos, ident()));
     } while (s.token == COMMA);
-	val thistpe = simpleTypedOpt();
+    val thistpe = simpleTypedOpt();
     val template = classTemplate( false );
     val ts = new myTreeList();
-	lhs foreach { case Pair(p, n) =>
-		ts.append(
-			make.ModuleDef(
-      			p, mods, n, thistpe.duplicate(),
-      			template.duplicate().asInstanceOf[Tree$Template]));
-	}
-	ts.toArray()
+    lhs foreach { case Pair(p, n) =>
+      ts.append(
+	make.ModuleDef(
+      	  p, mods, n, thistpe.duplicate(),
+      	  template.duplicate().asInstanceOf[Tree$Template]));
+	       }
+    ts.toArray()
   }
 
   /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]

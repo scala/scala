@@ -55,6 +55,7 @@ class Matcher( pgram:PatternGrammar )  {
 
   def getChildren( t:Any ):Iterator[Any] = t match {
     //case n:scala.xml.Node => n.child;
+    case n:Seq[Any]  => n.elements;
     case n:CaseClass => Iterator.fromCaseClass( n );
     case _ => Iterator.empty[Any];
   }
@@ -133,6 +134,7 @@ class Matcher( pgram:PatternGrammar )  {
     if( !it.hasNext ) {
       var set = immutable.ListSet.Empty[Int];
       for( val h <- initialNTs ) {
+        //Console.println("isNullable("+h+")="+pgram.isNullable(h));
         if( pgram.isNullable( h )) { set = set + h; }
       }
       //Console.println("RET isApplicableHedge("+initialNTs+","+h+") " + set.toString());
@@ -200,7 +202,7 @@ class Matcher( pgram:PatternGrammar )  {
 	}
       }
   */
-      //Console.println("RET isApplicableHedge( " + initialNTs + "," + h + ") " + applHedgeNTs);
+      //Console.println("RET isApplicableHedge( " + initialNTs + ",...) " + applHedgeNTs);
     /*  applHNTs */
 applHedgeNTs /* no chain rules stuff needed */
     }

@@ -34,8 +34,11 @@ import scalac.util.NewArray;
  *   - Local modules are replaced by variables and classes
  *   - caseArity, caseElement implementations added to case classes
  *   - equals, and hashCode and toString methods are added to case classes,
- *     unless they are defined in the class or a baseclass
- *     different from java.lang.Object
+ *       unless they are defined in the class or a baseclass
+ *       different from java.lang.Object
+ *   - toString method is added to case objects,
+ *       unless they are defined in the class or a baseclass
+ *       different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
  *   - Type nodes are replaced by TypeTerm nodes.
  *   - Eliminate constant definitions
@@ -859,6 +862,11 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       // the following report error if impl exists
       ts.append(caseElementMethod(clazz));
       ts.append(caseArityMethod(clazz));
+      ts.append(tagMethod(clazz));
+    } else if  (clazz.isCaseObject()) {
+      if (!hasImplementation(clazz, Names.toString)) {
+	ts.append(toStringMethod(clazz));
+      }
       ts.append(tagMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
       ts.append(tagMethod(clazz));
