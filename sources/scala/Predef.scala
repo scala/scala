@@ -1,5 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2003, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
 package scala;
 
+
+/** The <code>Predef</code> object provides definitions that are
+ *  accessible in all Scala compilation units without explicit
+ *  qualification.
+ */
 object Predef {
 
     type byte = scala.Byte;
@@ -15,28 +29,21 @@ object Predef {
     def List[A](x: A*): List[A] = x.asInstanceOf[List[A]];
     val List = scala.List;
 
-/*
-    def Set[A](es: A*): scala.Set[A] = {
-        val set = new HashSet[A];
-        set.addSet(es);
-        set;
-    }
-
-    def Map[A, B](mappings: Pair[A, B]*): MutableMap[A, B] = {
-        val map = new HashMap[A, B];
-        map.putMap(mappings);
-        map;
-    }
-*/
-
-    def error(x: String): All = throw new java.lang.RuntimeException(x);
+    def error(message: String): All = throw new Error(message);
 
     def exit: scala.Unit = System.exit(0);
 
-    def id[a](x: a): a = x;
-
-    def synchronized[A](obj: AnyRef)(def body: A) =
+    def synchronized[A](obj: AnyRef)(def body: A): A =
       scala.runtime.NativeMonitor.synchronised(obj, body);
+
+    def assert(assertion: Boolean): Unit = {
+    	if (!assertion)
+    		throw new Error("assertion failed");
+    }
+    def assert(assertion: Boolean, message: String): Unit = {
+    	if (!assertion)
+    		throw new Error(message);
+    }
 
     type Pair[p, q] = Tuple2[p, q];
     def Pair[a, b](x: a, y: b) = Tuple2(x, y);
@@ -44,4 +51,7 @@ object Predef {
     type Triple[a, b, c] = Tuple3[a, b, c];
     def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
 
+    def id[a](x: a): a = x;
+    def fst[a](x: a, y: Any): a = x;
+    def scd[a](x: Any, y: a): a = y;
 }

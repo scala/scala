@@ -69,4 +69,11 @@ trait Set[A] with scala.collection.Set[A] {
      *  the set will be empty.
      */
     def clear: Unit;
+
+    /** The hashCode method always yields an error, since it is not
+     *  safe to use mutable stacks as keys in hash tables.
+     *
+     *  @return never.
+     */
+    override def hashCode(): Int = error("unsuitable as hash key");
 }

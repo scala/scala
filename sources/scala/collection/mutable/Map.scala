@@ -87,6 +87,13 @@ trait Map[A, B] with scala.collection.Map[A, B] {
         case Pair(key, value) => if (p(key, value)) -=(key);
     }
 
+    /** The hashCode method always yields an error, since it is not
+     *  safe to use mutable maps as keys in hash tables.
+     *
+     *  @return never.
+     */
+    override def hashCode(): Int = error("unsuitable as hash key");
+
     /** Returns a string representation of this map which shows
      *  all the mappings.
      */
