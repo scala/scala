@@ -41,15 +41,15 @@ configure() {
     # This variable must refer a directory.
     RUNTIME_SOURCES={#RUNTIME_SOURCES#};
 
-    # Location of the compiled Scala library and Scala tools. This
-    # library and these tools are included in the Scala distribution.
+    # Location of the compiled Scala library. This library is included
+    # in the Scala distribution.
     # This variable must refer a directory or a zip or jar file.
     RUNTIME_CLASSES={#RUNTIME_CLASSES#};
 
-    # Location of the compiled dtd2scala tool. This tool is included
+    # Location of the compiled Scala tools. These tools are included
     # in the Scala distribution.
     # This variable must refer a directory or a zip or jar file.
-    DTD2SCALA_CLASSES={#DTD2SCALA_CLASSES#};
+    TOOLS_CLASSES={#TOOLS_CLASSES#};
 
     # Location of the compiled fjbg library.  This library is included
     # in the Scala distribution.
@@ -243,7 +243,7 @@ compute_variable() {
         SCALA_BOOTCLASSPATH ) compute_scala_bootclasspath;;
         RUNTIME_SOURCES     ) configure_path_variable "$1";;
         RUNTIME_CLASSES     ) configure_path_variable "$1";;
-        DTD2SCALA_CLASSES   ) configure_path_variable "$1";;
+        TOOLS_CLASSES       ) configure_path_variable "$1";;
         FJBG_CLASSES        ) configure_path_variable "$1";;
         MSIL_CLASSES        ) configure_path_variable "$1";;
         BCEL_CLASSES        ) configure_path_variable "$1";;
@@ -291,11 +291,12 @@ exec_compile() {
     [ $# -gt 0 ] || abort "internal error";
 
     # compute Java classpath
-    append_path JAVA_CLASSPATH RUNTIME_CLASSES;
+    append_path JAVA_CLASSPATH TOOLS_CLASSES;
     append_path JAVA_CLASSPATH BCEL_CLASSES;
     append_path JAVA_CLASSPATH FJBG_CLASSES;
     append_path JAVA_CLASSPATH MSIL_CLASSES;
 
+    # compute Scala classpath and bootclasspath
     compute_scala_classpath;
     compute_scala_bootclasspath;
 
@@ -306,13 +307,27 @@ exec_compile() {
         "$@";
 }
 
+# Starts a Java program using the Scala interprter. The given
+# arguments are passed to exec_compile. They must, at least, contain
+# the name of the main class.
+exec_interpret() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # compute Java classpath
+    # !!! this should not be needed
+    append_path JAVA_CLASSPATH RUNTIME_CLASSES;
+
+    # invoke Java
+    exec_compile "$@";
+}
+
 # Starts a program using dtd2scala. The given arguments are passed to
 # exec_java. They must, at least, contain the name of the main class.
 exec_dtd2scala() {
     [ $# -gt 0 ] || abort "internal error";
 
     # compute Java classpath
-    append_path JAVA_CLASSPATH DTD2SCALA_CLASSES;
+    append_path JAVA_CLASSPATH TOOLS_CLASSES;
     append_path JAVA_CLASSPATH XERCES_CLASSES;
 
     # invoke Java
@@ -368,7 +383,7 @@ scala_info_option_x_variable() {
         BOOTCLASSPATH       ) variable=SCALA_$2;;
         RUNTIME_SOURCES     ) variable=$2;;
         RUNTIME_CLASSES     ) variable=$2;;
-        DTD2SCALA_CLASSES   ) variable=$2;;
+        TOOLS_CLASSES       ) variable=$2;;
         FJBG_CLASSES        ) variable=$2;;
         MSIL_CLASSES        ) variable=$2;;
         BCEL_CLASSES        ) variable=$2;;
@@ -394,8 +409,8 @@ scala_info_option_help() {
     echo "  CLASSPATH             Default classpath";
     echo "  BOOTCLASSPATH         Default bootclasspath";
     echo "  RUNTIME_SOURCES       Location of the Scala library sources";
-    echo "  RUNTIME_CLASSES       Location of the Scala library and tools";
-    echo "  DTD2SCALA_CLASSES     Location of the dtd2scala tool";
+    echo "  RUNTIME_CLASSES       Location of the Scala library";
+    echo "  TOOLS_CLASSES         Location of the Scala tools";
     echo "  FJBG_CLASSES          Location of the fjbg library";
     echo "  MSIL_CLASSES          Location of the msil library";
     echo "  BCEL_CLASSES          Location of the bcel library";
@@ -458,8 +473,8 @@ case "$SCRIPT" in
     scala-info ) scala_info "$@";;
     scalac*    ) exec_compile scalac.Main "$@";;
     scaladoc*  ) exec_compile scalac.Main -doc "$@";;
-    scalarun*  ) exec_compile scalai.Main "$@";;
-    scalaint*  ) exec_compile scalai.Main -interactive "$@";;
+    scalarun*  ) exec_interpret scalai.Main "$@";;
+    scalaint*  ) exec_interpret scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala dtd2scala.Main "$@";;
     socos*     )
         warning "Deprecated command, use scalac${SCRIPT#socos} instead.";

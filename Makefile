@@ -22,16 +22,6 @@ PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 
-# project java archive
-PROJECT_JAR_ARCHIVE	 = $(ROOT)/lib/$(PROJECT_NAME).jar
-PROJECT_JAR_MANIFEST	 = $(PROJECT_SOURCEDIR)/MANIFEST
-PROJECT_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
-PROJECT_JAR_FILES	+= ch
-PROJECT_JAR_FILES	+= scala
-PROJECT_JAR_FILES	+= scalac
-PROJECT_JAR_FILES	+= scaladoc
-PROJECT_JAR_FILES	+= scalai
-
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
 SCRIPTS_WRAPPER		 = $(SCRIPTS_PREFIX)/.scala_wrapper
@@ -90,6 +80,9 @@ LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
 LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
 LIBRARY_SDC_FILES	+= $(LIBRARY_SC_FILES)
 LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDOCDIR)
+LIBRARY_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(PROJECT_NAME).jar
+LIBRARY_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
+LIBRARY_JAR_FILES	+= scala
 
 # scala interpreter
 INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scalai
@@ -111,6 +104,16 @@ DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/dtd2scala
 DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
 DTD2SCALA_JC_FILES	 = $(DTD2SCALA_SOURCES)
+
+# tools archive
+TOOLS_NAME		 = tools
+TOOLS_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(TOOLS_NAME).jar
+TOOLS_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
+TOOLS_JAR_FILES		+= ch
+TOOLS_JAR_FILES		+= scalac
+TOOLS_JAR_FILES		+= scaladoc
+TOOLS_JAR_FILES		+= scalai
+TOOLS_JAR_FILES		+= dtd2scala
 
 # java compilation
 JC_COMPILER		 = PICO
@@ -160,7 +163,8 @@ distclean	: clean
 	$(RM) .latest-*
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 	$(RM) $(SCRIPTS_WRAPPER)
-	$(RM) $(PROJECT_JAR_ARCHIVE)
+	$(RM) $(LIBRARY_JAR_ARCHIVE)
+	$(RM) $(TOOLS_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
 	$(RM) -r $(PROJECT_APIDOCDIR)
 
@@ -249,7 +253,7 @@ $(SCRIPTS_WRAPPER)	: INSTALL_PREFIX          ?= $(PROJECT_ROOT)
 $(SCRIPTS_WRAPPER)	: MACRO_VERSION           ?= development version
 $(SCRIPTS_WRAPPER)	: MACRO_RUNTIME_SOURCES   ?= $(PROJECT_SOURCEDIR)
 $(SCRIPTS_WRAPPER)	: MACRO_RUNTIME_CLASSES   ?= $(PROJECT_OUTPUTDIR)
-$(SCRIPTS_WRAPPER)	: MACRO_DTD2SCALA_CLASSES ?= $(PROJECT_OUTPUTDIR)
+$(SCRIPTS_WRAPPER)	: MACRO_TOOLS_CLASSES     ?= $(PROJECT_OUTPUTDIR)
 $(SCRIPTS_WRAPPER)	: MACRO_BCEL_CLASSES      ?= $(BCEL_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
@@ -265,7 +269,7 @@ $(SCRIPTS_WRAPPER)	: $(SCRIPTS_WRAPPER).tmpl
 	    $(call SCRIPTS_WRAPPER_MACRO,VERSION) \
 	    $(call SCRIPTS_WRAPPER_MACRO,RUNTIME_SOURCES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,RUNTIME_CLASSES) \
-	    $(call SCRIPTS_WRAPPER_MACRO,DTD2SCALA_CLASSES) \
+	    $(call SCRIPTS_WRAPPER_MACRO,TOOLS_CLASSES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,BCEL_CLASSES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,FJBG_CLASSES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,MSIL_CLASSES) \
@@ -297,16 +301,19 @@ $(TUPLE_FILES)		: .latest-meta $(TUPLE_TEMPLATE)
 	$(RM) .latest-generate
 	@$(make) generate
 
-$(PROJECT_JAR_ARCHIVE)	: .latest-lamplib
-$(PROJECT_JAR_ARCHIVE)	: .latest-compiler
-$(PROJECT_JAR_ARCHIVE)	: .latest-library-jc
-$(PROJECT_JAR_ARCHIVE)	: .latest-library-sc
-$(PROJECT_JAR_ARCHIVE)	: .latest-interpreter
-$(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc-jc
-$(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
-$(PROJECT_JAR_ARCHIVE)	: .latest-dtd2scala
-$(PROJECT_JAR_ARCHIVE)	:
-	@$(MAKE) jar target=PROJECT
+$(LIBRARY_JAR_ARCHIVE)	: .latest-library-jc
+$(LIBRARY_JAR_ARCHIVE)	: .latest-library-sc
+$(LIBRARY_JAR_ARCHIVE)	:
+	@$(MAKE) jar target=LIBRARY
+
+$(TOOLS_JAR_ARCHIVE)	: .latest-lamplib
+$(TOOLS_JAR_ARCHIVE)	: .latest-compiler
+$(TOOLS_JAR_ARCHIVE)	: .latest-interpreter
+$(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
+$(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala
+$(TOOLS_JAR_ARCHIVE)	:
+	@$(MAKE) jar target=TOOLS
 
 ##############################################################################
 # Includes
@@ -327,7 +334,7 @@ show-missing		:
 	done
 	@$(SORT) /tmp/check.tmp.log > /tmp/check.mkf.log
 	@$(FIND) $(LIBRARY_ROOT) -name '*.scala' | $(SORT) > /tmp/check.lst.log
-	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log 
+	@$(COMM) -1 -3 /tmp/check.mkf.log /tmp/check.lst.log
 	@$(RM) /tmp/check.tmp.log /tmp/check.mkf.log /tmp/check.lst.log
 
 .PHONY			: show-missing
