@@ -28,10 +28,11 @@ import Tree.*;
 
 public class ExplicitOuterClasses extends Transformer {
     // Mapping from class constructor symbols to owner field symbols.
-    protected HashMap/*<Symbol,Symbol>*/ outerMap = new HashMap();
+    protected HashMap/*<Symbol,Symbol>*/ outerMap;
 
     public ExplicitOuterClasses(Global global) {
         super(global);
+        outerMap = global.PHASE.EXPLICITOUTER.outerMap;
     }
 
     protected Type addValueParam(Type oldType, Symbol newValueParam) {

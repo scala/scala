@@ -11,8 +11,12 @@ package scalac.transformer;
 
 import scalac.*;
 import scalac.checkers.*;
+import java.util.HashMap;
 
 public class ExplicitOuterClassesPhase extends PhaseDescriptor {
+    // Mapping from class constructor symbols to owner field symbols.
+    public HashMap/*<Symbol,Symbol>*/ outerMap = new HashMap();
+
     public String name () {
         return "explicitouterclasses";
     }
