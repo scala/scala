@@ -122,6 +122,7 @@ compiler	: .latest-compiler
 
 include $(ROOT)/support/make/exec.mk
 include $(ROOT)/support/make/grep.mk
+include $(ROOT)/support/make/wc.mk
 
 ##############################################################################
 # JC - compile java files
