@@ -21,6 +21,9 @@ import scala.runtime.types.TypeInt;
 import scala.runtime.types.TypeLong;
 import scala.runtime.types.TypeShort;
 
+import scala.runtime.FNV_Hash;
+import scala.runtime.PearsonHash;
+
 /**
  * Run-time types for Scala.
  *
@@ -43,7 +46,12 @@ abstract public class Type {
      */
     abstract public boolean isInstance(Object o);
 
+    abstract public boolean isSameAs(Type that);
     abstract public boolean isSubType(Type that);
+
+    public boolean equals(Object that) {
+        return (that instanceof Type) && this.isSameAs((Type)that);
+    }
 
     /**
      * Check that the given object can be cast to this type, and throw
@@ -65,4 +73,14 @@ abstract public class Type {
     public static final TypeChar    Char    = new TypeChar();
     public static final TypeByte    Byte    = new TypeByte();
     public static final TypeBoolean Boolean = new TypeBoolean();
+
+    public static int hashCode(Type[] types) {
+        final int len = types.length;
+
+        int h = FNV_Hash.INIT;
+        for (int i = 0; i < len; ++i)
+            h = FNV_Hash.hashStep(h, PearsonHash.hash8(types[i].hashCode()));
+
+        return h;
+    }
 }
