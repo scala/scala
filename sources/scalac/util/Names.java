@@ -114,6 +114,7 @@ public class Names {
     public static final Name apply = Name.fromString("apply");
     public static final Name asInstanceOf = Name.fromString("asInstanceOf");
     public static final Name box = Name.fromString("box");
+    public static final Name coerce = Name.fromString("coerce");
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
     public static final Name fail = Name.fromString("fail");
