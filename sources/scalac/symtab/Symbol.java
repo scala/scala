@@ -40,6 +40,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 // Attribues -------------------------------------------------------------
 
     public static final int IS_ROOT        = 0x00000001;
+    public static final int IS_ANONYMOUS   = 0x00000002;
     public static final int IS_LABEL       = 0x00000010;
     public static final int IS_THISTYPE    = 0x20000000;
     public static final int IS_LOCALDUMMY  = 0x40000000;
@@ -244,9 +245,16 @@ public abstract class Symbol implements Modifiers, Kinds {
         return newClass(pos, flags, name, 0, NONE);
     }
 
-    /** Creates a new module-class owned by this symbol. */
+    /** Creates a new module class owned by this symbol. */
     public final ClassSymbol newModuleClass(int pos, int flags, Name name) {
         return newModuleClass(pos, flags, name, 0, NONE);
+    }
+
+    /** Creates a new anonymous class owned by this symbol. */
+    public final ClassSymbol newAnonymousClass(int pos) {
+        assert isTerm(): Debug.show(this);
+        Name name = Names.ANON_CLASS_NAME.toTypeName();
+        return newClass(pos, 0, name, IS_ANONYMOUS, NONE);
     }
 
     /**
@@ -593,7 +601,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /* Does this symbol denote an anonymous class? */
     public final boolean isAnonymousClass() {
-        return isClass() && name.startsWith(Names.ANON_CLASS_NAME);
+        return isClass() && (attrs & IS_ANONYMOUS) != 0;
     }
 
     /** Does this symbol denote the root class or root module?
@@ -943,7 +951,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public Symbol accessed() {
         assert (flags & ACCESSOR) != 0;
         Name name1 = name;
-        if (name1.endsWith(Names._EQ))
+        if (name1.toString().endsWith(Names._EQ.toString()))
             name1 = name1.subName(0, name1.length() - Names._EQ.length());
         return owner.info().lookup(Name.fromString(name1 + "$"));
     }

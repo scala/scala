@@ -314,10 +314,11 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     /** compensate for renaming during addition of access functions
      */
-    Name normalize(Name name) {
-	return (name.endsWith(Name.fromString("$")))
-	    ? name.subName(0, name.length() - 1)
-	    : name;
+    String normalize(Name name) {
+        String string = name.toString();
+	return (string.endsWith("$"))
+	    ? string.substring(0, string.length() - 1)
+	    : string;
     }
 
 // Basetype Checking --------------------------------------------------------

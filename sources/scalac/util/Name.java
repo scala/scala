@@ -125,18 +125,6 @@ public final class Name {
         return string.lastIndexOf(c);
     }
 
-/** does this name start with prefix?
- */
-    public boolean startsWith(Name prefix) {
-        return string.startsWith(prefix.string);
-    }
-
-/** does this name end with suffix?
- */
-    public boolean endsWith(Name suffix) {
-        return string.endsWith(suffix.string);
-    }
-
 /** returns the subName starting at position start, excluding position end
  */
     public Name subName(int start, int end) {

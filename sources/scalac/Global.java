@@ -429,7 +429,7 @@ public abstract class Global {
             switch (unit.body[i]) {
             case ModuleDef(_, _, _, Tree.Template impl):
                 Symbol symbol = unit.body[i].symbol();
-                if (!symbol.name.startsWith(CONSOLE_N)) break;
+                if (!symbol.name.toString().startsWith(CONSOLE_S)) break;
                 console = symbol;
                 if (impl.body.length <= 0) break;
                 imports.add(unit.body[i].symbol());
