@@ -822,6 +822,18 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       gen.mkIntLit(clazz.pos, if (clazz.isCaseClass()) clazz.tag() else 0));
   }
 
+  private def getTypeMethod(clazz: ClassSymbol): Tree = {
+    val flags = if (clazz.isSubClass(defs.SCALAOBJECT_CLASS)) OVERRIDE else 0;
+    val getTypeSym = clazz
+      .newMethod(clazz.pos, flags, Names.getType)
+      .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY,
+                               defs.SCALACLASSTYPE_TYPE()));
+    clazz.info().members().enter(getTypeSym);
+    // Use "null" for the RHS for now, this will get fixed by
+    // TypesAsValuePhase.
+    gen.DefDef(getTypeSym, gen.mkNullLit(clazz.pos));
+  }
+
   private def hashCodeMethod(clazz: ClassSymbol): Tree = {
     val hashCodeSym = clazz.newMethod(clazz.pos, OVERRIDE, Names.hashCode)
       .setInfo(defs.ANY_HASHCODE.getType());
@@ -877,8 +889,10 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       ts.append(caseElementMethod(clazz));
       ts.append(caseArityMethod(clazz));
       ts.append(tagMethod(clazz));
+      ts.append(getTypeMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
       ts.append(tagMethod(clazz));
+      ts.append(getTypeMethod(clazz));
     }
     if (clazz.isModuleClass() && clazz.isSubClass(defs.SERIALIZABLE_CLASS)) {
       // If you serialize a singleton and then deserialize it twice,

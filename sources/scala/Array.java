@@ -10,6 +10,8 @@
 
 package scala;
 
+import scala.runtime.types.ScalaClassType;
+
 /** @meta class [?T] extends scala.AnyRef with scala.Function1[scala.Int, ?T] with scala.ScalaObject with java.lang.Cloneable with java.io.Serializable; */
 public abstract class Array
     implements Function1, ScalaObject, Cloneable, java.io.Serializable
@@ -53,6 +55,11 @@ public abstract class Array
 
     public final Object apply(Object i) {
         return apply(((Int)i).value);
+    }
+
+    public ScalaClassType getType() {
+        // TODO
+        throw new Error("Scala arrays are not polymorphic yet...");
     }
 
     public int $tag() {
