@@ -39,6 +39,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Fields -------------------------------------------------------------
 
+    /** The unique identifier generator */
+    private static int ids;
+
     /** The kind of the symbol */
     public int kind;
 
@@ -60,6 +63,10 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The attributes of the symbol */
     private final int attrs;
 
+    /** The unique identifier */
+    public final int id;
+
+
 // Constructors -----------------------------------------------------------
 
     /** Generic symbol constructor */
@@ -70,6 +77,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         this.owner = owner == null ? this : owner;
         this.flags = flags & ~(INITIALIZED | LOCKED); // safety first
         this.attrs = attrs;
+        this.id = ids++;
     }
 
     protected void update(int pos, int flags) {
@@ -144,11 +152,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
 // Setters ---------------------------------------------------------------
-
-    /** Set the mangled name of this Symbol */
-    public Symbol setMangledName(Name name) {
-        throw new ApplicationError("illegal operation on " + getClass());
-    }
 
     /** Set owner */
     public Symbol setOwner(Symbol owner) {
@@ -581,18 +584,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
         return simpleName();
-    }
-
-    /** Get the mangled name of this Symbol
-     *  (this is always a normal name, never a type name)
-     */
-    public Name mangledName() {
-        return isConstructor() ? constructorClass().name.toTermName() : name.toTermName();
-    }
-
-    /** Get the fully qualified mangled name of this Symbol */
-    public Name mangledFullName() {
-        return fullName().replace((byte)'.', (byte)'$');
     }
 
 // Acess to related symbols -----------------------------------------------------
@@ -1037,25 +1028,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         } else if (that.isType()) {
             return false;
         }
-
-        diff = that.mangledName().index - this.mangledName().index;
-        if (diff > 0) return true;
-        if (diff < 0) return false;
-
-        diff = that.mangledFullName().index - this.mangledFullName().index;
-        if (diff > 0) return true;
-        if (diff < 0) return false;
-
-        diff = that.hashCode() - this.hashCode();
-        if (diff > 0) return true;
-        if (diff < 0) return false;
-
-        if (owner().isLess(that.owner())) return true;
-        if (that.owner().isLess(owner())) return false;
-
-        throw new ApplicationError(
-            "Giving up: can't order two incarnations of class " +
-            this.mangledFullName());
+        return this.id < that.id;
     }
 
     /** Return the symbol's type itself followed by all its direct and indirect
@@ -1692,9 +1665,6 @@ public class AbsTypeSymbol extends TypeSymbol {
  */
 public class ClassSymbol extends TypeSymbol {
 
-    /** The mangled class name */
-    private Name mangled;
-
     /** The module belonging to the class. This means:
      *  For Java classes, its statics parts.
      *  For module classes, the corresponding module.
@@ -1721,7 +1691,6 @@ public class ClassSymbol extends TypeSymbol {
     }
     public ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
         super(CLASS, pos, name, owner, flags, attrs);
-        this.mangled = name;
         this.rebindSym = new AliasTypeSymbol(pos, Names.ALIAS(this), owner, 0);
         Type rebindType = new ClassAliasLazyType();
         this.rebindSym.setInfo(rebindType);
@@ -1778,7 +1747,6 @@ public class ClassSymbol extends TypeSymbol {
         other.module = module;
         other.setInfo(info());
         copyConstructorInfo(other);
-        other.mangled = mangled;
         if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
     }
@@ -1799,38 +1767,12 @@ public class ClassSymbol extends TypeSymbol {
      */
     void setModule(Symbol module) { this.module = module; }
 
-    /** Set the mangled name of this Symbol */
-    public Symbol setMangledName(Name name) {
-        this.mangled = name;
-        return this;
-    }
-
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
         if (owner().kind == CLASS && !owner().isRoot())
             return Name.fromString(owner().fullName() + "." + name);
         else
             return name.toTermName();
-    }
-
-    /** Get the mangled name of this Symbol */
-    public Name mangledName() {
-        return mangled;
-    }
-
-    /** Get the fully qualified mangled name of this Symbol */
-    public Name mangledFullName() {
-        if (mangled == name) {
-            return fullName().replace((byte)'.', (byte)'$');
-        } else {
-            Symbol tc = enclToplevelClass();
-            if (tc != this) {
-                return Name.fromString(
-                    enclToplevelClass().mangledFullName() + "$" + mangled);
-            } else {
-                return mangled;
-            }
-        }
     }
 
     public Type thisType() {
@@ -1903,11 +1845,6 @@ public final class ErrorSymbol extends Symbol {
         return this;
     }
 
-    /** Set the mangled name of this Symbol */
-    public Symbol mangled(Name name) {
-        return this;
-    }
-
     /** Set type */
     public Symbol setInfo(Type info) {
         assert info == Type.ErrorType : info;
@@ -1952,11 +1889,6 @@ public final class NoSymbol extends Symbol {
     public Symbol cloneSymbol(Symbol owner) {
         assert owner == this : Debug.show(owner);
         return this;
-    }
-
-    /** Set the mangled name of this Symbol */
-    public Symbol mangled(Name name) {
-        throw new ApplicationError("illegal operation on " + getClass());
     }
 
     /** Set type */

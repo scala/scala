@@ -92,7 +92,6 @@ symtab/Definitions.java
 symtab/EntryTags.java
 symtab/Kinds.java
 symtab/Modifiers.java
-symtab/NameMangler.java
 symtab/Scope.java
 symtab/SourceCompleter.java
 symtab/SymSet.java

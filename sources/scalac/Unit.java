@@ -11,7 +11,6 @@ package scalac;
 import ch.epfl.lamp.util.SourceFile;
 import ch.epfl.lamp.util.Position;
 
-import scalac.symtab.NameMangler;
 import scalac.ast.Tree;
 import scalac.atree.ARepository;
 import java.util.HashMap;
@@ -44,10 +43,6 @@ public class Unit {
      */
     public Tree[] body;
     public ARepository repository;
-
-    /** the name mangler
-     */
-    public NameMangler mangler = new NameMangler();
 
     public Unit(Global global, SourceFile source,
 		boolean console, boolean mixinOnly) {

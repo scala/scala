@@ -818,7 +818,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       case Tree$ClassDef(mods, name, tparams, vparams, _, templ) =>
 	val clazz: ClassSymbol = ClassSymbol.define(
 	  tree.pos, name, owner, mods, context.scope);
-	if (clazz.isLocalClass()) unit.mangler.setMangledName(clazz);
 	if (!clazz.primaryConstructor().isInitialized())
 	  clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
 	if ((mods & CASE) != 0) {
@@ -841,7 +840,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	val clazz: Symbol = modul.moduleClass();
 	if (!clazz.isInitialized())
 	  clazz.setInfo(new LazyTreeType(tree));
-	if (clazz.isLocalClass()) unit.mangler.setMangledName(clazz);
 	enterSym(tree, modul)
 
       case Tree$ValDef(mods, name, _, _) =>
