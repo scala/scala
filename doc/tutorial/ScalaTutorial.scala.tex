@@ -17,7 +17,7 @@
 
 \newcommand{\toolname}[1]{\texttt{#1}\xspace}
 
-\newcommand{\socos}{\toolname{socos}}
+\newcommand{\scalac}{\toolname{scalac}}
 \newcommand{\java}{\toolname{java}}
 
 \newcommand{\ident}[1]{\url{#1}\xspace}
@@ -58,7 +58,7 @@ line arguments, an array of strings, as parameter; the body of this
 method consists of a single call to the \ident{println} method of the
 object representing the standard output, with the friendly greeting as
 argument. The \ident{main} method is declared as returning a value of
-type \ident{unit}, which for now can be seen as similar to \java's
+type \ident{unit}, which for now can be seen as similar to \Java's
 \ident{void} type.
 
 What should be less familiar to Java programmers is the \ident{object}
@@ -78,8 +78,8 @@ objects.
 \subsection{Compiling the example}
 \label{sec:compiling-example}
 
-To compile the example, we need to use \socos, the \Scala compiler.
-\socos works like most compilers: it takes a source file as argument,
+To compile the example, we need to use \scalac, the \Scala compiler.
+\scalac works like most compilers: it takes a source file as argument,
 maybe some options, and produces one or several object files. The
 object files it produces are standard \Java class files.
 
@@ -88,7 +88,7 @@ If we save the above program in a file called
 command (the greater-than sign `\verb|>|' represents the shell prompt
 and should not be typed):
 \begin{verbatim}
-> socos HelloWorld.scala
+> scalac HelloWorld.scala
 \end{verbatim}
 This will generate a few class files in the current directory, one of
 which called \ident{HelloWorld.class}. This file contains a class
@@ -377,7 +377,7 @@ import code from one or several \emph{mixins}.
 
 This document gave a quick overview of the \Scala language and
 presented some basic examples. The interested reader can go on by
-reading the companion document \textit{Scala by example\/} and consult
-the \textit{Scala reference\/} when needed.
+reading the companion document \textit{Scala By Example\/} and consult
+the \textit{Scala Language Specification\/} when needed.
 
 \end{document}
