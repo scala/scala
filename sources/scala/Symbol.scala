@@ -9,6 +9,8 @@
 
 package scala;
 
+import org.xml.sax.InputSource;
+
 import scala.xml.{AttributedNode,Node, Text,Utility};
 import scala.collection.Map ;
 import scala.collection.immutable.ListMap ;
@@ -75,7 +77,7 @@ object Symbol_IO {
   // functions for generic symbol loading, saving
 
   /** loads symbol from a given file*/
-  def load( filename:String ):Symbol = scala.xml.nobinding.XML.load( filename );
+  def load( source:InputSource ):Symbol = scala.xml.nobinding.XML.load( source );
 
   /** saves symbol to filename (with encoding ISO-8859-1) */
   def save( filename:String, doc:Symbol ):Unit = scala.xml.nobinding.XML.save( filename, doc );

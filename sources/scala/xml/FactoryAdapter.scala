@@ -3,7 +3,6 @@ package scala.xml ;
 
 import java.io.{OutputStream,OutputStreamWriter,PrintWriter,Writer};
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
 
 
 /*import java.util.Map;
@@ -20,6 +19,7 @@ import org.xml.sax.ContentHandler;
 
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.Locator;
+import org.xml.sax.InputSource;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
@@ -296,13 +296,11 @@ abstract class FactoryAdapter
     // MAIN
     //
 
-    def  loadXML( url:URL ):Node = loadXML( url.getFile() );
-
     /** load XML document
-     * @param fileName
+     * @param source
      * @return a new XML document object
      */
-    def  loadXML( fileName:String ):Node = {
+    def  loadXML( source:InputSource ):Node = {
 
         // variables
         //PrintWriter out = new PrintWriter(System.out);
@@ -342,8 +340,8 @@ abstract class FactoryAdapter
 
         // parse file
         try {
-            //System.err.println("[parsing \"" + fileName + "\"]");
-            parser.parse( fileName );
+            //System.err.println("[parsing \"" + source + "\"]");
+            parser.parse( source );
         } catch {
           case ( e:SAXParseException ) => {
             // ignore

@@ -1,6 +1,7 @@
 package scala.xml.nobinding ;
 
-import java.net.URL;
+import org.xml.sax.InputSource;
+
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
@@ -13,12 +14,8 @@ object XML {
   // functions for generic xml loading, saving
 
   /** loads XML from a given file*/
-  def load( filename:String ):Symbol =
-    new NoBindingFactoryAdapter().loadXML( filename );
-
-  /** loads XML from a (file) URL */
-  def load( url:URL ):Symbol =
-    new NoBindingFactoryAdapter().loadXML( url );
+  def load( source:InputSource ):Symbol =
+    new NoBindingFactoryAdapter().loadXML( source );
 
   /** saves XML to filename with encoding ISO-8859-1 */
   def save( filename:String, doc:Symbol ):Unit = {

@@ -4,6 +4,7 @@ import scalac.ast.parser.Scanner ; /* for keywords */
 package scala.tools.dtd2scala {
 
 import java.io.PrintWriter ;
+import org.xml.sax.InputSource ;
 
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
@@ -23,7 +24,7 @@ class DeclToScala(fOut:PrintWriter,
     val package_ : String = "";
     val compress : boolean = true;
     final val tmplFile = "scala/tools/dtd2scala/template/ObjectTemplate.scala.xml";
-    final val tmpl:Node = XML.load( ClassLoader.getSystemResource(tmplFile) );
+    final val tmpl:Node = XML.load( new InputSource(ClassLoader.getSystemResourceAsStream(tmplFile)) );
 
     val lookup : HashMap[String,String] = new HashMap[String,String]();
     var curAttribs: Map[String,AttrDecl] = null ;  /* of current elem */

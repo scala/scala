@@ -1,8 +1,8 @@
 package scala.xml.nobinding;
 
-import java.net.URL;
 import scala.collection.mutable.HashMap ;
 import scala.xml.{Node,Text,FactoryAdapter,Utility} ;
+import org.xml.sax.InputSource;
 
 /** nobinding adaptor providing callbacks to parser to create elements.
 *   implements hash-consing
@@ -40,8 +40,6 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
   def createText( text:String ) = Text( text );
 
-  override def loadXML( url:URL ):Symbol = loadXML( url.getFile() );
-
-  override def loadXML( filename:String ):Symbol =
-    super.loadXML( filename ).asInstanceOf[ Symbol ]
+  override def loadXML( source:InputSource ):Symbol =
+    super.loadXML( source ).asInstanceOf[ Symbol ]
 }

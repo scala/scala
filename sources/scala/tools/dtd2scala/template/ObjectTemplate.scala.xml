@@ -14,6 +14,7 @@
 <template>
   /* this file is generated from a DTD using ObjectTemplate.scala.xml */
   <!-- package/ -->
+import org.xml.sax.InputSource;
 import scala.xml._ ;&br;
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
@@ -72,7 +73,7 @@ import scala.collection.mutable.HashMap ;
         }
         val compress = _compress ; 
       };
-      fAdapter.loadXML( filename );
+      fAdapter.loadXML( new InputSource(filename) );
     };    
 }
 </template>
