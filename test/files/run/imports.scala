@@ -10,7 +10,7 @@ object checker {
     System.out.print("In " + where + ", " + what + ".toString() returns ");
     System.out.flush();
     val string: String = if (value == null) "null" else value.toString();
-    val test = if (string.equals(where)) "ok" else "KO";
+    val test = if (string == where) "ok" else "KO";
     System.out.println(string + " -> " + test);
     System.out.flush();
   }
