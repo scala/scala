@@ -68,8 +68,6 @@ class GenJVM {
 
     protected final static String CONSTRUCTOR_STRING =
         "<init>";               // TODO get it from FJBG
-    protected final static Name CONSTRUCTOR_NAME =
-        Name.fromString(CONSTRUCTOR_STRING);
 
     protected final JObjectType JAVA_LANG_OBJECT_T =
         new JObjectType(JAVA_LANG_OBJECT);
@@ -397,7 +395,7 @@ class GenJVM {
                 JMethodType funType = (JMethodType)typeStoJ(funSym.info());
                 JType[] argTypes = funType.getArgumentTypes();
 
-                boolean isConstrCall = (funSym.name == CONSTRUCTOR_NAME);
+                boolean isConstrCall = funSym.isInitializer();
                 boolean isSuperCall = false;
                 switch (fun) {
                 case Select(Super(_, _), _): isSuperCall = true;
@@ -1654,7 +1652,7 @@ class GenJVM {
      * sense) member of its owner.
      */
     protected boolean isStaticMember(Symbol sym) {
-        return (sym.name != CONSTRUCTOR_NAME)
+        return !sym.isInitializer()
             && sym.owner().isModuleClass()
             && sym.owner().isJava();
     }
