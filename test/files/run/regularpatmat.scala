@@ -24,7 +24,7 @@ object values  { // test values reused in nearly all test cases
 
 }
 
-// not tests matching without binding
+// matching without binding
 
 // 2do            case [ 'a'; x; y ]   => 100
 //                case [ z @ ('a'; x; y) ]   => 100
@@ -60,6 +60,9 @@ object testBK  {
     }
 
 }
+
+// tests with binding
+
 object testBL {
 
   import scala.testing.UnitTest._ ;
@@ -573,19 +576,26 @@ object testMZ {
   class Expr;
   case class One(xs: List[Expr]) extends Expr;
   case class Two() extends Expr;
-  def testFoo(xs: List[Expr]) = xs match {
+  def testFoo(xs: List[Expr]) = xs match { //bug#132
     case List(Two()?,a,Two()?) => "a = " + a;
     case List(Two()*,b,Two()*) => "b = " + b;
     case List(_*) => "no match";
   }
+  case class OneN();
+  def bind(xs: List[Any]):String = xs match { // bug#133b
+    case List(x@(OneN()*), y@(OneN())) => "case";
+    case _ => "default";
+  }
 
   def main:Unit = {
-                System.out.println("testMZ - bug#132");
+                System.out.println("testMZ - bug#132 bug#133b");
     test[List[Expr],String](testFoo, List(Two(),Two(),Two(),Two()), "b = Two");
     test[List[Expr],String](testFoo, List(Two(),Two(),Two()), "a = Two");
     test[List[Expr],String](testFoo, List(Two(),Two()), "a = Two");
     test[List[Expr],String](testFoo, List(Two()), "a = Two");
     test[List[Expr],String](testFoo, List(), "no match");
+    test[List[Any],String](bind, List(OneN(),OneN()), "case");
+
     ()
   }
 
