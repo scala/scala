@@ -1,5 +1,8 @@
 package examples;
 
+import scala.xml._;
+
+
 object fors {
 
   class Person(_name: String, _age: Int) {
