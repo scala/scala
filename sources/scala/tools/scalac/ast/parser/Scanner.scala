@@ -8,6 +8,7 @@
 
 import scalac._;
 import scalac.util.Name;
+import scalac.util.Names;
 import scalac.util.SourceRepresentation;
 
 package scala.tools.scalac.ast.parser {
@@ -653,69 +654,79 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  /*       X                                L
+  /*       X               M                 L
   */
 
-  /* methods for XML tokenizing, see XML 1.0 rec, available from www.w3.org/xml  */
+  /* methods for XML tokenizing, see XML 1.0 rec http://www.w3.org/xml  */
 
-  /*                       M
-  */
-
-  def xml_syntaxError(s:String) = {
-    syntaxError("in XML literal: "+s);
-    xml_nextch();
+  def xSyntaxError(s:String) = {
+    syntaxError("in XML literal: "+s); xNext;
   }
 
-  /* this helper functions updates ccol and cline
+  /** read the next character. do not skip whitespace.
+  *   treat CR LF as single LF. update ccol and cline
+  *
+  *   @todo: may XML contain SU, in CDATA sections ?
   */
-  def xml_nextch() = {
+  def xNext = {
     nextch();
     ch match {
-      case SU => syntaxError(lastpos, "unclosed XML literal"); token = EOF;
+      case SU =>
+	syntaxError( lastpos, "unclosed XML literal" );
+	token = EOF;
+      case LF =>
+        ccol = 0; cline = cline + 1;
       case CR =>
-        cline = cline + 1;
-        ccol = 0;
-        nextch(); /* in compliance with XML spec */
-        if( ch == LF ) {
-          ccol = 0;
-        }
-      case LF => {
-        cline = cline + 1;
-        ccol = 0;
-      }
+        nextch();
+        if( LF == ch ) {
+	  ccol = 0; cline = cline + 1;
+	} else {
+	  bp = bp - 1; ch = CR
+	}
       case _ =>
     }
     pos = Position.encode(cline, ccol);
   }
 
-  def xml_isSpace() = ch match {
-    case ' ' | '\t' | '\r' | '\n' => true
+  /** scan [S] '=' [S]
+  */
+  def xEQ = {
+    xSpaceOpt; xToken('='); xSpaceOpt
+  }
+
+  final val LT   = Name.fromString("<");
+
+  def xStartsXML = {
+    unit.global.xmlMarkup && ( token == IDENTIFIER )&&( name == LT );
+  }
+
+  def xIsSpace = ch match {
+    case ' ' | '\t' | CR | LF => true
     case _ => false;
   }
 
-  def xmlSpaceOpt() = {
-    while( xml_isSpace() ) {
-      xml_nextch();
-    }
-  }
-
-  /** [3] S ::= (#x20 | #x9 | #xD | #xA)+
+  /** skip optional space S?
   */
-  def xmlSpace() = {
-    if( xml_isSpace() ) {
-      xml_nextch();
-      xmlSpaceOpt()
+  def xSpaceOpt = {
+    while( xIsSpace ) { xNext; }
+  }
+
+  /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+
+  */
+  def xSpace = {
+    if( xIsSpace ) {
+      xNext; xSpaceOpt
     } else {
-      xml_syntaxError("whitespace expected");
+      xSyntaxError("whitespace expected");
     }
   }
 
-  /** a subset of
-   *  [4] NameChar ::= Letter | Digit | '.' | '-' | '_' | ':' | CombiningChar | Extender
-   *
-   * todo: add unicode letters and digits as well as combining chars and extenders
+  /** scan [4] NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'
+   *                      | CombiningChar | Extender
+   * partial implementation
+   * @todo: add unicode letters, add CombiningChar Extender
   **/
-  def xml_isNameChar() = ch match {
+  def xIsNameChar = ch match {
     case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' |
     'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
     'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b' | 'c' | 'd' | 'e' |
@@ -726,7 +737,8 @@ class Scanner(_unit: Unit) extends TokenData {
     case _ => false
   }
 
-  def xml_isNameStart() = ch match {
+  /** scan (Letter | '_' | ':') */
+  def xIsNameStart = ch match {
     case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' |
     'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
     'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b' | 'c' | 'd' | 'e' |
@@ -735,63 +747,72 @@ class Scanner(_unit: Unit) extends TokenData {
     '_' | ':'  => true;
     case _ => false
   }
-  /** a subset of (see isNameChar() )
-  *   [5] Name ::= (Letter | '_' | ':') (NameChar)*
+  /** scan [5] Name ::= (Letter | '_' | ':') (NameChar)*
   */
-  def xmlName():Name = {
-    if( xml_isNameStart() ) {
+  def xName:Name = {
+    if( xIsNameStart ) {
       val index = bp;
-      while( xml_isNameChar() ) {
-        xml_nextch();
-      }
-      Name.fromAscii(buf, index, bp - index);
+      while( xIsNameChar ) { xNext; }
+      Name.fromAscii( buf, index, bp - index );
     } else {
-      xml_syntaxError("name expected");
-      Name.fromString("-error-");
+      xSyntaxError( "name expected" );
+      Names.EMPTY
     }
   }
 
-  /* consuming everything up to the next endch */
-  def xmlValue(endch:char):String = xmlValue(endch, true);
+  /** @see xSkipToNext( char, boolean ) */
+  def xSkipToNext( endch:char ):String = xSkipToNext( endch, true );
 
-  def xmlValue(endch:char, keep:boolean):String = {
+  /** move forward to next endch. return a string if needed.
+   *  @param endch the character to which we skip
+   *  @param keep  if true, this function returns the string, otherwise null
+   */
+  def xSkipToNext( endch:char, keep:boolean ):String = {
     lastpos = pos;
     val index = bp;
-    while ( ch != endch ) { xml_nextch();};
-    pos = Position.encode( cline, ccol );
+    while ( ch != endch ) { xNext; };
     if( keep )
-      new String(buf, index, bp-index);
+      new String( buf, index, bp-index );
     else
       null
   }
 
-  def xmlAttribValue(endch:char):String = {
-    val s = xmlValue(endch, true);
+  /** attribute value, terminated by either ' or ". value may not contain <.
+   *  @param endch either ' or "
+   */
+  def xAttributeValue( endch:char ):String = {
+    val s = xSkipToNext( endch );
+    // well-formedness constraint
     if( s.indexOf('<') != -1 ) {
-        xml_syntaxError("'<' not allowed in attrib value");
-        "--syntax error--"
+      xSyntaxError( "'<' not allowed in attrib value" ); ""
     } else {
       s
     }
   }
 
-  def xmlText():String = xmlValue('<');
+  /** character data. WRONG
+  */
+  def xText:String = xSkipToNext( '<' );
 
-  def xmlComment() = {
-    xmlToken('!');
-    xmlToken('-');
-    xmlToken('-');
-    xmlValue('-', false);
-    xmlToken('-');
-    xmlToken('-');
-    xmlToken('>');
+  /** scan XML comment.
+  */
+  def xComment = {
+    xToken('!');
+    xToken('-');
+    xToken('-');
+    xSkipToNext('-', false);
+    xToken('-');
+    xToken('-');
+    xToken('>');
   };
 
-  def xmlToken(that:char):unit = {
+  /** scan an exected XML token
+  */
+  def xToken(that:char):unit = {
     if( ch == that ) {
-      xml_nextch();
+      xNext;
     } else {
-      xml_syntaxError("'"+that+"' expected instead of '"+ch.asInstanceOf[char]+"'");
+      xSyntaxError("'"+that+"' expected instead of '"+ch.asInstanceOf[char]+"'");
     }
   }
   /* end XML tokenizing */
