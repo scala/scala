@@ -990,7 +990,8 @@ class GenJVM {
     }
 
     /**
-     * Generate code to throw the value returned by the argument.
+     * Generate code to synchronise on the object and evaluate the
+     * code fragment.
      */
     protected void genSynchronized(Context ctx,
                                    Tree object,
@@ -1003,9 +1004,21 @@ class GenJVM {
         ctx.code.emitSTORE(monitorVar);
         ctx.code.emitLOAD(monitorVar);
         ctx.code.emitMONITORENTER();
+        int startPC = ctx.code.getPC();
         genLoad(ctx, code, expectedType);
+        int endPC = ctx.code.getPC();
         ctx.code.emitLOAD(monitorVar);
         ctx.code.emitMONITOREXIT();
+
+        JCode.Label afterLabel = ctx.code.newLabel();
+        ctx.code.emitGOTO(afterLabel);
+        int handlerPC = ctx.code.getPC();
+        ctx.code.emitLOAD(monitorVar);
+        ctx.code.emitMONITOREXIT();
+        ctx.code.emitATHROW();
+        afterLabel.anchorToNext();
+
+        ctx.code.addFinallyHandler(startPC, endPC, handlerPC);
     }
 
     /// Arrays
