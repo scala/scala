@@ -832,7 +832,7 @@ case object Nil extends List[All] with java.io.Serializable {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-final case class ::[b](hd: b, tl: List[b]) extends List[b] with java.io.Serializable {
+final case class ::[+b](hd: b, tl: List[b]) extends List[b] with java.io.Serializable {
     private val serialVersionUID = 0 - 8476791151983527571L;
     def isEmpty: boolean = false;
     def head: b = hd;
