@@ -45,6 +45,7 @@ atree/AComparisonOp.java
 atree/AConstant.java
 atree/AField.java
 atree/AFunction.java
+atree/AInvokeStyle.java
 atree/ALocation.java
 atree/ALogicalOp.java
 atree/AMember.java
