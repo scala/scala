@@ -404,9 +404,11 @@ public class ExpandMixins extends Transformer {
                     return super.transform(tree);
             }
 
-            case Select(Super(Tree tpe), _): {
+            case Select(This(_), _):
+            case Select(Super(_), _): {
                 Symbol sym = tree.symbol();
                 if (mixedInSymbols.containsKey(sym))
+                    // TODO generate this.ident instead of just ident
                     return gen.Ident((Symbol)mixedInSymbols.get(sym));
                 else
                     return super.transform(tree);
