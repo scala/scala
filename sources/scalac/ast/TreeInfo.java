@@ -14,6 +14,8 @@ import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.Modifiers;
 
+import java.util.LinkedList;
+
 public class TreeInfo {
 
     public static boolean isTerm(Tree tree) {
@@ -157,4 +159,41 @@ public class TreeInfo {
 	    else return Symbol.NONE;
 	}
     }
+
+      /** returns true if the tree is a sequence-valued pattern.
+       *  precondition: tree is a pattern.
+       *  calls isSequenceValued( Tree, List ) because needs to remember bound
+       *  values.
+       */
+      public static boolean isSequenceValued( Tree tree ) {
+            return isSequenceValued( tree, new LinkedList() );
+      }
+
+      /** returns true if the tree is a sequence-valued pattern.
+       *  precondition: tree is a pattern
+       */
+      public static boolean isSequenceValued( Tree tree, LinkedList recVars ) {
+            switch( tree ) {
+            case Bind(_, Tree t):
+                  recVars.addFirst( tree.symbol() );
+                  boolean res = isSequenceValued( t );
+                  recVars.removeFirst();
+                  return res;
+            case Sequence(_):
+                  return true;
+            case Alternative(Tree[] ts):
+                  for( int i = 0; i < ts.length; i++ ) {
+                        if( isSequenceValued( ts[ i ] ) )
+                              return true;
+                  }
+                  return false;
+            case Apply( _, _ ):
+            case Literal( _ ):
+                  return false;
+            case Ident(Name n): // if Ident is a recursive var, then true
+                  return recVars.contains( tree.symbol() );
+            default:
+                  throw new scalac.ApplicationError("Unexpected pattern "+tree);
+            }
+      }
 }
