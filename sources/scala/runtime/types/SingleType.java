@@ -42,6 +42,6 @@ public class SingleType extends Type {
     }
 
     public int hashCode() {
-        return instance.hashCode();
+        return System.identityHashCode(instance);
     }
 }
