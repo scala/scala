@@ -172,7 +172,7 @@ public class AddConstructors extends Transformer {
 			break;
 		    }
 		    classBody.add(transform(t));
-		    classScope.enter(sym);
+		    classScope.enterOrOverload(sym);
 		} else
 		    // move every class-level expression into the constructor
 		    constrBody.add(transform(t));
