@@ -153,6 +153,9 @@ public class ExplicitOuterClasses extends Transformer {
         }
 
         case Ident(Name name): {
+            if (! name.isTermName())
+                return super.transform(tree);
+
             // Follow "outer" links to fetch data in outer classes.
             Symbol sym = tree.symbol();
             Symbol owner = sym.classOwner();
