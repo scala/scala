@@ -141,7 +141,7 @@ object Test with Application {
 
   assertEquals(
 
-      new NodeSeq(List( parsedxml2 )) \\ "_",
+      (new NodeSeq { val theSeq = List( parsedxml2 ) }) \\ "_",
 
       List(
         Elem("","bib",e,
@@ -192,7 +192,7 @@ object Test with Application {
     for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
       x.attribute("value") + y.attribute("bazValue")+ "!"
     },
-    new NodeSeq(List(Text("38!"),Text("58!")))
+    new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) }
   );
 
   val books =
@@ -233,7 +233,7 @@ object Test with Application {
 
   // example
   Console.println(
-    for( val t @ <book><title>Blabla</title></book> <- new NodeSeq( books.child ).asList)
+    for( val t @ <book><title>Blabla</title></book> <- new NodeSeq { val theSeq = books.child }.asList)
     yield t
   );
 

@@ -15,7 +15,7 @@ object Test {
 
     // construct data using constructor (valid)
     val c = Link(
-      new AttributeSeq(
+      AttributeSeq.fromAttrs(
         Attribute("","target","http://www.scala.org")
       ),
       Name(n, scala.xml.Text("hello-link"))

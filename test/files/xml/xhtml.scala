@@ -9,7 +9,7 @@ object Test {
 
   def main( argv:Array[String] ) = {
     val link = A(
-      new AttributeSeq(
+      AttributeSeq.fromAttrs(
         Attribute("","href","http://lampwww.epfl.ch")
       ),
       Text("link")
@@ -26,7 +26,7 @@ object Test {
     val page = Html(n,
                     Head(n,
                          Base(
-                           new AttributeSeq(
+                           AttributeSeq.fromAttrs(
                              Attribute("","href","http://here.edu")
                            )),
                          Title(n,Text("a basic xhtml page"))),
