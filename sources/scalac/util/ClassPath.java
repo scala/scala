@@ -66,6 +66,15 @@ public class ClassPath {
     public ClassPath(String classpath, String sourcepath,
         String bootclasspath, String extdirs)
     {
+        // replace first empty path in bootclasspath by BOOT_PATH
+        if (!bootclasspath.equals(BOOT_PATH)) {
+            String path = PATH_SEP + bootclasspath + PATH_SEP;
+            int index = path.indexOf(PATH_SEP + PATH_SEP);
+            if (index >= 0)
+                bootclasspath =
+                    path.substring(1, index + 1) + BOOT_PATH +
+                    path.substring(index + 1, path.length() - 1);
+        }
         String path = "";
         path = appendPath(path, bootclasspath);
         path = appendExtDirs(path, extdirs);
