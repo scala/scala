@@ -218,6 +218,15 @@ public class Definitions {
         }
     }
 
+    /** The scala.Type class & its subclasses */
+    public final Symbol TYPE_CLASS;
+    public final Type   TYPE_TYPE() {
+        return TYPE_TYPE.type().resultType();
+    }
+
+    public final Symbol CONSTRUCTEDTYPE_CLASS;
+    public final Symbol SINGLETYPE_CLASS;
+
     /** The scala.Predef module */
     public final Symbol PREDEF;
 
@@ -441,6 +450,106 @@ public class Definitions {
         return MATCHERROR_REPORT;
     }
 
+    /** The scala.Type class (and subclasses) */
+    private Symbol TYPE_DEFAULTVALUE;
+    public Symbol TYPE_DEFAULTVALUE() {
+        if (TYPE_DEFAULTVALUE == null)
+            TYPE_DEFAULTVALUE = loadTerm(TYPE_CLASS, Names.defaultValue);
+        return TYPE_DEFAULTVALUE;
+    }
+
+    private Symbol TYPE_NEWARRAY;
+    public Symbol TYPE_NEWARRAY() {
+        if (TYPE_NEWARRAY == null)
+            TYPE_NEWARRAY = loadTerm(TYPE_CLASS, Names.newArray);
+        return TYPE_NEWARRAY;
+    }
+
+    private Symbol TYPE_HASASINSTANCE;
+    public Symbol TYPE_HASASINSTANCE() {
+        if (TYPE_HASASINSTANCE == null)
+            TYPE_HASASINSTANCE = loadTerm(TYPE_CLASS, Names.hasAsInstance);
+        return TYPE_HASASINSTANCE;
+    }
+
+    private Symbol TYPE_CHECKCASTABILITY;
+    public Symbol TYPE_CHECKCASTABILITY() {
+        if (TYPE_CHECKCASTABILITY == null)
+            TYPE_CHECKCASTABILITY = loadTerm(TYPE_CLASS, Names.checkCastability);
+        return TYPE_CHECKCASTABILITY;
+    }
+
+    private Symbol RTT_DOUBLE;
+    public Symbol RTT_DOUBLE() {
+        if (RTT_DOUBLE == null)
+            RTT_DOUBLE = loadTerm(TYPE_CLASS.dualClass(), Names.Double);
+        return RTT_DOUBLE;
+    }
+
+    private Symbol RTT_FLOAT;
+    public Symbol RTT_FLOAT() {
+        if (RTT_FLOAT == null)
+            RTT_FLOAT = loadTerm(TYPE_CLASS.dualClass(), Names.Float);
+        return RTT_FLOAT;
+    }
+
+    private Symbol RTT_LONG;
+    public Symbol RTT_LONG() {
+        if (RTT_LONG == null)
+            RTT_LONG = loadTerm(TYPE_CLASS.dualClass(), Names.Long);
+        return RTT_LONG;
+    }
+
+    private Symbol RTT_INT;
+    public Symbol RTT_INT() {
+        if (RTT_INT == null)
+            RTT_INT = loadTerm(TYPE_CLASS.dualClass(), Names.Int);
+        return RTT_INT;
+    }
+
+    private Symbol RTT_SHORT;
+    public Symbol RTT_SHORT() {
+        if (RTT_SHORT == null)
+            RTT_SHORT = loadTerm(TYPE_CLASS.dualClass(), Names.Short);
+        return RTT_SHORT;
+    }
+
+    private Symbol RTT_CHAR;
+    public Symbol RTT_CHAR() {
+        if (RTT_CHAR == null)
+            RTT_CHAR = loadTerm(TYPE_CLASS.dualClass(), Names.Char);
+        return RTT_CHAR;
+    }
+
+    private Symbol RTT_BYTE;
+    public Symbol RTT_BYTE() {
+        if (RTT_BYTE == null)
+            RTT_BYTE = loadTerm(TYPE_CLASS.dualClass(), Names.Byte);
+        return RTT_BYTE;
+    }
+
+    private Symbol RTT_BOOLEAN;
+    public Symbol RTT_BOOLEAN() {
+        if (RTT_BOOLEAN == null)
+            RTT_BOOLEAN = loadTerm(TYPE_CLASS.dualClass(), Names.Boolean);
+        return RTT_BOOLEAN;
+    }
+
+    public Symbol CONSTRUCTEDTYPE_CTOR(int argsCount) {
+        int totalArgsCount = argsCount + 2;
+        CONSTRUCTEDTYPE_CLASS.info(); // HACK to make sure that I
+                                      // really get all constructors
+                                      // below
+        Symbol[] ctors =
+            CONSTRUCTEDTYPE_CLASS.allConstructors().alternativeSymbols();
+
+        for (int i = 0; i < ctors.length; ++i)
+            if (ctors[i].valueParams().length == totalArgsCount)
+                return ctors[i];
+
+        throw Debug.abort("constructor not found for " + argsCount + " args");
+    }
+
     //########################################################################
     // Public Fields - Global values
 
@@ -460,6 +569,7 @@ public class Definitions {
     private final Symbol FLOAT_TYPE;
     private final Symbol DOUBLE_TYPE;
     private final Symbol ARRAY_TYPE;
+    private final Symbol TYPE_TYPE;
 
     //########################################################################
     // Public Constructor
@@ -518,6 +628,9 @@ public class Definitions {
         NIL = getModule(Names.scala_Nil);
         CONS_CLASS = getClass(Names.scala_COLONCOLON);
         ARRAY_CLASS = getClass(Names.scala_Array);
+        TYPE_CLASS = getClass(Names.scala_Type);
+        CONSTRUCTEDTYPE_CLASS = getClass(Names.scala_ConstructedType);
+        SINGLETYPE_CLASS = getClass(Names.scala_SingleType);
         PREDEF = getModule(Names.scala_Predef);
         CONSOLE = getModule(Names.scala_Console);
         MATCHERROR = getModule(Names.scala_MatchError);
@@ -540,6 +653,7 @@ public class Definitions {
         DOUBLE_TYPE  = newTypeSymbol(Names.Double ,DOUBLE_CLASS .staticType());
         ARRAY_TYPE   = newTypeSymbol(Names.Array  ,
             ARRAY_CLASS.staticType(new Type[]{ANYREF_TYPE()}));
+        TYPE_TYPE    = newTypeSymbol(Names.Type   , TYPE_CLASS.type   ());
 
         // add members to scala.Any
         ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
@@ -731,7 +845,8 @@ public class Definitions {
     /** Returns the term member of given class with given name. */
     private Symbol loadTerm(Symbol clasz, Name name) {
         Symbol sym = clasz.lookup(name);
-        assert sym.isTerm() && !sym.isOverloaded(): clasz+"."+name+" -> "+sym;
+        assert sym.isTerm(): clasz+"."+name+" -> "+sym;
+        assert !sym.isOverloaded(): clasz+"."+name+" -> "+sym;
         return sym;
     }
 
