@@ -6,7 +6,7 @@
 import java.lang.System; // to avoid name clash with .NET's library
 
 //############################################################################
-// Test 0 - Array creation
+// Test 0 - Array Creation
 
 object Test0Test {
   def println[A](xs: Array[A]): Unit = {
@@ -49,6 +49,45 @@ object Test0Test {
 }
 
 //############################################################################
+// Test 1 - Block Qualifiers
+
+package test1.bar {
+
+  object System {
+    val out: PrintStream = new PrintStream();
+  }
+
+  class PrintStream() {
+    def println(): Unit = {
+      java.lang.System.out.println();
+    }
+  }
+
+}
+
+object Test1Test {
+
+  def main(args: Array[String]): Unit = {
+    {System.out.print(10)}; java.lang.System.out.println();
+    // {System.out.print(11); java}.lang.System.out.println();
+    // {System.out.print(12); java.lang}.System.out.println();
+    // {System.out.print(13); java.lang.System}.out.println();
+    {System.out.print(14); java.lang.System.out}.println();
+    {System.out.print(15); java.lang.System.out.println:(() => Unit)}();
+    {System.out.print(16); java.lang.System.out.println()};
+
+    {System.out.print(20)}; test1.bar.System.out.println();
+    // {System.out.print(21); test1}.bar.System.out.println();
+    // {System.out.print(22); test1.bar}.System.out.println();
+    {System.out.print(23); test1.bar.System}.out.println();
+    {System.out.print(24); test1.bar.System.out}.println();
+    {System.out.print(25); test1.bar.System.out.println:(() => Unit)}();
+    {System.out.print(26); test1.bar.System.out.println()};
+  }
+
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -73,6 +112,7 @@ object Test  {
   def main(args: Array[String]): Unit = {
 
     test("Test0"  , Test0Test.main(args));
+    test("Test1"  , Test1Test.main(args));
 
     if (errors > 0) {
       System.out.println();

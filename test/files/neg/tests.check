@@ -1,0 +1,16 @@
+tests.scala:29: package java is not a value
+    {System.out.print(11); java}.lang.System.out.println();
+                           ^
+tests.scala:30: package lang is not a value
+    {System.out.print(12); java.lang}.System.out.println();
+                               ^
+tests.scala:31: object System is not a value
+    {System.out.print(13); java.lang.System}.out.println();
+                                    ^
+tests.scala:37: package test0 is not a value
+    {System.out.print(21); test0}.bar.System.out.println();
+                           ^
+tests.scala:38: package bar is not a value
+    {System.out.print(22); test0.bar}.System.out.println();
+                                ^
+5 errors found

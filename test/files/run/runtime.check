@@ -14,3 +14,15 @@ hello
 [0,bye]
 >>> bug Test0
 
+<<< bug Test1
+10
+14
+15
+16
+20
+23
+24
+25
+26
+>>> bug Test1
+
