@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -41,7 +41,7 @@ trait DefaultMapModel[A, B] extends scala.collection.mutable.Map[A, B] {
         def next = iter.next.toPair;
     }
 
-    protected class Entry(k: A, v: B) {
+    protected class Entry(k: A, v: B) with java.io.Serializable {
         def key = k;
         var value = v;
         def toPair = Pair(k, value);

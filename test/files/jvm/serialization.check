@@ -1,0 +1,56 @@
+x1 = List()
+y1 = List()
+x1 eq y1: true - y1 eq x1: true
+
+x2 = None
+y2 = None
+x2 eq y2: true - y2 eq x2: true
+
+x3 = Array[1,2,3]
+y3 = Array[1,2,3]
+arrayEquals(x3, y3): true
+
+x4 = <na>
+y4 = <na>
+x4(2): 4 - y4(2): 4
+
+x1 = List((buffers,20),(layers,2),(title,3))
+y1 = List((buffers,20),(layers,2),(title,3))
+x1 equals y1: true - y1 equals x1: true
+
+x2 = {buffers -> 20, layers -> 2, title -> 3}
+y2 = {buffers -> 20, layers -> 2, title -> 3}
+x2 equals y2: true - y2 equals x2: true
+
+x3 = {1}
+y3 = {1}
+x3 equals y3: true - y3 equals x3: true
+
+x1 = {title -> 3, buffers -> 20, layers -> 2}
+y1 = {title -> 3, buffers -> 20, layers -> 2}
+x1 equals y1: true - y1 equals x1: true
+
+x2 = {0, 8, 9}
+y2 = {0, 8, 9}
+x2 equals y2: true - y2 equals x2: true
+
+x1 = Tim
+y1 = Tim
+x1 equals y1: true - y1 equals x1: true
+
+x2 = Bob
+y2 = Bob
+x2 equals y2: true - y2 equals x2: true
+
+x1 = John
+y1 = John
+x1 equals y1: true - y1 equals x1: true
+
+x2 = Bill
+y2 = Bill
+x2 equals y2: true - y2 equals x2: true
+
+x3 = Paul
+y3 = Paul
+x3 equals y3: true - y3 equals x3: true
+
