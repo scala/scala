@@ -22,8 +22,7 @@ public final class TreeList {
     }
 
     public TreeList() {
-	this(new Tree[4]);
-	len = 0;
+	clear();
     }
 
     public void append(Tree tree) {
@@ -43,6 +42,11 @@ public final class TreeList {
     public void append(TreeList tl) {
         for (int j = 0; j < tl.len; j++)
             append(tl.trees[j]);
+    }
+
+    public void clear() {
+	trees = new Tree[4];
+	len = 0;
     }
 
     public int length() {
