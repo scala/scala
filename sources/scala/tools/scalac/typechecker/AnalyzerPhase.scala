@@ -52,7 +52,7 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
 
   private def addImport(context: Context, module: Symbol): unit = {
     global.prevPhase();
-    val tree = global.treeGen.mkImportAll(Position.NOPOS, module);
+    val tree = gen.mkImportAll(Position.NOPOS, module);
     global.nextPhase();
     context.imports = new ImportList(tree, new Scope(), context.imports);
   }

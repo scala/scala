@@ -30,7 +30,7 @@ public abstract class MetadataParser extends Type.LazyType {
      */
     public final void complete(Symbol sym) {
         Phase phase = global.currentPhase;
-        global.currentPhase = global.getFirstPhase();
+        global.currentPhase = global.PHASE.ANALYZER.phase();
 	doComplete(sym);
         global.currentPhase = phase;
     }

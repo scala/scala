@@ -43,6 +43,7 @@ public abstract class Phase {
         this.id = descriptor.id();
         this.prev = global.currentPhase;
         if (prev != null) prev.next = this;
+        descriptor.initialize(this);
         global.currentPhase = this;
     }
 

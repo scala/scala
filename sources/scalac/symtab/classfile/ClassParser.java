@@ -78,7 +78,7 @@ public class ClassParser extends MetadataParser {
 
         public void complete(Symbol c) {
             Phase phase = global.currentPhase;
-            global.currentPhase = global.getFirstPhase();
+            global.currentPhase = global.PHASE.ANALYZER.phase();
             try {
                 long msec = System.currentTimeMillis();
                 String filename = SourceRepresentation.externalizeFileName(

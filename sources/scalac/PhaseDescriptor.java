@@ -119,8 +119,9 @@ public final class PhaseDescriptor {
         try {
             Class[] params = { Global.class, PhaseDescriptor.class };
             Object[] args = { global, this };
-            Constructor constructor = clasz.getConstructor(params);
-            return phase = (Phase)constructor.newInstance(args);
+            Object phase = clasz.getConstructor(params).newInstance(args);
+            assert this.phase == phase: this.phase + " != " + phase;
+            return this.phase;
         } catch (NoSuchMethodException exception) {
             throw Debug.abort(exception);
         } catch (IllegalAccessException exception) {
@@ -213,6 +214,17 @@ public final class PhaseDescriptor {
     /** Returns the name of this phase. */
     public String toString() {
         return name();
+    }
+
+    //########################################################################
+    // Protected Methods
+
+    /** Initializes this descriptor with given phase. */
+    protected void initialize(Phase phase) {
+        assert phase != null: "illegal null phase";
+        assert phase.descriptor == this: phase.descriptor.name + " != " + name;
+        assert this.phase == null: "phase " + name + " already initialized";
+        this.phase = phase;
     }
 
     //########################################################################

@@ -12,13 +12,19 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.Unit;
+import scalac.ast.TreeGen;
+import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 
 public abstract class AnalyzerPhase extends Phase {
 
+    public final TreeGen gen;
+
     /** Initializes this instance. */
     public AnalyzerPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
+        global.definitions = new Definitions(global);
+        this.gen = new TreeGen(global, global.make);
     }
 
     public abstract void addConsoleImport(Symbol module);

@@ -29,6 +29,7 @@ import scalac.backend.Primitives;
 import scalac.symtab.*;
 // !!! >>> Interpreter stuff
 import scalac.symtab.Definitions;
+import scalac.typechecker.AnalyzerPhase;
 import scalac.typechecker.Infer;
 import scalac.util.*;
 
@@ -126,7 +127,7 @@ public abstract class Global {
 
     /** the global primitives
      */
-    public Primitives primitives;
+    public final Primitives primitives;
 
     /** compilation phases.
      */
@@ -234,11 +235,12 @@ public abstract class Global {
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
         this.firstPhase = descriptors[0].create(this);
-        this.definitions = new Definitions(this);
+        for (int i = 1; i <= PHASE.ANALYZER.id(); i++)
+            if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
+        this.treeGen = ((AnalyzerPhase)PHASE.ANALYZER.phase()).gen;
         this.primitives = new Primitives(this);
-        this.treeGen = new TreeGen(this, make);
         assert !descriptors[0].hasSkipFlag();
-        for (int i = 1; i < descriptors.length; i++)
+        for (int i = PHASE.ANALYZER.id() + 1; i < descriptors.length; i++)
             if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
         this.currentPhase = firstPhase;
     }
