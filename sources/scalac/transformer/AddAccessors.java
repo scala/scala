@@ -36,7 +36,7 @@ public class AddAccessors extends Transformer {
     }
 
     protected final HashMap/*<Symbol,Symbol>*/ accessorMap = new HashMap();
-    protected boolean inClassContext = true;
+    protected boolean inClassContext;
 
     protected Symbol accessor(Symbol sym) {
         Symbol accessor = (Symbol)accessorMap.get(sym);
@@ -62,14 +62,22 @@ public class AddAccessors extends Transformer {
                       Tree tpe,
                       Tree.Template impl): {
             Symbol clsSym = tree.symbol();
+            assert vparams.length == 1;
+            Tree.ValDef[] params = vparams[0];
 
-            LinkedList/*<Tree>*/ newBody =
-                new LinkedList(Arrays.asList(transform(impl.body)));
+            // Recursively transform body
+            Tree[] body = impl.body;
+            LinkedList/*<Tree>*/ newBody = new LinkedList();
+            for (int i = 0; i < body.length; ++i) {
+                Tree mem = body[i];
+                Symbol sym = mem.symbol();
+                inClassContext =
+                    mem.definesSymbol() && (sym.isClass() || sym.isMethod());
+                newBody.add(transform(mem));
+            }
 
             // Add value definitions and accessors for all constructor
             // arguments which were found in the body of the class.
-            assert vparams.length == 1;
-            Tree.ValDef[] params = vparams[0];
             Scope newMembers = new Scope(clsSym.members());
             for (int i = 0; i < params.length; ++i) {
                 Symbol paramSym = params[i].symbol();
@@ -95,10 +103,8 @@ public class AddAccessors extends Transformer {
                                                 newMembers,
                                                 clsSym));
 
-            assert inClassContext;
             inClassContext = false;
             Tree[] newParents = transform(impl.parents);
-            inClassContext = true;
 
             Tree[] newBodyA = (Tree[])newBody.toArray(new Tree[newBody.size()]);
 
@@ -108,16 +114,6 @@ public class AddAccessors extends Transformer {
                                  transform(vparams),
                                  transform(tpe),
                                  copy.Template(impl, newParents, newBodyA));
-        }
-
-        case ValDef(_, _, _, _): {
-            // Do not go into RHS of value definitions which reference
-            // case class constructor arguments, to avoid creating
-            // another accessor.
-            if (Modifiers.Helper.isCaseAccessor(tree.symbol().flags)) {
-                return tree;
-            } else
-                return super.transform(tree);
         }
 
         case Select(Tree qualifier, _): {
