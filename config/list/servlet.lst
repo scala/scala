@@ -10,7 +10,10 @@ Status.scala
 
 engine/Connector.scala
 engine/Main.scala
-engine/Mapping.scala
+
+engine/config/Config.scala
+engine/config/ConfigReader.scala
+engine/config/ConfigHandler.scala
 
 http/HTTP.scala
 http/HttpConnector.scala

@@ -5,6 +5,20 @@ import scala.xml._;
 import scala.collection.mutable.HashMap ;
 import http.HttpOutputStream;
 
+object ScalaServlet {
+  final def showError(out: HttpOutputStream, status:int, msg :String): Unit =
+    out.write(
+  <html>
+    <head>
+      <title>SERVLET ERROR</title>
+    </head>
+    <body>
+      <big>Attention,erreur dans la servlet</big>
+      <br/>type de l erreur: { Status.getMessage(status) }<br/>{ msg }
+    </body>
+  </html>.toString());
+}
+
 /** subclasses can be registered with the servlet engine to handle requests
  */
 abstract class ScalaServlet {
@@ -19,23 +33,12 @@ abstract class ScalaServlet {
     }
     catch {
       case ServletException(status, msg) =>
-        showError( status, msg );
+        ScalaServlet.showError(out, status, msg );
       case ex:Exception =>
-        showError(Status.INTERNAL_ERROR, ex.getMessage());
+        ScalaServlet.showError(out, Status.INTERNAL_ERROR, ex.getMessage());
     }
   }
 
-  final def showError(status:int, msg :String): scala.xml.Node = {
-  <html>
-    <head>
-      <title>SERVLET ERROR</title>
-    </head>
-    <body>
-      <big>Attention,erreur dans la servlet</big>
-      <br/>type de l erreur: { Status.getMessage(status) }<br/>{ msg }
-    </body>
-  </html>
-  }
 }
 
 

@@ -7,7 +7,7 @@ import scala.collection.mutable.HashMap;
 /** constants */
 object HTTP {
   val  SERVER_INFO: String= "JNP-HTTPD/1.0";
-  val  SERVLET: String= "/servlet/";
+  val  SERVLET_PREFIX: String= "/servlet/";
   val  SERVER_LOCATION: File= new File(System.getProperty("user.dir"));
   val  HTML_ROOT: File= new File(SERVER_LOCATION,"html");
   val  PORT:Int = 80  ;

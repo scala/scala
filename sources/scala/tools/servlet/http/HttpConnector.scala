@@ -1,12 +1,12 @@
 package scala.tools.servlet.http;
 
-import java.net.{ Socket, ServerSocket };
+import servlet.engine.config.HttpConnectorConfig;
 
 /** for every port, there is one connector that instantiates a handler
  *  per client connection
  */
-class HttpConnector(port: Int) extends servlet.engine.Connector(port) {
+class HttpConnector(port: Int, map: PartialFunction[String,String]) extends servlet.engine.Connector(port) {
 
-  def makeHandler(s: Socket) = new HttpHandler( s );
+  def makeHandler(s: java.net.Socket) = new HttpHandler( s, map );
 
 }

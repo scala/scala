@@ -4,7 +4,7 @@ import java.io._;
 import java.net._;
 import scala.collection.mutable.HashMap;
 
-class HttpHandler(client: Socket) extends Thread {
+class HttpHandler(client: Socket, mapping: PartialFunction[String,String]) extends Thread {
 
   override def run(): Unit  ={
 
@@ -34,7 +34,8 @@ class HttpHandler(client: Socket) extends Thread {
     /* La methode run: on a construit premierement un HttpInputStream dans le
   client  Input Stream, ceci nous facilte lire et parser les requetes HTTP*/
 
-  def getProcessor(httpIn: HttpInputStream): HttpProcessor={
+  def getProcessor(httpIn: HttpInputStream): HttpProcessor = {
+    Console.println("HttpHandler.getProcessor");
     var value = 0;
     var infoString = " " ;
     var info:HashMap[String, String] = null;
@@ -50,15 +51,17 @@ class HttpHandler(client: Socket) extends Thread {
 	info = HTTP.processing(infoString);
       }
 
-      if (httpIn.getPath().startsWith(HTTP.SERVLET)){
+      if( mapping.isDefinedAt(httpIn.getPath())) {
+        //if (httpIn.getPath().startsWith(HTTP.SERVLET_PREFIX)){
 	value = 1;
-	srv = new HttpServletPro(httpIn, info);
+	srv = new HttpServletPro(httpIn, info, mapping(httpIn.getPath())+"$class");
       }
       else{
 	value = 2;
 	fil = new HttpFile(httpIn, info);
       }
     }
+
 
     catch {
       case e: HttpException => {
@@ -72,6 +75,8 @@ class HttpHandler(client: Socket) extends Thread {
 	value=3;
 	error= exept.toProcessor;}
     }
+
+    Console.println("value = "+value);
 
     if(value == 1)
       return srv ;
