@@ -40,6 +40,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   final val PATTERN = true;
   final val EXPR    = false;
 
+  val enableEmbeddedExpressions: Boolean = true;
+
   //val cbuf = new StringBuffer();
 
   /** append Unicode character to name buffer*/
@@ -97,7 +99,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     sync;
     val b = p.expr(true,false);
     if(s.token != RBRACE)
-      xSyntaxError(" expected end of Scala block");
+      reportSyntaxError(" expected end of Scala block");
     init;
     //Console.println("[out of xScalaExpr s.ch = "+s.ch+" ch="+ch+"]");
     return b
@@ -109,7 +111,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     sync;
     val b = p.patterns();
     if( s.token != RBRACE )
-      xSyntaxError(" expected end of Scala patterns");
+      reportSyntaxError(" expected end of Scala patterns");
     init;
     return b
   }
@@ -163,7 +165,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   */
 
 
-  def xSyntaxError(str:String) = {
+  def reportSyntaxError(str:String) = {
     s.syntaxError("in XML literal: "+str);
     nextch;
   }

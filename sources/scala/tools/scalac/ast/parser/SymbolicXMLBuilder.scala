@@ -265,25 +265,18 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
              );
 
   // create
-  def comment( pos: int, comment:scala.xml.Comment ):Tree =
-    Comment( pos, gen.mkStringLit( pos, comment.text ));
+  def comment( pos: int, text: String ):Tree =
+    Comment( pos, gen.mkStringLit( pos, text ));
 
   // create
-  def charData( pos: int, charData:scala.xml.CharData ):Tree =
-    CharData( pos, gen.mkStringLit( pos, charData.text ));
+  def charData( pos: int, txt: String ):Tree =
+    CharData( pos, gen.mkStringLit( pos, txt ));
 
   // create scala.xml.Text here <: scala.xml.Node
-  def procInstr( pos: int, procInstr:scala.xml.ProcInstr ):Tree =
-    procInstr.text match {
-      case Some(txt) =>
-        ProcInstr( pos,
-                   gen.mkStringLit( pos, procInstr.target ),
-                   makeSome( pos, gen.mkStringLit( pos, txt )));
-      case _ =>
-        ProcInstr( pos,
-                   gen.mkStringLit( pos, procInstr.target ),
-                   makeNone( pos ));
-    }
+  def procInstr( pos: int, target: String, txt: String ):Tree =
+    ProcInstr(pos,
+              gen.mkStringLit( pos, target ),
+              gen.mkStringLit( pos, txt ));
 
   def makeNone( pos: int ):Tree = _scala_None( pos );
 
