@@ -520,7 +520,10 @@ public class LambdaLift extends OwnerTransformer
 		    global.log(sym + " has now type " + sym.typeAt(descr.nextPhase));
 	    }
 	} else if (sym.kind == CLASS) {
-	    liftSymbol(sym.primaryConstructor(), oldtparams, newtparams, newparams);
+            Symbol constr = sym.primaryConstructor();
+	    liftSymbol(constr, oldtparams, newtparams, newparams);
+            // fix result type of constructor
+            constr.updateInfo(descr.transform(constr.nextInfo(), constr));
 	} else {
 	    throw new ApplicationError();
 	}
