@@ -1204,7 +1204,7 @@ public class Parser implements Tokens {
 	Tree top = simplePattern();
 	if (s.token == COLON) {
 	    if (TreeInfo.isVarPattern(top)) {
-		return make.Typed(s.skipToken(), top, type());
+		return make.Typed(s.skipToken(), top, type1());
 	    }
 	}
 	if (s.token == IDENTIFIER) {
@@ -1688,7 +1688,7 @@ public class Parser implements Tokens {
      */
     Tree patDefOrDcl(int mods) {
         int pos = s.pos;
-        Tree pat = validPattern();
+        Tree pat = pattern();
 	Tree tp;
         switch (pat) {
 	case Typed(Tree pat1, Tree tp1):
