@@ -287,7 +287,7 @@ $(PROJECT_JAR_ARCHIVE)	:
 ##############################################################################
 # Includes
 
-include $(ROOT)/support/make/jc.mk
-include $(ROOT)/support/make/jar.mk
+include $(PROJECT_SUPPORTDIR)/make/jc.mk
+include $(PROJECT_SUPPORTDIR)/make/jar.mk
 
 ##############################################################################

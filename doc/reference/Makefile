@@ -6,7 +6,7 @@
 ##############################################################################
 # Configuration
 
-ROOT = ../..
+ROOT			 = ../..
 
 include $(ROOT)/Makefile.config
 
@@ -33,11 +33,11 @@ LATEX_SOURCES		+= rationale-chapter.tex
 
 # latex
 TEXINPUTS		:= /home/linuxsoft/share/texmf//:$(TEXINPUTS)
-TEXINPUTS		:= .:$(ROOT)/support/latex:$(TEXINPUTS):
+TEXINPUTS		:= .:$(PROJECT_SUPPORTDIR)/latex:$(TEXINPUTS):
 BIBINPUTS		:= .
 
 # verbfilter
-VERBFILTER		 = $(ROOT)/support/latex/verbfilterScala
+VERBFILTER		 = $(PROJECT_SUPPORTDIR)/latex/verbfilterScala
 
 ##############################################################################
 # Includes
