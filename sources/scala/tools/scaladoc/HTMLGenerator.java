@@ -47,6 +47,7 @@ import scalac.symtab.Type;
 import scalac.symtab.Type.*;
 import scalac.util.Debug;
 import scalac.util.Name;
+import scalac.util.Names;
 import scalac.util.Strings;
 
 /**
@@ -222,6 +223,8 @@ public class HTMLGenerator {
     protected final Symbol indexPage = new NoSymbol();
     protected final Symbol helpPage  = new NoSymbol();
 
+    private final Symbol JAVALANG; // !!! remove ?
+
     /**
      * Creates a new instance.
      *
@@ -234,6 +237,7 @@ public class HTMLGenerator {
 	this.subs = ScalaSearch.subTemplates(tree);
 	this.anchors = Anchors.apply(tree);
 
+        this.JAVALANG = global.definitions.getClass(Names.java_lang);
         assert global.args instanceof HTMLGeneratorCommand;
         HTMLGeneratorCommand args = (HTMLGeneratorCommand) global.args;
         this.representation = new HTMLRepresentation(
@@ -1025,7 +1029,7 @@ public class HTMLGenerator {
 	if (prefix.symbol().isRoot()) return null;
 
 	// Next line should be removed in theory.
-	if (prefix.symbol().moduleClass() == global.definitions.JAVALANG_CLASS)
+        if (prefix.symbol().moduleClass() == JAVALANG)
             return null;
 
 	switch(prefix) {
