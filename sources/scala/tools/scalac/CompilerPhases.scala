@@ -6,17 +6,20 @@
 
 // $Id$
 
-package scala.tools.scalac;
+import scalac.{CompilerPhases => scalac_CompilerPhases}
+
+package scala.tools.scalac {
 
 /**
  * This class defines all compiler phases and maintains a list of
  * active phases.
  */
-class CompilerPhases extends scalac.CompilerPhases {
+class CompilerPhases extends scalac_CompilerPhases {
 
   protected override def PARSER_PHASE(): Class =
     Class.forName("scala.tools.scalac.ast.parser.ParserPhase$class");
   protected override def ANALYZER_PHASE(): Class =
     Class.forName("scala.tools.scalac.typechecker.AnalyzerPhase$class");
 
+}
 }

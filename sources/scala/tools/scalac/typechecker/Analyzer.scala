@@ -13,8 +13,6 @@
 // todo: synchronize on module instantiation.
 // todo: empty package
 
-package scala.tools.scalac.typechecker;
-
 import ch.epfl.lamp.util.Position;
 import scalac._;
 import scalac.util._;
@@ -26,10 +24,13 @@ import Tree._;
 import java.util.HashMap;
 import java.lang.{Boolean, Byte, Short, Character, Integer, Object}
 import scala.tools.scalac.util.NewArray;
+import scalac.{Global => scalac_Global}
+
+package scala.tools.scalac.typechecker {
 
 /** The main attribution phase.
  */
-class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global) {
+class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(global) {
 
   import Modifiers._;
   import Kinds._;
@@ -112,7 +113,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     this.context = descr.contexts.remove(unit).asInstanceOf[Context];
     assert(this.context != null, "could not find context for " + unit);
     unit.body = transformStatSeq(unit.body, Symbol.NONE);
-    if (global.target != Global.TARGET_INT && global.reporter.errors() == 0) {
+    if (global.target != scalac_Global.TARGET_INT && global.reporter.errors() == 0) {
       genSymData(unit.body);
     }
     this.unit = null;
@@ -1488,7 +1489,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
       return error(tree.pos,
 		   "reference to " + name + " is ambiguous;\n" +
 		   "it is both defined in " + sym.owner() +
-		   " and imported subsequently by \n" + nextimports.tree);
+		   " and imported subsequently by \n" + lastimports.tree);
     } else {
       // check that there are no other applicable imports in same scope.
       while (nextimports != null && nextimports.enclScope == lastimports.enclScope) {
@@ -2720,6 +2721,6 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     }
   }
 }
-
+}
 
 //  LocalWords:  SOcos

@@ -6,17 +6,17 @@
 
 // $Id$
 
-package scala.tools.scalac.typechecker;
-
-import scalac.Global;
+import scalac.{Global => scalac_Global};
 import scalac.ApplicationError;
 import scalac.util._;
 import scalac.ast._;
 import scalac.symtab._;
 
+package scala.tools.scalac.typechecker {
+
 // Tree Substitution -------------------------------------------------------------
 
-class Substituter(global: Global, gen: TreeGen) extends Transformer(global) {
+class Substituter(global: scalac_Global, gen: TreeGen) extends Transformer(global) {
 
   var tparams: Array[Symbol] = _;
   var targs: Array[Type] = _;
@@ -92,4 +92,4 @@ class Substituter(global: Global, gen: TreeGen) extends Transformer(global) {
     }
   }
 }
-
+}

@@ -39,7 +39,7 @@ class Scanner( it:Iterator[char] ) with Tokens {
   }
 
   def getIdent:String = {
-    var cs = List(c);
+    var cs = c :: Nil;
     next;
     while ( isIdentChar ) { cs = c::cs; next }
     cs.foldLeft ("") { (c,s) => s+c }

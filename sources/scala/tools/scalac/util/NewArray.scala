@@ -6,13 +6,13 @@
 
 // $Id$
 
-package scala.tools.scalac.util;
-
 import scalac.ast._;
 import scalac.checkers.Checker;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Name;
+
+package scala.tools.scalac.util {
 
 object NewArray {
 
@@ -105,4 +105,5 @@ object NewArray {
     }
     arr
   }
+}
 }

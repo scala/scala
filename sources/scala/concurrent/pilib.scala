@@ -131,7 +131,7 @@ object pilib with Monitor {
   */
   private def compare(s1: Sum, ss: List[Sum]): List[Sum] =
     ss match {
-      case Nil => ss ::: List(s1)
+      case Nil => ss ::: s1 :: Nil
       case s2 :: rest => matches(s1.gs, s2.gs) match {
 	case None => s2 :: compare(s1, rest)
 	case Some(Pair(c1, c2)) => {

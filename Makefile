@@ -176,7 +176,7 @@ all		: system
 all		: interpreter
 all		: scaladoc
 all		: scalap
-all		: dtd2scala
+#all		: dtd2scala
 all		: scalac4ant
 all		: scalatest
 all		: library-doc

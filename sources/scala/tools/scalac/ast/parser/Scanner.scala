@@ -6,14 +6,14 @@
 ** $Id$
 \*                                                                      */
 
-package scala.tools.scalac.ast.parser;
-
-import ch.epfl.lamp.util.Position;
-import ch.epfl.lamp.util.SourceFile;
-
 import scalac._;
 import scalac.util.Name;
 import scalac.ast.parser.SourceRepresentation;
+
+package scala.tools.scalac.ast.parser {
+
+import ch.epfl.lamp.util.Position;
+import ch.epfl.lamp.util.SourceFile;
 
 
 /** A scanner for the programming language Scala.
@@ -804,5 +804,4 @@ class Scanner(_unit: Unit) extends TokenData {
     enterKeyword("@", AT);
   }
 }
-
-
+}

@@ -6,21 +6,18 @@
 ** $Id$
 \*                                                                      */
 
-package scala.tools.scalac.ast.parser;
-
 import scalac.ast.parser.PatternNormalizer;
-import ch.epfl.lamp.util.Position;
-
-import java.util.{Map, Stack, ArrayList, LinkedList};
-import scalac._;
-import scalac.util._;
-
 import scalac.symtab.Modifiers;
 import scalac.ast._;
-import Tree._;
+import scalac._;
+import scalac.util._;
+import ch.epfl.lamp.util.Position;
+import java.util.{Map, Stack, ArrayList, LinkedList};
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
+
+package scala.tools.scalac.ast.parser {
 
 /** A recursive descent parser for the programming language Scala.
  *
@@ -30,7 +27,7 @@ import scala.tools.scalac.util.NewArray;
 class Parser(unit: Unit) {
 
   import Tokens._;
-  import scala.tools.scalac.ast.TreeList;
+  import scala.tools.scalac.ast.{TreeList => myTreeList}
 
   /** the lexical analyzer
   */
@@ -635,7 +632,7 @@ class Parser(unit: Unit) {
   /** Types ::= Type {`,' Type}
   */
   def types(): Array[Tree] = {
-    val ts = new TreeList();
+    val ts = new myTreeList();
     ts.append(typ());
     while (s.token == COMMA) {
       s.nextToken();
@@ -660,7 +657,7 @@ class Parser(unit: Unit) {
         t = typ();
         if (s.token == COMMA) {
           s.nextToken();
-          val ts = new TreeList();
+          val ts = new myTreeList();
           ts.append(t);
           ts.append(types());
           accept(RPAREN);
@@ -685,7 +682,7 @@ class Parser(unit: Unit) {
     val pos = s.pos;
     val t = simpleType();
     if (s.token == WITH || s.token == LBRACE) {
-      val ts = new TreeList();
+      val ts = new myTreeList();
       ts.append(t);
       while (s.token == WITH) {
         s.nextToken();
@@ -747,7 +744,7 @@ class Parser(unit: Unit) {
   /** Exprs ::= Expr {`,' Expr}
   *          | Expr `:' `_' `*'
   */
-  def exprs(): Array[Tree] = {    val ts = new TreeList();
+  def exprs(): Array[Tree] = {    val ts = new myTreeList();
     ts.append(expr(true, false));
     while (s.token == COMMA) {
       s.nextToken();
@@ -939,7 +936,7 @@ class Parser(unit: Unit) {
           t = expr();
           if (s.token == COMMA) {
             val commapos = s.skipToken();
-            val ts = new TreeList();
+            val ts = new myTreeList();
             ts.append(t);
             ts.append(exprs());
             accept(RPAREN);
@@ -1004,7 +1001,7 @@ class Parser(unit: Unit) {
     val pos = accept(LBRACE);
     val res =
       if (s.token == CASE) {
-	val stats = new TreeList();
+	val stats = new myTreeList();
 	do {
 	  stats.append(caseClause());
 	} while (s.token == CASE);
@@ -1022,7 +1019,7 @@ class Parser(unit: Unit) {
   /** Block ::= BlockStatSeq
   */
   def block(pos: int): Tree = {
-    val stats = blockStatSeq(new TreeList());
+    val stats = blockStatSeq(new myTreeList());
     if (stats.length == 1 && stats(0).isTerm()) stats(0)
     else make.Block(pos, stats)
   }
@@ -1043,7 +1040,7 @@ class Parser(unit: Unit) {
   *                | Expr
   */
   def enumerators(): Array[Tree] = {
-    val enums = new TreeList();
+    val enums = new myTreeList();
     enums.append(generator());
     while (s.token == SEMI) {
       s.nextToken();
@@ -1107,7 +1104,7 @@ class Parser(unit: Unit) {
   /** Patterns ::= Pattern {`,' Pattern}
   */
   def patterns(): Array[Tree] = {
-    val ts = new TreeList();
+    val ts = new myTreeList();
     ts.append(pattern());
     while (s.token == COMMA) {
       s.nextToken();
@@ -1122,7 +1119,7 @@ class Parser(unit: Unit) {
     val pos = s.pos;
     val first = pattern1();
     if (s.token == IDENTIFIER && s.name == BAR) {
-      val choices = new TreeList();
+      val choices = new myTreeList();
       choices.append( first );
       while (s.token == IDENTIFIER && s.name == BAR) {
         s.nextToken();
@@ -1344,7 +1341,7 @@ class Parser(unit: Unit) {
   */
   def paramClause(): Array[Tree$ValDef] = {
     val pos = accept(LPAREN);
-    val params = new TreeList();
+    val params = new myTreeList();
     if (s.token != RPAREN) {
       params.append(param());
       while (s.token == COMMA) {
@@ -1384,7 +1381,7 @@ class Parser(unit: Unit) {
   *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
   */
   def typeParamClauseOpt(variant: boolean): Array[Tree$AbsTypeDef] = {
-    val params = new TreeList();
+    val params = new myTreeList();
     if (s.token == LBRACKET) {
       s.nextToken();
       params.append(typeParam(variant));
@@ -1433,7 +1430,7 @@ class Parser(unit: Unit) {
      */
     def importClause(): Array[Tree] = {
       accept(IMPORT);
-      val ts = new TreeList();
+      val ts = new myTreeList();
       ts.append(importExpr());
       while (s.token == COMMA) {
         s.nextToken();
@@ -1532,7 +1529,7 @@ class Parser(unit: Unit) {
   *           | type TypeDcl {`,' TypeDcl}
   */
   def defOrDcl(mods: int): Array[Tree] = {
-    val ts = new TreeList();
+    val ts = new myTreeList();
     s.token match {
       case VAL =>
 	do {
@@ -1568,7 +1565,7 @@ class Parser(unit: Unit) {
   */
   def clsDef(_mods: int): Array[Tree] = {
     var mods = _mods;
-    val ts = new TreeList();
+    val ts = new myTreeList();
     s.token match {
       case CLASS | CASECLASS | TRAIT =>
         if (s.token == CASECLASS)
@@ -1665,7 +1662,7 @@ class Parser(unit: Unit) {
   def constrExpr(): Tree =
     if (s.token == LBRACE) {
       val pos = s.skipToken();
-      val statlist = new TreeList();
+      val statlist = new myTreeList();
       statlist.append(selfInvocation());
       val stats =
         if (s.token == SEMI) { s.nextToken(); blockStatSeq(statlist) }
@@ -1713,7 +1710,7 @@ class Parser(unit: Unit) {
     val clazzname = ident().toTypeName();
     val tparams = typeParamClauseOpt(true);
     val params = paramClauseOpt();
-    val result = new TreeList();
+    val result = new myTreeList();
     popComment(make.ClassDef(pos, mods, clazzname, tparams, params,
                              simpleTypedOpt(), classTemplate()))
   }
@@ -1733,7 +1730,7 @@ class Parser(unit: Unit) {
       template()
     } else if (s.token == WITH) {
       s.nextToken();
-      val parents = new TreeList();
+      val parents = new myTreeList();
       parents.append(scalaObjectConstr(pos));
       template(parents)
     } else if (s.token == LBRACE) {
@@ -1753,9 +1750,9 @@ class Parser(unit: Unit) {
   /** Template  ::= Constr {`with' Constr} [TemplateBody]
   */
   def template(): Tree$Template =
-    template(new TreeList());
+    template(new myTreeList());
 
-  def template(parents: TreeList): Tree$Template = {
+  def template(parents: myTreeList): Tree$Template = {
     val pos = s.pos;
     parents.append(constr());
     while (s.token == WITH) {
@@ -1817,7 +1814,7 @@ class Parser(unit: Unit) {
   *            |
   */
   def topStatSeq(): Array[Tree] = {
-    val stats = new TreeList();
+    val stats = new myTreeList();
     while (s.token != RBRACE && s.token != EOF) {
       if (s.token == PACKAGE) {
         stats.append(packaging());
@@ -1846,7 +1843,7 @@ class Parser(unit: Unit) {
   *                     |
   */
   def templateStatSeq(): Array[Tree] = {
-    val stats = new TreeList();
+    val stats = new myTreeList();
     while (s.token != RBRACE && s.token != EOF) {
       if (s.token == IMPORT) {
         stats.append(importClause());
@@ -1868,7 +1865,7 @@ class Parser(unit: Unit) {
   *                     |
   */
   def refineStatSeq(): Array[Tree] = {
-    val stats = new TreeList();
+    val stats = new myTreeList();
     while (s.token != RBRACE && s.token != EOF) {
       if (isDclIntro()) {
         stats.append(defOrDcl(0));
@@ -1887,7 +1884,7 @@ class Parser(unit: Unit) {
   *                 | Expr
   *                 |
   */
-  def blockStatSeq(stats: TreeList): Array[Tree] = {
+  def blockStatSeq(stats: myTreeList): Array[Tree] = {
     while ((s.token != RBRACE) && (s.token != EOF) && (s.token != CASE)) {
       if (s.token == IMPORT) {
         stats.append(importClause());
@@ -1926,7 +1923,7 @@ class Parser(unit: Unit) {
         s.nextToken();
         NewArray.Tree(makePackaging(pos, pkg, topStatSeq()));
       } else {
-        val stats = new TreeList();
+        val stats = new myTreeList();
         accept(LBRACE);
         stats.append(makePackaging(pos, pkg, topStatSeq()));
         accept(RBRACE);
@@ -1938,5 +1935,4 @@ class Parser(unit: Unit) {
     }
   }
 }
-
-
+}

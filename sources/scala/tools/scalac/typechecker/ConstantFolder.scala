@@ -10,12 +10,12 @@
  * if this copyright notice stays attached.
  *************************************************************************/
 
-package scala.tools.scalac.typechecker;
-
 import scalac.util._;
 import scalac.ast._;
 import scalac.symtab._;
 import java.lang.{Byte,Character,Short,Integer,Long,Float,Double,Boolean,Object,Number}
+
+package scala.tools.scalac.typechecker {
 
 class ConstantFolder(ana: Analyzer) {
 
@@ -303,9 +303,4 @@ class ConstantFolder(ana: Analyzer) {
     }
   }
 }
-
-
-
-
-
-
+}

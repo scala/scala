@@ -158,7 +158,7 @@ class JarArchive(f: File) with AbstractFile {
             Iterator.empty;
         else if (j < (pref.length() - 1)) {
             if (files.isDefinedAt(pref.substring(j)))
-                List(pref).elements;
+                Predef.List(pref).elements;
             else
                 Iterator.empty;
         } else

@@ -2,7 +2,6 @@ package scala.xml.nobinding;
 
 import scala.collection.Map ;
 import scala.collection.immutable.ListMap ;
-import scala.xml.{AttributedNode,Node} ;
 
 /** an XML node. use this when data binding is not desired.
 **/

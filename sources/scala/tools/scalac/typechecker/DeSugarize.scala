@@ -5,8 +5,6 @@
 **                                                                      **
 ** $Id$
 \*                                                                      */
-package scala.tools.scalac.typechecker;
-
 import java.io._;
 import java.util.ArrayList;
 import java.lang.Object;
@@ -16,9 +14,12 @@ import scalac.util._;
 import scalac.symtab._;
 import scalac.ast._;
 import scalac.typechecker.Infer;
+import scalac.{Global => scalac_Global}
 
 import scala.tools.scalac.ast.printer.TextTreePrinter;
 import scala.tools.scalac.util.NewArray;
+
+package scala.tools.scalac.typechecker {
 
 /** A transformer for removing syntactic sugar. This transformer does
  *  not need any type or symbol-table information.
@@ -26,13 +27,13 @@ import scala.tools.scalac.util.NewArray;
  *  @author     Martin Odersky
  *  @version    2.0
  */
-class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer, global: Global) {
+class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer, global: scalac_Global) {
 
   import Kinds._, Modifiers._;
 
   protected final val freshNameCreator = global.freshNameCreator;
 
-  def this(analyzer: Analyzer, global: Global) =
+  def this(analyzer: Analyzer, global: scalac_Global) =
     this(analyzer.make, analyzer.copy, analyzer.gen, analyzer.infer, global);
 
 // Auxiliary definitions and functions -------------------------------------------
@@ -569,4 +570,5 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer
       .print(result).println().end();
     }
   }
+}
 }

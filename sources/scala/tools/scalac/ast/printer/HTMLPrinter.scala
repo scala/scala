@@ -7,16 +7,16 @@
 
 // $Id$
 
-package scala.tools.scalac.ast.printer;
-
 import scalac.Unit;
 import scalac.symtab.Symbol;
+import scalac.ast.Tree;
+
+package scala.tools.scalac.ast.printer {
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.Math;
 import java.util.HashMap;
-import scalac.ast.Tree;
 
 /**
  * HTML pretty printer for Scala abstract syntax trees.
@@ -164,4 +164,5 @@ class HTMLTreePrinter(stream: OutputStream) extends TextTreePrinter(stream) {
   override protected def printUnitFooter(unit: Unit): unit = {
     endTag("pre");
   }
+}
 }

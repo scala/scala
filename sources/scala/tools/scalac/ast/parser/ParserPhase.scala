@@ -6,14 +6,14 @@
 
 // $Id$
 
-package scala.tools.scalac.ast.parser;
-
-import scalac.Global;
+import scalac.{Global => scalac_Global}
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.Unit;
 
-class ParserPhase(global: Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
+package scala.tools.scalac.ast.parser {
+
+class ParserPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
 
   def apply(units: Array[Unit]): unit = {
     for (val i <- Iterator.range(0, units.length)) {
@@ -22,4 +22,5 @@ class ParserPhase(global: Global, descriptor: PhaseDescriptor) extends Phase(glo
       global.stop("parsed " + units(i).source);
     }
   }
+}
 }

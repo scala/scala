@@ -7,9 +7,9 @@
 
 // $Id$
 
-package scala.tools.scalac.ast;
-
 import scalac.ast._;
+
+package scala.tools.scalac.ast {
 
 /** List of trees.
  */
@@ -70,4 +70,5 @@ final class TreeList(ts: Array[Tree]) {
     System.arraycopy(trees, 0, ts, from, len);
     ts;
   }
+}
 }

@@ -6,11 +6,9 @@
 
 // $Id$
 
-package scala.tools.scalac.typechecker;
-
 import java.lang.Object;
 
-import scalac.Global;
+import scalac.{Global => scalac_Global}
 import scalac.ApplicationError;
 import scalac.util._;
 import scalac.ast._;
@@ -18,7 +16,9 @@ import scalac.symtab._;
 
 import scala.tools.scalac.util.NewArray;
 
-class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
+package scala.tools.scalac.typechecker {
+
+class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
 
   import Modifiers._, Kinds._;
 
@@ -338,7 +338,7 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 	    }}
 	    if (!cyclic) {
 	      if (up) {
-		if (bound.symbol() != Global.instance.definitions.ANY_CLASS)
+		if (bound.symbol() != definitions.ANY_CLASS)
 		  constr.hibounds = new Type$List(
 		    bound.subst(tparams, tvars), constr.hibounds);
 		{ var j = 0; while (j < tvars.length) {
@@ -351,7 +351,7 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 		  j = j + 1
 		}}
 	      } else {
-		if (bound.symbol() != Global.instance.definitions.ALL_CLASS)
+		if (bound.symbol() != definitions.ALL_CLASS)
 		  constr.lobounds = new Type$List(
 		    bound.subst(tparams, tvars), constr.lobounds);
 		{ var j = 0; while (j < tvars.length) {
@@ -436,7 +436,7 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def normalize(tp: Type): Type = tp match {
     case Type$MethodType(params, restype) =>
-      global.definitions.FUNCTION_TYPE(
+      definitions.FUNCTION_TYPE(
 	Symbol.getType(params), normalize(restype));
     case Type$PolyType(tparams, restype) if (tparams.length == 0) =>
       normalize(restype);
@@ -456,7 +456,7 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   private def normalizeArgs(targs: Array[Type], tparams: Array[Symbol]): Array[Symbol] = {
     var uninstantiated: Type$List = Type$List.EMPTY;
     { var i = 0; while (i < targs.length) {
-      if (targs(i).symbol() == Global.instance.definitions.ALL_CLASS) {
+      if (targs(i).symbol() == definitions.ALL_CLASS) {
 	targs(i) = tparams(i).getType();
 	uninstantiated = Type$List.append(uninstantiated, targs(i));
       }
@@ -910,3 +910,4 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   }
 }
 
+}

@@ -6,10 +6,10 @@
 
 // $Id$
 
-package scala.tools.scaladoc;
-
 import scalac.Global;
 import scalac.util.Reporter;
+
+package scala.tools.scaladoc {
 
 /**
  * The main class for scaladoc, an HTML documentation generator
@@ -38,4 +38,5 @@ object Main {
     System.exit(if (reporter.errors() > 0) 1 else 0);
   }
 
+}
 }

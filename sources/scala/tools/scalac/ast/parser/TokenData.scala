@@ -6,9 +6,9 @@
 ** $Id$
 \*                                                                      */
 
-package scala.tools.scalac.ast.parser;
-
 import scalac.util.Name;
+
+package scala.tools.scalac.ast.parser {
 
 /** A class for representing a token's data.
  *
@@ -43,4 +43,5 @@ class TokenData {
     this.intVal = td.intVal;
     this.floatVal = td.floatVal;
   }
+}
 }

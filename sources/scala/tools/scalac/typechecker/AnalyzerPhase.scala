@@ -6,8 +6,6 @@
 
 // $Id$
 
-package scala.tools.scalac.typechecker;
-
 import ch.epfl.lamp.util.Position;
 import scalac._;
 import scalac.util._;
@@ -17,8 +15,12 @@ import scalac.checkers._;
 import java.util.HashMap;
 import java.util.ArrayList;
 import scala.tools.scalac.util.NewArray;
+import scalac.typechecker.{AnalyzerPhase => scalac_AnalyzerPhase}
+import scalac.{Global => scalac_Global}
 
-class AnalyzerPhase(global: Global, descriptor: PhaseDescriptor) extends scalac.typechecker.AnalyzerPhase(global, descriptor) {
+package scala.tools.scalac.typechecker {
+
+class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends scalac_AnalyzerPhase(global, descriptor) {
 
   val startContext = new Context(
     Tree.Empty,
@@ -58,11 +60,11 @@ class AnalyzerPhase(global: Global, descriptor: PhaseDescriptor) extends scalac.
   override def apply(units: Array[Unit]): unit =
     new Analyzer(global, this).apply(units);
 
-  override def lateEnter(global: Global, unit: Unit, symbol: Symbol): unit = {
+  override def lateEnter(global: scalac_Global, unit: Unit, symbol: Symbol): unit = {
     new Analyzer(global, this).lateEnter(unit, symbol);
   }
 
-  override def postCheckers(global: Global): Array[Checker] =
+  override def postCheckers(global: scalac_Global): Array[Checker] =
     NewArray.Checker(
       new CheckSymbols(global),
       new CheckTypes(global),
@@ -70,4 +72,4 @@ class AnalyzerPhase(global: Global, descriptor: PhaseDescriptor) extends scalac.
       new CheckNames(global)
     );
 }
-
+}

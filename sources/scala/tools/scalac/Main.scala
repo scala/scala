@@ -6,10 +6,10 @@
 ** $Id$
 \*                                                                      */
 
-package scala.tools.scalac;
-
 import scalac.util.Reporter;
 import scalac.CompilerCommand;
+
+package scala.tools.scalac {
 
 /** The main class for SoCoS, a compiler for the programming
  *  language Scala.
@@ -36,4 +36,5 @@ object Main {
     }
     System.exit(if (reporter.errors() > 0) 1 else 0);
   }
+}
 }

@@ -6,12 +6,12 @@
 ** $Id$
 \*                                                                      */
 
-package scala.tools.scalac.typechecker;
-
 import scalac._;
 import scalac.util._;
 import scalac.symtab._;
 import scalac.ast._;
+
+package scala.tools.scalac.typechecker {
 
 /////////////////////////////////////////////////////////////////////////////
 // Import Lists
@@ -62,4 +62,5 @@ case class ImportList(tree: Tree, enclScope: Scope, prev: ImportList) {
 	Symbol.NONE
     }
   }
+}
 }

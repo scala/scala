@@ -6,17 +6,18 @@
 ** $Id: Global.scala
 \*                                                                      */
 
-package scala.tools.scalac;
+import scalac.{CompilerCommand, Global => scalac_Global};
+import scalac.ast.printer.TreePrinter;
+
+package scala.tools.scalac {
 
 import ast.printer._;
-import scalac.CompilerCommand;
 import java.io.OutputStream;
-import scalac.ast.printer.TreePrinter;
 
 /** The global environment of a compiler run
  *
  */
-class Global(args: CompilerCommand, interpret: boolean) extends scalac.Global(args, interpret) {
+class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(args, interpret) {
 
   def this(args: CompilerCommand) = this(args, false);
 
@@ -25,4 +26,5 @@ class Global(args: CompilerCommand, interpret: boolean) extends scalac.Global(ar
   protected override def newHTMLTreePrinter(printStream: OutputStream): TreePrinter =
     new HTMLTreePrinter(printStream);
 
+}
 }

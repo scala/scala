@@ -7,16 +7,16 @@
 
 // $Id$
 
-package scala.tools.scalac.ast.printer;
-
 import scalac.ast.printer._;
 import scalac.ast._;
 import scalac.symtab._;
 import scalac.util.Debug;
-import scalac.Global;
+import scalac.{Global => scalac_Global};
 import scalac.Unit;
 import scalac.util.Name;
 import scalac.util.TypeNames;
+
+package scala.tools.scalac.ast.printer {
 
 import java.io._;
 
@@ -116,8 +116,8 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     case Keyword(name) => printString(name)
     case Identifier(sym, name, _) =>
       printString(name);
-      if (sym != null && Global.instance.uniqid)
-	printString("#" + Global.instance.uniqueID.id(sym))
+      if (sym != null && scalac_Global.instance.uniqid)
+	printString("#" + scalac_Global.instance.uniqueID.id(sym))
     case Sequence(elements) => print(elements)
   }
 
@@ -182,19 +182,19 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   protected final val TXT_AT            = Simple("@");
 
   protected final val TXT_WITH_SP =
-    Sequence(List(Space, KW_WITH, Space));
+    Sequence(Predef.List(Space, KW_WITH, Space));
   protected final val TXT_BLOCK_BEGIN =
-    Sequence(List(TXT_LEFT_BRACE, Newline));
+    Sequence(Predef.List(TXT_LEFT_BRACE, Newline));
   protected final val TXT_BLOCK_END =
-    Sequence(List(Newline, TXT_RIGHT_BRACE));
+    Sequence(Predef.List(Newline, TXT_RIGHT_BRACE));
   protected final val TXT_BLOCK_SEP =
-    Sequence(List(TXT_SEMICOLON, Newline));
+    Sequence(Predef.List(TXT_SEMICOLON, Newline));
   protected final val TXT_COMMA_SP =
-    Sequence(List(TXT_COMMA, Space));
+    Sequence(Predef.List(TXT_COMMA, Space));
   protected final val TXT_ELSE_NL =
-    Sequence(List(KW_ELSE, Newline));
+    Sequence(Predef.List(KW_ELSE, Newline));
   protected final val TXT_BAR_SP =
-    Sequence(List(Space, TXT_BAR, Space));
+    Sequence(Predef.List(Space, TXT_BAR, Space));
 
   def print(unit: Unit): unit = {
     printUnitHeader(unit);
@@ -556,7 +556,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   // Printing of trees
 
   protected def printType(tree: Tree): unit =
-    if (Global.instance.printtypes) {
+    if (scalac_Global.instance.printtypes) {
       print(TXT_LEFT_BRACE);
       print(if (tree.\"type"/*"*/ != null) Simple(tree.\"type"/*"*/.toString())
 	    else TXT_NULL);
@@ -619,7 +619,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 
     val types: java.util.List  = new java.util.ArrayList();
     if (symbol != null) {
-      val global: Global  = Global.instance;
+      val global: scalac_Global  = scalac_Global.instance;
       if (global.currentPhase.id > global.PHASE.EXPLICITOUTER.id()) {
         val i: Scope$SymbolIterator = symbol.members().iterator(true);
         while (i.hasNext()) {
@@ -703,4 +703,5 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     if (!"scala.Any".equals(hibound.toString()))
       printOpt(TXT_SUBTYPE, hibound, true);
   }
+}
 }

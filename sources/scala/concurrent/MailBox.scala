@@ -108,7 +108,7 @@ trait ListQueueCreator {
   def queueCreate[a]: QueueModule[a] = new QueueModule[a] {
     type t = List[a];
     def make: t = Nil;
-    def append(l: t, x: a): t = l ::: List(x);
+    def append(l: t, x: a): t = l ::: x :: Nil;
     def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] =
       l match {
 	case Nil => None

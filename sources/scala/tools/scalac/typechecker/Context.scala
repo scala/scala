@@ -5,11 +5,10 @@
 **
 ** $Id$
 \*                                                                      */
-package scala.tools.scalac.typechecker;
-
 import scalac.symtab._;
-import scalac.ast.Tree;
 import scalac.ast._;
+
+package scala.tools.scalac.typechecker {
 
 object Context {
   val NONE = new Context();
@@ -61,4 +60,4 @@ class Context {
       outer.isTopLevel()
   }
 }
-
+}
