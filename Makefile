@@ -158,6 +158,7 @@ NICE			?= nice
 ZIP			?= zip
 UNIX2DOS		?= unix2dos
 XARGS			?= xargs
+JAVA			?= java
 
 PICO			?= pico
 PICO_FLAGS		+= -make -source 1.4
@@ -188,6 +189,7 @@ force		:
 	@$(make) all
 
 clean		:
+	@if [ -f .latest-meta ];then $(call RUN,$(RM) `$(CAT) .latest-meta`);fi
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
@@ -233,6 +235,8 @@ library		: .latest-library
 
 .latest-meta		: $(META_JC_FILES)
 	@$(MAKE) jc target=META META_JC_FILES='$?'
+	$(RM) .latest-compiler
+	$(JAVA) -cp $(JC_OUTPUTDIR) meta.GenerateAll $(PROJECT_SOURCEDIR) $@
 	touch $@
 
 .latest-runtime		: $(RUNTIME_JC_FILES)
