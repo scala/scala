@@ -17,6 +17,7 @@ import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Debug;
+import scalac.util.SourceRepresentation;
 import scalac.ast.Tree;
 import scalac.ast.TreeList;
 import scalac.atree.AConstant;
@@ -123,6 +124,7 @@ public final class GenMSIL {
 	    main.DefineParameter(0, 0, "args");
 	    ((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
 	    code = main.GetILGenerator();
+	    code.setPosition(mainLineNum, mainSourceFilename);
 	    code.Emit(OpCodes.Ldsfld, mainObjectField);
 	    code.Emit(OpCodes.Ldarg_0);
 	    code.Emit(OpCodes.Callvirt, mainMethod);
@@ -140,11 +142,13 @@ public final class GenMSIL {
 
     private FieldInfo mainObjectField = null;
     private MethodInfo mainMethod = null;
+    private int mainLineNum;
+    private String mainSourceFilename;
 
     /*
      * Check if the given method is a main function
      */
-    private void checkMain(MethodBase method) {
+    private void checkMain(MethodBase method, int line) {
 	if ( !currentClass.isModuleClass() )
 	    return;
 	// do not consider nested objects' main methods
@@ -158,6 +162,13 @@ public final class GenMSIL {
 	    return;
 	mainObjectField = tc.getModuleField(currentClass);
 	mainMethod = (MethodInfo) method;
+	mainLineNum = line;
+	mainSourceFilename = getSourceFilename();
+    }
+
+    private String getSourceFilename() {
+	assert currUnit != null;
+	return SourceRepresentation.escape(currUnit.source.getFile().getPath());
     }
 
     // keeps track of the current compilation unit for better error reporting
@@ -232,7 +243,6 @@ public final class GenMSIL {
      * Emit the symbol table for the class given class as an MSIL attribute.
      */
     private void emitSymtab(Symbol clazz) {
-	TypeBuilder type = (TypeBuilder) tc.getType(clazz);
 	Pickle pickle = (Pickle)global.symdata.get(clazz);
         if (pickle != null) {
 	    byte[] symtab = new byte[pickle.size() + 8];
@@ -242,6 +252,11 @@ public final class GenMSIL {
 		size >>= 8;
 	    }
 	    System.arraycopy(pickle.bytes, 0, symtab, 6, pickle.size());
+	    TypeBuilder type = (TypeBuilder) tc.getType(clazz);
+	    if (clazz.isModuleClass()) {
+		type = tc.getStaticType(clazz);
+		type.setPosition(Position.line(clazz.pos), getSourceFilename());
+	    }
 	    type.SetCustomAttribute(tc.SCALA_SYMTAB_ATTR_CONSTR, symtab);
 	}
     }
@@ -255,6 +270,8 @@ public final class GenMSIL {
 	if (clazz.isModuleClass()) {
 	    tc.getModuleField(clazz);
 	}
+	final TypeBuilder type = (TypeBuilder)tc.getType(clazz);
+	type.setPosition(Position.line(clazz.pos), getSourceFilename());
 	emitSymtab(clazz);
 	for (int i = 0; i < body.length; i++) {
 	    Symbol sym = body[i].symbol();
@@ -276,7 +293,7 @@ public final class GenMSIL {
 // 		if (!currentMethod.IsAbstract()) {
 		if (!sym.isDeferred()) {
 		    currentMethod = tc.getMethod(sym);
-		    checkMain(currentMethod);
+		    checkMain(currentMethod, Position.line(body[i].pos));
 		    genDef(sym, vparams[0], rhs, msilType(tpe.type));
 		}
 		break;
@@ -320,6 +337,7 @@ public final class GenMSIL {
 	if (method.IsConstructor()) {
 	    ConstructorInfo ctor = (ConstructorInfo) method;
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
+	    code.setPosition(Position.line(rhs.pos));
 	    if (sym.owner().isModuleClass()
 		&& sym.owner().owner().isPackageClass()) {
 		Tree[] cstats = null;
@@ -351,7 +369,6 @@ public final class GenMSIL {
 		// emit the call to the superconstructor
 		drop(gen(cstats[0], MSILType.VOID));
 		code.Emit(OpCodes.Ret); // conclude the instance constructor
-
 		ConstructorBuilder cctor = ((TypeBuilder)(method.DeclaringType)).
 		    DefineConstructor((short)(MethodAttributes.Static
 					      | MethodAttributes.Public),
@@ -359,6 +376,7 @@ public final class GenMSIL {
 				      Type.EmptyTypes);
 		currentMethod = cctor;
 		code = cctor.GetILGenerator();
+		code.setPosition(Position.line(sym.owner().pos));
 		// initialize the static module reference
 		code.Emit(OpCodes.Newobj, ctor);
 		code.Emit(OpCodes.Stsfld, tc.getModuleField(currentClass));
@@ -373,6 +391,7 @@ public final class GenMSIL {
 	} else if (!method.IsAbstract()) {
 	    lastExpr = true;
 	    code = ((MethodBuilder)method).GetILGenerator();
+	    code.setPosition(Position.line(rhs.pos));
 	    Item item = gen(rhs, toType);
 	    if (returnsVoid(method))
 		drop(item);
@@ -383,6 +402,7 @@ public final class GenMSIL {
 		MethodBuilder staticMethod = tc.getStaticObjectMethod(sym);
 		if (staticMethod != null) {
 		    code = staticMethod.GetILGenerator();
+		    code.setPosition(Position.line(sym.pos));
 		    code.Emit(OpCodes.Ldsfld, tc.getModuleField(currentClass));
 		    for (int i = 0; i < parameters.length; i++)
 			emitLdarg(i);
@@ -460,6 +480,9 @@ public final class GenMSIL {
      */
     private Item gen(Tree tree, MSILType toType) {
 	willReturn = true;
+ 	if (code != null && tree.pos != Position.NOPOS
+	    && Position.line(tree.pos) != Position.line(pos))
+ 	    code.setPosition(Position.line(tree.pos));
 	int tmpPos = pos;
 	pos = tree.pos;
 	Item item = null;
