@@ -67,8 +67,8 @@ public abstract class Command {
         }
     }
 
-    protected boolean execute(String cmdline, OutputStream out, OutputStream err) {
-        boolean ok = true;
+    protected int execute(String cmdline, OutputStream out, OutputStream err) {
+        int exitValue = -1;
         try {
             Process p = Runtime.getRuntime().exec(cmdline);
             StreamGobbler outputGobbler = new StreamGobbler(p.getInputStream(), out);
@@ -80,8 +80,7 @@ public abstract class Command {
             // read any errors from the attempted command
             errorGobbler.start();
 
-            int exitValue = p.waitFor();
-            ok = exitValue >= 0;
+            exitValue = p.waitFor();
 
             if (out != null)
                 out.flush();
@@ -90,14 +89,14 @@ public abstract class Command {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        return ok;
+        return exitValue;
     }
 
-    protected boolean execute(String cmdline, OutputStream out) {
-        return execute(cmdline, out, null);
+    protected int execute(String cmdline, OutputStream out) {
+        return execute(cmdline, out, out);
     }
 
-    protected boolean execute(String cmdline) {
+    protected int execute(String cmdline) {
         return execute(cmdline, null, null);
     }
 
