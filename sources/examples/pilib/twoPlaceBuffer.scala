@@ -1,7 +1,7 @@
 import scala.concurrent.pilib._;
 
 /** Two-place buffer specification and implementation. */
-object twoPlaceBuffer with Executable {
+object twoPlaceBuffer with Application {
 
   /**
   * Specification.

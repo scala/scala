@@ -10,6 +10,6 @@ class B extends A {
   }
   foo(new C);
 }
-object Main with Executable {
+object Main with Application {
   val b = new B;
 }

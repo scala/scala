@@ -352,7 +352,7 @@ class Bug266BB extends Bug266BA {
   val in = 3;
 }
 
-object Bug266BTest with Executable {
+object Bug266BTest with Application {
   val a: Bug266BA1 = new Bug266BA1 with Bug266BB;
   a.mkP.f(a.in);
 }

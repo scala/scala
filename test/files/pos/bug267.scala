@@ -17,7 +17,7 @@ trait Base {
   }
 }
 
-object testBase extends Base with Executable {
+object testBase extends Base with Application {
   type exp = Exp;
   val term = new Num(2);
   System.out.println(term.eval);

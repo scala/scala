@@ -10,6 +10,6 @@ class D extends J with I {
   abstract override def foo(): Unit = super.foo();
 }
 
-object Test with Executable {
+object Test with Application {
   (new D).foo();
 }

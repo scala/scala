@@ -5,7 +5,7 @@ object A {
   val s = "z is " + z;
 }
 
-object Test with Executable {
+object Test with Application {
 
     System.out.println(A.x);
     System.out.println(A.y);

@@ -35,7 +35,7 @@ class ComputeServer(n: Int) {
   spawn(replicate(0, n) { processor })
 }
 
-object Test with Executable {
+object Test with Application {
   val server = new ComputeServer(1);
   val f = server.future(42);
   Console.println(f())

@@ -3,7 +3,7 @@ import scala.collection.immutable.TreeMap;
 import scala.collection.immutable.ListMap;
 import scala.collection.immutable.Order;
 
-object Test with Executable {
+object Test with Application {
     val intOrder =
 	Order.make((x:int,y:int) => x < y);
 

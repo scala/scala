@@ -11,7 +11,7 @@ class C extends B[Int] {
   override def foo(x: Int): Int = x;
 }
 class D extends C with I[Int];
-object T with Executable {
+object T with Application {
   System.out.println((new D).foo(3));
 }
 

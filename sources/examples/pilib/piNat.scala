@@ -2,7 +2,7 @@ import scala.concurrent.pilib._;
 //import pilib._;
 
 /** Church encoding of naturals in the Pi-calculus */
-object piNat with Executable {
+object piNat with Application {
 
   /** Locations of Pi-calculus natural */
   class NatChan extends Chan[Triple[Chan[unit], Chan[NatChan], Chan[NatChan]]];

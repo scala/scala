@@ -1,4 +1,4 @@
-object This with Executable {
+object This with Application {
      trait A {
          def foo(): unit;
      }
