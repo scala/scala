@@ -247,11 +247,8 @@ public class ExpandMixins extends Transformer {
                 if (memSymT != memSymM) {
                     if ((memSym.flags & Modifiers.DEFERRED) != 0)
                         leftOutMembers.add(member);
-                    else {
-                        Symbol newMemSym = renameSymbol(symbolMap, memSym, owner);
-                        newMembers.enterOrOverload(newMemSym);
-                        mixedInSymbols.put(memSym, newMemSym);
-                    }
+                    else
+                        renameSymbol(symbolMap, memSym, owner);
                 }
             }
 
@@ -269,6 +266,15 @@ public class ExpandMixins extends Transformer {
                 treeCopier.popSymbolSubst();
 
                 newBody.add(newMember);
+
+                if (newMember.definesSymbol()) {
+		    Symbol sym = newMember.symbol();
+
+                    sym.setOwner(owner);
+                    newMembers.enterOrOverload(sym);
+
+                    mixedInSymbols.put(member.symbol(), newMember.symbol());
+		}
             }
         }
 
