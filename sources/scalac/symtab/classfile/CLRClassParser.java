@@ -69,12 +69,12 @@ public class CLRClassParser extends ClassParser {
 	Scope statics = new Scope();
 	scalac.symtab.Type classType =
 	    scalac.symtab.Type.compoundType(baseTypes, members, clazz);
-	clazz.setFirstInfo(classType);
+	clazz.setInfo(classType);
 	Symbol staticsClass = clazz.module().moduleClass();
 	if (staticsClass.isModuleClass()) {
 	    scalac.symtab.Type staticsInfo = scalac.symtab.Type.compoundType
 		(scalac.symtab.Type.EMPTY_ARRAY, statics, staticsClass);
-	    staticsClass.setFirstInfo(staticsInfo);
+	    staticsClass.setInfo(staticsInfo);
 	    clazz.module().setInfo(scalac.symtab.Type.typeRef
 				   (staticsClass.owner().thisType(),
 				    staticsClass, scalac.symtab.Type.EMPTY_ARRAY));
@@ -133,7 +133,7 @@ public class CLRClassParser extends ClassParser {
 		fieldType = make.constantType(fieldType, fields[i].getValue());
 	    Symbol owner = fields[i].IsStatic() ? staticsClass : clazz;
 	    Symbol field = new TermSymbol(Position.NOPOS, name, owner, mods);
-	    field.setFirstInfo(fieldType);
+	    field.setInfo(fieldType);
 	    (fields[i].IsStatic() ? statics : members).enterOrOverload(field);
 	    importer.map(field, fields[i]);
 	}
@@ -156,7 +156,7 @@ public class CLRClassParser extends ClassParser {
 	    Symbol owner = getter.IsStatic() ? staticsClass : clazz;
 	    Symbol method = new TermSymbol(Position.NOPOS, n, owner, mods);
 	    setParamOwners(mtype, method);
-	    method.setFirstInfo(mtype);
+	    method.setInfo(mtype);
 	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
 	    importer.map(method, getter);
 
@@ -171,7 +171,7 @@ public class CLRClassParser extends ClassParser {
 	    mods = translateAttributes(setter);
 	    method = new TermSymbol(Position.NOPOS, n, owner, mods);
 	    setParamOwners(mtype, method);
-	    method.setFirstInfo(mtype);
+	    method.setInfo(mtype);
 	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
 	    importer.map(method, setter);
 	}
@@ -200,7 +200,7 @@ public class CLRClassParser extends ClassParser {
 	    Symbol owner = methods[i].IsStatic() ? staticsClass : clazz;
 	    Symbol method = new TermSymbol(Position.NOPOS, n, owner, mods);
 	    setParamOwners(mtype, method);
-	    method.setFirstInfo(mtype);
+	    method.setInfo(mtype);
 	    (methods[i].IsStatic() ? statics : members).enterOrOverload(method);
 	    importer.map(method, methods[i]);
 	}
@@ -219,7 +219,7 @@ public class CLRClassParser extends ClassParser {
 	    int mods = translateAttributes(constrs[i]);
 	    TermSymbol.newConstructor(clazz, mods).copyTo(constr);
 	    setParamOwners(mtype, constr);
-	    constr.setFirstInfo(mtype);
+	    constr.setInfo(mtype);
 //  	    System.out.println(clazz.allConstructors() + ": "
 //  			       + clazz.allConstructors().info());
 	    importer.map(constr, constrs[i]);
@@ -227,7 +227,7 @@ public class CLRClassParser extends ClassParser {
 
 	Symbol constr = clazz.primaryConstructor();
 	if (!constr.isInitialized()) {
-	    constr.setFirstInfo(scalac.symtab.Type.MethodType
+	    constr.setInfo(scalac.symtab.Type.MethodType
 				(Symbol.EMPTY_ARRAY, ctype));
 	    if ((clazz.flags & Modifiers.INTERFACE) == 0)
 		constr.flags |= Modifiers.PRIVATE;

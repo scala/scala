@@ -95,12 +95,12 @@ public class ClassfileParser implements ClassfileConstants {
             this.statics = new Scope();
             // set type of class
             Type classType = Type.compoundType(basetpes, locals, c);
-            c.setFirstInfo(classType);
+            c.setInfo(classType);
             // set type of statics
             Symbol staticsClass = c.module().moduleClass();
             if (staticsClass.isModuleClass()) {
                 Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
-                staticsClass.setFirstInfo(staticsInfo);
+                staticsClass.setInfo(staticsInfo);
                 c.module().setInfo(Type.typeRef(staticsClass.owner().thisType(),
                                             staticsClass, Type.EMPTY_ARRAY));
             }
@@ -116,7 +116,7 @@ public class ClassfileParser implements ClassfileConstants {
 
             Symbol constr = c.primaryConstructor();
             if (!constr.isInitialized()) {
-                constr.setFirstInfo(
+                constr.setInfo(
                     Type.MethodType(Symbol.EMPTY_ARRAY, ctype));
                 if ((c.flags & Modifiers.INTERFACE) == 0)
                     constr.flags |= Modifiers.PRIVATE;
@@ -190,7 +190,7 @@ public class ClassfileParser implements ClassfileConstants {
         if ((flags & 0x0008) != 0)
             owner = c.module().moduleClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
-        s.setFirstInfo(type);
+        s.setInfo(type);
         attrib.readAttributes(s, type, FIELD_ATTR);
         ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
     }
@@ -224,7 +224,7 @@ public class ClassfileParser implements ClassfileConstants {
                 constr = c.addConstructor();
             s.copyTo(constr);
             setParamOwners(type, constr);
-            constr.setFirstInfo(type);
+            constr.setInfo(type);
             attrib.readAttributes(constr, type, METH_ATTR);
             //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
             //System.out.println("-- enter " + s);
@@ -234,7 +234,7 @@ public class ClassfileParser implements ClassfileConstants {
                 ((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
                 sflags);
             setParamOwners(type, s);
-            s.setFirstInfo(type);
+            s.setInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
             if ((s.flags & Modifiers.BRIDGE) == 0)
                 ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);

@@ -113,10 +113,6 @@ public abstract class Global {
      */
     public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();
 
-    /** the first phase
-     */
-    private final Phase firstPhase;
-
     /** the current phase
      */
     public Phase currentPhase;
@@ -234,20 +230,14 @@ public abstract class Global {
 	}
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
-        this.firstPhase = descriptors[0].create(this);
-        for (int i = 1; i <= PHASE.ANALYZER.id(); i++)
+        for (int i = 0; i <= PHASE.ANALYZER.id(); i++)
             if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
         this.treeGen = ((AnalyzerPhase)PHASE.ANALYZER.phase()).gen;
         this.primitives = new Primitives(this);
         assert !descriptors[0].hasSkipFlag();
         for (int i = PHASE.ANALYZER.id() + 1; i < descriptors.length; i++)
             if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
-        this.currentPhase = firstPhase;
-    }
-
-    /** Returns the first compilation phase. */
-    public Phase getFirstPhase() {
-        return firstPhase;
+        this.currentPhase = PHASE.INITIAL.phase();
     }
 
     /**
@@ -304,7 +294,7 @@ public abstract class Global {
     private void compile() {
         treePrinter.begin();
 
-        currentPhase = firstPhase;
+        currentPhase = PHASE.INITIAL.phase();
         // apply successive phases and pray that it works
         while (currentPhase.next != null && reporter.errors() == 0) {
             currentPhase = currentPhase.next;

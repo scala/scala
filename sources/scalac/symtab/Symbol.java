@@ -174,15 +174,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /**
-     * Set initial information valid from start of first phase. This
-     * information is visible in the first phase and will be
-     * transformed by all phases excepted the first one.
-     */
-    public final Symbol setFirstInfo(Type info) {
-        return setInfoAt(info, Global.instance.getFirstPhase());
-    }
-
-    /**
      * Set initial information valid from start of given phase. This
      * information is visible in the given phase and will be
      * transformed by the given phase.
@@ -1655,7 +1646,7 @@ public class AbsTypeSymbol extends TypeSymbol {
     }
     public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
         super(TYPE, pos, name, owner, flags, attrs);
-        allConstructors().setFirstInfo(Type.MethodType(EMPTY_ARRAY, Type.typeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
+        allConstructors().setInfo(Type.MethodType(EMPTY_ARRAY, Type.typeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
     }
 
     public static AbsTypeSymbol define(

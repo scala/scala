@@ -224,14 +224,14 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    case TYPEsym:
 			entries[n] = sym = new AbsTypeSymbol(
 			    Position.NOPOS, name, owner, flags);
-			sym.setFirstInfo(getType(inforef));
+			sym.setInfo(getType(inforef));
 			sym.setLoBound(readTypeRef());
 			break;
 
 		    case ALIASsym:
 			entries[n] = sym = new AliasTypeSymbol(
 			    Position.NOPOS, name, owner, flags);
-			sym.setFirstInfo(getType(inforef));
+			sym.setInfo(getType(inforef));
 			Symbol constr = readSymbolRef();
 			break;
 
@@ -245,7 +245,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			    sym.copyTo(clr);
 			    entries[n] = sym = clr;
 			}
-			sym.setFirstInfo(getType(inforef));
+			sym.setInfo(getType(inforef));
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
 			assert constr == sym.allConstructors();
@@ -277,7 +277,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			    entries[n] = sym = moduleroot;
 			}
 			Type tp = getType(inforef);
-			sym.setFirstInfo(tp.setOwner(sym));
+			sym.setInfo(tp.setOwner(sym));
 			break;
 
 		    default:
@@ -365,7 +365,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    params[i] = new TermSymbol(
 			Position.NOPOS, Name.fromString("$" + i),
 			Symbol.NONE, PARAM | flags[i]);
-		    params[i].setFirstInfo(argtypes[i]);
+		    params[i].setInfo(argtypes[i]);
 		}
 		tpe = Type.MethodType(params, restype);
 		break;

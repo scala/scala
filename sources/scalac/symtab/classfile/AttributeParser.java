@@ -126,7 +126,7 @@ public class AttributeParser implements ClassfileConstants {
                     	continue;
                 	AliasTypeSymbol alias =
 						new AliasTypeSymbol(Position.NOPOS, name.toTypeName(), outer, 0);
-					alias.setFirstInfo(inner.typeConstructor());
+					alias.setInfo(inner.typeConstructor());
 					alias.allConstructors()
 						.setInfo(new Type.MethodType(Symbol.EMPTY_ARRAY, inner.info()));
 					Scope.Entry e = parser.statics.lookupEntry(alias.name); // Why is this ??????
@@ -167,12 +167,12 @@ public class AttributeParser implements ClassfileConstants {
             case CONSTANT_VALUE_ATTR:
             	Object constVal = pool.readPool(in.nextChar());
             	//System.out.println(sym.owner() + "." + sym + ": " + constVal + " of type " + constantType(type, constVal));
-            	sym.setFirstInfo(parser.make.constantType(type, constVal));
+            	sym.setInfo(parser.make.constantType(type, constVal));
                 return;
             case META_ATTR:
                 //System.out.println("parsing meta data for " + sym);
                 String meta = pool.readPool(in.nextChar()).toString().trim();
-                sym.setFirstInfo(
+                sym.setInfo(
                     new MetaParser(meta, tvars, sym, type).parse());
                 return;
        		case JACO_ATTR:
@@ -233,7 +233,7 @@ public class AttributeParser implements ClassfileConstants {
                         Name.fromString(token).toTypeName(),
                         owner,
                         Modifiers.PARAM);
-                        s.setFirstInfo(parser.make.anyType());
+                        s.setInfo(parser.make.anyType());
                         tvars.enter(s);
                 return s;
             } else
@@ -289,7 +289,7 @@ public class AttributeParser implements ClassfileConstants {
                         //System.out.println("new var " + s + ", " + token);//DEBUG
                         if (token.equals("<")) {
                             nextToken();
-                            s.setFirstInfo(parseType());
+                            s.setInfo(parseType());
                         }
                         syms.add(s);
                     } while (token.equals(","));
@@ -302,7 +302,7 @@ public class AttributeParser implements ClassfileConstants {
                     Symbol constr = parser.c.primaryConstructor();
                     switch (constr.rawInfo()) {
                     case MethodType(Symbol[] vparams, _):
-                        constr.setFirstInfo(
+                        constr.setInfo(
                             Type.PolyType(
                                 smbls, Type.MethodType(vparams, clazztype)));
                         break;
@@ -372,12 +372,12 @@ public class AttributeParser implements ClassfileConstants {
                                         Name.fromString(token).toTypeName(),
                                         owner,
                                         Modifiers.PARAM);
-                                                s.setFirstInfo(parser.make.anyType());
+                                                s.setInfo(parser.make.anyType());
                                         locals.enter(s);
                         nextToken();
                         if (token.equals("<")) {
                             nextToken();
-                            s.setFirstInfo(parseType());
+                            s.setInfo(parseType());
                         }
                         syms.add(s);
                     } while (token.equals(","));
@@ -401,7 +401,7 @@ public class AttributeParser implements ClassfileConstants {
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            flags).setFirstInfo(parseType()));
+                            flags).setInfo(parseType()));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);
@@ -454,7 +454,7 @@ public class AttributeParser implements ClassfileConstants {
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            Modifiers.PARAM).setFirstInfo(parseType()));
+                            Modifiers.PARAM).setInfo(parseType()));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);

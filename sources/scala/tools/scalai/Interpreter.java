@@ -148,7 +148,7 @@ public class Interpreter {
 
     private Type getMainMethodType(boolean erased) {
         Phase current = global.currentPhase;
-        if (!erased) global.currentPhase = global.getFirstPhase();
+        if (!erased) global.currentPhase = global.PHASE.ANALYZER.phase();
         Definitions definitions = global.definitions;
         Type argument = definitions.ARRAY_TYPE(definitions.JAVA_STRING_TYPE());
         Type result = definitions.UNIT_TYPE();
