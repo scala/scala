@@ -21,6 +21,7 @@ LATEX_FORMATS		+= dvi
 LATEX_FORMATS		+= ps
 LATEX_FORMATS		+= pdf
 
+LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaRationale.%)
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaReference.%)
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaByExample.%)
 
