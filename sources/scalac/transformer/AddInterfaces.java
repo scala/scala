@@ -44,7 +44,7 @@ class AddInterfaces extends Transformer {
     protected Definitions defs;
 
     public AddInterfaces(Global global, AddInterfacesPhase phase) {
-        super(global, global.make);
+        super(global);
         this.phase = phase;
         this.defs = global.definitions;
     }
