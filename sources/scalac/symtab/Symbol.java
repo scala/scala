@@ -188,8 +188,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /**
      * Set initial information valid from start of given phase. This
      * information is visible in the given phase and will be
-     * transformed by the given phase (except if it is the first
-     * phase).
+     * transformed by the given phase.
      */
     private final Symbol setInfoAt(Type info, Phase phase) {
         assert info != null: Debug.show(this);
@@ -202,7 +201,7 @@ public abstract class Symbol implements Modifiers, Kinds {
             || info instanceof Type.OverloadedType
             || info instanceof Type.PolyType
             : "illegal type for " + this + ": " + info;
-        if (phase.prev != null) phase = phase.prev;
+        // !!! if (phase.prev != null) phase = phase.prev;
         infos = new TypeIntervalList(null, info, phase);
         if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
         else flags |= INITIALIZED;
@@ -215,16 +214,16 @@ public abstract class Symbol implements Modifiers, Kinds {
      * "nextInfo". It will not be transformed by the current phase.
      */
     public final Symbol updateInfo(Type info) {
-        return updateInfoAt(info, Global.instance.currentPhase);
+        return updateInfoAt_(info, Global.instance.currentPhase.next);
     }
 
     /**
-     * Set new information valid from start of phase after given
-     * phase. This information is only visible from the start of the
-     * phase after the given phase. It will not be tranformed by the
-     * given phase.
+     * Set new information valid from start of given phase. This
+     * information is only visible from the start of the given phase
+     * which is also the first phase that will transform this
+     * information.
      */
-    private final Symbol updateInfoAt(Type info, Phase phase) {
+    private final Symbol updateInfoAt_(Type info, Phase phase) {
         assert info != null: Debug.show(this);
         assert phase != null: Debug.show(this);
         assert infos != null: Debug.show(this);
@@ -770,10 +769,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Was symbol's type updated during given phase? */
     public final boolean isUpdatedAt(Phase phase) {
+        Phase next = phase.next;
         TypeIntervalList infos = this.infos;
         while (infos != null) {
-            if (infos.start == phase) return true;
-            if (infos.limit().precedes(phase)) return false;
+            if (infos.start == next) return true;
+            if (infos.limit().precedes(next)) return false;
             infos = infos.prev;
         }
         return false;
@@ -884,26 +884,27 @@ public abstract class Symbol implements Modifiers, Kinds {
         //if (infos == null) return Type.NoType;//DEBUG
         assert infos != null : this;
         assert phase != null : this;
-        if (infos.limit().precedes(phase)) {
+        if (infos.limit().id <= phase.id) {
             switch (infos.info) {
             case LazyType():
                 // don't force lazy types
                 return infos.info;
             }
-            while (infos.limit().next != phase) {
-                Phase next = infos.limit().next;
-                Type info = transformInfo(next, infos.info);
-                assert info != null: Debug.show(this) + " -- " + next;
+            while (infos.limit() != phase) {
+                Phase limit = infos.limit();
+                Type info = transformInfo(limit, infos.info);
+                assert info != null: Debug.show(this) + " -- " + limit;
                 if (info != infos.info) {
-                    infos = new TypeIntervalList(infos, info, next);
+                    infos = new TypeIntervalList(infos, info, limit.next);
                 } else {
-                    infos.setLimit(next);
+                    infos.setLimit(limit.next);
                 }
             }
             return infos.info;
         } else {
             TypeIntervalList infos = this.infos;
-            while (!infos.start.precedes(phase) && infos.prev != null)
+            // !!! && infos.prev != null
+            while (phase.id < infos.start.id && infos.prev != null)
                 infos = infos.prev;
             return infos.info;
         }
@@ -955,8 +956,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         TypeIntervalList infos = this.infos;
         assert infos != null : this;
         while (infos.prev != null) infos = infos.prev;
-        Phase phase = infos.start;
-        return phase.prev != null && phase.next != null ? phase.next : phase;
+        return infos.start;
     }
 
     /** Get type at start of current phase. The type of a symbol is:
@@ -1608,9 +1608,9 @@ public abstract class TypeSymbol extends Symbol {
         if (kind == ALIAS) return info().symbol().closure();
         if (closures == null) computeClosureAt(rawFirstInfoStartPhase());
         Phase phase = Global.instance.currentPhase;
-        if (closures.limit().precedes(phase)) {
-            while (closures.limit().next != phase) {
-                Phase limit = closures.limit().next;
+        if (closures.limit().id <= phase.id) {
+            while (closures.limit() != phase) {
+                Phase limit = closures.limit();
                 Type[] closure = closures.closure;
                 for (int i = 0; i < closure.length; i++) {
                     Symbol symbol = closure[i].symbol();
@@ -1619,12 +1619,13 @@ public abstract class TypeSymbol extends Symbol {
                         break;
                     }
                 }
-                closures.setLimit(limit);
+                closures.setLimit(limit.next);
             }
             return closures.closure;
         } else {
             ClosureIntervalList closures = this.closures;
-            while (!closures.start.precedes(phase) && closures.prev != null)
+            // !!! && closures.prev != null
+            while (phase.id < closures.start.id && closures.prev != null)
                 closures = closures.prev;
             return closures.closure;
         }
@@ -1636,8 +1637,7 @@ public abstract class TypeSymbol extends Symbol {
         Global.instance.currentPhase = phase;
         Map parents = inclClosure(new TreeMap(comparator), info());
         Type[] closure = new Type[parents.size() + 1];
-        closures = new ClosureIntervalList(
-            closures, closure, phase.prev == null ? phase : phase.prev);
+        closures = new ClosureIntervalList(closures, closure, phase);
         // the next put needs a defined closure size because of isLess
         parents.put(this, type());
         parents.values().toArray(closure);
@@ -2081,13 +2081,9 @@ public class CyclicReference extends Type.Error {
 /** A base class for values indexed by phases. */
 abstract class IntervalList {
 
-    // Content of start/limit can't be replaced by (start/limit).next
-    // because during initialization (start/limit).next is not yet
-    // known.
-
-    /** Interval starts at start of phase "start.next" (inclusive) */
+    /** Interval starts at start of phase "start" (inclusive) */
     public final Phase start;
-    /** Interval ends at start of phase "limit.next" (inclusive) */
+    /** Interval ends at start of phase "limit" (inclusive) */
     private Phase limit;
 
     public IntervalList(IntervalList prev, Phase start) {
