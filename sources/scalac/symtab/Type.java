@@ -22,21 +22,76 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public case AnyType;    // not used after analysis
     public case NoType;
 
+    /** C.this.type
+     */
     public case ThisType(Symbol sym);
 
-    public case TypeRef(Type pre, Symbol sym, Type[] args) {
-	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
-    }
-
+    /** pre.sym.type
+     *  sym represents a value
+     */
     public case SingleType(Type pre, Symbol sym) {
 	assert this instanceof ExtSingleType;
     }
 
+    /** pre.sym[args]
+     *  sym represents a type
+     *  for example: scala.List[java.lang.String] is coded as
+     *
+     *  TypeRef(
+     *	    SingleType(ThisType(definitions.ROOT_CLASS), definitions.SCALA),
+     *	    <List>,
+     *	    new Type[]{
+     *		TypeRef(
+     *		    SingleType(
+     *			SingleType(ThisType(definitions.ROOT_CLASS), definitions.JAVA),
+     *			definitions.LANG),
+     *		    definitions.STRING,
+     *		    new Type[]{})}).
+     *
+     */
+    public case TypeRef(Type pre, Symbol sym, Type[] args) {
+	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
+    }
+
+    /** parts_1 with ... with parts_n { members }
+     */
     public case CompoundType(Type[] parts, Scope members) {
 	assert this instanceof ExtCompoundType;
     }
+
+    /** synthetic type of a method  def ...(vparams): result = ...
+     */
     public case MethodType(Symbol[] vparams, Type result);
+
+    /** synthetic type of a method  def ...[tparams]result
+     *  For instance, given  def f[a](x: a): a
+     *  f has type   PolyType(new Symbol[]{<a>},
+     *                 MethodType(new Symbol[]{<x>}, <a>.type()))
+     *
+     *  if tparams is empty, this is the type of a parameterless method
+     *  def ... =
+     *  For instance, given    def f = 1
+     *  f has type   PolyType(new Symbol[]{}, <scala.Int>.type())
+     */
     public case PolyType(Symbol[] tparams, Type result);
+
+    /** synthetic type of an overloaded value whose alternatives are
+     *  alts_1, ..., alts_n, with respective types alttypes_1, ..., alttypes_n
+     *
+     *  For instance, if there are two definitions of `f'
+     *    def f: int
+     *    def f: String
+     *  then there are three symbols:
+     *    ``f1'' corresponding to def f: int
+     *    ``f2'' corresponding to def f: String
+     *    ``f3'' corresponding to both
+     *  f3 has type
+     *    OverloadedType(
+     *      new Symbol[]{<f1>, <f2>},
+     *      new Type[]{PolyType(new Symbol[]{}, <int>),
+     *                 PolyType(new Symbol[]{}, <String>),
+     *
+     */
     public case OverloadedType(Symbol[] alts, Type[] alttypes);
 
     /** Hidden case to implement delayed evaluation of types.
@@ -2526,6 +2581,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public static class VarianceError extends Error {
 	public VarianceError(String msg) {
 	    super(msg);
+	}
+    }
+
+    public static void explainTypes(Type found, Type required) {
+	if (Global.instance.explaintypes) {
+	    boolean s = explainSwitch;
+	    explainSwitch = true;
+	    found.isSubType(required);
+	    explainSwitch = s;
 	}
     }
 }

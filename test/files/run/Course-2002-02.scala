@@ -79,7 +79,7 @@ object M3 {
     if (a > b) 0
     else f(a) + sum(f, a + 1, b);
 
-  def sumInts(a: Int, b: Int): Double = sum((x => x), a, b);
+  def sumInts(a: Int, b: Int): Double = sum((xXXXXX => xXXXXX), a, b);
   def sumCubes(a: Int, b: Int): Double = sum((x => x * x * x), a, b);
   def sumReciprocals(a: Int, b: Int): Double = sum((x => 1.0/x), a, b);
   def sumPi(n: Int): Double = 4 + sum((x => 4.0/(4*x+1) - 4.0/(4*x-1)), 1, n);

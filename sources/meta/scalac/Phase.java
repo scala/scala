@@ -19,6 +19,7 @@ public class Phase {
         PARSER      = new Phase("parser", "PARSER"),
         ANALYZER    = new Phase("analyzer", "ANALYZER"),
         DESUGARIZER = new Phase("desugarizer", "ANALYZER"),
+	REFCHECK    = new Phase("refcheck", "REFCHECK"),
         UNCURRY     = new Phase("uncurry", "UNCURRY"),
         LAMBDALIFT  = new Phase("lambdalift", "LAMBDALIFT"),
         TRANSMATCH  = new Phase("transmatch", "TRANSMATCH"),

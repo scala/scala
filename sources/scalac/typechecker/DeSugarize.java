@@ -163,7 +163,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
 
     /** (x_1: T_1, ..., x_n: T_N) => e  ==>
-     *  new new scala.Object() with scala.Function[T_1, ..., T_N, T]() {
+     *  new scala.Object() with scala.Function[T_1, ..., T_N, T]() {
      *    def apply(x_1: T_1, ..., x_N: T_N): T = e
      *    def toString(): java.lang.String = "<function>"
      *  }
@@ -232,7 +232,6 @@ public class DeSugarize implements Kinds, Modifiers {
      *    Cases' = case P1 if G1 => True, ..., Pn if Gn => True, _ => False
      *    Argtpe = targs[0]
      *    Restpe = targs[1]
-     */
     public Tree partialFunction(Tree tree, Type pattpe, Type restpe) {
 	Tree constr =
 	    make.Apply(
@@ -271,8 +270,9 @@ public class DeSugarize implements Kinds, Modifiers {
 	print(tree, "partialfun", result);
 	return result;
     }
+     */
 
-    private Tree isDefinedAtVisitor(Tree tree) {
+    Tree isDefinedAtVisitor(Tree tree) {
 	switch (tree) {
 	case Visitor(CaseDef[] cases):
 	    CaseDef lastCase = cases[cases.length - 1];
@@ -310,7 +310,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
     /** match => this.match
      *  match[targs] => this.match[targs]
-     *  tree is already attributed and attributes need to be preserved.
+     *  IMPORTANT: tree is already attributed and attributes need to be preserved.
      */
     Tree postMatch(Tree tree, Symbol currentclazz) {
 	switch (tree) {
@@ -507,7 +507,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	    Name valname = Name.fromString(name + "$");
 	    Tree valdef1 = copy.ValDef(
 		tree, (mods & (DEFERRED | MUTABLE | CASEACCESSOR | MODUL)) | PRIVATE,
-		valname, tpe, rhs);
+		valname, tpe, rhs).setType(null);
 	    int mods1 = mods | ACCESSOR;
 	    if ((mods1 & MUTABLE) == 0) mods1 |= STABLE;
 	    Tree getter = make.DefDef(
@@ -535,33 +535,6 @@ public class DeSugarize implements Kinds, Modifiers {
 		if ((mods1 & DEFERRED) != 0) return new Tree[]{getter, setter};
 		else return new Tree[]{valdef1, getter, setter};
 	    }
-	default:
-	    throw new ApplicationError();
-	}
-    }
-
-    /** Tree represents an application of a constructor method of a case class
-     *  (whose name is a term name). Convert this tree to application of
-     *  the case classe's primary constructor `constr'.
-     */
-    public Tree toConstructor(Tree tree, Symbol constr) {
-	switch (tree) {
-	case Apply(Tree fn, Tree[] args):
-	    return toConstructor1(tree, constr);
-	default:
-	    return make.Apply(tree.pos, toConstructor1(tree, constr), Tree.EMPTY_ARRAY);
-	}
-    }
-    private Tree toConstructor1(Tree tree, Symbol constr) {
-	switch (tree) {
-	case Apply(Tree fn, Tree[] args):
-	    return copy.Apply(tree, toConstructor1(fn, constr), args);
-	case TypeApply(Tree fn, Tree[] args):
-	    return copy.TypeApply(tree, toConstructor1(fn, constr), args);
-	case Ident(Name name):
-	    return copy.Ident(tree, constr.name).setSymbol(constr);
-	case Select(Tree qual, Name name):
-	    return copy.Select(tree, qual, constr.name).setSymbol(constr);
 	default:
 	    throw new ApplicationError();
 	}
@@ -601,13 +574,14 @@ public class DeSugarize implements Kinds, Modifiers {
 	    return tree;
 
 	case Select(Tree qual, _):
-	    return copy.Select(tree, liftout(qual, defs));
+	    return copy.Select(tree, liftout(qual, defs)).setType(null);
 
 	case TypeApply(Tree fn, Tree[] args):
-	    return copy.TypeApply(tree, liftoutPrefix(fn, defs), args);
+	    return copy.TypeApply(tree, liftoutPrefix(fn, defs), args).setType(null);
 
 	case Apply(Tree fn, Tree[] args):
-	    return copy.Apply(tree, liftoutPrefix(fn, defs), liftout(args, defs));
+	    return copy.Apply(tree, liftoutPrefix(fn, defs), liftout(args, defs))
+		.setType(null);
 
 	default:
 	    throw new ApplicationError();

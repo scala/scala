@@ -315,30 +315,30 @@ public class Tree {
 
         n_SingletonType.
             setDescription("Singleton type").
-            setRange(Phase.PARSER, Phase.ANALYZER).
+            setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TermTree, "ref");
 
         n_SelectFromType.
             setDescription("Type selection").
-            setRange(Phase.PARSER, Phase.ANALYZER).
+            setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TypeTree, "qualifier").
             addField(t_TypeName, "selector", SymName);
 
         n_FunType.
             setDescription("Function type").
-            setRange(Phase.PARSER, Phase.ANALYZER).
+            setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TypeTrees, "argtpes").
             addField(t_TypeTree, "restpe");
 
         n_CompoundType.
             setDescription("Object type (~ Template)").
-            setRange(Phase.PARSER, Phase.ANALYZER).
+            setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TypeTrees, "parents").
             addField(t_Trees, "refinements");
 
         n_AppliedType.
             setDescription("Applied type").
-            setRange(Phase.PARSER, Phase.ANALYZER).
+            setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TypeTree, "tpe").
             addField(t_TypeTrees, "args");
 

@@ -415,13 +415,13 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Function(Tree.ValDef[] vparams, Tree body):
-            print(TXT_LEFT_BRACE);
+            print(TXT_LEFT_PAREN);
 	    printParams(vparams);
 	    print(Text.Space);
             print(TXT_RIGHT_ARROW);
             print(Text.Space);
 	    print(body);
-            print(TXT_RIGHT_BRACE);
+            print(TXT_RIGHT_PAREN);
             break;
 
         case Assign(Tree lhs, Tree rhs):
@@ -564,7 +564,7 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Template(Tree[] parents, Tree[] body):
-            Debug.abort("unexpected case", tree);
+            Debug.abort("unexpected case: template");
             break;
 
         default:

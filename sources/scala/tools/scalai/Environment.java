@@ -151,7 +151,7 @@ public class Environment {
 
     private void loadOwner(String what, Symbol symbol) {
         assert Debug.log("search ", what, ": ", symbol);
-        assert symbol.owner().isType() : Debug.show(symbol);
+        assert symbol.owner().isType() : Debug.show(symbol) + " " + symbol.owner();
         assert!symbol.owner().isJava() : Debug.show(symbol);
         loadTemplate(symbol.owner());
     }

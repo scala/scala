@@ -241,9 +241,32 @@ public class Infer implements Modifiers, Kinds {
      */
     private boolean isWithinBounds(Symbol[] tparams, Type[] targs) {
 	for (int i = 0; i < targs.length; i++) {
-	    if (!targs[i].isSubType(tparams[i].info().subst(tparams, targs)) ||
-		!tparams[i].loBound().subst(tparams, targs).isSubType(targs[i]))
+	    Type hibound = tparams[i].info().subst(tparams, targs);
+	    if (!targs[i].isSubType(hibound)) {
+		for (int j = 0; j < tparams.length; j++) {
+		    if (hibound.symbol() == tparams[j])
+			return isWithinBounds(
+			    tparams,
+			    Type.subst(
+				targs,
+				new Symbol[]{tparams[j]},
+				new Type[]{targs[i]}));
+		}
 		return false;
+	    }
+	    Type lobound = tparams[i].loBound().subst(tparams, targs);
+	    if (!lobound.isSubType(targs[i])) {
+		for (int j = 0; j < tparams.length; j++) {
+		    if (lobound.symbol() == tparams[j])
+			return isWithinBounds(
+			    tparams,
+			    Type.subst(
+				targs,
+				new Symbol[]{tparams[j]},
+				new Type[]{targs[i]}));
+		}
+		return false;
+	    }
 	}
 	return true;
     }
@@ -444,7 +467,7 @@ public class Infer implements Modifiers, Kinds {
     private Symbol[] normalizeArgs(Type[] targs, Symbol[] tparams) {
 	Type.List uninstantiated = Type.List.EMPTY;
 	for (int i = 0; i < targs.length; i++) {
-	    if (targs[i] == Global.instance.definitions.ALL_TYPE) {
+	    if (targs[i].symbol() == Global.instance.definitions.ALL_CLASS) {
 		targs[i] = tparams[i].type();
 		uninstantiated = Type.List.append(uninstantiated, targs[i]);
 	    }

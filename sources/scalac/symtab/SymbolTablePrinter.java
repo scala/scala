@@ -513,14 +513,15 @@ public class SymbolTablePrinter {
 	case ThisType(Symbol sym):
             if (sym == Symbol.NONE) return print("<local>.this");
             if (sym.isRoot()) return print("<root>.this");
-            if (sym.isAnonymousClass()) return print("this");
+            if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
+		return print("this");
             return printSymbolName(sym).print(".this");
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym.isRoot()) return print("<root>");
 	    if (!global.debug) {
                 if (type.isFunctionType())
                     return printFunctionType(args);
-		if (sym.isAnonymousClass())
+		if (sym.isAnonymousClass() || sym.isCompoundSym())
                     return printTemplateType(pre.memberInfo(sym).parents());
             }
             printPrefix(pre).printSymbolName(sym);

@@ -771,7 +771,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** String representation of location.
      */
     public String locationString() {
-	if (owner.kind == CLASS && !owner.isAnonymousClass() ||
+	if (owner.kind == CLASS &&
+	    !owner.isAnonymousClass() && !owner.isCompoundSym() ||
 	    Global.instance.debug)
 	    return " in " + owner;
 	else

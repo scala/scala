@@ -197,6 +197,7 @@ public class LambdaLift extends OwnerTransformer
 
 	public Tree transform(Tree tree) {
 	    //if (global.debug) global.debugPrinter.print("free ").print(tree).println().end();//DEBUG
+	    assert tree.type != null : tree;
 	    traverseTypeMap.apply(tree.type.widen());
 	    Symbol sym = tree.symbol();
 	    switch(tree) {

@@ -20,7 +20,6 @@ public class Context {
     Context enclClass = this;  // The next outer context whose tree
                                // is a class template
     int variance;              // Variance relative to eclosing class.
-    boolean delayArgs = false; // delay checking of type arguments
 
     public Context() {}
 
@@ -37,7 +36,6 @@ public class Context {
 	    tree instanceof Tree.CompoundType) this.enclClass = this;
 	else this.enclClass = outer.enclClass;
 	this.variance = outer.variance;
-	this.delayArgs = outer.delayArgs;
 	this.outer = outer;
     }
 

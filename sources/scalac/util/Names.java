@@ -82,7 +82,6 @@ public class Names {
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
     public static final Name scala_COLONCOLON = Name.fromString("scala." + COLONCOLON);
-    public static final Name scala_Algebraic = Name.fromString("scala.Algebraic");
     public static final Name scala_All = Name.fromString("scala.All");
     public static final Name scala_AllRef = Name.fromString("scala.AllRef");
     public static final Name scala_Any = Name.fromString("scala.Any");
@@ -113,6 +112,7 @@ public class Names {
     public static final Name equals = Name.fromString("equals");
     public static final Name toString = Name.fromString("toString");
     public static final Name that = Name.fromString("that");
+    public static final Name that1 = Name.fromString("that1");
     public static final Name this_ = Name.fromString("this");
     public static final Name throw_ = Name.fromString("throw");
     public static final Name true_ = Name.fromString("true");

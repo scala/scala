@@ -345,7 +345,7 @@ public class PatternMatcher {
     protected Tree[] patternArgs(Tree tree) {
         switch (tree) {
             case Apply(_, Tree[] args):
-                if (args.length == 1)
+                if (args.length == 1  && (tree.type.symbol().flags & Modifiers.CASE) == 0)
                     switch (args[0]) {
                         case Sequence(Tree[] ts):
                             return ts;
@@ -378,60 +378,62 @@ public class PatternMatcher {
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         switch (tree) {
-            case Apply(Tree fn, Tree[] args):             // pattern with args
-                if (args.length == 1)
-                    switch (args[0]) {
-                        case Sequence(Tree[] ts):
-                            return makeSequencePat(tree.pos, tree.type, ts.length);
-                    }
-                return makeConstrPat(tree.pos, getConstrType(tree.type));
-            case Typed(Ident(Name name), Tree tpe):       // variable pattern
-                PatternNode node =
-                    (header.type.isSubType(getConstrType(tpe.type))) ?
-                        makeDefaultPat(tree.pos, getConstrType(tpe.type))
-                    :   makeConstrPat(tree.pos, getConstrType(tpe.type));
-                if ((env != null) && (name != WILDCARD_N))
-                    switch (node) {
-                        case ConstrPat(Symbol casted):
-                            env.newBoundVar(
-                                tree.pos,
-                                ((Tree.Typed)tree).expr.symbol(),
-                                getConstrType(tpe.type),
-                                make.Ident(tree.pos, casted.name).
-                                    setType(typeOf(casted)).
-                                    setSymbol(casted));
-                            break;
-                        default:
-                            env.newBoundVar(
-                                tree.pos,
-                                ((Tree.Typed)tree).expr.symbol(),
-                                getConstrType(tpe.type),
-                                header.selector);
-                    }
-                return node;
-            case Ident(Name name):        // pattern without args or variable
-                if (tree.symbol().isPrimaryConstructor())
-                    return makeConstrPat(tree.pos, getConstrType(tree.type));
-                else if (name.isVariable()) {
-                    if ((env != null) && (name != WILDCARD_N))
-                        env.newBoundVar(
-                            tree.pos,
-                            tree.symbol(),
-                            getConstrType(tree.type),
-                            header.selector);
-                    return makeDefaultPat(tree.pos, getConstrType(header.type));
-                } else
+	case Apply(Tree fn, Tree[] args):             // pattern with args
+	    if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
+		switch (args[0]) {
+		case Sequence(Tree[] ts):
+		    return makeSequencePat(tree.pos, tree.type, ts.length);
+		}
+	    return makeConstrPat(tree.pos, getConstrType(tree.type));
+	case Typed(Ident(Name name), Tree tpe):       // variable pattern
+	    PatternNode node =
+		(header.type.isSubType(getConstrType(tpe.type))) ?
+		makeDefaultPat(tree.pos, getConstrType(tpe.type))
+		:   makeConstrPat(tree.pos, getConstrType(tpe.type));
+	    if ((env != null) && (name != WILDCARD_N))
+		switch (node) {
+		case ConstrPat(Symbol casted):
+		    env.newBoundVar(
+			tree.pos,
+			((Tree.Typed)tree).expr.symbol(),
+			getConstrType(tpe.type),
+			make.Ident(tree.pos, casted.name).
+			setType(typeOf(casted)).
+			setSymbol(casted));
+		    break;
+		default:
+		    env.newBoundVar(
+			tree.pos,
+			((Tree.Typed)tree).expr.symbol(),
+			getConstrType(tpe.type),
+			header.selector);
+		}
+	    return node;
+	case Ident(Name name):        // pattern without args or variable
+	    if (tree.symbol().isPrimaryConstructor())
+		return makeConstrPat(tree.pos, getConstrType(tree.type));
+	    else if (name.isVariable()) {
+		if ((env != null) && (name != WILDCARD_N))
+		    env.newBoundVar(
+			tree.pos,
+			tree.symbol(),
+			getConstrType(tree.type),
+			header.selector);
+		return makeDefaultPat(tree.pos, getConstrType(header.type));
+	    } else
                     return makeVariablePat(tree.pos, tree);
-            case Select(_, Name name):                                    // variable
-                if (tree.symbol().isPrimaryConstructor())
-                    return makeConstrPat(tree.pos, getConstrType(tree.type));
-                else
-                    return makeVariablePat(tree.pos, tree);
-            case Literal(Object value):
-                return makeConstantPat(tree.pos, getConstrType(tree.type), value);
-            default:
-                new scalac.ast.printer.TextTreePrinter().print(tree).flush();
-                throw new ApplicationError(tree);
+	case Select(_, Name name):                                    // variable
+	    if (tree.symbol().isPrimaryConstructor())
+		return makeConstrPat(tree.pos, getConstrType(tree.type));
+	    else
+		return makeVariablePat(tree.pos, tree);
+	case Literal(Object value):
+	    return makeConstantPat(tree.pos, getConstrType(tree.type), value);
+	case Sequence(Tree[] ts):
+	    return makeSequencePat(tree.pos, tree.type, ts.length);
+	default:
+	    new scalac.ast.printer.TextTreePrinter().print(tree).flush();
+	    throw new ApplicationError(tree);
         }
     }
 

@@ -4,7 +4,7 @@ object partialfun {
     if (f.isDefinedAt(x)) f(x) else "<undefined>";
 
   applyPartial {
-    case Some(x) => x
+    case Some(xxx) => xxx
   } (None);
 
 }

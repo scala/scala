@@ -540,6 +540,8 @@ public class TreeGen implements Kinds, Modifiers {
 	return ClassDef(clazz.pos, clazz, constrs, body);
     }
 
+
+
     /** Generate class definition from class symbol and body.
      *  All parents must by parameterless, or take unit parameters.
      */
@@ -555,44 +557,105 @@ public class TreeGen implements Kinds, Modifiers {
     }
 
     /** Build the expansion of (() => expr)
-     *  This is:
-     *    { class $anon() extends scala.Function0 { def apply() = expr } ; new $anon() }
      */
     public Tree mkUnitFunction(Tree expr, Type tp, Symbol owner) {
-	int pos = expr.pos;
-	Type f0t = definitions.functionType(Type.EMPTY_ARRAY, tp);
+	return mkFunction(expr.pos, Tree.ValDef_EMPTY_ARRAY, expr, tp, owner);
+    }
+
+    /** Build the expansion of ((vparams_1, ..., vparams_n) => body)
+     *  with result type `restype', where `owner' is the previous owner
+     *  of `body'.
+     *  This is:
+     *    { class $anon() extends scala.Object with
+     *                            scala.Function_N[T_1, ..., T_n, restype] {
+     *        def apply(vparams_1, ..., vparams_n) = body1
+     *      }
+     *	    new $anon()
+     *    }
+     *  where
+     *    vparams_i: T_i
+     *    `body1' results from `body' by changing owner of all defined
+     *    symbols in `body' from `owner' to the apply method.
+     */
+    public Tree mkFunction(int pos, ValDef[] vparams, Tree body, Type restype,
+			   Symbol owner) {
+	int n = vparams.length;
+	Symbol[] params = new Symbol[n];
+	Type[] argtypes = new Type[n];
+	for (int i = 0; i < n; i++) {
+	    params[i] = vparams[i].symbol();
+	    argtypes[i] = params[i].type();
+	}
+	Type ft = definitions.functionType(argtypes, restype);
 
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
-	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, f0t},
+	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, ft},
                                         new Scope(), clazz));
 	clazz.constructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
 	Symbol applyMeth = new TermSymbol(pos, Names.apply, clazz, FINAL)
-	    .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, tp));
+	    .setInfo(Type.MethodType(params, restype));
 	clazz.info().members().enter(applyMeth);
 
-	Tree applyDef = DefDef(applyMeth, changeOwner(expr, owner, applyMeth));
+	for (int i = 0; i < params.length; i++) {
+	    params[i].setOwner(applyMeth);
+	}
+	changeOwner(body, owner, applyMeth);
+	Tree applyDef = DefDef(applyMeth, body);
 	Tree classDef = ClassDef(clazz, new Tree[]{applyDef});
 	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY);
 	return Block(new Tree[]{classDef, alloc});
     }
 
+    public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
+				  Type pattype, Type restype, Symbol owner) {
+	Type pft = definitions.partialFunctionType(pattype, restype);
+	ClassSymbol clazz = new ClassSymbol(
+	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
+	clazz.setInfo(Type.compoundType(new Type[]{definitions.OBJECT_TYPE, pft},
+                                        new Scope(), clazz));
+	clazz.constructor().setInfo(
+	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
+
+	Tree classDef = ClassDef(clazz, new Tree[]{
+	    makeVisitorMethod(pos, Names.apply, applyVisitor,
+			      pattype, restype, clazz, owner),
+	    makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
+			      pattype, definitions.BOOLEAN_TYPE, clazz, owner)});
+	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY);
+	return Block(new Tree[]{classDef, alloc});
+    }
+    //where
+	private Tree makeVisitorMethod(int pos, Name name, Tree visitor,
+				       Type pattype, Type restype,
+				       Symbol clazz, Symbol prevOwner) {
+	    Symbol meth = new TermSymbol(pos, name, clazz, FINAL);
+	    Symbol param = new TermSymbol(pos, Name.fromString("x$"), meth, PARAM)
+		.setInfo(pattype);
+	    meth.setInfo(Type.MethodType(new Symbol[]{param}, restype));
+	    clazz.info().members().enter(meth);
+	    changeOwner(visitor, prevOwner, meth);
+	    Tree body = Apply(
+		Select(Ident(param), definitions.MATCH), new Tree[]{visitor});
+	    return DefDef(meth, body);
+	}
+
     /** Change owner of all defined symbols from `prevOwner' to `newOwner'
      */
-    public Tree changeOwner(Tree tree, final Symbol prevOwner, final Symbol newOwner) {
-	Transformer lifter = new Transformer(global) {
-	    public Tree transform(Tree tree) {
+    public void changeOwner(Tree tree, final Symbol prevOwner, final Symbol newOwner) {
+	Traverser lifter = new Traverser() {
+	    public void traverse(Tree tree) {
 		if (TreeInfo.isDefinition(tree)) {
 		    Symbol sym = tree.symbol();
                     if (sym != null && sym.owner() == prevOwner) {
 			sym.setOwner(newOwner);
                     }
 		}
-		return super.transform(tree);
+		super.traverse(tree);
 	    }
 	};
-	return lifter.transform(tree);
+	lifter.traverse(tree);
     }
 }
