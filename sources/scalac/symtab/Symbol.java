@@ -592,11 +592,6 @@ public abstract class Symbol implements Modifiers, Kinds {
         return name;
     }
 
-    /** Get the fully qualified name of this Symbol */
-    public Name fullName() {
-        return simpleName();
-    }
-
 // Acess to related symbols -----------------------------------------------------
 
     /** Get type parameters */
@@ -1102,14 +1097,6 @@ public abstract class Symbol implements Modifiers, Kinds {
         return NameTransformer.decode(simpleName());
     }
 
-    /** String representation of symbol's full name.
-     *  Translates expansions of operators back to operator symbol. E.g.
-     *  $eq => =.
-     */
-    public String fullNameString() {
-        return NameTransformer.decode(fullName());
-    }
-
     /** String representation, including symbol's kind
      *  e.g., "class Foo", "function Bar".
      */
@@ -1385,12 +1372,6 @@ public class TermSymbol extends Symbol {
     public static Symbol newLocalDummy(Symbol clazz) {
         return new TermSymbol(clazz.pos, Names.LOCAL(clazz), clazz, 0)
             .setInfo(Type.NoType);
-    }
-
-    /** Get the fully qualified name of this Symbol */
-    public Name fullName() {
-        if (clazz != null) return clazz.fullName();
-        else return super.fullName();
     }
 
     /** Is this symbol an instance initializer? */
@@ -1787,14 +1768,6 @@ public class ClassSymbol extends TypeSymbol {
     /** Set module; only used internally from TermSymbol
      */
     void setModule(Symbol module) { this.module = module; }
-
-    /** Get the fully qualified name of this Symbol */
-    public Name fullName() {
-        if (owner().kind == CLASS && !owner().isRoot())
-            return Name.fromString(owner().fullName() + "." + name);
-        else
-            return name.toTermName();
-    }
 
     public Type thisType() {
         Global global = Global.instance;
