@@ -191,7 +191,9 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		putTypes(args);
 		break;
 	    case CompoundType(Type[] parents, Scope members):
-                putSymbol(tp.symbol());
+                Symbol clazz = tp.symbol();
+                if (clazz.isCompoundSym()) putSymbol(clazz.owner());
+                putSymbol(clazz);
 		putTypes(parents);
 		break;
 	    case MethodType(Symbol[] vparams, Type result):
@@ -437,7 +439,10 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	case CompoundType(Type[] parents, Scope members):
 	    writeByte(COMPOUNDtpe);
 	    writeByte(0); // space for length
-            writeRef(tp.symbol());
+            Symbol clazz = tp.symbol();
+            writeByte(clazz.isCompoundSym() ? 1 : 0);
+            if (clazz.isCompoundSym()) writeRef(clazz.owner());
+            writeRef(clazz);
 	    writeRefs(parents);
 	    break;
 

@@ -100,6 +100,7 @@ class ScalaAttribute(in: ByteArrayReader) {
             case REF_TYPE =>
                 TypeReference(in.nextNat, in.nextNat, readRefs(end))
             case COMPOUND_TYPE =>
+                if (in.nextByte != 0) in.nextNat;
                 CompoundTypeRef(in.nextNat, readRefs(end))
             case METHOD_TYPE =>
                 MethodTypeRef(in.nextNat, readRefs(end))

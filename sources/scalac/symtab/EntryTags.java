@@ -29,7 +29,8 @@ public interface EntryTags {
  *                  | 13 SINGLEtpe len_Nat type_Ref sym_Ref
  *                  | 14 CONSTANTtpe len_Nat type_Ref constant_Ref
  *                  | 15 TYPEREFtpe len_Nat type_Ref sym_Ref {targ_Ref}
- *                  | 16 COMPOUNDtpe len_Nat classsym_Ref {tpe_Ref}
+ *                  | 16 COMPOUNDtpe len_Nat
+ *                       iscompoundsym_Byte [owner_Ref] classsym_Ref {tpe_Ref}
  *                  | 17 METHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 18 POLYTtpe len_Nat tpe_Ref {sym_Ref}
  *                  | 19 OVERLOADEDtpe len_Nat {sym_Ref} {tpe_Ref}
