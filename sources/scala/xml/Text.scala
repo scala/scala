@@ -13,7 +13,7 @@ case class Text( text:String ) extends Node {
   def children = Nil;
   def attributes = null;
 
-  protected val attribHashCode = 0;
+  protected override val attribHashCode = 0;
 
   override def toXML = Utility.escape( text );
 

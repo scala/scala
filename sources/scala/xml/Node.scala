@@ -13,7 +13,7 @@ abstract class Node {
   /** returns a mapping from all present attributes to values */
   def attributes: Map[String,String];
 
-  protected val attribHashCode: int;
+  protected val attribHashCode = attributes.toList.hashCode();
 
   /** hashcode for this node*/
   override def hashCode() = Utility.hashCode( label, attribHashCode, children );

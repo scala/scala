@@ -10,6 +10,8 @@ import scala.xml.Utility ;
 **/
 object XML {
 
+  def < (def s:Symbol) = s;
+
   // functions for generic xml loading, saving
 
   /** loads XML from a given file*/

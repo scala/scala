@@ -19,7 +19,6 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
                     children: List[Node] ):Element = {
 
           val el = new Element( Symbol( label ), children ) {
-            override val attribHashCode = attrs.toList.hashCode(); /*set eagerly*/
 	    override def attributes = attrs;
           };
 
