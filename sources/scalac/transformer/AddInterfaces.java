@@ -324,7 +324,9 @@ class AddInterfaces extends Transformer {
         Tree[] newClassParents =
             gen.mkParentConstrs(classDef.pos, newParents, parentArgs);
 
-        return gen.ClassDef(classSym, newClassParents, newClassBody.toArray());
+        Symbol local = classDef.impl.symbol();
+        local.setOwner(classSym);
+        return gen.ClassDef(classSym, newClassParents, local, newClassBody.toArray());
     }
 
     protected Tree[][] extractParentArgs(Tree[] parents) {
