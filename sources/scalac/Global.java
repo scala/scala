@@ -103,6 +103,7 @@ public class  Global {
     public final PhaseRepository PHASE;
     public final PhaseDescriptor[] phases;
 
+    public static final int START_PHASE_ID = 1;
     public final int POST_ANALYZER_PHASE_ID = 3;
 
     /** compilation targets
@@ -206,6 +207,7 @@ public class  Global {
             phase.initialize(this, i);
             assert phase.id == i;
         }
+	assert PHASE.PARSER.id == START_PHASE_ID;
 	assert PHASE.ANALYZER.id + 1 == POST_ANALYZER_PHASE_ID;
     }
 
