@@ -1,0 +1,81 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
+package scalac.ast;
+
+import scalac.Global;
+import scalac.Unit;
+{#Imports#}
+
+/**
+ * A default transformer class. This class traverses the abstract
+ * syntax tree but does not do any transformations.
+ */
+public class Transformer {
+
+    //########################################################################
+    // Public Fields
+
+    /** The global environment */
+    public final Global global;
+
+    /** The tree factory */
+    public final TreeFactory make;
+
+    /** The tree copier */
+    public final TreeCopier copy;
+
+    /** A tree generator */
+    public final TreeGen gen;
+
+    //########################################################################
+    // Public Constructors
+
+    public Transformer(Global global) {
+        this(global, global.make);
+    }
+
+    public Transformer(Global global, TreeFactory make) {
+        this(global, make, new LazyTreeCopier(make));
+    }
+
+    public Transformer(Global global, TreeFactory make, TreeCopier  copy) {
+        this.global = global;
+        this.make = make;
+        this.copy = copy;
+        this.gen = global.treeGen;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    public void apply() {
+        apply(global.units);
+    }
+
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++) apply(units[i]);
+    }
+
+    public void apply(Unit unit) {
+        unit.global.log("transforming " + unit);
+        unit.body = transform(unit.body);
+    }
+
+    public Tree transform(Tree tree) {
+        {#TreeSwitch#}
+    }
+
+    public Template transform(Template tree) {
+        return (Template)transform((Tree)tree);
+    }
+
+    {#TransformArrays#}
+
+    //########################################################################
+}

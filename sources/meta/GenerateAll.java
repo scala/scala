@@ -32,6 +32,8 @@ public class GenerateAll extends AbstractMain {
         new meta.scalac.ast.MetaTreeCopier(),
         new meta.scalac.ast.MetaStrictTreeCopier(),
         new meta.scalac.ast.MetaLazyTreeCopier(),
+        new meta.scalac.ast.MetaTraverser(),
+        new meta.scalac.ast.MetaTransformer(),
     };
 
     //########################################################################

@@ -1,0 +1,37 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
+package scalac.ast;
+
+import scalac.Unit;
+{#Imports#}
+
+/** Class to traverse a tree without modifying it. */
+public class Traverser {
+
+    //########################################################################
+    // Public Methods
+
+    public void traverse(Unit unit) {
+        traverse(unit.body);
+    }
+
+    public void traverse(Tree tree) {
+        {#TreeSwitch#}
+    }
+
+    public void traverse(Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) traverse(trees[i]);
+    }
+
+    public void traverse(Tree[][] trees) {
+        for (int i = 0; i < trees.length; i++) traverse(trees[i]);
+    }
+
+    //########################################################################
+}
