@@ -334,7 +334,7 @@ public class ExpandMixins extends Transformer {
                                   super.transform(vparams),
                                   super.transform(tpe),
                                   getMixinExpandedTemplate(impl, tree.symbol()));
-		newClass.symbol().setInfo(newClass.impl.type);
+		newClass.symbol().updateInfo(newClass.impl.type);
 		return newClass;
 	    }
 
