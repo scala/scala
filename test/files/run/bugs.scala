@@ -156,6 +156,16 @@ object Bug176Test {
 }
 
 //############################################################################
+// Bug 199
+
+class Bug199C { object o; }
+object Bug199Test {
+  def main(args: Array[String]) = {
+    (new Bug199C).o; ()
+  }
+}
+
+//############################################################################
 // Bug 213
 
 trait Bug213Foo {
@@ -270,12 +280,13 @@ object Test  {
     test(168, Bug168Test.main(args));
     test(174, Bug174Test.main(args));
     test(176, Bug176Test.main(args));
+    test(199, Bug199Test.main(args));
     test(213, Bug213Test.main(args));
     test(217, Bug217Test.main(args));
     test(222, Bug222Test.main(args));
     test(225, Bug225Test.main(args));
     test(226, Bug226Test.main(args));
-      test(233, Bug233Test.main(args));
+    test(233, Bug233Test.main(args));
 
     if (errors > 0) {
       System.out.println();
