@@ -198,6 +198,11 @@ public class Scope {
 	// assert !sym.isConstructor();
 	return enter(new Entry(sym, this));
     }
+    public final Scope enterNoHide(Symbol sym) {
+        assert lookupEntry(sym.name) == Entry.NONE:
+            sym + " hides " + lookup(sym.name);
+        return enter(sym);
+    }
 
     public Scope enterOrOverload(Symbol sym) {
 	Entry e = lookupEntry(sym.name);
