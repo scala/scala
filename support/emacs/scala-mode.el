@@ -43,7 +43,7 @@
   "Regular expression matching a Scala string literal.")
 
 (defconst scala-char-re
-  "'\\([^'\\\\]\\|\\\\.\\)*\'"
+  "'\\([^\\\\]\\|\\(\\\\[^']\\)\\)'"
   "Regular expression matching a Scala character literal.")
 
 (defconst scala-literal-re
@@ -548,7 +548,8 @@ When called repeatedly, indent each time one stop further on the right."
 
 
 (defvar scala-font-lock-syntactic-keywords
-  '((scala-search-special-identifier-forward (0 "w" nil t))))
+  `((,scala-char-re (0 "\"" t nil))
+    (scala-search-special-identifier-forward (0 "w" nil nil))))
 
 ;; Bug reporting
 
@@ -677,7 +678,6 @@ When started, run `scala-mode-hook'.
 
 ;; strings and character literals
 (modify-syntax-entry ?\" "\"" scala-mode-syntax-table)
-(modify-syntax-entry ?\' "\"" scala-mode-syntax-table)
 (modify-syntax-entry ?\\ "\\" scala-mode-syntax-table)
 
 ;; different kinds of "parenthesis"
