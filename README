@@ -1,0 +1,22 @@
+Distributions
+-------------
+
+- scala-YYYYMMDD-hhmmss.tar.gz            Unix distribution
+
+The standard distributions require java 1.4.x or above. If you don't
+know which version of java you have, run the command "java -version".
+
+Scala tools
+-----------
+
+- socos    Scala compiler
+- surus    Scala interpreter
+- siris    Scala interactive interpreter
+
+Install on Unix
+---------------
+
+Untar the archive. All scala tools are located in the directory "bin".
+
+You may test the distribution by running the script "scala-test"
+located in the subdirectory "share/scala/test/bin".
