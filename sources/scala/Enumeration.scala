@@ -19,7 +19,7 @@ import scala.collection.mutable._;
  * <b>object</b> Main <b>with</b> Application {
  *
  *   <b>object</b> WeekDays <b>extends</b> Enumeration  {
- *     val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
+ *     <b>val</b> Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
  *   }
  *
  *   <b>def</b> isWorkingDay(d: WeekDays.Value) =
@@ -31,6 +31,7 @@ import scala.collection.mutable._;
  *
  * @param initial the initial integer value associated with the first element
  * @param names the sequence of element names of the enumeration
+ *
  * @author  Matthias Zenger
  * @version 1.0, 10/02/04
  */
@@ -63,10 +64,10 @@ abstract class Enumeration(initial: Int, names: String*) {
 
     private def updateCache: List[Value] =
         if (vcache == null) {
-                vcache = values.values.toList.sort((p1, p2) => p1.id < p2.id);
-                vcache
+            vcache = values.values.toList.sort((p1, p2) => p1.id < p2.id);
+            vcache
         } else
-                vcache;
+            vcache;
 
     protected var nextId = initial;
 
