@@ -66,8 +66,8 @@ public class CLRClassParser extends SymbolLoader {
 	clazz.flags = translateAttributes(type);
 	Type[] ifaces = type.getInterfaces();
 	scalac.symtab.Type[] baseTypes = new scalac.symtab.Type[ifaces.length+1];
-	baseTypes[0] = type.BaseType() == null ? make.anyType()
-	    : getCLRType(type.BaseType());
+	baseTypes[0] = type.BaseType() != null ? getCLRType(type.BaseType())
+            :  (type.IsInterface() ? make.objectType() : make.anyType());
 	for (int i = 0; i < ifaces.length; i++)
 	    baseTypes[i + 1] = getCLRType(ifaces[i]);
 	members = new Scope();
