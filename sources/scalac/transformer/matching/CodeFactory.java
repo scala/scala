@@ -20,45 +20,8 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
-    /** I changed the names so that the compiler is still usable. -- Matthias
-     */
-    static final Name SEQ_N          = Name.fromString("scala.Seq");
-    static final Name SEQ_ITER_N     = Name.fromString("scala.Iterator");
-    static final Name NEW_ITERATOR_N = Name.fromString("elements");
-    static final Name HAS_CUR_N      = Name.fromString("hasNext");
-    static final Name CUR_N          = Name.fromString("next");
-    static final Name NEXT_N         = Name.fromString("next");
-
-    /** symbol of `scala.SequenceIterator'
-     */
-    Symbol seqIterSym;
-
-    /** symbol of `scala.Sequence.newIterator'
-     */
-    Symbol newIterSym;
-
-    Symbol curSym;
-    Symbol hasCurSym;
-    Symbol nextSym;
-
     public CodeFactory( Unit unit, Infer infer ) {
 	super( unit, infer );
-
-	// get `Sequence:newIterator'
-	Symbol sequenceSym = defs.getClass( SEQ_N );
-
-	Scope scp = sequenceSym.members();
-
-	this.newIterSym = scp.lookup/*Term */( NEW_ITERATOR_N );
-	// commented out the next line. -- Matthias
-	// assert !( newIterSym == Symbol.NONE ) : " did not find newIterator ";
-
-	this.seqIterSym = defs.getType( SEQ_ITER_N ).symbol();
-
-	scp = seqIterSym.members();
-	curSym = scp.lookup/*Term*/ ( CUR_N );
-	// commented out the next line. -- Matthias
-	//assert !( curSym == Symbol.NONE ) : "did not find cur";
     }
 
     // --------- these are new
@@ -102,6 +65,8 @@ class CodeFactory extends PatternTool {
     /**                       `SequenceIterator[ elemType ]' // TODO: Move to TypeFactory
      */
     Type _seqIterType( Type elemType ) {
+	Symbol seqIterSym = defs.getType( Names.scala_Iterator ).symbol();
+
 	return Type.TypeRef( defs.SCALA_TYPE/*PREFIX*/,
 			     seqIterSym,
 			     new Type[] { elemType });
@@ -118,6 +83,11 @@ class CodeFactory extends PatternTool {
 	//System.out.println( "elemType:"+elemType );
 
 	//Tree t1 = gen.Select(seqObj, newIterSym);
+
+	Scope scp = defs.getClass( Names.scala_Seq ) /* sequenceSym */
+	    .members();
+	Symbol newIterSym = scp.lookup/*Term */( Names.elements );
+
 	Tree t1 = make.Select( Position.NOPOS, seqObj, newIterSym.name )
 	    .setSymbol( newIterSym )
 	    .setType( Type.MethodType(new Symbol[] {},_seqIterType( elemType )));
@@ -148,34 +118,37 @@ class CodeFactory extends PatternTool {
 
     }
 
-    /** `it.cur()'
-     */
-    Tree _cur( Tree iter ) {
-	Type elemType = getElemType( iter.type() );
-	return _applyNone( gen.Select( iter, curSym ).setType( elemType ))
-	    .setType( elemType );
-    }
-
     /** `it.next()'
      */
     public Tree _next( Tree iter ) {
 	Type elemType = getElemType( iter.type() );
 
+	Scope scp = defs.getType( Names.scala_Iterator ).symbol() /* seqIterSym */
+	    .members();
+
+	Symbol nextSym = scp.lookup( Names.next );
+
 	return _applyNone( gen.Select( iter, nextSym ))
 	    .setType( iter.type() );
     }
 
-    /** `it.hasCur()'
+    /** `it.hasNext()'
      */
-    public Tree _hascur( Tree iter ) {
-	return _applyNone( gen.Select( iter, hasCurSym ))
+    public Tree _hasNext( Tree iter ) {
+
+	Scope scp = defs.getType( Names.scala_Iterator ).symbol() /* seqIterSym */
+	    .members();
+
+	Symbol hasNextSym = scp.lookup( Names.hasNext );
+
+	return _applyNone( gen.Select( iter, hasNextSym ))
 	    .setType( defs.BOOLEAN_TYPE );
     }
 
     /** `!it.hasCur()'
      */
-    public Tree _noMoreCur( Tree iter ) {
-	return _applyNone( gen.Select( _hascur( iter ), notSym ))
+    public Tree _not_hasNext( Tree iter ) {
+	return _applyNone( gen.Select( _hasNext( iter ), notSym ))
 	    .setType( defs.BOOLEAN_TYPE );
     }
 

@@ -155,8 +155,7 @@ public class Autom2Scala  {
             return cf.Block( Position.NOPOS, new Tree[] {
 		cf.gen.ValDef( 0,
 			       this.curSym,
-			       cf._cur( _iter() )),
-		cf._next( _iter() ) }, Type.NoType );
+			       cf._next( _iter() )) }, Type.NoType );
       }
 
       Tree currentElem() {
@@ -320,7 +319,7 @@ public class Autom2Scala  {
       Tree wrapStateBody( Tree stateBody,
                           Tree elseBody,
                           Tree runFinished, int i ) {
-            stateBody = cf.If( cf._noMoreCur( _iter() ),
+            stateBody = cf.If( cf._not_hasNext( _iter() ),
                                runFinished,
                                cf.Block( stateBody.pos,
                                          new Tree[] {
