@@ -9,6 +9,7 @@
 package scalac.backend.msil;
 
 import scalac.Global;
+import scalac.Phase;
 import scalac.CompilationUnit;
 import scalac.ApplicationError;
 import scalac.ast.Tree;
@@ -91,10 +92,10 @@ final class TypeCreator {
     public final MethodInfo MONITOR_ENTER;
     public final MethodInfo MONITOR_EXIT;
 
-    private final MethodInfo MONITOR_PULSE;
-    private final MethodInfo MONITOR_PULSE_ALL;
-    private final MethodInfo MONITOR_WAIT;
-    private final MethodInfo MONITOR_WAIT_TIMEOUT;
+//     private final MethodInfo MONITOR_PULSE;
+//     private final MethodInfo MONITOR_PULSE_ALL;
+//     private final MethodInfo MONITOR_WAIT;
+//     private final MethodInfo MONITOR_WAIT_TIMEOUT;
 
     public final Type SCALA_BYTE;
     public final Type SCALA_SHORT;
@@ -119,11 +120,14 @@ final class TypeCreator {
 
     private final CLRPackageParser ti;
 
+    private final Phase backPhase;
+
     //##########################################################################
 
     TypeCreator(Global global, GenMSILPhase phase) {
 	this.global = global;
 	this.defs = global.definitions;
+        this.backPhase = global.PHASE.ADDINTERFACES.phase();
 
 	ti = CLRPackageParser.instance();
 
@@ -157,10 +161,10 @@ final class TypeCreator {
 	CONCAT_OBJECT_OBJECT =
 	    STRING.GetMethod("Concat", new Type[] {OBJECT, OBJECT});
 	OBJECT_EQUALS = OBJECT.GetMethod("Equals", sObject1);
-	MONITOR_PULSE = MONITOR.GetMethod("Pulse", sObject1);
-	MONITOR_PULSE_ALL = MONITOR.GetMethod("PulseAll", sObject1);
-	MONITOR_WAIT = MONITOR.GetMethod("Wait", sObject1);
-	MONITOR_WAIT_TIMEOUT = MONITOR.GetMethod("Wait", new Type[] {OBJECT, INT});
+// 	MONITOR_PULSE = MONITOR.GetMethod("Pulse", sObject1);
+// 	MONITOR_PULSE_ALL = MONITOR.GetMethod("PulseAll", sObject1);
+// 	MONITOR_WAIT = MONITOR.GetMethod("Wait", sObject1);
+// 	MONITOR_WAIT_TIMEOUT = MONITOR.GetMethod("Wait", new Type[] {OBJECT, INT});
 	MONITOR_ENTER = MONITOR.GetMethod("Enter", sObject1);
 	MONITOR_EXIT = MONITOR.GetMethod("Exit", sObject1);
 
@@ -181,12 +185,12 @@ final class TypeCreator {
     private boolean initialized = false;
 
     /*
-     * Called from GenMSIL
+     * Called from GenMSILPhase
      */
     public void init() {
 	if (initialized)
 	    return;
-	final Symbol JOBJECT = defs.getClass("java.lang.Object"); //defs.OBJECT_CLASS;
+	final Symbol JOBJECT = defs.OBJECT_CLASS; //defs.getClass("java.lang.Object");
 	final Symbol JSTRING = defs.STRING_CLASS;
 
 
@@ -534,7 +538,6 @@ final class TypeCreator {
     /** Create the output assembly
      */
     void initAssembly() {
-
 	AssemblyName an = new AssemblyName();
 	an.Name = assemName;
 	msilAssembly = AssemblyBuilder.DefineDynamicAssembly(an);
@@ -763,7 +766,7 @@ final class TypeCreator {
 			staticType = msilModule.DefineType
  			    (staticTypeName,
  			     translateTypeAttributes(clazz.flags, false),
- 			     superType, interfaces);
+ 			     superType, Type.EmptyTypes);
  		    }
 		}
 	    } else {
@@ -795,8 +798,8 @@ final class TypeCreator {
 	    {
 		Symbol member = syms.next();
 		if (member.isMethod()) {
-		    createMethod(member);
-		    if (staticType != null) {
+		    MethodBase m = createMethod(member);
+		    if (staticType != null && !m.IsConstructor()) {
 			MethodBase sm = createMethod(staticType, member, true);
 			syms2staticMethods.put(member, sm);
 		    }
@@ -923,14 +926,9 @@ final class TypeCreator {
 		    assert method != null : "cannot find " + owner
 			+ "::.ctor" + methodSignature(params);
 		} else {
-		    String name = sym.name.toString();
-		    if (sym.name == Names.toString) name = "ToString";
-		    else if (sym.name == Names.hashCode) name = "GetHashCode";
-		    else if (sym.name == Names.equals) name = "Equals";
-		    else if (sym.name == Name.fromString("clone")) name = "MemberwiseClone";
 		    method = owner instanceof TypeBuilder
 			? findMethod(sym.owner(), sym)
-			: owner.GetMethod(name, params);
+			: owner.GetMethod(getMethodName(sym.name, params), params);
 		}
 		break;
 	    default:
@@ -941,6 +939,18 @@ final class TypeCreator {
 	}
 	symbols2methods.put(sym, method);
 	return method;
+    }
+
+    private String getMethodName(Name name, Type[] params) {
+        if (name == Names.finalize && params.length == 0)
+            return "Finalize";
+        if (name == Names.toString && params.length == 0)
+            return "ToString";
+        if (name == Names.hashCode && params.length == 0)
+            return "GetHashCode";
+        if (name == Names.equals && params.length == 1 && params[0] == OBJECT)
+            return "Equals";
+        return name.toString();
     }
 
     private MethodBase findMethod(Symbol owner, Symbol member) {
@@ -977,7 +987,24 @@ final class TypeCreator {
 		attr = (short)((attr & ~MethodAttributes.Virtual
 				& ~MethodAttributes.Final)
 			       | MethodAttributes.Static);
-            return createMethod(type, sym.name, sym.info(), attr);
+	    Phase bkpCurrent = global.currentPhase;
+	    global.currentPhase = backPhase;
+	    Name name = sym.name; String sname = name.toString();
+	    switch (sym.info()) {
+	    case PolyType(Symbol[] tparams, _):
+		if (tparams.length == 0) {
+		    name = Name.fromString("get_" + name);
+		}
+		break;
+	    default:
+		if (sname.endsWith("_$eq")) {
+		    name = Name.fromString("set_" + sname
+					   .substring(0, sname.length() - 4));
+		}
+	    }
+	    global.currentPhase = bkpCurrent;
+
+            return createMethod(type, name, sym.info(), attr);
 	default:
 	    throw Debug.abort("Symbol doesn't have a method type: "
 			      + Debug.show(sym));
@@ -1007,12 +1034,7 @@ final class TypeCreator {
 			(i, 0/*ParameterAttributes.In*/, vparams[i].name.toString());
 		return constructor;
 	    } else {
-		String sname;
-		if (name == Names.toString) sname = "ToString";
-		else if (name == Names.equals) sname = "Equals";
-		else if (name == Names.hashCode) sname = "GetHashCode";
-		else  sname = name.toString();
-
+		final String sname = getMethodName(name, params);
 		MethodBuilder methodBuilder = type.DefineMethod
 		    (sname, attr, getType(result), params);
 

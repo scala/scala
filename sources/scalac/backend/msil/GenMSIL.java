@@ -100,10 +100,10 @@ public final class GenMSIL {
      */
     public void apply(CompilationUnit unit) {
 	currUnit = unit;
-// 	try {
-	    for (int i = 0; i < unit.body.length; i++) {
-		Tree tree = unit.body[i];
-		Symbol sym = tree.symbol();
+        for (int i = 0; i < unit.body.length; i++) {
+            Tree tree = unit.body[i];
+            Symbol sym = tree.symbol();
+            try {
 		switch (tree) {
 		case Empty: break;
 		case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
@@ -116,12 +116,13 @@ public final class GenMSIL {
 		    throw Debug.abort
 			("Illegal top-level definition: " + Debug.show(tree));
 		}
-	    }
-// 	} catch (Throwable e) {
-// 	    e.printStackTrace();
-// 	    finalizeGen();
-// 	    System.exit(1);
-// 	}
+            } catch (Throwable e) {
+                currUnit.error(tree.pos, "Exception caught: " + e.getMessage());
+                e.printStackTrace();
+                tc.saveAssembly();
+                System.exit(1);
+            }
+        }
     }
 
     /**
@@ -246,7 +247,9 @@ public final class GenMSIL {
      */
     private boolean willReturn;
 
-    private boolean enableTailCalls = true;
+    private boolean enableTailCalls = false;
+
+    private Label methodEnd = null;
 
     /*
      * Generate code for constructors and methods.
@@ -263,6 +266,7 @@ public final class GenMSIL {
 	if (method.IsConstructor()) {
 	    ConstructorInfo ctor = (ConstructorInfo) method;
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
+            methodEnd = code.DefineLabel();
 	    if (global.args.debuginfo.value)
 		code.setPosition(Position.line(rhs.pos));
 	    if (sym.owner().isModuleClass()
@@ -295,7 +299,7 @@ public final class GenMSIL {
 
 		// emit the call to the superconstructor
 		drop(gen(cstats[0], MSILType.VOID));
-		code.Emit(OpCodes.Ret); // conclude the instance constructor
+                closeMethod(methodEnd);
 		ConstructorBuilder cctor = ((TypeBuilder)(method.DeclaringType)).
 		    DefineConstructor((short)(MethodAttributes.Static
 					      | MethodAttributes.Public),
@@ -314,11 +318,12 @@ public final class GenMSIL {
 		code.Emit(OpCodes.Ret); // conclude the static constructor
 	    } else {
 		drop(gen(rhs, MSILType.VOID));
-		code.Emit(OpCodes.Ret);
+                closeMethod(methodEnd);
 	    }
 	} else if (!method.IsAbstract()) {
 	    lastExpr = true;
 	    code = ((MethodBuilder)method).GetILGenerator();
+            methodEnd = code.DefineLabel();
 	    if (global.args.debuginfo.value)
 		code.setPosition(Position.line(rhs.pos));
 	    Item item = gen(rhs, toType);
@@ -326,7 +331,7 @@ public final class GenMSIL {
 		drop(item);
 	    else
 		coerce(load(item), toType); // FIXME: coerce???
-	    code.Emit(OpCodes.Ret);
+            closeMethod(methodEnd);
 	    if (currentClass.isModuleClass()) {
 		MethodBuilder staticMethod = tc.getStaticObjectMethod(sym);
 		if (staticMethod != null) {
@@ -344,8 +349,13 @@ public final class GenMSIL {
 
 	lastExpr = false;
 	code = null;
+        methodEnd = null;
     } // genDef();
 
+    private void closeMethod(Label methodEnd) {
+        code.MarkLabel(methodEnd);
+        code.Emit(OpCodes.Ret);
+    }
 
     /*
      * Check if the result type of a method is void
@@ -355,6 +365,14 @@ public final class GenMSIL {
 	    (((MethodInfo)method).ReturnType == tc.VOID);
     }
 
+    private boolean returnsVoid(Symbol fun) {
+	switch (fun.type()) {
+	case MethodType(_, scalac.symtab.Type restype):
+	    return restype.isSameAs(defs.UNIT_TYPE().unbox());
+        default:
+            return false;
+	}
+    }
 
     /*
      * Emit the code for this.
@@ -428,6 +446,7 @@ public final class GenMSIL {
 	catch (Throwable e) {
  	    currUnit.error(tree.pos, "Exception caught: " + e.getMessage());
 	    e.printStackTrace();
+            tc.saveAssembly();
 	    System.exit(1);
 // 		 + (global.debug ? "" : "; Use -debug to get a stack trace."));
 // 	    //if (global.debug)
@@ -516,8 +535,10 @@ public final class GenMSIL {
 	    return coerce(item, toType);
 
 	case Apply(Tree fun, Tree[] args):
-	    //System.out.println("gen.Apply: " + Debug.show(fun.symbol()) + " toType " + toType);
-	    return coerce(check(genApply(fun, args, msilType(tree.type))), toType);
+            Item i = check(genApply(fun, args, msilType(tree.type)));
+// 	    System.out.println("gen.Apply: " + Debug.show(fun.symbol()) + " toType = " + toType +
+//                                "; tree.type = " + msilType(tree.type) + "; result = " + i);
+ 	    return coerce(i, toType);
 
 	case Assign(Tree lhs, Tree rhs):
 	    boolean tmpLastExpr = lastExpr; lastExpr = false;
@@ -551,6 +572,12 @@ public final class GenMSIL {
 	    if (toType == MSILType.VOID)
 		return items.VoidItem();
 	    return coerce(items.LiteralItem(value), toType);
+
+        case Return(Tree expr):
+            genLoad(expr, toType);
+            //code.Emit(OpCodes.Ret);
+            code.Emit(OpCodes.Br, methodEnd);
+            return items.VoidItem();
 
 	case If(Tree cond, Tree thenp, Tree elsep):
 	    item = genIf(cond, thenp, elsep, toType);
@@ -738,8 +765,13 @@ public final class GenMSIL {
     }
 
 
-    /** Generate the code for an Apply node */
     private Item genApply(Tree fun, Tree[] args, MSILType resType) {
+        Item i = genApply0(fun, args, resType);
+        //System.out.println(Debug.show(fun.symbol()) + " -> " + i);
+        return i;
+    }
+    /** Generate the code for an Apply node */
+    private Item genApply0(Tree fun, Tree[] args, MSILType resType) {
 	boolean tmpLastExpr = lastExpr; lastExpr = false;
 	Symbol sym = fun.symbol();
 	switch (fun) {
@@ -767,8 +799,16 @@ public final class GenMSIL {
 		assert args.length == 1;
 		MSILType t = msilType(args[0].type);
 		Item i = genLoad(args[0], t);
-		if (!i.type.isValueType())
-		    code.Emit(OpCodes.Call, (MethodInfo)tc.getMethod(sym));
+		if (!i.type.isValueType()) {
+                    MethodInfo method = (MethodInfo)tc.getMethod(sym);
+		    code.Emit(OpCodes.Call, method);
+                    i = returnsVoid(method) ? items.VoidItem()
+                        : items.StackItem(msilType(method.ReturnType));
+                    return coerce(i, resType);
+                }
+                if (sym == primitives.UNBOX_UVALUE) {
+                    return items.VoidItem();
+                }
 		return i;
 	    }
 	    MSILType convTo = primitiveConvert(sym);
@@ -893,7 +933,8 @@ public final class GenMSIL {
 		    }
 		}
 		lastExpr = tmpLastExpr;
-		return check(invokeMethod(sym, args, resType, virtualCall));
+		return check(invokeMethod(sym, args, resType,
+                                          virtualCall || method.IsAbstract()));
 
 	    default:
 		throw Debug.abort(Debug.show(fun));
@@ -1015,7 +1056,8 @@ public final class GenMSIL {
 
 	case ADD:
 	    if (tc.getType(right.type) == tc.STRING) {
-		System.out.println("primaryOp().ADD: string concat!");
+                // TODO: check why this never gets printed
+		//System.out.println("primaryOp().ADD: string concat!");
 		genLoad(left, MSILType.OBJECT);
 		genLoad(right, MSILType.OBJECT);
 		code.Emit(OpCodes.Call, tc.CONCAT_OBJECT_OBJECT);
@@ -1031,15 +1073,14 @@ public final class GenMSIL {
 
 	case AS:
 // 	    Item item = genLoad(left, MSILType.OBJECT);
-	    Type ltype = tc.getType(left.type);
-	    MSILType mltype = msilType(ltype);
+	    MSILType mltype = msilType(left);
 	    Item item = genLoad(left, mltype);
 	    final Type rtype = tc.getType(right.type);
 	    final MSILType mrtype = msilType(rtype);
-	    if (ltype.IsEnum()) {
+	    if (mltype.isEnum()) {
 		MSILType ptype = unboxValueType(mrtype);
 		if (ptype != null) {
-		    MSILType uetype = msilType(ltype.getUnderlyingType());
+		    MSILType uetype = msilType(mltype.getUnderlyingType());
 		    //System.out.println("convert " + uetype + " -> " + ptype);
 		    emitConvert(uetype, ptype);
 		    return items.StackItem(ptype);
@@ -1258,13 +1299,20 @@ public final class GenMSIL {
 		      (MethodInfo)method);
 	    res = returnsVoid(method) ? items.VoidItem() : items.StackItem(resType);
 	}
-	return check(res);
+        if (returnsVoid(fun) && !returnsVoid(method)) {
+            res = drop(res);
+        }
+	return res;
     }
 
     /*
      * Returns the MSILType that corresponds to the given scala.symtab.Type
      */
     private MSILType msilType(scalac.symtab.Type type) {
+        if (type.symbol() == defs.ALLREF_CLASS) {
+            //System.out.println("Ouch! " + Debug.show(defs.ALLREF_CLASS));
+            return MSILType.NULL;
+        }
 	return msilType(tc.getType(type));
     }
 
@@ -2110,11 +2158,21 @@ final class MSILType {
     public boolean isEnum() {
 	switch (this) {
 	case REF(Type t):
-	    return t.BaseType == pp.ENUM;
+	    return t.IsEnum();
 	default:
 	    return false;
 	}
     }
+
+    /** Returns the underlying type of an enumeration; null otherwise */
+    public Type getUnderlyingType() {
+        switch (this) {
+        case REF(Type t):
+            return t.getUnderlyingType();
+        default:
+            return null;
+        }
+}
 
     public boolean isType(Type type) {
 	return equals(fromType(type));
