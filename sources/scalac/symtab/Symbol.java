@@ -245,12 +245,6 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Copying & cloning ------------------------------------------------------
 
-    protected void update(int pos, int flags) {
-        this.pos = pos;
-        this.flags = (flags & ~(INITIALIZED | LOCKED)) |
-            (this.flags & (INITIALIZED | LOCKED));
-    }
-
     /** Return a fresh symbol with the same fields as this one.
      */
     public final Symbol cloneSymbol() {
@@ -1527,11 +1521,6 @@ public abstract class TypeSymbol extends Symbol {
         this.closures = new ClosureHistory();
         assert name.isTypeName() : this;
         this.constructor = newConstructor(pos, flags & CONSTRFLAGS);
-    }
-
-    protected void update(int pos, int flags) {
-        super.update(pos, flags);
-        constructor.pos = pos;
     }
 
     protected final void copyConstructorInfo(TypeSymbol other) {
