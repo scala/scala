@@ -15,6 +15,11 @@ import scalac.Global;
 public class CheckTreeNodes {
 
     //########################################################################
+    // Public Constants
+
+    public static final CheckTreeNodes instance = new CheckTreeNodes();
+
+    //########################################################################
     // Private Fields
 
     private final Global global = Global.instance;
@@ -24,6 +29,11 @@ public class CheckTreeNodes {
 
     public void check(Tree tree) {
         {#TreeSwitch#}
+    }
+
+    public boolean checkNode(Tree tree) {
+        check(tree);
+        return true;
     }
 
     //########################################################################
