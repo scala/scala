@@ -3332,7 +3332,111 @@ written.
 % 2003 July - changed to new pattern syntax + semantic Burak
 %      Nov  - incorporated changes to grammar, avoiding empty patterns
 %             definitions for value and sequence patterns
+%      Jan  - revert back to original version ?! move regexp to subsect
+
 \label{sec:patterns}
+
+\syntax\begin{verbatim}
+  Pattern       ::=  SimplePattern {Id SimplePattern}
+                 |   varid `:' Type
+                 |   `_' `:' Type
+  SimplePattern ::=  varid
+                 |   `_'
+                 |   literal
+                 |   StableId {`(' [Patterns] `)'}
+  Patterns      ::=  Pattern {`,' Pattern}
+\end{verbatim}
+
+For clarity, this section deals with a subset of the Scala pattern language.
+The extended Scala pattern language, which is described below, adds more
+flexible variable binding and regular hedge expressions.
+
+A pattern is built from constants, constructors, and
+variables. Pattern matching tests whether a given value has the shape
+defined by a pattern, and, if it does, binds the variables in the
+pattern to the corresponding components of the value.  The same
+variable name may not be bound more than once in a pattern.
+
+A pattern is built from constants, constructors, variables and regular
+operators. Pattern matching tests whether a given value (or sequence
+of values) has the shape defined by a pattern, and, if it does, binds
+the variables in the pattern to the corresponding components of the
+value (or sequence of values).  The same variable name may not be
+bound more than once in a pattern.
+
+Pattern matching is always done in a context which supplies an
+expected type of the pattern. We distinguish the following kinds of patterns.
+
+A {\em variable pattern} $x$ is a simple identifier which starts with
+a lower case letter.  It matches any value, and binds the variable
+name to that value.  The type of $x$ is the expected type of the
+pattern as given from outside.  A special case is the wild-card
+pattern $\_$ which is treated as if it was a fresh variable.
+
+A {\em typed pattern} $x: T$ consists of a pattern variable $x$ and a
+simple type $T$. The type $T$ may be a class type or a compound type;
+it may not contain a refinement (\sref{sec:refinements}).  This
+pattern matches any value of type $T$ and binds the variable name to
+that value.  $T$ must conform to the pattern's expected type. The
+type of $x$ is $T$.
+
+A {\em pattern literal} $l$ matches any value that is equal (in terms
+of $==$) to it. It's type must conform to the expected type of the
+pattern.
+
+A {\em named pattern constant} $r$ is a stable identifier
+(\sref{sec:stableids}). To resolve the syntactic overlap with a
+variable pattern, a named pattern constant may not be a simple name
+starting with a lower-case letter. The type of $r$ must conform
+to the expected type of the pattern. The pattern matches any value $v$
+such that \verb@$r$ == $v$@ (\sref{sec:cls-object}).
+
+A {\em constructor pattern} $c(p_1) \ldots (p_n)$ where $n \geq 0$
+consists of an identifier $c$, followed by component patterns $p_1
+\commadots p_n$. The constructor $c$ is either a simple name
+or a qualified name $r.id$ where $r$ is a stable identifier. It refers
+to a (possibly overloaded) function which has one alternative of
+result type \verb@class C@, and which may not have other overloaded
+alternatives with a class constructor type as result type.
+Furthermore, the respective type parameters and value parameters of
+(said alternative of) $c$ and of the primary constructor function of
+class $C$ must be the same, after renaming corresponding type parameter
+names.  If $C$ is monomorphic, then
+\verb@C@ must conform to the expected type of the pattern, and the
+formal parameter types of $C$'s primary constructor are taken as the
+expected types of the component patterns $p_1 \commadots p_n$.  If $C$
+is polymorphic, then there must be a unique type application instance
+of it such that the instantiation of $C$ conforms to the expected type
+of the pattern. The instantiated formal parameter types of $C$'s
+primary constructor are then taken as the expected types of the
+component patterns $p_1\commadots p_n$.
+The pattern matches all objects created from
+constructor invocations $c(v_1)\ldots(v_n)$ where each component
+pattern $p_i$ matches the corresponding value $v_i$.
+
+An {\em infix operation pattern} \verb@p id p'@ is a shorthand for the
+constructor pattern \verb@id_class(p)(p')@.  The precedence and
+associativity of operators in patterns is the same as in expressions
+(\sref{sec:infix-operations}).
+
+\example Some examples of patterns are:
+\begin{enumerate}
+\item
+The pattern \verb@ex: IOException@ matches all instances of class
+\verb@IOException@, binding variable \verb@ex@ to the instance.
+\item
+The pattern \verb@(x, _)@ matches pairs of values, binding \verb@x@ to
+the first component of the pair. The second component is matched
+with a wildcard pattern.
+\item
+The pattern \verb@x :: y :: xs@ matches lists of length $\geq 2$,
+binding \verb@x@ to the lists's first element, \verb@y@ to the list's
+second element, and \verb@xs@ to the remainder.
+\end{enumerate}
+
+%%% new patterns
+
+\subsection{Regular Pattern Matching}
 
 \syntax\begin{lstlisting}
   Pattern         ::=  Pattern1 { `|' Pattern1 }
@@ -3351,69 +3455,46 @@ written.
   id'             ::=  id $\textit{ but not }$ '*' | '?' | '+' | `@' | `|'
 \end{lstlisting}
 
-A pattern is built from constants, constructors, variables and regular
-operators. Pattern matching tests whether a given value (or sequence
-of values) has the shape defined by a pattern, and, if it does, binds
-the variables in the pattern to the corresponding components of the
-value (or sequence of values).  The same variable name may not be
-bound more than once in a pattern.
-
-\subsection{Value and Sequence Patterns}
-
-\todo{Need to distinguish between value and sequence patterns at the outside}
-
-On an abstract level, we distinguish between value patterns and sequence patterns, which are defined in a 
-mutually inductive manner. A {\em value pattern} describes a set of matching values. A 
-{\em sequence pattern} describes a set of matching of sequences of values. Both sorts of patterns may 
-contain {\em variable bindings} which serve to extract constituents of a value or sequence,
-and may consist of patterns of the respective other sort.
+We distinguish between tree patterns and hedge patterns (hedges 
+are ordered sequences of trees). A {\em tree pattern} describes 
+a set of matching trees (like above). A {\em hedge pattern} describes 
+a set of matching hedges. Both kinds of patterns may contain {\em 
+variable bindings} which serve to extract constituents of a tree or hedge.
 
 The type of a patterns and the expected types of variables 
-within patterns are determined by the context. 
+within patterns are determined by the context and the structure of the
+patterns. The last case ensures that a variable bound 
+to a hedge pattern will have a sequence type.
 
-Concretely, we distinguish the following kinds of patterns.
+The following patterns are added:
 
-A {\em wild-card pattern} \_ matches any value. 
-
-A {\em typed pattern} $\_: T$ matches values of type $T$. The type $T$ may be
- a class type or a compound type; it may not contain a refinement (\sref{sec:refinements}).  
-This pattern matches any non-null value of type $T$. $T$ must conform to the pattern's expected
-type. A pattern $x:T$ is treated the same way as $x @ (\_:T)$
-
-A {\em pattern literal} $l$ matches any value that is equal (in terms
-of $==$) to it. It's type must conform to the expected type of the
-pattern.
-
-A {\em named pattern constant} $p$ is a stable identifier
-(\sref{sec:stable-ids}). To resolve the syntactic overlap with a
-variable pattern, a named pattern constant may not be a simple name
-starting with a lower-case letter. The stable identifier $p$ is
-expected to conform to the expected type of the pattern. The pattern
-matches any value $v$ such that ~\lstinline@$r$ == $v$@~ 
-(\sref{sec:cls-object}).
-
-A {\em sequence pattern} $p_1 \commadots p_n$ where $n \geq 0$ is a
-sequence of patterns separated by commas and matching the sequence of
-values that are matched by the components. Sequence patterns may only
-appear under constructor applications, or nested within a another sequence pattern. 
-Note that empty sequence patterns are allowed. The type of value patterns that appear in
-a sequence pattern is the expected type as determined from the constructor.
-A {\em fixed-length argument pattern} is a special sequence pattern where 
-where all $p_i$ are value patterns.
+A {\em hedge pattern} $p_1 \commadots p_n$ where $n \geq 0$ is a
+sequence of patterns separated by commas and matching the hedge described
+by the components. Hedge patterns may appear as arguments to constructor 
+applications, or nested within a another hedge pattern if grouped with
+parentheses. Note that empty hedge patterns are allowed. The type of tree 
+patterns that appear in a hedge pattern is the expected type as 
+determined from the enclosing constructor.
+A {\em fixed-length argument pattern} is a special hedge pattern where 
+where all $p_i$ are tree patterns.
 
 A {\em choice pattern} $p_1 | \ldots | p_n$ is a choice among several
 alternatives, which may not contain variable-binding patterns. It
-matches every value and every sequence matched by at least one of its alternatives. 
-Note that the empty sequence may appear as an alternative.  An {\em option
-pattern} $p?$ is an abbreviation for $(p| )$. A choice is a value pattern if all its branches
-are value patterns. In this case, all branches must conform to the expected type and the type 
-of the choice is the least upper bound of the branches. Otherwise, it has the same type as the
-sequence pattern it is part of.
+matches every tree and every hedge matched by at least one of its 
+alternatives.  Note that the empty sequence may appear as an alternative.  
+An {\em option pattern} $p?$ is an abbreviation for $(p| )$. A choice is 
+a tree pattern if all its branches are tree patterns. In this case, all 
+branches must conform to the expected type and the type 
+of the choice is the least upper bound of the branches. Otherwise, 
+its type is determined by the enclosing hedge pattern it is part of.
 
-An {\em iterated pattern} $p*$ matches sequences of values
-consisting of zero, one or more occurrences of values matched by $p$,
-where $p$ may not contain a variable-binding pattern. A {\em non-empty
-iterated pattern} $p+$ is an abbreviation for $(p,p*)$. 
+An {\em iterated pattern} $p*$ matches zero, one or more occurrences 
+of items matched by $p$, where $p$ may be either a tree pattern or a hedge pattern. $p$ may not 
+contain a variable-binding. A {\em non-empty iterated pattern} $p+$ is an 
+abbreviation for $(p,p*)$. 
+
+The treatment of the following patterns changes with to the 
+previous section:
 
 A {\em constructor pattern} $c ( p )$ consists of a simple type $c$
 followed by a pattern $p$.  If $c$ designates a monomorphic case
@@ -3439,29 +3520,23 @@ The pattern $(p)$ is regarded as equivalent to the pattern $p$, if $p$
 is a nonempty sequence pattern. The empty tuple $()$ is a shorthand
 for the constructor pattern \code{Unit}.
 
-An {\em infix operation pattern} ~\lstinline@$p$ $op$ $p'$@~ is a shorthand for the
-constructor pattern ~\lstinline@$op$($p$, $p'$)@.  The precedence and
-associativity of operators in patterns is the same as in expressions
-(\sref{sec:infix-operations}). The operands may not be empty sequence
-patterns.
-
-\subsection{Variable Binding}
-
-A {\em variable-binding pattern} $x @ p$ is a simple identifier $x$
+A {\em variable-binding} $x @ p$ is a simple identifier $x$
 which starts with a lower case letter, together with a pattern $p$. It
-matches a value or a sequence of values whenever $p$ does, and in
-addition binds the variable name to that value or to that sequence of
-values. If $p$ is a value pattern of type $T$, the type of $x$ is also $T$.
-If $p$ is a sequence pattern and appears under a constructor $c <: $\lstinline@Seq[$T\,$]@,
-then the type of $x$ is \lstinline@List[$T\,$]@. %%\todo{really?} burak:yes 
-where $T$ is the expected type as dictated by the constructor. A pattern
-consisting of only a variable $x$ is treated as the bound value pattern $x @ \_$. 
+matches every item (tree or hedge) matched by $p$, and in addition binds 
+it to the variable name. If $p$ is a tree pattern of type $T$, the type 
+of $x$ is also $T$.
+If $p$ is a hedge pattern enclosed by constructor $c <: $\lstinline@Seq[$T\,$]@,
+then the type of $x$ is \lstinline@List[$T\,$]@
+where $T$ is the expected type as dictated by the constructor. 
 
+%A pattern consisting of only a variable $x$ is treated as the bound
+%value pattern $x @ \_$. A typed pattern $x:T$ is treated as $x @ (_:T)$.
+%
 Regular expressions that contain variable bindings may be ambiguous,
 i.e. there might be several ways to match a sequence against the
 pattern. In these cases, the \emph{right-longest policy} applies:
-patterns that appear more to the right than others in a sequence take precedence in case
-of overlaps.
+patterns that appear more to the right than others in a sequence take
+precedence in case of overlaps.
 
 \example Some examples of patterns are:
 \begin{enumerate}
@@ -3490,6 +3565,7 @@ The pattern \code{List( x@( 'a'+ ), 'a'* )} also matches a non-empty list of
 \code{'a'}s. Here, \code{x} will always be bound to
 the sequence containing one \code{'a'}
 \end{enumerate}
+
 
 \section{Pattern Matching Expressions}
 \label{sec:pattern-match}
