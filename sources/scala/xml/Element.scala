@@ -1,5 +1,7 @@
 package scala.xml ;
 
+import javaAdapter.Map;
+
 /** interface to XML elements. used by dtd2scala tool and the generated XML parser interfaces.
  *  sorry, no attributes yet (needs working HashMap).
  *  future revisions might use sequence instead of list.
@@ -9,18 +11,19 @@ abstract class Element {
 
                 def getName:     String;                // the real element name
                 def getChildren: List[Element];         // the children
-                def getAttribs:  java.Map[ String, String ]; // disabled
+                def getAttribs:  Map[ String, String ]; // disabled
+		def setAttribs( m:Map[ String, String ] ):Unit ;
 
                 def toXML: String = {
-                        "<" + getName + " " + toXML( getAttribs ) + ">" + toXML( getChildren ) + "</" + getName +">"
+                        "<" + getName + toXML_( getAttribs ) + ">" + toXML_( getChildren ) + "</" + getName +">"
 		}
 
-	        def toXML( elems:List[Element] ):String = elems match {
-		    case head :: tail  => head.toString() + toXML( tail );
+	        def toXML_( elems:List[Element] ):String = elems match {
+		    case head :: tail  => head.toXML + toXML_( tail );
                     case Nil           => "";
 		}
 
-                def toXML( attrib:java.Map[ String, String ] ):String = {
+                def toXML_( attrib:Map[ String, String ] ):String = {
 		    def iterate( keys:Iterator[String] ) =
 			if( keys.hasNext )
 			    {
@@ -34,6 +37,7 @@ abstract class Element {
 
 		    iterate( attrib.keys.elements );
 		}
+
   /*
                 def toXML : String = {
                         val attribs   = getAttribs;

@@ -17,12 +17,12 @@ import scalac.ast.parser.Scanner ;
 
 public class DeclToScala {
 
-    /*
-      static final String ATTRIBS_VALDEF =
-"val _at:scala.Map[String,String] = if( attribs == null ) { new scala.HashMap[String,String] } else attribs ;";
-      static final String ATTRIB_MAP = "attribs";
-      static final String ATTRIB_T   = "scala.Map[String,String]";
-    */
+
+      static final String ATTRIBS_VARDEF =
+	  "var _at:Map[String,String] = null;";
+      //static final String ATTRIB_MAP = "attribs";
+      //static final String ATTRIB_T   = "scala.Map[String,String]";
+
       static final String CHILDREN_VALDEF =
 "val _ch:List[Element] = if( children == null ) { scala.Nil } else children ;";
       static final String CHILDREN_SEQ = "children";
@@ -31,7 +31,8 @@ public class DeclToScala {
       static final String RAW_NAME_DEF     = "def getName:String = ";
 
       static final String GET_CHILDREN_DEF = "def getChildren:scala.List[Element] = _ch ;";
-    //static final String GET_ATTRIBS_DEF =  "def getAttribs:scala.Map[String,String] = _at ;";
+      static final String GET_ATTRIBS_DEF =  "def getAttribs:Map[String,String] = _at ;";
+      static final String SET_ATTRIBS_DEF =  "def setAttribs( m:Map[String,String] ):Unit = {_at = m};";
 
       static final int IND_STEP = 5;
 
@@ -62,6 +63,8 @@ public class DeclToScala {
             fIndent = IND_STEP;
             printIndent();
             fOut.println("import scala.xml._ ;");
+            fOut.println("import scala.xml.javaAdapter.Map ;");
+            fOut.println("import scala.xml.javaAdapter.HashMap ;");
       }
 
       public void end() {
@@ -131,8 +134,9 @@ public class DeclToScala {
             fOut.print('"'); fOut.print( decl.name ); fOut.print('"');
             fOut.println(';');
 
-            //printIndent(); fOut.println( ATTRIBS_VALDEF );
-            //printIndent(); fOut.println( GET_ATTRIBS_DEF );
+            printIndent(); fOut.println( ATTRIBS_VARDEF );
+            printIndent(); fOut.println( GET_ATTRIBS_DEF );
+            printIndent(); fOut.println( SET_ATTRIBS_DEF );
             printIndent(); fOut.println( CHILDREN_VALDEF );
             printIndent(); fOut.println( GET_CHILDREN_DEF );
 
@@ -184,11 +188,12 @@ public class DeclToScala {
 
             printIndent();
             fOut.println(
-"val _factory: scala.Map[String, (scala.Map[String,String],scala.List[Element])=>Element] = {");
+"val _factory: Map[String, scala.List[Element] => Element] = {");
             fIndent += IND_STEP;
             printIndent();
             fOut.println(
-"val res = new scala.HashMap[String,(scala.Map[String,String],scala.List[Element])=>Element] ;");
+			 //"val res = new scala.HashMap[String,(scala.Map[String,String],scala.List[Element])=>Element] ;");
+"val res = new HashMap[String, scala.List[Element] => Element] ;");
             for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); ) {
                   ElemDecl decl = (ElemDecl) elemMap.get( it.next() );
                   printIndent();
@@ -208,10 +213,10 @@ public class DeclToScala {
 
       void printContainsTextDef( Map elemMap ) {
             printIndent();
-            fOut.println("val _containsMap: scala.Map[String, Boolean] = {");
+            fOut.println("val _containsMap: Map[String, Boolean] = {");
             fIndent += IND_STEP;
             printIndent();
-            fOut.println("val res = new scala.HashMap[String, Boolean] ;");
+            fOut.println("val res = new HashMap[String, Boolean] ;");
 
             for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); ) {
                   ElemDecl decl = (ElemDecl) elemMap.get( it.next() );
