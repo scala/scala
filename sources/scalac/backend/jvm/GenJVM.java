@@ -1603,8 +1603,8 @@ class GenJVM {
                                   boolean useWideJumps) {
         Symbol mSym = mDef.symbol();
 
-        global.log("entering method " + Debug.toString(mSym)
-                   + " (type: " + Debug.toString(mSym.info()) + ")"
+        global.log("entering method " + Debug.show(mSym)
+                   + " (type: " + Debug.show(mSym.info()) + ")"
                    + " wide jumps? " + useWideJumps);
 
         JMethod method = addNewScalaMethod(ctx.clazz, mSym, 0);

@@ -132,7 +132,7 @@ public class AddInterfacesPhase extends Phase {
     /** True iff the given class symbol needs an interface. */
     protected boolean needInterface(Symbol classSym) {
         assert classSym.isClass()
-            : Debug.toString(classSym) + " is not a class (kind " + classSym.kind + ")";
+            : Debug.show(classSym) + " is not a class (kind " + classSym.kind + ")";
         return !(classSym.isJava()
                  || classSym.isModuleClass()
                  || classSym.isAnonymousClass()
