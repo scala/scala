@@ -90,12 +90,19 @@ class GenJVM {
     protected final Definitions defs;
     protected final Primitives prims;
 
+    protected final Phase refCheckPhase;
+    protected final AddInterfacesPhase addInterfacesPhase;
+
     protected final FJBGContext fjbgContext;
 
     public GenJVM(Global global) {
         this.global = global;
         this.defs = global.definitions;
         this.prims = global.primitives;
+
+        this.refCheckPhase = global.PHASE.REFCHECK.phase();
+        this.addInterfacesPhase =
+            (AddInterfacesPhase)global.PHASE.ADDINTERFACES.phase();
 
         this.fjbgContext = new FJBGContext();
 
@@ -142,6 +149,7 @@ class GenJVM {
             Context ctx1 = enterClass(ctx, sym);
 
             addValueClassMembers(ctx1, classDef);
+            addStaticClassMembers(ctx1, classDef);
             if (ctx1.isModuleClass)
                 addModuleInstanceField(ctx1);
 
@@ -531,52 +539,9 @@ class GenJVM {
             generatedType = JAVA_LANG_OBJECT_T;
             break;
 
-        case Literal(UNIT):
-            maybeGenLoadUnit(ctx, expectedType);
-            generatedType = expectedType;
-            break;
-        case Literal(BOOLEAN(boolean value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.BOOLEAN;
-            break;
-        case Literal(BYTE(byte value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.BYTE;
-            break;
-        case Literal(SHORT(short value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.SHORT;
-            break;
-        case Literal(CHAR(char value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.CHAR;
-            break;
-        case Literal(INT(int value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.INT;
-            break;
-        case Literal(LONG(long value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.LONG;
-            break;
-        case Literal(FLOAT(float value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.FLOAT;
-            break;
-        case Literal(DOUBLE(double value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JType.DOUBLE;
-            break;
-        case Literal(STRING(String value)):
-            ctx.code.emitPUSH(value);
-            generatedType = JAVA_LANG_STRING_T;
-            break;
-        case Literal(NULL):
-            if (expectedType != JType.VOID) ctx.code.emitACONST_NULL();
-            generatedType = expectedType;
-            break;
         case Literal(AConstant value):
-            throw Debug.abort("unknown literal", value);
+            generatedType = genLoadLiteral(ctx, value, expectedType);
+            break;
 
         case Empty:
         case AbsTypeDef(_, _, _, _):
@@ -650,6 +615,46 @@ class GenJVM {
             break;
         default:
             throw global.fail("unknown qualifier");
+        }
+    }
+
+    protected JType genLoadLiteral(Context ctx, AConstant lit, JType type) {
+        switch (lit) {
+        case UNIT:
+            maybeGenLoadUnit(ctx, type);
+            return type;
+        case BOOLEAN(boolean value):
+            ctx.code.emitPUSH(value);
+            return JType.BOOLEAN;
+        case BYTE(byte value):
+            ctx.code.emitPUSH(value);
+            return JType.BYTE;
+        case SHORT(short value):
+            ctx.code.emitPUSH(value);
+            return JType.SHORT;
+        case CHAR(char value):
+            ctx.code.emitPUSH(value);
+            return JType.CHAR;
+        case INT(int value):
+            ctx.code.emitPUSH(value);
+            return JType.INT;
+        case LONG(long value):
+            ctx.code.emitPUSH(value);
+            return JType.LONG;
+        case FLOAT(float value):
+            ctx.code.emitPUSH(value);
+            return JType.FLOAT;
+        case DOUBLE(double value):
+            ctx.code.emitPUSH(value);
+            return JType.DOUBLE;
+        case STRING(String value):
+            ctx.code.emitPUSH(value);
+            return JAVA_LANG_STRING_T;
+        case NULL:
+            if (type != JType.VOID) ctx.code.emitACONST_NULL();
+            return type;
+        default:
+            throw Debug.abort("unknown literal", lit);
         }
     }
 
@@ -1473,6 +1478,8 @@ class GenJVM {
      */
     protected JType typeStoJ(Type tp) {
         switch (tp) {
+        case ConstantType(Type base, _):
+            return typeStoJ(base);
         case TypeRef(_, Symbol sym, _):
             Object value = typeMap.get(sym);
             if (value != null) return (JType)value;
@@ -1718,6 +1725,59 @@ class GenJVM {
                 ctx.clazz.addNewField(modifiersStoJ(member.flags),
                                       member.name.toString(),
                                       typeStoJ(member.info()));
+        }
+    }
+
+    // The following function is a single big hack.
+    protected void addStaticClassMembers(Context ctx, Tree.ClassDef cDef) {
+        Symbol cSym = cDef.symbol();
+        HashMap/*<Symbol, AConstant>*/ staticMembers = new HashMap();
+        Symbol iSym = addInterfacesPhase.getInterfaceSymbol(cSym);
+        if (iSym != null) {
+            // Compute the list of static members to add.
+            Phase bkpCurrent = global.currentPhase;
+            global.currentPhase = refCheckPhase;
+            Scope.SymbolIterator memberIt =
+                new Scope.UnloadIterator(iSym.members().iterator());
+            while (memberIt.hasNext()) {
+                Symbol member = memberIt.next();
+                if (member.isTerm() && !member.isMethod() && member.isPrivate())
+                    switch (member.info()) {
+                    case ConstantType(_, AConstant value):
+                        staticMembers.put(member, value);
+                    }
+            }
+            global.currentPhase = bkpCurrent;
+
+            // Add them and initialize them.
+            JMethod classInitMeth =
+                ctx.clazz.addNewMethod(JAccessFlags.ACC_STATIC,
+                                       "<clinit>",
+                                       JType.VOID,
+                                       JType.EMPTY_ARRAY,
+                                       new String[0]);
+            Context ctx1 =
+                ctx.withMethod(classInitMeth, Collections.EMPTY_MAP, false);
+
+            Iterator smIt = staticMembers.keySet().iterator();
+            while (smIt.hasNext()) {
+                Symbol sm = (Symbol)smIt.next();
+                String smName = sm.name.toString();
+                JType tp = typeStoJ(sm.info());
+                JField field =
+                    ctx1.clazz.addNewField((modifiersStoJ(sm.flags)
+                                            | JAccessFlags.ACC_STATIC
+                                            | JAccessFlags.ACC_PUBLIC)
+                                           & ~JAccessFlags.ACC_PRIVATE,
+                                           smName.substring(0,
+                                                            smName.length()-1),
+                                           tp);
+                genLoadLiteral(ctx1, (AConstant)staticMembers.get(sm), tp);
+                ctx1.code.emitPUTSTATIC(ctx1.clazz.getName(),
+                                        field.getName(),
+                                        tp);
+            }
+            ctx1.code.emitRETURN();
         }
     }
 
