@@ -317,7 +317,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	sym.flags |= ACCESSED;
 	Ident tree = make.Ident(pos, sym);
         global.nextPhase();
-        tree.setType(sym.owner().thisType().memberStabilizedType(sym));
+        Type type = sym.owner().thisType().memberStabilizedType(sym);
+        if (sym.isInitializer()) {
+            Symbol[] tparams = sym.owner().typeParams();
+            if (tparams.length != 0) type = Type.PolyType(tparams, type);
+        }
+        tree.setType(type);
         global.prevPhase();
         return tree;
     }
