@@ -71,7 +71,12 @@ public abstract class Long extends Float {
     public String toString() { return String.valueOf(asLong()); }
     public String $plus(String that) { return this + that; }
     public int hashCode() { return (int)(asLong() ^ (asLong() >>> 32)); }
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Long && $eq$eq(((Long)obj).asLong());
-    }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }

@@ -13,7 +13,7 @@ package scala {
 
     override def hashCode() = [#hash-code#];
 
-    override def == (other: Any) =
+    override def equals (other: Any) =
       if (other is Tuple[#n#][#type-params#]) {
 	val that = other as Tuple[#n#][#type-params#];
 	[#equal#]

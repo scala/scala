@@ -49,7 +49,12 @@ public abstract class Float extends Double {
     public String toString() { return String.valueOf(asFloat()); }
     public String $plus(String that) { return this + that; }
     public int hashCode() { return java.lang.Float.floatToIntBits(asFloat()); }
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Float && $eq$eq(((Float)obj).asFloat());
-    }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }

@@ -11,7 +11,6 @@
 
 package scala;
 
-
 public abstract class Double extends AnyVal {
     public abstract double asDouble();
     public abstract float asFloat();
@@ -59,7 +58,16 @@ public abstract class Double extends AnyVal {
         long bits = java.lang.Double.doubleToLongBits(asDouble());
         return (int)(bits ^ (bits >>> 32));
     }
+
     public boolean equals(java.lang.Object obj) {
         return obj instanceof Double && $eq$eq(((Double)obj).asDouble());
     }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }

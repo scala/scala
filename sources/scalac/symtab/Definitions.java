@@ -303,13 +303,13 @@ public class Definitions {
         ANY_CLASS.members().enter(IS);
 
         EQEQ = new TermSymbol(
-	    Position.NOPOS, Names.EQEQ, ANY_CLASS, 0);
+	    Position.NOPOS, Names.EQEQ, ANY_CLASS, Modifiers.FINAL);
         EQEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQEQ, ANY_TYPE)},
 				     BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQEQ);
 
         BANGEQ = new TermSymbol(
-	    Position.NOPOS, Names.BANGEQ, ANY_CLASS, 0);
+	    Position.NOPOS, Names.BANGEQ, ANY_CLASS, Modifiers.FINAL);
         BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE)},
 				       BOOLEAN_TYPE));
         ANY_CLASS.members().enter(BANGEQ);

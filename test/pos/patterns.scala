@@ -1,7 +1,7 @@
 trait Option[a] {}
 case class Some[a](x: a) extends Option[a] {
   override def toString(): scala.String = "Some(" + x + ")";
-  override def == (that: Any): Boolean = that match {
+  override def equals(that: Any): Boolean = that match {
     case Some(x) => this.x == x
     case _ => false
   }
@@ -9,7 +9,7 @@ case class Some[a](x: a) extends Option[a] {
 }
 case class None[a] extends Option[a] {
   override def toString(): scala.String = "None";
-  override def == (that: Any) = that match {
+  override def equals(that: Any) = that match {
     case None => true
     case _ => false
   }

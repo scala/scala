@@ -29,4 +29,12 @@ public abstract class Unit extends AnyVal {
     public String toString() {
         return "()";
     }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }

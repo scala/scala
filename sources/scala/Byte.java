@@ -11,11 +11,5 @@
 
 package scala;
 
-
 public abstract class Byte extends Short {
-    public String toString() { return String.valueOf(asByte()); }
-    public int hashCode() { return asInt(); }
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Byte && $eq$eq(((Byte)obj).asByte());
-    }
 }

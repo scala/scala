@@ -131,6 +131,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                                              // expressions may be packages and
                                              // Java statics modules.
 
+    static final int baseModes     = EXPRmode | PATTERNmode | CONSTRmode;
+
 // Helper definitions ---------------------------------------------------------
 
     /** The qualifier type of a potential application of the `match' method.
@@ -2031,7 +2033,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Typed(Tree expr, Tree tpe):
 		Tree tpe1 = transform(tpe, TYPEmode);
-		Tree expr1 = transform(expr, mode, tpe1.type);
+		Tree expr1 = transform(expr, mode & baseModes, tpe1.type);
 		return copy.Typed(tree, expr1, tpe1)
 		    .setType(tpe1.type);
 

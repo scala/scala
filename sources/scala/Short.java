@@ -13,9 +13,4 @@ package scala;
 
 
 public abstract class Short extends Int {
-    public String toString() { return String.valueOf(asShort()); }
-    public int hashCode() { return asInt(); }
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Short && $eq$eq(((Short)obj).asShort());
-    }
 }

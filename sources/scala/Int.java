@@ -94,7 +94,11 @@ public abstract class Int extends Long {
 
     public int hashCode() { return asInt(); }
 
-    public boolean equals(java.lang.Object obj) {
-        return obj instanceof Int && $eq$eq(((Int)obj).asInt());
-    }
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }

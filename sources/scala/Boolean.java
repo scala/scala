@@ -62,4 +62,12 @@ public abstract class Boolean extends AnyVal {
     public boolean equals(java.lang.Object obj) {
         return obj instanceof Boolean && $eq$eq(((Boolean)obj).asBoolean());
     }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $eq$eq(java.lang.Object obj) { return equals(obj); }
+
+    /** @meta method (scala.Any)scala.Boolean;
+     */
+    public boolean $bang$eq(java.lang.Object obj) { return !equals(obj); }
 }
