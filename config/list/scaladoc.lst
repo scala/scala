@@ -5,10 +5,13 @@
 
 Anchors.java
 Comment.java
+DocModule.java
 HTMLGenerator.java
-#Html.java
+HTMLGeneratorCommand.java
+HTMLGeneratorPhase.java
+HTMLGeneratorPhases.java
+Main.java
 OneTree.java
-#Page.java
 ScalaSearch.java
 StandardDocModule.java
 SymbolTablePrinter.java
