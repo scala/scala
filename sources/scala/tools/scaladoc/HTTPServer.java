@@ -74,11 +74,15 @@ public class HTTPServer extends Thread {
                       int port,
                       String indexFileName) throws IOException {
 
-        if (!documentRootDirectory.isDirectory()) {
-            throw new IOException(documentRootDirectory
+        this.documentRootDirectory =
+            documentRootDirectory == null ?
+            new File(".") :
+            documentRootDirectory;
+
+        if (!this.documentRootDirectory.isDirectory()) {
+            throw new IOException(this.documentRootDirectory
                                   + " does not exist as a directory");
         }
-        this.documentRootDirectory = documentRootDirectory;
         this.indexFileName = indexFileName;
         this.server = new ServerSocket(port);
     }
@@ -294,6 +298,7 @@ class RequestProcessor implements Runnable {
                     URI uri = new URI(filename);
                     String resource = uri.getPath();
                     Servlet servlet = (Servlet) servletNamed.get(resource);
+
                     if (servlet != null) { // servlet invokation
                         String query = uri.getRawQuery();
                         Map map =

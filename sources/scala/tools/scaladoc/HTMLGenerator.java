@@ -10,6 +10,8 @@ package scala.tools.scaladoc;
 
 import java.io.Writer;
 import java.io.BufferedWriter;
+import java.io.Reader;
+import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -60,11 +62,11 @@ import scalac.util.ScalaProgramArgumentParser;
 public abstract class HTMLGenerator {
 
     /*
-     * Names of predefined page names.
+     * Names of predefined page names and page sections.
      */
     protected final String FRAME_PAGE            = "index.html";
     protected final String ROOT_PAGE             = Location.ROOT_NAME + ".html";
-    protected final String PACKAGE_LIST_PAGE     = "package-list-page.html";
+    protected final String PACKAGE_INDEX_PAGE     = "package-index-page.html";
     protected final String HELP_PAGE             = "help-page.html";
     protected final String SEARCH_SECTION        = "search-section";
     protected final String INDEX_PAGE            = "index-page.html";
@@ -247,6 +249,10 @@ public abstract class HTMLGenerator {
      */
     public abstract TypeIsomorphism newTypeIso(Global global);
 
+    /** Page promises: Map[String, Promise].
+     */
+    public Map promises;
+
     /**
      * Creates a new instance.
      *
@@ -256,6 +262,7 @@ public abstract class HTMLGenerator {
 	this.global = global;
 	this.root = global.definitions.ROOT_CLASS;
 	this.uri = Location.makeURI(".");
+        this.promises = new HashMap();
 
         assert global.args instanceof HTMLGeneratorCommand;
         HTMLGeneratorCommand args = (HTMLGeneratorCommand) global.args;
@@ -285,14 +292,35 @@ public abstract class HTMLGenerator {
 	    };
     }
 
-    /** Relative URL of the definition of the given symbol.
+    /**
+     * Adapt the URI to the use context. If the usage context is the
+     * server, then the URI for the page <code>index.html</code> has
+     * the following shape: <pre>pageServlet?page=index.html</pre>. If
+     * the usage context is a static page, then the URI is given
+     * relative to the given page: <pre>../../index.html</pre>
      */
-    protected String definitionURL(Symbol sym, Page page) {
-        return page.rel(Location.get(sym));
+    public URI adaptURI(URI uri, URI pageUri) {
+        if (launchServer)
+            return Location.mkURI(PAGE_SERVLET_NAME + "?" +"page=" + uri.getPath() + "#" + uri.getFragment());
+        else
+            return Location.asSeenFrom(uri, pageUri);
     }
 
-    protected String definitionURL(Symbol sym) {
-        return definitionURL(sym, page);
+    /**
+     * Compute the URI for a symbol page. The URI is expressed
+     * relatively to the given page.
+     */
+    protected URI definitionURI(Symbol sym, Page page) {
+        URI defUri = Location.getURI(sym);
+        return adaptURI(defUri, page.uri);
+    }
+
+    /**
+     * Compute the URI for a symbol page. The URI is expressed
+     * relatively to the current page.
+     */
+    protected URI definitionURI(Symbol sym) {
+        return definitionURI(sym, page);
     }
 
     /** Get the list pf packages to be documented.
@@ -311,9 +339,9 @@ public abstract class HTMLGenerator {
 
     /** Get a file writer to a page.
      */
-    protected static Writer fileWriter(File rootDirectory, URI uri) {
+    protected static Writer fileWriter(File rootDirectory, String uri) {
         try {
-            File f = new File(rootDirectory, uri.toString());
+            File f = new File(rootDirectory, uri);
             f.getParentFile().mkdirs();
             return new BufferedWriter(new FileWriter(f));
         } catch(IOException e) { throw Debug.abort(e); }
@@ -324,15 +352,16 @@ public abstract class HTMLGenerator {
      * @param uri   URL of the page
      * @param title Title of the page
      */
-    protected void createPrinters(URI uri, String title, String destinationFrame) {
+    protected void createPrinters(Writer writer, URI uri, String title, String destinationFrame) {
 	stack.push(page);
 	stack.push(symtab);
 	// Create a new page.
-	page = new Page(fileWriter(directory, uri), uri, destinationFrame,
+	page = new Page(writer, uri, destinationFrame,
 			title, representation,
-			stylesheet/*, script*/);
+                        adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_STYLESHEET), uri).toString(),
+                        adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_JAVASCRIPT), uri).toString());
 	// Create a printer to print symbols and types.
-	symtab = SymbolTablePrinterFactory.makeHTML(page, isDocumented);
+	symtab = SymbolTablePrinterFactory.makeHTML(this, page, isDocumented);
 	page.open();
     }
 
@@ -340,7 +369,7 @@ public abstract class HTMLGenerator {
      * Close the current page.
      */
     protected void closePrinters() {
-        page.close();
+        //page.close();
         symtab = (MySymbolTablePrinter) stack.pop();
         page = (Page) stack.pop();
     }
@@ -368,27 +397,32 @@ public abstract class HTMLGenerator {
     }
 
     /**
-     * Generates the HTML pages.
+     * Main function.
      */
     public void apply() {
 
-        if (! checkOutpath())
-            return;
+        if (!launchServer) {
+            if (! checkOutpath())
+                return;
+        }
 
         this.xhtml = new HTMLValidator(getResourceURL(HTML_DTD[0]));
 
-        // page with list of packages
-        createPackageIndexPage();
+        // Page with list of packages
+        Promise packageIndexPage = new PackageIndexPromise();
+        promises.put(packageIndexPage.name(), packageIndexPage);
 
-        // class and object pages
+        // Class and object pages
         ScalaSearch.foreach(root,
 			    new ScalaSearch.SymFun() {
 				public void apply(Symbol sym) {
 				    if (ScalaSearch.isContainer(sym) &&
 					isDocumented.apply(sym)) {
- 					createPages(sym);
+                                        Promise containerPage = new ContainerPromise(sym);
+                                        promises.put(containerPage.name(), containerPage);
  					if (sym.isPackage() || sym.isPackageClass()) {
- 					    createContainerIndexPage(sym);
+                                            Promise containerIndexPage = new ContainerIndexPromise(sym);
+                                            promises.put(containerIndexPage.name(), containerIndexPage);
                                         }
 				    }
 				}
@@ -396,46 +430,72 @@ public abstract class HTMLGenerator {
 			    );
 
 	if (!noindex) {
-            // page with index of Scala documented entities.
-	    createIndexPage();
+            // Page with index of Scala documented entities
+            Promise indexPage = new IndexPromise();
+            promises.put(indexPage.name(), indexPage);
         }
 
-        createHelpPage();
+        // Help page
+        Promise helpPage = new HelpPromise();
+        promises.put(helpPage.name(), helpPage);
 
-	// frame description page
-	createFramePage();
+	// Frame description page
+        Promise framePage = new FramePromise();
+        promises.put(framePage.name(), framePage);
 
-        // style sheet
-        createResource(HTMLPrinter.DEFAULT_STYLESHEET, null);
+        // Style sheet
+        Promise styleSheetPage = new ResourcePromise(HTMLPrinter.DEFAULT_STYLESHEET, null);
+        promises.put(styleSheetPage.name(), styleSheetPage);
 
-        // script
-        createResource(HTMLPrinter.DEFAULT_JAVASCRIPT, null);
+        // Script
+        Promise javaScriptPage = new ResourcePromise(HTMLPrinter.DEFAULT_JAVASCRIPT, null);
+        promises.put(javaScriptPage.name(), javaScriptPage);
 
-        // launch HTTP server
         if (launchServer) {
-            Servlet servlet = new ScaladocServlet();
-            Servlet[] servlets = new Servlet[]{ servlet };
-            //	File directory = new File(global.outpath);
-            try {
-                HTTPServer webServer = new HTTPServer(directory, port, servlets);
-                webServer.start();
-            }
-            catch (IOException e) {
-                System.out.println("Server could not start because of an "
-                                   + e.getClass());
-                System.out.println(e);
-            }
-            // to prevent going to the next phase (implies checking
-            // errors when parsing a type after RefCheck)
-            try {
-                synchronized(this) { wait(); }
-            }
-            catch(InterruptedException e) {
-                System.err.println("Error while waiting.");
-                System.exit(0);
+            // Launch HTTP server
+            launchServer();
+        }
+        else {
+            // Generate statically all the pages
+            Iterator i = promises.values().iterator();
+            while(i.hasNext()) {
+                Promise pagePromise = (Promise) i.next();
+                Writer writer = fileWriter(directory, pagePromise.name());
+                pagePromise.writeOn(writer);
+                try {
+                    writer.close();
+                } catch(IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
+    }
 
+    /**
+     * Launch the HTTP server.
+     */
+    protected void launchServer() {
+        Servlet pageServlet = new PageServlet();
+        Servlet searchServlet = new SearchServlet();
+        Servlet[] servlets = new Servlet[]{ pageServlet, searchServlet };
+        try {
+            HTTPServer webServer = new HTTPServer(directory, port, servlets);
+            webServer.start();
+        }
+        catch (IOException e) {
+            System.out.println("Server could not start because of an "
+                               + e.getClass());
+            System.out.println(e);
+        }
+        // to prevent going to the next phase (implies checking
+        // errors when parsing a type after RefCheck)
+        try {
+            synchronized(this) { wait(); }
+        }
+        catch(InterruptedException e) {
+            System.err.println("Error while waiting.");
+            System.exit(0);
+        }
     }
 
     /**
@@ -491,45 +551,56 @@ public abstract class HTMLGenerator {
     /**
      * Generates a HTML page for a class or object definition.
      */
-    protected void createPages(Symbol sym) {
-	String title = Location.getName(sym);
-        createPrinters(Location.getURI(sym), title, SELF_FRAME);
-        page.printHeader(ATTRS_META, getGenerator());
-	page.printOpenBody();
+    class ContainerPromise  extends Promise {
 
-	if (sym.isRoot())
-	    addNavigationBar(ROOT_NAV_CONTEXT);
-	else
-	    addNavigationBar(CONTAINER_NAV_CONTEXT);
-        page.printlnHLine();
+        protected Symbol sym;
 
-        addTitle(sym);
-        addDocumentationComment(sym);
-        page.printlnHLine();
-
-        String[] titles = new String[]{ "Field", "Method", "Object",
-            "Trait", "Class", "Package" }; // "Constructor"
-        String[] inherited = new String[]{ "Fields", "Methods", "Objects",
-            "Traits", "Classes", "Packages" };
-	Symbol[][] members =
-            ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
-	for (int i = 0; i < members.length; i++) {
-	    addMemberSummary(members[i], titles[i] + " Summary");
-	    if (i == 1) addInheritedMembers(sym, inherited[i]);
+        public ContainerPromise(Symbol sym) {
+            this.sym = sym;
         }
-	for (int i = 0; i < titles.length; i++)
-            addMemberDetail(members[i], titles[i] + " Detail");
 
-        page.printlnHLine();
-	if (sym.isRoot())
-	    addNavigationBar(ROOT_NAV_CONTEXT);
-	else
-	    addNavigationBar(CONTAINER_NAV_CONTEXT);
-        if (validate)
-            addValidationBar();
+        public String name() { return Location.getURI(sym).toString(); }
 
-	page.printFootpage();
-        closePrinters();
+        public void writeOn(Writer writer) {
+            String title = Location.getName(sym);
+            createPrinters(writer, Location.getURI(sym), title, SELF_FRAME);
+            page.printHeader(ATTRS_META, getGenerator());
+            page.printOpenBody();
+
+            if (sym.isRoot())
+                addNavigationBar(ROOT_NAV_CONTEXT);
+            else
+                addNavigationBar(CONTAINER_NAV_CONTEXT);
+            page.printlnHLine();
+
+            addTitle(sym);
+            addDocumentationComment(sym);
+            page.printlnHLine();
+
+            String[] titles = new String[]{ "Field", "Method", "Object",
+                                            "Trait", "Class", "Package" }; // "Constructor"
+            String[] inherited = new String[]{ "Fields", "Methods", "Objects",
+                                               "Traits", "Classes", "Packages" };
+            Symbol[][] members =
+                ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
+            for (int i = 0; i < members.length; i++) {
+                addMemberSummary(members[i], titles[i] + " Summary");
+                if (i == 1) addInheritedMembers(sym, inherited[i]);
+            }
+            for (int i = 0; i < titles.length; i++)
+                addMemberDetail(members[i], titles[i] + " Detail");
+
+            page.printlnHLine();
+            if (sym.isRoot())
+                addNavigationBar(ROOT_NAV_CONTEXT);
+            else
+                addNavigationBar(CONTAINER_NAV_CONTEXT);
+            if (validate)
+                addValidationBar();
+
+            page.printFootpage();
+            closePrinters();
+        }
     }
 
     /**
@@ -549,7 +620,7 @@ public abstract class HTMLGenerator {
 
     protected void addSearchSection(Page page) {
 	page.printlnOTag("form", new XMLAttribute[] {
-            new XMLAttribute("action", "/" + SERVLET_NAME),
+            new XMLAttribute("action", "/" + SEARCH_SERVLET_NAME),
             new XMLAttribute("method", "get") }).indent();
 
         page.printlnOTag("table", new XMLAttribute[] {
@@ -618,9 +689,9 @@ public abstract class HTMLGenerator {
      */
     protected void addNavigationBar(int navigationContext, Page page) {
 	try {
-	    String overviewLink = page.rel(ROOT_PAGE);
-	    String indexLink    = page.rel(INDEX_PAGE);
-	    String helpLink     = page.rel(HELP_PAGE);
+	    String overviewLink = adaptURI(Location.mkURI(ROOT_PAGE), page.uri).toString();
+	    String indexLink    = adaptURI(Location.mkURI(INDEX_PAGE), page.uri).toString();
+	    String helpLink     = adaptURI(Location.mkURI(HELP_PAGE), page.uri).toString();
 
 	    page.printlnOTag("table", ATTRS_NAVIGATION).indent();
 	    page.printlnOTag("tr").indent();
@@ -878,7 +949,8 @@ public abstract class HTMLGenerator {
      */
     protected void addMemberDetail(Symbol sym) {
 	// title with label
-	page.printlnAname(Page.asSeenFrom(Location.getURI(sym), uri).getFragment(), "");
+        //	page.printlnAname(Page.asSeenFrom(Location.getURI(sym), uri).getFragment(), "");
+	page.printlnAname(Location.getURI(sym).getFragment(), "");
 	page.printTag("h3", sym.nameString());
 
 	// signature
@@ -996,37 +1068,43 @@ public abstract class HTMLGenerator {
      *
      * @param title The page title
      */
-    protected void createFramePage() {
-        createPrinters(Location.makeURI(FRAME_PAGE), windowtitle, "");
-        page.printHeader(ATTRS_META, getGenerator());
+    class FramePromise extends Promise {
 
-	page.printlnOTag("frameset", new XMLAttribute[] {
-            new XMLAttribute("cols", "25%, 75%")}).indent();
-	page.printlnOTag("frameset", new XMLAttribute[] {
-            new XMLAttribute("rows", "50%, 50%")}).indent();
+        public String name() { return FRAME_PAGE; }
 
-	page.printlnOTag("frame", new XMLAttribute[] {
-            new XMLAttribute("src", PACKAGE_LIST_PAGE),
-            new XMLAttribute("name", PACKAGES_FRAME)});
-	page.printlnOTag("frame", new XMLAttribute[] {
-            new XMLAttribute("src", PACKAGE_PAGE),
-            new XMLAttribute("name", CLASSES_FRAME)}).undent();
-	page.printlnCTag("frameset");
-	page.printlnOTag("frame", new XMLAttribute[] {
-            new XMLAttribute("src", ROOT_PAGE),
-            new XMLAttribute("name", ROOT_FRAME)});
+        public void writeOn(Writer writer) {
+            createPrinters(writer, Location.makeURI(FRAME_PAGE), windowtitle, "");
+            page.printHeader(ATTRS_META, getGenerator());
 
-        page.printlnOTag("noframes").indent();
-        page.printlnSTag("p");
-        page.print("Here is the ");
-        page.printAhref(ROOT_PAGE, "non-frame based version");
-        page.println(" of the documentation.").undent();
-        page.printlnCTag("noframes").undent();
+            page.printlnOTag("frameset", new XMLAttribute[] {
+                new XMLAttribute("cols", "25%, 75%")}).indent();
+            page.printlnOTag("frameset", new XMLAttribute[] {
+                new XMLAttribute("rows", "50%, 50%")}).indent();
 
-        page.printlnCTag("frameset");
-        page.printlnCTag("html");
+            page.printlnOTag("frame", new XMLAttribute[] {
+                new XMLAttribute("src", adaptURI(Location.mkURI(PACKAGE_INDEX_PAGE), page.uri).toString()),
+                new XMLAttribute("name", PACKAGES_FRAME)});
+            page.printlnOTag("frame", new XMLAttribute[] {
+                new XMLAttribute("src", adaptURI(Location.mkURI(PACKAGE_PAGE), page.uri).toString()),
+                new XMLAttribute("name", CLASSES_FRAME)}).undent();
+            page.printlnCTag("frameset");
+            page.printlnOTag("frame", new XMLAttribute[] {
+                new XMLAttribute("src", adaptURI(Location.mkURI(ROOT_PAGE), page.uri).toString()),
+                new XMLAttribute("name", ROOT_FRAME)});
 
-        closePrinters();
+            page.printlnOTag("noframes").indent();
+            page.printlnSTag("p");
+            page.print("Here is the ");
+            page.printAhref(adaptURI(Location.mkURI(ROOT_PAGE), page.uri).toString(),
+                            "non-frame based version");
+            page.println(" of the documentation.").undent();
+            page.printlnCTag("noframes").undent();
+
+            page.printlnCTag("frameset");
+            page.printlnCTag("html");
+
+            closePrinters();
+        }
     }
 
     /**
@@ -1037,7 +1115,6 @@ public abstract class HTMLGenerator {
         String rsc = HTMLGenerator.class
             .getResource("resources/" + name)
             .toString();
-        //        System.out.println("Some used resource: " + rsc);
         return rsc;
     }
 
@@ -1046,35 +1123,39 @@ public abstract class HTMLGenerator {
      *
      * @param name The name of the resource file
      */
-    protected void createResource(String name, String dir) {
-        File dest;
-        if (dir == null)
-            dest = new File(directory, name);
-        else {
-            File f = new File(directory, dir);
-            f.mkdirs();
-            dest = new File(f, name);
+    class ResourcePromise extends Promise {
+
+        protected String name;
+
+        protected String dir;
+
+        ResourcePromise(String name, String dir) {
+            this.name = name;
+            this.dir = dir;
         }
-        String rsrcName = "resources/" + name;
-        InputStream in = HTMLGenerator.class.getResourceAsStream(rsrcName);
-        if (in == null)
-	    throw Debug.abort("Resource file \"" + rsrcName + "\" not found");
-        try {
-            FileOutputStream out = new FileOutputStream(dest);
 
-            byte[] buf = new byte[1024];
-            int len;
-            while (true) {
-                len = in.read(buf, 0, buf.length);
-                if (len <= 0) break;
-               out.write(buf, 0, len);
+        public String name() { return name; }
+
+        public void writeOn(Writer writer) {
+            String rsrcName = "resources/" + name;
+            Reader reader = new InputStreamReader(HTMLGenerator.class.getResourceAsStream(rsrcName));
+            if (reader == null)
+                throw Debug.abort("Resource file \"" + rsrcName + "\" not found");
+            try {
+                char[] buf = new char[1024];
+                int len;
+                while (true) {
+                    len = reader.read(buf, 0, buf.length);
+                    if (len <= 0) break;
+                    writer.write(buf, 0, len);
+                }
+
+                reader.close();
+                //                writer.close();
+            } catch (IOException exception) {
+                throw Debug.abort(exception); // !!! reporting an error would be wiser
             }
-
-            in.close();
-            out.close();
-	} catch (IOException exception) {
-	    throw Debug.abort(exception); // !!! reporting an error would be wiser
-	}
+        }
     }
 
     private String removeHtmlSuffix(String url) {
@@ -1107,7 +1188,7 @@ public abstract class HTMLGenerator {
 	    for (int i = 1; i < syms.length; i++) {
 	        Symbol sym = syms[i];
                 page.printAhref(
-                    packageSummaryPage(sym),
+                    adaptURI(Location.mkURI(packageSummaryPage(sym)), page.uri).toString(),
                     CLASSES_FRAME,
 		    removeHtmlSuffix(Location.getURI(sym).toString()));
 	        page.printlnSTag("br");
@@ -1138,10 +1219,10 @@ public abstract class HTMLGenerator {
                 if (! sym.isRoot()) {
                     String name = sym.nameString();
                     if (sym.isPackage() || sym.isPackageClass())
-                        page.printAhref(definitionURL(sym), CLASSES_FRAME, name);
+                        page.printAhref(definitionURI(sym).toString(), CLASSES_FRAME, name);
                     else {
                         Symbol user = (useFullName) ? global.definitions.ROOT_CLASS : Symbol.NONE;
-                        page.printAhref(definitionURL(sym), ROOT_FRAME, name);
+                        page.printAhref(definitionURI(sym).toString(), ROOT_FRAME, name);
                     }
 	            page.printlnSTag("br");
                 }
@@ -1159,23 +1240,29 @@ public abstract class HTMLGenerator {
      *
      * @param title
      */
-    protected void createPackageIndexPage() {
-	createPrinters(Location.makeURI(PACKAGE_LIST_PAGE), "List of packages", CLASSES_FRAME);
-        page.printHeader(ATTRS_META, getGenerator());
-	page.printOpenBody();
+    class PackageIndexPromise extends Promise {
 
-        Symbol[] packages = ScalaSearch.getSortedPackageList(root, isDocumented);
+        public String name() { return PACKAGE_INDEX_PAGE; }
 
-        addDocumentationTitle(new XMLAttribute[]{
-            new XMLAttribute("class", "doctitle-larger")});
-        page.printAhref(PACKAGE_PAGE, CLASSES_FRAME, "All objects, traits and classes");
-        page.printlnSTag("p");
-        printPackagesTable(packages, "Packages");
-        if (validate)
-            addValidationBar();
+        public void writeOn(Writer writer) {
+            createPrinters(writer, Location.makeURI(PACKAGE_INDEX_PAGE), "List of packages", CLASSES_FRAME);
+            page.printHeader(ATTRS_META, getGenerator());
+            page.printOpenBody();
 
-	page.printFootpage();
-	closePrinters();
+            Symbol[] packages = ScalaSearch.getSortedPackageList(root, isDocumented);
+
+            addDocumentationTitle(new XMLAttribute[]{
+                new XMLAttribute("class", "doctitle-larger")});
+            page.printAhref(adaptURI(Location.mkURI(PACKAGE_PAGE), page.uri).toString(),
+                            CLASSES_FRAME, "All objects, traits and classes");
+            page.printlnSTag("p");
+            printPackagesTable(packages, "Packages");
+            if (validate)
+                addValidationBar();
+
+            page.printFootpage();
+            closePrinters();
+        }
     }
 
     /**
@@ -1183,38 +1270,49 @@ public abstract class HTMLGenerator {
      *
      * @param sym
      */
-    protected void createContainerIndexPage(Symbol sym) {
-        createPrinters(Location.makeURI(packageSummaryPage(sym)), Location.getName(sym), ROOT_FRAME);
-        page.printHeader(ATTRS_META, getGenerator());
-	page.printOpenBody();
+    class ContainerIndexPromise extends Promise {
 
-	page.printlnOTag("table", ATTRS_NAVIGATION).indent();
-	page.printlnOTag("tr").indent();
-	page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
-	printPath(sym, ROOT_FRAME);
-	page.printlnCTag("td");
-	page.printlnCTag("tr");
-	page.printlnCTag("table");
-	page.printlnSTag("p");
+        protected Symbol sym;
 
-        String[] titles = new String[]{ "Objects", "Traits", "Classes" };
-	if (sym.isRoot()) {
-	    Symbol[][] members = ScalaSearch.getSubContainerMembers(root, isDocumented);
-	    for (int i = 0; i < titles.length; i++)
-		addSymbolTable(members[i], "All " + titles[i], true);
-	} else {
-	    Symbol[][] members = ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
-	    for (int i = 0; i < titles.length; i++) {
-                Arrays.sort(members[i + 2], ScalaSearch.symAlphaOrder);
-		addSymbolTable(members[i + 2], titles[i], false);
+        ContainerIndexPromise(Symbol sym) {
+            this.sym = sym;
+        }
+
+        public String name() { return packageSummaryPage(sym); }
+
+        public void writeOn(Writer writer) {
+            createPrinters(writer, Location.makeURI(packageSummaryPage(sym)), Location.getName(sym), ROOT_FRAME);
+            page.printHeader(ATTRS_META, getGenerator());
+            page.printOpenBody();
+
+            page.printlnOTag("table", ATTRS_NAVIGATION).indent();
+            page.printlnOTag("tr").indent();
+            page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
+            printPath(sym, ROOT_FRAME);
+            page.printlnCTag("td");
+            page.printlnCTag("tr");
+            page.printlnCTag("table");
+            page.printlnSTag("p");
+
+            String[] titles = new String[]{ "Objects", "Traits", "Classes" };
+            if (sym.isRoot()) {
+                Symbol[][] members = ScalaSearch.getSubContainerMembers(root, isDocumented);
+                for (int i = 0; i < titles.length; i++)
+                    addSymbolTable(members[i], "All " + titles[i], true);
+            } else {
+                Symbol[][] members = ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
+                for (int i = 0; i < titles.length; i++) {
+                    Arrays.sort(members[i + 2], ScalaSearch.symAlphaOrder);
+                    addSymbolTable(members[i + 2], titles[i], false);
+                }
             }
-	}
 
-        if (validate)
-            addValidationBar();
+            if (validate)
+                addValidationBar();
 
-	page.printFootpage();
-        closePrinters();
+            page.printFootpage();
+            closePrinters();
+        }
     }
 
     /**
@@ -1222,54 +1320,59 @@ public abstract class HTMLGenerator {
      *
      * @param title The page title
      */
-    protected void createIndexPage() {
-	String title = "Scala Library Index";
-	createPrinters(Location.makeURI(INDEX_PAGE), title, SELF_FRAME);
-        page.printHeader(ATTRS_META, getGenerator());
-	page.printOpenBody();
+    class IndexPromise extends Promise {
 
-        addNavigationBar(INDEX_NAV_CONTEXT);
-        page.printlnHLine();
+        public String name() { return INDEX_PAGE; }
 
-        page.printlnOTag("table", ATTRS_MEMBER).indent();
-        page.printlnOTag("tr").indent();
-        page.printlnOTag("td", ATTRS_MEMBER_TITLE).indent();
-        page.println("Index").undent();
-        page.printlnCTag("td").undent();
-        page.printlnCTag("tr").undent();
-        page.printlnCTag("table");
-        page.printlnSTag("br");
+        public  void writeOn(Writer writer) {
+            String title = "Scala Library Index";
+            createPrinters(writer, Location.makeURI(INDEX_PAGE), title, SELF_FRAME);
+            page.printHeader(ATTRS_META, getGenerator());
+            page.printOpenBody();
 
-	Pair index = ScalaSearch.index(root, isDocumented);
-	Character[] chars = (Character[]) index.fst;
-	Map map = (Map) index.snd;
-	for (int i  = 0; i < chars.length; i++)
-	    page.printlnAhref("#" + i, SELF_FRAME, HTMLPrinter.encode(chars[i]));
-	page.printlnHLine();
-	for (int i  = 0; i < chars.length; i++) {
-	    Character car = chars[i];
-	    page.printlnAname(String.valueOf(i), "");
-	    page.printlnOTag("h2");
-            page.printBold(HTMLPrinter.encode(car));
-            page.printlnCTag("h2");
-	    page.printlnOTag("dl").indent();
-	    Symbol[] syms = (Symbol[]) map.get(car);
-	    for (int j  = 0; j < syms.length; j++) {
-		page.printOTag("dt");
-                addIndexEntry(syms[j]);
-                page.printlnCTag("dt");
-		page.printlnTag("dd", firstSentence(getComment(syms[j])));
-	    }
-            page.undent().printlnCTag("dl");
-	}
+            addNavigationBar(INDEX_NAV_CONTEXT);
+            page.printlnHLine();
 
-        page.printlnHLine();
-        addNavigationBar(INDEX_NAV_CONTEXT);
-        if (validate)
-            addValidationBar();
+            page.printlnOTag("table", ATTRS_MEMBER).indent();
+            page.printlnOTag("tr").indent();
+            page.printlnOTag("td", ATTRS_MEMBER_TITLE).indent();
+            page.println("Index").undent();
+            page.printlnCTag("td").undent();
+            page.printlnCTag("tr").undent();
+            page.printlnCTag("table");
+            page.printlnSTag("br");
 
-	page.printFootpage();
-        closePrinters();
+            Pair index = ScalaSearch.index(root, isDocumented);
+            Character[] chars = (Character[]) index.fst;
+            Map map = (Map) index.snd;
+            for (int i  = 0; i < chars.length; i++)
+                page.printlnAhref("#" + i, SELF_FRAME, HTMLPrinter.encode(chars[i]));
+            page.printlnHLine();
+            for (int i  = 0; i < chars.length; i++) {
+                Character car = chars[i];
+                page.printlnAname(String.valueOf(i), "");
+                page.printlnOTag("h2");
+                page.printBold(HTMLPrinter.encode(car));
+                page.printlnCTag("h2");
+                page.printlnOTag("dl").indent();
+                Symbol[] syms = (Symbol[]) map.get(car);
+                for (int j  = 0; j < syms.length; j++) {
+                    page.printOTag("dt");
+                    addIndexEntry(syms[j]);
+                    page.printlnCTag("dt");
+                    page.printlnTag("dd", firstSentence(getComment(syms[j])));
+                }
+                page.undent().printlnCTag("dl");
+            }
+
+            page.printlnHLine();
+            addNavigationBar(INDEX_NAV_CONTEXT);
+            if (validate)
+                addValidationBar();
+
+            page.printFootpage();
+            closePrinters();
+        }
     }
 
     /**
@@ -1277,168 +1380,173 @@ public abstract class HTMLGenerator {
      *
      * @param title The page title
      */
-    protected void createHelpPage() {
-	String title = "API Help";
-	createPrinters(Location.makeURI(HELP_PAGE), title, ROOT_PAGE);
-        page.printHeader(ATTRS_META, getGenerator());
-	page.printOpenBody();
+    class HelpPromise extends Promise {
 
-        addNavigationBar(HELP_NAV_CONTEXT);
-        page.printlnHLine();
+        public String name() { return HELP_PAGE; }
 
-        XMLAttribute[] h3 = new XMLAttribute[]{
-            new XMLAttribute("style", "margin:15px 0px 0px 0px; "
-                + "font-size:large; font-weight: bold;")
-        };
-        XMLAttribute[] em = new XMLAttribute[]{
-            new XMLAttribute("style", "margin:15px 0px 15px 0px; "
-                + "font-size:small; font-style: italic;")
-        };
-        page.printlnTag("div", ATTRS_PAGE_TITLE, "How This API Document Is Organized");
-        page.println("This API (Application Programming Interface) document "
-            + "has pages corresponding to the items in the navigation bar, "
-            + "described as follows.");
+        public void writeOn(Writer writer) {
+            String title = "API Help";
+            createPrinters(writer, Location.makeURI(HELP_PAGE), title, ROOT_PAGE);
+            page.printHeader(ATTRS_META, getGenerator());
+            page.printOpenBody();
 
-        page.printlnTag("div", h3, "Overview");
-        page.printlnOTag("blockquote").indent();
-        page.print("The ");
-        page.printAhref(ROOT_PAGE, SELF_FRAME, "Overview");
-        page.println(" page is the front page of this API document and "
-	    + "provides a list of all top-level packages, classes, traits "
-	    + "and objects with a summary for each. "
-            + "This page can also contain an overall description of the "
-            + "set of packages.").undent();
-        page.printlnCTag("blockquote");
+            addNavigationBar(HELP_NAV_CONTEXT);
+            page.printlnHLine();
 
-        page.printlnTag("div", h3, "Package");
-        page.printlnOTag("blockquote").indent();
-        page.println("Each package has a page that contains a list of "
-            + "its objects, traits and classes, with a summary for each. "
-            + "This page can contain three categories:");
-        page.printlnOTag("ul").indent();
-        page.printlnTag("li", "Objects");
-        page.printlnTag("li", "Traits");
-        page.printlnTag("li", "Classes").undent();
-        page.printlnCTag("ul").undent();
-        page.printlnCTag("blockquote");
+            XMLAttribute[] h3 = new XMLAttribute[]{
+                new XMLAttribute("style", "margin:15px 0px 0px 0px; "
+                                 + "font-size:large; font-weight: bold;")
+            };
+            XMLAttribute[] em = new XMLAttribute[]{
+                new XMLAttribute("style", "margin:15px 0px 15px 0px; "
+                                 + "font-size:small; font-style: italic;")
+            };
+            page.printlnTag("div", ATTRS_PAGE_TITLE, "How This API Document Is Organized");
+            page.println("This API (Application Programming Interface) document "
+                         + "has pages corresponding to the items in the navigation bar, "
+                         + "described as follows.");
 
-        page.printlnTag("div", h3, "Object/Trait/Class");
-        page.printlnOTag("blockquote").indent();
-        page.println("Each object, trait, class, nested object, nested "
-            + "trait and nested class has its own separate page. Each "
-            + "of these pages has three sections consisting of a object"
-            + "/trait/class description, summary tables, and detailed "
-            + "member descriptions:");
-        page.printlnOTag("ul").indent();
-        page.printlnTag("li", "Class inheritance diagram");
-        page.printlnTag("li", "Direct Subclasses");
-        page.printlnTag("li", "All Known Subinterfaces");
-        page.printlnTag("li", "All Known Implementing Classes");
-        page.printlnTag("li", "Class/interface declaration");
-        page.printlnTag("li", "Class/interface description<p/>");
-        page.printlnTag("li", "Nested Class Summary");
-        page.printlnTag("li", "Field Summary");
-        page.printlnTag("li", "Constructor Summary");
-        page.printlnTag("li", "Method Summary<p/>");
-        page.printlnTag("li", "Field Detail");
-        page.printlnTag("li", "Constructor Detail");
-        page.printlnTag("li", "Method Detail").undent();
-        page.printlnCTag("ul").undent();
-        page.println("Each summary entry contains the first sentence from "
-            + "the detailed description for that item. The summary entries "
-            + "are alphabetical, while the detailed descriptions are in "
-            + "the order they appear in the source code. This preserves "
-            + "the logical groupings established by the programmer.");
-        page.printlnCTag("blockquote");
-
-
-        page.printlnTag("div", h3, "Index");
-        page.printlnOTag("blockquote").indent();
-        page.print("The ");
-        page.printAhref(INDEX_PAGE, SELF_FRAME, "Index");
-        page.print(" contains an alphabetic list of all classes, interfaces, "
-            + "constructors, methods, and fields.");
-        page.printlnCTag("blockquote");
-
-        if (launchServer) {
-            page.printlnTag("div", h3, "Searching a definition");
+            page.printlnTag("div", h3, "Overview");
             page.printlnOTag("blockquote").indent();
-            page.printlnSTag("a",
-                             new XMLAttribute[] {
-                                 new XMLAttribute("name", SEARCH_SECTION) });
-            page.printlnOTag("p");
-            page.println("At the top and and at the bottom of each page, there is a form that "
-                         + "allows to search the definition of a <em>symbol</em> (field, method, "
-                         + "package, object, type, trait or class).");
-            page.printlnCTag("p");
-
-            page.printlnOTag("p");
-            page.println("There are three ways of specifying the symbols of interest:");
-            page.printlnOTag("dl");
-            page.printOTag("dt");
-            page.printlnTag("b", "By name");
-            page.printOTag("dd");
-            page.println("The search string must be a ");
-            page.printlnTag("a",
-                           new XMLAttribute[] {
-                               new XMLAttribute("href",
-                                                "http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/Pattern.html") },
-                           "regular expression");
-            page.print(" that has to match a substring in the name of the searched symbol.");
-            page.printOTag("dt");
-            page.printlnTag("b", "By comment");
-            page.printOTag("dd");
-            page.println("The search string must be a ");
-            page.printlnTag("a",
-                           new XMLAttribute[] {
-                               new XMLAttribute("href",
-                                                "http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/Pattern.html") },
-                           "regular expression");
-            page.print(" that has to match a substring in the comments associated to the searched symbol.");
-            page.printOTag("dt");
-            page.printlnTag("b", "By type");
-            page.printOTag("dd");
-            page.println("The search string must represent a Scala type. Any string ");
-            page.printlnTag("code", "S");
-            page.println(" such that ");
-            page.printlnTag("pre", "def foo S;");
-            page.println(" is a valid function definition is accepted. Here are some examples:");
-            page.printlnOTag("ul");
-            page.printOTag("li");
-            page.printlnTag("code", ": int => int");
-            page.printOTag("li");
-            page.printlnTag("code", "[a,b]: List[a] => (a => b) => List[b]");
-            page.printOTag("li");
-            page.printlnTag("code", "(x: int, y: int): unit");
-            page.printlnCTag("ul");
-            page.println("The searched symbols must conform to the entered type modulo ");
-            page.printlnTag("a",
-                           new XMLAttribute[] {
-                               new XMLAttribute("href",
-                                                "http://www.pps.jussieu.fr/~dicosmo/Publications/ISObook.html") },
-                           "type isomorphism");
-            page.println(". This concept allows to unify types that differ by their exact "
-                         + "representation but not by their meaning.  The order of parameters is "
-                         + "for instance irrelevant when looking for a function. Note finally that "
-                         + "methods of classes are interpreted as functions that would take an "
-                         + "extra argument of the type of the class.");
-            page.printlnCTag("dl");
-            page.printlnCTag("p");
+            page.print("The ");
+            page.printAhref(adaptURI(Location.mkURI(ROOT_PAGE), page.uri).toString(), SELF_FRAME, "Overview");
+            page.println(" page is the front page of this API document and "
+                         + "provides a list of all top-level packages, classes, traits "
+                         + "and objects with a summary for each. "
+                         + "This page can also contain an overall description of the "
+                         + "set of packages.").undent();
             page.printlnCTag("blockquote");
+
+            page.printlnTag("div", h3, "Package");
+            page.printlnOTag("blockquote").indent();
+            page.println("Each package has a page that contains a list of "
+                         + "its objects, traits and classes, with a summary for each. "
+                         + "This page can contain three categories:");
+            page.printlnOTag("ul").indent();
+            page.printlnTag("li", "Objects");
+            page.printlnTag("li", "Traits");
+            page.printlnTag("li", "Classes").undent();
+            page.printlnCTag("ul").undent();
+            page.printlnCTag("blockquote");
+
+            page.printlnTag("div", h3, "Object/Trait/Class");
+            page.printlnOTag("blockquote").indent();
+            page.println("Each object, trait, class, nested object, nested "
+                         + "trait and nested class has its own separate page. Each "
+                         + "of these pages has three sections consisting of a object"
+                         + "/trait/class description, summary tables, and detailed "
+                         + "member descriptions:");
+            page.printlnOTag("ul").indent();
+            page.printlnTag("li", "Class inheritance diagram");
+            page.printlnTag("li", "Direct Subclasses");
+            page.printlnTag("li", "All Known Subinterfaces");
+            page.printlnTag("li", "All Known Implementing Classes");
+            page.printlnTag("li", "Class/interface declaration");
+            page.printlnTag("li", "Class/interface description<p/>");
+            page.printlnTag("li", "Nested Class Summary");
+            page.printlnTag("li", "Field Summary");
+            page.printlnTag("li", "Constructor Summary");
+            page.printlnTag("li", "Method Summary<p/>");
+            page.printlnTag("li", "Field Detail");
+            page.printlnTag("li", "Constructor Detail");
+            page.printlnTag("li", "Method Detail").undent();
+            page.printlnCTag("ul").undent();
+            page.println("Each summary entry contains the first sentence from "
+                         + "the detailed description for that item. The summary entries "
+                         + "are alphabetical, while the detailed descriptions are in "
+                         + "the order they appear in the source code. This preserves "
+                         + "the logical groupings established by the programmer.");
+            page.printlnCTag("blockquote");
+
+
+            page.printlnTag("div", h3, "Index");
+            page.printlnOTag("blockquote").indent();
+            page.print("The ");
+            page.printAhref(adaptURI(Location.mkURI(INDEX_PAGE), page.uri).toString(), SELF_FRAME, "Index");
+            page.print(" contains an alphabetic list of all classes, interfaces, "
+                       + "constructors, methods, and fields.");
+            page.printlnCTag("blockquote");
+
+            if (launchServer) {
+                page.printlnTag("div", h3, "Searching a definition");
+                page.printlnOTag("blockquote").indent();
+                page.printlnSTag("a",
+                                 new XMLAttribute[] {
+                                     new XMLAttribute("name", SEARCH_SECTION) });
+                page.printlnOTag("p");
+                page.println("At the top and and at the bottom of each page, there is a form that "
+                             + "allows to search the definition of a <em>symbol</em> (field, method, "
+                             + "package, object, type, trait or class).");
+                page.printlnCTag("p");
+
+                page.printlnOTag("p");
+                page.println("There are three ways of specifying the symbols of interest:");
+                page.printlnOTag("dl");
+                page.printOTag("dt");
+                page.printlnTag("b", "By name");
+                page.printOTag("dd");
+                page.println("The search string must be a ");
+                page.printlnTag("a",
+                                new XMLAttribute[] {
+                                    new XMLAttribute("href",
+                                                     "http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/Pattern.html") },
+                                "regular expression");
+                page.print(" that has to match a substring in the name of the searched symbol.");
+                page.printOTag("dt");
+                page.printlnTag("b", "By comment");
+                page.printOTag("dd");
+                page.println("The search string must be a ");
+                page.printlnTag("a",
+                                new XMLAttribute[] {
+                                    new XMLAttribute("href",
+                                                     "http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/Pattern.html") },
+                                "regular expression");
+                page.print(" that has to match a substring in the comments associated to the searched symbol.");
+                page.printOTag("dt");
+                page.printlnTag("b", "By type");
+                page.printOTag("dd");
+                page.println("The search string must represent a Scala type. Any string ");
+                page.printlnTag("code", "S");
+                page.println(" such that ");
+                page.printlnTag("pre", "def foo S;");
+                page.println(" is a valid function definition is accepted. Here are some examples:");
+                page.printlnOTag("ul");
+                page.printOTag("li");
+                page.printlnTag("code", ": int => int");
+                page.printOTag("li");
+                page.printlnTag("code", "[a,b]: List[a] => (a => b) => List[b]");
+                page.printOTag("li");
+                page.printlnTag("code", "(x: int, y: int): unit");
+                page.printlnCTag("ul");
+                page.println("The searched symbols must conform to the entered type modulo ");
+                page.printlnTag("a",
+                                new XMLAttribute[] {
+                                    new XMLAttribute("href",
+                                                     "http://www.pps.jussieu.fr/~dicosmo/Publications/ISObook.html") },
+                                "type isomorphism");
+                page.println(". This concept allows to unify types that differ by their exact "
+                             + "representation but not by their meaning.  The order of parameters is "
+                             + "for instance irrelevant when looking for a function. Note finally that "
+                             + "methods of classes are interpreted as functions that would take an "
+                             + "extra argument of the type of the class.");
+                page.printlnCTag("dl");
+                page.printlnCTag("p");
+                page.printlnCTag("blockquote");
+            }
+
+            page.printlnOTag("div", em);
+            page.println("This help file applies to API documentation generated "
+                         + "using the standard doclet.");
+            page.printlnCTag("div");
+
+            page.printlnHLine();
+            addNavigationBar(HELP_NAV_CONTEXT);
+            if (validate)
+                addValidationBar();
+
+            page.printFootpage();
+            closePrinters();
         }
-
-        page.printlnOTag("div", em);
-        page.println("This help file applies to API documentation generated "
-            + "using the standard doclet.");
-        page.printlnCTag("div");
-
-        page.printlnHLine();
-        addNavigationBar(HELP_NAV_CONTEXT);
-        if (validate)
-            addValidationBar();
-
-	page.printFootpage();
-        closePrinters();
     }
 
     /**
@@ -1448,7 +1556,7 @@ public abstract class HTMLGenerator {
     protected void printPath(Symbol sym, String destinationFrame, Page page) {
 	String name = removeHtmlSuffix(Location.getURI(sym).toString());
 	if (isDocumented.apply(sym)) {
-	    String target = definitionURL(sym, page);
+	    String target = definitionURI(sym, page).toString();
 	    page.printlnAhref(target, destinationFrame, name);
 	}
 	else
@@ -1552,7 +1660,7 @@ public abstract class HTMLGenerator {
 	    }
 	    else {
 		String labl = label.equals("") ? sym.nameString() : label;
-		return ahref(definitionURL(sym), ROOT_FRAME, labl);
+		return ahref(definitionURI(sym).toString(), ROOT_FRAME, labl);
 	    }
 	default:
 	    throw Debug.abort("illegal case", tag);
@@ -1795,12 +1903,13 @@ public abstract class HTMLGenerator {
         page.printCTag("p");
     }
 
-    public static String SERVLET_NAME = "scaladocServlet";
+    public static String SEARCH_SERVLET_NAME = "scaladocServlet";
+    public static String PAGE_SERVLET_NAME = "pageServlet";
 
-    public class ScaladocServlet extends Servlet {
+    public class SearchServlet extends Servlet {
 
         public String name() {
-            return SERVLET_NAME;
+            return SEARCH_SERVLET_NAME;
         }
 
         public void apply(Map req, Writer out) {
@@ -1811,8 +1920,11 @@ public abstract class HTMLGenerator {
             String title = pagename;
 
             final Page page = new Page(out, uri, destinationFrame,
-                                 title, representation,
-                                 stylesheet/*, script*/);
+                                       title, representation,
+                                       HTMLGenerator.this.adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_STYLESHEET),
+                                                                   uri).toString(),
+                                       HTMLGenerator.this.adaptURI(Location.mkURI(HTMLPrinter.DEFAULT_JAVASCRIPT),
+                                                                   uri).toString());
             page.open();
             page.printHeader(ATTRS_META, getGenerator());
             page.printOpenBody();
@@ -1821,7 +1933,7 @@ public abstract class HTMLGenerator {
 
             // create symbol printer
             final MySymbolTablePrinter symtab =
-                SymbolTablePrinterFactory.makeHTML(page, isDocumented);
+                SymbolTablePrinterFactory.makeHTML(HTMLGenerator.this, page, isDocumented);
 
             // analyze the request
             String searchKind = (String) req.get("searchKind");
@@ -1957,6 +2069,24 @@ public abstract class HTMLGenerator {
             // already done by the HTTP server when closing connection
         }
     }
+
+    /**
+     * A servlet that accepts requests for web pages registered in the
+     * hastable <code>promises</code>.
+     */
+    public class PageServlet extends Servlet {
+
+        public String name() {
+            return PAGE_SERVLET_NAME;
+        }
+
+        public void apply(Map req, Writer out) {
+            // analyze the request
+            String pageName = (String) req.get("page");
+            Promise promise = (Promise) promises.get(pageName);
+            promise.writeOn(out);
+        }
+    }
 }
 
 public class SearchResult {
@@ -1975,3 +2105,14 @@ public class SearchResult {
     }
 }
 
+/**
+ * This class represents a web page not yet printed.
+ */
+public abstract class Promise {
+
+    /** Name of the web page. */
+    public abstract String name();
+
+    /** Print the web page on the given writer. */
+    public abstract void writeOn(Writer writer);
+}

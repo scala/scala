@@ -25,7 +25,9 @@ import SymbolBooleanFunction;
 
 class SymbolTablePrinterFactory {
 
-    public static MySymbolTablePrinter makeHTML(final Page page, final SymbolBooleanFunction isDocumented) {
+    public static MySymbolTablePrinter makeHTML(final HTMLGenerator htmlGenerator,
+                                                final Page page,
+                                                final SymbolBooleanFunction isDocumented) {
 
 	return new MySymbolTablePrinter(page.getCodePrinter()) {
 
@@ -34,7 +36,7 @@ class SymbolTablePrinterFactory {
 		    if (global.debug) name = sym.name.toString();
 		    if (isDocumented.apply(sym))
 			if (addLink)
-			    page.printAhref(page.rel(Location.get(sym)),
+			    page.printAhref(htmlGenerator.definitionURI(sym, page).toString(),
 					    page.destinationFrame, name);
 			else {
 			    page.printOTag("em");
