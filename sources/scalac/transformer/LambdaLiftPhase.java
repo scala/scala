@@ -85,6 +85,15 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
         public Type apply(Type tp) {
             switch (tp) {
             case TypeRef(Type pre, Symbol sym, Type[] targs):
+                if (sym.kind == CLASS) {
+                    switch (pre) {
+                    case ThisType(Symbol s):
+                        if (s == Symbol.NONE) {
+                            pre = sym.owner().enclClass().thisType();
+                            tp = Type.TypeRef(pre, sym, targs);
+                        }
+                    }
+                }
                 switch (pre) {
                 case ThisType(_):
                     if (sym.kind == CLASS &&
