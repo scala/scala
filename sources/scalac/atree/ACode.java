@@ -15,6 +15,11 @@ import scalac.symtab.Type;
 public class ACode {
 
     //########################################################################
+    // Public Constants
+
+    public static final ACode[] EMPTY_ARRAY = new ACode[0];
+
+    //########################################################################
     // Public Cases
 
     // jvm  : -
