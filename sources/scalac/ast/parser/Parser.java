@@ -1048,7 +1048,7 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** ArgumentPatterns ::= `[' [Patterns] `]'
+    /** ArgumentPatterns ::= `(' [Patterns] `)'
      */
     Tree[] argumentPatterns() {
 	Tree[] ts = Tree.EMPTY_ARRAY;
