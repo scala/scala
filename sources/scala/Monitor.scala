@@ -1,6 +1,6 @@
 package scala;
 
-class Monitor() extends NativeMonitor() with {
+class Monitor() extends NativeMonitor() {
 
   def synchronized[a](def p: a): a = synchronised(p);
 

@@ -554,7 +554,7 @@ public class Parser implements Tokens {
     Tree type1() {
 	int pos = s.pos;
 	Tree t = simpleType();
-	if (s.token == WITH) {
+	if (s.token == WITH || s.token == LBRACE) {
 	    TreeList ts = new TreeList();
 	    ts.append(t);
 	    while (s.token == WITH) {

@@ -1,3 +1,3 @@
-package scala with {
+package scala {
   case class Cell[T](elem: T)
 }
