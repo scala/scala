@@ -3,5 +3,32 @@
 ##############################################################################
 # $Id$
 
+Code.java
+CodeBuffer.java
+CodeContainer.java
+CodeGenerator.java
+CodePromise.java
+Compiler.java
+Constants.java
+EntryPointCompiler.java
+Environment.java
+Evaluator.java
+EvaluatorException.java
+EvaluatorResult.java
+ExpressionCompiler.java
+ExpressionContext.java
+Function.java
+Interpreter.java
+InterpreterCommand.java
+JavaMirror.java
+Main.java
+Override.java
+PathClassLoader.java
+ScalaFunction.java
+ScalaObject.java
+ScalaTemplate.java
+SymbolWriter.java
+Template.java
+Variable.java
 
 ##############################################################################
