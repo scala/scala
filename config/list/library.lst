@@ -194,6 +194,7 @@ xml/FactoryAdapter.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala
+xml/NodeTraverser.scala
 xml/Parsing.scala
 xml/PrettyPrinter.scala
 xml/ProcInstr.scala

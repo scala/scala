@@ -47,7 +47,7 @@ abstract class MarkupHandler[A] {
    *  @param attrMap1 the attribute map, from Pair(uri,label) to target
    *  @param args     the children of this element
    */
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],Attribute], args: mutable.Buffer[A]): Iterable[A];
+  def element(pos: int, uri: String, label: String, attrMap1: Map[Pair[String,String],Attribute], args: mutable.Buffer[A]): Iterable[A];
 
   def charData(pos: Int, txt: String ): Iterable[A];
   def procInstr(pos: Int, target: String, txt: String): Iterable[A];

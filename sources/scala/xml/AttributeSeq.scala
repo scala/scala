@@ -10,6 +10,7 @@
 package scala.xml ;
 
 import scala.collection.Map ;
+import scala.collection.mutable ;
 import scala.collection.immutable.TreeSet ;
 
 object AttributeSeq {
@@ -85,5 +86,16 @@ abstract class AttributeSeq with Seq[Attribute] {
   }
 
   override def hashCode():Int = sortedSeq.hashCode();
+
+  def toMap:Map[Pair[String,String],Attribute] =
+    new Map[Pair[String,String],Attribute] {
+      def elements = new Iterator[Pair[Pair[String,String],Attribute]] {
+        val it = AttributeSeq.this.sortedSeq.elements;
+        def hasNext = it.hasNext;
+        def next = { val a = it.next; Pair(Pair(a.namespace,a.key),a) }
+      }
+      def size = AttributeSeq.this.length;
+      def get(p:Pair[String,String]) = AttributeSeq.this.lookup(p._1, p._2);
+    }
 }
 

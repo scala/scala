@@ -29,8 +29,3 @@ case class Attribute(namespace:String, key:String, value:String) with Ordered[At
   }
 
 }
-
-class IntAttribute(namespace:String, key:String, theIntValue:Int)
-extends Attribute(namespace, key, theIntValue.toString()) {
-  final override def intValue = theIntValue;
-}

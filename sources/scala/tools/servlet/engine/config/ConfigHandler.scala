@@ -9,12 +9,6 @@ class ConfigHandler extends MarkupHandler[Config] {
 
   final val config_namespace = "http://scala.epfl.ch/scala.tools.servlet.engine/config";
 
-  override def attribute(pos: int, uri:String, key: String, value:String): Attribute =
-    if( key == "port" )
-      new IntAttribute(uri, key, Integer.parseInt(value));
-    else
-      super.attribute(pos, uri, key, value);
-
   var hmap = new mutable.HashMap[String,String];
 
   /** be careful to copy everything from attrMap1, as it will change
