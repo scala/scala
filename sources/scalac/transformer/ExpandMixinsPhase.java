@@ -421,16 +421,9 @@ public class ExpandMixinsPhase extends Phase {
                 if (inline != null) return inline;
                 return map(type);
             case SingleType(Type prefix, Symbol symbol):
-                // !!! prefix = apply(prefix);
-                // !!! symbol = prefix.rebind(symbol);
-                // !!! commented out because of following example:
-                // class Bar {
-                //   val b: Bar = null;
-                //   class Linker { def b: Bar.this.b.type = Bar.this.b; }
-                // }
                 Symbol clone = (Symbol)cloner.clones.get(symbol);
-                if (clone != null) symbol = clone;
-                return Type.singleType(prefix, symbol);
+                prefix = apply(prefix);
+                return Type.singleType(prefix, clone != null ? clone : symbol);
             case ThisType(Symbol symbol):
                 if (symbol.isNone()) return type;
                 return clasz.thisType();
