@@ -69,7 +69,8 @@ public class InterpreterSupport {
      * @meta method (java.lang.String, scala.Any) scala.Unit;
      */
     public static void showDefinition(String signature) {
-        getDefinitionPrinter().showDefinition(signature);
+        DefinitionPrinter printer = getDefinitionPrinter();
+        if (printer != null) printer.showDefinition(signature);
     }
 
     /**
@@ -79,7 +80,8 @@ public class InterpreterSupport {
      * @meta method (java.lang.String, scala.Any) scala.Unit;
      */
     public static void showValueDefinition(String signature, Object value) {
-        getDefinitionPrinter().showValueDefinition(signature, value);
+        DefinitionPrinter printer = getDefinitionPrinter();
+        if (printer != null) printer.showValueDefinition(signature, value);
     }
 
     /**
