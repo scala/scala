@@ -166,6 +166,7 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 ##############################################################################
 # Commands
 
+all		: $(PROJECT_OUTPUTDIR)
 all		: scripts
 all		: runtime
 all		: compiler
@@ -229,6 +230,12 @@ library		: .latest-library
 
 ##############################################################################
 # Rules
+
+$(PROJECT_OUTPUTDIR)	:
+	$(MKDIR) -p $(dir $(PROJECT_OUTPUTDIR))
+	$(if $(PROJECT_OUTPUTDIR_LINK),\
+	    $(LN) -s $(PROJECT_OUTPUTDIR_LINK) $(PROJECT_OUTPUTDIR),\
+	    $(MKDIR) $(PROJECT_OUTPUTDIR))
 
 $(SCRIPTS_WRAPPER_LINKS):
 	$(LN) -s $(SCRIPTS_WRAPPER_NAME) $@;
