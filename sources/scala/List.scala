@@ -8,7 +8,7 @@ package scala;
 *
 * @arg a the type of the elements contained in the list.
 */
-trait List[+a] extends Seq[a] {
+trait List[+a] extends Seq[a] with Iterable[a] {
 
   /** Tests if this list is empty.
   * @return True iff the list contains no element.
@@ -64,6 +64,8 @@ trait List[+a] extends Seq[a] {
     def hasNext: Boolean = !current.isEmpty;
     def next: a = { val result = current.head; current = current.tail; result }
   }
+
+  def iterator: Iterator[a] = elements;
 
   /** Returns the list without its last element.
    * @return the list without its last element.
