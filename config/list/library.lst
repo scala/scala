@@ -95,6 +95,7 @@ collection/mutable/Publisher.scala
 collection/mutable/Queue.scala
 collection/mutable/QueueProxy.scala
 collection/mutable/ResizableArray.scala
+collection/mutable/ResizableBitSet.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Scriptable.scala
 collection/mutable/Set.scala
