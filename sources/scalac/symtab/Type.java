@@ -880,6 +880,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
             Type symtype = pre.memberType(sym).derefDef();
             Type sym1type = pre.memberType(sym1).derefDef();
+	    if (sym1.isJava()) symtype = symtype.objParamToAny();
             switch (sym1type) {
             case OverloadedType(Symbol[] alts, Type[] alttypes):
                 for (int i = 0; i < alts.length; i++) {
@@ -895,6 +896,25 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 }
             }
         }
+    }
+    //where
+    static Map objToAnyMap = new Map() {
+	public Type apply(Type t) {
+	    if (t.symbol() == Global.instance.definitions.JAVA_OBJECT_CLASS)
+		return Global.instance.definitions.ANY_TYPE();
+	    else return t;
+	}
+    };
+
+    private Type objParamToAny() {
+	switch (this) {
+	case MethodType(Symbol[] params, Type restp):
+	    Symbol[] params1 = objToAnyMap.map(params);
+	    if (params1 == params) return this;
+	    else return MethodType(params1, restp);
+	default:
+	    return this;
+	}
     }
 
 // Set Owner ------------------------------------------------------------------

@@ -69,8 +69,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def variance(tparams: Array[Symbol], tp: Type): Array[int] = {
     val vs: Array[int] = new Array[int](tparams.length);
-    for (val i <- Iterator.range(0, vs.length))
+    { var i = 0; while (i < vs.length) {
       vs(i) = variance(tparams(i), tp);
+      i = i + 1;
+    }}
     vs
   }
 
@@ -78,8 +80,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def variance(tparams: Array[Symbol], tps: Array[Type]): Array[int] = {
     val vs: Array[int] = new Array[int](tparams.length);
-    for (val i <- Iterator.range(0, vs.length))
+    { var i = 0; while (i < vs.length) {
       vs(i) = variance(tparams(i), tps);
+      i = i + 1;
+    }}
     vs
   }
 
@@ -87,9 +91,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def variance(tparam: Symbol, syms: Array[Symbol]): int = {
     var v: int = VARIANCES;
-    for (val i <- Iterator.range(0, syms.length)) {
+    { var i = 0; while (i < syms.length) {
       v = v & variance(tparam, syms(i));
-    }
+      i = i + 1;
+    }}
     v
   }
 
@@ -112,9 +117,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
      */
   private def variance(tparam: Symbol, tps: Array[Type]): int = {
     var v: int = VARIANCES;
-    for (val i <- Iterator.range(0, tps.length)) {
+    { var i = 0; while (i < tps.length) {
       v = v & variance(tparam, tps(i));
-    }
+      i = i + 1;
+    }}
     v
   }
 
@@ -123,7 +129,7 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def varianceInArgs(tvar: Symbol, tps: Array[Type], tparams: Array[Symbol]): int = {
     var v: int = VARIANCES;
-    for (val i <- Iterator.range(0, tps.length)) {
+    { var i = 0; while (i < tps.length) {
       if ((tparams(i).flags & COVARIANT) != 0) {
 	v = v & variance(tvar, tps(i));
       } else if ((tparams(i).flags & CONTRAVARIANT) != 0) {
@@ -131,7 +137,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
       } else {
 	v = v & cut(variance(tvar, tps(i)));
       }
-    }
+      i = i + 1;
+    }}
     v
   }
 
@@ -209,8 +216,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
       if (args.length == 1) {
 	val ft: Type = args(0);
 	// params(0) has type Seq[T], we need T here
-	for (val i <- Iterator.range(0, length))
+	{ var i = 0; while (i < length) {
 	  formals(i) = ft;
+	  i = i + 1;
+	}}
 	return formals;
       }
     }
@@ -318,39 +327,42 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 	    tvars(i) = Type.NoType;
 	    val bound: Type = if (up) tparams(i).info() else tparams(i).loBound();
 	    var cyclic: boolean = false;
-	    for (val j <- Iterator.range(0, tvars.length)) {
+	    { var j = 0; while (j < tvars.length) {
 	      if (bound.contains(tparams(j)) ||
 		  up && tparams(j).loBound().isSameAs(tparams(i).getType()) ||
 		  !up && tparams(j).info().isSameAs(tparams(i).getType())) {
 		    cyclic = cyclic | tvars(j) == Type.NoType;
 		    solve(tparams, upper, variances, tvars, j);
 	      }
-	    }
+	      j = j + 1
+	    }}
 	    if (!cyclic) {
 	      if (up) {
 		if (bound.symbol() != Global.instance.definitions.ANY_CLASS)
 		  constr.hibounds = new Type$List(
 		    bound.subst(tparams, tvars), constr.hibounds);
-		for (val j <- Iterator.range(0, tvars.length)) {
+		{ var j = 0; while (j < tvars.length) {
 		  if (tparams(j).loBound().isSameAs(
 		    tparams(i).getType())) {
 		      constr.hibounds = new Type$List(
 			tparams(j).getType().subst(tparams, tvars),
 			constr.hibounds);
-		    }
-		}
+		  }
+		  j = j + 1
+		}}
 	      } else {
 		if (bound.symbol() != Global.instance.definitions.ALL_CLASS)
 		  constr.lobounds = new Type$List(
 		    bound.subst(tparams, tvars), constr.lobounds);
-		for (val j <- Iterator.range(0, tvars.length)) {
+		{ var j = 0; while (j < tvars.length) {
 		  if (tparams(j).info().isSameAs(
 		    tparams(i).getType())) {
 		      constr.lobounds = new Type$List(
 			tparams(j).getType().subst(tparams, tvars),
 			constr.lobounds);
-		    }
-		}
+		  }
+		  j = j + 1
+		}}
 	      }
 	    }
 	    if (up) maximizeVar(tvar);
@@ -367,9 +379,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def freshVars(tparams: Array[Symbol]): Array[Type] = {
     val tvars: Array[Type] = new Array[Type](tparams.length);
-    for (val i <- Iterator.range(0, tvars.length)) {
+    { var i = 0; while (i < tvars.length) {
       tvars(i) = new Type$TypeVar(tparams(i).getType(), new Type$Constraint());
-    }
+      i = i + 1
+    }}
     tvars
   }
 
@@ -390,9 +403,11 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 	  case _ =>
 	}
 	val newparams: Array[Symbol] = new Array[Symbol](tparams.length);
-	for (val i <- Iterator.range(0, tparams.length))
+	{ var i = 0; while (i < tparams.length) {
 	  newparams(i) = tparams(i).cloneSymbol();
-	for (val i <- Iterator.range(0, tparams.length)) {
+	  i = i + 1
+	}}
+	{ var i = 0; while (i < tparams.length) {
 	  newparams(i).setInfo(
 	    newparams(i).info()
 	    .subst(tparams, newparams)
@@ -401,7 +416,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 	    newparams(i).loBound()
 	    .subst(tparams, newparams)
 	    .subst(tparams1, newparams1));
-	}
+	  i = i + 1
+	}}
 	new Type$PolyType(newparams, restp1.subst(tparams, newparams))
 
       case Type$OverloadedType(_, _) =>
@@ -439,12 +455,13 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
   */
   private def normalizeArgs(targs: Array[Type], tparams: Array[Symbol]): Array[Symbol] = {
     var uninstantiated: Type$List = Type$List.EMPTY;
-    for (val i <- Iterator.range(0, targs.length)) {
+    { var i = 0; while (i < targs.length) {
       if (targs(i).symbol() == Global.instance.definitions.ALL_CLASS) {
 	targs(i) = tparams(i).getType();
 	uninstantiated = Type$List.append(uninstantiated, targs(i));
       }
-    }
+      i = i + 1
+    }}
     Type.symbol(uninstantiated.toArray());
   }
 
@@ -459,9 +476,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     if (isCompatible(insttype, pt)) {
       try {
 	val restype1 = normalize(restype);
-	for (val i <- Iterator.range(0, tvars.length)) {
+	{ var i = 0; while (i < tvars.length) {
 	  solve(tparams, false, variance(tparams, restype1), tvars, i);
-	}
+	  i = i + 1
+	}}
 	tvars
       } catch {
 	case ex: NoInstance => null
@@ -484,18 +502,23 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     val tvars: Array[Type] = freshVars(tparams);
     val insttype: Type = restype.subst(tparams, tvars);
     val targs: Array[Type] = new Array[Type](tvars.length);
-    for (val i <- Iterator.range(0, tvars.length))
+    { var i = 0; while (i < tvars.length) {
       targs(i) = Type.AnyType;
+      i = i + 1
+    }}
     if (isCompatible(insttype, pt)) {
       try {
-	for (val i <- Iterator.range(0, tvars.length)) {
+	{ var i = 0; while (i < tvars.length) {
 	  targs(i) = instantiateToBound(
 	    tvars(i), variance(tparams(i), params));
-	}
+	  i = i + 1
+	}}
       } catch {
 	case ex: NoInstance =>
-	  for (val i <- Iterator.range(0, tvars.length))
+	  { var i = 0; while (i < tvars.length) {
 	    targs(i) = Type.AnyType;
+	    i = i + 1
+	  }}
       }
     }
     targs
@@ -527,10 +550,11 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 			     " is incompatible with expected type " + pt);
       return null;
     }
-    for (val i <- Iterator.range(0, tvars.length)) {
+    { var i = 0; while (i < tvars.length) {
       val tvar: Type$TypeVar = tvars(i).asInstanceOf[Type$TypeVar];
       if (!isFullyDefined(tvar)) tvar.constr.inst = Type.NoType;
-    }
+      i = i + 1
+    }}
 
     // Then define remaining type variables from argument types.
     var i = 0;
@@ -553,9 +577,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
       }
       i = i + 1;
     }
-    for (val i <- Iterator.range(0, tvars.length)) {
+    { var i = 0; while (i < tvars.length) {
       solve(tparams, false, variance(tparams, formals), tvars, i);
-    }
+      i = i + 1
+    }}
     //System.out.println(" = " + ArrayApply.toString(tvars));//DEBUG
     tvars
   }
@@ -585,8 +610,10 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     }
     if (0 < i) {
       val argtrees: Array[Tree] = new Array[Tree](i);
-      for (val j <- Iterator.range(0, i))
+      { var j = 0; while (j < i) {
 	argtrees(j) = gen.mkType(tree.pos, targs(j));
+	j = j + 1
+      }}
       tree1 = make.TypeApply(tree.pos, tree1, argtrees);
     }
     //System.out.println(Sourcefile.files[Position.file(tree1.pos)] + ": ");
@@ -711,10 +738,11 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 	val ctpe1: Type = restype1.resultType();
 	if (ctpe1.isSubType(pt)) {
 	  try {
-	    for (val i <- Iterator.range(0, tvars.length)) {
+	    { var i = 0; while (i < tvars.length) {
 	      solve(tparams, true, variance(tparams, restype.resultType()),
 		    tvars, i);
-	    }
+	      i = i + 1
+	    }}
 	    checkBounds(tparams, tvars, "inferred ");
 	    tree.setType(restype.subst(tparams, tvars));
 	    //System.out.println("inferred constructor type: " + tree.getType());//DEBUG
@@ -800,20 +828,22 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
     }
     // second, do the normal case.
     var best: int = -1;
-    for (val i <- Iterator.range(0, alttypes.length)) {
+    { var i = 0; while (i < alttypes.length) {
       if (isCompatible(alttypes(i), pt) && (best < 0 || improves(alttypes(i), alttypes(best)))) {
 	best = i;
       }
-    }
+      i = i + 1
+    }}
     if (best >= 0) {
-      for (val i <- Iterator.range(0, alttypes.length)) {
+      { var i = 0; while (i < alttypes.length) {
 	if (isCompatible(alttypes(i), pt) && best != i && !improves(alttypes(best), alttypes(i))) {
 	  throw new Type$Error(
 	    overloadResolveErrorMsg(
 	      alts(best), alttypes(best), alts(i), alttypes(i)) +
 	    " expected type " + pt);
 	}
-      }
+	i = i + 1
+      }}
       tree.setSymbol(alts(best)).setType(alttypes(best));
     }
   }
@@ -834,13 +864,14 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
       return;
     }
     var best: int = -1;
-    for (val i <- Iterator.range(0, alttypes.length)) {
+    { var i = 0; while (i < alttypes.length) {
       if (isApplicable(alttypes(i), argtypes, pt) &&
 	  (best < 0 || specializes(alttypes(i), alttypes(best))))
 	best = i;
-    }
+      i = i + 1
+    }}
     if (best >= 0) {
-      for (val i <- Iterator.range(0, alttypes.length)) {
+      { var i = 0; while (i < alttypes.length) {
 	if (i != best &&
 	    isApplicable(alttypes(i), argtypes, pt) &&
 	    !(specializes(alttypes(best), alttypes(i)) &&
@@ -851,7 +882,8 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
 	     " argument types " +
 	     ArrayApply.toString(argtypes.asInstanceOf[Array[Object]], "(", ",", ")") +
 	     (if (pt == Type.AnyType) "" else " and expected result type " + pt));
-      }
+	i = i + 1
+      }}
       tree.setSymbol(alts(best)).setType(alttypes(best));
     } else if (pt != Type.AnyType) {
       methodAlternative(tree, alts, alttypes, argtypes, Type.AnyType);
@@ -875,13 +907,14 @@ class Infer(global: Global, gen: TreeGen, make: TreeFactory) {
       i = i + 1;
 
     if (i < alttypes.length) {
-      for (val j <- Iterator.range(i + 1, alttypes.length)) {
+      { var j = i + 1; while (j < alttypes.length) {
 	if (alts(j).isValue() &&
 	    alttypes(j).typeParams().length == nparams)
 	  throw new Type$Error(
 	    overloadResolveErrorMsg(alts(i), alttypes(i), alts(j), alttypes(j)) +
 	    " polymorphic function with " + nparams + " parameters");
-      }
+	j = j + 1
+      }}
       tree.setSymbol(alts(i)).setType(alttypes(i));
     }
   }

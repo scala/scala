@@ -141,6 +141,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 	if (clazz.kind == CLASS && (clazz.flags & ABSTRACT) == 0) {
 	    if ((member.flags & DEFERRED) != 0) {
+		Type[] parents = clazz.parents();
+		for (int i = 0; i < parents.length; i++) {
+		    Symbol p = parents[i].symbol();
+		    if (p.isSubClass(member.owner()) &&	(p.flags & ABSTRACT) == 0)
+			return; // everything was already checked elsewhere
+		}
 		abstractClassError(
 		    clazz,
 		    member + member.locationString() + " is not defined" +
@@ -196,10 +202,19 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *       M must be labelled `abstract override'.
      */
     void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
+	//System.out.println(member + member.locationString() + " overrides " + other + other.locationString() + " in " + clazz);//DEBUG
 	if (member.owner() == clazz)
 	    pos = member.pos;
 	else if (member.owner().isSubClass(other.owner()))
 	    return; // everything was already checked elsewhere
+	else {
+	    Type[] parents = clazz.parents();
+	    for (int i = 0; i < parents.length; i++) {
+		Symbol p = parents[i].symbol();
+		if (p.isSubClass(member.owner()) && p.isSubClass(other.owner()))
+		    return; // everything was already checked elsewhere
+	    }
+	}
 
 	if ((member.flags & PRIVATE) != 0) {
 	    overrideError(pos, member, other, "has weaker access privileges; it should not be private");
@@ -531,7 +546,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		gen.mkRef(tree.pos, mvar)});
 
 	    // def m: T = { if (m$ == null[T]) m$ = new m$class; m$ }
-	    sym.updateInfo(Type.PolyType(Symbol.EMPTY_ARRAY, sym.type()));
 	    sym.flags |= STABLE;
 	    Tree ddef = gen.DefDef(sym, body);
 

@@ -250,6 +250,7 @@ class Scanner(_unit: Unit) extends TokenData {
 		     'p' | 'q' | 'r' | 's' | 't' |
 		     'u' | 'v' | 'w' | 'x' | 'y' |
 		     'z' =>
+		  index = bp;
 		  putch(ch);
 		  nextch();
 		  if (ch != '\'') {

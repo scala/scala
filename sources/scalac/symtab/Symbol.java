@@ -1157,7 +1157,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
         assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
         assert this.isConstructor() == that.isConstructor();
-        int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS)) |
+        int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS | DEFERRED)) |
             ((this.flags | that.flags) & ACCESSOR);
         TermSymbol overloaded = (this.isConstructor())
             ? TermSymbol.newConstructor(this.constructorClass(), overflags)
@@ -1880,8 +1880,8 @@ public class ClassSymbol extends TypeSymbol {
 		} else {
 			sym = it.next();
 			while ((sym.flags & SYNTHETIC) == 0) {
-				System.out.println("skipping " + sym);
-				sym = it.next();
+			    //System.out.println("skipping " + sym);
+			    sym = it.next();
 			}
 			for (int i = 0; i < index; i++)
 				sym = it.next();

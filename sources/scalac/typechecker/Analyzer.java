@@ -266,7 +266,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    accessWithin(sym.owner())
 	    ||
 	    ((sym.flags & PRIVATE) == 0) &&
-	    site.type.symbol().isSubClass(sym.owner()) &&
+	    site.type.symbol().isSubClass(
+		sym.isConstructor() ? sym.constructorClass()
+		: sym.owner()) &&
 	    (site instanceof Tree.Super ||
 	     isSubClassOfEnclosing(site.type.symbol()));
     } //where

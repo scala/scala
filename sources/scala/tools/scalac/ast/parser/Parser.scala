@@ -248,18 +248,17 @@ class Parser(unit: Unit) {
 
     def makeForCont(pos: int, pat: Tree, body: Tree): Tree = {
       pat match {
-        case Tree$Ident(name1) =>
-          if (name1.isVariable())
-            make.Function(
+        case Tree$Ident(name1) if (name1.isVariable()) =>
+          make.Function(
               pos,
               NewArray.ValDef(
                 make.ValDef(
                   pat.pos, Modifiers.PARAM, name1, Tree.Empty, Tree.Empty)),
               body);
 	case _ =>
+	  make.Visitor(pos, NewArray.CaseDef(
+            make.CaseDef(pos, pat, Tree.Empty, body)));
       }
-      make.Visitor(pos, NewArray.CaseDef(
-        make.CaseDef(pos, pat, Tree.Empty, body)));
     }
 
     enums(0) match {
@@ -269,7 +268,7 @@ class Parser(unit: Unit) {
 	} else {
 	  val newenums = new Array[Tree](enums.length - 1);
           enums(1) match {
-            case Tree$PatDef(mods2, pat, rhs) =>
+            case Tree$PatDef(mods2, pat2, rhs2) =>
               System.arraycopy(enums, 1, newenums, 0, newenums.length);
               makeFor1(
 		pos, flatmapName, pat, rhs,
@@ -282,8 +281,6 @@ class Parser(unit: Unit) {
               makeFor(pos, newenums, mapName, flatmapName, body);
           }
 	}
-      case _ =>
-        throw new ApplicationError();
     }
   }
 

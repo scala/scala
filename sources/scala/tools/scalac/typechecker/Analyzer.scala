@@ -49,23 +49,27 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   private var patternVars: HashMap = _;   // for pattern matching; maps x to {true,false}
 
   override def apply(units: Array[Unit]): unit = {
-    for (val i <- Iterator.range(0, units.length))
+    var i = 0; while (i <  units.length) {
       enterUnit(units(i));
+      i = i + 1
+    }
     super.apply(units);
     var n = descr.newSources.size();
     while (n > 0) { // this calls apply(u) for every unit `u'.
       val l = global.units.length;
       val newUnits = new Array[Unit](l + n);
       System.arraycopy(
-	global.units.asInstanceOf[Array[Object]], 0,
-	newUnits.asInstanceOf[Array[Object]], 0, l);
-      for (val i <- Iterator.range(0, n)) {
+	global.units.asInstanceOf[Array[Object]], 0, newUnits.asInstanceOf[Array[Object]], 0, l);
+      var i = 0; while (i < n) {
         newUnits(i + l) = descr.newSources.get(i).asInstanceOf[Unit];
+	i = i + 1
       }
       global.units = newUnits;
       descr.newSources.clear();
-      for (val i <- Iterator.range(l, newUnits.length))
-        apply(newUnits(i));
+      var j = l; while (j < newUnits.length) {
+        apply(newUnits(j));
+	j = j + 1
+      }
       n = descr.newSources.size();
     }
   }
@@ -118,7 +122,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   }
 
   def genSymData(stats: Array[Tree]): unit = {
-    for (val i <- Iterator.range(0, stats.length)) {
+    var i = 0; while (i < stats.length) {
       stats(i) match {
 	case Tree$ClassDef(_, _, _, _, _, _) | Tree$ModuleDef(_, _, _, _) =>
 	  val sym = stats(i).symbol();
@@ -134,6 +138,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  genSymData(templ.body);
 	case _ =>
       }
+      i = i + 1
     }
   }
 
@@ -218,9 +223,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
       symtype match {
 	case Type$OverloadedType(alts, alttypes) =>
 	  var nacc: int = 0;
-	  for (val i <- Iterator.range(0, alts.length)) {
+	  var i = 0; while (i < alts.length) {
 	    if (isAccessible(alts(i), site))
 	      nacc = nacc + 1;
+	    i = i + 1
 	  }
 	  if (nacc == 0) {
 	    error(pos, "" + sym + " cannot be accessed in " + site.getType().widen());
@@ -229,12 +235,13 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	    val alts1: Array[Symbol] = new Array[Symbol](nacc);
 	    val alttypes1: Array[Type] = new Array[Type](nacc);
 	    nacc = 0;
-	    for (val i <- Iterator.range(0, alts.length)) {
+	    var i = 0; while (i < alts.length) {
 	      if (isAccessible(alts(i), site)) {
 		alts1(nacc) = alts(i);
 		alttypes1(nacc) = alttypes(i);
 		nacc = nacc + 1;
 	      }
+	      i = i + 1
 	    }
 	    new Type$OverloadedType(alts1, alttypes1)
 	  }
@@ -278,9 +285,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     accessWithin(sym.owner())
     ||
     ((sym.flags & PRIVATE) == 0) &&
-    site.getType().symbol().isSubClass(sym.owner()) &&
+    site.getType().symbol().isSubClass(
+      if (sym.isConstructor()) sym.constructorClass() else sym.owner()) &&
     (site.isInstanceOf[Tree$Super] ||
-    isSubClassOfEnclosing(site.getType().symbol()))
+     isSubClassOfEnclosing(site.getType().symbol()))
   }
 
 // Checking methods ----------------------------------------------------------
@@ -375,9 +383,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	      selfType + " does not conform to " + parents(i) +
 	      "'s selftype " + parents(i).instanceType());
       }
-      for (val j <- Iterator.range(0, i)) {
+      var j = 0; while (j < i) {
 	if (parents(i).symbol() == parents(j).symbol())
 	  error(constrs(i).pos, "" + parents(i).symbol() + " is inherited twice");
+	j = j + 1
       }
       i = i + 1;
     }
@@ -411,11 +420,12 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   */
   def checkEtaExpandable(pos: int, tp: Type): unit = tp match {
     case Type$MethodType(params, restype) =>
-      for (val i <- Iterator.range(0, params.length)) {
+      var i = 0; while (i < params.length) {
 	if ((params(i).flags & DEF) != 0)
 	  error(pos, "method with `def' parameters needs to be fully applied");
 	if ((params(i).flags & REPEATED) != 0)
 	  error(pos, "method with `*' parameters needs to be fully applied");
+	i = i + 1
       }
       checkEtaExpandable(pos, restype);
     case _ =>
@@ -454,8 +464,9 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
       }
 
     case Type$CompoundType(parents, members) =>
-      for (val i <- Iterator.range(0, parents.length)) {
+      var i = 0; while (i < parents.length) {
 	checkNonCyclic(pos, parents(i));
+	i = i + 1
       }
 
     case Type$SingleType(pre, sym) =>
@@ -507,9 +518,13 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   /** Check that there are no dependent parameter types among parameters
   */
   def checkNoEscapeParams(vparams: Array[Array[Tree$ValDef]]): unit = {
-    for (val i <- Iterator.range(0, vparams.length))
-      for (val j <- Iterator.range(0, vparams(i).length))
+    var i = 0; while (i < vparams.length) {
+      var j = 0; while (j < vparams(i).length) {
 	checkNoEscape(vparams(i)(j).pos, vparams(i)(j).tpe.getType());
+	j = j + 1
+      }
+      i = i + 1
+    }
   }
 
   /** Check that tree represents a pure definition.
@@ -856,12 +871,14 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   /** Enter all symbols in statement list
   */
   def enterSyms(stats: Array[Tree]): unit = {
-    for (val i <- Iterator.range(0, stats.length))
+    var i = 0; while (i < stats.length) {
       enterSym(stats(i));
+      i = i + 1
+    }
   }
 
   def enterParams[t <: Tree](params: Array[t]): Array[Symbol] = {
-    for (val i <- Iterator.range(0, params.length)) {
+    var i = 0; while (i < params.length) {
       enterSym(params(i));
       (params(i) : Tree) match {
 	case Tree$ValDef(mods, _, _, _) =>
@@ -870,14 +887,16 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 		  "`*' parameter must be the only parameter of a `('...`)' section");
 	case _ =>
       }
+      i = i + 1
     }
     Tree.symbolOf(params.asInstanceOf[Array[Tree]])
   }
 
   def enterParams(vparams: Array[Array[Tree$ValDef]]): Array[Array[Symbol]] = {
     val vparamSyms = new Array[Array[Symbol]](vparams.length);
-    for (val i <- Iterator.range(0, vparams.length)) {
+    var i = 0; while (i < vparams.length) {
       vparamSyms(i) = enterParams(vparams(i));
+      i = i + 1
     }
     vparamSyms
   }
@@ -885,12 +904,13 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   /** Re-enter type parameters in current scope.
   */
   def reenterParams(tparams: Array[Tree$AbsTypeDef], tsyms: Array[Symbol]): unit = {
-    for (val i <- Iterator.range(0, tparams.length)) {
+    var i = 0; while (i < tparams.length) {
       tsyms(i).pos = tparams(i).pos;
       tsyms(i).name = tparams(i).name;
       //necessary since tsyms might have been unpickled
       tparams(i).setSymbol(tsyms(i));
       context.scope.enter(tsyms(i));
+      i = i + 1
     }
   }
 
@@ -904,20 +924,22 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	rest = restp;
       case _ =>
     }
-    for (val j <- Iterator.range(0, vparamss.length)) {
+    var j = 0; while (j < vparamss.length) {
       val vparams = vparamss(j);
       rest match {
 	case Type$MethodType(vsyms, restp) =>
-	  for (val i <- Iterator.range(0, vparams.length)) {
+	  var i = 0; while (i < vparams.length) {
 	    vsyms(i).pos = vparams(i).pos;
 	    vsyms(i).name = vparams(i).name;
             //necessary since vsyms might have been unpickled
 	    vparams(i).setSymbol(vsyms(i));
 	    context.scope.enter(vsyms(i));
+	    i = i + 1
 	  }
 	  rest = restp;
 	case _ =>
       }
+      j = j + 1
     }
   }
 
@@ -1072,11 +1094,12 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  checkStable(expr);
 	  owntype = expr.getType();
 	  val tp: Type = owntype.widen();
-	  for (val i <- Iterator.range(0, selectors.length)) {
+	  var i = 0; while (i < selectors.length) {
 	    if (selectors(i) != Names.IMPORT_WILDCARD &&
 		tp.lookup(selectors(i)) == Symbol.NONE &&
 		tp.lookup(selectors(i).toTypeName()) == Symbol.NONE)
-	      error(tree.pos, "" + NameTransformer.decode(selectors(i)) + " is not a member of " + expr + " of type " + expr.getType());
+	      error(tree.pos, "" + NameTransformer.decode(selectors(i)) + " is not a member of " + expr);
+	    i = i + 2
 	  }
 
 	case _ =>
@@ -1548,8 +1571,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     tree match {
       case Tree$Visitor(cases) =>
 	val cases1 = cases;
-	for (val i <- Iterator.range(0, cases.length))
+	var i = 0; while (i < cases.length) {
 	  cases1(i) = transformCase(cases(i), pattpe, pt);
+	  i = i + 1
+	}
 	return copy.Visitor(tree, cases1)
 	  .setType(Type.lub(Tree.typeOf(cases1.asInstanceOf[Array[Tree]])));
       case _ =>
@@ -1576,7 +1601,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 
   def transformStatSeq(stats: Array[Tree], exprOwner: Symbol): Array[Tree] = {
     var stats1 = stats;
-    for (val i <- Iterator.range(0, stats.length)) {
+    var i = 0; while (i < stats.length) {
       val stat: Tree = stats(i);
       if (context.owner.isCompoundSym() && !TreeInfo.isDeclaration(stat)) {
 	error(stat.pos, "only declarations allowed here");
@@ -1598,6 +1623,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 			 stats1.asInstanceOf[Array[Object]], 0, i);
       }
       stats1(i) = stat1;
+      i = i + 1
     }
     stats1
   }
@@ -1605,7 +1631,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   /** Attribute a sequence of constructor invocations.
   */
   def transformConstrInvocations(pos: int, constrs: Array[Tree]): Array[Tree] = {
-    for (val i <- Iterator.range(0, constrs.length)) {
+    var i = 0; while (i < constrs.length) {
       constrs(i) = transform(constrs(i), CONSTRmode | SUPERmode, Type.AnyType);
       val f: Symbol = TreeInfo.methSymbol(constrs(i));
       if (f != null) {
@@ -1618,12 +1644,13 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  }
 	}
       }
+      i = i + 1
     }
     constrs
   }
 
   def transformConstrInvocationArgs(constrs: Array[Tree]): unit = {
-    for (val i <- Iterator.range(0, constrs.length)) {
+    var i = 0; while (i < constrs.length) {
       constrs(i) match {
 	case Tree$Apply(fn, args) =>
 	  if (fn.getType().isInstanceOf[Type$MethodType])
@@ -1632,6 +1659,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	      fn.getType(), EXPRmode, args, Type.AnyType);
 	case _ =>
       }
+      i = i + 1
     }
   }
 
@@ -1652,12 +1680,15 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
     val body1 = transformStatSeq(templ.body, templ.symbol());
     popContext();
     if (owner.isTrait()) {
-      for (val i <- Iterator.range(0, parents.length)) {
+      var i = 0; while (i < parents.length) {
 	checkPureConstr(parents(i), owner);
 	if (i >= 1) checkTrait(parents(i), owner);
+	i = i + 1
       }
-      for (val i <- Iterator.range(0, templ.body.length))
-	checkPureDef(body1(i), owner);
+      var j = 0; while (j < templ.body.length) {
+	checkPureDef(body1(j), owner);
+	j = j + 1
+      }
     }
     val templ1: Tree$Template = copy.Template(templ, parents, body1);
     templ1.setType(owner.getType());
@@ -1687,9 +1718,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  return null;
 	}
 	if (tparams.length == 0) {
-	  for (val i <- Iterator.range(0, args.length)) {
+	  var i = 0; while (i < args.length) {
 	    args(i) = transform(args(i), argMode, formals(i));
 	    argtypes(i) = args(i).getType().deconst();
+	    i = i + 1
 	  }
 	} else {
 	  // targs: the type arguments inferred from the prototype
@@ -1697,22 +1729,28 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 
 	  // argpts: prototypes for arguments
 	  val argpts = new Array[Type](formals.length);
-	  for (val i <- Iterator.range(0, formals.length))
+	  var i = 0; while (i < formals.length) {
 	    argpts(i) = formals(i).subst(tparams, targs);
+	    i = i + 1
+	  }
 
  	  // transform arguments with (targs/tparams)formals as prototypes
-	  for (val i <- Iterator.range(0, args.length))
+	  { var i = 0; while (i < args.length) {
 	    args(i) = transform(
 	      args(i), argMode | POLYmode, formals(i).subst(tparams, targs));
+	    i = i + 1
+	  }}
 
 	  // targs1: same as targs except that every AnyType is mapped to
 	  // formal parameter type.
 	  val targs1 = new Array[Type](targs.length);
-	  for (val i <- Iterator.range(0, targs.length))
+	  { var i = 0; while (i < targs.length) {
 	    targs1(i) = if (targs(i) != Type.AnyType) targs(i)
 			else tparams(i).getType();
+	    i = i + 1
+	  }}
 
-	  for (val i <- Iterator.range(0, args.length)) {
+	  { var i = 0; while (i < args.length) {
 	    argtypes(i) = args(i).getType().deconst();
 	    argtypes(i) match {
 	      case Type$PolyType(tparams1, restype1) =>
@@ -1722,13 +1760,14 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 		  argpts(i));
 	      case _ =>
 	    }
-	  }
+	    i = i + 1
+	  }}
 	}
 	//   desugarizing ident patterns
 	if (params.length == 1 && (params(0).flags & REPEATED) != 0) {
 	  if ((mode & PATTERNmode) != 0) {
 	    def desug_allIdentPatterns(trees: Array[Tree], currentOwner: Symbol): unit = {
-	      for (val i <- Iterator.range(0, trees.length))
+	      var i = 0; while (i < trees.length) {
 		trees(i) match {
 		  case Tree$Ident(name) =>
 		    if (name != Names.PATTERN_WILDCARD) {
@@ -1740,6 +1779,8 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
                     }
 		  case _ =>
 		}
+		i = i + 1
+	      }
 	    }
     	    desug_allIdentPatterns(args, context.owner);
 	  } else {
@@ -1762,16 +1803,18 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	transformArgs(pos, meth, tparams2, restp, argMode, args, pt)
 
       case Type.ErrorType =>
-	for (val i <- Iterator.range(0, args.length)) {
+	var i = 0; while (i < args.length) {
 	  args(i) = transform(args(i), argMode, Type.ErrorType);
 	  argtypes(i) = args(i).getType().deconst();
+	  i = i + 1
 	}
 	argtypes
 
       case _ =>
-	for (val i <- Iterator.range(0, args.length)) {
+	var i = 0; while (i < args.length) {
 	  args(i) = transform(args(i), argMode, Type.AnyType);
 	  argtypes(i) = args(i).getType().deconst();
+	  i = i + 1
 	}
 	argtypes
     }
@@ -1820,8 +1863,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
   }
 
   def transform(trees: Array[Tree], mode: int): Array[Tree] = {
-    for (val i <- Iterator.range(0, trees.length))
+    var i = 0; while (i < trees.length) {
       trees(i) = transform(trees(i), mode);
+      i = i + 1
+    }
     trees
   }
 
@@ -2001,12 +2046,16 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	    if ((curmode & CONSTRmode) != 0) {
 	      stats1(0) = transform(stats1(0), curmode, pt);
 	      context.enclClass.owner.flags = context.enclClass.owner.flags & ~INCONSTRUCTOR;
-	      for (val i <- Iterator.range(1, stats1.length))
+	      var i = 1; while (i < stats1.length) {
 		stats1(i) = transform(stats1(i), EXPRmode);
+		i = i + 1
+	      }
 	      stats1(0).getType()
 	    } else {
-	      for (val i <- Iterator.range(0, stats1.length - 1))
+	      var i = 0; while (i < stats1.length - 1) {
 		stats1(i) = transform(stats1(i), EXPRmode);
+		i = i + 1
+	      }
 	      if (stats1.length > 0) {
 		stats1(stats1.length - 1) =
 		  transform(stats1(stats1.length - 1), curmode & ~FUNmode, pt);
@@ -2020,10 +2069,11 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	    .setType(owntype);
 
         case Tree$Sequence(trees) =>
-          for (val i <- Iterator.range(0, trees.length)) {
+          var i = 0; while (i < trees.length) {
 	    trees(i) = transform(trees(i),
 				 this.mode | SEQUENCEmode,
 				 pt);
+	    i = i + 1
           }
           copy.Sequence(tree, trees).setType(pt);
 
@@ -2032,8 +2082,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  this.inAlternative = true;
 
 	  val newts = new Array[Tree](choices.length);
-	  for (val i <- Iterator.range(0, choices.length))
+	  var i = 0; while (i < choices.length) {
 	    newts(i) = transform(choices(i), this.mode, pt);
+	    i = i + 1
+	  }
 
 	  //val tpe: Type = Type.lub(Tree.typeOf(newts));
 
@@ -2388,6 +2440,7 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	      var matching1: int = -1;
 	      var matching2: int = -1;
 	      for (val i <- Iterator.range(0, alttypes.length)) {
+		// can't replace with while because of backend crash???
 		val alttp: Type = alttypes(i) match {
 		  case Type$PolyType(_, restp) => restp;
 		  case t => t
@@ -2481,8 +2534,9 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 		fn1.getType() match {
 		  case Type$MethodType(params, restp1) =>
 		    val formals = infer.formalTypes(params, args.length);
-		    for (val i <- Iterator.range(0, args.length)) {
+		    var i = 0; while (i < args.length) {
 		      args(i) = adapt(args(i), argMode, formals(i));
+		      i = i + 1
 		    }
 		    return constfold.tryToFold(
 		      copy.Apply(tree, fn1, args)
@@ -2620,9 +2674,10 @@ class Analyzer(global: Global, descr: AnalyzerPhase) extends Transformer(global)
 	  val self: Type = Type.compoundType(ptypes, members);
 	  val clazz: Symbol = self.symbol();
 	  pushContext(tree, clazz, members);
-	  for (val i <- Iterator.range(0, refinements.length)) {
+	  var i = 0; while (i < refinements.length) {
 	    val m = enterSym(refinements(i));
 	    m.flags = m.flags | OVERRIDE;
+	    i = i + 1
 	  }
 	  val refinements1 = transformStatSeq(refinements, Symbol.NONE);
 	  popContext();

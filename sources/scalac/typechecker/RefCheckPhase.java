@@ -10,6 +10,7 @@ package scalac.typechecker;
 
 import scalac.*;
 import scalac.ast.*;
+import scalac.symtab.*;
 import scalac.checkers.*;
 
 public class RefCheckPhase extends Phase {
@@ -23,6 +24,14 @@ public class RefCheckPhase extends Phase {
     public void apply(Unit[] units) {
         for (int i = 0; i < units.length; i++)
             new RefCheck(global).apply(units[i]);
+    }
+
+    public Type transformInfo(Symbol sym, Type tp) {
+	if (sym.isModule() && !sym.isPackage() && !sym.isGlobalModule()) {
+	    return Type.PolyType(Symbol.EMPTY_ARRAY, tp);
+	}
+	else
+	    return tp;
     }
 
     public Checker[] postCheckers(Global global) {
