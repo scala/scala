@@ -89,6 +89,7 @@ public class CLRPackageParser {
 	Type.initMSCORLIB(mscorlib);
 	findAssembly("vjslib.dll");
 	findAssembly("scala.dll");
+	findAllAssemblies();
 
 	BYTE    = getType("System.SByte");
 	UBYTE   = getType("System.Byte");
