@@ -40,4 +40,5 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
     }
   }
 
+  override def toString() = theSeq.elements.foldLeft ("") { (s:String,x:Node) => s + x.toString() }
 }
