@@ -20,10 +20,13 @@ import scalac.checkers.CheckOwners;
 import scalac.checkers.CheckSymbols;
 import scalac.checkers.CheckTypes;
 import scalac.checkers.CheckNames;
+import scalac.symtab.AbsTypeSymbol;
 import scalac.symtab.Definitions;
+import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
+import scalac.util.Name;
 import scalac.util.Debug;
 
 public class ErasurePhase extends Phase {
@@ -84,6 +87,13 @@ public class ErasurePhase extends Phase {
         if (sym.isType()) return tp;
         if (sym.isThisSym()) return sym.owner().nextType();
         // if (sym == definitions.NULL) return tp.resultType().erasure();
+        if (global.target == global.TARGET_INT && sym ==primitives.NEW_OARRAY){
+            // !!! hack for interpreter
+            Name name = Name.fromString("element").toTypeName();
+            Symbol tparam = new AbsTypeSymbol(0, name, sym, Modifiers.PARAM);
+            tparam.setType(definitions.ANY_TYPE());
+            return Type.PolyType(new Symbol[]{tparam}, tp);
+        }
         switch (primitives.getPrimitive(sym)) {
         case Primitive.IS : return Type.PolyType(tp.typeParams(), Type.MethodType(tp.valueParams(), tp.resultType().erasure()));
         case Primitive.AS : return tp;

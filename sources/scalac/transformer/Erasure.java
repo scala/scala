@@ -416,29 +416,15 @@ public class Erasure extends GenTransformer implements Modifiers {
      * of given type.
      */
     private Tree genNewUnboxedArray(int pos, Type element, Tree size) {
+        if (global.target == global.TARGET_INT) {
+            Tree[] targs = {gen.mkType(pos, element)};
+            Tree[] vargs = {coerce(size, UNBOXED_INT)};
+            Tree fun = gen.mkGlobalRef(pos, primitives.NEW_OARRAY);
+            Tree array = gen.mkApplyTV(fun, targs, vargs);
+            return gen.mkAsInstanceOf(array, Type.UnboxedArrayType(element));
+        }
         switch (element) {
         case UnboxedType(int kind): return genNewUnboxedArray(pos, kind, size);
-        }
-        if (global.target == global.TARGET_INT) {
-            int levels = 0;
-            while (isUnboxedArrayType(element)) {
-                element = getArrayElementType(element);
-                levels++;
-            }
-            global.nextPhase();
-            while (true) {
-                Symbol clasz = element.symbol();
-                if (clasz.isJava()) break;
-                if (clasz == definitions.ANY_CLASS) break;
-                if (isUnboxedSimpleType(element)) break;
-                assert element.parents().length > 0: element;
-                element = element.parents()[0];
-            }
-            global.prevPhase();
-            while (levels > 0) {
-                element = Type.UnboxedArrayType(element);
-                levels--;
-            }
         }
         String name = primitives.getNameForClassForName(element);
         Tree[] args = { coerce(size, UNBOXED_INT), gen.mkStringLit(pos,name) };
