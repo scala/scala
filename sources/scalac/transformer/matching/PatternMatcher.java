@@ -542,7 +542,7 @@ public class PatternMatcher extends PatternTool {
                                       Symbol.EMPTY_ARRAY,
                                       getHeaderType(typeOf0(ts))))
                             .setSymbol(ts),
-                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts))));
+                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts)).asSeenFrom(typeOf(casted), ts.owner())));
             }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);

@@ -356,7 +356,7 @@ public class AlgebraicMatcher extends PatternTool {
               Symbol typeSym = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
 
-              Type castType = getHeaderType( typeOf0( typeSym ));
+              Type castType = getHeaderType( typeOf0( typeSym )).asSeenFrom(typeOf(casted), typeSym.owner());
               target.and = curHeader =
                     mk.Header(pat.pos,
                               castType,
