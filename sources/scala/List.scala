@@ -176,35 +176,34 @@ trait List[a] extends Seq[a] {
 
   /** Combines the elements of this list together using the binary
   * operator <code>op</code>, from left to right, and starting with
-  * the value <code>z</code>. Similar to <code>fold</code> but with
-  * a different order of the arguments, allowing to use nice constructions like
-  * <code>(z foldl_: l) { ... }</code>.
+  * the value <code>z</code>.
   * @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
   * is <code>[a0, a1, ..., an]</code>.
   */
-  def foldl_:[b](z: b)(f: (b, a) => b): b = match {
+  def foldLeft[b](z: b)(f: (b, a) => b): b = match {
     case Nil => z
-    case x :: xs => (xs.foldl_:[b](f(z, x)))(f)
+    case x :: xs => xs.foldLeft[b](f(z, x))(f)
   }
 
-  def foldr[b](z: b)(f: (a, b) => b): b = match {
+  def foldRight[b](z: b)(f: (a, b) => b): b = match {
     case Nil => z
-    case x :: xs => f(x, (xs foldr z)(f))
+    case x :: xs => f(x, xs.foldRight(z)(f))
   }
 
-  def foldl1(f: (a, a) => a): a = this match {
-    case Nil => error("foldl1 of empty list")
-    case x :: xs => (x foldl_: xs)(f)
+  def reduceLeft(f: (a, a) => a): a = this match {
+    case Nil => error("reduceLeft of empty list")
+    case x :: xs => xs.foldLeft(x)(f)
   }
 
-  def foldr1(f: (a, a) => a): a = match {
-    case Nil => error("foldr1 of empty list")
+  def reduceRight(f: (a, a) => a): a = match {
+    case Nil => error("reduceRight of empty list")
     case x :: Nil => x
-    case x :: xs => f(x, xs foldr1 f)
+    case x :: xs => xs.foldRight(x)(f)
   }
 
-  /** Applies the given function <code>f</code> to each element of this list, then concatenates
-  * the results.
+  /**
+  * Applies the given function <code>f</code> to each element of
+  * this list, then concatenates the results.
   * @param f the function to apply on each element.
   * @return <code>f(a0) ::: ... ::: f(an)</code> if this list is
   * <code>[a0, ..., an]</code>.
@@ -220,7 +219,7 @@ trait List[a] extends Seq[a] {
   * @return the elements of this list in reverse order.
   */
   def reverse: List[a] = {
-    ((Nil: List[a]) foldl_: this)((xs: List[a], x: a) => x :: xs)
+    foldLeft(Nil: List[a])((xs: List[a], x: a) => x :: xs)
   }
 
   /** Prints on standard output a raw textual representation of this list.
