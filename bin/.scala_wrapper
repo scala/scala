@@ -69,7 +69,7 @@ if [ "$CVSTREE" = "true" ]; then
     BCEL_PATH="${BCEL_PATH:-/home/linuxsoft/apps/BCEL-5.0/bcel.jar}";
     MSIL_PATH="${MSIL_PATH:-/home/linuxsoft/apps/java2net/msil.jar}";
     SCALA_CLASSES="$PREFIX/classes";
-    SCALA_SOURCES="$PREFIX/scala-sources";
+    SCALA_SOURCES="$PREFIX/sources";
 else
     PROJECT_NAME="scala";
     LIBDIR="$PREFIX/lib";
