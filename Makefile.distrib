@@ -280,6 +280,13 @@ distrib-build-ia	: ia-build
 distrib-build-addons	: install-addons
 
 distrib-official	: version-update
+	@$(make) -C doc/tutorial distclean
+	@$(make) -C doc/reference distclean
+	@$(make) distclean
+	@$(make) all
+	@$(make) -C doc/reference all
+	@$(make) -C doc/tutorial all
+	@$(make) boottest
 	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
 #	$(CVS) tag "release-$(subst .,_,$(PROJECT_VERSION))" $(PROJECT_ROOT)
 	@$(make) version-increment
