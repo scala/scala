@@ -108,7 +108,8 @@ public class ExpressionCompiler {
             return Code.Label(symbol, vars, compute(body));
 
         case Block(Tree[] stats):
-            assert stats.length > 0;
+            if (stats.length == 0) return Code.Literal(constants.literal());
+            // !!! assert stats.length > 0;
             CodeBuffer buffer = new CodeBuffer();
             int stacksize = context.stacksize();
             for (int i = 0; i < stats.length - 1; i++)
