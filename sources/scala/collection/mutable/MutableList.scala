@@ -58,7 +58,7 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
     def elements: Iterator[A] =
         if (first == null) Nil.elements else first.elements;
 
-    def toList: List[A] = if (first == null) Nil else first.toList;
+    override def toList: List[A] = if (first == null) Nil else first.toList;
 
     override def toString() = toList.toString();
 }

@@ -61,7 +61,7 @@ trait Stream[+a] extends Seq[a] {
     if (isEmpty) Stream.empty
     else Stream.cons(f(head), tail.map(f));
 
-  def foreach(f: a => unit): unit =
+  override def foreach(f: a => unit): unit =
     if (isEmpty) {}
     else { f(head); tail.foreach(f) }
 
@@ -70,22 +70,19 @@ trait Stream[+a] extends Seq[a] {
     else if (p(head)) Stream.cons(head, tail.filter(p))
     else tail.filter(p);
 
-  def forall(p: a => Boolean): Boolean =
+  override def forall(p: a => Boolean): Boolean =
     isEmpty || (p(head) && tail.forall(p));
 
-  def exists(p: a => Boolean): Boolean =
+  override def exists(p: a => Boolean): Boolean =
     !isEmpty && (p(head) || tail.exists(p));
 
-  def foldLeft[b](z: b)(f: (b, a) => b): b =
+  override def foldLeft[b](z: b)(f: (b, a) => b): b =
     if (isEmpty) z
     else tail.foldLeft[b](f(z, head))(f);
 
-  def foldRight[b](z: b)(f: (a, b) => b): b =
+  override def foldRight[b](z: b)(f: (a, b) => b): b =
     if (isEmpty) z
     else f(head, tail.foldRight(z)(f));
-
-  def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
-  def :/[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
 
   def reduceLeft[b >: a](f: (b, b) => b): b =
     if (isEmpty) error("Stream.empty.reduceLeft")

@@ -12,13 +12,6 @@ package scala.collection.immutable;
 
 object ListMap {
     def Empty[A, B] = new ListMap[A, B];
-
-    /** bug: crashes analzyer with NullPointerException */
-    /*
-    def fromList[A,B]( list:List[Pair[A,B]] ):ListMap[A,B] =
-      list.foldLeft (Empty[A,B]) { ( x:ListMap[A,B],y:Pair[A,B] ) =>
-                                    x.update( y._1, y._2 ) };
-    */
 }
 
 /** This class implements immutable maps using a list-based data

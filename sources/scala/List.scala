@@ -123,6 +123,34 @@ object List {
     }
     res.reverse
   }
+
+  /** Returns the given string as a list of characters.
+   *  @param str the string to convert.
+   *  @return the string as a list of characters.
+   */
+  def fromString(str: String): List[Char] = {
+    var res: List[Char] = Nil;
+    var i = str.length();
+    while (i > 0) {
+      i = i - 1;
+      res = str.charAt(i) :: res;
+    }
+    res
+  }
+
+  /** Returns the given list of characters as a string.
+   *  @param xs the list to convert.
+   *  @return the list in form of a string.
+   */
+  def toString(xs: List[Char]): String = {
+    val sb = new StringBuffer();
+    var ys = xs;
+    while (!ys.isEmpty) {
+      sb.append(ys.head);
+      ys = ys.tail;
+    }
+    sb.toString()
+  }
 }
 
 
@@ -376,7 +404,7 @@ trait List[+a] extends Seq[a] {
    *  (while respecting the order of the elements).
    *  @param f the treatment to apply to each element.
    */
-  def foreach(f: a => Unit): Unit = match {
+  override def foreach(f: a => Unit): Unit = match {
     case Nil => ()
     case head :: tail => f(head); tail foreach f
   };
@@ -487,7 +515,7 @@ trait List[+a] extends Seq[a] {
    *  @param p the test predicate.
    *  @return True iff all elements of this list satisfy the predicate <code>p</code>.
    */
-  def forall(p: a => Boolean): Boolean =
+  override def forall(p: a => Boolean): Boolean =
     isEmpty || (p(head) && (tail forall p));
 
   /** Tests the existence in this list of an element that satisfies the predicate
@@ -496,7 +524,7 @@ trait List[+a] extends Seq[a] {
    *  @return true iff there exists an element in this list that satisfies
    *  the predicate <code>p</code>.
    */
-  def exists(p: a => Boolean): Boolean =
+  override def exists(p: a => Boolean): Boolean =
     !isEmpty && (p(head) || (tail exists p));
 
   /** Find and return the first element of the list satisfying a
@@ -516,7 +544,7 @@ trait List[+a] extends Seq[a] {
    *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
-  def foldLeft[b](z: b)(f: (b, a) => b): b = match {
+  override def foldLeft[b](z: b)(f: (b, a) => b): b = match {
     case Nil => z
     case x :: xs => xs.foldLeft[b](f(z, x))(f)
   };
@@ -527,21 +555,10 @@ trait List[+a] extends Seq[a] {
    *  @return <code>a0 op (... op (an op z)...)</code> if the list
    *  is <code>[a0, a1, ..., an]</code>.
    */
-  def foldRight[b](z: b)(f: (a, b) => b): b = match {
+  override def foldRight[b](z: b)(f: (a, b) => b): b = match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
   };
-
-  /** Similar to <code>foldLeft</code> but can be used as
-   *  an operator with the order of list and zero arguments reversed.
-   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
-   */
-  def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
-
-  /** An alias for <code>foldRight</code>.
-   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
-   */
-  def :\[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
 
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => error("Nil.reduceLeft")

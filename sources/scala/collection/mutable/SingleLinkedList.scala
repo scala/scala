@@ -56,7 +56,7 @@ abstract class SingleLinkedList[A, This <: SingleLinkedList[A, This]]: This with
         }
     }
 
-    def toList: List[A] =
+    override def toList: List[A] =
         if (next == null) (elem :: Nil) else (elem :: next.toList);
 
 }

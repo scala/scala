@@ -50,17 +50,17 @@ trait Option[+A] extends Iterable[A] {
       case Some(x) => if (p(x)) Some(x) else None
     }
 
-    def foreach(f: A => Unit): Unit = match {
+    override def foreach(f: A => Unit): Unit = match {
       case None => ()
       case Some(x) => f(x)
     }
 
 	def elements: Iterator[A] = match {
 		case None => Iterator.empty
-		case Some(x) => Iterator.fromSeq(x)
+		case Some(x) => Iterator.fromValues(x)
 	}
 
-    def toList: List[A] = match {
+    override def toList: List[A] = match {
       case None => List()
       case Some(x) => List(x)
     }

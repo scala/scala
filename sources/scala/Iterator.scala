@@ -13,8 +13,8 @@ package scala;
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
  *
- *  @author  Martin Odersky
- *  @version 1.0, 16/07/2003
+ *  @author  Martin Odersky, Matthias Zenger
+ *  @version 1.1, 04/02/2004
  */
 object Iterator {
 
@@ -23,35 +23,36 @@ object Iterator {
     def next: a = error("next on empty iterator");
   }
 
-  def fromSeq[a](xs: a*) = xs.elements;
+  def fromValues[a](xs: a*) = xs.elements;
 
   def fromArray[a](xs: Array[a]) = new Iterator[a] {
     private var i = 0;
-    def hasNext: Boolean =
-      i < xs.length;
+    def hasNext: Boolean = i < xs.length;
     def next: a =
       if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
       else error("next on empty iterator");
   }
 
+  def fromString(str: String): Iterator[Char] = new Iterator[Char] {
+    private var i = 0;
+    private val len = str.length();
+    def hasNext = i < len;
+    def next = str charAt i;
+  }
+
   def range(lo: Int, end: Int) = new Iterator[Int] {
     private var i = lo;
-    def hasNext: Boolean =
-      i < end;
+    def hasNext: Boolean =  i < end;
     def next: Int =
-      if (i < end) { i = i + 1 ; i - 1 }
-      else error("next on empty iterator");
+      if (i < end) { i = i + 1 ; i - 1 } else error("next on empty iterator");
     def head: Int =
-      if (i < end) i
-      else error("head on empty iterator");
+      if (i < end) i else error("head on empty iterator");
   }
 
   def from(lo: Int) = new Iterator[Int] {
     private var i = 0;
-    def hasNext: Boolean =
-      true;
-    def next: Int =
-      { i = i + 1 ; i - 1 }
+    def hasNext: Boolean = true;
+    def next: Int = { i = i + 1 ; i - 1 }
   }
 }
 
@@ -60,23 +61,23 @@ object Iterator {
  *  if there is a next element available, and a <code>next</code> method
  *  which returns the next element and discards it from the iterator.
  *
- *  @author  Martin Odersky
- *  @version 1.0, 16/07/2003
+ *  @author  Martin Odersky, Matthias Zenger
+ *  @version 1.1, 04/02/2004
  */
 trait Iterator[+a] with Iterable[a] {
   def hasNext: Boolean;
   def next: a;
 
-  def foreach(f: a => Unit): Unit =
+  override def foreach(f: a => Unit): Unit =
     while (hasNext) { f(next) }
 
-  def forall(p: a => Boolean): Boolean = {
+  override def forall(p: a => Boolean): Boolean = {
     var res = true;
     while (res && hasNext) { res = p(next); }
     res;
   }
 
-  def exists(p: a => Boolean): Boolean = {
+  override def exists(p: a => Boolean): Boolean = {
     var res = false;
     while (!res && hasNext) { res = p(next); }
     res;
@@ -97,15 +98,16 @@ trait Iterator[+a] with Iterable[a] {
     def next = f(Iterator.this.next)
   }
 
-  def foldLeft[b] ( z:b ) ( f: (b,a)=>b ): b = {
+  override def foldLeft[b](z: b)(f: (b, a) => b): b = {
     var acc = z;
     while( hasNext ) {
-      acc = f( acc, next)
+      acc = f(acc, next)
     }
     acc
   }
 
-  def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
+  override def foldRight[b](z: b)(f: (a, b) => b): b =
+  	if (hasNext) f(next, foldRight(z)(f)) else z;
 
   def append[b >: a](that: Iterator[b]) = new Iterator[b] {
     def hasNext = Iterator.this.hasNext || that.hasNext;
@@ -158,5 +160,37 @@ trait Iterator[+a] with Iterable[a] {
   }
 
   def elements: Iterator[a] = this;
-}
 
+  def duplicate: Pair[Iterator[a], Iterator[a]] = {
+    var xs: List[a] = Nil;
+    var ahead: Iterator[a] = null;
+    class Partner extends Iterator[a] {
+      var ys: List[a] = Nil;
+      def hasNext: Boolean = Iterator.this.synchronized {
+        ((this == ahead) && Iterator.this.hasNext) ||
+      	((this != ahead) && (!xs.isEmpty || !ys.isEmpty || Iterator.this.hasNext));
+      }
+      def next: a = Iterator.this.synchronized {
+		if (this == ahead) {
+		  val e = Iterator.this.next;
+		  xs = e :: xs; e
+		} else {
+		  if (ys.isEmpty) {
+			ys = xs.reverse;
+			xs = Nil;
+		  }
+		  ys match {
+			case Nil =>
+			  val e = Iterator.this.next;
+			  ahead = this;
+			  xs = e :: xs; e
+			case z :: zs =>
+			  ys = zs; z
+		  }
+		}
+      }
+    }
+    ahead = new Partner;
+    Pair(ahead, new Partner)
+  }
+}

@@ -97,7 +97,7 @@ class Stack[+A] with Seq[A] {
      *
      *  @return the created list.
      */
-    def toList: List[A] = Nil;
+    override def toList: List[A] = Nil;
 
     /** Compares this stack with the given object.
      *

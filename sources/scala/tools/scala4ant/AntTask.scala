@@ -116,7 +116,7 @@ class AntTask extends Javac {
         if( force ) {
             val newCompileList = new Array[File]( compileList.length + files.length );
             System.arraycopy(compileList, 0, newCompileList, 0, compileList.length);
-            var j = 0, i = 0;
+            var j, i = 0;
 
           def handleFile( theFile:String ):unit = { // this, because wile create anon-class -> access violation
                 if( hasLegalSuffix(sfx, theFile )) {

@@ -132,16 +132,6 @@ trait Map[A, +B] with PartialFunction[A, B]
         case Pair(key, value) => p(key, value)
     }
 
-    /** Creates a list of all (key, value) mappings.
-     *
-     *  @return    the list of all mappings
-     */
-    def toList: List[Pair[A, B]] = {
-        var res: List[Pair[A, B]] = Nil;
-        elements.foreach { mapping => res = mapping :: res; };
-        res;
-    }
-
     /** Compares two maps structurally; i.e. checks if all mappings
      *  contained in this map are also contained in the other map,
      *  and vice versa.

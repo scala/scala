@@ -59,37 +59,6 @@ trait Set[A] with Function1[A, Boolean] with Iterable[A] {
      */
     def subsetOf(that: Set[A]): Boolean = forall(that.contains);
 
-    /** Execute the statement <code>f</code> for every element in this set.
-     *
-     *  @param  f   a function that is applied to every element in this set.
-     */
-    def foreach(f: A => Unit): Unit = elements.foreach(f);
-
-    /** Checks if a given predicate is true for all elements in this set.
-     *
-     *  @param   p     the predicate
-     *  @returns true, iff the predicate yields true for all elements.
-     */
-    def forall(p: A => Boolean): Boolean = elements.forall(p);
-
-	/** Checks if a given predicate is true for at least one element
-	 *  in this set.
-     *
-     *  @param   p     the predicate
-     *  @returns true, iff the predicate yields true for at least one element.
-     */
-    def exists(p: A => Boolean): Boolean = elements.exists(p);
-
-    /** Transform this set into a list of all elements.
-     *
-     *  @return  a list which enumerates all elements of this set.
-     */
-    def toList: List[A] = {
-        var res: List[A] = Nil;
-        elements.foreach { elem => res = elem :: res; }
-        res;
-    }
-
     /** Compares this set with another object and returns true, iff the
      *  other object is also a set which contains the same elements as
      *  this set.

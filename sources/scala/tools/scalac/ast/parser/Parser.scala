@@ -16,6 +16,7 @@ import java.util.{Map, Stack, ArrayList, LinkedList};
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
+import scala.collection.mutable.Buffer;
 
 package scala.tools.scalac.ast.parser {
 
@@ -79,7 +80,7 @@ class Parser(unit: Unit) {
           nparens = nparens + 1;
         case LBRACE =>
           nbraces = nbraces + 1;
-	case _ =>
+        case _ =>
       }
       s.nextToken();
     }
@@ -102,7 +103,7 @@ class Parser(unit: Unit) {
     if (s.token != token) {
       val errpos = if ((s.pos >>> Position.COLUMN_BITS) >
                     (s.lastpos >>> Position.COLUMN_BITS)) s.lastpos
-		   else s.pos;
+                   else s.pos;
       syntaxError(errpos, s.token2string(token) + " expected but " +
                   s.token2string(s.token) + " found.", true);
     }
@@ -141,9 +142,9 @@ class Parser(unit: Unit) {
 
   def isExprIntro(): boolean = s.token match {
     case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-	 STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
-	 THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
-	 DO | RETURN | THROW | LPAREN | LBRACE =>
+         STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
+         THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
+         DO | RETURN | THROW | LPAREN | LBRACE =>
       true;
     case _ =>
       false;
@@ -201,12 +202,12 @@ class Parser(unit: Unit) {
     while (true) {
       val templ = make.Template(pos, Tree.EMPTY_ARRAY, stats);
       pkg match {
-	case Tree$Select(qual, name) =>
-	  stats = NewArray.Tree(
-		    make.PackageDef(pos, make.Ident(pkg.pos, name), templ));
-	  pkg = qual;
-	case _ =>
-	  return make.PackageDef(pos, pkg, templ);
+        case Tree$Select(qual, name) =>
+          stats = NewArray.Tree(
+                    make.PackageDef(pos, make.Ident(pkg.pos, name), templ));
+          pkg = qual;
+        case _ =>
+          return make.PackageDef(pos, pkg, templ);
       }
     }
     null//dummy
@@ -218,23 +219,23 @@ class Parser(unit: Unit) {
     if (isExpr) {
       if (op.isLeftAssoc()) {
         make.Apply(
-	  pos,
-	  make.Select(pos, left, NameTransformer.encode(op)),
-	  NewArray.Tree(right));
+          pos,
+          make.Select(pos, left, NameTransformer.encode(op)),
+          NewArray.Tree(right));
       } else {
         val x: Name = fresh();
         make.Block(
-	  pos,
-	  NewArray.Tree(
+          pos,
+          NewArray.Tree(
             make.ValDef(pos, 0, x, Tree.Empty, left),
             make.Apply(
-	      pos,
+              pos,
               make.Select(pos, right, NameTransformer.encode(op)),
               NewArray.Tree(make.Ident(left.pos, x)))));
       }
     } else {
       make.Apply(
-	pos,
+        pos,
         make.Ident(pos, NameTransformer.encode(op).toTypeName()),
         NewArray.Tree(left, right));
     }
@@ -279,8 +280,8 @@ class Parser(unit: Unit) {
                 make.ValDef(
                   pat.pos, Modifiers.PARAM, name1, Tree.Empty, Tree.Empty)),
               body);
-	case _ =>
-	  make.Visitor(pos, NewArray.CaseDef(
+        case _ =>
+          make.Visitor(pos, NewArray.CaseDef(
             make.CaseDef(pos, pat, Tree.Empty, body)));
       }
     }
@@ -289,13 +290,13 @@ class Parser(unit: Unit) {
       case Tree$PatDef(mods, pat, rhs) =>
         if (enums.length == 1) {
           makeFor1(pos, mapName, pat, rhs, body);
-	} else {
-	  val newenums = new Array[Tree](enums.length - 1);
+        } else {
+          val newenums = new Array[Tree](enums.length - 1);
           enums(1) match {
             case Tree$PatDef(mods2, pat2, rhs2) =>
               System.arraycopy(enums, 1, newenums, 0, newenums.length);
               makeFor1(
-		pos, flatmapName, pat, rhs,
+                pos, flatmapName, pat, rhs,
                 makeFor(enums(1).pos, newenums, mapName, flatmapName, body));
             case _ =>
               System.arraycopy(enums, 2, newenums, 1, newenums.length - 1);
@@ -304,7 +305,7 @@ class Parser(unit: Unit) {
                 makeFor1(enums(1).pos, Names.filter, pat.duplicate(), rhs, enums(1)));
               makeFor(pos, newenums, mapName, flatmapName, body);
           }
-	}
+        }
     }
   }
 
@@ -606,7 +607,7 @@ class Parser(unit: Unit) {
       val ts = new myTreeList();
       ts.append(t);
       if (s.token == LPAREN || s.token == LBRACE)
-	ts.append(argumentExprs());
+        ts.append(argumentExprs());
       make.Apply(pos, symt, ts.toArray());
     } else {
       t
@@ -671,7 +672,7 @@ class Parser(unit: Unit) {
           return make.FunType(pos, ts.toArray(), typ());
         } else {
           accept(RPAREN);
-	}
+        }
       }
     } else {
       t = type1()
@@ -711,12 +712,12 @@ class Parser(unit: Unit) {
     val pos = s.pos;
     var t: Tree =
       if (s.token == LPAREN) {
-	s.nextToken();
-	val t = typ();
-	accept(RPAREN);
-	t
+        s.nextToken();
+        val t = typ();
+        accept(RPAREN);
+        t
       } else {
-	convertToTypeId(stableRef(false, true));
+        convertToTypeId(stableRef(false, true));
       }
     while (true) {
       if (s.token == HASH)
@@ -724,7 +725,7 @@ class Parser(unit: Unit) {
       else if (s.token == LBRACKET)
         t = make.AppliedType(pos, t, typeArgs());
       else
-	return t;
+        return t;
     }
     null; //dummy
   }
@@ -776,18 +777,18 @@ class Parser(unit: Unit) {
    *  ResultExpr ::= Bindings `=>' Block
    *               | Expr1
    *  Expr1      ::= (' Expr `)' Expr [[`;'] else Expr]
-   *          	   | try `{' block `}' [catch Expr] [finally Expr]
-   *          	   | while `(' Expr `)' Expr
-   *          	   | do Expr [`;'] while `(' Expr `)'
-   *          	   | for `(' Enumerators `)' (do | yield) Expr
-   *          	   | throw Expr
-   *          	   | return [Expr]
-   *          	   | [SimpleExpr `.'] Id `=' Expr
-   *          	   | SimpleExpr ArgumentExprs `=' Expr
-   *          	   | PostfixExpr [`:' Type1]
-   *  Bindings	 ::= Id [`:' Type1]
-   *          	   | `(' [Binding {`,' Binding}] `)'
-   *  Binding 	 ::= Id [`:' Type]
+   *               | try `{' block `}' [catch Expr] [finally Expr]
+   *               | while `(' Expr `)' Expr
+   *               | do Expr [`;'] while `(' Expr `)'
+   *               | for `(' Enumerators `)' (do | yield) Expr
+   *               | throw Expr
+   *               | return [Expr]
+   *               | [SimpleExpr `.'] Id `=' Expr
+   *               | SimpleExpr ArgumentExprs `=' Expr
+   *               | PostfixExpr [`:' Type1]
+   *  Bindings   ::= Id [`:' Type1]
+   *               | `(' [Binding {`,' Binding}] `)'
+   *  Binding    ::= Id [`:' Type]
    */
 
   def expr(): Tree =
@@ -801,8 +802,8 @@ class Parser(unit: Unit) {
       accept(RPAREN);
       val thenp = expr();
       val elsep =
-	if (s.token == ELSE) { s.nextToken(); expr() }
-	else Tree.Empty;
+        if (s.token == ELSE) { s.nextToken(); expr() }
+        else Tree.Empty;
       make.If(pos, cond, thenp, elsep)
     } else if (s.token == TRY) {
       val pos = s.skipToken();
@@ -811,10 +812,10 @@ class Parser(unit: Unit) {
       accept(RBRACE);
       val catcher =
         if (s.token == CATCH) { s.nextToken(); expr() }
-	else Tree.Empty;
+        else Tree.Empty;
       val finalizer =
         if (s.token == FINALLY) { s.nextToken(); expr() }
-	else Tree.Empty;
+        else Tree.Empty;
       makeTry(pos, body, catcher, finalizer)
     } else if (s.token == WHILE) {
       val lname = Name.fromString("label$" + loopNestingDepth);
@@ -850,8 +851,8 @@ class Parser(unit: Unit) {
     } else if (s.token == RETURN) {
       val pos = s.skipToken();
       val e =
-	if (isExprIntro()) expr()
-	else make.Block(pos, Tree.EMPTY_ARRAY);
+        if (isExprIntro()) expr()
+        else make.Block(pos, Tree.EMPTY_ARRAY);
       make.Return(pos, e)
     } else if (s.token == THROW) {
       val pos = s.skipToken();
@@ -862,7 +863,7 @@ class Parser(unit: Unit) {
         t match {
           case Tree$Ident(_) | Tree$Select(_, _) | Tree$Apply(_, _) =>
             t = make.Assign(s.skipToken(), t, expr());
-	  case _ =>
+          case _ =>
         }
       } else if (s.token == COLON) {
         val pos = s.skipToken();
@@ -883,9 +884,9 @@ class Parser(unit: Unit) {
         }
       }
       if (s.token == ARROW) {
-	val arrowpos = s.skipToken();
+        val arrowpos = s.skipToken();
         t = make.Function(arrowpos, convertToParams(t),
-			  if (isInBlock) block(arrowpos) else expr());
+                          if (isInBlock) block(arrowpos) else expr());
       }
       t
     }
@@ -949,10 +950,10 @@ class Parser(unit: Unit) {
         t = stableRef(true, false);
       case LPAREN =>
         val pos = s.skipToken();
-	if (s.token == RPAREN) {
+        if (s.token == RPAREN) {
           s.nextToken();
           t = make.Block(pos, Tree.EMPTY_ARRAY);
-	} else {
+        } else {
           t = expr();
           if (s.token == COMMA) {
             val commapos = s.skipToken();
@@ -1021,15 +1022,15 @@ class Parser(unit: Unit) {
     val pos = accept(LBRACE);
     val res =
       if (s.token == CASE) {
-	val stats = new myTreeList();
-	do {
-	  stats.append(caseClause());
-	} while (s.token == CASE);
-	make.Visitor(pos,
-	  stats.copyTo(new Array[Tree$CaseDef](stats.length()))
-	  .asInstanceOf[Array[Tree$CaseDef]])
+        val stats = new myTreeList();
+        do {
+          stats.append(caseClause());
+        } while (s.token == CASE);
+        make.Visitor(pos,
+          stats.copyTo(new Array[Tree$CaseDef](stats.length()))
+          .asInstanceOf[Array[Tree$CaseDef]])
       } else {
-	block(pos);
+        block(pos);
       }
     accept(RBRACE);
     local = local - 1;
@@ -1087,10 +1088,10 @@ class Parser(unit: Unit) {
             NewArray.CaseDef(
               make.CaseDef(
                 rhs.pos, pat.duplicate(),
-		Tree.Empty, gen.mkBooleanLit(s.pos, true)),
+                Tree.Empty, gen.mkBooleanLit(s.pos, true)),
               make.CaseDef(
                 rhs.pos, make.Ident(rhs.pos, Names.PATTERN_WILDCARD),
-		Tree.Empty, gen.mkBooleanLit(s.pos, false))))));
+                Tree.Empty, gen.mkBooleanLit(s.pos, false))))));
     make.PatDef(pos, 0, pat, rhs)
   }
 
@@ -1172,7 +1173,7 @@ class Parser(unit: Unit) {
       p match {
         case Tree$Ident(name) =>
           if (name == Names.PATTERN_WILDCARD) return pattern3()
-	case _ =>
+        case _ =>
       }
       make.Bind(s.skipToken(), p.asInstanceOf[Tree$Ident].name, pattern3());
     } else {
@@ -1192,8 +1193,8 @@ class Parser(unit: Unit) {
         val zname = fresh();
         val zvar = make.Ident(s.pos, zname);
         return make.Bind(
-	  s.pos, zname,
-	  pN.flattenAlternative(
+          s.pos, zname,
+          pN.flattenAlternative(
             make.Alternative(s.pos, NewArray.Tree(
               make.Sequence(s.pos, Tree.EMPTY_ARRAY),
               pN.flattenSequence(make.Sequence(s.pos, NewArray.Tree(
@@ -1203,7 +1204,7 @@ class Parser(unit: Unit) {
         val zname = fresh();
         val zvar = make.Ident(s.pos, zname);
         return make.Bind(
-	  s.pos, zname,
+          s.pos, zname,
           pN.flattenSequence(make.Sequence(s.pos, NewArray.Tree(
             top,
             pN.flattenAlternative(make.Alternative(s.pos, NewArray.Tree(
@@ -1390,7 +1391,7 @@ class Parser(unit: Unit) {
       s.nextToken();
       mods = mods | Modifiers.REPEATED;
       tp = make.AppliedType(
-	tp.pos,
+        tp.pos,
         scalaDot(tp.pos, Names.Seq.toTypeName()),
         NewArray.Tree(tp));
     }
@@ -1538,141 +1539,170 @@ class Parser(unit: Unit) {
       false
     }
 
-  /** Def    ::= val PatDef {`,' PatDef}
-  *           | var VarDef {`,' VarDef}
-  *           | def FunDef {`,' FunDef}
-  *           | type TypeDef {`,' TypeDef}
-  *           | ClsDef
-  *  Dcl    ::= val ValDcl {`,' ValDcl}
-  *           | var ValDcl {`,' ValDcl}
-  *           | def FunDcl {`,' FunDcl}
-  *           | type TypeDcl {`,' TypeDcl}
-  */
+  /** Def    ::= val PatDef
+   *           | var VarDef
+   *           | def FunDef
+   *           | type TypeDef
+   *           | ClsDef
+   *  Dcl    ::= val ValDcl
+   *           | var ValDcl
+   *           | def FunDcl
+   *           | type TypeDcl
+   */
   def defOrDcl(mods: int): Array[Tree] = {
-    val ts = new myTreeList();
     s.token match {
       case VAL =>
-	do {
-          s.nextToken();
-          ts.append(popComment(patDefOrDcl(mods)));
-        } while (s.token == COMMA);
-	ts.toArray()
+		patDefOrDcl(mods);
       case VAR =>
-	do {
-          s.nextToken();
-          ts.append(popComment(varDefOrDcl(mods)));
-        } while (s.token == COMMA);
-	ts.toArray()
+        varDefOrDcl(mods);
       case DEF =>
-	do {
-          s.nextToken();
-          ts.append(popComment(funDefOrDcl(mods)));
-        } while (s.token == COMMA);
-	ts.toArray()
+        funDefOrDcl(mods);
       case TYPE =>
-	do {
-          s.nextToken();
-          ts.append(popComment(typeDefOrDcl(mods)));
-        } while (s.token == COMMA);
-	ts.toArray()
+        s.nextToken();
+        val ts = new myTreeList();
+        ts.append(popComment(typeDefOrDcl(mods)));
+        ts.toArray()
       case _ =>
         clsDef(mods)
     }
   }
 
   /**  ClsDef ::= ([case] class | trait) ClassDef {`,' ClassDef}
-  *            | [case] object ObjectDef {`,' ObjectDef}
-  */
-  def clsDef(_mods: int): Array[Tree] = {
-    var mods = _mods;
-    val ts = new myTreeList();
+   *            | [case] object ObjectDef {`,' ObjectDef}
+   */
+  def clsDef(mods: int): Array[Tree] = {
     s.token match {
-      case CLASS | CASECLASS | TRAIT =>
-        if (s.token == CASECLASS)
-	  mods = mods | Modifiers.CASE;
-        else if (s.token == TRAIT)
-	  mods = mods | Modifiers.TRAIT | Modifiers.ABSTRACT;
-	do {
-          s.nextToken();
-          ts.append(classDef(mods));
-        } while (s.token == COMMA);
-	ts.toArray()
-      case OBJECT | CASEOBJECT =>
-        if (s.token == CASEOBJECT)
-	  mods = mods | Modifiers.CASE;
-	do {
-          s.nextToken();
-          ts.append(objectDef(mods));
-        } while (s.token == COMMA);
-	ts.toArray()
+      case TRAIT =>
+        classDef(mods | Modifiers.TRAIT | Modifiers.ABSTRACT);
+      case CLASS =>
+        classDef(mods);
+      case CASECLASS =>
+        classDef(mods | Modifiers.CASE);
+      case OBJECT =>
+        objectDef(mods);
+      case CASEOBJECT =>
+        objectDef(mods | Modifiers.CASE);
       case _ =>
         NewArray.Tree(syntaxError("illegal start of definition", true))
     }
   }
 
   /** PatDef ::= Pattern2 [`:' Type] `=' Expr
-  *  ValDcl ::= Id `:' Type
-  */
-  def patDefOrDcl(mods: int): Tree = {
-    val pos = s.pos;
-    val pat = pattern2();
-    val tp = if (s.token == COLON) typedOpt() else Tree.Empty;
-    pat match {
-      case Tree$Ident(name) =>
-        if (tp == Tree.Empty || s.token == EQUALS)
-          make.ValDef(pos, mods, name, tp, equalsExpr())
-        else
-          make.ValDef(pos, mods | Modifiers.DEFERRED, name, tp, Tree.Empty)
-      case _ =>
-        make.PatDef(pos, mods, pat, equalsExpr())
-    }
+   *  ValDcl ::= Id `:' Type
+   */
+  def patDefOrDcl(mods: int): Array[Tree] = {
+	var lhs = new myTreeList();
+	do {
+	  s.nextToken();
+	  lhs.append(pattern2());
+	} while (s.token == COMMA);
+	val tp = typedOpt();
+	val rhs = if (tp == Tree.Empty || s.token == EQUALS) equalsExpr() else Tree.Empty;
+	val ls = lhs.toArray();
+	val ts = new myTreeList();
+	var i = 0;
+	if (rhs == Tree.Empty) {
+	  while (i < ls.length) {
+		ls(i) match {
+		  case Tree$Ident(name) =>
+			ts.append(popComment(
+				make.ValDef(ls(i).pos, mods | Modifiers.DEFERRED, name, tp.duplicate(), Tree.Empty)));
+		  case t =>
+			syntaxError(t.pos, "cannot defer pattern definition", false);
+		}
+		i = i + 1;
+	  }
+	} else {
+	  while (i < ls.length) {
+		ls(i) match {
+		  case Tree$Ident(name) =>
+			ts.append(popComment(
+				make.ValDef(ls(i).pos, mods, name, tp.duplicate(), rhs.duplicate())));
+		  case t =>
+			ts.append(popComment(
+				make.PatDef(t.pos, mods, t, rhs.duplicate())));
+		}
+		i = i + 1;
+	  }
+	}
+	ts.toArray()
   }
 
   /** VarDef ::= Id [`:' Type] `=' Expr
-  *           | Id `:' Type `=' `_'
-  *  VarDcl ::= Id `:' Type
-  */
-  def varDefOrDcl(mods: int): Tree = {
-    val pos = s.pos;
-    val name = ident();
-    val tp = typedOpt();
-    if (tp == Tree.Empty || s.token == EQUALS) {
-      accept(EQUALS);
-      val rhs =
-        if (tp != Tree.Empty && s.token == USCORE) { s.nextToken(); Tree.Empty }
-	else expr();
-      make.ValDef(pos, mods | Modifiers.MUTABLE, name, tp, rhs)
-    } else {
-      make.ValDef(pos, mods | Modifiers.MUTABLE | Modifiers.DEFERRED,
-                  name, tp, Tree.Empty);
-    }
+   *           | Id `:' Type `=' `_'
+   *  VarDcl ::= Id `:' Type
+   */
+  def varDefOrDcl(mods: int): Array[Tree] = {
+    var newmods = mods | Modifiers.MUTABLE;
+    val names = new Buffer[Pair[Int, Name]];
+	do {
+	  s.nextToken();
+	  names.append(Pair(s.pos, ident()));
+	} while (s.token == COMMA);
+	val tp = typedOpt();
+	val rhs = if (tp == Tree.Empty || s.token == EQUALS) {
+	  accept(EQUALS);
+	  if (tp != Tree.Empty && s.token == USCORE) {
+		  s.nextToken();
+		  Tree.Empty
+	  } else
+		  expr();
+	} else {
+	  newmods = newmods | Modifiers.DEFERRED;
+	  Tree.Empty;
+	}
+	val ts = new myTreeList();
+	names foreach { case Pair(p, n) =>
+		ts.append(popComment(
+			make.ValDef(p, newmods, n, tp.duplicate(), rhs.duplicate())));
+	}
+	ts.toArray()
   }
 
   /** FunDef ::= Id [FunTypeParamClause] {ParamClauses} [`:' Type] `=' Expr
-  *           | this ParamClause `=' ConstrExpr
-  *  FunDcl ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
-  */
-  def funDefOrDcl(mods: int): Tree = {
-    val pos = s.pos;
+   *           | this ParamClause `=' ConstrExpr
+   *  FunDcl ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
+   */
+  def funDefOrDcl(mods: int): Array[Tree] = {
+    val ts = new myTreeList();
+    s.nextToken();
     if (s.token == THIS) {
+      val pos = s.pos;
       s.nextToken();
       val vparams = NewArray.ValDefArray(paramClause());
       accept(EQUALS);
-      make.DefDef(
-        pos, mods, Names.CONSTRUCTOR,
-        Tree.AbsTypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
-        constrExpr());
+      ts.append(popComment(
+      	make.DefDef(
+        	pos, mods, Names.CONSTRUCTOR,
+        	Tree.AbsTypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
+        	constrExpr())));
     } else {
-      val name = ident();
-      val tparams = typeParamClauseOpt(false);
-      val vparams = paramClauses();
-      val restype = typedOpt();
-      if (s.token == EQUALS || restype == Tree.Empty)
-        make.DefDef(pos, mods, name, tparams, vparams, restype, equalsExpr());
-      else
-        make.DefDef(pos, mods | Modifiers.DEFERRED, name,
-                    tparams, vparams, restype, Tree.Empty);
-    }
+	  var newmods = mods;
+	  val lhs = new Buffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+	  var loop = true;
+	  while (loop) {
+		lhs.append(Tuple4(s.pos, ident(),
+		                  typeParamClauseOpt(false),
+		                  paramClauses()));
+		if (s.token == COMMA)
+		  s.nextToken();
+		else
+		  loop = false;
+	  }
+	  val restype = typedOpt();
+	  val rhs = if (restype == Tree.Empty || s.token == EQUALS) {
+		equalsExpr();
+	  } else {
+		newmods = newmods | Modifiers.DEFERRED;
+		Tree.Empty;
+	  }
+	  lhs foreach { case Tuple4(p, n, tp, vp) =>
+		  ts.append(popComment(
+			  make.DefDef(p, newmods, n, tp, vp, restype.duplicate(),
+			              rhs.duplicate())));
+	  }
+	}
+	ts.toArray()
   }
 
   /** ConstrExpr      ::=  SelfInvocation
@@ -1686,7 +1716,7 @@ class Parser(unit: Unit) {
       statlist.append(selfInvocation());
       val stats =
         if (s.token == SEMI) { s.nextToken(); blockStatSeq(statlist) }
-	else statlist.toArray();
+        else statlist.toArray();
       accept(RBRACE);
       make.Block(pos, stats)
     } else {
@@ -1711,11 +1741,11 @@ class Parser(unit: Unit) {
     s.token match {
       case LBRACKET =>
         val tparams = typeParamClauseOpt(true);
-	accept(EQUALS);
-	make.AliasTypeDef(pos, mods, name, tparams, typ())
+        accept(EQUALS);
+        make.AliasTypeDef(pos, mods, name, tparams, typ())
       case EQUALS =>
         s.nextToken();
-	make.AliasTypeDef(pos, mods, name, Tree.AbsTypeDef_EMPTY_ARRAY, typ())
+        make.AliasTypeDef(pos, mods, name, Tree.AbsTypeDef_EMPTY_ARRAY, typ())
       case SUPERTYPE | SUBTYPE | SEMI | COMMA | RBRACE =>
         typeBounds(pos, mods | Modifiers.DEFERRED, name)
       case _ =>
@@ -1724,25 +1754,50 @@ class Parser(unit: Unit) {
   }
 
   /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
-  */
-  def classDef(mods: int): Tree = {
-    val pos = s.pos;
-    val clazzname = ident().toTypeName();
-    val tparams = typeParamClauseOpt(true);
-    val params = paramClauseOpt();
-    val result = new myTreeList();
-    popComment(make.ClassDef(pos, mods, clazzname, tparams, params,
-                             simpleTypedOpt(), classTemplate()))
+   */
+  def classDef(mods: int): Array[Tree] = {
+	val lhs = new Buffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+	do {
+	  s.nextToken();
+	  lhs.append(Tuple4(s.pos,
+	                    ident().toTypeName(),
+		                typeParamClauseOpt(true),
+		                paramClauseOpt()));
+    } while (s.token == COMMA);
+	val thistpe = simpleTypedOpt();
+    val template = classTemplate();
+    val ts = new myTreeList();
+	lhs foreach { case Tuple4(p, n, tp, vp) =>
+		ts.append(popComment(
+			make.ClassDef(p, mods, n, tp, vp,
+                          thistpe.duplicate(),
+                          template.duplicate().asInstanceOf[Tree$Template])));
+	}
+	ts.toArray()
   }
 
   /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate
-  */
-  def objectDef(mods: int): Tree =
-    popComment(make.ModuleDef(
-      s.pos, mods, ident(), simpleTypedOpt(), classTemplate()));
+   */
+  def objectDef(mods: int): Array[Tree] = {
+    val lhs = new Buffer[Pair[Int, Name]];
+	do {
+	  s.nextToken();
+	  lhs.append(Pair(s.pos, ident()));
+    } while (s.token == COMMA);
+	val thistpe = simpleTypedOpt();
+    val template = classTemplate();
+    val ts = new myTreeList();
+	lhs foreach { case Pair(p, n) =>
+		ts.append(popComment(
+			make.ModuleDef(
+      			p, mods, n, thistpe.duplicate(),
+      			template.duplicate().asInstanceOf[Tree$Template])));
+	}
+	ts.toArray()
+  }
 
   /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
-  */
+   */
   def classTemplate(): Tree$Template = {
     val pos = s.pos;
     val parents = new myTreeList();
@@ -1858,12 +1913,12 @@ class Parser(unit: Unit) {
   }
 
   /** TemplateStatSeq  ::= TemplateStat {`;' TemplateStat}
-  *  TemplateStat     ::= Import
-  *                     | Modifiers Def
-  *                     | Modifiers Dcl
-  *                     | Expr
-  *                     |
-  */
+   *  TemplateStat     ::= Import
+   *                     | Modifiers Def
+   *                     | Modifiers Dcl
+   *                     | Expr
+   *                     |
+   */
   def templateStatSeq(): Array[Tree] = {
     val stats = new myTreeList();
     while (s.token != RBRACE && s.token != EOF) {
@@ -1882,10 +1937,10 @@ class Parser(unit: Unit) {
   }
 
   /** RefineStatSeq    ::= RefineStat {`;' RefineStat}
-  *  RefineStat       ::= Dcl
-  *                     | type TypeDef {`,' TypeDef}
-  *                     |
-  */
+   *  RefineStat       ::= Dcl
+   *                     | type TypeDef
+   *                     |
+   */
   def refineStatSeq(): Array[Tree] = {
     val stats = new myTreeList();
     while (s.token != RBRACE && s.token != EOF) {
@@ -1900,12 +1955,12 @@ class Parser(unit: Unit) {
   }
 
   /** BlockStatSeq ::= { BlockStat `;' } [Expr]
-  *  BlockStat    ::= Import
-  *                 | Def
-  *                 | LocalModifiers ClsDef
-  *                 | Expr
-  *                 |
-  */
+   *  BlockStat    ::= Import
+   *                 | Def
+   *                 | LocalModifiers ClsDef
+   *                 | Expr
+   *                 |
+   */
   def blockStatSeq(stats: myTreeList): Array[Tree] = {
     while ((s.token != RBRACE) && (s.token != EOF) && (s.token != CASE)) {
       if (s.token == IMPORT) {

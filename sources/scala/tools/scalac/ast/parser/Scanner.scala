@@ -58,7 +58,8 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** we need one token lookahead
   */
-  val next = new TokenData(), prev = new TokenData();
+  val next = new TokenData();
+  val prev = new TokenData();
 
   /** the first character position after the previous token
   */

@@ -2216,7 +2216,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree$If(cond, thenp, elsep) =>
 	  val cond1: Tree = transform(cond, EXPRmode, definitions.BOOLEAN_TYPE());
-	  var thenp1: Tree = _, elsep1: Tree = _;
+	  var thenp1: Tree = _;
+	  var elsep1: Tree = _;
 	  if (elsep == Tree.Empty) {
 	    thenp1 = transform(thenp, EXPRmode, definitions.UNIT_TYPE());
 	    elsep1 = make.Block(tree.pos, Tree.EMPTY_ARRAY)
@@ -2701,7 +2702,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    copy.Ident(tree, context.enclClass.owner)
             .setType(context.enclClass.owner.getType());
 	  } else if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) && name.isVariable()) {
-            var vble: Symbol = null, vble2: Symbol = null;
+            var vble: Symbol = null;
+            var vble2: Symbol = null;
 
 	    // if vble is bound with @, there is already a symbol
             if (name != Names.PATTERN_WILDCARD) {

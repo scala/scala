@@ -9,84 +9,84 @@
 package scala.tools.scalac.ast.parser;
 
 object Tokens {
-  val EMPTY = -3,
-      UNDEF = -2,
-      ERROR = -1,
-      EOF = 0,
+  val EMPTY = -3;
+  val UNDEF = -2;
+  val ERROR = -1;
+  val EOF = 0;
 
       /* literals */
-      CHARLIT = 1,
-      INTLIT = 2,
-      LONGLIT = 3,
-      FLOATLIT = 4,
-      DOUBLELIT = 5,
-      STRINGLIT = 6,
-      SYMBOLLIT = 7,
+  val CHARLIT = 1;
+  val INTLIT = 2;
+  val LONGLIT = 3;
+  val FLOATLIT = 4;
+  val DOUBLELIT = 5;
+  val STRINGLIT = 6;
+  val SYMBOLLIT = 7;
 
       /* identifier */
-      IDENTIFIER = 10,
+  val IDENTIFIER = 10;
 
       /* keywords */
-      IF = 20,
-      FOR = 21,
-      ELSE = 22,
-      THIS = 23,
-      NULL = 24,
-      NEW = 25,
-      WITH = 26,
-      SUPER = 27,
-      CASE = 28,
-      CASECLASS = 29,
-      CASEOBJECT = 30,
-      VAL = 31,
-      ABSTRACT = 32,
-      FINAL = 33,
-      PRIVATE = 34,
-      PROTECTED = 35,
-      OVERRIDE = 36,
-      VAR = 37,
-      DEF = 38,
-      TYPE = 39,
-      EXTENDS = 40,
-      TRUE = 41,
-      FALSE = 42,
-      OBJECT = 43,
-      CLASS = 44,
+  val IF = 20;
+  val FOR = 21;
+  val ELSE = 22;
+  val THIS = 23;
+  val NULL = 24;
+  val NEW = 25;
+  val WITH = 26;
+  val SUPER = 27;
+  val CASE = 28;
+  val CASECLASS = 29;
+  val CASEOBJECT = 30;
+  val VAL = 31;
+  val ABSTRACT = 32;
+  val FINAL = 33;
+  val PRIVATE = 34;
+  val PROTECTED = 35;
+  val OVERRIDE = 36;
+  val VAR = 37;
+  val DEF = 38;
+  val TYPE = 39;
+  val EXTENDS = 40;
+  val TRUE = 41;
+  val FALSE = 42;
+  val OBJECT = 43;
+  val CLASS = 44;
 
-      IMPORT = 46,
-      PACKAGE = 47,
-      YIELD = 48,
-      DO = 49,
-      TRAIT = 50,
-      SEALED = 51,
-      THROW = 52,
-      TRY = 53,
-      CATCH = 54,
-      FINALLY = 55,
-      WHILE = 56,
-      RETURN = 57,
+  val IMPORT = 46;
+  val PACKAGE = 47;
+  val YIELD = 48;
+  val DO = 49;
+  val TRAIT = 50;
+  val SEALED = 51;
+  val THROW = 52;
+  val TRY = 53;
+  val CATCH = 54;
+  val FINALLY = 55;
+  val WHILE = 56;
+  val RETURN = 57;
 
       /* special symbols */
-      COMMA = 61,
-      SEMI = 62,
-      DOT = 63,
-      USCORE = 64,
-      COLON = 65,
-      EQUALS = 66,
-      LARROW = 67,
-      ARROW = 68,
-      SUBTYPE = 69,
-      SUPERTYPE = 70,
-      HASH = 71,
-      AT = 72,
+  val COMMA = 61;
+  val SEMI = 62;
+  val DOT = 63;
+  val USCORE = 64;
+  val COLON = 65;
+  val EQUALS = 66;
+  val LARROW = 67;
+  val ARROW = 68;
+  val SUBTYPE = 69;
+  val SUPERTYPE = 70;
+  val HASH = 71;
+  val AT = 72;
 
       /* parenthesis */
-      LPAREN = 90,
-      RPAREN = 91,
-      LBRACKET = 92,
-      RBRACKET = 93,
-      LBRACE = 94,
-      RBRACE = 95;
+  val LPAREN = 90;
+  val RPAREN = 91;
+  val LBRACKET = 92;
+  val RBRACKET = 93;
+  val LBRACE = 94;
+  val RBRACE = 95;
 }
 
 
