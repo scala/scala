@@ -331,19 +331,16 @@ class AddInterfaces extends Transformer {
 
         thisTypeSubst = null;
 
-        Tree[][] oldParentArgs = extractParentArgs(classImpl.parents);
-        Tree[][] parentArgs = new Tree[oldParentArgs.length + 1][];
-        System.arraycopy(oldParentArgs, 0, parentArgs, 0, oldParentArgs.length);
-        parentArgs[oldParentArgs.length] = Tree.EMPTY_ARRAY;
+        Tree[] newParents = Tree.cloneArray(transform(classImpl.parents), 1);
         global.nextPhase();
-        Type[] newParents = classSym.parents();
+        Type ifaceType = classSym.parents()[newParents.length - 1];
         global.prevPhase();
-        Tree[] newClassParents =
-            gen.mkParentConstrs(classDef.pos, newParents, parentArgs);
+        newParents[newParents.length - 1] =
+            gen.mkParentConstr(classDef.pos, ifaceType);
 
         Symbol local = classDef.impl.symbol();
         local.setOwner(classSym);
-        return gen.ClassDef(classSym, newClassParents, local, newClassBody.toArray());
+        return gen.ClassDef(classSym, newParents, local, newClassBody.toArray());
     }
 
     protected Tree[][] extractParentArgs(Tree[] parents) {
