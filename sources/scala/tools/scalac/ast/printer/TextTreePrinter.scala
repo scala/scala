@@ -99,7 +99,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
   case class Simple(str: String) extends Text;
   case class Literal(str: String) extends Text;
   case class Keyword(name: String) extends Text;
-  case class Identifier(symbol: Symbol, name: String, usage: SymbolUsage)
+  case class Identifier(symbol: Symbol, name: Name, usage: SymbolUsage)
              extends Text;
   case class Sequence(elements: List[Text]) extends Text;
 
@@ -117,14 +117,14 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     case Identifier(sym, name, usage) =>
 
       if (sym != null) {
-        if (usage == SymbolUsage.Use)
+        if (usage == Use)
           printString(sym.simpleName().toString());
         else
           printString(sym.name.toString());
         if (scalac_Global.instance.uniqid)
 	  printString("#" + scalac_Global.instance.uniqueID.id(sym))
       } else {
-        printString(name);
+        printString(name.toString());
       }
     case Sequence(elements) => print(elements)
   }

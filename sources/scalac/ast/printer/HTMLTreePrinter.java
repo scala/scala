@@ -11,6 +11,7 @@ package scalac.ast.printer;
 
 import scalac.Unit;
 import scalac.symtab.Symbol;
+import scalac.util.Name;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -145,16 +146,19 @@ public class HTMLTreePrinter extends TextTreePrinter {
             printString(str);
             endSpan();
             break;
-        case Identifier(Symbol symbol, String name, SymbolUsage usage):
+        case Identifier(Symbol symbol, Name name, SymbolUsage usage):
             boolean defined = (usage == SymbolUsage.Definition);
             if (defined) startSpan("idDef");
             if (symbol != null) {
                 String attr = (defined ? "name" : "href");
                 startTag("a", attr, symbolAnchor(symbol, usage));
-            }
-            printString(name);
-            if (symbol != null)
+                if (usage == SymbolUsage.Use)
+                    printString(symbol.simpleName().toString());
+                else
+                    printString(symbol.name.toString());
                 endTag("a");
+            } else
+                printString(name.toString());
             if (defined) endSpan();
             break;
         default:

@@ -143,10 +143,13 @@ class HTMLTreePrinter(stream: OutputStream) extends TextTreePrinter(stream) {
       if (symbol != null) {
 	val attr = if (defined) "name" else "href";
 	startTag("a", attr, symbolAnchor(symbol, usage));
-      }
-      printString(name);
-      if (symbol != null)
+        if (usage == Use)
+          printString(symbol.simpleName().toString());
+        else
+          printString(symbol.name.toString());
 	endTag("a");
+      } else
+        printString(name.toString());
       if (defined) endSpan();
     case _ =>
       super.print(text);
