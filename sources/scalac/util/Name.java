@@ -223,7 +223,7 @@ public final class Name {
 
 /** returns last occurrence of char c in this name, -1 if not found.
  */
-    public int lastIndexOf(byte c) {
+    public int lastIndexOf(char c) {
         byte b = (byte)c;
         int i = len - 1;
         while (i >= 0 && names[index + i] != b)

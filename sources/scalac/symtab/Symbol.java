@@ -701,7 +701,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public final boolean isGenerated() {
-        return name.indexOf('$') < name.length();
+        return name.indexOf('$') >= 0;
     }
 
     /** Symbol was preloaded from package
