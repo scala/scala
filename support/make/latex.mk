@@ -76,7 +76,6 @@ latex.distclean		:
 ##############################################################################
 # Rules
 
-
 %.dvi			: %.tex $(LATEX_SOURCES)
 	$(LATEXMK) $(LATEXMK_FLAGS) -g $<
 
