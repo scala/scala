@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.transformer;
 
@@ -35,8 +35,8 @@ public class UnCurryPhase extends PhaseDescriptor implements Modifiers {
         return "uncurried";
     }
 
-    public Phase createPhase(Global global) {
-        return new UnCurry(global, this);
+    public void apply(Global global) {
+        new UnCurry(global, this).apply();
     }
 
     /** - return symbol's transformed type,

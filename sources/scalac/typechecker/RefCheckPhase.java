@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.typechecker;
 
@@ -26,8 +26,8 @@ public class RefCheckPhase extends PhaseDescriptor {
         return "reference checking";
     }
 
-    public Phase createPhase(Global global) {
-	return new RefCheck(global, this);
+    public void apply(Global global) {
+	new RefCheck(global, this).apply();
     }
 
     public Checker[] postCheckers(Global global) {

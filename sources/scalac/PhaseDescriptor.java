@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac;
 
@@ -33,10 +33,6 @@ public abstract class PhaseDescriptor {
             return "initializing compiler";
         }
 
-        public Phase createPhase(Global global) {
-            return null;
-        }
-
 	/** apply phase to all compilation units
 	 */
 	public void apply(Global global) {}
@@ -50,10 +46,6 @@ public abstract class PhaseDescriptor {
 
         public String description() {
             return "compilation terminated ";
-        }
-
-        public Phase createPhase(Global global) {
-            return null;
         }
 
 	/** apply phase to all compilation units
@@ -97,10 +89,6 @@ public abstract class PhaseDescriptor {
         this.id = id;
     }
 
-    /** create a phase
-     */
-    public abstract Phase createPhase(Global global);
-
     /** Assume that `tp' is the info of symbol `sym' before this phase.
      *  Return the info of `sym' after the phase.
      */
@@ -110,11 +98,7 @@ public abstract class PhaseDescriptor {
 
     /** apply phase to all compilation units
      */
-    public void apply(Global global) {
-        global.start();
-        createPhase(global).apply();
-        global.stop(taskDescription());
-    }
+    public abstract void apply(Global global);
 
     /** check all compilation units
      */

@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.symtab;
 
@@ -38,8 +38,8 @@ public class SourceCompleter extends Type.LazyType {
 		long msec = System.currentTimeMillis();
 		Unit unit = new Unit(global, new Sourcefile(filename), false);
 		filename = null;
-		global.PHASE.PARSER.createPhase(global).apply(unit);
-		((Analyzer)global.PHASE.ANALYZER.createPhase(global)).lateEnter(unit, c);
+		global.PHASE.PARSER.apply(unit);
+		global.PHASE.ANALYZER.lateEnter(global, unit, c);
 		global.operation("added " + fname + " in " +
 			(System.currentTimeMillis() - msec) + "ms");
 	    } catch (IOException e) {

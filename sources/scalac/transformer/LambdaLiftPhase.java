@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $Id$
@@ -38,8 +37,8 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
         return "lambda lifting";
     }
 
-    public Phase createPhase(Global global) {
-        return new LambdaLift(global, this);
+    public void apply(Global global) {
+        new LambdaLift(global, this).apply();
     }
 
     public Type transformInfo(Symbol sym, Type tp) {

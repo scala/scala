@@ -43,9 +43,9 @@ public class ErasurePhase extends PhaseDescriptor {
         return "erased types";
     }
 
-    public Phase createPhase(Global global) {
+    public void apply(Global global) {
 	this.definitions = global.definitions;
-        return new Erasure(global, this);
+        new Erasure(global, this).apply();
     }
 
     private Type eraseParams(Type tp) {

@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: AddAccessorsPhase.java,v 1.1 2002/10/17 12:27:11 schinz Exp $
@@ -28,8 +27,8 @@ public class AddAccessorsPhase extends PhaseDescriptor {
         return "added accessors";
     }
 
-    public Phase createPhase(Global global) {
-        return new AddAccessors(global, this);
+    public void apply(Global global) {
+        new AddAccessors(global, this).apply();
     }
 
     public Checker[] postCheckers(Global global) {

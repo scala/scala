@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: AddInterfacesPhase.java,v 1.9 2002/04/19 10:55:15 schinz Exp $
@@ -40,8 +39,8 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         return "added interfaces";
     }
 
-    public Phase createPhase(Global global) {
-        return new AddInterfaces(global, this);
+    public void apply(Global global) {
+        new AddInterfaces(global, this).apply();
     }
 
     public Checker[] postCheckers(Global global) {

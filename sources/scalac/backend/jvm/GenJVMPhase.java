@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: GenJVMPhase.java,v 1.1 2002/09/03 12:13:08 schinz Exp $
@@ -31,8 +30,8 @@ public class GenJVMPhase extends PhaseDescriptor {
         return "generated JVM code";
     }
 
-    public Phase createPhase(Global global) {
-        return new GenJVM(global, this);
+    public void apply(Global global) {
+        new GenJVM(global, this).apply();
     }
 
 }

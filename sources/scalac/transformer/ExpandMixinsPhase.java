@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: ExpandMixinsPhase.java,v 1.8 2002/05/02 10:59:35 schinz Exp $
@@ -31,8 +30,8 @@ public class ExpandMixinsPhase extends PhaseDescriptor {
         return "expanded mixins";
     }
 
-    public Phase createPhase(Global global) {
-        return new ExpandMixins(global, this);
+    public void apply(Global global) {
+        new ExpandMixins(global, this).apply();
     }
 
     public Checker[] postCheckers(Global global) {

@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $Id$
@@ -38,8 +37,8 @@ public class GenMSILPhase extends PhaseDescriptor {
         return "generated MSIL code";
     }
 
-    public Phase createPhase(Global global) {
-        return new GenMSIL(global, this);
+    public void apply(Global global) {
+        new GenMSIL(global, this).apply();
     }
 
 }

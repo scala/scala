@@ -266,7 +266,9 @@ public class  Global {
             if ((currentPhase.flags & PhaseDescriptor.SKIP) != 0) {
                 operation("skipping phase " + currentPhase.name());
             } else {
+                start();
                 currentPhase.apply(this);
+                stop(currentPhase.taskDescription());
             }
             if ((currentPhase.flags & PhaseDescriptor.PRINT) != 0)
                 currentPhase.print(this);

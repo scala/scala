@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $Id$
@@ -35,8 +34,8 @@ public class AddConstructorsPhase extends PhaseDescriptor {
 	return "added constructors";
     }
 
-    public Phase createPhase(Global global) {
-	return new AddConstructors(global, this, constructors);
+    public void apply(Global global) {
+	new AddConstructors(global, this, constructors).apply();
     }
 
     public Checker[] postCheckers(Global global) {

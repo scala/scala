@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.transformer;
 
@@ -25,8 +25,8 @@ public class TransMatchPhase extends PhaseDescriptor {
         return "translated pattern matching";
     }
 
-    public Phase createPhase(Global global) {
-        return new TransMatch(global, this);
+    public void apply(Global global) {
+        new TransMatch(global, this).apply();
     }
 
     public Checker[] postCheckers(Global global) {
