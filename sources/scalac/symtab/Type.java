@@ -237,20 +237,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     public static CompoundType compoundType(Type[] parts, Scope members,
                                             Symbol clazz) {
-        ExtCompoundType res = new ExtCompoundType(parts, members);
-        res.tsym = clazz;
-        return res;
+        return new ExtCompoundType(parts, members, clazz);
     }
 
     public static CompoundType compoundTypeWithOwner(Symbol owner, Type[] parts, Scope members) {
-        ExtCompoundType res = new ExtCompoundType(parts, members);
-        res.tsym = new ClassSymbol(
-            Position.FIRSTPOS, Names.COMPOUND_NAME.toTypeName(), owner,
-            SYNTHETIC | ABSTRACT);
-        res.tsym.setInfo(res);
-        res.tsym.primaryConstructor().setInfo(
-            Type.MethodType(Symbol.EMPTY_ARRAY, Type.typeRef(res.tsym.owner().thisType(), res.tsym, Type.EMPTY_ARRAY)));
-        return res;
+        return new ExtCompoundType(owner, parts, members);
     }
 
     static class ExtSingleType extends SingleType {
@@ -274,21 +265,19 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
-    static class ExtCompoundType extends CompoundType {
-        Symbol tsym;
-        ExtCompoundType(Type[] parts, Scope members) {
+    private static final class ExtCompoundType extends CompoundType {
+        private final Symbol clasz;
+        public ExtCompoundType(Symbol owner, Type[] parts, Scope members) {
             super(parts, members);
+            this.clasz = owner.newCompoundClass(this);
+        }
+        public ExtCompoundType(Type[] parts, Scope members, Symbol clasz) {
+            super(parts, members);
+            this.clasz = clasz;
         }
         public Symbol symbol() {
-            return tsym;
+            return clasz;
         }
-        void validate() {//debug
-            for (Scope.SymbolIterator it = members.iterator(true); it.hasNext(); )
-                assert it.next().owner() == tsym;
-        }
-    }
-
-    void validate() {//debug
     }
 
 // Access methods ---------------------------------------------------------------

@@ -39,7 +39,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Attribues -------------------------------------------------------------
 
-    public static final int IS_ROOT = 0x00000001;
+    public static final int IS_ROOT     = 0x00000001;
+    public static final int IS_COMPOUND = 0x80000000;
 
 // Fields -------------------------------------------------------------
 
@@ -110,6 +111,19 @@ public abstract class Symbol implements Modifiers, Kinds {
         flags |= MODUL | FINAL | SYNTHETIC;
         ClassSymbol clasz = newClass(pos, flags, name, attrs, dual);
         clasz.primaryConstructor().flags |= PRIVATE;
+        clasz.primaryConstructor().setInfo(
+            Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
+        return clasz;
+    }
+
+    /** Creates a new compound class. */
+    final ClassSymbol newCompoundClass(Type info) {
+        int pos = Position.FIRSTPOS;
+        Name name = Names.COMPOUND_NAME.toTypeName();
+        int flags = ABSTRACT | SYNTHETIC;
+        int attrs = IS_COMPOUND;
+        ClassSymbol clasz = newClass(pos, flags, name, attrs, NONE);
+        clasz.setInfo(info);
         clasz.primaryConstructor().setInfo(
             Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
         return clasz;
@@ -452,10 +466,9 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == CLASS && (flags & TRAIT) != 0;
     }
 
-    /** Does this class symbol denote a compound type symbol?
-     */
+    /** Does this class symbol denote a compound type symbol? */
     public final boolean isCompoundSym() {
-        return name == Names.COMPOUND_NAME.toTypeName();
+        return (attrs & IS_COMPOUND) != 0;
     }
 
     /** Does this symbol denote a this symbol? */
