@@ -146,23 +146,13 @@ public class CheckOwners extends Checker {
     }
 
     public void check(Tree tree) {
-        switch (tree) {
-        case PackageDef(_,_):
-        case ClassDef(_,_,_,_,_,_):
-        case ModuleDef(_,_,_,_):
-        case DefDef(_,_,_,_,_,_):
-        case ValDef(_,_,_,_):
-        case TypeDef(_,_,_,_): {
+        if (tree.definesSymbol()) {
             Symbol sym = tree.symbol();
             if (sym != null && sym != Symbol.NONE) {
                 checkOwner(tree, sym);
                 if (sym.kind == Kinds.CLASS)
                     checkOwner(tree, sym.constructor());
             }
-        } break;
-
-        default:
-            ;                   // nothing to do
         }
     }
 }
