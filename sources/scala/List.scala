@@ -453,7 +453,7 @@ trait List[+a] extends Seq[a] {
    *  Note: The current implementation is inefficent for
    *  already sorted lists.
    */
-  def sort(< : (a,a) => Boolean): List[a] = {
+  def sort(lt : (a,a) => Boolean): List[a] = {
     def sort_1(smaller: List[a], acc: List[a]): List[a] =
       smaller.match {
         case Nil =>
@@ -461,18 +461,18 @@ trait List[+a] extends Seq[a] {
         case List(x) =>
           x::acc
         case List(x, y) =>
-          if (<(x, y)) x::(y::acc) else y::x::acc
+          if (lt(x, y)) x::(y::acc) else y::x::acc
         case List(x, y, z) =>
-          if (<(x, y)) {
-	    if (<(y, z)) x::y::z::acc
-            else if (<(x, z)) x::z::y::acc
+          if (lt(x, y)) {
+	    if (lt(y, z)) x::y::z::acc
+            else if (lt(x, z)) x::z::y::acc
             else z::x::y::acc
-          } else if (<(x, z)) y::x::z::acc
-          else if (<(z, y)) z::y::x::acc
+          } else if (lt(x, z)) y::x::z::acc
+          else if (lt(z, y)) z::y::x::acc
           else y::z::x::acc
         case hd1::hd2::hd3::tail => {
           val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil);
-          val Pair(small, large) = tail.partition((e2) => <(e2, y));
+          val Pair(small, large) = tail.partition((e2) => lt(e2, y));
           sort_1(x::small, y::sort_1(z::large, acc))
         }
       }
@@ -483,18 +483,18 @@ trait List[+a] extends Seq[a] {
       case List(x) =>
         this
       case List(x, y) =>
-        if (<(x, y)) this else y::x::Nil
+        if (lt(x, y)) this else y::x::Nil
       case List(x, y, z) =>
-        if (<(x, y)) {
-	  if (<(y, z)) this
-          else if (<(x, z)) x::z::y::Nil
+        if (lt(x, y)) {
+	  if (lt(y, z)) this
+          else if (lt(x, z)) x::z::y::Nil
           else z::x::y::Nil
-        } else if (<(x, z)) y::x::z::Nil
-        else if (<(z, y)) z::y::x::Nil
+        } else if (lt(x, z)) y::x::z::Nil
+        else if (lt(z, y)) z::y::x::Nil
         else y::z::x::Nil
       case hd1::hd2::hd3::tail => {
 	val List(x, y, z) = sort_1(hd1::hd2::hd3::Nil, Nil);
-	val Pair(small,large) =  tail.partition((e2) => <(e2, y));
+	val Pair(small,large) =  tail.partition((e2) => lt(e2, y));
 	sort_1(x::small, y::sort_1(z::large, Nil));
       }
     }
