@@ -148,10 +148,26 @@ public class AddConstructors extends Transformer {
 
 	    // inline initialization of module values
             if (forINT && treeSym.isModuleClass()) {
-                constrBody.add(
-                    gen.Assign(
-                        gen.mkRef(tree.pos, treeSym.module()),
-                        gen.This(tree.pos, treeSym)));
+                Symbol module = treeSym.module();
+                if (module.isGlobalModule()) {
+                    constrBody.add(
+                        gen.Assign(
+                            gen.mkRef(tree.pos, module),
+                            gen.This(tree.pos, treeSym)));
+                } else {
+                    Symbol owner = module.owner();
+                    Name module_eqname = module.name.append(Names._EQ);
+                    Symbol module_eq = owner.lookup(module_eqname);
+                    assert module != Symbol.NONE :Debug.show(treeSym.module());
+                    if (owner.isModuleClass() && owner.module().isStable()) {
+                        constrBody.add(
+                            gen.Apply(
+                                gen.mkRef(tree.pos, module_eq),
+                                new Tree[] {gen.This(tree.pos, treeSym)}));
+                    } else {
+                        // !!! module_eq must be accessed via some outer field
+                    }
+                }
             }
 
 	    // for every ValDef move the initialization code into the constructor
