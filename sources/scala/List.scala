@@ -174,6 +174,11 @@ trait List[+a] extends Seq[a] {
   def exists(p: a => Boolean): Boolean =
     !isEmpty && (p(head) || tail.exists(p));
 
+  def find(p: a => Boolean): Option[a] = match {
+    case Nil => None
+    case x :: xs => if (p(x)) Some(x) else xs.find(p)
+  }
+
   /** Combines the elements of this list together using the binary
   * operator <code>op</code>, from left to right, and starting with
   * the value <code>z</code>. Similar to <code>fold</code> but with
