@@ -1220,7 +1220,9 @@ class JVMGenerator {
         addScalaAttr(currClass);
         JavaClass cls = currClass.getJavaClass();
         try {
-            cls.dump(javaFileName(cls.getClassName()));
+            String fileName = javaFileName(cls.getClassName());
+            cls.dump(fileName);
+            global.operation("wrote " + fileName);
         } catch (java.io.IOException e) {
             throw global.fail(e.getMessage());
         }
