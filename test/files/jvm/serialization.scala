@@ -43,10 +43,10 @@ object Test1_scala {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[Nil.type];
-    val y2 = in.readObject().asInstanceOf[Option[All]];
-    val y3 = in.readObject().asInstanceOf[Array[Int]];
-    val y4 = in.readObject().asInstanceOf[Int => Int];
+    val y1 = in.readObject().asInstanceOf[x1.type];
+    val y2 = in.readObject().asInstanceOf[x2.type];
+    val y3 = in.readObject().asInstanceOf[x3.type];
+    val y4 = in.readObject().asInstanceOf[x4.type];
     in.close();
 
     System.out.println("x1 = " + x1);
@@ -99,11 +99,11 @@ object Test2_immutable {
   val x5 = new Queue("a", "b", "c");
 
   val x6 = new Stack().push("a", "b", "c");
-/* !!! InvalidClassException !!!
+
   val x7 = new TreeMap[Int, String] + 42 -> "FortyTwo";
 
   val x8 = new TreeSet[Int]().incl(2).incl(0);
-*/
+
   try {
     val dataFile = java.io.File.createTempFile("test2", ".ser");
     val out = new ObjectOutputStream(new FileOutputStream(dataFile));
@@ -113,23 +113,19 @@ object Test2_immutable {
     out.writeObject(x4);
     out.writeObject(x5);
     out.writeObject(x6);
-/*
     out.writeObject(x7);
     out.writeObject(x8);
-*/
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[List[Pair[String,Int]]];
-    val y2 = in.readObject().asInstanceOf[ListMap[String, Int]];
-    val y3 = in.readObject().asInstanceOf[BitSet];
-    val y4 = in.readObject().asInstanceOf[ListSet[Int]];
-    val y5 = in.readObject().asInstanceOf[Queue[String]];
-    val y6 = in.readObject().asInstanceOf[Stack[String]];
-/*
-    val y7 = in.readObject().asInstanceOf[TreeMap[Int, String]];
-    val y8 = in.readObject().asInstanceOf[TreeSet[Int]];
-*/
+    val y1 = in.readObject().asInstanceOf[x1.type];
+    val y2 = in.readObject().asInstanceOf[x2.type];
+    val y3 = in.readObject().asInstanceOf[x3.type];
+    val y4 = in.readObject().asInstanceOf[x4.type];
+    val y5 = in.readObject().asInstanceOf[x5.type];
+    val y6 = in.readObject().asInstanceOf[x6.type];
+    val y7 = in.readObject().asInstanceOf[x7.type];
+    val y8 = in.readObject().asInstanceOf[x8.type];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -138,10 +134,8 @@ object Test2_immutable {
     EqualityTest.check(x4, y4);
     EqualityTest.check(x5, y5);
     EqualityTest.check(x6, y6);
-/*
     EqualityTest.check(x7, y7);
     EqualityTest.check(x8, y8);
-*/
     dataFile.deleteOnExit()
   }
   catch {
@@ -189,12 +183,12 @@ object Test3_mutable {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[HashMap[String, Int]];
-    val y2 = in.readObject().asInstanceOf[BitSet];
-    val y3 = in.readObject().asInstanceOf[HashSet[String]];
-    val y4 = in.readObject().asInstanceOf[LinkedList[Int]];
-    val y5 = in.readObject().asInstanceOf[Queue[Int]];
-    val y6 = in.readObject().asInstanceOf[Stack[Int]];
+    val y1 = in.readObject().asInstanceOf[x1.type];
+    val y2 = in.readObject().asInstanceOf[x2.type];
+    val y3 = in.readObject().asInstanceOf[x3.type];
+    val y4 = in.readObject().asInstanceOf[x4.type];
+    val y5 = in.readObject().asInstanceOf[x5.type];
+    val y6 = in.readObject().asInstanceOf[x6.type];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -219,17 +213,50 @@ object Test4_xml {
 
   val x1 = <html><title>title</title><body></body></html>;
 
+  case class Person(name: String, age: Int);
+
+  class AddressBook(a: Person*) {
+    private val people: List[Person] = a.toList;
+    def toXHTML =
+      <table cellpadding="2" cellspacing="0">
+        <tr>
+          <th>Last Name</th>
+          <th>First Name</th>
+        </tr>
+        { for (val p <- people) yield
+        <tr>
+          <td> { p.name } </td>
+          <td> { p.age.toString() } </td>
+        </tr> }
+      </table>;
+  }
+
+  val people = new AddressBook(
+    Person("Tom", 20),
+    Person("Bob", 22),
+    Person("James", 19));
+
+  val x2 =
+    <html>
+      <body>
+       { people.toXHTML }
+      </body>
+    </html>;
+
   try {
     val dataFile = java.io.File.createTempFile("test4", ".ser");
     val out = new ObjectOutputStream(new FileOutputStream(dataFile));
     out.writeObject(x1);
+    out.writeObject(x2);
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[Elem];
+    val y1 = in.readObject().asInstanceOf[x1.type];
+    val y2 = in.readObject().asInstanceOf[x2.type];
     in.close();
 
     EqualityTest.check(x1, y1);
+    EqualityTest.check(x2, y2);
     dataFile.deleteOnExit()
   }
   catch {
@@ -267,8 +294,8 @@ object Test5 {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[Person];
-    val y2 = in.readObject().asInstanceOf[Employee];
+    val y1 = in.readObject().asInstanceOf[x1.type];
+    val y2 = in.readObject().asInstanceOf[x2.type];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -304,9 +331,9 @@ object Test6 with java.io.Serializable {
     out.close();
 
     val in = new ObjectInputStream(new FileInputStream(dataFile));
-    val y1 = in.readObject().asInstanceOf[Person];
-    val y2 = in.readObject().asInstanceOf[Employee];
-    val y3 = in.readObject().asInstanceOf[Person];
+    val y1 = in.readObject().asInstanceOf[x1.type];
+    val y2 = in.readObject().asInstanceOf[x2.type];
+    val y3 = in.readObject().asInstanceOf[x3.type];
     in.close();
 
     EqualityTest.check(x1, y1);
@@ -335,3 +362,4 @@ object Test {
 }
 
 //############################################################################
+
