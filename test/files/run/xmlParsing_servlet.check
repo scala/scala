@@ -8,7 +8,11 @@
           What follows is an example of modular formatting.
         </p>
         <p>
-          <table align="center"><b>hallo</b></table>
+          <table align="center">
+      <tr>
+        <td color="#222255" bgcolor="#AAAAFF"><h1> message </h1></td>
+      </tr>
+    </table>
         </p>
         <hr></hr>
         <p>

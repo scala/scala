@@ -31,7 +31,7 @@ object Test {
 
   /** applies beautify to every element in a sequence
    */
-  def beautify( xs:Seq[Node] ):Seq[Node] = <b>hallo</b><i>Hwlt</i>;//xs.toList.map { beautify }
+  def beautify( xs:Seq[Node] ):Seq[Node] = xs.toList.map { beautify }
 
   /** this is a recursive procedure that adds some attributes to the tree
    */
