@@ -214,7 +214,7 @@ public class DetWordAutom  {
 
 	    for( Iterator it = labels.iterator(); it.hasNext(); ) {
 		Object label = it.next();
-		////System.out.print( "Label: " + label +" ");
+		//System.out.print( "Label: " + label +" ");
 		// Qdest will contain all states reachable via `label'
 		// from some nfa state in P1;
 		TreeSet Qdest = nfa.getSide( P1, label );
