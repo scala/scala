@@ -408,7 +408,7 @@ LIBRARY_SDC_FILES	+= $(LIBRARY_SC_FILES)
 LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDOCDIR)
 LIBRARY_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(PROJECT_NAME).jar
 LIBRARY_JAR_INPUTDIR	 = $(LIBRARY_CLASSDIR)
-LIBRARY_JAR_FILES	+= scala
+LIBRARY_JAR_FILES	+= .
 
 distclean		: distclean.library
 distclean.library	:
@@ -659,16 +659,7 @@ TOOLS_NAME		 = tools
 TOOLS_CLASSDIR		 = $($(prefix)_TOOLS_CLASSDIR)
 TOOLS_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(TOOLS_NAME).jar
 TOOLS_JAR_INPUTDIR	 = $(TOOLS_CLASSDIR)
-TOOLS_JAR_FILES		+= ch
-TOOLS_JAR_FILES		+= scala/tools/dtd2scala
-TOOLS_JAR_FILES		+= scala/tools/scala4ant
-TOOLS_JAR_FILES		+= scala/tools/scalac
-TOOLS_JAR_FILES		+= scala/tools/scaladoc
-TOOLS_JAR_FILES		+= scala/tools/scalai
-TOOLS_JAR_FILES		+= scala/tools/scalap
-TOOLS_JAR_FILES		+= scala/tools/scalatest
-TOOLS_JAR_FILES		+= scala/tools/util
-TOOLS_JAR_FILES		+= scalac
+TOOLS_JAR_FILES		+= .
 
 distclean		: distclean.tools
 distclean.tools	:
