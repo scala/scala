@@ -348,10 +348,11 @@ public class ExplicitOuterClassesPhase extends Phase {
 
             case ClassDef(_, _, _, _, _, Template impl):
                 Symbol clasz = tree.symbol();
-                context = new Context(context, clasz, new HashMap());
+                context = new Context(context, clasz, new HashMap(), new HashMap());
                 Tree[] parents = transform(impl.parents);
                 Tree[] body = transform(impl.body);
-                body = Tree.concat(body, genSuperMethods());
+                body = Tree.concat(body, genAccessMethods(false));
+                body = Tree.concat(body, genAccessMethods(true));
                 context = context.outer;
                 return gen.ClassDef(clasz, parents, impl.symbol(), body);
 
@@ -397,21 +398,27 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Symbol symbol = tree.symbol();
                 if (symbol.owner().isStaticOwner()) // !!! qualifier ignored
                     return gen.mkGlobalRef(tree.pos, symbol);
+                Symbol access;
                 switch (qualifier) {
                 case Super(_, _):
                     Symbol clasz = qualifier.symbol();
                     if (clasz == context.clasz) {
+                        access = symbol;
                         qualifier = gen.Super(tree.pos, qualifier.symbol());
                     } else {
+                        access = getAccessSymbol(symbol, clasz);
                         qualifier = genOuterRef(qualifier.pos, clasz);
-                        symbol = getSuperMethod(clasz, symbol);
                     }
                     break;
                 default:
+                    access = getAccessSymbol(symbol, null);
                     qualifier = transform(qualifier);
                     break;
                 }
-                return gen.Select(tree.pos, qualifier, symbol);
+                tree = gen.Select(tree.pos, qualifier, access);
+                if (access != symbol && !symbol.isMethod())
+                    tree = gen.mkApply__(tree);
+                return tree;
 
             case Ident(_):
                 Symbol symbol = tree.symbol();
@@ -475,41 +482,60 @@ public class ExplicitOuterClassesPhase extends Phase {
         }
 
         /**
-         * Returns the forwarding "super" method of the given class
-         * that invokes the given method. If the symbol does not yet
-         * exist, it is created and added to the class members.
+         * Returns the symbol to access the specified member from the
+         * current context. If "svper" is non null, the member is
+         * selected from the superclass of the specified class. The
+         * returned symbol may be the same as the given one.
          */
-        private Symbol getSuperMethod(Symbol clasz, Symbol method) {
+        private Symbol getAccessSymbol(Symbol member, Symbol svper) {
+            if (member.isPublic() && svper == null) return member;
             Context context = this.context;
-            for (; context.clasz != clasz; context = context.outer)
-                assert context.outer != null : Debug.show(clasz);
-            Symbol forward = (Symbol)context.supers.get(method);
-            if (forward == null) {
-                Name name = Names.SUPER(method);
-                int flags = Modifiers.PRIVATE | Modifiers.FINAL;
-                forward = clasz.newMethod(method.pos, flags, name);
-                forward.setInfo(method.nextType().cloneType(method, forward));
-                context.supers.put(method, forward);
-                clasz.nextInfo().members().enter(forward);
-                assert Debug.log("created forwarding method: ", forward);
+            for (; context != null; context = context.outer)
+                if (svper != null
+                    ? context.clasz == svper
+                    : context.clasz.isSubClass(member.owner())) break;
+            assert context != null: Debug.show(this.context, " - ", member);
+            if (context == this.context) return member;
+            Map table = svper != null ? context.supers : context.selfs;
+            Symbol access = (Symbol)table.get(member);
+            if (access == null) {
+                // !!! generate static access methods ?
+                Name name = Names.ACCESS(member, svper != null);
+                access = context.clasz.newAccessMethod(member.pos, name);
+                global.nextPhase();
+                Type info = member.isMethod()
+                    ? member.info().cloneType(member, access)
+                    : Type.MethodType(Symbol.EMPTY_ARRAY, member.info());
+                access.setInfo(info);
+                global.prevPhase();
+                table.put(member, access);
+                context.clasz.nextInfo().members().enter(access);
+                assert Debug.log("created access method: ", access);
             }
-            return forward;
+            return access;
         }
 
-        /** Generates the trees of the forwarding "super" methods. */
-        private Tree[] genSuperMethods() {
-            if (context.supers.size() == 0) return Tree.EMPTY_ARRAY;
-            Tree[] trees = new Tree[context.supers.size()];
-            Iterator entries = context.supers.entrySet().iterator();
+        /** Generates the trees of the access methods. */
+        private Tree[] genAccessMethods(boolean withSuper) {
+            Map table = withSuper ? context.supers : context.selfs;
+            if (table.size() == 0) return Tree.EMPTY_ARRAY;
+            Tree[] trees = new Tree[table.size()];
+            Iterator entries = table.entrySet().iterator();
             for (int i = 0; i < trees.length; i++) {
                 Map.Entry entry = (Map.Entry)entries.next();
-                Symbol method = (Symbol)entry.getKey();
-                Symbol forward = (Symbol)entry.getValue();
-                int pos = forward.pos;
-                Tree[] targs = gen.mkTypeRefs(pos, forward.nextTypeParams());
-                Tree[] vargs = gen.mkLocalRefs(pos, forward.nextValueParams());
-                Tree fun = gen.Select(gen.Super(pos, context.clasz), method);
-                trees[i] = gen.DefDef(forward, gen.mkApplyTV(fun,targs,vargs));
+                Symbol member = (Symbol)entry.getKey();
+                Symbol access = (Symbol)entry.getValue();
+                int pos = access.pos;
+                Tree qualifier = withSuper
+                    ? gen.Super(pos, context.clasz)
+                    : gen.This(pos, context.clasz);
+                Tree select = gen.Select(qualifier, member);
+                Tree[] targs = gen.mkTypeRefs(pos, access.nextTypeParams());
+                Tree[] vargs = gen.mkLocalRefs(pos, access.nextValueParams());
+                Tree body = member.isMethod()
+                    ? gen.mkApplyTV(select, targs, vargs)
+                    : select;
+                trees[i] = gen.DefDef(access, body);
             }
             return trees;
         }
@@ -563,23 +589,26 @@ public class ExplicitOuterClassesPhase extends Phase {
         public final Context outer;
         /** The current class symbol */
         public final Symbol clasz;
-        /** The super methods (maps invoked to forwarding methods) */
+        /** The self access methods (maps members to accessors) */
+        public final Map/*<Symbol,Symbol>*/ selfs;
+        /** The super access methods (maps members to accessors) */
         public final Map/*<Symbol,Symbol>*/ supers;
 
         public final TypeContext context;
 
         /** Initializes this instance. */
-        public Context(Context outer, Symbol symbol, Map supers) {
+        public Context(Context outer, Symbol symbol, Map selfs, Map supers){
             this.context = getTypeContextFor(symbol);
             this.outer = outer;
             this.clasz = symbol.constructorClass();
+            this.selfs = selfs;
             this.supers = supers;
         }
 
         /** Returns a context for the given constructor. */
         public Context getConstructorContext(Symbol constructor) {
             assert constructor.constructorClass() == clasz;
-            return new Context(outer, constructor, supers);
+            return new Context(outer, constructor, selfs, supers);
         }
 
     }

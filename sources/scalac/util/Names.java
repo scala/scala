@@ -8,15 +8,20 @@
 package scalac.util;
 
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolNameWriter;
 import scalac.symtab.ClassSymbol;
 
 public class Names {
+
+    private static final SymbolNameWriter writer =
+        new SymbolNameWriter().setAllSeparators('$').setRootSeparator('\0');
 
     private static final String ALIAS_PREFIX = "alias$";
     private static final String LOCAL_PREFIX = "local$";
     private static final String MIXIN_PREFIX = "mixin$";
     private static final String OUTER_PREFIX = "outer$";
     private static final String SUPER_PREFIX = "super$";
+    private static final String ACCESS_PREFIX = "access$";
     private static final String TUPLE_FIELD_PREFIX = "_";
     private static final String TYPE_PREFIX = "type$";
 
@@ -51,8 +56,10 @@ public class Names {
         return name;
     }
 
-    public static Name SUPER(Symbol method) {
-        return Name.fromString(SUPER_PREFIX + method.name);
+    public static Name ACCESS(Symbol member, boolean svper) {
+        assert member.isTerm() && member.owner().isClass(): Debug.show(member);
+        String prefix = svper ? ACCESS_PREFIX + SUPER_PREFIX : ACCESS_PREFIX;
+        return Name.fromString(writer.toString(prefix, member));
     }
 
     public static Name TUPLE_FIELD(int index) {
@@ -205,4 +212,3 @@ public class Names {
         return NameTransformer.encode(Name.fromString(string));
     }
 }
-
