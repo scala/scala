@@ -15,7 +15,7 @@
 
 import ch.epfl.lamp.util.Pair;
 import scala.tools.util.Position;
-import scalac.{symtab => scalac_symtab, _};
+import scalac._;
 import scalac.util._;
 import scalac.ast._;
 import scalac.ast.printer._;
@@ -23,6 +23,7 @@ import scalac.atree.AConstant;
 import scalac.atree.AConstant$CHAR;
 import scalac.atree.AConstant$INT;
 import scalac.symtab.classfile._;
+import scalac.{symtab => scalac_symtab}
 import Tree._;
 import java.util.HashMap;
 import scala.tools.scalac.util.NewArray;
@@ -943,7 +944,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	var sym: Symbol = null;
 	if (name == Names.CONSTRUCTOR) {
           var c = context;
-          while (c.tree.isInstanceOf[Tree$Import]) c = c.outer;
+          while (c.isImportContext) c = c.outer;
 	  val clazz: Symbol = c.enclClass.owner;
 	  if (!(c.tree.isInstanceOf[Tree$Template]) ||
 	      clazz.isModuleClass() ||
@@ -1616,14 +1617,21 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     var sym: Symbol = Symbol.NONE;
     var pre: Type = null;
     var qual: Tree = Tree.Empty;
+    var stopPos: int = Integer.MIN_VALUE;
     var nextcontext: Context = context;
     while (sym.kind == NONE && nextcontext != Context.NONE) {
       sym = nextcontext.scope.lookup(name);
-      if (sym.kind == NONE) {
+      if (sym.kind != NONE) {
+	stopPos = sym.pos;
+      } else {
 	nextcontext = nextcontext.enclClass;
 	if (nextcontext != Context.NONE) {
 	  sym = nextcontext.owner.thisSym().info().lookup(name);
-	  if (sym.kind == NONE) nextcontext = nextcontext.outer;
+	  if (sym.kind != NONE) {
+	    stopPos = nextcontext.owner.pos;
+	  } else {
+	    nextcontext = nextcontext.outer;
+	  }
 	}
       }
     }
@@ -1631,8 +1639,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     var impcontext: Context = context.prevImport;
     var lastimpcontext: Context = null;
     var sym1: Symbol = Symbol.NONE;
-    while (sym1.kind == NONE && impcontext.depth > nextcontext.depth) {
-      //System.out.println("imp " + name + " from " + impcontext.tree);
+    while (sym1.kind == NONE && impcontext != Context.NONE && impcontext.tree.pos > stopPos) {
       sym1 = impcontext.importedSymbol(name);
       lastimpcontext = impcontext;
       impcontext = impcontext.outer.prevImport;

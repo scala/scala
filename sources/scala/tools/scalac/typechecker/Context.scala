@@ -45,8 +45,7 @@ class Context {
 			  tree.isInstanceOf[Tree$CompoundType]) &&
 		         tree != outer.tree) this
 		     else outer.enclClass;
-    this.prevImport = if (tree.isInstanceOf[Tree$Import] &&
-                          tree != outer.tree) this
+    this.prevImport = if (isImportContext && tree != outer.tree) this
                       else outer.prevImport;
     this.variance = outer.variance;
     this.constructorClass = outer.constructorClass;
@@ -75,11 +74,18 @@ class Context {
       outer.isTopLevel()
   }
 
+  def isImportContext: boolean = tree.isInstanceOf[Tree$Import];
+
   def importString(): String =
     if (prevImport == Context.NONE) ""
     else
       prevImport.outer.importString() +
       prevImport.tree.symbol().toString() + ";";
+
+  override def toString(): String = {
+    if (this == Context.NONE) "Context.NONE";
+    else tree.toString() + "\n:: " + outer.toString()
+  }
 
   def importPrefix(): Tree = tree match {
     case Tree$Import(expr, _) =>  expr
