@@ -895,7 +895,8 @@ public abstract class Symbol implements Modifiers, Kinds {
         TypeIntervalList infos = this.infos;
         assert infos != null : this;
         while (infos.prev != null) infos = infos.prev;
-        return infos.start;
+        Phase phase = infos.start;
+        return phase.prev != null && phase.next != null ? phase.next : phase;
     }
 
     /** Get type at start of current phase. The type of a symbol is:
