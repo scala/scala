@@ -87,12 +87,10 @@ public class PatternNormalizer {
 	    return true;
 
 	case Ident( Name var ):
-	    if(( inAlt )
-	       &&( var != Names.PATTERN_WILDCARD )
-	       &&( var.toString().lastIndexOf("$") == -1))
-		{
+	    if (inAlt && var.isVariable() && var != Names.PATTERN_WILDCARD &&
+		var.lastPos((byte)'$') == -1) {
 		unit.error( t.pos,
-			      "variable not allowed under alternative");
+			    "variable not allowed under alternative");
 		return false;
 	    }
               /*
