@@ -89,24 +89,22 @@ public final class GenMSIL {
 	items = new ItemFactory(this);
 
 	currentPackage = defs.ROOT_CLASS; /// ???
-	//scalaModule = getPackage("scala", false);
     }
 
 
    /** Generate .NET assembly */
-    ModuleBuilder getPackage(String name, boolean isRealAssembly) {
+    ModuleBuilder getPackage(String name) {
 	AssemblyBuilder assem = (AssemblyBuilder) assemblies.get(name);
 	if (assem == null) {
 	    AssemblyName an = new AssemblyName();
 	    an.Name = name;
 	    assem = AssemblyBuilder.DefineDynamicAssembly(an);
-	    if (isRealAssembly)
-		assemblies.put(name, assem);
 	}
 	ModuleBuilder module = (ModuleBuilder) assem.GetModule(name);
 	if (module == null) {
 	    module = assem.DefineDynamicModule(name, name + ".dll");
 	}
+	assemblies.put(name, assem);
 	return module;
     }
 
@@ -115,21 +113,25 @@ public final class GenMSIL {
      */
     public void initGen() {
 	tc.init();
-	currModule = getPackage("prog", true);
-	//main = (MethodBuilder) currModule.GetMethod("Main", Type.EmptyTypes);
-	//if (main == null) {
-	    main = currModule.DefineGlobalMethod
-		("Main", MethodAttributes.Public | MethodAttributes.Static,
-		 tc.VOID,
-		 new Type[] {tc.STRING_ARRAY} );
-	    main.DefineParameter(0, 0, "args");
-	    //}
+	currModule = getPackage("prog");
     }
 
     public void finalizeGen() {
+	if (mainObjectField != null && mainMethod != null) {
+	    MethodBuilder main = currModule.DefineGlobalMethod
+		("Main", MethodAttributes.Public | MethodAttributes.Static,
+		 tc.VOID, new Type[] {tc.STRING_ARRAY} );
+	    main.DefineParameter(0, 0, "args");
+	    ((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
+	    code = main.GetILGenerator();
+	    code.Emit(OpCodes.Ldsfld, mainObjectField);
+	    code.Emit(OpCodes.Ldarg_0);
+	    code.Emit(OpCodes.Callvirt, mainMethod);
+	    if (!returnsVoid(mainMethod))
+		code.Emit(OpCodes.Pop);
+	    code.Emit(OpCodes.Ret);
+	}
 	tc.createTypes();
-	main.GetILGenerator().Emit(OpCodes.Ret);
-	((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
 	try {
 	    Iterator iter = assemblies.values().iterator();
 	    while (iter.hasNext()) {
@@ -146,32 +148,24 @@ public final class GenMSIL {
 	}
     }
 
-    MethodBuilder main;
 
-    final Map mains = new HashMap();
+    FieldInfo mainObjectField = null;
+    MethodInfo mainMethod = null;
 
     void checkMain(MethodBase method) {
 	//log("checking method: " + method);
 	if ( ! currentClass.isModuleClass() )
 	    return;
-
+	if (method.DeclaringType.DeclaringType != null)
+	    return;
 	if (method.IsConstructor || method.IsAbstract ||
 	    !method.Name.equals("main"))
 	    return;
 	ParameterInfo[] params = method.GetParameters();
-	if (params.length != 1)
+	if (params.length != 1 || params[0].ParameterType != tc.STRING_ARRAY)
 	    return;
-	if (params[0].ParameterType != tc.STRING_ARRAY)
-	    return;
-
-	//log("'main' method found: " + method);
-	mains.put(currentClass, method);
-	ILGenerator code = main.GetILGenerator();
-	code.Emit(OpCodes.Ldsfld, tc.getModuleField(currentClass));
-	code.Emit(OpCodes.Ldarg_0);
-	code.Emit(OpCodes.Callvirt, (MethodInfo)method);
-	if (!returnsVoid(main))
-	    code.Emit(OpCodes.Pop);
+	mainObjectField = tc.getModuleField(currentClass);
+	mainMethod = (MethodInfo) method;
     }
 
 
@@ -317,7 +311,8 @@ public final class GenMSIL {
 	    ConstructorInfo ctor = (ConstructorInfo) method;
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
 	    FieldInfo moduleField = tc.getModuleField(currentClass);
-	    if (moduleField != null) {
+	    if (moduleField != null
+		&& moduleField.DeclaringType.DeclaringType == null) {
 // 		log("genDef: initializing " + moduleField +
 // 		    " for class " + method.DeclaringType);
 
@@ -1460,9 +1455,12 @@ public final class GenMSIL {
 	case I2:
 	case I4:
 	case CHAR:
-	    int i = (type == MSILType.CHAR) ?
+	    int i = (obj instanceof Character) ?
 		(int)((Character) obj).charValue() :
 		((Number)obj).intValue();
+// 	    int i = (type == MSILType.CHAR) ?
+// 		(int)((Character) obj).charValue() :
+// 		((Number)obj).intValue();
 	    switch (i) {
 	    case -1:code.Emit(OpCodes.Ldc_I4_M1); break;
 	    case 0: code.Emit(OpCodes.Ldc_I4_0); break;
@@ -1825,11 +1823,6 @@ public final class GenMSIL {
     /**
      */
     void logErr(String message) {
-	if (code != null) {
-	    MethodBase method = code.owner;
-	    System.err.print("Processing " + method.DeclaringType.FullName +
-			     "::" + method.Name + " -> ");
-	}
 	System.err.println(message);
 	throw new ApplicationError();
 	//log(1, message);
