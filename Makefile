@@ -123,7 +123,7 @@ TOOLS_JAR_FILES		+= ch
 TOOLS_JAR_FILES		+= scalac
 TOOLS_JAR_FILES		+= scaladoc
 TOOLS_JAR_FILES		+= scalai
-TOOLS_JAR_FILES		+= dtd2scala
+TOOLS_JAR_FILES		+= scala/tools/dtd2scala
 TOOLS_JAR_FILES		+= scalap
 
 # java compilation
