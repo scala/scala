@@ -12,7 +12,6 @@ import scala.tools.util.Position;
 
 import scalac.Global;
 import scalac.atree.ATreeTyper;
-import scalac.symtab.classfile.PackageParser;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -585,7 +584,7 @@ public class Definitions {
         atyper = new ATreeTyper(global, this);
 
         // the root class
-        ROOT_CLASS = ClassSymbol.newRootClass(new PackageParser(global));
+        ROOT_CLASS = ClassSymbol.newRootClass(global);
 
         // the java, java.lang and scala packages
         JAVA = getModule("java");

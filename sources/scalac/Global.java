@@ -36,6 +36,7 @@ import scalac.backend.Primitives;
 import scalac.symtab.*;
 // !!! >>> Interpreter stuff
 import scalac.symtab.Definitions;
+import scalac.symtab.classfile.PackageParser;
 import scalac.typechecker.AnalyzerPhase;
 import scalac.typechecker.Infer;
 import scalac.util.*;
@@ -319,6 +320,11 @@ public abstract class Global {
         if (file == null) throw new FileNotFoundException(
             "source file for " + clasz + " could not be found");
         return getSourceFile(file);
+    }
+
+    /** Returns the root symbol loader. */
+    public SymbolLoader getRootLoader() {
+        return new PackageParser(this);
     }
 
     /** the top-level compilation process

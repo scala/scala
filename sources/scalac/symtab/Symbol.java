@@ -21,7 +21,6 @@ import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.NameTransformer;
 import scalac.util.Debug;
-import scalac.symtab.classfile.*;
 
 
 public abstract class Symbol implements Modifiers, Kinds {
@@ -1802,14 +1801,14 @@ public final class ClassSymbol extends TypeSymbol {
     }
 
     /** Creates the root class. */
-    public static Symbol newRootClass(PackageParser parser) {
+    public static Symbol newRootClass(Global global) {
         int pos = Position.NOPOS;
         Name name = Names.ROOT.toTypeName();
         Symbol owner = Symbol.NONE;
         int flags = JAVA | PACKAGE | FINAL | SYNTHETIC;
         int attrs = IS_ROOT;
         Symbol clasz = new ClassSymbol(pos, name, owner, flags, attrs, NONE);
-        clasz.setInfo(parser);
+        clasz.setInfo(global.getRootLoader());
         clasz.primaryConstructor().setInfo(
             Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
         // !!! Type.MethodType(Symbol.EMPTY_ARRAY, clasz.thisType()));
