@@ -292,26 +292,21 @@ public class  Global {
     public static final String CONSOLE_S = "$console$";
     private static final Name
         CONSOLE_N               = Name.fromString(CONSOLE_S),
-        INTERPRETER_N           = Name.fromString("Interpreter"),
-        SCALA_INTERPRETER_N     = Name.fromString("scala.Interpreter"),
+        INTERPRETER_N           = Name.fromString("scala.runtime.InterpreterSupport"),
         SHOW_DEFINITION_N       = Name.fromString("showDefinition"),
         SHOW_VALUE_DEFINITION_N = Name.fromString("showValueDefinition"),
-        SHOW_VALUE_N            = Name.fromString("showValue");
+        SET_EVALUATION_RESULT_N = Name.fromString("setEvaluationResult");
     private Symbol INTERPRETER;
+    private Symbol PRINTER;
     private Symbol SHOW_VALUE;
+    private Symbol SET_EVALUATION_RESULT;
     private Symbol SHOW_DEFINITION;
     private Symbol SHOW_VALUE_DEFINITION;
 
     private Symbol INTERPRETER() {
         if (INTERPRETER == null)
-            INTERPRETER = definitions.getModule(SCALA_INTERPRETER_N);
+            INTERPRETER = definitions.getModule(INTERPRETER_N);
         return INTERPRETER;
-    }
-
-    private Symbol SHOW_VALUE() {
-        if (SHOW_VALUE == null)
-            SHOW_VALUE = INTERPRETER().lookup(SHOW_VALUE_N);
-        return SHOW_VALUE;
     }
 
     private Symbol SHOW_DEFINITION() {
@@ -324,6 +319,12 @@ public class  Global {
         if (SHOW_VALUE_DEFINITION == null)
             SHOW_VALUE_DEFINITION = INTERPRETER().lookup(SHOW_VALUE_DEFINITION_N);
         return SHOW_VALUE_DEFINITION;
+    }
+
+    private Symbol SET_EVALUATION_RESULT() {
+        if (SET_EVALUATION_RESULT == null)
+            SET_EVALUATION_RESULT = INTERPRETER().lookup(SET_EVALUATION_RESULT_N);
+        return SET_EVALUATION_RESULT;
     }
 
     private int module = 0;
@@ -372,7 +373,7 @@ public class  Global {
                         treeGen.Apply(
                             treeGen.Select(
                                 treeGen.mkRef(0, INTERPRETER()),
-                                SHOW_VALUE()),
+                                SET_EVALUATION_RESULT()),
                             new Tree[] {
                                 last,
                                 make.Literal(0, show(last.type())).setType(
