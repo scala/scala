@@ -41,7 +41,6 @@ object Test with Application {
              <test/>
              <mars></mars></hello>.toString();   /* ws in element content */
 
-  /* Scala comments are not allowed in XML literals. see neg(2) */
 
   assertEquals( noWS( x3 ),
                Elem("hello",
@@ -49,12 +48,6 @@ object Test with Application {
                     Elem("test"),
                     Elem("mars")).toString() );
 
-  /* examples that MUST fail
-
-  val zzz = <hello>/* no comment */</hello>
-  assertEquals( zzz, Elem("hello", Text("/* no comment */");
-
-  */
 
   /*                                                                   */
   /*                                                === attributes === */
@@ -147,7 +140,17 @@ object Test with Application {
 
   Console.println( onlyOne );
 
-  val tryBrace = <try>Now we try escaped {{ braces }} </try>
+  val tryBrace = <try>Now we try escaped {{ braces } </try>;
+
+  assertEquals( tryBrace, Elem("try",Text("Now we try escaped { braces }")));
+
+  val tryBrace2 = <try myAttrib={ (3+4).toString() }> cool ?</try>;
+
+  assertEquals( tryBrace2("myAttrib").get, "7" );
+
+  /* Scala comments are not allowed in XML literals. see neg(2) */
+  val zzz = <hello>/* no comment */</hello>;
+  assertEquals( zzz, Elem("hello", Text("/* no comment */")));
 
 }
 
