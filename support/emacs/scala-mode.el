@@ -200,22 +200,26 @@ reserved keywords when used alone.")
   ;; Works only when point is at the beginning of a simple type
   ;; (modulo initial spaces/comments).
   (cond ((eobp) nil)
-        ((= (char-syntax (char-after)) ?\()
-         ;; Tuple or function type.
+        ((= (char-after) ?\()
+         ;; Parenthesized type
          (forward-sexp)
-         (scala-forward-spaces)
-         (when (looking-at "\\sw\\|(") (scala-forward-type)))
+         t)
         (t
          ;; Type designator
          (scala-forward-qual-ident)
          (scala-forward-spaces)
-         (when (and (not (eobp)) (= (char-after) ?\[))
-           ;; Type arguments
-           (forward-sexp))))
-  t)
+         (cond ((eobp) nil)
+               ((= (char-after) ?\[)
+                ;; Type arguments
+                (forward-sexp))
+               ((= (char-after) ?\#)
+                ;; Type selection
+                (forward-char)
+                (scala-forward-ident)))
+         t)))
 
-(defun scala-forward-type ()
-  ;; Move forward over a type.
+(defun scala-forward-type1 ()
+  ;; Move forward over a type1 (as defined by the grammar).
   ;; Works only when point is at the beginning of a type (modulo
   ;; initial spaces/comments).
   (scala-forward-spaces)
@@ -227,6 +231,24 @@ reserved keywords when used alone.")
         (forward-sexp)                       ;skip refinement
       (scala-forward-simple-type)))
   t)
+
+(defun scala-forward-type ()
+  ;; Move forward over a type.
+  (cond ((eobp) nil)
+        ((= (char-after) ?\()
+         ;; Function type (several arguments)
+         (forward-sexp)
+         (when (looking-at "\\s *=>\\s *")
+           (goto-char (match-end 0))
+           (scala-forward-type))
+         t)
+        (t
+         ;; Type1 or function type with one argument
+         (scala-forward-type1)
+         (when (looking-at "\\s *=>\\s *")
+           (goto-char (match-end 0))
+           (scala-forward-type))
+         t)))
 
 (defun scala-forward-literal ()
   ;; Move forward over an integer, float, character or string literal.
