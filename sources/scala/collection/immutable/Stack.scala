@@ -22,7 +22,7 @@ object Stack {
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
  */
-class Stack[A] with Seq[A] {
+class Stack[+A] with Seq[A] {
 
 	/** Checks if this stack is empty.
 	 *
@@ -41,7 +41,7 @@ class Stack[A] with Seq[A] {
      *  @param   elem		the element to push on the stack.
      *  @returns the stack with the new element on top.
      */
-	def +(elem: A): Stack[A] = new Node(elem);
+	def +[B >: A](elem: B): Stack[B] = new Node(elem);
 
     /** Push all elements provided by the given iterable object onto
      *  the stack. The last element returned by the iterable object
@@ -50,8 +50,8 @@ class Stack[A] with Seq[A] {
      *  @param   elems		the iterable object.
      *  @returns the stack with the new elements on top.
      */
-	def +(elems: Iterable[A]): Stack[A] = {
-		var res = this;
+	def +[B >: A](elems: Iterable[B]): Stack[B] = {
+		var res: Stack[B] = this;
 		elems.elements.foreach { elem => res = res + elem; }
 		res;
 	}
@@ -62,7 +62,7 @@ class Stack[A] with Seq[A] {
      *  @param   elems		the element sequence.
      *  @returns the stack with the new elements on top.
      */
-	def push(elems: A*): Stack[A] = this + elems;
+	def push[B >: A](elems: B*): Stack[B] = this + elems;
 
 	/** Returns the top element of the stack. An error is signaled if
 	 *  there is no element on the stack.
@@ -114,17 +114,17 @@ class Stack[A] with Seq[A] {
 	 */
 	override def hashCode(): Int = 0;
 
-	// Here comes true magic: lists with implicit tail references
+	// Here comes true magic: covariant lists with implicit tail references
 
-	protected class Node(elem: A) extends Stack[A] {
+	protected class Node[+B >: A](elem: B) extends Stack[B] {
 		override def isEmpty: Boolean = false;
 		override def length: Int = Stack.this.length + 1;
-		override def +(elem: A): Stack[A] = new Node(elem);
-		override def +(elems: Iterable[A]): Stack[A] = super.+(elems);
-		override def top: A = elem;
-		override def pop: Stack[A] = Stack.this;
-		override def apply(n: Int): A = if (n > 0) Stack.this(n - 1) else elem;
-		override def toList: List[A] = elem :: Stack.this.toList;
+		override def +[C >: B](elem: C): Stack[C] = new Node(elem);
+		override def +[C >: B](elems: Iterable[C]): Stack[C] = super.+(elems);
+		override def top: B = elem;
+		override def pop: Stack[B] = Stack.this;
+		override def apply(n: Int): B = if (n > 0) Stack.this(n - 1) else elem;
+		override def toList: List[B] = elem :: Stack.this.toList;
 		override def hashCode(): Int = elem.hashCode() + Stack.this.hashCode();
 	}
 }
