@@ -167,6 +167,7 @@ public class ScalaClassType extends ClassType {
             } catch (InterruptedException e) {
                 throw new Error(e);
             }
+            timeout *= 2;
             if (timeout >= 1000)
                 throw new Error("computation of parents apparently stuck for "
                                 + this);
@@ -197,7 +198,7 @@ public class ScalaClassType extends ClassType {
                 dci++;
                 toAddParents = ancestorCode[dci++];
             }
-            int toAddSelf = (!constr.isTrivial) && (l == level) ? 1 : 0;
+            int toAddSelf = (l == level) && (!constr.isTrivial) ? 1 : 0;
             int toAdd = toAddParents + toAddSelf;
             ScalaClassType[] initialRow;
 
