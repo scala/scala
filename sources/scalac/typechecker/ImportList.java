@@ -28,6 +28,12 @@ class ImportList {
 	this.prev = prev;
     }
 
+    public String toString() {
+	String str = tree.symbol().toString();
+	if (prev != null) str = prev + "; " + str;
+	return str;
+    }
+
     Tree importPrefix() {
 	switch (tree) {
 	case Import(Tree expr, _): return expr;

@@ -71,8 +71,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
         assert this.unit == null : "start unit non null for " + unit;
 	this.unit = unit;
 	this.context = context;
+	ImportList prevImports = context.imports;
         descr.contexts.put(unit, context);
 	enterSyms(unit.body);
+	context.imports = prevImports;
         this.unit = null;
 	this.context = null;
     }
@@ -982,6 +984,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
 	    tree.type = Type.ErrorType;
+            if (tree.hasSymbol()) tree.setSymbol(Symbol.ERROR);
+	    return tree;
 	}
 
         this.unit = savedUnit;
