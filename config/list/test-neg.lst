@@ -29,6 +29,7 @@ neg/cyclic.scala
 neg/imports.scala
 neg/matthias2.scala
 neg/michel2.scala
+neg/overlapping.scala
 neg/protected.scala
 neg/refine.scala
 neg/seqtest.scala
