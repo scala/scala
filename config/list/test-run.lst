@@ -30,6 +30,8 @@ run/overloads.scala
 run/regularpatmat.scala
 run/runtime.scala
 run/tailcalls.scala
+run/xmlLiterals.scala
+run/xmlParsing.scala
 
 shl/basic.scala
 

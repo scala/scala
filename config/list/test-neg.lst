@@ -32,5 +32,6 @@ neg/overlapping.scala
 neg/protected.scala
 neg/seqtest.scala
 neg/stable.scala
+neg/xmlParsing001.scala
 
 ##############################################################################
