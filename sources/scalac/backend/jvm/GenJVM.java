@@ -152,26 +152,8 @@ class GenJVM {
                 ctx.method.addNewLocalVariable(valType, name.toString());
             ctx.locals.put(sym, new Integer(var.getIndex()));
 
-            if (rhs != Tree.Empty)
-                genLoad(ctx, rhs, valType);
-            else {
-                switch (valType.getTag()) {
-                case JType.T_BOOLEAN:
-                case JType.T_BYTE:
-                case JType.T_CHAR:
-                case JType.T_SHORT:
-                case JType.T_INT:
-                    ctx.code.emitPUSH(0); break;
-                case JType.T_LONG:
-                    ctx.code.emitPUSH(0L); break;
-                case JType.T_FLOAT:
-                    ctx.code.emitPUSH(0F); break;
-                case JType.T_DOUBLE:
-                    ctx.code.emitPUSH(0D); break;
-                default:
-                    ctx.code.emitACONST_NULL(); break;
-                }
-            }
+            assert (rhs != Tree.Empty) : Debug.show(sym);
+            genLoad(ctx, rhs, valType);
             ctx.code.emitSTORE(var);
         } break;
 
