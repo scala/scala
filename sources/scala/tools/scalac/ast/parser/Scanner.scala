@@ -934,7 +934,10 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   final val LT   = Name.fromString("<");
 
   def xStartsXML = {
-    /* unit.global.xmlMarkup && */ ( token == IDENTIFIER )&&( name == LT );
+    /* unit.global.xmlMarkup && */ ( token == IDENTIFIER ) &&( name == LT );
+    /* ||  // support for proc instr, cdata, comment... ?
+       {val s = name.toString();
+        s.charAt(0) == '<' && (s.charAt(1)=='?' || s.charAt(1)=='!')}) */
   }
 
   // end XML tokenizing
