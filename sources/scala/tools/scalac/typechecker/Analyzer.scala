@@ -362,7 +362,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	val grandparents = parents(i).parents();
 	if (grandparents.length > 0 && !parents(0).isSubType(grandparents(0)))
 	  error(constrs(i).pos, "illegal inheritance;\n " + parents(0) +
-		" does not conform to " + parents(i) + "'s supertype");
+		" does not conform to " + parents(i) + "'s supertype " + grandparents(0));
       }
       if ((bsym.flags & FINAL) != 0) {
 	error(constrs(i).pos, "illegal inheritance from final class");

@@ -58,6 +58,16 @@ abstract class ListParsers extends Parsers {
   def expr      : Parser = ident ||| number ||| list;
 }
 
+abstract class ExprParsers extends Parsers {
+  def chr(p: char => boolean): Parser;
+  def chr(c: char): Parser = chr(d: char => d == c);
+
+  def digit     : Parser = chr(Character.isDigit);
+  def number    : Parser = digit &&& rep(digit);
+  def summand   : Parser = number ||| chr('(') &&& expr &&& chr(')');
+  def expr      : Parser = summand &&& rep(chr('+') &&& summand)
+}
+
 class ParseString(s: String) extends Parsers {
   type intype = int;
   val input = 0;
@@ -68,12 +78,26 @@ class ParseString(s: String) extends Parsers {
   }
 }
 
-object Test {
+object TestList {
 
   def main(args: Array[String]): unit =
     if (args.length == 1) {
       val ps = new ListParsers with ParseString(args(0));
-      ps.exprs(input) match {
+      ps.expr(ps.input) match {
+	case Some(n) =>
+	  System.out.println("parsed: " + args(0).substring(0, n));
+	case None =>
+	  System.out.println("nothing parsed");
+      }
+    } else System.out.println("usage: java examples.Test <expr-string>");
+}
+
+object TestExpr {
+
+  def main(args: Array[String]): unit =
+    if (args.length == 1) {
+      val ps = new ExprParsers with ParseString(args(0));
+      ps.expr(ps.input) match {
 	case Some(n) =>
 	  System.out.println("parsed: " + args(0).substring(0, n));
 	case None =>

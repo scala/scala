@@ -24,7 +24,7 @@ LATEX_FORMATS		+= pdf
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaReference.%)
 LATEX_TARGETS		+= $(LATEX_FORMATS:%=ScalaByExample.%)
 
-LATEX_SOURCES		+= Rationale.tex
+LATEX_SOURCES		+= ScalaRationale.tex
 LATEX_SOURCES		+= ScalaByExample.tex
 LATEX_SOURCES		+= ScalaReference.tex
 LATEX_SOURCES		+= Scala.bib

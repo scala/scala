@@ -26,6 +26,10 @@ object Predef {
     type boolean = scala.Boolean;
     type unit = scala.Unit;
 
+    type String = java.lang.String;
+    type NullPointerException = java.lang.NullPointerException;
+    type Throwable = java.lang.Throwable;
+
     /** Create an array with given elements.
      *
      *  @param xs the elements to put in the array
@@ -63,4 +67,7 @@ object Predef {
 
   val Text = scala.xml.Text;
 
+  type Function[-a,+b] = Function1[a,b];
+
 }
+*
