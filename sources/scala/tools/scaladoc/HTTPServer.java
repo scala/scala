@@ -163,7 +163,7 @@ public class HTTPServer extends Thread {
 
 class RequestProcessor implements Runnable {
 
-    private final static String ENCODING_SCHEME = "UTF-8";
+    private final static String ENCODING_SCHEME = "iso-8859-1"; // "UTF-8"
 
     private static List pool = new LinkedList();
     private File documentRootDirectory;
