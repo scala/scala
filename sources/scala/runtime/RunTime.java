@@ -193,6 +193,7 @@ public abstract class RunTime {
     public static Array box(final boolean[] xs) {
 	return new Array(0) {
 	    public boolean[] asBooleanArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Boolean)x).asBoolean(); }
 	    public int length() { return xs.length; }
@@ -203,6 +204,7 @@ public abstract class RunTime {
     public static Array box(final byte[] xs) {
 	return new Array(0) {
 	    public byte[] asByteArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Byte)x).asByte(); }
 	    public int length() { return xs.length; }
@@ -213,6 +215,7 @@ public abstract class RunTime {
     public static Array box(final short[] xs) {
 	return new Array(0) {
 	    public short[] asShortArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Short)x).asShort(); }
 	    public int length() { return xs.length; }
@@ -223,6 +226,7 @@ public abstract class RunTime {
     public static Array box(final char[] xs) {
 	return new Array(0) {
 	    public char[] asCharArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Char)x).asChar(); }
 	    public int length() { return xs.length; }
@@ -233,6 +237,7 @@ public abstract class RunTime {
     public static Array box(final int[] xs) {
 	return new Array(0) {
 	    public int[] asIntArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Int)x).asInt(); }
 	    public int length() { return xs.length; }
@@ -243,6 +248,7 @@ public abstract class RunTime {
     public static Array box(final long[] xs) {
 	return new Array(0) {
 	    public long[] asLongArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Long)x).asLong(); }
 	    public int length() { return xs.length; }
@@ -253,6 +259,7 @@ public abstract class RunTime {
     public static Array box(final float[] xs) {
 	return new Array(0) {
 	    public float[] asFloatArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Float)x).asFloat(); }
 	    public int length() { return xs.length; }
@@ -263,6 +270,7 @@ public abstract class RunTime {
     public static Array box(final double[] xs) {
 	return new Array(0) {
 	    public double[] asDoubleArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return box(xs[i]); }
 	    public void update(int i, Object x) { xs[i] = ((Double)x).asDouble(); }
 	    public int length() { return xs.length; }
@@ -273,11 +281,26 @@ public abstract class RunTime {
     public static Array box(final Object[] xs) {
 	return new Array(0) {
 	    public Object[] asObjectArray() { return xs; }
+	    public Object asArray() { return xs; }
 	    public Object apply(int i) { return xs[i]; }
 	    public void update(int i, Object x) { xs[i] = x; }
 	    public int length() { return xs.length; }
             public String toString() { return String.valueOf(xs); }
 	};
+    }
+
+    public static Array box(Object xs) {
+        if (xs == null) return box((Object[])xs);
+        if (xs instanceof Object[]) return box((Object[])xs);
+        if (xs instanceof boolean[]) return box((boolean[])xs);
+        if (xs instanceof byte[]) return box((byte[])xs);
+        if (xs instanceof short[]) return box((short[])xs);
+        if (xs instanceof char[]) return box((char[])xs);
+        if (xs instanceof int[]) return box((int[])xs);
+        if (xs instanceof long[]) return box((long[])xs);
+        if (xs instanceof float[]) return box((float[])xs);
+        if (xs instanceof double[]) return box((double[])xs);
+        throw new ClassCastException(xs.getClass() + " is not an array class");
     }
 
     public static boolean[] zarray(int length) {
