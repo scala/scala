@@ -430,11 +430,11 @@ public class  Global {
     }
 
     private String show(Symbol symbol) {
-        return symbol.defString();
+        return new SymbolTablePrinter("  ").printSignature(symbol).toString();
     }
 
     private String show(Type type) {
-        return type.toString();
+        return new SymbolTablePrinter("  ").printType(type).toString();
     }
 
     /*

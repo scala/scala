@@ -733,24 +733,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return NameTransformer.decode(fullName()).toString();
     }
 
-    public String idString() {
-	if (Global.instance.uniqid &&
-	    (kind == TYPE || Global.instance.debug))
-	    return "#" + Global.instance.uniqueID.id(this);
-	else return "";
-    }
-
     /** String representation, including symbol's kind
      *  e.g., "class Foo", "function Bar".
      */
     public String toString() {
-	if (isRoot()) return "<root package>";
-	String kstr = kindString();
-	String str;
-	if (isAnonymousClass()) str = "<template>";
-	else if (kstr.length() == 0) str = fullNameString();
-	else str = kstr + " " + fullNameString();
-	return str + idString();
+        return new SymbolTablePrinter().printSymbol(this).toString();
     }
 
     /** String representation of location.
@@ -765,22 +752,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** String representation of definition.
      */
     public String defString() {
-        StringBuffer buffer = new StringBuffer();
-        if (!isParameter()) buffer.append(defKeyword()).append(' ');
-        String name = nameString();
-        if (!Global.instance.debug) {
-            int index = name.indexOf('$');
-            if (index > 0) name = name.substring(0, index);
-        }
-        buffer.append(name).append(idString()).append(innerString());
-        if (rawInfoAt(Global.instance.POST_ANALYZER_PHASE_ID)
-            instanceof Type.LazyType)
-            buffer.append("?");
-        else if (isInitializedMethod())
-            buffer.append(info().defString());
-        else
-            buffer.append(info());
-        return buffer.toString();
+        return new SymbolTablePrinter().printSignature(this).toString();
     }
 
     public static String[] defString(Symbol[] defs) {
@@ -788,60 +760,6 @@ public abstract class Symbol implements Modifiers, Kinds {
 	for (int i = 0; i < defs.length; i++)
 	    strs[i] = defs[i].defString();
 	return strs;
-    }
-
-    private String innerString() {
-        switch (kind) {
-        case Kinds.ERROR: return ": ";
-        case Kinds.NONE : return ": ";
-        case Kinds.ALIAS: return " = ";
-        case Kinds.CLASS: return " extends ";
-        case Kinds.TYPE : return " <: ";
-        case Kinds.VAL  : return isModule() ? "extends" :
-            isInitializedMethod() ? "" : ": ";
-        default         : throw Debug.abort("illegal case: " + kind);
-        }
-    }
-
-    /** String representation of kind */
-    public String kindString() {
-	switch (kind) {
-        case CLASS:
-	    if ((flags & TRAIT) != 0)
-		return "trait";
-	    else if ((flags & MODUL) != 0 && Global.instance.debug)
-		return "object class";
-	    else
-		return "class";
-	case TYPE:
-        case ALIAS:
-	    return "type";
-        case VAL:
-	    if (isVariable()) return "variable";
-	    else if (isModule()) return "object";
-	    else if (isConstructor()) return "constructor";
-	    else if (isInitializedMethod() &&
-		     (Global.instance.debug || (flags & STABLE) == 0) )
-		return "method";
-	    else return "value";
-	default: return "";
-	}
-    }
-
-    /** Definition keyword of kind
-     */
-    public String defKeyword() {
-	switch (kind) {
-        case CLASS: if ((flags & TRAIT) != 0) return "trait"; else return "class";
-	case TYPE:
-        case ALIAS: return "type";
-        case VAL:
-	    if (isVariable()) return "var";
-	    else if (isModule()) return "object";
-	    else if (isInitializedMethod()) return "def";
-	    else return "val";
-	default: return "";
-	}
     }
 
 // Overloading and Overriding -------------------------------------------

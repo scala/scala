@@ -301,23 +301,7 @@ public class Scope {
     }
 
     public String toString() {
-	StringBuffer str = new StringBuffer("{");
-	SymbolIterator it = iterator();
-	while (it.hasNext()) {
-	    str.append("\n  " + it.next().defString());
-	}
-	str.append("}");
-        return str.toString();
-    }
-
-    public String simpleToString() {
-	StringBuffer str = new StringBuffer("{");
-	SymbolIterator it = iterator();
-	while (it.hasNext()) {
-	    str.append("\n  " + it.next().name);
-	}
-	str.append("}");
-        return str.toString();
+        return new SymbolTablePrinter().printScope(this).toString();
     }
 
     public static Scope EMPTY = new Scope();
