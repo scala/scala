@@ -449,6 +449,260 @@ module MA {
 
 //############################################################################
 
+module Utils {
+
+  private def power0(x: int, y: int): int =
+    if (y == 1) x else if (y % 2 == 0) power0(x*x,y/2) else x*power0(x, y-1);
+
+  def power(x: int, y: int): int = Pair(x,y) match {
+    case Pair(0,0) => error("power(0,0)")
+    case Pair(0,_) => 0
+    case Pair(1,_) => 1
+    case Pair(_,0) => 1
+    case Pair(_,1) => x
+    case Pair(_,2) => x*x
+    case Pair(_,_) => if (y < 0) 1/power0(x,y) else power0(x,y)
+  }
+
+  def lookup(entries: List[Pair[String,int]], key: String):int = entries match{
+    case List()                       => error("no value for " + key)
+    case Pair(k,v) :: _ if (k == key) => v
+    case _ :: rest                    => lookup(rest, key)
+  }
+
+  def compare(xs: List[String], ys: List[String]): int = Pair(xs,ys) match{
+    case Pair(List(), List()) =>  0
+    case Pair(List(), _     ) => -1
+    case Pair(_     , List()) => +1
+    case Pair(x::xs , y::ys ) => {
+      val diff = x.compareTo(y);
+      if (diff != 0) diff else compare(xs,ys)
+    }
+  }
+
+}
+
+module MB {
+
+  import Utils._;
+
+
+  trait Expr {
+
+    private def count: int = match {
+      case Lit(n)        => n
+      case Mul(Lit(n),_) => n
+      case _             => 1
+    }
+
+    private def term: Expr = match {
+      case Lit(_)        => Lit(1)
+      case Mul(Lit(_),r) => r
+      case _             => this
+    }
+
+    private def vars: List[String] = match {
+      case Var(n)   => List(n)
+      case Mul(l,r) => l.vars ::: r.vars
+      case Pow(l,n) => { val vs = l.vars; List.range(0,n).flatMap(i => vs) }
+      case _        => List()
+    }
+
+    private def +<  (that: Expr): boolean = (this +<? that) <  0;
+    private def +<= (that: Expr): boolean = (this +<? that) <= 0;
+    private def +<? (that: Expr): int = Pair(this,that) match {
+      case Pair(Add(_,_), _       ) =>  0
+      case Pair(_       , Add(_,_)) =>  0
+      case Pair(_       , _       ) => compare(this.vars,that.vars)
+    }
+
+    def + (that: Expr): Expr = if (that +<= this) Pair(this,that) match {
+      case Pair(_         , Lit(0)    )                  => this
+      case Pair(Lit(l)    , Lit(r)    )                  => Lit(l + r)
+      case Pair(_         , Add(rl,rr))                  => (this + rl) + rr
+      case Pair(Add(ll,lr), _         ) if (lr +<= that) => ll + (that + lr)
+      case Pair(_         , _         )                  => {
+        val l = this.term;
+        val r = that.term;
+        if (l equ r) Lit(this.count + that.count) * r else Add(this, that)
+      }
+    } else that + this;
+
+    private def *<  (that: Expr): boolean = (this *<? that) <  0;
+    private def *<= (that: Expr): boolean = (this *<? that) <= 0;
+    private def *<? (that: Expr): int = Pair(this,that) match {
+      case Pair(Mul(_,_), _       ) =>  0
+      case Pair(_       , Mul(_,_)) =>  0
+      case Pair(Add(_,_), Add(_,_)) =>  0
+      case Pair(Add(_,_), _       ) => -1
+      case Pair(_       , Add(_,_)) => +1
+      case Pair(Lit(_)  , Lit(_)  ) =>  0
+      case Pair(Lit(_)  , _       ) => -1
+      case Pair(_       , Lit(_)  ) => +1
+      case Pair(Var(l)  , Var(r)  ) => l.compareTo(r)
+      case Pair(Var(_)  , Pow(r,_)) => if (this *<= r) -1 else +1
+      case Pair(Pow(l,_), Var(_)  ) => if (l *<  that) -1 else +1
+      case Pair(Pow(l,_), Pow(r,_)) => l *<? r
+    }
+
+    def * (that: Expr): Expr = if (this *<= that) Pair(this,that) match {
+      case Pair(Lit(0)    , _         )                    => this
+      case Pair(Lit(1)    , _         )                    => that
+      case Pair(Mul(ll,lr), r         )                    => ll * (lr * r)
+      case Pair(Add(ll,lr), r         )                    => ll * r + lr * r
+      case Pair(Lit(l)    , Lit(r)    )                    => Lit(l * r)
+      case Pair(Var(_)    , Var(_)    ) if (this equ that) => Pow(this,2)
+      case Pair(Var(_)    , Pow(r,n)  ) if (this equ r)    => Pow(this,n + 1)
+      case Pair(Pow(ll,lr), Pow(rl,rr)) if (ll equ rl)     => Pow(ll,lr + rr)
+      case Pair(l         , Mul(rl,rr)) if (rl *<= l)      => (rl * l) * rr
+      case Pair(_         , _         )                    => Mul(this,that)
+    } else that * this;
+
+    def ^ (that: int): Expr = Pair(this,that) match {
+      case Pair(_       ,1) => this
+      case Pair(Lit(i)  ,n) => Lit(power(i,n))
+      case Pair(Var(_)  ,n) => Pow(this,n)
+      case Pair(Add(_,_),n) => this * (this ^ (n - 1))
+      case Pair(Mul(l,r),n) => (l ^ n) * (r ^ n)
+      case Pair(Pow(e,m),n) => Pow(e,m + n)
+    }
+
+    def derive(v: Var): Expr = match {
+      case Lit(_) => Lit(0)
+      case Var(name) => if (name == v.name) Lit(1) else Lit(0)
+      case Add(e1, e2) => (e1 derive v) + (e2 derive v)
+      case Mul(e1, e2) => e1 * (e2 derive v) + e2 * (e1 derive v)
+      case Pow(e1, i2) => Lit(i2) * (e1 derive v) * (e1 ^ (i2 - 1))
+    }
+
+    def evaluate(vars: List[Pair[String,int]]): int = match {
+      case Lit(cst) => cst
+      case Var  (name) => lookup(vars, name)
+      case Add  (l, r) => l.evaluate(vars) + r.evaluate(vars)
+      case Mul (l, r) => l.evaluate(vars) * r.evaluate(vars)
+      case Pow(l, r) => power(l.evaluate(vars), r)
+    }
+
+    def equ(that: Expr): boolean = Pair(this,that) match {
+      case Pair(Lit(l)    ,Lit(r))     => l == r
+      case Pair(Var(l)    ,Var(r))     => l == r
+      case Pair(Add(ll,lr),Add(rl,rr)) => (ll equ rl) && (lr equ rr)
+      case Pair(Mul(ll,lr),Mul(rl,rr)) => (ll equ rl) && (lr equ rr)
+      case Pair(Pow(ll,lr),Pow(rl,rr)) => (ll equ rl) && (lr == rr)
+      case _ => false
+    }
+
+  }
+
+  case class Lit(x: int) extends Expr {
+    override def toString() = x.toString()
+  }
+
+  case class Var(name: String) extends Expr {
+    override def toString() = name;
+  }
+
+  case class Add(e1: Expr, e2: Expr) extends Expr {
+    override def toString() = e1.toString() + " + " + e2.toString(); // !!! .toString
+  }
+
+  case class Mul(e1: Expr, e2: Expr) extends Expr {
+    override def toString() = {
+      def factorToString(e: Expr) = e match {
+        case Add(_, _) => "(" + e.toString() + ")"
+        case _         =>       e.toString()
+      }
+      factorToString(e1) + " * " + factorToString(e2);
+    }
+  }
+
+  case class Pow(e1: Expr, i2: int) extends Expr {
+    override def toString() = {
+      def factorToString(e: Expr) = e match {
+        case Add(_, _) => "(" + e.toString() + ")"
+        case Mul(_, _) => "(" + e.toString() + ")"
+        case _         =>       e.toString()
+      }
+      factorToString(e1) + "^" + i2;
+    }
+  }
+
+  def test = {
+    val _1 = Lit(1);
+    val _2 = Lit(2);
+    val _3 = Lit(3);
+    val _4 = Lit(4);
+    val _5 = Lit(5);
+
+    val x  = Var("x");
+
+    val ta = (_1 + (_2 + x));
+    val tb = (_1 + (x + _2));
+    val tc = ((_1 + x) + _2);
+    val td = ((x + _1) + _2);
+    val te = ((x + _1) + (x + _2));
+    val tf = ((_1 + x) + (_2 + x));
+    val tg = x + x + (x * _2) + x + x;
+    val th = x * x * (x ^  2) * x * x;
+
+    System.out.println("ta(x) = " + ta);
+    System.out.println("tb(x) = " + tb);
+    System.out.println("tc(x) = " + tc);
+    System.out.println("td(x) = " + td);
+    System.out.println("te(x) = " + te);
+    System.out.println("tf(x) = " + tf);
+    System.out.println("tg(x) = " + tg);
+    System.out.println("th(x) = " + th);
+    System.out.println();
+
+    val f4 = (x+ _3)*(_2+x)*x*(x+ _1) + (x+ _5)*(x*(x+ _2)+x+ _1) + (x^2) + x;
+    val f3 = f4.derive(x);
+    val f2 = f3.derive(x);
+    val f1 = f2.derive(x);
+    val f0 = f1.derive(x);
+
+    System.out.println("f4(x) = " + f4);
+    System.out.println("f3(x) = " + f3);
+    System.out.println("f2(x) = " + f2);
+    System.out.println("f1(x) = " + f1);
+    System.out.println("f0(x) = " + f0);
+    System.out.println();
+
+    def check(n: String, f: Expr, x: int, e: int) = {
+      val a: int = f.evaluate(List(Pair("x",x)));
+      val s: String = if (a == e) "ok" else "KO(" + e + ")";
+      System.out.println(n + "(" + x + ") = " + a + " " + s);
+    }
+
+    check("f4", f4, 0, 5);
+    check("f4", f4, 1, 56);
+    check("f4", f4, 2, 203);
+    check("f4", f4, 3, 524);
+    check("f4", f4, 4, 1121);
+    System.out.println();
+
+    check("f3", f3, 0, 23);
+    check("f3", f3, 1, 88);
+    check("f3", f3, 2, 219);
+    check("f3", f3, 3, 440);
+    System.out.println();
+
+    check("f2", f2, 0, 40);
+    check("f2", f2, 1, 94);
+    check("f2", f2, 2, 172);
+    System.out.println();
+
+    check("f1", f1, 0, 42);
+    check("f1", f1, 1, 66);
+    System.out.println();
+
+    check("f0", f0, 0, 24);
+    System.out.println();
+  }
+}
+
+//############################################################################
+
 module Test {
   def main(args: Array[String]): unit = {
     M0.test;
@@ -462,6 +716,7 @@ module Test {
     M8.test;
     M9.test;
     MA.test;
+    MB.test;
     ()
   }
 }
