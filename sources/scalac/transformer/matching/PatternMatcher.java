@@ -64,7 +64,7 @@ public class PatternMatcher extends PatternTool {
 
     /** init method, also needed in subclass AlgebraicMatcher
      */
-    protected void initialize(Tree selector, Symbol owner, Type resultType,  boolean doBinding) {
+    protected void initialize(Tree selector, Symbol owner, Type resultType, boolean doBinding) {
         this.mk = new PatternNodeCreator(unit, owner);
         this.cf = new CodeFactory(unit, selector.pos);
         this.root = mk.ConstrPat(selector.pos, selector.type.widen());
@@ -250,8 +250,7 @@ public class PatternMatcher extends PatternTool {
         //System.out.println("patternNode("+tree+","+header+")");
     	switch (tree) {
 			case Bind(Name name,
-					  Typed( Ident( Names.PATTERN_WILDCARD ), Tree tpe)): // x@_:Type
-
+					  Typed(Ident(Names.PATTERN_WILDCARD), Tree tpe)): // x@_:Type
 				  if(header.type.isSubType(tpe.type)) {
 						PatternNode node = mk.DefaultPat(tree.pos, tpe.type);
 						env.newBoundVar( tree.symbol(), tree.type, header.selector );
@@ -261,19 +260,17 @@ public class PatternMatcher extends PatternTool {
 						env.newBoundVar( tree.symbol(), tree.type, gen.Ident(tree.pos, node.casted));
 						return node;
 				  }
-
-			case Bind( Name name, Ident( Names.PATTERN_WILDCARD )): // x @ _
+			case Bind(Name name, Ident(Names.PATTERN_WILDCARD)): // x @ _
 				PatternNode node = mk.DefaultPat(tree.pos, header.type);
 				if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD))
 					env.newBoundVar( tree.symbol(), tree.type, header.selector);
 				return node;
-
-			case Bind( Name name, Tree pat):
+			case Bind(Name name, Tree pat):
 				PatternNode node = patternNode(pat, header, env);
 				if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD)) {
 					Symbol casted = node.symbol();
 					Tree theValue =  (casted == Symbol.NONE) ? header.selector : gen.Ident(tree.pos, casted);
-					env.newBoundVar( tree.symbol(), tree.type, theValue );
+					env.newBoundVar(tree.symbol(), tree.type, theValue);
 				}
 				return node;
 			case Apply(Tree fn, Tree[] args):             // pattern with args
@@ -289,25 +286,26 @@ public class PatternMatcher extends PatternTool {
 						res.and.and = mk.SeqContainerPat(tree.pos, tree.type, args[0]);
 						return res;
 					}
-				} else if ((fn.symbol() != null) && fn.symbol().isStable())
+				} else if ((fn.symbol() != null) &&
+				           fn.symbol().isStable() &&
+				           !(fn.symbol().isModule() &&
+				             ((fn.symbol().flags & Modifiers.CASE) != 0)))
 					return mk.VariablePat(tree.pos, tree);
 				return mk.ConstrPat(tree.pos, tree.type);
 			case Typed(Ident ident, Tree tpe):       // variable pattern
 				  boolean doTest = header.type.isSubType(tpe.type);
 				  PatternNode node = doTest ?
-						mk.DefaultPat(tree.pos, tpe.type)
-						: mk.ConstrPat(tree.pos, tpe.type);
+						mk.DefaultPat(tree.pos, tpe.type) :
+						mk.ConstrPat(tree.pos, tpe.type);
 				  if ((env != null) && (ident.symbol() != defs.PATTERN_WILDCARD))
 						switch (node) {
 							case ConstrPat(Symbol casted):
-								  env.newBoundVar(
-												  ((Tree.Typed)tree).expr.symbol(),
+								  env.newBoundVar(((Tree.Typed)tree).expr.symbol(),
 												  tpe.type,
 												  gen.Ident(tree.pos, casted));
 								  break;
 							default:
-								  env.newBoundVar(
-												  ((Tree.Typed)tree).expr.symbol(),
+								  env.newBoundVar(((Tree.Typed)tree).expr.symbol(),
 												  tpe.type,
 												  doTest ? header.selector : gen.Ident(tree.pos, ((ConstrPat) node).casted));
 					}
@@ -387,8 +385,7 @@ public class PatternMatcher extends PatternTool {
             switch (accType) {
                 // scala case accessor
 				case MethodType(_, _):
-					return mk.Header(
-									 pos,
+					return mk.Header(pos,
 									 accType.resultType(),
 									 gen.mkApply__(accTree));
 					// jaco case accessor
@@ -427,7 +424,7 @@ public class PatternMatcher extends PatternTool {
             if (next.isSameAs(patNode)) {           // test for patNode already present --> reuse
                   // substitute... !!!
                   switch(patNode) {
-					  case ConstrPat( Symbol ocasted ):
+					  case ConstrPat(Symbol ocasted):
 							env.substitute(ocasted, gen.Ident(patNode.pos,
 															  ((ConstrPat) next).casted));
                   }

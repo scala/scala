@@ -35,43 +35,43 @@ public class PatternNode {
     public case SeqContainerPat(Symbol casted, Tree seqpat); //   in AlgebraicMatcher
 
     public PatternNode dup() {
-    	PatternNode res;
-    	switch (this) {
-			case Header(Tree selector, Header next):
-				res = Header(selector, next);
-				break;
-			case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body):
-				res = Body(bound, guard, body);
-				break;
-			case DefaultPat():
-				res = DefaultPat();
-				break;
-			case ConstrPat(Symbol casted):
-				res = ConstrPat(casted);
-				break;
-			case SequencePat(Symbol casted, int len):
-				res = SequencePat(casted, len);
-				break;
-			case SeqContainerPat(Symbol casted, Tree seqpat):
-				res = SeqContainerPat(casted, seqpat);
-				break;
-			case ConstantPat(AConstant value):
-				res = ConstantPat(value);
-				break;
-			case VariablePat(Tree tree):
-				res = VariablePat(tree);
-				break;
-			case AltPat(Header subheader):
-				res = AltPat(subheader);
-				break;
-			default:
-				throw new ApplicationError();
-    	}
-    	res.pos = pos;
-   		res.type = type;
-   		res.or = or;
-   		res.and = and;
-   		return res;
+        PatternNode res;
+        switch (this) {
+            case Header(Tree selector, Header next):
+                res = Header(selector, next);
+                break;
+            case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body):
+                res = Body(bound, guard, body);
+                break;
+            case DefaultPat():
+                res = DefaultPat();
+                break;
+            case ConstrPat(Symbol casted):
+                res = ConstrPat(casted);
+                break;
+            case SequencePat(Symbol casted, int len):
+                res = SequencePat(casted, len);
+                break;
+            case SeqContainerPat(Symbol casted, Tree seqpat):
+                res = SeqContainerPat(casted, seqpat);
+                break;
+            case ConstantPat(AConstant value):
+                res = ConstantPat(value);
+                break;
+            case VariablePat(Tree tree):
+                res = VariablePat(tree);
+                break;
+            case AltPat(Header subheader):
+                res = AltPat(subheader);
+                break;
+            default:
+                throw new ApplicationError();
+        }
+        res.pos = pos;
+        res.type = type;
+        res.or = or;
+        res.and = and;
+        return res;
     }
 
     public Symbol symbol() {
@@ -88,20 +88,20 @@ public class PatternNode {
     }
 
     public PatternNode next() {
-    	switch (this) {
-    		case Header(_, Header next):
-    			return next;
-    		default:
-    			return null;
-    	}
+        switch (this) {
+            case Header(_, Header next):
+                return next;
+            default:
+                return null;
+        }
     }
 
-    public final boolean isDefaultPat() {
-        switch( this ) {
-        case DefaultPat():
-            return true;
-        default:
-            return false;
+    public boolean isDefaultPat() {
+        switch(this) {
+			case DefaultPat():
+				return true;
+			default:
+				return false;
         }
     }
 
@@ -109,62 +109,62 @@ public class PatternNode {
      *  p and q are equal (constructor | sequence) type tests, or
      *  "q matches" => "p matches"
      */
-    public final boolean isSameAs( PatternNode q ) {
+    public boolean isSameAs(PatternNode q) {
         switch( this ) {
-        case ConstrPat(_):
-            switch (q) {
             case ConstrPat(_):
-                return q.type.isSameAs( this.type );
-            }
-            return false;
-        case SequencePat(_, int plen):
-            switch (q) {
-            case SequencePat(_, int qlen):
-                return (plen == qlen) && q.type.isSameAs( this.type );
-            }
-            return false;
-        default:
-            return subsumes( q );
+                switch (q) {
+                    case ConstrPat(_):
+                        return q.type.isSameAs(this.type);
+                }
+                return false;
+            case SequencePat(_, int plen):
+                switch (q) {
+                    case SequencePat(_, int qlen):
+                        return (plen == qlen) && q.type.isSameAs(this.type);
+                }
+                return false;
+            default:
+                return subsumes(q);
         }
     }
 
     /** returns true if "q matches" => "p matches"
      */
-    public final boolean subsumes( PatternNode q ) {
+    public boolean subsumes(PatternNode q) {
         switch (this) {
-        case DefaultPat():
-            switch (q) {
             case DefaultPat():
-                return true;
-            }
-            return false;
-        case ConstrPat(_):
-            switch (q) {
+                switch (q) {
+                    case DefaultPat():
+                        return true;
+                }
+                return false;
             case ConstrPat(_):
-                return q.type.isSubType(this.type);
-            }
-            return false;
-        case SequencePat(_, int plen):
-            switch (q) {
-            case SequencePat(_, int qlen):
-                return (plen == qlen) && q.type.isSubType(this.type);
-            }
-            return false;
-        case ConstantPat(AConstant pval):
-            switch (q) {
-            case ConstantPat(AConstant qval):
-                return pval.equals(qval);
-            }
-            return false;
-        case VariablePat(Tree tree):
-            switch (q) {
-            case VariablePat(Tree other):
-                return (tree.symbol() != null) &&
-                    (!tree.symbol().isNone()) &&
-                    (!tree.symbol().isError()) &&
-                    (tree.symbol() == other.symbol());
-            }
-            return false;
+                switch (q) {
+                    case ConstrPat(_):
+                        return q.type.isSubType(this.type);
+                }
+                return false;
+            case SequencePat(_, int plen):
+                switch (q) {
+                    case SequencePat(_, int qlen):
+                        return (plen == qlen) && q.type.isSubType(this.type);
+                }
+                return false;
+            case ConstantPat(AConstant pval):
+                switch (q) {
+                    case ConstantPat(AConstant qval):
+                        return pval.equals(qval);
+                }
+                return false;
+            case VariablePat(Tree tree):
+                switch (q) {
+                    case VariablePat(Tree other):
+                        return (tree.symbol() != null) &&
+                               (!tree.symbol().isNone()) &&
+                               (!tree.symbol().isError()) &&
+                               (tree.symbol() == other.symbol());
+                }
+                return false;
         }
         return false;
     }
