@@ -242,7 +242,8 @@ public class ExpressionCompiler {
             assert object == Code.Null: object;
             assert targs.length == 1: Debug.show(targs);
             assert vargs.length == 1 : Debug.show(vargs);
-            Class component = context.getClass(targs[0].type());
+            Type arraytype = Type.UnboxedArrayType(targs[0].type());
+            Class component = context.getClass(arraytype).getComponentType();
             return Code.CreateArray(component, compute(vargs[0]));
         }
         throw Debug.abort("unknown method", symbol);

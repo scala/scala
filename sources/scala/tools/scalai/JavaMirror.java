@@ -12,6 +12,7 @@ package scala.tools.scalai;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -67,6 +68,7 @@ public class JavaMirror {
     // Public Methods - arrays
 
     public Class getArray(Class component) {
+        if (Proxy.isProxyClass(component)) component = Object_class;
         Object value = arrays.get(component);
         if (value != null) return (Class)value;
         Class array = getArray0(component);
