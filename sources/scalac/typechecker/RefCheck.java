@@ -121,7 +121,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private boolean isGlobalModule(Symbol sym) {
 	return
 	    sym.isModule() &&
-	    (sym.owner().isPackage() || isGlobalModule(sym.owner().module()));
+	    (sym.owner().isPackage()
+	     //|| isGlobalModule(sym.owner().module()) // add later? translation does not work (yet?)
+		);
     }
 
     private Tree[] transformModule(Tree tree, int mods, Name name, Tree tpe, Tree.Template templ) {
@@ -190,12 +192,16 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	switch (sym.type()) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    for (int i = 0; i < alts.length; i++) {
-		if (alttypes[i].firstParams().length == 0) return alts[i];
+		if (isNullaryMethod(alttypes[i])) return alts[i];
 	    }
 	}
-	assert sym.type().firstParams().length == 0
+	assert isNullaryMethod(sym.type())
 	    : "no nullary method " + name + " among " + sym.type() + " at " + site;
 	return sym;
+    }
+
+    private boolean isNullaryMethod(Type tp) {
+	return tp.paramSectionCount() == 1 && tp.firstParams().length == 0;
     }
 
     private Symbol getUnaryMemberMethod(Type site, Name name, Type paramtype) {

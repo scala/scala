@@ -165,6 +165,7 @@ public class DeSugarize implements Kinds, Modifiers {
     /** (x_1: T_1, ..., x_n: T_N) => e  ==>
      *  new new scala.Object() with scala.Function[T_1, ..., T_N, T]() {
      *    def apply(x_1: T_1, ..., x_N: T_N): T = e
+     *    def toString(): java.lang.String = "<function>"
      *  }
      *  where T = `restpe'
      *  T_i = `argtpes[i]'
@@ -203,8 +204,17 @@ public class DeSugarize implements Kinds, Modifiers {
 		Tree.TypeDef_EMPTY_ARRAY, new ValDef[][]{vparams},
 		restpe, body);
 
+	    Tree toStringDef = make.DefDef(
+		tree.pos, Modifiers.OVERRIDE, Names.toString,
+		Tree.TypeDef_EMPTY_ARRAY,
+		new ValDef[][]{Tree.ValDef_EMPTY_ARRAY},
+		gen.mkType(tree.pos, global.definitions.JAVA_STRING_TYPE),
+		make.Literal(tree.pos, "<function>"));
+
 	    Tree result = make.New(tree.pos,
-		make.Template(tree.pos, new Tree[]{objConstr, constr}, new Tree[]{applyDef}));
+		make.Template(tree.pos,
+		    new Tree[]{objConstr, constr},
+		    new Tree[]{applyDef, toStringDef}));
 	    print(tree, "mkfun", result);
 	    return result;
 	default:
