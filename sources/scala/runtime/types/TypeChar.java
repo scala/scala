@@ -15,10 +15,17 @@ import scala.Type;
 import scala.Array;
 import scala.Char;
 
-public class TypeChar extends BasicType {
+public class TypeChar extends ValueType {
     private final Char ZERO = RunTime.box_cvalue((char)0);
     public Array newArray(int size) {
         return RunTime.box_carray(new char[size]);
     }
+    public Object checkCastability(Object o) {
+        if (! (o == null || o instanceof scala.Char))
+            throw new ClassCastException(); // TODO error message
+        return o;
+    }
     public Object defaultValue() { return ZERO; }
+    public String toString() { return "scala.Char"; }
+    public int hashCode() { return 0x66666666; }
 };

@@ -15,10 +15,17 @@ import scala.Type;
 import scala.Array;
 import scala.Boolean;
 
-public class TypeBoolean extends BasicType {
+public class TypeBoolean extends ValueType {
     private final Boolean ZERO = RunTime.box_zvalue(false);
     public Array newArray(int size) {
         return RunTime.box_zarray(new boolean[size]);
     }
+    public Object checkCastability(Object o) {
+        if (! (o == null || o instanceof scala.Boolean))
+            throw new ClassCastException(); // TODO error message
+        return o;
+    }
     public Object defaultValue() { return ZERO; }
+    public String toString() { return "scala.Boolean"; }
+    public int hashCode() { return 0x88888888; }
 };

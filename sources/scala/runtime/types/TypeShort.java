@@ -14,10 +14,17 @@ import scala.runtime.RunTime;
 import scala.Type;
 import scala.Array;
 
-public class TypeShort extends BasicType {
+public class TypeShort extends ValueType {
     private final scala.Short ZERO = RunTime.box_svalue((short)0);
     public Array newArray(int size) {
         return RunTime.box_sarray(new short[size]);
     }
+    public Object checkCastability(Object o) {
+        if (! (o == null || o instanceof scala.Short))
+            throw new ClassCastException(); // TODO error message
+        return o;
+    }
     public Object defaultValue() { return ZERO; }
+    public String toString() { return "scala.Short"; }
+    public int hashCode() { return 0x55555555; }
 };

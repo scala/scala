@@ -14,11 +14,18 @@ import scala.runtime.RunTime;
 import scala.Type;
 import scala.Array;
 
-public class TypeFloat extends BasicType {
+public class TypeFloat extends ValueType {
     private final scala.Float ZERO = RunTime.box_fvalue(0.0f);
     public Array newArray(int size) {
         return RunTime.box_farray(new float[size]);
     }
+    public Object checkCastability(Object o) {
+        if (! (o == null || o instanceof scala.Float))
+            throw new ClassCastException(); // TODO error message
+        return o;
+    }
     public Object defaultValue() { return ZERO; }
+    public String toString() { return "scala.Float"; }
+    public int hashCode() { return 0x22222222; }
 };
 

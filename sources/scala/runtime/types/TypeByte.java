@@ -15,10 +15,17 @@ import scala.Type;
 import scala.Array;
 import scala.Byte;
 
-public class TypeByte extends BasicType {
+public class TypeByte extends ValueType {
     private final Byte ZERO = RunTime.box_bvalue((byte)0);
     public Array newArray(int size) {
         return RunTime.box_barray(new byte[size]);
     }
+    public Object checkCastability(Object o) {
+        if (! (o == null || o instanceof scala.Byte))
+            throw new ClassCastException(); // TODO error message
+        return o;
+    }
     public Object defaultValue() { return ZERO; }
+    public String toString() { return "scala.Byte"; }
+    public int hashCode() { return 0x77777777; }
 };
