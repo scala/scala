@@ -215,13 +215,6 @@ public class LambdaLift extends OwnerTransformer
 		    tree, mods, name,
 		    transform(rhs, currentOwner));
 
-	    case ValDef(int mods, Name name, Tree tpe, Tree rhs):
-		// ignore value definition as owner.
-		// reason: it might be in a refinement
-		return copy.ValDef(
-		    tree, mods, name, transform(tpe),
-		    transform(rhs, currentOwner));
-
 	    case Ident(Name name):
 		if (sym.isLocal()) {
 		    if (sym.isMethod()) {
@@ -372,7 +365,7 @@ public class LambdaLift extends OwnerTransformer
 	    Symbol sym = tree.symbol();
 	    Name name1 = sym.name;
 	    Tree tpe1 = transform(tpe);
-	    Tree rhs1 = transform(rhs, currentOwner);
+	    Tree rhs1 = transform(rhs, sym);
 	    if ((sym.flags & CAPTURED) != 0) {
 		assert sym.isLocal();
 		Type unboxedType = sym.typeAt(descr.nextPhase);
