@@ -101,6 +101,9 @@ object Tokens {
   val LBRACE = 94;
   val RBRACE = 95;
 
+  /** XML mode */
+  val XMLSTART = 96;
+
   /** Returns true if argument corresponds to a keyword. */
   def isKeyword(str: String) = Name.fromString(str).index <= maxKey;
 
@@ -150,6 +153,8 @@ object Tokens {
       "case class"
     case CASEOBJECT =>
       "case object"
+    case XMLSTART =>
+      "$XML<"
     case _ =>
       try {
         "'" + tokenName(token).toString() + "'"

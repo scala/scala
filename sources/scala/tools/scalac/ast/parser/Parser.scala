@@ -68,7 +68,7 @@ class Parser(unit: CompilationUnit) {
 
 /////// ERROR HANDLING //////////////////////////////////////////////////////
 
-  private def skip(): unit = {
+  private def skip(): Unit = {
     //System.out.println("<skipping> " + s.token2string(s.token));//DEBUG
     var nparens = 0;
     var nbraces = 0;
@@ -97,7 +97,7 @@ class Parser(unit: CompilationUnit) {
   def syntaxError(msg: String, skipIt: boolean): unit =
     syntaxError(s.pos, msg, skipIt);
 
-  def syntaxError(pos: int, msg: String, skipIt: boolean): unit = {
+  def syntaxError(pos: Int, msg: String, skipIt: boolean): unit = {
     if (pos != s.errpos) {
       s.unit.error(pos, msg);
       s.errpos = pos;
@@ -105,7 +105,7 @@ class Parser(unit: CompilationUnit) {
     if (skipIt) skip();
   }
 
-  def accept(token: int): int = {
+  def accept(token: Int): Int = {
     val pos = s.pos;
     if (s.token != token) {
       val errpos = if ((s.pos >>> Position.COLUMN_BITS) >
@@ -151,7 +151,7 @@ class Parser(unit: CompilationUnit) {
     case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
          STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL | IDENTIFIER |
          THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
-         DO | RETURN | THROW | LPAREN | LBRACE =>
+         DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART =>
       true;
     case _ =>
       false;
@@ -187,7 +187,7 @@ class Parser(unit: CompilationUnit) {
 
   /** Create a tree representing a packaging
   */
-  def makePackaging(pos: int, pkg0: Tree, stats0: Array[Tree]): Tree = {
+  def makePackaging(pos: Int, pkg0: Tree, stats0: Array[Tree]): Tree = {
     var pkg = pkg0;
     var stats = stats0;
     while (true) {
@@ -206,7 +206,7 @@ class Parser(unit: CompilationUnit) {
 
   /** Create tree representing binary operation expression or pattern.
   */
-  def makeBinop(isExpr: boolean, pos: int, left: Tree, op: Name, right: Tree): Tree =
+  def makeBinop(isExpr: boolean, pos: Int, left: Tree, op: Name, right: Tree): Tree =
     if (isExpr) {
       if (isLeftAssoc(op)) {
         make.Apply(
@@ -232,27 +232,27 @@ class Parser(unit: CompilationUnit) {
     }
 
 
-  def scalaDot(pos: int, name: Name): Tree =
+  def scalaDot(pos: Int, name: Name): Tree =
     make.Select(pos, make.Ident(pos, Names.scala), name);
 
-  def scalaRuntimeDot(pos: int, name: Name): Tree =
+  def scalaRuntimeDot(pos: Int, name: Name): Tree =
     make.Select(pos, scalaDot(pos, Names.runtime), name);
 
-  def ScalaRunTimeDot(pos: int, name: Name): Tree =
+  def ScalaRunTimeDot(pos: Int, name: Name): Tree =
     make.Select(pos, scalaRuntimeDot(pos, Names.ScalaRunTime), name);
 
-  def scalaBooleanDot(pos: int, name: Name): Tree =
+  def scalaBooleanDot(pos: Int, name: Name): Tree =
     make.Select(pos, scalaDot(pos, Names.Boolean), name);
 
-  def scalaAnyRefConstr(pos: int): Tree =
+  def scalaAnyRefConstr(pos: Int): Tree =
     make.Apply(
       pos, scalaDot(pos, Names.AnyRef.toTypeName()), Tree.EMPTY_ARRAY);
 
-  def scalaObjectConstr(pos: int): Tree =
+  def scalaObjectConstr(pos: Int): Tree =
     make.Apply(
       pos, scalaDot(pos, Names.ScalaObject.toTypeName()), Tree.EMPTY_ARRAY);
 
-  def caseClassConstr(pos: int): Tree =
+  def caseClassConstr(pos: Int): Tree =
     make.Apply(
       pos, scalaDot(pos, Names.CaseClass.toTypeName()), Tree.EMPTY_ARRAY);
 
@@ -260,14 +260,14 @@ class Parser(unit: CompilationUnit) {
   *   <for (enums) yield body> where mapName and flatmapName are chosen
   *  corresponding to whether this is a for-do or a for-yield.
   */
-  def makeFor(pos: int, enums: Array[Tree], mapName: Name, flatmapName: Name, body: Tree): Tree = {
+  def makeFor(pos: Int, enums: Array[Tree], mapName: Name, flatmapName: Name, body: Tree): Tree = {
 
-    def makeFor1(pos: int, name: Name, pat: Tree, rhs: Tree, body: Tree): Tree =
+    def makeFor1(pos: Int, name: Name, pat: Tree, rhs: Tree, body: Tree): Tree =
       make.Apply(
         pos, make.Select(pos, rhs, name),
         NewArray.Tree(makeForCont(pos, pat, body)));
 
-    def makeForCont(pos: int, pat: Tree, body: Tree): Tree = {
+    def makeForCont(pos: Int, pat: Tree, body: Tree): Tree = {
       pat match {
         case Tree$Ident(name1) if (name1.isVariable()) =>
           make.Function(
@@ -305,7 +305,7 @@ class Parser(unit: CompilationUnit) {
     }
   }
 
-  def makeTry(pos: int, body: Tree, catcher: Tree, finalizer: Tree): Tree = {
+  def makeTry(pos: Int, body: Tree, catcher: Tree, finalizer: Tree): Tree = {
     var t = body;
     if (catcher != Tree.Empty)
       t = make.Apply(
@@ -328,7 +328,7 @@ class Parser(unit: CompilationUnit) {
     t
   }
 
-  def makeWhile(pos: int, lname: Name, cond: Tree, body: Tree): Tree = {
+  def makeWhile(pos: Int, lname: Name, cond: Tree, body: Tree): Tree = {
     val continu = make.Apply(
       pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
     val rhs = make.If(
@@ -339,7 +339,7 @@ class Parser(unit: CompilationUnit) {
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs);
   }
 
-  def makeDoWhile(pos: int, lname: Name, body: Tree, cond: Tree): Tree = {
+  def makeDoWhile(pos: Int, lname: Name, body: Tree, cond: Tree): Tree = {
     val continu = make.Apply(
       pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
     val rhs = make.Block(
@@ -427,7 +427,7 @@ class Parser(unit: CompilationUnit) {
   }
 
   /** make closure from tree */
-  def makeClosure(pos: int, tree: Tree): Tree = {
+  def makeClosure(pos: Int, tree: Tree): Tree = {
     val pname = fresh();
     def insertParam(tree: Tree): Tree = tree match {
       case Tree$Ident(name) =>
@@ -452,11 +452,11 @@ class Parser(unit: CompilationUnit) {
 /////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
 
   var operands = new Array[Tree](8);
-  var positions = new Array[int](8);
+  var positions = new Array[Int](8);
   var operators = new Array[Name](8);
   var sp = 0;
 
-  def precedence(operator: Name): int =
+  def precedence(operator: Name): Int =
     if (operator eq Names.ERROR) -1
     else {
       val first_ch = operator.charAt(0);
@@ -480,12 +480,12 @@ class Parser(unit: CompilationUnit) {
   def isLeftAssoc(operator: Name): boolean =
     operator.length() > 0 && operator.charAt(operator.length() - 1) != ':';
 
-  def push(od: Tree, pos: int, op: Name): unit = {
+  def push(od: Tree, pos: Int, op: Name): unit = {
     if (sp == operands.length) {
       val operands1 = new Array[Tree](sp * 2);
       System.arraycopy(operands, 0, operands1, 0, sp);
       operands = operands1;
-      val positions1 = new Array[int](sp * 2);
+      val positions1 = new Array[Int](sp * 2);
       System.arraycopy(positions, 0, positions1, 0, sp);
       positions = positions1;
       val operators1 = new Array[Name](sp * 2);
@@ -498,7 +498,7 @@ class Parser(unit: CompilationUnit) {
     sp = sp + 1;
   }
 
-  def reduceStack(isExpr: boolean, base: int, _top: Tree, prec: int, leftAssoc: boolean): Tree = {
+  def reduceStack(isExpr: boolean, base: Int, _top: Tree, prec: Int, leftAssoc: boolean): Tree = {
     var top = _top;
     if (sp != base &&
         precedence(operators(sp-1)) == prec &&
@@ -579,7 +579,7 @@ class Parser(unit: CompilationUnit) {
     t
   }
 
-  def selectors(pos: int, t: Tree, typeOK: boolean): Tree =
+  def selectors(pos: Int, t: Tree, typeOK: boolean): Tree =
     if (typeOK && s.token == TYPE) {
       s.nextToken();
       make.SingletonType(pos, t);
@@ -623,9 +623,9 @@ class Parser(unit: CompilationUnit) {
   def literal(isPattern: boolean, isNegated: boolean): Tree = {
     def litToTree() = s.token match {
       case CHARLIT =>
-        gen.mkCharLit(s.pos, s.intVal.asInstanceOf[char])
+        gen.mkCharLit(s.pos, s.intVal.asInstanceOf[Char])
       case INTLIT =>
-        gen.mkIntLit(s.pos, s.intVal(isNegated).asInstanceOf[int])
+        gen.mkIntLit(s.pos, s.intVal(isNegated).asInstanceOf[Int])
       case LONGLIT =>
         gen.mkLongLit(s.pos, s.intVal(isNegated))
       case FLOATLIT =>
@@ -919,7 +919,7 @@ class Parser(unit: CompilationUnit) {
       var t = postfixExpr();
       if (s.token == EQUALS) {
         t match {
-          case Tree$Ident(_) | Tree$Select(_, _) | Tree$Apply(_, _) =>
+          case Tree.Ident(_) | Tree.Select(_, _) | Tree.Apply(_, _) =>
             t = make.Assign(s.skipToken(), t, expr());
           case _ =>
         }
@@ -1010,16 +1010,15 @@ class Parser(unit: CompilationUnit) {
   */
   def simpleExpr(): Tree = {
     var t: Tree = null;
+    //Console.println("simpleExpr, s.lastch="+s.lastch+" token = "+token2string(s.token));
     s.token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
            SYMBOLLIT | TRUE | FALSE | NULL =>
         t = literal(false, false);
+      case XMLSTART =>
+        t = xmlp.xLiteral;
       case IDENTIFIER | THIS | SUPER =>
-        t = if( s.xStartsXML ) {
-          xmlp.xLiteral;
-        } else {
-          stableRef(true, false);
-        }
+          t = stableRef(true, false);
       case LPAREN =>
         val pos = s.skipToken();
         if (s.token == RPAREN) {
@@ -1077,7 +1076,7 @@ class Parser(unit: CompilationUnit) {
           t = make.Select(s.skipToken(), t, ident());
         case LBRACKET =>
           t match {
-            case Tree$Ident(_) | Tree$Select(_, _) =>
+            case Tree.Ident(_) | Tree.Select(_, _) =>
               t = make.TypeApply(s.pos, t, typeArgs());
             case _ =>
               return t;
@@ -1119,8 +1118,8 @@ class Parser(unit: CompilationUnit) {
           stats.append(caseClause());
         } while (s.token == CASE);
         make.Visitor(pos,
-          stats.copyTo(new Array[Tree$CaseDef](stats.length()))
-          .asInstanceOf[Array[Tree$CaseDef]])
+          stats.copyTo(new Array[Tree.CaseDef](stats.length()))
+          .asInstanceOf[Array[Tree.CaseDef]])
       } else {
         block(pos);
       }
@@ -1130,10 +1129,10 @@ class Parser(unit: CompilationUnit) {
 
   /** Block ::= BlockStatSeq
   */
-  def block(pos: int): Tree = {
+  def block(pos: Int): Tree = {
     block(pos, blockStatSeq(new myTreeList()));
   }
-  private def block(pos: int, stats: Array[Tree]): Tree = {
+  private def block(pos: Int, stats: Array[Tree]): Tree = {
     if (stats.length == 0)
       gen.mkUnitLit(pos);
     else if (!stats(stats.length - 1).isTerm())
@@ -1273,11 +1272,11 @@ class Parser(unit: CompilationUnit) {
     val p = pattern3();
     if (s.token == AT && TreeInfo.isVarPattern(p)) {
       p match {
-        case Tree$Ident(name) =>
+        case Tree.Ident(name) =>
           if (name == Names.PATTERN_WILDCARD) return pattern3()
         case _ =>
       }
-      make.Bind(s.skipToken(), p.asInstanceOf[Tree$Ident].name, pattern3());
+      make.Bind(s.skipToken(), p.asInstanceOf[Tree.Ident].name, pattern3());
     } else {
       p
     }
@@ -1343,17 +1342,17 @@ class Parser(unit: CompilationUnit) {
   def simplePattern(): Tree = s.token match {
     case RPAREN | COMMA =>
       make.Sequence(s.pos, Tree.EMPTY_ARRAY) // ((nothing))
+    case XMLSTART =>
+      xmlp.xLiteralPattern
     case IDENTIFIER | THIS =>
       if (s.name == BAR) {
         make.Sequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
-      } else if( s.xStartsXML ) {
-        xmlp.xLiteralPattern
       } else {
         var t = stableId();
 	s.token match {
 	  case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
 	    t match {
-	      case Tree$Ident(name) if name == Names.MINUS =>
+	      case Tree.Ident(name) if name == Names.MINUS =>
 		return literal(true, true);
 	      case _ =>
 	    }
@@ -1378,7 +1377,7 @@ class Parser(unit: CompilationUnit) {
       s.nextToken();
       val ts = if (s.token == RPAREN) Tree.EMPTY_ARRAY else patterns();
       var t: Tree = null;
-      if (ts.length == 1 && !ts(0).isInstanceOf[Tree$Alternative])  {
+      if (ts.length == 1 && !ts(0).isInstanceOf[Tree.Alternative])  {
         t = ts(0);
       } else {
         t = pN.flattenSequence(make.Sequence(s.pos, ts));
@@ -1400,7 +1399,7 @@ class Parser(unit: CompilationUnit) {
   *              | override
   *              | abstract
   */
-  def modifiers(): int = {
+  def modifiers(): Int = {
 //    pushComment();
     var mods = 0;
     while (true) {
@@ -1433,7 +1432,7 @@ class Parser(unit: CompilationUnit) {
   *  LocalModifier  ::= final
   *                   | private
   */
-  def localClassModifiers(): int = {
+  def localClassModifiers(): Int = {
     var mods = 0;
     while (true) {
       var mod = 0;
@@ -1459,24 +1458,24 @@ class Parser(unit: CompilationUnit) {
 
   /** ParamClauses ::= {ParamClause}
   */
-  def paramClauses(): Array[Array[Tree$ValDef]] = {
+  def paramClauses(): Array[Array[Tree.ValDef]] = {
     val ts = new ArrayList();
     while (s.token == LPAREN)
       ts.add(paramClause(false));
-    ts.toArray(new Array[Array[Tree$ValDef]](ts.size()).asInstanceOf[Array[java.lang.Object]])
-      .asInstanceOf[Array[Array[Tree$ValDef]]]
+    ts.toArray(new Array[Array[Tree.ValDef]](ts.size()).asInstanceOf[Array[java.lang.Object]])
+      .asInstanceOf[Array[Array[Tree.ValDef]]]
   }
 
   /** ParamClauseOpt ::= [ParamClause]
   */
-  def paramClauseOpt(ofPrimaryConstructor: boolean): Array[Array[Tree$ValDef]] =
+  def paramClauseOpt(ofPrimaryConstructor: boolean): Array[Array[Tree.ValDef]] =
     if (s.token == LPAREN) NewArray.ValDefArray(paramClause(ofPrimaryConstructor))
     else Tree.ValDef_EMPTY_ARRAY_ARRAY;
 
   /** ParamClause ::= `(' [Param {`,' Param}] `)'
    *  ClassParamClause ::= `(' [ClassParam {`,' ClassParam}] `)'
    */
-  def paramClause(ofPrimaryConstructor: boolean): Array[Tree$ValDef] = {
+  def paramClause(ofPrimaryConstructor: boolean): Array[Tree.ValDef] = {
     val pos = accept(LPAREN);
     val params = new myTreeList();
     if (s.token != RPAREN) {
@@ -1487,15 +1486,15 @@ class Parser(unit: CompilationUnit) {
       }
     }
     accept(RPAREN);
-    params.copyTo(new Array[Tree$ValDef](params.length()))
-      .asInstanceOf[Array[Tree$ValDef]]
+    params.copyTo(new Array[Tree.ValDef](params.length()))
+      .asInstanceOf[Array[Tree.ValDef]]
   }
 
   /** Param ::= Id `:' ParamType
    *  ParamType ::= Type | Type `*' | `=>' Type
    *  ClassParam ::= [[modifiers] val] Param
    */
-  def param(ofPrimaryConstructor: boolean): Tree$ValDef = {
+  def param(ofPrimaryConstructor: boolean): Tree.ValDef = {
     val pos = s.pos;
     var mods = if (ofPrimaryConstructor) modifiers() | Modifiers.PARAM else Modifiers.PARAM;
     if (s.token == VAL) {
@@ -1535,7 +1534,7 @@ class Parser(unit: CompilationUnit) {
   /** TypeParamClauseOpt ::= [`[' TypeParam {`,' TypeParam} `]']
   *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
   */
-  def typeParamClauseOpt(variant: boolean): Array[Tree$AbsTypeDef] = {
+  def typeParamClauseOpt(variant: boolean): Array[Tree.AbsTypeDef] = {
     val params = new myTreeList();
     if (s.token == LBRACKET) {
       s.nextToken();
@@ -1546,8 +1545,8 @@ class Parser(unit: CompilationUnit) {
       }
       accept(RBRACKET);
     }
-    params.copyTo(new Array[Tree$AbsTypeDef](params.length()))
-      .asInstanceOf[Array[Tree$AbsTypeDef]];
+    params.copyTo(new Array[Tree.AbsTypeDef](params.length()))
+      .asInstanceOf[Array[Tree.AbsTypeDef]];
   }
 
   /** TypeParam   ::= [`+' | `-'] FunTypeParam
@@ -1569,7 +1568,7 @@ class Parser(unit: CompilationUnit) {
 
   /** TypeBounds ::= [`>:' Type] [`<:' Type | `<%' Type]
   */
-  def typeBounds(pos: int, _mods: int, name: Name): Tree = {
+  def typeBounds(pos: Int, _mods: Int, name: Name): Tree = {
     var mods = _mods;
     val lobound =
       if (s.token == SUPERTYPE) { s.nextToken(); typ() }
@@ -1613,7 +1612,7 @@ class Parser(unit: CompilationUnit) {
       t = make.Select(accept(DOT), t, ident());
       pos = accept(DOT);
     } else {
-      val i: Tree$Ident = make.Ident(s.pos, ident());
+      val i: Tree.Ident = make.Ident(s.pos, ident());
       pos = accept(DOT);
       if (s.token == THIS) {
         s.nextToken();
@@ -1691,7 +1690,7 @@ class Parser(unit: CompilationUnit) {
    *           | def FunDcl
    *           | type TypeDcl
    */
-  def defOrDcl(mods: int): Array[Tree] = {
+  def defOrDcl(mods: Int): Array[Tree] = {
     s.token match {
       case VAL =>
 	patDefOrDcl(mods);
@@ -1712,7 +1711,7 @@ class Parser(unit: CompilationUnit) {
   /**  ClsDef ::= ([case] class | trait) ClassDef {`,' ClassDef}
    *            | [case] object ObjectDef {`,' ObjectDef}
    */
-  def clsDef(mods: int): Array[Tree] = {
+  def clsDef(mods: Int): Array[Tree] = {
     s.token match {
       case TRAIT =>
         classDef(mods | Modifiers.TRAIT | Modifiers.ABSTRACT);
@@ -1733,7 +1732,7 @@ class Parser(unit: CompilationUnit) {
   /** PatDef ::= Pattern2 [`:' Type] `=' Expr
    *  ValDcl ::= Id `:' Type
    */
-  def patDefOrDcl(mods: int): Array[Tree] = {
+  def patDefOrDcl(mods: Int): Array[Tree] = {
 	var lhs = new myTreeList();
 	do {
 	  s.nextToken();
@@ -1747,7 +1746,7 @@ class Parser(unit: CompilationUnit) {
 	if (rhs == Tree.Empty) {
 	  while (i < ls.length) {
 		ls(i) match {
-		  case Tree$Ident(name) =>
+		  case Tree.Ident(name) =>
 		    ts.append(
 		      make.ValDef(ls(i).pos, mods | Modifiers.DEFERRED, name, tp.duplicate(), Tree.Empty));
 		  case t =>
@@ -1758,7 +1757,7 @@ class Parser(unit: CompilationUnit) {
 	} else {
 	  while (i < ls.length) {
 		ls(i) match {
-		  case Tree$Ident(name) =>
+		  case Tree.Ident(name) =>
 			ts.append(
 			  make.ValDef(ls(i).pos, mods, name, tp.duplicate(), rhs.duplicate()));
 		  case t =>
@@ -1775,7 +1774,7 @@ class Parser(unit: CompilationUnit) {
    *           | Id `:' Type `=' `_'
    *  VarDcl ::= Id `:' Type
    */
-  def varDefOrDcl(mods: int): Array[Tree] = {
+  def varDefOrDcl(mods: Int): Array[Tree] = {
     var newmods = mods | Modifiers.MUTABLE;
     val names = new ListBuffer[Pair[Int, Name]];
 	do {
@@ -1806,7 +1805,7 @@ class Parser(unit: CompilationUnit) {
    *           | this ParamClause `=' ConstrExpr
    *  FunDcl ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
    */
-  def funDefOrDcl(mods: int): Array[Tree] = {
+  def funDefOrDcl(mods: Int): Array[Tree] = {
     val ts = new myTreeList();
     s.nextToken();
     if (s.token == THIS) {
@@ -1821,7 +1820,7 @@ class Parser(unit: CompilationUnit) {
         	constrExpr()));
     } else {
 	  var newmods = mods;
-	  val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+	  val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree.AbsTypeDef], Array[Array[Tree.ValDef]]]];
 	  var loop = true;
 	  while (loop) {
 		lhs.append(Tuple4(s.pos, ident(),
@@ -1878,7 +1877,7 @@ class Parser(unit: CompilationUnit) {
   /** TypeDef ::= Id `=' Type
   *  TypeDcl ::= Id TypeBounds
   */
-  def typeDefOrDcl(mods: int): Tree = {
+  def typeDefOrDcl(mods: Int): Tree = {
     val pos = s.pos;
     val name = ident().toTypeName();
     s.token match {
@@ -1899,8 +1898,8 @@ class Parser(unit: CompilationUnit) {
 
   /** ClassDef ::= Id [TypeParamClause] [ClassParamClause] [`:' SimpleType] ClassTemplate
    */
-  def classDef(mods: int): Array[Tree] = {
-    val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+  def classDef(mods: Int): Array[Tree] = {
+    val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree.AbsTypeDef], Array[Array[Tree.ValDef]]]];
     do {
       s.nextToken();
       lhs.append(Tuple4(s.pos,
@@ -1916,14 +1915,14 @@ class Parser(unit: CompilationUnit) {
 		ts.append(
 			make.ClassDef(p, mods, n, tp, vp,
                           thistpe.duplicate(),
-                          template.duplicate().asInstanceOf[Tree$Template]));
+                          template.duplicate().asInstanceOf[Tree.Template]));
 	}
 	ts.toArray()
   }
 
   /** ObjectDef       ::= Id { , Id } [`:' SimpleType] ClassTemplate
    */
-  def objectDef(mods: int): Array[Tree] = {
+  def objectDef(mods: Int): Array[Tree] = {
     val lhs = new ListBuffer[Pair[Int, Name]];
 	do {
 	  s.nextToken();
@@ -1936,14 +1935,14 @@ class Parser(unit: CompilationUnit) {
       ts.append(
 	make.ModuleDef(
       	  p, mods, n, thistpe.duplicate(),
-      	  template.duplicate().asInstanceOf[Tree$Template]));
+      	  template.duplicate().asInstanceOf[Tree.Template]));
 	       }
     ts.toArray()
   }
 
   /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
    */
-  def classTemplate( isCaseClass:boolean ): Tree$Template = {
+  def classTemplate(isCaseClass: Boolean): Tree.Template = {
     val pos = s.pos;
     val parents = new myTreeList();
     if (s.token == EXTENDS) {
@@ -1974,10 +1973,10 @@ class Parser(unit: CompilationUnit) {
 
   /** Template  ::= Constr {`with' Constr} [TemplateBody]
   */
-  def template(): Tree$Template =
+  def template(): Tree.Template =
     template(new myTreeList());
 
-  def template(parents: myTreeList): Tree$Template = {
+  def template(parents: myTreeList): Tree.Template = {
     val pos = s.pos;
     parents.append(constr());
     while (s.token == WITH) {

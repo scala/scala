@@ -35,7 +35,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** add the given character to the documentation buffer
   */
-  protected def addCharToDoc(ch: char): unit =
+  protected def addCharToDoc(ch: Char): unit =
       if (docBuffer != null) docBuffer.append(ch);
 
   /** layout & character constants
@@ -60,23 +60,23 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   var errpos = -1;
 
   /** the input buffer:
-  var buf: Array[char] = unit.source.getContent();
-  var bp: int = -1;
+  var buf: Array[Char] = unit.source.getContent();
+  var bp: Int = -1;
   */
 
-  class SourceIterator(charArray:Array[char]) extends  Iterator[char] {
-    val buf:Array[char] = charArray;
-    var bp: int = -1;
+  class SourceIterator(charArray:Array[Char]) extends  Iterator[Char] {
+    val buf:Array[Char] = charArray;
+    var bp: Int = -1;
     /* inv: true if buf( bp ) is last of an odd number of ASCII '\' */
     var odd = false;
-    var unicode1:int = 0;
-    var unicode2:int = 0;
-    def hasMore( i:int, j:int ) = i + j < buf.length;
-    def hasMore( j:int ) = bp + j < buf.length;
+    var unicode1: Int = 0;
+    var unicode2: Int = 0;
+    def hasMore(i: Int, j: Int) = i + j < buf.length;
+    def hasMore(j: Int) = bp + j < buf.length;
     def hasNext = hasMore( 1 );
 
     /** gets next char, handles unicode transform */
-    def next:char = {
+    def next: Char = {
       bp = bp + 1;
       val ch = buf( bp );
       odd = ( ch == '\\' ) && !odd;
@@ -90,7 +90,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         ch
       }
     }
-    def raw:char = { bp = bp + 1; buf( bp ) }
+    def raw: Char = { bp = bp + 1; buf( bp ) }
 
     /** precondition: hasNext
     */
@@ -138,7 +138,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     import SourceRepresentation.digit2int;
 
     /** returns unicode and offset of next character */
-    def nextUnicode( p:int ):Pair[char,int] = {
+    def nextUnicode(p: Int): Pair[Char,Int] = {
       var j = p;
       while ( buf( j ) == 'u' ) { j = j + 1 };
       if ( j + 4 >= buf.length ) syntaxError("incomplete unicode escape");
@@ -150,12 +150,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         j = j + 1;
         i
       }
-      var code:int = munch;
+      var code:Int = munch;
       //Console.println("nextUnicode2, code ="+code);
       code = (code << 4) + munch;
       code = (code << 4) + munch;
       code = (code << 4) + munch;
-      Pair( code.asInstanceOf[char], j - p )
+      Pair( code.asInstanceOf[Char], j - p )
     }
 
   } /* class SourceIterator */
@@ -166,12 +166,16 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** the current character
   */
-  var ch: char = _;
+  var ch: Char = _;
+
+  /** the last character (needed by XMLSTART)
+  */
+  var lastch: Char = _;
 
   /** the line and column position of the current character
   */
-  var cline: int = 1;
-  var ccol: int = 0;
+  var cline: Int = 1;
+  var ccol: Int = 0;
 
   /** a buffer for character and string literals
   */
@@ -186,6 +190,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   nextToken();
 
   def nextch(): unit = {
+    lastch = ch;
     ch = srcIterator.next;
     ccol = ccol + 1;
     //System.out.print("[" + ch + "]");//DEBUG
@@ -193,7 +198,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** read next token and return last position
   */
-  def skipToken(): int = {
+  def skipToken(): Int = {
     val p = pos; nextToken(); p
   }
 
@@ -298,8 +303,21 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	      nextch();
 	      getIdentRest;
               return;
+
+            case '<' => // is XMLSTART?
+              var last = lastch;
+              nextch();
+              last.match {
+                case ' '|'{'|'('|'>' if xml.Parsing.isNameStart( ch ) =>
+                  token = XMLSTART;
+                case _ =>
+                  putChar('<');
+                  getOperatorRest;
+              }
+            return;
+
 	    case '~' | '!' | '@' | '#' | '%' |
-		 '^' | '*' | '+' | '-' | '<' |
+		 '^' | '*' | '+' | '-' | /* '<' | */
 		 '>' | '?' | ':' | '=' | '&' |
                  '|' | '\\' =>
               putChar( ch );
@@ -492,7 +510,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     }
   }
 
-  def isIdentStart( c:char ) = c.match {
+  def isIdentStart( c: Char ) = c.match {
     case 'A' | 'B' | 'C' | 'D' | 'E' |
     'F' | 'G' | 'H' | 'I' | 'J' |
     'K' | 'L' | 'M' | 'N' | 'O' |
@@ -511,7 +529,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     case _ => false;
   }
 
-  def isIdentPart( c:char ) = isIdentStart( c ) || c.match {
+  def isIdentPart( c: Char ) = isIdentStart( c ) || c.match {
     case '0' | '1' | '2' | '3' | '4' |
          '5' | '6' | '7' | '8' | '9' =>
            true
@@ -520,7 +538,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     case _ => false } ;
 
 
-  private def getIdentRest: unit = {
+  private def getIdentRest: Unit = {
     while (true) {
       ch match {
         case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -609,7 +627,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     }
   }
 
-  private def getStringLit(delimiter: char): unit = {
+  private def getStringLit(delimiter: Char): unit = {
     nextch();
     while (srcIterator.hasNext && ch != delimiter && ch != CR && ch != LF ) {
       getlitch();
@@ -637,7 +655,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** generate an error at the given position
   */
-  def syntaxError(pos: int, msg: String) = {
+  def syntaxError(pos: Int, msg: String) = {
     unit.error(pos, msg);
     token = ERROR;
     errpos = pos;
@@ -649,7 +667,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** append Unicode character to "lit" buffer
   */
-  private def putChar(c: char) = cbuf.append( c );
+  private def putChar(c: Char) = cbuf.append( c );
     /*
     if (litlen == lit.length) {
       val newlit = new Array[char](lit.length * 2);
@@ -673,7 +691,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   /** precondition: isUnicode() == true
   protected def getUnicodeChar():char = {
-    var i : int = 0;
+    var i : Int = 0;
     var k = bp + 2;
     while( k < bp + 6 ) {
       i = 16 * i +  SourceRepresentation.digit2int(buf( k ), 16);
@@ -700,8 +718,8 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         */
         nextch();
         if ('0' <= ch && ch <= '7') {
-          val leadch: char = ch;
-          var oct: int = SourceRepresentation.digit2int(ch, 8);
+          val leadch: Char = ch;
+          var oct: Int = SourceRepresentation.digit2int(ch, 8);
           nextch();
           if ('0' <= ch && ch <= '7') {
             oct = oct * 8 + SourceRepresentation.digit2int(ch, 8);
@@ -711,7 +729,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
               nextch();
             }
           }
-          putChar(oct.asInstanceOf[char]);
+          putChar(oct.asInstanceOf[Char]);
         } else if (ch != SU) {
           ch match {
             case 'b'  => putChar('\b')
@@ -831,12 +849,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
 
   /** see Java spec 3.10.2 */
-  def exponentPart(c1:char,c2:char) =
+  def exponentPart(c1: Char,c2: Char) =
     (c1 == 'e' || c1 == 'E') &&
   ((c2 >= '0' && c2 <= '9') || (c2 == '+' || c2 == '-')) ;
 
   /** see Java spec 3.10.2 */
-  def floatTypeSuffix(c1:char) =
+  def floatTypeSuffix(c1: Char) =
     (c1 == 'f' || c1 == 'F' ||
      c1 == 'd' || c1 == 'D');
 
@@ -926,7 +944,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 	  srcIterator.raw; ccol = 0; cline = cline + 1;
 	}
       case _ =>
-        //Console.print(ch.asInstanceOf[char]); // DEBUG
+        //Console.print(ch.asInstanceOf[Char]); // DEBUG
     }
     pos = Position.encode(cline, ccol);
     //Console.print(ch);
