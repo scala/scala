@@ -1,4 +1,13 @@
-package scala.xml.parsing ;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
+package scala.xml.parsing;
 
 import scala.collection.mutable;
 import scala.collection.immutable.ListMap;
@@ -25,7 +34,7 @@ abstract class MarkupParser[MarkupType, AVType] {
   protected val cbuf = new StringBuffer();
 
   /** append Unicode character to name buffer*/
-  protected def putChar(c: char) = cbuf.append( c );
+  protected def putChar(c: Char) = cbuf.append(c);
 
 
   var xEmbeddedBlock = false;
@@ -39,12 +48,12 @@ abstract class MarkupParser[MarkupType, AVType] {
   val enableEmbeddedExpressions: Boolean;
 
   /** report a syntax error */
-  def reportSyntaxError(str:String): Unit;
+  def reportSyntaxError(str: String): Unit;
 
   /** munch expected XML token, report syntax error for unexpected
   */
   def xToken(that: Char): Unit = {
-    if( ch == that )
+    if (ch == that)
       nextch;
     else
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'");
@@ -55,7 +64,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    */
   def xCheckEmbeddedBlock:Boolean = {
     xEmbeddedBlock =
-      enableEmbeddedExpressions && ( ch == '{' ) && { nextch;( ch != '{' ) };
+      enableEmbeddedExpressions && (ch == '{') && { nextch; ch != '{' };
     return xEmbeddedBlock;
   }
 
@@ -67,78 +76,79 @@ abstract class MarkupParser[MarkupType, AVType] {
   */
   def xAttributes = {
     var aMap = new mutable.HashMap[String, AttribValue[AVType]];
-    while( xml.Parsing.isNameStart( ch )) {
+    while (xml.Parsing.isNameStart(ch)) {
       val key = xName;
       xEQ;
       val delim = ch;
       val pos1 = pos;
-      val value:AttribValue[AVType] = ch match {
+      val value: AttribValue[AVType] = ch match {
         case '"' | '\'' =>
           nextch;
-          val tmp = xAttributeValue( delim );
+          val tmp = xAttributeValue(delim);
           nextch;
-          handle.attributeCDataValue( pos1, tmp );
+          handle.attributeCDataValue(pos1, tmp);
         case '{' if enableEmbeddedExpressions =>
           nextch;
           handle.attributeEmbedded(pos1, xEmbeddedExpr);
         case _ =>
-	  reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
+          reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
           handle.attributeCDataValue( pos1, "<syntax-error>" )
       };
       // well-formedness constraint: unique attribute names
-      if( aMap.contains( key ))
-        reportSyntaxError( "attribute "+key+" may only be defined once" );
+      if (aMap.contains(key))
+        reportSyntaxError( "attribute " + key + " may only be defined once" );
       aMap.update( key, value );
-      if(( ch != '/' )&&( ch != '>' ))
+      if ((ch != '/') && (ch != '>'))
         xSpace;
     };
    aMap
   }
 
-  /** attribute value, terminated by either ' or ". value may not contain <.
+  /** attribute value, terminated by either ' or ". value may not contain &lt;.
    *  @param endch either ' or "
    */
-  def xAttributeValue( endch:char ):String = {
-    while ( ch != endch ) {
-      putChar( ch );
-      nextch;
-    };
+  def xAttributeValue(endch: Char): String = {
+    while (ch != endch) {
+      putChar(ch);
+      nextch
+    }
     val str = cbuf.toString();
     cbuf.setLength( 0 );
     // @todo: normalize attribute value
     // well-formedness constraint
-    if( str.indexOf('<') != -1 ) {
+    if (str.indexOf('<') != -1) {
       reportSyntaxError( "'<' not allowed in attrib value" ); ""
-    } else {
-      str
     }
+    else
+      str
   }
 
   /** parse a start or empty tag.
-   *  [40] STag         ::= '<' Name { S Attribute } [S]
-   *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
+   *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
+   *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  def xTag: Pair[String, mutable.Map[String,AttribValue[AVType]]] = {
+  def xTag: Pair[String, mutable.Map[String, AttribValue[AVType]]] = {
     val elemName = xName;
     xSpaceOpt;
-    val aMap = if(xml.Parsing.isNameStart( ch )) {
+    val aMap = if (xml.Parsing.isNameStart(ch)) {
       xAttributes;
     } else {
-      new mutable.HashMap[String,AttribValue[AVType]]();
+      new mutable.HashMap[String, AttribValue[AVType]]();
     }
-    Tuple2( elemName, aMap );
+    Tuple2(elemName, aMap)
   }
 
-  /* [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'                 */
+  /** [42]  '&lt;' xmlEndTag ::=  '&lt;' '/' Name S? '&gt;'
+   */
   def xEndTag(n: String) = {
     xToken('/');
     val m = xName;
-    if(n != m) reportSyntaxError( "expected closing tag of " + n/* +", not "+m*/);
+    if(n != m) reportSyntaxError("expected closing tag of " + n/* +", not "+m*/);
     xSpaceOpt;
     xToken('>')
   }
 
-  /** '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
+  /** '&lt;! CharData ::= [CDATA[ ( {char} - {char}"]]&gt;"{char} ) ']]&gt;'
    *
    * see [15]
    */
@@ -154,9 +164,9 @@ abstract class MarkupParser[MarkupType, AVType] {
     val sb:StringBuffer = new StringBuffer();
     while (true) {
       if( ch==']'  &&
-         { sb.append( ch ); nextch; ch == ']' } &&
-         { sb.append( ch ); nextch; ch == '>' } ) {
-        sb.setLength( sb.length() - 2 );
+         { sb.append(ch); nextch; ch == ']' } &&
+         { sb.append(ch); nextch; ch == '>' } ) {
+        sb.setLength(sb.length() - 2);
         nextch;
         return handle.charData( pos1, sb.toString() );
       } else sb.append( ch );
@@ -165,13 +175,13 @@ abstract class MarkupParser[MarkupType, AVType] {
     throw FatalError("this cannot happen");
   };
 
-  /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"
-   *            | "&#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
+  /** CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
+   *            | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
    *
    * see [66]
    */
-  def xCharRef:String = {
-    val hex  = ( ch == 'x' ) && { nextch; true };
+  def xCharRef: String = {
+    val hex  = (ch == 'x') && { nextch; true };
     val base = if (hex) 16 else 10;
     var i = 0;
     while( ch != ';' ) {
@@ -184,52 +194,51 @@ abstract class MarkupParser[MarkupType, AVType] {
             reportSyntaxError("hex char not allowed in decimal char ref\n"
                          +"Did you mean to write &#x ?");
           else
-            i = i * base + Character.digit( ch, base );
+            i = i * base + Character.digit(ch, base);
         case _ =>
-          reportSyntaxError("character '"+ch+" not allowed in char ref\n");
+          reportSyntaxError("character '" + ch + " not allowed in char ref\n");
       }
       nextch;
     }
-    new String( Predef.Array[char]( i.asInstanceOf[char] ))
+    new String(Predef.Array[char](i.asInstanceOf[char]))
   }
 
 
-  /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
+  /** Comment ::= '&lt;!--' ((Char - '-') | ('-' (Char - '-')))* '--&gt;'
    *
    * see [15]
    */
   def xComment: MarkupType = {
-    val sb:StringBuffer = new StringBuffer();
+    val sb: StringBuffer = new StringBuffer();
     xToken('-');
     xToken('-');
     while (true) {
-      if( ch=='-'  && { sb.append( ch ); nextch; ch == '-' } ) {
-        sb.setLength( sb.length() - 1 );
+      if (ch == '-'  && { sb.append(ch); nextch; ch == '-' }) {
+        sb.setLength(sb.length() - 1);
         nextch;
         xToken('>');
-        return handle.comment( pos, sb.toString() );
-      } else sb.append( ch );
+        return handle.comment(pos, sb.toString());
+      } else sb.append(ch);
       nextch;
     }
     throw FatalError("this cannot happen");
   };
 
-  def appendText(pos: int, ts:mutable.Buffer[MarkupType], txt:String):Unit = {
-    if( !preserveWS )
-      for( val t <- TextBuffer.fromString( txt ).toText ) {
-        ts.append( handle.text( pos, t.text ) );
+  def appendText(pos: Int, ts: mutable.Buffer[MarkupType], txt: String): Unit = {
+    if (!preserveWS)
+      for (val t <- TextBuffer.fromString(txt).toText) {
+        ts.append(handle.text(pos, t.text));
       }
     else
-      ts.append( handle.text( pos, txt ));
+      ts.append(handle.text(pos, txt));
   }
-
 
   def content: mutable.Buffer[MarkupType] = {
     var ts = new mutable.ArrayBuffer[MarkupType];
     var exit = false;
-    while( !exit ) {
-      if( xEmbeddedBlock ) {
-        ts.append( xEmbeddedExpr );
+    while (!exit) {
+      if (xEmbeddedBlock) {
+        ts.append(xEmbeddedExpr);
       } else {
         tmppos = pos;
         ch match {
@@ -240,23 +249,24 @@ abstract class MarkupParser[MarkupType, AVType] {
                 exit = true;                    // end tag
               case '!' =>
                 nextch;
-                if( '[' == ch )                 // CDATA
-                  ts.append( xCharData );
+                if ('[' == ch)                 // CDATA
+                  ts.append(xCharData);
                 else                            // comment
-                  ts.append( xComment );
+                  ts.append(xComment);
               case '?' =>                       // PI
                 nextch;
-                ts.append( xProcInstr );
+                ts.append(xProcInstr);
               case _   =>
-                ts.append( element );     // child
+                ts.append(element);     // child
             }
 
           case '{' =>
-            if( xCheckEmbeddedBlock ) {
+            if (xCheckEmbeddedBlock) {
               ts.append(xEmbeddedExpr);
-            } else {
+            }
+            else {
               val str = new StringBuffer("{");
-              str.append( xText );
+              str.append(xText);
               appendText(tmppos, ts, str.toString());
             }
           // postcond: xEmbeddedBlock == false!
@@ -282,21 +292,22 @@ abstract class MarkupParser[MarkupType, AVType] {
     ts
   } /* end content */
 
-  /** '<' element ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
-   *               | xmlTag1 '/' '>'
+  /** '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
+   *               | xmlTag1 '/' '&gt;'
    */
   def element: MarkupType = {
     var pos1 = pos;
     val Tuple2(qname, attrMap) = xTag;
-    if(ch == '/') { // empty element
+    if (ch == '/') { // empty element
       xToken('/');
       xToken('>');
-      handle.element( pos1, qname, attrMap, new mutable.ListBuffer[MarkupType] );
-    } else { // handle content
+      handle.element(pos1, qname, attrMap, new mutable.ListBuffer[MarkupType]);
+    }
+    else { // handle content
       xToken('>');
       val ts = content;
-      xEndTag( qname );
-      handle.element( pos1, qname, attrMap, ts );
+      xEndTag(qname);
+      handle.element(pos1, qname, attrMap, ts)
     }
   }
 
@@ -307,17 +318,18 @@ abstract class MarkupParser[MarkupType, AVType] {
    *  see  [5] of XML 1.0 specification
    */
   def xName: String = {
-    if( xml.Parsing.isNameStart( ch ) ) {
+    if (xml.Parsing.isNameStart(ch)) {
       do {
-        putChar( ch );
+        putChar(ch);
         nextch;
-      } while( xml.Parsing.isNameChar( ch ) );
+      } while (xml.Parsing.isNameChar(ch));
       val n = cbuf.toString().intern();
-      cbuf.setLength( 0 );
+      cbuf.setLength(0);
       n
-    } else {
-      reportSyntaxError( "name expected" );
-      new String();
+    }
+    else {
+      reportSyntaxError("name expected");
+      new String()
     }
   }
 
@@ -326,18 +338,19 @@ abstract class MarkupParser[MarkupType, AVType] {
   def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
 
   /** skip optional space S? */
-  def xSpaceOpt = { while( xml.Parsing.isSpace( ch ) ) { nextch; }}
+  def xSpaceOpt = while (xml.Parsing.isSpace(ch)) { nextch; };
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
   def xSpace = {
-    if( xml.Parsing.isSpace( ch ) ) {
+    if (xml.Parsing.isSpace(ch)) {
       nextch; xSpaceOpt
-    } else {
+    }
+    else {
       reportSyntaxError("whitespace expected");
     }
   }
 
-  /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
+  /** '&lt;?' ProcInstr ::= Name [S ({Char} - ({Char}'&gt;?' {Char})]'?&gt;'
    *
    * see [15]
    */
@@ -346,14 +359,14 @@ abstract class MarkupParser[MarkupType, AVType] {
     val n = xName;
     if( xml.Parsing.isSpace( ch ) ) {
       xSpace;
-      while( true ) {
-        if( ch=='?' && { sb.append( ch ); nextch; ch == '>' } ) {
-          sb.setLength( sb.length() - 1 );
+      while (true) {
+        if (ch=='?' && { sb.append( ch ); nextch; ch == '>' }) {
+          sb.setLength(sb.length() - 1);
           nextch;
           return handle.procInstr(tmppos, n.toString(), sb.toString());
         } else
-          sb.append( ch );
-        nextch;
+          sb.append(ch);
+        nextch
       }
     };
     xToken('?');
@@ -362,21 +375,22 @@ abstract class MarkupParser[MarkupType, AVType] {
   }
 
   /** parse character data.
-  *   precondition: xEmbeddedBlock == false (we are not in a scala block)
-  */
+   *   precondition: xEmbeddedBlock == false (we are not in a scala block)
+   */
   def xText: String = {
-    if( xEmbeddedBlock ) throw FatalError("internal error: encountered embedded block"); // assert
+    if (xEmbeddedBlock)
+      throw FatalError("internal error: encountered embedded block"); // assert
 
-    if( xCheckEmbeddedBlock )
+    if (xCheckEmbeddedBlock)
       return ""
     else {
       var exit = false;
-      while( !exit ) {
-        putChar( ch );
-        exit = { nextch; xCheckEmbeddedBlock }||( ch == '<' ) || ( ch == '&' );
+      while (!exit) {
+        putChar(ch);
+        exit = { nextch; xCheckEmbeddedBlock } || (ch == '<') || (ch == '&');
       }
       val str = cbuf.toString();
-      cbuf.setLength( 0 );
+      cbuf.setLength(0);
       str
     }
   }
