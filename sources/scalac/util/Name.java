@@ -42,15 +42,6 @@ public final class Name {
         return fromString(SourceRepresentation.ascii2string(cs, offset, len));
     }
 
-/** create a name from the bytes in cs[offset..offset+len-1];
- *  assume that characters are in source format
- */
-    public static Name fromSource(byte cs[], int offset, int len) {
-        byte[]  ascii = new byte[len * 2];
-        int alen = SourceRepresentation.source2ascii(cs, offset, len, ascii);
-        return fromAscii(ascii, 0, alen);
-    }
-
 /** create a name from the characters in string s
  */
     public static Name fromString(String s) {

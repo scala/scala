@@ -243,7 +243,7 @@ class Scanner(_unit: Unit) extends TokenData {
 		     'u' | 'v' | 'w' | 'x' | 'y' |
 		     'z' =>
 		  index = bp;
-		  putch(ch);
+		  putAscii(ch);
 		  nextch();
 		  if (ch != '\'') {
 		    getIdentRest(index);
@@ -441,7 +441,7 @@ class Scanner(_unit: Unit) extends TokenData {
       getlitch();
     if (ch == delimiter) {
       token = STRINGLIT;
-      name = Name.fromSource(lit, 0, litlen);
+      name = Name.fromAscii(lit, 0, litlen);
       nextch();
     } else {
       syntaxError("unclosed character literal");
@@ -465,9 +465,9 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   def syntaxError(msg: String): unit = syntaxError(pos, msg);
 
-  /** append characteter to "lit" buffer
+  /** append ascii character to "lit" buffer
   */
-  protected def putch(c: byte) = {
+  private def putAscii(c: byte) = {
     if (litlen == lit.length) {
       val newlit = new Array[byte](lit.length * 2);
       System.arraycopy(lit, 0, newlit, 0, lit.length);
@@ -475,6 +475,20 @@ class Scanner(_unit: Unit) extends TokenData {
     }
     lit(litlen) = c;
     litlen = litlen + 1;
+  }
+  /** append Unicode character to "lit" buffer
+  */
+  private def putChar(c: char) = {
+    if (c <= 0x7F) {
+      putAscii(c.asInstanceOf[byte]);
+    } else if (c <= 0x3FF) {
+      putAscii((0xC0 | (c >> 6)).asInstanceOf[byte]);
+      putAscii((0x80 | (c & 0x3F)).asInstanceOf[byte]);
+    } else {
+      putAscii((0xE0 | (c >> 12)).asInstanceOf[byte]);
+      putAscii((0x80 | ((c >> 6) & 0x3F)).asInstanceOf[byte]);
+      putAscii((0x80 | (c & 0x3F)).asInstanceOf[byte]);
+    }
   }
 
   /** return true iff next 6 characters are a valid unicode sequence:
@@ -493,12 +507,14 @@ class Scanner(_unit: Unit) extends TokenData {
   protected def getlitch() =
     if (ch == '\\') {
       if (isUnicode()) {
-        putch(ch); nextch();
-        putch(ch); nextch();
-        putch(ch); nextch();
-        putch(ch); nextch();
-        putch(ch); nextch();
-        putch(ch); nextch();
+        nextch();
+        nextch();
+        var code: int = 0;
+        code = (code << 4) + SourceRepresentation.digit2int(ch, 16); nextch();
+        code = (code << 4) + SourceRepresentation.digit2int(ch, 16); nextch();
+        code = (code << 4) + SourceRepresentation.digit2int(ch, 16); nextch();
+        code = (code << 4) + SourceRepresentation.digit2int(ch, 16); nextch();
+        putChar(code.asInstanceOf[char]);
       } else {
         nextch();
         if ('0' <= ch && ch <= '7') {
@@ -513,21 +529,26 @@ class Scanner(_unit: Unit) extends TokenData {
               nextch();
             }
           }
-          putch(oct.asInstanceOf[byte]);
+          putChar(oct.asInstanceOf[char]);
         } else if (ch != SU) {
           ch match {
-            case 'b' | 't' | 'n' | 'f' | 'r' | '\"' /*"*/ | '\'' | '\\' =>
-              putch('\\'.asInstanceOf[byte]);
-              putch(ch);
-            case _ =>
+            case 'b'  => putChar('\b')
+            case 't'  => putChar('\t')
+            case 'n'  => putChar('\n')
+            case 'f'  => putChar('\f')
+            case 'r'  => putChar('\r')
+            case '\"' => putChar('\"')
+            case '\'' => putChar('\'')
+            case '\\' => putChar('\\')
+            case _    =>
               syntaxError(Position.encode(cline, ccol) - 1, "invalid escape character");
-              putch(ch);
+              putAscii(ch);
           }
           nextch();
         }
       }
     } else if (ch != SU) {
-      putch(ch);
+      putAscii(ch);
       nextch();
     }
 
@@ -567,10 +588,8 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   def intVal(negated: boolean): long = {
     if (token == CHARLIT && !negated) {
-      val ascii = new Array[byte](litlen * 2);
-      val alen = SourceRepresentation.source2ascii(lit, 0, litlen, ascii);
-      if (alen > 0)
-	SourceRepresentation.ascii2string(ascii, 0, alen).charAt(0)
+      if (litlen > 0)
+	SourceRepresentation.ascii2string(lit, 0, litlen).charAt(0)
       else
 	0
     } else {
