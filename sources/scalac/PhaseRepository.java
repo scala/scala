@@ -12,9 +12,7 @@ import scalac.ast.parser.ParserPhase;
 import scalac.typechecker.AnalyzerPhase;
 import scalac.typechecker.RefCheckPhase;
 import scalac.transformer.UnCurryPhase;
-/*
 import scalac.transformer.TransMatchPhase;
-*/
 import scalac.transformer.LambdaLiftPhase;
 import scalac.transformer.ExplicitOuterClassesPhase;
 import scalac.transformer.AddAccessorsPhase;
@@ -47,9 +45,9 @@ public class PhaseRepository {
             REFCHECK = new RefCheckPhase(),
             UNCURRY = new UnCurryPhase(),
 	    /*
-            OPTIMIZE = new OptimizePhase(),
+            OPTIMIZE = new OptimizePhase(), */
             TRANSMATCH = new TransMatchPhase(),
-	    */
+
             LAMBDALIFT = new LambdaLiftPhase(),
             EXPLICITOUTER = new ExplicitOuterClassesPhase(),
             ADDACCESSORS = new AddAccessorsPhase(),
@@ -75,9 +73,8 @@ public class PhaseRepository {
     public final RefCheckPhase REFCHECK;
     public final UnCurryPhase UNCURRY;
     /*
-    public final OptimizePhase OPTIMIZE;
+    public final OptimizePhase OPTIMIZE; */
     public final TransMatchPhase TRANSMATCH;
-    */
     public final LambdaLiftPhase LAMBDALIFT;
     public final ExplicitOuterClassesPhase EXPLICITOUTER;
     public final AddAccessorsPhase ADDACCESSORS;

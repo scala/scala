@@ -45,15 +45,14 @@ public class TransMatch extends OwnerTransformer {
     }
 
     protected Tree transform(Tree root, CaseDef[] cases, Type restpe) {
-        /* PatternMatcher pm = new PatternMatcher(unit, infer, currentOwner, root, restpe);
+        PatternMatcher pm = new PatternMatcher(unit, infer, currentOwner, root, restpe);
         for (int i = 0; i < cases.length; i++)
             pm.enter(cases[i]);
         if (global.log()) {
             System.out.println("[log " + descr.name() + "] internal pattern matching structure");
             pm.print();
         }
-        return pm.toTree(); */
-        return null;
+        return pm.toTree();
     }
 
     public Tree transform(Tree tree) {

@@ -83,6 +83,10 @@ transformer/LambdaLiftPhase.java
 transformer/OwnerTransformer.java
 transformer/UnCurry.java
 transformer/UnCurryPhase.java
+transformer/PatternMatcher.java
+transformer/PatternNode.java
+transformer/TransMatch.java
+transformer/TransMatchPhase.java
 
 typechecker/Analyzer.java
 typechecker/AnalyzerPhase.java

@@ -801,7 +801,7 @@ public class PatternMatcher {
                 FAIL_N).setType(typeOf(failMethod)).setSymbol(failMethod),
                 new Tree[]{gen.mkType(pos, type)})
               .setType(((Type.PolyType) typeOf(failMethod)).result.subst(
-                    failMethod.typeParams(),
+                    typeOf(failMethod).typeParams(),
                     new Type[]{type})),
             new Tree[]{
                 make.Literal(pos, unit.toString()).setType(defs.STRING_TYPE),

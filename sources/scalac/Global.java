@@ -177,9 +177,9 @@ public class  Global {
 	/*
         if (optimize) {
             phases.add(PHASE.OPTIMIZE);
-        }
+        } */
         phases.add(PHASE.TRANSMATCH);
-	*/
+
         //phases.add(PHASE.LAMBDALIFT);
         phases.add(PHASE.EXPLICITOUTER);
         phases.add(PHASE.ADDACCESSORS);
