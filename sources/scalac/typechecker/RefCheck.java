@@ -903,12 +903,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	    //System.out.println("name: "+name);
 	    Scope.Entry e = scopes[level].lookupEntry(name);
-<<<<<<< RefCheck.java
-            //System.out.println("sym: "+sym);
-	    if (sym == null) unit.error(tree.pos, "sym is null");
-=======
 	    //System.out.println("sym: "+sym);
->>>>>>> 1.27
 	    if (sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;
