@@ -1,6 +1,6 @@
 package scala.concurrent;
 
-module ops {
+object ops {
 
   def spawn(def p: Unit) = {
     val t = new Thread { override def run() = p; }
