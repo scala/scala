@@ -98,10 +98,10 @@ public abstract class AbstractFileExpander {
 
     /**
      * Returns the base name of the source file. The default
-     * implementation returns the target base name.
+     * implementation returns this instance's associated name.
      */
     public String getSourceBaseName() {
-        return getTargetBaseName();
+        return getName();
     }
 
     /**
