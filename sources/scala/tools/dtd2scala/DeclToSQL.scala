@@ -5,7 +5,7 @@ import scala.tools.dtd2scala.regexp._ ;
 import java.io.PrintWriter ;
 import scala.collection.mutable.{Set,Map,HashMap,HashSet} ;
 
-class DeclToSQL(fOut:PrintWriter,mName:String,elemMap:Map[String,ElemDecl ] ) {
+class DeclToSQL(fOut:PrintWriter,mName:String,elemMap:Map[String,MyElemDecl ] ) {
 
   abstract class Vertex {
     var marked = false;

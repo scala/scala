@@ -10,6 +10,7 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
+import scala.xml.dtd._;
 import scala.xml.nobinding.XML ;
 
 /** transforms a set of DTD declaraion to a scala source file.
@@ -17,7 +18,7 @@ import scala.xml.nobinding.XML ;
  */
 class DeclToScala(fOut:PrintWriter,
 		  moduleName:String,
-		  elemMap:Map[ String, ElemDecl ] ) {
+		  elemMap:Map[ String, MyElemDecl ] ) {
 
   abstract class objectTemplate {
     val objectName : String = "myXML"; /* DEFAULT MODULE NAME */
@@ -71,17 +72,17 @@ class DeclToScala(fOut:PrintWriter,
                 lookup -= "attributeName";
               }
               case "ccstring" => {
-                fOut.print( cookedCap( lookup( n("ref").get ) ));
+                fOut.print( cookedCap( lookup( n.attribute("ref") ) ));
               }
               case "cstring" => {
-                fOut.print( cooked( lookup( n("ref").get ) ));
+                fOut.print( cooked( lookup( n.attribute("ref") ) ));
               }
               case "string" => {
-                fOut.print( lookup( n("ref").get ) );
+                fOut.print( lookup( n.attribute("ref") ) );
               }
               case "qstring" =>  {
                 fOut.print("\"");
-                fOut.print( lookup( n("ref").get ) );
+                fOut.print( lookup( n.attribute("ref") ) );
                 fOut.print("\"");
               }
               case _ => error("what shall I do with a \""+n.label+"\" node ?")

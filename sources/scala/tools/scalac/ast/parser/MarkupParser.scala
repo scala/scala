@@ -25,11 +25,14 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
   val  _ArrayBuffer = Name.fromString("ArrayBuffer");
-  val  _collection = Name.fromString("collection");
+  val  _TreeMap = Name.fromString("TreeMap");
   val  _Elem = Name.fromString("Elem");
   val  _Seq = Name.fromString("Seq");
+  val  _String = Name.fromString("String");
+  val  _immutable = Name.fromString("immutable");
   val  _mutable = Name.fromString("mutable");
   val  _append = Name.fromString("append");
+  val  _collection = Name.fromString("collection");
   val  _xml = Name.fromString("xml");
   val  _Node = Name.fromString("Node");
   val  _Text = Name.fromString("Text");
@@ -50,6 +53,9 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   private def _scala_Seq( pos: int ) =
     p.convertToTypeId( _scala( pos, _Seq ));
 
+  private def _string( pos: int ) =
+    p.convertToTypeId( make.Ident( pos, _String ) );
+
   private def _scala_xml( pos: int, name: Name ) =
     make.Select( pos, _scala( pos, _xml ), name );
 
@@ -68,6 +74,9 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   private def _scala_collection_mutable( pos: int, name: Name ) =
     make.Select(pos, _scala_collection(pos, _mutable ), name);
 
+  private def _scala_collection_immutable( pos: int, name: Name ) =
+    make.Select(pos, _scala_collection(pos, _immutable ), name);
+
   private def _scala_collection_mutable_ArrayBuffer( pos: int ) =
     make.Apply( pos,
                make.AppliedType(pos,
@@ -78,6 +87,22 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
                                     _scala_xml_Node( pos ) ))
                               ),
                Tree.EMPTY_ARRAY );
+
+  private def _scala_collection_immutable_TreeMap( pos: int ) =
+    make.Apply( pos,
+               make.AppliedType(pos,
+                                p.convertToConstr(
+                                  _scala_collection_immutable(pos, _TreeMap )),
+                                Predef.Array[Tree](
+                                  _string( pos ),
+                                  _string( pos )
+                                )
+                              ),
+               Tree.EMPTY_ARRAY );
+
+  private def _emptyMap( pos:int ) = {
+    make.New( pos,_scala_collection_immutable_TreeMap( pos: int ));
+  }
 
   private def _scala_Tuple2( pos:int ) =
     _scala( pos, Names.Tuple2 );
@@ -101,15 +126,16 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     if( isPattern ) {
       val ts = new myTreeList();
       ts.append( t );
+      ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) );
       ts.append( convertToText( args ) );
       make.Apply(pos,
                  convertToTypeId( _scala_xml_Elem( pos ) ),
                  ts.toArray())
     } else {
       val constrArgs = if( 0 == args.length ) {
-        Predef.Array[Tree]( t )
+        Predef.Array[Tree]( t, _emptyMap( pos ) )
       } else {
-        Predef.Array[Tree]( t, make.Typed(
+        Predef.Array[Tree]( t, _emptyMap( pos ), make.Typed(
           pos, makeXMLseq(pos, args), make.Ident(pos, TypeNames.WILDCARD_STAR)))
       };
       make.Apply( pos, _scala_xml_Elem( pos ), constrArgs )
