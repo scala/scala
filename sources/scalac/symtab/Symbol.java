@@ -282,6 +282,14 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return owner.isPackage() && pos == Position.NOPOS;
     }
 
+    /** Is this symbol an overloaded symbol? */
+    public boolean isOverloaded() {
+        switch (info()) {
+        case OverloadedType(_,_): return true;
+        default                 : return false;
+        }
+    }
+
 // Symbol names ----------------------------------------------------------------
 
     /** Get the fully qualified name of this Symbol
@@ -381,6 +389,12 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Scope members() {
 	return info().members();
+    }
+
+    /** Lookup symbol with given name; return Symbol.NONE if not found.
+     */
+    public Symbol lookup(Name name) {
+        return info().lookup(name);
     }
 
 // Symbol types --------------------------------------------------------------
