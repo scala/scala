@@ -315,7 +315,7 @@ class AddInterfaces extends Transformer {
         Tree[][] pArgs = new Tree[parents.length][];
         for (int i = 0; i < parents.length; ++i) {
             switch(parents[i]) {
-            case Apply(_, Tree[] args): pArgs[i] = args; break;
+            case Apply(_, Tree[] args): pArgs[i] = transform(args); break;
             default: throw Debug.abort("unexpected parent constr. ", parents[i]);
             }
         }
