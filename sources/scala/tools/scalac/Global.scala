@@ -13,6 +13,7 @@ import scalac.backend.msil.GenMSIL;
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
 import scala.tools.scalac.backend.GenJVMFromICode;
+import scala.tools.util.Timer;
 
 package scala.tools.scalac {
 
@@ -23,8 +24,10 @@ import typechecker.Infer;
 /** The global environment of a compiler run
  *
  */
-class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(args, interpret) {
+class Global(args: CompilerCommand, timer: Timer, interpret: Boolean) extends scalac_Global(args, timer, interpret) {
 
+  def this(args: CompilerCommand, interpret: Boolean) =
+    this(args, scalac_Global.getTimer(args.reporter()), interpret);
   def this(args: CompilerCommand) = this(args, false);
 
   override def newInfer(): Infer =

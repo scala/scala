@@ -91,7 +91,6 @@ public class InterpreterShell {
     public void main(String[] files, String script, String main, String[]args){
         if (interactive && !nologo) showBanner();
         if (files.length > 0) load(lfiles = files);
-        global.stop("total"); // !!! remove ?
         if (global.reporter.errors() == 0 && script != null) eval(script);
         if (global.reporter.errors() == 0 && main != null) call(main, args);
         if (interactive)

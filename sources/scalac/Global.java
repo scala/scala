@@ -28,6 +28,9 @@ import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 import scala.tools.util.SourceReader;
 import scala.tools.util.Reporter;
+import scala.tools.util.Timer;
+import scala.tools.util.DummyTimer;
+import scala.tools.util.ReporterTimer;
 
 import scalac.ast.*;
 import scalac.ast.parser.*;
@@ -79,9 +82,9 @@ public abstract class Global {
      */
     public final Reporter reporter;
 
-    /** a stack for maintaining timestamps
+    /** the timer
      */
-    private final Stack startTimes = new Stack();
+    public final Timer timer;
 
     /** the source file charset
      */
@@ -186,13 +189,10 @@ public abstract class Global {
 	PRINTER_SWING = "swing",
     };
 
-    /**
-     * Creates an instance variable.
-     *
-     * @param args
-     */
-    public Global(CompilerCommand args) {
-        this(args, false);
+    public static Timer getTimer(Reporter reporter) {
+        return reporter.verbose
+            ? (Timer)new ReporterTimer(reporter)
+            : (Timer)DummyTimer.object;
     }
 
     /** hooks for installing printers
@@ -208,14 +208,14 @@ public abstract class Global {
      * @param args
      * @param interpret
      */
-    public Global(CompilerCommand args, boolean interpret) {
+    public Global(CompilerCommand args, Timer timer, boolean interpret) {
         assert Debug.initialize() || true;
         if (Global.instance != null) // jaco bug: can't use assert here
             /* throw */ Debug.abort("duplicate creation of Global");
         Global.instance = this;
         this.args = args;
         this.reporter = args.reporter();
-        this.start(); // timestamp to compute the total time
+        this.timer = timer;
         this.noimports = args.noimports.value;
         this.nopredefs = args.nopredefs.value;
         //this.optimize = args.optimize.optimize;
@@ -649,23 +649,6 @@ public abstract class Global {
      */
     public boolean log() {
         return currentPhase.descriptor.hasLogFlag();
-    }
-
-    /** start a new timer
-     */
-    public void start() {
-        startTimes.push(new Long(System.currentTimeMillis()));
-    }
-
-    /**
-     * issue timing information
-     *
-     * @param message
-     */
-    public void stop(String message) {
-        long start = ((Long)startTimes.pop()).longValue();
-        reporter.inform("[" + message + " in " +
-                (System.currentTimeMillis() - start) + "ms]");
     }
 
 }

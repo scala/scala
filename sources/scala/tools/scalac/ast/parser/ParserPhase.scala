@@ -16,9 +16,9 @@ package scala.tools.scalac.ast.parser {
 class ParserPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
 
   override def apply(unit: CompilationUnit): Unit = {
-    global.start();
+    global.timer.start();
     unit.body = new Parser(unit).parse();
-    global.stop("parsed " + unit.source);
+    global.timer.stop("parsed " + unit.source);
   }
 }
 }

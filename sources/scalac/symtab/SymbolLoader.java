@@ -63,15 +63,15 @@ public abstract class SymbolLoader extends Type.LazyType {
     public final void complete(Symbol symbol) {
         Symbol root = getRootSymbol(symbol);
         try {
-            long start = System.currentTimeMillis();
             Phase phase = global.currentPhase;
             global.currentPhase = global.PHASE.ANALYZER.phase();
+            global.timer.start();
             String source = doComplete(root);
+            global.timer.stop("loaded " + source);
             global.currentPhase = phase;
-            long end = System.currentTimeMillis();
-            global.operation("loaded " + source + " in " + (end-start) + "ms");
             checkValidity(root, source);
         } catch (IOException exception) {
+            global.timer.drop();
 	    if (global.debug) exception.printStackTrace();
             String error = "error while loading " + symbol;
             String message = exception.getMessage();

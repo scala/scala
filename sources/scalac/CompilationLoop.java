@@ -94,7 +94,7 @@ public class CompilationLoop {
             // Update the current phase pointer.
             Phase phase = global.currentPhase = phases[current];
             // If the phase is not yet started, start it.
-            if (indexes[current] == 0) global.start();
+            if (indexes[current] == 0) global.timer.start();
             // Apply the phase to all available units. It's important
             // to not cache the result of "size()" as new units may be
             // added during the loop.
@@ -104,7 +104,7 @@ public class CompilationLoop {
             // If no new units were introduced, stop the phase.
             if (next == current) {
                 PhaseDescriptor descriptor = phase.descriptor;
-                global.stop(descriptor.taskDescription());
+                global.timer.stop(descriptor.taskDescription());
                 CompilationUnit[] units =
                     (CompilationUnit[])unitss[current].toArray(
                         new CompilationUnit[unitss[current].size()]);
