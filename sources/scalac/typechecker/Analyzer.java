@@ -1644,12 +1644,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    if (pt != Type.ErrorType) error(tree.pos, ex.msg);
 			    return tree.setType(Type.ErrorType);
 			}
+/*
 			if (!(tree.type instanceof Type.MethodType))
 			    tree = make.Apply(tree.pos, tree, Tree.EMPTY_ARRAY)
 				.setType(tree.type);
+*/
 		    }
 		} else if (clazz.isSubClass(definitions.SEQ_CLASS)) {
 		    // set type to instantiated sequence class constructor
+		    // todo: should we admit even supertypes of the target type?
 		    Type seqtp = pt.baseType(clazz);
 		    if (seqtp != Type.NoType) {
 			tree.type = seqConstructorType(seqtp, pt);
@@ -2031,8 +2034,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			int i = 0;
 			while (i < tparams.length &&
 			       (context.delayArgs ||
-				argtypes[i].isSubType(
-				    tparams[i].info().subst(tparams, argtypes))))
+				(argtypes[i].isSubType(
+				    tparams[i].info().subst(tparams, argtypes)) &&
+				 tparams[i].loBound().subst(tparams, argtypes)
+				 .isSubType(argtypes[i]))))
 			    i++;
 			if (i == tparams.length) {
 			    return copy.TypeApply(tree, fn1, args1)
