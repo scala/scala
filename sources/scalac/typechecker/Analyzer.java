@@ -1240,7 +1240,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** Adapt tree to given mode and given prototype
      */
     Tree adapt(Tree tree, int mode, Type pt) {
-	//new TextTreePrinter().Print(tree).print(" adapt " + pt).println().end();//DEBUG
+	//System.out.println(tree + ":" + tree.type + " adapt " + pt + " " + mode);//DEBUG
 	switch (tree.type) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    // resolve overloading
@@ -1410,7 +1410,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			.setType(coerceType);
 		    return adapt(tree, mode, pt);
 		}
-	    } else if ((mode & CONSTRmode) == 0) {
+	    }
+	    if ((mode & CONSTRmode) == 0) {
 		typeError(tree.pos, owntype, pt);
 		Type.explainTypes(owntype, pt);
 		tree.type = Type.ErrorType;
@@ -2193,7 +2194,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    .setType(owntype);
 			popContext();
 			return make.Block(tree.pos, new Tree[]{cd, alloc})
-			    .setType(owntype);
+			  .setType(owntype);
 		    }
 		default:
 		    throw new ApplicationError();
