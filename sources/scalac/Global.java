@@ -124,7 +124,6 @@ public class  Global {
     public final CompilerPhases PHASE;
     public final Phase[] phases;
 
-    public static final int START_PHASE_ID = 1;
     public static final int POST_ANALYZER_PHASE_ID = 3;
 
     /** compilation targets
@@ -213,7 +212,6 @@ public class  Global {
             this.currentPhase = phases[i] = descriptors[i].create(this);
         this.currentPhase = phases[0];
 
-        assert PHASE.PARSER.id() == START_PHASE_ID;
         assert PHASE.ANALYZER.id() + 1 == POST_ANALYZER_PHASE_ID;
     }
 
