@@ -16,10 +16,45 @@ object Bug135Test {
 	new Order((x:int,y:int) => x < y, (x:int,y:int) => x == y);
     val myMap:TreeMap[int,String] = new TreeMap(intOrder);
     val map1 = myMap + 42 -> "The answer";
-    if (map1.get(42) != Some("The answer"))
-      Console.println("KO: " + map1.get(42));
+    Console.println(map1.get(42));
   }
 
+}
+
+//############################################################################
+// Bug 142
+
+abstract class Bug142Foo1 { class Inner; def foo: Inner; foo; }
+abstract class Bug142Foo2 { class Inner; def foo: Inner = {System.out.println("ok"); null};}
+abstract class Bug142Foo3 { type  Inner; def foo: Inner; foo; }
+abstract class Bug142Foo4 { type  Inner; def foo: Inner = {System.out.println("ok"); null.asInstanceOf[Inner]}; }
+
+abstract class Bug142Bar1 { type  Inner; def foo: Inner = {System.out.println("ok"); null.asInstanceOf[Inner]}; }
+abstract class Bug142Bar2 { type  Inner; def foo: Inner; foo; }
+abstract class Bug142Bar3 { class Inner; def foo: Inner = {System.out.println("ok"); null}; }
+abstract class Bug142Bar4 { class Inner; def foo: Inner; foo; }
+
+object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 {def main(args:Array[String]):Unit=();}
+object Bug142Test2 extends Bug142Foo2 with Bug142Bar2 {def main(args:Array[String]):Unit=();}
+object Bug142Test3 extends Bug142Foo3 with Bug142Bar3 {def main(args:Array[String]):Unit=();}
+object Bug142Test4 extends Bug142Foo4 with Bug142Bar4 {def main(args:Array[String]):Unit=();}
+object Bug142Test5 with    Bug142Foo1 with Bug142Bar1 {def main(args:Array[String]):Unit=();}
+object Bug142Test6 with    Bug142Foo2 with Bug142Bar2 {def main(args:Array[String]):Unit=();}
+object Bug142Test7 with    Bug142Foo3 with Bug142Bar3 {def main(args:Array[String]):Unit=();}
+object Bug142Test8 with    Bug142Foo4 with Bug142Bar4 {def main(args:Array[String]):Unit=();}
+
+object Bug142Test {
+  def main(args:Array[String]): Unit = {
+    Bug142Test1;
+    Bug142Test2;
+    Bug142Test3;
+    Bug142Test4;
+    Bug142Test5;
+    Bug142Test6;
+    Bug142Test7;
+    Bug142Test8;
+    ()
+  }
 }
 
 //############################################################################
@@ -46,9 +81,37 @@ class Bug168Foo {
   def foo = new Bar;
 }
 
-object Bug168Test  {
+object Bug168Test {
   def main(args: Array[String]): Unit = {
     (new Bug168Foo).foo;
+    ()
+  }
+}
+
+//############################################################################
+// Bug 174
+
+class Bug174Foo[X] {
+
+  class Tree;
+  class Node extends Tree;
+
+
+  val inner:Inner = new SubInner;
+
+  trait Inner {
+    def test: Bug174Foo[X]#Tree ;
+  }
+
+  class SubInner extends Inner {
+    def test = new Node;
+  }
+
+}
+
+object Bug174Test {
+  def main(args: Array[String]): Unit = {
+    (new Bug174Foo[Int]).inner.test;
     ()
   }
 }
@@ -57,10 +120,18 @@ object Bug168Test  {
 // Main
 
 object Test  {
+  def test(bug: Int, def test: Unit): Unit = {
+    System.out.println("<<< bug " + bug);
+    test;
+    System.out.println(">>> bug " + bug);
+    System.out.println();
+  }
   def main(args: Array[String]): Unit = {
-    Bug135Test.main(args);
-    Bug167Test.main(args);
-    Bug168Test.main(args);
+    test(135, Bug135Test.main(args));
+    test(142, Bug142Test.main(args));
+    test(167, Bug167Test.main(args));
+    test(168, Bug168Test.main(args));
+    test(174, Bug174Test.main(args));
   }
 }
 
