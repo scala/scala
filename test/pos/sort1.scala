@@ -2,8 +2,8 @@ object test {
 
   type String = java.lang.String;
 
-  def while(def c: Boolean)(def b: Unit): Unit =
-    if (c) { b ; while(c)(b) }
+  def While(def c: Boolean)(def b: Unit): Unit =
+    if (c) { b ; While(c)(b) }
     else ();
 
   def sort(a: Array[Double]): Unit = {
@@ -15,9 +15,9 @@ object test {
     def sort1(l: Int, r: Int): Unit = {
       val pivot = a((l + r) / 2);
       var i = l, j = r;
-      while (i <= j) {
-	while (a(i) < pivot) { i = i + 1 }
-	while (a(j) > pivot) { j = j - 1 }
+      While (i <= j) {
+	While (a(i) < pivot) { i = i + 1 }
+	While (a(j) > pivot) { j = j - 1 }
 	if (i <= j) {
 	  swap(i, j);
 	  i = i + 1;
