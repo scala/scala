@@ -44,12 +44,16 @@ public class WordAutomInScala extends Autom2Scala {
         Tree result;
 
         // conditions
+        //int tags[] = new int[body.length];
         Tree cond[] = new Tree[body.length];
         //Tree bbody[] = new Tree[body.length];
-        for( int i = body.length - 1; i >= 0; i-- )
+        for( int i = body.length - 1; i >= 0; i-- ) {
+            //tags[i] = i;
             cond[i] = cf.Equals(_swres(), gen.mkIntLit( cf.pos, i ));
-
+        }
         result = cf.Switch( selector, cond, body, failTree );
+
+        //result = gen.Switch( _swres(), tags, body, failTree );
 
         result = cf.gen.mkBlock( cf.pos, new Tree[] { theDefDef, run, result } );
         //unit.global.debugPrinter.print( result );
