@@ -48,7 +48,10 @@ public class SymbolMapApplier {
             return type;
 
         case ThisType(Symbol sym):
-            return new Type.ThisType(apply(sym));
+            if (type == Type.localThisType)
+                return type;
+            else
+                return new Type.ThisType(apply(sym));
 
         case TypeRef(Type prefix, Symbol sym, Type[] args):
             return new Type.TypeRef(apply(prefix), apply(sym), apply(args));
