@@ -2145,7 +2145,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
                                   context.owner,
                                   0x00000000).setType(pt);
             enterInScope(vble);
-            //System.out.println("Bind("+name+",...) enters in scope:"+vble.fullNameString());
+            //System.out.println("Bind("+name+",...) enters in scope:"+Debug.show(vble));
 
             patternVars.put(vble, new Boolean(this.inAlternative));
             //System.out.println("case Bind.. put symbol vble="+vble+" in scope and patternVars.");
