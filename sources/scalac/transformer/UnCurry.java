@@ -172,7 +172,8 @@ public class UnCurry extends OwnerTransformer
 	case PolyType(_, Type restp):
 	    return transformArgs(pos, args, restp);
 	default:
-	    throw new ApplicationError(methtype);
+	    if (args.length == 0) return args; // could be arguments of nullary case pattern
+	    else throw new ApplicationError(methtype);
 	}
     }
 

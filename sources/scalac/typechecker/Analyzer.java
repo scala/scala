@@ -19,7 +19,6 @@ import scalac.ast.printer.*;
 import scalac.symtab.*;
 import Tree.*;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class Analyzer extends Transformer implements Modifiers, Kinds {
 
@@ -42,10 +41,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private Context context;
     private Type pt;
     private int mode;
-    private HashSet compiledNow = new HashSet();
 
     public void apply() {
-	compiledNow.clear();
 	for (int i = 0; i < global.units.length; i++) {
             enterUnit(global.units[i]);
         }
@@ -813,7 +810,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		    result = other;
 		} else if (sym.owner().isPackage()) {
-		    if (compiledNow.contains(other)) {
+		    if (global.compiledNow.contains(other)) {
 			error(sym.pos, sym + " is compiled twice");
 		    }
 		    context.scope.unlink(e);
@@ -837,7 +834,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    } else {
 		context.scope.enter(sym);
 	    }
-	    if (result.owner().isPackage()) compiledNow.add(result);
+	    if (result.owner().isPackage()) global.compiledNow.add(result);
 	    return result;
 	}
 
@@ -1590,9 +1587,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tree = error(tree.pos, ex.msg);
 		}
 		return adapt(tree, mode, pt);
-	    } else if ((mode & EXPRmode) != 0) {
-		// will be instantiated later
-		return tree;
+//	    } else if ((mode & EXPRmode) != 0) {
+//		// will be instantiated later
+//		return tree;
 	    }
 	    break;
 
@@ -1606,12 +1603,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return error(tree.pos, "missing arguments for class constructor");
 	    }
 	}
-	if ((mode & FUNmode) != 0) {
-	    if ((mode & PATTERNmode) != 0) {
-		// set type to instantiated case class constructor
-		if (tree.type == Type.ErrorType) return tree;
+	if ((mode & PATTERNmode) != 0) {
+	    if (tree.isType()) {
 		Symbol clazz = tree.type.unalias().symbol();
 		if (clazz.isCaseClass()) {
+		    // set type to instantiated case class constructor
 		    tree.type = clazz.constructor().type();
 		    switch (tree.type) {
 		    case PolyType(Symbol[] tparams, Type restp):
@@ -1619,10 +1615,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    infer.constructorInstance(tree, tparams, restp, pt);
 			} catch (Type.Error ex) {
 			    if (pt != Type.ErrorType) error(tree.pos, ex.msg);
-			    tree.setType(Type.ErrorType);
+			    return tree.setType(Type.ErrorType);
 			}
+			if (!(tree.type instanceof Type.MethodType))
+			    tree = make.Apply(tree.pos, tree, Tree.EMPTY_ARRAY)
+				.setType(tree.type);
 		    }
 		} else if (clazz.isSubClass(definitions.SEQ_CLASS)) {
+		    // set type to instantiated sequence class constructor
 		    Type seqtp = dropVarArgs(pt.baseType(clazz));
 		    if (seqtp != Type.NoType) {
 			tree.type = seqConstructorType(seqtp, pt);
@@ -1630,55 +1630,86 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			error(tree.pos, "expected pattern type " + pt +
 			      " does not conform to sequence " + clazz);
 		    }
-		} else {
+		} else if (tree.type != Type.ErrorType) {
 		    error(tree.pos, tree.symbol() +
 			  " is neither a case class constructor nor a sequence class constructor");
 		}
+	    }
+	    if ((mode & FUNmode) != 0) {
 		return tree;
-	    } else if ((mode & EXPRmode) != 0 && tree.type.isObjectType()) {
-		// insert apply method
-		Symbol applyMeth = tree.type.lookup(Names.apply);
-		if (applyMeth != Symbol.NONE && isAccessible(applyMeth, tree)) {
-		    applyMeth.flags |= (ACCESSED | SELECTOR);
-		    tree = make.Select(tree.pos, tree, Names.apply)
-			.setSymbol(applyMeth)
-			.setType(tree.type.memberType(applyMeth));
-		    return adapt(tree, mode, pt);
-		}
-	    }
-	} else if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
-	    Symbol fsym = TreeInfo.methSymbol(tree);
-	    if (fsym != null && fsym.isMethod() && (fsym.flags & CASE) != 0) {
-		Symbol constr = fsym.owner().info()
-		    .lookup(fsym.name.toTypeName()).constructor();
-		Template templ = make.Template(
-		    tree.pos,
-		    new Tree[]{desugarize.toConstructor(tree, constr)},
-		    Tree.EMPTY_ARRAY);
-		//templ.setSymbol(Symbol.NONE).setType(tree.type);
-		return transform(
-		    make.New(tree.pos, templ).setType(tree.type.instanceType()), mode, pt);
-	    } else if ((mode & QUALmode) == 0) {
-		// check that packages and static modules are not used as values
+	    } else {
 		Symbol sym = tree.symbol();
-		if (sym != null && sym.kind != ERROR && !sym.isValue() && tree.isTerm()) {
-		    new TextTreePrinter().print(tree).println().end();//debug
-		    error(tree.pos, tree.symbol() + " is not a value");
+		// convert nullary case methods to types
+		// check that other idents or selects are stable.
+		switch (tree) {
+		case Ident(Name name):
+		    if (sym != null && isNullaryMethod(sym) && (sym.flags & CASE) != 0) {
+			((Ident)tree).name = name.toTypeName();
+			return transform(tree, mode, pt);
+		    } else {
+			checkStable(tree);
+		    }
+		    break;
+		case Select(_, Name selector):
+		    if (sym != null && isNullaryMethod(sym) && (sym.flags & CASE) != 0) {
+			((Select)tree).selector = selector.toTypeName();
+			return transform(tree, mode, pt);
+		    } else {
+			checkStable(tree);
+		    }
 		}
 	    }
-	} else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode) {
-	    switch (tree) {
-	    case Ident(_):
-	    case Select(_, _):
-		if (!tree.type.unalias().symbol().isCaseClass())
-		    checkStable(tree);
+	} else if ((mode & EXPRmode) != 0) {
+	    if ((mode & FUNmode) != 0) {
+		if (tree.type.isObjectType()) {
+		    // insert apply method
+		    Symbol applyMeth = tree.type.lookup(Names.apply);
+		    if (applyMeth != Symbol.NONE && isAccessible(applyMeth, tree)) {
+			applyMeth.flags |= (ACCESSED | SELECTOR);
+			tree = make.Select(tree.pos, tree, Names.apply)
+			    .setSymbol(applyMeth)
+			    .setType(tree.type.memberType(applyMeth));
+			return adapt(tree, mode, pt);
+		    }
+		}
+	    } else {
+		Symbol fsym = TreeInfo.methSymbol(tree);
+		if (fsym != null && fsym.isMethod() && (fsym.flags & CASE) != 0) {
+		    // convert case methods to new's
+		    Symbol constr = fsym.owner().info()
+			.lookup(fsym.name.toTypeName()).constructor();
+		    Template templ = make.Template(
+			tree.pos,
+			new Tree[]{desugarize.toConstructor(tree, constr)},
+			Tree.EMPTY_ARRAY);
+		    return transform(make.New(tree.pos, templ), mode, pt);
+		} else if ((mode & QUALmode) == 0) {
+		    // check that packages and static modules are not used as values
+		    Symbol sym = tree.symbol();
+		    if (sym != null && sym.kind != ERROR && !sym.isValue() &&
+			tree.isTerm()) {
+			new TextTreePrinter().print(tree).println().end();//debug
+			error(tree.pos, tree.symbol() + " is not a value");
+		    }
+		}
 	    }
 	}
 
-	// check type against prototype
-	return tree.setType(checkType(tree.pos, tree.type, pt));
+	if (!(tree.type instanceof Type.PolyType))
+	    tree.type = checkType(tree.pos, tree.type, pt);
+
+	return tree;
     }
     //where
+	boolean isNullaryMethod(Symbol sym) {
+	    switch (sym.type()) {
+	    case PolyType(_, Type restpe):
+		return !(restpe instanceof Type.MethodType);
+	    default:
+		return false;
+	    }
+	}
+
 	Type dropVarArgs(Type tp) {
 	    switch (tp) {
 	    case TypeRef(Type pre, Symbol sym, Type[] targs):

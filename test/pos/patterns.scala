@@ -1,6 +1,6 @@
 trait Option[a] {}
 case class Some[a](x: a) extends Option[a];
-case class None[a]() extends Option[a];
+case class None[a] extends Option[a];
 
 module test {
 
@@ -8,6 +8,6 @@ module test {
 
   def print(opt: Option[String]) = opt match {
     case Some(x) => println(x);
-    case None() => println("nothing");
+    case None => println("nothing");
   }
 }

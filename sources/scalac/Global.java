@@ -17,10 +17,7 @@ import scalac.symtab.Definitions;
 import scalac.ast.printer.*;
 import scalac.backend.Primitives;
 // !!! <<< Interpreter stuff
-import scalac.symtab.Kinds;
-import scalac.symtab.Type;
-import scalac.symtab.Symbol;
-import scalac.symtab.Scope;
+import scalac.symtab.*;
 // !!! >>> Interpreter stuff
 
 
@@ -86,6 +83,10 @@ public class  Global {
     public final TreePrinter printer;
     public OutputStream printStream;
     public final TreePrinter debugPrinter;
+
+    /** The set of currenttly compiled top-level symbols
+     */
+    public HashSet/*Symbol*/ compiledNow = new HashSet();
 
     /** the current phase
      */
@@ -280,8 +281,13 @@ public class  Global {
             if (currentPhase == PHASE.PARSER) fix1();
             if (currentPhase == PHASE.ANALYZER) fix2();
         }
-        if (reporter.errors() != 0) imports.clear();
-
+        if (reporter.errors() != 0) {
+	    imports.clear();
+	    for (Iterator it = compiledNow.iterator(); it.hasNext();) {
+		uninitialize((Symbol)it.next());
+	    }
+	}
+	compiledNow.clear();
         printer.end();
     }
     // !!! <<< Interpreter stuff
@@ -622,5 +628,15 @@ public class  Global {
         long start = ((Long)startTimes.pop()).longValue();
         reporter.inform("[" + message + " in " +
                 (System.currentTimeMillis() - start) + "ms]");
+    }
+
+    private void uninitialize(Symbol sym) {
+	if (sym instanceof ClassSymbol) {
+	    ClassSymbol clazz = (ClassSymbol)sym;
+	    if (clazz.sourcefile != null) {
+		clazz.reset(
+		    new SourceCompleter(this, clazz.sourcefile));
+	    }
+	}
     }
 }

@@ -153,9 +153,9 @@ module M5 {
     def contains(x: Int): Boolean;
   }
 
-  class Empty() extends IntSet {
+  class Empty extends IntSet {
     def contains(x: Int): Boolean = false;
-    def incl(x: Int): IntSet = new NonEmpty(x, new Empty(), new Empty());
+    def incl(x: Int): IntSet = new NonEmpty(x, new Empty, new Empty);
   }
 
   class NonEmpty(elem: Int, left: IntSet, right: IntSet) extends IntSet {
@@ -169,7 +169,7 @@ module M5 {
       else this;
   }
 
-  val x = new Empty() incl 1 incl 2;
+  val x = new Empty incl 1 incl 2;
   System.out.println(x contains 0);
   System.out.println(x contains 1);
   System.out.println(x contains 2);
@@ -226,9 +226,9 @@ module M8 {
     def intersect0(that: IntSet, accu: IntSet): IntSet;
     def filter0(f: Int => Boolean, accu: IntSet): IntSet;
 
-    def intersect(that: IntSet): IntSet = intersect0(that, new Empty());
+    def intersect(that: IntSet): IntSet = intersect0(that, new Empty);
     def intersect2(that: IntSet): IntSet = filter(x => that.contains(x));
-    def filter(f: Int => Boolean): IntSet = filter0(f, new Empty());
+    def filter(f: Int => Boolean): IntSet = filter0(f, new Empty);
 
     def printOn(out: java.io.PrintStream) = foreach(out.println);
 
@@ -244,9 +244,9 @@ module M8 {
     }
   }
 
-  class Empty() extends IntSet { // !!! class Empty() -> module Empty
+  class Empty extends IntSet { // !!! class Empty() -> module Empty
     def contains(x: Int): Boolean = false;
-    def incl(x: Int): IntSet = new NonEmpty(x, new Empty(), new Empty());
+    def incl(x: Int): IntSet = new NonEmpty(x, new Empty, new Empty);
     def map(f: Int => Int): IntSet = this;
 
     def foreach(f: Int => Unit): Unit = ();
@@ -288,11 +288,11 @@ module M8 {
   }
 
   def test = {
-    val set0: IntSet = new Empty();
-    val set1: IntSet = new Empty() incl 1;
-    val set2: IntSet = new Empty() incl 1 incl 2;
-    val set3: IntSet = new Empty() incl 1 incl 2 incl 3;
-    val set4: IntSet = new Empty() incl 1 incl 2 incl 3 incl 4;
+    val set0: IntSet = new Empty;
+    val set1: IntSet = new Empty incl 1;
+    val set2: IntSet = new Empty incl 1 incl 2;
+    val set3: IntSet = new Empty incl 1 incl 2 incl 3;
+    val set4: IntSet = new Empty incl 1 incl 2 incl 3 incl 4;
     val setx: IntSet = set0 incl -10 incl 5 incl 21 incl -1 incl 0 incl 3;
     val sety: IntSet = set0 incl 3 incl 7 incl -5 incl 0 incl-9 incl 8 incl-1;
 

@@ -53,7 +53,7 @@ trait List[a] extends Seq[a] {
   * @return the number of elements in the list.
   */
   def length: Int = this match {
-    case Nil() => 0
+    case Nil => 0
     case _ :: xs => xs.length + 1
   }
 
@@ -71,7 +71,7 @@ trait List[a] extends Seq[a] {
    */
   def init: List[a] =
     if (isEmpty) error("Nil.init")
-    else if (tail.isEmpty) Nil()
+    else if (tail.isEmpty) Nil
     else head :: tail.init;
 
   /** Returns the last element of this list.
@@ -89,7 +89,7 @@ trait List[a] extends Seq[a] {
   * @throws java.lang.RuntimeException if the list is too short.
   */
   def take(n: Int): List[a] =
-    if (n == 0) Nil()
+    if (n == 0) Nil
     else head :: tail.take(n-1);
 
   /** Returns the list without its <code>n</code> first elements.
@@ -108,7 +108,7 @@ trait List[a] extends Seq[a] {
   * the predicate <code>p</code>.
   */
   def takeWhile(p: a => Boolean): List[a] =
-    if (isEmpty || !p(head)) Nil()
+    if (isEmpty || !p(head)) Nil
     else head :: tail.takeWhile(p);
 
   /** Returns the longest suffix of this list whose first element does not satisfy
@@ -137,7 +137,7 @@ trait List[a] extends Seq[a] {
   * @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
   */
   def map[b](f: a => b): List[b] =
-    if (isEmpty) Nil()
+    if (isEmpty) Nil
     else f(head) :: tail.map(f);
 
   /** Apply the given function <code>f</code> to each element of this list (while respecting
@@ -183,23 +183,23 @@ trait List[a] extends Seq[a] {
   * is <code>[a0, a1, ..., an]</code>.
   */
   def foldl_:[b](z: b)(f: (b, a) => b): b = match {
-    case Nil() => z
+    case Nil => z
     case x :: xs => (xs.foldl_:[b](f(z, x)))(f)
   }
 
   def foldr[b](z: b)(f: (a, b) => b): b = match {
-    case Nil() => z
+    case Nil => z
     case x :: xs => f(x, (xs foldr z)(f))
   }
 
   def foldl1(f: (a, a) => a): a = this match {
-    case Nil() => error("foldl1 of empty list")
+    case Nil => error("foldl1 of empty list")
     case x :: xs => (x foldl_: xs)(f)
   }
 
   def foldr1(f: (a, a) => a): a = match {
-    case Nil() => error("foldr1 of empty list")
-    case x :: Nil() => x
+    case Nil => error("foldr1 of empty list")
+    case x :: Nil => x
     case x :: xs => f(x, xs foldr1 f)
   }
 
@@ -210,7 +210,7 @@ trait List[a] extends Seq[a] {
   * <code>[a0, ..., an]</code>.
   */
   def flatMap[b](f: a => List[b]): List[b] =
-    if (isEmpty) Nil()
+    if (isEmpty) Nil
     else f(head) ::: tail.flatMap(f);
 
   /** Reverses the elements of this list.
@@ -220,7 +220,7 @@ trait List[a] extends Seq[a] {
   * @return the elements of this list in reverse order.
   */
   def reverse: List[a] = {
-    ((Nil(): List[a]) foldl_: this)((xs: List[a], x: a) => x :: xs)
+    ((Nil: List[a]) foldl_: this)((xs: List[a], x: a) => x :: xs)
   }
 
   /** Prints on standard output a raw textual representation of this list.
@@ -229,7 +229,7 @@ trait List[a] extends Seq[a] {
   * <code>[1, 2, 3] print</code> will display <code>1 :: 2 :: 3 :: []</code>.
   */
   def print: Unit =
-    if (isEmpty) java.lang.System.out.println("Nil()")
+    if (isEmpty) java.lang.System.out.println("Nil")
     else {
       java.lang.System.out.print(head as java.lang.Object);
       java.lang.System.out.print(" :: ");
@@ -284,7 +284,7 @@ trait List[a] extends Seq[a] {
   * @throws java.lang.RuntimeException if lists have different lengths.
   */
   def zip[b](that: List[b]): List[Tuple2[a,b]] =
-    if (this.isEmpty || that.isEmpty) Nil()
+    if (this.isEmpty || that.isEmpty) Nil
     else Tuple2(this.head, that.head) :: this.tail.zip(that.tail);
 
   /** Tests if the given value <code>elem</code> is a member of

@@ -884,6 +884,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    }
 	}
     }
+
+    public void reset(Type completer) {
+	this.flags &= (FINAL | MODUL);
+	this.pos = 0;
+	this.infos = TypeIntervalList.EMPTY;
+	this.setInfo(completer);
+    }
 }
 
 /** A class for term symbols
@@ -924,7 +931,7 @@ public class TermSymbol extends Symbol {
      */
     public static TermSymbol newCompanionModule(Symbol clazz, int flags, Type.LazyType parser) {
         TermSymbol sym = newModule(Position.NOPOS, clazz.name.toTermName(), clazz.owner(),
-				   FINAL | flags);
+				   flags);
         sym.clazz.setInfo(parser);
 	return sym;
     }
@@ -946,8 +953,7 @@ public class TermSymbol extends Symbol {
     }
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
-	if (isModule()) return moduleClass().fullName();
-	else if (isPrimaryConstructor()) return primaryConstructorClass().fullName();
+	if (clazz != null) return clazz.fullName();
 	else return super.fullName();
     }
 
@@ -1106,6 +1112,12 @@ public class TypeSymbol extends Symbol {
 		adjustType(parents[i]);
 	    }
 	}
+
+    public void reset(Type completer) {
+	super.reset(completer);
+	closures = ClosureIntervalList.EMPTY;
+	tycon = null;
+    }
 }
 
 /** A class for class symbols. It has JavaClassSymbol as a subclass.
@@ -1134,7 +1146,14 @@ public class ClassSymbol extends TypeSymbol {
 
     /** A cache for this.thisType()
      */
-    private Type thistp = Type.ThisType(this);
+    final private Type thistp = Type.ThisType(this);
+
+    /** The sourcefile name form where the class symbol was or
+     *  needs to be loaded. only defined for Scala source library classes;
+     *  not for classes that exist in class files, or classes compiled
+     *  from the command line.
+     */
+    public String sourcefile = null;
 
     /** Principal Constructor
      */
@@ -1158,6 +1177,7 @@ public class ClassSymbol extends TypeSymbol {
 	this.module = TermSymbol.newCompanionModule(this, 0, parser);
         this.mangled = name;
         this.setInfo(parser);
+	this.sourcefile = parser.filename;
     }
 
     /** Constructor for classes to load as class files.
@@ -1178,6 +1198,7 @@ public class ClassSymbol extends TypeSymbol {
 	other.constructor.setInfo(constructor.info());
 	other.mangled = mangled;
 	other.module = module;
+	other.sourcefile = sourcefile;
 	if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
     }
@@ -1278,6 +1299,14 @@ public class ClassSymbol extends TypeSymbol {
 	//System.out.println(this + ", case field[" + index + "] = " + sym);//DEBUG
 	assert sym != null : this;
 	return sym;
+    }
+
+    public void reset(Type completer) {
+	super.reset(completer);
+	constructor().reset(completer);
+	module().reset(completer);
+	template = null;
+	thisSym = this;
     }
 }
 

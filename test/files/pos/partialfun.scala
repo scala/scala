@@ -5,6 +5,6 @@ module partialfun {
 
   applyPartial {
     case Some(x) => x
-  } (None());
+  } (None);
 
 }
