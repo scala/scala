@@ -159,16 +159,12 @@ class HTMLTreePrinter(global0: scalac_Global, out0: PrintWriter)
       super.print(text);
   }
 
-  override def print(unit: CompilationUnit) = super.print(unit);
-  override def print(str: String) = super.print(str);
-  override def print(tree: Tree) = super.print(tree);
-
-  override protected def printUnitHeader(unit: CompilationUnit): Unit = {
+  override def printUnitHeader(unit: CompilationUnit): Unit = {
     beginSection1(outSectionLevel + 1, unit.source.toString());
     startTag("pre");
   }
 
-  override protected def printUnitFooter(unit: CompilationUnit): Unit = {
+  override def printUnitFooter(unit: CompilationUnit): Unit = {
     endTag("pre");
   }
 }
