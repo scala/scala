@@ -19,7 +19,7 @@ class Address( l:Int* ) with Ordered[Address] {
 
   /** precond: p is nonempty */
   def right: Address = list.match {
-    case List( i, rest@_* ) => new Address( ((i+1) :: rest ):_* )
+    case i :: rest => new Address( ((i+1) :: rest ):_* )
   }
 
   override def toString() = list.mkString("Address(",".",")");
