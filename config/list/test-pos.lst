@@ -68,4 +68,10 @@ pos/test5refine.scala
 pos/thistypes.scala
 pos/valdefs.scala
 
+cours/constr.scala
+cours/lisp.scala
+cours/sim.scala
+cours/week10.scala
+cours/week10a.scala
+
 ##############################################################################
