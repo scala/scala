@@ -1,3 +1,5 @@
+// $Id$
+
 import scalac.util.Name ;
 import scala.tools.scalac.ast.parser.Tokens ; /* for keywords */
 

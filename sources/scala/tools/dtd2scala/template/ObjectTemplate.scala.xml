@@ -1,3 +1,4 @@
+<!-- $Id$ -->
 <!DOCTYPE template [ 
   <!ENTITY elementName   '<string ref="elementName"/>'> 
   <!ENTITY qElementName  '<qstring ref="elementName"/>'> 
