@@ -43,8 +43,8 @@ public class UnCurry extends OwnerTransformer
     }
 
     public void apply(Unit unit) {
-	super.apply(unit);
 	this.unit = unit;
+	super.apply(unit);
     }
 
     /** (ps_1) ... (ps_n) => (ps_1, ..., ps_n)
@@ -110,12 +110,10 @@ public class UnCurry extends OwnerTransformer
      *       (a_1, ..., a_n) => (Sequence(a_1, ..., a_n))
      */
     public Tree transform(Tree tree) {
-          //System.out.println("A uncurry: "+tree+" CLASS:"+tree.getClass());//DEBUG
         System.out.flush();
 	//uncurry type and symbol
 	Type prevtype = tree.type;
 	if (prevtype != null) tree.type = descr.uncurry(prevtype);
-	//System.out.println("B uncurry (after descr.): "+tree);//DEBUG
         switch (tree) {
 	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(
