@@ -1003,7 +1003,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Get this.type corresponding to this symbol
      */
     public Type thisType() {
-        return Type.localThisType;
+        return Type.NoPrefix;
     }
 
     /** Get type of `this' in current class.

@@ -135,10 +135,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 // Creators ---------------------------------------------------------------------
 
-    /** An owner-less ThisType
-     */
-    public static Type localThisType = NoPrefix;
-
     /** An empty Type array */
     public static final Type[] EMPTY_ARRAY  = new Type[0];
 
@@ -3089,11 +3085,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (sym == definitions.JAVA_OBJECT_CLASS ||
                     sym == definitions.ALL_CLASS ||
                     sym == definitions.ALLREF_CLASS)
-                    return Type.typeRef(localThisType, definitions.ANY_CLASS, EMPTY_ARRAY);
+                    return Type.typeRef(NoPrefix, definitions.ANY_CLASS, EMPTY_ARRAY);
                 else {
                     Type this1 = unbox();
                     if (this1 != this) return this1;
-                    else return Type.typeRef(localThisType, sym, EMPTY_ARRAY);
+                    else return Type.typeRef(NoPrefix, sym, EMPTY_ARRAY);
                 }
 
             default: throw new ApplicationError(sym + " has wrong kind: " + sym.kind);

@@ -260,7 +260,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         public Type getTypeLink(int level) {
             if (level == outers.length - 1) {
                 assert outers[level].clasz.isRoot(): level + " - " + this; // !!! remove
-                return Type.localThisType;
+                return Type.NoPrefix;
             }
             if (tlinks[level] != null) return tlinks[level].type();
             return Type.singleType(getTypeLink(level + 1), outers[level].clasz.module());
@@ -299,19 +299,19 @@ public class ExplicitOuterClassesPhase extends Phase {
             switch (type) {
             case TypeRef(Type prefix, Symbol symbol, Type[] args):
                 if (symbol.isParameter() && symbol.owner().isConstructor()) {
-                    assert prefix.equals(Type.localThisType): type;
+                    assert prefix == Type.NoPrefix: type;
                     assert args.length == 0: type;
                     Object value = tparams.get(symbol);
                     return value != null ? (Type)value : type;
                 }
                 if (symbol.isClass()) {
                     args = map(getNewArgsOf(context, prefix, symbol, args));
-                    prefix = Type.localThisType;
+                    prefix = Type.NoPrefix;
                     return Type.typeRef(prefix, symbol, args);
                 }
                 if (symbol.isPackage()) {
                     args = Type.EMPTY_ARRAY;
-                    prefix = Type.localThisType;
+                    prefix = Type.NoPrefix;
                     return Type.typeRef(prefix, symbol, args);
                 }
                 return Type.typeRef(apply(prefix), symbol, map(args));

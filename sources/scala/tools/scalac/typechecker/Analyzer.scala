@@ -1513,7 +1513,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    //System.out.println(name + " :::> " + tree + " " + qual1.symbol());//DEBUG
 	  }
 	} else {
-	  pre = Type.localThisType;
+	  pre = Type.NoPrefix;
 	}
       }
     } else if (sym.kind != NONE && !sym.isExternal()) {

@@ -464,8 +464,6 @@ public class Definitions {
     public Definitions(Global global) {
         // make definitions accessible earlier to other components
         global.definitions = this;
-        // force initialization of class Type
-        Type.localThisType.symbol();
         // create attributed tree typer
         atyper = new ATreeTyper(global, this);
 
