@@ -18,6 +18,9 @@ import Tree.*;
 
 import java.util.*;
 
+// TODO remove stacks of substitutions, since they never grow to more
+// than one element.
+
 /**
  * A transformer which performs symbol or type substitutions.
  *
@@ -35,8 +38,7 @@ public class SubstTransformer extends Transformer {
     protected LinkedList/*<Symbol[]>*/ tmfStack = new LinkedList();
     protected LinkedList/*<Symbol[]>*/ tmaStack = new LinkedList();
 
-    protected LinkedList/*<Symbol>*/ thisTypeFrom = new LinkedList();
-    protected LinkedList/*<Symbol>*/ thisTypeTo = new LinkedList();
+    protected Type.Map userTypeMap = null;
 
     final protected Type.Map typeMap =
         new Type.Map() {
@@ -57,6 +59,16 @@ public class SubstTransformer extends Transformer {
         return true;
     }
 
+    public void setTypeMap(Type.Map map) {
+        assert userTypeMap == null;
+        userTypeMap = map;
+    }
+
+    public void clearTypeMap() {
+        assert userTypeMap != null;
+        userTypeMap = null;
+    }
+
     protected void updateSymbolSubst() {
         symbolMap.clear();
         Iterator ssIt = ssStack.iterator();
@@ -67,11 +79,13 @@ public class SubstTransformer extends Transformer {
     }
 
     public void pushSymbolSubst(Map map) {
+        assert ssStack.size() == 0;
         ssStack.addLast(map);
         updateSymbolSubst();
     }
 
     public void popSymbolSubst() {
+        assert ssStack.size() == 1;
         ssStack.removeLast();
         updateSymbolSubst();
     }
@@ -111,6 +125,8 @@ public class SubstTransformer extends Transformer {
     }
 
     public void pushTypeSubst(Symbol[] from, Type[] to) {
+        assert tmfStack.size() == 0;
+
         assert from.length == to.length;
         tmfStack.addLast(from);
         tmaStack.addLast(to);
@@ -118,6 +134,8 @@ public class SubstTransformer extends Transformer {
     }
 
     public void popTypeSubst() {
+        assert tmfStack.size() == 1;
+
         tmfStack.removeLast();
         tmaStack.removeLast();
         updateTypeSubst();
@@ -127,16 +145,6 @@ public class SubstTransformer extends Transformer {
         tmfStack.clear();
         tmaStack.clear();
         updateTypeSubst();
-    }
-
-    public void pushThisTypeSubst(Symbol from, Symbol to) {
-        thisTypeFrom.addLast(from);
-        thisTypeTo.addLast(to);
-    }
-
-    public void popThisTypeSubst() {
-        thisTypeFrom.removeLast();
-        thisTypeTo.removeLast();
     }
 
     public Tree transform(Tree oldTree) {
@@ -228,11 +236,7 @@ public class SubstTransformer extends Transformer {
     //////////////////////////////////////////////////////////////////////
 
     protected Type transformType(Type tp) {
-        assert thisTypeFrom.size() == 1;
-        Symbol thisFromSym = (Symbol)thisTypeFrom.getLast();
-        Type thisToType = ((Symbol)thisTypeTo.getLast()).thisType();
-
-        Type tp1 = tp.substThis(thisFromSym, thisToType);
+        Type tp1 = (userTypeMap != null ? userTypeMap.apply(tp) : tp);
         Type tp2 = smApplier.apply(tp1);
         Type tp3 = typeMap.apply(tp2);
         return tp3;
