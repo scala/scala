@@ -157,6 +157,8 @@ install-windows		: install
 	@root=`cd "$(INSTALL_PREFIX)"; pwd`; \
 	for name in "" $(SCRIPTS_ALIASES_NAMES); do \
 	    if [ -z "$$name" ]; then continue; fi; \
+	    case "$$name" in scala-info* ) continue;; esac; \
+	    case "$$name" in scalatest* ) continue;; esac; \
 	    echo -n "Generating $$name.bat ... "; \
 	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
 	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
