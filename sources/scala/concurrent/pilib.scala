@@ -27,17 +27,17 @@ object pilib with Monitor {
 
   type Name = AnyRef;
 
-  /** A guarded process.
+  /** An untyped guarded process.
   * @param n         channel name
   * @param polarity  input (true) or output (false)
   * @param v         transmitted value
   * @param c         continuation
   */
-  case class GP(n: Name, polarity: boolean, v: Any, c: Any => Any);
+  case class UGP(n: Name, polarity: boolean, v: Any, c: Any => Any);
 
   /** Typed guarded process. */
-  class TGP[a](n: Name, polarity: boolean, v: Any, c: Any => a) {
-    val untyped = GP(n, polarity, v, c);
+  class GP[a](n: Name, polarity: boolean, v: Any, c: Any => a) {
+    val untyped = UGP(n, polarity, v, c);
   }
 
   ////////////////////////// CHANNELS //////////////////////////////
@@ -50,11 +50,11 @@ object pilib with Monitor {
 
     /** Creates an input guarded process. */
     def input[b](c: a => b) =
-      new TGP(this, true, (), x => c(x.asInstanceOf[a]));
+      new GP(this, true, (), x => c(x.asInstanceOf[a]));
 
     /** Creates an input guarded process. */
     def output[b](v: a, c: () => b) =
-      new TGP(this, false, v, x => c());
+      new GP(this, false, v, x => c());
 
     /** Blocking read. */
     def read = {
@@ -82,7 +82,7 @@ object pilib with Monitor {
 
   //////////////////// SUM OF GUARDED PROCESSES //////////////////////
 
-  case class Sum(gs: List[GP]) with Monitor {
+  case class Sum(gs: List[UGP]) with Monitor {
 
     /** Continuation of the sum. */
     var cont: () => Any = _;
@@ -111,11 +111,11 @@ object pilib with Monitor {
   private var sums: List[Sum] = Nil;
 
   /** Test if two lists of guarded processes can communicate. */
-  private def matches(gs1: List[GP], gs2: List[GP]): Option[Pair[() => Any, () => Any]] =
+  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[Pair[() => Any, () => Any]] =
     Pair(gs1, gs2) match {
       case Pair(Nil, _) => None
       case Pair(_, Nil) => None
-      case Pair(GP(a1, d1, v1, c1) :: rest1, GP(a2, d2, v2, c2) :: rest2) =>
+      case Pair(UGP(a1, d1, v1, c1) :: rest1, UGP(a2, d2, v2, c2) :: rest2) =>
 	if (a1 == a2 && d1 == !d2)
 	  Some(Pair(() => c1(v2), () => c2(v1)))
 	else matches(gs1, rest2) match {
@@ -143,8 +143,8 @@ object pilib with Monitor {
     }
 
   /** Pi-calculus non-deterministic choice. */
-  def choice[a](s: TGP[a]*): a = {
-    val sum = Sum(s.asInstanceOf[List[TGP[a]]] map { x => x.untyped });
+  def choice[a](s: GP[a]*): a = {
+    val sum = Sum(s.asInstanceOf[List[GP[a]]] map { x => x.untyped });
     synchronized { sums = compare(sum, sums) };
     (sum.continue).asInstanceOf[a]
   }
