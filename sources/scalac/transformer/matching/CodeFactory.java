@@ -402,12 +402,8 @@ class CodeFactory extends PatternTool {
             Scope scp = seqListSym().members();
             Symbol headSym = scp.lookup ( HEAD_N );
             assert headSym != Symbol.NONE;
-            return gen.Apply( make.Select( pos,
-                                           arg,
-                                           HEAD_N )
-                              .setType( headSym.type() )
-                              .setSymbol( headSym ),
-                              Tree.EMPTY_ARRAY);
+            return gen.Apply( gen.Select( pos, arg, headSym ),
+                              Tree.EMPTY_ARRAY );
       }
 
     /** return the analyzed type

@@ -113,7 +113,9 @@ public class RightTracerInScala extends TracerInScala  {
 	if( keepType )
 	    rhs = cf.ignoreValue( realVar.type() );
 	else
-	    rhs = /* cf.newRef( */ cf.newSeqNil( elementType ) /* ) */;
+	    rhs = /* cf.newRef( */ cf.newSeqNil( elementType )
+		.setType( cf.SeqListType( elementType ));
+ /* ) */;
 	helpVar.flags |= Modifiers.MUTABLE;
 	Tree varDef = gen.ValDef( helpVar, rhs );
 	//((ValDef) varDef).kind = Kinds.VAR;
