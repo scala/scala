@@ -16,6 +16,9 @@ import scala.collection.immutable.TreeSet ;
 object AttributeSeq {
   final val Empty = new AttributeSeq { final def sortedSeq = new TreeSet[Attribute] }
 
+  /** construct an attribute sequence from a map
+   *  @param as a map from Pair(uri,key) to value
+   */
   final def fromMap(as:Map[Pair[String,String],String]) = {
     AttributeSeq.fromAttrs( {
       for( val a <- as.keys.toList )
@@ -23,6 +26,11 @@ object AttributeSeq {
     }:_* )
   }
 
+  /** construct from a map, fixing namespaces to ns
+   *  each Attribute with an empty namespace will get the namespace ns.
+   *  @param ns the namespace to use instead of the empty one
+   *  @param as a map from Pair(uri,key) to value
+   */
   final def fromMap(ns:String, as:Map[Pair[String,String],String]) = {
     AttributeSeq.fromAttrs( {
       for( val a <- as.keys.toList )
@@ -36,11 +44,30 @@ object AttributeSeq {
       }
     }:_*)
   }
+  /** construct from sequence of Attribute.
+   * @param as any sequence of attributes a1,a2,...
+   */
   final def fromAttrs(as: Attribute*) = {
     var ts = new TreeSet[Attribute];
     for( val a <- as ) {
       if( a.key != "xmlns" ) {
         ts = ts + a ;
+      }
+    }
+    new AttributeSeq { final def sortedSeq = ts };
+  }
+
+  /** construct from sequence of Attribute, fixing namespaces to ns
+   *  Each Attribute with an empty namespace will get the namespace ns.
+   * @param ns the namespace to use instead of the empty one
+   * @param as any sequence of attributes a1,a2,...
+   */
+  final def fromAttrs(ns:String, as: Attribute*) = {
+    var ts = new TreeSet[Attribute];
+    for( val a <- as ) {
+      if( a.key != "xmlns" ) {
+        val url = if( a.namespace.length() == 0) ns else a.namespace;
+        ts = ts + Attribute(url,a.key,a.value) ;
       }
     }
     new AttributeSeq { final def sortedSeq = ts };
