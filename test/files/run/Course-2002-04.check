@@ -6,6 +6,18 @@ list4 = List(1,1,2,3,3,4,4,5,6,7,8,8,8)
 list5 = List(8,8,8,7,6,5,4,4,3,3,2,1,1)
 list6 = List(8,8,8,7,6,5,4,4,3,3,2,1,1)
 
+list0: List() -> List()
+list1: List(0) -> List(0)
+list2: List(0,1) -> List(0,1)
+list3: List(1,0) -> List(0,1)
+list4: List(0,1,2) -> List(0,1,2)
+list5: List(1,0,2) -> List(0,1,2)
+list6: List(0,1,2) -> List(0,1,2)
+list7: List(1,0,2) -> List(0,1,2)
+list8: List(2,0,1) -> List(0,1,2)
+list9: List(2,1,0) -> List(0,1,2)
+listA: List(6,3,1,8,7,1,2,5,8,4) -> List(1,1,2,3,4,5,6,7,8,8)
+
 f(x) = 5x^3+7x^2+5x+9
 f(0) = 9.0
 f(1) = 26.0
