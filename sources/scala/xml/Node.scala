@@ -25,7 +25,7 @@ trait Node {
    *  of all children of this node that are labelled with "foo".
    *  The document order is preserved.
    */
-    def /(that:Symbol): NodeList = new NodeList({
+    def /(that:Symbol): NodeSeq = new NodeSeq({
       val iter = children.elements;
       if( "_" == that.label ) {
         List.fromIterator( iter );
@@ -43,7 +43,7 @@ trait Node {
    *  Use /'_ as a wildcard.
    *  The document order is preserved.
    */
-    def /#(that:Symbol): NodeList = new NodeList({
+    def /#(that:Symbol): NodeSeq = new NodeSeq({
       var res:List[Node] = Nil;
       var tmp:List[Node] = Nil;
       for( val x <- children.elements ) {
@@ -59,7 +59,7 @@ trait Node {
 }
 
 /* a wrapper that adds a filter method */
-class NodeList(theList:List[Node]) extends List[Node] {
+class NodeSeq(theList:List[Node]) extends Seq[Node] {
   val res = theList.flatMap ( x => List.fromIterator( x.children.elements ));
 
   /** projection function. Similar to XPath, use this./'foo to get a list
@@ -67,9 +67,9 @@ class NodeList(theList:List[Node]) extends List[Node] {
    *  Use /'_ as a wildcard. The document order is preserved.
    */
   def /(that: Symbol) = if( "_" == that.label ) {
-    new NodeList( res )
+    new NodeSeq( res )
   } else {
-    new NodeList( res.filter( y => y.label == that.label ))
+    new NodeSeq( res.filter( y => y.label == that.label ))
   }
 
 
@@ -77,11 +77,11 @@ class NodeList(theList:List[Node]) extends List[Node] {
    *  of all children of this node that are labelled with "foo"
    *  Use /#'_ as a wildcard. The document order is preserved.
    */
-    def /#(that: Symbol): NodeList = new NodeList(
+    def /#(that: Symbol): NodeSeq = new NodeSeq(
       if ( "_" == that.label ) {
-        this.flatMap ( x => (x/#'_).toList )
+        theList.flatMap ( x => (x/#'_).toList )
       } else {
-        this.flatMap ( x => {
+        theList.flatMap ( x => {
           if( x.label == that.label )
             x::(x/#(that)).toList;
           else
@@ -89,11 +89,13 @@ class NodeList(theList:List[Node]) extends List[Node] {
         })
       });
 
+  override def toList:List[Node] = theList;
 
-  override def toList: List[Node] = theList;
-
-  // forwarding list methods
-
+  /* Seq methods */
+  def length = theList.length;
+  def elements = theList.elements ;
+  def apply( i:int ) = theList.apply( i );
+  /* forwarding list methods
   def isEmpty: boolean = theList.isEmpty;
   def head: Node = theList.head;
   def tail: List[Node] = theList.tail;
@@ -108,6 +110,7 @@ class NodeList(theList:List[Node]) extends List[Node] {
   override def flatMap[b](f: Node => List[b]): List[b] = theList.flatMap( f );
 
   override def :::[b >: Node](prefix: List[b]): List[b] = theList.:::( prefix );
+  */
 
   //the  == method cannot be forwarded :-(
 }
