@@ -891,7 +891,7 @@ public class Parser implements Tokens {
      */
     Tree block(int pos) {
 	Tree[] stats = blockStatSeq(new TreeList());
-	if (stats.length == 1) return stats[0];
+	if (stats.length == 1 && stats[0].isTerm()) return stats[0];
 	else return make.Block(pos, stats);
     }
 
