@@ -257,7 +257,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      */
     void validate(Symbol sym) {
 	checkNoConflict(sym, DEFERRED, PRIVATE);
-	checkNoConflict(sym, FINAL, PRIVATE);
 	checkNoConflict(sym, FINAL, SEALED);
 	checkNoConflict(sym, PRIVATE, PROTECTED);
 	checkNoConflict(sym, PRIVATE, OVERRIDE);
@@ -2174,7 +2173,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tree, adapt(qual1, qualmode, Type.AnyType), name);
 
 	    case Ident(Name name):
-		if (((mode & PATTERNmode) != 0) && name.isVariable()) {
+		if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) && name.isVariable()) {
                       //System.out.println("pat var " + name + ":" + pt);//DEBUG
 
                       Symbol vble, vble2 = null;
