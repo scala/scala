@@ -153,6 +153,20 @@ class AddInterfaces extends Transformer {
             return newTree;
         }
 
+        case Return(Tree expr): {
+            Symbol sym = tree.symbol();
+            Symbol owner = sym.owner();
+            if (owner.isClass() && phase.needInterface(owner)) {
+                Symbol classOwner = phase.getClassSymbol(owner);
+                Map ownerMemberMap = phase.getClassMemberMap(classOwner);
+                Symbol newSym = (Symbol)ownerMemberMap.get(sym);
+                assert newSym != null
+                    : Debug.show(sym) + " not in " + ownerMemberMap;
+                return gen.Return(tree.pos, newSym, transform(expr));
+            } else
+                return super.transform(tree);
+        }
+
         case This(_): {
             // Use class symbol for references to "this".
             Symbol classThisSym = phase.getClassSymbol(tree.symbol());
