@@ -222,10 +222,11 @@ object Test with Application {
 
   Console.println( new scala.xml.PrettyPrinter(80, 5).format (
     for( val t <- books \\ "title";
-         val r <- reviews \\ "entry"; r \ "title" == t  ) yield
+         val r <- reviews \\ "entry";
+         r \ "title" == t) yield
           <result>
     { t }
-    { r }
+    { (r \ "remarks"):_* }
     </result>
   ));
 

@@ -22,20 +22,11 @@ NodeSeq
 passed ok
 <result>
      <title>Blabla</title>
-     <entry>
-          <title>Blabla</title>
-          <remarks>Hallo Welt.</remarks>
-     </entry>
+     <remarks>Hallo Welt.</remarks>
 </result><result>
      <title>Blubabla</title>
-     <entry>
-          <title>Blubabla</title>
-          <remarks>Hello Blu</remarks>
-     </entry>
+     <remarks>Hello Blu</remarks>
 </result><result>
      <title>Blubabla</title>
-     <entry>
-          <title>Blubabla</title>
-          <remarks>rem 2</remarks>
-     </entry>
+     <remarks>rem 2</remarks>
 </result>
