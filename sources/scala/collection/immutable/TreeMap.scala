@@ -9,20 +9,20 @@
 
 package scala.collection.immutable;
 
-class TreeMapFactory[KEY](order:Order[KEY]) extends MapFactory[KEY] {
-  def Empty[VALUE] = new TreeMap[KEY,VALUE](order);
-}
 
 /** This class implements immutable maps using a tree.
  *
  *  @author  Erik Stenman, Matthias Zenger
  *  @version 1.0, 23/07/2003
  */
- class TreeMap[KEY,VALUE](order:Order[KEY]) extends Tree[KEY,Pair[KEY,VALUE]](order) with Map[KEY, VALUE] {
-   override type This = TreeMap[KEY,VALUE];
+ class TreeMap[KEY, VALUE](order: Order[KEY]) extends Tree[KEY, Pair[KEY, VALUE]](order)
+                                              with Map[KEY, VALUE] {
+
+   override type This = TreeMap[KEY, VALUE];
+
    /** A factory to create empty maps of the same type of keys.
-   */
-   val factory = new TreeMapFactory[KEY](order);
+    */
+   def empty[C] = new TreeMap[KEY, C](order);
 
   /** Returns the key of an entry.
   *   This method has to be defined by concrete implementations
@@ -65,9 +65,6 @@ class TreeMapFactory[KEY](order:Order[KEY]) extends MapFactory[KEY] {
        case Some(Pair(_,value:VALUE)) => Some(value);
        case _ => None;
      }
-
-
-
 
    /** Retrieve the value which is associated with the given key. This
    *  method throws an exception if there is no mapping from the given
