@@ -95,13 +95,13 @@ abstract class MarkupParser[MarkupType, AVType] {
           nextch;
           val tmp = xAttributeValue(delim);
           nextch;
-          handle.attributeCDataValue( pos1, tmp );
+          handle.attribute( pos1, key, tmp );
         /*case '{' if enableEmbeddedExpressions =>
           nextch;
           handle.attributeEmbedded(pos1, xEmbeddedExpr);*/
         case _ =>
           reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
-          handle.attributeCDataValue( pos1, "<syntax-error>" )
+          handle.attribute( pos1, key, "<syntax-error>" )
       };
       // well-formedness constraint: unique attribute names
       if (aMap.contains(key))
@@ -302,6 +302,8 @@ abstract class MarkupParser[MarkupType, AVType] {
    *               | xmlTag1 '/' '&gt;'
    */
   def element: MarkupType = {
+    xSpaceOpt; // @todo: move this to init
+    xToken('<');
     var pref: Map[String, String] = _;
     var pos1 = pos;
     val qname = xTag;

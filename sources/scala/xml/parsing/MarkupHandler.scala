@@ -13,7 +13,7 @@ abstract class MarkupHandler[MarkupType, AVType] {
 
   /** mapping from prefixes to namespaces */
   var namespace: immutable.Map[String,String] =
-    new immutable.TreeMap[String,String];
+    new immutable.TreeMap[String,String].update("","");
 
   /** returns prefix of the qualified name if any */
   final def namespacePrefix(name: String): Option[String] = {
@@ -50,6 +50,14 @@ abstract class MarkupHandler[MarkupType, AVType] {
 
   def attributeCDataValue(pos: int, str:String): AttribValue;
   def attributeNamespaceDecl(pos: int, uri: String): AttribValue;
+
+  final def attribute(pos: int, key: String, value:String): AttribValue =
+    if( key.startsWith("xmlns"))
+      attributeNamespaceDecl(pos, value);
+    else
+      attributeCDataValue(pos, value);
+
+
 
   /** be careful to copy everything from attrMap1, as it will change
    *  @param attrMap1 the attribute map.
