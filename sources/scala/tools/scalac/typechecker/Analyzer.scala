@@ -1979,7 +1979,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$PackageDef(pkg, templ @ Tree$Template(parents, body)) =>
 	  val pkgSym: Symbol = pkg.symbol();
 	  if (pkgSym != null && pkgSym.isPackage()) {
-	    pushContext(templ, pkgSym, pkgSym.members());
+	    pushContext(templ, pkgSym.moduleClass(), pkgSym.members());
 	    val body1: Array[Tree] = transform(body);
 	    popContext();
 	    val templ1: Tree$Template = copy.Template(templ, parents, body1);
