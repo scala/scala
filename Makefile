@@ -174,8 +174,8 @@ $(LATEST)boottest-%	:
 	@$(make) \
 	    INSTALL_PREFIX=$(PROJECT_BOOTTESTDIR) \
 	    SCRIPTS_PREFIX=$(PROJECT_BOOTTESTDIR)/bin \
-	    JC_OUTPUTDIR=$(PROJECT_BOOTSTRAPDIR)/classes \
-	    JC_CLASSPATH=$(PROJECT_BOOTSTRAPDIR)/classes \
+	    JC_OUTPUTDIR=$(PROJECT_BOOTTESTDIR)/classes \
+	    JC_CLASSPATH=$(PROJECT_BOOTTESTDIR)/classes \
 	    LIBRARY_SCALAC=$(PROJECT_BINARYDIR)/scalac \
 	    prefix="boottest-" $@;
 	touch $@
