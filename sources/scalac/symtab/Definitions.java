@@ -677,6 +677,15 @@ public class Definitions {
         return SCALACLASSTYPE_SETPARENTS;
     }
 
+    private Symbol SCALACLASSTYPE_EMPTYARRAY;
+    public Symbol SCALACLASSTYPE_EMPTYARRAY() {
+        if (SCALACLASSTYPE_EMPTYARRAY == null)
+            SCALACLASSTYPE_EMPTYARRAY =
+                loadTerm(SCALACLASSTYPE_CLASS.linkedModule().moduleClass(),
+                         Names.emptyArray);
+        return SCALACLASSTYPE_EMPTYARRAY;
+    }
+
     //########################################################################
     // Public Fields - Global values
 
