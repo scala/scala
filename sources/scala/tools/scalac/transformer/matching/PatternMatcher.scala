@@ -253,6 +253,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //Console.println("patternNode("+tree+","+header+")");
+    //Console.println("tree.getType()"+tree.getType());
     tree.match {
       case Bind(name, Typed(Ident(Names.PATTERN_WILDCARD), tpe)) => // x@_:Type
       if(header.getTpe().isSubType(tpe.getType())) {
@@ -296,9 +297,14 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
                      ((fn.symbol().flags & Modifiers.CASE) != 0))) {
                        mk.VariablePat(tree.pos, tree);
                      }
-           else
+           else {
+             /*
+            Console.println("apply but not seqApply");
+            Console.println("tree.getType()="+tree.getType());
+            Console.println("tree.symbol()="+tree.symbol());
+             */
              mk.ConstrPat(tree.pos, tree.getType());
-
+           }
         case t @ Typed(ident, tpe) =>       // variable pattern
           val doTest = header.getTpe().isSubType(tpe.getType());
           val node = {
@@ -341,6 +347,7 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
 
         case Sequence(ts) =>
             if ( !delegateSequenceMatching ) {
+              //throw new ApplicationError("cannot happen:"+tree);
                 mk.SequencePat(tree.pos, tree.getType(), ts.length);
             } else {
                 mk.SeqContainerPat(tree.pos, tree.getType(), tree);
@@ -894,14 +901,17 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
                                       toTree(node.and)),
                           toTree(node.or, selector.duplicate()));
           case SequencePat(casted, len) =>
-            return gen.If(cf.And(gen.mkIsInstanceOf(selector.duplicate(), node.getTpe()),
-                                 cf.Equals(gen.mkApply__(gen.Select(gen.mkAsInstanceOf(selector.duplicate(), node.getTpe()),
-                                                                    defs.SEQ_LENGTH())),
-                                           gen.mkIntLit(selector.pos, len))),
-                          gen.mkBlock(gen.ValDef(casted,
-                                                 gen.mkAsInstanceOf(selector.duplicate(), node.getTpe())),
-                                      toTree(node.and)),
-                          toTree(node.or, selector.duplicate()));
+            return
+          cf.Or(
+            cf.And(
+              cf.And(gen.mkIsInstanceOf(selector.duplicate(), node.getTpe()),
+                     cf.Equals(gen.mkApply__(gen.Select(gen.mkAsInstanceOf(selector.duplicate(), node.getTpe()),
+                                                        defs.SEQ_LENGTH())),
+                               gen.mkIntLit(selector.pos, len))),
+              gen.mkBlock(gen.ValDef(casted,
+                                     gen.mkAsInstanceOf(selector.duplicate(), node.getTpe())),
+                          toTree(node.and))),
+            toTree(node.or, selector.duplicate()));
           case ConstantPat(value) =>
             return gen.If(cf.Equals(selector.duplicate(),
                                     gen.Literal(selector.pos, value)),
