@@ -12,7 +12,7 @@ package scala;
 import org.xml.sax.InputSource;
 
 import scala.xml.{AttributedNode,Node, Text,Utility};
-import scala.collection.Map;
+import scala.collection.immutable.Map;
 import scala.collection.immutable.ListMap;
 
 
@@ -40,11 +40,11 @@ case class Symbol(name: String, elems: Any*) extends AttributedNode {
         case _      => Text(x.toString());
     }));
 
-    private var attrMap: ListMap[String, String] = ListMap.Empty[String,String];
+    //private val attrMap: ListMap[String, String] = ListMap.Empty[String,String];
 
     /** Returns a map representing the attributes of this node.
      */
-    def attributes: Map[String, String] = attrMap;
+    def attributes: Map[String, String] = ListMap.Empty;
 
     /** Converts this symbol to a string
      */
@@ -63,14 +63,18 @@ case class Symbol(name: String, elems: Any*) extends AttributedNode {
         s.toString();
     }
 
-    /** This method <b>destructively</b> updates attributes of this symbol.
+    /** returns a new symbol with updated attributes
      */
-    final def %(attrs: List[Pair[String, String]]): Symbol = {
-        attrMap = ListMap.Empty[String,String];
-        for(val a <- attrs.elements) {
-            attrMap = attrMap.update(a._1, a._2);
-        }
-        this
+    final def %(attrs: List[Pair[String, String]]): Symbol = new Symbol( name, elems:_* ) {
+      val themap = Symbol.this.attributes.incl( attrs );
+      override def attributes = themap;
+    }
+
+    /** returns a new symbol with updated attribute
+     */
+    final def %(attr: Pair[String, String]): Symbol = new Symbol( name, elems:_* ) {
+      val themap = Symbol.this.attributes.incl( attr );
+      override def attributes = themap;
     }
 
     final def <=(value: String) = new Pair(name, value);
