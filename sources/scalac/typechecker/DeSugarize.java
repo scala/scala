@@ -612,7 +612,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	ValDef[] vpars = new ValDef[symbols.length];
 	for (int i = 0; i < symbols.length; i++) {
 	    vpars[i] = (ValDef)make.ValDef(
-		symbols[i].pos, 0, symbols[i].name,
+		symbols[i].pos, PARAM | SYNTHETIC, symbols[i].name,
 		gen.mkType(symbols[i].pos, symbols[i].type()),
 		Tree.Empty);
 	}

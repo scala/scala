@@ -5,6 +5,7 @@ import scalac.symtab.Symbol ;
 import scalac.symtab.Type ;
 import scalac.symtab.TermSymbol ;
 import scalac.symtab.Definitions ;
+import scalac.symtab.Modifiers;
 import scalac.ast.Tree;
 import scalac.ast.TreeGen;
 import scalac.util.Name;
@@ -59,7 +60,7 @@ public class Autom2Scala  {
 	  return new TermSymbol( pos,
 				 cf.fresh.newName( prefix ),
 				 owner,
-				 scalac.symtab.Modifiers.FINAL );
+				 Modifiers.FINAL );
       }
 
       Symbol newParam( String prefix ) {
@@ -67,7 +68,7 @@ public class Autom2Scala  {
                                    pos,
                                    cf.fresh.newName( prefix ),
                                    funSym,
-                                   0);
+                                   Modifiers.PARAM );
       }
 
       Type funRetType() {

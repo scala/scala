@@ -521,7 +521,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: Infer
     val vpars = new Array[Tree$ValDef](symbols.length);
     for (val i <- Iterator.range(0, symbols.length)) {
       vpars(i) = make.ValDef(
-	symbols(i).pos, 0, symbols(i).name,
+	symbols(i).pos, PARAM | SYNTHETIC, symbols(i).name,
 	gen.mkType(symbols(i).pos, symbols(i).getType()),
 	Tree.Empty);
     }

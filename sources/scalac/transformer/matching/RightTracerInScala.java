@@ -141,13 +141,13 @@ public class RightTracerInScala extends TracerInScala  {
 	this.iterSym = new TermSymbol( pos,
 				       cf.fresh.newName("iter"),
 				       funSym,
-				       0)
+				       Modifiers.PARAM )
 	    .setType( cf.SeqTraceType( elementType ));
 
 	this.stateSym = new TermSymbol( pos,
 					cf.fresh.newName("q"),
 					funSym,
-					0 )
+					Modifiers.PARAM )
 	    .setType( defs.INT_TYPE() ) ;
 
 	this.curSym = new TermSymbol( pos,

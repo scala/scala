@@ -553,7 +553,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
             Name m_eqname = name.append(Names._EQ);
 	    Symbol m_eq = new TermSymbol(
 		tree.pos, m_eqname, sym.owner(), PRIVATE | SYNTHETIC);
-            Symbol m_eqarg = new TermSymbol(tree.pos, name, m_eq, 0)
+            Symbol m_eqarg = new TermSymbol(tree.pos, name, m_eq, PARAM | SYNTHETIC)
                 .setType(sym.type());
             m_eq.setInfo(
                 Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE()));
