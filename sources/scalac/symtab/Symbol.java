@@ -63,8 +63,9 @@ public abstract class Symbol implements Modifiers, Kinds {
         this.kind = kind;
         this.pos = pos;
         this.name = name;
-        this.owner = owner;
+        this.owner = owner == null ? this : owner;
         this.flags = flags & ~(INITIALIZED | LOCKED); // safety first
+        assert owner != null || isError() || isNone(): this;
     }
 
     protected void update(int pos, int flags) {
@@ -147,21 +148,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Set owner */
     public Symbol setOwner(Symbol owner) {
-        assert !isModuleClass() : Debug.show(this);
-        assert !isPrimaryConstructor() : Debug.show(this);
-        setOwner(this, owner);
+        assert !isConstructor() && !isNone() && !isError(): Debug.show(this);
+        setOwner0(owner);
         return this;
     }
-    private static void setOwner(Symbol symbol, Symbol owner) {
-        assert symbol != null;
-        assert symbol != Symbol.NONE;
-        assert symbol != Symbol.ERROR;
-        if (symbol.isModule()) setOwner(symbol.moduleClass(), owner);
-        if (symbol.isClass()) {
-            Symbol[] alts = symbol.allConstructors().alternativeSymbols();
-            for (int i = 0; i < alts.length; i++) setOwner(alts[i], owner);
-        }
-        symbol.owner = owner;
+    protected void setOwner0(Symbol owner) {
+        this.owner = owner;
     }
 
     /** Set type -- this is an alias for setInfo(Type info) */
@@ -1435,9 +1427,6 @@ public abstract class TypeSymbol extends Symbol {
      */
     private ClosureIntervalList closures;
 
-    /** The symbol's type template */
-    private Type template = null;
-
     /** A cache for type constructors
      */
     private Type tycon = null;
@@ -1454,7 +1443,6 @@ public abstract class TypeSymbol extends Symbol {
 
     protected void update(int pos, int flags) {
         super.update(pos, flags);
-        this.template = null;
     }
 
     /** copy all fields to `sym'
@@ -1467,7 +1455,7 @@ public abstract class TypeSymbol extends Symbol {
             symconstr.setInfo(fixConstrType(symconstr.type(), sym));
     }
 
-    protected void copyConstructorInfo(TypeSymbol other) {
+    protected final void copyConstructorInfo(TypeSymbol other) {
         other.primaryConstructor().setInfo(
             fixConstrType(
                 primaryConstructor().info().cloneType(
@@ -1484,7 +1472,7 @@ public abstract class TypeSymbol extends Symbol {
         }
     }
 
-    private Type fixConstrType(Type type, Symbol clone) {
+    private final Type fixConstrType(Type type, Symbol clone) {
         switch (type) {
         case MethodType(Symbol[] vparams, Type result):
             result = fixConstrType(result, clone);
@@ -1504,35 +1492,35 @@ public abstract class TypeSymbol extends Symbol {
 
     /** add a constructor
      */
-    public Symbol addConstructor() {
+    public final Symbol addConstructor() {
         Symbol constr = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
         constructor = constructor.overloadWith(constr);
         return constr;
     }
 
     /** Get primary constructor */
-    public Symbol primaryConstructor() {
+    public final Symbol primaryConstructor() {
         return constructor.firstAlternative();
     }
 
     /** Get all constructors */
-    public Symbol allConstructors() {
+    public final Symbol allConstructors() {
         return constructor;
     }
 
     /** Get type parameters */
-    public Symbol[] typeParams() {
+    public final Symbol[] typeParams() {
         return primaryConstructor().info().typeParams();
     }
 
     /** Get value parameters */
-    public Symbol[] valueParams() {
+    public final Symbol[] valueParams() {
         return (kind == CLASS) ? primaryConstructor().info().valueParams()
             : Symbol.EMPTY_ARRAY;
     }
 
     /** Get type constructor */
-    public Type typeConstructor() {
+    public final Type typeConstructor() {
         if (tycon == null)
             tycon = Type.TypeRef(owner().thisType(), this, Type.EMPTY_ARRAY);
         return tycon;
@@ -1540,15 +1528,19 @@ public abstract class TypeSymbol extends Symbol {
 
     public Symbol setOwner(Symbol owner) {
         tycon = null;
-        template = null;
+        constructor.setOwner0(owner);
+        switch (constructor.type()) {
+        case OverloadedType(Symbol[] alts, _):
+            for (int i = 0; i < alts.length; i++) alts[i].setOwner0(owner);
+        }
         return super.setOwner(owner);
     }
 
     /** Get type */
-    public Type type() {
+    public final Type type() {
         return primaryConstructor().type().resultType();
     }
-    public Type getType() {
+    public final Type getType() {
         return primaryConstructor().type().resultType();
     }
 
@@ -1649,7 +1641,6 @@ public abstract class TypeSymbol extends Symbol {
         super.reset(completer);
         closures = null;
         tycon = null;
-        template = null;
     }
 }
 
@@ -1910,7 +1901,6 @@ public final class ErrorSymbol extends Symbol {
     /** Constructor */
     public ErrorSymbol() {
         super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null, INITIALIZED);
-        super.setOwner(this);
         super.setInfo(Type.ErrorType);
     }
 
@@ -1921,12 +1911,6 @@ public final class ErrorSymbol extends Symbol {
 
     /** Set the mangled name of this Symbol */
     public Symbol mangled(Name name) {
-        return this;
-    }
-
-    /** Set owner */
-    public Symbol setOwner(Symbol owner) {
-        assert owner == this : Debug.show(owner);
         return this;
     }
 
@@ -1966,7 +1950,6 @@ public final class NoSymbol extends Symbol {
     /** Constructor */
     public NoSymbol() {
         super(Kinds.NONE, Position.NOPOS, Names.NOSYMBOL, null, INITIALIZED);
-        super.setOwner(this);
         super.setInfo(Type.NoType);
     }
 
@@ -1980,12 +1963,6 @@ public final class NoSymbol extends Symbol {
     /** Set the mangled name of this Symbol */
     public Symbol mangled(Name name) {
         throw new ApplicationError("illegal operation on " + getClass());
-    }
-
-    /** Set owner */
-    public Symbol setOwner(Symbol owner) {
-        assert owner == this : Debug.show(owner);
-        return this;
     }
 
     /** Set type */

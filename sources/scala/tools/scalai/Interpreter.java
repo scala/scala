@@ -148,7 +148,7 @@ public class Interpreter {
         Definitions definitions = global.definitions;
         Type argument = definitions.ARRAY_TYPE(definitions.JAVA_STRING_TYPE());
         Type result = definitions.UNIT_TYPE();
-        Symbol formal = new TermSymbol(0, ARGS_N, null, Modifiers.PARAM);
+        Symbol formal = new TermSymbol(0, ARGS_N, Symbol.NONE,Modifiers.PARAM);
         formal.setInfo(argument);
         global.currentPhase = current;
         return Type.MethodType(new Symbol[] {formal}, result);

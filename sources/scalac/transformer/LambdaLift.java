@@ -560,7 +560,7 @@ public class LambdaLift extends OwnerTransformer
                 ? enclClass.constructorClass()
                 : enclClass.owner();
         }
-	if (!sym.isPrimaryConstructor() && !sym.isModuleClass()) sym.setOwner(enclClass);
+	if (!sym.isConstructor()) sym.setOwner(enclClass);
 	if (!sym.isConstructor()) enclClass.members().enter(sym);
 	if (sym.isMethod()) {
 	    if (newtparams.length != 0 || newparams.length != 0) {
