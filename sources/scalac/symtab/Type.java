@@ -1044,6 +1044,17 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    Type[] args1 = map(args);
 		    if (prefix1 == prefix && args1 == args) return t;
 		    Symbol sym1 = (sym.flags & MODUL) == 0 ? prefix1.rebind(sym) : sym;
+                    if (local && sym != sym1) {
+                        // Here what we should do is remove the outer
+                        // type links of sym from args and then add
+                        // the outer type links of sym1 to
+                        // args. However, as currently type symbols
+                        // that can be rebound can't have type
+                        // arguments (excepted those added by explicit
+                        // outer), we can just replace args by the
+                        // outer type params of sym1.
+                        args1 = asSeenFrom(Symbol.type(sym1.owner().typeParams()), pre, sym1.owner());
+                    }
                     if (local) prefix1 = localThisType;
 		    return typeRef(prefix1, sym1, args1);
 		}
