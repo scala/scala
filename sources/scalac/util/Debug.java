@@ -102,7 +102,7 @@ public abstract class Debug {
         handlers = new HashMap();
         handlers.put(String.class, DebugToStringHandler.instance);
         handlers.put(Tree.class, DebugToStringHandler.instance);
-        handlers.put(Type.class, DebugType.instance);
+        handlers.put(Type.class, DebugToStringHandler.instance);
         handlers.put(Symbol.class, DebugSymbol.instance);
         handlers.put(Scope.class, DebugScope.instance);
     }
@@ -471,134 +471,6 @@ public class DebugArray extends DebugAbstractHandler {
 
     public void append0(StringBuffer buffer, Object that) {
         append1(buffer, (Object[])that);
-    }
-
-    //########################################################################
-}
-
-public class DebugType extends DebugAbstractHandler {
-
-    //########################################################################
-    // DebugType interface
-
-    public static DebugType instance = new DebugType();
-
-    public void append1(StringBuffer buffer, Type that) {
-        switch (that) {
-
-        case ErrorType:
-            buffer.append("ErrorType");
-            return;
-
-        case AnyType:
-            buffer.append("AnyType");
-            return;
-
-        case NoType:
-            buffer.append("NoType");
-            return;
-
-	case ThisType(Symbol symbol):
-            buffer.append("ThisType(");
-            Debug.append(buffer, symbol);
-            buffer.append(')');
-            return;
-
-        case TypeRef(Type prefix, Symbol symbol, Type[] args) :
-            buffer.append("TypeRef(");
-            Debug.append(buffer, prefix);
-            buffer.append(',');
-            Debug.append(buffer, symbol);
-	    buffer.append(',');
-	    Debug.append(buffer, args);
-            buffer.append(')');
-            return;
-
-        case SingleType(Type prefix, Symbol symbol):
-            buffer.append("SingleType(");
-            Debug.append(buffer, prefix);
-            buffer.append(',');
-            Debug.append(buffer, symbol);
-            buffer.append(')');
-            return;
-
-        case ConstantType(Type prefix, Object value):
-            buffer.append("ConstantType(");
-            Debug.append(buffer, prefix);
-            buffer.append(',');
-            Debug.append(buffer, value);
-            buffer.append(')');
-            return;
-
-        case CompoundType(Type[] basetypes, Scope members):
-            buffer.append("CompoundType(");
-            Debug.append(buffer, basetypes);
-            buffer.append(',');
-            Debug.append(buffer, members);
-            buffer.append(',');
-            Debug.append(buffer, that.symbol());
-            buffer.append(')');
-            return;
-
-        case MethodType(Symbol[] vparams, Type result):
-            buffer.append("MethodType(");
-            Debug.append(buffer, vparams);
-            buffer.append(',');
-            Debug.append(buffer, result);
-            buffer.append(')');
-            return;
-
-        case PolyType(Symbol[] tparams, Type result):
-            buffer.append("PolyType(");
-            Debug.append(buffer, tparams);
-            buffer.append(',');
-            Debug.append(buffer, result);
-            buffer.append(')');
-            return;
-
-        case OverloadedType(Symbol[] alts, Type[] alttypes):
-            buffer.append("OverloadedType(");
-            Debug.append(buffer, alts);
-            buffer.append(',');
-            Debug.append(buffer, alttypes);
-            buffer.append(')');
-            return;
-
-        case LazyType():
-            buffer.append("LazyType()");
-            return;
-
-        case TypeVar(Type origin, Type.Constraint constr):
-            buffer.append("TypeVar(");
-            Debug.append(buffer, origin);
-            buffer.append(',');
-            Debug.append(buffer, constr);
-            buffer.append(')');
-            return;
-
-        case UnboxedType(int tag):
-            buffer.append("UnboxedType(");
-            buffer.append(tag);
-            buffer.append(')');
-            return;
-
-        case UnboxedArrayType(Type elemtp):
-            buffer.append("UnboxedArrayType(");
-            Debug.append(buffer, elemtp);
-            buffer.append(')');
-            return;
-
-        default:
-            Debug.appendDefault(buffer, that);
-            return;
-        }
-    }
-
-    //########################################################################
-    // DebugHandler interface
-
-    public void append0(StringBuffer buffer, Object that) {
-        append1(buffer, (Type)that);
     }
 
     //########################################################################
