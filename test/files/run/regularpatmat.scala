@@ -568,6 +568,29 @@ object testWW {
 
 }
 
+object testMZ {
+        import scala.testing.UnitTest.test ;
+  class Expr;
+  case class One(xs: List[Expr]) extends Expr;
+  case class Two() extends Expr;
+  def testFoo(xs: List[Expr]) = xs match {
+    case List(Two()?,a,Two()?) => "a = " + a;
+    case List(Two()*,b,Two()*) => "b = " + b;
+    case List(_*) => "no match";
+  }
+
+  def main:Unit = {
+                System.out.println("testMZ - bug#132");
+    test[List[Expr],String](testFoo, List(Two(),Two(),Two(),Two()), "b = Two");
+    test[List[Expr],String](testFoo, List(Two(),Two(),Two()), "a = Two");
+    test[List[Expr],String](testFoo, List(Two(),Two()), "a = Two");
+    test[List[Expr],String](testFoo, List(Two()), "a = Two");
+    test[List[Expr],String](testFoo, List(), "no match");
+    ()
+  }
+
+}
+
 object Test {
   def main(args: Array[String]): Unit = {
     testWR.main( args );
@@ -580,6 +603,7 @@ object Test {
     testBM.main( args );
     testBN.main( args );
     testBO.main( args );
+    testMZ.main;
     ()
   }
 }
