@@ -17,21 +17,21 @@ import scalac.ast.parser.Scanner ;
 
 public class DeclToScala {
 
-
+    /*
       static final String ATTRIBS_VALDEF =
 "val _at:scala.Map[String,String] = if( attribs == null ) { new scala.HashMap[String,String] } else attribs ;";
       static final String ATTRIB_MAP = "attribs";
       static final String ATTRIB_T   = "scala.Map[String,String]";
-
+    */
       static final String CHILDREN_VALDEF =
-"val _ch:List[Element] = if( children == null ) { scala.Nil[Element] } else children ;";
+"val _ch:List[Element] = if( children == null ) { scala.Nil } else children ;";
       static final String CHILDREN_SEQ = "children";
       static final String CHILDREN_T   = "scala.List[Element]";
 
       static final String RAW_NAME_DEF     = "def getName:String = ";
 
       static final String GET_CHILDREN_DEF = "def getChildren:scala.List[Element] = _ch ;";
-      static final String GET_ATTRIBS_DEF =  "def getAttribs:scala.Map[String,String] = _at ;";
+    //static final String GET_ATTRIBS_DEF =  "def getAttribs:scala.Map[String,String] = _at ;";
 
       static final int IND_STEP = 5;
 
@@ -61,7 +61,7 @@ public class DeclToScala {
             fOut.println(" {");
             fIndent = IND_STEP;
             printIndent();
-            fOut.println("import scala.xml ;");
+            fOut.println("import scala.xml._ ;");
       }
 
       public void end() {
@@ -118,8 +118,8 @@ public class DeclToScala {
             fOut.print( clazzName );
 
             fOut.print('(');
-            fOut.print( ATTRIB_MAP ); fOut.print(':'); fOut.print( ATTRIB_T );
-            fOut.print(',');
+            //fOut.print( ATTRIB_MAP ); fOut.print(':'); fOut.print( ATTRIB_T );
+            //fOut.print(',');
             fOut.print( CHILDREN_SEQ ); fOut.print(':'); fOut.print( CHILDREN_T );
             fOut.print(')');
 
@@ -131,14 +131,15 @@ public class DeclToScala {
             fOut.print('"'); fOut.print( decl.name ); fOut.print('"');
             fOut.println(';');
 
-            printIndent(); fOut.println( ATTRIBS_VALDEF );
-            printIndent(); fOut.println( GET_ATTRIBS_DEF );
+            //printIndent(); fOut.println( ATTRIBS_VALDEF );
+            //printIndent(); fOut.println( GET_ATTRIBS_DEF );
             printIndent(); fOut.println( CHILDREN_VALDEF );
             printIndent(); fOut.println( GET_CHILDREN_DEF );
 
-
+	    /*
             for( Iterator it = decl.attribs.keySet().iterator(); it.hasNext() ; )
                   toScala( (AttrDecl) decl.attribs.get( it.next() ));
+	    */
 
             fIndent -= IND_STEP ;
             printIndent();
