@@ -1,5 +1,5 @@
-class D[A <: Ord[A],B] {
-    abstract class Tree[A <: Ord[A],B]();
+class D[A <: Ordered[A],B] {
+    abstract class Tree[A <: Ordered[A],B]();
     case class Node[A,B](key:A,value:B,smaller:Tree[A,B],bigger:Tree[A,B])
 	extends Tree[A,B];
     case class Nil[A,B]() extends Tree[A,B];
