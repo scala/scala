@@ -86,11 +86,12 @@ class AddInterfaces extends Transformer {
             if (ownerSubst != null && ownerSubst.fst == sym.owner())
                 sym.setOwner((Symbol)ownerSubst.snd);
 
-            // Update symbol's type. TODO is this needed? Shouldn't
-            // the type of the members be updated in transformInfo.
-            // Here we should only be concerned by the type symbols
-            // appearing in the tree, not in the type.
-            //sym.updateInfo(typeMap.map(sym.info()));
+            // Update symbol's type. Do that only for symbols which do
+            // not belong to a class, since the type of these (i.e.
+            // class members) has been changed during cloning
+            // operation.
+            if (! (sym.owner().isClass() || thisTypeSubst == null))
+                sym.updateInfo(typeSubst.apply(sym.info()));
         }
 
         switch (tree) {

@@ -190,13 +190,15 @@ public class AddInterfacesPhase extends PhaseDescriptor {
      * to use these new symbols. Also applies the given substitution
      * to the cloned symbols' type. */
     protected Symbol deepCloneSymbol(Symbol original,
+                                     Symbol oldOwner,
                                      Symbol newOwner,
                                      SymbolSubstTypeMap map) {
+        SymbolSubstTypeMap symMap;
         Symbol clone = cloneSymbol(original, newOwner);
         if (clone.isMethod()) {
             Symbol[] tparams = clone.typeParams();
             Symbol[] newTParams = new Symbol[tparams.length];
-            SymbolSubstTypeMap symMap = new SymbolSubstTypeMap(map);
+            symMap = new SymbolSubstTypeMap(map);
             for (int i = 0; i < tparams.length; ++i) {
                 newTParams[i] = cloneSymbol(tparams[i], clone);
                 symMap.insertSymbol(tparams[i], newTParams[i]);
@@ -209,9 +211,12 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                 newVParams[i].updateInfo(symMap.apply(newVParams[i].info()));
                 symMap.insertSymbol(vparams[i], newVParams[i]);
             }
+        } else
+            symMap = map;
 
-            clone.updateInfo(substParams(clone.info(), symMap));
-        }
+        ThisTypeMap thisTypeMap = new ThisTypeMap(oldOwner, newOwner);
+        Type newTp = thisTypeMap.apply(substParams(clone.info(), symMap));
+        clone.updateInfo(newTp);
         return clone;
     }
 
@@ -287,8 +292,10 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                     } else if (ifaceMemberSym.isProtected())
                         ifaceMemberSym.flags ^= Modifiers.PROTECTED;
 
-                    classMemberSym =
-                        deepCloneSymbol(ifaceMemberSym, classSym, paramsSubst);
+                    classMemberSym = deepCloneSymbol(ifaceMemberSym,
+                                                     ifaceSym,
+                                                     classSym,
+                                                     paramsSubst);
                     ifaceMemberSym.flags |= Modifiers.DEFERRED;
 
                     classMemberSym.updateInfo(thisTpMap.apply(classMemberSym.info()));
@@ -448,6 +455,10 @@ class ThisTypeMap extends Type.Map {
 
     public ThisTypeMap(Symbol sym, Type tp) {
         this.sym = sym; this.tp = tp;
+    }
+
+    public ThisTypeMap(Symbol oldSym, Symbol newSym) {
+        this(oldSym, new Type.ThisType(newSym));
     }
 
     public Type apply(Type t) {
