@@ -1,10 +1,24 @@
 import java.io.StringReader;
 import org.xml.sax.InputSource;
 import scala.xml.nobinding.XML;
-import scala.testing.UnitTest.assertEquals ;
-import scala.xml.NodeList;
+import scala.testing.UnitTest._ ;
+import scala.xml.{Node,NodeSeq};
 
 object Test with Application {
+
+  def eq( a:Seq[Node], b:Seq[Node] ) = {
+    if( a.length == b.length ) {
+      val ita = a.elements;
+      val itb = b.elements;
+      var res = true;
+      while( ita.hasNext ) {
+        res = res &&( ita.next == itb.next );
+      };
+      res
+    } else {
+      false
+    }
+  }
   val xmlFile1 = "<hello><world/></hello>";
   val isrc1 = new InputSource( new StringReader( xmlFile1 ) );
   val parsedxml1 = XML.load( isrc1 );
@@ -15,36 +29,108 @@ object Test with Application {
 
   // xmlFile2/book -> book,book
 
-  Console.println( parsedxml1/'world ); /* List('world()) */
-  Console.println( parsedxml1/'_ );     /* List('world()) */
+  assertEquals( eq( parsedxml1/'_ ,List('world()) ), true);
+  assertEquals( eq( parsedxml1/'world ,List('world()) ), true);
 
-  Console.println( "\nparsedxml2/'_"); /* List(book,book) */
-  Console.println( parsedxml2/'_); /* List(book,book) */
+  assertEquals(
+    eq(
 
-  Console.println( "\nparsedxml2/'author"); /* List() */
-  Console.println( parsedxml2/'author); /* List() */
+      parsedxml2/'_,
 
-  Console.println( "\nparsedxml2/'book:");
-  Console.println( parsedxml2/'book); /* List(book,book) */
+      List(
+        'book('author(Text("Peter Buneman")),
+              'author(Text("Dan Suciu")),
+              'title(Text("Data on ze web"))),
+        'book('author(Text("John Mitchell")),
+              'title(Text("Foundations of Programming Languages")))
+      )), true );
 
-  Console.println( "\nparsedxml2/'_/'_");
-  Console.println( parsedxml2/'_/'_ );
-  Console.println( "\nparsedxml2/'_/'author");
-  Console.println( parsedxml2/'_/'author );
-  Console.println( "\nparsedxml2/'_/'_/'author");
-  Console.println( parsedxml2/'_/'_/'author );
-               /* List('author(Text("Peter Buneman")),
-                    'author(Text("Dan Suciu")),
-                    'author(Text("John Mitchell")))); */
 
-  Console.println( "\nparsedxml2/#'author");
-  Console.println( parsedxml2/#'author );
+  assertEquals( (parsedxml2/'author).length == 0, true );
 
-  Console.println( "\nnew NodeList(List(parsedxml2))/#'_");
-  Console.println( new NodeList( List( parsedxml2 ))/#'_ );
 
-  Console.println( "\nnew NodeList(List(parsedxml2))/#'title");
-  Console.println( new NodeList( List( parsedxml2 ))/#'title );
+  assertEquals(
+    eq(
 
+      parsedxml2/'book,
+
+      List(
+        'book('author(Text("Peter Buneman")),
+              'author(Text("Dan Suciu")),
+              'title(Text("Data on ze web"))),
+        'book('author(Text("John Mitchell")),
+              'title(Text("Foundations of Programming Languages")))
+      )), true );
+
+  assertEquals(
+    eq(
+
+      parsedxml2/'_/'_,
+
+      List('author(Text("Peter Buneman")),
+           'author(Text("Dan Suciu")),
+           'title(Text("Data on ze web")),
+           'author(Text("John Mitchell")),
+           'title(Text("Foundations of Programming Languages")))
+
+    ), true);
+
+  assertEquals(
+    eq(
+
+      parsedxml2/'_/'author,
+
+      List('author(Text("Peter Buneman")),
+           'author(Text("Dan Suciu")),
+           'author(Text("John Mitchell")))
+
+    ), true);
+
+  assertEquals( (parsedxml2/'_/'_/'author).length == 0, true );
+
+  assertEquals(
+    eq(
+
+      parsedxml2/#'author,
+
+      List('author(Text("Peter Buneman")),
+           'author(Text("Dan Suciu")),
+           'author(Text("John Mitchell")))
+
+    ), true );
+
+  assertEquals(
+    eq(
+
+      parsedxml2/#'_,
+
+      List(
+        'book('author(Text("Peter Buneman")),
+              'author(Text("Dan Suciu")),
+              'title(Text("Data on ze web"))),
+        'author(Text("Peter Buneman")),
+        Text("Peter Buneman"),
+        'author(Text("Dan Suciu")),
+        Text("Dan Suciu"),
+        'title(Text("Data on ze web")),
+        Text("Data on ze web"),
+        'book('author(Text("John Mitchell")),
+              'title(Text("Foundations of Programming Languages"))),
+        'author(Text("John Mitchell")),
+        Text("John Mitchell"),
+        'title(Text("Foundations of Programming Languages")),
+        Text("Foundations of Programming Languages"))
+    ) , true);
+
+
+  assertEquals(
+    eq(
+
+      parsedxml2/#'title,
+
+      List(
+        'title(Text("Data on ze web")),
+        'title(Text("Foundations of Programming Languages")))
+    ) , true);
 
 }
