@@ -18,7 +18,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
                     attrs: HashMap[String,String],
                     children: List[Node] ):Element = {
 
-          val el = new Element( Symbol( label ), children ) {
+          val el = new Element( label, children ) {
 	    override def attributes = attrs;
           };
 

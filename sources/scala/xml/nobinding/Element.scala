@@ -5,9 +5,9 @@ import scala.collection.immutable.ListMap ;
 
 /** an XML node. use this when data binding is not desired.
 **/
-class Element( symbol: Symbol, ch: Seq[Node] ) extends AttributedNode {
+class Element( name:String, ch: Seq[Node] ) extends AttributedNode with Symbol( name, ch )  {
 
-  def label = symbol.name;
+  def label = name;
   def children = ch;
 
   override def attributes : Map[String,String] = ListMap.Empty[String,String] ;
