@@ -521,8 +521,8 @@ case "$SCRIPT" in
     scala-info ) scala_info "$@";;
     scalac*    ) exec_compile scalac.Main "$@";;
     scaladoc*  ) exec_compile scala.tools.scaladoc.Main "$@";;
-    scalarun*  ) exec_interpret scalai.Main "$@";;
-    scalaint*  ) exec_interpret scalai.Main -interactive "$@";;
+    scalarun*  ) exec_interpret scala.tools.scalai.Main "$@";;
+    scalaint*  ) exec_interpret scala.tools.scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala scala.tools.dtd2scala.Main "$@";;
     scalap*    ) exec_scalap scala.tools.scalap.Main "$@";;
     scalatest* ) exec_scalatest scala.tools.scalatest.Main "$@";;
