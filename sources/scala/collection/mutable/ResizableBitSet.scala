@@ -13,7 +13,7 @@ package scala.collection.mutable ;
  *  @author  Burak Emir
  *  @param initSize: initial size in nbits
  */
-class ResizableBitSet(initSize: Int) with Iterable[Boolean] {
+class ResizableBitSet(initSize: Int) extends scala.collection.BitSet {
 
   /** default constructor, initial size of 16 bits */
   def this() = this( 16 );
@@ -34,32 +34,23 @@ class ResizableBitSet(initSize: Int) with Iterable[Boolean] {
     def get(j:Int, mask:Int):Boolean = {
       (array(j) & mask) != 0;
     }
+
+    def freeze: Array[Byte] = {
+      val arr = new Array[Byte]( array.length );
+      java.lang.System.arraycopy(array, 0, arr, 0, arr.length);
+      arr
+    }
   }
 
   protected val internal = new ByteArray();
 
   /** size of this bitset in nbytes */
-  protected var size: Int = 0;
+  var size: Int = 0;
 
   /** size of this bitset in nbits */
   def ensureSize(nbits: Int): Unit = {
     internal.ensureBits( nbits );
     size = nbits;
-  }
-
-  /** Returns the length of this resizable bitset in nbytes */
-  def length: Int = size;
-
-  /** Returns a new iterator over all elements of this resizable array. */
-  def elements: Iterator[Boolean] = new Iterator[Boolean] {
-    var i = 0;
-    def hasNext: Boolean = i < length;
-    def next: Boolean = {
-      val j    = i >>> 3;
-      val mask = (1 << (i & 0x07));
-      i = i + 1;
-      internal.get(j,mask)
-    }
   }
 
   final def set(i: Int, b: Boolean): Unit = if( b ) set(i) else clear(i);
@@ -76,9 +67,11 @@ class ResizableBitSet(initSize: Int) with Iterable[Boolean] {
     internal.and(j, ~mask);
   }
 
-  def get(i: Int):Boolean = {
+  def apply(i: Int):Boolean = {
     val j    = (i >>> 3);
     val mask = (1 << (i & 0x07));
     internal.get(j, mask);
   }
+
+  def toByteArray: Array[Byte] = internal.freeze;
 }

@@ -29,8 +29,8 @@ import scalac.transformer.matching.AlgebraicMatcher ;
 package scala.tools.scalac.transformer {
 
 
-import matching.FullRegularTranslator ;
-import matching.GrammarPrinter ; //DEBUG
+//import matching.FullRegularTranslator ;
+//import matching.GrammarTool ; //DEBUG
 
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
@@ -92,23 +92,23 @@ class TransMatch( global:scalac_Global )
     }
 
 
-    val pe  = new matching.PatternExp( global.definitions );
     //val bsf = new scala.util.automaton.BerrySethi[ matching.PatternTest ]( pe );
 
   def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
+    /*
     if( global.newMatch ) {
       val fm = new FullRegularTranslator( global );
       val gram = fm.MakeGrammar( scala.Iterator.fromArray( cases ) );
-      Console.println( GrammarPrinter.toString( gram ));
+      Console.println("writing out the grammar to /tmp/encodedGrammar.bin");
+      val f = new FileOutputStream(new File("/tmp/encodedGrammar.bin"));
+      f.write( gram.encode );
+      f.close();
+      // val gram = Predef.decode( Predef.Array[] );
+      Console.println( GrammarTool.toString( gram ));
 
-      for( val p <- cases ) {
-        val aPe = pe.fromTree( p.pat ) ;
-        Console.println( aPe );
-        //val na = bsf.automatonFrom( aPe ) ;
-        //Console.println( na );
-      }
       throw new ApplicationError("not impl.");
     };
+    */
     var containsReg = false;
     var i = 0;
     while (i < cases.length) {

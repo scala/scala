@@ -64,6 +64,7 @@ collection/Map.scala
 collection/MapProxy.scala
 collection/Set.scala
 collection/SetProxy.scala
+collection/BitSet.scala
 
 collection/mutable/ArrayBuffer.scala
 collection/mutable/Buffer.scala
@@ -146,21 +147,30 @@ runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
 runtime/matching/Address.scala
-runtime/matching/Context.scala
-runtime/matching/Grammar.scala
-runtime/matching/Match.scala
-runtime/matching/Matcher.scala 
-runtime/matching/NonTerm.scala
-runtime/matching/Pebble.scala
-runtime/matching/Rule.scala
+#runtime/matching/Context.scala
+#runtime/matching/Grammar.scala
+#runtime/matching/Match.scala
+#runtime/matching/Matcher.scala 
+#runtime/matching/NonTerm.scala
+runtime/matching/PatternGrammar.scala
+#runtime/matching/Pebble.scala
+#runtime/matching/Rule.scala
 
 testing/UnitTest.scala
 
 util/alphabet/Alphabet.scala
+util/alphabet/AlphabetPlusWildcard.scala
+util/alphabet/IntAlphabet.scala
+util/alphabet/WildcardLabel.scala
+#util/automata/NondetTreeHedgeAutom.scala
 util/automata/NondetWordAutom.scala
 util/automata/BaseBerrySethi.scala
 util/automata/WordBerrySethi.scala
+util/grammar/TreeHedgeGrammar.scala
+util/grammar/ImmutableTreeHedgeGrammar.scala
+util/grammar/MutableTreeHedgeGrammar.scala
 util/regexp/Base.scala
+util/regexp/WildcardBase.scala
 util/regexp/WordExp.scala
 util/regexp/PointedHedgeExp.scala
 util/regexp/SyntaxError.scala
