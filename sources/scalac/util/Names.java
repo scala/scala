@@ -61,12 +61,14 @@ public class Names {
     public static final Name as = Name.fromString("as");
     public static final Name box = Name.fromString("box");
     public static final Name elem = Name.fromString("elem");
+    public static final Name elements = Name.fromString("elements");
     public static final Name false_ = Name.fromString("false");
     public static final Name filter = Name.fromString("filter");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
     public static final Name getClass = Name.fromString("getClass");
     public static final Name hashCode = Name.fromString("hashCode");
+    public static final Name hasNext = Name.fromString("hasNext");
     public static final Name is = Name.fromString("is");
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
     public static final Name java = Name.fromString("java");
@@ -78,6 +80,7 @@ public class Names {
     public static final Name length = Name.fromString("length");
     public static final Name match = Name.fromString("match");
     public static final Name map = Name.fromString("map");
+    public static final Name next = Name.fromString("next");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
     public static final Name runtime = Name.fromString("runtime");
@@ -97,6 +100,8 @@ public class Names {
     public static final Name scala_Float = Name.fromString("scala.Float");
     public static final Name scala_Function = Name.fromString("scala.Function");
     public static final Name scala_Int = Name.fromString("scala.Int");
+
+    public static final Name scala_Iterator = Name.fromString("scala.Iterator");
     public static final Name scala_Long = Name.fromString("scala.Long");
     public static final Name scala_Nil = Name.fromString("scala.Nil");
     public static final Name scala_Object = Name.fromString("scala.Object");
