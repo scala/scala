@@ -167,8 +167,6 @@ public class CompilerPhases {
     public void freeze() {
         PhaseDescriptor[] phases = phases();
         PhaseDescriptor.freeze(phases);
-        for (int i = 0; i < phases.length; i++)
-            if (phases[i].hasSkipFlag()) remove(phases[i]);
     }
 
     /** Activates phase "phase" by placing it before phase "where". */
@@ -183,11 +181,6 @@ public class CompilerPhases {
         int index = phases.indexOf(where);
         assert index >= 0 : "could not find phase " + where;
         phases.add(index + 1, phase);
-    }
-
-    /** Deactivates phase "phase". */
-    public void remove(PhaseDescriptor phase) {
-        phases.remove(phase);
     }
 
     //########################################################################

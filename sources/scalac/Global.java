@@ -107,6 +107,10 @@ public class  Global {
      */
     public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();
 
+    /** the first phase
+     */
+    private final Phase firstPhase;
+
     /** the current phase
      */
     public Phase currentPhase;
@@ -122,7 +126,6 @@ public class  Global {
     /** compilation phases.
      */
     public final CompilerPhases PHASE;
-    public final Phase[] phases;
 
     /** compilation targets
      */
@@ -197,32 +200,39 @@ public class  Global {
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
 	// TODO: Enable TailCall for other backends when they handle LabelDefs
-        if (target != TARGET_JVM) PHASE.remove(args.phases.TAILCALL);
-        if (target != TARGET_MSIL) PHASE.remove(args.phases.GENMSIL);
-        if (target != TARGET_JVM) PHASE.remove(args.phases.GENJVM);
-        if (target != TARGET_JVM_BCEL) PHASE.remove(args.phases.GENJVM_BCEL);
+        if (target != TARGET_JVM) args.phases.TAILCALL.addSkipFlag();
+        if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
+        if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
+        if (target != TARGET_JVM_BCEL) args.phases.GENJVM_BCEL.addSkipFlag();
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
-        this.phases = new Phase[descriptors.length];
-        this.currentPhase = phases[0] = descriptors[0].create(this);
+        this.firstPhase = descriptors[0].create(this);
         this.definitions = new Definitions(this);
         this.primitives = new Primitives(this);
         this.treeGen = new TreeGen(this, make);
+        assert !descriptors[0].hasSkipFlag();
         for (int i = 1; i < descriptors.length; i++)
-            this.currentPhase = phases[i] = descriptors[i].create(this);
-        this.currentPhase = phases[0];
+            if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
+        this.currentPhase = firstPhase;
+    }
+
+    /** Returns the first compilation phase. */
+    public Phase getFirstPhase() {
+        return firstPhase;
     }
 
     /** Move to next phase
      */
     public void nextPhase() {
-        currentPhase = phases[currentPhase.id + 1];
+        assert currentPhase.next != null;
+        currentPhase = currentPhase.next;
     }
 
     /** Move to previous phase
      */
     public void prevPhase() {
-        currentPhase = phases[currentPhase.id - 1];
+        assert currentPhase.prev != null;
+        currentPhase = currentPhase.prev;
     }
 
     /** the top-level compilation process
@@ -259,9 +269,10 @@ public class  Global {
     private void compile() {
         printer.begin();
 
+        currentPhase = firstPhase;
         // apply successive phases and pray that it works
-        for (int i = 0; i < phases.length && reporter.errors() == 0; ++i) {
-            currentPhase = phases[i];
+        while (currentPhase.next != null && reporter.errors() == 0) {
+            currentPhase = currentPhase.next;
             start();
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
@@ -295,9 +306,8 @@ public class  Global {
      */
     public void transformUnit(Unit unit) {
        	Phase oldCurrentPhase = currentPhase;
-    	int i = PHASE.REFCHECK.id(); // or PHASE.UNCURRY.id?
-        while ((i < oldCurrentPhase.id) && (reporter.errors() == 0)) {
-            currentPhase = phases[i];
+        currentPhase = PHASE.ANALYZER.phase().next; // or REFCHECK.next?
+        while ((currentPhase.id < oldCurrentPhase.id) && (reporter.errors() == 0)) {
             start();
             currentPhase.apply(new Unit[] {unit}); // !!! pb with Analyzer
             stop(currentPhase.descriptor.taskDescription());
@@ -307,6 +317,7 @@ public class  Global {
                 currentPhase.graph(this);
             if (currentPhase.descriptor.hasCheckFlag())
                 currentPhase.check(this);
+            currentPhase = currentPhase.next;
         }
         currentPhase = oldCurrentPhase;
     }

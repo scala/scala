@@ -54,7 +54,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     private Symbol owner;
 
     /** The infos of the symbol */
-    private TypeIntervalList infos = TypeIntervalList.EMPTY;
+    private TypeIntervalList infos;
 
 // Constructors -----------------------------------------------------------
 
@@ -128,52 +128,61 @@ public abstract class Symbol implements Modifiers, Kinds {
         symbol.owner = owner;
     }
 
-    /** Set information, except if symbol is both initialized and locked.
-     */
+    /** Set type -- this is an alias for setInfo(Type info) */
+    public final Symbol setType(Type info) { return setInfo(info); }
+
+    /** Set initial information valid from start of current phase. */
     public Symbol setInfo(Type info) {
-	return setInfoAt(info, currentPhaseId());
+        return setInfoAt(info, Global.instance.currentPhase);
     }
 
-    public Symbol setFirstInfo(Type info) {
-        return setInfoAt(info, 0);
+    /** Set initial information valid from start of first phase. */
+    public final Symbol setFirstInfo(Type info) {
+        return setInfoAt(info, Global.instance.getFirstPhase());
     }
 
-    private Symbol setInfoAt(Type info, int limit) {
-	assert !isConstructor()
-	    || info instanceof Type.LazyType
-	    || info == Type.NoType
-	    || info == Type.ErrorType
-	    || info instanceof Type.MethodType
-	    || info instanceof Type.OverloadedType
-	    || info instanceof Type.PolyType
-	    : "illegal type for " + this + ": " + info;
-	if (infos == TypeIntervalList.EMPTY) {
-	    infos = new TypeIntervalList(TypeIntervalList.EMPTY);
-	}
-	infos.limit = limit;
-	infos.info = info;
-	if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
-	else flags |= INITIALIZED;
+    /** Set initial information valid from start of given phase. */
+    private final Symbol setInfoAt(Type info, Phase phase) {
+        assert phase != null : this;
+        assert !isConstructor()
+            || info instanceof Type.LazyType
+            || info == Type.NoType
+            || info == Type.ErrorType
+            || info instanceof Type.MethodType
+            || info instanceof Type.OverloadedType
+            || info instanceof Type.PolyType
+            : "illegal type for " + this + ": " + info;
+        if (phase.prev != null) phase = phase.prev;
+        infos = new TypeIntervalList(null, info, phase);
+        if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
+        else flags |= INITIALIZED;
         return this;
     }
 
-    /** Set type -- this is an alias for setInfo(Type info)
-     */
-    public Symbol setType(Type info) { return setInfo(info); }
+    /** Set new information valid from start of next phase */
+    public final Symbol updateInfo(Type info) {
+        return updateInfoAt(info, Global.instance.currentPhase);
+    }
+
+    /** Set new information valid from start of given phase */
+    private final Symbol updateInfoAt(Type info, Phase phase) {
+        assert infos != null : this;
+        assert !phase.precedes(infos.limit()) :
+            this + " -- " + phase + " -- " + infos.limit();
+	if (infos.limit() == phase) {
+            if (infos.start == phase)
+                infos = infos.prev;
+            else
+                infos.setLimit(infos.limit().prev);
+        }
+        infos = new TypeIntervalList(infos, info, phase);
+	return this;
+    }
 
     /** Set type of `this' in current class
      */
     public Symbol setTypeOfThis(Type tp) {
 	throw new ApplicationError(this + ".setTypeOfThis");
-    }
-
-    public Symbol updateInfo(Type info) {
-        assert infos.limit <= Global.instance.currentPhase.id + 1 : this;
-	if (infos.limit > Global.instance.currentPhase.id) infos.limit--;
-        infos = new TypeIntervalList(infos);
-        infos.limit = Global.instance.currentPhase.id + 1;
-	infos.info = info;
-	return this;
     }
 
     /** Set the low bound of this type variable
@@ -221,7 +230,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote a method?
      */
     public final boolean isInitializedMethod() {
-	if (infos.limit < 0) return false;
+	if (infos == null) return false;
 	switch (rawInfo()) {
 	case MethodType(_, _):
 	case PolyType(_, _):
@@ -536,7 +545,9 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  Needed in ClassSymbol.primaryConstructor() and in UnPickle.
      */
     public Symbol firstAlternative() {
-	if (infos.info instanceof Type.OverloadedType)
+        if (infos == null)
+            return this;
+	else if (infos.info instanceof Type.OverloadedType)
 	    return infos.info.alternativeSymbols()[0];
 	else if (infos.info instanceof LazyOverloadedType)
 	    return ((LazyOverloadedType) infos.info).sym1.firstAlternative();
@@ -591,22 +602,15 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Symbol types --------------------------------------------------------------
 
-    /** Was symbol's type updated during phase `id'?
-     */
-    public boolean isUpdated(int id) {
-	return infos.limit >= id;
-    }
-
-    /** the current phase id, or the id after analysis, whichever is larger.
-     */
-    static int currentPhaseId() {
-	return Global.instance.currentPhase.id;
-    }
-
-    public int definedPhaseId() {
-	TypeIntervalList i = infos;
-	while (i.prev != TypeIntervalList.EMPTY) i = i.prev;
-	return i.limit;
+    /** Was symbol's type updated during given phase? */
+    public final boolean isUpdatedAt(Phase phase) {
+        TypeIntervalList infos = this.infos;
+        while (infos != null) {
+            if (infos.start == phase) return true;
+            if (infos.limit().precedes(phase)) return false;
+            infos = infos.prev;
+        }
+        return false;
     }
 
     /** Is this symbol initialized? */
@@ -616,7 +620,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Initialize the symbol */
     public final Symbol initialize() {
-	info();
+        info();
         return this;
     }
 
@@ -630,16 +634,16 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    infos.info.complete(this);
     }
 
-    /** Get info; This is:
+    /** Get info at start of current phase; This is:
      *  for a term symbol, its type
      *  for a type variable, its bound
      *  for a type alias, its right-hand side
      *  for a class symbol, the compound type consisting of
      *  its baseclasses and members.
      */
-    public Type info() {
+    public final Type info() {
 	//if (isModule()) moduleClass().initialize();
-	int id = currentPhaseId();
+	Phase phase = Global.instance.currentPhase;
 	if ((flags & INITIALIZED) == 0) {
 	    Type info = rawFirstInfo();
 	    assert info != null : this;
@@ -657,84 +661,106 @@ public abstract class Symbol implements Modifiers, Kinds {
  		Type tp = info();
  		flags &= ~SNDTIME;
  	    } else {
- 		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
+ 		assert !(rawInfoAt(phase) instanceof Type.LazyType) : this;
  		//flags |= INITIALIZED;
  	    }
 	    //System.out.println("done: " + this);//DEBUG
 	}
-	return rawInfoAt(id);
+	return rawInfoAt(phase);
     }
 
-    /** Get info at phase #id
+    /** Get info at start of next phase
      */
-    public Type infoAt(int id) {
-	info();
-	return rawInfoAt(id);
-    }
-
-    /** Get info at next phase
-     */
-    public Type nextInfo() {
-	Global.instance.nextPhase();
-	Type info = info();
-	Global.instance.prevPhase();
+    public final Type nextInfo() {
+        Global.instance.nextPhase();
+        Type info = info();
+        Global.instance.prevPhase();
         return info;
     }
 
-    /** get info at phase #id, without forcing lazy types.
+    /** Get info at start of given phase
      */
-    private Type rawInfoAt(int id) {
-	//if (infos == TypeIntervalList.EMPTY) return Type.NoType;//DEBUG
-	assert infos != TypeIntervalList.EMPTY : this;
-	int nextid = infos.limit;
-	if (nextid < id) {
-	    Phase curphase = Global.instance.currentPhase;
-	    do {
-		Global.instance.currentPhase = Global.instance.phases[nextid];
-		Type newInfo =
-		    Global.instance.currentPhase.transformInfo(this, infos.info);
-		if (newInfo != infos.info) {
-		    infos = new TypeIntervalList(infos);
-		    infos.info = newInfo;
-		}
-		nextid++;
-		infos.limit = nextid;
-	    } while (nextid < id);
-	    Global.instance.currentPhase = curphase;
+    protected final Type infoAt(Phase phase) {
+        return initialize().rawInfoAt(phase);
+    }
+
+    /** Get info at start of current phase, without forcing lazy types.
+     */
+    public final Type rawInfo() {
+        return rawInfoAt(Global.instance.currentPhase);
+    }
+
+    /** Get info at start of next phase, without forcing lazy types.
+     */
+    public final Type rawNextInfo() {
+        Global.instance.nextPhase();
+        Type info = rawInfo();
+        Global.instance.prevPhase();
+        return info;
+    }
+
+    /** Get info at start of given phase, without forcing lazy types.
+     */
+    private final Type rawInfoAt(Phase phase) {
+	//if (infos == null) return Type.NoType;//DEBUG
+	assert infos != null : this;
+        assert phase != null : this;
+	if (infos.limit().precedes(phase)) {
+            while (infos.limit().next != phase) {
+                Global global = phase.global;
+                Phase current = global.currentPhase;
+                Phase next = infos.limit().next;
+		global.currentPhase = next;
+		Type info = next.transformInfo(this, infos.info);
+                global.currentPhase = current;
+		if (info != infos.info) {
+		    infos = new TypeIntervalList(infos, info, next);
+		} else {
+                    infos.setLimit(next);
+                }
+            }
 	    return infos.info;
 	} else {
-	    TypeIntervalList infos1 = infos;
-	    while (infos1.prev.limit >= id) {
-		infos1 = infos1.prev;
-	    }
-	    return infos1.info;
+	    TypeIntervalList infos = this.infos;
+	    while (!infos.start.precedes(phase) && infos.prev != null)
+                infos = infos.prev;
+	    return infos.info;
 	}
     }
 
-    public Type rawFirstInfo() {
-        TypeIntervalList infos1 = infos;
-        while (infos1.prev.limit >= 0) {
-            infos1 = infos1.prev;
-        }
-        return infos1.info;
+    /** Get first defined info, without forcing lazy types.
+     */
+    public final Type rawFirstInfo() {
+        TypeIntervalList infos = this.infos;
+        assert infos != null : this;
+        while (infos.prev != null) infos = infos.prev;
+        return infos.info;
     }
 
-    public Type rawInfo() {
-	return rawInfoAt(currentPhaseId());
+    /** Get phase that first defined an info, without forcing lazy types.
+     */
+    public final Phase rawFirstInfoStartPhase() {
+        TypeIntervalList infos = this.infos;
+        assert infos != null : this;
+        while (infos.prev != null) infos = infos.prev;
+        return infos.start;
     }
 
-    /** The type of a symbol is:
+    /** Get type at start of current phase. The type of a symbol is:
      *  for a type symbol, the type corresponding to the symbol itself
      *  for a term symbol, its usual type
      */
     public Type type() {
-	return info();
+        return info();
     }
 
-    /** The type at phase #id
+    /** Get type at start of next phase
      */
-    public Type typeAt(int id) {
-	return infoAt(id);
+    public final Type nextType() {
+        Global.instance.nextPhase();
+        Type type = type();
+        Global.instance.prevPhase();
+        return type;
     }
 
     /** The types of these symbols as an array.
@@ -1053,7 +1079,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public void reset(Type completer) {
 	this.flags &= SOURCEFLAGS;
 	this.pos = 0;
-	this.infos = TypeIntervalList.EMPTY;
+	this.infos = null;
 	this.setInfo(completer);
     }
 
@@ -1192,7 +1218,7 @@ public abstract class TypeSymbol extends Symbol {
 
      /** A cache for closures
      */
-    private ClosureIntervalList closures = ClosureIntervalList.EMPTY;
+    private ClosureIntervalList closures;
 
     /** The symbol's type template */
     private Type template = null;
@@ -1324,101 +1350,91 @@ public abstract class TypeSymbol extends Symbol {
 	return template;
     }
 
-    /** Get type at phase id */
-    public Type typeAt(int id) {
-	return type();
-    }
-
-    public Type[] closure() {
-	if (kind == ALIAS) return info().symbol().closure();
-	int id = currentPhaseId();
-	if (closures.limit < id) {
-	    if (id <= definedPhaseId() || changes(closureAt(id - 1))) {
-		closures = new ClosureIntervalList(closures);
-		closures.limit = id;
-		computeClosure();
-	    } else {
-		closures.limit = id;
-	    }
-	    return closures.closure;
-	} else {
-	    ClosureIntervalList closures1 = closures;
-	    while (closures1.prev.limit >= id) {
-		closures1 = closures1.prev;
-	    }
-	    return closures1.closure;
-	}
-    }
-
-    //todo: needed?
-    private Type[] closureAt(int id) {
-	Phase savedPhase = Global.instance.currentPhase;
-	Global.instance.currentPhase = Global.instance.phases[id];
-	Type[] c = closure();
-	Global.instance.currentPhase = savedPhase;
-	return c;
-    }
-
-    private boolean changes(Type[] closure) {
-	for (int i = 0; i < closure.length; i++) {
-	    Symbol c = closure[i].symbol();
-	    if (c.infoAt(Global.instance.currentPhase.id - 1) != c.info())
-		return true;
-	}
-	return false;
-    }
-
-    private static Type[] BAD_CLOSURE = new Type[0];
-
-    /** Return the type itself followed by all direct and indirect
-     *  base types of this type, sorted by isLess().
+    /**
+     * Get closure at start of current phase. The closure of a symbol
+     * is a list of types which contains the type of the symbol
+     * followed by all its direct and indirect base types, sorted by
+     * isLess().
      */
-    private void computeClosure() {
-	assert closures.closure != BAD_CLOSURE : this;
-	closures.closure = BAD_CLOSURE; // to catch cycles.
-	// todo: why can't we do: inclClosure(SymSet.EMPTY, this) ?
-	//System.out.println("computing closure of " + this);//DEBUG
-	SymSet closureClassSet = inclClosure(SymSet.EMPTY, type().parents());
-	Symbol[] closureClasses = new Symbol[closureClassSet.size() + 1];
-	closureClasses[0] = this;
-	closureClassSet.copyToArray(closureClasses, 1);
-	//System.out.println(ArrayApply.toString(closureClasses));//DEBUG
-	closures.closure = Symbol.type(closureClasses);
-	//System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
-	adjustType(type());
-	//System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
+    public final Type[] closure() {
+        if (kind == ALIAS) return info().symbol().closure();
+        if (closures == null) computeClosureAt(rawFirstInfoStartPhase());
+        Phase phase = Global.instance.currentPhase;
+        if (closures.limit().precedes(phase)) {
+            while (closures.limit().next != phase) {
+                Phase limit = closures.limit().next;
+                Type[] closure = closures.closure;
+                for (int i = 0; i < closure.length; i++) {
+                    Symbol symbol = closure[i].symbol();
+                    if (symbol.infoAt(limit) != symbol.infoAt(limit.next)) {
+                        computeClosureAt(limit.next);
+                        break;
+                    }
+                }
+                closures.setLimit(limit);
+            }
+            return closures.closure;
+        } else {
+            ClosureIntervalList closures = this.closures;
+            while (!closures.start.precedes(phase) && closures.prev != null)
+                closures = closures.prev;
+            return closures.closure;
+        }
+    }
+
+    /** Compute closure at start of given phase. */
+    private final void computeClosureAt(Phase phase) {
+        Phase current = Global.instance.currentPhase;
+        Global.instance.currentPhase = phase;
+        // todo: why can't we do: inclClosure(SymSet.EMPTY, this) ?
+        //System.out.println("computing closure of " + this);//DEBUG
+        Type[] parents = type().parents(); // evals info before use of LOCKED
+        assert (flags & LOCKED) == 0 : Debug.show(this) + " -- " + phase;
+        flags |= LOCKED;
+        SymSet closureClassSet = inclClosure(SymSet.EMPTY, parents);
+        flags &= ~LOCKED;
+        Symbol[] closureClasses = new Symbol[closureClassSet.size() + 1];
+        closureClasses[0] = this;
+        closureClassSet.copyToArray(closureClasses, 1);
+        //System.out.println(ArrayApply.toString(closureClasses));//DEBUG
+        closures = new ClosureIntervalList(closures, Symbol.type(closureClasses), phase.prev == null ? phase : phase.prev);
+        //System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
+
+
+
+        adjustType(type());
+        //System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
+        Global.instance.currentPhase = current;
 
     }
     //where
+        private static SymSet inclClosure(SymSet set, Type[] tps) {
+            for (int i = 0; i < tps.length; i++) set = inclClosure(set,tps[i]);
+            return set;
+        }
+        private static SymSet inclClosure(SymSet set, Type tp) {
+            tp = tp.unalias();
+            switch (tp) {
+            case CompoundType(Type[] parents, _):
+                return inclClosure(set, parents);
+            default:
+                return inclClosure(set, tp.symbol());
+            }
+        }
+        private static SymSet inclClosure(SymSet set, Symbol sym) {
+            while (sym.kind == ALIAS) sym = sym.info().symbol();
+            return inclClosure(set.incl(sym), sym.type().parents());
+        }
 
- 	private SymSet inclClosure(SymSet set, Type[] tps) {
-	    for (int i = 0; i < tps.length; i++) {
-		Type tp = tps[i].unalias();
-		switch (tp) {
-		case CompoundType(Type[] parents, _):
-		    set = inclClosure(set, parents);
-		    break;
-		default:
-		    set = inclClosure(set, tp.symbol());
-		}
-	    }
-	    return set;
-	}
-
- 	private SymSet inclClosure(SymSet set, Symbol c) {
-	    Symbol c1 = c;
-	    while (c1.kind == ALIAS) c1 = c1.info().symbol();
-	    return inclClosure(set.incl(c1), c1.type().parents());
-	}
-
-	void adjustType(Type tp) {
+	private void adjustType(Type tp) {
 	    Type tp1 = tp.unalias();
 	    switch (tp) {
 	    case CompoundType(Type[] parents, _):
 		break;
 	    default:
-		int pos = closurePos(tp1.symbol());
-		assert pos >= 0 : this + " " + tp1 + " " + tp1.symbol();
+                Symbol sym = tp1.symbol();
+		int pos = closurePos(sym);
+		assert pos >= 0 : this + " " + tp1 + " " + tp1.symbol() + " " + pos;
 		closures.closure[pos] = tp1;
 	    }
 	    Type[] parents = tp1.parents();
@@ -1429,7 +1445,7 @@ public abstract class TypeSymbol extends Symbol {
 
     public void reset(Type completer) {
 	super.reset(completer);
-	closures = ClosureIntervalList.EMPTY;
+	closures = null;
 	tycon = null;
 	template = null;
     }
@@ -1805,34 +1821,68 @@ public class CyclicReference extends Type.Error {
     }
 }
 
-/** A class for types indexed by phase numbers.
- */
-class TypeIntervalList {
-    int limit;
-    Type info;
-    TypeIntervalList prev;
-    TypeIntervalList(TypeIntervalList prev) {
-	this.prev = prev;
-    }
-    static TypeIntervalList EMPTY = new TypeIntervalList(null);
+/** A base class for values indexed by phases. */
+abstract class IntervalList {
 
-  static {
-	EMPTY.limit = -1;
+    // Content of start/limit can't be replaced by (start/limit).next
+    // because during initialization (start/limit).next is not yet
+    // known.
+
+    /** Interval starts at start of phase "start.next" (inclusive) */
+    public final Phase start;
+    /** Interval ends at start of phase "limit.next" (inclusive) */
+    private Phase limit;
+
+    public IntervalList(IntervalList prev, Phase start) {
+        this.start = start;
+        this.limit = start;
+        assert start != null && (prev == null || prev.limit.next == start) :
+            Global.instance.currentPhase + " - " + prev + " - " + start;
     }
+
+    public Phase limit() {
+        return limit;
+    }
+
+    public void setLimit(Phase phase) {
+        assert phase != null && !phase.precedes(start) : start + " - " + phase;
+        limit = phase;
+    }
+
+    public String toString() {
+        return "[" + start + "->" + limit + "]";
+    }
+
 }
 
-/** A class for closures indexed by phase numbers.
- */
-class ClosureIntervalList {
-    int limit;
-    Type[] closure;
-    ClosureIntervalList prev;
-    ClosureIntervalList(ClosureIntervalList prev) {
-	this.prev = prev;
+/** A class for types indexed by phases. */
+class TypeIntervalList extends IntervalList {
+
+    /** Previous interval */
+    public final TypeIntervalList prev;
+    /** Info valid during this interval */
+    public final Type info;
+
+    public TypeIntervalList(TypeIntervalList prev, Type info, Phase start) {
+        super(prev, start);
+        this.prev = prev;
+        this.info = info;
     }
-    static ClosureIntervalList EMPTY = new ClosureIntervalList(null);
-    static {
-	EMPTY.limit = -1;
-    }
+
 }
 
+/** A class for closures indexed by phases. */
+class ClosureIntervalList extends IntervalList {
+
+    /** Previous interval */
+    public final ClosureIntervalList prev;
+    /** Closure valid during this interval */
+    public final Type[] closure;
+
+    public ClosureIntervalList(ClosureIntervalList prev, Type[] closure, Phase start){
+        super(prev, start);
+        this.prev = prev;
+        this.closure = closure;
+    }
+
+}

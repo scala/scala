@@ -17,12 +17,9 @@ import java.util.ArrayList;
 
 public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
 
-    final int nextPhase;
-
     /** Initializes this instance. */
     public LambdaLiftPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
-        this.nextPhase = id + 1;
     }
 
     /** Applies this phase to the given compilation units. */
@@ -82,7 +79,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
                 switch (pre) {
                 case ThisType(_):
                     if (sym.kind == CLASS &&
-			sym.primaryConstructor().isUpdated(nextPhase)) {
+			sym.primaryConstructor().isUpdatedAt(LambdaLiftPhase.this)) {
                         Symbol[] tparams = sym.primaryConstructor().nextInfo().typeParams();
                         int i = tparams.length;
                         while (i > 0 && (tparams[i-1].flags & SYNTHETIC) != 0)
@@ -138,7 +135,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
             Symbol fowner = LambdaLift.asFunction(o);
             if (fowner.isMethod()) {
                 if (fv.owner() == fowner) return fv;
-                Type ft = (fowner.isUpdated(nextPhase)) ? fowner.typeAt(nextPhase)
+                Type ft = (fowner.isUpdatedAt(this)) ? fowner.nextType()
                     : fowner.type();
                 Symbol[] ownerparams = fv.isType() ? ft.typeParams()
                     : ft.firstParams();

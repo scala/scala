@@ -52,10 +52,10 @@ public final class PhaseDescriptor {
         // propagate other flags and freeze remaining phases
         PhaseDescriptor last = null;
         for (int i = 0; i < phases.length; i++) {
+            phases[i].id = i;
             if (phases[i].hasSkipFlag()) continue;
             if (last != null) last.flags |= phases[i].flags >>> 16;
             phases[i].flags &= 0x0000FFFF;
-            phases[i].freeze(last);
             last = phases[i];
         }
     }
@@ -110,12 +110,6 @@ public final class PhaseDescriptor {
         return task;
     }
 
-    /** Freezes this phase by assigning it an identifier. */
-    public void freeze(PhaseDescriptor prev) {
-        assert id < 0 : "phase " + name + " already frozen";
-        id = prev != null ? prev.id + 1 : 0;
-    }
-
     /** Creates the object implementing this phase. */
     public Phase create(Global global) {
         assert id >= 0 : "phase " + name + " not yet frozen";
@@ -152,6 +146,36 @@ public final class PhaseDescriptor {
     public void addFlag(int flag, boolean prev) {
         assert id < 0 : "phase " + name + " already frozen";
         flags |= flag << (prev ? 16 : 0);
+    }
+
+    /** Adds the SKIP flag. */
+    public void addSkipFlag() {
+        flags |= SKIP;
+    }
+
+    /** Adds the CHECK flag. */
+    public void addCheckFlag() {
+        flags |= CHECK;
+    }
+
+    /** Adds the PRINT flag. */
+    public void addPrintFlag() {
+        flags |= PRINT;
+    }
+
+    /** Adds the GRAPH flag. */
+    public void addGraphFlag() {
+        flags |= GRAPH;
+    }
+
+    /** Adds the STOP flag. */
+    public void addStopFlag() {
+        flags |= STOP;
+    }
+
+    /** Adds the LOG flag. */
+    public void addLogFlag() {
+        flags |= LOG;
     }
 
     /** Has this phase the SKIP flag? */

@@ -50,6 +50,12 @@ public abstract class Phase {
     /** The phase identifier */
     public final int id;
 
+    /** The previous phase */
+    public final Phase prev;
+
+    /** The next phase */
+    public Phase next;
+
     //########################################################################
     // Public Constructors
 
@@ -58,11 +64,18 @@ public abstract class Phase {
         this.global = global;
         this.descriptor = descriptor;
         this.id = descriptor.id();
-        global.currentPhase = global.phases[id] = this;
+        this.prev = global.currentPhase;
+        if (prev != null) prev.next = this;
+        global.currentPhase = this;
     }
 
     //########################################################################
     // Public Methods
+
+    /** Does this phase precede the given phase? */
+    public boolean precedes(Phase phase) {
+        return id < phase.id;
+    }
 
     /**
      * Returns the info of `sym' after the phase. Assumes that `tp' is

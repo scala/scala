@@ -397,7 +397,7 @@ public class LambdaLift extends OwnerTransformer
 	    Tree rhs1 = transform(rhs, sym);
 	    if ((sym.flags & CAPTURED) != 0) {
 		assert sym.isLocal();
-		Type boxedType = sym.typeAt(descr.nextPhase);
+		Type boxedType = sym.nextType();
 		Type unboxedType = boxedType.typeArgs()[0];
 		tpe1 = gen.mkType(tpe.pos, boxedType);
 		rhs1 = gen.New(
@@ -445,7 +445,7 @@ public class LambdaLift extends OwnerTransformer
 		sym = descr.proxy(sym, currentOwner);
 	    }
 	    Tree tree1 = copy.Ident(tree, sym).setType(
-		sym.typeAt(descr.nextPhase));
+		sym.nextType());
 	    if (name != sym.name) ((Ident)tree1).name = sym.name;
 	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, Names.elem);
 	    else return tree1;
@@ -482,7 +482,7 @@ public class LambdaLift extends OwnerTransformer
     }
 
     Symbol[] newtparams(Symbol owner) {
-	Symbol[] tparams = owner.typeAt(descr.nextPhase).typeParams();
+	Symbol[] tparams = owner.nextType().typeParams();
 	int nfree = get(free.ftvs, owner).size();
 	assert nfree == tparams.length - owner.type().typeParams().length
 	    : owner + " " + nfree + " " + tparams.length + " " + owner.type().firstParams().length;
@@ -492,7 +492,7 @@ public class LambdaLift extends OwnerTransformer
     }
 
     Symbol[] newparams(Symbol owner) {
-	Symbol[] params = owner.typeAt(descr.nextPhase).firstParams();
+	Symbol[] params = owner.nextType().firstParams();
 	int nfree = get(free.fvs, owner).size();
 	assert nfree == params.length - owner.type().firstParams().length;
 	Symbol[] newparams = new Symbol[nfree];
@@ -537,10 +537,10 @@ public class LambdaLift extends OwnerTransformer
 		sym.updateInfo(
 		    addParams(
 			addTypeParams(
-			    sym.infoAt(descr.nextPhase), oldtparams, newtparams),
+			    sym.nextInfo(), oldtparams, newtparams),
 			newparams));
 		if (global.debug)
-		    global.log(sym + " has now type " + sym.typeAt(descr.nextPhase));
+		    global.log(sym + " has now type " + sym.nextType());
 	    }
 	} else if (sym.kind == CLASS) {
             Symbol constr = sym.primaryConstructor();
@@ -641,7 +641,7 @@ public class LambdaLift extends OwnerTransformer
 	    for (int i = 0; i < fparams.length; i++) {
 		Symbol farg = descr.proxy(fparams[i], currentOwner);
 		args1[args.length + i] =
-		    gen.Ident(pos, farg).setType(farg.typeAt(descr.nextPhase));
+		    gen.Ident(pos, farg).setType(farg.nextType());
 	    }
 	    return args1;
 	} else {
