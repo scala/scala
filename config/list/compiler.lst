@@ -118,7 +118,6 @@ transformer/matching/PatternNodeCreator.java
 transformer/matching/PatternTool.java
 transformer/matching/RightTracerInScala.java
 transformer/matching/SequenceMatcher.java
-transformer/matching/SplitNested.java
 transformer/matching/StateSetComparator.java
 transformer/matching/TestRegTraverser.java
 transformer/matching/VariableTraverser.java
