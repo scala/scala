@@ -1,0 +1,26 @@
+############################################################-*-Makefile-*-####
+# servlet source files (paths are relative to ./sources/scala/tools/servlet)
+##############################################################################
+# $Id$
+
+ExcepServlet.scala
+SERVLET.scala
+ScalaCookiee.scala
+ScalaServlet.scala
+ServletException.scala
+
+engine/Connector.scala
+engine/Main.scala
+engine/Mapping.scala
+
+http/HTTP.scala
+http/HttpConnector.scala
+http/HttpException.scala
+http/HttpFile.scala
+http/HttpHandler.scala
+http/HttpInputStream.scala
+http/HttpOutputStream.scala
+http/HttpProcessor.scala
+http/HttpServletPro.scala
+
+##############################################################################
