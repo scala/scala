@@ -1,8 +1,8 @@
 package scala.tools.servlet.engine.config ;
 
-import scala.collection.mutable;
+import scala.collection.{ Map, mutable };
 
-import scala.xml.{ Attribute, IntAttribute, AttributeSeq, Elem };
+import scala.xml.{ Attribute, AttributeSeq, Elem };
 import scala.xml.parsing._;
 
 class ConfigHandler extends MarkupHandler[Config] {
@@ -14,7 +14,7 @@ class ConfigHandler extends MarkupHandler[Config] {
   /** be careful to copy everything from attrMap1, as it will change
    *  @param attrMap1 the attribute map.
    */
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],Attribute], args: mutable.Buffer[Config]): Option[Config] = {
+  def element(pos: int, uri: String, label: String, attrMap1: Map[Pair[String,String],Attribute], args: mutable.Buffer[Config]): Option[Config] = {
     if( uri == config_namespace ) {
       label match {
 
