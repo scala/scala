@@ -73,9 +73,11 @@ public class TestRegTraverser extends Traverser {
                             }
                             //System.out.println( fn );
                             //System.out.println( tree.type() );
-                        }
+                        } else super.traverse( tree );
+                        break;
+                    default:
+                        super.traverse( tree );
                     }
-                if( !result ) super.traverse( tree );
 		break;
 	    default:
 		super.traverse( tree );
