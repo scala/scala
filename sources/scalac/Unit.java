@@ -26,11 +26,15 @@ public class Unit {
 
     /** the global compilation environment
      */
-    public Global global;
+    public final Global global;
 
     /** the associated source code file
      */
-    public Sourcefile source;
+    public final Sourcefile source;
+
+    /** does this unit come from the interpreter console
+     */
+    public final boolean console;
 
     /** the content of the compilation unit in tree form
      */
@@ -56,9 +60,10 @@ public class Unit {
      */
     public int notes;
 
-    public Unit(Global global, Sourcefile source) {
+    public Unit(Global global, Sourcefile source, boolean console) {
         this.global = global;
         this.source = source;
+        this.console = console;
     }
     /*
     public void print(String message) {

@@ -36,7 +36,7 @@ public class SourceCompleter extends Type.LazyType {
 	    try {
 		String fname = filename;
 		long msec = System.currentTimeMillis();
-		Unit unit = new Unit(global, new Sourcefile(filename, false));
+		Unit unit = new Unit(global, new Sourcefile(filename), false);
 		filename = null;
 		global.PHASE.PARSER.createPhase(global).apply(unit);
 		((Analyzer)global.PHASE.ANALYZER.createPhase(global)).lateEnter(unit, c);

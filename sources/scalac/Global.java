@@ -228,7 +228,7 @@ public class  Global {
         for (int i = 0; i < files.length; i++) {
             String file = files[i];
             try {
-                units.add(new Unit(this, new Sourcefile(file, console)));
+                units.add(new Unit(this, new Sourcefile(file), console));
             } catch (FileNotFoundException e) {
                 error("file " + file + " not found");
             } catch (IOException e) {
@@ -243,8 +243,8 @@ public class  Global {
      */
     public void compile(String input, boolean console) {
         reporter.resetCounters();
-        Sourcefile source = new Sourcefile(input.getBytes(), console);
-        units = new Unit[]{new Unit(this, source)};
+        Sourcefile source = new Sourcefile(input.getBytes());
+        units = new Unit[]{new Unit(this, source, console)};
         compile();
     }
 

@@ -81,7 +81,7 @@ public class EntryPointCompiler {
 
         int pos = Position.NOPOS;
         global.units = new Unit[1];
-        global.units[0] = new Unit(global, new Sourcefile((byte[])null,false));
+        global.units[0] = new Unit(global, new Sourcefile((byte[])null),false);
         global.units[0].body = new Tree[1];
         global.units[0].body[0] = global.treeGen.Apply(
             global.treeGen.mkRef(pos, module.thisType(), method),

@@ -35,7 +35,6 @@ public class Sourcefile {
 
     /** the filename
      */
-    public final boolean    console;
     protected String        filename;
     public String           shortname;
     public String           pathname;
@@ -83,8 +82,7 @@ public class Sourcefile {
 
     /** constructors
      */
-    public Sourcefile(String filename, boolean console) throws IOException, FileNotFoundException {
-        this.console = console;
+    public Sourcefile(String filename) throws IOException, FileNotFoundException {
         if (filename == null) {
             this.filename = "(sourcefile not available)";
             this.shortname = "?";
@@ -111,7 +109,6 @@ public class Sourcefile {
     }
 
     public Sourcefile(AbstractFile abs) throws IOException, FileNotFoundException {
-        this.console = false;
         if (filename == null) {
             this.filename = "(sourcefile not available)";
             this.shortname = "?";
@@ -135,8 +132,7 @@ public class Sourcefile {
         files[id = numIds++] = shortname;
     }
 
-    public Sourcefile(byte[] input, boolean console) {
-        this.console = console;
+    public Sourcefile(byte[] input) {
         if (input == null) {
             this.filename = "(sourcefile not available)";
             this.shortname = "?";
