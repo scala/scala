@@ -356,28 +356,51 @@ public class Erasure extends Transformer implements Modifiers {
 	assert tree.type != null : tree;
 	Type owntype = eraseFully ? tree.type.fullErasure() : tree.type.erasure();
 	switch (tree) {
-	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
             Symbol oldCurrentClass = currentClass;
-            currentClass = tree.symbol();
-            Tree newTree =
-                copy.ClassDef(tree, new AbsTypeDef[0],
-                              transform(vparams), tpe, transform(impl, tree.symbol()))
-		.setType(owntype);
+            TreeList savedBridges = bridges;
+            HashMap savedBridgeSyms = bridgeSyms;
+            Symbol clazz = currentClass = tree.symbol();
+            bridges = new TreeList();
+            bridgeSyms = new HashMap();
+
+            TreeList body1 = new TreeList(transform(body));
+            if (!clazz.isInterface()) addInterfaceBridges(clazz);
+            body1.append(bridges);
+            if (bridges.length() > 0) {
+                Type info = clazz.nextInfo();
+                switch (info) {
+                case CompoundType(Type[] parts, Scope members):
+                    members = new Scope(members);
+                    for (int i = 0; i < bridges.length(); i++) {
+                        Tree bridge = (Tree)bridges.get(i);
+                        members.enterOrOverload(bridge.symbol());
+                    }
+                    clazz.updateInfo(Type.compoundType(parts, members, info.symbol()));
+                    break;
+                default:
+                    throw Debug.abort("class = " + Debug.show(clazz) + ", " +
+                        "info = " + Debug.show(info));
+                }
+            }
+            Tree newTree = gen.ClassDef(clazz, body1.toArray());
+
+            bridgeSyms = savedBridgeSyms;
+            bridges = savedBridges;
             currentClass = oldCurrentClass;
             return newTree;
 
-	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
-	    addBridges(tree.symbol());
-	    Tree tpe1 = gen.mkType(tpe.pos, tpe.type.fullErasure());
-	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
-	    return copy.DefDef(
-		tree, new AbsTypeDef[0], transform(vparams), tpe1, rhs1)
-		.setType(owntype);
+	case DefDef(_, _, _, _, _, Tree rhs):
+            Symbol method = tree.symbol();
+	    addBridges(method);
+            if (rhs != Tree.Empty)
+                rhs = transform(rhs, method.nextType().resultType());
+	    return gen.DefDef(method, rhs);
 
-	case ValDef(_, _, Tree tpe, Tree rhs):
-	    Tree tpe1 = transform(tpe);
-	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
-	    return copy.ValDef(tree, tpe1, rhs1).setType(owntype);
+	case ValDef(_, _, _, Tree rhs):
+            Symbol field = tree.symbol();
+	    if (rhs != Tree.Empty) rhs = transform(rhs, field.nextType());
+	    return gen.ValDef(field, rhs);
 
 	case AbsTypeDef(_, _, _, _):
 	case AliasTypeDef(_, _, _, _):
@@ -388,7 +411,7 @@ public class Erasure extends Transformer implements Modifiers {
             Tree[] newStats = new Tree[stats.length];
             for (int i = 0; i < stats.length; ++i)
                 newStats[i] = transform(stats[i], true);
-            return copy.Block(tree, newStats).setType(owntype.fullErasure());
+            return gen.Block(tree.pos, newStats);
 
 	case Assign(Tree lhs, Tree rhs):
 	    Tree lhs1 = transformLhs(lhs);
@@ -590,37 +613,6 @@ public class Erasure extends Transformer implements Modifiers {
 
     public Tree transform(Tree tree) {
         return transform(tree, false);
-    }
-
-    public Template transform(Template templ, Symbol clazz) {
-	TreeList savedBridges = bridges;
-	HashMap savedBridgeSyms = bridgeSyms;
-	bridges = new TreeList();
-	bridgeSyms = new HashMap();
-	Tree[] bases1 = transform(templ.parents);
-	TreeList body1 = new TreeList(transform(templ.body));
-        if (!clazz.isInterface()) addInterfaceBridges(clazz);
-	body1.append(bridges);
-        if (bridges.length() > 0) {
-            Type info = clazz.nextInfo();
-            switch (info) {
-            case CompoundType(Type[] parts, Scope members):
-                members = new Scope(members);
-                for (int i = 0; i < bridges.length(); i++) {
-                    Tree bridge = (Tree)bridges.get(i);
-                    members.enterOrOverload(bridge.symbol());
-                }
-                clazz.updateInfo(Type.compoundType(parts, members, info.symbol()));
-                break;
-            default:
-                throw Debug.abort("class = " + Debug.show(clazz) + ", " +
-                    "info = " + Debug.show(info));
-            }
-        }
-	bridges = savedBridges;
-	bridgeSyms = savedBridgeSyms;
-	return (Template) copy.Template(templ, bases1, body1.toArray())
-	    .setType(templ.type.erasure());
     }
 
     // !!! This is just rapid fix. Needs to be reviewed.
