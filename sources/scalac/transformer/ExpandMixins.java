@@ -25,9 +25,12 @@ import Tree.*;
  * @version 1.0
  */
 
-// [...] do not copy hidden members which are not accessible via
-//       "super"
-// [...] handle overloaded symbols
+// TODO do not copy hidden members which are not accessible via
+// "super".
+
+// TODO also substitute type parameters of classes in which the mixin
+// is nested, if any. Do the same for the substitution of symbols in
+// ThisTypes.
 
 public class ExpandMixins extends Transformer {
     // Mapping from (class) symbols to their definition.
@@ -249,6 +252,7 @@ public class ExpandMixins extends Transformer {
             }
 
             // Pass 2: copy members
+            treeCopier.pushThisTypeSubst(bcSym, owner);
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
 
@@ -272,6 +276,7 @@ public class ExpandMixins extends Transformer {
                     mixedInSymbols.put(member.symbol(), newMember.symbol());
 		}
             }
+            treeCopier.popThisTypeSubst();
         }
 
 	// Modify mixin base classes to refer to interfaces instead of
