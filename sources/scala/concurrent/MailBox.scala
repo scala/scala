@@ -1,5 +1,7 @@
 package scala.concurrent;
 
+import scala.collection.mutable.LinkedList;
+
 class MailBox with Monitor {
 
   type Message = AnyRef;
@@ -18,20 +20,24 @@ class MailBox with Monitor {
     }
   }
 
-  private val sent = new LinkedList[Message];
+  // !!! is this new correct ?
+  private val sent = new LinkedList[Message](null, null);
   private var lastSent = sent;
-  private var receivers = new LinkedList[Receiver];
+  // !!! is this new correct ?
+  private var receivers = new LinkedList[Receiver](null, null);
   private var lastReceiver = receivers;
 
   def send(msg: Message): Unit = synchronized {
     var rs = receivers, rs1 = rs.next;
-    while (rs1 != null && !rs1.elem.receiver.isDefinedAt(msg)) {
-      rs = rs1; rs1 = rs1.next;
-    }
+    // !!! does not compile
+    // !!! while (rs1 != null && !rs1.elem.receiver.isDefinedAt(msg)) {
+    // !!!   rs = rs1; rs1 = rs1.next;
+    // !!! }
     if (rs1 != null) {
       rs.next = rs1.next; rs1.elem.msg = msg; rs1.elem.notify();
     } else {
-      lastSent = lastSent.append(msg)
+      // !!! does not compile
+      // !!! lastSent = lastSent.append(msg)
     }
   }
 
@@ -43,7 +49,8 @@ class MailBox with Monitor {
     if (ss1 != null) {
       ss.next = ss1.next; r.msg = ss1.elem;
     } else {
-      lastReceiver = lastReceiver append r;
+      // !!! does not compile
+      // !!! lastReceiver = lastReceiver append r;
     }
   }
 

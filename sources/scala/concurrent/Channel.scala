@@ -1,12 +1,16 @@
 package scala.concurrent;
 
-class Channel[a] with Monitor {
-  private var written: LinkedList[a] = new LinkedList;
+import scala.collection.mutable.LinkedList;
+
+class Channel[a <: AnyRef] with Monitor {
+  // !!! is this new correct ?
+  private var written = new LinkedList[a](null, null);
   private var lastWritten = written;
   private var nreaders = 0;
 
   def write(x: a) = synchronized {
-    lastWritten.next = new LinkedList;
+  // !!! is this new correct ?
+    lastWritten.next = new LinkedList(x, null);
     lastWritten = lastWritten.next;
     if (nreaders > 0) notify();
   }
