@@ -75,7 +75,7 @@ public class SymbolCloner {
         return cloneSymbol(symbol, false);
     }
 
-    /** Clones the given symbol and renames it rename is true. */
+    /** Clones the given symbol and renames it if rename is true. */
     public Symbol cloneSymbol(Symbol symbol, boolean rename) {
         assert !symbol.isPrimaryConstructor() : Debug.show(symbol);
         assert !symbol.isModuleClass() : Debug.show(symbol);
@@ -88,6 +88,19 @@ public class SymbolCloner {
         if (rename) clone.name = renamer.newName(symbol.name);
         clones.put(symbol, clone);
         return clone;
+    }
+
+    /** Clones the given symbols. */
+    public Symbol[] cloneSymbols(Symbol[] symbols) {
+        return cloneSymbols(symbols, false);
+    }
+
+    /** Clones the given symbols and renames them if rename is true. */
+    public Symbol[] cloneSymbols(Symbol[] symbols, boolean rename) {
+        Symbol[] clones = new Symbol[symbols.length];
+        for (int i = 0; i < clones.length; i++)
+            clones[i] = cloneSymbol(symbols[i], rename);
+        return clones;
     }
 
     //########################################################################
