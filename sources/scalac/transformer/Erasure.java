@@ -19,6 +19,7 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.Unit;
 import scalac.ast.Tree;
+import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.ast.Tree.AbsTypeDef;
 import scalac.ast.Tree.AliasTypeDef;
@@ -99,6 +100,260 @@ public class Erasure extends Transformer implements Modifiers {
     public void apply(Unit unit) {
 	this.unit = unit;
 	super.apply(unit);
+    }
+
+    /** Transforms the given tree. */
+    public Tree transform(Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return tree;
+
+	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
+            Symbol clasz = tree.symbol();
+            TreeList members = new TreeList(transform(body));
+            checkOverloadedTermsOf(clasz);
+            addBridges(clasz, members);
+            return gen.ClassDef(clasz, members.toArray());
+
+        case PackageDef(Tree packaged, Template(_, Tree[] body)):
+            return gen.PackageDef(packaged.symbol(), transform(body));
+
+	case ValDef(_, _, _, Tree rhs):
+            Symbol field = tree.symbol();
+	    if (rhs != Tree.Empty) rhs = transform(rhs, field.nextType());
+	    return gen.ValDef(field, rhs);
+
+	case DefDef(_, _, _, _, _, Tree rhs):
+            Symbol method = tree.symbol();
+            if (rhs != Tree.Empty)
+                rhs = transform(rhs, method.nextType().resultType());
+	    return gen.DefDef(method, rhs);
+
+	case AbsTypeDef(_, _, _, _):
+	case AliasTypeDef(_, _, _, _):
+	    // eliminate
+	    return Tree.Empty;
+
+        case LabelDef(_, Ident[] params, Tree body):
+            Symbol label = tree.symbol();
+            body = transform(body, label.nextType().resultType());
+	    return gen.LabelDef(label, Tree.symbolOf(params), body);
+
+        case Block(_):
+            return transform(tree, tree.type().fullErasure()); // !!!
+
+	case Assign(Tree lhs, Tree rhs):
+	    lhs = transform(lhs);
+	    rhs = transform(rhs, lhs.type);
+	    return gen.Assign(tree.pos, lhs, rhs);
+
+	case If(_, _, _):
+        case Switch(_, _, _, _):
+            return transform(tree, tree.type().fullErasure()); // !!!
+
+	case Return(Tree expr):
+            Symbol method = tree.symbol();
+            Type type = method.nextType().resultType();
+	    return gen.Return(tree.pos, method, transform(expr, type));
+
+        case New(Template(Tree[] base, Tree[] body)):
+            assert base.length == 1 && body.length == 0: tree;
+            if (tree.type().symbol() == definitions.ARRAY_CLASS) {
+                switch (base[0]) {
+                case Apply(_, Tree[] args):
+                    assert args.length == 1: tree;
+                    Type element = getArrayElementType(tree.type()).erasure();
+                    Tree size = transform(args[0]);
+                    return genNewUnboxedArray(tree.pos, element, size);
+                default:
+                    throw Debug.abort("illegal case", tree);
+                }
+            }
+	    return gen.New(tree.pos, transform(base[0]));
+
+	case Typed(Tree expr, _): // !!!
+            return transform(expr);
+
+	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
+            fun = transform(fun);
+            vargs = transform(vargs);
+            Symbol symbol = fun.symbol();
+            if (symbol == definitions.AS) {
+                assert targs.length == 1 && vargs.length == 0: tree;
+                return coerce(getQualifier(fun), targs[0].type().erasure());
+            }
+            if (symbol == definitions.IS) {
+                assert targs.length == 1 && vargs.length == 0: tree;
+                Type type = targs[0].type.erasure();
+                if (isUnboxedSimpleType(type)) type = targs[0].type;
+                return gen.mkIsInstanceOf(tree.pos, getQualifier(fun), type);
+            }
+            return genApply(tree.pos, fun, vargs);
+
+	case Apply(Tree fun, Tree[] vargs):
+            fun = transform(fun);
+            vargs = transform(vargs);
+            switch (fun) {
+            case Select(Tree qualifier, _):
+                if (!hasBoxing(qualifier)) break;
+                switch (primitives.getPrimitive(fun.symbol())) {
+                case LENGTH:
+                    assert vargs.length == 0: tree;
+                    Tree array = removeBoxing(qualifier);
+                    return genUnboxedArrayLength(tree.pos, array);
+                case APPLY:
+                    assert vargs.length == 1: tree;
+                    Tree array = removeBoxing(qualifier);
+                    Tree index = vargs[0];
+                    return genUnboxedArrayGet(tree.pos, array, index);
+                case UPDATE:
+                    assert vargs.length == 2: tree;
+                    Tree array = removeBoxing(qualifier);
+                    Tree index = vargs[0];
+                    Tree value = vargs[1];
+                    return genUnboxedArraySet(tree.pos, array, index, value);
+                }
+            }
+            return genApply(tree.pos, fun, vargs);
+
+        case Super(_, _):
+	    return gen.Super(tree.pos, tree.symbol());
+
+        case This(_):
+	    return gen.This(tree.pos, tree.symbol());
+
+	case Select(Tree qualifier, _):
+            Symbol symbol = tree.symbol();
+            qualifier = transform(qualifier);
+            qualifier = coerce(qualifier, symbol.owner().type().erasure());
+            if (isUnboxedType(qualifier.type())) qualifier = box(qualifier);
+	    return gen.Select(tree.pos, qualifier, symbol);
+
+	case Ident(_):
+            Symbol symbol = tree.symbol();
+	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
+            return gen.Ident(tree.pos, symbol);
+
+        case Literal(_):
+	    return tree.setType(tree.type().erasure()); // !!!
+
+        case Bad():
+        case ModuleDef(_, _, _, _):
+        case PatDef(_, _, _):
+        case Import(_, _):
+        case CaseDef(_, _, _):
+        case Template(_, _):
+        case Sequence(_):
+        case Alternative(_):
+        case Bind(_, _):
+        case Visitor(_):
+        case Function(_, _):
+        case Throw(_):
+        case TypeApply(_, _):
+
+        case TypeTerm():
+        case SingletonType(_):
+        case SelectFromType(_, _):
+        case FunType(_, _):
+        case CompoundType(_, _):
+        case AppliedType(_, _):
+        case Try(_, _, _): // !!!
+            throw Debug.abort("illegal case", tree);
+
+        default:
+            throw Debug.abort("illegal case", tree);
+
+        }
+    }
+
+    //########################################################################
+    // Private Methods - Tree transformation
+
+    /** Transforms the given tree with given prototype. */
+    private Tree transform(Tree tree, Type pt) {
+        switch (tree) {
+
+        case Block(Tree[] stats):
+            if (stats.length == 0) return transformUnit(tree.pos, pt);
+            stats = Tree.cloneArray(stats);
+            for (int i = 0; i < stats.length - 1; i++)
+                stats[i] = transform(stats[i]);
+            stats[stats.length - 1] = transform(stats[stats.length - 1], pt);
+            return gen.Block(tree.pos, stats);
+
+	case If(Tree cond, Tree thenp, Tree elsep):
+	    cond = transform(cond, UNBOXED_BOOLEAN);
+	    thenp = transform(thenp, pt);
+	    elsep = transform(elsep, pt);
+	    return gen.If(tree.pos, cond, thenp, elsep, pt);
+
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+	    test = transform(test, UNBOXED_INT);
+            bodies = transform(bodies, pt);
+            otherwise = transform(otherwise, pt);
+            return gen.Switch(tree.pos, test, tags, bodies, otherwise, pt);
+
+        case Return(_):
+            // !!!
+            Tree value = transform(gen.mkDefaultValue(tree.pos, pt), pt);
+            return gen.mkBlock(new Tree[] {transform(tree), value});
+
+	case Typed(Tree expr, _): // !!!
+	    return transform(expr, pt);
+
+            // !!! case Return(_):
+
+        case LabelDef(_, _, _):
+	case Assign(_, _):
+        case New(_):
+        case Apply(_, _):
+        case Super(_, _):
+        case This(_):
+        case Select(_, _):
+        case Ident(_):
+        case Literal(_):
+            return coerce(transform(tree), pt);
+
+        case Bad():
+        case Empty:
+	case ClassDef(_, _, _, _, _, _):
+        case PackageDef(_, _):
+        case ModuleDef(_, _, _, _):
+	case ValDef(_, _, _, _):
+        case PatDef(_, _, _):
+	case DefDef(_, _, _, _, _, _):
+	case AbsTypeDef(_, _, _, _):
+	case AliasTypeDef(_, _, _, _):
+        case Import(_, _):
+        case CaseDef(_, _, _):
+        case Template(_, _):
+        case Sequence(_):
+        case Alternative(_):
+        case Bind(_, _):
+        case Visitor(_):
+        case Function(_, _):
+        case Throw(_):
+        case TypeApply(_, _):
+        case TypeTerm():
+        case SingletonType(_):
+        case SelectFromType(_, _):
+        case FunType(_, _):
+        case CompoundType(_, _):
+        case AppliedType(_, _):
+        case Try(_, _, _): // !!!
+            throw Debug.abort("illegal case", tree);
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    /** Transforms Unit literal with given prototype. */
+    private Tree transformUnit(int pos, Type pt) {
+        Tree unit = pt.isSameAs(UNBOXED_UNIT)
+            ? gen.mkUnitLit(pos)
+            : gen.mkApply__(gen.mkRef(pos, primitives.BOX_UVALUE));
+        return coerce(unit, pt);
     }
 
     //########################################################################
@@ -605,195 +860,6 @@ public class Erasure extends Transformer implements Modifiers {
         bridges = savedBridges;
     }
 
-    /** Contract: every node needs to be transformed so that it's type is the
-     *  erasure of the node's original type.  The only exception are functions;
-     *  these are mapped to the erasure of the function symbol's type.
-     */
-    public Tree transform(Tree tree, boolean eraseFully) {
-	assert tree.type != null : tree;
-	Type owntype = eraseFully ? tree.type.fullErasure() : tree.type.erasure();
-	switch (tree) {
-
-	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
-            Symbol clasz = tree.symbol();
-            TreeList members = new TreeList(transform(body));
-            checkOverloadedTermsOf(clasz);
-            addBridges(clasz, members);
-            return gen.ClassDef(clasz, members.toArray());
-
-	case DefDef(_, _, _, _, _, Tree rhs):
-            Symbol method = tree.symbol();
-            if (rhs != Tree.Empty)
-                rhs = transform(rhs, method.nextType().resultType());
-	    return gen.DefDef(method, rhs);
-
-	case ValDef(_, _, _, Tree rhs):
-            Symbol field = tree.symbol();
-	    if (rhs != Tree.Empty) rhs = transform(rhs, field.nextType());
-	    return gen.ValDef(field, rhs);
-
-	case AbsTypeDef(_, _, _, _):
-	case AliasTypeDef(_, _, _, _):
-	    // eliminate
-	    return Tree.Empty;
-
-        case Block(Tree[] stats):
-            Tree[] newStats = new Tree[stats.length];
-            for (int i = 0; i < stats.length; ++i)
-                newStats[i] = transform(stats[i], true);
-            return gen.Block(tree.pos, newStats);
-
-	case Assign(Tree lhs, Tree rhs):
-	    Tree lhs1 = transform(lhs);
-	    Tree rhs1 = transform(rhs, lhs1.type);
-	    return copy.Assign(tree, lhs1, rhs1).setType(owntype.fullErasure());
-
-	case If(Tree cond, Tree thenp, Tree elsep):
-	    Tree cond1 = transform(cond, Type.unboxedType(TypeTags.BOOLEAN));
-	    Tree thenp1 = transform(thenp, owntype);
-	    Tree elsep1 = (elsep == Tree.Empty) ? elsep : transform(elsep, owntype);
-	    return copy.If(tree, cond1, thenp1, elsep1).setType(owntype);
-
-        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
-	    Tree test1 = transform(test, Type.unboxedType(TypeTags.INT));
-            Tree[] bodies1 = transform(bodies, owntype);
-            Tree otherwise1 = transform(otherwise, owntype);
-            return copy.Switch(tree, test1, tags, bodies1, otherwise1).setType(owntype);
-
-	case Return(Tree expr):
-	    Tree expr1 = transform(expr,
-                                   tree.symbol().type().resultType().fullErasure());
-            Tree zero = gen.Ident(tree.pos, definitions.NULL);
-	    return make.Block(tree.pos, new Tree[] {
-                copy.Return(tree, expr1).setType(owntype), zero}).setType(zero.type());
-
-        case New(Template templ):
-            if (tree.type.symbol() == definitions.ARRAY_CLASS) {
-                switch (templ.parents[0]) {
-                case Apply(_, Tree[] args):
-                    args = transform(args);
-                    switch (owntype) {
-                    case UnboxedArrayType(Type element):
-                        return genNewUnboxedArray(tree.pos, element, args[0]);
-                    default:
-                        throw Debug.abort("illegal case", owntype);
-                    }
-                default:
-                    throw Debug.abort("illegal case", templ.parents[0]);
-                }
-            }
-	    return super.transform(tree).setType(owntype);
-
-	case Typed(Tree expr, Tree tpe):
-	    // coerce expr to tpe
-	    Tree tpe1 = gen.mkType(tpe.pos, tpe.type().erasure()); // !!! was transform(tpe);
-            // !!! More generally, we should never transform a tree
-            // that represents a type. We should always transform
-            // types and then reconstruct the corresponding tree.
-	    return transform(expr, tpe1.type);
-
-	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
-            fun = transform(fun);
-            vargs = transform(vargs);
-            Symbol symbol = fun.symbol();
-            if (symbol == definitions.AS) {
-                assert targs.length == 1 && vargs.length == 0: tree;
-                return coerce(getQualifier(fun), targs[0].type().erasure());
-            }
-            if (symbol == definitions.IS) {
-                assert targs.length == 1 && vargs.length == 0: tree;
-                Type type = targs[0].type.erasure();
-                if (isUnboxedSimpleType(type)) type = targs[0].type;
-                return gen.mkIsInstanceOf(tree.pos, getQualifier(fun), type);
-            }
-            return genApply(tree.pos, fun, vargs);
-
-	case Apply(Tree fun, Tree[] vargs):
-            fun = transform(fun);
-            vargs = transform(vargs);
-            switch (fun) {
-            case Select(Tree qualifier, _):
-                if (!hasBoxing(qualifier)) break;
-                switch (primitives.getPrimitive(fun.symbol())) {
-                case LENGTH:
-                    assert vargs.length == 0: tree;
-                    Tree array = removeBoxing(qualifier);
-                    return genUnboxedArrayLength(tree.pos, array);
-                case APPLY:
-                    assert vargs.length == 1: tree;
-                    Tree array = removeBoxing(qualifier);
-                    Tree index = vargs[0];
-                    return genUnboxedArrayGet(tree.pos, array, index);
-                case UPDATE:
-                    assert vargs.length == 2: tree;
-                    Tree array = removeBoxing(qualifier);
-                    Tree index = vargs[0];
-                    Tree value = vargs[1];
-                    return genUnboxedArraySet(tree.pos, array, index, value);
-                }
-            }
-            return genApply(tree.pos, fun, vargs);
-
-	case Select(Tree qualifier, _):
-            Symbol symbol = tree.symbol();
-            qualifier = transform(qualifier);
-            qualifier = coerce(qualifier, symbol.owner().type().erasure());
-            if (isUnboxedType(qualifier.type())) qualifier = box(qualifier);
-	    return gen.Select(tree.pos, qualifier, symbol);
-
-	case Ident(_):
-            Symbol symbol = tree.symbol();
-	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
-            return gen.Ident(tree.pos, symbol);
-
-        case LabelDef(Name name, Tree.Ident[] params,Tree body):
-	    Tree.Ident[] new_params = new Tree.Ident[params.length];
-	    for (int i = 0; i < params.length; i++) {
-		new_params[i] = (Tree.Ident)gen.Ident(params[i].pos, params[i].symbol());
-	    }
-
-	    return copy.LabelDef(tree, new_params, transform(body)).setType(owntype);
-
-
-
-        case Empty:
-        case PackageDef(_,_):
-        case Template(_,_):
-        case Sequence(_): // !!! ? [BE:was Tuple before]
-        case Super(_, _):
-        case This(_):
-        case Literal(_):
-        case TypeTerm():
-	    return super.transform(tree).setType(owntype);
-
-        case Bad():
-        case ModuleDef(_,_,_,_):
-        case PatDef(_,_,_):
-        case Import(_,_):
-        case CaseDef(_,_,_):
-        case Visitor(_):
-        case Function(_,_):
-        case SingletonType(_):
-        case SelectFromType(_,_):
-        case FunType(_,_):
-        case CompoundType(_,_):
-        case AppliedType(_, _):
-            throw Debug.abort("illegal case", tree);
-
-	default:
-            throw Debug.abort("unknown case", tree);
-	}
-    }
-
-    public Tree transform(Tree tree) {
-        return transform(tree, false);
-    }
-
-    /** Transform with prototype
-     */
-    Tree transform(Tree expr, Type pt) {
-	return coerce(transform(expr), pt);
-    }
     Tree[] transform(Tree[] exprs, Type pt) {
         for (int i = 0; i < exprs.length; i++) {
             Tree tree = transform(exprs[i], pt);
