@@ -97,16 +97,14 @@ class Queue[+A](elem: A*) extends Seq[A] {
         var newOut:List[A] = Nil;
         var newIn:List[A] = Nil;
            if (out.isEmpty) {
-           newOut = in.reverse;
-           newIn = Nil;
-         } else {
-	 newOut = out;
-	 newIn = in;
-         }
-         if (newOut.isEmpty)
-  	 error("queue empty");
-        else
-            Pair(newOut.head, mkQueue(newIn, newOut.tail));
+             newOut = in.reverse;
+             newIn = Nil;
+           } else {
+	     newOut = out;
+	     newIn = in;
+           }
+           if (newOut.isEmpty) error("queue empty");
+           else Pair(newOut.head, mkQueue(newIn, newOut.tail));
     }
 
     /** Returns the first element in the queue, or throws an error if there
@@ -168,4 +166,11 @@ class Queue[+A](elem: A*) extends Seq[A] {
 
         case _ => false; /* o is not a queue: not equal to this. */
     }
+
+  override def hashCode():Int =
+	if (isEmpty) 0
+	else {
+	  val q:Pair[A,Queue[A]] = dequeue;
+          q._1.hashCode()+q._2.hashCode();
+        }
 }
