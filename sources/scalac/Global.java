@@ -405,7 +405,7 @@ public class Global {
                     make.Apply(Position.FIRSTPOS,
                         make.Select(Position.FIRSTPOS,
                             make.Ident(Position.FIRSTPOS, Names.scala),
-                            Names.Object.toTypeName()),
+                            Names.AnyRef.toTypeName()),
                         new Tree[0])},
                     unit.body))};
         module++;
