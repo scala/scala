@@ -8,7 +8,7 @@ import scala.collection.mutable ;
  *  can derive the empty hedge are called "nullable". initials tree
  *  or hedge nonterminals.
  */
-class MutableTreeHedgeGrammar[ A ] extends TreeHedgeGrammar {
+class MutableTreeHedgeGrammar[ A ]  {
 
   /** number of tree nonterminals*/
   var nTreeNT: Int = 0;

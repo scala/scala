@@ -21,7 +21,7 @@ abstract class TreeHedgeGrammar {
   /** inv: isNullable.size == nHedgeNT */
   def isNullable: BitSet;
 
-  def treeTransitions:  Function1[Int, Set[TreeRHS]] ;
-  def hedgeTransitions: Function1[Int, Set[HedgeRHS]] ;
+  def treeTransitions:  Array[Set[TreeRHS]] ;
+  def hedgeTransitions: Array[Set[HedgeRHS]] ;
 
 }

@@ -14,12 +14,12 @@ abstract class NondetWordAutom {
   type T_label;
 
   val nstates:  Int;
-  val finals:   Array[Int] ;
+  val finals:   Array[Option[Int]] ;
   val delta:    Array[Map[T_label,List[Int]]];
   val default:  Array[List[Int]];
 
   /** returns true if the state is final */
-  final def isFinal(state: Int)  = finals.isDefinedAt( state );
+  final def isFinal(state: Int)  = !finals( state ).isEmpty;
 
   /** returns tag of final state */
   final def finalTag(state: Int) = finals( state );
