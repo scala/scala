@@ -82,9 +82,10 @@ PICO_FLAGS		+= -make -source 1.4
 # Functions
 
 RUN			 = echo $(1); $(1) || exit $$?
-MAKE			+= --no-print-directory
 LOOKUP			 = $(if $($(source)_$(1)),$($(source)_$(1)),$($(1)))
 READLIST		 = $(shell cat $(1) | grep -v "^\#")
+
+make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 
 ##############################################################################
 # Commands
@@ -93,7 +94,7 @@ all		: compiler
 
 force		:
 	$(RM) -f .latest-compiler
-	@$(MAKE) all
+	@$(make) all
 
 clean		:
 	$(RM) -f .latest-compiler
@@ -114,8 +115,12 @@ compiler	: .latest-compiler
 # Targets
 
 .latest-compiler	: $(COMPILER_SOURCES)
-	@$(MAKE) .do-jc source=COMPILER JC_FILES='$?'
+	@$(make) .do-jc source=COMPILER JC_FILES='$?'
 	touch $@
+
+##############################################################################
+
+include $(ROOT)/support/make/grep.mk
 
 ##############################################################################
 # JC - compile java files
