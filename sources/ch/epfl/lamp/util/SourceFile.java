@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
+**                                                                      **
+** $Id$
 \*                                                                      */
-
-// $Id$
 
 package ch.epfl.lamp.util;
 
@@ -15,8 +15,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
-/**
- * This class represents a single source file.
+
+/** This class represents a single source file.
  */
 public class SourceFile {
 
@@ -114,7 +114,8 @@ public class SourceFile {
                 if (bytes[index] == FF) break;
             }
             lineLength = index - lineStart;
-            if (index < bytes.length) index++;
+            if (index < bytes.length)
+            	index++;
             if (index < bytes.length)
                 if (bytes[index - 1] == CR && bytes[index] == LF) index++;
         }
@@ -136,7 +137,8 @@ public class SourceFile {
     //########################################################################
     // Private Methods
 
-    /** Reads the file and returns its content as a byte array. */
+    /** Reads the file and returns its content as a byte array.
+     */
     private static byte[] read(File file) throws IOException {
         InputStream input = new FileInputStream(file);
         try {
@@ -146,13 +148,14 @@ public class SourceFile {
         }
     }
 
-    /** Reads the InputStream and returns its content as a byte array. */
-    private static byte[] read(String name, InputStream input)
-        throws IOException
-    {
+    /** Reads the InputStream and returns its content as a byte array.
+     */
+    private static byte[] read(String name, InputStream input) throws IOException {
         try {
             byte[] bytes = new byte[input.available() + 1];
-            if (input.read(bytes) != bytes.length - 1) throw new IOException();
+            int numread = input.read(bytes);
+            if ((numread >= 0) && (numread != bytes.length - 1))
+            	throw new IOException();
             bytes[bytes.length - 1] = SU;
             return bytes;
         } catch (IOException exception) {
@@ -162,7 +165,8 @@ public class SourceFile {
 
     /** Ensures that the last byte of the array is SU. */
     private static byte[] normalize(byte[] input) {
-        if (input.length > 0 && input[input.length - 1] == SU) return input;
+        if (input.length > 0 && input[input.length - 1] == SU)
+        	return input;
         byte[] bytes = new byte[input.length + 1];
         System.arraycopy(input, 0, bytes, 0, input.length);
         bytes[input.length] = SU;
