@@ -388,6 +388,7 @@ public class TextTreePrinter implements TreePrinter {
             printArray(trees, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
             break;
 
+	    /*
 	case Subsequence(Tree[] trees):
 	    if( trees.length > 0 )
 		printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
@@ -398,7 +399,7 @@ public class TextTreePrinter implements TreePrinter {
 		    print( TXT_RIGHT_PAREN );
 		}
 	    break;
-
+	    */
 	case Alternative(Tree[] trees):
 	    printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_BAR_SP);
 	    break;
