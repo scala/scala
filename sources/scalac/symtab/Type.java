@@ -9,6 +9,8 @@
 
 package scalac.symtab;
 
+import java.util.HashMap;
+
 import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
 import scalac.util.*;
@@ -1619,6 +1621,88 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             assert from.length == to.length;
             return new SubstTypeMap(from, to).map(these);
         } else return these;
+    }
+
+    /**
+     * A map that substitutes ThisTypes of a given class by a given
+     * type. All occurrences of the type parameters of the given class
+     * are replaced by the type arguments extracted from the given
+     * type. Furthermore, the prefixes of the given type are used to
+     * substitute, in the same way, the ThisTypes of the outer classes
+     * of the given class.
+     *
+     * object Foo {
+     *   class C[D] { class I[J]; }
+     *   val c: C[Int] = new C[Int];
+     *   class M[N] extends c.I[N];
+     * }
+     *
+     * In the code above, a ThisTypeMap of class "I" and type
+     * "ThisType(M)", would do the following substitutions:
+     *
+     *   - ThisType(I)       ->  ThisType(M)
+     *   - TypeRef(_, J, _)  ->  TypeRef(_, N, -)
+     *   - ThisType(C)       ->  SingleType(ThisType(Foo), c)
+     *   - TypeRef(_, D, _)  ->  TypeRef(_, Int, _)
+     */
+    private static class ThisTypeMap extends Map {
+        private final HashMap/*<Symbol,Type>*/ subst;
+
+        public ThisTypeMap(Symbol clasz, Type type) {
+            this.subst = new HashMap();
+            initialize(clasz, type);
+        }
+
+        private void initialize(Symbol clasz, Type type) {
+            switch (type) {
+            case ThisType(Symbol symbol):
+                if (symbol == clasz) return;
+                if (symbol.isNone()) return; // !!!
+            }
+            subst.put(clasz, type);
+            Type base = type.baseType(clasz);
+            switch (base) {
+            case TypeRef(Type prefix, Symbol symbol, Type[] args):
+                Symbol[] params = clasz.typeParams();
+                assert symbol == clasz && args.length == params.length:
+                    type + "@" + Debug.show(clasz) + " -> " + base;
+                for (int i = 0; i < params.length; i++) {
+                    assert params[i].isParameter(): Debug.show(params[i]);
+                    subst.put(params[i], args[i]);
+                }
+                initialize(clasz.owner(), prefix);
+                break;
+            default:
+                throw Debug.abort("illegal case",
+                    type + "@" + Debug.show(clasz) + " -> " + base);
+            }
+        }
+
+        public Type apply(Type type) {
+            switch (type) {
+            case ThisType(Symbol symbol):
+                Type lookup = (Type)subst.get(symbol);
+                if (lookup == null) break;
+                return lookup;
+            case TypeRef(Type prefix, Symbol symbol, Type[] args):
+                if (!symbol.isParameter()) break;
+                assert args.length == 0: type;
+                Type lookup = (Type)subst.get(symbol);
+                if (lookup == null) break;
+                return lookup;
+            }
+            return map(type);
+        }
+
+        public String toString() {
+            return subst.toString();
+        }
+
+    }
+
+    /** Returns a ThisTypeMap of given class and type. */
+    public static Map getThisTypeMap(Symbol clasz, Type type) {
+        return new ThisTypeMap(clasz, type);
     }
 
     /** A map for substitutions of thistypes.
