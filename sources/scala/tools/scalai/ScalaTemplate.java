@@ -26,6 +26,7 @@ public class ScalaTemplate {
 
     private final Evaluator evaluator;
     private final Symbol symbol;
+    private final Class proxy;
     private final Function constructor;
     private final Map/*<Method|Symbol,CodePromise>*/ vtable;
     private final Object[] fields;
@@ -33,9 +34,10 @@ public class ScalaTemplate {
     //########################################################################
     // Public Constructors
 
-    public ScalaTemplate(Evaluator evaluator, Symbol symbol, Function constructor, Map vtable, Object[] fields) {
+    public ScalaTemplate(Evaluator evaluator, Symbol symbol, Class proxy, Function constructor, Map vtable, Object[] fields) {
         this.evaluator = evaluator;
         this.symbol = symbol;
+        this.proxy = proxy;
         this.constructor = constructor;
         this.vtable = vtable;
         this.fields = fields;
@@ -50,6 +52,10 @@ public class ScalaTemplate {
 
     public Symbol getSymbol() {
         return symbol;
+    }
+
+    public Class getProxy() {
+        return proxy;
     }
 
     public Function getConstructor() {
