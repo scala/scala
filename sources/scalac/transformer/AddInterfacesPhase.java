@@ -142,11 +142,14 @@ public class AddInterfacesPhase extends Phase {
         }
     }
 
+    protected final SymbolNameWriter uniqueNameWriter = new SymbolNameWriter()
+        .setAllSeparators('$')
+        .setRootSeparator('\0');
     protected Name uniqueName(Symbol sym) {
-        Name owner = sym.owner().fullName().replace((byte)'.', (byte)'$');
-        Name newName = Name.fromString(owner.toString() + '$' + sym.name);
-        if (sym.name.isTypeName()) return newName.toTypeName();
-        else return newName;
+        Name name =
+            Name.fromString(uniqueNameWriter.appendSymbol(sym).toString());
+        uniqueNameWriter.setStringBuffer(null);
+        return sym.name.isTypeName() ? name.toTypeName() : name;
     }
 
     // Terminology: in the following code, the symbol which was used
