@@ -38,4 +38,9 @@ class Point(x: Int, y: Int) {
 val p1 = new Point(3,7)
 p1.move(7,3)
 
+"string".isInstanceOf[String]
+"string".isInstanceOf[Int]
+"string".asInstanceOf[String]
+"string".asInstanceOf[Int]
+
 //############################################################################

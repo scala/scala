@@ -34,5 +34,11 @@ length(Nil)
 }
 > val p1: $console$25.Point = Point(3,7)
 > Point(10,10): $console$25.Point
+> > true: scala.Boolean
+> false: scala.Boolean
+> string: java.lang.String("string")
+> Exception in thread "main" java.lang.ClassCastException: class java.lang.String is not an instance of class scala.Int
+        at $console$31.$console$31(<console>:1)
+        at <root>.$console$31(<console>:1)
 > > > 
 [Leaving scalarun]
