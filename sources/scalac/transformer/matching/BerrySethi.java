@@ -592,8 +592,8 @@ class BerrySethi {
                                             labels,
                                             initials,
                                             finals,
-                                            (Object) deltaq,
-                                            (Object) defaultq,
+                                            deltaq,
+                                            defaultq,
                                             null/*(Object) qbinders*/);
 
                   /*

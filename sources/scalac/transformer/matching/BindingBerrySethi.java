@@ -120,8 +120,8 @@ public class BindingBerrySethi extends BerrySethi {
                                             labels,
                                             initials,
                                             finals,
-                                            (Object) deltaq,
-                                            (Object) defaultq,
+                                             deltaq,
+                                             defaultq,
                                             (Object) qbinders);
 
                   result.leftTrans = true;
@@ -144,8 +144,8 @@ public class BindingBerrySethi extends BerrySethi {
                                                labels,
                                                revInitials,
                                                revFinals,
-                                               (Object) deltaqRev,
-                                               (Object) defaultqRev,
+					       deltaqRev,
+					       defaultqRev,
                                                (Object) qbinders);
 
                   revnfa.rightTrans = true;

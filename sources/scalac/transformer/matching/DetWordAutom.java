@@ -7,12 +7,125 @@ import java.util.* ;
 
 import scalac.ApplicationError ;
 
-public class DetWordAutom extends FiniteAutom {
+public class DetWordAutom  {
+
+    // BEGIN stuff from FiniteAutom
+
+      //final static Integer FINTAG = new Integer(0);
+
+      /** number of states */
+      protected int nstates;
+
+      /** the 'alphabet' */
+      protected HashSet labels;
+
+      /** the set of final states, here as a TreeMap */
+      protected TreeMap finals;
+
+      /** dfa: HashMap trans: Object -> Integer
+       *  nfa: HashMap trans: Object -> Vector [ Integer ]
+       *
+       *  nfa: Integer  ->(Object -> Vector [ Int ])
+       *       [q]     |->( a |-> { q' | (q,a,q') in \deltaright } )
+       *
+       *  dfa: Integer  ->(Object -> Int)
+       *       [q]     |->( a |-> q' | \deltaright(q,a) = q' } )
+       */
+
+      public HashMap[] deltaq;
+
+      public Integer[] defaultq; // this gives the default transitions
+
+      //protected HashMap deltaq[];
+
+      // --- accessor methods
+
+      /** returns number of states
+       */
+      public int nstates() {
+            return nstates;
+      }
+
+      /** returns the labels
+       */
+      public HashSet labels() {
+            return labels;
+      }
+
+      /** returns the transitions
+       */
+      public HashMap deltaq( int state ) {
+            return deltaq[ state ];
+      }
+
+      /** returns the transitions
+       */
+      public HashMap deltaq( Integer state ) {
+            return deltaq[ state.intValue() ];
+      }
+
+
+      /** returns the transitions
+       */
+      public Integer defaultq( int state ) {
+            return defaultq[ state ];
+      }
+
+      /** returns the transitions
+       */
+      public Integer defaultq( Integer state ) {
+            return defaultq[ state.intValue() ];
+      }
+
+
+      /** returns true if the state is final
+       */
+      public boolean isFinal( int state ) {
+            return ((finals != null)
+                    && (finals.get( new Integer( state )) != null));
+      }
+
+      /** returns true if the state is final
+       */
+      public boolean isFinal( Integer state ) {
+            return ((finals != null) && finals.containsKey( state ));
+      }
+
+      /** returns true if the state is final
+       */
+      public Integer finalTag( Integer state ) {
+            return (Integer) finals.get( state );
+      }
+
+
+      public Integer finalTag( int state ) {
+            return (Integer) finals.get( new Integer (state ));
+      }
+
+      /** returns true if the set of states contains at least one final state
+       */
+      boolean containsFinal( TreeSet Q ) {
+            for( Iterator it = Q.iterator(); it.hasNext(); ) {
+                  if( isFinal( (Integer) it.next()))
+                        return true;
+            }
+            return false;
+      }
+
+
+      /** returns true if there are no finite states
+       */
+      public boolean isEmpty() {
+            return finals.isEmpty();
+      }
+
+    // END stuff from FiniteAutom
 
       static final int FIRST = 0;
       static final int LAST  = FIRST + 1;
 
-      static final int WHICH_LONGEST_MATCH = FIRST ;
+    //static final int WHICH_LONGEST_MATCH = FIRST ;
+      static final int WHICH_LONGEST_MATCH = LAST ;
 
       // inherited from FiniteAutom:
 
@@ -24,11 +137,11 @@ public class DetWordAutom extends FiniteAutom {
       //Integer defaultq[];
 
 
-      // used only during determinization and debug printing
+      // TEMPORARY VAR used only during determinization and debug printing
       // Q -> (Label -> Q )
-      HashMap delta;
-      // Q -> Integer;
-      HashMap indexMap;
+    HashMap delta;
+    // Q -> Integer;
+    HashMap indexMap;
 
       // Integer -> Q
       HashMap invIndexMap;
@@ -39,13 +152,13 @@ public class DetWordAutom extends FiniteAutom {
       final static Integer NODEFAULT = new Integer( -1 );
 
       public boolean isSink( int i ) {
-            return  (((HashMap[])deltaq)[ i ].keySet().isEmpty()
-                     && (defaultq != null )
-                     && (((Integer)defaultq( i )).intValue() == i));
+	  return  ( deltaq[ i ].keySet().isEmpty()
+		    && (defaultq != null )
+		    && (defaultq( i ).intValue() == i) );
       }
 
       public boolean hasDefault( int i ) {
-            return (Integer) defaultq( i ) != NODEFAULT;
+            return defaultq( i ) != NODEFAULT;
       }
 
       void determinize( NondetWordAutom nfa ) {
@@ -184,8 +297,8 @@ public class DetWordAutom extends FiniteAutom {
                         }
 
                   }
-                  ((HashMap[])deltaq)[ state_x.intValue() ] = newTrans;
-                  ((Integer[])defaultq)[ state_x.intValue() ] = defTarget_x;
+                  deltaq[ state_x.intValue() ] = newTrans;
+                  defaultq[ state_x.intValue() ] = defTarget_x;
 
                   delta.remove( state );
                   deftrans.remove( state );
@@ -232,14 +345,14 @@ public class DetWordAutom extends FiniteAutom {
       /** for a set of nfa states (that must exist), returns its transitions
        */
       HashMap deltaq( TreeSet nset ) {
-            return (HashMap) deltaq( (Integer) indexMap.get( nset ) );
+            return deltaq( (Integer) indexMap.get( nset ) );
       }
 
 
       /** for a set of nfa states (that must exist), returns its transitions
        */
       Integer defaultq( TreeSet nset ) {
-            return (Integer) defaultq( (Integer) indexMap.get( nset ) );
+            return defaultq( (Integer) indexMap.get( nset ) );
       }
 
       /** returns target of the transition from state i with label label.
@@ -254,7 +367,7 @@ public class DetWordAutom extends FiniteAutom {
                   return (Integer) defaultq( i ) ;
             case SimpleLabel( _ ):
             case TreeLabel( _ ):
-                  return (Integer) ((HashMap[])deltaq)[ i ].get( label ) ;
+                  return (Integer) deltaq[ i ].get( label ) ;
                   /*case Pair( Integer state, Label lab ):
                   return state;
                   */
@@ -315,7 +428,7 @@ public class DetWordAutom extends FiniteAutom {
             for( Iterator su = targets.iterator(); su.hasNext(); ) {
                   TreeSet nset   = (TreeSet) su.next();
 
-                  HashMap ddelta = (HashMap) dLeft.deltaq( nset );
+                  HashMap ddelta = dLeft.deltaq( nset );
 
                   // ...  at THIS dstate
                   if( (Integer) ddelta.get( theLabel ) == dstate ) {
@@ -366,7 +479,7 @@ public class DetWordAutom extends FiniteAutom {
                   for( Iterator su = targets.iterator(); su.hasNext(); ) {
                         TreeSet nset   = (TreeSet) su.next();
 
-                        Integer ddef = (Integer) dLeft.defaultq( nset );
+                        Integer ddef = dLeft.defaultq( nset );
 
                         //System.out.println( "ddef ="+ddef );
 
@@ -494,7 +607,7 @@ public class DetWordAutom extends FiniteAutom {
                   ////System.out.print(" binders: ");
                   ////System.out.print( right.qbinders[ npair.nstate.intValue() ] );
 
-                  HashMap delta = (HashMap) right.deltaq( npair.nstate );
+                  HashMap delta = right.deltaq( npair.nstate );
 
                   ////System.out.print(" we could have arrived : ");
                   //search the delta for target invIndexMap
@@ -564,7 +677,7 @@ public class DetWordAutom extends FiniteAutom {
                   nsrc = new TreeMap( new StateSetComparator() );
 
                   // now for all default transitions that arrive at this nfa state
-                  Vector defqs = (Vector) right.defaultq( npair.nstate );
+                  Vector defqs = right.defaultq( npair.nstate );
                   for( Iterator it = defqs.iterator(); it.hasNext(); ) {
                         Integer nq = (Integer) it.next();
                         //System.out.println("checking nq="+nq);
@@ -699,7 +812,7 @@ public class DetWordAutom extends FiniteAutom {
 
                   hmap.put( dtarget, i );
             }
-            ((HashMap[])deltaq)[ 0 ]  = hmap; // careful, this maps Int to Int
+            deltaq[ 0 ]  = hmap; // careful, this maps Int to Int
 
             qbinders[ 0 ] = new Vector();
             //((Vector[])defaultq)[ 0 ] = new Vector(); is null

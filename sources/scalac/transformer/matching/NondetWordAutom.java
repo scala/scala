@@ -13,7 +13,120 @@ import java.util.* ;
  *  states are represented (implicitly) as Integer objects.
  */
 
-public class NondetWordAutom extends FiniteAutom {
+public class NondetWordAutom  {
+
+    // BEGIN stuff from FiniteAutom
+
+      //final static Integer FINTAG = new Integer(0);
+
+      /** number of states */
+      protected int nstates;
+
+      /** the 'alphabet' */
+      protected HashSet labels;
+
+      /** the set of final states, here as a TreeMap */
+      protected TreeMap finals;
+
+      /** dfa: HashMap trans: Object -> Integer
+       *  nfa: HashMap trans: Object -> Vector [ Integer ]
+       *
+       *  nfa: Integer  ->(Object -> Vector [ Int ])
+       *       [q]     |->( a |-> { q' | (q,a,q') in \deltaright } )
+       *
+       *  dfa: Integer  ->(Object -> Int)
+       *       [q]     |->( a |-> q' | \deltaright(q,a) = q' } )
+       */
+
+      public HashMap[] deltaq;
+
+      public Vector[]  defaultq; // this gives the default transitions
+
+      //protected HashMap deltaq[];
+
+      // --- accessor methods
+
+      /** returns number of states
+       */
+      public int nstates() {
+            return nstates;
+      }
+
+      /** returns the labels
+       */
+      public HashSet labels() {
+            return labels;
+      }
+
+      /** returns the transitions
+       */
+      public HashMap deltaq( int state ) {
+            return deltaq[ state ];
+      }
+
+      /** returns the transitions
+       */
+      public HashMap deltaq( Integer state ) {
+            return deltaq[ state.intValue() ];
+      }
+
+
+      /** returns the transitions
+       */
+      public Vector defaultq( int state ) {
+            return defaultq[ state ];
+      }
+
+      /** returns the transitions
+       */
+      public Vector defaultq( Integer state ) {
+            return defaultq[ state.intValue() ];
+      }
+
+
+      /** returns true if the state is final
+       */
+      public boolean isFinal( int state ) {
+            return ((finals != null)
+                    && (finals.get( new Integer( state )) != null));
+      }
+
+      /** returns true if the state is final
+       */
+      public boolean isFinal( Integer state ) {
+            return ((finals != null) && finals.containsKey( state ));
+      }
+
+      /** returns true if the state is final
+       */
+      public Integer finalTag( Integer state ) {
+            return (Integer) finals.get( state );
+      }
+
+
+      public Integer finalTag( int state ) {
+            return (Integer) finals.get( new Integer (state ));
+      }
+
+      /** returns true if the set of states contains at least one final state
+       */
+      boolean containsFinal( TreeSet Q ) {
+            for( Iterator it = Q.iterator(); it.hasNext(); ) {
+                  if( isFinal( (Integer) it.next()))
+                        return true;
+            }
+            return false;
+      }
+
+
+      /** returns true if there are no finite states
+       */
+      public boolean isEmpty() {
+            return finals.isEmpty();
+      }
+
+    // END stuff from FiniteAutom
+
 
       // inherited from FiniteAutom
 
@@ -58,13 +171,13 @@ public class NondetWordAutom extends FiniteAutom {
             for( Iterator it = Qsrc.iterator(); it.hasNext(); ) {
                   // state
                   int q1 = ((Integer) it.next()).intValue();
-                  Vector ps = (Vector) ((HashMap[])deltaq)[ q1 ].get( label );
+                  Vector ps = (Vector) deltaq[ q1 ].get( label );
 
                   //System.out.println( "q1 "+q1+" targ:"+ps.toString() );
                   if( ps!=null )
                         Qdest.addAll( ps );
 
-                  Qdest.addAll((Vector) defaultq( q1 ));
+                  Qdest.addAll( defaultq( q1 ) );
             }
             return Qdest;
       }
@@ -76,7 +189,7 @@ public class NondetWordAutom extends FiniteAutom {
             for( Iterator p1 = P1.iterator(); p1.hasNext(); ) {
                   int q1 = ((Integer) p1.next()).intValue();
                   //System.out.println("   q1:"+q1+ " defa: "+defaultq( q1 ));
-                  defTarget.addAll( (Vector) defaultq( q1 ));
+                  defTarget.addAll( defaultq( q1 ) );
             }
             return defTarget;
       }
@@ -175,7 +288,7 @@ public class NondetWordAutom extends FiniteAutom {
                   _deltaq  [ i + offset ] = (HashMap) mapmap( ((HashMap[])deltaq)[ i ],
                                                     offset, new HashMap(), false, true);
 
-                  _defaultq[ i + offset ] = vmap( offset, ((Vector[])defaultq)[ i ]);
+                  _defaultq[ i + offset ] = vmap( offset, defaultq[ i ] );
 
             }
             if ((_qbinders != null) &&( qbinders != null ))
@@ -210,7 +323,7 @@ public class NondetWordAutom extends FiniteAutom {
                         finals.put( q0, finTag );
 
 
-                  HashMap tmp = (HashMap) deltaq( ostate );
+                  HashMap tmp = deltaq( ostate );
 
                   if( reloc )
                         tmp = (HashMap) mapmap( tmp, 1, new HashMap(), false, true );
@@ -225,7 +338,7 @@ public class NondetWordAutom extends FiniteAutom {
                   }
                   //System.out.println( "normalize:defaultq[ "+ostate+" ] "+((Vector[]) defaultq) [ ostate.intValue() ]);
                   if( defaultq( ostate ) != null )
-                        idefault.addAll( (Vector) defaultq( ostate )  );
+                        idefault.addAll( defaultq( ostate )  );
             }
 
             if( reloc ) {
@@ -247,9 +360,9 @@ public class NondetWordAutom extends FiniteAutom {
                   this.qbinders = _qbinders;
             }
 
-            ((HashMap[])this.deltaq)  [ 0 ] = idelta;
+            this.deltaq  [ 0 ] = idelta;
             //System.out.println("normalize:deltaq[ 0 ]"+ idelta );
-            ((Vector[])this.defaultq) [ 0 ] = new Vector( idefault );
+            this.defaultq[ 0 ] = new Vector( idefault );
 
             //System.out.println("normalize:defaultq[ 0 ]"+ idefault );
 
@@ -269,8 +382,8 @@ public class NondetWordAutom extends FiniteAutom {
                              HashSet labels,
                              TreeSet initials,
                              TreeMap finals,
-                             Object deltaq,
-                             Object defaultq,
+                             HashMap[] deltaq,
+                             Vector[]  defaultq,
                              Object qbinders) {
             this.nstates = nstates;
             this.labels = labels;
@@ -329,7 +442,7 @@ public class NondetWordAutom extends FiniteAutom {
             this.defaultq      = new Vector [ nstates ];
 
             //TreeSet defaultqSet = new TreeSet();
-            ((HashMap [])deltaq)[ 0 ] = new HashMap(); // 0 = our new initial state
+            deltaq[ 0 ] = new HashMap(); // 0 = our new initial state
 
             TreeSet initials = new TreeSet();
 
@@ -345,8 +458,8 @@ public class NondetWordAutom extends FiniteAutom {
 
                   n.relocate( offs,
                               this.finals,
-                              (HashMap[]) this.deltaq,
-                              (Vector[])  this.defaultq,
+                              this.deltaq,
+                              this.defaultq,
                               (Vector[])  this.qbinders );
             }
 
@@ -383,7 +496,7 @@ public class NondetWordAutom extends FiniteAutom {
                         System.out.print("*"); //final
                   }
                   System.out.print("  transitions: {");
-                  HashMap arrows = ((HashMap[])deltaq)[ i ];
+                  HashMap arrows = deltaq[ i ];
 
                   for( Iterator it = arrows.keySet().iterator();
                        it.hasNext(); ) {
