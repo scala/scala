@@ -27,7 +27,6 @@ meta_SCALAC		 = $(SCALAC)
 boot_PREFIX		 = boot
 boot_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(boot_PREFIX)
 boot_INSTALLDIR		 = $(boot_OBJECTDIR)
-boot_BINARYDIR		 = $(boot_OBJECTDIR)/bin
 boot_LIBRARY_CLASSDIR	 = $(main_LIBRARY_CLASSDIR)
 boot_TOOLS_CLASSDIR	 = $(boot_OBJECTDIR)/lib/$(TOOLS_NAME)
 boot_JC_OUTPUTDIR	 = $(boot_TOOLS_CLASSDIR)
@@ -40,28 +39,26 @@ boot_SCALA_CMD		 = $(SCALA)
 main_PREFIX		 = main
 main_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(main_PREFIX)
 main_INSTALLDIR		 = $(PROJECT_ROOT)
-main_BINARYDIR		 = $(PROJECT_BINARYDIR)
 main_LIBRARY_CLASSDIR	 = $(main_OBJECTDIR)/lib/$(LIBRARY_NAME)
 main_TOOLS_CLASSDIR	 = $(main_OBJECTDIR)/lib/$(TOOLS_NAME)
 main_JC_OUTPUTDIR	 = $(main_TOOLS_CLASSDIR)
 main_JC_CLASSPATH	 = $(main_JC_OUTPUTDIR):$(main_LIBRARY_CLASSDIR)
 main_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
-main_SCALAC		 = $(boot_BINARYDIR)/scalac
-main_SCALADOC		 = $(main_BINARYDIR)/scaladoc
-main_SCALA_CMD		 = $(main_BINARYDIR)/scala
+main_SCALAC		 = $(boot_OBJECTDIR)/bin/scalac
+main_SCALADOC		 = $(main_OBJECTDIR)/bin/scaladoc
+main_SCALA_CMD		 = $(main_OBJECTDIR)/bin/scala
 
 test_PREFIX		 = test
 test_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(test_PREFIX)
 test_INSTALLDIR		 = $(test_OBJECTDIR)
-test_BINARYDIR		 = $(test_OBJECTDIR)/bin
 test_LIBRARY_CLASSDIR	 = $(test_OBJECTDIR)/lib/$(LIBRARY_NAME)
 test_TOOLS_CLASSDIR	 = $(test_OBJECTDIR)/lib/$(TOOLS_NAME)
 test_JC_OUTPUTDIR	 = $(test_TOOLS_CLASSDIR)
 test_JC_CLASSPATH	 = $(test_JC_OUTPUTDIR):$(test_LIBRARY_CLASSDIR)
 test_SC_BOOTCLASSPATH	 = $(JRE_JARFILE)
-test_SCALAC		 = $(main_BINARYDIR)/scalac
-test_SCALADOC		 = $(test_BINARYDIR)/scaladoc
-test_SCALA_CMD		 = $(test_BINARYDIR)/scala
+test_SCALAC		 = $(main_OBJECTDIR)/bin/scalac
+test_SCALADOC		 = $(test_OBJECTDIR)/bin/scaladoc
+test_SCALA_CMD		 = $(test_OBJECTDIR)/bin/scala
 
 ##############################################################################
 # Variables
@@ -273,11 +270,12 @@ $(LATEST_PREFIX)-test-%	: ; @$(make) prefix="test" $@
 ##############################################################################
 # Targets - scala scripts
 
-SCRIPTS_PREFIX		 = $($(prefix)_BINARYDIR)
+SCRIPTS_PREFIX		 = $($(prefix)_OBJECTDIR)
+SCRIPTS_BINARYDIR	 = $(SCRIPTS_PREFIX)/bin
 SCRIPTS_TEMPLATE_NAME	 = $(SCRIPTS_WRAPPER_NAME).tmpl
 SCRIPTS_TEMPLATE_FILE	 = $(PROJECT_BINARYDIR)/$(SCRIPTS_TEMPLATE_NAME)
 SCRIPTS_WRAPPER_NAME	 = .scala_wrapper
-SCRIPTS_WRAPPER_FILE	 = $(SCRIPTS_PREFIX)/$(SCRIPTS_WRAPPER_NAME)
+SCRIPTS_WRAPPER_FILE	 = $(SCRIPTS_BINARYDIR)/$(SCRIPTS_WRAPPER_NAME)
 SCRIPTS_ALIASES_NAMES	+= scala
 SCRIPTS_ALIASES_NAMES	+= scala-debug
 SCRIPTS_ALIASES_NAMES	+= scala-info
@@ -292,13 +290,10 @@ SCRIPTS_ALIASES_NAMES	+= scalaint-debug
 SCRIPTS_ALIASES_NAMES	+= dtd2scala
 SCRIPTS_ALIASES_NAMES	+= scalap
 SCRIPTS_ALIASES_NAMES	+= scalatest
-SCRIPTS_ALIASES_FILES	+= $(SCRIPTS_ALIASES_NAMES:%=$(SCRIPTS_PREFIX)/%)
-SCRIPTS_MACRO		 = -es@{\#$(1)\#}@'"$(MACRO_$(1):$(INSTALL_PREFIX)/%=$$PREFIX/%)"'@g
+SCRIPTS_ALIASES_FILES	+= $(SCRIPTS_ALIASES_NAMES:%=$(SCRIPTS_BINARYDIR)/%)
+SCRIPTS_MACRO		 = -es@{\#$(1)\#}@'"$(MACRO_$(1):$(SCRIPTS_PREFIX)/%=$$PREFIX/%)"'@g
 
-distclean		: distclean.scripts
-distclean.scripts	:
-	$(RM) $(SCRIPTS_ALIASES_FILES)
-	$(RM) $(SCRIPTS_WRAPPER_FILE)
+
 
 $(latest)scripts	: $(SCRIPTS_ALIASES_FILES)
 	$(TOUCH) $@
@@ -308,7 +303,7 @@ $(SCRIPTS_ALIASES_FILES): $(SCRIPTS_WRAPPER_FILE)
 	    $(call RUN,$(LN) -s $(notdir $(SCRIPTS_WRAPPER_FILE)) $@); \
 	fi
 
-$(SCRIPTS_WRAPPER_FILE)	: INSTALL_PREFIX          ?= $($(prefix)_INSTALLDIR)
+$(SCRIPTS_WRAPPER_FILE)	: ROOT                    := $(shell cd $(ROOT); pwd)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_VERSION           ?= $(PROJECT_VERSION)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_LIBRARY_SOURCES   ?= $(PROJECT_SOURCEDIR)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_LIBRARY_CLASSES   ?= $(LIBRARY_CLASSDIR)
