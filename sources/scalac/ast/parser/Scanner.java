@@ -3,8 +3,10 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scalac.ast.parser;
 
@@ -481,10 +483,12 @@ public class Scanner extends TokenData {
 	}
     }
 
-    /** returns true if argument corresponds to a keyword. used in dtd2scala tool */
-    public boolean isKeyword( String str ) {
-	Name name = Name.fromString( str );
-	return (name.index <= maxKey) ;
+    /** returns true if argument corresponds to a keyword.
+     *  Used in dtd2scala tool.
+     */
+    public boolean isKeyword(String str) {
+	Name name = Name.fromString(str);
+	return (name.index <= maxKey);
     }
 
     void treatIdent(int start, int end) {
@@ -799,12 +803,12 @@ public class Scanner extends TokenData {
         enterKeyword("do", DO);
         enterKeyword("else", ELSE);
         enterKeyword("extends", EXTENDS);
-        enterKeyword("final", FINAL);
 	enterKeyword("false", FALSE);
+        enterKeyword("final", FINAL);
         enterKeyword("for", FOR);
         enterKeyword("if", IF);
-	enterKeyword("is", IS);
         enterKeyword("import", IMPORT);
+	enterKeyword("is", IS);
         enterKeyword("new", NEW);
         enterKeyword("null", NULL);
         enterKeyword("object", OBJECT);
