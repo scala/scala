@@ -1444,6 +1444,7 @@ public abstract class TypeSymbol extends Symbol {
 
     protected void update(int pos, int flags) {
         super.update(pos, flags);
+        constructor.pos = pos;
     }
 
     /** copy all fields to `sym'
