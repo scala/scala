@@ -11,10 +11,6 @@ package scalac.symtab;
 
 public interface Kinds {
 
-    /** kind of error symbol
-     */
-    int ERROR = 0;
-
     /** kind of non-existent symbol
      */
     int NONE = 1;

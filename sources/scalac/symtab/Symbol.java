@@ -31,9 +31,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** An empty array of symbol arrays */
     public static final Symbol[][] EMPTY_ARRAY_ARRAY = new Symbol[0][];
 
-    /** The error symbol */
-    public static final Symbol ERROR = new ErrorSymbol();
-
     /** The absent symbol */
     public static final Symbol NONE = new NoSymbol();
 
@@ -1945,50 +1942,6 @@ public final class ClassSymbol extends TypeSymbol {
         ClassSymbol clone = new ClassSymbol(pos, name, owner,flags,attrs,NONE);
         if (thisSym != this) clone.setTypeOfThis(typeOfThis());
         return clone;
-    }
-
-}
-
-/** A class for error symbols.
- */
-final class ErrorSymbol extends Symbol {
-
-    /** Constructor */
-    public ErrorSymbol() {
-        super(Kinds.ERROR, Position.NOPOS, Names.ERROR, null, 0, IS_ERROR);
-        super.setInfo(Type.ErrorType);
-    }
-
-    /** Set type */
-    public Symbol setInfo(Type info) {
-        assert info == Type.ErrorType : info;
-        return this;
-    }
-
-    /** Get primary constructor */
-    public Symbol primaryConstructor() {
-        return newConstructor(pos, 0).setInfo(Type.ErrorType);
-    }
-
-    /** Return the next enclosing class */
-    public Symbol enclClass() {
-        return this;
-    }
-
-    /** Return the next enclosing method */
-    public Symbol enclMethod() {
-        return this;
-    }
-
-    public Type loBound() {
-        return Type.ErrorType;
-    }
-
-    public void reset(Type completer) {
-    }
-
-    protected Symbol cloneSymbolImpl(Symbol owner, int attrs) {
-        throw Debug.abort("illegal clone", this);
     }
 
 }

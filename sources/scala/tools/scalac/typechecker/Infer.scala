@@ -112,8 +112,6 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   /** Compute variance of type parameter `tparam' in type of symbol `sym'.
   */
   private def variance(tparam: Symbol, sym: Symbol): int = sym.kind match {
-    case ERROR =>
-      VARIANCES
     case VAL =>
       variance(tparam, sym.info())
     case TYPE =>

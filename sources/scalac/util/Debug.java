@@ -484,11 +484,9 @@ public class DebugSymbol extends DebugAbstractHandler {
     public static DebugSymbol instance = new DebugSymbol();
 
     public void append1(StringBuffer buffer, Symbol that) {
-        if (that != Symbol.NONE && that != Symbol.ERROR) {
-            if (!that.owner().isRoot() && !that.isRoot()) {
-                Debug.append(buffer, that.owner());
-                buffer.append(".");
-            }
+        if (!that.isNone() && !that.owner().isRoot() && !that.isRoot()) {
+            Debug.append(buffer, that.owner());
+            buffer.append(".");
         }
         buffer.append(that.name);
         if (Global.instance.uniqid) {

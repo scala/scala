@@ -247,7 +247,6 @@ public class SymbolTablePrinter {
      */
     public String getSymbolKind(Symbol symbol) {
         switch (symbol.kind) {
-        case Kinds.ERROR:
         case Kinds.NONE:
             return null;
         case Kinds.CLASS:
@@ -279,7 +278,6 @@ public class SymbolTablePrinter {
     public String getSymbolKeyword(Symbol symbol) {
         if (symbol.isParameter()) return null;
         switch (symbol.kind) {
-        case Kinds.ERROR:
         case Kinds.NONE:
             return null;
         case Kinds.CLASS:
@@ -309,7 +307,6 @@ public class SymbolTablePrinter {
     /** Returns the inner string of the given symbol. */
     public String getSymbolInnerString(Symbol symbol) {
         switch (symbol.kind) {
-        case Kinds.ERROR: return ":";
         case Kinds.NONE : return ":";
         case Kinds.ALIAS: return "=";
         case Kinds.CLASS: return "extends";
