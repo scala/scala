@@ -421,8 +421,9 @@ public final class GenMSIL {
 	//i = gen0(tree, toType);
 	try {
 	    item = gen0(tree, toType);
-	    assert item.type.equals(toType) : "" + item + " <> " + toType
-		+ "; tree = " + tree.getClass();
+	    assert item.type.equals(toType)
+		|| item.type.equals(unboxValueType(toType))
+		: "" + item + " <> " + toType + "; tree = " + tree.getClass();
 	}
 	catch (Throwable e) {
  	    currUnit.error(tree.pos, "Exception caught: " + e.getMessage());
@@ -515,7 +516,7 @@ public final class GenMSIL {
 	    return coerce(item, toType);
 
 	case Apply(Tree fun, Tree[] args):
-	    //System.out.println("gen2.Apply: tree.type = " + msilType(tree.type));
+	    //System.out.println("gen.Apply: " + Debug.show(fun.symbol()) + " toType " + toType);
 	    return coerce(check(genApply(fun, args, msilType(tree.type))), toType);
 
 	case Assign(Tree lhs, Tree rhs):
@@ -662,6 +663,9 @@ public final class GenMSIL {
 	    item.type = toType;
 	    return item;
 	case StackItem():
+	    MSILType utype = unboxValueType(toType);
+	    if (item.type.isValueType() && utype != null)
+		toType = utype;
 	    emitConvert(item.type, toType);
 	    item.type = toType;
 	    return item;
@@ -757,6 +761,16 @@ public final class GenMSIL {
 	    assert sym.isStatic() : Debug.show(sym);
 	    lastExpr = tmpLastExpr;
 
+	    Primitive p = primitives.getPrimitive(sym);
+	    switch (p) {
+	    case UNBOX:
+		assert args.length == 1;
+		MSILType t = msilType(args[0].type);
+		Item i = genLoad(args[0], t);
+		if (!i.type.isValueType())
+		    code.Emit(OpCodes.Call, (MethodInfo)tc.getMethod(sym));
+		return i;
+	    }
 	    MSILType convTo = primitiveConvert(sym);
 	    if (convTo != null) {
 		assert args.length == 1;
@@ -887,6 +901,7 @@ public final class GenMSIL {
 
  	case TypeApply(Tree tfun, Tree[] targs):
 	    final Symbol tsym = tfun.symbol();
+	    //System.out.println("gen.TypeApply: " + Debug.show(tsym) + " toType " + resType);
 	    if (primitives.isPrimitive(tsym)) {
 		return primitiveOp(primitives.getPrimitive(tsym),
 				   ((Select)tfun).qualifier,
@@ -1015,21 +1030,32 @@ public final class GenMSIL {
 	    return mkCond(items.StackItem(msilType(type)));
 
 	case AS:
-	    Item item = genLoad(left, MSILType.OBJECT);
-	    final Type type = tc.getType(right.type);
-	    final MSILType mtype = msilType(type);
-	    if (!item.type.equals(mtype) && !type.equals(MSILType.OBJECT)) {
-		if (type.IsValueType()) {
-		    code.Emit(OpCodes.Unbox, type);
-		    if (type.IsEnum())
-			emitLdind(type.getUnderlyingType());
+// 	    Item item = genLoad(left, MSILType.OBJECT);
+	    Type ltype = tc.getType(left.type);
+	    MSILType mltype = msilType(ltype);
+	    Item item = genLoad(left, mltype);
+	    final Type rtype = tc.getType(right.type);
+	    final MSILType mrtype = msilType(rtype);
+	    if (ltype.IsEnum()) {
+		MSILType ptype = unboxValueType(mrtype);
+		if (ptype != null) {
+		    MSILType uetype = msilType(ltype.getUnderlyingType());
+		    //System.out.println("convert " + uetype + " -> " + ptype);
+		    emitConvert(uetype, ptype);
+		    return items.StackItem(ptype);
+		}
+	    } else if (!item.type.equals(mrtype) && !(rtype == tc.OBJECT)) {
+		if (rtype.IsValueType()) {
+		    code.Emit(OpCodes.Unbox, rtype);
+		    if (rtype.IsEnum())
+			emitLdind(rtype.getUnderlyingType());
 		    else
-			code.Emit(OpCodes.Ldobj, type);
+			code.Emit(OpCodes.Ldobj, rtype);
 		} else {
-		    code.Emit(OpCodes.Castclass, type);
+		    code.Emit(OpCodes.Castclass, rtype);
 		}
 	    }
-	    return items.StackItem(mtype);
+	    return items.StackItem(mrtype);
 
 	case SYNCHRONIZED:
 	    // TODO: reuse temporary local variable whenever possible
@@ -1263,6 +1289,19 @@ public final class GenMSIL {
 	MSILType mtype = msilType(type);
 	switch (mtype) {
 	case REF(Type t):
+	    MSILType ptype = unboxValueType(mtype);
+	    return ptype != null ? ptype : msilType(t).asPrimitive();
+	    //case NULL:
+	case ARRAY(_):
+	    throw Debug.abort("cannot convert " + mtype);
+	default:
+	    return mtype;
+	}
+    }
+
+    private MSILType unboxValueType(MSILType type) {
+	switch (type) {
+	case REF(Type t):
 	    if (t == tc.SCALA_BYTE)    return MSILType.I1;
 	    if (t == tc.SCALA_SHORT)   return MSILType.I2;
 	    if (t == tc.SCALA_INT)     return MSILType.I4;
@@ -1272,13 +1311,8 @@ public final class GenMSIL {
 	    if (t == tc.SCALA_CHAR)    return MSILType.CHAR;
 	    if (t == tc.SCALA_UNIT)    return MSILType.VOID;
 	    if (t == tc.SCALA_BOOLEAN) return MSILType.BOOL;
-	    return msilType(t).asPrimitive();
-	    //case NULL:
-	case ARRAY(_):
-	    throw Debug.abort("cannot convert " + mtype);
-	default:
-	    return mtype;
 	}
+	return null;
     }
 
     /*

@@ -186,7 +186,7 @@ final class TypeCreator {
     public void init() {
 	if (initialized)
 	    return;
-	final Symbol JOBJECT = defs.OBJECT_CLASS;
+	final Symbol JOBJECT = defs.getClass("java.lang.Object"); //defs.OBJECT_CLASS;
 	final Symbol JSTRING = defs.STRING_CLASS;
 
 
@@ -236,11 +236,11 @@ final class TypeCreator {
 			new Type[] {OBJECT, INT});
 	translateMethod(JOBJECT, "notify", jEmpty, MONITOR, "Pulse", sObject1);
 	translateMethod(JOBJECT, "notifyAll", jEmpty, MONITOR, "PulseAll", sObject1);
-	translateMethod(JOBJECT, "getClass", jEmpty, ObjectImpl, "getClass", sObject1);
+	//translateMethod(JOBJECT, "getClass", jEmpty, ObjectImpl, "getClass", sObject1);
 
 	// map methods of java.lang.String
-	translateMethod(JSTRING, "equals",    STRING, "Equals");
-	translateMethod(JSTRING, "toString",  STRING, "ToString");
+	//translateMethod(JSTRING, "equals",    STRING, "Equals");
+	//translateMethod(JSTRING, "toString",  STRING, "ToString");
 	translateMethod(JSTRING, "compareTo", STRING, "CompareTo");
 	translateMethod(JSTRING, "length",    STRING, "get_Length");
 	translateMethod(JSTRING, "charAt",    STRING, "get_Chars");
@@ -376,7 +376,7 @@ final class TypeCreator {
     {
 	Symbol sym = lookupMethod(clazz, name, paramTypes);
 	assert sym != null : "Cannot find method: " + name + " in class " +
-	    Debug.show(clazz);
+	    Debug.show(clazz) + "; scope = " + Debug.show(clazz.members());
 	mapMethod(sym, newClazz, newName, newParamTypes);
     }
 
@@ -422,7 +422,7 @@ final class TypeCreator {
 		translateMethod(alts[i], newClazz, newName);
 	    return;
 	default:
-	    global.fail("" + Debug.show(sym.info()));
+	    global.fail(Debug.show(sym) + " : " + Debug.show(sym.info()));
 	}
     }
 
