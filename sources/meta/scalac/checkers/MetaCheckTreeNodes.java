@@ -6,11 +6,14 @@
 
 // $Id$
 
-package meta.scalac.ast;
+package meta.scalac.checkers;
 
 import meta.java.Type;
 import meta.scalac.ast.AbstractTreeCaseExpander;
+import meta.scalac.ast.TreeKind;
+import meta.scalac.ast.TreeType;
 import meta.scalac.ast.TreeNode;
+import meta.scalac.ast.TreeField;
 
 public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
 
@@ -25,7 +28,7 @@ public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
             }
         }
         printCheckNode(node);
-        writer.println("return true;");
+        writer.println("return;");
     }
 
     private void printCheckNode(TreeNode node) {
