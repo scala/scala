@@ -2013,10 +2013,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		body = transform( body );
 		//assert body.type != null;
 		if( TreeInfo.isSequenceValued( body ) ) {
-                    Symbol listSym = definitions.getType( Name.fromString("scala.List") ).symbol();
-                    assert listSym != Symbol.NONE : "did not find Seq";
-
-                    vble.setType( new Type.TypeRef(definitions.SCALA_TYPE, listSym, new Type[] { pt }) );
+                    vble.setType( definitions.listType(pt) );
                 } else {
                     vble.setType( body.type );
                 }
