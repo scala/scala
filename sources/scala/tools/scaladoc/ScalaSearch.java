@@ -575,7 +575,7 @@ public class DocSyms {
 	if (sym.isParameter())
 	    res = contains(sym.classOwner());
 	else
-	    res = (syms.contains(sym) || (sym.isModuleClass() && syms.contains(sym.module())));
+	    res = sym.isRoot() || (syms.contains(sym) || (sym.isModuleClass() && syms.contains(sym.module())));
 	return res;
     }
 }
