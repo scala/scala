@@ -69,8 +69,7 @@ public class SymbolCloner {
     /** Clones the given symbol. */
     public Symbol cloneSymbol(Symbol symbol) {
         assert !symbol.isPrimaryConstructor() : Debug.show(symbol);
-        assert !symbol.isModuleClass() : Debug.show(symbol);
-        assert !symbol.isClass() : Debug.show(symbol);
+        assert !symbol.isClassType() : Debug.show(symbol);
         assert !symbol.isModule() : Debug.show(symbol);
         assert !owners.containsKey(symbol) : Debug.show(symbol);
         assert !clones.containsKey(symbol) :
