@@ -30,6 +30,7 @@ abstract class StdNames: SymbolTable {
     val COMPOUND_NAME = newTermName("<ct>");
     val ANON_CLASS_NAME = newTermName("$anon");
     val REFINE_CLASS_NAME = newTermName("<refinement>");
+    val IMPORT = newTermName("<import>");
     val ZERO = newTermName("<zero>");
     val STAR = newTermName("*");
     val ROOT = newTermName("<root>");

@@ -47,7 +47,7 @@ abstract class Types: SymbolTable {
      *  for a reference denoting an abstract type, its bounds,
      *  for all other types, a TypeBounds type all of whose bounds are this type.
      *  error for all other types */
-    def bounds: TypeBounds = TypeBounds(this, this, this);
+    def bounds: TypeBounds = TypeBounds(this, this);
 
     /** For a class or intersection type, its parents.
      *  For a TypeBounds type, the parents of its hi bound.
@@ -364,7 +364,7 @@ abstract class Types: SymbolTable {
 
   /** A class for the bounds of abstract types and type parameters
    */
-  case class TypeBounds(lo: Type, hi: Type, vu: Type) extends SubType {
+  case class TypeBounds(lo: Type, hi: Type) extends SubType {
     protected def supertype: Type = hi;
     override def bounds: TypeBounds = this;
     def containsType(that: Type) = lo <:< that && that <:< hi;
@@ -461,9 +461,6 @@ abstract class Types: SymbolTable {
 
     def computeClosure: Array[Type] =
       addClosure(clazz.tpe, glbArray(parents map (.closure)));
-
-    override def toString(): String =
-      super[TypeWithScope].toString();
   }
 
   class PackageClassInfoType(defs: Scope, clazz: Symbol) extends ClassInfoType(List(), defs, clazz);
@@ -504,6 +501,9 @@ abstract class Types: SymbolTable {
     override def prefix: Type = pre;
 
     override def typeArgs: List[Type] = args;
+
+    override def typeParams: List[Symbol] =
+      if (args.isEmpty) symbol.typeParams else List();
 
     override def members: Scope = sym.info.members;
 
@@ -556,7 +556,7 @@ abstract class Types: SymbolTable {
     }
 
     override def erasure = {
-      val pts = map1(paramTypes, t: Type => t.erasure);
+      val pts = List.transform(paramTypes)(.erasure);
       val res = resultType.erasure;
       if ((pts eq paramTypes) && (res eq resultType)) this
       else MethodType(pts, res)
@@ -613,10 +613,9 @@ abstract class Types: SymbolTable {
 
   /** A class representing a lazy type with known type parameters
    */
-  class LazyPolyType(tparams: List[Symbol], restp: Type) extends LazyType {
+  class LazyPolyType(override val typeParams: List[Symbol], restp: Type) extends LazyType {
     override def complete(sym: Symbol): unit = {
       restp.complete(sym);
-      sym.setInfo(PolyType(tparams, sym.info))
     }
   }
 
@@ -718,15 +717,14 @@ abstract class Types: SymbolTable {
         else ConstantType(base1, value)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre);
-	val args1 = map1(args, this);
+	val args1 = List.transform(args)(this);
         if ((pre1 eq pre) && (args1 eq args)) tp
         else typeRef(pre1, sym, args1)
-      case TypeBounds(lo, hi, vu) =>
+      case TypeBounds(lo, hi) =>
         val lo1 = this(lo);
         val hi1 = this(hi);
-        val vu1 = this(vu);
-        if ((lo1 eq lo) && (hi1 eq hi) && (vu1 eq vu)) tp
-        else TypeBounds(lo1, hi1, vu1)
+        if ((lo1 eq lo) && (hi1 eq hi)) tp
+        else TypeBounds(lo1, hi1)
       case RefinedType(base, refinement) =>
         val base1 = this(base);
         val refinement1 = mapOver(refinement);
@@ -743,11 +741,11 @@ abstract class Types: SymbolTable {
           result
         }
       case IntersectionType(parents) =>
-        val parents1 = map1(parents, this);
+        val parents1 = List.transform(parents)(this);
         if (parents1 eq parents) tp
         else IntersectionType(parents1)
       case MethodType(paramtypes, result) =>
-        val paramtypes1 = map1(paramtypes, this);
+        val paramtypes1 = List.transform(paramtypes)(this);
         val result1 = this(result);
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
         else MethodType(paramtypes1, result1)
@@ -771,7 +769,7 @@ abstract class Types: SymbolTable {
     /** Map this function over given list of symbols */
     private def mapOver(syms: List[Symbol]): List[Symbol] = {
       val infos = syms map (.info);
-      val infos1 = map1(infos, this);
+      val infos1 = List.transform(infos)(this);
       if (infos1 eq infos) syms
       else {
         val syms1 = syms map (.cloneSymbol);
@@ -924,18 +922,6 @@ abstract class Types: SymbolTable {
       else assert(result == sym || (sym isNestedIn result));
   }
 
-  /** Equivalent to (xs map f), except that the same (wrt eq) input list
-   *  (or its suffix) is returned if the function `f' is the identity
-   *  on all elements of the list (or the suffix). */
-  def map1[T <: AnyRef](xs: List[T], f: T => T): List[T] = xs match {
-    case List() => xs
-    case hd :: tl =>
-      val hd1 = f(hd);
-      val tl1 = map1(tl, f);
-      if ((hd1 eq hd) && (tl1 eq tl)) xs
-      else hd1 :: tl1
-  }
-
 // Helper Methods  -------------------------------------------------------------
 
   /** Do tp1 and tp2 denote equivalent types? */
@@ -988,8 +974,8 @@ abstract class Types: SymbolTable {
         List.forall2(tparams1, tparams2)
           ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) &&
         res1 =:= res2.substSym(tparams2, tparams1)
-      case Pair(TypeBounds(lo1, hi1, vu1), TypeBounds(lo2, hi2, vu2)) =>
-	lo1 =:= lo2 && hi1 =:= hi2 && vu1 =:= vu2
+      case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
+	lo1 =:= lo2 && hi1 =:= hi2
       case Pair(TypeVar(_, constr1), _) =>
 	if (constr1.inst != NoType) constr1.inst =:= tp2
 	else constr1 instantiate (wildcardToTypeVarMap(tp2))
@@ -1063,8 +1049,8 @@ abstract class Types: SymbolTable {
         List.forall2(tparams1, tparams2)
           ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
         res1 <:< res2.substSym(tparams2, tparams1)
-      case Pair(TypeBounds(lo1, hi1, vu1), TypeBounds(lo2, hi2, vu2)) =>
-        lo2 <:< lo1 && hi1 <:< hi2 && vu1 <:< vu2
+      case Pair(TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
+        lo2 <:< lo1 && hi1 <:< hi2
       case Pair(_, TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 <:< constr2.inst
         else { constr2.lobounds = tp1 :: constr2.lobounds; true }
@@ -1288,8 +1274,7 @@ abstract class Types: SymbolTable {
             proto.cloneSymbol.setInfo(symtypes.head)
           else {
             def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-              TypeBounds(
-                glb(bnds map (.lo)), lub(bnds map (.hi)), lub(bnds map (.vu)));
+              TypeBounds(glb(bnds map (.lo)), lub(bnds map (.hi)));
             proto.owner.newAbstractType(proto.pos, proto.name)
               .setInfo(lubBounds(symtypes map (.bounds)))
           }
@@ -1338,19 +1323,19 @@ abstract class Types: SymbolTable {
               if (proto.isTerm) glb(symtypes)
               else {
                 def isTypeBound(tp: Type) = tp match {
-                  case TypeBounds(_, _, _) => true
+                  case TypeBounds(_, _) => true
                   case _ => false
                 }
                 def glbBounds(bnds: List[Type]): TypeBounds = {
                   val lo = lub(bnds map (.bounds.lo));
                   val hi = glb(bnds map (.bounds.hi));
-                  if (lo <:< hi) TypeBounds(lo, hi, glb(bnds map (.bounds.vu)))
+                  if (lo <:< hi) TypeBounds(lo, hi)
                   else throw new MalformedClosure(bnds)
                 }
                 val symbounds = symtypes filter isTypeBound;
                 var result: Type =
                   if (symbounds.isEmpty)
-                    TypeBounds(AllClass.tpe, AnyClass.tpe, AnyClass.tpe)
+                    TypeBounds(AllClass.tpe, AnyClass.tpe)
                   else glbBounds(symbounds);
                 for (val t <- symtypes; !isTypeBound(t))
                   if (result.bounds containsType t) result = t
@@ -1383,7 +1368,7 @@ abstract class Types: SymbolTable {
    *  of thistype or prefixless typerefs/singletype occurrences in given list of types */
   private def commonOwner(tps: List[Type]): Symbol = {
     commonOwnerMap.init;
-    map1(tps, commonOwnerMap);
+    List.transform(tps)(commonOwnerMap);
     commonOwnerMap.result
   }
 

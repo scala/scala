@@ -10,6 +10,7 @@ import symtab.classfile.Pickle;
 import util._;
 import ast._;
 import ast.parser._;
+import typechecker._;
 
 class Global(val settings: Settings, val reporter: Reporter)
  extends SymbolTable
@@ -24,6 +25,10 @@ class Global(val settings: Settings, val reporter: Reporter)
   val treePrinter = treePrinters.create();
 
   object treeInfo extends TreeInfo {
+    val global: Global.this.type = Global.this
+  }
+
+  object gen extends TreeGen {
     val global: Global.this.type = Global.this
   }
 
@@ -101,19 +106,26 @@ class Global(val settings: Settings, val reporter: Reporter)
   object parserPhase extends ParserPhase(NoPhase) {
     val global: Global.this.type = Global.this
   }
-  val analyzerPhase = new StdPhase(parserPhase) {
-    def name = "analyzer";
-    val global: Global.this.type = Global.this;
-    def apply(unit: CompilationUnit): unit = {}
+  val firstPhase = parserPhase;
+
+  definitions.init; // needs firstPhase to be defined, that's why it is placed here.
+
+  object deSugarizePhase extends DeSugarizePhase(parserPhase) {
+    val global: Global.this.type = Global.this
   }
 
-  val terminalPhase = new StdPhase(analyzerPhase) {
+  object analyzer extends Analyzer {
+    val global: Global.this.type = Global.this;
+  }
+
+  val namerPhase = new analyzer.NamerPhase(deSugarizePhase);
+  val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
+
+  val terminalPhase = new StdPhase(typeCheckPhase) {
     def name = "terminal";
     val global: Global.this.type = Global.this;
     def apply(unit: CompilationUnit): unit = {}
   }
-
-  definitions.init;
 
 // Units and how to compile them -------------------------------------
 
@@ -163,8 +175,8 @@ class Global(val settings: Settings, val reporter: Reporter)
     if (!(fileset contains file)) {
       val unit = new CompilationUnit(getSourceFile(file));
       addUnit(unit);
-      atPhase(parserPhase) { parserPhase.apply(unit) }
-      //atPhase(analyzerPhase) { analyzerPhase.lateEnter(unit) }
+      atPhase(parserPhase) { parserPhase(unit) }
+      atPhase(namerPhase) { namerPhase(unit) }
     }
   }
 

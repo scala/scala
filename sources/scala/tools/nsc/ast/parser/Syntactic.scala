@@ -80,7 +80,7 @@ abstract class Syntactic: ParserPhase {
       pos
     }
 
-    def errorTypeTree = GeneralTypeTree().setType(ErrorType).setPos(in.pos);
+    def errorTypeTree = EmptyTypeTree().setType(ErrorType).setPos(in.pos);
     def errorTermTree = Literal(null).setPos(in.pos);
     def errorPatternTree = Ident(nme.WILDCARD).setPos(in.pos);
 
@@ -152,7 +152,7 @@ abstract class Syntactic: ParserPhase {
 	} else {
 	  val x: Name = fresh();
 	  Block(
-	    List(ValDef(0, x, EmptyTree, left)),
+	    List(ValDef(0, x, EmptyTypeTree(), left)),
 	    Apply(Select(right, op.encode), List(Ident(x))))
 	}
       } else {
@@ -212,7 +212,7 @@ abstract class Syntactic: ParserPhase {
     /** Convert tree to formal parameter list
     */
     def convertToParams(t: Tree): List[ValDef] = t match {
-      case Function(params, EmptyTree) =>
+      case Function(params, EmptyTypeTree()) =>
 	params
       case Ident(_) | Typed(Ident(_), _) =>
 	List(convertToParam(t));
@@ -229,7 +229,7 @@ abstract class Syntactic: ParserPhase {
       atPos(tree.pos) {
 	tree match {
 	  case Ident(name) =>
-	    ValDef(Flags.PARAM, name, EmptyTree, EmptyTree)
+	    ValDef(Flags.PARAM, name, EmptyTypeTree(), EmptyTree)
 	  case Typed(Ident(name), tpe) =>
 	    ValDef(Flags.PARAM, name, tpe, EmptyTree)
 	  case _ =>
@@ -275,7 +275,7 @@ abstract class Syntactic: ParserPhase {
 	  errorTermTree
       }
       Function(
-	List(ValDef(Flags.PARAM, pname, EmptyTree, EmptyTree)),
+	List(ValDef(Flags.PARAM, pname, EmptyTypeTree(), EmptyTree)),
 	insertParam(tree))
     }
 
@@ -480,13 +480,13 @@ abstract class Syntactic: ParserPhase {
     */
     def typedOpt(): Tree =
       if (in.token == COLON) { in.nextToken(); typ() }
-      else EmptyTree;
+      else EmptyTypeTree();
 
     /** SimpleTypedOpt ::= [`:' SimpleType]
     */
     def simpleTypedOpt(): Tree =
       if (in.token == COLON) { in.nextToken(); simpleType() }
-      else EmptyTree;
+      else EmptyTypeTree();
 
     /** Types ::= Type {`,' Type}
     */
@@ -494,7 +494,7 @@ abstract class Syntactic: ParserPhase {
       val ts = new ListBuffer[Tree] + typ();
       while (in.token == COMMA) {
 	in.nextToken();
-	ts + typ();
+	ts += typ();
       }
       ts.toList
     }
@@ -537,7 +537,7 @@ abstract class Syntactic: ParserPhase {
       if (in.token == WITH) {
 	val ts = new ListBuffer[Tree] + t;
 	while (in.token == WITH) {
-	  in.nextToken(); ts + simpleType()
+	  in.nextToken(); ts += simpleType()
 	}
 	t = atPos(pos) { IntersectionTypeTree(ts.toList) }
       }
@@ -603,7 +603,7 @@ abstract class Syntactic: ParserPhase {
     def exprs(): List[Tree] = {
       val ts = new ListBuffer[Tree] + expr(true, false);
       while (in.token == COMMA) {
-	in.nextToken(); ts + expr(true, false)
+	in.nextToken(); ts += expr(true, false)
       }
       ts.toList
     }
@@ -627,7 +627,6 @@ abstract class Syntactic: ParserPhase {
      *               | `(' [Binding {`,' Binding}] `)'
      *  Binding    ::= Id [`:' Type]
      */
-
     def expr(): Tree =
       expr(false, false);
 
@@ -805,7 +804,7 @@ abstract class Syntactic: ParserPhase {
 	      accept(RPAREN);
 	      if (in.token == ARROW) {
 		t = atPos(pos) {
-		  Function(ts.toList map convertToParam, EmptyTree)
+		  Function(ts.toList map convertToParam, EmptyTypeTree())
 		}
 	      } else {
 		syntaxError(commapos, "`)' expected", false);
@@ -903,7 +902,7 @@ abstract class Syntactic: ParserPhase {
       val enums = new ListBuffer[Tree] + generator();
       while (in.token == SEMI) {
 	in.nextToken();
-	enums + (if (in.token == VAL) generator() else expr())
+	enums += (if (in.token == VAL) generator() else expr())
       }
       enums.toList
     }
@@ -917,13 +916,12 @@ abstract class Syntactic: ParserPhase {
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
 
-    /**   Patterns ::= SeqPattern { `,' SeqPattern }
-     */
+    /**   Patterns ::= SeqPattern { , SeqPattern }  */
     def patterns(): List[Tree] = {
       val ts = new ListBuffer[Tree];
-      ts + pattern(true);
+      ts += pattern(true);
       while (in.token == COMMA) {
-	in.nextToken(); ts + pattern(true);
+	in.nextToken(); ts += pattern(true);
       }
       ts.toList
     }
@@ -937,7 +935,7 @@ abstract class Syntactic: ParserPhase {
       if (in.token == IDENTIFIER && in.name == BAR) {
 	val ts = new ListBuffer[Tree] + t;
 	while (in.token == IDENTIFIER && in.name == BAR) {
-          in.nextToken(); ts + pattern1(seqOK);
+          in.nextToken(); ts += pattern1(seqOK);
 	}
 	atPos(pos) { makeAlternative(ts.toList) }
       } else t
@@ -1133,17 +1131,11 @@ abstract class Syntactic: ParserPhase {
 
     /** ParamClauses ::= {ParamClause}
      */
-    def paramClauses(): List[List[ValDef]] = {
+    def paramClauses(ofClass: boolean): List[List[ValDef]] = {
       val vds = new ListBuffer[List[ValDef]];
-      while (in.token == LPAREN) vds + paramClause(false);
+      while (in.token == LPAREN) vds += paramClause(ofClass);
       vds.toList
     }
-
-    /** ParamClauseOpt ::= [ParamClause]
-     */
-    def paramClauseOpt(ofClass: boolean): List[List[ValDef]] =
-      if (in.token == LPAREN) List(paramClause(ofClass))
-      else List();
 
     /** ParamClause ::= `(' [Param {`,' Param}] `)'
      *  ClassParamClause ::= `(' [ClassParam {`,' ClassParam}] `)'
@@ -1152,9 +1144,9 @@ abstract class Syntactic: ParserPhase {
       accept(LPAREN);
       val params = new ListBuffer[ValDef];
       if (in.token != RPAREN) {
-        params + param(ofClass);
+        params += param(ofClass);
         while (in.token == COMMA) {
-          in.nextToken(); params + param(ofClass)
+          in.nextToken(); params += param(ofClass)
         }
       }
       accept(RPAREN);
@@ -1166,12 +1158,15 @@ abstract class Syntactic: ParserPhase {
      */
     def param(ofClass: boolean): ValDef = {
       atPos(in.pos) {
-        var mods = if (ofClass) modifiers() | Flags.PARAM else Flags.PARAM;
-        if (in.token == VAL) {
-          in.nextToken(); mods = mods | Flags.PARAMACCESSOR;
-        } else if (mods != Flags.PARAM) {
-          accept(VAL);
-        }
+	var mods = Flags.PARAM;
+	if (ofClass) {
+	  mods = modifiers() | Flags.PARAMACCESSOR;
+	  if (in.token == VAL) in.nextToken()
+	  else {
+	    if (mods != Flags.PARAMACCESSOR) accept(VAL);
+	    mods = mods | Flags.PRIVATE | Flags.LOCAL;
+	  }
+	}
         val name = ident();
         accept(COLON);
         ValDef(mods, name, paramType(), EmptyTree)
@@ -1201,10 +1196,10 @@ abstract class Syntactic: ParserPhase {
       val params = new ListBuffer[AbsTypeDef];
       if (in.token == LBRACKET) {
         in.nextToken();
-        params + typeParam(ofClass);
+        params += typeParam(ofClass);
         while (in.token == COMMA) {
           in.nextToken();
-          params + typeParam(ofClass);
+          params += typeParam(ofClass);
         }
         accept(RBRACKET);
       }
@@ -1228,7 +1223,7 @@ abstract class Syntactic: ParserPhase {
       atPos(in.pos) { typeBounds(mods, ident()) }
     }
 
-    /** TypeBounds ::= [`>:' Type] [`<:' Type] [`<%' Type]
+    /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
     def typeBounds(mods: int, name: Name): AbsTypeDef = {
       def bound(tok: int, default: Name): Tree =
@@ -1236,11 +1231,11 @@ abstract class Syntactic: ParserPhase {
         else scalaDot(default.toTypeName);
       AbsTypeDef(mods, name.toTypeName,
                  bound(SUPERTYPE, nme.All),
-                 bound(SUBTYPE, nme.Any),
-                 bound(VIEWBOUND, nme.Any))
+                 bound(SUBTYPE, nme.Any))
     }
 
 //////// DEFS ////////////////////////////////////////////////////////////////
+
 
     /** Import  ::= import ImportExpr {`,' ImportExpr}
      */
@@ -1248,7 +1243,7 @@ abstract class Syntactic: ParserPhase {
       accept(IMPORT);
       val ts = new ListBuffer[Tree] + importExpr();
       while (in.token == COMMA) {
-        in.nextToken(); ts + importExpr();
+        in.nextToken(); ts += importExpr();
       }
       ts.toList
     }
@@ -1278,7 +1273,7 @@ abstract class Syntactic: ParserPhase {
         def loop: Tree =
           if (in.token == USCORE) {
             in.nextToken();
-            Import(t, List(nme.WILDCARD))
+            Import(t, List(Pair(nme.WILDCARD, null)))
           } else if (in.token == LBRACE) {
             Import(t, importSelectors())
           } else {
@@ -1288,7 +1283,7 @@ abstract class Syntactic: ParserPhase {
               pos = accept(DOT);
               loop
             } else {
-              Import(t, List(name, name));
+              Import(t, List(Pair(name, name)));
             }
           }
         loop
@@ -1296,8 +1291,8 @@ abstract class Syntactic: ParserPhase {
 
     /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
      */
-    def importSelectors(): List[Name] = {
-      val names = new ListBuffer[Name];
+    def importSelectors(): List[Pair[Name, Name]] = {
+      val names = new ListBuffer[Pair[Name, Name]];
       accept(LBRACE);
       var isLast = importSelector(names);
       while (!isLast && in.token == COMMA) {
@@ -1310,22 +1305,19 @@ abstract class Syntactic: ParserPhase {
 
     /** ImportSelector ::= Id [`=>' Id | `=>' `_']
      */
-    def importSelector(names: ListBuffer[Name]): boolean =
+    def importSelector(names: ListBuffer[Pair[Name, Name]]): boolean =
       if (in.token == USCORE) {
-        in.nextToken(); names + nme.WILDCARD; true
+        in.nextToken(); names += Pair(nme.WILDCARD, null); true
       } else {
         val name = ident();
-        names + name;
-        if (in.token == ARROW) {
-          in.nextToken();
-          if (in.token == USCORE) {
-            in.nextToken(); names + nme.WILDCARD;
+        names += Pair(
+          name,
+          if (in.token == ARROW) {
+            in.nextToken();
+            if (in.token == USCORE) { in.nextToken(); nme.WILDCARD } else ident()
           } else {
-            names + ident()
-          }
-        } else {
-          names + name
-        }
+            name
+          });
         false
       }
 
@@ -1363,7 +1355,7 @@ abstract class Syntactic: ParserPhase {
       var lhs = new ListBuffer[Tree];
       do {
 	in.nextToken();
-	lhs + pattern2(false)
+	lhs += pattern2(false)
       } while (in.token == COMMA);
       val tp = typedOpt();
       val rhs =
@@ -1400,7 +1392,7 @@ abstract class Syntactic: ParserPhase {
       var newmods = mods | Flags.MUTABLE;
       val lhs = new ListBuffer[Pair[Int, Name]];
       do {
-	lhs + Pair(in.skipToken(), ident())
+	lhs += Pair(in.skipToken(), ident())
       } while (in.token == COMMA);
       val tp = typedOpt();
       val rhs = if (tp == EmptyTree || in.token == EQUALS) {
@@ -1414,8 +1406,8 @@ abstract class Syntactic: ParserPhase {
 	newmods = newmods | Flags.DEFERRED;
 	EmptyTree
       }
-      lhs.toList map { case Pair(pos, name) =>
-	ValDef(newmods, name, tp.duplicate, rhs.duplicate) setPos pos }
+      for (val Pair(pos, name) <- lhs.toList) yield
+	atPos(pos) { ValDef(newmods, name, tp.duplicate, rhs.duplicate) }
     }
 
     /** FunDef ::= FunSig {`,' FunSig} `:' Type `=' Expr
@@ -1431,16 +1423,16 @@ abstract class Syntactic: ParserPhase {
             val vparams = List(paramClause(false));
             accept(EQUALS);
       	    DefDef(
-              mods, nme.CONSTRUCTOR, List(), vparams, EmptyTree, constrExpr())
+              mods, nme.CONSTRUCTOR, List(), vparams, EmptyTypeTree(), constrExpr())
           })
       else {
 	var newmods = mods;
 	val lhs = new ListBuffer[Tuple4[Int, Name, List[AbsTypeDef], List[List[ValDef]]]]
 	  + Tuple4(
-            in.pos, ident(), typeParamClauseOpt(false), paramClauses());
+            in.pos, ident(), typeParamClauseOpt(false), paramClauses(false));
         while (in.token == COMMA)
-	  lhs + Tuple4(
-            in.skipToken(), ident(), typeParamClauseOpt(false), paramClauses());
+	  lhs += Tuple4(
+            in.skipToken(), ident(), typeParamClauseOpt(false), paramClauses(false));
 	val restype = typedOpt();
 	val rhs =
           if (restype == EmptyTree || in.token == EQUALS) equalsExpr();
@@ -1449,8 +1441,10 @@ abstract class Syntactic: ParserPhase {
 	    EmptyTree
 	  }
 	for (val Tuple4(pos, name, tparams, vparams) <- lhs.toList) yield
-          DefDef(newmods, name, tparams, vparams,
-                 restype.duplicate, rhs.duplicate) setPos pos
+          atPos(pos) {
+	    DefDef(newmods, name, tparams, vparams,
+		   restype.duplicate, rhs.duplicate)
+	  }
       }
     }
 
@@ -1462,7 +1456,7 @@ abstract class Syntactic: ParserPhase {
       if (in.token == LBRACE) {
         atPos(in.skipToken()) {
           val statlist = new ListBuffer[Tree];
-	  statlist + selfInvocation();
+	  statlist += selfInvocation();
           val stats =
             if (in.token == SEMI) { in.nextToken(); blockStatSeq(statlist) }
             else statlist.toList;
@@ -1490,7 +1484,7 @@ abstract class Syntactic: ParserPhase {
           case EQUALS =>
             in.nextToken();
             AliasTypeDef(mods, name, List(), typ())
-          case SUPERTYPE | SUBTYPE | VIEWBOUND | SEMI | COMMA | RBRACE =>
+          case SUPERTYPE | SUBTYPE | SEMI | COMMA | RBRACE =>
             typeBounds(mods | Flags.DEFERRED, name)
           case _ =>
             syntaxError("`=', `>:', or `<:' expected", true);
@@ -1523,17 +1517,26 @@ abstract class Syntactic: ParserPhase {
     def classDef(mods: int): List[Tree] = {
       val lhs = new ListBuffer[Tuple4[Int, Name, List[AbsTypeDef], List[List[ValDef]]]];
       do {
-        lhs + Tuple4(in.skipToken(),
+        lhs += Tuple4(in.skipToken(),
 	             ident().toTypeName,
 		     typeParamClauseOpt(true),
-		     paramClauseOpt(true))
+		     paramClauses(true))
       } while (in.token == COMMA);
       val thistpe = simpleTypedOpt();
-      val template = classTemplate((mods & Flags.CASE) != 0);
-
-      for (val Tuple4(pos, name, tparams, vparams) <- lhs.toList) yield
-	ClassDef(mods, name, tparams, vparams, thistpe.duplicate,
-                 template.duplicate.asInstanceOf[Template]) setPos pos
+      val Template(parents, body) = classTemplate((mods & Flags.CASE) != 0);
+      for (val Tuple4(pos, name, tparams, vparamss) <- lhs.toList) yield
+	atPos(pos) {
+	  val vparamss1 = vparamss map (.map (vd =>
+	    ValDef(Flags.PARAM, vd.name, vd.tp.duplicate, EmptyTree)));
+	  val constr: Tree = DefDef(
+	    mods & Flags.CONSTRFLAGS | Flags.SYNTHETIC, nme.CONSTRUCTOR, List(),
+	    if (vparamss1.isEmpty) List(List()) else vparamss1,
+	    EmptyTypeTree(), EmptyTree);
+	  val vparams: List[Tree] =
+            for (val vparams <- vparamss; val vparam <- vparams) yield vparam;
+	  ClassDef(mods, name, tparams, thistpe.duplicate,
+		   Template(parents, vparams ::: constr :: body))
+	}
     }
 
     /** ObjectDef       ::= Id { , Id } [`:' SimpleType] ClassTemplate
@@ -1541,13 +1544,15 @@ abstract class Syntactic: ParserPhase {
     def objectDef(mods: int): List[Tree] = {
       val lhs = new ListBuffer[Pair[Int, Name]];
       do {
-	lhs + Pair(in.skipToken(), ident());
+	lhs += Pair(in.skipToken(), ident());
       } while (in.token == COMMA);
       val thistpe = simpleTypedOpt();
       val template = classTemplate((mods & Flags.CASE)!= 0);
       for (val Pair(pos, name) <- lhs.toList) yield
-	ModuleDef(mods, name, thistpe.duplicate,
-      		  template.duplicate.asInstanceOf[Template]) setPos pos
+	atPos(pos) {
+	  ModuleDef(mods, name, thistpe.duplicate,
+      		    template.duplicate.asInstanceOf[Template])
+	}
     }
 
     /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
@@ -1557,12 +1562,12 @@ abstract class Syntactic: ParserPhase {
 	val parents = new ListBuffer[Tree];
 	if (in.token == EXTENDS) {
           in.nextToken();
-          parents + constr()
+          parents += constr()
 	} else {
-          parents + scalaAnyRefConstr()
+          parents += scalaAnyRefConstr()
 	}
-	parents + scalaObjectConstr();
-	if (isCaseClass) parents + caseClassConstr();
+	parents += scalaObjectConstr();
+	if (isCaseClass) parents += caseClassConstr();
 	if (in.token == WITH) {
 	  in.nextToken();
 	  template(parents)
@@ -1582,10 +1587,10 @@ abstract class Syntactic: ParserPhase {
     def template(): Template = template(new ListBuffer[Tree]);
 
     def template(parents: ListBuffer[Tree]): Template = {
-      parents + constr();
+      parents += constr();
       while (in.token == WITH) {
 	in.nextToken();
-	parents + constr()
+	parents += constr()
       }
       val stats = if (in.token == LBRACE) templateBody() else List();
       Template(parents.toList, stats)
@@ -1645,9 +1650,9 @@ abstract class Syntactic: ParserPhase {
       val stats = new ListBuffer[Tree];
       while (in.token != RBRACE && in.token != EOF) {
         if (in.token == PACKAGE) {
-          stats + packaging()
+          stats += packaging()
         } else if (in.token == IMPORT) {
-          stats ++ importClause()
+          stats ++= importClause()
         } else if (in.token == CLASS ||
                    in.token == CASECLASS ||
                    in.token == TRAIT ||
@@ -1676,9 +1681,9 @@ abstract class Syntactic: ParserPhase {
       val stats = new ListBuffer[Tree];
       while (in.token != RBRACE && in.token != EOF) {
         if (in.token == IMPORT) {
-          stats ++ importClause()
+          stats ++= importClause()
         } else if (isExprIntro) {
-          stats + expr()
+          stats += expr()
         } else if (isDefIntro || isModifier || in.token == LBRACKET) {
           stats ++
             joinAttributes(attributeClauses(), joinComment(defOrDcl(modifiers())))
@@ -1698,10 +1703,10 @@ abstract class Syntactic: ParserPhase {
       var attrs = new ListBuffer[Tree];
       while (in.token == LBRACKET) {
         in.nextToken();
-        attrs + constr();
+        attrs += constr();
         while (in.token == COMMA) {
           in.nextToken();
-          attrs + constr()
+          attrs += constr()
         }
         accept(RBRACKET);
       }
@@ -1721,7 +1726,7 @@ abstract class Syntactic: ParserPhase {
       val stats = new ListBuffer[Tree];
       while (in.token != RBRACE && in.token != EOF) {
         if (isDclIntro) {
-          stats ++ joinComment(defOrDcl(0))
+          stats ++= joinComment(defOrDcl(0))
         } else if (in.token != SEMI) {
           syntaxError("illegal start of declaration", true);
         }
@@ -1740,22 +1745,22 @@ abstract class Syntactic: ParserPhase {
     def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = {
       while ((in.token != RBRACE) && (in.token != EOF) && (in.token != CASE)) {
         if (in.token == IMPORT) {
-          stats ++ importClause();
+          stats ++= importClause();
           accept(SEMI);
         } else if (isExprIntro) {
-          stats + expr(false, true);
+          stats += expr(false, true);
           if (in.token != RBRACE && in.token != CASE) accept(SEMI);
         } else if (isDefIntro) {
-          stats ++ defOrDcl(0);
+          stats ++= defOrDcl(0);
           accept(SEMI);
           if (in.token == RBRACE || in.token == CASE) {
-            stats + Literal(()).setPos(in.pos)
+            stats += Literal(()).setPos(in.pos)
           }
         } else if (isLocalModifier) {
-          stats ++ tmplDef(localClassModifiers());
+          stats ++= tmplDef(localClassModifiers());
           accept(SEMI);
           if (in.token == RBRACE || in.token == CASE) {
-            stats + Literal(()).setPos(in.pos)
+            stats += Literal(()).setPos(in.pos)
           }
         } else if (in.token == SEMI) {
           in.nextToken();
@@ -1778,9 +1783,9 @@ abstract class Syntactic: ParserPhase {
         } else {
           val stats = new ListBuffer[Tree];
           accept(LBRACE);
-          stats + atPos(pos) { makePackaging(pkg, topStatSeq()) }
+          stats += atPos(pos) { makePackaging(pkg, topStatSeq()) }
           accept(RBRACE);
-          stats ++ topStatSeq();
+          stats ++= topStatSeq();
           stats.toList
         }
       } else {

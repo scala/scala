@@ -1,1 +1,1 @@
-scalac -d c:\classes *.scala ast/*.scala ast/parser/*.scala symtab/*.scala symtab/classfile/*.scala util/*.scala %1 %2 %3 %4 %5
+scalac -d c:\classes *.scala ast/*.scala ast/parser/*.scala symtab/*.scala symtab/classfile/*.scala util/*.scala typechecker/*.scala %1 %2 %3 %4 %5

@@ -69,9 +69,9 @@ abstract class TreePrinters {
         } else {
           print(symName(tree, name)); printOpt(": ", tp);
         }
-      case AbsTypeDef(mods, name, lo, hi, vu) =>
+      case AbsTypeDef(mods, name, lo, hi) =>
         print(symName(tree, name));
-        printOpt(">: ", lo); printOpt("<: ", hi); printOpt("<% ", vu)
+        printOpt(">: ", lo); printOpt("<: ", hi);
     }
 
     def symName(tree: Tree, name: Name): String =
@@ -94,9 +94,9 @@ abstract class TreePrinters {
         case EmptyTree =>
           print("<empty>");
 
-        case ClassDef(mods, name, tparams, vparams, tp, impl) =>
+        case ClassDef(mods, name, tparams, tp, impl) =>
           printModifiers(mods); print("class " + symName(tree, name));
-          printTypeParams(tparams); vparams foreach printValueParams;
+          printTypeParams(tparams);
           printOpt(": ", tp); print(" extends "); print(impl);
 
         case PackageDef(packaged, stats) =>
@@ -122,7 +122,7 @@ abstract class TreePrinters {
           printTypeParams(tparams); vparams foreach printValueParams;
           printOpt(": ", tp); printOpt(" = ", rhs);
 
-        case AbsTypeDef(mods, name, lo, hi, vu) =>
+        case AbsTypeDef(mods, name, lo, hi) =>
           printModifiers(mods); print("type "); printParam(tree);
 
         case AliasTypeDef(mods, name, tparams, rhs) =>
@@ -133,13 +133,14 @@ abstract class TreePrinters {
           print(symName(tree, name)); printRow(params, "(", ",", ")"); print(rhs);
 
         case Import(expr, selectors) =>
-          def printSelectors(ss: List[Name]): unit = ss match {
-            case List() =>
-            case List(s) => print(s.toString());
-            case s1 :: s2 :: ss1 =>
+          def printSelectors(ss: List[Pair[Name, Name]]): unit = ss match {
+            case List(Pair(nme.WILDCARD, _)) => print("_");
+            case Pair(s1, s2) :: ss1 =>
               print(s1);
               if (s1 != s2) print("=>" + s2);
-              printSelectors(ss1);
+              if (!ss1.isEmpty) {
+                print(", "); printSelectors(ss1);
+              }
           }
           print("import "); print(expr); print(".{"); printSelectors(selectors); print("}");
 
@@ -245,7 +246,7 @@ abstract class TreePrinters {
             case _ => obj.toString()
           })
 
-        case GeneralTypeTree() =>
+        case EmptyTypeTree() =>
           print(tree.tpe.toString());
 
         case SingletonTypeTree(ref) =>

@@ -48,6 +48,8 @@ abstract class Symbols: SymbolTable {
     }
     final def newThisSym(pos: int) =
       newValue(pos, nme.this_).setFlag(SYNTHETIC);
+    final def newImport(pos: int) =
+      newValue(pos, nme.IMPORT).setFlag(SYNTHETIC);
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType);
     final def newAliasType(pos: int, name: Name) =
@@ -119,7 +121,7 @@ abstract class Symbols: SymbolTable {
 
 
     /** Is this symbol locally defined? I.e. not a member of a class or module */
-    final def isLocal: boolean = owner.isTerm;
+    final def isLocal: boolean = owner.isTerm || hasFlag(LOCAL);
 
     /** Is this class locally defined?
      *  A class is local, if
@@ -520,10 +522,9 @@ abstract class Symbols: SymbolTable {
 	typeParamsString + " = " + tp.resultType
       else if (isAbstractType)
 	tp.match {
-	  case TypeBounds(lo, hi, vu) =>
+	  case TypeBounds(lo, hi) =>
 	    (if (lo.symbol == AllClass) "" else " >: " + lo) +
-	    (if (hi.symbol == AnyClass) "" else " <: " + hi) +
-	    (if (vu.symbol == AnyClass) "" else " <% " + vu)
+	    (if (hi.symbol == AnyClass) "" else " <: " + hi)
 	  case _ =>
 	    "<: " + tp;
 	}
@@ -610,6 +611,7 @@ abstract class Symbols: SymbolTable {
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: int, initName: Name)
    extends TypeSymbol(initOwner, initPos, initName) {
+    var sourceFile: String = null;
     private var thissym: Symbol = this;
     override def isClass: boolean = true;
     override def reset(completer: Type): unit = {

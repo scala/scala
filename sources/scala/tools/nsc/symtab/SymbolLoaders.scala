@@ -25,7 +25,7 @@ abstract class SymbolLoaders {
       try {
         val start = System.currentTimeMillis();
         val currentphase = phase;
-        phase = analyzerPhase;
+        phase = firstPhase;
         val source = doComplete(root);
         phase = currentphase;
         informTime("loaded " + source, start);
