@@ -129,7 +129,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 //             symbol = symbol.owner();
         if (symbol.isClassType())
             symbol = symbol.primaryConstructor();
-        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, null, null, Collections.EMPTY_MAP); // !!!
+        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, Collections.EMPTY_MAP); // !!!
         TypeContext context = (TypeContext)contexts.get(symbol);
         if (context == null) {
             context = createTypeContext(symbol);
@@ -151,13 +151,12 @@ public class ExplicitOuterClassesPhase extends Phase {
             : getTypeContextFor(clasz.owner());
 
         // create outer type links
-        Symbol[] tlinks = new Symbol[outer == null ? 0 : outer.depth + 1];
         int tflags = Modifiers.PARAM | Modifiers.COVARIANT | Modifiers.SYNTHETIC | Modifiers.STABLE;
         for (TypeContext o = outer; o != null; o = o.outer) {
             Name tname = Names.OUTER(constructor, o.clasz);
-            tlinks[o.depth] = constructor.newTParam(
+            Symbol tlink = constructor.newTParam(
                 constructor.pos, tflags, tname, o.clasz.typeOfThis());
-            tparams.put(o.clasz, tlinks[o.depth].type());
+            tparams.put(o.clasz, tlink.type());
         }
 
         // create outer value link
@@ -171,7 +170,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         // create new type parameters
         for (TypeContext o = outer; o != null; o = o.outer) {
-            Symbol[] oldtparams = o.oldtparams;
+            Symbol[] oldtparams = o.clasz.typeParams();
             for (int i = 0; i < oldtparams.length; i++) {
                 Symbol oldtparam = oldtparams[i];
                 Symbol newtparam = oldtparam.cloneSymbol(constructor);
@@ -187,7 +186,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             tparams.put(oldtparam, newtparam.type());
         }
 
-        return new TypeContext(clasz, outer, tlinks, vlink, constructor.typeParams(), tparams);
+        return new TypeContext(clasz, outer, vlink, tparams);
     }
 
     //########################################################################
@@ -266,43 +265,25 @@ public class ExplicitOuterClassesPhase extends Phase {
         private final Symbol clasz;
         /** The outer context */
         private final TypeContext outer;
-        /** The outer type links (null for stable outer contexts) */
-        private final Symbol[] tlinks;
         /** The outer value link (null if all outer contexts are stable) */
         private final Symbol vlink;
-
-        private final int depth;
-
-        /** The old type parameters of the context class */
-        private Symbol[] oldtparams;
 
 
         /** !!! */
         private TypeTransformer transformer; // !!! type
 
         /** !!! */
-        public TypeContext(Symbol clasz, TypeContext outer, Symbol[] tlinks, Symbol vlink, Symbol[] oldtparams, Map tparams) {
+        public TypeContext(Symbol clasz, TypeContext outer, Symbol vlink, Map tparams) {
             this.clasz = clasz;
             this.outer = outer;
-            this.tlinks = tlinks;
             this.vlink = vlink;
-            this.depth = outer == null ? 0 : outer.depth + 1;
-            this.oldtparams = oldtparams;
             this.transformer = new TypeTransformer(tparams);
-        }
-
-        /** !!! */
-        public Type getTypeLink(int level) {
-            assert tlinks[level] != null: level + " - " + Debug.show(clasz); // !!! useless ?
-            return tlinks[level].type();
         }
 
         public String toString() {
             return
                 "\nclasz    = " + Debug.show(clasz) +
-                "\ntlinks   = " + Debug.show(tlinks) +
                 "\nvlink    = " + Debug.show(vlink) +
-                "\noldparams= " + Debug.show(oldtparams) +
                 "\ntparams  = " + Debug.show(transformer.tparams) +
                 "\nouter    : " + "\n" + outer;
         }
