@@ -14,6 +14,7 @@ import meta.scalac.ast.TreeKind;
 import meta.scalac.ast.TreeType;
 import meta.scalac.ast.TreeNode;
 import meta.scalac.ast.TreeField;
+import meta.scalac.ast.TreeFieldLink;
 
 public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
 
@@ -25,6 +26,14 @@ public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
             for (int i = 0; i < node.fields.length; i++) {
                 TreeField field = node.fields[i];
                 printCheckField(node, field.type, field.name, "i");
+            }
+            if (node.hasLinkedFields()) {
+                writer.println("Symbol symbol = tree.symbol();");
+                writer.print("if (symbol != null)").lbrace();
+                for (int i = 0; i < node.fields.length; i++)
+                    if (node.fields[i].link != null)
+                        printCheckFieldLink(node.fields[i]);
+                writer.rbrace();
             }
         }
         printCheckNode(node);
@@ -91,6 +100,14 @@ public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
         default:
             throw new Error(type.getClass().getName());
         }
+    }
+
+    private void printCheckFieldLink(TreeField field) {
+        String getter = field.link.getLink();
+        writer.println("assert symbol." +getter+ " == " +field+ " :").indent();
+        writer.println("\"symbol and tree " + field.link + " differ: \"+" +
+            "symbol." + getter + "+\" != \"+" +field+ ";");
+        writer.undent();
     }
 
     private void printNullValue(TreeNode node, String field) {
