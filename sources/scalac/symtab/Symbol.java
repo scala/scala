@@ -615,6 +615,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return this == c || c.kind == Kinds.ERROR || closurePos(c) >= 0;
     }
 
+    /** Get base types of this symbol */
+    public Type[] parents() {
+        return type().parents();
+    }
+
 // ToString -------------------------------------------------------------------
 
     /** String representation of symbol's simple name.
