@@ -17,7 +17,7 @@ import scalac.util.Debug;
 public class InterpreterPrinter implements DefinitionPrinter {
 
     //########################################################################
-    // Private State
+    // Private Fields
 
     private final Interpreter interpreter;
     private final PrintWriter writer;
