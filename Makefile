@@ -96,10 +96,13 @@ SCALAC_SCALAC		 = $(LIBRARY_SCALAC)
 # scala library
 LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
 LIBRARY_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
+LIBRARY_MSIL_LIST	+= $(call READLIST,$(PROJECT_LISTDIR)/library-msil.lst)
 LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
+LIBRARY_MSIL_SOURCES	+= $(LIBRARY_MSIL_LIST:%=$(LIBRARY_ROOT)/%)
 LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
 LIBRARY_JC_FLAGS	+= $(JC_FLAGS) -scala-hack
 LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
+LIBRARY_MSIL_SC_FILES	+= $(filter %.scala,$(LIBRARY_MSIL_SOURCES))
 LIBRARY_SC_BOOTCLASSPATH = $(PROJECT_OUTPUTDIR):$(PROJECT_SOURCEDIR):$(JRE_JARFILE)
 LIBRARY_SDC_FLAGS	+= -windowtitle "Scala Library Documentation"
 LIBRARY_SDC_FLAGS	+= -doctitle "Scala<br/>$(PROJECT_VERSION)"
@@ -235,7 +238,7 @@ bootstrap	: .latest-bootstrap
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 library		: .latest-$(boot)library-jc
 library		: .latest-$(boot)library-sc
-library-msil	: .latest-$(boot)library-sc-msil
+library-msil	: .latest-$(boot)library-msil-sc
 util		: .latest-$(boot)util-jc
 util		: .latest-$(boot)util-sc
 scalac		: .latest-$(boot)scalac-jc
@@ -376,11 +379,11 @@ cvs-fix-perms		:
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
-.latest-$(boot)library-sc-msil	: $(LIBRARY_SC_FILES)
-	@$(make) sc target=LIBRARY SC_TARGET="msil"\
+.latest-$(boot)library-msil-sc	: $(LIBRARY_MSIL_SC_FILES)
+	@$(make) sc target=LIBRARY_MSIL SC_TARGET="msil"\
 	    LIBRARY_SCALAC=$(PROJECT_BINARYDIR)/scalac \
-	    SC_FLAGS="-r $(PROJECT_LIBRARYDIR)" \
-	    LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
+	    SC_FLAGS="-uniqid -r $(PROJECT_LIBRARYDIR) -o scalalibx -g" \
+	    LIBRARY_MSIL_SC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
 .latest-library-sdc	: $(LIBRARY_SDC_FILES)
