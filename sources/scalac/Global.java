@@ -187,14 +187,14 @@ public class  Global {
         phases.add(PHASE.ADDINTERFACES);
         phases.add(PHASE.EXPANDMIXIN);
         phases.add(PHASE.ERASURE);
-	/*
 	if (target == TARGET_INT || target == TARGET_MSIL || target == TARGET_JVM) {
             phases.add(PHASE.ADDCONSTRUCTORS);
         }
+	/*
         if (target == TARGET_JAVA) phases.add(PHASE.GENJAVA);
         if (target == TARGET_MSIL) phases.add(PHASE.GENMSIL);
-        if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
 	*/
+        if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
         phases.add(PHASE.TERMINAL);
         this.phases = new PhaseDescriptor[phases.size()];
         for (int i = 0; i < phases.size(); i++) {

@@ -19,13 +19,13 @@ import scalac.transformer.AddAccessorsPhase;
 import scalac.transformer.AddInterfacesPhase;
 import scalac.transformer.ExpandMixinsPhase;
 import scalac.transformer.ErasurePhase;
+import scalac.transformer.AddConstructorsPhase;
 /*
 import scalac.optimizer.OptimizePhase;
-import scalac.backend.AddConstructorsPhase;
 import scalac.backend.msil.GenMSILPhase;
 import scalac.jaco.GenJavaPhase;
-import scalac.backend.jvm.GenJVMPhase;
 */
+import scalac.backend.jvm.GenJVMPhase;
 
 public class PhaseRepository {
 
@@ -54,12 +54,12 @@ public class PhaseRepository {
             ADDINTERFACES = new AddInterfacesPhase(),
             EXPANDMIXIN = new ExpandMixinsPhase(),
             ERASURE = new ErasurePhase(),
-	    /*
             ADDCONSTRUCTORS = new AddConstructorsPhase(),
+	    /*
             GENMSIL = new GenMSILPhase(),
             GENJAVA = new GenJavaPhase(),
-            GENJVM = new GenJVMPhase(),
 	    */
+            GENJVM = new GenJVMPhase(),
             TERMINAL = PhaseDescriptor.TERMINAL,
         };
     }
@@ -82,12 +82,12 @@ public class PhaseRepository {
     public final AddInterfacesPhase ADDINTERFACES;
     public final ExpandMixinsPhase EXPANDMIXIN;
     public final ErasurePhase ERASURE;
-    /*
     public final AddConstructorsPhase ADDCONSTRUCTORS;
+    /*
     public final GenMSILPhase GENMSIL;
     public final GenJavaPhase GENJAVA;
-    public final GenJVMPhase GENJVM;
     */
+    public final GenJVMPhase GENJVM;
     public final PhaseDescriptor TERMINAL;
 
     //########################################################################
