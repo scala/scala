@@ -3,7 +3,7 @@ package scala.xml.parsing ;
 
 /** an xml parser. parses XML and invokes callback methods of a MarkupHandler
  */
-abstract class ConstructingParser extends MarkupParser[Node, String] {
+abstract class ConstructingParser extends MarkupParser[Node] {
 
   val handle = new ConstructingHandler();
 

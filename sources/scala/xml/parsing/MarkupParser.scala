@@ -16,10 +16,10 @@ import scala.collection.immutable.ListMap;
  *  and returns whatever the markup handler returns. Use ConstructingParser
  *  if you just want to parse XML to construct instances of scala.xml.Node.
  */
-abstract class MarkupParser[MarkupType, AVType] {
+abstract class MarkupParser[MarkupType] {
 
   /** the handler of the markup */
-  val handle: MarkupHandler[MarkupType, AVType];
+  val handle: MarkupHandler[MarkupType];
 
   /** if true, does not remove surplus whitespace */
   val preserveWS: Boolean;
@@ -159,7 +159,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    *
    * see [15]
    */
-  def xCharData: MarkupType = {
+  def xCharData: Iterable[MarkupType] = {
     xToken('[');
     xToken('C');
     xToken('D');
@@ -215,7 +215,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    *
    * see [15]
    */
-  def xComment: MarkupType = {
+  def xComment: Iterable[MarkupType] = {
     val sb: StringBuffer = new StringBuffer();
     xToken('-');
     xToken('-');
@@ -234,10 +234,10 @@ abstract class MarkupParser[MarkupType, AVType] {
   def appendText(pos: Int, ts: mutable.Buffer[MarkupType], txt: String): Unit = {
     if (!preserveWS)
       for (val t <- TextBuffer.fromString(txt).toText) {
-        ts.append(handle.text(pos, t.text));
+        ts.appendAll(handle.text(pos, t.text));
       }
     else
-      ts.append(handle.text(pos, txt));
+      ts.appendAll(handle.text(pos, txt));
   }
 
   def content: mutable.Buffer[MarkupType] = {
@@ -257,19 +257,19 @@ abstract class MarkupParser[MarkupType, AVType] {
               case '!' =>
                 nextch;
                 if ('[' == ch)                 // CDATA
-                  ts.append(xCharData);
+                  ts.appendAll(xCharData);
                 else                            // comment
-                  ts.append(xComment);
+                  ts.appendAll(xComment);
               case '?' =>                       // PI
                 nextch;
-                ts.append(xProcInstr);
+                ts.appendAll(xProcInstr);
               case _   =>
-                ts.append(element);     // child
+                ts.appendAll(element);     // child
             }
 
           case '{' =>
 /*            if( xCheckEmbeddedBlock ) {
-              ts.append(xEmbeddedExpr);
+              ts.appendAll(xEmbeddedExpr);
             } else {*/
               val str = new StringBuffer("{");
               str.append(xText);
@@ -283,11 +283,11 @@ abstract class MarkupParser[MarkupType, AVType] {
                 nextch;
               val theChar = handle.text( tmppos, xCharRef );
               xToken(';');
-              ts.append( theChar );
+              ts.appendAll( theChar );
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
-                ts.append( handle.entityRef( tmppos, n ) );
+                ts.appendAll( handle.entityRef( tmppos, n ) );
             }
           case _ => // text content
             appendText(tmppos, ts, xText);
@@ -301,7 +301,7 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
    *               | xmlTag1 '/' '&gt;'
    */
-  def element: MarkupType = {
+  def element: Iterable[MarkupType] = {
     xSpaceOpt; // @todo: move this to init
     xToken('<');
     var pref: Map[String, String] = _;
@@ -378,7 +378,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    *
    * see [15]
    */
-  def xProcInstr: MarkupType = {
+  def xProcInstr: Iterable[MarkupType] = {
     val sb:StringBuffer = new StringBuffer();
     val n = xName;
     if( xml.Parsing.isSpace( ch ) ) {

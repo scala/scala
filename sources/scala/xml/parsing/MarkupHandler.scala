@@ -4,8 +4,8 @@ import scala.collection.immutable ;
 import scala.collection.mutable ;
 import scala.collection.Map ;
 
-/** @todo: make ConstructingMarkupHandler */
-abstract class MarkupHandler[MarkupType, AVType] {
+/** class that handles markup - provides callback methods to MarkupParser */
+abstract class MarkupHandler[MarkupType] {
 
   /** a stack of prefix namespace mappings */
   protected val prefixStack =
@@ -51,25 +51,23 @@ abstract class MarkupHandler[MarkupType, AVType] {
   def attributeCDataValue(pos: int, str:String): AttribValue;
   def attributeNamespaceDecl(pos: int, uri: String): AttribValue;
 
-  final def attribute(pos: int, key: String, value:String): AttribValue =
+  def attribute(pos: int, key: String, value:String): AttribValue =
     if( key.startsWith("xmlns"))
       attributeNamespaceDecl(pos, value);
     else
       attributeCDataValue(pos, value);
 
-
-
   /** be careful to copy everything from attrMap1, as it will change
    *  @param attrMap1 the attribute map.
    */
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[String,AttribValue], args: mutable.Buffer[MarkupType]): MarkupType;
+  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[String,AttribValue], args: mutable.Buffer[MarkupType]): Iterable[MarkupType];
 
-  def charData(pos: Int, txt: String ): MarkupType;
-  def procInstr(pos: Int, target: String, txt: String): MarkupType;
-  def comment(pos: Int, comment: String ): MarkupType;
-  def entityRef(pos: Int, n: String): MarkupType;
+  def charData(pos: Int, txt: String ): Iterable[MarkupType];
+  def procInstr(pos: Int, target: String, txt: String): Iterable[MarkupType];
+  def comment(pos: Int, comment: String ): Iterable[MarkupType];
+  def entityRef(pos: Int, n: String): Iterable[MarkupType];
 
-  def text(pos: Int, txt:String): MarkupType;
+  def text(pos: Int, txt:String): Iterable[MarkupType];
 
 
   def internal_startPrefixMapping(pref: Map[String, String]) = {

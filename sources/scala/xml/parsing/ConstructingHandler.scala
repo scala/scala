@@ -4,7 +4,7 @@ import scala.collection.immutable.Map ;
 import scala.collection.mutable ;
 
 /** */
-class ConstructingHandler extends MarkupHandler[Node,String] {
+class ConstructingHandler extends MarkupHandler[Node] {
 
   def attributeCDataValue(pos: int, str:String) = CDataValue(str);
 
@@ -35,7 +35,7 @@ class ConstructingHandler extends MarkupHandler[Node,String] {
       }
     }
     val ch: Seq[Node] = nodes;
-    Elem(uri, label, AttributeSeq.fromAttrs(attrSeq:_*), ch:_*);
+    Some(Elem(uri, label, AttributeSeq.fromAttrs(attrSeq:_*), ch:_*));
   };
 
   def charData(pos: Int, txt: String ) =
