@@ -178,14 +178,14 @@ public class PatternMatcher extends PatternTool {
 
     /** enters a sequence of cases into the pattern matcher
      */
-    public void enter(Tree[] cases) {
+    public void construct(Tree[] cases) {
         for( int i = 0; i < cases.length; i++ )
             enter(cases[i]);
     }
 
     /** enter a single case into the pattern matcher
      */
-    public void enter(Tree caseDef) {
+    protected void enter(Tree caseDef) {
         switch (caseDef) {
         case CaseDef(Tree pat, Tree guard, Tree body):
             CaseEnv env = new CaseEnv(owner, unit);
@@ -395,7 +395,7 @@ public class PatternMatcher extends PatternTool {
         }
     }
 
-    public PatternNode enter(Tree pat,
+    protected PatternNode enter(Tree pat,
                              int index,
                              PatternNode target,
                              Symbol casted,
@@ -442,7 +442,7 @@ public class PatternMatcher extends PatternTool {
      *
      *  invariant: ( curHeader == (Header)target.and ) holds
      */
-    public PatternNode enter1(Tree pat,
+    protected PatternNode enter1(Tree pat,
                               int index,
                               PatternNode target,
                               Symbol casted,
@@ -487,7 +487,7 @@ public class PatternMatcher extends PatternTool {
 
     /** calls enter for an array of patterns, see enter
      */
-    public PatternNode enter(Tree[] pats, PatternNode target, Symbol casted, CaseEnv env) {
+    protected PatternNode enter(Tree[] pats, PatternNode target, Symbol casted, CaseEnv env) {
         switch (target) {
         case ConstrPat(Symbol newCasted):
             casted = newCasted;
