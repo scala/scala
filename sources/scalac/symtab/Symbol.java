@@ -10,9 +10,11 @@
 
 package scalac.symtab;
 
+import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
 
 import scalac.ApplicationError;
+import scalac.CompilationUnit;
 import scalac.Global;
 import scalac.Phase;
 import scalac.framework.History;
@@ -875,18 +877,125 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Returns the origin of this symbol. */
     public SymbolOrigin getOrigin() {
-        if (isModule())
-            return moduleClass().getOrigin();
-        if (isConstructor())
-            return constructorClass().getOrigin();
-        if (isCaseFactory())
-            return type().resultType().symbol().getOrigin();
-        return owner().getOrigin();
+        Symbol clasz = getMainClassOrNone();
+        return (clasz != this ? clasz : owner()).getOrigin();
     }
 
     /** Sets the origin of this symbol. */
     public void setOrigin(SymbolOrigin origin) {
         throw Debug.abort("not a class", this);
+    }
+
+    /**
+     * Returns the main owner of this symbol. The main owner of a
+     * symbol is:
+     * - its module class for modules
+     * - its constructed class for constructors and factory methods
+     * - its owner for other symbols
+     *
+     * @see Symbol#getMainClassOrNone()
+     */
+    public Symbol getMainOwner() {
+        if (isModule())
+            return moduleClass();
+        if (isConstructor())
+            return constructorClass();
+        if (isCaseFactory())
+            return type().resultType().symbol();
+        return owner();
+    }
+
+    /**
+     * Returns the main class of this symbol. The main class of a
+     * symbol is:
+     * - itself for non-compound classes and NONE
+     * - the main class of its main owner for other symbols
+     *
+     * This implies that the main class of a symbol is the first
+     * enclosing class of that symbol excepted for modules,
+     * constructors and factory methods. The main class of modules is
+     * their module class and the main class of constructors and
+     * factory methods is their constructed class. If a the symbol is
+     * not linked to a class through its owner, the method returns
+     * the symbol NONE.
+     *
+     * The main class of a symbol can be understood as the class that
+     * declared that symbol.
+     *
+     * @see Symbol@getMainOwner()
+     */
+    public Symbol getMainClassOrNone() {
+        if (isNone() || (isClassType() && !isCompoundSym()))
+            return this;
+        return getMainOwner().getMainClassOrNone();
+    }
+
+    /**
+     * Determines the enclosing package of this symbol and returns the
+     * module class of that package. Note that the enclosing package
+     * of a package is itself. If a symbol has no enclosing package,
+     * the method returns the symbol NONE.
+     */
+    public Symbol getEnclosingPackageClassOrNone() {
+        Symbol clasz = getMainClassOrNone();
+        while (!clasz.isNone() && !clasz.isPackageClass())
+            clasz = clasz.owner().getMainClassOrNone();
+        return clasz;
+    }
+
+    /**
+     * Returns the source directory of this symbol or "null" if it is
+     * unknown. The source directory of a symbol is the directory
+     * corresponding to the enclosing package of that symbol.
+     *
+     * @see Symbol@getEnclosingPackageClassOrNone()
+     */
+    public final AbstractFile getSourceDirectoryOrNull() {
+        if (isNone()) return null;
+        if (!isPackageClass())
+            return getEnclosingPackageClassOrNone().getSourceDirectoryOrNull();
+
+        switch (getOrigin()) {
+        case Directory(AbstractFile file):
+            return file;
+        default:
+            AbstractFile parent = owner().getSourceDirectoryOrNull();
+            if (parent == null) return null;
+            return parent.lookupName(name.toString(), true);
+        }
+    }
+
+    /**
+     * Returns the source file of this symbol or "null" if it is
+     * unknown.
+     */
+    public final AbstractFile getSourceFileOrNull() {
+        switch (getOrigin()) {
+        case ClassFile(_, String sourcefile):
+            if (sourcefile == null) return null;
+            AbstractFile parent = getSourceDirectoryOrNull();
+            if (parent == null) return null;
+            return parent.lookupName(sourcefile, false);
+        case ScalaFile(AbstractFile file):
+            return file;
+        case ScalaUnit(CompilationUnit unit):
+            return unit.source.getFile();
+        default:
+            return null;
+        }
+    }
+
+    /**
+     * Returns the compilation unit of this symbol or "null" if it is
+     * unknown or if the symbol has no associated compilation unit.
+     */
+    public final CompilationUnit getUnitOrNull() {
+        switch (getOrigin()) {
+        case ScalaUnit(CompilationUnit unit):
+            return unit;
+        default:
+            return null;
+        }
     }
 
 // Acess to related symbols -----------------------------------------------------
