@@ -3,22 +3,22 @@
 ##############################################################################
 # $Id$
 
-TypeIsomorphism.java
-MLType.scala
 Comment.java
+# DocModule.java
 HTMLGenerator.java
 HTMLGeneratorCommand.java
 HTMLGeneratorPhase.scala
 HTMLGeneratorPhases.scala
-Main.scala
-ScalaSearch.java
-#DocModule.java
-#StandardDocModule.java
-Tag.java
+HTTPServer.java
 Location.java
+MLType.scala
+Main.scala
 Page.java
+ScalaSearch.java
+# StandardDocModule.java
 SymbolTablePrinter.java
 SymbolTablePrinterFactory.java
-HTTPServer.java
+Tag.java
+TypeIsomorphism.java
 
 ##############################################################################
