@@ -404,9 +404,10 @@ public class SymbolTablePrinter {
     /** Returns the type to print for the given type (non-transitive). */
     public Type getTypeToPrintForType0(Type type) {
         switch (type) {
-        case ThisType(_):
-            if (global.debug) return type;
-            return type.expandModuleThis();
+        case ThisType(Symbol clasz):
+            if (global.debug || !clasz.isModuleClass()) return type;
+            Type prefix = getTypeToPrintForType(clasz.owner().thisType());
+            return Type.singleType(prefix, clasz.module());
         case SingleType(_, Symbol sym):
             if (global.debug) return type;
             if (sym.isSynthetic()) return type.widen();
