@@ -255,7 +255,7 @@ test_file() {
     if [ ! -f $expect ]; then
 	expect="`expr "$source" : "\(.*\)\\.scala"`.check";
     fi;
-    actual="`expr "$source" : "\(.*\)\\.scala"`-$KIND.log";
+    actual="$OBJDIR""`expr "$source" : "\(.*\)\\.scala"`-$KIND.log";
     if [ -f "$flags" ]; then
         TEST_FLAGS=`cat $flags`;
     else
