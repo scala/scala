@@ -89,12 +89,21 @@ public class ScalaSearch {
         return  (sym.isInitializedMethod() && (sym.flags & Modifiers.STABLE) != 0);
     }
 
+    /** Test if the given symbol is a phantom top-level class or object.
+     */
+    public static boolean isPhantom(Symbol sym) {
+        return
+            (sym.isClass() && sym.info().isError()) ||
+            (sym.isModule() && sym.info() == Type.NoType);
+    }
+
     /** Test if the given symbol is relevant for the documentation.
      */
     public static boolean isRelevant(Symbol sym) {
 	return !isGenerated(sym) && !isLazy(sym) && !isPrivate(sym) &&
 	    !sym.isConstructor() &&
-            !sym.isCaseFactory() && !isEmptyJavaModule(sym);
+            !sym.isCaseFactory() && !isEmptyJavaModule(sym) &&
+            !isPhantom(sym);
     }
 
     //////////////////////// SCOPE ITERATOR //////////////////////////////
