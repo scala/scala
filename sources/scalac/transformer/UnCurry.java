@@ -64,6 +64,8 @@ public class UnCurry extends OwnerTransformer
      *  - for every argument to a def parameter `def x: T':
      *      if argument is not a reference to a def parameter:
      *        convert argument `e' to (expansion of) `() => e'
+     *  - for every argument list that corresponds to a repeated parameter
+     *       (a_1, ..., a_n) => (Tuple(a_1, ..., a_n))
      */
     public Tree transform(Tree tree) {
 	//uncurry type and symbol
@@ -103,7 +105,7 @@ public class UnCurry extends OwnerTransformer
 	    // argument to parameterless function e => ( => e)
 	    Type ftype = fn.type;
 	    Tree fn1 = transform(fn);
-	    Tree[] args1 = transformArgs(args, ftype);
+	    Tree[] args1 = transformArgs(tree.pos, args, ftype);
 	    switch (fn1) {
 	    case Apply(Tree fn2, Tree[] args2):
 		Tree[] newargs = new Tree[args1.length + args2.length];
@@ -141,15 +143,19 @@ public class UnCurry extends OwnerTransformer
 
     /** Transform arguments `args' to method with type `methtype'.
      */
-    private Tree[] transformArgs(Tree[] args, Type methtype) {
+    private Tree[] transformArgs(int pos, Tree[] args, Type methtype) {
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
+	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
+		args = new Tree[]{
+		    make.Tuple(pos, args).setType(params[0].type())};
+	    }
 	    for (int i = 0; i < args.length; i++) {
 		args[i] = transformArg(args[i], params[i]);
 	    }
 	    return args;
 	case PolyType(_, Type restp):
-	    return transformArgs(args, restp);
+	    return transformArgs(pos, args, restp);
 	default:
 	    throw new ApplicationError(methtype);
 	}
@@ -174,7 +180,7 @@ public class UnCurry extends OwnerTransformer
 		}
 	    }
 	    return transform(gen.mkUnitFunction(
-				 arg, descr.uncurry(arg.type), currentOwner));
+				 arg, descr.uncurry(arg1.type), currentOwner));
 	} else return arg1;
     }
 }

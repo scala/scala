@@ -141,10 +141,11 @@ public class Parser implements Tokens {
     boolean isExprIntro() {
 	switch (s.token) {
 	case CHARLIT: case INTLIT: case LONGLIT:
-	case FLOATLIT: case DOUBLELIT: case STRINGLIT: case NULL:
-	case IDENTIFIER: case THIS: case SUPER:
-	case IF: case FOR: case NEW: case USCORE:
-	case LPAREN: case LBRACKET: case LBRACE:
+	case FLOATLIT: case DOUBLELIT: case STRINGLIT:
+	case SYMBOLLIT: case NULL: case IDENTIFIER:
+	case THIS: case SUPER: case IF:
+	case FOR: case NEW: case USCORE:
+	case LPAREN: case LBRACE:
 	    return true;
 	default:
 	    return false;
@@ -191,10 +192,42 @@ public class Parser implements Tokens {
 	return make.Select(pos, make.Ident(pos, Names.scala), Names.Any.toTypeName());
     }
 
+    /** Create tree representing type scala.Seq
+     */
+    Tree scalaSeqType(int pos) {
+	return make.Select(pos, make.Ident(pos, Names.scala), Names.Seq.toTypeName());
+    }
+
     /** Create tree representing constructor scala.Object
      */
     Tree scalaObjectConstr(int pos) {
 	return make.Select(pos, make.Ident(pos, Names.scala), Names.Object.toConstrName());
+    }
+
+    /** Create tree representing method scala.Symbol
+     */
+    Tree scalaSymbol(int pos) {
+	return make.Select(pos, make.Ident(pos, Names.scala), Names.Symbol);
+    }
+
+    /** Create tree representing method scala.Labelled
+     */
+    Tree scalaLabelled(int pos) {
+	return make.Select(pos, make.Ident(pos, Names.scala), Names.Labelled);
+    }
+
+    /** Create tree representing method scala.Predef.List
+     */
+    Tree scalaPredefList(int pos) {
+	return make.Select(pos,
+	    make.Select(pos, make.Ident(pos, Names.scala), Names.Predef),
+	    Names.List);
+    }
+
+    /** Create tree representing type scala.List
+     */
+    Tree scalaListType(int pos) {
+	return make.Select(pos, make.Ident(pos, Names.scala), Names.List.toTypeName());
     }
 
     /** Create tree for for-comprehension <for (enums) do body> or
@@ -364,6 +397,7 @@ public class Parser implements Tokens {
     static final Name PLUS = Name.fromString("+");
     static final Name BANG = Name.fromString("!");
     static final Name TILDE = Name.fromString("~");
+    static final Name STAR = Name.fromString("*");
 
     Name ident() {
         if (s.token == IDENTIFIER) {
@@ -431,9 +465,10 @@ public class Parser implements Tokens {
     }
 
     /** SimpleExpr    ::= literal
+     *                  | symbol [ArgumentExprs]
      *                  | null
      */
-    Tree literal() {
+    Tree literal(boolean isPattern) {
 	Tree t;
 	switch (s.token) {
 	case CHARLIT:
@@ -457,6 +492,23 @@ public class Parser implements Tokens {
 	case NULL:
 	    t = make.Ident(s.pos, Names.null_);
 	    break;
+	case SYMBOLLIT:
+	    Tree symt = scalaSymbol(s.pos);
+	    if (isPattern) symt = convertToTypeId(symt);
+	    t = make.Apply(s.pos,
+		symt,
+		new Tree[]{make.Literal(s.pos, s.name.toString())});
+	    s.nextToken();
+	    if (s.token == LPAREN || s.token == LBRACE) {
+		Tree labt = scalaLabelled(s.pos);
+		if (isPattern) labt = convertToTypeId(labt);
+		Tree listt = isPattern ? scalaListType(s.pos)
+		    : scalaPredefList(s.pos);
+		t = make.Apply(s.pos,
+		    labt,
+		    new Tree[]{t, make.Apply(s.pos, listt, argumentExprs())});
+	    }
+	    return t;
 	default:
 	    return syntaxError("illegal literal", true);
 	}
@@ -549,7 +601,6 @@ public class Parser implements Tokens {
      *               | SimpleType `#' Id
      *               | StableId
      *               | StableRef `.' type
-     *               | `[' Types `]'
      *               | `(' Type `)'
      */
     Tree simpleType() {
@@ -559,11 +610,6 @@ public class Parser implements Tokens {
 	    s.nextToken();
 	    t = type();
 	    accept(RPAREN);
-	} else if (s.token == LBRACKET) {
-	    s.nextToken();
-	    Tree[] ts = types();
-	    accept(RBRACKET);
-	    t = make.TupleType(pos, ts);
 	} else {
 	    t = convertToTypeId(stableRef(false, true));
 	}
@@ -744,7 +790,6 @@ public class Parser implements Tokens {
      *                 | super `.' Id
      *                 | SimpleExpr `.' Id
      *                 | `(' [Expr] `)'
-     *                 | `[' [Exprs] `]'
      *                 | BlockExpr
      *                 | SimpleExpr `@' TypeArgs
      *                 | SimpleExpr ArgumentExprs
@@ -760,8 +805,9 @@ public class Parser implements Tokens {
 	case FLOATLIT:
 	case DOUBLELIT:
 	case STRINGLIT:
+	case SYMBOLLIT:
 	case NULL:
-	    t = literal();
+	    t = literal(false);
 	    break;
 	case IDENTIFIER:
 	case THIS:
@@ -794,14 +840,6 @@ public class Parser implements Tokens {
 		}
 	    }
 	    break;
-	case LBRACKET:
-	    int pos = s.skipToken();
-	    Tree[] ts;
-	    if (s.token == RBRACKET) ts = Tree.EMPTY_ARRAY;
-	    else ts = exprs();
-	    t = make.Tuple(pos, ts);
-	    accept(RBRACKET);
-	    break;
 	case LBRACE:
 	    t = blockExpr();
 	    break;
@@ -816,12 +854,10 @@ public class Parser implements Tokens {
 	    case DOT:
 		t = make.Select(s.skipToken(), t, ident());
 		break;
-	    case AT:
-		int pos = s.skipToken();
-		t = make.TypeApply(pos, t, typeArgs());
+	    case LBRACKET:
+		t = make.TypeApply(s.pos, t, typeArgs());
 		break;
 	    case LPAREN:
-	    case LBRACKET:
 	    case LBRACE:
 		t = make.Apply(s.pos, t, argumentExprs());
 		break;
@@ -832,19 +868,12 @@ public class Parser implements Tokens {
     }
 
     /** ArgumentExprs ::= `(' [Exprs] `)'
-     *                  | `[' [Exprs] `]'
      *                  | BlockExpr
      */
     Tree[] argumentExprs() {
 	Tree[] ts = Tree.EMPTY_ARRAY;
 	if (s.token == LBRACE) {
 	    ts = new Tree[]{blockExpr()};
-	} else if (s.token == LBRACKET) {
-	    int pos = s.skipToken();
-	    if (s.token != RBRACKET)
-		ts = exprs();
-	    accept(RBRACKET);
-	    ts = new Tree[]{make.Tuple(pos, ts)};
 	} else {
 	    accept(LPAREN);
 	    if (s.token != RPAREN)
@@ -982,15 +1011,14 @@ public class Parser implements Tokens {
      *                 | null
      *                 | StableId {ArgumentPatterns}
      *                 | `(' Pattern `)'
-     *                 | `[' [Patterns] `]'
      */
     Tree simplePattern() {
 	switch (s.token) {
 	case IDENTIFIER:
 	case THIS:
 	    Tree t = stableId();
-	    while (s.token == LPAREN || s.token == LBRACKET) {
-		t = make.Apply(s.pos, convertToConstr(t), argumentPatterns());
+	    while (s.token == LPAREN) {
+		t = make.Apply(s.pos, convertToTypeId(t), argumentPatterns());
 	    }
 	    return t;
 	case USCORE:
@@ -1001,45 +1029,28 @@ public class Parser implements Tokens {
 	case FLOATLIT:
 	case DOUBLELIT:
 	case STRINGLIT:
+	case SYMBOLLIT:
 	case NULL:
-	    return literal();
+	    return literal(true);
 	case LPAREN:
 	    s.nextToken();
 	    Tree t = pattern();
 	    accept(RPAREN);
 	    return t;
-	case LBRACKET:
-	    return tuplePattern();
 	default:
 	    return syntaxError("illegal start of pattern", true);
 	}
     }
 
-    /** SimplePattern ::= `[' [Patterns] ']'
-     */
-    Tree tuplePattern() {
-	int pos = accept(LBRACKET);
-	Tree[] ts;
-	if (s.token == RBRACKET) ts = Tree.EMPTY_ARRAY;
-	else ts = patterns();
-	accept(RBRACKET);
-	return make.Tuple(pos, ts);
-    }
-
-    /** ArgumentPatterns ::= `(' [Patterns] `)'
-     *                     | `[' [Patterns] `]'
+    /** ArgumentPatterns ::= `[' [Patterns] `]'
      */
     Tree[] argumentPatterns() {
-	if (s.token == LBRACKET) {
-	    return new Tree[]{tuplePattern()};
-	} else {
-	    Tree[] ts = Tree.EMPTY_ARRAY;
-	    accept(LPAREN);
-	    if (s.token != RPAREN)
-		ts = patterns();
-	    accept(RPAREN);
-	    return ts;
-	}
+	Tree[] ts = Tree.EMPTY_ARRAY;
+	accept(LPAREN);
+	if (s.token != RPAREN)
+	    ts = patterns();
+	accept(RPAREN);
+	return ts;
     }
 
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
@@ -1133,7 +1144,7 @@ public class Parser implements Tokens {
         return (ValDef[])params.copyTo(new ValDef[params.length()]);
     }
 
-    /** Param ::= [def] Id `:' Type
+    /** Param ::= [def] Id `:' Type [`*']
      */
     ValDef param() {
         int pos = s.pos;
@@ -1144,7 +1155,13 @@ public class Parser implements Tokens {
         }
 	Name name = ident();
 	accept(COLON);
-        return (ValDef)make.ValDef(pos, mods, name, type(), Tree.Empty);
+	Tree tp = type();
+	if (s.token == IDENTIFIER && s.name == STAR) {
+	    s.nextToken();
+	    mods |= Modifiers.REPEATED;
+	    tp = make.AppliedType(tp.pos, scalaSeqType(tp.pos), new Tree[]{tp});
+	}
+        return (ValDef)make.ValDef(pos, mods, name, tp, Tree.Empty);
     }
 
     /** TypeParamClauseOpt ::= [`[' TypeSig {`,' TypeSig} `]']

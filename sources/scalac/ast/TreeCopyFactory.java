@@ -152,9 +152,6 @@ public interface TreeCopyFactory {
                              Tree[] baseTypes,
                              Tree[] refinements);
 
-    public Tree TupleType(Tree tree,
-                          Tree[] types);
-
     public Tree AppliedType(Tree tree,
                             Tree tpe,
                             Tree[] args);

@@ -143,9 +143,6 @@ public interface TreeFactory {
                              Tree[] baseTypes,
                              Tree[] refinements);
 
-    public Tree TupleType(int pos,
-                          Tree[] types);
-
     public Tree AppliedType(int pos,
                             Tree tpe,
                             Tree[] args);

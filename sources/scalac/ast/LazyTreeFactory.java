@@ -397,16 +397,6 @@ public class LazyTreeFactory extends AbstractTreeCopyFactory {
         return tree;
     }
 
-    public Tree TupleType(Tree tree,
-                          Tree[] types) {
-        TupleType t = (TupleType)tree;
-        if (t.types == types)
-            return t;
-        tree = make.TupleType(t.pos, types);
-        attribute(tree, t);
-        return tree;
-    }
-
     public Tree AppliedType(Tree tree,
                             Tree tpe,
                             Tree[] args) {

@@ -38,12 +38,16 @@ public class Names {
     public static final Name Float = Name.fromString("Float");
     public static final Name Function = Name.fromString("Function");
     public static final Name Int = Name.fromString("Int");
+    public static final Name Labelled = Name.fromString("Labelled");
+    public static final Name List = Name.fromString("List");
     public static final Name Long = Name.fromString("Long");
     public static final Name Nil = Name.fromString("Nil");
     public static final Name Object = Name.fromString("Object");
     public static final Name Predef = Name.fromString("Predef");
+    public static final Name Seq = Name.fromString("Seq");
     public static final Name Short = Name.fromString("Short");
     public static final Name String = Name.fromString("String");
+    public static final Name Symbol = Name.fromString("Symbol");
     public static final Name Throwable = Name.fromString("Throwable");
     public static final Name True = Name.fromString("True");
     public static final Name Tuple = Name.fromString("Tuple");
@@ -86,7 +90,9 @@ public class Names {
     public static final Name scala_Object = Name.fromString("scala.Object");
     public static final Name scala_Predef = Name.fromString("scala.Predef");
     public static final Name scala_Ref = Name.fromString("scala.Ref");
+    public static final Name scala_Seq = Name.fromString("scala.Seq");
     public static final Name scala_Short = Name.fromString("scala.Short");
+    public static final Name scala_Symbol = Name.fromString("scala.Symbol");
     public static final Name scala_Tuple = Name.fromString("scala.Tuple");
     public static final Name scala_Unit = Name.fromString("scala.Unit");
     public static final Name scala_runtime = Name.fromString("scala.runtime");

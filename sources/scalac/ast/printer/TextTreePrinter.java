@@ -170,7 +170,6 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text TXT_COMMA         = Text.Simple(",");
     protected static final Text TXT_EQUAL         = Text.Simple("=");
     protected static final Text TXT_SUBTYPE       = Text.Simple("<:");
-    protected static final Text TXT_AT            = Text.Simple("@");
     protected static final Text TXT_HASH          = Text.Simple("#");
     protected static final Text TXT_RIGHT_ARROW   = Text.Simple("=>");
     protected static final Text TXT_LEFT_PAREN    = Text.Simple("(");
@@ -251,7 +250,6 @@ public class TextTreePrinter implements TreePrinter {
             print(KW_PACKAGE);
             print(Text.Space);
             print(packaged);
-            print(Text.Space);
             printTemplate(KW_WITH, impl, true);
             break;
 
@@ -412,7 +410,6 @@ public class TextTreePrinter implements TreePrinter {
 
         case TypeApply(Tree fun, Tree[] targs):
             print(fun);
-	    print(TXT_AT);
             printArray(targs, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
             printType(tree);
             break;
@@ -490,10 +487,6 @@ public class TextTreePrinter implements TreePrinter {
         case CompoundType(Tree[] baseTypes, Tree[] refinements):
             printArray(baseTypes, Text.None, Text.None, TXT_WITH_SP);
             printArray(refinements, TXT_WITH_BLOCK_BEGIN, TXT_BLOCK_END, Text.Newline);
-            break;
-
-        case TupleType(Tree[] types):
-            printArray(types, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
             break;
 
         case AppliedType(Tree tpe, Tree[] args):

@@ -125,6 +125,8 @@ public class Definitions {
     public final Symbol STRING_CLASS;
     public final Type   STRING_TYPE;
 
+    public final Symbol SEQ_CLASS;
+
     /** string concatenation pseudo-methods of classes scala.Any and
      *  java.lang.String
      */
@@ -260,6 +262,8 @@ public class Definitions {
 	    Type.PolyType(Symbol.EMPTY_ARRAY, Type.NoType));
 	STRING_TYPE = monoType(STRING_CLASS);
         SCALA.members().enter(STRING_CLASS);
+
+	SEQ_CLASS = getClass(Names.scala_Seq);
 
 	/*
         ANY_PLUS_STRING = new TermSymbol(
@@ -410,12 +414,7 @@ public class Definitions {
 	    argtps1);
     }
 
-    public Type tupleType(Type[] args) {
-	assert args.length > 0;
-	Type[] args1 = new Type[args.length];
-	for (int i = 0; i < args.length; i++)
-	    args1[i] = Type.covarType(args[i]);
-	return Type.appliedType(
-	    getType(Name.fromString("scala.Tuple" + args.length)), args1);
+    public Type seqType(Type argtpe) {
+	return Type.appliedType(getType(Names.scala_Seq), new Type[]{argtpe});
     }
 }

@@ -428,33 +428,18 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    /** Is this type of the form scala.Tuple_N[+T_0, ..., +T_N-1]?
-     */
-    public boolean isTupleType() {
-	switch (this) {
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.owner() == Global.instance.definitions.SCALA_CLASS &&
-		sym.name.startsWith(Names.Tuple)) {
-		for (int i = 0; i < args.length; i++)
-		    if (!args[i].isCovarType()) return false;
-		return true;
-	    }
-	}
-	return false;
-    }
-
     /** Is this type of the form scala.FunctionN[T_1, ..., T_n, +T]?
      */
     public boolean isFunctionType() {
 	switch (this) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.fullName().startsWith(Names.Function))
+	    if (sym.fullName().startsWith(Names.Function)) {
 		for (int i = 0; i < args.length - 1; i++)
 		    if (args[i].isCovarType()) return false;
-	    return args.length > 0 && args[args.length - 1].isCovarType();
-	default:
-	    return false;
+		return args.length > 0 && args[args.length - 1].isCovarType();
+	    }
 	}
+	return false;
     }
 
 // Members and Lookup -------------------------------------------------------
@@ -814,7 +799,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
 	    Symbol sym = symbol();
-	    Symbol ownclass = sym.owner().constructorClass();
+	    Symbol ownclass = sym.owner().primaryConstructorClass();
 	    if (ownclass.isSubClass(clazz) &&
 		pre.symbol().isSubClass(ownclass)) {
 		switch (pre.baseType(ownclass)) {
@@ -2018,9 +2003,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym.isRoot()) return "<root>";
 	    if (!Global.instance.debug) {
-		if (isTupleType())
-		    return ArrayApply.toString(
-			dropVarianceMap.map(args), "[", ",", "]");
 		if (isFunctionType()) {
 		    Type[] params = new Type[args.length - 1];
 		    System.arraycopy(args, 0, params, 0, params.length);

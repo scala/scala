@@ -312,9 +312,6 @@ public class Transformer extends Phase {
 	    return copy.CompoundType(tree,
 				     transform(parents),
 				     transform(refinements));
-	case TupleType(Tree[] types):
-	    return copy.TupleType(tree,
-				  transform(types));
 	case AppliedType(Tree tpe, Tree[] args):
 	    return copy.AppliedType(tree,
 				    transform(tpe),
@@ -388,8 +385,6 @@ public class Transformer extends Phase {
 	case FunType(Tree argtpe, Tree restpe):
 
 	case CompoundType(Tree[] baseTypes, Tree[] refinements):
-
-	case TupleType(Tree[] types):
 
 	case AppliedType(Tree tpe, Tree[] args):
 

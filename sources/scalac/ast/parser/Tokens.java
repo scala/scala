@@ -21,6 +21,7 @@ public interface Tokens {
         FLOATLIT = 4,
         DOUBLELIT = 5,
         STRINGLIT = 6,
+        SYMBOLLIT = 7,
 
         /* identifier */
         IDENTIFIER = 10,
@@ -66,11 +67,10 @@ public interface Tokens {
         USCORE = 64,
         COLON = 65,
         EQUALS = 66,
-        LARROW = 57,
+        LARROW = 67,
         ARROW = 68,
         SUBTYPE = 69,
-        AT = 70,
-        HASH = 71,
+        HASH = 70,
 
         /* parenthesis */
         LPAREN = 90,

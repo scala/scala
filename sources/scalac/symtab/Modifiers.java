@@ -22,13 +22,14 @@ public interface Modifiers {
     int ABSTRACTCLASS = 0x00000080;   // abstract class
 
     int DEF           = 0x00000100;   // a def parameter
-    int SYNTHETIC     = 0x00000200;
-    int DEPRECATED    = 0x00000400;
-    int JAVA          = 0x00000800;   // symbol was defined by a Java class
+    int REPEATED      = 0x00000200;   // a repeated parameter
+    int SYNTHETIC     = 0x00000400;
+    int DEPRECATED    = 0x00000800;
 
-    int MODUL         = 0x00001000;   // symbol is module or class implementing a module
-    int MUTABLE       = 0x00002000;   // symbol is a mutable variable.
-    int PARAM         = 0x00004000;   // symbol is a (type) parameter to a method
+    int JAVA          = 0x00001000;   // symbol was defined by a Java class
+    int MODUL         = 0x00002000;   // symbol is module or class implementing a module
+    int MUTABLE       = 0x00004000;   // symbol is a mutable variable.
+    int PARAM         = 0x00008000;   // symbol is a (type) parameter to a method
 
     int INITIALIZED   = 0x00010000;   // symbol's definition is complete
     int LOCKED        = 0x00020000;   // temporary flag to catch cyclic dependencies

@@ -269,7 +269,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol the primary constructor of a type? */
     public final boolean isPrimaryConstructor() {
-	return isConstructor() && this == constructorClass().constructor();
+	return isConstructor() && this == primaryConstructorClass().constructor();
     }
 
     public boolean isGenerated() {
@@ -332,7 +332,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Symbol classOwner() {
 	Symbol owner = owner();
-	Symbol clazz = owner.constructorClass();
+	Symbol clazz = owner.primaryConstructorClass();
 	if (clazz.constructor() == owner) return clazz;
 	else return owner;
     }
@@ -353,10 +353,10 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return sym;
     }
 
-     /* If this is a constructor, return the class it constructs.
+     /* If this is a primary constructor, return the class it constructs.
      *  Otherwise return the symbol itself.
      */
-    public Symbol constructorClass() {
+    public Symbol primaryConstructorClass() {
 	return this;
     }
 
@@ -874,8 +874,8 @@ public class TermSymbol extends Symbol {
         return other;
     }
 
-    public Symbol constructorClass() {
-	return isConstructor() ? clazz : this;
+    public Symbol primaryConstructorClass() {
+	return isConstructor() && clazz != null ? clazz : this;
     }
 
     public Symbol moduleClass() {

@@ -309,17 +309,6 @@ public class Tree {
 	}
     }
 
-/** tuple type (~ Tuple)
- */
-    public case TupleType(Tree[] types) {
-	if (types != null) {
-	    for (int i = 0; i < types.length; i++) {
-		if (!types[i].isType())
-		    throw new ApplicationError("TupleType requires types.");
-	    }
-	}
-    }
-
     /** applied type
      */
     public case AppliedType(Tree tpe, Tree[] args) {
@@ -755,7 +744,6 @@ public class Tree {
 	case SelectFromType(_, _):
 	case CompoundType(_, _):
 	case FunType(_, _):
-	case TupleType(_):
 	case AppliedType(_, _):
 	case CovariantType(_):
 	    return true;

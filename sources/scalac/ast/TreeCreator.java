@@ -269,13 +269,6 @@ public class TreeCreator implements TreeFactory {
         return t;
     }
 
-    public Tree TupleType(int pos,
-                          Tree[] types) {
-        Tree t = new TupleType(types);
-        t.pos = pos;
-        return t;
-    }
-
     public Tree AppliedType(int pos,
                             Tree tpe,
                             Tree[] args) {

@@ -469,6 +469,22 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
 
+    /** The formal parameter types corresponding to `params'.
+     *  If `params' is a repeated parameter, a list of `length' copies
+     *  of its type is returned.
+     */
+    Type[] formalTypes(Symbol[] params, int length) {
+	Type[] result;
+	if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
+	    Type[] formals = new Type[length];
+	    Type ft = params[0].type().typeArgs()[0];
+	    for (int i = 0; i < length; i++) formals[i] = ft;
+	    return formals;
+	} else {
+	    return Symbol.type(params);
+	}
+    }
+
     /** Return inferred type arguments, given type parameters, formal parameters and
      *  argument types.
      *  If this is not possible, throw a `NoInstance' exception, or, if
@@ -481,13 +497,13 @@ public class Infer implements Modifiers, Kinds {
 	//System.out.println("methTypeArgs, tparams = " + ArrayApply.toString(tparams) + ", params = " + ArrayApply.toString(params) + ", type(params) = " + ArrayApply.toString(Symbol.type(params)) + ", argtypes = " + ArrayApply.toString(argtypes));//DEBUG
 
 	Type[] tvars = freshVars(tparams);
-	Type[] formals = Symbol.type(params);
+	Type[] formals = formalTypes(params, argtypes.length);
 	if (formals.length != argtypes.length) {
 	    if (needToSucceed)
 		throw new NoInstance("parameter lists differ in length");
 	    return null;
 	}
-	for (int i = 0; i < formals.length; i++) {
+	for (int i = 0; i < argtypes.length; i++) {
 	    if (!isCompatible(argtypes[i].subst(tparams, tvars),
 			      formals[i].subst(tparams, tvars))) {
 		if (needToSucceed)
@@ -679,10 +695,11 @@ public class Infer implements Modifiers, Kinds {
     boolean isApplicable(Type ftpe, Type[] argtypes, Type pt) {
 	switch (ftpe) {
 	case MethodType(Symbol[] params, Type restpe):
+	    Type[] formals = formalTypes(params, argtypes.length);
 	    return
 		isCompatible(restpe, pt) &&
-		params.length == argtypes.length &&
-		Type.isSubType(argtypes, Symbol.type(params));
+		formals.length == argtypes.length &&
+		Type.isSubType(argtypes, formals);
 	case PolyType(Symbol[] tparams, MethodType(Symbol[] params, Type restpe)):
 	    try {
 		Type[] targs = methTypeArgs(

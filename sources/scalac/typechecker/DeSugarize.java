@@ -98,30 +98,12 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < args.length; i++)
 		getVariables(args[i], vars);
 	    break;
-	case Tuple(Tree[] elems):
-	    for (int i = 0; i < elems.length; i++)
-		getVariables(elems[i], vars);
-	    break;
 	default:
 	    throw new ApplicationError ("illegal pattern", tree);
 	}
     }
 
 // Transform functions -----------------------------------------------------
-
-    /** [T_1, ..., T_N]  =>  scala.TupleN[+T_1, ..., +T_N]
-     */
-    public Tree mkTupleType(int pos, Tree[] types) {
-	assert types.length > 0;
-	Tree[] types1 = new Tree[types.length];
-	for (int i = 0; i < types.length; i++)
-	    types1[i] = make.CovariantType(pos, types[i]);
-	return make.AppliedType(pos,
-	    gen.mkTycon(pos,
-		global.definitions.getType(
-		    Name.fromString("scala.Tuple" + types.length))),
-	    types1);
-    }
 
     /**  (T_1, ..., T_N) => T  ==>  scala.FunctionN[T_1, ..., T_N, +T]
      */
@@ -141,30 +123,12 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
     }
 
-    /** []             ==>  scala.Nil()
-     *  [e_1,...,e_N]  ==>  scala.TupleN(e_1,...,e_n)    (N >= 1)
-     *  mode is either EXPRmode or PATmode
-     */
-    public Tree Tuple(Tree tree) {
-	switch(tree) {
-	case Tuple(Tree[] trees):
-	    Name n = trees.length == 0 ? Names.Nil
-		: Name.fromString("Tuple" + trees.length);
-	    Tree select = make.Select(tree.pos,
-		make.Ident(tree.pos, Names.scala), n.toConstrName());
-	    return make.Apply(tree.pos, select, trees);
-
-	default:
-	    throw new ApplicationError("tuple expected", tree);
-	}
-    }
-
-    /** constr call C of type TupleN[T_1,...,T_N] ==> (C: TupleN[+T_1,...,+T_N])
-     */
-    Tree postTuple(Tree tree) {
-	Type[] targs = tree.type.typeArgs();
-	if (targs.length == 0) return tree;
-	else return gen.Typed(tree, global.definitions.tupleType(targs));
+    public Tree mkTuple(int pos, Tree[] trees) {
+	Name n = trees.length == 0 ? Names.Unit
+	    : Name.fromString("Tuple" + trees.length);
+	Tree select = make.Select(pos,
+	    make.Ident(pos, Names.scala), n.toConstrName());
+	return make.Apply(pos, select, trees);
     }
 
     /** Convert method to function type.
@@ -407,14 +371,14 @@ public class DeSugarize implements Kinds, Modifiers {
 	    Name[] vars = new Name[varlist.size()];
 	    varlist.toArray(vars);
 
-	    // (x_1, ..., x_N)
+	    // Tuple_N(x_1, ..., x_N)
 	    Tree[] vtree = new Tree[vars.length];
 	    for (int i = 0; i < vars.length; i++) {
 		vtree[i] = make.Ident(pos, vars[i]);
 	    }
-	    Tree tuple = this.Tuple(make.Tuple(tree.pos, vtree));
+	    Tree tuple = mkTuple(tree.pos, vtree);
 
-	    // e.match (case p => (x_1, ..., x_N))
+	    // e.match (case p => Tuple_N(x_1, ..., x_N))
 	    CaseDef[] cases = {make.CaseDef(pos, pat, Tree.Empty, tuple)};
 	    Tree match = make.Apply(pos,
 				    make.Select(pos, rhs, Names.match),
@@ -621,7 +585,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	return idents;
     }
 
-    /** Build value element definitions and return its name.
+    /** Build value element definition name for case parameter.
      */
     void addCaseElement(TreeList ts, ValDef vparam) {
 	//System.out.println("add case for " + vparam.name);//DEBUG

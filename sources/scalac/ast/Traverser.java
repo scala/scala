@@ -185,10 +185,6 @@ public class Traverser {
             traverse(refinements);
             return;
 
-        case TupleType(Tree[] types):
-            traverse(types);
-            return;
-
         case AppliedType(Tree tpe, Tree[] args):
             traverse(tpe);
             traverse(args);

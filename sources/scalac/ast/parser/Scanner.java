@@ -113,7 +113,7 @@ public class Scanner extends TokenData {
 	    case YIELD:  case DO:
 	    case COMMA:  case SEMI:     case DOT:
 	    case COLON:  case EQUALS:   case ARROW:
-            case LARROW: case SUBTYPE:  case AT:
+            case LARROW: case SUBTYPE:
             case HASH:   case AS:       case IS:
 	    case RPAREN: case RBRACKET: case RBRACE:
 		break;
@@ -249,7 +249,31 @@ public class Scanner extends TokenData {
 		case '\'':
 		    nextch();
 		    litlen = 0;
-		    getlitch();
+		    switch (ch) {
+		    case 'A': case 'B': case 'C': case 'D': case 'E':
+		    case 'F': case 'G': case 'H': case 'I': case 'J':
+		    case 'K': case 'L': case 'M': case 'N': case 'O':
+		    case 'P': case 'Q': case 'R': case 'S': case 'T':
+		    case 'U': case 'V': case 'W': case 'X': case 'Y':
+		    case 'Z': case '$':
+		    case 'a': case 'b': case 'c': case 'd': case 'e':
+		    case 'f': case 'g': case 'h': case 'i': case 'j':
+		    case 'k': case 'l': case 'm': case 'n': case 'o':
+		    case 'p': case 'q': case 'r': case 's': case 't':
+		    case 'u': case 'v': case 'w': case 'x': case 'y':
+		    case 'z':
+			index = bp;
+			putch(ch);
+			nextch();
+			if (ch != '\'') {
+			    getIdentRest(index);
+			    token = SYMBOLLIT;
+			    return;
+			}
+			break;
+		    default:
+			getlitch();
+		    }
 		    if (ch == '\'') {
 			nextch();
 			token = CHARLIT;
@@ -668,6 +692,8 @@ public class Scanner extends TokenData {
                 return "double literal";
             case STRINGLIT:
                 return "string literal";
+            case SYMBOLLIT:
+                return "symbol literal";
             case LPAREN:
                 return "'('";
             case RPAREN:
@@ -688,11 +714,15 @@ public class Scanner extends TokenData {
                 return "';'";
             case COMMA:
                 return "','";
+	    case CASECLASS:
+		return "case class";
             default:
                 try {
                     return "'" + tokenName[token].toString() + "'";
                 } catch (ArrayIndexOutOfBoundsException e) {
                     return "'<" + token + ">'";
+                } catch (NullPointerException e) {
+                    return "'<(" + token + ")>'";
                 }
         }
     }
@@ -782,7 +812,6 @@ public class Scanner extends TokenData {
         enterKeyword("<:", SUBTYPE);
         enterKeyword("yield", YIELD);
         enterKeyword("do", DO);
-        enterKeyword("@", AT);
         enterKeyword("#", HASH);
         enterKeyword("trait", TRAIT);
 	enterKeyword("as", AS);
