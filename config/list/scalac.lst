@@ -50,10 +50,8 @@
 
 ../../../scalac/backend/Primitive.java
 ../../../scalac/backend/Primitives.java
-../../../scalac/backend/jvm/GenJVMPhase.java
 ../../../scalac/backend/jvm/GenJVM.java
 ../../../scalac/backend/msil/GenMSIL.java
-../../../scalac/backend/msil/GenMSILPhase.java
 ../../../scalac/backend/msil/TypeCreator.java
 
 ../../../scalac/checkers/CheckTreeNodes.java
@@ -212,7 +210,6 @@ icode/ICodePrinter.scala
 icode/ICTypeStack.scala
 
 backend/GenJVMFromICode.scala
-backend/GenJVMFromICodePhase.scala
 
 wholeprog/ApplicationBuilder.scala
 wholeprog/PrintDotFile.scala

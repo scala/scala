@@ -273,14 +273,7 @@ public abstract class Global {
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
         // TODO: Enable TailCall for other backends when they handle LabelDefs
         if (!runTimeTypes) args.phases.TYPESASVALUES.addSkipFlag();
-        if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
-        if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
-	if (target != TARGET_JVMFROMICODE) {
-	    args.phases.ICODE.addSkipFlag();
-	    args.phases.GENJVMFROMICODE.addSkipFlag();
-	} else {
-	    ;//args.phases.ERASURE.addSkipFlag();
-	}
+	if (target != TARGET_JVMFROMICODE) args.phases.ICODE.addSkipFlag();
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
         for (int i = 0; i <= PHASE.ANALYZER.id(); i++)
@@ -407,7 +400,6 @@ public abstract class Global {
                 clasz.reset(new SourceCompleter(this, file));
             }
         }
-        symdata.clear();
         compiledNow.clear();
         treePrinter.end();
         return units;
@@ -428,6 +420,8 @@ public abstract class Global {
 	    currentPhase = backup;
 	}
     }
+
+    public abstract void dump(CompilationUnit[] units);
 
     private void print(CompilationUnit[] units) {
         if (currentPhase.id == PHASE.MAKEBOXINGEXPLICIT.id()) {

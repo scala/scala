@@ -20,6 +20,14 @@ import java.io.File;
 
 package scala.tools.scalac.backend {
 
+object GenJVMFromICode {
+  def translate(global: scalac_Global, units: Array[CompilationUnit]): Unit = {
+    val translator = new GenJVMFromICode(global);
+    var i = 0;
+    while (i < units.length) { translator.translate(units(i)); i = i + 1; }
+  }
+}
+
 /* This class implements the backend which create
  * Java Virtual Machine's bytecode with
  * The Intermediate Code of the compiler */

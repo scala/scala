@@ -56,7 +56,7 @@ import scalac.util.*;
  * @author Michel Schinz
  */
 
-class GenJVM {
+public class GenJVM {
     protected final static String JAVA_LANG_OBJECT = "java.lang.Object";
     protected final static String JAVA_LANG_STRING = "java.lang.String";
     protected final static String JAVA_LANG_STRINGBUFFER =
@@ -117,6 +117,12 @@ class GenJVM {
 
     /// Code generation
     //////////////////////////////////////////////////////////////////////
+
+    /** Generate code for the given units. */
+    public static void translate(Global global, CompilationUnit[] units) {
+        GenJVM translator = new GenJVM(global);
+        for (int i = 0; i < units.length; i++) translator.translate(units[i]);
+    }
 
     /**
      * Generate code for the given unit.

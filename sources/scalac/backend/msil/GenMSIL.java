@@ -74,14 +74,25 @@ public final class GenMSIL {
     private static final Item TRUE_ITEM  = Item.CondItem(Test.True, null, null);
     private static final Item FALSE_ITEM = Item.CondItem(Test.False, null, null);
 
+    /** The public entry point into the code generator. */
+    public static void translate(Global global, CompilationUnit[] units) {
+	TypeCreator tc = new TypeCreator(global);
+        GenMSIL translator = new GenMSIL(global, tc);
+	tc.init();
+	tc.collectSymbols(units);
+	tc.initAssembly();
+        for (int i = 0; i < units.length; i++) translator.apply(units[i]);
+	tc.saveAssembly();
+    }
+
     /**
-     * The public constructor of the code generator.
+     * The private constructor of the code generator.
      */
-    public GenMSIL(Global global, GenMSILPhase phase) {
+    private GenMSIL(Global global, TypeCreator tc) {
         this.global = global;
 	this.defs = global.definitions;
 	this.primitives = global.primitives;
-	this.tc = phase.tc; //new TypeCreator(global, this, phase);
+	this.tc = tc; //new TypeCreator(global, this, phase);
 	this.items = new ItemFactory(this);
     }
 
@@ -95,10 +106,10 @@ public final class GenMSIL {
     private CompilationUnit currUnit;
 
     /**
-     * The main entry point into the code generator. Called from GenMSILPhase
+     * The main entry point into the code generator. Called from translate
      * for every compilation unit.
      */
-    public void apply(CompilationUnit unit) {
+    private void apply(CompilationUnit unit) {
 	currUnit = unit;
         for (int i = 0; i < unit.body.length; i++) {
             Tree tree = unit.body[i];

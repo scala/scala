@@ -42,7 +42,8 @@ object Main {
       }
       if (ok) {
 	val global = new Global(command);
-	global.compile(command.files.toArray(), false);
+	val units = global.compile(command.files.toArray(), false);
+	if (reporter.errors() == 0) global.dump(units);
 	global.stop("total");
 	global.reporter.printSummary();
       }

@@ -30,8 +30,6 @@ class CompilerPhases extends scalac_CompilerPhases {
     Class.forName("scala.tools.scalac.wholeprog.WholeProgPhase$class");
   protected override def ICODE_PHASE(): Class =
     Class.forName("scala.tools.scalac.icode.ICodePhase$class");
-  protected override def GENJVMFROMICODE_PHASE(): Class =
-    Class.forName("scala.tools.scalac.backend.GenJVMFromICodePhase$class");
 
   }
 }

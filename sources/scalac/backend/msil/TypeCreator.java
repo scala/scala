@@ -125,18 +125,18 @@ final class TypeCreator {
 
     //##########################################################################
 
-    TypeCreator(Global global, GenMSILPhase phase) {
+    TypeCreator(Global global) {
 	this.global = global;
 	this.defs = global.definitions;
         this.backPhase = global.PHASE.ADDINTERFACES.phase();
 
 	ti = CLRTypes.instance();
 
-	types2symbols = phase.types2symbols;
-	symbols2types = phase.symbols2types;
-	symbols2fields = phase.symbols2fields;
-	symbols2methods = phase.symbols2methods;
-	symbols2moduleFields = phase.symbols2moduleFields;
+	types2symbols = new HashMap();
+	symbols2types = new HashMap();
+	symbols2fields = new HashMap();
+	symbols2methods = new HashMap();
+	symbols2moduleFields = new HashMap();
 
 	BYTE    = ti.BYTE;
 	CHAR    = ti.CHAR;
