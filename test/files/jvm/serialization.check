@@ -38,6 +38,14 @@ x = Seq(c, b, a)
 y = Seq(c, b, a)
 x equals y: true - y equals x: true
 
+x = {42 -> FortyTwo}
+y = {42 -> FortyTwo}
+x equals y: true - y equals x: true
+
+x = {0, 2}
+y = {0, 2}
+x equals y: true - y equals x: true
+
 x = {title -> 3, buffers -> 20, layers -> 2}
 y = {title -> 3, buffers -> 20, layers -> 2}
 x equals y: true - y equals x: true
@@ -64,6 +72,10 @@ x equals y: true - y equals x: true
 
 x = <html><title>title</title><body></body></html>
 y = <html><title>title</title><body></body></html>
+x equals y: true - y equals x: true
+
+x = <html><body><table cellpadding="2" cellspacing="0"><tr><th>Last Name</th><th>First Name</th></tr><tr><td>Tom</td><td>20</td></tr><tr><td>Bob</td><td>22</td></tr><tr><td>James</td><td>19</td></tr></table></body></html>
+y = <html><body><table cellpadding="2" cellspacing="0"><tr><th>Last Name</th><th>First Name</th></tr><tr><td>Tom</td><td>20</td></tr><tr><td>Bob</td><td>22</td></tr><tr><td>James</td><td>19</td></tr></table></body></html>
 x equals y: true - y equals x: true
 
 x = Tim
