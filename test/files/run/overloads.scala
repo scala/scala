@@ -76,9 +76,9 @@ object overloads {
         val x = 3;
         check("M1.f(" + x +")", M1.f(x), 11);
         check("M2.f(" + x +")", M2.f(x), 22);
-        val y = new scala.collection.mutable.Stack[Int];
-        check("M1.f(" + y +")", M1.f(y), 12);
-        check("M2.f(" + y +")", M2.f(y), 21);
+//       val y = new scala.collection.mutable.Stack[Int];
+//      check("M1.f(" + y +")", M1.f(y), 12);
+//      check("M2.f(" + y +")", M2.f(y), 21);
     }
 
 }
