@@ -12,7 +12,7 @@ Byte.java
 CaseClass.scala
 Cell.scala
 Char.java
-Console.scala
+../msil/scala/Console.scala
 Double.java
 Application.scala
 ../msil/scala/Enumeration.scala
@@ -72,6 +72,7 @@ collection/SetProxy.scala
 collection/BitSet.scala
 
 ../msil/scala/collection/mutable/ArrayBuffer.scala
+collection/mutable/BitSet.scala
 ../msil/scala/collection/mutable/Buffer.scala
 ../msil/scala/collection/mutable/BufferProxy.scala
 collection/mutable/DefaultMapModel.scala
@@ -101,7 +102,6 @@ collection/mutable/Publisher.scala
 ../msil/scala/collection/mutable/Queue.scala
 ../msil/scala/collection/mutable/QueueProxy.scala
 collection/mutable/ResizableArray.scala
-collection/mutable/ResizableBitSet.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Scriptable.scala
 ../msil/scala/collection/mutable/Set.scala
@@ -141,24 +141,28 @@ concurrent/pilib.scala
 concurrent/Process.scala
 concurrent/NameServer.scala
 
-# mobile/Location.scala
-# mobile/Code.scala
+#io/Source.scala
+io/Position.scala
+
+#mobile/Location.scala
+#mobile/Code.scala
 
 runtime/InterpreterSupport.java
 runtime/NativeLoop.java
-# runtime/NativeMonitor.java
+#runtime/NativeMonitor.java
 runtime/ResultOrException.java
 runtime/RunTime.java
-runtime/ScalaRunTime.scala
+../msil/scala/runtime/ScalaRunTime.scala
 
 runtime/matching/Address.scala
 runtime/matching/TestAlphabet.scala
 #runtime/matching/Context.scala
 #runtime/matching/Grammar.scala
 #runtime/matching/Match.scala
-runtime/matching/Matcher.scala 
+runtime/matching/Matcher.scala
 runtime/matching/NonTerm.scala
-runtime/matching/PatternGrammar.scala
+../msil/scala/runtime/matching/PatternGrammar.scala
+runtime/matching/PatternTests.scala
 #runtime/matching/Pebble.scala
 runtime/matching/Rule.scala
 
@@ -187,6 +191,7 @@ util/regexp/SyntaxError.scala
 # xml/BindingFactoryAdapter.scala
 # xml/CharData.scala
 # xml/Comment.scala
+# xml/DocType.scala
 # xml/Elem.scala
 # xml/ExternalID.scala
 # xml/EntityRef.scala
@@ -194,6 +199,7 @@ util/regexp/SyntaxError.scala
 # xml/Node.scala
 # xml/NodeBuffer.scala
 # xml/NodeSeq.scala
+# xml/NodeTraverser.scala
 # xml/Parsing.scala
 # xml/PrettyPrinter.scala
 # xml/ProcInstr.scala
@@ -215,9 +221,11 @@ util/regexp/SyntaxError.scala
 
 # xml/parsing/AttribValue.scala
 # xml/parsing/ConstructingHandler.scala
+# xml/parsing/ConstructingParser.scala
 # xml/parsing/FatalError.scala
 # xml/parsing/MarkupParser.scala
 # xml/parsing/MarkupHandler.scala
+# xml/parsing/XSDHandler.scala
 # xml/path/Expression.scala
 #xml/path/Tokens.scala
 #xml/path/Scanner.scala
