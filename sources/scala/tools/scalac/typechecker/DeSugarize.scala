@@ -42,7 +42,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   */
   def getvar(): Name = freshNameCreator.newName("ds", '$');
 
-  def setterName(name: Name): Name = name.append(Names._EQ);
+  def setterName(name: Name): Name = Name.fromString(name.toString() + Names._EQ);
 
   def parameterName(i: int): Name = Name.fromString("x$" + i);
 

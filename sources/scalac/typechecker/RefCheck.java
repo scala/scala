@@ -554,7 +554,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree ddef = gen.DefDef(sym, body);
 
 	    // def m_eq(m: T): Unit = { m$ = m }
-            Name m_eqname = name.append(Names._EQ);
+            Name m_eqname = Name.fromString(name.toString() + Names._EQ);
 	    Symbol m_eq = sym.owner().newMethodOrFunction(
 		tree.pos, PRIVATE | SYNTHETIC, m_eqname);
             Symbol m_eqarg = m_eq.newVParam(tree.pos, SYNTHETIC, name, sym.type());

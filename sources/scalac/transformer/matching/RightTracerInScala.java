@@ -292,7 +292,7 @@ public class RightTracerInScala extends TracerInScala  {
                 this.helpMap2.put( key, helpMap.get( key ));
                 // "freshening" by appending string ( a bit dangerous )
                 Symbol newSym = key.cloneSymbol().setOwner( owner /*funSym*/ );
-                newSym.name = key.name.append( Name.fromString("%") );
+                newSym.name = Name.fromString( key.name + "%" );
                 freshenMap.put( key, newSym );
                 helpMap3.put( newSym, helpMap.get( key ));
                 //System.out.println( "key: "+ key + " key.owner:"+key.owner());

@@ -146,7 +146,7 @@ public class CLRClassParser extends SymbolLoader {
 	    mtype = methodType(setter, getCLSType(importer.VOID));
 	    if (mtype == null)
 		continue;
-	    n = n.append(Names._EQ);
+	    n = Name.fromString(n.toString() + Names._EQ);
 	    mods = translateAttributes(setter);
 	    method = owner.newMethod(Position.NOPOS, mods, n);
 	    setParamOwners(mtype, method);

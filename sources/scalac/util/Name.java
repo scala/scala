@@ -125,12 +125,6 @@ public final class Name {
         return string.lastIndexOf(c);
     }
 
-/** returns the concatenation of this name and n
- */
-    public Name append(Name n) {
-        return fromString(string + n.string);
-    }
-
 /** is this name a variable identifier?
  */
     public boolean isVariable() {
