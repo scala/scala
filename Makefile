@@ -52,20 +52,20 @@ TUPLE_RULES		 = $(TUPLE_PREFIX)/Tuple.scm
 RUNTIME_ROOT		 = $(PROJECT_SOURCEDIR)/scala
 RUNTIME_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/runtime.lst)
 RUNTIME_SOURCES		+= $(RUNTIME_LIST:%=$(RUNTIME_ROOT)/%)
-RUNTIME_JC_COMPILER	+= PICO
+RUNTIME_JC_FILES	+= $(RUNTIME_SOURCES)
 
 # scala compiler
 COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
 COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
 COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
-COMPILER_JC_COMPILER	 = PICO
+COMPILER_JC_FILES	 = $(COMPILER_SOURCES)
 COMPILER_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE)
 
 # scala interpreter
 INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scalai
 INTERPRETER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/interpreter.lst)
 INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
-INTERPRETER_JC_COMPILER	 = PICO
+INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
 
 # scala library
 
@@ -75,6 +75,7 @@ LIBRARY_FILES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 
 # java compilation
 
+JC_COMPILER		 = PICO
 JC_OUTPUTDIR		 = $(PROJECT_OUTPUTDIR)
 JC_CLASSPATH		 = $(PROJECT_CLASSPATH)
 
@@ -116,9 +117,6 @@ NICE			?= nice
 ZIP			?= zip
 UNIX2DOS		?= unix2dos
 
-JAVAC			?= javac
-JAVAC_FLAGS		+=
-
 PICO			?= pico
 PICO_FLAGS		+= -make -source 1.4
 
@@ -126,7 +124,6 @@ PICO_FLAGS		+= -make -source 1.4
 # Functions
 
 RUN			 = echo $(1); $(1) || exit $$?
-LOOKUP			 = $(if $($(source)_$(1)),$($(source)_$(1)),$($(1)))
 READLIST		 = $(shell cat $(1) | grep -v "^\#")
 
 make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
@@ -178,16 +175,16 @@ library		: .latest-library
 ##############################################################################
 # Targets
 
-.latest-runtime		: $(RUNTIME_SOURCES)
-	@$(MAKE) .do-jc source=RUNTIME JC_FILES='$?'
+.latest-runtime		: $(RUNTIME_JC_FILES)
+	@$(MAKE) jc target=RUNTIME RUNTIME_JC_FILES='$?'
 	touch $@
 
-.latest-compiler	: $(COMPILER_SOURCES)
-	@$(make) .do-jc source=COMPILER JC_FILES='$?'
+.latest-compiler	: $(COMPILER_JC_FILES)
+	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
 	touch $@
 
-.latest-interpreter	: $(INTERPRETER_SOURCES)
-	@$(make) .do-jc source=INTERPRETER JC_FILES='$?'
+.latest-interpreter	: $(INTERPRETER_JC_FILES)
+	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
 	touch $@
 
 .latest-library		: $(LIBRARY_FILES)
@@ -207,45 +204,9 @@ $(TUPLE_FILES): $(TUPLE_TEMPLATE) $(TUPLE_RULES)
 
 ##############################################################################
 
+include $(ROOT)/support/make/jc.mk
 include $(ROOT)/support/make/exec.mk
 include $(ROOT)/support/make/grep.mk
 include $(ROOT)/support/make/wc.mk
-
-##############################################################################
-# JC - compile java files
-##############################################################################
-#
-# JC_COMPILER		 = compiler name, for example JAVAC or PICO
-# $(JC_COMPILER)	 = compiler command
-# $(JC_COMPILER)_FLAGS	 = compiler-specific compilation flags
-# JC_FLAGS		+= compilation flags
-# JC_OUTPUTDIR		 = directory for the generated class files
-# JC_CLASSPATH		 = class path
-# JC_FILES		+= files to compile
-#
-##############################################################################
-
-# setup default values
-
-JC_COMPILER		?= JAVAC
-JAVAC			?= javac
-
-# lookup actual values
-
-JC_COMPILER		:= $(call LOOKUP,JC_COMPILER)
-JC_compiler		:= $(call LOOKUP,$(JC_COMPILER))
-JC_compiler_flags	:= $(call LOOKUP,$(JC_COMPILER)_FLAGS)
-JC_FLAGS		:= $(call LOOKUP,JC_FLAGS)
-JC_OUTPUTDIR		:= $(call LOOKUP,JC_OUTPUTDIR)
-JC_CLASSPATH		:= $(call LOOKUP,JC_CLASSPATH)
-JC_FILES		:= $(call LOOKUP,JC_FILES)
-
-# rules
-
-.do-jc:
-	@[ -d "$(JC_OUTPUTDIR)" ] || $(MKDIR) -p "$(JC_OUTPUTDIR)"
-	$(strip $(JC_compiler) $(JC_compiler_flags) $(JC_FLAGS) \
-	    $(JC_OUTPUTDIR:%=-d %) $(JC_CLASSPATH:%=-classpath %) \
-	    $(JC_FILES))
 
 ##############################################################################
