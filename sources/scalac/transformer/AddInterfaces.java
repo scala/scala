@@ -171,20 +171,7 @@ class AddInterfaces extends SubstTransformer {
         if (!needInterface(ifaceSym))
             return ifaceSym;
         else {
-            if (!ifaceToClass.containsKey(ifaceSym)) {
-                Symbol classSym;
-
-                Name ifaceName = ifaceSym.primaryConstructorClass().fullName();
-                classSym = global.definitions.getClass(className(ifaceName));
-                if (ifaceSym.isPrimaryConstructor())
-                    classSym = classSym.constructor();
-
-                assert classSym != Symbol.NONE : ifaceSym;
-
-                ifaceToClass.put(ifaceSym, classSym);
-                classToInterface.put(classSym, ifaceSym);
-            }
-
+            assert ifaceToClass.containsKey(ifaceSym);
             return (Symbol)ifaceToClass.get(ifaceSym);
         }
     }
@@ -644,6 +631,7 @@ class AddInterfaces extends SubstTransformer {
             Symbol classSym = cloneAndMaybeRenameSymbol(ifaceSym);
             ifaceToClass.put(ifaceSym, classSym);
             ifaceToClass.put(ifaceSym.constructor(), classSym.constructor());
+            ifaceSym.owner().members().enter(classSym);
         }
 
         public void traverse(Tree tree) {
