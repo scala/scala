@@ -226,6 +226,12 @@ public class HTMLGenerator {
     private final int CONTAINER_NAV_CONTEXT = 3; // on a container page different from the root.
 
     /**
+     * Variables used when loading this documentation generator.
+     */
+    public static final String DEFAULT_DOCTITLE = "";
+    public static final String DEFAULT_WINDOWTITLE = "Generated Documentation";
+
+    /**
      * Creates a new instance.
      *
      * @param tree
@@ -253,21 +259,22 @@ public class HTMLGenerator {
         this.validate = args.validate.value;
     }
 
-    protected void createPrinters(Symbol sym, String newURI) {
+    /**
+     * Open a new documentation page and make it the current page.
+     * @param uri   URL of the page
+     * @param title Title of the page
+     */
+    protected void openPage(URI uri, String title) {
 	try {
 	    stack.push(page);
 	    stack.push(symtab);
 	    stack.push(uri);
 
-	    if (newURI == null)
-		uri = Location.getURI(sym);
-	    else
-		uri = new URI(newURI);
+	    this.uri = uri;
 	    File f = new File(directory, uri.toString());
 	    f.getParentFile().mkdirs();
 
 	    BufferedWriter out = new BufferedWriter(new FileWriter(f));
-	    String title = Location.getName(sym);
 	    String stylesheetPath = Location.asSeenFrom(new URI(stylesheet), uri).toString();
 	    if (representation.isXHTMLType())
 		page = new XHTMLPrinter(out, title, representation, stylesheetPath);
@@ -278,34 +285,9 @@ public class HTMLGenerator {
     }
 
     /**
-     * Creates two new printer objects to generate HTML documents.
-     *
-     * @param anchor
-     * @param title  The title of the generated HTML document.
+     * Close the current page.
      */
-    protected void createPrinters(String anchor, String title) {
-	stack.push(page);
-	stack.push(symtab);
-	stack.push(uri);
-
-        try {
-            BufferedWriter out =
-                new BufferedWriter(new FileWriter(directory.getPath() + File.separator + anchor));
-            if (representation.isXHTMLType())
-                page = new XHTMLPrinter(out, title, representation, stylesheet);
-            else
-                page = new HTMLPrinter(out, title, representation, stylesheet);
-	    symtab = new SymbolTablePrinter(this, page.getCodePrinter());
-	    uri = new URI(".");
-	} catch (Exception e) {
-	    throw Debug.abort(e); // !!! reporting an error would be wiser
-	}
-    }
-
-    /**
-     * Closes the Writer object associated with both printer objects.
-     */
-    protected void closePrinters() {
+    protected void closePage() {
 	try {
 	    page.getCodePrinter().getWriter().close();
             uri = (URI) stack.pop();
@@ -316,6 +298,9 @@ public class HTMLGenerator {
 	}
     }
 
+    /**
+     * Check if the outpath is valid.
+     */
     private boolean checkOutpath()  {
         String text = "Output path \"" + global.outpath + "\" ";
         boolean ok = false;
@@ -335,7 +320,11 @@ public class HTMLGenerator {
         return ok;
     }
 
-    public String ref(Symbol sym) {
+    /**
+     * Return the URL of the definition of the given symbol relative
+     * to the current page.
+     */
+    public String definitionURL(Symbol sym) {
 	return Location.asSeenFrom(Location.getURI(sym), uri).toString();
     }
 
@@ -347,23 +336,23 @@ public class HTMLGenerator {
             return;
 
         // page with list of packages
-	createPackageIndexPage("Overview");
+	createPackageIndexPage();
 
 	// class and object pages
 	createPages(tree);
 
 	if (!noindex) {
             // page with index of Scala documented entities.
-	    createIndexPage("Scala Library Index");
+	    createIndexPage();
         }
 
-        createHelpPage("API Help");
+        createHelpPage();
 
 	// page with list of objects and classes.
 	createContainerIndexPage(tree);
 
 	// frame description page
-	createFramePage(windowtitle);
+	createFramePage();
 
         // style sheet
         createResource(HTMLPrinter.DEFAULT_STYLESHEET);
@@ -459,8 +448,8 @@ public class HTMLGenerator {
      */
     protected void createPages(Tree tree) {
         Symbol sym = tree.symbol();
-        createPrinters(sym, null);
 	String title = Location.getName(sym);
+        openPage(Location.getURI(sym), title);
 
         page.printHeader(ATTRS_META, getGenerator());
         String windowTitle = title + " (" + doctitle.replaceAll("<.*>", " ") + ")";
@@ -498,7 +487,7 @@ public class HTMLGenerator {
             addValidationBar();
         page.printFootpage();
 
-        closePrinters();
+        closePage();
     }
 
     /**
@@ -650,8 +639,7 @@ public class HTMLGenerator {
 			defString(sub, true /*addLink*/);
 			if (sub.owner() != sym.owner()) {
                             page.print(" in ");
-                            page.printlnAhref(ref(sub.owner()), ROOT_FRAME,
-			                      sub.owner().fullNameString());
+			    printPath(sub.owner());
                         }
 			page.printlnCTag("dd");
 		    }
@@ -917,13 +905,19 @@ public class HTMLGenerator {
 	}
     }
 
+    protected URI mkURI(String uri) {
+	try {
+	    return new URI(uri);
+	} catch(Exception e) { throw Debug.abort(e); }
+    }
+
     /**
      * Creates the page describing the different frames.
      *
      * @param title The page title
      */
-    protected void createFramePage(String title) {
-        createPrinters(FRAME_PAGE, title);
+    protected void createFramePage() {
+        openPage(mkURI(FRAME_PAGE), windowtitle);
 
         page.printHeader(ATTRS_META, getGenerator());
 	page.printlnOTag("frameset", new XMLAttribute[] {
@@ -952,7 +946,7 @@ public class HTMLGenerator {
         page.printlnCTag("frameset");
         page.printlnCTag("html");
 
-        closePrinters();
+        closePage();
     }
 
     /**
@@ -1045,10 +1039,10 @@ public class HTMLGenerator {
                 if (! sym.isRoot()) {
                     String name = sym.nameString();
                     if (sym.isPackage())
-                        page.printAhref(ref(sym), CLASSES_FRAME, name);
+                        page.printAhref(definitionURL(sym), CLASSES_FRAME, name);
                     else {
                         Symbol user = (useFullName) ? global.definitions.ROOT : Symbol.NONE;
-                        page.printAhref(ref(sym), ROOT_FRAME, name);
+                        page.printAhref(definitionURL(sym), ROOT_FRAME, name);
                     }
 	            page.printlnSTag("br");
                 }
@@ -1066,8 +1060,8 @@ public class HTMLGenerator {
      *
      * @param title
      */
-    protected void createPackageIndexPage(String title) {
-	createPrinters(PACKAGE_LIST_PAGE, title);
+    protected void createPackageIndexPage() {
+	openPage(mkURI(PACKAGE_LIST_PAGE), "List of packages");
 
         Tree[] packages = ScalaSearch.getSortedPackageList(tree);
 
@@ -1082,7 +1076,7 @@ public class HTMLGenerator {
             addValidationBar();
 	page.printFootpage();
 
-	closePrinters();
+	closePage();
     }
 
     /**
@@ -1092,8 +1086,7 @@ public class HTMLGenerator {
      */
     protected void createContainerIndexPage(Tree tree) {
         Symbol sym = tree.symbol();
-	String title = Location.getName(sym);
-        createPrinters(sym, packageSummaryPage(sym));
+        openPage(mkURI(packageSummaryPage(sym)), Location.getName(sym));
         page.printHeader(ATTRS_META, getGenerator());
 	page.printOpenBody();
 
@@ -1107,7 +1100,7 @@ public class HTMLGenerator {
 	    page.printlnOTag("tr").indent();
 	    page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
 
-            page.printlnAhref(ref(sym), ROOT_FRAME, sym.fullNameString());
+            page.printlnAhref(definitionURL(sym), ROOT_FRAME, sym.fullNameString());
 
             page.printlnCTag("td");
             page.printlnCTag("tr");
@@ -1123,7 +1116,7 @@ public class HTMLGenerator {
             addValidationBar();
         page.printFootpage();
 
-        closePrinters();
+        closePage();
     }
 
     /**
@@ -1131,8 +1124,9 @@ public class HTMLGenerator {
      *
      * @param title The page title
      */
-    protected void createIndexPage(String title) {
-	createPrinters(INDEX_PAGE, title);
+    protected void createIndexPage() {
+	String title = "Scala Library Index";
+	openPage(mkURI(INDEX_PAGE), title);
 
         page.printHeader(ATTRS_META, getGenerator());
         String windowTitle = title + " (" + doctitle.replaceAll("<.*>", " ") + ")";
@@ -1180,7 +1174,7 @@ public class HTMLGenerator {
             addValidationBar();
         page.printFootpage();
 
-        closePrinters();
+        closePage();
     }
 
     /**
@@ -1188,8 +1182,9 @@ public class HTMLGenerator {
      *
      * @param title The page title
      */
-    protected void createHelpPage(String title) {
-	createPrinters(HELP_PAGE, title);
+    protected void createHelpPage() {
+	String title = "API Help";
+	openPage(mkURI(HELP_PAGE), title);
 
         page.printHeader(ATTRS_META, getGenerator());
         String windowTitle = title + " (" + doctitle.replaceAll("<.*>", " ") + ")";
@@ -1284,7 +1279,7 @@ public class HTMLGenerator {
             addValidationBar();
         page.printFootpage();
 
-        closePrinters();
+        closePage();
     }
 
     /**
@@ -1294,7 +1289,7 @@ public class HTMLGenerator {
     protected void printPath(Symbol sym) {
 	String name = removeHtmlSuffix(Location.getURI(sym).toString());
 	if (isReferenced(sym)) {
-	    String target = ref(sym);
+	    String target = definitionURL(sym);
 	    page.printlnAhref(target, ROOT_FRAME, name);
 	}
 	else
@@ -1310,7 +1305,7 @@ public class HTMLGenerator {
 	if (global.debug) name = sym.name.toString();
 	if (isReferenced(sym))
 	    if (addLink)
-		page.printAhref(ref(sym), ROOT_FRAME, name);
+		page.printAhref(definitionURL(sym), ROOT_FRAME, name);
 	    else {
 		page.printOTag("em");
 		page.print(name);
@@ -1408,7 +1403,7 @@ public class HTMLGenerator {
 	    }
 	    else {
 		String labl = label.equals("") ? sym.nameString() : label;
-		return ahref(ref(sym), ROOT_FRAME, labl);
+		return ahref(definitionURL(sym), ROOT_FRAME, labl);
 	    }
 	default:
 	    throw Debug.abort("illegal case", tag);
