@@ -21,7 +21,7 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
     def isDefinedAt(n: Int) = (n >= 0) && (n < len);
 
     def apply(n: Int): A = get(n) match {
-        case None => null
+        case None => error("element not found")
         case Some(value) => value
     }
 
