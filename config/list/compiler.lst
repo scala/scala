@@ -17,7 +17,6 @@ ast/parser/Parser.java
 ast/parser/ParserPhase.java
 ast/parser/Scanner.java
 ast/parser/SourceRepresentation.java
-ast/parser/Sourcefile.java
 ast/parser/TokenData.java
 ast/parser/Tokens.java
 
@@ -118,7 +117,6 @@ util/Name.java
 util/NameTransformer.java
 util/Names.java
 util/OptionParser.java
-util/Position.java
 util/PrefixMatcher.java
 util/Reporter.java
 util/SourceRepresentation.java

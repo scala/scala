@@ -8,6 +8,8 @@
 
 package scalac.symtab;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import scalac.*;
 import scalac.ast.parser.*;
 import scalac.typechecker.Analyzer;
@@ -36,7 +38,7 @@ public class SourceCompleter extends Type.LazyType {
 	    try {
 		String fname = filename;
 		long msec = System.currentTimeMillis();
-		Unit unit = new Unit(global, new Sourcefile(filename), false);
+		Unit unit = new Unit(global, new SourceFile(filename), false);
 		filename = null;
 		global.PHASE.PARSER.apply(unit);
 		global.PHASE.ANALYZER.lateEnter(global, unit, c);

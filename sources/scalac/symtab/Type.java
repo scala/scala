@@ -9,6 +9,7 @@
 
 package scalac.symtab;
 
+import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
 import scalac.util.*;
 import scalac.Global;

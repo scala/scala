@@ -8,6 +8,8 @@
 
 package scalac.ast.parser;
 
+import ch.epfl.lamp.util.Position;
+
 import java.util.*;
 import scalac.*;
 import scalac.util.*;
@@ -98,8 +100,8 @@ public class Parser implements Tokens {
     int accept(int token) {
 	int pos = s.pos;
         if (s.token != token) {
-            int errpos = ((s.pos >>> Position.LINESHIFT) >
-			  (s.lastpos >>> Position.LINESHIFT)) ?
+            int errpos = ((s.pos >>> Position.COLUMN_BITS) >
+			  (s.lastpos >>> Position.COLUMN_BITS)) ?
 		s.lastpos : s.pos;
             syntaxError(errpos, s.token2string(token) + " expected but " +
 			s.token2string(s.token) + " found.", true);

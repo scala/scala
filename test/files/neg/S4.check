@@ -1,4 +1,4 @@
-S4.scala:5: stable identifier required, but a found.
+./neg/S4.scala:5: stable identifier required, but a found.
     def foo(x: a.Inner) = x;
                ^
 one error found

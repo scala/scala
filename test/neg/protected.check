@@ -1,4 +1,4 @@
-protected.scala:11: error overriding method y in class A;
+./neg/protected.scala:11: error overriding method y in class A;
  method y in class B has weaker access privileges; it should not be protected
     protected def y(): int;
                   ^

@@ -8,6 +8,7 @@
 
 package scalac.transformer;
 
+import ch.epfl.lamp.util.Position;
 import scalac.*;
 import scalac.ast.*;
 import scalac.symtab.*;
@@ -15,7 +16,7 @@ import scalac.typechecker.*;
 
 
 public class PatternNode {
-    public int pos = scalac.util.Position.NOPOS;
+    public int pos = Position.NOPOS;
     public Type type;
     public PatternNode or;
     public PatternNode and;

@@ -13,6 +13,8 @@
 
 package scalac.backend.jvm;
 
+import ch.epfl.lamp.util.Position;
+
 import scalac.*;
 import scalac.backend.*;
 import scalac.util.*;

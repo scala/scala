@@ -15,7 +15,6 @@ import scalac.ast.Tree;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
-import scalac.util.Position;
 import scalac.symtab.Kinds;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Symbol;
@@ -27,6 +26,7 @@ import Tree.*;
 
 import ch.epfl.lamp.compiler.msil.*;
 import ch.epfl.lamp.compiler.msil.emit.*;
+import ch.epfl.lamp.util.Position;
 
 import java.util.Map;
 import java.util.ArrayList;
@@ -727,16 +727,11 @@ public final class TypeCreator
     }
 
     void log(String message) {
-	System.err.println(message);
-	//log(1, message);
+        global.reporter.printMessage(message);
     }
 
     void logErr(String message) {
-	log(formatMessage(message));
-    }
-
-    String formatMessage(String message) {
-	return unit.source.getMessage(pos, message);
+        global.reporter.printMessage(new Position(pos), message);
     }
 
 } // class TypeCreator

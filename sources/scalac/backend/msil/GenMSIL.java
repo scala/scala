@@ -16,7 +16,6 @@ import scalac.util.Debug;
 
 import scalac.util.Name;
 import scalac.util.Names;
-import scalac.util.Position;
 import scalac.util.Debug;
 import scalac.ast.Tree;
 import Tree.*;
@@ -32,6 +31,7 @@ import scalac.backend.Primitives;
 
 import ch.epfl.lamp.compiler.msil.*;
 import ch.epfl.lamp.compiler.msil.emit.*;
+import ch.epfl.lamp.util.Position;
 
 import Item.*;
 
@@ -1660,12 +1660,11 @@ public class GenMSIL /*implements Modifiers */ {
     /**
      */
     void log(String message) {
-	System.err.println(message);
-	//log(1, message);
+        global.reporter.printMessage(message);
     }
 
     void logErr(int pos, String message) {
-	log(currUnit.source.getMessage(pos, message));
+        global.reporter.printMessage(new Position(pos), message);
     }
 
     void logErr(String message) {

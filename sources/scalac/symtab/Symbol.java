@@ -10,6 +10,7 @@
 
 package scalac.symtab;
 
+import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
 import scalac.Global;
 import scalac.PhaseDescriptor;
@@ -17,7 +18,6 @@ import scalac.util.ArrayApply;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.NameTransformer;
-import scalac.util.Position;
 import scalac.util.Debug;
 import scalac.symtab.classfile.*;
 

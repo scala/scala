@@ -11,10 +11,10 @@ package scalai;
 import java.util.List;
 import java.util.ArrayList;
 
+import ch.epfl.lamp.util.Position;
+
 import scalac.Global;
-import scalac.ast.parser.Sourcefile;
 import scalac.symtab.Symbol;
-import scalac.util.Position;
 
 public class EvaluatorException extends RuntimeException {
 
@@ -54,7 +54,7 @@ public class EvaluatorException extends RuntimeException {
         buffer.append('.');
         buffer.append(method.nameString());
         buffer.append('(');
-        buffer.append(Sourcefile.files[Position.file(pos)]);
+        buffer.append(Position.file(pos));
         buffer.append(':');
         buffer.append(Position.line(pos));
         buffer.append(")");

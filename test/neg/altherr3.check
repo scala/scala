@@ -1,169 +1,169 @@
-altherr3.scala:26: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:26: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo0());                             // error  1
                 ^
-altherr3.scala:27: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:27: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo0(foo0()));                       // error  2
                 ^
-altherr3.scala:28: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
+./neg/altherr3.scala:28: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo0(foo0(foo0())));                 // error  3
                 ^
-altherr3.scala:29: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[bug.Foo[scala.All]]])
+./neg/altherr3.scala:29: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[bug.Foo[scala.All]]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo0(foo0(foo0(foo0()))));           // error  4
                 ^
-altherr3.scala:32: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:32: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Int]](foo0(foo0()));                  // error  5
                           ^
-altherr3.scala:33: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:33: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Int]](foo0(foo0(foo0())));            // error  6
                           ^
-altherr3.scala:34: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
+./neg/altherr3.scala:34: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Int]](foo0(foo0(foo0(foo0()))));      // error  7
                           ^
-altherr3.scala:38: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:38: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Foo[Int]]](foo0(foo0(foo0())));       // error  8
                                     ^
-altherr3.scala:39: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:39: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Foo[Int]]](foo0(foo0(foo0(foo0())))); // error  9
                                     ^
-altherr3.scala:49: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:49: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Int](foo0(foo0()));                       // error 10
                      ^
-altherr3.scala:50: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:50: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Int](foo0(foo0(foo0())));                 // error 11
                      ^
-altherr3.scala:51: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
+./neg/altherr3.scala:51: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Int](foo0(foo0(foo0(foo0()))));           // error 12
                      ^
-altherr3.scala:55: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:55: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Foo[Int]](foo0(foo0(foo0())));            // error 13
                                ^
-altherr3.scala:56: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:56: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Foo[Int]](foo0(foo0(foo0(foo0()))));      // error 14
                                ^
-altherr3.scala:61: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:61: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Foo[Foo[Int]]](foo0(foo0(foo0(foo0())))); // error 15
                                          ^
-altherr3.scala:72: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:72: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar2[Int](foo0(foo0(foo0())));                 // error 16
                           ^
-altherr3.scala:73: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:73: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar2[Int](foo0(foo0(foo0(foo0()))));           // error 17
                           ^
-altherr3.scala:78: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:78: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar2[Foo[Int]](foo0(foo0(foo0(foo0()))));      // error 18
                                     ^
-altherr3.scala:95: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:95: no type parameters for method foo0 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar3[Int](foo0(foo0(foo0(foo0()))));           // error 20
                                ^
-altherr3.scala:116: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:116: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo1());                             // error 21
                 ^
-altherr3.scala:117: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:117: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo1(foo1()));                       // error 22
                 ^
-altherr3.scala:118: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
+./neg/altherr3.scala:118: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo1(foo1(foo1())));                 // error 23
                 ^
-altherr3.scala:119: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[bug.Foo[scala.All]]])
+./neg/altherr3.scala:119: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[bug.Foo[scala.All]]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Int](foo1(foo1(foo1(foo1()))));           // error 24
                 ^
-altherr3.scala:122: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:122: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Int]](foo1(foo1()));                  // error 25
                           ^
-altherr3.scala:123: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:123: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Int]](foo1(foo1(foo1())));            // error 26
                           ^
-altherr3.scala:124: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
+./neg/altherr3.scala:124: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Int]](foo0(foo1(foo1(foo1()))));      // error 27
                           ^
-altherr3.scala:128: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:128: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Foo[Int]]](foo1(foo1(foo1())));       // error 28
                                     ^
-altherr3.scala:129: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:129: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar0[Foo[Foo[Int]]](foo1(foo0(foo1(foo1())))); // error 29
                                     ^
-altherr3.scala:139: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:139: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Int](foo1(foo1()));                       // error 30
                      ^
-altherr3.scala:140: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:140: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Int](foo1(foo1(foo1())));                 // error 31
                      ^
-altherr3.scala:141: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
+./neg/altherr3.scala:141: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[bug.Foo[scala.All]])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Int](foo1(foo1(foo1(foo1()))));           // error 32
                      ^
-altherr3.scala:145: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:145: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Foo[Int]](foo1(foo1(foo1())));            // error 33
                                ^
-altherr3.scala:146: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
+./neg/altherr3.scala:146: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments (bug.Foo[scala.All])
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Foo[Int]](foo1(foo1(foo1(foo1()))));      // error 34
                                ^
-altherr3.scala:151: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
+./neg/altherr3.scala:151: no type parameters for method foo1 of type [a](a*)bug.Foo[a] exist so that it can be applied to arguments ()
  --- because ---
 result type bug.Foo[a] is incompatible with expected type scala.Int
   bar1[Foo[Foo[Int]]](foo1(foo1(foo1(foo1())))); // error 35

@@ -1,4 +1,4 @@
-altherr2.scala:5: ';' expected but '[' found.
+./neg/altherr2.scala:5: ';' expected but '[' found.
   foo()[Int];
        ^
 one error found

@@ -8,6 +8,7 @@
 
 package scalac.symtab;
 
+import ch.epfl.lamp.util.Position;
 import scalac.*;
 import scalac.util.*;
 import scalac.symtab.classfile.*;

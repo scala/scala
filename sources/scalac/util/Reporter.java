@@ -8,19 +8,28 @@
 
 package scalac.util;
 
+import ch.epfl.lamp.util.Position;
+
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.IOException;
+import java.util.HashSet;
+
 import scalac.ApplicationError;
 
 public class Reporter {
 
     //########################################################################
-    // Private state
+    // Private Fields
 
+    /** The reader to ask for failures on demand */
     private final BufferedReader reader;
+    /** The writer to print messages */
     private final PrintWriter writer;
+
+    /** Log of error positions (used to avoid printing errors twice) */
+    private final HashSet positions;
 
     /** Number of errors issued totally */
     private int errors;
@@ -28,25 +37,7 @@ public class Reporter {
     private int warnings;
 
     //########################################################################
-    // Reporter constructors
-
-    public Reporter() {
-        this(
-            new BufferedReader(new InputStreamReader(System.in)),
-            new PrintWriter(System.err, true));
-    }
-
-    public Reporter(BufferedReader reader, PrintWriter writer) {
-        this.reader = reader;
-        this.writer = writer;
-        this.prompt = false;
-        this.nowarn = false;
-        this.verbose = false;
-        this.errors = 0;
-    }
-
-    //########################################################################
-    // Reporter state
+    // Public Fields
 
     /** Whether warnings should be issued */
     public boolean nowarn;
@@ -56,101 +47,167 @@ public class Reporter {
     public boolean prompt;
 
     //########################################################################
-    // Reporter interface - query
+    // Public Constructors
 
-    /** Return the number of errors issued totally */
+    /** Initializes a new instance. */
+    public Reporter() {
+        this(
+            new BufferedReader(new InputStreamReader(System.in)),
+            new PrintWriter(System.err, true));
+    }
+
+    /** Initializes a new instance. */
+    public Reporter(BufferedReader reader, PrintWriter writer) {
+        this.reader = reader;
+        this.writer = writer;
+        this.positions = new HashSet();
+        this.prompt = false;
+        this.nowarn = false;
+        this.verbose = false;
+        this.errors = 0;
+    }
+
+    //########################################################################
+    // Public Methods - Count
+
+    /** Returns the number of errors issued totally */
     public int errors() {
         return errors;
     }
 
-    /** Return the number of warnings issued totally */
+    /** Returns the number of warnings issued totally */
     public int warnings() {
         return warnings;
     }
 
-    /** Return the number of errors issued totally as a string */
+    /** Returns the number of errors issued totally as a string */
     public String getErrorCountString() {
         return getCountString(errors, "error");
     }
 
-    /** Return the number of warnings issued totally as a string */
+    /** Returns the number of warnings issued totally as a string */
     public String getWarningCountString() {
         return getCountString(warnings, "warning");
     }
 
-    public String getCountString(int count, String what) {
-        switch (count) {
-        case 0: return "no " + what + "s";
-        case 1: return "one " + what;
-        case 2: return "two " + what + "s";
-        case 3: return "three " + what + "s";
-        case 4: return "four " + what + "s";
-        default: return count + " " + what + "s";
+    /** Returns a string meaning "n elements". */
+    public String getCountString(int n, String elements) {
+        switch (n) {
+        case 0: return "no " + elements + "s";
+        case 1: return "one " + elements;
+        case 2: return "two " + elements + "s";
+        case 3: return "three " + elements + "s";
+        case 4: return "four " + elements + "s";
+        default: return n + " " + elements + "s";
         }
     }
 
-    //########################################################################
-    // Reporter interface - report
-
-    /** Reset all counters */
+    /** Resets all counters */
     public void resetCounters() {
         errors = 0;
         warnings = 0;
     }
 
-    /** Issue a message */
+    //########################################################################
+    // Public Methods - Report
+
+    /** Issues a message */
     public void report(String message) {
-        writer.println(message);
+        printMessage(message);
     }
 
-    /** Issue a message */
+    /** Issues a message */
     public void inform(String message) {
-        if (verbose) report(message);
+        if (verbose) printMessage(message);
     }
 
-    /** Issue an error */
-    public void error(String message) {
-        error(message, false);
-    }
-
-    /** Issue an error if it is not hidden */
-    public void error(String message, boolean hidden) {
-        if (!hidden || prompt) report(message);
+    /** Issues an error */
+    public void error(Position position, String message) {
+        boolean hidden = testAndLog(position);
+        if (!hidden || prompt) printError(position, message);
         if (!hidden) errors++;
         if (prompt) failOnDemand();
     }
 
-    /** Issue a warning */
-    public void warning(String message) {
-        warning(message, false);
-    }
-
-    /** Issue a warning if it is not hidden */
-    public void warning(String message, boolean hidden) {
+    /** Issues a warning */
+    public void warning(Position position, String message) {
+        boolean hidden = testAndLog(position);
         if (nowarn) return;
-        if (!hidden || prompt) report(message);
+        if (!hidden || prompt) printWarning(position, message);
         if (!hidden) warnings++;
         if (prompt) failOnDemand();
     }
 
+    //########################################################################
+    // Public Methods - Print
+
+    /** Prints the message. */
+    public void printMessage(String message) {
+        writer.println(message);
+    }
+
+    /** Prints the message with the given position indication. */
+    public void printMessage(Position position, String message) {
+        if (position != null && position.file().id() != 0) {
+            message = " " + message;
+            if (position.line() != 0)
+                message = position.line() + ":" + message;
+            message = position.file().name() + ":" + message;
+        }
+        printMessage(message);
+        printSourceLine(position);
+    }
+
+    /** Prints the error message. */
+    public void printError(Position position, String message) {
+        if (position != null && position.file().id() == 0)
+            message = "error: " + message;
+        printMessage(position, message);
+    }
+
+    /** Prints the warning message. */
+    public void printWarning(Position position, String message) {
+        message = "warning: " + message;
+        printMessage(position, message);
+    }
+
+    /** Prints the number of errors and warnings if their are non-zero. */
     public void printSummary() {
         if (errors() > 0) report(getErrorCountString() + " found");
         if (warnings() > 0) report(getWarningCountString() + " found");
     }
 
-    //########################################################################
-    // Reporter interface - fail
+    /** Prints the source line of the given position. */
+    public void printSourceLine(Position position) {
+        if (position == null || position.file().id() == 0) return;
+        if (position.line() == 0) return;
+        printMessage(position.file().getLine(position.line()));
+        printColumnMarker(position);
+    }
 
-    /** Fail only if requested */
+    /** Prints the column marker of the given position. */
+    public void printColumnMarker(Position position) {
+        int column = position == null ? 0 : position.column();
+        StringBuffer buffer = new StringBuffer(column);
+        for (int i = 1; i < column; i++) buffer.append(' ');
+        if (column > 0) buffer.append('^');
+        printMessage(buffer.toString());
+    }
+
+    //########################################################################
+    // Public Methods - Fail on demand
+
+    /** Fails only if requested. */
     public void failOnDemand() {
         failOnDemand("user abort");
     }
 
-    /** Fail only if requested */
+    /** Fails only if requested. */
     public void failOnDemand(String message) {
         try {
             while (true) {
                 writer.print("r)esume, a)bort: ");
+                writer.flush();
                 String line = reader.readLine();
                 if (line == null) continue; else line = line.toLowerCase();
                 if ("abort".startsWith(line))
@@ -160,6 +217,20 @@ public class Reporter {
         } catch (IOException e) {
             throw new ApplicationError("input read error");
         }
+    }
+
+    //########################################################################
+    // Private Methods
+
+    /** Logs a position and returns true if it was already logged. */
+    private boolean testAndLog(Position position) {
+        if (position == null) return false;
+        if (position.column() == 0) return false;
+        if (position.line() == 0) return false;
+        if (position.file().id() == 0) return false;
+        if (positions.contains(position)) return true;
+        positions.add(position);
+        return false;
     }
 
     //########################################################################

@@ -1,7 +1,7 @@
-S2.scala:14: type z.type escapes its defining scope as part of z.Inner
+./neg/S2.scala:14: type z.type escapes its defining scope as part of z.Inner
         def x = { val z = new S2(); new z.Inner(); }
                 ^
-S2.scala:15: type z.type escapes its defining scope as part of z.Inner
+./neg/S2.scala:15: type z.type escapes its defining scope as part of z.Inner
         def y = { val z = new S2(); new z.Inner(); }
                 ^
 two errors found

@@ -8,9 +8,11 @@
 
 package scalac.ast.parser;
 
+import ch.epfl.lamp.util.Position;
+import ch.epfl.lamp.util.SourceFile;
+
 import scalac.*;
 import scalac.util.Name;
-import scalac.util.Position;
 
 /** A scanner for the programming language Scala.
  *
@@ -22,10 +24,10 @@ public class Scanner extends TokenData {
     /** layout & character constants
      */
     public int tabinc = 8;
-    public final static byte LF = 0xA;
-    protected final static byte FF = 0xC;
-    protected final static byte CR = 0xD;
-    protected final static byte SU = Sourcefile.SU;
+    protected final static byte LF = SourceFile.LF;
+    protected final static byte FF = SourceFile.FF;
+    protected final static byte CR = SourceFile.CR;
+    protected final static byte SU = SourceFile.SU;
 
     /** the names of all tokens
      */
@@ -66,7 +68,7 @@ public class Scanner extends TokenData {
 
     /** the current sourcefile
      */
-    public Sourcefile   currentSource;
+    public SourceFile   currentSource;
 
     /** a buffer for character and string literals
      */
@@ -82,7 +84,7 @@ public class Scanner extends TokenData {
      */
     public Scanner(Unit unit) {
         this.unit = unit;
-        buf = (currentSource = unit.source).getBuffer();
+        buf = (currentSource = unit.source).bytes();
         cline = 1;
         bp = -1;
         ccol = 0;
@@ -124,8 +126,8 @@ public class Scanner extends TokenData {
 		break;
 	    default:
 		if (token == EOF ||
-		    ((pos >>> Position.LINESHIFT) >
-		     (prevpos >>> Position.LINESHIFT))) {
+		    ((pos >>> Position.COLUMN_BITS) >
+		     (prevpos >>> Position.COLUMN_BITS))) {
 		    next.copyFrom(this);
 		    this.token = SEMI;
 		    this.pos = prevpos;
@@ -165,7 +167,7 @@ public class Scanner extends TokenData {
      */
     public void fetchToken() {
         if (token == EOF) return;
-        lastpos = Position.encode(cline, ccol, currentSource.id);
+        lastpos = Position.encode(currentSource, cline, ccol);
 	int index = bp;
 	while(true) {
 	    switch (ch) {
@@ -192,7 +194,7 @@ public class Scanner extends TokenData {
 		nextch();
 		break;
 	    default:
-		pos = Position.encode(cline, ccol, currentSource.id);
+		pos = Position.encode(currentSource, cline, ccol);
 		index = bp;
 		switch (ch) {
 		case 'A': case 'B': case 'C': case 'D': case 'E':
@@ -324,7 +326,6 @@ public class Scanner extends TokenData {
 		    return;
 		case SU:
 		    token = EOF;
-		    currentSource.lines = cline;
 		    return;
 		default:
 		    nextch();
@@ -573,7 +574,7 @@ public class Scanner extends TokenData {
                             putch(ch);
                             break;
                         default:
-                            syntaxError(Position.encode(cline, ccol, currentSource.id) - 1, "invalid escape character");
+                            syntaxError(Position.encode(currentSource, cline, ccol) - 1, "invalid escape character");
                             putch(ch);
                     }
                     nextch();

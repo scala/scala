@@ -63,7 +63,7 @@ public class Interpreter {
 
     public EvaluatorResult interpret(String input, boolean interactive) {
         if (input.trim().length() == 0) return EvaluatorResult.Void;
-        global.compile(input + ";", interactive);
+        global.compile("<console>", input + ";", interactive);
         return interpret(interactive);
     }
 
@@ -183,7 +183,7 @@ public class Interpreter {
     // Private Methods - Signaling errors
 
     private void error(String message) {
-        global.reporter.error("error: " + message);
+        global.reporter.error(null, message);
     }
 
     //########################################################################

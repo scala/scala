@@ -8,6 +8,8 @@
 
 package scalac.transformer;
 
+import ch.epfl.lamp.util.Position;
+
 import scalac.*;
 import scalac.ast.*;
 import scalac.util.*;

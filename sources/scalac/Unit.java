@@ -8,9 +8,11 @@
 
 package scalac;
 
+import ch.epfl.lamp.util.SourceFile;
+import ch.epfl.lamp.util.Position;
+
 import scalac.util.*;
 import scalac.symtab.NameMangler;
-import scalac.ast.parser.Sourcefile;
 import scalac.ast.Tree;
 import scala.compiler.typechecker.*;
 import java.io.*;
@@ -30,7 +32,7 @@ public class Unit {
 
     /** the associated source code file
      */
-    public final Sourcefile source;
+    public final SourceFile source;
 
     /** does this unit come from the interpreter console
      */
@@ -60,11 +62,12 @@ public class Unit {
      */
     public int notes;
 
-    public Unit(Global global, Sourcefile source, boolean console) {
+    public Unit(Global global, SourceFile source, boolean console) {
         this.global = global;
         this.source = source;
         this.console = console;
     }
+
     /*
     public void print(String message) {
         print(System.out, message);
@@ -77,34 +80,17 @@ public class Unit {
         out.println("[[end " + message + "]]");
     }
     */
-    /** issue an error in this compilation unit
-     */
-    public void error(String message) {
-        error(Position.NOPOS, message);
-    }
 
     /** issue an error in this compilation unit at a specific location
      */
     public void error(int pos, String message) {
-        boolean hidden = source.testAndSetLog(pos, message);
-        if (!hidden) errors++;
-        global.reporter.error(source.getMessage(pos, message), hidden);
-    }
-
-    /** issue a warning in this compilation unit
-     */
-    public void warning(String message) {
-        warning(Position.NOPOS, message);
+        global.reporter.error(decode(pos), message);
     }
 
     /** issue a warning in this compilation unit at a specific location
      */
     public void warning(int pos, String message) {
-        if (global.reporter.nowarn) return;
-        message = "warning: " + message;
-        boolean hidden = source.testAndSetLog(pos, message);
-        if (!hidden) warnings++;
-        global.reporter.warning(source.getMessage(pos, message), hidden);
+        global.reporter.warning(decode(pos), message);
     }
 
     /** return a string representation
@@ -112,4 +98,14 @@ public class Unit {
     public String toString() {
         return source.toString();
     }
+
+
+    private Position decode(int pos) {
+        Position position = new Position(pos);
+        if (position.file().id() == 0)
+            if (/* !!! source.id() > Position.FILE_MASK && */ position.line() != 0)
+                return source.getPosition(position.line(), position.column());
+        return position;
+    }
+
 }

@@ -1,4 +1,4 @@
-vincent1.scala:7: type x.type escapes its defining scope as part of test.B { type T = x.T }
+./neg/vincent1.scala:7: type x.type escapes its defining scope as part of test.B { type T = x.T }
   def functor(x: A): B { type T = x.T } =
                      ^
 one error found

@@ -8,6 +8,8 @@
 
 package scalac;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import java.io.*;
 import java.util.*;
 import scalac.util.*;
@@ -231,7 +233,7 @@ public class  Global {
         for (int i = 0; i < files.length; i++) {
             String file = files[i];
             try {
-                units.add(new Unit(this, new Sourcefile(file), console));
+                units.add(new Unit(this, new SourceFile(file), console));
             } catch (FileNotFoundException e) {
                 error("file " + file + " not found");
             } catch (IOException e) {
@@ -244,9 +246,9 @@ public class  Global {
 
     /** the top-level compilation process
      */
-    public void compile(String input, boolean console) {
+    public void compile(String filename, String input, boolean console) {
         reporter.resetCounters();
-        Sourcefile source = new Sourcefile(input.getBytes());
+        SourceFile source = new SourceFile(filename, input.getBytes());
         units = new Unit[]{new Unit(this, source, console)};
         compile();
     }
@@ -283,8 +285,8 @@ public class  Global {
 	    imports.clear();
 	    for (Iterator it = compiledNow.keySet().iterator(); it.hasNext();) {
 		Symbol sym = (Symbol) it.next();
-		Sourcefile f = (Sourcefile) compiledNow.get(sym);
-		sym.reset(new SourceCompleter(this, f.filename));
+		SourceFile f = (SourceFile) compiledNow.get(sym);
+		sym.reset(new SourceCompleter(this, f.name()));
 	    }
 	}
 	compiledNow.clear();
@@ -472,13 +474,13 @@ public class  Global {
     /** issue a global error
      */
     public void error(String message) {
-        reporter.error("error: " + message);
+        reporter.error(null, message);
     }
 
     /** issue a global warning
      */
     public void warning(String message) {
-        reporter.warning("warning: " + message);
+        reporter.warning(null, message);
     }
 
     /** issue an operation note

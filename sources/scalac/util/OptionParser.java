@@ -8,6 +8,8 @@
 
 package scalac.util;
 
+import ch.epfl.lamp.util.Position;
+
 import java.text.Format;
 import java.text.MessageFormat;
 import java.util.List;
@@ -106,11 +108,11 @@ public class CommandParser {
     }
 
     public void error(String message) {
-        reporter.error(product + ": " + message);
+        reporter.error(new Position(product), message);
     }
 
     public void warning(String message) {
-        reporter.warning(product + ": " + message);
+        reporter.warning(new Position(product), message);
     }
 }
 

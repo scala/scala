@@ -15,6 +15,7 @@
 
 package scalac.typechecker;
 
+import ch.epfl.lamp.util.Position;
 import scalac.*;
 import scalac.util.*;
 import scalac.ast.*;

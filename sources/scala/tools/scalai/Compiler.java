@@ -31,7 +31,6 @@ import scalac.symtab.TermSymbol;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
-import scalac.util.Position;
 
 import scala.runtime.RunTime;
 
@@ -97,12 +96,12 @@ public class Compiler {
                         Function.JavaMethod(getInvocationHandler_method),
                         new Code[] {
                             Code.Self},
-                        Position.NOPOS),
+                        0),
                     Function.JavaMethod(equals_method),
                     new Code[] {
                         Code.Load(
                             Code.Null, Variable.Argument(0))},
-                    Position.NOPOS),
+                    0),
                 0));
         // !!! any_methods.put(_, equals_code);
         any_methods.put(equals_method, equals_code);
@@ -122,7 +121,7 @@ public class Compiler {
                 definitions.HASHCODE,
                 Code.Invoke(
                     Code.Self, Function.HashCode, new Code[0],
-                    Position.NOPOS),
+                    0),
                 0));
         any_methods.put(definitions.HASHCODE, hashCode_code);
         any_methods.put(hashCode_method, hashCode_code);
@@ -146,7 +145,7 @@ public class Compiler {
                 definitions.TOSTRING,
                 Code.Invoke(
                     Code.Self, Function.ToString, new Code[0],
-                    Position.NOPOS),
+                    0),
                 0));
         any_methods.put(definitions.TOSTRING, toString_code);
         any_methods.put(toString_method, toString_code);
@@ -183,7 +182,7 @@ public class Compiler {
                         Code.Load(
                             Code.Null,
                             Variable.Argument(0)) },
-                    Position.NOPOS),
+                    0),
                 0));
         any_methods.put(definitions.EQEQ, eqeq_code);
         environment.insertFunction(definitions.EQEQ, Function.EqEq);
@@ -203,11 +202,11 @@ public class Compiler {
                                 Code.Load(
                                     Code.Null,
                                     Variable.Argument(0)) },
-                                Position.NOPOS)},
-                        Position.NOPOS),
+                                0)},
+                        0),
                     Function.JavaMethod(bang_method),
                     new Code[0],
-                    Position.NOPOS),
+                    0),
                 0));
         any_methods.put(definitions.BANGEQ, bangeq_code);
         environment.insertFunction(definitions.BANGEQ, Function.BangEq);
@@ -330,8 +329,8 @@ public class Compiler {
     // Private Methods -
 
     private Symbol newGlobalVariable(Type type, Object value) {
-        Symbol symbol = new TermSymbol(Position.NOPOS,
-            Name.fromString(value.toString()), definitions.ROOT, 0);
+        Symbol symbol = new TermSymbol(
+            0, Name.fromString(value.toString()), definitions.ROOT, 0);
         symbol.setInfo(type);
         environment.insertVariable(symbol, Variable.Global(value));
         return symbol;
