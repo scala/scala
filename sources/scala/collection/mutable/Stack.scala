@@ -4,9 +4,8 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
+** $Id$
 \*                                                                      */
-
-// $Id$
 
 package scala.collection.mutable;
 
@@ -17,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Stack[A] with MutableList[A] with StructuralEquality[Stack[A]] {
+class Stack[A] with MutableList[A] {
 
     /** Checks if the stack is empty.
      *
@@ -83,13 +82,23 @@ class Stack[A] with MutableList[A] with StructuralEquality[Stack[A]] {
      *
      *  @returns true, iff both stacks contain the same sequence of elements.
      */
-    override def ===[B >: Stack[A]](that: B) =
+    override def equals(that: Any): Boolean =
         that.isInstanceOf[Stack[A]] &&
         { val other = that.asInstanceOf[Stack[A]];
           elements.zip(other.elements).forall {
             case Pair(thiselem, thatelem) => thiselem == thatelem;
         }};
 
-    override def toString() = toList.mkString("Stack(", ", ", ")");
+    /** The hashCode method always yields an error, since it is not
+     *  safe to use mutable stacks as keys in hash tables.
+     *
+     *  @returns never.
+     */
+    override def hashCode(): Int = error("unsuitable as hash key");
 
+    /** Returns a textual representation of a stack as a string.
+     *
+     *  @returns the string representation of this stack.
+     */
+    override def toString() = toList.mkString("Stack(", ", ", ")");
 }

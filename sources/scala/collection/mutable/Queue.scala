@@ -9,13 +9,14 @@
 
 package scala.collection.mutable;
 
+
 /** <code>Queue</code> objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Queue[A] with MutableList[A] with StructuralEquality[Queue[A]] {
+class Queue[A] with MutableList[A] {
 
     /** Checks if the queue is empty.
      *
@@ -74,11 +75,23 @@ class Queue[A] with MutableList[A] with StructuralEquality[Queue[A]] {
      *
      *  @returns true, iff both queues contain the same sequence of elements.
      */
-    override def ===[B >: Queue[A]](that: B) =
+    override def equals(that: Any): Boolean =
         that.isInstanceOf[Queue[A]] &&
         { val other = that.asInstanceOf[Queue[A]];
           elements.zip(other.elements).forall {
             case Pair(thiselem, thatelem) => thiselem == thatelem;
         }};
-}
 
+    /** The hashCode method always yields an error, since it is not
+     *  safe to use mutable queues as keys in hash tables.
+     *
+     *  @returns never.
+     */
+    override def hashCode(): Int = error("unsuitable as hash key");
+
+    /** Returns a textual representation of a queue as a string.
+     *
+     *  @returns the string representation of this queue.
+     */
+    override def toString() = toList.mkString("Queue(", ", ", ")");
+}
