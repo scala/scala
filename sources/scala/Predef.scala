@@ -26,7 +26,24 @@ object Predef {
     type boolean = scala.Boolean;
     type unit = scala.Unit;
 
-    def List[A](x: A*): List[A] = x.asInstanceOf[List[A]];
+    /** Create an array with given elements.
+     *
+     *  @param xs the elements to put in the array
+     *  @return the array containing elements xs.
+     */
+    def Array[A](xs: A*): Array[A] = {
+      val array: Array[A] = new Array[A](xs.length);
+      var i = 0;
+      for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+      array;
+    }
+
+    /** Create a list with given elements.
+     *
+     *  @param xs the elements to put in the list
+     *  @return the list containing elements xs.
+     */
+    def List[A](xs: A*): List[A] = xs.asInstanceOf[List[A]];
     val List = scala.List;
 
     def error(message: String): All = throw new Error(message);
