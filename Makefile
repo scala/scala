@@ -140,11 +140,11 @@ DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUT
 
 # scala ant task
 SCALA4ANT_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scala4ant
-SCALA4ANT_LIST		+= AntAdaptor.java
-SCALA4ANT_LIST		+= AntTask.java
+SCALA4ANT_LIST		+= AntAdaptor.scala
+SCALA4ANT_LIST		+= AntTask.scala
 SCALA4ANT_SOURCES	+= $(SCALA4ANT_LIST:%=$(SCALA4ANT_ROOT)/%)
-SCALA4ANT_JC_FILES	+= $(SCALA4ANT_SOURCES)
-SCALA4ANT_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(ANT_JARFILE)
+SCALA4ANT_SC_FILES	+= $(SCALA4ANT_SOURCES)
+SCALA4ANT_SC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(ANT_JARFILE)
 
 # scalatest
 SCALATEST_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalatest
@@ -234,7 +234,7 @@ scaladoc	: .latest-scaladoc-rsrc
 scalap		: .latest-scalap-sc
 dtd2scala	: .latest-dtd2scala-sc
 dtd2scala	: .latest-dtd2scala-rsrc
-scala4ant	: .latest-scala4ant-jc
+scala4ant	: .latest-scala4ant-sc
 scalatest	: .latest-scalatest-jc
 library-doc	: .latest-library-sdc
 
@@ -383,8 +383,8 @@ cvs-fix-perms		:
 	    $(DTD2SCALA_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-scala4ant-jc	: $(SCALA4ANT_JC_FILES)
-	@$(make) jc target=SCALA4ANT SCALA4ANT_JC_FILES='$?'
+.latest-scala4ant-sc	: $(SCALA4ANT_SC_FILES)
+	@$(make) sc target=SCALA4ANT SCALA4ANT_SC_FILES='$?'
 	touch $@
 
 .latest-scalatest-jc	: $(SCALATEST_JC_FILES)
@@ -460,7 +460,7 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalap-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-rsrc
-$(TOOLS_JAR_ARCHIVE)	: .latest-scala4ant-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scala4ant-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalatest-jc
 $(TOOLS_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=TOOLS
