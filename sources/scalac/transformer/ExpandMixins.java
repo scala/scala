@@ -140,9 +140,6 @@ public class ClassExpander {
         switch (type) {
         case TypeRef(Type prefix, Symbol symbol, Type[] args):
             map.insertType(symbol.typeParams(), args);
-            // !!! symbols could be equal but args different? need to rebind ?
-            if (prefix.symbol() != symbol.owner())
-                inlineMixinTParams(prefix.baseType(symbol.owner()));
             return;
         default:
             throw Debug.abort("illegal case", type);
@@ -183,6 +180,10 @@ public class ClassExpander {
         for (SymbolIterator i = symbols.iterator(true); i.hasNext();) {
             Symbol member = i.next();
             if (member.kind != scalac.symtab.Kinds.TYPE) continue;
+            // !!! use same trick as in erasure?
+            //Symbol clone = member.cloneSymbol(clasz);
+            //clone.setInfo(clasz.thisType().memberInfo(member));
+            //Symbol subst = clasz.thisType().memberType(clone).symbol();
             Symbol subst = clasz.thisType().memberType(member).symbol();
             if (subst == member) continue;
             Symbol subst1 = map.lookupSymbol(member);

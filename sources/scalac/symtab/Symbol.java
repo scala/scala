@@ -1358,8 +1358,7 @@ public abstract class TypeSymbol extends Symbol {
     public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags) {
         super(kind, pos, name, owner, flags);
         assert name.isTypeName() : this;
-        if (kind != TYPE)
-            this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
+        this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
     }
 
     protected void update(int pos, int flags) {
@@ -1371,12 +1370,10 @@ public abstract class TypeSymbol extends Symbol {
      */
     public void copyTo(Symbol sym) {
         super.copyTo(sym);
-        if (kind != TYPE) {
-            Symbol symconstr = ((TypeSymbol) sym).constructor;
-            constructor.copyTo(symconstr);
-            if (constructor.isInitialized())
-                symconstr.setInfo(fixConstrType(symconstr.type(), sym));
-        }
+        Symbol symconstr = ((TypeSymbol) sym).constructor;
+        constructor.copyTo(symconstr);
+        if (constructor.isInitialized())
+            symconstr.setInfo(fixConstrType(symconstr.type(), sym));
     }
 
     protected void copyConstructorInfo(TypeSymbol other) {
@@ -1423,18 +1420,17 @@ public abstract class TypeSymbol extends Symbol {
 
     /** Get primary constructor */
     public Symbol primaryConstructor() {
-        return (kind == TYPE) ? Symbol.NONE : constructor.firstAlternative();
+        return constructor.firstAlternative();
     }
 
     /** Get all constructors */
     public Symbol allConstructors() {
-        return (kind == TYPE) ? Symbol.NONE : constructor;
+        return constructor;
     }
 
     /** Get type parameters */
     public Symbol[] typeParams() {
-        return (kind == TYPE) ? Symbol.EMPTY_ARRAY
-            : primaryConstructor().info().typeParams();
+        return primaryConstructor().info().typeParams();
     }
 
     /** Get value parameters */
@@ -1611,6 +1607,7 @@ public class AbsTypeSymbol extends TypeSymbol {
     /** Constructor */
     public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags) {
         super(TYPE, pos, name, owner, flags);
+        allConstructors().setType(Type.MethodType(EMPTY_ARRAY, thisType()));
     }
 
     public static AbsTypeSymbol define(

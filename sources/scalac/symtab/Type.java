@@ -1011,11 +1011,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     static class AsSeenFromMap extends Map {
 
-	private Type pre;
-	private Symbol clazz;
+	private final Type pre;
+	private final Symbol clazz;
+        private final boolean local;
 
 	AsSeenFromMap(Type pre, Symbol clazz) {
 	    this.pre = pre; this.clazz = clazz;
+            Global global = Global.instance;
+            this.local =global.PHASE.EXPLICITOUTER.id()<global.currentPhase.id;
 	}
 
 	public Type apply(Type t) {
@@ -1036,12 +1039,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    //System.out.println(t + ".toInstance(" + pre + "," + clazz + ") = " + t1);//DEBUG
 		    return t1;
 		} else {
+                    if (local) prefix = sym.owner().thisType();
 		    Type prefix1 = apply(prefix);
-		    Symbol sym1 = (prefix1 == prefix || (sym.flags & MODUL) != 0)
-			? sym : prefix1.rebind(sym);
 		    Type[] args1 = map(args);
 		    if (prefix1 == prefix && args1 == args) return t;
-		    else return typeRef(prefix1, sym1, args1);
+		    Symbol sym1 = (sym.flags & MODUL) == 0 ? prefix1.rebind(sym) : sym;
+                    if (local) prefix1 = localThisType;
+		    return typeRef(prefix1, sym1, args1);
 		}
 
 	    case SingleType(Type prefix, Symbol sym):
@@ -1086,7 +1090,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	Type toPrefix(Symbol sym, Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    else if (sym.isSubClass(clazz) &&
+	    else if ((sym.isSubClass(clazz) || clazz.isSubClass(sym)) &&
 		     pre.widen().symbol().isSubClass(sym))
 		return pre;
 	    else

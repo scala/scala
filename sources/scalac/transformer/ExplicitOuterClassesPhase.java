@@ -33,11 +33,13 @@ import scalac.util.Names;
  * - In every nested class, adds to each of its constructor a new
  *   value parameter that contains a link to the outer class.
  *
- * - In every nested class, adds to each of its constructor a new type
- *   parameter for every type parameter appearing in outer classes.
+ * - In every nested type, adds to each of its constructor a new type
+ *   parameter for every type parameter appearing in outer types.
  *
  * - In every class, adds a forwarding "super" method for every method
  *   that is accessed via "super" in a nested class.
+ *
+ * - Replaces all prefixes of TypeRefs by localThisTypes.
  *
  * - Adds all missing qualifiers.
  */
@@ -91,7 +93,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 : symbol.enclClass();
             //System.out.println("!!! debug2 = " + Debug.show(symbol) + " - " + Debug.show(owner) + " --- " + (owner == Symbol.NONE) + " -- #" + owner.name + "#");
             //if (onwer.isJava() && owner != Symbol.NONE && owner.name.length() > 0) // !!!
-            if (owner.isClass() || owner.isConstructor())
+            if (owner.isType() || owner.isConstructor())
             type = getOuterTypeSubst(owner, true).apply(type);
         }
 
@@ -121,9 +123,9 @@ public class ExplicitOuterClassesPhase extends Phase {
     //########################################################################
     // Private Methods - Outer class
 
-    /** Returns the outer class of the given class or constructor. */
+    /** Returns the outer class of the given type or constructor. */
     private Symbol getOuterClass(Symbol symbol) {
-        assert symbol.isClass() || symbol.isConstructor(): Debug.show(symbol);
+        assert symbol.isType() || symbol.isConstructor(): Debug.show(symbol);
         return symbol.owner();
     }
 
@@ -140,12 +142,12 @@ public class ExplicitOuterClassesPhase extends Phase {
         return nextValueParams(symbol)[0];
     }
 
-    /** Has the given class or constructor outer type links? */
+    /** Has the given type or constructor outer type links? */
     private boolean hasOuterTypeLinks(Symbol symbol) {
-        assert symbol.isClass() || symbol.isConstructor(): Debug.show(symbol);
+        assert symbol.isType() || symbol.isConstructor(): Debug.show(symbol);
         if (symbol.isJava()) return false;
         Symbol outer = getOuterClass(symbol);
-        return outer.isClass() && nextTypeParams(outer).length != 0;
+        return outer.isType() && nextTypeParams(outer).length != 0;
     }
 
     /** Returns the type substitution for the given class or constructor. */
@@ -212,11 +214,11 @@ public class ExplicitOuterClassesPhase extends Phase {
         public Type apply(Type type) {
             switch (type) {
             case TypeRef(Type prefix, Symbol symbol, Type[] targs):
-                if (!symbol.isClass()) break;
+                if (!symbol.owner().isType()) break;
                 prefix = apply(prefix);
                 targs = map(targs);
                 targs = Type.concat(getOuterTypeArgs(prefix, symbol), targs);
-                return Type.TypeRef(prefix, symbol, targs);
+                return Type.TypeRef(Type.localThisType, symbol, targs);
             }
             return map(type);
         }
