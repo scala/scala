@@ -17,6 +17,7 @@ import scalac.typechecker.*;
 import scalac.util.*;
 import Tree.*;
 
+import scalac.transformer.matching.PatternMatcher ;
 
 /** A transformer for expanding match expressions into
  *  flat sequences of .is and .as method calls

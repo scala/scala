@@ -6,7 +6,7 @@
 ** $Id$
 \*                                                                      */
 
-package scalac.transformer;
+package scalac.transformer.matching;
 
 import ch.epfl.lamp.util.Position;
 
