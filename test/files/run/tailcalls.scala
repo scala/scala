@@ -188,23 +188,23 @@ class TailCall[S](s: S) {
 // Test code
 
 object Test {
-  import java.lang.System;
+  import java.lang.System.out;
 
   def check_success(name: String, closure: => Int, expected: Int): Unit = {
-    System.out.print("test " + name);
+    out.print("test " + name);
     try {
       val actual: Int = closure;
       if (actual == expected) {
-        System.out.print(" was successful");
+        out.print(" was successful");
       } else {
-        System.out.print(" failed: expected "+ expected +", found "+ actual);
+        out.print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
       case exception: Throwable => {
-        System.out.print(" raised exception " + exception);
+        out.print(" raised exception " + exception);
       }
     }
-    System.out.println();
+    out.println();
   }
 
   def calibrate: Int = {
@@ -218,6 +218,7 @@ object Test {
         n = 2 * n;
       } catch {
         case exception: StackOverflowError => stop = true
+        //case exception: System.StackOverflowException => stop = true
       }
     }
     4 * n;
@@ -240,7 +241,7 @@ object Test {
     check_success("SubClass .f", SubClass .f(max, max), max);
     check_success("Sealed   .f", Sealed   .f(max, max), 0);
     check_success("SubSealed.f", SubSealed.f(max, max), max);
-    System.out.println();
+    out.println();
 
     // test tail calls in nested classes/objects
     val c: C = new C;
@@ -274,7 +275,7 @@ object Test {
     check_success("c.c.O.c.f", c.c.O.c.f(max, max), 0);
     check_success("c.c.c.O.f", c.c.c.O.f(max, max), 0);
     check_success("c.c.c.c.f", c.c.c.c.f(max, max), 0);
-    System.out.println();
+    out.println();
 
     // test tail calls with different signatures
     val TailCall = new TailCall("S");
@@ -285,7 +286,7 @@ object Test {
     check_success("TailCall.g2", TailCall.g2(max, max     ), 0);
     check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0);
     check_success("TailCall.h1", TailCall.h1(max, max     ), 0);
-    System.out.println();
+    out.println();
   }
 }
 
