@@ -285,6 +285,8 @@ class GenJVM {
                     genLoad(ctx, args[i], typeStoJ(args[i].type));
                 for (int i = idents.length; i > 0; --i)
                     genStoreEpilogue(ctx, idents[i-1]);
+                ctx.code.emitGOTO(label);
+                generatedType = JType.VOID;
             } else if (isKnownPrimitive(funSym)) {
                 Primitive prim = prims.getPrimitive(funSym);
 
