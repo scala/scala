@@ -41,6 +41,7 @@ index.html
 intro/abstracttypes.html
 intro/caseclasses.html
 intro/classes.html
+intro/coercions.html
 intro/compoundtypes.html
 intro/comprehensions.html
 intro/currying.html
@@ -48,6 +49,7 @@ intro/funnesting.html
 intro/funsyntax.html
 intro/generics.html
 intro/hofuns.html
+intro/inference.html
 intro/innerclasses.html
 intro/lowbounds.html
 intro/mixin.html
