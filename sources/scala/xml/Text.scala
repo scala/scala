@@ -17,7 +17,7 @@ case class Text( text:String ) extends Node {
 
   override def toXML = Utility.escape( text );
 
-  override def hashCode() = text.hashCode(); /* could be done at parse time */
+  override def hashCode() = text.hashCode(); /* could be done at parse time, too */
   override def toString() = "Text("+text+")";
 
 } // Text
