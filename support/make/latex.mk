@@ -37,7 +37,7 @@
 ##############################################################################
 # Defaults
 
-TEXINPUTS		?= .
+TEXINPUTS		?= .:
 BIBINPUTS		?= .
 LATEXMK			?= latexmk
 TOUCH			?= touch
