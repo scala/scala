@@ -17,16 +17,16 @@ Double.java
 Application.scala
 Enumeration.scala
 Float.java
-Function0.java
-Function1.java
-Function2.java
-Function3.java
-Function4.java
-Function5.java
-Function6.java
-Function7.java
-Function8.java
-Function9.java
+Function0.scala
+Function1.scala
+Function2.scala
+Function3.scala
+Function4.scala
+Function5.scala
+Function6.scala
+Function7.scala
+Function8.scala
+Function9.scala
 Int.java
 Iterable.scala
 IterableProxy.scala
@@ -60,7 +60,7 @@ Tuple6.scala
 Tuple7.scala
 Tuple8.scala
 Tuple9.scala
-Type.java
+#Type.java
 Unit.java
 transient.scala
 volatile.scala
@@ -153,8 +153,6 @@ io/Position.scala
 #runtime/PearsonHash.java
 #runtime/IOMap.java
 #runtime/InterpreterSupport.java
-runtime/NativeLoop.java
-runtime/ResultOrException.java
 runtime/RunTime.java
 ../msil/scala/runtime/ScalaRunTime.scala
 
@@ -194,12 +192,14 @@ testing/UnitTest.scala
 
 util/automata/BaseBerrySethi.scala
 util/automata/DetWordAutom.scala
+util/automata/Inclusion.scala
 util/automata/NondetWordAutom.scala
+util/automata/SubsetConstruction.scala
 util/automata/WordBerrySethi.scala
 util/grammar/HedgeRHS.scala
-util/grammar/ImmutableTreeHedgeGrammar.scala
-util/grammar/MutableTreeHedgeGrammar.scala
-util/grammar/TreeHedgeGrammar.scala
+#util/grammar/ImmutableTreeHedgeGrammar.scala
+#util/grammar/MutableTreeHedgeGrammar.scala
+#util/grammar/TreeHedgeGrammar.scala
 util/grammar/TreeRHS.scala
 util/regexp/Base.scala
 util/regexp/PointedHedgeExp.scala
@@ -253,5 +253,9 @@ util/logging/ConsoleLogger.scala
 # xml/parsing/MarkupParser.scala
 # xml/parsing/XSDHandler.scala
 # xml/path/Expression.scala
+
+#xml/transform/BasicTransformer.scala
+#xml/transform/RewriteRule.scala
+#xml/transform/RuleTransformer.scala
 
 ##############################################################################
