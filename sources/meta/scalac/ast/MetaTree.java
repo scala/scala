@@ -207,5 +207,12 @@ public class MetaTree extends AbstractTreeExpander {
         writer.println("this." + symbol + " = " + symbol + ";");
     }
 
+    public void printEmptyCases() {
+        for (int i = 0;i < tree.nodes.length;i++) {
+            tree.nodes[i].printCase(writer, false).println();
+            writer.println();
+        }
+    }
+
     //########################################################################
 }
