@@ -9,13 +9,13 @@
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 package scala.tools.scaladoc {
 
   class HTMLGeneratorPhase(global: Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
 
-    def apply(units: Array[Unit]): unit = new HTMLGeneratorScala(global).apply();
+    def apply(units: Array[CompilationUnit]): unit = new HTMLGeneratorScala(global).apply();
 
   }
 }

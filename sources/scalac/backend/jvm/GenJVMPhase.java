@@ -11,7 +11,7 @@ package scalac.backend.jvm;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 /**
  * Phase to generate Java bytecodes using the FJBG library.
@@ -41,7 +41,7 @@ public class GenJVMPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) translator.translate(units[i]);
     }
 

@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
 

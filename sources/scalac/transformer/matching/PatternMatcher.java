@@ -50,7 +50,7 @@ public class PatternMatcher extends PatternTool {
 
     /** constructor
      */
-    public PatternMatcher(Unit unit, Tree selector,
+    public PatternMatcher(CompilationUnit unit, Tree selector,
                           Symbol owner, Type resultType) {
         super(unit);
         initialize(selector, owner, resultType, true);
@@ -58,7 +58,7 @@ public class PatternMatcher extends PatternTool {
 
     /** constructor, used in subclass AlgebraicMatcher
      */
-    protected PatternMatcher(Unit unit) {
+    protected PatternMatcher(CompilationUnit unit) {
         super(unit);
     }
 

@@ -5,11 +5,14 @@
 **
 ** $Id$
 \*                                                                      */
-import scalac.symtab._;
+import scalac.{symtab => scalac_symtab}
 import scalac.ast._;
 import scalac.util.Names;
+import scalac.util.Name;
 
 package scala.tools.scalac.typechecker {
+
+import scalac_symtab._;
 
 object Context {
   val NONE = new Context();
@@ -23,28 +26,32 @@ class Context {
   var tree: Tree = _;                 // Tree associated with this context
   var owner: Symbol = _;              // The current owner
   var scope: Scope = _;               // The current scope
-  var imports: ImportList = null;     // The current import list
   var outer: Context = _;             // The next outer context
   var enclClass: Context = this;      // The next outer context whose tree
                                       // is a class template
+  var prevImport: Context = this;     // the next outer import context
   var variance: int = _;              // Variance relative to enclosing class.
   var constructorClass: Symbol = _;   // Class for auxiliary constructor
   var viewCache: List[View] = null;   // View symbols visible in scope
   var infer: Infer = null;            // Type inferencer
+  var depth: int = 0;
 
   def this(tree: Tree, owner: Symbol, scope: Scope, outer: Context) = {
     this();
     this.tree = tree;
     this.owner = owner;
     this.scope = scope;
-    this.imports = outer.imports;
     this.enclClass = if ((tree.isInstanceOf[Tree$Template] ||
 			  tree.isInstanceOf[Tree$CompoundType]) &&
 		         tree != outer.tree) this
 		     else outer.enclClass;
+    this.prevImport = if (tree.isInstanceOf[Tree$Import] &&
+                          tree != outer.tree) this
+                      else outer.prevImport;
     this.variance = outer.variance;
     this.constructorClass = outer.constructorClass;
     this.infer = outer.infer;
+    this.depth = outer.depth + 1;
     this.outer = outer;
   }
 
@@ -53,7 +60,7 @@ class Context {
 
   def outerContext(clazz: Symbol): Context = {
     var c = this;
-    while (c != Context.NONE && c.owner != clazz) c = c.outer;
+    while (c != Context.NONE && c.owner != clazz) c = c.outer.enclClass;
     c
   }
 
@@ -66,6 +73,26 @@ class Context {
       true
     case _ =>
       outer.isTopLevel()
+  }
+
+  def importString(): String =
+    if (prevImport == Context.NONE) ""
+    else
+      prevImport.outer.importString() +
+      prevImport.tree.symbol().toString() + ";";
+
+  def importPrefix(): Tree = tree match {
+    case Tree$Import(expr, _) =>  expr
+  }
+
+  def importType(): Type =
+    tree.symbol().getType();
+
+  def sameImport(that: Context): boolean =
+    this.importType().isSameAs(that.importType());
+
+  def importedSymbol(name: Name): Symbol = {
+    return TreeInfo.importedSymbol(tree, name);
   }
 
   def viewMeths: List[View] = {
@@ -91,16 +118,15 @@ class Context {
 
     if (viewCache == null) {
       viewCache = outer.viewMeths;
-      val e = scope.lookupEntry(Names.view);
-      if (e.owner == scope && e.sym.kind == VAL)
-	addView(e.sym, e.sym.getType(), Tree.Empty);
-
-      var imp = imports;
-      while (imp != outer.imports) {
-	val sym = imp.importedSymbol(Names.view);
+      if (scope != outer.scope) {
+        val e = scope.lookupEntry(Names.view);
+        if (e.owner == scope && e.sym.kind == VAL)
+	  addView(e.sym, e.sym.getType(), Tree.Empty);
+      }
+      if (prevImport == this) {
+        val sym = importedSymbol(Names.view);
 	if (sym.kind == VAL)
-	  addView(sym, imp.importType().memberType(sym), imp.importPrefix());
-	imp = imp.prev;
+	  addView(sym, importType().memberType(sym), importPrefix());
       }
     }
     viewCache

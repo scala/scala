@@ -9,7 +9,7 @@
 package scalac.ast.printer;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Tree;
 
 /**
@@ -24,7 +24,7 @@ public interface TreePrinter {
     public void flush();
 
     public void print(Global global);
-    public void print(Unit unit);
+    public void print(CompilationUnit unit);
 
     public TreePrinter print(Tree tree);
     public TreePrinter print(String str);

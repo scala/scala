@@ -34,7 +34,7 @@ typechecker/AnalyzerPhase.scala
 typechecker/ConstantFolder.scala
 typechecker/Context.scala
 typechecker/DeSugarize.scala
-typechecker/ImportList.scala
+# typechecker/ImportList.scala
 typechecker/Infer.scala
 typechecker/Substituter.scala
 typechecker/View.scala

@@ -12,7 +12,7 @@ import ch.epfl.lamp.util.CodePrinter;
 
 import scalac.Global;
 import scalac.Phase;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolTablePrinter;
@@ -247,13 +247,13 @@ public class ATreePrinter {
     }
 
     /** Prints the units. */
-    public ATreePrinter printUnits(Unit[] units) {
+    public ATreePrinter printUnits(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) printUnit(units[i]);
         return this;
     }
 
     /** Prints the unit. */
-    public ATreePrinter printUnit(Unit unit) {
+    public ATreePrinter printUnit(CompilationUnit unit) {
         println("// Scala source: " + unit.source);
         return printRepository(unit.repository);
     }

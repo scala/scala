@@ -21,7 +21,7 @@ public class PatternNodeCreator extends PatternTool {
     /** the owner of the variable symbols that might be created */
     Symbol owner;
 
-    public PatternNodeCreator(Unit unit, Symbol owner) {
+    public PatternNodeCreator(CompilationUnit unit, Symbol owner) {
 		super(unit);
 		assert owner != null;
 		this.owner = owner;

@@ -1,6 +1,6 @@
 package scala.xml.path;
 
-import scala.xml.Node ;
+// import scala.xml.Node ;
 
 object Expression {
         def evaluate(expr:Expression):List[Node] = {

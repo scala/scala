@@ -7,7 +7,7 @@
 \*                                                                      */
 
 import scalac.symtab.Modifiers;
-import scalac.symtab.Type;
+import scalac.{symtab => scalac_symtab}
 import scalac.ast._;
 import scalac.atree.AConstant;
 import scalac._;
@@ -22,12 +22,14 @@ import scala.collection.mutable.ListBuffer;
 
 package scala.tools.scalac.ast.parser {
 
+import scalac_symtab.Type;
+
 /** A recursive descent parser for the programming language Scala.
  *
  *  @author     Martin Odersky, Matthias Zenger, Burak Emir
  *  @version    1.3
  */
-class Parser(unit: Unit) {
+class Parser(unit: CompilationUnit) {
 
   import Tokens._;
   import scala.tools.scalac.ast.{TreeList => myTreeList}

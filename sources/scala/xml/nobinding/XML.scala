@@ -12,7 +12,7 @@ import org.xml.sax.InputSource;
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
-import scala.xml.Utility ;
+// import scala.xml.Utility ;
 
 /** functions to load and save XML elements. use this when data binding is not
 **  desired, i.e. when XML is handled using Symbol nodes

@@ -9,7 +9,7 @@
 package scalac.transformer.matching;
 
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.TreeGen;
 import scalac.util.*;
 import scalac.symtab.*;
@@ -23,7 +23,7 @@ abstract class PatternTool {
 
     /** the current compilation unit
      */
-    final Unit unit;
+    final CompilationUnit unit;
 
     /** the global fresh name creator
      */
@@ -38,7 +38,7 @@ abstract class PatternTool {
     final TreeGen gen;
 
     // constructor
-    public PatternTool( Unit unit ) {
+    public PatternTool( CompilationUnit unit ) {
 	this.unit = unit;
 	this.fresh = unit.fresh;
 	this.gen = unit.global.treeGen;

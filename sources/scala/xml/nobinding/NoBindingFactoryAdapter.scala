@@ -9,7 +9,7 @@
 package scala.xml.nobinding;
 
 import scala.collection.{ immutable, mutable };
-import scala.xml.{ Elem, Node, Text, FactoryAdapter, Utility };
+//import scala.xml.{ Elem, Node, Text, FactoryAdapter, Utility };
 import org.xml.sax.InputSource;
 
 /** nobinding adaptor providing callbacks to parser to create elements.

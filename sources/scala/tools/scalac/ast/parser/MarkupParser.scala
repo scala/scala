@@ -21,7 +21,7 @@ import scalac.util.Name;
 
 package scala.tools.scalac.ast.parser {
 
-class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
+class MarkupParser( unit: CompilationUnit, s:Scanner, p:Parser, preserveWS:boolean ) {
 
   import Tokens.{EMPTY, LBRACE, RBRACE} ;
   import scala.tools.scalac.ast.{TreeList => myTreeList}

@@ -7,12 +7,13 @@
 
 // $Id$
 
-import scalac.Unit;
-import scalac.symtab.Symbol;
+import scalac.CompilationUnit;
+import scalac.{symtab => scalac_symtab}
 import scalac.ast.Tree;
 
 package scala.tools.scalac.ast.printer {
 
+import scalac_symtab.Symbol;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.Math;
@@ -155,16 +156,16 @@ class HTMLTreePrinter(writer: PrintWriter) extends TextTreePrinter(writer) {
       super.print(text);
   }
 
-  override def print(unit: Unit) = super.print(unit);
+  override def print(unit: CompilationUnit) = super.print(unit);
   override def print(str: String) = super.print(str);
   override def print(tree: Tree) = super.print(tree);
 
-  override protected def printUnitHeader(unit: Unit): unit = {
+  override protected def printUnitHeader(unit: CompilationUnit): unit = {
     beginSection1(outSectionLevel + 1, unit.source.toString());
     startTag("pre");
   }
 
-  override protected def printUnitFooter(unit: Unit): unit = {
+  override protected def printUnitFooter(unit: CompilationUnit): unit = {
     endTag("pre");
   }
 }

@@ -6,10 +6,10 @@
 
 // $Id$
 
-import scalac.symtab._;
+import scalac.{symtab => scalac_symtab}
 import scalac.{Global => scalac_Global};
 import scalac.atree._;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.util.Debug;
 import scala.tools.scalac.icode._;
 import ch.epfl.lamp.fjbg._;
@@ -19,6 +19,8 @@ import java.util.StringTokenizer;
 import java.io.File;
 
 package scala.tools.scalac.backend {
+
+import scalac_symtab._;
 
 /* This class implements the backend which create
  * Java Virtual Machine's bytecode with
@@ -52,7 +54,7 @@ class GenJVMFromICode(global: scalac_Global) {
   // Public methods
 
   /* This method generates byte code for a single unit */
-  def translate(unit: Unit) = {
+  def translate(unit: CompilationUnit) = {
     global.log("Jvm.translate() called");
     currentSrcFileName = unit.source.toString();
     // 1. ##### Generate the structure

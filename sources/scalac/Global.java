@@ -92,7 +92,7 @@ public abstract class Global {
 
     /** all compilation units
      */
-    public Unit[] units;
+    public CompilationUnit[] units;
 
     /** the class path
      */
@@ -342,13 +342,13 @@ public abstract class Global {
         for (int i = 0; i < files.length; i++) {
             try {
 		SourceFile source = getSourceFile(files[i]);
-                units.add(new Unit(this, source, console));
+                units.add(new CompilationUnit(this, source, console));
 		compiledUnits.add(source);
             } catch (IOException exception) {
                 error(exception.getMessage());
             }
         }
-        this.units = (Unit[])units.toArray(new Unit[units.size()]);
+        this.units = (CompilationUnit[])units.toArray(new CompilationUnit[units.size()]);
         compile();
     }
 
@@ -363,7 +363,7 @@ public abstract class Global {
         reporter.resetCounters();
         SourceFile source = getSourceFile(filename, input);
 	compiledUnits.add(source);
-        units = new Unit[]{new Unit(this, source, console)};
+        units = new CompilationUnit[]{new CompilationUnit(this, source, console)};
         compile();
     }
 
@@ -406,11 +406,11 @@ public abstract class Global {
     public void compileLate(SourceFile source, boolean mixinOnly) {
 	if (!compiledUnits.contains(source)) {
 	    compiledUnits.add(source);
-	    Unit unit = new Unit(this, source, false, mixinOnly);
+	    CompilationUnit unit = new CompilationUnit(this, source, false, mixinOnly);
 	    Phase backup = currentPhase;
 	    // !!! add code to print/skip/graph as in compile
 	    currentPhase = PHASE.PARSER.phase();
-	    PHASE.PARSER.phase().apply(new Unit[] {unit});
+	    PHASE.PARSER.phase().apply(new CompilationUnit[] {unit});
 	    currentPhase = PHASE.ANALYZER.phase();
 	    ((AnalyzerPhase)PHASE.ANALYZER.phase()).lateEnter(unit);
 	    // !!! add code for later phases?
@@ -499,7 +499,7 @@ public abstract class Global {
         prevPhase();
     }
 
-    private void fix1(Unit unit) {
+    private void fix1(CompilationUnit unit) {
         unit.body = new Tree[] {
             make.ModuleDef(Position.FIRSTPOS,
                 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
@@ -519,7 +519,7 @@ public abstract class Global {
         }
     }
 
-    private void fix2(Unit unit) {
+    private void fix2(CompilationUnit unit) {
         imports.clear();
         for (int i = 0; i < unit.body.length; i++) {
             switch (unit.body[i]) {

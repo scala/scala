@@ -1,6 +1,6 @@
 package scalac.transformer.matching ;
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.Global ;
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
@@ -20,7 +20,7 @@ import java.util.* ;
 
 public class BindingBerrySethi extends BerrySethi {
 
-    public BindingBerrySethi(Unit unit) {
+    public BindingBerrySethi(CompilationUnit unit) {
         super(unit);
     }
 

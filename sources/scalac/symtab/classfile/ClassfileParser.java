@@ -144,7 +144,23 @@ public class ClassfileParser implements ClassfileConstants {
             //System.out.println("module: " + m);
             //System.out.println("modules class: " + m.type().symbol());
 
+            int savedFlags = c.flags;
+            c.flags |= Modifiers.INITIALIZED;
+            // hack to make memberType in addInheritedOverloaded work
+	    addInheritedOverloaded();
+
+            //if (global.debug) {
+            //    Symbol[] elems = c.members().elements();
+            //    global.log(c + " defines: ");
+            //    for (int i = 0; i < elems.length; i++) {
+            //        global.log(elems[i] + ":" + elems[i].type());
+            //    }
+            //}
+
+            c.flags = savedFlags;
+
             // Add static members of superclass
+	    // todo: remove
             Symbol superclass = supertpe.symbol();
             if (m.isJava() && superclass.isJava()) {
                 Symbol mclass = m.moduleClass();
@@ -169,6 +185,18 @@ public class ClassfileParser implements ClassfileConstants {
                     statics.enterOrOverload(member);
                 }
             }
+        }
+    }
+
+    private void addInheritedOverloaded() {
+        Symbol[] elems = c.members().elements();
+        for (int i = 0; i < elems.length; i++)
+            addInheritedOverloaded(elems[i]);
+    }
+
+    private void addInheritedOverloaded(Symbol sym) {
+	if (sym.isMethod() && !sym.isConstructor()) {
+            sym.addInheritedOverloaded(sym.type());
         }
     }
 
@@ -253,7 +281,6 @@ public class ClassfileParser implements ClassfileConstants {
                 symbol = owner.newTerm(Position.NOPOS, sflags, name);
             }
             setParamOwners(type, symbol);
-	    symbol.addInheritedOverloaded(type);
             symbol.setInfo(type);
             attrib.readAttributes(symbol, type, METH_ATTR);
             if (name != CONSTR_N) {

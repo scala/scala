@@ -9,7 +9,7 @@
 package scalac.backend.msil;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 import scalac.util.Debug;
 
@@ -92,13 +92,13 @@ public final class GenMSIL {
     }
 
     // keeps track of the current compilation unit for better error reporting
-    private Unit currUnit;
+    private CompilationUnit currUnit;
 
     /**
      * The main entry point into the code generator. Called from GenMSILPhase
      * for every compilation unit.
      */
-    public void apply(Unit unit) {
+    public void apply(CompilationUnit unit) {
 	currUnit = unit;
 // 	try {
 	    for (int i = 0; i < unit.body.length; i++) {

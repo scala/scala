@@ -5,10 +5,12 @@
 **
 ** $Id$
 \*                                                                      */
-import scalac.symtab._;
+import scalac.{symtab => scalac_symtab}
 import scalac.ast._;
 
 package scala.tools.scalac.typechecker {
+
+import scalac_symtab._;
 
 case class View(sym: Symbol, symtype: Type, qual: Tree, context: Context) {
   var locked = false;

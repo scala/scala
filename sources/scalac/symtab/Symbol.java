@@ -1227,6 +1227,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         private Type transformInfo(Phase phase, Type info) {
             Global global = phase.global;
             Phase current = global.currentPhase;
+            boolean keepInheritedOverloaded = current.id <= global.PHASE.REFCHECK.id();
             switch (info) {
             case ErrorType:
             case NoType:
@@ -1237,7 +1238,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 		boolean altChanged = false;
                 for (int i = 0; i < alts.length; i++) {
                     Type type = alts[i].info();
-		    if (alts[i].owner() == owner()) n++;
+		    if (keepInheritedOverloaded ||
+                        alts[i].owner() == owner()) n++;
 		    if (alts[i].info() != alttypes[i]) altChanged = true;
 		}
 		Type result;
@@ -1246,7 +1248,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 		    Type[] types = new Type[n];
 		    int j = 0;
 		    for (int i = 0; i < alts.length; i++) {
-			if (alts[i].owner() == owner()) {
+			if (keepInheritedOverloaded ||
+                            alts[i].owner() == owner()) {
 			    symbols[j] = alts[i];
 			    types[j] = alts[i].info();
 			    j++;
@@ -1663,24 +1666,21 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public void addInheritedOverloaded(Type owntype) {
-	if (owner().kind == CLASS && !isConstructor() && owner().lookup(name) == this) {
-	    // it's a class member which is not an overloaded alternative
-	    Symbol sym = Type.lookupNonPrivate(owner().parents(), name);
-	    if (sym.kind == VAL) {
-		Type symtype = owner.thisType().memberType(sym);
-		switch (symtype) {
-		case OverloadedType(Symbol[] alts, Type[] alttypes):
-		    for (int i = 0; i < alts.length; i++)
-			addInheritedOverloaded(owntype, alts[i], alttypes[i]);
-		    break;
-		default:
-		    addInheritedOverloaded(owntype, sym, symtype);
-		}
-	    }
-	}
+        Symbol sym = Type.lookupNonPrivate(owner.parents(), name);
+        if (sym.kind == VAL) {
+            Type symtype = owner.thisType().memberType(sym);
+            switch (symtype) {
+            case OverloadedType(Symbol[] alts, Type[] alttypes):
+                for (int i = 0; i < alts.length; i++)
+                    addInheritedOverloaded(owntype, alts[i], alttypes[i]);
+                break;
+            default:
+                addInheritedOverloaded(owntype, sym, symtype);
+            }
+        }
     }
 
-    private void addInheritedOverloaded(Type owntype, Symbol sym, Type symtype) {
+    public void addInheritedOverloaded(Type owntype, Symbol sym, Type symtype) {
 	if (!owntype.overrides(symtype)) {
 	    if (Global.instance.debug) Global.instance.log(owner() + " inherits overloaded: " + sym + ":" + symtype + sym.locationString());//debug
 	    owner().members().lookupEntry(name).setSymbol(overloadWith(sym));

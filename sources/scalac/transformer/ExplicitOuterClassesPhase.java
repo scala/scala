@@ -15,7 +15,7 @@ import java.util.Iterator;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.GenTransformer;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Ident;
@@ -69,7 +69,7 @@ public class ExplicitOuterClassesPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         treeTransformer.apply(units);
     }
 

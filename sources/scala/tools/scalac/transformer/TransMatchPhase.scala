@@ -9,7 +9,7 @@
 import scalac.{Global => scalac_Global}
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.checkers._;
 
 package scala.tools.scalac.transformer {
@@ -18,7 +18,7 @@ class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
   extends Phase(global, descriptor) {
 
     /** Applies this phase to the given compilation units. */
-    def apply( units:Array[Unit] ):unit = {
+    def apply( units:Array[CompilationUnit] ):unit = {
       for(val u <- units) {
         new TransMatch( global ).apply( u );
       }

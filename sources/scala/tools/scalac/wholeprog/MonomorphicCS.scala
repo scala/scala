@@ -13,8 +13,8 @@
 ** [iuli]   2.05.2004                                                   */
 
 import scalac.{Global => scalac_Global}
-import scalac.{Unit => scalac_Unit}
-import scalac.symtab._;
+import scalac.{CompilationUnit => scalac_CompilationUnit}
+import scalac.{symtab => scalac_symtab}
 import scalac.util._;
 import scala.collection.mutable._;
 import scalac.ast._;
@@ -22,6 +22,8 @@ import scala.tools.scalac.wholeprog.graph.{Node => GNode};
 import scala.tools.scalac.wholeprog.graph._;
 
 package scala.tools.scalac.wholeprog {
+
+import scalac_symtab._;
 
 class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
   type CallGraph = Graph[Symbol, MethodNode, CallEdge];
@@ -129,9 +131,9 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
       dumpCallGraph;
 
     Console.println("[start Monomorphic call site identification]");
-    cg.nodes.foreach( (id, n) => {
-      n.info.callSites.foreach( (site) => {
-	val mcs = cg.getOutEdges(id).filter( e => e.info.site == site );
+    cg.nodes.foreach( (id: Symbol, n: CallGraphNode) => {
+      n.info.callSites.foreach( (site: CallSite) => {
+	val mcs = cg.getOutEdges(id).filter( e: CallGraphEdge => e.info.site == site );
 
 	if (mcs.length == 1) {
 	  inlineCallSite(mcs.head);
@@ -190,13 +192,13 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 //     });
 
     Console.println("[Visiting call graph]");
-    callGraph.nodes.foreach( (id, n) => {
-      n.info.callSites.foreach( (site) => {
-	val targets = callGraph.getOutEdges(id).filter( e => e.info.site == site );
+    callGraph.nodes.foreach( (id: Symbol, n: CallGraphNode) => {
+      n.info.callSites.foreach( (site: CallSite) => {
+	val targets = callGraph.getOutEdges(id).filter( e: CallGraphEdge => e.info.site == site );
 
 	if (targets.length > 1) {
 	  // test for instantiation
-	  targets.foreach( (t) => if ( !isInstatiated(callGraph.getNode(t.to).info.classz) ) {
+	  targets.foreach( (t: CallGraphEdge) => if ( !isInstatiated(callGraph.getNode(t.to).info.classz) ) {
 	    callGraph.removeEdge(t);
 	    Logger.log("[RTA] Removed edge " +
 		       SymbolPrinter.fullName(t.from) + " -> " +
@@ -229,7 +231,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     var edges = 0;
     var callsites = 0;
 
-    callGraph.nodes.foreach( (id, n) => {
+    callGraph.nodes.foreach( (id: Symbol, n: CallGraphNode) => {
       nodes = nodes + 1;
       callsites = callsites + n.info.callSites.length;
       edges = edges + callGraph.getOutEdges(id).length;

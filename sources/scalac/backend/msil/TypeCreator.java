@@ -9,7 +9,7 @@
 package scalac.backend.msil;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ApplicationError;
 import scalac.ast.Tree;
 import scalac.ast.Traverser;
@@ -442,7 +442,7 @@ final class TypeCreator {
 	return moreThanOneEntryPoint;
     }
 
-    private Unit entryPointUnit;
+    private CompilationUnit entryPointUnit;
 
     private int entryPointPos;
 
@@ -450,7 +450,7 @@ final class TypeCreator {
      *  - collects all entry points
      *  - gives the name of the new assembly
      */
-    public void collectSymbols(Unit[] units) {
+    public void collectSymbols(CompilationUnit[] units) {
 	types2create.clear();
 	entryPoint = null;
 	new CollectSymbols().traverse(units);
@@ -491,8 +491,8 @@ final class TypeCreator {
      *  in the program and all entry points.
      */
     private final class CollectSymbols extends Traverser {
-	private Unit currUnit;
-	public void traverse(Unit unit) {
+	private CompilationUnit currUnit;
+	public void traverse(CompilationUnit unit) {
 	    currUnit = unit;
 	    if (entryPointUnit == null)
 		entryPointUnit = unit;

@@ -15,7 +15,7 @@ import java.util.HashMap;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Transformer;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
@@ -46,7 +46,7 @@ public class AddAccessorsPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         treeTransformer.apply(units);
     }
 

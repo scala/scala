@@ -15,7 +15,7 @@ import java.util.Iterator;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.symtab.Definitions;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
@@ -194,7 +194,7 @@ public class TypesAsValuesPhase extends Phase {
         throw new Error();      // TODO
     }
 
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         transformer.apply(units);
     }
 

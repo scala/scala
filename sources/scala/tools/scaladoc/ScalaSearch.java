@@ -35,7 +35,7 @@ import scalac.util.NameTransformer;
 import java.io.*;
 import scalac.ast.printer.*;
 import scala.tools.scalac.ast.parser.Parser$class;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 /**
  * This class contains functions to retrieve information from a Scala
@@ -552,11 +552,11 @@ public class ScalaSearch {
         // complains.
         queryCounter = queryCounter + 1;
         SourceFile sourceFile = global.getSourceFile("tmp.scala", unitString);
-        Unit tmpUnit = new Unit(global, sourceFile, false);
+        CompilationUnit tmpUnit = new CompilationUnit(global, sourceFile, false);
         tmpUnit.body = new Parser$class(tmpUnit).parse();
         //TreePrinter treePrinter = new TextTreePrinter(System.out);
         //treePrinter.print(tmpUnit);
-        global.PHASE.ANALYZER.phase().apply(new Unit[]{ tmpUnit });
+        global.PHASE.ANALYZER.phase().apply(new CompilationUnit[]{ tmpUnit });
         if (global.reporter.errors() == errorNumber) {
             Scope tmpScope = tmpUnit.body[0].symbol().members();
             Type res = tmpScope.lookup(Name.fromString("f")).type();

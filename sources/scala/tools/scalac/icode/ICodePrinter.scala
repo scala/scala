@@ -9,13 +9,15 @@
 
 import ch.epfl.lamp.util.CodePrinter;
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.{Global => scalac_Global}
 import scalac.atree._;
 
-import scalac.symtab.{Symbol => scalac_Symbol}
+import scalac.{symtab => scalac_symtab}
 
 package scala.tools.scalac.icode {
+
+import scalac_symtab.Symbol;
 
 /* This class implements a Printer for the ICode */
 class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePrinter) {
@@ -35,7 +37,7 @@ class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePri
   }
 
   /* This method print a single unit. */
-  def printAnUnit(unit: Unit) = { // ??? Private
+  def printAnUnit(unit: CompilationUnit) = { // ??? Private
     printer.println ("// Scala source: "+unit.source);
     val classes_it = Iterator.fromArray(unit.repository.classes());
     classes_it.foreach((c: AClass) => {
@@ -50,7 +52,7 @@ class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePri
 	  printer.println("Initial stack -> "+bb.initialStack);
 	  printer.println("Substituable variables : ");
 	  if (bb.substituteVars != null)
-	    bb.substituteVars.foreach((s: scalac_Symbol) => printer.print(s.name.toString()));
+	    bb.substituteVars.foreach((s: Symbol) => printer.print(s.name.toString()));
 	  else
 	    printer.println(" {Empty} ");
 	  printer.println("Instructions:");

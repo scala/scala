@@ -43,12 +43,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
         super(global);
     }
 
-    private Unit unit;
+    private CompilationUnit unit;
     private Definitions defs = global.definitions;
     private Infer infer = global.newInfer();
     private Symbol enclClass;
 
-    public void apply(Unit unit) {
+    public void apply(CompilationUnit unit) {
 	this.unit = unit;
 	level = 0;
 	scopes[0] = new Scope();
@@ -120,8 +120,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    switch (member1.info()) {
 		    case OverloadedType(Symbol[] alts, _):
 			for (int i = 0; i < alts.length; i++) {
-			    if (normalizedInfo(self, alts[i]).isSubType(template) &&
-				alts[i].owner() == member1.owner()) {
+			    if (normalizedInfo(self, alts[i]).isSubType(template) /*&&
+                                                                                    alts[i].owner() == member1.owner()*/) {
 				if (member == other)
 				    member = alts[i];
 				else
@@ -159,7 +159,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		}
 		abstractClassError(
 		    clazz,
-		    member.toString() + member.type() + member.locationString() + " is not defined" +
+		    member.toString() + member.locationString() + " is not defined" +
 		    (((member.flags & MUTABLE) == 0) ? ""
 		     : "\n(Note that variables need to be initialized to be defined)"));
 	    } else if (member.isAbstractOverride()) {

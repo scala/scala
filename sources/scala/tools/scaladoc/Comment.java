@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.regex.*;
 import ch.epfl.lamp.util.Pair;
 import scalac.symtab.Symbol;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 import java.io.StringReader;
 import org.xml.sax.*;
@@ -34,9 +34,9 @@ public class Comment extends DefaultHandler {
     public final Symbol holder;
 
     /**
-     * Unit of the symbol associated with this comment.
+     * CompilationUnit of the symbol associated with this comment.
      */
-    Unit unit;
+    CompilationUnit unit;
 
     /**
      * Raw text of the comment.
@@ -59,7 +59,7 @@ public class Comment extends DefaultHandler {
      * @param holder
      * @param rawText
      */
-    public Comment(String rawText, Symbol holder, Unit unit, HTMLValidator html) {
+    public Comment(String rawText, Symbol holder, CompilationUnit unit, HTMLValidator html) {
 	this.holder = holder;
 	this.rawText = cleanComment(rawText);
         this.unit = unit;

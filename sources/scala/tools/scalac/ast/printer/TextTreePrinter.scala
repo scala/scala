@@ -9,15 +9,16 @@
 
 import scalac.ast.printer._;
 import scalac.ast._;
-import scalac.symtab._;
+import scalac.{symtab => scalac_symtab}
 import scalac.util.Debug;
 import scalac.{Global => scalac_Global, Phase};
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.util.Name;
 import scalac.util.TypeNames;
 
 package scala.tools.scalac.ast.printer {
 
+import scalac_symtab._;
 import java.io._;
 
 /**
@@ -200,7 +201,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
       print(global.units(i));
   }
 
-  def print(unit: Unit): unit = {
+  def print(unit: CompilationUnit): unit = {
     printUnitHeader(unit);
     if (unit.body != null) {
       for (val i <- Iterator.range(0, unit.body.length)) {
@@ -214,10 +215,10 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
     flush();
   }
 
-  protected def printUnitHeader(unit: Unit): unit =
+  protected def printUnitHeader(unit: CompilationUnit): unit =
     print(Simple("// Scala source: " + unit.source + "\n"));
 
-  protected def printUnitFooter(unit: Unit): unit =
+  protected def printUnitFooter(unit: CompilationUnit): unit =
     print(Newline);
 
   def print(tree: Tree): TreePrinter = {

@@ -8,7 +8,7 @@
 
 package scalac.ast;
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 {#Imports#}
 
 /** Class to traverse a tree without modifying it. */
@@ -17,11 +17,11 @@ public class Traverser {
     //########################################################################
     // Public Methods
 
-    public void traverse(Unit[] units) {
+    public void traverse(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) traverse(units[i]);
     }
 
-    public void traverse(Unit unit) {
+    public void traverse(CompilationUnit unit) {
         traverse(unit.body);
     }
 

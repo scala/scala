@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
@@ -74,7 +74,7 @@ public class ATreeFromSTree {
     // Public Methods - Translating units
 
     /** Translates the unit's body and stores the result in it. */
-    public void translate(Unit unit) {
+    public void translate(CompilationUnit unit) {
         template(unit.repository = new ARepository(), unit.body);
     }
 

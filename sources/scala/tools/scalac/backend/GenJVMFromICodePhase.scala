@@ -7,7 +7,7 @@
 // $Id$
 
 import scalac.{Global => scalac_Global}
-import scalac.{Unit => scalac_Unit}
+import scalac.{CompilationUnit => scalac_CompilationUnit}
 import scalac.PhaseDescriptor;
 import scalac.Phase;
 
@@ -22,7 +22,7 @@ class GenJVMFromICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) e
   // Public method
 
   /* Apply this phase to all units */
-  def apply(units: Array[scalac_Unit]) = {
+  def apply(units: Array[scalac_CompilationUnit]) = {
     val generator = new GenJVMFromICode(global); // !!! super global
     Iterator.fromArray(units).foreach(generator.translate);
   }

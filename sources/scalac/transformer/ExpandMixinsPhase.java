@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
 import scalac.ast.TreeGen;
@@ -93,7 +93,7 @@ public class ExpandMixinsPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         collector.traverse(units);
         expander.apply(units);
     }
@@ -146,7 +146,7 @@ public class ExpandMixinsPhase extends Phase {
         public TreeExpander(Global global) {
             super(global);
         }
-        public void apply(Unit unit) {
+        public void apply(CompilationUnit unit) {
             if (unit.mixinOnly) {
                 assert Debug.log("removing unit " + unit);
                 unit.body = Tree.EMPTY_ARRAY;

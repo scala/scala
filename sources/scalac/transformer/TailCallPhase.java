@@ -11,7 +11,7 @@ package scalac.transformer;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Tree;
 import scalac.ast.GenTransformer;
 import scalac.symtab.Symbol;
@@ -61,7 +61,7 @@ public class TailCallPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         treeTransformer.apply(units);
     }
 

@@ -8,13 +8,14 @@ import scala.collection.immutable;
 
 import scalac.ast._ ;
 import scalac.{Global => scalac_Global}
-import scalac.symtab.Symbol ;
+import scalac.{symtab => scalac_symtab}
 import scalac.util.Names ;
 
 
 
 package scala.tools.scalac.transformer.matching {
 
+  import scalac_symtab.Symbol ;
   import PatternInfo.minimalWidth;
   import TreeInfo.isSequenceValued;
 

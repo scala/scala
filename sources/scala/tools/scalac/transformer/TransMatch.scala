@@ -11,7 +11,7 @@ import java.util._;
 import scalac.{Global => scalac_Global};
 import scalac._;
 import scalac.ast._;
-import scalac.symtab._;
+import scalac.{symtab => scalac_symtab}
 import scalac.util._;       // Names
 
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
@@ -28,15 +28,16 @@ import scalac.transformer.matching.AlgebraicMatcher ;
  */
 package scala.tools.scalac.transformer {
 
+import scalac_symtab._;
 import matching.FullRegularTranslator ;
 import matching.GrammarPrinter ; //DEBUG
 
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
 
-  var cunit:Unit = null;
+  var cunit:CompilationUnit = null;
 
-  override def apply( cunit:Unit ):unit = {
+  override def apply( cunit:CompilationUnit ):unit = {
     this.cunit = cunit;
     super.apply( cunit );
   }

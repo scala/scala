@@ -30,7 +30,7 @@ public class OwnerTransformer extends Transformer {
         super(global);
     }
 
-    public void apply(Unit unit) {
+    public void apply(CompilationUnit unit) {
 	currentOwner = global.definitions.ROOT_CLASS;
         unit.body = transform(unit.body);
     }

@@ -33,7 +33,7 @@ public class AlgebraicMatcher extends PatternMatcher {
 
       /** constructor
        */
-      public AlgebraicMatcher( Unit unit ) {
+      public AlgebraicMatcher( CompilationUnit unit ) {
             super( unit );
 	    this.delegateSequenceMatching = true;
 	    this.optimize = false;

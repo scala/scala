@@ -10,8 +10,8 @@
 ** [iuli]   12.05.2004                                                  */
 
 import scalac.{Global => scalac_Global}
-import scalac.{Unit => scalac_Unit}
-import scalac.symtab._;
+import scalac.{CompilationUnit => scalac_CompilationUnit}
+import scalac.{symtab => scalac_symtab}
 import scalac.util._;
 import scala.collection.mutable._;
 import scalac.ast._;
@@ -20,6 +20,8 @@ import scala.tools.scalac.wholeprog.graph._;
 import scala.tools.util._;
 
 package scala.tools.scalac.wholeprog {
+
+import scalac_symtab._;
 
 /** Perform inlining of the sites passed as parameter */
 class InlineMethods(sites: List[Tuple3[GNode[Symbol, MethodNode], GNode[Symbol, MethodNode], CallSite]],

@@ -6,18 +6,20 @@
 
 // $Id$
 
+import scalac.{symtab => scalac_symtab}
 import scalac.transformer.{ICodePhase => scalac_ICodePhase}
 import scalac.{Global => scalac_Global}
-import scalac.{Unit => scalac_Unit}
+import scalac.{CompilationUnit => scalac_CompilationUnit}
 import scalac.PhaseDescriptor;
-import scalac.symtab.Symbol;
-import scalac.symtab.Type;
 import scalac.Phase;
 import scalac.atree._;
 
 import ch.epfl.lamp.util.CodePrinter;
 
 package scala.tools.scalac.icode {
+
+import scalac_symtab.Symbol;
+import scalac_symtab.Type;
 
 /** This class represents the ICode phase. This phase use the ATrees
   * that represents the code with some primitives backends-like
@@ -30,7 +32,7 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
   // Public methods
 
   /* Apply the icode phase to the given units */
-  override def apply(units: Array[scalac_Unit]) = {
+  override def apply(units: Array[scalac_CompilationUnit]) = {
     val units_it = Iterator.fromArray(units);
 
     units_it.foreach(translate);
@@ -44,7 +46,7 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
 
   /** This method translates a single unit, it traverses all methods and
     * generates ICode for each of them */
-  private def translate(u: scalac_Unit) : unit = {
+  private def translate(u: scalac_CompilationUnit) : unit = {
     def genClass(c: AClass) : unit = {
       val nestedClasses_it = Iterator.fromArray(c.classes());
       nestedClasses_it.foreach(genClass);

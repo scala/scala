@@ -11,15 +11,17 @@ import java.lang.Object;
 
 import scalac._;
 import scalac.util._;
-import scalac.symtab._;
+import scalac.{symtab => scalac_symtab}
 import scalac.ast._;
 import scalac.typechecker.Infer;
-import scalac.{Global => scalac_Global, Unit => scalac_Unit}
+import scalac.{Global => scalac_Global, CompilationUnit => scalac_CompilationUnit}
 
 import scala.tools.scalac.ast.printer.TextTreePrinter;
 import scala.tools.scalac.util.NewArray;
 
 package scala.tools.scalac.typechecker {
+
+import scalac_symtab._;
 
 /** A transformer for removing syntactic sugar. This transformer does
  *  not need any type or symbol-table information.
@@ -39,7 +41,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   /** introduce fresh variable of the form "ds$56"
   */
-  def getvar(unit: scalac_Unit): Name = unit.fresh.newName("ds", '$');
+  def getvar(unit: scalac_CompilationUnit): Name = unit.fresh.newName("ds", '$');
 
   def setterName(name: Name): Name = Name.fromString(name.toString() + Names._EQ);
 
@@ -199,7 +201,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     *  only called when match has to be added
   *  no type for parameter x
   */
-  def Visitor(unit: scalac_Unit, tree: Tree): Tree = tree match {
+  def Visitor(unit: scalac_CompilationUnit, tree: Tree): Tree = tree match {
     case Tree$Visitor(cases) =>
       val x: Name = getvar(unit);
       val param: Tree$ValDef = make.ValDef(
@@ -258,7 +260,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   /** expand pattern definitions and variable definitions in templates.
   */
-  def Statements(unit: scalac_Unit, stats: Array[Tree], isLocal: boolean): Array[Tree] = {
+  def Statements(unit: scalac_CompilationUnit, stats: Array[Tree], isLocal: boolean): Array[Tree] = {
     var change: boolean = false;
     var i = 0;
     while (i < stats.length && !change) {
@@ -360,7 +362,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   *                  val x_N = t$._N
   *
   */
-  def PatDef(unit: scalac_Unit, tree: Tree): Array[Tree] = tree match {
+  def PatDef(unit: scalac_CompilationUnit, tree: Tree): Array[Tree] = tree match {
     case Tree$PatDef(mods, Tree$Ident(name), rhs) =>
       // val x = e     ==>  val x = e
       NewArray.Tree(make.ValDef(tree.pos, mods, name, Tree.Empty, rhs))

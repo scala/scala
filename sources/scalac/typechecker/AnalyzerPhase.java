@@ -11,7 +11,7 @@ package scalac.typechecker;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.TreeGen;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
@@ -29,6 +29,6 @@ public abstract class AnalyzerPhase extends Phase {
 
     public abstract void addConsoleImport(Symbol module);
 
-    public abstract void lateEnter(Unit unit);
+    public abstract void lateEnter(CompilationUnit unit);
 
 }

@@ -38,7 +38,7 @@ public class LambdaLift extends OwnerTransformer
     final Definitions definitions;
     final FreeVars free;
     final LambdaLiftPhase descr;
-    private Unit unit;
+    private CompilationUnit unit;
 
     public LambdaLift(Global global, LambdaLiftPhase descr) {
         super(global);
@@ -48,7 +48,7 @@ public class LambdaLift extends OwnerTransformer
 	this.descr = descr;
     }
 
-    public void apply(Unit unit) {
+    public void apply(CompilationUnit unit) {
 	this.unit = unit;
 	global.log(unit.source.toString());
 	free.initialize(unit);
@@ -108,7 +108,7 @@ public class LambdaLift extends OwnerTransformer
      */
     static class FreeVars extends OwnerTransformer {
 
-	private Unit unit;
+	private CompilationUnit unit;
 
 	public FreeVars(Global global) {
 	    super(global);
@@ -305,7 +305,7 @@ public class LambdaLift extends OwnerTransformer
 	/** Compute a mapping from symbols to their free variables
 	 *  in hashtable `fvs'. Also rename all variables that need it.
 	 */
-	public void initialize(Unit unit) {
+	public void initialize(CompilationUnit unit) {
 	    this.unit = unit;
 	    fvs = new HashMap();
 	    ftvs = new HashMap();

@@ -15,7 +15,7 @@ import java.util.Stack;
 
 import scala.tools.util.Position;
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.AbsTypeDef;
 import scalac.ast.Tree.Ident;
@@ -41,7 +41,7 @@ public class TreeChecker {
     private final Definitions definitions;
 
     /** The stack of current units */
-    private final Stack/*<Unit>*/ units = new Stack();
+    private final Stack/*<CompilationUnit>*/ units = new Stack();
 
     /** The stack of current classes */
     private final Stack/*<Symbol>*/ classes = new Stack();
@@ -76,7 +76,7 @@ public class TreeChecker {
     // Public Methods - Checking units
 
     /** Checks the unit. Returns true. */
-    public boolean check(Unit unit) {
+    public boolean check(CompilationUnit unit) {
         pushUnit(unit);
         template(unit.body);
         popUnit();
@@ -507,8 +507,8 @@ public class TreeChecker {
     // Private Methods - Managing current context
 
     /** Returns the current unit. */
-    private Unit currentUnit() {
-        return units.size() > 0 ? (Unit)units.peek() : null;
+    private CompilationUnit currentUnit() {
+        return units.size() > 0 ? (CompilationUnit)units.peek() : null;
     }
 
     /** Returns the current class. */
@@ -527,7 +527,7 @@ public class TreeChecker {
     }
 
     /** Sets the current unit to the given one. */
-    private void pushUnit(Unit unit) {
+    private void pushUnit(CompilationUnit unit) {
         assert units.size() == 0: showPush(unit);
         assert classes.size() == 0: showPush(unit);
         assert members.size() == 0: showPush(unit);

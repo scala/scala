@@ -6,14 +6,13 @@
 
 // $Id$
 
-import scalac.symtab.Symbol;
-import scalac.symtab._;
-import scalac.symtab.Definitions;
+import scalac.{symtab => scalac_symtab}
 import scalac.Global;
 import scalac.util.Names;
 
 package scala.tools.scaladoc {
 
+  import scalac_symtab._;
   import scala.collection.immutable._;
 
   /**

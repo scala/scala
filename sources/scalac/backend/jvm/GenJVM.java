@@ -115,7 +115,7 @@ class GenJVM {
     /**
      * Generate code for the given unit.
      */
-    public void translate(Unit unit) {
+    public void translate(CompilationUnit unit) {
         try {
             for (int i = 0; i < unit.body.length; ++i)
                 gen(Context.EMPTY.withSourceFileName(unit.source.getFile().getName()),

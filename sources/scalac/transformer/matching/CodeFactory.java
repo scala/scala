@@ -21,7 +21,7 @@ class CodeFactory extends PatternTool {
 
     public int pos = Position.FIRSTPOS ;
 
-    public CodeFactory( Unit unit, int pos ) {
+    public CodeFactory( CompilationUnit unit, int pos ) {
 	super( unit );
 	this.pos = pos;
     }

@@ -2,7 +2,7 @@
 
 package scalac.transformer.matching ;
 
-import scalac.Unit ;
+import scalac.CompilationUnit ;
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
 import scalac.ast.TreeInfo ;
@@ -20,9 +20,9 @@ import java.util.* ;
 
 class BerrySethi {
 
-    Unit unit;
+    CompilationUnit unit;
 
-    public BerrySethi(Unit unit) {
+    public BerrySethi(CompilationUnit unit) {
         this.unit = unit;
     }
 

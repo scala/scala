@@ -18,7 +18,7 @@ import java.util.HashMap;
 import scalac.util.Names;
 
 /*
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.*;
 import scalac.util.Name;
 import Tree.*;
@@ -34,7 +34,7 @@ package scala.tools.scalac.ast.parser {
   *  @version 1.0
   */
 
-  class PatternNormalizer( unit:Unit ) {
+  class PatternNormalizer( unit:CompilationUnit ) {
 
     val make = unit.global.make ;
 

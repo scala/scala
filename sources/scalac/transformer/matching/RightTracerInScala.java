@@ -425,7 +425,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
 
     /* returns statements that do the work of the right-transducer
      */
-    Tree getStms( Tree trace, Unit unit, Tree body ) {
+    Tree getStms( Tree trace, CompilationUnit unit, Tree body ) {
 
         TreeList stms = new TreeList();
         Tree loopbody = code_body_NEW();

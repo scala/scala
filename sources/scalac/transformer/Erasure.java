@@ -17,7 +17,7 @@ import java.util.HashSet;
 
 import scalac.Global;
 import scalac.Phase;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
@@ -82,7 +82,7 @@ public class Erasure extends GenTransformer implements Modifiers {
     private final Primitives primitives;
 
     /** The current unit */
-    private Unit unit;
+    private CompilationUnit unit;
 
     private final boolean forMSIL;
 
@@ -101,7 +101,7 @@ public class Erasure extends GenTransformer implements Modifiers {
     // Public Methods
 
     /** Transforms the given unit. */
-    public void apply(Unit unit) {
+    public void apply(CompilationUnit unit) {
 	this.unit = unit;
 	super.apply(unit);
     }

@@ -33,7 +33,7 @@ class CaseEnv {
 
     /** constructor
      */
-    CaseEnv( Symbol owner, Unit unit ) {
+    CaseEnv( Symbol owner, CompilationUnit unit ) {
 	this.owner = owner;
 	this.defs = unit.global.definitions;
 	this.gen = unit.global.treeGen;

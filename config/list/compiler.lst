@@ -9,7 +9,7 @@ CompilerPhases.java
 Global.java
 Phase.java
 PhaseDescriptor.java
-Unit.java
+CompilationUnit.java
 
 ast/DefaultTreeFactory.java
 ast/LazyTreeCopier.java

@@ -22,7 +22,7 @@ import java.util.Iterator;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.Global;
 import scalac.ast.Tree;
 import scalac.ast.Tree.ValDef;
@@ -265,7 +265,7 @@ public class Compiler {
     //########################################################################
     //
 
-    public void compile(Unit[] units) {
+    public void compile(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) declare(units[i].source, units[i].body);
     }
 

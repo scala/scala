@@ -35,14 +35,14 @@ public class UnCurry extends OwnerTransformer
                      implements Modifiers {
 
     UnCurryPhase descr;
-    Unit unit;
+    CompilationUnit unit;
 
     public UnCurry(Global global, UnCurryPhase descr) {
         super(global);
 	this.descr = descr;
     }
 
-    public void apply(Unit unit) {
+    public void apply(CompilationUnit unit) {
 	this.unit = unit;
 	super.apply(unit);
     }

@@ -11,7 +11,7 @@ package scalac.util;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 /** This class implements a phase that does nothing. */
 public class EmptyPhase extends Phase {
@@ -28,7 +28,7 @@ public class EmptyPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         // do nothing
     }
 

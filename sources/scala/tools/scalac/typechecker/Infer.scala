@@ -9,17 +9,19 @@
 import java.lang.Object;
 
 import scalac.{Global => scalac_Global}
+import scalac.{symtab => scalac_symtab}
 import scalac.typechecker.{Infer => scalac_Infer}
 import scalac.ApplicationError;
 import scalac.util._;
 import scalac.ast._;
-import scalac.symtab._;
 import scala.collection.mutable.HashMap;
 import scala.tools.util.Position;
 
 import scala.tools.scalac.util.NewArray;
 
 package scala.tools.scalac.typechecker {
+
+import scalac_symtab._;
 
 class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scalac_Infer {
 
@@ -536,7 +538,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   *  (nargs - params.length + 1) copies of its type is returned.
   */
   def formalTypes(params: Array[Symbol], nargs: int): Array[Type] = {
-    if (params.length > 0 && (params(params.length-1).flags & REPEATED) != 0) {
+    if (nargs >= params.length - 1 && params.length > 0 && (params(params.length-1).flags & REPEATED) != 0) {
       val args: Array[Type] = params(params.length-1).getType().typeArgs();
       if (args.length == 1) {
 	val ft: Type = args(0); // last param has type Seq[T], we need T here

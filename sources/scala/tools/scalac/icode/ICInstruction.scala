@@ -8,12 +8,14 @@
 // $Id$
 
 
-import scalac.symtab.Symbol;
-import scalac.symtab.Type;
+import scalac.{symtab => scalac_symtab}
 
 import scalac.atree._;
 
 package scala.tools.scalac.icode {
+
+import scalac_symtab.Symbol;
+import scalac_symtab.Type;
 
 /** This class represents an instruction of intermediate code */
 abstract class ICInstruction {

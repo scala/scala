@@ -25,7 +25,7 @@ public class AddInterfacesPhase extends Phase {
     }
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++)
             new AddInterfaces(global, this).apply(units[i]);
     }

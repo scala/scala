@@ -14,7 +14,7 @@ import java.util.HashMap;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
@@ -55,7 +55,7 @@ public class AddConstructorsPhase extends Phase {
     }
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++)
             new AddConstructors(global, constructors).apply(units[i]);
     }

@@ -12,6 +12,7 @@
 
 import java.lang.Object;
 
+import scalac.{symtab => scalac_symtab}
 import scalac.{Global => scalac_Global}
 import scalac.util.Name;
 import scalac.util.Names;
@@ -20,9 +21,10 @@ import scalac.ast.TreeGen;
 import scalac.atree._;
 import scalac.atree.ATypeKind;
 import scalac.atree.ATypeKind._;
-import scalac.symtab._;
 
 package scala.tools.scalac.typechecker {
+
+import scalac_symtab._;
 
 class ConstantFolder(global: scalac_Global) {
 

@@ -40,7 +40,7 @@ import ch.epfl.lamp.util.XHTMLPrinter;
 import scala.tools.util.Position;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.symtab.Kinds;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
@@ -510,7 +510,7 @@ public abstract class HTMLGenerator {
             Pair p = (Pair) global.mapSymbolComment.get(sym);
             if (p != null) {
                 String s = (String) p.fst;
-                Unit unit = (Unit) p.snd;
+                CompilationUnit unit = (CompilationUnit) p.snd;
                 comment = new Comment(s, sym, unit, xhtml);
             }
             else { // comment inheritance

@@ -16,13 +16,12 @@ package scala.tools.scalac.ast.parser {
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
 
-
 /** A scanner for the programming language Scala.
  *
  *  @author     Matthias Zenger, Martin Odersky, Burak Emir
  *  @version    1.1
  */
-class Scanner(_unit: Unit) extends TokenData {
+class Scanner(_unit: CompilationUnit) extends TokenData {
 
   import Tokens._;
   import java.lang.{Integer, Long, Float, Double}

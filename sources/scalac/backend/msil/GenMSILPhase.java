@@ -11,7 +11,7 @@ package scalac.backend.msil;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 
 import java.util.HashMap;
 
@@ -45,7 +45,7 @@ public class GenMSILPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
 	tc.init();
 	tc.collectSymbols(units);
 	tc.initAssembly();

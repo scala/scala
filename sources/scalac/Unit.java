@@ -22,7 +22,7 @@ import java.util.HashMap;
  *  @author     Matthias Zenger
  *  @version    1.0
  */
-public class Unit {
+public class CompilationUnit {
 
     /** the global compilation environment
      */
@@ -49,7 +49,7 @@ public class Unit {
     public Tree[] body;
     public ARepository repository;
 
-    public Unit(Global global, SourceFile source,
+    public CompilationUnit(Global global, SourceFile source,
 		boolean console, boolean mixinOnly) {
         this.global = global;
         this.source = source;
@@ -58,7 +58,7 @@ public class Unit {
         this.fresh = new FreshNameCreator();
     }
 
-    public Unit(Global global, SourceFile source, boolean console) {
+    public CompilationUnit(Global global, SourceFile source, boolean console) {
 	this(global, source, console, false);
     }
 

@@ -22,10 +22,11 @@ import checker.check;
 
 //############################################################################
 
-import o_ico.v_ico;
+//import o_ico.v_ico;
 
 class C_ico() {
   o_ico.v_ico = this;
+  import o_ico.v_ico;
   override def toString(): String = "C_ico";
   def method: C_ico = v_ico;
   val field: C_ico = v_ico;
@@ -43,12 +44,13 @@ object o_ico {
 
 //############################################################################
 
-import o_ioc.v_ioc;
-
 object o_ioc {
   var v_ioc: C_ioc = null;
   new C_ioc();
 }
+
+import o_ioc.v_ioc;
+
 
 class C_ioc() {
   o_ioc.v_ioc = this;

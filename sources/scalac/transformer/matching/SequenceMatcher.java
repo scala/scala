@@ -154,7 +154,7 @@ public class SequenceMatcher extends PatternTool {
 
       /** constructor, invoked  by AlgebraicMatcher
        */
-    SequenceMatcher( Unit unit ) {
+    SequenceMatcher( CompilationUnit unit ) {
         super( unit );
     }
 } // class SequenceMatcher

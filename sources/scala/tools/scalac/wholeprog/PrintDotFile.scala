@@ -1,4 +1,4 @@
-import scalac.{Unit => scalac_Unit}
+import scalac.{CompilationUnit => scalac_CompilationUnit}
 import scalac.ast._;
 import scalac.util.Name;
 
@@ -9,7 +9,7 @@ package scala.tools.scalac.wholeprog {
  * the graphviz "dot" tool to build a graph image. Useful for
  * understanding the Abstract Syntax Tree.
  */
-class PrintDotFile(_units: Array[scalac_Unit]) {
+class PrintDotFile(_units: Array[scalac_CompilationUnit]) {
   private val units = _units;
   private var writer: java.io.Writer = null;
 
@@ -19,7 +19,7 @@ class PrintDotFile(_units: Array[scalac_Unit]) {
 
       writer.write("digraph tree {\nnode [style=filled, color=cadetblue2];\n");
 
-      units.foreach( (u:scalac_Unit) =>
+      units.foreach( (u:scalac_CompilationUnit) =>
 	u.body.foreach ( (t: Tree) => walk(t, null) ) );
 
       writer.write("}\n");

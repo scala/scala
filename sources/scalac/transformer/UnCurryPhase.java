@@ -21,7 +21,7 @@ public class UnCurryPhase extends Phase implements Modifiers {
     }
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++)
             new UnCurry(global, this).apply(units[i]);
     }

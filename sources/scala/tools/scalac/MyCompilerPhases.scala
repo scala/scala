@@ -17,7 +17,7 @@ import scala.tools.scalac.{CompilerPhases => old_CompilerPhases}
 import scalac.{Global => scalac_Global}
 import scalac.transformer.{ICodePhase => scalac_ICodePhase}
 import scalac.PhaseDescriptor;
-import scalac.{Unit => scalac_Unit}
+import scalac.{CompilationUnit => scalac_CompilationUnit}
 import scalac.atree._;
 import scala.tools.scalac.wholeprog._;
 //import scalac.ast._;
@@ -61,7 +61,7 @@ class WholeProgPhase(global: scalac_Global, descriptor: PhaseDescriptor)
   // Public methods
 
   /* Apply the global analysis phase to the given units */
-  override def apply(units: Array[scalac_Unit]): unit = {
+  override def apply(units: Array[scalac_CompilationUnit]): unit = {
 
     if (!global.args.XdotFile.value.equals("$")) {
       val dotFilePrinter = new PrintDotFile(units);

@@ -7,12 +7,13 @@
 
 // $Id$
 
-import scalac.symtab.Symbol;
-import scalac.symtab.Type;
-
+import scalac.{symtab => scalac_symtab}
 import scalac.atree._;
 
 package scala.tools.scalac.icode {
+
+import scalac_symtab.Symbol;
+import scalac_symtab.Type;
 
 /** This class represents a basic block */
 class IBasicBlock (theLabel: int) {

@@ -7,10 +7,12 @@
 // $Id$
 
 import scalac.atree._;
-import scalac.symtab._;
-import scalac.Global;
+import scalac.{symtab => scalac_symtab}
+import scalac.{Global => scalac_Global};
 
 package scala.tools.scalac.icode {
+
+import scalac_symtab._;
 
 /* This class simulates the type of the opperand
  * stack of the ICode. */
@@ -20,7 +22,7 @@ class ICTypeStack() {
   // Private fields
   private var stack : List[Type] = Nil;
 
-  private val global = Global.instance;
+  private val global = scalac_Global.instance;
 
   private val definitions = global.definitions;
 

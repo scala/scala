@@ -8,11 +8,13 @@
 
 import scalac.ast._;
 import scalac.checkers.Checker;
-import scalac.symtab.Symbol;
-import scalac.symtab.Type;
+import scalac.{symtab => scalac_symtab}
 import scalac.util.Name;
 
 package scala.tools.scalac.util {
+
+import scalac_symtab.Symbol;
+import scalac_symtab.Type;
 
 object NewArray {
 

@@ -11,7 +11,7 @@ package scalac.transformer;
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.Unit;
+import scalac.CompilationUnit;
 import scalac.checkers.TreeChecker;
 import scalac.symtab.Definitions;
 
@@ -41,7 +41,7 @@ public class MakeBoxingExplicitPhase extends Phase {
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(Unit[] units) {
+    public void apply(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) {
             assert checker.check(units[i]);
             new scalac.atree.ATreeFromSTree(global.definitions)

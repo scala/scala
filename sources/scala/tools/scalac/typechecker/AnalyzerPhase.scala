@@ -7,10 +7,9 @@
 // $Id$
 
 import scala.tools.util.Position;
-import scalac._;
+import scalac.{symtab => scalac_symtab, _}
 import scalac.util._;
 import scalac.ast._;
-import scalac.symtab._;
 import scalac.checkers._;
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -20,9 +19,11 @@ import scalac.{Global => scalac_Global}
 
 package scala.tools.scalac.typechecker {
 
+import scalac_symtab._;
+
 class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends scalac_AnalyzerPhase(global, descriptor) {
 
-  val startContext = new Context(
+  var startContext = new Context(
     Tree.Empty,
     global.definitions.ROOT_CLASS,
     global.definitions.ROOT_CLASS.members(),
@@ -30,37 +31,41 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
   startContext.enclClass = startContext;
 
   if (!global.noimports) {
-    addImport(startContext, global.definitions.JAVALANG);
-    addImport(startContext, global.definitions.SCALA);
+    startContext = addImport(startContext, global.definitions.JAVALANG);
+    startContext = addImport(startContext, global.definitions.SCALA);
   }
 
   if (!global.noimports && !global.nopredefs) {
-    addImport(startContext, global.definitions.PREDEF);
+    startContext = addImport(startContext, global.definitions.PREDEF);
   }
 
-  val consoleContext = new Context(
+  startContext = new Context(Tree.Empty, startContext.owner, new Scope(), startContext);
+
+  var consoleContext = new Context(
     Tree.Empty,
     global.definitions.ROOT_CLASS,
     global.definitions.ROOT_CLASS.members(),
     startContext);
 
-  val contexts = new HashMap/*<Unit,Context>*/();
-  val newSources = new ArrayList/*<Unit>*/();
+  val contexts = new HashMap/*<CompilationUnit,Context>*/();
+  val newSources = new ArrayList/*<CompilationUnit>*/();
 
   override def addConsoleImport(module: Symbol): unit =
-    addImport(consoleContext, module);
+    consoleContext = addImport(consoleContext, module);
 
-  private def addImport(context: Context, module: Symbol): unit = {
+  private def addImport(context: Context, module: Symbol): Context = {
     global.prevPhase();
     val tree = gen.mkImportAll(Position.NOPOS, module);
     global.nextPhase();
-    context.imports = new ImportList(tree, new Scope(), context.imports);
+    val c = new Context(tree, context.owner, new Scope(), context);
+    c.depth = context.depth;
+    c
   }
 
-  override def apply(units: Array[Unit]): unit =
+  override def apply(units: Array[CompilationUnit]): unit =
     new Analyzer(global, this).apply(units);
 
-  override def lateEnter(unit: Unit): unit = {
+  override def lateEnter(unit: CompilationUnit): unit = {
     new Analyzer(global, this).lateEnter(unit);
   }
 
