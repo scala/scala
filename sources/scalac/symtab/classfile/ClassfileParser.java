@@ -195,7 +195,7 @@ public class ClassfileParser implements ClassfileConstants {
     protected void parseMethod() {
         int jflags = in.nextChar();
         int sflags = transFlags(jflags);
-        if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags |= Modifiers.BRIDGE;
+        if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags |= Modifiers.PRIVATE;
         if ((sflags & Modifiers.PRIVATE) != 0) {
             in.skip(4);
             attrib.skipAttributes();
@@ -226,8 +226,11 @@ public class ClassfileParser implements ClassfileConstants {
             setParamOwners(type, symbol);
             symbol.setInfo(type);
             attrib.readAttributes(symbol, type, METH_ATTR);
-            if (name != CONSTR_N) getScope(jflags).enterOrOverload(symbol);
-            else if (newConstructor) owner.addConstructor(symbol);
+            if (name != CONSTR_N) {
+                if ((symbol.flags & Modifiers.BRIDGE) == 0)
+                    getScope(jflags).enterOrOverload(symbol);
+            } else if (newConstructor)
+                owner.addConstructor(symbol);
         }
     }
 
