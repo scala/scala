@@ -64,11 +64,7 @@ trait SynchronizedMap[A, B] extends MutableMap[A, B] with Monitor {
         super.clear;
     }
 
-    override def put(key: A, value: B): B = synchronized {
-        super.put(key, value);
-    }
-
-    override def putAll(mappings: Pair[A, B]*) = synchronized {
+    override def put(mappings: Pair[A, B]*) = synchronized {
         super.putMap(mappings);
     }
 

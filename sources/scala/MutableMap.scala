@@ -24,13 +24,7 @@ trait MutableMap[A, B] with Map[A, B] {
         }
     }
 
-    def put(key: A, value: B): B = {
-        val old = apply(key);
-        update(key, value);
-        old;
-    }
-
-    def putAll(mappings: Pair[A, B]*) = {
+    def put(mappings: Pair[A, B]*): Unit = {
         val ys = mappings as List[Pair[A, B]];
         ys foreach { case Pair(key, value) => update(key, value); };
     }

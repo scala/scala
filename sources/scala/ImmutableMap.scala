@@ -17,9 +17,7 @@ trait ImmutableMap[A, B, This <: ImmutableMap[A, B, This]]: This with Map[A, B] 
 
     def clear: This;
 
-    def put(key: A, value: B): This = update(key, value);
-
-    def putAll(mappings: Pair[A, B]*): This = putMap(mappings);
+    def put(mappings: Pair[A, B]*): This = putMap(mappings);
 
     def putMap(map: Iterable[Pair[A, B]]): This = {
         val iter = map.elements;

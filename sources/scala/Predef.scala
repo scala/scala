@@ -15,19 +15,7 @@ object Predef {
     def List[A](x: A*): List[A] = x as List[A];
     val List = scala.List;
 
-    def Set[A](es: A*): Set[A] = {
-        val set = new HashSet[A];
-        set.addSet(es);
-        set;
-    }
-
-    def ListSet[A](es: A*): Set[A] = {
-        val set = new ListSet[A];
-        set.addSet(es);
-        set;
-    }
-
-    def HashSet[A](es: A*): Set[A] = {
+    def Set[A](es: A*): MutableSet[A] = {
         val set = new HashSet[A];
         set.addSet(es);
         set;
