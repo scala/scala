@@ -140,14 +140,7 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
   *
   *  @return  a list which enumerates all elements of this sequence.
   */
-  def toList: List[A] = {
-    val it = elements;
-    var res: List[A] = Nil;
-    while (it.hasNext) {
-      res = it.next :: res;
-    }
-    res.reverse
-  }
+  def toList: List[A] = elements.toList;
 
   /** Customizes the <code>toString</code> method.
   *
