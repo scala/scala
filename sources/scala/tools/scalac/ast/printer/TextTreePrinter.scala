@@ -20,6 +20,7 @@ package scala.tools.scalac.ast.printer {
 
 
 import java.io._;
+import java.util.ArrayList;
 
 /**
  * Text pretty printer for Scala abstract syntax trees.
@@ -115,7 +116,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
         else
           printString(sym.name.toString());
         if (global.uniqid)
-	  printString("#" + sym.id)
+	  printUniqueIdOf(sym)
       } else {
         printString(name.toString());
       }
@@ -251,13 +252,13 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printParams(tparams);
 	printParams(vparams);
 	printOpt(TXT_COLON, tpe, false);
-	printTemplate(tree.symbol(), KW_EXTENDS, impl, true);
+	printTemplate(tree.symbol(), impl);
 
       case Tree$PackageDef(packaged, impl) =>
 	print(KW_PACKAGE);
 	print(Space);
 	print(packaged);
-	printTemplate(null, KW_WITH, impl, true);
+	printTemplate(null, impl);
 
       case Tree$ModuleDef(mods, name, tpe, impl) =>
 	printSModifiers(mods);
@@ -265,7 +266,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
 	printOpt(TXT_COLON, tpe, false);
-	printTemplate(null, KW_EXTENDS, impl, true);
+	printTemplate(null, impl);
 
       case Tree$ValDef(mods, name, tpe, rhs) =>
 	printSModifiers(mods);
@@ -335,8 +336,11 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	}
 	print(TXT_RIGHT_BRACE);
 
-      case templ @ Tree$Template(bases, body) =>
-        printTemplate(tree.symbol().owner(), TXT_TEMPLATE , templ, false);
+      case template @ Tree$Template(bases, body) =>
+        val local = tree.symbol();
+        val clasz = if (local != null) local.owner() else null;
+        print(TXT_TEMPLATE);
+        printTemplate(local, template);
 
       case Tree$CaseDef(pat, guard, body) =>
 	print(KW_CASE);
@@ -585,6 +589,12 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   protected def printSymbolUse(symbol: Symbol, name: Name): Unit =
     print(Identifier(symbol, name, Use));
 
+  /** Print unique identifier of symbol */
+  protected def printUniqueIdOf(symbol: Symbol): Unit = {
+    print(TXT_HASH);
+    printString(String.valueOf(symbol.id));
+  }
+
   // Printing of trees
 
   protected def printType(tree: Tree): Unit =
@@ -671,45 +681,53 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   }
 
   //##########################################################################
+  // Public Methods - Printing templates
 
-  protected def printTemplate(symbol: Symbol,
-                              prefix: Text,
-                              templ: Tree$Template,
-                              spaceBefore: boolean): Unit =
-  {
-    if (! (templ.parents.length == 0
-           || (templ.parents.length == 1
-               && templ.parents(0) == Tree.Empty))) {
-      if (spaceBefore)
-        print(Space);
-      print(prefix);
-      print(Space);
-      printArray(templ.parents, None, None, TXT_WITH_SP);
-    }
-
-    val types: java.util.List  = new java.util.ArrayList();
-    if (symbol != null) {
+  /** Print template. */
+  def printTemplate(clasz: Symbol, template: Tree$Template): Unit = {
+    val local = template.symbol();
+    val parents = template.parents;
+    val body = template.body;
+    val types = new ArrayList();
+    // collect type members
+    if (clasz != null) {
       if (global.currentPhase.id > global.PHASE.ADDACCESSORS.id()) {
-        val i: Scope$SymbolIterator = symbol.members().iterator();
+        val i = clasz.members().iterator();
         while (i.hasNext()) {
-          val member: Symbol = i.next();
+          val member = i.next();
           if (member.isTypeAlias() || member.isAbstractType())
             types.add(member);
         }
       }
     }
-    if (templ.body.length > 0 || types.size() > 0) {
+    // print parents
+    if (parents.length > 0) {
+      print(Space);
+      print(KW_EXTENDS);
+      print(Space);
+      printArray(parents, None, None, TXT_WITH_SP);
+    }
+    // print local
+    if (global.uniqid && local != null) {
+      print(Space);
+      printString("/* ");
+      printString("local");
+      printUniqueIdOf(local);
+      printString(" */");
+    }
+    // print body
+    if (body.length > 0 || types.size() > 0) {
       print(Space);
       indent();
       print(TXT_BLOCK_BEGIN);
       if (types.size() > 0) {
-        val printer: SymbolTablePrinter = new SymbolTablePrinter(
-          INDENT_STRING.substring(0, indentMargin));
+        val printer =
+          new SymbolTablePrinter(INDENT_STRING.substring(0, indentMargin));
         printer.indent();
         var i: Int = 0;
         while (i < types.size()) {
           if (i > 0) printer.line();
-          val type0: Symbol = types.get(i).asInstanceOf[Symbol];
+          val type0 = types.get(i).asInstanceOf[Symbol];
           printer.printSignature(type0).print(';');
           i = i + 1;
         }
@@ -718,15 +736,17 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
         print(Newline);
       }
       var i: Int = 0;
-      while (i < templ.body.length) {
+      while (i < body.length) {
         if (i > 0) print(TXT_BLOCK_SEP);
-        print(templ.body(i));
+        print(body(i));
         i = i + 1;
       }
       undent();
       print(TXT_BLOCK_END);
     }
   }
+
+  //##########################################################################
 
   protected def printParams(tparams: Array[Tree$AbsTypeDef]): Unit =
     if (tparams.length > 0) {
