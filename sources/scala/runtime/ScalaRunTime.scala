@@ -12,20 +12,32 @@ package scala.runtime;
 
 object ScalaRunTime {
 
-    class Try[a](r: scala.runtime.ResultOrException[a]) {
-      def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
-	if (r.exc == null)
-	    r.result.asInstanceOf[b]
-	else if (/*!(r.exc is NonLocalReturn) && */handler isDefinedAt r.exc)
-	    handler(r.exc)
-	else
-	    throw r.exc;
+  trait Try[a] {
+    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b;
+    def Finally(handler: Unit): a;
+  }
 
-      def Finally(handler: Unit): a =
-	if (r.exc == null) r.result.asInstanceOf[a] else throw r.exc;
-    }
+  def Try[a](block: => a): Try[a] = new Try[a] with Runnable {
+    var result: a = _;
+    var exception: Throwable = RunTime.tryCatch(this);
 
-    def Try[a](def/*!!!*/ block: a): Try[a] =
-        new Try(ResultOrException.tryBlock(block));
+    def run(): Unit = result = block;
+
+    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
+      if (exception == null)
+	result.asInstanceOf[b]
+      // !!! else if (exception is LocalReturn)
+      // !!!   // ...
+      else if (handler isDefinedAt exception)
+	handler(exception)
+      else
+	throw exception;
+
+    def Finally(handler: Unit): a =
+      if (exception == null)
+        result.asInstanceOf[a]
+      else
+        throw exception;
+  }
 
 }

@@ -72,6 +72,18 @@ public abstract class RunTime {
     }
 
     //########################################################################
+    // Public Functions - Catching exceptions
+
+    public static Throwable tryCatch(Runnable runnable) {
+	try {
+	    runnable.run();
+            return null;
+	} catch (Throwable exception) {
+	    return exception;
+	}
+    }
+
+    //########################################################################
     // Public Functions - Boxing primitives
 
     public static Unit    box_uvalue(         ) {
