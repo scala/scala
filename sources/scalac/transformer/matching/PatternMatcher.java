@@ -348,7 +348,7 @@ public class PatternMatcher extends PatternTool {
 		(header.type.isSubType(getConstrType(tpe.type))) ?
 		mk.DefaultPat(tree.pos, getConstrType(tpe.type))
 		: mk.ConstrPat(tree.pos, getConstrType(tpe.type));
-	    if ((env != null) && (name != WILDCARD_N))
+	    if ((env != null) && (name != Names.WILDCARD))
 		switch (node) {
 		case ConstrPat(Symbol casted):
 		    env.newBoundVar(
@@ -371,7 +371,7 @@ public class PatternMatcher extends PatternTool {
 	    if (tree.symbol().isPrimaryConstructor())
 		return mk.ConstrPat(tree.pos, getConstrType(tree.type));
 	    else if (name.isVariable()) {
-		if ((env != null) && (name != WILDCARD_N))
+		if ((env != null) && (name != Names.WILDCARD))
 		    env.newBoundVar(
 				    tree.pos,
 				    tree.symbol(),

@@ -12,6 +12,9 @@ import Scope.SymbolIterator;
 
 import scalac.ast.printer.TextTreePrinter ;
 
+import scalac.util.Name ;
+import scalac.util.Names ;
+
 import ch.epfl.lamp.util.Position;
 
 public class RightTracerInScala extends Autom2Scala  {
@@ -347,15 +350,18 @@ public class RightTracerInScala extends Autom2Scala  {
                   this.helpMap2.put( key, helpMap.get( key ));
             }
 
+	    // find this weird ? pattern matcher expects var. symbol for _ pattern FIXME ?!! CANNOT BE TRUE
+	    //Symbol obfuscvble = new TermSymbol(0, Name.fromString("ga$ga$ga$"), _m.owner, 0).setType( pat.type() );
+
             am.construct( m, new CaseDef[] {
                   (CaseDef) cf.make.CaseDef( pat.pos,
                                              pat,
                                              Tree.Empty,
                                              handleBody( helpMap2 )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
-                                                   cf.make.Ident(pat.pos, WILDCARD_N)
-                                                   .setSymbol( Symbol.NONE )
-                                                   .setType( pat.type() ),
+                                                   cf.make.Ident(pat.pos, Names.WILDCARD)
+                                                   //.setSymbol( Symbol.NONE ) FIXED
+						   .setType( pat.type() ),
                                                    Tree.Empty,
                                                    gen.mkBooleanLit( pat.pos, false )) },
                           true // do binding please

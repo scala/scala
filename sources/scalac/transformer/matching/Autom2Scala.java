@@ -9,6 +9,7 @@ import scalac.symtab.Definitions ;
 import scalac.ast.Tree;
 import scalac.ast.TreeGen;
 import scalac.util.Name;
+import scalac.util.Names;
 import Tree.*;
 
 import scalac.transformer.TransMatch.Matcher ;
@@ -18,7 +19,6 @@ import ch.epfl.lamp.util.Position;
 
 public class Autom2Scala  {
 
-      static final Name WILDCARD_N   = Name.fromString("_");
       static final Name CURRENT_ELEM = Name.fromString("cur");
 
       final int FAIL = -1;
@@ -126,7 +126,6 @@ public class Autom2Scala  {
                                           funSym,//clazzOwner,
                                           0)
                   .setType( elementType );
-
       }
 
 
@@ -278,12 +277,12 @@ public class Autom2Scala  {
                                              Tree.Empty,
                                              handleBody( freeVars )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
-                                                   cf.make.Ident(pat.pos, WILDCARD_N)
-                                                   .setSymbol( Symbol.NONE )
+                                                   cf.make.Ident(pat.pos, Names.WILDCARD)
+                                                   //.setSymbol( Symbol.NONE )
                                                    .setType(pat.type()),
                                                    Tree.Empty,
-                                                   gen.mkBooleanLit( pat.pos, false )) }/*,
-											  false*/
+                                                   gen.mkBooleanLit( pat.pos, false )) },
+			  false
                           );
             Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
             return res;

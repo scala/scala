@@ -18,6 +18,7 @@ import Tree.*;
 
 import scalac.transformer.TransMatch.Matcher ;
 import scalac.util.Name ;
+import scalac.util.Names ;
 //import scalac.ast.printer.TextTreePrinter ;
 
 import java.util.Vector ;
@@ -238,7 +239,7 @@ public class AlgebraicMatcher extends PatternTool {
           case Typed(Ident(Name name), Tree tpe):       // typed pattern
                 theType = getConstrType( tpe.type );
                 assert (env != null ) : "env is null";
-                if (/*(env != null) &&*/ (name != WILDCARD_N))
+                if (/*(env != null) &&*/ (name != Names.WILDCARD))
                       env.newBoundVar(tree.pos,
                                       ((Tree.Typed)tree).expr.symbol(),
                                       theType,
@@ -249,7 +250,7 @@ public class AlgebraicMatcher extends PatternTool {
                 else
                       return mk.ConstrPat( tree.pos, theType );
           case Bind(Name name, Ident(Name id)): // x @ _
-                if( id == WILDCARD_N ) {
+                if( id == Names.WILDCARD ) {
                       env.newBoundVar(tree.pos,
                                       tree.symbol(),
                                       theType,
@@ -258,11 +259,11 @@ public class AlgebraicMatcher extends PatternTool {
                 }
                 throw new ApplicationError("cannot handle "+tree);
           case Ident(Name name):        // pattern without args or variable
-                if (tree.symbol().isPrimaryConstructor())
+                if ((tree.symbol() != null) && tree.symbol().isPrimaryConstructor())
                       return mk.ConstrPat(tree.pos, theType);
                 else if (name.isVariable()) {
                       assert (env != null ) : "env is null";
-                      if (/*(env != null) &&*/ (name != WILDCARD_N))
+                      if (/*(env != null) &&*/ (name != Names.WILDCARD))
                             env.newBoundVar(tree.pos,
                                             tree.symbol(),
                                             theType,
@@ -583,8 +584,8 @@ public class AlgebraicMatcher extends PatternTool {
                         toTree(node.and),
                         toTree(node.or, selector)).setType(defs.BOOLEAN_TYPE);
         case VariablePat(Tree tree):
-              System.out.print("VariablePat");
-              System.out.println( tree );
+	    //System.out.print("VariablePat");
+	    //System.out.println( tree );
               return make.If( selector.pos,
                               cf.Equals(selector, tree),
                               toTree(node.and),

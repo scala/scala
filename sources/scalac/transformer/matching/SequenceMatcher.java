@@ -88,8 +88,9 @@ public class SequenceMatcher extends PatternTool {
       }
     */
 
-      // translates the det/switching automaton to scala code
-
+    /** translates the det/switching automaton to scala code
+     *  precondition: pat.type() corresponds to element type
+     */
       Tree addBinderToBody( Tree pat, Tree body ) {
 
             SplitNested spn = new SplitNested( pat, _m.owner, cf );
@@ -110,7 +111,7 @@ public class SequenceMatcher extends PatternTool {
                   body = nbody;
             }
 
-            Type elementType = cf.getElemType( pat.type() );
+            Type elementType = cf.getElemType_Sequence( pat.type() );
 
             BindingBerrySethi build = new BindingBerrySethi();
             NondetWordAutom left =  build.automatonFrom( pat, new Integer(0) );
@@ -216,6 +217,7 @@ public class SequenceMatcher extends PatternTool {
 
       /** constructs a word recognizer from an array of patterns which
        *  should all be SequencePatterns ( no wildcard * )
+       *  precondition: pat.type corresponds to element type
        *  @param _m          Matcher object, holds the result
        *  @param pat         the (Sequence) patterns
        *  @param body        the bodies
@@ -238,7 +240,7 @@ public class SequenceMatcher extends PatternTool {
 
             Type seqType = pat[ 0 ].type();
 
-            elementType = cf.getElemType( seqType );
+            elementType = cf.getElemType_Sequence( seqType );
 
             NondetWordAutom manyNfa[] = new NondetWordAutom[ pat.length ];
 

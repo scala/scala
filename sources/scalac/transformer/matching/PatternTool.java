@@ -32,7 +32,7 @@ abstract class PatternTool {
     public static final Name SCALA_MATCHERROR_N = Name.fromString("scala.MatchError");
     public static final Name MATCHERROR_N = Name.fromString("MatchError");
     public static final Name FAIL_N = Name.fromString("fail");
-    public static final Name WILDCARD_N = Name.fromString("_");
+    //public static final Name WILDCARD_N = Name.fromString("_"); use Names
     public static final Name LENGTH_N = Name.fromString("length");
     public static final Name APPLY_N = Name.fromString("apply");
 

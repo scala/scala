@@ -3,6 +3,7 @@ package scalac.transformer.matching ;
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
 import scalac.util.Name ;
+import scalac.util.Names ;
 import Tree.* ;
 
 import java.util.* ;
@@ -57,14 +58,14 @@ public class BindingBerrySethi extends BerrySethi {
                   this.varAt.put( i, activeBinders.clone() ); // below @ ?
                   break;
             case Ident( Name name ):
-                  assert ( name == Name.fromString("_"));
+                  assert ( name == Names.WILDCARD )||( name.toString().indexOf("$") > -1 ) : "found variable label "+name;
 
                   Vector binders = (Vector) activeBinders.clone();
-
-                  if( name != Name.fromString("_")) {
+                  /*
+                  if( name != Names.WILDCARD) {
                         binders.add( pat.symbol() );
                   }
-
+                  */
                   this.varAt.put( i, binders );
 
             }
@@ -97,7 +98,7 @@ public class BindingBerrySethi extends BerrySethi {
       public NondetWordAutom automatonFrom( Tree pat, Integer finalTag ) {
 
             this.finalTag = finalTag ;
-            //System.out.println( "enter automatonFrom("+TextTreePrinter.toString(pat)+")");
+            //System.out.println( "enter automatonFrom("+ pat +")");
             switch( pat ) {
             case Sequence( Tree[] subexpr ):
 

@@ -599,7 +599,10 @@ public class DetWordAutom extends FiniteAutom {
             // Renumbering
 
             ////System.out.println( "output: a dfa with "+ix+"states");
-            assert ( !ix_final.isEmpty() ) : "no final states found";
+
+	    // FIX: empty regular expression (as in "List()") is valid
+            //assert ( !ix_final.isEmpty() ) : "no final states found";
+
             ////System.out.println( "final state:"+ix_final);
 
             //System.out.println( "indexMap: " +indexMap);

@@ -5,6 +5,7 @@ import scalac.ast.*;
 import scalac.symtab.*;
 import Tree.*;
 import scalac.util.Name;
+import scalac.util.Names;
 
 import scalac.transformer.TransMatch.Matcher ;
 
@@ -73,10 +74,10 @@ public class LeftTracerInScala extends Autom2Scala {
                                   cf.fresh.newName(Name.fromString( helpName )),
                                   owner,
                                   0)
-                  .setType( pat.type() ) ;
+                  .setType( cf.SeqListType( pat.type() )) ;
 
             ValDef varDef = (ValDef) gen.ValDef( helpVar,
-                                                 cf.ignoreValue( pat.type() ));
+                                                 cf.ignoreValue( cf.SeqListType( pat.type() )));
             //varDef.kind = Kinds.VAR;
             helpVarDefs.add( varDef );
             return helpVar;
@@ -278,7 +279,7 @@ public class LeftTracerInScala extends Autom2Scala {
 
             Tree run = callFun( new Tree[] {
                   gen.Ident( pos, emptyAccSym ),
-                  cf.newIterator( selector ),
+                  cf.newIterator( selector, selector.type() ),
                   cf.Int( 0 )  });
 
             run = gen.ValDef( Position.NOPOS, resultSym, run );
@@ -348,12 +349,12 @@ public class LeftTracerInScala extends Autom2Scala {
                                              Tree.Empty,
                                              handleBody( fv.helpMap )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
-                                                   cf.make.Ident(pat.pos, WILDCARD_N)
-                                                   .setSymbol( Symbol.NONE )
+                                                   cf.make.Ident(pat.pos, Names.WILDCARD)
+                                                   //.setSymbol( Symbol.NONE ) FIXED
                                                    .setType(pat.type()),
                                                    Tree.Empty,
-                                                   gen.mkBooleanLit(Position.NOPOS, false)) }/*,
-											       false */
+                                                   gen.mkBooleanLit(Position.NOPOS, false)) },
+			  false
                           );
             Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
             //System.out.println("freeVars: "+freeVars);

@@ -28,7 +28,9 @@ public class SplitNested {
                   return new Tree.Apply( fun, split( trees ))
                         .setType( pat.type() );
 
-            case Sequence(_):  // remove nested sequences, make vars
+            case Sequence( Tree[] trees ):  // FIXED like Subseq now// remove nested sequences, make vars
+		return Tree.Sequence( split( trees ));
+		/*
                   Name n = cf.fresh.newName("nestseq");
                   Symbol v = new TermSymbol( 0,
                                              n,
@@ -41,7 +43,7 @@ public class SplitNested {
                                            .setType( v.type() ))
                         .setSymbol( v )
                         .setType( v.type() );
-
+		*/
             case Bind(Name name, Tree subtree):  // remove nested sequences, make vars
                   return new Tree.ExtBind(name, split( subtree ))
                         .setType( pat.type() )

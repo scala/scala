@@ -38,6 +38,14 @@ class CodeFactory extends PatternTool {
 	return defs.getType( Names.scala_Ref ).symbol() ;
     }
 
+    Symbol seqSym() {
+	return defs.getType( Names.scala_Seq ).symbol() ;
+    }
+
+    Symbol iteratorSym() {
+	return defs.getType( Names.scala_Iterator ).symbol() ;
+    }
+
     Symbol seqListSym() {
 	return defs.getType( Names.scala_List ).symbol() ;
     }
@@ -69,9 +77,19 @@ class CodeFactory extends PatternTool {
     Symbol seqTraceConsSym() {
 	return defs.getType( Name.fromString( "scala.SeqTraceCons" ) ).symbol();
     }
+
     Symbol seqTraceNilSym() {
 	return defs.getType( Name.fromString( "scala.SeqTraceNil" ) ).symbol();
     }
+
+    Symbol iterableSym() {
+	return defs.getType( Names.scala_Iterable ).symbol();
+    }
+
+    Symbol newIterSym() {
+	Scope scp = iterableSym().members(); return scp.lookup( Names.elements );
+    }
+
 
     public CodeFactory( Unit unit, Infer infer ) {
 	super( unit, infer );
@@ -115,61 +133,52 @@ class CodeFactory extends PatternTool {
 	return result ;
     }
 
-      //                       `SeqList[ elemType ]'
+    /** returns `List[ elemType ]' */
       Type SeqListType( Type elemType ) {
             return Type.TypeRef( defs.SCALA_TYPE,
                                  seqListSym(),
                                  new Type[] { elemType });
       }
 
-      //                       `SeqTrace[ elemType ]'
+    /** returns  `SeqTrace[ elemType ]' */
       Type SeqTraceType( Type elemType ) {
             return Type.TypeRef( defs.SCALA_TYPE,
                                  seqTraceSym(),
                                  new Type[] { elemType });
       }
 
-    /**                       `SequenceIterator[ elemType ]' // TODO: Move to TypeFactory
-     */
+    /**  returns `Iterator[ elemType ]' */
     Type _seqIterType( Type elemType ) {
 	Symbol seqIterSym = defs.getType( Names.scala_Iterator ).symbol();
 
-	return Type.TypeRef( defs.SCALA_TYPE/*PREFIX*/,
-			     seqIterSym(),
+	return Type.TypeRef( defs.SCALA_TYPE, seqIterSym(),
 			     new Type[] { elemType });
     }
 
-    /** returns code `<seqObj>.elements'
-     *  the parameter needs to have type attribute `Sequence[<elemType>]'
-     *  it is not checked whether seqObj really has type `Sequence'
-     */
-    Tree newIterator( Tree seqObj ) {
-	Type elemType = getElemType( seqObj.type() );
-	//System.out.println( "elemType:"+elemType );
-
-	//Tree t1 = gen.Select(seqObj, newIterSym);
-
-	Scope scp = defs.getClass( Names.scala_Iterable ) /* sequenceSym */
-	    .members();
-	Symbol newIterSym = scp.lookup/*Term */( Names.elements );
-
-	Tree t1 = make.Select( Position.NOPOS, seqObj, newIterSym.name ) /*todo: newIterSym() */
-	    .setSymbol( newIterSym )
+    /**  returns `<seqObj.elements>' */
+    Tree newIterator( Tree seqObj, Type elemType ) {
+	Symbol newIterSym = newIterSym();
+	Tree t1 = gen.Select( Position.NOPOS, seqObj, newIterSym)
 	    .setType( Type.MethodType(new Symbol[] {},_seqIterType( elemType )));
-
-	//System.out.println( "t1.type:"+t1.type() );
 
 	Tree theIterator = gen.Apply(seqObj.pos,
 				     t1,
 				     Tree.EMPTY_ARRAY)
 	    .setType( _seqIterType( elemType ) );
 
-	//System.out.println( "theit.type:"+theIterator.type() );
-
 	return theIterator;
 
     }
 
+    /** returns code `<seqObj>.elements'
+     *  the parameter needs to have type attribute `Sequence[<elemType>]'
+     */
+    Tree newIterator( Tree seqObj ) {
+	return newIterator( seqObj, getElemType_Sequence( seqObj.type() ));
+    }
+
+    /** FIXME - short type
+     */
       Tree ignoreValue( Type asType ) {
             if( asType.isSameAs(defs.BYTE_TYPE ))
                   return make.Literal(Position.NOPOS, new Integer( 0 ))
@@ -196,20 +205,20 @@ class CodeFactory extends PatternTool {
             else if( asType.isSameAs(defs.STRING_TYPE ))
                   return make.Literal(Position.NOPOS, "")
                         .setType( defs.STRING_TYPE );
-            /** FIX ME FOR THE NEW VERSION
-		else
-                  return gen.Apply( Null( asType ),
-                                    Tree.EMPTY_ARRAY);
-	    */
-	    return null;  // should not happen FIXME
+            /** FIX ME FOR THE NEW VERSION*/
+	    else
+		return /*gen.Apply( */Null( asType )/*,
+						      Tree.EMPTY_ARRAY)*/;
+
+	    //throw new ApplicationError("don't know how to handle "+asType);
       }
 
     /** FIX ME FOR THE NEW VERSION
-      Tree Null( Type asType ) {
-            return gen.TypeApply(pos, gen.mkId(pos, defs.NULL ),
-                                 new Tree[] { gen.mkType(pos, asType) } );
-      }
-    */
+     */
+    Tree Null( Type asType ) {
+	return gen.Ident(pos, defs.NULL );/*gen.TypeApply(pos, gen.Ident(pos, defs.NULL ),
+					    new Tree[] { gen.mkType(pos, asType) } );*/
+    }
 
     // the caller needs to set the type !
     Tree  _applyNone( Tree arg ) {
@@ -242,6 +251,9 @@ class CodeFactory extends PatternTool {
       /** code `new SeqTraceCons[ elemType ]( state, head, tail )'
        */
       Tree newSeqTraceCons(  Integer state, Tree head, Tree tail ) {
+	  assert head != null : "head null";
+	  assert tail != null : "tail null";
+	  assert state != null : "state null";
             return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqTraceConsSym(),
                             new Type[] { head.type() },
                             new Tree[] { Int( state ), head, tail });
@@ -293,31 +305,39 @@ class CodeFactory extends PatternTool {
 			new Tree[] { head, tail });
     }
 
-    /** gets first arg of typeref ( can be Seq, Iterator, whatever )
+    /** returns A for T <: Sequence[ A ]
      */
-    Type getElemType( Type seqType ) {
-	//System.err.println("getElemType("+seqType+")");
-	//Symbol seqClass = defs.getType( Name.fromString("scala.Seq") ).symbol();
-	//assert seqClass != Symbol.NONE : "did not find Seq";
+    Type getElemType_Sequence( Type tpe ) {
+	//System.err.println("getElemType_Sequence("+tpe.widen()+")");
+	Type tpe1 = tpe.widen().baseType( seqSym() );
 
-	//Type seqType1 = seqType.baseType( seqClass );
+	if( tpe1 == Type.NoType )
+	    throw new ApplicationError("arg "+tpe+" not subtype of Sequence[ A ]");
 
-	switch( seqType ) {
+	return tpe1.typeArgs()[ 0 ];
+    }
+
+    /** returns A for T <: Iterator[ A ]
+     */
+    Type getElemType_Iterator( Type tpe ) {
+	//System.err.println("getElemType_Iterator("+tpe+")");
+
+	Type tpe1 = tpe.widen().baseType( iteratorSym() );
+
+	switch( tpe1 ) {
 	case TypeRef(_,_,Type[] args):
-	    assert( args.length==1 ) : "weird type:"+seqType;
 	    return args[ 0 ];
 	default:
-	    //System.err.println("somethings wrong: "+seqType);
-	    return seqType.widen();
+	    throw new ApplicationError("arg "+tpe+" not subtype of Iterator[ A ]");
 	}
+
     }
 
     /** `it.next()'
      */
     public Tree _next( Tree iter ) {
-	Type elemType = getElemType( iter.type() );
+	Type elemType = getElemType_Iterator( iter.type() );
 	Symbol nextSym = seqIterSym_next();
-
 	return _applyNone( gen.Select( iter, nextSym )).setType( elemType );
     }
 
