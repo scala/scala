@@ -21,13 +21,17 @@ object Queue {
 }
 
 class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
-    /*    val in:List[A]= Nil;
-	  val out:List[A]= Nil; */
 
     def at(n: Int): A =
 	if (n < out.length) out.at(n)
 	    else (in.reverse).at(n - out.length);
 
+  /** Returns the <code>n</code>-th element of this queue.
+   * The first element is at position 0.
+   * @param n index of the element to return
+   * @return the element at position <code>n</code> in this list.
+   * @throws java.lang.RuntimeException if the list is too short.
+   */
     def apply(n: Int): A = at(n);
 
     /** Returns the elements in the list as an iterator
@@ -40,6 +44,8 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
      */
     def isEmpty: Boolean = (in.isEmpty && out.isEmpty);
 
+    /** Returns the lenegth of the queue.
+     */
     def length = in.length + out.length;
 
     /** Creates a new queue with element added at the end
@@ -47,7 +53,7 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
      *
      *  @param  elem        the element to insert
      */
-    def +(elem: A):Queue[A] = {
+    def +[B >: A](elem: B):Queue[B] = {
 	new Queue(elem::in,out);
     }
 
@@ -59,8 +65,8 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
      *
      *  @param  iter        an iterable object
      */
-    def +(iter: Iterable[A]) = {
-	var q:List[A] = in;
+    def +[B >: A](iter: Iterable[B]) = {
+	var q:List[B] = in;
 	iter.elements.foreach(e => q = (e::q));
 	new Queue(q,out);
     }
@@ -69,14 +75,14 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
      *
      *  @param  elems		the elements to add.
      */
-    def enqueue(elems: A*): Queue[A] = (this + elems);
+    def enqueue [B >: A](elems: B*): Queue[B] = (this + elems);
 
     /** Returns a tuple with the first element in the queue,
      *  and a new queu with this element removed.
      *
      *  @returns the first element of the queue.
      */
-    def dequeue: Tuple2[A,Queue[A]] = {
+    def dequeue: Pair[A,Queue[A]] = {
 	var newOut:List[A]=Nil;
 	var newIn:List[A]=Nil;
         if (out.isEmpty) {
@@ -89,7 +95,7 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
 	if (newOut.isEmpty)
   	  error("queue empty");
         else {
-            Tuple2(newOut.head,new Queue(newIn,newOut.tail));
+            Pair(newOut.head,new Queue(newIn,newOut.tail));
         }
     }
 
@@ -106,6 +112,27 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
 	} else
 	out.head;
     }
+
+  /** Returns a string representation of this queue. The resulting string
+  * begins with the string <code>start</code> and is finished by the string
+  * <code>end</code>. Inside, the string representations of elements (w.r.t.
+  * the method <code>toString()</code>) are separated by the string
+  * <code>sep</code>.
+  * <p>
+  * Ex: <br>
+  * <code>Queue(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+  * @param start starting string.
+  * @param sep separator string.
+  * @param end ending string.
+  * @return a string representation of this list.
+  */
+  def mkString(start: String, sep: String, end: String): String =
+      (out:::(in.reverse)).mkString(start,sep,end);
+
+  /** Returns a string representation of this queue.
+   */
+  override def toString() = (out:::(in.reverse)).toString();
+
 }
 
 
