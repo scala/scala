@@ -49,6 +49,7 @@ public class InterpreterShell {
     // Private Fields
 
     private final boolean interactive;
+    private final boolean nologo;
     private final boolean emacs;
     private final BufferedReader reader;
     private final PrintWriter writer;
@@ -72,6 +73,7 @@ public class InterpreterShell {
         PrintWriter writer)
     {
         this.interactive = command.interactive.value;
+        this.nologo = command.nologo.value;
         this.emacs = command.emacs.value;
         this.reader = reader;
         this.writer = writer;
@@ -87,7 +89,7 @@ public class InterpreterShell {
     // Public Methods - shell
 
     public void main(String[] files, String script, String main, String[]args){
-        if (interactive) showBanner();
+        if (interactive && !nologo) showBanner();
         if (files.length > 0) load(lfiles = files);
         global.stop("total"); // !!! remove ?
         if (global.reporter.errors() == 0 && script != null) eval(script);

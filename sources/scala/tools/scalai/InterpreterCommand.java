@@ -23,6 +23,7 @@ public class InterpreterCommand extends CompilerCommand {
 
     public final StringOptionParser script;
     public final BooleanOptionParser interactive;
+    public final BooleanOptionParser nologo;
     public final BooleanOptionParser emacs;
     public final ScalaProgramArgumentParser program;
 
@@ -49,6 +50,10 @@ public class InterpreterCommand extends CompilerCommand {
             "interactive", "Start interpreter in interactive mode",
             false);
 
+        this.nologo = new BooleanOptionParser(this,
+            "nologo", "Print no logo at interactive interpreter start",
+            false);
+
         this.emacs = new BooleanOptionParser(this,
             "emacs", "Use Emacs editing mode",
             false);
@@ -60,7 +65,8 @@ public class InterpreterCommand extends CompilerCommand {
 
         add(0, script);
         add(1, interactive);
-        add(2, emacs);
+        add(2, nologo);
+        add(3, emacs);
         add(parsers().indexOf(unknown_options), program);
     }
 
