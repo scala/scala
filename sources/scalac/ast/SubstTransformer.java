@@ -35,6 +35,9 @@ public class SubstTransformer extends Transformer {
     protected LinkedList/*<Symbol[]>*/ tmfStack = new LinkedList();
     protected LinkedList/*<Symbol[]>*/ tmaStack = new LinkedList();
 
+    protected LinkedList/*<Symbol>*/ thisTypeFrom = new LinkedList();
+    protected LinkedList/*<Symbol>*/ thisTypeTo = new LinkedList();
+
     final protected Type.Map typeMap =
         new Type.Map() {
             public Type apply(Type t) {
@@ -126,6 +129,16 @@ public class SubstTransformer extends Transformer {
         updateTypeSubst();
     }
 
+    public void pushThisTypeSubst(Symbol from, Symbol to) {
+        thisTypeFrom.addLast(from);
+        thisTypeTo.addLast(to);
+    }
+
+    public void popThisTypeSubst() {
+        thisTypeFrom.removeLast();
+        thisTypeTo.removeLast();
+    }
+
     public Tree transform(Tree oldTree) {
         Tree newTree = super.transform(oldTree);
         if (oldTree.hasSymbol()) {
@@ -138,7 +151,7 @@ public class SubstTransformer extends Transformer {
                 newTree.setSymbol(oldTree.symbol());
         }
 
-        newTree.type = smApplier.apply(typeMap.apply(oldTree.type));
+        newTree.type = transformType(oldTree.type);
         return syncTree(newTree);
     }
 
@@ -152,7 +165,7 @@ public class SubstTransformer extends Transformer {
         Symbol sym = null;
         if (tree.hasSymbol()) {
             sym = tree.symbol();
-            newType = smApplier.apply(typeMap.apply(sym.nextInfo()));
+            newType = transformType(sym.nextInfo());
         }
 
         // !!! Do we really need to copy ? transformer's copier is strict so
@@ -201,8 +214,7 @@ public class SubstTransformer extends Transformer {
             // TODO add a case for TypeDef?
 
         case Typed(Tree expr, Tree tpe): {
-            Type newType2 =
-                smApplier.apply(((Tree.Typed)tree).tpe.type);
+            Type newType2 = transformType(((Tree.Typed)tree).tpe.type);
             return simpleCopy.Typed(tree,
                                     expr,
                                     gen.mkType(tpe.pos, newType2));
@@ -214,6 +226,17 @@ public class SubstTransformer extends Transformer {
     }
 
     //////////////////////////////////////////////////////////////////////
+
+    protected Type transformType(Type tp) {
+        assert thisTypeFrom.size() == 1;
+        Symbol thisFromSym = (Symbol)thisTypeFrom.getLast();
+        Type thisToType = ((Symbol)thisTypeTo.getLast()).thisType();
+
+        Type tp1 = tp.substThis(thisFromSym, thisToType);
+        Type tp2 = smApplier.apply(tp1);
+        Type tp3 = typeMap.apply(tp2);
+        return tp3;
+    }
 }
 
 
@@ -283,7 +306,10 @@ public class AttributedTreeCopier extends SubstTransformer {
             Symbol oldSym = (Symbol)symPair.getKey();
             Symbol newSym = (Symbol)symPair.getValue();
 
-            newSym.setInfo(smApplier.apply(typeMap.apply(oldSym.info())));
+            Type oldType = oldSym.info();
+            Type newType = transformType(oldType);
+
+            newSym.setInfo(newType);
         }
 
         return newTree;
