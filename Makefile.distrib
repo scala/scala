@@ -159,7 +159,7 @@ install-windows		: install
 	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
 	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
 	    winfile="$(INSTALL_PREFIX)/bin/$$name.bat"; \
-	    nixexec=`SCALA_EXEC=echo SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
+	    nixexec=`SCALA_JAVA_CMD="echo java" SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
 	    winexec="$$nixexec"; \
 	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%SCALA_HOME%\"#g"`; \
 	    winexec=`echo "$$winexec" | tr '/' '\\\\' | tr ':' ';'`; \
@@ -171,8 +171,12 @@ install-windows		: install
 	        $(ECHO) "set COMMAND=$$winexec"; \
 	        $(CAT) "$$srcfile-footer.bat"; \
 	    ) | $(UNIX2DOS) >> "$$winfile"; \
-	    $(RM) "$$nixfile"; \
 	    echo "done"; \
+	done; \
+	for name in "" $(SCRIPTS_ALIASES_NAMES); do \
+	    if [ -z "$$name" ]; then continue; fi; \
+	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
+	    $(RM) "$$nixfile"; \
 	done
 	$(RM) $(INSTALL_PREFIX)/bin/.scala_wrapper
 	$(FIND) $(INSTALL_SRCDIR) -type f -exec $(UNIX2DOS) "{}" ";"
@@ -290,6 +294,8 @@ ia-build-windows	:
 ia-build-all		: ia-build-common
 ia-build-all		: ia-build-unix
 ia-build-all		: ia-build-windows
+ia-build-all		:
+	$(CHMOD) -R a+w $(IA_BUILD_PREFIX)
 
 .PHONY			: ia-build-all
 .PHONY			: ia-build-common
