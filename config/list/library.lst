@@ -4,6 +4,7 @@
 # $Id$
 
 $colon$colon.scala
+#$percent.scala # waiting for scaladoc bug to be fixed
 AnyVal.java
 Array.java
 Boolean.java
