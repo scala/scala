@@ -964,11 +964,12 @@ The class definition ~\lstinline@case class X(), Y(n: int) extends Z@~ expands t
 \item
 The object definition ~\lstinline@case object Red, Green, Blue extends Color@~
 expands to  
-\begin{\lstlisting}
+\begin{lstlisting}
 case object Red extends Color; 
 case object Green extends Color;
 case object Blue extends Color .
-\end{lstisting}
+\end{lstlisting}
+\end{itemize}
 
 \section{Value Declarations and Definitions}
 \label{sec:valdef}
@@ -1047,7 +1048,7 @@ val xs = x$\Dollar$._2;
                    |  id `:' Type `=' `_'
 \end{lstlisting}
 
-A sequence of variable declarations \listinline@var x$_1$, ..., x$_n$: T@
+A sequence of variable declarations \lstinline@var x$_1$, ..., x$_n$: T@
 is equivalent to 
 
 
