@@ -14,21 +14,11 @@ package scala.concurrent;
 */
 object jolib {
 
-  /////////////////// QUEUE /////////////////////////
-
-  class Queue[a] {
-    private var queue: List[a] = Nil;
-    def enqueue(x: a) = queue = queue ::: List(x);
-    def dequeue: a = { val x = queue.head; queue = queue.tail; x };
-    def front: a = queue.head;
-    def isEmpty = queue.isEmpty;
-  }
-
-  /////////////////// JOIN /////////////////////////
-
   type Pattern = List[Signal];
 
   type Rule = PartialFunction[List[Any], unit];
+
+  /////////////////// JOIN DEFINITION /////////////////////////
 
   class Join with Monitor {
 
@@ -58,7 +48,7 @@ object jolib {
 
   abstract class Signal (join: Join) {
     type C;
-    val queue = new Queue[C];
+    val queue = new collection.mutable.Queue[C];
     def tryReduction(x: C): unit = {
       val continuation = join synchronized {
 	queue.enqueue(x);
