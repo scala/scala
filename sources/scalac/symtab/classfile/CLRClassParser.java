@@ -333,7 +333,7 @@ public class CLRClassParser extends SymbolLoader {
         if (base == global.definitions.SHORT_CLASS)
             return AConstant.SHORT(((Number)value).shortValue());
         if (base == global.definitions.CHAR_CLASS)
-            return AConstant.CHAR((char)((Number)value).intValue());
+            return AConstant.CHAR(((Character)value).charValue());
         if (base == global.definitions.INT_CLASS)
             return AConstant.INT(((Number)value).intValue());
         if (base == global.definitions.LONG_CLASS)
