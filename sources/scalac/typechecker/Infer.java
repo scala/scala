@@ -926,14 +926,7 @@ public class Infer implements Modifiers, Kinds {
 	    if (i == alts.length)
 		throw new Type.Error("missing arguments for " + alts[0]);
 	}
-	/*
-	// then catch the case of a single alternative.
-	if (alts.length == 1) {
-	    tree.setSymbol(alts[0]).setType(alttypes[0]);
-	    return;
-	}
-	*/
-	// finally, do the normal case.
+	// second, do the normal case.
 	int best = -1;
 	for (int i = 0; i < alttypes.length; i++) {
 	    if (isCompatible(alttypes[i], pt) &&

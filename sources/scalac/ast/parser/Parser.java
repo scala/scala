@@ -1209,24 +1209,19 @@ public class Parser implements Tokens {
      *                |  Pattern2
      */
     Tree pattern1() {
-        int base = sp;
-	Tree top = simplePattern();
-	if (s.token == COLON) {
-	    if (TreeInfo.isVarPattern(top)) {
-		return make.Typed(s.skipToken(), top, type1());
-	    }
+	Tree p = pattern2();
+	if (s.token == COLON && TreeInfo.isVarPattern(p)) {
+	    return make.Typed(s.skipToken(), p, type1());
 	}
-	return pattern1rest(base, top);
+	return p;
     }
 
     /*   Pattern2  ::=  SimplePattern [ '*' | '?' | '+' ]
      *               |  SimplePattern {Id SimplePattern}    // op2 must not be empty
      */
     Tree pattern2() {
-	return pattern1rest(sp, simplePattern());
-    }
-
-    Tree pattern1rest(int base, Tree top) {
+	int base = sp;
+	Tree top = simplePattern();
 	if (s.token == IDENTIFIER) {
             if (s.name == STAR) {    /*         p*  becomes  z@( |(p,z))       */
                 s.nextToken();

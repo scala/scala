@@ -199,6 +199,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 	    }
 	}
+	//throw ex;//DEBUG
 	return error(pos, ex.msg);
     }
 
@@ -506,6 +507,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 	    }
 	};
+
+    /** Check that there are no dependent parameter types among parameters
+     */
+    void checkNoEscapeParams(ValDef[][] vparams) {
+	for (int i = 0; i < vparams.length; i++)
+	    for (int j = 0; j < vparams[i].length; j++)
+		checkNoEscape(vparams[i][j].pos, vparams[i][j].tpe.type);
+    }
 
     /** Check that tree represents a pure definition.
      */
@@ -1174,6 +1183,31 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 // Attribution and Transform -------------------------------------------------
 
+    /** Turn tree type into stable type if possible and required by
+     *  context.
+     */
+    Tree mkStable(Tree tree, Type pre, int mode, Type pt) {
+	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) &&
+	    pre.isStable()) {
+	    Symbol sym = tree.symbol();
+	    switch (tree.type) {
+	    case OverloadedType(Symbol[] alts, Type[] alttypes):
+		if ((mode & FUNmode) == 0) {
+		    try {
+			infer.exprAlternative(tree, alts, alttypes, pt);
+			sym = tree.symbol();
+		    } catch (Type.Error ex) {
+			reportTypeError(tree.pos, ex);
+		    }
+		}
+	    }
+	    if (sym.isStable()) {
+		tree.setType(Type.singleType(pre, sym));
+	    }
+	}
+	return tree;
+    }
+
     /** Adapt tree to given mode and given prototype
      */
     Tree adapt(Tree tree, int mode, Type pt) {
@@ -1442,12 +1476,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    symtype = checkAccessible(tree.pos, sym, symtype, qual);
 	if (symtype == Type.NoType)
 	    return error(tree.pos, "not found: " + decode(name));
-	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) && sym.isStable()) {
-	    //System.out.println("making single " + sym + ":" + symtype);//DEBUG
-	    symtype = Type.singleType(pre, sym);
-	}
 	//System.out.println(name + ":" + symtype);//DEBUG
-	return tree.setSymbol(sym).setType(symtype);
+	return mkStable(tree.setSymbol(sym).setType(symtype), pre, mode, pt);
     }
 
     /** Attribute a selection where `tree' is `qual.name'.
@@ -1483,9 +1513,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    symtype = Type.PolyType(uninst, symtype);
 		}
 	    }
-	    if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) &&
-		sym.isStable() && qual.type.isStable())
-		symtype = Type.singleType(qual.type, sym);
 	    //System.out.println(qual.type + ".member: " + sym + ":" + symtype);//DEBUG
 	    Tree tree1;
 	    switch (tree) {
@@ -1498,7 +1525,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    default:
 		throw new ApplicationError();
 	    }
-	    return tree1.setType(symtype);
+	    return mkStable(tree1.setType(symtype), qual.type, mode, pt);
 	}
     }
 
@@ -1815,6 +1842,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		reenterParams(tparams, vparams, sym.primaryConstructor().type());
 		Tree.AbsTypeDef[] tparams1 = transform(tparams);
 		Tree.ValDef[][] vparams1 = transform(vparams);
+		checkNoEscapeParams(vparams1);
 		Tree tpe1 = transform(tpe, TYPEmode);
 		if ((sym.flags & CASE) != 0 && vparams.length > 0 && templ.type == null)
 		    templ.body = desugarize.addCaseElements(templ.body, vparams[0]);
@@ -1842,6 +1870,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    context.enclClass.owner.flags |= INCONSTRUCTOR;
 		Tree.AbsTypeDef[] tparams1 = transform(tparams);
 		Tree.ValDef[][] vparams1 = transform(vparams);
+		checkNoEscapeParams(vparams1);
 		Tree tpe1 = (tpe == Tree.Empty)
 		    ? gen.mkType(tree.pos, sym.type().resultType())
 		    : transform(tpe, TYPEmode);
