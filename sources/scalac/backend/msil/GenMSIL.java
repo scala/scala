@@ -241,12 +241,6 @@ public final class GenMSIL {
      */
     private boolean lastExpr;
 
-    /*
-     * Specifies if the control flow may come through the current point
-     * in the instruction sequence.
-     */
-    private boolean willReturn;
-
     private boolean enableTailCalls = false;
 
     private Label methodEnd = null;
@@ -426,7 +420,6 @@ public final class GenMSIL {
      * the current position in the tree for better error messages
      */
     private Item gen(Tree tree, MSILType toType) {
-	willReturn = true;
  	if (global.args.debuginfo.value
 	    && code != null && tree.pos != Position.NOPOS
 	    && Position.line(tree.pos) != Position.line(pos))
@@ -576,18 +569,25 @@ public final class GenMSIL {
         case Return(Tree expr):
             //System.out.println(Debug.show(expr) + "; toType = " + toType);
             genLoad(expr, msilType(expr));
-            //code.Emit(OpCodes.Ret);
-            code.Emit(OpCodes.Br, methodEnd);
+            code.Emit(OpCodes.Ret);
+            //code.Emit(OpCodes.Br, methodEnd);
             return items.VoidItem();
 
 	case If(Tree cond, Tree thenp, Tree elsep):
 	    item = genIf(cond, thenp, elsep, toType);
 	    return check(item);
 
-	case LabelDef(_, _ /*Ident[] params*/, Tree rhs):
+	case LabelDef(_, Ident[] params, Tree rhs):
+//             System.out.print("LabelDef: " + sym + "(");
+//             for (int i = 0; i < params.length; i++) {
+//                 if (i > 0) System.out.print(", ");
+//                 System.out.print(params[i].symbol());
+//             }
+//             System.out.println(")");
 	    Label l = code.DefineLabel();
 	    code.MarkLabel(l);
-	    sym2label.put(sym, l);
+	    //sym2label.put(sym, l);
+	    sym2label.put(sym, new LabelDescr(l, params));
 	    return gen(rhs, toType);
 
 	case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
@@ -608,8 +608,7 @@ public final class GenMSIL {
 // 		if (lastExpr)
 // 		    code.Emit(OpCodes.Ret);
 // 		else
-		if (willReturn)
-		    code.Emit(OpCodes.Br, exit);
+                code.Emit(OpCodes.Br, exit);
 		code.MarkLabel(nextCase);
 		nextCase = code.DefineLabel();
 	    }
@@ -663,10 +662,8 @@ public final class GenMSIL {
 		code.Emit(OpCodes.Ret);
 		} else */
 
-	    if (willReturn) {
-		exit = code.DefineLabel();
-		code.Emit(OpCodes.Br, exit);
-	    }
+            exit = code.DefineLabel();
+            code.Emit(OpCodes.Br, exit);
 	    resolve(fail);
 	    Item iElse = load(gen(elsep, toType));
 	    resolve(exit);
@@ -765,6 +762,14 @@ public final class GenMSIL {
 			  + fromType.isSubtypeOf(toType));
     }
 
+    private static class LabelDescr {
+        final Label label;
+        final Ident[] params;
+        LabelDescr(Label label, Ident[] params) {
+            this.label = label;
+            this.params = params;
+        }
+    }
 
     private Item genApply(Tree fun, Tree[] args, MSILType resType) {
         Item i = genApply0(fun, args, resType);
@@ -777,15 +782,18 @@ public final class GenMSIL {
 	Symbol sym = fun.symbol();
 	switch (fun) {
 	case Ident(_):
-	    Label l = (Label)sym2label.get(sym);
-	    if (l != null) {
+	    LabelDescr ld = (LabelDescr)sym2label.get(sym);
+	    if (ld != null) {
+                assert ld.params.length == args.length
+                    : ld.params.length + " != " + args.length;
 		lastExpr = false;
 		for (int i = 0; i < args.length; i++)
 		    genLoad(args[i], msilType(args[i].type));
-		for (int i = args.length; i > 0; i--)
-		    code.Emit(OpCodes.Starg_S, i);
-		code.Emit(OpCodes.Br, l);
-		willReturn = false;
+		for (int i = args.length - 1; i >= 0; i--) {
+                    Item ident = gen(ld.params[i], msilType(ld.params[i]));
+                    store(ident);
+                }
+		code.Emit(OpCodes.Br, ld.label);
 		MSILType retType = msilType(sym.info().resultType());
 		Item i = retType == MSILType.VOID ? items.VoidItem()
 		    : items.StackItem(retType);
@@ -1545,8 +1553,7 @@ public final class GenMSIL {
 		Label exit = null;
 		/*if (lastExpr)
 		    code.Emit(OpCodes.Ret);
-		    else */
-		if (willReturn) {
+		    else */ {
 		    exit = code.DefineLabel();
 		    code.Emit(OpCodes.Br, exit);
 		}
@@ -1557,8 +1564,7 @@ public final class GenMSIL {
 			/*if (lastExpr)
 			    code.Emit(OpCodes.Ret);
 			    else*/
-			if (willReturn)
-			    code.Emit(OpCodes.Br, exit);
+                        code.Emit(OpCodes.Br, exit);
 		    }
 		}
 		if (success != null) {
