@@ -7,10 +7,10 @@
 ** $Id$
 \*                                                                      */
 
-package scala.xml ;
+package scala.xml;
 
-import scala.collection.Map ;
-import scala.collection.immutable ;
+import scala.collection.Map;
+import scala.collection.immutable;
 
 object Node {
 
@@ -21,8 +21,10 @@ object Node {
   val EmptyNamespace = "";
 
 }
-/** Trait for representing XML using nodes of a labelled tree.
- *  This trait contains an implementation of a subset of XPath for navigation.
+
+/**
+ * Trait for representing XML using nodes of a labelled tree.
+ * This trait contains an implementation of a subset of XPath for navigation.
  */
 abstract class Node extends NodeSeq {
 
@@ -35,7 +37,7 @@ abstract class Node extends NodeSeq {
   def namespace: String;
 
   /** used internally. Text = -1 PI = -2 Comment = -3 CDATA = -4 EntityRef = -5    */
-  def typeTag$:Int = 0;
+  def typeTag$: Int = 0;
 
   /** attribute map for attributes with the same namespace as this element  */
   final def attribute: Map[String,String] = {
@@ -52,7 +54,7 @@ abstract class Node extends NodeSeq {
 	def elements =
           theMap.elements;
 
-	def get(x:String) =
+	def get(x: String) =
           theMap.get(x);
       };
     internalAttrMap
@@ -66,19 +68,19 @@ abstract class Node extends NodeSeq {
   def child:      Seq[Node];
 
   /** descendant axis (all descendants of this node) */
-  def descendant:List[Node] =
+  def descendant: List[Node] =
     child.toList.flatMap { x => x::x.descendant } ;
 
   /** descendant axis (all descendants of this node) */
-  def descendant_or_self:List[Node] = this :: descendant;
+  def descendant_or_self: List[Node] = this :: descendant;
 
   /** structural equality */
-  override def equals( x:Any ):boolean = x match {
-    case that:Node =>
+  override def equals(x: Any): Boolean = x match {
+    case that: Node =>
       //Console.print("(Node)");
       that.label == this.label
     && that.attributes ==  this.attributes
-    && that.child.sameElements( this.child ) // sameElements
+    && that.child.sameElements(this.child) // sameElements
     case _ => false
   }
 
@@ -90,13 +92,16 @@ abstract class Node extends NodeSeq {
   /** method for NodeSeq */
   final def theSeq = this :: Nil;
 
-  /** string representation of this node
-   *  @param stripComment if true, strips comment nodes from result
+  /**
+   * String representation of this node
+   *
+   * @param stripComment if true, strips comment nodes from result
    */
   def toString(stripComment: Boolean): String  =
     Utility.toXML(this, stripComment);
 
-  /** @see toString(false)
+  /**
+   * @see "toString(Boolean)"
    */
   override def toString(): String =
     toString(false);
