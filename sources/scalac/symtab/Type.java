@@ -3033,8 +3033,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (sym == Global.instance.definitions.UNIT_CLASS) return this;
                 Name fullname = sym.fullName();
                 if (fullname == Names.java_lang_Object ||
-                    fullname == Names.scala_AnyRef ||
-                    fullname == Names.scala_AnyVal ||
                     fullname == Names.scala_All ||
                     fullname == Names.scala_AllRef)
                     return TypeRef(localThisType, Global.instance.definitions.ANY_CLASS, EMPTY_ARRAY);
