@@ -9,33 +9,32 @@ import scala.xml.{Node,Text,FactoryAdapter} ;
 */
 class NoBindingFactoryAdapter extends FactoryAdapter  {
 
-    def nodeContainsText( label:java.lang.String ):boolean = true;
+  def nodeContainsText( label:java.lang.String ):boolean = true;
 
-    /* default behaviour is hash-consing */
-    val cache = new HashMap[Element,Element];
+  /* default behaviour is hash-consing */
+  val cache = new HashMap[int,Element]();
 
-    def createNode( label: String,
-                    attrs: HashMap[String,String],
-                    children: List[Node] ):Element = {
+  def createNode( label: String, attrs: HashMap[String,String], children: List[Node] ):Element = {
 
-          val el = new Element( label, children ) {
-	    override def attributes = attrs;
-          };
+    val elHashCode = Utility.hashCode( label, attrs, children ) ;
 
-	  cache.get( el ).match{
-	    case Some(cachedElem) =>
-	      //System.err.println("[using cached elem +"+cachedElem.toXML+"!]");
-	      cachedElem
-	    case None =>
-	      cache.update( el, el );
-	      el
-	  }
+    cache.get( elHashCode ).match{
+      case Some(cachedElem) =>
+        //System.err.println("[using cached elem +"+cachedElem.toXML+"!]");
+      cachedElem
+      case None =>
+        val el = new Element( label, children ) {
+          override def attributes = attrs;
+        };
+      cache.update( elHashCode, el );
+      el
     }
-
-    def createText( text:String ) = Text( text );
-
-    override def loadXML( url:URL ):Element = loadXML( url.getFile() );
-
-    override def loadXML( filename:String ):Element =
-      super.loadXML( filename ).asInstanceOf[ Element ]
   }
+
+  def createText( text:String ) = Text( text );
+
+  override def loadXML( url:URL ):Element = loadXML( url.getFile() );
+
+  override def loadXML( filename:String ):Element =
+    super.loadXML( filename ).asInstanceOf[ Element ]
+}
