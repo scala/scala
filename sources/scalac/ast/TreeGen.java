@@ -521,7 +521,6 @@ public class TreeGen implements Kinds, Modifiers {
      */
     public Tree ClassDef(int pos, Symbol clazz, Template template) {
 	Global.instance.nextPhase();
-	Type clazzinfo = clazz.info();
 	Type constrtype = clazz.constructor().info();
 	Global.instance.prevPhase();
         return make.ClassDef(
