@@ -125,7 +125,7 @@ public class AttributeParser implements ClassfileConstants {
                     if ((flags & JAVA_ACC_STATIC) == 0) return;
                     if ((flags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) == 0) return;
                     if (pool.getClass(outer) != sym) return;
-                    Symbol alias = sym.dualClass().newTypeAlias(
+                    Symbol alias = sym.linkedModule().moduleClass().newTypeAlias(
                         Position.NOPOS,
                         0,
                         pool.getName(name).toTypeName(),

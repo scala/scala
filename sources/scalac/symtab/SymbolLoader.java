@@ -49,16 +49,15 @@ public abstract class SymbolLoader extends Type.LazyType {
      * - the main class of the constructed class, if it's a
      *   constructor,
      * - the main class of the module class, if it's a module,
-     * - the dual class, if it's a dual module class,
-     * - itself if it's a non-dual class or a non-module class,
+     * - the linked class, if it's a linked module class,
+     * - itself if it's a non-linked class or a non-module class,
      * - undefined otherwise.
      *
      * The related symbols of a class include:
      * - the class itself,
      * - its constructor (symbol returned by allConstructors()),
-     * - its module, if it has one,
-     * - the related symbols of its dual class, if it's dual
-     *   non-module class.
+     * - its linked module, if it has one,
+     * - the related symbols of its linked module class, if it has one
      */
     public final void complete(Symbol symbol) {
         Symbol clasz = getMainClass(symbol);
@@ -70,7 +69,7 @@ public abstract class SymbolLoader extends Type.LazyType {
             global.currentPhase = phase;
             long end = System.currentTimeMillis();
             global.operation("loaded " + source + " in " + (end-start) + "ms");
-            checkValidity(clasz, source, symbol);
+            checkValidity(clasz, source);
         } catch (IOException exception) {
 	    if (global.debug) exception.printStackTrace();
             String error = "error while loading " + symbol;
@@ -100,24 +99,24 @@ public abstract class SymbolLoader extends Type.LazyType {
             return getMainClass(symbol.constructorClass());
         if (symbol.isModule())
             return getMainClass(symbol.moduleClass());
+        if (symbol.isModuleClass() && !symbol.linkedClass().isNone())
+            return symbol.linkedClass();
         assert symbol.isClassType(): Debug.show(symbol);
-        if (!symbol.isModuleClass()) return symbol;
-        return symbol.dualClass().isNone() ? symbol : symbol.dualClass();
+        return symbol;
     }
 
     /**
      * Checks that at least the class or its dual class have been
      * initialized and signals an error otherwise.
      */
-    private void checkValidity(Symbol clasz, String source, Symbol s) {
+    private void checkValidity(Symbol clasz, String source) {
         if (clasz.rawInfo() != this) return;
         String what;
-        if (clasz.dualClass().isNone()) {
-            what = "does not define " + clasz;
+        if (clasz.linkedClass().isNone()) {
+            what = "does not define " + clasz.linkedModule();
         } else {
-            if (clasz.dualClass().rawInfo() != this) return;
-            Symbol module = clasz.dualClass().module();
-            what = "defines neither " + clasz + " nor " + module;
+            if (clasz.linkedModule().moduleClass().rawInfo() != this) return;
+            what = "defines neither " + clasz + " nor " + clasz.linkedModule();
         }
         global.error(source + " " + what);
     }
@@ -129,8 +128,10 @@ public abstract class SymbolLoader extends Type.LazyType {
     private void initializeAll(Symbol clasz) {
         initializeOne(clasz);
         initializeOne(clasz.allConstructors());
-        if (clasz.isModuleClass()) initializeOne(clasz.module());
-        else if (!clasz.dualClass().isNone()) initializeAll(clasz.dualClass());
+        if (clasz.isModuleClass()) initializeOne(clasz.linkedModule());
+        Symbol module = clasz.linkedModule();
+        if (!module.isNone() && module.moduleClass() != clasz)
+            initializeAll(module.moduleClass());
     }
 
     /** Initializes the symbol if its info is this instance. */

@@ -484,56 +484,56 @@ public class Definitions {
     private Symbol RTT_DOUBLE;
     public Symbol RTT_DOUBLE() {
         if (RTT_DOUBLE == null)
-            RTT_DOUBLE = loadTerm(TYPE_CLASS.dualClass(), Names.Double);
+            RTT_DOUBLE = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Double);
         return RTT_DOUBLE;
     }
 
     private Symbol RTT_FLOAT;
     public Symbol RTT_FLOAT() {
         if (RTT_FLOAT == null)
-            RTT_FLOAT = loadTerm(TYPE_CLASS.dualClass(), Names.Float);
+            RTT_FLOAT = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Float);
         return RTT_FLOAT;
     }
 
     private Symbol RTT_LONG;
     public Symbol RTT_LONG() {
         if (RTT_LONG == null)
-            RTT_LONG = loadTerm(TYPE_CLASS.dualClass(), Names.Long);
+            RTT_LONG = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Long);
         return RTT_LONG;
     }
 
     private Symbol RTT_INT;
     public Symbol RTT_INT() {
         if (RTT_INT == null)
-            RTT_INT = loadTerm(TYPE_CLASS.dualClass(), Names.Int);
+            RTT_INT = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Int);
         return RTT_INT;
     }
 
     private Symbol RTT_SHORT;
     public Symbol RTT_SHORT() {
         if (RTT_SHORT == null)
-            RTT_SHORT = loadTerm(TYPE_CLASS.dualClass(), Names.Short);
+            RTT_SHORT = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Short);
         return RTT_SHORT;
     }
 
     private Symbol RTT_CHAR;
     public Symbol RTT_CHAR() {
         if (RTT_CHAR == null)
-            RTT_CHAR = loadTerm(TYPE_CLASS.dualClass(), Names.Char);
+            RTT_CHAR = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Char);
         return RTT_CHAR;
     }
 
     private Symbol RTT_BYTE;
     public Symbol RTT_BYTE() {
         if (RTT_BYTE == null)
-            RTT_BYTE = loadTerm(TYPE_CLASS.dualClass(), Names.Byte);
+            RTT_BYTE = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Byte);
         return RTT_BYTE;
     }
 
     private Symbol RTT_BOOLEAN;
     public Symbol RTT_BOOLEAN() {
         if (RTT_BOOLEAN == null)
-            RTT_BOOLEAN = loadTerm(TYPE_CLASS.dualClass(), Names.Boolean);
+            RTT_BOOLEAN = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Boolean);
         return RTT_BOOLEAN;
     }
 

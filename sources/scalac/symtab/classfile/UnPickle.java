@@ -55,16 +55,10 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 
     private UnPickle(Global global, byte[] data, Symbol root) {
 	this.global = global;
-	if (root.isConstructor()) {
-	    this.classroot = root.constructorClass();
-	    this.moduleroot = classroot.dualClass().module();
-	} else if (root.isType()) {
-	    this.classroot = root;
-	    this.moduleroot = classroot.dualClass().module();
-	} else {
-	    this.moduleroot = root;
-	    this.classroot = root.owner().lookup(root.name.toTypeName());
-	}
+        this.classroot = root.linkedClass();
+        this.moduleroot = root.linkedModule();
+        assert !classroot.isNone(): Debug.show(root);
+        assert !moduleroot.isNone(): Debug.show(root);
 	if (root != moduleroot && moduleroot.isModule()) {
 	    moduleroot.moduleClass().setInfo(Type.NoType);
 	}
@@ -267,9 +261,13 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			    if (global.debug) global.log("overwriting " + clr);
 			    entries[n] = sym = clr;
 			    sym.flags = flags;
-			} else {
+			} else if ((flags & MODUL) == 0) {
                             entries[n] = sym = owner.newClass(
                                 Position.NOPOS, flags, name);
+                        } else {
+                            entries[n] = sym = owner.newModule(
+                                Position.NOPOS, flags, name.toTermName())
+                                .moduleClass();
                         }
 			sym.setInfo(getType(inforef, sym));
 			sym.setTypeOfThis(readTypeRef(sym));

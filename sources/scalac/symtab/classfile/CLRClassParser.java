@@ -72,12 +72,13 @@ public class CLRClassParser extends SymbolLoader {
 	scalac.symtab.Type classInfo =
 	    scalac.symtab.Type.compoundType(baseTypes, members, clazz);
 	clazz.setInfo(classInfo);
-	Symbol staticsClass = clazz.dualClass();
+        Symbol staticsModule = clazz.linkedModule();
+	Symbol staticsClass = staticsModule.moduleClass();
         assert staticsClass.isModuleClass(): Debug.show(staticsClass);
         scalac.symtab.Type staticsInfo = scalac.symtab.Type.compoundType
             (scalac.symtab.Type.EMPTY_ARRAY, statics, staticsClass);
         staticsClass.setInfo(staticsInfo);
-        staticsClass.module().setInfo(make.classType(staticsClass));
+        staticsModule.setInfo(make.classType(staticsClass));
         scalac.symtab.Type ctype = make.classType(clazz);
 
 	// import nested types

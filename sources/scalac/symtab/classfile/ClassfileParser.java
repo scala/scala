@@ -44,6 +44,7 @@ public class ClassfileParser implements ClassfileConstants {
     protected final Global global;
     protected final AbstractFileReader in;
     protected final Symbol c;
+    protected final Symbol m;
     protected final Type ctype;
     protected final JavaTypeFactory make;
     protected final ConstantPool pool;
@@ -56,6 +57,7 @@ public class ClassfileParser implements ClassfileConstants {
         this.global = global;
         this.in = in;
         this.c = c;
+        this.m = c.linkedModule();
         this.ctype = make.classType(c);
         this.make = make;
         this.pool = pool;
@@ -113,11 +115,11 @@ public class ClassfileParser implements ClassfileConstants {
             Type classInfo = Type.compoundType(basetpes, locals, c);
             c.setInfo(classInfo);
             // set info of statics class
-            Symbol staticsClass = c.dualClass();
+            Symbol staticsClass = m.moduleClass();
             assert staticsClass.isModuleClass(): Debug.show(staticsClass);
             Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
             staticsClass.setInfo(staticsInfo);
-            staticsClass.module().setInfo(make.classType(staticsClass));
+            m.setInfo(make.classType(staticsClass));
             basetpes[0] = supertpe;
             for (int i = 1; i < basetpes.length; i++)
                 basetpes[i] = readClassType(in.nextChar());
@@ -138,8 +140,8 @@ public class ClassfileParser implements ClassfileConstants {
             attrib.readAttributes(c, classInfo, CLASS_ATTR);
             //System.out.println("dynamic class: " + c);
             //System.out.println("statics class: " + staticsClass);
-            //System.out.println("module: " + c.module());
-            //System.out.println("modules class: " + c.module().type().symbol());
+            //System.out.println("module: " + m);
+            //System.out.println("modules class: " + m.type().symbol());
         }
     }
 
@@ -237,7 +239,7 @@ public class ClassfileParser implements ClassfileConstants {
     /** return the owner of a member with given java flags
      */
     private Symbol getOwner(int jflags) {
-        return (jflags & JAVA_ACC_STATIC) != 0 ? c.dualClass() : c;
+        return (jflags & JAVA_ACC_STATIC) != 0 ? m.moduleClass() : c;
     }
 
     /** return the scope of a member with given java flags
