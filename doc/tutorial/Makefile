@@ -28,7 +28,7 @@ LATEX_SOURCES		+= tutorial.tex
 ##############################################################################
 # Includes
 
-include $(ROOT)/support/make/scalatex.mk
-include $(ROOT)/support/make/latex.mk
+include $(PROJECT_SUPPORTDIR)/make/scalatex.mk
+include $(PROJECT_SUPPORTDIR)/make/latex.mk
 
 ##############################################################################

@@ -42,7 +42,7 @@ VERBFILTER		 = $(ROOT)/support/latex/verbfilterScala
 ##############################################################################
 # Includes
 
-include $(ROOT)/support/make/verbfilter.mk
-include $(ROOT)/support/make/latex.mk
+include $(PROJECT_SUPPORTDIR)/make/verbfilter.mk
+include $(PROJECT_SUPPORTDIR)/make/latex.mk
 
 ##############################################################################
