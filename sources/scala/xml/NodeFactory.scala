@@ -48,9 +48,8 @@ abstract class NodeFactory[A <: Node] {
     &&(eqElements(n.child,children));
 
   def makeNode(uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
-    Console.println("wrong makeNode");
     val hash    = Utility.hashCode( uname, attrSeq.hashCode(), children ) ;
-   cache.get( hash ) match {
+    cache.get( hash ) match {
       case Some(list) => // find structurally equal
         val it     = list.elements;
         val lookup = it.find { x => nodeEquals(x,uname,attrSeq,children) };
