@@ -1143,7 +1143,7 @@ public class ClassSymbol extends TypeSymbol {
 	other.constructor.setInfo(constructor.info());
 	other.mangled = mangled;
 	other.module = module;
-	other.thisSym = thisSym;
+	if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
     }
 
