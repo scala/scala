@@ -530,14 +530,42 @@ public class LambdaLift extends OwnerTransformer
 	if (newtparams.length == 0) return tp;
 	switch (tp) {
 	case MethodType(_, _):
-	    return Type.PolyType(newtparams, tp.subst(oldtparams, newtparams));
+	    return Type.PolyType(
+		newtparams,
+		new UpdateSubstSymMap(oldtparams, newtparams).apply(tp));
 	case PolyType(Symbol[] tparams, Type restpe):
 	    Symbol[] tparams1 = new Symbol[tparams.length + newtparams.length];
 	    System.arraycopy(tparams, 0, tparams1, 0, tparams.length);
 	    System.arraycopy(newtparams, 0, tparams1, tparams.length, newtparams.length);
-	    return Type.PolyType(tparams1, restpe.subst(oldtparams, newtparams));
+	    return Type.PolyType(
+		tparams1,
+		new UpdateSubstSymMap(oldtparams, newtparams).apply(restpe));
 	default:
 	    throw new ApplicationError("illegal type: " + tp);
+	}
+    }
+
+    /* A substitution map which, instead of cloning parameters, updates
+     * their symbol's types.
+     */
+    static class UpdateSubstSymMap extends Type.SubstSymMap {
+	protected UpdateSubstSymMap(Symbol[] from, Symbol[] to) {
+	    super(from, to);
+	}
+	public Type apply(Type t) {
+	    switch (t) {
+	    case MethodType(Symbol[] params, Type result):
+		for (int i = 0; i < params.length; i++) {
+		    Type tp = params[i].type();
+		    Type tp1 = apply(tp);
+		    if (tp != tp1) params[i].updateInfo(tp1);
+		}
+		Type result1 = apply(result);
+		if (result1 == result) return t;
+		else return Type.MethodType(params, result1);
+	    default:
+		return super.apply(t);
+	    }
 	}
     }
 
