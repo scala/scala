@@ -21,9 +21,10 @@ public class Names {
     public static final Name _EQ = encode("_=");
     public static final Name MINUS = encode("-");
     public static final Name PLUS = encode("+");
-    public static final Name BANG = encode("!");
+    public static final Name ASTERISK = encode("*");
     public static final Name TILDE = encode("~");
     public static final Name EQEQ = encode("==");
+    public static final Name BANG = encode("!");
     public static final Name BANGEQ = encode("!=");
     public static final Name BARBAR = encode("||");
     public static final Name AMPAMP = encode("&&");

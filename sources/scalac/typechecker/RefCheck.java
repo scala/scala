@@ -209,6 +209,56 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    : name;
     }
 
+// Basetype Checking --------------------------------------------------------
+
+    /** 1. Check that only traits are inherited several times (except if the
+     *     inheriting instance is a compund type).
+     *  2. Check that later type instances in the base-type sequence
+     *     of a class are subtypes of earlier type instances of the same trait.
+     *  3. Check that case classes do not inherit from case classes.
+     */
+    void validateBaseTypes(Symbol clazz) {
+	validateBaseTypes(clazz, clazz.type().parents(),
+			  new Type[clazz.closure().length], 0);
+    }
+    //where
+        void validateBaseTypes(Symbol clazz, Type[] tps, Type[] seen, int start) {
+	    for (int i = tps.length - 1; i >= start; i--) {
+		validateBaseTypes(clazz, tps[i].unalias(), seen, i == 0 ? 0 : 1);
+	    }
+	}
+
+	void validateBaseTypes(Symbol clazz, Type tp, Type[] seen, int start) {
+	    Symbol baseclazz = tp.symbol();
+	    if (baseclazz.kind == CLASS) {
+		int index = clazz.closurePos(baseclazz);
+                if (index < 0) return;
+		if (seen[index] != null) {
+		    // check that only uniform classes are inherited several times.
+		    if (!clazz.isCompoundSym() && !baseclazz.isTrait()) {
+			unit.error(clazz.pos, "illegal inheritance;\n" + clazz +
+			      " inherits " + baseclazz + " twice");
+		    }
+		    // if there are two different type instances of same class
+		    // check that second is a subtype of first.
+		    if (!seen[index].isSubType(tp)) {
+			String msg = (clazz.isCompoundSym())
+			    ? "illegal combination;\n compound type combines"
+			    : "illegal inheritance;\n " + clazz + " inherits";
+			unit.error(clazz.pos, msg + " different type instances of " +
+			      baseclazz + ":\n" + tp + " and " + seen[index]);
+		    }
+		}
+		// check that case classes do not inherit from case classes
+		if (clazz.isCaseClass() && baseclazz.isCaseClass())
+		    unit.error(clazz.pos, "illegal inheritance;\n " + "case " + clazz +
+			  " inherits from other case " + baseclazz);
+
+		seen[index] = tp;
+		validateBaseTypes(clazz, tp.parents(), seen, start);
+	    }
+	}
+
 // Variance Checking --------------------------------------------------------
 
     private final int
@@ -784,7 +834,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree[] bases1 = transform(bases);
 	    Tree[] body1 = transformStats(body);
 	    if (sym.kind == VAL) {
-		checkAllOverrides(tree.pos, tree.symbol().owner());
+		Symbol owner = tree.symbol().owner();
+		validateBaseTypes(owner);
+		checkAllOverrides(tree.pos, owner);
 	    }
 	    return copy.Template(tree, bases1, body1);
 
@@ -826,7 +878,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return elimTypeNode(super.transform(tree));
 
 	case CompoundType(_, _):
-	    checkAllOverrides(tree.pos, tree.type.symbol());
+	    Symbol clazz = tree.type.symbol();
+	    validateBaseTypes(clazz);
+	    checkAllOverrides(tree.pos, clazz);
 	    return elimTypeNode(super.transform(tree));
 
 	case Ident(Name name):

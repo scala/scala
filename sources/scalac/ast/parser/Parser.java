@@ -1386,6 +1386,9 @@ public class Parser implements Tokens {
 		    t = make.Select(pos, t, name);
 		    pos = accept(DOT);
 		} else {
+		    if (name == Names.ASTERISK)
+			s.unit.warning(
+			    pos, "this imports only the identifier `*';\nuse `import xyz._' to import all members of `xyz'.");
 		    return make.Import(startpos, t, new Name[]{name, name});
 		}
 	    }

@@ -364,54 +364,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	}
     }
 
-    /** 1. Check that only traits are inherited several times (except if the
-     *     inheriting instance is a compund type).
-     *  2. Check that later type instances in the base-type sequence
-     *     of a class are subtypes of earlier type instances of the same trait.
-     *  3. Check that case classes do not inherit from case classes.
-     */
-    void validateBaseTypes(Symbol clazz) {
-	validateBaseTypes(clazz, clazz.type().parents(),
-			  new Type[clazz.closure().length], 0);
-    }
-    //where
-        void validateBaseTypes(Symbol clazz, Type[] tps, Type[] seen, int start) {
-	    for (int i = tps.length - 1; i >= start; i--) {
-		validateBaseTypes(clazz, tps[i].unalias(), seen, i == 0 ? 0 : 1);
-	    }
-	}
-
-	void validateBaseTypes(Symbol clazz, Type tp, Type[] seen, int start) {
-	    Symbol baseclazz = tp.symbol();
-	    if (baseclazz.kind == CLASS) {
-		int index = clazz.closurePos(baseclazz);
-                if (index < 0) return;
-		if (seen[index] != null) {
-		    // check that only uniform classes are inherited several times.
-		    if (!clazz.isCompoundSym() && !baseclazz.isTrait()) {
-			error(clazz.pos, "illegal inheritance;\n" + clazz +
-			      " inherits " + baseclazz + " twice");
-		    }
-		    // if there are two different type instances of same class
-		    // check that second is a subtype of first.
-		    if (!seen[index].isSubType(tp)) {
-			String msg = (clazz.isCompoundSym())
-			    ? "illegal combination;\n compound type combines"
-			    : "illegal inheritance;\n " + clazz + " inherits";
-			error(clazz.pos, msg + " different type instances of " +
-			      baseclazz + ":\n" + tp + " and " + seen[index]);
-		    }
-		}
-		// check that case classes do not inherit from case classes
-		if (clazz.isCaseClass() && baseclazz.isCaseClass())
-		    error(clazz.pos, "illegal inheritance;\n " + "case " + clazz +
-			  " inherits from other case " + baseclazz);
-
-		seen[index] = tp;
-		validateBaseTypes(clazz, tp.parents(), seen, start);
-	    }
-	}
-
     /** Check that type is eta-expandable (i.e. no `def' or `*' parameters)
      */
     void checkEtaExpandable(int pos, Type tp) {
@@ -1241,6 +1193,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *  @param name      The name of the identifier.
      */
     Tree transformIdent(Tree tree, Name name) {
+	//System.out.println("transforming " + name);//DEBUG
 	// find applicable definition and assign to `sym'
 	Symbol sym = Symbol.NONE;
 	Type pre;
@@ -1482,7 +1435,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	transformConstrInvocationArgs(parents);
 	if (owner.kind != ERROR) {
 	    validateParentClasses(parents, owner.info().parents(), owner.typeOfThis());
-	    validateBaseTypes(owner);
 	}
 	pushContext(templ, owner, owner.members());
 	templ.setSymbol(gen.localDummy(templ.pos, owner));
@@ -2140,7 +2092,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Scope members = new Scope();
 		Type self = Type.compoundType(ptypes, members);
 		Symbol clazz = self.symbol();
-		validateBaseTypes(clazz);
 		pushContext(tree, clazz, members);
 		for (int i = 0; i < refinements.length; i++) {
 		    enterSym(refinements[i]).flags |= OVERRIDE;

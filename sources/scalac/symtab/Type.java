@@ -911,7 +911,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
 	    Symbol ownclass = sym.owner().primaryConstructorClass();
-	    if (ownclass.isSubClass(clazz) &&
+	    if (ownclass == clazz &&
 		pre.widen().symbol().isSubClass(ownclass)) {
 		switch (pre.baseType(ownclass)) {
 		case TypeRef(_, Symbol basesym, Type[] baseargs):
