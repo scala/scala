@@ -13,6 +13,8 @@ import java.util.*;
  * author: Burak Emir
  * adapted from package jaco.framework.ant.AntCompilerTask
  *  (part of Matthias Zenger's jaco framework)
+ *
+ * $Id$
  */
 
 
@@ -23,16 +25,16 @@ public class AntTask extends Javac {
     private String source = null;
     private String target = null;
     private FileUtils fileUtils = FileUtils.newFileUtils();
-    private Project project = getProject();
 
     public void execute() {
-        String old = project.getProperty("build.compiler");
-        project.setProperty("build.compiler", "scala.tools.scalac4ant.AntAdaptor");
-        super.execute();
-        if (old == null)
-            project.setProperty("build.compiler", "modern");
-        else
-            project.setProperty("build.compiler", old);
+          Project project = getProject();
+          String old = project.getProperty("build.compiler");
+          project.setProperty("build.compiler", "scala.tools.scalac4ant.AntAdaptor");
+          super.execute();
+          if (old == null)
+                project.setProperty("build.compiler", "modern");
+          else
+                project.setProperty("build.compiler", old);
     }
 
     public void setForce(boolean fc) {
