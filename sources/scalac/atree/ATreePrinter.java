@@ -235,6 +235,48 @@ public class ATreePrinter {
     }
 
     //########################################################################
+    // Public Methods - Printing trees
+
+    /** Prints the primitive */
+    public ATreePrinter printPrimitive(APrimitive primitive) {
+        switch (primitive) {
+        case Negation(ATypeKind type):
+            return printPrimitiveOp("NEG", type);
+        case Test(ATestOp op, ATypeKind type, boolean zero):
+            return printPrimitiveOp(op.toString() + (zero ? "Z" : ""), type);
+        case Comparison(AComparisonOp op, ATypeKind type):
+            return printPrimitiveOp(op.toString(), type);
+        case Arithmetic(AArithmeticOp op, ATypeKind type):
+            return printPrimitiveOp(op.toString(), type);
+        case Logical(ALogicalOp op, ATypeKind type):
+            return printPrimitiveOp(op.toString(), type);
+        case Shift(AShiftOp op, ATypeKind type):
+            return printPrimitiveOp(op.toString(), type);
+        case Conversion(ATypeKind src, ATypeKind dst):
+            return printPrimitiveOp("CONV", src, dst);
+        case ArrayLength(ATypeKind type):
+            return printPrimitiveOp("LENGTH", type);
+        case StringConcat(ATypeKind lf, ATypeKind rg):
+            return printPrimitiveOp("CONCAT", lf, rg);
+        default:
+            throw Debug.abort("unknown case", primitive);
+        }
+    }
+
+    /** Prints the primitive operation of given type */
+    public ATreePrinter printPrimitiveOp(String op, ATypeKind type) {
+        return printPrimitiveOp(op, type, null);
+    }
+
+    /** Prints the primitive operation of given types */
+    public ATreePrinter printPrimitiveOp(String op, ATypeKind t1,ATypeKind t2){
+        print('<').print(op).print('>');
+        if (t1 != null && global.uniqid) print('#').print(t1.toString());
+        if (t2 != null && global.uniqid) print(',').print(t2.toString());
+        return this;
+    }
+
+    //########################################################################
     // Public Methods - Converting
 
     /** Returns the string representation of this printer. */
