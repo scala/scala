@@ -99,7 +99,7 @@ public class ClassExpander {
             inlineMixinTParams(type);
             Tree.Apply constr = (Tree.Apply)template.parents[i];
             inlineMixinVParams(mixin.valueParams(), constr.args);
-            inlineMixinMembers(impl);
+            inlineMixinMembers(mixin.nextInfo().members(), impl);
             parents[i] = Type.TypeRef(prefix, iface, args);
             template.parents[i] = gen.mkPrimaryConstr(constr.pos, parents[i]);
             state = i;
@@ -125,7 +125,7 @@ public class ClassExpander {
         body.append(superFixer.transform(template.body));
         template.body = body.toArray();
         // !!! *1 fix ExpandMixinsPhase.transformInfo and remove next line
-        clasz.updateInfo(template.type());
+        clasz.updateInfo(Type.compoundType(parents, members, clasz));
         state = 0;
         return template;
     }
@@ -161,8 +161,7 @@ public class ClassExpander {
         }
     }
 
-    private void inlineMixinMembers(Template mixin) {
-        Scope symbols = mixin.type().members();
+    private void inlineMixinMembers(Scope symbols, Template mixin) {
         // The map names is used to implement an all or nothing
         // strategy for overloaded symbols.
         Map/*<Name,Name>*/ names = new HashMap();
