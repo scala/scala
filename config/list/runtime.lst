@@ -24,6 +24,7 @@ Function9.java
 Int.java
 Long.java
 MatchError.java
+NativeMonitor.java
 Object.java
 Ref.java
 Short.java
