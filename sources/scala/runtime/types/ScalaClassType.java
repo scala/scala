@@ -23,26 +23,19 @@ public class ScalaClassType extends ClassType {
     private static ScalaClassType[][] EMPTY_DISPLAY =
         new ScalaClassType[0][];
 
-    protected Refinement[] refinements;
-
     private final TypeConstructor constr;
     private final Type[] inst;
-    private final ScalaClassType[] parents;
+
+    private ScalaClassType[] parents = null;
+    private ScalaClassType[][] display = null;
 
     private final int hashCode;
 
-    private ScalaClassType[][] display = EMPTY_DISPLAY;
-
-    public ScalaClassType(TypeConstructor constr,
-                          Type[] inst,
-                          ScalaClassType[] parents,
-                          Refinement[] baseRefinement) {
+    public ScalaClassType(TypeConstructor constr, Type[] inst) {
         super(constr.clazz, constr.isTrivial);
 
         this.constr = constr;
         this.inst = inst;
-        this.parents = parents;
-        this.refinements = baseRefinement;
 
         int hash = FNV_Hash.hashStep(FNV_Hash.INIT,
                                      PearsonHash.hash8(constr.hashCode()));
@@ -51,13 +44,10 @@ public class ScalaClassType extends ClassType {
                                      PearsonHash.hash8(inst[i].hashCode()));
         }
         this.hashCode = hash;
-
-        computeDisplay();       // TODO do this lazily
-        computeRefinement();    // TODO idem
     }
 
-    public boolean isInstance(Object o) {
-        return super.isInstance(o)
+    public boolean isInstance0(Object o) {
+        return super.isInstance0(o)
             && ((ScalaObject)o).getType().weakIsSubScalaClassType(this);
     }
 
@@ -65,10 +55,6 @@ public class ScalaClassType extends ClassType {
         return super.isSubClassType(that)
             && (that.isTrivial
                 || weakIsSubScalaClassType((ScalaClassType)that));
-    }
-
-    protected boolean hasSubRefinements(Refinement[] thatRefinements) {
-        return Refinement.isFiner(refinements, thatRefinements);
     }
 
     private boolean weakIsSubScalaClassType(ScalaClassType that) {
@@ -137,7 +123,7 @@ public class ScalaClassType extends ClassType {
 
     private ScalaClassType myInstantiationFor(ScalaClassType that) {
         // Find our instantiation for the other type, if any.
-        ScalaClassType[] thisSlice = display[that.constr.level];
+        ScalaClassType[] thisSlice = getDisplay()[that.constr.level];
 
         for (int i = 0; i < thisSlice.length; ++i) {
             if (thisSlice[i].constr == that.constr)
@@ -153,7 +139,7 @@ public class ScalaClassType extends ClassType {
             buf.append(constr.outer).append(".");
 
         int firstM = constr.zCount;
-        int firstP = firstM + constr.pCount;
+        int firstP = firstM + constr.mCount;
         buf.append(constr).append("[");
         for (int i = 0; i < inst.length; ++i) {
             if (i > 0) buf.append(", ");
@@ -170,13 +156,43 @@ public class ScalaClassType extends ClassType {
         return hashCode;
     }
 
+    public ScalaClassType setParents(ScalaClassType[] parents) {
+        assert this.parents == null || Type.isSameAs(this.parents, parents);
+        this.parents = parents;
+        // TODO notifyAll?
+        return this;
+    }
+
+    public ScalaClassType[] getParents() {
+        int timeout = 1;
+        while (parents == null) {
+            try {
+                wait(timeout);
+            } catch (InterruptedException e) {
+                throw new Error(e);
+            }
+            if (timeout >= 1000)
+                throw new Error("computation of parents apparently stuck for "
+                                + this);
+        }
+        return parents;
+    }
+
+    private ScalaClassType[][] getDisplay() {
+        if (display == null)
+            computeDisplay();
+        return display;
+    }
+
     private void computeDisplay() {
         final int level = constr.level;
         final int[] displayCode = constr.displayCode;
+        ScalaClassType[] parents = getParents();
 
         display = new ScalaClassType[level + 1][];
-        ScalaClassType[][] superClassDisplay =
-            parents.length > 0 ? parents[0].display : EMPTY_DISPLAY;
+        ScalaClassType[][] superClassDisplay = constr.inheritsFromJavaClass
+            ? EMPTY_DISPLAY
+            : parents[0].getDisplay();
 
         for (int l = 0, dci = 0; l <= level; ++l) {
             int additionalEntries = displayCode[dci++];
@@ -200,16 +216,11 @@ public class ScalaClassType extends ClassType {
                 for (int i = 0; i < additionalEntries; ++i) {
                     int p = displayCode[dci++];
                     int o = displayCode[dci++];
-                    newRow[superLen + i] = parents[p].display[l][o];
+                    newRow[superLen + i] = parents[p].getDisplay()[l][o];
                 }
 
                 display[l] = newRow;
             }
         }
-    }
-
-    private void computeRefinement() {
-        refinements =
-            Refinement.make(parents, refinements, constr.refinementCode);
     }
 }
