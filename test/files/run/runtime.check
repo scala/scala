@@ -1,4 +1,4 @@
-<<< bug Test0
+<<< Test0
 hello
 []
 [false,true]
@@ -12,9 +12,9 @@ hello
 [6,7,8.0,9.0]
 [string]
 [0,bye]
->>> bug Test0
+>>> Test0
 
-<<< bug Test1
+<<< Test1
 10
 14
 15
@@ -24,5 +24,26 @@ hello
 24
 25
 26
->>> bug Test1
+>>> Test1
+
+<<< Test2
+A
+M0
+N0
+
+A
+N0
+M0
+
+A
+M0
+M1
+N0
+
+A
+N0
+N1
+M0
+
+>>> Test2
 

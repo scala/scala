@@ -97,12 +97,53 @@ object Test1Test {
 }
 
 //############################################################################
+// Test 2 - Super Calls with Mixins
+
+package test2 {
+
+  class A {
+    def run = System.out.println("A");
+  }
+
+  class M0 extends A {
+    override def run = { super.run; System.out.println("M0"); }
+  }
+
+  class M1 extends M0 {
+    override def run = { super.run; System.out.println("M1"); }
+  }
+
+  class N0 extends A {
+    override def run = { super.run; System.out.println("N0"); }
+  }
+
+  class N1 extends N0 {
+    override def run = { super.run; System.out.println("N1"); }
+  }
+
+  object M0N0 extends M0 with N0;
+  object N0M0 extends N0 with M0;
+  object M1N0 extends M1 with N0;
+  object N1M0 extends N1 with M0;
+
+}
+
+object Test2Test {
+  def main(args: Array[String]): Unit = {
+    test2.M0N0.run; System.out.println();
+    test2.N0M0.run; System.out.println();
+    test2.M1N0.run; System.out.println();
+    test2.N1M0.run; System.out.println();
+  }
+}
+
+//############################################################################
 // Main
 
 object Test  {
   var errors: Int = 0;
-  def test(bug: String, test: => Unit): Unit = {
-    System.out.println("<<< bug " + bug);
+  def test(name: String, test: => Unit): Unit = {
+    System.out.println("<<< " + name);
     try {
       test;
     } catch {
@@ -113,7 +154,7 @@ object Test  {
         errors = errors + 1;
       }
     }
-    System.out.println(">>> bug " + bug);
+    System.out.println(">>> " + name);
     System.out.println();
   }
 
@@ -121,6 +162,7 @@ object Test  {
 
     test("Test0"  , Test0Test.main(args));
     test("Test1"  , Test1Test.main(args));
+    test("Test2"  , Test2Test.main(args));
 
     if (errors > 0) {
       System.out.println();

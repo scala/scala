@@ -409,6 +409,29 @@ object Bug328Test {
 }
 
 //############################################################################
+// Bug 396
+
+class Bug396A {
+  class I {
+    def run = System.out.println("A");
+  }
+}
+class Bug396B extends Bug396A {
+  class I extends super.I {
+    override def run = { super.run; System.out.println("B"); }
+  }
+}
+class Bug396C extends Bug396A {
+  class I extends super.I {
+    override def run = { super.run; System.out.println("C"); }
+  }
+}
+object Bug396Test extends Bug396B with Bug396C with Application {
+  class I2 extends super[Bug396B].I with super[Bug396C].I;
+  (new I2).run
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -454,6 +477,7 @@ object Test  {
               else Bug281Test.main(args)); // !!!
     test(316, Bug316Test.main(args));
     test(328, Bug328Test.main(args));
+    test(396, Bug396Test.main(args));
 
     if (errors > 0) {
       System.out.println();
