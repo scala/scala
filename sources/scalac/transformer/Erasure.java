@@ -88,6 +88,15 @@ public class Erasure extends Transformer implements Modifiers {
     //########################################################################
     // Private Methods - Tree generation
 
+    /** Generates given bridge method forwarding to given method. */
+    private Tree genBridgeMethod(Symbol bridge, Symbol method) {
+        Type type = bridge.nextType();
+        Tree body = genApply(bridge.pos,
+            gen.Select(gen.This(bridge.pos, bridge.owner()), method),
+            gen.mkRefs(bridge.pos, type.valueParams()));
+        return gen.DefDef(bridge, coerce(body, type.resultType()));
+    }
+
     /** Generates an application with given function and arguments. */
     private Tree genApply(int pos, Tree fun, Tree[] args) {
         switch (fun.type()) {
@@ -432,22 +441,9 @@ public class Erasure extends Transformer implements Modifiers {
 	    }
 	    bridgeSym.setType(Type.MethodType(params1, restp));
 
-	    // create bridge definition
-	    Type symtype = sym.type().erasure();
-	    switch (symtype) {
-	    case MethodType(Symbol[] symparams, Type symrestp):
-		assert params1.length == symparams.length;
-		Tree[] args = new Tree[params1.length];
-		for (int i = 0; i < args.length; i++) {
-		    args[i] = cast(gen.Ident(sym.pos, params1[i]), symparams[i].type().erasure());
-		}
-		Tree fwd = make.Apply(sym.pos, gen.Ident(sym.pos, sym).setType(symtype), args)
-		    .setType(symrestp);
-		bridges.append(gen.DefDef(bridgeSym, coerce(fwd, restp)));
-		return;
-	    }
-	}
-	throw Debug.abort("bad bridge types " + bridgeType + "," + sym.type().erasure());
+            bridges.append(genBridgeMethod(bridgeSym, sym));
+        }
+
     }
 
     public void addBridges(Symbol sym) {
@@ -502,52 +498,59 @@ public class Erasure extends Transformer implements Modifiers {
 // Transformer
 /////////////////////////////////////////////////////////////////////////////////
 
+    private void addBridges(Symbol clasz, TreeList members) {
+        TreeList savedBridges = bridges;
+        HashMap savedBridgeSyms = bridgeSyms;
+        bridges = new TreeList();
+        bridgeSyms = new HashMap();
+
+        int length = members.length();
+        for (int i = 0; i < length; i++) {
+            switch (members.get(i)) {
+            case DefDef(_, _, _, _, _, Tree rhs):
+                addBridges(members.get(i).symbol());
+            }
+        }
+
+        if (!clasz.isInterface()) addInterfaceBridges(clasz);
+        members.append(bridges);
+        if (bridges.length() > 0) {
+            Type info = clasz.nextInfo();
+            switch (info) {
+            case CompoundType(Type[] parts, Scope members_):
+                members_ = new Scope(members_);
+                for (int i = 0; i < bridges.length(); i++) {
+                    Tree bridge = (Tree)bridges.get(i);
+                    members_.enterOrOverload(bridge.symbol());
+                }
+                clasz.updateInfo(Type.compoundType(parts, members_, info.symbol()));
+                break;
+            default:
+                throw Debug.abort("class = " + Debug.show(clasz) + ", " +
+                    "info = " + Debug.show(info));
+            }
+        }
+        bridgeSyms = savedBridgeSyms;
+        bridges = savedBridges;
+    }
+
     /** Contract: every node needs to be transformed so that it's type is the
      *  erasure of the node's original type.  The only exception are functions;
      *  these are mapped to the erasure of the function symbol's type.
      */
-    Symbol currentClass = null;
     public Tree transform(Tree tree, boolean eraseFully) {
 	assert tree.type != null : tree;
 	Type owntype = eraseFully ? tree.type.fullErasure() : tree.type.erasure();
 	switch (tree) {
+
 	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
-            Symbol oldCurrentClass = currentClass;
-            TreeList savedBridges = bridges;
-            HashMap savedBridgeSyms = bridgeSyms;
-            Symbol clazz = currentClass = tree.symbol();
-            bridges = new TreeList();
-            bridgeSyms = new HashMap();
-
-            TreeList body1 = new TreeList(transform(body));
-            if (!clazz.isInterface()) addInterfaceBridges(clazz);
-            body1.append(bridges);
-            if (bridges.length() > 0) {
-                Type info = clazz.nextInfo();
-                switch (info) {
-                case CompoundType(Type[] parts, Scope members):
-                    members = new Scope(members);
-                    for (int i = 0; i < bridges.length(); i++) {
-                        Tree bridge = (Tree)bridges.get(i);
-                        members.enterOrOverload(bridge.symbol());
-                    }
-                    clazz.updateInfo(Type.compoundType(parts, members, info.symbol()));
-                    break;
-                default:
-                    throw Debug.abort("class = " + Debug.show(clazz) + ", " +
-                        "info = " + Debug.show(info));
-                }
-            }
-            Tree newTree = gen.ClassDef(clazz, body1.toArray());
-
-            bridgeSyms = savedBridgeSyms;
-            bridges = savedBridges;
-            currentClass = oldCurrentClass;
-            return newTree;
+            Symbol clasz = tree.symbol();
+            TreeList members = new TreeList(transform(body));
+            addBridges(clasz, members);
+            return gen.ClassDef(clasz, members.toArray());
 
 	case DefDef(_, _, _, _, _, Tree rhs):
             Symbol method = tree.symbol();
-	    addBridges(method);
             if (rhs != Tree.Empty)
                 rhs = transform(rhs, method.nextType().resultType());
 	    return gen.DefDef(method, rhs);
@@ -593,9 +596,6 @@ public class Erasure extends Transformer implements Modifiers {
                 copy.Return(tree, expr1).setType(owntype), zero}).setType(zero.type());
 
         case New(Template templ):
-            if (tree.type.symbol() == definitions.UNIT_CLASS)
-                // !!! return Tree.Literal(UNIT, null).setType(owntype);
-                throw Debug.abort("found unit literal in " + currentClass);
             if (tree.type.symbol() == definitions.ARRAY_CLASS) {
                 switch (templ.parents[0]) {
                 case Apply(_, Tree[] args):
@@ -766,21 +766,6 @@ public class Erasure extends Transformer implements Modifiers {
         }
     }
 
-    private Tree getQualifier(Symbol currentClass, Tree tree) {
-        switch (tree) {
-        case Select(Tree qual, _):
-            return qual;
-        case Ident(_):
-            assert currentClass != null;
-            if (currentClass.isSubClass(tree.symbol().owner()))
-                return gen.This(tree.pos, currentClass);
-            else
-                throw Debug.abort("no qualifier for tree", tree);
-        default:
-            throw Debug.abort("no qualifier for tree", tree);
-        }
-    }
-
 
     private Type getArrayElementType(Type type) {
         switch (type) {
@@ -791,7 +776,7 @@ public class Erasure extends Transformer implements Modifiers {
         case UnboxedArrayType(Type element):
             return element;
         }
-        throw Debug.abort("non-array type: " + type);
+        throw Debug.abort("non-array type", type);
     }
 
 }
