@@ -320,6 +320,8 @@ $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_CMD          ?= java
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_JAVA_ARGS         ?= -enableassertions
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_CMD         ?= $($(prefix)_SCALA_CMD)
 $(SCRIPTS_WRAPPER_FILE)	: MACRO_SCALA_ARGS        ?=
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_TEST_SRCDIR       ?= $(PROJECT_TESTDIR)
+$(SCRIPTS_WRAPPER_FILE)	: MACRO_TEST_OBJDIR       ?= ""
 $(SCRIPTS_WRAPPER_FILE)	: $(VERSION_FILE)
 $(SCRIPTS_WRAPPER_FILE)	: $(PROJECT_ROOT)/Makefile
 $(SCRIPTS_WRAPPER_FILE)	: $(PROJECT_ROOT)/Makefile.config
@@ -340,6 +342,8 @@ $(SCRIPTS_WRAPPER_FILE)	: $(SCRIPTS_TEMPLATE_FILE)
 	    $(call SCRIPTS_MACRO,JAVA_ARGS) \
 	    $(call SCRIPTS_MACRO,SCALA_CMD) \
 	    $(call SCRIPTS_MACRO,SCALA_ARGS) \
+	    $(call SCRIPTS_MACRO,TEST_SRCDIR) \
+	    $(call SCRIPTS_MACRO,TEST_OBJDIR) \
 	    $(SCRIPTS_TEMPLATE_FILE) > $@
 	@macros=`$(SED) -n -es'@.*{#\(.*\)#}.*@\1@p' < $@`; \
 	if [ -n "$$macros" ]; then \
