@@ -2,47 +2,47 @@ package examples;
 
 object parsers1 {
 
-abstract class Parsers {
+  abstract class Parsers {
 
-  type intype;
+    type intype;
 
-  abstract class Parser {
+    abstract class Parser {
 
-    type Result = Option[intype];
+      type Result = Option[intype];
 
-    def apply(in: intype): Result;
+      def apply(in: intype): Result;
 
-    /*** p &&& q applies first p, and if that succeeds, then q
-     */
-    def &&& (def q: Parser) = new Parser {
-      def apply(in: intype): Result = Parser.this.apply(in) match {
-        case None => None
-        case Some(in1)  => q(in1)
+      /*** p &&& q applies first p, and if that succeeds, then q
+       */
+      def &&& (def q: Parser) = new Parser {
+        def apply(in: intype): Result = Parser.this.apply(in) match {
+          case None => None
+          case Some(in1)  => q(in1)
+        }
+      }
+
+      /*** p ||| q applies first p, and, if that fails, then q.
+       */
+      def ||| (def q: Parser) = new Parser {
+        def apply(in: intype): Result = Parser.this.apply(in) match {
+          case None => q(in)
+          case s => s
+        }
       }
     }
 
-    /*** p ||| q applies first p, and, if that fails, then q.
-     */
-    def ||| (def q: Parser) = new Parser {
-      def apply(in: intype): Result = Parser.this.apply(in) match {
-        case None => q(in)
-        case s => s
-      }
+    val empty = new Parser {
+      def apply(in: intype): Result = Some(in)
     }
-  }
 
-  val empty = new Parser {
-    def apply(in: intype): Result = Some(in)
-  }
+    val fail = new Parser {
+      def apply(in: intype): Result = None
+    }
 
-  val fail = new Parser {
-    def apply(in: intype): Result = None
+    def opt(p: Parser): Parser = p ||| empty;    // p? = (p | <empty>)
+    def rep(p: Parser): Parser = opt(rep1(p));   // p* = [p+]
+    def rep1(p: Parser): Parser = p &&& rep(p);  // p+ = p p*
   }
-
-  def opt(p: Parser): Parser = p ||| empty;    // p? = (p | <empty>)
-  def rep(p: Parser): Parser = opt(rep1(p));   // p* = [p+]
-  def rep1(p: Parser): Parser = p &&& rep(p);  // p+ = p p*
-}
 
   abstract class ListParsers extends Parsers {
     def chr(p: char => boolean): Parser;
