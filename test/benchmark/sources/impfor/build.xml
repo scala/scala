@@ -1,0 +1,36 @@
+<project name="impfor" default="run">
+
+  <import file="../../predef.xml"/>
+
+  <target name="init">
+    <mkdir dir="${benchmark.classes.dir}/${ant.project.name}"/>
+  </target>
+
+  <!-- Compile the impfor benchmark without optimizations -->
+  <target name="compile-noopt"
+          description="Compile the ${ant.project.name} benchmark with no optimizations">
+     <compile-benchmark files="${benchmark.sources.dir}/${ant.project.name}/impfor.scala"
+                        destination="${benchmark.classes.dir}/${ant.project.name}/noopt"/>
+  </target>
+
+  <!-- Compile the impfor benchmark with optimizations -->
+  <target name="compile-opt"
+          description="Compile the ${ant.project.name} benchmark with opt">
+     <compile-benchmark files="${benchmark.sources.dir}/${ant.project.name}/impfor.scala"
+                        destination="${benchmark.classes.dir}/${ant.project.name}/opt"
+			additionalArgs="-separate:no -Xinline"/>
+  </target>
+
+
+  <target name="run" depends="init,compile-noopt,compile-opt"
+          description="Run this benchmark">
+    <run-benchmark location="${benchmark.classes.dir}/${ant.project.name}/noopt"/>
+    <run-benchmark location="${benchmark.classes.dir}/${ant.project.name}/opt"/>
+  </target> 
+
+  <target name="clean.benchmark"
+          description="Clean the object files for ${ant.project.name} benchmark">
+    <delete dir="${benchmark.classes.dir}/${ant.project.name}"/>
+  </target>
+
+</project>

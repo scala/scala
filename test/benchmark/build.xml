@@ -4,6 +4,7 @@
 
   <target name="init" depends="clean.benchmark">
     <mkdir dir="${benchmark.classes.dir}"/>
+    <mkdir dir="times"/>
   </target>
 
   <target name="clean.benchmark" 
@@ -11,7 +12,7 @@
     <delete dir="${benchmark.classes.dir}"/>
   </target>
 
-  <target name="run.benchmark"
+  <target name="run.benchmark" depends="init"
           description="Run the benchmark suite">
 
     <subant inheritAll="false">

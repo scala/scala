@@ -14,10 +14,6 @@
   <property name="log.file"
             value="${benchmark.home}/times/times.log"/>
 
-  <!-- Define the scalac task -->
-  <taskdef name="scalac"
-    classname="scala.tools.scala4ant.ScalacTask$class"/>
-
   <!--  Define a <run-benchmark> element that can be used to run   -->
   <!--    benchmarks                                               -->
   <!--  It accepts these attributes:                               -->
