@@ -706,13 +706,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   def moduleSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
     val symbol = termSymbolOrNone(scope, pos, name, flags | MODUL | FINAL);
-    if (symbol.isNone()) owner.newModule(pos, flags, name) else {
-      val clasz = symbol.moduleClass();
-      updateFlagsAndPos(clasz, pos, clasz.flags & ~(JAVA | PACKAGE));
-      val constr = clasz.primaryConstructor();
-      updateFlagsAndPos(constr, pos, constr.flags & ~JAVA);
-      symbol
-    }
+    if (symbol.isNone()) owner.newModule(pos, flags, name) else symbol;
   }
 
   def termSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
@@ -779,6 +773,20 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     val oldflags = symbol.flags & (INITIALIZED | LOCKED);
     val newflags = flags & ~(INITIALIZED | LOCKED);
     symbol.flags = oldflags | newflags;
+    if (symbol.isModule()) {
+      // here we repeat what is done in the constructor of ModuleClassSymbol
+      val clasz = symbol.moduleClass();
+      val classFlags = (flags & MODULE2CLASSFLAGS) | MODUL | FINAL;
+      updateFlagsAndPos(clasz, pos, classFlags);
+      clasz.primaryConstructor().flags =
+        clasz.primaryConstructor().flags | PRIVATE;
+    }
+    if (symbol.isType()) {
+      // here we repeat what is done in the constructor of TypeSymbol
+      val constr = symbol.primaryConstructor();
+      val constrFlags = flags & CONSTRFLAGS;
+      updateFlagsAndPos(constr, pos, constrFlags);
+    }
   }
 
   /** Enter symbol `sym' in current scope. Check for double definitions.
