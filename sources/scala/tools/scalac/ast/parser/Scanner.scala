@@ -950,6 +950,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     //Console.print(ch);
   }
 
+  /* OBSOLETE
   final val LT   = Name.fromString("<");
 
   def xStartsXML = {
@@ -958,7 +959,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
        {val s = name.toString();
         s.charAt(0) == '<' && (s.charAt(1)=='?' || s.charAt(1)=='!')}) */
   }
-
+  */
   // end XML tokenizing
 
 
