@@ -166,6 +166,7 @@ public class Names {
     public static final Name defaultValue = Name.fromString("defaultValue");
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
+    public static final Name emptyArray = Name.fromString("EMPTY_ARRAY");
     public static final Name eq = Name.fromString("eq");
     public static final Name equals = Name.fromString("equals");
     public static final Name fail = Name.fromString("fail");
