@@ -258,6 +258,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     void validate(Symbol sym) {
 	checkNoConflict(sym, DEFERRED, PRIVATE);
 	checkNoConflict(sym, FINAL, SEALED);
+	checkNoConflict(sym, FINAL, PRIVATE);
 	checkNoConflict(sym, PRIVATE, PROTECTED);
 	checkNoConflict(sym, PRIVATE, OVERRIDE);
 	checkNoConflict(sym, DEFERRED, FINAL);
@@ -751,6 +752,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	private Symbol enterSym(Tree tree, Symbol sym) {
 	    //if (global.debug) System.out.println("entering " + sym);//DEBUG
 	    sym.setInfo(new LazyTreeType(tree));
+	    Symbol owner = sym.owner();
+	    if (sym.kind == VAL && !sym.isConstructor() &&
+		(sym.flags & (PRIVATE | SEALED)) == 0 &&
+		owner != null && owner.kind == CLASS &&
+		(owner.flags & FINAL) != 0)
+		sym.flags |= FINAL;
 	    sym = enterInScope(sym);
 	    tree.setSymbol(sym);
 	    return sym;

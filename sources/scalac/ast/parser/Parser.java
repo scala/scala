@@ -1603,10 +1603,12 @@ public class Parser implements Tokens {
 	if (s.token == EQUALS || restype == Tree.Empty) {
 	    accept(EQUALS);
             return make.DefDef(
-		pos, mods, name, tparams, vparams, restype, constrExpr());
+		pos, mods | Modifiers.FINAL, name,
+		tparams, vparams, restype, constrExpr());
         } else
-            return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
-                               tparams, vparams, restype, Tree.Empty);
+            return make.DefDef(
+		pos, mods | Modifiers.FINAL | Modifiers.DEFERRED, name,
+		tparams, vparams, restype, Tree.Empty);
     }
 
     /** TypeDef ::= Id `=' Type

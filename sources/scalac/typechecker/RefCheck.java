@@ -830,6 +830,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    validateVariance(sym, sym.type(), CoVariance);
 	    return super.transform(tree);
 
+	case ValDef(_, _, _, _):
+	    validateVariance(
+		sym, sym.type(),
+		((sym.flags & MUTABLE) != 0) ? NoVariance : CoVariance);
+	    return super.transform(tree);
+
 	case TypeDef(_, _, _, _):
 	    if (sym.kind == ALIAS) {
 		validateVariance(sym, sym.info(), NoVariance);
