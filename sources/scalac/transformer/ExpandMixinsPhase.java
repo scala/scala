@@ -67,6 +67,9 @@ public class ExpandMixinsPhase extends Phase {
     /** A map from classes to their original (unexpanded) body */
     private final Map/*<Symbol,Tree[]>*/ bodies;
 
+    /** A map from members to their original member */
+    private final Map/*<Symbol,Symbol>*/ origins;
+
 
     /** A transformer that expands classes that have mixins */
     private final GenTransformer expander;
@@ -82,6 +85,7 @@ public class ExpandMixinsPhase extends Phase {
         this.transformers = new HashMap();
         this.expansions = new HashMap();
         this.bodies = ((AddInterfacesPhase)addinterfaces).classToBody;
+        this.origins = new HashMap();
         this.expander = new TreeExpander(global);
     }
 
@@ -188,7 +192,9 @@ public class ExpandMixinsPhase extends Phase {
         public Tree transform(Tree tree) {
             switch (tree) {
             case DefDef(_, _, _, _, _, _):
-                if (getSymbolFor(tree).isInitializer()) initializer = true;
+                Symbol symbol = getSymbolFor(tree);
+                if (symbol.owner() != clasz) return Tree.Empty;
+                if (symbol.isInitializer()) initializer = true;
                 tree = super.transform(tree);
                 initializer = false;
                 return tree;
@@ -326,11 +332,13 @@ public class ExpandMixinsPhase extends Phase {
     private class TypeTransformer extends Type.MapOnlyTypes {
 
         public final Symbol clasz;
+        public final Type[] parents;
         public final SymbolCloner cloner;
         public final Map/*<Symbol,Type>*/ inlines;
 
         public TypeTransformer(Symbol clasz) {
             this.clasz = clasz;
+            this.parents = clasz.parents();
             this.cloner = new SymbolCloner();
             this.inlines = new HashMap();
             initialize();
@@ -370,11 +378,20 @@ public class ExpandMixinsPhase extends Phase {
 
         private void createMixedInMemberSymbols(Scope symbols) {
             Scope scope = clasz.members();
-            for (SymbolIterator i = symbols.iterator();
-		 i.hasNext();) {
+            for (SymbolIterator i = symbols.iterator(); i.hasNext();) {
                 Symbol member = i.next();
                 boolean shadowed = member.isPrivate() || member.isInitializer()
                     || member.overridingSymbol(clasz.thisType()) != member;
+                Symbol origin = (Symbol)origins.get(member);
+                if (!shadowed) {
+                    if (member.overriddenSymbol(parents[0]) == origin) {
+                        cloner.clones.put(member, origin);
+                        continue;
+                    }
+                }
+                // !!! when the symbol is shadowed, inlining could be
+                // avoided if the original definition is accessible
+                // through super
                 assert Debug.log("expanding type ", clasz, ": cloning ", member);
                 Symbol clone = cloner.cloneSymbol(member);
                 if (shadowed) clone.name = Names.MIXIN(member);
@@ -382,6 +399,7 @@ public class ExpandMixinsPhase extends Phase {
                 if (shadowed) clone.flags &= ~Modifiers.ACCESSFLAGS;
                 if (shadowed) clone.flags |=  Modifiers.PRIVATE;
                 scope.enterOrOverload(clone);
+                origins.put(clone, origin != null ? origin : member);
             }
         }
 
