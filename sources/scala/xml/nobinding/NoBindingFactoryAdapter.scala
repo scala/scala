@@ -15,7 +15,7 @@ import org.xml.sax.InputSource;
 /** nobinding adaptor providing callbacks to parser to create elements.
 *   implements hash-consing
 */
-class NoBindingFactoryAdapter extends FactoryAdapter  {
+class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
 
   type Elem = scala.xml.Elem;
 
@@ -25,12 +25,17 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
   **/
   def nodeContainsText( label:java.lang.String ):boolean = true;
 
+
+  protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): Elem = {
+     Elem( uname.uri, uname.label, attrs, children:_* );
+  }
+
   /* default behaviour is to use hash-consing */
-  val cache = new mutable.HashMap[int,Elem]();
+  //val cache = new mutable.HashMap[int,Elem]();
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
-  def createNode(uri:String, label: String, attrs: mutable.HashMap[Pair[String,String],String], children: List[Node] ):Elem = {
+  def createNode(uri:String, label: String, attrs: mutable.HashMap[Pair[String,String],String], children: List[Node] ): Elem = {
 
     // this is a dirty hack to quickly add xmlns.
     // does SAX handle prefixes, xmlns stuff ?
@@ -43,6 +48,8 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
     val attrSeq = AttributeSeq.fromMap( uri$, attrs );
     val elHashCode =
       Utility.hashCode( uri$, label, attrSeq.hashCode(), children ) ;
+    makeNode(UName(uri$,label),attrSeq, children);
+    /*
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
@@ -52,6 +59,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
       cache.update( elHashCode, el );
       el
     }
+    */
                  }
 
   /** creates a text node

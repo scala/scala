@@ -16,8 +16,9 @@ import scala.collection.mutable.HashMap ;
 **   to the SAX XML parser, by giving concrete values for the factory maps f and g.
 */
 
-abstract class BindingFactoryAdapter extends FactoryAdapter() {
+abstract class BindingFactoryAdapter extends FactoryAdapter() with NodeFactory[Node] {
 
+  val namespace:String;
   var errors = 0;
 
   /** mapping from element names to an element constructor
@@ -46,7 +47,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
   }
 
   // if compress is set, used for hash-consing
-  val cache = new HashMap[int,Node];
+  //val cache = new HashMap[int,Node];
   //var cacheCount = 0;
 
 
@@ -54,9 +55,18 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
     f.get( elemName ) match {
       case Some(d) => d
       case _       => {
-        throw new IllegalArgumentException("unrecognized:elemNamehello");
+        throw new IllegalArgumentException("unrecognized:"+elemName);
       }
     }
+
+  protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): Node = {
+    if( this.namespace == uname.uri ) {
+      val c = getConstructor( uname.label );
+      c( attrs, children );
+    } else {
+      Elem( uname.uri, uname.label, attrs, children:_* );
+    }
+  }
 
   /** creates an element. see also compress */
   def   createNode(uri:String,
@@ -65,6 +75,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
                    children:List[Node] ):Node = {
       val uri$ = uri.intern();
       val attribs1 = AttributeSeq.fromMap(attribs);
+
       // 2do:optimize
       if( !compress ) {
         // get constructor
@@ -73,6 +84,8 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
       } else { // do hash-consing
 
         val ahc = attribs.toList.hashCode();
+        makeNode(UName(uri$, elemName), attribs1, children);
+        /*
 	val h = Utility.hashCode( uri$, elemName, ahc, children );
         cache.get( h ).match {
 
@@ -88,6 +101,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
               cache.update( h, el );
               el
         }
+        */
       }
     } // createNode
 

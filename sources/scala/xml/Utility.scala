@@ -235,6 +235,11 @@ object Utility {
   }
 
   /** returns a hashcode for the given constituents of a node */
+  def hashCode(uname: UName, attribHashCode: Int, children: Seq[Node]): Int = {
+    hashCode(uname.uri, uname.label, attribHashCode, children);
+  }
+
+  /** returns a hashcode for the given constituents of a node */
   def hashCode(uri: String, label: String, attribHashCode: Int, children: Seq[Node]) = {
     41 * uri.hashCode() % 7 + label.hashCode() + attribHashCode + children.hashCode()
   }

@@ -76,14 +76,14 @@ abstract class Node extends NodeSeq {
   override def equals( x:Any ):boolean = x match {
     case that:Node =>
       //Console.print("(Node)");
-      that.label == this.label &&
-        that.attribute.sameElements( this.attribute ) &&
-          that.child.sameElements( this.child ) // sameElements
+      that.label == this.label
+    && that.attributes ==  this.attributes
+    && that.child.sameElements( this.child ) // sameElements
     case _ => false
   }
 
   /** returns a hashcode */
-  override def hashCode() =
+  override def hashCode(): Int =
     Utility.hashCode(namespace, label, attribute.toList.hashCode(), child);
 
 

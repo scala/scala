@@ -26,6 +26,16 @@ object AttributeSeq {
     }:_* )
   }
 
+  /** construct an attribute sequence from a map
+   *  @param as a map from Pair(uri,key) to value
+   */
+  final def fromUMap(as:Map[UName,String]) = {
+    AttributeSeq.fromAttrs( {
+      for( val a <- as.keys.toList )
+      yield Attribute(a.uri,a.label, as(a))
+    }:_* )
+  }
+
   /** construct from a map, fixing namespacePs to ns
    *  each Attribute with an empty namespace will get the namespace ns.
    *  @param ns the namespace to use instead of the empty one
@@ -84,6 +94,12 @@ abstract class AttributeSeq with Seq[Attribute] {
 
   def sortedSeq:TreeSet[Attribute];
 
+  override def equals(x: Any) = x match {
+    case that:AttributeSeq => (this.sortedSeq == that.sortedSeq)
+    case _                 => false;
+  }
+
+
   final def length = sortedSeq.size;
   final def elements = sortedSeq.elements;
   final def apply(i:Int) = sortedSeq.elements.drop(i).next;
@@ -99,6 +115,24 @@ abstract class AttributeSeq with Seq[Attribute] {
       }
     }
     return None;
+  }
+
+  /** Return a new AttributeSeq with removed attributes
+   *  Only namespace and label are regarded
+   *
+   *  @param  attrs the attributes to be removed
+   *  @return a new AttributeSeq without attributes from attrs
+   */
+  final def -(attrs: Attribute*) = {
+    val diff = new mutable.HashSet[Pair[String,String]];
+    for(val a <- attrs) {
+      diff += Pair(a.namespace, a.key);
+    }
+    var newset = new TreeSet[Attribute];
+    for(val a <- elements; !(diff contains Pair(a.namespace, a.key))) {
+      newset = newset + a;
+    }
+    new AttributeSeq { final def sortedSeq = newset };
   }
 
   /** Return a new AttributeSeq with updated or added attributes

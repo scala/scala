@@ -2,7 +2,7 @@
 
 <!DOCTYPE lnkDB SYSTEM "lnk.dtd">
 <!-- try this DOCTYPE lnkDB SYSTEM "lnkDB.dtd" [ <!ELEMENT newEl (link*)> ] -->
-<lnkDB>
+<lnkDB xmlns="http://scala.epfl.ch/testSuite/links">
   <linkgroup>
     <groupname>LDAP Links</groupname>
 

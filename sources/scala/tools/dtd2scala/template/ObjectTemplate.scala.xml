@@ -131,6 +131,8 @@
 
     def load( filename:String, _compress:boolean ):scala.xml.Node = {
       val fAdapter = new scala.xml.BindingFactoryAdapter  {
+      val namespace=<qstring ref="namespace"/>;
+      
         val f = { 
           val res = new mutable.HashMap[String, (scala.xml.AttributeSeq,cT) => scala.xml.Node]() ;
           <elementBinding>
