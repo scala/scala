@@ -4,27 +4,29 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala;
 
 
 abstract class SingleLinkedList[A, This <: SingleLinkedList[A, This]]: This with Seq[A] {
 
-	var elem: A = _;
+    var elem: A = _;
 
-	var next: This = _;
+    var next: This = _;
 
-	def length: Int = 1 + (if (next == null) 0 else next.length);
+    def length: Int = 1 + (if (next == null) 0 else next.length);
 
-	def append(that: This): Unit =
-		if (next == null) { next = that; } else next.append(that);
+    def append(that: This): Unit =
+        if (next == null) { next = that; } else next.append(that);
 
-	def insert(that: This): Unit = if (that != null) {
-		that.append(next);
-		next = that;
-	}
+    def insert(that: This): Unit = if (that != null) {
+        that.append(next);
+        next = that;
+    }
 
     def apply(n: Int): A = {
         if (n == 0) elem
@@ -52,4 +54,5 @@ abstract class SingleLinkedList[A, This <: SingleLinkedList[A, This]]: This with
 
     def toList: List[A] =
         if (next == null) (elem :: Nil) else (elem :: next.toList);
+
 }
