@@ -5420,7 +5420,7 @@ given predicate. They are now implemented in terms of \code{any}.
 The next level is represented by parsers reading identifiers, numbers
 and lists. Here is a parser for identifiers.
 \begin{lstlisting}
-class ListParsers extends CharParsers {
+abstract class ListParsers extends CharParsers {
   def ident: Parser[Tree] = 
     for (
       val c: char <- chr(Character.isLetter); 
@@ -5578,7 +5578,7 @@ applying it to the command line argument.
 object Test {
   def main(args: Array[String]): unit = {
     val ps = new ListParsers with ParseString(args(0));
-    ps.expr(input) match {
+    ps.expr(ps.input) match {
       case Some(Pair(list, _)) => System.out.println("parsed: " + list);
       case None => "nothing parsed"
     }
