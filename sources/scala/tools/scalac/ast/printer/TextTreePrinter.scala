@@ -609,10 +609,10 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     }
 
   //##########################################################################
-  // Protected Methods - Printing modifiers
+  // Public Methods - Printing modifiers
 
   /** Print syntactic modifiers. */
-  protected def printSModifiers(flags: Int): Unit = {
+  def printSModifiers(flags: Int): Unit = {
     if ((flags & Modifiers.ABSTRACT) != 0) {
       print(KW_ABSTRACT);
       print(Space);
@@ -648,7 +648,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   }
 
   /** Print attributed modifiers. */
-  protected def printAModifiers(symbol: Symbol): Unit = {
+  def printAModifiers(symbol: Symbol): Unit = {
     if (symbol.isAbstractClass()) {
       print(KW_ABSTRACT);
       print(Space);
