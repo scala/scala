@@ -20,7 +20,6 @@ ast/parser/Sourcefile.java
 ast/parser/TokenData.java
 ast/parser/Tokens.java
 
-ast/AbstractTreeCopyFactory.java
 ast/DefaultTreeFactory.java
 ast/LazyTreeCopier.java
 ast/StrictTreeCopier.java
