@@ -32,17 +32,18 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 10/09/03
  */
+
 class Executable {
 
     /** The time when execution of this program started.
      */
-	val executionStart: Long = System.currentTimeMillis();
+    val executionStart: Long = System.currentTimeMillis();
 
-	/** The default main method.
-	 */
+    /** The default main method.
+     */
     def main(args: Array[String]) = {
-    	if (System.getProperty("scala.time") != null)
-    		System.out.println("[total " +
-    			(System.currentTimeMillis() - executionStart) + "ms]");
+        if (System.getProperty("scala.time") != null)
+          System.out.println("[total " +
+                             (System.currentTimeMillis() - executionStart) + "ms]");
     }
 }
