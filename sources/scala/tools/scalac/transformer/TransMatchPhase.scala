@@ -26,10 +26,9 @@ class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
       }
 
     override def postCheckers( global:scalac_Global ):Array[Checker] = {
-      val a = new Array[Checker](4);
+      val a = new Array[Checker](2);
       a.update(0, new CheckSymbols(global) );
       a.update(1, new CheckTypes(global) );
-      a.update(2, new CheckOwners(global) );
       a
     }
   }

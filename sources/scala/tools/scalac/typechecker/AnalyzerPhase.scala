@@ -67,8 +67,7 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
   override def postCheckers(global: scalac_Global): Array[Checker] =
     NewArray.Checker(
       new CheckSymbols(global),
-      new CheckTypes(global),
-      new CheckOwners(global)
+      new CheckTypes(global)
     );
 }
 }

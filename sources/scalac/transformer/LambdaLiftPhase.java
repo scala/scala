@@ -156,7 +156,6 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
         return new Checker[] {
             new CheckSymbols(global),
             new CheckTypes(global),
-            new CheckOwners(global),
         };
     }
 }

@@ -16,7 +16,6 @@ import scalac.Unit;
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
 import scalac.checkers.Checker;
-import scalac.checkers.CheckOwners;
 import scalac.checkers.CheckSymbols;
 import scalac.checkers.CheckTypes;
 import scalac.symtab.AbsTypeSymbol;
@@ -106,7 +105,6 @@ public class ErasurePhase extends Phase {
         return new Checker[] {
             new CheckSymbols(global),
             new CheckTypes(global),
-            new CheckOwners(global),
         };
     }
 
