@@ -498,13 +498,13 @@ case "$SCRIPT" in
     scalap*    ) exec_scalap scala.tools.scalap.Main "$@";;
     scalatest* ) exec_scalatest scala.tools.scalatest.Main "$@";;
     socos*     )
-        warning "Deprecated command, use scalac${SCRIPT#socos} instead.";
+        warning "Deprecated command, use scalarun`expr "$SCRIPT" : 'socos\(.*\)'` instead.";
         exec_compile scalac.Main "$@";;
     surus*     )
-        warning "Deprecated command, use scalarun${SCRIPT#surus} instead.";
+        warning "Deprecated command, use scalarun`expr "$SCRIPT" : 'surus\(.*\)'` instead.";
         exec_compile scalai.Main "$@";;
     siris*     )
-        warning "Deprecated command, use scalaint${SCRIPT#siris} instead.";
+        warning "Deprecated command, use scalarun`expr "$SCRIPT" : 'siris\(.*\)'` instead.";
         exec_compile scalai.Main -interactive "$@";;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
