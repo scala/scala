@@ -27,10 +27,10 @@ public class SymSet {
 	    return new SymSet(sym, EMPTY, EMPTY);
 	} else if (sym == this.sym) {
 	    return this;
-	} else if (sym.isLess(this.sym)) {
+	} else if (less(sym, this.sym)) {
 	    return new SymSet(this.sym, l.incl(sym), r);
 	} else {
-	    assert this.sym.isLess(sym);
+	    assert less(this.sym, sym);
 	    return new SymSet(this.sym, l, r.incl(sym));
 	}
     }
@@ -51,10 +51,10 @@ public class SymSet {
 	    }
 	    m.l = l;
 	    return m;
-	} else if (sym.isLess(this.sym)) {
+	} else if (less(sym, this.sym)) {
 	    return new SymSet(this.sym, l.excl(sym), r);
 	} else {
-	    assert this.sym.isLess(sym);
+	    assert less(this.sym, sym);
 	    return new SymSet(this.sym, l, r.excl(sym));
 	}
     }
@@ -66,10 +66,10 @@ public class SymSet {
 	    return false;
 	} else if (sym == this.sym) {
 	    return true;
-	} else if (sym.isLess(this.sym)) {
+	} else if (less(sym, this.sym)) {
 	    return l.contains(sym);
 	} else {
-	    assert this.sym.isLess(sym);
+	    assert less(this.sym, sym);
 	    return r.contains(sym);
 	}
     }
@@ -110,4 +110,9 @@ public class SymSet {
     /** The empty set.
      */
     public final static SymSet EMPTY = new SymSet();
+
+    private boolean less(Symbol s1, Symbol s2) {
+        return (s1.hashCode() < s2.hashCode())
+            || (s1.hashCode() == s2.hashCode() && s1.isLess(s2));
+    }
 }
