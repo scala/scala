@@ -91,6 +91,7 @@ public class TreeInfo {
 	case Super(_):
 	    return true;
 	case Ident(_):
+	    assert tree.type != null : tree.toString();
 	    return tree.symbol().isStable();
 	case Select(Tree qual, _):
 	    return tree.symbol().isStable() && isPureExpr(qual);

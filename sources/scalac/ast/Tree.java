@@ -331,6 +331,7 @@ public class Tree {
     public case This(Tree qualifier) {
 	if (!qualifier.isType())
 	    throw unexpected("This expects type", qualifier);
+	assert Global.instance.currentPhase.id <= 2 || qualifier.symbol() != null;
     }
 
     /**

@@ -740,7 +740,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    if (isVariable()) return "variable";
 	    else if (isModule()) return "module";
 	    else if (isConstructor()) return "constructor";
-	    else if (isInitializedMethod()) return "method";
+	    else if (isInitializedMethod() &&
+		     (Global.instance.debug || (flags & STABLE) == 0) )
+		return "method";
 	    else return "value";
 	default: return "";
 	}
@@ -856,7 +858,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    default:
 		if (symtype.isSubType(sym1type)) return sym1;
 		else {
-		    if (Type.debugSwitch) System.out.println(this + locationString() + " does not override " + sym1 + sym1.locationString() + ", since " + symtype + " !<= " + sym1type);//DEBUG
+		    if (Global.instance.debug) System.out.println(this + locationString() + " does not override " + sym1 + sym1.locationString() + ", since " + symtype + " !<= " + sym1type);//DEBUG
 		    return Symbol.NONE;
 		}
 	    }

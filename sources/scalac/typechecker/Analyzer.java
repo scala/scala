@@ -171,6 +171,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	return errorTree(pos);
     }
 
+    void explainTypes(Type found, Type required) {
+	if (global.debug) {
+	    Type.debugSwitch = true;
+	    found.isSubType(required);
+	    Type.debugSwitch = false;
+	}
+    }
+
     void typeError(int pos, Type found, Type req) {
 	String explanation = "";
 	switch (found) {
@@ -414,11 +422,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (found.isSubType(required)) return found;
 	else {
 	    typeError(pos, found, required);
-	    if (global.debug) {
-		Type.debugSwitch = true;
-		found.isSubType(required);
-		Type.debugSwitch = false;
-	    }
+	    explainTypes(found, required);
 	    return Type.ErrorType;
 	}
     }
@@ -604,7 +608,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    default:
 		if (other.isConstructor())
 		    overrideError(pos, member, other, "cannot override a class constructor");
-		if (!self.memberInfo(member).isSubType(self.memberInfo(other)))
+		Type selftype = normalizedInfo(self, member);
+		Type othertype = normalizedInfo(self, other);
+		if (!selftype.isSubType(othertype))
 		    overrideTypeError(pos, member, other, self);
 	    }
 	}
@@ -618,12 +624,20 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     }
 
     void overrideTypeError(int pos, Symbol member, Symbol other, Type site) {
-	if (other.type() != Type.ErrorType && member.type() != Type.ErrorType)
+	if (other.type() != Type.ErrorType && member.type() != Type.ErrorType) {
 	    error(pos,
 		member + member.locationString() +
-		infoString(member, site.memberInfo(member)) +
+		infoString(member, normalizedInfo(site, member)) +
 		"\n cannot override " + other + other.locationString() +
-		infoString(other, site.memberInfo(other)));
+		infoString(other, normalizedInfo(site, other)));
+	    explainTypes(normalizedInfo(site, member), normalizedInfo(site, other));
+	}
+    }
+
+    Type normalizedInfo(Type site, Symbol sym) {
+	Type tp = site.memberInfo(sym);
+	if (sym.kind == VAL && (sym.flags & STABLE) != 0) tp = tp.resultType();
+	return tp;
     }
 
     String infoString(Symbol sym, Type symtype) {
@@ -1097,9 +1111,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (sym.owner().kind == CLASS) {
 		    pre = nextcontext.enclClass.owner.thisType();
 		    if (!sym.owner().isPackage()) {
-			tree = make.Select(
-			    tree.pos, gen.mkStableId(tree.pos, pre), name);
-			//System.out.println(name + " :::> " + tree);//DEBUG
+			Tree qual = gen.mkStableId(tree.pos, pre);
+			tree = make.Select(tree.pos, qual, name);
+			//System.out.println(name + " :::> " + tree + " " + qual.symbol());//DEBUG
 		    }
 		} else {
 		    pre = Type.localThisType;
@@ -1288,9 +1302,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	popContext();
 	if (owner.isTrait()) {
 	    for (int i = 0; i < templ.parents.length; i++)
-		checkTrait(templ.parents[i], owner);
+		checkTrait(parents1[i], owner);
 	    for (int i = 0; i < templ.body.length; i++)
-		checkPureDef(templ.body[i], owner);
+		checkPureDef(body1[i], owner);
 	}
 	Tree.Template templ1 = copy.Template(templ, parents1, body1);
 	templ1.setType(owner.type());
@@ -1731,15 +1745,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tpe1 = transform(tpe, TYPEmode);
 		Tree rhs1 = rhs;
 		if (tpe1 == Tree.Empty) {
-		    tpe1 = gen.mkType(rhs1.pos, rhs.type);
-		    //System.out.println("infer " + sym + ":" + rhs.type);//DEBUG
+		    tpe1 = gen.mkType(rhs.pos, rhs.type);
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
 		    if ((mods & CASE) != 0) {
-			rhs1 = rhs; //rhs was already attributed
+			//rhs was already attribute
 		    } else {
 			pushContext(tree, sym, context.scope);
-			rhs1 = transform(rhs1, EXPRmode, sym.type());
+			rhs1 = transform(rhs, EXPRmode, sym.type());
 			popContext();
 		    }
 		}
@@ -2016,11 +2029,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tree1;
 		if (qual == Tree.Empty) {
 		    clazz = context.enclClass.owner;
-		    if (clazz != null) { // we are in a class or module
-			tree1 = make.This(
-			    tree.pos,
-			    make.Ident(tree.pos, clazz.name)
-			    .setSymbol(clazz).setType(clazz.type()));
+		    if (clazz != null) {
+			tree1 = gen.mkStableId(tree.pos, clazz.thisType());
 		    } else {
 			return error(
 			    tree.pos, tree +
@@ -2032,7 +2042,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    if (clazz.kind == CLASS) {
 			Context clazzContext = context.outerContext(clazz);
 			if (clazzContext != Context.NONE) {
-			    tree1 = tree;
+			    if (!(qual1 instanceof Tree.Ident))
+				qual1 = gen.Ident(tree.pos, qual1.symbol());
+			    tree1 = copy.This(tree, qual1);
 			} else {
 			    return error(qual.pos,
 				clazz.name + " is not an enclosing class");

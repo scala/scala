@@ -190,6 +190,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	case Ident(Name name):
 	    Scope.Entry e = scopes[level].lookupEntry(name);
 	    Symbol sym = tree.symbol();
+	    assert sym != null : name;
 	    if (sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;
