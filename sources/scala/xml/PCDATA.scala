@@ -2,7 +2,7 @@
 
 package scala.xml;
 
-import scala.xml.javaAdapter.Map ;
+import scala.collection.Map ;
 
 /** an XML representation text. Used in both generic and specific XML representation
 */
@@ -19,7 +19,6 @@ case class PCDATA( content:String ) extends Element  {
   */
 
               override def toXML:String = {
-                // new java.util.StringBuffer !!crashes!!
                 val s = new StringBuffer();
                 var i = 0;
                 while( i < content.length() ) {

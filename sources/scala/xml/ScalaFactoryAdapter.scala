@@ -1,7 +1,9 @@
 package scala.xml ;
 
-import scala.xml.javaAdapter.Map ;
-import scala.xml.javaAdapter.HashMap ;
+import scala.collection.Map ;
+import scala.collection.mutable.HashMap ;
+//import scala.xml.javaAdapter.Map ;
+//import scala.xml.javaAdapter.HashMap ;
 
 /** a Scala specific dtd2scala.FactoryAdapter, which plays the SAX content
 *   handler for the SAX parser. It implements the three callback methods
@@ -31,42 +33,44 @@ abstract class ScalaFactoryAdapter
     /** looks up in g whether an element may contain text (PCDATA)
       */
 
-    def   elementContainsText( name:java.lang.String ):boolean =
-         g.get( name ) ;
+    def elementContainsText( name:java.lang.String ):boolean =
+         g.get( name ).match { case Some(x) => x };
 
     // if compress is set, used for hash-consing
-    val cache = new HashMap();
+    val cache = new HashMap[int,Element];
 
-      /** creates an element. uses hash-consing if compress == true
-      */
-      def   createElement(elemName:String,
-			  attribs:java.util.Map,
-			  children:java.util.Iterator ):scala.Object = {
-			    val _children = Generic.iterToList[Element]( children ); // 2do:optimize
-			    if( !compress ) {
-			      val c = f.get( elemName ); // get constructor
-			      val el = c( _children );
-			      el.setAttribs( Generic.mapToMap[String,String]( attribs ) );
-			      el
-			    } else { // do hash-consing
+   /** creates an element. uses hash-consing if compress == true
+    */
+   def   createElement(elemName:String,
+                       attribs:HashMap[String,String],
+                       children:List[Element] ):Element = {
+      // 2do:optimize
+      if( !compress ) {
+        // get constructor
+        val c = f.get( elemName ).match{ case Some(x) => x };
+        val el = c( children );
+        el.setAttribs( attribs );
+        el
+      } else { // do hash-consing
 
-			      val h = Element.hashValue( elemName, attribs, _children );
-			      val el_cache = cache.get( h.asInstanceOf[scala.All] ).asInstanceOf[scala.Object];
-			      if ( el_cache != null ) {  // return cached elem
-				el_cache
-			      } else {
-				val c = f.get( elemName ); // get constructor
-				val el = c( _children );
-				el.setAttribs( Generic.mapToMap[String,String]( attribs ) );
-				cache.put( h.asInstanceOf[scala.All], el.asInstanceOf[scala.All] );
-				el
-			      }
-			    }
-			  }
+	val h = Element.hashValue( elemName, attribs, children );
+        cache.get( h ).match {
 
-      /** creates PCDATA element */
-      def createPCDATA( text:String ):scala.Object  = {
-        new PCDATA( text );
-      };
+            case Some(cachedElem) =>
+	      cachedElem
+
+            case None =>
+              // get constructor
+              val c = f.get( elemName ).match{ case Some(x) => x };
+              val el = c( children );
+              el.setAttribs( attribs );
+              cache.update( h, el );
+              el
+        }
+      }
+    } // createElement
+
+   /** creates PCDATA element */
+   def createPCDATA( text:String ):PCDATA  = new PCDATA( text );
 
 } // ScalaFactoryAdapter

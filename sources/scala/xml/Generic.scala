@@ -1,8 +1,7 @@
 package scala.xml;
 
-import scala.xml.javaAdapter.Map ;
-import scala.xml.javaAdapter.HashMap ;
-
+import scala.collection.Map ;
+import scala.collection.mutable.HashMap ;
 
 /** Generic.load( <fileName> ) will load the xml document from file and
  *  create a tree with scala.Labelled, PCDATA and scala.Symbol objects.
@@ -14,7 +13,6 @@ object Generic {
           // utility functions
 
   /** TEMPORARY converting Java iterators to scala List
-  */
 
     def iterToList[ a ]( iter:java.util.Iterator ):List[a] =
         if( !iter.hasNext() )
@@ -22,8 +20,9 @@ object Generic {
         else
             (iter.next().asInstanceOf[ a ])::iterToList( iter ) ;
 
-  /** TEMPORARY converting Java maps to javaAdapter maps
   */
+
+  /** TEMPORARY converting Java maps to javaAdapter maps
 
     def mapToMap[a,b]( map:java.util.Map ):Map[a,b] = {
 
@@ -42,6 +41,7 @@ object Generic {
         iterToMap;
         res
     }
+  */
 
   /** turns a Map that contains attributes into XML like att1="val1" att2="val2"
   */
@@ -50,7 +50,7 @@ object Generic {
 	def iterate( keys:Iterator[String] ) =
 	    if( keys.hasNext ) {
                         val key = keys.next;
-			" " + key + "=\"" + attrib.get( key ) + "\"";
+			" " + key + "=\"" + attrib.get( key ).match{ case Some(x) => x } + "\"";
             } else {
 			""
 	    }
@@ -124,35 +124,36 @@ object Generic {
     def   elementContainsText( name:java.lang.String ):boolean = true;
 
     // default behaviour is hash-consing
-    val cache = new HashMap();
+    val cache = new HashMap[Element,Element];
 
     def   createElement( elemName: String,
-                         attrs: java.util.Map,
-                         children: java.util.Iterator ):scala.Object = {
+                         attrs: HashMap[String,String],
+                         children: List[Element] ):Element = {
 
-          val el = new Labelled( Symbol( elemName ),
-			     Generic.iterToList[ Any ]( children ))
-                with Attribbed {
-                     def attribs = Generic.mapToMap[String,String]( attrs );
+          val el = new Labelled( Symbol( elemName ), children )
+                with Attribbed with Element {
+		     def getName = elemName;
+		     def getChildren = children;
+                     def attribs = attrs ; // ?! not needed anymore
+		     def getAttribs = attrs;
+		     def setAttribs( m:Map[ String, String ] ) = {
+		       /* FIXME throw error */ };
                 };
 
-	  val el_cache = cache.get( el.asInstanceOf[scala.All])
-			     .asInstanceOf[scala.Object];
-	  if ( el_cache != null ) {
-	    System.err.println("[using cached elem!]");
-	    el_cache
-	  } else {
-	    cache.put( el.asInstanceOf[scala.All], el.asInstanceOf[scala.All] );
-	    el
+	  cache.get( el ).match{
+	    case Some(cachedElem) =>
+	      System.err.println("[using cached elem!]");
+	      cachedElem
+	    case None =>
+	      cache.update( el, el );
+	      el
 	  }
+    }; // createElement
 
-
-    }
-
-    def createPCDATA( text:String ):scala.Object  = {
+    def createPCDATA( text:String ):PCDATA  = {
           new PCDATA( text );
     };
 
   } // GenericFactoryAdapter
 
-}
+} //Generic

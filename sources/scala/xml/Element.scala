@@ -1,6 +1,6 @@
 package scala.xml ;
 
-import javaAdapter.Map;
+import scala.collection.Map;
 
 /** superclass for specific representation of XML elements. These are created by the dtd2scala tool, together
 *  with a parsing facility.
@@ -9,7 +9,7 @@ abstract class Element {
 
   def getName:     String;                // the real element name
   def getChildren: Seq[ Element ];         // the children
-  def getAttribs:  Map[ String, String ]; // disabled
+  def getAttribs:  Map[ String, String ]; // disabled updates
   def setAttribs( m:Map[ String, String ] ):Unit ;
 
   /** see Element.hashValue
@@ -40,14 +40,14 @@ object Element {
   */
 
   def hashValue( name:String, attribs:Map[ String, String ], children:Seq[ Element ] ) = {
-    name.hashCode() + attribs.hashCode() + children.hashCode()
+    name.hashCode() + attribs.elements.hashCode() + children.hashCode()
   }
 
   /** returns a hash value computed from the element name, attributes and hash values of children.
-  */
 
   def hashValue( name:String, attribs:java.util.Map, children:Seq[ Element ] ) = {
     name.hashCode() + attribs.hashCode() + children.hashCode()
   }
+  */
 
 }

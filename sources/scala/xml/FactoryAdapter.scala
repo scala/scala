@@ -7,11 +7,14 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
-import java.util.Map;
+/*import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
 import java.util.Iterator;
+*/
+import scala.collection.mutable.Stack;
+import scala.collection.mutable.HashMap;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -37,8 +40,8 @@ abstract class FactoryAdapter
 {
   // default settings
 
-  /** Default parser name. */
-  val DEFAULT_PARSER_NAME   = "org.apache.crimson.parser.XMLReaderImpl"; // included in JDK1.4
+  /** Default parser name - included in JDK1.4 */
+  val DEFAULT_PARSER_NAME   = "org.apache.crimson.parser.XMLReaderImpl";
   //val DEFAULT_PARSER_NAME   = "org.apache.xerces.parsers.SAXParser";
 
   /** Namespaces feature id (http://xml.org/sax/features/namespaces). */
@@ -49,9 +52,9 @@ abstract class FactoryAdapter
   //
 
   val buffer = new StringBuffer();
-  val attribStack = new Stack();
-  val hStack  = new Stack();   // [ element ] contains siblings
-  val tagStack  = new Stack(); // [String]
+  val attribStack = new Stack[HashMap[String,String]];
+  val hStack  = new Stack[Element];   // [ element ] contains siblings
+  val tagStack  = new Stack[String]; // [String]
 
   var curTag : String = null ;
   var capture:boolean = false;
@@ -70,14 +73,14 @@ abstract class FactoryAdapter
   * @return a new XML element.
   */
   def createElement(elemName:String ,
-                    attribs:Map ,
-                    chIter:Iterator ):scala.Object; //abstract
+                    attribs:HashMap[String,String] ,
+                    chIter:List[Element] ):Element; //abstract
 
   /** Creates an PCDATA element.
    * @param text
    * @return a new PCDATA element.
    */
-  def createPCDATA( text:String ):scala.Object; // abstract
+  def createPCDATA( text:String ):PCDATA; // abstract
 
   //
   // ContentHandler methods
@@ -156,25 +159,23 @@ abstract class FactoryAdapter
         capture = elementContainsText(localName) ;
 
         hStack.push( null );
-        var map:HashMap = null;
+        var map:HashMap[String,String] = null:HashMap[String,String];
 
         if (attributes == null) {
               //fOut.println("null");
         }
         else {
-              map = new HashMap();
+              map = new HashMap[String,String];
 
-              val length:int = attributes.getLength();
-	      var i : int = 0;
-              while ( i < length ) {
-                    val attrLocalName = attributes.getLocalName(i);
-                    //String attrQName = attributes.getQName(i);
-                    //String attrURI = attributes.getURI(i);
-                    val attrType = attributes.getType(i);
-                    val attrValue = attributes.getValue(i);
-                    if( attrType.equals("CDATA") )
-                          { val _ = map.put( attrLocalName, attrValue ); }
-		i=i+1;
+	      for( val i <- List.range( 0, attributes.getLength() )) do {
+                val attrLocalName = attributes.getLocalName(i);
+                //String attrQName = attributes.getQName(i);
+                //String attrURI = attributes.getURI(i);
+                val attrType = attributes.getType(i);
+                val attrValue = attributes.getValue(i);
+                if( attrType.equals("CDATA") ) {
+		  map.update( attrLocalName, attrValue );
+		}
               }
 	}
 
@@ -207,22 +208,22 @@ abstract class FactoryAdapter
 
         captureText();
 
-        val attribMap = attribStack.pop().asInstanceOf[ HashMap ];
+        val attribMap = attribStack.top; attribStack.pop;
 
         // reverse order to get it right
-        val v       = new LinkedList();
-        var child = hStack.pop().asInstanceOf[ scala.Object ];
+        var v:List[Element] = Nil;
+        var child:Element = hStack.top; hStack.pop;
         while( child != null ) {
-            v.addFirst(child);
-            child = hStack.pop().asInstanceOf[ scala.Object ];
+            v = child::v;
+            child = hStack.top; hStack.pop;
         }
 
         // create element
-        rootElem = createElement(localName, attribMap, v.iterator());
+        rootElem = createElement( localName, attribMap, v );
         hStack.push(rootElem);
 
         // set
-        curTag = tagStack.pop().asInstanceOf[ String ];
+        curTag = tagStack.top; tagStack.pop;
 
         if (curTag != null) // root level
             capture = elementContainsText(curTag);
@@ -294,7 +295,7 @@ abstract class FactoryAdapter
 
     } // printError(String,SAXParseException)
   //} // class FA_ErrorHandler
-    var rootElem : scala.Object = null;
+    var rootElem : Element = null:Element;
 
     //FactoryAdapter
     // MAIN
@@ -304,7 +305,7 @@ abstract class FactoryAdapter
      * @param fileName
      * @return a new XML document object
      */
-    def  loadXML( fileName:String ):scala.Object = {
+    def  loadXML( fileName:String ):Element = {
 
         // variables
         //PrintWriter out = new PrintWriter(System.out);
