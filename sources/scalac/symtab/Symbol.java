@@ -391,9 +391,16 @@ public abstract class Symbol implements Modifiers, Kinds {
         );
     }
 
-    /** Does this symbol denote a module? */
+    /** Does this symbol denote a module class? */
     public final boolean isModuleClass() {
         return kind == CLASS && (flags & MODUL) != 0;
+    }
+
+    /** Does this symbol denote a global module class? */
+    public final boolean isGlobalModuleClass() {
+        return isModuleClass() && (owner.isPackage()
+            //|| owner().isGlobalModuleClass() // add later? translation does not work (yet?)
+        );
     }
 
     /** Does this symbol denote a class? */
