@@ -42,13 +42,12 @@ public class SubstTransformer extends Transformer {
             }
         };
 
+    // !!! remove (use transformer's copy, both are strict)
     protected final TreeCopier simpleCopy;
 
     public SubstTransformer(Global global, TreeFactory make) {
-        super(global, make, new TCF(make));
+        super(global, make, new StrictTreeCopier(make));
         this.simpleCopy = new StrictTreeCopier(make);
-
-        ((TCF)copy).setTransformer(this);
     }
 
     public boolean mustSubstituteSymbol(Tree tree) {
@@ -127,8 +126,19 @@ public class SubstTransformer extends Transformer {
         updateTypeSubst();
     }
 
-    public Tree transform(Tree tree) {
-        Tree newTree = super.transform(tree);
+    public Tree transform(Tree oldTree) {
+        Tree newTree = super.transform(oldTree);
+        if (oldTree.hasSymbol()) {
+            Symbol oldSym = oldTree.symbol();
+
+            if (mustSubstituteSymbol(oldTree)
+                && symbolMap.containsKey(oldSym)) {
+                newTree.setSymbol((Symbol)symbolMap.get(oldSym));
+            } else
+                newTree.setSymbol(oldTree.symbol());
+        }
+
+        newTree.type = smApplier.apply(typeMap.apply(oldTree.type));
         return syncTree(newTree);
     }
 
@@ -149,6 +159,8 @@ public class SubstTransformer extends Transformer {
             newMods = sym.flags;
         }
 
+        // !!! Do we really need to copy ? transformer's copier is strict so
+        // !!! all trees should already be copies.
         switch (tree) {
         case ClassDef(_, // fix Emacs :
                       _,
@@ -209,38 +221,6 @@ public class SubstTransformer extends Transformer {
     }
 
     //////////////////////////////////////////////////////////////////////
-
-    public static class TCF extends StrictTreeCopier {
-        protected SubstTransformer transformer;
-        protected Map/*<Symbol,Symbol>*/ symbolMap;
-        protected SymbolMapApplier smApplier;
-        protected Type.Map typeMap;
-
-        public TCF(TreeFactory make) {
-            super(make);
-        }
-
-        public void setTransformer(SubstTransformer transformer) {
-            this.transformer = transformer;
-            this.symbolMap = transformer.symbolMap;
-            this.smApplier = transformer.smApplier;
-            this.typeMap = transformer.typeMap;
-        }
-
-        public void attribute(Tree newTree, Tree oldTree) {
-            if (oldTree.hasSymbol()) {
-                Symbol oldSym = oldTree.symbol();
-
-                if (transformer.mustSubstituteSymbol(oldTree)
-                    && symbolMap.containsKey(oldSym)) {
-                    newTree.setSymbol((Symbol)symbolMap.get(oldSym));
-                } else
-                    newTree.setSymbol(oldTree.symbol());
-            }
-
-            newTree.type = smApplier.apply(typeMap.apply(oldTree.type));
-        }
-    }
 }
 
 
