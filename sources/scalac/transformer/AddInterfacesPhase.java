@@ -138,10 +138,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             || (member.isMethod() && !member.isPrimaryConstructor());
     }
 
-    protected boolean memberMovesToInterface(Symbol member) {
-        return member.isType();
-    }
-
     protected Type removeValueParams(Type tp) {
         switch (tp) {
         case MethodType(Symbol[] vparams, Type result):
@@ -247,7 +243,8 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             while (ifaceMembersIt.hasNext()) {
                 Symbol ifaceMemberSym = ifaceMembersIt.next();
 
-                if (memberMovesToInterface(ifaceMemberSym)
+                if (ifaceMemberSym.isType()
+                    || ifaceMemberSym.isDeferred()
                     || ifaceMemberSym.isPrimaryConstructor())
                     continue;
 
