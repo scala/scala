@@ -291,7 +291,7 @@ class AddInterfaces extends Transformer {
                 throw Debug.abort("don't know what to do with this ", t);
         }
 
-        return gen.mkInterfaceDef(classDef.symbol(), ifaceBody.toArray());
+        return gen.ClassDef(classDef.symbol(), ifaceBody.toArray());
     }
 
     protected Tree makeClass(ClassDef classDef) {

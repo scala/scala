@@ -665,6 +665,20 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	Template templ = Template(pos, Symbol.NONE, constrs, Tree.EMPTY_ARRAY);
 	New tree = make.New(pos, templ);
         tree.setType(constr.type);
+        // after AddConstructor use type of symbol
+        switch (constr) {
+        case Apply(TypeApply(Tree fun, Tree[] targs), _):
+            Symbol sym = fun.symbol();
+            if (sym == null || sym.isConstructor()) break;
+            Type[] args = Tree.typeOf(targs);
+            tree.setType(Type.appliedType(sym.owner().typeConstructor(),args));
+            break;
+        case Apply(Tree fun, _):
+            Symbol sym = fun.symbol();
+            if (sym == null || sym.isConstructor()) break;
+            tree.setType(sym.owner().typeConstructor());
+            break;
+        }
         return tree;
     }
     public Tree New(Tree constr) {
@@ -731,17 +745,6 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	return ValDef(sym, Tree.Empty);
     }
 
-    /** Builds a definition for given interface with given body. */
-    public Tree mkInterfaceDef(Symbol clazz, Tree[] body) {
-	Global.instance.nextPhase();
-        clazz.info(); // needed until isInterface() triggers flag updates
-        assert clazz.isInterface(): Debug.show(clazz);
-	Type[] parents = clazz.parents();
-	Global.instance.prevPhase();
-        Tree[] constrs = mkPrimaryConstrs(clazz.pos, parents);
-        return ClassDef(clazz, constrs, Symbol.NONE, body);
-    }
-
     /** Builds a ClassDef node for given class with given template. */
     public ClassDef ClassDef(Symbol clazz, Template template) {
         ClassDef tree = make.ClassDef(
@@ -763,6 +766,20 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Tree[] body)
     {
         return ClassDef(clazz, Template(clazz.pos, local, constrs, body));
+    }
+
+    /** Builds a ClassDef node for given class with given body. */
+    public Tree ClassDef(Symbol clazz, Tree[] body) {
+        for (int i = 0; i < body.length; i++) {
+            assert body[i].definesSymbol() && body[i].symbol().owner() ==clazz:
+                "\nclass : " + clazz +
+                "\nmember: " + body[i];
+        }
+	Global.instance.nextPhase();
+	Type[] parents = clazz.parents();
+	Global.instance.prevPhase();
+        Tree[] constrs = mkPrimaryConstrs(clazz.pos, parents);
+        return ClassDef(clazz, constrs, Symbol.NONE, body);
     }
 
     /** Builds a ValDef node for given symbol and with given rhs. */
