@@ -32,13 +32,14 @@ public class PathClassLoader extends ClassLoader {
     // ClassLoader interface
 
     public Class findClass(String name) throws ClassNotFoundException {
+        String filename = name.replace('.', File.separatorChar) + ".class";
+        AbstractFile file = root.lookupPath(filename, false);
+        if (file == null) throw new ClassNotFoundException(name);
         try {
-            String filename = name.replace('.', File.separatorChar) + ".class";
-            AbstractFile file = root.lookupPath(filename, false);
             byte[] bytes = file.read();
             return defineClass(name, bytes, 0, bytes.length);
         } catch (IOException exception) {
-            throw new ClassNotFoundException(name);
+            throw new ClassFormatError(name+"(Failed to read file "+file+")");
         }
     }
 
