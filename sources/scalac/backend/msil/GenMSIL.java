@@ -1106,7 +1106,8 @@ public final class GenMSIL {
 		    emitConvert(uetype, ptype);
 		    return items.StackItem(ptype);
 		}
-	    } else if (!item.type.equals(mrtype) && !(rtype == tc.OBJECT)) {
+                //} else if (!item.type.equals(mrtype) && !(rtype == tc.OBJECT)) {
+	    } else if (!item.type.isSubtypeOf(mrtype) && !(rtype == tc.OBJECT)) {
 		if (rtype.IsValueType()) {
 		    code.Emit(OpCodes.Unbox, rtype);
 		    if (rtype.IsEnum())
