@@ -426,17 +426,17 @@ public class LambdaLift extends OwnerTransformer
 	    switch (fn1) {
 	    case TypeApply(Tree fn2, Tree[] targs):
 		fn1 = copy.TypeApply(
-		    fn1, fn2, addFreeArgs(tree.pos, get(free.ftvs, fsym), targs));
+		    fn1, fn2, addFreeArgs(tree.pos, get(free.ftvs, fsym), targs, true));
 		break;
 	    default:
  		Tree[] targs = addFreeArgs(
-		    tree.pos, get(free.ftvs, fsym), Tree.EMPTY_ARRAY);
+		    tree.pos, get(free.ftvs, fsym), Tree.EMPTY_ARRAY, true);
 		if (targs.length > 0)
 		    fn1 = gen.TypeApply(fn1, targs);
 	    }
 	    Tree[] args1 = transform(args);
 	    return copy.Apply(
-		tree, fn1, addFreeArgs(tree.pos, get(free.fvs, fsym), args1));
+		tree, fn1, addFreeArgs(tree.pos, get(free.fvs, fsym), args1, false));
 
 	case Ident(Name name):
 	    Symbol sym = tree.symbol();
@@ -633,7 +633,7 @@ public class LambdaLift extends OwnerTransformer
     /** For all variables or type variables in `fvs',
      *  append proxies to argument array `args'.
      */
-    Tree[] addFreeArgs(int pos, SymSet fvs, Tree[] args) {
+    Tree[] addFreeArgs(int pos, SymSet fvs, Tree[] args, boolean types) {
 	if (fvs != SymSet.EMPTY) {
 	    Symbol[] fparams = fvs.toArray();
 	    Tree[] args1 = new Tree[args.length + fparams.length];
@@ -641,7 +641,7 @@ public class LambdaLift extends OwnerTransformer
 	    for (int i = 0; i < fparams.length; i++) {
 		Symbol farg = descr.proxy(fparams[i], currentOwner);
 		args1[args.length + i] =
-		    gen.Ident(pos, farg).setType(farg.nextType());
+                    types ? gen.mkTypeIdent(pos, farg) : gen.Ident(pos, farg);
 	    }
 	    return args1;
 	} else {

@@ -116,6 +116,18 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         }
     }
 
+    /** Build and attribute type ident node with given symbol.
+     */
+    public Tree mkTypeIdent(int pos, Symbol sym) {
+        assert sym.kind == TYPE: Debug.show(sym);
+	sym.flags |= ACCESSED;
+	return mkType(pos, sym.nextType());
+    }
+
+    public Tree mkTypeIdent(Symbol sym) {
+        return Ident(sym.pos, sym);
+    }
+
     /** Build and attribute tree corresponding to given type.
      */
     public Tree mkType(int pos, Type type) {
@@ -496,11 +508,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Build and attribute ident node with given symbol.
      */
     public Tree Ident(int pos, Symbol sym) {
-	Global.instance.nextPhase();
-	Type symtype = sym.type();
-	Global.instance.prevPhase();
+        assert sym.isTerm(): Debug.show(sym);
 	sym.flags |= ACCESSED;
-	return make.Ident(pos, sym).setType(deref(symtype));
+	return make.Ident(pos, sym).setType(deref(sym.nextType()));
     }
 
     public Tree Ident(Symbol sym) {

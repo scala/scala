@@ -2364,7 +2364,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Ident(Name name):
 		if (name == Names.CONSTRUCTOR) {
 		    assert (mode & CONSTRmode) != 0 : tree;
-		    return gen.Ident(tree.pos, context.constructorClass);
+		    return copy.Ident(tree, context.constructorClass)
+                        .setType(context.constructorClass.nextType());
 		    /*
 		    */
 		} else if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) &&
