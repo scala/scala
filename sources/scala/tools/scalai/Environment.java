@@ -47,6 +47,35 @@ public class Environment {
     }
 
     //########################################################################
+    // Public Methods - translate
+
+    public Class getClass(Symbol symbol) {
+        assert symbol.isClass(): Debug.show(symbol);
+        Template value = lookupTemplate(symbol);
+        switch (value) {
+        case Global(ScalaTemplate template):
+            return template.getProxy();
+        case JavaClass(Class clasz):
+            return clasz;
+        default:
+            throw Debug.abort("illegal case", value);
+        }
+    }
+
+    public Class getClass(Type type) {
+        switch (type) {
+        case TypeRef(_, Symbol symbol, _):
+            return getClass(symbol);
+        case UnboxedType(int kind):
+            return mirror.getClass(kind);
+        case UnboxedArrayType(Type element):
+            return mirror.getArray(getClass(element));
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }
+
+    //########################################################################
     // Public Methods - insert
 
     public ClassDef insertClassDef(Symbol symbol, ClassDef classdef) {

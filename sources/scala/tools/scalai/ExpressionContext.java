@@ -15,6 +15,7 @@ import java.util.HashMap;
 import ch.epfl.lamp.util.SourceFile;
 
 import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 import scalac.util.Debug;
 
 public class ExpressionContext {
@@ -44,6 +45,17 @@ public class ExpressionContext {
         this.owner = owner;
         this.current = 0;
         this.maximum = 0;
+    }
+
+    //########################################################################
+    // Public Methods - translate
+
+    public Class getClass(Symbol symbol) {
+        return environment.getClass(symbol);
+    }
+
+    public Class getClass(Type type) {
+        return environment.getClass(type);
     }
 
     //########################################################################
