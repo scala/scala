@@ -258,7 +258,7 @@ class GenJVM {
         } break;
 
         case Apply(TypeApply(Tree fun, Tree[] args), _): {
-            genLoadQualifier(ctx, fun);
+            genLoadQualifier(ctx, fun, true);
 
             JType type = typeStoJ(args[0].type);
             if (fun.symbol() == defs.IS) {
@@ -378,15 +378,14 @@ class GenJVM {
                 JType[] argTypes = funType.getArgumentTypes();
 
                 boolean isConstrCall = (funSym.name == CONSTRUCTOR_NAME);
-                boolean isSuperCall;
+                boolean isSuperCall = false;
                 switch (fun) {
-                case Select(Super(_, _), _): isSuperCall = true; break;
-                default: isSuperCall = false; break;
+                case Select(Super(_, _), _): isSuperCall = true;
                 }
 
                 boolean isStatic = isStaticMember(funSym);
-                if (!(isStatic || (isConstrCall && !isSuperCall)))
-                    genLoadQualifier(ctx, fun);
+                if (!isStatic)
+                    genLoadQualifier(ctx, fun, !isConstrCall);
                 for (int i = 0; i < args.length; ++i)
                     genLoad(ctx, args[i], argTypes[i]);
 
@@ -452,7 +451,7 @@ class GenJVM {
                 if (isStaticMember(sym))
                     ctx.code.emitGETSTATIC(className, fieldName, fieldType);
                 else {
-                    genLoadQualifier(ctx, tree);
+                    genLoadQualifier(ctx, tree, true);
                     ctx.code.emitGETFIELD(className, fieldName, fieldType);
                 }
                 generatedType = fieldType;
@@ -593,10 +592,11 @@ class GenJVM {
      * Generate code to load the qualifier of the given tree, which
      * can be implicitely "this".
      */
-    protected void genLoadQualifier(Context ctx, Tree tree) {
+    protected void genLoadQualifier(Context ctx, Tree tree, boolean implicitThis) {
         switch (tree) {
         case Ident(_):
-            ctx.code.emitALOAD_0();
+            if (implicitThis)
+                ctx.code.emitALOAD_0();
             break;
         case Select(Tree qualifier, _):
             genLoad(ctx, qualifier, JAVA_LANG_OBJECT_T);
@@ -630,7 +630,7 @@ class GenJVM {
             break;
         case Select(Tree qualifier, _):
             if (!isStaticMember(sym))
-                genLoadQualifier(ctx, tree);
+                genLoadQualifier(ctx, tree, true);
             break;
         default:
             throw global.fail("unexpected left-hand side", tree);
