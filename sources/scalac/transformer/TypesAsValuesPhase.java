@@ -31,6 +31,7 @@ import scalac.util.Debug;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -177,7 +178,9 @@ public class TypesAsValuesPhase extends Phase {
                 argTypes = Symbol.EMPTY_ARRAY;
 
             imSym.setInfo(new Type.MethodType(argTypes,
-                                              defs.SCALACLASSTYPE_TYPE()));
+                                              isStatic
+                                              ? defs.SCALACLASSTYPE_TYPE()
+                                              : defs.TYPE_TYPE()));
 
             instantiator.put(classSym, imSym);
         }
@@ -218,6 +221,7 @@ public class TypesAsValuesPhase extends Phase {
     private NewMember[] membersToAdd(Symbol classSym) {
         NewMember[] toAdd = (NewMember[])membersToAdd.get(classSym);
         if (toAdd == null) {
+            HashSet seenMembers = new HashSet(); // [HACK]
             ArrayList toAddL = new ArrayList();
             Scope.SymbolIterator membersIt = classSym.members().iterator();
             while (membersIt.hasNext()) {
@@ -226,6 +230,8 @@ public class TypesAsValuesPhase extends Phase {
                 // doesn't add the module class to its owner's members
                 if (member.isModule())
                     member = member.moduleClass();
+                if (!seenMembers.add(member))
+                    continue;
                 if (member.isClass()) {
                     Symbol tcSym = getTConstructorSym(member);
                     toAddL.add(NewMember.TypeConstructor(member, tcSym));
@@ -916,34 +922,21 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         private Ancestor[][] computeDisplay0(Symbol classSym) {
-            Type[] parentTypes = classSym.parents();
-            Symbol superClassSym = parentTypes[0].symbol();
-            Ancestor[][] superDisplay = computeDisplay(superClassSym);
-            int level = superDisplay.length;
+            Symbol[] scalaParents = scalaParents(classSym);
+            int level = level(classSym);
             ArrayList/*<Ancestor>*/[] display = new ArrayList[level + 1];
 
-            // Start with the display of the super-class
-            for (int l = 0; l < level; ++l) {
-                Ancestor[] superRow = superDisplay[l];
-                ArrayList newRow = new ArrayList();
-                for (int i = 0; i < superRow.length; ++i)
-                    newRow.add(new Ancestor(superRow[i].symbol, 0, i));
-                display[l] = newRow;
-            }
+            for (int l = 0; l < display.length; ++l)
+                display[l] = new ArrayList();
 
-            display[level] = new ArrayList();
             display[level].add(new Ancestor(classSym, -1, -1));
 
             // Go over parents from left to right and add missing
             // ancestors to the display, remembering where they come
             // from.
-            int parentIndex = superClassSym.isJava() ? 0 : 1;
-            for (int p = 1; p < parentTypes.length; ++p) {
-                Symbol parentSymbol = parentTypes[p].symbol();
+            for (int p = 0; p < scalaParents.length; ++p) {
+                Symbol parentSymbol = scalaParents[p];
                 assert parentSymbol != Symbol.NONE;
-
-                if (parentSymbol.isJava())
-                    continue;
 
                 Ancestor[][] parentDisplay = computeDisplay(parentSymbol);
                 assert parentDisplay.length <= display.length;
@@ -963,10 +956,9 @@ public class TypesAsValuesPhase extends Phase {
                         }
 
                         if (!alreadyExists)
-                            myRow.add(new Ancestor(sym, parentIndex, i));
+                            myRow.add(new Ancestor(sym, p, i));
                     }
                 }
-                ++parentIndex;
             }
 
             Ancestor[][] finalDisplay = new Ancestor[level + 1][];
@@ -983,8 +975,21 @@ public class TypesAsValuesPhase extends Phase {
             if (display == null) {
                 display = computeDisplay0(classSym);
                 displayCache.put(classSym, display);
+//                 debugPrintDisplay(classSym, display);
             }
             return display;
+        }
+
+        private Symbol[] scalaParents(Symbol classSym) {
+            Type[] parentTypes = classSym.parents();
+            ArrayList scalaParents = new ArrayList();
+            for (int i = 0; i < parentTypes.length; ++i) {
+                Symbol parentSym = parentTypes[i].symbol();
+                if (!parentSym.isJava())
+                    scalaParents.add(parentSym);
+            }
+            return (Symbol[])
+                scalaParents.toArray(new Symbol[scalaParents.size()]);
         }
 
         private int[] getDisplayCode(Ancestor[][] display) {
@@ -1070,6 +1075,8 @@ public class TypesAsValuesPhase extends Phase {
     }
 
     private static class Ancestor {
+        public static final Ancestor[] EMPTY_ARRAY = new Ancestor[0];
+
         public final Symbol symbol;
         public final int parentIndex;
         public final int position;
