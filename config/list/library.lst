@@ -191,6 +191,7 @@ xml/AttributeSeq.scala
 xml/BindingFactoryAdapter.scala
 xml/CharData.scala
 xml/Comment.scala
+xml/DocType.scala
 xml/Elem.scala
 xml/ExternalID.scala
 xml/EntityRef.scala
