@@ -9,7 +9,7 @@
 
 package scala;
 
-/** defines an access function for instances of case classes (not case objects)
+/** defines an access function for instances of case classes
  *
  *  @author  Burak Emir
  */
