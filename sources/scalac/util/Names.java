@@ -16,6 +16,8 @@ public class Names {
     public static final Name ANON_CLASS_NAME = Name.fromString("$anon");
     public static final Name OUTER_PREFIX = Name.fromString("outer");
 
+    public static final Name CONSTRUCTOR = Name.fromString("<init>");
+
     public static final Name _EQ = encode("_=");
     public static final Name MINUS = encode("-");
     public static final Name PLUS = encode("+");
