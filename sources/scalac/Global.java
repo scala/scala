@@ -270,6 +270,7 @@ public abstract class Global {
         }
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
+        args.phases.WHOLEPROG.addSkipFlag(); // !!!
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
         // TODO: Enable TailCall for other backends when they handle LabelDefs
         if (!runTimeTypes) args.phases.TYPESASVALUES.addSkipFlag();
@@ -381,7 +382,8 @@ public abstract class Global {
             currentPhase = currentPhase.next;
             start();
             // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
-            currentPhase.apply(units);
+            for (int i = 0; i < units.length; i++)
+                currentPhase.apply(units[i]);
             if (currentPhase == PHASE.ANALYZER.phase())
                 units = ((AnalyzerPhase)currentPhase).getUnits();
             stop(currentPhase.descriptor.taskDescription());
@@ -413,7 +415,7 @@ public abstract class Global {
 	    Phase backup = currentPhase;
 	    // !!! add code to print/skip/graph as in compile
 	    currentPhase = PHASE.PARSER.phase();
-	    PHASE.PARSER.phase().apply(new CompilationUnit[] {unit});
+	    PHASE.PARSER.phase().apply(unit);
 	    currentPhase = PHASE.ANALYZER.phase();
 	    ((AnalyzerPhase)PHASE.ANALYZER.phase()).apply(unit);
 	    // !!! add code for later phases?

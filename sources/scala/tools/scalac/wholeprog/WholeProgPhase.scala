@@ -31,7 +31,7 @@ class WholeProgPhase(global: scalac_Global, descriptor: PhaseDescriptor)
 
 
   /* Apply the global analysis phase to the given units */
-  override def apply(units: Array[CompilationUnit]): unit = {
+  def applyAll(units: Array[CompilationUnit]): unit = {
 
     if (!global.args.XdotFile.value.equals("$")) {
       val dotFilePrinter = new PrintDotFile(units);
@@ -50,7 +50,8 @@ class WholeProgPhase(global: scalac_Global, descriptor: PhaseDescriptor)
     }
   }
 
-  override def apply(unit: CompilationUnit): Unit = throw Debug.abort("!!!");
+  override def apply(unit: CompilationUnit): Unit =
+    throw Debug.abort("!!! Phase " + this + " is currently disabled");
 
 }
 

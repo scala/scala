@@ -552,7 +552,9 @@ public class ScalaSearch {
         CompilationUnit tmpUnit = new CompilationUnit(global, sourceFile, false);
         tmpUnit.body = new Parser$class(tmpUnit).parse();
 
-        global.PHASE.ANALYZER.phase().apply(new CompilationUnit[]{ tmpUnit });
+        global.PHASE.ANALYZER.phase().apply(tmpUnit);
+        ((scalac.typechecker.AnalyzerPhase)global.PHASE.ANALYZER.phase())
+            .getUnits(); // force completion of type analysis
         if (global.reporter.errors() == errorNumber) {
             Scope tmpScope = tmpUnit.body[0].symbol().members();
             Type res = tmpScope.lookup(Name.fromString("f")).type();

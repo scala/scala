@@ -61,11 +61,6 @@ public abstract class Phase {
         return tp;
     }
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        for (int i = 0; i < units.length; i++) apply(units[i]);
-    }
-
     /** Applies this phase to the given compilation unit. */
     public abstract void apply(CompilationUnit unit);
 
