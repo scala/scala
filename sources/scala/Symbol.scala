@@ -10,7 +10,6 @@
 package scala;
 
 import scala.xml.{AttributedNode,Node, Text,Utility};
-import scala.xml.nobinding.Element;
 import scala.collection.Map ;
 import scala.collection.immutable.ListMap ;
 
