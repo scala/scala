@@ -3,11 +3,10 @@
 ##############################################################################
 # $Id$
 
-ExcepServlet.scala
-SERVLET.scala
 ScalaCookiee.scala
 ScalaServlet.scala
 ServletException.scala
+Status.scala
 
 engine/Connector.scala
 engine/Main.scala
