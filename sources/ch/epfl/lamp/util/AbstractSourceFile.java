@@ -1,6 +1,6 @@
 package ch.epfl.lamp.util;
 
-interface AbstractSourceFile {
+public interface AbstractSourceFile {
     /** Returns the name of this source file. */
     String name() ;
 
