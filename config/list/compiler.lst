@@ -68,6 +68,9 @@ checkers/CheckTypes.java
 checkers/Checker.java
 checkers/TreeChecker.java
 
+framework/History.java
+framework/Promise.java
+
 symtab/classfile/AttributeParser.java
 symtab/classfile/CLRPackageParser.java
 symtab/classfile/CLRClassParser.java
