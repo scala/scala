@@ -70,6 +70,10 @@ public class TreeGen implements Kinds, Modifiers {
 	    return Select(pos, mkStableId(pos, pre), sym);
     }
 
+    public Tree mkRef(int pos, Symbol sym) {
+	return mkRef(pos, sym.owner().thisType(), sym);
+    }
+
     /** Build and attribute stable identifier tree corresponding to given prefix.
      */
     public Tree mkStableId(int pos, Type pre) {
@@ -129,6 +133,12 @@ public class TreeGen implements Kinds, Modifiers {
 	    res[i] = mkDef(pos, syms[i]);
         }
         return res;
+    }
+
+    /** Build a boolean constant tree.
+     */
+    public Tree mkBoolean(int pos, boolean bool) {
+	return mkRef(pos, bool ? definitions.TRUE() : definitions.FALSE());
     }
 
     /** Build a tree to be used as a base class constructor for a template.

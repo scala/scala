@@ -263,13 +263,14 @@ public class DeSugarize implements Kinds, Modifiers {
 	    tree.pos, 0, Names.isDefinedAt, Tree.ExtTypeDef.EMPTY_ARRAY,
 	    duplicator.transform(vparams),
 	    gen.mkType(tree.pos, global.definitions.BOOLEAN_TYPE), body1);
-	Tree newTree = make.New(tree.pos,
+	Tree result = make.New(tree.pos,
 	    make.Template(
 		tree.pos, new Tree[]{constr}, new Tree[]{applyDef, isDefinedAtDef}));
-	Tree result = make.Typed(tree.pos,
-	    tree,
-	    gen.mkType(tree.pos,
-                global.definitions.partialFunctionType(targs[0], targs[1])));
+
+	//Tree result = make.Typed(tree.pos,
+	//    newTree,
+	//    gen.mkType(tree.pos,
+        //        global.definitions.partialFunctionType(targs[0], targs[1])));
 	print(tree, "partialfun", result);
 	return result;
     }
@@ -277,22 +278,33 @@ public class DeSugarize implements Kinds, Modifiers {
     private Tree isDefinedAtVisitor(Tree tree) {
 	switch (tree) {
 	case Visitor(CaseDef[] cases):
+	    CaseDef lastCase = cases[cases.length - 1];
+	    switch (lastCase) {
+	    case CaseDef(Ident(Name name), Tree.Empty, Tree expr):
+		if (name.isVariable())
+		    return make.Visitor(tree.pos,
+			new CaseDef[]{
+			    make.CaseDef(lastCase.pos,
+				duplicator.transform(lastCase.pat),
+				Tree.Empty,
+				gen.mkBoolean(lastCase.body.pos, true))});
+	    }
 	    CaseDef[] cases1 = new CaseDef[cases.length + 1];
 	    for (int i = 0; i < cases.length; i++) {
 		switch (cases[i]) {
 		case CaseDef(Tree pat, Tree guard, _):
-		    cases1[i] = (CaseDef) make.CaseDef(cases[i].pos,
+		    cases1[i] = (CaseDef) make.CaseDef(
+			cases[i].pos,
 			duplicator.transform(pat),
 			duplicator.transform(guard),
-			make.Select(tree.pos,
-			    make.Ident(tree.pos, Names.scala), Names.True));
+			gen.mkBoolean(tree.pos, true));
 		}
 	    }
-	    cases1[cases.length] = (CaseDef) make.CaseDef(tree.pos,
+	    cases1[cases.length] = (CaseDef) make.CaseDef(
+		tree.pos,
 		make.Ident(tree.pos, Names.WILDCARD),
-   	        Tree.Empty,
-		make.Select(tree.pos,
-		    make.Ident(tree.pos, Names.scala), Names.False));
+		Tree.Empty,
+		gen.mkBoolean(tree.pos, false));
 	    return make.Visitor(tree.pos, cases1);
 	default:
 	    throw new ApplicationError("visitor expected", tree);

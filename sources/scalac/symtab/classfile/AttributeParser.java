@@ -150,7 +150,6 @@ public class AttributeParser implements ClassfileConstants {
                 //System.out.println("parsing meta data for " + sym);
                 String meta = pool.readPool(in.nextChar()).toString().trim();
                 sym.setInfo(new MetaParser(meta, tvars, sym, type).parse(), parser.phaseId);
-
                 return;
         }
         throw new RuntimeException("unknown classfile attribute");
@@ -361,11 +360,16 @@ public class AttributeParser implements ClassfileConstants {
                         nextToken();
                         if (")".equals(token))
                             break;
+			int flags = Modifiers.PARAM;
+			if ("def".equals(token)) {
+			    nextToken();
+			    flags |= Modifiers.DEF;
+			}
                         params.add(new TermSymbol(
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            Modifiers.PARAM).setInfo(parseType(), parser.phaseId));
+                            flags).setInfo(parseType(), parser.phaseId));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);

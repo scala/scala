@@ -31,12 +31,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     public Analyzer(Global global, AnalyzerPhase descr) {
         super(global, descr);
+	this.duplicator = new Transformer(
+	    global, descr, make, new StrictTreeFactory(make));
         this.definitions = global.definitions;
 	this.descr = descr;
 	this.infer = new Infer(this);
 	this.desugarize = new DeSugarize(this, global);
-	this.duplicator = new Transformer(
-	    global, descr, make, new StrictTreeFactory(make));
     }
 
     /** Phase variables, used and set in transformers;

@@ -23,11 +23,15 @@ import scala.Double;
 import scala.Array;
 import java.lang.Object;
 
-/**
+/** @meta class extends java.lang.Object;
  * Run-time support functions for Scala.
  */
-
 public abstract class RunTime {
+
+    /** @meta method () scala.Unit;
+     */
+    public void test() {}
+
     public static final Unit UNIT_VAL = new Unit() {};
 
     private static ClassLoader loader = ClassLoader.getSystemClassLoader();
@@ -548,5 +552,8 @@ public abstract class RunTime {
     public static void oarray_set(Object[] array, int index, Object value) {
         array[index] = value;
     }
-
 }
+
+
+
+

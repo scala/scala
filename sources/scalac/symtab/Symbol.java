@@ -965,7 +965,7 @@ public class TypeSymbol extends Symbol {
     /** Return a fresh symbol with the same fields as this one.
      */
     public Symbol cloneSymbol() {
-	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString());
+	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " in phase " + Global.instance.currentPhase.name());
         TypeSymbol other = new TypeSymbol(kind, pos, name, owner(), flags);
         other.setInfo(info());
         return other;

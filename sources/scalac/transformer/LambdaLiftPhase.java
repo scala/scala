@@ -43,8 +43,19 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
+	if (global.debug)
+	    global.log("transform info for " + sym + sym.locationString());
 	Type tp1 = tp;
-	if (sym != Symbol.NONE) tp1 = transform(tp, sym.owner());
+	if (sym != Symbol.NONE) {
+	    switch (sym.type()) {
+	    case MethodType(_, _):
+	    case PolyType(_, _):
+		tp1 = transform(tp, sym);
+		break;
+	    default:
+		tp1 = transform(tp, sym.owner());
+	    }
+	}
 	if ((sym.flags & Modifiers.CAPTURED) != 0) return refType(tp1);
 	else return tp1;
     }
@@ -55,7 +66,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 	return transformTypeMap.setOwner(owner).apply(tp);
     }
 
-    private class TransformTypeMap extends Type.Map {
+    private class TransformTypeMap extends Type.MapOnlyTypes {
 	Symbol owner;
         Type.Map setOwner(Symbol owner) { this.owner = owner; return this; }
 

@@ -14,7 +14,10 @@ package scala {
       mkList(x.elements);
     }
 
-    def error[err](x: String):err = (new java.lang.RuntimeException(x)).throw;
+    def error[err](x: String):err = new java.lang.RuntimeException(x).throw;
+
+    def try[a](def block: a): Except[a] =
+      new Except(scala.runtime.ResultOrException.tryBlock(block));
 
     def range(lo: Int, hi: Int): List[Int] =
       if (lo > hi) List() else lo :: range(lo + 1, hi);
@@ -43,6 +46,15 @@ package scala {
 
     type Triple = Tuple3;
     def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
+  }
+
+  class Except[a](r: scala.runtime.ResultOrException[a]) {
+    def except(handler: PartialFunction[Throwable, a]): a =
+      if (r.exc == null) r.result
+      else if (handler isDefinedAt r.exc) handler(r.exc)
+      else r.exc.throw;
+    def finally(def handler: Unit): a =
+      if (r.exc == null) r.result else { handler; r.exc.throw }
   }
 }
 
