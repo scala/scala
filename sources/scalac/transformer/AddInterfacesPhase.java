@@ -209,9 +209,6 @@ public class AddInterfacesPhase extends Phase {
             classSym.name = className(ifaceSym.name);
             classSym.flags &= ~Modifiers.INTERFACE;
 
-            Symbol ifaceConstrSym = ifaceSym.primaryConstructor();
-            Symbol classConstrSym = classSym.primaryConstructor();
-
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);
 
@@ -220,13 +217,23 @@ public class AddInterfacesPhase extends Phase {
 
             // Create class substitution map.
             SymbolSubstTypeMap classSubst = newClassSubst(classSym);
-            classSubst.insertSymbol(ifaceConstrSym.typeParams(),
-                                    classConstrSym.typeParams());
-            classSubst.insertSymbol(ifaceConstrSym.valueParams(),
-                                    classConstrSym.valueParams());
+            Map classMemberMap = newClassMemberMap(classSym);
+
+            Symbol[] allClassConstrs=
+                classSym.allConstructors().alternativeSymbols();
+            Symbol[] allIFaceConstrs=
+                ifaceSym.allConstructors().alternativeSymbols();
+            for (int i = 0; i < allClassConstrs.length; ++i) {
+                Symbol iConstr = allIFaceConstrs[i];
+                Symbol cConstr = allClassConstrs[i];
+                classSubst.insertSymbol(iConstr.typeParams(),
+                                        cConstr.typeParams());
+                classSubst.insertSymbol(iConstr.valueParams(),
+                                        cConstr.valueParams());
+                classMemberMap.put(iConstr, cConstr);
+            }
 
             // Clone all members, entering them in the class scope.
-            Map classMembersMap = newClassMemberMap(classSym);
             Scope classMembers = new Scope();
             Scope.SymbolIterator ifaceMembersIt =
                 new Scope.UnloadIterator(ifaceSym.members().iterator());
@@ -265,7 +272,7 @@ public class AddInterfacesPhase extends Phase {
                                 classMemberSym.info())));
                 }
 
-                classMembersMap.put(ifaceMemberSym, classMemberSym);
+                classMemberMap.put(ifaceMemberSym, classMemberSym);
                 classMembers.enterOrOverload(classMemberSym);
                 if (classMemberSym.isClass())
                     classMembers.enterOrOverload(classMemberSym.primaryConstructor());

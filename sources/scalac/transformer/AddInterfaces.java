@@ -171,10 +171,13 @@ class AddInterfaces extends Transformer {
                 // If the constructor now refers to the interface
                 // constructor, use the class constructor instead.
                 Symbol clsSym = sym.constructorClass();
-                if (phase.needInterface(clsSym))
-                    return gen.Select(qualifier,
-                                      phase.getClassSymbol(clsSym).primaryConstructor());
-                else
+                if (phase.needInterface(clsSym)) {
+                    Symbol realClsSym = phase.getClassSymbol(clsSym);
+                    Map memMap = phase.getClassMemberMap(realClsSym);
+                    assert memMap != null
+                        : Debug.show(clsSym) + " " + Debug.show(realClsSym);
+                    return gen.Select(qualifier, (Symbol)memMap.get(sym));
+                } else
                     return super.transform(tree);
             } else {
                 qualifier = transform(qualifier);
@@ -206,9 +209,15 @@ class AddInterfaces extends Transformer {
                 // If the constructor now refers to the interface
                 // constructor, use the class constructor instead.
                 Symbol clsSym = sym.constructorClass();
-                if (phase.needInterface(clsSym))
-                    return gen.Ident(phase.getClassSymbol(clsSym).primaryConstructor());
-                else
+                if (phase.needInterface(clsSym)) {
+                    Symbol realClsSym = phase.getClassSymbol(clsSym);
+                    Map memMap = phase.getClassMemberMap(realClsSym);
+                    assert memMap != null
+                        : Debug.show(clsSym) + " " + Debug.show(realClsSym);
+                    assert memMap.containsKey(sym)
+                        : Debug.show(sym) + " not in " + memMap;
+                    return gen.Ident((Symbol)memMap.get(sym));
+                } else
                     return super.transform(tree);
             } else if (typeSubst != null) {
                 Symbol newSym = (Symbol)typeSubst.lookupSymbol(tree.symbol());
