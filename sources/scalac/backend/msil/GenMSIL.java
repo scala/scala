@@ -2034,7 +2034,7 @@ final class MSILType {
     public case REF(Type t) { assert t != null && !t.IsArray(); }
     public case ARRAY(MSILType t) { assert t != null; }
 
-    private final static CLRPackageParser pp = CLRPackageParser.instance;
+    private final static CLRPackageParser pp = CLRPackageParser.instance();
 
     public static final MSILType OBJECT = REF(pp.OBJECT);
     public static final MSILType STRING = REF(pp.STRING);

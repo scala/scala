@@ -117,7 +117,7 @@ final class TypeCreator {
 	this.gen = gen;
 	this.defs = global.definitions;
 
-	ti = CLRPackageParser.instance;
+	ti = CLRPackageParser.instance();
 
 	types2symbols = phase.types2symbols;
 	symbols2types = phase.symbols2types;
