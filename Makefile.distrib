@@ -177,10 +177,16 @@ install-windows		:
 
 ##############################################################################
 
-IA_PROJECTFILE		 = $(PROJECT_CONFIGDIR)/ia/$(PROJECT_NAME).iap_xml
-IA_CUSTOMFILE_FR	 = $(PROJECT_CONFIGDIR)/ia/custom_fr
+IA_CONFIG_PREFIX	 = $(PROJECT_CONFIGDIR)/ia
+IA_CONFIG_IMAGESDIR	 = $(IA_CONFIG_PREFIX)/images
+IA_CONFIG_LOCALESDIR	 = $(IA_CONFIG_PREFIX)/locales
+
+IA_PROJECTFILE		 = $(IA_CONFIG_PREFIX)/$(PROJECT_NAME).iap_xml
+IA_CUSTOMFILE	 	 = custom
+IA_LICENSEFILE		 = LICENSE
 
 IA_BUILD_PREFIX		 = /tmp/IA_Build_$(PROJECT_NAME)
+IA_BUILD_IMAGESDIR	 = $(IA_BUILD_PREFIX)/images
 IA_BUILD_LOCALESDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)locales
 IA_BUILD_ARCHIVE_TGZ	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).tar.gz
 IA_BUILD_ARCHIVE_ZIP	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).zip
@@ -193,8 +199,18 @@ ia-build		:
 	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 644 -p $(IA_PROJECTFILE) $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_LOCALESDIR)
-	$(INSTALL) -m 644 -p $(IA_CUSTOMFILE_FR) $(IA_BUILD_LOCALESDIR)
-	$(INSTALL) -m 644 -p $(PROJECT_ROOT)/LICENSE $(IA_BUILD_PREFIX)
+	@for locale in "" `$(FIND) $(IA_CONFIG_LOCALESDIR)/* -type d -exec $(BASENAME) {} \;`; do \
+	    if [ -z "$$locale" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_CUSTOMFILE) \
+	        $(IA_BUILD_LOCALESDIR)/$(IA_CUSTOMFILE)"_$$locale"; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_LICENSEFILE).html \
+	        $(IA_BUILD_PREFIX)/$(IA_LICENSEFILE)"_$$locale".html; \
+	done
+	$(INSTALL) -m 755 -d $(IA_BUILD_IMAGESDIR)
+	@for file in "" `$(FIND) $(IA_CONFIG_IMAGESDIR)/* -type f`; do \
+	    if [ -z "$$file" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_IMAGESDIR); \
+	done
 	$(INSTALL) -m 644 -p $(INSTALL_PREFIX).tar.gz $(IA_BUILD_ARCHIVE_TGZ)
 	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
 	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
