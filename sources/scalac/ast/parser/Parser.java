@@ -1781,11 +1781,14 @@ public class Parser implements Tokens {
     Tree constrExpr() {
 	if (s.token == LBRACE) {
 	    int pos = s.skipToken();
-	    TreeList stats = new TreeList();
-	    stats.append(selfInvocation());
+	    TreeList statlist = new TreeList();
+	    statlist.append(selfInvocation());
+	    Tree[] stats;
 	    if (s.token == SEMI) {
 		s.nextToken();
-		stats = blockStatSeq(stats);
+		stats = blockStatSeq(statlist);
+	    } else {
+		stats = statlist.toArray();
 	    }
 	    accept(RBRACE);
 	    return make.Block(pos, stats);
@@ -1800,7 +1803,7 @@ public class Parser implements Tokens {
 	int pos = s.pos;
 	accept(THIS);
 	return make.Apply(
-	    s.pos, make.Ident(pos, Names.CONSTRUCTOR, argumentExprs()));
+	    s.pos, make.Ident(pos, Names.CONSTRUCTOR), argumentExprs());
     }
 
     /** TypeDef ::= Id `=' Type

@@ -20,6 +20,7 @@ public class Context {
     Context enclClass = this;  // The next outer context whose tree
                                // is a class template
     int variance;              // Variance relative to enclosing class.
+    Symbol constructorClass;   // Class for auxiliary constructor
 
     public Context() {}
 
@@ -29,13 +30,14 @@ public class Context {
 
     public Context(Tree tree, Symbol owner, Scope scope, Context outer) {
 	this.tree = tree;
-Pa	this.owner = owner;
+	this.owner = owner;
 	this.scope = scope;
 	this.imports = outer.imports;
 	if (tree instanceof Tree.Template ||
 	    tree instanceof Tree.CompoundType) this.enclClass = this;
 	else this.enclClass = outer.enclClass;
 	this.variance = outer.variance;
+	this.constructorClass = outer.constructorClass;
 	this.outer = outer;
     }
 

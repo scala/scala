@@ -1834,10 +1834,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tpe1 = (tpe == Tree.Empty)
 		    ? gen.mkType(tree.pos, sym.type().resultType())
 		    : transform(tpe, TYPEmode);
-		Tree rhs1 = transform(
-		    rhs,
-		    (name == Names.CONSTRUCTOR) ? CONSTRmode : EXPRmode,
-		    tpe1.type);
+		Tree rhs1 = rhs;
+		if (rhs1 != Tree.Empty) {
+		    rhs1 = transform(
+			rhs,
+			(name == Names.CONSTRUCTOR) ? CONSTRmode : EXPRmode,
+			tpe1.type);
+		}
+		popContext();
 		context.enclClass.owner.flags &= ~INCONSTRUCTOR;
 		sym.flags |= LOCKED;
 		checkNonCyclic(tree.pos, tpe1.type);
@@ -1889,8 +1893,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree[] stats1 = desugarize.Statements(stats, true);
 		enterSyms(stats1);
 		context.imports = context.outer.imports;
-		if (mode == CONSTRmode) {
-		    stats1[0] = transform(stats1[0], mode, pt);
+		Type owntype;
+		int curmode = mode;
+		if ((curmode & CONSTRmode) != 0) {
+		    stats1[0] = transform(stats1[0], curmode, pt);
 		    context.enclClass.owner.flags &= ~INCONSTRUCTOR;
 		    for (int i = 1; i < stats1.length; i++)
 			stats1[i] = transform(stats1[i], EXPRmode);
@@ -1898,10 +1904,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		} else {
 		    for (int i = 0; i < stats1.length - 1; i++)
 			stats1[i] = transform(stats1[i], EXPRmode);
-		    Type owntype;
-		    if (stats1.length > start) {
+		    if (stats1.length > 0) {
 			stats1[stats1.length - 1] =
-			    transform(stats1[stats1.length - 1], EXPRmode, pt);
+			    transform(stats1[stats1.length - 1], curmode & ~FUNmode, pt);
 			owntype = checkNoEscape(tree.pos, stats1[stats1.length - 1].type);
 		    } else {
 			owntype = definitions.UNIT_TYPE;

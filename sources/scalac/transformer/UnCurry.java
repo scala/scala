@@ -17,9 +17,18 @@ import scalac.symtab.*;
 import Tree.*;
 import scalac.typechecker.DeSugarize ;
 
-/** (1) Make all functions into one-argument functions
- *  (2) Convert `def' parameters to closures
- *  (3) Convert matches with non-visitor arguments to postfix applications
+/** - uncurry all symbol and tree types (@see UnCurryPhase)
+ *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
+ *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
+ *  - for every type application: f[Ts] ==> f[Ts]() unless followed by parameters
+ *  - for every use of a parameterless function: f ==> f()  and  q.f ==> q.f()
+ *  - for every def-parameter:  def x: T ==> x: () => T
+ *  - for every use of a def-parameter: x ==> x.apply()
+ *  - for every argument to a def parameter `def x: T':
+ *      if argument is not a reference to a def parameter:
+ *        convert argument `e' to (expansion of) `() => e'
+ *  - for every argument list that corresponds to a repeated parameter
+ *       (a_1, ..., a_n) => (Sequence(a_1, ..., a_n))
  */
 public class UnCurry extends OwnerTransformer
                      implements Modifiers {
