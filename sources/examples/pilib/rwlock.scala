@@ -1,3 +1,5 @@
+package examples.pilib;
+
 /**
 * From Pi to Scala: Semaphores, monitors, read/write locks.
 * Readers/writers locks.
@@ -313,12 +315,17 @@ object rwlock {
       writer(i, rwlock)
     }
 
-    val rwlock = args(0) match {
-      case "1" => new ReadWriteLock1
-      case "2" => new ReadWriteLock2
-      case "3" => new ReadWriteLock3
-      case "4" => new ReadWriteLock4
-      case "5" => new ReadWriteLock5
+    val n = try { Integer.parseInt(args(0)) } catch { case _ => 0 }
+    if (n < 1 || 5 < n) {
+      Console.println("Usage: scala examples.pilib.rwlock <n> (n=1..5)");
+      exit
+    }
+    val rwlock = n match {
+      case 1 => new ReadWriteLock1
+      case 2 => new ReadWriteLock2
+      case 3 => new ReadWriteLock3
+      case 4 => new ReadWriteLock4
+      case 5 => new ReadWriteLock5
     }
     List.range(0, 5) foreach (i => spawn < reader(i, rwlock) >);
     List.range(0, 5) foreach (i => spawn < writer(i, rwlock) >);
