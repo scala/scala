@@ -149,6 +149,7 @@ public class HTMLGeneratorCommand extends CompilerCommand {
         remove(graph);
         remove(stop);
         remove(log);
+        remove(Xshortname);
 
         // similar order as javadoc options
         add(2, windowtitle);
