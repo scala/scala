@@ -26,7 +26,7 @@ import scalac.util.NameTransformer;
 /**
  * This class provides methods to print symbols and types.
  */
-public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
+public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 
     //########################################################################
     // Private Fields
@@ -34,23 +34,20 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     /** The global environment */
     private final Global global;
 
-    /** The HTML generator using this object */ // vincent
-    HTMLGenerator htmlGenerator;
-
     //########################################################################
     // Public Constructors
 
     /**
      * Creates a new instance.
      *
-     * @param htmlgenerator
      * @param page
      */
-    public SymbolTablePrinter(HTMLGenerator generator, CodePrinter printer) {
+    public SymbolTablePrinter(CodePrinter printer) {
         super(printer);
         this.global = Global.instance;
-        this.htmlGenerator = generator;
     }
+
+    public abstract void printSymbol(Symbol sym, boolean addLink);
 
     //########################################################################
     // Public Methods - Printing scopes
@@ -101,26 +98,12 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     // Public Methods - Printing symbols
 
     /**
-     * Returns the inner string of the given symbol.
-     *
-     * @param symbol
-     */
-    public String getSymbolInnerString(Symbol symbol) {
-        if (symbol.kind == Kinds.TYPE)
-            return INNER_LT; // HTML encoded "<:" symbol
-        else
-            return super.getSymbolInnerString(symbol);
-    }
-    // where
-    protected String INNER_LT = "&lt;:";
-
-    /**
      * Prints the name of the given symbol usage.
      *
      * @param symbol
      */
     public SymbolTablePrinter printUsedSymbolName(Symbol symbol) {
-	htmlGenerator.printSymbol(symbol, true);
+	printSymbol(symbol, true);
         printSymbolUniqueId(symbol);
         return this;
     }
@@ -132,7 +115,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param addLink
      */
     public SymbolTablePrinter printDefinedSymbolName(Symbol symbol, boolean addLink) {
-	htmlGenerator.printSymbol(symbol, addLink);
+	printSymbol(symbol, addLink);
         printSymbolUniqueId(symbol);
         return this;
     }
@@ -160,6 +143,24 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     }
 
     /**
+     * Writes the string representation of the signature of a definition.
+     *
+     * @param sym
+     * @param addLink Generates an hypertext reference if the parameter
+     *        <code>addLink</code> is <code>true</code>
+     */
+    public void defString(Symbol sym, boolean addLink) {
+	if (sym.isRoot())
+	    print("Root class");
+	else if (sym.isClass() || sym.isModule())
+	    printTemplateSignature(sym, addLink);
+	else if (sym.isType() && !sym.isParameter())
+	    printShortSignature(sym, addLink);
+	else
+	    printSignature(sym, addLink);
+    }
+
+    /**
      * Prints the signature of the given symbol.
      *
      * @param symbol
@@ -179,7 +180,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     public SymbolTablePrinter printShortSignature(Symbol symbol, boolean addLink) {
         String keyword = getSymbolKeyword(symbol);
         if (keyword != null) print(keyword).space();
-	htmlGenerator.printSymbol(symbol, addLink);
+	printSymbol(symbol, addLink);
         return printType(symbol.loBound(), ">:");
     }
 
@@ -215,7 +216,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 	    for (int i = 0; i < vparams.length; i++) {
 		if (i > 0) print(", "); // vincent
 		if (vparams[i].isDefParameter()) print("def ");
-		htmlGenerator.defString(vparams[i], false);
+		defString(vparams[i], false);
 	    }
 	    print(')');
 	}
@@ -224,61 +225,6 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 // 	Type[] parts = symbol.moduleClass().parents();
 // 	if (parts.length != 0) space().print(inner).space();
 // 	printTypes(parts," with ");
-	return this;
-    }
-
-    /**
-     * Prints the signature of a class symbol.
-     *
-     * @param symbol
-     * @param addLink
-     */
-    public SymbolTablePrinter printTemplateHtmlSignature(Symbol symbol, boolean addLink) {
-	// modifiers
-        String mods = Modifiers.Helper.toString(symbol.flags);
-	htmlGenerator.page.printlnOTag("dl");
-	htmlGenerator.page.printlnOTag("dt");
-	print(mods).space();
-
-        // kind
-	String keyword = getSymbolKeyword(symbol);
-        if (keyword != null) print(keyword).space();
-        String inner = getSymbolInnerString(symbol);
-
-        // name
-	printDefinedSymbolName(symbol, addLink);
-	if (symbol.isClass()) {
-	    // type parameters
-	    Symbol[] tparams = symbol.typeParams();
-	    if (tparams.length != 0 || global.debug) {
-		print('[');
-		for (int i = 0; i < tparams.length; i++) {
-		    if (i > 0) print(",");
-		    printSignature(tparams[i], false);
-		}
-		print(']');
-	    }
-	    // value parameters
-	    Symbol[] vparams = symbol.valueParams();
-	    print('(');
-	    for (int i = 0; i < vparams.length; i++) {
-		if (i > 0) print(", ");
-		if (vparams[i].isDefParameter()) print("def ");
-		htmlGenerator.defString(vparams[i], false);
-	    }
-	    print(')');
-	}
-
-        // parents
-        Type[] parts = symbol.moduleClass().parents();
-        htmlGenerator.page.printlnCTag("dt");
-        for (int i = 0; i < parts.length; i++) {
-            htmlGenerator.page.printOTag("dd");
-            print((i == 0) ? "extends " : "with ");
-            printType(parts[i]);
-	    htmlGenerator.page.printlnCTag("dd");
-	}
-	htmlGenerator.page.printCTag("dl");
 	return this;
     }
 
@@ -325,18 +271,10 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         }
     }
 
-    /**
-     * Prints the given type with the given inner string.
-     *
-     * @param type
-     * @param inner
-     */
+    /** Prints the given type with the given inner string. */
     public SymbolTablePrinter printType(Type type, String inner) {
-	if ((INNER_LT.equals(inner) && type.symbol() == global.definitions.ANY_CLASS) ||
-	    (">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS))
-	    return this;
-        else
-	    return printType0(getTypeToPrintForType(type), inner);
+	super.printType(type, inner);
+	return this;
     }
 
     /**
@@ -352,9 +290,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             for (int i = 0; i < vparams.length; i++) {
                 if (i > 0) print(", ");
 		if (vparams[i].isDefParameter()) print("def ");
-		htmlGenerator.defString(vparams[i], false);
-		//print(NameTransformer.decode(vparams[i].name.toString()) + ": ");// vincent
-                //printSymbolType(vparams[i], null);
+		defString(vparams[i], false);
             }
             print(')');
             return printType(result, inner);
@@ -506,33 +442,12 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     // Public Methods - Printing prefixes
 
     /**
-     * Returns the type to print for the given prefix (transitive).
-     *
-     * @param prefix
-     * @param sym
-     */
-    public Type getTypeToPrintForPrefix(Type prefix, Symbol sym) {
-        while (true) {
-            Type result = getTypeToPrintForPrefix0(prefix);
-            if (result == prefix || result == null) {
-		return
-		    htmlGenerator.cleanPrefix(result); // vincent
-		// Next lines should replace the previous one in theory.
-		// 		    htmlGenerator.isReferenced(sym) ?
-		// 		    htmlGenerator.cleanPrefix(result) : // vincent
-		// 		    result;
-	    }
-            prefix = result;
-	}
-    }
-
-    /**
      * Prints the given type as a prefix.
      *
      * @param prefix
      */
     public SymbolTablePrinter printPrefix(Type prefix, Symbol sym) {
-        prefix = getTypeToPrintForPrefix(prefix, sym);
+        prefix = getTypeToPrintForPrefix(prefix/*, sym*/);
         return prefix == null ? this : printPrefix0(prefix);
     }
 

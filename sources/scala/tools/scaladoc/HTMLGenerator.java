@@ -280,7 +280,42 @@ public class HTMLGenerator {
 		page = new XHTMLPrinter(out, title, representation, stylesheetPath);
 	    else
 		page = new HTMLPrinter(out, title, representation, stylesheetPath);
-	    symtab = new SymbolTablePrinter(this, page.getCodePrinter());
+	    symtab = new SymbolTablePrinter(page.getCodePrinter()) {
+		    public void printSymbol(Symbol sym, boolean addLink) {
+			HTMLGenerator.this.printSymbol(sym, addLink);
+		    }
+		    public Type getTypeToPrintForPrefix(Type prefix/*, sym*/) {
+			while (true) {
+			    Type result = getTypeToPrintForPrefix0(prefix);
+			    if (result == prefix || result == null) {
+				return
+				    cleanPrefix(result); // vincent
+				// Next lines should replace the previous one in theory.
+				// 		    htmlGenerator.isReferenced(sym) ?
+				// 		    htmlGenerator.cleanPrefix(result) : // vincent
+				// 		    result;
+			    }
+			    prefix = result;
+			}
+		    }
+		    public String getSymbolInnerString(Symbol symbol) {
+			if (symbol.kind == Kinds.TYPE)
+			    return INNER_LT; // HTML encoded "<:" symbol
+			else
+			    return super.getSymbolInnerString(symbol);
+		    }
+		    // where
+		    protected String INNER_LT = "&lt;:";
+		    public SymbolTablePrinter printType(Type type, String inner) {
+			if ((INNER_LT.equals(inner) && type.symbol() == global.definitions.ANY_CLASS) ||
+			    (">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS))
+			    return this;
+			else {
+			    printType0(getTypeToPrintForType(type), inner);
+			    return this;
+			}
+		    }
+		};
 	} catch(Exception e) { throw Debug.abort(e); }
     }
 
@@ -609,7 +644,7 @@ public class HTMLGenerator {
 
 	    // complete signature
 	    // !!! page.println(printer().printTemplateHtmlSignature(sym, false).toString());
-	    symtab.printTemplateHtmlSignature(sym, false);
+	    printTemplateHtmlSignature(sym, false);
 
 	    // implementing classes or modules
 	    if (sym.isClass()) {
@@ -626,7 +661,7 @@ public class HTMLGenerator {
 			Type tipe = (Type) p.snd;
 			page.printlnOTag("dd");
 
-			defString(sub, true /*addLink*/);
+			symtab.defString(sub, true /*addLink*/);
 			if (sub.owner() != sym.owner()) {
                             page.print(" in ");
 			    printPath(sub.owner());
@@ -710,7 +745,7 @@ public class HTMLGenerator {
 	    // signature
 	    page.printlnOTag("td", ATTRS_SIGNATURE).indent();
 	    page.printOTag("code");
-	    defString(sym, true /*addLink*/);
+	    symtab.defString(sym, true /*addLink*/);
 	    page.printlnCTag("code");
 
 	    // short description
@@ -823,24 +858,6 @@ public class HTMLGenerator {
     }
 
     /**
-     * Writes the string representation of the signature of a definition.
-     *
-     * @param sym
-     * @param addLink Generates an hypertext reference if the parameter
-     *        <code>addLink</code> is <code>true</code>
-     */
-    void defString(Symbol sym, boolean addLink) {
-	if (sym.isRoot())
-	    page.print("Root class");
-	else if (sym.isClass() || sym.isModule())
-	    symtab.printTemplateSignature(sym, addLink);
-	else if (sym.isType() && !sym.isParameter())
-	    symtab.printShortSignature(sym, addLink);
-	else
-	    symtab.printSignature(sym, addLink);
-    }
-
-    /**
      * Removes the longest prefix of this type which corresponds to a
      * nested of class and object definitions. The idea is that this
      * prefix is redondant and can be recovered directly from the tree
@@ -891,6 +908,61 @@ public class HTMLGenerator {
 	    return prefix;
 	}
     }
+
+    /**
+     * Prints the signature of a class symbol.
+     *
+     * @param symbol
+     * @param addLink
+     */
+    public void printTemplateHtmlSignature(Symbol symbol, boolean addLink) {
+	// modifiers
+        String mods = Modifiers.Helper.toString(symbol.flags);
+	page.printlnOTag("dl");
+	page.printlnOTag("dt");
+	symtab.print(mods).space();
+
+        // kind
+	String keyword = symtab.getSymbolKeyword(symbol);
+        if (keyword != null) symtab.print(keyword).space();
+        String inner = symtab.getSymbolInnerString(symbol);
+
+        // name
+	symtab.printDefinedSymbolName(symbol, addLink);
+	if (symbol.isClass()) {
+	    // type parameters
+	    Symbol[] tparams = symbol.typeParams();
+	    if (tparams.length != 0 || global.debug) {
+		symtab.print('[');
+		for (int i = 0; i < tparams.length; i++) {
+		    if (i > 0) symtab.print(",");
+		    symtab.printSignature(tparams[i], false);
+		}
+		symtab.print(']');
+	    }
+	    // value parameters
+	    Symbol[] vparams = symbol.valueParams();
+	    symtab.print('(');
+	    for (int i = 0; i < vparams.length; i++) {
+		if (i > 0) symtab.print(", ");
+		if (vparams[i].isDefParameter()) symtab.print("def ");
+		symtab.defString(vparams[i], false);
+	    }
+	    symtab.print(')');
+	}
+
+        // parents
+        Type[] parts = symbol.moduleClass().parents();
+        page.printlnCTag("dt");
+        for (int i = 0; i < parts.length; i++) {
+            page.printOTag("dd");
+            symtab.print((i == 0) ? "extends " : "with ");
+            symtab.printType(parts[i]);
+	    page.printlnCTag("dd");
+	}
+	page.printCTag("dl");
+    }
+
 
     protected URI mkURI(String uri) {
 	try {
