@@ -1,4 +1,0 @@
-bug86.scala:4: trait Foo is abstract, so it cannot be instantiated
-  new Foo();
-  ^
-one error found

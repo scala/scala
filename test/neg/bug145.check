@@ -1,4 +1,0 @@
-bug145.scala:8: symbol accessed from super may not be abstract
-  abstract override def foo(x: T): Int = super[J].foo(x) + 1;
-                                                 ^
-one error found

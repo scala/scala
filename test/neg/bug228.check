@@ -1,4 +1,0 @@
-bug228.scala:11: constructor java.lang.reflect.AccessibleObject cannot be accessed in Foo
-  val o = new AccessibleObject;
-              ^
-one error found

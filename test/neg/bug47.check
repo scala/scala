@@ -1,7 +1,0 @@
-bug47.scala:8: malformed formal parameter list
-  val factory = new HashMap( String, Elem* => Elem )
-                                         ^
-bug47.scala:9: ';' expected but '.' found.
-  factory.put("MySuperXML_Tag", MySuperXML_Tag )
-         ^
-two errors found

@@ -537,10 +537,10 @@ main() {
             auto | xml ) FILES_XML="$FILES_XML $SRCDIR/xml";;
         esac;
         case "$TEST_TYPE" in
-            auto | pos ) FILES_POS="$FILES_POS $PREFIX/pos $PREFIX/cours";;
+            auto | pos ) FILES_POS="$FILES_POS $SRCDIR/pos";;
         esac;
         case "$TEST_TYPE" in
-            auto | neg ) FILES_NEG="$FILES_NEG $PREFIX/neg";;
+            auto | neg ) FILES_NEG="$FILES_NEG $SRCDIR/neg";;
         esac;
         case "$TEST_TYPE" in
                    msil ) FILES_MSIL="$FILES_MSIL $SRCDIR/run";;

@@ -1,4 +1,0 @@
-S6.scala:11: illegal cyclic reference involving type S
-    type S <: T;
-         ^
-one error found

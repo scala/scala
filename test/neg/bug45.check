@@ -1,6 +1,0 @@
-bug45.scala:4: type mismatch;
- found   : scala.AllRef
- required: Int
-        def foo[Int](x: Int): Int = null;
-                                    ^
-one error found

@@ -1,4 +1,0 @@
-bug112.scala:6: T.A is not a legal prefix for a constructor
-  class D extends C;
-                  ^
-one error found

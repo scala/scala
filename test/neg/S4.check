@@ -1,4 +1,0 @@
-S4.scala:4: type a.type escapes its defining scope as part of a.Inner with scala.ScalaObject { def foo(a.Inner): a.Inner,  val b$: Other,  def b: Other }
-class S4(a: Other) extends a.Inner() {
-      ^
-one error found

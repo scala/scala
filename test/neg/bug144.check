@@ -1,4 +1,0 @@
-bug144.scala:2: trait I is inherited twice
-class C with I with I;
-                    ^
-one error found

@@ -1,4 +1,0 @@
-bug96.scala:5: method foo overrides nothing
-    override def foo(def x: Any): Object = null;
-                 ^
-one error found

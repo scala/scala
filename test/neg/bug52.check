@@ -1,6 +1,0 @@
-bug52.scala:3: type mismatch;
- found   : scala.Any
- required: scala.Int
-  val y: Int = x(2);
-                ^
-one error found

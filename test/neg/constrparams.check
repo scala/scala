@@ -1,9 +1,0 @@
-constrparams.scala:4: type mismatch;
- found   : scala.AllRef
- required: x.t
-  private val z: x.t = null; //error
-                       ^
-constrparams.scala:1: type x.type escapes its defining scope as part of java.lang.Object with scala.ScalaObject { type t,  val y$: x.type,  def y: x.type,  val z$: x.t,  def z: x.t }
-abstract class C(x: C) {
-               ^
-two errors found

@@ -1,4 +1,0 @@
-bug105.scala:1: illegal inheritance from sealed class
-object T extends Array[Int](1);
-                           ^
-one error found
