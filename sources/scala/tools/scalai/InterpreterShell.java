@@ -32,7 +32,7 @@ public class InterpreterShell {
 
     public static final String PRODUCT   = Main.PRODUCT;
     public static final String VERSION   = Main.VERSION;
-    public static final String COPYRIGHT = "(c) 2002, LAMP/EPFL";
+    public static final String COPYRIGHT = "(c) 2002-04, LAMP/EPFL";
 
     //########################################################################
     // Private Constants
