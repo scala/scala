@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 ** $Id$
@@ -33,10 +33,10 @@ class Scanner(_unit: Unit) extends TokenData {
   var docBuffer: StringBuffer = null;
 
   /** add the given character to the documentation buffer
-     */
+  */
   protected def addCharToDoc(ch: byte): unit =
       if (docBuffer != null)
-	docBuffer.append(ch.asInstanceOf[char]);
+        docBuffer.append(ch.asInstanceOf[char]);
 
   /** layout & character constants
   */
@@ -101,11 +101,11 @@ class Scanner(_unit: Unit) extends TokenData {
       val prevpos = pos;
       fetchToken();
       token match {
-	case ELSE | EXTENDS | WITH | YIELD | CATCH | FINALLY |
-	  COMMA | SEMI | DOT | COLON | EQUALS | ARROW |
+        case ELSE | EXTENDS | WITH | YIELD | CATCH | FINALLY |
+          COMMA | SEMI | DOT | COLON | EQUALS | ARROW |
           LARROW | SUBTYPE | SUPERTYPE | HASH | AT |
           RPAREN | RBRACKET | RBRACE =>
-	case _ =>
+        case _ =>
           if (token == EOF ||
               ((pos >>> Position.COLUMN_BITS) >
                (prevpos >>> Position.COLUMN_BITS))) {
@@ -152,24 +152,24 @@ class Scanner(_unit: Unit) extends TokenData {
     var index = bp;
     while (true) {
       ch match {
-	case ' ' =>
-	  nextch();
-	case '\t' =>
-	  ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
-	  nextch();
-	case CR =>
-	  cline = cline + 1;
-	  ccol = 0;
-	  nextch();
-	  if (ch == LF) {
-	    ccol = 0;
-	    nextch();
+        case ' ' =>
+          nextch();
+        case '\t' =>
+          ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
+          nextch();
+        case CR =>
+          cline = cline + 1;
+          ccol = 0;
+          nextch();
+          if (ch == LF) {
+            ccol = 0;
+            nextch();
 	  }
-	case LF | FF =>
-	  cline = cline + 1;
-	  ccol = 0;
-	  nextch();
-	case _ =>
+        case LF | FF =>
+          cline = cline + 1;
+          ccol = 0;
+          nextch();
+        case _ =>
 	  pos = Position.encode(cline, ccol);
 	  index = bp;
 	  ch match {
@@ -608,20 +608,37 @@ class Scanner(_unit: Unit) extends TokenData {
     }
     if (base <= 10 && ch == '.') {
       nextch();
-      if ((ch >= '0') && (ch <= '9'))
+      if (ch >= '0' && ch <= '9')
         getFraction(index);
-      else {
-	bp = bp - 1;
+      else if (((bp + 2) < buf.length) && // guard for character lookahead
+               (ch == 'e' || ch == 'E' ||
+                ch == 'f' || ch == 'F' ||
+                ch == 'd' || ch == 'D')) {
+        val ch1 = buf(bp + 1); // lookahead
+        if ((ch1 >= 'a' && ch1 <= 'z') ||
+            (ch1 >= 'A' && ch1 <= 'Z') ||
+            (ch1 >= '0' && ch1 <= '9') ||
+             ch1 == '$' || ch1 == '_') {
+          makeInt(index, bp - index, base, Integer.MAX_VALUE);
+          intVal = intVal.asInstanceOf[int];
+          token = INTLIT;
+        } else
+          getFraction(index);
+      } else if ((ch >= 'a' && ch <= 'z') ||
+                 (ch >= 'A' && ch <= 'Z') ||
+                  ch == '$' || ch == '_') {
+        bp = bp - 1;
         ch = buf(bp);
-	ccol = ccol - 1;
+        ccol = ccol - 1;
         makeInt(index, bp - index, base, Integer.MAX_VALUE);
         intVal = intVal.asInstanceOf[int];
         token = INTLIT;
-      }
+      } else
+        getFraction(index);
     } else if (base <= 10 &&
                (ch == 'e' || ch == 'E' ||
-		ch == 'f' || ch == 'F' ||
-		ch == 'd' || ch == 'D')) {
+                ch == 'f' || ch == 'F' ||
+                ch == 'd' || ch == 'D')) {
       getFraction(index);
     } else {
       if (ch == 'l' || ch == 'L') {
@@ -657,9 +674,9 @@ class Scanner(_unit: Unit) extends TokenData {
       nextch();
     } catch {
       case e:ArrayIndexOutOfBoundsException =>  {
-	token = EOF;
-	syntaxError(lastpos, "unclosed XML literal");
-	throw new ApplicationError("unclosed XML literal");
+        token = EOF;
+        syntaxError(lastpos, "unclosed XML literal");
+        throw new ApplicationError("unclosed XML literal");
       }
     }
     ch match {
