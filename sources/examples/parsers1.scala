@@ -1,126 +1,118 @@
 package examples;
 
 object parsers1 {
-/*
+
 abstract class Parsers {
 
   type intype;
 
-  trait Parser[a] {
+  abstract class Parser {
 
-    type Result = Option[Pair[a, intype]];
+    type Result = Option[intype];
 
     def apply(in: intype): Result;
 
-    def filter(pred: a => boolean) = new Parser[a] {
+    /*** p &&& q applies first p, and if that succeeds, then q
+     */
+    def &&& (def q: Parser) = new Parser {
       def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
-        case Some(Pair(x, in1)) => if (pred(x)) Some(Pair(x, in1)) else None
+        case Some(in1)  => q(in1)
       }
     }
 
-    def map[b](f: a => b) = new Parser[b] {
+    /*** p ||| q applies first p, and, if that fails, then q.
+     */
+    def ||| (def q: Parser) = new Parser {
       def apply(in: intype): Result = Parser.this.apply(in) match {
-        case None => None
-        case Some(Pair(x, in1)) => Some(Pair(f(x), in1))
+        case None => q(in)
+        case s => s
       }
     }
-
-    def flatMap[b](f: a => Parser[b]) = new Parser[b] {
-      def apply(in: intype): Result = Parser.this.apply(in) match {
-        case None => None
-        case Some(Pair(x, in1)) => f(x).apply(in1)
-      }
-    }
-
-    def ||| (def p: Parser[a]) = new Parser[a] {
-      def apply(in: intype): Result = Parser.this.apply(in) match {
-	case None => p(in)
-	case s => s
-      }
-    }
-
-    def &&& [b](def p: Parser[b]): Parser[b] =
-      for (val _ <- this; val x <- p) yield x;
   }
 
-  def succeed[a](x: a) = new Parser[a] {
-    def apply(in: intype): Result = Some(Pair(x, in))
+  val empty = new Parser {
+    def apply(in: intype): Result = Some(in)
   }
 
-  def rep[a](p: Parser[a]): Parser[List[a]] =
-    rep1(p) ||| succeed(List());
+  val fail = new Parser {
+    def apply(in: intype): Result = None
+  }
 
-  def rep1[a](p: Parser[a]): Parser[List[a]] =
-    for (val x <- p; val xs <- rep(p)) yield x :: xs;
-
-  def opt[a](p: Parser[a]): Parser[List[a]] =
-    (for (val x <- p) yield List(x)) ||| succeed(List());
+  def opt(p: Parser): Parser = p ||| empty;    // p? = (p | <empty>)
+  def rep(p: Parser): Parser = opt(rep1(p));   // p* = [p+]
+  def rep1(p: Parser): Parser = p &&& rep(p);  // p+ = p p*
 }
 
-abstract class CharParsers extends Parsers {
-  def any: Parser[char];
-  def chr(ch: char) =
-    for (val c <- any; c == ch) yield c;
-  def chr(p: char => boolean) =
-    for (val c <- any; p(c)) yield c;
-}
-*/
-abstract class Tree{}
-case class Id (s: String)         extends Tree {}
-case class Num(n: int)            extends Tree {}
-case class Lst(elems: List[Tree]) extends Tree {}
+  abstract class ListParsers extends Parsers {
+    def chr(p: char => boolean): Parser;
+    def chr(c: char): Parser = chr(d: char => d == c);
 
-abstract class ListParsers extends CharParsers {
+    def letter    : Parser = chr(Character.isLetter);
+    def digit     : Parser = chr(Character.isDigit);
 
-  def ident: Parser[Tree] =
-    for (
-      val c: char <- chr(Character.isLetter);
-      val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
-    ) yield Id((c :: cs).mkString("", "", ""));
+    def ident     : Parser = letter &&& rep(letter ||| digit);
+    def number    : Parser = digit &&& rep(digit);
+    def list      : Parser = chr('(') &&& listElems &&& chr(')');
+    def listElems : Parser = expr &&& (chr(',') &&& listElems ||| empty);
+    def expr      : Parser = ident ||| number ||| list;
+  }
 
-  def number: Parser[Tree] =
-    for (
-      val d: char <- chr(Character.isDigit);
-      val ds: List[char] <- rep(chr(Character.isDigit))
-    ) yield Num(((d - '0') /: ds) ((x, digit) => x * 10 + digit - '0'));
+  abstract class ExprParsers extends Parsers {
+    def chr(p: char => boolean): Parser;
+    def chr(c: char): Parser = chr(d: char => d == c);
 
-  def list: Parser[Tree] =
-    for (
-      val _ <- chr('(');
-      val es <- listElems ||| succeed(List());
-      val _ <- chr(')')
-    ) yield Lst(es);
-
-  def listElems: Parser[List[Tree]] =
-    for (
-      val x <- expr;
-      val xs <- chr(',') &&& listElems ||| succeed(List())
-    ) yield x :: xs;
-
-  def expr: Parser[Tree] =
-    list ||| ident ||| number;
-
-}
+    def digit     : Parser = chr(Character.isDigit);
+    def number    : Parser = digit &&& rep(digit);
+    def summand   : Parser = number ||| chr('(') &&& expr &&& chr(')');
+    def expr      : Parser = summand &&& rep(chr('+') &&& summand)
+  }
 
   class ParseString(s: String) extends Parsers {
     type intype = int;
     val input = 0;
-    def any = new Parser[char] {
-      def apply(in: int): Parser[char]#Result =
-        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None;
+    def chr(p: char => boolean) = new Parser {
+      def apply(in: int): Parser#Result =
+        if (in < s.length() && p(s charAt in)) Some(in + 1);
+        else None;
     }
   }
 
-  def main(args: Array[String]): unit =
-    Console.println(
+  object TestList {
+
+    def main(args: Array[String]): unit =
       if (args.length == 1) {
         val ps = new ListParsers with ParseString(args(0));
         ps.expr(ps.input) match {
-          case Some(Pair(list, _)) => Console.println("parsed: " + list);
-          case None => "nothing parsed"
+          case Some(n) =>
+            Console.println("parsed: " + args(0).substring(0, n));
+          case None =>
+            Console.println("nothing parsed");
         }
-      } else "usage: java examples.Test <expr-string>"
-    );
-}
+      }
+      else
+        Console.println("usage: java examples.TestList <expr-string>");
+  }
 
+  object TestExpr {
+
+    def main(args: Array[String]): unit =
+      if (args.length == 1) {
+        val ps = new ExprParsers with ParseString(args(0));
+        ps.expr(ps.input) match {
+          case Some(n) =>
+            Console.println("parsed: " + args(0).substring(0, n));
+          case None =>
+            Console.println("nothing parsed");
+        }
+      }
+      else
+        Console.println("usage: java examples.TestExpr <expr-string>");
+  }
+
+  def main(args: Array[String]): Unit = {
+    TestList.main(Array("(a,b,(1,2))"));
+    TestExpr.main(Array("2+3+(4+1)"))
+  }
+
+}
