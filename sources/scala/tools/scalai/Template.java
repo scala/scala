@@ -7,7 +7,7 @@
 // $OldId: Template.java,v 1.2 2002/06/28 17:23:59 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import scalac.util.Debug;
 

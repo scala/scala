@@ -7,7 +7,7 @@
 // $OldId: Function.java,v 1.5 2002/07/01 13:16:39 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;

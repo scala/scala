@@ -7,7 +7,7 @@
 // $OldId: Compiler.java,v 1.19 2002/10/01 16:14:07 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Proxy;
 import java.lang.reflect.InvocationHandler;

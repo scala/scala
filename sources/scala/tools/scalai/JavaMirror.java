@@ -7,7 +7,7 @@
 // $OldId: JavaMirror.java,v 1.8 2002/10/01 16:14:07 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

@@ -7,7 +7,7 @@
 // $OldId: Interpreter.java,v 1.63 2002/09/13 01:50:30 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import scalac.Global;
 import scalac.Phase;

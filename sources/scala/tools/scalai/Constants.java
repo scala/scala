@@ -7,7 +7,7 @@
 // $OldId: Constants.java,v 1.3 2002/07/09 08:35:02 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import scala.runtime.RunTime;
 

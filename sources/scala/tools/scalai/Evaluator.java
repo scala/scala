@@ -7,7 +7,7 @@
 // $OldId: Evaluator.java,v 1.40 2002/10/04 15:37:10 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;

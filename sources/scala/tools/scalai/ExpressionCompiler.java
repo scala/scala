@@ -7,7 +7,7 @@
 // $OldId: ExpressionCompiler.java,v 1.16 2002/10/04 15:37:10 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;

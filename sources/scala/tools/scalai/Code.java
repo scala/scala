@@ -7,7 +7,7 @@
 // $OldId: Code.java,v 1.13 2002/09/06 13:04:01 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import scalac.symtab.Symbol;
 import scalac.util.Debug;

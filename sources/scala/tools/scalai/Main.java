@@ -7,7 +7,7 @@
 // $OldId: Main.java,v 1.2 2002/08/30 15:44:55 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import scalac.CompilerPhases;
 import scalac.util.Reporter;

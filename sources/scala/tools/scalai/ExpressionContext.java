@@ -7,7 +7,7 @@
 // $OldId: ExpressionContext.java,v 1.2 2002/06/05 09:05:56 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.util.Map;
 import java.util.HashMap;

@@ -7,7 +7,7 @@
 // $OldId: CodeBuffer.java,v 1.3 2002/06/13 15:24:14 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 public class CodeBuffer {
 

@@ -7,7 +7,7 @@
 // $OldId: Variable.java,v 1.4 2002/06/17 12:33:38 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Field;
 

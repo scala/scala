@@ -7,7 +7,7 @@
 // $OldId: PathClassLoader.java,v 1.1 2002/10/01 16:09:34 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.io.IOException;
 

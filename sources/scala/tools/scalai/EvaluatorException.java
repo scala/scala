@@ -6,7 +6,7 @@
 
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.io.StringWriter;
 import java.io.PrintWriter;

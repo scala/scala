@@ -7,7 +7,7 @@
 // $OldId: ScalaFunction.java,v 1.9 2002/07/03 16:08:00 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import ch.epfl.lamp.util.SourceFile;
 

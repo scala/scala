@@ -7,7 +7,7 @@
 // $OldId: Environment.java,v 1.13 2002/10/01 16:14:07 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.util.Map;
 import java.util.HashMap;

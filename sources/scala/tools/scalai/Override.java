@@ -7,7 +7,7 @@
 // $OldId: Override.java,v 1.2 2002/07/11 09:20:41 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Method;
 import java.util.Set;

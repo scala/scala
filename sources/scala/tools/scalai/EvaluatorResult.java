@@ -6,7 +6,7 @@
 
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 public class EvaluatorResult {
 

@@ -7,7 +7,7 @@
 // $OldId: ScalaTemplate.java,v 1.8 2002/07/11 11:46:53 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import java.lang.reflect.Method;
 import java.util.List;

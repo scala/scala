@@ -7,7 +7,7 @@
 // $OldId: InterpreterCommand.java,v 1.3 2002/09/02 12:58:22 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 import scalac.CompilerPhases;
 import scalac.CompilerCommand;

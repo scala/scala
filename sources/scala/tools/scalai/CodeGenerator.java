@@ -7,7 +7,7 @@
 // $OldId: CodeGenerator.java,v 1.1 2002/06/06 11:42:25 paltherr Exp $
 // $Id$
 
-package scalai;
+package scala.tools.scalai;
 
 public abstract class CodeGenerator {
 
