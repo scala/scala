@@ -1285,7 +1285,7 @@ public class TermSymbol extends Symbol {
      */
     public static TermSymbol newCompanionModule(Symbol clazz, int flags, Type.LazyType parser) {
         TermSymbol sym = new TermSymbol(
-            Position.NOPOS, clazz.name.toTermName(), clazz.owner(), flags)
+            Position.NOPOS, clazz.name.toTermName(), clazz.owner(), flags | STABLE)
             .makeModule();
         sym.clazz.setInfo(parser);
         return sym;
