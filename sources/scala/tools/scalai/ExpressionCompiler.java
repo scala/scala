@@ -218,7 +218,7 @@ public class ExpressionCompiler {
             return Code.Self;
 
         case Select(Tree expr, _):
-            return compute(expr);
+            return tree.symbol().isStatic() ? Code.Null : compute(expr);
 
         case Ident(_):
             return Code.Self;
@@ -305,15 +305,6 @@ public class ExpressionCompiler {
     // Private Methods - load & store
 
     private Code load(Tree target, Symbol symbol) {
-        // !!! remove this hack, and argument "from"
-        if (symbol.isMethod()) { // !!! Kinds.
-            // !!!
-            return vapply(target, symbol, Tree.EMPTY_ARRAY);
-        }
-
-        // !!! return something ? raise exception ?
-        if (!symbol.isValue()) return Code.Null;
-
         return Code.Load(object(target), context.lookupVariable(symbol));
     }
 
