@@ -15,7 +15,7 @@ import scalac.util.*;
 import scalac.ast.*;
 import scalac.symtab.*;
 import Tree.*;
-
+import scalac.typechecker.DeSugarize ;
 /** Make all functions into one-argument functions
  */
 public class UnCurry extends OwnerTransformer
@@ -117,6 +117,8 @@ public class UnCurry extends OwnerTransformer
 
 	case Select(_, _):
 	case Ident(_):
+	    if( TreeInfo.isWildcardPattern( tree ) )
+		return tree;
 	    Tree tree1 = super.transform(tree);
 	    switch (tree1.symbol().type()) {
 	    case PolyType(Symbol[] tparams, Type restp):
@@ -128,13 +130,12 @@ public class UnCurry extends OwnerTransformer
 	    default:
 		if (tree1.symbol().isDefParameter()) {
 		    tree1.type = global.definitions.functionType(
-			Type.EMPTY_ARRAY, tree1.type);
+								 Type.EMPTY_ARRAY, tree1.type);
 		    return gen.Apply(gen.Select(tree1, Names.apply), new Tree[0]);
 		} else {
 		    return tree1;
 		}
 	    }
-
 	default:
 	    return super.transform(tree);
 	}
@@ -153,10 +154,13 @@ public class UnCurry extends OwnerTransformer
 
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
+
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
 		assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
-		args = new Tree[]{make.Sequence(pos, args).setType(params[0].type())};
+		args = new Tree[]{make.Sequence( pos, args ).setType(params[0].type())};
+
 	    }
+
 	    Tree[] args1 = args;
 	    for (int i = 0; i < args.length; i++) {
 		Tree arg = args[i];
