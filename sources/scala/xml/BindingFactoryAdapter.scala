@@ -32,8 +32,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
   val compress: boolean ;
 
   /** looks up whether an element may have text children */
-  def nodeContainsText( name:java.lang.String ):boolean =
-    g.get( name ).match { case Some(x) => x };
+  def nodeContainsText( name:java.lang.String ):boolean = g( name );
 
   // if compress is set, used for hash-consing
   val cache = new HashMap[int,Node];
@@ -46,7 +45,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
       // 2do:optimize
       if( !compress ) {
         // get constructor
-        val c = f.get( elemName ).match{ case Some(x) => x };
+        val c = f( elemName );
         c( children, attribs );
       } else { // do hash-consing
 
@@ -61,7 +60,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
 
             case None =>
               // get constructor
-              val c = f.get( elemName ).match{ case Some(x) => x };
+              val c = f( elemName );
               val el = c( children, attribs );
               cache.update( h, el );
               el
