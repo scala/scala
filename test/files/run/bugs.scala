@@ -58,6 +58,17 @@ object Bug142Test {
 }
 
 //############################################################################
+// Bug 166
+
+object Bug166Test {
+  import scala.collection.mutable.HashMap ;
+  def main(args:Array[String]) = {
+    val m:HashMap[String,String] = new HashMap[String,String];
+    m.update("foo","bar");
+  }
+}
+
+//############################################################################
 // Bug 167
 
 class Bug167Node(bar:Int) {
@@ -120,18 +131,37 @@ object Bug174Test {
 // Main
 
 object Test  {
+  var errors: Int = 0;
   def test(bug: Int, def test: Unit): Unit = {
     System.out.println("<<< bug " + bug);
-    test;
+    try {
+      test;
+    } catch {
+      case exception => {
+        val name: String = Thread.currentThread().getName();
+        System.out.print("Exception in thread \"" + name + "\" ");
+        exception.printStackTrace();
+        System.out.println();
+        errors = errors + 1;
+      }
+    }
     System.out.println(">>> bug " + bug);
     System.out.println();
   }
+
   def main(args: Array[String]): Unit = {
+
     test(135, Bug135Test.main(args));
     test(142, Bug142Test.main(args));
+    test(166, Bug166Test.main(args));
     test(167, Bug167Test.main(args));
     test(168, Bug168Test.main(args));
     test(174, Bug174Test.main(args));
+
+    if (errors > 0) {
+      System.out.println();
+      System.out.println(errors + " error" + (if (errors > 1) "s" else ""));
+    }
   }
 }
 
