@@ -1,0 +1,32 @@
+################################################################-*-text-*-####
+# scala library files (paths are relative to ./sources/scala)
+##############################################################################
+# $Id$
+
+$colon$colon.scala
+Cell.scala
+ConsStreamClass.scala
+EmptyStream.scala
+Iterator.scala
+List.scala
+Monitor.scala
+Nil.scala
+None.scala
+Option.scala
+Predef.scala
+Some.scala
+Stream.scala
+Tuple1.scala
+Tuple2.scala
+Tuple3.scala
+Tuple4.scala
+Tuple5.scala
+Tuple6.scala
+Tuple7.scala
+Tuple8.scala
+Tuple9.scala
+Symbol.scala
+Seq.scala
+Labelled.scala
+
+##############################################################################
