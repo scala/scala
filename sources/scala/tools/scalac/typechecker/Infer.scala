@@ -1248,6 +1248,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   def exprAlternative(tree: Tree, alts: Array[Symbol], alttypes: Array[Type], pt: Type): unit = {
 
     def improves(tp1: Type, tp2: Type): boolean =
+      tp2 == Type.ErrorType ||
       !normalize(tp2).isSubType(pt) && normalize(tp1).isSubType(pt) ||
       tp2.isParameterized() &&
       (!tp1.isParameterized() || specializes(tp1, tp2));

@@ -333,48 +333,59 @@ public class UnCurry extends OwnerTransformer
     private void checkNoDoubleDef(Symbol clazz, Symbol sym) {
         switch (sym.type()) {
         case OverloadedType(Symbol[] alts, Type[] alttypes):
-            for (int i = 0; i < alttypes.length; i++) {
+            for (int i = 0; i < alttypes.length; i++)
                 for (int j = i + 1; j < alttypes.length; j++)
-                    if (inConflict(alts[i], alts[j], descr.uncurry(alttypes[i]), descr.uncurry(alttypes[j])))
-                        conflictError(clazz, alts[i], alts[j], alttypes[i], alttypes[j]);
-            }
+                    checkNoDoubleDef(clazz, alts[i], alts[j], alttypes[i], alttypes[j]);
             break;
         default:
         }
     }
 
-    private void conflictError(Symbol clazz, Symbol sym1, Symbol sym2, Type type1, Type type2) {
+    private void checkNoDoubleDef(Symbol clazz,
+                                  Symbol sym1, Symbol sym2,
+                                  Type type1, Type type2) {
+        Type newtype1 = descr.uncurry(type1);
+        Type newtype2 = descr.uncurry(type2);
+        if (sym1.owner() != sym2.owner() &&
+            (newtype1.overrides(newtype2) || newtype2.overrides(newtype1)))
+            conflictError(clazz, sym1, sym2, type1, type2, "uncurry");
+        else if (erasureConflict(newtype1, newtype2))
+            conflictError(clazz, sym1, sym2, type1, type2, "erasure");
+    }
+
+    private void conflictError(Symbol clazz, Symbol sym1, Symbol sym2,
+                               Type type1, Type type2, String phase) {
         if (sym1.owner() == clazz && sym2.owner() == clazz)
             unit.error(sym2.pos,
                        "Double declaration:\n" +
                        sym1 + ": " + type1 + " and\n" +
-                       sym2 + ": " + type2 + " have same types after erasure");
+                       sym2 + ": " + type2 + " have same types after " + phase);
         else if (sym1.owner() == clazz)
             unit.error(sym1.pos,
                        "Accidental override:\n" +
-                       sym1 + ": " + type1 + " has same type after erasure as\n" +
+                       sym1 + ": " + type1 + " has same type after " + phase + " as\n" +
                        sym2 + ": " + type2 + " which is inherited from " + sym2.owner());
         else if (sym2.owner() == clazz)
             unit.error(sym2.pos,
                        "Accidental override:\n" +
-                       sym2 + ": " + type2 + " has same type after erasure as\n" +
+                       sym2 + ": " + type2 + " has same type after " + phase + " as\n" +
                        sym1 + ": " + type1 + " which is inherited from " + sym1.owner());
         else
             unit.error(clazz.pos,
                        "Inheritance conflict: inherited members\n" +
                       sym1 + ": " + type1 + sym1.locationString() + " and\n" +
-                       sym2 + ": " + type2 + sym2.locationString() + " have same types after erasure");
+                       sym2 + ": " + type2 + sym2.locationString() + " have same types after " + phase);
     }
 
-    private boolean inConflict(Symbol sym1, Symbol sym2, Type type1, Type type2) {
+    private boolean erasureConflict(Type type1, Type type2) {
         switch (type1) {
         case PolyType(_, Type restype1):
-            return inConflict(sym1, sym2, restype1, type2);
+            return erasureConflict(restype1, type2);
 
         case MethodType(Symbol[] params1, Type restype1):
             switch (type2) {
             case PolyType(_, Type restype2):
-                return inConflict(sym1, sym2, type1, restype2);
+                return erasureConflict(type1, restype2);
 
             case MethodType(Symbol[] params2, Type restype2):
                 if (params1.length != params2.length) return false;
@@ -382,15 +393,7 @@ public class UnCurry extends OwnerTransformer
                     if (!params1[i].nextInfo().erasure().isSameAs(
                             params2[i].nextInfo().erasure())) return false;
                 }
-                if (restype1.erasure().isSameAs(restype2.erasure()))
-                    return true;
-                if (sym1.owner() == sym2.owner())
-                    return false;
-                for (int i = 0; i < params1.length; i++) {
-                    if (!params1[i].nextInfo().isSameAs(
-                            params2[i].nextInfo())) return false;
-                }
-                return true;
+                return restype1.erasure().isSameAs(restype2.erasure());
 
             default:
                 return false;
@@ -399,7 +402,7 @@ public class UnCurry extends OwnerTransformer
         default:
             switch (type2) {
             case PolyType(_, _):
-            case MethodType(_, _): return inConflict(sym1, sym2, type2, type1);
+            case MethodType(_, _): return erasureConflict(type2, type1);
             default: return true;
             }
         }
