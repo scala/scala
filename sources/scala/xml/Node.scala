@@ -21,6 +21,10 @@ trait Node {
   /** the string representation of this XML node */
     def toXML: String;
 
+  /** projection function. Similar to XPath, use this./'foo to get a list
+   *  of all children of this node that are labelled with "foo".
+   *  The document order is preserved.
+   */
     def /(that:Symbol): NodeList = new NodeList({
       val iter = children.elements;
       if( "_" == that.label ) {
@@ -34,15 +38,22 @@ trait Node {
       }
     });
 
+  /** projection function. Similar to XPath, use this./#'foo to get a list
+   *  of all descendants of this node that are labelled with "foo".
+   *  Use /'_ as a wildcard.
+   *  The document order is preserved.
+   */
     def /#(that:Symbol): NodeList = new NodeList({
       var res:List[Node] = Nil;
+      var tmp:List[Node] = Nil;
       for( val x <- children.elements ) {
-        if ( x.label == that.label || "_" == that.label )  // order messed up here
-          res = x::res;
-        res =(x/#(that)).toList:::res;
-
+        if ( x.label == that.label || "_" == that.label )
+          tmp = x::tmp;
+        tmp = tmp:::(x/#(that)).toList;
+        res = res:::tmp;
+        tmp = Nil
       }
-      res.reverse
+      res;
     });
 
 }
@@ -51,11 +62,32 @@ trait Node {
 class NodeList(theList:List[Node]) extends List[Node] {
   val res = theList.flatMap ( x => List.fromIterator( x.children.elements ));
 
+  /** projection function. Similar to XPath, use this./'foo to get a list
+   *  of all elements of this sequence that are labelled with "foo".
+   *  Use /'_ as a wildcard. The document order is preserved.
+   */
   def /(that:Symbol) = if( "_" == that.label ) {
     new NodeList( res )
   } else {
     new NodeList( res.filter( y => y.label == that.label ))
   }
+
+
+  /** projection function. Similar to XPath, use this./'foo to get a list
+   *  of all children of this node that are labelled with "foo"
+   *  Use /#'_ as a wildcard. The document order is preserved.
+   */
+    def /#(that:Symbol): NodeList = new NodeList(
+      if ( "_" == that.label ) {
+        this.flatMap ( x => (x/#'_).toList )
+      } else {
+        this.flatMap ( x => {
+          if( x.label == that.label )
+            x::(x/#(that)).toList;
+          else
+            (x/#(that)).toList;
+        })
+      });
 
 
   def toList:List[Node] = theList;
@@ -65,10 +97,17 @@ class NodeList(theList:List[Node]) extends List[Node] {
   def isEmpty: boolean = theList.isEmpty;
   def head: Node = theList.head;
   def tail: List[Node] = theList.tail;
+
   override def toString():String = "Node"+theList.toString();
 
   override def filter(p: Node => Boolean): NodeList =
     new NodeList( theList.filter( p ) );
 
-  // == does not work
+  override def foreach(f: Node => Unit): Unit = theList.foreach( f );
+
+  override def flatMap[b](f: Node => List[b]): List[b] = theList.flatMap( f );
+
+  override def :::[b >: Node](prefix: List[b]): List[b] = theList.:::( prefix );
+
+  //the  == method cannot be forwarded :-(
 }

@@ -2,6 +2,7 @@ import java.io.StringReader;
 import org.xml.sax.InputSource;
 import scala.xml.nobinding.XML;
 import scala.testing.UnitTest.assertEquals ;
+import scala.xml.NodeList;
 
 object Test with Application {
   val xmlFile1 = "<hello><world/></hello>";
@@ -38,5 +39,12 @@ object Test with Application {
 
   Console.println( "\nparsedxml2/#'author");
   Console.println( parsedxml2/#'author );
+
+  Console.println( "\nnew NodeList(List(parsedxml2))/#'_");
+  Console.println( new NodeList( List( parsedxml2 ))/#'_ );
+
+  Console.println( "\nnew NodeList(List(parsedxml2))/#'title");
+  Console.println( new NodeList( List( parsedxml2 ))/#'title );
+
 
 }

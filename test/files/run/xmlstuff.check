@@ -20,4 +20,10 @@ parsedxml2/'_/'_/'author
 NodeList()
 
 parsedxml2/#'author
-NodeList('author(Text(Dan Suciu)),'author(Text(Peter Buneman)),'author(Text(John Mitchell)))
+NodeList('author(Text(Peter Buneman)),'author(Text(Dan Suciu)),'author(Text(John Mitchell)))
+
+new NodeList(List(parsedxml2))/#'_
+NodeList('book('author(Text(Peter Buneman)),'author(Text(Dan Suciu)),'title(Text(Data on ze web))),'author(Text(Peter Buneman)),Text(Peter Buneman),'author(Text(Dan Suciu)),Text(Dan Suciu),'title(Text(Data on ze web)),Text(Data on ze web),'book('author(Text(John Mitchell)),'title(Text(Foundations of Programming Languages))),'author(Text(John Mitchell)),Text(John Mitchell),'title(Text(Foundations of Programming Languages)),Text(Foundations of Programming Languages))
+
+new NodeList(List(parsedxml2))/#'title
+NodeList('title(Text(Data on ze web)),'title(Text(Foundations of Programming Languages)))
