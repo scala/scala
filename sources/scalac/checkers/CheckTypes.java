@@ -63,8 +63,6 @@ public class CheckTypes extends Checker {
                 checkIsTypeTerm(tree, tpe); break;
             case Typed(_, Tree tpe):
                 checkIsTypeTerm(tree, tpe); break;
-            case Super(Tree qualifier):
-                checkIsTypeTerm(tree, qualifier); break;
             }
         }
     }

@@ -146,9 +146,9 @@ class AddInterfaces extends Transformer {
             return newTree;
         }
 
-        case This(Ident qualifier): {
+        case This(_): {
             // Use class symbol for references to "this".
-            Symbol classThisSym = phase.getClassSymbol(qualifier.symbol());
+            Symbol classThisSym = phase.getClassSymbol(tree.symbol());
             return gen.This(tree.pos, classThisSym);
         }
 

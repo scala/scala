@@ -15,6 +15,7 @@ import scalac.util.Debug;
 import scalac.Global;
 import scalac.Unit;
 import scalac.util.Name;
+import scalac.util.TypeNames;
 
 import java.io.*;
 import java.util.*;
@@ -479,18 +480,18 @@ public class TextTreePrinter implements TreePrinter {
             printType(tree);
             break;
 
-        case Super(Tree qualifier):
-	    if (qualifier != Tree.Empty) {
-		print(qualifier);
+        case Super(Name name):
+	    if (name != TypeNames.EMPTY) {
+                printSymbolUse(tree.symbol(), name);
 		print(TXT_DOT);
 	    }
             print(KW_SUPER);
             printType(tree);
             break;
 
-	case This(Tree qualifier):
-	    if (qualifier != Tree.Empty) {
-		print(qualifier);
+	case This(Name name):
+	    if (name != TypeNames.EMPTY) {
+                printSymbolUse(tree.symbol(), name);
 		print(TXT_DOT);
 	    }
 	    print(KW_THIS);

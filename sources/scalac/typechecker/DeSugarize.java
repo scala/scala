@@ -331,7 +331,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	case Ident(Name name):
 	    return
 		make.Select(tree.pos,
-		    make.This(tree.pos, Tree.Empty).setType(currentclazz.type()),
+		    gen.This(tree.pos, currentclazz),
 		    name).setSymbol(tree.symbol()).setType(tree.type);
 	case TypeApply(Tree fn, Tree[] args):
 	    return copy.TypeApply(tree, postMatch(fn, currentclazz), args);

@@ -586,7 +586,7 @@ public class GenMSIL /*implements Modifiers */ {
 	case This(_):
 	    return items.SelfItem(tc.getType(currentClass));
 
-	case Super(Tree tpe):
+	case Super(_):
 	    //logErr("Not implemented yet: Super(" + Debug.show(sym) + ")");
 	    //log("gen.Super(_): Super.symbol() = " + dumpSym(sym));
 	    //log("gen.Super(tpe): tpe.symbol() = " + dumpSym(tpe.symbol()));

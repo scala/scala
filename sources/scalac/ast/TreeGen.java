@@ -108,7 +108,7 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree mkStableId(int pos, Type pre) {
         switch (pre.expandModuleThis()) {
 	case ThisType(Symbol sym):
-	    return make.This(pos, Ident(pos, sym)).setType(pre);
+	    return This(pos, sym);
         case SingleType(Type pre1, Symbol sym):
 	    return mkStable(mkRef(pos, pre1, sym));
         default:
@@ -462,14 +462,13 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute this node with given symbol.
      */
     public Tree This(int pos, Symbol sym) {
-        Type type = sym.thisType();
-        return make.This(pos, TypeTerm(pos, type)).setType(type);
+        return make.This(pos, sym).setType(sym.thisType());
     }
 
     /** Build and attribute super node with given type.
      */
-    public Tree Super(int pos, Type type) {
-        return make.Super(pos, TypeTerm(pos, type)).setType(type);
+    public Tree Super(int pos, Symbol sym) {
+        return make.Super(pos, sym).setType(sym.thisType());
     }
 
     /** Build and attribute value/variable/let definition node whose signature

@@ -424,7 +424,7 @@ public class Parser implements Tokens {
 	    break;
 	case Apply(Tree fn, Tree[] args):
 	    switch (fn) {
-	    case This(Tree.Empty):
+	    case This(TypeNames.EMPTY):
 		return make.Apply(
 		    t.pos, make.Ident(t.pos, constrname), args);
 	    }
@@ -515,26 +515,27 @@ public class Parser implements Tokens {
     Tree stableRef(boolean thisOK, boolean typeOK) {
 	Tree t;
 	if (s.token == THIS) {
-	    t = make.This(s.skipToken(), Tree.Empty);
+	    t = make.This(s.skipToken(), TypeNames.EMPTY);
 	    if (!thisOK || s.token == DOT)
 		t = selectors(accept(DOT), t, typeOK);
 	} else if (s.token == SUPER) {
-	    t = make.Super(s.skipToken(), Tree.Empty);
+	    t = make.Super(s.skipToken(), TypeNames.EMPTY);
 	    t = make.Select(accept(DOT), t, ident());
 	    if (s.token == DOT)
 		t = selectors(s.skipToken(), t, typeOK);
 	} else {
-	    t = make.Ident(s.pos, ident());
+            Ident i = make.Ident(s.pos, ident());
+            t = i;
 	    if (s.token == DOT) {
 		int pos = s.skipToken();
 		if (s.token == THIS) {
 		    s.nextToken();
-		    t = make.This(pos, convertToTypeId(t));
+		    t = make.This(i.pos, i.name.toTypeName());
 		    if (!thisOK || s.token == DOT)
 			t = selectors(accept(DOT), t, typeOK);
 		} else if (s.token == SUPER) {
 		    s.nextToken();
-		    t = make.Super(pos, convertToTypeId(t));
+		    t = make.Super(i.pos, i.name.toTypeName());
 		    t = make.Select(accept(DOT), t, ident());
 		    if (s.token == DOT)
 			t = selectors(s.skipToken(), t, typeOK);
@@ -1495,18 +1496,20 @@ public class Parser implements Tokens {
 	int startpos = s.pos;
 	int pos;
 	if (s.token == THIS) {
-	    t = make.This(s.skipToken(), Tree.Empty);
+	    t = make.This(s.skipToken(), TypeNames.EMPTY);
 	    t = make.Select(accept(DOT), t, ident());
 	    pos = accept(DOT);
 	} else {
-	    t = make.Ident(s.pos, ident());
+	    Ident i = make.Ident(s.pos, ident());
 	    pos = accept(DOT);
 	    if (s.token == THIS) {
 		s.nextToken();
-		t = make.This(pos, convertToTypeId(t));
+		t = make.This(i.pos, i.name.toTypeName());
 		t = make.Select(accept(DOT), t, ident());
 		pos = accept(DOT);
-	    }
+	    } else {
+                t = i;
+            }
 	}
 	while (true) {
 	    if (s.token == USCORE) {

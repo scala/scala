@@ -138,8 +138,8 @@ public class TreeInfo {
      */
     public static boolean isSelf(Tree tree, Symbol enclClass) {
 	switch (tree) {
-	case This(Tree qual):
-	    return qual.symbol() == enclClass;
+	case This(_):
+	    return tree.symbol() == enclClass;
 	default:
 	    return false;
 	}

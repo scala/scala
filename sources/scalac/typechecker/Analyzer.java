@@ -1100,7 +1100,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     Tree makeStableId(int pos, Type tp) {
 	if (tp.symbol().isCompoundSym())
-	    return make.This(pos, Tree.Empty).setType(tp);
+	    return gen.This(pos, tp.symbol());
 	else
 	    return gen.mkStableId(pos, tp);
     }
@@ -1234,11 +1234,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 	    } else if ((mode & QUALmode) == 0) {
 		// check that packages and static modules are not used as values
-		Symbol sym = tree.symbol();
-		if (tree.isTerm() &&
-		    sym != null && sym.kind != ERROR && !sym.isValue()) {
-		    error(tree.pos, tree.symbol() + " is not a value");
-		}
+                switch (tree) {
+                case Ident(_):
+                case Select(_, _):
+                    Symbol sym = tree.symbol();
+                    if (sym != null && sym.kind != ERROR && !sym.isValue()) {
+                        error(tree.pos, tree.symbol() + " is not a value");
+                    }
+                }
 	    }
 	}
 
@@ -2133,56 +2136,19 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    infer.applyErrorMsg(
 			"", fn1, " cannot be applied to ", argtypes, pt));
 
-	    case Super(Tree qual):
-		Symbol clazz;
-		Tree qual1;
-		if (qual == Tree.Empty) {
-		    clazz = context.enclClass.owner;
-		    if (clazz != null) {
-			qual1 = gen.Ident(tree.pos, clazz);
-		    } else {
-			return error(
-			    tree.pos,
-			    "super can be used only in a class, object, or template");
-		    }
-		} else {
-		    qual1 = transform(qual, TYPEmode | FUNmode);
-		    clazz = qualifyingClass(qual1);
-		    if (clazz.kind == CLASS && !(qual1 instanceof Tree.Ident))
-			qual1 = gen.Ident(tree.pos, clazz);
-		}
-		switch (clazz.info()) {
-		case CompoundType(Type[] parents, _):
-		    return copy.Super(tree, qual1)
-			.setType(Type.compoundType(parents, Scope.EMPTY).symbol().thisType());
-		case ErrorType:
-		    return tree.setType(Type.ErrorType);
-		default:
-		    return error(qual.pos, "class identifier expected");
-		}
+	    case Super(Name name):
+		Symbol clazz = qualifyingClass(tree, name);
+                tree.setSymbol(clazz);
+                if (clazz == Symbol.ERROR) return tree.setType(Type.ErrorType);
+                return tree.setType(Type.compoundType(clazz.parents(), Scope.EMPTY).symbol().thisType());
 
-	    case This(Tree qual):
-		Symbol clazz;
-		Tree tree1;
-		if (qual == Tree.Empty) {
-		    clazz = context.enclClass.owner;
-		    if (clazz != null) {
-			tree1 = makeStableId(tree.pos, clazz.thisType());
-		    } else {
-			return error(
-			    tree.pos, tree +
-			    " can be used only in a class, object, or template");
-		    }
-		} else {
-		    Tree qual1 = transform(qual, TYPEmode | FUNmode);
-		    clazz = qualifyingClass(qual1);
-		    if (clazz.kind == CLASS && !(qual1 instanceof Tree.Ident))
-			qual1 = gen.Ident(tree.pos, clazz);
-		    tree1 = copy.This(tree, qual1);
-		}
-		return tree1.setType(
-		    (pt != null && pt.isStable() || (mode & QUALmode) != 0)
-		    ? clazz.thisType() : clazz.typeOfThis());
+	    case This(Name name):
+		Symbol clazz = qualifyingClass(tree, name);
+                tree.setSymbol(clazz);
+                if (clazz == Symbol.ERROR) return tree.setType(Type.ErrorType);
+ 		return tree.setType(
+ 		    (pt != null && pt.isStable() || (mode & QUALmode) != 0)
+ 		    ? clazz.thisType() : clazz.typeOfThis());
 
 	    case Select(Tree qual, Name name):
 		int qualmode = EXPRmode | POLYmode | QUALmode;
@@ -2288,22 +2254,20 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	}
     }
     //where
-	private Symbol qualifyingClass(Tree qual) {
-	    Tree qual1 = transform(qual, TYPEmode | FUNmode);
-	    Symbol clazz = qual1.symbol();
-	    if (clazz.kind == CLASS) {
-		Context clazzContext = context.outerContext(clazz);
-		if (clazzContext != Context.NONE) {
-		    return clazz;
-		} else {
-		    error(qual.pos, clazz.name + " is not an enclosing class");
-		    return Symbol.NONE;
-		}
-	    } else {
-		error(qual.pos, "class identifier expected");
-		return Symbol.NONE;
-	    }
-
+	private Symbol qualifyingClass(Tree tree, Name name) {
+            if (name == TypeNames.EMPTY) {
+                Symbol clazz = context.enclClass.owner;
+                if (clazz != null) return clazz;
+                error(tree.pos, tree +
+                    " can be used only in a class, object, or template");
+            } else {
+                for (Context i = context; i != Context.NONE; i = i.outer) {
+                    Symbol sym = i.owner;
+                    if (sym.kind == CLASS && sym.name == name) return sym;
+                }
+                error(tree.pos, name + " is not an enclosing class");
+            }
+            return Symbol.ERROR;
 	}
 
     // ///////////////

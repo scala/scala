@@ -153,7 +153,7 @@ public class ExplicitOuterClasses extends Transformer {
                 for (int i = 0; i < argsSym.length; ++i)
                     args[i] = gen.mkRef(argsSym[i].pos, argsSym[i]);
                 Tree fwdBody =
-                    gen.Apply(gen.Select(gen.Super(classSym.pos, classSym.type()),
+                    gen.Apply(gen.Select(gen.Super(classSym.pos, classSym),
                                          funSym),
                               args);
 
@@ -193,20 +193,20 @@ public class ExplicitOuterClasses extends Transformer {
             }
         }
 
-        case This(Tree qualifier): {
+        case This(_): {
             // If "this" refers to some outer class, replace it by
             // explicit reference to it.
-            int level = qualifier.hasSymbol() ? outerLevel(qualifier.symbol()) : 0;
+            int level = outerLevel(tree.symbol());
             if (level > 0)
                 return outerRef(level);
             else
                 return super.transform(tree);
         }
 
-        case Select(Super(Tree qualifier), Name selector): {
+        case Select(Super(_), Name selector): {
             // If "super" refers to an outer class, access the value
             // (a method) through outer link(s).
-            int level = outerLevel(qualifier.type.symbol());
+            int level = outerLevel(((Select)tree).qualifier.symbol());
             if (level > 0)
                 return gen.Select(outerRef(level),
                                   outerSuperSym(level, tree.symbol()));

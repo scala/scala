@@ -161,13 +161,12 @@ public class AddConstructors extends Transformer {
 	    }
 
 	    // inline the call to the super constructor
-            Type superType = treeSym.parents()[0];
-            if ( !forINT || !superType.symbol().isJava()) {
+            if ( !forINT || !treeSym.parents()[0].symbol().isJava()) {
 		switch (baseClasses[0]) {
 		case Apply(Tree fun, Tree[] args):
 		    int pos = baseClasses[0].pos;
 		    Tree superConstr = gen.Select
-			(gen.Super(pos, superType),
+			(gen.Super(pos, treeSym),
 			 getConstructor(fun.symbol()));
 		    constrBody.add(gen.Apply(superConstr, transform(args)));
 		    break;

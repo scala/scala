@@ -92,8 +92,8 @@ public class Tree {
         n_Typed          = node("Typed"         , Term, NoSym),
         n_TypeApply      = node("TypeApply"     , Term, NoSym),
         n_Apply          = node("Apply"         , Term, NoSym),
-        n_Super          = node("Super"         , Term, NoSym),
-        n_This           = node("This"          , Term, NoSym),
+        n_Super          = node("Super"         , Term, HasSym),
+        n_This           = node("This"          , Term, HasSym),
         n_Select         = node("Select"        , Test, HasSym),
         n_Ident          = node("Ident"         , Test, HasSym),
         n_Literal        = node("Literal"       , Term, NoSym),
@@ -283,12 +283,12 @@ public class Tree {
         n_Super.
             setDescription("Super reference").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_TypeTree, "qualifier");
+            addField(t_TypeName, "qualifier", SymName);
 
         n_This.
             setDescription("Self reference").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_TypeTree, "qualifier");
+            addField(t_TypeName, "qualifier", SymName);
 
         n_Select.
             setDescription("Designator").
