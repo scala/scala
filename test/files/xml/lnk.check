@@ -1,4 +1,3 @@
-<link><name>hello-link</name></link>
 <link target="http://www.scala.org"><name>hello-link</name></link>
 <lnkDB><linkgroup><groupname>LDAP Links</groupname><link target="http://www.openldap.org/doc/"><name>OpenLDAP Administration Guide</name><description>contains very readable section &quot;What is LDAP&quot;</description></link><linkgroup><groupname>LDAP RFCs</groupname><link target="ftp://ftp.isi.edu/in-notes/rfc2251.txt"><name>RFC2251 Lightweight Directory Access Protocol (v3)</name></link><link target="ftp://ftp.isi.edu/in-notes/rfc2252.txt"><name>Lightweight Directory Access Protocol (v3):
           Attribute Syntax Definitions</name></link><link target="ftp://ftp.isi.edu/in-notes/rfc2253.txt"><name>Lightweight Directory Access Protocol (v3):
