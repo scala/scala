@@ -1,0 +1,176 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
+package scalac.ast;
+
+import scalac.Global;
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
+import scalac.util.Debug;
+import scalac.util.Position;
+{#Imports#}
+
+public class Tree {
+
+    //########################################################################
+    // Public Constants
+
+    {#EmptyArrays#}
+
+    //########################################################################
+    // Public Fields
+
+    /** The position of the tree */
+    public int pos = Position.NOPOS;
+
+    /** The type of the tree */
+    public Type type;
+
+    //########################################################################
+    // Public Cases
+
+    {#TreeCases#}
+
+    //########################################################################
+    // Public Methods - queries
+
+    {#IsKind#}
+
+    /** Returns true if this tree is empty or error. */
+    public boolean isMissing() {
+	switch (this) {
+        case Bad():
+	case Empty:
+	    return true;
+	default:
+	    return false;
+	}
+    }
+
+    //########################################################################
+    // Public Methods - tree type
+
+    /** Get the type of the node. */
+    public Type type() {
+        assert type != null : Debug.show(this);
+        return type;
+    }
+
+    /** Set the type of the node. */
+    public Tree setType(Type type) {
+	assert !(type instanceof Type.LazyType) : Debug.show(this);
+        this.type = type;
+	return this;
+    }
+
+    /** Get types attached to array of nodes. */
+    public static Type[] typeOf(Tree[] trees) {
+	Type[] types = new Type[trees.length];
+	for (int i = 0; i < trees.length; i++) types[i] = trees[i].type();
+	return types;
+    }
+
+    //########################################################################
+    // Public Methods - tree symbol
+
+    /** Has this tree a symbol field? */
+    public boolean hasSymbol() {
+        return false;
+    }
+
+    /** Tells if the tree defines a symbol. */
+    public boolean definesSymbol() {
+	return false;
+    }
+
+    /** Get symbol attached to the node, if any. */
+    public Symbol symbol() {
+        return null;
+    }
+
+    /** Set symbol attached to the node, if possible. */
+    public Tree setSymbol(Symbol sym) {
+        throw Debug.abort("no settable symbol for node", this);
+    }
+
+    /** Get symbols attached to array of nodes. */
+    public static Symbol[] symbolOf(Tree[] trees) {
+	Symbol[] symbols = new Symbol[trees.length];
+	for (int i = 0; i < trees.length; i++) symbols[i] = trees[i].symbol();
+	return symbols;
+    }
+
+    //########################################################################
+    // Public Methods - tree to string
+
+    /**
+     * Get string corresponding to this tree only implemented for
+     * prefix trees, maybe we should generalize this; the PatternMatch
+     * phase needs support for Apply, so this case got added
+     */
+    public String toString() {
+	switch (this) {
+	case This(Tree qual):
+	    return (qual == Tree.Empty) ? "this" : qual + ".this";
+	case Select(Tree qual, Name name):
+	    return qual + "." + name;
+	case Ident(Name name):
+	    return name.toString();
+        case Typed(Tree expr, Tree type):
+            return "(" + expr + ": " + type + ")";
+        case TypeApply(Tree fn, Tree[] args):
+            String res = fn + "[";
+            if ((args == null) || (args.length == 0))
+                return res + "]";
+            res += args[0].toString();
+            for (int i = 1; i < args.length; i++)
+                res += ", " + args[i];
+            return res + "]";
+        case Apply(Tree fn, Tree[] args):
+            String res = fn + "(";
+            if ((args == null) || (args.length == 0))
+                return res + ")";
+            res += args[0].toString();
+            for (int i = 1; i < args.length; i++)
+                res += ", " + args[i];
+            return res + ")";
+        case Literal(Object value):
+            if (value instanceof String)
+                return "\"" + value + "\"";
+            else
+                return value.toString();
+        case Import(Tree expr, _):
+            return "import " + expr;
+	case Empty:
+	    return "<empty>";
+        case TypeTerm():
+            return type().toString();
+	default:
+	    return super.toString();
+	}
+    }
+
+    //########################################################################
+    // Public Methods - duplication
+
+    public static Transformer duplicator =
+       new Transformer(
+	    Global.instance, Global.instance.make,
+	    new StrictTreeCopier(Global.instance.make));
+
+    public Tree duplicate() {
+	return duplicator.transform(this);
+    }
+
+    //########################################################################
+    // Public Classes
+
+    {#ExtClasses#}
+
+    //########################################################################
+}
