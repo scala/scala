@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.LinkedHashSet;
 
 import java.io.File;
+import scala.tools.util.AbstractFile;
+import scala.tools.util.ByteArrayFile;
 
 import ch.epfl.lamp.compiler.msil.*;
 import scalac.symtab.Symbol;
@@ -51,6 +53,8 @@ public class CLRPackageParser extends SymbolLoader {
     public Type OBJECT;
     public Type STRING;
     public Type STRING_ARRAY;
+
+    public Type SCALA_SYMTAB_ATTR;
 
     protected CLRClassParser completer;
 
@@ -101,6 +105,9 @@ public class CLRPackageParser extends SymbolLoader {
 
  	findAssembly("vjslib.dll");
    	findAssembly("scala.dll");
+
+	SCALA_SYMTAB_ATTR = Type.GetType("scala.support.SymtabAttribute");
+
    	//findAssembly("scalalib.dll");
 	findAllAssemblies();
 
@@ -251,16 +258,32 @@ public class CLRPackageParser extends SymbolLoader {
                 return;
         }
 	for (int i = 0; i < types.length; i++) {
-	    String fullname = types[i].FullName;
-	    if (!fullname.startsWith(n1))
+	    final Type type = types[i];
+	    final String fullname = type.FullName;
+	    if (!fullname.startsWith(n1) /*|| fullname.endsWith("$class")*/)
 		continue;
 	    int j = n1.length();
 	    int k = fullname.indexOf('.', j);
 	    String name = fullname.substring(j, k < 0 ? fullname.length() : k);
-	    Name n = Name.fromString(name);
+	    Name n = Name.fromString(name).toTypeName();
 	    if (k < 0) {
 		// it's a class
-                Symbol clazz = p.newLoadedClass(JAVA, n.toTypeName(), completer, members);
+		Object[] symtab_attr =
+		    type.GetCustomAttributes(SCALA_SYMTAB_ATTR, false);
+		AbstractFile symtab = null;
+		for (int l = 0; l < symtab_attr.length; l++) {
+		    MemberInfo.Attribute a = (MemberInfo.Attribute)symtab_attr[l];
+		    if (a.GetType() == SCALA_SYMTAB_ATTR) {
+			symtab = new ByteArrayFile
+			    (fullname, type.Assembly.GetName().toString(),
+			     a.getValue());
+			break;
+		    }
+		}
+		SymbolLoader loader = symtab == null ? this.completer
+		    : new SymblParser(global, symtab);
+
+                Symbol clazz = p.newLoadedClass(JAVA, n, loader, members);
 		map(clazz, types[i]);
 	    } else {
 		importCLRNamespace(name, p, members);
