@@ -1270,22 +1270,23 @@ the variance position of the enclosing type ~\lstinline@$S$[$\ldots T \ldots$ ]@
 
 \example The following variance annotation is legal. 
 \begin{lstlisting}
-class P[a, b] {
-  val fst: a, snd: b
-}\end{lstlisting}
+abstract class P[+a, +b] {
+  def fst: a; def snd: b
+}
+\end{lstlisting}
 With this variance annotation, elements
 of type $P$ subtype covariantly with respect to their arguments. 
 For instance, 
 \begin{lstlisting}
-P[IOExeption, String] <: P[Throwable, AnyRef] .
+P[IOException, String] <: P[Throwable, AnyRef] .
 \end{lstlisting}
 
 If we make the elements of $P$ mutable, 
 the variance annotation becomes illegal. 
 \begin{lstlisting}
-class Q[+a, +b] { 
-  var fst: a, snd: b    // **** error: illegal variance:
-                        // `a', `b' occur in invariant position.
+abstract class Q[+a, +b] { 
+  var fst: a;           // **** error: illegal variance:
+  var snd: b            // `a', `b' occur in invariant position.
 }
 \end{lstlisting}
 
@@ -2312,7 +2313,7 @@ abstract class Point {
   def isOrigin = (x == 0.0 && y == 0.0);
 }
 object Point {
-  val origin = new Point() { val x = 0.0, y = 0.0 }
+  val origin = new Point() { val x = 0.0; val y = 0.0 }
 }
 \end{lstlisting}
 This defines a class \code{Point} and an object \code{Point} which
@@ -2719,7 +2720,8 @@ alternatives in $\BB$.
   class A extends B {}
   def f(x: B, y: B) = $\ldots$
   def f(x: A, y: B) = $\ldots$
-  val a: A, b: B
+  val a: A;
+  val b: B
 \end{lstlisting}
 Then the application \lstinline@f(b, b)@ refers to the first
 definition of $f$ whereas the application \lstinline@f(a, a)@
