@@ -18,8 +18,8 @@ import scalac.transformer.ExplicitOuterClassesPhase;
 import scalac.transformer.AddAccessorsPhase;
 import scalac.transformer.AddInterfacesPhase;
 import scalac.transformer.ExpandMixinsPhase;
-/*
 import scalac.transformer.ErasurePhase;
+/*
 import scalac.optimizer.OptimizePhase;
 import scalac.backend.AddConstructorsPhase;
 import scalac.backend.msil.GenMSILPhase;
@@ -45,16 +45,16 @@ public class PhaseRepository {
             REFCHECK = new RefCheckPhase(),
             UNCURRY = new UnCurryPhase(),
 	    /*
-            OPTIMIZE = new OptimizePhase(), */
+            OPTIMIZE = new OptimizePhase(),
+            */
             TRANSMATCH = new TransMatchPhase(),
-
             LAMBDALIFT = new LambdaLiftPhase(),
             EXPLICITOUTER = new ExplicitOuterClassesPhase(),
             ADDACCESSORS = new AddAccessorsPhase(),
             ADDINTERFACES = new AddInterfacesPhase(),
             EXPANDMIXIN = new ExpandMixinsPhase(),
-	    /*
             ERASURE = new ErasurePhase(),
+	    /*
             ADDCONSTRUCTORS = new AddConstructorsPhase(),
             GENMSIL = new GenMSILPhase(),
             GENJAVA = new GenJavaPhase(),
@@ -73,15 +73,16 @@ public class PhaseRepository {
     public final RefCheckPhase REFCHECK;
     public final UnCurryPhase UNCURRY;
     /*
-    public final OptimizePhase OPTIMIZE; */
+    public final OptimizePhase OPTIMIZE;
+    */
     public final TransMatchPhase TRANSMATCH;
     public final LambdaLiftPhase LAMBDALIFT;
     public final ExplicitOuterClassesPhase EXPLICITOUTER;
     public final AddAccessorsPhase ADDACCESSORS;
     public final AddInterfacesPhase ADDINTERFACES;
     public final ExpandMixinsPhase EXPANDMIXIN;
-    /*
     public final ErasurePhase ERASURE;
+    /*
     public final AddConstructorsPhase ADDCONSTRUCTORS;
     public final GenMSILPhase GENMSIL;
     public final GenJavaPhase GENJAVA;

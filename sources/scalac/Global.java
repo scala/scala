@@ -184,8 +184,8 @@ public class  Global {
         phases.add(PHASE.ADDACCESSORS);
         phases.add(PHASE.ADDINTERFACES);
         phases.add(PHASE.EXPANDMIXIN);
-	/*
         phases.add(PHASE.ERASURE);
+	/*
 	if (target == TARGET_INT || target == TARGET_MSIL || target == TARGET_JVM) {
             phases.add(PHASE.ADDCONSTRUCTORS);
         }
