@@ -17,7 +17,7 @@ import Tree.*;
 
 /** A recursive descent parser for the programming language Scala.
  *
- *  @author     Martin Odersky, Matthias Zenger
+ *  @author     Martin Odersky, Matthias Zenger, Burak Emir
  *  @version    1.2
  */
 public class Parser implements Tokens {
@@ -30,9 +30,14 @@ public class Parser implements Tokens {
      */
     TreeFactory make;
 
+    /** pattern checker and normalizer
+     */
+    PatternNormalizer pN;
+
     public Parser(Unit unit) {
         s = new Scanner(unit);
         make = unit.global.make;
+	pN = new PatternNormalizer( unit );
     }
 
     /** this is the general parse method
@@ -1078,6 +1083,7 @@ public class Parser implements Tokens {
      */
     Tree simplePattern() {
 	switch (s.token) {
+	case RPAREN:
 	case COMMA:
 	    return make.Subsequence( s.pos, Tree.EMPTY_ARRAY ); // ((nothing))
 	case IDENTIFIER:
@@ -1122,7 +1128,10 @@ public class Parser implements Tokens {
 	    if( ts.length == 1 )
 		t = ts[ 0 ];
 	    else
-		t = make.Subsequence( s.pos, ts );
+		{
+		    t = pN.flattenSubsequence( make.Subsequence( s.pos, ts ) );
+		    t = pN.elimSubsequence( t );
+		}
 	    accept(RPAREN);
 	    return t;
 	default:
