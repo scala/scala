@@ -12,6 +12,7 @@ import scalac.symtab.Symbol;
 public class Names {
 
     private static final String LOCAL_PREFIX = "local$";
+    private static final String MIXIN_PREFIX = "mixin$";
     private static final String OUTER_PREFIX = "outer$";
     private static final String SUPER_PREFIX = "super$";
     private static final String TUPLE_FIELD_PREFIX = "_";
@@ -20,6 +21,13 @@ public class Names {
 
     public static Name LOCAL(Symbol clasz) {
         return Name.fromString(LOCAL_PREFIX + clasz.name);
+    }
+
+    public static Name MIXIN(Symbol member) {
+        Name name = Name.fromString(MIXIN_PREFIX + member.owner().name
+            + (member.isInitializer() ? INLINED_INITIALIZER : member.name));
+        if (member.name.isTypeName()) name = name.toTypeName();
+        return name;
     }
 
     public static Name OUTER(Symbol constructor) {
@@ -66,6 +74,8 @@ public class Names {
     public static final Name ROOT = Name.fromString("<root>");
 
     public static final Name CONSTRUCTOR = Name.fromString("<init>");
+    public static final Name INITIALIZER = Name.fromString("<init>");
+    public static final Name INLINED_INITIALIZER = Name.fromString("$init$");
 
     public static final Name _EQ = encode("_=");
     public static final Name MINUS = encode("-");
