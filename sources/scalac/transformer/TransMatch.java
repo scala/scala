@@ -50,8 +50,8 @@ public class TransMatch extends OwnerTransformer {
 
 	  public int pos;
 
-	  //public HashMap varMap;
-	  //public Tree[]  stms;
+	  public HashMap varMap;    // needed in LeftTracerInScala
+	  public Tree[]  stms;      // needed in LeftTracerInScala
 
 	  public Matcher(Symbol owner,
 			 Tree root,
