@@ -559,6 +559,22 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return EMPTY_ARRAY;
     }
 
+    /** Get type parameters at start of next phase */
+    public final Symbol[] nextTypeParams() {
+        Global.instance.nextPhase();
+        Symbol[] tparams = typeParams();
+        Global.instance.prevPhase();
+        return tparams;
+    }
+
+    /** Get value parameters at start of next phase */
+    public final Symbol[] nextValueParams() {
+        Global.instance.nextPhase();
+        Symbol[] vparams = valueParams();
+        Global.instance.prevPhase();
+        return vparams;
+    }
+
     /** Get all constructors of class */
     public Symbol allConstructors() {
         return NONE;
