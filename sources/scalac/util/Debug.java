@@ -440,8 +440,8 @@ public class DebugSymbol extends DebugAbstractHandler {
         if (that != Symbol.NONE && that != Symbol.ERROR) {
             buffer.append(that.kindString()).append(' ');
             if (that.owner() != Global.instance.definitions.ROOT_CLASS) {
-                buffer.append(that.owner().fullName());
-                buffer.append("::");
+                Debug.append(buffer, that.owner());
+                buffer.append(".");
             }
         }
         buffer.append(that.name);
