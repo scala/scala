@@ -32,6 +32,8 @@ public class PatternMatcher {
     public static final Name MATCHERROR_N = Name.fromString("MatchError");
     public static final Name FAIL_N = Name.fromString("fail");
     public static final Name WILDCARD_N = Name.fromString("_");
+    public static final Name LENGTH_N = Name.fromString("length");
+    public static final Name AT_N = Name.fromString("at");
 
     /** the current compilation unit
      */
@@ -97,12 +99,12 @@ public class PatternMatcher {
         this.owner = owner;
         this.selector = selector;
         this.root = makeConstrPat(selector.pos,
-                                  selector.type);
+                                  selector.type.widen());
         this.root.and = makeHeader(selector.pos,
-                                   selector.type,
+                                   selector.type.widen(),
                                    make.Ident(selector.pos,
                                               root.symbol().name)
-                                    .setType(selector.type)
+                                    .setType(selector.type.widen())
                                     .setSymbol(root.symbol()));
         this.resultVar = new TermSymbol(selector.pos,
                                         RESULT_N,
@@ -174,6 +176,14 @@ public class PatternMatcher {
         return node;
     }
 
+    public SequencePat makeSequencePat(int pos, Type type, int len) {
+        Symbol sym = newVar(Position.NOPOS, type);
+        SequencePat node = new SequencePat(sym, len);
+        node.pos = pos;
+        node.type = type;
+        return node;
+    }
+
     public ConstantPat makeConstantPat(int pos, Type type, Object value) {
         ConstantPat node = new ConstantPat(value);
         node.pos = pos;
@@ -221,6 +231,20 @@ public class PatternMatcher {
                     break;
                 case ConstrPat(Symbol casted):
                     String s = "-- " + patNode.type.symbol().name + "(" + patNode.type + ", " + casted + ") -> ";
+                    String ind = indent;
+                    indent = (patNode.or != null) ?
+                                    indent :
+                                    indent.substring(0, indent.length() - 1) + " ";
+                    for (int i = 0; i < s.length(); i++)
+                        indent += " ";
+                    System.out.println(ind + s);
+                    print(patNode.and, indent);
+                    if (patNode.or != null)
+                        print(patNode.or, ind);
+                    break;
+                case SequencePat(Symbol casted, int plen):
+                    String s = "-- " + patNode.type.symbol().name + "(" + patNode.type +
+                               ", " + casted + ", " + plen + ") -> ";
                     String ind = indent;
                     indent = (patNode.or != null) ?
                                     indent :
@@ -331,6 +355,11 @@ public class PatternMatcher {
     protected Tree[] patternArgs(Tree tree) {
         switch (tree) {
             case Apply(_, Tree[] args):
+                if (args.length == 1)
+                    switch (args[0]) {
+                        case Tuple(Tree[] ts):
+                            return ts;
+                    }
                 return args;
             default:
                 return Tree.EMPTY_ARRAY;
@@ -359,7 +388,12 @@ public class PatternMatcher {
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         switch (tree) {
-            case Apply(_, _):                            // pattern with args
+            case Apply(Tree fn, Tree[] args):             // pattern with args
+                if (args.length == 1)
+                    switch (args[0]) {
+                        case Tuple(Tree[] ts):
+                            return makeSequencePat(tree.pos, tree.type, ts.length);
+                    }
                 return makeConstrPat(tree.pos, getConstrType(tree.type));
             case Typed(Ident(Name name), Tree tpe):       // variable pattern
                 if ((env != null) && (name != WILDCARD_N))
@@ -399,13 +433,19 @@ public class PatternMatcher {
                     //    return q.type.isSubType(p.type);
                 }
                 return false;
-           case ConstrPat(_):
+            case ConstrPat(_):
                 switch (q) {
                     case ConstrPat(_):
                         return q.type.isSubType(p.type);
                 }
                 return false;
-           case ConstantPat(Object pval):
+            case SequencePat(_, int plen):
+                switch (q) {
+                    case SequencePat(_, int qlen):
+                        return (plen == qlen) && q.type.isSubType(p.type);
+                }
+                return false;
+            case ConstantPat(Object pval):
                 switch (q) {
                     case ConstantPat(Object qval):
                         return pval.equals(qval);
@@ -432,6 +472,8 @@ public class PatternMatcher {
         switch (target) {
             case ConstrPat(Symbol newCasted):
                 return enter1(pat, index, target, newCasted, env);
+            case SequencePat(Symbol newCasted, int len):
+                return enter1(pat, index, target, newCasted, env);
             default:
                 return enter1(pat, index, target, casted, env);
         }
@@ -446,30 +488,62 @@ public class PatternMatcher {
         // get pattern arguments
         Tree[] patArgs = patternArgs(pat);
         // get case fields
-        assert patArgs.length == nCaseComponents(pat);
+        //assert patArgs.length == nCaseComponents(pat);
         // advance one step in pattern
         Header curHeader = (Header)target.and;
         // check if we have to add a new header
         if (curHeader == null) {
             assert index >= 0 : casted;
-            Symbol ts = ((ClassSymbol) casted.type().symbol())
-                .caseFieldAccessor(index);
-            target.and = curHeader = makeHeader(
-                pat.pos,
-                getHeaderType(typeOf0(ts)),
-                make.Apply(
+            if (casted.pos == Position.NOPOS) {
+                Symbol atSym = casted.type().lookup(AT_N);
+                //System.out.println("casted type = " + typeOf(casted));
+                Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
+                Tree t = make.Select(
+                            pat.pos,
+                            make.Ident(pat.pos, casted.name)
+                                .setType(typeOf(casted))
+                                .setSymbol(casted),
+                            AT_N);
+                switch (typeOf(atSym)) {
+                    case OverloadedType(Symbol[] alts, Type[] alttypes):
+                        infer.methodAlternative(t, alts, alttypes,
+                            new Type[]{defs.INT_TYPE}, seqType);
+                        t = make.Apply(pat.pos, t,
+                                new Tree[]{
+                                    make.Literal(pat.pos, new Integer(index))
+                                        .setType(defs.INT_TYPE)
+                                }).setType(seqType);
+                        break;
+                    default:
+                        t.setSymbol(atSym);
+                        t.setType(typeOf(atSym));
+                        t = make.Apply(pat.pos, t,
+                                new Tree[]{
+                                    make.Literal(pat.pos, new Integer(index))
+                                        .setType(defs.INT_TYPE)
+                                }).setType(seqType);
+                }
+                target.and = curHeader = makeHeader(pat.pos, seqType, t);
+            } else {
+                Symbol ts = ((ClassSymbol) casted.type().symbol())
+                    .caseFieldAccessor(index);
+                target.and = curHeader = makeHeader(
                     pat.pos,
-                    make.Select(
+                    getHeaderType(typeOf0(ts)),
+                    make.Apply(
                         pat.pos,
-                        make.Ident(pat.pos, casted.name)
-                            .setType(typeOf(casted))
-                            .setSymbol(casted),
-                        ts.name)
-                        .setType(Type.MethodType(
-                                  Symbol.EMPTY_ARRAY,
-                                  getHeaderType(typeOf0(ts))))
-                        .setSymbol(ts),
-                    Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts))));
+                        make.Select(
+                            pat.pos,
+                            make.Ident(pat.pos, casted.name)
+                                .setType(typeOf(casted))
+                                .setSymbol(casted),
+                            ts.name)
+                            .setType(Type.MethodType(
+                                      Symbol.EMPTY_ARRAY,
+                                      getHeaderType(typeOf0(ts))))
+                            .setSymbol(ts),
+                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts))));
+            }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);
         }
@@ -502,6 +576,10 @@ public class PatternMatcher {
         switch (target) {
             case ConstrPat(Symbol newCasted):
                 casted = newCasted;
+                break;
+            case SequencePat(Symbol newCasted, int len):
+                casted = newCasted;
+                break;
         }
         for (int i = 0; i < pats.length; i++)
             target = enter1(pats[i], i, target, casted, env);
@@ -612,6 +690,43 @@ public class PatternMatcher {
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector)).setType(defs.BOOLEAN_TYPE);
+            case SequencePat(Symbol casted, int len):
+                Symbol lenSym = casted.type().lookup(LENGTH_N);
+                Tree t = make.Select(selector.pos,
+                                     make.Ident(selector.pos, casted.name)
+                                        .setSymbol(casted)
+                                        .setType(node.type),
+                                     LENGTH_N);
+                switch (typeOf(lenSym)) {
+                    case OverloadedType(Symbol[] alts, Type[] alttypes):
+                        infer.methodAlternative(t, alts, alttypes, new Type[0], defs.INT_TYPE);
+                        break;
+                    default:
+                        t.setSymbol(lenSym);
+                        t.setType(typeOf(lenSym));
+                }
+                return make.If(
+                        selector.pos,
+                        mkIs(selector, node.type),
+                        mkBlock(selector.pos,
+                            new Tree[]{
+                                make.ValDef(selector.pos,
+                                            0,
+                                            casted.name,
+                                            gen.mkType(selector.pos, node.type),
+                                            mkAs(selector, node.type))
+                                    .setType(defs.UNIT_TYPE).setSymbol(casted),
+                                mkAnd(
+                                    mkEquals(
+                                        make.Apply(
+                                            selector.pos, t,
+                                            Tree.EMPTY_ARRAY)
+                                                .setType(defs.INT_TYPE),
+                                        make.Literal(selector.pos, new Integer(len))
+                                            .setType(defs.INT_TYPE)),
+                                    toTree(node.and))}, defs.BOOLEAN_TYPE),
+                        toTree(node.or, selector))
+                            .setType(defs.BOOLEAN_TYPE);
             case ConstantPat(Object value):
                 return make.If(
                         selector.pos,
@@ -691,7 +806,10 @@ public class PatternMatcher {
                     return right;
                 else if (left.symbol() == falseSym)
                     return left;
-                else if (right.symbol() == trueSym)
+        }
+        switch (right) {
+            case Select(_, _):
+                if (right.symbol() == trueSym)
                     return left;
         }
         Symbol fun = left.type.lookup(AND_N);
@@ -711,7 +829,10 @@ public class PatternMatcher {
                     return left;
                 else if (left.symbol() == falseSym)
                     return right;
-                else if (right.symbol() == falseSym)
+        }
+        switch (right) {
+            case Select(_, _):
+                if (right.symbol() == falseSym)
                     return left;
         }
         Symbol fun = left.type.lookup(OR_N);
