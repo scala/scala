@@ -46,7 +46,6 @@ public class ClassfileParser implements ClassfileConstants {
     protected ConstantPool pool;
     protected AttributeParser attrib;
     protected Definitions defs;
-    protected int phaseId;
 
 
     public ClassfileParser(Global global, AbstractFileReader in, Symbol c) {
@@ -59,7 +58,6 @@ public class ClassfileParser implements ClassfileConstants {
         this.pool = new ConstantPool(in, sigs);
         this.attrib = new AttributeParser(in, pool, this);
         this.defs = global.definitions;
-	this.phaseId = global.POST_ANALYZER_PHASE_ID;
     }
 
 
