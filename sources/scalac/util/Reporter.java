@@ -26,8 +26,6 @@ public class Reporter {
     private int errors;
     /** Number of warning issued totally */
     private int warnings;
-    /** Number of notes issued totally */
-    private int notes;
 
     //########################################################################
     // Reporter constructors
@@ -45,7 +43,6 @@ public class Reporter {
         this.nowarn = false;
         this.verbose = false;
         this.errors = 0;
-        this.notes = 0;
     }
 
     //########################################################################
@@ -53,7 +50,7 @@ public class Reporter {
 
     /** Whether warnings should be issued */
     public boolean nowarn;
-    /** Whether notes and information messages should be issued */
+    /** Whether information messages should be issued */
     public boolean verbose;
     /** Whether a prompt should be displayed after errors and warnings */
     public boolean prompt;
@@ -71,11 +68,6 @@ public class Reporter {
         return warnings;
     }
 
-    /** Return the number of notes issued totally */
-    public int notes() {
-        return notes;
-    }
-
     /** Return the number of errors issued totally as a string */
     public String getErrorCountString() {
         return getCountString(errors, "error");
@@ -84,11 +76,6 @@ public class Reporter {
     /** Return the number of warnings issued totally as a string */
     public String getWarningCountString() {
         return getCountString(warnings, "warning");
-    }
-
-    /** Return the number of notes issued totally as a string */
-    public String getNoteCountString() {
-        return getCountString(notes, "note");
     }
 
     public String getCountString(int count, String what) {
@@ -109,7 +96,6 @@ public class Reporter {
     public void resetCounters() {
         errors = 0;
         warnings = 0;
-        notes = 0;
     }
 
     /** Issue a message */
@@ -147,21 +133,9 @@ public class Reporter {
         if (prompt) failOnDemand();
     }
 
-    /** Issue a note */
-    public void note(String message) {
-        note(message, false);
-    }
-
-    /** Issue a note if it is not hidden */
-    public void note(String message, boolean hidden) {
-        if (!hidden) report(message);
-        if (!hidden) notes++;
-    }
-
     public void printSummary() {
         if (errors() > 0) report(getErrorCountString() + " found");
         if (warnings() > 0) report(getWarningCountString() + " found");
-        if (notes() > 0) report(getNoteCountString() + " found");
     }
 
     //########################################################################

@@ -107,19 +107,6 @@ public class Unit {
         global.reporter.warning(source.getMessage(pos, message), hidden);
     }
 
-    /** issue a note in this compilation unit
-     */
-    public void note(String message) {
-        note(Position.NOPOS, message);
-    }
-
-    /** issue a note in this compilation unit at a specific location
-     */
-    public void note(int pos, String message) {
-        global.reporter.note(source.getMessage(pos, message));
-        notes++;
-    }
-
     /** return a string representation
      */
     public String toString() {

@@ -481,12 +481,6 @@ public class  Global {
         reporter.warning("warning: " + message);
     }
 
-    /** issue a global note (if in verbose mode)
-     */
-    public void note(String message) {
-        reporter.note("note: " + message);
-    }
-
     /** issue an operation note
      */
     public void operation(String message) {

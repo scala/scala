@@ -112,10 +112,6 @@ public class CommandParser {
     public void warning(String message) {
         reporter.warning(product + ": " + message);
     }
-
-    public void note(String message) {
-        reporter.note(product + ": " + message);
-    }
 }
 
 public abstract class ArgumentParser {
@@ -235,10 +231,6 @@ public abstract class OptionParser extends ArgumentParser {
 
     public void warning(String message) {
         command.warning("option -" + option + ": " + message);
-    }
-
-    public void note(String message) {
-        command.note("option -" + option + ": " + message);
     }
 }
 /*
