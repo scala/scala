@@ -100,6 +100,10 @@ public class JavaTypeCreator implements JavaTypeFactory {
     }
 
     public Type classType(String classname) {
+	if (classname.equals("java.lang.Object"))
+	    return objectType();
+	if (classname.equals("java.lang.String"))
+	    return stringType();
         return classType(definitions.getClass(classname));
     }
 
@@ -121,10 +125,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         return new MethodType(args, restpe);
     }
     private Type objToAny(Type tp) {
-	if (tp.isSameAs(OBJECT_TYPE))
-	    return ANY_TYPE;
-	else
-	    return tp;
+	return tp.isSameAs(OBJECT_TYPE) ? ANY_TYPE : tp;
     }
 
     public Type packageType(Name packagename) {
