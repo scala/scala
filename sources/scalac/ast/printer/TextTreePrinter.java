@@ -613,7 +613,7 @@ public class TextTreePrinter implements TreePrinter {
 
     protected String symbolString(Symbol symbol, Name name) {
         if (symbol != null)
-            return symbol.name.toString();
+            return symbol.simpleName().toString();
         else
             return name.toString();
     }

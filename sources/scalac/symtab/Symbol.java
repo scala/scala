@@ -984,7 +984,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + sym1.type() + sym1.locationString()); //DEBUG
 	    //System.out.println(owner.thisType());//DEBUG
 
-	    Type symtype = owner.thisType().memberType(this);
+	    Type symtype = this.type();//owner.thisType().memberType(this);
 	    //todo: try whether we can do: this.type(); instead
 	    Type sym1type = owner.thisType().memberType(sym1);
 	    switch (sym1type) {
@@ -997,6 +997,36 @@ public abstract class Symbol implements Modifiers, Kinds {
 		if (symtype.isSubType(sym1type)) return sym1;
 		else {
 		    if (Global.instance.debug) System.out.println(this + locationString() + " does not override " + sym1 + sym1.locationString() + ", since " + symtype + " !<= " + sym1type);//DEBUG
+		    return Symbol.NONE;
+		}
+	    }
+	}
+    }
+
+    /** The symbol which is overridden by this symbol in base class `base'
+     *  `base' must be a superclass of this.owner().
+     */
+    public Symbol overridingSymbol(Type sub) {
+	assert !isOverloaded() : this;
+	Symbol sym1 = sub.lookupNonPrivate(name);
+	if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
+	    return Symbol.NONE;
+	} else {
+	    //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + sym1.type() + sym1.locationString()); //DEBUG
+	    //System.out.println(owner.thisType());//DEBUG
+
+	    Type symtype = sub.memberType(this);
+	    Type sym1type = sub.memberType(sym1);
+	    switch (sym1type) {
+	    case OverloadedType(Symbol[] alts, Type[] alttypes):
+		for (int i = 0; i < alts.length; i++) {
+		    if (alttypes[i].isSubType(symtype)) return alts[i];
+		}
+		return Symbol.NONE;
+	    default:
+		if (sym1type.isSubType(symtype)) return sym1;
+		else {
+		    if (Global.instance.debug) System.out.println(this + locationString() + " is not overridden by " + sym1 + sym1.locationString() + ", since " + sym1type + " !<= " + symtype);//DEBUG
 		    return Symbol.NONE;
 		}
 	    }
