@@ -15,6 +15,7 @@ import scalac.CompilationUnit;
 import scalac.symtab.Definitions;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolNameWriter;
 import scalac.symtab.Type;
 import scalac.symtab.Modifiers;
 import scalac.atree.AConstant;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Turn types into values by applying the following transformations:
@@ -57,8 +59,8 @@ import java.util.Arrays;
  * @version 1.0
  */
 
-// TODO vérifier tous les appels à scalaClassType et à typeAsValue
-// pour s'assurer qu'ils n'ont effectivement pas d'env. à passer
+// TODO use a constant instead of generating empty arrays all the
+// time.
 
 public class TypesAsValuesPhase extends Phase {
     private final TV_Transformer transformer;
@@ -92,14 +94,13 @@ public class TypesAsValuesPhase extends Phase {
     private final Definitions defs = global.definitions;
     private final Primitives prims = global.primitives;
 
-    private final Type typeType = defs.TYPE_TYPE();
     private final Type.MethodType typeAccessorType =
-        new Type.MethodType(new Symbol[]{}, typeType);
+        new Type.MethodType(new Symbol[]{}, defs.TYPE_TYPE());
 
-    private final Symbol SINGLETYPE_CLASS =
-        defs.SINGLETYPE_CLASS;
     private final Symbol ARRAY_CONSTRUCTOR =
         defs.ARRAY_CLASS.primaryConstructor();
+
+    private final TEnv EENV = new TEnv();
 
     private final Map/*<Symbol, Symbol>*/ basicTypes;
 
@@ -140,7 +141,7 @@ public class TypesAsValuesPhase extends Phase {
             accessorSym = typeSym.owner().newVariable(typeSym.pos,
                                                       typeSym.flags,
                                                       Names.TYPE(typeSym));
-            accessorSym.setInfo(typeType);
+            accessorSym.setInfo(defs.TYPE_TYPE());
             typeAccessor.put(typeSym, accessorSym);
         }
         return accessorSym;
@@ -161,7 +162,7 @@ public class TypesAsValuesPhase extends Phase {
             if (true || classSym.typeParams().length > 0) {
                 Symbol typesP =
                     imSym.newVParam(pos, 0, Name.fromString("types"));
-                typesP.setInfo(defs.ARRAY_TYPE(typeType));
+                typesP.setInfo(defs.ARRAY_TYPE(defs.TYPE_TYPE()));
                 argTypes = new Symbol[]{ typesP };
             } else
                 argTypes = Symbol.EMPTY_ARRAY;
@@ -311,6 +312,15 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         public Tree transform(Tree tree) {
+            try {
+                return transform0(tree);
+            } catch (Error e) {
+                System.out.println("tree: " + tree);
+                throw e;
+            }
+        }
+
+        public Tree transform0(Tree tree) {
             switch (tree) {
             case ClassDef(int mods, //:
                           Name name,
@@ -319,6 +329,9 @@ public class TypesAsValuesPhase extends Phase {
                           Tree tpe,
                           Tree.Template impl):
                 Symbol sym = tree.symbol();
+
+//                 if (impl.symbol().isNone())
+//                     throw new Error("no symbol for " + tree);
 
                 TreeList newBody =
                     new TreeList(transform(impl.body, impl.symbol()));
@@ -343,8 +356,10 @@ public class TypesAsValuesPhase extends Phase {
                     }
                 }
 
+                Symbol pConst = sym.primaryConstructor();
+
                 return gen.ClassDef(sym,
-                                    transform(impl.parents),
+                                    transform(impl.parents, pConst),
                                     impl.symbol(),
                                     newBody.toArray());
 
@@ -359,7 +374,8 @@ public class TypesAsValuesPhase extends Phase {
                     // RefCheck).
                     rhs = scalaClassType(symbol.pos,
                                          symbol.owner().type(),
-                                         currentOwner);
+                                         symbol,
+                                         EENV);
                 }
 
                 return gen.DefDef(symbol, transform(rhs, symbol));
@@ -372,7 +388,10 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol symbol = getSymbolFor(tree);
                 Tree defaultValue =
                     gen.mkRef(tree.pos,
-                              typeAsValue(tree.pos, tpe.type, currentOwner),
+                              typeAsValue(tree.pos,
+                                          tpe.type,
+                                          currentOwner,
+                                          EENV),
                               defs.TYPE_DEFAULTVALUE());
                 Tree rhs = gen.mkApply__(tree.pos, defaultValue);
                 return gen.ValDef(symbol, rhs);
@@ -392,7 +411,8 @@ public class TypesAsValuesPhase extends Phase {
                     Tree newArrayfun = gen.mkRef(tree.pos,
                                                  typeAsValue(targs[0].pos,
                                                              targs[0].type,
-                                                             currentOwner),
+                                                             currentOwner,
+                                                             EENV),
                                                  defs.TYPE_NEWARRAY());
                     return gen.mkApplyTV(newArrayfun, targs, vargs);
                 } else
@@ -436,7 +456,8 @@ public class TypesAsValuesPhase extends Phase {
                         for (int i = 0; i < targs.length; ++i)
                             finalVArgs[i] = typeAsValue(targs[i].pos,
                                                         targs[i].type,
-                                                        currentOwner);
+                                                        currentOwner,
+                                                        EENV);
                         System.arraycopy(newVArgs, 0,
                                          finalVArgs, targs.length,
                                          newVArgs.length);
@@ -486,9 +507,9 @@ public class TypesAsValuesPhase extends Phase {
             if (typSym.isAbstractType())
                 rhs = Tree.Empty;
             else if (typSym.isClass())
-                rhs = scalaClassType(typSym.pos, typSym.type(), accSym);
+                rhs = scalaClassType(typSym.pos, typSym.type(), accSym, EENV);
             else
-                rhs = typeAsValue(typSym.pos, typSym.type(), accSym);
+                rhs = typeAsValue(typSym.pos, typSym.type(), accSym, EENV);
             return gen.DefDef(accSym, rhs);
         }
 
@@ -527,6 +548,10 @@ public class TypesAsValuesPhase extends Phase {
 
             int[] displayCode = getDisplayCode(computeDisplay(clsSym));
 
+            Pair attrRef = refinements(clsSym.info());
+            int[] refinementCode =
+                refinementCode((ArrayList)attrRef.fst, (HashMap)attrRef.snd);
+
             Tree[] tcArgs = new Tree[] {
                 gen.mkIntLit(pos, level(clsSym)),
                 gen.mkStringLit(pos, prims.getJREClassName(clsSym)),
@@ -536,7 +561,8 @@ public class TypesAsValuesPhase extends Phase {
                 gen.mkIntLit(pos, zCount),
                 gen.mkIntLit(pos, mCount),
                 gen.mkIntLit(pos, pCount),
-                mkNewIntLitArray(pos, displayCode, owner)
+                mkNewIntLitArray(pos, displayCode, owner),
+                mkNewIntLitArray(pos, refinementCode, owner)
             };
 
             Symbol tcConst = defs.TYPECONSTRUCTOR_CLASS.primaryConstructor();
@@ -613,21 +639,29 @@ public class TypesAsValuesPhase extends Phase {
             TreeList parentTypes = new TreeList();
             for (int i = 0; i < parents.length; ++i) {
                 Type parent = parents[i];
-                if (!parent.symbol().isJava())
-                    parentTypes.append(typeAsValue(pos, parent, insSym, tEnv));
+                if (!parent.symbol().isJava()) {
+                    Tree parentType =
+                        typeAsValue(pos, parent, insSym, tEnv);
+                    parentTypes.append(parentType);
+                }
             }
-
             Tree parentsArray = gen.mkNewArray(pos,
                                                defs.SCALACLASSTYPE_TYPE(),
                                                parentTypes.toArray(),
                                                insSym);
+            Tree refArray = mkRefinementArray(pos,
+                                              refinements(clsSym.members()),
+                                              insSym,
+                                              tEnv);
+
             Tree instFun =
                 gen.Select(pos,
                            gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
                            defs.TYPECONSTRUCTOR_INSTANTIATE());
             Tree[] instArgs = new Tree[] {
                 gen.mkLocalRef(pos, vparams[0]),
-                parentsArray
+                parentsArray,
+                refArray
             };
             Tree elseP = gen.mkApply_V(pos, instFun, instArgs);
 
@@ -637,12 +671,34 @@ public class TypesAsValuesPhase extends Phase {
             return gen.DefDef(insSym, gen.mkBlock(pos, instValDef, ifExpr));
         }
 
+        private Tree mkRefinementArray(int pos,
+                                       ArrayList refinements,
+                                       Symbol owner,
+                                       TEnv env) {
+            TreeList refs = new TreeList();
+            Symbol refClass = defs.REFINEMENT_CLASS;
+
+            Iterator refIt = refinements.iterator();
+            while (refIt.hasNext()) {
+                Refinement ref = (Refinement)refIt.next();
+                Tree[] args = {
+                    gen.mkIntLit(pos, ref.hash),
+                    typeAsValue(pos, ref.type, owner, env)
+                };
+                Tree constr = gen.mkPrimaryConstructorGlobalRef(pos, refClass);
+                refs.append(gen.New(pos, gen.mkApply_V(constr, args)));
+            }
+
+            Type refType = defs.REFINEMENT_TYPE();
+            return gen.mkNewArray(pos, refType, refs.toArray(), owner);
+        }
+
         /**
          * Generate code to test if the given expression is an
          * instance of the given type.
          */
         private Tree genInstanceTest(int pos, Tree expr, Type tp) {
-            Tree tpVal = typeAsValue(pos, tp, currentOwner);
+            Tree tpVal = typeAsValue(pos, tp, currentOwner, EENV);
             Tree fun = gen.Select(pos, tpVal, defs.TYPE_ISINSTANCE());
             return gen.mkApply_V(pos, fun, new Tree[] { expr });
         }
@@ -651,7 +707,7 @@ public class TypesAsValuesPhase extends Phase {
          * Generate code to cast the given value to the given type.
          */
         private Tree genTypeCast(int pos, Tree expr, Type tp) {
-            Tree tpVal = typeAsValue(pos, tp, currentOwner);
+            Tree tpVal = typeAsValue(pos, tp, currentOwner, EENV);
             Tree fun = gen.Select(pos, tpVal, defs.TYPE_CHECKCASTABILITY());
             Tree checkCastCall = gen.mkApply_V(pos, fun, new Tree[] { expr });
             return gen.mkAsInstanceOf(pos, checkCastCall, tp);
@@ -692,10 +748,13 @@ public class TypesAsValuesPhase extends Phase {
                 } else if (basicTypes.containsKey(sym)) {
                     return gen.mkGlobalRef(pos, (Symbol)basicTypes.get(sym));
                 } else if (sym.isJava()) {
-                    assert args.length == 0;
+                    assert args.length == 0
+                        : Debug.show(sym) + " " + args.length;
                     return javaType(pos, sym);
                 } else if (!sym.owner().isMethod()) {
                     // Reference to a "global" type.
+                    if (owner == null)
+                        throw new Error("null owner for " + Debug.show(tp));
                     return scalaClassType(pos, tp, owner, env);
                 } else {
                     assert !isValuePrefix(pre) : tp;
@@ -703,28 +762,58 @@ public class TypesAsValuesPhase extends Phase {
                 }
 
             case SingleType(Type pre, Symbol sym):
-                Tree constr =
-                    gen.mkPrimaryConstructorGlobalRef(pos, SINGLETYPE_CLASS);
-                Tree[] args = new Tree[] { gen.mkRef(pos, pre, sym) };
-                return gen.New(pos, gen.mkApply_V(constr, args));
+                return singleType(pos, pre, sym);
+
+            case CompoundType(Type[] parts, Scope members):
+                return compoundType(pos, parts, members, owner, env);
+
+            case MethodType(Symbol[] vparams, Type result):
+                return methodType(pos, vparams, result, owner, env);
 
             default:
                 throw global.fail("unexpected type: ", tp);
             }
         }
 
-        private Tree typeAsValue(int pos, Type tp, Symbol owner) {
-            return typeAsValue(pos, tp, owner, new TEnv());
-        }
-
         private Tree javaType(int pos, Symbol sym) {
+            Tree constr =
+                gen.mkPrimaryConstructorGlobalRef(pos,
+                                                  defs.JAVACLASSTYPE_CLASS);
             Tree nameLit = gen.mkStringLit(pos, prims.getJREClassName(sym));
-            Tree getRef = gen.mkGlobalRef(pos, defs.JAVATYPEREPOSITORY_GET());
-            return gen.mkApply_V(pos, getRef, new Tree[] { nameLit });
+            Tree[] args = new Tree[] { nameLit };
+            return gen.New(pos, gen.mkApply_V(constr, args));
         }
 
-        private Tree scalaClassType(int pos, Type tp, Symbol owner) {
-            return scalaClassType(pos, tp, owner, new TEnv());
+        private Tree singleType(int pos, Type pre, Symbol sym) {
+            Tree constr =
+                gen.mkPrimaryConstructorGlobalRef(pos, defs.SINGLETYPE_CLASS);
+            Tree[] args = new Tree[] { gen.mkRef(pos, pre, sym) };
+            return gen.New(pos, gen.mkApply_V(constr, args));
+        }
+
+        private Tree compoundType(int pos,
+                                  Type[] parts,
+                                  Scope members,
+                                  Symbol owner,
+                                  TEnv env) {
+            Tree[] partsT = new Tree[parts.length];
+            for (int i = 0; i < parts.length; ++i)
+                partsT[i] = typeAsValue(pos, parts[i], owner, env);
+
+            Tree refinementArray =
+                mkRefinementArray(pos,
+                                  (ArrayList)refinements(parts, members).fst,
+                                  owner,
+                                  env);
+
+            Tree[] constrArgs = new Tree[] {
+                gen.mkNewArray(pos, defs.CLASSTYPE_TYPE(), partsT, owner),
+                refinementArray
+            };
+            Tree constr =
+                gen.mkPrimaryConstructorGlobalRef(pos,
+                                                  defs.COMPOUNDTYPE_CLASS);
+            return gen.New(pos, gen.mkApply_V(constr, constrArgs));
         }
 
         private Tree scalaClassType(int pos, Type tp, Symbol owner, TEnv env) {
@@ -743,7 +832,7 @@ public class TypesAsValuesPhase extends Phase {
                     for (int i = 0; i < args.length; ++i)
                         elems[i] = typeAsValue(pos, args[perm[i]], owner, env);
                     insArgs = new Tree[] {
-                        gen.mkNewArray(pos, typeType, elems, owner)
+                        gen.mkNewArray(pos, defs.TYPE_TYPE(), elems, owner)
                     };
                 } else
                     insArgs = Tree.EMPTY_ARRAY;
@@ -753,6 +842,24 @@ public class TypesAsValuesPhase extends Phase {
             default:
                 throw Debug.abort("unexpected type: ", tp);
             }
+        }
+
+        private Tree methodType(int pos,
+                                Symbol[] args,
+                                Type result,
+                                Symbol owner,
+                                TEnv env) {
+            Tree[] argTypes = new Tree[args.length];
+            for (int i = 0; i < argTypes.length; ++i)
+                argTypes[i] = typeAsValue(pos, args[i].info(), owner, env);
+            Tree[] constrArgs = new Tree[] {
+                gen.mkNewArray(pos, defs.TYPE_TYPE(), argTypes, owner),
+                typeAsValue(pos, result, owner, env)
+            };
+            Tree constr =
+                gen.mkPrimaryConstructorGlobalRef(pos, defs.METHODTYPE_CLASS);
+
+            return gen.New(pos, gen.mkApply_V(constr, constrArgs));
         }
 
         private final int VARIANT =
@@ -928,6 +1035,113 @@ public class TypesAsValuesPhase extends Phase {
         }
     }
 
+    /*Pair<ArrayList<Refinement>, HashMap<Refinement,Origin>>*/
+    private Pair refinements(Type[] parents, Scope members) {
+        HashMap attribution = new HashMap();
+
+        ArrayList/*<Refinement>*/ ref = refinements(members);
+        attributeRefinements(attribution, ref, -1);
+
+        for (int i = parents.length; i > 0; --i) {
+            ArrayList parentRef =
+                (ArrayList)(refinements(parents[i - 1]).fst);
+            attributeRefinements(attribution, parentRef, i);
+            ref = mergeRefinements(parentRef, ref);
+        }
+
+        return new Pair(ref, attribution);
+    }
+
+    /*Pair<ArrayList<Refinement>, HashMap<Refinement,Origin>>*/
+    private Pair refinements(Type tp) {
+        return refinements(tp.parents(), tp.members());
+    }
+
+    /** Return the refinements introduced by the given members */
+    private ArrayList/*<Refinement>*/ refinements(Scope members) {
+        ArrayList/*<Refinement>*/ myRefs = new ArrayList();
+        Scope.SymbolIterator membersIt = members.iterator();
+        while (membersIt.hasNext()) {
+            Symbol mem = membersIt.next();
+            Symbol origMem = originalSymbol(mem);
+            if (origMem != Symbol.NONE && !mem.info().isSameAs(origMem.info()))
+                myRefs.add(new Refinement(origMem, mem.info()));
+        }
+        Collections.sort(myRefs);
+        return myRefs;
+    }
+
+    private ArrayList mergeRefinements(ArrayList rs1, ArrayList rs2) {
+        ArrayList/*<Refinement>*/ res =
+            new ArrayList(rs1.size() + rs2.size());
+
+        int i1 = 0, i2 = 0;
+        while (i1 < rs1.size() && i2 < rs2.size()) {
+            Refinement r1 = (Refinement)rs1.get(i1);
+            Refinement r2 = (Refinement)rs2.get(i2);
+            int cmp = r1.compareTo(r2);
+            if (cmp < 0) {
+                res.add(r1);
+                ++i1;
+            } else if (cmp > 0) {
+                res.add(r2);
+                ++i2;
+            } else {
+                assert r2.type.isSubType(r1.type) : r2 + " !<: " + r1;
+                res.add(r2);
+                ++i1;
+                ++i2;
+            }
+        }
+        while (i1 < rs1.size())
+            res.add(rs1.get(i1++));
+        while (i2 < rs2.size())
+            res.add(rs2.get(i2++));
+
+        return res;
+    }
+
+    private void attributeRefinements(HashMap attribution,
+                                      ArrayList refs,
+                                      int parentIndex) {
+        for (int i = 0; i < refs.size(); ++i)
+            attribution.put(refs.get(i), new Origin(parentIndex, i));
+    }
+
+    private int[] refinementCode(ArrayList refinement, HashMap attribution) {
+        int[] code = new int[1 + 2 * refinement.size()];
+        int pc = 0;
+
+        code[pc++] = refinement.size();
+        Iterator refIt = refinement.iterator();
+        while (refIt.hasNext()) {
+            Origin orig = (Origin)attribution.get(refIt.next());
+            code[pc++] = orig.parentIndex;
+            code[pc++] = orig.position;
+        }
+        assert pc == code.length;
+
+        return code;
+    }
+
+//     private Symbol originalSymbol(Symbol sym) {
+//         Symbol orig = originalSymbol0(sym);
+//         if (orig != Symbol.NONE)
+//         System.out.println("orig for " + Debug.show(sym) + ": " + Debug.show(orig));
+//         return orig;
+//     }
+
+    private Symbol originalSymbol(Symbol sym) {
+        Type[] closure = sym.owner().closure();
+        for (int i = closure.length; i > 0; --i) {
+            Type parent = closure[i - 1];
+            Symbol maybeOrig = sym.overriddenSymbol(parent, false);
+            if (maybeOrig != Symbol.NONE)
+                return maybeOrig;
+        }
+        return Symbol.NONE;
+    }
+
     //////////////////////////////////////////////////////////////////////
 
     private static class TEnv {
@@ -970,6 +1184,60 @@ public class TypesAsValuesPhase extends Phase {
             this.symbol = symbol;
             this.parentIndex = parentIndex;
             this.position = position;
+        }
+    }
+
+    private static class Origin {
+        public final int parentIndex;
+        public final int position;
+        public Origin(int parentIndex, int position) {
+            this.parentIndex = parentIndex;
+            this.position = position;
+        }
+    }
+
+    private static class Pair {
+        public final Object fst, snd;
+        public Pair(Object fst, Object snd) {
+            this.fst = fst;
+            this.snd = snd;
+        }
+    }
+
+    private class Refinement implements Comparable {
+        public final Symbol member;
+        public final int hash;
+        public final Type type;
+
+        private final SymbolNameWriter symWriter = new SymbolNameWriter();
+
+        public Refinement(Symbol member, Type type) {
+            this.member = member;
+            this.hash = memberHash(member);
+            this.type = type;
+        }
+
+        public boolean equals(Object thatO) {
+            return (thatO instanceof Refinement) && (compareTo(thatO) == 0);
+        }
+
+        public int compareTo(Object thatO) {
+            Refinement that = (Refinement)thatO;
+            if (this.hash < that.hash)
+                return -1;
+            else if (this.hash > that.hash)
+                return 1;
+            else
+                return 0;
+        }
+
+        public String toString() {
+            return "<" + hash + " " + member + " : " + type + ">";
+        }
+
+        private int memberHash(Symbol sym) {
+            // TODO use FNV hash
+            return symWriter.toString(sym).hashCode();
         }
     }
 }

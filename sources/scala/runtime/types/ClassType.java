@@ -39,8 +39,36 @@ public class ClassType extends Type {
     }
 
     public boolean isSubType(Type that) {
+        return (that instanceof ClassType
+                && isSubClassType((ClassType)that))
+            || (that instanceof CompoundType
+                && isSubCompoundType((CompoundType)that));
+    }
+
+    protected boolean isSubClassType(ClassType that) {
+        return that.clazz.isAssignableFrom(this.clazz);
+    }
+
+    protected final boolean isSubCompoundType(CompoundType that) {
+        for (int i = 0; i < that.components.length; ++i) {
+            if (!isSubType(that.components[i]))
+                return false;
+        }
+
+        return hasSubRefinements(that.refinements);
+    }
+
+    protected boolean hasSubRefinements(Refinement[] thatRefinements) {
+        return thatRefinements.length == 0;
+    }
+
+    public boolean isSameAs(Type that) {
         return (that instanceof ClassType)
-            && ((ClassType)that).clazz.isAssignableFrom(this.clazz);
+            && (((ClassType)that).clazz == this.clazz);
+    }
+
+    public int hashCode() {
+        return clazz.hashCode();
     }
 
     public String toString() {
