@@ -306,6 +306,7 @@ class GenJVM {
                     generatedType = resType;
                     break;
 
+                case ID:
                 case EQ: case NE: case LT: case LE: case GE: case GT:
                 case ZNOT: case ZOR: case ZAND:
                     JLabel falseLabel = new JLabel();
@@ -654,7 +655,7 @@ class GenJVM {
                 Tree[] allArgs = extractPrimitiveArgs((Tree.Apply)tree);
 
                 switch (prim) {
-                case EQ: case NE: case LT: case LE: case GE: case GT:
+                case ID: case EQ: case NE: case LT: case LE: case GE: case GT:
                     assert allArgs.length == 2;
                     genCompPrim(ctx, prim, allArgs, target, when);
                     return;
@@ -807,7 +808,10 @@ class GenJVM {
             intCompareWithZero |= isIntZero;
         }
 
-        if (maxType.isReferenceType()) {
+        if (prim == Primitive.ID) {
+            if (when) ctx.code.emitIF_ACMPEQ(target);
+            else ctx.code.emitIF_ACMPNE(target);
+        } else if (maxType.isReferenceType()) {
             // Comparison between two references. We inline the code
             // for the predefined (and final) "=="/"!=" operators,
             // which check for null values and then forward the call
@@ -1054,7 +1058,7 @@ class GenJVM {
             case ZARRAY_LENGTH : case BARRAY_LENGTH : case SARRAY_LENGTH :
             case CARRAY_LENGTH : case IARRAY_LENGTH : case LARRAY_LENGTH :
             case FARRAY_LENGTH : case DARRAY_LENGTH : case OARRAY_LENGTH :
-            case IS : case AS :
+            case IS : case AS : case ID :
             case CONCAT :
             case THROW :
             case AS_UVALUE :
