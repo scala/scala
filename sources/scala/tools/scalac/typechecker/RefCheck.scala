@@ -893,7 +893,6 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
         ts.append(getTypeMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
       if (!isTrueSubClassOfCaseClass(clazz)) {
-        System.out.println("" + clazz + " gets tag method");
         ts.append(gen.mkTagMethod(clazz));
       }
       if (global.target != Global.TARGET_MSIL)
