@@ -313,7 +313,7 @@ exec_dtd2scala() {
 
     # compute Java classpath
     append_path JAVA_CLASSPATH DTD2SCALA_CLASSES;
-    append_path JAVA_CLASSPATH XERCES_PATH;
+    append_path JAVA_CLASSPATH XERCES_CLASSES;
 
     # invoke Java
     exec_java \
