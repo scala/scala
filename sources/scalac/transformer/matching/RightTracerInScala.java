@@ -336,8 +336,7 @@ public class RightTracerInScala extends TracerInScala  {
 
 
 	    // "freshening"
-	    scalac.ast.SubstTransformer st = new SubstTransformer(cf.unit.global, cf.make);
-	    st.pushSymbolSubst( freshenMap );
+	    TreeCloner st = new TreeCloner(cf.unit.global, freshenMap, Type.IdMap );
 	    pat = st.transform( pat );
             //System.out.println("RightTracerInScala:: -pat( after subst ) :"+pat);
 
