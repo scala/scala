@@ -260,7 +260,7 @@ library-doc	: .latest-library-sdc
 .latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
 	@$(make) jc target=DTD2SCALA DTD2SCALA_JC_FILES='$?'
 	touch $@
-	
+
 .latest-scalap	: $(SCALAP_SC_FILES)
 	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
 	touch $@
@@ -276,7 +276,6 @@ $(SCRIPTS_WRAPPER)	: MACRO_TOOLS_CLASSES     ?= $(PROJECT_OUTPUTDIR)
 $(SCRIPTS_WRAPPER)	: MACRO_BCEL_CLASSES      ?= $(BCEL_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
-$(SCRIPTS_WRAPPER)	: MACRO_XERCES_CLASSES    ?= $(XERCES_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_JAVA_ARGS         ?= -enableassertions
 $(SCRIPTS_WRAPPER)	: $(PROJECT_ROOT)/Makefile
 $(SCRIPTS_WRAPPER)	: $(PROJECT_ROOT)/Makefile.config
@@ -292,7 +291,6 @@ $(SCRIPTS_WRAPPER)	: $(SCRIPTS_WRAPPER).tmpl
 	    $(call SCRIPTS_WRAPPER_MACRO,BCEL_CLASSES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,FJBG_CLASSES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,MSIL_CLASSES) \
-	    $(call SCRIPTS_WRAPPER_MACRO,XERCES_CLASSES) \
 	    $(call SCRIPTS_WRAPPER_MACRO,JAVA_ARGS) \
 	    $@.tmpl > $@
 	@macros=`$(SED) -n -es'@.*{#\(.*\)#}.*@\1@p' < $@`; \
