@@ -59,6 +59,30 @@ object Test with Application {
   assertEquals( sc.children.toList, List(Text("World"),Text("42"), 'date("now!")) );
   assertEquals( sc.toXML, 'hello("World42",'date("now!")).toXML );
 
+  import scala.xml.Node ;
+
+  def foo( m:Node ):String = m match {
+    case <hello/> => "hello node"
+    case <hallo ></hallo > => "hallo node"
+    case <test>{ z }</test> => "test node:"+z
+    case <list>{ e1:Node }{ e2:Node }{ _* }</list> => e1.toXML + e2.toXML;
+  }
+
+  assertEquals( foo(<hello/>), "hello node" );
+  assertEquals( foo(<hallo/>), "hallo node" );
+  assertEquals( foo(<test>42</test>), "test node:42" );
+  assertEquals( foo(<list><a/><b><c/></b><d/><d/></list>),
+     	        <a/>.toXML + <b><c/></b>.toXML );
+
+  val rows = <tr>
+		<td>1.1</td><td>1.2</td>
+             </tr>
+             <tr>
+		<td>2.1</td><td>2.2</td>
+             </tr>;
+
+  assertEquals( rows, List('tr('td("1.1"),'td("1.2")),
+			   'tr('td("2.1"),'td("2.2"))));
   /* examples that MUST fail
 
   neg(1)
@@ -69,7 +93,6 @@ object Test with Application {
           </hello>
 
   */
-
 
 }
 
