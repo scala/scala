@@ -9,10 +9,12 @@
 
 package scalac.transformer;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Iterator;
 
 import scalac.Global;
@@ -57,7 +59,7 @@ public class ClassExpander {
     private final Template template;
 
     /** The body of the expanding class */
-    private final TreeList body;
+    private final LinkedList/*<Tree>*/ body;
 
     /** The type map to apply to inlined symbols and trees */
     private final SymbolSubstTypeMap map;
@@ -79,7 +81,7 @@ public class ClassExpander {
         this.members = clasz.members().cloneScope();
         this.template = gen.Template(template.pos, template.symbol(),
             Tree.cloneArray(template.parents), template.body);
-        this.body = new TreeList();
+        this.body = new LinkedList();
         this.map = new SymbolSubstTypeMap();
         this.cloner = new SymbolCloner(
             global.freshNameCreator, new HashMap(), map.getSymbols());
@@ -97,9 +99,10 @@ public class ClassExpander {
             cloner.owners.put(mixin.primaryConstructor(), clasz);
             inlineMixinTParams(type);
             Tree.Apply constr = (Tree.Apply)template.parents[i];
-            inlineMixinVParams(mixin.valueParams(), constr.args);
+            Symbol[] vparams = mixin.valueParams();
+            inlineMixinVParams(vparams, constr.args, 0);
             handleMixinInterfaceMembers(mixin);
-            inlineMixinMembers(mixin.nextInfo().members(), impl);
+            inlineMixinMembers(mixin.nextInfo().members(), impl, vparams.length);
             parents[i] = Type.TypeRef(prefix, iface, args);
             template.parents[i] = gen.mkPrimaryConstr(constr.pos, parents[i]);
             state = i;
@@ -122,8 +125,8 @@ public class ClassExpander {
                 return super.transform(tree);
             }
         };
-        body.append(superFixer.transform(template.body));
-        template.body = body.toArray();
+        body.addAll(Arrays.asList(superFixer.transform(template.body)));
+        template.body = (Tree[])body.toArray(new Tree[body.size()]);
         // !!! *1 fix ExpandMixinsPhase.transformInfo and remove next line
         clasz.updateInfo(Type.compoundType(parents, members, clasz));
         state = 0;
@@ -146,7 +149,7 @@ public class ClassExpander {
         }
     }
 
-    private void inlineMixinVParams(Symbol[] params, Tree[] args) {
+    private void inlineMixinVParams(Symbol[] params, Tree[] args, int fstPos) {
         for (int i = 0; i < params.length; i++) {
             Symbol member = cloner.cloneSymbol(params[i], true);
             member.flags &= ~Modifiers.PARAM;
@@ -157,7 +160,7 @@ public class ClassExpander {
         for (int i = 0; i < params.length; i++) {
             Symbol member = map.lookupSymbol(params[i]);
             member.setType(map.apply(member.type()));
-            body.append(gen.ValDef(member, args[i]));
+            body.add(fstPos + i, gen.ValDef(member, args[i]));
         }
     }
 
@@ -189,7 +192,7 @@ public class ClassExpander {
         }
     }
 
-    private void inlineMixinMembers(Scope symbols, Template mixin) {
+    private void inlineMixinMembers(Scope symbols, Template mixin, int fstPos) {
         // The map names is used to implement an all or nothing
         // strategy for overloaded symbols.
         Map/*<Name,Name>*/ names = new HashMap();
@@ -251,6 +254,7 @@ public class ClassExpander {
                 }
             }
         };
+        int pos = 0;
         for (int i = 0; i < mixin.body.length; i++) {
             Tree tree = mixin.body[i];
             // Inline local code and members whose symbol has been cloned.
@@ -262,7 +266,8 @@ public class ClassExpander {
                     clone.setType(map.apply(clone.type()));
                 }
                 clones.clear();
-                body.append(mixinTreeCloner.transform(tree));
+                body.add(fstPos + pos, mixinTreeCloner.transform(tree));
+                ++pos;
             }
         }
     }
