@@ -2,128 +2,124 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.util;
 
-import java.util.HashMap;
+/** This class implements the common part of TermName and TypeName. */
+public abstract class Name {
 
-public final class Name {
+    //########################################################################
+    // Public Fields
 
-/** address in the name memory
- */
+    /** The unique identifier */
     public final int index;
 
-    private final String string;
+    //########################################################################
+    // Private Fields
 
-/** hashtable for finding term names quickly
- */
-    private static HashMap/*<String,TermName>*/ terms = new HashMap();
+    /** The related term name */
+    private final TermName term;
 
-    private final Name term;
-    private Name type;
+    /** The related type name (null if not yet created) */
+    private TypeName type;
 
-/** Constructor
- */
-    private Name(String string, Name dual) {
-        this.string = string;
-        this.index = dual != null ? dual.index + 1 : 2 * terms.size();
-        this.term = dual != null ? dual : this;
-        this.type = dual != null ? this : null;
-        if (dual == null) terms.put(string, this);
+    //########################################################################
+    // Protected Constructors
+
+    /** Initializes this instance. */
+    protected Name(int index, TermName term) {
+        this.index = index;
+        this.term = term == null ? (TermName)this : term;
+        this.type = term == null ? null : (TypeName)this;
     }
 
-/** create a term name from the bytes in cs[offset..offset+len-1].
- *  assume that bytes are in ascii format.
- */
-    public static Name fromAscii(byte cs[], int offset, int len) {
-        return fromString(SourceRepresentation.ascii2string(cs, offset, len));
+    //########################################################################
+    // Public Factories
+
+    /** Returns the term name with given ASCII representation. */
+    public static TermName fromAscii(byte[] bytes, int start, int count) {
+        return TermName.fromAscii(bytes, start, count);
     }
 
-/** create a name from the characters in string s
- */
-    public static Name fromString(String s) {
-        Object value = terms.get(s);
-        if (value != null) return (Name)value;
-        return new Name(s, null);
+    /** Returns the term name with given string representation. */
+    public static TermName fromString(String string) {
+        return TermName.fromString(string);
     }
 
-/** return the string representation of this name
- */
-    public String toString() {
-        return string;
+    //########################################################################
+    // Public Methods
+
+    /** Is this name a variable identifier? */
+    public final boolean isVariable() {
+        char first = charAt(0);
+        return (('a' <= first && first <= 'z') || first == '_')
+            && this != Names.false_
+            && this != Names.true_
+            && this != Names.null_;
     }
 
-/** is this name a term name?
- */
-    public boolean isTermName() {
+    /** Is this name a term name? */
+    public final boolean isTermName() {
         return this == term;
     }
 
-/** is this name a type name?
- */
-    public boolean isTypeName() {
+    /** Is this name a type name? */
+    public final boolean isTypeName() {
         return this == type;
     }
 
-/** create a term name corresponding to this name
- */
-    public Name toTermName() {
+    /** Returns the term name with the same representation. */
+    public final TermName toTermName() {
         return term;
     }
 
-/** create a type name corresponding to this name
- */
-    public Name toTypeName() {
-        return type != null ? type : (type = new Name(string, this));
+    /** Returns the type name with the same representation. */
+    public final TypeName toTypeName() {
+        return type != null ? type : (type = new TypeName(term));
     }
 
-/** return the string hash value of this name
- */
-    public int hashCode() {
+    /** Returns the result of "toString().length()". */
+    public final int length() {
+        return toString().length();
+    }
+
+    /** Returns the result of "toString().charAt(index)". */
+    public final char charAt(int index) {
+        return toString().charAt(index);
+    }
+
+    /** Returns the result of "toString().indexOf(ch)". */
+    public final int indexOf(char ch) {
+        return toString().indexOf(ch);
+    }
+
+    /** Returns the result of "toString().indexOf(ch, start)". */
+    public final int indexOf(char ch, int start) {
+        return toString().indexOf(ch, start);
+    }
+
+    /** Returns the result of "toString().lastIndexOf(ch)". */
+    public final int lastIndexOf(char ch) {
+        return toString().lastIndexOf(ch);
+    }
+
+    /** Returns the result of "toString().lastIndexOf(ch, start)". */
+    public final int lastIndexOf(char ch, int start) {
+        return toString().lastIndexOf(ch, start);
+    }
+
+    /** Returns the hash code of this name. */
+    public final int hashCode() {
         return index;
     }
 
-/** returns the length of this name
- */
-    public int length() {
-        return string.length();
+    /** Returns the string representation of this name. */
+    public String toString() {
+        return term.toString();
     }
 
-/** returns i'th char of this name
- */
-    public char charAt(int i) {
-        return string.charAt(i);
-    }
-
-/** returns first occurrence of char c in this name, -1 if not found
- */
-    public int indexOf(char c) {
-        return indexOf(c, 0);
-    }
-
-/** returns first occurrence of char c in this name from `start', -1 if not found
- */
-    public int indexOf(char c, int start) {
-        return string.indexOf(c, start);
-    }
-
-/** returns last occurrence of char c in this name, -1 if not found.
- */
-    public int lastIndexOf(char c) {
-        return string.lastIndexOf(c);
-    }
-
-/** is this name a variable identifier?
- */
-    public boolean isVariable() {
-        char first = string.charAt(0);
-        return ((first >= 'a' && first <= 'z') || first == '_') &&
-            this != Names.null_ &&
-            this != Names.true_ &&
-            this != Names.false_;
-    }
-
+    //########################################################################
 }

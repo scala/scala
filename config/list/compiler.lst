@@ -164,6 +164,8 @@ util/PrefixMatcher.java
 util/Reporter.java
 util/SourceRepresentation.java
 util/Strings.java
+util/TermName.java
+util/TypeName.java
 util/TypeNames.java
 util/UniqueID.java
 
