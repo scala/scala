@@ -7,82 +7,72 @@
   <!ENTITY qAttributeName  '<qstring ref="attributeName"/>'> 
   <!ENTITY cAttributeName '<cstring ref="attributeName"/>'> 
   <!ENTITY space '<![CDATA[ ]]>'> 
-  <!ENTITY br '<br/>'> 
+  <!ENTITY br ''> 
 ]>
 <!-- generalize to abstract syntax instead of concrete ? -->
 <!-- the formatting should be done by a code beautifier -->
 <template>
   /* this file is generated from a DTD using ObjectTemplate.scala.xml */
-  <br/>
   <!-- package/ -->
 import scala.xml._ ;&br;
-import scala.collection.Map ;<br/>
-import scala.collection.mutable.HashMap ;<br/>
-  <br/>
+import scala.collection.Map ;
+import scala.collection.mutable.HashMap ;
+  
   /** the following elements are bound
   <elementBinding>
-    * &elementName; : &elementContentModel; { 
-      <attributeBinding>&attributeName;</attributeBinding>&space;
-    }
+    * &elementName; : &elementContentModel; {<attributeBinding>&attributeName;</attributeBinding>&space;}
   </elementBinding>
   **/
-  <br/>
-  object <string ref="objectName"/> {<inc/><br/>
+  
+  object <string ref="objectName"/> {
 
     type childrenT = scala.Seq[scala.xml.Node];
-    type attribMapT = HashMap[String,String];<br/>
-    type NodeConstructorType = (childrenT,attribMapT) =&gt; scala.xml.Node;<br/>
+    type attribMapT = HashMap[String,String];
+    type NodeConstructorType = (childrenT,attribMapT) =&gt; scala.xml.Node;
 
     <elementBinding>
       def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = 
-    new &ccElementName;(ch:_*) { <inc/><br/>
-      def attributes : Map[String,String] = attrs; <br/>   
+    new &ccElementName;(ch:_*) { 
+      def attributes : Map[String,String] = attrs;    
       <attributeAssign>    
-      override val &cAttributeName; = attrs.get(&qAttributeName;); <br/>
+      override val &cAttributeName; = attrs.get(&qAttributeName;); 
       </attributeAssign>
-      val attribHashCode: int = attrs.toList.hashCode() ;<br/>
-    };<dec/><br/>
-    def &ccElementName;( ch:Node* ) = new &ccElementName;(ch:_*){<inc/><br/>
-      def attributes = scala.collection.immutable.ListMap.Empty[String,String];<br/>
+      val attribHashCode: int = attrs.toList.hashCode() ;
+    };
+    def &ccElementName;( ch:Node* ) = new &ccElementName;(ch:_*){
+      def attributes = scala.collection.immutable.ListMap.Empty[String,String];
       val attribHashCode = 0;
     };
-      abstract case class &ccElementName;( ch:Node* ) extends scala.xml.AttributedNode {<inc/><br/>
-          def label = &qElementName;; <br/>
-          def children = ch;<br/>
+      abstract case class &ccElementName;( ch:Node* ) extends scala.xml.AttributedNode {
+          def label = &qElementName;; 
+          def children = ch;
       <attributeBinding>
-        val &cAttributeName; : scala.Option[String] = scala.None;  
-        /*     overridden at parse time */
-      </attributeBinding><dec/><br/>
+        val &cAttributeName; : scala.Option[String] = scala.None;  /* o'ridden at parse time */
+      </attributeBinding>
       }
     </elementBinding>
-    <br/>
+    
 
-    def load( filename:String ):Node = 
-       load( filename, <string ref="compressDefault"/> );<br/>
-<br/>
-    def load( filename:String, _compress:boolean ):scala.xml.Node = {<inc/><br/>
+    def load( filename:String ):Node = load( filename, <string ref="compressDefault"/> );
 
-  val fAdapter = new BindingFactoryAdapter  {<inc/><br/>
+    def load( filename:String, _compress:boolean ):scala.xml.Node = {
+      val fAdapter = new BindingFactoryAdapter  {
+        val f = { 
+          val res = new HashMap[String, NodeConstructorType] ;
+          <elementBinding>
+          res.update( &qElementName;, (x:childrenT,aMap:attribMapT) => constr_&ccElementName;(x,aMap));</elementBinding>
+          res;
+        }
 
-  val f = { <inc/><br/>
-    val res = new HashMap[String, NodeConstructorType] ;<br/>
-    <elementBinding>
-    res.update( &qElementName;, 
-    (x:childrenT,aMap:attribMapT) => constr_&ccElementName;(x,aMap));
-    </elementBinding><br/>
-    res;<dec/><br/>
-  }<br/>
-
-  val g = { <inc/><br/>
-    val res = new HashMap[scala.String, boolean] ;
-    <elementBinding>
-    res.update( &qElementName;, <string ref="elementContainsText"/>);<br/>
-  </elementBinding><br/>
-    res;<dec/><br/>
-  }<br/>
-  val compress = _compress ; <dec/><br/>
-  };<dec/><br/>
-  fAdapter.loadXML( filename );<br/>
-  };<dec/><br/>    
+        val g = { 
+          val res = new HashMap[scala.String, boolean] ;
+          <elementBinding>
+          res.update( &qElementName;, <string ref="elementContainsText"/>);</elementBinding>
+          res;
+        }
+        val compress = _compress ; 
+      };
+      fAdapter.loadXML( filename );
+    };    
 }
 </template>

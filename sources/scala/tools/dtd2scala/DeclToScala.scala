@@ -29,103 +29,63 @@ class DeclToScala(fOut:PrintWriter,
     var curAttribs: Map[String,AttrDecl] = null ;  /* of current elem */
 
     def write:Unit = {
-      def writeNode( x:Node ):Unit = x match {
-        case Text(text) =>
-          fOut.print( text );
-        case n:AttributedNode =>
-          n.label match {
-            case "template" => {
-              lookup.update("objectName", objectName);
-              lookup.update("compressDefault", compress.toString());
-              n.children.elements.foreach { n => writeNode(n) }
-            }
-            case "elementBinding" => {
-              for( val decl <- elemMap.values.elements ) {
-                fOut.println();
-                printIndent();
-                lookup += "elementName" -> decl.name;
-                lookup += "elementContainsText" -> decl.containsText.toString();
-                lookup += "elementContentModel" -> decl.contentModel;
-                curAttribs = decl.attribs;
-                n.children.elements.foreach{ n => writeNode( n ) }
+      def writeNode( x:Node ):Unit = {
+        /*Console.println("visiting "+x);*/
+        x match {
+          case Text(text) =>
+            fOut.print( text );
+          case n:AttributedNode =>
+            n.label match {
+              case "template" => {
+                lookup.update("objectName", objectName);
+                lookup.update("compressDefault", compress.toString());
+                n.children.elements.foreach { n => writeNode(n) }
               }
-              curAttribs = null;
-              lookup -= "elementName";
-              lookup -= "elementContainsText";
-            }
-
-            case "attributeAssign" => {
-              for( val aDecl <- curAttribs.keys.elements ) {
-                lookup += "attributeName" -> aDecl;
-                n.children.elements.foreach{ n => writeNode( n ) }
+              case "elementBinding" => {
+                for( val decl <- elemMap.values.elements ) {
+                  lookup += "elementName" -> decl.name;
+                  lookup += "elementContainsText" -> decl.containsText.toString();
+                  lookup += "elementContentModel" -> decl.contentModel;
+                  curAttribs = decl.attribs;
+                  n.children.elements.foreach{ n => writeNode( n ) }
+                }
+                curAttribs = null;
+                lookup -= "elementName";
+                lookup -= "elementContainsText";
               }
-              lookup -= "attributeName";
-            }
-
-            case "attributeBinding" => {
-              for( val aDecl <- curAttribs.keys.elements ) {
-                lookup += "attributeName" -> aDecl;
-                n.children.elements.foreach{ n => writeNode( n ) }
+              case "attributeAssign" => {
+                for( val aDecl <- curAttribs.keys.elements ) {
+                  lookup += "attributeName" -> aDecl;
+                  n.children.elements.foreach{ n => writeNode( n ) }
+                }
+                lookup -= "attributeName";
               }
-              lookup -= "attributeName";
+              case "attributeBinding" => {
+                for( val aDecl <- curAttribs.keys.elements ) {
+                  lookup += "attributeName" -> aDecl;
+                  n.children.elements.foreach{ n => writeNode( n ) }
+                }
+                lookup -= "attributeName";
+              }
+              case "ccstring" => {
+                fOut.print( cookedCap( lookup( n("ref").get ) ));
+              }
+              case "cstring" => {
+                fOut.print( cooked( lookup( n("ref").get ) ));
+              }
+              case "string" => {
+                fOut.print( lookup( n("ref").get ) );
+              }
+              case "qstring" =>  {
+                fOut.print("\"");
+                fOut.print( lookup( n("ref").get ) );
+                fOut.print("\"");
+              }
+              case _ => error("what shall I do with a \""+n.label+"\" node ?")
             }
-            case "ccstring" => {
-              fOut.print( cookedCap( lookup( n("ref").get ) ));
-            }
-            case "cstring" => {
-              fOut.print( cooked( lookup( n("ref").get ) ));
-            }
-            case "string" => {
-              fOut.print( lookup( n("ref").get ) );
-            }
-            case "qstring" =>  {
-
-              fOut.print("\"");
-              fOut.print( lookup( n("ref").get ) );
-              fOut.print("\"");
-            }
-            case "br" => { fOut.println(); printIndent() }
-            case "inc" => fIndent = fIndent + IND_STEP
-            case "dec" => fIndent = fIndent - IND_STEP
-            case _ => error("what shall I do with a \""+n.label+"\" node ?")
-          }
+        }
       }
-
       writeNode( tmpl )
-    }
-  }
-
-  final val IND_STEP:int  = 5;
-
-  var fIndent:int = 0;
-
-  /*
-                    // convenience ! overloaded constructors, have to appear *before*
-    // the class def and need the "final" modifier
-
-    fOut.println( "final def "+clazzName+"(ch:Seq[Element]):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], ch ) ;" );
-
-    printIndent();
-
-    fOut.println( "final def "+clazzName+"( el:Element ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], el::Nil[Element] ) ;" );
-
-    printIndent();
-
-    // might contain text
-    if( decl.contentModel.indexOf("#PCDATA") != -1 ) {
-
-      fOut.println( "final def "+clazzName+"( text:String ):"+clazzName+" = new "+clazzName+"( PCDATA( text ) );" );
-    printIndent();
-
-    }
-
-    */
-
-
-  /** Prints the indent. */
-  def printIndent():Unit = {
-    for (val i<-List.range(0, fIndent)) {
-      fOut.print(' ');
     }
   }
 
@@ -150,6 +110,7 @@ class DeclToScala(fOut:PrintWriter,
 //
 // cooking raw names
 //
+
 /* replace dash, colons with underscore, keywords with appended $ */
 private def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
   for( val i <- List.range( off, raw.length()) ) {
