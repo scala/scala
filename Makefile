@@ -187,7 +187,6 @@ distclean	: clean
 	$(RM) $(TOOLS_JAR_ARCHIVE)
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 	$(RM) $(SCRIPTS_WRAPPER)
-	$(RM) $(ROOT)/support/latex/*.class
 
 sources		: lamplib
 sources		: meta

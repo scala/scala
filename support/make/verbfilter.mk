@@ -7,12 +7,12 @@
 # Usage
 #
 #   make verbfilter[.clean|.distclean]
-#   make [VERBFILTER=<verbfilter-basename>] <*.tex>
+#   make [VERBFILTER=<verbfilter-source-file>] <*.tex>
 #
 ##############################################################################
 # Variables
 #
-# VERBFILTER		 = Verb filter base name
+# VERBFILTER		 = Verb filter source file
 #
 ##############################################################################
 # Examples
@@ -34,6 +34,13 @@
 
 JAVA			?= java
 JAVAC			?= javac
+VERBFILTER		?= $(PROJECT_SUPPORTDIR)/latex/verbfilterScala.java
+
+##############################################################################
+# Values
+
+verbfilter		 = $(VERBFILTER:%.java=%)
+verbfilter_CLASS	 = $(PROJECT_OUTPUTDIR)/$(verbfilter).class
 
 ##############################################################################
 # Commands
@@ -52,7 +59,7 @@ verbfilter.distclean	:
 	        echo $(RM) "$${file%.verb.tex}.tex"; \
 	        $(RM) "$${file%.verb.tex}.tex" ); \
 	done
-	$(RM) $(VERBFILTER:%=%.class)
+	$(RM) $(verbfilter_CLASS)
 
 .PHONY			: verbfilter
 .PHONY			: verbfilter.clean
@@ -61,13 +68,13 @@ verbfilter.distclean	:
 ##############################################################################
 # Rules
 
-%.tex			: %.verb.tex $(VERBFILTER:%=%.class)
-	$(JAVA) -cp $(dir $(VERBFILTER)) $(notdir $(VERBFILTER)) $< $@
+%.tex			: %.verb.tex $(verbfilter_CLASS)
+	$(JAVA) -cp $(dir $(verbfilter_CLASS)) $(notdir $(verbfilter)) $< $@
 
-$(VERBFILTER:%=%.class)	: $(VERBFILTER:%=%.java)
+$(verbfilter_CLASS)	: $(VERBFILTER)
 	$(JAVAC) $?
 
 .PRECIOUS		: %.tex
-.PRECIOUS		: $(VERBFILTER:%=%.class)
+.PRECIOUS		: $(verbfilter_CLASS)
 
 ##############################################################################
