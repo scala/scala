@@ -443,15 +443,6 @@ public class  Global {
         return new SymbolTablePrinter("  ").printType(type).toString();
     }
 
-    /*
-    private StringBuffer appendPrefix(StringBuffer buffer, Type prefix) {
-        if (prefix.isSameAs(definitions.ROOT_TYPE)) return buffer;
-        if (prefix.isSameAs(definitions.SCALA_TYPE)) return buffer;
-        if (prefix.symbol().name.startsWith(CONSOLE_N)) return buffer;
-        return append(buffer, prefix).append('.');
-    }
-    */
-
     // !!! >>> Interpreter stuff
 
     /** stop the compilation process immediately
