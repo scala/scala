@@ -274,7 +274,8 @@ public final class GenMSIL {
 
 	    case DefDef(_, _, _, ValDef[][] vparams, Tree tpe, Tree rhs):
 		currentMethod = tc.getMethod(sym);
-		if (!currentMethod.IsAbstract()) {
+// 		if (!currentMethod.IsAbstract()) {
+		if (!sym.isDeferred()) {
 		    checkMain(currentMethod);
 		    genDef(sym, vparams[0], rhs, msilType(tpe.type));
 		}
@@ -453,17 +454,21 @@ public final class GenMSIL {
 	pos = tree.pos;
 	Item item = null;
 	//i = gen0(tree, toType);
-	try { item = gen0(tree, toType); }
+	try {
+	    item = gen0(tree, toType);
+	    assert item.type.equals(toType) : "" + item + " <> " + toType
+		+ "; tree = " + tree.getClass();
+	}
 	catch (Throwable e) {
-	    logErr(tree.pos, "Exception caught: " + e.getMessage()
-		   + (global.debug ? "" : "; Use -debug to get a stack trace."));
-	    //if (global.debug)
-		e.printStackTrace();
-	    System.exit(1);
+// 	    currUnit.error(tree.pos,
+// 		 "Exception caught: " + e.getMessage()
+// 		 + (global.debug ? "" : "; Use -debug to get a stack trace."));
+// 	    //if (global.debug)
+// 		e.printStackTrace();
+// 	    //System.exit(1);
+	    throw Debug.abort(tree, e);
 	}
 	pos = tmpPos;
-	assert item.type.equals(toType) : "" + item + " <> " + toType
-	    + "; tree = " + tree.getClass();
 	return check(item);
     }
 
@@ -498,7 +503,6 @@ public final class GenMSIL {
 
 	case Ident(_):
 	    if (sym.isModule()) {
-		//currUnit.warning(tree.pos, "gen2.Ident: " + Debug.show(sym));
 		FieldInfo field = tc.getModuleField(sym);
 		// force the loading of the module
  		item = coerce(load(items.StaticItem(field)), toType);
@@ -759,9 +763,9 @@ public final class GenMSIL {
 	    }
 	    break;
 	}
-	logErr("emitConvert: " + fromType + " => " + toType
-	       + "; fromType.isSubtypeOf(toType) = "
-	       + fromType.isSubtypeOf(toType));
+	throw Debug.abort("emitConvert: " + fromType + " => " + toType
+			  + "; fromType.isSubtypeOf(toType) = "
+			  + fromType.isSubtypeOf(toType));
     }
 
 
@@ -963,7 +967,7 @@ public final class GenMSIL {
 	case ADD: case SUB: case MUL: case DIV: case MOD:
 	case OR: case XOR: case AND:
 	case LSL: case LSR: case ASR:
-	case EQ: case NE: case LT: case LE: case GT: case GE:
+	case ID: case EQ: case NE: case LT: case LE: case GT: case GE:
 	case ZNOT: case ZOR: case ZAND:
 	case IS: case AS:
 	case CONCAT:
@@ -1032,7 +1036,7 @@ public final class GenMSIL {
 
 	case ADD:
 	    if (tc.getType(right.type) == tc.STRING) {
-		log("primaryOp().ADD: string concat!");
+		System.out.println("primaryOp().ADD: string concat!");
 		genLoad(left, MSILType.OBJECT);
 		genLoad(right, MSILType.OBJECT);
 		code.Emit(OpCodes.Call, tc.CONCAT_OBJECT_OBJECT);
@@ -1184,7 +1188,7 @@ public final class GenMSIL {
 	case LSR: code.Emit(OpCodes.Shr); res = items.StackItem(toType); break;
 	case ASR: code.Emit(OpCodes.Shr_Un); res = items.StackItem(toType); break;
 
-	case EQ:
+	case ID: case EQ: // FIXME?: should ID be treated as EQ?
 	    res =  items.CondItem(Test.Binary(Test.EQ, toType), null, null);
 	    break;
 	case NE:
@@ -1305,7 +1309,7 @@ public final class GenMSIL {
 	    if (t == tc.SCALA_UNIT)    return MSILType.VOID;
 	    if (t == tc.SCALA_BOOLEAN) return MSILType.BOOL;
 	    return msilType(t).asPrimitive();
-	case NULL:
+	    //case NULL:
 	case ARRAY(_):
 	    throw Debug.abort("primitiveType: cannot convert " + mtype);
 	default:
@@ -1349,8 +1353,7 @@ public final class GenMSIL {
 	case NEW_OARRAY: case OARRAY_LENGTH: case OARRAY_GET: case OARRAY_SET:
 	    return tc.OBJECT;
 	}
-	log("getArrayElemType(): unknown primitive " + Debug.show(p));
-	return null;
+	throw Debug.abort("unknown primitive " + Debug.show(p));
     }
 
     /*
@@ -1960,37 +1963,7 @@ public final class GenMSIL {
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-
-    /*
-     * Print a message
-     */
-    private void log(String message) {
-        global.reporter.printMessage(message);
-    }
-
-    /*
-     *
-     */
-    private void logErr(int pos, String message) {
-        global.reporter.printMessage(currUnit.position(pos), message);
-    }
-
-    /**
-     */
-    private void logErr(String message) {
-	System.err.println(message);
-	throw new ApplicationError();
-	//log(1, message);
-    }
-
-    private static final int DEBUG_LEVEL = 2;
-
-    private void log(int level, String message) {
-	if (level < DEBUG_LEVEL)
-	    global.log(message);
-    }
-
+    //##########################################################################
 } // class GenMSIL
 
 /**
@@ -2137,8 +2110,8 @@ final class MSILType {
     public MSILType asPrimitive() {
 	switch (this) {
 	case REF(Type t):
-	    assert t.IsEnum();
-	    return fromType(t.getUnderlyingType());
+	    if (t.IsEnum()) return fromType(t.getUnderlyingType());
+	    else return this;
 	case NULL:
 	case ARRAY(_):
 	    throw Debug.abort(this);
@@ -2204,8 +2177,9 @@ final class MSILType {
 	int m = Math.max(i, j);
 	if (m < n)
 	    return ARITHM_PRECISION[m];
-	else
-	    throw Debug.abort("cannot find coercion " + t1 + " => " + t2);
+	else if (t1.isSubtypeOf(t2)) return t2;
+	else if (t2.isSubtypeOf(t1)) return t1;
+	else throw Debug.abort("cannot find coercion " + t1 + " => " + t2);
     }
 
     public String toString() {
