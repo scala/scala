@@ -165,7 +165,7 @@ public class ExpressionCompiler {
     private Code object(Tree tree) {
         switch (tree) {
 
-        case Select(Super(_), _):
+        case Select(Super(_, _), _):
             return Code.Self;
 
         case Select(Tree expr, _):
@@ -241,7 +241,7 @@ public class ExpressionCompiler {
             function = symbol.name == plus_N ? Function.Pos : Function.Neg;
         }
         switch (target) {
-        case Select(Super(_), _):
+        case Select(Super(_, _), _):
             Template template = context.lookupTemplate(symbol.owner());
             switch (template) {
             case Global(ScalaTemplate template_):
