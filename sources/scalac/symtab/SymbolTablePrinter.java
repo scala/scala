@@ -337,6 +337,7 @@ public class SymbolTablePrinter {
     /** Prints the full name of the given symbol */
     public SymbolTablePrinter printSymbolFullName(Symbol symbol) {
         print(getSymbolFullName(symbol));
+	//print("{" + symbol.owner() + "}");//DEBUG
         return printSymbolUniqueId(symbol);
     }
 
@@ -514,6 +515,7 @@ public class SymbolTablePrinter {
                     return printTemplateType(pre.memberInfo(sym).parents());
             }
             printPrefix(pre).printSymbolName(sym);
+	    //print("{" + sym.owner() + "}");//DEBUG
 	    if (args.length != 0) print('[').printTypes(args, ",").print(']');
 	    return this;
 	case SingleType(Type pre, Symbol sym):

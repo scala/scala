@@ -315,8 +315,7 @@ public class  Global {
             imports.clear();
             for (Iterator it = compiledNow.keySet().iterator(); it.hasNext();) {
                 Symbol sym = (Symbol) it.next();
-                SourceFile f = (SourceFile) compiledNow.get(sym);
-                sym.reset(new SourceCompleter(this, f.name()));
+                sym.reset(new SourceCompleter(this));
             }
         }
         compiledNow.clear();

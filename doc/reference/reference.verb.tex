@@ -1245,13 +1245,13 @@ d.hours = 25;                 \=// throws a DateError exception
 \label{sec:typealias}
 
 \syntax\begin{verbatim}
-  Dcl             \=::= \= type TypeDcl {`,' TypeDcl}
+  Dcl             \=::= \= class TypeDcl {`,' TypeDcl}
   TypeDcl         \>::= \> Id [>: Type] [<: Type]
   Def             \>::= \> type TypeDef {`,' TypeDef}
   TypeDef         \>::= \> Id `=' Type
 \end{verbatim}
 
-A {\em type declaration} \verb@type t >: L <: U@ declares \verb@t@ to
+A {\em type declaration} \verb@class t >: L <: U@ declares \verb@t@ to
 be an abstract type with lower bound type \verb@L@ and upper bound
 type \verb@U@.  If such a declaration appears as a member declaration
 of a type, implementations of the type may implement \verb@t@ with any
@@ -1260,7 +1260,7 @@ be omitted.  If the lower bound \verb@L@ is missing, the bottom type
 \verb@scala.All@ is assumed.  If the upper bound \verb@U@ is missing,
 the top type \verb@scala.Any@ is assumed.
 
-A {\em type alias} \verb@type t = T@ defines \verb@t@ to be an alias
+A {\em type alias} \verb@class t = T@ defines \verb@t@ to be an alias
 name for the type \verb@T@. Type declarations and type aliases are
 collectively called {\em type bindings}.
 
@@ -1268,28 +1268,44 @@ The scope rules for definitions (\sref{sec:defs}) and type parameters
 (\sref{sec:funsigs}) make it possible that a type name appears in its
 own bound or in its right-hand side.  However, it is a static error if
 a type alias refers recursively to the defined type itself.  That is,
-the type \verb@T@ in a type alias \verb@type t = T@ may not refer
+the type \verb@T@ in a type alias \verb@class t = T@ may not refer
 directly or indirectly to the name \verb@t@.  It is also an error if
 an abstract type is directly or indirectly its own bound.
 
 \example The following are legal type declarations and definitions:
 \begin{verbatim}
-type IntList = List[Integer];
-type T extends Comparable[T];
+class IntList = List[Integer];
+class T extends Comparable[T];
 \end{verbatim}
 
 The following are illegal:
 \begin{verbatim}
-type Abs = Comparable[Abs];	                 \=// recursive type alias
+class Abs = Comparable[Abs];	                 \=// recursive type alias
 
-type S <: T;                       \>// S, T are bounded by themselves.
-type T <: S;
+class S <: T;                       \>// S, T are bounded by themselves.
+class T <: S;
 
-type T <: Object with T;	    \>// T is abstract, may not be part of
+class T <: Object with T;	    \>// T is abstract, may not be part of
                                     \>// compound type
 
-type T >: Comparable[T.That];       \>// Cannot select from T.
+class T >: Comparable[T.That];       \>// Cannot select from T.
 			            \>// T is a type, not a value
+\end{verbatim}
+
+Neither type declarations nor type aliases may carry type
+parameters. However, it is possible to alias a type constructor of a
+parameterized type, as is shown in the following example.
+
+\example The \verb@Predef@ module contains a definition which establishes \verb@Pair@ 
+as an alias of the parameterized class \verb@Tuple2@:
+\begin{verbatim}
+class Pair = Tuple2;
+\end{verbatim}
+As a consequence, for any two types \verb@S@ and \verb@T@, the type
+\verb@Pair[S, T]@ is equivalent to the type \verb@Tuple2[S, T]@.
+\verb@Pair@ can also be used as a constructor instead of \verb@Tuple2@, as in
+\begin{verbatim}
+new Pair[Int, Int](1, 2) .
 \end{verbatim}
 
 \section{Function Declarations and Definitions}
@@ -1836,13 +1852,13 @@ Here,
 \begin{itemize}
 \item[]
 \verb@c@ is the name of the class to be defined.
-\item[]
-\verb@tps@ is a non-empty list of type parameters of the class being
-defined.  The scope of a type parameter is the whole class definition,
-including the type parameter section itself.  It is illegal to define
-two type parameters with the same name.  The type parameter section
-\verb@[tps]@ may be omitted. A class with a type parameter section is
-called {\em polymorphic}, otherwise it is called {\em monomorphic}.
+\item[] \verb@tps@ is a non-empty list of type parameters of the class
+being defined.  The scope of a type parameter is the whole class
+definition including the type parameter section itself.  It is
+illegal to define two type parameters with the same name.  The type
+parameter section \verb@[tps]@ may be omitted. A class with a type
+parameter section is called {\em polymorphic}, otherwise it is called
+{\em monomorphic}.
 \item[] 
 \verb@ps@ is a formal parameter clause for the {\em primary
 constructor} of the class. The scope of a formal parameter includes
@@ -1879,7 +1895,7 @@ initializes instances of type \verb@c[tps]@ by evaluating the template
 \syntax\begin{verbatim}
   FunDef          \=::=\= this ParamClause `=' ConstrExpr
   ConstrExpr      \>::=\> this ArgumentExpr
-                  \>  |\>  `{' {BlockStat `;'} ConstrExpr {`;' Blockstat} `}'
+                  \>  |\>  `{' {BlockStat `;'} ConstrExpr `}'
 \end{verbatim}
 
 A class may have additional constructors besides the primary
@@ -1890,10 +1906,13 @@ formal parameter list \verb@ps@, and whose evaluation is defined by
 the constructor expression \verb@e@.  The scope of each formal
 parameter is the constructor expression \verb@e@.  A constructor
 expression is either a self constructor invocation \verb@this(args)@
-or a block which contains a constructor expression as one of its
-statements.  A constructor expression may not refer to \verb@this@,
-nor to any of the value parameters or members of the object being
-constructed, until after the self constructor has been called.
+or a block which ends in a constructor expression.  In terms of
+visibility rules, constructor definitions are conceptually outside
+their enclosing class.  Hence, they can access neither value
+parameters nor members of the enclosing class by simple name, and the
+value \verb@this@ refers to an object of the class enclosing the class
+of the object being constructed. However, constructor definitions can
+access type parameters of the enclosing class.
 
 If there are auxilary constructors of a class \verb@C@, they define
 together with \verb@C@'s primary constructor an overloaded constructor
@@ -1906,10 +1925,30 @@ invocation must refer to a constructor definition which precedes it
 (i.e. it must refer to either a preceding auxiliary constructor or the
 primary constructor of the class).  The type of a constructor
 expression must be always so that a generic instance of the class is
-constructed.  I.e. if the class in question has name \verb@C@ and type
+constructed.  I.e., if the class in question has name \verb@C@ and type
 parameters \verb@[tps]@, then each constructor must construct an
 instance of \verb@C[tps]@; it is not permitted to instantiate formal
 type parameters.
+
+\example Consider the class definition
+
+\begin{verbatim}
+class LinkedList[a <: AnyRef](x: a, xs: LinkedList[a]) {
+  var head = x;
+  var tail = xs;
+  def isEmpty = tail != null;  
+  def this() = this(null, null);
+  def this(x: a) = { val empty = new LinkedList(); this(x, empty) }
+}
+\end{verbatim}
+This defines a class \verb@LinkedList@ with an overloaded constructor of type
+\begin{verbatim}
+[a <: AnyRef](x: a, xs: LinkList[a]): LinkedList[a]   $\overload$
+[a <: AnyRef](): LinkedList[a]   $\overload$
+[a <: AnyRef](x: a): LinkedList[a] .
+\end{verbatim}
+The second constructor alternative constructs an empty list, while the
+third one constructs a list with one element.
 
 \subsection{Case Classes}
 \label{sec:case-classes}
@@ -2159,7 +2198,7 @@ module FileSystem with {
 		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
                   \>  |\> [SimpleExpr `.'] Id `=' Expr
 		  \>  |\> SimpleExpr ArgumentExpr `=' Expr
-                  \>  |\> PostfixExpr [`:' Type1 | as Type1 | is Type1]
+                  \>  |\> PostfixExpr [`:' Type1]
   PostfixExpr     \>::=\> InfixExpr [Id]
   InfixExpr       \>::=\> PrefixExpr
 		  \>  |\> InfixExpr Id InfixExpr
@@ -2186,6 +2225,39 @@ discussed subsequently in decreasing order of precedence.
 
 Typing and evaluation of literals are analogous to Java.
 
+\section{Boolean constants}
+
+\begin{verbatim}
+  SimpleExpr    \=::= \= true  |  false
+\end{verbatim}
+
+The boolean truth values are denoted by the reserved words \verb@true@
+and \verb@false@. The type of these expressions is \verb@boolean@, and
+their evaluation is immediate.
+
+\section{The $\NULL$ Reference}
+
+\syntax\begin{verbatim}
+  SimpleExpr    \=::= \= null
+\end{verbatim}
+
+The \verb@null@ expression is of type \verb@scala.AllRef@. It
+denotes a reference value which refers to a special ``null' object,
+which implements methods in class \verb@scala.AnyRef@ as follows:
+\begin{itemize}
+\item[]
+\verb@eq(x)@, \verb@==(x)@, \verb@equals(x)@ return \verb@true@ iff their
+argument \verb@x@ is also the ``null'' object.
+\item[]
+\verb@isInstance[T]@ always returns \verb@false@.
+\item[]
+\verb@asInstance[T]@ always returns the ``null'' object itself.
+\item[]
+\verb@toString@ returns the string ``\verb@null@''.
+\end{itemize}
+A reference to any other member of the ``null'' object causes a
+ \verb@NullPointerException@ to be thrown. 
+
 \section{Designators}
 \label{sec:designators}
 
@@ -2205,30 +2277,6 @@ abstract type member of \verb@e@.
 The selection $e.x$ is evaluated by first evaluating the qualifier
 expression $e$. The selection's result is then the value to which the
 selector identifier is bound in the selected object designated by $e$.
-
-\section{The $\NULL$ Reference}
-
-\syntax\begin{verbatim}
-  SimpleExpr    \=::= \= null
-\end{verbatim}
-
-The reserved word \verb@null@ refers to a polymorphic parameterless
-function of type \verb@[a extends scala.AnyRef]a@. Its result is the
-special ``null'' object, which implements methods in class
-\verb@scala.AnyRef@ as follows:
-\begin{itemize}
-\item[]
-\verb@eq(x)@, \verb@==(x)@, \verb@equals(x)@ return \verb@True@ iff their
-argument \verb@x@ is also the ``null'' object.
-\item[]
-\verb@is[T]@ always returns \verb@False@.
-\item[]
-\verb@as[T]@ always returns the ``null'' object itself.
-\item[]
-\verb@toString@ returns the string ``\verb@null@''.
-\end{itemize}
-A reference to any member of the ``null'' object which is not defined in class
-\verb@Object@ causes a \verb@NullPointerException@ to be thrown.
 
 \section{This and Super}
 \label{sec:this-super}
@@ -4157,9 +4205,6 @@ grammar.
                   \>  |\> charLit
                   \>  |\> stringLit
 		  \>  |\> symbolLit
-		  \>  |\> true
-		  \>  |\> false
-		  \>  |\> null
 
   Id              \>::=\> id  |  `+'  |  `-'  |  `!'
   QualId          \>::=\> Id {`.' Id}
@@ -4198,12 +4243,15 @@ grammar.
 		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
                   \>  |\> [SimpleExpr `.'] Id `=' Expr
 		  \>  |\> SimpleExpr ArgumentExpr `=' Expr
-                  \>  |\> PostfixExpr [`:' Type1 | as Type1 | is Type1]
+                  \>  |\> PostfixExpr [`:' Type1]
   PostfixExpr     \>::=\> InfixExpr [Id]
   InfixExpr       \>::=\> PrefixExpr
 		  \>  |\> InfixExpr Id InfixExpr
   PrefixExpr      \>::=\> [`-' | `+' | `~' | `!'] SimpleExpr 
   SimpleExpr      \>::=\> literal
+		  \>  |\> true
+		  \>  |\> false
+		  \>  |\> null
 		  \>  |\> Path
 		  \>  |\> `(' [Expr] `)'
 		  \>  |\> BlockExpr

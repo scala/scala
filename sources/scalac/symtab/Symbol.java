@@ -71,6 +71,12 @@ public abstract class Symbol implements Modifiers, Kinds {
         this.flags = flags & ~(INITIALIZED | LOCKED); // safety first
     }
 
+    protected void update(int pos, int flags) {
+	this.pos = pos;
+	this.flags = (flags & ~(INITIALIZED | LOCKED)) |
+	    (this.flags & (INITIALIZED | LOCKED));
+    }
+
     /** Return a fresh symbol with the same fields as this one.
      */
     public final Symbol cloneSymbol() {
@@ -631,7 +637,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 		throw new CyclicReference(this, info);
 	    }
 	    flags |= LOCKED;
-	    //System.out.println("completing " + this.name);//DEBUG
+	    //System.out.println("completing " + this);//DEBUG
 	    info.complete(this);
             flags = flags & ~LOCKED;
 	    if (info instanceof SourceCompleter && (flags & SNDTIME) == 0) {
@@ -642,7 +648,7 @@ public abstract class Symbol implements Modifiers, Kinds {
  		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
  		//flags |= INITIALIZED;
  	    }
-	    //System.out.println("done: " + this.name);//DEBUG
+	    //System.out.println("done: " + this);//DEBUG
 	}
 	return rawInfoAt(id);
     }
@@ -666,6 +672,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** get info at phase #id, without forcing lazy types.
      */
     public Type rawInfoAt(int id) {
+	//if (infos == TypeIntervalList.EMPTY) return Type.NoType;//DEBUG
 	assert infos != TypeIntervalList.EMPTY : this;
 	int nextid = infos.limit;
 	if (nextid < id) {
@@ -1009,6 +1016,18 @@ public class TermSymbol extends Symbol {
         super(VAL, pos, name, owner, flags);
     }
 
+    public static TermSymbol define(
+	int pos, Name name, Symbol owner, int flags, Scope scope) {
+	Scope.Entry e = scope.lookupEntry(name);
+	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == VAL) {
+	    TermSymbol sym = (TermSymbol) e.sym;
+	    sym.update(pos, flags);
+	    return sym;
+	} else {
+	    return new TermSymbol(pos, name, owner, flags);
+	}
+    }
+
     public static TermSymbol newConstructor(Symbol clazz, int flags) {
         TermSymbol sym = new TermSymbol(
 	    clazz.pos, clazz.name, clazz.owner(), flags | FINAL);
@@ -1020,30 +1039,28 @@ public class TermSymbol extends Symbol {
 	return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | JAVA));
     }
 
-    public static TermSymbol newModule(int pos, Name name, Symbol owner,
-				       int flags, ClassSymbol clazz) {
-	TermSymbol sym = new TermSymbol(pos, name, owner, flags | MODUL | FINAL);
-	sym.clazz = clazz;
-	clazz.setModule(sym);
-	sym.setInfo(clazz.typeConstructor());
-	return sym;
+    public TermSymbol makeModule(ClassSymbol clazz) {
+	flags |= MODUL | FINAL;
+	this.clazz = clazz;
+	clazz.setModule(this);
+	setInfo(clazz.typeConstructor());
+	return this;
     }
 
-    public static TermSymbol newModule(int pos, Name name, Symbol owner,
-				       int flags) {
+    public TermSymbol makeModule() {
         ClassSymbol clazz = new ClassSymbol(
-	    pos, name.toTypeName(), owner, flags | MODUL | FINAL);
+	    pos, name.toTypeName(), owner(), flags | MODUL | FINAL);
         clazz.primaryConstructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
-
-	return newModule(pos, name, owner, flags, clazz);
+	return makeModule(clazz);
     }
 
     /** Constructor for companion modules to classes, which need to be completed.
      */
     public static TermSymbol newCompanionModule(Symbol clazz, int flags, Type.LazyType parser) {
-        TermSymbol sym = newModule(Position.NOPOS, clazz.name.toTermName(), clazz.owner(),
-				   flags);
+        TermSymbol sym = new TermSymbol(
+	    Position.NOPOS, clazz.name.toTermName(), clazz.owner(), flags)
+	    .makeModule();
         sym.clazz.setInfo(parser);
 	return sym;
     }
@@ -1051,7 +1068,8 @@ public class TermSymbol extends Symbol {
     /** Java package module constructor
      */
     public static TermSymbol newJavaPackageModule(Name name, Symbol owner, Type.LazyType parser) {
-        TermSymbol sym = newModule(Position.NOPOS, name, owner, JAVA | PACKAGE);
+        TermSymbol sym = new TermSymbol(Position.NOPOS, name, owner, JAVA | PACKAGE)
+	    .makeModule();
         sym.clazz.flags |= SYNTHETIC;
         sym.clazz.setInfo(parser != null ? parser : Type.compoundType(Type.EMPTY_ARRAY, new Scope(), sym));
 	return sym;
@@ -1080,7 +1098,7 @@ public class TermSymbol extends Symbol {
         assert !isPrimaryConstructor() : Debug.show(this);
         TermSymbol other;
 	if (isModule()) {
-	    other = newModule(pos, name, owner, flags);
+	    other = new TermSymbol(pos, name, owner, flags).makeModule();
 	} else {
 	    other = new TermSymbol(pos, name, owner, flags);
 	    other.clazz = clazz;
@@ -1123,6 +1141,17 @@ public class TypeSymbol extends Symbol {
         super(kind, pos, name, owner, flags);
     }
 
+    public static TypeSymbol define(
+	int pos, Name name, Symbol owner, int flags, Scope scope) {
+	Scope.Entry e = scope.lookupEntry(name);
+	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == ALIAS) {
+	    TypeSymbol sym = (TypeSymbol) e.sym;
+	    sym.update(pos, flags);
+	    return sym;
+	} else {
+	    return new TypeSymbol(ALIAS, pos, name, owner, flags);
+	}
+    }
 
     /** Return a fresh symbol with the same fields as this one.
      */
@@ -1283,6 +1312,18 @@ public class AbsTypeSymbol extends TypeSymbol {
         super(TYPE, pos, name, owner, flags);
     }
 
+    public static AbsTypeSymbol define(
+	int pos, Name name, Symbol owner, int flags, Scope scope) {
+	Scope.Entry e = scope.lookupEntry(name);
+	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == TYPE) {
+	    AbsTypeSymbol sym = (AbsTypeSymbol) e.sym;
+	    sym.update(pos, flags);
+	    return sym;
+	} else {
+	    return new AbsTypeSymbol(pos, name, owner, flags);
+	}
+    }
+
     /** Return a fresh symbol with the same fields as this one.
      */
     public Symbol cloneSymbol(Symbol owner) {
@@ -1354,6 +1395,19 @@ public class ClassSymbol extends TypeSymbol {
         super(CLASS, pos, name, owner, flags);
         this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
         this.mangled = name;
+    }
+
+    public static ClassSymbol define(
+	int pos, Name name, Symbol owner, int flags, Scope scope) {
+	Scope.Entry e = scope.lookupEntry(name);
+	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == CLASS) {
+	    ClassSymbol sym = (ClassSymbol) e.sym;
+	    sym.update(pos, flags);
+	    sym.template = null;
+	    return sym;
+	} else {
+	    return new ClassSymbol(pos, name, owner, flags);
+	}
     }
 
     /** Constructor for classes to load as source files

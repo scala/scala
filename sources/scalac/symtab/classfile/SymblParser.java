@@ -38,9 +38,10 @@ public class SymblParser extends ClassParser {
 		new UnPickle(c, data, Name.fromString(filename));
 		global.operation("loaded " + f.getPath() + " in " +
 				 (System.currentTimeMillis() - msec) + "ms");
-		//for (Definition e = c.locals().elems; e != null; e = e.sibling)
-		//  if (e.def.kind == TYP)
-                //      e.def.complete();
+		/*
+		  if (!global.separate)
+		    new SourceCompleter(global).complete(c);//for now
+		*/
 	    }
 	} catch (IOException e) {
 	    e.printStackTrace();

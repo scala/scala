@@ -8,6 +8,7 @@
 
 package scalac.symtab.classfile;
 
+import ch.epfl.lamp.util.Position;
 import java.util.HashMap;
 import java.io.*;
 import scalac.Global;
@@ -45,8 +46,8 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     /** Pickle all symbols descending from `root'.
      */
     public void add(Symbol root) {
-	if (root.kind != NONE) {
-	    if (debug) System.out.println("adding " + root);//debug
+	if (root.pos != Position.NOPOS) {
+	    if (Global.instance.debug) System.out.println("pickling " + root);
 	    if (index.get(root) == null) {
 		this.rootname = root.name.toTermName();
 		this.rootowner = root.owner();

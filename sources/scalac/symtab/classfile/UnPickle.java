@@ -9,6 +9,7 @@
 package scalac.symtab.classfile;
 
 import java.util.HashMap;
+import java.io.PrintStream;
 import scalac.*;
 import scalac.util.*;
 import ch.epfl.lamp.util.Position;
@@ -60,28 +61,13 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	    bp = readNat() + bp;
 	}
 	entries = new Object[index.length];
-	if (global.debug) {
-	    global.log("length: " + index.length);
-	    for (int i = 0; i < index.length; i++) {
-		System.out.print(i + "," + index[i] + ": ");
-		bp = index[i];
-		int tag = readByte();
-		System.out.print(tag + " ");
-		int len = readNat();
-		System.out.print(len + " ");
-		if (tag == TERMname || tag == TYPEname)
-		    System.out.print(
-			SourceRepresentation.ascii2string(bytes, bp, len));
-		else
-		    for (int j = 0; j < len; j++)
-			System.out.print(readByte() + " ");
-		System.out.println();
-	    }
-	}
+
+	if (global.debug) print(System.out);
+
 	for (int i = 0; i < index.length; i++) {
 	    if (isSymbolEntry(i)) getSymbol(i);
 	}
-	if (global.debug) global.log("unpickled " + root);//debug
+	if (global.debug) global.log("unpickled " + root + ":" + root.rawInfo());//debug
 	if (!root.isInitialized())
 	    throw new BadSignature(this, "it does not define " + root);
     }
@@ -98,8 +84,10 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		params[0].owner() != owner && params[0].owner() != Symbol.NONE) {
 		params1 = new Symbol[params.length];
 		for (int i = 0; i < params.length; i++)
-		    params1[i] = params[i].cloneSymbol().setOwner(owner);
+		    params1[i] = params[i].cloneSymbol();
 	    }
+	    for (int i = 0; i < params.length; i++)
+		params1[i].setOwner(owner);
 	    Type restpe1 = setOwner(restpe, owner);
 	    if (params1 == params && restpe1 == restpe) return tp;
 	    else return Type.MethodType(params1, restpe1);
@@ -222,7 +210,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		entries[n] = sym;
 		if (sym.kind == NONE) {
 		    if (global.debug)
-			global.log(owner.info().members().toString());//debug
+			global.log(owner.info().members().toString());
 		    throw new BadSignature(this,
 			"reference " + decode(name) + " of " + owner +
 			" refers to nonexisting symbol.");
@@ -232,7 +220,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		assert isSymbolEntry(n) : n;
 		Name name = readNameRef();
 		if (global.debug)
-		    global.log("reading " + name + " at " + n);//debug
+		    global.log("reading " + name + " at " + n);
 		owner = readSymbolRef();
 		if (entries[n] == null) {
 		    int flags = readNat();
@@ -241,14 +229,14 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    case TYPEsym:
 			entries[n] = sym = new AbsTypeSymbol(
 			    Position.NOPOS, name, owner, flags);
-			sym.setInfo(getType(inforef));
+			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
 			sym.setLoBound(readTypeRef());
 			break;
 
 		    case ALIASsym:
 			entries[n] = sym = new TypeSymbol(
 			    ALIAS, Position.NOPOS, name, owner, flags);
-			sym.setInfo(getType(inforef));
+			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
 			break;
 
 		    case CLASSsym:
@@ -261,7 +249,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			    sym.copyTo(clr);
 			    entries[n] = sym = clr;
 			}
-			sym.setInfo(getType(inforef));
+			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
 			if (constr != sym.primaryConstructor()) {
@@ -279,8 +267,9 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 				sym.flags = flags;
 			    } else {
 				assert (flags & MODUL) != 0 : name;
-				entries[n] = sym = TermSymbol.newModule(
-				    Position.NOPOS, name, owner, flags, clazz);
+				entries[n] = sym = new TermSymbol(
+				    Position.NOPOS, name, owner, flags)
+				    .makeModule(clazz);
 			    }
 			} else {
 			    entries[n] = sym = new TermSymbol(
@@ -288,12 +277,12 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			}
 			if (name == moduleroot.name && owner == moduleroot.owner()) {
 			    if (global.debug)
-				global.log("overwriting " + moduleroot);//debug
+				global.log("overwriting " + moduleroot);
 			    sym.copyTo(moduleroot);
 			    entries[n] = sym = moduleroot;
 			}
 			Type tp = getType(inforef);
-			sym.setInfo(setOwner(tp, sym));
+			sym.setInfo(setOwner(tp, sym), Symbol.FIRST_ID);
 			break;
 
 		    default:
@@ -375,7 +364,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    params[i] = new TermSymbol(
 			Position.NOPOS, Name.fromString("$" + i),
 			Symbol.NONE, PARAM | flags[i]);
-		    params[i].setInfo(argtypes[i]);
+		    params[i].setInfo(argtypes[i], Symbol.FIRST_ID);
 		}
 		tpe = Type.MethodType(params, restype);
 		break;
@@ -466,6 +455,71 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	}
 	public BadSignature(UnPickle outer) {
 	    this(outer, "malformed signature at " + outer.bp);
+	}
+    }
+
+// --- print symbl files -------------------------------------------------
+
+    private static String tag2string(int tag) {
+	switch (tag) {
+	case TERMname: return "TERMname";
+	case TYPEname: return "TYPEname";
+	case NONEsym: return "NONEsym";
+	case TYPEsym: return "TYPEsym";
+	case ALIASsym: return "ALIASsym";
+	case CLASSsym: return "CLASSsym";
+	case VALsym: return "VALsym";
+	case EXTref: return "EXTref";
+	case EXTMODCLASSref: return "EXTMODCLASSref";
+	case NOtpe: return "NOtpe";
+	case THIStpe: return "THIStpe";
+	case SINGLEtpe: return "SINGLEtpe";
+	case TYPEREFtpe: return "TYPEREFtpe";
+	case COMPOUNDtpe: return "COMPOUNDtpe";
+	case METHODtpe: return "METHODtpe";
+	case POLYtpe: return "POLYtpe";
+	case OVERLOADEDtpe: return "OVERLOADEDtpe";
+	case UNBOXEDtpe: return "UNBOXEDtpe";
+        case UNBOXEDARRAYtpe: return "UNBOXEDARRAYtpe";
+	case FLAGGEDtpe: return "FLAGGEDtpe";
+	case ERRORtpe: return "ERRORtpe";
+	default: return "***BAD TAG***(" + tag + ")";
+	}
+    }
+
+    private void print(PrintStream out) {
+	out.println("symbl attribute for " + classroot + ":");
+	for (int i = 0; i < index.length; i++) {
+	    out.print(i + "," + index[i] + ": ");
+	    bp = index[i];
+	    int tag = readByte();
+	    out.print(tag2string(tag));
+	    int len = readNat();
+	    int end = len + bp;
+	    out.print(" " + len);
+	    switch (tag) {
+	    case TERMname:
+	    case TYPEname:
+		out.print(" " +
+		    SourceRepresentation.ascii2string(bytes, bp, len));
+		bp = end;
+		break;
+	    case NONEsym:
+		break;
+	    case TYPEsym:
+	    case ALIASsym:
+	    case CLASSsym:
+	    case VALsym:
+		out.print(" " + readNat()); //name
+		out.print(" " + readNat()); //owner
+		out.print(" " + Integer.toHexString(readNat())); //flags
+		out.print(" " + readNat()); //type
+		break;
+	    case FLAGGEDtpe:
+		out.print(" " + Integer.toHexString(readNat())); //flags
+	    }
+	    while (bp < end) out.print(" " + readNat());
+	    out.println();
 	}
     }
 }

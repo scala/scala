@@ -30,7 +30,7 @@ public interface EntryTags {
  *                  | 15 METHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 16 POLYTtpe len_Nat tpe_Ref {sym_Ref}
  *                  | 17 OVERLOADEDtpe len_Nat {sym_Ref} {tpe_Ref}
- *                  | 20 FLAGGEDtype len_Nat flags_Nat tpe_Ref
+ *                  | 20 FLAGGEDtpe len_Nat flags_Nat tpe_Ref
  *   SymbolInfo     = name_Ref owner_Ref flags_Nat info_Ref
  *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
  *   Ref            = Nat

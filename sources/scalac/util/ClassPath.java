@@ -142,6 +142,19 @@ public class ClassPath {
                                         "' not found in classpath");
     }
 
+    public java.io.File openJavaFile(String name) throws FileNotFoundException {
+        if (printSearch)
+            System.out.println("looking for " + name);
+        for (int i = 0; i < root.length; i++) {
+            if (printSearch)
+                System.out.println("  in " + root[i]);
+            java.io.File f = new File(root[i], name);
+	    if (f.exists()) return f;
+        }
+        throw new FileNotFoundException("file '" + name +
+                                        "' not found in classpath");
+    }
+
     public String[] components() {
         return root;
     }

@@ -8,6 +8,9 @@
 
 package scalac.ast.parser;
 
+import java.io.File;
+import scalac.util.Name;
+
 public final class SourceRepresentation {
 
     public static int digit2int(byte ch, int base) {
@@ -201,5 +204,16 @@ public final class SourceRepresentation {
     public static String escape(char c) {
         char[] s = {c};
         return escape(new String(s));
+    }
+
+    /** return external representation of file name s,
+     *  converting '.' to File.separatorChar
+     */
+    public static String externalizeFileName(Name n) {
+        if ((n == null) || (n.length() == 0))
+            return ".";
+        byte[] ascii = n.toAscii();
+        String s = ascii2string(ascii, 0, ascii.length);
+        return s.replace('.', File.separatorChar);
     }
 }

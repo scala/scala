@@ -101,12 +101,13 @@ public class PackageParser extends Type.LazyType {
                         locals.enter(module);
 			locals.enter(module.moduleClass());
                     }
-		} else if (inclClasses && global.separate && fname.endsWith(".symbl")) {
+		} else if (inclClasses && fname.endsWith(".symbl")) {
 		    //todo: compare dates between symbl and scala.
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
 		    Symbol sym = locals.lookup(n);
 		    if (sym == Symbol.NONE ||
+			sym.isPackage() ||
 			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
 			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
 			ClassSymbol clazz = new ClassSymbol(n, p, symblCompletion);
@@ -121,10 +122,10 @@ public class PackageParser extends Type.LazyType {
 			.toTypeName();
 		    Symbol sym = locals.lookup(n);
 		    if (sym == Symbol.NONE ||
+			sym.isPackage() ||
 			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
 			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
-                        SourceCompleter completer = new SourceCompleter(global,
-                            dir.getPath() + File.separatorChar + fname);
+                        SourceCompleter completer = new SourceCompleter(global);
                         ClassSymbol clazz = new ClassSymbol(n, p, completer);
 			//todo: needed?
                         clazz.allConstructors().setInfo(completer);

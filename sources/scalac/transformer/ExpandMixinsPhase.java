@@ -109,6 +109,7 @@ public class ExpandMixinsPhase extends PhaseDescriptor {
     // Private Methods
 
     private Template getExpandedTemplate(Symbol clasz) {
+	if (global.debug) global.log("get expanded " + clasz + " in " + clasz.owner());
         Template template = (Template)expansions.get(clasz);
         if (template == null) {
             template = (Template)templates.remove(clasz);

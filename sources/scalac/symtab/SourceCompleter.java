@@ -21,12 +21,10 @@ public class SourceCompleter extends Type.LazyType {
     /** the global compilation environment
      */
     protected Global global;
-    protected String filename;
     private boolean completed = false;
 
-    public SourceCompleter(Global global, String filename) {
+    public SourceCompleter(Global global) {
         this.global = global;
-        this.filename = filename;
     }
 
     /** complete class symbol c by loading the unit
@@ -34,15 +32,16 @@ public class SourceCompleter extends Type.LazyType {
     public void complete(Symbol c) {
         if (completed) {
             c.setInfo(Type.NoType);
-        } else if (filename != null) {
+        } else {
             try {
-                String fname = filename;
                 long msec = System.currentTimeMillis();
-                Unit unit = new Unit(global, new SourceFile(filename), false);
-                filename = null;
+		String filename = SourceRepresentation.externalizeFileName(
+		    c.fullName()) + ".scala";
+		java.io.File f = global.classPath.openJavaFile(filename);
+                Unit unit = new Unit(global, new SourceFile(f), false);
                 global.PHASE.PARSER.apply(unit);
                 global.PHASE.ANALYZER.lateEnter(global, unit, c);
-                global.operation("added " + fname + " in " +
+                global.operation("added " + filename + " in " +
                         (System.currentTimeMillis() - msec) + "ms");
             } catch (IOException e) {
                 e.printStackTrace();
