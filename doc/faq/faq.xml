@@ -17,11 +17,13 @@
   <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
 
   <section title="General">
+
     <entry id="why">
       <question>Why another programming language ?</question>
       <answer>Read the rationale available on the <a
       href="http://scala.epfl.ch">Scala homepage</a></answer>
     </entry>
+
     <entry>
       <question>How can I get an executable program ?</question>
       <answer><p><em>First option</em>: use the Application mixin. Example:<code>
@@ -40,19 +42,106 @@ object Foo {
 Of course you can leave away the specification of the result type. In
 that case you should take care that your main function does not return
 something else. The latter would result in the virtual machine not finding
-your function
+your function.
 </p>
 </answer>
 
     </entry>
 
-  </section>
+    <entry>
+      <question>Is Scala stable enough to generate correct code for a
+ larger scale real life projects? Isn't it dangerous to relay on a
+ fresh project?</question>
+
+      <answer>You should give it a try. It's quite stable and if you
+encounter an issue, you can submit the bug and we try to fix it as
+quickly as possible. As a workaround you can always implement the
+problematic part in Java.</answer>
+</entry>
+<entry>
+<question>
+What's the licensing conditions of the available Scala code? Does the Scala team endorse a specific license?
+</question>
+<answer>
+Currently, Scala is distributed under a BSD-style
+license. Consequently, there are almost no implications
+when redistributing the Scala binaries. 
+</answer>
+</entry>
+
+<entry>
+ <question>Is it possible to package the generated program so that the
+user does not have to install the full Scala environment? <p/>
+Basically, I just want to give the user a jar
+file which can be started by java -jar ... </question>
+<answer>
+The Scala distribution comes with several jar files
+in the lib subdirectory. If you want to package your
+Scala application in a way that doesn't require the
+user to install the full Scala environment, you simply
+have to distribute a copy of the lib/scala.jar file
+together with your application. You can even copy the
+content of the scala.jar file into your own jar file
+if you prefer this.
+
+</answer>
+</entry> </section>
+
+
+
+  <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
+  <!--                  Java InterOp                                  -->
+  <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
+  <section title="Java Interoperability">
+    <entry>
+
+
+    <question>
+I am currently implementing an application in Java. If I go over
+to Scala, can I use the existing stuff and link it with the new
+Scala code?</question>
+
+<answer>
+Accessing Java classes from Scala code is no problem at all. Using a Scala
+class from Java can get tricky, in particular if your Scala class uses
+advanced features like generics, polymorphic methods, or abstract types.
+Since Java doesn't have such language features, you have to know something
+about the encoding scheme of Scala classes. Otherwise, there should be
+no problems.
+</answer>
+    </entry>
+
+<entry>
+<question>How easy is it to convert Java data structures to Scala, and vice versa?</question>
+
+<answer>
+You do not have to convert Java data structures at all for using them
+in Scala. You can use them "as is". For instance, Scala classes can
+subclass Java classes, you can instantiate Java classes in Scala, you
+can access methods, fields (even if they are static), etc. 
+</answer>
+
+</entry>
+  </section> 
 
   <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
   <!--                  Less General                                  -->
   <!-- zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz -->
 
   <section title="Less General">
+<!--
+    <entry>
+      <question>What were the first reactions when you released your language ?</question>
+      <answer>
+<p>&quot;Wow! This is the coolest thing since Haskell and Ruby!&quot;</p>
+<p>&quot;Thanks, this is so cool, I can hardly believe it's true&quot;</p>
+<p>&quot;I have seen that Scala addresses the right questions. It will be interesting to see whether it also gives the right answers&quot;</p>
+
+<p>&quot;It seems somebody had the strong desire to do functional programming and still access Java and .NET classes</p>
+
+</answer>
+    </entry>
+-->
     <entry>
       <question>Why is feature XYZ not integrated ?</question>
       <answer>Convince us that it is useful. Make sure you read 
