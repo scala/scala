@@ -195,6 +195,7 @@ public class Names {
     public static final Name wait = Name.fromString("wait");
     public static final Name notify = Name.fromString("notify");
     public static final Name notifyAll = Name.fromString("notifyAll");
+    public static final Name GetType = Name.fromString("GetType");
 
     public static final Name
         ZNOT = encode("!"),
