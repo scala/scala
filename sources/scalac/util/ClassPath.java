@@ -119,7 +119,7 @@ public class ClassPath {
     /** parse a class path specification and return an array
      *  of existing class file locations
      */
-    protected String[] parse(String path) {
+    public static String[] parse(String path) {
         path += PATH_SEP;
         Vector components = new Vector();
         int i = 0;
