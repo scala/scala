@@ -1739,6 +1739,31 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return copy.Block(tree, stats1)
 		    .setType(owntype);
 
+	    case Subsequence(Tree[] trees):
+		return copy.Subsequence( tree, trees ).setType( pt );
+
+	    case Alternative(Tree[] choices): 		// todo: sanity check for variables
+		Tree[] newts = new Tree[ choices.length ];
+		for (int i = 0; i < choices.length; i++ )
+		    newts[ i ] = transform( choices[ i ], this.mode, pt );
+
+		Type tpe = Type.lub( Tree.typeOf( newts ));
+
+		return copy.Alternative( tree, newts )
+		    .setType( tpe );
+
+	    case Bind( Name name, Tree body ):
+		Symbol vble = new TermSymbol(tree.pos, name, context.owner, 0x00000000 ).setType( pt );
+		vble = enterInScope( vble );
+		//patternVars.put( vble, new Boolean( this.inAlternative ));
+		//System.out.println("put symbol vble="+vble+" in scope and patternVars.");
+
+		body = transform( body );
+		//assert body.type != null;
+		vble.setType( body.type );
+		return copy.Bind( tree, name, body )
+		    .setSymbol( vble ).setType( body.type );
+
 	    case Visitor(Tree.CaseDef[] cases):
 		if (pt.symbol().isSubClass(definitions.PARTIALFUNCTION_CLASS)) {
 		    Type pft = pt.baseType(definitions.PARTIALFUNCTION_CLASS);
