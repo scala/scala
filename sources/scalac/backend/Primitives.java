@@ -683,7 +683,7 @@ public class Primitives {
         // !!! addAll(defs.ARRAY_CLASS, Names.hashCode, Primitive.HASHCODE, 1);
         // !!! addAll(defs.ARRAY_CLASS, Names.toString, Primitive.TOSTRING, 1);
         addAll(defs.ARRAY_CLASS, Names.length, Primitive.LENGTH, 1);
-        addAll(defs.ARRAY_CLASS, Names.apply, Primitive.APPLY, 2);
+        addAll(defs.ARRAY_CLASS, Names.apply, Primitive.APPLY, 1);
         addAll(defs.ARRAY_CLASS, Names.update, Primitive.UPDATE, 1);
 
         // scala.runtime.RunTime
