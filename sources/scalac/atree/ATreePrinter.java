@@ -344,6 +344,26 @@ public class ATreePrinter {
         }
     }
 
+    /** Prints the location. */
+    public ATreePrinter printLocation(ALocation location) {
+        switch (location) {
+        case Module(Symbol module):
+            return printSymbol(module);
+        case Field(Void, Symbol field, true):
+            return printSymbol(field.owner()).print('.').printSymbol(field);
+        case Field(ACode object, Symbol field, boolean isStatic):
+            printCode(object).print('.');
+            if (isStatic) print("<static>").space();
+            return printSymbol(field);
+        case Local(Symbol local, _):
+            return printSymbol(local);
+        case ArrayItem(ACode array, ACode index):
+            return printCode(array).print('(').printCode(index).print(')');
+        default:
+            throw Debug.abort("illegal case", location);
+        }
+    }
+
     /** Prints the primitive. */
     public ATreePrinter printPrimitive(APrimitive primitive) {
         switch (primitive) {
