@@ -425,6 +425,16 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	print(init);
 	printType(tree);
 
+      case Tree$Create(qualifier, targs) =>
+        if (qualifier != Tree.Empty) {
+          print(qualifier);
+          print(TXT_DOT);
+        }
+	printSymbolUse(tree.symbol(), tree.symbol().name);
+        if (targs.length != 0) {
+	  printArray(targs, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
+        }
+
       case Tree$Typed(expr, tpe) =>
 	print(TXT_LEFT_PAREN);
 	print(expr);

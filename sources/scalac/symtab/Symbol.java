@@ -845,7 +845,6 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Name simpleName() {
         if (isConstructor()) return constructorClass().name.toTermName();
-        if (isInitializer()) return owner().name.toTermName();
         return name;
     }
 

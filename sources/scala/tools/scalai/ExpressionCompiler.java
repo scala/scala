@@ -213,6 +213,9 @@ public class ExpressionCompiler {
         case Select(Super(_, _), _):
             return Code.Self;
 
+        case Select(Create(_, _), _):
+            return Code.Null;
+
         case Select(Tree expr, _):
             return compute(expr);
 

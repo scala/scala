@@ -157,6 +157,9 @@ public class Erasure extends GenTransformer implements Modifiers {
             }
 	    return gen.New(tree.pos, transform(init));
 
+        case Create(_, _):
+            return gen.Create(tree.pos, Tree.Empty, tree.symbol());
+
 	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
             fun = transform(fun);
             vargs = transform(vargs);

@@ -264,12 +264,18 @@ public class TreeChecker {
             return expression(value, definitions.THROWABLE_TYPE());
 
         case New(Tree init):
-            Tree fun = TreeInfo.methPart(init);
-            assert fun instanceof Tree.Ident: show(tree);
-            Symbol symbol = fun.symbol();
-            assert symbol != null && !symbol.isLabel(): show(tree);
-            assert symbol.isInitializer(): show(tree);
-            return expression(init, definitions.UNIT_TYPE());
+            switch (init) {
+            case Apply(Select(Create(_, Tree[] targs), _), Tree[] vargs):
+                return expression(init, definitions.UNIT_TYPE());
+            default:
+                throw Debug.abort("illegal case", show(tree));
+            }
+
+        case Create(Tree qualifier, Tree[] targs):
+            assert qualifier == Tree.Empty: show(tree);
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isClass(): show(tree);
+            return true;
 
         case Apply(Tree vfun, Tree[] vargs):
             vapply(tree, vfun.type(), vargs);
@@ -298,7 +304,7 @@ public class TreeChecker {
             return true;
 
         default:
-            throw Debug.abort("illegal case", tree);
+            throw Debug.abort("illegal case", show(tree));
         }
     }
 
@@ -339,10 +345,11 @@ public class TreeChecker {
         switch (tree) {
 
         case Select(Tree qualifier, _):
+            if (qualifier instanceof Tree.Create)
+                assert symbol.isInitializer(): show(tree);
             return selection(tree);
 
         case Ident(_):
-            if (!symbol.isLabel() && symbol.isInitializer()) return true;
             if (!symbol.isLabel() && symbol.isStatic()) return true;
             assert labels.contains(symbol): show(tree);
             assert symbol.owner() == currentMember(): show(tree);

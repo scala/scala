@@ -79,6 +79,8 @@ public class AddInterfaces extends GenTransformer {
     /** Transforms the given symbol. */
     public Symbol getSymbolFor(Tree tree) {
         switch (tree) {
+        case Create(_, _):
+            return phase.getClassSymbol(tree.symbol());
         case Return(_):
             return member;
         case This(_):

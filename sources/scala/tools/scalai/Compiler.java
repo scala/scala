@@ -305,7 +305,7 @@ public class Compiler {
             return;
 
         default:
-            throw Debug.abort("illegal case", tree);
+            throw Debug.abort("illegal case");
         }
     }
 
@@ -429,7 +429,7 @@ public class Compiler {
             Symbol clasz = symbol.moduleClass();
             Symbol initializer = clasz.lookup(Names.INITIALIZER);
             compiler.global.prevPhase();
-            Tree code =gen.New(gen.Apply(gen.Ident(symbol.pos, initializer)));
+            Tree code = gen.mkNew__(symbol.pos, Tree.Empty, initializer);
             compiler.global.nextPhase();
             return compiler.compile(source, symbol, code, Symbol.EMPTY_ARRAY);
         }

@@ -221,20 +221,21 @@ public class AddConstructors extends GenTransformer {
             return gen.New(transform(init, true));
 
  	case TypeApply(Tree fun, Tree[] args):
-            if (!inNew && fun.symbol().isConstructor()) return transform(fun);
-            return gen.TypeApply(transform(fun, inNew), transform(args));
+            if (!fun.symbol().isConstructor()) return super.transform(tree);
+            if (!inNew) return transform(fun);
+            assert fun instanceof Tree.Ident: tree;
+            return transform(tree, fun.symbol(), transform(args));
 
  	case Apply(Tree fun, Tree[] args):
             return gen.Apply(transform(fun, inNew), transform(args));
 
         case Ident(_):
             Symbol symbol = tree.symbol();
+            if (inNew) return transform(tree, symbol, Tree.EMPTY_ARRAY);
             if (symbol.isConstructor()) {
                 symbol = getInitializer(symbol);
-                if (!inNew) {
-                    Symbol clasz = symbol.owner();
-                    return gen.Select(gen.This(tree.pos, clasz), symbol);
-                }
+                Symbol clasz = symbol.owner();
+                return gen.Select(gen.This(tree.pos, clasz), symbol);
             } else if (symbol.owner().isConstructor()) {
                 symbol = subst.lookupSymbol(symbol);
             }
@@ -248,5 +249,14 @@ public class AddConstructors extends GenTransformer {
 	} // switch(tree)
 
     } // transform()
+
+    /** Transforms the new instance creation. */
+    private Tree transform(Tree tree, Symbol constructor, Tree[] targs) {
+        assert constructor.isConstructor(): tree;
+        Symbol initializer = getInitializer(constructor);
+        Symbol clasz = initializer.owner();
+        Tree instance = gen.Create(tree.pos, Tree.Empty, clasz, targs);
+        return gen.Select(tree.pos, instance, initializer);
+    }
 
 } // class AddConstructors

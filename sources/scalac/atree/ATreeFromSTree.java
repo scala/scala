@@ -227,8 +227,13 @@ public class ATreeFromSTree {
         case Throw(Tree value):
             return make.Throw(tree, expression(value));
 
-        case New(Tree init):
-            return expression(init);
+        case New(Apply(Tree fun, Tree[] vargs)):
+            switch (fun) {
+            case Select(Create(_, Tree[] targs), _):
+                return apply(tree, fun, targs, vargs);
+            default:
+                throw Debug.abort("illegal case", tree);
+            }
 
         case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
             return apply(tree, fun, targs, vargs);
@@ -280,14 +285,16 @@ public class ATreeFromSTree {
         Symbol symbol = tree.symbol();
         switch (tree) {
 
+        case Select(Create(_, _), _):
+            AInvokeStyle style = AInvokeStyle.New;
+            return AFunction.Method(make.Void, symbol, style);
+
         case Select(Tree qualifier, _):
             AInvokeStyle style = invokeStyle(qualifier);
             return AFunction.Method(expression(qualifier), symbol, style);
 
         case Ident(_):
-            AInvokeStyle style = symbol.isInitializer()
-                ? AInvokeStyle.New
-                : AInvokeStyle.StaticClass;
+            AInvokeStyle style = AInvokeStyle.StaticClass;
             return AFunction.Method(make.Void, symbol, style);
 
         default:

@@ -588,6 +588,8 @@ class GenJVM {
         switch (tree) {
         case Ident(_):
             break;
+        case Select(Create(_, _), _):
+            break;
         case Select(Tree qualifier, _):
             genLoad(ctx, qualifier, JAVA_LANG_OBJECT_T);
             break;

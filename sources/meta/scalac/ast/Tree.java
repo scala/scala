@@ -96,6 +96,7 @@ public class Tree {
         n_Return         = node("Return"        , Term, HasSym),
         n_Throw          = node("Throw"         , Term, NoSym),
         n_New            = node("New"           , Term, NoSym),
+        n_Create         = node("Create"        , Term, HasSym),
         n_Typed          = node("Typed"         , Term, NoSym),
         n_TypeApply      = node("TypeApply"     , Term, NoSym),
         n_Apply          = node("Apply"         , Term, NoSym),
@@ -295,6 +296,12 @@ public class Tree {
             setDescription("Instantiation").
             setRange(Phase.PARSER, Phase.END).
             addField(t_TermTree, "init");
+
+        n_Create.
+            setDescription("Instance creation").
+            setRange(Phase.ANALYZER, Phase.END).
+            addField(t_TermTree, "qualifier").
+            addField(t_TypeTrees, "targs");
 
         n_Typed.
             setDescription("Type annotation").

@@ -239,6 +239,12 @@ public class GenTransformer {
         case New(Tree init):
             return gen.New(tree.pos, transform(init));
 
+        case Create(Tree qualifier, Tree[] args):
+            Symbol symbol = getSymbolFor(tree);
+            qualifier = transform(qualifier);
+            args = transform(args);
+            return gen.Create(tree.pos, qualifier, symbol, args);
+
         case Typed(Tree expr, Tree tpe):
             return gen.Typed(tree.pos, transform(expr), transform(tpe));
 

@@ -460,28 +460,126 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
     // Public Methods - Building new instances
 
+    /**
+     * Builds a new instance creation with given qualifier,
+     * initializer, type arguments and value arguments.
+     */
+    public Tree mkNewTV(int pos, Tree qual, Symbol init, Type[] targs,
+        Tree[] vargs)
+    {
+        return mkNewTV(pos, qual, init, mkTypes(pos, targs), vargs);
+    }
+    public Tree mkNewTV(Tree qual, Symbol init, Type[] targs, Tree[] vargs) {
+        return mkNewTV(qual.pos, qual, init, targs, vargs);
+    }
+    public Tree mkNewTV(int pos, Tree qual, Symbol init, Tree[] targs,
+        Tree[] vargs)
+    {
+        assert init.isInitializer(): Debug.show(init);
+        Tree instance = Create(pos, qual, init.owner(), targs);
+        return New(pos, Apply(pos, Select(pos, instance, init), vargs));
+    }
+    public Tree mkNewTV(Tree qual, Symbol init, Tree[] targs, Tree[] vargs) {
+        return mkNewTV(qual.pos, qual, init, targs, vargs);
+    }
+
+    /**
+     * Builds a new instance creation with given qualifier,
+     * initializer and type arguments and no value arguments.
+     */
+    public Tree mkNewT_(int pos, Tree qual, Symbol init, Type[] targs) {
+        return mkNewTV(pos, qual, init, targs, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkNewT_(Tree qual, Symbol init, Type[] targs) {
+        return mkNewT_(qual.pos, qual, init, targs);
+    }
+    public Tree mkNewT_(int pos, Tree qual, Symbol init, Tree[] targs) {
+        return mkNewTV(pos, qual, init, targs, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkNewT_(Tree qual, Symbol init, Tree[] targs) {
+        return mkNewT_(qual.pos, qual, init, targs);
+    }
+
+    /**
+     * Builds a new instance creation with given qualifier,
+     * initializer and value arguments and no type arguments.
+     */
+    public Tree mkNew_V(int pos, Tree qual, Symbol init, Tree[] vargs) {
+        return mkNewTV(pos, qual, init, Tree.EMPTY_ARRAY, vargs);
+    }
+    public Tree mkNew_V(Tree qual, Symbol init, Tree[] vargs) {
+        return mkNew_V(qual.pos, qual, init, vargs);
+    }
+
+    /**
+     * Builds a new instance creation with given qualifier, and
+     * initializer and no type arguments and no value arguments.
+     */
+    public Tree mkNew__(int pos, Tree qual, Symbol init) {
+        return mkNewTV(pos, qual, init, Tree.EMPTY_ARRAY, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkNew__(Tree qual, Symbol init) {
+        return mkNew__(qual.pos, qual, init);
+    }
+
     /** Builds a New node corresponding to "new <init>". */
     public New New(int pos, Tree init) {
-	New tree = make.New(pos, init);
-        tree.setType(init.type);
-        // after AddConstructor use type of symbol
+        New tree = make.New(pos, init);
+        tree.setType(init.type());
+        // after AddConstructor use type of Create node
         switch (init) {
-        case Apply(TypeApply(Tree fun, Tree[] targs), _):
-            Symbol sym = fun.symbol();
-            if (sym == null || sym.isConstructor()) break;
-            Type[] args = Tree.typeOf(targs);
-            tree.setType(Type.appliedType(sym.owner().nextType(), args));
-            break;
-        case Apply(Tree fun, _):
-            Symbol sym = fun.symbol();
-            if (sym == null || sym.isConstructor()) break;
-            tree.setType(sym.owner().nextType());
-            break;
+        case Apply(Select(Tree qual, _), _):
+            if (qual instanceof Tree.Create) tree.setType(qual.type());
         }
         return tree;
     }
     public New New(Tree init) {
         return New(init.pos, init);
+    }
+
+    /**
+     * Builds a Create node with given qualifier, clasz and type
+     * arguments.
+     */
+    public Create Create(int pos, Tree qual, Symbol clasz, Type[] targs) {
+        return Create(pos, qual, clasz, mkTypes(pos, targs));
+    }
+    public Create Create(Tree qual, Symbol clasz, Type[] targs) {
+        return Create(qual.pos, qual, clasz, targs);
+    }
+    public Create Create(int pos, Tree qual, Symbol clasz, Tree[] targs) {
+        assert clasz.isClass(): Debug.show(clasz);
+        Create tree = make.Create(pos, clasz, qual, targs);
+        global.nextPhase();
+        assert targs.length == clasz.typeParams().length: tree;
+        Type prefix = qual == Tree.Empty ? Type.NoPrefix:qual.type();
+        tree.setType(Type.typeRef(prefix, clasz, Tree.typeOf(targs)));
+        global.prevPhase();
+        return tree;
+    }
+    public Create Create(Tree qual, Symbol clasz, Tree[] targs) {
+        return Create(qual.pos, qual, clasz, targs);
+    }
+
+    /**
+     * Builds a Create node with given qualifier, clasz and no type
+     * arguments.
+     */
+    public Create Create(int pos, Tree qual, Symbol clasz) {
+        return Create(pos, qual, clasz, Tree.EMPTY_ARRAY);
+    }
+    public Create Create(Tree qual, Symbol clasz) {
+        return Create(qual.pos, qual, clasz);
+    }
+
+    /** Builds a Create node with given type. */
+    public Create Create(int pos, Type type) {
+        switch (type) {
+        case TypeRef(Type prefix, Symbol clasz, Type[] targs):
+            return Create(pos, mkQualifier(pos, prefix), clasz, targs);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
     }
 
     //########################################################################
