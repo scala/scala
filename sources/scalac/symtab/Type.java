@@ -1218,7 +1218,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case NoType:
 	    return false;
 
-	case ThisType(_):
+	case ThisType(Symbol sym1):
+	    switch (this) {
+	    case ThisType(Symbol sym):
+		return sym.isSubClass(sym1);
+	    case SingleType(_, _):
+		return this.isSameAs(that);
+	    }
+	    break;
+
 	case SingleType(_, _):
 	    switch (this) {
 	    case ThisType(_):
@@ -1230,7 +1238,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
        	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		if (sym == sym1 && pre.isSameAs(pre1) && isSubArgs(args, args1))
+		if (sym == sym1 && pre.isSubType(pre1) && isSubArgs(args, args1))
 		    return true;
 		break;
 	    }
