@@ -234,15 +234,23 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
       make.Apply(tree.pos, update, args1);
   }
 
-  /** make a set of trees share the same documentation comment as a
-  * given tree (used for pattern and val definitions)
+  /** Remove the DocDef shell, if any.
   */
-  def shareComment(trees: Array[Tree], tree: Tree): Array[Tree] = {
-    val comment: String = global.mapTreeComment.get(tree).asInstanceOf[String];
-    if (comment != null)
-      for (val i <- Iterator.range(0, trees.length))
-	global.mapTreeComment.put(trees(i), comment);
-    trees;
+  def unboxDocDef(tree: Tree): Tree = tree match {
+    case Tree$DocDef(_, definition) => definition
+    case _ => tree
+  }
+
+  /** If "tree" is a DocDef, add its comment to "trees".
+  */
+  def boxDocDef(trees: Array[Tree], tree: Tree): Array[Tree] = {
+    tree match {
+      case Tree$DocDef(comment, _) =>
+        for (val i <- Iterator.range(0, trees.length))
+          trees(i) = make.DocDef(tree.pos, comment, trees(i))
+      case _ =>
+    }
+    trees
   }
 
   /** expand pattern definitions and variable definitions in templates.
@@ -251,7 +259,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     var change: boolean = false;
     var i = 0;
     while (i < stats.length && !change) {
-      stats(i) match {
+      unboxDocDef(stats(i)) match {
 	case Tree$PatDef(_, _, _) =>
 	  change = true;
 	case Tree$ValDef(_, _, _, _) =>
@@ -263,12 +271,13 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     if (change) {
       val ts: TreeList = new TreeList();
       for (val i <- Iterator.range(0, stats.length)) {
-	stats(i) match {
+        val stat = unboxDocDef(stats(i));
+	stat match {
 	  case Tree$PatDef(_, _, _) =>
-	    ts.append(Statements(this.PatDef(stats(i)), isLocal));
+	    ts.append(boxDocDef(Statements(this.PatDef(stat), isLocal), stats(i)));
 	  case Tree$ValDef(_, _, _, _) =>
 	    if (isLocal) ts.append(stats(i))
-	    else ts.append(this.ValDef(stats(i)));
+	    else ts.append(boxDocDef(this.ValDef(stat), stats(i)));
 	  case _ =>
 	    ts.append(stats(i));
 	}
@@ -300,15 +309,11 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   def PatDef(tree: Tree): Array[Tree] = tree match {
     case Tree$PatDef(mods, Tree$Ident(name), rhs) =>
       // val x = e     ==>  val x = e
-      shareComment(
-	NewArray.Tree(make.ValDef(tree.pos, mods, name, Tree.Empty, rhs)),
-	tree);
+      NewArray.Tree(make.ValDef(tree.pos, mods, name, Tree.Empty, rhs))
 
     case Tree$PatDef(mods, Tree$Typed(Tree$Ident(name), tpe), rhs) =>
       // val x: T = e  ==> val x: T = e
-      shareComment(
-	NewArray.Tree(make.ValDef(tree.pos, mods, name, tpe, rhs)),
-	tree);
+	NewArray.Tree(make.ValDef(tree.pos, mods, name, tpe, rhs))
 
     case Tree$PatDef(mods, pat, rhs) =>
       val pos: int = tree.pos;
@@ -340,7 +345,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	// val x_1 = e.match (case p => x_1)
 	val valdef: Tree = make.ValDef(pos, mods, vars(0), Tree.Empty, match);
 	print(pat, "patdef", valdef);
-	shareComment(NewArray.Tree(valdef), tree);
+	NewArray.Tree(valdef)
       } else {
 	// t$
 	val vble: Name = getvar();
@@ -355,7 +360,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	    make.Select(pos, make.Ident(pos, vble), tupleSelectorName(i + 1)));
 	}
 	print(pat, "patdef", new Tree$Block(res, gen.mkUnitLit(pos)));//debug
-	shareComment(res, tree);
+	res
       }
   }
 
@@ -375,9 +380,9 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	else make.Ident(tree.pos, valname));
       if ((mods1 & MUTABLE) == 0) {
 	if ((mods1 & DEFERRED) != 0)
-	  shareComment(NewArray.Tree(getter), tree);
+	  NewArray.Tree(getter)
 	else
-	  shareComment(NewArray.Tree(valdef1, getter), tree);
+	  NewArray.Tree(valdef1, getter)
       } else {
 	val setter: Tree = make.DefDef(
 	  tree.pos, mods1, setterName(name),
@@ -394,9 +399,9 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	    make.Ident(tree.pos, valname),
 	    make.Ident(tree.pos, parameterName(0))));
 	if ((mods1 & DEFERRED) != 0)
-	  shareComment(NewArray.Tree(getter, setter), tree);
+	  NewArray.Tree(getter, setter)
 	else
-	  shareComment(NewArray.Tree(valdef1, getter, setter), tree);
+	  NewArray.Tree(valdef1, getter, setter)
       }
   }
 

@@ -227,6 +227,11 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
       case Tree.Empty =>
 	print(TXT_EMPTY);
 
+      case Tree$DocDef(comment, definition) =>
+        print(comment);
+        printNewLine();
+        print(definition);
+
       case Tree$ClassDef(mods, name, tparams, vparams, tpe, impl) =>
 	printModifiers(mods);
 	print(if ((mods & Modifiers.INTERFACE) != 0) KW_INTERFACE else KW_CLASS);

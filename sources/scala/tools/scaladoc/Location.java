@@ -24,8 +24,8 @@ public class Location {
 
     static public final String ROOT_NAME    = "root-page";
     static public final String HTML_SUFFIX  = ".html";
-    //static public final String CLASS_SUFFIX = "-class";
-    static public final String CLASS_SUFFIX = "(class)";
+    static public final String CLASS_SUFFIX = "-class";
+    //static public final String CLASS_SUFFIX = "(class)";
 
     /////////////////// UNIQUE URL //////////////////////
 

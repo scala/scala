@@ -96,10 +96,6 @@ public abstract class Global {
     public final PrintWriter writer;
     public final TreePrinter treePrinter;
 
-    /** documentation comments of trees
-     */
-    public final Map/*<Tree, String>*/ mapTreeComment = new HashMap();
-
     /** documentation comments of symbols
      */
     public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
