@@ -1,0 +1,4 @@
+bug170.scala:9: class D needs to be abstract, since method foo in class D is marked `abstract' and `override' and overrides an incomplete superclass member in J
+class D extends J with I {
+      ^
+one error found

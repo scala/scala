@@ -1,0 +1,6 @@
+bug191.scala:11: type mismatch;
+ found   : B.this.C
+ required: B.this.C
+  foo(new C);
+          ^
+one error found
