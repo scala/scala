@@ -994,7 +994,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  val constrtype: Type = makeMethodType(
 	    tparamSyms,
 	    vparamSyms,
-	    new Type$TypeRef(sym.owner().thisType(), sym, Symbol.getType(tparamSyms)));
+	    Type.typeRef(sym.owner().thisType(), sym, Symbol.getType(tparamSyms)));
 	  //System.out.println("set info " + sym.constructor() + " to " + constrtype + " was " + sym.constructor().rawInfo());//DEBUG
 	  sym.primaryConstructor().setInfo(constrtype);
 	  // necessary so that we can access tparams
@@ -1088,14 +1088,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  var rhs = _rhs;
 	  pushContext(tree, sym.primaryConstructor(), new Scope(context.scope));
 	  val tparamSyms = enterParams(tparams);
-	  sym.primaryConstructor().setInfo(
-	    new Type$PolyType(tparamSyms, sym.typeConstructor()));
-	  // necessary so that we can access tparams
-	  sym.primaryConstructor().flags =
-	    sym.primaryConstructor().flags | INITIALIZED;
 	  rhs = transform(rhs, TYPEmode);
 	  (tree.asInstanceOf[Tree$AliasTypeDef]).rhs = rhs;
 	  owntype = rhs.getType();
+	  sym.primaryConstructor().setInfo(
+	    new Type$PolyType(tparamSyms, owntype));
 	  popContext();
 
 	case Tree$AbsTypeDef(mods, name, _rhs, _lobound) =>

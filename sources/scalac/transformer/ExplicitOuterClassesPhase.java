@@ -92,7 +92,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             Type prefix = clasz.owner().thisType();
             Type[] args = Symbol.type(tparams);
             // !!! use getNewTypeArgs ?
-            Type self = Type.TypeRef(prefix, clasz, args);
+            Type self = Type.typeRef(prefix, clasz, args);
             Type s = self;
             self = context.transformer.apply(self);
             tparams = Type.symbol(self.typeArgs());
@@ -305,14 +305,14 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (symbol.isClass()) {
                     args = map(getNewArgsOf(context, prefix, symbol, args));
                     prefix = Type.localThisType;
-                    return Type.TypeRef(prefix, symbol, args);
+                    return Type.typeRef(prefix, symbol, args);
                 }
                 if (symbol.isPackage()) {
                     args = Type.EMPTY_ARRAY;
                     prefix = Type.localThisType;
-                    return Type.TypeRef(prefix, symbol, args);
+                    return Type.typeRef(prefix, symbol, args);
                 }
-                return Type.TypeRef(apply(prefix), symbol, map(args));
+                return Type.typeRef(apply(prefix), symbol, map(args));
             case SingleType(Type prefix, Symbol symbol):
                 return Type.singleType(apply(prefix), symbol);
             case ThisType(Symbol clasz):

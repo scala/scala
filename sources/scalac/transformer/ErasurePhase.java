@@ -112,7 +112,7 @@ public class ErasurePhase extends Phase {
         case MethodType(Symbol[] params, Type result):
             return Type.MethodType(params, eraseBoxMethodType(result));
         case TypeRef(Type prefix, Symbol clasz, Type[] args):
-            return Type.TypeRef(prefix, clasz, Type.EMPTY_ARRAY);
+            return Type.typeRef(prefix, clasz, Type.EMPTY_ARRAY);
         default:
             throw Debug.abort("illegal case", type);
         }

@@ -110,7 +110,7 @@ public class AddInterfacesPhase extends Phase {
             case CompoundType(Type[] parents, Scope members):
                 parents = Type.cloneArray(parents);
                 parents[parents.length - 1] = sym.owner().nextType();
-                return Type.compoundType(parents, members, tp.symbol());
+                return Type.compoundTypeWithOwner(sym.owner(), parents, members);
             default:
                 throw Debug.abort("illegal case", tp +" -- "+ Debug.show(sym));
             }

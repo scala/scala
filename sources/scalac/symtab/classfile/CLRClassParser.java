@@ -66,7 +66,7 @@ public class CLRClassParser extends ClassParser {
 	    scalac.symtab.Type staticsInfo = scalac.symtab.Type.compoundType
 		(scalac.symtab.Type.EMPTY_ARRAY, statics, staticsClass);
 	    staticsClass.setFirstInfo(staticsInfo);
-	    clazz.module().setInfo(scalac.symtab.Type.TypeRef
+	    clazz.module().setInfo(scalac.symtab.Type.typeRef
 				   (staticsClass.owner().thisType(),
 				    staticsClass, scalac.symtab.Type.EMPTY_ARRAY));
 	}

@@ -1004,7 +1004,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Type constrtype = makeMethodType(
 		    tparamSyms,
 		    vparamSyms,
-		    Type.TypeRef(sym.owner().thisType(), sym, Symbol.type(tparamSyms)));
+		    Type.typeRef(sym.owner().thisType(), sym, Symbol.type(tparamSyms)));
 		//System.out.println("set info " + sym.constructor() + " to " + constrtype + " was " + sym.constructor().rawInfo());//DEBUG
 		sym.primaryConstructor().setInfo(constrtype);
 		// necessary so that we can access tparams
@@ -1089,13 +1089,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case AliasTypeDef(int mods, Name name, AbsTypeDef[] tparams, Tree rhs):
 		pushContext(tree, sym.primaryConstructor(), new Scope(context.scope));
 		Symbol[] tparamSyms = enterParams(tparams);
-		sym.primaryConstructor().setInfo(
-		    Type.PolyType(tparamSyms, sym.typeConstructor()));
-		// necessary so that we can access tparams
-		sym.primaryConstructor().flags |= INITIALIZED;
 		((AliasTypeDef) tree).rhs = rhs = transform(rhs, TYPEmode);
 		owntype = rhs.type;
-
+		sym.primaryConstructor().setInfo(
+                    Type.PolyType(tparamSyms, owntype));
 		popContext();
 		break;
 

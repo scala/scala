@@ -73,7 +73,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
                     case ThisType(Symbol s):
                         if (s == Symbol.NONE) {
                             pre = sym.owner().enclClass().thisType();
-                            tp = Type.TypeRef(pre, sym, targs);
+                            tp = Type.typeRef(pre, sym, targs);
                         }
                     }
                 }
@@ -95,7 +95,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
                                 targs1[i] = proxy(tparams[i], owner).type();
                                 i++;
                             }
-                            return Type.TypeRef(pre, sym, targs1);
+                            return Type.typeRef(pre, sym, targs1);
                         }
                     } else if (LambdaLift.isLocal(sym, owner)) {
                         assert targs.length == 0;

@@ -101,7 +101,7 @@ public class ClassfileParser implements ClassfileConstants {
             if (staticsClass.isModuleClass()) {
                 Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
                 staticsClass.setFirstInfo(staticsInfo);
-                c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
+                c.module().setInfo(Type.typeRef(staticsClass.owner().thisType(),
                                             staticsClass, Type.EMPTY_ARRAY));
             }
             basetpes[0] = supertpe;

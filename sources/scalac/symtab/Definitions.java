@@ -203,7 +203,7 @@ public class Definitions {
         Type type = ARRAY_TYPE.type().resultType();
         switch (type) {
         case TypeRef(Type prefix, Symbol clasz, _):
-            return Type.TypeRef(prefix, clasz, new Type[]{element});
+            return Type.typeRef(prefix, clasz, new Type[]{element});
         case UnboxedArrayType(_):
             return Type.UnboxedArrayType(element);
         default:

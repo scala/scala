@@ -105,6 +105,7 @@ public class ExpandMixinsPhase extends Phase {
             if (symbol.isJava()) return type;
             if (symbol.isPackage()) return type;
             if (symbol.isInterface()) return type;
+            if (symbol.isCompoundSym()) return type; // !!! check
             if (symbol.isClass()) {
                 // !!! System.out.println(Debug.show("!!! ", s, " -> ", symbol, " - ", getTypeExpander(symbol).clasz, " : " + type));
                 return getTypeExpander(symbol).apply(type);
@@ -423,7 +424,7 @@ public class ExpandMixinsPhase extends Phase {
                     symbol = prefix.rebind(symbol);
                 }
                 args = map(args);
-                return Type.TypeRef(prefix, symbol, args).unalias();
+                return Type.typeRef(prefix, symbol, args).unalias();
             case SingleType(Type prefix, Symbol symbol):
                 // !!! prefix = apply(prefix);
                 // !!! symbol = prefix.rebind(symbol);
@@ -449,7 +450,7 @@ public class ExpandMixinsPhase extends Phase {
                     parents = Type.cloneArray(parents);
                     while (i < parents.length) {
                         if (!parents[i].symbol().isInterface())
-                            parents[i] = Type.TypeRef(parents[i].prefix(), (Symbol)interfaces.get(parents[i].symbol()), parents[i].typeArgs());
+                            parents[i] = Type.typeRef(parents[i].prefix(), (Symbol)interfaces.get(parents[i].symbol()), parents[i].typeArgs());
                         i++;
                     }
                     return Type.compoundType(parents, members, clasz);

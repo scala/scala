@@ -64,8 +64,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *
      */
     public case TypeRef(Type pre, Symbol sym, Type[] args) {
-        assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
-        assert sym.kind == ERROR || sym.isType() : pre + " # " + sym;
+        assert this instanceof ExtTypeRef: this;
     }
 
     /** parts_1 with ... with parts_n { members }
@@ -147,7 +146,21 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public static final Type[] EMPTY_ARRAY  = new Type[0];
 
     public static SingleType singleType(Type pre, Symbol sym) {
-        assert sym.isTerm(): pre + " -- " + Debug.show(sym);
+        assert sym.isTerm() && !sym.isNone(): pre + " -- " + Debug.show(sym);
+        rebind:
+        {
+            Symbol owner = sym.owner();
+            if (!owner.isClass()) break rebind;
+            if (owner == pre.symbol()) break rebind;
+            // !!! add if (owner is sealed/final) break rebind ?
+            // !!! add if (owner is module class) break rebind ?
+            if (sym.isFinal() || sym.isPrivate()) break rebind;
+            Symbol rebind = pre.lookupNonPrivate(sym.name);
+            if (rebind.isNone()) break rebind;
+            if (rebind.isLocked()) throw new Type.Error(
+                "illegal cyclic reference involving " + rebind);
+            sym = rebind.rebindSym();
+        }
         if (pre.isStable() || pre == ErrorType) {
             return new ExtSingleType(pre, sym);
         } else {
@@ -198,14 +211,53 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
-    public static TypeRef appliedType(Type tycon, Type[] args) {
+    public static Type appliedType(Type tycon, Type[] args) {
         switch (tycon) {
         case TypeRef(Type pre, Symbol sym, Type[] args1):
-            if (args == args1) return (TypeRef)tycon;
-            else return TypeRef(pre, sym, args);
+            if (args == args1) return tycon;
+            else return Type.typeRef(pre, sym, args);
         default:
-            throw new ApplicationError();
+            throw Debug.abort("illegal case", tycon);
         }
+    }
+
+    public static Type typeRef(Type pre, Symbol sym, Type[] args) {
+        if (!pre.isLegalPrefix() && pre != ErrorType)
+            throw new Type.Malformed(pre, sym.nameString());
+        rebind:
+        if (sym.isAbstractType()) {
+            Symbol owner = sym.owner();
+            if (!owner.isClass()) break rebind;
+            if (owner == pre.symbol()) break rebind;
+            // !!! add if (owner is sealed/final) break rebind ?
+            // !!! add if (owner is module class) break rebind ?
+            if (sym.isFinal() || sym.isPrivate()) break rebind;
+            Symbol rebind = pre.lookupNonPrivate(sym.name);
+            if (rebind.isNone()) break rebind;
+            if (rebind.isLocked()) throw new Type.Error(
+                "illegal cyclic reference involving " + rebind);
+            sym = rebind.rebindSym();
+        }
+        if (sym.isTypeAlias()) {
+            Symbol[] params = sym.typeParams();
+            if (args.length == params.length)
+                return pre.memberInfo(sym).subst(params, args);
+            assert args.length == 0 || args.length == params.length:
+                Debug.show(pre, " - ", sym, " - ", args, " - ", params);
+        }
+        assert isLegalTypeRef(pre, sym, args):
+            Debug.show(pre, " - ", sym, " - ", args, " - ", sym.typeParams());
+        return new ExtTypeRef(pre, sym, args);
+    }
+    private static boolean isLegalTypeRef(Type pre, Symbol sym, Type[] args) {
+        if (!pre.isLegalPrefix() && pre != ErrorType) return false;
+        if (!sym.isType() && !sym.isError()) return false;
+        // !!! return args.length == 0 || args.length == sym.typeParams().length;
+        return true;
+    }
+
+    public static Type newTypeRefUnsafe(Type pre, Symbol sym, Type[] args) {
+        return new ExtTypeRef(pre, sym, args);
     }
 
     public static CompoundType compoundType(Type[] parts, Scope members,
@@ -222,18 +274,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             SYNTHETIC | ABSTRACT);
         res.tsym.setInfo(res);
         res.tsym.primaryConstructor().setInfo(
-            Type.MethodType(Symbol.EMPTY_ARRAY, Type.TypeRef(res.tsym.owner().thisType(), res.tsym, Type.EMPTY_ARRAY)));
+            Type.MethodType(Symbol.EMPTY_ARRAY, Type.typeRef(res.tsym.owner().thisType(), res.tsym, Type.EMPTY_ARRAY)));
         return res;
-    }
-
-    public static Type typeRef(Type pre, Symbol sym, Type[] args) {
-        if (pre.isLegalPrefix() || pre == ErrorType)
-            return TypeRef(pre, sym, args);
-        else if (sym.kind == ALIAS && sym.typeParams().length == args.length)
-            return sym.info().subst(sym.typeParams(), args)
-                .asSeenFrom(pre, sym.owner());
-        else
-            throw new Type.Malformed(pre, sym.nameString());
     }
 
     static class ExtSingleType extends SingleType {
@@ -248,6 +290,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 tp = pre.memberType(sym).resultType();
             }
             return tp;
+        }
+    }
+
+    static class ExtTypeRef extends TypeRef {
+        ExtTypeRef(Type pre, Symbol sym, Type[] args) {
+            super(pre, sym, args);
         }
     }
 
@@ -309,7 +357,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         switch (this) {
         case TypeRef(Type pre, Symbol sym, Type[] args):
             if (args.length == 0 && sym.typeParams().length != 0)
-                return TypeRef(pre, sym, Symbol.type(sym.typeParams()));
+                return Type.typeRef(pre, sym, Symbol.type(sym.typeParams()));
         }
         return this;
     }
@@ -1253,16 +1301,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** Return overriding instance of `sym' in this type,
      *  or `sym' itself if none exists.
      */
+    // !!! remove !
     public Symbol rebind(Symbol sym) {
-        if (sym.kind != CLASS && sym.owner().isClass() && (sym.flags & (PRIVATE | MODUL)) == 0) {
-            Symbol sym1 = lookupNonPrivate(sym.name);
-            if (sym1.kind != NONE) {
-                if ((sym1.flags & LOCKED) != 0)
-                    throw new Type.Error("illegal cyclic reference involving " + sym1);
-                //System.out.println("rebinding " + sym + " to " + sym1);//DEBUG
-                return sym1.rebindSym();
-            }
-        }
         return sym;
     }
 
@@ -3220,11 +3260,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (fullname == Names.java_lang_Object ||
                     fullname == Names.scala_All ||
                     fullname == Names.scala_AllRef)
-                    return TypeRef(localThisType, Global.instance.definitions.ANY_CLASS, EMPTY_ARRAY);
+                    return Type.typeRef(localThisType, Global.instance.definitions.ANY_CLASS, EMPTY_ARRAY);
                 else {
                     Type this1 = unbox();
                     if (this1 != this) return this1;
-                    else return TypeRef(localThisType, sym, EMPTY_ARRAY);
+                    else return Type.typeRef(localThisType, sym, EMPTY_ARRAY);
                 }
 
             default: throw new ApplicationError(sym + " has wrong kind: " + sym.kind);

@@ -1502,19 +1502,19 @@ public abstract class TypeSymbol extends Symbol {
     }
 
     protected final void copyConstructorInfo(TypeSymbol other) {
-        other.primaryConstructor().setInfo(
-            fixConstrType(
-                primaryConstructor().info().cloneType(
-                    primaryConstructor(), other.primaryConstructor()),
-                other));
+        {
+            Type info = primaryConstructor().info().cloneType(
+                primaryConstructor(), other.primaryConstructor());
+            if (!isTypeAlias()) info = fixConstrType(info, other);
+            other.primaryConstructor().setInfo(info);
+        }
         Symbol[] alts = allConstructors().alternativeSymbols();
         for (int i = 1; i < alts.length; i++) {
             Symbol constr = other.addConstructor();
 	    constr.flags = other.flags;
-            constr.setInfo(
-                fixConstrType(
-                    alts[i].info().cloneType(alts[i], constr),
-                    other));
+            Type info = alts[i].info().cloneType(alts[i], constr);
+            if (!isTypeAlias()) info = fixConstrType(info, other);
+            constr.setInfo(info);
         }
     }
 
@@ -1530,7 +1530,7 @@ public abstract class TypeSymbol extends Symbol {
             if (sym != this && isTypeAlias() && owner().isCompoundSym())
                 return type;
             assert sym == this: Debug.show(sym) + " != " + Debug.show(this);
-            return new Type.TypeRef(pre, clone, args);
+            return Type.typeRef(pre, clone, args);
         case LazyType():
             return type;
         default:
@@ -1570,7 +1570,7 @@ public abstract class TypeSymbol extends Symbol {
     /** Get type constructor */
     public final Type typeConstructor() {
         if (tycon == null)
-            tycon = Type.TypeRef(owner().thisType(), this, Type.EMPTY_ARRAY);
+            tycon = Type.typeRef(owner().thisType(), this, Type.EMPTY_ARRAY);
         return tycon;
     }
 
@@ -1707,7 +1707,7 @@ public class AbsTypeSymbol extends TypeSymbol {
     /** Constructor */
     public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags) {
         super(TYPE, pos, name, owner, flags);
-        allConstructors().setFirstInfo(Type.MethodType(EMPTY_ARRAY, Type.TypeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
+        allConstructors().setFirstInfo(Type.MethodType(EMPTY_ARRAY, Type.typeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
     }
 
     public static AbsTypeSymbol define(
@@ -1791,15 +1791,13 @@ public class ClassSymbol extends TypeSymbol {
             Symbol clasz = ClassSymbol.this;
             Symbol alias = rebindSym;
             Type prefix = clasz.owner().thisType();
-            Type constrtype = Type.TypeRef(prefix, alias,Type.EMPTY_ARRAY);
+            Type constrtype = clasz.type(); // !!!
             constrtype = Type.MethodType(Symbol.EMPTY_ARRAY, constrtype);
             constrtype = Type.PolyType(clasz.typeParams(), constrtype);
             constrtype = constrtype.cloneType(
                 clasz.primaryConstructor(), alias.primaryConstructor());
             alias.primaryConstructor().setInfo(constrtype);
-            Symbol[] tparams = constrtype.typeParams();
-            Type info = Type.TypeRef(prefix, clasz, Symbol.type(tparams));
-            alias.setInfo(info);
+            alias.setInfo(constrtype.resultType());
         }
     }
 

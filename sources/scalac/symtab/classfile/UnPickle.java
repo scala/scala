@@ -342,7 +342,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		tpe = new Type.ConstantType(base, value);
 		break;
 	    case TYPEREFtpe:
-		tpe = Type.TypeRef(
+		tpe = Type.newTypeRefUnsafe( // !!!
 		    readTypeRef(), readSymbolRef(), readTypeRefs(end));
 		break;
 	    case COMPOUNDtpe:
