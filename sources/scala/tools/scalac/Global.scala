@@ -28,6 +28,8 @@ class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(ar
     new TextTreePrinter(writer);
   override def newHTMLTreePrinter(writer: PrintWriter): TreePrinter =
     new HTMLTreePrinter(writer);
+  override def newSwingTreePrinter(writer: PrintWriter): TreePrinter =
+    new SwingTreePrinter;
 
 }
 }

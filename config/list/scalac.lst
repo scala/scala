@@ -184,6 +184,8 @@ ast/parser/Tokens.scala
 
 ast/printer/HTMLPrinter.scala
 ast/printer/TextTreePrinter.scala
+ast/printer/SwingPrinter.scala
+ast/printer/TreeInfo.scala
 
 transformer/TransMatch.scala
 transformer/TransMatchPhase.scala

@@ -181,10 +181,12 @@ public abstract class Global {
      */
     public static final String PRINTER_TEXT;
     public static final String PRINTER_HTML;
+    public static final String PRINTER_SWING;
 
     public static final String[] PRINTERS = new String[] {
         PRINTER_TEXT = "text",
         PRINTER_HTML = "html",
+	PRINTER_SWING = "swing",
     };
 
     /**
@@ -201,6 +203,7 @@ public abstract class Global {
     public abstract Infer newInfer();
     public abstract TreePrinter newTextTreePrinter(PrintWriter writer);
     public abstract TreePrinter newHTMLTreePrinter(PrintWriter writer);
+    public abstract TreePrinter newSwingTreePrinter(PrintWriter writer);
 
     /**
      * Creates an instance variable.
@@ -264,7 +267,9 @@ public abstract class Global {
         this.writer = new PrintWriter(stream, debug);
         if (args.printer.value.equals(PRINTER_HTML)) {
             this.treePrinter = newHTMLTreePrinter(writer);
-        } else {
+	} else if (args.printer.value.equals(PRINTER_SWING)) {
+	    this.treePrinter = newSwingTreePrinter(writer);
+	} else {
             if (!args.printer.value.equals(PRINTER_TEXT))
                 error("unknown printer kind: " +  args.printer.value);
             this.treePrinter = newTextTreePrinter(writer);
