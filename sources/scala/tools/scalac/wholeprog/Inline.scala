@@ -28,16 +28,34 @@ class InlineMethods(sites: List[Tuple3[GNode[Symbol, MethodNode], GNode[Symbol, 
     var inlines: int = 0;
     var inlinedThis: Symbol = null;
 
+    var inMain = false;
 
   override def transform(tree: Tree): Tree = {
     tree match {
       case Tree$Apply(fun, args) => {
-	val s = sites.find( tuple => tree == tuple._3.t);
+//	if (inMain)
+//	  Console.println("main " + fun);
+	val s = sites.find( tuple => tree eq tuple._3.t);
 	s match {
 	  case Some(Tuple3(cl, ce, s)) => expand(tree, cl, ce)
 	  case _ => super.transform(tree);
 	}
       }
+
+      case Tree$ClassDef(_, name, _, _, _, _) => {
+	//Console.println("Enter class " + name.toString());
+	super.transform(tree);
+      }
+
+      case Tree$DefDef(_, name, _, _, _, _) => {
+	//Console.println("Enter method " + name.toString());
+	if (name.toString().equals("main"))
+	  inMain = true;
+	else
+	  inMain = false;
+	super.transform(tree);
+      }
+
 
       case _ => super.transform(tree);
     }
@@ -56,7 +74,7 @@ class InlineMethods(sites: List[Tuple3[GNode[Symbol, MethodNode], GNode[Symbol, 
       assert(args.length == vparams(0).length,
 	     "Call site has different nr. of arguments than def " + fun.symbol());
 
-      res(0) = makeThisDef(fun);
+      res(0) = makeThisDef(fun); // was: makeThisDef(fun);
       var i: int = 1;
       while (i < res.length) {
 	// duplicate the formal parameter of the method and create a symbol for this def
@@ -76,7 +94,8 @@ class InlineMethods(sites: List[Tuple3[GNode[Symbol, MethodNode], GNode[Symbol, 
 	subst += arg.symbol() -> sym;
 
 	// set the initial value to the actual parameter
-	arg.rhs = args(i - 1).duplicate();
+//	arg.rhs = args(i - 1).duplicate();
+	arg.rhs = (new InlineMethods(sites, global)).transform(args(i-1));
 	arg.setSymbol(sym);
 	arg.rhs.setType(sym.getType());
 
@@ -90,21 +109,24 @@ class InlineMethods(sites: List[Tuple3[GNode[Symbol, MethodNode], GNode[Symbol, 
     def makeThisDef(fun: Tree): Tree = {
       val Tree$Select(qualifier, selector) = fun;
 
-//      val tpe = make.TypeTerm(fun.pos);
       val sym = caller.info.method.newVariable(fun.pos, 0, Name.fromString("inthis"));
-//      sym.setType(qualifier.getType().singleDeref()); // it was .singleDeref() but unneded?
+
       sym.setType(callee.info.classz.getType());
       Logger.log("[inthis] Set type to " + sym.getType());
 
-//      val t = make.ValDef(fun.pos, 0, Name.fromString("inthis"), tpe, qualifier.duplicate());
-      val t = gen.ValDef(sym, qualifier.duplicate());
+      val t = gen.ValDef(sym, (new InlineMethods(sites, global)).transform(qualifier)); // was: qualifier.duplicate());
 
-//      tpe.setType(qualifier.getType().deconst());
-//      t.setSymbol(sym);
       inlinedThis = sym;
 
       t
     }
+
+      Logger.log("Trying to inline at " +
+		 caller.info.classz.name + "." +
+		 caller.info.method.name + " [" + Position.toString(tree.pos) + "] with " +
+		 callee.info.classz.name + "." +
+		 callee.info.method.name);
+
 
     val locals = createLocals(tree, callee.info.code);
     val updater = new UpdateAccesses(subst, caller.info.method);

@@ -98,6 +98,10 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 
       if (canInline(caller, callee))
 	inlinable = new Tuple3(caller, callee, e.info.site) :: inlinable;
+      else
+	Logger.log("[monomorphiccs] skipped monomorphic call site " +
+		   SymbolPrinter.fullName(caller.info.method) + " -> " +
+		   SymbolPrinter.fullName(callee.info.method));
     }
 
     def canInline(caller: CallGraphNode, callee: CallGraphNode): boolean =
@@ -131,12 +135,15 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 
 	if (mcs.length == 1) {
 	  inlineCallSite(mcs.head);
-//	  Console.println("Monomorphic call-site: " + mcs.head.from + " " + mcs.head.to);
+// 	  Console.println("Monomorphic call-site: " +
+// 			  SymbolPrinter.fullName(mcs.head.from) + " " +
+// 			  SymbolPrinter.fullName(mcs.head.to));
 	  logStatistics(mcs.head);
 	  nr = nr + 1;
 	}
       });
     });
+
     Console.println("[end Monomorphic call site identification]");
 
     Console.println("We identified " + nr + " monomorphic call-sites. ("
@@ -145,6 +152,8 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 
     if (global.args.Xinline.value) {
       Console.println("[start inlining]");
+
+//      inlinable.foreach( (t) => Console.println("inline callsite " + t._3.t));
 
       doInline(inlinable);
       Console.println("[end inlining]");
@@ -189,7 +198,10 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 	  // test for instantiation
 	  targets.foreach( (t) => if ( !isInstatiated(callGraph.getNode(t.to).info.classz) ) {
 	    callGraph.removeEdge(t);
-	    Logger.log("[RTA] Removed edge to " + SymbolPrinter.fullName(t.to));
+	    Logger.log("[RTA] Removed edge " +
+		       SymbolPrinter.fullName(t.from) + " -> " +
+		       SymbolPrinter.fullName(t.to));
+
 	  });
 	}
       });
@@ -256,6 +268,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 	  val methSym = tree.symbol();
 
 	  cg.addNode(new CallGraphNode(methSym, new MethodNode(methSym, methSym.enclClass(), tree)));
+	  Logger.log("[callgraph] Created node " + SymbolPrinter.fullName(methSym));
 	}
 
 	case _ => ;
@@ -292,10 +305,26 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 	case Tree$Apply(fun, args) => {
 
 	  if (enclMethod != null) {
-	    val targetMeth = fun.symbol();
+
+	    var targetMeth = fun.symbol();
+	    var callsiteTree = tree;
+
+	    if (targetMeth == null)
+	      fun match {
+		case Tree$TypeApply(innerFun, args) => {
+		  targetMeth = innerFun.symbol();
+		  callsiteTree = innerFun;
+		  //Console.println("Hopla, a type apply for " + innerFun);
+		}
+		case _ => ;
+	      }
+
+	    if (targetMeth == null)
+	      Console.println("Null symbol for method " + tree);
+
 	    //assert(targetMeth != null, "Null target method for " + tree);
 	    if (targetMeth != null)
-	      createEdges(targetMeth, tree);
+	      createEdges(targetMeth, callsiteTree);
 //	    else
 //	      Console.println("Null symbol: " + tree);
 // 	    fun match {
