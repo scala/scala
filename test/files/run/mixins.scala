@@ -49,11 +49,35 @@ object Test2 {
   }
 }
 
+// Test 3: mixin evaluation order (bug 120)
+
+object Test3 {
+  import System.out.println;
+
+  class A(x: Unit, y: Unit) {
+    println("A");
+  }
+
+  class B(x: Unit) {
+    println("B");
+  }
+
+  class C with A({ println("one"); }, { println("two"); })
+          with B({ println("three"); }) {
+    System.out.println("C");
+  }
+
+  def main(args: Array[String]) = {
+    val c = new C();
+  }
+}
+
 // Main testing function
 
 object Test {
   def main(args: Array[String]): Unit = {
     Test1.main(args);
     Test2.main(args);
+    Test3.main(args);
   }
 }
