@@ -243,12 +243,10 @@ public class ATreeFromSTree {
     private ACode apply(Tree tree, Tree fun, Tree[] targs, Tree[] vargs) {
         switch (fun) {
         case Ident(_):
-            if ("".equals("")) return ACode.Void; // !!!
-            Symbol symbol = tree.symbol();
-            assert symbol.isLabel() && targs.length == 0: tree; // !!!
-            return make.Goto(tree, symbol, expression(vargs));
+            return make.Goto(tree, tree.symbol(), expression(vargs));
+        default:
+            return apply(tree, method(fun), targs, vargs);
         }
-        return apply(tree, method(fun), targs, vargs);
     }
 
     /** Translates the application. */
@@ -261,17 +259,18 @@ public class ATreeFromSTree {
 
     /** Translates the method. */
     private AFunction method(Tree tree) {
+        Symbol symbol = tree.symbol();
         switch (tree) {
+
         case Select(Tree qualifier, _):
-            Symbol symbol = tree.symbol();
             if (symbol.isJava() && symbol.owner().isModuleClass())
                 return AFunction.Method(make.Void, symbol, AInvokeStyle.Static); // !!! qualifier is ignored !
             ACode object = expression(qualifier);
             return AFunction.Method(object, symbol, invokeStyle(qualifier));
+
         case Ident(_):
-            Symbol symbol = tree.symbol();
-            assert symbol.isInitializer(); // !!!
             return AFunction.Method(make.Void, symbol, AInvokeStyle.New);
+
         default:
             throw Debug.abort("illegal case", tree);
         }
@@ -292,10 +291,10 @@ public class ATreeFromSTree {
 
     /** Translates the location. */
     private ALocation location(Tree tree) {
+        Symbol symbol = tree.symbol();
         switch (tree) {
 
         case Select(Tree qualifier, _):
-            Symbol symbol = tree.symbol();
             if (symbol.isModule())
                 return ALocation.Module(symbol); // !!! qualifier is ignored !
             if (symbol.isJava() && symbol.owner().isModuleClass())
@@ -303,7 +302,6 @@ public class ATreeFromSTree {
             return ALocation.Field(expression(qualifier), symbol, false);
 
         case Ident(_):
-            Symbol symbol = tree.symbol();
             if (symbol.isModule()) return ALocation.Module(symbol);
             return ALocation.Local(symbol, symbol.isParameter());
 
