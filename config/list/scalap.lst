@@ -3,15 +3,12 @@
 ##############################################################################
 # $Id$
 
-AbstractFile.scala
 ByteArrayReader.scala
-ClassPath.scala
 Classfile.scala
 Classfiles.scala
 CodeWriter.scala
 Entity.scala
 EntityTable.scala
-FileCache.scala
 Flags.scala
 JavaWriter.scala
 Main.scala

@@ -24,20 +24,44 @@ public class ClassPath {
     public static final String PATH_SEPARATOR =
         System.getProperty("path.separator", ":");
 
+    /** The location of the scala library classes */
+    public static final String SCALA_LIBRARY_CLASSPATH =
+        System.getProperty("scala.library.class.path", "");
+
+    /** The location of the scala library sources */
+    public static final String SCALA_LIBRARY_SOURCEPATH =
+        System.getProperty("scala.library.source.path", "");
+
+    /** The current VM's boot class path */
+    public static final String RUNTIME_BOOTCLASSPATH =
+        System.getProperty("sun.boot.class.path", "");
+
+    /** The current VM's extension directory path */
+    public static final String RUNTIME_EXTDIRS =
+        System.getProperty("java.ext.dirs", "");
+
+    /** The implicit boot class path */
+    public static final String IMPLICIT_BOOTCLASSPATH =
+        concat(new String[]{
+            SCALA_LIBRARY_CLASSPATH,
+            SCALA_LIBRARY_SOURCEPATH,
+            RUNTIME_BOOTCLASSPATH});
+
     /** The default class path */
-    public static final String CLASSPATH =
+    public static final String DEFAULT_CLASSPATH =
         System.getProperty("scala.class.path", ".");
 
     /** The default source path */
-    public static final String SOURCEPATH = "";
+    public static final String DEFAULT_SOURCEPATH =
+        System.getProperty("scala.source.path", "");
 
     /** The default boot class path */
-    public static final String BOOTCLASSPATH =
-        getDefaultBootClassPath();
+    public static final String DEFAULT_BOOTCLASSPATH =
+        System.getProperty("scala.boot.class.path", IMPLICIT_BOOTCLASSPATH);
 
     /** The default extension directory path */
-    public static final String EXTDIRS =
-        System.getProperty("java.ext.dirs", "");
+    public static final String DEFAULT_EXTDIRS =
+        System.getProperty("scala.ext.dirs", RUNTIME_EXTDIRS);
 
     //########################################################################
     // Public Functions
@@ -88,12 +112,18 @@ public class ClassPath {
     //########################################################################
     // Private Functions
 
-    /** Returns the default boot class path. */
-    private static String getDefaultBootClassPath() {
-        String java = System.getProperty("sun.boot.class.path");
-        String scala = System.getProperty("scala.boot.class.path");
-        if (java == null) return scala == null ? "" : scala;
-        return scala == null ? java : java + PATH_SEPARATOR + scala;
+    /** Returns the concatenation of the two paths. */
+    private static String concat(String path1, String path2) {
+        if (path1.length() == 0) return path2;
+        if (path2.length() == 0) return path1;
+        return path1 + PATH_SEPARATOR + path2;
+    }
+
+    /** Returns the concatenation of the array of paths. */
+    private static String concat(String[] paths) {
+        String path = "";
+        for (int i = 0; i < paths.length; i++) path = concat(path, paths[i]);
+        return path;
     }
 
     //########################################################################
@@ -107,7 +137,7 @@ public class ClassPath {
 
     /** Initializes this instance with default paths. */
     public ClassPath() {
-        this(CLASSPATH);
+        this(DEFAULT_CLASSPATH);
     }
 
     /**
@@ -115,20 +145,21 @@ public class ClassPath {
      * default source, boot class and extension directory paths.
      */
     public ClassPath(String classpath) {
-        this(classpath, SOURCEPATH, BOOTCLASSPATH, EXTDIRS);
+        this(classpath, DEFAULT_SOURCEPATH, DEFAULT_BOOTCLASSPATH,
+            DEFAULT_EXTDIRS);
     }
 
     /** Initializes this instance with the specified paths. */
     public ClassPath(String classpath, String sourcepath, String bootclasspath,
         String extdirs)
     {
-        // replace first empty path in bootclasspath by BOOTCLASSPATH
-        if (!bootclasspath.equals(BOOTCLASSPATH)) {
+        // replace first empty path in bootclasspath by IMPLICIT_BOOTCLASSPATH
+        if (!bootclasspath.equals(IMPLICIT_BOOTCLASSPATH)) {
             String path = PATH_SEPARATOR + bootclasspath + PATH_SEPARATOR;
             int index = path.indexOf(PATH_SEPARATOR + PATH_SEPARATOR);
             if (index >= 0)
                 bootclasspath =
-                    path.substring(1, index + 1) + BOOTCLASSPATH +
+                    path.substring(1, index + 1) + IMPLICIT_BOOTCLASSPATH +
                     path.substring(index + 1, path.length() - 1);
         }
         Set files = new LinkedHashSet();

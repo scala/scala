@@ -96,7 +96,7 @@ public class HTMLGeneratorCommand extends CompilerCommand {
             "docmodulepath",
             "Specify where to find doc module class files",
             "path",
-            ClassPath.CLASSPATH);
+            ClassPath.DEFAULT_CLASSPATH);
 
         this.doctitle = new StringOptionParser(this,
 	    "doctitle",

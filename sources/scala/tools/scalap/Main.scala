@@ -10,6 +10,8 @@ package scala.tools.scalap;
 
 import java.io._;
 
+import scala.tools.util.ClassPath;
+
 
 /** The main object used to execute scalap on the command-line.
  *
@@ -44,16 +46,17 @@ object Main {
      */
     def process(args: Arguments, path: ClassPath)(classname: String): Unit = {
         // find the classfile
-        val file = path.openClass(Names.encode(
+        val filename = Names.encode(
             if (classname == "scala.AnyRef") "java.lang.Object"
-            else classname));
+            else classname).replace('.', File.separatorChar) + ".class";
+        val file = path.getRoot().lookupPath(filename, false);
         // if the classfile exists...
-        if (file.exists) {
+        if (file != null) {
             if (verbose)
                 Console.println(Console.BOLD + "FILENAME" + Console.RESET +
                                 " = " + file.getPath);
             // construct a reader for the classfile content
-            val reader = new ByteArrayReader(file.content);
+            val reader = new ByteArrayReader(file.read());
             // parse the classfile
             val clazz = new Classfile(reader);
             // check if there is a Scala signature attribute
@@ -133,10 +136,10 @@ object Main {
             // construct a custom class path
             val path = arguments.getArgument("-classpath") match {
                 case None => arguments.getArgument("-cp") match {
-                    case None => new ClassPath
-                    case Some(path) => new ClassPath { override val classPath = path }
+                    case None => new ClassPath()
+                    case Some(path) => new ClassPath(path)
                 }
-                case Some(path) => new ClassPath { override val classPath = path }
+                case Some(path) => new ClassPath(path)
             }
             // print the classpath if output is verbose
             if (verbose)

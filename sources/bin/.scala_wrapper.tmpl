@@ -14,63 +14,71 @@
 # Configuration
 
 # The configure function contains all the configurable variables of
-# this script. The content of these variables may be overridden by
-# defining an environment variable with the same name prefixed by
-# SCALA_. For example, to run socos with a big initial heap size, one
-# may run the command "env SCALA_JAVA_ARGS=-Xms1024m socos".
+# this script. Each of these variables may be overridden by defining
+# an environment variable with the same but where the "default_" has
+# been replaced by "SCALA_". For example, to start scalaint with a big
+# initial heap size, one may run the following command:
+#
+#   env SCALA_SCALA_ARGS=-Xms1024m scalaint".
+#
+# These variables must use the Unix form for paths and path lists
+# (i.e. use '/' as file separator and ':' as path separator). There
+# are two exceptions: JAVA_ARGS and SCALA_ARGS which must use the
+# paltform-specific form.
 #
 # The following environment variables are also read by this script:
-# - SCALA_BOOTCLASSPATH: if defined, it is used as the default
-#   bootclasspath by the Scala compiler.
 #
 # - SCALA_CLASSPATH: if defined, it is used as the default classpath
-#   by the scala compiler.
+#   by all Scala tools.
 #
-# - CLASSPATH: if defined and if SCALA_CLASSPATH is undefined, it is
-#   used as the default classpath by the Scala compiler.
+# - CLASSPATH: if defined and SCALA_CLASSPATH is undefined, it is used
+#   as the default classpath by all Scala tools.
 #
-# All paths and path lists must be in Unix form (i.e. use '/' as file
-# separator and ':' as path separator). There is only one exception to
-# this rule: CLASSPATH must be in Windows form (i.e. use '\' and ';')
-# on Windows platforms.
+# - SCALA_SOURCEPATH: if defined, it is used as the default sourcepath
+#   by all Scala tools.
+#
+# - SCALA_BOOTCLASSPATH: if defined, it is used as the default
+#   bootclasspath by all Scala tools.
+#
+# - SCALA_EXTDIRS: if defined, it is used as the default extdirs by
+#   all Scala tools.
+#
+# These variables must use the platform-specific form for paths and
+# path lists.
 
 configure() {
 
-    # Location of the Scala library sources. These sources are
-    # included in the Scala distribution.
-    # This variable must refer a directory.
-    RUNTIME_SOURCES={#RUNTIME_SOURCES#};
+    # Location of the Scala library sources.
+    default_LIBRARY_SOURCES={#LIBRARY_SOURCES#};
 
-    # Location of the compiled Scala library. This library is included
-    # in the Scala distribution.
-    # This variable must refer a directory or a zip or jar file.
-    RUNTIME_CLASSES={#RUNTIME_CLASSES#};
+    # Location of the Scala library.
+    default_LIBRARY_CLASSES={#LIBRARY_CLASSES#};
 
-    # Location of the compiled Scala tools. These tools are included
-    # in the Scala distribution.
-    # This variable must refer a directory or a zip or jar file.
-    TOOLS_CLASSES={#TOOLS_CLASSES#};
+    # Location of the Scala tools library.
+    default_TOOLS_CLASSES={#TOOLS_CLASSES#};
 
-    # Location of the compiled fjbg library.  This library is included
-    # in the Scala distribution.
-    # This variable must refer a directory or a zip or jar file.
-    FJBG_CLASSES={#FJBG_CLASSES#};
+    # Location of the FJBG library.
+    default_FJBG_CLASSES={#FJBG_CLASSES#};
 
-    # Location of the compiled msil library. This library is included
-    # in the Scala distribution.
-    # This variable must refer a directory or a zip or jar file.
-    MSIL_CLASSES={#MSIL_CLASSES#};
+    # Location of the MSIL library.
+    default_MSIL_CLASSES={#MSIL_CLASSES#};
 
     # Command to start the Java VM.
-    JAVA_EXEC="java";
+    default_JAVA_CMD={#JAVA_CMD#};
 
     # Additional arguments to pass to the Java VM.
-    JAVA_ARGS={#JAVA_ARGS#};
+    default_JAVA_ARGS={#JAVA_ARGS#};
+
+    # Command to start the Scala VM.
+    default_SCALA_CMD={#SCALA_CMD#};
+
+    # Additional arguments to pass to the Scala VM.
+    default_SCALA_ARGS={#SCALA_ARGS#};
 
     # Command to start subprocesses. This is mainly for debugging
-    # purposes. One may, for example, display the Java command that is
-    # started by "socos", by running "env SCALA_EXEC=echo socos".
-    EXEC="exec";
+    # purposes. For example, one may display the Java command that is
+    # started by "scala", by running "env SCALA_EXEC=echo scala".
+    default_EXEC="exec";
 
 }
 
@@ -96,7 +104,7 @@ abort() {
 ##############################################################################
 # File name and path list conversion functions
 
-# Prints the OS specific form of the given Unix form file name.
+# Prints the OS-specific form of the specified Unix form file name.
 get_os_filename() {
     [ $# = 1 ] || abort "internal error";
     case "$UNAME" in
@@ -105,7 +113,7 @@ get_os_filename() {
     esac;
 }
 
-# Prints the OS specific form of the given Unix form path list.
+# Prints the Unix form of the specified OS-specific form file name.
 get_unix_filename() {
     [ $# = 1 ] || abort "internal error";
     case "$UNAME" in
@@ -114,7 +122,7 @@ get_unix_filename() {
     esac;
 }
 
-# Prints the Unix form of the given OS specific form file name.
+# Prints the OS-specific form of the specified Unix form path list.
 get_os_pathlist() {
     [ $# = 1 ] || abort "internal error";
     case "$UNAME" in
@@ -123,7 +131,7 @@ get_os_pathlist() {
     esac;
 }
 
-# Prints the Unix form of the given OS specific form path list.
+# Prints the Unix form of the specified OS-specific form path list.
 get_unix_pathlist() {
     [ $# = 1 ] || abort "internal error";
     case "$UNAME" in
@@ -133,306 +141,142 @@ get_unix_pathlist() {
 }
 
 ##############################################################################
-# Variable configuration functions
-
-# Configures the variable with the given name. If a variable named
-# SCALA_$1 is defined, assigns its value to the variable named $1,
-# otherwise does nothing.
-configure_variable() {
-    [ $# = 1 ] || abort "internal error";
-
-    if set | grep "^SCALA_$1=" > /dev/null; then
-        eval $1=\$SCALA_$1;
-    fi;
-}
-
-# Configures and tests the path variable with the given name. If a
-# variable named SCALA_$1 is defined and refers an existing directory
-# or file, assigns its value to the variable named $1. If, after that,
-# the variable $1 refers a non-existing path, exits with an error.
-configure_path_variable() {
-    [ $# = 1 ] || abort "internal error";
-
-    if set | grep "^SCALA_$1=" > /dev/null; then
-        path=`eval echo \\\$SCALA_\$1`;
-        if [ -f "$path" -o -d "$path" ]; then
-            eval $1=\$SCALA_$1;
-        else
-            warning "File refered by SCALA_$1 ($path) does not exist.";
-            unset SCALA_$1;
-        fi;
-    fi;
-
-    path=`eval echo \\\$\$1`;
-    if [ ! -f "$path" -a ! -d "$path" ]; then
-        abort "File referred by $1 ($path) does not exist." \
-            "Please, fix the definition of $1 in file $SOURCE." \
-            "Alternatively you may also define the environment" \
-            "variable SCALA_$1.";
-    fi
-}
-
-##############################################################################
 # Path list construction functions
 
-# Prepends a named path to a named path list. First, computes variable
-# $2 and then updates the path list in variable $1 by appending the
-# path from variable $2.
-prepend_path() {
+# Prints the concatenation of two path lists.
+append_pathlists() {
     [ $# = 2 ] || abort "internal error";
 
-    compute_variable "$2";
-
-    if [ -z "`eval echo \\\$\$1`" ]; then
-        eval $1=\$$2;
+    if [ -z "$1" ]; then
+        echo "$2";
+    elif [ -z "$2" ]; then
+        echo "$1";
     else
-        eval $1=\$$2:\$$1;
+        echo "$1:$2";
     fi;
 }
 
 ##############################################################################
-# Variable computation functions
+# Value computation functions
 
-# Sets SCALA_CLASSPATH to its default value.
-compute_default_scala_classpath() {
-    SCALA_CLASSPATH=".";
-}
-
-# Computes SCALA_CLASSPATH.
-compute_scala_classpath() {
-    if [ -z "$SCALA_CLASSPATH" ]; then
-        if [ -n "$CLASSPATH" ]; then
-            SCALA_CLASSPATH=`get_unix_pathlist "$CLASSPATH"`;
-        else
-            compute_default_scala_classpath;
-        fi;
-    fi;
-}
-
-# Sets SCALA_BOOTCLASSPATH to its default value.
-compute_default_scala_bootclasspath() {
-    eval SCALA_BOOTCLASSPATH="";
-    prepend_path SCALA_BOOTCLASSPATH RUNTIME_SOURCES;
-    prepend_path SCALA_BOOTCLASSPATH RUNTIME_CLASSES;
-}
-
-
-# Computes SCALA_BOOTCLASSPATH.
-compute_scala_bootclasspath() {
-    if [ -z "$SCALA_BOOTCLASSPATH" ]; then
-        compute_default_scala_bootclasspath;
-    fi;
-}
-
-# Computes variable $1.
-compute_variable() {
+# Computes and stores the value "$1" in the variable "current_$1". If
+# the variable "SCALA_$1" is defined, its content is used. Otherwise,
+# the content of the variable "default_$1" is used.
+compute_value() {
     [ $# = 1 ] || abort "internal error";
 
+    eval current_$1=\"\$default_$1\";
     case "$1" in
-        SCALA_CLASSPATH     ) compute_scala_classpath;;
-        SCALA_BOOTCLASSPATH ) compute_scala_bootclasspath;;
-        RUNTIME_SOURCES     ) configure_path_variable "$1";;
-        RUNTIME_CLASSES     ) configure_path_variable "$1";;
-        TOOLS_CLASSES       ) configure_path_variable "$1";;
-        FJBG_CLASSES        ) configure_path_variable "$1";;
-        MSIL_CLASSES        ) configure_path_variable "$1";;
-        JAVA_EXEC           ) configure_variable "$1";;
-        JAVA_ARGS           ) configure_variable "$1";;
-        EXEC                ) configure_variable "$1";;
+
+        LIBRARY_SOURCES | \
+        LIBRARY_CLASSES | \
+        TOOLS_CLASSES   | \
+        FJBG_CLASSES    | \
+        MSIL_CLASSES    )
+            if eval [ -n \"\$SCALA_$1\" ]; then
+                if eval [ -f \"\$SCALA_$1\" -o -d \"\$SCALA_$1\" ]; then
+                    eval current_$1=\"\$SCALA_$1\";
+                else
+                    eval warning \""File referred by SCALA_$1 (\$SCALA_$1)" \
+                        "does not exist, using default value instead."\";
+                    unset SCALA_$1;
+                fi;
+            fi;
+            if ! eval [ -f \"\$current_$1\" -o -d \"\$current_$1\" ]; then
+                eval abort \""File referred by default_$1 (\$default_$1)" \
+                    "does not exist. Please, fix definition of default_$1 in" \
+                    "file $SOURCE or define environment variable SCALA_$1."\";
+            fi;
+            ;;
+
+        JAVA_CMD   | \
+        JAVA_ARGS  | \
+        SCALA_CMD  | \
+        SCALA_ARGS | \
+        EXEC       )
+            if eval [ -n \"\$SCALA_$1\" ]; then
+                eval current_$1=\"\$SCALA_$1\";
+            fi;
+            ;;
+
+        * )
+            abort "internal error: $1";
+            ;;
+
     esac;
 }
 
 ##############################################################################
-# Java invocation functions
+# Default paths
 
-# Starts a Java program with the given arguments and the following
-# additional ones:
-# - arguments specified by the variable JAVA_ARGS
-# - script-suffix-specific arguments
-exec_java() {
-    [ $# -gt 0 ] || abort "internal error";
+# Prints the default scala classpath or nothing if it's unspecified.
+get_scala_classpath() {
+    if [ -n "$SCALA_CLASSPATH" ]; then
+        get_unix_pathlist "$SCALA_CLASSPATH";
+    elif [ -n "$CLASSPATH" ]; then
+        get_unix_pathlist "$CLASSPATH";
+    fi;
+}
 
-    # configure variables
-    compute_variable EXEC;
-    compute_variable JAVA_EXEC;
-    compute_variable JAVA_ARGS;
+# Prints the default scala sourcepath or nothing if it's unspecified.
+get_scala_sourcepath() {
+    if [ -n "$SCALA_SOURCEPATH" ]; then
+        get_unix_pathlist "$SCALA_SOURCEPATH";
+    fi;
+}
 
-    # append script-suffix-specific arguments
+# Prints the default scala bootclasspath or nothing if it's unspecified.
+get_scala_bootclasspath() {
+    if [ -n "$SCALA_BOOTCLASSPATH" ]; then
+        get_unix_pathlist "$SCALA_BOOTCLASSPATH";
+    fi;
+}
+
+# Prints the default scala extdirs or nothing if it's unspecified.
+get_scala_extdirs() {
+    if [ -n "$SCALA_EXTDIRS" ]; then
+        get_unix_pathlist "$SCALA_EXTDIRS";
+    fi;
+}
+
+##############################################################################
+# VM invocation functions
+
+# Prints the VM script-suffix-specific arguments.
+vm_get_script_suffix_args() {
     case "$SCRIPT" in
-        *-debug* ) JAVA_ARGS="$JAVA_ARGS -Djava.compiler=NONE -ea";;
+        *-debug* ) echo "-Djava.compiler=NONE -ea";;
     esac;
-
-    # invoke Java
-    $EXEC $JAVA_EXEC $JAVA_ARGS "$@";
 }
 
-# Starts a Scala tool. The first argument must be either "java" or
-# "scala". It tells whether the tool is written in Java or Scala. The
-# following arguments are passed to exec_java. They must, at least,
-# contain the name of the main class.
-exec_tool() {
-    [ $# -gt 1 ] || abort "internal error";
-    language="$1"; shift 1;
+# Starts a Java VM with the specified arguments.
+vm_start_java() {
+    # compute values
+    compute_value EXEC;
+    compute_value JAVA_CMD;
+    compute_value JAVA_ARGS;
 
-    # augment Java classpath
-    prepend_path JAVA_CLASSPATH TOOLS_CLASSES;
-    case "$language" in
-        java  ) true;;
-        scala ) prepend_path JAVA_CLASSPATH RUNTIME_CLASSES;;
-        *     ) abort "internal error: found language='$language'";;
-    esac;
-
-    # invoke Java
-    exec_java \
-        -classpath "`get_os_pathlist "$JAVA_CLASSPATH"`" \
-        -Dscala.home="$PREFIX" \
-        -Dscala.product="$SCRIPT" \
-        -Dscala.version="$VERSION" \
-        "$@";
+    # start Java VM
+    $current_EXEC $current_JAVA_CMD $current_JAVA_ARGS \
+        `vm_get_script_suffix_args` "$@";
 }
 
-# Starts a Scala compile tool (one that uses properties
-# scala.class.path and scala.boot.class.path). The first argument must
-# be either "java" or "scala". It tells whether the tool is written in
-# Java or Scala. The following arguments are passed to exec_java. They
-# must, at least, contain the name of the main class.
-exec_compile_tool() {
-    [ $# -gt 1 ] || abort "internal error";
-    language="$1"; shift 1;
+# Starts a Scala VM with the specified arguments.
+vm_start_scala() {
+    # compute values
+    compute_value EXEC;
+    compute_value SCALA_CMD;
+    compute_value SCALA_ARGS;
 
-    # compute Scala classpath and bootclasspath
-    compute_scala_classpath;
-    compute_scala_bootclasspath;
-
-    # invoke Java
-    exec_tool "$language" \
-        -Dscala.class.path=`get_os_pathlist "$SCALA_CLASSPATH"` \
-        -Dscala.boot.class.path=`get_os_pathlist "$SCALA_BOOTCLASSPATH"` \
-        "$@";
-}
-
-# Starts a Scala compiler. The first argument must be either "java" or
-# "scala". It tells whether the tool is written in Java or Scala. The
-# following arguments are passed to exec_java. They must, at least,
-# contain the name of the main class.
-exec_compiler() {
-    [ $# -gt 1 ] || abort "internal error";
-    language="$1"; shift 1;
-
-    # augment Java classpath
-    prepend_path JAVA_CLASSPATH MSIL_CLASSES;
-    prepend_path JAVA_CLASSPATH FJBG_CLASSES;
-
-    exec_compile_tool "$language" "$@";
+    # start Java VM
+    $current_EXEC $current_SCALA_CMD $current_SCALA_ARGS \
+        `vm_get_script_suffix_args` "$@";
 }
 
 ##############################################################################
-# Implementation of scala-info
+# Scala invocation functions
 
-# Prints given error message, prints usage and exits with error code 1.
-scala_info_abort() {
-    error "$@";
-    scala_info_print_usage 1>&2;
-    exit 1;
-}
-
-# Prints value of $1.
-scala_info_print_variable() {
-    [ $# = 1 ] || abort "internal error";
-    eval echo \"\$$1\";
-}
-
-# Prints default value of $1.
-scala_info_print_variable_default() {
-    [ $# = 1 ] || abort "internal error";
-    case "$1" in
-        SCALA_CLASSPATH     ) compute_default_scala_classpath;;
-        SCALA_BOOTCLASSPATH ) compute_default_scala_bootclasspath;;
-    esac;
-    scala_info_print_variable "$1";
-}
-
-# Prints current value of $1.
-scala_info_print_variable_current() {
-    [ $# = 1 ] || abort "internal error";
-    compute_variable "$1";
-    scala_info_print_variable "$1";
-}
-
-# Implements "scala-info --home".
-scala_info_option_home() {
-    [ $# -gt 0 ] && abort "too many arguments";
-    echo "$PREFIX";
-}
-
-# Implements "scala-info --version".
-scala_info_option_version() {
-    [ $# -gt 0 ] && abort "too many arguments";
-    echo "$VERSION";
-}
-
-# Implements "scala-info --$1 <variable>"
-scala_info_option_x_variable() {
-    [ $# -lt 2 ] && abort "missing variable name";
-    [ $# -gt 2 ] && abort "too many arguments";
-    case "$2" in
-        CLASSPATH           ) variable=SCALA_$2;;
-        BOOTCLASSPATH       ) variable=SCALA_$2;;
-        RUNTIME_SOURCES     ) variable=$2;;
-        RUNTIME_CLASSES     ) variable=$2;;
-        TOOLS_CLASSES       ) variable=$2;;
-        FJBG_CLASSES        ) variable=$2;;
-        MSIL_CLASSES        ) variable=$2;;
-        JAVA_EXEC           ) variable=$2;;
-        JAVA_ARGS           ) variable=$2;;
-        EXEC                ) variable=$2;;
-        *                   ) abort "Unknown variable \`$2'";;
-    esac;
-    scala_info_print_variable_$1 $variable;
-}
-
-# Implements "scala-info --help".
-scala_info_option_help() {
-    echo "usage: $0 <option>";
-    echo "where possible options include:";
-    echo "  --home                Print Scala home directory";
-    echo "  --version             Print Scala version";
-    echo "  --default <variable>  Print default value of variable";
-    echo "  --current <variable>  Print current value of variable";
-    echo "  -? --help             Print this help message";
-    echo "";
-    echo "valid variables include:";
-    echo "  CLASSPATH             Default classpath";
-    echo "  BOOTCLASSPATH         Default bootclasspath";
-    echo "  RUNTIME_SOURCES       Location of the Scala library sources";
-    echo "  RUNTIME_CLASSES       Location of the Scala library";
-    echo "  TOOLS_CLASSES         Location of the Scala tools";
-    echo "  FJBG_CLASSES          Location of the fjbg library";
-    echo "  MSIL_CLASSES          Location of the msil library";
-    echo "  JAVA_EXEC             Command to start the Java VM";
-    echo "  JAVA_ARGS             Additional arguments to pass to the Java VM";
-    echo "  EXEC                  Command to start subprocesses";
-}
-
-# Entry point of scala-info.
-scala_info() {
-    [ $# = 0 ] && abort "missing option";
-
-    case "$1" in
-        --home      ) shift 1; scala_info_option_home "$@";;
-        --version   ) shift 1; scala_info_option_version "$@";;
-        --default   ) shift 1; scala_info_option_x_variable default "$@";;
-        --current   ) shift 1; scala_info_option_x_variable current "$@";;
-        -? | --help ) shift 1; scala_info_option_help "$@";;
-        -*          ) abort "unrecognised option \`$1'";;
-        *           ) abort "illegal argument \`$1'";;
-    esac;
-}
-
-##############################################################################
-# Implementation of scala
-
-# Returns true if the given arguments contain a Xbootclasspath: flag.
+# Returns true if the given arguments contain a flag -Xbootclasspath.
 scala_has_bootclasspath() {
     while [ $# != 0 ]; do
         case "$1" in
@@ -446,15 +290,202 @@ scala_has_bootclasspath() {
     return 1;
 }
 
-# Entry point of scala-info.
+# Implements the command "scala".
 scala() {
-    compute_variable EXEC;
     if scala_has_bootclasspath "$@"; then
-        exec_java "$@";
+        vm_start_java "$@";
     else
-        compute_variable RUNTIME_CLASSES;
-        exec_java "-Xbootclasspath/a:$RUNTIME_CLASSES" "$@";
+        compute_value LIBRARY_CLASSES;
+        classes="$current_LIBRARY_CLASSES";
+        vm_start_java "-Xbootclasspath/a:`get_os_filename "$classes"`" "$@";
     fi;
+}
+
+##############################################################################
+# Tool invocation functions
+
+# Starts a Scala tool. The first argument is added to the runtime
+# classpath. The following ones are passed to vm_start_scala. They
+# must, at least, contain the name of the main class.
+tool_start() {
+    [ $# -gt 1 ] || abort "internal error";
+    classpath="$1"; shift 1;
+
+    # compute value
+    compute_value LIBRARY_SOURCES;
+    compute_value LIBRARY_CLASSES;
+    compute_value TOOLS_CLASSES;
+
+    # append tools library to classpath
+    classpath=`append_pathlists "$classpath" "$current_TOOLS_CLASSES"`;
+
+    # start Scala VM
+    tool_start0 -classpath "`get_os_pathlist "$classpath"`" "$@";
+}
+
+tool_start0() {
+    if [ -n "`get_scala_extdirs`" ]; then
+        tool_start1 -Dscala.ext.dirs="`get_scala_extdirs`" "$@";
+    else
+        tool_start1 "$@";
+    fi;
+}
+
+tool_start1() {
+    if [ -n "`get_scala_bootclasspath`" ]; then
+        tool_start2 -Dscala.boot.class.path="`get_scala_bootclasspath`" "$@";
+    else
+        tool_start2 "$@";
+    fi;
+}
+
+tool_start2() {
+    if [ -n "`get_scala_sourcepath`" ]; then
+        tool_start3 -Dscala.source.path="`get_scala_sourcepath`" "$@";
+    else
+        tool_start3 "$@";
+    fi;
+}
+
+tool_start3() {
+    if [ -n "`get_scala_classpath`" ]; then
+        tool_start4 -Dscala.class.path="`get_scala_classpath`" "$@";
+    else
+        tool_start4 "$@";
+    fi;
+}
+
+tool_start4() {
+    sources="$current_LIBRARY_SOURCES";
+    classes="$current_LIBRARY_CLASSES";
+    vm_start_scala \
+        -Dscala.product="$SCRIPT" \
+        -Dscala.version="$VERSION" \
+        -Dscala.home="$PREFIX" \
+        -Dscala.library.source.path="`get_os_filename "$sources"`" \
+        -Dscala.library.class.path="`get_os_filename "$classes"`" \
+        "$@";
+}
+
+##############################################################################
+# Compiler invocation functions
+
+# Starts a Scala compiler. The first argument is added to the runtime
+# classpath. The following ones are passed to vm_start_scala. They
+# must, at least, contain the name of the main class.
+compiler_start() {
+    [ $# -gt 1 ] || abort "internal error";
+    classpath="$1"; shift 1;
+
+    # compute values
+    compute_value FJBG_CLASSES;
+    compute_value MSIL_CLASSES;
+
+    # append FJBG and MSIL libraries to classpath
+    classpath=`append_pathlists "$classpath" "$current_FJBG_CLASSES"`;
+    classpath=`append_pathlists "$classpath" "$current_MSIL_CLASSES"`;
+
+    # start tool
+    tool_start "$classpath" "$@";
+}
+
+##############################################################################
+# Implementation of scala-info
+
+# Prints given error message, prints usage and exits with error code 1.
+info_abort() {
+    error "$@";
+    info_print_usage 1>&2;
+    exit 1;
+}
+
+# Prints value of variable $1.
+info_print_variable() {
+    [ $# = 1 ] || abort "internal error";
+    eval echo \"\$$1\";
+}
+
+# Prints default value of value $1.
+info_print_default_value() {
+    [ $# = 1 ] || abort "internal error";
+    info_print_variable "default_$1";
+}
+
+# Prints current value of value $1.
+info_print_current_value() {
+    [ $# = 1 ] || abort "internal error";
+    compute_value "$1";
+    info_print_variable "current_$1";
+}
+
+# Implements "scala-info --home".
+info_option_home() {
+    [ $# -gt 0 ] && abort "too many arguments";
+    echo "$PREFIX";
+}
+
+# Implements "scala-info --version".
+info_option_version() {
+    [ $# -gt 0 ] && abort "too many arguments";
+    echo "$VERSION";
+}
+
+# Implements "scala-info --$1 <value>"
+info_option_x_value() {
+    [ $# -lt 2 ] && abort "missing value name";
+    [ $# -gt 2 ] && abort "too many arguments";
+    case "$2" in
+        LIBRARY_SOURCES     ) value=$2;;
+        LIBRARY_CLASSES     ) value=$2;;
+        TOOLS_CLASSES       ) value=$2;;
+        FJBG_CLASSES        ) value=$2;;
+        MSIL_CLASSES        ) value=$2;;
+        JAVA_CMD            ) value=$2;;
+        JAVA_ARGS           ) value=$2;;
+        SCALA_CMD           ) value=$2;;
+        SCALA_ARGS          ) value=$2;;
+        EXEC                ) value=$2;;
+        *                   ) abort "Unknown value \`$2'";;
+    esac;
+    info_print_$1_value $value;
+}
+
+# Implements "scala-info --help".
+info_option_help() {
+    echo "usage: $0 <option>";
+    echo "where possible options include:";
+    echo "  --home            Print Scala home directory";
+    echo "  --version         Print Scala version";
+    echo "  --default <name>  Print default value of value <name>";
+    echo "  --current <name>  Print current value of value <name>";
+    echo "  -? --help         Print this help message";
+    echo "";
+    echo "valid value names include:";
+    echo "  LIBRARY_SOURCES   Location of the Scala library sources";
+    echo "  LIBRARY_CLASSES   Location of the Scala library";
+    echo "  TOOLS_CLASSES     Location of the Scala tools";
+    echo "  FJBG_CLASSES      Location of the fjbg library";
+    echo "  MSIL_CLASSES      Location of the msil library";
+    echo "  JAVA_CMD          Command to start the Java VM";
+    echo "  JAVA_ARGS         Additional arguments to pass to the Java VM";
+    echo "  SCALA_CMD         Command to start the Scala VM";
+    echo "  SCALA_ARGS        Additional arguments to pass to the Scala VM";
+    echo "  EXEC              Command to start subprocesses";
+}
+
+# Entry point of scala-info.
+info() {
+    [ $# = 0 ] && abort "missing option";
+
+    case "$1" in
+        --home      ) shift 1; info_option_home "$@";;
+        --version   ) shift 1; info_option_version "$@";;
+        --default   ) shift 1; info_option_x_value default "$@";;
+        --current   ) shift 1; info_option_x_value current "$@";;
+        -? | --help ) shift 1; info_option_help "$@";;
+        -*          ) abort "unrecognised option \`$1'";;
+        *           ) abort "illegal argument \`$1'";;
+    esac;
 }
 
 ##############################################################################
@@ -490,19 +521,19 @@ fi;
 ##############################################################################
 # Configuration and invocation of $SCRIPT
 
-unset JAVA_CLASSPATH;
 configure;
 
 case "$SCRIPT" in
+    scala-info ) info "$@";;
     scala      ) scala "$@";;
-    scala-info ) scala_info "$@";;
-    scalac*    ) exec_compiler scala scala.tools.scalac.Main "$@";;
-    scalarun*  ) exec_compiler scala scala.tools.scalai.Main "$@";;
-    scalaint*  ) exec_compiler scala scala.tools.scalai.Main -interactive "$@";;
-    scaladoc*  ) exec_compile_tool scala scala.tools.scaladoc.Main "$@";;
-    scalap*    ) exec_compile_tool scala scala.tools.scalap.Main "$@";;
-    dtd2scala* ) exec_tool scala scala.tools.dtd2scala.Main "$@";;
-    scalatest* ) exec_tool java scala.tools.scalatest.Main "$@";;
+    scala-*    ) scala "$@";;
+    scalac*    ) compiler_start "" scala.tools.scalac.Main "$@";;
+    scalarun*  ) compiler_start "" scala.tools.scalai.Main "$@";;
+    scalaint*  ) compiler_start "" scala.tools.scalai.Main -interactive "$@";;
+    scaladoc*  ) tool_start "" scala.tools.scaladoc.Main "$@";;
+    scalap*    ) tool_start "" scala.tools.scalap.Main "$@";;
+    dtd2scala* ) tool_start "" scala.tools.dtd2scala.Main "$@";;
+    scalatest* ) tool_start "" scala.tools.scalatest.Main "$@";;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
