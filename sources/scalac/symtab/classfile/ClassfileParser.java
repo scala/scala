@@ -82,8 +82,8 @@ public class ClassfileParser implements ClassfileConstants {
             pool.indexPool();
             int flags = in.nextChar();
             Name name = readClassName(in.nextChar());
-            if (c.fullName() != name)
-                throw new IOException("class file '" + c.fullName() +
+            if (c != global.definitions.getClass(name))
+                throw new IOException("class file '" + in.path +
                                       "' contains wrong class " + name);
             // todo: correct flag transition
             c.flags = transFlags(flags);
