@@ -95,6 +95,20 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
     // Public Methods - Building constants
 
+    /** Builds a literal. */
+    public Tree mkLit(int pos, Object value) {
+        if (value instanceof Boolean) return mkBooleanLit(pos, (Boolean)value);
+        if (value instanceof Byte) return mkByteLit(pos, (Byte)value);
+        if (value instanceof Short) return mkShortLit(pos, (Short)value);
+        if (value instanceof Character) return mkCharLit(pos,(Character)value);
+        if (value instanceof Integer) return mkIntLit(pos, (Integer)value);
+        if (value instanceof Long) return mkLongLit(pos, (Long)value);
+        if (value instanceof Float) return mkFloatLit(pos, (Float)value);
+        if (value instanceof Double) return mkDoubleLit(pos, (Double)value);
+        if (value instanceof String) return mkStringLit(pos, (String)value);
+        throw Debug.abort("unknown literal class " + value.getClass(), value);
+    }
+
     /** Builds a unit literal. */
     public Tree mkUnitLit(int pos) {
         return make.Block(pos, Tree.EMPTY_ARRAY).
@@ -103,56 +117,82 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a boolean literal. */
     public Tree mkBooleanLit(int pos, boolean value) {
-        return make.Literal(pos, value ? Boolean.TRUE : Boolean.FALSE).
-            setType(definitions.BOOLEAN_TYPE);
+        return mkBooleanLit(pos, value ? Boolean.TRUE : Boolean.FALSE);
+    }
+
+    /** Builds a boolean literal. */
+    public Tree mkBooleanLit(int pos, Boolean value) {
+        return make.Literal(pos, value).setType(definitions.BOOLEAN_TYPE);
     }
 
     /** Builds a byte literal. */
     public Tree mkByteLit(int pos, byte value) {
-        return make.Literal(pos, new Byte(value)).
-            setType(definitions.BYTE_TYPE);
+        return mkByteLit(pos, new Byte(value));
+    }
+
+    /** Builds a byte literal. */
+    public Tree mkByteLit(int pos, Byte value) {
+        return make.Literal(pos, value).setType(definitions.BYTE_TYPE);
     }
 
     /** Builds a short literal. */
     public Tree mkShortLit(int pos, short value) {
-        return make.Literal(pos, new Short(value)).
-            setType(definitions.SHORT_TYPE);
+        return mkShortLit(pos, new Short(value));
+    }
+
+    /** Builds a short literal. */
+    public Tree mkShortLit(int pos, Short value) {
+        return make.Literal(pos, value).setType(definitions.SHORT_TYPE);
     }
 
     /** Builds a character literal. */
     public Tree mkCharLit(int pos, char value) {
-        return make.Literal(pos, new Character(value)).
-            setType(definitions.CHAR_TYPE);
+        return mkCharLit(pos, new Character(value));
+    }
+
+    /** Builds a character literal. */
+    public Tree mkCharLit(int pos, Character value) {
+        return make.Literal(pos, value).setType(definitions.CHAR_TYPE);
     }
 
     /** Builds an integer literal */
     public Tree mkIntLit(int pos, int value) {
-        return mkIntLit( pos, new Integer(value));
+        return mkIntLit(pos, new Integer(value));
     }
 
     /** Builds an integer literal */
     public Tree mkIntLit(int pos, Integer value) {
-        return make.Literal(pos, value)
-	    .setType(definitions.INT_TYPE);
+        return make.Literal(pos, value).setType(definitions.INT_TYPE);
     }
-
 
     /** Builds a long literal. */
     public Tree mkLongLit(int pos, long value) {
-        return make.Literal(pos, new Long(value)).
-            setType(definitions.LONG_TYPE);
+        return mkLongLit(pos, new Long(value));
+    }
+
+    /** Builds a long literal. */
+    public Tree mkLongLit(int pos, Long value) {
+        return make.Literal(pos, value).setType(definitions.LONG_TYPE);
     }
 
     /** Builds a float literal. */
     public Tree mkFloatLit(int pos, float value) {
-        return make.Literal(pos, new Float(value)).
-            setType(definitions.FLOAT_TYPE);
+        return mkFloatLit(pos, new Float(value));
+    }
+
+    /** Builds a float literal. */
+    public Tree mkFloatLit(int pos, Float value) {
+        return make.Literal(pos, value).setType(definitions.FLOAT_TYPE);
     }
 
     /** Builds a double literal. */
     public Tree mkDoubleLit(int pos, double value) {
-        return make.Literal(pos, new Double(value)).
-            setType(definitions.DOUBLE_TYPE);
+        return mkDoubleLit(pos, new Double(value));
+    }
+
+    /** Builds a double literal. */
+    public Tree mkDoubleLit(int pos, Double value) {
+        return make.Literal(pos, value).setType(definitions.DOUBLE_TYPE);
     }
 
     /** Builds a string literal. */
