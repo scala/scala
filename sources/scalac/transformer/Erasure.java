@@ -503,6 +503,17 @@ public class Erasure extends Transformer implements Modifiers {
 	    return (tree1.type instanceof Type.MethodType) ? tree1
 		: coerce(tree1, owntype);
 
+        case LabelDef(Name name, Tree.Ident[] params,Tree body):
+	    Tree.Ident[] new_params = new Tree.Ident[params.length];
+	    for (int i = 0; i < params.length; i++) {
+		new_params[i] = (Tree.Ident)gen.Ident(params[i].symbol());
+	    }
+
+	    return copy.LabelDef(tree, new_params, transform(body)).setType(owntype);
+
+
+
+
         case Empty:
         case PackageDef(_,_):
         case Template(_,_):
@@ -511,7 +522,6 @@ public class Erasure extends Transformer implements Modifiers {
         case This(_):
         case Literal(_):
         case TypeTerm():
-        case LabelDef(_, _,_):
 	    return super.transform(tree).setType(owntype);
 
         case Bad():

@@ -196,6 +196,8 @@ public class  Global {
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
+	// TODO: Enable TailCall for other backends when they handle LabelDefs
+        if (target != TARGET_JVM) PHASE.remove(args.phases.TAILCALL);
         if (target != TARGET_MSIL) PHASE.remove(args.phases.GENMSIL);
         if (target != TARGET_JVM) PHASE.remove(args.phases.GENJVM);
         if (target != TARGET_JVM_BCEL) PHASE.remove(args.phases.GENJVM_BCEL);

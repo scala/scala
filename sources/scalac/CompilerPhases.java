@@ -26,6 +26,7 @@ public class CompilerPhases {
     public final PhaseDescriptor LAMBDALIFT;
     public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDACCESSORS;
+    public final PhaseDescriptor TAILCALL;
     public final PhaseDescriptor ADDINTERFACES;
     public final PhaseDescriptor EXPANDMIXIN;
     public final PhaseDescriptor ERASURE;
@@ -96,6 +97,11 @@ public class CompilerPhases {
                 "add accessors for constructor arguments",
                 "added accessors",
                 scalac.transformer.AddAccessorsPhase.class),
+            this.TAILCALL = new PhaseDescriptor(
+                "tailcall",
+                "add tail-calls",
+                "added tail-calls",
+                scalac.transformer.TailCallPhase.class),
             this.ADDINTERFACES = new PhaseDescriptor(
                 "addinterfaces",
                 "add one interface per class",
