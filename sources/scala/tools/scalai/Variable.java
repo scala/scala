@@ -19,7 +19,7 @@ public class Variable {
     // Public Cases
 
     public case Global(Object value);
-    public case Module(CodePromise body, Object value);
+    public case Module(ScalaTemplate template, Object value);
     public case Member(int index);
     public case Argument(int index);
     public case Local(int index);
@@ -34,8 +34,8 @@ public class Variable {
         case Global(Object value):
             return "Global(" + Debug.show(value) + ")";
 
-        case Module(CodePromise body, Object value):
-            return "Module(" + body + "," + Debug.show(value) + ")";
+        case Module(ScalaTemplate template, Object value):
+            return "Module(" + template + "," + Debug.show(value) + ")";
 
         case Member(int index):
             return "Member(" + index + ")";

@@ -137,33 +137,24 @@ public class ExpressionCompiler {
             return Code.Switch(
                 compute(test), tags, compute(bodies), compute(otherwise));
 
-        case New(Tree init): // !!!
-            Symbol symbol = Symbol.NONE.newTerm(tree.pos, 0, Name.fromString("new")); // !!! should be newVariable
-            Variable variable = Variable.Local(context.push());
-            Code code = compute(init);
+        case New(Tree init):
             switch (context.lookupTemplate(tree.getType().symbol())) {
             case Global(ScalaTemplate template):
-                assert code instanceof Code.Invoke : Debug.show(code);
-                Code.Invoke invoke = (Code.Invoke)code;
-                // !!! correct ?
-                assert invoke.target == Code.Self | invoke.target == Code.Null : Debug.show(code);
-                invoke.target = Code.Load(Code.Null, variable);
-                context.insertVariable(symbol, variable);
-                Code module = template.getSymbol().isModuleClass()
-                    && template.getSymbol().isStatic()
-                    ? Code.Store(
-                        Code.Null,
-                        context.lookupVariable(template.getSymbol().module()),
-                        Code.Load(Code.Null, variable))
-                    : Code.Null;
-                code = Code.Block(
-                    new Code[] {
-                        Code.Store(Code.Null, variable, Code.Create(template)),
-                        module,
-                        invoke},
-                    Code.Load(Code.Null, variable));
+                Variable local = Variable.Local(context.push());
+                Code create = Code.Create(template);
+                Code store = Code.Store(Code.Null, local, create);
+                Code load = Code.Load(Code.Null, local);
+                Code code = compute(init);
+                switch (code) {
+                case Invoke(Null, Function fun, Code[] args, int pos):
+                    Code initialize = Code.Invoke(load, fun, args, pos);
+                    return Code.Block(new Code[] {store, initialize}, load);
+                default:
+                    throw Debug.abort("illegal case", code);
+                }
+            default:
+                return compute(init);
             }
-            return code;
 
         case Apply(TypeApply(Tree tfun, Tree[] targs), Tree[] vargs):
             return tapply(tfun, tfun.symbol(), targs, vargs);

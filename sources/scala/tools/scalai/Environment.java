@@ -161,6 +161,14 @@ public class Environment {
         } else if (symbol.isExternal()) {
             Variable variable = Variable.JavaField(mirror.getField(symbol));
             return insertVariable(symbol, variable);
+        } else if (symbol.isModule() && symbol.isStatic()) {
+            switch (lookupTemplate(symbol.moduleClass())) {
+            case Global(ScalaTemplate template):
+                Variable variable = Variable.Module(template, null);
+                return insertVariable(symbol, variable);
+            default:
+                throw Debug.abort("illegal case", symbol);
+            }
         } else {
             return (Variable)loadOwnerThenGet("variable", symbol, variables);
         }

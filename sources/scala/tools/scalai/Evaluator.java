@@ -30,6 +30,7 @@ import scalac.symtab.Symbol;
 import scalac.symtab.SymbolNameWriter;
 import scalac.symtab.Type;
 import scalac.util.Debug;
+import scalac.util.Names;
 
 public class Evaluator {
 
@@ -445,11 +446,17 @@ public class Evaluator {
         case Global(Object value):
             return value;
 
-        case Module(CodePromise body, Object value):
+        case Module(ScalaTemplate template, Object value):
             if (value != null) return value;
-            ((Variable.Module)variable).body = null;
-            evaluate(body, null, new Object[0]);
-            return load(object, variable);
+            value = evaluate(Code.Create(template));
+            ((Variable.Module)variable).template = null;
+            ((Variable.Module)variable).value = value;
+            Symbol clasz = template.getSymbol();
+            Symbol initializer = clasz.lookup(Names.INITIALIZER);
+            CodePromise promise = template.getMethod(initializer);
+            assert promise != null: Debug.show(clasz, " - ", initializer);
+            evaluate(promise, value, new Object[0]);
+            return value;
 
         case Member(int index):
             return getScalaObject(object).variables[index];

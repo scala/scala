@@ -292,9 +292,6 @@ public class Compiler {
         case ClassDef(_, _, _, _, _, _):
             sources.put(tree, source);
             environment.insertClassDef(symbol, (Tree.ClassDef)tree);
-            if (symbol.isModuleClass() && symbol.isStatic()) {
-                environment.insertVariable(symbol.module(), Variable.Module(new CodePromise(new ModuleBuilder(this, source, symbol.module())), null));
-            }
             return;
 
         // !!! these could be removed
@@ -406,32 +403,6 @@ public class Compiler {
 
         default:
             throw Debug.abort("illegal tree", tree);
-        }
-    }
-
-    //########################################################################
-    // !!!
-
-    public static class ModuleBuilder extends CodeGenerator {
-
-        private final Compiler compiler;
-        private final SourceFile source;
-        private final Symbol symbol;
-
-        public ModuleBuilder(Compiler compiler, SourceFile source, Symbol symbol) {
-            this.compiler = compiler;
-            this.source = source;
-            this.symbol = symbol;
-        }
-
-        public CodeContainer generate() {
-            TreeGen gen = compiler.global.treeGen;
-            Symbol clasz = symbol.moduleClass();
-            Symbol initializer = clasz.lookup(Names.INITIALIZER);
-            compiler.global.prevPhase();
-            Tree code = gen.mkNew__(symbol.pos, Tree.Empty, initializer);
-            compiler.global.nextPhase();
-            return compiler.compile(source, symbol, code, Symbol.EMPTY_ARRAY);
         }
     }
 
