@@ -13,11 +13,6 @@ public class MetaTreeCopier extends AbstractTreeMethodExpander {
     //########################################################################
     // Public Methods
 
-    // !!!
-    public String getName() {
-        return "TreeCopyFactory";
-    }
-
     public void printTreeMethod(TreeNode node) {
         printTreeMethodHeader(node, tree.t_Tree + " tree");
         writer.println(";");
