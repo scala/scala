@@ -1376,12 +1376,6 @@ public class TermSymbol extends Symbol {
             .setInfo(Type.NoType);
     }
 
-    /** Get this.type corresponding to this class or module
-     */
-    public Type thisType() {
-        if ((flags & MODUL) != 0) return moduleClass().thisType();
-        else return Type.localThisType;
-    }
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
         if (clazz != null) return clazz.fullName();
