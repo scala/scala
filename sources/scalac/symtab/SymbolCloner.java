@@ -124,7 +124,24 @@ public class SymbolCloner {
 
     /** Clones the given type. */
     public Type cloneType(Type type) {
-        return typer.apply(type);
+        return cloner.apply(type);
+    }
+
+    //########################################################################
+    // Public Methods - Mapping symbols
+
+    /**
+     * Returns the clone of the specified symbol if it has been cloned
+     * and the specified symbol otherwise.
+     */
+    public Symbol mapSymbol(Symbol symbol) {
+        Object clone = clones.get(symbol);
+        return clone != null ? (Symbol)clone : symbol;
+    }
+
+    /** Replaces all cloned symbols by clones in given type. */
+    public Type mapType(Type type) {
+        return mapper.apply(type);
     }
 
     //########################################################################
@@ -144,10 +161,11 @@ public class SymbolCloner {
     }
 
     //########################################################################
-    // Private Class - Type cloner
+    // Private Class - Type mapper
 
-    /** The type cloner Type.Map */
-    private final Type.Map typer = new Type.Map(){public Type apply(Type type){
+    /** The type mapper Type.Map */
+    private final Type.Map mapper = new TypeMapper();
+    private class TypeMapper extends Type.Map { public Type apply(Type type) {
         switch (type) {
         case ErrorType:
         case NoType:
@@ -168,6 +186,31 @@ public class SymbolCloner {
             if (clone == null) return map(type);
             return Type.typeRef(apply(prefix), clone, map(args));
         case CompoundType(Type[] parts, Scope members):
+            Symbol clone = (Symbol)clones.get(type.symbol());
+            // !!! if (clone == null) return map(type);
+            if (clone == null) clone = type.symbol();
+            return Type.compoundType(map(parts), members, clone);
+        case MethodType(Symbol[] vparams, Type result):
+            return Type.MethodType(vparams, apply(result));
+        case PolyType(Symbol[] tparams, Type result):
+            return Type.PolyType(tparams, apply(result));
+        case UnboxedType(_):
+            return type;
+        case UnboxedArrayType(_):
+            return map(type);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }}
+
+    //########################################################################
+    // Private Class - Type cloner
+
+    /** The type cloner Type.Map */
+    private final Type.Map cloner = new TypeCloner();
+    private class TypeCloner extends TypeMapper { public Type apply(Type type){
+        switch (type) {
+        case CompoundType(Type[] parts, Scope members):
             Symbol clone = /* !!! getCompoundClone */(type.symbol());
             return Type.compoundType(map(parts), /* !!! cloneScope */(members), clone);
         case MethodType(Symbol[] vparams, Type result):
@@ -176,14 +219,10 @@ public class SymbolCloner {
         case PolyType(Symbol[] tparams, Type result):
             Symbol[] clones = cloneSymbols(tparams);
             return Type.PolyType(clones, apply(result));
-        case UnboxedType(_):
-            return type;
-        case UnboxedArrayType(_):
-            return map(type);
         default:
-            throw Debug.abort("illegal case", type);
+            return super.apply(type);
         }
-    }};
+    }}
 
     //########################################################################
 }
