@@ -1263,7 +1263,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public Type cloneType(Symbol oldOwner, Symbol newOwner) {
         Type clone = cloneType0(oldOwner, newOwner);
-        if (oldOwner.isClass())
+        if (oldOwner != newOwner && oldOwner.isClass())
             clone = new SubstThisMap(oldOwner, newOwner).applyParams(clone);
         return clone;
     }
