@@ -18,8 +18,8 @@ object pilib with Monitor {
   }
   val spawn = new Spawn {
   //object spawn extends Spawn { // BUG !
-    def <(def p: unit): Spawn = { ops.spawn(p); this }
-    def |(def p: unit): Spawn = { ops.spawn(p); this }
+    def <(def p: unit): Spawn = { scala.concurrent.ops.spawn(p); this }
+    def |(def p: unit): Spawn = { scala.concurrent.ops.spawn(p); this }
     def > : unit = ()
   }
 
