@@ -221,6 +221,7 @@ distrib			: distrib-build-all
 distrib-build-all	: distrib-build-unix
 distrib-build-all	: distrib-build-windows
 distrib-build-all	: distrib-build-ia
+distrib-build-all	: distrib-build-website
 
 distrib-build-unix	: install
 	$(RM) $(DISTRIB_ARCHIVE).tar
@@ -246,6 +247,11 @@ distrib-build-windows	: install-windows
 
 distrib-build-ia	: ia-build
 
+distrib-build-website	:
+	$(make) -C $(PROJECT_WEBSITEDIR) all \
+	    INSTALL_VERSION=$(INSTALL_VERSION) \
+	    PROJECT_HTDOCSDIR=$(DISTRIB_ARCHIVE).website
+
 distrib-official	: version-update
 	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
 	@$(make) version-increment
@@ -255,6 +261,7 @@ distrib-official	: version-update
 .PHONY			: distrib-build-unix
 .PHONY			: distrib-build-windows
 .PHONY			: distrib-build-ia
+.PHONY			: distrib-build-website
 .PHONY			: distrib-official
 
 ##############################################################################
