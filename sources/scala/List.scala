@@ -18,6 +18,13 @@ package scala;
  */
 object List {
 
+  /** Create a list with given elements.
+   *
+   *  @param xs the elements to put in the list
+   *  @return the list containing elements xs.
+   */
+  def apply[A](xs: A*): List[A] = xs.asInstanceOf[List[A]];
+
   /** Create a sorted list of all integers in a range.
    *
    *  @return the sorted list of all integers in range [from;end).
