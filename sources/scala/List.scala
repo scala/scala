@@ -399,6 +399,54 @@ trait List[+a] extends Seq[a] {
       else Pair(taily, head :: tailn)
   };
 
+  /** Sort the list according to the comparison function
+  *   <(e1:a,e2:a) => Boolean,
+  *   which should be true iff e1 is smaller than e2.
+  *   Note: The current implementation is inefficent for
+  *   already sorted lists.
+  */
+  def sort(< : (a,a) => Boolean):List[a] = {
+    def sort_1(smaller:List[a],acc:List[a]):List[a] =
+      smaller.match{
+      case Nil => acc;
+      case List(x) => x::acc;
+      case List(x,y) => if (<(x,y)) x::(y::acc) else y::x::acc;
+      case List(x,y,z) => {
+        if (<(x,y))
+	  {if (<(y,z)) x::y::z::acc else if (<(x,z)) x::z::y::acc
+ 				         else z::x::y::acc}
+	else
+	   if (<(x,z)) y::x::z::acc else if (<(z,y)) z::y::x::acc else y::z::x::acc
+      }
+      case hd1::hd2::hd3::tail => {
+	val List(x,y,z) = sort_1(hd1::hd2::hd3::Nil,Nil);
+	val Pair(small,large) =  tail.partition((e2) => <(e2,y));
+	sort_1(x::small,y::sort_1(z::large,acc));
+      }
+      }
+
+    match {
+      case Nil => this;
+      case List(x) => this;
+      case List(x,y) => if (<(x,y)) this else y::x::Nil;
+      case List(x,y,z) => {
+        if (<(x,y))
+	  {if (<(y,z)) this else if (<(x,z)) x::z::y::Nil
+			         else z::x::y::Nil;}
+	else
+	  if (<(x,z)) y::x::z::Nil else
+            if (<(z,y)) z::y::x::Nil else
+	      y::z::x::Nil;
+      }
+        case hd1::hd2::hd3::tail => {
+	val List(x,y,z) = sort_1(hd1::hd2::hd3::Nil,Nil);
+	val Pair(small,large) =  tail.partition((e2) => <(e2,y));
+	sort_1(x::small,y::sort_1(z::large,Nil));
+      }
+    }
+  }
+
+
   /** Count the number of elements in the list which satisfy a predicate.
    *  @param p the predicate for which to count
    *  @return the number of elements satisfying <code>p</code>.
