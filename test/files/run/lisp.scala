@@ -144,14 +144,14 @@ object Lisp {
     .extend("=", Lambda{
       case List(arg1, arg2) => if(arg1 == arg2) 1 else 0})
     .extend("+", Lambda{
-      case List(arg1: int, arg2: int) => asInt(arg1) + asInt(arg2)
-      case List(arg1: String, arg2: String) => asString(arg1) + asString(arg2)})
+      case List(arg1: int, arg2: int) => arg1 + arg2
+      case List(arg1: String, arg2: String) => arg1 + arg2})
     .extend("-", Lambda{
-      case List(arg1, arg2) => asInt(arg1) - asInt(arg2)})
+      case List(arg1: int, arg2: int) => arg1 - arg2})
     .extend("*", Lambda{
-      case List(arg1, arg2) => asInt(arg1) * asInt(arg2)})
+      case List(arg1: int, arg2: int) => arg1 * arg2})
     .extend("/", Lambda{
-      case List(arg1, arg2) => asInt(arg1) / asInt(arg2)})
+      case List(arg1: int, arg2: int) => arg1 / arg2})
     .extend("nil", Nil)
     .extend("cons", Lambda{
       case List(arg1, arg2) => arg1 :: asList(arg2)})

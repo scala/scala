@@ -1308,6 +1308,8 @@ public class Parser implements Tokens {
 		s.nextToken();
 		mods |= Modifiers.COVARIANT;
 	    } else if (s.name == MINUS) {
+//		syntaxError(
+//		    "contravariant type parameters not yet supported", false);
 		s.nextToken();
 		mods |= Modifiers.CONTRAVARIANT;
 	    }

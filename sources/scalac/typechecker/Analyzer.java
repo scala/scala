@@ -277,6 +277,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if ((sym.flags & DEF) != 0 && sym.owner().isPrimaryConstructor()) {
 	    error(sym.pos, "`def' modifier not allowed for class parameters");
 	}
+	if ((sym.flags & REPEATED) != 0 && sym.owner().isPrimaryConstructor()) {
+	    error(sym.pos, "`*' modifier not allowed for class parameters");
+	}
 	if ((sym.flags & DEFERRED) != 0) {
 	    if (sym.owner().kind != CLASS ||
 		(sym.owner().flags & MODUL) != 0 ||

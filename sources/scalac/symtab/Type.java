@@ -18,8 +18,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public static boolean debugSwitch = false;
     private static int indent = 0;
 
-    //todo: convert C with {} to C.
-
     public case ErrorType;  // not used after analysis
     public case AnyType;    // not used after analysis
     public case NoType;
@@ -27,14 +25,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public case ThisType(Symbol sym);
 
     public case TypeRef(Type pre, Symbol sym, Type[] args) {
-	//assert sym != Global.instance.definitions.ALL_CLASS ||
-	//    Global.instance.definitions.ALL_TYPE == null;
 	assert pre.isLegalPrefix() || pre == ErrorType : pre + "#" + sym;
     }
 
     public case SingleType(Type pre, Symbol sym) {
-	//	assert sym != Global.instance.definitions.SCALA ||
-	//    Global.instance.definitions.SCALA_TYPE == null;
 	assert this instanceof ExtSingleType;
     }
 
@@ -75,9 +69,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     /** An empty Type array */
     public static final Type[] EMPTY_ARRAY  = new Type[0];
-
-    /** A non-existing Type array; used to express type erasure */
-    public static final Type[] NO_ARRAY  = new Type[0];
 
     public static SingleType singleType(Type pre, Symbol sym) {
 	if (pre.isStable() || pre == ErrorType) {
@@ -132,27 +123,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	ExtSingleType(Type pre, Symbol sym) {
 	    super(pre, sym);
 	}
-	private Type type() {
+	public Type singleDeref() {
 	    if (definedId != Global.instance.currentPhase.id) {
 		definedId = Global.instance.currentPhase.id;
 		tp = pre.memberType(sym).resultType();
 	    }
 	    return tp;
-	}
-	/** If this type is a thistype or singleton type, its underlying object type,
-	 *  otherwise the type itself.
-	 */
-	public Type widen() {
-	    return type().widen();
-	}
-
-	/** If this type is a singleton type whose type is another, the end of the chain,
-	 *  otherwise the type itself.
-	 */
-	public Type aliasedType() {
-	    Type tp = type();
-	    if (tp.isStable()) return tp.aliasedType();
-	    else return this;
 	}
     }
 
@@ -205,10 +181,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return syms;
     }
 
-    /** If this type is a thistype or singleton type, its underlying object type,
+    /** If this type is a thistype or singleton type, its type,
      *  otherwise the type itself.
      */
-    public Type widen() {
+    public Type singleDeref() {
 	switch (this) {
 	case ThisType(Symbol sym):
 	    return sym.typeOfThis();
@@ -216,47 +192,35 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    // overridden in ExtSingleType
 	    throw new ApplicationError();
 	case TypeVar(Type origin, Constraint constr):
-	    if (constr.inst != NoType) return constr.inst.widen();
+	    if (constr.inst != NoType) return constr.inst.singleDeref();
 	    else return this;
 	default:
 	    return this;
 	}
     }
 
-    public static Type[] widen(Type[] tps) {
-	if (tps.length == 0) return Type.EMPTY_ARRAY;
-	Type[] tps1 = new Type[tps.length];
-	for (int i = 0; i < tps1.length; i++) {
-	    tps1[i] = tps[i].widen();
-	    assert !(tps1[i] instanceof SingleType) : tps[i];//debug
-	}
-	return tps1;
-    }
-
-    /** If this type is a singleton type whose type is another, the end of the chain,
+    /** If this type is a thistype or singleton type, its underlying object type,
      *  otherwise the type itself.
      */
-    public Type aliasedType() {
-	return this;
+    public Type widen() {
+	Type tp = singleDeref();
+	switch (tp) {
+	case ThisType(_):
+	case SingleType(_, _):
+	    return tp.widen();
+	default:
+	    return tp;
+	}
     }
 
-    /** The lower approximation of this type (which must be a typeref)
-     */
-    public Type loBound() {
-	switch (unalias()) {
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Type lb = Global.instance.definitions.ALL_TYPE;
-	    if (sym.kind == TYPE) {
-		lb = sym.loBound().asSeenFrom(pre, sym.owner());
+    private static Map widenMap = new Map() {
+	    public Type apply(Type t) {
+		return t.widen();
 	    }
-	    if (lb.symbol() == Global.instance.definitions.ALL_CLASS &&
-		this.isSubType(Global.instance.definitions.ANYREF_TYPE)) {
-		lb = Global.instance.definitions.ALLREF_TYPE;
-	    }
-	    return lb;
-	default:
-	    throw new ApplicationError();
-	}
+	};
+
+    public static Type[] widen(Type[] tps) {
+	return widenMap.map(tps);
     }
 
     /** The thistype or singleton type corresponding to values of this type.
@@ -274,18 +238,26 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    /** The upper bound of this type.
-      */
-    public Type bound() {
-	switch (this) {
+    /** The lower approximation of this type (which must be a typeref)
+     */
+    public Type loBound() {
+	switch (unalias()) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.kind == ALIAS || sym.kind == TYPE)
-                return pre.memberInfo(sym).bound();
+	    Type lb = Global.instance.definitions.ALL_TYPE;
+	    if (sym.kind == TYPE) {
+		lb = pre.memberLoBound(sym);
+	    }
+	    if (lb.symbol() == Global.instance.definitions.ALL_CLASS &&
+		this.isSubType(Global.instance.definitions.ANYREF_TYPE)) {
+		lb = Global.instance.definitions.ALLREF_TYPE;
+	    }
+	    return lb;
+	default:
+	    throw new ApplicationError();
 	}
-        return this;
     }
 
-    /** The this is a this-type, named-type, applied type or single-type, its prefix,
+    /** If this is a this-type, named-type, applied type or single-type, its prefix,
      *  otherwise NoType.
      */
     public Type prefix() {
@@ -312,14 +284,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     /** Get type of `this' symbol corresponding to this type, extend
-     *  homomorphically to function types and method types.
+     *  homomorphically to function types and poly types.
      */
     public Type instanceType() {
 	switch (unalias()) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Type tp1 = sym.typeOfThis();
-	    if (tp1 != sym.type())
-		return tp1.asSeenFrom(pre, sym.owner()).subst(sym.typeParams(), args);
+	    if (sym != sym.thisSym())
+		return sym.typeOfThis()
+		    .asSeenFrom(pre, sym.owner())
+		    .subst(sym.typeParams(), args);
 	    break;
 	case MethodType(Symbol[] params, Type restp):
 	    Type restp1 = restp.instanceType();
@@ -344,7 +317,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     private Type unalias(int n) {
-	if (n == 20) throw new Type.Error("recursive type alias: " + this);
+	if (n == 100)
+	    throw new Type.Error("alias chain too long (recursive type alias?): " + this);
 	switch (this) {
         case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym.kind == ALIAS) return pre.memberInfo(sym).unalias(n + 1);
@@ -356,13 +330,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return this;
     }
 
-    /** The (prefix-adapted) parents of this type.
+    /** The (prefix/argument-adapted) parents of this type.
      */
     public Type[] parents() {
 	switch (unalias()) {
 	case ThisType(_):
 	case SingleType(_, _):
-	    return widen().parents();
+	    return singleDeref().parents();
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym.kind == ALIAS)
 		return unalias().parents();
@@ -379,7 +353,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
         }
     }
 
-    /** Get type parameters of polymorphic method
+    /** Get type parameters of polymorphic method or class
      *  or EMPTY_ARRAY if not applicable.
      */
     public Symbol[] typeParams() {
@@ -393,7 +367,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return Symbol.EMPTY_ARRAY;
     }
 
-    /** Get value parameters of method or EMPTY_ARRAY if not
+    /** Get value parameters of method or class or EMPTY_ARRAY if not
      * applicable.
      */
     public Symbol[] valueParams() {
@@ -527,10 +501,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public boolean isFunctionType() {
 	switch (this) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.fullName().startsWith(Names.scala_Function)) {
-		return args.length > 0;
-	    }
-	    break;
+	    return sym.fullName().startsWith(Names.scala_Function) &&
+		args.length > 0;
 	case CompoundType(Type[] parents, Scope members):
 	    return members.elems == Scope.Entry.NONE &&
 		parents.length == 2 &&
@@ -552,7 +524,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case TypeRef(_, Symbol sym, _):
 	    return sym.info().members();
 	case SingleType(_, Symbol sym):
-	    return widen().members();
+	    return singleDeref().members();
 	case CompoundType(Type[] basetypes, Scope members):
 	    return members;
         default:
@@ -569,7 +541,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return Symbol.ERROR;
 	case ThisType(_):
 	case SingleType(_, _):
-	    return widen().lookup(name);
+	    return singleDeref().lookup(name);
 	case TypeRef(_, Symbol sym, _):
 	    return sym.info().lookup(name);
 	case CompoundType(Type[] parts, Scope members):
@@ -598,7 +570,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return Symbol.ERROR;
 	case ThisType(_):
 	case SingleType(_, _):
-	    return widen().lookupNonPrivate(name);
+	    return singleDeref().lookupNonPrivate(name);
 	case TypeRef(_, Symbol sym, _):
 	    return sym.info().lookupNonPrivate(name, start);
 	case CompoundType(Type[] parts, Scope members):
@@ -788,7 +760,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	case ThisType(_):
 	case SingleType(_, _):
-	    return widen().baseType(clazz);
+	    return singleDeref().baseType(clazz);
 
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym == clazz)
@@ -811,7 +783,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    break;
 
 	case UnboxedArrayType(_):
-	    if (clazz == Global.instance.definitions.ANY_CLASS)
+	    if (clazz == Global.instance.definitions.ANY_CLASS ||
+		clazz == Global.instance.definitions.ANYREF_CLASS)
 		return clazz.type();
 	}
 	return NoType;
@@ -840,29 +813,22 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    this.pre = pre; this.clazz = clazz;
 	}
 
-	public Type apply0(Type t) {
-	    Type t1 = apply0(t);
-	    System.out.println(t + " as seen from (" + pre + "," + clazz + ") = " + t1);//debug
-	    return t1;
-	}
-
 	public Type apply(Type t) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return t;
 	    switch (t) {
 	    case ThisType(Symbol sym):
-		return t.toPrefix(pre, clazz);
+		return t.toPrefix(sym, pre, clazz);
 
 	    case TypeRef(Type prefix, Symbol sym, Type[] args):
 		if (sym.kind == ALIAS) {
 		    return apply(t.unalias());
 		} else if (sym.owner().isPrimaryConstructor()) {
 		    assert sym.kind == TYPE;
-		    Type t1 = t.toInstance(pre, clazz);
+		    Type t1 = t.toInstance(sym, pre, clazz);
 		    //System.out.println(t + ".toInstance(" + pre + "," + clazz + ") = " + t1);//DEBUG
 		    return t1;
 		} else {
-		    //Type prefix1 = prefix.toPrefix(pre, clazz);
 		    Type prefix1 = apply(prefix);
 		    Symbol sym1 = (prefix1 == prefix || (sym.flags & MODUL) != 0)
 			? sym : prefix1.rebind(sym);
@@ -873,12 +839,11 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	    case SingleType(Type prefix, Symbol sym):
 		try {
-		    //Type prefix1 = prefix.toPrefix(pre, clazz);
 		    Type prefix1 = apply(prefix);
 		    if (prefix1 == prefix) return t;
 		    else return singleType(prefix1, prefix1.rebind(sym));
 		} catch (Type.Error ex) {}
-                return apply(t.widen());
+		return apply(t.singleDeref());
 
 	    default:
 		return map(t);
@@ -886,10 +851,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
     //where
-        Type toInstance(Type pre, Symbol clazz) {
+        Type toInstance(Symbol sym, Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    Symbol sym = symbol();
 	    Symbol ownclass = sym.owner().primaryConstructorClass();
 	    if (ownclass.isSubClass(clazz) &&
 		pre.widen().symbol().isSubClass(ownclass)) {
@@ -906,23 +870,23 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		throw new ApplicationError(
 		    this + " in " + ownclass + " cannot be instantiated from " + pre.widen());
 	    } else {
-		return toInstance(
-		    pre.baseType(clazz).prefix(), clazz.owner());
+		return toInstance(sym, pre.baseType(clazz).prefix(), clazz.owner());
 	    }
 	}
 
-	Type toPrefix(Type pre, Symbol clazz) {
+	Type toPrefix(Symbol sym, Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    else if (symbol().isSubClass(clazz) &&
-		     pre.widen().symbol().isSubClass(symbol()))
+	    else if (sym.isSubClass(clazz) &&
+		     pre.widen().symbol().isSubClass(sym))
 		return pre;
 	    else
-		return toPrefix(pre.baseType(clazz).prefix(), clazz.owner());
+		return toPrefix(sym, pre.baseType(clazz).prefix(), clazz.owner());
 	}
 
-    /** This type Types as seen from prefix `pre' and class `clazz'. This means:
-     *  Replace all this thistypes of `clazz' or one of its superclasses by `pre'.
+    /** This type as seen from prefix `pre' and class `clazz'. This means:
+     *  Replace all thistypes of `clazz' or one of its superclasses by `pre'
+     *  and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes.
      */
     public Type asSeenFrom(Type pre, Symbol clazz) {
@@ -939,21 +903,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
     /** The info of `sym', seen as a member of this type.
      */
     public Type memberInfo(Symbol sym) {
-	return memberTransform(sym, sym.info());
+	return sym.info().asSeenFrom(this, sym.owner());
     }
 
     /** The type of `sym', seen as a member of this type.
      */
     public Type memberType(Symbol sym) {
-	return memberTransform(sym, sym.type());
+	return sym.type().asSeenFrom(this, sym.owner());
     }
 
-    private Type memberTransform(Symbol sym, Type tp) {
-	Type tp1 = tp.asSeenFrom(this, sym.owner());
-	//if (Global.instance.debug) System.out.println(this + ".memberType(" + sym + ":" + tp + ") = " + tp1);//DEBUG
-	return tp1;
-    }
-
+    /** The low bound of `sym', seen as a member of this type.
+     */
     public Type memberLoBound(Symbol sym) {
 	return sym.loBound().asSeenFrom(this, sym.owner());
     }
@@ -1167,17 +1127,19 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    this.sym = sym;
 	}
 	public Type apply(Type t) {
-	    switch (t) {
-	    case TypeRef(Type pre, Symbol sym1, Type[] args):
-		if (sym == sym1) result = true;
-		else { map(pre); map(args); }
-		break;
-	    case SingleType(Type pre, Symbol sym1):
-		map(pre);
-		if (sym == sym1) result = true;
-		break;
-	    default:
-		map(t);
+	    if (!result) {
+		switch (t) {
+		case TypeRef(Type pre, Symbol sym1, Type[] args):
+		    if (sym == sym1) result = true;
+		    else { map(pre); map(args); }
+		    break;
+		case SingleType(Type pre, Symbol sym1):
+		    map(pre);
+		    if (sym == sym1) result = true;
+		    break;
+		default:
+		    map(t);
+		}
 	    }
 	    return t;
 	}
@@ -1276,7 +1238,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Symbol p1 = ps1[i];
 		    Symbol p = ps[i];
 		    if (!p1.type().isSubType(p.type()) ||
-			(p1.flags & Modifiers.DEF) != (p.flags & Modifiers.DEF))
+			(p1.flags & (Modifiers.DEF | Modifiers.REPEATED)) !=
+			(p.flags & (Modifiers.DEF | Modifiers.REPEATED)))
 			return false;
 		}
 		return res.isSubType(res1);
@@ -1288,15 +1251,18 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case PolyType(Symbol[] ps, Type res):
 		if (ps.length != ps1.length) return false;
 		for (int i = 0; i < ps.length; i++)
-		    if (!ps1[i].info().subst(ps1, ps).isSubType(ps[i].info()))
+		    if (!ps1[i].info().subst(ps1, ps).isSubType(ps[i].info()) ||
+			!ps[i].loBound().isSubType(ps1[i].loBound().subst(ps1, ps)))
 			return false;
 		return res.isSubType(res1.subst(ps1, ps));
 	    }
 	    break;
 
 	case OverloadedType(Symbol[] alts1, Type[] alttypes1):
-	    if (isSubSet(alttypes1, alternatives()))
-		return true;
+	    for (int i = 0; i < alttypes1.length; i++) {
+		if (!isSubType(alttypes1[i]))
+		    return false;
+	    }
 	    break;
 
 	case UnboxedType(int tag1):
@@ -1339,7 +1305,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return false;
 	case ThisType(_):
 	case SingleType(_, _):
-	    if (this.widen().isSubType(that)) return true;
+	    if (this.singleDeref().isSubType(that)) return true;
 	    break;
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) {
@@ -1367,7 +1333,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    for (int i = 0; i < alttypes.length; i++) {
-		if (alttypes[i].isSameAs0(that)) return true;
+		if (alttypes[i].isSubType(that)) return true;
 	    }
 	    break;
 	}
@@ -1444,11 +1410,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public boolean specializes0(Symbol sym1) {
 	Symbol sym = lookup(sym1.name);
 	Type self = narrow();
+	Symbol[] tparams = symbol().typeParams();
+	Type[] targs = typeArgs();
 	return
-	    sym == sym1 ||
-	    ((sym.kind == sym1.kind || sym1.kind == TYPE) &&
-	     self.memberInfo(sym).subst(symbol().typeParams(), typeArgs())
-	         .isSubType(sym1.info().substThis(sym.owner(), self))) ||
+	    sym == sym1
+	    ||
+	    (sym.kind == sym1.kind || sym1.kind == TYPE) &&
+	    self.memberInfo(sym).subst(tparams, targs)
+	    .isSubType(sym1.info().substThis(sym.owner(), self)) &&
+	    sym1.loBound().substThis(sym.owner(), self)
+	    .isSubType(self.memberLoBound(sym).subst(tparams, targs))
+	    ||
 	    (sym.kind == TYPE && sym1.kind == ALIAS &&
 	     sym1.info().unalias().isSameAs(sym.type()));
     }
@@ -1487,8 +1459,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    && sym == sym1.moduleClass()
 		    && sym.owner().thisType().isSameAs(pre1)
 		    ||
-		    that != that.aliasedType() &&
-		    this.isSameAs(that.aliasedType());
+		    deAlias(that) != that &&
+		    this.isSameAs(deAlias(that));
 	    }
 	    break;
 
@@ -1497,15 +1469,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case SingleType(Type pre1, Symbol sym1):
 		return sym == sym1 && pre.isSameAs(pre1)
 		    ||
-		    (this != this.aliasedType() || that != that.aliasedType()) &&
-		    this.aliasedType().isSameAs(that.aliasedType());
+		    (deAlias(this) != this || deAlias(that) != that) &&
+                    deAlias(this).isSameAs(deAlias(that));
 	    case ThisType(Symbol sym1):
 		return sym.isModule()
 		    && sym.moduleClass() == sym1
 		    && pre.isSameAs(sym1.owner().thisType())
 		    ||
-		    this != this.aliasedType() &&
-		    this.aliasedType().isSameAs(that);
+		    deAlias(this) != this &&
+		    deAlias(this).isSameAs(that);
 	    }
 	    break;
 
@@ -1535,7 +1507,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Symbol p1 = ps1[i];
 		    Symbol p = ps[i];
 		    if (!p1.type().isSameAs(p.type()) ||
-			(p1.flags & Modifiers.DEF) != (p.flags & Modifiers.DEF))
+			(p1.flags & (Modifiers.DEF | Modifiers.REPEATED)) !=
+			(p.flags & (Modifiers.DEF | Modifiers.REPEATED)))
 			return false;
 		}
 		return res.isSameAs(res1);
@@ -1547,7 +1520,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case PolyType(Symbol[] ps1, Type res1):
 		if (ps.length != ps1.length) return false;
 		for (int i = 0; i < ps.length; i++)
-		    if (!ps1[i].info().subst(ps1, ps).isSameAs(ps[i].info()))
+		    if (!ps1[i].info().subst(ps1, ps).isSameAs(ps[i].info()) ||
+			!ps1[i].loBound().subst(ps1, ps).isSameAs(ps[i].loBound()))
 			return false;
 		return res.isSameAs(res1.subst(ps1, ps));
 	    }
@@ -1605,6 +1579,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	return false;
     }
+    //where
+        Type deAlias(Type tp) {
+	    switch (tp) {
+	    case SingleType(_, _):
+		Type tp1 = tp.singleDeref();
+		if (tp1.isStable()) return deAlias(tp1);
+	    }
+	    return tp;
+	}
 
     /** Are types `these' the same as corresponding types `those'?
      */
@@ -1630,7 +1613,11 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    Symbol sym1 = s1.lookup(sym2.name);
 	    if (sym1.kind != sym2.kind ||
 		!sym1.info().isSameAs(
-		    sym2.info().substThis(sym2.owner(), sym1.owner().thisType())))
+		    sym2.info().substThis(
+			sym2.owner(), sym1.owner().thisType())) ||
+		!sym1.loBound().isSameAs(
+		    sym2.loBound().substThis(
+			sym2.owner(), sym1.owner().thisType())))
 		return false;
 	}
 	return true;
@@ -1661,8 +1648,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     /** The closure of this type, i.e. the widened type itself followed by all
      *  its direct and indirect (pre-) base types, sorted by Symbol.isLess().
-     *  Note that (pre-) base types do _not_ carry type parameters; these
-     *  are added by baseType().
      */
     public Type[] closure() {
 	switch (this.widen().unalias()) {
@@ -1682,7 +1667,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
         }
     }
 
-    /** return union of array of closures
+    /** return union of array of closures. It is assumed that
+     *  for any two base types with the same class symbols the later one
+     *  is a subtype of the former.
      */
     static private Type[] union(Type[][] closures) {
 	if (closures.length == 1) return closures[0]; // fast special case
@@ -1703,7 +1690,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Type cltype = closures[i][index[i]];
 		    if (min == null ||
 			cltype.symbol().isLess(min.symbol()) ||
-			cltype.symbol() == min.symbol() && cltype.isSubType(min)) {
+			cltype.symbol() == min.symbol()) {
 			min = cltype;
 		    }
 		}
@@ -1725,7 +1712,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return result;
     }
 
-    /** return intersection of array of closures
+    /** return intersection of non-empty array of closures
      */
     static private Type[] intersection(Type[][] closures) {
 	if (closures.length == 1) return closures[0]; // fast special case
@@ -1742,18 +1729,18 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	L:
 	while (true) {
 	    // find minimal element
-	    Symbol min = null;
+	    Symbol minsym = null;
 	    for (int i = 0; i < index.length; i++) {
 		if (index[i] == closures[i].length) break L;
 		Symbol clsym = closures[i][index[i]].symbol();
-		if (min == null || clsym.isLess(min)) min = clsym;
+		if (minsym == null || clsym.isLess(minsym)) minsym = clsym;
 	    }
 
 	    boolean agree = true;
 	    // bump all indices that start with minimal element
 	    for (int i = 0; i < index.length; i++) {
 		Type cltype = closures[i][index[i]];
-		if (cltype.symbol() == min) {
+		if (cltype.symbol() == minsym) {
 		    mintypes[i] = cltype;
 		    index[i] = index[i] + 1;
 		} else {
@@ -1761,10 +1748,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		}
 	    }
 	    if (agree) {
-		Type mintype;
-	        mintype = commonType(mintypes);
-		if (mintype == NoType)
-		    mintype = arglub(mintypes);
+		Type mintype = argLub(mintypes);
 		if (mintype.symbol().kind == CLASS) {
 		    res[j] = mintype;
 		    j = j + 1;
@@ -1780,14 +1764,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
      *  possibly with different prefixes and arguments.
      */
     //todo: catch lubs not within bounds.
-    static Type arglub(Type[] types) {
-	Type pre = types[0].prefix();
-	Symbol sym = types[0].symbol();
+    static Type argLub(Type[] tps) {
+	tps = elimRedundant(tps, true);
+	if (tps.length == 1) return tps[0];
+
+	Type pre = tps[0].prefix();
+	Symbol sym = tps[0].symbol();
 	Symbol[] tparams = sym.typeParams();
 	Type[] args = new Type[tparams.length];
-	Type[][] argss = new Type[args.length][types.length];
-	for (int i = 0; i < types.length; i++) {
-	    switch (types[i]) {
+	Type[][] argss = new Type[args.length][tps.length];
+	for (int i = 0; i < tps.length; i++) {
+	    switch (tps[i]) {
 	    case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 		assert sym == sym1;
 		assert args1.length == args.length;
@@ -1798,18 +1785,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case ErrorType:
 		return ErrorType;
 	    default:
-		assert false : types[i];
+		assert false : tps[i];
 	    }
 	}
 	for (int j = 0; j < args.length; j++) {
-	    args[j] = commonType(argss[j]);
-	    if (args[j] == NoType) {
-		if ((tparams[j].flags & COVARIANT) != 0)
-		    args[j] = lub(argss[j]);
-		else if ((tparams[j].flags & CONTRAVARIANT) != 0)
-		    args[j] = glb(argss[j]);
-		else return NoType;
-	    }
+	    if ((tparams[j].flags & COVARIANT) != 0)
+		args[j] = lub(argss[j]);
+	    else if ((tparams[j].flags & CONTRAVARIANT) != 0)
+		args[j] = glb(argss[j]);
+	    else return NoType;
 	}
 	return typeRef(pre, sym, args);
     }
@@ -1877,8 +1861,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public static Type lub(Type[] tps) {
 	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
 
-	// remove types that are subtypes of some other type.
+	if (tps.length == 0) return Global.instance.definitions.ALL_TYPE;
 
+	// remove types that are subtypes of some other type.
 	tps = elimRedundant(tps, true);
 	if (tps.length == 1) return tps[0];
 
@@ -1889,10 +1874,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
 	Type[] allBaseTypes = intersection(closures);
 	Type[] leastBaseTypes = frontier(allBaseTypes);
-	if (leastBaseTypes.length == 0) {
-	    //System.out.println("empty intersection");//DEBUG
-	    return Type.NoType;
-	}
+	assert leastBaseTypes.length > 0 : ArrayApply.toString(tps);
 
 	// add refinements where necessary
 	Scope members = new Scope();
@@ -1909,14 +1891,14 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		 e = e.next) {
 		Name name = e.sym.name;
 		if ((e.sym.flags & PRIVATE) == 0 && lubType.lookup(name) == e.sym) {
-		    //todo: not memberType?
-		    Type symType = lubThisType.memberInfo(e.sym);
+		    //todo: not info?
+		    Type symType = memberTp(lubThisType, e.sym);
 		    Type symLoBound = lubThisType.memberLoBound(e.sym);
 		    int j = 0;
 		    while (j < tps.length) {
 			rsyms[j] = tps[j].lookupNonPrivate(name);
 			if (rsyms[j] == e.sym) break;
-			rtps[j] = tps[j].memberType(rsyms[j])
+			rtps[j] = memberTp(tps[j], rsyms[j])
 			    .substThis(tps[j].symbol(), lubThisType);
 			rlbs[j] = tps[j].memberLoBound(rsyms[j])
 			    .substThis(tps[j].symbol(), lubThisType);
@@ -1926,7 +1908,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    }
 		    if (j == tps.length) {
 			Symbol lubSym = lub(rsyms, rtps, rlbs, lubType.symbol());
-			if (lubSym.kind != NONE && !lubSym.info().isSameAs(symType))
+			if (lubSym.kind != NONE &&
+			    !(lubSym.kind == e.sym.kind &&
+			      lubSym.info().isSameAs(symType) &&
+			      lubSym.loBound().isSameAs(symType)))
 			    members.enter(lubSym);
 		    }
 		}
@@ -1937,12 +1922,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return leastBaseTypes[0];
 	else return lubType;
     }
-
-    private static Type commonType(Type[] tps) {
-	Type tp = tps[0];
-	if (tp.isSameAsAll(tps)) return tp;
-	else return NoType;
-    }
+    //where
+	private static Type memberTp(Type base, Symbol sym) {
+	    return sym.kind == CLASS ? base.memberType(sym) : base.memberInfo(sym);
+	}
 
     private static Symbol lub(Symbol[] syms, Type[] tps, Type[] lbs, Symbol owner) {
 	//System.out.println("lub" + ArrayApply.toString(syms));//DEBUG
@@ -1955,6 +1938,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	if (lubKind == syms[0].kind && tps[0].isSameAsAll(tps)) {
 	    return syms[0].cloneSymbol();
 	}
+
 	Type lubType = lub(tps);
 	if (lubType == Type.NoType) return Symbol.NONE;
 	Symbol lubSym;
@@ -1973,7 +1957,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return lubSym;
     }
 
-    private static Type glb(Type[] tps) {
+    public static Type glb(Type[] tps) {
+	if (tps.length == 0) return Global.instance.definitions.ANY_TYPE;
+
 	// step one: eliminate redunandant types; return if one one is left
 	tps = elimRedundant(tps, false);
 	if (tps.length == 1) return tps[0];
@@ -2048,7 +2034,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		 i++) {
 		for (int j = 0; j < i; j++) {
 		    if (treftypes[j].symbol() == treftypes[i].symbol())
-			lb = argglb(treftypes[j], treftypes[i]);
+			lb = argGlb(treftypes[j], treftypes[i]);
 		}
 	    }
 	    if (lb != NoType) return lb;
@@ -2062,7 +2048,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    private static Type argglb(Type tp1, Type tp2) {
+    private static Type argGlb(Type tp1, Type tp2) {
 	switch (tp1) {
 	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 	    switch (tp2) {
@@ -2079,15 +2065,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
 			else if ((tparams[i].flags & CONTRAVARIANT) != 0)
 			    args[i]= glb(new Type[]{args1[i], args2[i]});
 			else
-			    return tp1.loBound();
+			    return glb(new Type[]{tp1.loBound(), tp2.loBound()});
 		    }
 		    return typeRef(pre1, sym1, args);
 		}
 	    }
 	}
-	return tp1.loBound();
+	return glb(new Type[]{tp1.loBound(), tp2.loBound()});
     }
 
+    /** Set scope `result' to glb of scopes `ss'. Return true iff succeeded.
+     */
     private static boolean setGlb(Scope result, Scope[] ss, Type glbThisType) {
 	for (int i = 0; i < ss.length; i++)
 	    for (Scope.Entry e = ss[i].elems; e != Scope.Entry.NONE; e = e.next)
@@ -2095,6 +2083,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return true;
     }
 
+    /** Add member `sym' to scope `s'. If`s' has already a member with same name,
+     *  overwrite its info/low bound to form glb of both symbols.
+     */
     private static boolean addMember(Scope s, Symbol sym, Type glbThisType) {
 	Type syminfo = sym.info().substThis(sym.owner(), glbThisType);
 	Type symlb = sym.loBound().substThis(sym.owner(), glbThisType);
@@ -2206,9 +2197,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if ((sym.flags & MODUL) == 0) {
 		Name fullname = sym.fullName();
-		if (fullname == Names.scala_Array && args.length == 1
-		    /*&& args[0].unalias().symbol().kind != TYPE Q: why needed?*/) {
-                    Type bound = args[0].bound();
+		if (fullname == Names.scala_Array && args.length == 1) {
+                    Type bound = upperBound(args[0]);
+		    // todo: check with Philippe if this is what we want.
                     if (bound.symbol() != Global.instance.definitions.ANY_CLASS &&
                         bound.symbol() != Global.instance.definitions.ANYVAL_CLASS)
                     {
@@ -2222,6 +2213,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
 	return this;
     }
+    //where
+	private Type upperBound(Type tp) {
+	    switch (tp) {
+	    case TypeRef(Type pre, Symbol sym, Type[] args):
+		if (sym.kind == ALIAS || sym.kind == TYPE)
+		    return upperBound(pre.memberInfo(sym));
+	    }
+	    return tp;
+	}
 
     /** Return the erasure of this type.
      */
@@ -2229,7 +2229,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	switch (this) {
 	case ThisType(_):
 	case SingleType(_, _):
-	    return widen().erasure();
+	    return singleDeref().erasure();
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    switch (sym.kind) {
 	    case ALIAS: case TYPE:
