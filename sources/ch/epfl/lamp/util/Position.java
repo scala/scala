@@ -87,7 +87,7 @@ public class Position {
     // Private Fields
 
     /** The position's file */
-    private final SourceFile file;
+    private final AbstractSourceFile file;
 
     /** The position's line number */
     private final int line;
@@ -104,17 +104,17 @@ public class Position {
     }
 
     /** Initializes a new instance. */
-    public Position(SourceFile file) {
+    public Position(AbstractSourceFile file) {
         this(file, 0, 0);
     }
 
     /** Initializes a new instance. */
-    public Position(SourceFile file, int position) {
+    public Position(AbstractSourceFile file, int position) {
         this(file, line(position), column(position));
     }
 
     /** Initializes a new instance. */
-    public Position(SourceFile file, int line, int column) {
+    public Position(AbstractSourceFile file, int line, int column) {
         this.file = file;
         this.line = line;
         this.column = column;
@@ -127,7 +127,7 @@ public class Position {
     // Public Methods
 
     /** Returns the file of this position. */
-    public SourceFile file() {
+    public AbstractSourceFile file() {
         return file;
     }
 

@@ -18,7 +18,7 @@ import java.util.ArrayList;
 
 /** This class represents a single source file.
  */
-public class SourceFile {
+public class SourceFile implements AbstractSourceFile {
 
     //########################################################################
     // Public Constants
