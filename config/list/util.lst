@@ -22,6 +22,7 @@ SourceFile.java
 SourceReader.java
 StringBufferWriter.java
 Timer.java
+UTF8Codec.java
 VirtualDirectory.java
 VirtualFile.java
 ZipArchive.java
