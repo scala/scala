@@ -367,6 +367,21 @@ object Bug266Test {
 }
 
 //############################################################################
+// Bug 281
+
+class Bug281A extends java.util.Hashtable {
+  class B { def f = rehash() }
+}
+
+object Bug281Test {
+  def main(args: Array[String]): Unit = {
+    val a = new Bug281A;
+    val b = new a.B;
+    b.f
+  }
+}
+
+//############################################################################
 // Bug 316
 
 class Bug316MyIterator with Iterator[Int] {
@@ -422,6 +437,7 @@ object Test  {
     test(250, Bug250Test.main(args));
     test(257, Bug257Test.main(args));
     test(266, Bug266Test.main(args));
+    test(281, Bug281Test.main(args));
     test(316, Bug316Test.main(args));
 
     if (errors > 0) {
