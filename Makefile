@@ -111,7 +111,6 @@ JC_CLASSPATH		 = $(PROJECT_CLASSPATH)
 # Commands
 
 
-all		: $(PROJECT_OUTPUTDIR)
 all		: scripts
 all		: lamplib
 all		: meta
@@ -139,13 +138,12 @@ fastclean	:
 	$(RM) .latest-lamplib
 
 clean		: fastclean
-	$(RM) -r $(PROJECT_OUTPUTDIR)/*
+	$(RM) -r $(PROJECT_OUTPUTDIR)
 
 distclean	: clean
 	$(RM) .latest-*
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 	$(RM) $(SCRIPTS_WRAPPER)
-	$(RM) -r $(PROJECT_OUTPUTDIR)
 	$(RM) $(PROJECT_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
 
@@ -216,12 +214,6 @@ library		: .latest-library
 
 ##############################################################################
 # Rules
-
-$(PROJECT_OUTPUTDIR)	:
-	$(MKDIR) -p $(dir $(PROJECT_OUTPUTDIR))
-	$(if $(PROJECT_OUTPUTDIR_LINK),\
-	    $(LN) -s $(PROJECT_OUTPUTDIR_LINK) $(PROJECT_OUTPUTDIR),\
-	    $(MKDIR) $(PROJECT_OUTPUTDIR))
 
 $(SCRIPTS_WRAPPER)	: INSTALL_PREFIX          ?= $(PROJECT_ROOT)
 $(SCRIPTS_WRAPPER)	: MACRO_VERSION           ?= development version
