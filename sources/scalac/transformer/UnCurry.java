@@ -228,7 +228,9 @@ public class UnCurry extends OwnerTransformer
      *  escaping
      */
     private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
-	assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
+	assert (args.length != 1
+		|| !(args[0] instanceof Tree.Sequence)
+		|| TreeInfo.isSequenceValued( args[0]));
  	if (args.length == 1) {
             switch (args[0]) {
             case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
