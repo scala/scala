@@ -4,18 +4,22 @@
 # $Id$
 
 $colon$colon.scala
+BufferedIterator.scala
 Cell.scala
 ConsStreamClass.scala
 EmptyStream.scala
 Iterator.scala
+Labelled.scala
 List.scala
 Monitor.scala
 Nil.scala
 None.scala
 Option.scala
 Predef.scala
+Seq.scala
 Some.scala
 Stream.scala
+Symbol.scala
 Tuple1.scala
 Tuple2.scala
 Tuple3.scala
@@ -25,8 +29,5 @@ Tuple6.scala
 Tuple7.scala
 Tuple8.scala
 Tuple9.scala
-Symbol.scala
-Seq.scala
-Labelled.scala
 
 ##############################################################################
