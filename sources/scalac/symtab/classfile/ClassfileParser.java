@@ -126,8 +126,9 @@ public class ClassfileParser implements ClassfileConstants {
 	    //System.out.println("module: " + c.module());
 	    //System.out.println("modules class: " + c.module().type().symbol());
         } catch (RuntimeException e) {
-            e.printStackTrace();
-            throw new IOException("bad class file (" + e.getMessage() + ")");
+            if (global.debug) e.printStackTrace();
+            String s = e.getMessage() == null ? "" : " (" +e.getMessage()+ ")";
+            throw new IOException("bad class file" + s);
         }
     }
 

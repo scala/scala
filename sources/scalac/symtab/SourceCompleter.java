@@ -44,7 +44,7 @@ public class SourceCompleter extends Type.LazyType {
                 global.operation("added " + filename + " in " +
                         (System.currentTimeMillis() - msec) + "ms");
             } catch (IOException e) {
-                e.printStackTrace();
+                if (global.debug) e.printStackTrace();
                 global.error("i/o error while loading " + c);
                 c.setInfo(Type.ErrorType);
             }

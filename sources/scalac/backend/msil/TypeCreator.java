@@ -313,7 +313,7 @@ public final class TypeCreator
 // 	    log("getType: Exception cought for " + dumpSym(sym));
 // 	    //log("-->symbol.type() = " + Debug.show(sym.type()));
 // 	    //log("-->symbol.info()" + Debug.show(sym.info()));
-// 	    e.printStackTrace();
+// 	    if (global.debug) e.printStackTrace();
 // 	}
 // 	return type;
 //     }
@@ -474,7 +474,7 @@ public final class TypeCreator
 	    method = getMethod2(sym);
 	} catch (ClassCastException e) {
 	    logErr("getMethod: " + dumpSym(sym));
-	    e.printStackTrace();
+	    if (global.debug) e.printStackTrace();
 	}
 	return method;
     }
@@ -531,7 +531,7 @@ public final class TypeCreator
 	    method = createMethod2(sym);
 	} catch (RuntimeException e) {
 	    logErr(e.getMessage());
-	    e.printStackTrace();
+	    if (global.debug) e.printStackTrace();
 	    System.exit(1);
 	}
 	return method;

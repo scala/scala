@@ -147,7 +147,7 @@ public class GenMSIL /*implements Modifiers */ {
 		    log("Processing method " + method.DeclaringType +
 			"::" +method.Name);
 		}
-		e.printStackTrace();
+		if (global.debug) e.printStackTrace();
 		throw (Error) e;
 	    }
 	    tc.createTypes();
@@ -165,7 +165,7 @@ public class GenMSIL /*implements Modifiers */ {
 		}
 	    }
 	    catch (IOException e) {
-		e.printStackTrace();
+		if (global.debug) e.printStackTrace();
 	    }
 	}
     }
@@ -451,7 +451,7 @@ public class GenMSIL /*implements Modifiers */ {
 	try { i = gen2(tree, toType); }
 	catch (Throwable e) {
 	    logErr(tree.pos, "gen(): Exception");
-	    e.printStackTrace();
+	    if (global.debug) e.printStackTrace();
 	    System.exit(1);
 	    throw (Error) e;
 	}

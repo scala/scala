@@ -46,7 +46,7 @@ public class ClassParser extends Type.LazyType {
                 //      e.def.complete();
 	    }
 	} catch (IOException e) {
-	    e.printStackTrace();
+	    if (global.debug) e.printStackTrace();
 	    global.error("i/o error while loading " + c);
 	    c.setInfo(Type.ErrorType);
 	}
@@ -97,7 +97,7 @@ public class ClassParser extends Type.LazyType {
                         (System.currentTimeMillis() - msec) + "ms");
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                if (global.debug) e.printStackTrace();
                 global.error("i/o error while loading " + c);
                 c.setInfo(Type.ErrorType);
             }

@@ -44,10 +44,10 @@ public class SymblParser extends ClassParser {
 		*/
 	    }
 	} catch (IOException e) {
-	    e.printStackTrace();
+	    if (global.debug) e.printStackTrace();
 	    global.error("i/o error while loading " + c);
 	    c.setInfo(Type.ErrorType);
-	    }
+        }
     }
 }
 

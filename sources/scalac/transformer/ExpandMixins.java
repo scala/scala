@@ -137,6 +137,7 @@ public class ClassExpander {
         switch (type) {
         case TypeRef(Type prefix, Symbol symbol, Type[] args):
             map.insertType(symbol.typeParams(), args);
+            // !!! symbols could be equal but args different? need to rebind ?
             if (prefix.symbol() != symbol.owner())
                 inlineMixinTParams(prefix.baseType(symbol.owner()));
             return;
