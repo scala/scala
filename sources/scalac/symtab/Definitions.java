@@ -67,6 +67,7 @@ public class Definitions {
     public final Symbol EQEQ;
     public final Symbol BANGEQ;
     public final Symbol EQUALS;
+    public final Symbol EQ;
     public final Symbol TOSTRING;
     public final Symbol HASHCODE;
 
@@ -230,6 +231,7 @@ public class Definitions {
 
         // the scala.ANYVAL class
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
+	ANYVAL_CLASS.flags |= Modifiers.SEALED;
         ANYVAL_TYPE = ANYVAL_CLASS.typeConstructor();
 
         // the scala.ALL class
@@ -346,6 +348,12 @@ public class Definitions {
         EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, JAVA_OBJECT_TYPE)},
 				     BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQUALS);
+
+	EQ = new TermSymbol(
+	    Position.NOPOS, Names.eq, ANY_CLASS, 0);
+        EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, JAVA_OBJECT_TYPE)},
+				   BOOLEAN_TYPE));
+        ANY_CLASS.members().enter(EQ);
 
         TOSTRING = new TermSymbol(
 	    Position.NOPOS, Names.toString, ANY_CLASS, 0);

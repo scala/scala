@@ -46,7 +46,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     /** Pickle all symbols descending from `root'.
      */
     public void add(Symbol root) {
-	if (root.pos != Position.NOPOS) {
+	if (!root.isExternal()) {
 	    if (Global.instance.debug) System.out.println("pickling " + root);
 	    if (index.get(root) == null) {
 		this.rootname = root.name.toTermName();

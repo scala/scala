@@ -17,8 +17,17 @@
 \date{\today}
 
 \author{
-Martin Odersky
-}
+Martin Odersky \\
+Philippe Altherr \\
+Vincent Cremet \\
+Burak Emir \\
+Nikolay Mihaylov \\
+Michel Schinz \\
+Matthias Zenger \\
+St\'ephane Micheloud
+\\ \ 
+\\
+EPFL}
 
 
 \sloppy
@@ -478,10 +487,10 @@ exactly the value denoted by \verb@p@.
 \label{sec:type-project}
 
 \syntax\begin{verbatim} 
-SimpleType ::=  SimpleType # Id
+SimpleType ::=  SimpleType `#' Id
 \end{verbatim}
 
-A type projection \verb@T # x@ references the type member named 
+A type projection \verb@T#x@ references the type member named 
 \verb@x@ of type \verb@T@. \verb@T@ must be either a singleton type,
 or a non-abstract class type, or a Java class type (in either of the
 last two cases, it is guaranteed that \verb@T@ has no abstract type
@@ -499,23 +508,23 @@ qualified. All such type designators are shorthands for type projections.
 
 Specifically, the unqualified type name $t$ where $t$ is bound in some
 class, object, or package $C$ is taken as a shorthand for
-\verb@C.this.type # t@.  If $t$ is not bound in a class, object, or
+\verb@C.this.type#t@.  If $t$ is not bound in a class, object, or
 package, then \verb@t@ is taken as a shorthand for
-\verb@$\epsilon$.type # t@.
+\verb@$\epsilon$.type#t@.
 
 A qualified type designator has the form \verb@p.t@ where \verb@p@ is
 a path (\sref{}) and $t$ is a type name. Such a type designator is
-equivalent to the type projection \verb@p.type # x@.
+equivalent to the type projection \verb@p.type#x@.
 
 \example 
 Some type designators and their expansions are listed below. We assume
 a local type parameter \verb@t@, a value \verb@mytable@
 with a type member \verb@Node@ and the standard class \verb@scala.Int@, 
 \begin{verbatim}
-  t                            \=$\epsilon$.type # t
-  Int              \>scala.type # Int
-  scala.Int        \>scala.type # Int
-  mytable.Node     \>mytable.type # Node
+  t                            \=$\epsilon$.type#t
+  Int              \>scala.type#Int
+  scala.Int        \>scala.type#Int
+  mytable.Node     \>mytable.type#Node
 \end{verbatim}
 
 \subsection{Parameterized Types}
@@ -758,7 +767,7 @@ earlier base classes which are instances of the same class.
 {\em seen as a member of some class \verb@C@ from some prefix type
 \verb@S@} makes sense only if the prefix type \verb@S@
 has a type instance of class \verb@C@ as a base class, say
-\verb@S' # C[T$_1$, ..., T$_n$]@. Then we define as follows.
+\verb@S'#C[T$_1$, ..., T$_n$]@. Then we define as follows.
 \begin{itemize}
  \item 
   If \verb@S = $\epsilon$.type@, then $T$ seen as a member of $C$ from $S$ is $T$ itself.
@@ -808,9 +817,9 @@ and there exists a definition or declaration $d'$ in $C$
 such that $d$ results from $d'$ by replacing every
 type $T'$ in $d'$ by $T'$ seen as a member of $C$ from $T$.
 
-The {\em definition} of a type projection \verb@S # t@ is the member
+The {\em definition} of a type projection \verb@S#t@ is the member
 binding $d$ of the type \verb@t@ in \verb@S@. In that case, we also say
-that \verb@S # t@ {\em is defined by} \verb@d@.
+that \verb@S#t@ {\em is defined by} \verb@d@.
 
 \section{Relations between types}
 
@@ -873,7 +882,7 @@ transitive relation that satisfies the following conditions.
 \item A type variable or abstract type $t$ conforms to its upper bound and
       its lower bound conforms to $t$. 
 \item A class type or parameterized type $c$ conforms to any of its basetypes, $b$.
-\item A type projection \verb@T # t@ conforms to \verb@U # t@ if 
+\item A type projection \verb@T#t@ conforms to \verb@U#t@ if 
       \verb@T@ conforms to \verb@U@.
 \item A parameterized type \verb@T[T$_1$, ..., T$_n$]@ conforms to 
       \verb@T[U$_1$, ..., U$_n$]@ if
@@ -947,7 +956,7 @@ The erasure mapping is defined as follows.
 \item The erasure of a parameterized type $T[T_1 \commadots T_n]$ is $|T|$.
 \item The erasure of a singleton type \verb@p.type@ is the 
       erasure of the type of \verb@p@.
-\item The erasure of a type projection \verb@T # x@ is \verb@|T| # x@.
+\item The erasure of a type projection \verb@T#x@ is \verb@|T|#x@.
 \item The erasure of a compound type $T_1;\WITH;\ldots;\WITH;T_n\{R\}$ is $|T_1|$.
 \item The erasure of every other type is the type itself.
 \end{itemize}
@@ -971,16 +980,17 @@ arguments.
 A parameterless method $m$ of type $[] T$
 is converted to type $T$ by evaluating the expression to which $m$ is bound.
 \item
-An expression $e$ of polymorphic type $[a_1 \extends S_1 \commadots
-a_n \extends S_n]T$ which does not appear as the function part of
-a type application is converted to type $T$
+An expression $e$ of polymorphic type 
+\verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$]T@
+which does not appear as the function part of
+a type application is converted to type \verb@T@
 by determining with local type inference
-(\sref{sec:local-type-inf}) instance types $U_1
-\commadots U_n$ for the type variables $a_1 \commadots a_n$ and
-implicitly embedding $e$ in the type application
-$e[U_1 \commadots U_n]$ (\sref{sec:type-app}).
+(\sref{sec:local-type-inf}) instance types \verb@T$_1$, ..., T$_n$@
+for the type variables \verb@a$_1$, ..., a$_n$@ and
+implicitly embedding \verb@e@ in the type application
+\verb@e[U$_1$, ..., U$_n$]@ (\sref{sec:type-app}).
 \item
-An expression $e$ of monomorphic method type
+An expression \verb@e@ of monomorphic method type
 $(ps_1) \ldots (ps_n) U$ of arity $n > 0$
 which does not appear as the function part of an application is
 converted to a function type by implicitly embedding $e$ in
@@ -1009,7 +1019,6 @@ parameters always need to be applied to arguments immediately.
                   \>  |\> type TypeDef {`,' TypeDef}
 	          \>  |\> ClsDef
 \end{verbatim}
-\iflet{$\LET$ ValDef {`,' ValDef}}
 
 A {\em declaration} introduces names and assigns them types. It can
 appear as one of the statements of a class definition
@@ -1026,10 +1035,10 @@ The scope of a name introduced by a declaration or definition is the
 whole statement sequence containing the binding.  However, there is a
 restriction on forward references: In a statement sequence $s_1 \ldots
 s_n$, if a simple name in $s_i$ refers to an entity defined by $s_j$
-where $j \geq i$, then all statements between and including $s_i$ and
-$s_j$ must be pure statements (\sref{sec:statements}).
+where $j \geq i$, then all non-empty statements between and including
+$s_i$ and $s_j$ must be imports or pure definitions (\sref{sec:statements}).
 
-{\em Pure} definitions can be evaluated without any side effect.
+A {\em pure} definition can be evaluated without any side effect.
 Function, type, class, or object definitions are always pure. A value
 definition is pure if its right-hand side expression is pure. Pure
 expressions are paths, literals, as well as typed expressions
@@ -1134,32 +1143,6 @@ val x = x$\Dollar$._1;
 val xs = x$\Dollar$._2;
 
 \end{verbatim}
-
-\iflet{
-\section{Let Definitions}
-\label{sec:letdef}
-
-\syntax\begin{verbatim}
-  PureDef      \=::= \= $\LET$ ValDef {`,' ValDef}
-  ValDef       \>::= \> Id [`:' Type] `=' Expr
-\end{verbatim}
-
-A let definition $\LET;x: T = e$ defines $x$ as a name of the value
-that results from the delayed evaluation of $e$. The type $T$ must be
-a concrete value type (\sref{sec:types}) and the type of the
-expression $e$ must conform to $T$. The effect of the let definition
-is to bind the left-hand side $x$ to the result of evaluating $e$
-converted to type $T$.  However, the expression $e$ is not evaluated
-at the point of the let definition, but is instead evaluated the first
-time $x$ is dereferenced during execution of the program (which might
-be never at all). An attempt to dereference $x$ again in the course of
-evaluation of $e$ leads to a run-time error.  Other threads trying to
-dereference $x$ while $e$ is being evaluated block until evaluation is
-complete.
-
-The type $T$ may be omitted if it can be determined using local type
-inference (\sref{sec:local-type-inf}).
-}
 
 \section{Variable Declarations and Definitions}
 \label{sec:vardef}
@@ -1350,11 +1333,11 @@ function. That is, the argument is evaluated using {\em call-by-name}.
 
 \example The declaration
 \begin{verbatim}
-def while (def cond: Boolean) (def stat: Unit): Unit
+def whileLoop (def cond: Boolean) (def stat: Unit): Unit
 \end{verbatim}
 produces the typing
 \begin{verbatim}
-while: (cond: [] Boolean) (stat: [] Unit) Unit
+whileLoop: (cond: [] Boolean) (stat: [] Unit) Unit
 \end{verbatim}
 which indicates that both parameters of \verb@while@ are evaluated using
 call-by-name.
@@ -1371,13 +1354,13 @@ determined from the type of the function body.
 
 An overloaded definition is a set of \verb@n > 1@ value or function
 definitions in the same scope that define the same name, binding it to
-types \verb@T_1 \commadots T_n@, respectively.  The individual
+types \verb@T_1, ..., T_n@, respectively.  The individual
 definitions are called {\em alternatives}.  Alternatives always need
 to specify the type of the defined entity completely.  All
 alternatives must have the same modifiers. It is an error if the types
-of two alternatives \verb@T_i@ and \verb@T_j@ have the same erasure
+of two alternatives \verb@T$_i$@ and \verb@T$_j$@ have the same erasure
 (\sref{sec:erasure}).  An overloaded definition defines a single
-entity, of type \verb@T_1 \overload \ldots \overload T_n@
+entity, of type \verb@T_1 $\overload$ ... $\overload$ T_n@
 (\sref{sec:overloaded-types}).
 %This must be a well-formed
 %overloaded type
@@ -1565,9 +1548,9 @@ with a given superclass \verb@sc@. These notions are defined for templates
 and constructor invocations as follows.
 
 A {\em mixin evaluation with superclass \verb@sc@} of a template
-\verb@sc';\WITH;mc_1;\WITH;mc_n;\WITH;(stats)@ consists of mixin
+\verb@sc' with mc$_1$ with mc$_n$ with {stats}@ consists of mixin
 evaluations with superclass \verb@sc@ of the mixin constructor invocations
-\verb@mc_1 \commadots mc_n@ in the order they are given, followed by an
+\verb@mc$_1$, ..., mc$_n$@ in the order they are given, followed by an
 evaluation of the statement sequence \verb@stats@.  Within \verb@stats@ the
 actual superclass refers to \verb@sc@.  A mixin evaluation with superclass
 \verb@sc@ of a class constructor invocation \verb@ci@ consists of an evaluation
@@ -1576,7 +1559,7 @@ given, followed by a mixin evaluation with superclass \verb@sc@ of the
 template represented by the constructor invocation.
 
 An {\em evaluation} of a template
-\verb@sc;\WITH;mc_1;\WITH;mc_n;\WITH;(stats)@ consists of an evaluation of
+\verb@sc with mc$_1$ with mc$_n$ with (stats)@ consists of an evaluation of
 the superclass constructor invocation \verb@sc@ (of type \verb@S@, say),
 followed by a mixin evaluation with superclass \verb@sc@ of the template. An
 evaluation of a class constructor invocation \verb@ci@ consists of an
@@ -1613,12 +1596,15 @@ of a base class which succeeds \verb@b@ in the base class sequence of the
 template.
 \end{enumerate}
 
+If two mixin base classes of a template each have a concrete member with the same
+name, then the template itself must also declare or define a member with the same name.
+
 \comment{
 The type of a member \verb@m@ is determined as follows: If \verb@m@ is defined
 in \verb@stats@, then its type is the type as given in the member's
 declaration or definition. Otherwise, if \verb@m@ is inherited from the
-base class \verb@B[T1 \commadots T_n]@, \verb@B@'s class declaration has formal
-parameters \verb@[a_1 \commadots a_n]@, and \verb@M@'s type in \verb@B@ is \verb@U@, then
+base class \verb@B[T1, .... T_n]@, \verb@B@'s class declaration has formal
+parameters \verb@[a_1, ..., a_n]@, and \verb@M@'s type in \verb@B@ is \verb@U@, then
 \verb@M@'s type in \verb@C@ is \verb@U[a_1 := T_1
 \commadots a_n := T_n]@.
 
@@ -1774,7 +1760,7 @@ is mandatory for member definitions that override some other
 non-abstract member definition in a super- or mixin-class. If an
 \verb@override@ modifier is given, there must be at least one
 overridden member definition.  Furthermore, the overridden definition
-must be concrete \sref{sec:members}, unless the class containing the
+must be concrete (\sref{sec:members}), unless the class containing the
 overriding member is abstract.
 \item
 The \verb@abstract@ modifier is used in class definitions. It is
@@ -2050,19 +2036,15 @@ A class definition which starts with the reserved word \verb@trait@
 instead of \verb@class@ defines a trait. A trait is a specific
 instance of an abstract class, so the \verb@abstract@ modifier is
 redundant for it.  The template of a trait must satisfy the following
-four restrictions.
+three restrictions.
 \begin{enumerate}
 \item All base classes of the trait are traits.
 \item All parent class constructors of a template
       must be primary constructors with empty value
       parameter lists. 
-\item None of the statements in the template may be a variable definition.
-\item For every value definition \verb@val x: T = e@ among the statements 
-      of the template, the defining expression \verb@e@ must {\em pure}.      
+\item All non-empty statements in the template are either imports or pure definitions
+\sref{sec:defs}
 \end{enumerate}
-A pure expression is a literal, or an occurrence of \verb@this@,
-or a stable identifier, or a typed expression \verb@e: T@ where
-\verb@e@ is a pure expression.
 
 These restrictions ensure that the evaluation of the mixin constructor
 of a trait has no effect. Therefore, traits may appear several times 
@@ -2187,7 +2169,7 @@ module FileSystem with {
 \syntax\begin{verbatim}
   Expr            \=::=\= [Bindings `=>'] Expr
 		  \>  |\> if `(' Expr `)' Expr [[`;'] else Expr]
-		  \>  |\> try Expr [`;'] (except Expr | finally Expr)
+                  \>  |\> try `{' block `}' [catch Expr] [finally Expr]
 		  \>  |\> while '(' Expr ')' Expr
 		  \>  |\> do Expr [`;'] while `(' Expr ')'
 		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
@@ -2325,17 +2307,19 @@ is the same as the type of \verb@C.this@.
 The expression \verb@C.this@ is legal in the statement part of an
 enclosing class or object definition with simple name \verb@C@. It
 stands for the object being defined by the innermost such definition.
-Its type is the self type of that definition if one is given;
-otherwise its type is \verb@C.this.type@.
+If the expression's expected type is a singleton type, or
+\verb@C.this@ occurs as the prefix of a selection, its type is
+\verb@C.this.type@, otherwise it is the self type of class \verb@C@.
 
 A reference \verb@super.$m$@ in a template refers to the definition of
 \verb@m@ in the actual superclass (\sref{sec:base-classes}) of the
 template.  A reference \verb@C.super.m@ refers to the definition of
 \verb@m@ in the actual superclass of the innermost enclosing class or
-object definition enclosing the reference. The definition referred to
-by \verb@super@ or \verb@C.super@ must be concrete, or the template
-containing the reference must contain a definition which has an
-\verb@override@ modifier and which overrides \verb@m@.
+object definition named \verb@C@ which encloses the reference. The
+definition referred to by \verb@super@ or \verb@C.super@ must be
+concrete, or the template containing the reference must contain a
+definition which has an \verb@override@ modifier and which overrides
+\verb@m@.
 
 \example\label{ex:super}
 Consider the following class definitions
@@ -2401,7 +2385,7 @@ super references.
 class BorderedColoredShape extends Shape with Bordered with Colored {
   def equals(other: Any) = other match {
     case that: BorderedColoredShape => 
-      super.equals(that) && Bordered # equals(that) && Colored # equals(that)
+      super.equals(that) && Bordered#equals(that) && Colored#equals(that)
     case _ => false
   }
 }
@@ -2414,20 +2398,20 @@ class BorderedColoredShape extends Shape with Bordered with Colored {
   SimpleExpr    \=::= \= SimpleExpr ArgumentExpr
 \end{verbatim}
 
-An application \verb@f(e$_1$ \commadots e$_n$)@ applies the function \verb@f@ to the
-argument expressions \verb@e$_1$ \commadots e$_n$@. If \verb@f@ has a method type
-\verb@(x$_1$: T$_1$ \commadots x$_n$: T$_n$)U@, the type of each argument
+An application \verb@f(e$_1$, ..., e$_n$)@ applies the function \verb@f@ to the
+argument expressions \verb@e$_1$, ..., e$_n$@. If \verb@f@ has a method type
+\verb@(x$_1$: T$_1$, ..., x$_n$: T$_n$)U@, the type of each argument
 expression \verb@e$_i$@ must conform to the corresponding parameter type
 \verb@T$_i$@. If \verb@f@ has some value type, the application is taken to be
-equivalent to \verb@f.apply(e$_1$ \commadots e$_n$)@, i.e.\ the
+equivalent to \verb@f.apply(e$_1$, ..., e$_n$)@, i.e.\ the
 application of an \verb@apply@ function defined by \verb@f@.
 
 %Class constructor functions
 %(\sref{sec:classes}) can only be applied in constructor invocations
 %(\sref{sec:constr-invoke}), never in expressions.
 
-Evaluation of \verb@f(e$_1$ \commadots e$_n$)@ usually entails evaluation of
-\verb@f@ and \verb@e$_1$ \commadots e$_n$@ in that order. Each argument expression
+Evaluation of \verb@f(e$_1$, ..., e$_n$)@ usually entails evaluation of
+\verb@f@ and \verb@e$_1$, ..., e$_n$@ in that order. Each argument expression
 is converted to the type of its corresponding formal parameter.  After
 that, the application is rewritten to the function's right hand side,
 with actual arguments substituted for formal parameters.  The result
@@ -2443,20 +2427,6 @@ actual argument expression. In other words, the evaluation order for
 \verb@def@-parameters is {\em call-by-name} whereas the evaluation
 order for normal parameters is {\em call-by-value}.
 
-\example A function equivalent to a \verb@while@-loop could be defined as:
-
-\begin{verbatim}
-  def whileLoop(def c: boolean)(def s: unit): unit  =
-    if (c) { s ; while(c)(s) } else {}
-\end{verbatim}
-Therefore the call
-\begin{verbatim}
-  whileLoop (x != 0) { y = y + 1/x ; x = x - 1 }
-\end{verbatim}
-will never produce a division-by-zero error at run-time, since the
-expression \verb@(y = 1/x)@ will be evaluated in the body of
-\verb@while@ only if the condition parameter is false.
-
 \section{Type Applications}
 \label{sec:type-app}
 \syntax\begin{verbatim}
@@ -2468,14 +2438,14 @@ polymorphic value \verb@f@ of type
 \verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$]S@ with
 argument types \verb@T$_1$, ..., T$_n$@.  Every argument type
 \verb@T$_i$@ must obey corresponding bounds \verb@L$_i$@ and
-\verb@U$_i$@.  That is, for each \verb@i = 1 \commadots n@, we must
+\verb@U$_i$@.  That is, for each \verb@i = 1, ..., n@, we must
 have \verb@L$_i \sigma$ <: T$_i$ <: U$_i \sigma$@, where $\sigma$ is the
 substitution \verb@[a$_1$ := T$_1$, ..., a$_n$ := T$_n$]@.  The type
 of the application is \verb@S$\sigma$@.  
 
 The function part \verb@f@ may also have some value type. In this case
 the type application is taken to be equivalent to
-\verb@f.apply[\verb@T$_1$, ..., T$_n$]@, i.e.\ the
+\verb@f.apply[T$_1$, ..., T$_n$]@, i.e.\ the
 application of an \verb@apply@ function defined by \verb@f@.
 
 Type applications can be omitted if local type inference
@@ -2495,7 +2465,7 @@ function.  Let $\AA$ be the set of all type alternatives of
 
 Assume first that \verb@f@ appears as a function in an application, as
 in \verb@f(args)@.  If there is precisely one alternative in
-\verb@\AA@ which is a (possibly polymorphic) method type whose arity
+$\AA$ which is a (possibly polymorphic) method type whose arity
 matches the number of arguments given, that alternative is chosen.
 
 Otherwise, let \verb@argtypes@ be the vector of types obtained by
@@ -2536,7 +2506,7 @@ A polymorphic method type
 \verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$](ps)T@ is
 more specific than some other type \verb@S@ if \verb@(ps)T@ is more
 specific than \verb@S@ under the assumption that for
-\verb@i = 1 \commadots n@ each \verb@a$_i$@ is an abstract type name
+\verb@i = 1, ..., n@ each \verb@a$_i$@ is an abstract type name
 bounded from below by \verb@L$_i$@ and from above by \verb@U$_i$@.
 \item
 Any other type is always more specific than a parameterized method
@@ -2553,10 +2523,10 @@ exists, or if it is not unique.
 
 Assume finally that \verb@f@ does not appear as a function in either
 an application or a type application. If an expected type is given,
-let \verb@BB@ be the set of those alternatives in \verb@AA@ which are
-compatible to it. Otherwise, let \verb@BB@ be the same as \verb@AA@.
+let $\BB$ be the set of those alternatives in $\AA$ which are
+compatible to it. Otherwise, let $\BB$ be the same as $\AA$y.
 We choose in this case the most specific alternative among all
-alternatives in \verb@BB@. It is an error if there is no unique
+alternatives in $\BB$. It is an error if there is no unique
 alternative in $\BB$ which is more specific than all other
 alternatives in $\BB$.
 
@@ -2635,10 +2605,10 @@ override a member of \verb@C@.
   Block       \>::= \> [{BlockStat `;'} Expr]
 \end{verbatim}
 
-A block expression
-\verb@{s$_1$; ...; s$_n$; e} is constructed from a sequence of block statements \verb@s$_1$
-, ..., s$_n$@ and a final expression \verb@e@. The final expression
-can be omitted, in which case the unit value \verb@()@ is assumed.
+A block expression \verb@{s$_1$; ...; s$_n$; e}@ is constructed from a
+sequence of block statements \verb@s$_1$ , ..., s$_n$@ and a final
+expression \verb@e@. The final expression can be omitted, in which
+case the unit value \verb@()@ is assumed.
 
 %Whether or not the scope includes the statement itself
 %depends on the kind of definition.
@@ -2769,119 +2739,147 @@ the expression is the value of \verb@e@ converted to type \verb@T@.
 	       \>  | \> SimpleExpr ArgumentExpr `=' Expr
 \end{verbatim}
 
-An assignment to a simple variable \verb@x = e@ is interpreted as the invocation
-\verb@x_=(e)@ of the setter function for variable
-\verb@x@ (\sref{sec:vardef}).
-Analogously, an assignment \verb@f.x = e@ to a field \verb@x@ is interpreted
-as the invocation \verb@f.x_=(e)@.
+An assignment to a simple variable \verb@x = e@ is interpreted
+depending on whether \verb@x@ is defined in a block or in a
+template. If \verb@x@ is a variable defined in a block, then the
+assignment changes the current value of \verb@x@ to be the result of
+evaluating the expression \verb@e@. The type of \verb@e@ is expected
+to conform to the declated type of \verb@x@.  If \verb@x@ is a member
+of a template, the assignment \verb@x = e@ is interpreted as the
+invocation \verb@x_=(e)@ of the setter function for variable \verb@x@
+(\sref{sec:vardef}).  Analogously, an assignment \verb@f.x = e@ to a
+field \verb@x@ is interpreted as the invocation \verb@f.x_=(e)@.
 
 An assignment \verb@f(args) = e@ with a function application to the
 left of the ``\verb@=@' operator is interpreted as 
 \verb@f.update(args, e)@, i.e.\
 the invocation of an \verb@update@ function defined by \verb@f@.
 
-\example Here is the usual imperative code for matrix multiplication.
+\example \label{ex:imp-mat-mul}
+Here is the usual imperative code for matrix multiplication.
 
 \begin{verbatim}
-def matmul(xs: Array[Array[double]], ys: Array[Array[double]]) = {
-  val zs: Array[Array[double]] = new Array(xs.length, ys.length);
+def matmul(xss: Array[Array[double]], yss: Array[Array[double]]) = {
+  val zss: Array[Array[double]] = new Array(xss.length, yss.length);
   var i = 0;
-  while (i < xs.length) {
+  while (i < xss.length) {
     var j = 0;
-    while (j < ys(0).length) {
+    while (j < yss(0).length) {
       var acc = 0.0;
       var k = 0;
-      while (k < ys.length) {
-	acc = acc + xs(i)(k) * ys(k)(j);
+      while (k < yss.length) {
+	acc = acc + xs(i)(k) * yss(k)(j);
 	k = k + 1
       }
-      zs(i)(j) = acc;
+      zss(i)(j) = acc;
       j = j + 1
     }
     i = i + 1
   }
-  zs
+  zss
 }
 \end{verbatim}
 Desugaring the array accesses and assignments yields the following
 expanded version:
 \begin{verbatim}
-def matmul(xs: Array[Array[double]], ys: Array[Array[double]]) = {
-  val zs: Array[Array[double]] = new Array(xs.length, ys.length);
+def matmul(xss: Array[Array[double]], yss: Array[Array[double]]) = {
+  val zss: Array[Array[double]] = new Array(xss.length, yss.length);
   var i = 0;
-  while (i < xs.length) {
+  while (i < xss.length) {
     var j = 0;
-    while (j < ys(0).length) {
+    while (j < yss(0).length) {
       var acc = 0.0;
       var k = 0;
-      while (k < ys.length) {
-	acc = acc + xsa.apply(i).apply(k) * ys.apply(k).apply(j);
+      while (k < yss.length) {
+	acc = acc + xss.apply(i).apply(k) * yss.apply(k).apply(j);
 	k = k + 1
       }
-      zs.apply(i).update(j, acc);
+      zss.apply(i).update(j, acc);
       j = j + 1
     }
     i = i + 1
   }
-  zs
+  zss
 }
 \end{verbatim}
-
-\begin{verbatim}
-def matmul(xss: Array[Array[double]], yss: Array[Array[double]]) = {
-  val ysst = transpose(yss);
-  for (val xs <- xs) yield
-    for (val ys <- ysst) yield 
-      scalprod(xs, ys)
-}
-
-def transpose[a](xss: Array[Array[a]]) {
-  for (val i <- Array.range(0, xss(0).length)) yield
-    Array(for (val xs <- xss) yield xs(i))
-
-def scalprod(xs: Array[double], ys: Array[double]) {
-  var acc = 0.0;
-  for (val Pair(x, y) <- xs zip ys) do acc = acc + x * y; 
-  acc
-}
-\end{verbatim}
-
 
 \section{Conditional Expressions}
 
 \syntax\begin{verbatim}
-  Expr	       \=::= \= \verb@\IF@ `(' Expr `)' Expr [\verb@\ELSE@ Expr]
+  Expr	       \=::= \= if `(' Expr `)' Expr [[`;'] else Expr]
 \end{verbatim}
 
-The conditional expression \verb@if (\verb@e$_1$@) \verb@e$_2$@ else \verb@e$_3$@@ is treated as
-a shorthand for the expression
-\begin{verbatim}
-\verb@e$_1$@.ifThenElse(\verb@e$_2$@)(\verb@e$_3$@)  .
+The conditional expression \verb@if (e$_1$) e$_2$ else e$_3$@ chooses
+one of the values of \verb@e$_2$@ and \verb@e$_2$@, depending on the
+value of \verb@e$_1$@. The condition \verb@e$_1$@ is expected to
+conform to type \verb@boolean@.  The then-part \verb@e$_2$@ and the
+else-part \verb@e$_3$@ are both expected to conform to the expected
+type of the conditional expression. The type of the conditional
+expression is the least upper bound of the types of \verb@e$_1$@ and
+\verb@e$_2$@.  A semicolon preceding the \verb@else@ symbol of a
+conditional expression is ignored.
+
+The conditional expression is evaluated by evaluating first
+\verb@e$_1$@. If this evaluates to \verb@true@, the result of
+evaluating \verb@e$_2$@ is returned, otherwise the result of
+evaluating \verb@e$_3$@ is returned.
+
+A short form of the conditional expression eliminates the
+else-part. The condition expression \verb@if (e$_1$) e$_2$@ is
+evaluated as if it was \verb@if (e$_1$) e$_2$ else ()@.  The type of
+this expression is \verb@unit@ and the then-part
+\verb@e$_2$@ is also expected to conform to type \verb@unit@.
+
+\section{While Loop Expressions}
+
+\syntax\begin{verbatim}
+  Expr	       \=::= \= while `(' Expr ')' Expr
 \end{verbatim}
-The conditional expression \verb@if (\verb@e$_1$@) \verb@e$_2$@@ without an
-else-part is treated as a shorthand for the expression
+
+The while loop expression \verb@while (e$_1$) e$_2$@ is typed and
+evaluated as if it was an application of \verb@whileLoop (e$_1$) (e$_2$)@ where
+the hypothetical function \verb@whileLoop@ is defined as follows.
+
 \begin{verbatim}
-\verb@e$_1$@.ifThen(\verb@e$_2$@)  .
+  def whileLoop(def c: boolean)(def s: unit): unit  =
+    if (c) { s ; while(c)(s) } else {}
 \end{verbatim}
-The predefined type \verb@Boolean@ (\sref{sec:cls-Boolean})
-contains implementations of
-methods \verb@ifThen@ and \verb@ifThenElse@.
+
+\example The loop 
+\begin{verbatim}
+  while (x != 0) { y = y + 1/x ; x = x - 1 }
+\end{verbatim}
+Is equivalent to the application
+\begin{verbatim}
+  whileLoop (x != 0) { y = y + 1/x ; x = x - 1 }
+\end{verbatim}
+Note that this application will never produce a division-by-zero 
+error at run-time, since the
+expression \verb@(y = 1/x)@ will be evaluated in the body of
+\verb@while@ only if the condition parameter is false.
+
+\section{Do Loop Expressions}
+
+\syntax\begin{verbatim}
+  Expr	       \=::= \= do Expr [`;'] while `(' Expr ')'
+\end{verbatim}
+
+The do loop expression \verb@do e$_1$ while (e$_2$)@ is typed and
+evaluated as if it was the expression \verb@(e$_1$ ; while (e$_2$) e$_1$)@.
+A semicolon preceding the \verb@while@ symbol of a do loop expression is ignored.
 
 \section{Comprehensions}
 
-\todo{change syntax; treat refulatble patterns as filters}
-
 \syntax\begin{verbatim}
-  Expr	           \=::= \= for `(' Enumerator `)' [do | yield] Expr
-  Enumerator      \>::=\> Generator {`;' Enumerator1}
-  Enumerator1     \>::=\> Generator
+  Expr	           \=::= \= for `(' Enumerators `)' (do | yield) Expr
+  Enumerator      \>::=\> Generator {`;' Enumerator}
+  Enumerator     \>::=\> Generator
                   \>  |\> Expr
-                  \>  |\>
   Generator       \>::=\> val Pattern `<-' Expr
 \end{verbatim}
 
-A comprehension \verb@for (g) e@ evaluates expression \verb@e@ for each
-binding generated by the enumerator \verb@g@. An enumerator is a generator,
+A comprehension \verb@for (N) yield e@ evaluates expression \verb@e@ for each
+binding generated by the enumerators \verb@N@. An enumerator is a generator,
 possibly followed by further generators or filters.  A generator
 \verb@val p <- e@ produces bindings from an expression \verb@e@ which is
 matched in some way against pattern \verb@p@. Filters are expressions which
@@ -2895,95 +2893,82 @@ given in (\sref{cls-list}).
 The translation scheme is by repeated applications of the following
 rules, until the comprehension has been eliminated.
 
-\ifnewfor{
-First, a definition: A pattern \verb@P@ is a {\em binding} if \verb@P@ is a
-variable pattern or a tuple pattern consisting only of pattern
-variables. In the following, we let \verb@B@ range over bindings, \verb@P@ over
-patterns other than bindings, \verb@E, F@ over expressions, and \verb@G@ over
-enumerators.
+First, a definition: A pattern \verb@p@ is a {\em irrefutable} if \verb@p@ is a
+variable pattern or a pattern \verb@scala.Tuple$\,n$(x$_1$, ..., x$_n$)@ where
+\verb@x$_1$, ..., x$_n$@ are variable patterns. 
+In the following, we let \verb@p@ range over patterns, 
+\verb@q@ over refutable patterns, and
+\verb@e, f@ over expressions.
 
-%\begin{itemize}
-%\item
-If
-\verb@x$_1$ \commadots x$_n$@ are the free variables of \verb@p@, then
-the generator \verb@p <- e@ is translated to:
-\begin{verbatim}
-\verb@(x$_1$ \commadots x$_n$)@ <- e.filter(case p => True case _ => False).map(case p => \verb@(x$_1$ \commadots x$_n$)@)
-\end{verbatim}
-
-%\item
-A generator \verb@P <- E@ followed by a filter \verb@F@ is translated to
-a single generator \verb@P <- E.filter(x$_1$ \commadots x$_n$ => F)@.
-
-%\item
-The comprehension \verb@for (B <- E) E'@ is translated to
-\verb@E.map(B => E')@.
-
-%\item
-The comprehension \verb@for (B <- E, G) E'@ is translated to
-\begin{verbatim}
-(val x$\Dollar$ = E ; x$\Dollar$.combine(for (B <- E) for (G) E'))
-\end{verbatim}
-
-%\end{itemize}
-}
 \begin{itemize}
 \item
-A for-comprehension
-\verb@for (val p <- e) yield e'@
+For a refutable pattern \verb@p@ with free variables
+\verb@x$_1$, ..., x$_n$@, 
+the generator \verb@val p <- e@ is translated to:
+\begin{verbatim}
+val Scala.Tuple$\,n$(x$_1$, ..., x$_n$) <- 
+  e\=.filter { case p => True case _ => False }
+   \>.map{ case p => Tuple$\,n$(x$_1$, ..., x$_n$) } ,
+\end{verbatim}
+yielding a generator with an irrefutable pattern.
+
+\item
+A generator \verb@q <- e@ followed by a filter \verb@f@ is translated to
+a single generator \verb@q <- e.filter(x$_1$, ..., x$_n$ => f)@ where
+\verb@x$_1$, ..., x$_n$@ are the free variables of \verb@q@.
+
+\item
+A for-comprehension 
+\verb@for (val q <- e) yield e'@
 is translated to
-\verb@e.map(x$_1$, ..., x$_n$ => e')@.
-where x$_1$, ..., x$_n$ are the free variables of $p$.
-A for-comprehension
-\verb@for (val p <- e) do e'@
-is translated to
-\verb@e.foreach(x$_1$, ..., x$_n$ => e')@.
+\verb@e.map { case q => e' }@.
+
 \item
 A for-comprehension
-\verb@for (val p <- e; f; s) yield e'@
-where \verb@f@ is a filter expression and \verb@s@ is a (possibly empty)
-sequence of generators or filters
+\verb@for (val q <- e) do e'@
 is translated to
-\verb@for (val p <- e.filter(x$_1$, ..., x$_n$ => f); s) yield e'@
-where x$_1$, ..., x$_n$ are the free variables of $p$. The translation
-of \verb@for@-\verb@do@ comprehensions is analogous for this case.
+\verb@e.foreach { case q => e' }@.
+
 \item
 A for-comprehension
 \begin{verbatim}
-for (val p <- e; val p' <- e'; s) yield e''
+for (val q <- e; val q' <- e' ...) yield e'' ,
 \end{verbatim}
-where \verb@s@ is a (possibly empty)
-sequence of generators or filters
+where \verb@...@ is a (possibly empty)
+sequence of generators or filters,
 is translated to
 \begin{verbatim}
-e.flatmap(x$_1$, ..., x$_n$ => for (val p' <- e'; s) yield e'') .
+e.flatmap { case q => for (val q' <- e' ...) yield e'' } .
 \end{verbatim}
+\item
 A for-comprehension
 \begin{verbatim}
-for (val p <- e; val p' <- e'; s) do e'' .
+for (val q <- e; val q' <- e' ...) do e'' .
 \end{verbatim}
+where \verb@...@ is a (possibly empty)
+sequence of generators or filters,
 is translated to
 \begin{verbatim}
-e.foreach(x$_1$, ..., x$_n$ => for (val p' <- e'; s) do e'')
+e.foreach { case q => for (val q' <- e'...) do e'' } .
 \end{verbatim}
 \end{itemize}
 
 \example
 the following code produces all pairs of numbers
-between \verb@1@ and \verb@n@ whose sums are prime.
+between \verb@1@ and \verb@n-1@ whose sums are prime.
 \begin{verbatim}
 for \= { \= val i <- range(1, n);
-    \>   \> val j <- range(1, i-1);
+    \>   \> val j <- range(1, i);
     \>   \> isPrime(i+j)
-} yield (i, j)
+} yield Pair (i, j)
 \end{verbatim}
 The for-comprehension is translated to:
 \begin{verbatim}
 range(1, n)
-  .flatMap(
-     i => range(1, i-1)
-            .filter(j => isPrime(i+j))
-            .map(j => (i, j)))
+  .flatMap {
+     case i => range(1, i)
+       .filter { j => isPrime(i+j) }
+       .map { case j => Pair(i, j) } }
 \end{verbatim}
 
 \comment{
@@ -3029,124 +3014,121 @@ def topsort[Node](g: Graph[Node]): List[Node] = {
 \end{verbatim}
 }
 
-\section{Tuples}
+\example For comprehensions can be used to express vector 
+and matrix algorithms concisely. 
+For instance, here is a function to compute the transpose of a given matrix:
+
+\begin{verbatim}
+def transpose[a](xss: Array[Array[a]]) {
+  for (val i <- Array.range(0, xss(0).length)) yield
+    Array(for (val xs <- xss) yield xs(i))
+\end{verbatim}
+
+Here is a function to compute the scalar product of two vectors:
+\begin{verbatim}
+def scalprod(xs: Array[double], ys: Array[double]) {
+  var acc = 0.0;
+  for (val Pair(x, y) <- xs zip ys) do acc = acc + x * y; 
+  acc
+}
+\end{verbatim}
+
+Finally, here is a function to compute the product of two matrices. Compare with the imperative version of Example~\ref{ex:imp-mat-mul}.
+\begin{verbatim}
+def matmul(xss: Array[Array[double]], yss: Array[Array[double]]) = {
+  val ysst = transpose(yss);
+  for (val xs <- xs) yield
+    for (val ys <- ysst) yield 
+      scalprod(xs, ys)
+}
+\end{verbatim}
+The code above makes use of the fact that \verb@map@, \verb@flatmap@,
+\verb@filter@, and \verb@foreach@ are defined for members of class
+\verb@scala.Array@.
+
+\section{Try Expressions}
 
 \syntax\begin{verbatim}
-  ArgumentExpr   \=::= \= `(' [Expr `,' Exprs] `)'
+  Expr   \=::= \= try `{' block `}' [catch Expr] [finally Expr]
 \end{verbatim}
 
-An expression $(e_1 \commadots e_n)$ where $n \geq 2$
-is a shorthand for the constructor invocation
-\verb@Tuple$\,n$($e_1 \commadots e_n)$@.
-The empty tuple $()$ is a shorthand for the constructor invocation
-\verb@Unit@.
-There are no tuples of length 1, since $(e)$ is seen as an expression
-in parentheses, not as a tuple.
-See \sref{sec:cls-tuple}
-for a definition of the \verb@Unit@ and \verb@Tuple$\,n$@ classes.
-\comment{
-An $n$-tuple type implicitly defines parameterless functions $\_1 \commadots
-\_n$ that select the tuple's components.
+A try expression \verb@try { b } catch e@ evaluates the block
+\verb@b@.  If evaluation of \verb@b@ does not cause an exception to be
+thrown, the result of \verb@b@ is returned. Otherwise the {\em
+handler} \verb@e@ is applied to the thrown exception.  Let \verb@pt@
+be the expected type of the try expression.  The block \verb@b@ is
+expected to conform to \verb@pt@.  The handler \verb@e@ is expected
+conform to type \verb@scala.PartialFunction[scala.Throwable, pt]@.
+The type of the try expression is the least upper bound of the type of
+\verb@b@ and the result type of \verb@e@.
 
-\example Here is an example of how tuples are formed and accessed.
+A try expression \verb@try { b } finally e@ evaluates the block
+\verb@b@.  If evaluation of \verb@b@ does not cause an exception to be
+thrown, expression \verb@e@ is evaluated. If an exception is thrown
+during evaluation of \verb@e@, the evaluation of the try expression is
+aborted with the thrown exception. If no exception is thrown during
+evaluation of \verb@e@, the result of \verb@b@ is returned as the
+result of the try expression. If an exception is thrown during
+evaluation of \verb@b@, the finally block
+\verb@e@ is also evaluated. If another exception \verb@e@ is thrown
+during evaluation of \verb@e@, evaluation of the try expression is
+aborted with the thrown exception. If no exception is thrown during
+evaluation of \verb@e@, the original exception thrown in \verb@b@ is
+re-thrown once evaluation of \verb@e@ has completed.  The block
+\verb@b@ is expected to conform to the expected type of the try
+expression. The finally expression \verb@e@ is expected to conform to
+type \verb@unit@.
 
-\begin{verbatim}
-  def helloWorld = {
-    val pair = ("hello", "world")
-    println (pair._1 + " " + pair._2)
-  }
-\end{verbatim}
-}
-
-\section{List Expressions}
-\label{sec:list-exprs}
-
-\syntax\begin{verbatim}
-  ListExpr	  \=::= \= `[' [Exprs] `]'
-\end{verbatim}
-
-The list expression $[ e_1 \commadots e_n ]$ with $n \geq 0$ is a
-shorthand for
-\begin{verbatim}
- cons(e$_1$, ..., cons(e$_n$, nil) ... ) .
-\end{verbatim}
-\verb@cons@ and \verb@nil@ are defined in module \verb@Predef@ as:
-\begin{verbatim}
-    def cons[a](x: a, xs: List[a]): List[a] = new ::_class(x)(xs);
-    def nil[a]: List[a] = Nil[a];
-\end{verbatim}
-Like all other members of module \verb@Predef@, these definitions
-are implicitly imported in all programs.
-
-\example Here is how the basic type of lists can be defined, so that
-list expressions ``do the right thing''.
-\begin{verbatim}
-final class List[a] with {
-  def ::(x: a) = new ::_class(x)(this);
-}
-case class Nil[a] extends List[a];
-case class ::_class[a](head: a)(tail: List[a]) extends List[a];
-\end{verbatim}
-Class \verb@List@ is declared \verb@final@ which has as
-consequence that no further case classes for \verb@List@ can be
-defined except for the two case classes \verb@Nil@ and \verb@::_class@ that are
-defined together with the class.
-
-Note the definition of ``\verb@::@'' as a method in class \verb@List@
-and of \verb@::_class@ as a case class outside.  This lets clients of
-\verb@List@ compose and decompose lists with the infix operator
-``\verb@::@''. E.g.\ \verb@x :: y :: zs@ is a valid list expression
-because ``\verb@::@'' is a unary method of \verb@List@ and it is a
-valid infix operation pattern (\sref{sec:patterns}) because
-``\verb@::_class@'' is a case class with two parameter sections.
-
-Note that list expressions are not argument expressions, hence it is
-necessary to enclose them in parentheses when used as parameters.
-This is necessary to distinguish list expression parameters from type arguments.
-
-\example\
-
-\begin{verbatim}
-  f([x, y])	       \=// application of function `f' to the list `[x,y]'
-  g[x, y]	       \>// instantiation of polymorphic `g' with types `x, y'
-\end{verbatim}
-
+A try expresion \verb@try { b } catch e$_1$ finally e$_2$@ is a shorthand
+for  \verb@try { try { b } catch e$_1$ } finally e$_2$@.
 
 \section{Anonymous Functions}
 \label{sec:closures}
 
 \syntax\begin{verbatim}
-  ArgumentExpr    \=::= \= `(' Closure `)'
-  Closure         \>::= \> [Bindings] `=>' Closure
-                  \>  | \> Block
-  Bindings	  \>::= \> Binding {`,' Binding}
-  Binding \>::= \> Id [`:' Type]
+  Expr            \=::= \= [Bindings `=>'] Expr
+  Bindings        \>::=\> `(' Binding {`,' Binding `)'
+                  \>  |\> Id [`:' Type1]
+  Binding         \>::= \> Id [`:' Type]
 \end{verbatim}
 
-An anonymous function is a closure $x_1: T_1 \commadots x_n: T_n
-\Arrow c$ in parentheses, where $n \geq 0$ and $c$ is a block or another closure.
-The types of the parameters can be omitted if they can be inferred
-from the context by local type inference.  The scope of every
-parameter name is the closure $c$. Let $T_1
-\commadots T_n$ be the types of the parameters and let $U$ be the type
-of $c$. The type $U$ may not depend on any of the parameter
-names $x_1 \commadots x_n$. The type of the whole expression is then
-$(T_1 \commadots T_n) U$. The expression is interpreted as
+The anonymous function \verb@(x$_1$: T$_1$, ..., x$_n$: T$_n$) => e@
+maps parameters \verb@x$_i$@ of types \verb@T$_i$@ to a result given
+by expression \verb@e@. The scope of each formal parameter
+\verb@x$_i$@ is \verb@e@.
+
+If the expected type of the anonymous function is of the form
+\verb@scala.Function$\,n$[S$_1$, ..., S$_n$, R]@, the expected type of \verb@e@
+is \verb@R@, the expected types of \verb@e@ is \verb@R@ and the type
+\verb@T$_i$@ of any of the parameters \verb@x$_i$@ can be omitted, in
+which case \verb@T$_i$ = S$_i$@ is assumed. If the expected type of
+the anonymous function is some other type, all formal parameter types
+must be explicitly given, and the expected type of \verb@e@ is
+undefined. The type of the anonymous function is
+\verb@scala.Function$\,n$[S$_1$, ..., S$_n$, T]@, where \verb@T@ is
+the type of \verb@e@. \verb@T@ must be equivalent to a type which does
+not refer to any of the formal parameters \verb@x$_i$@.
+
+The anonymous function is evaluated as the instance creation expression
 \begin{verbatim}
-  scala.Function$\,n$[$T_1 \commadots T_n, U$] with ( def apply($x_1 \commadots x_n$) = $c$ )  .
+scala.Function$\,n$[T$_1$, ..., T$_n$, T] {
+  def apply(x$_1$: T$_1$, ..., x$_n$: T$_n$): T = e
+}
 \end{verbatim}
+If there is only one formal parameter, \verb@(x: T) => e@ and \verb@(x) => e@
+can be abbreviated to \verb@x: T => e@, and \verb@x => e@, respectively.
 
 \example Examples of anonymous functions:
 
 \begin{verbatim}
-  (x => x)                                         \=// The identity function
+  x => x                                         \=// The identity function
 
-  (f => g => x => f(g(x)))	\>// Curried function composition
+  f => g => x => f(g(x))	\>// Curried function composition
 
-  (x: Int,y: String => (y,x))   \>// A function which swaps its arguments
+  (x: Int,y: Int) => x + y))    \>// A summation function
 
-  ( => count = count + 1; count)   \>// The function which takes an empty
-                                   \>// parameter list $()$, increments a global
+  () => { count = count + 1; count }  \>// The function which takes an empty
+                                   \>// parameter list $()$, increments a non-local
                                    \>// variable count and returns the new value.
 \end{verbatim}
 
@@ -3156,25 +3138,28 @@ $(T_1 \commadots T_n) U$. The expression is interpreted as
 \syntax\begin{verbatim}
   BlockStat        \=::= \=  Import
             \>  | \> Def
-	    \>  | \> $\VAL$ SimplePattern Id Expr
-	    \>  | \> [Expr]
+	    \>  | \> {LocalModifier} ClsDef
+	    \>  | \> Expr
+	    \>  | \>
   TemplateStat    \>::= \>  Import
-	\>  | \> {Modifier} Def
+   	\>  | \> {Modifier} Def
 	\>  | \> {Modifier} Dcl
-        \>  | \> [Expr]
-  PureStat        \>::=\> Import
-                  \>  |\> {Modifier} PureDef
-		  \>  |\> `;'
+        \>  | \> Expr
+	    \>  | \>
 \end{verbatim}
 
-A statement can be a definition or an expression, or it can be empty.
+Statements occur as parts of blocks and templates.  A statement can be
+an import, a definition or an expression, or it can be empty.
 Statements used in the template of a class definition can also be
 declarations.  An expression that is used as a statement can have an
 arbitrary value type. An expression statement $e$ is evaluated by
-evaluating $e$ and discarding the result of the evaluation.
+evaluating $e$ and discarding the result of the evaluation. The scope
+of a name introduced by a definition
 
 Block statements may be definitions which bind local names in the
-block. No modifiers are allowed in block-local definitions.
+block. The only modifiers allowed in block-local definitions are modifiers
+\verb@abstract@, \verb@final@, or \verb@sealed@ preceding a class or
+object definition.
 
 With the exception of overloaded definitions
 (\sref{sec:overloaded-defs}), a statement sequence making up a block
@@ -3182,10 +3167,6 @@ or template may not contain two definitions or declarations that bind
 the same name in the same namespace.  Evaluation of a statement
 sequence entails evaluation of the statements in the order they are
 written.
-
-{\em Pure statements} are statements that are guaranteed to be
-evaluated without side effect. A pure statement is either the empty
-statement, or an import clause, or a pure definition (\sref{sec:defs}).
 
 \chapter{Pattern Matching}
 
@@ -3233,9 +3214,8 @@ which starts with a lower case letter, together with a pattern $p$. It
 matches a value or a sequence of values whenever $p$ does, and in
 addition binds the variable name to that value or to that sequence of
 values. The type of $x$ is either $T$ as determined from the context, or
-\verb@List[ T ]@, if $p$ matches sequences of values. A
-special case is a {\em variable pattern} $x$ which is treated as $x @
-\_$. 
+\verb@List[T]@, if $p$ matches sequences of values. A
+special case is a {\em variable pattern} $x$ which is treated as $x @ \_$. 
 
 A {\em typed pattern} $x: T$ consists of a pattern variable $x$ and a
 simple type $T$. The type $T$ may be a class type or a compound type;
@@ -3279,40 +3259,32 @@ A non-regular sequence pattern is a sequence pattern $p_1 \commadots p_n$
 where $n \geq 1$ with no component pattern containing iterated or nested
 sequence patterns.
 
-A {\em constructor pattern} $c ( p )$ consists of an identifier $c$,
-followed by a pattern $p$.  The constructor $c$ is either a simple
-name or a qualified name $r.id$ where $r$ is a stable identifier. It
-refers to a (possibly overloaded) function which has one alternative
-of result type \verb@class C@, and which may not have other overloaded
-alternatives with a class constructor type as result type.
-Furthermore, the respective type parameters and value parameters of
-(said alternative of) $c$ and of the primary constructor function of
-class $C$ must be the same, after renaming corresponding type
-parameter names.  If $C$ is monomorphic and not a subclass of
-\verb@Seq[ T ]@ then \verb@C@ must conform to the expected type of the
-pattern, the pattern must be a non-regular sequence pattern $p_1
-\commadots p_n$ whose length corresponds to the number of arguments of
-$C$'s primary constructor. The expected types of the component
-patterns are then taken from the formal parameter types of (said)
-constructor.  If $C$ is polymorphic and not a subclass of
-\verb@Seq[ T ]@, then there must be a unique type application instance
-of it such that the instantiation of $C$ conforms to the expected type
-of the pattern. The instantiated formal parameter types of $C$'s
-primary constructor are then taken as the expected types of the
-component patterns $p_1\commadots p_n$.  In both cases, the pattern
-matches all objects created from constructor invocations
+A {\em constructor pattern} $c ( p )$ consists of a simple type $c$
+followed by a pattern $p$.  If $c$ designates a monomorphic case
+class, then it must conform to the expected type of the pattern, the
+pattern must be a non-regular sequence pattern $p_1 \commadots p_n$
+whose length corresponds to the number of arguments of $c$'s primary
+constructor. The expected types of the component patterns are then
+taken from the formal parameter types of (said) constructor.  If $c$
+designates a polymorphic case class, then there must be a unique type
+application instance of it such that the instantiation of $c$ conforms
+to the expected type of the pattern. The instantiated formal parameter
+types of $c$'s primary constructor are then taken as the expected
+types of the component patterns $p_1\commadots p_n$.  In both cases,
+the pattern matches all objects created from constructor invocations
 $c(v_1 \commadots v_n)$ where each component pattern $p_i$ matches the
-corresponding value $v_i$. If $C$ is a subclass of \verb@Seq[ T ]@,
-then $p$ may be an arbitrary pattern. Value patterns in $p$ are
-expected to conform to type $T$, and the pattern matches all objects
-whose \verb@elements()@ method returns a sequence that matches $p$.
+corresponding value $v_i$. If $c$ does not designate a case class, it
+must be a subclass of \verb@Seq[ T ]@. In that case $p$ may be an
+arbitrary pattern. Value patterns in $p$ are expected to conform to
+type $T$, and the pattern matches all objects whose \verb@elements()@
+method returns a sequence that matches $p$.
 
 The pattern $(p)$ is regarded as equivalent to the pattern $p$, if $p$
 is a nonempty sequence pattern. The empty tuple $()$ is a shorthand
 for the constructor pattern \verb@Unit@.
 
 An {\em infix operation pattern} \verb@p id p'@ is a shorthand for the
-constructor pattern \verb@id_class(p)(p')@.  The precedence and
+constructor pattern \verb@id(p, p')@.  The precedence and
 associativity of operators in patterns is the same as in expressions
 (\sref{sec:infix-operations}). The operands may not be empty sequence
 patterns.
@@ -3329,7 +3301,7 @@ as little as possible.
 The pattern \verb@ex: IOException@ matches all instances of class
 \verb@IOException@, binding variable \verb@ex@ to the instance.
 \item
-The pattern \verb@(x, _)@ matches pairs of values, binding \verb@x@ to
+The pattern \verb@Pair(x, _)@ matches pairs of values, binding \verb@x@ to
 the first component of the pair. The second component is matched
 with a wildcard pattern.
 \item
@@ -3355,28 +3327,28 @@ the sequence containing one \verb@'a'@
 \label{sec:pattern-match}
 
 \syntax\begin{verbatim}
-  ArgumentExpr   \=::= \= `(' Case {Case} `)'
-  Case	       \>::= \> $\CASE$ Patterns [$\IF$ Expr] `$=>$' Block
+  BlockExpr       \=::=\= `{' CaseClause {CaseClause} `}'
+  CaseClause      \>::=\> case Pattern [`if' PostfixExpr] `=>' Block 
 \end{verbatim}
 
-A pattern matching expression $(\CASE;p_1 \Arrow b_1 ;\ldots; \CASE;p_n
-\Arrow b_n)$ consists of a number $n \geq 1$ of cases.  Each case
-consists of a pattern $p_i$ and a block $b_i$.  The scope
-of the pattern variables in $p_i$ is the corresponding block
-$b_i$.
+A pattern matching expression
+\verb@case p$_1$ => b$_1$ ... case p$_n$ => b$_n$@ consists of a number 
+$n \geq 1$ of cases. Each case consists of a (possibly guarded) pattern 
+$p_i$ and a block $b_i$.  The scope of the pattern variables in $p_i$ is 
+the corresponding block $b_i$.
 
-The type of a pattern matching expression must in part be given from
-the outside. It must be either \verb@Function[T$_p$, T$_r$]@ or
-\verb@PartialFunction[T$_p$, T$_r$]@, where the argument type
-\verb@T$_p$@ must be fully determined, but the result type \verb@T$_r$@
-may be partially undetermined.  All patterns are typed relative to the
-expected type $T_p$ (\sref{sec:patterns}).  Let $T_b$ be the least
-type in the $(\conforms)$ ordering to which the types of all blocks
-conform.  The type of the pattern matching expression is then the
-required type with \verb@T$_r$@ replaced by \verb@T$_b$@ (i.e. the
-type is either \verb@Function[T$_p$, T$_b$]@ or
-\verb@PartialFunction[T$_p$, T$_b$]@ -- see \sref{sec:cls-function} for
-a definition of these classes).
+The expected type of a pattern matching expression must in part be
+defined. It must be either \verb@Function1[T$_p$, T$_r$]@ or
+\verb@scala.PartialFunction[T$_p$, T$_r$]@, where the argument type
+\verb@T$_p$@ must be fully determined, but the result type
+\verb@T$_r$@ may be partially undetermined.  All patterns are typed
+relative to the expected type $T_p$ (\sref{sec:patterns}).  The expected type of
+every block \verb@b$_i$@ is \verb@T$_r$@.
+Let \verb@T$_b$@ be the least upper bound of the types of all blocks 
+\verb@b$_i$@. The type of the pattern matching expression is
+then the required type with \verb@T$_r$@ replaced by \verb@T$_b$@
+(i.e. the type is either \verb@Function[T$_p$, T$_b$]@ or
+\verb@PartialFunction[T$_p$, T$_b$]@.
 
 When applying a pattern matching expression to a selector value,
 patterns are tried in sequence until one is found which matches the
@@ -3384,29 +3356,29 @@ selector value (\sref{sec:patterns}). Say this case is $\CASE;p_i
 \Arrow b_i$.  The result of the whole expression is then the result of
 evaluating $b_i$, where all pattern variables of $p_i$ are bound to
 the corresponding parts of the selector value.  If no matching pattern
-is found, a \verb@MatchError@ exception is thrown.
+is found, a \verb@scala.MatchError@ exception is thrown.
 
-The pattern in a case may also be followed by a guard suffix $\IF;e$
-with a Boolean expression $e$.  The guard expression is evaluated if
+The pattern in a case may also be followed by a guard suffixverb@if e@
+with a boolean expression $e$.  The guard expression is evaluated if
 the preceding pattern in the case matches. If the guard expression
-evaluates to \verb@True@, the pattern match succeeds as normal. If the
-guard expression evaluates to \verb@False@, the patterns in the case
-are considered not to match and the search for a matching pattern
+evaluates to \verb@true@, the pattern match succeeds as normal. If the
+guard expression evaluates to \verb@false@, the pattern in the case
+is considered not to match and the search for a matching pattern
 continues.
 
+\comment{
 A case with several patterns $\CASE;p_1 \commadots p_n ;\IF; e \Arrow b$  is a
 shorthand for a sequence of single-pattern cases $\CASE;p_1;\IF;e \Arrow b
 ;\ldots; \CASE;p_n ;\IF;e\Arrow b$. In this case none of the patterns
 $p_i$ may contain a named pattern variable (but the patterns may contain
 wild-cards).
+}
 
 In the interest of efficiency the evaluation of a pattern matching
 expression may try patterns in some other order than textual
-sequence. This might affect evaluation through side effects in
-let-bound (\sref{sec:letdef}) selector expressions or through side
-effects in guards. However, it is guaranteed that a guard expression
-is evaluated only if the pattern it guards matches.
-
+sequence. This might affect evaluation through
+side effects in guards. However, it is guaranteed that a guard
+expression is evaluated only if the pattern it guards matches.
 
 \example
 Often, pattern matching expressions are used as arguments
@@ -3424,106 +3396,61 @@ def length [a] (xs: List[a]) = xs match {
 \label{sec:topdefs}
 
 \syntax\begin{verbatim}
-  ClsDef         \=::= \= Packaging
-                 \>  | \> ClassDef
-		 \>  | \> ModuleDef
-  Packaging     \=::= \= package QualId with `(' {ClsDef `;'} `)'
+  CompilationUnit \=::=\= [package QualId `;'] {TopStat `;'} TopStat
+  TopStat         \>::=\> {Modifier} ClsDef
+	          \>  |\> Import
+		  \>  |\>
 \end{verbatim}
 
-There are two kinds of compilation units: Main programs and library
-units. A main program is a sequence of arbitrary definitions. A
-library unit is a sequence of top-level definitions, i.e. class
-definitions, module definitions, or packagings.
+A compilation unit consists of a sequence of import clauses, class and
+object definitions, which may be preceded by a package clause.
 
-Implicitly imported into every compilation unit is the package
-\verb@scala@ and the module \verb@scala.Predef@ (\sref{cls-predef}).
+A compilation unit \verb@package p; stats@ starting with a package
+clause is equivalent to \verb@package p { stats }@.
+
+Implicitly imported into every compilation unit are, in that order:
+the package \verb@java.lang@, the package \verb@scala@, and the object
+\verb@scala.Predef@ (\sref{cls-predef}). Members of a later import in
+that order hide members of an earlier import.
 
 \section{Packagings}
 
 \syntax\begin{verbatim}
-  Packaging     \=::= \= package QualId with `(' {ClsDef `;'} `)'
+  Packaging     \=::= \= package QualId `{' {TopStat `;'} TopStat `}'
 \end{verbatim}
 
-A packaging \verb@package P with ( D )@ declares all definitions in
-\verb@D@ as members of the package whose qualified name is
-\verb@P@. Packages are as in Java (this is likely to change in the
-future).
-\ifpackaging{
-Packagings augment top-level modules and classes. A simple packaging
-$$\PACKAGE;id;\WITH;mi_1;\ldots;\WITH;mi_n;\WITH;(stats)$$ augments the
-template of the top-level module or class named $id$ with new mixin
-classes and with new member definitions.
+A package is a special object which defines a set of member classes,
+objects and packages.  Unlike other objects, packages are not defined
+by a definition.  Instead, the set of members is determined by
+packagings.
 
-The static effect of such a packaging can be expressed as a
-source-to-source tranformation which adds $mi_1 \commadots mi_n$ to
-the mixin classes of $id$, and which adds the definitions in $stats$
-to the statement part of $id$'s template.  Each type $mi_j$ must refer
-to an interface type and $stats$ must consists only of pure and local
-definitions.  The augmented template and any class that extends it
-must be well-formed.  The aditional definitions may not overwrite
-definitions of the augmented template, and they may not access private
-members of it.
+A packaging \verb@package p { ds }@ injects all definitions in
+\verb@ds@ as members into the package whose qualified name is
+\verb@p@. If a definition in \verb@ds@ is labelled \verb@private@, it
+is visible only for other members in the package.
 
-Several packagings can be applied to the same top-level definition,
-and those packagings may reside in different compilation units.
+Selections \verb@p.m@ from \verb@p@ as well as imports from \verb@p@
+work as for objects. However, unlike other objects, packages may not
+be used as values. It is illegal to have a package with the same fully
+qualified name as an object or a class.
 
-A qualified packaging $\PACKAGE;Q.id;\WITH;t$ is equivalent to the
-nested packagings
-\begin{verbatim}
-package $Q$ with {
-  package $id$ with $t$
-}
-\end{verbatim}
-
-A packaging with type parameters $\PACKAGE;c[tps];\WITH;...$ applies to
-a parameterized class $c$. The number of type parameters must equal
-the number of type parameters of $c$, and every bound in $tps$ must
-conform to the corresponding bound in the original definition of $c$.
-
-The augmented class has the type parameters given in its original
-definition. If a parameter $a$ of an augmented class has a bound $T$
-which is a strict subtype of the corresponding bound in the original
-class, $a \conforms T$ is taken as an {\em application condition} for
-the packaging. That is, every time a member defined in the packaging
-is accessed or a conformance between class $c$ and a mixin base class
-of the packaging needs to be established, an (instantiation of) the
-application condition is checked. An unvalidated application
-condition constitutes a type error. \todo{Need to specify more
-precisely when application conditions are checked}
+Top-level definitions outside a packaging are assumed to be injected
+into a special empty package. That package cannot be named and
+therefore cannot be imported. However, members of the empty package
+are visible to each other wihtout qualification.
 
 \example The following example will create a hello world program as
 function \verb@main@ of module \verb@test.HelloWorld@.
 \begin{verbatim}
-package test with {
-  module HelloWord with {
-    def main(args: Array[String]) = out.println("hello world")
-  }
+package test;
+
+object HelloWord {
+  def main(args: Array[String]) = System.out.println("hello world")
 }
-\end{verbatim}
-This assumes there exists a top-level definition that defines a
-\verb@test@ module, e.g.:
-\begin{verbatim}
-module test
 \end{verbatim}
 
-\example The following packaging adds class \verb@Comparable@
-(\ref{ex:comparable}) as a mixin to class
-\verb@scala.List@, provided the list elements are also comparable.
-Every instance of \verb@List[$T$]@ will then implement
-\verb@Comparable[List[$T$]]@ in the way it is defined in the
-packaging. Each use of the added functionality for an instance type
-\verb@List[$T$]@ requires that the application condition
-\verb@T $<:$ Comparable@ is satisfied.
-\begin{verbatim}
-package scala.List[a extends Comparable[a]] with Comparable[List[a]] with {
-  def < (that: List[a]) = (this, that) match {
-    case (_, Nil) => False
-    case (Nil, _) => True
-    case (x :: xs, y :: ys) => (x < y) || (x == y && xs < ys)
-  }
-}
-\end{verbatim}
-}
+\end{document}
+
 \chapter{Local Type Inference}
 \label{sec:local-type-inf}
 
@@ -4380,8 +4307,7 @@ grammar.
   Exprs           \>::=\> Expr {`,' Expr}
   Expr            \>::=\> [Bindings `=>'] Expr
 		  \>  |\> if `(' Expr `)' Expr [[`;'] else Expr]
-		  \>  |\> try Expr [`;'] (except Expr | finally Expr)
-		  \>  |\> while '(' Expr ')' Expr
+		  \>  |\> try `{' block `}' [catch Expr] [finally Expr]
 		  \>  |\> do Expr [`;'] while `(' Expr ')'
 		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
                   \>  |\> [SimpleExpr `.'] Id `=' Expr
@@ -4449,7 +4375,6 @@ grammar.
   Param           \>::=\> [def] Id `:' Type [`*']
   Bindings        \>::=\> Id [`:' Type1]
                   \>  |\> `(' Binding {`,' Binding `)'
-                  \>  |\>
   Binding         \>::=\> Id [`:' Type]
 
   Modifier        \>::=\> LocalModifier
@@ -4505,12 +4430,12 @@ grammar.
   ConstrExpr      \>::=\> this ArgumentExpr
                   \>  |\>  `{' {BlockStat `;'} this ArgumentExpr {`;' BlockStat} `}'
 
-  CompilationUnit \>::=\> [package QualId `;'] [{TopStat `;'} TopStat]
+  CompilationUnit \>::=\> [package QualId `;'] {TopStat `;'} TopStat
   TopStat         \>::=\> {Modifier} ClsDef
 	          \>  |\> Packaging
 	          \>  |\> Import
 		  \>  |\>
-  Packaging       \>::=\> package QualId `{' [{TopStat `;'} TopStat] `}'
+  Packaging       \>::=\> package QualId `{' {TopStat `;'} TopStat `}'
 \end{verbatim}
 
 case class extends { ... }
@@ -4807,3 +4732,141 @@ non-existing class \verb@yCoord@ of an object of type \verb@Point1D@,
 if it were permitted to execute in spite of being not well-typed.
 }
 
+\iflet{
+\section{Let Definitions}
+\label{sec:letdef}
+
+\syntax\begin{verbatim}
+  PureDef      \=::= \= $\LET$ ValDef {`,' ValDef}
+  ValDef       \>::= \> Id [`:' Type] `=' Expr
+\end{verbatim}
+
+A let definition $\LET;x: T = e$ defines $x$ as a name of the value
+that results from the delayed evaluation of $e$. The type $T$ must be
+a concrete value type (\sref{sec:types}) and the type of the
+expression $e$ must conform to $T$. The effect of the let definition
+is to bind the left-hand side $x$ to the result of evaluating $e$
+converted to type $T$.  However, the expression $e$ is not evaluated
+at the point of the let definition, but is instead evaluated the first
+time $x$ is dereferenced during execution of the program (which might
+be never at all). An attempt to dereference $x$ again in the course of
+evaluation of $e$ leads to a run-time error.  Other threads trying to
+dereference $x$ while $e$ is being evaluated block until evaluation is
+complete.
+
+The type $T$ may be omitted if it can be determined using local type
+inference (\sref{sec:local-type-inf}).
+}
+
+\section{Packagings}
+
+\syntax\begin{verbatim}
+  Packaging     \=::= \= package QualId `{' {TopStat `;'} TopStat `}'
+\end{verbatim}
+
+A package is a special object which defines a set of member classes,
+objects and packages.  Unlike other objects, packages are not defined
+by a definition.  Instead, the set of members is determined by
+packagings.
+
+A packaging \verb@package p { ds }@ injects all definitions in
+\verb@ds@ as members into the package whose qualified name is
+\verb@p@. If a definition in \verb@ds@ is labelled \verb@private@, it
+is visible only for other members in the package.
+
+Selections \verb@p.m@ from \verb@p@ as well as imports from \verb@p@
+work as for objects. However, unlike other objects, packages may not
+be used as values. It is illegal to have a package with the same fully
+qualified name as an object or a class.
+
+Top-level definitions outside a packaging are assumed to be injected
+into a special empty package. That package cannot be named and
+therefore cannot be imported. However, members of the empty package
+are visible to each other wihtout qualification.
+
+\example The following example will create a hello world program as
+function \verb@main@ of module \verb@test.HelloWorld@.
+\begin{verbatim}
+package test;
+
+object HelloWord {
+  def main(args: Array[String]) = System.out.println("hello world")
+}
+\end{verbatim}
+
+\ifpackaging{
+Packagings augment top-level modules and classes. A simple packaging
+$$\PACKAGE;id;\WITH;mi_1;\ldots;\WITH;mi_n;\WITH;(stats)$$ augments the
+template of the top-level module or class named $id$ with new mixin
+classes and with new member definitions.
+
+The static effect of such a packaging can be expressed as a
+source-to-source tranformation which adds $mi_1 \commadots mi_n$ to
+the mixin classes of $id$, and which adds the definitions in $stats$
+to the statement part of $id$'s template.  Each type $mi_j$ must refer
+to an interface type and $stats$ must consists only of pure and local
+definitions.  The augmented template and any class that extends it
+must be well-formed.  The aditional definitions may not overwrite
+definitions of the augmented template, and they may not access private
+members of it.
+
+Several packagings can be applied to the same top-level definition,
+and those packagings may reside in different compilation units.
+
+A qualified packaging $\PACKAGE;Q.id;\WITH;t$ is equivalent to the
+nested packagings
+\begin{verbatim}
+package $Q$ with {
+  package $id$ with $t$
+}
+\end{verbatim}
+
+A packaging with type parameters $\PACKAGE;c[tps];\WITH;...$ applies to
+a parameterized class $c$. The number of type parameters must equal
+the number of type parameters of $c$, and every bound in $tps$ must
+conform to the corresponding bound in the original definition of $c$.
+
+The augmented class has the type parameters given in its original
+definition. If a parameter $a$ of an augmented class has a bound $T$
+which is a strict subtype of the corresponding bound in the original
+class, $a \conforms T$ is taken as an {\em application condition} for
+the packaging. That is, every time a member defined in the packaging
+is accessed or a conformance between class $c$ and a mixin base class
+of the packaging needs to be established, an (instantiation of) the
+application condition is checked. An unvalidated application
+condition constitutes a type error. \todo{Need to specify more
+precisely when application conditions are checked}
+
+\example The following example will create a hello world program as
+function \verb@main@ of module \verb@test.HelloWorld@.
+\begin{verbatim}
+package test with {
+  module HelloWord with {
+    def main(args: Array[String]) = out.println("hello world")
+  }
+}
+\end{verbatim}
+This assumes there exists a top-level definition that defines a
+\verb@test@ module, e.g.:
+\begin{verbatim}
+module test
+\end{verbatim}
+
+\example The following packaging adds class \verb@Comparable@
+(\ref{ex:comparable}) as a mixin to class
+\verb@scala.List@, provided the list elements are also comparable.
+Every instance of \verb@List[$T$]@ will then implement
+\verb@Comparable[List[$T$]]@ in the way it is defined in the
+packaging. Each use of the added functionality for an instance type
+\verb@List[$T$]@ requires that the application condition
+\verb@T $<:$ Comparable@ is satisfied.
+\begin{verbatim}
+package scala.List[a extends Comparable[a]] with Comparable[List[a]] with {
+  def < (that: List[a]) = (this, that) match {
+    case (_, Nil) => False
+    case (Nil, _) => True
+    case (x :: xs, y :: ys) => (x < y) || (x == y && xs < ys)
+  }
+}
+\end{verbatim}
+}

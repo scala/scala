@@ -316,7 +316,7 @@ public class Compiler {
 
     private void getTypes(Set supertypes, List interfaces, Symbol type) {
         if (supertypes.contains(type)) return; else supertypes.add(type);
-        if (!type.isPreloaded()) {
+        if (!type.isExternal()) {
             Type[] basetypes = type.parents();
             for (int i = 0; i < basetypes.length; i++) {
                 getTypes(supertypes, interfaces, basetypes[i].symbol());

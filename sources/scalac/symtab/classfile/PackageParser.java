@@ -66,11 +66,13 @@ public class PackageParser extends Type.LazyType {
 	if (previous == Symbol.NONE || previous.isPackage()) return true;
 	if (previous.pos != Position.NOPOS) return false;
 	AbstractFile pf = (AbstractFile) symFile.get(previous);
-	if (!global.separate) {
-	    if (f.getName().endsWith(".scala") &&
-		pf.getName().endsWith(".class")) return true;
-	    if (f.getName().endsWith(".class") &&
-		pf.getName().endsWith(".scala")) return false;
+	if (f.getName().endsWith(".scala")) {
+	    if (pf.getName().endsWith(".scala")) return false;
+	    if (!global.separate) return true;
+	}
+	if (f.getName().endsWith(".class")) {
+	    if (pf.getName().endsWith(".class")) return false;
+	    if (!global.separate) return false;
 	}
 	return f.lastModified() > pf.lastModified();
     }

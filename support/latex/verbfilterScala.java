@@ -10,8 +10,8 @@ public class verbfilterScala {
       "finally", "for", "if", "import", "new",
       "null", "object", "override", "package", "private",
       "protected", "return", "sealed", "super", "this",
-      "trait", "try",  "true", "type", "val",
-      "var", "with", "while", "yield"};
+      "trait", "true", "try", "type", "val",
+      "var", "while", "with", "yield"};
 
     static final int TABINC = 8;
 

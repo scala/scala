@@ -13,7 +13,9 @@
 // todo: emit warnings for unchecked.
 // todo: synchronize on module instantiation.
 // todo: type select operator for superclass term access.
-
+// todo: implement EQ
+// todo: for (Tuplen(...) <- ...)
+// todo: empty package
 
 package scalac.typechecker;
 
@@ -211,7 +213,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	else return "value " + NameTransformer.decode(name);
     }
 
-    /** Check that `sym' accessible as a member of tree `site' in current context.
+    /** Check that `sym' is accessible as a member of tree `site' in current context.
      */
     void checkAccessible(int pos, Symbol sym, Tree site) {
 	if (!isAccessible(sym, site)) {
@@ -815,7 +817,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (sym == other) {
 		if (global.debug) global.log("redefined: " + sym + ":" + sym.rawInfo());
 	    } else if (e.owner == context.scope) {
-		if (other.isPreloaded()) {
+		if (other.isExternal()) {
 		    assert false : sym + " " + other;
 		    // symbol was preloaded from package;
 		    // need to overwrite definition.
@@ -1378,7 +1380,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    pre = Type.localThisType;
 		}
 	    }
-	} else if (sym.kind != NONE && !sym.isPreloaded()) {
+	} else if (sym.kind != NONE && !sym.isExternal()) {
 	    return error(tree.pos,
 			 "reference to " + name + " is ambiguous;\n" +
 			 "it is both defined in " + sym.owner() +
@@ -1547,7 +1549,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Symbol c = f.primaryConstructorClass();
 		if (c.kind == CLASS) {
 		    c.initialize();//to detect cycles
-		    if (i > 0 && (c.flags & JAVA) == 0 && c.pos == Position.NOPOS) {
+		    if (i > 0 && (c.flags & JAVA) == 0 && c.isExternal()) {
 			// need to load tree for mixins
 			new SourceCompleter(global).complete(c);
 		    }
@@ -1943,7 +1945,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Tree applyVisitor = transformVisitor(tree, pattype, restype);
 			if (!infer.isFullyDefined(restype))
 			    restype = applyVisitor.type;
-			if (definitions.PARTIALFUNCTION_CLASS.pos == Position.NOPOS)
+			if (definitions.PARTIALFUNCTION_CLASS.isExternal())
 			    // need to load tree for mixins
 			    new SourceCompleter(global).complete(
 				definitions.PARTIALFUNCTION_CLASS);
@@ -2249,7 +2251,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Ident(Name name):
 		if (name == Names.this_.toTypeName()) {
-		    return transform(make.Ident(tree.pos, pt.symbol().name));
+		    Tree tree1 = transform(make.Ident(tree.pos, pt.symbol().name));
+		    Symbol constr = tree1.symbol();
+		    if (constr != null && constr.kind == VAL && constr.pos > tree.pos)
+			error(tree.pos,
+			      "illegal forward reference to self constructor");
+		    return tree1;
 		} else if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) &&
 			     name.isVariable()) {
 

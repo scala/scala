@@ -399,18 +399,18 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return isConstructor() && this == primaryConstructorClass().primaryConstructor();
     }
 
-    public boolean isGenerated() {
+    public final boolean isGenerated() {
 	return name.pos((byte)'$') < name.length();
     }
 
     /** Symbol was preloaded from package
      */
-    public boolean isPreloaded() {
+    public final boolean isExternal() {
 	return pos == Position.NOPOS;
     }
 
     /** Is this symbol an overloaded symbol? */
-    public boolean isOverloaded() {
+    public final boolean isOverloaded() {
         switch (info()) {
         case OverloadedType(_,_): return true;
         default                 : return false;
@@ -418,7 +418,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /** Does this symbol denote a label? */
-    public boolean isLabel() {
+    public final boolean isLabel() {
         return (flags & LABEL) != 0;
     }
 
@@ -1020,7 +1020,7 @@ public class TermSymbol extends Symbol {
     public static TermSymbol define(
 	int pos, Name name, Symbol owner, int flags, Scope scope) {
 	Scope.Entry e = scope.lookupEntry(name);
-	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == VAL) {
+	if (e.owner == scope && e.sym.isExternal() && e.sym.kind == VAL) {
 	    TermSymbol sym = (TermSymbol) e.sym;
 	    sym.update(pos, flags);
 	    return sym;
@@ -1145,7 +1145,7 @@ public class TypeSymbol extends Symbol {
     public static TypeSymbol define(
 	int pos, Name name, Symbol owner, int flags, Scope scope) {
 	Scope.Entry e = scope.lookupEntry(name);
-	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == ALIAS) {
+	if (e.owner == scope && e.sym.isExternal() && e.sym.kind == ALIAS) {
 	    TypeSymbol sym = (TypeSymbol) e.sym;
 	    sym.update(pos, flags);
 	    return sym;
@@ -1316,7 +1316,7 @@ public class AbsTypeSymbol extends TypeSymbol {
     public static AbsTypeSymbol define(
 	int pos, Name name, Symbol owner, int flags, Scope scope) {
 	Scope.Entry e = scope.lookupEntry(name);
-	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == TYPE) {
+	if (e.owner == scope && e.sym.isExternal() && e.sym.kind == TYPE) {
 	    AbsTypeSymbol sym = (AbsTypeSymbol) e.sym;
 	    sym.update(pos, flags);
 	    return sym;
@@ -1401,7 +1401,7 @@ public class ClassSymbol extends TypeSymbol {
     public static ClassSymbol define(
 	int pos, Name name, Symbol owner, int flags, Scope scope) {
 	Scope.Entry e = scope.lookupEntry(name);
-	if (e.owner == scope && e.sym.pos == Position.NOPOS && e.sym.kind == CLASS) {
+	if (e.owner == scope && e.sym.isExternal() && e.sym.kind == CLASS) {
 	    ClassSymbol sym = (ClassSymbol) e.sym;
 	    sym.update(pos, flags);
 	    sym.template = null;

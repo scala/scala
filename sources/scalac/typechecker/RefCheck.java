@@ -136,6 +136,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    overrideError(pos, member, other, "needs `override' modifier");
 	} else if (other.isStable() && !member.isStable()) {
 	    overrideError(pos, member, other, "needs to be an immutable value");
+	} else if ((member.flags & DEFERRED) == 0 && (other.flags & DEFERRED) == 0 &&
+		   member.owner() != clazz &&
+		   !clazz.parents()[0].symbol().isSubClass(other.owner())) {
+	    unit.error(pos, "conflict between concrete members " +
+		       member + member.locationString() + " and " +
+		       other + other.locationString() +
+		       ":\n both are inherited from mixin classes; " +
+		       "\n an overriding definition in the current template is required");
 	} else {
 	    Type self = clazz.thisType();
 	    switch (other.kind) {
