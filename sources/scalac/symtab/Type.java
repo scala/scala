@@ -704,7 +704,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		if (elemtp1 == elemtp) return tp;
 		else return UnboxedArrayType(elemtp1);
 	    default:
-		throw new ApplicationError(tp);
+		throw new ApplicationError(tp + " " + tp.symbol());
 	    }
 	}
 

@@ -79,6 +79,10 @@ public class ClassParser extends Type.LazyType {
         public void complete(Symbol statics) {
             ClassParser.this.complete(clazz);
         }
+
+	public String toString() {
+	    return "StaticsParser(" + clazz + ")";
+	}
     }
 
     class AliasParser extends Type.LazyType {

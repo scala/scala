@@ -104,7 +104,7 @@ public class  Global {
     public final PhaseDescriptor[] phases;
 
     public static final int START_PHASE_ID = 1;
-    public final int POST_ANALYZER_PHASE_ID = 3;
+    public static final int POST_ANALYZER_PHASE_ID = 3;
 
     /** compilation targets
      */

@@ -56,6 +56,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The infos of the symbol */
     private TypeIntervalList infos = TypeIntervalList.EMPTY;
 
+    static int FIRST_ID = Global.POST_ANALYZER_PHASE_ID;
+
 // Constructors -----------------------------------------------------------
 
     /** Generic symbol constructor */
@@ -113,8 +115,9 @@ public abstract class Symbol implements Modifiers, Kinds {
    	       ((Type.PolyType)info).result instanceof Type.MethodType
 	    : "illegal type for " + this + ": " + info;
 	if ((flags & (INITIALIZED | LOCKED)) != (INITIALIZED | LOCKED)) {
-	    if (infos == TypeIntervalList.EMPTY)
+	    if (infos == TypeIntervalList.EMPTY) {
 		infos = new TypeIntervalList(TypeIntervalList.EMPTY);
+	    }
 	    infos.limit = limit;
 	    infos.info = info;
 	}
@@ -132,7 +135,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public Symbol updateInfo(Type info) {
-	// Global.instance.currentPhase.setInfo(this, info);
         assert infos.limit <= Global.instance.currentPhase.id + 1 : this;
 	if (infos.limit > Global.instance.currentPhase.id) infos.limit--;
         infos = new TypeIntervalList(infos);
@@ -474,9 +476,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     int currentPhaseId() {
 	int id = Global.instance.currentPhase.id;
-	if (id > Global.instance.POST_ANALYZER_PHASE_ID)
-	    id = Global.instance.POST_ANALYZER_PHASE_ID;
-	return id;
+	return id < FIRST_ID ? FIRST_ID : id;
     }
 
     /** Is this symbol initialized? */
@@ -498,11 +498,10 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  its baseclasses and members.
      */
     public Type info() {
+	int id = currentPhaseId();
 	if ((flags & INITIALIZED) == 0) {
-	    int id = currentPhaseId();
-	    Type info = rawInfoAt(id);
+	    Type info = rawInfoAt(FIRST_ID);
 	    assert info != null : this;
-
 	    if ((flags & LOCKED) != 0) {
 	        setInfo(Type.ErrorType);
 		flags |= INITIALIZED;
@@ -522,7 +521,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    }
 	    //System.out.println("done: " + this);//DEBUG
 	}
-	return rawInfoAt(Global.instance.currentPhase.id);
+	return rawInfoAt(id);
     }
 
     /** Get info at phase #id
@@ -571,7 +570,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public Type rawInfo() {
-	return rawInfoAt(Global.instance.currentPhase.id);
+	return rawInfoAt(currentPhaseId());
     }
 
     /** The type of a symbol is:
@@ -895,6 +894,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    System.arraycopy(alttypes2, 0, alttypes3, alttypes1.length, alttypes2.length);
 	    overloaded.setInfo(Type.OverloadedType(alts3, alttypes3));
 	}
+	public String toString() {
+	    return "LazyOverloadedType(" + sym1 + "," + sym2 + ")";
+	}
     }
 
     /** All the alternatives of this symbol if it's overloaded, the
@@ -1082,9 +1084,9 @@ public class TypeSymbol extends Symbol {
 
     public Type[] closure() {
 	if (kind == ALIAS) return info().symbol().closure();
-	int id = Global.instance.currentPhase.id;
+	int id = currentPhaseId();
 	if (closures.limit < id) {
-	    if (id == Global.START_PHASE_ID || changes(closureAt(id - 1))) {
+	    if (id == FIRST_ID || changes(closureAt(id - 1))) {
 		closures = new ClosureIntervalList(closures);
 		closures.limit = id;
 		computeClosure();
