@@ -320,7 +320,9 @@ public class Definitions {
     public final Symbol ANY_TOSTRING;
     //public final Symbol ANY_PLUS;
     public final Symbol ANY_IS;
+    public final Symbol ANY_IS_ERASED;
     public final Symbol ANY_AS;
+    public final Symbol ANY_AS_ERASED;
     public final Symbol ANY_MATCH;
 
     //########################################################################
@@ -815,7 +817,9 @@ public class Definitions {
         ANY_TOSTRING = newMethod(ANY_CLASS,Names.toString    ,0);
         // ANY_PLUS  = newMethod(ANY_CLASS,Names.PLUS        ,Modifiers.FINAL);
         ANY_IS       = newMethod(ANY_CLASS,Names.isInstanceOf,Modifiers.FINAL);
+        ANY_IS_ERASED= newMethod(ANY_CLASS,Names.isInstanceOfE,Modifiers.FINAL);
         ANY_AS       = newMethod(ANY_CLASS,Names.asInstanceOf,Modifiers.FINAL);
+        ANY_AS_ERASED= newMethod(ANY_CLASS,Names.asInstanceOfE,Modifiers.FINAL);
         ANY_MATCH    = newMethod(ANY_CLASS,Names._match      ,Modifiers.FINAL);
 
         initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , boolean_TYPE());
@@ -827,9 +831,17 @@ public class Definitions {
 
         Symbol[] ANY_IS_TPARAMS = {newTParam(ANY_IS, 0, ANY_TYPE())};
         ANY_IS.setInfo(Type.PolyType(ANY_IS_TPARAMS, boolean_TYPE()));
+        Symbol[] ANY_IS_ERASED_TPARAMS =
+            {newTParam(ANY_IS_ERASED, 0, ANY_TYPE())};
+        ANY_IS_ERASED.setInfo(Type.PolyType(ANY_IS_ERASED_TPARAMS,
+                                            boolean_TYPE()));
 
         Symbol[] ANY_AS_TPARAMS = {newTParam(ANY_AS, 0, ANY_TYPE())};
         ANY_AS.setInfo(Type.PolyType(ANY_AS_TPARAMS,ANY_AS_TPARAMS[0].type()));
+        Symbol[] ANY_AS_ERASED_TPARAMS =
+            {newTParam(ANY_AS_ERASED, 0, ANY_TYPE())};
+        ANY_AS_ERASED.setInfo(Type.PolyType(ANY_AS_ERASED_TPARAMS,
+                                            ANY_AS_ERASED_TPARAMS[0].type()));
 
         Symbol[] ANY_MATCH_TPARAMS = {
             newTParam(ANY_MATCH, 0, ANY_TYPE()),

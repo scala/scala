@@ -21,6 +21,7 @@ import scalac.atree.AConstant;
 import scalac.ast.Transformer;
 import scalac.ast.GenTransformer;
 import scalac.ast.Tree;
+import scalac.ast.TreeGen;
 import scalac.ast.TreeList;
 import scalac.backend.Primitives;
 
@@ -63,7 +64,7 @@ import java.util.Collections;
 // time.
 
 public class TypesAsValuesPhase extends Phase {
-    private final TV_Transformer transformer;
+    private final GenTransformer transformer;
 
     /**
      * The list of members to add to a given class (either type
@@ -108,7 +109,12 @@ public class TypesAsValuesPhase extends Phase {
 
     public TypesAsValuesPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
-        transformer = new TV_Transformer(global);
+        // If RTT are disabled, use a minimal transformer which simply
+        // replaces [ia]sInstanceOf with their erased counterpart.
+        if (global.runTimeTypes)
+            transformer = new TV_Transformer(global);
+        else
+            transformer = new TV_MiniTransformer(global);
 
         predefTypes = new HashMap();
         predefTypes.put(defs.DOUBLE_CLASS,  defs.RTT_DOUBLE());
@@ -271,10 +277,14 @@ public class TypesAsValuesPhase extends Phase {
             || sym == ARRAY_CONSTRUCTOR
             || sym == defs.OBJECT_SYNCHRONIZED
             || sym == defs.ANY_IS
-            || sym == defs.ANY_AS;
+            || sym == defs.ANY_IS_ERASED
+            || sym == defs.ANY_AS
+            || sym == defs.ANY_AS_ERASED;
     }
 
     public Type transformInfo(Symbol symbol, Type type) {
+        if (!global.runTimeTypes) return type;
+
         if (symbol.isClass()) {
             Symbol[] toAdd = membersToAdd(symbol);
 
@@ -925,16 +935,6 @@ public class TypesAsValuesPhase extends Phase {
             return tparamsPerm;
         }
 
-        /**
-         * Extract qualifier from a tree, which must be a Select node.
-         */
-        private Tree qualifierOf(Tree tree) {
-            switch (tree) {
-            case Select(Tree qualifier, _): return qualifier;
-            default: throw Debug.abort("cannot extract qualifier from ", tree);
-            }
-        }
-
         private boolean isValuePrefix(Type pre) {
             switch (pre) {
             case ThisType(Symbol clazz):
@@ -1053,6 +1053,52 @@ public class TypesAsValuesPhase extends Phase {
             }
             assert i == totalSize;
             return res;
+        }
+    }
+
+    /**
+     * Minimalistic transformer, which simply transforms calls to
+     * isInstanceOf/asInstanceOf by calls to their erased
+     * counterparts. Used when full run time types are disabled.
+     */
+    private class TV_MiniTransformer extends GenTransformer {
+        private final Definitions defs;
+
+        public TV_MiniTransformer(Global global) {
+            super(global);
+            defs = global.definitions;
+        }
+
+        public Tree transform(Tree tree) {
+            switch (tree) {
+            case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
+                Symbol funSym = fun.symbol();
+                if (funSym == defs.ANY_IS || funSym == defs.ANY_AS) {
+                    Symbol erasedSym = (funSym == defs.ANY_AS)
+                        ? defs.ANY_AS_ERASED
+                        : defs.ANY_IS_ERASED;
+                    return gen.mkApplyTV(tree.pos,
+                                         gen.Select(fun.pos,
+                                                    qualifierOf(fun),
+                                                    erasedSym),
+                                         targs,
+                                         vargs);
+                } else
+                    return super.transform(tree);
+
+            default:
+                return super.transform(tree);
+            }
+        }
+    }
+
+    /**
+     * Extract qualifier from a tree, which must be a Select node.
+     */
+    private Tree qualifierOf(Tree tree) {
+        switch (tree) {
+        case Select(Tree qualifier, _): return qualifier;
+        default: throw Debug.abort("cannot extract qualifier from ", tree);
         }
     }
 

@@ -276,7 +276,6 @@ public abstract class Global {
         args.phases.WHOLEPROG.addSkipFlag(); // !!!
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
         // TODO: Enable TailCall for other backends when they handle LabelDefs
-        if (!runTimeTypes) args.phases.TYPESASVALUES.addSkipFlag();
 	if (target != TARGET_JVMFROMICODE) args.phases.ICODE.addSkipFlag();
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();

@@ -467,8 +467,8 @@ public class Primitives {
         Definitions defs = definitions;
 
         // scala.Any
-        addPrimitive(defs.ANY_IS, Primitive.IS);
-        addPrimitive(defs.ANY_AS, Primitive.AS);
+        addPrimitive(defs.ANY_IS_ERASED, Primitive.IS);
+        addPrimitive(defs.ANY_AS_ERASED, Primitive.AS);
         addPrimitive(defs.ANY_EQEQ, Primitive.EQ);
         addPrimitive(defs.ANY_BANGEQ, Primitive.NE);
         // !!! addPrimitive(defs.ANY_EQUALS, Primitive.EQUALS);

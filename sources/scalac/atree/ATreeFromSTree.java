@@ -476,8 +476,8 @@ public class ATreeFromSTree {
         if (clasz == definitions.ANY_CLASS) {
             addGenerator(definitions.ANY_EQEQ, Generator.ANYEQ);
             addGenerator(definitions.ANY_BANGEQ, Generator.ANYNE);
-            addGenerator(definitions.ANY_IS, Generator.ISAS(false));
-            addGenerator(definitions.ANY_AS, Generator.ISAS(true));
+            addGenerator(definitions.ANY_IS_ERASED, Generator.ISAS(false));
+            addGenerator(definitions.ANY_AS_ERASED, Generator.ISAS(true));
         }
         if (clasz == definitions.OBJECT_CLASS) {
             addGenerator(definitions.OBJECT_EQ, Generator.ANYID);

@@ -776,7 +776,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
           gen.TypeApply(
 	    gen.Select(
 	      gen.mkLocalRef(clazz.pos, equalsParam),
-	      defs.ANY_AS),
+	      defs.ANY_AS_ERASED),
 	    NewArray.Tree(gen.mkType(clazz.pos, testtp)));
 	val that1sym = equalsSym.newVariable(clazz.pos, 0, Names.that1)
 	  .setType(testtp);

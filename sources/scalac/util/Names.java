@@ -157,6 +157,7 @@ public class Names {
     public static final Name apply = Name.fromString("apply");
     public static final Name array = Name.fromString("array");
     public static final Name asInstanceOf = Name.fromString("asInstanceOf");
+    public static final Name asInstanceOfE = Name.fromString("asInstanceOf$erased");
     public static final Name box = Name.fromString("box");
     public static final Name caseArity = Name.fromString("caseArity");
     public static final Name caseElement = Name.fromString("caseElement");
@@ -185,6 +186,7 @@ public class Names {
     public static final Name hasNext = Name.fromString("hasNext");
     public static final Name head = Name.fromString("head");
     public static final Name isInstanceOf = Name.fromString("isInstanceOf");
+    public static final Name isInstanceOfE = Name.fromString("isInstanceOf$erased");
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
     public static final Name isEmpty = Name.fromString("isEmpty");
     public static final Name instantiate = Name.fromString("instantiate");

@@ -641,8 +641,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an instance test with given value and type. */
     public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
-        Type[] targs = new Type[]{type};
-        return mkApplyT_(pos, Select(value, definitions.ANY_IS), targs);
+        Symbol sym = global.currentPhase.id >= global.PHASE.TYPESASVALUES.id()
+            ? definitions.ANY_IS_ERASED
+            : definitions.ANY_IS;
+        return mkApplyT_(pos, Select(value, sym), new Type[]{type});
     }
     public Tree mkIsInstanceOf(Tree value, Type type) {
         return mkIsInstanceOf(value.pos, value, type);
@@ -650,8 +652,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a cast with given value and type. */
     public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
-        Type[] targs = new Type[]{type};
-        return mkApplyT_(pos, Select(value, definitions.ANY_AS), targs);
+        Symbol sym = global.currentPhase.id >= global.PHASE.TYPESASVALUES.id()
+            ? definitions.ANY_AS_ERASED
+            : definitions.ANY_AS;
+        return mkApplyT_(pos, Select(value, sym), new Type[]{type});
     }
     public Tree mkAsInstanceOf(Tree value, Type type) {
         return mkAsInstanceOf(value.pos, value, type);

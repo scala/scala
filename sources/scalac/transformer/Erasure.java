@@ -163,11 +163,11 @@ public class Erasure extends GenTransformer implements Modifiers {
             fun = transform(fun);
             vargs = transform(vargs);
             Symbol symbol = fun.symbol();
-            if (symbol == definitions.ANY_AS) {
+            if (symbol == definitions.ANY_AS_ERASED) {
                 assert targs.length == 1 && vargs.length == 0: tree;
                 return coerce(getQualifier(fun), targs[0].getType().erasure());
             }
-            if (symbol == definitions.ANY_IS) {
+            if (symbol == definitions.ANY_IS_ERASED) {
                 assert targs.length == 1 && vargs.length == 0: tree;
                 Type type = targs[0].type.erasure();
                 if (isUnboxedSimpleType(type)) type = targs[0].type;

@@ -223,10 +223,11 @@ public class ExpressionCompiler {
 
     private Code tapply(Tree target, Symbol symbol, Tree[] targs, Tree[]vargs){
         Code object = object(target);
-        if (symbol == definitions.ANY_IS || symbol == definitions.ANY_AS) {
+        if (symbol == definitions.ANY_IS_ERASED
+            || symbol == definitions.ANY_AS_ERASED) {
             assert targs.length == 1: Debug.show(targs);
             assert vargs.length == 0 : Debug.show(vargs);
-            boolean cast = symbol == definitions.ANY_AS;
+            boolean cast = symbol == definitions.ANY_AS_ERASED;
             Type type = targs[0].type();
             return Code.IsAs(object, type, context.getClass(type), cast);
         }
