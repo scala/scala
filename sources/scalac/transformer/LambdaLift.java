@@ -581,10 +581,6 @@ public class LambdaLift extends OwnerTransformer
         case LabelDef(_, _, _):
             Symbol sym = tree.symbol();
 	    assert sym.isLocal() : sym;
-            if (!sym.owner().owner().isClass()) {
-                assert sym.owner().owner().owner().isClass(): tree;
-                sym.setOwner(sym.owner().owner());
-            }
             break;
 
 	}
