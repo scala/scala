@@ -14,6 +14,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -72,12 +73,13 @@ public class HTMLGenerator {
 
     protected final String FRAME_PAGE_NAME = "index.html";
     protected final String INDEX_PAGE_NAME = "all.html";
-    protected final String PAGE_ALLCLASSES_FRAME = "allclasses.html";
     protected final String PAGE_HELP             = "help-doc.html";
-    protected final String PAGE_OVERVIEW_FRAME   = "overview-frame.html";
-    protected final String PAGE_OVERVIEW_SUMMARY = "overview-summary.html";
+    protected final String PACKAGE_LIST_PAGE     = "packageList.html";
+    protected final String ROOT_PAGE             = "root.html";
     protected final String PAGE_PACKAGE_FRAME    = "package-frame.html";
     protected final String PAGE_PACKAGE_SUMMARY  = "package-summary.html";
+    protected final String PACKAGE_SUMMARY       = "summary.html";
+    protected final String PAGE_ALLCLASSES_FRAME = PACKAGE_SUMMARY;
 
     /*
      * Names of frames.
@@ -190,7 +192,11 @@ public class HTMLGenerator {
 
     /** The underlying HTML printer.
      */
-    protected HTMLPrinter page;
+    public HTMLPrinter page;
+
+    /** The current URI.
+     */
+    protected URI uri;
 
     /**
      * The underlying symbol table printer.
@@ -237,6 +243,7 @@ public class HTMLGenerator {
 	this.global = global;
 	this.subs = ScalaSearch.subTemplates(tree);
 	this.anchors = Anchors.apply(tree);
+	try {  this.uri = new URI("."); } catch(Exception e) {}
 
         this.JAVALANG = global.definitions.getClass(Names.java_lang);
         this.ROOT_TYPE = global.definitions.ROOT.thisType();
@@ -253,6 +260,30 @@ public class HTMLGenerator {
         this.validate = args.validate.value;
     }
 
+    protected void createPrinters(Symbol sym, String newURI) {
+	try {
+	    stack.push(page);
+	    stack.push(symtab);
+	    stack.push(uri);
+
+	    if (newURI == null)
+		uri = Location.getURI(sym);
+	    else
+		uri = new URI(newURI);
+	    File f = new File(directory, uri.toString());
+	    f.getParentFile().mkdirs();
+
+	    BufferedWriter out = new BufferedWriter(new FileWriter(f));
+	    String title = Location.getName(sym);
+	    String stylesheetPath = Location.asSeenFrom(new URI(stylesheet), uri).toString();
+	    if (representation.isXHTMLType())
+		page = new XHTMLPrinter(out, title, representation, stylesheetPath);
+	    else
+		page = new HTMLPrinter(out, title, representation, stylesheetPath);
+	    symtab = new SymbolTablePrinter(this, page.getCodePrinter());
+	} catch(Exception e) { throw Debug.abort(e); }
+    }
+
     /**
      * Creates two new printer objects to generate HTML documents.
      *
@@ -260,73 +291,23 @@ public class HTMLGenerator {
      * @param title  The title of the generated HTML document.
      */
     protected void createPrinters(String anchor, String title) {
+	stack.push(page);
+	stack.push(symtab);
+	stack.push(uri);
+
         try {
             BufferedWriter out =
                 new BufferedWriter(new FileWriter(directory.getPath() + File.separator + anchor));
-	    stack.push(page);
-	    stack.push(symtab);
             if (representation.isXHTMLType())
                 page = new XHTMLPrinter(out, title, representation, stylesheet);
             else
                 page = new HTMLPrinter(out, title, representation, stylesheet);
-            symtab = new SymbolTablePrinter(this, page);
+	    symtab = new SymbolTablePrinter(this, page.getCodePrinter());
 	} catch (IOException exception) {
 	    throw Debug.abort(exception); // !!! reporting an error would be wiser
 	}
     }
 
-    private String getRelativePath(String path, String name) {
-        StringBuffer buf = new StringBuffer();
-        int i = path.indexOf(File.separatorChar);
-        while (i >= 0) {
-            buf.append("../");
-            i = path.indexOf(File.separatorChar, i + 1);
-        }
-        buf.append(name);
-        return buf.toString();
-    }
-
-    protected String createPrinters(Symbol sym, boolean isSummary) {
-        try {
-            String title, name;
-            if (sym.isRoot()) {
-                title = (isSummary) ? "Overview" : "All Classes";
-                name = (isSummary) ? PAGE_OVERVIEW_SUMMARY : PAGE_ALLCLASSES_FRAME;
-            } else if (sym.isPackage()) {
-                title = sym.fullNameString();
-                name = sym.nameString() + "/" + ((isSummary) ? PAGE_PACKAGE_SUMMARY : PAGE_PACKAGE_FRAME);
-            } else {
-                title = sym.nameString().replaceAll("::", "_cons");
-                name = title + (sym.isModule() ? PAGE_OBJECT_SUFFIX : PAGE_DEFAULT_SUFFIX);
-            }
-
-            String path;
-            if (sym.isRoot())
-                path = name;
-            else if (sym.owner().isRoot())
-                path = name.replace('/', File.separatorChar);
-            else {
-                path = sym.owner().fullNameString().replace('.', File.separatorChar);
-                File f = new File(directory, path);
-                f.mkdirs();
-                path = path + File.separator + name.replace('/', File.separatorChar);
-            }
-            BufferedWriter out =
-                new BufferedWriter(new FileWriter(directory.getPath() + File.separator + path));
-	    stack.push(page);
-	    stack.push(symtab);
-            String stylePath = getRelativePath(path, stylesheet);
-            String scriptPath = getRelativePath(path, HTMLPrinter.DEFAULT_JAVASCRIPT);
-            if (representation.isXHTMLType())
-                page = new XHTMLPrinter(out, title, representation, stylePath, scriptPath);
-            else
-                page = new HTMLPrinter(out, title, representation, stylePath, scriptPath);
-            symtab = new SymbolTablePrinter(this, page);
-            return title;
-	} catch (IOException exception) {
-	    throw Debug.abort(exception); // !!! reporting an error would be wiser
-	}
-    }
 
     /**
      * Closes the Writer object associated with both printer objects.
@@ -334,6 +315,7 @@ public class HTMLGenerator {
     protected void closePrinters() {
 	try {
 	    page.getCodePrinter().getWriter().close();
+            uri = (URI) stack.pop();
             symtab = (SymbolTablePrinter) stack.pop();
             page = (HTMLPrinter) stack.pop();
 	} catch (IOException exception) {
@@ -358,6 +340,10 @@ public class HTMLGenerator {
             global.reporter.error(null, e.getMessage());
         }
         return ok;
+    }
+
+    public String ref(Symbol sym) {
+	return Location.asSeenFrom(Location.getURI(sym), uri).toString();
     }
 
     /**
@@ -410,91 +396,6 @@ public class HTMLGenerator {
 	return anchors.containsKey(OneTree.symbol(sym));
     }
 
-    /**
-     * Returns the URL location of <code>user</code> relative to
-     * the <code>sym</code> location, i.e.
-     * if the name of <code>user</code> is "<code>scala.concurrent.pilib</code>"
-     * and the name of <code>sym</code> is "<code>scala.Monitor</code>"
-     * then the relative location of <code>sym2</code> is "<code>../</code>".
-     *
-     * @param sym  The symbol used by the <code>user</code> symbol
-     * @param user The symbol using the symbol <code>sym</code>
-     */
-    private String getRelativeLocation(Symbol sym, Symbol user) {
-        assert sym != null && user != null;
-        if (user == Symbol.NONE)
-             return sym.nameString();
-
-        String sName = sym.fullNameString();
-        if (user.isRoot())
-             return sName.replace('.', '/');
-        if (sym.isPackage()) sName += ".";
-        String uName = user.fullNameString();
-        if (user.isPackage()) uName = uName + ".";
-        int offset = 0;
-        int inx;
-        while ((inx = sName.indexOf('.', offset)) > 0 &&
-               sName.regionMatches(offset, uName, offset, inx - offset + 1)) {
-            offset = inx + 1;
-        }
-        int sOffset = offset;
-        int uOffset = offset;
-        int n1 = 0;
-        while ((inx = sName.indexOf('.', sOffset)) > 0) {
-            sOffset = inx + 1;
-            n1++;
-        }
-        int n2 = 0;
-        while ((inx = uName.indexOf('.', uOffset)) > 0) {
-             uOffset = inx + 1;
-             n2++;
-        }
-        StringBuffer buf = new StringBuffer();
-        while (n2 > 0) { buf.append("../"); n2--; }
-        if (n1 > 0)
-            buf.append(sName.substring(offset, sOffset).replace('.', '/'));
-        return buf.toString();
-    }
-
-    /**
-     * Gives the HTML reference of this symbol.
-     *
-     * @param sym
-     */
-    protected String ref(Symbol sym, Symbol user, String targetName) {
-	assert isReferenced(sym) : sym;
-        String name;
-        String suffix;
-        if (sym.isPackage()) {
-            name = getRelativeLocation(sym, user);
-            suffix = name.endsWith("/") ? targetName : "/" + targetName;
-        } else if (sym.isModule() || sym.isModuleClass()) {
-            name = getRelativeLocation(sym, user);
-            if (name.length() == 0 || name.endsWith("/"))
-                name += sym.nameString();
-            suffix = PAGE_OBJECT_SUFFIX;
-        } else if (sym.isClass() || sym.isTrait()) {
-            name = getRelativeLocation(sym, user);
-            if (name.length() == 0 || name.endsWith("/"))
-                name += sym.nameString();
-            suffix = PAGE_DEFAULT_SUFFIX;
-        } else if (sym.isMethod()) {
-            name = getRelativeLocation(sym.owner(), user);
-            suffix = PAGE_DEFAULT_SUFFIX + "#" + sym.nameString();
-        } else {
-             name = getRelativeLocation(sym, user) + sym.nameString();
-             suffix = PAGE_DEFAULT_SUFFIX;
-        }
-        return name.replaceAll("::", "_cons") + suffix;
-    }
-
-    protected String ref(Symbol sym, Symbol user) {
-        return ref(sym, user, PAGE_PACKAGE_SUMMARY);
-    }
-
-    protected String ref(Symbol sym) {
-        return ref(sym, Symbol.NONE);
-    }
 
     /**
      * Give the HTML label of this symbol.
@@ -575,7 +476,8 @@ public class HTMLGenerator {
      */
     protected void createPages(Tree tree) {
         Symbol sym = tree.symbol();
-        String title = createPrinters(sym, true /*isSummary*/);
+        createPrinters(sym, null);
+	String title = Location.getName(sym);
 
         page.printHeader(ATTRS_META, getGenerator());
         String windowTitle = title + " (" + doctitle.replaceAll("<.*>", " ") + ")";
@@ -636,91 +538,61 @@ public class HTMLGenerator {
      * @param sym
      */
     protected void addNavigationBar(Symbol sym) {
-    	String overviewLink, indexLink, helpLink;
-    	if (sym == indexPage || sym == helpPage || sym.isRoot()) {
-    	    overviewLink = PAGE_OVERVIEW_SUMMARY;
-    	    indexLink = INDEX_PAGE_NAME;
-    	    helpLink = PAGE_HELP;
-    	 } else {
-    	    String path = sym.fullNameString().replace('.', File.separatorChar);
-            if (sym.isPackage())
-                path = path + File.separator;
-            overviewLink = getRelativePath(path, PAGE_OVERVIEW_SUMMARY);
-            indexLink = getRelativePath(path, INDEX_PAGE_NAME);
-            helpLink = getRelativePath(path, PAGE_HELP);
-        }
+	try {
+	    String overviewLink = Location.asSeenFrom(new URI(ROOT_PAGE), uri).toString();
+	    String indexLink = Location.asSeenFrom(new URI(INDEX_PAGE_NAME), uri).toString();
+	    String helpLink = Location.asSeenFrom(new URI(PAGE_HELP), uri).toString();
 
-        page.printlnOTag("table", ATTRS_NAVIGATION).indent();
-        page.printlnOTag("tr").indent();
+	    page.printlnOTag("table", ATTRS_NAVIGATION).indent();
+	    page.printlnOTag("tr").indent();
+	    page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
+	    page.printlnOTag("table").indent();
+	    page.printlnOTag("tr").indent();
 
-        // links
-        page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
-        page.printlnOTag("table").indent();
-        page.printlnOTag("tr").indent();
-        if (sym == indexPage || sym == helpPage) {
-            page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-            page.printAhref(overviewLink, "Overview");
-            page.printlnCTag("td");
-            page.printlnTag("td", "Package");
-            page.printlnTag("td", "Class");
-            if (sym == indexPage) {
-                page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Index");
-                page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-                page.printAhref(helpLink, "Help");
-                page.printlnCTag("td");
-            } else { // help page
-                page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-                page.printAhref(indexLink, "Index");
-                page.printlnCTag("td");
-                page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Help");
-            }
-        } else {
-            if (sym.isRoot()) { // overview page
-                page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Overview");
-                page.printlnTag("td", "Package");
-                page.printlnTag("td", "Class");
-            } else if (sym.isPackage()) {
-                page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-                page.printAhref(overviewLink, "Overview");
-                page.printlnCTag("td");
-                page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Package");
-                page.printlnTag("td", "Class");
-            } else {
-                page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-                page.printAhref(overviewLink, "Overview");
-                page.printlnCTag("td");
-                page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-                page.printAhref(PAGE_PACKAGE_SUMMARY, "Package");
-                page.printlnCTag("td");
-                page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Class");
-            }
-            if (! noindex) {
-                page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-                page.printAhref(indexLink, "Index");
-                page.printlnCTag("td");
-            }
-            page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
-            page.printAhref(helpLink, "Help");
-            page.printlnCTag("td");
-        }
-        page.undent();
-        page.printlnCTag("tr").undent();
-        page.printlnCTag("table").undent();
-        page.printlnCTag("td");
+	    // overview link
+	    if (sym.isRoot())
+		page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Overview");
+	    else {
+		page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
+		page.printAhref(overviewLink, ROOT_FRAME_NAME, "Overview");
+		page.printlnCTag("td");
+	    }
+	    // index link
+	    if (sym == indexPage)
+		page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Index");
+	    else {
+		page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
+		page.printAhref(indexLink, ROOT_FRAME_NAME, "Index");
+		page.printlnCTag("td");
+	    }
+	    // help link
+	    if (sym == helpPage)
+		page.printlnTag("td", ATTRS_NAVIGATION_SELECTED, "Help");
+	    else {
+		page.printOTag("td", ATTRS_NAVIGATION_ENABLED);
+		page.printAhref(helpLink, ROOT_FRAME_NAME, "Help");
+		page.printlnCTag("td");
+	    }
 
-        // product & version
-        page.printlnOTag("td", ATTRS_NAVIGATION_PRODUCT).indent();
-        addDocumentationTitle(new XMLAttribute[]{
-            new XMLAttribute("class", "doctitle")});
-        page.undent();
-        page.printlnCTag("td").undent();
+	    page.undent();
+	    page.printlnCTag("tr").undent();
+	    page.printlnCTag("table").undent();
+	    page.printlnCTag("td");
 
-        page.printlnCTag("tr");
+	    // product & version
+	    page.printlnOTag("td", ATTRS_NAVIGATION_PRODUCT).indent();
+	    addDocumentationTitle(new XMLAttribute[]{
+		new XMLAttribute("class", "doctitle")});
+	    page.undent();
+	    page.printlnCTag("td").undent();
 
-        page.printlnOTag("tr").indent();
-        page.printlnTag("td", "&nbsp;").undent();
-        page.printlnCTag("tr").undent();
-        page.printlnCTag("table");
+	    page.printlnCTag("tr");
+
+	    page.printlnOTag("tr").indent();
+	    page.printlnTag("td", "&nbsp;").undent();
+	    page.printlnCTag("tr").undent();
+	    page.printlnCTag("table");
+	} catch(Exception e) { throw Debug.abort(e); }
     }
 
     /**
@@ -730,8 +602,8 @@ public class HTMLGenerator {
         page.printlnOTag("div", ATTRS_VALIDATION);
         page.indent();
         page.printlnAhref(
-            "http://validator.w3.org/check/referer",
-            "validate html");
+			  "http://validator.w3.org/check/referer", ROOT_FRAME_NAME,
+			  "validate html");
         page.undent();
         page.printlnCTag("div");
     }
@@ -751,25 +623,19 @@ public class HTMLGenerator {
             page.println("This document is the API specification for "
                 + doctitle.replaceAll("<.*>", " ") + ".");
             page.printlnSTag("p");
-	} else if (sym.isPackage()) {
-	    page.printlnOTag("div", ATTRS_ENTITY).indent();
-            page.print("Package ");
-            if (sym.owner().isRoot())
-                page.println(sym.nameString()).undent();
-            else
-                page.println(sym.fullNameString()).undent();
-            page.printlnCTag("div");
         } else {
-	    // owner
-	    page.printlnOTag("div", ATTRS_ENTITY).indent();
-            page.printOTag("span",
-                new XMLAttribute[]{ new XMLAttribute("style", "font-size:small;") });
-            page.print(sym.owner().fullNameString());
-            page.printCTag("span");
-            page.printlnSTag("br");
+	    // in
+	    page.print("in ");
+	    String ownerName = removeHtmlSuffix(Location.getURI(sym.owner()).toString());
+	    String target = ref(sym.owner());
+	    page.printlnAhref(target, ROOT_FRAME_NAME, ownerName);
 
             // kind and name
-	    page.print(kind(sym) + " ");
+	    page.printlnOTag("div", ATTRS_ENTITY).indent();
+	    if (sym.isPackage())
+		page.print("package ");
+	    else
+		page.print(kind(sym) + " ");
 	    page.printlnTag("span", ATTRS_ENTITY, sym.nameString()).undent();
 	    page.printlnCTag("div");
 	    page.printlnHLine();
@@ -795,7 +661,7 @@ public class HTMLGenerator {
 			defString(sub, sym, true /*addLink*/);
 			if (sub.owner() != sym.owner()) {
                             page.print(" in ");
-                            page.printlnAhref(ref(sub.owner(), sym.owner()),
+                            page.printlnAhref(ref(sub.owner()), ROOT_FRAME_NAME,
 			                      sub.owner().fullNameString());
                         }
 			page.printlnCTag("dd");
@@ -905,11 +771,12 @@ public class HTMLGenerator {
 	boolean first = true;
 	for (int i = 0; i < members.length; i++) {
             Symbol sym = members[i].symbol();
-            if (sym.isClass() || sym.isModule()) {
+	    if (sym.isRoot() || sym.isClass() || sym.isModule() || sym.isPackage()) {
 		createPages(members[i]);
-	        if (sym.isPackage())
-                    createContainerIndexPage(members[i]);
-            } else {
+		if (sym.isPackage())
+		    createContainerIndexPage(members[i]);
+	    }
+	    else {
 		if (first) {
 		    page.printlnOTag("table", ATTRS_MEMBER_DETAIL).indent();
                     page.printlnOTag("tr").indent();
@@ -933,7 +800,7 @@ public class HTMLGenerator {
     protected void addMemberDetail(Symbol sym) {
 	if (isReferenced(sym)) {
 	    // title with label
-	    page.printlnAname(sym.nameString(), "");
+	    page.printlnAname(Location.asSeenFrom(Location.getURI(sym), uri).getFragment(), "");
             page.printTag("h3", sym.nameString());
 
             // signature
@@ -970,7 +837,7 @@ public class HTMLGenerator {
                 page.print(inheritedMembers + " inherited from ");
                 String ownerName = owners[i].fullNameString();
 		if (isReferenced(owners[i]))
-                    page.printlnAhref(ref(owners[i], sym), ROOT_FRAME_NAME, ownerName);
+                    page.printlnAhref(ref(owners[i]), ROOT_FRAME_NAME, ownerName);
 		else
 		    page.println(ownerName);
                 page.undent();
@@ -986,7 +853,7 @@ public class HTMLGenerator {
 		    if (j > 0) page.print(", ");
                     String memberName = members[j].nameString();
 		    if (isReferenced(members[j]))
-			page.printAhref(ref(members[j], sym), ROOT_FRAME_NAME, memberName);
+			page.printAhref(ref(members[j]), ROOT_FRAME_NAME, memberName);
 		    else
 			page.print(memberName);
 		}
@@ -1084,20 +951,20 @@ public class HTMLGenerator {
             new XMLAttribute("rows", "50%, 50%")}).indent();
 
 	page.printlnOTag("frame", new XMLAttribute[] {
-            new XMLAttribute("src", PAGE_OVERVIEW_FRAME),
+            new XMLAttribute("src", PACKAGE_LIST_PAGE),
             new XMLAttribute("name", PACKAGES_FRAME_NAME)});
 	page.printlnOTag("frame", new XMLAttribute[] {
             new XMLAttribute("src", PAGE_ALLCLASSES_FRAME),
             new XMLAttribute("name", CLASSES_FRAME_NAME)}).undent();
 	page.printlnCTag("frameset");
 	page.printlnOTag("frame", new XMLAttribute[] {
-            new XMLAttribute("src", PAGE_OVERVIEW_SUMMARY),
+            new XMLAttribute("src", ROOT_PAGE),
             new XMLAttribute("name", ROOT_FRAME_NAME)});
 
         page.printlnOTag("noframes").indent();
         page.printlnSTag("p");
         page.print("Here is the ");
-        page.printAhref(PAGE_OVERVIEW_SUMMARY, "non-frame based version");
+        page.printAhref(ROOT_PAGE, "non-frame based version");
         page.println(" of the documentation.").undent();
         page.printlnCTag("noframes").undent();
 
@@ -1136,6 +1003,20 @@ public class HTMLGenerator {
 	}
     }
 
+    private String removeHtmlSuffix(String url) {
+	return url.substring(0, url.length() - 5);
+    }
+
+    /** Returns the summary page attached to a package symbol. */
+    private String packageSummaryPage(Symbol sym) {
+	if (sym.isRoot())
+	    return PACKAGE_SUMMARY;
+	else {
+	    String packagePage = Location.getURI(sym).toString();
+	    return removeHtmlSuffix(packagePage) + File.separator + PACKAGE_SUMMARY;
+	}
+    }
+
     /**
      * Writes a table containing a list of packages to the current page.
      *
@@ -1152,7 +1033,7 @@ public class HTMLGenerator {
 	    for (int i = 1; i < trees.length; i++) {
 	        Symbol sym = trees[i].symbol();
                 page.printAhref(
-                    ref(sym, global.definitions.ROOT, PAGE_PACKAGE_FRAME),
+                    packageSummaryPage(sym),
                     CLASSES_FRAME_NAME,
                     sym.fullNameString());
 	        page.printlnSTag("br");
@@ -1183,10 +1064,10 @@ public class HTMLGenerator {
                 if (! sym.isRoot()) {
                     String name = sym.nameString();
                     if (sym.isPackage())
-                        page.printAhref(ref(sym, global.definitions.ROOT), CLASSES_FRAME_NAME, name);
+                        page.printAhref(ref(sym), CLASSES_FRAME_NAME, name);
                     else {
                         Symbol user = (useFullName) ? global.definitions.ROOT : Symbol.NONE;
-                        page.printAhref(ref(sym, user), ROOT_FRAME_NAME, name);
+                        page.printAhref(ref(sym), ROOT_FRAME_NAME, name);
                     }
 	            page.printlnSTag("br");
                 }
@@ -1205,21 +1086,15 @@ public class HTMLGenerator {
      * @param title
      */
     protected void createPackageIndexPage(String title) {
-	createPrinters(PAGE_OVERVIEW_FRAME, title);
+	createPrinters(PACKAGE_LIST_PAGE, title);
 
         Tree[] packages = ScalaSearch.getSortedPackageList(tree);
-	for (int i = 1; i < packages.length; i++) {
-            Symbol sym = packages[i].symbol();
-            String path = sym.fullNameString().replace('.', File.separatorChar);
-            File f = new File(directory, path);
-            f.mkdir();
-        }
 
         page.printHeader(ATTRS_META, getGenerator());
 	page.printOpenBody();
         addDocumentationTitle(new XMLAttribute[]{
             new XMLAttribute("class", "doctitle-larger")});
-        page.printAhref(PAGE_ALLCLASSES_FRAME, CLASSES_FRAME_NAME, "All Classes");
+        page.printAhref(PACKAGE_SUMMARY, CLASSES_FRAME_NAME, "All objects, traits and classes");
         page.printlnSTag("p");
         printPackagesTable(packages, "Packages");
         if (validate)
@@ -1236,8 +1111,8 @@ public class HTMLGenerator {
      */
     protected void createContainerIndexPage(Tree tree) {
         Symbol sym = tree.symbol();
-        String title = createPrinters(sym, false/*isSummary*/);
-
+	String title = Location.getName(sym);
+        createPrinters(sym, packageSummaryPage(sym));
         page.printHeader(ATTRS_META, getGenerator());
 	page.printOpenBody();
 
@@ -1247,7 +1122,16 @@ public class HTMLGenerator {
             for (int i = 0; i < titles.length; i++)
                 addTreeTable(members[i], "All " + titles[i], true);
         } else {
-            page.printlnAhref(PAGE_PACKAGE_SUMMARY, ROOT_FRAME_NAME, title);
+	    page.printlnOTag("table", ATTRS_NAVIGATION).indent();
+	    page.printlnOTag("tr").indent();
+	    page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
+
+            page.printlnAhref(ref(sym), ROOT_FRAME_NAME, sym.fullNameString());
+
+            page.printlnCTag("td");
+            page.printlnCTag("tr");
+            page.printlnCTag("table");
+
             page.printlnSTag("p");
             Tree[][] members = members(tree);
             for (int i = 0; i < titles.length; i++)
@@ -1290,7 +1174,7 @@ public class HTMLGenerator {
 	Character[] chars = (Character[]) index.fst;
 	Map map = (Map) index.snd;
 	for (int i  = 0; i < chars.length; i++)
-	    page.printlnAhref("#" + i, HTMLPrinter.encode(chars[i]));
+	    page.printlnAhref("#" + i, ROOT_FRAME_NAME, HTMLPrinter.encode(chars[i]));
 	page.printlnHLine();
 	for (int i  = 0; i < chars.length; i++) {
 	    Character car = chars[i];
@@ -1303,6 +1187,7 @@ public class HTMLGenerator {
 	    for (int j  = 0; j < trees.length; j++) {
 		page.printOTag("dt");
                 addIndexEntry(trees[j].symbol());
+		//		page.printlnTag("em", Location.getURI(trees[j].symbol()).toString()); // for debugging
                 page.printlnCTag("dt");
 		page.printlnTag("dd", firstSentence(getComment(trees[j].symbol())));
 	    }
@@ -1350,9 +1235,10 @@ public class HTMLGenerator {
         page.printlnTag("div", h3, "Overview");
         page.printlnOTag("blockquote").indent();
         page.print("The ");
-        page.printAhref(PAGE_OVERVIEW_SUMMARY, "Overview");
+        page.printAhref(ROOT_PAGE, ROOT_FRAME_NAME, "Overview");
         page.println(" page is the front page of this API document and "
-            + "provides a list of all packages with a summary for each. "
+	    + "provides a list of all top-level packages, classes, traits "
+	    + "and objects with a summary for each. "
             + "This page can also contain an overall description of the "
             + "set of packages.").undent();
         page.printlnCTag("blockquote");
@@ -1402,7 +1288,7 @@ public class HTMLGenerator {
         page.printlnTag("div", h3, "Index");
         page.printlnOTag("blockquote").indent();
         page.print("The ");
-        page.printAhref(INDEX_PAGE_NAME, "Index");
+        page.printAhref(INDEX_PAGE_NAME, ROOT_FRAME_NAME, "Index");
         page.print(" contains an alphabetic list of all classes, interfaces, "
             + "constructors, methods, and fields.");
         page.printlnCTag("blockquote");
@@ -1435,7 +1321,7 @@ public class HTMLGenerator {
 	// owner
 	if (!symbol.isRoot()) {
 	    page.print(" in ");
-	    page.printAhref(ref(symbol.owner(), global.definitions.ROOT), //true),
+	    page.printAhref(ref(symbol.owner()), ROOT_FRAME_NAME, //true),
 		              ScalaSearch.getOwnersString(symbol.owner()));
 	}
     }

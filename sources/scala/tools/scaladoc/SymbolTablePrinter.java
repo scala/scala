@@ -34,9 +34,6 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     /** The global environment */
     private final Global global;
 
-    /** The underlying code printer */
-    private final HTMLPrinter page;
-
     /** The HTML generator using this object */ // vincent
     HTMLGenerator htmlGenerator;
 
@@ -49,10 +46,9 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param htmlgenerator
      * @param page
      */
-    public SymbolTablePrinter(HTMLGenerator generator, HTMLPrinter page) {
-        super(page.getCodePrinter());
+    public SymbolTablePrinter(HTMLGenerator generator, CodePrinter printer) {
+        super(printer);
         this.global = Global.instance;
-	this.page = page;
         this.htmlGenerator = generator;
     }
 
@@ -127,9 +123,9 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         if (!global.debug) name = NameTransformer.decode(name);
         String s = name.toString();
         if (htmlGenerator.isReferenced(symbol))
-            page.printAhref(htmlGenerator.ref(symbol, user), s);
+            htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), s);
 	else
-	    page.print(s);
+	    htmlGenerator.page.print(s);
         printSymbolUniqueId(symbol);
         return this;
     }
@@ -147,11 +143,11 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         String s = name.toString();
         if (htmlGenerator.isReferenced(symbol))
             if (addLink)
-                page.printAhref(htmlGenerator.ref(symbol, user), s);
+                htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), s);
             else
-	        page.printBold(s);
+	        htmlGenerator.page.printBold(s);
 	else
-	    page.print(s);
+	    htmlGenerator.page.print(s);
         printSymbolUniqueId(symbol);
         return this;
     }
@@ -190,9 +186,9 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         String inner = getSymbolInnerString(symbol);
         String name = symbol.nameString();
         if (addLink)
-            page.printAhref("#" + name, name);
+	    htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), name);
 	else
-            page.print(name);
+            htmlGenerator.page.print(name);
         return printType(symbol.loBound(), ">:", user)
 	    .printSymbolType(symbol, inner, user);
     }
@@ -209,9 +205,9 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
         String inner = getSymbolInnerString(symbol);
         String name = symbol.nameString();
         if (addLink)
-            page.printAhref("#" + name, name);
+	    htmlGenerator.page.printAhref(htmlGenerator.ref(symbol), name);
         else
-            page.print(name);
+            htmlGenerator.page.print(name);
         return printType(symbol.loBound(), ">:", user);
     }
 
@@ -268,8 +264,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
     public SymbolTablePrinter printTemplateHtmlSignature(Symbol symbol, Symbol user, boolean addLink) {
 	// modifiers
         String mods = Modifiers.Helper.toString(symbol.flags);
-	page.printlnOTag("dl");
-	page.printlnOTag("dt");
+	htmlGenerator.page.printlnOTag("dl");
+	htmlGenerator.page.printlnOTag("dt");
 	print(mods).space();
 
         // kind
@@ -303,14 +299,14 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 
         // parents
         Type[] parts = symbol.moduleClass().parents();
-        page.printlnCTag("dt");
+        htmlGenerator.page.printlnCTag("dt");
         for (int i = 0; i < parts.length; i++) {
-            page.printOTag("dd");
+            htmlGenerator.page.printOTag("dd");
             print((i == 0) ? "extends " : "with ");
             printType(parts[i], symbol);
-	    page.printlnCTag("dd");
+	    htmlGenerator.page.printlnCTag("dd");
 	}
-	page.printCTag("dl");
+	htmlGenerator.page.printCTag("dl");
 	return this;
     }
 

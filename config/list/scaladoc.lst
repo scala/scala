@@ -16,5 +16,6 @@ ScalaSearch.java
 StandardDocModule.java
 SymbolTablePrinter.java
 Tag.java
+Location.java
 
 ##############################################################################

@@ -50,10 +50,8 @@ class Anchors {
 	    //anchorId = sym.isRoot() ? "root.html" : new Integer(anchors.size()).toString() + ".html";
 	    if (sym.isRoot())
 		anchorId = "root.html";
-	    else {
-		anchorId = new Integer(currentpage).toString() + ".html";
-		currentpage++;
-	    }
+	    else
+		anchorId = new Integer(anchors.size()).toString() + ".html";
 	    anchors.put(sym, anchorId);
 	}
 	return anchorId;
