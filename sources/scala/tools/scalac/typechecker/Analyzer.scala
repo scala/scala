@@ -701,8 +701,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   def packageSymbol(pos: int, base: Symbol, name: Name): Symbol = {
     var p: Symbol = base.members().lookup(name);
     if (p.kind == NONE) {
-      p = TermSymbol.newJavaPackageModule(name, base.moduleClass(), null);
-      base.members().enter(p);
+      p = base.moduleClass().newPackage(name);
     } else if (!p.isPackage()) {
       error(pos, "package and class with same name");
       p = Symbol.ERROR;
@@ -848,11 +847,27 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	enterSym(tree, clazz)
 
       case Tree$ModuleDef(mods, name, _, _) =>
-	val modul: TermSymbol = TermSymbol.define(
-	  tree.pos, name, owner, mods, context.scope).makeModule();
+	var modul: TermSymbol = TermSymbol.lookup(
+	  tree.pos, name, owner, mods | MODUL | FINAL, context.scope);
+        if (modul == null) {
+          modul = new TermSymbol(tree.pos, name, owner, mods).makeModule();
+        } else {
+          // The symbol has already been created by some symbol
+          // loader. It must be a real module.
+          assert(modul.moduleClass() != modul, Debug.show(modul));
+          val clasz = modul.moduleClass();
+          clasz.flags = clasz.flags & (~JAVA);
+          clasz.pos = tree.pos;
+          val constr = clasz.primaryConstructor();
+          constr.flags = constr.flags & (~JAVA);
+          constr.pos = tree.pos;
+        }
 	val clazz: Symbol = modul.moduleClass();
-	if (!clazz.isInitialized())
-	  clazz.setInfo(new LazyTreeType(tree));
+	if (!clazz.isInitialized()) {
+          val info = new LazyTreeType(tree);
+	  clazz.setInfo(info);
+          modul.setInfo(info);
+        }
 	enterSym(tree, modul)
 
       case Tree$ValDef(mods, name, _, _) =>

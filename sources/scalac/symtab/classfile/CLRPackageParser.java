@@ -260,14 +260,7 @@ public class CLRPackageParser extends SymbolLoader {
 	    Name n = Name.fromString(name);
 	    if (k < 0) {
 		// it's a class
-		ClassSymbol clazz = new ClassSymbol(n.toTypeName(), p, completer);
-		clazz.allConstructors().setInfo(completer);
-		clazz.module().setInfo(completer);
-		members.enter(clazz);
-		Scope.Entry e = members.lookupEntry(clazz.module().name);
-		if (e != Scope.Entry.NONE)
-		    members.unlink(e);
-		members.enter(clazz.module());
+                Symbol clazz = p.newLoadedClass(JAVA, n.toTypeName(), completer, members);
 		map(clazz, types[i]);
 	    } else {
 		importCLRNamespace(name, p, members, pp);
@@ -283,9 +276,7 @@ public class CLRPackageParser extends SymbolLoader {
 	Name n = Name.fromString(namespace);
 	if (members.lookup(n) == Symbol.NONE) {
 	    //System.out.println("importing namespace " + namespace);
-	    TermSymbol module = TermSymbol.newJavaPackageModule(n, p, pp);
-	    members.enter(module);
-	    members.enter(module.moduleClass());
+	    p.newLoadedPackage(n, pp, members);
 	}
     }
 

@@ -122,7 +122,7 @@ public class AttributeParser implements ClassfileConstants {
                         ((flags & 0x0009) == 0) ||
                         ((flags & 0x0001) == 0) ||
                         !outer.isModule() ||
-                        (outer != sym.module()))
+                        (outer != sym.dualClass().module()))
                     	continue;
                 	AliasTypeSymbol alias =
 						new AliasTypeSymbol(Position.NOPOS, name.toTypeName(), outer, 0);

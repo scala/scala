@@ -87,6 +87,36 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Factories --------------------------------------------------------------
 
+    /** Creates a new module owned by this symbol. */
+    public final TermSymbol newModule(int pos, int flags, Name name) {
+        ClassSymbol clasz = newModuleClass(pos, flags, name.toTypeName());
+        return (TermSymbol)clasz.module();
+    }
+
+    /**
+     * Creates a new package owned by this symbol, initializes it with
+     * an empty scope and adds it to this symbol's members.
+     */
+    public final TermSymbol newPackage(Name name) {
+        TermSymbol peckage = newPackage(name, null);
+        members().enterNoHide(peckage);
+        return peckage;
+    }
+
+    /**
+     * Creates a new package owned by this symbol, initializes it with
+     * the loader and enters it in the scope if it's non-null.
+     */
+    public final TermSymbol newLoadedPackage(Name name, SymbolLoader loader,
+        Scope scope)
+    {
+        assert loader != null: Debug.show(this) + " - " + name;
+        TermSymbol peckage = newPackage(name, loader);
+        peckage.moduleClass().setInfo(loader);
+        if (scope != null) scope.enterNoHide(peckage);
+        return peckage;
+    }
+
     /** Creates a new class owned by this symbol. */
     public final ClassSymbol newClass(int pos, int flags, Name name) {
         return newClass(pos, flags, name, 0, NONE);
@@ -97,6 +127,36 @@ public abstract class Symbol implements Modifiers, Kinds {
         return newModuleClass(pos, flags, name, 0, NONE);
     }
 
+    /**
+     * Creates a new class with a dual module class, both owned by
+     * this symbol, initializes them with the loader and enters the
+     * class and the module in the scope if it's non-null.
+     */
+    public final ClassSymbol newLoadedClass(int flags, Name name,
+        SymbolLoader loader, Scope scope)
+    {
+        assert isPackageClass(): Debug.show(this);
+        assert loader != null: Debug.show(this) + " - " + name;
+        ClassSymbol clasz = newClass(pos, flags, name, 0, null);
+        clasz.setInfo(loader);
+        clasz.allConstructors().setInfo(loader);
+        clasz.dualClass().setInfo(loader);
+        clasz.dualClass().module().setInfo(loader);
+        if (scope != null) scope.enterNoHide(clasz);
+        if (scope != null) scope.enterNoHide(clasz.dualClass().module());
+        return clasz;
+    }
+
+    /** Creates a new package owned by this symbol. */
+    final TermSymbol newPackage(Name name, Type info) {
+        assert isPackageClass(): Debug.show(this);
+        TermSymbol peckage = newModule(Position.NOPOS, JAVA | PACKAGE, name);
+        if (info == null) info = Type.compoundType(
+            Type.EMPTY_ARRAY, new Scope(), peckage.moduleClass());
+        peckage.moduleClass().setInfo(info);
+        return peckage;
+    }
+
     /** Creates a new class owned by this symbol. */
     final ClassSymbol newClass(int pos, int flags, Name name, int attrs,
         Symbol dual)
@@ -104,7 +164,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         return new ClassSymbol(pos, name, this, flags, attrs, dual);
     }
 
-    /** Creates a new module-class owned by this symbol. */
+    /** Creates a new module class owned by this symbol. */
     final ClassSymbol newModuleClass(int pos, int flags, Name name, int attrs,
         Symbol dual)
     {
@@ -116,7 +176,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         return clasz;
     }
 
-    /** Creates a new compound class. */
+    /** Creates a new compound class owned by this symbol. */
     final ClassSymbol newCompoundClass(Type info) {
         int pos = Position.FIRSTPOS;
         Name name = Names.COMPOUND_NAME.toTypeName();
@@ -1359,6 +1419,12 @@ public class TermSymbol extends Symbol {
 
     public static TermSymbol define(
         int pos, Name name, Symbol owner, int flags, Scope scope) {
+        TermSymbol symbol = lookup(pos, name, owner, flags, scope);
+        if (symbol != null) return symbol;
+        return new TermSymbol(pos, name, owner, flags);
+    }
+    public static TermSymbol lookup(
+        int pos, Name name, Symbol owner, int flags, Scope scope) {
         Scope.Entry e = scope.lookupEntry(name);
         if (e.owner == scope && e.sym.isExternal() && e.sym.kind == VAL) {
             TermSymbol sym = (TermSymbol) e.sym;
@@ -1381,7 +1447,7 @@ public class TermSymbol extends Symbol {
 	    sym.update(pos, flags);
             return sym;
         } else {
-            return new TermSymbol(pos, name, owner, flags);
+            return null;
         }
     }
 
@@ -1865,13 +1931,7 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Get dual class */
     public Symbol dualClass() {
-        // !!! temporary hack, replace all this by: "return dual;"
-        if (isModuleClass()) {
-            Symbol symbol = owner().lookup(name.toTypeName());
-            return symbol.isClassType() ? symbol : NONE;
-        } else {
-            return module.isNone() ? NONE : module.moduleClass();
-        }
+        return dual;
     }
 
     /** Set module; only used internally from TermSymbol

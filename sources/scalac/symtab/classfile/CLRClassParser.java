@@ -70,12 +70,12 @@ public class CLRClassParser extends SymbolLoader {
 	scalac.symtab.Type classType =
 	    scalac.symtab.Type.compoundType(baseTypes, members, clazz);
 	clazz.setInfo(classType);
-	Symbol staticsClass = clazz.module().moduleClass();
+	Symbol staticsClass = clazz.dualClass();
 	if (staticsClass.isModuleClass()) {
 	    scalac.symtab.Type staticsInfo = scalac.symtab.Type.compoundType
 		(scalac.symtab.Type.EMPTY_ARRAY, statics, staticsClass);
 	    staticsClass.setInfo(staticsInfo);
-	    clazz.module().setInfo(scalac.symtab.Type.typeRef
+	    staticsClass.module().setInfo(scalac.symtab.Type.typeRef
 				   (staticsClass.owner().thisType(),
 				    staticsClass, scalac.symtab.Type.EMPTY_ARRAY));
 	}
@@ -94,14 +94,12 @@ public class CLRClassParser extends SymbolLoader {
 	    Name classname = Name.fromString(n).toTypeName();
 	    Name aliasname = Name.fromString(ntype.Name).toTypeName();
 	    // put the class at the level of its outermost class
-	    ClassSymbol nclazz = new ClassSymbol(classname, clazz.owner(), this);
+	    Symbol nclazz = clazz.owner().newLoadedClass(JAVA, classname, this, null);
 	    importer.map(nclazz, ntype);
 	    // create an alias in the module of the outer class
 	    AliasTypeSymbol alias =
-		new AliasTypeSymbol(Position.NOPOS, aliasname, clazz.module(),
+		new AliasTypeSymbol(Position.NOPOS, aliasname, staticsClass,
 				    translateAttributes(ntype));
-	    nclazz.allConstructors().setInfo(this);
-	    nclazz.module().setInfo(this);
 	    //
 	    alias.setInfo(make.classType(nclazz));
 	    alias.allConstructors()

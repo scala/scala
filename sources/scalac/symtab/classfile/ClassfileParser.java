@@ -102,11 +102,11 @@ public class ClassfileParser implements ClassfileConstants {
             Type classType = Type.compoundType(basetpes, locals, c);
             c.setInfo(classType);
             // set type of statics
-            Symbol staticsClass = c.module().moduleClass();
+            Symbol staticsClass = c.dualClass();
             if (staticsClass.isModuleClass()) {
                 Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
                 staticsClass.setInfo(staticsInfo);
-                c.module().setInfo(Type.typeRef(staticsClass.owner().thisType(),
+                staticsClass.module().setInfo(Type.typeRef(staticsClass.owner().thisType(),
                                             staticsClass, Type.EMPTY_ARRAY));
             }
             basetpes[0] = supertpe;
@@ -193,7 +193,7 @@ public class ClassfileParser implements ClassfileConstants {
             mods |= Modifiers.MUTABLE;
         Symbol owner = c;
         if ((flags & JAVA_ACC_STATIC) != 0)
-            owner = c.module().moduleClass();
+            owner = c.dualClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
         s.setInfo(type);
         attrib.readAttributes(s, type, FIELD_ATTR);
@@ -236,7 +236,7 @@ public class ClassfileParser implements ClassfileConstants {
         } else {
             Symbol s = new TermSymbol(
                 Position.NOPOS, name,
-                ((flags & JAVA_ACC_STATIC) != 0) ? c.module().moduleClass() : c,
+                ((flags & JAVA_ACC_STATIC) != 0) ? c.dualClass() : c,
                 sflags);
             setParamOwners(type, s);
             s.setInfo(type);

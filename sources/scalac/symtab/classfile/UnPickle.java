@@ -39,10 +39,10 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	global = Global.instance;
 	if (root.isConstructor()) {
 	    this.classroot = root.constructorClass();
-	    this.moduleroot = classroot.module();
+	    this.moduleroot = classroot.dualClass().module();
 	} else if (root.isType()) {
 	    this.classroot = root;
-	    this.moduleroot = classroot.module();
+	    this.moduleroot = classroot.dualClass().module();
 	} else {
 	    this.moduleroot = root;
 	    this.classroot = root.owner().lookup(root.name.toTypeName());

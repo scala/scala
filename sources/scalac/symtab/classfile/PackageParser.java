@@ -2,135 +2,141 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.symtab.classfile;
 
-import ch.epfl.lamp.util.*;
-import scalac.*;
-import scalac.symtab.*;
-import scalac.util.*;
-import java.io.*;
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.HashMap;
+import java.util.HashSet;
 
+import ch.epfl.lamp.util.Position;
+
+import scalac.Global;
+import scalac.symtab.Scope;
+import scalac.symtab.SourceCompleter;
+import scalac.symtab.Symbol;
+import scalac.symtab.SymbolLoader;
+import scalac.symtab.Type;
+import scalac.util.AbstractFile;
+import scalac.util.Name;
+import scalac.util.SourceRepresentation;
+
+/**
+ * This class implements a package member loader. It can be used to
+ * complete package class symbols.
+ */
 public class PackageParser extends SymbolLoader {
 
-    /** the class parser
-     */
-    public ClassParser classCompletion;
-    public SymblParser symblCompletion; // provisional
+    //########################################################################
+    // Private Fields
 
-    protected final CLRPackageParser importer;
+    /** The JVM class file parser */
+    private final ClassParser classCompletion;
 
+    /** The CLR package parser */
+    private final CLRPackageParser importer;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
     public PackageParser(Global global) {
         super(global);
         this.classCompletion = new ClassParser(global);
-	this.symblCompletion = new SymblParser(global); // provisional
-	if (global.reporter.verbose)
-	    System.out.println("classpath = " + global.classPath);//debug
-	importer = (global.target == global.TARGET_MSIL)
+	this.importer = (global.target == global.TARGET_MSIL)
 	    ? CLRPackageParser.create(global) : null;
+	if (global.reporter.verbose)
+	    global.reporter.inform("classpath = " + global.classPath);
     }
 
-    /** complete package type symbol p by loading all package members
-     */
-    protected String doComplete(Symbol p) {
-        Scope members = new Scope();
-        String dirname = null;
-	HashMap/*<Symbol, AbstractFile>*/ symFile = new HashMap();
-        if (!p.isRoot()) {
-            dirname = SourceRepresentation.externalizeFileName(p, "/");
-        }
+    //########################################################################
+    // Protected Methods
+
+    /** Completes the package symbol by loading all its members. */
+    protected String doComplete(Symbol peckage) {
+	boolean isRoot = peckage.isRoot();
+        String dirname = isRoot ? null
+            : SourceRepresentation.externalizeFileName(peckage, "/");
+
+        // collect JVM and source members
+        HashMap sources = new HashMap();
+        HashMap classes = new HashMap();
+        HashSet packages = new HashSet();
         String[] base = global.classPath.components();
         for (int i = 0; i < base.length; i++) {
-            includeMembers(
-		AbstractFile.open(base[i], dirname),
-		p, members, symFile);
+            AbstractFile dir = AbstractFile.open(base[i], dirname);
+            if (dir == null) continue;
+            try {
+                String[] filenames = dir.list();
+                if (filenames == null) continue;
+                for (int j = 0; j < filenames.length; j++) {
+                    String fname = filenames[j];
+                    if (fname.endsWith("/") && !fname.equals("META-INF/")) {
+                        String name = fname.substring(0, fname.length() - 1);
+                        packages.add(name);
+                        continue;
+                    }
+                    if (!isRoot && fname.endsWith(".class")) {
+                        String name = fname.substring(0, fname.length() - 6);
+                        if (!classes.containsKey(name))
+                            classes.put(name, dir.open(fname));
+                        continue;
+                    }
+                    if (!isRoot && fname.endsWith(".scala")) {
+                        String name = fname.substring(0, fname.length() - 6);
+                        if (!sources.containsKey(name))
+                            sources.put(name, dir.open(fname));
+                        continue;
+                    }
+                }
+            } catch (IOException exception) {
+                if (global.debug) exception.printStackTrace();
+                continue;
+            }
 	}
- 	if (global.target == global.TARGET_MSIL)
- 	    importer.importCLRTypes(p, members, this);
-        p.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, p));
+
+        // create JVM and source members
+        Scope members = new Scope();
+        for (Iterator i = sources.entrySet().iterator(); i.hasNext(); ) {
+            HashMap.Entry entry = (HashMap.Entry)i.next();
+            String name = (String)entry.getKey();
+            AbstractFile sfile = (AbstractFile)entry.getValue();
+            AbstractFile cfile = (AbstractFile)classes.remove(name);
+            if (global.separate && cfile != null) {
+                if (cfile.lastModified() > sfile.lastModified()) {
+                    classes.put(name, cfile);
+                    continue;
+                }
+            }
+            packages.remove(name);
+            Name classname = Name.fromString(name).toTypeName();
+            SourceCompleter completer = new SourceCompleter(global);
+            peckage.newLoadedClass(0, classname, completer, members);
+        }
+        for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
+            HashMap.Entry entry = (HashMap.Entry)i.next();
+            String name = (String)entry.getKey();
+            AbstractFile cfile = (AbstractFile)entry.getValue();
+            packages.remove(name);
+            Name classname = Name.fromString(name).toTypeName();
+            peckage.newLoadedClass(JAVA, classname, classCompletion, members);
+        }
+        for (Iterator i = packages.iterator(); i.hasNext(); ) {
+            String name = (String)i.next();
+            peckage.newLoadedPackage(Name.fromString(name), this, members);
+        }
+
+        // collect and create CLR members
+        if (importer != null) importer.importCLRTypes(peckage, members, this);
+
+        // initialize package
+        peckage.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, peckage));
         return dirname == null ? "anonymous package" : "package '"+dirname+"'";
     }
 
-    private boolean isMostRecent(AbstractFile f, Symbol previous, HashMap symFile) {
-	if (previous == Symbol.NONE || previous.isPackage()) return true;
-	if (previous.pos != Position.NOPOS) return false;
-	AbstractFile pf = (AbstractFile) symFile.get(previous);
-	if (f.getName().endsWith(".scala")) {
-	    if (pf.getName().endsWith(".scala")) return false;
-	    if (!global.separate) return true;
-	}
-	if (f.getName().endsWith(".class")) {
-	    if (pf.getName().endsWith(".class")) return false;
-	    if (!global.separate) return false;
-	}
-	return f.lastModified() > pf.lastModified();
-    }
-
-    /** read directory of a classpath directory and include members
-     *  in package/module scope
-     */
-    protected void includeMembers(AbstractFile dir, Symbol p, Scope locals,
-				  HashMap symFile) {
-        if (dir == null)
-            return;
-	boolean inclClasses = p != global.definitions.ROOT_CLASS;
-        String[] filenames = null;
-        try {
-            if ((filenames = dir.list()) == null)
-                return;
-            for (int j = 0; j < filenames.length; j++) {
-                String fname = filenames[j];
-		AbstractFile f = dir.open(fname);
-                if (inclClasses && fname.endsWith(".class")) {
-                    Name n = Name.fromString(fname.substring(0, fname.length() - 6))
-			.toTypeName();
-		    if (isMostRecent(f, locals.lookup(n), symFile)) {
-		        ClassSymbol clazz = new ClassSymbol(n, p, classCompletion);
-			// todo: needed?
-		        clazz.allConstructors().setInfo(classCompletion);
-			clazz.module().setInfo(classCompletion);
-		        // enter class
-		        locals.enter(clazz);
-		        // enter module
-                        Scope.Entry e = locals.lookupEntry(clazz.module().name);
-                        if (e != Scope.Entry.NONE) {
-                            // we already have a package of the same name; delete it
-                            locals.unlink(e);
-                        }
-                        locals.enter(clazz.module());
-			symFile.put(clazz, f);
-                    }
-                } else if (inclClasses && fname.endsWith(".scala")) {
-                    Name n = Name.fromString(fname.substring(0, fname.length() - 6))
-			.toTypeName();
-		    if (isMostRecent(f, locals.lookup(n), symFile)) {
-                        SourceCompleter completer = new SourceCompleter(global);
-                        ClassSymbol clazz = new ClassSymbol(n, p, completer);
-			//todo: needed?
-                        clazz.allConstructors().setInfo(completer);
-			clazz.module().setInfo(completer);
-                        // enter class
-                        locals.enter(clazz);
-			locals.enter(clazz.module());
-			symFile.put(clazz, f);
-                    }
-                } else if (fname.endsWith("/") && !fname.equals("META-INF/")) {
-                    Name n = Name.fromString(fname.substring(0, fname.length() - 1));
-                    if (locals.lookup(n) == Symbol.NONE) {
-                        TermSymbol module = TermSymbol.newJavaPackageModule(n, p, this);
-                        locals.enter(module);
-			//todo: moduleClass needs to be entered?
-			locals.enter(module.moduleClass());
-		    }
-                }
-            }
-        } catch (IOException e) {
-        }
-    }
-
-
+    //########################################################################
 }
