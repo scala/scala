@@ -1,9 +1,8 @@
 <project name="predef">
  
-  <!-- Redefine accordingly to where you checked out your scala files -->
-  <!-- scala.home should point to the directory that contains the     -->
-  <!-- "benchmark" directory                                          -->
-  <property name="scala.home" value="${user.home}/scala"/>
+  <!-- Include the file defining private properties   -->
+  <dirname property="predef.basedir" file="${ant.file.predef}"/>
+  <property file="${predef.basedir}/ant.private"/>
 
   <!-- Define some basic paths  -->
   <property name="benchmark.home" value="${scala.home}/test/benchmark"/>
@@ -17,7 +16,7 @@
   <!--  Define a <run-benchmark> element that can be used to run   -->
   <!--    benchmarks                                               -->
   <!--  It accepts these attributes:                               -->
-  <!--    count - how many times to run each benchmark (default:3) -->
+  <!--    count - how many times to run each benchmark (default:5) -->
   <!--    classname - the name of the class to be ran  (default:   -->
   <!--                the name of the ant project                  -->
   <!--    logfile - the location of the file where running times   -->
@@ -26,14 +25,14 @@
   <!--               up as head of the current classpath (default: -->
   <!--               benchmark classes dir/project name            -->
   <macrodef name="run-benchmark">
-    <attribute name="count" default="3"/>
+    <attribute name="count" default="5"/>
     <attribute name="classname" default="benchmarks.${ant.project.name}"/>
     <attribute name="logfile" default="${log.file}"/>
     <attribute name="location" default="${benchmark.classes.dir}/${ant.project.name}"/>
 
     <sequential>
       <echo>** Running benchmark @{classname} in @{location}..</echo>
-      <exec executable="scala" failonerror="true">
+      <exec executable="${scala.vm}" failonerror="true">
         <arg line="-cp @{location}:${java.class.path}"/>
 	<arg line="@{classname} @{count} @{logfile}"/>
       </exec>
@@ -54,7 +53,7 @@
   <!--            name)                                            -->
   <!--    files - the source files to be compiled                  -->
   <macrodef name="compile-benchmark">
-    <attribute name="compiler" default="myscalac"/>
+    <attribute name="compiler" default="${scala.compiler}"/>
     <attribute name="additionalArgs" default=""/>
     <attribute name="destination" default="${benchmark.classes.dir}/${ant.project.name}"/>
     <attribute name="files"/>

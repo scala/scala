@@ -1,0 +1,9 @@
+# the compiler executable
+scala.compiler=scalac
+
+# the vm to run scala programs with
+scala.vm=scala
+
+# the location where your scala distribution is
+# it should point to the parent of the 'test/' directory
+scala.home=${user.home}/scala

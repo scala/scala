@@ -116,7 +116,7 @@ object TestExpr {
     } else System.out.println("usage: java examples.TestExpr <expr-string>");
 }
 
-object parsers1 with scala.testing.Benchmark {
+object parsers with scala.testing.Benchmark {
   def run: Unit = {
     TestList.main(Array("(a,b,(1,2))"));
     TestExpr.main(Array("2+3+(4+1)"))

@@ -39,7 +39,7 @@ trait Tree[+a <% Ordered[a]] {
   }
 }
 
-object viewtest1 with scala.testing.Benchmark {
+object viewtest with scala.testing.Benchmark {
   import O.view;
 
   def run: Unit = {
