@@ -249,10 +249,10 @@ class GenJVM {
             genLoadQualifier(ctx, fun, true);
 
             JType type = typeStoJ(args[0].type);
-            if (fun.symbol() == defs.IS) {
+            if (fun.symbol() == defs.ANY_IS) {
                 ctx.code.emitINSTANCEOF((JReferenceType)type);
                 generatedType = JType.BOOLEAN;
-            } else if (fun.symbol() == defs.AS) {
+            } else if (fun.symbol() == defs.ANY_AS) {
                 ctx.code.emitCHECKCAST((JReferenceType)type);
                 generatedType = type;
             } else

@@ -108,7 +108,7 @@ public class RightTracerInScala extends TracerInScala  {
 	if( keepType )
 	    helpVar.setType( realVar.type() );
 	else
-	    helpVar.setType( defs.listType(elementType) );
+	    helpVar.setType( defs.LIST_TYPE(elementType) );
 
 
 	helpMap.put( realVar, helpVar );
@@ -291,7 +291,7 @@ public class RightTracerInScala extends TracerInScala  {
 	for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
 	    Symbol vsym = (Symbol) it.next();
 	    Symbol hv   = (Symbol) helpMap3.get( vsym );
-	    hv.setType( defs.listType( elementType ) ) ;
+	    hv.setType( defs.LIST_TYPE( elementType ) ) ;
 	    Tree refv   = gen.Ident(Position.FIRSTPOS, vsym);
 	    Tree refhv  = gen.Ident(Position.FIRSTPOS, hv);
 	    res[ j++ ] = gen.Assign( refhv, refv );

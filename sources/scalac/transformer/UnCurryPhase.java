@@ -32,7 +32,7 @@ public class UnCurryPhase extends Phase implements Modifiers {
      */
     public Type transformInfo(Symbol sym, Type tp0) {
 	Type tp1 = uncurry(tp0);
-	if (sym.isDefParameter()) return global.definitions.functionType(Type.EMPTY_ARRAY, tp1);
+	if (sym.isDefParameter()) return global.definitions.FUNCTION_TYPE(Type.EMPTY_ARRAY, tp1);
 	else return tp1;
     }
 

@@ -172,11 +172,11 @@ public class Erasure extends Transformer implements Modifiers {
             fun = transform(fun);
             vargs = transform(vargs);
             Symbol symbol = fun.symbol();
-            if (symbol == definitions.AS) {
+            if (symbol == definitions.ANY_AS) {
                 assert targs.length == 1 && vargs.length == 0: tree;
                 return coerce(getQualifier(fun), targs[0].type().erasure());
             }
-            if (symbol == definitions.IS) {
+            if (symbol == definitions.ANY_IS) {
                 assert targs.length == 1 && vargs.length == 0: tree;
                 Type type = targs[0].type.erasure();
                 if (isUnboxedSimpleType(type)) type = targs[0].type;

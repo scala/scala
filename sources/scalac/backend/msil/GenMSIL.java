@@ -737,10 +737,10 @@ public class GenMSIL {
  		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
  	    }
 
-	    if (sym == defs.EQEQ) {
+	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
 	    }
-	    if (sym == defs.BANGEQ) {
+	    if (sym == defs.ANY_BANGEQ) {
 		return negate(genEq(qualifier, args[0]));
 	    }
 
@@ -857,10 +857,10 @@ public class GenMSIL {
 
     /** Generate code for scala's '==' */
     Item genEq(Tree left, Tree right) {
-	LocalBuilder tmpLocal = (LocalBuilder)locals.get(defs.EQEQ);
+	LocalBuilder tmpLocal = (LocalBuilder)locals.get(defs.ANY_EQEQ);
 	if (tmpLocal == null) {
 	    tmpLocal = code.DeclareLocal(TypeCreator.SYSTEM_OBJECT);
-	    locals.put(defs.EQEQ, tmpLocal);
+	    locals.put(defs.ANY_EQEQ, tmpLocal);
 	}
 	Label l1 = code.DefineLabel(), l2 = code.DefineLabel();
 	load(gen(left));

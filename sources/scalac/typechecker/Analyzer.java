@@ -582,13 +582,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private Type matchQualType(Tree fn) {
 	switch (fn) {
 	case Select(Tree qual, _):
-	    if (fn.symbol() == definitions.MATCH)
+	    if (fn.symbol() == definitions.ANY_MATCH)
 		return qual.type.widen();
 	    break;
 	case TypeApply(Tree fn1, _):
 	    return matchQualType(fn1);
 	case Ident(_):
-	    if (fn.symbol() == definitions.MATCH)
+	    if (fn.symbol() == definitions.ANY_MATCH)
 		return context.enclClass.owner.typeOfThis();
 	    break;
 	}
@@ -2013,7 +2013,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		body = transform( body );
 		//assert body.type != null;
 		if( TreeInfo.isSequenceValued( body ) ) {
-                    vble.setType( definitions.listType(pt) );
+                    vble.setType( definitions.LIST_TYPE(pt) );
                 } else {
                     vble.setType( body.type );
                 }
@@ -2082,7 +2082,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Throw(Tree expr):
 		Tree expr1 = transform(
 		    expr, EXPRmode, definitions.JAVA_THROWABLE_TYPE());
-		return gen.Select(tree.pos, expr1, definitions.THROW);
+		return gen.Select(tree.pos, expr1, definitions.JAVA_THROWABLE_THROW);
 
 	    case Return(Tree expr):
 		if (!context.owner.isInitialized()) {
@@ -2171,7 +2171,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		switch (tpe) {
 		case Ident(TypeNames.WILDCARD_STAR):
 		    expr1 = transform(
-			expr, mode & baseModes, definitions.seqType(pt));
+			expr, mode & baseModes, definitions.SEQ_TYPE(pt));
 		    Type[] elemtps = expr1.type.baseType(definitions.SEQ_CLASS).
 			typeArgs();
 		    Type elemtp = (elemtps.length == 1) ? elemtps[0]

@@ -319,7 +319,7 @@ public class Primitives {
     }
 
     private Symbol getBoxArray(Symbol[] alts, Type type) {
-        return getBoxValue(alts, definitions.arrayType(type));
+        return getBoxValue(alts, definitions.ARRAY_TYPE(type));
     }
 
     private Symbol getUniqueTerm(Symbol owner, Name name) {
@@ -339,14 +339,14 @@ public class Primitives {
         Definitions defs = definitions;
 
         // scala.Any
-        addPrimitive(defs.EQ, Primitive.ID);
-        addPrimitive(defs.IS, Primitive.IS);
-        addPrimitive(defs.AS, Primitive.AS);
-        addPrimitive(defs.EQEQ, Primitive.EQ);
-        addPrimitive(defs.BANGEQ, Primitive.NE);
-        // !!! addPrimitive(defs.EQUALS, Primitive.EQUALS);
-        addPrimitive(defs.HASHCODE, Primitive.HASHCODE);
-        addPrimitive(defs.TOSTRING, Primitive.TOSTRING);
+        addPrimitive(defs.ANY_EQ, Primitive.ID);
+        addPrimitive(defs.ANY_IS, Primitive.IS);
+        addPrimitive(defs.ANY_AS, Primitive.AS);
+        addPrimitive(defs.ANY_EQEQ, Primitive.EQ);
+        addPrimitive(defs.ANY_BANGEQ, Primitive.NE);
+        // !!! addPrimitive(defs.ANY_EQUALS, Primitive.EQUALS);
+        addPrimitive(defs.ANY_HASHCODE, Primitive.HASHCODE);
+        addPrimitive(defs.ANY_TOSTRING, Primitive.TOSTRING);
 
         // scala.Unit
         addAll(defs.UNIT_CLASS, Names.EQ, Primitive.EQ, 1);
@@ -492,10 +492,10 @@ public class Primitives {
         addAll(defs.ARRAY_CLASS, Names.update, Primitive.UPDATE, 1);
 
         // scala.String
-        addPrimitive(defs.STRING_PLUS_ANY, Primitive.CONCAT);
+        addPrimitive(defs.JAVA_STRING_PLUS, Primitive.CONCAT);
 
         // java.lang.Throwable
-        addPrimitive(defs.THROW, Primitive.THROW);
+        addPrimitive(defs.JAVA_THROWABLE_THROW, Primitive.THROW);
 
         // scala.runtime.RunTime
         addPrimitive(BOX_UVALUE, Primitive.BOX);

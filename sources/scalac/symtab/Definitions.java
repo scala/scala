@@ -9,111 +9,202 @@
 package scalac.symtab;
 
 import ch.epfl.lamp.util.Position;
-import scalac.*;
-import scalac.util.*;
-import scalac.symtab.classfile.*;
-import Type.*;
+
+import scalac.Global;
+import scalac.symtab.classfile.PackageParser;
+import scalac.util.Debug;
+import scalac.util.Name;
+import scalac.util.Names;
 
 public class Definitions {
 
-    /** the root module
-     */
+    //########################################################################
+    // Public Fields & Methods - Root module
+
+    /** The root module */
     public final Symbol ROOT;
     public final Symbol ROOT_CLASS;
+    public final Type   ROOT_TYPE() {return ROOT_CLASS.type();}
 
-    /** the null value
-     */
-    public final Symbol NULL;
+    //########################################################################
+    // Public Fields & Methods - Top and bottom classes
 
-    /** the zero value (a default null for type variables with bound Any)
-     */
-    public final Symbol ZERO;
-
-    /** the scala.Any class
-     */
+    /** The scala.Any class */
     public final Symbol ANY_CLASS;
     public final Type   ANY_TYPE() {return ANY_CLASS.type();}
 
-    public final Symbol MATCH;
-    public final Symbol IS;
-    public final Symbol AS;
-    public final Symbol EQEQ;
-    public final Symbol BANGEQ;
-    public final Symbol EQUALS;
-    public final Symbol EQ;
-    public final Symbol TOSTRING;
-    public final Symbol HASHCODE;
-
-    /** the scala.AnyVal class
-     */
+    /** The scala.AnyVal class */
     public final Symbol ANYVAL_CLASS;
     public final Type   ANYVAL_TYPE() {return ANYVAL_CLASS.type();}
 
-    /** the scala.AnyRef class
-     */
+    /** The scala.AnyRef class */
     public final Symbol ANYREF_CLASS;
     public final Type   ANYREF_TYPE() {return ANYREF_CLASS.type();}
 
-    /** the scala.AllRef class
-     */
+    /** The scala.AllRef class */
     public final Symbol ALLREF_CLASS;
     public final Type   ALLREF_TYPE() {return ALLREF_CLASS.type();}
 
-    /** the scala.All class
-     */
+    /** The scala.All class */
     public final Symbol ALL_CLASS;
     public final Type   ALL_TYPE() {return ALL_CLASS.type();}
 
-    /** the java.lang.Object class
-     */
+    //########################################################################
+    // Public Fields & Methods - Java classes
+
+    /** The java.lang.Object class */
     public final Symbol JAVA_OBJECT_CLASS;
     public final Type   JAVA_OBJECT_TYPE() {return JAVA_OBJECT_CLASS.type();}
 
-    /** the java.lang.String class
-     */
+    /** The java.lang.String class */
     public final Symbol JAVA_STRING_CLASS;
     public final Type   JAVA_STRING_TYPE() {return JAVA_STRING_CLASS.type();}
 
-    /** the java.lang.Throwable class
-     */
+    /** The java.lang.Throwable class */
     public final Symbol JAVA_THROWABLE_CLASS;
     public final Type   JAVA_THROWABLE_TYPE() {return JAVA_THROWABLE_CLASS.type();}
 
-    public final Symbol THROW;
+    //########################################################################
+    // Public Fields & Methods - Scala value classes
 
-    /** the scala.Object class
-     */
-    public final Symbol OBJECT_CLASS;
-    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.type();}
-
-    private Symbol OBJECT_TAG;
-    public Symbol OBJECT_TAG() {
-        if (OBJECT_TAG == null)
-            OBJECT_TAG = loadTerm(OBJECT_CLASS, Names.tag);
-        return OBJECT_TAG;
-    }
-
-    /** the primitive types
-     */
-    public final Symbol BYTE_CLASS;
-    public final Type   BYTE_TYPE() {return BYTE_CLASS.type();}
-    public final Symbol SHORT_CLASS;
-    public final Type   SHORT_TYPE() {return SHORT_CLASS.type();}
-    public final Symbol CHAR_CLASS;
-    public final Type   CHAR_TYPE() {return CHAR_CLASS.type();}
-    public final Symbol INT_CLASS;
-    public final Type   INT_TYPE() {return INT_CLASS.type();}
-    public final Symbol LONG_CLASS;
-    public final Type   LONG_TYPE() {return LONG_CLASS.type();}
-    public final Symbol FLOAT_CLASS;
-    public final Type   FLOAT_TYPE() {return FLOAT_CLASS.type();}
-    public final Symbol DOUBLE_CLASS;
-    public final Type   DOUBLE_TYPE() {return DOUBLE_CLASS.type();}
-    public final Symbol BOOLEAN_CLASS;
-    public final Type   BOOLEAN_TYPE() {return BOOLEAN_CLASS.type();}
+    /** The scala.Unit class */
     public final Symbol UNIT_CLASS;
     public final Type   UNIT_TYPE() {return UNIT_CLASS.type();}
 
+    /** The scala.Boolean class */
+    public final Symbol BOOLEAN_CLASS;
+    public final Type   BOOLEAN_TYPE() {return BOOLEAN_CLASS.type();}
+
+    /** The scala.Byte class */
+    public final Symbol BYTE_CLASS;
+    public final Type   BYTE_TYPE() {return BYTE_CLASS.type();}
+
+    /** The scala.Short class */
+    public final Symbol SHORT_CLASS;
+    public final Type   SHORT_TYPE() {return SHORT_CLASS.type();}
+
+    /** The scala.Char class */
+    public final Symbol CHAR_CLASS;
+    public final Type   CHAR_TYPE() {return CHAR_CLASS.type();}
+
+    /** The scala.Int class */
+    public final Symbol INT_CLASS;
+    public final Type   INT_TYPE() {return INT_CLASS.type();}
+
+    /** The scala.Long class */
+    public final Symbol LONG_CLASS;
+    public final Type   LONG_TYPE() {return LONG_CLASS.type();}
+
+    /** The scala.Float class */
+    public final Symbol FLOAT_CLASS;
+    public final Type   FLOAT_TYPE() {return FLOAT_CLASS.type();}
+
+    /** The scala.Double class */
+    public final Symbol DOUBLE_CLASS;
+    public final Type   DOUBLE_TYPE() {return DOUBLE_CLASS.type();}
+
+    //########################################################################
+    // Public Fields & Methods - Scala reference classes
+
+    /** The scala.Object class */
+    public final Symbol OBJECT_CLASS;
+    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.type();}
+
+    /** The scala.String class */
+    public final Symbol STRING_CLASS;
+    public final Type   STRING_TYPE() {return STRING_CLASS.type();}
+
+    /** The scala.Ref class */
+    public final Symbol REF_CLASS;
+    public final Type   REF_TYPE(Type element) {
+        return getType(REF_CLASS, element);
+    }
+
+    /** The scala.TupleX classes */
+    public final int      TUPLE_COUNT = 10;
+    public final Symbol[] TUPLE_CLASS = new Symbol[TUPLE_COUNT];
+    public final Type     TUPLE_TYPE(Type[] args) {
+        assert 0 < args.length && args.length < TUPLE_COUNT: args.length;
+	return getType(TUPLE_CLASS[args.length], args);
+    }
+
+    /** The scala.FunctionX classes */
+    public final int      FUNCTION_COUNT = 10;
+    public final Symbol[] FUNCTION_CLASS = new Symbol[FUNCTION_COUNT];
+    public final Type     FUNCTION_TYPE(Type[] args, Type result) {
+        assert 0 <= args.length && args.length < FUNCTION_COUNT: args.length;
+        args = Type.cloneArray(args, 1);
+        args[args.length - 1] = result;
+	return getType(FUNCTION_CLASS[args.length - 1], args);
+    }
+
+    /** The scala.PartialFunction class */
+    public final Symbol PARTIALFUNCTION_CLASS;
+    public final Type   PARTIALFUNCTION_TYPE(Type argument, Type result) {
+	return getType(PARTIALFUNCTION_CLASS, new Type[] { argument, result });
+    }
+
+    /** The scala.Iterable class */
+    public final Symbol ITERABLE_CLASS;
+    public final Type   ITERABLE_TYPE(Type element) {
+        return getType(ITERABLE_CLASS, element);
+    }
+
+    /** The scala.Iterator class */
+    public final Symbol ITERATOR_CLASS;
+    public final Type   ITERATOR_TYPE(Type element) {
+        return getType(ITERATOR_CLASS, element);
+    }
+
+    /** The scala.Seq class */
+    public final Symbol SEQ_CLASS;
+    public final Type   SEQ_TYPE(Type element) {
+	return getType(SEQ_CLASS, element);
+    }
+
+    /** The scala.List class */
+    public final Symbol LIST_CLASS;
+    public final Type   LIST_TYPE(Type element) {
+        return getType(LIST_CLASS, element);
+    }
+
+    /** The scala.Array class */
+    public final Symbol ARRAY_CLASS;
+    public final Type   ARRAY_TYPE(Type element) {
+        return getType(ARRAY_CLASS, element);
+    }
+
+    /** The scala.MatchError module */
+    public final Symbol MATCHERROR;
+
+    //########################################################################
+    // Public Fields & Methods - Top and bottom class methods
+
+    /** Some scala.Any methods */
+    public final Symbol ANY_EQ;
+    public final Symbol ANY_EQEQ;
+    public final Symbol ANY_BANGEQ;
+    public final Symbol ANY_EQUALS;
+    public final Symbol ANY_HASHCODE;
+    public final Symbol ANY_TOSTRING;
+    //public final Symbol ANY_PLUS;
+    public final Symbol ANY_IS;
+    public final Symbol ANY_AS;
+    public final Symbol ANY_MATCH;
+
+    //########################################################################
+    // Public Fields & Methods - Java class methods
+
+    /** Some java.lang.String methods */
+    public final Symbol JAVA_STRING_PLUS;
+
+    /** Some java.lang.Throwable methods */
+    public final Symbol JAVA_THROWABLE_THROW;
+
+    //########################################################################
+    // Public Fields & Methods - Scala value class methods
+
+    /** Some scala.Boolean methods */
     private Symbol BOOLEAN_OR;
     private Symbol BOOLEAN_AND;
     private Symbol BOOLEAN_NOT;
@@ -134,76 +225,19 @@ public class Definitions {
         return BOOLEAN_NOT;
     }
 
-    /** the scala.String class
-     */
-    public final Symbol STRING_CLASS;
-    public final Type   STRING_TYPE() {return STRING_CLASS.type();}
+    //########################################################################
+    // Public Fields & Methods - Scala reference class methods
 
-    /** the scala.TupleX classes
-     */
-    public final int  TUPLE_count = 10;
-    public final Symbol[] TUPLE_CLASS = new Symbol[TUPLE_count];
+    /** Some scala.Object methods */
+    private Symbol OBJECT_TAG;
 
-    public Type tupleType(Type[] args) {
-        assert 0 < args.length && args.length < TUPLE_count: args.length;
-	return getType(TUPLE_CLASS[args.length], args);
+    public Symbol OBJECT_TAG() {
+        if (OBJECT_TAG == null)
+            OBJECT_TAG = loadTerm(OBJECT_CLASS, Names.tag);
+        return OBJECT_TAG;
     }
 
-    private final Symbol[][] TUPLE_FIELD = new Symbol[TUPLE_count][];
-
-    public Symbol TUPLE_FIELD(int arity, int index) {
-        assert 0 < arity && arity < TUPLE_count: arity;
-        assert 0 < index && index <= arity: arity + " - " + index;
-        if (TUPLE_FIELD[arity][index - 1] == null)
-            TUPLE_FIELD[arity][index - 1] = loadTerm(TUPLE_CLASS[arity],Names.TUPLE_FIELD(index));
-        return TUPLE_FIELD[arity][index - 1];
-    }
-
-    /** the scala.FunctionX classes
-     */
-    public final int  FUNCTION_count = 10;
-    public final Symbol[] FUNCTION_CLASS = new Symbol[FUNCTION_count];
-
-    public Type functionType(Type[] args, Type result) {
-        assert 0 <= args.length && args.length < FUNCTION_count: args.length;
-        args = Type.cloneArray(args, 1);
-        args[args.length - 1] = result;
-	return getType(FUNCTION_CLASS[args.length - 1], args);
-    }
-
-    private final Symbol[] FUNCTION_APPLY = new Symbol[FUNCTION_count];
-
-    public Symbol FUNCTION_APPLY(int arity) {
-        assert 0 <= arity && arity < FUNCTION_count: arity;
-        if (FUNCTION_APPLY[arity] == null)
-            FUNCTION_APPLY[arity] = loadTerm(FUNCTION_CLASS[arity],Names.apply);
-        return FUNCTION_APPLY[arity];
-    }
-
-    /** the scala.PartialFunction class
-     */
-    public final Symbol PARTIALFUNCTION_CLASS;
-
-    public Type partialFunctionType(Type arg, Type result) {
-	return getType(PARTIALFUNCTION_CLASS, new Type[] { arg, result });
-    }
-
-    private Symbol PARTIALFUNCTION_ISDEFINEDAT;
-
-    public Symbol PARTIALFUNCTION_ISDEFINEDAT() {
-        if (PARTIALFUNCTION_ISDEFINEDAT == null)
-            PARTIALFUNCTION_ISDEFINEDAT = loadTerm(PARTIALFUNCTION_CLASS, Names.isDefinedAt);
-        return PARTIALFUNCTION_ISDEFINEDAT;
-    }
-
-    /** the scala.Ref class
-     */
-    public final Symbol REF_CLASS;
-
-    public Type refType(Type element) {
-        return getType(REF_CLASS, element);
-    }
-
+    /** Some scala.Ref methods */
     private Symbol REF_ELEM;
 
     public Symbol REF_ELEM() {
@@ -212,16 +246,70 @@ public class Definitions {
         return REF_ELEM;
     }
 
-    /** the scala.List class
-     */
-    public final Symbol LIST_CLASS;
-    // !!! public final Symbol LIST_NIL_CLASS;
-    // !!! public final Symbol LIST_CONS_CLASS;
+    /** Some scala.TupleX methods */
+    private final Symbol[][] TUPLE_FIELD = new Symbol[TUPLE_COUNT][];
 
-    public Type listType(Type element) {
-        return getType(LIST_CLASS, element);
+    public Symbol TUPLE_FIELD(int arity, int index) {
+        assert 0 < arity && arity < TUPLE_COUNT: arity;
+        assert 0 < index && index <= arity: arity + " - " + index;
+        if (TUPLE_FIELD[arity][index - 1] == null)
+            TUPLE_FIELD[arity][index - 1] = loadTerm(TUPLE_CLASS[arity],Names.TUPLE_FIELD(index));
+        return TUPLE_FIELD[arity][index - 1];
     }
 
+    /** Some scala.FunctionX methods */
+    private final Symbol[] FUNCTION_APPLY = new Symbol[FUNCTION_COUNT];
+
+    public Symbol FUNCTION_APPLY(int arity) {
+        assert 0 <= arity && arity < FUNCTION_COUNT: arity;
+        if (FUNCTION_APPLY[arity] == null)
+            FUNCTION_APPLY[arity] = loadTerm(FUNCTION_CLASS[arity],Names.apply);
+        return FUNCTION_APPLY[arity];
+    }
+
+    /** Some scala.PartialFunction methods */
+    private Symbol PARTIALFUNCTION_ISDEFINEDAT;
+
+    public Symbol PARTIALFUNCTION_ISDEFINEDAT() {
+        if (PARTIALFUNCTION_ISDEFINEDAT == null)
+            PARTIALFUNCTION_ISDEFINEDAT = loadTerm(PARTIALFUNCTION_CLASS, Names.isDefinedAt);
+        return PARTIALFUNCTION_ISDEFINEDAT;
+    }
+
+    /** Some scala.Iterable methods */
+    private Symbol ITERABLE_ELEMENTS;
+
+    public Symbol ITERABLE_ELEMENTS() {
+        if (ITERABLE_ELEMENTS == null)
+            ITERABLE_ELEMENTS = loadTerm(ITERABLE_CLASS, Names.elements);
+        return ITERABLE_ELEMENTS;
+    }
+
+    /** Some scala.Iterator methods */
+    private Symbol ITERATOR_NEXT;
+    private Symbol ITERATOR_HASNEXT;
+
+    public Symbol ITERATOR_NEXT() {
+        if (ITERATOR_NEXT == null)
+            ITERATOR_NEXT = loadTerm(ITERATOR_CLASS, Names.next);
+        return ITERATOR_NEXT;
+    }
+    public Symbol ITERATOR_HASNEXT() {
+        if (ITERATOR_HASNEXT == null)
+            ITERATOR_HASNEXT = loadTerm(ITERATOR_CLASS, Names.hasNext);
+        return ITERATOR_HASNEXT;
+    }
+
+    /** Some scala.Seq methods */
+    private Symbol SEQ_LENGTH;
+
+    public Symbol SEQ_LENGTH() {
+        if (SEQ_LENGTH == null)
+            SEQ_LENGTH = loadTerm(SEQ_CLASS, Names.length);
+        return SEQ_LENGTH;
+    }
+
+    /** Some scala.List methods */
     private Symbol LIST_ISEMPTY;
     private Symbol LIST_HEAD;
     private Symbol LIST_TAIL;
@@ -242,73 +330,7 @@ public class Definitions {
         return LIST_TAIL;
     }
 
-    /** the scala.Iterator class
-     */
-    public final Symbol ITERATOR_CLASS;
-
-    public Type iteratorType(Type element) {
-        return getType(ITERATOR_CLASS, element);
-    }
-
-    private Symbol ITERATOR_NEXT;
-    private Symbol ITERATOR_HASNEXT;
-
-    public Symbol ITERATOR_NEXT() {
-        if (ITERATOR_NEXT == null)
-            ITERATOR_NEXT = loadTerm(ITERATOR_CLASS, Names.next);
-        return ITERATOR_NEXT;
-    }
-    public Symbol ITERATOR_HASNEXT() {
-        if (ITERATOR_HASNEXT == null)
-            ITERATOR_HASNEXT = loadTerm(ITERATOR_CLASS, Names.hasNext);
-        return ITERATOR_HASNEXT;
-    }
-
-    /** the scala.Iterable class
-     */
-    public final Symbol ITERABLE_CLASS;
-
-    public Type iterableType(Type element) {
-        return getType(ITERABLE_CLASS, element);
-    }
-
-    private Symbol ITERABLE_ELEMENTS;
-
-    public Symbol ITERABLE_ELEMENTS() {
-        if (ITERABLE_ELEMENTS == null)
-            ITERABLE_ELEMENTS = loadTerm(ITERABLE_CLASS, Names.elements);
-        return ITERABLE_ELEMENTS;
-    }
-
-    /** the scala.Seq class
-     */
-    public final Symbol SEQ_CLASS;
-
-    public Type seqType(Type element) {
-	return getType(SEQ_CLASS, element);
-    }
-
-    private Symbol SEQ_LENGTH;
-
-    public Symbol SEQ_LENGTH() {
-        if (SEQ_LENGTH == null)
-            SEQ_LENGTH = loadTerm(SEQ_CLASS, Names.length);
-        return SEQ_LENGTH;
-    }
-
-    /** the scala.Array class
-     */
-    public final Symbol ARRAY_CLASS;
-
-    public Type arrayType(Type element) {
-        return getType(ARRAY_CLASS, element);
-    }
-
-    /** the scala.MatchError class
-     */
-    public final Symbol MATCHERROR;
-    public final Symbol MATCHERROR_CLASS;
-
+    /** Some scala.MatchError methods */
     private Symbol MATCHERROR_FAIL;
 
     public Symbol MATCHERROR_FAIL() {
@@ -317,222 +339,146 @@ public class Definitions {
         return MATCHERROR_FAIL;
     }
 
-    /** string concatenation pseudo-methods of classes scala.Any and
-     *  java.lang.String
-     */
-    //public final Symbol ANY_PLUS_STRING;
-    public final Symbol STRING_PLUS_ANY;
+    //########################################################################
+    // Public Fields - Global values
 
+    /** The null value */
+    public final Symbol NULL;
+
+    /** The zero value (a default null for type variables with bound Any) */
+    public final Symbol ZERO;
+
+    /** The universal pattern */
     public final Symbol PATTERN_WILDCARD;
 
-    public Definitions(Global global) {
-        // a hack to make definitions accessible earlier to other
-        // components
-        global.definitions = this;
-        PackageParser pparser = new PackageParser(global);
+    //########################################################################
+    // Public Constructor
 
-        // this is the root value; all top-level functions,
-        // modules etc. are a member of this value
+    /** Initializes this instance. */
+    public Definitions(Global global) {
+        // make definitions accessible earlier to other components
+        global.definitions = this;
+        // force initialization of class Type
+        Type.localThisType.symbol();
+
+        // the root module
         ROOT = TermSymbol.newJavaPackageModule(
-            Names.ROOT, Symbol.NONE, pparser);
+            Names.ROOT, Symbol.NONE, new PackageParser(global));
         ROOT_CLASS = ROOT.moduleClass();
 
-        // the scala class
-        Symbol SCALA_CLASS = getClass(Names.scala);
+        // the scala package
+        Symbol SCALA_PACKAGE = getClass(Names.scala);
 
-        // the scala.ANY classs
-        ANY_CLASS = new ClassSymbol(
-	    Position.NOPOS, Names.Any.toTypeName(), SCALA_CLASS, Modifiers.JAVA);
-        SCALA_CLASS.members().enter(ANY_CLASS);
-        ANY_CLASS.setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), ANY_CLASS));
-        ANY_CLASS.primaryConstructor().setInfo(
-	    Type.MethodType(Symbol.EMPTY_ARRAY, ANY_CLASS.typeConstructor()));
-
-        // the java.lang.OBJECT class
-        JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
-
-        // the primitive types
-        DOUBLE_CLASS = getClass(Names.scala_Double);
-        FLOAT_CLASS = getClass(Names.scala_Float);
-        LONG_CLASS = getClass(Names.scala_Long);
-        INT_CLASS = getClass(Names.scala_Int);
-        CHAR_CLASS = getClass(Names.scala_Char);
-        SHORT_CLASS = getClass(Names.scala_Short);
-        BYTE_CLASS = getClass(Names.scala_Byte);
-        BOOLEAN_CLASS = getClass(Names.scala_Boolean);
-        UNIT_CLASS = getClass(Names.scala_Unit);
-
-        // the scala.ANYREF class
-	ANYREF_CLASS = new AliasTypeSymbol(
-	    Position.NOPOS, Names.AnyRef.toTypeName(),
-	    SCALA_CLASS, Modifiers.JAVA)
-	    .setInfo(JAVA_OBJECT_TYPE());
-        SCALA_CLASS.members().enter(ANYREF_CLASS);
-	ANYREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, JAVA_OBJECT_TYPE()));
-
-        // the scala.OBJECT class
-	OBJECT_CLASS = getClass(Names.scala_Object);
-
-        // the scala.ANYVAL class
+        // the top and bottom classes
+        ANY_CLASS = newClass(SCALA_PACKAGE, Names.Any, Modifiers.JAVA);
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
+	ANYREF_CLASS = newAlias(SCALA_PACKAGE, Names.AnyRef, Modifiers.JAVA);
+        ALLREF_CLASS = newClass(SCALA_PACKAGE, Names.AllRef, 0);
+        ALL_CLASS = newClass(SCALA_PACKAGE, Names.All, 0);
 
-        // the scala.ALL class
-        ALL_CLASS = new ClassSymbol(
-	    Position.NOPOS, Names.All.toTypeName(), SCALA_CLASS, 0);
-        SCALA_CLASS.members().enter(ALL_CLASS);
-        ALL_CLASS.setInfo(Type.compoundType(new Type[]{ANY_TYPE()}, new Scope(), ALL_CLASS));
-        ALL_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALL_CLASS.typeConstructor()));
-
-        // the scala.ALLREF class
-        ALLREF_CLASS = new ClassSymbol(
-	    Position.NOPOS, Names.AllRef.toTypeName(), SCALA_CLASS, 0);
-        SCALA_CLASS.members().enter(ALLREF_CLASS);
-        ALLREF_CLASS.setInfo(Type.compoundType(new Type[]{ANYREF_TYPE()}, new Scope(), ALLREF_CLASS));
-        ALLREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALLREF_CLASS.typeConstructor()));
-
-        // the array class
-        ARRAY_CLASS = getClass(Names.scala_Array);
-
-        // add members to java.lang.Throwable
+        // the java classes
+        JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
         JAVA_THROWABLE_CLASS = getClass(Names.java_lang_Throwable);
-        THROW = new TermSymbol(
-	    Position.NOPOS, Names.throw_, JAVA_THROWABLE_CLASS, Modifiers.FINAL);
-        THROW.setInfo(Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
-        JAVA_THROWABLE_CLASS.members().enter(THROW);
-
-        // add the java.lang.String class to the scala package
         JAVA_STRING_CLASS = getClass(Names.java_lang_String);
-        STRING_CLASS = new AliasTypeSymbol(
-	    Position.NOPOS, Names.String.toTypeName(), SCALA_CLASS, 0)
-	    .setInfo(JAVA_STRING_TYPE());
-        SCALA_CLASS.members().enter(STRING_CLASS);
-	STRING_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_CLASS.typeConstructor()));
 
-        for (int i = 1; i < TUPLE_count; i++) {
+        // the scala value classes
+        UNIT_CLASS = getClass(Names.scala_Unit);
+        BOOLEAN_CLASS = getClass(Names.scala_Boolean);
+        BYTE_CLASS = getClass(Names.scala_Byte);
+        SHORT_CLASS = getClass(Names.scala_Short);
+        CHAR_CLASS = getClass(Names.scala_Char);
+        INT_CLASS = getClass(Names.scala_Int);
+        LONG_CLASS = getClass(Names.scala_Long);
+        FLOAT_CLASS = getClass(Names.scala_Float);
+        DOUBLE_CLASS = getClass(Names.scala_Double);
+
+        // the scala reference classes
+	OBJECT_CLASS = getClass(Names.scala_Object);
+        STRING_CLASS = newAlias(SCALA_PACKAGE, Names.String, 0);
+        REF_CLASS = getClass(Names.scala_Ref);
+        for (int i = 1; i < TUPLE_COUNT; i++) {
             TUPLE_CLASS[i] = getClass(Names.scala_Tuple(i));
             TUPLE_FIELD[i] = new Symbol[i];
         }
-        for (int i = 0; i < FUNCTION_count; i++)
+        for (int i = 0; i < FUNCTION_COUNT; i++)
             FUNCTION_CLASS[i] = getClass(Names.scala_Function(i));
 	PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
-        REF_CLASS = getClass(Names.scala_Ref);
-	LIST_CLASS = getClass(Names.scala_List);
-	ITERATOR_CLASS = getClass(Names.scala_Iterator);
 	ITERABLE_CLASS = getClass(Names.scala_Iterable);
+	ITERATOR_CLASS = getClass(Names.scala_Iterator);
 	SEQ_CLASS = getClass(Names.scala_Seq);
+	LIST_CLASS = getClass(Names.scala_List);
+        ARRAY_CLASS = getClass(Names.scala_Array);
 	MATCHERROR = getModule(Names.scala_MatchError);
-	MATCHERROR_CLASS = getClass(Names.scala_MatchError);
 
-	/*
-        ANY_PLUS_STRING = new TermSymbol(
-	    Position.NOPOS, Names.PLUS, ANY_CLASS, Modifiers.FINAL);
-        ANY_PLUS_STRING.setInfo(
-	    Type.MethodType(
-		new Symbol[]{newParameter(ANY_PLUS_STRING, STRING_TYPE)},
-		STRING_TYPE));
-        ANY_CLASS.members().enter(ANY_PLUS_STRING);
-	*/
+        // initialize generated classes and aliases
+        initClass(ANY_CLASS, Type.EMPTY_ARRAY);
+        initAlias(ANYREF_CLASS, JAVA_OBJECT_TYPE());
+        initClass(ALLREF_CLASS, new Type[]{ANYREF_TYPE()});
+        initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
+        initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
-        STRING_PLUS_ANY = new TermSymbol(
-	    Position.NOPOS, Names.PLUS, JAVA_STRING_CLASS, Modifiers.FINAL);
-        STRING_PLUS_ANY.setInfo(
-	    Type.MethodType(
-		new Symbol[]{newParameter(STRING_PLUS_ANY, ANY_TYPE())},
-		STRING_TYPE()));
-        JAVA_STRING_CLASS.members().enter(STRING_PLUS_ANY);
+        // add members to scala.Any
+	ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
+        ANY_EQEQ     = newTerm(ANY_CLASS, Names.EQEQ        , Modifiers.FINAL);
+        ANY_BANGEQ   = newTerm(ANY_CLASS, Names.BANGEQ      , Modifiers.FINAL);
+        ANY_EQUALS   = newTerm(ANY_CLASS, Names.equals      , 0);
+        ANY_HASHCODE = newTerm(ANY_CLASS, Names.hashCode    , 0);
+        ANY_TOSTRING = newTerm(ANY_CLASS, Names.toString    , 0);
+        // ANY_PLUS  = newTerm(ANY_CLASS, Names.PLUS        , Modifiers.FINAL);
+        ANY_IS       = newTerm(ANY_CLASS, Names.isInstanceOf, Modifiers.FINAL);
+        ANY_AS       = newTerm(ANY_CLASS, Names.asInstanceOf, Modifiers.FINAL);
+        ANY_MATCH    = newTerm(ANY_CLASS, Names.match       , Modifiers.FINAL);
 
-        // add members to class scala.Any
-        MATCH = new TermSymbol(
-	    Position.NOPOS, Names.match, ANY_CLASS, Modifiers.FINAL);
-	Symbol matchTyParam1 = newTypeParameter(MATCH, ANY_TYPE());
-	Symbol matchTyParam2 = newTypeParameter(MATCH, ANY_TYPE());
-        MATCH.setInfo(
+        initMethod(ANY_EQ      , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
+        initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
+        initMethod(ANY_BANGEQ  , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
+        initMethod(ANY_EQUALS  , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
+        initMethod(ANY_HASHCODE, new Type[]{}             , INT_TYPE());
+        initMethod(ANY_TOSTRING, new Type[]{}             , STRING_TYPE());
+        // initMethod(ANY_PLUS , new Type[]{STRING_TYPE()}, STRING_TYPE());
+
+        Symbol[] ANY_IS_TPARAMS = {newTParam(ANY_IS, 0, ANY_TYPE())};
+        ANY_IS.setInfo(Type.PolyType(ANY_IS_TPARAMS, BOOLEAN_TYPE()));
+
+        Symbol[] ANY_AS_TPARAMS = {newTParam(ANY_AS, 0, ANY_TYPE())};
+        ANY_AS.setInfo(Type.PolyType(ANY_AS_TPARAMS,ANY_AS_TPARAMS[0].type()));
+
+	Symbol[] ANY_MATCH_TPARAMS = {
+            newTParam(ANY_MATCH, 0, ANY_TYPE()),
+            newTParam(ANY_MATCH, 1, ANY_TYPE())};
+	Symbol[] ANY_MATCH_VPARAMS = {
+            newVParam(ANY_MATCH, 0, FUNCTION_TYPE(
+                new Type[]{ANY_MATCH_TPARAMS[0].type()},
+                ANY_MATCH_TPARAMS[1].type()))};
+        ANY_MATCH.setInfo(
 	    Type.PolyType(
-		new Symbol[]{matchTyParam1, matchTyParam2},
+		ANY_MATCH_TPARAMS,
 		Type.MethodType(
-		    new Symbol[]{
-			newParameter(
-			    MATCH,
-			    functionType(
-				new Type[]{matchTyParam1.typeConstructor()},
-				matchTyParam2.typeConstructor()))},
-		    matchTyParam2.typeConstructor())));
-        ANY_CLASS.members().enter(MATCH);
+                    ANY_MATCH_VPARAMS,
+                    ANY_MATCH_TPARAMS[1].type())));
 
-        AS = new TermSymbol(
-	    Position.NOPOS, Names.asInstanceOf, ANY_CLASS, Modifiers.FINAL);
-        Symbol tvar = newTypeParameter(AS, ANY_TYPE());
-        AS.setInfo(Type.PolyType(new Symbol[]{tvar}, tvar.type()));
-        ANY_CLASS.members().enter(AS);
+        // add members to java.lang.String
+        JAVA_STRING_PLUS =
+            newTerm(JAVA_STRING_CLASS, Names.PLUS, Modifiers.FINAL);
+        initMethod(JAVA_STRING_PLUS, new Type[]{ANY_TYPE()}, STRING_TYPE());
 
-        IS = new TermSymbol(
-	    Position.NOPOS, Names.isInstanceOf, ANY_CLASS, Modifiers.FINAL);
-        IS.setInfo(Type.PolyType(new Symbol[]{newTypeParameter(IS, ANY_TYPE())},
-				 BOOLEAN_TYPE()));
-        ANY_CLASS.members().enter(IS);
+        // add members to java.lang.Throwable
+        JAVA_THROWABLE_THROW =
+            newTerm(JAVA_THROWABLE_CLASS, Names.throw_, Modifiers.FINAL);
+        JAVA_THROWABLE_THROW.setInfo(
+            Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
 
-        EQEQ = new TermSymbol(
-	    Position.NOPOS, Names.EQEQ, ANY_CLASS, Modifiers.FINAL);
-        EQEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQEQ, ANY_TYPE())},
-				     BOOLEAN_TYPE()));
-        ANY_CLASS.members().enter(EQEQ);
-
-        BANGEQ = new TermSymbol(
-	    Position.NOPOS, Names.BANGEQ, ANY_CLASS, Modifiers.FINAL);
-        BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE())},
-				       BOOLEAN_TYPE()));
-        ANY_CLASS.members().enter(BANGEQ);
-
-        EQUALS = new TermSymbol(
-	    Position.NOPOS, Names.equals, ANY_CLASS, 0);
-        EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, ANY_TYPE())},
-				     BOOLEAN_TYPE()));
-        ANY_CLASS.members().enter(EQUALS);
-
-	EQ = new TermSymbol(
-	    Position.NOPOS, Names.eq, ANY_CLASS, 0);
-        EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, ANY_TYPE())},
-				   BOOLEAN_TYPE()));
-        ANY_CLASS.members().enter(EQ);
-
-        TOSTRING = new TermSymbol(
-	    Position.NOPOS, Names.toString, ANY_CLASS, 0);
-        TOSTRING.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE()));
-        ANY_CLASS.members().enter(TOSTRING);
-
-        HASHCODE = new TermSymbol(
-	    Position.NOPOS, Names.hashCode, ANY_CLASS, 0);
-        HASHCODE.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, INT_TYPE()));
-        ANY_CLASS.members().enter(HASHCODE);
-
-        // add a null value to the root scope
-	NULL = new TermSymbol(
-	    Position.NOPOS, Names.null_, ROOT_CLASS, 0);
-        NULL.setInfo(ALLREF_TYPE());
-        ROOT.members().enter(NULL);
-
-        // add a null value to the root scope
-	ZERO = new TermSymbol(
-	    Position.NOPOS, Names.ZERO, ROOT_CLASS, 0);
-        ZERO.setInfo(ALL_TYPE());
-        ROOT.members().enter(ZERO);
-
-        PATTERN_WILDCARD = new TermSymbol(
-            Position.NOPOS, Names.PATTERN_WILDCARD, Symbol.NONE, 0);
-        PATTERN_WILDCARD.setType(ALL_TYPE());
+        // create global values
+	NULL = newTerm(ROOT_CLASS, Names.null_, 0).setInfo(ALLREF_TYPE());
+	ZERO = newTerm(ROOT_CLASS, Names.ZERO, 0).setInfo(ALL_TYPE());
+        PATTERN_WILDCARD = newTerm(Symbol.NONE, Names.PATTERN_WILDCARD, 0)
+            .setType(ALL_TYPE());
     }
 
-    private Symbol newParameter(Symbol owner, Type tp) {
-	return new TermSymbol(Position.NOPOS, Name.fromString("v"), owner, Modifiers.PARAM)
-	    .setInfo(tp);
-    }
+    //########################################################################
+    // Public Methods
 
-    private Symbol newTypeParameter(Symbol owner, Type bound) {
-	return new AbsTypeSymbol(
-	    Position.NOPOS, Name.fromString("T").toTypeName(), owner, Modifiers.PARAM)
-	    .setInfo(bound);
-    }
-
+    /** Returns the symbol of the module with the given fullname. */
     public Symbol getModule(Name fullname) {
 	Scope scope = ROOT_CLASS.members();
         int i = 0;
@@ -554,6 +500,7 @@ public class Definitions {
         return sym;
     }
 
+    /** Returns the symbol of the class with the given fullname. */
     public Symbol getClass(Name fullname) {
 	Scope scope = ROOT_CLASS.members();
         int i = 0;
@@ -568,20 +515,89 @@ public class Definitions {
 	return sym;
     }
 
+    /** Returns the type of the class with the given fullname. */
     public Type getType(Name fullname) {
 	return getClass(fullname).type();
     }
 
+    //########################################################################
+    // Private Methods
+
+    /** Creates a new class */
+    private Symbol newClass(Symbol owner, Name name, int flags) {
+        name = name.toTypeName();
+        Symbol clasz = new ClassSymbol(Position.NOPOS, name, owner, flags);
+        owner.members().enter(clasz);
+        return clasz;
+    }
+
+    /** Creates a new type alias */
+    private Symbol newAlias(Symbol owner, Name name, int flags) {
+        name = name.toTypeName();
+        Symbol alias = new AliasTypeSymbol(Position.NOPOS, name, owner, flags);
+        owner.members().enter(alias);
+        return alias;
+    }
+
+    /** Creates a new term */
+    private Symbol newTerm(Symbol owner, Name name, int flags) {
+        Symbol method = new TermSymbol(Position.NOPOS, name, owner, flags);
+        if (owner != Symbol.NONE) owner.members().enterOrOverload(method);
+        return method;
+    }
+
+    /** Creates a new type parameter */
+    private Symbol newTParam(Symbol owner, int index, Type bound) {
+        Name name = Name.fromString("T" + index).toTypeName();
+	return new AbsTypeSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
+	    .setInfo(bound);
+    }
+
+    /** Creates a new value parameter */
+    private Symbol newVParam(Symbol owner, int index, Type type) {
+        Name name = Name.fromString("v" + index);
+        return new TermSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
+	    .setInfo(type);
+    }
+
+    /** Initializes the given class */
+    private void initClass(Symbol clasz, Type[] parents) {
+        clasz.setInfo(Type.compoundType(parents, new Scope(), clasz));
+        clasz.primaryConstructor().setInfo(
+            Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
+    }
+
+    /** Initializes the given type alias */
+    private void initAlias(Symbol alias, Type aliased) {
+        alias.setInfo(aliased);
+        alias.primaryConstructor().setInfo(
+            Type.MethodType(Symbol.EMPTY_ARRAY, aliased));
+    }
+
+    /** Initializes the given method */
+    private void initMethod(Symbol method, Type[] vargs, Type result) {
+        Symbol[] vparams = new Symbol[vargs.length];
+        for (int i = 0; i < vargs.length; i++)
+            vparams[i] = newVParam(method, i, vargs[i]);
+        method.setInfo(Type.MethodType(vparams, result));
+    }
+
+    /** Returns the term member of given class with given name. */
     private Symbol loadTerm(Symbol clasz, Name name) {
         Symbol sym = clasz.lookup(name);
         assert sym.isTerm() && !sym.isOverloaded(): clasz+"."+name+" -> "+sym;
         return sym;
     }
 
+    /** Returns the type of given class applied to given type argument. */
     private Type getType(Symbol clasz, Type arg) {
 	return getType(clasz, new Type[] { arg });
     }
+
+    /** Returns the type of given class applied to given type arguments. */
     private Type getType(Symbol clasz, Type[] args) {
         return Type.appliedType(clasz.typeConstructor(), args);
     }
+
+    //########################################################################
 }

@@ -90,7 +90,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
     }
 
     public Type arrayType(Type elemtpe) {
-        return definitions.arrayType(elemtpe);
+        return definitions.ARRAY_TYPE(elemtpe);
     }
 
     public Type methodType(Type[] argtpes, Type restpe, Type[] thrown) {

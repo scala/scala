@@ -594,7 +594,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an instance test with given value and type. */
     public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
-        return mkApplyT_(pos, Select(value, definitions.IS), new Type[]{type});
+        Type[] targs = new Type[]{type};
+        return mkApplyT_(pos, Select(value, definitions.ANY_IS), targs);
     }
     public Tree mkIsInstanceOf(Tree value, Type type) {
         return mkIsInstanceOf(value.pos, value, type);
@@ -602,7 +603,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a cast with given value and type. */
     public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
-        return mkApplyT_(pos, Select(value, definitions.AS), new Type[]{type});
+        Type[] targs = new Type[]{type};
+        return mkApplyT_(pos, Select(value, definitions.ANY_AS), targs);
     }
     public Tree mkAsInstanceOf(Tree value, Type type) {
         return mkAsInstanceOf(value.pos, value, type);
@@ -1018,7 +1020,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	}
         Type[] parentTypes = {
             definitions.OBJECT_TYPE(),
-            definitions.functionType(argtypes, restype) };
+            definitions.FUNCTION_TYPE(argtypes, restype) };
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
         clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
@@ -1049,7 +1051,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
         Type[] parentTypes = {
             definitions.OBJECT_TYPE(),
-            definitions.partialFunctionType(pattype, restype)};
+            definitions.PARTIALFUNCTION_TYPE(pattype, restype)};
 	clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
@@ -1077,7 +1079,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    changeOwner(visitor, prevOwner, meth);
 	    Tree body =
 		mkApplyTV(
-                    Select(Ident(pos, param), definitions.MATCH),
+                    Select(Ident(pos, param), definitions.ANY_MATCH),
                     new Tree[]{mkType(pos, pattype), mkType(pos, restype)},
                     new Tree[]{visitor});
 	    return DefDef(meth, body);

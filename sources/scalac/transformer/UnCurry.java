@@ -88,7 +88,7 @@ public class UnCurry extends OwnerTransformer
 	    }
 	default:
 	    if (tree1.symbol().isDefParameter()) {
-		tree1.type = global.definitions.functionType(
+		tree1.type = global.definitions.FUNCTION_TYPE(
 		    Type.EMPTY_ARRAY, tree1.type.widen());
 		return gen.Apply(gen.Select(tree1, global.definitions.FUNCTION_APPLY(0)));
 	    } else {
@@ -131,7 +131,7 @@ public class UnCurry extends OwnerTransformer
 
 	case ValDef(_, _, Tree tpe, Tree rhs):
 	    if (tree.symbol().isDefParameter()) {
-		Type newtype = global.definitions.functionType(Type.EMPTY_ARRAY, tpe.type);
+		Type newtype = global.definitions.FUNCTION_TYPE(Type.EMPTY_ARRAY, tpe.type);
 		Tree tpe1 = gen.mkType(tpe.pos, newtype);
                 return copy.ValDef(tree, tpe1, rhs).setType(newtype);
 	    } else {
@@ -148,7 +148,7 @@ public class UnCurry extends OwnerTransformer
 	    Type ftype = fn.type;
 	    Tree fn1 = transform(fn);
 	    Tree[] args1 = transformArgs(tree.pos, args, ftype);
-	    if (TreeInfo.methSymbol(fn1) == global.definitions.MATCH &&
+	    if (TreeInfo.methSymbol(fn1) == global.definitions.ANY_MATCH &&
 		!(args1[0] instanceof Tree.Visitor)) {
 		switch (TreeInfo.methPart(fn1)) {
 		case Select(Tree qual, Name name):

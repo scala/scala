@@ -145,7 +145,7 @@ public class Interpreter {
         scalac.Phase current = global.currentPhase; // !!!
         if (!erased) global.currentPhase = global.getFirstPhase();
         Definitions definitions = global.definitions;
-        Type argument = definitions.arrayType(definitions.JAVA_STRING_TYPE());
+        Type argument = definitions.ARRAY_TYPE(definitions.JAVA_STRING_TYPE());
         Type result = definitions.UNIT_TYPE();
         if (erased) argument = argument.erasure();
         if (erased) result = result.fullErasure();

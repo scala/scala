@@ -48,12 +48,12 @@ class CodeFactory extends PatternTool {
 
     /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
       Type SeqTraceType( Type elemType ) {
-          return defs.listType(pairType(defs.INT_TYPE(), elemType));
+          return defs.LIST_TYPE(pairType(defs.INT_TYPE(), elemType));
       }
 
     /**  returns `Iterator[ elemType ]' */
     Type _seqIterType( Type elemType ) {
-        return defs.iteratorType(elemType);
+        return defs.ITERATOR_TYPE(elemType);
     }
 
     /**  returns `<seqObj.elements>' */
@@ -183,7 +183,7 @@ class CodeFactory extends PatternTool {
     }
 
     protected Tree Equals(Tree left, Tree right) {
-        Symbol fun = unit.global.definitions.EQEQ;
+        Symbol fun = unit.global.definitions.ANY_EQEQ;
         return gen.mkApply_V(gen.Select(left, fun), new Tree[]{right});
     }
 
@@ -199,7 +199,7 @@ class CodeFactory extends PatternTool {
 
 
     Type pairType( Type left, Type right ) {
-	return defs.tupleType(new Type[] { left, right } );
+	return defs.TUPLE_TYPE(new Type[] { left, right } );
     }
 
     Tree newPair( Tree left, Tree right ) {

@@ -48,7 +48,7 @@ public class LeftTracerInScala extends TracerInScala {
                                                            .toString() ),
                                          owner,
                                          0)
-            .setType( defs.listType( elementType ) ) ;
+            .setType( defs.LIST_TYPE( elementType ) ) ;
 
         helpMap.put( realVar, helpVar );
 
@@ -65,11 +65,11 @@ public class LeftTracerInScala extends TracerInScala {
                             cf.fresh.newName(Name.fromString( helpName )),
                             owner,
                             0)
-            .setType( defs.listType( pat.type() )) ;
+            .setType( defs.LIST_TYPE( pat.type() )) ;
 
         Tree varDef = gen.ValDef( helpVar,
                                   gen.mkDefaultValue( cf.pos,
-                                                      defs.listType( pat.type() ))
+                                                      defs.LIST_TYPE( pat.type() ))
                                   //cf.ignoreValue( )
                                   );
         helpVarDefs.add( varDef );

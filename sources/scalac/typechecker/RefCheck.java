@@ -613,7 +613,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private Tree toStringMethod(ClassSymbol clazz) {
 	Symbol toStringSym = new TermSymbol(
 	    clazz.pos, Names.toString, clazz, OVERRIDE)
-	    .setInfo(defs.TOSTRING.type());
+	    .setInfo(defs.ANY_TOSTRING.type());
 	clazz.info().members().enter(toStringSym);
 	Tree[] fields = caseFields(clazz);
 	Tree body;
@@ -626,10 +626,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    for (int i = 0; i < fields.length; i++) {
 		String str = (i == fields.length - 1) ? ")" : ",";
 		body = gen.Apply(
-		    gen.Select(body, defs.STRING_PLUS_ANY),
+		    gen.Select(body, defs.JAVA_STRING_PLUS),
 		    new Tree[]{fields[i]});
 		body = gen.Apply(
-		    gen.Select(body, defs.STRING_PLUS_ANY),
+		    gen.Select(body, defs.JAVA_STRING_PLUS),
 		    new Tree[]{gen.mkStringLit(clazz.pos, str)});
 	    }
 	}
@@ -659,7 +659,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Tree cond = gen.TypeApply(
 	    gen.Select(
 		gen.mkRef(clazz.pos, Type.localThisType, equalsParam),
-		defs.IS),
+		defs.ANY_IS),
 	    new Tree[]{gen.mkType(clazz.pos, testtp)});
 
 	Tree thenpart;
@@ -670,7 +670,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree cast = gen.TypeApply(
 		gen.Select(
 		    gen.mkRef(clazz.pos, Type.localThisType, equalsParam),
-		    defs.AS),
+		    defs.ANY_AS),
 		new Tree[]{gen.mkType(clazz.pos, testtp)});
 	    Symbol that1sym = new TermSymbol(clazz.pos, Names.that1, equalsSym, 0)
 		.setType(testtp);
@@ -717,7 +717,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private Tree hashCodeMethod(ClassSymbol clazz) {
 	Symbol hashCodeSym = new TermSymbol(
 	    clazz.pos, Names.hashCode, clazz, OVERRIDE)
-	    .setInfo(defs.HASHCODE.type());
+	    .setInfo(defs.ANY_HASHCODE.type());
 	clazz.info().members().enter(hashCodeSym);
 	Tree[] fields = caseFields(clazz);
 	Symbol getClassMethod = getNullaryMemberMethod(clazz.type(), Names.getClass);

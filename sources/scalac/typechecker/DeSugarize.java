@@ -151,7 +151,7 @@ public class DeSugarize implements Kinds, Modifiers {
     Type meth2fun(Type tp) {
 	switch (tp) {
 	case MethodType(Symbol[] params, Type restype):
-	    return global.definitions.functionType(
+	    return global.definitions.FUNCTION_TYPE(
 		Symbol.type(params), meth2fun(restype));
 	default:
 	    return tp;

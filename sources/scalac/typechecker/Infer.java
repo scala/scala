@@ -556,7 +556,7 @@ public class Infer implements Modifiers, Kinds {
     private Type normalize(Type tp) {
 	switch (tp) {
 	case MethodType(Symbol[] params, Type restype):
-	    return global.definitions.functionType(
+	    return global.definitions.FUNCTION_TYPE(
 		Symbol.type(params), normalize(restype));
 	case PolyType(Symbol[] tparams, Type restype):
 	    if (tparams.length == 0) return normalize(restype);

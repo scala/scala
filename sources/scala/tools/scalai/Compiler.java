@@ -63,10 +63,10 @@ public class Compiler {
 
         SourceFile compiled = new SourceFile("<<compiled code>>", new byte[0]);
 
-        environment.insertFunction(definitions.STRING_PLUS_ANY, Function.StringPlus); // !!!
+        environment.insertFunction(definitions.JAVA_STRING_PLUS, Function.StringPlus); // !!!
         // !!! ANY_PLUS_STRING is commented out in definitions
         // !!! environment.insertFunction(definitions.ANY_PLUS_STRING, Function.StringPlus); // !!!
-        environment.insertFunction(definitions.THROW, Function.Throw);
+        environment.insertFunction(definitions.JAVA_THROWABLE_THROW, Function.Throw);
         // !!! environment.insertFunction(definitions.MATCH, ...);
         // !!! environment.insertFunction(definitions.IS, ...);
         // !!! environment.insertFunction(definitions.AS, ...);
@@ -110,13 +110,13 @@ public class Compiler {
                             Code.Null, Variable.Argument(0))},
                     0),
                 0));
-        any_methods.put(definitions.EQUALS, equals_code);
+        any_methods.put(definitions.ANY_EQUALS, equals_code);
         any_methods.put(equals_method, equals_code);
-        environment.insertFunction(definitions.EQUALS,
+        environment.insertFunction(definitions.ANY_EQUALS,
             Function.JavaMethod(equals_method));
         Override equals_override = Override.empty();
-        equals_override.insert(equals_method).insert(definitions.EQUALS);
-        environment.insertOverride(definitions.EQUALS, equals_override);
+        equals_override.insert(equals_method).insert(definitions.ANY_EQUALS);
+        environment.insertOverride(definitions.ANY_EQUALS, equals_override);
 
         // !!! method java.lang.Object.equals(Object)
         // !!! method java.lang.Object.finalize()
@@ -131,18 +131,18 @@ public class Compiler {
         CodePromise hashCode_code = new CodePromise(
             new CodeContainer(
                 compiled,
-                definitions.HASHCODE,
+                definitions.ANY_HASHCODE,
                 Code.Invoke(
                     Code.Self, Function.HashCode, new Code[0],
                     0),
                 0));
-        any_methods.put(definitions.HASHCODE, hashCode_code);
+        any_methods.put(definitions.ANY_HASHCODE, hashCode_code);
         any_methods.put(hashCode_method, hashCode_code);
-        environment.insertFunction(definitions.HASHCODE,
+        environment.insertFunction(definitions.ANY_HASHCODE,
             Function.JavaMethod(hashCode_method));
         Override hashCode_override = Override.empty();
-        hashCode_override.insert(hashCode_method).insert(definitions.HASHCODE);
-        environment.insertOverride(definitions.HASHCODE, hashCode_override);
+        hashCode_override.insert(hashCode_method).insert(definitions.ANY_HASHCODE);
+        environment.insertOverride(definitions.ANY_HASHCODE, hashCode_override);
 
         // !!! method java.lang.Object.notify()
         // !!! method java.lang.Object.notifyAll()
@@ -156,30 +156,30 @@ public class Compiler {
         CodePromise toString_code = new CodePromise(
             new CodeContainer(
                 compiled,
-                definitions.TOSTRING,
+                definitions.ANY_TOSTRING,
                 Code.Invoke(
                     Code.Self, Function.ToString, new Code[0],
                     0),
                 0));
-        any_methods.put(definitions.TOSTRING, toString_code);
+        any_methods.put(definitions.ANY_TOSTRING, toString_code);
         any_methods.put(toString_method, toString_code);
-        environment.insertFunction(definitions.TOSTRING,
+        environment.insertFunction(definitions.ANY_TOSTRING,
             Function.JavaMethod(toString_method));
         Override toString_override = Override.empty();
-        toString_override.insert(toString_method).insert(definitions.TOSTRING);
-        environment.insertOverride(definitions.TOSTRING, toString_override);
+        toString_override.insert(toString_method).insert(definitions.ANY_TOSTRING);
+        environment.insertOverride(definitions.ANY_TOSTRING, toString_override);
 
         // !!! method java.lang.Object.wait()
         // !!! method java.lang.Object.wait(long)
         // !!! method java.lang.Object.wait(long, int)
 
-        environment.insertFunction(definitions.EQEQ, Function.EqEq);
-        Override eqeq_override = Override.empty().insert(definitions.EQEQ);
-        environment.insertOverride(definitions.EQEQ, eqeq_override);
+        environment.insertFunction(definitions.ANY_EQEQ, Function.EqEq);
+        Override eqeq_override = Override.empty().insert(definitions.ANY_EQEQ);
+        environment.insertOverride(definitions.ANY_EQEQ, eqeq_override);
 
-        environment.insertFunction(definitions.BANGEQ, Function.BangEq);
-        Override bangeq_override = Override.empty().insert(definitions.BANGEQ);
-        environment.insertOverride(definitions.BANGEQ, bangeq_override);
+        environment.insertFunction(definitions.ANY_BANGEQ, Function.BangEq);
+        Override bangeq_override = Override.empty().insert(definitions.ANY_BANGEQ);
+        environment.insertOverride(definitions.ANY_BANGEQ, bangeq_override);
     }
 
     //########################################################################

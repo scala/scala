@@ -184,12 +184,12 @@ public class ExpressionCompiler {
 
     private Code tapply(Tree target, Symbol symbol, Tree[] trees) {
         Code object = object(target);
-        if (symbol == definitions.AS) {
+        if (symbol == definitions.ANY_AS) {
             assert trees.length == 1 : Debug.show(trees);
             // !!! some AS should be kept; they might fail
             return object;
         }
-        if (symbol == definitions.IS) {
+        if (symbol == definitions.ANY_IS) {
             assert trees.length == 1 : Debug.show(trees);
             //assert trees[0].hasSymbol() : trees[0];
             Symbol expect = trees[0].type().symbol();

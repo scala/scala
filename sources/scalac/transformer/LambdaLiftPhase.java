@@ -48,7 +48,7 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
             }
         }
         if ((sym.flags & Modifiers.CAPTURED) != 0)
-            return global.definitions.refType(tp1);
+            return global.definitions.REF_TYPE(tp1);
         else return tp1;
     }
 
