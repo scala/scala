@@ -41,7 +41,7 @@ object Utility {
   def toXML( n:Node ):String = n match {
     case Text( t ) =>
       escape( t );
-    case _:EntityRef =>
+    case _:EntityRef | _:Comment | _:ProcInstr =>
       n.toString();
     case _ =>
       val s = new StringBuffer();
@@ -54,7 +54,7 @@ object Utility {
   def toXML( n:Node, s:StringBuffer ):Unit = n match {
     case Text( t ) =>
       s.append( escape( t ) );
-    case _:EntityRef =>
+    case _:EntityRef | _:Comment | _:ProcInstr =>
       s.append( n.toString() );
     case x:Node => {
       s.append('<');

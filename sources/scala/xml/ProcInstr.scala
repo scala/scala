@@ -16,7 +16,7 @@ package scala.xml;
  * @param  text   text contained in this node, may not contain "?>"
 **/
 
-case class ProcInstr( target:String, text:String ) extends Node {
+case class ProcInstr( target:String, text:Option[String] ) extends Node {
 
   val z:Seq[Char] = target; z match {
     case Seq('X'|'x','M'|'m','L'|'l') =>
@@ -25,9 +25,11 @@ case class ProcInstr( target:String, text:String ) extends Node {
   }
   if( !Utility.isName( target ) )
     throw new IllegalArgumentException(target+" must be an XML Name");
-  else if( text.indexOf("?>" ) != -1 )
-    throw new IllegalArgumentException(text+" may not contain \"?>\"");
-
+  else text match {
+    case Some(txt) => if( txt.indexOf("?>" ) != -1 )
+      throw new IllegalArgumentException(txt+" may not contain \"?>\"");
+    case _ =>
+  }
 
   /** the constant "#PI" */
   final def label    = "#PI";
@@ -41,7 +43,17 @@ case class ProcInstr( target:String, text:String ) extends Node {
   /** hashcode for this PI */
   override def hashCode() = target.hashCode() * 7 + text.hashCode();
 
-  /** returns "<?"+text+"?>" */
-  final override def toString() = "<?"+text+"?>";
-
+  /** returns "<?"+target+(" "+text)?+"?>" */
+  final override def toString() = {
+    val sb = new StringBuffer("<?");
+    sb.append(target);
+    text match {
+      case Some(txt) =>
+        sb.append(' ');
+        sb.append(txt);
+      case _ =>
+    };
+    sb.append("?>");
+    sb.toString()
+  }
 }

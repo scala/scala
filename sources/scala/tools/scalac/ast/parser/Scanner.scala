@@ -1114,26 +1114,76 @@ class Scanner(_unit: Unit) extends TokenData {
     new String( Predef.Array[char]( i.asInstanceOf[char] ))
   }
 
+  /** '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
+   *
+   * see [15]
+   */
+  def xCharData:scala.xml.CharData = {
+    xToken('[');
+    xToken('C');
+    xToken('D');
+    xToken('A');
+    xToken('T');
+    xToken('A');
+    xToken('[');
+    val sb:StringBuffer = new StringBuffer();
+    while (true) {
+      if( ch==']'  &&
+         { sb.append( ch ); xNext; ch == ']' } &&
+         { sb.append( ch ); xNext; ch == '>' } ) {
+        sb.setLength( sb.length() - 2 );
+        xNext;
+        return scala.xml.CharData( sb.toString() );
+      } else sb.append( ch );
+      xNext;
+    }
+    return null; // this cannot happen;
+  };
+
+
   /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
    *
    * see [15]
    */
-  def xComment:String = {
+  def xComment:scala.xml.Comment = {
     val sb:StringBuffer = new StringBuffer();
-    xToken('!');
     xToken('-');
     xToken('-');
     while (true) {
-      xNext;
       if( ch=='-'  && { sb.append( ch ); xNext; ch == '-' } ) {
         sb.setLength( sb.length() - 1 );
         xNext;
         xToken('>');
-        return sb.toString();
+        return scala.xml.Comment( sb.toString() );
       } else sb.append( ch );
+      xNext;
     }
-    return ""; // this cannot happen;
+    return null; // this cannot happen;
   };
+
+  /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
+   *
+   * see [15]
+   */
+  def xProcInstr:scala.xml.ProcInstr = {
+    val sb:StringBuffer = new StringBuffer();
+    val n = xName;
+    if( xIsSpace ) {
+      xSpace;
+      while( true ) {
+        if( ch=='?' && { sb.append( ch ); xNext; ch == '>' } ) {
+          sb.setLength( sb.length() - 1 );
+          xNext;
+          return scala.xml.ProcInstr( n.toString(), Some(sb.toString()) );
+        } else
+          sb.append( ch );
+        xNext;
+      }
+    };
+    xToken('?');
+    xToken('>');
+   scala.xml.ProcInstr( n.toString(), None );
+  }
 
   /** munch expected XML token, report syntax error for unexpected
   */

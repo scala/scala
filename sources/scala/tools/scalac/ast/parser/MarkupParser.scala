@@ -34,7 +34,12 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   val  _append = Name.fromString("append");
   val  _collection = Name.fromString("collection");
   val  _xml = Name.fromString("xml");
+  val  _Comment = Name.fromString("Comment");
+  val  _CharData = Name.fromString("CharData");
   val  _Node = Name.fromString("Node");
+  val  _None = Name.fromString("None");
+  val  _Some = Name.fromString("Some");
+  val  _ProcInstr = Name.fromString("ProcInstr");
   val  _Text = Name.fromString("Text");
   val  _EntityRef = Name.fromString("EntityRef");
 
@@ -53,6 +58,14 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   private def _scala_Seq( pos: int ) =
     p.convertToTypeId( _scala( pos, _Seq ));
 
+
+  private def _scala_None( pos: int ) =
+    _scala( pos, _None ) ;
+
+  private def _scala_Some( pos: int ) =
+    p.convertToConstr( _scala( pos, _Some ));
+
+
   private def _string( pos: int ) =
     p.convertToTypeId( make.Ident( pos, _String ) );
 
@@ -62,11 +75,22 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   private def _scala_xml_Node( pos: int ) =
     _scala_xml( pos, _Node );
 
-  private def _scala_xml_Text( pos: int ) =
-    p.convertToConstr( _scala_xml( pos, _Text ));
 
   private def _scala_xml_EntityRef( pos: int ) =
     p.convertToConstr( _scala_xml( pos, _EntityRef ));
+
+  private def _scala_xml_Comment( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _Comment ));
+
+  private def _scala_xml_CharData( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _CharData ));
+
+  private def _scala_xml_ProcInstr( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _ProcInstr ));
+
+  private def _scala_xml_Text( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _Text ));
+
 
   private def _scala_collection( pos: int, name: Name ) =
     make.Select( pos, _scala( pos, _collection ), name );
@@ -153,12 +177,65 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   def makeText( pos: int, txt:String ):Tree =
     makeText( pos, gen.mkStringLit( pos, txt ));
 
+  // create
+  def makeComment( pos: int, comment:scala.xml.Comment ):Tree =
+    makeComment( pos, gen.mkStringLit( pos, comment.text ));
+
+  // create
+  def makeCharData( pos: int, charData:scala.xml.CharData ):Tree =
+    makeCharData( pos, gen.mkStringLit( pos, charData.text ));
+
+  // create scala.xml.Text here <: scala.xml.Node
+  def makeProcInstr( pos: int, procInstr:scala.xml.ProcInstr ):Tree =
+    procInstr.text match {
+      case Some(txt) =>
+        makeProcInstr( pos,
+                      gen.mkStringLit( pos, procInstr.target ),
+                      makeSome( pos, gen.mkStringLit( pos, txt )));
+      case _ =>
+        makeProcInstr( pos,
+                      gen.mkStringLit( pos, procInstr.target ),
+                      makeNone( pos ));
+    }
+
+  def makeNone( pos: int ):Tree = _scala_None( pos );
+
+  def makeSome( pos: int, txt:Tree ):Tree = {
+    val constr = make.Apply( pos,
+                           _scala_Some( pos ),
+                           Predef.Array[Tree] ( txt ));
+    make.New( pos, constr );
+  }
+
+
   def makeText( pos: int, txt:Tree ):Tree = {
     val constr = make.Apply( pos,
                            _scala_xml_Text( pos ),
                            Predef.Array[Tree] ( txt ));
     make.New( pos, constr );
   }
+
+  def makeCharData( pos: int, txt:Tree ):Tree = {
+    val constr = make.Apply( pos,
+                           _scala_xml_CharData( pos ),
+                           Predef.Array[Tree] ( txt ));
+    make.New( pos, constr );
+  }
+
+  def makeComment( pos: int, txt:Tree ):Tree = {
+    val constr = make.Apply( pos,
+                           _scala_xml_Comment( pos ),
+                            Predef.Array[Tree] ( txt ));
+    make.New( pos, constr );
+  }
+
+  def makeProcInstr( pos: int, target:Tree, txt:Tree ):Tree = {
+    val constr = make.Apply( pos,
+                           _scala_xml_ProcInstr( pos ),
+                            Predef.Array[Tree] ( target, txt ));
+    make.New( pos, constr );
+  }
+
 
   def makeXMLpat(pos:int, n:Name, args:Array[Tree]):Tree =
     mkXML(pos, true, gen.mkStringLit( pos, n.toString() ), args);
@@ -319,10 +396,11 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
    *  the caller has to resynchronize with s.token = EMPTY; s.nextToken;
    */
   def xExpr:Tree = {
-    val pos = s.pos;
+    var pos = s.pos;
     val Tuple2( elemName, attrMap ) = xTag;
     if( s.ch == '/' ) { // empty element
-      s.xToken('/'); s.xToken('>');
+      s.xToken('/');
+      s.xToken('>');
       makeXML( pos, elemName, Tree.EMPTY_ARRAY, attrMap );
     } else { // handle content
       s.xToken('>');
@@ -332,14 +410,22 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
         if( s.xScalaBlock ) {
           ts.append( xScalaExpr );
         } else {
+          pos = s.pos;
           s.ch match {
-
             case '<' => // another tag
               s.xNext;
               s.ch match {
                 case '/' => exit = true;            // end tag
-                case '!' => val _ = s.xComment;
-                case _   => ts.append( xExpr ); // parse child
+                case '!' =>
+                  s.xNext;
+                  if( '[' == s.ch )                 // CDATA
+                    ts.append( makeCharData( pos, s.xCharData ));
+                  else                              // comment
+                    ts.append( makeComment( pos, s.xComment ));
+                case '?' =>                         // PI
+                  s.xNext;
+                  ts.append( makeProcInstr( pos, s.xProcInstr ));
+                case _   => ts.append( xExpr );     // child
               }
 
             case '{' =>
