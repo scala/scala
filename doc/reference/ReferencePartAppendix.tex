@@ -1,0 +1,203 @@
+\appendix
+\chapter{Scala Syntax Summary}
+
+The lexical syntax of Scala is given by the following grammar in EBNF
+form.
+
+\begin{lstlisting}
+  upper          ::=  `A' | $\ldots$ | `Z' | `$\Dollar$' | `_'
+  lower          ::=  `a' | $\ldots$ | `z'
+  letter         ::=  upper | lower
+  digit          ::=  `0' | $\ldots$ | `9'
+  special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
+
+  op             ::=  special {special} 
+  varid          ::=  lower {letter | digit} [`_' [id]]
+  id             ::=  upper {letter | digit} [`_' [id]]
+                   | varid
+                   | op
+                   | `\'stringLit
+
+  intLit         ::=  $\mbox{\rm\em ``as in Java''}$
+  floatLit       ::=  $\mbox{\rm\em ``as in Java''}$
+  charLit        ::=  $\mbox{\rm\em ``as in Java''}$
+  stringLit      ::=  $\mbox{\rm\em ``as in Java''}$
+  symbolLit      ::= `\'' id
+
+  comment        ::=  `/*' ``any sequence of characters'' `*/'
+                   |  `//' `any sequence of characters up to end of line''
+\end{lstlisting}
+
+The context-free syntax of Scala is given by the following EBNF
+grammar.
+
+\begin{lstlisting}
+  Literal        ::=  intLit
+                   |  floatLit
+                   |  charLit
+                   |  stringLit
+                   |  symbolLit
+                   |  true
+                   |  false
+                   |  null
+
+  StableId       ::=  id
+                   |  Path `.' id
+  Path           ::=  StableId
+                   |  [id `.'] this
+                   |  [id '.'] super [`[' id `]']`.' id
+
+  Type           ::=  Type1 `=>' Type
+                   |  `(' [Types] `)' `=>' Type
+                   |  Type1
+  Type1          ::=  SimpleType {with SimpleType} [Refinement]
+  SimpleType     ::=  SimpleType TypeArgs
+                   |  SimpleType `#' id
+                   |  StableId
+                   |  Path `.' type
+                   |  `(' Type ')'
+  TypeArgs        ::=  `[' Types `]'
+  Types           ::=  Type {`,' Type}
+  Refinement      ::=  `{' [RefineStat {`;' RefineStat}] `}'
+  RefineStat      ::=  Dcl
+                    |  type TypeDef {`,' TypeDef}
+                    |
+
+  Exprs           ::=  Expr {`,' Expr}
+  Expr            ::=  Bindings `=>' Expr
+                    |  Expr1
+  Expr1           ::=  if `(' Expr1 `)' Expr [[`;'] else Expr]
+                    |  try `{' Block `}' [catch Expr] [finally Expr]
+                    |  do Expr [`;'] while `(' Expr ')'
+                    |  for `(' Enumerators `)' (do | yield) Expr
+                    |  return [Expr]
+                    |  throw Expr
+                    |  [SimpleExpr `.'] id `=' Expr
+                    |  SimpleExpr ArgumentExprs `=' Expr
+                    |  PostfixExpr [`:' Type1]
+  PostfixExpr     ::=  InfixExpr [id]
+  InfixExpr       ::=  PrefixExpr
+                    |  InfixExpr id PrefixExpr
+  PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
+  SimpleExpr      ::=  Literal
+                    |  Path
+                    |  `(' [Expr] `)'
+                    |  BlockExpr
+                    |  new Template 
+                    |  SimpleExpr `.' id 
+                    |  SimpleExpr TypeArgs
+                    |  SimpleExpr ArgumentExprs
+  ArgumentExprs    ::=  `(' [Exprs] ')'
+                    |  BlockExpr
+  BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
+                    |  `{' Block `}'
+  Block           ::=  {BlockStat `;'} [ResultExpr]
+  BlockStat       ::=  Import
+                    |  Def
+                    |  {LocalModifier} ClsDef
+                    |  Expr1
+                    |
+  ResultExpr      ::=  Expr1
+                    |  Bindings `=>' Block
+
+  Enumerators     ::=  Generator {`;' Enumerator}
+  Enumerator      ::=  Generator
+                    |  Expr
+  Generator       ::=  val Pattern1 `<-' Expr
+
+  CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
+
+  Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
+
+  Pattern         ::=  Pattern1 { `|' Pattern1 }
+  Pattern1        ::=  varid `:' Type
+                    |  `_' `:' Type
+                    |  Pattern2
+  Pattern2        ::=  [varid `@'] Pattern3
+  Pattern3        ::=  SimplePattern [ '*' | '?' | '+' ]
+                    |  SimplePattern { id SimplePattern }
+  SimplePattern   ::=  `_'
+                    |  varid
+                    |  Literal
+                    |  StableId [ `(' [Patterns] `)' ]
+                    |  `(' [Patterns] `)'
+  Patterns        ::=  Pattern {`,' Pattern}
+
+  TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
+  FunTypeParamClause ::=  `[' TypeDcl {`,' TypeDcl} `]'
+  TypeParam       ::=  [`+' | `-'] TypeDcl
+  ParamClause     ::=  `(' [Param {`,' Param}] `)'
+  Param           ::=  [def] id `:' Type [`*']
+  Bindings        ::=  id [`:' Type1]
+                    |  `(' Binding {`,' Binding `)'
+  Binding         ::=  id [`:' Type]
+
+  Modifier        ::=  LocalModifier
+                    |  private
+                    |  protected
+                    |  override 
+  LocalModifier   ::=  abstract
+                    |  final
+                    |  sealed
+
+  Template        ::=  Constr {`with' Constr} [TemplateBody]
+  TemplateBody    ::=  `{' [TemplateStat {`;' TemplateStat}] `}'
+  TemplateStat    ::=   Import
+                    |  {Modifier} Def
+                    |  {Modifier} Dcl
+                    |  Expr
+                    |
+
+  Import          ::=  import ImportExpr {`,' ImportExpr}
+  ImportExpr      ::=  StableId `.' (id | `_' | ImportSelectors)
+  ImportSelectors ::=  `{' {ImportSelector `,'} 
+                       (ImportSelector | `_') `}'
+  ImportSelector  ::=  id [`=>' id | `=>' `_']
+
+  Dcl             ::=  val ValDcl {`,' ValDcl}
+                    |  var VarDcl {`,' VarDcl}
+                    |  def FunDcl {`,' FunDcl}
+                    |  type TypeDcl {`,' TypeDcl}
+  ValDcl          ::=  id `:' Type
+  VarDcl          ::=  id `:' Type
+  FunDcl          ::=  id [FunTypeParamClause] {ParamClause} `:' Type
+  TypeDcl         ::=  id [`>:' Type] [`<:' Type]
+
+  Def             ::=  val PatDef {`,' PatDef}
+                    |  var VarDef {`,' VarDef}
+                    |  def FunDef {`,' FunDef}
+                    |  type TypeDef {`,' TypeDef}
+                    |  ClsDef
+  PatDef          ::=  Pattern `=' Expr
+  VarDef          ::=  id [`:' Type] `=' Expr
+                    |  id `:' Type `=' `_'
+  FunDef          ::=  id [FunTypeParamClause] {ParamClause} 
+                       [`:' Type] `=' Expr
+                    |  this ParamClause `=' ConstrExpr
+  TypeDef         ::=  id [TypeParamClause] `=' Type
+  ClsDef          ::=  ([case] class | trait) ClassDef {`,' ClassDef}
+                    |  [case] object ObjectDef {`,' ObjectDef}
+  ClassDef        ::=  id [TypeParamClause] [ParamClause] 
+                       [`:' SimpleType] ClassTemplate
+  ObjectDef       ::=  id [`:' SimpleType] ClassTemplate
+  ClassTemplate   ::=  extends Template
+                    |  TemplateBody
+                    |
+  ConstrExpr      ::=  this ArgumentExprs
+                    |  `{' this ArgumentExprs {`;' BlockStat} `}'
+
+  CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
+  TopStat         ::=  {Modifier} ClsDef
+                    |  Import
+                    |  Packaging
+                    |
+  Packaging       ::=  package QualId `{' {TopStat `;'} TopStat `}'
+  QualId          ::=  id {`.' id}
+\end{lstlisting}
+
+\chapter{Implementation Status}
+
+\input{ImplementationStatus}
+
+\end{document}
+
