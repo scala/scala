@@ -1467,42 +1467,6 @@ public class TermSymbol extends Symbol {
         return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | JAVA));
     }
 
-    public TermSymbol makeModule(ClassSymbol clazz) {
-        flags |= MODUL | FINAL;
-        this.clazz = clazz;
-        clazz.setModule(this);
-        setInfo(clazz.typeConstructor());
-        return this;
-    }
-
-    public TermSymbol makeModule() {
-        ClassSymbol clazz = new ClassSymbol(
-            pos, name.toTypeName(), owner(), flags | MODUL | FINAL);
-        clazz.primaryConstructor().setInfo(
-            Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
-        return makeModule(clazz);
-    }
-
-    /** Constructor for companion modules to classes, which need to be completed.
-     */
-    public static TermSymbol newCompanionModule(Symbol clazz, int flags, Type.LazyType parser) {
-        TermSymbol sym = new TermSymbol(
-            Position.NOPOS, clazz.name.toTermName(), clazz.owner(), flags | STABLE)
-            .makeModule();
-        sym.clazz.setInfo(parser);
-        return sym;
-    }
-
-    /** Java package module constructor
-     */
-    public static TermSymbol newJavaPackageModule(Name name, Symbol owner, Type.LazyType parser) {
-        TermSymbol sym = new TermSymbol(Position.NOPOS, name, owner, JAVA | PACKAGE)
-            .makeModule();
-        sym.clazz.flags |= SYNTHETIC;
-        sym.clazz.setInfo(parser != null ? parser : Type.compoundType(Type.EMPTY_ARRAY, new Scope(), sym));
-        return sym;
-    }
-
     /** Dummy symbol for template of given class
      */
     public static Symbol newLocalDummy(Symbol clazz) {
@@ -1524,13 +1488,7 @@ public class TermSymbol extends Symbol {
      */
     public Symbol cloneSymbol(Symbol owner) {
         assert !isPrimaryConstructor() : Debug.show(this);
-        TermSymbol other;
-        if (isModule()) {
-            other = new TermSymbol(pos, name, owner, flags).makeModule();
-        } else {
-            other = new TermSymbol(pos, name, owner, flags);
-            other.clazz = clazz;
-        }
+        TermSymbol other = new TermSymbol(pos, name, owner, flags, 0, clazz);
         other.setInfo(info());
         return other;
     }
@@ -1858,22 +1816,6 @@ public class ClassSymbol extends TypeSymbol {
         }
     }
 
-    /** Constructor for classes to load as source files
-     */
-    public ClassSymbol(Name name, Symbol owner, SourceCompleter parser) {
-        this(Position.NOPOS, name, owner, 0);
-        this.module = TermSymbol.newCompanionModule(this, 0, parser);
-        this.setInfo(parser);
-    }
-
-    /** Constructor for classes to load as class files.
-     */
-    public ClassSymbol(Name name, Symbol owner, SymbolLoader parser) {
-        this(Position.NOPOS, name, owner, JAVA);
-        this.module = TermSymbol.newCompanionModule(this, JAVA, parser);
-        this.setInfo(parser);
-    }
-
     /** Creates the root class. */
     public static Symbol newRootClass(PackageParser parser) {
         int pos = Position.NOPOS;
@@ -1933,10 +1875,6 @@ public class ClassSymbol extends TypeSymbol {
     public Symbol dualClass() {
         return dual;
     }
-
-    /** Set module; only used internally from TermSymbol
-     */
-    void setModule(Symbol module) { this.module = module; }
 
     public Type thisType() {
         Global global = Global.instance;
