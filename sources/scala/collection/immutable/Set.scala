@@ -38,7 +38,7 @@ trait Set[A] with scala.collection.Set[A] {
         res;
     }
 
-    /** <code>-=</code> can be used to remove a single element from
+    /** <code>-</code> can be used to remove a single element from
      *  a set.
      */
      def -(elem: A): Set[A];

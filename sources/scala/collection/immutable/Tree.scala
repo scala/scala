@@ -124,13 +124,14 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
   *  @param   key        the key
   *  @return true, iff there is a mapping for key in this map
   */
-   def is_defined(key:KEY) = tree.is_defined(key);
+  def is_defined(key:KEY) = tree.is_defined(key);
 
 
   /**
   *   A new tree with the entry added is returned,
   *   assuming that key is <emph>not</emph> in the tree.
-  */  def add(key:KEY,entry:Entry):This = {
+  */
+  def add(key:KEY,entry:Entry):This = {
     val newSize = size+1;
     New(newSize,
 	tree.insert(key,
@@ -149,6 +150,8 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
   }
 
 
+  /** Removes the key from the tree.
+  */
   def delete_any(key:KEY) =
     if(is_defined(key)) delete(key) else
       // TODO: Avoid this creation by convincing the type system that this has type This.
@@ -225,33 +228,33 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
     }
 
     def is_defined(key:KEY):Boolean = {
-      if(order.lt(key,entryKey(value))) smaller.is_defined(key)
-      else if(order.gt(key,entryKey(value))) bigger.is_defined(key)
+      if(order.<(key,entryKey(value))) smaller.is_defined(key)
+      else if(order.>(key,entryKey(value))) bigger.is_defined(key)
       else true;
     }
 
     def get(key:KEY):Option[Entry] =
-      if (order.lt(key,entryKey(value))) smaller.get(key);
-      else if (order.gt(key,entryKey(value))) bigger.get(key);
+      if (order.<(key,entryKey(value))) smaller.get(key);
+      else if (order.>(key,entryKey(value))) bigger.get(key);
 	else Some(value);
 
     def apply(key:KEY):Entry =
-      if (order.lt(key,entryKey(value))) smaller.apply(key);
-	else if (order.gt(key,entryKey(value))) bigger.apply(key);
+      if (order.<(key,entryKey(value))) smaller.apply(key);
+	else if (order.>(key,entryKey(value))) bigger.apply(key);
 	else value;
 
     def update(key:KEY, newValue:Entry):aNode =
-      if (order.lt(key,entryKey(value)))
+      if (order.<(key,entryKey(value)))
 	GBNode(value, smaller.update(key,newValue), bigger);
-      else if (order.gt(key,entryKey(value)))
+      else if (order.>(key,entryKey(value)))
 	GBNode(value, smaller, bigger.update(key,newValue));
       else
 	GBNode(newValue, smaller, bigger);
 
     def insert(key:KEY, newValue:Entry, s:int):anInsertTree = {
-      if(order.lt(key,entryKey(value)))
+      if(order.<(key,entryKey(value)))
 	smaller.insert(key, newValue, div2(s)).insert_left(value,bigger);
-      else if(order.gt(key,entryKey(value)))
+      else if(order.>(key,entryKey(value)))
 	bigger.insert(key, newValue, div2(s)).insert_right(value,smaller);
       else error("Key exists" + key);
     }
@@ -265,10 +268,10 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
 
 
     def delete(key:KEY):aNode = {
-      if (order.lt(key,entryKey(value)))
+      if (order.<(key,entryKey(value)))
 	GBNode(value, smaller.delete(key), bigger);
       else
-	if (order.gt(key,entryKey(value)))
+	if (order.>(key,entryKey(value)))
 	  GBNode(value, smaller, bigger.delete(key));
 	else
 	  smaller.merge(bigger)
@@ -357,8 +360,6 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
 
 } // End of class Tree...
 
-case class Info(height:int, size:int);
-
 abstract class InsertTree[KEY,Entry]() {
   type aNode = GBTree[KEY,Entry];
   type anInsertTree = InsertTree[KEY,Entry];
@@ -368,10 +369,17 @@ abstract class InsertTree[KEY,Entry]() {
   def node:aNode;
 }
 
+/**
+*  GBTree is an internal class used by Tree.
+*/
+
 abstract class GBTree[KEY,Entry] {
   type aNode = GBTree[KEY,Entry];
   type anInsertTree = InsertTree[KEY,Entry];
 
+  /** Calculates 2^h, and size, where h is the height of the tree
+  *   and size is the number of nodes in the tree.
+  */
   def count:Info;
   def is_defined(Key:KEY):Boolean;
   def get(key:KEY):Option[Entry];
@@ -384,6 +392,9 @@ abstract class GBTree[KEY,Entry] {
   def merge(t:aNode):aNode;
   def take_smallest:Pair[Entry,aNode];
   def balance(s:int):GBTree[KEY,Entry];
+
+  case class Info(height:int, size:int);
+
 
 }
 

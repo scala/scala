@@ -5,7 +5,7 @@ import scala.collection.immutable.Order;
 
 object Test with Executable {
     val intOrder =
-	new Order((x:int,y:int) => x < y, (x:int,y:int) => x == y);
+	Order.make((x:int,y:int) => x < y);
 
     test1();
     test2();

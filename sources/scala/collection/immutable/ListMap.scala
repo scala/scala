@@ -33,6 +33,8 @@ object ListMap {
  *  @version 1.0, 09/07/2003
  */
 class ListMap[A, B] with Map[A, B] {
+  /** A factory to create empty maps of the same type of keys.
+  */
   val factory = new ListMapFactory[A];
 
   /** Returns the number of mappings in this map.

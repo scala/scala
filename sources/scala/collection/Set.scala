@@ -25,10 +25,10 @@ package scala.collection;
  */
 trait Set[A] with Function1[A, Boolean] with Iterable[A] {
 
-	/** Returns the number of elements in this set.
-	 *
-	 *  @return number of set elements.
-	 */
+    /** Returns the number of elements in this set.
+    *
+    *  @return number of set elements.
+    */
     def size: Int;
 
     /** Checks if this set contains element <code>elem</code>.

@@ -20,21 +20,39 @@ class TreeMapFactory[KEY](order:Order[KEY]) extends MapFactory[KEY] {
  */
  class TreeMap[KEY,VALUE](order:Order[KEY]) extends Tree[KEY,Pair[KEY,VALUE]](order) with Map[KEY, VALUE] {
    override type This = TreeMap[KEY,VALUE];
+   /** A factory to create empty maps of the same type of keys.
+   */
    val factory = new TreeMapFactory[KEY](order);
+
+  /** Returns the key of an entry.
+  *   This method has to be defined by concrete implementations
+  *   of the class.
+  */
    override def entryKey(entry:Pair[KEY,VALUE]) = entry._1;
 
+   /** Creates a new TreeMap from a GBTree and its size. */
    protected def New(sz:Int,t:aNode):This =
      new TreeMap[KEY,VALUE](order) {
        override def size=sz;
        override protected val tree:aNode=t;
      }
 
+   /**
+   *   A new TreeMap with the entry added is returned,
+   *   if key is <emph>not</emph> in the TreeMap, otherwise
+   *   the key is updated with the new entry.
+   */
    def update(key:KEY, value:VALUE) = update_or_add(key,Pair(key,value));
 
+   /**
+   *   A new TreeMap with the entry added is returned,
+   *   assuming that key is <emph>not</emph> in the TreeMap.
+   */
    def insert(key:KEY,value:VALUE) = add(key,Pair(key,value));
+
+   /** Removes the key from the TreeMap.
+   */
    def -(key:KEY) = delete_any(key);
-
-
 
    /** Check if this map maps <code>key</code> to a value and return the
    *  value if it exists.
@@ -68,9 +86,20 @@ class TreeMapFactory[KEY](order:Order[KEY]) extends MapFactory[KEY] {
    */
    override def toList:List[Pair[KEY,VALUE]] = tree.toList(scala.Nil);
 
-   def elements:Iterator[Pair[KEY,VALUE]] = entries;
+   /** Creates a new iterator over all elements contained in this
+   *  object.
+   *
+   *  @return the new iterator
+   */
+    def elements:Iterator[Pair[KEY,VALUE]] = entries;
 
 
+   /** Compares two maps structurally; i.e. checks if all mappings
+   *  contained in this map are also contained in the other map,
+   *  and vice versa.
+   *
+   *  @return    true, iff both maps contain exactly the same mappings.
+   */
    override def equals(obj: Any): Boolean =
      if (obj.isInstanceOf[scala.collection.Map[KEY, VALUE]]) {
        val that = obj.asInstanceOf[scala.collection.Map[KEY, VALUE]];
