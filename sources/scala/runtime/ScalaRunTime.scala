@@ -25,7 +25,7 @@ object ScalaRunTime {
 
     def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
       if (exception == null)
-	result.asInstanceOf[b]
+	result.asInstanceOf$erased[b]
       // !!! else if (exception is LocalReturn)
       // !!!   // ...
       else if (handler isDefinedAt exception)
@@ -35,7 +35,7 @@ object ScalaRunTime {
 
     def Finally(handler: Unit): a =
       if (exception == null)
-        result.asInstanceOf[a]
+        result.asInstanceOf$erased[a]
       else
         throw exception;
   }

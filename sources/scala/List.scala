@@ -22,7 +22,7 @@ object List {
    *  @param xs the elements to put in the list
    *  @return the list containing elements xs.
    */
-  def apply[A](xs: A*): List[A] = xs.asInstanceOf[List[A]];
+  def apply[A](xs: A*): List[A] = xs.asInstanceOf$erased[List[A]];
 
   /** Create a sorted list of all integers in a range.
    *
