@@ -59,6 +59,8 @@ symtab/Symbol.java
 symtab/Type.java
 symtab/TypeTags.java
 
+transformer/ExplicitOuterClasses.java
+transformer/ExplicitOuterClassesPhase.java
 transformer/LambdaLift.java
 transformer/LambdaLiftPhase.java
 transformer/OwnerTransformer.java

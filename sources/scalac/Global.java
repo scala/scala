@@ -180,8 +180,8 @@ public class  Global {
         phases.add(PHASE.TRANSMATCH);
 	*/
         //phases.add(PHASE.LAMBDALIFT);
-	/*
         phases.add(PHASE.EXPLICITOUTER);
+	/*
         phases.add(PHASE.ADDACCESSORS);
         phases.add(PHASE.ADDINTERFACES);
         phases.add(PHASE.EXPANDMIXIN);
