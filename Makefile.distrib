@@ -186,6 +186,7 @@ install-addons			:
 IA_CONFIG_PREFIX	 = $(PROJECT_CONFIGDIR)/ia
 IA_CONFIG_IMAGESDIR	 = $(IA_CONFIG_PREFIX)/images
 IA_CONFIG_LOCALESDIR	 = $(IA_CONFIG_PREFIX)/locales
+IA_CONFIG_CUSTOMCODEDIR	 = $(IA_CONFIG_PREFIX)/CustomCode
 
 IA_PROJECTFILE		 = $(IA_CONFIG_PREFIX)/$(PROJECT_NAME).iap_xml
 IA_CUSTOMFILE	 	 = custom
@@ -193,6 +194,7 @@ IA_LICENSEFILE		 = LICENSE
 
 IA_BUILD_PREFIX		 = /tmp/IA_Build_$(PROJECT_NAME)
 IA_BUILD_IMAGESDIR	 = $(IA_BUILD_PREFIX)/images
+IA_BUILD_CUSTOMCODEDIR	 = $(IA_BUILD_PREFIX)/CustomCode
 IA_BUILD_LOCALESDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)locales
 IA_BUILD_ARCHIVE_TGZ	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).tar.gz
 IA_BUILD_ARCHIVE_ZIP	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).zip
@@ -204,6 +206,11 @@ ia-build		:
 	$(RM) -r $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 644 -p $(IA_PROJECTFILE) $(IA_BUILD_PREFIX)
+	$(INSTALL) -m 755 -d $(IA_BUILD_CUSTOMCODEDIR)
+	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/* -type f`; do \
+	    if [ -z "$$file" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_CUSTOMCODEDIR); \
+	done
 	$(INSTALL) -m 755 -d $(IA_BUILD_LOCALESDIR)
 	@for locale in "" `ls -d $(IA_CONFIG_LOCALESDIR)/?? | $(XARGS) -n 1 $(BASENAME)`; do \
 	    if [ -z "$$locale" ]; then continue; fi; \
