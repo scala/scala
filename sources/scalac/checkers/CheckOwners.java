@@ -103,8 +103,8 @@ public class CheckOwners extends Checker {
 		      Tree tpe,
                       Template impl): {
             check(tree);
-            traverse(tparams, tree.symbol());
-            traverse(vparams, tree.symbol());
+            traverse(tparams, tree.symbol().constructor());
+            traverse(vparams, tree.symbol().constructor());
 	    traverse(tpe);
             traverse(impl, tree.symbol());
         } break;
@@ -112,7 +112,7 @@ public class CheckOwners extends Checker {
         case ModuleDef(int mods, Name name, Tree tpe, Template impl): {
             check(tree);
             traverse(tpe);
-            traverse(impl, tree.symbol());
+            traverse(impl, tree.symbol().moduleClass());
         } break;
 
         case DefDef(int mods,
