@@ -204,6 +204,11 @@ public class SymbolDebugger implements Debugger {
             buffer.append('#');
             buffer.append(Global.instance.uniqueID.id(symbol));
         }
+        if (symbol.isConstructor()) {
+            buffer.append('(');
+            buffer.append(symbol.constructorClass().name);
+            buffer.append(')');
+        }
     }
 
     //########################################################################
