@@ -11,7 +11,7 @@ package scala.collection.immutable;
 
 
 object ListMap {
-	def Empty[A, B] = new ListMap[A, B];
+    def Empty[A, B] = new ListMap[A, B];
 }
 
 /** This class implements immutable maps using a list-based data
@@ -28,7 +28,7 @@ class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
 
     def get(key: A): Option[B] = None;
 
-	def update(key: A, value: B): ListMap[A, B] = new Node(key, value);
+    def update(key: A, value: B): ListMap[A, B] = new Node(key, value);
 
     def -(key: A): ListMap[A, B] = this;
 
@@ -36,40 +36,40 @@ class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
 
     override def toList: List[Pair[A, B]] = Nil;
 
- 	override def equals(obj: Any): Boolean =
-		if (obj is scala.collection.Map[A, B]) {
-			val that = obj as scala.collection.Map[A, B];
-			if (size != that.size) false else toList.forall {
-				case Pair(key, value) => that.get(key) match {
-					case None => false;
-					case Some(v) => v == value;
-				}
-			};
-		} else
-			false;
+    override def equals(obj: Any): Boolean =
+        if (obj is scala.collection.Map[A, B]) {
+            val that = obj as scala.collection.Map[A, B];
+            if (size != that.size) false else toList.forall {
+                case Pair(key, value) => that.get(key) match {
+                    case None => false;
+                    case Some(v) => v == value;
+                }
+            };
+        } else
+            false;
 
-	override def hashCode(): Int = 0;
+    override def hashCode(): Int = 0;
 
     protected class Node(key: A, value: B) extends ListMap[A, B] {
         override def size: Int = ListMap.this.size + 1;
-       	override def isEmpty: Boolean = true;
-		override def apply(k: A): B = if (k == key) value else ListMap.this(k);
-		override def get(k: A): Option[B] =
-			if (k == key) Some(value) else ListMap.this.get(k);
-		override def update(k: A, v: B): ListMap[A, B] =
-			if (k == key) {
-				new ListMap.this.Node(k, v);
-			} else {
-				val tail = ListMap.this.update(k,v); new tail.Node(key, value)
-			}
-		override def -(k: A): ListMap[A, B] =
-			if (k == key)
-				ListMap.this
-			else {
-				val tail = ListMap.this - k; new tail.Node(key, value)
-			}
-		override def toList: List[Pair[A, B]] = Pair(key, value) :: ListMap.this.toList;
-		override def hashCode(): Int =
-			(key.hashCode() ^ value.hashCode()) + ListMap.this.hashCode();
+        override def isEmpty: Boolean = true;
+        override def apply(k: A): B = if (k == key) value else ListMap.this(k);
+        override def get(k: A): Option[B] =
+            if (k == key) Some(value) else ListMap.this.get(k);
+        override def update(k: A, v: B): ListMap[A, B] =
+            if (k == key) {
+                new ListMap.this.Node(k, v);
+            } else {
+                val tail = ListMap.this.update(k,v); new tail.Node(key, value)
+            }
+        override def -(k: A): ListMap[A, B] =
+            if (k == key)
+                ListMap.this
+            else {
+                val tail = ListMap.this - k; new tail.Node(key, value)
+            }
+        override def toList: List[Pair[A, B]] = Pair(key, value) :: ListMap.this.toList;
+        override def hashCode(): Int =
+            (key.hashCode() ^ value.hashCode()) + ListMap.this.hashCode();
     }
 }

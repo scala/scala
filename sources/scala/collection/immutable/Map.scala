@@ -33,7 +33,7 @@ trait Map[A, B, This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
     def excl(keys: A*): This = excl(keys);
 
     def excl(keys: Iterable[A]): This = {
-    	val iter = keys.elements;
+        val iter = keys.elements;
         var res = this;
         while (iter.hasNext) {
             res = res - iter.next;
