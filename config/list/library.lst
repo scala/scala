@@ -132,6 +132,7 @@ runtime/ScalaRunTime.scala
 testing/UnitTest.scala
 
 xml/Node.scala
+xml/AttributedNode.scala
 xml/FactoryAdapter.scala
 xml/Text.scala
 xml/BindingFactoryAdapter.scala
