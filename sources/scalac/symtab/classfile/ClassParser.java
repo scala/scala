@@ -14,22 +14,13 @@ import scalac.util.*;
 import java.io.*;
 
 
-public class ClassParser extends Type.LazyType {
-
-    /** the global compilation environment
-     */
-    protected Global global;
-    protected boolean completed = false;
+public class ClassParser extends MetadataParser {
 
     public ClassParser(Global global) {
-        this.global = global;
+        super(global);
     }
 
-    /** complete class symbol c by loading the class
-     */
-    public void complete(Symbol c) {
-        Phase phase = global.currentPhase;
-        global.currentPhase = global.getFirstPhase();
+    protected void doComplete(Symbol c) {
 	c.owner().initialize();
 	//System.out.println("loading " + c);//DEBUG
 	try {
@@ -52,7 +43,6 @@ public class ClassParser extends Type.LazyType {
 	    global.error("i/o error while loading " + c);
 	    c.setInfo(Type.ErrorType);
 	}
-        global.currentPhase = phase;
     }
 
     public Type.LazyType staticsParser(Symbol clazz) {

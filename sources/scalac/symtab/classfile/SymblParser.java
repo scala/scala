@@ -16,17 +16,13 @@ import java.io.*;
 
 public class SymblParser extends ClassParser {
 
-    /** the global compilation environment
-     */
-
     public SymblParser(Global global) {
 	super(global);
     }
+
     /** complete class symbol c by loading the class
      */
-    public void complete(Symbol c) {
-        Phase phase = global.currentPhase;
-        global.currentPhase = global.getFirstPhase();
+    public void doComplete(Symbol c) {
 	//System.out.println("loading " + c);//DEBUG
 	try {
 	    long msec = System.currentTimeMillis();
@@ -50,7 +46,6 @@ public class SymblParser extends ClassParser {
 	    global.error("i/o error while loading " + c);
 	    c.setInfo(Type.ErrorType);
         }
-        global.currentPhase = phase;
     }
 }
 

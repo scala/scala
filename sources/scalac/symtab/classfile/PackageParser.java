@@ -15,30 +15,28 @@ import scalac.util.*;
 import java.io.*;
 import java.util.HashMap;
 
-public class PackageParser extends Type.LazyType {
-
-    /** the global compilation environment
-     */
-    protected Global global;
+public class PackageParser extends MetadataParser {
 
     /** the class parser
      */
     public ClassParser classCompletion;
     public SymblParser symblCompletion; // provisional
 
+    protected final CLRPackageParser importer;
+
     public PackageParser(Global global) {
-        this.global = global;
+        super(global);
         this.classCompletion = new ClassParser(global);
 	this.symblCompletion = new SymblParser(global); // provisional
 	if (global.reporter.verbose)
 	    System.out.println("classpath = " + global.classPath);//debug
+	importer = (global.target == global.TARGET_MSIL)
+	    ? CLRPackageParser.create(global) : null;
     }
 
     /** complete package type symbol p by loading all package members
      */
-    public void complete(Symbol p) {
-        Phase phase = global.currentPhase;
-        global.currentPhase = global.getFirstPhase();
+    protected void doComplete(Symbol p) {
         long msec = System.currentTimeMillis();
         Scope members = new Scope();
         String dirname = null;
@@ -54,12 +52,13 @@ public class PackageParser extends Type.LazyType {
 		AbstractFile.open(base[i], dirname),
 		p, members, symFile);
 	}
+ 	if (global.target == global.TARGET_MSIL)
+ 	    importer.importCLRTypes(p, members, this);
         p.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, p));
         if (dirname == null)
             dirname = "anonymous package";
         global.operation("scanned " + dirname + " in " +
                     (System.currentTimeMillis() - msec) + "ms");
-        global.currentPhase = phase;
     }
 
     private boolean isMostRecent(AbstractFile f, Symbol previous, HashMap symFile) {
@@ -144,4 +143,6 @@ public class PackageParser extends Type.LazyType {
         } catch (IOException e) {
         }
     }
+
+
 }
