@@ -15,7 +15,7 @@ Char.java
 ../msil/scala/Console.scala
 Double.java
 Application.scala
-../msil/scala/Enumeration.scala
+Enumeration.scala
 Float.java
 Function0.java
 Function1.java
@@ -45,8 +45,8 @@ Ref.java
 ScalaObject.java
 Seq.scala
 SeqProxy.scala
-Serializable.scala
 SerialVersionUID.scala
+Serializable.scala
 Short.java
 Some.scala
 Stream.scala
@@ -65,11 +65,11 @@ Unit.java
 transient.scala
 volatile.scala
 
+collection/BitSet.scala
 collection/Map.scala
 collection/MapProxy.scala
 collection/Set.scala
 collection/SetProxy.scala
-collection/BitSet.scala
 
 ../msil/scala/collection/mutable/ArrayBuffer.scala
 collection/mutable/BitSet.scala
@@ -118,73 +118,96 @@ collection/mutable/SynchronizedQueue.scala
 collection/mutable/SynchronizedStack.scala
 collection/mutable/Undoable.scala
 
+collection/immutable/BitSet.scala
 collection/immutable/ListMap.scala
 collection/immutable/ListSet.scala
 collection/immutable/Map.scala
-collection/immutable/Tree.scala
-collection/immutable/TreeMap.scala
-collection/immutable/TreeSet.scala
 collection/immutable/Queue.scala
 collection/immutable/Set.scala
 collection/immutable/Stack.scala
+collection/immutable/Tree.scala
+collection/immutable/TreeMap.scala
+collection/immutable/TreeSet.scala
 
 concurrent/Actor.scala
-concurrent/MailBox.scala
 concurrent/Channel.scala
 concurrent/Lock.scala
+concurrent/MailBox.scala
+concurrent/NameServer.scala
+concurrent/Process.scala
 concurrent/SyncChannel.scala
 concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
 # concurrent/jolib.scala
 concurrent/ops.scala
 concurrent/pilib.scala
-concurrent/Process.scala
-concurrent/NameServer.scala
 
 #io/Source.scala
 io/Position.scala
 
-#mobile/Location.scala
 #mobile/Code.scala
+#mobile/Location.scala
 
-runtime/InterpreterSupport.java
+#runtime/AtomicReference.java
+#runtime/FNV_Hash.java
+#runtime/PearsonHash.java
+#runtime/IOMap.java
+#runtime/InterpreterSupport.java
 runtime/NativeLoop.java
-#runtime/NativeMonitor.java
 runtime/ResultOrException.java
 runtime/RunTime.java
 ../msil/scala/runtime/ScalaRunTime.scala
 
+../msil/scala/runtime/compat/Platform.scala
+
 runtime/matching/Address.scala
-runtime/matching/TestAlphabet.scala
-#runtime/matching/Context.scala
-#runtime/matching/Grammar.scala
-#runtime/matching/Match.scala
-runtime/matching/Matcher.scala
+#runtime/matching/Matcher.scala
 runtime/matching/NonTerm.scala
-../msil/scala/runtime/matching/PatternGrammar.scala
+#runtime/matching/PatternGrammar.scala
 runtime/matching/PatternTests.scala
-#runtime/matching/Pebble.scala
 runtime/matching/Rule.scala
+runtime/matching/TestAlphabet.scala
+
+text/Document.scala
+
+#runtime/types/ClassType.java
+#runtime/types/JavaClassType.java
+#runtime/types/ScalaClassType.java
+#runtime/types/CompoundType.java
+#runtime/types/SingleType.java
+#runtime/types/BasicType.java
+#runtime/types/TypeBoolean.java
+#runtime/types/TypeByte.java
+#runtime/types/TypeChar.java
+#runtime/types/TypeConstructor.java
+#runtime/types/TypeDouble.java
+#runtime/types/TypeFloat.java
+#runtime/types/TypeInt.java
+#runtime/types/TypeLong.java
+#runtime/types/TypeShort.java
+#runtime/types/Refinement.java
+#runtime/types/MethodType.java
 
 testing/UnitTest.scala
+#testing/SUnit.scala
+#testing/Benchmark.scala
 
-util/alphabet/Alphabet.scala
-util/alphabet/AlphabetPlusWildcard.scala
-util/alphabet/WildcardLabel.scala
-#util/automata/NondetTreeHedgeAutom.scala
+util/automata/BaseBerrySethi.scala
+util/automata/DetWordAutom.scala
 util/automata/NondetWordAutom.scala
-../msil/scala/util/automata/BaseBerrySethi.scala
 util/automata/WordBerrySethi.scala
-util/grammar/TreeRHS.scala
 util/grammar/HedgeRHS.scala
-util/grammar/TreeHedgeGrammar.scala
 util/grammar/ImmutableTreeHedgeGrammar.scala
 util/grammar/MutableTreeHedgeGrammar.scala
+util/grammar/TreeHedgeGrammar.scala
+util/grammar/TreeRHS.scala
 util/regexp/Base.scala
-util/regexp/WildcardBase.scala
-util/regexp/WordExp.scala
 util/regexp/PointedHedgeExp.scala
 util/regexp/SyntaxError.scala
+util/regexp/WildcardBase.scala
+util/regexp/WordExp.scala
+util/logging/Logged.scala
+util/logging/ConsoleLogger.scala
 
 # xml/Attribute.scala
 # xml/AttributeSeq.scala
@@ -196,8 +219,10 @@ util/regexp/SyntaxError.scala
 # xml/ExternalID.scala
 # xml/EntityRef.scala
 # xml/FactoryAdapter.scala
+# #xml/LoggedNodeFactory.scala
 # xml/Node.scala
 # xml/NodeBuffer.scala
+# xml/NodeFactory.scala
 # xml/NodeSeq.scala
 # xml/NodeTraverser.scala
 # xml/Parsing.scala
@@ -206,6 +231,7 @@ util/regexp/SyntaxError.scala
 # xml/SpecialNode.scala
 # xml/Text.scala
 # xml/TextBuffer.scala
+# xml/UName.scala
 # xml/Utility.scala
 
 # xml/dtd/ContentModel.scala
@@ -223,12 +249,9 @@ util/regexp/SyntaxError.scala
 # xml/parsing/ConstructingHandler.scala
 # xml/parsing/ConstructingParser.scala
 # xml/parsing/FatalError.scala
-# xml/parsing/MarkupParser.scala
 # xml/parsing/MarkupHandler.scala
+# xml/parsing/MarkupParser.scala
 # xml/parsing/XSDHandler.scala
 # xml/path/Expression.scala
-#xml/path/Tokens.scala
-#xml/path/Scanner.scala
-#xml/path/Parser.scala
 
 ##############################################################################
