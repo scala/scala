@@ -275,7 +275,7 @@ trait List[a] extends Seq[a] {
    else if (tail.isEmpty) head.toString() + end
    else head.toString().concat(sep).concat(tail.mkString("", sep, end)));
 
-  override def toString() = mkString("[", ",", "]");
+  override def toString() = mkString("List(", ",", ")");
 
   /** Return a list formed from this list and the specified list
   * <code>that</code> by associating each element of the former with
