@@ -2623,9 +2623,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		if (vparams.length != vparams0.length)
 		    return Type.NoType;
 		for (int j = 0; j < vparams.length; j++)
-		    if (!vparams[i].type().isSameAs(vparams0[i].type()) ||
-			(vparams[i].flags & (DEF | REPEATED)) !=
-			(vparams0[i].flags & (DEF | REPEATED)))
+		    if (!vparams[j].type().isSameAs(vparams0[j].type()) ||
+			(vparams[j].flags & (DEF | REPEATED)) !=
+			(vparams0[j].flags & (DEF | REPEATED)))
 			return Type.NoType;
 		restps[i] = restp;
 	    }
