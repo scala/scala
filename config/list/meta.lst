@@ -14,6 +14,8 @@ java/AbstractJavaExpander.java
 java/JavaWriter.java
 java/Type.java
 
+scala/MetaFunction.java
+
 scalac/Phase.java
 
 scalac/ast/AbstractTreeCaseExpander.java
