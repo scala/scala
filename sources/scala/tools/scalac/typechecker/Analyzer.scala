@@ -212,6 +212,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   private def errorTermTree(tree: Tree): Tree =
     gen.mkLocalRef(tree.pos, Symbol.NONE.newErrorValue(errorName(tree)));
 
+  private def setError(tree: Tree): Tree = {
+    if (tree.hasSymbol() && tree.symbol() == null)
+      tree.setSymbol(
+	if (tree.isType()) Symbol.NONE.newErrorClass(errorName(tree).toTypeName())
+	else Symbol.NONE.newErrorValue(errorName(tree)));
+    tree.setType(Type.ErrorType);
+  }
+
   def error(pos: int, msg: String): unit =
     unit.error(pos, msg);
 
@@ -1229,7 +1237,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } catch {
       case ex: Type$Error =>
 	reportTypeError(tree.pos, ex);
-	tree.setType(Type.ErrorType);
+	setError(tree);
 	if (tree.hasSymbol()) {
 	  tree.symbol().setInfo(Type.ErrorType);
 	}
@@ -1454,7 +1462,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      } catch {
 		case ex: Type$Error =>
 		  if (!pt.isError()) error(tree.pos, ex.msg);
-		  tree.setType(Type.ErrorType);
+		  setError(tree);
 	      }
 	    case _ =>
 	  }
@@ -1570,7 +1578,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       if ((mode & CONSTRmode) == 0) {
 	typeError(tree.pos, owntype, pt);
 	Type.explainTypes(owntype, pt);
-	tree.setType(Type.ErrorType);
+	setError(tree);
       } // for constructors, delay until after the `new'.
     }
     tree
@@ -2133,11 +2141,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    copy.PackageDef(tree, pkg, templ1)
 	      .setType(Type.NoType);
 	  } else {
-	    tree.setType(Type.ErrorType);
+	    setError(tree);
 	  }
 
 	case Tree$PackageDef(_, _) =>
-	  tree.setType(Type.ErrorType)
+	  setError(tree)
 
 	case Tree$ClassDef(_, _, tparams, vparams, tpe, templ) =>
 	  pushContext(
@@ -2492,7 +2500,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  while (i < argtypes.length && !argtypes(i).isError())
 	    i = i + 1;
 	  if (i < argtypes.length)
-	    tree.setType(Type.ErrorType);
+	    setError(tree);
 	  else {
 
 	    // resolve overloading
@@ -2515,7 +2523,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    .setType(restp.subst(tparams, argtypes))));
 
 	      case Type.ErrorType =>
-		tree.setType(Type.ErrorType)
+		setError(tree)
 
 	      case fn1tp =>
                 if (!fn1tp.isError()) error(tree.pos,
@@ -2660,7 +2668,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    if (args.length == 1 && args(0).isInstanceOf[Tree$Visitor]) {
 	      val pattp: Type = matchQualType(fn1);
 	      if (pattp.isError()) {
-		return tree.setType(Type.ErrorType)
+		return setError(tree)
 	      } else if (pattp != Type.NoType) {
 		if (infer.isFullyDefined(pattp) &&
 		    !(fn1.getType().isInstanceOf[Type$PolyType] &&
@@ -2688,12 +2696,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      tree.pos, fn1.symbol(), Symbol.EMPTY_ARRAY, fn1.getType(), argMode, args, pt);
 
 	    if (argtypes == null)
-	      return tree.setType(Type.ErrorType)
+	      return setError(tree)
 	    else {
 	      var i: int = 0;
 	      while (i < argtypes.length && !argtypes(i).isError())
 		i = i + 1;
-	      if (i < argtypes.length) return tree.setType(Type.ErrorType);
+	      if (i < argtypes.length) return setError(tree);
 	    }
 
 	    // resolve overloading1g
@@ -2774,7 +2782,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$Super(qualifier, mixin) =>
 	  val clazz: Symbol = qualifyingClass(tree, qualifier);
           if (clazz.isNone()) {
-	    tree.setType(Type.ErrorType);
+	    setError(tree);
 	  } else {
             tree.setSymbol(clazz);
 	    val parents = clazz.parents();
@@ -2797,7 +2805,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$This(name) =>
 	  val clazz: Symbol = qualifyingClass(tree, name);
           if (clazz.isNone())
-	    tree.setType(Type.ErrorType);
+	    setError(tree)
 	  else {
             tree.setSymbol(clazz);
  	    tree.setType(

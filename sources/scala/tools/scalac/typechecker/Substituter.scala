@@ -63,7 +63,7 @@ class Substituter(global: scalac_Global, gen: TreeGen) extends Transformer(globa
 	  val sym: Symbol = tree.symbol();
 	  var i = 0;
 	  while (i < tparams.length) {
-	    if (typeSubstituter.matches(tparams(i), sym)) {
+	    if (sym != null && typeSubstituter.matches(tparams(i), sym)) {
 	      return gen.mkType(tree.pos, targs(i));
 	    }
 	    i = i + 1;
