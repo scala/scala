@@ -25,6 +25,19 @@ object UnitTest {
 
 	    } // testEquals
 
+	    def testNotEquals[a]( actual: a, expected: a ):Unit = {
+
+	      if( actual != expected )
+                        {
+                         message_passedOK
+                        }
+                else
+                        {
+			 message_failed( actual.toString(), "something != "+expected.toString() )
+                        }
+
+	    } // testNotEquals
+
             def test[b,a]( doit:b => a,
                               input: b,
                               expected:a ):Unit = {
