@@ -9,6 +9,8 @@
 package scalac.atree;
 
 import scalac.Unit;
+import scalac.ast.Tree;
+import scalac.ast.Tree.Template;
 import scalac.symtab.Definitions;
 import scalac.util.Debug;
 
@@ -38,6 +40,75 @@ public class ATreeFromSTree {
 
     /** Translates the unit's body and stores the result in it. */
     public void translate(Unit unit) {
+        template(unit.repository = new ARepository(), unit.body);
+    }
+
+    //########################################################################
+    // Private Methods - Translating templates
+
+    /** Translates the templates and adds them to the repository. */
+    private void template(ARepository repository, Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) template(repository, trees[i]);
+    }
+
+    /** Translates the template and adds it to the repository. */
+    private void template(ARepository repository, Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return;
+
+        case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
+            AClass clasz = new AClass(tree.symbol());
+            repository.addClass(clasz);
+            member(clasz, body);
+            return;
+
+        case PackageDef(_, Template(_, Tree[] body)):
+            template(repository, body);
+            return;
+
+        case ValDef(_, _, _, Tree rhs):
+            // !!!
+            return;
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    //########################################################################
+    // Private Methods - Translating members
+
+    /** Translates the members and adds them to the class. */
+    private void member(AClass clasz, Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) member(clasz, trees[i]);
+    }
+
+    /** Translates the member and adds it to the class. */
+    private void member(AClass clasz, Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return;
+
+        case ClassDef(_, _, _, _, _, _):
+            template(clasz, tree);
+            return;
+
+        case ValDef(_, _, _, Tree rhs):
+            AField field = new AField(tree.symbol(), false);
+            clasz.addField(field);
+            return;
+
+        case DefDef(_, _, _, _, _, Tree rhs):
+            AMethod method = new AMethod(tree.symbol(), false);
+            clasz.addMethod(method);
+            return;
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
     }
 
     //########################################################################
