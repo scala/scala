@@ -167,9 +167,11 @@ xml/NamespaceRegistry.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala
+xml/Parsing.scala
 xml/PrettyPrinter.scala
 xml/ProcInstr.scala
 xml/Text.scala
+xml/TextBuffer.scala
 xml/Utility.scala
 
 xml/dtd/Decl.scala
