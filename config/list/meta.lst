@@ -36,4 +36,6 @@ scalac/ast/TreeNode.java
 scalac/ast/TreeSymbol.java
 scalac/ast/TreeType.java
 
+scalac/checkers/MetaCheckTreeNodes.java
+
 ##############################################################################
