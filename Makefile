@@ -206,18 +206,18 @@ sources		: generate
 
 system		: scripts
 system		: lamplib
-system		: scalac
 system		: library
+system		: scalac
 
 lamplib		: .latest-$(boot)lamplib-jc
 meta		: .latest-meta-jc
 generate	: .latest-generate
 bootstrap	: .latest-bootstrap
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
-scalac		: .latest-$(boot)scalac-jc
-scalac		: .latest-$(boot)scalac-sc
 library		: .latest-$(boot)library-jc
 library		: .latest-$(boot)library-sc
+scalac		: .latest-$(boot)scalac-jc
+scalac		: .latest-$(boot)scalac-sc
 interpreter	: .latest-interpreter-jc
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-sc
@@ -285,11 +285,12 @@ cvs-fix-perms		:
 
 ##############################################################################
 # Targets
-.latest-$(boot)lamplib-jc	: $(LAMPLIB_JC_FILES)
+
+.latest%lamplib-jc	: $(LAMPLIB_JC_FILES)
 	@$(make) jc target=LAMPLIB LAMPLIB_JC_FILES='$?'
 	touch $@
 
-.latest-meta-jc			: $(META_JC_FILES)
+.latest-meta-jc		: $(META_JC_FILES)
 	@$(make) jc target=META META_JC_FILES='$?'
 	$(RM) .latest-*scalac-jc
 	$(RM) .latest-*scalac-sc
@@ -297,13 +298,13 @@ cvs-fix-perms		:
 	$(RM) .latest-*library-sc
 	touch $@
 
-.latest-generate		: .latest-meta-jc
+.latest-generate	: .latest-meta-jc
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(strip $(JAVA) -cp $(JC_OUTPUTDIR) \
 	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
 
-.latest-bootstrap		:
+.latest-bootstrap	:
 	$(MKDIR) -p $(PROJECT_BOOTSTRAPDIR)
 	$(MKDIR) -p $(PROJECT_BOOTSTRAPDIR)/bin
 	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_BOOTSTRAPDIR)/bin/
@@ -311,66 +312,66 @@ cvs-fix-perms		:
 	    INSTALL_PREFIX=$(PROJECT_BOOTSTRAPDIR) \
 	    PROJECT_BINARYDIR=$(PROJECT_BOOTSTRAPDIR)/bin \
 	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTSTRAPDIR)/classes \
-	    boot="bootstrap-" system
+	    boot="bootstrap-" scripts lamplib scalac library
 	touch $@
 
-.latest-$(boot)scalac-jc	: $(SCALAC_JC_FILES)
+.latest%scalac-jc	: $(SCALAC_JC_FILES)
 	@$(make) jc target=SCALAC SCALAC_JC_FILES='$?'
 	touch $@
 
-.latest-$(boot)scalac-sc	: $(SCALAC_SC_FILES)
+.latest%scalac-sc	: $(SCALAC_SC_FILES)
 	@if [ -d $(PROJECT_BOOTSTRAPDIR) -a -z "$(boot)" ]; then \
 	    $(make) sc target=SCALAC SCALAC_SC_FILES='$?'; \
 	fi;
 	touch $@
 
-.latest-$(boot)library-jc	: $(LIBRARY_JC_FILES)
+.latest%library-jc	: $(LIBRARY_JC_FILES)
 	@$(make) jc target=LIBRARY LIBRARY_JC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
-.latest-$(boot)library-sc	: $(LIBRARY_SC_FILES)
+.latest%library-sc	: $(LIBRARY_SC_FILES)
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
-.latest-library-sdc		: $(LIBRARY_SDC_FILES)
+.latest-library-sdc	: $(LIBRARY_SDC_FILES)
 	@$(make) sdc target=LIBRARY
 	touch $@
 
-.latest-interpreter-jc		: $(INTERPRETER_JC_FILES)
+.latest-interpreter-jc	: $(INTERPRETER_JC_FILES)
 	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
 	touch $@
 
-.latest-scaladoc-jc		: $(SCALADOC_JC_FILES)
+.latest-scaladoc-jc	: $(SCALADOC_JC_FILES)
 	@$(make) jc target=SCALADOC SCALADOC_JC_FILES='$?'
 	touch $@
 
-.latest-scaladoc-sc		: $(SCALADOC_SC_FILES)
+.latest-scaladoc-sc	: $(SCALADOC_SC_FILES)
 	@$(make) sc target=SCALADOC SCALADOC_SC_FILES='$?'
 	touch $@
 
-.latest-scaladoc-rsrc		: $(SCALADOC_RSRC_FILES)
+.latest-scaladoc-rsrc	: $(SCALADOC_RSRC_FILES)
 	$(strip $(MIRROR) -m 644 -C $(SCALADOC_ROOT) $(SCALADOC_RSRC_LIST) \
 	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-scalap-sc		: $(SCALAP_SC_FILES)
+.latest-scalap-sc	: $(SCALAP_SC_FILES)
 	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
 	touch $@
 
-.latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES)
+.latest-dtd2scala-sc	: $(DTD2SCALA_SC_FILES)
 	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
 	touch $@
 
-.latest-dtd2scala-rsrc		: $(DTD2SCALA_RSRC_FILES)
+.latest-dtd2scala-rsrc	: $(DTD2SCALA_RSRC_FILES)
 	$(strip $(MIRROR) -m 644 -C $(DTD2SCALA_ROOT) $(DTD2SCALA_RSRC_LIST) \
 	    $(DTD2SCALA_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-scalac4ant-jc		: $(SCALAC4ANT_JC_FILES)
+.latest-scalac4ant-jc	: $(SCALAC4ANT_JC_FILES)
 	@$(make) jc target=SCALAC4ANT SCALAC4ANT_JC_FILES='$?'
 	touch $@
 
-.latest-scalatest-jc		: $(SCALATEST_JC_FILES)
+.latest-scalatest-jc	: $(SCALATEST_JC_FILES)
 	@$(make) jc target=SCALATEST SCALATEST_JC_FILES='$?'
 	touch $@
 
