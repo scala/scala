@@ -66,11 +66,6 @@ configure() {
     # This variable must refer a directory or a zip or jar file.
     BCEL_CLASSES={#BCEL_CLASSES#};
 
-    # Location of the compiled xerces library. This library may be
-    # found at http://xml.apache.org/xerces2-j/.
-    # This variable must refer a directory or a zip or jar file.
-    XERCES_CLASSES={#XERCES_CLASSES#};
-
     # Command to start the Java VM.
     JAVA_EXEC="java";
 
@@ -247,7 +242,6 @@ compute_variable() {
         FJBG_CLASSES        ) configure_path_variable "$1";;
         MSIL_CLASSES        ) configure_path_variable "$1";;
         BCEL_CLASSES        ) configure_path_variable "$1";;
-        XERCES_CLASSES      ) configure_path_variable "$1";;
         JAVA_EXEC           ) configure_variable "$1";;
         JAVA_ARGS           ) configure_variable "$1";;
         EXEC                ) configure_variable "$1";;
@@ -328,7 +322,6 @@ exec_dtd2scala() {
 
     # compute Java classpath
     append_path JAVA_CLASSPATH TOOLS_CLASSES;
-    append_path JAVA_CLASSPATH XERCES_CLASSES;
 
     # invoke Java
     exec_java \
@@ -406,7 +399,6 @@ scala_info_option_x_variable() {
         FJBG_CLASSES        ) variable=$2;;
         MSIL_CLASSES        ) variable=$2;;
         BCEL_CLASSES        ) variable=$2;;
-        XERCES_CLASSES      ) variable=$2;;
         JAVA_EXEC           ) variable=$2;;
         JAVA_ARGS           ) variable=$2;;
         EXEC                ) variable=$2;;
@@ -433,7 +425,6 @@ scala_info_option_help() {
     echo "  FJBG_CLASSES          Location of the fjbg library";
     echo "  MSIL_CLASSES          Location of the msil library";
     echo "  BCEL_CLASSES          Location of the bcel library";
-    echo "  XERCES_CLASSES        Location of the xerces library";
     echo "  JAVA_EXEC             Command to start the Java VM";
     echo "  JAVA_ARGS             Additional arguments to pass to the Java VM";
     echo "  EXEC                  Command to start subprocesses";
