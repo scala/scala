@@ -96,6 +96,7 @@ transformer/TransMatchPhase.java
 transformer/UnCurry.java
 transformer/UnCurryPhase.java
 
+transformer/matching/AlgebraicMatcher.java
 transformer/matching/Autom2Scala.java
 transformer/matching/BindingBerrySethi.java
 transformer/matching/BerrySethi.java
