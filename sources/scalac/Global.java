@@ -297,7 +297,7 @@ public class Global {
                 // go to next phase to print symbols with their new type
                 boolean next = currentPhase.next != null;
                 if (next) currentPhase = currentPhase.next;
-                currentPhase.print(this);
+                (next ? currentPhase.prev : currentPhase).print(this);
                 if (next) currentPhase = currentPhase.prev;
             }
             if (currentPhase.descriptor.hasGraphFlag())
@@ -333,7 +333,7 @@ public class Global {
                 // go to next phase to print symbols with their new type
                 boolean next = currentPhase.next != null;
                 if (next) currentPhase = currentPhase.next;
-                currentPhase.print(this);
+                (next ? currentPhase.prev : currentPhase).print(this);
                 if (next) currentPhase = currentPhase.prev;
             }
             if (currentPhase.descriptor.hasGraphFlag())
