@@ -6,7 +6,7 @@ import scala.collection.{ Set, Map, mutable };
 /** 0 is always the only initial state */
 abstract class NondetWordAutom[ A <: Alphabet ] {
 
-  val nstates: Int;
+  val nstates:  Int;
   val labels:   Set[A] ;
   val finals:   Map[Int,Int] ;
   val delta:    Function1[Int,Map[A,List[Int]]];

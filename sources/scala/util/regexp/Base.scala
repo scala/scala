@@ -32,8 +32,8 @@ trait Base {
 
     final val isNullable = {
       val it = rs.elements;
-      while( it.hasNext && !it.next.isNullable ) {}
-      it.hasNext
+      while( it.hasNext && it.next.isNullable ) {}
+      !it.hasNext
     }
   }
 

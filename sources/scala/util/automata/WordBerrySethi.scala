@@ -62,7 +62,7 @@ abstract class WordBerrySethi[ A <: Alphabet ] extends BaseBerrySethi {
   /** called at the leaves of the regexp */
   protected def  seenLabel( r:RegExp, i:Int, label: A ): Unit = {
     this.posMap.update( r, i );
-    this.labelAt.update( i, label );
+    this.labelAt = this.labelAt.update( i, label );
     //@ifdef if( label != Wildcard ) {
       this.labels += label ;
     //@ifdef }
@@ -157,7 +157,7 @@ abstract class WordBerrySethi[ A <: Alphabet ] extends BaseBerrySethi {
       collectTransitions();
 
       if( x.isNullable ) // initial state is final
-	finals.update( 0, finalTag );
+	finals = finals.update( 0, finalTag );
 
       var delta1: immutable.TreeMap[Int,Map[A,List[Int]]] =
         new immutable.TreeMap[Int,Map[A,List[Int]]];

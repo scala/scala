@@ -76,6 +76,7 @@ abstract class BaseBerrySethi {
           return tmp
       };
     tmp
+    case Star(t)  => compLast(t);
     case _        => error("unexpected pattern " + r.getClass());
   }
 
@@ -129,7 +130,6 @@ abstract class BaseBerrySethi {
 
       case x:Star =>
         fol = fol incl compFirst( x.r );
-        this.follow.update( posMap( x ), fol );
         compFollow1( fol, x.r );
 
       case x:Sequ =>
@@ -166,6 +166,9 @@ abstract class BaseBerrySethi {
         while( it.hasNext ) traverse( it.next );
 
       case x:Meta           => traverse( x.r )
+
+      case Star(t) =>
+        traverse(t)
 
       case _ => error("unexp pattern "+ r.getClass());
     }
