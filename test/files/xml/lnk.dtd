@@ -1,0 +1,13 @@
+<!-- $Id$ -->
+
+<!ELEMENT lnkDB          ((link|linkgroup)*)>
+
+<!ELEMENT linkgroup      (groupname, (link|linkgroup)*)>
+<!ELEMENT link           (name, description?)>
+
+<!ATTLIST link
+          target CDATA #REQUIRED>
+
+<!ELEMENT groupname      (#PCDATA)>
+<!ELEMENT name           (#PCDATA)>
+<!ELEMENT description    (#PCDATA)>
