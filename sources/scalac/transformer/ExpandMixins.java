@@ -235,18 +235,6 @@ public class ClassExpander {
         TreeCloner mixinTreeCloner = new TreeCloner(global, map) {
             public Tree transform(Tree tree) {
                 switch (tree) {
-                case New(Template template):
-                    assert template.parents.length == 1 : tree;
-                    assert template.body.length == 0 : tree;
-                    Tree apply = template.parents[0];
-                    switch (apply) {
-                    case Apply(Tree clasz, Tree[] args):
-                        args = transform(args);
-                        apply = gen.Apply(apply.pos, clasz, args);
-                        return gen.New(tree.pos, apply);
-                    default:
-                        throw Debug.abort("illegal case", tree);
-                    }
                 case Select(Super(_, _), _):
                     Tree qualifier = ((Tree.Select)tree).qualifier;
                     qualifier = gen.Super(qualifier.pos, clasz);
