@@ -10,7 +10,7 @@ object ConstructingParser {
     val p = new ConstructingParser() {
       val input = inp;
       override val handle = theHandle;
-      def nextch = { ch = input.next; pos = input.pos; }
+      def nextch = if(input.hasNext) { ch = input.next; pos = input.pos; }
       override val preserveWS = true;
 
       /** report a syntax error */
