@@ -38,7 +38,13 @@ public class SymbolSubstTypeMap extends Type.Map {
     public SymbolSubstTypeMap(Map symbols, Map types) {
         this();
         insertSymbol(symbols);
-        insertType(symbols);
+        insertType(types);
+    }
+
+    public SymbolSubstTypeMap(SymbolSubstTypeMap other) {
+        this();
+        insertSymbol(other.symbols);
+        insertType(other.types);
     }
 
     //########################################################################
@@ -71,6 +77,10 @@ public class SymbolSubstTypeMap extends Type.Map {
         symbols.keySet().removeAll(keys);
     }
 
+    public Symbol lookupSymbol(Symbol key) {
+        return (Symbol)symbols.get(key);
+    }
+
     //########################################################################
     // Public Methods - Inserting and removing symbol to type substitutions
 
@@ -99,6 +109,10 @@ public class SymbolSubstTypeMap extends Type.Map {
 
     public void removeType(Set keys) {
         types.keySet().removeAll(keys);
+    }
+
+    public Type lookupType(Symbol key) {
+        return (Type)types.get(key);
     }
 
     //########################################################################
