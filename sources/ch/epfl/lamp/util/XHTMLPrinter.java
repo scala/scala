@@ -18,13 +18,13 @@ public class XHTMLPrinter extends HTMLPrinter {
     // Public Constructors
 
     /** Creates a new instance */
-    public XHTMLPrinter(Writer writer, String title, String type, String encoding) {
-        super(writer, title, type, encoding);
+    public XHTMLPrinter(Writer writer, String title, HTMLRepresentation repr) {
+        super(writer, title, repr);
     }
 
     /** Creates a new instance */
     public XHTMLPrinter(Writer writer, String title, String encoding) {
-        super(writer, title, "XHTML 1.0 Transitional", encoding);
+        super(writer, title, encoding);
     }
 
     /** Creates a new instance */
@@ -37,30 +37,41 @@ public class XHTMLPrinter extends HTMLPrinter {
 
     /** Prints text 'text' in bold followed by a new line. */
     public HTMLPrinter printlnBold(String text) {
-        printlnTag("span", new Attr[]{ new Attr("style", "font-weight:bold;") }, text);
-        return this;
+        return printlnTag("span",
+            new XMLAttribute[]{ new XMLAttribute("style", "font-weight:bold;") },
+            text);
     }
 
     /** Prints text 'text' in bold. */
     public HTMLPrinter printBold(String text) {
-        printTag("span", new Attr[]{ new Attr("style", "font-weight:bold;") }, text);
-        return this;
+        return printTag("span",
+            new XMLAttribute[]{ new XMLAttribute("style", "font-weight:bold;") },
+            text);
     }
 
     /** Prints an horizontal line separator
      *  @ param n gives the number of printed blank spaces
      */
     public HTMLPrinter printHLine() {
-        printOTag("div", new Attr[] {
-            new Attr("style", "border:1px solid #aaaaaa; margin:10px 0px 5px 0px;height:1px;") });
-        printlnCTag("div");
-        return this;
+        printOTag("div", new XMLAttribute[] {
+            new XMLAttribute("style", "border:1px solid #aaaaaa; " +
+                              "margin:10px 0px 5px 0px;height:1px;") });
+        return printlnCTag("div");
     }
 
     /** Prints an horizontal line separator with attributes 'attrs'. */
-    public HTMLPrinter printHLine(Attr[] attrs) {
-        printHLine();
-        return this;
+    public HTMLPrinter printHLine(XMLAttribute[] attrs) {
+        return printHLine();
+    }
+
+    /** Prints the <meta/> tag with attributes 'attrs' followed by a new line. */
+    public HTMLPrinter printlnMeta(XMLAttribute[] attrs) {
+	return printlnSTag("meta", attrs);
+    }
+
+    /** Prints the <link> tag with attributes 'attrs' followed by a new line. */
+    public HTMLPrinter printlnLink(XMLAttribute[] attrs) {
+	return printlnSTag("link", attrs);
     }
 
     //########################################################################
@@ -69,22 +80,14 @@ public class XHTMLPrinter extends HTMLPrinter {
      */
     protected void printPreamble() {
 	println("<!--");
-	println("< ?xml version=\"1.0\" encoding=\"" + getEncoding() + "\"?>");
+	println("< ?xml version=\"1.0\" encoding=\"" +
+            representation.getEncoding() + "\"?>");
 	println("//-->");
-	println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " + getType() +
-            "//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
-	println("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">").line();
-    }
-
-    /** Prints XHTML meta information.
-     */
-    protected void printMetaInfo(String name) {
-	printlnSTag("meta", new Attr[]{
-            new Attr("http-equiv", "content-type"),
-            new Attr("content", "text/html; charset=" + getEncoding())});
-	printlnSTag("meta", new Attr[]{
-            new Attr("name", "author"),
-            new Attr("content", name)});
+	println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
+            representation.getType() + "//" + representation.getLanguage() +
+            "\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+	println("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"" +
+            representation.getLanguage() + "\">").line();
     }
 
     //########################################################################

@@ -16,6 +16,8 @@ import java.util.Date;
  */
 public class HTMLPrinter {
 
+    public static final String DEFAULT_STYLESHEET = "style.css";
+
     //########################################################################
     // Private Fields
 
@@ -25,34 +27,32 @@ public class HTMLPrinter {
     /** The document title */
     private final String title;
 
-    /** The document type */
-    private final String type;
+    //########################################################################
+    // Protected Fields
 
-    /** The document character encoding */
-    private final String encoding;
+    /** The document representation */
+    protected final HTMLRepresentation representation;
 
     //########################################################################
     // Public Constructors
 
     /** Creates a new instance */
-    public HTMLPrinter(Writer writer, String title, String type, String encoding) {
+    public HTMLPrinter(Writer writer, String title, HTMLRepresentation representation) {
         this.printer = new CodePrinter(writer, "  ");
         this.title = title;
-        this.type = type;
-        this.encoding = encoding;
+        this.representation = representation;
     }
 
     /** Creates a new instance */
     public HTMLPrinter(Writer writer, String title, String encoding) {
         this.printer = new CodePrinter(writer, "  ");
         this.title = title;
-        this.type = "HTML 4.01 Transitional";
-        this.encoding = encoding;
+        this.representation = new HTMLRepresentation("HTML 4.01 Transitional", encoding);
     }
 
     /** Creates a new instance */
     public HTMLPrinter(Writer writer, String title) {
-        this(writer, title, "iso-8859-1");
+        this(writer, title,  "iso-8859-1");
     }
 
     //########################################################################
@@ -66,16 +66,6 @@ public class HTMLPrinter {
     /** Returns the underlying title. */
     public String getTitle() {
         return title;
-    }
-
-    /** Returns the underlying document type. */
-    public String getType() {
-        return type;
-    }
-
-    /** Returns the underlying character encoding. */
-    public String getEncoding() {
-        return encoding;
     }
 
     //########################################################################
@@ -106,7 +96,7 @@ public class HTMLPrinter {
     }
 
     //########################################################################
-    // Public Methods - Printing simple values
+    // Public Methods - Printing simple values followed by a new line
 
     /** Prints a new line. */
     public HTMLPrinter println() {
@@ -177,7 +167,7 @@ public class HTMLPrinter {
     }
 
     /** Prints the HTML tag with attributes followed by a new line. */
-    public HTMLPrinter printlnOTag(String label, Attr[] attrs) {
+    public HTMLPrinter printlnOTag(String label, XMLAttribute[] attrs) {
         printer.print("<");
         printer.print(label);
         printer.print(" ");
@@ -198,18 +188,16 @@ public class HTMLPrinter {
     public HTMLPrinter printlnTag(String label, String text) {
         printOTag(label);
         print(text);
-        printlnCTag(label);
-        return this;
+        return printlnCTag(label);
     }
 
     /** Prints the HTML tag 'label' with attributes 'attrs' and contents 'text'
      *  followed by a new line.
      */
-    public HTMLPrinter printlnTag(String label, Attr[] attrs, String text) {
+    public HTMLPrinter printlnTag(String label, XMLAttribute[] attrs, String text) {
         printOTag(label, attrs);
         print(text);
-        printlnCTag(label);
-        return this;
+        return printlnCTag(label);
     }
 
     /** Prints the short HTML tag followed by a new line.
@@ -223,7 +211,7 @@ public class HTMLPrinter {
     }
 
     /** Prints the short HTML tag with attributes 'attrs' followed by a new line. */
-    public HTMLPrinter printlnSTag(String label, Attr[] attrs) {
+    public HTMLPrinter printlnSTag(String label, XMLAttribute[] attrs) {
         printer.print("<");
         printer.print(label);
         printer.print(" ");
@@ -234,7 +222,7 @@ public class HTMLPrinter {
 
     /** Prints <A HREF=link> text </a> tag followed by a new line. */
     public HTMLPrinter printlnAhref(String dest, String text) {
-	printOTag("a", new Attr[]{ new Attr("href", dest) });
+	printOTag("a", new XMLAttribute[]{ new XMLAttribute("href", dest) });
         print(text);
         printlnCTag("a");
         return this;
@@ -242,9 +230,9 @@ public class HTMLPrinter {
 
     /** Prints <A HREF=dest TARGET=target> text </a> tag followed by a new line. */
     public HTMLPrinter printlnAhref(String dest, String target, String text) {
-        printOTag("a", new Attr[]{
-            new Attr("href", dest),
-            new Attr("target", target)});
+        printOTag("a", new XMLAttribute[]{
+            new XMLAttribute("href", dest),
+            new XMLAttribute("target", target)});
         print(text);
         printlnCTag("a");
         return this;
@@ -252,7 +240,7 @@ public class HTMLPrinter {
 
     /** Prints <A NAME=name> text </a> tag followed by a new line. */
     public HTMLPrinter printlnAname(String anchor, String text) {
-        printOTag("a", new Attr[]{new Attr("name", anchor)});
+        printOTag("a", new XMLAttribute[]{new XMLAttribute("name", anchor)});
         print(text);
         printlnCTag("a");
         return this;
@@ -266,9 +254,30 @@ public class HTMLPrinter {
 
     /** Prints text 'text' in color 'color' followed by a new line. */
     public HTMLPrinter printlnFontColor(String color, String text) {
-	printlnTag("font", new Attr[]{new Attr("color", color)}, text);
+	printlnTag("font", new XMLAttribute[]{new XMLAttribute("color", color)}, text);
         return this;
     }
+
+    /** Prints comment with contents 'text' followed by a new line. */
+    public HTMLPrinter printlnComment(String text) {
+	printer.print("<!--");
+        printer.print(text);
+        printer.println("-->");
+        return this;
+    }
+
+    /** Prints the <meta> tag with attributes 'attrs' followed by a new line. */
+    public HTMLPrinter printlnMeta(XMLAttribute[] attrs) {
+	return printlnOTag("meta", attrs);
+    }
+
+    /** Prints the <link> tag with attributes 'attrs' followed by a new line. */
+    public HTMLPrinter printlnLink(XMLAttribute[] attrs) {
+	return printlnOTag("link", attrs);
+    }
+
+    //########################################################################
+    // Public Methods - Printing simple values
 
     /** Prints the boolean value. */
     public HTMLPrinter print(boolean value) {
@@ -333,7 +342,7 @@ public class HTMLPrinter {
     }
 
     /** Prints the opening HTML tag 'label' with attributes 'attrs'. */
-    public HTMLPrinter printOTag(String label, Attr[] attrs) {
+    public HTMLPrinter printOTag(String label, XMLAttribute[] attrs) {
         printer.print("<");
         printer.print(label);
         printer.print(" ");
@@ -354,12 +363,11 @@ public class HTMLPrinter {
     public HTMLPrinter printTag(String label, String text) {
         printOTag(label);
         print(text);
-        printCTag(label);
-        return this;
+        return printCTag(label);
     }
 
     /** Prints the HTML tag 'label' with attributes 'attrs' and contents 'text'. */
-    public HTMLPrinter printTag(String label, Attr[] attrs, String text) {
+    public HTMLPrinter printTag(String label, XMLAttribute[] attrs, String text) {
         printOTag(label, attrs);
         print(text);
         printCTag(label);
@@ -376,44 +384,50 @@ public class HTMLPrinter {
 
     /** Prints <A HREF=link> text </a> tag. */
     public HTMLPrinter printAhref(String dest, String text) {
-        printOTag("a", new Attr[]{ new Attr("href", dest) });
+        printOTag("a", new XMLAttribute[]{ new XMLAttribute("href", dest) });
         print(text);
-        printCTag("a");
-        return this;
+        return printCTag("a");
     }
 
     /** Prints <A HREF=dest TARGET=target> text </a> tag. */
     public HTMLPrinter printAhref(String dest, String target, String text) {
-        printOTag("a", new Attr[]{
-            new Attr("href", dest),
-            new Attr("target", target)});
+        printOTag("a", new XMLAttribute[]{
+            new XMLAttribute("href", dest),
+            new XMLAttribute("target", target)});
         print(text);
-        printCTag("a");
-        return this;
+        return printCTag("a");
     }
 
     /** Prints <A NAME=name> text </a> tag. */
     public HTMLPrinter printAname(String anchor, String text) {
-        printOTag("a", new Attr[]{ new Attr("name", anchor) });
+        printOTag("a", new XMLAttribute[]{ new XMLAttribute("name", anchor) });
         print(text);
-        printCTag("a");
-        return this;
+        return printCTag("a");
     }
 
     /** Prints text 'text' in bold. */
     public HTMLPrinter printBold(String text) {
-        printTag("b", text);
-        return this;
+        return printTag("b", text);
     }
 
     /** Prints text 'text' in color 'color'. */
     public HTMLPrinter printFontColor(String color, String text) {
-	printTag("font", new Attr[]{ new Attr("color", color) }, text);
+	return printTag("font", new XMLAttribute[]{ new XMLAttribute("color", color) }, text);
+    }
+
+    /** Prints comment with contents 'text'.
+     *  @param text
+     */
+    public HTMLPrinter printComment(String text) {
+	printer.print("<!-- ");
+        printer.print(text);
+        printer.print(" -->");
         return this;
     }
 
     /** Prints n HTML blank spaces.
-     *  @ param n gives the number of printed blank spaces
+     *  @param n The parameter <code>n</code> gives the number
+     *           of printed blank spaces
      */
     public HTMLPrinter printNbsp(int n) {
 	while (n > 0) {
@@ -425,14 +439,12 @@ public class HTMLPrinter {
 
     /** Prints an horizontal line separator */
     public HTMLPrinter printHLine() {
-        printOTag("hr");
-        return this;
+        return printOTag("hr");
     }
 
     /** Prints an horizontal line separator with attributes 'attrs'. */
-    public HTMLPrinter printHLine(Attr[] attrs) {
-        printOTag("hr", attrs);
-        return this;
+    public HTMLPrinter printHLine(XMLAttribute[] attrs) {
+        return printOTag("hr", attrs);
     }
 
     //########################################################################
@@ -448,53 +460,82 @@ public class HTMLPrinter {
     /** Prints HTML preamble.
      */
     protected void printPreamble() {
-	println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " + type + "//EN\">");
+	print("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
+            representation.getType() + "//" + representation.getLanguage() + "\">");
 	printlnOTag("html").line();
     }
 
     /**
      */
-    protected void printGeneratedBy(String name) {
-        SimpleDateFormat df = new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy");
-        println("<!-- Generated by " + name + " on " +
-            df.format(new Date()) + " -->");
+    protected void printGeneratedBy(String generator) {
+        if (generator != null) {
+            SimpleDateFormat df = new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy");
+            printlnComment("Generated by " + generator + " on " +
+                df.format(new Date()));
+        }
     }
 
     /** Prints HTML meta information.
      */
-    protected void printMetaInfo(String name) {
-	printlnOTag("meta", new Attr[]{
-            new Attr("http-equiv", "content-type"),
-            new Attr("content", "text/html; charset=" + encoding)});
-	printlnOTag("meta", new Attr[]{
-            new Attr("name", "author"),
-            new Attr("content", name)});
+    protected void printMetaInfo(XMLAttribute[] attrs) {
+	printlnMeta(new XMLAttribute[]{
+            new XMLAttribute("http-equiv", "content-type"),
+            new XMLAttribute("content", "text/html; charset=" + representation.getEncoding())});
+        for (int i = 0; i < attrs.length; i++) {
+	    printlnMeta(new XMLAttribute[]{
+                new XMLAttribute("name", attrs[i].name),
+                new XMLAttribute("content", attrs[i].value)});
+        }
     }
 
-    protected void printStyle() {
-	//printlnOTag("link", new Attr[]{ new Attr("rel", "stylesheet"),
-	//				    new Attr("href", "style.css")});
-	println("<style type=\"text/css\">");
-	println("<!--").indent();
-	println("a:link { color: #0000ee; }");
-	println("a:visited { color: #551a8b; }");
-	println("a:active { color: #0000ee; }");
-	println("body { background-color: #ffffff; }").undent();
-	println("-->");
-	println("</style>");
+    /** Prints HTML link information for style sheets.
+     *  @param stylesheets A list of stylesheets to be linked
+     *                     to the current HTML document
+     */
+    protected void printStyles(String[] stylesheets) {
+        for (int i = 0; i < stylesheets.length; i++) {
+	    printlnLink(new XMLAttribute[]{
+                new XMLAttribute("rel", "stylesheet"),
+                new XMLAttribute("type", "text/css"),
+	        new XMLAttribute("href", stylesheets[i])});
+        }
     }
 
     /** Prints HTML header section.
-     * @param name
+     * @param metaXMLAttributes
      */
-    public void printHeader(String name) {
+    public void printHeader(XMLAttribute[] metaXMLAttributes, String generator, String[] stylesheets) {
 	printPreamble();
 	printlnOTag("head").indent();
         printlnTag("title", title);
-        printGeneratedBy(name);
-        printMetaInfo(name);
-        printStyle();
+        printGeneratedBy(generator);
+        printMetaInfo(metaXMLAttributes);
+        printStyles(stylesheets);
 	undent().printlnCTag("head").line();
+    }
+
+    /** Prints HTML header section.
+     *  @param metaXMLAttributes
+     *  @param generator
+     *  @param stylesheet
+     */
+    public void printHeader(XMLAttribute[] metaXMLAttributes, String generator, String stylesheet) {
+	printHeader(metaXMLAttributes, generator, new String[]{ stylesheet });
+    }
+
+    /** Prints HTML header section.
+     * @param metaXMLAttributes
+     * @param generator
+     */
+    public void printHeader(XMLAttribute[] metaXMLAttributes, String generator) {
+	printHeader(metaXMLAttributes, generator, DEFAULT_STYLESHEET);
+    }
+
+    /** Prints HTML header section.
+     * @param metaXMLAttributes
+     */
+    public void printHeader(XMLAttribute[] metaXMLAttributes) {
+	printHeader(metaXMLAttributes, null);
     }
 
     /** Open the body section.
