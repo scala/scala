@@ -795,10 +795,16 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     /** Builds a Typed nodes with given value and type. */
-    public Typed Typed(int pos, Tree value, Type type) {
-        Typed tree = make.Typed(pos, value, TypeTerm(pos, type));
-        tree.setType(type);
+    public Typed Typed(int pos, Tree value, Tree type) {
+        Typed tree = make.Typed(pos, value, type);
+        tree.setType(type.type());
         return tree;
+    }
+    public Typed Typed(Tree value, Tree type) {
+        return Typed(value.pos, value, type);
+    }
+    public Typed Typed(int pos, Tree value, Type type) {
+        return Typed(pos, value, mkType(pos, type));
     }
     public Typed Typed(Tree value, Type type) {
         return Typed(value.pos, value, type);
