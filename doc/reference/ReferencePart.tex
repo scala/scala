@@ -4189,6 +4189,8 @@ ETag          ::=    `</' Name [S] '>'
 Content       ::=    [CharData] {Content1 [CharData]}
 Content1      ::=    Element
                 |    Reference
+                |    CDSect
+                |    PI
                 |    Comment
                 |    ScalaExpr
 \end{lstlisting}
@@ -4200,6 +4202,14 @@ than one element, then its value is a runtime representation of a
 sequence of XML nodes (an instance of a subclass of 
 \lstinline@scala.Seq[scala.xml.Node]@).
 
+If an XML expression is an entity reference, CDATA section, processing 
+instructions or a comments, it is represented by an instance of the 
+corresponding Scala runtime class.
+
+By default, beginning and trailing whitespace in element content is removed, 
+and consecutive occurrences of whitespace are replaced by a single space
+character \U{0020}. This behaviour can be changed to preserve all whitespace
+with a compiler option.
 \syntax\begin{lstlisting}
 Attribute     ::=    Name Eq AttValue	                                 
 
@@ -4253,6 +4263,16 @@ elements match the sequence described by the pattern.
 
 XML patterns may contain Scala patterns(\ref{sec:pattern-match}).
 
+Whitespace is treated the same way as in XML expressions. Patterns 
+that are entity references, CDATA sections, processing 
+instructions and comments match runtime representations which are the
+the same.
+
+By default, beginning and trailing whitespace in element content is removed, 
+and consecutive occurrences of whitespace are replaced by a single space
+character \U{0020}. This behaviour can be changed to preserve all whitespace
+with a compiler option.
+
 \syntax\begin{lstlisting}
 ElemPattern   ::=    EmptyElemTagP
                 |    STagP ContentP ETagP                                    
@@ -4261,6 +4281,12 @@ EmptyElemTagP ::=    '<' Name [S] '/>'
 STagP         ::=    '<' Name [S] '>'                          
 ETagP         ::=    '</' Name [S] '>'                                        
 ContentP      ::=    [CharData] {(ElemPattern|ScalaPatterns) [CharData]}
+ContentP1     ::=    ElemPattern
+                |    Reference
+                |    CDSect
+                |    PI
+                |    Comment
+                |    ScalaPatterns
 ScalaPatterns ::=    '{' patterns '}'
 \end{lstlisting}
 
