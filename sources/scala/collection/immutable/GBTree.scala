@@ -5,11 +5,8 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 ** $Id$
-**  @author  Erik Stenman
-**  @version 1.0, 10/07/2003
-**
 ** =====================================================================*/
-/** General Balanced Trees - highly efficient functional dictionaries.
+/* General Balanced Trees - highly efficient functional dictionaries.
 **
 ** This is a scala version of gb_trees.erl which is
 ** copyrighted (C) 1999-2001 by Sven-Olof Nyström, and Richard Carlsson
@@ -37,78 +34,42 @@
 ** Author contact: erik.stenman@epfl.ch
 **                 (svenolof@csd.uu.se, richardc@csd.uu.se)
 ** ---------------------------------------------------------------------
-**
-**
-** - update(X, V): updates key X to value V in the tree; returns the
-**   new tree. Assumes that the key is present in the tree.
-**
-** - enter(X, V): inserts key X with value V into the tree if the key
-**   is not present in the tree, otherwise updates key X to value V in
-**   the tree. Returns the new tree.
-**
-** - delete(X): removes key X from the tree; returns new tree. Assumes
-**   that the key is present in the tree.
-**
-** - delete_any(X): removes key X from the tree if the key is present
-**   in the tree, otherwise does nothing; returns new tree.
-**
-** - balance: rebalances the tree. Note that this is rarely necessary,
-**   but may be motivated when a large number of entries have been
-**   deleted from the tree without further insertions. Rebalancing could
-**   then be forced in order to minimise lookup times, since deletion
-**   only does not rebalance the tree.
-**
-** - contains(X): returns `true' if key X is present in the tree, and
-**   `false' otherwise.
-**
-** - keys: returns an ordered list of all keys in the tree.
-**
-** - values: returns the list of values for all keys in the tree,
-**   sorted by their corresponding keys. Duplicates are not removed.
-**
-** - to_list: returns an ordered list of Pair(Key, Value) for all
-**   keys in the tree.
-**
-**
-** - iterator: returns an iterator that can be used for traversing
-**   the entries of the tree; see `next'. The implementation of this is
-**   very efficient; traversing the whole tree using `next' is only
-**   slightly slower than getting the list of all elements using
-**   `to_list' and traversing that. The main advantage of the iterator
-**   approach is that it does not require the complete list of all
-**   elements to be built in memory at one time.
-**
-** - next: returns Tuple3(X, V, S1) where X is the smallest key referred to
-**   by the iterator, and S1 is the new iterator to be used for
-**   traversing the remaining entries, or the atom `none' if no entries
-**   remain.
 */
 
 package scala.collection.immutable;
 
 object GBTree {
-  def Empty[A <: Ord[A], B] = new GBTree[A, B];
+    /** An empty GBTree. */
+    def Empty[A <: Ord[A], B] = new GBTree[A, B];
 }
 
-/** %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-** Data structure:
+/** General Balanced Trees - highly efficient functional dictionaries.
+**
+** An efficient implementation of Prof. Arne Andersson's General
+** Balanced Trees. These have no storage overhead compared to plain
+** unbalanced binary trees, and their performance is in general better
+** than AVL trees.
+** <p>
+** I make no attempt to balance trees after deletions. Since deletions
+** don't increase the height of a tree, I figure this is OK.
+**
+**  @author  Erik Stenman
+**  @version 1.0, 10/07/2003
+*/
+/* Data structure:
 ** - Size - the number of elements in the tree.
 ** - Tree, which is composed of nodes of the form:
 **   - Node(Key, Value, Smaller, Bigger), and the "empty tree" node:
-**   - Nil.
-**
-** I make no attempt to balance trees after deletions. Since deletions
-** don't increase the height of a tree, I figure this is OK.
+**   - Nil().
 **
 ** Original balance condition h(T) <= ceil(c * log(|T|)) has been
 ** changed to the similar (but not quite equivalent) condition 2 ^ h(T)
 ** <= |T| ^ c. I figure this should also be OK.
 **
-** %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 */
 
-class GBTree[A <: Ord[A], B]() with Map[A, B, GBTree[A,B]] {
-  type TREE = Tree[A,B];
+class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[A,B]] {
+  private type TREE = Tree[A,B];
 
   /** - size: returns the number of nodes in the tree as an integer.
    **   Returns 0 (zero) if the tree is empty.
@@ -142,7 +103,7 @@ class GBTree[A <: Ord[A], B]() with Map[A, B, GBTree[A,B]] {
    **/
   def get(key:A) = get_1(key, tree);
 
-  /* The term order is an arithmetic total order, so we should not
+  /* Ord is an arithmetic total order, so we should not
   ** test exact equality for the keys. (If we do, then it becomes
   ** possible that neither `>', `<', nor `=:=' matches.) Testing '<'
   ** and '>' first is statistically better than testing for
@@ -401,7 +362,7 @@ class GBTree[A <: Ord[A], B]() with Map[A, B, GBTree[A,B]] {
     def count:Info;
   }
 
-  case class Node(key:A,value:B,smaller:TREE,bigger:TREE)
+  private case class Node(key:A,value:B,smaller:TREE,bigger:TREE)
 	extends Tree[A,B] {
 	  def count:Info = {
 	    if (smaller == Nil() && bigger == Nil())
@@ -415,13 +376,13 @@ class GBTree[A <: Ord[A], B]() with Map[A, B, GBTree[A,B]] {
 	  }
 	}
 
-  case class Nil[A <: Ord[A],B]() extends Tree[A,B] {
+  private case class Nil[A <: Ord[A],B]() extends Tree[A,B] {
     def count = new Info(1,0);
   }
 
   class KeyExists(key:Any) extends java.lang.Exception();
 
-  class Info(h:int, s:int) {
+  private class Info(h:int, s:int) {
     val height = h;
     val size = s;
   }
@@ -429,16 +390,16 @@ class GBTree[A <: Ord[A], B]() with Map[A, B, GBTree[A,B]] {
   /* -----------------------------------------------------------
   // Some helpful definitions.
   */
-  final val p = 2; // It seems that p = 2 is optimal for sorted keys */
-  final def pow(a:int, b:int):int =
+  private val p = 2; // It seems that p = 2 is optimal for sorted keys */
+  private def pow(a:int, b:int):int =
     a.match {
       case 2 => a * a;
       case 1 => a;
       case x if x > 0 => a * pow(a, b-1);
     };
-  final def div2(x:int) = x >> 1;
-  final def mul2(x:int) = x << 1;
-  def max(x:int, y:int) = if(x < y) y; else x;
+  private def div2(x:int) = x >> 1;
+  private def mul2(x:int) = x << 1;
+  private def max(x:int, y:int) = if(x < y) y; else x;
 
 
 
@@ -514,4 +475,51 @@ largest_1({_Key, _Value, _Smaller, Larger}) =>
 
 
 
+*/
+
+/*
+**
+** - update(X, V): updates key X to value V in the tree; returns the
+**   new tree. Assumes that the key is present in the tree.
+**
+** - enter(X, V): inserts key X with value V into the tree if the key
+**   is not present in the tree, otherwise updates key X to value V in
+**   the tree. Returns the new tree.
+**
+** - delete(X): removes key X from the tree; returns new tree. Assumes
+**   that the key is present in the tree.
+**
+** - delete_any(X): removes key X from the tree if the key is present
+**   in the tree, otherwise does nothing; returns new tree.
+**
+** - balance: rebalances the tree. Note that this is rarely necessary,
+**   but may be motivated when a large number of entries have been
+**   deleted from the tree without further insertions. Rebalancing could
+**   then be forced in order to minimise lookup times, since deletion
+**   only does not rebalance the tree.
+**
+** - contains(X): returns `true' if key X is present in the tree, and
+**   `false' otherwise.
+**
+** - keys: returns an ordered list of all keys in the tree.
+**
+** - values: returns the list of values for all keys in the tree,
+**   sorted by their corresponding keys. Duplicates are not removed.
+**
+** - to_list: returns an ordered list of Pair(Key, Value) for all
+**   keys in the tree.
+**
+**
+** - iterator: returns an iterator that can be used for traversing
+**   the entries of the tree; see `next'. The implementation of this is
+**   very efficient; traversing the whole tree using `next' is only
+**   slightly slower than getting the list of all elements using
+**   `to_list' and traversing that. The main advantage of the iterator
+**   approach is that it does not require the complete list of all
+**   elements to be built in memory at one time.
+**
+** - next: returns Tuple3(X, V, S1) where X is the smallest key referred to
+**   by the iterator, and S1 is the new iterator to be used for
+**   traversing the remaining entries, or the atom `none' if no entries
+**   remain.
 */
