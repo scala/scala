@@ -32,6 +32,7 @@ public class Tree {
         t_int       = TreeType.INT,
         t_ints      = TreeType.Array(t_int),
         t_Object    = TreeType.Reference(null, "Object"),
+        t_String    = TreeType.Reference(null, "String"),
         t_Global    = TreeType.Reference("scalac", "Global"),
         t_Unit      = TreeType.Reference("scalac", "Unit"),
         t_TreeGen   = TreeType.Reference("scalac.ast", "TreeGen"),
@@ -71,6 +72,7 @@ public class Tree {
     public final TreeNode
         n_Bad            = node("Bad"           , Any , HasSym),
         n_Empty          = node("Empty"         , Any , NoSym),
+        n_DocDef         = node("DocDef"        , None, NoSym),
         n_ClassDef       = node("ClassDef"      , None, DefSym),
         n_PackageDef     = node("PackageDef"    , None, NoSym),
         n_ModuleDef      = node("ModuleDef"     , None, DefSym),
@@ -128,6 +130,12 @@ public class Tree {
             setDescription("A tree node for the absence of a tree").
             setRange(Phase.PARSER, Phase.UNKNOWN).
             noFields();
+
+        n_DocDef.
+            setDescription("Documented definition").
+            setRange(Phase.PARSER, Phase.ANALYZER).
+            addField(t_String, "comment").
+            addField(t_Tree, "definition");
 
         n_ClassDef.
             setDescription("Class and data declaration").

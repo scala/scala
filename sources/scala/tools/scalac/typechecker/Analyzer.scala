@@ -753,6 +753,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       global.compiledNow.put(sym, unit.source);
   }
 
+  def outerEnterSym(tree: Tree): Symbol = enterSym(tree);
   /** If `tree' is a definition, create a symbol for it with a lazily
   *  constructed type, and enter into current scope.
   */
@@ -819,6 +820,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  case _ =>
 	    throw new ApplicationError();
 	}
+
+      case Tree$DocDef(comment, definition) =>
+        outerEnterSym(definition)
 
       case Tree$ClassDef(mods, name, tparams, vparams, _, templ) =>
 	val clazz: ClassSymbol = ClassSymbol.define(
@@ -1941,30 +1945,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   */
   override def transform(tree: Tree): Tree = {
 
-    def qualifyingClass(tree: Tree, name: Name): Symbol = {
-      if (name == TypeNames.EMPTY) {
-        val clazz: Symbol = context.enclClass.owner;
-        if (clazz != null)
-	  clazz
-	else {
-          error(tree.pos, "" + tree +
-		" can be used only in a class, object, or template");
-	  Symbol.ERROR
-	}
-      } else {
-	var i: Context = context;
-	while (i != Context.NONE &&
-	       !(i.owner.kind == CLASS && i.owner.name == name))
-	  i = i.outer;
-	if (i != Context.NONE)
-	  i.owner
-	else {
-          error(tree.pos, "" + name + " is not an enclosing class");
-	  Symbol.ERROR
-	}
-      }
-    }
-
     //System.out.println("transforming " + tree);//DEBUG
     if (tree.getType() != null) {
       checkDefined.all = tree; checkDefined.traverse(tree);//debug
@@ -1974,12 +1954,36 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     if (sym != null && !sym.isInitialized()) sym.initialize();
     if (global.debug && TreeInfo.isDefinition(tree)) global.log("transforming definition of " + sym);
     try {
+      transform0(tree, sym);
+    } catch {
+      case ex: Type$Error =>
+	reportTypeError(tree.pos, ex);
+	tree.setType(Type.ErrorType);
+	if (tree.hasSymbol()) {
+	  if (tree.symbol() != null) tree.symbol().setInfo(Type.ErrorType);
+	  else tree.setSymbol(Symbol.ERROR);
+	}
+	tree;
+    }
+  }
+
+  // extracted from transform to avoid overflows in GenJVM
+  def transform0(tree: Tree, sym: Symbol): Tree = {
       tree match {
 	case Tree$Bad() =>
 	  tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType)
 
 	case Tree.Empty =>
 	  tree.setType(Type.NoType)
+
+   	case Tree$DocDef(comment, definition) =>
+          val defined = definition match {
+            case Tree$PackageDef(pkg, _) => pkg.symbol()
+            case _ => definition.symbol()
+          }
+          assert(defined != null, tree);
+	  global.mapSymbolComment.put(defined, new Pair(comment, unit));
+          transform(definition)
 
 	case Tree$PackageDef(pkg, templ @ Tree$Template(parents, body)) =>
 	  val pkgSym: Symbol = pkg.symbol();
@@ -2089,6 +2093,39 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  context.imports = new ImportList(tree, context.scope, context.imports);
 	  Tree.Empty
 
+        case _ =>
+          transform1(tree, sym)
+      }
+  }
+
+  // extracted from transform0 to avoid overflows in GenJVM
+  def transform1(tree: Tree, sym: Symbol): Tree = {
+
+    def qualifyingClass(tree: Tree, name: Name): Symbol = {
+      if (name == TypeNames.EMPTY) {
+        val clazz: Symbol = context.enclClass.owner;
+        if (clazz != null)
+	  clazz
+	else {
+          error(tree.pos, "" + tree +
+		" can be used only in a class, object, or template");
+	  Symbol.ERROR
+	}
+      } else {
+	var i: Context = context;
+	while (i != Context.NONE &&
+	       !(i.owner.kind == CLASS && i.owner.name == name))
+	  i = i.outer;
+	if (i != Context.NONE)
+	  i.owner
+	else {
+          error(tree.pos, "" + name + " is not an enclosing class");
+	  Symbol.ERROR
+	}
+      }
+    }
+
+      tree match {
 	case Tree$Block(stats, value) =>
 	  pushContext(tree, context.owner, new Scope(context.scope));
 	  val stats1 = desugarize.Statements(stats, true);
@@ -2801,16 +2838,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case _ =>
 	  throw new ApplicationError("illegal tree: " + tree)
       }
-    } catch {
-      case ex: Type$Error =>
-	reportTypeError(tree.pos, ex);
-	tree.setType(Type.ErrorType);
-	if (tree.hasSymbol()) {
-	  if (tree.symbol() != null) tree.symbol().setInfo(Type.ErrorType);
-	  else tree.setSymbol(Symbol.ERROR);
-	}
-	tree;
-    }
   }
 }
 }
