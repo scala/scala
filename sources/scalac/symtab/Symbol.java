@@ -404,6 +404,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         }
     }
 
+    /** Does this symbol denote a label? */
+    public boolean isLabel() {
+        return (flags & LABEL) != 0;
+    }
+
     /** The variance of this symbol as an integer
      */
     public int variance() {
