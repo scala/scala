@@ -1169,13 +1169,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	}
     }
 
-    Tree makeStableId(int pos, Type tp) {
-	if (tp.symbol().isCompoundSym())
-	    return gen.This(pos, tp.symbol());
-	else
-	    return gen.mkStableId(pos, tp);
-    }
-
     /** Define self type of class or module `sym'
      *  associated with `tree' using given `unit' and `context'.
      */
@@ -1500,7 +1493,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (sym.owner().kind == CLASS) {
 		    pre = nextcontext.enclClass.owner.thisType();
 		    if (!sym.owner().isPackage()) {
-			Tree qual1 = makeStableId(tree.pos, pre);
+			Tree qual1 = gen.This(tree.pos, nextcontext.enclClass.owner);
 			tree = make.Select(tree.pos, qual1, name);
 			//System.out.println(name + " :::> " + tree + " " + qual1.symbol());//DEBUG
 		    }
@@ -2203,9 +2196,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Tree alloc =
 			    gen.New(
 				gen.Apply(
-				    gen.mkRef(
+				    gen.mkLocalRef(
 					tree.pos,
-					Type.localThisType,
 					clazz.primaryConstructor()),
 				Tree.EMPTY_ARRAY))
 			    .setType(owntype);

@@ -192,55 +192,122 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
     // Public Methods - Building references
 
-    /** Builds references corresponding to given symbols. */
-    public Tree[] mkRefs(int pos, Symbol[] syms) {
-        if (syms.length == 0) return Tree.EMPTY_ARRAY;
-        Tree[] trees = new Tree[syms.length];
+    /**
+     * Builds a reference to primary constructor of given class with
+     * given qualifier.
+     */
+    public Tree mkPrimaryConstructorRef(int pos, Tree qualifier, Symbol clasz){
+        return mkRef(pos, qualifier, primaryConstructorOf(clasz));
+    }
+    public Tree mkPrimaryConstructorRef(Tree qualifier, Symbol clasz) {
+        return mkPrimaryConstructorRef(qualifier.pos, qualifier, clasz);
+    }
+
+    /**
+     * Builds a reference to primary constructor of given class with
+     * given stable prefix.
+     */
+    public Tree mkPrimaryConstructorRef(int pos, Type stable, Symbol clasz) {
+        return mkRef(pos, stable, primaryConstructorOf(clasz));
+    }
+
+    /**
+     * Builds a local reference to primary constructor of given class.
+     */
+    public Tree mkPrimaryConstructorLocalRef(int pos, Symbol clasz) {
+        return mkLocalRef(pos, primaryConstructorOf(clasz));
+    }
+
+    /**
+     * Builds a global reference to primary constructor of given
+     * class.
+     */
+    public Tree mkPrimaryConstructorGlobalRef(int pos, Symbol clasz) {
+        return mkGlobalRef(pos, primaryConstructorOf(clasz));
+    }
+
+    /** Builds local references to given symbols. */
+    public Tree[] mkLocalRefs(int pos, Symbol[] symbols) {
+        if (symbols.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[symbols.length];
         for (int i = 0; i < trees.length; i++)
-            trees[i] = mkRef(pos, syms[i]);
+            trees[i] = mkLocalRef(pos, symbols[i]);
 	return trees;
     }
 
-    /** Builds a reference corresponding to given symbol. */
-    public Tree mkRef(int pos, Symbol sym) {
-	//System.out.println("mkref " + sym.owner().thisType() + " . " + sym);//DEBUG
-	return mkRef(pos, sym.owner().thisType(), sym);
+    /** Builds global references to given symbols. */
+    public Tree[] mkGlobalRefs(int pos, Symbol[] symbols) {
+        if (symbols.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[symbols.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkGlobalRef(pos, symbols[i]);
+	return trees;
     }
 
-    /** Builds a reference corresponding to given prefix & symbol. */
-    public Tree mkRef(int pos, Type pre, Symbol sym) {
-	if (pre.isSameAs(Type.localThisType) || pre.symbol().isRoot())
-	    return Ident(pos, sym);
-	else
-	    return Select(pos, mkStableId(pos, pre), sym);
+    /** Builds a reference to given symbol with given qualifier. */
+    public Tree mkRef(int pos, Tree qualifier, Symbol symbol) {
+        return Select(pos, qualifier, symbol);
+    }
+    public Tree mkRef(Tree qualifier, Symbol symbol) {
+        return mkRef(qualifier.pos, qualifier, symbol);
     }
 
-    /** Builds a reference corresponding to given stable prefix. */
-    public Tree mkStableId(int pos, Type pre) {
-        switch (pre.expandModuleThis()) {
-	case ThisType(Symbol sym):
-	    return This(pos, sym);
-        case SingleType(Type pre1, Symbol sym):
-	    Tree id = mkRef(pos, pre1, sym);
-	    switch (sym.type()) {
+    /**
+     * Builds a reference to given symbol with given stable prefix.
+     */
+    public Tree mkRef(int pos, Type stable, Symbol symbol) {
+        switch (stable) {
+	case ThisType(Symbol clasz):
+	    if (clasz.isPackage()) return mkRef(pos, mkGlobalRef(pos, clasz.module()), symbol); // !!!
+            if (clasz.isNone()) return Ident(pos, symbol);
+            return mkRef(pos, This(pos, clasz), symbol);
+        case SingleType(Type prefix, Symbol member):
+	    Tree tree = mkRef(pos, prefix, member);
+	    switch (tree.type()) {
 	    case MethodType(Symbol[] params, _):
-		assert params.length == 0 : pre;
-		id = this.Apply(id, Tree.EMPTY_ARRAY);
+		assert params.length == 0: tree.type();
+		tree = Apply(pos, tree);
 	    }
-	    return id;
+	    return mkRef(pos, tree, symbol);
         default:
-            throw Debug.abort("illegal case", pre);
+            throw Debug.abort("illegal case", stable);
         }
+    }
+
+    /** Builds a local reference to given symbol. */
+    public Tree mkLocalRef(int pos, Symbol symbol) {
+        if (symbol.isRoot()) return Ident(pos, symbol);
+        return mkRef(pos, symbol.owner().thisType(), symbol);
+    }
+
+    /** Builds a global reference to given symbol. */
+    public Tree mkGlobalRef(int pos, Symbol symbol) {
+        if (symbol.isRoot()) return Ident(pos, symbol);
+        assert symbol.owner().isModuleClass(): Debug.show(symbol);
+        return mkRef(pos, mkGlobalRef(pos, symbol.owner().module()), symbol);
     }
 
     /** Builds a This node corresponding to given class. */
     public This This(int pos, Symbol clazz) {
-        assert clazz.isClass(): Debug.show(clazz);
+        assert clazz.isClassType(): Debug.show(clazz);
         This tree = make.This(pos, clazz);
         global.nextPhase();
         tree.setType(clazz.thisType());
         global.prevPhase();
         return tree;
+    }
+
+    /** Builds a This node corresponding to given type. */
+    public This This(int pos, Type type) {
+        switch (type) {
+	case ThisType(Symbol clasz):
+            return This(pos, clasz);
+        case SingleType(Type prefix, Symbol member):
+            assert member.isModule(): type;
+            return This(pos, member.moduleClass());
+        default:
+            throw Debug.abort("illegal case", type);
+        }
     }
 
     /** Builds a Super node corresponding to given class. */
@@ -276,105 +343,21 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      * Builds a Select node corresponding to given symbol selected
      * from given qualifier.
      */
-    public Select Select(int pos, Tree qual, Symbol sym) {
+    public Select Select(int pos, Tree qualifier, Symbol sym) {
 	assert sym.isTerm(): Debug.show(sym);
 	sym.flags |= ACCESSED | SELECTOR;
-	Select tree = make.Select(pos, sym, qual);
+	Select tree = make.Select(pos, sym, qualifier);
         global.nextPhase();
-        tree.setType(qual.type.memberStabilizedType(sym));
+        tree.setType(qualifier.type.memberStabilizedType(sym));
         global.prevPhase();
         return tree;
     }
-    public Select Select(Tree qual, Symbol sym) {
-	return Select(qual.pos, qual, sym);
+    public Select Select(Tree qualifier, Symbol sym) {
+	return Select(qualifier.pos, qualifier, sym);
     }
 
     //########################################################################
     // Public Methods - Building applications
-
-    /**
-     * Builds calls to primary constructors of given types with given
-     * value arguments.
-     */
-    public Tree[] mkPrimaryConstrs(int pos, Type[] types, Tree[][] vargs) {
-        assert types.length == vargs.length: Debug.show(types, " -- ", vargs);
-        Tree[] trees = new Tree[types.length];
-        for (int i = 0; i < trees.length; i++)
-            trees[i] = mkPrimaryConstr(pos, types[i], vargs[i]);
-        return trees;
-    }
-
-    /**
-     * Builds calls to primary constructors of given types with no
-     * value arguments.
-     */
-    public Tree[] mkPrimaryConstrs(int pos, Type[] types) {
-        Tree[] trees = new Tree[types.length];
-        for (int i = 0; i < trees.length; i++)
-            trees[i] = mkPrimaryConstr(pos, types[i]);
-        return trees;
-    }
-
-    /**
-     * Builds a call to the primary constructor of given type with
-     * given value arguments. Missing type arguments are extracted
-     * from the given type.
-     */
-    public Tree mkPrimaryConstr(int pos, Type type, Tree[] vargs) {
-	switch (type) {
-	case TypeRef(Type pre, Symbol clazz, Type[] targs):
-            return mkPrimaryConstr(pos, pre, clazz, targs, vargs);
-	default:
-	    throw Debug.abort("invalid type", type);
-	}
-    }
-
-    /**
-     * Builds a call to the primary constructor of given type with no
-     * value arguments. Missing type arguments are extracted from the
-     * given type.
-     */
-    public Tree mkPrimaryConstr(int pos, Type type) {
-        return mkPrimaryConstr(pos, type, Tree.EMPTY_ARRAY);
-    }
-
-    /**
-     * Builds a call to the primary constructor of given class with
-     * given type and value arguments.
-     */
-    public Tree mkPrimaryConstr(int pos, Type pre, Symbol clazz, Type[] targs,
-        Tree[] vargs)
-    {
-        global.nextPhase();
-        Symbol constr = clazz.primaryConstructor();
-        global.prevPhase();
-        return mkApplyTV(pos, mkRef(pos, constr), targs, vargs);
-    }
-    public Tree mkPrimaryConstr(int pos, Symbol clazz, Type[]targs, Tree[]vargs){
-        return mkPrimaryConstr(pos,clazz.owner().thisType(),clazz,targs,vargs);
-    }
-
-    /**
-     * Builds a call to the primary constructor of given class with
-     * given type arguments and no value arguments.
-     */
-    public Tree mkPrimaryConstr(int pos, Type pre, Symbol clazz, Type[] targs){
-        return mkPrimaryConstr(pos, pre, clazz, targs, Tree.EMPTY_ARRAY);
-    }
-    public Tree mkPrimaryConstr(int pos, Symbol clazz, Type[] targs) {
-        return mkPrimaryConstr(pos, clazz.owner().thisType(), clazz, targs);
-    }
-
-    /**
-     * Builds a call to the primary constructor of given class with no
-     * type and value arguments.
-     */
-    public Tree mkPrimaryConstr(int pos, Type pre, Symbol clazz) {
-        return mkPrimaryConstr(pos, pre, clazz, Type.EMPTY_ARRAY);
-    }
-    public Tree mkPrimaryConstr(int pos, Symbol clazz) {
-        return mkPrimaryConstr(pos, clazz.owner().thisType(), clazz);
-    }
 
     /**
      * Builds an application with given function, type arguments and
@@ -539,7 +522,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return mkImportAll(qualifier.pos, qualifier);
     }
     public Import mkImportAll(int pos, Symbol qualifier) {
-        return mkImportAll(pos, mkRef(pos, qualifier));
+        return mkImportAll(pos, mkGlobalRef(pos, qualifier));
     }
 
     /** Builds an instance test with given value and type. */
@@ -582,7 +565,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return Import(qualifier.pos, qualifier, names);
     }
     public Import Import(int pos, Symbol qualifier, Name[] names) {
-        return Import(pos, mkRef(pos, qualifier), names);
+        return Import(pos, mkGlobalRef(pos, qualifier), names);
     }
 
     /** Builds a Template node with given symbol, parents and body. */
@@ -739,7 +722,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an empty list. */
     public Tree mkNil(int pos) {
-	return mkRef(pos, definitions.NIL);
+	return mkGlobalRef(pos, definitions.NIL);
     }
 
     /** Builds a list with given element type, head and tail. */
@@ -749,8 +732,11 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             element + " -- " + head + " : " + head.type;
         assert tail.type().isSubType(definitions.LIST_TYPE(element)):
             element + " -- " + tail + " : " + tail.type;
-        Type cons = definitions.CONS_TYPE(element);
-	return New(mkPrimaryConstr(pos, cons, new Tree[]{head, tail}));
+	return New(
+            mkApplyTV(
+                mkPrimaryConstructorGlobalRef(pos, definitions.CONS_CLASS),
+                new Type[]{element},
+                new Tree[]{head, tail}));
     }
     public Tree mkNewCons(Type element, Tree head, Tree tail) {
         return mkNewCons(head.pos, element, head, tail);
@@ -769,8 +755,11 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a new array tree with given element type and length. */
     public Tree mkNewArray(int pos, Type element, Tree length) {
-        Type array = definitions.ARRAY_TYPE(element);
-        return New(mkPrimaryConstr(pos, array, new Tree[]{length}));
+        return New(
+            mkApplyTV(
+                mkPrimaryConstructorGlobalRef(pos, definitions.ARRAY_CLASS),
+                new Type[]{element},
+                new Tree[]{length}));
     }
     public Tree mkNewArray(Type element, Tree length) {
         return mkNewArray(length.pos, element, length);
@@ -892,7 +881,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return tree;
     }
     public PackageDef PackageDef(Symbol peckage, Template template) {
-        return PackageDef(mkRef(peckage.pos, peckage), template);
+        return PackageDef(mkGlobalRef(peckage.pos, peckage), template);
     }
 
     /** Builds a PackageDef with given package and body. */
@@ -902,7 +891,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             Template(peckage.pos, Symbol.NONE, Tree.EMPTY_ARRAY, body));
     }
     public PackageDef PackageDef(Symbol peckage, Tree[] body) {
-        return PackageDef(mkRef(peckage.pos, peckage), body);
+        return PackageDef(mkGlobalRef(peckage.pos, peckage), body);
     }
 
     /** Builds a ClassDef node for given class with given template. */
@@ -946,7 +935,18 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	Global.instance.nextPhase();
 	Type[] parents = clazz.parents();
 	Global.instance.prevPhase();
-        Tree[] constrs = mkPrimaryConstrs(clazz.pos, parents);
+        Tree[] constrs = new Tree[parents.length];
+        for (int i = 0; i < constrs.length; i++) {
+            switch (parents[i]) {
+            case TypeRef(Type prefix, Symbol parent, Type[] targs):
+                constrs[i] = mkApplyT_(
+                    mkPrimaryConstructorRef(clazz.pos, prefix, parent),
+                    targs);
+                continue;
+            default:
+                throw Debug.abort("invalid type", parents[i]);
+            }
+        }
         return ClassDef(clazz, constrs, Symbol.NONE, body);
     }
 
@@ -1048,6 +1048,14 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return local;
     }
 
+    /** Returns the primary constructor of given class. */
+    private Symbol primaryConstructorOf(Symbol clasz) {
+        global.nextPhase();
+        Symbol constr = clasz.primaryConstructor();
+        global.prevPhase();
+        return constr;
+    }
+
     //########################################################################
     //########################################################################
     //########################################################################
@@ -1102,11 +1110,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    params[i].setOwner(applyMeth);
 	}
 	changeOwner(body, owner, applyMeth);
-        Tree[] parentTrees = mkPrimaryConstrs(pos, parentTypes);
         Tree[] memberTrees = { DefDef(applyMeth, body) };
-        Symbol local = TermSymbol.newLocalDummy(clazz);
-        Tree classDef = ClassDef(clazz, parentTrees, local, memberTrees);
-	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))
+        Tree classDef = ClassDef(clazz, memberTrees);
+	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)))
             .setType(parentTypes[1]); // !!!
 	return Block(new Tree[]{classDef, alloc});
     }
@@ -1122,15 +1128,13 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
-        Tree[] parentTrees = mkPrimaryConstrs(pos, parentTypes);
         Tree[] memberTrees = {
             makeVisitorMethod(pos, Names.apply, applyVisitor,
                               pattype, restype, clazz, owner),
             makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
                               pattype, definitions.BOOLEAN_TYPE(), clazz, owner)};
-        Symbol local = TermSymbol.newLocalDummy(clazz);
-        Tree classDef = ClassDef(clazz, parentTrees, local, memberTrees);
-	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))
+        Tree classDef = ClassDef(clazz, memberTrees);
+	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)))
 	    .setType(parentTypes[1]); // !!!
 	return Block(new Tree[]{classDef, alloc});
     }
@@ -1194,7 +1198,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Tree Console_print(int pos, Tree arg) {
         Symbol sym = global.definitions.getModule( Names.scala_Console );
         return Apply( Select( pos,
-                              mkRef( pos, sym),
+                              mkGlobalRef( pos, sym),
                               global.definitions.CONSOLE_PRINT()),
                       new Tree[] {
                           arg

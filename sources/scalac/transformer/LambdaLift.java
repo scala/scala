@@ -417,18 +417,21 @@ public class LambdaLift extends OwnerTransformer
 		transform(tparams, currentOwner),
 		transform(rhs, currentOwner));
 
-	case ValDef(_, _, Tree tpe, Tree rhs):
+	case ValDef(_, _, _, Tree rhs):
 	    Symbol sym = tree.symbol();
-	    Tree tpe1 = transform(tpe);
-	    Tree rhs1 = transform(rhs, sym);
+	    rhs = transform(rhs, sym);
 	    if ((sym.flags & CAPTURED) != 0) {
 		assert sym.isLocal();
-		Type boxedType = sym.nextType();
-		tpe1 = gen.mkType(tpe.pos, boxedType);
-		rhs1 = gen.New(
-                    gen.mkPrimaryConstr(rhs.pos, boxedType, new Tree[]{rhs1}));
+                switch (sym.nextType()) {
+                case TypeRef(_, Symbol clasz, Type[] args):
+                    Tree constr = gen.mkPrimaryConstructorGlobalRef(rhs.pos, clasz);
+                    rhs = gen.New(gen.mkApplyTV(constr, args, new Tree[]{rhs}));
+                    break;
+                default:
+                    throw Debug.abort("illegal case", sym.nextType());
+                }
 	    }
-	    return copy.ValDef(tree, sym, tpe1, rhs1);
+	    return gen.ValDef(sym, rhs);
 
 	case Sequence(Tree[] args):
 	    Tree tree1 = gen.mkNewList(tree.pos, tree.type.typeArgs()[0], transform(args));
@@ -486,7 +489,7 @@ public class LambdaLift extends OwnerTransformer
 		sym = descr.proxy(sym, currentOwner);
 	    }
 	    Tree tree1 = (sym.owner().kind == CLASS)
-		? gen.mkRef(tree.pos, sym)
+		? gen.mkLocalRef(tree.pos, sym)
 		: copy.Ident(tree, sym).setType(sym.nextType());
 	    if (name != sym.name) {
 		if (tree1 instanceof Ident) ((Ident)tree1).name = sym.name;

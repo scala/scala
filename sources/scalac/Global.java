@@ -448,7 +448,7 @@ public class Global {
                     impl.body[impl.body.length - 1] =
                         treeGen.Apply(last.pos,
                             treeGen.Select(last.pos,
-                                treeGen.mkRef(last.pos, INTERPRETER()),
+                                treeGen.mkGlobalRef(last.pos, INTERPRETER()),
                                 SET_EVALUATION_RESULT()),
                             new Tree[] {
                                 last,
@@ -480,7 +480,7 @@ public class Global {
             body.append(
                 treeGen.Apply(tree.pos,
                     treeGen.Select(tree.pos,
-                        treeGen.mkRef(tree.pos, INTERPRETER()),
+                        treeGen.mkGlobalRef(tree.pos, INTERPRETER()),
                         SHOW_DEFINITION()),
                     new Tree[] {
                         treeGen.mkStringLit(tree.pos, show(tree.symbol()))}));
@@ -490,7 +490,7 @@ public class Global {
             body.append(
                 treeGen.Apply(tree.pos,
                     treeGen.Select(tree.pos,
-                        treeGen.mkRef(tree.pos, INTERPRETER()),
+                        treeGen.mkGlobalRef(tree.pos, INTERPRETER()),
                         SHOW_VALUE_DEFINITION()),
                     new Tree[] {
                         treeGen.mkStringLit(tree.pos, show(tree.symbol())),

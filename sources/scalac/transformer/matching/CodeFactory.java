@@ -69,9 +69,9 @@ class CodeFactory extends PatternTool {
     // EXPERIMENTAL
     Tree newRef( Tree init ) {
 	//System.out.println( "hello:"+refSym().type() );
-	return gen.New(gen.mkPrimaryConstr(pos, defs.REF_CLASS,
-			                    new Type[] { init.getType() },
-			                    new Tree[] { init } ));
+	return gen.New( gen.mkApplyTV( gen.mkPrimaryConstructorGlobalRef( pos, defs.REF_CLASS),
+                                                                    new Type[] { init.getType() },
+                                                                    new Tree[] { init } ));
     }
 
     /** returns A for T <: Sequence[ A ]
@@ -187,7 +187,7 @@ class CodeFactory extends PatternTool {
 
     protected Tree ThrowMatchError(int pos, Type type) {
         return gen.mkApplyTV(
-			     gen.mkRef(pos, defs.MATCHERROR_FAIL()),
+			     gen.mkGlobalRef(pos, defs.MATCHERROR_FAIL()),
                              new Tree[]{gen.mkType(pos, type)},
                              new Tree[]{
                                  gen.mkStringLit(pos, unit.toString()),
@@ -197,7 +197,7 @@ class CodeFactory extends PatternTool {
 
     protected Tree Error(int pos, Type type) {
         return gen.mkApplyTV(
-			     gen.mkRef(pos, defs.MATCHERROR_FAIL()),
+			     gen.mkGlobalRef(pos, defs.MATCHERROR_FAIL()),
                              new Tree[]{gen.mkType(pos, type)},
                              new Tree[]{
                                  gen.mkStringLit(pos, unit.toString()),
@@ -211,9 +211,9 @@ class CodeFactory extends PatternTool {
     }
 
     Tree newPair( Tree left, Tree right ) {
- 	return gen.New(gen.mkPrimaryConstr(pos, defs.TUPLE_CLASS[2],
-			                   new Type[] { left.getType(), right.getType() },
-			                   new Tree[] { left, right }));
+ 	return gen.New(gen.mkApplyTV( gen.mkPrimaryConstructorGlobalRef( pos, defs.TUPLE_CLASS[2]),
+                                                                   new Type[] { left.getType(), right.getType() },
+                                                                   new Tree[] { left, right }));
 
     }
 

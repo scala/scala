@@ -1177,10 +1177,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       result
     }
 
-  def makeStableId(pos: int, tp: Type): Tree =
-    if (tp.symbol().isCompoundSym()) gen.This(pos, tp.symbol())
-    else gen.mkStableId(pos, tp);
-
   /** Define self type of class or module `sym'
   *  associated with `tree' using given `unit' and `context'.
   */
@@ -1505,7 +1501,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (sym.owner().kind == CLASS) {
 	  pre = nextcontext.enclClass.owner.thisType();
 	  if (!sym.owner().isPackage()) {
-	    val qual1: Tree = makeStableId(tree.pos, pre);
+	    val qual1: Tree = gen.This(tree.pos, nextcontext.enclClass.owner);
 	    tree = make.Select(tree.pos, qual1, name);
 	    //System.out.println(name + " :::> " + tree + " " + qual1.symbol());//DEBUG
 	  }
@@ -2304,9 +2300,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  val alloc: Tree =
 		    gen.New(
 		      gen.Apply(
-			gen.mkRef(
+			gen.mkLocalRef(
 			  tree.pos,
-			  Type.localThisType,
 			  clazz.primaryConstructor()),
 			Tree.EMPTY_ARRAY))
 		    .setType(owntype);

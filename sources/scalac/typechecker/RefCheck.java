@@ -525,7 +525,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol sym = tree.symbol();
 	Tree cdef = gen.ClassDef(sym.moduleClass(), templ);
 	if (sym.isGlobalModule()) return new Tree[]{cdef};
-	Tree alloc = gen.New(gen.mkPrimaryConstr(tree.pos, sym.moduleClass()));
+        Tree alloc = gen.New(gen.mkApply__(gen.mkPrimaryConstructorLocalRef(tree.pos, sym.moduleClass())));
 	{
 	    // var m$: T = null;
 	    Name varname = Name.fromString(name + "$");
@@ -542,10 +542,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		gen.If(
 		    gen.Apply(
 			gen.Select(gen.mkNullLit(tree.pos), eqMethod),
-			new Tree[]{gen.mkRef(tree.pos, mvar)}),
-		    gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
+			new Tree[]{gen.mkLocalRef(tree.pos, mvar)}),
+		    gen.Assign(gen.mkLocalRef(tree.pos, mvar), alloc),
 		    gen.Block(tree.pos, Tree.EMPTY_ARRAY)),
-		gen.mkRef(tree.pos, mvar)});
+		gen.mkLocalRef(tree.pos, mvar)});
 
 	    // def m: T = { if (m$ == null[T]) m$ = new m$class; m$ }
 	    sym.flags |= STABLE;
@@ -560,7 +560,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
             m_eq.setInfo(
                 Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE()));
             Tree m_eqdef = gen.DefDef(m_eq,
-                gen.Assign(gen.mkRef(tree.pos, mvar), gen.Ident(tree.pos, m_eqarg)));
+                gen.Assign(gen.mkLocalRef(tree.pos, mvar), gen.Ident(tree.pos, m_eqarg)));
             sym.owner().members().enterOrOverload(m_eq);
 
 	    return new Tree[]{cdef, vdef, ddef, m_eqdef};
@@ -622,8 +622,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol[] vparams = clazz.primaryConstructor().type().firstParams();
 	Tree[] fields = new Tree[vparams.length];
 	for (int i = 0; i < fields.length; i++) {
-	    fields[i] = gen.mkRef(
-		clazz.pos, clazz.thisType(), clazz.caseFieldAccessor(i));
+	    fields[i] = gen.mkRef(clazz.pos, clazz.thisType(), clazz.caseFieldAccessor(i));
 	}
 	return fields;
     }
@@ -675,9 +674,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 	// if (that is C) {...
 	Tree cond = gen.TypeApply(
-	    gen.Select(
-		gen.mkRef(clazz.pos, Type.localThisType, equalsParam),
-		defs.ANY_IS),
+	    gen.Select(gen.mkLocalRef(clazz.pos, equalsParam), defs.ANY_IS),
 	    new Tree[]{gen.mkType(clazz.pos, testtp)});
 
 	Tree thenpart;
@@ -687,7 +684,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    // val that1 = that as C;
 	    Tree cast = gen.TypeApply(
 		gen.Select(
-		    gen.mkRef(clazz.pos, Type.localThisType, equalsParam),
+		    gen.mkLocalRef(clazz.pos, equalsParam),
 		    defs.ANY_AS),
 		new Tree[]{gen.mkType(clazz.pos, testtp)});
 	    Symbol that1sym = new TermSymbol(clazz.pos, Names.that1, equalsSym, 0)
@@ -697,8 +694,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    // this.elem_1 == that1.elem_1 && ... && this.elem_n == that1.elem_n
 	    Tree cmp = eqOp(
 		fields[0],
-		qualCaseField(clazz,
-		    gen.mkRef(clazz.pos, Type.localThisType, that1sym), 0));
+		qualCaseField(clazz, gen.mkLocalRef(clazz.pos, that1sym), 0));
 	    for (int i = 1; i < fields.length; i++) {
 		cmp = gen.Apply(
 		    gen.Select(cmp, defs.BOOLEAN_AND()),
@@ -706,7 +702,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 			eqOp(
 			    fields[i],
 			    qualCaseField(clazz,
-				gen.mkRef(clazz.pos, Type.localThisType, that1sym), i))});
+				gen.mkLocalRef(clazz.pos, that1sym), i))});
 	    }
 	    thenpart = gen.Block(new Tree[]{that1def, cmp});
 	}

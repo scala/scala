@@ -260,8 +260,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         public Type getTypeLink(int level) {
             if (tlinks.length <= level) return Type.localThisType;
             if (tlinks[level] != null) return tlinks[level].type();
-            // !!! if (clasz.isPackage()) return Type.localThisType;
-            return Type.singleType(getTypeLink(level + 1), clasz.module());
+            return Type.singleType(getTypeLink(level + 1), outers[level].clasz.module());
         }
 
         public String toString() {
@@ -318,14 +317,9 @@ public class ExplicitOuterClassesPhase extends Phase {
             case ThisType(Symbol clasz):
                 if (clasz == Symbol.NONE) return type;
                 if (clasz == context.clasz) return type;
-                if (clasz.isPackage()) return Type.localThisType;
                 for (int i = 0; i < context.outers.length; i++)
                     if (clasz == context.outers[i].clasz)
                         return context.getTypeLink(i);
-                if (clasz.isModuleClass()) {
-                    Type prefix = clasz.owner().thisType();
-                    return Type.singleType(apply(prefix), clasz.module());
-                }
                 throw Debug.abort("illegal ThisType", type);
             case CompoundType(Type[] parents, Scope members):
                 // !!! this case should not be needed
@@ -397,6 +391,8 @@ public class ExplicitOuterClassesPhase extends Phase {
 
             case This(_):
                 return genOuterRef(tree.pos, tree.symbol());
+//                 Symbol clasz = tree.symbol();
+//                 return clasz.isRoot() ? tree : genOuterRef(tree.pos, clasz);
 
             case Select(Tree qualifier, _):
                 Symbol symbol = tree.symbol();
@@ -510,7 +506,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Symbol forward = (Symbol)entry.getValue();
                 int pos = forward.pos;
                 Tree[] targs = gen.mkTypeRefs(pos, forward.nextTypeParams());
-                Tree[] vargs = gen.mkRefs(pos, forward.nextValueParams());
+                Tree[] vargs = gen.mkLocalRefs(pos, forward.nextValueParams());
                 Tree fun = gen.Select(gen.Super(pos, context.clasz), method);
                 trees[i] = gen.DefDef(forward, gen.mkApplyTV(fun,targs,vargs));
             }
