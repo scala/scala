@@ -27,7 +27,9 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
    * @return the element at position <code>n</code> in this list.
    * @throws java.lang.RuntimeException if the list is too short.
    */
-    def apply(n: Int): A = at(n);
+    def apply(n: Int): A =
+	if (n < out.length) out.apply(n)
+	    else (in.reverse).apply(n - out.length);
 
     /** Returns the elements in the list as an iterator
      */
