@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,9 +11,9 @@
 
 package scala;
 
-/** @meta class [?T] extends java.lang.Object;
+/** @meta class [?T] extends java.lang.Object with java.io.Serializable;
  */
-public class Ref extends java.lang.Object {
+public class Ref extends java.lang.Object implements java.io.Serializable {
 
     /** @meta field ?T;
      */
