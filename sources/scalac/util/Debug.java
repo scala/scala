@@ -375,17 +375,41 @@ public class DebugType extends DebugAbstractHandler {
             buffer.append(')');
             return;
 
+        case OverloadedType(Symbol[] alts, Type[] alttypes):
+            buffer.append("OverloadedType(");
+            Debug.append(buffer, alts);
+            buffer.append(',');
+            Debug.append(buffer, alttypes);
+            buffer.append(')');
+            return;
+
         case CovarType(Type tp):
             buffer.append("CovarType(");
             Debug.append(buffer, tp);
             buffer.append(')');
             return;
 
-        case OverloadedType(Symbol[] alts, Type[] alttypes):
-            buffer.append("OverloadedType(");
-            Debug.append(buffer, alts);
+        case LazyType():
+            buffer.append("LazyType()");
+            return;
+
+        case TypeVar(Type origin, Type.Constraint constr):
+            buffer.append("TypeVar(");
+            Debug.append(buffer, origin);
             buffer.append(',');
-            Debug.append(buffer, alttypes);
+            Debug.append(buffer, constr);
+            buffer.append(')');
+            return;
+
+        case UnboxedType(int tag):
+            buffer.append("UnboxedType(");
+            buffer.append(tag);
+            buffer.append(')');
+            return;
+
+        case UnboxedArrayType(Type elemtp):
+            buffer.append("UnboxedArrayType(");
+            Debug.append(buffer, elemtp);
             buffer.append(')');
             return;
 
