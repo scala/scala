@@ -577,7 +577,7 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      *
      * @param prefix
      */
-    public Type getTypeToPrintForPrefix0(Ty*pe prefix) {
+    public Type getTypeToPrintForPrefix0(Type prefix) {
         if (!global.debug) {
             if (prefix.symbol().kind == Kinds.NONE) return null;
             if (prefix.symbol().isRoot()) return null;

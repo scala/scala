@@ -481,10 +481,11 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	    return new Float(Double.longBitsToDouble(readNumberRef()));
 	case UnboxedType(BOOLEAN):
 	    return new Boolean(readNumberRef() == 0 ? false : true);
-	case UnboxedType(STRING):
-	    return readNameRef().toString();
 	default:
-	    return new ApplicationError("bad constant base type: " + base);
+	    if (base.symbol() == Global.instance.definitions.JAVA_STRING_CLASS)
+		return readNameRef().toString();
+	    else
+		throw new ApplicationError("bad constant base type: " + base);
 	}
     }
 
