@@ -1,0 +1,6 @@
+refine.scala:3: type mismatch;
+ found   : scala.Object
+ required: scala.Object { def t(): java.lang.String }
+  val x: Object { def t(): String } = new Object {
+                                      ^
+one error found
