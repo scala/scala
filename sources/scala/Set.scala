@@ -11,58 +11,60 @@ package scala;
 
 /** I promise, there will be some documentation soon! :-) Matthias
  */
-trait Map[A, +B] with Function1[A, B]
-                 with PartialFunction[A, B]
-                 with Iterable[Pair[A, B]] {
+trait Set[A] with Iterable[A] {
 
 	def size: Int;
 
     def isEmpty: Boolean = (size == 0);
 
-    def apply(key: A): B = get(key) match {
-    	case None => null
-    	case Some(value) => value
-    }
+	def contains(elem: A): Boolean;
 
-	def get(key: A): Option[B];
+	def add(elem: A): Unit;
 
-	def remove(key: A): B;
-
-	def contains(key: A): Boolean = get(key) match {
-		case None => false
-		case Some(_) => true
+	def addAll(elems: A*): Unit = {
+		val ys = elems as List[A];
+    	ys foreach { y => add(y); };
 	}
 
-	def isDefinedAt(key: A) = contains(key);
+	def addSet(that: Iterable[A]): Unit =
+		that.iterator.foreach(elem => add(elem));
+
+	def remove(elem: A): Unit;
+
+	def removeAll(elems: A*): Unit = {
+		val ys = elems as List[A];
+    	ys foreach { y => remove(y); };
+	}
+
+	def removeSet(that: Iterable[A]): Unit =
+		that.iterator.foreach(elem => remove(elem));
+
+	def intersect(that: Set[A]): Unit = filter(that.contains);
 
 	def clear: Unit;
 
-	def keys: Iterator[A] = new Iterator[A] {
+	def subsetOf(that: Set[A]): Boolean = {
 		val iter = iterator;
-  		def hasNext = iter.hasNext;
-    	def next = iter.next._1;
+		var res = true;
+		while (res && iter.hasNext) {
+			res = that.contains(iter.next);
+		}
+		res
 	}
 
-	def values: Iterator[B] = new Iterator[B] {
-		val iter = iterator;
-  		def hasNext = iter.hasNext;
-    	def next = iter.next._2;
-	}
-
-	def foreach(f: (A, B) => Unit) = {
+	def foreach(f: A => Unit) = {
 		val iter = iterator;
 		while (iter.hasNext) {
-			val Pair(key, value) = iter.next;
-			f(key, value);
+			f(iter.next);
 		}
 	}
 
-	def filter(p: (A, B) => Boolean): Unit = toList foreach {
-		case Pair(key, value) => if (p(key, value)) { val old = remove(key); }
+	def filter(p: A => Boolean): Unit = toList foreach {
+		elem => if (p(elem)) remove(elem);
 	}
 
-	def toList: List[Pair[A, B]] = {
-		var res: List[Pair[A, B]] = Nil;
+	def toList: List[A] = {
+		var res: List[A] = Nil;
 		val iter = iterator;
 		while (iter.hasNext) {
 			res = iter.next :: res;
