@@ -72,12 +72,14 @@ completely different. Here is Quicksort again, this time written in
 functional style.
 
 \begin{lstlisting}
-def sort(xs: List[int]): List[int] = {
-  val pivot = a(a.length / 2);
-  sort(a.filter(x => x < pivot))
-    :::  a.filter(x => x == pivot)
-    :::  sort(a.filter(x => x > pivot))
-}
+def sort(xs: List[int]): List[int] = 
+  if (xs.length <= 1) xs
+  else {
+    val pivot = a(a.length / 2);
+    sort(a.filter(x => x < pivot))
+      :::  a.filter(x => x == pivot)
+      :::  sort(a.filter(x => x > pivot))
+  }
 \end{lstlisting}
 
 The functional program works with lists instead of arrays.\footnote{In
@@ -86,7 +88,10 @@ instead of lists, but at the moment arrays do not yet support
 \code{filter} and \code{:::}.}
 It captures the essence of the quicksort algorithm in a concise way:
 \begin{itemize}
-\item Pick an element in the middle of the list as a pivot.
+\item If the list is empty or consists of a single element, 
+      it is already sorted, so return it immediately.
+\item If the list is not empty, pick an an element in the middle of
+      it as a pivot.
 \item Partition the lists into two sub-lists containing elements that
 are less than, respectively greater than the pivot element, and a
 third list which contains elements equal to pivot.

@@ -3,6 +3,8 @@
 \newcommand{\Ts}{\mbox{\sl Ts}}
 \newcommand{\tps}{\mbox{\sl tps}}
 \newcommand{\psig}{\mbox{\sl psig}}
+\newcommand{\fsig}{\mbox{\sl fsig}}
+\newcommand{\csig}{\mbox{\sl csig}}
 \newcommand{\args}{\mbox{\sl args}}
 \newcommand{\targs}{\mbox{\sl targs}}
 \newcommand{\enums}{\mbox{\sl enums}}
@@ -374,7 +376,7 @@ the following types are ill-formed:
   Type            ::=  SimpleType {with SimpleType} [Refinement]
   Refinement      ::=  `{' [RefineStat {`;' RefineStat}] `}'
   RefineStat      ::=  Dcl
-                    |  type TypeDef {`,' TypeDef}
+                    |  type TypeDef
                     |
 \end{lstlisting}
 
@@ -848,15 +850,15 @@ $[]U$ where $U$ does conform to $pt$, then the expression is typed and evaluated
 \label{sec:defs}
 
 \syntax\begin{lstlisting}
-  Dcl             ::=  val ValDcl {`,' ValDcl}
-                    |  var VarDcl {`,' VarDcl}
-                    |  def FunDcl {`,' FunDcl}
-                    |  type TypeDcl {`,' TypeDcl}
-  Def             ::=  val PatDef {`,' PatDef}
-                    |  var VarDef {`,' VarDef}
-                    |  def FunDef {`,' FunDef}
-                    |  type TypeDef {`,' TypeDef}
-                    |  ClsDef
+  Dcl             ::=  val ValDcl
+                    |  var VarDcl
+                    |  def FunDcl
+                    |  type TypeDcl
+  Def             ::=  val PatDef 
+                    |  var VarDef 
+                    |  def FunDef 
+                    |  type TypeDef 
+                    |  TmplDef
 \end{lstlisting}
 
 A {\em declaration} introduces names and assigns them types. It can
@@ -898,7 +900,6 @@ by commas. These are expanded according to the following scheme:
 \TYPE;t,u = T && \TYPE; t = T\\
               && \TYPE; u = t\\[0.5em]
 \eda
-}
 
 All definitions have a ``repeated form'' where the initial
 definition keyword is followed by several constituent definitions
@@ -910,7 +911,7 @@ constituent definitions. E.g.\ the function definition
 the type definition
 ~\lstinline@type T, U <: B@~ expands to
 ~\lstinline@type T; type U <: B@.
-
+}
 \comment{
 If an element in such a sequence introduces only the defined name,
 possibly with some type or value parameters, but leaves out any
@@ -941,10 +942,10 @@ case object Blue extends Color .
 \label{sec:valdef}
 
 \syntax\begin{lstlisting}
-  Dcl          ::=  val ValDcl {`,' ValDcl}
-  ValDcl       ::=  id `:' Type
-  Def          ::=  val PatDef {`,' PatDef}
-  PatDef       ::=  Pattern2 [`:' Type] `=' Expr
+  Dcl          ::=  val ValDcl
+  ValDcl       ::=  id {`,' id} `:' Type
+  Def          ::=  val PatDef 
+  PatDef       ::=  Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
 \end{lstlisting}
 
 A value declaration ~\lstinline@val $x$: $T$@~ introduces $x$ as a name of a value of
@@ -1003,15 +1004,28 @@ val x = x$\Dollar$._1;
 val xs = x$\Dollar$._2;
 \end{lstlisting}
 
+A value declaration ~\lstinline@val $x_1 \commadots x_n$: $T$@~
+is a
+shorthand for the sequence of value declarations
+~\lstinline@val $x_1$: $T$; ...; val $x_n$: $T$@.
+A value definition ~\lstinline@val $p_1 \commadots p_n$ = $e$@~
+is a
+shorthand for the sequence of value definitions
+~\lstinline@val $p_1$ = $e$; ...; val $p_n$ = $e$@.
+A value definition ~\lstinline@val $p_1 \commadots p_n: T$ = $e$@~
+is a
+shorthand for the sequence of value definitions
+~\lstinline@val $p_1: T$ = $e$; ...; val $p_n: T$ = $e$@.
+
 \section{Variable Declarations and Definitions}
 \label{sec:vardef}
 
 \syntax\begin{lstlisting}
-  Dcl            ::=  var VarDcl {`,' VarDcl}
-  Def            ::=  var ValDef {`,' ValDef}
-  VarDcl         ::=  id `:' Type
-  VarDef         ::=  id [`:' Type] `=' Expr
-                   |  id `:' Type `=' `_'
+  Dcl            ::=  var VarDcl
+  Def            ::=  var VarDef
+  VarDcl         ::=  id {`,' id} `:' Type
+  VarDef         ::=  id {`,' id} [`:' Type] `=' Expr
+                   |  id {`,' id} `:' Type `=' `_'
 \end{lstlisting}
 
 A variable declaration ~\lstinline@var $x$: $T$@~ is equivalent to declarations
@@ -1082,15 +1096,28 @@ d.hours = 8; d.minutes = 30; d.seconds = 0;
 d.hours = 25;                 // throws a DateError exception
 \end{lstlisting}
 
+A variable declaration ~\lstinline@var $x_1 \commadots x_n$: $T$@~
+is a
+shorthand for the sequence of variable declarations
+~\lstinline@var $x_1$: $T$; ...; var $x_n$: $T$@.
+A variable definition ~\lstinline@var $x_1 \commadots x_n$ = $e$@~
+is a
+shorthand for the sequence of variable definitions
+~\lstinline@var $x_1$ = $e$; ...; var $x_n$ = $e$@.
+A variable definition ~\lstinline@var $x_1 \commadots x_n: T$ = $e$@~
+is a
+shorthand for the sequence of variable definitions
+~\lstinline@var $x_1: T$ = $e$; ...; var $x_n: T$ = $e$@.
+
 \section{Type Declarations and Type Aliases}
 \label{sec:typedcl}
 \label{sec:typealias}
 
 \syntax\begin{lstlisting}
-  Dcl             ::=  type TypeDcl {`,' TypeDcl}
+  Dcl             ::=  type TypeDcl
   TypeDcl         ::=  id [>: Type] [<: Type]
-  Def             ::=  type TypeDef {`,' TypeDef}
-  TypeDef         ::=  id  [TypeParamClause] `=' Type
+  Def             ::=  type TypeDef
+  TypeDef         ::=  id [TypeParamClause] `=' Type
 \end{lstlisting}
 
 A {\em type declaration} ~\lstinline@type $t$ >: $L$ <: $U$@~ declares $t$ to
@@ -1300,11 +1327,11 @@ on which one can write only strings.
 \label{sec:parameters}
 
 \syntax\begin{lstlisting} 
-Dcl                ::=  def FunDcl {`,' FunDcl} 
-FunDcl             ::=  id [FunTypeParamClause] {ParamClause} `:' Type 
-Def                ::=  def FunDef {`,' FunDef} 
-FunDef             ::=  id [FunTypeParamClause] {ParamClause} 
-                        [`:' Type] `=' Expr 
+Dcl                ::=  def FunDcl
+FunDcl             ::=  FunSig {`,' FunSig} `:' Type 
+Def                ::=  def FunDef
+FunDef             ::=  FunSig {`,' FunSig} [`:' Type] `=' Expr 
+FunSig             ::=  id [FunTypeParamClause] {ParamClause} 
 FunTypeParamClause ::= `[' TypeDcl {`,' TypeDcl} `]' 
 ParamClause        ::= `(' [Param {`,' Param}] `)' 
 Param              ::=  [def] id `:' Type [`*']
@@ -1388,6 +1415,20 @@ The type of the function body must conform to the function's declared
 result type, if one is given. If the function definition is not
 recursive, the result type may be omitted, in which case it is
 determined from the type of the function body.
+
+For any index $i$ let $\fsig_i$ be a function signature consisting of a function
+name, an optional type parameter section, and zero or more parameter
+sections.  Then a function declaration 
+~\lstinline@def $\fsig_1 \commadots \fsig_n$: $T$@~ 
+is a shorthand for the sequence of function
+declarations ~\lstinline@def $\fsig_1$: $T$; ...; def $\fsig_n$: $T$@.  
+A function definition ~\lstinline@def $\fsig_1 \commadots \fsig_n$ = $e$@~ is a
+shorthand for the sequence of function definitions 
+~\lstinline@def $\fsig_1$ = $e$; ...; def $\fsig_n$ = $e$@.  
+A function definition
+~\lstinline@def $\fsig_1 \commadots \fsig_n: T$ = $e$@~ is a shorthand for the
+sequence of function definitions 
+~\lstinline@def $\fsig_1: T$ = $e$; ...; def $\fsig_n: T$ = $e$@.
 
 \section{Overloaded Definitions}
 \label{sec:overloaded-defs}
@@ -1484,8 +1525,8 @@ is equivalent to the block
 \label{sec:globaldefs}
 
 \syntax\begin{lstlisting}
-  ClsDef          ::=  ([case] class | trait) ClassDef {`,' ClassDef}
-                    |  [case] object ObjectDef {`,' ObjectDef}
+  TmplDef          ::=  ([case] class | trait) ClassDef
+                    |  [case] object ObjectDef
 \end{lstlisting}
 
 Classes (\sref{sec:classes}) and objects
@@ -1924,9 +1965,9 @@ object; it is not possible for clients to create objects of class
 \label{sec:classes}
 
 \syntax\begin{lstlisting}
-  ClsDef         ::=  class ClassDef {`,' ClassDef}
-  ClassDef       ::=  id [TypeParamClause] [ParamClause] 
-                      [`:' SimpleType] ClassTemplate
+  TmplDef        ::=  class ClassDef
+  ClassDef       ::=  ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate
+  ClassSig       ::= id [TypeParamClause] [ParamClause] 
   ClassTemplate  ::=  extends Template
                    |  TemplateBody
                    |
@@ -1977,6 +2018,18 @@ This class definition defines a type \lstinline@$c$[$\tps\,$]@ and a constructor
 which when applied to parameters conforming to types $ps$
 initializes instances of type \lstinline@$c$[$\tps\,$]@ by evaluating the template
 $t$.
+
+For any index $i$ let $\csig_i$ be a class signature consisting of a class
+name and optional type parameter and value parameter sections. Let $ct$
+be a class template.
+Then a class definition 
+~\lstinline@class $\csig_1 \commadots \csig_n$ $ct$@~ 
+is a shorthand for the sequence of class definitions
+~\lstinline@class $\csig_1$ $ct$; ...; class $\csig_n$ $ct$@.
+A class definition 
+~\lstinline@class $\csig_1 \commadots \csig_n: T$ $ct$@~ 
+is a shorthand for the sequence of class definitions
+~\lstinline@class $\csig_1: T$ $ct$; ...; class $\csig_n: T$ $ct$@.
 
 \subsection{Constructor Definitions}\label{sec:constr-defs}
 
@@ -2039,7 +2092,7 @@ third one constructs a list with a given head and tail.
 \label{sec:case-classes}
 
 \syntax\begin{lstlisting} 
-  ClsDef  ::=  case class ClassDef {`,' ClassDef}
+  TmplDef  ::=  case class ClassDef
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said
@@ -2146,7 +2199,7 @@ which appear in the same statement sequence as the definition of
 \label{sec:traits}
 
 \syntax\begin{lstlisting}
-  ClsDef          ::=  trait ClassDef {`,' ClassDef}
+  TmplDef          ::=  trait ClassDef
 \end{lstlisting}
 
 A class definition which starts with the reserved word \code{trait}
@@ -2193,7 +2246,7 @@ trait Ord[t <: Ord[t]]: t {
 \label{sec:object-defs}
 
 \syntax\begin{lstlisting}
-  ObjectDef       ::=  id [`:' SimpleType] ClassTemplate
+  ObjectDef       ::=  id {`,' id} [`:' SimpleType] ClassTemplate
 \end{lstlisting}
 
 An object definition defines a single object of a new class. Its 
@@ -2271,6 +2324,17 @@ This technique is applied by the Scala compiler when interpreting a
 Java class with static members. Such a class $C$ is conceptually seen
 as a pair of a Scala class that contains all instance members of $C$
 and a Scala object that contains all static members of $C$.
+
+Let $ct$ be a class template. 
+Then an object definition 
+~\lstinline@object $x_1 \commadots x_n$ $ct$@~ 
+is a shorthand for the sequence of object definitions
+~\lstinline@object $x_1$ $ct$; ...; object $x_n$ $ct$@.
+An object definition 
+~\lstinline@object $x_1 \commadots x_n: T$ $ct$@~ 
+is a shorthand for the sequence of object definitions
+~\lstinline@object $x_1: T$ $ct$; ...; object $x_n: T$ $ct$@.
+
 
 \comment{
 \example Here's an outline of a module definition for a file system.
@@ -3295,7 +3359,7 @@ can be abbreviated to ~\lstinline@$x$: $T$ => e@, and ~\lstinline@$x$ => $e$@, r
 \syntax\begin{lstlisting}
   BlockStat    ::=  Import
                  |  Def
-                 |  {LocalModifier} ClsDef
+                 |  {LocalModifier} TmplDef
                  |  Expr
                  | 
   TemplateStat ::=  Import
@@ -3641,7 +3705,7 @@ def length [a] (xs: List[a]) = xs match {
 
 \syntax\begin{lstlisting}
   CompilationUnit  ::=  [package QualId `;'] {TopStat `;'} TopStat
-  TopStat          ::=  {Modifier} ClsDef
+  TopStat          ::=  {Modifier} TmplDef
                      |  Import
                      |  Packaging
                      |

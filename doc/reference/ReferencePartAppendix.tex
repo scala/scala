@@ -60,7 +60,7 @@ grammar.
   Types           ::=  Type {`,' Type}
   Refinement      ::=  `{' [RefineStat {`;' RefineStat}] `}'
   RefineStat      ::=  Dcl
-                    |  type TypeDef {`,' TypeDef}
+                    |  type TypeDef
                     |
 
   Exprs           ::=  Expr {`,' Expr}
@@ -94,7 +94,7 @@ grammar.
   Block           ::=  {BlockStat `;'} [ResultExpr]
   BlockStat       ::=  Import
                     |  Def
-                    |  {LocalModifier} ClsDef
+                    |  {LocalModifier} TmplDef
                     |  Expr1
                     |
   ResultExpr      ::=  Expr1
@@ -108,6 +108,7 @@ grammar.
   CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
 
   Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
+  SimpleConstr    ::=  Id [TypeArgs] [`(' [Exprs] `)']  
 
   Pattern         ::=  Pattern1 { `|' Pattern1 }
   Pattern1        ::=  varid `:' Type
@@ -154,32 +155,35 @@ grammar.
                        (ImportSelector | `_') `}'
   ImportSelector  ::=  id [`=>' id | `=>' `_']
 
-  Dcl             ::=  val ValDcl {`,' ValDcl}
-                    |  var VarDcl {`,' VarDcl}
-                    |  def FunDcl {`,' FunDcl}
-                    |  type TypeDcl {`,' TypeDcl}
-  ValDcl          ::=  id `:' Type
-  VarDcl          ::=  id `:' Type
-  FunDcl          ::=  id [FunTypeParamClause] {ParamClause} `:' Type
-  TypeDcl         ::=  id [`>:' Type] [`<:' Type]
+  Dcl             ::=  val ValDcl
+                    |  var VarDcl
+                    |  def FunDcl
+                    |  type TypeDcl
 
-  Def             ::=  val PatDef {`,' PatDef}
-                    |  var VarDef {`,' VarDef}
-                    |  def FunDef {`,' FunDef}
-                    |  type TypeDef {`,' TypeDef}
-                    |  ClsDef
-  PatDef          ::=  Pattern `=' Expr
-  VarDef          ::=  id [`:' Type] `=' Expr
-                    |  id `:' Type `=' `_'
-  FunDef          ::=  id [FunTypeParamClause] {ParamClause} 
-                       [`:' Type] `=' Expr
+  ValDcl          ::=  id {`,' id} `:' Type
+  VarDcl          ::=  id {`,' id} `:' Type
+  FunDcl          ::=  FunSig {`,' FunSig} `:' Type
+  FunSig          ::=  id [FunTypeParamClause] {ParamClause}
+  TypeDcl         ::=  id [>: Type] [<: Type]
+
+  Def             ::=  val PatDef
+                    |  var VarDef
+                    |  def FunDef
+                    |  type TypeDef
+                    |  TmplDef
+  PatDef          ::=  Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
+  VarDef          ::=  id {`,' id} [`:' Type] `=' Expr
+                    |  id {`,' id} `:' Type `=' `_'
+  FunDef          ::=  FunSig {`,' FunSig} `:' Type `=' Expr
                     |  this ParamClause `=' ConstrExpr
   TypeDef         ::=  id [TypeParamClause] `=' Type
-  ClsDef          ::=  ([case] class | trait) ClassDef {`,' ClassDef}
-                    |  [case] object ObjectDef {`,' ObjectDef}
-  ClassDef        ::=  id [TypeParamClause] [ParamClause] 
-                       [`:' SimpleType] ClassTemplate
-  ObjectDef       ::=  id [`:' SimpleType] ClassTemplate
+
+  TmplDef         ::=  ([case] class | trait) ClassDef
+                    |  [case] object ObjectDef
+  ClassDef        ::=  ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate
+  ClassSig        ::=  id [TypeParamClause] [ParamClause]
+  ObjectDef       ::=  id {`,' id} [`:' SimpleType] ClassTemplate
+
   ClassTemplate   ::=  extends Template
                     |  TemplateBody
                     |
@@ -187,7 +191,7 @@ grammar.
                     |  `{' this ArgumentExprs {`;' BlockStat} `}'
 
   CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
-  TopStat         ::=  {Modifier} ClsDef
+  TopStat         ::=  {Modifier} TmplDef
                     |  Import
                     |  Packaging
                     |
