@@ -465,7 +465,7 @@ public class Erasure extends Transformer implements Modifiers {
         case Empty:
         case PackageDef(_,_):
         case Template(_,_):
-        case Tuple(_): // !!! ?
+        case Sequence(_): // !!! ? [BE:was Tuple before]
         case Super(_):
         case This(_):
         case Literal(_):

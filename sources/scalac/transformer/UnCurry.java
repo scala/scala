@@ -65,7 +65,7 @@ public class UnCurry extends OwnerTransformer
      *      if argument is not a reference to a def parameter:
      *        convert argument `e' to (expansion of) `() => e'
      *  - for every argument list that corresponds to a repeated parameter
-     *       (a_1, ..., a_n) => (Tuple(a_1, ..., a_n))
+     *       (a_1, ..., a_n) => (Sequence(a_1, ..., a_n))
      */
     public Tree transform(Tree tree) {
 	//new scalac.ast.printer.TextTreePrinter().print("uncurry: ").print(tree).println().end();//DEBUG
@@ -154,8 +154,8 @@ public class UnCurry extends OwnerTransformer
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
-		assert (args.length != 1 || !(args[0] instanceof Tree.Tuple));
-		args = new Tree[]{make.Tuple(pos, args).setType(params[0].type())};
+		assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
+		args = new Tree[]{make.Sequence(pos, args).setType(params[0].type())};
 	    }
 	    Tree[] args1 = args;
 	    for (int i = 0; i < args.length; i++) {

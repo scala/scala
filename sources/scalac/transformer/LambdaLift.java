@@ -381,7 +381,7 @@ public class LambdaLift extends OwnerTransformer
 	    }
 	    return copy.ValDef(tree, sym, tpe1, rhs1);
 
-	case Tuple(Tree[] args):
+	case Sequence(Tree[] args):
 	    Tree tree1 = mkList(tree.pos, tree.type, transform(args));
 	    //new scalac.ast.printer.TextTreePrinter().print("TUPLE: ").print(tree).print("\n ==> \n").print(tree1).println().end();//DEBUG
 	    return tree1;

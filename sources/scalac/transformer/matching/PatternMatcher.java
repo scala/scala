@@ -347,7 +347,7 @@ public class PatternMatcher {
             case Apply(_, Tree[] args):
                 if (args.length == 1)
                     switch (args[0]) {
-                        case Tuple(Tree[] ts):
+                        case Sequence(Tree[] ts):
                             return ts;
                     }
                 return args;
@@ -381,7 +381,7 @@ public class PatternMatcher {
             case Apply(Tree fn, Tree[] args):             // pattern with args
                 if (args.length == 1)
                     switch (args[0]) {
-                        case Tuple(Tree[] ts):
+                        case Sequence(Tree[] ts):
                             return makeSequencePat(tree.pos, tree.type, ts.length);
                     }
                 return makeConstrPat(tree.pos, getConstrType(tree.type));
