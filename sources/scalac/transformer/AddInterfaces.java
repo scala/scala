@@ -158,7 +158,7 @@ class AddInterfaces extends Transformer {
             Symbol sym = tree.symbol();
             Symbol classOwner = phase.getClassSymbol(sym.owner());
             Map ownerMemberMap = phase.getClassMemberMap(classOwner);
-            if (ownerMemberMap != null) {
+            if (ownerMemberMap != null && ownerMemberMap.containsKey(sym)) {
                 Symbol newSym = (Symbol)ownerMemberMap.get(sym);
                 return gen.Select(((Select)tree).qualifier, newSym);
             } else
