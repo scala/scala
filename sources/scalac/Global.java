@@ -326,7 +326,7 @@ public class  Global {
 
     private void fix1() {
         // make sure that Interpreter.scala is compiled
-        SHOW_DEFINITION();
+        if (target == TARGET_INT) SHOW_DEFINITION();
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
         }
