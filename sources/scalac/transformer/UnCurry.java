@@ -237,9 +237,8 @@ public class UnCurry extends OwnerTransformer
     }
 
     /** converts `a_1,...,a_n' to Seq(a_1,...,a_n)
-     *  if a_1 is an escaped sequence  as in  x:_*, takes care of
+     *  if a_n is an escaped sequence  as in  x:_*, takes care of
      *  escaping
-     */
     private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
 	Tree[] result = new Tree[params.length];
 	for (int i = 0; i < params.length - 1; i++)
@@ -247,7 +246,36 @@ public class UnCurry extends OwnerTransformer
 	assert (args.length != params.length
 		|| !(args[params.length-1] instanceof Tree.Sequence)
 		|| TreeInfo.isSequenceValued(args[params.length-1]));
- 	if (args.length == params.length) {
+	if (args.length == params.length) {
+            switch (args[params.length-1]) {
+            case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
+		result[params.length-1] = arg;
+		return result;
+            }
+            //}
+	Tree[] args1 = args;
+	if (params.length != 1) {
+	    args1 = new Tree[args.length - (params.length - 1)];
+	    System.arraycopy(args, params.length - 1, args1, 0, args1.length);
+	}
+	result[params.length-1] =
+	    make.Sequence(pos, args1).setType(params[params.length-1].type());
+	return result;
+    }
+     */
+
+    /** converts `a_1,...,a_n' to Seq(a_1,...,a_n)
+     *  if a_n is an escaped sequence  as in  x:_*, takes care of
+     *  escaping
+     */
+    private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
+	Tree[] result = new Tree[params.length];
+	for (int i = 0; i < params.length - 1; i++)
+	    result[i] = args[i];
+	assert ( args.length != params.length )
+            || !(args[params.length-1] instanceof Tree.Sequence)
+            || TreeInfo.isSequenceValued(args[params.length-1]);
+	if (args.length == params.length) {
             switch (args[params.length-1]) {
             case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
 		result[params.length-1] = arg;
@@ -259,6 +287,14 @@ public class UnCurry extends OwnerTransformer
 	    args1 = new Tree[args.length - (params.length - 1)];
 	    System.arraycopy(args, params.length - 1, args1, 0, args1.length);
 	}
+
+	if ( args.length>0 )
+            switch (args[args1.length-1]) {
+            case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
+                // unit is null ???!
+                throw new ApplicationError( "not allowed to mix escape :_* with values"+unit);
+            }
+
 	result[params.length-1] =
 	    make.Sequence(pos, args1).setType(params[params.length-1].type());
 	return result;
