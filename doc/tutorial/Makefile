@@ -1,21 +1,34 @@
-# Makefile to compile the Scala tutorial
+############################################################-*-Makefile-*-####
+# Scala Tutorial
+##############################################################################
 # $Id$
 
-LATEX_TARGETS = tutorial.ps tutorial.pdf
+##############################################################################
+# Configuration
 
 ROOT = ../..
 
-# Thing to add to the class path to run Scala programs.
-SCALA_CLASS_PATH = /home/linuxsoft/apps/scala/lib/scala.jar
+include $(ROOT)/Makefile.config
 
-# Commands
-ENV = env
-LATEXMK = latexmk
-SCALATEX = /home/schinz/projects/scsh-scripts/scalatex/scalatex.scm
+##############################################################################
+# Variables
 
-all: $(LATEX_TARGETS)
+# project
+PROJECT_SOURCES		+= $(LATEX_SOURCES)
 
-%.tex: %.scalatex
-	$(ENV) CLASSPATH=$(SCALA_CLASS_PATH):$(CLASSPATH) $(SCALATEX) $< $@
+# latex
+LATEX_FORMATS		+= dvi
+LATEX_FORMATS		+= ps
+LATEX_FORMATS		+= pdf
 
+LATEX_TARGETS		+= $(LATEX_FORMATS:%=tutorial.%)
+
+LATEX_SOURCES		+= tutorial.tex
+
+##############################################################################
+# Includes
+
+include $(ROOT)/support/make/scalatex.mk
 include $(ROOT)/support/make/latex.mk
+
+##############################################################################
