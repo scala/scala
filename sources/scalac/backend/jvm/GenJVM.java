@@ -1188,6 +1188,7 @@ class GenJVM {
             case HASHCODE :
             case TOSTRING :
             case BOX :
+            case UNBOX :
             case APPLY : case UPDATE : case LENGTH :
                 return false;
             default:
