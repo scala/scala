@@ -254,7 +254,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	case NoPrefix:
             return Ident(pos, symbol);
 	case ThisType(Symbol clasz):
-            if (clasz.isRoot() || clasz.isNone()) return Ident(pos, symbol);
+            if (clasz.isRoot()) return Ident(pos, symbol); // !!! remove ?
 	    if (clasz.isPackage()) return mkRef(pos, mkGlobalRef(pos, clasz.module()), symbol); // !!!
             return mkRef(pos, This(pos, clasz), symbol);
         case SingleType(Type prefix, Symbol member):
