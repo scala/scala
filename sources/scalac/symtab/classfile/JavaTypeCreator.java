@@ -30,8 +30,8 @@ public class JavaTypeCreator implements JavaTypeFactory {
     protected final Type BYTE_TYPE;
     protected final Type BOOLEAN_TYPE;
     protected final Type UNIT_TYPE;
+    protected final Type OBJECT_TYPE;
     protected final Type ARRAY_TYPE;
-    protected final Type JAVA_OBJECT_TYPE;
 
     public JavaTypeCreator(Definitions definitions) {
         this.definitions = definitions;
@@ -45,8 +45,8 @@ public class JavaTypeCreator implements JavaTypeFactory {
         this.BYTE_TYPE = definitions.BYTE_CLASS.typeConstructor();
         this.BOOLEAN_TYPE = definitions.BOOLEAN_CLASS.typeConstructor();
         this.UNIT_TYPE = definitions.UNIT_CLASS.typeConstructor();
+        this.OBJECT_TYPE = definitions.OBJECT_CLASS.typeConstructor();
         this.ARRAY_TYPE = definitions.ARRAY_CLASS.typeConstructor();
-        this.JAVA_OBJECT_TYPE =definitions.JAVA_OBJECT_CLASS.typeConstructor();
     }
 
     public Type anyType() {
@@ -111,7 +111,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         return new MethodType(args, restpe);
     }
     private Type objToAny(Type tp) {
-	if (tp.isSameAs(JAVA_OBJECT_TYPE))
+	if (tp.isSameAs(OBJECT_TYPE))
 	    return ANY_TYPE;
 	else
 	    return tp;
@@ -144,7 +144,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
             return AConstant.FLOAT(((Number)value).floatValue());
         if (base.symbol() == definitions.DOUBLE_CLASS)
             return AConstant.DOUBLE(((Number)value).doubleValue());
-        if (base.symbol() == definitions.JAVA_STRING_CLASS)
+        if (base.symbol() == definitions.STRING_CLASS)
             return AConstant.STRING((String)value);
     	throw Debug.abort("illegal value", value + " - " + base);
     }
@@ -163,7 +163,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         else if (value instanceof Double)
             return doubleType();
         else if (value instanceof String)
-            return definitions.JAVA_STRING_CLASS.typeConstructor();
+            return definitions.STRING_CLASS.typeConstructor();
         else if (value instanceof Boolean)
             return booleanType();
         else

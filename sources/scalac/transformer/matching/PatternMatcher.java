@@ -815,7 +815,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected boolean optimize(Type selType, PatternNode alternatives) {
-        if (!optimize || !selType.isSubType(defs.OBJECT_TYPE()))
+        if (!optimize || !selType.isSubType(defs.SCALAOBJECT_TYPE()))
             return false;
         int cases = 0;
         while (alternatives != null) {
@@ -898,7 +898,7 @@ public class PatternMatcher extends PatternTool {
             cases = cases.next;
         }
         return gen.Switch(
-                          gen.mkApply__(gen.Select(selector.duplicate(), defs.OBJECT_TAG())),
+                          gen.mkApply__(gen.Select(selector.duplicate(), defs.SCALAOBJECT_TAG())),
                           tags,
                           bodies,
                           (defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)

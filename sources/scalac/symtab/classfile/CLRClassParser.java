@@ -286,9 +286,9 @@ public class CLRClassParser extends ClassParser {
 
     protected scalac.symtab.Type getCLRType(Type type) {
 	if (type == importer.OBJECT)
-	    return global.definitions.JAVA_OBJECT_TYPE();
+	    return global.definitions.OBJECT_TYPE();
 	if (type == importer.STRING)
-	    return global.definitions.JAVA_STRING_TYPE();
+	    return global.definitions.STRING_TYPE();
 	if (type == importer.VOID)
 	    return make.voidType();
 	if (type == importer.BOOLEAN)

@@ -64,16 +64,16 @@ public class Definitions {
     // Public Fields & Methods - Java classes
 
     /** The java.lang.Object class */
-    public final Symbol JAVA_OBJECT_CLASS;
-    public final Type   JAVA_OBJECT_TYPE() {return JAVA_OBJECT_CLASS.type();}
+    public final Symbol OBJECT_CLASS;
+    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.type();}
 
     /** The java.lang.String class */
-    public final Symbol JAVA_STRING_CLASS;
-    public final Type   JAVA_STRING_TYPE() {return JAVA_STRING_CLASS.type();}
+    public final Symbol STRING_CLASS;
+    public final Type   STRING_TYPE() {return STRING_CLASS.type();}
 
     /** The java.lang.Throwable class */
-    public final Symbol JAVA_THROWABLE_CLASS;
-    public final Type   JAVA_THROWABLE_TYPE() {return JAVA_THROWABLE_CLASS.type();}
+    public final Symbol THROWABLE_CLASS;
+    public final Type   THROWABLE_TYPE() {return THROWABLE_CLASS.type();}
 
     //########################################################################
     // Public Fields & Methods - Scala value classes
@@ -135,13 +135,9 @@ public class Definitions {
     //########################################################################
     // Public Fields & Methods - Scala reference classes
 
-    /** The scala.Object class */
-    public final Symbol OBJECT_CLASS;
-    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.type();}
-
-    /** The scala.String class */
-    public final Symbol STRING_CLASS;
-    public final Type   STRING_TYPE() {return STRING_CLASS.type();}
+    /** The scala.ScalaObject class */
+    public final Symbol SCALAOBJECT_CLASS;
+    public final Type   SCALAOBJECT_TYPE() {return SCALAOBJECT_CLASS.type();}
 
     /** The scala.Ref class */
     public final Symbol REF_CLASS;
@@ -246,17 +242,17 @@ public class Definitions {
     public final Symbol ANY_AS;
     public final Symbol ANY_MATCH;
 
-    /** Some scala.AnyRef methods */
-    public final Symbol ANYREF_SYNCHRONIZED;
-
     //########################################################################
     // Public Fields & Methods - Java class methods
 
+    /** Some java.lang.Object methods */
+    public final Symbol OBJECT_SYNCHRONIZED;
+
     /** Some java.lang.String methods */
-    public final Symbol JAVA_STRING_PLUS;
+    public final Symbol STRING_PLUS;
 
     /** Some java.lang.Throwable methods */
-    public final Symbol JAVA_THROWABLE_THROW;
+    public final Symbol THROWABLE_THROW;
 
     //########################################################################
     // Public Fields & Methods - Scala value class methods
@@ -285,13 +281,13 @@ public class Definitions {
     //########################################################################
     // Public Fields & Methods - Scala reference class methods
 
-    /** Some scala.Object methods */
-    private Symbol OBJECT_TAG;
+    /** Some scala.ScalaObject methods */
+    private Symbol SCALAOBJECT_TAG;
 
-    public Symbol OBJECT_TAG() {
-        if (OBJECT_TAG == null)
-            OBJECT_TAG = loadTerm(OBJECT_CLASS, Names.tag);
-        return OBJECT_TAG;
+    public Symbol SCALAOBJECT_TAG() {
+        if (SCALAOBJECT_TAG == null)
+            SCALAOBJECT_TAG = loadTerm(SCALAOBJECT_CLASS, Names.tag);
+        return SCALAOBJECT_TAG;
     }
 
     /** Some scala.Ref methods */
@@ -482,9 +478,9 @@ public class Definitions {
         ALL_CLASS = newClass(SCALA_CLASS, Names.All, 0);
 
         // the java classes
-        JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
-        JAVA_THROWABLE_CLASS = getClass(Names.java_lang_Throwable);
-        JAVA_STRING_CLASS = getClass(Names.java_lang_String);
+        OBJECT_CLASS = getClass(Names.java_lang_Object);
+        THROWABLE_CLASS = getClass(Names.java_lang_Throwable);
+        STRING_CLASS = getClass(Names.java_lang_String);
 
         // the scala value classes
         UNIT_CLASS = getClass(Names.scala_Unit);
@@ -498,8 +494,7 @@ public class Definitions {
         DOUBLE_CLASS = getClass(Names.scala_Double);
 
         // the scala reference classes
-        OBJECT_CLASS = getClass(Names.scala_ScalaObject);
-        STRING_CLASS = newAlias(SCALA_CLASS, Names.String, 0);
+        SCALAOBJECT_CLASS = getClass(Names.scala_ScalaObject);
         REF_CLASS = getClass(Names.scala_Ref);
         for (int i = 1; i < TUPLE_COUNT; i++) {
             TUPLE_CLASS[i] = getClass(Names.scala_Tuple(i));
@@ -521,7 +516,7 @@ public class Definitions {
 
         // initialize generated classes and aliases
         initClass(ANY_CLASS, Type.EMPTY_ARRAY);
-        initAlias(ANYREF_CLASS, JAVA_OBJECT_TYPE());
+        initAlias(ANYREF_CLASS, OBJECT_TYPE());
         initClass(ALLREF_CLASS, new Type[]{ANYREF_TYPE()});
         initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
 
@@ -537,9 +532,6 @@ public class Definitions {
         DOUBLE_TYPE  = newTypeSymbol(Names.Double , DOUBLE_CLASS.type ());
         ARRAY_TYPE   = newTypeSymbol(Names.Array  ,
             Type.appliedType(ARRAY_CLASS.type(), new Type[]{ANYREF_TYPE()}));
-
-        // initialize generated classes and aliases
-        initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
         // add members to scala.Any
         ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
@@ -581,31 +573,28 @@ public class Definitions {
                     ANY_MATCH_VPARAMS,
                     ANY_MATCH_TPARAMS[1].type())));
 
-        // add members to scala.AnyREF
-        ANYREF_SYNCHRONIZED =
-            newTerm(ANYREF_CLASS, Names.synchronized_, Modifiers.FINAL);
+        // add members to java.lang.Object
+        OBJECT_SYNCHRONIZED =
+            newTerm(OBJECT_CLASS, Names.synchronized_, Modifiers.FINAL);
 
-        Symbol ANYREF_SYNCHRONIZED_TPARAM =
-            newTParam(ANYREF_SYNCHRONIZED,0,ANY_TYPE());
-        Symbol ANYREF_SYNCHRONIZED_VPARAM =
-            newVParam(ANYREF_SYNCHRONIZED,0,ANYREF_SYNCHRONIZED_TPARAM.type());
-        ANYREF_SYNCHRONIZED.setInfo(
+        Symbol OBJECT_SYNCHRONIZED_TPARAM =
+            newTParam(OBJECT_SYNCHRONIZED,0,ANY_TYPE());
+        Symbol OBJECT_SYNCHRONIZED_VPARAM =
+            newVParam(OBJECT_SYNCHRONIZED,0,OBJECT_SYNCHRONIZED_TPARAM.type());
+        OBJECT_SYNCHRONIZED.setInfo(
             Type.PolyType(
-                new Symbol[] {ANYREF_SYNCHRONIZED_TPARAM},
+                new Symbol[] {OBJECT_SYNCHRONIZED_TPARAM},
                 Type.MethodType(
-                    new Symbol[] {ANYREF_SYNCHRONIZED_VPARAM},
-                    ANYREF_SYNCHRONIZED_TPARAM.type())));
+                    new Symbol[] {OBJECT_SYNCHRONIZED_VPARAM},
+                    OBJECT_SYNCHRONIZED_TPARAM.type())));
 
         // add members to java.lang.String
-        JAVA_STRING_PLUS =
-            newTerm(JAVA_STRING_CLASS, Names.PLUS, Modifiers.FINAL);
-        initMethod(JAVA_STRING_PLUS, new Type[]{ANY_TYPE()}, STRING_TYPE());
+        STRING_PLUS = newTerm(STRING_CLASS, Names.PLUS, Modifiers.FINAL);
+        initMethod(STRING_PLUS, new Type[]{ANY_TYPE()}, STRING_TYPE());
 
         // add members to java.lang.Throwable
-        JAVA_THROWABLE_THROW =
-            newTerm(JAVA_THROWABLE_CLASS, Names.throw_, Modifiers.FINAL);
-        JAVA_THROWABLE_THROW.setInfo(
-            Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
+        THROWABLE_THROW =newTerm(THROWABLE_CLASS,Names.throw_,Modifiers.FINAL);
+        THROWABLE_THROW.setInfo(Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
 
         // create global values
         PATTERN_WILDCARD = new TermSymbol(
@@ -688,7 +677,6 @@ public class Definitions {
 
     /** Creates a new term */
     private Symbol newTerm(Symbol owner, Name name, int flags) {
-        if (owner.isTypeAlias()) owner = owner.type().unalias().symbol();
         assert owner.isClassType(): Debug.show(owner) + " -- " + name;
         Symbol term = new TermSymbol(Position.NOPOS, name, owner, flags);
         owner.members().enterOrOverload(term);

@@ -150,7 +150,7 @@ public class Interpreter {
         Phase current = global.currentPhase;
         if (!erased) global.currentPhase = global.PHASE.ANALYZER.phase();
         Definitions definitions = global.definitions;
-        Type argument = definitions.ARRAY_TYPE(definitions.JAVA_STRING_TYPE());
+        Type argument = definitions.ARRAY_TYPE(definitions.STRING_TYPE());
         Type result = definitions.UNIT_TYPE();
         Symbol formal = new TermSymbol(0, ARGS_N, Symbol.NONE,Modifiers.PARAM);
         formal.setInfo(argument);

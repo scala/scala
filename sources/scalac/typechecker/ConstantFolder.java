@@ -285,7 +285,7 @@ public class ConstantFolder {
                 return AConstant.DOUBLE(value.doubleValue());
             return null;
         case STR:
-            if (type.isSameAs(definitions.JAVA_STRING_TYPE()))
+            if (type.isSameAs(definitions.STRING_TYPE()))
                 return value;
             return null;
         default:

@@ -91,7 +91,7 @@
         }
 
         val g = { 
-          val res = new scala.collection.mutable.HashMap[scala.String, boolean] ;
+          val res = new scala.collection.mutable.HashMap[String, boolean] ;
           <elementBinding>
           res.update( &qElementName;, <string ref="elementContainsText"/>);</elementBinding>
           res;

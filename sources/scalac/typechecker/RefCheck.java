@@ -574,7 +574,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol sym = clazz.info().lookupNonPrivate(name);
 	return sym.kind == VAL &&
 	    (sym.owner() == clazz ||
-	     !defs.JAVA_OBJECT_CLASS.isSubClass(sym.owner()) &&
+	     !defs.OBJECT_CLASS.isSubClass(sym.owner()) &&
 	     (sym.flags & DEFERRED) == 0);
     }
 
@@ -644,10 +644,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    for (int i = 0; i < fields.length; i++) {
 		String str = (i == fields.length - 1) ? ")" : ",";
 		body = gen.Apply(
-		    gen.Select(body, defs.JAVA_STRING_PLUS),
+		    gen.Select(body, defs.STRING_PLUS),
 		    new Tree[]{fields[i]});
 		body = gen.Apply(
-		    gen.Select(body, defs.JAVA_STRING_PLUS),
+		    gen.Select(body, defs.STRING_PLUS),
 		    new Tree[]{gen.mkStringLit(clazz.pos, str)});
 	    }
 	}
@@ -723,7 +723,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	private Tree tagMethod(ClassSymbol clazz) {
 	    Symbol tagSym = new TermSymbol(
 		clazz.pos, Names.tag, clazz,
-		clazz.isSubClass(defs.OBJECT_CLASS) ? OVERRIDE : 0)
+		clazz.isSubClass(defs.SCALAOBJECT_CLASS) ? OVERRIDE : 0)
 		.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE()));
 	    clazz.info().members().enter(tagSym);
 	    return gen.DefDef(

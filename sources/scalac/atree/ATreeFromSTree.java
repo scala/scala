@@ -53,9 +53,9 @@ public class ATreeFromSTree {
         this.generators = new HashMap();
         Symbol[] classes = {
             definitions.ANY_CLASS,
-            definitions.JAVA_OBJECT_CLASS,
-            definitions.JAVA_STRING_CLASS,
-            definitions.JAVA_THROWABLE_CLASS,
+            definitions.OBJECT_CLASS,
+            definitions.STRING_CLASS,
+            definitions.THROWABLE_CLASS,
             definitions.ARRAY_CLASS,
             definitions.UNIT_CLASS,
             definitions.BOOLEAN_CLASS,
@@ -469,7 +469,7 @@ public class ATreeFromSTree {
             if (clasz == definitions.LONG_CLASS) return ATypeKind.I8;
             if (clasz == definitions.FLOAT_CLASS) return ATypeKind.R4;
             if (clasz == definitions.DOUBLE_CLASS) return ATypeKind.R8;
-            if (clasz == definitions.JAVA_STRING_CLASS) return ATypeKind.STR;
+            if (clasz == definitions.STRING_CLASS) return ATypeKind.STR;
             return ATypeKind.REF;
         default:
             return ATypeKind.REF;
@@ -488,14 +488,14 @@ public class ATreeFromSTree {
             addGenerator(definitions.ANY_IS, Generator.ISAS(false));
             addGenerator(definitions.ANY_AS, Generator.ISAS(true));
         }
-        if (clasz == definitions.JAVA_OBJECT_CLASS) {
-            addGenerator(definitions.ANYREF_SYNCHRONIZED, Generator.SYNCHRONIZED);
+        if (clasz == definitions.OBJECT_CLASS) {
+            addGenerator(definitions.OBJECT_SYNCHRONIZED, Generator.SYNCHRONIZED);
         }
-        if (clasz == definitions.JAVA_STRING_CLASS) {
-            addGenerator(definitions.JAVA_STRING_PLUS, Generator.CONCAT(ATypeKind.STR));
+        if (clasz == definitions.STRING_CLASS) {
+            addGenerator(definitions.STRING_PLUS, Generator.CONCAT(ATypeKind.STR));
         }
-        if (clasz == definitions.JAVA_THROWABLE_CLASS) {
-            addGenerator(definitions.JAVA_THROWABLE_THROW, Generator.THROW);
+        if (clasz == definitions.THROWABLE_CLASS) {
+            addGenerator(definitions.THROWABLE_THROW, Generator.THROW);
         }
         if (clasz == definitions.ARRAY_CLASS) {
             // !!! addAll(defs.ARRAY_CLASS, Names.length, Primitive.LENGTH, 1);

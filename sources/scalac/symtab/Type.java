@@ -719,7 +719,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             Definitions definitions = Global.instance.definitions;
             return members.isEmpty() &&
                 parents.length == 2 &&
-                (parents[0].symbol() == definitions.JAVA_OBJECT_CLASS ||
+                (parents[0].symbol() == definitions.OBJECT_CLASS ||
 		 parents[0].symbol() == definitions.ANYREF_CLASS) &&
                 parents[1].isFunctionType();
         }
@@ -914,7 +914,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
     static private Map objToAnyMap = new Map() {
 	public Type apply(Type t) {
-	    if (t.symbol() == Global.instance.definitions.JAVA_OBJECT_CLASS)
+	    if (t.symbol() == Global.instance.definitions.OBJECT_CLASS)
 		return Global.instance.definitions.ANY_TYPE();
 	    else return t;
 	}
@@ -2005,7 +2005,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             break;
 
         case UnboxedArrayType(_):
-            if (Global.instance.definitions.JAVA_OBJECT_TYPE().isSubType(that))
+            if (Global.instance.definitions.OBJECT_TYPE().isSubType(that))
                 return true;
             // !!! we should probably also test for Clonable, Serializable, ...
         }
@@ -3082,7 +3082,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             case CLASS:
                 Definitions definitions = Global.instance.definitions;
                 if (sym == definitions.UNIT_CLASS) return this;
-                if (sym == definitions.JAVA_OBJECT_CLASS ||
+                if (sym == definitions.OBJECT_CLASS ||
                     sym == definitions.ALL_CLASS ||
                     sym == definitions.ALLREF_CLASS)
                     return Type.typeRef(NoPrefix, definitions.ANY_CLASS, EMPTY_ARRAY);

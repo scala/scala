@@ -261,7 +261,7 @@ public class TreeChecker {
             return expression(value, currentMember().resultType());
 
         case Throw(Tree value):
-            return expression(value, definitions.JAVA_THROWABLE_TYPE());
+            return expression(value, definitions.THROWABLE_TYPE());
 
         case New(Template(Tree[] bases, Tree[] body)):
             assert bases.length == 1 && body.length == 0: show(tree);

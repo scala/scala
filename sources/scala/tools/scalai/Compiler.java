@@ -65,10 +65,10 @@ public class Compiler {
 
         SourceFile compiled = new SourceFile("<<compiled code>>", new byte[0]);
 
-        environment.insertFunction(definitions.JAVA_STRING_PLUS, Function.StringPlus); // !!!
+        environment.insertFunction(definitions.STRING_PLUS, Function.StringPlus); // !!!
         // !!! ANY_PLUS_STRING is commented out in definitions
         // !!! environment.insertFunction(definitions.ANY_PLUS_STRING, Function.StringPlus); // !!!
-        environment.insertFunction(definitions.JAVA_THROWABLE_THROW, Function.Throw);
+        environment.insertFunction(definitions.THROWABLE_THROW, Function.Throw);
         // !!! environment.insertFunction(definitions.MATCH, ...);
         // !!! environment.insertFunction(definitions.IS, ...);
         // !!! environment.insertFunction(definitions.AS, ...);
@@ -93,7 +93,7 @@ public class Compiler {
         }
         // !!! should we have a symbol Any.equals as for hashcode and toString?
         Symbol equals_symbol =
-            definitions.JAVA_OBJECT_CLASS.lookup(Names.equals);
+            definitions.OBJECT_CLASS.lookup(Names.equals);
         assert equals_symbol != Symbol.NONE;
         CodePromise equals_code = new CodePromise(
             new CodeContainer(

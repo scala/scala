@@ -161,8 +161,8 @@ final class TypeCreator {
 	if (initialized)
 	    return;
 
-	final Symbol JOBJECT = defs.JAVA_OBJECT_CLASS;
-	final Symbol JSTRING = defs.JAVA_STRING_CLASS;
+	final Symbol JOBJECT = defs.OBJECT_CLASS;
+	final Symbol JSTRING = defs.STRING_CLASS;
 
 	SCALA_BYTE    = getType("scala.Byte");
 	SCALA_SHORT   = getType("scala.Short");

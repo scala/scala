@@ -2263,8 +2263,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree$Throw(expr) =>
 	  val expr1: Tree = transform(
-	    expr, EXPRmode, definitions.JAVA_THROWABLE_TYPE());
-	  gen.Select(tree.pos, expr1, definitions.JAVA_THROWABLE_THROW);
+	    expr, EXPRmode, definitions.THROWABLE_TYPE());
+	  gen.Select(tree.pos, expr1, definitions.THROWABLE_THROW);
 
 	case Tree$Return(expr) =>
 	  if (!context.owner.isInitialized()) {

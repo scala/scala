@@ -476,9 +476,6 @@ public class Primitives {
         addPrimitive(defs.ANY_HASHCODE, Primitive.HASHCODE);
         addPrimitive(defs.ANY_TOSTRING, Primitive.TOSTRING);
 
-        // scala.AnyRef
-        addPrimitive(defs.ANYREF_SYNCHRONIZED, Primitive.SYNCHRONIZED);
-
         // scala.Unit
         addAll(defs.UNIT_CLASS, Names.EQ, Primitive.EQ, 1);
         addAll(defs.UNIT_CLASS, Names.NE, Primitive.NE, 1);
@@ -654,6 +651,15 @@ public class Primitives {
         addAll(defs.DOUBLE_CLASS, Names.GT, Primitive.GT, 1);
         addAll(defs.DOUBLE_CLASS, Names.GE, Primitive.GE, 1);
 
+        // scala.Object
+        addPrimitive(defs.OBJECT_SYNCHRONIZED, Primitive.SYNCHRONIZED);
+
+        // scala.String
+        addPrimitive(defs.STRING_PLUS, Primitive.CONCAT);
+
+        // scala.Throwable
+        addPrimitive(defs.THROWABLE_THROW, Primitive.THROW);
+
         // scala.Array
         // !!! addAll(defs.ARRAY_CLASS, defs.EQEQ_N, Primitive.EQ, 1);
         // !!! addAll(defs.ARRAY_CLASS, defs.BANGEQ_N, Primitive.NE, 1);
@@ -663,12 +669,6 @@ public class Primitives {
         addAll(defs.ARRAY_CLASS, Names.length, Primitive.LENGTH, 1);
         addAll(defs.ARRAY_CLASS, Names.apply, Primitive.APPLY, 2);
         addAll(defs.ARRAY_CLASS, Names.update, Primitive.UPDATE, 1);
-
-        // scala.String
-        addPrimitive(defs.JAVA_STRING_PLUS, Primitive.CONCAT);
-
-        // java.lang.Throwable
-        addPrimitive(defs.JAVA_THROWABLE_THROW, Primitive.THROW);
 
         // scala.runtime.RunTime
         addPrimitive(BOX_UVALUE, Primitive.BOX);
@@ -811,7 +811,7 @@ public class Primitives {
                     // !!! System.out.println("!!! Ignoring pico bridge method " + Debug.show(clasz) + "." + name);
                     break;
                 }
-                if (vparams[0].type().equals(definitions.JAVA_STRING_TYPE())) {
+                if (vparams[0].type().equals(definitions.STRING_TYPE())) {
                     addPrimitive(alts[i], Primitive.CONCAT);
                     assert !concat;
                     concat = true;
@@ -1258,7 +1258,7 @@ public class Primitives {
         assert clasz.isClassType(): Debug.show(clasz);
         if (clasz == definitions.ANY_CLASS ||
             clasz == definitions.ANYREF_CLASS)
-            return getJREClassName(definitions.JAVA_OBJECT_CLASS);
+            return getJREClassName(definitions.OBJECT_CLASS);
         String suffix = clasz.isModuleClass() && !clasz.isJava() ? "$" : "";
         String name = jreNameWriter.appendSymbol(clasz, suffix).toString();
         jreNameWriter.setStringBuffer(null);
