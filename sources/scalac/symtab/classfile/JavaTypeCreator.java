@@ -90,7 +90,11 @@ public class JavaTypeCreator implements JavaTypeFactory {
     }
 
     public Type classType(Name classname) {
-        return definitions.getClass(classname).typeConstructor();
+        return classType(definitions.getClass(classname));
+    }
+
+    public Type classType(Symbol clasz) {
+        return clasz.typeConstructor();
     }
 
     public Type arrayType(Type elemtpe) {

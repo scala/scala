@@ -8,6 +8,7 @@
 
 package scalac.symtab.classfile;
 
+import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Name;
 
@@ -23,6 +24,7 @@ public interface JavaTypeFactory {
     Type booleanType();
     Type voidType();
     Type classType(Name classname);
+    Type classType(Symbol clasz);
     Type arrayType(Type elemtpe);
     Type methodType(Type[] argtpes, Type restpe, Type[] thrown);
     Type packageType(Name packagename);
