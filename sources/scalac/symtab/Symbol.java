@@ -370,7 +370,6 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public final boolean isRoot() {
         return (attrs & IS_ROOT) != 0;
-        //return this.moduleClass() == Global.instance.definitions.ROOT_CLASS;
     }
 
     /** Does this symbol denote something loaded from a Java class? */
@@ -1757,7 +1756,7 @@ public class ClassSymbol extends TypeSymbol {
         clasz.setInfo(parser);
         clasz.primaryConstructor().setInfo(
             Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
-        //            Type.MethodType(Symbol.EMPTY_ARRAY, clasz.thisType()));
+        // !!! Type.MethodType(Symbol.EMPTY_ARRAY, clasz.thisType()));
         return clasz;
     }
 
@@ -1781,6 +1780,7 @@ public class ClassSymbol extends TypeSymbol {
 
    /** Get module */
     public Symbol module() {
+        assert !isRoot(): this + ".module()";
         return module;
     }
 
