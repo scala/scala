@@ -6,7 +6,8 @@ case class Elem( label:String, child:Node* ) extends Node with Similarity {
 
   def similar( x:Any ) = {
     x match {
-      case that:Node => (label == that.label) && child.similar( that.child )
+      case that:Node => (label == that.label) && child.equals( that.child )
+      // sameElements
       case _ => false;
     }
   }

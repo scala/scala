@@ -44,8 +44,8 @@ trait Node {
     case that:Node =>
       //Console.print("(Node)");
       that.label == this.label &&
-        that.attribute.similar( this.attribute ) &&
-          that.child.similar( this.child )
+        that.attribute.sameElements( this.attribute ) &&
+          that.child.sameElements( this.child ) // sameElements
     case _ => false
   }
 
@@ -55,18 +55,17 @@ trait Node {
    */
     def \(that:Symbol): NodeSeq = {
       new NodeSeq({
-      val iter = child.elements;
-      that.name match {
+        that.name match {
 
-        case "_" => iter.toList;
-        case _ =>
-          var res:List[Node] = Nil;
-          for( val x <- child.elements; x.label == that.name ) {
-            res = x::res;
-          }
-          res.reverse
-      }
-    });
+          case "_" => child.toList;
+          case _ =>
+            var res:List[Node] = Nil;
+            for( val x <- child.elements; x.label == that.name ) {
+              res = x::res;
+            }
+            res.reverse
+        }
+      });
     }
 
  /** projection function. Similar to XPath, use this \\ 'foo to filter
@@ -79,15 +78,6 @@ trait Node {
         case "_" => this.descendant_or_self;
         case _ => this.descendant_or_self.asInstanceOf[List[Node]].
         filter( x => x.label == that.name );
-        /*
-          val res = new AppendBuffer[Node]();
-          if( this.label == that.name )
-            res.append( this );
-          res.append( this.child.elements.flatMap {
-            x => //x.\\(that).elements
-          }.toSeq);
-        res.toList
-        */
       })
   }
 
