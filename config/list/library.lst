@@ -40,9 +40,6 @@ PartialFunction.scala
 Predef.scala
 Ref.java
 Seq.scala
-SeqTrace.scala
-SeqTraceCons.scala
-SeqTraceNil.scala
 Short.java
 Some.scala
 Stream.scala
