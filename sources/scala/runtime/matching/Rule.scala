@@ -80,6 +80,9 @@ abstract class Rule with Ordered[Rule] {
 
   }
 }
+
+abstract class TRule extends Rule;
+abstract class HRule extends Rule;
 /*
 a tree rule is of the from  A -> s(B)
 where A,B are TreeNTs and s is an identifier (string).
@@ -87,15 +90,15 @@ where A,B are TreeNTs and s is an identifier (string).
 If s is the empty string, then the node label is arbitrary
 If HedgeNT is AnyHedgeNT, then the tree is arbitrary
 */
-case class HedgeChainRule( n: HedgeNT, rhs: HedgeNT ) extends Rule;
-case class TreeRule( n:TreeNT, rhs:Pair[Int,HedgeNT] ) extends Rule {
+case class HedgeChainRule( n: HedgeNT, rhs: HedgeNT ) extends HRule;
+case class TreeRule( n:TreeNT, rhs:Pair[Int,HedgeNT] ) extends TRule {
   def this(i:int, s:Int, n:int ) = {
     this( new TreeNT(i), new Pair(s, new HedgeNT(n)));
   }
 };
-case class AnyTreeRule( n:TreeNT ) extends Rule {
+case class AnyTreeRule( n:TreeNT ) extends TRule {
 }
-case class AnyNodeRule( n:TreeNT, h:HedgeNT ) extends Rule {
+case class AnyNodeRule( n:TreeNT, h:HedgeNT ) extends TRule {
 }
-case class HedgeRule( n:HedgeNT, rhs:Pair[TreeNT,HedgeNT] ) extends Rule;
+case class HedgeRule( n:HedgeNT, rhs:Pair[TreeNT,HedgeNT] ) extends HRule;
 

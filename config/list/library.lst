@@ -8,6 +8,7 @@ Array.java
 Boolean.java
 BufferedIterator.scala
 Byte.java
+CaseClass.scala
 Cell.scala
 Char.java
 Console.scala
