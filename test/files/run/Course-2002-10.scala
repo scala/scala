@@ -111,7 +111,7 @@ module M2 {
   }
 
   def test = {
-    val i = (new PrimeIterator()).take(100);
+    val i = (new PrimeIterator()).take(30);
     System.out.print("prime numbers:");
     while (i.hasNext) { System.out.print(" " + i.next); }
     System.out.println();
