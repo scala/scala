@@ -399,10 +399,12 @@ public abstract class Global {
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
         }
+        nextPhase();
         for (int i = 0; i < imports.size(); i++) {
             Symbol module = (Symbol)imports.get(i);
             ((scalac.typechecker.AnalyzerPhase)PHASE.ANALYZER.phase()).addConsoleImport(module);
         }
+        prevPhase();
     }
 
     private void fix1(Unit unit) {
