@@ -91,11 +91,10 @@ class AddInterfaces extends SubstTransformer {
     }
 
     protected Name uniqueName(Symbol sym) {
-        boolean isTypeName = sym.name.isTypeName();
         StringBuffer buf = new StringBuffer();
         uniqueName(sym, buf);
         Name newName = Name.fromString(buf.toString());
-        return (isTypeName ? newName.toTypeName() : newName);
+        return (sym.name.isTypeName() ? newName.toTypeName() : newName);
     }
 
     protected final static String CLASS_SUFFIX = "$class";
@@ -107,10 +106,9 @@ class AddInterfaces extends SubstTransformer {
     protected Name className(Name interfaceName) {
         assert !hasClassSuffix(interfaceName) : interfaceName;
 
-        boolean isType = interfaceName.isTypeName();
         String interfaceStr = interfaceName.toString();
         Name className = Name.fromString(interfaceStr + CLASS_SUFFIX);
-        return (isType ? className.toTypeName() : className);
+        return (interfaceName.isTypeName() ? className.toTypeName() : className);
     }
 
     // Modifiers for which we do not create interfaces.
@@ -118,7 +116,7 @@ class AddInterfaces extends SubstTransformer {
         (Modifiers.MODUL | Modifiers.SYNTHETIC | Modifiers.JAVA);
 
     protected boolean needInterface(Symbol sym) {
-        return (sym.enclClass().flags & NO_INTERFACE_MODS) == 0;
+        return (sym.primaryConstructorClass().flags & NO_INTERFACE_MODS) == 0;
     }
 
     protected boolean memberGoesInInterface(Symbol member) {
@@ -163,13 +161,13 @@ class AddInterfaces extends SubstTransformer {
     protected Symbol getClassSym(Symbol ifaceSym) {
         assert !hasClassSuffix(ifaceSym.name) : ifaceSym.name;
 
-        if (!needInterface(ifaceSym)) {
+        if (!needInterface(ifaceSym))
             return ifaceSym;
-        } else {
+        else {
             if (!ifaceToClass.containsKey(ifaceSym)) {
                 Symbol classSym;
 
-                Name ifaceName = ifaceSym.enclClass().fullName();
+                Name ifaceName = ifaceSym.primaryConstructorClass().fullName();
                 classSym = global.definitions.getClass(className(ifaceName));
                 if (ifaceSym.isPrimaryConstructor())
                     classSym = classSym.constructor();
@@ -287,10 +285,7 @@ class AddInterfaces extends SubstTransformer {
         case Type.NoType:
             return type;
         case ThisType(Symbol sym):
-            if (sym == Symbol.NONE)
-                return type;
-            else
-                return new Type.ThisType(getClassSym(sym));
+            return new Type.ThisType(getClassSym(sym));
         case TypeRef(Type pre, Symbol sym, Type[] args):
             return new Type.TypeRef(fixClassSymbols(pre), getClassSym(sym), args);
         case SingleType(Type pre, Symbol sym):
