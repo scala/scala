@@ -10,8 +10,6 @@
 
 package scala;
 
-/** @meta class [{#ClassScalaTParams#}] extends java.lang.Object; */
-public interface Function{#n#} extends java.io.Serializable {
-    /** @meta method {#ApplyScalaSignature#}; */
-    public abstract java.lang.Object apply({#ApplyJavaVParams#});
+trait Function{#n#}{#ClassSignature#} with java.io.Serializable {
+  def apply{#ApplySignature#};
 }

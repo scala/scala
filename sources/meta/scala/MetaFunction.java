@@ -10,7 +10,7 @@ package meta.scala;
 
 import meta.java.AbstractJavaExpander;
 
-public class MetaFunction extends AbstractJavaExpander {
+public class MetaFunction extends AbstractScalaExpander {
 
     //########################################################################
     // Public Fields
@@ -35,24 +35,20 @@ public class MetaFunction extends AbstractJavaExpander {
         writer.print(arity);
     }
 
-    public void printClassScalaTParams() {
+    public void printClassSignature() {
+        writer.print("[");
         for (int i = 0; i < arity; i++)
-            writer.print("- ?A").print(i).print(", ");
-        writer.print("+ ?R");
+            writer.print("-T").print(i).print(", ");
+        writer.print("+R]");
     }
 
-    public void printApplyScalaSignature() {
+    public void printApplySignature() {
         writer.print("(");
-        for (int i = 0; i < arity; i++)
-            writer.print("?A").print(i).print(", ");
-        writer.print(") ?R");
-    }
-
-    public void printApplyJavaVParams() {
         for (int i = 0; i < arity; i++) {
             if (i > 0) writer.print(", ");
-            writer.print("java.lang.Object a").print(i);
+            writer.print("v").print(i).print(":").space().print("T").print(i);
         }
+        writer.print("): R");
     }
 
     //########################################################################

@@ -677,9 +677,9 @@ endif
 ##############################################################################
 # Targets - template expansion
 
-# generation of Function<n>.java
-FUNCTION_FILES		+= $(filter $(LIBRARY_ROOT)/Function%.java,$(LIBRARY_SOURCES))
-FUNCTION_TEMPLATE	 = $(LIBRARY_ROOT)/Function.java.tmpl
+# generation of Function<n>.scala
+FUNCTION_FILES		+= $(filter $(LIBRARY_ROOT)/Function%.scala,$(LIBRARY_SOURCES))
+FUNCTION_TEMPLATE	 = $(LIBRARY_ROOT)/Function.scala.tmpl
 
 # generation of Tuple<n>.scala
 TUPLE_FILES		+= $(filter $(LIBRARY_ROOT)/Tuple%.scala,$(LIBRARY_SOURCES))
