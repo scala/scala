@@ -1109,7 +1109,7 @@ public class Parser implements Tokens {
         return ts.toArray();
     }
 
-    /**   Pattern  ::=  TreePattern { '|' TreePattern }
+    /**   Pattern  ::=  TreePattern { `|' TreePattern }
      */
 
     Tree pattern() {
@@ -1192,7 +1192,7 @@ public class Parser implements Tokens {
      *                 | literal
      *                 | StableId [ArgumentPatterns]
      *                 | `(' Patterns `)'
-     *                 | ((nothing)) //???
+     *                 |                     (empty word - nothing)
      */
     Tree simplePattern() {
         switch (s.token) {
