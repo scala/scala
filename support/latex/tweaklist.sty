@@ -1,0 +1,36 @@
+\def\enumhook{}
+\def\enumhooki{}
+\def\enumhookii{}
+\def\enumhookiii{}
+\def\enumhookiv{}
+\def\itemhook{}
+\def\itemhooki{}
+\def\itemhookii{}
+\def\itemhookiii{}
+\def\itemhookiv{}
+\def\descripthook{}
+\def\enumerate{%
+  \ifnum \@enumdepth >\thr@@\@toodeep\else
+    \advance\@enumdepth\@ne
+    \edef\@enumctr{enum\romannumeral\the\@enumdepth}%
+      \expandafter
+      \list
+        \csname label\@enumctr\endcsname
+        {\usecounter\@enumctr\def\makelabel##1{\hss\llap{##1}}%
+          \enumhook \csname enumhook\romannumeral\the\@enumdepth\endcsname}%
+  \fi}
+\def\itemize{%
+  \ifnum \@itemdepth >\thr@@\@toodeep\else
+    \advance\@itemdepth\@ne
+    \edef\@itemitem{labelitem\romannumeral\the\@itemdepth}%
+    \expandafter
+    \list
+      \csname\@itemitem\endcsname
+      {\def\makelabel##1{\hss\llap{##1}}%
+        \itemhook \csname itemhook\romannumeral\the\@itemdepth\endcsname}%
+  \fi}
+\renewenvironment{description}
+                 {\list{}{\labelwidth\z@ \itemindent-\leftmargin
+                          \let\makelabel\descriptionlabel\descripthook}}
+                 {\endlist}
+

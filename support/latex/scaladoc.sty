@@ -1,14 +1,15 @@
 %% $Id$
 
-\usepackage{fourier}
-\usepackage[scaled=0.8]{luximono}
-\usepackage{helvet}
-
-\usepackage{color}
-\usepackage{colortbl}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{scaladoc}[2003/08/27 v0.1 Scala style customization]
+\RequirePackage{fourier}
+\RequirePackage[scaled=0.8]{luximono}
+\RequirePackage{helvet}
+\RequirePackage{color}
+\RequirePackage{colortbl}
 
 % produce an acceptable typing area
-\usepackage{a4}
+\RequirePackage{a4}
 \setlength{\textheight}{22.5cm}
 
 % support for generating PDF files
@@ -21,33 +22,36 @@
 \fi
 
 % produce nice captions
-\usepackage[hang,small,bf]{caption2}
+\RequirePackage[hang,small,bf]{caption2}
 
 % include titlesec
-\usepackage[clearempty]{titlesec}
+\RequirePackage[clearempty]{titlesec}
 \newcommand{\mytitlerule}{\titlerule[.5pt]}
 \newcommand{\mychaptername}{Chapter}
-\titleformat{name=\part}
-   [block]
-   {\thispagestyle{empty}\centering\scshape\huge}
-   {\Roman{part}}
-   {1ex}
-   {}
-   [\vspace*{0.5\textheight}]
-\titleformat{name=\chapter}
-   [display]
-   {\sffamily\bfseries\huge}
-   {\textnormal{\sffamily\LARGE\mychaptername{} \thechapter}}
-   {0pt}
-   {\vspace*{2.5mm}}
-   [\vspace*{8mm}]
-\titleformat{name=\chapter,numberless}
-   [display]
-   {\vspace*{-30mm}\sffamily\bfseries\huge}
-   {}
-   {0pt}
-   {}
-   [\vspace*{2mm}]
+\newcommand{\setupBookStyle}{%
+	\titleformat{name=\part}%
+   		[block]%
+   		{\thispagestyle{empty}\centering\scshape\huge}%
+   		{\Roman{part}}%
+   		{1ex}%
+   		{}%
+   		[\vspace*{0.5\textheight}]%
+	\titleformat{name=\chapter}%
+   		[display]%
+   		{\sffamily\bfseries\huge}%
+   		{\textnormal{\sffamily\LARGE\mychaptername{} \thechapter}}%
+   		{0pt}%
+   		{\vspace*{2.5mm}}%
+   		[\vspace*{8mm}]%
+	\titleformat{name=\chapter,numberless}%
+   		[display]%
+   		{\vspace*{-30mm}\sffamily\bfseries\huge}%
+   		{}%
+   		{0pt}%
+   		{}%
+   		[\vspace*{2mm}]%
+}
+\@ifundefined{part}{}{\setupBookStyle}
 \titleformat{name=\section}
    {\sffamily\bfseries\large}
    {\thesection}
@@ -82,10 +86,10 @@
 \addtocounter{secnumdepth}{1}
 
 % produce nice footers
-\usepackage[bottom,multiple,stable]{footmisc} % flushmargin,norule removed
+\RequirePackage[bottom,multiple,stable]{footmisc} % flushmargin,norule removed
 
 % produce nice headings
-\usepackage{fancyhdr}
+\RequirePackage{fancyhdr}
 \pagestyle{fancy}
 \fancypagestyle{plain}{\fancyhf{}%
    \renewcommand{\headrulewidth}{0pt}%
@@ -98,9 +102,20 @@
 \fancyhead[LO]{\sffamily\footnotesize\rightmark}
 \renewcommand{\headrulewidth}{0.5pt}
 
+% tweak list environments to customize the spacing between items
+\RequirePackage{tweaklist}
+\renewcommand{\enumhooki}{\addtolength{\itemsep}{-0.32\baselineskip}}
+\renewcommand{\enumhookii}{\addtolength{\itemsep}{-0.13\baselineskip}}
+\renewcommand{\enumhookiii}{\addtolength{\itemsep}{-0.1\baselineskip}}
+\renewcommand{\enumhookiv}{\addtolength{\itemsep}{-0.08\baselineskip}}
+\renewcommand{\itemhooki}{\addtolength{\itemsep}{-0.32\baselineskip}}
+\renewcommand{\itemhookii}{\addtolength{\itemsep}{-0.13\baselineskip}}
+\renewcommand{\itemhookiii}{\addtolength{\itemsep}{-0.1\baselineskip}}
+\renewcommand{\itemhookiv}{\addtolength{\itemsep}{-0.08\baselineskip}}
+
 %% set latex/pdflatex specific stuff
 \ifpdf
-    \usepackage[pdftex,
+    \RequirePackage[pdftex,
                 hyperindex,
                 plainpages=false,
                 breaklinks,
@@ -110,19 +125,19 @@
                 linkcolor=black,
                 pagecolor=black,
                 urlcolor=blue]{hyperref}
-    \usepackage[pdftex]{graphicx}
+    \RequirePackage[pdftex]{graphicx}
     \DeclareGraphicsExtensions{.jpg,.pdf}
     \pdfcatalog {
         /PageMode (/UseNone)
     }
-    \usepackage{thumbpdf}
+    \RequirePackage{thumbpdf}
 \else
-    \usepackage[ps2pdf]{hyperref}
-    \usepackage{graphicx}
+    \RequirePackage[ps2pdf]{hyperref}
+    \RequirePackage{graphicx}
     \DeclareGraphicsExtensions{.eps,.jpg}
 \fi
 
-\usepackage{listings}
+\RequirePackage{listings}
 
 % scala language description
 \lstdefinelanguage{Scala}{
@@ -221,3 +236,5 @@
   \end{tabular}%
   \end{center}%
   \end{titlepage}}
+
+\endinput
