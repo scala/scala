@@ -47,17 +47,6 @@ public class Tree {
 
     {#IsKind#}
 
-    /** Returns true if this tree is empty or error. */
-    public boolean isMissing() {
-	switch (this) {
-        case Bad():
-	case Empty:
-	    return true;
-	default:
-	    return false;
-	}
-    }
-
     //########################################################################
     // Public Methods - tree type
 

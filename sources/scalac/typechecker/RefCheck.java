@@ -867,7 +867,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 // Tree node simplification---------------------------------------------------
 
     private Tree elimTypeNode(Tree tree) {
-	if (tree.isType() && !tree.isMissing())
+	if (tree.isType())
 	    return gen.mkType(tree.pos, tree.type.deconst());
 	else
 	    return tree;
@@ -930,6 +930,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     public Tree transform(Tree tree) {
 	Symbol sym = tree.symbol();
 	switch (tree) {
+        case Empty:
+            return tree;
+
 	case ClassDef(_, _, Tree.AbsTypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
 	    Symbol enclClassPrev = enclClass;
 	    enclClass = sym;
