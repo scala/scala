@@ -1,0 +1,4 @@
+bug63.scala:2: covariant type T occurs in contravariant position in type T of value elem
+  def set(elem: T): Unit = ();
+          ^
+one error found
