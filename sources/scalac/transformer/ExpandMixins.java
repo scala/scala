@@ -350,11 +350,11 @@ public class ExpandMixins extends Transformer {
                        || qualSym.isSubClass(funOwnerSym))) {
                     Type ownerTp = funOwnerSym.type();
                     Tree castQualifier =
-                        Tree.Apply(Tree.TypeApply(Tree.Select(qualifier, Names.as),
-                                                  new Tree[] {
-                                                      gen.mkType(qualifier.pos, ownerTp)
-                                                  }),
-                                   Tree.EMPTY_ARRAY);
+                        gen.Apply(gen.TypeApply(gen.Select(qualifier, defs.AS),
+                                                new Tree[] {
+                                                    gen.mkType(qualifier.pos, ownerTp)
+                                                }),
+                                  Tree.EMPTY_ARRAY);
                     return copy.Apply(newTree,
                                       copy.Select(fun, castQualifier, selector),
                                       args);
