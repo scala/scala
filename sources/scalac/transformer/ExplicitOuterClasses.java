@@ -27,56 +27,24 @@ import Tree.*;
  */
 
 public class ExplicitOuterClasses extends Transformer {
+    protected final ExplicitOuterClassesPhase phase;
+
     // Mapping from class constructor symbols to owner field symbols.
-    protected HashMap/*<Symbol,Symbol>*/ outerMap;
+    protected final HashMap/*<Symbol,Symbol>*/ outerMap;
 
     public ExplicitOuterClasses(Global global) {
         super(global);
-        outerMap = global.PHASE.EXPLICITOUTER.outerMap;
-    }
-
-    protected Type addValueParam(Type oldType, Symbol newValueParam) {
-        switch (oldType) {
-        case MethodType(Symbol[] vparams, Type result): {
-            Symbol[] newVParams = new Symbol[vparams.length + 1];
-            newVParams[0] = newValueParam;
-            System.arraycopy(vparams, 0, newVParams, 1, vparams.length);
-            return new Type.MethodType(newVParams, result);
-        }
-
-        case PolyType(Symbol[] tparams, Type result):
-            return new Type.PolyType(tparams, addValueParam(result, newValueParam));
-
-        default:
-            throw global.fail("invalid type", oldType);
-        }
-    }
-
-    protected Symbol outerSym(Symbol constSym) {
-        if (! outerMap.containsKey(constSym)) {
-            Symbol ownerSym = constSym.enclClass();
-            Symbol outerSym =
-                new TermSymbol(constSym.pos, freshOuterName(), constSym, 0);
-            outerSym.setInfo(ownerSym.type());
-
-            outerMap.put(constSym, outerSym);
-        }
-        return (Symbol)outerMap.get(constSym);
-    }
-
-    protected Type newConstType(Symbol constSym) {
-        return addValueParam(constSym.info(), outerSym(constSym));
+        this.phase = global.PHASE.EXPLICITOUTER;
+        this.outerMap = phase.outerMap;
     }
 
     protected LinkedList/*<Symbol>*/ classStack = new LinkedList();
     protected LinkedList/*<Symbol>*/ outerLinks = new LinkedList();
 
-    protected Name freshOuterName() {
-        return global.freshNameCreator.newName(Names.OUTER_PREFIX);
-    }
-
-    // Return the number of outer links to follow to find the given
-    // symbol.
+    /**
+     * Return the number of outer links to follow to find the given
+     * symbol.
+     */
     protected int outerLevel(Symbol sym) {
         Iterator classIt = classStack.iterator();
         for (int level = 0; classIt.hasNext(); ++level) {
@@ -87,7 +55,9 @@ public class ExplicitOuterClasses extends Transformer {
         return -1;
     }
 
-    // Return a tree referencing the "level"th outer class.
+    /**
+     * Return a tree referencing the "level"th outer class.
+     */
     protected Tree outerRef(int level) {
         assert level >= 0 : level;
 
@@ -145,13 +115,13 @@ public class ExplicitOuterClasses extends Transformer {
                 outerLinks.addFirst(null);
                 newVParams = classDef.vparams;
             } else {
-                // Add the outer parameter, both to the type and the tree.
+                // Add the outer parameter to the tree (it is added to
+                // the type by transformInfo).
                 Symbol constSym = classSym.constructor();
-                Symbol outerSym = outerSym(constSym);
+                Symbol outerSym = phase.outerSym(constSym);
                 assert (outerSym.owner() == constSym) : outerSym;
                 outerLinks.addFirst(outerSym);
 
-                Type newConstType = newConstType(constSym);
                 ValDef[][] vparams = classDef.vparams;
                 ValDef[] newVParamsI;
                 if (vparams.length == 0)
@@ -162,8 +132,6 @@ public class ExplicitOuterClasses extends Transformer {
                     System.arraycopy(vparams[0], 0, newVParamsI, 1, vparams[0].length);
                 }
                 newVParams = new ValDef[][] { newVParamsI };
-
-                constSym.updateInfo(newConstType);
 
                 classSym.flags |= Modifiers.STATIC;
             }
@@ -294,8 +262,9 @@ public class ExplicitOuterClasses extends Transformer {
                     else
                         finalFun = newFun;
 
-                    finalFun.type = addValueParam(finalFun.type,
-                                                  outerSym(realFun.symbol()));
+                    finalFun.type =
+                        phase.addValueParam(finalFun.type,
+                                            phase.outerSym(realFun.symbol()));
                     return copy.Apply(tree, finalFun, transform(newArgs));
                 } else
                     return super.transform(tree);
