@@ -761,17 +761,15 @@ public final class GenMSIL {
     Item genApply(Tree fun, Tree[] args, MSILType resType) {
 	boolean tmpLastStatement = lastStatement; lastStatement = false;
 	Symbol sym = fun.symbol();
-// 	if (primitives.isPrimitive(sym)) {
-// 	    log("genApply: primitive " + primitives.getPrimitive(sym).tag +
-// 		" = " + dumpSym(sym));
-// 	}
 	switch (fun) {
 	case Ident(_):
 	    Label l = (Label)sym2label.get(sym);
 	    if (l != null) {
 		lastStatement = false;
-		//System.out.println("Jumping to label: " + dumpSym(sym));
-		assert args.length == 0;
+		for (int i = 0; i < args.length; i++)
+		    load(gen(args[i]));
+		for (int i = args.length; i > 0; i--)
+		    code.Emit(OpCodes.Starg_S, i);
 		code.Emit(OpCodes.Br, l);
 		return items.VoidItem();
 	    }
@@ -784,17 +782,6 @@ public final class GenMSIL {
 //    	    log("\tqualifier: " + Debug.show(qualifier));
 //    	    log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
 //  	    log("\tqualifier.type: " + Debug.show(qualifier.type));
-
-// 	    if (sym == primitives.BOX_UVALUE) {
-// 		return items.StaticItem(MSILType.REF(tc.SCALA_UNIT),
-// 					tc.RUNTIME_UNIT_VAL);
-// 	    }
-
-// removed by philippe (next 3 lines):
-// 	    if (sym == primitives.AS_UVALUE) {
-// 		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
-// 	    }
-
 	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
 	    }
@@ -977,6 +964,7 @@ public final class GenMSIL {
 	case IS: case AS:
 	case CONCAT:
 	case THROW:
+	case SYNCHRONIZED:
 	    return true;
 	default:
 	    return false;
@@ -1017,7 +1005,6 @@ public final class GenMSIL {
 	    return invokeMethod(opSym, new Tree[]{right}, resType, false);
 
 	case CONCAT:
-// 	    log("primaryOp().CONCAT: string concat!");
 	    load(gen(left));
 	    load(gen(right));
 	    code.Emit(OpCodes.Call, tc.CONCAT_OBJECT_OBJECT);
@@ -1049,6 +1036,19 @@ public final class GenMSIL {
 		code.Emit(OpCodes.Castclass, type);
 	    }
 	    return items.StackItem(MSILType.REF(type));
+
+	case SYNCHRONIZED:
+	    // TODO: reuse temporary local variable whenever possible
+	    LocalBuilder tmp = code.DeclareLocal(tc.OBJECT);
+	    load(gen(left));
+	    //code.Emit(OpCodes.Dup);
+	    code.Emit(OpCodes.Stloc, tmp);
+	    code.Emit(OpCodes.Ldloc, tmp);
+	    code.Emit(OpCodes.Call, tc.MONITOR_ENTER);
+	    load(gen(right));
+	    code.Emit(OpCodes.Ldloc, tmp);
+	    code.Emit(OpCodes.Call, tc.MONITOR_EXIT);
+	    return items.StackItem(MSILType.OBJECT);
 	}
 
 	Item iLeft = null;
