@@ -2329,7 +2329,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    else
 		      checkNoEscape(
 			tree.pos,
-			Type.compoundType(parentTypes, refinement, clazz));
+			Type.compoundTypeWithOwner(
+                          context.enclClass.owner, parentTypes, refinement));
 		  val alloc: Tree =
 		    gen.New(
 		      gen.Apply(
