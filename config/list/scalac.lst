@@ -1,0 +1,32 @@
+############################################################-*-Makefile-*-####
+# scalac source files (paths are relative to ./sources/scala/tools/scalac)
+##############################################################################
+# $Id$
+
+CompilerPhases.scala
+Global.scala
+Main.scala
+
+ast/TreeList.scala
+
+ast/parser/Parser.scala
+ast/parser/ParserPhase.scala
+ast/parser/Scanner.scala
+ast/parser/TokenData.scala
+ast/parser/Tokens.scala
+
+ast/printer/HTMLPrinter.scala
+ast/printer/TextTreePrinter.scala
+
+typechecker/Analyzer.scala
+typechecker/AnalyzerPhase.scala
+typechecker/ConstantFolder.scala
+typechecker/Context.scala
+typechecker/DeSugarize.scala
+typechecker/ImportList.scala
+typechecker/Infer.scala
+typechecker/Substituter.scala
+
+util/NewArray.scala
+
+##############################################################################
