@@ -2812,7 +2812,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$LabelDef(name, params, body) =>
 	  assert(params.length == 0);
 	  pushContext(tree, context.owner, new Scope(context.scope));
-	  val lsym: Symbol = new TermSymbol(tree.pos, name, context.owner, LABEL);
+	  val lsym: Symbol = context.owner.newLabel(tree.pos, name);
 	  lsym.setInfo(
 	    new Type$MethodType(Symbol.EMPTY_ARRAY, definitions.UNIT_TYPE()));
 	  context.scope.enter(lsym);

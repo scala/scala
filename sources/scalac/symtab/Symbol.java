@@ -40,6 +40,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 // Attribues -------------------------------------------------------------
 
     public static final int IS_ROOT     = 0x00000001;
+    public static final int IS_LABEL    = 0x00000010;
     public static final int IS_COMPOUND = 0x80000000;
 
 // Fields -------------------------------------------------------------
@@ -91,6 +92,12 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final TermSymbol newConstructor(int pos, int flags) {
         assert isType(): Debug.show(this);
         return new TermSymbol(pos, Names.CONSTRUCTOR, owner(), flags, 0, this);
+    }
+
+    /** Creates a new Label owned by this symbol. */
+    public final TermSymbol newLabel(int pos, Name name) {
+        assert isTerm(): Debug.show(this);
+        return new TermSymbol(pos, name, this, 0, IS_LABEL);
     }
 
     /** Creates a new module owned by this symbol. */
@@ -664,7 +671,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a label? */
     public final boolean isLabel() {
-        return (flags & LABEL) != 0;
+        return (attrs & IS_LABEL) != 0;
     }
 
     /** Is this symbol accessed? */
@@ -1950,17 +1957,6 @@ public final class NoSymbol extends Symbol {
         throw Debug.abort("illegal clone", this);
     }
 
-}
-
-/** A class for symbols generated in label definitions.
- */
-public class LabelSymbol extends TermSymbol {
-
-    /** give as argument the symbol of the function that triggered
-        the creation of this label */
-    public LabelSymbol(Symbol f) {
-        super(f.pos, f.name, f, LABEL);
-    }
 }
 
 /** An exception for signalling cyclic references.

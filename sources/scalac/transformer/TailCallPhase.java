@@ -14,7 +14,6 @@ import scalac.PhaseDescriptor;
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.GenTransformer;
-import scalac.symtab.LabelSymbol;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
@@ -89,7 +88,7 @@ public class TailCallPhase extends Phase {
                 assert method == null: Debug.show(method) + " -- " + tree;
                 method = tree.symbol();
                 if (method.isMethodFinal()) {
-                    label = new LabelSymbol(method);
+                    label = method.newLabel(method.pos, method.name);
                     types = Type.EMPTY_ARRAY;
                     Type type = method.type();
                     switch (type) {

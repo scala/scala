@@ -39,7 +39,6 @@ public interface Modifiers {
     int SELECTOR      = 0x00080000;   // symbol was used as selector in Select
 
     int PACKAGE       = 0x00100000;   // symbol is a java package.
-    int LABEL         = 0x00200000;   // symbol is a label symbol
     int STABLE        = 0x00800000;   // functions that are assumed to be stable
                                     // (typically, access methods for valdefs)
 

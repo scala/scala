@@ -68,10 +68,8 @@ public class WordAutomInScala extends Autom2Scala {
 
     protected void initializeSyms() { // TEST
 
-        this.funSym = new TermSymbol( pos,
-                                      cf.fresh.newName( "matcher" ),
-                                      owner,
-                                      Modifiers.LABEL );
+        this.funSym = owner.newLabel( pos,
+                                      cf.fresh.newName( "matcher" ));
 
         this.iterSym = new TermSymbol( pos,
                                        cf.fresh.newName("iter"),

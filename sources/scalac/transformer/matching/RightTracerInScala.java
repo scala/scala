@@ -126,10 +126,8 @@ public class RightTracerInScala extends TracerInScala  {
 
     protected void initializeSyms() {
 
-        this.funSym = new TermSymbol( pos,
-                                      cf.fresh.newName( "right" ),
-                                      owner,
-                                      Modifiers.LABEL );
+        this.funSym = owner.newLabel( pos,
+                                      cf.fresh.newName( "right" ));
 
         this.iterSym = new TermSymbol( pos,
                                        cf.fresh.newName("iter"),
