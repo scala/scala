@@ -5,6 +5,8 @@
 
 //############################################################################
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 abstract class IntMap[A] {
     def lookup(key: Int): A = match {
         case Empty() => error("KO")

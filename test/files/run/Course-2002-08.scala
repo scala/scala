@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 import List._;
 
 object M0 {

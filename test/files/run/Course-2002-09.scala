@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 trait Option[a];
 case class Some[a](value: a) extends Option[a];
 case class None[a]() extends Option[a];

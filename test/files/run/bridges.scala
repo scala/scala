@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 class A;
 class B;
 class C;

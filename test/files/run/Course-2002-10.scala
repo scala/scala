@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 object M0 {
 
   def addStream (s1: Stream[int], s2: Stream[int]): Stream[int] =

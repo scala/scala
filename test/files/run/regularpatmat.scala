@@ -1,5 +1,7 @@
 // Burak's test suite for regular pattern matching
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 // contains 17 visitors plus X
 
 // analyzer related (no execution)

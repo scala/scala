@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 object M0 {
   def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
     if (xs.isEmpty)

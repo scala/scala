@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 object M0 {
 
   def quicksort[a] (less : (a,a) => Boolean) (xs : List[a]) : List[a] = {

@@ -3,6 +3,8 @@
 //############################################################################
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 class Tokenizer(s: String, delimiters: String) extends Iterator[String] {
 
   private var i = 0;

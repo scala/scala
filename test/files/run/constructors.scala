@@ -2,6 +2,8 @@
 
 // Test constructors, including multiple ones.
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 class A(x: Int, y: Int) {
   def this(x: Int) = this(x, x);
   def this() = this(1);

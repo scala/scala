@@ -1,5 +1,7 @@
 // $Id$
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 object Test {
 
 def fac(n: Int): Int = if (n < 2) 1 else fac(n - 1) * n;
@@ -10,14 +12,14 @@ def fac(n: Int): Int = if (n < 2) 1 else fac(n - 1) * n;
 def fib(n: Int): Int = if (n < 2) 1 else fib(n - 1) + fib(n - 2);
 
 def show_fib(n: Int): Int = {
-    java.lang.System.out.print("### fib(");
-    java.lang.System.out.print(n);
-    java.lang.System.out.print(") = ");
-    java.lang.System.out.flush();
+    System.out.print("### fib(");
+    System.out.print(n);
+    System.out.print(") = ");
+    System.out.flush();
     val v = fib(n);
-    java.lang.System.out.print(v);
-    java.lang.System.out.println();
-    java.lang.System.out.flush();
+    System.out.print(v);
+    System.out.println();
+    System.out.flush();
     v
 }
 
@@ -39,7 +41,7 @@ def apply_int(f: Int => Int, x: Int): Int = f(x);
 
 class MyClass() {
     override def toString() = "=== MyClass::toString ===";
-    def test() = java.lang.System.out.println("=== MyClass::test ===");
+    def test() = System.out.println("=== MyClass::test ===");
 }
 
 class MySubclass() extends MyClass() {
@@ -57,13 +59,13 @@ def foobar = {
     // java; // !!! why is this legal ? what  does it return ?
     // java.lang;
     // java.lang.System; // !!! return the Class object ?
-    java.lang.System.out;
-    java.lang.System.out.println("### Hello");
-    java.lang.System.out.print("### ");
-    java.lang.System.out.println(17);
+    System.out;
+    System.out.println("### Hello");
+    System.out.print("### ");
+    System.out.println(17);
     // !!! java.lang.System.out.println("### " + 13);
-    java.lang.System.out.println("### Bye");
-    java.lang.System.out.println();
+    System.out.println("### Bye");
+    System.out.println();
     val x = 13;
     x;
     // !!! why are DefDef replaced by Block(Tree[0])? we should use Empty!
@@ -103,17 +105,17 @@ def foobar = {
     val map: java.util.Map = new java.util.HashMap();
     // why do we insert type casts as[scala.Any]();
     map.put("Hello", new java.lang.Integer(32));
-    java.lang.System.out.println("Hello -> " + map.get("Hello"));
+    System.out.println("Hello -> " + map.get("Hello"));
     // !!! apply(map.get, "Hello");
-    java.lang.System.out.println();
+    System.out.println();
 
     val myObj = new MyClass();
-    java.lang.System.out.println(myObj);
+    System.out.println(myObj);
     val mySub = new MySubclass();
-    java.lang.System.out.println(mySub);
+    System.out.println(mySub);
     // java.lang.System.out.println(myObj.test()); // !!! strange type error
     myObj.test();
-    java.lang.System.out.println();
+    System.out.println();
 
     System.out.println(apply_any(id_any, "identity").toString());
     //apply[java.lang.String](id[java.lang.String], "identity")

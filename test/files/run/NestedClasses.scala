@@ -69,6 +69,8 @@ class AAA1 extends AAA {
 }
 
 object Test {
+  import java.lang.System; // to avoid name clash with .NET's library
+
   def main(args: Array[String]): Unit = {
     val a = new A1(12);
     val d = new a.D;

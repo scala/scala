@@ -5,6 +5,8 @@
 
 //############################################################################
 
+import java.lang.System; // to avoid name clash with .NET's library
+
 object arrays {
 
   type JObject = java.lang.Object;
