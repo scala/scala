@@ -10,6 +10,7 @@ package scalac.atree;
 
 import scalac.Unit;
 import scalac.symtab.Definitions;
+import scalac.util.Debug;
 
 /** This class translates syntax trees into attributed trees. */
 public class ATreeFromSTree {
@@ -37,6 +38,23 @@ public class ATreeFromSTree {
 
     /** Translates the unit's body and stores the result in it. */
     public void translate(Unit unit) {
+    }
+
+    //########################################################################
+    // Private Methods - Translating constants
+
+    /** Translates the constant. */
+    private AConstant constant(Object value) {
+        if (value instanceof Boolean  ) return make.BOOLEAN((Boolean  )value);
+        if (value instanceof Byte     ) return make.BYTE   (((Byte    )value));
+        if (value instanceof Short    ) return make.SHORT  ((Short    )value);
+        if (value instanceof Character) return make.CHAR   ((Character)value);
+        if (value instanceof Integer  ) return make.INT    ((Integer  )value);
+        if (value instanceof Long     ) return make.LONG   ((Long     )value);
+        if (value instanceof Float    ) return make.FLOAT  ((Float    )value);
+        if (value instanceof Double   ) return make.DOUBLE ((Double   )value);
+        if (value instanceof String   ) return make.STRING ((String   )value);
+        throw Debug.abort("illegal constant", value +" -- "+ value.getClass());
     }
 
     //########################################################################
