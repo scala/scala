@@ -245,18 +245,26 @@ public class PatternNormalizer {
 
     // main algo for (1), precondition: choices are children of an Alternative node
     TreeList flattenAlternativeChildren( Tree[] choices ) {
+	boolean allEmpty = true;
 	TreeList cs = new TreeList();
 	for( int j = 0; j < choices.length; j++ ) {
 	    Tree tree = flattenAlternative( choices[ j ] ); // flatten child
 	    switch( tree ) {
 	    case Alternative( Tree[] child_choices ):
+		int tmp = cs.length();
 		appendNonEmpty( cs, child_choices );
+		if( cs.length() != tmp )
+		    allEmpty = false;
 		break;
 	    default:
-		appendNonEmpty( cs, tree );
+		cs.append( tree );
+		allEmpty = allEmpty && TreeInfo.isEmptySequence( tree );
 	    }
 	}
-	//System.out.println( cs.length() );
+	if( allEmpty ) {
+	    cs.clear();
+	    cs.append(make.Sequence(choices[0].pos, Tree.EMPTY_ARRAY));
+	}
 	return cs;
     }
 

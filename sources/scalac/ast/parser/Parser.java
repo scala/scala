@@ -1198,7 +1198,8 @@ public class Parser implements Tokens {
 		s.nextToken();
 		choices.append( pattern1() );
 	    }
-	    TreeList ts = pN.flattenAlternativeChildren( choices.toArray() );
+	    Tree[] tarr = choices.toArray();
+	    TreeList ts = pN.flattenAlternativeChildren( tarr );
 	    return pN.flattenAlternative( make.Alternative( pos, ts.toArray() ) );
 	}
 	return first;
@@ -1335,10 +1336,10 @@ public class Parser implements Tokens {
 	    Tree[] ts = Tree.EMPTY_ARRAY;
 	    if( s.token!= RPAREN )
 		ts = patterns();
-            Tree t;
-            if (ts.length == 1)
+            Tree t = null;
+            if ((ts.length == 1)&&!( ts[0] instanceof Tree.Alternative ))  {
                 t = ts[0];
-            else {
+            } else {
                 t = pN.flattenSequence(make.Sequence(s.pos, ts));
                 t = pN.elimSequence(t);
             }
