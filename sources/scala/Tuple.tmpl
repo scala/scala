@@ -1,0 +1,24 @@
+// [#do-not-edit#]
+
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala with {
+  case class Tuple[#n#][#type-params#]([#value-params#]) extends scala.Object with {
+
+    override def hashCode() = [#hash-code#];
+
+    override def == (other: Any) =
+      if (other.is[Tuple[#n#][#type-params#]]) {
+	val that = other.as[Tuple[#n#][#type-params#]];
+	[#equal#]
+      } else Boolean.False;
+
+    override def toString() = [#to-string#];
+  }
+}
