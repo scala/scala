@@ -1,0 +1,15 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
+package scala;
+
+class LinkedList[A](head: A, tail: LinkedList[A]) extends SingleLinkedList[A, LinkedList[A]] {
+	elem = head;
+	next = tail;
+}
