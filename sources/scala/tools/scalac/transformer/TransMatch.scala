@@ -132,6 +132,15 @@ class TransMatch( global:scalac_Global )
       i = i+1;
     }
     if( containsReg ) {
+      /*
+      val pe = new matching.PatternExp(global.definitions); // TEST
+      var j = 0;
+      val pat = new Array[pe.RegExp](cases.length);
+      while( j < cases.length) {
+        pat(j) = pe.fromTree(cases(j).pat);
+        j = j + 1;
+      } // TEST
+      */
       val am = new AlgebraicMatcher( cunit );
       val matcher = new PartialMatcher( currentOwner, root, restpe );
       am.construct( matcher, cases.asInstanceOf[ Array[Tree] ] );
