@@ -16,7 +16,7 @@ object Test {
     //c.getAttribs.update("target", "http://www.scala.org");
     System.out.println( c );
 
-    val c2 = c % ('target <= "http://www.scala.org");
+    val c2 = c % Pair("target", "http://www.scala.org");
     System.out.println( c2 );
 
     // construct data using loading from a file
