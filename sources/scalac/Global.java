@@ -329,6 +329,7 @@ public class  Global {
 
     private int module = 0;
     private List imports = new ArrayList();
+    public Symbol console;
 
     private void fix1() {
         for (int i = 0; i < units.length; i++) {
@@ -363,8 +364,10 @@ public class  Global {
         imports.clear();
         for (int i = 0; i < unit.body.length; i++) {
             switch (unit.body[i]) {
-            case ModuleDef(_, Name name, _, Tree.Template impl):
-                if (!name.startsWith(CONSOLE_N)) break;
+            case ModuleDef(_, _, _, Tree.Template impl):
+                Symbol symbol = unit.body[i].symbol();
+                if (!symbol.name.startsWith(CONSOLE_N)) break;
+                console = symbol;
                 if (impl.body.length <= 0) break;
                 imports.add(unit.body[i].symbol());
                 Tree last = impl.body[impl.body.length - 1];

@@ -45,8 +45,6 @@ public class Compiler {
     private final Evaluator evaluator; // !!! remove
     private final Map any_methods;
 
-    private boolean interactive;
-
     public Compiler(Global global, Evaluator evaluator) {
         this.global = global;
         this.definitions = global.definitions;
@@ -253,6 +251,14 @@ public class Compiler {
 
     //########################################################################
 
+    public Variable getModule(Symbol symbol) {
+        return environment.lookupVariable(symbol);
+    }
+
+    public Function getMethod(Symbol symbol) {
+        return environment.lookupFunction(symbol);
+    }
+
     public CodePromise compile(Symbol symbol, Tree.DefDef tree) {
         assert tree.tparams.length == 0 : Debug.show(tree);
         assert tree.vparams.length == 1 : Debug.show(tree);
@@ -262,12 +268,8 @@ public class Compiler {
     //########################################################################
     //
 
-    public CodeContainer compile(Symbol owner, Tree tree) {
-        return compile(owner, tree, new Symbol[0]); // !!!
-    }
-
-    public CodeContainer compile(Symbol owner, Tree tree, ValDef[] params) {
-        return compile(owner, tree, Tree.symbolOf(params));
+    public void compile(Unit[] units) {
+        for (int i = 0; i < units.length; i++) declare(units[i].body);
     }
 
     public CodeContainer compile(Symbol owner, Tree tree, Symbol[] params) {
@@ -276,34 +278,14 @@ public class Compiler {
         return worker.compile(tree);
     }
 
-    public CodeContainer compile(Symbol owner, ArrayList items) {
-        return compile(owner, items, new Symbol[0]); // !!!
-    }
-
-    public CodeContainer compile(Symbol owner, ArrayList items,Symbol[]params){
-        ExpressionContext context = new ExpressionContext(environment, owner);
-        ExpressionCompiler worker = new ExpressionCompiler(definitions, constants, context, params);
-        return worker.compile(items);
-    }
-
     //########################################################################
     // Private Methods -
 
-    public CodeContainer compile(Unit[] units, boolean interactive) {
-        this.interactive = interactive;
-        ArrayList buffer = new ArrayList();
-        for (int i = 0; i < units.length; i++) declare(buffer, units[i].body);
-        return compile(null, buffer);
+    private void declare(Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) declare(trees[i]);
     }
 
-    //########################################################################
-    // Private Methods -
-
-    private void declare(ArrayList buffer, Tree[] trees) {
-        for (int i = 0; i < trees.length; i++) declare(buffer, trees[i]);
-    }
-
-    private void declare(ArrayList buffer, Tree tree) {
+    private void declare(Tree tree) {
         Symbol symbol = tree.symbol();
         switch (tree) {
 
@@ -318,39 +300,21 @@ public class Compiler {
         case PackageDef(Tree packaged, Tree.Template(Tree[] bases, Tree[] body)):
             assert packaged.symbol().isPackage() : Debug.show(tree); // !!! was isJavaPackage
             assert bases.length == 0 : Debug.show(tree);
-            declare(buffer, body);
+            declare(body);
             return;
 
         case ValDef(_, _, _, Tree body):
             assert symbol.isModule() : Debug.show(symbol);
             environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, symbol, body)), null));
-            if (interactive &&
-                symbol.name.toString().startsWith(global.CONSOLE_S)) // !!!
-            {
-                global.prevPhase();
-                buffer.add(global.treeGen.Ident(symbol));
-                global.nextPhase();
-            }
-            return;
-
-        case DefDef(_, _, _, _, _, _):
-            // !!! impossible ? => remove !
-            CodePromise function = compile(symbol, (Tree.DefDef)tree);
-            environment.insertFunction(symbol, Function.Global(function));
             return;
 
         default:
-            // !!! impossible ? => remove !
-            buffer.add(tree);
-            return;
+            throw Debug.abort("illegal case", tree);
         }
     }
 
     //########################################################################
     // Private Methods -
-
-    // !!! move elsewhere ?
-    public static final Name MAIN_N = Name.fromString("main");
 
     private Symbol newGlobalVariable(Type type, Object value) {
         Symbol symbol = new TermSymbol(Position.NOPOS,
@@ -464,7 +428,7 @@ public class Compiler {
         }
 
         public CodeContainer generate() {
-            return compiler.compile(symbol, body);
+            return compiler.compile(symbol, body, Symbol.EMPTY_ARRAY);
         }
     }
 

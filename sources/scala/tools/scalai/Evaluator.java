@@ -84,6 +84,14 @@ public class Evaluator {
         }
     }
 
+    public Object evaluate(Variable module) {
+        return load(null, module);
+    }
+
+    public Object evaluate(Variable module, Function method, Object[] args) {
+        return invoke(load(null, module), method, args);
+    }
+
     public Object evaluate(CodeContainer code) {
         return evaluate(code, null, new Object[0]);
     }

@@ -38,7 +38,7 @@ public class ScalaFunction extends CodeGenerator {
     // Public Methods - CodeGenerator interface
 
     public CodeContainer generate() {
-        return compiler.compile(symbol, body, params);
+        return compiler.compile(symbol, body, Tree.symbolOf(params));
     }
 
     //########################################################################

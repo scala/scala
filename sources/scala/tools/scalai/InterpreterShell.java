@@ -88,10 +88,13 @@ public class InterpreterShell {
     public void main(String[] program, String main, String[] args) {
         if (interactive) showBanner();
         if (program.length > 0) load(lfiles = program);
-        if (global.reporter.errors() == 0 && main != null) call(main, args);
-        if (interactive) loop(new DefaultDefinitionPrinter());
         global.stop("total"); // !!! remove ?
-        if (!interactive) global.reporter.printSummary();
+        if (global.reporter.errors() == 0) {
+            if (main != null) call(main, args);
+        } else {
+            if (!interactive) global.reporter.printSummary();
+        }
+        if (interactive) loop(new DefaultDefinitionPrinter());
     }
 
     public void loop(DefinitionPrinter printer) {
@@ -222,10 +225,7 @@ public class InterpreterShell {
     // Public Methods - interpretation
 
     public void call(String main, String[] args) {
-        global.prevPhase(); // !!!
-        new EntryPointCompiler(PRODUCT, global).compile(main, args);
-        global.nextPhase(); // !!!
-        show(interpreter.interpret(false), false);
+        show(interpreter.invoke(main, args), false);
     }
 
     public void load(String input) {

@@ -10,7 +10,6 @@ CodeGenerator.java
 CodePromise.java
 Compiler.java
 Constants.java
-EntryPointCompiler.java
 Environment.java
 Evaluator.java
 EvaluatorException.java
