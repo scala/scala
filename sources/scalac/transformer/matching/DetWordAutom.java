@@ -849,21 +849,21 @@ public class DetWordAutom  {
        */
       public void printBefore( TreeSet states, HashMap deftrans ) {
             HashMap trans;
-            //System.out.println( states );
+            System.out.println( states );
             for( Iterator it = states.iterator(); it.hasNext(); ) {
                   TreeSet state = (TreeSet) it.next();
-                  //System.out.print("state:"+state.toString()+" transitions ");
+                  System.out.print("state:"+state.toString()+" transitions ");
                   trans = (HashMap) delta.get( state );
                   for( Iterator labs = labels.iterator(); labs.hasNext() ;) {
                         Object label = labs.next();
                         TreeSet target = (TreeSet) trans.get( label );
-                        //System.out.print( "  (" + label.toString()
-                        //            + "," + target.toString()+")");
+                        System.out.print( "  (" + label.toString()
+                                    + "," + target.toString()+")");
                   }
-                  //System.out.print("default trans"+deftrans.get( state ));
-                  //System.out.println();
+                  System.out.print("default trans"+deftrans.get( state ));
+                  System.out.println();
             }
-            //System.out.println("final states:" + finals );
+            System.out.println("final states:" + finals );
       }
 
 

@@ -241,6 +241,7 @@ public class SequenceMatcher extends PatternTool {
                   {
                         manyNfa[ i ] = build.automatonFrom( pat[ i ],
                                                             new Integer( i ));
+			//manyNfa[ i ].print();
                   }
 
             // merge nfas into one if necessary

@@ -330,9 +330,9 @@ public class RightTracerInScala extends TracerInScala  {
 	    helpMap3.put( newSym, helpMap.get( key ));
 	}
 
-	//System.out.println("RightTracerInScala:: -pat :"+pat);
-	//System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
 	//System.out.println("RightTracerInScala::freshenMap :"+freshenMap);
+	//System.out.println("RightTracerInScala:: -pat :"+pat.toString());
+	//System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
 
 
 	// "freshening"

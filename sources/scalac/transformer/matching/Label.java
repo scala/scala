@@ -1,6 +1,7 @@
 package scalac.transformer.matching ;
 
 import scalac.ast.Tree ;
+import scalac.ast.TreeInfo ;
 import scalac.symtab.Type ;
 import Tree.Literal ;
 
@@ -28,6 +29,10 @@ public class Label {
             case SimpleLabel( Literal lit ):
                   return lit.value.hashCode();
             case TreeLabel( Tree pat ):
+		switch( pat ) {
+		    case Apply( _, Tree[] args ):
+			return TreeInfo.methSymbol( pat ).hashCode() + args.hashCode(); // incorrect?
+		}
                   return pat.hashCode();
             case TypeLabel( Type type ):
                   return type.hashCode();
@@ -57,8 +62,15 @@ public class Label {
                   break;
             case TreeLabel( Tree pat ):
                   switch( oL ) {
-                  case TreeLabel( Tree pat2):
-                        return pat == pat2;
+                  case TreeLabel( Tree pat2 ):
+		      switch( pat ) {
+		      case Apply( _, _ ):
+			  switch( pat2 ) {
+			  case Apply( _, _ ):
+			      return TreeInfo.methSymbol( pat ) == TreeInfo.methSymbol( pat2 );
+			  }
+		      }
+		      return pat == pat2;
                   }
                   break ;
             case TypeLabel( Type tpe ):
