@@ -581,6 +581,17 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return clone;
     }
 
+    /** Builds an import of all names of given qualifier. */
+    public Import mkImportAll(int pos, Tree qualifier) {
+        return Import(pos, qualifier, new Name[]{Names.IMPORT_WILDCARD});
+    }
+    public Import mkImportAll(Tree qualifier) {
+        return mkImportAll(qualifier.pos, qualifier);
+    }
+    public Import mkImportAll(int pos, Symbol qualifier) {
+        return mkImportAll(pos, mkRef(pos, qualifier));
+    }
+
     /** Builds an instance test with given value and type. */
     public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
         return mkApplyT_(pos, Select(value, definitions.IS), new Type[]{type});
@@ -607,6 +618,19 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Tree mkBlock(Tree[] trees) {
         assert trees.length != 0;
         return mkBlock(trees[0].pos, trees);
+    }
+
+    /** Builds an Import node with given qualifier and names. */
+    public Import Import(int pos, Tree qualifier, Name[] names) {
+        Import tree = make.Import(pos, qualifier.symbol(), qualifier, names);
+        tree.setType(Type.NoType);
+        return tree;
+    }
+    public Import Import(Tree qualifier, Name[] names) {
+        return Import(qualifier.pos, qualifier, names);
+    }
+    public Import Import(int pos, Symbol qualifier, Name[] names) {
+        return Import(pos, mkRef(pos, qualifier), names);
     }
 
     /** Builds a Template node with given symbol, parents and body. */
