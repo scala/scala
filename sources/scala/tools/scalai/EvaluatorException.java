@@ -8,6 +8,8 @@
 
 package scalai;
 
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -94,12 +96,23 @@ public class EvaluatorException extends RuntimeException {
     }
 
     public String getScalaErrorMessage(boolean withTrace) {
-        String line = System.getProperty("line.separator", "\n");
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(getCause().toString());
-        if (withTrace)
-            for (int i = 0; i < stack.size(); i++)
-                buffer.append(line).append("        at ").append(stack.get(i));
+        StringWriter buffer = new StringWriter();
+        PrintWriter writer = new PrintWriter(buffer);
+        Throwable exception = getCause();
+        writer.print(exception.toString());
+        if (withTrace) {
+            writer.println();
+            for (int i = 0; i < stack.size(); i++) {
+                writer.print("        at ");
+                writer.println(stack.get(i));
+            }
+            Throwable cause = exception.getCause();
+            if (cause != null) {
+                writer.print("Caused by ");
+                cause.printStackTrace(writer);
+            }
+        }
+        writer.close();
         return buffer.toString();
     }
 

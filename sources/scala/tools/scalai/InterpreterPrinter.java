@@ -42,10 +42,12 @@ public class InterpreterPrinter implements DefinitionPrinter {
         switch (result) {
         case Value(Object string, _):
             writer.println(signature + " = " + string);
+            writer.flush();
             return;
         case Error(EvaluatorException exception):
             writer.print(signature + " = ");
-            writer.println(exception.getScalaErrorMessage(true));
+            writer.print(exception.getScalaErrorMessage(true));
+            writer.flush();
             return;
         default:
             throw Debug.abort("illegal case", result);
@@ -62,11 +64,13 @@ public class InterpreterPrinter implements DefinitionPrinter {
                     writer.println(value + ": " + type);
                 else
                     showResult(interpreter.toString(value, type), interactive);
+            writer.flush();
             return;
         case Error(EvaluatorException exception):
             String name = Thread.currentThread().getName();
             writer.print("Exception in thread \"" + name + "\" ");
-            writer.println(exception.getScalaErrorMessage(true));
+            writer.print(exception.getScalaErrorMessage(true));
+            writer.flush();
             return;
         default:
             throw Debug.abort("illegal case", result);
