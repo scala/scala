@@ -85,7 +85,7 @@ abstract class Source extends Iterator[Char] {
   /** default col increment for tabs '\t', set to 4 */
   val tabinc = 4;
 
-  val iter: Iterator[Char];
+  protected val iter: Iterator[Char];
   /** returns next characters, updates positions and assigns the character
    *  ch as side effect
    */
