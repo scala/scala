@@ -1190,8 +1190,13 @@ public class ClassSymbol extends TypeSymbol {
 	if (mangled == name) {
 	    return fullName().replace((byte)'.', (byte)'$');
 	} else {
-	    return Name.fromString(
-		enclToplevelClass().mangledFullName() + "$" + mangled);
+	    Symbol tc = enclToplevelClass();
+	    if (tc != this) {
+		return Name.fromString(
+		    enclToplevelClass().mangledFullName() + "$" + mangled);
+	    } else {
+		return mangled;
+	    }
 	}
     }
 

@@ -1736,7 +1736,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Block(Tree[] stats):
 		pushContext(tree, context.owner, new Scope(context.scope));
-		int lastmode = mode;
+		int lastmode = mode & ~FUNmode;
 		Tree[] stats1 = desugarize.Statements(stats, true);
 		enterSyms(stats1);
 		context.imports = context.outer.imports;
