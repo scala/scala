@@ -201,6 +201,7 @@ class AddInterfaces extends SubstTransformer {
     }
 
     protected Type cloneSymbolsInMethodType(Type type,
+                                            Symbol newOwner,
                                             SymbolMapApplier smApplier,
                                             Map symbolMap) {
         switch (type) {
@@ -215,11 +216,13 @@ class AddInterfaces extends SubstTransformer {
             Symbol[] newVParams = new Symbol[vparams.length];
             for (int i = 0; i < vparams.length; ++i) {
                 newVParams[i] = vparams[i].cloneSymbol();
+                newVParams[i].setOwner(newOwner);
                 newVParams[i].setType(smApplier.apply(newVParams[i].info()));
                 symbolMap.put(vparams[i], newVParams[i]);
             }
             return new Type.MethodType(newVParams,
                                        cloneSymbolsInMethodType(result,
+                                                                newOwner,
                                                                 smApplier,
                                                                 symbolMap));
         }
@@ -228,10 +231,12 @@ class AddInterfaces extends SubstTransformer {
             Symbol[] newTParams = new Symbol[tparams.length];
             for (int i = 0; i < tparams.length; ++i) {
                 newTParams[i] = tparams[i].cloneSymbol();
+                newTParams[i].setOwner(newOwner);
                 symbolMap.put(tparams[i], newTParams[i]);
             }
             return new Type.PolyType(newTParams,
                                      cloneSymbolsInMethodType(result,
+                                                              newOwner,
                                                               smApplier,
                                                               symbolMap));
         }
@@ -354,16 +359,6 @@ class AddInterfaces extends SubstTransformer {
     }
 
     public Tree transform(Tree tree) {
-        if (tree.hasSymbol()) {
-            Symbol sym = tree.symbol();
-            if (sym != Symbol.NONE) {
-                Symbol owner = sym.owner();
-                if (ifaceMemberToClass.containsKey(owner)) {
-                    sym.setOwner((Symbol)ifaceMemberToClass.get(owner));
-                }
-            }
-        }
-
         switch (tree) {
         case ClassDef(int mods,
                       Name name,
@@ -702,6 +697,7 @@ class AddInterfaces extends SubstTransformer {
                         if (cSym.isMethod()) {
                             Map funSymMap = new HashMap();
                             Type newInfo = cloneSymbolsInMethodType(cSym.info(),
+                                                                    cSym,
                                                                     tparamsSM,
                                                                     funSymMap);
                             if (! funSymMap.isEmpty())
