@@ -171,68 +171,74 @@ public class ClassfileParser implements ClassfileConstants {
     /** read a field
      */
     protected void parseField() {
-        int flags = in.nextChar();
-        Name name = pool.getName(in.nextChar());
-        Type type = pool.getFieldType(in.nextChar());
-        int mods = transFlags(flags);
-        if ((flags & JAVA_ACC_FINAL) == 0)
-            mods |= Modifiers.MUTABLE;
-        Symbol owner = c;
-        if ((flags & JAVA_ACC_STATIC) != 0)
-            owner = c.dualClass();
-        Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
-        s.setInfo(type);
-        attrib.readAttributes(s, type, FIELD_ATTR);
-        ((flags & JAVA_ACC_STATIC) != 0 ? statics : locals).enterOrOverload(s);
+        int jflags = in.nextChar();
+        int sflags = transFlags(jflags);
+        if ((jflags & JAVA_ACC_FINAL) == 0) sflags |= Modifiers.MUTABLE;
+        if ((sflags & Modifiers.PRIVATE) != 0) {
+            in.skip(4);
+            attrib.skipAttributes();
+        } else {
+            Name name = pool.getName(in.nextChar());
+            Symbol owner = getOwner(jflags);
+            Symbol symbol = owner.newTerm(Position.NOPOS, sflags, name);
+            Type type = pool.getFieldType(in.nextChar());
+            symbol.setInfo(type);
+            attrib.readAttributes(symbol, type, FIELD_ATTR);
+            getScope(jflags).enterOrOverload(symbol);
+        }
     }
 
     /** read a method
      */
     protected void parseMethod() {
-        int flags = in.nextChar();
-        int sflags = transFlags(flags);
-        if ((flags & JAVA_ACC_BRIDGE) != 0)
-                sflags |= Modifiers.BRIDGE;
-        Name name = pool.getName(in.nextChar());
-        Type type = pool.getMethodType(in.nextChar());
-        if (CONSTR_N.equals(name)) {
-            Symbol s = c.newConstructor(Position.NOPOS, sflags);
-            // kick out package visible or private constructors
-            if (((flags & JAVA_ACC_PRIVATE) != 0) ||
-                ((flags & (JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)) {
-                attrib.readAttributes(s, type, METH_ATTR);
-                return;
-            }
-            switch (type) {
+        int jflags = in.nextChar();
+        int sflags = transFlags(jflags);
+        if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags |= Modifiers.BRIDGE;
+        if ((sflags & Modifiers.PRIVATE) != 0) {
+            in.skip(4);
+            attrib.skipAttributes();
+        } else {
+            Name name = pool.getName(in.nextChar());
+            Type type = pool.getMethodType(in.nextChar());
+            Symbol owner = getOwner(jflags);
+            Symbol symbol;
+            boolean newConstructor = false;
+            if (name == CONSTR_N) {
+                switch (type) {
                 case MethodType(Symbol[] vparams, _):
                     type = Type.MethodType(vparams, ctype);
                     break;
                 default:
-                    throw new ApplicationError();
-            }
-            Symbol constr = c.primaryConstructor();
-            if (constr.isInitialized()) {
-                c.addConstructor(constr = s);
+                    throw Debug.abort("illegal case", type);
+                }
+                symbol = owner.primaryConstructor();
+                if (symbol.isInitialized()) {
+                    symbol = owner.newConstructor(Position.NOPOS, sflags);
+                    newConstructor = true;
+                } else {
+                    symbol.flags = sflags;
+                }
             } else {
-                constr.flags = sflags;
+                symbol = owner.newTerm(Position.NOPOS, sflags, name);
             }
-            setParamOwners(type, constr);
-            constr.setInfo(type);
-            attrib.readAttributes(constr, type, METH_ATTR);
-
-            //System.out.println(c + " " + c.allConstructors() + ":" + c.allConstructors().info());//debug
-            //System.out.println("-- enter " + s);
-        } else {
-            Symbol s = new TermSymbol(
-                Position.NOPOS, name,
-                ((flags & JAVA_ACC_STATIC) != 0) ? c.dualClass() : c,
-                sflags);
-            setParamOwners(type, s);
-            s.setInfo(type);
-            attrib.readAttributes(s, type, METH_ATTR);
-            if ((s.flags & Modifiers.BRIDGE) == 0)
-                ((flags & JAVA_ACC_STATIC) != 0 ? statics : locals).enterOrOverload(s);
+            setParamOwners(type, symbol);
+            symbol.setInfo(type);
+            attrib.readAttributes(symbol, type, METH_ATTR);
+            if (name != CONSTR_N) getScope(jflags).enterOrOverload(symbol);
+            else if (newConstructor) owner.addConstructor(symbol);
         }
+    }
+
+    /** return the owner of a member with given java flags
+     */
+    private Symbol getOwner(int jflags) {
+        return (jflags & JAVA_ACC_STATIC) != 0 ? c.dualClass() : c;
+    }
+
+    /** return the scope of a member with given java flags
+     */
+    private Scope getScope(int jflags) {
+        return (jflags & JAVA_ACC_STATIC) != 0 ? statics : locals;
     }
 
     private void setParamOwners(Type type, Symbol owner) {
