@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id: UnCurryPhase.scala
+// $Id$
 
 import scalac.{Global => scalac_Global, _};
 import scalac.symtab._;

@@ -1,3 +1,4 @@
+// $Id$
 
 import scalac.{Global => scalac_Global}
 import scalac.{CompilationUnit => scalac_CompilationUnit}

@@ -1,3 +1,5 @@
+// $Id$
+
 import scalac.{CompilationUnit => scalac_CompilationUnit}
 import scalac.ast._;
 import scalac.util.Name;

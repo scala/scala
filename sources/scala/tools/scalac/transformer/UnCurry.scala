@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id: UnCurry.scala
+// $Id$
 
 import scalac.{CompilationUnit, ApplicationError};
 import scalac.{Global => scalac_Global};

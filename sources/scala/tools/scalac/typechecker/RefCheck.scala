@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id: RefCheck.scala
+// $Id$
 
 
 import scala.collection.mutable.HashMap;
