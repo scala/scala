@@ -754,12 +754,12 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Add another overloaded alternative to this symbol.
      */
     public Symbol overloadWith(Symbol that) {
-        assert isTerm() : this;
-	assert this.name == that.name : this + " " + that;
-	assert this.owner == that.owner : Debug.show(this) + " " + Debug.show(that);
+        assert isTerm() : Debug.show(this);
+	assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
+	assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
 	assert (this.flags & that.flags & JAVA) != 0 ||
 	    (this.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) ==
-	    (that.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) : this + " " + that;
+	    (that.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) : Debug.show(this) + " <> " + Debug.show(that);
         TermSymbol overloaded = new TermSymbol(
             pos, name, owner,
 	    ((this.flags | that.flags) & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) |
