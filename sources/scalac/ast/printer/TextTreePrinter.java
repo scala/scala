@@ -479,19 +479,12 @@ public class TextTreePrinter implements TreePrinter {
             printType(tree);
             break;
 
-        case Super(Tree tpe):
-            if (tpe != Tree.Empty)
-                print(TXT_LEFT_PAREN);
-
+        case Super(Tree qualifier):
+	    if (qualifier != Tree.Empty) {
+		print(qualifier);
+		print(TXT_DOT);
+	    }
             print(KW_SUPER);
-
-            if (tpe != Tree.Empty) {
-                print(Text.Space);
-                print(TXT_COLON);
-                print(Text.Space);
-                print(tpe);
-                print(TXT_RIGHT_PAREN);
-            }
             printType(tree);
             break;
 
