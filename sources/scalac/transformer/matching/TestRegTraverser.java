@@ -1,38 +1,46 @@
-package scalac.transformer.matching ;
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+**                                                                      **
+** $Id$
+\*                                                                      */
 
-import scalac.ast.Tree;
-import scalac.util.Name;
-import scalac.symtab.Symbol ;
-import scalac.ast.Traverser ;
+package scalac.transformer.matching;
 
-import Tree.Ident;
-import Tree.Bind;
+import scalac.ast.*;
+import scalac.util.*;
+import scalac.symtab.*;
+import java.util.*;
+
 
 public class TestRegTraverser extends Traverser {
-
-    boolean result;
-
-    public TestRegTraverser() {
-	super();
-	result = false;
-    }
+    boolean result = false;
+	Set variables = new HashSet();
 
     public void traverse(Tree tree) {
-	switch (tree) {
-	case Alternative(Tree[] ts):
-	case Bind(_, _):
-	    result = true;
-	    break;
-	default:
-	    super.traverse( tree );
-	}
+    	if (!result)
+			switch (tree) {
+				case Alternative(Tree[] ts):
+					result = true;
+					break;
+				case Bind(_, Tree pat):
+					variables.add(tree.symbol());
+					traverse(pat);
+					break;
+				case Ident(_):
+					if (variables.contains(tree.symbol()))
+						result = true;
+					break;
+				default:
+					super.traverse( tree );
+			}
     }
 
-    public static boolean apply( Tree t ) {
-	TestRegTraverser trt = new TestRegTraverser();
-	trt.traverse( t );
-	//System.err.println("TestRegTraverser says "+t+" -> "+trt.result);
-	return trt.result;
+    public static boolean apply(Tree t) {
+        TestRegTraverser trt = new TestRegTraverser();
+        trt.traverse(t);
+        //System.err.println("TestRegTraverser says "+t+" -> "+trt.result);
+        return trt.result;
     }
-
 }
