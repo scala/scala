@@ -24,7 +24,7 @@ import scala.runtime.FNV_Hash;
  * @version 1.0
  */
 
-public class TypeConstructor {
+public class TypeConstructor implements java.io.Serializable {
     public final static TypeConstructor[] EMPTY_ARRAY =
         new TypeConstructor[0];
 

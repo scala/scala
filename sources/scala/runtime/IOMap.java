@@ -18,10 +18,10 @@ package scala.runtime;
  * @version 1.0
  */
 
-public class IOMap {
+public class IOMap implements java.io.Serializable {
 
     /** The map class itself */
-    public static class T {
+    public static class T implements java.io.Serializable {
         public case N(int c, T l, T r, int k, Object v);
         public case E;
     }

@@ -36,7 +36,7 @@ import scala.runtime.PearsonHash;
  * @version 1.0
  */
 
-abstract public class Type {
+abstract public class Type implements java.io.Serializable {
     public static final Type[] EMPTY_ARRAY = new Type[]{};
 
     /** @meta method [?T](scala.Int) scala.Array[?T]; */

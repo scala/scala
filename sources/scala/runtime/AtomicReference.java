@@ -5,7 +5,7 @@ package scala.runtime;
  * java.util.concurrent.atomic.AtomicReference class.
  */
 
-public class AtomicReference {
+public class AtomicReference implements java.io.Serializable {
     private Object value;
 
     public AtomicReference(Object value) {
