@@ -7,9 +7,6 @@ abstract class MarkupParser[MarkupType, AVType] {
 
   val handle: MarkupHandler[MarkupType, AVType];
 
-  // @todo: kill this field
-  var mode: Boolean;
-
   /** character buffer, for names */
   protected val cbuf = new StringBuffer();
 
@@ -53,8 +50,41 @@ abstract class MarkupParser[MarkupType, AVType] {
     return xEmbeddedBlock;
   }
 
-
-  def xAttributes: scala.collection.mutable.Map[String,AttribValue[AVType]];
+  /** parse attribute and add it to listmap
+   *  [41] Attributes    ::= { S Name Eq AttValue }
+   *       AttValue     ::= `'` { _  } `'`
+   *                      | `"` { _ } `"`
+   *                      | `{` scalablock `}`
+  */
+  def xAttributes = {
+    var aMap = new mutable.HashMap[String, AttribValue[AVType]];
+    while( xml.Parsing.isNameStart( ch )) {
+      val key = xName;
+      xEQ;
+      val delim = ch;
+      val pos1 = pos;
+      val value:AttribValue[AVType] = ch match {
+        case '"' | '\'' =>
+          nextch;
+          val tmp = xAttributeValue( delim );
+          nextch;
+          handle.attributeCDataValue( pos1, tmp );
+        case '{' =>
+          nextch;
+          handle.attributeEmbedded(pos1, xEmbeddedExpr);
+        case _ =>
+	  xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
+          handle.attributeCDataValue( pos1, "<syntax-error>" )
+      };
+      // well-formedness constraint: unique attribute names
+      if( aMap.contains( key ))
+        xSyntaxError( "attribute "+key+" may only be defined once" );
+      aMap.update( key, value );
+      if(( ch != '/' )&&( ch != '>' ))
+        xSpace;
+    };
+   aMap
+  }
 
   /** attribute value, terminated by either ' or ". value may not contain <.
    *  @param endch either ' or "
@@ -174,22 +204,78 @@ abstract class MarkupParser[MarkupType, AVType] {
     return null; // this cannot happen;
   };
 
-  def appendTrimmed(pos: int, mode:Boolean, ts:mutable.Buffer[MarkupType], txt:String):Unit = {
-    var textNodes =
-      if( !preserveWS )
-        new TextBuffer().append( txt ).toText;
-      else
-        List( scala.xml.Text( txt ));
-
-    for( val t <- textNodes ) {
-      ts.append( handle.Text( pos, mode, t.text ) );
-    };
+  def appendText(pos: int, ts:mutable.Buffer[MarkupType], txt:String):Unit = {
+    if( !preserveWS )
+      for( val t <- TextBuffer.fromString( txt ).toText ) {
+        ts.append( handle.text( pos, t.text ) );
+      }
+    else
+      ts.append( handle.text( pos, txt ));
   }
 
-  /** '<' xExpr ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
+
+  def content: mutable.Buffer[MarkupType] = {
+    var ts = new mutable.ArrayBuffer[MarkupType];
+    var exit = false;
+    while( !exit ) {
+      if( xEmbeddedBlock ) {
+        ts.append( xEmbeddedExpr );
+      } else {
+        val pos2 = pos;
+        ch match {
+          case '<' => // another tag
+            nextch;
+            ch match {
+              case '/' => exit = true;            // end tag
+              case '!' =>
+                nextch;
+                if( '[' == ch )                 // CDATA
+                  ts.append(handle.charData( pos2, xCharData ));
+                else                              // comment
+                  ts.append(handle.comment( pos2, xComment ));
+              case '?' =>                         // PI
+                nextch;
+                ts.append(handle.procInstr( pos2, xProcInstr ));
+              case _   =>
+                ts.append( element );     // child
+            }
+
+          case '{' =>
+            if( xCheckEmbeddedBlock ) {
+              ts.append(xEmbeddedExpr);
+            } else {
+              val str = new StringBuffer("{");
+              str.append( xText );
+              appendText(pos2, ts, str.toString());
+              //@todo
+            }
+          // postcond: xEmbeddedBlock == false!
+          case '&' => // EntityRef or CharRef
+            nextch;
+            ch match {
+              case '#' => // CharacterRef
+                nextch;
+              val theChar = handle.text( pos2, xCharRef );
+              xToken(';');
+              ts.append( theChar );
+              case _ => // EntityRef
+                val n = xName ;
+                xToken(';');
+                ts.append( handle.entityRef( pos2, n ) );
+            }
+          case _ => // text content
+            appendText(pos2, ts, xText);
+          // here xEmbeddedBlock might be true
+        }
+      }
+    }
+    ts
+  } /* end content */
+
+  /** '<' element ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
    *               | xmlTag1 '/' '>'
    */
-  def xExpr: MarkupType = {
+  def element: MarkupType = {
     var pos1 = pos;
     val Tuple2(qname, attrMap) = xTag;
     if(ch == '/') { // empty element
@@ -198,62 +284,7 @@ abstract class MarkupParser[MarkupType, AVType] {
       handle.element( pos1, qname, attrMap, new mutable.ListBuffer[MarkupType] );
     } else { // handle content
       xToken('>');
-      var ts = new mutable.ArrayBuffer[MarkupType];
-      var exit = false;
-      while( !exit ) {
-        if( xEmbeddedBlock ) {
-          ts.append( xEmbeddedExpr );
-        } else {
-          val pos2 = pos;
-          ch match {
-            case '<' => // another tag
-              nextch;
-              ch match {
-                case '/' => exit = true;            // end tag
-                case '!' =>
-                  nextch;
-                  if( '[' == ch )                 // CDATA
-                    ts.append(handle.CharData( pos2, xCharData ));
-                  else                              // comment
-                    ts.append(handle.Comment( pos2, xComment ));
-                case '?' =>                         // PI
-                  nextch;
-                  ts.append(handle.ProcInstr( pos2, xProcInstr ));
-                case _   =>
-                  ts.append( xExpr );     // child
-              }
-
-            case '{' =>
-              if( xCheckEmbeddedBlock ) {
-                ts.append(xEmbeddedExpr);
-              } else {
-                val str = new StringBuffer("{");
-                str.append( xText );
-                appendTrimmed( pos2, mode, ts, str.toString() );
-                //@todo
-              }
-            // postcond: xEmbeddedBlock == false!
-            case '&' => // EntityRef or CharRef
-              nextch;
-              ch match {
-                case '#' => // CharacterRef
-                  nextch;
-                  val theChar = handle.Text( pos2, false, xCharRef );
-                  xToken(';');
-                  ts.append( theChar );
-                case _ => // EntityRef
-                  val n = xName ;
-                  xToken(';');
-                  ts.append( handle.EntityRef( pos2, n ) );
-              }
-            case _ => // text content
-              appendTrimmed( pos2, mode, ts, xText );
-              //@todo
-            // here xEmbeddedBlock might be true
-
-          }
-        }
-      }
+      val ts = content;
       xEndTag( qname );
       handle.element( pos1, qname, attrMap, ts );
     }

@@ -27,6 +27,19 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
 
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
+  def attributeCDataValue(pos: int, str:String): AttribValue[Tree] = {
+    val v = gen.mkStringLit(pos, str);
+    new AttribValue[Tree] {
+      def value = v;
+    }
+  }
+  def attributeEmbedded(pos: int, v:Tree): AttribValue[Tree] = {
+    new AttribValue[Tree] {
+      def value = v;
+    }
+  }
+  var isPattern:Boolean = _;
+
   val  _ArrayBuffer = Name.fromString("ArrayBuffer");
   val  _Attribute = Name.fromString("Attribute");
   val  _NodeBuffer = Name.fromString("NodeBuffer");
@@ -200,7 +213,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     }
   }
 
-  final def EntityRef( pos:int, n: String ) = {
+  final def entityRef( pos:int, n: String ) = {
     val constr = make.Apply( pos,
                             _scala_xml_EntityRef( pos ),
                             Predef.Array[Tree]( gen.mkStringLit( pos, n )));
@@ -208,7 +221,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     make.New( pos, constr );
   };
   // create scala.xml.Text here <: scala.xml.Node
-  final def Text( pos: int, isPattern:Boolean, txt:String ):Tree =  {
+  final def text( pos: int, txt:String ):Tree =  {
     //makeText( pos, isPattern, gen.mkStringLit( pos, txt ));
     val txt1 = gen.mkStringLit( pos, txt );
     if( isPattern )
@@ -252,15 +265,15 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
              );
 
   // create
-  def Comment( pos: int, comment:scala.xml.Comment ):Tree =
+  def comment( pos: int, comment:scala.xml.Comment ):Tree =
     Comment( pos, gen.mkStringLit( pos, comment.text ));
 
   // create
-  def CharData( pos: int, charData:scala.xml.CharData ):Tree =
+  def charData( pos: int, charData:scala.xml.CharData ):Tree =
     CharData( pos, gen.mkStringLit( pos, charData.text ));
 
   // create scala.xml.Text here <: scala.xml.Node
-  def ProcInstr( pos: int, procInstr:scala.xml.ProcInstr ):Tree =
+  def procInstr( pos: int, procInstr:scala.xml.ProcInstr ):Tree =
     procInstr.text match {
       case Some(txt) =>
         ProcInstr( pos,

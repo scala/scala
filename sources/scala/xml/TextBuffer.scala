@@ -8,9 +8,16 @@
 \*                                                                      */
 package scala.xml ;
 
-/** this classes is for creating text nodes with trimmed whitespace.
- *  all occurrences of one or more whitespace in strings appended (using the
- *  append method) will be replaced by a single space character
+object TextBuffer {
+  def fromString(str: String): TextBuffer = {
+    new TextBuffer().append( str );
+  }
+}
+
+/** this classes is for creating text nodes without surplus whitespace.
+ *  all occurrences of one or more whitespace in strings appended with the
+ *  append method will be replaced by a single space character, and
+ *  leading and trailing space will be removed completely.
  */
 class TextBuffer {
 

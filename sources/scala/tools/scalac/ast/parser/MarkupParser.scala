@@ -37,7 +37,6 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /** the XML tree builder */
   val gen = unit.global.treeGen ;
 
-  var mode:boolean = false;
   final val PATTERN = true;
   final val EXPR    = false;
 
@@ -46,20 +45,20 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   /** append Unicode character to name buffer*/
   //private def putChar(c: char) = cbuf.append( c );
 
-  /** xLiteral = xExpr { xExpr }
+  /** xLiteral = element { element }
    * @return Scala representation of this xml literal
    * precondition: s.xStartsXML == true
   */
   def xLiteral: Tree = {
     init;
-    mode = EXPR;
+    handle.isPattern = false;
     val pos = s.pos;
-    var tree = xExpr; xSpaceOpt;
+    var tree = element; xSpaceOpt;
     if( ch=='<' )  {
       val ts = new mutable.ArrayBuffer[Tree](); ts.append( tree );
       while( ch == '<' ) {
         nextch;
-        ts.append( xExpr );
+        ts.append( element );
         xSpaceOpt;
       }
       tree = handle.makeXMLseq( pos, ts );
@@ -75,8 +74,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
   */
   def xLiteralPattern:Tree = {
     init;
-    val oldMode = mode;
-    mode = PATTERN;
+    val oldMode = handle.isPattern;
+    handle.isPattern = true;
     val pos = s.pos;
     var tree = xPattern; xSpaceOpt;
     if( ch == '<' )  {
@@ -88,7 +87,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       }
       tree = handle.makeXMLseqPat( pos, ts.toArray() );
     }
-    mode = oldMode;
+    handle.isPattern = oldMode;
     //Console.println("out of xLiteralPattern, parsed:"+tree.toString());
     s.xSync2;
     tree
@@ -132,7 +131,6 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *       AttValue     ::= `'` { _  } `'`
    *                      | `"` { _ } `"`
    *                      | `{` scalablock `}`
-  */
   def xAttributes = {
     var aMap = new mutable.HashMap[String, AttribValue[Tree]];
     while( xml.Parsing.isNameStart( ch )) {
@@ -162,6 +160,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     };
    aMap
   }
+  */
 
 
   def xSyntaxError(str:String) = {
@@ -214,7 +213,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
             // postcond: xEmbeddedBlock = false;
           if( xEmbeddedBlock ) throw new ApplicationError(); // assert
           case _ => // teMaxt
-            appendTrimmed( pos2, mode, ts, xText );
+            appendText( pos2, ts, xText );
           // here  xEmbeddedBlock might be true;
           //if( xEmbeddedBlock ) throw new ApplicationError("after:"+text); // assert
 	}
@@ -223,5 +222,14 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     handle.makeXMLpat( pos1, qname, ts );
   }
 
+
+  override def appendText(pos: int, ts:mutable.Buffer[Tree], txt:String):Unit = {
+    if( !preserveWS )
+      for( val t <- TextBuffer.fromString( txt ).toText ) {
+        ts.append( handle.text( pos, t.text ) );
+      }
+    else
+      ts.append( handle.text( pos, txt ));
+  }
 } /* class MarkupParser */
 }

@@ -1,4 +1,6 @@
 package scala.xml.parsing ;
 
 /** a container for attribute values */
-case class AttribValue[A](value: A);
+trait AttribValue[A] {
+  def value: A;
+};
