@@ -1676,7 +1676,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			return transform(
 			    make.Apply(
 				tree.pos,
-				copy.Ident(tree, name.toTypeName()),
+				copy.Ident(tree, name).setSymbol(sym.type().resultType().symbol()),
 				Tree.EMPTY_ARRAY),
 			    mode, pt);
 		    else
@@ -1687,7 +1687,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			return transform(
 			    make.Apply(
 				tree.pos,
-				copy.Select(tree, qual, name.toTypeName()),
+				copy.Select(tree, qual, name).setSymbol(sym.type().resultType().symbol()),
 				Tree.EMPTY_ARRAY),
 			    mode, pt);
 		    else
