@@ -91,7 +91,6 @@ transformer/AddInterfaces.java
 transformer/AddInterfacesPhase.java
 transformer/Erasure.java
 transformer/ErasurePhase.java
-transformer/ExplicitOuterClasses.java
 transformer/ExplicitOuterClassesPhase.java
 transformer/ExpandMixins.java
 transformer/ExpandMixinsPhase.java
