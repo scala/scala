@@ -2995,32 +2995,58 @@ statement, or an import clause, or a pure definition (\sref{sec:defs}).
 \label{sec:patterns}
 
 \syntax\begin{verbatim}
-  Pattern                 \=::= \= SimplePattern {Id SimplePattern}
-			  \> |  \> varid `:' Type
-			  \> |  \> `_' `:' Type
-  SimplePattern \>::= \> varid
-  	\>  | \> `_'
-	\>  | \> literal
-      \>  | \> StableId {`(' [Patterns] `)'}
-	\>  | \> `(' [Patterns] `)'
-	\>  | \> `[' [Patterns] `]'
-  Patterns \>::= \> Pattern {`,' Pattern}
+Pattern        \=::=  \= TreePattern { `|' TreePattern }
+
+TreePattern    \>::=  \> varid `:' Type
+               \> |   \> `_' `:' Type
+               \> |   \> SimplePattern [ '*' | '?' | '+' ]
+               \> |   \> SimplePattern { Id SimplePattern }
+
+SimplePattern  \=::= \> varid [ '@' SimplePattern ]
+               \> |  \> `_'
+               \> |  \> literal
+               \> |  \> StableId [ `(' [Patterns] `)' ]
+               \> |  \> `(' Patterns `)'
+               \> |  \> 
+
+ Patterns      \>::= \> Pattern {`,' Pattern}
 \end{verbatim}
+%% \syntax\begin{verbatim}
+%%   Pattern                 \=::= \= SimplePattern {Id SimplePattern}
+%% 			  \> |  \> varid `:' Type
+%% 			  \> |  \> `_' `:' Type
+%%   SimplePattern \>::= \> varid
+%%   	\>  | \> `_'
+%% 	\>  | \> literal
+%%       \>  | \> StableId {`(' [Patterns] `)'}
+%% 	\>  | \> `(' [Patterns] `)'
+%% 	\>  | \> `[' [Patterns] `]'
+%%   Patterns \>::= \> Pattern {`,' Pattern}
+%% \end{verbatim}
 
-A pattern is built from constants, constructors, and
-variables. Pattern matching tests whether a given value has the shape
-defined by a pattern, and, if it does, binds the variables in the
-pattern to the corresponding components of the value.  The same
-variable name may not be bound more than once in a pattern.
+A pattern is built from constants, constructors, variables and regular
+operators. Pattern matching tests whether a given value or a sequence
+of values has the shape defined by a pattern, and, if it does, binds
+the variables in the pattern to the corresponding components of the
+value or the sequence of values.  The same variable name may not be
+bound more than once in a pattern.
 
-Pattern matching is always done in a context which supplies an
-expected type of the pattern. We distinguish the following kinds of patterns.
+The type of a pattern and the expected types of variables within the
+pattern are mainly determined by the context, except for patterns
+that employ regular operators. In the latter case  the missing 
+information is provided by the structure of the pattern. 
+We distinguish the following kinds of patterns.
 
-A {\em variable pattern} $x$ is a simple identifier which starts with
-a lower case letter.  It matches any value, and binds the variable
-name to that value.  The type of $x$ is the expected type of the
-pattern as given from outside.  A special case is the wild-card
-pattern $\_$ which is treated as if it was a fresh variable.
+A {\em wild-card pattern} \_ matches any value. 
+
+A {\em variable-binding pattern} $x @ p$ is a simple identifier $x$
+which starts with a lower case letter, together with a pattern $p$. It
+matches a value or a sequence of values whenever $p$ does, and in
+addition binds the variable name to that value or to that sequence of
+values. The type of $x$ is either determined from the context, or, if
+$p$ matches sequences, determined from the structure of $p$.  A
+special case is a {\em variable pattern} $x$ which is treated as $x @
+\_$.
 
 A {\em typed pattern} $x: T$ consists of a pattern variable $x$ and a
 simple type $T$. The type $T$ may be a class type or a compound type;
@@ -3041,8 +3067,9 @@ to the expected type of the pattern. The pattern matches any value $v$
 such that \verb@$r$ == $v$@ (\sref{sec:cls-object}).
 
 A {\em constructor pattern} $c(p_1) \ldots (p_n)$ where $n \geq 0$
-consists of an identifier $c$, followed by component patterns $p_1
-\commadots p_n$. The constructor $c$ is either a simple name
+consists of an identifier $c$, followed either by a regular expression 
+$\alpha$ or component patterns $p_1 \commadots p_n$. 
+The constructor $c$ is either a simple name
 or a qualified name $r.id$ where $r$ is a stable identifier. It refers
 to a (possibly overloaded) function which has one alternative of
 result type \verb@class C@, and which may not have other overloaded
