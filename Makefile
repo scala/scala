@@ -312,7 +312,11 @@ cvs-fix-perms		:
 	    INSTALL_PREFIX=$(PROJECT_BOOTSTRAPDIR) \
 	    PROJECT_BINARYDIR=$(PROJECT_BOOTSTRAPDIR)/bin \
 	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTSTRAPDIR)/classes \
-	    boot="bootstrap-" scripts lamplib scalac library
+	    boot="bootstrap-" scripts lamplib \
+	    .latest-bootstrap-scalac-jc \
+	    .latest-bootstrap-library-jc \
+	    .latest-bootstrap-library-sc \
+	    .latest-bootstrap-scalac-sc;
 	touch $@
 
 .latest%scalac-jc	: $(SCALAC_JC_FILES)
@@ -320,9 +324,7 @@ cvs-fix-perms		:
 	touch $@
 
 .latest%scalac-sc	: $(SCALAC_SC_FILES)
-	@if [ -d $(PROJECT_BOOTSTRAPDIR) -a -z "$(boot)" ]; then \
-	    $(make) sc target=SCALAC SCALAC_SC_FILES='$?'; \
-	fi;
+	@$(make) sc target=SCALAC SCALAC_SC_FILES='$?'
 	touch $@
 
 .latest%library-jc	: $(LIBRARY_JC_FILES)
