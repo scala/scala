@@ -146,12 +146,16 @@ trait Map[A, B] with scala.collection.Map[A, B] {
         } else
             false;
 
+    override def hashCode() = {
+      elements.foldLeft(0)((hash:Int,E:Object) => hash + E.hashCode());
+    }
+
     /** This method controls how a mapping is represented in the string
      *  representation provided by method <code>toString</code>.
      */
     def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
 
     class MapTo(key: A) {
-        def ->(value: B): Map[A, B] = update(key, value);
+        def ->(value: B) = update(key, value);
     }
 }
