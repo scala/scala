@@ -116,12 +116,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (member1.kind == VAL) {
 		    Type self = clazz.thisType();
 		    Type otherinfo = normalizedInfo(self, other);
-		    Type template = resultToAny(otherinfo);
 		    switch (member1.info()) {
 		    case OverloadedType(Symbol[] alts, _):
 			for (int i = 0; i < alts.length; i++) {
-			    if (normalizedInfo(self, alts[i]).isSubType(template) /*&&
-                                                                                    alts[i].owner() == member1.owner()*/) {
+			    if (normalizedInfo(self, alts[i]).overrides(otherinfo)) {
 				if (member == other)
 				    member = alts[i];
 				else
@@ -136,7 +134,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 			}
 			break;
 		    default:
-			if (normalizedInfo(self, member1).isSubType(template)) {
+			if (normalizedInfo(self, member1).overrides(otherinfo)) {
 			    member = member1;
 			}
 		    }
@@ -212,7 +210,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *       M must be labelled `abstract override'.
      */
     void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
-	//System.out.println(member + member.locationString() + " overrides " + other + other.locationString() + " in " + clazz);//debug
+	//System.out.println(member + ":" + member.type() + member.locationString() + " overrides " + other + ":" + other.type() + other.locationString() + " in " + clazz);//DEBUG
 	if (member.owner() == clazz)
 	    pos = member.pos;
 	else {

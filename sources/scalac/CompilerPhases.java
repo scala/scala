@@ -54,7 +54,7 @@ public abstract class CompilerPhases {
      */
     protected abstract Class PARSER_PHASE();
     protected abstract Class ANALYZER_PHASE();
-    protected Class REFCHECK_PHASE() { return scalac.typechecker.RefCheckPhase.class; }
+    protected abstract Class REFCHECK_PHASE();
     protected Class UNCURRY_PHASE() { return scalac.transformer.UnCurryPhase.class; }
     protected abstract Class TRANSMATCH_PHASE() ;
     protected Class LAMBDALIFT_PHASE() { return scalac.transformer.LambdaLiftPhase.class; }
