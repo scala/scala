@@ -121,7 +121,7 @@ public abstract class AbstractFile {
 
     /** Returns the path of this abstract file. */
     public final String toString() {
-        return getPath() + File.separator + getName();
+        return getPath();
     }
 
     //########################################################################
