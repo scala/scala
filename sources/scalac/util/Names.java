@@ -143,6 +143,7 @@ public class Names {
     public static final Name next = Name.fromString("next");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
+    public static final Name print = Name.fromString("print");
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
     public static final Name xml = Name.fromString("xml");
@@ -157,6 +158,7 @@ public class Names {
     public static final Name scala_Byte = Name.fromString("scala.Byte");
     public static final Name scala_Case = Name.fromString("scala.Case");
     public static final Name scala_Char = Name.fromString("scala.Char");
+    public static final Name scala_Console = Name.fromString("scala.Console");
     public static final Name scala_Double = Name.fromString("scala.Double");
     public static final Name scala_Float = Name.fromString("scala.Float");
     public static final Name scala_Function = Name.fromString(scala_Function_PREFIX);
