@@ -1,10 +1,11 @@
 ############################################################-*-Makefile-*-####
-# scala dtd2scala source files (paths are relative to ./sources/dtd2scala)
+# scala dtd2scala source files (paths are relative to ./sources/scala/tools/dtd2scala)
 ##############################################################################
 # $Id$
 
-DeclToScala.java
-Main.java
-XMLDecl.java
+DeclToScala.scala
+Main.scala
+MainHandler.scala
+XMLDecl.scala
 
 ##############################################################################
