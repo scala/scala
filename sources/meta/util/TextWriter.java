@@ -196,7 +196,7 @@ public class TextWriter {
         return level;
     }
 
-    /** Returns the indentation level. */
+    /** Sets the indentation level. */
     public TextWriter setIndentLevel(int level) {
         this.level = level;
         return this;
