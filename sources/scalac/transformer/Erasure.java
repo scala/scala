@@ -12,7 +12,6 @@ package scalac.transformer;
 import java.util.HashMap;
 
 import scalac.Global;
-import scalac.PhaseDescriptor;
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
@@ -54,8 +53,8 @@ public class Erasure extends Transformer implements Modifiers {
 
     private Unit unit;
 
-    public Erasure(Global global, PhaseDescriptor descr) {
-        super(global, descr);
+    public Erasure(Global global) {
+        super(global);
 	this.global = global;
 	this.definitions = global.definitions;
         this.primitives = global.primitives;

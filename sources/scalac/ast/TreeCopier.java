@@ -23,10 +23,8 @@ import java.util.*;
  */
 
 public class TreeCopier extends SubstTransformer {
-    public TreeCopier(Global global,
-                      PhaseDescriptor descr,
-                      TreeFactory make) {
-        super(global, descr, make);
+    public TreeCopier(Global global, TreeFactory make) {
+        super(global, make);
     }
 
     private boolean inPattern = false;

@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.ast;
 
@@ -528,7 +528,7 @@ public class TreeGen implements Kinds, Modifiers {
     /** Change owner of all defined symbols from `prevOwner' to `newOwner'
      */
     public Tree changeOwner(Tree tree, final Symbol prevOwner, final Symbol newOwner) {
-	Transformer lifter = new Transformer(global, global.currentPhase) {
+	Transformer lifter = new Transformer(global) {
 	    public Tree transform(Tree tree) {
 		if (TreeInfo.isDefinition(tree)) {
 		    Symbol sym = tree.symbol();

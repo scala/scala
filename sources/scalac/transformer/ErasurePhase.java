@@ -13,7 +13,6 @@ package scalac.transformer;
 //import scala.compiler.typechecker.*;
 
 import scalac.Global;
-import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.checkers.Checker;
 import scalac.checkers.CheckOwners;
@@ -45,7 +44,7 @@ public class ErasurePhase extends PhaseDescriptor {
 
     public void apply(Global global) {
 	this.definitions = global.definitions;
-        new Erasure(global, this).apply();
+        new Erasure(global).apply();
     }
 
     private Type eraseParams(Type tp) {

@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $Id$
@@ -59,10 +58,8 @@ public class AddConstructors extends Transformer {
 
     final HashMap constructors;
 
-    public AddConstructors(Global global,
-			   AddConstructorsPhase descr,
-			   HashMap constructors) {
-	super(global, descr);
+    public AddConstructors(Global global, HashMap constructors) {
+	super(global);
         this.constructors = constructors;
         this.forINT = global.target == global.TARGET_INT;
         this.forJVM = global.target == global.TARGET_JVM;

@@ -26,7 +26,7 @@ public class ExplicitOuterClassesPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-        new ExplicitOuterClasses(global, this).apply();
+        new ExplicitOuterClasses(global).apply();
     }
 
     public Checker[] postCheckers(Global global) {

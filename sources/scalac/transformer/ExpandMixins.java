@@ -43,7 +43,7 @@ public class ExpandMixins extends Transformer {
     protected final Definitions defs;
 
     public ExpandMixins(Global global, ExpandMixinsPhase descr) {
-        super(global, descr);
+        super(global);
         defs = global.definitions;
 
         classToInterface = global.PHASE.ADDINTERFACES.classToInterface;
@@ -53,7 +53,7 @@ public class ExpandMixins extends Transformer {
 
         freshNameCreator = global.freshNameCreator;
 
-        treeCopier = new TreeCopier(global, descr, global.make) {
+        treeCopier = new TreeCopier(global, global.make) {
                 // Substitute symbols refering to this class only.
                 public boolean mustSubstituteSymbol(Tree tree) {
                     switch (tree) {
@@ -304,7 +304,7 @@ public class ExpandMixins extends Transformer {
 	}
 
         // Use correct symbols for mixed-in members.
-        SymbolFixer symbolFixer = new SymbolFixer(global, descr, mixedInSymbols);
+        SymbolFixer symbolFixer = new SymbolFixer(global, mixedInSymbols);
         Tree[] fixedBody =
             symbolFixer.transform((Tree[])newBody.toArray(new Tree[newBody.size()]));
         Template newTree = make.Template(tree.pos, newBaseClasses, fixedBody);
@@ -395,8 +395,8 @@ public class ExpandMixins extends Transformer {
     protected static class SymbolFixer extends Transformer {
         protected final Map/*<Symbol,Symbol>*/ mixedInSymbols;
 
-        public SymbolFixer(Global global, PhaseDescriptor descr, Map mixedInSymbols) {
-            super(global, descr);
+        public SymbolFixer(Global global, Map mixedInSymbols) {
+            super(global);
             this.mixedInSymbols = mixedInSymbols;
         }
 

@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: AddInterfaces.java,v 1.40 2002/11/08 11:56:47 schinz Exp $
@@ -55,7 +54,7 @@ class AddInterfaces extends SubstTransformer {
     protected final Set/*<Symbol>*/ createdIFaces = new HashSet();
 
     public AddInterfaces(Global global, AddInterfacesPhase descr) {
-        super(global, descr, global.make);
+        super(global, global.make);
         classToInterface = descr.classToInterface;
         ifaceToClass = descr.interfaceToClass;
         ifaceMemberToClass = descr.ifaceMemberToClass;

@@ -27,7 +27,7 @@ public class RefCheckPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-	new RefCheck(global, this).apply();
+	new RefCheck(global).apply();
     }
 
     public Checker[] postCheckers(Global global) {

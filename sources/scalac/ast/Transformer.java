@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.ast;
 
@@ -22,7 +22,12 @@ import Tree.*;
  *  @author     Matthias Zenger
  *  @version    1.0
  */
-public class Transformer extends Phase {
+public class Transformer {
+
+    /** the global environment
+     */
+    public final Global global;
+
     /** the tree factory
      */
     public final TreeFactory make;
@@ -39,32 +44,33 @@ public class Transformer extends Phase {
 
     /** various constructors
      */
-    public Transformer(Global global, PhaseDescriptor descr) {
-        this(global, descr, global.make, new LazyTreeFactory(global.make));
+    public Transformer(Global global) {
+        this(global, global.make, new LazyTreeFactory(global.make));
     }
 
-    public Transformer(Global global,
-                       PhaseDescriptor descr,
-                       TreeFactory make) {
-        this(global, descr, make, new LazyTreeFactory(make));
+    public Transformer(Global global, TreeFactory make) {
+        this(global, make, new LazyTreeFactory(make));
     }
 
-    public Transformer(Global global,
-                       PhaseDescriptor descr,
-                       TreeFactory make,
-                       TreeCopyFactory copy) {
-        super(global, descr);
+    public Transformer(Global global, TreeFactory make, TreeCopyFactory copy) {
+        this.global = global;
         this.make = make;
         this.copy = copy;
         this.gen = global.treeGen;
     }
 
     public void apply() {
-        super.apply();
+        for (int i = 0; i < global.units.length; i++) {
+            apply(global.units[i]);
+        }
+    }
+
+    public void apply_(Unit[] units) {
+        for (int i = 0; i < units.length; i++) apply(units[i]);
     }
 
     public void apply(Unit unit) {
-	global.log("transforming " + unit);
+	unit.global.log("transforming " + unit);
         unit.body = transform(unit.body);
     }
 

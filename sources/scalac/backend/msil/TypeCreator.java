@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.backend.msil;
 
@@ -98,12 +98,11 @@ public final class TypeCreator
 	    throw Debug.abort(e); }
     }
 
-    TypeCreator(GenMSIL _gen) {
+    TypeCreator(GenMSIL _gen, GenMSILPhase phase) {
 	gen = _gen;
 	global = gen.global;
 	defs = global.definitions;
 
-	GenMSILPhase phase = (GenMSILPhase) gen.descr;
 	types2symbols = phase.types2symbols;
 	symbols2types = phase.symbols2types;
 	symbols2fields = phase.symbols2fields;

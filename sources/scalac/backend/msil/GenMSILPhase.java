@@ -10,7 +10,6 @@ package scalac.backend.msil;
 
 import scalac.Global;
 import scalac.Unit;
-import scalac.Phase;
 import scalac.PhaseDescriptor;
 
 import java.util.HashMap;

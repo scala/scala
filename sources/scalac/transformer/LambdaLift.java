@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.transformer;
 
@@ -40,10 +40,10 @@ public class LambdaLift extends OwnerTransformer
     final LambdaLiftPhase descr;
 
     public LambdaLift(Global global, LambdaLiftPhase descr) {
-        super(global, descr);
+        super(global);
 	this.global = global;
 	this.definitions = global.definitions;
-	this.free = new FreeVars(global, descr);
+	this.free = new FreeVars(global);
 	this.descr = descr;
     }
 
@@ -84,8 +84,8 @@ public class LambdaLift extends OwnerTransformer
 
 	private Unit unit;
 
-	public FreeVars(Global global, PhaseDescriptor descr) {
-	    super(global, descr);
+	public FreeVars(Global global) {
+	    super(global);
 	}
 
 	/** A hashtable storing free variables of functions and class constructors.

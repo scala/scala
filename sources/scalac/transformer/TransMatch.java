@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.transformer;
 
@@ -34,8 +34,8 @@ public class TransMatch extends OwnerTransformer {
      */
     Infer infer;
 
-    public TransMatch(Global global, PhaseDescriptor descr) {
-        super(global, descr);
+    public TransMatch(Global global) {
+        super(global);
     }
 
     public void apply(Unit unit) {
@@ -49,7 +49,7 @@ public class TransMatch extends OwnerTransformer {
         for (int i = 0; i < cases.length; i++)
             pm.enter(cases[i]);
         if (global.log()) {
-            System.out.println("[log " + descr.name() + "] internal pattern matching structure");
+            global.log("internal pattern matching structure");
             pm.print();
         }
         return pm.toTree();

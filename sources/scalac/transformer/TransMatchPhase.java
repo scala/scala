@@ -26,7 +26,7 @@ public class TransMatchPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-        new TransMatch(global, this).apply();
+        new TransMatch(global).apply();
     }
 
     public Checker[] postCheckers(Global global) {

@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.transformer;
 
@@ -24,7 +24,7 @@ public class UnCurry extends OwnerTransformer
     UnCurryPhase descr;
 
     public UnCurry(Global global, UnCurryPhase descr) {
-        super(global, descr);
+        super(global);
 	this.descr = descr;
     }
 

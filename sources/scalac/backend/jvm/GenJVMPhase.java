@@ -11,7 +11,6 @@ package scalac.backend.jvm;
 
 import scalac.Global;
 import scalac.Unit;
-import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.ApplicationError;
 
@@ -31,7 +30,9 @@ public class GenJVMPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-        new GenJVM(global, this).apply();
+        for (int i = 0; i < global.units.length; i++) {
+            new JVMGenerator(global).translate(global.units[i]);
+        }
     }
 
 }

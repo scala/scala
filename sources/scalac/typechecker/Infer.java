@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.typechecker;
 
@@ -28,7 +28,7 @@ public class Infer implements Modifiers, Kinds {
 	this.definitions = global.definitions;
 	this.gen = trans.gen;
 	this.make = trans.make;
-	this.substituter = new Substituter(global, trans.descr, gen);
+	this.substituter = new Substituter(global, gen);
     }
 
 // Error messages -------------------------------------------------------------
@@ -87,8 +87,8 @@ public class Infer implements Modifiers, Kinds {
 	TreeGen gen;
 	Type.SubstTypeMap typeSubstituter;
 
-	public Substituter(Global global, PhaseDescriptor descr, TreeGen gen) {
-	    super(global, descr);
+	public Substituter(Global global, TreeGen gen) {
+	    super(global);
 	    this.gen = gen;
 	}
 

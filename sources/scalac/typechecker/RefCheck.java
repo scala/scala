@@ -2,9 +2,10 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 // todo: Any cannot be inherited.
 // todo: check that only stable defs override stable defs
 // todo: admit vardefs w/o rhs
@@ -25,8 +26,8 @@ import Tree.*;
  */
 public class RefCheck extends Transformer implements Modifiers, Kinds {
 
-    public RefCheck(Global global, RefCheckPhase descr) {
-        super(global, descr);
+    public RefCheck(Global global) {
+        super(global);
     }
 
     private Unit unit;

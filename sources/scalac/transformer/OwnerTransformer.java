@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.transformer;
 
@@ -26,8 +26,8 @@ public class OwnerTransformer extends Transformer {
 
     protected Symbol currentOwner;
 
-    public OwnerTransformer(Global global, PhaseDescriptor descr) {
-        super(global, descr);
+    public OwnerTransformer(Global global) {
+        super(global);
     }
 
     public void apply(Unit unit) {

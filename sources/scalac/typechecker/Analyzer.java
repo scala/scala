@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 // todo: (0) propagate target type in cast.
 // todo: (1) check that only stable defs override stable defs
@@ -28,7 +28,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     final Infer infer;
 
     public Analyzer(Global global, AnalyzerPhase descr) {
-        super(global, descr);
+        super(global);
         this.definitions = global.definitions;
 	this.descr = descr;
 	this.infer = new Infer(this);

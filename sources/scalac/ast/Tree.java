@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.ast;
 
@@ -903,7 +903,7 @@ public class Tree {
 
     public static Transformer duplicator =
        new Transformer(
-	    Global.instance, null, Global.instance.make,
+	    Global.instance, Global.instance.make,
 	    new StrictTreeFactory(Global.instance.make));
 
     public Tree duplicate() {

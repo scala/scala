@@ -27,8 +27,8 @@ import java.util.*;
  */
 
 public class AddAccessors extends Transformer {
-    public AddAccessors(Global global, PhaseDescriptor descr) {
-        super(global, descr);
+    public AddAccessors(Global global) {
+        super(global);
     }
 
     protected Name valName(Symbol sym) {

@@ -30,8 +30,8 @@ public class ExplicitOuterClasses extends Transformer {
     // Mapping from class constructor symbols to owner field symbols.
     protected HashMap/*<Symbol,Symbol>*/ outerMap = new HashMap();
 
-    public ExplicitOuterClasses(Global global, PhaseDescriptor descr) {
-        super(global, descr);
+    public ExplicitOuterClasses(Global global) {
+        super(global);
     }
 
     protected Type addValueParam(Type oldType, Symbol newValueParam) {

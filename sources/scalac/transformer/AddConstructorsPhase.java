@@ -13,7 +13,6 @@ import java.util.HashMap;
 
 import scalac.checkers.*;
 import scalac.Global;
-import scalac.Phase;
 import scalac.PhaseDescriptor;
 
 public class AddConstructorsPhase extends PhaseDescriptor {
@@ -35,7 +34,7 @@ public class AddConstructorsPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-	new AddConstructors(global, this, constructors).apply();
+	new AddConstructors(global, constructors).apply();
     }
 
     public Checker[] postCheckers(Global global) {

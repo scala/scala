@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: GenJVM.java,v 1.29 2003/02/05 09:32:17 schinz Exp $
@@ -36,17 +35,6 @@ import java.io.*;
  * @version 1.0
  * @author Michel Schinz
  */
-
-public class GenJVM extends Phase {
-    public GenJVM(Global global, PhaseDescriptor descr) {
-	super(global, descr);
-    }
-
-    public void apply(Unit unit) {
-        JVMGenerator gen = new JVMGenerator(global);
-        gen.translate(unit);
-    }
-}
 
 class JVMGenerator {
     protected final static String JAVA_LANG_OBJECT = "java.lang.Object";

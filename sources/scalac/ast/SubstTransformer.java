@@ -2,7 +2,6 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $OldId: SubstTransformer.java,v 1.3 2002/04/19 10:55:15 schinz Exp $
@@ -45,10 +44,8 @@ public class SubstTransformer extends Transformer {
 
     protected final TreeCopyFactory simpleCopy;
 
-    public SubstTransformer(Global global,
-                            PhaseDescriptor descr,
-                            TreeFactory make) {
-        super(global, descr, make, new TCF(make));
+    public SubstTransformer(Global global, TreeFactory make) {
+        super(global, make, new TCF(make));
         this.simpleCopy = new StrictTreeFactory(make);
 
         ((TCF)copy).setTransformer(this);

@@ -2,17 +2,14 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
 
+// $Id$
 
 package scalac.backend.msil;
 
 import scalac.Global;
 import scalac.Unit;
-import scalac.Phase;
-import scalac.PhaseDescriptor;
 import scalac.ApplicationError;
 
 import scalac.util.Debug;
@@ -50,7 +47,7 @@ import java.io.IOException;
  * @author Nikolay Mihaylov
  */
 
-public class GenMSIL extends Phase /*implements Modifiers */ {
+public class GenMSIL /*implements Modifiers */ {
 
     final Map assemblies;
 
@@ -62,6 +59,7 @@ public class GenMSIL extends Phase /*implements Modifiers */ {
 
     ILGenerator code;
 
+    final Global global;
     final TypeCreator tc;
     final Definitions defs;
     final Primitives primitives;
@@ -104,12 +102,12 @@ public class GenMSIL extends Phase /*implements Modifiers */ {
     /**
      */
     public GenMSIL(Global global, GenMSILPhase phase) {
-	super(global, phase);
+        this.global = global;
 	defs = global.definitions;
 	primitives = global.primitives;
 	assemblies = phase.assemblies;
 
-	tc = new TypeCreator(this);
+	tc = new TypeCreator(this, phase);
 	items = new ItemFactory(this);
 
 	currentPackage = defs.ROOT_CLASS; /// ???
@@ -158,7 +156,9 @@ public class GenMSIL extends Phase /*implements Modifiers */ {
 	    tc.traverse(global.units);
 
 	    try {
-		super.apply(); // this invokes apply(Unit) for each Unit
+                for (int i = 0; i < global.units.length; i++) {
+                    apply(global.units[i]);
+                }
 	    } catch (Throwable e) {
 		//log("params: " + params);
 		//log("locals: " + locals);

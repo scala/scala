@@ -28,7 +28,7 @@ public class AddAccessorsPhase extends PhaseDescriptor {
     }
 
     public void apply(Global global) {
-        new AddAccessors(global, this).apply();
+        new AddAccessors(global).apply();
     }
 
     public Checker[] postCheckers(Global global) {
