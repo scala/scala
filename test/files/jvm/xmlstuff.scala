@@ -237,4 +237,42 @@ object Test with Application {
     yield t
   );
 
+val phoneBook =
+  <phonebook>
+      <descr>
+        This is the <b>phonebook</b> of the
+        <a href="http://acme.org">ACME</a> corporation.
+      </descr>
+      <entry>
+        <name>John</name>
+        <phone where="work">  +41 21 693 68 67</phone>
+        <phone where="mobile">+41 79 602 23 23</phone>
+      </entry>
+    </phonebook>;
+
+
+val addrBook =
+  <addrbook>
+      <descr>
+        This is the <b>addressbook</b> of the
+        <a href="http://acme.org">ACME</a> corporation.
+      </descr>
+      <entry>
+        <name>John</name>
+        <street> Elm Street</street>
+        <city>Dolphin City</city>
+      </entry>
+    </addrbook>;
+
+  Console.println( new scala.xml.PrettyPrinter(80, 5).format (
+    for( val t <- addrBook \\ "entry";
+         val r <- phoneBook \\ "entry";
+         t \ "name" == r \ "name") yield
+          <result>
+    { t.child }
+    { r \ "phone" }
+    </result>
+  ));
+
+
 }
