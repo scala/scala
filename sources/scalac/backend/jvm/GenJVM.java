@@ -103,6 +103,7 @@ class JVMGenerator {
     protected MethodGen currMethod = null;
     protected InstructionList currIL = null;
     protected Map currLocals = null;
+    protected boolean isModuleClass = false;
 
     static class InstrContext {
         public case Empty;
@@ -155,14 +156,17 @@ class JVMGenerator {
         case ClassDef(_, _, _, _, _, Tree.Template impl) : {
             Tree.ClassDef classDef = (Tree.ClassDef)tree;
 
+            boolean oldIsModuleClass = isModuleClass;
+            isModuleClass = Modifiers.Helper.isModClass(sym.flags);
             enterClass(sym);
 
             addValueClassMembers(classDef);
-            if (Modifiers.Helper.isModClass(sym.flags))
+            if (isModuleClass)
                 addModuleInstanceField();
 
             gen(impl);
             leaveClass(sym);
+            isModuleClass = oldIsModuleClass;
         } break;
 
         case Template(_, Tree[] body):
@@ -312,18 +316,27 @@ class JVMGenerator {
                 } else {
                     int methodIndex =
                         currPool.addMethodref(className, methodName, methodSig);
-                    boolean isSpecial;
-                    if (funSym.name == CONSTRUCTOR_NAME)
-                        isSpecial = true;
-                    else {
-                        switch (fun) {
-                        case Select(Super(_), _): isSpecial = true; break;
-                        default: isSpecial = false; break;
-                        }
+                    boolean isConstrCall = (funSym.name == CONSTRUCTOR_NAME);
+                    boolean isSuperCall;
+                    switch (fun) {
+                    case Select(Super(_), _): isSuperCall = true; break;
+                    default: isSuperCall = false; break;
                     }
-                    if (isSpecial)
+
+                    if (isConstrCall || isSuperCall) {
                         currIL.append(new INVOKESPECIAL(methodIndex));
-                    else if (isStatic)
+                        if (isConstrCall && isSuperCall && isModuleClass) {
+                            // Initialise module instance field ASAP
+                            String currClassSig =
+                                new ObjectType(currClassName).getSignature();
+                            int fieldRef =
+                                currPool.addFieldref(currClassName,
+                                                     MODULE_INSTANCE_FIELD_NAME,
+                                                     currClassSig);
+                            currIL.append(ic.THIS);
+                            currIL.append(new PUTSTATIC(fieldRef));
+                        }
+                    } else if (isStatic)
                         currIL.append(new INVOKESTATIC(methodIndex));
                     else
                         currIL.append(new INVOKEVIRTUAL(methodIndex));
@@ -520,12 +533,11 @@ class JVMGenerator {
     // Add field containing module instance, and code to
     // initialize it, to current class.
     protected void addModuleInstanceField() {
-        Type currClassType = new ObjectType(currClassName);
         FieldGen instanceField =
             new FieldGen(cst.ACC_PUBLIC
                          | cst.ACC_FINAL
                          | cst.ACC_STATIC,
-                         currClassType,
+                         new ObjectType(currClassName),
                          MODULE_INSTANCE_FIELD_NAME,
                          currPool);
         currClass.addField(instanceField.getField());
@@ -535,14 +547,9 @@ class JVMGenerator {
         int constrRef = currPool.addMethodref(currClassName,
                                               CONSTRUCTOR_STRING,
                                               VOID_NO_ARGS_SIG);
-        int fieldRef = currPool.addFieldref(currClassName,
-                                            MODULE_INSTANCE_FIELD_NAME,
-                                            currClassType.getSignature());
 
         initIL.append(new NEW(currPool.addClass(currClassName)));
-        initIL.append(ic.DUP);
         initIL.append(new INVOKESPECIAL(constrRef));
-        initIL.append(new PUTSTATIC(fieldRef));
         initIL.append(ic.RETURN);
 
         MethodGen initMethod =
@@ -1204,7 +1211,7 @@ class JVMGenerator {
 
     protected HashSet seenClasses = new HashSet();
     protected void leaveClass(Symbol cSym) {
-        if (Modifiers.Helper.isModClass(cSym.flags)) {
+        if (isModuleClass) {
             if (!seenClasses.contains(cSym.fullName()))
                 dumpModuleMainClass(currClass);
         } else
