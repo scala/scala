@@ -90,7 +90,7 @@ public class AddConstructors extends Transformer {
                 constrType = Type.PolyType(tparamSyms, constrType);
 
             if (!classConstr.isExternal())
-                constrType.cloneType(classConstr, constr);
+                constrType = constrType.cloneType(classConstr, constr);
 
 	    constr.setInfo(constrType);
 	    constructors.put(classConstr, constr);
