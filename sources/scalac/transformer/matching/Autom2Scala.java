@@ -154,9 +154,9 @@ public class Autom2Scala  {
 	    cf.gen.ValDef( this.hasnSym,
 			   cf._hasNext( _iter() ) ),
 	    cf.gen.ValDef( this.curSym,
-			   cf.If( gen.Ident( pos, hasnSym ),//cf._hasNext( _iter() ),
-				  cf._next( _iter() ),
-				  gen.mkDefaultValue(cf.pos,curSym.type()))),
+			   gen.If( gen.Ident( pos, hasnSym ),//cf._hasNext( _iter() ),
+				   cf._next( _iter() ),
+				   gen.mkDefaultValue(cf.pos,curSym.type()))),
 						 //cf.ignoreValue( curSym.type() )
 
 	    body });
@@ -209,9 +209,9 @@ public class Autom2Scala  {
 	    if( dfa.isSink( i ))
 		bodies[ i ] = run_finished( i ); // state won't change!
 	    else
-		bodies[ i ] = cf.If( cf.Negate( gen.Ident( pos, hasnSym )),//cf._not_hasNext( _iter() ),
-				     run_finished( i ),
-				     code_state_NEW( i ));
+		bodies[ i ] = gen.If( cf.Negate( gen.Ident( pos, hasnSym )),//cf._not_hasNext( _iter() ),
+				      run_finished( i ),
+				      code_state_NEW( i ));
 	}
 	if( optimize )
 	    return loadCurrentElem( gen.Switch( _state(),
@@ -222,9 +222,9 @@ public class Autom2Scala  {
 
 	Tree res = code_fail();
 	for( int i = dfa.nstates-2; i>= 0; i-- )
-	    res = cf.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
-			 bodies[ i ] ,
-			 res );
+	    res = gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
+			  bodies[ i ] ,
+			  res );
 
 	return loadCurrentElem( res );
 
@@ -302,9 +302,9 @@ public class Autom2Scala  {
 
 	    if( action != null ) {
 
-		stateBody = cf.If( currentMatches((Label) label ),
-				   action,
-				   stateBody);
+		stateBody = gen.If( currentMatches((Label) label ),
+				    action,
+				    stateBody);
 	    }
 	}
 	return stateBody;

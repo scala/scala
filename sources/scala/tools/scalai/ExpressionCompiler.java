@@ -219,10 +219,10 @@ public class ExpressionCompiler {
     private Code vapply(Tree target, Symbol symbol, Tree[] trees) {
         // !!! optimize ?
         Code object = object(target);
-        if (symbol == definitions.BARBAR()) {
+        if (symbol == definitions.BOOLEAN_OR()) {
             return Code.Or(object, compute(trees[0]));
         }
-        if (symbol == definitions.AMPAMP()) {
+        if (symbol == definitions.BOOLEAN_AND()) {
             return Code.And(object, compute(trees[0]));
         }
         // !!! System.out.println("!!! method: " + Debug.show(symbol));

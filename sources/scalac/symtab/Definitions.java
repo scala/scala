@@ -46,10 +46,6 @@ public class Definitions {
     public final Symbol SCALARUNTIME_CLASS;
     public final Type   SCALARUNTIME_TYPE;
 
-    /** the partial function class
-     */
-    public final Symbol PARTIALFUNCTION_CLASS;
-
     /** the null value
      */
     public final Symbol NULL;
@@ -101,7 +97,8 @@ public class Definitions {
 
     private Symbol OBJECT_TAG;
     public Symbol OBJECT_TAG() {
-        if (OBJECT_TAG == null) OBJECT_TAG = loadTerm(OBJECT_TYPE, Names.tag);
+        if (OBJECT_TAG == null)
+            OBJECT_TAG = loadTerm(OBJECT_CLASS, Names.tag);
         return OBJECT_TAG;
     }
 
@@ -136,9 +133,25 @@ public class Definitions {
     public final Symbol UNIT_CLASS;
     public final Type   UNIT_TYPE;
 
-    /** the array class
-     */
-    public final Symbol ARRAY_CLASS;
+    private Symbol BOOLEAN_OR;
+    private Symbol BOOLEAN_AND;
+    private Symbol BOOLEAN_NOT;
+
+    public Symbol BOOLEAN_OR() {
+        if (BOOLEAN_OR == null)
+            BOOLEAN_OR = loadTerm(BOOLEAN_CLASS, Names.BARBAR);
+        return BOOLEAN_OR;
+    }
+    public Symbol BOOLEAN_AND() {
+        if (BOOLEAN_AND == null)
+            BOOLEAN_AND = loadTerm(BOOLEAN_CLASS, Names.AMPAMP);
+        return BOOLEAN_AND;
+    }
+    public Symbol BOOLEAN_NOT() {
+        if (BOOLEAN_NOT == null)
+            BOOLEAN_NOT = loadTerm(BOOLEAN_CLASS, Names.BANG);
+        return BOOLEAN_NOT;
+    }
 
     /** types from java.lang
      */
@@ -152,46 +165,189 @@ public class Definitions {
     public final Symbol STRING_CLASS;
     public final Type   STRING_TYPE;
 
+    /** the scala.TupleX classes
+     */
+    public final int  TUPLE_count = 10;
+    public final Symbol[] TUPLE_CLASS = new Symbol[TUPLE_count];
+
+    public Type tupleType(Type[] args) {
+        assert 0 < args.length && args.length < TUPLE_count: args.length;
+	return getType(TUPLE_CLASS[args.length], args);
+    }
+
+    private final Symbol[][] TUPLE_FIELD = new Symbol[TUPLE_count][];
+
+    public Symbol TUPLE_FIELD(int arity, int index) {
+        assert 0 < arity && arity < TUPLE_count: arity;
+        assert 0 < index && index <= arity: arity + " - " + index;
+        if (TUPLE_FIELD[arity][index - 1] == null)
+            TUPLE_FIELD[arity][index - 1] = loadTerm(TUPLE_CLASS[arity],Names.TUPLE_FIELD(index));
+        return TUPLE_FIELD[arity][index - 1];
+    }
+
     /** the scala.FunctionX classes
      */
     public final int  FUNCTION_count = 10;
     public final Symbol[] FUNCTION_CLASS = new Symbol[FUNCTION_count];
-    public final Type[]   FUNCTION_TYPE = new Type[FUNCTION_count];
+
+    public Type functionType(Type[] args, Type result) {
+        assert 0 <= args.length && args.length < FUNCTION_count: args.length;
+        args = Type.cloneArray(args, 1);
+        args[args.length - 1] = result;
+	return getType(FUNCTION_CLASS[args.length - 1], args);
+    }
 
     private final Symbol[] FUNCTION_APPLY = new Symbol[FUNCTION_count];
+
     public Symbol FUNCTION_APPLY(int arity) {
-        assert arity < FUNCTION_count: arity;
+        assert 0 <= arity && arity < FUNCTION_count: arity;
         if (FUNCTION_APPLY[arity] == null)
-            FUNCTION_APPLY[arity] = loadTerm(FUNCTION_TYPE[arity],Names.apply);
+            FUNCTION_APPLY[arity] = loadTerm(FUNCTION_CLASS[arity],Names.apply);
         return FUNCTION_APPLY[arity];
+    }
+
+    /** the scala.PartialFunction class
+     */
+    public final Symbol PARTIALFUNCTION_CLASS;
+
+    public Type partialFunctionType(Type arg, Type result) {
+	return getType(PARTIALFUNCTION_CLASS, new Type[] { arg, result });
+    }
+
+    private Symbol PARTIALFUNCTION_ISDEFINEDAT;
+
+    public Symbol PARTIALFUNCTION_ISDEFINEDAT() {
+        if (PARTIALFUNCTION_ISDEFINEDAT == null)
+            PARTIALFUNCTION_ISDEFINEDAT = loadTerm(PARTIALFUNCTION_CLASS, Names.isDefinedAt);
+        return PARTIALFUNCTION_ISDEFINEDAT;
     }
 
     /** the scala.Ref class
      */
     public final Symbol REF_CLASS;
-    public final Type   REF_TYPE;
+
+    public Type refType(Type element) {
+        return getType(REF_CLASS, element);
+    }
 
     private Symbol REF_ELEM;
+
     public Symbol REF_ELEM() {
-        if (REF_ELEM == null) REF_ELEM = loadTerm(REF_TYPE, Names.elem);
+        if (REF_ELEM == null)
+            REF_ELEM = loadTerm(REF_CLASS, Names.elem);
         return REF_ELEM;
     }
 
+    /** the scala.List class
+     */
+    public final Symbol LIST_CLASS;
+    // !!! public final Symbol LIST_NIL_CLASS;
+    // !!! public final Symbol LIST_CONS_CLASS;
+
+    public Type listType(Type element) {
+        return getType(LIST_CLASS, element);
+    }
+
+    private Symbol LIST_ISEMPTY;
+    private Symbol LIST_HEAD;
+    private Symbol LIST_TAIL;
+
+    public Symbol LIST_ISEMPTY() {
+        if (LIST_ISEMPTY == null)
+            LIST_ISEMPTY = loadTerm(LIST_CLASS, Names.isEmpty);
+        return LIST_ISEMPTY;
+    }
+    public Symbol LIST_HEAD() {
+        if (LIST_HEAD == null)
+            LIST_HEAD = loadTerm(LIST_CLASS, Names.head);
+        return LIST_HEAD;
+    }
+    public Symbol LIST_TAIL() {
+        if (LIST_TAIL == null)
+            LIST_TAIL = loadTerm(LIST_CLASS, Names.tail);
+        return LIST_TAIL;
+    }
+
+    /** the scala.Iterator class
+     */
+    public final Symbol ITERATOR_CLASS;
+
+    public Type iteratorType(Type element) {
+        return getType(ITERATOR_CLASS, element);
+    }
+
+    private Symbol ITERATOR_NEXT;
+    private Symbol ITERATOR_HASNEXT;
+
+    public Symbol ITERATOR_NEXT() {
+        if (ITERATOR_NEXT == null)
+            ITERATOR_NEXT = loadTerm(ITERATOR_CLASS, Names.next);
+        return ITERATOR_NEXT;
+    }
+    public Symbol ITERATOR_HASNEXT() {
+        if (ITERATOR_HASNEXT == null)
+            ITERATOR_HASNEXT = loadTerm(ITERATOR_CLASS, Names.hasNext);
+        return ITERATOR_HASNEXT;
+    }
+
+    /** the scala.Iterable class
+     */
+    public final Symbol ITERABLE_CLASS;
+
+    public Type iterableType(Type element) {
+        return getType(ITERABLE_CLASS, element);
+    }
+
+    private Symbol ITERABLE_ELEMENTS;
+
+    public Symbol ITERABLE_ELEMENTS() {
+        if (ITERABLE_ELEMENTS == null)
+            ITERABLE_ELEMENTS = loadTerm(ITERABLE_CLASS, Names.elements);
+        return ITERABLE_ELEMENTS;
+    }
+
+    /** the scala.Seq class
+     */
     public final Symbol SEQ_CLASS;
+
+    public Type seqType(Type element) {
+	return getType(SEQ_CLASS, element);
+    }
+
+    private Symbol SEQ_LENGTH;
+
+    public Symbol SEQ_LENGTH() {
+        if (SEQ_LENGTH == null)
+            SEQ_LENGTH = loadTerm(SEQ_CLASS, Names.length);
+        return SEQ_LENGTH;
+    }
+
+    /** the scala.Array class
+     */
+    public final Symbol ARRAY_CLASS;
+
+    public Type arrayType(Type element) {
+        return getType(ARRAY_CLASS, element);
+    }
+
+    /** the scala.MatchError class
+     */
+    public final Symbol MATCHERROR;
+    public final Symbol MATCHERROR_CLASS;
+
+    private Symbol MATCHERROR_FAIL;
+
+    public Symbol MATCHERROR_FAIL() {
+        if (MATCHERROR_FAIL == null)
+            MATCHERROR_FAIL = loadTerm(MATCHERROR, Names.fail);
+        return MATCHERROR_FAIL;
+    }
 
     /** string concatenation pseudo-methods of classes scala.Any and
      *  java.lang.String
      */
     //public final Symbol ANY_PLUS_STRING;
     public final Symbol STRING_PLUS_ANY;
-
-    /** members of class Boolean
-     */
-    private Symbol BARBAR;
-    private Symbol AMPAMP;
-
-    public Symbol BARBAR() { loadBooleanMembers(); return BARBAR; }
-    public Symbol AMPAMP() { loadBooleanMembers(); return AMPAMP; }
 
     public final Symbol PATTERN_WILDCARD;
 
@@ -250,9 +406,6 @@ public class Definitions {
         JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
         JAVA_OBJECT_TYPE = JAVA_OBJECT_CLASS.typeConstructor();
         JAVA_OBJECT_CLASS.setInfo(pparser.classCompletion);
-
-	// the scala.PartialFunction class
-	PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
 
         // the scala.ANYREF class
 	ANYREF_CLASS = new AliasTypeSymbol(
@@ -328,13 +481,20 @@ public class Definitions {
 	STRING_TYPE = STRING_CLASS.typeConstructor();
 	STRING_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE));
 
-        for (int i = 0; i < FUNCTION_count; i++) {
-            FUNCTION_CLASS[i] = getClass(Names.scala_Function(i));
-            FUNCTION_TYPE[i] = FUNCTION_CLASS[i].typeConstructor();
+        for (int i = 1; i < TUPLE_count; i++) {
+            TUPLE_CLASS[i] = getClass(Names.scala_Tuple(i));
+            TUPLE_FIELD[i] = new Symbol[i];
         }
+        for (int i = 0; i < FUNCTION_count; i++)
+            FUNCTION_CLASS[i] = getClass(Names.scala_Function(i));
+	PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
         REF_CLASS = getClass(Names.scala_Ref);
-        REF_TYPE = REF_CLASS.typeConstructor();
+	LIST_CLASS = getClass(Names.scala_List);
+	ITERATOR_CLASS = getClass(Names.scala_Iterator);
+	ITERABLE_CLASS = getClass(Names.scala_Iterable);
 	SEQ_CLASS = getClass(Names.scala_Seq);
+	MATCHERROR = getModule(Names.scala_MatchError);
+	MATCHERROR_CLASS = getClass(Names.scala_MatchError);
 
 	/*
         ANY_PLUS_STRING = new TermSymbol(
@@ -489,40 +649,16 @@ public class Definitions {
 	return getClass(fullname).typeConstructor();
     }
 
-    private void loadBooleanMembers() {
-        if (BARBAR != null) return;
-        Symbol booleanStatics = getModule(Names.scala_Boolean);
-        BARBAR = BOOLEAN_TYPE.lookup(Names.BARBAR);
-        AMPAMP = BOOLEAN_TYPE.lookup(Names.AMPAMP);
-    }
-
-    private Symbol loadTerm(Type type, Name name) {
-        Symbol sym = type.lookup(name);
-        assert sym.isTerm() && !sym.isOverloaded(): type+"."+name+" -> "+sym;
+    private Symbol loadTerm(Symbol clasz, Name name) {
+        Symbol sym = clasz.lookup(name);
+        assert sym.isTerm() && !sym.isOverloaded(): clasz+"."+name+" -> "+sym;
         return sym;
     }
 
-    public Type arrayType(Type elemtpe) {
-        return Type.appliedType(ARRAY_CLASS.typeConstructor(), new Type[]{elemtpe});
+    private Type getType(Symbol clasz, Type arg) {
+	return getType(clasz, new Type[] { arg });
     }
-
-    public Type functionType(Type[] argtps, Type restp) {
-	Type[] argtps1 = new Type[argtps.length + 1];
-	System.arraycopy(argtps, 0, argtps1, 0, argtps.length);
-	argtps1[argtps.length] = restp;
-	return Type.appliedType(
-	    getType(Name.fromString("scala.Function" + argtps.length)),
-	    argtps1);
-    }
-
-    public Type partialFunctionType(Type argtpe, Type restpe) {
-	Type[] argtps1 = new Type[2];
-	argtps1[0] = argtpe;
-	argtps1[1] = restpe;
-	return Type.appliedType(PARTIALFUNCTION_CLASS.typeConstructor(), argtps1);
-    }
-
-    public Type seqType(Type argtpe) {
-	return Type.appliedType(getType(Names.scala_Seq), new Type[]{argtpe});
+    private Type getType(Symbol clasz, Type[] args) {
+        return Type.appliedType(clasz.typeConstructor(), args);
     }
 }

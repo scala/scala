@@ -505,7 +505,7 @@ public class Erasure extends Transformer implements Modifiers {
 		Tree result = coerce(copy.Apply(tree, fun1, args1).setType(restpe), owntype);
 		if (isUnboxed(isSelectorType) && !isUnboxedArray(isSelectorType)) {
 		    Symbol primSym = primitives.getInstanceTestSymbol(isSelectorType);
-		    Symbol ampAmpSym = definitions.AMPAMP();
+		    Symbol ampAmpSym = definitions.BOOLEAN_AND();
 		    result = make.Apply(
 			result.pos,
 			make.Select(

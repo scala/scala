@@ -378,9 +378,9 @@ public class AlgebraicMatcher extends PatternMatcher {
         ts.append( gen.ValDef(root.symbol(), _m.selector ));
         ts.append( gen.ValDef(resultVar,
                               gen.mkDefaultValue(_m.pos, resultVar.info()) ));
-        ts.append( cf.If( toTree(root.and),
-                          gen.Ident( _m.pos, resultVar ),
-                          cf.ThrowMatchError( _m.pos, _m.resultType )));
+        ts.append( gen.If( toTree(root.and),
+                           gen.Ident( _m.pos, resultVar ),
+                           cf.ThrowMatchError( _m.pos, _m.resultType )));
         /*
             gen.If(
                 _m.pos,

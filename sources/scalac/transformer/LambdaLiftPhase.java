@@ -47,7 +47,8 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
                     tp1 = transform(tp, sym.owner());
             }
         }
-        if ((sym.flags & Modifiers.CAPTURED) != 0) return refType(tp1);
+        if ((sym.flags & Modifiers.CAPTURED) != 0)
+            return global.definitions.refType(tp1);
         else return tp1;
     }
 
@@ -149,12 +150,6 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
         }
         return fv;
         //throw new ApplicationError("proxy " + fv + " in " + owner);
-    }
-
-    /** The type scala.Ref[tp]
-     */
-    Type refType(Type tp) {
-        return Type.appliedType(global.definitions.REF_TYPE, new Type[]{tp});
     }
 
     public Checker[] postCheckers(Global global) {

@@ -14,6 +14,8 @@ public class Names {
     private static final String LOCAL_PREFIX = "local$";
     private static final String OUTER_PREFIX = "outer$";
     private static final String SUPER_PREFIX = "super$";
+    private static final String TUPLE_FIELD_PREFIX = "_";
+    private static final String scala_Tuple_PREFIX = "scala.Tuple";
     private static final String scala_Function_PREFIX = "scala.Function";
 
     public static Name LOCAL(Symbol clasz) {
@@ -38,6 +40,14 @@ public class Names {
 
     public static Name SUPER(Symbol method) {
         return Name.fromString(SUPER_PREFIX + method.name);
+    }
+
+    public static Name TUPLE_FIELD(int index) {
+        return Name.fromString(TUPLE_FIELD_PREFIX + index);
+    }
+
+    public static Name scala_Tuple(int arity) {
+        return Name.fromString(scala_Tuple_PREFIX + arity);
     }
 
     public static Name scala_Function(int arity) {
@@ -106,6 +116,7 @@ public class Names {
     public static final Name box = Name.fromString("box");
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
+    public static final Name fail = Name.fromString("fail");
     public static final Name false_ = Name.fromString("false");
     public static final Name filter = Name.fromString("filter");
     public static final Name flatmap = Name.fromString("flatMap");
@@ -113,8 +124,10 @@ public class Names {
     public static final Name getClass = Name.fromString("getClass");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name hasNext = Name.fromString("hasNext");
+    public static final Name head = Name.fromString("head");
     public static final Name isInstanceOf = Name.fromString("isInstanceOf");
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
+    public static final Name isEmpty = Name.fromString("isEmpty");
     public static final Name java = Name.fromString("java");
     public static final Name java_lang = Name.fromString("java.lang");
     public static final Name java_lang_Object = Name.fromString("java.lang.Object");
@@ -149,6 +162,7 @@ public class Names {
     public static final Name scala_Iterator = Name.fromString("scala.Iterator");
     public static final Name scala_List = Name.fromString("scala.List");
     public static final Name scala_Long = Name.fromString("scala.Long");
+    public static final Name scala_MatchError = Name.fromString("scala.MatchError");
     public static final Name scala_Nil = Name.fromString("scala.Nil");
     public static final Name scala_Object = Name.fromString("scala.Object");
     public static final Name scala_PartialFunction = Name.fromString("scala.PartialFunction");
@@ -163,6 +177,7 @@ public class Names {
     public static final Name scala_runtime_RunTime = Name.fromString("scala.runtime.RunTime");
     public static final Name eq = Name.fromString("eq");
     public static final Name equals = Name.fromString("equals");
+    public static final Name tail = Name.fromString("tail");
     public static final Name toString = Name.fromString("toString");
     public static final Name that = Name.fromString("that");
     public static final Name that1 = Name.fromString("that1");

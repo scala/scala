@@ -192,15 +192,15 @@ public class RightTracerInScala extends TracerInScala  {
 	}
 
 
-	Tree t3 = cf.If( cf.isEmpty( _iter() ),
-			 run_finished( 0 ),
-			 gen.mkBlock( new Tree[] {
-			     gen.ValDef( targetSym,
-					 cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
-			     gen.ValDef( elemSym,
-					 cf.SeqTrace_headElem( gen.Ident( pos, iterSym))),
+	Tree t3 = gen.If( cf.isEmpty( _iter() ),
+			  run_finished( 0 ),
+			  gen.mkBlock( new Tree[] {
+			      gen.ValDef( targetSym,
+					  cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
+			      gen.ValDef( elemSym,
+					  cf.SeqTrace_headElem( gen.Ident( pos, iterSym))),
 
-			     body }));
+			      body }));
 
 	/*
 	  t3 = gen.mkBlock( new Tree[] {
@@ -231,17 +231,17 @@ public class RightTracerInScala extends TracerInScala  {
 	    Integer targetL  = (Integer) it.next();
 	    Integer targetR  = (Integer) hmap.get( targetL );
 
-	    stateBody = cf.If( cf.Equals( gen.Ident( pos, targetSym ),
-					  gen.mkIntLit( cf.pos, targetL )),
-			       callFun( new Tree[] {
-				   cf.SeqTrace_tail( _iter() ),
-				   gen.mkIntLit( cf.pos, targetR ) }),
-			       stateBody );
+	    stateBody = gen.If( cf.Equals( gen.Ident( pos, targetSym ),
+					   gen.mkIntLit( cf.pos, targetL )),
+			        callFun( new Tree[] {
+				    cf.SeqTrace_tail( _iter() ),
+				    gen.mkIntLit( cf.pos, targetR ) }),
+			        stateBody );
 	}
 
-	return cf.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, 0 )),
-		      stateBody ,
-		      elseBody );
+	return gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, 0 )),
+		       stateBody ,
+		       elseBody );
 
     }
 
@@ -272,15 +272,15 @@ public class RightTracerInScala extends TracerInScala  {
 
 	    if( action != null ) {
 
-		stateBody = cf.If( _cur_eq( _iter(), (Label) label ),
-				   action,
-				   stateBody);
+		stateBody = gen.If( _cur_eq( _iter(), (Label) label ),
+				    action,
+				    stateBody);
 	    }
 	}
 
-	return cf.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
-		      stateBody ,
-		      elseBody );
+	return gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
+		       stateBody ,
+		       elseBody );
     }
 
     /** returns a Tree whose type is boolean.

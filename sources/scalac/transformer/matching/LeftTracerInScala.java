@@ -184,17 +184,17 @@ public class LeftTracerInScala extends TracerInScala {
 	    Tree action = code_delta( i, (Label) label );
 
 	    if( action != null ) {
-		stateBody = cf.If( _cur_eq( _iter(), (Label) label ),
-				   action,
-				   stateBody);
+		stateBody = gen.If( _cur_eq( _iter(), (Label) label ),
+				    action,
+				    stateBody);
 	    }
 	}
-	stateBody = cf.If( cf.Negate( gen.Ident( cf.pos, hasnSym )),
-			   runFinished,
-			   stateBody );
-	return cf.If( cf.Equals( _state(), gen.mkIntLit(cf.pos, i )),
-		      stateBody ,
-		      elseBody );
+	stateBody = gen.If( cf.Negate( gen.Ident( cf.pos, hasnSym )),
+			    runFinished,
+			    stateBody );
+	return gen.If( cf.Equals( _state(), gen.mkIntLit(cf.pos, i )),
+		       stateBody ,
+		       elseBody );
     }
 
     Tree[] getTrace() {

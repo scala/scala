@@ -679,7 +679,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    gen.mkRef(clazz.pos, Type.localThisType, that1sym), 0));
 	    for (int i = 1; i < fields.length; i++) {
 		cmp = gen.Apply(
-		    gen.Select(cmp, defs.AMPAMP()),
+		    gen.Select(cmp, defs.BOOLEAN_AND()),
 		    new Tree[]{
 			eqOp(
 			    fields[i],

@@ -9,12 +9,10 @@
 package scalac.transformer.matching;
 
 
-import scalac.*;
-import scalac.ast.*;
+import scalac.Unit;
+import scalac.ast.TreeGen;
 import scalac.util.*;
 import scalac.symtab.*;
-import PatternNode.*;
-import Tree.*;
 
 /** this class takes care of tedious stuff which has nothing to do with
  *  matching
@@ -26,7 +24,6 @@ abstract class PatternTool {
     public static final Name BOOLEAN_N = Name.fromString("Boolean");
     public static final Name AND_N = Name.fromString("$amp$amp");
     public static final Name OR_N = Name.fromString("$bar$bar");
-    public static final Name NOT_N = Name.fromString("$bang");
     public static final Name EQUALS_N = Name.fromString("$eq$eq");
     public static final Name SCALA_MATCHERROR_N = Name.fromString("scala.MatchError");
     public static final Name MATCHERROR_N = Name.fromString("MatchError");
@@ -36,32 +33,19 @@ abstract class PatternTool {
 
     /** the current compilation unit
      */
-    Unit unit;
+    final Unit unit;
 
     /** the global fresh name creator
      */
-    FreshNameCreator fresh;
+    final FreshNameCreator fresh;
 
     /** the global definitions component
      */
-    Definitions defs;
+    final Definitions defs;
 
     /** the global tree generation component
      */
-    TreeGen gen;
-
-    /** the statics of class Boolean
-     */
-    Symbol statics; // REMOVE
-
-    /** the eqeq symbol
-     */
-    Symbol eqSymInt; // REMOVE
-    Symbol eqSymBool; // REMOVE
-
-    /** the eqeq symbol
-     */
-    Symbol notSym;
+    final TreeGen gen;
 
     // constructor
     public PatternTool( Unit unit ) {
@@ -69,10 +53,6 @@ abstract class PatternTool {
 	this.fresh = unit.global.freshNameCreator;
 	this.gen = unit.global.treeGen;
 	this.defs = unit.global.definitions;
-
-	this.notSym = defs.BOOLEAN_CLASS.lookup/*Term*/( NOT_N );
-	assert !(notSym instanceof NoSymbol) : " Boolean.! not found ";
-
-    } // PatternTool( Unit unit, .... )
+    }
 
 } // class PatternTool

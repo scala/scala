@@ -686,7 +686,7 @@ public class PatternMatcher extends PatternTool {
     	else if (ncases == 1) {
     		switch (root.and.or) {
     			case ConstantPat(Object value):
-    				return cf.If(
+    				return gen.If(
     					cf.Equals(selector,
     						gen.mkLit(root.and.or.pos, value)),
     					bodyToTree(root.and.or.and),
@@ -921,7 +921,7 @@ public class PatternMatcher extends PatternTool {
                                     gen.Select(
                                         gen.mkAsInstanceOf(
                                             selector.duplicate(), node.type),
-                                        cf.seqListSym_length())),
+                                        defs.SEQ_LENGTH())),
                                 gen.mkIntLit(selector.pos, len))),
                         gen.mkBlock(
                             new Tree[]{
