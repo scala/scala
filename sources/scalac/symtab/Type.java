@@ -1994,7 +1994,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return "<notype>";
 	case ThisType(Symbol sym):
 	    if (sym.isRoot()) return "<root>.this.type";
-	    else if (this == localThisType) return "<local>.this.type";
+	    else if (isSameAs(localThisType)) return "<local>.this.type";
 	    else {
 		Type this1 = (Global.instance.debug) ? this : expandModuleThis();
 		if (this1 == this) return sym.nameString() + ".this.type";
@@ -2072,7 +2072,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     private String prefixString() {
-	if ((this == localThisType || symbol().isRoot()) && !Global.instance.debug) {
+	if ((isSameAs(localThisType) || symbol().isRoot()) && !Global.instance.debug) {
 	    return "";
 	} else {
 	    String spre = toString();

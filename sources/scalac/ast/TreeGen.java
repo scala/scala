@@ -64,7 +64,7 @@ public class TreeGen implements Kinds, Modifiers {
     }
 
     public Tree mkRef(int pos, Type pre, Symbol sym) {
-	if (pre == Type.localThisType || pre.symbol().isRoot())
+	if (pre.isSameAs(Type.localThisType) || pre.symbol().isRoot())
 	    return Ident(pos, sym);
 	else
 	    return Select(pos, mkStableId(pos, pre), sym);
