@@ -21,6 +21,7 @@ import scalac.ast.Tree;
 import scalac.ast.TreeList;
 import scalac.atree.AConstant;
 import Tree.*;
+import scalac.symtab.AttrInfo;
 import scalac.symtab.Symbol;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Modifiers;
@@ -38,6 +39,7 @@ import ch.epfl.lamp.compiler.msil.emit.*;
 
 import Item.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -170,38 +172,47 @@ public final class GenMSIL {
     /** The method that is currently being compiled. */
     private MethodBase currentMethod;
 
+
+    private static final byte[] NO_SYMTAB = new byte[] {1, 0, 0, 0};
     /*
      * Emit the symbol table for the class given class as an MSIL attribute.
      */
     private void emitSymtab(Symbol clazz) {
+        ConstructorInfo symtabConstr = tc.SYMTAB_DEFAULT_CONSTR;
+        byte[] symtab = null;
 	Pickle pickle = (Pickle)global.symdata.get(clazz);
-        if (pickle != null) {
-	    byte[] symtab = new byte[pickle.size() + 8];
+        if (pickle == null) {
+            symtab = NO_SYMTAB;
+        } else {
+            symtabConstr = tc.SYMTAB_CONSTR;
+	    symtab = new byte[pickle.size() + 8];
 	    symtab[0] = 1;
 	    for (int size = pickle.size(), i = 2; i < 6; i++) {
 		symtab[i] = (byte)(size & 0xff);
 		size >>= 8;
 	    }
 	    System.arraycopy(pickle.bytes, 0, symtab, 6, pickle.size());
-	    TypeBuilder type = (TypeBuilder) tc.getType(clazz);
-	    if (clazz.isModuleClass()) {
-		TypeBuilder t = tc.getStaticType(clazz);
-		if (t != null) {
-		    type = t;
-		    if (global.args.debuginfo.value)
-			type.setPosition(Position.line(clazz.pos), getSourceFilename());
-		}
-	    }
-	    type.SetCustomAttribute(tc.SCALA_SYMTAB_ATTR_CONSTR, symtab);
-	}
+        }
+        TypeBuilder type = (TypeBuilder) tc.getType(clazz);
+        if (clazz.isModuleClass()) {
+            TypeBuilder t = tc.getStaticType(clazz);
+            if (t != null) {
+                type.SetCustomAttribute(tc.SYMTAB_DEFAULT_CONSTR, NO_SYMTAB);
+                type = t;
+                if (global.args.debuginfo.value)
+                    type.setPosition(Position.line(clazz.pos), getSourceFilename());
+            }
+        }
+        type.SetCustomAttribute(symtabConstr, symtab);
     }
 
     /*
      * Generate the code for a class definition
      */
     private void genClass(Symbol clazz, Tree[] body) {
-        //Object o = global.mapSymbolAttr.get(clazz);
-        //System.out.println("[" + o + "]" + Debug.show(clazz));
+//         AttrInfo attrs = global.getAttributes(clazz);
+//         if (attrs != null)
+//             System.out.println("" + attrs + Debug.show(clazz));
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
 	if (clazz.isModuleClass()) {
@@ -268,6 +279,9 @@ public final class GenMSIL {
      * Generate code for constructors and methods.
      */
     private void genDef(Symbol sym, ValDef[] parameters, Tree rhs, MSILType toType) {
+//         AttrInfo attrs = global.getAttributes(sym);
+//         if (attrs != null)
+//             System.out.println("" + attrs + Debug.show(sym));
 	MethodBase method = tc.getMethod(sym);
 
 	params.clear();

@@ -70,9 +70,11 @@ public final class CLRTypes {
     public final Type STRING;
     public final Type STRING_ARRAY;
 
-    public final Type SCALA_SYMTAB_ATTR;
-
     public final Type PICO_META_ATTR;
+
+    public final Type SCALA_SYMTAB_ATTR;
+    public final ConstructorInfo SYMTAB_CONSTR;
+    public final ConstructorInfo SYMTAB_DEFAULT_CONSTR;
 
     private final SymbolNameWriter snw = new SymbolNameWriter();
 
@@ -110,10 +112,15 @@ public final class CLRTypes {
 	STRING = getType("System.String");
 	STRING_ARRAY = getType("System.String[]");
 
-	SCALA_SYMTAB_ATTR = Type.GetType("scala.runtime.SymtabAttribute");
         PICO_META_ATTR = Type.GetType("scala.runtime.MetaAttribute");
+	SCALA_SYMTAB_ATTR = Type.GetType("scala.runtime.SymtabAttribute");
+        final Type[] bytearray = new Type[]{ Type.GetType("System.Byte[]") };
+	SYMTAB_CONSTR = SCALA_SYMTAB_ATTR.GetConstructor(bytearray);
+        SYMTAB_DEFAULT_CONSTR =
+            SCALA_SYMTAB_ATTR.GetConstructor(Type.EmptyTypes);
 
         assert PICO_META_ATTR != null;
+        assert SCALA_SYMTAB_ATTR != null;
 
 	Type[] types = Type.EmptyTypes;
 	Iterator as = assemblies.iterator();

@@ -13,6 +13,8 @@ namespace scala.runtime
          AllowMultiple = false, Inherited = false)]
     public class MetaAttribute : Attribute
     {
+        // keeps a textual representation of the pico-style attributes
+        // used in some classes of the runtime library
         public readonly string meta;
         public MetaAttribute(string meta)
         {

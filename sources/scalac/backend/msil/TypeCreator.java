@@ -115,7 +115,8 @@ final class TypeCreator {
     public Symbol SYM_COMPARE_TO_IGNORE_CASE;
     public MethodInfo COMPARE_TO_IGNORE_CASE;
 
-    public ConstructorInfo SCALA_SYMTAB_ATTR_CONSTR;
+    public ConstructorInfo SYMTAB_CONSTR;
+    public ConstructorInfo SYMTAB_DEFAULT_CONSTR;
 
     private scalac.symtab.Type MAIN_METHOD_TYPE;
 
@@ -193,7 +194,6 @@ final class TypeCreator {
 	    return;
 	final Symbol JOBJECT = defs.OBJECT_CLASS; //defs.getClass("java.lang.Object");
 	final Symbol JSTRING = defs.STRING_CLASS;
-
 
 	// initialize type mappings
 	map(defs.ANY_CLASS, OBJECT);
@@ -289,7 +289,8 @@ final class TypeCreator {
 	    STRING.GetMethod("Compare", new Type[]{STRING, STRING, BOOLEAN});
 	initialized = true;
 
-	SCALA_SYMTAB_ATTR_CONSTR = ti.SCALA_SYMTAB_ATTR.GetConstructors()[0];
+	SYMTAB_CONSTR = ti.SYMTAB_CONSTR;
+        SYMTAB_DEFAULT_CONSTR = ti.SYMTAB_DEFAULT_CONSTR;
 
         scalac.symtab.Type argument = defs.array_TYPE(defs.STRING_TYPE());
         scalac.symtab.Type result = defs.void_TYPE();

@@ -115,7 +115,9 @@ public final class CLRPackageParser extends PackageParser {
                     (clrTypes.SCALA_SYMTAB_ATTR, false);
                 assert attrs.length == 1 : attrs.length;
                 Attribute a = (Attribute)attrs[0];
-               assert a.GetType() == clrTypes.SCALA_SYMTAB_ATTR : a.toString();
+                assert a.GetType() == clrTypes.SCALA_SYMTAB_ATTR : a.toString();
+                if (a.getConstructor() == clrTypes.SYMTAB_DEFAULT_CONSTR)
+                    continue;
                 byte[] symtab = (byte[])a.getConstructorArguments()[0];
                 symfile = new ByteArrayFile
                     (type.FullName, "[" + type.Assembly().GetName() + "]",
