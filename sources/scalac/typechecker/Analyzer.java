@@ -1736,9 +1736,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    //   desugarizing ident patterns
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
-		assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
-		if (( mode & PATTERNmode ) != 0 )
+		if (( mode & PATTERNmode ) != 0 ) {
 		    desug_allIdentPatterns( args, context.owner );
+		} else {
+		    assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
+		}
 	    }
 	    return argtypes;
 
@@ -2602,29 +2604,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                     trees[i] = gen.Ident(trees[i].pos, definitions.PATTERN_WILDCARD);
                 }
 	    }
-    }
-
-
-    // get first elementary type in a sequence
-    // precondition: tree is successor of a sequence node
-
-    Type revealSeqOrElemType( Tree tree, Type proto, Type seqType, Type elemType ) {
-	switch( tree ) {
-	    //case Subsequence(_): NEW
-	    //return proto; NEW
-	case Sequence(_):
-	    return elemType;
-	case Alternative( Tree[] choices ):
-	    // after normalization, choices.length >= 2
-	    // and if there is one subsequence branch, all
-	    // branches are subsequence nodes
-	    return revealSeqOrElemType( choices[ 0 ], proto, seqType, elemType );
-	case Bind( _, Tree body ):
-	    // here, we forget the (concrete) prototype (if we have one)
-	    return revealSeqOrElemType( body, seqType, seqType, elemType );
-	default:
-	    return elemType;
-	}
     }
 
 }
