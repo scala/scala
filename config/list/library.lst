@@ -165,6 +165,7 @@ runtime/matching/TestAlphabet.scala
 text/Document.scala
 
 testing/UnitTest.scala
+testing/SUnit.scala
 
 util/alphabet/Alphabet.scala
 util/alphabet/AlphabetPlusWildcard.scala
