@@ -7,13 +7,14 @@ bugs/index.html
 
 community/index.html
 
+css/acrobat.css
 css/index.html
 css/print.css
 css/screen.css
 
 docu/index.html
 docu/rationale.html
-#docu/related.html
+docu/related.html
 
 downloads/changes.html
 downloads/index.html
