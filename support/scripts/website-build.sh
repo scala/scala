@@ -144,14 +144,14 @@ function website-build-installers-add-installers() {
     fi;
 
     local -a add=($program-add-installer "$installerdir");
-    "${add[@]}" "Java/install.jar"         "other"   "Java Installer";
-    "${add[@]}" "GenericUnix/install.bin"  "unix"    "GenericUnix Installer";
-    "${add[@]}" "AIX/NoVM/install.bin"     "aix"     "AIX Installer";
-    "${add[@]}" "Linux/NoVM/install.bin"   "linux"   "Linux Installer";
-    "${add[@]}" "Solaris/NoVM/install.bin" "solaris" "Solaris Installer";
-    "${add[@]}" "HPUX/NoVM/install.bin"    "hp"      "HPUX Installer";
     "${add[@]}" "Windows/NoVM/install.exe" "win"     "Windows Installer";
     "${add[@]}" "MacOSX/install.zip"       "macosx"  "MacOSX Installer";
+    "${add[@]}" "Linux/NoVM/install.bin"   "linux"   "Linux Installer";
+    "${add[@]}" "Solaris/NoVM/install.bin" "solaris" "Solaris Installer";
+    "${add[@]}" "AIX/NoVM/install.bin"     "aix"     "AIX Installer";
+    "${add[@]}" "HPUX/NoVM/install.bin"    "hp"      "HPUX Installer";
+    "${add[@]}" "GenericUnix/install.bin"  "unix"    "GenericUnix Installer";
+    "${add[@]}" "Java/install.jar"         "other"   "Java Installer";
 }
 
 function website-build-installers-add-archive() {
@@ -201,11 +201,15 @@ function website-build-installers() {
     start=$[${start%%:*} + 3];
     end=$[${end%%:*} - 2];
 
-    echo ""
-    echo "<params>"
+    echo "";
+    echo "<webinstaller>";
+    echo "";
+    echo "<params>";
     head -$end "$installhtm" | tail -$[$end - $start] \
         | sed '-es/[	 ]*//' '-es!>$!/>!' '-e/^$/d';
-    echo "</params>"
+    echo "</params>";
+    echo "";
+    echo "</webinstaller>";
 }
 
 ##############################################################################
@@ -240,9 +244,15 @@ function website-build() {
         abort "could not find directory '$archivedir'";
     fi;
 
+    echo "<website>";
+    echo "";
+    echo "<version>$current</version>";
+    echo "";
     $program-distributions "$archivedir";
     echo "";
     $program-installers "$archivedir/scala-$current";
+    echo "";
+    echo "</website>";
 }
 
 ##############################################################################
