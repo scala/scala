@@ -6,16 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $OldId: AnyVal.java,v 1.4 2002/11/13 15:24:42 schinz Exp $
 // $Id$
 
 package scala;
 
-/** @meta class extends scala.Any;
- */
-public abstract class AnyVal {
-    /** @meta constr();
-     */
-    public AnyVal() {
-    }
-}
+/** @meta class extends scala.Any; */
+public abstract class AnyVal {}

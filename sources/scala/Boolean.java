@@ -39,7 +39,7 @@ public abstract class Boolean extends AnyVal {
 
 
 
-
+    public String  $plus      (String  that) { return  value +  that; }
 
     public boolean $eq$eq     (boolean that) { return  value == that; }
     public boolean $bang$eq   (boolean that) { return  value != that; }

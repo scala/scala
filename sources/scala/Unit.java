@@ -34,4 +34,11 @@ public abstract class Unit    extends AnyVal {
     /** @meta method (scala.Any)scala.Boolean; */
     public boolean $bang$eq(java.lang.Object other) { return !equals(other); }
 
+
+
+
+
+
+    public String  $plus      (String  that) { return  this  +  that; }
+
 }
