@@ -19,6 +19,12 @@ EMACS_ROOT		 = $(PROJECT_SUPPORTDIR)/emacs
 EMACS_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/emacs.lst)
 EMACS_FILES		 = $(EMACS_LIST:%=$(EMACS_ROOT)/%)
 
+# gedit scala-mode
+GEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/gedit
+GEDIT_LIST		+= scala.lang
+GEDIT_LIST		+= README
+GEDIT_FILES		 = $(GEDIT_LIST:%=$(GEDIT_ROOT)/%)
+
 # jedit scala-mode
 JEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/jedit
 JEDIT_LIST		+= scala.xml
@@ -113,6 +119,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/emacs
 	$(strip $(MIRROR) -m 644 -p -C $(EMACS_ROOT) $(EMACS_LIST) \
 	    $(INSTALL_SUPPORTDIR)/emacs)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/gedit
+	$(strip $(MIRROR) -m 644 -p -C $(GEDIT_ROOT) $(GEDIT_LIST) \
+	    $(INSTALL_SUPPORTDIR)/gedit)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/jedit
 	$(strip $(MIRROR) -m 644 -p -C $(JEDIT_ROOT) $(JEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/jedit)
