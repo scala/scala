@@ -376,6 +376,20 @@ class GenJVM {
                     generatedType = JType.INT;
                     break;
 
+                case B2B: case B2S: case B2C: case B2I: case B2L: case B2F: case B2D:
+                case S2B: case S2S: case S2C: case S2I: case S2L: case S2F: case S2D:
+                case C2B: case C2S: case C2C: case C2I: case C2L: case C2F: case C2D:
+                case I2B: case I2S: case I2C: case I2I: case I2L: case I2F: case I2D:
+                case L2B: case L2S: case L2C: case L2I: case L2L: case L2F: case L2D:
+                case F2B: case F2S: case F2C: case F2I: case F2L: case F2F: case F2D:
+                case D2B: case D2S: case D2C: case D2I: case D2L: case D2F: case D2D:
+                    assert args.length == 1 : args.length;
+                    JType fromType = typeStoJ(args[0].type);
+                    genLoad(ctx, args[0], fromType);
+                    ctx.code.emitT2T(fromType, expectedType);
+                    generatedType = expectedType;
+                    break;
+
                 default:
                     throw Debug.abort("unknown primitive ", prim);
                 }
@@ -575,7 +589,7 @@ class GenJVM {
         } else if (! (expectedType == JType.VOID
                       || generatedType == expectedType
                       || generatedType.isReferenceType()))
-            genWidenConversion(ctx, generatedType, expectedType);
+            ctx.code.emitT2T(generatedType, expectedType);
 
         endCodeForTree(ctx, tree);
         return expectedType;
@@ -969,25 +983,6 @@ class GenJVM {
         ctx.code.emitATHROW();
     }
 
-    protected JOpcode[][] WIDENING_CONVERSION_TABLE = {
-        /*               bool  int   long         float        double */
-        /* boolean */  { null, null, null,        null,        null   },
-        /* int ... */  { null, null, JOpcode.I2L, JOpcode.I2F, JOpcode.I2D },
-        /* long */     { null, null, null,        JOpcode.L2F, JOpcode.L2D },
-        /* float */    { null, null, null,        null,        JOpcode.F2D },
-        /* double */   { null, null, null,        null,        null   }
-    };
-
-    protected void genWidenConversion(Context ctx, JType from, JType to) {
-        int fromIdx = getTypeIndex(from);
-        int toIdx = getTypeIndex(to);
-
-        assert (fromIdx <= 4 && toIdx <= 4) : from + " -> " + to;
-        JOpcode instr = WIDENING_CONVERSION_TABLE[fromIdx][toIdx];
-        if (instr != null)
-            ctx.code.emit(instr);
-    }
-
     /// Arrays
     //////////////////////////////////////////////////////////////////////
 
@@ -1168,6 +1163,13 @@ class GenJVM {
             case IS : case AS : case ID :
             case CONCAT :
             case THROW :
+            case B2B: case B2S: case B2C: case B2I: case B2L: case B2F: case B2D:
+            case S2B: case S2S: case S2C: case S2I: case S2L: case S2F: case S2D:
+            case C2B: case C2S: case C2C: case C2I: case C2L: case C2F: case C2D:
+            case I2B: case I2S: case I2C: case I2I: case I2L: case I2F: case I2D:
+            case L2B: case L2S: case L2C: case L2I: case L2L: case L2F: case L2D:
+            case F2B: case F2S: case F2C: case F2I: case F2L: case F2F: case F2D:
+            case D2B: case D2S: case D2C: case D2I: case D2L: case D2F: case D2D:
                 return true;
 
             case EQUALS  :
@@ -1177,13 +1179,6 @@ class GenJVM {
             case BOX :
             case UNBOX :
             case APPLY : case UPDATE : case LENGTH :
-            case B2B:case B2S:case B2C:case B2I:case B2L:case B2F:case B2D:
-            case S2B:case S2S:case S2C:case S2I:case S2L:case S2F:case S2D:
-            case C2B:case C2S:case C2C:case C2I:case C2L:case C2F:case C2D:
-            case I2B:case I2S:case I2C:case I2I:case I2L:case I2F:case I2D:
-            case L2B:case L2S:case L2C:case L2I:case L2L:case L2F:case L2D:
-            case F2B:case F2S:case F2C:case F2I:case F2L:case F2F:case F2D:
-            case D2B:case D2S:case D2C:case D2I:case D2L:case D2F:case D2D:
                 return false;
             default:
                 throw Debug.abort("unknown primitive", sym);
