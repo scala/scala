@@ -361,7 +361,9 @@ class GenJVM {
                 for (int i = 0; i < args.length; ++i)
                     genLoad(ctx, args[i], argTypes[i]);
 
-                String clsName = javaName(funSym.owner());
+                String clsName = isSuperCall
+                    ? ctx.clazz.getSuperclassName()
+                    : javaName(funSym.owner());
                 String mthName = funSym.name.toString();
 
                 if (funSym.owner().isInterface())
