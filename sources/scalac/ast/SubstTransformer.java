@@ -147,16 +147,12 @@ public class SubstTransformer extends Transformer {
     //   2. types reflect the ones in symbols.
     //   3. modifiers reflect the ones in symbols.
     public Tree syncTree(Tree tree) {
-        Name newName = null;
         Type newType = null;
-        int newMods = -1;
 
+        Symbol sym = null;
         if (tree.hasSymbol()) {
-            Symbol sym = tree.symbol();
-
-            newName = sym.name;
+            sym = tree.symbol();
             newType = smApplier.apply(typeMap.apply(sym.nextInfo()));
-            newMods = sym.flags;
         }
 
         // !!! Do we really need to copy ? transformer's copier is strict so
@@ -169,19 +165,17 @@ public class SubstTransformer extends Transformer {
                       Tree tpe,
                       Tree.Template impl) :
             return simpleCopy
-                .ClassDef(tree, newMods, newName, tparams, vparams, tpe, impl);
+                .ClassDef(tree, sym, tparams, vparams, tpe, impl);
 
         case ModuleDef(_, _, Tree tpe, Template impl):
             return simpleCopy.ModuleDef(tree,
-                                        newMods,
-                                        newName,
+                                        sym,
                                         gen.mkType(tpe.pos, newType),
                                         impl);
 
         case ValDef(int mods, Name name, Tree tpe, Tree rhs):
             return simpleCopy.ValDef(tree,
-                                     newMods,
-                                     newName,
+                                     sym,
                                      gen.mkType(tpe.pos, newType),
                                      rhs);
 
@@ -192,18 +186,17 @@ public class SubstTransformer extends Transformer {
                     Tree tpe,
                     Tree rhs):
             return simpleCopy.DefDef(tree,
-                                     newMods,
-                                     newName,
+                                     sym,
                                      tparams,
                                      vparams,
                                      gen.mkType(tpe.pos, newType.resultType()),
                                      rhs);
 
         case Select(Tree qualifier, _):
-            return simpleCopy.Select(tree, qualifier, newName);
+            return simpleCopy.Select(tree, sym, qualifier);
 
         case Ident(_):
-            return simpleCopy.Ident(tree, newName);
+            return simpleCopy.Ident(tree, sym);
 
             // TODO add a case for TypeDef?
 

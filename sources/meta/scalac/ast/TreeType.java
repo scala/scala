@@ -14,15 +14,14 @@ import meta.java.Type;
 public class TreeType extends Type {
 
     //########################################################################
-    // Public Constants
+    // Private Constants
 
-    // !!!
-    public static final String NAME_PACKAGE  = "scalac.util";
-    public static final String NAME_NAME     = "Name";
-    public static final String NAME_FULLNAME = NAME_PACKAGE + "." + NAME_NAME;
-    public static final String TREE_PACKAGE  = meta.scalac.ast.Tree.PACKAGE;
-    public static final String TREE_NAME     = meta.scalac.ast.Tree.NAME;
-    public static final String TREE_FULLNAME = TREE_PACKAGE + "." + TREE_NAME;
+    private static final String NAME_PACKAGE  = "scalac.util";
+    private static final String NAME_NAME     = "Name";
+    private static final String NAME_FULLNAME = NAME_PACKAGE + "." + NAME_NAME;
+    private static final String TREE_PACKAGE  = "scalac.ast";
+    private static final String TREE_NAME     = "Tree";
+    private static final String TREE_FULLNAME = TREE_PACKAGE + "." + TREE_NAME;
 
     //########################################################################
     // Public Cases

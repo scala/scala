@@ -327,30 +327,28 @@ public class Erasure extends Transformer implements Modifiers {
 	assert tree.type != null : tree;
 	Type owntype = eraseFully ? tree.type.fullErasure() : tree.type.erasure();
 	switch (tree) {
-	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
             Symbol oldCurrentClass = currentClass;
             currentClass = tree.symbol();
             Tree newTree =
-                copy.ClassDef(tree, mods, name, new TypeDef[0],
+                copy.ClassDef(tree, new TypeDef[0],
                               transform(vparams), tpe, transform(impl, tree.symbol()))
 		.setType(owntype);
             currentClass = oldCurrentClass;
             return newTree;
 
-	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    addBridges(tree.symbol());
 	    Tree tpe1 = gen.mkType(tpe.pos, tpe.type.fullErasure());
 	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
 	    return copy.DefDef(
-		tree, mods, name, new TypeDef[0], transform(vparams), tpe1, rhs1)
+		tree, new TypeDef[0], transform(vparams), tpe1, rhs1)
 		.setType(owntype);
 
-	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
+	case ValDef(_, _, Tree tpe, Tree rhs):
 	    Tree tpe1 = transform(tpe);
 	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
-	    return copy.ValDef(
-		tree, mods, name, tpe1, rhs1)
-		.setType(owntype);
+	    return copy.ValDef(tree, tpe1, rhs1).setType(owntype);
 
 	case TypeDef(_, _, _):
 	    // eliminate
@@ -537,12 +535,13 @@ public class Erasure extends Transformer implements Modifiers {
 	case Ident(_):
 	    tree1 = tree;
 	    break;
-	case Select(Tree qual, Name name):
+	case Select(Tree qual, _):
+            Symbol sym = tree.symbol();
 	    Tree qual1 = transform(qual);
 	    if (isUnboxed(qual1.type))
-                if (!isUnboxedArray(qual1.type) || tree.symbol() == definitions.ARRAY_CLASS)
+                if (!isUnboxedArray(qual1.type) || sym == definitions.ARRAY_CLASS)
                     qual1 = box(qual1);
-	    tree1 = copy.Select(tree, qual1, name);
+	    tree1 = copy.Select(tree, sym, qual1);
 	    break;
 	default:
 	    throw Debug.abort("illegal case", tree);

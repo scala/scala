@@ -13,26 +13,38 @@ public class MetaLazyTreeCopier extends AbstractTreeMethodExpander {
     //########################################################################
     // Public Methods
 
-    public void printTreeMethod(TreeNode node) {
-        printTreeMethodHeader(node, tree.t_Tree + " tree");
-        writer.lbrace();
-        writer.println(node.name + " t = (" + node.name + ")tree;");
-        if (node.fields.length > 0) {
+    public void printTreeMethod(TreeNode node, boolean withSymbol) {
+        TreeField symbol = node.getSymbol();
+        node.printMethod(writer, tree.getFormal("tree"), withSymbol).lbrace();
+        if (!withSymbol && node.hasLinkedFields())
+            writer.println("assert tree.symbol() == null : "+
+                "\"tree's symbol is not null\";");
+        writer.print(node.getType(0)).print(" t = (").
+            print(node.getType(0)).println(")tree;");
+        TreeField[] fields = node.getFields(withSymbol);
+        // !!! why do we copy if there is no symbol and no field
+        if (withSymbol || node.fields.length > 0) {
             writer.print("if (").indent();
-            for (int i = 0; i < node.fields.length; i++) {
-                if (i > 0) writer.println(" &&");
-                String name = node.fields[i].name;
-                writer.print("t." + name + " == " + name);
+            if (withSymbol) writer.print("t.symbol() == " + symbol);
+            for (int i = 0; i < fields.length; i++) {
+                if (i > 0 ? true : withSymbol) writer.println(" &&");
+                writer.print("t." + fields[i] + " == " + fields[i]);
             }
             writer.println(")");
             writer.println("return t;").undent();
-            writer.print("t = copier." + node.name + "(");
-            node.printArgs(writer, "tree").println(");");
-            writer.println("t.type = tree.type;");
-            if (node.hasSymbol())writer.println("t.setSymbol(tree.symbol());");
         }
-        writer.println("return t;");
+        writer.print("return copier.");
+        node.printCall(writer, "tree", withSymbol).println(";");
         writer.rbrace();
+
+        if (withSymbol && node.hasLinkedFields()) {
+            node.printMethod(writer, tree.getFormal("tree"), false, true);
+            writer.lbrace();
+            symbol.print(writer, true).println(" = tree.symbol();");
+            node.printCall(writer.print("return "), "tree", true).println(";");
+            writer.rbrace();
+            return;
+        }
     }
 
     //########################################################################

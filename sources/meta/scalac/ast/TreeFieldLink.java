@@ -8,6 +8,8 @@
 
 package meta.scalac.ast;
 
+import meta.java.JavaWriter;
+
 /**
  * This class describes the possible links between a given field of a
  * tree and the symbol of that tree.
@@ -48,6 +50,10 @@ public class TreeFieldLink {
         default:
             throw new Error("unknown case: " + this);
         }
+    }
+
+    public JavaWriter print(JavaWriter writer, TreeField symbol) {
+        return writer.print(symbol.name).print('.').print(getLink());
     }
 
     //########################################################################

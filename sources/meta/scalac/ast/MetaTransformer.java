@@ -19,40 +19,52 @@ public class MetaTransformer extends AbstractTreeCaseExpander {
         if (node.fields == null) {
             writer.println("return tree;");
         } else {
-            writer.print("return copy." + node + "(tree");
-            for (int i = 0; i < node.fields.length; i++) {
-                writer.print(", ");
-                if (Tree.isTree(node.fields[i].type))
-                    writer.print("transform(" + node.fields[i] + ")");
-                else
-                    writer.print(node.fields[i].name);
+            if (node.hasSymbol()) {
+                writer.print("if (tree.symbol() != null)").lbrace();
+                printTransformNode(node, true);
+                writer.undent().print("} else").lbrace();
             }
-            writer.println(");");
+            printTransformNode(node, false);
+            if (node.hasSymbol()) writer.rbrace();
         }
     }
 
-    public void printTransformArrays() {
-        printTransformArrayOf(tree.t_Tree, false);
-        printTransformArrayOf(tree.t_Trees, false);
-        for (int i = 0; i < tree.nodes.length; i++)
-            for (int j = 0; j < tree.nodes[i].arrays; j++)
-                printTransformArrayOf(tree.nodes[i].getType(j), j == 0);
+    public void printTransformNode(TreeNode node, boolean withSymbol) {
+        TreeField[] fields = node.getFields(withSymbol);
+        writer.print("return copy." + node + "(tree");
+        if (withSymbol) writer.print(", tree.symbol()");
+        for (int i = 0; i < fields.length; i++) {
+            writer.print(", ");
+            if (Tree.isTree(fields[i].type))
+                writer.print("transform(" + fields[i].name + ")");
+            else
+                writer.print(fields[i].name);
+        }
+        writer.println(");");
     }
 
-    public void printTransformArrayOf(Type type, boolean needCast) {
-        String cast = needCast ? "(" + type + ")" : "";
-        writer.print("public "+type+"[] transform("+type+"[] ts)");
-        writer.lbrace();
-        writer.print("for (int i = 0; i < ts.length; i++)");
-        writer.lbrace();
-        writer.println((needCast?tree.t_Tree:type)+" t = transform(ts[i]);");
-        writer.print("if (t != ts[i])");
-        writer.lbrace();
-        writer.println(type+"[] res = new "+type.newArray("[ts.length]")+";");
+    public void printTransformArrays() {
+        for (int j = 1; j <= tree.arrays; j++)
+            printTransformArray(tree.getType(j), false);
+        for (int i = 0; i < tree.nodes.length; i++)
+            for (int j = 1; j <= tree.nodes[i].arrays; j++)
+                printTransformArray(tree.nodes[i].getType(j), j == 1);
+    }
+
+    public void printTransformArray(Type type, boolean needCast) {
+        Type item = type.getItemType();
+        Type erased = needCast ? tree.getType(0) : item;
+        String cast = needCast ? "(" + item + ")" : "";
+        writer.print("public ").print(type).print(" transform").
+            print("(").print(type).print(" ts)").lbrace();
+        writer.print("for (int i = 0; i < ts.length; i++)").lbrace();
+        writer.println(erased + " t = transform(ts[i]);");
+        writer.print("if (t != ts[i])").lbrace();
+        writer.println(type+" res = new "+item.newArray("[ts.length]")+";");
         writer.println("System.arraycopy(ts, 0, res, 0, i);");
-        writer.println("res[i] = "+cast+"t;");
-        writer.println("for (int j = i + 1; j < ts.length; j++)");
-        writer.println("res[j] = "+cast+"transform(ts[j]);");
+        writer.println("res[i++] = "+cast+"t;");
+        writer.print("for (; i < ts.length; i++)").
+            println("res[i] = "+cast+"transform(ts[i]);");
         writer.println("return res;");
         writer.rbrace();
         writer.rbrace();

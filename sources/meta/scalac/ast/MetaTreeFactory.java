@@ -13,9 +13,8 @@ public class MetaTreeFactory extends AbstractTreeMethodExpander {
     //########################################################################
     // Public Methods
 
-    public void printTreeMethod(TreeNode node) {
-        printTreeMethodHeader(node, "int pos");
-        writer.println(";");
+    public void printTreeMethod(TreeNode node, boolean withSymbol) {
+        node.printMethod(writer, "int pos", withSymbol).println(";");
     }
 
     //########################################################################

@@ -16,20 +16,22 @@ public class MetaTree extends AbstractTreeExpander {
     // Public Methods
 
     public void printEmptyArrays() {
-        writer.print("public static final ");
-        writer.print(tree.t_Trees.toString());
-        writer.print(" EMPTY_ARRAY = new ").print(tree.NAME).println("[0];");
+        printEmptyArrays(tree.getType(0), "EMPTY", tree.arrays);
         for (int i = 0; i < tree.nodes.length; i++) {
             TreeNode node = tree.nodes[i];
-            for (int j = 1; j <= node.arrays; j++) {
-                writer.print("public static final ");
-                writer.print(node.getType(j).toString());
-                writer.space().print(node.name).print("_EMPTY");
-                for (int k = 0; k < j; k++) writer.print("_ARRAY");
-                writer.print(" = new ").print(node.name).print("[0]");
-                for (int k = 1; k < j; k++) writer.print("[]");
-                writer.println(";");
-            }
+            printEmptyArrays(node.getType(0), node + "_EMPTY", node.arrays);
+        }
+    }
+
+    public void printEmptyArrays(Type base, String prefix, int maxRank) {
+        Type type = base;
+        for (int rank = 1; rank <= maxRank; rank++) {
+            type = Type.Array(type);
+            writer.print("public static final ").print(type).print(" "+prefix);
+            for (int i = 0; i < rank; i++) writer.print("_ARRAY");
+            writer.print(" = new ").print(base).print("[0]");
+            for (int i = 1; i < rank; i++) writer.print("[]");
+            writer.println(";");
         }
     }
 
@@ -46,39 +48,38 @@ public class MetaTree extends AbstractTreeExpander {
             "- introduced by: " + node.start.name,
             "- eliminated by: " + node.stop.name,
         });
-        writer.print("public case ").print(node.name);
+        node.printDecl(writer.print("public case "), null, false);
         if (node.fields != null) {
-            node.printParams(writer.print("(")).print(")");
             writer.lbrace();
             writer.println("assert CheckTreeNodes.instance.checkNode(this);");
             writer.rbrace();
-        } else if (node == tree.n_Empty) {
-            writer.print("; static { "+node.name+".type = ").
-                print(tree.t_Type).println(".NoType; }");
         } else {
             writer.println(";");
         }
+        if (node == tree.n_Empty)
+            writer.print("static { " + node + ".type = Type.NoType; }");
         writer.println();
     }
 
     private String description(TreeKind kind) {
         switch (kind) {
-        case Any: return "this tree is of any kind";
+        case Any : return "this tree is of any kind";
         case Type: return "this tree is a type";
         case Term: return "this tree is a term";
         case Dual: return "this tree is a type or a term";
-        case Test: return "this tree is a type or a term (determined by the kind of the name field)";
+        case Test: return "this tree is a type or a term " +
+                       "(determined by the kind of the name field)";
         case None: return "this tree is neither a type nor a term";
-        default    : throw new Error(kind.getClass().getName());
+        default  : throw new Error(kind.getClass().getName());
         }
     }
 
     private String description(TreeSymbol symbol) {
         switch (symbol) {
-        case NoSym : return "this tree has no symbol";
-        case HasSym: return "this tree references a symbol";
-        case DefSym: return "this tree defines a symbol";
-        default    : throw new Error(symbol.getClass().getName());
+        case NoSym           : return "this tree has no symbol";
+        case HasSym(_, false): return "this tree references a symbol";
+        case HasSym(_, true ): return "this tree defines a symbol";
+        default              : throw new Error(symbol.getClass().getName());
         }
     }
 
@@ -88,9 +89,9 @@ public class MetaTree extends AbstractTreeExpander {
     }
 
     private void printIsKind(TreeNode[] nodes, TreeKind kind) {
-        writer.println("/** Returns true if this tree is a " + kind.toString().toLowerCase() + ". */");
-        writer.print("public boolean is" + kind + "()");
-        writer.lbrace();
+        writer.println("/** Returns true if this tree is a " +
+            kind.toString().toLowerCase() + ". */");
+        writer.print("public boolean is" + kind + "()").lbrace();
         writer.println("switch (this) {");
 
         for (int i = 0; i < nodes.length; i++)
@@ -136,62 +137,74 @@ public class MetaTree extends AbstractTreeExpander {
     }
 
     public void printExtClasses() {
-        for (int i = 0; i < tree.nodes.length; i++)
-            printExtTreeNode(tree.nodes[i]);
+        for (int i = 0;i < tree.nodes.length;i++) printExtClass(tree.nodes[i]);
     }
 
-    private void printExtTreeNode(TreeNode node) {
-        if (node.symbol == TreeSymbol.NoSym) return;
-        writer.print("public static class Ext"+node+" extends "+node);
-        writer.lbrace();
-        writer.print("private ").print(tree.t_Symbol).println(" symbol;");
+    private void printExtClass(TreeNode node) {
+        TreeField symbol = node.getSymbol();
+        if (symbol == null) return;
+        writer.print("public static class Ext"+node+" extends "+node).lbrace();
+        symbol.print(writer.print("private "), true).println(";");
         writer.println();
 
-        node.printParams(writer.print("public Ext"+node.name+"(")).print(")");
-        writer.lbrace();
-        node.printArgs(writer.print("super(")).println(");");
-        writer.rbrace();
+        printExtConstructor(node, false);
+        printExtConstructor(node, true);
         writer.println();
 
-        writer.print("public boolean hasSymbol()");
-        writer.lbrace();
+        writer.print("public boolean hasSymbol()").lbrace();
         writer.println("return true;");
         writer.rbrace();
         writer.println();
 
-        if (node.symbol == TreeSymbol.DefSym) {
-            writer.print("public boolean definesSymbol()");
-            writer.lbrace();
+        if (node.definesSymbol()) {
+            writer.print("public boolean definesSymbol()").lbrace();
             writer.println("return true;");
             writer.rbrace();
             writer.println();
         }
 
-        writer.print("public ").print(tree.t_Symbol).print(" symbol()");
+        writer.print("public ").print(symbol.type).print(" symbol()");
         writer.lbrace();
-        writer.println("return symbol;");
+        writer.println("return " + symbol + ";");
         writer.rbrace();
         writer.println();
 
-        writer.print("public Tree setSymbol(").print(tree.t_Symbol).print(" symbol)");
-        writer.lbrace();
-        writer.println("this.symbol = symbol;");
-        if (node.hasLinkedFields()) {
-            writer.print("if (symbol != null)").lbrace();
-            for (int i = 0; i < node.fields.length; i++) {
-                TreeField field = node.fields[i];
-                TreeFieldLink link = field.link;
-                if (link == null) continue;
-                writer.println("this."+field+" = symbol."+link.getLink()+";");
-            }
-            writer.rbrace();
+        writer.print("public ").print(tree.getType(0)).print(" setSymbol");
+        symbol.print(writer.print("("), true).print(")").lbrace();
+        printSetSymbol(symbol);
+        for (int i = 0; i < node.fields.length; i++) {
+            TreeField field = node.fields[i];
+            TreeFieldLink link = field.link;
+            if (link == null) continue;
+            link.print(writer.print("this."+field+" = "),symbol).println(";");
         }
         writer.println("return this;");
         writer.rbrace();
-        writer.println();
 
         writer.rbrace();
         writer.println();
+    }
+
+    private void printExtConstructor(TreeNode node, boolean withSymbol) {
+        node.printDecl(writer.print("public Ext"), null, withSymbol).lbrace();
+        TreeField symbol = node.getSymbol();
+        writer.print("super(");
+        for (int i = 0; i < node.fields.length; i++) {
+            if (i > 0) writer.print(", ");
+            if (withSymbol && node.fields[i].link != null) {
+                node.fields[i].link.print(writer, symbol);
+            } else {
+                writer.print(node.fields[i].name);
+            }
+        }
+        writer.println(");");
+        if (withSymbol) printSetSymbol(symbol);
+        writer.rbrace();
+    }
+
+    private void printSetSymbol(TreeField symbol) {
+        writer.println("assert " + symbol + " != null : \"null symbol\";");
+        writer.println("this." + symbol + " = " + symbol + ";");
     }
 
     //########################################################################

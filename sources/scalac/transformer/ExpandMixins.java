@@ -316,24 +316,24 @@ public class ExpandMixins extends Transformer {
 
     public Tree transform(Tree tree) {
         switch (tree) {
-        case ClassDef(int mods,
-                      Name name,
+        case ClassDef(_,
+                      _,
                       TypeDef[] tparams,
                       ValDef[][] vparams,
                       Tree tpe,
                       Template impl):
-            if (Modifiers.Helper.isInterface(mods))
+            Symbol sym = tree.symbol();
+            if (Modifiers.Helper.isInterface(sym.flags))
                 return super.transform(tree);
             else {
-                global.log("expanding " + name);
+                global.log("expanding " + sym);
 		Tree.ClassDef newClass = (Tree.ClassDef)
                     copy.ClassDef(tree,
-                                  mods,
-                                  name,
+                                  sym,
                                   super.transform(tparams),
                                   super.transform(vparams),
                                   super.transform(tpe),
-                                  getMixinExpandedTemplate(impl, tree.symbol()));
+                                  getMixinExpandedTemplate(impl, sym));
 		newClass.symbol().updateInfo(newClass.impl.type);
 		return newClass;
 	    }
@@ -342,7 +342,7 @@ public class ExpandMixins extends Transformer {
             Tree newTree = super.transform(tree);
 
             switch (newTree) {
-            case Apply(Select(Tree qualifier, Name selector), Tree[] args): {
+            case Apply(Select(Tree qualifier, _), Tree[] args): {
                 Tree fun = ((Tree.Apply)newTree).fun;
                 Symbol funOwnerSym = fun.symbol().owner();
                 Symbol qualSym = qualifier.type.symbol().moduleClass();
@@ -357,7 +357,7 @@ public class ExpandMixins extends Transformer {
                                                 }),
                                   Tree.EMPTY_ARRAY);
                     return copy.Apply(newTree,
-                                      copy.Select(fun, castQualifier, selector),
+                                      copy.Select(fun, castQualifier),
                                       args);
                 } else
                     return newTree;
@@ -411,7 +411,7 @@ public class ExpandMixins extends Transformer {
                     return super.transform(tree);
             }
 
-            case Select(Super(Tree tpe), Name selector): {
+            case Select(Super(Tree tpe), _): {
                 Symbol sym = tree.symbol();
                 if (mixedInSymbols.containsKey(sym))
                     return gen.Ident((Symbol)mixedInSymbols.get(sym));

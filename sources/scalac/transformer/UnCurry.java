@@ -72,26 +72,25 @@ public class UnCurry extends OwnerTransformer
 	//uncurry type and symbol
 	if (tree.type != null) tree.type = descr.uncurry(tree.type);
         switch (tree) {
-	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(
-		tree, mods, name, tparams,
+		tree, tree.symbol(), tparams,
 		uncurry(transform(vparams, tree.symbol())),
 		tpe,
 		transform(impl, tree.symbol()));
 
-	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Tree rhs1 = transform(rhs, tree.symbol());
 	    return copy.DefDef(
-		tree, mods, name, tparams,
+		tree, tree.symbol(), tparams,
 		uncurry(transform(vparams, tree.symbol())),
 		tpe, rhs1);
 
-	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
+	case ValDef(_, _, Tree tpe, Tree rhs):
 	    if (tree.symbol().isDefParameter()) {
-		int mods1 = mods & ~ DEF;
 		Type newtype = global.definitions.functionType(Type.EMPTY_ARRAY, tpe.type);
 		Tree tpe1 = gen.mkType(tpe.pos, newtype);
-		return copy.ValDef(tree, mods1, name, tpe1, rhs).setType(newtype);
+                return copy.ValDef(tree, tpe1, rhs).setType(newtype);
 	    } else {
 		return super.transform(tree);
 	    }

@@ -91,37 +91,47 @@ public class OwnerTransformer extends Transformer {
 	switch(tree) {
 	case PackageDef(Tree packaged, Template impl):
 	    return copy.PackageDef(
-		tree, transform(packaged), transform(impl, packaged.symbol()));
+		tree,
+                transform(packaged),
+                transform(impl, packaged.symbol()));
 
-	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+            Symbol symbol = tree.symbol();
 	    return copy.ClassDef(
-		tree, mods, name,
-		transform(tparams, tree.symbol().constructor()),
-		transform(vparams, tree.symbol().constructor()),
+		tree, symbol,
+		transform(tparams, symbol.constructor()),
+		transform(vparams, symbol.constructor()),
 		transform(tpe),
-		transform(impl, tree.symbol()));
+		transform(impl, symbol));
 
-	case ModuleDef(int mods, Name name, Tree tpe, Template impl):
+	case ModuleDef(_, _, Tree tpe, Template impl):
+            Symbol symbol = tree.symbol();
 	    return copy.ModuleDef(
-		tree, mods, name, transform(tpe),
-		transform(impl, tree.symbol().moduleClass()));
+		tree, symbol,
+                transform(tpe),
+		transform(impl, symbol.moduleClass()));
 
-	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+            Symbol symbol = tree.symbol();
 	    return copy.DefDef(
-		tree, mods, name,
-		transform(tparams, tree.symbol()),
-		transform(vparams, tree.symbol()),
-		transform(tpe, tree.symbol()),
-		transform(rhs, tree.symbol()));
+		tree, symbol,
+		transform(tparams, symbol),
+		transform(vparams, symbol),
+		transform(tpe, symbol),
+		transform(rhs, symbol));
 
-	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
+	case ValDef(_, _, Tree tpe, Tree rhs):
+            Symbol symbol = tree.symbol();
 	    return copy.ValDef(
-		tree, mods, name, transform(tpe),
-		transform(rhs, tree.symbol()));
+		tree, symbol,
+                transform(tpe),
+		transform(rhs, symbol));
 
-	case TypeDef(int mods, Name name, Tree rhs):
+	case TypeDef(_, _, Tree rhs):
+            Symbol symbol = tree.symbol();
 	    return copy.TypeDef(
-		tree, mods, name, transform(rhs, tree.symbol()));
+		tree, symbol,
+                transform(rhs, symbol));
 
 	default:
 	    return super.transform(tree);

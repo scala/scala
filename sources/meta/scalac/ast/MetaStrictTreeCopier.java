@@ -13,16 +13,30 @@ public class MetaStrictTreeCopier extends AbstractTreeMethodExpander {
     //########################################################################
     // Public Methods
 
-    public void printTreeMethod(TreeNode node) {
-        printTreeMethodHeader(node, tree.t_Tree + " tree");
-        writer.lbrace();
-        writer.print(node.name + " t = make." + node.name + "(");
-        node.printArgs(writer, "tree.pos").println(");");
+    public void printTreeMethod(TreeNode node, boolean withSymbol) {
+        TreeField symbol = node.getSymbol();
+        node.printMethod(writer, tree.getFormal("tree"), withSymbol).lbrace();
+        if (!withSymbol && node.hasLinkedFields())
+            writer.println("assert tree.symbol() == null : "+
+                "\"tree's symbol is not null\";");
+        writer.print(node.getType(0)).print(" t = make.");
+        node.printCall(writer, "tree.pos", withSymbol).println(";");
         writer.println("t.type = tree.type;");
-        if (node.hasSymbol()) writer.println("t.setSymbol(tree.symbol());");
+        if (!withSymbol && node.hasSymbol() && !node.hasLinkedFields())
+            writer.println("t.setSymbol(tree.symbol());");
         writer.println("return t;");
         writer.rbrace();
+
+        if (withSymbol && node.hasLinkedFields()) {
+            node.printMethod(writer, tree.getFormal("tree"), false, true);
+            writer.lbrace();
+            symbol.print(writer, true).println(" = tree.symbol();");
+            node.printCall(writer.print("return "), "tree", true).println(";");
+            writer.rbrace();
+        }
     }
 
     //########################################################################
 }
+
+

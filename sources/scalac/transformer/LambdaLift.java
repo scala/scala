@@ -207,15 +207,15 @@ public class LambdaLift extends OwnerTransformer
 		}
 		return super.transform(tree);
 
-	    case TypeDef(int mods, Name name, Tree rhs):
+	    case TypeDef(_, _, Tree rhs):
 		// ignore type definition as owner.
 		// reason: it might be in a refinement
 		// todo: handle type parameters?
 		return copy.TypeDef(
-		    tree, mods, name,
+		    tree, sym,
 		    transform(rhs, currentOwner));
 
-	    case Ident(Name name):
+	    case Ident(_):
 		if (sym.isLocal()) {
 		    if (sym.isMethod()) {
 			Symbol f = enclFun(currentOwner);
@@ -311,14 +311,14 @@ public class LambdaLift extends OwnerTransformer
 	//global.debugPrinter.print("lifting ").print(tree).println().end();//DEBUG
 	tree.type = descr.transform(tree.type, currentOwner);
         switch (tree) {
-	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    Symbol sym = tree.symbol();
 	    if (sym.isLocal()) {
 		Symbol[] newtparams = ftvsParams(sym.constructor());
 		Symbol[] newparams = fvsParams(sym.constructor());
 		liftSymbol(sym, newtparams, newparams);
 		Tree tree1 = copy.ClassDef(
-		    tree, mods, sym.name,
+		    tree, sym,
 		    addTypeParams(transform(tparams, sym), newtparams),
 		    new ValDef[][]{addParams(transform(vparams, sym)[0], newparams)},
 		    transform(tpe, sym),
@@ -327,19 +327,19 @@ public class LambdaLift extends OwnerTransformer
 		return Tree.Empty;
 	    } else {
 		return copy.ClassDef(
-		    tree, mods, sym.name,
+		    tree, sym,
 		    transform(tparams, sym), transform(vparams, sym), transform(tpe, sym),
 		    transform(impl, sym));
 	    }
 
-	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
 	    if (sym.isLocal()) {
 		Symbol[] newtparams = ftvsParams(sym);
 		Symbol[] newparams = fvsParams(sym);
 		liftSymbol(sym, newtparams, newparams);
 		Tree tree1 = copy.DefDef(
-		    tree, mods, sym.name,
+		    tree, sym,
 		    addTypeParams(transform(tparams, sym), newtparams),
 		    new ValDef[][]{addParams(transform(vparams, sym)[0], newparams)},
 		    transform(tpe, sym),
@@ -348,22 +348,20 @@ public class LambdaLift extends OwnerTransformer
 		return Tree.Empty;
 	    } else {
 		return copy.DefDef(
-		    tree, mods, sym.name,
+		    tree, sym,
 		    transform(tparams, sym), transform(vparams, sym), transform(tpe, sym),
 		    transform(rhs, sym));
 	    }
 
-	case TypeDef(int mods, Name name, Tree rhs):
+	case TypeDef(_, _, Tree rhs):
 	    // ignore type definition as owner.
 	    // reason: it might be in a refinement
 	    // todo: handle type parameters?
 	    return copy.TypeDef(
-		tree, mods, name,
-		transform(rhs, currentOwner));
+                tree, tree.symbol(), transform(rhs, currentOwner));
 
-	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
+	case ValDef(_, _, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
-	    Name name1 = sym.name;
 	    Tree tpe1 = transform(tpe);
 	    Tree rhs1 = transform(rhs, sym);
 	    if ((sym.flags & CAPTURED) != 0) {
@@ -378,7 +376,7 @@ public class LambdaLift extends OwnerTransformer
 		    new Type[]{unboxedType},
 		    new Tree[]{rhs1});
 	    }
-	    return copy.ValDef(tree, mods, name1, tpe1, rhs1);
+	    return copy.ValDef(tree, sym, tpe1, rhs1);
 
 	case Tuple(Tree[] args):
 	    Tree tree1 = mkList(tree.pos, tree.type, transform(args));
@@ -402,14 +400,13 @@ public class LambdaLift extends OwnerTransformer
 	    return copy.Apply(
 		tree, fn1, addFreeArgs(tree.pos, get(free.fvs, fsym), args1));
 
-	case Ident(Name name):
+	case Ident(_):
 	    Symbol sym = tree.symbol();
-	    Name name1 = sym.name;
 	    if (sym.isLocal() &&
 		(sym.kind == TYPE || (sym.kind == VAL && !sym.isMethod()))) {
 		sym = descr.proxy(sym, currentOwner);
 	    }
-	    Tree tree1 = copy.Ident(tree, name1).setSymbol(sym).setType(
+	    Tree tree1 = copy.Ident(tree, sym).setType(
 		sym.typeAt(descr.nextPhase));
 	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, Names.elem);
 	    else return tree1;

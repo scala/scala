@@ -13,9 +13,13 @@ public class MetaTreeCopier extends AbstractTreeMethodExpander {
     //########################################################################
     // Public Methods
 
-    public void printTreeMethod(TreeNode node) {
-        printTreeMethodHeader(node, tree.t_Tree + " tree");
+    public void printTreeMethod(TreeNode node, boolean withSymbol) {
+        node.printMethod(writer,tree.getFormal("tree"),withSymbol);
         writer.println(";");
+        if (withSymbol && node.hasLinkedFields()) {
+            node.printMethod(writer, tree.getFormal("tree"), false, true);
+            writer.println(";");
+        }
     }
 
     //########################################################################

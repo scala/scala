@@ -311,14 +311,12 @@ class AddInterfaces extends SubstTransformer {
 
         int ifaceMods = classDef.mods | INTERFACE_MODS;
         ClassDef interfaceDef = (ClassDef)make.ClassDef(classDef.pos,
-                                                        ifaceMods,
-                                                        classDef.name,
+                                                        ifaceSym,
                                                         classDef.tparams,
                                                         EMPTY_PARAMS,
                                                         classDef.tpe,
                                                         ifaceTmpl);
         interfaceDef.setType(Type.NoType);
-        interfaceDef.setSymbol(ifaceSym);
 
         createdIFaces.add(ifaceSym);
 
@@ -360,13 +358,13 @@ class AddInterfaces extends SubstTransformer {
             return copy.Apply(tree, fixClassSymbols(fun), args);
         case TypeApply(Tree fun, Tree[] args):
             return copy.TypeApply(tree, fixClassSymbols(fun), args);
-        case Select(Tree qualifier, Name selector): {
+        case Select(Tree qualifier, _): {
             Symbol classSym = getClassSym(tree.symbol());
-            return copy.Select(tree, qualifier, classSym.name).setSymbol(classSym);
+            return copy.Select(tree, classSym, qualifier);
         }
-        case Ident(Name name): {
+        case Ident(_): {
             Symbol classSym = getClassSym(tree.symbol());
-            return copy.Ident(tree, classSym.name).setSymbol(classSym);
+            return copy.Ident(tree, classSym);
         }
         default:
             throw global.fail("unexpected tree",tree);
@@ -403,8 +401,8 @@ class AddInterfaces extends SubstTransformer {
         }
 
         switch (tree) {
-        case ClassDef(int mods,
-                      Name name,
+        case ClassDef(_,
+                      _,
                       TypeDef[] tparams,
                       ValDef[][] vparams,
                       Tree tpe,
@@ -498,13 +496,11 @@ class AddInterfaces extends SubstTransformer {
 
                 Tree newTree =
                     copy.ClassDef(classDef,
-                                  classSym.flags,
-                                  classSym.name.toTypeName(),
+                                  classSym,
                                   transform(tparams),
                                   transform(vparams),
                                   transform(tpe),
-                                  newImpl)
-                    .setSymbol(classSym);
+                                  newImpl);
 
                 thisTypeSubst = thisTypeSubst.outer;
                 popSymbolSubst();
@@ -555,7 +551,7 @@ class AddInterfaces extends SubstTransformer {
                 return super.transform(tree);
         }
 
-        case Select(Super(_), Name selector): {
+        case Select(Super(_), _): {
             // Use class member symbol for "super" references.
             Symbol sym = tree.symbol();
             if (needInterface(sym.classOwner())) {

@@ -681,9 +681,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	        .setType(tree.symbol().type());
 	case Select(Tree qual, Name name):
 	    Tree qual1 = transformPackageId(qual);
-	    return copy.Select(tree, qual1, name)
-		.setSymbol(packageSymbol(tree.pos, qual1.symbol(), name))
-	        .setType(tree.symbol().type());
+            Symbol sym = packageSymbol(tree.pos, qual1.symbol(), name);
+	    return copy.Select(tree, sym, qual1).setType(sym.type());
 	default:
 	    return transform(tree);
 	}
@@ -1233,8 +1232,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    //System.out.println(qual.type + ".member: " + sym + ":" + symtype);//DEBUG
 	    switch (tree) {
 	    case Select(_, _):
-		return copy.Select(tree, qual, name)
-		    .setSymbol(sym).setType(symtype);
+		return copy.Select(tree, sym, qual).setType(symtype);
 	    case SelectFromType(_, _):
 		return make.TypeTerm(tree.pos).setType(symtype);
 	    default:
@@ -1671,23 +1669,23 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		// convert nullary case methods to types
 		// check that other idents or selects are stable.
 		switch (tree) {
-		case Ident(Name name):
+		case Ident(_):
 		    if (sym != null && isNullaryMethod(sym) && (sym.flags & CASE) != 0)
 			return transform(
 			    make.Apply(
 				tree.pos,
-				copy.Ident(tree, name).setSymbol(sym.type().resultType().symbol()),
+				copy.Ident(tree, sym.type().resultType().symbol()),
 				Tree.EMPTY_ARRAY),
 			    mode, pt);
 		    else
 			checkStable(tree);
 		    break;
-		case Select(Tree qual, Name name):
+		case Select(Tree qual, _):
 		    if (sym != null && isNullaryMethod(sym) && (sym.flags & CASE) != 0)
 			return transform(
 			    make.Apply(
 				tree.pos,
-				copy.Select(tree, qual, name).setSymbol(sym.type().resultType().symbol()),
+				copy.Select(tree, sym.type().resultType().symbol(), qual),
 				Tree.EMPTY_ARRAY),
 			    mode, pt);
 		    else
@@ -1823,7 +1821,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 		return tree.setType(Type.ErrorType);
 
-	    case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
+	    case ClassDef(_, _, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
 		pushContext(tree, sym.constructor(), new Scope(context.scope));
 		reenterParams(tparams);
 		Tree.TypeDef[] tparams1 = transform(tparams);
@@ -1832,23 +1830,23 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tpe1 = transform(tpe);
 		Tree.Template templ1 = transformTemplate(templ, sym);
 		popContext();
-		return copy.ClassDef(tree, mods, name, tparams1, vparams1, tpe1, templ1)
+		return copy.ClassDef(tree, sym, tparams1, vparams1, tpe1, templ1)
 		    .setType(definitions.UNIT_TYPE);
 
-	    case ModuleDef(int mods, Name name, Tree tpe, Tree.Template templ):
+	    case ModuleDef(_, _, Tree tpe, Tree.Template templ):
 		Tree tpe1 = transform(tpe, TYPEmode);
 		Tree.Template templ1 = transformTemplate(templ, sym.moduleClass());
-		return copy.ModuleDef(tree, mods, name, tpe1, templ1)
+		return copy.ModuleDef(tree, sym, tpe1, templ1)
 		    .setType(definitions.UNIT_TYPE);
 
-	    case ValDef(int mods, Name name, Tree tpe, Tree rhs):
+	    case ValDef(_, _, Tree tpe, Tree rhs):
 		Tree tpe1 = transform(tpe, TYPEmode);
 		Tree rhs1 = rhs;
 		if (tpe1 == Tree.Empty) {
 		    tpe1 = gen.mkType(rhs.pos, rhs.type);
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
-		    if ((mods & CASEACCESSOR) != 0) {
+		    if ((sym.flags & CASEACCESSOR) != 0) {
 			//rhs was already attribute
 		    } else {
 			pushContext(tree, sym, context.scope);
@@ -1856,10 +1854,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			popContext();
 		    }
 		}
-		return copy.ValDef(tree, mods, name, tpe1, rhs1)
+		return copy.ValDef(tree, sym, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
-	    case DefDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
+	    case DefDef(_, _, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
 		pushContext(tree, sym, new Scope(context.scope));
 		reenterParams(tparams);
 		Tree.TypeDef[] tparams1 = transform(tparams);
@@ -1876,16 +1874,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			tpe1.type == Type.NoType ? Type.AnyType : tpe1.type);
 		}
 		popContext();
-		return copy.DefDef(tree, mods, name, tparams1, vparams1, tpe1, rhs1)
+		return copy.DefDef(tree, sym, tparams1, vparams1, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
-	    case TypeDef(int mods, Name name, Tree rhs):
+	    case TypeDef(_, _, Tree rhs):
 		pushContext(tree, sym, new Scope(context.scope));
 		int mode = TYPEmode;
 		if (sym.kind == ALIAS) mode |= FUNmode;
 		Tree rhs1 = transform(rhs, mode);
 		popContext();
-		return copy.TypeDef(tree, mods, name, rhs1)
+		return copy.TypeDef(tree, sym, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
 	    case Import(Tree expr, Name[] selectors):
@@ -1969,8 +1967,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    if (parents.length == 1 && body.length == 0) {
 			Tree parent1 = transform(parents[0], CONSTRmode, pt);
 			Tree.Template templ1 = (Tree.Template)
-			    copy.Template(templ, new Tree[]{parent1}, body)
-			    .setType(parent1.type).setSymbol(Symbol.NONE);
+			    copy.Template(templ, Symbol.NONE, new Tree[]{parent1}, body)
+			    .setType(parent1.type);
 			Type owntype = parent1.type;
 			checkInstantiatable(tree.pos, owntype);
 			return copy.New(tree, templ1)

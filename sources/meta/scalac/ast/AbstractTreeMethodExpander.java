@@ -16,17 +16,16 @@ public abstract class AbstractTreeMethodExpander extends AbstractTreeExpander {
 
     public void printTreeMethods() {
         for (int i = 0; i < tree.nodes.length; i++) {
-            if (tree.nodes[i].fields != null) printTreeMethod(tree.nodes[i]);
+            if (tree.nodes[i].fields != null) {
+                printTreeMethod(tree.nodes[i], false);
+                if (tree.nodes[i].hasSymbol())
+                    printTreeMethod(tree.nodes[i], true);
+            }
             writer.println();
         }
     }
 
-    public abstract void printTreeMethod(TreeNode node);
-
-    public void printTreeMethodHeader(TreeNode node, String prefix) {
-        writer.print("public " + node.name + " " + node.name + "(");
-        node.printParams(writer, prefix).print(")");
-    }
+    public abstract void printTreeMethod(TreeNode node, boolean withSymbol);
 
     //########################################################################
 }

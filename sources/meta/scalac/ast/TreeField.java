@@ -9,6 +9,7 @@
 package meta.scalac.ast;
 
 import meta.java.Type;
+import meta.java.JavaWriter;
 
 /** This class describes a tree node field. */
 public class TreeField {
@@ -23,6 +24,10 @@ public class TreeField {
     //########################################################################
     // Public Constructors
 
+    public TreeField(Type type, String name) {
+        this(type, name, null);
+    }
+
     public TreeField(Type type, String name, TreeFieldLink link) {
         this.type = type;
         this.name = name;
@@ -30,7 +35,25 @@ public class TreeField {
     }
 
     //########################################################################
+    // Public Function
+
+    public static JavaWriter print(JavaWriter writer, TreeField[] fields,
+        boolean withType)
+    {
+        for (int i = 0; i < fields.length; i++) {
+            if (i > 0) writer.print(", ");
+            fields[i].print(writer, withType);
+        }
+        return writer;
+    }
+
+    //########################################################################
     // Public Methods
+
+    public JavaWriter print(JavaWriter writer, boolean withType) {
+        if (withType) writer.print(type).space();
+        return writer.print(name);
+    }
 
     public String toString() {
         return name;

@@ -15,7 +15,7 @@ public abstract class AbstractTreeCaseExpander extends AbstractTreeExpander {
     // Public Constructors
 
     public AbstractTreeCaseExpander() {
-        writer.importType(tree.t_Debug);
+        writer.importType(t_Debug);
     }
 
     //########################################################################
@@ -27,7 +27,7 @@ public abstract class AbstractTreeCaseExpander extends AbstractTreeExpander {
         printTreeCases();
         writer.println("default:");
         writer.indent();
-        writer.print("throw ").print(tree.t_Debug).
+        writer.print("throw ").print(t_Debug).
             println(".abort(\"unknown tree\", tree);");
         writer.undent();
         writer.println("}");

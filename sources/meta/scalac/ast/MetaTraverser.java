@@ -8,6 +8,8 @@
 
 package meta.scalac.ast;
 
+import meta.java.Type;
+
 public class MetaTraverser extends AbstractTreeCaseExpander {
 
     //########################################################################
@@ -19,6 +21,23 @@ public class MetaTraverser extends AbstractTreeCaseExpander {
                 if (Tree.isTree(node.fields[i].type))
                     writer.println("traverse(" + node.fields[i] + ");");
         writer.println("return;");
+    }
+
+    public void printTraverseArrays() {
+        int max = tree.arrays;
+        for (int i = 0; i < tree.nodes.length; i++)
+            max = Math.max(max, tree.nodes[i].arrays);
+        for (int i = 1; i <= max; i++)
+            printTraverseArray(tree.getType(i));
+    }
+
+    public void printTraverseArray(Type type) {
+        writer.print("public void traverse").
+            print("(").print(type).print(" trees)").lbrace();
+        writer.print("for (int i = 0; i < trees.length; i++) ").
+            println("traverse(trees[i]);");
+        writer.rbrace();
+        writer.line();
     }
 
     //########################################################################

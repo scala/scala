@@ -13,10 +13,9 @@ public class MetaDefaultTreeFactory extends AbstractTreeMethodExpander {
     //########################################################################
     // Public Methods
 
-    public void printTreeMethod(TreeNode node) {
-        printTreeMethodHeader(node, "int pos");
-        writer.lbrace();
-        node.printNew(writer.print(node.name + " t = ")).println(";");
+    public void printTreeMethod(TreeNode node, boolean withSymbol) {
+        node.printMethod(writer, "int pos", withSymbol).lbrace();
+        node.printNew(writer.print(node + " t = "), withSymbol).println(";");
         writer.println("t.pos = pos;");
         writer.println("return t;");
         writer.rbrace();

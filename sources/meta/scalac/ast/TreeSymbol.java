@@ -18,10 +18,7 @@ public class TreeSymbol {
     public case NoSym;
 
     /** Indicates the presence of a symbol. */
-    public case HasSym;
-
-    /** Indicates the presence of a symbol that is define here. */
-    public case DefSym;
+    public case HasSym(TreeField field, boolean isDef);
 
     //########################################################################
 }

@@ -44,30 +44,7 @@ public class TreeNode {
     }
 
     //########################################################################
-    // Public Methods
-
-    public boolean hasExtClass() {
-        return hasSymbol();
-    }
-
-    public boolean hasSymbol() {
-        return symbol == symbol.HasSym || symbol == symbol.DefSym;
-    }
-
-    public boolean hasLinkedFields() {
-        for (int i = 0; i < fields.length; i++)
-            if (fields[i].link != null) return true;
-        return false;
-    }
-
-    public boolean definesSymbol() {
-        return symbol == symbol.DefSym;
-    }
-
-    public Type getType(int rank) {
-        arrays = Math.max(arrays , rank);
-        return rank == 0 ? TreeType.Node(this) : Type.Array(getType(rank - 1));
-    }
+    // Public Methods - Initializing
 
     public TreeNode setDescription(String description) {
         this.description = description;
@@ -90,9 +67,8 @@ public class TreeNode {
     }
 
     public TreeNode addField(Type type, String name, TreeFieldLink link) {
-        if (link != null)
-            if (symbol != TreeSymbol.HasSym && symbol != TreeSymbol.DefSym)
-                throw new Error("node "+this+" may not have linked fields");
+        if (link != null && !hasSymbol())
+            throw new Error("node "+this+" may not have linked fields");
         TreeField[] array = new TreeField[fields.length + 1];
         for (int i = 0; i < fields.length; i++) array[i] = fields[i];
         array[fields.length] = new TreeField(type, name, link);
@@ -100,56 +76,155 @@ public class TreeNode {
         return this;
     }
 
-    public JavaWriter printCase(JavaWriter writer, boolean wildcards) {
-        writer.print("case ").print(name);
-        if (fields!=null) printParams(writer.print("("),wildcards).print(")");
-        return writer.print(":").space();
+    //########################################################################
+    // Public Methods - Querying
+
+    public Type getType(int rank) {
+        arrays = Math.max(arrays , rank);
+        return rank == 0 ? TreeType.Node(this) : Type.Array(getType(rank - 1));
     }
 
-    public JavaWriter printParams(JavaWriter writer) {
-        return printParams(writer, false);
+    public boolean hasExtClass() {
+        return hasSymbol();
     }
 
-    public JavaWriter printParams(JavaWriter writer, String prefix) {
-        return printParams(printPrefix(writer, prefix));
-    }
-
-    public JavaWriter printParams(JavaWriter writer, boolean wildcards) {
-        if (fields != null) for (int i = 0; i < fields.length; i++) {
-            if (i > 0) writer.print(", ");
-            if (wildcards) writer.print("_");
-            else writer.print(fields[i].type).space().print(fields[i].name);
+    public boolean hasSymbol() {
+        switch (symbol) {
+        case TreeSymbol.HasSym(_, _):
+            return true;
+        default:
+            return false;
         }
-        return writer;
     }
 
-    public JavaWriter printArgs(JavaWriter writer) {
-        if (fields != null) for (int i = 0; i < fields.length; i++) {
-            if (i > 0) writer.print(", ");
-            writer.print(fields[i].name);
+    public boolean definesSymbol() {
+        switch (symbol) {
+        case TreeSymbol.HasSym(_, true):
+            return true;
+        default:
+            return false;
         }
-        return writer;
     }
 
-    public JavaWriter printArgs(JavaWriter writer, String prefix) {
-        return printArgs(printPrefix(writer, prefix));
-    }
-
-    public JavaWriter printPrefix(JavaWriter writer, String prefix) {
-        if (prefix != null) {
-            writer.print(prefix);
-            if (fields != null && fields.length > 0) writer.print(", ");
+    public TreeField getSymbol() {
+        switch (symbol) {
+        case TreeSymbol.HasSym(TreeField field, _):
+            return field;
+        default:
+            return null;
         }
-        return writer;
     }
 
-    public JavaWriter printNew(JavaWriter writer) {
-        String classname = (hasExtClass() ? "Ext" : "") + name;
-        return printArgs(writer.print("new " + classname + "(")).print(")");
+    public boolean hasLinkedFields() {
+        for (int i = 0; i < fields.length; i++)
+            if (fields[i].link != null) return true;
+        return false;
+    }
+
+    public TreeField[] getFields(boolean withoutLinkedFields) {
+        if (fields == null || !withoutLinkedFields) return fields;
+        int count = 0;;
+        for (int i = 0; i < fields.length; i++)
+            if (fields[i].link == null) count++;
+        TreeField[] array = new TreeField[count];
+        for (int i = 0, j = 0; i < fields.length; i++)
+            if (fields[i].link == null) array[j++] = fields[i];
+        return array;
     }
 
     public String toString() {
         return name;
+    }
+
+    //########################################################################
+    // Public Methods - Printing
+
+    public JavaWriter printCase(JavaWriter writer, boolean withWildcards) {
+        writer.print("case ");
+        if (fields != null && withWildcards) {
+            writer.print(name).print('(');
+            for (int i = 0; i < fields.length; i++) {
+                if (i > 0) writer.print(", ");
+                writer.print("_");
+            }
+            writer.print(')');
+        } else {
+            printDecl(writer, null, false);
+        }
+        return writer.print(":").space();
+    }
+
+    public JavaWriter printNew(JavaWriter writer, boolean withSymbol) {
+        writer.print("new ");
+        if (hasExtClass()) writer.print("Ext");
+        return printCall(writer, null, withSymbol);
+    }
+
+    public JavaWriter printMethod(JavaWriter writer, String prefix,
+        boolean withSymbol)
+    {
+        return printMethod(writer, prefix, withSymbol, withSymbol);
+    }
+
+    public JavaWriter printMethod(JavaWriter writer, String prefix,
+        boolean withSymbol, boolean withoutLinkedFields)
+    {
+        writer.print("public ").print(name).space();
+        return printDecl(writer, prefix, withSymbol, withoutLinkedFields);
+    }
+
+    public JavaWriter printDecl(JavaWriter writer, String prefix,
+        boolean withSymbol)
+    {
+        return printDecl(writer, prefix, withSymbol, withSymbol);
+    }
+
+    public JavaWriter printDecl(JavaWriter writer, String prefix,
+        boolean withSymbol, boolean withoutLinkedFields)
+    {
+        return printPattern(writer,true,prefix,withSymbol,withoutLinkedFields);
+    }
+
+    public JavaWriter printCall(JavaWriter writer, String prefix,
+        boolean withSymbol)
+    {
+        return printCall(writer, prefix, withSymbol, withSymbol);
+    }
+
+    public JavaWriter printCall(JavaWriter writer, String prefix,
+        boolean withSymbol, boolean withoutLinkedFields)
+    {
+        return printPattern(
+            writer, false, prefix, withSymbol, withoutLinkedFields);
+    }
+
+    public JavaWriter printPattern(JavaWriter writer, boolean withType,
+        String prefix, boolean withSymbol, boolean withoutLinkedFields)
+    {
+        writer.print(name);
+        if (fields != null || prefix != null || withSymbol) {
+            writer.print('(');
+            printFields(writer,withType,prefix,withSymbol,withoutLinkedFields);
+            writer.print(')');
+        }
+        return writer;
+    }
+
+    public JavaWriter printFields(JavaWriter writer, boolean withType,
+        String prefix, boolean withSymbol, boolean withoutLinkedFields)
+    {
+        TreeField[] fields = getFields(withoutLinkedFields);
+        if (prefix != null) {
+            writer.print(prefix);
+            if (withSymbol || (fields != null && fields.length > 0))
+                writer.print(", ");
+        }
+        if (withSymbol) {
+            getSymbol().print(writer, withType);
+            if (fields != null && fields.length > 0) writer.print(", ");
+        }
+        TreeField.print(writer, fields, withType);
+        return writer;
     }
 
     //########################################################################

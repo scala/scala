@@ -412,12 +412,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    case TypeApply(Tree fn, Tree[] args):
 		return toMethodType(
 		    copy.TypeApply(tree, toConstructor1(fn, constr), args));
-	    case Ident(Name name):
+	    case Ident(_):
 		return toMethodType(
-		    copy.Ident(tree, constr.name).setSymbol(constr));
-	    case Select(Tree qual, Name name):
+		    copy.Ident(tree, constr));
+	    case Select(Tree qual, _):
 		return toMethodType(
-		    copy.Select(tree, qual, constr.name).setSymbol(constr));
+		    copy.Select(tree, constr, qual));
 	    default:
 		throw new ApplicationError();
 	    }
@@ -473,9 +473,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     public Tree transform(Tree tree) {
 	Tree tree1;
 	switch (tree) {
-	case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
+	case ClassDef(_, _, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
 	    return super.transform(
-		copy.ClassDef(tree, mods, name, tparams, vparams, tpe, addCaseMethods(templ, tree.symbol())));
+		copy.ClassDef(tree, tree.symbol(), tparams, vparams, tpe, addCaseMethods(templ, tree.symbol())));
 
 	case Template(Tree[] bases, Tree[] body):
 	    Tree[] bases1 = transform(bases);

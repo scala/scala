@@ -99,12 +99,10 @@ public class ExplicitOuterClasses extends Transformer {
 
         constSym.updateInfo(newConstType);
 
-        int newMods = classDef.mods | Modifiers.STATIC;
         classSym.flags |= Modifiers.STATIC;
 
         return copy.ClassDef(classDef,
-                             newMods,
-                             classDef.name,
+                             classSym,
                              transform(classDef.tparams),
                              transform(newVParams),
                              transform(classDef.tpe),
@@ -164,8 +162,8 @@ public class ExplicitOuterClasses extends Transformer {
             return newTree;
         }
 
-        case Ident(Name name): {
-            if (! name.isTermName())
+        case Ident(_): {
+            if (! tree.symbol().name.isTermName())
                 return super.transform(tree);
 
             // Follow "outer" links to fetch data in outer classes.
@@ -204,17 +202,16 @@ public class ExplicitOuterClasses extends Transformer {
 
             if (realFun.hasSymbol() && realFun.symbol().isPrimaryConstructor()) {
                 switch (transform(realFun)) {
-                case Select(Tree qualifier, Name selector): {
+                case Select(Tree qualifier, _): {
                     if (! (qualifier.hasSymbol()
                            && Modifiers.Helper.isNoVal(qualifier.symbol().flags))) {
-                        newFun = make.Ident(qualifier.pos, selector)
-                            .setType(realFun.type())
-                            .setSymbol(realFun.symbol());
+                        newFun = make.Ident(qualifier.pos, realFun.symbol())
+                            .setType(realFun.type());
                         newArg = qualifier;
                     }
                 } break;
 
-                case Ident(Name name): {
+                case Ident(_): {
                     int level = outerLevel(realFun.symbol().owner());
                     if (level >= 0) {
                         newFun = realFun;

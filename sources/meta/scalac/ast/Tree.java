@@ -18,32 +18,53 @@ import meta.scalac.Phase;
 public class Tree {
 
     //########################################################################
-    // Public Constants
+    // Private Fields
 
-    public static final String PACKAGE  = "scalac.ast";
-    public static final String NAME     = "Tree";
+    private final TreeKind
+        Any  = TreeKind.Any,
+        Type = TreeKind.Type,
+        Term = TreeKind.Term,
+        Dual = TreeKind.Dual,
+        Test = TreeKind.Test,
+        None = TreeKind.None;
+
+    private final Type
+        t_int       = TreeType.INT,
+        t_Object    = TreeType.Reference(null, "Object"),
+        t_Global    = TreeType.Reference("scalac", "Global"),
+        t_Unit      = TreeType.Reference("scalac", "Unit"),
+        t_TreeGen   = TreeType.Reference("scalac.ast", "TreeGen"),
+        t_Symbol    = TreeType.Reference("scalac.symtab", "Symbol"),
+        t_Type      = TreeType.Reference("scalac.symtab", "Type"),
+        t_Name      = TreeType.Name(Any),
+        t_TypeName  = TreeType.Name(Type),
+        t_TermName  = TreeType.Name(Term),
+        t_TestName  = TreeType.Name(Test),
+        t_Names     = TreeType.Array(t_Name),
+        t_Tree      = getType(0),
+        t_TypeTree  = getType(0, Type),
+        t_TermTree  = getType(0, Term),
+        t_Trees     = getType(1),
+        t_TypeTrees = getType(1, Type),
+        t_TermTrees = getType(1, Term);
+
+    private final TreeFieldLink
+        SymFlags = TreeFieldLink.SymFlags,
+        SymName  = TreeFieldLink.SymName;
+
+    private final TreeField
+        tree_symbol = new TreeField(t_Symbol, "symbol");
+
+    private final TreeSymbol
+        NoSym  = TreeSymbol.NoSym,
+        HasSym = TreeSymbol.HasSym(tree_symbol, false),
+        DefSym = TreeSymbol.HasSym(tree_symbol, true);
+
+    private final List list
+        = new ArrayList();
 
     //########################################################################
-    // Private Constants
-
-    private static final TreeKind Any  = TreeKind.Any;
-    private static final TreeKind Type = TreeKind.Type;
-    private static final TreeKind Term = TreeKind.Term;
-    private static final TreeKind Dual = TreeKind.Dual;
-    private static final TreeKind Test = TreeKind.Test;
-    private static final TreeKind None = TreeKind.None;
-
-    private static final TreeSymbol NoSym  = TreeSymbol.NoSym;
-    private static final TreeSymbol HasSym = TreeSymbol.HasSym;
-    private static final TreeSymbol DefSym = TreeSymbol.DefSym;
-
-    private static final TreeFieldLink SymFlags = TreeFieldLink.SymFlags;
-    private static final TreeFieldLink SymName  = TreeFieldLink.SymName;
-
-    private final List list = new ArrayList();
-
-    //########################################################################
-    // Public Constants
+    // Public Fields
 
     public final TreeNode
         n_Bad            = node("Bad"           , Any , HasSym),
@@ -57,7 +78,7 @@ public class Tree {
         n_TypeDef        = node("TypeDef"       , None, DefSym),
         n_Import         = node("Import"        , None, HasSym),
         n_CaseDef        = node("CaseDef"       , None, NoSym),
-        n_Template       = node("Template"      , None, HasSym), // !!! HasSym
+        n_Template       = node("Template"      , None, HasSym),
         n_LabelDef       = node("LabelDef"      , Term, DefSym),
         n_Block          = node("Block"         , Term, NoSym),
         n_Tuple          = node("Tuple"         , Term, NoSym),
@@ -83,38 +104,7 @@ public class Tree {
         n_CovariantType  = node("CovariantType" , Type, NoSym);
 
     public final TreeNode[] nodes;
-
-    public final Type
-        t_int       = TreeType.INT,
-        t_Object    = TreeType.Reference(null, "Object"),
-        t_Global    = TreeType.Reference("scalac", "Global"),
-        t_Unit      = TreeType.Reference("scalac", "Unit"),
-        t_TreeGen   = TreeType.Reference("scalac.ast", "TreeGen"),
-        t_Symbol    = TreeType.Reference("scalac.symtab", "Symbol"),
-        t_Type      = TreeType.Reference("scalac.symtab", "Type"),
-        t_Debug     = TreeType.Reference("scalac.util", "Debug"),
-        t_Name      = TreeType.Name(Any),
-        t_TypeName  = TreeType.Name(Type),
-        t_TermName  = TreeType.Name(Term),
-        t_TestName  = TreeType.Name(Test),
-        t_Names     = TreeType.Array(t_Name),
-        t_Tree      = TreeType.Tree(Any),
-        t_TypeTree  = TreeType.Tree(Type),
-        t_TermTree  = TreeType.Tree(Term),
-        t_Trees     = TreeType.Array(t_Tree),
-        t_TypeTrees = TreeType.Array(t_TypeTree),
-        t_TermTrees = TreeType.Array(t_TermTree),
-        t_Treess    = TreeType.Array(t_Trees),
-        t_ValDef    = n_ValDef.getType(0),
-        t_ValDefs   = n_ValDef.getType(1),
-        t_ValDefss  = n_ValDef.getType(2),
-        t_TypeDef   = n_TypeDef.getType(0),
-        t_TypeDefs  = n_TypeDef.getType(1),
-        t_Template  = n_Template.getType(0),
-        t_CaseDef   = n_CaseDef.getType(0),
-        t_CaseDefs  = n_CaseDef.getType(1),
-        t_Ident     = n_Ident.getType(0),
-        t_Idents    = n_Ident.getType(1);
+    public int arrays;
 
     //########################################################################
     // Public Constructors
@@ -136,16 +126,16 @@ public class Tree {
             setRange(Phase.PARSER, Phase.END).
             addField(t_int, "mods", SymFlags).
             addField(t_TypeName, "name", SymName).
-            addField(t_TypeDefs, "tparams").
-            addField(t_ValDefss, "vparams").
+            addField(n_TypeDef.getType(1), "tparams").
+            addField(n_ValDef.getType(2), "vparams").
             addField(t_TypeTree, "tpe").
-            addField(t_Template, "impl");
+            addField(n_Template.getType(0), "impl");
 
         n_PackageDef.
             setDescription("Package declaration").
             setRange(Phase.PARSER, Phase.UNKNOWN).
             addField(t_TermTree, "packaged").
-            addField(t_Template, "impl");
+            addField(n_Template.getType(0), "impl");
 
         n_ModuleDef.
             setDescription("Module declaration").
@@ -153,7 +143,7 @@ public class Tree {
             addField(t_int, "mods", SymFlags).
             addField(t_TermName, "name", SymName).
             addField(t_TypeTree, "tpe").
-            addField(t_Template, "impl");
+            addField(n_Template.getType(0), "impl");
 
         n_ValDef.
             setDescription("Value declaration (var or let)").
@@ -176,8 +166,8 @@ public class Tree {
             setRange(Phase.PARSER, Phase.END).
             addField(t_int, "mods", SymFlags).
             addField(t_TermName, "name", SymName).
-            addField(t_TypeDefs, "tparams").
-            addField(t_ValDefss, "vparams").
+            addField(n_TypeDef.getType(1), "tparams").
+            addField(n_ValDef.getType(2), "vparams").
             addField(t_TypeTree, "tpe").
             addField(t_TermTree, "rhs");
 
@@ -227,13 +217,13 @@ public class Tree {
         n_Visitor.
             setDescription("Visitor (a sequence of cases)").
             setRange(Phase.PARSER, Phase.TRANSMATCH).
-            addField(t_CaseDefs, "cases");
+            addField(n_CaseDef.getType(1), "cases");
 
 
         n_Function.
             setDescription("Anonymous function").
             setRange(Phase.PARSER, Phase.ANALYZER).
-            addField(t_ValDefs, "vparams").
+            addField(n_ValDef.getType(1), "vparams").
             addField(t_TermTree, "body");
 
         n_Assign.
@@ -252,7 +242,7 @@ public class Tree {
         n_New.
             setDescription("Instantiation").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_Template, "templ");
+            addField(n_Template.getType(0), "templ");
 
         n_Typed.
             setDescription("Type annotation").
@@ -352,6 +342,22 @@ public class Tree {
         default:
             return false;
         }
+    }
+
+    //########################################################################
+    // Public Methods
+
+    public Type getType(int rank) {
+        return getType(rank, Any);
+    }
+
+    public Type getType(int rank, TreeKind kind) {
+        arrays = Math.max(arrays , rank);
+        return rank==0 ? TreeType.Tree(kind) : TreeType.Array(getType(rank-1));
+    }
+
+    public String getFormal(String name) {
+        return getType(0) + " " + name;
     }
 
     //########################################################################

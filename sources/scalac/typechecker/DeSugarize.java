@@ -614,8 +614,8 @@ public class DeSugarize implements Kinds, Modifiers {
 	case Ident(_):
 	    return tree;
 
-	case Select(Tree qual, Name name):
-	    return copy.Select(tree, liftout(qual, defs), name);
+	case Select(Tree qual, _):
+	    return copy.Select(tree, liftout(qual, defs));
 
 	case TypeApply(Tree fn, Tree[] args):
 	    return copy.TypeApply(tree, liftoutPrefix(fn, defs), args);

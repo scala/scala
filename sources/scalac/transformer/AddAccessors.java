@@ -55,8 +55,8 @@ public class AddAccessors extends Transformer {
 
     public Tree transform(Tree tree) {
         switch (tree) {
-        case ClassDef(int mods, // :
-                      Name name,
+        case ClassDef(_, // :
+                      _,
                       Tree.TypeDef[] tparams,
                       Tree.ValDef[][] vparams,
                       Tree tpe,
@@ -108,8 +108,7 @@ public class AddAccessors extends Transformer {
             Tree[] newBodyA = (Tree[])newBody.toArray(new Tree[newBody.size()]);
 
             return copy.ClassDef(tree,
-                                 mods,
-                                 name,
+                                 clsSym,
                                  transform(tparams),
                                  transform(vparams),
                                  transform(tpe),
@@ -126,24 +125,24 @@ public class AddAccessors extends Transformer {
                 return super.transform(tree);
         }
 
-        case Select(Tree qualifier, Name selector): {
+        case Select(Tree qualifier, _): {
             Symbol sym = tree.symbol();
 	    assert sym.kind != Kinds.NONE : tree;
             if (sym.owner().isPrimaryConstructor())
                 return gen.Apply(gen.Select(transform(qualifier), accessor(sym)),
                                  Tree.EMPTY_ARRAY);
             else
-                return copy.Select(tree, transform(qualifier), selector);
+                return copy.Select(tree, sym, transform(qualifier));
         }
 
-        case Ident(Name name): {
+        case Ident(_): {
             Symbol sym = tree.symbol();
             if (inClassContext
-                && name.isTermName()
+                && sym.name.isTermName()
                 && sym.owner().isPrimaryConstructor())
                 return gen.Apply(gen.Ident(accessor(sym)), Tree.EMPTY_ARRAY);
             else
-                return copy.Ident(tree, name);
+                return copy.Ident(tree, sym);
         }
 
         default:
