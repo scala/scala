@@ -35,7 +35,6 @@ public class Names {
     public static final Name Char = Name.fromString("Char");
     public static final Name Boolean = Name.fromString("Boolean");
     public static final Name Double = Name.fromString("Double");
-    public static final Name False = Name.fromString("False");
     public static final Name Float = Name.fromString("Float");
     public static final Name Function = Name.fromString("Function");
     public static final Name Int = Name.fromString("Int");
@@ -51,7 +50,6 @@ public class Names {
     public static final Name String = Name.fromString("String");
     public static final Name Symbol = Name.fromString("Symbol");
     public static final Name Throwable = Name.fromString("Throwable");
-    public static final Name True = Name.fromString("True");
     public static final Name Tuple = Name.fromString("Tuple");
     public static final Name Unit = Name.fromString("Unit");
     public static final Name apply = Name.fromString("apply");

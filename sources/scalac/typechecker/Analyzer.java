@@ -159,6 +159,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	else if (value instanceof Float) return Name.fromString("scala.Float");
 	else if (value instanceof Double) return Name.fromString("scala.Double");
 	else if (value instanceof String) return Name.fromString("java.lang.String");
+	else if (value instanceof Boolean) return Name.fromString("scala.Boolean");
 	else throw new ApplicationError();
     }
 

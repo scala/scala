@@ -516,9 +516,6 @@ public class Primitives {
         addPrimitive(FARRAY_SET, Primitive.FARRAY_SET);
         addPrimitive(DARRAY_SET, Primitive.DARRAY_SET);
         addPrimitive(OARRAY_SET, Primitive.OARRAY_SET);
-
-        // !!! Boolean.True
-        // !!! Boolean.False
     }
 
     private void addAdd(Symbol clasz, int count) {

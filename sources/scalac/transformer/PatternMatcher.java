@@ -22,8 +22,6 @@ public class PatternMatcher {
     public static final Name RESULT_N = Name.fromString("$result");
     public static final Name SCALA_N = Name.fromString("scala");
     public static final Name BOOLEAN_N = Name.fromString("Boolean");
-    public static final Name TRUE_N = Name.fromString("True");
-    public static final Name FALSE_N = Name.fromString("False");
     public static final Name AND_N = Name.fromString("$amp$amp");
     public static final Name OR_N = Name.fromString("$bar$bar");
     public static final Name NOT_N = Name.fromString("$bang");
@@ -79,14 +77,6 @@ public class PatternMatcher {
      */
     Symbol statics;
 
-    /** true symbol
-     */
-    Symbol trueSym;
-
-    /** false symbol
-     */
-    Symbol falseSym;
-
 
     /** constructor
      */
@@ -112,8 +102,6 @@ public class PatternMatcher {
                                         Modifiers.MUTABLE);
         this.resultVar.setType(tpe);
         this.statics = defs.getModule(Names.scala_Boolean);
-        this.trueSym = defs.TRUE();
-        this.falseSym = defs.FALSE();
         this.infer = infer;
     }
 
@@ -792,25 +780,14 @@ public class PatternMatcher {
     }
 
     protected Tree mkBoolean(int pos, boolean bool) {
-        Name name = bool ? TRUE_N : FALSE_N;
-        Symbol val = bool ? trueSym : falseSym;
-        return make.Select(
-                    pos,
-                    make.Select(
-                        pos,
-                        make.Ident(pos, SCALA_N)
-                            .setType(typeOf(defs.SCALA)).setSymbol(defs.SCALA),
-                        BOOLEAN_N).setType(typeOf(statics)).setSymbol(statics),
-                    name).setType(defs.BOOLEAN_TYPE).setSymbol(val);
+        Boolean val = bool ? Boolean.TRUE : Boolean.FALSE;
+        return make.Literal(pos, val).setType(defs.BOOLEAN_TYPE);
     }
 
     protected Tree mkNegate(Tree tree) {
         switch (tree) {
-            case Select(_, _):
-                if (tree.symbol() == trueSym)
-                    return mkBoolean(tree.pos, false);
-                else if (tree.symbol() == falseSym)
-                    return mkBoolean(tree.pos, true);
+            case Literal(Object value):
+                return mkBoolean(tree.pos, !((Boolean)value).booleanValue());
         }
         return make.Apply(
                 tree.pos,
@@ -820,16 +797,12 @@ public class PatternMatcher {
 
     protected Tree mkAnd(Tree left, Tree right) {
         switch (left) {
-            case Select(_, _):
-                if (left.symbol() == trueSym)
-                    return right;
-                else if (left.symbol() == falseSym)
-                    return left;
+            case Literal(Object value):
+                return ((Boolean)value).booleanValue() ? right : left;
         }
         switch (right) {
-            case Select(_, _):
-                if (right.symbol() == trueSym)
-                    return left;
+            case Literal(Object value):
+                if (((Boolean)value).booleanValue()) return left;
         }
         Symbol fun = left.type.lookup(AND_N);
         return make.Apply(
@@ -843,16 +816,12 @@ public class PatternMatcher {
 
     protected Tree mkOr(Tree left, Tree right) {
         switch (left) {
-            case Select(_, _):
-                if (left.symbol() == trueSym)
-                    return left;
-                else if (left.symbol() == falseSym)
-                    return right;
+            case Literal(Object value):
+                return ((Boolean)value).booleanValue() ? left : right;
         }
         switch (right) {
-            case Select(_, _):
-                if (right.symbol() == falseSym)
-                    return left;
+            case Literal(Object value):
+                if (!((Boolean)value).booleanValue()) return left;
         }
         Symbol fun = left.type.lookup(OR_N);
         return make.Apply(

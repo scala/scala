@@ -139,13 +139,9 @@ public class Definitions {
 
     /** members of class Boolean
      */
-    private Symbol TRUE;
-    private Symbol FALSE;
     private Symbol BARBAR;
     private Symbol AMPAMP;
 
-    public Symbol TRUE  () { loadBooleanMembers(); return TRUE  ; }
-    public Symbol FALSE () { loadBooleanMembers(); return FALSE ; }
     public Symbol BARBAR() { loadBooleanMembers(); return BARBAR; }
     public Symbol AMPAMP() { loadBooleanMembers(); return AMPAMP; }
 
@@ -391,10 +387,8 @@ public class Definitions {
     }
 
     private void loadBooleanMembers() {
-        if (TRUE != null) return;
+        if (BARBAR != null) return;
         Symbol booleanStatics = getModule(Names.scala_Boolean);
-        TRUE   = booleanStatics.members().lookup(Names.True);
-        FALSE  = booleanStatics.members().lookup(Names.False);
         BARBAR = BOOLEAN_TYPE.lookup(Names.BARBAR);
         AMPAMP = BOOLEAN_TYPE.lookup(Names.AMPAMP);
     }

@@ -450,6 +450,9 @@ class JVMGenerator {
             } else if (value instanceof String) {
                 generatedType = cst.T_OBJECT;
                 currIL.append(new PUSH(currPool, (String)value));
+            } else if (value instanceof Boolean) {
+                generatedType = cst.T_BOOLEAN;
+                currIL.append(new PUSH(currPool, (Boolean)value));
             } else
                 throw global.fail("unknown literal " + value);
             break;

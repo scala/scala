@@ -17,7 +17,7 @@ package scala {
       if (other is Tuple[#n#][#type-params#]) {
 	val that = other as Tuple[#n#][#type-params#];
 	[#equal#]
-      } else Boolean.False;
+      } else false;
 
     override def toString() = [#to-string#];
   }

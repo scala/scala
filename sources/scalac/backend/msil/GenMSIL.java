@@ -553,10 +553,6 @@ public class GenMSIL /*implements Modifiers */ {
 // 	    break;
 
 	case Select(Tree qualifier, Name selector):
-	    if (sym == defs.TRUE())
-		return TRUE_ITEM;
-	    if (sym == defs.FALSE())
-		return FALSE_ITEM;
 	    if (sym.isModule()) {
 		//log("gen: Select from a module: " + sym);
 		if (sym.isJava())

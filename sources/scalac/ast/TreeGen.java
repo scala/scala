@@ -153,7 +153,8 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build a boolean constant tree.
      */
     public Tree mkBoolean(int pos, boolean bool) {
-	return mkRef(pos, bool ? definitions.TRUE() : definitions.FALSE());
+        return make.Literal(pos, bool ? Boolean.TRUE : Boolean.FALSE).
+            setType(definitions.BOOLEAN_TYPE);
     }
 
     /** Build a tree to be used as a base class constructor for a template.

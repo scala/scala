@@ -193,10 +193,6 @@ public class Parser implements Tokens {
 	return make.Select(pos, make.Ident(pos, Names.scala), name);
     }
 
-    Tree scalaBooleanDot(int pos, Name name) {
-	return make.Select(pos, scalaDot(pos, Names.Boolean), name);
-    }
-
     /** Create tree for for-comprehension <for (enums) do body> or
      *   <for (enums) yield body> where mapName and flatmapName are chosen
      *  corresponding to whether this is a for-do or a for-yield.
@@ -457,10 +453,10 @@ public class Parser implements Tokens {
 	    t = make.Literal(s.pos, s.name.toString());
 	    break;
 	case TRUE:
-	    t = scalaBooleanDot(s.pos, Names.True);
+	    t = make.Literal(s.pos, Boolean.TRUE);
 	    break;
 	case FALSE:
-	    t = scalaBooleanDot(s.pos, Names.False);
+	    t = make.Literal(s.pos, Boolean.FALSE);
 	    break;
 	case NULL:
 	    t = make.Ident(s.pos, Names.null_);
@@ -962,10 +958,10 @@ public class Parser implements Tokens {
 			new Tree.CaseDef[]{
 			    (CaseDef)make.CaseDef(
 				rhs.pos, pat.duplicate(), Tree.Empty,
-				scalaBooleanDot(rhs.pos, Names.True)),
+				make.Literal(s.pos, Boolean.TRUE)),
 			    (CaseDef)make.CaseDef(
 				rhs.pos, make.Ident(rhs.pos, Names.WILDCARD), Tree.Empty,
-				scalaBooleanDot(rhs.pos, Names.False))})});
+				make.Literal(s.pos, Boolean.FALSE))})});
 	return make.PatDef(pos, 0, pat, rhs);
     }
 

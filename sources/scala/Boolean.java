@@ -15,9 +15,6 @@ package scala;
  */
 public abstract class Boolean extends AnyVal {
 
-    public static final boolean True  = true;
-    public static final boolean False = false;
-
     public abstract boolean asBoolean();
 
     public boolean $amp$amp(boolean that) {
