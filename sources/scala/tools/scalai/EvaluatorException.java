@@ -71,10 +71,10 @@ public class EvaluatorException extends RuntimeException {
         while (traceAtStartsWith(entry, "$Proxy")) entry++;
     }
 
-    public void addScalaLeavePoint() {
+    public void addScalaLeavePoint(String clasz, String method) {
         // find leave point
         int leave = entry;
-        while (leave < trace.length && !traceAtStartsWith(leave, "scalai."))
+        while (leave < trace.length && !traceAtEquals(leave, clasz, method))
             leave++;
         if (leave < trace.length) {
             // skip calls through reflection
@@ -105,6 +105,12 @@ public class EvaluatorException extends RuntimeException {
 
     //########################################################################
     // Private Methods
+
+    private boolean traceAtEquals(int index, String clasz, String method) {
+        if (index < 0 || trace.length <= index) return false;
+        if (!trace[index].getClassName().equals(clasz)) return false;
+        return method == null || trace[index].getMethodName().equals(method);
+    }
 
     private boolean traceAtStartsWith(int index, String prefix) {
         if (index < 0 || trace.length <= index) return false;

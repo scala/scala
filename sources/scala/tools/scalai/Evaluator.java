@@ -105,9 +105,20 @@ public class Evaluator {
     }
 
     public Object evaluate(CodeContainer code, Object object, Object[] args) {
+        return trace(code, object, args);
+    }
+
+    //########################################################################
+    // Private Methods - trace
+
+    private Object trace(CodeContainer code, Object object, Object[] args) {
         try {
             stack = new EvaluationStack(stack, code, object, args);
             return evaluate(code.code);
+        } catch (EvaluatorException exception) {
+            throw exception;
+        } catch (Throwable exception) {
+            return throw_(exception, "trace");
         } finally {
             stack = stack.stack;
         }
@@ -163,6 +174,8 @@ public class Evaluator {
                 if (stack != null)
                     exception.addScalaCall(stack.symbol, stack.source, pos);
                 throw exception;
+//             } catch (Throwable exception) {
+//                 return abort(exception);
             }
 
         case Create(ScalaTemplate template):
@@ -441,12 +454,16 @@ public class Evaluator {
     // Private Methods - throw
 
     private Object throw_(Throwable exception) {
+        return throw_(exception, null);
+    }
+
+    private Object throw_(Throwable exception, String method) {
         if (exception.getCause() != null && (
                 exception instanceof ExceptionInInitializerError ||
                 exception instanceof InvocationTargetException))
             exception = exception.getCause();
         if (trace.getCause() != exception) trace.reset(exception);
-        trace.addScalaLeavePoint();
+        trace.addScalaLeavePoint(getClass().getName(), method);
         throw trace;
     }
 
