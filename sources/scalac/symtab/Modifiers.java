@@ -59,6 +59,7 @@ public interface Modifiers {
     // masks
     int SOURCEFLAGS   = 0x00000077 | DEF | REPEATED | MODUL | MUTABLE | PACKAGE | PARAM | TRAIT | COVARIANT | CONTRAVARIANT;  // these modifiers can be set in source programs.
     int ACCESSFLAGS   = PRIVATE | PROTECTED;
+    int VARIANCES     = COVARIANT | CONTRAVARIANT;
 
     public static class Helper {
 

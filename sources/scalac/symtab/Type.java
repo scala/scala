@@ -1422,8 +1422,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	for (int i = 0; i < these.length; i++) {
 	    if ((tparams[i].flags & COVARIANT) != 0) {
 		if (!these[i].isSubType(those[i])) return false;
-		//} else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
-		//if (!those[i].isSubType(these[i])) return false;
+	    } else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
+		//System.out.println("contra: " + these[i] + " " + those[i] + " " + those[i].isSubType(these[i]));//DEBUG
+		if (!those[i].isSubType(these[i])) return false;
 	    } else {
 		if (!these[i].isSameAs(those[i])) return false;
 	    }

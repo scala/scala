@@ -12,6 +12,7 @@
 // todo: drop requirement that only abstract classes can have abstract
 //       type members.
 // todo: use mangled name or drop.
+// todo: emit warnings for unchecked.
 
 package scalac.typechecker;
 

@@ -53,7 +53,7 @@ public class Infer implements Modifiers, Kinds {
     String overloadResolveErrorMsg(Symbol sym1, Type tpe1, Symbol sym2, Type tpe2) {
 	return "ambiguous reference to overloaded definition,\n" +
 	    "both " + sym1 + ": " + tpe1 + "\n" +
-	    "and  " + sym2 + ": " + tpe2 + " match.";
+	    "and  " + sym2 + ": " + tpe2 + "\nmatch";
     }
 
     /** Give a string representation of symbol `sym' with type `tp'
@@ -157,6 +157,115 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
 
+// Variance calculation ----------------------------------------------------------
+
+    private static int flip(int v) {
+	if (v == COVARIANT) return CONTRAVARIANT;
+	else if (v == CONTRAVARIANT) return COVARIANT;
+	else return v;
+    }
+
+    private static static int cut(int v) {
+	if (v == VARIANCES) return v;
+	else return 0;
+    }
+
+    /** Compute variances of all type parameters `tparams' in type `tp'.
+     *  A variance is taken from the four point lattice
+     *
+     *  0, Modifiers.COVARIANT, Modifiers.CONTRAVARIANT, Modifiers.VARIANCES.
+     */
+    private static int[] variance(Symbol[] tparams, Type tp) {
+	int[] vs = new int[tparams.length];
+	for (int i = 0; i < vs.length; i++) vs[i] = variance(tparams[i], tp);
+	return vs;
+    }
+
+    /** Compute variances of all type parameters `tparams' in types `tps'.
+     */
+    private static int[] variance(Symbol[] tparams, Type[] tps) {
+	int[] vs = new int[tparams.length];
+	for (int i = 0; i < vs.length; i++) vs[i] = variance(tparams[i], tps);
+	return vs;
+    }
+
+    /** Compute variance of type parameter `tparam' in types of all symbols `sym'.
+     */
+    private static int variance(Symbol tparam, Symbol[] syms) {
+	int v = VARIANCES;
+	for (int i = 0; i < syms.length; i++) {
+	    v = v & variance(tparam, syms[i]);
+	}
+	return v;
+    }
+
+    /** Compute variance of type parameter `tparam' in type of symbol `sym'.
+     */
+    private static int variance(Symbol tparam, Symbol sym) {
+	switch (sym.kind) {
+	case ERROR:
+	    return VARIANCES;
+	case VAL:
+	    return variance(tparam, sym.info());
+	case TYPE:
+	    return variance(tparam, sym.info()) &
+		flip(variance(tparam, sym.loBound()));
+	case ALIAS:
+	    return cut(variance(tparam, sym.info()));
+	default:
+	    return 0;
+	}
+    }
+
+    /** Compute variance of type parameter `tparam' in all types `tps'.
+     */
+    private static int variance(Symbol tparam, Type[] tps) {
+	int v = VARIANCES;
+	for (int i = 0; i < tps.length; i++) {
+	    v = v & variance(tparam, tps[i]);
+	}
+	return v;
+    }
+
+    /** Compute variance of type parameter `tparam' in all type arguments
+     *  `tps' which correspond to formal type parameters `tparams'.
+     */
+    private static int varianceInArgs(Symbol tvar, Type[] tps, Symbol[] tparams) {
+	int v = VARIANCES;
+	for (int i = 0; i < tps.length; i++) {
+	    if ((tparams[i].flags & COVARIANT) != 0) {
+		v = v & variance(tvar, tps[i]);
+	    } else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
+		v = v & flip(variance(tvar, tps[i]));
+	    } else {
+		v = v & cut(variance(tvar, tps[i]));
+	    }
+	}
+	return v;
+    }
+
+    /** Does given `tparam' occur with variance `v' in type?
+     */
+    private static int variance(Symbol tparam, Type tp) {
+	switch (tp) {
+	case ErrorType:
+	case AnyType:
+	case NoType:
+	case ThisType(Symbol sym):
+	    return VARIANCES;
+	case TypeRef(Type pre, Symbol sym, Type[] args):
+	    if (sym == tparam) return COVARIANT;
+	    else return variance(tparam, pre) &
+		     varianceInArgs(tparam, args, sym.typeParams());
+	case SingleType(Type pre, Symbol sym):
+	    return cut(variance(tparam, pre));
+	case CompoundType(Type[] parts, Scope members):
+	    return variance(tparam, parts) & variance(tparam, members.elements());
+	default:
+	    throw new ApplicationError();
+	}
+    }
+
 // Type parameter inference -----------------------------------------------------
 
     private static class NoInstance extends RuntimeException {
@@ -191,14 +300,19 @@ public class Infer implements Modifiers, Kinds {
     /** Map type variable to its instance, or, if `covariant' is true,
      *  to its upper bound;
      */
-    private Type instantiateUpper(Type tp, boolean covariant) {
+    private Type instantiateToBound(Type tp, int variance) {
 	switch (tp) {
 	case TypeVar(Type origin, Type.Constraint constr):
 	    try {
 		if (constr.inst != Type.NoType) {
 		    return instantiate(constr.inst);
-		} else if (covariant && constr.hibounds != Type.List.EMPTY) {
+		} else if ((variance & COVARIANT) != 0 &&
+			   constr.hibounds != Type.List.EMPTY) {
 		    maximizeVar(tp);
+		    return instantiate(constr.inst);
+		} else if ((variance & CONTRAVARIANT) != 0 &&
+			   constr.lobounds != Type.List.EMPTY) {
+		    minimizeVar(tp);
 		    return instantiate(constr.inst);
 		}
 	    } catch (NoInstance ex) {
@@ -309,7 +423,16 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
 
-    private void solveUpper(Symbol[] tparams, Type[] tvars, int i)
+    /** Solve constraint collected in types `tvars', instantiating `tvars[i]'
+     *  in the process.
+     *  @param tparams    The type parameters corresponding to `tvars'
+     *  @param upper      When `true' search for max solution else min.
+     *  @param variances  The variances of type parameters; need to reverse
+     *                    solution direction for all contravariant variables.
+     *  @param tvars      All type variables to be instantiated.
+     *  @param i          The index of the type variable to be instantiated.
+     */
+    private void solve(Symbol[] tparams, boolean upper, int[] variances, Type[] tvars, int i)
         throws NoInstance {
 	if (tvars[i] != Type.NoType) {
 	    switch (tvars[i]) {
@@ -318,75 +441,58 @@ public class Infer implements Modifiers, Kinds {
 		    constr.inst = tvars[i] = instantiate(constr.inst);
 		} else {
 		    Type tvar = tvars[i];
+		    boolean up = (variances[i] != CONTRAVARIANT) ? upper
+			: !upper;
 		    tvars[i] = Type.NoType;
-		    Type bound = tparams[i].info();
-		    boolean cyclic = false;
-		    for (int j = 0; j < tvars.length; j++) {
-			if (bound.contains(tparams[j]) ||
-			    tparams[j].loBound().isSameAs(tparams[i].type())) {
-			    cyclic |= tvars[j] == Type.NoType;
-			    solveUpper(tparams, tvars, j);
-			}
-		    }
-		    if (!cyclic) {
-			constr.hibounds = new Type.List(
-			    bound.subst(tparams, tvars), constr.hibounds);
-			for (int j = 0; j < tvars.length; j++) {
-			    if (tparams[j].loBound().isSameAs(tparams[i].type())) {
-				constr.hibounds = new Type.List(
-				    tparams[j].type().subst(tparams, tvars),
-				    constr.hibounds);
-			    }
-			}
-		    }
-		    maximizeVar(tvar);
-		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
-		}
-	    }
-	}
-    }
-
-    private void solveLower(Symbol[] tparams, Type[] tvars, int i)
-        throws NoInstance {
-	if (tvars[i] != Type.NoType) {
-	    switch (tvars[i]) {
-	    case TypeVar(Type origin, Type.Constraint constr):
-		if (constr.inst != Type.NoType) {
-		    constr.inst = tvars[i] = instantiate(constr.inst);
-		} else {
-		    Type tvar = tvars[i];
-		    tvars[i] = Type.NoType;
-		    Type bound = tparams[i].loBound();
-		    if (bound != Global.instance.definitions.ALL_TYPE) {
+		    Type bound = up ? tparams[i].info() : tparams[i].loBound();
+		    if (up && bound != Global.instance.definitions.ANY_TYPE ||
+			!up && bound != Global.instance.definitions.ALL_TYPE) {
 			boolean cyclic = false;
 			for (int j = 0; j < tvars.length; j++) {
 			    if (bound.contains(tparams[j]) ||
-				tparams[j].info().isSameAs(tparams[i].type())) {
+				up && tparams[j].loBound().isSameAs(tparams[i].type()) ||
+				!up && tparams[j].info().isSameAs(tparams[i].type())) {
 				cyclic |= tvars[j] == Type.NoType;
-				solveLower(tparams, tvars, j);
+				solve(tparams, upper, variances, tvars, j);
 			    }
 			}
-			assert !cyclic;
 			if (!cyclic) {
-			    constr.lobounds = new Type.List(
-				bound.subst(tparams, tvars), constr.lobounds);
-			    for (int j = 0; j < tvars.length; j++) {
-				if (tparams[j].info().isSameAs(tparams[i].type())) {
-				    constr.lobounds = new Type.List(
-					tparams[j].type().subst(tparams, tvars),
-					constr.lobounds);
+			    if (up) {
+				constr.hibounds = new Type.List(
+				    bound.subst(tparams, tvars), constr.hibounds);
+				for (int j = 0; j < tvars.length; j++) {
+				    if (tparams[j].loBound().isSameAs(
+					    tparams[i].type())) {
+					constr.hibounds = new Type.List(
+					    tparams[j].type().subst(tparams, tvars),
+					    constr.hibounds);
+				    }
+				}
+			    } else {
+				constr.lobounds = new Type.List(
+				    bound.subst(tparams, tvars), constr.lobounds);
+				for (int j = 0; j < tvars.length; j++) {
+				    if (tparams[j].info().isSameAs(
+					    tparams[i].type())) {
+					constr.lobounds = new Type.List(
+					    tparams[j].type().subst(tparams, tvars),
+					    constr.lobounds);
+				    }
 				}
 			    }
 			}
 		    }
-		    minimizeVar(tvar);
+		    if (up) maximizeVar(tvar);
+		    else minimizeVar(tvar);
 		    tvars[i] = ((Type.TypeVar) tvar).constr.inst;
-		    //System.out.println("solve lower " + tparams[i] + "=" + tvars[i]);//DEBUG
 		}
 	    }
 	}
     }
 
+    /** Generate an array of fresh type variables corresponding to parameters
+     *  `tparams'
+     */
     private Type[] freshVars(Symbol[] tparams) {
 	Type[] tvars = new Type[tparams.length];
 	for (int i = 0; i < tvars.length; i++) {
@@ -486,7 +592,7 @@ public class Infer implements Modifiers, Kinds {
 	if (isCompatible(insttype, pt)) {
 	    try {
 		for (int i = 0; i < tvars.length; i++) {
-		    solveLower(tparams, tvars, i);
+		    solve(tparams, false, variance(tparams, restype), tvars, i);
 		}
 		return tvars;
 	    } catch (NoInstance ex) {
@@ -513,89 +619,14 @@ public class Infer implements Modifiers, Kinds {
 	if (isCompatible(insttype, pt)) {
 	    try {
 		for (int i = 0; i < tvars.length; i++) {
-		    targs[i] = instantiateUpper(
-			tvars[i], isVariant(tparams[i], params, 1));
+		    targs[i] = instantiateToBound(
+			tvars[i], variance(tparams[i], params));
 		}
 		return targs;
 	    } catch (NoInstance ex) {
 	    }
 	}
 	return targs;
-    }
-
-    /** Does given `tparam' occur with variance `v' in symbols?
-     */
-    private boolean isVariant(Symbol tparam, Symbol[] syms, int v) {
-	for (int i = 0; i < syms.length; i++) {
-	    if (!isVariant(tparam, syms[i], v)) return false;
-	}
-	return true;
-    }
-
-    /** Does given `tparam' occur with variance `v' in symbol?
-     */
-    private boolean isVariant(Symbol tparam, Symbol sym, int v) {
-	switch (sym.kind) {
-	case ERROR:
-	    return true;
-	case VAL:
-	    return isVariant(tparam, sym.info(), v);
-	case TYPE:
-	    return isVariant(tparam, sym.info(), v) &&
-		isVariant(tparam, sym.loBound(), -v);
-	case ALIAS:
-	    return !sym.info().contains(tparam);
-	default:
-	    return false;
-	}
-    }
-
-    /** Does given `tparam' occur with variance `v' in types?
-     */
-    private boolean isVariant(Symbol tparam, Type[] tps, int v) {
-	for (int i = 0; i < tps.length; i++) {
-	    if (!isVariant(tparam, tps[i], v)) return false;
-	}
-	return true;
-    }
-
-    /** Does given `tparam' occur with variance `v' in argument types `tps'
-     *  which correspond to formal type parameters `tparams'?
-     */
-    private boolean isVariantArgs(Symbol tvar, Type[] tps, Symbol[] tparams,
-				  int v) {
-	for (int i = 0; i < tps.length; i++) {
-	    if ((tparams[i].flags & COVARIANT) != 0) {
-		if (!isVariant(tvar, tps[i], v)) return false;
-	    } else if ((tparams[i].flags & CONTRAVARIANT) != 0) {
-		if (!isVariant(tvar, tps[i], -v)) return false;
-	    } else {
-		if (tps[i].contains(tvar)) return false;
-	    }
-	}
-	return true;
-    }
-
-    /** Does given `tparam' occur with variance `v' in type?
-     */
-    private boolean isVariant(Symbol tparam, Type tp, int v) {
-	switch (tp) {
-	case ErrorType:
-	case AnyType:
-	case NoType:
-	case ThisType(Symbol sym):
-	    return true;
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    return isVariant(tparam, pre, v) &&
-		isVariantArgs(tparam, args, sym.typeParams(), v);
-	case SingleType(Type pre, Symbol sym):
-	    return !pre.contains(tparam);
-	case CompoundType(Type[] parts, Scope members):
-	    return isVariant(tparam, parts, v) &&
-		isVariant(tparam, members.elements(), v);
-	default:
-	    throw new ApplicationError();
-	}
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
@@ -653,7 +684,7 @@ public class Infer implements Modifiers, Kinds {
 	    }
 	}
 	for (int i = 0; i < tvars.length; i++) {
-	    solveLower(tparams, tvars, i);
+	    solve(tparams, false, variance(tparams, formals), tvars, i);
 	}
 	//System.out.println(" = " + ArrayApply.toString(tvars));//DEBUG
 	return tvars;
@@ -803,7 +834,8 @@ public class Infer implements Modifiers, Kinds {
 	if (ctpe1.isSubType(pt)) {
 	    try {
 		for (int i = 0; i < tvars.length; i++) {
-		    solveUpper(tparams, tvars, i);
+		    solve(tparams, true, variance(tparams, restype.resultType()),
+			  tvars, i);
 		}
 		checkBounds(tparams, tvars, "inferred ");
 		tree.setType(restype.subst(tparams, tvars));
@@ -905,7 +937,8 @@ public class Infer implements Modifiers, Kinds {
 		if (isCompatible(alttypes[i], pt) &&
 		    best != i && !improves(alttypes[best], alttypes[i])) {
 		    throw new Type.Error(overloadResolveErrorMsg(
-			alts[best], alttypes[best], alts[i], alttypes[i]));
+			alts[best], alttypes[best], alts[i], alttypes[i]) +
+			" expected type " + pt);
 		}
 	    }
 	    tree.setSymbol(alts[best]).setType(alttypes[best]);
@@ -913,7 +946,8 @@ public class Infer implements Modifiers, Kinds {
     }
     //where
 	private boolean improves(Type tp1, Type tp2) {
-	    return !isParameterized(tp1) && isParameterized(tp2);
+	    return isParameterized(tp2) &&
+		(!isParameterized(tp1) || specializes(tp1, tp2));
 	}
 
     /** Assign `tree' the type of an alternative
@@ -942,8 +976,12 @@ public class Infer implements Modifiers, Kinds {
 		    isApplicable(alttypes[i], argtypes, pt) &&
 		    !(specializes(alttypes[best], alttypes[i]) &&
 		      !specializes(alttypes[i], alttypes[best]))) {
-		    throw new Type.Error(overloadResolveErrorMsg(
-			alts[best], alttypes[best], alts[i], alttypes[i]));
+		    throw new Type.Error(
+			overloadResolveErrorMsg(
+			alts[best], alttypes[best], alts[i], alttypes[i]) +
+			" argument types " +
+			ArrayApply.toString(argtypes, "(", ",", ")") +
+			" and expected result type " + pt);
 		}
 	    }
 	    tree.setSymbol(alts[best]).setType(alttypes[best]);
@@ -973,7 +1011,8 @@ public class Infer implements Modifiers, Kinds {
 		if (alts[j].isValue() &&
 		    alttypes[j].typeParams().length == nparams)
 		    throw new Type.Error(overloadResolveErrorMsg(
-			alts[i], alttypes[i], alts[j], alttypes[j]));
+			alts[i], alttypes[i], alts[j], alttypes[j]) +
+			" polymorphic function with " + nparams + " parameters");
 	    }
 	    tree.setSymbol(alts[i]).setType(alttypes[i]);
 	}
