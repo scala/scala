@@ -107,15 +107,16 @@ SCALADOC_SOURCES	+= $(SCALADOC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_JC_FILES	 = $(SCALADOC_SOURCES)
 SCALADOC_RSRC_LIST	 = resources/style.css resources/script.js
 SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
-SCALADOC_RSRC_OUTPUTDIR	 = $(PROJECT_OUTPUTDIR)/scala/tools/scaladoc
+SCALADOC_RSRC_OUTPUTDIR = $(SCALADOC_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 
 # dtd2scala
-DTD2SCALA_PATH  	 = scala/tools/dtd2scala
-DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/$(DTD2SCALA_PATH)
+DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
 DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
 DTD2SCALA_SC_FILES	 = $(filter %.scala,$(DTD2SCALA_SOURCES))
-DTD2SCALA_XML_FILES	 = $(filter %.xml,$(DTD2SCALA_SOURCES))
+DTD2SCALA_RSRC_LIST	 = $(filter %.xml,$(DTD2SCALA_LIST))
+DTD2SCALA_RSRC_FILES	 = $(filter %.xml,$(DTD2SCALA_SOURCES))
+DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 
 # scalap
 SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalap
@@ -172,6 +173,7 @@ fastclean	:
 	$(RM) .generated
 	$(RM) .latest-scalatest-jc
 	$(RM) .latest-dtd2scala-sc
+	$(RM) .latest-dtd2scala-rsrc
 	$(RM) .latest-scalap-sc
 	$(RM) .latest-scaladoc-jc
 	$(RM) .latest-scaladoc-rsrc
@@ -219,6 +221,7 @@ interpreter	: .latest-interpreter-jc
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala-sc
+dtd2scala	: .latest-dtd2scala-rsrc
 scalap		: .latest-scalap-sc
 scalatest	: .latest-scalatest-jc
 library-doc	: .latest-library-sdc
@@ -346,10 +349,13 @@ cvs-fix-perms		:
 	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES) $(DTD2SCALA_XML_FILES)
-	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$(filter %.scala,$?)'	
-	@mkdir -p $(PROJECT_OUTPUTDIR)/$(DTD2SCALA_PATH)/template
-	cp $(DTD2SCALA_XML_FILES) $(PROJECT_OUTPUTDIR)/$(DTD2SCALA_PATH)/template/
+.latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES)
+	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
+	touch $@
+
+.latest-dtd2scala-rsrc		: $(DTD2SCALA_RSRC_FILES)
+	$(strip $(MIRROR) -m 644 -C $(DTD2SCALA_ROOT) $(DTD2SCALA_RSRC_LIST) \
+	    $(DTD2SCALA_RSRC_OUTPUTDIR))
 	touch $@
 
 .latest-scalap-sc		: $(SCALAP_SC_FILES)
@@ -424,6 +430,7 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-sc
+$(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-rsrc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalap-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalatest-jc
 $(TOOLS_JAR_ARCHIVE)	:
