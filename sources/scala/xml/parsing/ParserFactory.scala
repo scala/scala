@@ -13,13 +13,15 @@ object ParserFactory {
   }
 
   def make(theHandle:ConstructingHandler, input:Iterator[Char]): ConstructingParser = {
-    new ConstructingParser() {
+    val p = new ConstructingParser() {
       val it = input;
       override val handle = theHandle;
       def nextch = { ch = it.next; pos = pos + 1; }
       def init = { ch = it.next; pos = 0; }
       override val preserveWS = true;
-    }
+    };
+    p.init;
+    p
   }
 
 }
