@@ -6,6 +6,8 @@
   <!--                                                                -->
   <taskdef name="scalac"
 	   classname="scala.tools.scala4ant.AntTask$class"/>
+
+  <target name="test">
     <scalac srcdir="src.scala" destdir="/tmp/classes" force="true"
 	    scalaClasspath="/home/buraq/scala/classes" 
 	    scalaBootClasspath="/home/buraq/scala/classes:/home/buraq/scala/sources">
