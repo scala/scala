@@ -1350,13 +1350,24 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	// handle the case of application of match to a visitor specially
 	if (args.length == 1 && args[0] instanceof Visitor) {
 	    Type pattp = matchQualType(fn1);
+	    switch (fn1.type) {
+	    case PolyType(Symbol[] tparams, _):
+		if (pattp.containsSome(tparams)) {
+		    if (global.debug) System.out.println(fn1.type + "+" + pattp);//debug
+		    pattp = Type.AnyType; // so isFullyDefined fails below.
+		}
+	    }
 	    if (pattp == Type.ErrorType) {
 		return tree.setType(Type.ErrorType);
 	    } else if (pattp != Type.NoType) {
-		Tree fn2 = desugarize.postMatch(fn1, context.enclClass.owner);
-		Tree arg1 = transformVisitor(args[0], pattp, pt);
-		return copy.Apply(tree, fn2, new Tree[]{arg1})
-		    .setType(arg1.type);
+		if (infer.isFullyDefined(pattp)) {
+		    Tree fn2 = desugarize.postMatch(fn1, context.enclClass.owner);
+		    Tree arg1 = transformVisitor(args[0], pattp, pt);
+		    return copy.Apply(tree, fn2, new Tree[]{arg1})
+			.setType(arg1.type);
+		} else {
+		    return error(tree.pos, "expected pattern type of cases could not be determined");
+		}
 	    }
 	}
 

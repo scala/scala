@@ -762,17 +762,18 @@ public class Parser implements Tokens {
 	return t;
     }
 
-    /* SimpleExpr    ::= literal
+    /* SimpleExpr    ::= SimpleExpr1
+     *                 | SimpleExpr ArgumentExprs
+     *                 | new Template
+     *                 | BlockExpr
+     *                 | `(' [Expr] `)'
+     *
+     * SimpleExpr1   ::= literal
      *                 | null
      *                 | StableRef
      *                 | super `.' Id
      *                 | SimpleExpr `.' Id
-     *                 | `(' [Expr] `)'
-     *                 | BlockExpr
-     *                 | SimpleExpr `@' TypeArgs
-     *                 | SimpleExpr ArgumentExprs
-     *                 | new Template
-     *                 | `_'
+     *                 | SimpleExpr TypeArgs
      */
     Tree simpleExpr() {
 	Tree t;
@@ -835,7 +836,14 @@ public class Parser implements Tokens {
 		t = make.Select(s.skipToken(), t, ident());
 		break;
 	    case LBRACKET:
-		t = make.TypeApply(s.pos, t, typeArgs());
+		switch (t) {
+		case Ident(_):
+		case Select(_, _):
+		    t = make.TypeApply(s.pos, t, typeArgs());
+		    break;
+		default:
+		    return t;
+		}
 		break;
 	    case LPAREN:
 	    case LBRACE:
