@@ -28,15 +28,21 @@ case class Symbol(name: String) {
 
   override def toString() = "'" + name;
 
+  /* WAITING FOR SCALADOC BUG TO BE FIXED
   def % (ch:Node*) = new Element(this, List.fromIterator(ch.elements)) {
     override def attributes = map;
   };
+  */
 
   def % (a:Attribute) =  {
     map = map.update(a.name, a.value);
     this
   }
   def -> (value:String) = new Attribute( name, value );
+
+  def apply( ch:Node* ) = new Element(this, List.fromIterator(ch.elements)) {
+    override def attributes = map;
+  };
 
   class Attribute( n:String, v:String ) {
     final val name = n;

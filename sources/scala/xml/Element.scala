@@ -8,7 +8,7 @@ import scala.collection.Map;
 abstract class Element {
 
   def getName:     String;                // the real element name
-  def getChildren: Seq[ Element ];         // the children
+  def getChildren: Seq[ Node ];           // the children
   def getAttribs:  Map[ String, String ]; // disabled updates
   def setAttribs( m:Map[ String, String ] ):Unit ;
 
