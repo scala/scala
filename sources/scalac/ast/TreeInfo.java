@@ -10,6 +10,7 @@ package scalac.ast;
 
 import scalac.ApplicationError;
 import scalac.util.Name;
+import scalac.util.Names;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.Modifiers;
@@ -196,4 +197,13 @@ public class TreeInfo {
                   throw new scalac.ApplicationError("Unexpected pattern "+tree);
             }
       }
+
+    public static boolean isWildcardPattern( Tree tree ) {
+	switch( tree ) {
+	case Ident( Name n ):
+	    return ( n == Names.WILDCARD ) && ( tree.symbol() == null );
+	default:
+	    return false;
+	}
+    }
 }
