@@ -160,7 +160,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    SYNTHETIC | ABSTRACT);
 	res.tsym.setInfo(res);
 	res.tsym.primaryConstructor().setInfo(
-	    Type.MethodType(Symbol.EMPTY_ARRAY, Type.NoType));
+	    Type.MethodType(Symbol.EMPTY_ARRAY, Type.TypeRef(res.tsym.owner().thisType(), res.tsym, Type.EMPTY_ARRAY)));
 	return res;
     }
 
@@ -1804,6 +1804,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		i++;
 	    }
 	    break;
+
+	case UnboxedArrayType(_):
+            if (Global.instance.definitions.JAVA_OBJECT_TYPE.isSubType(that))
+                return true;
+            // !!! we should probably also test for Clonable, Serializable, ...
 	}
 
 	switch (that) {
