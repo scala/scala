@@ -21,8 +21,10 @@ ast/parser/Tokens.scala
 ast/printer/HTMLPrinter.scala
 ast/printer/TextTreePrinter.scala
 
-transformer/TransMatch.scala 
-transformer/TransMatchPhase.scala 
+transformer/TransMatch.scala
+transformer/TransMatchPhase.scala
+transformer/UnCurry.scala
+transformer/UnCurryPhase.scala
 transformer/matching/FullRegularTranslator.scala 
 transformer/matching/GrammarPrinter.scala 
 transformer/matching/MutableGrammar.scala 
