@@ -14,16 +14,10 @@ import scala.runtime.RunTime;
 import scala.Type;
 import scala.Array;
 
-public class TypeLong extends Type {
+public class TypeLong extends BasicType {
     private final scala.Long ZERO = RunTime.box_lvalue(0l);
     public Array newArray(int size) {
         return RunTime.box_larray(new long[size]);
     }
     public Object defaultValue() { return ZERO; }
-    public boolean isInstance(Object o) {
-        throw new UnsupportedOperationException();
-    }
-    public boolean isSubType(Type that) {
-        return false;           // TODO
-    }
 };

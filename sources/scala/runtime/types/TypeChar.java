@@ -15,16 +15,10 @@ import scala.Type;
 import scala.Array;
 import scala.Char;
 
-public class TypeChar extends Type {
+public class TypeChar extends BasicType {
     private final Char ZERO = RunTime.box_cvalue((char)0);
     public Array newArray(int size) {
         return RunTime.box_carray(new char[size]);
     }
     public Object defaultValue() { return ZERO; }
-    public boolean isInstance(Object o) {
-        throw new UnsupportedOperationException();
-    }
-    public boolean isSubType(Type that) {
-        return false;           // TODO
-    }
 };

@@ -15,16 +15,10 @@ import scala.Type;
 import scala.Array;
 import scala.Boolean;
 
-public class TypeBoolean extends Type {
+public class TypeBoolean extends BasicType {
     private final Boolean ZERO = RunTime.box_zvalue(false);
     public Array newArray(int size) {
         return RunTime.box_zarray(new boolean[size]);
     }
     public Object defaultValue() { return ZERO; }
-    public boolean isInstance(Object o) {
-        throw new UnsupportedOperationException();
-    }
-    public boolean isSubType(Type that) {
-        return false;           // TODO
-    }
 };

@@ -15,16 +15,10 @@ import scala.Type;
 import scala.Array;
 import scala.Int;
 
-public class TypeInt extends Type {
+public class TypeInt extends BasicType {
     private final Int ZERO = RunTime.box_ivalue(0);
     public Array newArray(int size) {
         return RunTime.box_iarray(new int[size]);
     }
     public Object defaultValue() { return ZERO; }
-    public boolean isInstance(Object o) {
-        throw new UnsupportedOperationException();
-    }
-    public boolean isSubType(Type that) {
-        return false;           // TODO
-    }
 };

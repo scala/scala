@@ -14,17 +14,11 @@ import scala.runtime.RunTime;
 import scala.Type;
 import scala.Array;
 
-public class TypeFloat extends Type {
+public class TypeFloat extends BasicType {
     private final scala.Float ZERO = RunTime.box_fvalue(0.0f);
     public Array newArray(int size) {
         return RunTime.box_farray(new float[size]);
     }
     public Object defaultValue() { return ZERO; }
-    public boolean isInstance(Object o) {
-        throw new UnsupportedOperationException();
-    }
-    public boolean isSubType(Type that) {
-        return false;           // TODO
-    }
 };
 
