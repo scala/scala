@@ -53,15 +53,15 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         this.make = make;
 	this.infer = new Infer(global, this, make);
         this.toType = new Symbol[] {
-            mkToType(definitions.BYTE_TYPE),
-            mkToType(definitions.CHAR_TYPE),
-            mkToType(definitions.SHORT_TYPE),
-            mkToType(definitions.INT_TYPE),
-            mkToType(definitions.LONG_TYPE),
-            mkToType(definitions.FLOAT_TYPE),
-            mkToType(definitions.DOUBLE_TYPE),
-            mkToType(definitions.BOOLEAN_TYPE),
-            mkToType(definitions.UNIT_TYPE),
+            mkToType(definitions.BYTE_TYPE()),
+            mkToType(definitions.CHAR_TYPE()),
+            mkToType(definitions.SHORT_TYPE()),
+            mkToType(definitions.INT_TYPE()),
+            mkToType(definitions.LONG_TYPE()),
+            mkToType(definitions.FLOAT_TYPE()),
+            mkToType(definitions.DOUBLE_TYPE()),
+            mkToType(definitions.BOOLEAN_TYPE()),
+            mkToType(definitions.UNIT_TYPE()),
             mkToType(definitions.JAVA_STRING_TYPE()),
         };
     }
@@ -1034,7 +1034,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             makeVisitorMethod(pos, Names.apply, applyVisitor,
                               pattype, restype, clazz, owner),
             makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
-                              pattype, definitions.BOOLEAN_TYPE, clazz, owner)};
+                              pattype, definitions.BOOLEAN_TYPE(), clazz, owner)};
         Symbol local = TermSymbol.newLocalDummy(clazz);
         Tree classDef = ClassDef(clazz, parentTrees, local, memberTrees);
 	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))

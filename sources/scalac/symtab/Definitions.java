@@ -121,23 +121,23 @@ public class Definitions {
     /** the primitive types
      */
     public final Symbol BYTE_CLASS;
-    public final Type   BYTE_TYPE;
+    public final Type   BYTE_TYPE() {return BYTE_CLASS.type();}
     public final Symbol SHORT_CLASS;
-    public final Type   SHORT_TYPE;
+    public final Type   SHORT_TYPE() {return SHORT_CLASS.type();}
     public final Symbol CHAR_CLASS;
-    public final Type   CHAR_TYPE;
+    public final Type   CHAR_TYPE() {return CHAR_CLASS.type();}
     public final Symbol INT_CLASS;
-    public final Type   INT_TYPE;
+    public final Type   INT_TYPE() {return INT_CLASS.type();}
     public final Symbol LONG_CLASS;
-    public final Type   LONG_TYPE;
+    public final Type   LONG_TYPE() {return LONG_CLASS.type();}
     public final Symbol FLOAT_CLASS;
-    public final Type   FLOAT_TYPE;
+    public final Type   FLOAT_TYPE() {return FLOAT_CLASS.type();}
     public final Symbol DOUBLE_CLASS;
-    public final Type   DOUBLE_TYPE;
+    public final Type   DOUBLE_TYPE() {return DOUBLE_CLASS.type();}
     public final Symbol BOOLEAN_CLASS;
-    public final Type   BOOLEAN_TYPE;
+    public final Type   BOOLEAN_TYPE() {return BOOLEAN_CLASS.type();}
     public final Symbol UNIT_CLASS;
-    public final Type   UNIT_TYPE;
+    public final Type   UNIT_TYPE() {return UNIT_CLASS.type();}
 
     private Symbol BOOLEAN_OR;
     private Symbol BOOLEAN_AND;
@@ -406,23 +406,14 @@ public class Definitions {
 
         // the primitive types
         DOUBLE_CLASS = getClass(Names.scala_Double);
-        DOUBLE_TYPE = DOUBLE_CLASS.typeConstructor();
         FLOAT_CLASS = getClass(Names.scala_Float);
-        FLOAT_TYPE = FLOAT_CLASS.typeConstructor();
         LONG_CLASS = getClass(Names.scala_Long);
-        LONG_TYPE = LONG_CLASS.typeConstructor();
         INT_CLASS = getClass(Names.scala_Int);
-        INT_TYPE = INT_CLASS.typeConstructor();
         CHAR_CLASS = getClass(Names.scala_Char);
-        CHAR_TYPE = CHAR_CLASS.typeConstructor();
         SHORT_CLASS = getClass(Names.scala_Short);
-        SHORT_TYPE = SHORT_CLASS.typeConstructor();
         BYTE_CLASS = getClass(Names.scala_Byte);
-        BYTE_TYPE = BYTE_CLASS.typeConstructor();
         BOOLEAN_CLASS = getClass(Names.scala_Boolean);
-        BOOLEAN_TYPE = BOOLEAN_CLASS.typeConstructor();
         UNIT_CLASS = getClass(Names.scala_Unit);
-        UNIT_TYPE = UNIT_CLASS.typeConstructor();
 
         // the scala.ANYREF class
 	ANYREF_CLASS = new AliasTypeSymbol(
@@ -530,31 +521,31 @@ public class Definitions {
         IS = new TermSymbol(
 	    Position.NOPOS, Names.isInstanceOf, ANY_CLASS, Modifiers.FINAL);
         IS.setInfo(Type.PolyType(new Symbol[]{newTypeParameter(IS, ANY_TYPE())},
-				 BOOLEAN_TYPE));
+				 BOOLEAN_TYPE()));
         ANY_CLASS.members().enter(IS);
 
         EQEQ = new TermSymbol(
 	    Position.NOPOS, Names.EQEQ, ANY_CLASS, Modifiers.FINAL);
         EQEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQEQ, ANY_TYPE())},
-				     BOOLEAN_TYPE));
+				     BOOLEAN_TYPE()));
         ANY_CLASS.members().enter(EQEQ);
 
         BANGEQ = new TermSymbol(
 	    Position.NOPOS, Names.BANGEQ, ANY_CLASS, Modifiers.FINAL);
         BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE())},
-				       BOOLEAN_TYPE));
+				       BOOLEAN_TYPE()));
         ANY_CLASS.members().enter(BANGEQ);
 
         EQUALS = new TermSymbol(
 	    Position.NOPOS, Names.equals, ANY_CLASS, 0);
         EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, ANY_TYPE())},
-				     BOOLEAN_TYPE));
+				     BOOLEAN_TYPE()));
         ANY_CLASS.members().enter(EQUALS);
 
 	EQ = new TermSymbol(
 	    Position.NOPOS, Names.eq, ANY_CLASS, 0);
         EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, ANY_TYPE())},
-				   BOOLEAN_TYPE));
+				   BOOLEAN_TYPE()));
         ANY_CLASS.members().enter(EQ);
 
         TOSTRING = new TermSymbol(
@@ -564,7 +555,7 @@ public class Definitions {
 
         HASHCODE = new TermSymbol(
 	    Position.NOPOS, Names.hashCode, ANY_CLASS, 0);
-        HASHCODE.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, INT_TYPE));
+        HASHCODE.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, INT_TYPE()));
         ANY_CLASS.members().enter(HASHCODE);
 
         // add a null value to the root scope

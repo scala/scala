@@ -540,7 +540,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
             Symbol m_eqarg = new TermSymbol(tree.pos, name, m_eq, 0)
                 .setType(sym.type());
             m_eq.setInfo(
-                Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE));
+                Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE()));
             Tree m_eqdef = gen.DefDef(m_eq,
                 gen.Assign(gen.mkRef(tree.pos, mvar), gen.Ident(tree.pos, m_eqarg)));
             sym.owner().members().enterOrOverload(m_eq);
@@ -642,7 +642,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    new TermSymbol(clazz.pos, Names.that, equalsSym, PARAM)
 	    .setInfo(defs.ANY_TYPE());
 	equalsSym.setInfo(
-	    Type.MethodType(new Symbol[]{equalsParam}, defs.BOOLEAN_TYPE));
+	    Type.MethodType(new Symbol[]{equalsParam}, defs.BOOLEAN_TYPE()));
 	clazz.info().members().enter(equalsSym);
 	Tree[] fields = caseFields(clazz);
 	Type testtp = clazz.type();
@@ -709,7 +709,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
         Symbol tagSym = new TermSymbol(
             clazz.pos, Names.tag, clazz,
             clazz.isSubClass(defs.OBJECT_CLASS) ? OVERRIDE : 0)
-            .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE));
+            .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE()));
         clazz.info().members().enter(tagSym);
         return gen.DefDef(tagSym, gen.mkIntLit(clazz.pos, clazz.tag()));
 	}
@@ -722,9 +722,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Tree[] fields = caseFields(clazz);
 	Symbol getClassMethod = getNullaryMemberMethod(clazz.type(), Names.getClass);
 	Symbol addMethod = getUnaryMemberMethod(
-	    defs.INT_TYPE, Names.ADD, defs.INT_TYPE);
+	    defs.INT_TYPE(), Names.ADD, defs.INT_TYPE());
 	Symbol mulMethod = getUnaryMemberMethod(
-	    defs.INT_TYPE, Names.MUL, defs.INT_TYPE);
+	    defs.INT_TYPE(), Names.MUL, defs.INT_TYPE());
 	Tree body =
 	    gen.Apply(
 		gen.Select(

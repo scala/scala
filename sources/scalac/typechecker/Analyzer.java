@@ -596,13 +596,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     }
 
     private Type value2Type(Object value) {
-	if (value instanceof Character) return definitions.CHAR_TYPE;
-	else if (value instanceof Integer) return definitions.INT_TYPE;
-	else if (value instanceof Long) return definitions.LONG_TYPE;
-	else if (value instanceof Float) return definitions.FLOAT_TYPE;
-	else if (value instanceof Double) return definitions.DOUBLE_TYPE;
+	if (value instanceof Character) return definitions.CHAR_TYPE();
+	else if (value instanceof Integer) return definitions.INT_TYPE();
+	else if (value instanceof Long) return definitions.LONG_TYPE();
+	else if (value instanceof Float) return definitions.FLOAT_TYPE();
+	else if (value instanceof Double) return definitions.DOUBLE_TYPE();
 	else if (value instanceof String) return definitions.JAVA_STRING_TYPE();
-	else if (value instanceof Boolean) return definitions.BOOLEAN_TYPE;
+	else if (value instanceof Boolean) return definitions.BOOLEAN_TYPE();
 	else throw new ApplicationError();
     }
 
@@ -1576,7 +1576,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    this.inAlternative = false;       // no vars allowed below Alternative
 	    Tree pat1 = transform(pat, PATTERNmode, pattpe);
 	    Tree guard1 = (guard == Tree.Empty) ? Tree.Empty
-		: transform(guard, EXPRmode, definitions.BOOLEAN_TYPE);
+		: transform(guard, EXPRmode, definitions.BOOLEAN_TYPE());
 	    Tree body1 = transform(body, EXPRmode, pt);
 	    popContext();
 	    return (Tree.CaseDef) copy.CaseDef(tree, pat1, guard1, body1)
@@ -1851,7 +1851,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Tree.Template templ1 = copy.Template(templ, parents, body1);
 			templ1.setType(Type.NoType).setSymbol(Symbol.NONE);
 			return copy.PackageDef(tree, pkg, templ1)
-			    .setType(definitions.UNIT_TYPE);
+			    .setType(definitions.UNIT_TYPE());
 		    }
 		}
 		return tree.setType(Type.ErrorType);
@@ -1871,7 +1871,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		checkNoEscape(tree.pos, sym.info());
 		popContext();
 		return copy.ClassDef(tree, sym, tparams1, vparams1, tpe1, templ1)
-		    .setType(definitions.UNIT_TYPE);
+		    .setType(definitions.UNIT_TYPE());
 
 	    case ModuleDef(_, _, Tree tpe, Tree.Template templ):
 		sym.moduleClass().initialize();
@@ -1881,7 +1881,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    error(tree.pos,
 			sym + " does not implement " + tpe1.type);
 		return copy.ModuleDef(tree, sym, tpe1, templ1)
-		    .setType(definitions.UNIT_TYPE);
+		    .setType(definitions.UNIT_TYPE());
 
 	    case DefDef(_, Name name, Tree.AbsTypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
 		pushContext(tree, sym, new Scope(context.scope));
@@ -1907,7 +1907,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		checkNonCyclic(tree.pos, tpe1.type);
 		sym.flags &= ~LOCKED;
 		return copy.DefDef(tree, sym, tparams1, vparams1, tpe1, rhs1)
-		    .setType(definitions.UNIT_TYPE);
+		    .setType(definitions.UNIT_TYPE());
 
 	    case ValDef(_, _, Tree tpe, Tree rhs):
 		Tree tpe1 = (tpe == Tree.Empty)
@@ -1925,14 +1925,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		checkNonCyclic(tree.pos, tpe1.type);
 		sym.flags &= ~LOCKED;
 		return copy.ValDef(tree, sym, tpe1, rhs1)
-		    .setType(definitions.UNIT_TYPE);
+		    .setType(definitions.UNIT_TYPE());
 
 	    case AbsTypeDef(_, _, Tree rhs, Tree lobound):
 		Tree rhs1 = transform(rhs, TYPEmode);
 		Tree lobound1 = transform(lobound, TYPEmode);
 		checkNonCyclic(tree.pos, sym.type());
 		return copy.AbsTypeDef(tree, sym, rhs1, lobound1)
-		    .setType(definitions.UNIT_TYPE);
+		    .setType(definitions.UNIT_TYPE());
 
 	    case AliasTypeDef(_, _, AbsTypeDef[] tparams, Tree rhs):
 		pushContext(tree, sym.primaryConstructor(), new Scope(context.scope));
@@ -1942,7 +1942,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		popContext();
 		checkNonCyclic(tree.pos, sym.type());
 		return copy.AliasTypeDef(tree, sym, tparams1, rhs1)
-		    .setType(definitions.UNIT_TYPE);
+		    .setType(definitions.UNIT_TYPE());
 
 	    case Import(Tree expr, Name[] selectors):
 		context.imports = new ImportList(tree, context.scope, context.imports);
@@ -1969,7 +1969,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    transform(stats1[stats1.length - 1], curmode & ~FUNmode, pt);
 			owntype = checkNoEscape(tree.pos, stats1[stats1.length - 1].type);
 		    } else {
-			owntype = definitions.UNIT_TYPE;
+			owntype = definitions.UNIT_TYPE();
 		    }
 		}
 		popContext();
@@ -2033,7 +2033,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Type restype = pftargs[1];
 			Tree isDefinedAtVisitor = transformVisitor(
 			    desugarize.isDefinedAtVisitor(tree),
-			    pattype, definitions.BOOLEAN_TYPE);
+			    pattype, definitions.BOOLEAN_TYPE());
 			Tree applyVisitor = transformVisitor(tree, pattype, restype);
 			if (!infer.isFullyDefined(restype))
 			    restype = applyVisitor.type;
@@ -2063,18 +2063,18 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		} else if (varsym != null && (varsym.flags & MUTABLE) != 0) {
 		    Tree rhs1 = transform(rhs, EXPRmode, lhs1.type);
 		    return copy.Assign(tree, lhs1, rhs1)
-			.setType(definitions.UNIT_TYPE);
+			.setType(definitions.UNIT_TYPE());
 		} else {
 		    return error(tree.pos, "assignment to non-variable");
 		}
 
 	    case If(Tree cond, Tree thenp, Tree elsep):
-		Tree cond1 = transform(cond, EXPRmode, definitions.BOOLEAN_TYPE);
+		Tree cond1 = transform(cond, EXPRmode, definitions.BOOLEAN_TYPE());
 		Tree thenp1, elsep1;
 		if (elsep == Tree.Empty) {
-		    thenp1 = transform(thenp, EXPRmode, definitions.UNIT_TYPE);
+		    thenp1 = transform(thenp, EXPRmode, definitions.UNIT_TYPE());
 		    elsep1 = make.Block(tree.pos, Tree.EMPTY_ARRAY)
-			.setType(definitions.UNIT_TYPE);
+			.setType(definitions.UNIT_TYPE());
 		} else {
 		    thenp1 = transform(thenp, EXPRmode, pt);
 		    elsep1 = transform(elsep, EXPRmode, pt);
@@ -2493,12 +2493,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		pushContext(tree, context.owner, new Scope(context.scope));
 		Symbol lsym = new TermSymbol(tree.pos, name, context.owner, LABEL);
 		lsym.setInfo(
-		    Type.MethodType(Symbol.EMPTY_ARRAY, definitions.UNIT_TYPE));
+		    Type.MethodType(Symbol.EMPTY_ARRAY, definitions.UNIT_TYPE()));
 		context.scope.enter(lsym);
 		Tree body1 = transform(body, mode, pt);
 		popContext();
 		return copy.LabelDef(tree, lsym, params, body1)
-		    .setSymbol(lsym).setType(definitions.UNIT_TYPE);
+		    .setSymbol(lsym).setType(definitions.UNIT_TYPE());
 
 	    case TypeTerm():
 		return tree;

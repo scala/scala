@@ -85,7 +85,7 @@ public class AddConstructors extends Transformer {
 
 	    Type constrType = Type.MethodType
 		(paramSyms, forJVM ?
-		 global.definitions.UNIT_TYPE : owner.type());
+		 global.definitions.UNIT_TYPE() : owner.type());
             if (tparamSyms.length != 0)
                 constrType = Type.PolyType(tparamSyms, constrType);
 

@@ -447,7 +447,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		    new ValDef[][]{{
 			(ValDef) make.ValDef(
 			    tree.pos, SYNTHETIC | PARAM, parameterName(0), tpe.duplicate(), Tree.Empty)}},
-		    gen.mkType(tree.pos, global.definitions.UNIT_TYPE),
+		    gen.mkType(tree.pos, global.definitions.UNIT_TYPE()),
 		    ((mods1 & DEFERRED) != 0) ? Tree.Empty
 		        : make.Assign(
 			    tree.pos,

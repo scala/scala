@@ -461,7 +461,7 @@ public class AlgebraicMatcher extends PatternMatcher {
 
 	  Matcher m = new Matcher( _m.owner,
 				   selector,
-				   defs.BOOLEAN_TYPE );
+				   defs.BOOLEAN_TYPE() );
 
 	  Tree pats[] = new Tree[ seqPatNodes.size() ];
 	  Tree body[] = new Tree[ seqPatNodes.size() ];

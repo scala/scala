@@ -133,7 +133,7 @@ public class RightTracerInScala extends TracerInScala  {
 	  new Tree [] {
 	  cf.debugPrintRuntime( "ASSIGN" ),
 	  gen.Assign( hv, cf.newSeqCons( elem, hv ))
-	  }, defs.UNIT_TYPE);
+	  }, defs.UNIT_TYPE());
 	*/
     }
 
@@ -151,7 +151,7 @@ public class RightTracerInScala extends TracerInScala  {
 					cf.fresh.newName("q"),
 					funSym,
 					0 )
-	    .setType( defs.INT_TYPE ) ;
+	    .setType( defs.INT_TYPE() ) ;
 
 	this.elemSym = new TermSymbol( pos,
 				       cf.fresh.newName("elem"),
@@ -163,17 +163,17 @@ public class RightTracerInScala extends TracerInScala  {
 					 cf.fresh.newName("trgt"),
 					 funSym,
 					 0)
-	    .setType( defs.INT_TYPE ) ;
+	    .setType( defs.INT_TYPE() ) ;
 
 
 	funSym.setType( new Type.MethodType( new Symbol[] {
-	    iterSym, stateSym },  defs.UNIT_TYPE ));
+	    iterSym, stateSym },  defs.UNIT_TYPE() ));
 
     }
 
     // same as in LeftTracer
     Tree code_fail() {
-	return cf.ThrowMatchError( _m.pos, defs.UNIT_TYPE );
+	return cf.ThrowMatchError( _m.pos, defs.UNIT_TYPE() );
     }
 
     public Tree code_body() {
@@ -311,7 +311,7 @@ public class RightTracerInScala extends TracerInScala  {
 
 	Matcher m = new Matcher( funSym,//this.funSym,
 				 currentElem(),
-				 defs.BOOLEAN_TYPE );
+				 defs.BOOLEAN_TYPE() );
 
 	// there could be variables in regular expressions under Sequence node,
 	// export those later

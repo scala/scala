@@ -99,17 +99,17 @@ public class Autom2Scala  {
                   .setType( cf._seqIterType( elementType ) ) ;
 
             this.stateSym = newParam("q")
-                  .setType( defs.INT_TYPE ) ;
+                  .setType( defs.INT_TYPE() ) ;
 
             this.resultSym = new TermSymbol( pos,
 					     cf.fresh.newName("swRes"),
 					     owner,
 					     0 )
-                  .setType( defs.INT_TYPE ) ;
+                  .setType( defs.INT_TYPE() ) ;
 
             this.funSym
                   .setType( new Type.MethodType( new Symbol[] {
-                        iterSym, stateSym },  defs.INT_TYPE ));
+                        iterSym, stateSym },  defs.INT_TYPE() ));
 
             this.curSym = new TermSymbol( pos,
                                           CURRENT_ELEM,
@@ -121,7 +121,7 @@ public class Autom2Scala  {
 					   HASNEXT,
 					   funSym,
 					   0)
-                  .setType( defs.BOOLEAN_TYPE );
+                  .setType( defs.BOOLEAN_TYPE() );
 
       }
 
@@ -250,7 +250,7 @@ public class Autom2Scala  {
       Tree _cur_match( Tree pat ) {
             Matcher m = new Matcher( funSym,//this.funSym,
                                      currentElem(),
-                                     defs.BOOLEAN_TYPE );
+                                     defs.BOOLEAN_TYPE() );
 
             am.construct( m, new CaseDef[] {
                 cf.gen.CaseDef( pat,

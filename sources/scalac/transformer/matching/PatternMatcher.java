@@ -477,7 +477,7 @@ public class PatternMatcher extends PatternTool {
                 switch (t.type()) {
                     case OverloadedType(Symbol[] alts, Type[] alttypes):
                         infer.methodAlternative(t, alts, alttypes,
-                            new Type[]{defs.INT_TYPE}, seqType);
+                            new Type[]{defs.INT_TYPE()}, seqType);
                 }
                 t = gen.mkApply_V(t, new Tree[]{gen.mkIntLit(pat.pos, index)});
 */
@@ -582,7 +582,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected boolean isSimpleIntSwitch() {
-    	if (selector.type.widen().isSameAs(defs.INT_TYPE)) {
+    	if (selector.type.widen().isSameAs(defs.INT_TYPE())) {
     		PatternNode patNode = root.and;
     		while (patNode != null) {
    				PatternNode node = patNode;
@@ -922,7 +922,7 @@ public class PatternMatcher extends PatternTool {
 			bodies,
 			(defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
 			                      : toTree(defaultCase.and),
-                        defs.BOOLEAN_TYPE);
+                        defs.BOOLEAN_TYPE());
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {

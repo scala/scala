@@ -265,7 +265,7 @@ public class LeftTracerInScala extends TracerInScala {
 
         Matcher m = new Matcher( funSym,
                                  currentElem(),
-                                 defs.BOOLEAN_TYPE );
+                                 defs.BOOLEAN_TYPE() );
 
         if( CollectVariableTraverser.containsBinding( pat )) {
             switch( pat ) {
