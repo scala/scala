@@ -48,8 +48,8 @@ trait Set[A] with Iterable[A] {
     }
 
     def exists(p: A => Boolean): Boolean = {
-    	val iter = elements;
-    	var res = false;
+        val iter = elements;
+        var res = false;
         while (!res && iter.hasNext) {
             if (p(iter.next)) { res = true; }
         }

@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 class SetWrapper[A](set: Set[A]) extends Set[A]
-			                     with scala.collection.SetWrapper[A](set) {
+                                 with scala.collection.SetWrapper[A](set) {
 
     def +=(elem: A): Unit = set.+=(elem);
 

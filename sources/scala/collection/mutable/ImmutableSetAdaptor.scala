@@ -20,7 +20,7 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 class ImmutableSetAdaptor[A, B <: scala.collection.immutable.Set[A, B]]
-			(s: B) extends Set[A] {
+            (s: B) extends Set[A] {
 
     protected var set = s;
 
