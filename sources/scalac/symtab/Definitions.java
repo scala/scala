@@ -217,6 +217,13 @@ public class Definitions {
         return TYPE_CLASS.staticType();
     }
 
+    public final Symbol CLASSTYPE_CLASS;
+    public final Type   CLASSTYPE_TYPE() {
+        return CLASSTYPE_CLASS.staticType();
+    }
+
+    public final Symbol JAVACLASSTYPE_CLASS;
+
     public final Symbol SCALACLASSTYPE_CLASS;
     public final Type   SCALACLASSTYPE_TYPE() {
         return SCALACLASSTYPE_CLASS.staticType();
@@ -229,7 +236,13 @@ public class Definitions {
         return TYPECONSTRUCTOR_CLASS.staticType();
     }
 
-    public final Symbol JAVATYPEREPOSITORY_CLASS;
+    public final Symbol COMPOUNDTYPE_CLASS;
+    public final Symbol METHODTYPE_CLASS;
+
+    public final Symbol REFINEMENT_CLASS;
+    public final Type   REFINEMENT_TYPE() {
+        return REFINEMENT_CLASS.staticType();
+    }
 
     /** The scala.Predef module */
     public final Symbol PREDEF;
@@ -626,15 +639,6 @@ public class Definitions {
         return TYPECONSTRUCTOR_INSTANTIATE;
     }
 
-    private Symbol JAVATYPEREPOSITORY_GET;
-    public Symbol JAVATYPEREPOSITORY_GET() {
-        if (JAVATYPEREPOSITORY_GET == null)
-            JAVATYPEREPOSITORY_GET =
-                loadTerm(JAVATYPEREPOSITORY_CLASS.linkedModule().moduleClass(),
-                         Names.get);
-        return JAVATYPEREPOSITORY_GET;
-    }
-
     //########################################################################
     // Public Fields - Global values
 
@@ -717,10 +721,14 @@ public class Definitions {
         LIST_CLASS = getClass("scala.List");
         ARRAY_CLASS = getClass("scala.Array");
         TYPE_CLASS = getClass("scala.Type");
+        CLASSTYPE_CLASS = getClass("scala.runtime.types.ClassType");
+        JAVACLASSTYPE_CLASS = getClass("scala.runtime.types.JavaClassType");
         SCALACLASSTYPE_CLASS = getClass("scala.runtime.types.ScalaClassType");
         SINGLETYPE_CLASS = getClass("scala.runtime.types.SingleType");
         TYPECONSTRUCTOR_CLASS = getClass("scala.runtime.types.TypeConstructor");
-        JAVATYPEREPOSITORY_CLASS = getClass("scala.runtime.types.JavaTypeRepository");
+        COMPOUNDTYPE_CLASS = getClass("scala.runtime.types.CompoundType");
+        METHODTYPE_CLASS = getClass("scala.runtime.types.MethodType");
+        REFINEMENT_CLASS = getClass("scala.runtime.types.Refinement");
         PREDEF = getModule("scala.Predef");
         CONSOLE = getModule("scala.Console");
         MATCHERROR = getModule("scala.MatchError");
