@@ -65,6 +65,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       i = i + 1
     }
     super.apply(units);
+    val mixinOnly = global.target != Global.TARGET_INT;
+    List.range(0, definitions.FUNCTION_COUNT).foreach(
+      i => loadCode(definitions.FUNCTION_CLASS(i), mixinOnly));
     var n = descr.newSources.size();
     while (n > 0) { // this calls apply(u) for every unit `u'.
       val l = global.units.length;
@@ -118,6 +121,20 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           if (global.debug) exception.printStackTrace();
           unit.error(pos, exception.getMessage() + "; source file for "
                      + clasz + " is needed because it is used as a mixin");
+      }
+    }
+  }
+
+  def loadCode(clasz: Symbol, mixinOnly: boolean): unit = {
+    assert(clasz.isClass() && !clasz.isModuleClass(), Debug.show(clasz));
+    if (clasz.isExternal()) {
+      try {
+        global.compileLate(global.getSourceFile(clasz), mixinOnly);
+      } catch {
+        case exception: java.io.IOException =>
+          if (global.debug) exception.printStackTrace();
+          global.error(exception.getMessage() + "; source file for "
+                     + clasz + " is needed");
       }
     }
   }
