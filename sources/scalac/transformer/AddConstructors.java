@@ -146,6 +146,14 @@ public class AddConstructors extends Transformer {
 		}
 	    }
 
+	    // inline initialization of module values
+            if (forINT && treeSym.isModuleClass()) {
+                constrBody.add(
+                    gen.Assign(
+                        gen.mkRef(tree.pos, treeSym.module()),
+                        gen.This(tree.pos, treeSym)));
+            }
+
 	    // for every ValDef move the initialization code into the constructor
 	    for (int i = 0; i < body.length; i++) {
 		Tree t = body[i];
