@@ -118,6 +118,7 @@ collection/mutable/SynchronizedSet.scala
 collection/mutable/SynchronizedStack.scala
 collection/mutable/Undoable.scala
 
+collection/immutable/BitSet.scala
 collection/immutable/ListMap.scala
 collection/immutable/ListSet.scala
 collection/immutable/Map.scala

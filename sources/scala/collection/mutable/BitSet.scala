@@ -16,7 +16,7 @@ package scala.collection.mutable ;
  */
 class BitSet(initSize: Int) extends scala.collection.BitSet {
 
-  /** default constructor, initial size of 16 bits */
+  /** default constructor, initial size of 32 bits */
   def this() = this( 32 );
 
   class ByteArray with ResizableArray[Int] {
