@@ -378,20 +378,23 @@ public class Erasure extends Transformer implements Modifiers {
             if (tree.type.symbol() == definitions.UNIT_CLASS)
                 // !!! return Tree.Literal(UNIT, null).setType(owntype);
                 throw Debug.abort("found unit literal");
-            switch (owntype) {
-            case UnboxedArrayType(Type elemtp):
-                Tree apply = transform(templ.parents[0]);
-                switch (apply) {
+            if (tree.type.symbol() == definitions.ARRAY_CLASS) {
+                switch (templ.parents[0]) {
                 case Apply(_, Tree[] args):
-                    assert args.length == 1;
-                    switch (elemtp) {
-                    case UnboxedType(int kind):
-                        return genNewArray(tree.pos,args[0],kind);
+                    args = transform(args);
+                    switch (owntype) {
+                    case UnboxedArrayType(Type elemtp):
+                        switch (elemtp) {
+                        case UnboxedType(int kind):
+                            return genNewArray(tree.pos,args[0],kind);
+                        default:
+                            return genNewArray(tree.pos,args[0],elemtp);
+                        }
                     default:
-                        return genNewArray(tree.pos,args[0],elemtp);
+                        throw Debug.abort("illegal case", owntype);
                     }
                 default:
-                    throw Debug.abort("illegal case", apply);
+                    throw Debug.abort("illegal case", templ.parents[0]);
                 }
             }
 	    return super.transform(tree).setType(owntype);
