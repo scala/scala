@@ -266,14 +266,14 @@ public class TextTreePrinter implements TreePrinter {
             printParams(tparams);
             printParams(vparams);
             printOpt(TXT_COLON, tpe, false);
-            printTemplate(KW_EXTENDS, impl, true);
+            printTemplate(tree.symbol(), KW_EXTENDS, impl, true);
             break;
 
         case PackageDef(Tree packaged, Tree.Template impl):
             print(KW_PACKAGE);
             print(Text.Space);
             print(packaged);
-            printTemplate(KW_WITH, impl, true);
+            printTemplate(null, KW_WITH, impl, true);
             break;
 
         case ModuleDef(int mods, // :
@@ -285,7 +285,7 @@ public class TextTreePrinter implements TreePrinter {
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
             printOpt(TXT_COLON, tpe, false);
-            printTemplate(KW_EXTENDS, impl, true);
+            printTemplate(null, KW_EXTENDS, impl, true);
             break;
 
         case ValDef(int mods, Name name, Tree tpe, Tree rhs):
@@ -490,7 +490,7 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case New(Tree.Template templ):
-            printTemplate(KW_NEW, templ, false);
+            printTemplate(null, KW_NEW, templ, false);
             printType(tree);
             break;
 
@@ -715,7 +715,8 @@ public class TextTreePrinter implements TreePrinter {
         }
     }
 
-    protected void printTemplate(Text prefix,
+    protected void printTemplate(Symbol symbol,
+                                 Text prefix,
                                  Tree.Template templ,
                                  boolean spaceBefore) {
         if (! (templ.parents.length == 0
@@ -728,9 +729,41 @@ public class TextTreePrinter implements TreePrinter {
             printArray(templ.parents, Text.None, Text.None, TXT_WITH_SP);
         }
 
-        if (templ.body.length > 0) {
+        List types = new ArrayList();
+        if (symbol != null) {
+            Global global = Global.instance;
+            if (global.currentPhase.id > global.PHASE.EXPLICITOUTER.id()) {
+                Scope.SymbolIterator i = symbol.members().iterator(true);
+                while (i.hasNext()) {
+                    Symbol member = i.next();
+                    if (member.isTypeAlias() || member.isAbstractType())
+                        types.add(member);
+                }
+            }
+        }
+        if (templ.body.length > 0 || types.size() > 0) {
             print(Text.Space);
-            printArray(templ.body, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
+            indent();
+            print(TXT_BLOCK_BEGIN);
+            if (types.size() > 0) {
+                SymbolTablePrinter printer = new SymbolTablePrinter(
+                    INDENT_STRING.substring(0, indent));
+                printer.indent();
+                for (int i = 0; i < types.size(); ++i) {
+                    if (i > 0) printer.line();
+                    Symbol type = (Symbol)types.get(i);
+                    printer.printSignature(type).print(';');
+                }
+                printer.undent();
+                print(printer.toString().substring(indent));
+                print(Text.Newline);
+            }
+            for (int i = 0; i < templ.body.length; ++i) {
+                if (i > 0) print(TXT_BLOCK_SEP);
+                print(templ.body[i]);
+            }
+            undent();
+            print(TXT_BLOCK_END);
         }
     }
 
