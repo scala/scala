@@ -14,6 +14,7 @@ import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.parser.Sourcefile;
 import scalac.symtab.Type;
+import scalac.symtab.TypeTags;
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
 import scalac.util.Name;
@@ -38,8 +39,10 @@ public class EntryPointCompiler {
         this.global = global;
         Name ARGS_N = Name.fromString("args");
         Symbol args = new TermSymbol(0, ARGS_N, null, 0);
-        args.setInfo(global.definitions.arrayType(global.definitions.STRING_TYPE));
-        this.MAIN_TYPE = Type.MethodType(new Symbol[] {args}, global.definitions.UNIT_TYPE).erasure();
+        args.setInfo(
+            Type.UnboxedArrayType(global.definitions.JAVA_STRING_TYPE));
+        this.MAIN_TYPE = Type.MethodType(
+            new Symbol[] {args}, Type.UnboxedType(TypeTags.UNIT));
     }
 
     //########################################################################
@@ -68,7 +71,7 @@ public class EntryPointCompiler {
 
         Name name = Compiler.MAIN_N;
         Type type = MAIN_TYPE;
-        Symbol method = getMethod(module, name, type.erasure());
+        Symbol method = getMethod(module, name, type);
         if (method == Symbol.NONE) {
             error("module '" + main + "' has no method '" + name + "'");
             return;
