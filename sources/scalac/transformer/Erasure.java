@@ -522,6 +522,7 @@ public class Erasure extends Transformer implements Modifiers {
         case This(_):
         case Literal(_):
         case TypeTerm():
+        case Switch(_, _, _, _):  // MZ: this this right?
 	    return super.transform(tree).setType(owntype);
 
         case Bad():

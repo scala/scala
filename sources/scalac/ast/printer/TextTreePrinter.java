@@ -456,6 +456,30 @@ public class TextTreePrinter implements TreePrinter {
             printType(tree);
             break;
 
+		case Switch(Tree expr, int[] tags, Tree[] bodies, Tree defaultBody):
+			print("<switch>");
+			print(Text.Space);
+            print(TXT_LEFT_PAREN);
+            print(expr);
+            print(TXT_RIGHT_PAREN);
+            print(Text.Space);
+            indent();
+            print(TXT_BLOCK_BEGIN);
+			for (int i = 0; i < tags.length; i++) {
+				print(KW_CASE);
+				print("" + i);
+				print(Text.Space);
+            	print(TXT_RIGHT_ARROW);
+            	print(Text.Space);
+            	print(bodies[i]);
+            	print(Text.Newline);
+            }
+            print("<default> => ");
+            print(defaultBody);
+            undent();
+        	print(TXT_BLOCK_END);
+			break;
+
         case New(Tree.Template templ):
             printTemplate(KW_NEW, templ, false);
             printType(tree);

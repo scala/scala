@@ -24,6 +24,8 @@ import java.util.Iterator ;
 
 public class PatternMatcher extends PatternTool {
 
+    private static boolean OPTIMIZE = false;
+
     /** the owner of the pattern matching expression
      */
     Symbol owner;
@@ -614,6 +616,169 @@ public class PatternMatcher extends PatternTool {
 //////////// generator methods
 
     public Tree toTree() {
+    	if (OPTIMIZE && isTopLevelIntSwitch())
+    		return intSwitchToTree();
+    	else
+    		return generalSwitchToTree();
+    }
+
+    protected boolean isTopLevelIntSwitch() {
+    	if (selector.type.widen().isSameAs(defs.INT_TYPE)) {
+    		PatternNode patNode = root.and;
+    		while (patNode != null) {
+   				PatternNode node = patNode;
+  				while ((node = node.or) != null)
+     				switch (node.and) {
+     					case Body(ValDef[][] bound, Tree[] guard, _):
+     						if ((guard.length > 1) ||
+     						    (guard[0] != Tree.Empty) ||
+     						    (bound[0].length > 0))
+     							return false;
+     						break;
+     					default:
+     						return false;
+     				}
+         		patNode = patNode.next();
+      		}
+      		return true;
+    	} else
+    		return false;
+    }
+
+    static class TagBodyPair {
+    	int tag;
+    	Tree body;
+    	TagBodyPair next;
+
+    	TagBodyPair(int tag, Tree body, TagBodyPair next) {
+    		this.tag = tag;
+    		this.body = body;
+    		this.next = next;
+    	}
+
+    	int length() {
+    		return (next == null) ? 1 : (next.length() + 1);
+    	}
+    }
+
+    static TagBodyPair insert(int tag, Tree body, TagBodyPair current) {
+    	if (current == null)
+    		return new TagBodyPair(tag, body, null);
+    	else if (tag > current.tag)
+    		return new TagBodyPair(current.tag, current.body, insert(tag, body, current.next));
+    	else
+    		return new TagBodyPair(tag, body, current);
+    }
+
+    protected int numCases(PatternNode patNode) {
+    	int n = 0;
+  		while ((patNode = patNode.or) != null)
+     		switch (patNode) {
+ 				case DefaultPat():
+        			break;
+          		default:
+          			n++;
+         	}
+      	return n;
+    }
+
+  	protected Tree defaultBody(PatternNode patNode, Tree otherwise) {
+   		while (patNode != null) {
+   			PatternNode node = patNode;
+  			while ((node = node.or) != null)
+     			switch (node) {
+ 					case DefaultPat():
+        				return bodyToTree(patNode.and);
+         		}
+         	patNode = patNode.next();
+      	}
+      	return otherwise;
+    }
+
+    /** This method translates pattern matching expressions that match
+     *  on integers on the top level.
+     */
+    public Tree intSwitchToTree() {
+    	print();
+    	int ncases = numCases(root.and);
+    	Tree matchError = cf.ThrowMatchError(selector.pos, typeOf(resultVar));
+    	// without a case, we return a match error if there is no default case
+    	if (ncases == 0)
+    		return defaultBody(root.and, matchError);
+    	// for one case we use a normal if-then-else instruction
+    	else if (ncases == 1) {
+    		switch (root.and.or) {
+    			case ConstantPat(Object value):
+    				return cf.If(
+    					cf.Equals(selector,
+    						make.Literal(root.and.or.pos, value).setType(root.and.or.type)),
+    					bodyToTree(root.and.or.and),
+    					defaultBody(root.and, matchError)).
+    						setType(typeOf(resultVar));
+    			default:
+    				return generalSwitchToTree();
+    		}
+		}
+    	// if we have more than 2 cases than use a switch statement
+    	switch (root.and) {
+    		case Header(_, Header next):
+    			TagBodyPair mappings = null;
+    			Tree defaultBody = null;
+    			PatternNode patNode = root.and;
+    			while (patNode != null) {
+    				PatternNode node = patNode.or;
+    				while (node != null) {
+    					switch (node) {
+    						case DefaultPat():
+    							if (defaultBody != null)
+    								throw new ApplicationError();
+    							defaultBody = bodyToTree(node.and);
+                				node = node.or;
+                				break;
+               				case ConstantPat(Object value):
+               					mappings = insert(
+               						((Integer)value).intValue(),
+               						bodyToTree(node.and),
+               						mappings);
+								node = node.or;
+								break;
+            				default:
+            					throw new ApplicationError(node.toString());
+    					}
+    				}
+    				patNode = patNode.next();
+    			}
+    			if (defaultBody == null)
+    				defaultBody = cf.ThrowMatchError(selector.pos, typeOf(resultVar));
+    			if (mappings == null) {
+    				return cf.Switch(selector, new int[0], new Tree[0], defaultBody).setType(typeOf(resultVar));
+    			} else {
+    				int n = mappings.length();
+    				int[] tags = new int[n];
+    				Tree[] bodies = new Tree[n];
+    				n = 0;
+    				while (mappings != null) {
+    					tags[n] = mappings.tag;
+    					bodies[n++] = mappings.body;
+    					mappings = mappings.next;
+    				}
+    				return cf.Switch(selector, tags, bodies, defaultBody).setType(typeOf(resultVar));;
+    			}
+            default:
+            	throw new ApplicationError();
+    	}
+    }
+
+    protected Tree bodyToTree(PatternNode node) {
+       switch (node) {
+       		case Body(_, _, Tree[] body):
+       			return body[0];
+       		default:
+   				throw new ApplicationError();
+		}
+    }
+
+    public Tree generalSwitchToTree() {
         TreeList ts = new TreeList();
         ts.append(
             make.ValDef(selector.pos,

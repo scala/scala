@@ -145,6 +145,13 @@ class CodeFactory extends PatternTool {
 	return result ;
     }
 
+	Tree Switch(Tree selector,
+	            int[] tags,
+	            Tree[] bodies,
+	            Tree defaultBody) {
+		return make.Switch(selector.pos, selector, tags, bodies, defaultBody);
+	}
+
     /** returns `List[ elemType ]' */
       Type SeqListType( Type elemType ) {
             return Type.TypeRef( defs.SCALA_TYPE,
