@@ -42,6 +42,11 @@ FUNCTION_FILES		+= $(filter $(FUNCTION_PREFIX)/Function%.java,$(RUNTIME_SOURCES)
 FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.tmpl
 FUNCTION_RULES		 = $(FUNCTION_PREFIX)/Function.scm
 
+TUPLE_PREFIX		 = $(LIBRARY_ROOT)
+TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_FILES))
+TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.tmpl
+TUPLE_RULES		 = $(TUPLE_PREFIX)/Tuple.scm
+
 # scala runtime
 RUNTIME_ROOT		 = $(PROJECT_SOURCEDIR)/scala
 RUNTIME_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/runtime.lst)
@@ -54,6 +59,12 @@ COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
 COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
 COMPILER_JC_COMPILER	 = PICO
 COMPILER_JC_CLASSPATH    = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE)
+
+# scala library
+
+LIBRARY_ROOT		 = $(RUNTIME_ROOT)
+LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
+LIBRARY_FILES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 
 # java compilation
 
@@ -85,7 +96,7 @@ FIND			?= find
 WC			?= wc
 SED			?= sed
 M4			?= m4
-RM			?= rm
+RM			?= rm -f
 CP			?= cp
 LN			?= ln
 MKDIR			?= mkdir
@@ -119,24 +130,27 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 all		: scripts
 all		: runtime
 all		: compiler
+all		: library
 
 force		:
-	$(RM) -f .latest-compiler
+	$(RM) .latest-compiler
 	@$(make) all
 
 clean		:
-	$(RM) -f .latest-compiler
-	$(RM) -f .latest-runtime
-	$(RM) -rf $(PROJECT_OUTPUTDIR)
-	$(RM) -f $(FUNCTION_FILES)
+	$(RM) .latest-compiler
+	$(RM) .latest-runtime
+	$(RM) -r $(PROJECT_OUTPUTDIR)
 
 distclean	: clean
-	$(RM) -f .latest-*
-	$(RM) -f $(SCRIPTS_WRAPPER_LINKS)
+	$(RM) .latest-*
+	$(RM) $(TUPLE_FILES)
+	$(RM) $(FUNCTION_FILES)
+	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 runtime		: .latest-runtime
 compiler	: .latest-compiler
+library		: .latest-library
 
 .PHONY		: all
 .PHONY		: force
@@ -145,6 +159,7 @@ compiler	: .latest-compiler
 .PHONY		: scripts
 .PHONY		: runtime
 .PHONY		: compiler
+.PHONY		: library
 
 ##############################################################################
 # Targets
@@ -157,6 +172,9 @@ compiler	: .latest-compiler
 	@$(make) .do-jc source=COMPILER JC_FILES='$?'
 	touch $@
 
+.latest-library		: $(LIBRARY_FILES)
+	touch $@
+
 ##############################################################################
 # Rules
 
@@ -165,6 +183,9 @@ $(SCRIPTS_WRAPPER_LINKS):
 
 $(FUNCTION_FILES): $(FUNCTION_TEMPLATE) $(FUNCTION_RULES)
 	$(TEMPLATE_EXPANDER) $(FUNCTION_RULES) $(FUNCTION_TEMPLATE) $@
+
+$(TUPLE_FILES): $(TUPLE_TEMPLATE) $(TUPLE_RULES)
+	$(TEMPLATE_EXPANDER) $(TUPLE_RULES) $(TUPLE_TEMPLATE) $@
 
 ##############################################################################
 
