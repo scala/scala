@@ -21,7 +21,7 @@ package scala.collection.mutable;
 trait Map[A, B] with scala.collection.Map[A, B] {
 
     /** This method allows one to add a new mapping from <code>key</code>
-     *  to <code>value</code> to the map. If the map contains already a
+     *  to <code>value</code> to the map. If the map already contains a
      *  mapping for <code>key</code>, it will be overridden by this
      *  function.
      */
@@ -84,7 +84,7 @@ trait Map[A, B] with scala.collection.Map[A, B] {
      *  <code>p</code> returns <code>false</code>.
      */
     def filter(p: (A, B) => Boolean): Unit = toList foreach {
-        case Pair(key, value) => if (p(key, value)) -=(key);
+        case Pair(key, value) => if (!p(key, value)) -=(key);
     }
 
     /** The hashCode method always yields an error, since it is not

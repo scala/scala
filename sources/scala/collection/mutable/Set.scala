@@ -62,7 +62,7 @@ trait Set[A] with scala.collection.Set[A] {
      *  which the predicate <code>p</code> yields the value <code>false</code>.
      */
     def filter(p: A => Boolean): Unit = toList foreach {
-        elem => if (p(elem)) -=(elem);
+        elem => if (!p(elem)) -=(elem);
     }
 
     /** Removes all elements from the set. After this operation is completed,

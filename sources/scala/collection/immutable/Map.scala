@@ -9,7 +9,6 @@
 
 package scala.collection.immutable;
 
-
 /** This trait extends the Map interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
  *  This trait defines the interface for functional map implementations
@@ -106,7 +105,7 @@ trait Map[A, B] with scala.collection.Map[A, B] {
     def filter(p: (A, B) => Boolean): Map[A, B] = {
         var res = this;
         toList foreach {
-            case Pair(key, value) => if (p(key, value)) { res = res.excl(key); }
+            case Pair(key, value) => if (!p(key, value)) { res = res.excl(key); }
         }
         res;
     }
@@ -147,7 +146,7 @@ trait Map[A, B] with scala.collection.Map[A, B] {
             false;
 
     override def hashCode() = {
-      elements.foldLeft(0)((hash:Int,E:Object) => hash + E.hashCode());
+      elements.foldLeft(0)((hash:Int,pair:Object) => hash + pair.hashCode());
     }
 
     /** This method controls how a mapping is represented in the string

@@ -67,7 +67,7 @@ trait Set[A] with scala.collection.Set[A] {
    def filter(p: A => Boolean): Set[A] = {
         var res = this;
         toList foreach {
-            elem => if (p(elem)) { res = res - elem; }
+            elem => if (!p(elem)) { res = res - elem; }
         }
         res;
     }
