@@ -591,6 +591,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return EMPTY_ARRAY;
     }
 
+    /** Get result type */
+    public final Type resultType() {
+        return type().resultType();
+    }
+
     /** Get type parameters at start of next phase */
     public final Symbol[] nextTypeParams() {
         Global.instance.nextPhase();
@@ -605,6 +610,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         Symbol[] vparams = valueParams();
         Global.instance.prevPhase();
         return vparams;
+    }
+
+    /** Get result type at start of next phase */
+    public final Type nextResultType() {
+        return nextType().resultType();
     }
 
     /** Get all constructors of class */
