@@ -2483,7 +2483,7 @@ module FileSystem {
                     |  try `{' block `}' [catch Expr] [finally Expr]
                     |  while '(' Expr ')' Expr
                     |  do Expr [`;'] while `(' Expr ')'
-                    |  for `(' Enumerators `)' (do | yield) Expr
+                    |  for `(' Enumerators `)' [yield] Expr
                     |  return [Expr]
                     |  throw Expr
                     |  [SimpleExpr `.'] id `=' Expr
@@ -4829,7 +4829,7 @@ object Predef {
 
 \section{Class Node}\label{cls:Node}
 \begin{lstlisting}
-package scala.xml ;
+package scala.xml;
 
 trait Node {
 
@@ -4837,40 +4837,39 @@ trait Node {
   def label: String;              
 
   /** attribute axis */
-  def attribute: Map[ String, String ];
+  def attribute: Map[String, String];
 
   /** child axis (all children of this node) */
   def child: Seq[Node];         
 
   /** descendant axis (all descendants of this node) */
-  def descendant:Seq[Node] = child.toList.flatMap { 
+  def descendant: Seq[Node] = child.toList.flatMap { 
     x => x::x.descendant.asInstanceOf[List[Node]] 
-  } ;
+  };
 
   /** descendant axis (all descendants of this node) */
-  def descendant_or_self:Seq[Node] = this::child.toList.flatMap { 
+  def descendant_or_self: Seq[Node] = this::child.toList.flatMap { 
     x => x::x.descendant.asInstanceOf[List[Node]] 
-  } ;
+  };
 
-  override def equals( x:Any ):boolean = x match {
+  override def equals(x: Any): boolean = x match {
     case that:Node => 
       that.label == this.label && 
-        that.attribute.sameElements( this.attribute ) && 
-          that.child.sameElements( this.child )
+        that.attribute.sameElements(this.attribute) && 
+          that.child.sameElements(this.child)
     case _ => false
-  }
+  };
 
  /** XPath style projection function. Returns all children of this node
   *  that are labelled with 'that. The document order is preserved.
   */
-    def \(that:Symbol): NodeSeq = {
+    def \(that: Symbol): NodeSeq = {
       new NodeSeq({
         that.name match {
-
           case "_" => child.toList; 
           case _ =>
             var res:List[Node] = Nil;
-            for( val x <- child.elements; x.label == that.name ) {
+            for (val x <- child.elements; x.label == that.name) {
               res = x::res;
             }
             res.reverse
@@ -4881,18 +4880,18 @@ trait Node {
  /** XPath style projection function. Returns all nodes labelled with the 
   *  name 'that from the descendant_or_self axis. Document order is preserved.
   */
-  def \\(that:Symbol): NodeSeq = {
+  def \\(that: Symbol): NodeSeq = {
     new NodeSeq(
       that.name match {
         case "_" => this.descendant_or_self;
         case _ => this.descendant_or_self.asInstanceOf[List[Node]].
-        filter( x => x.label == that.name );
+        filter(x => x.label == that.name);
       })
   }
 
   /** hashcode for this XML node */
   override def hashCode() = 
-    Utility.hashCode( label, attribute.toList.hashCode(), child);
+    Utility.hashCode(label, attribute.toList.hashCode(), child);
 
   /** string representation of this node */
   override def toString() = Utility.toXML(this);

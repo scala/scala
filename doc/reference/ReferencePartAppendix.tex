@@ -70,7 +70,7 @@ grammar.
   Expr1           ::=  if `(' Expr1 `)' Expr [[`;'] else Expr]
                     |  try `{' Block `}' [catch Expr] [finally Expr]
                     |  do Expr [`;'] while `(' Expr ')'
-                    |  for `(' Enumerators `)' (do | yield) Expr
+                    |  for `(' Enumerators `)' [yield] Expr
                     |  return [Expr]
                     |  throw Expr
                     |  [SimpleExpr `.'] id `=' Expr
