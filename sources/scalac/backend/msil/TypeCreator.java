@@ -31,10 +31,18 @@ import ch.epfl.lamp.util.Position;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
-public final class TypeCreator
-    extends scalac.ast.Traverser
-{
+/**
+ * Creates System.Reflection objects corresponding to
+ * Scala symbols
+ *
+ * @author Nikolay Mihaylov
+ * @version 1.1
+ */
+
+public final class TypeCreator {
 
     final private GenMSIL gen;
     final private Global global;
@@ -151,7 +159,7 @@ public final class TypeCreator
 			MONITOR, "Wait", OBJECT_1);
 	translateMethod(defs.JAVA_OBJECT_CLASS, "wait",
 			new scalac.symtab.
-			Type[] {UNBOXED_LONG},
+			Type[] {defs.LONG_TYPE},
 			MONITOR, "Wait",
 			new Type[] {SYSTEM_OBJECT, INT});
 	translateMethod(defs.JAVA_OBJECT_CLASS, "notify",
@@ -176,6 +184,7 @@ public final class TypeCreator
     {
 	Symbol[] methods = clazz.members().
 	    lookup(Name.fromString(name)).alternativeSymbols();
+
 	search:
 	for (int i = 0; i < methods.length; i++) {
 	    switch (methods[i].info()) {
@@ -200,7 +209,8 @@ public final class TypeCreator
 			 Type newClazz, String newName, Type[] newParamTypes)
     {
 	Symbol sym = lookupMethod(clazz, name, paramTypes);
-	assert sym != null : "Cannot find method: " + name;
+	assert sym != null : "Cannot find method: " + name + " in class " +
+	    dumpSym(clazz);
 	//System.out.println("translate2staticMethod:");
 	//System.out.println("\told method: " + dumpSym(sym));
 	MethodInfo method = newClazz.GetMethod(newName, newParamTypes);
@@ -236,59 +246,9 @@ public final class TypeCreator
 	}
     }
 
-    public void traverse(Unit[] units) {
-	for (int i = 0; i < units.length; i++) {
-	    unit = units[i];
-	    traverse(unit);
-	}
-    }
 
-    private Symbol currentClass;
-
-    public void traverse(Tree tree) {
-	pos = tree.pos;
-	final Symbol sym = tree.hasSymbol() ? tree.symbol() : null;
-	switch (tree) {
-	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
-	    Symbol tmpClass = currentClass;
-	    currentClass = sym;
-	    TypeBuilder tb = (TypeBuilder) symbols2types.get(sym);
-	    if (tb != null) {
-		assert tb == null || (tb instanceof TypeBuilder);
-		//logErr("Class already defined: " + dumpSym(sym) +
-		//   ";old type: " + tb);
-	    } else {
-		tb = (TypeBuilder) createType(sym);
-	    }
-	    types2symbols.put(tb, sym);
-	    traverse(body);
-	    currentClass = tmpClass;
-	    break;
-
-	case ValDef(_, _, _, _):
-	    if (currentClass == null)
-		break;
-	    FieldBuilder field = (FieldBuilder) symbols2fields.get(sym);
-	    if (field != null)
-		logErr("Field already defined: " + dumpSym(sym));
-	    else {
-		field = (FieldBuilder) createField(sym);
-	    }
-	    break;
-
-	case DefDef(_, _, _, _, _, _):
-	    MethodBase method = (MethodBase) symbols2methods.get(sym);
-	    if (method != null)
-		logErr("Method already defined: " + dumpSym(sym));
-	    else
-		method = createMethod(sym);
-	    break;
-
-	default:
-	    super.traverse(tree);
-	}
-    }
-
+    /** Finilizes ('bakes') the newly created types
+     */
     public void createTypes() {
 	Iterator iter = typeBuilders.iterator();
 	while (iter.hasNext())
@@ -296,6 +256,7 @@ public final class TypeCreator
     }
 
 
+    // creates bidirectional mapping from symbols to types
     public void map(Symbol sym, Type type) {
 	symbols2types.put(sym, type);
 	if (sym.isClass())
@@ -326,16 +287,8 @@ public final class TypeCreator
 	Type type = (Type) symbols2types.get(sym);
 	if (type != null)
 	    return type;
-	if (sym.isJava()) {
-	    //log("getType: looking up Java class: " + dumpSym(sym));
-// 	    try {
-// 		type = JavaType.fromString(sym.fullNameString());
-// 	    } catch (ClassNotFoundException e) {
-// 		global.fail(formatMessage("Cannot find class: " +
-//	                    sym.fullNameString()));
-// 	    }
+	if (sym.isJava())
 	    type = getJavaType(sym.fullNameString());
-	}
 	else {
 	    switch (sym.info()) {
 	    case CompoundType(_, _):
@@ -375,14 +328,18 @@ public final class TypeCreator
 	assert type == null : "Type " + type +
 	    " already defined for symbol: " + dumpSym(sym);
 
+
 	//log("TypeCreator.getType: creating type for " + dumpSym(sym));
 	final Symbol owner = sym.owner();
 	final String typeName =
 	    (owner.isClass() ? sym.nameString() : sym.fullNameString()) +
 	    (sym.isModuleClass() ? "$" : "");
 	final ModuleBuilder module = gen.currModule;
+
+	final scalac.symtab.Type classType = sym.info();
+
 	//log("createType: " + dumpSym(sym) + "\n");
-	switch (sym.info()) {
+	switch (classType) {
 	case CompoundType(scalac.symtab.Type[] baseTypes, _):
 	    Type superType = null;
 	    Type[] interfaces = null;
@@ -438,10 +395,106 @@ public final class TypeCreator
 	//log("createType: "  + dumpSym(sym) + " => " + type.getSignature());
 	//log("createType: symbol type symbol = " +
 	//getTypeFromType(sym.type()).getSignature());
+
+	// create the members of the class
+	for (Scope.SymbolIterator syms = sym.members().iterator();
+	     syms.hasNext(); )
+	    {
+		Symbol[] members = syms.next().alternativeSymbols();
+		for (int i = 0; i < members.length; i++) {
+		    if (members[i].isClass()) {
+			getType(members[i]);
+		    } else if (members[i].isMethod() /*&& !members[i].isModule()*/) {
+			createMethod(members[i]);
+		    }
+		    else if (!members[i].isClass() &&
+			     !members[i].isModule()) {
+			createField(members[i]);
+		    }
+		}
+	    }
+
+	if (!sym.isInterface()) {
+	    Set m = collapseInterfaceMethods(classType);
+	    for (Iterator i = m.iterator(); i.hasNext(); ) {
+		Symbol s = (Symbol) i.next();
+		Symbol method = lookupMethodImplementation(classType, s);
+		if (method == Symbol.NONE) {
+		    createMethod(type, s.name, s.info(),
+				 s.flags | Modifiers.DEFERRED);
+		}
+	    }
+	}
+
 	return type;
-    }
+    } // createType()
+
+
+
+//     Set collapseInheritedMethods(scalac.symtab.Type classType){
+// 	LinkedHashSet methods = new LinkedHashSet();
+// 	scalac.symtab.Type[] parents = classType.parents();
+// 	if (parents.length > 0) {
+// 	    methods.addAll(collapseInheritedMethods(parents[0]));
+// 	}
+// 	methods.addAll(expandScopeMethods(methods, classType.members()));
+// 	return methods;
+//     }
+
 
     /**
+     */
+    Symbol lookupMethodImplementation(scalac.symtab.Type classType, Symbol sym) {
+	Symbol method = classType.members().lookup(sym.name);
+	Symbol[] methods = method.alternativeSymbols();
+	for (int i = 0; i < methods.length; i++) {
+	    if (methods[i].info().equals(sym.info()))
+		return methods[i];
+	}
+
+	scalac.symtab.Type[] parents = classType.parents();
+	if (parents.length > 0) {
+	    // look up the inheritance chain
+	    method = lookupMethodImplementation(parents[0], sym);
+	} else {
+	    return Symbol.NONE;
+	}
+
+	// if the method is private this guarantees that there isn't
+	// public method with such name up the chain
+	return method.isPrivate() ? Symbol.NONE : method;
+    }
+
+
+    /** returns a set with the symbols of all the methods from
+     *  all interfaces implemented by the class
+     */
+    Set collapseInterfaceMethods(scalac.symtab.Type classType) {
+	LinkedHashSet methods = new LinkedHashSet();
+	scalac.symtab.Type[] parents = classType.parents();
+	for (int i = 1; i < parents.length; i++) {
+	    methods.addAll(collapseInterfaceMethods(parents[i]));
+	}
+	methods.addAll(expandScopeMethods(methods, classType.members()));
+	return methods;
+    }
+
+
+    /**
+     */
+    Set expandScopeMethods(Set symbols, Scope scope) {
+	for(Scope.SymbolIterator syms = scope.iterator(); syms.hasNext(); ) {
+	    Symbol[] members = syms.next().alternativeSymbols();
+	    for (int i = 0; i < members.length; i++) {
+		if (members[i].isMethod())
+		    symbols.add(members[i]);
+	    }
+	}
+	return symbols;
+    }
+
+
+    /** Retrieve the MSIL Type from the scala type
      */
     public Type getTypeFromType(scalac.symtab.Type type) {
 	//log("getTypeFromType: " + Debug.show(type));
@@ -468,16 +521,18 @@ public final class TypeCreator
 	return null;
     }
 
+
     public MethodBase getMethod(Symbol sym) {
 	MethodBase method = null;
 	try {
 	    method = getMethod2(sym);
-	} catch (ClassCastException e) {
+	} catch (Exception e) {
 	    logErr("getMethod: " + dumpSym(sym));
 	    if (global.debug) e.printStackTrace();
 	}
 	return method;
     }
+
 
     /** Returns the MethodBase object corresponding to the symbol
      */
@@ -485,6 +540,8 @@ public final class TypeCreator
 	MethodBase method = (MethodBase) symbols2methods.get(sym);
 	if (method != null)
 	    return method;
+
+
 	//log("getMethod: resolving " + dumpSym(sym));
 	//log("getMethod: sym.owner() = " + dumpSym(sym.owner()));
 	switch (sym.info()) {
@@ -492,7 +549,7 @@ public final class TypeCreator
 	    Type[] params = new Type[vparams.length];
 	    for (int i = 0; i < params.length; i++)
 		params[i] = getType(vparams[i]);
-// 	    if ( sym.isConstructor() ) {
+ 	    //if ( sym.isConstructor() ) {
 	    if (sym.name == Names.CONSTRUCTOR) {
 		// The owner of a constructor is the outer class
 		// so get the result type of the constructor
@@ -525,6 +582,7 @@ public final class TypeCreator
 	return method;
     }
 
+
     MethodBase createMethod(Symbol sym) {
 	MethodBase method = null;
 	try {
@@ -537,6 +595,55 @@ public final class TypeCreator
 	return method;
     }
 
+
+    /**
+     */
+    MethodBase createMethod(TypeBuilder type, Name name,
+			    scalac.symtab.Type symType, int flags)
+    {
+	MethodBase method = null;
+	switch (symType) {
+	case MethodType(Symbol[] vparams, scalac.symtab.Type result):
+	    Type[] params = new Type[vparams.length];
+	    for (int i = 0; i < params.length; i++)
+		params[i] = getType(vparams[i]);
+
+	    if (name == Names.CONSTRUCTOR) {
+		ConstructorBuilder constructor = type.DefineConstructor
+		    (translateMethodAttributes(flags, true),
+		     CallingConventions.Standard, params);
+
+		for (int i = 0; i < vparams.length; i++)
+		    constructor.DefineParameter
+			(i, ParameterAttributes.In, vparams[i].name.toString());
+		method = constructor;
+	    } else {
+		String sname;
+		if (name == Names.toString) sname = "ToString";
+		else if (name == Names.equals) sname = "Equals";
+		else if (name == Names.hashCode) sname = "GetHashCode";
+		else  sname = name.toString();
+
+		MethodBuilder methodBuilder = type.DefineMethod
+		    (sname, translateMethodAttributes(flags, false),
+		     getTypeFromType(result), params);
+
+		for (int i = 0; i < vparams.length; i++)
+		    methodBuilder.DefineParameter
+			(i, ParameterAttributes.In, vparams[i].name.toString());
+		method =  methodBuilder;
+	    }
+	    break;
+	default:
+	    assert false : "Method type expected: " + Debug.show(symType);
+	}
+
+	return method;
+    }
+
+
+    /** create the method corresponding to the symbol
+     */
     MethodBase createMethod2(Symbol sym) {
 	final Symbol owner = sym.owner();
 	MethodBase method = null;
@@ -544,44 +651,16 @@ public final class TypeCreator
 	//log("createMethod: sym.owner() = " + dumpSym(sym.owner()));
 	switch (sym.info()) {
 	case MethodType(Symbol[] vparams, scalac.symtab.Type result):
-	    Type[] params = new Type[vparams.length];
-	    for (int i = 0; i < params.length; i++)
-		params[i] = getType(vparams[i]);
-
-	    int flags = ( owner.isJava() && owner.isModuleClass() ) ?
-		sym.flags | Modifiers.STATIC :
-		sym.flags;
-
-// 	    if (sym.isConstructor()) {
 	    if (sym.name == Names.CONSTRUCTOR) {
-		Type type = getTypeFromType(result);
-		ConstructorBuilder constructor =
-		    ((TypeBuilder)type).DefineConstructor
-		    (translateMethodAttributes(flags, true),
-		     CallingConventions.Standard,
-		     params);
-		for (int i = 0; i < vparams.length; i++)
-		    constructor.DefineParameter
-			(i, ParameterAttributes.In, vparams[i].name.toString());
-		method = constructor;
+		TypeBuilder type = (TypeBuilder) getTypeFromType(result);
+		method = createMethod(type, sym.name, sym.info(), sym.flags);
 	    } else {
-		String name = sym.name.toString();
-		if (sym.name == Names.toString) name = "ToString";
-		else if (sym.name == Names.hashCode) name = "GetHashCode";
-		else if (sym.name == Names.equals) name = "Equals";
-		Type type = getType(owner);
-		//log("createMethod: Define method for " + dumpSym(sym));
-		MethodBuilder methodBuilder =
-		    ((TypeBuilder)type).DefineMethod
-		    (name, translateMethodAttributes(flags, false),
-		     getTypeFromType(result), params);
-		for (int i = 0; i < vparams.length; i++)
-		    methodBuilder.DefineParameter
-			(i, ParameterAttributes.In,
-			 vparams[i].name.toString());
-		method =  methodBuilder;
-		//log("createMethod: New method defined: " +
-		//method.getSignature());
+		int flags = ( owner.isJava() && owner.isModuleClass() ) ?
+		    sym.flags | Modifiers.STATIC :
+		    sym.flags;
+
+		TypeBuilder type = (TypeBuilder)getType(owner);
+		method = createMethod(type, sym.name, sym.info(), flags);
 	    }
 	    break;
 	default:
@@ -590,6 +669,7 @@ public final class TypeCreator
 	symbols2methods.put(sym, method);
 	return method;
     }
+
 
     /** Returns teh FieldInfo object corresponing to the symbol
      */
@@ -606,6 +686,9 @@ public final class TypeCreator
 	return field;
     }
 
+
+    /**
+     */
     public FieldInfo createField(Symbol sym) {
 	FieldBuilder field;
 	//log("createField: resolving symbol: " + dumpSym(sym));
@@ -622,6 +705,9 @@ public final class TypeCreator
 	return field;
     }
 
+
+    /**
+     */
     FieldInfo getModuleField(Type type) {
 	Symbol sym = (Symbol) types2symbols.get(type);
 	assert sym != null;
@@ -638,6 +724,9 @@ public final class TypeCreator
 	return null;
     }
 
+
+    /**
+     */
     FieldInfo getModuleField(Symbol sym) {
 	FieldInfo moduleField = null;
 	if (sym.isModule() || sym.isModuleClass()) {
@@ -669,8 +758,8 @@ public final class TypeCreator
 	return moduleField;
     }
 
-    /**
-     * Translates Scala modifiers into TypeAttributes
+
+    /** Translates Scala modifiers into TypeAttributes
      */
     public static long translateTypeAttributes(int mods, boolean nested) {
 	long attr = TypeAttributes.AutoLayout | TypeAttributes.AnsiClass;
@@ -702,8 +791,8 @@ public final class TypeCreator
 	return attr;
     }
 
-    /**
-     * Translates Scala modifiers into FieldAttributes
+
+    /** Translates Scala modifiers into FieldAttributes
      */
     public static long translateFieldAttributes(int mods) {
 	long attr = 0L;
@@ -723,8 +812,8 @@ public final class TypeCreator
 	return attr;
     }
 
-    /**
-     * Translates Scala modifiers into MethodAttributes
+
+    /** Translates Scala modifiers into MethodAttributes
      */
     public static long translateMethodAttributes(int mods, boolean constructor)
     {
@@ -778,13 +867,14 @@ public final class TypeCreator
     }
 
     void log(String message) {
-	//System.out.println(message);
+	System.out.println(message);
 	//log(1, message);
-        global.reporter.printMessage(message);
+        //global.reporter.printMessage(message);
     }
 
     void logErr(String message) {
-        global.reporter.printMessage(unit.position(pos), message);
+	System.err.println(message);
+        //global.reporter.printMessage(unit.position(pos), message);
     }
 
 } // class TypeCreator
