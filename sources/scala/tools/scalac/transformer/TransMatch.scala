@@ -43,6 +43,46 @@ class TransMatch( global:scalac_Global )
     super.apply( cunit );
   }
 
+    import Tree._ ;
+/*
+    def singleSeq(t:Array[Tree]) = {
+      t.length == 1 && t(0).isInstaceOf[Sequence] && val ts = Iterator.fromArray( t );
+
+      (( trees.length == 1 ) &&
+       ( trees( 0 ) match {
+         case Sequence( trees2 ) =>
+           (( trees2.length == 1 ) &&
+            ( trees2( 0 ) match {
+              case Sequence( trees3 )=>
+                true;
+              case _ => isRegular( trees2 );
+              }
+             })) || ( trees2.length != 0 ) && isRegular( trees2 )
+           case _ => false
+         })) ||
+    }
+*/
+    def isRegular(ps:Array[Tree]):Boolean = {
+      var res = false;
+      val pats = scala.Iterator.fromArray( ps );
+      while (!res && pats.hasNext )
+        res = isRegular( pats.next );
+      res
+    }
+
+    def isRegular(pat:Tree):Boolean = pat match {
+      case Alternative(_)          => true;
+      case Bind( n, pat1 ) =>
+        TreeInfo.isNameOfStarPattern( n ) || TreeInfo.isEmptySequence( pat1 )
+      case Tree$Ident(n)                =>  TreeInfo.isNameOfStarPattern( n )
+      case Sequence( trees )       =>
+        true;//( trees.length != 0 )||isRegular( trees );
+      case Apply( fn, trees ) =>
+        isRegular( trees ) &&
+        !((trees.length == 1) && TreeInfo.isEmptySequence( trees( 0 )))
+      case _ => false;
+    }
+
   def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
     if( global.newMatch ) {
       val fm = new FullRegularTranslator( global );
@@ -54,6 +94,8 @@ class TransMatch( global:scalac_Global )
     var i = 0;
     while (i < cases.length) {
       containsReg = TestRegTraverser.apply(cases( i )) || containsReg;
+      //containsReg = isRegular(cases(i).pat) || containsReg;
+      //TestRegTraverser.apply(cases( i ));
       var nilvars:Set  = TestRegTraverser.getNilVariables();
       if( !nilvars.isEmpty() ) {
         val newBody = new Array[Tree]( nilvars.size() );
@@ -76,7 +118,12 @@ class TransMatch( global:scalac_Global )
       matcher.tree
     } else {
       val pm = new PatternMatcher( cunit, root, currentOwner, restpe );
+      try{
       pm.construct( cases.asInstanceOf[ Array[Tree] ] );
+      } catch {
+        case e:Throwable =>
+          Console.println("failed on pats"+scala.Iterator.fromArray(cases).toList.mkString("","\n","")+", message\n"+e.getMessage())
+      }
       if (global.log()) {
         global.log("internal pattern matching structure");
         pm.print();
