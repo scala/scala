@@ -204,7 +204,7 @@ public class Erasure extends GenTransformer implements Modifiers {
 	case Select(Tree qualifier, _):
             Symbol symbol = tree.symbol();
             Type prefix = qualifier.type().baseType(symbol.owner()).erasure();
-            assert prefix != Type.NoType: tree;
+            assert prefix != Type.NoType: tree + " has type NoType (its owner is" + symbol.owner() + ");
 	    qualifier = transform(qualifier);
 	    qualifier = coerce(qualifier, prefix);
 
