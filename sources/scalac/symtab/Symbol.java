@@ -786,12 +786,8 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert phase != null : this;
 	if (infos.limit().precedes(phase)) {
             while (infos.limit().next != phase) {
-                Global global = phase.global;
-                Phase current = global.currentPhase;
                 Phase next = infos.limit().next;
-		global.currentPhase = next;
-		Type info = next.transformInfo(this, infos.info);
-                global.currentPhase = current;
+                Type info = transformInfo(next, infos.info);
 		if (info != infos.info) {
 		    infos = new TypeIntervalList(infos, info, next);
 		} else {
@@ -806,6 +802,37 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    return infos.info;
 	}
     }
+    // where
+        private Type transformInfo(Phase phase, Type info) {
+            Global global = phase.global;
+            Phase current = global.currentPhase;
+            switch (info) {
+            case ErrorType:
+            case NoType:
+                return info;
+            case OverloadedType(Symbol[] alts, Type[] alttypes):
+                global.currentPhase = phase.next;
+                for (int i = 0; i < alts.length; i++) {
+                    Type type = alts[i].info();
+                    if (type != alttypes[i]) {
+                        Type[] types = new Type[alttypes.length];
+                        for (int j = 0; j < i; j++) types[j] = alttypes[j];
+                        alttypes[i] = type;
+                        for (; i < alts.length; i++)
+                            types[i] = alts[i].info();
+                        global.currentPhase = current;
+                        return Type.OverloadedType(alts, types);
+                    }
+                }
+                global.currentPhase = current;
+                return info;
+            default:
+                global.currentPhase = phase;
+                info = phase.transformInfo(this, info);
+                global.currentPhase = current;
+                return info;
+            }
+        }
 
     /** Get first defined info, without forcing lazy types.
      */
