@@ -1,0 +1,218 @@
+\usepackage{fourier}
+\usepackage[scaled]{luximono}
+\usepackage{helvet}
+
+\usepackage{color}
+\usepackage{colortbl}
+
+% produce an acceptable typing area
+\usepackage{a4}
+\setlength{\textheight}{22.5cm}
+
+% support for generating PDF files
+\newif\ifpdf
+    \ifx\pdfoutput\undefined
+    \pdffalse
+\else
+    \pdftrue
+    \pdfoutput=1
+\fi
+
+% produce nice captions
+\usepackage[hang,small,bf]{caption2}
+
+% include titlesec
+\usepackage[clearempty]{titlesec}
+\newcommand{\mytitlerule}{\titlerule[.5pt]}
+\newcommand{\mychaptername}{Chapter}
+\titleformat{name=\part}
+   [block]
+   {\thispagestyle{empty}\centering\scshape\huge}
+   {\Roman{part}}
+   {1ex}
+   {}
+   [\vspace*{0.5\textheight}]
+\titleformat{name=\chapter}
+   [display]
+   {\sffamily\bfseries\huge}
+   {\textnormal{\sffamily\LARGE\mychaptername{} \thechapter}}
+   {0pt}
+   {\vspace*{2.5mm}}
+   [\vspace*{8mm}]
+\titleformat{name=\chapter,numberless}
+   [display]
+   {\vspace*{-30mm}\sffamily\bfseries\huge}
+   {}
+   {0pt}
+   {}
+   [\vspace*{2mm}]
+\titleformat{name=\section}
+   {\sffamily\bfseries\large}
+   {\thesection}
+   {1em}
+   {}
+\titleformat{name=\subsection}
+   {\sffamily\bfseries\normalsize}
+   {\thesubsection}
+   {0.666em}
+   {}
+\titleformat{name=\subsubsection}
+   {\sffamily\bfseries\normalsize}
+   {\thesubsubsection}
+   {0.55em}
+   {}
+\titleformat{name=\paragraph}
+   [runin]
+   {\rmfamily\normalsize\bfseries}
+   {}
+   {opt}
+   {}
+   [.\ ]
+\titleformat{name=\subparagraph}
+   [runin]
+   {\itshape}
+   {}
+   {0pt}
+   {}
+   [.\ ]
+\addtocounter{secnumdepth}{1}
+
+% produce nice footers
+\usepackage[bottom,multiple,stable]{footmisc} % flushmargin,norule removed
+
+% produce nice headings
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancypagestyle{plain}{\fancyhf{}%
+   \renewcommand{\headrulewidth}{0pt}%
+   \renewcommand{\footrulewidth}{0pt}}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ \ #1}}
+\fancyhf{}
+\fancyhead[LE,RO]{\sffamily\footnotesize\thepage}
+\fancyhead[RE]{\sffamily\footnotesize\leftmark}
+\fancyhead[LO]{\sffamily\footnotesize\rightmark}
+\renewcommand{\headrulewidth}{0.5pt}
+
+%% set latex/pdflatex specific stuff
+\ifpdf
+    \usepackage[pdftex,
+                hyperindex,
+                plainpages=false,
+                breaklinks,
+                colorlinks,
+                citecolor=black,
+                filecolor=black,
+                linkcolor=black,
+                pagecolor=black,
+                urlcolor=blue]{hyperref}
+    \usepackage[pdftex]{graphicx}
+    \DeclareGraphicsExtensions{.jpg,.pdf}
+    \pdfcatalog {
+        /PageMode (/UseNone)
+    }
+    \usepackage{thumbpdf}
+\else
+    \usepackage[ps2pdf]{hyperref}
+    \usepackage{graphicx}
+    \DeclareGraphicsExtensions{.eps,.jpg}
+\fi
+
+\usepackage{listings}
+
+% scala language description
+\lstdefinelanguage{Scala}{
+    morekeywords={%
+        abstract,case,catch,class,def,do,else,extends,false,final,finally,%
+        for,if,import,let,module,new,null,object,override,package,private,%
+        protected,qualified,return,sealed,super,this,trait,true,try,type,%
+        val,var,while,with,yield},%
+    sensitive,%
+    morecomment=[l]//,%
+    morecomment=[s]{/*}{*/},%
+    morestring=[b]",%
+    morestring=[b]',%
+}[keywords,comments,strings]%
+
+% activate the language and predefine settings
+\lstset{
+    language=Scala,%
+    xleftmargin=4mm,%
+    aboveskip=3mm,%
+    belowskip=3mm,%
+    fontadjust=true,%
+    columns=[c]flexible,%
+    keepspaces=true,%
+    basewidth={0.5em, 0.425em},%
+    tabsize=2,%
+    basicstyle=\small\renewcommand{\baselinestretch}{0.95}\ttfamily,%
+    commentstyle=\itshape,%
+    keywordstyle=\bfseries,%
+    mathescape=true,%
+    escapechar=¤,%
+    captionpos=b,%
+    framerule=0.3pt,%
+    firstnumber=0,%
+    numbersep=1.5mm,%
+    numberstyle=\tiny,%
+}
+
+\lstdefinestyle{floating}{%
+    xleftmargin=10pt,%
+    xrightmargin=5pt,%
+    aboveskip=4mm,%
+    belowskip=4mm,%
+    fontadjust=true,%
+    columns=[c]flexible,%
+    keepspaces=true,%
+    basewidth={0.5em, 0.425em},%
+    tabsize=2,%
+    basicstyle=\small\renewcommand{\baselinestretch}{0.95}\ttfamily,%
+    commentstyle=\rm,%
+    keywordstyle=\bfseries,%
+    mathescape=true,%
+    captionpos=b,%
+    framerule=0.3pt,%
+    firstnumber=0,%
+    numbersep=1.5mm,%
+    numberstyle=\tiny,%
+    float=tbp,%
+    frame=tblr,%
+    framesep=5pt,%
+    framexleftmargin=3pt,%
+    abovecaptionskip=\smallskipamount,%
+    belowcaptionskip=\smallskipamount,%
+} % to define: caption, label
+
+\newcommand{\code}[1]{%
+    \lstinline[keywordstyle=,%
+               flexiblecolumns=true,%
+               basicstyle=\small\ttfamily]£#1£}
+
+\newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
+
+\newcommand{\docauthor}{Author}
+\newcommand{\doctitle}{Title}
+\newcommand{\docsubtitle}{DRAFT}
+\newcommand{\docdate}{\today}
+\newcommand{\makedoctitle}{%
+  \begin{titlepage}%
+  \begin{center}%
+  \begin{tabular}{p{0.6\textwidth}>{\columncolor[gray]{.82}[\tabcolsep]}p{0.327\textwidth}}%
+  \rowcolor[gray]{.82}\ & \  \\%
+  \  & \  \\[35mm]%
+  \hspace*{4mm}{\sffamily\huge\bfseries\parbox{0.55\textwidth}{\doctitle}} & \  \\[42mm]%
+  \  & {\sffamily\large \docsubtitle} \\[.5ex]%
+  \  & {\sffamily\large \docdate} \\[16mm]%
+  \  & {\sffamily\large\bfseries\parbox{0.31\textwidth}{\docauthor}} \\[55mm]%
+  \rowcolor[gray]{.82} \  & \  \\%
+  \multicolumn{2}{>{\columncolor[gray]{.82}[\tabcolsep]}r}{%
+    \small\sc Programming Methods Laboratory}\\[-.2ex]%
+  \multicolumn{2}{>{\columncolor[gray]{.82}[\tabcolsep]}r}{%
+    \small\sc Swiss Federal Institute of Technology, Lausanne}\\[-.2ex]%
+  \multicolumn{2}{>{\columncolor[gray]{.82}[\tabcolsep]}r}{%
+    \small\sc Switzerland}\\[-.6ex]%
+  \rowcolor[gray]{.82} \  & \  %
+  \end{tabular}%
+  \end{center}%
+  \end{titlepage}}
