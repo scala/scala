@@ -1039,8 +1039,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    //System.out.println(t + ".toInstance(" + pre + "," + clazz + ") = " + t1);//DEBUG
 		    return t1;
 		} else {
-                    if (local) prefix = sym.owner().thisType();
-		    Type prefix1 = apply(prefix);
+		    Type prefix1 = prefix;
+                    if (!local) {
+                        prefix1 = apply(prefix);
+                    } else if (sym.isAbstractType()) {
+                        prefix = sym.owner().thisType();
+                        prefix1 = prefix.asSeenFrom(pre, sym.owner());
+                    }
 		    Type[] args1 = map(args);
 		    if (prefix1 == prefix && args1 == args) return t;
 		    Symbol sym1 = (sym.flags & MODUL) == 0 ? prefix1.rebind(sym) : sym;
@@ -1101,7 +1106,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	Type toPrefix(Symbol sym, Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    else if ((sym.isSubClass(clazz) || clazz.isSubClass(sym)) &&
+	    else if (sym.isSubClass(clazz) &&
 		     pre.widen().symbol().isSubClass(sym))
 		return pre;
 	    else
