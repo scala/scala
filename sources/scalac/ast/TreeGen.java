@@ -176,7 +176,7 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build a tree to be used as a base class constructor for a template.
      */
-    public Tree mkParentConstr(int pos, Type parentType, Type root) {
+    public Tree mkParentConstr(int pos, Type parentType) {
 	switch (parentType) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    Tree ref = mkRef(pos, pre, sym.constructor());
@@ -196,10 +196,10 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build an array of trees to be used as base classes for a template.
      */
-    public Tree[] mkParentConstrs(int pos, Type[] parents, Type root) {
+    public Tree[] mkParentConstrs(int pos, Type[] parents) {
         Tree[] constrs = new Tree[parents.length];
         for (int i = 0; i < parents.length; ++i)
-	    constrs[i] = mkParentConstr(pos, parents[i], root);
+	    constrs[i] = mkParentConstr(pos, parents[i]);
         return constrs;
     }
 
@@ -515,10 +515,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type clazzinfo = clazz.info();
 	Global.instance.prevPhase();
-	return ClassDef(pos,
-			clazz,
-			mkParentConstrs(pos, clazzinfo.parents(), clazzinfo),
-			body);
+	return ClassDef(pos, clazz, mkParentConstrs(pos, clazzinfo.parents()), body);
     }
 
     public Tree ClassDef(Symbol clazz, Tree[] body) {
