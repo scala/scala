@@ -23,6 +23,8 @@ object Iterator {
     def next: a = error("next on empty iterator");
   }
 
+  def fromSeq[a](xs: a*) = xs.elements;
+
   def fromArray[a](xs: Array[a]) = new Iterator[a] {
     private var i = 0;
     def hasNext: Boolean =
