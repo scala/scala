@@ -1863,7 +1863,8 @@ class Parser(unit: Unit) {
 		        paramClauseOpt()));
     } while (s.token == COMMA);
     val thistpe = simpleTypedOpt();
-    val template = classTemplate( mods );
+    val template = classTemplate( (mods & Modifiers.CASE)!= 0 );
+
     val ts = new myTreeList();
 	lhs foreach { case Tuple4(p, n, tp, vp) =>
 		ts.append(
@@ -1883,7 +1884,7 @@ class Parser(unit: Unit) {
 	  lhs.append(Pair(s.pos, ident()));
     } while (s.token == COMMA);
 	val thistpe = simpleTypedOpt();
-    val template = classTemplate( mods );
+    val template = classTemplate( false );
     val ts = new myTreeList();
 	lhs foreach { case Pair(p, n) =>
 		ts.append(
@@ -1896,7 +1897,7 @@ class Parser(unit: Unit) {
 
   /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
    */
-  def classTemplate( mods:int ): Tree$Template = {
+  def classTemplate( isCaseClass:boolean ): Tree$Template = {
     val pos = s.pos;
     val parents = new myTreeList();
     if (s.token == EXTENDS) {
@@ -1906,11 +1907,9 @@ class Parser(unit: Unit) {
       parents.append(scalaAnyRefConstr(pos));
     }
     parents.append(scalaObjectConstr(pos));
-    /* needs bootstrapping
-    if( (mods & Modifiers.CASE) != 0 ) {
-          parents.append(caseClassConstr(pos));
+    if( isCaseClass ) {
+      parents.append(caseClassConstr(pos));
     }
-    */
     if (s.token == WITH) {
       s.nextToken();
       template(parents)
