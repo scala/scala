@@ -2761,7 +2761,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		else {
 		    Type this1 = unbox();
 		    if (this1 != this) return this1;
-                    else return sym.typeConstructor();
+                    else return TypeRef(localThisType, sym, EMPTY_ARRAY);
 		}
 
 	    default: throw new ApplicationError(sym + " has wrong kind: " + sym.kind);
