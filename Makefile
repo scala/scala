@@ -67,12 +67,22 @@ META_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
 META_SOURCES		+= $(META_LIST:%=$(META_ROOT)/%)
 META_JC_FILES		+= $(META_SOURCES)
 
+# boot scala compiler
+BOOT_COMPILER_ROOT	 = $(PROJECT_SOURCEDIR)/scalac
+BOOT_COMPILER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
+BOOT_COMPILER_SOURCES	+= $(BOOT_COMPILER_LIST:%=$(BOOT_COMPILER_ROOT)/%)
+BOOT_COMPILER_JC_FILES	 = $(filter %.java,$(BOOT_COMPILER_SOURCES))
+BOOT_COMPILER_JC_CLASSPATH = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE):$(FJBG_JARFILE)
+
 # scala compiler
 COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
 COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
 COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
-COMPILER_JC_FILES	 = $(COMPILER_SOURCES)
+COMPILER_JC_FILES	 = $(filter %.java,$(COMPILER_SOURCES))
 COMPILER_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE):$(FJBG_JARFILE)
+COMPILER_SC_COMPILER	 = BOOTSCALAC
+COMPILER_SC_FILES	 = $(filter %.scala,$(COMPILER_SOURCES))
+COMPILER_SC_CLASSPATH	 = $(COMPILER_JC_CLASSPATH)
 
 # scala library
 LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
@@ -179,13 +189,49 @@ distclean	: clean
 	$(RM) $(LIBRARY_JAR_ARCHIVE)
 	$(RM) $(TOOLS_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
+	$(RM) -r $(PROJECT_ROOT)/bootstrap
 	$(RM) -r $(PROJECT_APIDOCDIR)
+
+boot		:
+	$(RM) -r $(PROJECT_ROOT)/bootstrap
+	$(MKDIR) $(PROJECT_ROOT)/bootstrap
+	$(MKDIR) $(PROJECT_ROOT)/bootstrap/bin
+	$(MKDIR) $(PROJECT_ROOT)/bootstrap/classes
+	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_ROOT)/bootstrap/bin/.scala_wrapper.tmpl
+	$(RM) .latest-boot-compiler
+	$(MAKE) \
+	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
+	    PROJECT_BINARYDIR=$(PROJECT_ROOT)/bootstrap/bin \
+	    INSTALL_PREFIX=$(PROJECT_ROOT)/bootstrap \
+	    scripts
+	$(RM) .latest-boot-compiler
+	$(RM) .latest-lamplib
+	$(MAKE) \
+	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
+	    lamplib
+	$(RM) .latest-lamplib
+	$(MAKE) \
+	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
+	    boot-compiler
+	$(RM) .latest-library-jc
+	$(RM) .latest-library-sc
+	$(MAKE) \
+	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
+	    LIBRARY_SC_COMPILER=BOOTSCALAC \
+	    library
+	$(RM) .latest-library-jc
+	$(RM) .latest-library-sc
+
+BOOTSCALAC	= $(PROJECT_ROOT)/bootstrap/bin/scalac
+
+boot-compiler	: .latest-boot-compiler
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 lamplib		: .latest-lamplib
 meta		: .latest-meta
 generate	: .latest-generate
-compiler	: .latest-compiler
+compiler	: .latest-compiler-jc
+compiler	: .latest-compiler-sc
 library		: .latest-library-jc
 library		: .latest-library-sc
 interpreter	: .latest-interpreter
@@ -230,8 +276,18 @@ scalac4ant	:
 	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
 
-.latest-compiler	: $(COMPILER_JC_FILES)
+.latest-boot-compiler	: $(BOOT_COMPILER_JC_FILES)
+	@$(make) jc target=BOOT_COMPILER BOOT_COMPILER_JC_FILES='$?'
+	touch $@
+
+.latest-compiler-jc	: $(COMPILER_JC_FILES)
 	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
+	touch $@
+
+.latest-compiler-sc	: $(COMPILER_SC_FILES)
+	@if [ -d $(PROJECT_ROOT)/bootstrap ]; then \
+	    $(make) sc target=COMPILER COMPILER_SC_FILES='$?'; \
+	fi;
 	touch $@
 
 .latest-library-jc	: $(LIBRARY_JC_FILES)
