@@ -6,5 +6,6 @@
 AbstractFile.java
 Position.java
 SourceFile.java
+SourceReader.java
 
 ##############################################################################
