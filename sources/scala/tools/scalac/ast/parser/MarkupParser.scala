@@ -1,3 +1,10 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
 
 import scalac.ast._;
 import scalac.atree.AConstant;
@@ -211,7 +218,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     var aMap = ListMap.Empty[Name,Tree];
     while( s.xIsNameStart ) {
       val key = s.xName; s.xEQ;
-      val endch = s.ch.asInstanceOf[char];
+      val endch = s.ch;
       val value = endch match {
         case '"' | '\'' =>
           val pos = s.pos;

@@ -20,7 +20,7 @@ public final class SourceRepresentation {
         .setAllSeparators(File.separatorChar)
         .setRootSeparator('\0');
 
-    public static int digit2int(byte ch, int base) {
+    public static int digit2int(char ch, int base) {
         if ('0' <= ch && ch <= '9' && ch < '0' + base)
             return ch - '0';
         else if ('A' <= ch && ch < 'A' + base - 10)
@@ -72,7 +72,8 @@ public final class SourceRepresentation {
                         int k = 1;
                         int d = 0;
                         while (k <= 4 && d >= 0) {
-                            d = digit2int(source[offset + i + k], 16);
+                            // !!! (char)
+                            d = digit2int((char)source[offset + i + k], 16);
                             code = code * 16 + d;
                             k++;
                         }

@@ -35,9 +35,8 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** add the given character to the documentation buffer
   */
-  protected def addCharToDoc(ch: byte): unit =
-      if (docBuffer != null)
-        docBuffer.append(ch.asInstanceOf[char]);
+  protected def addCharToDoc(ch: char): unit =
+      if (docBuffer != null) docBuffer.append(ch);
 
   /** layout & character constants
   */
@@ -62,12 +61,12 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** the input buffer:
   */
-  var buf: Array[byte] = unit.source.getContent();
+  var buf: Array[char] = unit.source.getContent();
   var bp: int = -1;
 
   /** the current character
   */
-  var ch: byte = _;
+  var ch: char = _;
 
   /** the line and column position of the current character
   */
@@ -76,7 +75,7 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** a buffer for character and string literals
   */
-  var lit = new Array[byte](64);
+  var lit = new Array[char](64);
   var litlen: int = _;
 
 
@@ -89,7 +88,7 @@ class Scanner(_unit: Unit) extends TokenData {
 
   def nextch(): unit = {
     bp = bp + 1; ch = buf(bp); ccol = ccol + 1;
-    //System.out.print(bp + "[" + (ch.asInstanceOf[char]) + "]");//DEBUG
+    //System.out.print(bp + "[" + ch + "]");//DEBUG
   }
 
   /** read next token and return last position
@@ -243,7 +242,7 @@ class Scanner(_unit: Unit) extends TokenData {
 		     'u' | 'v' | 'w' | 'x' | 'y' |
 		     'z' =>
 		  index = bp;
-		  putAscii(ch);
+		  putChar(ch);
 		  nextch();
 		  if (ch != '\'') {
 		    getIdentRest(index);
@@ -441,7 +440,7 @@ class Scanner(_unit: Unit) extends TokenData {
       getlitch();
     if (ch == delimiter) {
       token = STRINGLIT;
-      name = Name.fromAscii(lit, 0, litlen);
+      name = Name.fromString(new String(lit, 0, litlen));
       nextch();
     } else {
       syntaxError("unclosed character literal");
@@ -449,7 +448,7 @@ class Scanner(_unit: Unit) extends TokenData {
   }
 
   def treatIdent(start: int, end: int) = {
-    name = Name.fromAscii(buf, start, end - start);
+    name = Name.fromString(new String(buf, start, end - start));
     token = name2token(name);
   }
 
@@ -465,30 +464,16 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   def syntaxError(msg: String): unit = syntaxError(pos, msg);
 
-  /** append ascii character to "lit" buffer
+  /** append Unicode character to "lit" buffer
   */
-  private def putAscii(c: byte) = {
+  private def putChar(c: char) = {
     if (litlen == lit.length) {
-      val newlit = new Array[byte](lit.length * 2);
+      val newlit = new Array[char](lit.length * 2);
       System.arraycopy(lit, 0, newlit, 0, lit.length);
       lit = newlit;
     }
     lit(litlen) = c;
     litlen = litlen + 1;
-  }
-  /** append Unicode character to "lit" buffer
-  */
-  private def putChar(c: char) = {
-    if (c <= 0x7F) {
-      putAscii(c.asInstanceOf[byte]);
-    } else if (c <= 0x3FF) {
-      putAscii((0xC0 | (c >> 6)).asInstanceOf[byte]);
-      putAscii((0x80 | (c & 0x3F)).asInstanceOf[byte]);
-    } else {
-      putAscii((0xE0 | (c >> 12)).asInstanceOf[byte]);
-      putAscii((0x80 | ((c >> 6) & 0x3F)).asInstanceOf[byte]);
-      putAscii((0x80 | (c & 0x3F)).asInstanceOf[byte]);
-    }
   }
 
   /** return true iff next 6 characters are a valid unicode sequence:
@@ -518,7 +503,7 @@ class Scanner(_unit: Unit) extends TokenData {
       } else {
         nextch();
         if ('0' <= ch && ch <= '7') {
-          val leadch: byte = ch;
+          val leadch: char = ch;
           var oct: int = SourceRepresentation.digit2int(ch, 8);
           nextch();
           if ('0' <= ch && ch <= '7') {
@@ -542,13 +527,13 @@ class Scanner(_unit: Unit) extends TokenData {
             case '\\' => putChar('\\')
             case _    =>
               syntaxError(Position.encode(cline, ccol) - 1, "invalid escape character");
-              putAscii(ch);
+              putChar(ch);
           }
           nextch();
         }
       }
     } else if (ch != SU) {
-      putAscii(ch);
+      putChar(ch);
       nextch();
     }
 
@@ -562,7 +547,7 @@ class Scanner(_unit: Unit) extends TokenData {
     if ((ch == 'e') || (ch == 'E')) {
       nextch();
       if ((ch == '+') || (ch == '-')) {
-        val sign: byte = ch;
+        val sign: char = ch;
         nextch();
         if (('0' > ch) || (ch > '9')) {
           ch = sign;
@@ -580,7 +565,7 @@ class Scanner(_unit: Unit) extends TokenData {
       token = FLOATLIT;
       nextch();
     }
-    name = Name.fromAscii(buf, index, bp - index);
+    name = Name.fromString(new String(buf, index, bp - index));
   }
 
   /** convert name, base to long value
@@ -589,7 +574,7 @@ class Scanner(_unit: Unit) extends TokenData {
   def intVal(negated: boolean): long = {
     if (token == CHARLIT && !negated) {
       if (litlen > 0)
-	SourceRepresentation.ascii2string(lit, 0, litlen).charAt(0)
+	lit(0)
       else
 	0
     } else {
@@ -599,7 +584,7 @@ class Scanner(_unit: Unit) extends TokenData {
       var i = 0;
       val len = name.length();
       while (i < len) {
-	val d = SourceRepresentation.digit2int(name.charAt(i).asInstanceOf[byte], base);
+	val d = SourceRepresentation.digit2int(name.charAt(i), base);
 	if (d < 0) {
           syntaxError("malformed integer number");
           return 0;
@@ -658,7 +643,7 @@ class Scanner(_unit: Unit) extends TokenData {
             (ch1 >= 'A' && ch1 <= 'Z') ||
             (ch1 >= '0' && ch1 <= '9') ||
              ch1 == '$' || ch1 == '_') {
-	  name = Name.fromAscii(buf, index, bp - index);
+	  name = Name.fromString(new String(buf, index, bp - index));
           token = INTLIT;
         } else
           getFraction(index);
@@ -668,7 +653,7 @@ class Scanner(_unit: Unit) extends TokenData {
         bp = bp - 1;
         ch = buf(bp);
 	ccol = ccol - 1;
-	name = Name.fromAscii(buf, index, bp - index);
+	name = Name.fromString(new String(buf, index, bp - index));
         token = INTLIT;
       } else
         getFraction(index);
@@ -679,11 +664,11 @@ class Scanner(_unit: Unit) extends TokenData {
       getFraction(index);
     } else {
       if (ch == 'l' || ch == 'L') {
-	name = Name.fromAscii(buf, index, bp - index);
+	name = Name.fromString(new String(buf, index, bp - index));
         nextch();
         token = LONGLIT;
       } else {
-	name = Name.fromAscii(buf, index, bp - index);
+	name = Name.fromString(new String(buf, index, bp - index));
         token = INTLIT;
       }
     }
@@ -789,7 +774,7 @@ class Scanner(_unit: Unit) extends TokenData {
     if( xIsNameStart ) {
       val index = bp;
       while( xIsNameChar ) { xNext; }
-      Name.fromAscii( buf, index, bp - index );
+      Name.fromString(new String( buf, index, bp - index ));
     } else {
       xSyntaxError( "name expected" );
       Names.EMPTY
@@ -848,7 +833,7 @@ class Scanner(_unit: Unit) extends TokenData {
     if( ch == that ) {
       xNext;
     } else {
-      xSyntaxError("'"+that+"' expected instead of '"+ch.asInstanceOf[char]+"'");
+      xSyntaxError("'" + that + "' expected instead of '" + ch + "'");
     }
   }
   /* end XML tokenizing */

@@ -100,7 +100,7 @@ public class Position {
 
     /** Initializes a new instance. */
     public Position(String sourcename) {
-        this(new SourceFile(sourcename, new byte[0]));
+        this(new SourceFile(sourcename, new char[0]));
     }
 
     /** Initializes a new instance. */

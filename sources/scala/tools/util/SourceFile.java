@@ -8,9 +8,6 @@
 
 package scala.tools.util;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-
 
 /** This class represents a single source file. */
 public class SourceFile {
@@ -19,10 +16,10 @@ public class SourceFile {
     // Public Constants
 
     /** Constants used for source parsing */
-    public static final byte LF = 0x0A;
-    public static final byte FF = 0x0C;
-    public static final byte CR = 0x0D;
-    public static final byte SU = 0x1A;
+    public static final char LF = '\u000A';
+    public static final char FF = '\u000C';
+    public static final char CR = '\u000D';
+    public static final char SU = '\u001A';
 
     //########################################################################
     // Private Fields
@@ -31,10 +28,7 @@ public class SourceFile {
     private final AbstractFile file;
 
     /** The content of this source file */
-    private final byte[] content;
-
-    /** The encoding of this source file or null if unspecified */
-    private String encoding;
+    private final char[] content;
 
     /** The position of the last line returned by getLine */
     private int lineNumber = 0;
@@ -46,12 +40,12 @@ public class SourceFile {
     // Public Constructors
 
     /** Initializes this instance with given name and content. */
-    public SourceFile(String sourcename, byte[] content) {
-        this(new ByteArrayFile(sourcename, content), content);
+    public SourceFile(String sourcename, char[] content) {
+        this(new CharArrayFile(sourcename, content), content);
     }
 
     /** Initializes this instance with given file and content. */
-    public SourceFile(AbstractFile file, byte[] content) {
+    public SourceFile(AbstractFile file, char[] content) {
         this.file = file;
         this.content = normalize(content);
     }
@@ -65,13 +59,8 @@ public class SourceFile {
     }
 
     /** Returns the content of this source file. */
-    public byte[] getContent() {
+    public char[] getContent() {
         return content;
-    }
-
-    /** Sets the encoding of the file. */
-    public void setEncoding(String encoding) {
-        this.encoding = encoding;
     }
 
     /**
@@ -99,13 +88,7 @@ public class SourceFile {
                 if (content[index - 1] == CR && content[index] == LF) index++;
         }
         nextIndex = index;
-        try {
-            return encoding != null ?
-                new String(content, lineStart, lineLength, encoding) :
-                new String(content, lineStart, lineLength);
-        } catch (UnsupportedEncodingException exception) {
-            throw new Error(exception); // !!! use ApplicationError
-        }
+        return new String(content, lineStart, lineLength);
     }
 
     /** Returns the path of the underlying file. */
@@ -116,11 +99,11 @@ public class SourceFile {
     //########################################################################
     // Private Functions
 
-    /** Ensures that the last byte of the array is SU. */
-    private static byte[] normalize(byte[] input) {
+    /** Ensures that the last char of the array is SU. */
+    private static char[] normalize(char[] input) {
         if (input.length > 0 && input[input.length - 1] == SU)
                 return input;
-        byte[] content = new byte[input.length + 1];
+        char[] content = new char[input.length + 1];
         System.arraycopy(input, 0, content, 0, input.length);
         content[input.length] = SU;
         return content;

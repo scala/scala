@@ -16,11 +16,16 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.*;
 
 import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
 import scala.tools.util.SourceFile;
+import scala.tools.util.SourceReader;
 
 import scalac.ast.*;
 import scalac.ast.parser.*;
@@ -69,6 +74,18 @@ public abstract class Global {
     /** a stack for maintaining timestamps
      */
     private final Stack startTimes = new Stack();
+
+    /** the source file charset
+     */
+    private final Charset charset;
+
+    /** the source file decoder
+     */
+    private final CharsetDecoder decoder;
+
+    /** the source file reader
+     */
+    private final SourceReader reader;
 
     /** all compilation units
      */
@@ -194,7 +211,23 @@ public abstract class Global {
         this.printtokens = args.print.tokens;
         this.classPath = args.classpath();
         this.outpath = args.outpath();
-        this.encoding = args.encoding.value;
+        String encoding = args.encoding.value;
+        Charset charset = null;
+        try {
+            charset = Charset.forName(encoding);
+        } catch (IllegalCharsetNameException exception) {
+            args.encoding.error("illegal charset name '" + encoding + "'");
+        } catch (UnsupportedCharsetException exception) {
+            args.encoding.error("unsupported charset '" + encoding + "'");
+        }
+        if (charset == null) {
+            encoding = "ISO-8859-1"; // A mandatory charset
+            charset = Charset.forName(encoding);
+        }
+        this.encoding = encoding;
+        this.charset = charset;
+        this.decoder = charset.newDecoder();
+        this.reader = new SourceReader(decoder);
         this.target = interpret ? TARGET_INT : args.target.value.intern();
         this.separate = args.separate.value.equals("yes") ||
             args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
@@ -259,7 +292,7 @@ public abstract class Global {
 
     /** Creates a virtual source file with given name and content. */
     public SourceFile getSourceFile(String sourcename, String content) {
-        return new SourceFile(sourcename, content.getBytes());
+        return new SourceFile(sourcename, content.toCharArray());
     }
 
     /** Reads and returns the source file in file with given name. */
@@ -273,9 +306,8 @@ public abstract class Global {
     /** Reads and returns the source file in given abstract file. */
     public SourceFile getSourceFile(AbstractFile file) throws IOException {
         if (!file.exists()) throw new FileNotFoundException(
-            "source file '" + file.getPath() + "' could not be found");
-        byte[] content = file.read();
-        return new SourceFile(file, content);
+            "source file '" + file + "' could not be found");
+        return new SourceFile(file, reader.read(file));
     }
 
     /** Reads and returns the source file of given clasz. */
