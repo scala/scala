@@ -18,6 +18,7 @@ import scalac.PhaseDescriptor;
 import scalac.Unit;
 import scalac.ast.Transformer;
 import scalac.ast.Tree;
+import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Symbol;
@@ -243,6 +244,145 @@ public class ExplicitOuterClassesPhase extends Phase {
         public Tree transform(Tree tree) {
             switch (tree) {
 
+            case Empty:
+                return tree;
+
+            case ClassDef(_, _, _, _, _, Template impl):
+                Symbol clasz = tree.symbol();
+                context = new Context(context, clasz, new HashMap());
+                Tree[] parents = transform(impl.parents);
+                Tree[] body = transform(impl.body);
+                body = Tree.concat(body, genSuperMethods());
+                context = context.outer;
+                if (context != null) clasz.flags |= Modifiers.STATIC;
+                return gen.ClassDef(clasz, parents, impl.symbol(), body);
+
+            case PackageDef(Tree packaged, Template(_, Tree[] body)):
+                return gen.PackageDef(packaged.symbol(), transform(body));
+
+            case ValDef(_, _, _, Tree rhs):
+                return gen.ValDef(tree.symbol(), transform(rhs));
+
+            case DefDef(_, _, _, _, _, Tree rhs):
+                Symbol method = tree.symbol();
+                Context backup = context;
+                if (method.isConstructor())
+                    context = context.getConstructorContext(method);
+                rhs = transform(rhs);
+                context = backup;
+                return gen.DefDef(method, rhs);
+
+            case AbsTypeDef(_, _, _, _):
+            case AliasTypeDef(_, _, _, _):
+                // eliminate // !!!
+                return Tree.Empty;
+
+            case LabelDef(_, Ident[] params, Tree rhs):
+                Symbol label = tree.symbol();
+                rhs = transform(rhs);
+                return gen.LabelDef(label, Tree.symbolOf(params), rhs);
+
+            case Block(Tree[] stats):
+                return gen.Block(tree.pos, transform(stats));
+
+            case Assign(Tree lhs, Tree rhs):
+                return gen.Assign(tree.pos, transform(lhs), transform(rhs));
+
+            case If(Tree cond, Tree thenp, Tree elsep):
+                cond = transform(cond);
+                thenp = transform(thenp);
+                elsep = transform(elsep);
+                return gen.If(tree.pos, cond, thenp, elsep);
+
+            case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+                test = transform(test);
+                bodies = transform(bodies);
+                otherwise = transform(otherwise);
+                return gen.Switch(tree.pos, test, tags, bodies, otherwise);
+
+            case Return(Tree expr):
+                return gen.Return(tree.pos, tree.symbol(), expr);
+
+            case New(Template(Tree[] base, Tree[] body)):
+                assert base.length == 1 && body.length == 0: tree;
+                return gen.New(tree.pos, transform(base[0]));
+
+            case Typed(Tree expr, Tree tpe): // !!!
+                return transform(expr);
+
+            case TypeApply(Tree tfun, Tree[] targs):
+                tfun = transform(tfun);
+                targs = transform(targs);
+                return gen.TypeApply(tree.pos, tfun, targs);
+
+            case Apply(Tree vfun, Tree[] vargs):
+                switch (vfun) {
+                case TypeApply(Tree tfun, Tree[] targs):
+                    if (!tfun.symbol().isConstructor()) break;
+                    return transform(tree, vargs, vfun, targs, tfun);
+                default:
+                    if (!vfun.symbol().isConstructor()) break;
+                    return transform(tree, vargs, vfun, Tree.EMPTY_ARRAY,vfun);
+                }
+                vfun = transform(vfun);
+                vargs = transform(vargs);
+                return gen.Apply(tree.pos, vfun, vargs);
+
+            case This(_):
+                return genOuterRef(tree.pos, tree.symbol());
+
+            case Select(Tree qualifier, _):
+                Symbol symbol = tree.symbol();
+                switch (qualifier) {
+                case Super(_, _):
+                    Symbol clasz = qualifier.symbol();
+                    if (clasz == context.clasz) {
+                        qualifier = gen.Super(tree.pos, qualifier.symbol());
+                    } else {
+                        qualifier = genOuterRef(qualifier.pos, clasz);
+                        symbol = getSuperMethod(clasz, symbol);
+                    }
+                    break;
+                default:
+                    qualifier = transform(qualifier);
+                    break;
+                }
+                return gen.Select(tree.pos, qualifier, symbol);
+
+            case Ident(_):
+                Symbol symbol = tree.symbol();
+                Symbol owner = symbol.owner();
+                if (owner.isClass()) {
+                    // !!! A this node is missing here. This should
+                    // never happen if all trees were correct.
+                    Tree qualifier = genOuterRef(tree.pos, owner);
+                    return gen.Select(qualifier, symbol);
+                }
+                if (owner.isConstructor()) {
+                    Symbol clasz = owner.constructorClass();
+                    if (clasz != context.clasz) {
+                        Tree qualifier = genOuterRef(tree.pos, clasz);
+                        return gen.Select(qualifier, symbol);
+                    }
+                }
+                return gen.Ident(tree.pos, symbol);
+
+            case Literal(Object value):
+                return gen.mkLit(tree.pos, value);
+
+            case TypeTerm():
+                Type type = typeTransformer.apply(tree.type());
+                if (context != null) type = context.subst.apply(type);
+                return gen.TypeTerm(tree.pos, type);
+
+            default:
+                throw Debug.abort("illegal case", tree);
+            }
+
+            /*
+
+            switch (tree) {
+
             case ClassDef(_, _, _, _, _, Template impl):
                 Symbol clasz = tree.symbol();
                 context = new Context(context, clasz, new HashMap());
@@ -302,6 +442,9 @@ public class ExplicitOuterClassesPhase extends Phase {
             Type type = typeTransformer.apply(tree.type());
             if (context != null) type = context.subst.apply(type);
             return super.transform(tree).setType(type);
+
+            */
+
         }
 
         /* Add outer type and value arguments to constructor calls. */
