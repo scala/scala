@@ -700,10 +700,6 @@ public abstract class Symbol implements Modifiers, Kinds {
         return isConstructor() && this == constructorClass().primaryConstructor();
     }
 
-    public final boolean isGenerated() {
-        return name.indexOf('$') >= 0;
-    }
-
     /** Symbol was preloaded from package
      */
     public final boolean isExternal() {

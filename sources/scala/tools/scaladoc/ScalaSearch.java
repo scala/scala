@@ -70,7 +70,7 @@ public class ScalaSearch {
     public static boolean isGenerated(Symbol sym) {
 	return
 	    (sym.isSynthetic() && !sym.isRoot()) ||
-	    (sym.isGenerated() &&
+	    (sym.name.indexOf('$') >= 0 &&
 	     NameTransformer.decode(sym.name).equals(sym.name.toString())) ||
 	    NameTransformer.decode(sym.name).endsWith("_=");
     }
