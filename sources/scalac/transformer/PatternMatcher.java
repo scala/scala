@@ -158,7 +158,7 @@ public class PatternMatcher {
     }
 
     public ConstrPat makeConstrPat(int pos, Type type) {
-    	System.out.println("making constructor pattern for " + type);
+    	//System.out.println("making constructor pattern for " + type);
         ConstrPat node = new ConstrPat(newVar(pos, type));
         node.pos = pos;
         node.type = type;
@@ -174,7 +174,7 @@ public class PatternMatcher {
     }
 
     public ConstantPat makeConstantPat(int pos, Type type, Object value) {
-    	System.out.println("making constant pattern for " + type + " of value " + value);
+    	//System.out.println("making constant pattern for " + type + " of value " + value);
         ConstantPat node = new ConstantPat(value);
         node.pos = pos;
         node.type = type;
@@ -182,7 +182,7 @@ public class PatternMatcher {
     }
 
     public VariablePat makeVariablePat(int pos, Tree tree) {
-    	System.out.println("making variable pattern for " + tree.type);
+    	//System.out.println("making variable pattern for " + tree.type);
         VariablePat node = new VariablePat(tree);
         node.pos = pos;
         node.type = tree.type;
