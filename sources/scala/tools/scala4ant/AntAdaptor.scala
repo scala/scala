@@ -76,7 +76,7 @@ package scala.tools.scala4ant {
 
     def setupScalacCommand() = {
       val cmd = new Commandline();
-      val cp = new Path( getProject() );
+      val cp = new Path( this.project );
       if( attributes.asInstanceOf[AntTask].xmarkup ) {
         cmd.createArgument().setValue("-Xmarkup");
       }
@@ -91,7 +91,7 @@ package scala.tools.scala4ant {
       /* cp.addJavaRuntime(); */
 
       if( compileClasspath != null ) {
-        cp.add( compileClasspath );
+        cp.addExisting( compileClasspath );
       }
 
       cmd.createArgument().setValue("-classpath");
