@@ -265,7 +265,7 @@ public class Scanner extends TokenData {
                     case 'K': case 'L': case 'M': case 'N': case 'O':
                     case 'P': case 'Q': case 'R': case 'S': case 'T':
                     case 'U': case 'V': case 'W': case 'X': case 'Y':
-                    case 'Z': case '$':
+                    case 'Z': case '$': case '_':
                     case 'a': case 'b': case 'c': case 'd': case 'e':
                     case 'f': case 'g': case 'h': case 'i': case 'j':
                     case 'k': case 'l': case 'm': case 'n': case 'o':
