@@ -2060,7 +2060,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
     if ((mode & TYPEmode) != 0) {
       val sym: Symbol = tree1.symbol();
-      if ((mode & FUNmode) == 0 && sym != null && sym.typeParams().length != 0) {
+      def typeParamCount = sym.primaryConstructor().rawInfo() match {
+	case t: LazyTreeType =>
+	  t.tree match {
+	    case Tree$ClassDef(_, _, tparams, _, _, _) => tparams.length
+	    case Tree$AliasTypeDef(_, _, tparams, _) => tparams.length
+	    case _ => 0
+	  }
+	case _ => sym.typeParams().length
+      }
+      if ((mode & FUNmode) == 0 && sym != null && typeParamCount != 0) {
         error(tree.pos, "" + sym + " takes type parameters.");
         return errorTree(tree);
       }
