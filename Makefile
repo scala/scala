@@ -88,7 +88,7 @@ LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
 LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
 LIBRARY_SDC_FILES	+= $(LIBRARY_SC_FILES)
-LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDIR)
+LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDOCDIR)
 
 # scala interpreter
 INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scalai
@@ -156,6 +156,7 @@ distclean	: clean
 	$(RM) $(SCRIPTS_WRAPPER)
 	$(RM) $(PROJECT_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
+	$(RM) -r $(PROJECT_APIDOCDIR)
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 lamplib		: .latest-lamplib
