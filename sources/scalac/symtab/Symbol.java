@@ -1480,20 +1480,7 @@ public abstract class TypeSymbol extends Symbol {
 
     /** Get type */
     public Type type() {
-        Symbol[] tparams = typeParams();
-        if (template != null) {
-            switch (template) {
-            case TypeRef(_, _, Type[] targs):
-                if (targs.length == tparams.length)
-                    return template;
-            }
-        }
-        if (tparams.length == 0)
-            template = typeConstructor();
-        else
-            template = Type.TypeRef(
-                owner().thisType(), this, type(tparams));
-        return template;
+        return primaryConstructor().type().resultType();
     }
 
     /**
@@ -1633,7 +1620,7 @@ public class AbsTypeSymbol extends TypeSymbol {
     /** Constructor */
     public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags) {
         super(TYPE, pos, name, owner, flags);
-        allConstructors().setType(Type.MethodType(EMPTY_ARRAY, thisType()));
+        allConstructors().setFirstInfo(Type.MethodType(EMPTY_ARRAY, Type.TypeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
     }
 
     public static AbsTypeSymbol define(
@@ -1805,6 +1792,7 @@ public class ClassSymbol extends TypeSymbol {
     }
 
     public Symbol setTypeOfThis(Type tp) {
+        if (tp == Type.NoType) { thisSym = this; return this; }
         thisSym = new TermSymbol(this.pos, Names.this_, this, SYNTHETIC);
         thisSym.setInfo(tp);
         return this;
