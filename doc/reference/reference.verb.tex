@@ -3045,6 +3045,8 @@ statement, or an import clause, or a pure definition (\sref{sec:defs}).
 
 \section{Patterns}
 
+% 2003 July - changed to new pattern syntax + semantic Burak
+
 \label{sec:patterns}
 
 \syntax\begin{verbatim}
@@ -3078,10 +3080,10 @@ SimplePattern  \=::= \> varid [ '@' SimplePattern ]
 %% \end{verbatim}
 
 A pattern is built from constants, constructors, variables and regular
-operators. Pattern matching tests whether a given value or a sequence
-of values has the shape defined by a pattern, and, if it does, binds
+operators. Pattern matching tests whether a given value (sequence
+of values) has the shape defined by a pattern, and, if it does, binds
 the variables in the pattern to the corresponding components of the
-value or the sequence of values.  The same variable name may not be
+value (sequence of values).  The same variable name may not be
 bound more than once in a pattern.
 
 The type of a pattern and the expected types of variables within the
@@ -3096,10 +3098,10 @@ A {\em variable-binding pattern} $x @ p$ is a simple identifier $x$
 which starts with a lower case letter, together with a pattern $p$. It
 matches a value or a sequence of values whenever $p$ does, and in
 addition binds the variable name to that value or to that sequence of
-values. The type of $x$ is either determined from the context, or, if
-$p$ matches sequences, determined from the structure of $p$.  A
+values. The type of $x$ is either $T$ as determined from the context, or
+\verb@List[ T ]@, if $p$ matches sequences of values. A
 special case is a {\em variable pattern} $x$ which is treated as $x @
-\_$.
+\_$. 
 
 A {\em typed pattern} $x: T$ consists of a pattern variable $x$ and a
 simple type $T$. The type $T$ may be a class type or a compound type;
@@ -3119,46 +3121,67 @@ starting with a lower-case letter. The type of $r$ must conform
 to the expected type of the pattern. The pattern matches any value $v$
 such that \verb@$r$ == $v$@ (\sref{sec:cls-object}).
 
-A {\em constructor pattern} $c(p_1) \ldots (p_n)$ where $n \geq 0$
-consists of an identifier $c$, followed either by a regular expression 
-$\alpha$ or component patterns $p_1 \commadots p_n$. 
-The constructor $c$ is either a simple name
-or a qualified name $r.id$ where $r$ is a stable identifier. It refers
-to a (possibly overloaded) function which has one alternative of
-result type \verb@class C@, and which may not have other overloaded
+A {\em sequence pattern} $p_1 \commadots p_n$ where $n \geq 0$ is a
+sequence of patterns separated by commata and matching the sequence of
+values that are matched by the components. Sequence pattern may only
+appear under constructor applications. Note that empty sequence
+patterns are allowed. The type of the value patterns that appear in
+the pattern is the expected type as determined from the context.
+
+A {\em choice pattern} $p_1 | \ldots | p_n$ is a choice among several
+alternatives, which may not contain variable-binding patterns. It
+matches every value matched by at least one of its alternatives. Note
+that the empty sequence may appear as an alternative.  An {\em option
+pattern} $p?$ is an abbreviation for $(p| )$. If the alternatives
+are value patterns, then the whole choice pattern is a value pattern,
+whose type is the least upper bound of the types of the alternatives.
+
+An {\em iterated pattern} $p*$ matches the sequence of values
+consisting of zero, one or more occurrences of values matched by $p$,
+where $p$ may not contain a variable-binding pattern. A {\em non-empty
+iterated pattern} $p+$ is an abbreviation for $(p,p*)$. 
+
+A non-regular sequence pattern is a sequence pattern $p_1 \commadots p_n$ 
+where $n \geq 1$ with no component pattern containing iterated or nested
+sequence patterns.
+
+A {\em constructor pattern} $c ( p )$ consists of an identifier $c$,
+followed by a pattern $p$.  The constructor $c$ is either a simple
+name or a qualified name $r.id$ where $r$ is a stable identifier. It
+refers to a (possibly overloaded) function which has one alternative
+of result type \verb@class C@, and which may not have other overloaded
 alternatives with a class constructor type as result type.
 Furthermore, the respective type parameters and value parameters of
 (said alternative of) $c$ and of the primary constructor function of
-class $C$ must be the same, after renaming corresponding type parameter
-names.  If $C$ is monomorphic, then
-\verb@C@ must conform to the expected type of the pattern, and the
-formal parameter types of $C$'s primary constructor are taken as the
-expected types of the component patterns $p_1 \commadots p_n$.  If $C$
-is polymorphic, then there must be a unique type application instance
+class $C$ must be the same, after renaming corresponding type
+parameter names.  If $C$ is monomorphic and not a subclass of
+\verb@Seq[ T ]@ then \verb@C@ must conform to the expected type of the
+pattern, the pattern must be a non-regular sequence pattern $p_1
+\commadots p_n$ whose length corresponds to the number of arguments of
+$C$'s primary constructor. The expected types of the component
+patterns are then taken from the formal parameter types of (said)
+constructor.  If $C$ is polymorphic and not a subclass of
+\verb@Seq[ T ]@, then there must be a unique type application instance
 of it such that the instantiation of $C$ conforms to the expected type
 of the pattern. The instantiated formal parameter types of $C$'s
 primary constructor are then taken as the expected types of the
-component patterns $p_1\commadots p_n$.
-The pattern matches all objects created from
-constructor invocations $c(v_1)\ldots(v_n)$ where each component
-pattern $p_i$ matches the corresponding value $v_i$.
+component patterns $p_1\commadots p_n$.  In both cases, the pattern
+matches all objects created from constructor invocations
+$c(v_1 \commadots v_n)$ where each component pattern $p_i$ matches the
+corresponding value $v_i$. If $C$ is a subclass of \verb@Seq[ T ]@,
+then $p$ may be an arbitrary pattern. Value patterns in $p$ are
+expected to conform to type $T$, and the pattern matches all objects
+whose \verb@elements()@ method returns a sequence that matches $p$.
 
-A {\em tuple pattern} $(p_1 \commadots p_n)$ with $n \geq 2$ matches
-tuples which have components matching patterns $p_1 \commadots p_n$.
-It is a shorthand for the constructor pattern
-\verb@Tuple$\,n$($p_1 \commadots p_n$)@.
-The empty tuple $()$ is a shorthand for the
-constructor pattern \verb@Unit@. There are no tuple patterns of length
-1.  Instead, the pattern $(p)$ is regarded as equivalent to the
-pattern $p$, except for grouping of operators.
-
-A {\em list pattern} $[ p_1 \commadots p_n ]$ with $n \geq 0$
-is a shorthand for \verb@::_class(p$_1$)(... ::_class(p$_n$, Nil)...)@.
+The pattern $(p)$ is regarded as equivalent to the pattern $p$, if $p$
+is a nonempty sequence pattern. The empty tuple $()$ is a shorthand
+for the constructor pattern \verb@Unit@.
 
 An {\em infix operation pattern} \verb@p id p'@ is a shorthand for the
 constructor pattern \verb@id_class(p)(p')@.  The precedence and
 associativity of operators in patterns is the same as in expressions
-(\sref{sec:infix-operations}).
+(\sref{sec:infix-operations}). The operands may not be empty sequence
+patterns.
 
 \example Some examples of patterns are:
 \begin{enumerate}
@@ -3170,7 +3193,7 @@ The pattern \verb@(x, _)@ matches pairs of values, binding \verb@x@ to
 the first component of the pair. The second component is matched
 with a wildcard pattern.
 \item
-The pattern \verb@x :: y :: xs@ matches lists of length $\geq 2$,
+The pattern \verb@List( x, y, xs @ \_ * )@ matches lists of length $\geq 2$,
 binding \verb@x@ to the lists's first element, \verb@y@ to the list's
 second element, and \verb@xs@ to the remainder.
 \end{enumerate}
