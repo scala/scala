@@ -488,18 +488,24 @@ public class LambdaLift extends OwnerTransformer
 	    ((ClassDef) tree).mods |= LIFTED;
 	    Symbol sym = tree.symbol();
 	    assert sym.isLocal() : sym;
-	    liftSymbol(sym, ftvsParams(sym.primaryConstructor()), fvsParams(sym.primaryConstructor()));
+	    Symbol constr = sym.primaryConstructor();
+	    liftSymbol(
+		sym, get(free.ftvs, constr).toArray(),
+		ftvsParams(constr), fvsParams(constr));
 	    break;
 
 	case DefDef(_, _, _, _, _, _):
 	    ((DefDef) tree).mods |= LIFTED;
 	    Symbol sym = tree.symbol();
 	    assert sym.isLocal() : sym;
-	    liftSymbol(sym, ftvsParams(sym), fvsParams(sym));
+	    liftSymbol(
+		sym, get(free.ftvs, sym).toArray(),
+		ftvsParams(sym), fvsParams(sym));
 	}
     }
 
-    void liftSymbol(Symbol sym, Symbol[] newtparams, Symbol[] newparams) {
+    void liftSymbol(Symbol sym, Symbol[] oldtparams,
+		    Symbol[] newtparams, Symbol[] newparams) {
 	Symbol enclClass = sym.owner().enclClass();
 	if (!sym.isPrimaryConstructor()) sym.setOwner(enclClass);
 	if (!sym.isConstructor()) enclClass.members().enter(sym);
@@ -507,28 +513,29 @@ public class LambdaLift extends OwnerTransformer
 	    if (newtparams.length != 0 || newparams.length != 0) {
 		sym.updateInfo(
 		    addParams(
-			addTypeParams(sym.infoAt(descr.nextPhase), newtparams),
+			addTypeParams(
+			    sym.infoAt(descr.nextPhase), oldtparams, newtparams),
 			newparams));
 		if (global.debug)
 		    global.log(sym + " has now type " + sym.typeAt(descr.nextPhase));
 	    }
 	} else if (sym.kind == CLASS) {
-	    liftSymbol(sym.primaryConstructor(), newtparams, newparams);
+	    liftSymbol(sym.primaryConstructor(), oldtparams, newtparams, newparams);
 	} else {
 	    throw new ApplicationError();
 	}
     }
 
-    Type addTypeParams(Type tp, Symbol[] newtparams) {
+    Type addTypeParams(Type tp, Symbol[] oldtparams, Symbol[] newtparams) {
 	if (newtparams.length == 0) return tp;
 	switch (tp) {
 	case MethodType(_, _):
-	    return Type.PolyType(newtparams, tp);
+	    return Type.PolyType(newtparams, tp.subst(oldtparams, newtparams));
 	case PolyType(Symbol[] tparams, Type restpe):
 	    Symbol[] tparams1 = new Symbol[tparams.length + newtparams.length];
 	    System.arraycopy(tparams, 0, tparams1, 0, tparams.length);
 	    System.arraycopy(newtparams, 0, tparams1, tparams.length, newtparams.length);
-	    return Type.PolyType(tparams1, restpe);
+	    return Type.PolyType(tparams1, restpe.subst(oldtparams, newtparams));
 	default:
 	    throw new ApplicationError("illegal type: " + tp);
 	}

@@ -324,31 +324,8 @@ public class Parser implements Tokens {
 		    new Tree[]{finalizer});
 	return t;
     }
-/*
-     Tree makeWhile(int pos, Tree cond, Tree body) {
- 	return
- 	    make.Apply(
- 		pos,
- 		make.Apply(
- 		    pos, ScalaRunTimeDot(pos, Names.While), new Tree[]{cond}),
- 		new Tree[]{body});
-     }
 
-     Tree makeDoWhile(int pos, Tree body, Tree cond) {
- 	return
- 	    make.Apply(
- 		    pos,
- 		    make.Select(
- 			pos,
- 			make.Apply(
- 			    pos,
- 			    ScalaRunTimeDot(pos, Names.Do),
- 			    new Tree[]{body}),
- 			Names.While),
- 		    new Tree[]{cond});
-      }
-*/
-      Tree makeWhile(int pos, Name lname, Tree cond, Tree body) {
+    Tree makeWhile(int pos, Name lname, Tree cond, Tree body) {
 	Tree continu = make.Apply(
 	    pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
 	Tree rhs = make.If(

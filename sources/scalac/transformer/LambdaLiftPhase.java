@@ -98,12 +98,6 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
                 case ThisType(_):
                     if (sym.kind == CLASS &&
 			sym.primaryConstructor().isUpdated(nextPhase)) {
-                        // !!! For some Java classes,
-                        // Symbol.constructor() returns an Overloaded
-                        // symbol. This is wrong as constructor()
-                        // should return the primary constructor. Once
-                        // this problem is solved, the following
-                        // switch can be removed.
                         Type constrtype = sym.primaryConstructor().infoAt(nextPhase);
                         Symbol[] tparams;
                         switch (constrtype) {
