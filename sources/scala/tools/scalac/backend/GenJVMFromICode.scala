@@ -41,6 +41,7 @@ class GenJVMFromICode(global: scalac_Global) {
   private val clasz = new HashMap[Symbol, JVMClass];
 
   private val nameMap = new HashMap[Symbol, String];
+
   private val typeMap = new HashMap[Symbol, JType];
 
   // ##################################################
@@ -54,11 +55,11 @@ class GenJVMFromICode(global: scalac_Global) {
   def translate(unit: Unit) = {
     global.log("Jvm.translate() called");
     currentSrcFileName = unit.source.toString();
-    // Generate the structure
+    // 1. ##### Generate the structure
     val classes_it = new IterableArray(unit.repository.classes()).elements;
     classes_it.foreach(genClass(null));
     dumpStructure;
-    // Generate the code & Save the classes
+    // 2. ##### Generate the code & Save the classes
     var pairs_it = clasz.elements;
     pairs_it.foreach ((p: Pair[Symbol, JVMClass]) => {
       val sym = p._1;
@@ -66,9 +67,8 @@ class GenJVMFromICode(global: scalac_Global) {
       val methods_it = jvmClass.methods.values;
       global.log("Jvm.translate: translating class "+sym);
       methods_it.foreach ((m: JVMMethod) => if(!m.aMethod.isAbstract()) genCode(m));
-      //jvmClass.jClass.writeTo("/tmp/"+javaName(sym)); // tmp
     });
-    pairs_it = clasz.elements; // Remettre joli quand ca marche !!!
+    pairs_it = clasz.elements;
     pairs_it.foreach ((p: Pair[Symbol, JVMClass]) => {
       val sym = p._1;
       val jvmClass = p._2;
@@ -107,11 +107,9 @@ class GenJVMFromICode(global: scalac_Global) {
     var superClassName : String = null;
 
     val firstParent : Type = aClass.parents()(0);
-    //var aParentType : Type = baseTps.next;
-    global.log("first parent: "+firstParent); // Debug
+
     if (aClass.isInterface()) {
       if (firstParent.isSameAs(defs.ANY_TYPE())) {
-	global.log("test ANY succeded for interface. l112");
 	baseTps.drop(1);
       }
       superClassName = JAVA_LANG_OBJECT;
@@ -132,43 +130,30 @@ class GenJVMFromICode(global: scalac_Global) {
 					     interfaceNames_a,
 					     currentSrcFileName);
 
-    // 2. ##### Modify context:: Enter class
-    //currentClass = aClass;
+    // 2. ##### Visits the class
+
     val jvmClass = new JVMClass(parent);
     clasz += aClass.symbol() -> jvmClass;
     jvmClass.jClass = jclass;
     //classFields = new HashMap[Symbol, JField]();
 
-    // 3. ##### Access the inner classes
-    // !!! Acces aux champs extérieurs
-    val classes_it = new IterableArray(aClass.classes()).elements;
+    // 2.1 ##### Access the inner classes
+      val classes_it = new IterableArray(aClass.classes()).elements;
     classes_it.foreach(genClass(jvmClass));
 
-    // 4. ##### Add fields of the class
-    //genFields(aClass, jClass);
-
-    val fields_it = new IterableArray(aClass.fields()).elements;
+    // 2.2. ##### Add fields of the class
+       val fields_it = new IterableArray(aClass.fields()).elements;
     fields_it.foreach(genField(jvmClass));
 
-    // ICI -> Faut-il s'occuper du truc module ? (case ClassDef)
-
-    // 5. ##### Enregistre les methodes
+    // 2.3 ##### Setup the stucture, records methods
     val methods_it = new IterableArray(aClass.methods()).elements;
     global.log("  number of methods: "+aClass.methods().length); // Debug
     methods_it.foreach(genMethod(jvmClass));
-
-    // ##### Modify context:: Leave class
-    //currentClass = null;
-    //classFields = null;
   }
 
   /* Add a field to a class */
   private def genField(jvmClass : JVMClass)(aField : AField) : unit = {
-    //val fields_it = new IterableArray(aClass.fields()).elements;
-
-    //fileds_it.foreach(aField: AField => {
-      //aField = fields_it.next;
-    val flags = (if (aField.isPublic()) JAccessFlags.ACC_PUBLIC else 0) |
+       val flags = (if (aField.isPublic()) JAccessFlags.ACC_PUBLIC else 0) |
 		(if (aField.isPrivate()) JAccessFlags.ACC_PRIVATE else 0) |
 		(if (aField.isProtected()) JAccessFlags.ACC_PROTECTED else 0) |
 		(if (aField.isStatic()) JAccessFlags.ACC_STATIC else 0) |
@@ -178,7 +163,7 @@ class GenJVMFromICode(global: scalac_Global) {
     jvmClass.fields += aField.symbol() ->
     jvmClass.jClass.addNewField(flags,
 				aField.symbol().name.toString(),
-				typeStoJ(aField.symbol().info())); // Vérifier si name n'est pas plus simple
+				typeStoJ(aField.symbol().info()));
   }
 
   /* Generate a method */
@@ -214,10 +199,8 @@ class GenJVMFromICode(global: scalac_Global) {
 							 argNames_a);
 
 
-    // 2. ##### Modify context:: Enter method
-    //currentMethod = aMethod;
-    //methodLocals = new HashMap[Symbol, JLocalVariable];
-    //methodArgs   = new HashMap[Symbol, int];
+    // 2. ##### Visits the method items
+
     val jvmMethod = new JVMMethod(aMethod, jvmClass);
     jvmClass.methods += aMethod.symbol() -> jvmMethod;
     jvmMethod.jMethod = jMethod;
@@ -233,21 +216,13 @@ class GenJVMFromICode(global: scalac_Global) {
 
 
 
-       // 3. ##### Generate labels
+       // 2.1 ##### Generate labels for the basic blocks
 
        jvmMethod.aMethod.icode.asInstanceOf[ICode].icTraverse((bb : IBasicBlock) => {
 	 val blockLabel : JCode$Label = jvmMethod.jCode.newLabel();
 	 jvmMethod.labels += bb -> blockLabel;
        });
      }
-    //if (!aMethod.isAbstract()) {
-    //  genCode(aMethod.icode, jMethod.getCode());
-    //}
-
-    // 3. ##### Modify context:: Leave method
-    //currentMethod = null;
-    //methodLocals = null;
-
   }
 
   /* Translate code */
@@ -255,6 +230,13 @@ class GenJVMFromICode(global: scalac_Global) {
     val icode : ICode = jvmMethod.aMethod.icode.asInstanceOf[ICode];
     var stack : ICTypeStack = new ICTypeStack();
     val jCode = jvmMethod.jCode;
+
+    // * IMPORTANT NOTICE *
+    // Here we assume the icTraverse method uses *preorder*
+    // I.e. The next translated block will be successor of the currently emmited block
+    // It avoids to put the goto instruction since the successor is not already emmited
+    // In the case of a CJUMP ICInstruction, the preorder ensures the next traversed block
+    // will be the failure block.
     icode.icTraverseFeedBack((bb: IBasicBlock, hm: HashMap[IBasicBlock, boolean]) => {
       val blockLabel = jvmMethod.labels.apply(bb);
       blockLabel.anchorToNext();
@@ -273,15 +255,10 @@ class GenJVMFromICode(global: scalac_Global) {
 	case _ =>
 	  ;
       }
-
-
-    //if (bb.successors != Nil) // !!! Dont work with switch. TO DO QUICKLY
-//	if (hm(bb.successors.head))
-//	  jCode.emitGOTO(jvmMethod.labels(bb.successors.head));
     });
   }
 
-  /* Translate an ICInstruction to a JVM instruction */
+  /* Translate an ICInstruction into a JVM instruction */
   private def emitICInstruction(jvmMethod: JVMMethod, stack: ICTypeStack)(instruction: ICInstruction) : ICTypeStack = {
     val jcode = jvmMethod.jCode;
     instruction match {
@@ -310,12 +287,13 @@ class GenJVMFromICode(global: scalac_Global) {
       case CONSTANT(AConstant.NULL) =>
 	jcode.emitACONST_NULL();
       case CONSTANT(AConstant.UNIT) =>
-	throw(Debug.abort("Illegal constant type: UNIT"));
+	; //throw(Debug.abort("Illegal constant type: UNIT"));
+      // Here, we dissable the error message until the unboxed types
+      // are introduced.
       case CONSTANT(AConstant.ZERO) =>
 	throw(Debug.abort("Illegal constant type: ZERO"));
 
       case LOAD_ARRAY_ITEM() => {
-	// depend the type of the elements of the array
 	val elementType = typer.getArrayElementType(stack.tail.head);
 	jcode.emitALOAD(typeStoJ(elementType));
       }
@@ -365,7 +343,8 @@ class GenJVMFromICode(global: scalac_Global) {
       case CALL_PRIMITIVE(APrimitive$Negation(ATypeKind.R8)) => jcode.emitDNEG();
 
       case CALL_PRIMITIVE(APrimitive$Test(op, typ, false)) => {
-	// !!! ne traite pas tous les types
+	// !!! Not all type cases are handeled here
+	// !!! TODO
 
 	val condTag = condAtoJ(op);
 	val thenLabel : JCode$Label = jvmMethod.jCode.newLabel();
@@ -416,15 +395,15 @@ class GenJVMFromICode(global: scalac_Global) {
       case CALL_PRIMITIVE(APrimitive$Arithmetic(AArithmeticOp.REM, ATypeKind.R8)) => jcode.emitDREM();
 
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.AND, ATypeKind.I4)) => jcode.emitIAND();
-      case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.AND, ATypeKind.BOOL)) => jcode.emitIAND(); // ??? is that true
+      case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.AND, ATypeKind.BOOL)) => jcode.emitIAND();
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.AND, ATypeKind.I8)) => jcode.emitLAND();
 
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.OR, ATypeKind.I4)) => jcode.emitIOR();
-      case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.OR, ATypeKind.BOOL)) => jcode.emitIOR(); // ??? is that true
+      case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.OR, ATypeKind.BOOL)) => jcode.emitIOR();
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.OR, ATypeKind.I8)) => jcode.emitLOR();
 
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.XOR, ATypeKind.I4)) => jcode.emitIXOR();
-      case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.XOR, ATypeKind.BOOL)) => jcode.emitIXOR(); // ??? is that true
+      case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.XOR, ATypeKind.BOOL)) => jcode.emitIXOR();
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.XOR, ATypeKind.I8)) => jcode.emitLXOR();
 
       case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.LSL, ATypeKind.I4)) => jcode.emitISHL();
@@ -455,29 +434,22 @@ class GenJVMFromICode(global: scalac_Global) {
       case CALL_PRIMITIVE(APrimitive$ArrayLength(_)) => jcode.emitARRAYLENGTH();
 
       //case CALL_PRIMITIVE(APrimitive$StringConcat(ATypeKind.REF,ATypeKind.REF)) =>
-      //	jcode.emitINVOKEVIRTUAL("String","concat",?);
+      // !!! TODO !!!
 
       case CALL_METHOD(method, style) => {
 	var calledMethod : JMethod = null;
-	/*
-	var owner : JVMClass = method.owner;
-	while (calledMethod == null && owner != null) do
-	  if (owner.methods.contains(method))
-	    calledMethod = owner.methods.apply(method);
-	  else
-	    owner = owner.parent;
-	*/ // Joli pour optimization ?
 	val clasz_it = clasz.values;
 	var aJvmClass : JVMClass = null;
+	// Is the method a method of the current unit ?
 	while (clasz_it.hasNext && calledMethod == null) {
 	  aJvmClass = clasz_it.next;
 	  if (aJvmClass.methods.contains(method))
 	    calledMethod = aJvmClass.methods.apply(method).jMethod;
 	}
 	if (calledMethod != null)
-	  jcode.emitINVOKE(calledMethod); // et le style !!!
+	  jcode.emitINVOKE(calledMethod);
 	else {
-	  // cas normal
+	  // normal case
 	  val methodName = method.name.toString();
 	  val className = javaName(method.owner());
 	  val methodType = typeStoJ(method.info()).asInstanceOf[JMethodType];
@@ -535,10 +507,11 @@ class GenJVMFromICode(global: scalac_Global) {
       }
 
       case JUMP(basicBlock) =>
-	; //jcode.emitGOTO(jvmMethod.labels(basicBlock));
+	; // goto instructions are generated by the genCode method.
 
       case CJUMP(success, failure, cond) => {
 	// !!! Type cases are missing
+	// TODO (same as CALL_PRIMITIVE(Test))
 	val condTag : int = condAtoJ(cond);
 	val typ = typeStoJ(stack.head);
 	if (typ.getTag() == JType.T_REFERENCE)
@@ -551,7 +524,7 @@ class GenJVMFromICode(global: scalac_Global) {
       case CZJUMP(success, failure, cond) => {
 	val condTag = condAtoJ(cond);
 	jcode.emitIF(condTag, jvmMethod.labels.apply(success));
-	jcode.emitGOTO(jvmMethod.labels.apply(failure)); // !!! Ha ha ha
+	jcode.emitGOTO(jvmMethod.labels.apply(failure));
       }
 
       case RETURN() => {
@@ -563,8 +536,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
       case THROW() => jcode.emitATHROW;
 
-      case DROP(typ) => { // A voir mieux
-	// ??? On pourrait aussi regarder sur la pile
+      case DROP(typ) => {
 	val jtyp = typeStoJ(typ);
 	val jtypTag : int = jtyp.getTag();
 	if (jtyp.isObjectType() ||
