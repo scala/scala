@@ -41,7 +41,9 @@ public class Names {
     }
 
     public static Name OUTER(Symbol constructor) {
-        assert constructor.isConstructor() : Debug.show(constructor);
+        if (constructor.isClass())
+            return Name.fromString(OUTER_PREFIX + constructor.owner().name);
+        assert constructor.isConstructor(): Debug.show(constructor);
         Symbol clasz = constructor.constructorClass();
         Symbol[] constructors = clasz.allConstructors().alternativeSymbols();
         int index = 0;
