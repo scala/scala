@@ -15,6 +15,7 @@ Char.java
 Console.scala
 Double.java
 Application.scala
+Enumeration.scala
 Float.java
 Function0.java
 Function1.java

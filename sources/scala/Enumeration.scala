@@ -14,9 +14,19 @@ import scala.collection.mutable._;
 
 abstract class Enumeration(initial: Int, names: String*) {
 
-    def this() = this(0, "0");
+    def this() = this(0, null);
 
     def this(names: String*) = this(0, names: _*);
+
+    def name = {
+    	val cname = getClass().getName();
+    	if (cname.endsWith("$"))
+    		cname.substring(0, cname.length() - 1);
+    	else if (cname.endsWith("$class"))
+    		cname.substring(0, cname.length() - 6);
+    	else
+    		cname;
+    }
 
     /** A mapping between the enumeration value id and the enumeration
      *  object.
@@ -65,14 +75,14 @@ abstract class Enumeration(initial: Int, names: String*) {
     override def toString(): String = updateCache.mkString("{", ", ", "}");
 
     protected final def Value: Value =
-    	new Val(nextId, if (nextName.hasNext) nextName.next else nextId.toString());
+    	new Val(nextId, if (nextName.hasNext) nextName.next else null);
 
     protected final def Value(i: Int): Value =
-    	new Val(i, if (nextName.hasNext) nextName.next else i.toString());
+    	new Val(i, if (nextName.hasNext) nextName.next else null);
 
     protected final def Value(name: String): Value = new Val(nextId, name);
 
-    protected final def Value(i: Int, name: String): Value = new Val(nextId, nextId.toString());
+    protected final def Value(i: Int, name: String): Value = new Val(i, name);
 
     trait Value extends Ord[Value] {
         def id: Int;
@@ -91,6 +101,10 @@ abstract class Enumeration(initial: Int, names: String*) {
         if (nextId > topId)
         	topId = nextId;
         def id = i;
-        override def toString() = name;
+        override def toString() =
+        	if (name == null)
+        		Enumeration.this.name + "(" + i + ")";
+        	else
+        		name;
     }
 }
