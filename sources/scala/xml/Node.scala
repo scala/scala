@@ -66,7 +66,7 @@ class NodeList(theList:List[Node]) extends List[Node] {
    *  of all elements of this sequence that are labelled with "foo".
    *  Use /'_ as a wildcard. The document order is preserved.
    */
-  def /(that:Symbol) = if( "_" == that.label ) {
+  def /(that: Symbol) = if( "_" == that.label ) {
     new NodeList( res )
   } else {
     new NodeList( res.filter( y => y.label == that.label ))
@@ -77,7 +77,7 @@ class NodeList(theList:List[Node]) extends List[Node] {
    *  of all children of this node that are labelled with "foo"
    *  Use /#'_ as a wildcard. The document order is preserved.
    */
-    def /#(that:Symbol): NodeList = new NodeList(
+    def /#(that: Symbol): NodeList = new NodeList(
       if ( "_" == that.label ) {
         this.flatMap ( x => (x/#'_).toList )
       } else {
@@ -90,7 +90,7 @@ class NodeList(theList:List[Node]) extends List[Node] {
       });
 
 
-  def toList:List[Node] = theList;
+  override def toList: List[Node] = theList;
 
   // forwarding list methods
 
