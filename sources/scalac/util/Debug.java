@@ -73,23 +73,23 @@ public abstract class Debug {
     // Debug interface - log
 
     public static boolean log(Object a) {
-        return log(new Object[] {a});
+        return logAll(new Object[] {a});
     }
 
     public static boolean log(Object a, Object b) {
-        return log(new Object[] {a, b});
+        return logAll(new Object[] {a, b});
     }
 
     public static boolean log(Object a, Object b, Object c) {
-        return log(new Object[] {a, b, c});
+        return logAll(new Object[] {a, b, c});
     }
 
     public static boolean log(Object a, Object b, Object c, Object d) {
-        return log(new Object[] {a, b, c, d});
+        return logAll(new Object[] {a, b, c, d});
     }
 
-    public static boolean log(Object[] args) {
-        return Global.instance.log(show(args));
+    public static boolean logAll(Object[] args) {
+        return Global.instance.log(showAll(args));
     }
 
     //########################################################################
@@ -128,69 +128,69 @@ public abstract class Debug {
     // Debug interface - show
 
     public static String show(Object a) {
-        return show(new Object[] {a});
+        return showAll(new Object[] {a});
     }
 
     public static String show(Object a, Object b) {
-        return show(new Object[] {a, b});
+        return showAll(new Object[] {a, b});
     }
 
     public static String show(Object a, Object b, Object c) {
-        return show(new Object[] {a, b, c});
+        return showAll(new Object[] {a, b, c});
     }
 
     public static String show(Object a, Object b, Object c, Object d) {
-        return show(new Object[] {a, b, c, d});
+        return showAll(new Object[] {a, b, c, d});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e)
     {
-        return show(new Object[] {a, b, c, d, e});
+        return showAll(new Object[] {a, b, c, d, e});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f)
     {
-        return show(new Object[] {a, b, c, d, e, f});
+        return showAll(new Object[] {a, b, c, d, e, f});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g)
     {
-        return show(new Object[] {a, b, c, d, e, f, g});
+        return showAll(new Object[] {a, b, c, d, e, f, g});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h)
     {
-        return show(new Object[] {a, b, c, d, e, f, g, h});
+        return showAll(new Object[] {a, b, c, d, e, f, g, h});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i)
     {
-        return show(new Object[] {a, b, c, d, e, f, g, h, i});
+        return showAll(new Object[] {a, b, c, d, e, f, g, h, i});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i, Object j)
     {
-        return show(new Object[] {a, b, c, d, e, f, g, h, i, j});
+        return showAll(new Object[] {a, b, c, d, e, f, g, h, i, j});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i, Object j, Object k)
     {
-        return show(new Object[] {a, b, c, d, e, f, g, h, i, j, k});
+        return showAll(new Object[] {a, b, c, d, e, f, g, h, i, j, k});
     }
 
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i, Object j, Object k, Object l)
     {
-        return show(new Object[] {a, b, c, d, e, f, g, h, i, j, k, l});
+        return showAll(new Object[] {a, b, c, d, e, f, g, h, i, j, k, l});
     }
 
-    public static String show(Object[] args) {
+    public static String showAll(Object[] args) {
         if (args == null) return "null";
         StringBuffer buffer = new StringBuffer();
         for (int i = 0; i < args.length; i++) append(buffer, args[i]);
