@@ -45,10 +45,11 @@ backend/msil/GenMSIL.java
 backend/msil/GenMSILPhase.java
 backend/msil/TypeCreator.java
 
+checkers/CheckNames.java
 checkers/CheckOwners.java
 checkers/CheckSymbols.java
+checkers/CheckTreeNodes.java
 checkers/CheckTypes.java
-checkers/CheckNames.java
 checkers/Checker.java
 
 symtab/classfile/AttributeParser.java
