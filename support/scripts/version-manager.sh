@@ -85,13 +85,13 @@ function version-manager() {
     # check new value syntax, if command is "set"
     if [ "$command" = "set" ]; then
         local new_value="${args[2]}";
-        if ! $program-check-syntax "$new_value-b0"; then
+        if ! $program-check-syntax "$new_value.0"; then
             local -a error;
             error[0]="version value '$new_value' does not conform";
             error[1]="to version syntax <int>.<int>.<int>";
             abort "${error[*]}";
         fi;
-        new_value="$new_value-b0";
+        new_value="$new_value.0";
     fi;
 
     # check file existence
