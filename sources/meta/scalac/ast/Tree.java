@@ -283,7 +283,7 @@ public class Tree {
         n_Super.
             setDescription("Super reference").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_TypeTree, "tpe");
+            addField(t_TypeTree, "qualifier");
 
         n_This.
             setDescription("Self reference").
