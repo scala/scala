@@ -13,6 +13,7 @@ import java.util.Map;
 import scalac.Global;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
+import scalac.symtab.SymbolSubstTypeMap;
 import scalac.util.Debug;
 
 /**
@@ -32,6 +33,11 @@ public class TreeCloner extends Transformer {
 
     //########################################################################
     // Public Constructors
+
+    /** Initializes a new instance. */
+    public TreeCloner(Global global, SymbolSubstTypeMap types) {
+        this(global, types.getSymbols(), types);
+    }
 
     /** Initializes a new instance. */
     public TreeCloner(Global global, Map symbols, Type.Map types) {
