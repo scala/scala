@@ -4,7 +4,6 @@
 # $Id$
 
 files/jvm/JavaInteraction.scala
-#files/jvm/bug142.scala
 
 files/run/Course-2002-01.scala
 files/run/Course-2002-02.scala
