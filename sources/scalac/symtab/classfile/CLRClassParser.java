@@ -57,7 +57,7 @@ public class CLRClassParser extends ClassParser {
 
 	Type type = (Type)importer.getMember(clazz);
 	if (type == null)
-	    type = Type.GetType(clazz.fullNameString());
+	    type = Type.GetType(global.primitives.getCLRClassName(clazz));
 	clazz.flags = translateAttributes(type);
 	Type[] ifaces = type.getInterfaces();
 	scalac.symtab.Type[] baseTypes = new scalac.symtab.Type[ifaces.length+1];

@@ -431,7 +431,7 @@ final class TypeCreator {
 	    type = (Type)m;
  	else if (sym.isJava()) {
 // 	if (sym.isExternal()) {
-	    type = getType(sym.fullNameString());
+	    type = getType(global.primitives.getCLRClassName(sym));
 	}
 	if (type == null) {
 	    final Symbol owner = sym.owner();
@@ -451,7 +451,7 @@ final class TypeCreator {
 			+ (sym.isModuleClass() ? "$" : "");
 		    type = outer.GetNestedType(name);
 		} else {
-		    String fullname = sym.type().symbol().fullNameString() +
+		    String fullname = global.primitives.getCLRClassName(sym.type().symbol()) +
 			(sym.isModuleClass() ? "$" : "");
 		    type = getType(fullname);
 		}
@@ -512,7 +512,7 @@ final class TypeCreator {
 
 	final Symbol owner = clazz.owner();
 	final String typeName =
-	    (owner.isClass() ? clazz.nameString() : clazz.fullNameString()) +
+	    (owner.isClass() ? clazz.nameString() : global.primitives.getCLRClassName(clazz)) +
 	    (clazz.isModuleClass() ? "$" : "");
 	final ModuleBuilder module = gen.getCurrentModule();
 
