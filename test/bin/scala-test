@@ -435,8 +435,8 @@ main() {
         COLOR="none";
     fi;
     color_initialization "${COLOR:-many}";
-    find_program SOCOS socos;
-    find_program SURUS surus;
+    find_program SOCOS scalac;
+    find_program SURUS scalarun;
     find_runtime SCALA $SOCOS;
 
     if [ "$TEST_ALL" = "true" ]; then
