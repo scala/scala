@@ -87,6 +87,6 @@ abstract class BitSet with Function1[Int,Boolean] {
   }
 
   /** returns number of Int cells needed to store n bits */
-  protected def memsize(n:Int) = size >>> 5 + { if(size < 32) 1 else 0 };
+  protected def memsize(n:Int) = (size >>> 5) + { if(size < 32) 1 else 0 };
 
 }
