@@ -9,7 +9,13 @@
 
 package scala;
 
-
+/**
+ * The object <code>Stream</code> provides helper functions
+ * to manipulate streams.
+ *
+ * @author Martin Odersky, Matthias Zenger
+ * @version 1.1 08/08/03
+ */
 object Stream {
 
   val empty: Stream[All] = new Stream[All] {
@@ -41,27 +47,29 @@ object Stream {
     else empty;
   }
 
-  /** Create a stream with element values
-   *  <code>v<sub>n+1</sub> = v<sub>n</sub> + 1</code>
-   *  where <code>v<sub>0</sub> = start</code>
-   *  and <code>v<sub>i</sub> &lt; end</code>.
+  /**
+   * Create a stream with element values
+   * <code>v<sub>n+1</sub> = v<sub>n</sub> + 1</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and <code>v<sub>i</sub> &lt; end</code>.
    *
-   *  @param start the start value of the stream
-   *  @param end the end value of the stream
-   *  @return the stream starting at value <code>start</code>.
+   * @param start the start value of the stream
+   * @param end the end value of the stream
+   * @return the stream starting at value <code>start</code>.
    */
   def range(start: Int, end: Int): Stream[Int] =
     range(start, end, 1);
 
-  /** Create a stream with element values
-   *  <code>v<sub>n+1</sub> = v<sub>n</sub> + step</code>
-   *  where <code>v<sub>0</sub> = start</code>
-   *  and <code>v<sub>i</sub> &lt; end</code>.
+  /**
+   * Create a stream with element values
+   * <code>v<sub>n+1</sub> = v<sub>n</sub> + step</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and <code>v<sub>i</sub> &lt; end</code>.
    *
-   *  @param start the start value of the stream
-   *  @param end the end value of the stream
-   *  @param step the increment value of the stream
-   *  @return the stream starting at value <code>start</code>.
+   * @param start the start value of the stream
+   * @param end the end value of the stream
+   * @param step the increment value of the stream
+   * @return the stream starting at value <code>start</code>.
    */
   def range(start: Int, end: Int, step: Int): Stream[Int] = {
     def loop(lo: Int): Stream[Int] =
@@ -70,15 +78,16 @@ object Stream {
     loop(start)
   }
 
-  /** Create a stream with element values
-   *  <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
-   *  where <code>v<sub>0</sub> = start</code>
-   *  and <code>v<sub>i</sub> &lt; end</code>.
+  /**
+   * Create a stream with element values
+   * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and <code>v<sub>i</sub> &lt; end</code>.
    *
-   *  @param start the start value of the stream
-   *  @param end the end value of the stream
-   *  @param step the increment function of the stream
-   *  @return the stream starting at value <code>start</code>.
+   * @param start the start value of the stream
+   * @param end the end value of the stream
+   * @param step the increment function of the stream
+   * @return the stream starting at value <code>start</code>.
    */
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
     def loop(lo: Int): Stream[Int] =
@@ -88,6 +97,27 @@ object Stream {
   }
 }
 
+/**
+ * <p>The class <code>Stream</code> implements lazy lists where elements
+ * are only evaluated when they are needed. Here is an example:</p>
+ * <pre>
+ * <b>object</b> Main <b>with</b> Application {
+ *
+ *   <b>def</b> from(n: Int): Stream[Int] =
+ *     Stream.cons(n, from(n + 1));
+ *
+ *   <b>def</b> sieve(s: Stream[Int]): Stream[Int] =
+ *     Stream.cons(s.head, sieve(s.tail filter { x => x % s.head != 0 }));
+ *
+ *   <b>def</b> primes = sieve(from(2));
+ *
+ *   primes take 10 print
+ * }
+ * </pre>
+ *
+ * @author Martin Odersky, Matthias Zenger
+ * @version 1.1 08/08/03
+ */
 trait Stream[+a] extends Seq[a] {
 
   def isEmpty: Boolean;
