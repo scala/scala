@@ -47,5 +47,12 @@ public class MetaTuple extends AbstractScalaExpander {
         }
     }
 
+    public void printToStringBody() {
+        for (int i = 1; i <= arity; i++) {
+            if (i > 1) writer.print(" + \",\" + ");
+            writer.print("_").print(i);
+        }
+    }
+
     //########################################################################
 }

@@ -10,4 +10,6 @@
 
 package scala;
 
-case class Tuple{#n#}[{#TParams#}]({#VParams#});
+case class Tuple{#n#}[{#TParams#}]({#VParams#}) {
+  override def toString(): String = "(" + {#ToStringBody#} + ")";
+}
