@@ -1,0 +1,40 @@
+<project name="scala.tools.scalac4ant" default="build.jar" basedir=".">
+
+  <!-- the bootstrap compiler jar archive -->
+  <property name="bootstrap.jar" value="/home/linuxsoft/apps/jaco/lib/jaco.jar"/>
+  <property name="pizza.jar" value="/home/linuxsoft/apps/pizza/lib/pizza.jar" />
+
+  <property name="jar.file" value="scalac4ant.jar"/>
+  <property name="sources" value="src.java" />            <!-- the source directory -->
+  <property name="classes" value="../../classes" />       <!-- the target directory -->
+
+  <!-- task definitions for pico -->
+  <taskdef name="pico"
+           classname="jaco.pizza.AntTask">
+    <classpath path="${bootstrap.jar}"/>
+  </taskdef>
+
+  <!-- compiling the ant task -->
+
+  <target name="build.anttask">
+      <pico srcdir="${sources}" destdir="${classes}" source="1.4" classpath="${classes}">
+         <include name="scala/tools/scalac4ant/*.java"/>
+      </pico>
+  </target>
+
+  <!-- building jar -->
+
+  <target name="build.jar" depends="build.anttask">
+    <!-- Create war file  -->
+    <jar jarfile="${jar.file}" basedir="${classes}">
+	 <include name="scala/tools/scalac4ant/**"/>
+    </jar>
+  </target>
+
+  <!-- clean up -->
+
+  <target name="clean">
+    <delete file="${jar.file}"/>
+    <delete file="${classes}/scala/tools/scalac4ant/*.class"/>
+  </target>
+</project>
