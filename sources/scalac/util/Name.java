@@ -274,15 +274,6 @@ public final class Name {
         return fromAscii(ascii, 0, ascii.length);
     }
 
-/** is this name an operator?
- */
-    public boolean isOperator() {
-        return !(((names[index] >= 'a') && (names[index] <= 'z')) ||
-                 ((names[index] >= 'A') && (names[index] <= 'Z')) ||
-                 (names[index] == '$') ||
-                 (names[index] == '_'));
-    }
-
 /** is this name a variable identifier?
  */
     public boolean isVariable() {
