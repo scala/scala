@@ -375,31 +375,16 @@ def element: MarkupType = {
    *   precondition: xEmbeddedBlock == false (we are not in a scala block)
    */
   def xText: String = {
-<<<<<<< MarkupParser.scala
     //if( xEmbeddedBlock ) throw FatalError("internal error: encountered embedded block"); // assert
-=======
-    if (xEmbeddedBlock)
-      throw FatalError("internal error: encountered embedded block"); // assert
->>>>>>> 1.4
 
-<<<<<<< MarkupParser.scala
     /*if( xCheckEmbeddedBlock )
-=======
-    if (xCheckEmbeddedBlock)
->>>>>>> 1.4
       return ""
     else {*/
       var exit = false;
-<<<<<<< MarkupParser.scala
       while( !exit ) {
         putChar( ch );
         nextch;
         exit = /*{ nextch; xCheckEmbeddedBlock }||*/( ch == '<' ) || ( ch == '&' );
-=======
-      while (!exit) {
-        putChar(ch);
-        exit = { nextch; xCheckEmbeddedBlock } || (ch == '<') || (ch == '&');
->>>>>>> 1.4
       }
       val str = cbuf.toString();
       cbuf.setLength(0);
