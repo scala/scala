@@ -31,7 +31,7 @@ public class GenJVMPhase extends PhaseDescriptor {
 
     public void apply(Global global) {
         for (int i = 0; i < global.units.length; i++) {
-            new JVMGenerator(global).translate(global.units[i]);
+            new GenJVM(global).translate(global.units[i]);
         }
     }
 

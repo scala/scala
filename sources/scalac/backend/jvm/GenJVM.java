@@ -36,7 +36,7 @@ import java.io.*;
  * @author Michel Schinz
  */
 
-class JVMGenerator {
+class GenJVM {
     protected final static String JAVA_LANG_OBJECT = "java.lang.Object";
     protected final static String JAVA_LANG_STRING = "java.lang.String";
     protected final static String JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
@@ -67,7 +67,7 @@ class JVMGenerator {
     protected final Definitions defs;
     protected final Primitives prims;
 
-    public JVMGenerator(Global global) {
+    public GenJVM(Global global) {
         this.global = global;
         this.defs = global.definitions;
         this.prims = global.primitives;
