@@ -73,6 +73,9 @@ public class Primitive {
     public case HASHCODE;                     // x.hashcode()
     public case TOSTRING;                     // x.toString()
 
+    // AnyRef operations
+    public case SYNCHRONIZED;                 // x.synchronized(y)
+
     // String operations
     public case CONCAT;                       // String.valueOf(x)+String.valueOf(y)
 
@@ -171,8 +174,6 @@ public class Primitive {
     public case D2L;                          // RunTime.d2l(x)
     public case D2F;                          // RunTime.d2f(x)
     public case D2D;                          // RunTime.d2d(x)
-
-    public case SYNCHRONIZED;                 // RunTime.synchronised(x,y)
 
     /** Return negated version of comparison primitive. */
     public Primitive negate() {
