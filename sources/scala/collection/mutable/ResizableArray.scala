@@ -27,9 +27,12 @@ abstract class ResizableArray[A] with Iterable[A] {
      */
     protected def ensureSize(n: Int): Unit = {
         if ((size + n) > array.length) {
-            val newar: Array[A] = new Array(array.length * 2);
-            arraycopy(array, 0, newar, 0, size);
-            array = newar;
+          var nsize = array.length;
+          while( nsize < size + n )
+            nsize = nsize * 2;
+          val newar: Array[A] = new Array(nsize);
+          arraycopy(array, 0, newar, 0, size);
+          array = newar;
         }
     }
 

@@ -149,12 +149,21 @@ DTD2SCALA_RSRC_LIST	+= $(filter %.xml,$(DTD2SCALA_LIST))
 DTD2SCALA_RSRC_FILES	+= $(filter %.xml,$(DTD2SCALA_SOURCES))
 DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 
+# servletEngine
+SERVLETENGINE_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/servletEngine
+SERVLETENGINE_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/servletEngine.lst)
+SERVLETENGINE_SOURCES		+= $(SERVLETENGINE_LIST:%=$(SERVLETENGINE_ROOT)/%)
+SERVLETENGINE_SC_FILES		+= $(SERVLETENGINE_SOURCES)
+SERVLETENGINE_SC_CLASSPATH	 = $(PROJECT_CLASSPATH)
+
 # scala ant tasks
 SCALA4ANT_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scala4ant
 SCALA4ANT_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scala4ant.lst)
 SCALA4ANT_SOURCES	+= $(SCALA4ANT_LIST:%=$(SCALA4ANT_ROOT)/%)
 SCALA4ANT_SC_FILES	+= $(SCALA4ANT_SOURCES)
 SCALA4ANT_SC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(ANT_JARFILE)
+
+
 
 # scalatest
 SCALATEST_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalatest
@@ -197,6 +206,7 @@ all		: interpreter
 all		: scaladoc
 all		: scalap
 all		: dtd2scala
+all		: servletEngine
 all		: scala4ant
 all		: scalatest
 
@@ -249,6 +259,7 @@ scaladoc	: .latest-scaladoc-rsrc
 scalap		: .latest-scalap-sc
 dtd2scala	: .latest-dtd2scala-sc
 dtd2scala	: .latest-dtd2scala-rsrc
+servletEngine	: .latest-servletEngine-sc
 scala4ant	: .latest-scala4ant-sc
 scalatest	: .latest-scalatest-jc
 boottest	: .latest-boottest
@@ -269,6 +280,7 @@ library-doc	: .latest-library-sdc
 .PHONY		: scaladoc
 .PHONY		: scalap
 .PHONY		: dtd2scala
+.PHONY		: servletEngine
 .PHONY		: scala4ant
 .PHONY		: scalatest
 .PHONY		: boottest
@@ -417,6 +429,10 @@ cvs-fix-perms		:
 .latest-dtd2scala-rsrc	: $(DTD2SCALA_RSRC_FILES)
 	$(strip $(MIRROR) -m 644 -C $(DTD2SCALA_ROOT) $(DTD2SCALA_RSRC_LIST) \
 	    $(DTD2SCALA_RSRC_OUTPUTDIR))
+	touch $@
+
+.latest-servletEngine-sc	: $(SERVLETENGINE_SC_FILES)
+	@$(make) sc target=SERVLETENGINE SERVLETENGINE_SC_FILES='$?'
 	touch $@
 
 .latest-scala4ant-sc	: $(SCALA4ANT_SC_FILES)

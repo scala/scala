@@ -24,7 +24,6 @@ class Scanner( it:Iterator[char] ) with Tokens {
       next;
       if ( '/' == c ) { next; token = SLASHSLASH } else { token = SLASH }
     }
-    case '*' =>next; token = STAR
     case _  =>getIdentOrKeyword;
   }
 
