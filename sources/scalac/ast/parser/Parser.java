@@ -40,7 +40,7 @@ public class Parser implements Tokens {
     /** this is the general parse method
      */
     public Tree[] parse() {
-        Tree[] ts = compilationUnit();
+        Tree[] ts = s.unit.console ? templateStatSeq() : compilationUnit();
         accept(EOF);
         return ts;
     }
