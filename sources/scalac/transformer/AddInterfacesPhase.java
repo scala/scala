@@ -97,11 +97,19 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                 LinkedList/*<Type>*/ newParentsLst = new LinkedList();
                 Type[] oldParents = tp.parents();
                 for (int i = 0; i < oldParents.length; ++i) {
-                    Symbol oldSym = oldParents[i].unalias().symbol();
-                    if (needInterface(oldSym))
-                        newParentsLst.addLast(getClassSymbol(oldSym).type());
-                    else
-                        newParentsLst.addLast(oldParents[i]);
+                    switch (oldParents[i]) {
+                    case TypeRef(Type pre, Symbol oldSym, Type[] args):
+                        if (needInterface(oldSym)) {
+                            newParentsLst.addLast(
+                                Type.typeRef(
+                                    pre, getClassSymbol(oldSym), args));
+                        }
+                        else
+                            newParentsLst.addLast(oldParents[i]);
+                        break;
+                    default:
+                        throw Debug.abort("illegal case", oldParents[i]);
+                    }
                 }
                 Type[] newParents = (Type[])
                     newParentsLst.toArray(new Type[newParentsLst.size()]);
