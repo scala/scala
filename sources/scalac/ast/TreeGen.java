@@ -461,7 +461,8 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute this node with given symbol.
      */
     public Tree This(int pos, Symbol sym) {
-        return make.This(pos, Ident(pos, sym)).setType(sym.thisType());
+        Type type = sym.thisType();
+        return make.This(pos, TypeTerm(pos, type)).setType(type);
     }
 
     /** Build and attribute super node with given type.
