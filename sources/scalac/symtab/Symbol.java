@@ -1268,13 +1268,6 @@ public class ClassSymbol extends TypeSymbol {
         this.mangled = name;
     }
 
-    /** Constructor for module classes and classes with static members.
-    public ClassSymbol(int pos, Name name, Symbol owner, int flags, Symbol module) {
-	this(pos, name, owner, flags);
-	this.module = module;
-    }
-     */
-
     /** Constructor for classes to load as source files
      */
     public ClassSymbol(Name name, Symbol owner, SourceCompleter parser) {

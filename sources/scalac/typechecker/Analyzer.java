@@ -795,7 +795,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (other.isPreloaded()) {
 		    // symbol was preloaded from package;
 		    // need to overwrite definition.
-		    UnPickle.overwrite(sym, other);
+		    overwrite(sym, other);
 		    result = other;
 		} else if (sym.owner().isPackage()) {
 		    if (global.compiledNow.get(other) != null) {
@@ -827,6 +827,23 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (result.owner().isPackage())
 		global.compiledNow.put(result, unit.source);
 	    return result;
+	}
+
+	/** Overwrite symbol `to' from symbol `from'
+	 */
+	void overwrite(Symbol from, Symbol to) {
+	    if (Global.instance.debug) System.out.println(from + " overwrites " + to);//debug
+	    from.copyTo(to);
+	    if (from.isModule()) {
+		from.moduleClass().copyTo(
+		    to.moduleClass());
+		from.moduleClass().constructor().copyTo(
+		    to.moduleClass().constructor());
+		to.moduleClass().constructor().setInfo(
+		    Type.MethodType(
+			Symbol.EMPTY_ARRAY,
+			to.moduleClass().typeConstructor()));
+	    }
 	}
 
     /** Enter all symbols in statement list

@@ -28,26 +28,30 @@ public class ClassParser extends Type.LazyType {
     /** complete class symbol c by loading the class
      */
     public void complete(Symbol c) {
-        //System.out.println("loading " + c);//DEBUG
-        try {
-            long msec = System.currentTimeMillis();
-            String filename = externalizeFileName(c.fullName()) + ".class";
-            AbstractFile f = global.classPath.openFile(filename);
-            if (f == null)
-                global.error("could not read class " + c);
-            else {
-                new ClassfileParser(global, new AbstractFileReader(f), c).parse();
-                global.operation("loaded " + f.getPath() + " in " +
-                    (System.currentTimeMillis() - msec) + "ms");
-                //for (Definition e = c.locals().elems; e != null; e = e.sibling)
-                //  if (e.def.kind == TYP)
+        if (completed) {
+            c.setInfo(Type.NoType);
+        } else {
+	    //System.out.println("loading " + c);//DEBUG
+	    try {
+		long msec = System.currentTimeMillis();
+		String filename = externalizeFileName(c.fullName()) + ".class";
+		AbstractFile f = global.classPath.openFile(filename);
+		if (f == null)
+		    global.error("could not read class " + c);
+		else {
+		    new ClassfileParser(global, new AbstractFileReader(f), c).parse();
+		    global.operation("loaded " + f.getPath() + " in " +
+				     (System.currentTimeMillis() - msec) + "ms");
+		    //for (Definition e = c.locals().elems; e != null; e = e.sibling)
+		    //  if (e.def.kind == TYP)
                 //      e.def.complete();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            global.error("i/o error while loading " + c);
-            c.setInfo(Type.ErrorType);
-        }
+		}
+	    } catch (IOException e) {
+		e.printStackTrace();
+		global.error("i/o error while loading " + c);
+		c.setInfo(Type.ErrorType);
+	    }
+	}
     }
 
     /** return external representation of file name s,

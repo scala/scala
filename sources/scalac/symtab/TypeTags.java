@@ -25,23 +25,4 @@ public interface TypeTags {
 
     int FirstUnboxedTag = BYTE;
     int LastUnboxedTag = UNIT;
-
-    /** other type tags (used for hashcodes and Pickling)
-     */
-    int ERRORtpe = 20;
-    int NOtpe = 21;
-    int THIStpe = 22;
-    int NAMEDtpe = 23;
-    int SINGLEtpe = 24;
-    int COMPOUNDtpe = 25;
-    int METHODtpe = 26;
-    int POLYtpe = 27;
-    int CONSTRUCTORtpe = 28;
-    int COVARtpe = 29;
-    int OVERLOADEDtpe = 30;
-    int UNBOXEDtpe = 31;
-    int UNBOXEDARRAYtpe = 32;
-
-    int firstTypeTag = ERRORtpe;
-    int lastTypeTag = UNBOXEDARRAYtpe;
 }

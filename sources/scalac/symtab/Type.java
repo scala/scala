@@ -15,7 +15,7 @@ import scalac.ApplicationError;
 import scalac.util.*;
 import scalac.Global;
 
-public class Type implements Modifiers, Kinds, TypeTags {
+public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     public static boolean explainSwitch = false;
     private static int indent = 0;
@@ -2444,7 +2444,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return THIStpe
 		^ (sym.hashCode() * 41);
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    return NAMEDtpe
+	    return TYPEREFtpe
 		^ (pre.hashCode() * 41)
 		^ (sym.hashCode() * (41*41))
                 ^ (hashCode(args) * (41*41*41));
@@ -2457,7 +2457,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		^ (hashCode(parts) * 41)
 		^ (members.hashCode() * (41 * 41));
 	case MethodType(Symbol[] vparams, Type result):
-	    return METHODtpe
+	    int h = METHODtpe;
+	    for (int i = 0; i < vparams.length; i++)
+		h = (h << 4) ^ vparams[i].flags;
+	    return h
 		^ (hashCode(Symbol.type(vparams)) * 41)
 		^ (result.hashCode() * (41 * 41));
 	case PolyType(Symbol[] tparams, Type result):
@@ -2535,7 +2538,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    case MethodType(Symbol[] vparams, Type result):
 		switch (that) {
 		case MethodType(Symbol[] vparams1, Type result1):
-		    return equals(Symbol.type(vparams), Symbol.type(vparams1)) &&
+	 	    if (vparams.length != vparams1.length)
+			return false;
+		    for (int i = 0; i < vparams.length; i++)
+			if (vparams[i].flags != vparams1[i].flags)
+			    return false;
+		    return
+			equals(Symbol.type(vparams), Symbol.type(vparams1)) &&
 			result.equals(result1);
 		default: return false;
 		}
