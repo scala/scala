@@ -563,6 +563,14 @@ public class Tree {
 	    return qual + "." + name;
 	case Ident(Name name):
 	    return name.toString();
+        case TypeApply(Tree fn, Tree[] args):
+            String res = fn + "[";
+            if ((args == null) || (args.length == 0))
+                return res + "]";
+            res += args[0].toString();
+            for (int i = 1; i < args.length; i++)
+                res += ", " + args[i];
+            return res + "]";
         case Apply(Tree fn, Tree[] args):
             String res = fn + "(";
             if ((args == null) || (args.length == 0))
@@ -580,6 +588,8 @@ public class Tree {
             return "import " + expr;
 	case Empty:
 	    return "<empty>";
+        case TypeTerm():
+            return type().toString();
 	default:
 	    return super.toString();
 	}
