@@ -251,14 +251,16 @@ public class SymbolTablePrinter {
         case Kinds.NONE:
             return null;
         case Kinds.CLASS:
+            if (symbol.isPackageClass()) return "package class";
+            if (symbol.isModuleClass()) return "object class";
             if (symbol.isTrait()) return "trait";
-            if (symbol.isModuleClass() && global.debug) return "object class";
             return "class";
         case Kinds.TYPE:
         case Kinds.ALIAS:
             return "type";
         case Kinds.VAL:
             if (symbol.isVariable()) return "variable";
+            if (symbol.isPackage()) return "package";
             if (symbol.isModule()) return "object";
             if (symbol.isConstructor()) return "constructor";
             if (symbol.isInitializedMethod())
