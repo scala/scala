@@ -396,7 +396,6 @@ public class PatternMatcher extends PatternTool {
             }
             return mk.AltPat(tree.pos, (Header)subroot.and);
         default:
-            new scalac.ast.printer.TextTreePrinter().print(tree).flush();
             throw new ApplicationError("unit = " + unit + "; tree = "+tree);
         }
     }
