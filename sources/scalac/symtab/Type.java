@@ -864,10 +864,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    Type prefix1 = apply(prefix);
 		    if (prefix1 == prefix) return t;
 		    else return singleType(prefix1, prefix1.rebind(sym));
-		} catch (Type.Error ex) {
-		    return apply(t.widen());
-		}
-		break;
+		} catch (Type.Error ex) {}
+                return apply(t.widen());
 
 	    default:
 		return map(t);
