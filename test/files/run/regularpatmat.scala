@@ -1,6 +1,28 @@
 // Burak's test suite for regular pattern matching
 
-import java.lang.System; // to avoid name clash with .NET's library
+//import java.lang.System; // to avoid name clash with .NET's library
+
+object Test {
+  def main(args: Array[String]): Unit = {
+    Console.println("pretest");
+    val L = List(1,2,3);
+    scala.testing.UnitTest.assertEquals( L, L.match { case List(xs@_*) => xs; } ) ;
+
+    testWR.main( args );
+    testWS.main( args );
+    testWT.main( args );
+    testWV.main( args );
+    //testWW.main( args );
+    testBK.main( args );
+    testBL.main( args );
+    testBM.main( args );
+    testBN.main( args );
+    testBO.main( args );
+    testMZ.main;
+    //testNN.main;
+    ()
+  }
+}
 
 // contains 17 visitors plus X
 
@@ -693,26 +715,4 @@ object testNO {   // this does not need to be run, only compiled
   case class Operation (e: Expression, o: Operator) extends Expression;
 
 
-}
-
-object Test {
-  def main(args: Array[String]): Unit = {
-    Console.println("pretest");
-    val L = List(1,2,3);
-    scala.testing.UnitTest.assertEquals( L, L.match { case List(xs@_*) => xs; } ) ;
-
-    testWR.main( args );
-    testWS.main( args );
-    testWT.main( args );
-    testWV.main( args );
-    //testWW.main( args );
-    testBK.main( args );
-    testBL.main( args );
-    testBM.main( args );
-    testBN.main( args );
-    testBO.main( args );
-    testMZ.main;
-    //testNN.main;
-    ()
-  }
 }
