@@ -143,7 +143,11 @@ test_compilation_success() {
 }
 
 test_compilation_failure() {
-    if test_compilation_success "$@"; then false; else true; fi;
+    (
+        cd `dirname "$source"`;
+        source=`basename "$source"`;
+        if test_compilation_success "$@"; then false; else true; fi;
+    )
 }
 
 test_output() {

@@ -1,28 +1,28 @@
-./neg/imports.scala:26: not found: value v_coi
+imports.scala:26: not found: value v_coi
   def method: C_coi = v_coi;
                       ^
-./neg/imports.scala:27: not found: value v_coi
+imports.scala:27: not found: value v_coi
   val field: C_coi = v_coi;
                      ^
-./neg/imports.scala:29: not found: value v_coi
+imports.scala:29: not found: value v_coi
   check("C_coi", "v_coi ", v_coi);
                            ^
-./neg/imports.scala:47: not found: value v_cio
+imports.scala:47: not found: value v_cio
   def method: C_cio = v_cio;
                       ^
-./neg/imports.scala:48: not found: value v_cio
+imports.scala:48: not found: value v_cio
   val field: C_cio = v_cio;
                      ^
-./neg/imports.scala:50: not found: value v_cio
+imports.scala:50: not found: value v_cio
   check("C_cio", "v_cio ", v_cio);
                            ^
-./neg/imports.scala:136: not found: value v_oci
+imports.scala:136: not found: value v_oci
   def method: C_oci = v_oci;
                       ^
-./neg/imports.scala:137: not found: value v_oci
+imports.scala:137: not found: value v_oci
   val field: C_oci = v_oci;
                      ^
-./neg/imports.scala:139: not found: value v_oci
+imports.scala:139: not found: value v_oci
   check("C_oci", "v_oci ", v_oci);
                            ^
 9 errors found

@@ -1,7 +1,7 @@
-./neg/stable.scala:10: stable identifier required, but test.y found.
+stable.scala:10: stable identifier required, but test.y found.
     type b = y.T;
              ^
-./neg/stable.scala:11: stable identifier required, but test.z found.
+stable.scala:11: stable identifier required, but test.z found.
     type c = z.T;
              ^
 two errors found

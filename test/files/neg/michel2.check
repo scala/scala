@@ -1,4 +1,4 @@
-./neg/michel2.scala:1: Java class may not be used as mixin
+michel2.scala:1: Java class may not be used as mixin
 class A() extends java.lang.Object() with java.util.Random() { }
                                                           ^
 one error found
