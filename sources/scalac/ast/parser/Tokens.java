@@ -75,6 +75,7 @@ public interface Tokens {
         SUBTYPE = 69,
         SUPERTYPE = 70,
         HASH = 71,
+        AT = 72,
 
         /* parenthesis */
         LPAREN = 90,

@@ -379,6 +379,8 @@ public class Parser implements Tokens {
     static final Name BANG = Name.fromString("!");
     static final Name TILDE = Name.fromString("~");
     static final Name STAR = Name.fromString("*");
+    static final Name BAR  = Name.fromString("|");
+    static final Name OPT  = Name.fromString("?");
 
     Name ident() {
         if (s.token == IDENTIFIER) {
@@ -988,18 +990,72 @@ public class Parser implements Tokens {
         return ts.toArray();
     }
 
-    /**   Pattern  ::=  varid `:' Type1
-     *               |  `_' `:' Type1
-     *               |  SimplePattern {Id SimplePattern}
+    /**   Pattern  ::=  TreePattern { '|' TreePattern }
      */
+
     Tree pattern() {
+	int pos = s.pos;
+	Tree first = treePattern();
+	if(( s.token == IDENTIFIER )&&( s.name == BAR )) {
+	    TreeList choices = new TreeList();
+	    choices.append( first );
+	    while(( s.token == IDENTIFIER )&&( s.name == BAR )) {
+		s.nextToken();
+		choices.append( treePattern() );
+	    }
+	    return make.Alternative( pos, choices.toArray() );
+	}
+	return first;
+    }
+
+    /**   TreePattern  ::=  varid `:' Type1
+     *                   |  `_' `:' Type1
+     *                   |  SimplePattern [ '*' | '?' | '+' ]
+     *                   |  SimplePattern {Id SimplePattern}
+     */
+    Tree treePattern() {
         int base = sp;
 	Tree top = simplePattern();
 	if (s.token == COLON) {
 	    if (TreeInfo.isVarPattern(top))
 		return make.Typed(s.skipToken(), top, type1());
 	}
-        while (s.token == IDENTIFIER) {
+	if( s.token == IDENTIFIER )
+	    {
+		if ( s.name == STAR ) /*         p*  becomes  z@( |(p,z))       */
+		    {
+			Name zname= fresh();
+			Tree zvar = make.Ident( s.pos, zname );
+
+			return make.Bind( s.pos, zname,
+					  make.Alternative( s.pos, new Tree[] {
+					      make.Subsequence( s.pos, Tree.EMPTY_ARRAY ),
+					      make.Subsequence( s.pos, new Tree[] {
+						  top,
+						  zvar })
+					  }));
+		    }
+		else if ( s.name == PLUS ) /*    p+   becomes   z@(p,(z| ))     */
+		    {
+			Name zname= fresh();
+			Tree zvar = make.Ident( s.pos, zname );
+
+			return make.Bind( s.pos, zname,
+					  make.Subsequence( s.pos, new Tree[] {
+					      top,
+					      make.Alternative( s.pos, new Tree[] {
+						  zvar,
+			 			  make.Subsequence( s.pos, Tree.EMPTY_ARRAY ) })
+					  }));
+		    }
+		else if ( s.name == OPT ) /*    p?   becomes   (p| )            */
+		    {
+			return make.Alternative( s.pos, new Tree[] {
+			    top,
+			    make.Subsequence( s.pos, Tree.EMPTY_ARRAY )});
+		    }
+	    }
+	while ((s.token == IDENTIFIER)&&( s.name != BAR )) {
 	    top = reduceStack(
 		false, base, top, s.name.precedence(), s.name.isLeftAssoc());
 	    push(top, s.pos, s.name);
@@ -1009,18 +1065,33 @@ public class Parser implements Tokens {
 	return reduceStack(false, base, top, 0, true);
     }
 
-    /** SimplePattern ::= varid
+    /** SimplePattern ::= varid [ '@' SimplePattern ]
      *                 | `_'
      *                 | literal
      *                 | null
      *                 | StableId {ArgumentPatterns}
      *                 | `(' Pattern `)'
+     *                 | ((nothing))
      */
     Tree simplePattern() {
 	switch (s.token) {
 	case IDENTIFIER:
+	    if( s.name == BAR )
+		{
+		    return make.Subsequence( s.pos, Tree.EMPTY_ARRAY ); // ((nothing))
+		}
+
 	case THIS:
 	    Tree t = stableId();
+	    switch( t ) {
+	    case Ident( Name name ):
+		if(( name.isVariable() )&&( s.token == AT ))
+		    {
+			int pos = s.pos;
+			s.nextToken();
+			return make.Bind( pos, name, simplePattern() );
+		    }
+	    }
 	    while (s.token == LPAREN) {
 		t = make.Apply(s.pos, convertToTypeId(t), argumentPatterns());
 	    }
