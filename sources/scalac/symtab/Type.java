@@ -2520,10 +2520,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    if ((sym.flags & MODUL) == 0) {
 		Name fullname = sym.fullName();
 		if (fullname == Names.scala_Array && args.length == 1) {
-                    Type bound = upperBound(args[0]);
+                    Type item = args[0].unalias();
+                    Type bound = item.upperBound();
 		    // todo: check with Philippe if this is what we want.
-                    if (bound.symbol() != Global.instance.definitions.ANY_CLASS &&
-                        bound.symbol() != Global.instance.definitions.ANYVAL_CLASS)
+                    if (item.symbol().isClass() ||
+                        (bound.symbol() != Global.instance.definitions.ANY_CLASS &&
+                            bound.symbol() != Global.instance.definitions.ANYVAL_CLASS))
                     {
                         return UnboxedArrayType(args[0].erasure());
                     }
@@ -2536,13 +2538,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	return this;
     }
     //where
-	private Type upperBound(Type tp) {
-	    switch (tp) {
+	private Type upperBound() {
+	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
 		if (sym.kind == ALIAS || sym.kind == TYPE)
-		    return upperBound(pre.memberInfo(sym));
+		    return pre.memberInfo(sym).upperBound();
 	    }
-	    return tp;
+	    return this;
 	}
 
     /** Return the erasure of this type.
