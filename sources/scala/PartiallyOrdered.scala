@@ -1,4 +1,14 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-04, LAMP/EPFL               **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
 package scala;
+
 
 /** A trait for partially ordered data.
  */
@@ -7,9 +17,9 @@ trait PartiallyOrdered[+a] {
   /** Result of comparing `this' with operand `that'.
    *  Returns `None' if operands are not comparable.
    *  If operands are comparable, returns `Some(x)' where
-   *  x < 0    iff    this < that
-   *  x == 0   iff    this == that
-   *  x > 0    iff    this > that
+   *  <code>x &lt; 0</code>    iff    <code>this &lt; that</code>
+   *  <code>x == 0</code>   iff    <code>this == that</code>
+   *  <code>x &gt; 0</code>    iff    <code>this &gt; that</code>
    */
   def tryCompareTo [b >: a <% PartiallyOrdered[b]](that: b): Option[int];
 
