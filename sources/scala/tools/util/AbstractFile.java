@@ -587,3 +587,78 @@ final class JarArchive extends AbstractFile {
         }
     }
 }
+
+
+public class VirtualFile extends AbstractFile {
+
+    /** The file name */
+    private final String name;
+
+    /** The file path */
+    private final String path;
+
+    public VirtualFile(String name) {
+        this(name, name);
+    }
+
+    public VirtualFile(String name, String path) {
+        this.name = name;
+        this.path = path;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public boolean exists() {
+        return false;
+    }
+
+    public boolean isDirectory() {
+        return false;
+    }
+
+    public long lastModified() {
+        return Long.MIN_VALUE;
+    }
+
+    public byte[] read() {
+        return new byte[0];
+    }
+
+    public String[] list() {
+        return new String[0];
+    }
+
+    public AbstractFile open(String name) {
+        return null;
+    }
+
+}
+
+public class ByteArrayFile extends VirtualFile {
+
+    private final byte[] bytes;
+
+    public ByteArrayFile(String name, byte[] bytes) {
+        this(name, name, bytes);
+    }
+
+    public ByteArrayFile(String name, String path, byte[] bytes) {
+        super(name, path);
+        this.bytes = bytes;
+    }
+
+    public boolean exists() {
+        return true;
+    }
+
+    public byte[] read() {
+        return bytes;
+    }
+
+}
