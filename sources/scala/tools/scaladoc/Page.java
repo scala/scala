@@ -124,10 +124,14 @@ class Page extends HTMLPrinter {
      * f1 and f2 should be of the form (A/...)
      */
     static private File asSeenFrom(File f1, File f2) {
-	File lcp = longestCommonPrefix(f1, f2);
-	File relf1 = subtractPrefix(lcp, f1);
-	File relf2 = subtractPrefix(lcp, f2);
-	return new File(pathToRoot(relf2), relf1.getPath());
+	if (f1.equals(f2))
+	    return new File(f1.getName());
+	else {
+	    File lcp = longestCommonPrefix(f1, f2);
+	    File relf1 = subtractPrefix(lcp, f1);
+	    File relf2 = subtractPrefix(lcp, f2);
+	    return new File(pathToRoot(relf2), relf1.getPath());
+	}
     }
     // where
     /** p and q should be of the form (A/...) */
