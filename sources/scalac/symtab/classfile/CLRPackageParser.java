@@ -112,9 +112,6 @@ public class CLRPackageParser extends SymbolLoader {
 
 	SCALA_SYMTAB_ATTR = Type.GetType("scala.support.SymtabAttribute");
 
-   	//findAssembly("scalalib.dll");
-	findAllAssemblies();
-
 	Type[] types = Type.EmptyTypes;
 	Iterator as = assemblies.iterator();
 	while (as.hasNext()) {
@@ -266,17 +263,6 @@ public class CLRPackageParser extends SymbolLoader {
 	    BANNED_TYPES.add(BANNED[i]);
 	}
     }
-
-//     private void testFind(String prefix) {
-// 	System.out.println("test find for " + prefix);
-// 	int i = findFirst(prefix);
-// 	if (i > 0)
-// 	    System.out.println(types[i - 1]);
-// 	if (i < types.length)
-// 	    System.out.println("> " + types[i]);
-// 	if (i < types.length - 1)
-// 	    System.out.println(types[i + 1]);
-//     }
 
     /** Find the position of the first type whose name starts with
      *  the given prefix; return the length of the types array if no match
