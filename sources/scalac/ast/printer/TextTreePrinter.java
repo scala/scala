@@ -391,8 +391,13 @@ public class TextTreePrinter implements TreePrinter {
             print(rhs);
             break;
 
-        case Block(Tree[] stats):
-            printArray(stats, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
+        case Block(Tree[] stats, Tree value):
+            printArray(stats, TXT_BLOCK_BEGIN, TXT_SEMICOLON, TXT_BLOCK_SEP);
+            indent();
+            printNewLine();
+            print(value);
+            undent();
+            print(TXT_BLOCK_END);
             printType(tree);
             break;
 

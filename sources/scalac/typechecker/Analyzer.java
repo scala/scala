@@ -1402,7 +1402,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    if ((mode & EXPRmode) != 0) {
 		if (pt.symbol() == definitions.UNIT_CLASS) {
-		    return gen.Block(new Tree[]{tree, gen.mkUnitLit(tree.pos)});
+		    return gen.mkUnitBlock(tree);
 		} else {
 		    Symbol coerceMeth = tree.type.lookup(Names.coerce);
 		    if (coerceMeth != Symbol.NONE) {
@@ -1939,7 +1939,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    rhs1 = transform(
 			rhs,
 			(name == Names.CONSTRUCTOR) ? CONSTRmode : EXPRmode,
-			tpe1.type);
+			(name == Names.CONSTRUCTOR) ? definitions.UNIT_TYPE() : tpe1.type);
 		}
 		popContext();
 		context.enclClass.owner.flags &= ~INCONSTRUCTOR;
@@ -1988,33 +1988,27 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		context.imports = new ImportList(tree, context.scope, context.imports);
 		return Tree.Empty;
 
-	    case Block(Tree[] stats):
+	    case Block(Tree[] stats, Tree value):
 		pushContext(tree, context.owner, new Scope(context.scope));
 		Tree[] stats1 = desugarize.Statements(stats, true);
 		enterSyms(stats1);
 		context.imports = context.outer.imports;
-		Type owntype;
 		int curmode = mode;
+                int start = 0;
+                int valuemode = curmode;
 		if ((curmode & CONSTRmode) != 0) {
 		    stats1[0] = transform(stats1[0], curmode, pt);
 		    context.enclClass.owner.flags &= ~INCONSTRUCTOR;
-		    for (int i = 1; i < stats1.length; i++)
-			stats1[i] = transform(stats1[i], EXPRmode);
-		    owntype = stats1[0].type;
-		} else {
-		    for (int i = 0; i < stats1.length - 1; i++)
-			stats1[i] = transform(stats1[i], EXPRmode);
-		    if (stats1.length > 0) {
-			stats1[stats1.length - 1] =
-			    transform(stats1[stats1.length - 1], curmode & ~FUNmode, pt);
-			owntype = checkNoEscape(tree.pos, stats1[stats1.length - 1].type);
-		    } else {
-			owntype = definitions.UNIT_TYPE();
-		    }
-		}
+                    start = 1;
+                    valuemode = (curmode & ~CONSTRmode) | EXPRmode;
+                }
+                for (int i = start; i < stats1.length; i++)
+                    stats1[i] = transform(stats1[i], EXPRmode);
+                Tree value1 = transform(value, valuemode & ~FUNmode, pt);
+		Type owntype = checkNoEscape(tree.pos, value1.type);
 		popContext();
-		return copy.Block(tree, stats1)
-		    .setType(owntype);
+		return copy.Block(tree, stats1, value1)
+                    .setType(owntype);
 
             case Sequence( Tree[] trees ):
                 for( int i = 0; i < trees.length; i++ ) {
@@ -2115,8 +2109,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree thenp1, elsep1;
 		if (elsep == Tree.Empty) {
 		    thenp1 = transform(thenp, EXPRmode, definitions.UNIT_TYPE());
-		    elsep1 = make.Block(tree.pos, Tree.EMPTY_ARRAY)
-			.setType(definitions.UNIT_TYPE());
+		    elsep1 = gen.mkUnitLit(tree.pos);
 		} else {
 		    thenp1 = transform(thenp, EXPRmode, pt);
 		    elsep1 = transform(elsep, EXPRmode, pt);
@@ -2202,7 +2195,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				Tree.EMPTY_ARRAY))
 			    .setType(owntype);
 			popContext();
-			return make.Block(tree.pos, new Tree[]{cd, alloc})
+			return make.Block(tree.pos, new Tree[]{cd}, alloc)
 			  .setType(owntype);
 		    }
 		default:

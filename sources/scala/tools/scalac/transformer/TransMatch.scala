@@ -86,7 +86,7 @@ class TransMatch( global:scalac_Global )
       var nilvars:Set  = TestRegTraverser.getNilVariables();
       if( !nilvars.isEmpty() ) {
         //System.err.println("nilvars present");
-        val newBody = new Array[Tree]( nilvars.size() + 1 );
+        val newBody = new Array[Tree]( nilvars.size() );
         var j=0;
         var it:Iterator = nilvars.iterator();
         while( it.hasNext() ) {
@@ -94,8 +94,7 @@ class TransMatch( global:scalac_Global )
           val n = gen.mkNil(cases(i).pos);
           newBody.update( {j = j + 1; j} , gen.ValDef(v, n));
         }
-        newBody.update( newBody.length - 1, cases(i).body);
-        cases(i).body = gen.mkBlock( newBody );
+        cases(i).body = gen.mkBlock( newBody, cases(i).body );
       }
       i = i+1;
     }

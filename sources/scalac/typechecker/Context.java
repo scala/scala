@@ -51,7 +51,7 @@ public class Context {
 
     boolean isTopLevel() {
 	switch (tree) {
-	case Block(_):
+	case Block(_, _):
 	    return false;
 	case Template(_, _):
 	    return outer.tree instanceof Tree.PackageDef;

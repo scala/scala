@@ -51,7 +51,7 @@ class Context {
   }
 
   def isTopLevel(): boolean = tree match {
-    case Tree$Block(_) =>
+    case Tree$Block(_,_) =>
       false
     case Tree$Template(_, _) =>
       outer.tree.isInstanceOf[Tree$PackageDef]

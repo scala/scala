@@ -227,12 +227,11 @@ public class TreeChecker {
             scopeRemoveLabel(symbol);
             return true;
 
-        case Block(Tree[] statements):
+        case Block(Tree[] statements, Tree value):
             Set locals = new HashSet();
-            for (int i = 0; i < statements.length - 1; i++)
+            for (int i = 0; i < statements.length; i++)
                 statement(locals, statements[i]);
-            if (statements.length > 0)
-                expression(statements[statements.length - 1], expected);
+            expression(value, expected);
             for (Iterator i = locals.iterator(); i.hasNext(); )
                 scopeRemoveVVariable((Symbol)i.next());
             return true;

@@ -15,6 +15,7 @@ import scalac.*;
 import scalac.util.*;
 import scalac.symtab.Modifiers;
 import scalac.ast.*;
+import scalac.atree.AConstant;
 import Tree.*;
 
 /** A recursive descent parser for the programming language Scala.
@@ -243,10 +244,10 @@ public class Parser implements Tokens {
                 Name x = fresh();
                 return make.Block(pos,
                     new Tree[]{
-                        make.ValDef(pos, 0, x, Tree.Empty, left),
+                        make.ValDef(pos, 0, x, Tree.Empty, left)},
                         make.Apply(pos,
                             make.Select(pos, right, NameTransformer.encode(op)),
-                            new Tree[]{make.Ident(left.pos, x)})});
+                            new Tree[]{make.Ident(left.pos, x)}));
             }
         } else {
             return make.Apply(pos,
@@ -370,8 +371,8 @@ public class Parser implements Tokens {
         Tree rhs = make.If(
             pos,
             cond,
-            make.Block(body.pos, new Tree[]{body, continu}),
-            make.Block(pos, Tree.EMPTY_ARRAY));
+            make.Block(body.pos, new Tree[]{body}, continu),
+            gen.mkUnitLit(pos));
         return make.LabelDef(pos, lname, new Ident[0], rhs);
     }
 
@@ -381,12 +382,12 @@ public class Parser implements Tokens {
         Tree rhs = make.Block(
             body.pos,
             new Tree[]{
-                body,
+                body},
                 make.If(
                     cond.pos,
                     cond,
                     continu,
-                    make.Block(pos, Tree.EMPTY_ARRAY))});
+                    gen.mkUnitLit(pos)));
         return make.LabelDef(pos, lname, new Ident[0], rhs);
     }
 
@@ -399,8 +400,8 @@ public class Parser implements Tokens {
         case Ident(_):
         case Typed(Ident(_), _):
             return new ValDef[]{convertToParam(t)};
-        case Block(Tree[] stats):
-            if (stats.length == 0) return Tree.ValDef_EMPTY_ARRAY;
+        case Literal(AConstant.UNIT):
+            return Tree.ValDef_EMPTY_ARRAY; // !!!
         }
         syntaxError(t.pos, "malformed formal parameter list", false);
         return Tree.ValDef_EMPTY_ARRAY;
@@ -912,7 +913,7 @@ public class Parser implements Tokens {
 	} else if (s.token == RETURN) {
             int pos = s.skipToken();
             Tree e = (isExprIntro()) ? expr()
-                : make.Block(pos, Tree.EMPTY_ARRAY);
+                : gen.mkUnitLit(pos);
             return make.Return(pos, e);
         } else if (s.token == THROW) {
             int pos = s.skipToken();
@@ -1031,7 +1032,7 @@ public class Parser implements Tokens {
             int pos = s.skipToken();
             if (s.token == RPAREN) {
                 s.nextToken();
-                t = make.Block(pos, Tree.EMPTY_ARRAY);
+                t = gen.mkUnitLit(pos);
             } else {
                 t = expr();
                 if (s.token == COMMA) {
@@ -1126,9 +1127,20 @@ public class Parser implements Tokens {
     /** Block ::= BlockStatSeq
      */
     Tree block(int pos) {
-        Tree[] stats = blockStatSeq(new TreeList());
-        if (stats.length == 1 && stats[0].isTerm()) return stats[0];
-        else return make.Block(pos, stats);
+        return block(pos, blockStatSeq(new TreeList()));
+    }
+    private Tree block(int pos, Tree[] stats) {
+        if (stats.length == 0)
+            return gen.mkUnitLit(pos);
+        else if (!stats[stats.length - 1].isTerm())
+            return make.Block(pos, stats, gen.mkUnitLit(pos));
+        else if (stats.length == 1)
+            return stats[0];
+        else {
+            Tree[] trees = new Tree[stats.length - 1];
+            System.arraycopy(stats, 0, trees, 0, trees.length);
+            return make.Block(pos, trees, stats[stats.length - 1]);
+        }
     }
 
     /** CaseClause ::= case Pattern [if PostfixExpr] `=>' Block
@@ -1832,7 +1844,7 @@ public class Parser implements Tokens {
                 stats = statlist.toArray();
             }
             accept(RBRACE);
-            return make.Block(pos, stats);
+            return block(pos, stats);
         } else {
             return selfInvocation();
         }
@@ -2070,13 +2082,13 @@ public class Parser implements Tokens {
                 stats.append(defOrDcl(0));
                 accept(SEMI);
                 if (s.token == RBRACE || s.token == CASE) {
-                    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
+                    stats.append(gen.mkUnitLit(s.pos));
                 }
             } else if (isLocalModifier()) {
                 stats.append(clsDef(localClassModifiers()));
                 accept(SEMI);
                 if (s.token == RBRACE || s.token == CASE) {
-                    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
+                    stats.append(gen.mkUnitLit(s.pos));
                 }
             } else if (s.token == SEMI) {
                 s.nextToken();

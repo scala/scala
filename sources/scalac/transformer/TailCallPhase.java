@@ -109,13 +109,8 @@ public class TailCallPhase extends Phase {
                 method = null;
                 return tree;
 
-            case Block(Tree[] stats):
-                if (stats.length == 0) return tree;
-                Tree expr = transform(stats[stats.length - 1]);
-                if (expr == stats[stats.length - 1]) return tree;
-                stats = Tree.cloneArray(stats);
-                stats[stats.length - 1] = expr;
-                return gen.Block(tree.pos, stats);
+            case Block(Tree[] stats, Tree value):
+                return gen.Block(tree.pos, stats, transform(value));
 
             case If(Tree cond, Tree thenp, Tree elsep):
                 Type type = tree.type();

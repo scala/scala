@@ -55,8 +55,6 @@ public class SequenceMatcher extends PatternTool {
 
         Tree trace = ltis.getTrace();
 
-        Tree theTrace = gen.Ident( cf.pos, ltis.resultSym );
-
         //  (c) determinize + translate R
 
         DetWordAutom dRight = new DetWordAutom( right, left, dLeft );
@@ -67,16 +65,10 @@ public class SequenceMatcher extends PatternTool {
             new RightTracerInScala( dRight, seqVars, _m.owner,
                                     cf, pat, elementType );
 
-        Tree stms2[] = rtis.getStms( theTrace, unit, body );
-
-        // paste statements together
-
-        Tree items[] = new Tree[ 1 + stms2.length ];
-
-        items[ 0 ] = trace;
-        System.arraycopy( stms2, 0, items, 1, stms2.length );
-
-        return gen.mkBlock( body.pos, items );
+        // !!! Tree stms2 = rtis.getStms( theTrace, unit, body );
+        // !!! gen.mkBlock_( body.pos, trace, stms2 );
+        Tree stms2 = rtis.getStms( trace, unit, body );
+        return stms2;
     }
 
     private NondetWordAutom[] buildNfas( Tree[] pat ) {

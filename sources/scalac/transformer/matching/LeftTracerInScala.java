@@ -208,7 +208,8 @@ public class LeftTracerInScala extends TracerInScala {
                                       new Ident[] {
                                           gen.Ident( pos, stateSym ),
                                           gen.Ident( pos, accumSym )
-                                      }, code_body() /* code_body_new ? */ ))});
+                                      }, code_body() /* code_body_new ? */ ))},
+            gen.Ident( cf.pos, resultSym ));
     }
 
     // calling the AlgebraicMatcher here

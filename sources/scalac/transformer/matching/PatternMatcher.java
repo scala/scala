@@ -766,16 +766,15 @@ public class PatternMatcher extends PatternTool {
     }
 
     public Tree generalSwitchToTree() {
-        TreeList ts = new TreeList();
-        ts.append(gen.ValDef(root.symbol(), selector));
-        ts.append(gen.ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.getType())));
-        ts.append(
-                  gen.If(
-                         selector.pos,
-                         toTree(root.and),
-                         gen.Ident(selector.pos, resultVar),
-                         cf.ThrowMatchError(selector.pos, resultVar.getType())));
-        return gen.mkBlock(selector.pos, ts.toArray());
+        Tree[] ts = {
+            gen.ValDef(root.symbol(), selector),
+            gen.ValDef(resultVar, gen.mkDefaultValue(selector.pos, resultVar.getType()))};
+        Tree res = gen.If(
+                          selector.pos,
+                          toTree(root.and),
+                          gen.Ident(selector.pos, resultVar),
+                          cf.ThrowMatchError(selector.pos, resultVar.getType()));
+        return gen.mkBlock(selector.pos, ts, res);
     }
 
     protected Tree toTree(PatternNode node) {
@@ -799,18 +798,15 @@ public class PatternMatcher extends PatternTool {
                 } else if (!doBinding)
                     bound = new ValDef[][]{new ValDef[]{}};
                 for (int i = guard.length - 1; i >= 0; i--) {
-                    Tree[] ts = new Tree[bound[i].length + 1];
-                    System.arraycopy(bound[i], 0, ts, 0, bound[i].length);
-                    ts[bound[i].length] = gen.mkBlock(
-                                                      new Tree[]{
-                                                          gen.Assign(
-                                                                     gen.Ident(body[i].pos, resultVar),
-                                                                     body[i]),
-                                                          gen.mkBooleanLit(body[i].pos, true)
-                                                      });
+                    Tree[] ts = bound[i];
+                    Tree res0 = gen.mkBlock(
+                                            gen.Assign(
+                                                       gen.Ident(body[i].pos, resultVar),
+                                                       body[i]),
+                                            gen.mkBooleanLit(body[i].pos, true));
                     if (guard[i] != Tree.Empty)
-                        ts[bound[i].length] = cf.And(guard[i], ts[bound[i].length]);
-                    res = cf.Or(gen.mkBlock(body[i].pos, ts), res);
+                        res0 = cf.And(guard[i], res0);
+                    res = cf.Or(gen.mkBlock(body[i].pos, ts, res0), res);
                 }
                 return res;
             default:
@@ -922,10 +918,9 @@ public class PatternMatcher extends PatternTool {
             return gen.If(
                           gen.mkIsInstanceOf(selector.duplicate(), node.type),
                           gen.mkBlock(
-                                      new Tree[]{
-                                          gen.ValDef(casted,
-                                                     gen.mkAsInstanceOf(selector.duplicate(), node.type)),
-                                          toTree(node.and)}),
+                                      gen.ValDef(casted,
+                                                 gen.mkAsInstanceOf(selector.duplicate(), node.type)),
+                                      toTree(node.and)),
                           toTree(node.or, selector.duplicate()));
         case SequencePat(Symbol casted, int len):
             return gen.If(
@@ -939,10 +934,9 @@ public class PatternMatcher extends PatternTool {
                                                                     defs.SEQ_LENGTH())),
                                            gen.mkIntLit(selector.pos, len))),
                           gen.mkBlock(
-                                      new Tree[]{
-                                          gen.ValDef(casted,
-                                                     gen.mkAsInstanceOf(selector.duplicate(), node.type)),
-                                          toTree(node.and)}),
+                                      gen.ValDef(casted,
+                                                 gen.mkAsInstanceOf(selector.duplicate(), node.type)),
+                                      toTree(node.and)),
                           toTree(node.or, selector.duplicate()));
         case ConstantPat(AConstant value):
             return gen.If(

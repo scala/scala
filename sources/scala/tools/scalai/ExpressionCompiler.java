@@ -116,16 +116,14 @@ public class ExpressionCompiler {
             context.insertLabel(symbol);
             return Code.Label(symbol, vars, compute(body));
 
-        case Block(Tree[] stats):
-            if (stats.length == 0) return Code.Literal(constants.literal());
-            // !!! assert stats.length > 0;
+        case Block(Tree[] stats, Tree value):
+            if (stats.length == 0) return compute(value);
             CodeBuffer buffer = new CodeBuffer();
             int stacksize = context.stacksize();
-            for (int i = 0; i < stats.length - 1; i++)
-                declare(stats[i], buffer);
-            Code value = compute(stats[stats.length - 1]);
+            for (int i = 0; i < stats.length; i++) declare(stats[i], buffer);
+            Code result = compute(value);
             context.stacksize(stacksize);
-            return buffer.code(value);
+            return buffer.code(result);
 
         case Assign(Tree lhs, Tree rhs):
             return store(lhs, lhs.symbol(), compute(rhs));

@@ -99,7 +99,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   def mkTuple(pos: int, trees: Array[Tree]): Tree =
     if (trees.length == 0)
-      make.Block(pos, trees);
+      gen.mkUnitLit(pos);
     else
       make.Apply(
 	pos,
@@ -353,7 +353,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	    pos, mods, vars(i), Tree.Empty,
 	    make.Select(pos, make.Ident(pos, vble), tupleSelectorName(i + 1)));
 	}
-	print(pat, "patdef", new Tree$Block(res));//debug
+	print(pat, "patdef", new Tree$Block(res, gen.mkUnitLit(pos)));//debug
 	shareComment(res, tree);
       }
   }
@@ -416,8 +416,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     val defs: TreeList = new TreeList();
     val lambda: Tree =
       toFunction(toApply(liftoutPrefix(tree, defs), tpe), tpe);
-    defs.append(lambda);
-    val result: Tree = make.Block(tree.pos, defs.toArray());
+    val result: Tree = make.Block(tree.pos, defs.toArray(), lambda);
     print(tree, "eta", result);//debug
     result
   }

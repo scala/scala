@@ -60,8 +60,8 @@ public class WordAutomInScala extends Autom2Scala {
         result = cf.gen.mkBlock( cf.pos, new Tree[] {
             gen.ValDef( iterSym, cf.newIterator( selector )),
             gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),
-            gen.ValDef( resultSym, theDefDef ),
-            result } );
+            gen.ValDef( resultSym, theDefDef )},
+            result );
         //unit.global.debugPrinter.print( result );
         return result;
     }

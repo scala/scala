@@ -468,7 +468,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     // Public Methods - Building expressions - Simple nodes
 
     /** Flattens the given tree array by inlining Block nodes. */
-    public Tree[] flatten(Tree[] trees) {
+    public Tree[] flatten_(Tree[] trees) {
         boolean copy = false;
         int length = 0;
         for (int i = 0; i < trees.length; i++) {
@@ -477,10 +477,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
                 copy = true;
                 length -= 1;
                 continue;
-            case Block(Tree[] stats):
-                if (stats.length == 0) break; // preserve unit literals
+            case Block(Tree[] stats, Tree value):
                 copy = true;
-                length += stats.length;
+                length += stats.length + 1;
                 continue;
             }
             length += 1;
@@ -491,9 +490,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             switch (trees[i]) {
             case Empty:
                 continue;
-            case Block(Tree[] stats):
-                if (stats.length == 0) break; // preserve unit literals
+            case Block(Tree[] stats, Tree value):
                 for (int j = 0; j < stats.length; j++) clone[o++] = stats[j];
+                clone[o++] = value;
                 continue;
             }
             clone[o++] = trees[i];
@@ -530,16 +529,43 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return mkAsInstanceOf(value.pos, value, type);
     }
 
-    /** Builds an expression with given non-empty tree array. */
-    public Tree mkBlock(int pos, Tree[] trees) {
-        assert trees.length != 0;
-        Tree[] flatten = flatten(trees);
-        assert flatten.length != 0: Debug.show(trees);
-        return Block(pos, flatten);
+    /** Builds an expression of type Unit with given statements. */
+    public Tree mkUnitBlock(int pos, Tree[] stats) {
+        return mkBlock(pos, stats, mkUnitLit(pos));
     }
-    public Tree mkBlock(Tree[] trees) {
-        assert trees.length != 0;
-        return mkBlock(trees[0].pos, trees);
+
+    /** Builds an expression of type Unit with given statement. */
+    public Tree mkUnitBlock(int pos, Tree stat) {
+        return mkUnitBlock(pos, new Tree[]{stat});
+    }
+    public Tree mkUnitBlock(Tree stat) {
+        return mkUnitBlock(stat.pos, stat);
+    }
+
+    /** Builds an expression with given statements and value. */
+    public Tree mkBlock(int pos, Tree[] stats, Tree value) {
+        if (stats.length == 0) return value;
+        return Block(pos, stats, value); // !!! add flatten?
+    }
+    public Tree mkBlock(Tree[] stats, Tree value) {
+        return mkBlock((stats.length!=0 ? stats[0] : value).pos, stats, value);
+    }
+
+    /** Builds an expression with given statement and value. */
+    public Tree mkBlock(int pos, Tree stat, Tree value) {
+        switch (stat) {
+        case Empty:
+            return value;
+        case Block(Tree[] block_stats, Tree block_value):
+            Tree[] stats = Tree.cloneArray(block_stats, 1);
+            stats[block_stats.length] = block_value;
+            return Block(stat.pos, stats, value);
+        default:
+            return Block(pos, new Tree[]{stat}, value);
+        }
+    }
+    public Tree mkBlock(Tree stat, Tree value) {
+        return mkBlock(stat.pos, stat, value);
     }
 
     /** Builds an Import node with given qualifier and names. */
@@ -562,20 +588,29 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return tree;
     }
 
-    /** Builds a Block node with given statements. */
-    public Tree Block(int pos, Tree[] stats) {
-        Block tree = make.Block(pos, stats);
-        global.nextPhase();
-        tree.setType(stats.length == 0
-            ? definitions.UNIT_TYPE()
-            : stats[stats.length - 1].type);
-        global.prevPhase();
+    /** Builds a Block node with given statements and value. */
+    public Block Block(int pos, Tree[] stats, Tree value) {
+        inline:
+        switch (value) {
+        case Block(Tree[] value_stats, Tree value_value):
+            int count = 0;
+            for (int i = 0; i < value_stats.length; i++) {
+                if (value_stats[i].definesSymbol()) break inline;
+                if (value_stats[i] != Tree.Empty) count++;
+            }
+            Tree[] array = Tree.cloneArray(stats, count);
+            for (int i = 0, j = stats.length; i < value_stats.length; i++) {
+                if (value_stats[i] != Tree.Empty) array[j++] = value_stats[i];
+            }
+            stats = array;
+            value = value_value;
+        }
+        Block tree = make.Block(pos, stats, value);
+        tree.setType(value.type());
 	return tree;
     }
-
-    /** Builds a Block node with given non-empty statements list. */
-    public Tree Block(Tree[] stats) {
-	return Block(stats[0].pos, stats);
+    public Block Block(Tree[] stats, Tree value) {
+        return Block((stats.length != 0 ? stats[0] : value).pos, stats, value);
     }
 
     /** Builds an Assign node corresponding to "<lhs> = <rhs>". */
@@ -762,14 +797,13 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      */
     public Tree mkNewArray(int pos, Type element, Tree[] values, Symbol owner){
         if (values.length == 0) return mkNewArray(pos, element, 0);
-        Tree[] trees = new Tree[1 + values.length + 1];
+        Tree[] trees = new Tree[1 + values.length];
         Symbol array =
             newLocal(pos, Names.array, owner, definitions.ARRAY_TYPE(element));
         trees[0] = ValDef(array, mkNewArray(pos, element, values.length));
         for (int i = 0; i < values.length; i++)
             trees[1 + i] = mkArraySet(Ident(pos, array), i, values[i]);
-        trees[values.length + 1] = Ident(pos, array);
-        return Block(pos, trees);
+        return Block(pos, trees, Ident(pos, array));
     }
 
     /** Builds an array length operation. */
@@ -1101,7 +1135,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Tree classDef = ClassDef(clazz, memberTrees);
 	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)))
             .setType(parentTypes[1]); // !!!
-	return Block(new Tree[]{classDef, alloc});
+	return mkBlock(classDef, alloc);
     }
 
 
@@ -1123,7 +1157,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Tree classDef = ClassDef(clazz, memberTrees);
 	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)))
 	    .setType(parentTypes[1]); // !!!
-	return Block(new Tree[]{classDef, alloc});
+	return mkBlock(classDef, alloc);
     }
     //where
 	private Tree makeVisitorMethod(int pos, Name name, Tree visitor,
@@ -1172,7 +1206,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 		.setInfo(obj.type);
 	    Tree tmpdef = ValDef(tmp, obj);
 	    Tree expr = postfixApply(Ident(obj.pos, tmp), fn, owner);
-	    return Block(new Tree[]{tmpdef, expr});
+	    return mkBlock(tmpdef, expr);
 	}
     }
 

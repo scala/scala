@@ -143,7 +143,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
     public Tree mkTuple(int pos, Tree[] trees) {
 	if (trees.length == 0)
-	    return make.Block(pos, trees);
+	    return gen.mkUnitLit(pos);
 	else
 	    return make.Apply(pos,
 		make.Select(pos,
@@ -420,7 +420,7 @@ public class DeSugarize implements Kinds, Modifiers {
 			pos, mods, vars[i], Tree.Empty,
 			make.Select(pos, make.Ident(pos, var), tupleSelectorName(i + 1)));
 		}
-		print(pat, "patdef", new Block(res));//debug
+		print(pat, "patdef", new Block(res, gen.mkUnitLit(pos)));//debug
 		return shareComment(res, tree);
 	    }
 	default:
@@ -484,8 +484,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	TreeList defs = new TreeList();
 	Tree lambda =
 	    toFunction(toApply(liftoutPrefix(tree, defs), type), type);
-	defs.append(lambda);
-	Tree result = make.Block(tree.pos, defs.toArray());
+	Tree result = make.Block(tree.pos, defs.toArray(), lambda);
 	print(tree, "eta", result);//debug
 	return result;
     }

@@ -1419,7 +1419,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       }
       if ((mode & EXPRmode) != 0) {
 	if (pt.symbol() == definitions.UNIT_CLASS) {
-	  return gen.Block(NewArray.Tree(tree, gen.mkUnitLit(tree.pos)));
+	  return gen.mkUnitBlock(tree);
 	} else if (infer.isCompatible(tree.getType(), pt)) {
 	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
 	  if (coerceMeth != Symbol.NONE) {
@@ -2037,7 +2037,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    else transform(
 	      rhs,
 	      if (name == Names.CONSTRUCTOR) CONSTRmode else EXPRmode,
-	      tpe1.getType());
+	      if (name == Names.CONSTRUCTOR) definitions.UNIT_TYPE() else tpe1.getType());
 	  popContext();
 	  context.enclClass.owner.flags = context.enclClass.owner.flags & ~INCONSTRUCTOR;
 	  sym.flags = sym.flags | LOCKED;
@@ -2086,36 +2086,29 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  context.imports = new ImportList(tree, context.scope, context.imports);
 	  Tree.Empty
 
-	case Tree$Block(stats) =>
+	case Tree$Block(stats, value) =>
 	  pushContext(tree, context.owner, new Scope(context.scope));
 	  val stats1 = desugarize.Statements(stats, true);
 	  enterSyms(stats1);
 	  context.imports = context.outer.imports;
 	  val curmode: int = mode;
+          var start: Int = 0;
+          var valuemode: Int = curmode;
+	  if ((curmode & CONSTRmode) != 0) {
+	    stats1(0) = transform(stats1(0), curmode, pt);
+	    context.enclClass.owner.flags = context.enclClass.owner.flags & ~INCONSTRUCTOR;
+            start = 1;
+            valuemode = (curmode & ~CONSTRmode) | EXPRmode;
+	  }
+	  var i = start; while (i < stats1.length) {
+	    stats1(i) = transform(stats1(i), EXPRmode);
+	    i = i + 1
+	  }
+	  val value1: Tree = transform(value, valuemode & ~FUNmode, pt);
 	  val owntype: Type =
-	    if ((curmode & CONSTRmode) != 0) {
-	      stats1(0) = transform(stats1(0), curmode, pt);
-	      context.enclClass.owner.flags = context.enclClass.owner.flags & ~INCONSTRUCTOR;
-	      var i = 1; while (i < stats1.length) {
-		stats1(i) = transform(stats1(i), EXPRmode);
-		i = i + 1
-	      }
-	      stats1(0).getType()
-	    } else {
-	      var i = 0; while (i < stats1.length - 1) {
-		stats1(i) = transform(stats1(i), EXPRmode);
-		i = i + 1
-	      }
-	      if (stats1.length > 0) {
-		stats1(stats1.length - 1) =
-		  transform(stats1(stats1.length - 1), curmode & ~FUNmode, pt);
-		checkNoEscape(tree.pos, stats1(stats1.length - 1).getType().deconst())
-	      } else {
-		definitions.UNIT_TYPE()
-	      }
-	    }
+	    checkNoEscape(tree.pos, value1.getType().deconst());
 	  popContext();
-	  copy.Block(tree, stats1)
+	  copy.Block(tree, stats1, value1)
 	    .setType(owntype);
 
         case Tree$Sequence(trees) =>
@@ -2220,8 +2213,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  var elsep1: Tree = _;
 	  if (elsep == Tree.Empty) {
 	    thenp1 = transform(thenp, EXPRmode, definitions.UNIT_TYPE());
-	    elsep1 = make.Block(tree.pos, Tree.EMPTY_ARRAY)
-	      .setType(definitions.UNIT_TYPE());
+	    elsep1 = gen.mkUnitLit(tree.pos);
 	  } else {
 	    thenp1 = transform(thenp, EXPRmode, pt);
 	    elsep1 = transform(elsep, EXPRmode, pt);
@@ -2307,7 +2299,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 			Tree.EMPTY_ARRAY))
 		    .setType(owntype);
 		  popContext();
-		  make.Block(tree.pos, NewArray.Tree(cd1, alloc))
+		  make.Block(tree.pos, NewArray.Tree(cd1), alloc)
 		    .setType(owntype);
 		}
 	      }

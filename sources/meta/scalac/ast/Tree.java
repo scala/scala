@@ -225,7 +225,8 @@ public class Tree {
             setDescription("Block of expressions " +
                 "(semicolon separated expressions)").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_Trees, "stats");
+            addField(t_Trees, "stats").
+            addField(t_TermTree, "expr");
 
         n_Sequence.
             setDescription("Sequence of expressions (comma separated expressions)").

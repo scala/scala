@@ -350,10 +350,10 @@ public class LambdaLift extends OwnerTransformer
 	tree.type = descr.transform(tree.type, currentOwner);
 	//System.out.println(tree.type);//DEBUG
         switch (tree) {
-	case Block(Tree[] stats):
+	case Block(Tree[] stats, Tree value):
 	    for (int i = 0; i < stats.length; i++)
 		liftSymbol(stats[i]);
-	    return copy.Block(tree, transform(stats));
+	    return copy.Block(tree, transform(stats), transform(value));
 
 	case ClassDef(int mods, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    Symbol sym = tree.symbol();
@@ -461,9 +461,7 @@ public class LambdaLift extends OwnerTransformer
                         // fn2 may be like "{ println("hello"); Predef}.Array"
                         switch (fn2) {
                         case Select(Tree qualifier, _):
-                            return gen.Block(
-                                args[0].pos,
-                                new Tree[] {qualifier, array});
+                            return gen.mkBlock(args[0].pos, qualifier, array);
                         default:
                             throw Debug.abort("illegal case", fn2);
                         }

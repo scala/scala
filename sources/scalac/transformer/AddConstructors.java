@@ -179,10 +179,9 @@ public class AddConstructors extends GenTransformer {
 	    // add valdefs and class-level expression to the constructorr body
 	    constrBody.addAll(constrBody2);
 
-            Tree constrTree = constrBody.size() > 1 ?
-                gen.Block((Tree[])constrBody.
-			  toArray(new Tree[constrBody.size()])):
-                (Tree) constrBody.get(0);
+            Tree constrTree = gen.mkUnitBlock(
+                clasz.primaryConstructor().pos,
+                (Tree[])constrBody.toArray(new Tree[constrBody.size()]));
 
 	    classBody.add(gen.DefDef(clasz.primaryConstructor(),constrTree));
 
@@ -210,7 +209,7 @@ public class AddConstructors extends GenTransformer {
             subst.removeSymbol(constructor.valueParams());
             subst.removeSymbol(constructor.typeParams());
             // add consistent result expression
-            rhs = gen.mkBlock(new Tree[] { rhs, gen.mkUnitLit(rhs.pos) });
+            rhs = gen.mkUnitBlock(rhs);
             return gen.DefDef(initializer, rhs);
 
         case ValDef(_, _, _, _):

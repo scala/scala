@@ -206,8 +206,8 @@ public class GenTransformer {
             Symbol symbol = getSymbolFor(tree);
             return gen.LabelDef(symbol, transform(params), transform(rhs));
 
-        case Block(Tree[] stats):
-            return gen.Block(tree.pos, transform(stats));
+        case Block(Tree[] stats, Tree value):
+            return gen.Block(tree.pos, transform(stats), transform(value));
 
         // case Sequence(Tree[] trees):
         // case Alternative(Tree[] trees):

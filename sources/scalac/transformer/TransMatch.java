@@ -94,14 +94,13 @@ public class TransMatch extends OwnerTransformer {
             Set nilvars = TestRegTraverser.getNilVariables();
             if(!nilvars.isEmpty()) {
                 //System.err.println("nilvars present");
-                Tree[] newBody = new Tree[ nilvars.size() + 1 ];
+                Tree[] newBody = new Tree[ nilvars.size() ];
                 int j=0;
                 for( Iterator it = nilvars.iterator(); it.hasNext(); ) {
                     Symbol v = (Symbol) it.next();
                     newBody[ j++ ] = gen.ValDef(v, gen.mkNil(cases[i].pos));
                 }
-                newBody[ newBody.length - 1 ] = cases[i].body;
-                cases[i].body = gen.mkBlock( newBody );
+                cases[i].body = gen.mkBlock( newBody, cases[i].body );
             }
             i++;
         }

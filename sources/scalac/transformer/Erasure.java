@@ -220,7 +220,7 @@ public class Erasure extends GenTransformer implements Modifiers {
         case Literal(AConstant.ZERO):
 	    return gen.mkNullLit(tree.pos);
 
-        case Block(_):
+        case Block(_, _):
 	case If(_, _, _):
         case Switch(_, _, _, _):
             return transform(tree, tree.getType().fullErasure());
@@ -251,13 +251,8 @@ public class Erasure extends GenTransformer implements Modifiers {
     private Tree transform(Tree tree, Type pt) {
         switch (tree) {
 
-        case Block(Tree[] stats):
-            if (stats.length == 0) return transformUnit(tree.pos, pt);
-            stats = Tree.cloneArray(stats);
-            for (int i = 0; i < stats.length - 1; i++)
-                stats[i] = transform(stats[i]);
-            stats[stats.length - 1] = transform(stats[stats.length - 1], pt);
-            return gen.Block(tree.pos, stats);
+        case Block(Tree[] stats, Tree value):
+            return gen.Block(tree.pos, transform(stats), transform(value, pt));
 
 	case If(Tree cond, Tree thenp, Tree elsep):
 	    cond = transform(cond, UNBOXED_BOOLEAN);
@@ -272,8 +267,9 @@ public class Erasure extends GenTransformer implements Modifiers {
             return gen.Switch(tree.pos, test, tags, bodies, otherwise, pt);
 
         case Return(_):
+            // !!! why do we build a block here?
             Tree value = transform(gen.mkDefaultValue(tree.pos, pt), pt);
-            return gen.mkBlock(new Tree[] {transform(tree), value});
+            return gen.mkBlock(transform(tree), value);
 
         case LabelDef(_, _, _):
 	case Assign(_, _):
@@ -354,7 +350,7 @@ public class Erasure extends GenTransformer implements Modifiers {
         Symbol symbol = primitives.getBoxValueSymbol(tree.getType());
 	Tree boxtree = gen.mkGlobalRef(tree.pos, symbol);
         return tree.getType().equals(UNBOXED_UNIT)
-            ? gen.Block(new Tree[]{tree, gen.mkApply__(boxtree)})
+            ? gen.mkBlock(tree, gen.mkApply__(boxtree))
             : gen.mkApply_V(boxtree, new Tree[]{tree});
     }
 

@@ -538,14 +538,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    // { if (null == m$) m$ = new m$class; m$ }
 	    Symbol eqMethod = getUnaryMemberMethod(
 		sym.type(), Names.EQEQ, defs.ANY_TYPE());
-	    Tree body = gen.Block(new Tree[]{
+	    Tree body = gen.mkBlock(
 		gen.If(
 		    gen.Apply(
 			gen.Select(gen.mkNullLit(tree.pos), eqMethod),
 			new Tree[]{gen.mkLocalRef(tree.pos, mvar)}),
 		    gen.Assign(gen.mkLocalRef(tree.pos, mvar), alloc),
-		    gen.Block(tree.pos, Tree.EMPTY_ARRAY)),
-		gen.mkLocalRef(tree.pos, mvar)});
+		    gen.mkUnitLit(tree.pos)),
+		gen.mkLocalRef(tree.pos, mvar));
 
 	    // def m: T = { if (m$ == null[T]) m$ = new m$class; m$ }
 	    sym.flags |= STABLE;
@@ -704,7 +704,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 			    qualCaseField(clazz,
 				gen.mkLocalRef(clazz.pos, that1sym), i))});
 	    }
-	    thenpart = gen.Block(new Tree[]{that1def, cmp});
+	    thenpart = gen.mkBlock(that1def, cmp);
 	}
 	Tree body = gen.If(cond, thenpart, gen.mkBooleanLit(clazz.pos, false));
 	return gen.DefDef(equalsSym, body);
@@ -970,9 +970,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    }
 	    return copy.Template(tree, bases1, body1);
 
-	case Block(Tree[] stats):
+	case Block(Tree[] stats, Tree value):
 	    Tree[] stats1 = transformStats(stats);
-	    return copy.Block(tree, stats1);
+            Tree value1 = transform(value);
+	    return copy.Block(tree, stats1, value1);
 
 	case This(_):
 	    return tree;

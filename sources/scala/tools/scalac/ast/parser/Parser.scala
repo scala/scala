@@ -9,6 +9,7 @@
 import scalac.ast.parser.PatternNormalizer;
 import scalac.symtab.Modifiers;
 import scalac.ast._;
+import scalac.atree.AConstant;
 import scalac._;
 import scalac.util._;
 import ch.epfl.lamp.util.Position;
@@ -228,11 +229,11 @@ class Parser(unit: Unit) {
         make.Block(
           pos,
           NewArray.Tree(
-            make.ValDef(pos, 0, x, Tree.Empty, left),
+            make.ValDef(pos, 0, x, Tree.Empty, left)),
             make.Apply(
               pos,
               make.Select(pos, right, NameTransformer.encode(op)),
-              NewArray.Tree(make.Ident(left.pos, x)))));
+              NewArray.Tree(make.Ident(left.pos, x))));
       }
     } else {
       make.Apply(
@@ -339,8 +340,8 @@ class Parser(unit: Unit) {
     val rhs = make.If(
       pos,
       cond,
-      make.Block(body.pos, NewArray.Tree(body, continu)),
-      make.Block(pos, Tree.EMPTY_ARRAY));
+      make.Block(body.pos, NewArray.Tree(body), continu),
+      gen.mkUnitLit(pos));
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs);
   }
 
@@ -350,12 +351,12 @@ class Parser(unit: Unit) {
     val rhs = make.Block(
       body.pos,
       NewArray.Tree(
-        body,
+        body),
         make.If(
           cond.pos,
           cond,
           continu,
-          make.Block(pos, Tree.EMPTY_ARRAY))));
+          gen.mkUnitLit(pos)));
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs)
   }
 
@@ -402,7 +403,7 @@ class Parser(unit: Unit) {
       params
     case Tree$Ident(_) | Tree$Typed(Tree$Ident(_), _) =>
       NewArray.ValDef(convertToParam(t));
-    case Tree$Block(stats) if (stats.length == 0) =>
+    case Tree$Literal(AConstant.UNIT) => // !!!
       Tree.ValDef_EMPTY_ARRAY;
     case _ =>
       syntaxError(t.pos, "malformed formal parameter list", false);
@@ -887,7 +888,7 @@ class Parser(unit: Unit) {
       val pos = s.skipToken();
       val e =
         if (isExprIntro()) expr()
-        else make.Block(pos, Tree.EMPTY_ARRAY);
+        else gen.mkUnitLit(pos);
       make.Return(pos, e)
     } else if (s.token == THROW) {
       val pos = s.skipToken();
@@ -994,7 +995,7 @@ class Parser(unit: Unit) {
         val pos = s.skipToken();
         if (s.token == RPAREN) {
           s.nextToken();
-          t = make.Block(pos, Tree.EMPTY_ARRAY);
+          t = gen.mkUnitLit(pos);
         } else {
           t = expr();
           if (s.token == COMMA) {
@@ -1167,9 +1168,20 @@ class Parser(unit: Unit) {
   /** Block ::= BlockStatSeq
   */
   def block(pos: int): Tree = {
-    val stats = blockStatSeq(new myTreeList());
-    if (stats.length == 1 && stats(0).isTerm()) stats(0)
-    else make.Block(pos, stats)
+    block(pos, blockStatSeq(new myTreeList()));
+  }
+  private def block(pos: int, stats: Array[Tree]): Tree = {
+    if (stats.length == 0)
+      gen.mkUnitLit(pos);
+    else if (!stats(stats.length - 1).isTerm())
+      make.Block(pos, stats, gen.mkUnitLit(pos));
+    else if (stats.length == 1)
+      return stats(0);
+    else {
+      val trees: Array[Tree] = new Array[Tree](stats.length - 1);
+      System.arraycopy(stats, 0, trees, 0, trees.length);
+      return make.Block(pos, trees, stats(stats.length - 1));
+    }
   }
 
   /** caseClause : =>= case Pattern [if PostfixExpr] `=>' Block
@@ -1845,7 +1857,7 @@ class Parser(unit: Unit) {
         if (s.token == SEMI) { s.nextToken(); blockStatSeq(statlist) }
         else statlist.toArray();
       accept(RBRACE);
-      make.Block(pos, stats)
+      block(pos, stats)
     } else {
       selfInvocation()
     }
@@ -2100,13 +2112,13 @@ class Parser(unit: Unit) {
         stats.append(defOrDcl(0));
         accept(SEMI);
         if (s.token == RBRACE || s.token == CASE) {
-          stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
+          stats.append(gen.mkUnitLit(s.pos));
         }
       } else if (isLocalModifier()) {
         stats.append(clsDef(localClassModifiers()));
         accept(SEMI);
         if (s.token == RBRACE || s.token == CASE) {
-          stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
+          stats.append(gen.mkUnitLit(s.pos));
         }
       } else if (s.token == SEMI) {
         s.nextToken();

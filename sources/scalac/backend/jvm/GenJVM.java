@@ -234,14 +234,11 @@ class GenJVM {
             ctx.labels.remove(sym);
         } break;
 
-        case Block(Tree[] stats): {
+        case Block(Tree[] stats, Tree value): {
             int statsNum = stats.length;
-            for (int i = 0; i < statsNum - 1; ++i)
+            for (int i = 0; i < stats.length; ++i)
                 gen(ctx, stats[i]);
-            if (statsNum == 0)
-                maybeGenLoadUnit(ctx, expectedType);
-            else
-                genLoad(ctx, stats[stats.length - 1], expectedType);
+            genLoad(ctx, value, expectedType);
             generatedType = expectedType;
         } break;
 
@@ -1274,12 +1271,6 @@ class GenJVM {
             if (prims.getPrimitive(fun.symbol()) == Primitive.BOX) {
                 assert args.length == 1;
                 return args[0];
-            } else
-                return tree;
-        case Block(Tree[] stats):
-            if (stats.length == 2
-                && prims.getPrimitive(stats[1].symbol()) == Primitive.BOX) {
-                return stats[0];
             } else
                 return tree;
         default:

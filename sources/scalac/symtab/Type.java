@@ -3166,10 +3166,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      * the "void" type.
      */
     public Type fullErasure() {
-        if (Global.instance.definitions.UNIT_CLASS == symbol())
-            return unbox();
-        else
-            return erasure();
+        Type erasure = erasure();
+        if (Global.instance.definitions.UNIT_CLASS == erasure.symbol())
+            erasure = erasure.unbox();
+        return erasure;
     }
 
 // Object Interface -----------------------------------------------------------------

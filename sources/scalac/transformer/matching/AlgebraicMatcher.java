@@ -79,13 +79,13 @@ public class AlgebraicMatcher extends PatternMatcher {
 //////////// generator methods
 
     public Tree toTree() {
-        TreeList ts = new TreeList();
-        ts.append( gen.ValDef(root.symbol(), _m.selector ));
-        ts.append( gen.ValDef(resultVar,
-                              gen.mkDefaultValue(_m.pos, resultVar.info()) ));
-        ts.append( gen.If( toTree(root.and),
+        Tree[] ts = {
+            gen.ValDef(root.symbol(), _m.selector ),
+            gen.ValDef(resultVar,
+                       gen.mkDefaultValue(_m.pos, resultVar.info()) )};
+        Tree res = gen.If( toTree(root.and),
                            gen.Ident( _m.pos, resultVar ),
-                           cf.ThrowMatchError( _m.pos, _m.resultType )));
+                           cf.ThrowMatchError( _m.pos, _m.resultType ));
         /*
             gen.If(
                 _m.pos,
@@ -93,7 +93,7 @@ public class AlgebraicMatcher extends PatternMatcher {
                 gen.Ident( _m.pos, resultVar ),
                 cf.ThrowMatchError( _m.resultType ));
         */
-        return gen.mkBlock(_m.pos, ts.toArray());
+        return gen.mkBlock(_m.pos, ts, res);
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {

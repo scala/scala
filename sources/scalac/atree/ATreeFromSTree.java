@@ -149,9 +149,9 @@ public class ATreeFromSTree {
     // Private Methods - Translating statements
 
      /** Translates the statements. */
-    private ACode[] statement(List locals, Tree[] trees, int start, int count){
+    private ACode[] statement(List locals, Tree[] trees) {
         List codes = new ArrayList();
-        for (int i = start; i < start + count; i++) {
+        for (int i = 0; i < trees.length; i++) {
             ACode code = statement(locals, trees[i]);
             if (code != ACode.Void) codes.add(code);
         }
@@ -194,16 +194,14 @@ public class ATreeFromSTree {
             Symbol[] locals = Tree.symbolOf(idents);
             return make.Label(tree, tree.symbol(), locals, expression(rhs));
 
-        case Block(Tree[] statements):
-            if (statements.length == 0) return make.Void;
-            int statement_count = statements.length - 1;
+        case Block(Tree[] stats, Tree value):
             List locals = new ArrayList();
-            ACode[] codes = statement(locals,statements,0, statement_count);
-            ACode value = expression(statements[statement_count]);
-            if (locals.size() == 0 && codes.length == 0) return value;
+            ACode[] codes = statement(locals, stats);
+            ACode code = expression(value);
+            if (locals.size() == 0 && codes.length == 0) return code;
             Symbol[] symbols =
                 (Symbol[])locals.toArray(new Symbol[locals.size()]);
-            return make.Block(tree, symbols, codes, value);
+            return make.Block(tree, symbols, codes, code);
 
         case Assign(Tree lhs, Tree rhs):
             return make.Block(tree, Symbol.EMPTY_ARRAY, new ACode[] {

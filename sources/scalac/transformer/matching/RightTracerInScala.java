@@ -32,7 +32,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     HashMap helpMap;
     HashMap helpMap2 ;
-    Vector  helpVarDefs;
+    TreeList helpVarDefs;
 
 
     /** translate right tracer to code
@@ -60,7 +60,7 @@ public class RightTracerInScala extends TracerInScala  {
         this.helpMap = new HashMap();
 
         helpMap2 = new HashMap();
-        helpVarDefs = new Vector();
+        helpVarDefs = new TreeList();
 
         for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
             makeHelpVar( (Symbol) it.next() );
@@ -110,7 +110,7 @@ public class RightTracerInScala extends TracerInScala  {
         helpVar.flags |= Modifiers.MUTABLE;
         Tree varDef = gen.ValDef( helpVar, rhs );
         //((ValDef) varDef).kind = Kinds.VAR;
-        helpVarDefs.add( varDef );
+        helpVarDefs.append( varDef );
 
     }
 
@@ -174,16 +174,16 @@ public class RightTracerInScala extends TracerInScala  {
 
     // load current elem and trace
     Tree loadCurrentElem( Tree body ) {
-        return gen.mkBlock( new Tree[] {
+        return
             gen.If( cf.isEmpty( _iter() ),
                     run_finished( 0 ),            // we are done
                     gen.mkBlock( new Tree[] {
                         gen.ValDef( this.targetSym,
                                     cf.SeqTrace_headState( gen.Ident( pos, iterSym))),
                         gen.ValDef( this.curSym,
-                                    cf.SeqTrace_headElem( gen.Ident( pos, iterSym ))),
-                        body })
-                    )});
+                                    cf.SeqTrace_headElem( gen.Ident( pos, iterSym )))},
+                        body )
+                    );
     }
 
     /** see code_state0_NEW
@@ -354,7 +354,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
         //             case _     => false
 
 
-        Tree res[] = new Tree[ helpMap3.keySet().size() + 1 ];
+        Tree ts[] = new Tree[ helpMap3.keySet().size() ];
         int j = 0;
         for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
             Symbol vsym = (Symbol) it.next();
@@ -362,12 +362,12 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
             //hv.setType( defs.LIST_TYPE( elementType ) ) ; DEBUG ALARM ?
             Tree refv   = gen.Ident(cf.pos, vsym);
             Tree refhv  = gen.Ident(cf.pos, hv);
-            res[ j++ ] = gen.Assign( refhv, refv );
+            ts[ j++ ] = gen.Assign( refhv, refv );
             // System.out.println( "the assign" + res[ j - 1 ] );
         }
 
-        res[ j ] = gen.mkBooleanLit( cf.pos, true ); // just `true'
-        Tree theBody =  gen.mkBlock(res);
+        Tree res = gen.mkBooleanLit( cf.pos, true ); // just `true'
+        Tree theBody =  gen.mkBlock(ts, res);
 
         am.construct( m, new CaseDef[] {
 
@@ -417,8 +417,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
         assert vars != null;
 
         Tree stms[] = new Tree[ vars.size()
-                                + ((algMatchTree != null )? 1 : 0 )
-                                + 1 ];
+                                + ((algMatchTree != null )? 1 : 0 ) ];
         int j = 0;
         for( Iterator it = vars.iterator(); it.hasNext(); ) {
             Symbol var = (Symbol) it.next();
@@ -431,10 +430,10 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
         if( algMatchTree != null )
             stms[ j++ ] = algMatchTree ;
 
-        stms[ j ] = callFun( new Tree[] { cf.SeqTrace_tail( _iter() ),
-                                          gen.mkIntLit( cf.pos, ntarget.intValue() ) } );
+        Tree value = callFun( new Tree[] { cf.SeqTrace_tail( _iter() ),
+                                           gen.mkIntLit( cf.pos, ntarget.intValue() ) } );
 
-        return gen.mkBlock( pos, stms );
+        return gen.mkBlock( pos, stms, value );
     }
 
     Tree stateWrap(int i) {
@@ -445,23 +444,23 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
 
     /* returns statements that do the work of the right-transducer
      */
-    Tree[] getStms( Tree trace, Unit unit, Tree body ) {
+    Tree getStms( Tree trace, Unit unit, Tree body ) {
 
-        Vector v = new Vector();
+        TreeList stms = new TreeList();
         Tree loopbody = code_body_NEW();
 
-        v.add( gen.ValDef( iterSym, trace ) );
-        v.add( gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0 ) ) );
-        v.addAll( helpVarDefs );
-        v.add( gen.LabelDef( this.funSym,
-                             new Ident[] {
-                                 gen.Ident( pos, iterSym ),
-                                 gen.Ident( pos, stateSym )
-                             }, loopbody ));
+        stms.append( gen.ValDef( iterSym, trace ) );
+        stms.append( gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0 ) ) );
+        stms.append( helpVarDefs );
+        stms.append( gen.LabelDef( this.funSym,
+                                   new Ident[] {
+                                       gen.Ident( pos, iterSym ),
+                                       gen.Ident( pos, stateSym )
+                                   }, loopbody ));
 
         // bind variables handled by this righttracer
         for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
-            v.add( bindVar( (Symbol) it.next() ) );
+            stms.append( bindVar( (Symbol) it.next() ) );
         }
 
         Transformer treeCloner = new Transformer(unit.global) {
@@ -475,15 +474,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
                 }
             };
 
-        v.add( treeCloner.transform( body ) );
-
-        Tree result[] = new Tree[ v.size() ];
-        int j = 0;
-        for( Iterator it = v.iterator(); it.hasNext(); ) {
-            result[ j++ ] = (Tree) it.next();
-        }
-
-        return result;
+        return gen.mkBlock(stms.toArray(), treeCloner.transform( body ));
     }
 
 
@@ -492,7 +483,7 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
      *  todo: move tree generation of Unit somewhere else
      */
     Tree run_finished( int state ) {
-        return gen.Block(Position.FIRSTPOS, Tree.EMPTY_ARRAY);
+        return gen.mkUnitLit(Position.FIRSTPOS);
     }
 
     Tree current() {   return gen.Ident( pos, targetSym );}

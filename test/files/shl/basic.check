@@ -1,4 +1,4 @@
-> > > > > > (): scala.Unit
+> > > > > > (): scala.Unit(())
 > false: scala.Boolean(false)
 > 1: scala.Char('1')
 > 2: scala.Int(2)

@@ -326,7 +326,7 @@ public final class GenMSIL {
 
 		// emit the call to the superconstructor
 		switch (rhs) {
-		case Block(Tree[] stats):
+		case Block(Tree[] stats, _):
 		    // this is the call to the super constructor
 		    drop(gen(stats[0], MSILType.VOID));
 		    break;
@@ -346,11 +346,12 @@ public final class GenMSIL {
 		code.Emit(OpCodes.Newobj, ctor);
 		code.Emit(OpCodes.Stsfld, moduleField);
 		switch (rhs) {
-		case Block(Tree[] stats):
+		case Block(Tree[] stats, Tree value):
 		    int n = stats.length;
 		    assert n > 0;
 		    for (int i = 1; i < n; i++)
 			drop(gen(stats[i], MSILType.VOID));
+                    drop(gen(value, MSILType.VOID));
 		    break;
 		}
 		code.Emit(OpCodes.Ret);
@@ -396,21 +397,6 @@ public final class GenMSIL {
     }
 
 
-    /** Generate code for array of trees
-     */
-    Item gen(Tree[] trees) {
-	int n = trees.length;
-	if (n == 0)
-	    return items.VoidItem();
-	boolean tmpLastStatement = lastStatement; lastStatement = false;
-	for (int i = 0; i < n-1; i++) {
-	    drop(gen(trees[i], MSILType.VOID));
-	}
-	lastStatement = tmpLastStatement;
-	return gen(trees[n-1], type2MSILType(trees[n-1].type));
-    }
-
-
     Item gen(Tree tree) {
 	return gen(tree, type2MSILType(tree.type));
     }
@@ -452,8 +438,13 @@ public final class GenMSIL {
 	case Empty:
 	    return items.VoidItem();
 
-	case Block(Tree[] stats):
-	    return gen(stats);
+	case Block(Tree[] stats, Tree value):
+            boolean tmpLastStatement = lastStatement; lastStatement = false;
+            for (int i = 0; i < stats.length; i++) {
+                drop(gen(stats[i], MSILType.VOID));
+            }
+            lastStatement = tmpLastStatement;
+            return gen(value, type2MSILType(value.type));
 
 	case ValDef(_, Name name, Tree tpe, Tree rhs):
 	    LocalBuilder local = code.DeclareLocal(tc.getType(sym));

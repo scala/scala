@@ -334,8 +334,13 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	printArray(params.asInstanceOf[Array[Tree]], TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
 	print(rhs);
 
-      case Tree$Block(stats) =>
-	printArray(stats, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
+      case Tree$Block(stats, value) =>
+	printArray(stats, TXT_BLOCK_BEGIN, TXT_SEMICOLON, TXT_BLOCK_SEP);
+        indent();
+        printNewLine();
+        print(value);
+        undent();
+        print(TXT_BLOCK_END);
 	printType(tree);
 
       case Tree$Sequence(trees) =>
