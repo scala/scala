@@ -69,8 +69,8 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
                     if (!tvars.isEmpty) {
                         printTVar(tvars.head);
                         tvars.tail foreach { sym =>
-                        	print(", ");
-                        	printTVar(sym);
+                            print(", ");
+                            printTVar(sym);
                         }
                     }
                     print("]");
@@ -85,18 +85,18 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
         var first = true;
         scope.elements foreach (
             sym => { sym match {
-        		case s: ValSymbol if
-                	(s.tpe.isInstanceOf[OverloadedType] ||
+                case s: ValSymbol if
+                    (s.tpe.isInstanceOf[OverloadedType] ||
                     (Flags.is(Flags.CASEACCESSOR, s.flags) &&
                     !s.tpe.isInstanceOf[PolyType])) =>
                 case _ =>
-              		if (!ignoreDef(sym)) {
-						if (first) print(" {").indent else print(";");
-						first = false;
-						newline;
-						printSymbol(sym);
-					}
-        	}});
+                    if (!ignoreDef(sym)) {
+                        if (first) print(" {").indent else print(";");
+                        first = false;
+                        newline;
+                        printSymbol(sym);
+                    }
+            }});
         if (!first)
             newline.undent.print("}")
     }
@@ -188,8 +188,8 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
                 printType0(tpe);
                 print(".")
             }
-     	case SingletonType(_, sym) =>
-     		if ((sym.name.length() != 0) &&
+        case SingletonType(_, sym) =>
+            if ((sym.name.length() != 0) &&
                 ("<root>" != sym.name)) {
                 printType0(tpe);
                 print(".")
@@ -198,22 +198,22 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             printType0(tpe);
             print("#")
         case _ =>
-        	Console.println(tpe.getClass());
+            Console.println(tpe.getClass());
             printType0(tpe);
             print(".")
     }
 
     def printTVar(tvar: Symbol): Unit = tvar match {
         case sym: TypeSymbol =>
-        	print(sym.name);
-			if (!isExternalType(sym.tpe, "Any")) {
-				print(" <: ")*;
-				printType(sym.tpe);
-			}
-			if (!isExternalType(sym.lower, "All")) {
-				print(" >: ")*;
-				printType(sym.lower);
-			}
+            print(sym.name);
+            if (!isExternalType(sym.tpe, "Any")) {
+                print(" <: ")*;
+                printType(sym.tpe);
+            }
+            if (!isExternalType(sym.lower, "All")) {
+                print(" >: ")*;
+                printType(sym.lower);
+            }
     }
 
     def printFlags(sym: Symbol) = print(Flags.toString(sym.flags));

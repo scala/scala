@@ -11,8 +11,8 @@ package scala.tools.scalap;
 
 /** Encoding of modifiers for Scala definitions.
  *
- *  @author		Matthias Zenger
- *	@version	1.0, 10/02/2004
+ *  @author     Matthias Zenger
+ *  @version    1.0, 10/02/2004
  */
 object Flags {
 
@@ -47,12 +47,12 @@ object Flags {
     final val COVAR        = 0x40000000; // a covariant type variable
     final val CONTRAVAR    = 0x80000000; // a contravariant type variable
 
-	final val TF_STAR      = 4;			 // a repeated type
-	final val TF_DEF       = 8;          // a 'def' type
+    final val TF_STAR      = 4;          // a repeated type
+    final val TF_DEF       = 8;          // a 'def' type
 
-	/** Check if a flag is present in the given flag set.
-	 */
-	def is(flag: Int, flagset: Int): Boolean = (flag & flagset) != 0;
+    /** Check if a flag is present in the given flag set.
+     */
+    def is(flag: Int, flagset: Int): Boolean = (flag & flagset) != 0;
 
     /** Convert a set of modifiers into a readable string.
      */
