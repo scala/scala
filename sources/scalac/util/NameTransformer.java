@@ -34,6 +34,7 @@ public class NameTransformer {
        operatorName['+'] = "$plus";
        operatorName['-'] = "$minus";
        operatorName[':'] = "$colon";
+       operatorName['\\']= "$bslash";
     }
 
     /** Replace operator symbols by corresponding "$op_name" in names.
