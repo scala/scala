@@ -20,6 +20,9 @@ scalac/ast/AbstractTreeCaseExpander.java
 scalac/ast/AbstractTreeExpander.java
 scalac/ast/AbstractTreeMethodExpander.java
 
+scalac/ast/MetaDefaultTreeFactory.java
+scalac/ast/MetaTreeFactory.java
+
 scalac/ast/Tree.java
 scalac/ast/TreeField.java
 scalac/ast/TreeKind.java
