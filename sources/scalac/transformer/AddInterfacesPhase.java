@@ -32,7 +32,7 @@ public class AddInterfacesPhase extends Phase {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-        if (sym.isPrimaryConstructor()) {
+        if (sym.isConstructor()) {
             Symbol clazz = sym.constructorClass();
             if (!(clazz.isClass() && needInterface(clazz))) return tp;
             // The symbol is a constructor of a class which needs
@@ -82,17 +82,16 @@ public class AddInterfacesPhase extends Phase {
                 }
 
                 Symbol oldSym = oldParents[0].symbol();
-                if (oldSym.isJava() && !oldSym.isInterface() &&
-                    oldSym != definitions.ANY_CLASS &&
-                    oldSym != definitions.ANYREF_CLASS)
-                {
+                if (oldSym.isJava()
+                    && !oldSym.isInterface()
+                    && oldSym != definitions.ANY_CLASS
+                    && oldSym != definitions.ANYREF_CLASS) {
                     newParents = new Type[oldParents.length];
                     newParents[0] = definitions.ANYREF_TYPE;
                     for (int i = 1; i < oldParents.length; ++i)
                         newParents[i] = oldParents[i];
-                } else {
+                } else
                     newParents = oldParents;
-                }
             } else {
                 // The symbol is the one of a class which doesn't need
                 // an interface. We need to fix its parents to use
@@ -102,8 +101,9 @@ public class AddInterfacesPhase extends Phase {
                 for (int i = 0; i < oldParents.length; ++i) {
                     switch (oldParents[i]) {
                     case TypeRef(Type pre, Symbol oldSym, Type[] args):
-                        newParents[i] = !needInterface(oldSym) ? oldParents[i]:
-                            Type.typeRef(pre, getClassSymbol(oldSym), args);
+                        newParents[i] = !needInterface(oldSym)
+                            ? oldParents[i]
+                            : Type.typeRef(pre, getClassSymbol(oldSym), args);
                         break;
                     default:
                         throw Debug.abort("illegal case", oldParents[i]);
@@ -127,7 +127,7 @@ public class AddInterfacesPhase extends Phase {
 
     protected boolean memberGoesInInterface(Symbol member) {
         return member.isType()
-            || (member.isMethod() && !member.isPrimaryConstructor());
+            || (member.isMethod() && !member.isConstructor());
     }
 
     protected Type removeValueParams(Type tp) {
@@ -136,6 +136,8 @@ public class AddInterfacesPhase extends Phase {
             return new Type.MethodType(Symbol.EMPTY_ARRAY, result);
         case PolyType(Symbol[] tps, Type result):
             return new Type.PolyType(tps, removeValueParams(result));
+        case OverloadedType(_, Type[] altTypes):
+            return removeValueParams(altTypes[0]);
         default:
             return tp;
         }
@@ -209,21 +211,19 @@ public class AddInterfacesPhase extends Phase {
 
             Symbol ifaceConstrSym = ifaceSym.primaryConstructor();
             Symbol classConstrSym = classSym.primaryConstructor();
-            // classConstrSym.name = className(ifaceConstrSym.name);
 
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);
-            // ifaceOwnerMembers.enter(classConstrSym);
 
             Type.SubstThisMap thisTypeMap =
                 new Type.SubstThisMap(ifaceSym, classSym);
 
             // Create class substitution map.
             SymbolSubstTypeMap classSubst = newClassSubst(classSym);
-            classSubst.insertSymbol(
-                ifaceConstrSym.typeParams(), classConstrSym.typeParams());
-            classSubst.insertSymbol(
-                ifaceConstrSym.valueParams(), classConstrSym.valueParams());
+            classSubst.insertSymbol(ifaceConstrSym.typeParams(),
+                                    classConstrSym.typeParams());
+            classSubst.insertSymbol(ifaceConstrSym.valueParams(),
+                                    classConstrSym.valueParams());
 
             // Clone all members, entering them in the class scope.
             Map classMembersMap = newClassMemberMap(classSym);
@@ -319,7 +319,8 @@ public class AddInterfacesPhase extends Phase {
      * interface's type and value parameters to the class' equivalent)
      */
     public SymbolSubstTypeMap getClassSubst(Symbol classSym) {
-        SymbolSubstTypeMap classSubst = (SymbolSubstTypeMap)classSubstitutions.get(classSym);
+        SymbolSubstTypeMap classSubst =
+            (SymbolSubstTypeMap)classSubstitutions.get(classSym);
         assert classSubst != null;
         return classSubst;
     }
