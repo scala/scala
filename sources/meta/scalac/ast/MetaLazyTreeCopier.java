@@ -16,8 +16,8 @@ public class MetaLazyTreeCopier extends AbstractTreeMethodExpander {
     public void printTreeMethod(TreeNode node) {
         printTreeMethodHeader(node, tree.t_Tree + " tree");
         writer.lbrace();
+        writer.println(node.name + " t = (" + node.name + ")tree;");
         if (node.fields.length > 0) {
-            writer.println(node.name + " t = (" + node.name + ")tree;");
             writer.print("if (").indent();
             for (int i = 0; i < node.fields.length; i++) {
                 if (i > 0) writer.println(" &&");
@@ -26,14 +26,11 @@ public class MetaLazyTreeCopier extends AbstractTreeMethodExpander {
             }
             writer.println(")");
             writer.println("return t;").undent();
-        } else {
-            writer.print(node.name).space();
+            writer.print("t = copier." + node.name + "(");
+            node.printArgs(writer, "tree").println(");");
+            writer.println("t.type = tree.type;");
+            if (node.hasSymbol())writer.println("t.setSymbol(tree.symbol());");
         }
-
-        writer.print("t = make." + node.name + "(");
-        node.printArgs(writer, "tree.pos").println(");");
-        writer.println("t.type = tree.type;");
-        if (node.hasSymbol()) writer.println("t.setSymbol(tree.symbol());");
         writer.println("return t;");
         writer.rbrace();
     }

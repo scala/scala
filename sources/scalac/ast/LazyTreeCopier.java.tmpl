@@ -19,13 +19,18 @@ public class LazyTreeCopier implements TreeCopier {
     //########################################################################
     // Protected Fields
 
-    protected final TreeFactory make;
+    /** The tree copier used to copy trees */
+    protected final TreeCopier copier;
 
     //########################################################################
     // Public Constructors
 
     public LazyTreeCopier(TreeFactory make) {
-        this.make = make;
+        this(new StrictTreeCopier(make));
+    }
+
+    public LazyTreeCopier(TreeCopier copier) {
+        this.copier = copier;
     }
 
     //########################################################################
