@@ -126,10 +126,10 @@ case "$SCRIPT" in
         JAVA_MAIN="scalac.Main";
         ;;
     surus* )
-        JAVA_MAIN="scala.interpreter.Main";
+        JAVA_MAIN="scalai.Main";
         ;;
     siris* )
-        JAVA_MAIN="scala.interpreter.Main";
+        JAVA_MAIN="scalai.Main";
         MAIN_ARGS="$MAIN_ARGS -interactive";
         ;;
 esac;
