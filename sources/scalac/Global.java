@@ -20,6 +20,7 @@ import scalac.backend.Primitives;
 import scalac.symtab.Kinds;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
+import scalac.symtab.Scope;
 // !!! >>> Interpreter stuff
 
 
@@ -334,7 +335,7 @@ public class  Global {
     }
 
     private void fix1(Unit unit) {
-        // !!! make sure that Interpreter.scala is compiled
+        // make sure that Interpreter.scala is compiled
         SHOW_DEFINITION();
         unit.body = new Tree[] {
             make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
@@ -424,7 +425,10 @@ public class  Global {
     }
 
     private String show(Symbol symbol) {
-        StringBuffer buffer = new StringBuffer();
+        return appendMember(new StringBuffer(), symbol).toString();
+    }
+
+    private StringBuffer appendMember(StringBuffer buffer, Symbol symbol) {
         buffer.append(symbol.defKeyword()).append(' ');
         String name = symbol.nameString();
         int index = name.indexOf('$');
@@ -434,7 +438,7 @@ public class  Global {
             appendDefInfo(buffer, symbol.info());
         else
             append(buffer, symbol.info());
-        return buffer.toString();
+        return buffer;
     }
 
     private String show(Type type) {
@@ -497,9 +501,10 @@ public class  Global {
             appendPrefix(buffer, pre);
             appendSymbol(buffer, sym);
             return buffer;
-        case CompoundType(Type[] parts, _// Scope members
-            ):
-            return buffer.append("<!!! no yet implemented: CompoundType !!!>");
+        case CompoundType(Type[] parts, Scope members):
+            append(buffer, parts, "", " with ", "");
+            append(buffer, members.elements(), " {", ", ", "}");
+            return buffer;
         case MethodType(Symbol[] vparams, Type result):
             append(buffer, Symbol.type(vparams), "(", ",", ")");
             return append(buffer, result);
@@ -527,6 +532,16 @@ public class  Global {
         buffer.append(prefix);
         for (int i = 0; i < types.length; i++)
             append(i > 0 ? buffer.append(infix) : buffer, types[i]);
+        buffer.append(suffix);
+        return buffer;
+    }
+
+    private StringBuffer append(StringBuffer buffer, Symbol[] types,
+        String prefix, String infix, String suffix)
+    {
+        buffer.append(prefix);
+        for (int i = 0; i < types.length; i++)
+            appendMember(i > 0 ? buffer.append(infix) : buffer, types[i]);
         buffer.append(suffix);
         return buffer;
     }
