@@ -45,6 +45,7 @@ Ref.java
 ScalaObject.java
 Seq.scala
 Short.java
+Similarity.scala
 Some.scala
 Stream.scala
 StructuralEquality.scala
@@ -133,11 +134,11 @@ runtime/ScalaRunTime.scala
 
 testing/UnitTest.scala
 
-xml/AttributedNode.scala
 xml/BindingFactoryAdapter.scala
 xml/Elem.scala
 xml/FactoryAdapter.scala
 xml/Node.scala
+xml/NodeSeq.scala
 xml/Text.scala
 xml/Utility.scala
 
