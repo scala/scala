@@ -46,8 +46,8 @@ public class ScalaTemplate {
     //########################################################################
     // Public Methods - ScalaTemplate interface
 
-    public Name getName() {
-        return symbol.fullName();
+    public String getName() {
+        return evaluator.getClassName(symbol);
     }
 
     public Symbol getSymbol() {

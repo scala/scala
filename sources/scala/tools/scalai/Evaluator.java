@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
+import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.SourceFile;
 
 import scala.runtime.RunTime;
@@ -133,7 +134,16 @@ public class Evaluator {
                 return throw_(exception, "trace");
             }
         } catch (EvaluatorException exception) {
-            exception.addScalaCall(stack.symbol, stack.source, stack.pos);
+            StringBuffer buffer = new StringBuffer();
+            buffer.append(getClassName(stack.symbol.owner()));
+            buffer.append('.');
+            buffer.append(stack.symbol.nameString());
+            buffer.append('(');
+            buffer.append(stack.source.getShortName());
+            int line = Position.line(stack.pos);
+            if (line != 0) buffer.append(':').append(line);
+            buffer.append(")");
+            exception.addScalaCall(buffer.toString());
             throw exception;
         } finally {
             stack = stack.stack;
@@ -547,7 +557,7 @@ public class Evaluator {
         for (Iterator i = scalas.iterator(); i.hasNext(); separator = true) {
             if (separator) buffer.append(" | ");
             ScalaTemplate scala = (ScalaTemplate)i.next();
-            buffer.append(scala.getSymbol().fullName());
+            buffer.append(getClassName(scala.getSymbol()));
         }
         if (scalas.size() != 1) buffer.append(')');
         return buffer.toString();
@@ -556,7 +566,7 @@ public class Evaluator {
     private String getClassName(Type type) {
         switch (type) {
         case TypeRef(_, Symbol symbol, _):
-            return symbol.fullNameString();
+            return getClassName(symbol);
         case UnboxedArrayType(Type element):
             return getClassName(element) + "[]";
         case UnboxedType(_):
