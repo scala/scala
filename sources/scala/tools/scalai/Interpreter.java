@@ -167,7 +167,7 @@ public class Interpreter {
     }
 
     private Symbol getMethod(Symbol module, Name name, Type type) {
-        Symbol symbol = module.lookup(name);
+        Symbol symbol = module.moduleClass().lookup(name);
         if (symbol == Symbol.NONE || isMethod(symbol, type)) return symbol;
         switch (symbol.type()) {
         case OverloadedType(Symbol[] alts, _):
