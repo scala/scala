@@ -190,35 +190,38 @@ public class ScalaClassType extends ClassType {
         ScalaClassType[] parents = getParents();
 
         display = new ScalaClassType[level + 1][];
-        ScalaClassType[][] superClassDisplay = constr.inheritsFromJavaClass
-            ? EMPTY_DISPLAY
-            : parents[0].getDisplay();
+        ScalaClassType[][] initialDisplay = parents.length > 0
+            ? parents[0].getDisplay()
+            : EMPTY_DISPLAY;
 
         for (int l = 0, dci = 0; l <= level; ++l) {
-            int additionalEntries = displayCode[dci++];
+            int toAddParents = displayCode[dci++];
+            int toAddSelf = (l == level) ? 1 : 0;
+            int toAdd = toAddParents + toAddSelf;
             ScalaClassType[] initialRow;
 
-            if (l < superClassDisplay.length)
-                initialRow = superClassDisplay[l];
-            else if (l == level)
-                initialRow = new ScalaClassType[] { this };
+            if (l < initialDisplay.length)
+                initialRow = initialDisplay[l];
             else
                 initialRow = EMPTY_DISPLAY_ROW;
 
-            if (additionalEntries == 0) {
+            if (toAdd == 0) {
                 display[l] = initialRow;
             } else {
-                int superLen = initialRow.length;
+                int initialLen = initialRow.length;
                 ScalaClassType[] newRow =
-                    new ScalaClassType[superLen + additionalEntries];
+                    new ScalaClassType[initialLen + toAdd];
 
-                System.arraycopy(initialRow, 0, newRow, 0, superLen);
-                for (int i = 0; i < additionalEntries; ++i) {
+                if (toAddSelf == 1)
+                    newRow[0] = this;
+
+                System.arraycopy(initialRow, 0, newRow, toAddSelf, initialLen);
+                for (int i = 0; i < toAddParents; ++i) {
                     int p = displayCode[dci++];
                     int o = displayCode[dci++];
-                    newRow[superLen + i] = parents[p].getDisplay()[l][o];
+                    newRow[toAddSelf + initialLen + i] =
+                        parents[p].getDisplay()[l][o];
                 }
-
                 display[l] = newRow;
             }
         }

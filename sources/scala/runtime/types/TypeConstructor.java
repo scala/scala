@@ -55,9 +55,6 @@ public class TypeConstructor {
      */
     public final boolean isTrivial;
 
-    /** True iff this constructor inherits from a Java class */
-    public final boolean inheritsFromJavaClass;
-
     /**
      * "Code" to compute the display for an instance of this
      * constructor, based on the display of its parents. This code is
@@ -97,7 +94,6 @@ public class TypeConstructor {
 
         this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
 
-        this.inheritsFromJavaClass = inheritsFromJavaClass;
         this.displayCode = displayCode;
 
         try {
