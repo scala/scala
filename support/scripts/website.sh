@@ -160,7 +160,7 @@ function website-print-xml-installers-add-archive() {
     local suffix="$1"; shift 1;
     local description="$1"; shift 1;
 
-    local path="./distrib/"`basename $archive`;
+    local path="./distrib/files/"`basename $archive`;
     $program-add-entry "$archive" "" "$description" "$path" "$suffix";
 }
 
