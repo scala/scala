@@ -63,15 +63,6 @@ public final class GenMSIL {
     // mapping from LabelDef symbols to labels
     private final Map/*<Symbol, Label>*/ sym2label = new HashMap();
 
-    // the Assembly the program is compiled into.
-    private AssemblyBuilder currAssembly;
-
-    // the main module of the assembly
-    private ModuleBuilder currModule;
-
-    // used by TypeCreator.createType()
-    ModuleBuilder getCurrentModule() { return currModule; }
-
     // the code generator for the current method
     private ILGenerator code;
 
@@ -91,79 +82,10 @@ public final class GenMSIL {
         this.global = global;
 	this.defs = global.definitions;
 	this.primitives = global.primitives;
-	this.tc = new TypeCreator(global, this, phase);
+	this.tc = phase.tc; //new TypeCreator(global, this, phase);
 	this.items = new ItemFactory(this);
     }
 
-    /**
-     * Initialize the code generator. Called from GenMSILPhase
-     * before processing any compilation unit.
-     */
-    void initGen() {
-	tc.init();
-	AssemblyName an = new AssemblyName();
-	String assemname = global.args.assemname.value;
-	an.Name = assemname != null ? assemname : "prog";
-	currAssembly = AssemblyBuilder.DefineDynamicAssembly(an);
-	currModule = (ModuleBuilder) currAssembly.GetModule(an.Name);
-	if (currModule == null) {
-	    currModule = currAssembly.DefineDynamicModule(an.Name, an.Name + "Module");
-	}
-    }
-
-    /** Finilize the code generation. Called from GenMSILPhase
-     *  after processing all compilation units.
-     */
-    public void finalizeGen() {
-	if (mainObjectField != null && mainMethod != null) {
-	    MethodBuilder main = currModule.DefineGlobalMethod
-		("Main", MethodAttributes.Public | MethodAttributes.Static,
-		 tc.VOID, new Type[] {tc.STRING_ARRAY} );
-	    main.DefineParameter(0, 0, "args");
-	    ((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
-	    code = main.GetILGenerator();
-	    if (global.args.debuginfo.value)
-		code.setPosition(mainLineNum, mainSourceFilename);
-	    code.Emit(OpCodes.Ldsfld, mainObjectField);
-	    code.Emit(OpCodes.Ldarg_0);
-	    code.Emit(OpCodes.Callvirt, mainMethod);
-	    if (!returnsVoid(mainMethod))
-		code.Emit(OpCodes.Pop);
-	    code.Emit(OpCodes.Ret);
-	}
-	tc.createTypes();
-	try { currAssembly.Save(currAssembly.GetName().Name + ".il"); }
-	catch (IOException e) {
-	    if (global.debug) e.printStackTrace(); // FIXME
-	}
-    }
-
-
-    private FieldInfo mainObjectField = null;
-    private MethodInfo mainMethod = null;
-    private int mainLineNum;
-    private String mainSourceFilename;
-
-    /*
-     * Check if the given method is a main function
-     */
-    private void checkMain(MethodBase method, int line) {
-	if ( !currentClass.isModuleClass() )
-	    return;
-	// do not consider nested objects' main methods
-	if (method.DeclaringType.DeclaringType != null)
-	    return;
-	if (method.IsConstructor() || method.IsAbstract() ||
-	    !method.Name.equals("main"))
-	    return;
-	ParameterInfo[] params = method.GetParameters();
-	if (params.length != 1 || params[0].ParameterType != tc.STRING_ARRAY)
-	    return;
-	mainObjectField = tc.getModuleField(currentClass);
-	mainMethod = (MethodInfo) method;
-	mainLineNum = line;
-	mainSourceFilename = getSourceFilename();
-    }
 
     private String getSourceFilename() {
 	assert currUnit != null;
@@ -179,7 +101,7 @@ public final class GenMSIL {
      */
     public void apply(Unit unit) {
 	currUnit = unit;
-	try {
+// 	try {
 	    for (int i = 0; i < unit.body.length; i++) {
 		Tree tree = unit.body[i];
 		Symbol sym = tree.symbol();
@@ -192,15 +114,15 @@ public final class GenMSIL {
 		    genPackage(body);
 		    break;
 		default:
-		    throw new ApplicationError
+		    throw Debug.abort
 			("Illegal top-level definition: " + Debug.show(tree));
 		}
 	    }
-	} catch (Throwable e) {
-	    e.printStackTrace();
-	    finalizeGen();
-	    System.exit(1);
-	}
+// 	} catch (Throwable e) {
+// 	    e.printStackTrace();
+// 	    finalizeGen();
+// 	    System.exit(1);
+// 	}
     }
 
     /**
@@ -294,10 +216,12 @@ public final class GenMSIL {
 		break;
 
 	    case DefDef(_, _, _, ValDef[][] vparams, Tree tpe, Tree rhs):
-// 		if (!currentMethod.IsAbstract()) {
 		if (!sym.isDeferred()) {
 		    currentMethod = tc.getMethod(sym);
-		    checkMain(currentMethod, Position.line(body[i].pos));
+		    if (tc.isEntryPoint(sym) && tc.moreThanOneEntryPoint())
+			currUnit.warning(body[i].pos,
+					 "Program has more than one"
+					 + " entry point defined");
 		    genDef(sym, vparams[0], rhs, msilType(tpe.type));
 		}
 		break;
@@ -442,8 +366,7 @@ public final class GenMSIL {
 	    if (currentMethod.IsConstructor()) {
 		code.Emit(OpCodes.Ldsfld, tc.getModuleField(currentClass));
 	    } else
-		throw new ApplicationError
-		    ("Static methods don't have 'this' pointer");
+		throw Debug.abort ("Static methods don't have 'this' pointer");
 	} else
 	    code.Emit(OpCodes.Ldarg_0);
     }
@@ -946,6 +869,7 @@ public final class GenMSIL {
 	    case SingleType(_, _):
 	    case ThisType(_):
 		MethodBase method = tc.getMethod(sym);
+		assert method != null : Debug.show(sym);
 		boolean virtualCall = false;
 		if (!method.IsStatic() || becomesStatic(sym)) {
 		    // FIXME: after the Super attribution is correct
@@ -1306,7 +1230,7 @@ public final class GenMSIL {
 	    res = items.VoidItem();
 	} else {
 	    loadArgs(args, method.GetParameters());
-	    if (enableTailCalls && lastExpr && method == currentMethod)
+	    if (enableTailCalls && lastExpr /*&& method == currentMethod*/)
 		code.Emit(OpCodes.Tailcall);
 	    code.Emit(virtualCall ? OpCodes.Callvirt : OpCodes.Call,
 		      (MethodInfo)method);

@@ -9,11 +9,14 @@
 package scalac.backend.msil;
 
 import scalac.Global;
+import scalac.Unit;
 import scalac.ApplicationError;
 import scalac.ast.Tree;
+import scalac.ast.Traverser;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
+import scalac.util.SourceRepresentation;
 import scalac.symtab.Kinds;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Symbol;
@@ -21,18 +24,22 @@ import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Definitions;
 import scalac.symtab.classfile.CLRPackageParser;
+import scala.tools.util.Position;
+import scala.tools.util.SourceFile;
 
 import Tree.*;
 
 import ch.epfl.lamp.compiler.msil.*;
 import ch.epfl.lamp.compiler.msil.emit.*;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 /**
  * Creates System.Reflection objects corresponding to
@@ -44,7 +51,7 @@ import java.util.HashSet;
 
 final class TypeCreator {
 
-    private final GenMSIL gen;
+    //private final GenMSIL gen;
     private final Global global;
     private final Definitions defs;
 
@@ -89,17 +96,17 @@ final class TypeCreator {
     private final MethodInfo MONITOR_WAIT;
     private final MethodInfo MONITOR_WAIT_TIMEOUT;
 
-    public Type SCALA_BYTE;
-    public Type SCALA_SHORT;
-    public Type SCALA_INT;
-    public Type SCALA_LONG;
-    public Type SCALA_FLOAT;
-    public Type SCALA_DOUBLE;
-    public Type SCALA_CHAR;
-    public Type SCALA_BOOLEAN;
-    public Type SCALA_UNIT;
+    public final Type SCALA_BYTE;
+    public final Type SCALA_SHORT;
+    public final Type SCALA_INT;
+    public final Type SCALA_LONG;
+    public final Type SCALA_FLOAT;
+    public final Type SCALA_DOUBLE;
+    public final Type SCALA_CHAR;
+    public final Type SCALA_BOOLEAN;
+    public final Type SCALA_UNIT;
 
-    public MethodInfo RUNTIME_BOX_UNIT = null;
+    public final MethodInfo RUNTIME_BOX_UNIT ;
 
     public Symbol SYM_SUBSTRING_INT_INT;
     public MethodInfo SUBSTRING_INT_INT;
@@ -108,13 +115,14 @@ final class TypeCreator {
 
     public ConstructorInfo SCALA_SYMTAB_ATTR_CONSTR;
 
+    private scalac.symtab.Type MAIN_METHOD_TYPE;
+
     private final CLRPackageParser ti;
 
     //##########################################################################
 
-    TypeCreator(Global global, GenMSIL gen, GenMSILPhase phase) {
+    TypeCreator(Global global, GenMSILPhase phase) {
 	this.global = global;
-	this.gen = gen;
 	this.defs = global.definitions;
 
 	ti = CLRPackageParser.instance();
@@ -155,18 +163,6 @@ final class TypeCreator {
 	MONITOR_WAIT_TIMEOUT = MONITOR.GetMethod("Wait", new Type[] {OBJECT, INT});
 	MONITOR_ENTER = MONITOR.GetMethod("Enter", sObject1);
 	MONITOR_EXIT = MONITOR.GetMethod("Exit", sObject1);
-    }
-
-    private boolean initialized = false;
-
-    /*
-     * Called from GenMSIL
-     */
-    public void init() {
-	if (initialized)
-	    return;
-	final Symbol JOBJECT = defs.OBJECT_CLASS;
-	final Symbol JSTRING = defs.STRING_CLASS;
 
 	SCALA_BYTE    = getType("scala.Byte");
 	SCALA_SHORT   = getType("scala.Short");
@@ -180,6 +176,19 @@ final class TypeCreator {
 
  	RUNTIME_BOX_UNIT = getType("scala.runtime.RunTime")
  	    .GetMethod("box_uvalue", Type.EmptyTypes);
+    }
+
+    private boolean initialized = false;
+
+    /*
+     * Called from GenMSIL
+     */
+    public void init() {
+	if (initialized)
+	    return;
+	final Symbol JOBJECT = defs.OBJECT_CLASS;
+	final Symbol JSTRING = defs.STRING_CLASS;
+
 
 	// initialize type mappings
 	map(defs.ANY_CLASS, OBJECT);
@@ -277,6 +286,13 @@ final class TypeCreator {
 
 	SCALA_SYMTAB_ATTR_CONSTR = ti.SCALA_SYMTAB_ATTR.GetConstructors()[0];
 
+        scalac.symtab.Type argument = defs.array_TYPE(defs.STRING_TYPE());
+        scalac.symtab.Type result = defs.void_TYPE();
+        Symbol formal = Symbol.NONE.newTerm // !!! should be newVParam
+            (Position.NOPOS, Modifiers.PARAM, Name.fromString("args"));
+        formal.setInfo(argument);
+        MAIN_METHOD_TYPE =
+	    scalac.symtab.Type.MethodType(new Symbol[] {formal}, result);
     } // init()
 
     /*
@@ -410,22 +426,181 @@ final class TypeCreator {
 	}
     }
 
+    //##########################################################################
+    // tree treversal
+
+    private static final Name MAIN_N = Name.fromString("main");
+
+    private final Set types2create = new LinkedHashSet();
+
+    private String assemName;
+
+    private Symbol entryPoint;
+
+    private boolean moreThanOneEntryPoint;
+    public boolean moreThanOneEntryPoint() {
+	return moreThanOneEntryPoint;
+    }
+
+    private SourceFile mainSourceFile;
+
+    private int mainLineNum;
+
+    /** - collects the symbols of all classes defined in the program
+     *  - collects all entry points
+     *  - gives the name of the new assembly
+     */
+    public void collectSymbols(Unit[] units) {
+	types2create.clear();
+	entryPoint = null;
+	new CollectSymbols().traverse(units);
+
+	// the assembly name supplied with the -o option (or null)
+	String aname = global.args.assemname.value;
+
+	if (entryPoint == null) {
+	    // if no entry point is found assume the name of the first
+	    // source file if not supplied with the -o option
+	    assemName = aname;
+	    if (assemName == null) {
+		assemName = mainSourceFile.getFile().getName();
+		assert assemName.endsWith(".scala") : assemName;
+		assemName = assemName.substring(0, assemName.length() - 6);
+	    }
+	} else {
+	    // assume the name of the object defining the first entry point
+	    // if not supplied with the -o option
+	    assemName = aname != null ? aname
+		: entryPoint.owner().name.toString();
+	}
+    }
+
+    /** Determines if the given symbol is an entry point:
+     *    - the name is "main"
+     *    - belongs to a top-level class
+     *    - the type is Array[String] => Unit
+     */
+    public boolean isEntryPoint(Symbol main) {
+	return main.name == MAIN_N
+	    && main.owner().isModuleClass()
+	    && main.owner().owner().isPackageClass()
+	    && MAIN_METHOD_TYPE.isSameAs(main.info());
+    }
+
+    /** A traverser that collects the symbols of all classes defined
+     *  in the program and all entry points.
+     */
+    private final class CollectSymbols extends Traverser {
+	private Unit currUnit;
+	public void traverse(Unit unit) {
+	    currUnit = unit;
+	    super.traverse(unit);
+	}
+	public void traverse(Tree tree) {
+	    switch (tree) {
+	    case ClassDef(_, _, _, _, _, Template impl):
+		types2create.add(tree.symbol());
+		traverse(impl);
+		return;
+	    case DefDef(_, _, _, _, _, _):
+		Symbol sym = tree.symbol();
+		if (isEntryPoint(sym)) {
+		    if (entryPoint == null) {
+			entryPoint = sym;
+ 			mainSourceFile = currUnit.source;
+			mainLineNum = Position.line(tree.pos);
+		    } else
+			moreThanOneEntryPoint = true;
+		}
+		return;
+	    case ValDef(_, _, _, _):
+		return;
+	    default:
+		super.traverse(tree);
+	    }
+	}
+    }
+
+    //##########################################################################
+
+    // the Assembly the program is compiled into.
+    private AssemblyBuilder msilAssembly;
+
+    // the main module of the assembly
+    private ModuleBuilder msilModule;
+
+    /** Create the output assembly
+     */
+    void initAssembly() {
+
+	AssemblyName an = new AssemblyName();
+	an.Name = assemName;
+	msilAssembly = AssemblyBuilder.DefineDynamicAssembly(an);
+	msilModule = msilAssembly.DefineDynamicModule
+	    (an.Name, an.Name + (entryPoint == null ? ".dll" : ".exe"));
+
+	for (Iterator classes = types2create.iterator(); classes.hasNext();) {
+	    Symbol clazz = (Symbol)classes.next();
+	    createType(clazz);
+	}
+    }
+
+    /** Finilize the code generation. Called from GenMSILPhase
+     *  after processing all compilation units.
+     */
+    public void saveAssembly() {
+	if (entryPoint != null) {
+	    MethodInfo mainMethod = (MethodInfo)getMethod(entryPoint);
+	    assert mainMethod != null : Debug.show(entryPoint);
+	    FieldInfo moduleField = getModuleField(entryPoint.owner());
+	    assert moduleField != null : Debug.show(entryPoint.owner());
+	    MethodBuilder main = msilModule.DefineGlobalMethod
+		("Main", MethodAttributes.Public | MethodAttributes.Static,
+		 VOID, new Type[] {STRING_ARRAY} );
+	    main.DefineParameter(0, 0, "args");
+	    msilAssembly.SetEntryPoint(main);
+	    ILGenerator code = main.GetILGenerator();
+ 	    if (global.args.debuginfo.value) {
+		String fname = SourceRepresentation
+		    .escape(mainSourceFile.getFile().getPath());
+		code.setPosition(mainLineNum, fname);
+	    }
+
+	    code.Emit(OpCodes.Ldsfld, moduleField);
+	    code.Emit(OpCodes.Ldarg_0);
+	    code.Emit(OpCodes.Callvirt, mainMethod);
+	    code.Emit(OpCodes.Ret);
+	}
+	createTypes();
+	String assemblyFilename = msilAssembly.GetName().Name + ".il";
+	try {
+	    msilAssembly.Save(assemblyFilename);
+	    if (moreThanOneEntryPoint())
+		global.warning("Setting " + Debug.show(entryPoint) +
+			       " as an entry point");
+	} catch (IOException e) {
+	    global.error("Could not save " + assemblyFilename);
+	}
+    }
+
     /**
      * Finalizes ('bakes') the newly created types
      */
-    public void createTypes() {
+    private void createTypes() {
 	Iterator iter = typeBuilders.iterator();
 	while (iter.hasNext())
 	    ((TypeBuilder)iter.next()).CreateType();
     }
 
+    //##########################################################################
     /**
      * Creates bidirectional mapping from symbols to types.
      */
-    private void map(Symbol sym, Type type) {
+    private Type map(Symbol sym, Type type) {
 	symbols2types.put(sym, type);
 	if (sym.isClass())
 	    types2symbols.put(type, sym);
+	return type;
     }
 
     /**
@@ -446,53 +621,43 @@ final class TypeCreator {
 	    return STRING;
 
 	Type type = (Type) symbols2types.get(sym);
-	if (type != null && (sym.isExternal() || type instanceof TypeBuilder))
+	if (type != null) {
+	    if (sym.isExternal()) {
+		assert !(type instanceof TypeBuilder)
+		    : Debug.show(sym) + " -> " + type.toString();
+		return type;
+	    } else if (types2create.contains(sym) && type instanceof TypeBuilder)
+		return type;
+	} else if (types2create.contains(sym))
+	    type = createType(sym);
+	if (type != null)
 	    return type;
-	final Symbol owner = sym.owner();
-	MemberInfo m = ti.getMember(sym);
-	if (m != null && m instanceof Type &&
-	    (sym.isExternal() || m instanceof TypeBuilder))
-	    type = (Type)m;
- 	else if (sym.isExternal()) {
-	    if (sym.isClass()) {
-		if (owner.isClass()) {
-		    Type ownerType = getType(owner);
-		    assert ownerType != null : Debug.show(owner);
-		    type = ownerType.GetNestedType(sym.name.toString());
-		} else {
-		    String name = global.primitives.getCLRClassName(sym);
-		    type = getType(sym.isModuleClass() && !sym.isJava()
-				   ? name + "$" : name);
-		}
+
+	type = (Type)ti.getMember(sym);
+	if (type != null)
+	    return map(sym, type);
+
+	if (sym.isClass()) {
+	    final Symbol owner = sym.owner();
+	    if (owner.isClass()) {
+		Type ownerType = getType(owner);
+		assert ownerType != null : Debug.show(owner);
+		type = ownerType.GetNestedType(sym.name.toString());
 	    } else {
-		type = getType(sym.info());
+		String name = global.primitives.getCLRClassName(sym);
+		type = getType(sym.isModuleClass() && !sym.isJava()
+			       ? name + "$" : name);
 	    }
-	    if (type == null)
-		throw Debug.abort("Type resolution failed for "+Debug.show(sym));
+	} else {
+	    type = getType(sym.info());
 	}
-	if (type == null) {
-	    switch (sym.info()) {
-	    case CompoundType(_, _):
-		type = createType(sym);
-		break;
+	if (type != null)
+	    return map(sym, type);
 
- 	    case UnboxedArrayType(scalac.symtab.Type elemtp):
-		type = getType(sym.info());
-		break;
-
-	    default:
-		type = getType(sym.info());
-	    }
-	}
-	if (type == null)
-	    global.error("Cannot find class " + Debug.show(sym) +
-			 "; use the '-r' option to specify its assembly");
-	map(sym, type);
-	return type;
+	throw Debug.abort("Type resolution failed for " + Debug.show(sym));
     }
 
-    /**
-     * Retrieve the System.Type from the scala type.
+    /** Retrieve the System.Type from the scala type.
      */
     public Type getType(scalac.symtab.Type type) {
 	switch (type) {
@@ -513,6 +678,25 @@ final class TypeCreator {
 	}
     }
 
+    /** Retrieves the primitive datatypes given their kind
+     */
+    private Type getTypeFromKind(int kind) {
+	switch (kind) {
+	case TypeTags.CHAR:    return CHAR;
+	case TypeTags.BYTE:    return BYTE;
+	case TypeTags.SHORT:   return SHORT;
+	case TypeTags.INT:     return INT;
+	case TypeTags.LONG:    return LONG;
+	case TypeTags.FLOAT:   return FLOAT;
+	case TypeTags.DOUBLE:  return DOUBLE;
+	case TypeTags.BOOLEAN: return BOOLEAN;
+	case TypeTags.UNIT:    return VOID;
+	case TypeTags.STRING:  return STRING;
+	default:
+	    throw new ApplicationError("Unknown kind: " + kind);
+	}
+    }
+
     public Type createType(Symbol clazz) {
 	try { return createType0(clazz); }
 	catch (Error e) {
@@ -524,10 +708,10 @@ final class TypeCreator {
      * Creates the TypeBuilder for a class.
      */
     public Type createType0(Symbol clazz) {
-	assert !clazz.isExternal() : "Can not create type " + Debug.show(clazz);
+	assert types2create.contains(clazz) : Debug.show(clazz);
 	Type type = (Type)symbols2types.get(clazz);
-	assert type == null : "Type " + type +
-	    " already defined for symbol: " + Debug.show(clazz);
+	if (type != null && type instanceof TypeBuilder)
+	    return type;
 
 	TypeBuilder staticType = null;
 	final Symbol owner = clazz.owner();
@@ -536,7 +720,6 @@ final class TypeCreator {
 	    : global.primitives.getCLRClassName(clazz);
 	final String typeName =
 	    staticTypeName + (clazz.isModuleClass() ? "$" : "");
-	final ModuleBuilder moduleBuilder = gen.getCurrentModule();
 	final scalac.symtab.Type classType = clazz.info();
 	switch (classType) {
 	case CompoundType(scalac.symtab.Type[] baseTypes, _):
@@ -567,16 +750,15 @@ final class TypeCreator {
 		return type;
 
 	    if (owner.isPackageClass()) {  // i.e. top level class
-		type = moduleBuilder.DefineType
+		type = msilModule.DefineType
 		    (typeName, translateTypeAttributes(clazz.flags, false),
 		     superType, interfaces);
-		//System.out.println("Created type " + type);
 		if (clazz.isModuleClass()) {
 		    Symbol module = owner.members().lookup(clazz.name.toTermName());
 		    Symbol linkedClass = module.linkedClass();
 
  		    if (linkedClass == null || linkedClass.info().isError()) {
-			staticType = moduleBuilder.DefineType
+			staticType = msilModule.DefineType
  			    (staticTypeName,
  			     translateTypeAttributes(clazz.flags, false),
  			     superType, interfaces);
@@ -594,7 +776,6 @@ final class TypeCreator {
 		type = ((TypeBuilder)outerType).DefineNestedType
 		    (typeName, translateTypeAttributes(clazz.flags, true),
 		     superType, interfaces);
-		//System.out.println("Created nested type " + type);
 	    }
 	    break;
 
@@ -605,7 +786,6 @@ final class TypeCreator {
 	typeBuilders.add(type);
 	map(clazz, type);
 	if (clazz.isModuleClass() && staticType != null) {
-	    //System.out.println(Debug.show(clazz) + " -> " + Debug.show(staticType));
 	    syms2staticTypes.put(clazz, staticType);
 	}
 	for (Scope.SymbolIterator syms = clazz.members().iterator(true);
@@ -659,6 +839,9 @@ final class TypeCreator {
 
     private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
 
+    /** Adapted from Erasure. Returns a set of the interfaces
+     *  implemented by the class.
+     */
     private Set getInterfacesOf(Symbol clasz) {
         assert clasz.isClass(): Debug.show(clasz);
         Set set = (Set)interfaces.get(clasz);
@@ -672,6 +855,9 @@ final class TypeCreator {
         }
         return set;
     }
+
+    //##########################################################################
+    // find/create methods
 
     public MethodBase getMethod(Symbol sym) {
 	MethodBase method = null;
@@ -762,8 +948,7 @@ final class TypeCreator {
 		if (m != null)
 		    return m;
 	    }
-	System.out.println("Couldn't find mapping for " + Debug.show(member));
-	return null;
+	throw Debug.abort("Couldn't find mapping for " + Debug.show(member));
     }
 
     private MethodBase createMethod(Symbol sym) {
@@ -838,6 +1023,8 @@ final class TypeCreator {
 	}
     }
 
+    //##########################################################################
+    // find/create fields
 
     /** Returns the FieldInfo object corresponing to the symbol
      */
@@ -910,6 +1097,7 @@ final class TypeCreator {
 // 	    + " : " + syms2staticTypes;
 	return staticType;
     }
+
     /*
      *
      */
@@ -953,6 +1141,9 @@ final class TypeCreator {
 	assert moduleField != null : Debug.show(sym);
 	return moduleField;
     }
+
+    //##########################################################################
+    // translate Scala modifiers into attributes
 
     /** Translates Scala modifiers into TypeAttributes
      */
@@ -1035,24 +1226,6 @@ final class TypeCreator {
 	return (short)attr;
     }
 
-    /*
-     * Retrieves the primitive datatypes given their kind
-     */
-    private Type getTypeFromKind(int kind) {
-	switch (kind) {
-	case TypeTags.CHAR:    return CHAR;
-	case TypeTags.BYTE:    return BYTE;
-	case TypeTags.SHORT:   return SHORT;
-	case TypeTags.INT:     return INT;
-	case TypeTags.LONG:    return LONG;
-	case TypeTags.FLOAT:   return FLOAT;
-	case TypeTags.DOUBLE:  return DOUBLE;
-	case TypeTags.BOOLEAN: return BOOLEAN;
-	case TypeTags.UNIT:    return VOID;
-	case TypeTags.STRING:  return STRING;
-	default:
-	    throw new ApplicationError("Unknown kind: " + kind);
-	}
-    }
+    //##########################################################################
 
 } // class TypeCreator

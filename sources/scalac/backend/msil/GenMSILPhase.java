@@ -29,12 +29,15 @@ public class GenMSILPhase extends Phase {
     final HashMap symbols2methods = new HashMap();
     final HashMap symbols2moduleFields = new HashMap();
 
+    final TypeCreator tc;
+
     //########################################################################
     // Public Constructors
 
     /** Initializes this instance. */
     public GenMSILPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
+	this.tc = new TypeCreator(global, this);
         this.translator = new GenMSIL(global, this);
     }
 
@@ -43,9 +46,11 @@ public class GenMSILPhase extends Phase {
 
     /** Applies this phase to the given compilation units. */
     public void apply(Unit[] units) {
-	translator.initGen();
+	tc.init();
+	tc.collectSymbols(units);
+	tc.initAssembly();
         for (int i = 0; i < units.length; i++) translator.apply(units[i]);
-	translator.finalizeGen();
+	tc.saveAssembly();
     }
 
     //########################################################################
