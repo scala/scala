@@ -1371,7 +1371,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	// apply parameterless functions
 	// instantiate polymorphic expressions
 	if (tparams.length == 0) {
-	  return adapt(tree.setType(restp), mode, pt);
+	  return adapt(constfold.tryToFold(tree.setType(restp)), mode, pt);
 	} else if ((mode & (FUNmode | POLYmode)) == 0) {
 	  var tree1: Tree = null;
 	  try {
@@ -1700,7 +1700,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     //System.out.println(qual.getType() + ".member: " + sym + ":" + symtype);//DEBUG
     val tree1: Tree = tree match {
       case Tree$Select(_, _) =>
-	copy.Select(tree, sym, qual)
+	copy.Select(tree, sym, qual);
       case Tree$SelectFromType(_, _) =>
 	copy.SelectFromType(tree, sym, qual)
     }
@@ -2824,8 +2824,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    i = i + 1
 	  }}
 	  val members: Scope = new Scope();
-	  val cowner = if (context.owner.isPrimaryConstructor()) context.owner.constructorClass()
-		       else context.enclClass.owner;
+	  val cowner =
+	    if (context.owner.isPrimaryConstructor() && context.owner.owner().isPackageClass())
+	      context.owner.constructorClass()
+	    else context.enclClass.owner;
 	  val self: Type = Type.compoundTypeWithOwner(cowner, ptypes, members);
 	  val clazz: Symbol = self.symbol();
 	  pushContext(tree, clazz, members);

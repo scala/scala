@@ -206,17 +206,33 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *       M must be labelled `abstract override'.
      */
     void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
-	//System.out.println(member + member.locationString() + " overrides " + other + other.locationString() + " in " + clazz);//DEBUG
+	//System.out.println(member + member.locationString() + " overrides " + other + other.locationString() + " in " + clazz);//debug
 	if (member.owner() == clazz)
 	    pos = member.pos;
-	else if (member.owner().isSubClass(other.owner()))
-	    return; // everything was already checked elsewhere
 	else {
+	    if (member.owner().isSubClass(other.owner()) &&
+		(member.flags & DEFERRED) >= (other.flags & DEFERRED)) {
+		//System.out.println(member + member.locationString() + " shadows1 " + other + other.locationString() + " in " + clazz);//DEBUG
+		return; // everything was already checked elsewhere
+	    }
+
 	    Type[] parents = clazz.parents();
-	    for (int i = 0; i < parents.length; i++) {
+	    boolean memberShadowsOther = true;
+	    for (int i = 0; i < parents.length && memberShadowsOther; i++) {
 		Symbol p = parents[i].symbol();
-		if (p.isSubClass(member.owner()) && p.isSubClass(other.owner()))
+		boolean subMember = p.isSubClass(other.owner());
+		boolean subOther = p.isSubClass(member.owner());
+		if (subMember != subOther) {
+		    memberShadowsOther = false;
+		} else if (subMember && subOther &&
+			   (member.flags & DEFERRED) >= (other.flags & DEFERRED)) {
+		    //System.out.println(member + member.locationString() + " shadows2 " + other + other.locationString() + " in " + clazz);//DEBUG
 		    return; // everything was already checked elsewhere
+		}
+	    }
+	    if (memberShadowsOther) {
+		//System.out.println(member + member.locationString() + " shadows " + other + other.locationString() + " in " + clazz);//DEBUG
+		return; // everything was already checked elsewhere
 	    }
 	}
 
