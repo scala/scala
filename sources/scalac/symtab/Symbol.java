@@ -568,8 +568,9 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Get the simple name of this Symbol (this is always a term name)
      */
     public Name simpleName() {
-        return isConstructor() ? constructorClass().name.toTermName()
-            : name.toTermName();
+        if (isConstructor()) return constructorClass().name.toTermName();
+        if (isInitializer()) return owner().name.toTermName();
+        return name;
     }
 
     /** Get the fully qualified name of this Symbol */
