@@ -41,6 +41,7 @@ ast/printer/TreePrinter.java
 atree/AArithmeticOp.java
 atree/AClass.java
 atree/ACode.java
+atree/ACodeFactory.java
 atree/AComparisonOp.java
 atree/AConstant.java
 atree/AField.java
