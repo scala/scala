@@ -34,7 +34,7 @@
 ** USA
 **
 ** Author contact: erik.stenman@epfl.ch
-**                 (svenolof@csd.uu.se, richardc@csd.uu.se)
+ @csd.uu.se, richardc@csd.uu.se)
 ** ---------------------------------------------------------------------
 */
 
@@ -92,8 +92,6 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
 	  override def size=sz;
 	  override protected val tree:this.Tree[A,B]=t.asInstanceOf[this.Tree[A,B]];
       };
-
-
   /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
 
