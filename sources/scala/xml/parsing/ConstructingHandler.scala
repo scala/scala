@@ -3,21 +3,24 @@ package scala.xml.parsing;
 import scala.collection.immutable.Map ;
 import scala.collection.mutable ;
 
-/** @todo: make ConstructingMarkupHandler */
-abstract class ConstructingHandler extends MarkupHandler[Node,String] {
+/** */
+class ConstructingHandler extends MarkupHandler[Node,String] {
 
-  //def attributeCDataValue(pos: int, str:String): AttribValue[String];
-  //def attributeEmbedded(pos: int, x:MarkupType): AttribValue[String];
+  def attributeCDataValue(pos: int, str:String) = CDataValue(str);
 
-  def element(pos: int, label: String, attrMap1: mutable.Map[String,AttribValue[String]], args: mutable.Buffer[Node]) = {
+  def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
+
+  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[String,AttribValue], args: mutable.Buffer[Node]) = {
 
     var attrs = new Array[Attribute](attrMap1.size);
     {
       var i = 0;
       val it = attrMap1.elements;
       while( it.hasNext ) {
-        val Pair(ke:String, va: AttribValue[String]) = it.next;
-        attrs( i ) = Attribute("",ke,va.value);
+        val Pair(ke:String, va: AttribValue) = it.next;
+        va match {
+          case CDataValue(str) => attrs( i ) = Attribute("",ke,str);
+        }
         i = i + 1;
       }
     }

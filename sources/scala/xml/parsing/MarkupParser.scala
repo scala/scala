@@ -12,6 +12,10 @@ package scala.xml.parsing;
 import scala.collection.{ mutable, Map };
 import scala.collection.immutable.ListMap;
 
+/** an xml parser. parses XML, invokes callback methods of a MarkupHandler
+ *  and returns whatever the markup handler returns. Use ConstructingParser
+ *  if you just want to parse XML to construct instances of scala.xml.Node.
+ */
 abstract class MarkupParser[MarkupType, AVType] {
 
   /** the handler of the markup */
@@ -35,8 +39,15 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c);
 
+  protected var aMap: mutable.Map[String,AttribValue] =
+    new mutable.HashMap[String,AttribValue];
+
+  final val noChildren = new mutable.ListBuffer[MarkupType];
+
   //var xEmbeddedBlock = false;
 
+  var defaultURI: String = "";
+  val lookupURI: mutable.Map[String,String] = new mutable.HashMap[String,String]();
   /** this method assign the next character to ch and advances in input */
   def nextch: Unit;
 
@@ -73,13 +84,13 @@ abstract class MarkupParser[MarkupType, AVType] {
    *                      | `{` scalablock `}`
   */
   def xAttributes = {
-    var aMap = new mutable.HashMap[String, AttribValue[AVType]];
-    while (xml.Parsing.isNameStart(ch)) {
+    aMap.clear;
+    while( xml.Parsing.isNameStart( ch )) {
       val key = xName;
       xEQ;
       val delim = ch;
       val pos1 = pos;
-      val value: AttribValue[AVType] = ch match {
+      val value:AttribValue = ch match {
         case '"' | '\'' =>
           nextch;
           val tmp = xAttributeValue(delim);
@@ -125,15 +136,13 @@ abstract class MarkupParser[MarkupType, AVType] {
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  def xTag: Pair[String, mutable.Map[String, AttribValue[AVType]]] = {
-    val elemName = xName;
+  protected def xTag: String = {
+    val elemqName = xName;
     xSpaceOpt;
-    val aMap = if (xml.Parsing.isNameStart(ch)) {
+    if(xml.Parsing.isNameStart( ch )) {
       xAttributes;
-    } else {
-      new mutable.HashMap[String, AttribValue[AVType]]();
     }
-    Tuple2(elemName, aMap)
+    elemqName;
   }
 
   /** [42]  '&lt;' xmlEndTag ::=  '&lt;' '/' Name S? '&gt;'
@@ -292,20 +301,37 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
    *               | xmlTag1 '/' '&gt;'
    */
-def element: MarkupType = {
+  def element: MarkupType = {
+    var pref: Map[String, String] = _;
     var pos1 = pos;
-    val Tuple2(qname, attrMap) = xTag;
-    if (ch == '/') { // empty element
-      xToken('/');
-      xToken('>');
-      handle.element(pos1, qname, attrMap, new mutable.ListBuffer[MarkupType]);
+    val qname = xTag;
+    val ts: mutable.Buffer[MarkupType] = {
+      if(ch == '/') {    // empty element
+        xToken('/');
+        xToken('>');
+        pref = handle.namespaceDecl( aMap );
+        handle.internal_startPrefixMapping( pref );
+        noChildren;
+      } else {          // element with  content
+        xToken('>');
+        pref = handle.namespaceDecl( aMap );
+        handle.internal_startPrefixMapping( pref );
+        val tmp = content;
+        xEndTag( qname );
+        tmp;
+      }
     }
-    else { // handle content
-      xToken('>');
-      val ts = content;
-      xEndTag(qname);
-      handle.element(pos1, qname, attrMap, ts)
+    var name = qname;
+    val uri = handle.namespacePrefix(qname).match {
+      case Some(pref) =>
+        name = name.substring(pref.length()+1, name.length());
+        handle.namespace( pref );
+      case _          =>
+        handle.namespace("");
     }
+    val res = handle.element(pos1, uri, name, aMap, ts );
+    handle.internal_endPrefixMapping( pref );
+    res
   }
 
   //def xEmbeddedExpr: MarkupType;
@@ -329,7 +355,6 @@ def element: MarkupType = {
       new String()
     }
   }
-
 
   /** scan [S] '=' [S]*/
   def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
