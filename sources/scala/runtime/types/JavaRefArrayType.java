@@ -37,9 +37,20 @@ public class JavaRefArrayType extends Type {
 
     public boolean isInstance(Object o) {
         assert Statistics.incInstanceOf();
-        // TODO plus fin: on doit tenir compte de la version effacée
-        // de elemType.
-        return (o instanceof Object[]);
+        if (o instanceof Object[]) {
+            if (elemType instanceof ClassType) {
+                ClassType elemTypeClass = (ClassType)elemType;
+                if (o.getClass().getComponentType() == elemTypeClass.clazz) {
+                    if (elemTypeClass.isTrivial)
+                        return true;
+                    else
+                        throw new Error("not able to compute isInstance");
+                } else
+                    return false;
+            } else
+                throw new Error("not able to compute isInstance");
+        } else
+            return false;
     }
 
     public boolean isSameType(Type that) {
