@@ -7,14 +7,14 @@ package scala.util.regexp ;
  */
 trait PointedHedgeExp extends Base {
 
-  type T_label;
-  type regexp <: RegExp;
+  type _regexpT <: RegExp;
+  type _labelT;
 
-  case class  Node(label: T_label, r: regexp) extends RegExp {
+  case class  Node(label: _labelT, r: _regexpT) extends RegExp {
     final val isNullable = false;
   }
 
-  case class  TopIter(r1: regexp, r2: regexp) extends RegExp {
+  case class  TopIter(r1: _regexpT, r2: _regexpT) extends RegExp {
     final val isNullable = r1.isNullable && r2.isNullable; //?
   }
 

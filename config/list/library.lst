@@ -194,6 +194,7 @@ util/automata/BaseBerrySethi.scala
 util/automata/DetWordAutom.scala
 util/automata/Inclusion.scala
 util/automata/NondetWordAutom.scala
+util/automata/SubsetConstruction.scala
 util/automata/WordBerrySethi.scala
 util/grammar/HedgeRHS.scala
 #util/grammar/ImmutableTreeHedgeGrammar.scala

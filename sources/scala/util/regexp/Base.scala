@@ -6,14 +6,14 @@ package scala.util.regexp ;
 
 trait Base {
 
-  type regexp <: RegExp;
+  type _regexpT <: RegExp;
 
   abstract class RegExp {
     val isNullable:Boolean;
   }
 
   /** Alt( R,R,R* ) */
-  case class  Alt(rs: regexp*)  extends RegExp {
+  case class  Alt(rs: _regexpT*)  extends RegExp {
 
     // check rs \in R,R,R*
     // @todo: flattening
@@ -26,7 +26,7 @@ trait Base {
       !it.hasNext
     }
   }
-  case class  Sequ(rs: regexp*) extends RegExp {
+  case class  Sequ(rs: _regexpT*) extends RegExp {
     // @todo: flattening
     // check rs \in R,R*
     if({ val it = rs.elements; !it.hasNext })
@@ -39,7 +39,7 @@ trait Base {
     }
   }
 
-  case class  Star(r: regexp)   extends RegExp {
+  case class  Star(r: _regexpT)   extends RegExp {
     final val isNullable = true;
   }
 
@@ -49,12 +49,12 @@ trait Base {
   }
 
   /** this class can be used to add meta information to regexps */
-  class Meta( r1:regexp )       extends RegExp {
+  class Meta( r1: _regexpT )       extends RegExp {
     final val isNullable = r1.isNullable;
     def r = r1;
   }
 
-  final def mkSequ(rs: regexp*): RegExp =
+  final def mkSequ(rs: _regexpT *): RegExp =
     if(!rs.elements.hasNext)
       Eps
     else

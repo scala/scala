@@ -14,16 +14,16 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   override val lang: WordExp;
 
-  type T_label = this.lang.T_label;
+  type _labelT = this.lang._labelT;
 
   import lang.{Alt, Eps, Letter, Meta, RegExp, Sequ, Star} ;
 
 
-  protected var labels:mutable.HashSet[T_label] = _ ;
+  protected var labels:mutable.HashSet[_labelT] = _ ;
   // don't let this fool you, only labelAt is a real, surjective mapping
-  protected var labelAt: immutable.TreeMap[Int, T_label] = _; // new alphabet "gamma"
+  protected var labelAt: immutable.TreeMap[Int, _labelT] = _; // new alphabet "gamma"
 
-  protected var deltaq: Array[mutable.HashMap[T_label,List[Int]]] = _;    // delta
+  protected var deltaq: Array[mutable.HashMap[_labelT,List[Int]]] = _;    // delta
 
   protected var defaultq: Array[List[Int]] = _;  // default transitions
 
@@ -63,7 +63,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
 
   /** called at the leaves of the regexp */
-  protected def  seenLabel( r:RegExp, i:Int, label: T_label ): Unit = {
+  protected def  seenLabel( r:RegExp, i:Int, label: _labelT ): Unit = {
     this.posMap.update( r, i );
     this.labelAt = this.labelAt.update( i, label );
     //@ifdef if( label != Wildcard ) {
@@ -72,7 +72,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   // overriden in BindingBerrySethi
-  protected def seenLabel( r: RegExp, label: T_label ): Unit = {
+  protected def seenLabel( r: RegExp, label: _labelT ): Unit = {
     pos = pos + 1;
     seenLabel( r, pos, label );
   }
@@ -85,7 +85,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
 
-  protected def makeTransition(src: Int, dest:Int, label: T_label ):Unit = {
+  protected def makeTransition(src: Int, dest:Int, label: _labelT ):Unit = {
     //@ifdef compiler if( label == Wildcard )
     //@ifdef compiler   defaultq.update(src, dest::defaultq( src ))
     //@ifdef compiler else
@@ -98,9 +98,9 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected def initialize(subexpr: Seq[RegExp]): Unit = {
     this.posMap = new mutable.HashMap[RegExp,Int]();
-    this.labelAt = new immutable.TreeMap[Int,T_label]();
+    this.labelAt = new immutable.TreeMap[Int,_labelT]();
     this.follow = new mutable.HashMap[Int,immutable.Set[Int]]();
-    this.labels = new mutable.HashSet[T_label]();
+    this.labels = new mutable.HashSet[_labelT]();
 
     this.pos = 0;
 
@@ -117,12 +117,12 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   protected def initializeAutom(): Unit = {
 
     finals   = immutable.TreeMap.Empty[Int,Int];        // final states
-    deltaq   = new Array[mutable.HashMap[T_label,List[Int]]]( pos );   // delta
+    deltaq   = new Array[mutable.HashMap[_labelT,List[Int]]]( pos );   // delta
     defaultq = new Array[List[Int]]( pos );    // default transitions
 
     var j = 0;
     while( j < pos ) {
-      deltaq( j ) = new mutable.HashMap[T_label,List[Int]]();
+      deltaq( j ) = new mutable.HashMap[_labelT,List[Int]]();
       defaultq( j ) = Nil;
       j = j + 1
     }
@@ -135,9 +135,9 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       while( it.hasNext ) {
         val k = it.next;
         if( pos == k )
-          finals = finals.update( k, finalTag )
+          finals = finals.update( j, finalTag )
         else
-          makeTransition( j, k, labelAt( k ))
+          makeTransition( j, k, labelAt( k ));
       }
       j = j + 1;
     }
@@ -161,8 +161,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       if( x.isNullable ) // initial state is final
 	finals = finals.update( 0, finalTag );
 
-      var delta1: immutable.TreeMap[Int,Map[T_label,List[Int]]] =
-        new immutable.TreeMap[Int,Map[T_label,List[Int]]];
+      var delta1: immutable.TreeMap[Int,Map[_labelT,List[Int]]] =
+        new immutable.TreeMap[Int,Map[_labelT,List[Int]]];
 
       var i = 0;
       while( i < deltaq.length ) {
@@ -174,7 +174,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         var k = 0; while(k < pos) {
           finalsArr(k) = finals.get(k).match {
             case Some(z) => z;
-            case None => -1;
+            case None => 0; // 0 == not final
           };
           k = k + 1;
         }
@@ -189,21 +189,42 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         }
       }
 
-      val deltaArr = new Array[Map[T_label,List[Int]]](pos);
+      val deltaArr = new Array[Map[_labelT,immutable.BitSet]](pos);
       {
         var k = 0; while(k < pos) {
-          deltaArr(k) = delta1(k);
+          val labels = delta1(k).keys;
+          val hmap =
+            new mutable.HashMap[_labelT,immutable.BitSet];
+          for(val lab <- labels) {
+            val trans = delta1(k);
+            val x = new mutable.BitSet(pos);
+            for(val q <- trans(lab))
+              x.set(q);
+            hmap.update(lab, x.makeImmutable);
+          }
+          deltaArr(k) = hmap;
           k = k + 1;
         }
       }
+      val defaultArr = new Array[immutable.BitSet](pos);
+      {
+        var k = 0; while(k < pos) {
+          val x = new mutable.BitSet(pos);
+          for(val q <- defaultq(k))
+            x.set(q);
+          defaultArr(k) = x.makeImmutable;
+          k = k + 1;
+        }
+      }
+
       new NondetWordAutom {
-	type T_label = WordBerrySethi.this.T_label;
+	type _labelT = WordBerrySethi.this._labelT;
         val nstates  = pos;
-        //val labels   = WordBerrySethi.this.labels;
+        val labels   = WordBerrySethi.this.labels.toList;
         val initials = initialsArr;
         val finals   = finalsArr;
         val delta    = deltaArr;
-        val default  = defaultq;
+        val default  = defaultArr;
       }
       case _ => error("expected Sequ");
     }

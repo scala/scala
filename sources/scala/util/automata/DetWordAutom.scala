@@ -9,16 +9,18 @@ import scala.collection.{ Set, Map };
  *  All states are reachable. Accepting states are those for which
  *  the partial function 'finals' is defined.
  */
-abstract class DetWordAutom[A] {
+abstract class DetWordAutom[T] {
 
   val nstates:  Int;
   val finals:   Array[Int] ;
-  val delta:    Array[Map[A,Int]];
+  val delta:    Array[Map[T,Int]];
   val default:  Array[Int] ;
 
-  def isFinal(q:Int) = finals(q) != 0;
+  def isFinal(q: Int) = finals(q) != 0;
 
-  def next(q:Int, label:A) = {
+  def isSink(q: Int) = delta(q).isEmpty && default(q) == q;
+
+  def next(q: Int, label: T) = {
     delta(q).get(label) match {
       case Some(p) => p
       case _       => default(q)
@@ -26,16 +28,15 @@ abstract class DetWordAutom[A] {
   }
 
   override def toString() = {
-    "DetWordAutom"
-    /*
     val sb = new StringBuffer();
-    sb.append("[nfa nstates=");
+    sb.append("[DetWordAutom  nstates=");
     sb.append(nstates);
     sb.append(" finals=");
     var map = new scala.collection.immutable.ListMap[Int,Int];
     var j = 0; while( j < nstates ) {
       if(finals.isDefinedAt(j))
-        map = map.update(j,finals(j))
+        map = map.update(j,finals(j));
+      j = j + 1;
     }
     sb.append(map.toString());
     sb.append(" delta=\n");
@@ -51,6 +52,5 @@ abstract class DetWordAutom[A] {
       }
     }
     sb.toString();
-    */
   }
 }

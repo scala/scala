@@ -81,6 +81,4 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
 
   def makeImmutable = new scala.collection.immutable.BitSet(this);
 
-  /** returns this object */
-  def makeMutable = this;
 }

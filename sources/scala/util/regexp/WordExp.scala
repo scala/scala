@@ -13,10 +13,10 @@ trait WordExp extends Base {
 
   trait Label;
 
-  type T_label <: Label;
-  type regexp <: RegExp ;
+  type _regexpT <: RegExp ;
+  type _labelT <: Label;
 
-  case class Letter(a: T_label)    extends RegExp {
+  case class Letter(a: _labelT)    extends RegExp {
     final val isNullable = false;
   }
 

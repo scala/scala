@@ -59,14 +59,9 @@ abstract class BitSet with Function1[Int,Boolean] {
     };
 
   /**
-   * returns an immutable bitset with same information
+   *  applies f to any index which is set to true.
    */
-  def makeImmutable: immutable.BitSet;
-
-  /**
-   * returns a mutable bitset with same information
-   */
-  def makeMutable: mutable.BitSet;
+  def foreach(f: Int => Unit): Unit = toSet(true).foreach(f);
 
   /**
    * Returns a string representation of this bitset in hexadecimal form,

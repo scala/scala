@@ -2,8 +2,8 @@ package scala.xml.dtd ;
 
 
 object ContentModel extends scala.util.regexp.WordExp {
-  type T_label = ElemName;
-  type regexp = RegExp;
+  type _labelT = ElemName;
+  type _regexpT = RegExp;
 
   case class ElemName(name: String) extends Label {
     override def toString() = "ElemName(\""+name+"\")";
@@ -21,7 +21,7 @@ object ContentModel extends scala.util.regexp.WordExp {
 
   def parse(s: String): RegExp = Parser.parse( s );
 
-  def isMixed(alt:Alt):boolean = {
+  def isMixed(alt: Alt): Boolean = {
     val it = alt.rs.elements;
     it.next == PCDATA_ && {
       while( it.hasNext && it.next.isInstanceOf[Letter] ) {} ;
@@ -29,7 +29,7 @@ object ContentModel extends scala.util.regexp.WordExp {
     }
   }
 
-  def getLabels(r:RegExp): scala.collection.Set[String] = {
+  def getLabels(r: RegExp): scala.collection.Set[String] = {
     val s = new scala.collection.mutable.HashSet[String]();
     def traverse1(xs: Seq[RegExp]): Unit = {
       val it = xs.elements;
@@ -77,7 +77,7 @@ object ContentModel extends scala.util.regexp.WordExp {
       case Alt(rs @ _*) =>
         sb.append("Alt");
         toString(rs, sb);
-      case Star(r:RegExp) =>
+      case Star(r: RegExp) =>
         sb.append("Star(");
         toString(r, sb);
         sb.append(')');

@@ -98,8 +98,6 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet wit
     (array(j) & mask) != 0;
   }
 
-  def makeImmutable = this;
-
   def makeMutable = {
     val rbs = new mutable.BitSet(size) ;
     val it = this.toSet(true).elements;
