@@ -121,7 +121,7 @@ public class Parser implements Tokens {
 	    || (s.token == OVERRIDE);
     }
 
-    boolean isLocalClassModifier() {
+    boolean isLocalModifier() {
         return (s.token == ABSTRACT)
 	    || (s.token == FINAL);
     }
@@ -400,8 +400,8 @@ public class Parser implements Tokens {
         }
     }
 
-    /** StableRef  ::=  StableId
-     *               |  [Ident `.'] this
+    /** StableRef  ::= StableId
+     *              |  [Ident `.'] this
      *  SimpleType ::=  StableRef [`.' type]
      */
     Tree stableRef(boolean thisOK, boolean typeOK) {
@@ -412,7 +412,9 @@ public class Parser implements Tokens {
 		t = selectors(accept(DOT), t, typeOK);
 	} else if (s.token == SUPER) {
 	    t = make.Super(s.skipToken(), Tree.Empty);
-	    t = selectors(accept(DOT), t, typeOK);
+	    t = make.Select(accept(DOT), t, ident());
+	    if (s.token == DOT)
+		t = selectors(s.skipToken(), t, typeOK);
 	} else {
 	    t = make.Ident(s.pos, ident());
 	    if (s.token == DOT) {
@@ -422,6 +424,12 @@ public class Parser implements Tokens {
 		    t = make.This(pos, convertToTypeId(t));
 		    if (!thisOK || s.token == DOT)
 			t = selectors(accept(DOT), t, typeOK);
+		} else if (s.token == SUPER) {
+		    s.nextToken();
+		    t = make.Super(pos, convertToTypeId(t));
+		    t = make.Select(accept(DOT), t, ident());
+		    if (s.token == DOT)
+			t = selectors(s.skipToken(), t, typeOK);
 		} else {
 		    t = selectors(pos, t, typeOK);
 		}
@@ -443,7 +451,9 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** StableId ::= [[Ident `.'] this `.' | super] {Id `.'} Id
+    /** StableId ::= Id
+     *            |  StableRef `.' Id
+     *            |  [Ident '.'] super `.' Id
      */
     Tree stableId() {
 	return stableRef(false, false);
@@ -663,8 +673,8 @@ public class Parser implements Tokens {
 
     /** Expr     ::= Bindings `=>' Expr
      *             | if `(' Expr `)' Expr [[`;'] else Expr]
-     *             | for `(' Enumerators `)' [do | yield] Expr
-     *             | Designator `=' Expr
+     *             | for `(' Enumerators `)' (do | yield) Expr
+     *             | [SimpleExpr `.'] Id `=' Expr
      *             | SimpleExpr ArgumentExprs `=' Expr
      *             | PostfixExpr [`:' Type1 | as Type1 | is Type1]
      *  Bindings ::= Id [`:' Type1]
@@ -757,7 +767,7 @@ public class Parser implements Tokens {
 	return reduceStack(true, base, top, 0, true);
     }
 
-    /** PrefixExpr   ::= [op] SimpleExpr
+    /** PrefixExpr   ::= [`-' | `+' | `~' | `!'] SimpleExpr
      */
     Tree prefixExpr() {
 	Tree t;
@@ -774,18 +784,14 @@ public class Parser implements Tokens {
 	return t;
     }
 
-    /* SimpleExpr    ::= SimpleExpr1
-     *                 | SimpleExpr ArgumentExprs
-     *                 | new Template
-     *                 | BlockExpr
-     *                 | `(' [Expr] `)'
-     *
-     * SimpleExpr1   ::= literal
-     *                 | null
+    /* SimpleExpr    ::= literal
      *                 | StableRef
-     *                 | super `.' Id
+     *                 | `(' [Expr] `)'
+     *                 | BlockExpr
+     *                 | new Template
      *                 | SimpleExpr `.' Id
      *                 | SimpleExpr TypeArgs
+     *                 | SimpleExpr ArgumentExprs
      */
     Tree simpleExpr() {
 	Tree t;
@@ -804,11 +810,8 @@ public class Parser implements Tokens {
 	    break;
 	case IDENTIFIER:
 	case THIS:
-	    t = stableRef(true, false);
-	    break;
 	case SUPER:
-	    int pos = s.skipToken();
-	    t = make.Select(accept(DOT), make.Super(pos, Tree.Empty), ident());
+	    t = stableRef(true, false);
 	    break;
 	case LPAREN:
 	    int pos = s.skipToken();
@@ -824,7 +827,8 @@ public class Parser implements Tokens {
 		    ts.append(exprs());
 		    accept(RPAREN);
 		    if (s.token == ARROW) {
-			t = make.Function(pos, convertToParams(ts.toArray()), Tree.Empty);
+			t = make.Function(
+			    pos, convertToParams(ts.toArray()), Tree.Empty);
 		    } else {
 			t = syntaxError(commapos, "`)' expected", false);
 		    }
@@ -903,21 +907,26 @@ public class Parser implements Tokens {
 	return res;
     }
 
-    /** BlockConstr ::= `{' Block `}'
+    /** ConstrExpr ::= Constr
+     *              |  `{' {BlockStat `;'} Constr `}'
      */
-    Tree blockConstr() {
-	int pos = accept(LBRACE);
-	Tree res = block(pos);
-	switch (res) {
-	case Block(Tree[] stats):
-	    if (stats.length > 0)
-		stats[stats.length - 1] = applyConstr(
-		    convertToConstr(stats[stats.length - 1]));
-	    else
-		syntaxError(res.pos, "class constructor expected", false);
+    Tree constrExpr() {
+	if (s.token == LBRACE) {
+	    int pos = s.skipToken();
+	    Tree res = block(pos);
+	    switch (res) {
+	    case Block(Tree[] stats):
+		if (stats.length > 0)
+		    stats[stats.length - 1] = applyConstr(
+			convertToConstr(stats[stats.length - 1]));
+		else
+		    syntaxError(res.pos, "class constructor expected", false);
+	    }
+	    accept(RBRACE);
+	    return res;
+	} else {
+	    return constr();
 	}
-	accept(RBRACE);
-	return res;
     }
 
     /** Block ::= BlockStatSeq
@@ -928,20 +937,17 @@ public class Parser implements Tokens {
 	else return make.Block(pos, stats);
     }
 
-    /** CaseClause ::= case Pattern [if `(' Expr `)'] `=>' Block
+    /** CaseClause ::= case Pattern [if PostfixExpr] `=>' Block
      */
     Tree caseClause() {
 	int pos = accept(CASE);
-	Tree pat = pattern_valid();
+	Tree pat = validPattern();
 	Tree guard = Tree.Empty;
 	if (s.token == IF) {
 	    s.nextToken();
-	    accept(LPAREN);
-	    guard = expr();
-	    accept(RPAREN);
+	    guard = postfixExpr();
 	}
-	accept(ARROW);
-	return make.CaseDef(pos, pat, guard, block(s.pos));
+	return make.CaseDef(pos, pat, guard, block(accept(ARROW)));
     }
 
     /** Enumerators ::= Generator {`;' Enumerator}
@@ -963,7 +969,7 @@ public class Parser implements Tokens {
      */
     Tree generator() {
 	int pos = accept(VAL);
-	Tree pat = pattern_valid();
+	Tree pat = validPattern();
 	accept(LARROW);
 	Tree rhs = expr();
 	if (!TreeInfo.isVarPattern(pat))
@@ -987,8 +993,7 @@ public class Parser implements Tokens {
 
     /**  Pattern ( see pattern() ) which is checked for validity
      */
-
-    Tree pattern_valid() {
+    Tree validPattern() {
 	int pos = s.pos;
 
 	Tree pat = pattern();
@@ -1096,10 +1101,9 @@ public class Parser implements Tokens {
     /** SimplePattern ::= varid [ '@' SimplePattern ]
      *                 | `_'
      *                 | literal
-     *                 | null
-     *                 | StableId {ArgumentPatterns}
+     *                 | StableId [ArgumentPatterns]
      *                 | `(' Patterns `)'
-     *                 | ((nothing))
+     *                 | ((nothing)) //???
      */
     Tree simplePattern() {
 	switch (s.token) {
@@ -1209,8 +1213,8 @@ public class Parser implements Tokens {
         }
     }
 
-    /** LocalClassModifiers ::= {LocalClassModifier}
-     *  LocalClassModifier  ::= final
+    /** LocalModifiers ::= {LocalModifier}
+     *  LocalModifier  ::= final
      *                   | private
      */
     int localClassModifiers() {
@@ -1341,22 +1345,22 @@ public class Parser implements Tokens {
 
 //////// DEFS ////////////////////////////////////////////////////////////////
 
-    /** Import  ::= import ImportRef {`,' ImportRef}
+    /** Import  ::= import ImportExpr {`,' ImportExpr}
      */
     Tree[] importClause() {
         accept(IMPORT);
         TreeList ts = new TreeList();
-	ts.append(importRef());
+	ts.append(importExpr());
 	while (s.token == COMMA) {
 	    s.nextToken();
-	    ts.append(importRef());
+	    ts.append(importExpr());
 	}
 	return ts.toArray();
     }
 
     /**  ImportRef ::= StableId `.' (Id | `_' | ImportSelectors)
      */
-    Tree importRef() {
+    Tree importExpr() {
 	Tree t;
 	int startpos = s.pos;
 	int pos;
@@ -1409,7 +1413,7 @@ public class Parser implements Tokens {
 	return (Name[])names.toArray(new Name[]{});
     }
 
-    /** ImportSelector ::= Id [`=>' [Id | `_']]
+    /** ImportSelector ::= Id [`=>' Id | `=>' `_']
      */
     boolean importSelector(LinkedList/*<Name>*/ names) {
 	if (s.token == USCORE) {
@@ -1439,11 +1443,11 @@ public class Parser implements Tokens {
      *           | def FunDef {`,' FunDef}
      *           | constr ConstrDef {`,' ConstrDef}
      *           | type TypeDef {`,' TypeDef}
-     *           | TopDef
-     *  Dcl    ::= val ValSig {`,' ValSig}
-     *           | var ValSig {`,' ValSig}
-     *           | def FunSig {`,' FunSig}
-     *           | constr ConstrSig {`,' ConstrSig}
+     *           | ClsDef
+     *  Dcl    ::= val ValDcl {`,' ValDcl}
+     *           | var ValDcl {`,' ValDcl}
+     *           | def FunDcl {`,' FunDcl}
+     *           | constr ConstrDcl {`,' ConstrDcl}
      *           | type TypeDcl {`,' TypeDcl}
      */
     Tree[] defOrDcl(int mods) {
@@ -1452,42 +1456,42 @@ public class Parser implements Tokens {
 	case VAL:
 	    do {
 		s.nextToken();
-		ts.append(patDefOrSig(mods));
+		ts.append(patDefOrDcl(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case VAR:
 	    do {
 		s.nextToken();
-		ts.append(varDefOrSig(mods));
+		ts.append(varDefOrDcl(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case DEF:
 	    do {
 		s.nextToken();
-		ts.append(funDefOrSig(mods));
+		ts.append(funDefOrDcl(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case CONSTR:
 	    do {
 		s.nextToken();
-		ts.append(constrDefOrSig(mods));
+		ts.append(constrDefOrDcl(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case TYPE:
 	    do {
 		s.nextToken();
-		ts.append(typeDefOrSig(mods));
+		ts.append(typeDefOrDcl(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	default:
-	    return topDef(mods);
+	    return clsDef(mods);
 	}
     }
 
-    /**  TopDef ::= ([case] class | trait) ClassDef {`,' ClassDef}
-     *            | [case] object ModuleDef {`,' ModuleDef}
+    /**  ClsDef ::= ([case] class | trait) ClassDef {`,' ClassDef}
+     *            | [case] object ObjectDef {`,' ObjectDef}
      */
-    Tree[] topDef(int mods) {
+    Tree[] clsDef(int mods) {
         TreeList ts = new TreeList();
 	switch (s.token) {
 	case CLASS:
@@ -1504,7 +1508,7 @@ public class Parser implements Tokens {
 	case CASEOBJECT:
 	    do {
 		s.nextToken();
-		ts.append(moduleDef(mods));
+		ts.append(objectDef(mods));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	default:
@@ -1513,9 +1517,9 @@ public class Parser implements Tokens {
     }
 
     /** PatDef ::= Pattern `=' Expr
-     *  ValSig ::= Id `:' Type
+     *  ValDcl ::= Id `:' Type
      */
-    Tree patDefOrSig(int mods) {
+    Tree patDefOrDcl(int mods) {
         int pos = s.pos;
         Tree pat = pattern();
 	Tree tp;
@@ -1541,9 +1545,9 @@ public class Parser implements Tokens {
 
     /** VarDef ::= Id [`:' Type] `=' Expr
      *           | Id `:' Type `=' `_'
-     *  VarSig ::= Id `:' Type
+     *  VarDcl ::= Id `:' Type
      */
-    Tree varDefOrSig(int mods) {
+    Tree varDefOrDcl(int mods) {
         int pos = s.pos;
         Name name = ident();
         Tree type = typedOpt();
@@ -1564,9 +1568,9 @@ public class Parser implements Tokens {
     }
 
     /** FunDef ::= Id [FunTypeParamClause] {ParamClauses} [`:' Type] `=' Expr
-     *  FunSig ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
+     *  FunDcl ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
      */
-    Tree funDefOrSig(int mods) {
+    Tree funDefOrDcl(int mods) {
         int pos = s.pos;
         Name name = ident();
         TypeDef[] tparams = typeParamClauseOpt(false);
@@ -1580,9 +1584,9 @@ public class Parser implements Tokens {
                                tparams, vparams, restype, Tree.Empty);
     }
 
-    /*  ConstrDef ::= Id [FunTypeParamClause] [ParamClause] [`:' Type] `=' (Constr | BlockConstr)
+    /*  ConstrDef ::= Id [FunTypeParamClause] [ParamClause] [`:' Type] `=' ConstrExpr
      */
-    Tree constrDefOrSig(int mods) {
+    Tree constrDefOrDcl(int mods) {
         int pos = s.pos;
         Name name = ident().toConstrName();
         TypeDef[] tparams = typeParamClauseOpt(false);
@@ -1590,8 +1594,8 @@ public class Parser implements Tokens {
         Tree restype = typedOpt();
 	if (s.token == EQUALS || restype == Tree.Empty) {
 	    accept(EQUALS);
-            return make.DefDef(pos, mods, name, tparams, vparams,
-                               restype, (s.token == LBRACE) ? blockConstr() : constr());
+            return make.DefDef(
+		pos, mods, name, tparams, vparams, restype, constrExpr());
         } else
             return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
                                tparams, vparams, restype, Tree.Empty);
@@ -1600,7 +1604,7 @@ public class Parser implements Tokens {
     /** TypeDef ::= Id `=' Type
      *  TypeDcl ::= Id TypeBounds
      */
-    Tree typeDefOrSig(int mods) {
+    Tree typeDefOrDcl(int mods) {
         int pos = s.pos;
         Name name = ident().toTypeName();
 	switch (s.token) {
@@ -1618,7 +1622,7 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** ClassDef ::= Id [TypeParamClause] [`:' SimpleType] ClassTemplate
+    /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
      */
     Tree classDef(int mods) {
 	int pos = s.pos;
@@ -1630,25 +1634,29 @@ public class Parser implements Tokens {
 			     simpleTypedOpt(), classTemplate());
     }
 
-    /** ModuleDef       ::= Id [`:' SimpleType] ClassTemplate
+    /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate
      */
-    Tree moduleDef(int mods) {
-        return make.ModuleDef(
+    Tree objectDef(int mods) {
+        return make.ObjectDef(
 	    s.pos, mods, ident(), simpleTypedOpt(), classTemplate());
     }
 
-    /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
+    /** ClassTemplate ::= `extends' Template
+     *                 |  TemplateBody
+     *                 |
      */
     Template classTemplate() {
         int pos = s.pos;
 	if (s.token == EXTENDS) {
 	    s.nextToken();
 	    return template();
+/*
 	} else if (s.token == WITH) {
 	    s.nextToken();
 	    TreeList parents = new TreeList();
 	    parents.append(scalaObjectConstr(pos));
 	    return template(parents);
+*/
 	} else if (s.token == LBRACE) {
 	    return (Template)make.Template(
 		pos, new Tree[]{scalaObjectConstr(pos)}, templateBody());
@@ -1724,7 +1732,7 @@ public class Parser implements Tokens {
     }
 
     /** TopStatSeq ::= [TopStat {`;' TopStat}]
-     *  TopStat ::= Modifiers TopDef
+     *  TopStat ::= Modifiers ClsDef
      *            | Packaging
      *            | Import
      *            |
@@ -1742,7 +1750,7 @@ public class Parser implements Tokens {
 		       s.token == OBJECT ||
 		       s.token == CASEOBJECT ||
 		       isModifier()) {
-		stats.append(topDef(modifiers()));
+		stats.append(clsDef(modifiers()));
 	    } else if (s.token != SEMI) {
 		syntaxError("illegal start of class or object definition", true);
 	    }
@@ -1756,7 +1764,6 @@ public class Parser implements Tokens {
      *                	   | Modifiers Def
      *	                   | Modifiers Dcl
      *	                   | Expr
-     * %                   | val this `:' Type
      *                     |
      */
     Tree[] templateStatSeq() {
@@ -1797,7 +1804,7 @@ public class Parser implements Tokens {
     /** BlockStatSeq ::= { BlockStat `;' } [Expr]
      *  BlockStat    ::= Import
      *                 | Def
-     *                 | LocalClassModifiers TopDef
+     *                 | LocalModifiers ClsDef
      *	               | Expr
      *                 |
      */
@@ -1815,8 +1822,8 @@ public class Parser implements Tokens {
 		if (s.token == RBRACE) {
 		    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
 		}
-	    } else if (isLocalClassModifier()) {
-		stats.append(topDef(localClassModifiers()));
+	    } else if (isLocalModifier()) {
+		stats.append(clsDef(localClassModifiers()));
 		accept(SEMI);
 		if (s.token == RBRACE) {
 		    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));

@@ -117,7 +117,7 @@ public class Scanner extends TokenData {
 	    case COMMA:  case SEMI:     case DOT:
 	    case COLON:  case EQUALS:   case ARROW:
             case LARROW: case SUBTYPE:  case SUPERTYPE:
-            case HASH:   case AS:       case IS:
+            case HASH:   case AT:       case AS:    case IS:
 	    case RPAREN: case RBRACKET: case RBRACE:
 		break;
 	    default:
@@ -791,33 +791,37 @@ public class Scanner extends TokenData {
     }
 
     protected void initKeywords() {
-        enterKeyword("if", IF);
-        enterKeyword("for", FOR);
-        enterKeyword("else", ELSE);
-        enterKeyword("this", THIS);
-        enterKeyword("null", NULL);
-        enterKeyword("new", NEW);
-        enterKeyword("with", WITH);
-        enterKeyword("super", SUPER);
-        enterKeyword("case", CASE);
-        enterKeyword("val", VAL);
         enterKeyword("abstract", ABSTRACT);
+	enterKeyword("as", AS);
+        enterKeyword("case", CASE);
+        enterKeyword("class", CLASS);
+        enterKeyword("constr", CONSTR);
+        enterKeyword("def", DEF);
+        enterKeyword("do", DO);
+        enterKeyword("else", ELSE);
+        enterKeyword("extends", EXTENDS);
         enterKeyword("final", FINAL);
+	enterKeyword("false", FALSE);
+        enterKeyword("for", FOR);
+        enterKeyword("if", IF);
+	enterKeyword("is", IS);
+        enterKeyword("import", IMPORT);
+        enterKeyword("new", NEW);
+        enterKeyword("null", NULL);
+        enterKeyword("object", OBJECT);
+        enterKeyword("override", OVERRIDE);
+        enterKeyword("package", PACKAGE);
         enterKeyword("private", PRIVATE);
         enterKeyword("protected", PROTECTED);
-        enterKeyword("override", OVERRIDE);
-        enterKeyword("var", VAR);
-        enterKeyword("def", DEF);
-        enterKeyword("type", TYPE);
-        enterKeyword("extends", EXTENDS);
-        enterKeyword("object", OBJECT);
-        enterKeyword("module", OBJECT1);
-        enterKeyword("class",CLASS);
-        enterKeyword("constr",CONSTR);
-        enterKeyword("import", IMPORT);
-        enterKeyword("package", PACKAGE);
+        enterKeyword("super", SUPER);
+        enterKeyword("this", THIS);
+        enterKeyword("trait", TRAIT);
 	enterKeyword("true", TRUE);
-	enterKeyword("false", FALSE);
+        enterKeyword("type", TYPE);
+        enterKeyword("val", VAL);
+        enterKeyword("var", VAR);
+        enterKeyword("with", WITH);
+        enterKeyword("yield", YIELD);
         enterKeyword(".", DOT);
         enterKeyword("_", USCORE);
         enterKeyword(":", COLON);
@@ -826,12 +830,7 @@ public class Scanner extends TokenData {
         enterKeyword("<-", LARROW);
         enterKeyword("<:", SUBTYPE);
         enterKeyword(">:", SUPERTYPE);
-        enterKeyword("yield", YIELD);
-        enterKeyword("do", DO);
         enterKeyword("#", HASH);
-        enterKeyword("trait", TRAIT);
-	enterKeyword("as", AS);
-	enterKeyword("is", IS);
 	enterKeyword("@", AT);
     }
 }

@@ -216,19 +216,23 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *  2. Check that later type instances in the base-type sequence
      *     of a class are subtypes of earlier type instances of the same trait.
      *  3. Check that case classes do not inherit from case classes.
+     *  4. Check that at most one base type is a case-class.
      */
     void validateBaseTypes(Symbol clazz) {
 	validateBaseTypes(clazz, clazz.type().parents(),
-			  new Type[clazz.closure().length], 0);
+			  new Type[clazz.closure().length], clazz, 0);
     }
     //where
-        void validateBaseTypes(Symbol clazz, Type[] tps, Type[] seen, int start) {
+        void validateBaseTypes(Symbol clazz, Type[] tps, Type[] seen,
+			       Symbol caseSeen, int start) {
 	    for (int i = tps.length - 1; i >= start; i--) {
-		validateBaseTypes(clazz, tps[i].unalias(), seen, i == 0 ? 0 : 1);
+		validateBaseTypes(
+		    clazz, tps[i].unalias(), seen, caseSeen, i == 0 ? 0 : 1);
 	    }
 	}
 
-	void validateBaseTypes(Symbol clazz, Type tp, Type[] seen, int start) {
+	void validateBaseTypes(Symbol clazz, Type tp, Type[] seen,
+			       Symbol caseSeen, int start) {
 	    Symbol baseclazz = tp.symbol();
 	    if (baseclazz.kind == CLASS) {
 		int index = clazz.closurePos(baseclazz);
@@ -250,12 +254,16 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 		// check that case classes do not inherit from case classes
-		if (clazz.isCaseClass() && baseclazz.isCaseClass())
-		    unit.error(clazz.pos, "illegal inheritance;\n " + "case " + clazz +
-			  " inherits from other case " + baseclazz);
+		if (baseclazz.isCaseClass())
+		    if (caseSeen.isCaseClass())
+			unit.error(
+			    clazz.pos, "illegal combination of case " +
+			    caseSeen + "and case " + baseClazz + " in one object");
+		    else
+			caseSeen = baseclazz;
 
 		seen[index] = tp;
-		validateBaseTypes(clazz, tp.parents(), seen, start);
+		validateBaseTypes(clazz, tp.parents(), seen, caseSeen, start);
 	    }
 	}
 
@@ -796,9 +804,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    if (sym.isLocal() && !sym.isModule() && index <= maxindex[level]) {
 		if (Global.instance.debug)
 		    System.out.println(refsym[level] + ":" + refsym[level].type());
+		String kind == ((sym.flags & MUTABLE) != 0) ? "variable" : "value";
 		unit.error(
 		    refpos[level],
-		    "forward reference extends over definition of value " +
+		    "forward reference extends over definition of " + kind + " " +
 		    normalize(name));
 	    }
 	    return tree1;

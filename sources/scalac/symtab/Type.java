@@ -5,7 +5,8 @@
 **
 ** $Id$
 \*                                                                      */
-//todo: implement rule single
+//todo: T {} == T
+
 
 package scalac.symtab;
 
@@ -1267,7 +1268,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
        	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		if (sym == sym1 && pre.isSameAs(pre1) &&
+		if (sym.name == sym1.name && pre.isSubType(pre1) &&
 		    isSubArgs(args, args1, sym.typeParams())
 		    ||
 		    sym.kind == TYPE && pre.memberInfo(sym).isSubType(that))

@@ -1,0 +1,6 @@
+seqtest.scala:11: ambiguous reference to overloaded definition,
+both method L: [a](scala.Seq[a])scala.Seq[a]
+and  method L: [a](a*)scala.Seq[a] match.
+  val c = L(a);
+           ^
+one error found

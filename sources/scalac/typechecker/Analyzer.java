@@ -13,6 +13,8 @@
 //       type members.
 // todo: use mangled name or drop.
 // todo: emit warnings for unchecked.
+// todo: qualified super.
+// todo: pattern definitions with 0 or 1 bound variable.
 
 package scalac.typechecker;
 

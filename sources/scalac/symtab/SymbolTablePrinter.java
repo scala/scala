@@ -250,7 +250,7 @@ public class SymbolTablePrinter {
         case Kinds.NONE:
             return null;
         case Kinds.CLASS:
-            if (symbol.isTrait()) return "trait";
+	    if (symbol.isTrait()) return "trait";
 	    if (symbol.isModuleClass() && global.debug) return "object class";
             return "class";
 	case Kinds.TYPE:
@@ -261,7 +261,8 @@ public class SymbolTablePrinter {
 	    if (symbol.isModule()) return "object";
 	    if (symbol.isConstructor()) return "constructor";
 	    if (symbol.isInitializedMethod())
-                if (global.debug || !symbol.isStable()) return "method";
+                if (global.debug || (symbol.flags & Modifiers.STABLE) == 0)
+		    return "method";
 	    return "value";
 	default:
             throw Debug.abort("unknown kind " + symbol.kind);

@@ -61,8 +61,6 @@ public interface Tokens {
         DO = 51,
         TRAIT = 52,
 
-        OBJECT1 = 53, // todo: elim
-
         /* special symbols */
         COMMA = 61,
         SEMI = 62,
