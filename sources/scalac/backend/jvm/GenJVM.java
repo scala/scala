@@ -675,7 +675,7 @@ class GenJVM {
         throws JCode.OffsetTooBigException {
         switch (tree) {
         case Apply(Tree fun, Tree[] args):
-            if (isKnownPrimitive(fun.symbol())) {
+            if (isJumpingPrimitive(fun.symbol())) {
                 Primitive prim = prims.getPrimitive(fun.symbol());
                 Tree[] allArgs = extractPrimitiveArgs((Tree.Apply)tree);
 
@@ -1156,17 +1156,35 @@ class GenJVM {
 
     /**
      * Return true iff the given symbol is a primitive, AND that
+     * primitive is recognized by this back-end, AND that primitive is
+     * a "jumping" one.
+     */
+    protected boolean isJumpingPrimitive(Symbol sym) {
+        if (prims.isPrimitive(sym)) {
+            switch (prims.getPrimitive(sym)) {
+            case ID   : case EQ  : case NE   :
+            case LT   : case LE  : case GE   : case GT :
+            case ZNOT : case ZOR : case ZAND :
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Return true iff the given symbol is a primitive, AND that
      * primitive is recognized by this back-end.
      */
     protected boolean isKnownPrimitive(Symbol sym) {
+        if (isJumpingPrimitive(sym))
+            return true;
+
         if (prims.isPrimitive(sym)) {
             switch (prims.getPrimitive(sym)) {
             case POS : case NEG :
             case ADD : case SUB : case MUL : case DIV : case MOD :
             case NOT : case OR : case XOR : case AND :
             case LSL : case LSR : case ASR :
-            case EQ : case NE : case LT : case LE : case GE : case GT :
-            case ZNOT : case ZOR : case ZAND :
             case NEW_ZARRAY : case NEW_BARRAY : case NEW_SARRAY :
             case NEW_CARRAY : case NEW_IARRAY : case NEW_LARRAY :
             case NEW_FARRAY : case NEW_DARRAY : case NEW_OARRAY :
