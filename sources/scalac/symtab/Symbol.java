@@ -322,7 +322,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol locally defined? I.e. not a member of a class or module */
     public final boolean isLocal() {
-	return owner.kind == VAL && !owner.isPrimaryConstructor();
+	return owner.kind == VAL &&
+	    !((flags & PARAM) != 0 && owner.isPrimaryConstructor());
     }
 
     /** Is this symbol a parameter? Includes type parameters of methods.
