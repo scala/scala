@@ -57,7 +57,7 @@ public class CLRPackageParser extends SymbolLoader {
     }
 
     public static CLRPackageParser instance;
-    public static CLRPackageParser create(Global global) {
+    public static CLRPackageParser instance(Global global) {
 	if (instance != null)
 	    return instance;
 	instance = new CLRPackageParser(global);
@@ -225,19 +225,18 @@ public class CLRPackageParser extends SymbolLoader {
     // main functionality
 
     protected String doComplete(Symbol p) {
-	// for future use
-        return "!!!";
+        return "!!! CLRPackageParser";
     }
 
     /**
      */
-    public void importCLRTypes(Symbol p, Scope members, PackageParser pp) {
+    public void importCLRTypes(Symbol p, Scope members) {
 	if (p.isRoot()) {
 	    for (int i = 0; i < types.length; i++) {
 		int j = types[i].FullName.indexOf('.');
 		if (j < 0) continue;
 		String namespace = types[i].FullName.substring(0, j);
-		importCLRNamespace(namespace, p, members, pp);
+		importCLRNamespace(namespace, p, members);
 	    }
 	    return;
 	}
@@ -262,7 +261,7 @@ public class CLRPackageParser extends SymbolLoader {
                 Symbol clazz = p.newLoadedClass(JAVA, n.toTypeName(), completer, members);
 		map(clazz, types[i]);
 	    } else {
-		importCLRNamespace(name, p, members, pp);
+		importCLRNamespace(name, p, members);
 	    }
 	}
     }
@@ -270,12 +269,12 @@ public class CLRPackageParser extends SymbolLoader {
     /** Imports a CLR namespace as a scala package.
      */
     protected void importCLRNamespace(String namespace, Symbol p,
-				   Scope members, PackageParser pp)
+				   Scope members)
     {
 	Name n = Name.fromString(namespace);
 	if (members.lookup(n) == Symbol.NONE) {
 	    //System.out.println("importing namespace " + namespace);
-	    p.newLoadedPackage(n, pp, members);
+	    p.newLoadedPackage(n, this, members);
 	}
     }
 

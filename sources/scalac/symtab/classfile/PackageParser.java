@@ -34,17 +34,12 @@ public class PackageParser extends SymbolLoader {
     //########################################################################
     // Private Fields
 
-    /** The CLR package parser */
-    private final CLRPackageParser importer;
-
     //########################################################################
     // Public Constructors
 
     /** Initializes this instance. */
     public PackageParser(Global global) {
         super(global);
-	this.importer = (global.target == global.TARGET_MSIL)
-	    ? CLRPackageParser.create(global) : null;
     }
 
     //########################################################################
@@ -126,7 +121,8 @@ public class PackageParser extends SymbolLoader {
         }
 
         // collect and create CLR members
-        if (importer != null) importer.importCLRTypes(peckage, members, this);
+	if (global.target == global.TARGET_MSIL)
+            CLRPackageParser.instance(global).importCLRTypes(peckage, members);
 
         // initialize package
         peckage.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, peckage));
