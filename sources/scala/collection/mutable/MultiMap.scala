@@ -21,20 +21,18 @@ trait MultiMap[A, B] extends scala.collection.mutable.Map[A, scala.collection.mu
 
     def add(key: A, value: B): Unit = get(key) match {
         case None => val set = makeSet;
-                     set.add(value);
-                     update(key, set);
-        case Some(set) => set.add(value);
+                     set += value;
+                     this(key) = set;
+        case Some(set) => set += value;
     }
 
-    override def remove(key: A) = super.remove(key);
-
-    override def remove(key: A, value: B) = get(key) match {
+    def remove(key: A, value: B) = get(key) match {
         case None =>
-        case Some(set) => set.remove(value);
+        case Some(set) => set -= value;
     }
 
     def exists(key: A, p: B => Boolean): Boolean = get(key) match {
         case None => false
-        case Some(set) => set.exists(p);
+        case Some(set) => set exists p;
     }
 }

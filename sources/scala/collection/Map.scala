@@ -46,13 +46,13 @@ trait Map[A, +B] with PartialFunction[A, B]
     def isDefinedAt(key: A) = contains(key);
 
     def keys: Iterator[A] = new Iterator[A] {
-        val iter = elements;
+        val iter = Map.this.elements;
         def hasNext = iter.hasNext;
         def next = iter.next._1;
     }
 
     def values: Iterator[B] = new Iterator[B] {
-        val iter = elements;
+        val iter = Map.this.elements;
         def hasNext = iter.hasNext;
         def next = iter.next._2;
     }

@@ -21,18 +21,14 @@ abstract class ObservableSet[A, This <: ObservableSet[A, This]]: This
                     extends scala.collection.mutable.Set[A]
                     with Publisher[ObservableUpdate[A] with Undo, This] {
 
-    override def add(elem: A): Unit = if (!contains(elem)) {
-   		super.add(elem);
-   		publish(new Inclusion(elem) with Undo {
-   		            def undo = remove(elem);
-   		        });
+    override def +=(elem: A): Unit = if (!contains(elem)) {
+   		super.+=(elem);
+   		publish(new Inclusion(elem) with Undo { def undo = -=(elem); });
    	}
 
-	override def remove(elem: A): Unit = if (contains(elem)) {
-		super.remove(elem);
-		publish(new Removal(elem) with Undo {
-   		            def undo = add(elem);
-   		        });
+	override def -=(elem: A): Unit = if (contains(elem)) {
+		super.-=(elem);
+		publish(new Removal(elem) with Undo { def undo = +=(elem); });
 	}
 
     override def clear: Unit = {

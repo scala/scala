@@ -62,20 +62,28 @@ trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] with Moni
         super.update(key, value);
     }
 
-    override def remove(key: A): Unit = synchronized {
-        super.remove(key);
+    override def -=(key: A): Unit = synchronized {
+        super.-=(key);
+    }
+
+    override def incl(mappings: Pair[A, B]*): Unit = synchronized {
+        super.incl(mappings);
+    }
+
+    override def incl(map: Iterable[Pair[A, B]]): Unit = synchronized {
+        super.incl(map);
+    }
+
+    override def excl(keys: A*): Unit = synchronized {
+    	super.excl(keys);
+    }
+
+    override def excl(keys: Iterable[A]): Unit = synchronized {
+    	super.excl(keys);
     }
 
     override def clear: Unit = synchronized {
         super.clear;
-    }
-
-    override def put(mappings: Pair[A, B]*) = synchronized {
-        super.putMap(mappings);
-    }
-
-    override def putMap(map: Iterable[Pair[A, B]]): Unit = synchronized {
-        super.putMap(map);
     }
 
     override def map(f: (A, B) => B): Unit = synchronized {

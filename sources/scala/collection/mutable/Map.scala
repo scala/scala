@@ -22,30 +22,31 @@ trait Map[A, B] with scala.collection.Map[A, B] {
 
     def update(key: A, value: B): Unit;
 
-    def remove(key: A): Unit;
+    def -=(key: A): Unit;
 
-    def clear: Unit = {
-    	val iter = keys;
-    	while (iter.hasNext) {
-            remove(iter.next);
-        }
-    }
+    def +=(key: A): MapTo = new MapTo(key);
 
-    def put(mappings: Pair[A, B]*): Unit = {
+    def incl(mappings: Pair[A, B]*): Unit = {
         val ys = mappings as List[Pair[A, B]];
         ys foreach { case Pair(key, value) => update(key, value); };
     }
 
-    def putMap(map: Iterable[Pair[A, B]]): Unit = map.elements foreach {
+    def incl(map: Iterable[Pair[A, B]]): Unit = map.elements foreach {
         case Pair(key, value) => update(key, value);
     }
+
+    def excl(keys: A*): Unit = excl(keys);
+
+    def excl(keys: Iterable[A]): Unit = keys.elements foreach -=;
+
+    def clear: Unit = keys foreach -=;
 
     def map(f: (A, B) => B): Unit = elements foreach {
         case Pair(key, value) => update(key, f(key, value));
     }
 
     def filter(p: (A, B) => Boolean): Unit = toList foreach {
-        case Pair(key, value) => if (p(key, value)) remove(key);
+        case Pair(key, value) => if (p(key, value)) -=(key);
     }
 
     override def toString() =
@@ -62,4 +63,8 @@ trait Map[A, B] with scala.collection.Map[A, B] {
             } + "}";
 
     def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
+
+    class MapTo(key: A) {
+        def ->(value: B): Unit = update(key, value);
+    }
 }

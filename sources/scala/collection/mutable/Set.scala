@@ -20,28 +20,28 @@ package scala.collection.mutable;
  */
 trait Set[A] with scala.collection.Set[A] {
 
-    def add(elem: A): Unit;
+    def +=(elem: A): Unit;
 
-    def addAll(elems: A*): Unit = {
+    def incl(elems: A*): Unit = {
         val ys = elems as List[A];
-        ys foreach { y => add(y); };
+        ys foreach { y => +=(y); };
     }
 
-    def addSet(that: Iterable[A]): Unit =
-        that.elements.foreach(elem => add(elem));
+    def incl(that: Iterable[A]): Unit =
+        that.elements.foreach(elem => +=(elem));
 
-    def remove(elem: A): Unit;
+    def -=(elem: A): Unit;
 
-    def removeAll(elems: A*): Unit = removeSet(elems);
+    def excl(elems: A*): Unit = excl(elems);
 
-    def removeSet(that: Iterable[A]): Unit =
-        that.elements.foreach(elem => remove(elem));
+    def excl(that: Iterable[A]): Unit =
+        that.elements.foreach(elem => -=(elem));
 
     def intersect(that: Set[A]): Unit = filter(that.contains);
 
     def clear: Unit;
 
     def filter(p: A => Boolean): Unit = toList foreach {
-        elem => if (p(elem)) remove(elem);
+        elem => if (p(elem)) -=(elem);
     }
 }

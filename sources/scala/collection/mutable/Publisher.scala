@@ -31,11 +31,11 @@ class Publisher[A, This <: Publisher[A, This]]: This {
     def subscribe(sub: Subscriber[A, This], filter: A => Boolean): Unit =
         filters.add(sub, filter);
 
-    def suspendSubscription(sub: Subscriber[A, This]): Unit = suspended.add(sub);
+    def suspendSubscription(sub: Subscriber[A, This]): Unit = suspended += sub;
 
-    def activateSubscription(sub: Subscriber[A, This]): Unit = suspended.remove(sub);
+    def activateSubscription(sub: Subscriber[A, This]): Unit = suspended -= sub;
 
-    def removeSubscription(sub: Subscriber[A, This]): Unit = filters.remove(sub);
+    def removeSubscription(sub: Subscriber[A, This]): Unit = filters -= sub;
 
     def removeSubscriptions: Unit = filters.clear;
 

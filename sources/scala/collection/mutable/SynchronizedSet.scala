@@ -30,28 +30,28 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
         super.contains(elem);
     }
 
-    override def add(elem: A): Unit = synchronized {
-        super.add(elem);
+    override def +=(elem: A): Unit = synchronized {
+        super.+=(elem);
     }
 
-    override def addAll(elems: A*): Unit = synchronized {
-        super.addSet(elems);
+    override def incl(elems: A*): Unit = synchronized {
+        super.incl(elems);
     }
 
-    override def addSet(that: Iterable[A]) = synchronized {
-        super.addSet(that);
+    override def incl(that: Iterable[A]) = synchronized {
+        super.incl(that);
     }
 
-    override def remove(elem: A): Unit = synchronized {
-        super.remove(elem);
+    override def -=(elem: A): Unit = synchronized {
+        super.-=(elem);
     }
 
-    override def removeAll(elems: A*): Unit = synchronized {
-        super.removeSet(elems);
+    override def excl(elems: A*): Unit = synchronized {
+        super.excl(elems);
     }
 
-    override def removeSet(that: Iterable[A]) = synchronized {
-        super.removeSet(that);
+    override def excl(that: Iterable[A]) = synchronized {
+        super.excl(that);
     }
 
     override def intersect(that: Set[A]) = synchronized {

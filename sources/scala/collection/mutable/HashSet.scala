@@ -22,10 +22,12 @@ class HashSet[A] extends scala.collection.mutable.Set[A] with HashTable[A] {
         case Some(_) => true
     }
 
-    def add(elem: A): Unit = findEntry(elem) match {
+    def +=(elem: A): Unit = findEntry(elem) match {
         case None => addEntry(elem);
         case Some(_) =>
     }
+
+    def -=(elem: A): Unit = removeEntry(elem);
 
     def elements = entries;
 

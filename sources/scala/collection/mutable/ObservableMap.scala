@@ -25,7 +25,7 @@ abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
     override def update(key: A, value: B): Unit = get(key) match {
         case None => super.update(key, value);
                      publish(new Inclusion(Pair(key, value)) with Undo {
-                                 def undo = remove(key);
+                                 def undo = -=(key);
                              });
         case Some(old) => super.update(key, value);
                           publish(new Modification(Pair(key, old), Pair(key, value)) with Undo {
@@ -33,9 +33,9 @@ abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
                                   });
     }
 
-    override def remove(key: A): Unit = get(key) match {
+    override def -=(key: A): Unit = get(key) match {
         case None =>
-        case Some(old) => super.remove(key);
+        case Some(old) => super.-=(key);
                           publish(new Removal(Pair(key, old)) with Undo {
                                       def undo = update(key, old);
                                   });
