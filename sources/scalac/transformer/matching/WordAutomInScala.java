@@ -71,7 +71,7 @@ public class WordAutomInScala extends Autom2Scala  {
             else if( target.intValue() == dfa.nstates - 1 ) // that one is a dead state
                   return code_fail();
 
-            return callFun( new Tree[] {cf._next( _iter()), gen.mkIntLit(Position.NOPOS, target.intValue() )} );
+            return callFun( new Tree[] { _iter(), gen.mkIntLit(Position.NOPOS, target.intValue() )} );
       }
 
       public WordAutomInScala( DetWordAutom dfa,

@@ -152,9 +152,11 @@ public class Autom2Scala  {
       Symbol curSym;
 
       Tree loadCurrentElem() {
-            return cf.gen.ValDef( 0,
-                                  this.curSym,
-                                  cf._cur( _iter() ));
+            return cf.Block( Position.NOPOS, new Tree[] {
+		cf.gen.ValDef( 0,
+			       this.curSym,
+			       cf._cur( _iter() )),
+		cf._next( _iter() ) }, Type.NoType );
       }
 
       Tree currentElem() {
