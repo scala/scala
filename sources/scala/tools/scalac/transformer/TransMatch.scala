@@ -17,6 +17,7 @@ import Tree._;
 
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
 
+import scalac.transformer.matching.PartialMatcher ;
 import scalac.transformer.matching.PatternMatcher ;
 import scalac.transformer.matching.TestRegTraverser ;
 import scalac.transformer.matching.AlgebraicMatcher ;
@@ -32,45 +33,6 @@ package scalac.tools.transformer {
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
 
-  /** container. classes AlgebraicMatcher and SequenceMatcher get input and store their results in here.
-  *  resembles the 'Memento' design pattern, could also be named 'Liaison'
-  */
-  class Matcher( theOwner:Symbol, theRoot:Tree, theResultType:Type )
-    extends scalac_transformer_TransMatch_Matcher( theOwner:Symbol, theRoot:Tree, theResultType:Type ) ;
-    /*{
-
-    // owner of the code we create (input)
-
-    var owner: Symbol =  {
-      if( theOwner == Symbol.NONE ) error("owner none");
-      owner
-    };
-
-    // the selector value (input)
-
-    var selector: Tree =  {
-      if(( theRoot == null )&&( theRoot.getType() == null )) error("root[.type] null");
-      theRoot
-    };
-
-    // type of the result of the whole match (input)
-
-    var resultType: Type = {
-      if( theResultType == Type.NoType ) error("result type?");
-      theResultType
-    };
-
-    // tree representing the matcher (output)
-
-    var tree: Tree ;
-
-    var pos: int = theRoot.pos;
-
-    var varMap:java.util.HashMap ;    // needed in LeftTracerInScala
-    var stms:Array[Tree] ;      // needed in LeftTracerInScala
-
-  }
-    */
   var cunit:Unit = null;
 
   override def apply( cunit:Unit ):unit = {
@@ -100,7 +62,7 @@ class TransMatch( global:scalac_Global )
     }
     if( containsReg ) {
       val am = new AlgebraicMatcher( cunit );
-      val matcher = new Matcher( currentOwner, root, restpe );
+      val matcher = new PartialMatcher( currentOwner, root, restpe );
       am.construct( matcher, cases.asInstanceOf[ Array[Tree] ] );
       matcher.tree
     } else {
