@@ -1154,6 +1154,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	}
     }
 
+
+    Tree makeStableId(int pos, Type tp) {
+	if (tp.symbol().isCompoundSym())
+	    return make.This(pos, Tree.Empty).setType(tp);
+	else
+	    return gen.mkStableId(pos, tp);
+    }
+
     /** Re-enter type parameters in current scope.
      */
     void reenterParams(Tree[] params) {
@@ -1205,7 +1213,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    } else {
 		nextcontext = nextcontext.enclClass;
 		if (nextcontext != Context.NONE) {
-		    sym = nextcontext.owner.info().lookup(name);
+		    sym = nextcontext.owner.thisSym().info().lookup(name);
 		    if (sym.kind != NONE) {
 			stopPos = nextcontext.owner.pos;
 		    } else {
@@ -1238,13 +1246,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	// evaluate what was found
 	if (sym1.kind == NONE) {
 	    if (sym.kind == NONE) {
+		System.out.println(name);//debug
 		return error(tree.pos, "not found: " + decode(name));
 	    } else {
 		sym.flags |= ACCESSED;
 		if (sym.owner().kind == CLASS) {
 		    pre = nextcontext.enclClass.owner.thisType();
 		    if (!sym.owner().isPackage()) {
-			Tree qual = gen.mkStableId(tree.pos, pre);
+			Tree qual = makeStableId(tree.pos, pre);
 			tree = make.Select(tree.pos, qual, name);
 			//System.out.println(name + " :::> " + tree + " " + qual.symbol());//DEBUG
 		    }
@@ -1835,6 +1844,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** The main attribution function
      */
     public Tree transform(Tree tree) {
+	//new TextTreePrinter().print("transforming ").print(tree).println().end();//DEBUG
 	Symbol sym = tree.symbol();
 	if (sym != null && !sym.isInitialized()) sym.initialize();
 	if (global.debug && TreeInfo.isDefinition(tree)) global.log("transforming " + sym);
@@ -2163,7 +2173,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (qual == Tree.Empty) {
 		    clazz = context.enclClass.owner;
 		    if (clazz != null) {
-			tree1 = gen.mkStableId(tree.pos, clazz.thisType());
+			tree1 = makeStableId(tree.pos, clazz.thisType());
 		    } else {
 			return error(
 			    tree.pos, tree +

@@ -645,6 +645,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return type();
     }
 
+    /** Get this symbol of current class
+     */
+    public Symbol thisSym() { return this; }
+
+
     /** A total ordering between symbols that refines the class
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
      */
@@ -1085,23 +1090,29 @@ public class TypeSymbol extends Symbol {
 	assert closures.closure != BAD_CLOSURE : this;
 	closures.closure = BAD_CLOSURE; // to catch cycles.
 	// todo: why can't we do: inclClosure(SymSet.EMPTY, this) ?
-	SymSet closureClassSet = inclClosureBases(SymSet.EMPTY, this);
+	SymSet closureClassSet = inclClosure(SymSet.EMPTY, type().parents());
 	Symbol[] closureClasses = new Symbol[closureClassSet.size() + 1];
 	closureClasses[0] = this;
 	closureClassSet.copyToArray(closureClasses, 1);
 	//System.out.println(ArrayApply.toString(closureClasses));//DEBUG
 	closures.closure = Symbol.type(closureClasses);
-	//System.out.println(ArrayApply.toString(closures.closure));//DEBUG
+	//System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
 	adjustType(type());
 	//System.out.println("closure(" + this + ") at " + Global.instance.currentPhase.name() + " = " + ArrayApply.toString(closures.closure));//DEBUG
 
     }
     //where
 
- 	private SymSet inclClosureBases(SymSet set, Symbol c) {
-	    Type[] parents = c.type().parents();
-	    for (int i = 0; i < parents.length; i++) {
-		set = inclClosure(set, parents[i].symbol());
+ 	private SymSet inclClosure(SymSet set, Type[] tps) {
+	    for (int i = 0; i < tps.length; i++) {
+		Type tp = tps[i].unalias();
+		switch (tp) {
+		case CompoundType(Type[] parents, _):
+		    set = inclClosure(set, parents);
+		    break;
+		default:
+		    set = inclClosure(set, tp.symbol());
+		}
 	    }
 	    return set;
 	}
@@ -1109,14 +1120,19 @@ public class TypeSymbol extends Symbol {
  	private SymSet inclClosure(SymSet set, Symbol c) {
 	    Symbol c1 = c;
 	    while (c1.kind == ALIAS) c1 = c1.info().symbol();
-	    return inclClosureBases(set.incl(c1), c1);
+	    return inclClosure(set.incl(c1), c1.type().parents());
 	}
 
 	void adjustType(Type tp) {
 	    Type tp1 = tp.unalias();
-	    int pos = closurePos(tp1.symbol());
-	    assert pos >= 0 : this + " " + tp1 + " " + tp1.symbol();
-	    closures.closure[pos] = tp1;
+	    switch (tp) {
+	    case CompoundType(Type[] parents, _):
+		break;
+	    default:
+		int pos = closurePos(tp1.symbol());
+		assert pos >= 0 : this + " " + tp1 + " " + tp1.symbol();
+		closures.closure[pos] = tp1;
+	    }
 	    Type[] parents = tp1.parents();
 	    for (int i = 0; i < parents.length; i++) {
 		adjustType(parents[i]);
@@ -1183,6 +1199,8 @@ public class ClassSymbol extends TypeSymbol {
     /** The given type of self, or NoType, if no explicit type was given.
      */
     private Symbol thisSym = this;
+
+    public Symbol thisSym() { return thisSym; }
 
     /** A cache for this.thisType()
      */
