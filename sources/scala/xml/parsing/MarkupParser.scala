@@ -140,7 +140,7 @@ abstract class MarkupParser[MarkupType] {
       val uri = handle.namespace(pref);
       val qkey = Pair(uri, key);
       // well-formedness constraint: unique attribute names
-      if (aMap.contains(qkey))
+      if (aMap1.contains(qkey))
         reportSyntaxError( "attribute " + key + " may only be defined once" );
       aMap1.update(qkey,  handle.attribute(pos, uri, key, value));
     }
