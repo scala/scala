@@ -62,6 +62,7 @@ public class SequenceMatcher extends PatternTool {
         DetWordAutom dRight = new DetWordAutom( right, left, dLeft );
 
         Set seqVars = NondetWordAutom.collectVariables( left );
+        //System.out.println("seqVars here are:"+seqVars);
         final RightTracerInScala rtis =
             new RightTracerInScala( dRight, seqVars, _m.owner,
                                     cf, pat, elementType );

@@ -56,6 +56,7 @@ public class BindingBerrySethi extends BerrySethi {
             switch( pat ) {
             case Apply(_, _):
             case Literal( _ ):
+            case Typed(_,_):
                   this.varAt.put( i, activeBinders.clone() ); // below @ ?
                   break;
             case Ident( Name name ):
@@ -68,7 +69,9 @@ public class BindingBerrySethi extends BerrySethi {
                   }
                   */
                   this.varAt.put( i, binders );
-
+                  break;
+            default:
+                throw new ApplicationError("unexpected atom:"+pat.getClass());
             }
       }
 

@@ -73,6 +73,7 @@ public class RightTracerInScala extends TracerInScala  {
                 makeHelpVar( varSym, true );
             }
         }
+
         //System.out.println("allVars: "+allVars);
         //System.out.println("seqVars: "+seqVars);
         //System.out.println("helpVarDefs now: "+helpVarDefs);
@@ -362,9 +363,10 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
             Tree refv   = gen.Ident(cf.pos, vsym);
             Tree refhv  = gen.Ident(cf.pos, hv);
             res[ j++ ] = gen.Assign( refhv, refv );
+            // System.out.println( "the assign" + res[ j - 1 ] );
         }
 
-        res[ j ] = gen.mkBooleanLit( Position.FIRSTPOS, true ); // just `true'
+        res[ j ] = gen.mkBooleanLit( cf.pos, true ); // just `true'
         Tree theBody =  gen.mkBlock(res);
 
         am.construct( m, new CaseDef[] {
@@ -409,10 +411,10 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
 
         Vector vars = dfa.qbinders[ i ];
 
+        //System.out.println("dfa.qbinders[ i ]"+vars);
+
         if( vars == null ) vars = new Vector(); // TODO: make this more consistent
         assert vars != null;
-
-        //System.out.println("delta: theLab: " + theLab + " vars in current ="+ vars );
 
         Tree stms[] = new Tree[ vars.size()
                                 + ((algMatchTree != null )? 1 : 0 )
