@@ -252,8 +252,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Tree mkRef(int pos, Type stable, Symbol symbol) {
         switch (stable) {
 	case ThisType(Symbol clasz):
+            if (clasz.isRoot() || clasz.isNone()) return Ident(pos, symbol);
 	    if (clasz.isPackage()) return mkRef(pos, mkGlobalRef(pos, clasz.module()), symbol); // !!!
-            if (clasz.isNone()) return Ident(pos, symbol);
             return mkRef(pos, This(pos, clasz), symbol);
         case SingleType(Type prefix, Symbol member):
 	    Tree tree = mkRef(pos, prefix, member);
@@ -270,15 +270,17 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a local reference to given symbol. */
     public Tree mkLocalRef(int pos, Symbol symbol) {
-        if (symbol.isRoot()) return Ident(pos, symbol);
+        assert symbol.isTerm(): Debug.show(symbol);
         return mkRef(pos, symbol.owner().thisType(), symbol);
     }
 
     /** Builds a global reference to given symbol. */
     public Tree mkGlobalRef(int pos, Symbol symbol) {
-        if (symbol.isRoot()) return Ident(pos, symbol);
-        assert symbol.owner().isModuleClass(): Debug.show(symbol);
-        return mkRef(pos, mkGlobalRef(pos, symbol.owner().module()), symbol);
+        assert symbol.isTerm(): Debug.show(symbol);
+        Symbol owner = symbol.owner();
+        if (owner.isRoot()) return Ident(pos, symbol);
+        assert owner.isModuleClass(): Debug.show(symbol);
+        return mkRef(pos, mkGlobalRef(pos, owner.module()), symbol);
     }
 
     /** Builds a This node corresponding to given class. */
