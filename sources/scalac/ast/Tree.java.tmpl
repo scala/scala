@@ -60,7 +60,12 @@ public class Tree {
     // Public Methods - tree type
 
     /** Get the type of the node. */
-    public Type getType() {
+    public final Type getType() {
+        return type();
+    }
+
+    /** Get the type of the node. */
+    public Type type() {
         assert type != null : Debug.show(this);
         return type;
     }
