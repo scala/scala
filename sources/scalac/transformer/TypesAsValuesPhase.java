@@ -1064,8 +1064,14 @@ public class TypesAsValuesPhase extends Phase {
         while (membersIt.hasNext()) {
             Symbol mem = membersIt.next();
             Symbol origMem = originalSymbol(mem);
-            if (origMem != Symbol.NONE && !mem.info().isSameAs(origMem.info()))
-                myRefs.add(new Refinement(origMem, mem.info()));
+            if (origMem != Symbol.NONE) {
+                Type ownerTp = mem.owner().thisType();
+                Type origTp = ownerTp.memberType(origMem);
+                Type memTp = ownerTp.memberType(mem);
+
+                if (!memTp.isSameAs(origTp))
+                    myRefs.add(new Refinement(origMem, mem.info()));
+            }
         }
         Collections.sort(myRefs);
         return myRefs;
