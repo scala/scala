@@ -23,7 +23,7 @@ import scalac.util.{ Name, Names, TypeNames } ;
 package scala.tools.scalac.ast.parser {
 
 /** this class builds instance of Tree that represent XML */
-class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS: Boolean ) extends MarkupHandler[Tree,Tree] {
+class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS: Boolean ) /*extends MarkupHandler[Tree,Tree]*/ {
 
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
