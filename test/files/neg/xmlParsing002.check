@@ -1,0 +1,4 @@
+xmlParsing002.scala:13: in XML literal: whitespace expected
+  val y = <hello foo="bar"baz="baz"></hello>.toString();
+                          ^
+one error found
