@@ -234,7 +234,7 @@ public class Erasure extends Transformer implements Modifiers {
 
     /** Add bridge which Java-overrides `sym1' and which forwards to `sym'
      */
-    public void addBridge(Symbol sym, Symbol sym1) {
+    public void addBridge(Symbol owner, Symbol sym, Symbol sym1) {
 	Type bridgeType = sym1.type().erasure();
 
 	// create bridge symbol and add to bridgeSyms(sym)
@@ -250,10 +250,11 @@ public class Erasure extends Transformer implements Modifiers {
 	bridgeSym.flags &= ~JAVA;
 	bridgesOfSym = bridgesOfSym.incl(bridgeSym);
 	bridgeSyms.put(sym, bridgesOfSym);
+        bridgeSym.setOwner(owner);
 
 	// check that there is no overloaded symbol with same erasure as bridge
 	// todo: why only check for overloaded?
-	Symbol overSym = sym.owner().members().lookup(sym.name);
+	Symbol overSym = owner.members().lookup(sym.name);
 	switch (overSym.type()) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    for (int i = 0; i < alts.length; i++) {
@@ -295,26 +296,51 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
     public void addBridges(Symbol sym) {
-	Symbol c = sym.owner();
+        Symbol c = sym.owner();
 	if (c.isClass() && !c.isInterface()) {
+            //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
 	    Type[] basetypes = c.parents();
-
-            //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure()); global.prevPhase();
-
 	    for (int i = 0; i < basetypes.length; i++) {
-		Symbol sym1 = sym.overriddenSymbol(basetypes[i]);
-
-                //global.nextPhase();  System.out.println("!!! " + Debug.show(sym) + " @ " + basetypes[i] + " -> " + Debug.show(sym1) + (sym1.kind == Kinds.NONE ? "" : " : " + sym1.type().erasure() + " => " + (isSameAs(sym1.type().erasure(), sym.type().erasure()) ? "ok" : "ADD BRIDGE"))); global.prevPhase();
-
-		if (sym1.kind != Kinds.NONE &&
-		    !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
-
-                    //System.out.println("!!! " + Debug.show(sym) + " adding bridge for " + Debug.show(sym1));
-
-		    addBridge(sym, sym1);
-		}
+                addBridges(basetypes[i], sym);
 	    }
-	}
+        }
+    }
+
+    public void addBridges(Type basetype, Symbol sym) {
+        Symbol sym1 = sym.overriddenSymbol(basetype);
+        //global.nextPhase();  System.out.println("!!!     " + Debug.show(sym) + " @ " + basetype + " -> " + Debug.show(sym1) + (sym1.kind == Kinds.NONE ? "" : " : " + sym1.type().erasure() + " => " + (isSameAs(sym1.type().erasure(), sym.type().erasure()) ? "ok" : "ADD BRIDGE"))); global.prevPhase();
+
+        if (sym1.kind != Kinds.NONE &&
+            !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
+            //System.out.println("!!! " + Debug.show(sym) + " adding bridge for " + Debug.show(sym1));
+            addBridge(sym.owner(), sym, sym1);
+        }
+    }
+
+    public void addInterfaceBridges(Symbol c, Symbol sym) {
+	assert c.isClass() && !c.isInterface(): Debug.show(c);
+        //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
+        Symbol member = sym;
+
+        // !!! create a clone to make overriddenSymbol return the right symbol
+        Symbol clone = sym.cloneSymbol();
+        clone.setOwner(c);
+        clone.setType(c.thisType().memberType(sym));
+
+        sym = clone;
+        //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
+
+        Type basetype = c.thisType();
+        Symbol sym1 = sym.overriddenSymbol(basetype);
+        sym = member;
+        //global.nextPhase();  System.out.println("!!!     " + Debug.show(sym) + " @ " + basetype + " -> " + Debug.show(sym1) + (sym1.kind == Kinds.NONE ? "" : " : " + sym1.type().erasure() + " => " + (isSameAs(sym1.type().erasure(), sym.type().erasure()) ? "ok" : "ADD BRIDGE"))); global.prevPhase();
+
+        if (sym1.kind != Kinds.NONE &&
+            !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
+            //System.out.println("!!! " + Debug.show(sym) + " adding bridge for " + Debug.show(sym1));
+            addBridge(c, sym1, member);
+        }
+
     }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -566,6 +592,7 @@ public class Erasure extends Transformer implements Modifiers {
 	bridgeSyms = new HashMap();
 	Tree[] bases1 = transform(templ.parents);
 	TreeList body1 = new TreeList(transform(templ.body));
+        if (!clazz.isInterface()) addInterfaceBridges(clazz);
 	body1.append(bridges);
         if (bridges.length() > 0) {
             Type info = clazz.nextInfo();
@@ -587,6 +614,28 @@ public class Erasure extends Transformer implements Modifiers {
 	bridgeSyms = savedBridgeSyms;
 	return (Template) copy.Template(templ, bases1, body1.toArray())
 	    .setType(templ.type.erasure());
+    }
+
+    // !!! This is just rapid fix. Needs to be reviewed.
+    private void addInterfaceBridges(Symbol owner) {
+        Type[] parents = owner.info().parents();
+        for (int i = 1; i < parents.length; i++)
+            addInterfaceBridgesRec(owner, parents[i].symbol());
+    }
+    private void addInterfaceBridgesRec(Symbol owner, Symbol interfase) {
+        addInterfaceBridgesAux(owner, interfase.nextInfo().members());
+        Type[] parents = interfase.parents();
+        for (int i = 0; i < parents.length; i++) {
+            Symbol clasz = parents[i].symbol();
+            if (clasz.isInterface()) addInterfaceBridgesRec(owner, clasz);
+        }
+    }
+    private void addInterfaceBridgesAux(Symbol owner, Scope symbols) {
+        for (Scope.SymbolIterator i = symbols.iterator(true); i.hasNext();) {
+            Symbol member = i.next();
+            if (!member.isTerm() || !member.isDeferred()) continue;
+            addInterfaceBridges(owner, member);
+        }
     }
 
     /** Transform without keeping the previous transform's contract.
