@@ -18,6 +18,8 @@ import Tree.*;
 
 import java.util.*;
 
+// TODO see why lambda-lifted functions end up in the interface
+
 /**
  * Add, for each class, an interface with the same name, to be used
  * later by mixin expansion. More specifically:
@@ -131,7 +133,7 @@ class AddInterfaces extends SubstTransformer {
         case Kinds.CLASS:
             return needInterface(member);
         case Kinds.VAL:
-            return member.isMethod();
+            return member.isMethod() && !member.isPrimaryConstructor();
         default:
             throw Debug.abort("unknown kind: " + member.kind);
         }
@@ -483,6 +485,17 @@ class AddInterfaces extends SubstTransformer {
                 Tree newTree = super.transform(tree);
                 popSymbolSubst();
                 return newTree;
+            }
+            return super.transform(tree);
+        }
+
+        case ValDef(_, _, _, _): {
+            Symbol sym = tree.symbol();
+            Symbol owner = sym.owner();
+            if (!sym.isParameter() && ifaceMemberToClass.containsKey(owner)) {
+                Symbol newOwner = (Symbol)ifaceMemberToClass.get(owner);
+                sym.setOwner(newOwner);
+                global.log("new owner for " + Debug.show(sym) + " => " + newOwner);
             }
             return super.transform(tree);
         }
