@@ -209,7 +209,13 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Return a fresh symbol with the same fields as this one and the
      * given owner.
      */
-    public abstract Symbol cloneSymbol(Symbol owner);
+    public final Symbol cloneSymbol(Symbol owner) {
+        Symbol clone = cloneSymbolImpl(owner, attrs);
+        clone.setInfo(info());
+        return clone;
+    }
+
+    protected abstract Symbol cloneSymbolImpl(Symbol owner, int attrs);
 
     /** Returns a shallow copy of the given array. */
     public static Symbol[] cloneArray(Symbol[] array) {
@@ -1460,15 +1466,6 @@ public class TermSymbol extends Symbol {
         return clazz != null && name == Names.CONSTRUCTOR;
     }
 
-    /** Return a fresh symbol with the same fields as this one.
-     */
-    public Symbol cloneSymbol(Symbol owner) {
-        assert !isPrimaryConstructor() : Debug.show(this);
-        TermSymbol other = new TermSymbol(pos, name, owner, flags, 0, clazz);
-        other.setInfo(info());
-        return other;
-    }
-
     public Symbol[] typeParams() {
         return type().typeParams();
     }
@@ -1484,6 +1481,12 @@ public class TermSymbol extends Symbol {
     public Symbol moduleClass() {
         return (flags & MODUL) != 0 ? clazz : this;
     }
+
+    protected final Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        assert !isPrimaryConstructor() : Debug.show(this);
+        return new TermSymbol(pos, name, owner, flags, attrs, clazz);
+    }
+
 }
 
 /** A base class for all type symbols.
@@ -1620,6 +1623,15 @@ public abstract class TypeSymbol extends Symbol {
         closures.reset();
         tycon = null;
     }
+
+
+    protected final Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        TypeSymbol clone = cloneTypeSymbolImpl(owner, attrs);
+        copyConstructorInfo(clone);
+        return clone;
+    }
+
+    protected abstract TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs);
 }
 
 public class AliasTypeSymbol extends TypeSymbol {
@@ -1644,14 +1656,10 @@ public class AliasTypeSymbol extends TypeSymbol {
         }
     }
 
-    /** Return a fresh symbol with the same fields as this one.
-     */
-    public Symbol cloneSymbol(Symbol owner) {
-        AliasTypeSymbol other = new AliasTypeSymbol(pos, name, owner, flags);
-        other.setInfo(info());
-        copyConstructorInfo(other);
-        return other;
+    protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
+        return new AliasTypeSymbol(pos, name, owner, flags, attrs);
     }
+
 }
 
 public class AbsTypeSymbol extends TypeSymbol {
@@ -1679,15 +1687,6 @@ public class AbsTypeSymbol extends TypeSymbol {
         }
     }
 
-    /** Return a fresh symbol with the same fields as this one.
-     */
-    public Symbol cloneSymbol(Symbol owner) {
-        TypeSymbol other = new AbsTypeSymbol(pos, name, owner, flags);
-        other.setInfo(info());
-        other.setLoBound(loBound());
-        return other;
-    }
-
     public Type loBound() {
         initialize();
         return lobound == null ? Global.instance.definitions.ALL_TYPE() : lobound;
@@ -1697,6 +1696,13 @@ public class AbsTypeSymbol extends TypeSymbol {
         this.lobound = lobound;
         return this;
     }
+
+    protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
+        TypeSymbol clone = new AbsTypeSymbol(pos, name, owner, flags, attrs);
+        clone.setLoBound(loBound());
+        return clone;
+    }
+
 }
 
 /** A class for class symbols. It has JavaClassSymbol as a subclass.
@@ -1805,17 +1811,6 @@ public class ClassSymbol extends TypeSymbol {
         return owner().newModuleClass(pos, flags, name, 0, this);
     }
 
-    /** Return a fresh symbol with the same fields as this one.
-     */
-    public Symbol cloneSymbol(Symbol owner) {
-        ClassSymbol other = new ClassSymbol(pos, name, owner, flags);
-        other.module = module;
-        other.setInfo(info());
-        copyConstructorInfo(other);
-        if (thisSym != this) other.setTypeOfThis(typeOfThis());
-        return other;
-    }
-
    /** Get module */
     public Symbol module() {
         assert !isRoot(): this + ".module()";
@@ -1884,6 +1879,14 @@ public class ClassSymbol extends TypeSymbol {
         module().reset(completer);
         thisSym = this;
     }
+
+    protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
+        ClassSymbol clone = new ClassSymbol(pos, name, owner, flags, attrs);
+        clone.module = module;
+        if (thisSym != this) clone.setTypeOfThis(typeOfThis());
+        return clone;
+    }
+
 }
 
 /** A class for error symbols.
@@ -1894,11 +1897,6 @@ public final class ErrorSymbol extends Symbol {
     public ErrorSymbol() {
         super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null, 0, 0);
         super.setInfo(Type.ErrorType);
-    }
-
-    public Symbol cloneSymbol(Symbol owner) {
-        assert owner == this : Debug.show(owner);
-        return this;
     }
 
     /** Set type */
@@ -1928,6 +1926,11 @@ public final class ErrorSymbol extends Symbol {
 
     public void reset(Type completer) {
     }
+
+    protected Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        throw Debug.abort("illegal clone", this);
+    }
+
 }
 
 /** The class of Symbol.NONE
@@ -1938,13 +1941,6 @@ public final class NoSymbol extends Symbol {
     public NoSymbol() {
         super(Kinds.NONE, Position.NOPOS, Names.NOSYMBOL, null, 0, 0);
         super.setInfo(Type.NoType);
-    }
-
-    /** Return a fresh symbol with the same fields as this one.
-     */
-    public Symbol cloneSymbol(Symbol owner) {
-        assert owner == this : Debug.show(owner);
-        return this;
     }
 
     /** Set type */
@@ -1973,6 +1969,11 @@ public final class NoSymbol extends Symbol {
 
     public void reset(Type completer) {
     }
+
+    protected Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        throw Debug.abort("illegal clone", this);
+    }
+
 }
 
 /** A class for symbols generated in label definitions.
