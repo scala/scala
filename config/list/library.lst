@@ -133,6 +133,9 @@ concurrent/pilib.scala
 concurrent/Process.scala
 concurrent/NameServer.scala
 
+mobile/Location.scala
+mobile/Code.scala
+
 runtime/InterpreterSupport.java
 runtime/NativeLoop.java
 # runtime/NativeMonitor.java
