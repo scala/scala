@@ -182,7 +182,9 @@ compute_value() {
                     unset SCALA_$1;
                 fi;
             fi;
-            if ! eval [ -f \"\$current_$1\" -o -d \"\$current_$1\" ]; then
+            if eval [ -f \"\$current_$1\" -o -d \"\$current_$1\" ]; then
+                :;
+            else
                 eval abort \""File referred by default_$1 (\$default_$1)" \
                     "does not exist. Please, fix definition of default_$1 in" \
                     "file $SOURCE or define environment variable SCALA_$1."\";
