@@ -24,7 +24,6 @@ ast/parser/Tokens.java
 ast/DefaultTreeFactory.java
 ast/LazyTreeCopier.java
 ast/StrictTreeCopier.java
-ast/SubstTransformer.java
 ast/Transformer.java
 ast/Traverser.java
 ast/Tree.java
