@@ -35,7 +35,6 @@ object values  { // test values reused in nearly all test cases
 
     val s10:List[Char] = '7'::'0'::'1'::'.'::'2'::'4'::Nil ;
 
-
 }
 
 // matching without binding
@@ -59,7 +58,7 @@ object testBK  {
         };
 
     def test1:Unit = {
-                System.out.println("testBK");
+                Console.println("testBK");
                 //test[List[Char],Int]( doit1, s0, 321);
       assertEquals( doit1( s0 ), 321);
       assertEquals( doit1( s1 ),321);
@@ -124,7 +123,7 @@ object testBM  {
         };
 
     def test1:Unit = {
-                System.out.println("testBM");
+                Console.println("testBM");
                 assertEquals( doit1( s0 ), Nil);
                 assertEquals( doit1( s1 ), s1);
                 assertEquals( doit1( s2 ), s2);
@@ -160,9 +159,9 @@ object testBN {
         };
 
     def test1:Unit = {
-                System.out.print("BN preTest: ");
-                System.out.println( Nil == Nil );
-                System.out.println("testBN");
+                Console.print("BN preTest: ");
+                Console.println( Nil == Nil );
+                Console.println("testBN");
 
                 assertEquals
                         ( doit1( testA(s0)), Nil);
@@ -244,7 +243,7 @@ object testBO  {
            db.match {
 
                 case List( _ *, Person( "John", lastname  ), rest@(_ *) )
-                        => { //System.out.print("before is : "+before );
+                        => { //Console.print("before is : "+before );
                              lastname::searchJohns( rest )
                                 }
 
@@ -268,7 +267,7 @@ object testBO  {
 
                 val db2:List[Person] = p3::Nil;
 
-                System.out.println("testBO");
+                Console.println("testBO");
 
           assertEquals
                         ( onlyJohn( db ), Nil );
@@ -303,7 +302,7 @@ object testWR  {
         };
 
     def test1:Unit = {
-                System.out.println("testWR_1");
+                Console.println("testWR_1");
                 assertEquals( doit1( s0 ),321);
                 assertEquals( doit1( s1 ),100);
                 assertEquals( doit1( s2 ),321);
@@ -319,7 +318,7 @@ object testWR  {
 	}
 
     def test2:Unit = {
-                System.out.println("testWR_2");
+                Console.println("testWR_2");
                 assertEquals( doit2( s0 ),1000);
                 assertEquals( doit2( s1 ),1000);
                 assertEquals( doit2( s2 ),321);
@@ -336,7 +335,7 @@ object testWR  {
 	}
 
     def test3:Unit = {
-                System.out.println("testWR_3");
+                Console.println("testWR_3");
                 assertEquals( doit3( s0 ), "ok");
                 assertEquals( doit3( s1 ),"fail");
                 assertEquals( doit3( s2 ), "fail");
@@ -352,7 +351,7 @@ object testWR  {
 	}
 
     def test4:Unit = {
-                System.out.println("testWR_4");
+                Console.println("testWR_4");
                 assertEquals( doit4( s0 ), "gu");
                 assertEquals( doit4( s1 ), "ga!!!!");
                 assertEquals( doit4( s2 ), "ga!!!!");
@@ -368,7 +367,7 @@ object testWR  {
 	}
 
     def test5:Unit = {
-                System.out.println("testWR_5");
+                Console.println("testWR_5");
                 assertEquals( doit5( s7 ), "not binary");
                 assertEquals( doit5( s8 ), "binary");
                 assertEquals( doit5( s9 ), "not binary");
@@ -386,7 +385,7 @@ object testWR  {
 	}
 
     def test6:Unit = {
-                System.out.println("testWR_6");
+                Console.println("testWR_6");
                 assertEquals( doit6( s3 ), "not decimal");
                 assertEquals( doit6( s10 ), "decimal number");
     }
@@ -464,7 +463,7 @@ object testWS {
         };
 
     def test1:Unit = {
-                System.out.println("testWS");
+                Console.println("testWS");
                 assertEquals( doit1( s0 ),1004);
                 assertEquals( doit1( s1 ),100);
                 assertEquals( doit1( s2 ),321);
@@ -494,7 +493,7 @@ object testWT  {
         };
 
     def test1:Unit = {
-                System.out.println("testWT");
+                Console.println("testWT");
                 assertEquals( doit1( s0 ),321);
                 assertEquals( doit1( s1 ),100);
                 assertEquals( doit1( s2 ),321);
@@ -530,7 +529,7 @@ object testWV {
         };
 
     def test1:Unit = {
-                System.out.println("testWV");
+                Console.println("testWV");
                 assertEquals( doit1( testA(s0) ),1004);
                 assertEquals( doit1( testA(s1) ),100);
                 assertEquals( doit1( testA(s2) ),321);
@@ -568,7 +567,7 @@ object testWW {
         def test1:Unit = {
                 val x1 = List( testA(s0) );
 
-                System.out.println("testWW");
+                Console.println("testWW");
 
                 assertEquals( doit1( x1 ), 321 );
 
@@ -625,7 +624,7 @@ object testMZ {
 
 
   def main:Unit = {
-                System.out.println("testMZ - bugs #132 #133b #180 #195 #196");
+                Console.println("testMZ - bugs #132 #133b #180 #195 #196");
     assertEquals(testFoo( List(Two(),Two(),Two(),Two()) ),"b = Two");
     assertEquals(testFoo( List(Two(),Two(),Two()) ),"a = Two");
     assertEquals(testFoo( List(Two(),Two()) ),"a = Two");
@@ -661,7 +660,7 @@ object testNN {
   }
 
   def main:Unit = {
-    System.out.println("testNN");
+    Console.println("testNN");
     assertEquals(mtch( F(F(G()),G(),F(G()))), true);
     assertEquals(mtch( F(F(),G(),F(G(),G(),G(),G())) ), true);
     assertEquals(mtch( G() ), false);
@@ -671,6 +670,10 @@ object testNN {
 
 object Test {
   def main(args: Array[String]): Unit = {
+    Console.println("pretest");
+    val L = List(1,2,3);
+    scala.testing.UnitTest.assertEquals( L, L.match { case List(xs@_*) => xs; } ) ;
+
     testWR.main( args );
     testWS.main( args );
     testWT.main( args );
