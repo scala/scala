@@ -872,6 +872,16 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         public Scope map(Scope s) { return s; }
     }
 
+    public static final Map IdMap = new Map() {
+        public Type apply(Type tp) { return tp; }
+        public Type applyParams(Type tp) { return tp; }
+        public Type map(Type tp) { return tp; }
+	public Symbol map(Symbol sym, boolean dontClone) { return sym; }
+        public Type[] map(Type[] tps) { return tps; }
+	public Symbol[] map(Symbol[] syms, boolean dontClone) { return syms; }
+        public Scope map(Scope scope) { return scope; }
+    };
+
 // baseType and asSeenFrom --------------------------------------------------------
 
     /** Return the base type of this type whose symbol is `clazz', or NoType, if
