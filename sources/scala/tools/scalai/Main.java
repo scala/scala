@@ -9,7 +9,7 @@
 
 package scala.tools.scalai;
 
-import scalac.CompilerPhases;
+import scala.tools.scalac.CompilerPhases$class;
 import scalac.util.Reporter;
 
 public class Main {
@@ -28,7 +28,7 @@ public class Main {
     public static void main(String[] args) {
         Reporter reporter = new Reporter();
         InterpreterCommand command = new InterpreterCommand(
-            PRODUCT, VERSION, reporter, new CompilerPhases());
+            PRODUCT, VERSION, reporter, new CompilerPhases$class());
         if (command.parse(args)) {
             InterpreterShell shell = new InterpreterShell(command);
             shell.main(command.files.toArray(), command.script.value,

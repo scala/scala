@@ -78,7 +78,7 @@ public class InterpreterShell {
         this.reader = reader;
         this.writer = writer;
         this.matcher = matcher();
-        this.global = new Global(command, true);
+        this.global = new scala.tools.scalac.Global$class(command, true);
         this.interpreter = new Interpreter(global);
         this.printer = new InterpreterPrinter(interpreter, writer);
         this.lfiles = new String[0];
