@@ -1010,7 +1010,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		return NoType;
 	    else {
 		return sym.baseType(clazz)
-		    .asSeenFrom(pre, clazz.owner())
+		    .asSeenFrom(pre, sym.owner())
 		    .subst(sym.typeParams(), args);
 	    }
 
@@ -1060,6 +1060,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
 
 	public Type apply(Type t) {
+	    //System.out.println(t + " as seen from " + pre + "," + clazz);//DEBUG
 	    if (pre == NoType || clazz.kind != CLASS)
 		return t;
 	    switch (t) {
@@ -1124,7 +1125,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    for (int i = 0; i < baseparams.length; i++) {
 			if (sym == baseparams[i]) return baseargs[i];
 		    }
-		    System.out.println(sym + " " + basesym + " " + ArrayApply.toString(baseparams));//debug
+		    //System.out.println(sym + " " + basesym + " " + ArrayApply.toString(baseparams));//DEBUG
 		    break;
 		case ErrorType:
 		    return ErrorType;

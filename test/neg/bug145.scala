@@ -14,3 +14,4 @@ class D extends C with I[Int];
 object T with Executable {
   System.out.println((new D).foo(3));
 }
+
