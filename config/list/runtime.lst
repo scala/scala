@@ -24,6 +24,7 @@ Int.java
 Long.java
 MatchError.java
 NativeMonitor.java
+NativeLoop.java
 Object.java
 Ref.java
 Short.java
