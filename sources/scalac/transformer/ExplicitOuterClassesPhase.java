@@ -19,7 +19,6 @@ import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
 import scalac.ast.GenTransformer;
 import scalac.ast.Tree;
-import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
