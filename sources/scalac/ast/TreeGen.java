@@ -575,7 +575,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     //########################################################################
-    // Public Methods - Building expressions
+    // Public Methods - Building expressions - Simple nodes
 
     /** Flattens the given tree array by inlining Block nodes. */
     public Tree[] flatten(Tree[] trees) {
@@ -815,6 +815,107 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     //########################################################################
+    // Public Methods - Building expressions - Lists
+
+    /** Builds an empty list. */
+    public Tree mkNil(int pos) {
+	return mkRef(pos, definitions.NIL);
+    }
+
+    /** Builds a list with given element type, head and tail. */
+    public Tree mkNewCons(int pos, Type element, Tree head, Tree tail) {
+        // !!! these checks can be removed once they are done in Apply
+        assert head.type().isSubType(element):
+            element + " -- " + head + " : " + head.type;
+        assert tail.type().isSubType(definitions.LIST_TYPE(element)):
+            element + " -- " + tail + " : " + tail.type;
+        Type cons = definitions.CONS_TYPE(element);
+	return New(mkPrimaryConstr(pos, cons, new Tree[]{head, tail}));
+    }
+    public Tree mkNewCons(Type element, Tree head, Tree tail) {
+        return mkNewCons(head.pos, element, head, tail);
+    }
+
+    /** Builds a list with given element type and values. */
+    public Tree mkNewList(int pos, Type element, Tree[] values) {
+        Tree list = mkNil(pos);
+        for (int i = values.length - 1; 0 <= i; i--)
+            list = mkNewCons(pos, element, values[i], list);
+        return list;
+    }
+
+    //########################################################################
+    // Public Methods - Building expressions - Arrays
+
+    /** Builds a new array tree with given element type and length. */
+    public Tree mkNewArray(int pos, Type element, Tree length) {
+        Type array = definitions.ARRAY_TYPE(element);
+        return New(mkPrimaryConstr(pos, array, new Tree[]{length}));
+    }
+    public Tree mkNewArray(Type element, Tree length) {
+        return mkNewArray(length.pos, element, length);
+    }
+    public Tree mkNewArray(int pos, Type element, int length) {
+        return mkNewArray(pos, element, mkIntLit(pos, length));
+    }
+
+    /**
+     * Builds a new array tree with given element type and values. The
+     * owner must be the owner of the created code. It is needed to
+     * create a local variable.
+     */
+    public Tree mkNewArray(int pos, Type element, Tree[] values, Symbol owner){
+        if (values.length == 0) return mkNewArray(pos, element, 0);
+        Tree[] trees = new Tree[1 + values.length + 1];
+        Symbol array =
+            newLocal(pos, Names.array, owner, definitions.ARRAY_TYPE(element));
+        trees[0] = ValDef(array, mkNewArray(pos, element, values.length));
+        for (int i = 0; i < values.length; i++)
+            trees[1 + i] = mkArraySet(Ident(pos, array), i, values[i]);
+        trees[values.length + 1] = Ident(pos, array);
+        return Block(pos, trees);
+    }
+
+    /** Builds an array length operation. */
+    public Tree mkArrayLength(int pos, Tree array) {
+        Tree function = Select(pos, array, definitions.ARRAY_LENGTH());
+        return Apply(pos, function);
+    }
+    public Tree mkArrayLength(Tree array) {
+        return mkArrayLength(array.pos, array);
+    }
+
+    /** Builds an array get operation. */
+    public Tree mkArrayGet(int pos, Tree array, Tree index) {
+        Tree function = Select(pos, array, definitions.ARRAY_GET());
+        return Apply(pos, function, new Tree[] {index});
+    }
+    public Tree mkArrayGet(Tree array, Tree index) {
+        return mkArrayGet(array.pos, array, index);
+    }
+    public Tree mkArrayGet(int pos, Tree array, int index) {
+        return mkArrayGet(pos, array, mkIntLit(pos, index));
+    }
+    public Tree mkArrayGet(Tree array, int index) {
+        return mkArrayGet(array.pos, array, index);
+    }
+
+    /** Builds an array set operation. */
+    public Tree mkArraySet(int pos, Tree array, Tree index, Tree value) {
+        Tree function = Select(pos, array, definitions.ARRAY_SET());
+        return Apply(pos, function, new Tree[] {index, value});
+    }
+    public Tree mkArraySet(Tree array, Tree index, Tree value) {
+        return mkArraySet(array.pos, array, index, value);
+    }
+    public Tree mkArraySet(int pos, Tree array, int index, Tree value) {
+        return mkArraySet(pos, array, mkIntLit(pos, index), value);
+    }
+    public Tree mkArraySet(Tree array, int index, Tree value) {
+        return mkArraySet(array.pos, array, index, value);
+    }
+
+    //########################################################################
     // Public Methods - Building definitions
 
     /** Builds the type parameter section of given symbol. */
@@ -1016,6 +1117,16 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return true;
     }
 
+    /** Creates a local variable with given prefix, owner and type. */
+    private Symbol newLocal(int pos, Name prefix, Symbol owner, Type type) {
+        Name name = global.freshNameCreator.newName(prefix);
+        Symbol local = new TermSymbol(pos, name, owner, Modifiers.SYNTHETIC);
+        global.nextPhase();
+        local.setType(type);
+        global.prevPhase();
+        return local;
+    }
+
     //########################################################################
     //########################################################################
     //########################################################################
@@ -1156,19 +1267,11 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     // refactoring duplicate code of LambdaLift and CodeFactory
 
     public Tree Nil(int pos) {
-	return mkRef(pos, global.definitions.getModule(Names.scala_Nil));
+        return mkNil(pos);
     }
 
     public Tree Cons(int pos, Type elemtpe, Tree hd, Tree tl) {
-        assert hd.getType().isSubType(elemtpe): elemtpe + " -- " + hd;
-        assert tl.getType().isSubType(definitions.LIST_TYPE(elemtpe)):
-            elemtpe + " -- " + tl;
-	return New(mkPrimaryConstr(pos,
-				   global.definitions
-				   .getClass( Names.scala_COLONCOLON ),
-				   new Type[] { elemtpe },
-				   new Tree[] { hd, tl }));
-
+        return mkNewCons(pos, elemtpe, hd, tl);
     }
 
     // for insert debug printing code
