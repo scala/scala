@@ -13,7 +13,6 @@ package scalac.transformer;
 
 import scalac.*;
 import scalac.symtab.*;
-import scalac.checkers.*;
 import scalac.util.Name;
 import java.util.*;
 import scalac.util.Debug;
@@ -113,26 +112,8 @@ public class AddInterfacesPhase extends Phase {
             return tp;
     }
 
-    public Checker[] postCheckers(Global global) {
-        return new Checker[] {
-            new CheckSymbols(global),
-            new CheckTypes(global),
-        };
-    }
-
     protected boolean memberGoesInInterface(Symbol member) {
         return member.isType() || member.isMethod();
-    }
-
-    protected Type removeValueParams(Type tp) {
-        switch (tp) {
-        case MethodType(Symbol[] vparams, Type result):
-            return new Type.MethodType(Symbol.EMPTY_ARRAY, result);
-        case PolyType(Symbol[] tps, Type result):
-            return new Type.PolyType(tps, removeValueParams(result));
-        default:
-            throw Debug.abort("illegal case", tp);
-        }
     }
 
     protected final SymbolNameWriter uniqueNameWriter = new SymbolNameWriter()
