@@ -15,6 +15,7 @@ import scalac.ast.*;
 import scalac.ast.parser.*;
 import scalac.symtab.Definitions;
 import scalac.ast.printer.*;
+import scalac.backend.Primitives;
 
 
 /** The global environment of a compiler run
@@ -89,7 +90,7 @@ public class  Global {
 
     /** the global primitives
      */
-    //public Primitives primitives;
+    public Primitives primitives;
 
     /** compilation phases.
      */
@@ -164,7 +165,7 @@ public class  Global {
         this.make = new TreeCreator();
         this.currentPhase = PhaseDescriptor.INITIAL;
         this.definitions = new Definitions(this);
-        //this.primitives = new Primitives(this);
+        this.primitives = new Primitives(this);
         this.treeGen = new TreeGen(this, make);
         this.PHASE = args.phases;
         List phases = new ArrayList();
