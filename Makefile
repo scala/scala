@@ -484,8 +484,8 @@ $(latest)scalatest-jc	: $(SCALATEST_JC_FILES)
 # Targets - scala tools - servlet engine
 
 PROJECT_SOURCES		+= $(SERVLET_SOURCES)
-SERVLET_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/servletEngine
-SERVLET_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/servletEngine.lst)
+SERVLET_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/servlet
+SERVLET_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/servlet.lst)
 SERVLET_SOURCES		+= $(SERVLET_LIST:%=$(SERVLET_ROOT)/%)
 SERVLET_SC_FILES	+= $(SERVLET_SOURCES)
 SERVLET_SC_CLASSPATH	 = $(PROJECT_CLASSPATH)
