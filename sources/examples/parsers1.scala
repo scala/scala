@@ -1,5 +1,7 @@
 package examples;
 
+object parsers1 {
+/*
 abstract class Parsers {
 
   type intype;
@@ -20,14 +22,14 @@ abstract class Parsers {
     def map[b](f: a => b) = new Parser[b] {
       def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
-	case Some(Pair(x, in1)) => Some(Pair(f(x), in1))
+        case Some(Pair(x, in1)) => Some(Pair(f(x), in1))
       }
     }
 
     def flatMap[b](f: a => Parser[b]) = new Parser[b] {
       def apply(in: intype): Result = Parser.this.apply(in) match {
         case None => None
-	case Some(Pair(x, in1)) => f(x).apply(in1)
+        case Some(Pair(x, in1)) => f(x).apply(in1)
       }
     }
 
@@ -63,7 +65,7 @@ abstract class CharParsers extends Parsers {
   def chr(p: char => boolean) =
     for (val c <- any; p(c)) yield c;
 }
-
+*/
 abstract class Tree{}
 case class Id (s: String)         extends Tree {}
 case class Num(n: int)            extends Tree {}
@@ -101,24 +103,23 @@ abstract class ListParsers extends CharParsers {
 
 }
 
-class ParseString(s: String) extends Parsers {
-  type intype = int;
-  val input = 0;
-  def any = new Parser[char] {
-    def apply(in: int): Parser[char]#Result =
-      if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None;
+  class ParseString(s: String) extends Parsers {
+    type intype = int;
+    val input = 0;
+    def any = new Parser[char] {
+      def apply(in: int): Parser[char]#Result =
+        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None;
+    }
   }
-}
 
-object Test {
   def main(args: Array[String]): unit =
-    System.out.println(
+    Console.println(
       if (args.length == 1) {
-	val ps = new ListParsers with ParseString(args(0));
-	ps.expr(ps.input) match {
-	  case Some(Pair(list, _)) => System.out.println("parsed: " + list);
-	  case None => "nothing parsed"
-	}
+        val ps = new ListParsers with ParseString(args(0));
+        ps.expr(ps.input) match {
+          case Some(Pair(list, _)) => Console.println("parsed: " + list);
+          case None => "nothing parsed"
+        }
       } else "usage: java examples.Test <expr-string>"
     );
 }
