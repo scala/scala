@@ -91,6 +91,7 @@
 ../../../scalac/symtab/SymbolComparator.java
 ../../../scalac/symtab/SymbolLoader.java
 ../../../scalac/symtab/SymbolNameWriter.java
+../../../scalac/symtab/SymbolOrigin.java
 ../../../scalac/symtab/SymbolSubstTypeMap.java
 ../../../scalac/symtab/SymbolTablePrinter.java
 ../../../scalac/symtab/Type.java
