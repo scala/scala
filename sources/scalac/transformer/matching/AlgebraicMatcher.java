@@ -310,14 +310,7 @@ public class AlgebraicMatcher extends PatternMatcher {
               target.and = curHeader =
                     mk.Header(pat.pos,
                               castType,
-                              make.Apply(pat.pos,
-                                         make.Select(pat.pos,
-                                                     gen.Ident(pat.pos, casted),
-                                                     typeSym.name)
-                                         .setType(Type.MethodType(Symbol.EMPTY_ARRAY,
-                                                               castType))
-                                         .setSymbol( typeSym ),
-                                         Tree.EMPTY_ARRAY).setType( castType ));
+                              gen.mkApply__(gen.Select(gen.Ident(pat.pos, casted), typeSym)));
               // translate the root of `pat'
               curHeader.or = patternNode(pat,
                                          curHeader.type,
@@ -388,11 +381,11 @@ public class AlgebraicMatcher extends PatternMatcher {
                           gen.Ident( _m.pos, resultVar ),
                           cf.ThrowMatchError( _m.pos, _m.resultType )));
         /*
-            make.If(
+            gen.If(
                 _m.pos,
                 toTree(root.and),
                 gen.Ident( _m.pos, resultVar ),
-                cf.ThrowMatchError( _m.resultType )).type( _m.resultType ));
+                cf.ThrowMatchError( _m.resultType ));
         */
         return gen.mkBlock(_m.pos, ts.toArray());
     }
@@ -474,7 +467,7 @@ public class AlgebraicMatcher extends PatternMatcher {
                                 Tree selector) {
 
               /*    ???????????????????????? necessary to test whether is a Seq?
-		    make.If(selector.pos,
+		    gen.If(selector.pos,
                              maybe cf.And( cf.Is(selector, seqpat.type())
                              ...
               */

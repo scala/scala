@@ -184,11 +184,6 @@ public class Autom2Scala  {
 	  return gen.ValDef( sym, init );
       }
 
-      // the caller needs to set the type !
-      Tree  _applyNone( Tree arg ) {
-	  return cf.make.Apply(pos, arg, Tree.EMPTY_ARRAY/*None*/ );
-      }
-
     Tree _scala() {
 	return gen.Ident(pos, defs.SCALA );
     }

@@ -49,8 +49,7 @@ public class WordAutomInScala extends Autom2Scala {
 
         result = cf.Switch( selector, cond, body, failTree );
 
-        result = cf.make.Block( pos, new Tree[] { theDefDef, run, result } )
-                  .setType( resultType );
+        result = cf.gen.mkBlock( pos, new Tree[] { theDefDef, run, result } );
         //unit.global.debugPrinter.print( result );
         return result;
     }
