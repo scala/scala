@@ -8,9 +8,8 @@
 \*                                                                      */
 package scala.xml.nobinding;
 
-import scala.collection.mutable ;
-import scala.collection.immutable ;
-import scala.xml.{Elem, Node,Text,FactoryAdapter,Utility} ;
+import scala.collection.{ immutable, mutable };
+import scala.xml.{ Elem, Node, Text, FactoryAdapter, Utility };
 import org.xml.sax.InputSource;
 
 /** nobinding adaptor providing callbacks to parser to create elements.
@@ -31,20 +30,21 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
-  def createNode( label: String, attrs: mutable.HashMap[String,String], children: List[Node] ):Elem = {
+  def createNode(uri:String,
+                 label: String,
+                 attrs: mutable.HashMap[String,String],
+                 children: List[Node] ):Elem = {
 
-    val elHashCode = Utility.hashCode( label, attrs, children ) ;
+    val ncode = NamespaceRegistry.getCode( uri );
+    val elHashCode = Utility.hashCode( ncode, label, attrs, children ) ;
 
     val attrMap = immutable.TreeMap.Empty[String,String] incl attrs;
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
         cachedElem
-      case None => val el = if( children.isEmpty ) {
-        Elem( label, attrMap )
-      } else {
-        Elem( label, attrMap, children:_* ) ;
-      }
+      case None =>
+      val el = Elem( ncode, label, attrMap, children:_* );
       cache.update( elHashCode, el );
       el
     }

@@ -27,6 +27,9 @@ case class CharData( text:String ) extends Node {
   */
   def label    = "#CDATA";
 
+  /** always 0 */
+  final val namespaceCode = 0;
+
   /** always empty */
   final def attribute = Node.NoAttributes;
 

@@ -32,6 +32,9 @@ case class Comment( text:String ) extends Node {
   /** the constant "#REM" */
   def label    = "#REM";
 
+  /** always 0 */
+  final val namespaceCode = 0;
+
   /** always empty */
   final def attribute = Node.NoAttributes;
 

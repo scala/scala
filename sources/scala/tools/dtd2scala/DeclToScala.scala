@@ -23,7 +23,7 @@ class DeclToScala(fOut:PrintWriter,
 		  moduleName:String,
 		  elemMap:Map[ String, MyElemDecl ] ) {
 
-  abstract class objectTemplate {
+  abstract class ObjectTemplate {
     val objectName : String = "myXML"; /* DEFAULT MODULE NAME */
     val package_ : String = "";
     val compress : boolean = true;
@@ -240,7 +240,7 @@ class DeclToScala(fOut:PrintWriter,
 
   /** runs translation. */
   def run:Unit = {
-    new objectTemplate {
+    new ObjectTemplate {
       override val objectName = moduleName
     }.write;
     fOut.flush();

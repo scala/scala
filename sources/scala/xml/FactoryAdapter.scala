@@ -23,9 +23,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.SAXParseException;
-//import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.helpers.ParserAdapter;
 
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -59,7 +57,8 @@ abstract class FactoryAdapter  extends DefaultHandler() {
   * @param chIter
   * @return a new XML element.
   */
-  def createNode(elemName:String ,
+  def createNode(uri:String,
+                 elemName:String ,
                  attribs:HashMap[String,String] ,
                  chIter:List[Node] ):Node; //abstract
 
@@ -186,7 +185,7 @@ abstract class FactoryAdapter  extends DefaultHandler() {
         }
 
         // create element
-        rootElem = createNode( localName, attribMap, v );
+        rootElem = createNode( uri, localName, attribMap, v );
         hStack.push(rootElem);
 
         // set

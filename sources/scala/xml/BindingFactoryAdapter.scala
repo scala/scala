@@ -39,9 +39,13 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
   //var cacheCount = 0;
 
   /** creates an element. see also compress */
-  def   createNode(elemName:String,
+  def   createNode(uri:String,
+                   elemName:String,
                    attribs:HashMap[String,String],
                    children:List[Node] ):Node = {
+
+      val ncode = NamespaceRegistry.getCode( uri );
+
       // 2do:optimize
       if( !compress ) {
         // get constructor
@@ -50,7 +54,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
       } else { // do hash-consing
 
         val ahc = attribs.toList.hashCode();
-	val h = Utility.hashCode( elemName, ahc, children );
+	val h = Utility.hashCode( ncode, elemName, ahc, children );
         cache.get( h ).match {
 
             case Some(cachedElem) =>

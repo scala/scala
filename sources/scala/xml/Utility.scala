@@ -100,13 +100,13 @@ object Utility {
   }
 
   /** returns a hashcode for the given constituents of a node */
-  def hashCode( label:String, attribHashCode:int, children:Seq[Node] ) = {
-    label.hashCode() + attribHashCode + children.hashCode()
+  def hashCode(uriCode:int, label:String, attribHashCode:int, children:Seq[Node]) = {
+    41 * uriCode % 7 + label.hashCode() + attribHashCode + children.hashCode()
   }
 
   /** returns a hashcode for the given constituents of a node */
-  def hashCode( label:String, attribs:scala.collection.mutable.HashMap[String,String], children:Seq[Node] ) = {
-    label.hashCode() + attribs.toList.hashCode() + children.hashCode()
+  def hashCode(uriCode:int, label:String, attribs:scala.collection.mutable.HashMap[String,String], children:Seq[Node]) = {
+    41 * uriCode % 7 + label.hashCode() + attribs.toList.hashCode() + children.hashCode()
   }
 
   /** NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'

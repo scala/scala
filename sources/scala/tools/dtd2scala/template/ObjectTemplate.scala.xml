@@ -48,7 +48,10 @@
             +ch.elements.map( x => x.label ).toList.mkString("",",","")
             +"\n content model was "+cM);
 
-    abstract class <string ref="objectName"/>Node$ extends scala.xml.Node;
+    abstract class <string ref="objectName"/>Node$ extends scala.xml.Node {
+      /** the namespace code of this node */
+      final val namespaceCode: Int = 0;
+    }
 
     def tagIterator(ch:Seq[scala.xml.Node]):Iterator[Int] = new Iterator[Int] {
       val it = ch.elements.buffered;

@@ -24,6 +24,9 @@ case class EntityRef( entityName:String ) extends Node {
   */
   def label    = "#ENTITY";
 
+  /** always 0 */
+  final val namespaceCode = 0;
+
   final override def equals(x:Any) = x match {
     case EntityRef( s ) => entityName.equals( s );
     case _ => false;

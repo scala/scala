@@ -162,6 +162,8 @@ xml/Elem.scala
 xml/ExternalID.scala
 xml/EntityRef.scala
 xml/FactoryAdapter.scala
+xml/Namespace.scala
+xml/NamespaceRegistry.scala
 xml/Node.scala
 xml/NodeBuffer.scala
 xml/NodeSeq.scala

@@ -153,6 +153,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   def mkXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
     if( isPattern ) {
       val ts = new myTreeList();
+      ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) );
       ts.append( t );
       ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) );
       ts.append( convertToText( true, args ) );
@@ -161,9 +162,9 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                  ts.toArray())
     } else {
       val constrArgs = if( 0 == args.length ) {
-        Predef.Array[Tree]( t, _emptyMap( pos ) )
+        Predef.Array[Tree]( gen.mkIntLit(pos, 0), t, _emptyMap( pos ) )
       } else {
-        Predef.Array[Tree]( t, _emptyMap( pos ), make.Typed(
+        Predef.Array[Tree]( gen.mkIntLit(pos, 0), t, _emptyMap( pos ), make.Typed(
           pos, makeXMLseq(pos, args ), make.Ident(pos, TypeNames.WILDCARD_STAR)))
       };
       make.Apply( pos, _scala_xml_Elem( pos ), constrArgs )

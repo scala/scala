@@ -41,6 +41,9 @@ case class ProcInstr( target:String, text:Option[String] ) extends Node {
   /** the constant "#PI" */
   final def label    = "#PI";
 
+  /** always 0 */
+  final val namespaceCode = 0;
+
   /** always empty */
   final def attribute = Node.NoAttributes;
 

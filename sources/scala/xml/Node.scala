@@ -18,6 +18,9 @@ object Node {
   val NoAttributes: immutable.TreeMap[String,String] =
     immutable.TreeMap.Empty[String,String];
 
+  /** the constant empty attribute map */
+  val EmptyNamespace: Int = 0;
+
 }
 /** Trait for representing XML using nodes of a labelled tree.
  *  This trait contains an implementation of a subset of XPath for navigation.
@@ -29,6 +32,9 @@ trait Node {
 
   /** QName (the label of this node). I.e. "foo" for &lt;foo/&gt;) */
   def label: String;
+
+  /** the namespace code of this node */
+  val namespaceCode: Int;
 
   /** attribute axis */
   def attribute: Map[String,String] ;
@@ -85,7 +91,7 @@ trait Node {
       })
   }
 
-  override def hashCode() = Utility.hashCode(label, attribute.toList.hashCode(), child);
+  override def hashCode() = Utility.hashCode(namespaceCode, label, attribute.toList.hashCode(), child);
   /** string representation of this node */
   override def toString() = Utility.toXML(this);
 

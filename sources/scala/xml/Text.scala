@@ -24,6 +24,9 @@ case class Text( text:String ) extends Node {
   */
   def label    = "#PCDATA";
 
+  /** always 0 */
+  final val namespaceCode = 0;
+
   final override def equals(x:Any) = x match {
     case s:String => text.equals( s );
     case Text( s ) => text.equals( s );
