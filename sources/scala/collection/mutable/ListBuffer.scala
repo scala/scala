@@ -42,26 +42,26 @@ class ListBuffer[A] extends Buffer[A] with MutableList[A] {
      *  @param iter  the iterable object providing all elements to insert.
      */
     def insertAll(n: Int, iter: Iterable[A]): Unit = {
-    	val it = iter.elements;
-    	while (it.hasNext) {
-    		val newelem = it.next;
-    		if (n == 0)
-				prepend(newelem);
-			else if (n >= len)
-				append(newelem);
-			else {
-				var elem = first;
-				var i = n;
-				while (i > 1) {
-					elem = elem.next;
-					if (elem == null)
-						error("cannot insert element " + n + " in ListBuffer");
-					i = i - 1;
-				}
-				val old = elem.next;
-				elem.next = new LinkedList[A](newelem, old);
-			}
-    	}
+        val it = iter.elements;
+        while (it.hasNext) {
+            val newelem = it.next;
+            if (n == 0)
+                prepend(newelem);
+            else if (n >= len)
+                append(newelem);
+            else {
+                var elem = first;
+                var i = n;
+                while (i > 1) {
+                    elem = elem.next;
+                    if (elem == null)
+                        error("cannot insert element " + n + " in ListBuffer");
+                    i = i - 1;
+                }
+                val old = elem.next;
+                elem.next = new LinkedList[A](newelem, old);
+            }
+        }
     }
 
     /** Replace element at index <code>n</code> with the new element
@@ -120,14 +120,14 @@ class ListBuffer[A] extends Buffer[A] with MutableList[A] {
      *  @return true, iff both buffers contain the same sequence of elements.
      */
     override def equals(obj: Any): Boolean = obj match {
-    	case that: ListBuffer[A] =>
-    		elements.zip(that.elements).forall {
-    			case Pair(thiselem, thatelem) => thiselem == thatelem;
-    		}
-    	case _ => false
+        case that: ListBuffer[A] =>
+            elements.zip(that.elements).forall {
+                case Pair(thiselem, thatelem) => thiselem == thatelem;
+            }
+        case _ => false
     }
 
     /** Defines the prefix of the string representation.
-	 */
-	override protected def stringPrefix: String = "ListBuffer";
+     */
+    override protected def stringPrefix: String = "ListBuffer";
 }
