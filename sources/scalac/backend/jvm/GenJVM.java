@@ -54,7 +54,7 @@ class GenJVM {
     protected final static String CONSTRUCTOR_STRING =
         Constants.CONSTRUCTOR_NAME;
     protected final static Name CONSTRUCTOR_NAME =
-        Name.fromString(CONSTRUCTOR_STRING).toConstrName();
+        Name.fromString(CONSTRUCTOR_STRING);
 
     protected Unit unit = null;
     protected String sourceFileName = null;
