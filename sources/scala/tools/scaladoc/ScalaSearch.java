@@ -234,6 +234,11 @@ public class ScalaSearch {
      */
     public static Comparator symPathOrder = new Comparator() {
 	    public int compare(Object o1, Object o2) {
+                int c = compare0(o1, o2);
+                System.out.println("!!! " + Debug.show(o1, " - ", o2) + " -> " + c);
+                return c;
+            }
+	    public int compare0(Object o1, Object o2) {
                 LinkedList l1 = getOwners((Symbol)o1);
                 LinkedList l2 = getOwners((Symbol)o2);
                 for (int i = 0; true; i++) {
@@ -244,6 +249,8 @@ public class ScalaSearch {
                     if (s1 == s2) continue;
                     int c = s1.nameString().compareTo(s2.nameString());
                     if (c != 0) return c;
+                    if (s1.isTerm() && s2.isType()) return -1;
+                    if (s1.isType() && s2.isTerm()) return +1;
                     return s1.id - s2.id;
                 }
 	    }
@@ -253,6 +260,7 @@ public class ScalaSearch {
             public LinkedList getOwners(Symbol symbol) {
                 LinkedList owners = new LinkedList();
                 while (true) {
+                    assert !symbol.isNone() && !symbol.isError();
                     owners.addFirst(symbol);
                     if (symbol.isRoot()) break;
                     if (symbol.isNone()) break;

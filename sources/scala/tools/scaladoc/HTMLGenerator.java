@@ -387,8 +387,9 @@ public abstract class HTMLGenerator {
 				    if (ScalaSearch.isContainer(sym) &&
 					isDocumented.apply(sym)) {
  					createPages(sym);
- 					if (sym.isPackage())
+ 					if (sym.isPackage() || sym.isPackageClass()) {
  					    createContainerIndexPage(sym);
+                                        }
 				    }
 				}
 			    }
@@ -470,7 +471,7 @@ public abstract class HTMLGenerator {
      */
     protected String filterModifiers(Symbol sym) {
         int flags = sym.flags;
-        if (sym.isPackage()) {
+        if (sym.isPackage() || sym.isPackageClass()) {
             if ((flags & Modifiers.FINAL) != 0)
                 flags = flags - Modifiers.FINAL;
         }
@@ -1136,7 +1137,7 @@ public abstract class HTMLGenerator {
 	        Symbol sym = syms[i];
                 if (! sym.isRoot()) {
                     String name = sym.nameString();
-                    if (sym.isPackage())
+                    if (sym.isPackage() || sym.isPackageClass())
                         page.printAhref(definitionURL(sym), CLASSES_FRAME, name);
                     else {
                         Symbol user = (useFullName) ? global.definitions.ROOT_CLASS : Symbol.NONE;

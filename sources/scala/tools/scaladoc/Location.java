@@ -40,7 +40,7 @@ public class Location {
 	    try {
 		if (sym.isModuleClass())
 		    uri = getURI(sym.module());
-		else if (sym.isRoot() || sym.isClass() || sym.isModule() || sym.isPackage())
+		else if (sym.isRoot() || sym.isClass() || sym.isModule() || sym.isPackage() || sym.isPackageClass())
 		    uri = new URI(getPath(sym).toString() + HTML_SUFFIX);
 		else if (sym.isParameter())
 		    uri = getURI(sym.classOwner());
