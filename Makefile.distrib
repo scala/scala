@@ -31,6 +31,12 @@ JEDIT_LIST		+= scala.xml
 JEDIT_LIST		+= README
 JEDIT_FILES		 = $(JEDIT_LIST:%=$(JEDIT_ROOT)/%)
 
+# textpad scala-mode
+TEXTPAD_ROOT		 = $(PROJECT_SUPPORTDIR)/textpad
+TEXTPAD_LIST		+= scala.syn
+TEXTPAD_LIST		+= README
+TEXTPAD_FILES		 = $(TEXTPAD_LIST:%=$(TEXTPAD_ROOT)/%)
+
 # ultraedit scala-mode
 ULTRAEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/ultraedit
 ULTRAEDIT_LIST		+= scala.txt
@@ -126,6 +132,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/jedit
 	$(strip $(MIRROR) -m 644 -p -C $(JEDIT_ROOT) $(JEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/jedit)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/textpad
+	$(strip $(MIRROR) -m 644 -p -C $(TEXTPAD_ROOT) $(TEXTPAD_LIST) \
+	    $(INSTALL_SUPPORTDIR)/textpad)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/ultraedit
 	$(strip $(MIRROR) -m 644 -p -C $(ULTRAEDIT_ROOT) $(ULTRAEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/ultraedit)
