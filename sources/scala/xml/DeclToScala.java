@@ -24,13 +24,13 @@ public class DeclToScala {
       static final String ATTRIB_T   = "scala.Map[String,String]";
 
       static final String CHILDREN_VALDEF =
-"val _ch:SeqList[Element] = if( children == null ) { scala.SeqNil[Element] } else children ;";
+"val _ch:List[Element] = if( children == null ) { scala.Nil[Element] } else children ;";
       static final String CHILDREN_SEQ = "children";
-      static final String CHILDREN_T   = "scala.SeqList[Element]";
+      static final String CHILDREN_T   = "scala.List[Element]";
 
       static final String RAW_NAME_DEF     = "def getName:String = ";
 
-      static final String GET_CHILDREN_DEF = "def getChildren:scala.SeqList[Element] = _ch ;";
+      static final String GET_CHILDREN_DEF = "def getChildren:scala.List[Element] = _ch ;";
       static final String GET_ATTRIBS_DEF =  "def getAttribs:scala.Map[String,String] = _at ;";
 
       static final int IND_STEP = 5;
@@ -56,9 +56,9 @@ public class DeclToScala {
 
       public void begin() {
             fOut.println( "// this file is generated from a DTD");
-            fOut.print( "module " );
+            fOut.print( "object " );
             fOut.print( moduleName );
-            fOut.println(" with {");
+            fOut.println(" {");
             fIndent = IND_STEP;
             printIndent();
             fOut.println("import scala.xml ;");
@@ -92,23 +92,26 @@ public class DeclToScala {
 
             printIndent();
 
+	    /* // DISABLED
             // convenience ! overloaded constructors, have to appear *before*
             // the class def and need the "final" modifier
 
-            fOut.println( "final def "+clazzName+"(ch:SeqList[Element]):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], ch ) ;" );
+            fOut.println( "final def "+clazzName+"(ch:List[Element]):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], ch ) ;" );
 
             printIndent();
 
-            fOut.println( "final def "+clazzName+"( el:Element ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], el::SeqNil[Element] ) ;" );
+            fOut.println( "final def "+clazzName+"( el:Element ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], el::Nil[Element] ) ;" );
 
             printIndent();
             // might contain text
             if( decl.contentModel.indexOf("#PCDATA") != -1 ) {
 
-                  fOut.println( "final def "+clazzName+"( text:String ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], PCDATA( text )::SeqNil[Element] ) ;" );
-                  printIndent();
+	    fOut.println( "final def "+clazzName+"( text:String ):"+clazzName+" = new "+clazzName+"( null[scala.Map[String,String]], PCDATA( text )::Nil[Element] ) ;" );
+	    printIndent();
 
             }
+
+	    */
 
             fOut.print( "case class " );
 
@@ -120,7 +123,7 @@ public class DeclToScala {
             fOut.print( CHILDREN_SEQ ); fOut.print(':'); fOut.print( CHILDREN_T );
             fOut.print(')');
 
-            fOut.println(" extends Element with {");
+            fOut.println(" extends Element {");
             fIndent += IND_STEP ;
 
             printIndent();
@@ -180,11 +183,11 @@ public class DeclToScala {
 
             printIndent();
             fOut.println(
-"val _factory: scala.Map[String, (scala.Map[String,String],scala.SeqList[Element])Element] = {");
+"val _factory: scala.Map[String, (scala.Map[String,String],scala.List[Element])=>Element] = {");
             fIndent += IND_STEP;
             printIndent();
             fOut.println(
-"val res = new scala.HashMap[String,(scala.Map[String,String],scala.SeqList[Element])Element] ;");
+"val res = new scala.HashMap[String,(scala.Map[String,String],scala.List[Element])=>Element] ;");
             for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); ) {
                   ElemDecl decl = (ElemDecl) elemMap.get( it.next() );
                   printIndent();
@@ -217,9 +220,9 @@ public class DeclToScala {
                   fOut.print( "\",");
 
                   if( decl.contentModel.indexOf("#PCDATA") != -1 )
-                        fOut.print("True");
+                        fOut.print("true");
                   else
-                        fOut.print("False");
+                        fOut.print("false");
 
                   fOut.println(");");
             }
@@ -245,7 +248,7 @@ public class DeclToScala {
             fOut.println("def load( filename:String ):Element = {");
             fIndent += IND_STEP;
             printIndent();
-            fOut.println("val fAdapter = new ScalaFactoryAdapter with {");
+            fOut.println("val fAdapter = new ScalaFactoryAdapter  {");
             fIndent += IND_STEP;
             printIndent();
             fOut.println("val f = _factory ;");
@@ -257,7 +260,7 @@ public class DeclToScala {
             printIndent();
             fOut.println("val b:scala.Object = fAdapter.loadXML( filename );");
             printIndent();
-            fOut.println("b.as[ Element ]");
+            fOut.println("b as Element");
             printIndent();
             fOut.println("};");
             fIndent -= IND_STEP;
