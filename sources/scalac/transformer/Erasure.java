@@ -161,6 +161,10 @@ public class Erasure extends Transformer implements Modifiers {
 		    isSubType(elemtp1, elemtp2);
 	    }
 	}
+	switch (tp1) {
+	case UnboxedArrayType(Type elemtp1):
+            if (tp2.symbol() == definitions.ANY_CLASS) return true;
+        }
 	return isSubClass(tp1, tp2);
     }
 
