@@ -390,7 +390,10 @@ public class Erasure extends Transformer implements Modifiers {
 
 	case Typed(Tree expr, Tree tpe):
 	    // coerce expr to tpe
-	    Tree tpe1 = transform(tpe);
+	    Tree tpe1 = gen.mkType(tpe.pos, tpe.type().erasure()); // !!! was transform(tpe);
+            // !!! More generally, we should never transform a tree
+            // that represents a type. We should always transform
+            // types and then reconstruct the corresponding tree.
 	    Tree expr1 = transform(expr, tpe1.type);
 	    return noTyped ? expr1 : copy.Typed(tree, expr1, tpe1).setType(owntype);
 
