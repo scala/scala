@@ -152,14 +152,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	return fn.type == Type.ErrorType ? Type.ErrorType : Type.NoType;
     }
 
-    static Name value2TypeName(Object value) {
-	if (value instanceof Character) return Name.fromString("scala.Char");
-	else if (value instanceof Integer) return Name.fromString("scala.Int");
-	else if (value instanceof Long) return Name.fromString("scala.Long");
-	else if (value instanceof Float) return Name.fromString("scala.Float");
-	else if (value instanceof Double) return Name.fromString("scala.Double");
-	else if (value instanceof String) return Name.fromString("java.lang.String");
-	else if (value instanceof Boolean) return Name.fromString("scala.Boolean");
+    private Type value2Type(Object value) {
+	if (value instanceof Character) return definitions.CHAR_TYPE;
+	else if (value instanceof Integer) return definitions.INT_TYPE;
+	else if (value instanceof Long) return definitions.LONG_TYPE;
+	else if (value instanceof Float) return definitions.FLOAT_TYPE;
+	else if (value instanceof Double) return definitions.DOUBLE_TYPE;
+	else if (value instanceof String) return definitions.JAVA_STRING_TYPE;
+	else if (value instanceof Boolean) return definitions.BOOLEAN_TYPE;
 	else throw new ApplicationError();
     }
 
@@ -2141,7 +2141,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 
 	    case Literal(Object value):
-		return tree.setType(definitions.getType(value2TypeName(value)));
+		return tree.setType(value2Type(value));
 
 	    case TypeTerm():
 		return tree;
