@@ -55,7 +55,7 @@ public class Interpreter {
         Variable variable = compiler.getModule(module);
         Function function = compiler.getMethod(method);
         try {
-            evaluator.evaluate(variable, function, args);
+            evaluator.evaluate(variable, function, new Object[] {args});
             return EvaluatorResult.Void;
         } catch (EvaluatorException exception) {
             return EvaluatorResult.Error(exception);
