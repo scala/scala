@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.util.logging;
 /**
  *  A ConsoleLogger is mixed into a concrete class who has class Logged
