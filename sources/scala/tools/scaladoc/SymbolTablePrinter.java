@@ -289,6 +289,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
     public SymbolTablePrinter printType0(Type type) {
         printCommonPart(type);
         switch (type) {
+        case NoPrefix:
         case ThisType(_):
         case SingleType(_,_):
             print(".type");
@@ -386,8 +387,11 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
 	    print("<notype>");
             return this;
 
+	case NoPrefix:
+	    print("<noprefix>");
+            return this;
+
 	case ThisType(Symbol sym):
-            if (sym == Symbol.NONE) print("<local>.this");
             if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
 		print("this");
             printUsedSymbolName(sym);
@@ -499,6 +503,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
     public SymbolTablePrinter printPrefix0(Type prefix) {
         printCommonPart(prefix);
         switch (prefix) {
+        case NoPrefix:
         case ThisType(_):
         case SingleType(_,_):
             print(".");

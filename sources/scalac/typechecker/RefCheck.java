@@ -419,7 +419,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	case ErrorType:
 	case AnyType:
 	case NoType:
-	case ThisType(Symbol sym):
+	case NoPrefix:
+	case ThisType(_):
 	    break;
 	case SingleType(Type pre, Symbol sym):
 	    validateVariance(base, all, pre, variance);
