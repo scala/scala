@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import scalac.symtab.Symbol;
+import scalac.util.Debug;
 
 public class Override {
 
@@ -54,6 +55,10 @@ public class Override {
 
     public Iterator iterator() {
         return methods.iterator();
+    }
+
+    public String toString() {
+        return "Override(" + Debug.show(methods.toArray()) + ")";
     }
 
     //########################################################################
