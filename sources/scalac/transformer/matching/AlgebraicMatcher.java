@@ -140,11 +140,17 @@ public class AlgebraicMatcher extends PatternMatcher {
 	//System.err.println("patternArgs("+tree+")");
         switch (tree) {
             case Apply(_, Tree[] args):
+		/*
 		if( isSeqApply( (Apply) tree )) {
 		    //System.err.println("patternArgs: is seq apply !");
 		    return Tree.EMPTY_ARRAY;// let sequence matcher handle this
 
 		}
+		if( isStarApply( (Apply) tree )) {
+		    return Tree.EMPTY_ARRAY;// let sequence matcher handle this
+
+		}
+		*/
                 return args;
             default:
                 return Tree.EMPTY_ARRAY;
@@ -170,11 +176,18 @@ public class AlgebraicMatcher extends PatternMatcher {
                                       Type castType,
                                       Tree selector,
                                       CaseEnv env) {
+	  //System.err.println("patternNode:"+tree );
           Type theType = getConstrType( tree.type );
           switch (tree) {
 	  case Apply(Tree fn, Tree[] args):             // pattern with args
-	      if( isSeqApply( (Apply) tree ))
-		  return mk.SeqContainerPat( tree.pos, theType, args[ 0 ] );
+	      //System.err.println("Apply, isSeq?" + isSeqApply( (Apply) tree ));
+	      //System.err.println("Apply, isStar?" + isStarApply( (Apply) tree ));
+	      if( isSeqApply( (Apply) tree )) {
+		  PatternNode res = mk.ConstrPat(tree.pos, theType);
+		  res.and = mk.Header(tree.pos, castType, selector);
+		  res.and.and = mk.SeqContainerPat( tree.pos, theType, args[ 0 ] );
+	      	  return res;
+	      }
 	      return mk.ConstrPat(tree.pos, theType);
           case Typed(Ident(Name name), Tree tpe):       // typed pattern
                 theType = getConstrType( tpe.type );
@@ -220,7 +233,7 @@ public class AlgebraicMatcher extends PatternMatcher {
 	      return mk.ConstantPat(tree.pos, theType, value);
 
 	  case Sequence( _ ):
-	      throw new ApplicationError("Illegal pattern");
+	      return mk.SeqContainerPat( tree.pos, theType, tree );
 	  default:
 	      throw new ApplicationError("cannot handle "+tree);
 	  }
@@ -351,7 +364,17 @@ public class AlgebraicMatcher extends PatternMatcher {
 
 
     boolean isSeqApply( Tree.Apply tree ) {
-	return (tree.args.length == 1  && (tree.type.symbol().flags & Modifiers.CASE) == 0);
+	return (tree.args.length == 1  &&
+		(tree.type.symbol().flags & Modifiers.CASE) == 0);
+    }
+
+    boolean isStarApply( Tree.Apply tree ) {
+	Symbol params[] = tree.fun.type.valueParams();
+	//System.err.println( tree.fun.type.resultType().symbol() );
+	return  (tree.args.length == 1)
+	    && (tree.type.symbol().flags & Modifiers.CASE) != 0
+	    && params.length == 1
+	    && (params[ 0 ].flags & Modifiers.REPEATED) != 0;
     }
 
 //////////// generator methods
