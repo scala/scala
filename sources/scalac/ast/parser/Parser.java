@@ -1431,10 +1431,7 @@ public class Parser implements Tokens {
         TypeDef[] tparams = typeParamClauseOpt();
         ValDef[][] vparams = paramClauses();
         Tree restype = typedOpt();
-	if (s.token == LBRACE)
-	    return make.DefDef(pos, mods, name, tparams, vparams,
-                               restype, blockExpr());
-	else if (s.token == EQUALS || restype == Tree.Empty)
+	if (s.token == EQUALS || restype == Tree.Empty)
             return make.DefDef(pos, mods, name, tparams, vparams,
                                restype, equalsExpr());
         else
