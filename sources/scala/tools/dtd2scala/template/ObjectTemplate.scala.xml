@@ -57,12 +57,12 @@
         val &cAttributeName; : scala.Option[String] = scala.None;  /* o'ridden at parse time */
       </attributeBinding>
 
-      def % (attrs:scala.List[scala.Symbol#AttrDef]) = new &ccElementName;( children:_* ) {
+      def % (attrs:scala.List[Pair[String,String]]) = new &ccElementName;( children:_* ) {
 
         private var lmap = scala.collection.immutable.ListMap.Empty[String,String];
 
         for( val a &lt;- attrs.elements ) {
-          lmap = lmap.update(a.key, a.value)
+          lmap = lmap.update( a._1, a._2 )
         }
 
         def attributes : attribMap = lmap;
