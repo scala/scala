@@ -162,7 +162,7 @@ public class  Global {
             this.printer = new TextTreePrinter(printStream);
         else
             this.printer = new HTMLTreePrinter(printStream);
-        this.debugPrinter = new TextTreePrinter(System.err);
+        this.debugPrinter = new TextTreePrinter(System.err, true);
         this.freshNameCreator = new FreshNameCreator();
         this.make = new TreeCreator();
         this.currentPhase = PhaseDescriptor.INITIAL;
