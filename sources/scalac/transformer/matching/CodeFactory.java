@@ -46,6 +46,14 @@ class CodeFactory extends PatternTool {
 	return defs.getType( TUPLE2_N ).symbol() ;
     }
 
+    Symbol tuple2Sym_left() {
+	return tuple2Sym().lookup( LEFT_N );
+    }
+
+    Symbol tuple2Sym_right() {
+	return tuple2Sym().lookup( RIGHT_N );
+    }
+
     Symbol iteratorSym() {
 	return defs.getType( Names.scala_Iterator ).symbol() ;
     }
@@ -80,11 +88,11 @@ class CodeFactory extends PatternTool {
     }
 
     Symbol seqIterSym_next() {
-	Scope scp = seqIterSym().members(); return scp.lookup( Names.next );
+	return seqIterSym().lookup( Names.next );
     }
 
     Symbol seqIterSym_hasNext() {
-	Scope scp = seqIterSym().members(); return scp.lookup( Names.hasNext );
+	return seqIterSym().lookup( Names.hasNext );
     }
     /*
 
@@ -104,7 +112,7 @@ class CodeFactory extends PatternTool {
     }
 
     Symbol newIterSym() {
-	Scope scp = iterableSym().members(); return scp.lookup( Names.elements );
+	return iterableSym().lookup( Names.elements );
     }
 
     Symbol andSym() {
@@ -149,10 +157,7 @@ class CodeFactory extends PatternTool {
 	Tree result = defaultBody;
 
 	for( int i = condition.length-1; i >= 0; i-- )
-	    result = If( condition[ i ],
-			 body[ i ],
-			 result
-			 ).setType( result.type );
+	    result = If(condition[i], body[i], result);
 
 	return result ;
     }
@@ -184,17 +189,7 @@ class CodeFactory extends PatternTool {
 
     /**  returns `<seqObj.elements>' */
     Tree newIterator( Tree seqObj, Type elemType ) {
-	Symbol newIterSym = newIterSym();
-	Tree t1 = gen.Select( pos, seqObj, newIterSym)
-	    .setType( Type.MethodType(new Symbol[] {},_seqIterType( elemType )));
-
-	Tree theIterator = gen.Apply(seqObj.pos,
-				     t1,
-				     Tree.EMPTY_ARRAY)
-	    .setType( _seqIterType( elemType ) );
-
-	return theIterator;
-
+	return gen.mkApply__(gen.Select(seqObj, newIterSym()));
     }
 
     /** returns code `<seqObj>.elements'
@@ -285,50 +280,24 @@ class CodeFactory extends PatternTool {
       }
 
     Tree SeqTrace_headElem( Tree arg ) { // REMOVE SeqTrace
-	Scope scp = seqListSym().members();
-	Symbol headSym = scp.lookup ( HEAD_N );
-	assert headSym != Symbol.NONE;
-	scp = tuple2Sym().members();
-	Symbol leftSym = scp.lookup ( RIGHT_N );
-	assert leftSym != Symbol.NONE;
-	Tree t =  gen.Apply( gen.Select( pos, arg, headSym ),
-			     Tree.EMPTY_ARRAY );
-	return gen.Apply( gen.Select( pos, t, leftSym ),
-			  Tree.EMPTY_ARRAY );
+	Tree t = gen.mkApply__(gen.Select(arg, seqListSym_head()));
+	return gen.mkApply__(gen.Select(t, tuple2Sym_right()));
     }
 
     Tree SeqTrace_headState( Tree arg ) { // REMOVE SeqTrace
-	Scope scp = seqListSym().members();
-	Symbol headSym = scp.lookup ( HEAD_N );
-	assert headSym != Symbol.NONE;
-	scp = tuple2Sym().members();
-	Symbol leftSym = scp.lookup ( LEFT_N );
-	assert leftSym != Symbol.NONE;
-	Tree t =  gen.Apply( gen.Select( pos, arg, headSym ),
-			     Tree.EMPTY_ARRAY );
-	t =  gen.Apply( gen.Select( pos, t, leftSym ),
-			Tree.EMPTY_ARRAY );
-	return t;
+	Tree t = gen.mkApply__(gen.Select(arg, seqListSym_head()));
+	return gen.mkApply__(gen.Select(t, tuple2Sym_left()));
 
     }
 
-    Tree SeqTrace_tail( Tree arg ) {
-	Scope scp = seqListSym()/*seqTraceSym()*/.members(); // REMOVE SeqTrace
-	Symbol tailSym = scp.lookup ( TAIL_N );
-	assert tailSym != Symbol.NONE;
-	//System.err.println( "CodeFactory::SeqTrace_tail " + tailSym +" "+ tailSym.type() );
-	return gen.Apply( gen.Select( pos, arg, tailSym ),
-			  Tree.EMPTY_ARRAY );
+    Tree SeqTrace_tail( Tree arg ) { // REMOVE SeqTrace
+	return gen.mkApply__(gen.Select(arg, seqListSym_tail()));
     }
 
     /** `<seqlist>.head()'
      */
     Tree SeqList_head( Tree arg ) {
-	Scope scp = seqListSym().members();
-	Symbol headSym = scp.lookup ( HEAD_N );
-	assert headSym != Symbol.NONE;
-	return gen.Apply( gen.Select( pos, arg, headSym ),
-			  Tree.EMPTY_ARRAY );
+	return gen.mkApply__(gen.Select(arg, seqListSym_head()));
     }
 
     /** return the analyzed type
@@ -359,7 +328,7 @@ class CodeFactory extends PatternTool {
        case Literal(Object value):
        return gen.mkBooleanLit(tree.pos, !((Boolean)value).booleanValue());
        }
-       return gen.Apply(tree.pos, gen.Select(tree, notSym));
+       return gen.mkApply__(gen.Select(tree, notSym));
        }
 
     protected Tree And(Tree left, Tree right) {
@@ -383,7 +352,7 @@ class CodeFactory extends PatternTool {
 	case Literal(Object value):
 	    if (!((Boolean)value).booleanValue()) return left;
         }
-        return gen.Apply(gen.Select(left, orSym()), new Tree[]{right});
+        return gen.mkApply_V(gen.Select(left, orSym()), new Tree[]{right});
     }
 
     protected Tree Equals(Tree left, Tree right) {
