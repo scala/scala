@@ -9,7 +9,7 @@
 import java.lang.Object;
 
 import scalac.{Global => scalac_Global}
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.typechecker.{Infer => scalac_Infer}
 import scalac.ApplicationError;
 import scalac.util._;
@@ -20,8 +20,6 @@ import scala.tools.util.Position;
 import scala.tools.scalac.util.NewArray;
 
 package scala.tools.scalac.typechecker {
-
-import scalac_symtab._;
 
 class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scalac_Infer {
 

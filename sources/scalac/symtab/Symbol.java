@@ -1227,7 +1227,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         private Type transformInfo(Phase phase, Type info) {
             Global global = phase.global;
             Phase current = global.currentPhase;
-            boolean keepInheritedOverloaded = current.id <= global.PHASE.REFCHECK.id();
+            boolean keepInheritedOverloaded = current.id <= global.PHASE.UNCURRY.id();
             switch (info) {
             case ErrorType:
             case NoType:

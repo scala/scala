@@ -164,7 +164,7 @@ public class Names {
     public static final Name java = Name.fromString("java");
     public static final Name lang = Name.fromString("lang");
     public static final Name length = Name.fromString("length");
-    public static final Name match = Name.fromString("match");
+    public static final Name _match = Name.fromString("match");
     public static final Name map = Name.fromString("map");
     public static final Name n = Name.fromString("n");
     public static final Name nobinding = Name.fromString("nobinding");

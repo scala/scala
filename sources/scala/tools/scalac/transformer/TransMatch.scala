@@ -163,7 +163,7 @@ class TransMatch( global:scalac_Global )
        return null;
      else
        tree match {
-         case Tree$Apply(Tree$Select( receiver, Names.match ), args) =>
+         case Tree$Apply(Tree$Select( receiver, Names._match ), args) =>
            if ((args != null) && (args.length == 1))
              args( 0 ) match {
                case Tree$Visitor( cases ) =>
@@ -171,7 +171,7 @@ class TransMatch( global:scalac_Global )
              }
            return tree;
 
-         case Tree$Apply(Tree$TypeApply(Tree$Select( receiver, Names.match ), targs), args) =>
+         case Tree$Apply(Tree$TypeApply(Tree$Select( receiver, Names._match ), targs), args) =>
            if ((args != null) && (args.length == 1))
              args( 0 ) match {
                case Tree$Visitor( cases ) =>

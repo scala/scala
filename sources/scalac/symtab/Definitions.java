@@ -707,7 +707,7 @@ public class Definitions {
         // ANY_PLUS  = newMethod(ANY_CLASS,Names.PLUS        ,Modifiers.FINAL);
         ANY_IS       = newMethod(ANY_CLASS,Names.isInstanceOf,Modifiers.FINAL);
         ANY_AS       = newMethod(ANY_CLASS,Names.asInstanceOf,Modifiers.FINAL);
-        ANY_MATCH    = newMethod(ANY_CLASS,Names.match       ,Modifiers.FINAL);
+        ANY_MATCH    = newMethod(ANY_CLASS,Names._match      ,Modifiers.FINAL);
 
         initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , boolean_TYPE());
         initMethod(ANY_BANGEQ  , new Type[]{ANY_TYPE()}   , boolean_TYPE());

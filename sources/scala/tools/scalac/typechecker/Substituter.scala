@@ -7,14 +7,12 @@
 // $Id$
 
 import scalac.{Global => scalac_Global};
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.ApplicationError;
 import scalac.util._;
 import scalac.ast._;
 
 package scala.tools.scalac.typechecker {
-
-import scalac_symtab._;
 
 // Tree Substitution -------------------------------------------------------------
 

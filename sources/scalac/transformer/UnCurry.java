@@ -123,11 +123,14 @@ public class UnCurry extends OwnerTransformer
 	}
         switch (tree) {
 	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+            Symbol clazz = tree.symbol();
+            for (Scope.SymbolIterator it = clazz.members().iterator(); it.hasNext(); )
+                checkNoDoubleDef(clazz, it.next());
 	    return copy.ClassDef(
-		tree, tree.symbol(), tparams,
-		uncurry(transform(vparams, tree.symbol())),
+		tree, clazz, tparams,
+		uncurry(transform(vparams, clazz)),
 		tpe,
-		transform(impl, tree.symbol()));
+		transform(impl, clazz));
 
 	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
@@ -173,7 +176,7 @@ public class UnCurry extends OwnerTransformer
 		!(args1[0] instanceof Tree.Visitor)) {
 		switch (TreeInfo.methPart(fn1)) {
 		case Select(Tree qual, Name name):
-		    assert name == Names.match;
+		    assert name == Names._match;
 		    return gen.postfixApply(qual, args1[0], currentOwner);
 		default:
 		    throw new ApplicationError("illegal prefix for match: " + tree);
@@ -323,5 +326,82 @@ public class UnCurry extends OwnerTransformer
 	} else {
 	    return transform(arg);
 	}
+    }
+
+// Double Definition Checking -----------------------------------------------
+
+    private void checkNoDoubleDef(Symbol clazz, Symbol sym) {
+        switch (sym.type()) {
+        case OverloadedType(Symbol[] alts, Type[] alttypes):
+            for (int i = 0; i < alttypes.length; i++) {
+                for (int j = i + 1; j < alttypes.length; j++)
+                    if (inConflict(alts[i], alts[j], descr.uncurry(alttypes[i]), descr.uncurry(alttypes[j])))
+                        conflictError(clazz, alts[i], alts[j], alttypes[i], alttypes[j]);
+            }
+            break;
+        default:
+        }
+    }
+
+    private void conflictError(Symbol clazz, Symbol sym1, Symbol sym2, Type type1, Type type2) {
+        if (sym1.owner() == clazz && sym2.owner() == clazz)
+            unit.error(sym2.pos,
+                       "Double declaration:\n" +
+                       sym1 + ": " + type1 + " and\n" +
+                       sym2 + ": " + type2 + " have same types after erasure");
+        else if (sym1.owner() == clazz)
+            unit.error(sym1.pos,
+                       "Accidental override:\n" +
+                       sym1 + ": " + type1 + " has same type after erasure as\n" +
+                       sym2 + ": " + type2 + " which is inherited from " + sym2.owner());
+        else if (sym2.owner() == clazz)
+            unit.error(sym2.pos,
+                       "Accidental override:\n" +
+                       sym2 + ": " + type2 + " has same type after erasure as\n" +
+                       sym1 + ": " + type1 + " which is inherited from " + sym1.owner());
+        else
+            unit.error(clazz.pos,
+                       "Inheritance conflict: inherited members\n" +
+                      sym1 + ": " + type1 + sym1.locationString() + " and\n" +
+                       sym2 + ": " + type2 + sym2.locationString() + " have same types after erasure");
+    }
+
+    private boolean inConflict(Symbol sym1, Symbol sym2, Type type1, Type type2) {
+        switch (type1) {
+        case PolyType(_, Type restype1):
+            return inConflict(sym1, sym2, restype1, type2);
+
+        case MethodType(Symbol[] params1, Type restype1):
+            switch (type2) {
+            case PolyType(_, Type restype2):
+                return inConflict(sym1, sym2, type1, restype2);
+
+            case MethodType(Symbol[] params2, Type restype2):
+                if (params1.length != params2.length) return false;
+                for (int i = 0; i < params1.length; i++) {
+                    if (!params1[i].nextInfo().erasure().isSameAs(
+                            params2[i].nextInfo().erasure())) return false;
+                }
+                if (restype1.erasure().isSameAs(restype2.erasure()))
+                    return true;
+                if (sym1.owner() == sym2.owner())
+                    return false;
+                for (int i = 0; i < params1.length; i++) {
+                    if (!params1[i].nextInfo().isSameAs(
+                            params2[i].nextInfo())) return false;
+                }
+                return true;
+
+            default:
+                return false;
+            }
+
+        default:
+            switch (type2) {
+            case PolyType(_, _):
+            case MethodType(_, _): return inConflict(sym1, sym2, type2, type1);
+            default: return true;
+            }
+        }
     }
 }

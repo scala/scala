@@ -2852,7 +2852,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           }
 
 	case Tree$Select(qual, name) =>
-	  val qualmode: int = if (name == Names.match) EXPRmode
+	  val qualmode: int = if (name == Names._match) EXPRmode
                               else EXPRmode | POLYmode | QUALmode;
 	  var qual1: Tree = transform(qual, qualmode);
 	  if (name.isTypeName())

@@ -61,7 +61,7 @@ object Match {
 
 class Match( k:Int,it:Iterator[Seq[scala.xml.Node]] ) {
 
-  def equals( o:Object ) = o match {
+  override def equals( o:Any ) = o match {
     case that:Match =>
     ( this.index == that.index )&&( this.iter.toList == that.iter.toList )
     case _ => false;

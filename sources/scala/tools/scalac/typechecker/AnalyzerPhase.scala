@@ -7,7 +7,8 @@
 // $Id$
 
 import scala.tools.util.Position;
-import scalac.{symtab => scalac_symtab, _}
+import scalac._;
+import scalac.symtab._;
 import scalac.util._;
 import scalac.ast._;
 import scalac.checkers._;
@@ -18,8 +19,6 @@ import scalac.typechecker.{AnalyzerPhase => scalac_AnalyzerPhase}
 import scalac.{Global => scalac_Global}
 
 package scala.tools.scalac.typechecker {
-
-import scalac_symtab._;
 
 class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends scalac_AnalyzerPhase(global, descriptor) {
 

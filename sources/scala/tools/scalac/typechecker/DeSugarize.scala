@@ -11,7 +11,7 @@ import java.lang.Object;
 
 import scalac._;
 import scalac.util._;
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.ast._;
 import scalac.typechecker.Infer;
 import scalac.{Global => scalac_Global, CompilationUnit => scalac_CompilationUnit}
@@ -20,8 +20,6 @@ import scala.tools.scalac.ast.printer.TextTreePrinter;
 import scala.tools.scalac.util.NewArray;
 
 package scala.tools.scalac.typechecker {
-
-import scalac_symtab._;
 
 /** A transformer for removing syntactic sugar. This transformer does
  *  not need any type or symbol-table information.
@@ -210,7 +208,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
       // x.match {cases}
       val body: Tree = make.Apply(
 	tree.pos,
-	make.Select(tree.pos, xuse, Names.match),
+	make.Select(tree.pos, xuse, Names._match),
 	NewArray.Tree(tree));
       make.Function(tree.pos, NewArray.ValDef(param), body);
   }
@@ -390,7 +388,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
       val cases = NewArray.CaseDef(make.CaseDef(pos, pat, Tree.Empty, tuple));
       val match: Tree = make.Apply(
 	pos,
-	make.Select(pos, rhs, Names.match),
+	make.Select(pos, rhs, Names._match),
 	NewArray.Tree(make.Visitor(pos, cases)));
 
       if (vars.length == 0) {

@@ -5,14 +5,12 @@
 **
 ** $Id$
 \*                                                                      */
-import scalac.{symtab => scalac_symtab}
+import scalac.symtab._;
 import scalac.ast._;
 import scalac.util.Names;
 import scalac.util.Name;
 
 package scala.tools.scalac.typechecker {
-
-import scalac_symtab._;
 
 object Context {
   val NONE = new Context();

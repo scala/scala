@@ -63,7 +63,7 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
     } ;
   }
 
-  def toString:String = {
+  override def toString(): String = {
     val sb = new StringBuffer();
     sb.append( { if( treeRules.isEmpty )
       "Set of rules is EMPTY.\n" else treeRulesToString });
