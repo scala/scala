@@ -417,12 +417,6 @@ class CodeFactory extends PatternTool {
         //return sym.typeAt(unit.global.ANALYZER_PHASE.id);
     }
 
-    /** return the analyzed type
-     */
-    public Type typeOf0(Symbol sym) {
-        return sym.typeAt(unit.global.PHASE.ANALYZER.id());
-    }
-
 
     protected Tree Block(int pos, Tree[] ts, Type tpe) {
         if (ts.length == 1)

@@ -71,12 +71,6 @@ public class AlgebraicMatcher extends PatternMatcher {
         return sym.type();
     }
 
-    /** return the analyzed type
-     */
-    public Type typeOf0(Symbol sym) {
-        return sym.typeAt(unit.global.PHASE.ANALYZER.id());
-    }
-
     /** factories
      */
 
@@ -161,13 +155,8 @@ public class AlgebraicMatcher extends PatternMatcher {
 	return tpe;
     }
 
-    protected Type getHeaderType(Type tpe) {
-        switch (tpe) {
-            case PolyType(_, Type res):
-                return res;
-            default:
-                return tpe;
-        }
+    protected Type getHeaderType(Symbol sym) {
+        return sym.type().resultType();
     }
 
       /** constructs a pattern node depending on the case of argument `tree'
@@ -304,7 +293,7 @@ public class AlgebraicMatcher extends PatternMatcher {
               Symbol typeSym = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
 
-              Type castType = getHeaderType( typeOf0( typeSym )).asSeenFrom(typeOf(casted), typeSym.owner());
+              Type castType = getHeaderType(typeSym).asSeenFrom(typeOf(casted), typeSym.owner());
               target.and = curHeader =
                     mk.Header(pat.pos,
                               castType,
