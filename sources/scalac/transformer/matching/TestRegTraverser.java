@@ -21,6 +21,7 @@ public class TestRegTraverser extends Traverser {
     static Set nilVariables = new HashSet();
 
     public void traverse(Tree tree) {
+        //System.out.println("traverse:"+tree);
     	if (!result)
 	    switch (tree) {
 	    case Alternative(_):
@@ -57,21 +58,26 @@ public class TestRegTraverser extends Traverser {
 
                 // Matthias PatternMatcher cannot handle this case
 	    case Apply( Tree fn, Tree[] trees ):
-                if( trees.length == 1 ) {
+                if( trees.length == 1 )
                     switch (trees[ 0 ]) {
+
                     case Sequence( Tree[] trees2 ):
                         if( trees2.length == 1 ) {
                             switch (trees2[ 0 ]) {
-                            case Sequence( _ ):
+                            case Sequence( Tree[] trees3 ):
                                 result = true;
                                 break;
+                            default:
+                                super.traverse( tree );
                             };
                             //System.out.println( fn );
                             //System.out.println( tree.type() );
-                        }
+                        } else if( trees.length > 0 )
+                            super.traverse( tree );
+                        break;
+                    default:
+                        super.traverse( tree );
                     }
-                }
-                super.traverse( tree );
 		break;
 	    default:
 		super.traverse( tree );
@@ -82,7 +88,7 @@ public class TestRegTraverser extends Traverser {
         TestRegTraverser trt = new TestRegTraverser();
         nilVariables.clear();
         trt.traverse(t);
-        //System.err.println("TestRegTraverser says "+t+" -> "+trt.result);
+        //System.out.println("TestRegTraverser says "+t+" -> "+trt.result);
         return trt.result;
     }
 

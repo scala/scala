@@ -317,7 +317,7 @@ public class PatternMatcher extends PatternTool {
                 assert false; // this may not happen ??  ----------------- Burak
                 return mk.ConstrPat(tree.pos, tree.type);
             } else if (name.isVariable()) {// should be Bind  ------------ Burak
-                assert false;
+                assert false : "encountered ident:"+name;
                 if (env != null)
                     env.newBoundVar(tree.symbol(),
                                     tree.type,
