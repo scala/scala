@@ -367,6 +367,19 @@ object Bug266Test {
 }
 
 //############################################################################
+// Bug 316
+
+class Bug316MyIterator with Iterator[Int] {
+    def hasNext = false;
+    def next = 42;
+}
+
+object Bug316Test {
+  def main(args: Array[String]): Unit =
+    (new Bug316MyIterator) filter { x: Int => x == 1 };
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -409,6 +422,7 @@ object Test  {
     test(250, Bug250Test.main(args));
     test(257, Bug257Test.main(args));
     test(266, Bug266Test.main(args));
+    test(316, Bug316Test.main(args));
 
     if (errors > 0) {
       System.out.println();
