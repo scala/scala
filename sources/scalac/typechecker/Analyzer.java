@@ -984,7 +984,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
 	    tree.type = Type.ErrorType;
-            if (tree.hasSymbol()) tree.setSymbol(Symbol.ERROR);
+            if (tree.hasSymbol() && tree.symbol() == null) tree.setSymbol(Symbol.ERROR);
 	}
 
         this.unit = savedUnit;
@@ -2215,7 +2215,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
 	    tree.type = Type.ErrorType;
-            if (tree.hasSymbol()) tree.setSymbol(Symbol.ERROR);
+            if (tree.hasSymbol() && tree.symbol() == null) tree.setSymbol(Symbol.ERROR);
 	    return tree;
 	}
     }
