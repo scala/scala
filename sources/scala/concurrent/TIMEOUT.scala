@@ -1,3 +1,3 @@
 package scala.concurrent;
 
-case class TIMEOUT;
+case class TIMEOUT();

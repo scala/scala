@@ -1,68 +1,160 @@
 package scala.concurrent;
 
-import scala.collection.mutable.LinkedList;
-
-class MailBox with Monitor {
+//class MailBox with Monitor with LinkedListQueueCreator {
+class MailBox with Monitor with ListQueueCreator {
 
   type Message = AnyRef;
 
-  private abstract class Receiver extends Monitor {
-    type t;
-    val receiver: PartialFunction[Message, t];
-    var msg: Message = _;
-    def receive(): t = synchronized {
-      if (msg != null) wait();
+  private abstract class PreReceiver with Monitor {
+    var msg: Message = null;
+    def isDefinedAt(msg: Message): boolean;
+  }
+
+  private class Receiver[a](receiver: PartialFunction[Message, a]) extends PreReceiver {
+
+    def isDefinedAt(msg: Message) = receiver.isDefinedAt(msg);
+
+    def receive(): a = synchronized {
+      if (msg == null) wait();
       receiver(msg)
     }
-    def receiveWithin(msec: Long): t = synchronized {
-      if (msg != null) wait(msec);
-      receiver(if (msg != null) msg else TIMEOUT)
+
+    def receiveWithin(msec: long): a = synchronized {
+      if (msg == null) wait(msec);
+      receiver(if (msg != null) msg else TIMEOUT())
     }
   }
 
-  // !!! is this new correct ?
-  private val sent = new LinkedList[Message](null, null);
-  private var lastSent = sent;
-  // !!! is this new correct ?
-  private var receivers = new LinkedList[Receiver](null, null);
-  private var lastReceiver = receivers;
+  private val messageQueue = queueCreate[Message];
+  private val receiverQueue = queueCreate[PreReceiver];
 
-  def send(msg: Message): Unit = synchronized {
-    var rs = receivers, rs1 = rs.next;
-    // !!! does not compile
-    // !!! while (rs1 != null && !rs1.elem.receiver.isDefinedAt(msg)) {
-    // !!!   rs = rs1; rs1 = rs1.next;
-    // !!! }
-    if (rs1 != null) {
-      rs.next = rs1.next; rs1.elem.msg = msg; rs1.elem.notify();
-    } else {
-      // !!! does not compile
-      // !!! lastSent = lastSent.append(msg)
+  /** Unconsumed messages. */
+  private var sent = messageQueue.make;
+
+  /** Pending receivers. */
+  private var receivers = receiverQueue.make;
+
+  /**
+  * Check whether the receiver can be applied to an unconsumed message.
+  * If yes, the message is extracted and associated with the receiver.
+  * Otherwise the receiver is appended to the list of pending receivers.
+  */
+  private def scanSentMsgs[a](receiver: Receiver[a]): unit = synchronized {
+    messageQueue.extractFirst(sent, msg => receiver.isDefinedAt(msg)) match {
+      case None => receivers = receiverQueue.append(receivers, receiver)
+      case Some(Pair(msg, withoutMsg)) => {
+	sent = withoutMsg;
+	receiver.msg = msg
+      }
     }
   }
 
-  def scanSentMsgs[a](r: Receiver { type t = a }): Unit = synchronized {
-    var ss = sent, ss1 = ss.next;
-    while (ss1 != null && !r.receiver.isDefinedAt(ss1.elem)) {
-      ss = ss1; ss1 = ss1.next
-    }
-    if (ss1 != null) {
-      ss.next = ss1.next; r.msg = ss1.elem;
-    } else {
-      // !!! does not compile
-      // !!! lastReceiver = lastReceiver append r;
+  /**
+  * First check whether a pending receiver is applicable to the sent
+  * message. If yes, the receiver is notified. Otherwise the message
+  * is appended to the linked list of sent messages.
+  */
+  def send(msg: Message): unit = synchronized {
+    receiverQueue.extractFirst(receivers, r => r.isDefinedAt(msg)) match {
+      case None => sent = messageQueue.append(sent, msg)
+      case Some(Pair(receiver, withoutReceiver)) => {
+	receivers = withoutReceiver;
+	receiver.msg = msg;
+	receiver synchronized { receiver.notify() };
+      }
     }
   }
 
+  /**
+  * Block until there is a message in the mailbox for which the processor
+  * <code>f</code> is defined.
+  */
   def receive[a](f: PartialFunction[Message, a]): a = {
-    val r = new Receiver { type t = a; val receiver = f }
+    val r = new Receiver(f);
     scanSentMsgs(r);
     r.receive()
   }
 
-  def receiveWithin[a](msec: Long)(f: PartialFunction[Message, a]): a = {
-    val r = new Receiver { type t = a; val receiver = f }
+  /**
+  * Block until there is a message in the mailbox for which the processor
+  * <code>f</code> is defined or the timeout is over.
+  */
+  def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = {
+    val r = new Receiver(f);
     scanSentMsgs(r);
     r.receiveWithin(msec)
   }
+
 }
+
+/////////////////////////////////////////////////////////////////
+
+/**
+* Module for dealing with queues.
+*/
+trait QueueModule[a] {
+  /** Type of queues. */
+  type t;
+  /** Create an empty queue. */
+  def make: t;
+  /** Append an element to a queue. */
+  def append(l: t, x: a): t;
+  /** Extract an element satisfying a predicate from a queue. */
+  def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]];
+}
+
+/** Inefficient but simple queue module creator. */
+trait ListQueueCreator {
+  def queueCreate[a]: QueueModule[a] = new QueueModule[a] {
+    type t = List[a];
+    def make: t = Nil;
+    def append(l: t, x: a): t = l ::: List(x);
+    def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] =
+      l match {
+	case Nil => None
+	case head :: tail =>
+	  if (p(head))
+	    Some(Pair(head, tail))
+	  else
+	    extractFirst(tail, p) match {
+	      case None => None
+	      case Some(Pair(x, without_x)) => Some(Pair(x, head :: without_x))
+	    }
+      }
+  }
+}
+
+/** Efficient queue module creator based on linked lists. */
+trait LinkedListQueueCreator {
+  import scala.collection.mutable.LinkedList;
+  def queueCreate[a <: AnyRef]: QueueModule[a] = new QueueModule[a] {
+    type t = Pair[LinkedList[a], LinkedList[a]]; // fst = the list, snd = last elem
+    def make: t = {
+      val l = new LinkedList[a](null, null);
+      Pair(l, l)
+    }
+    def append(l: t, x: a): t = {
+      val atTail = new LinkedList(x, null);
+      l._2 append atTail;
+      Pair(l._1, atTail)
+    }
+    def extractFirst(l: t, p: a => boolean): Option[Pair[a, t]] = {
+      var xs = l._1;
+      var xs1 = xs.next;
+      while (xs1 != null && !p(xs1.elem)) {
+	xs = xs1;
+	xs1 = xs1.next;
+      }
+      if (xs1 != null) {
+	xs.next = xs1.next;
+	if (xs.next == null)
+	  Some(Pair(xs1.elem, Pair(l._1, xs)))
+	else
+	  Some(Pair(xs1.elem, l))
+      }
+      else
+	None
+    }
+  }
+}
+

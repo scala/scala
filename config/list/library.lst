@@ -102,10 +102,10 @@ collection/immutable/Queue.scala
 collection/immutable/Set.scala
 collection/immutable/Stack.scala
 
-# concurrent/Actor.scala
+concurrent/Actor.scala
+concurrent/MailBox.scala
 concurrent/Channel.scala
 concurrent/Lock.scala
-# concurrent/MailBox.scala
 concurrent/SyncChannel.scala
 concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
