@@ -494,6 +494,7 @@ public class Primitives {
         // !!! addAll(defs.BOOLEAN_CLASS, Names.ADD, Primitive.CONCAT, 1);
 
         // scala.Byte
+        addAll(defs.BYTE_CLASS, Names.coerce, Primitive.COERCE, 5);
         addAll(defs.BYTE_CLASS, Names.EQ, Primitive.EQ, 5);
         addAll(defs.BYTE_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.BYTE_CLASS, Names.equals, Primitive.EQUALS, 1);
@@ -517,6 +518,7 @@ public class Primitives {
         addAll(defs.BYTE_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Short
+        addAll(defs.SHORT_CLASS, Names.coerce, Primitive.COERCE, 4);
         addAll(defs.SHORT_CLASS, Names.EQ, Primitive.EQ, 5);
         addAll(defs.SHORT_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.SHORT_CLASS, Names.equals, Primitive.EQUALS, 1);
@@ -540,6 +542,7 @@ public class Primitives {
         addAll(defs.SHORT_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Char
+        addAll(defs.CHAR_CLASS, Names.coerce, Primitive.COERCE, 4);
         addAll(defs.CHAR_CLASS, Names.EQ, Primitive.EQ, 5);
         addAll(defs.CHAR_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.CHAR_CLASS, Names.equals, Primitive.EQUALS, 1);
@@ -563,6 +566,7 @@ public class Primitives {
         addAll(defs.CHAR_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Int
+        addAll(defs.INT_CLASS, Names.coerce, Primitive.COERCE, 3);
         addAll(defs.INT_CLASS, Names.EQ, Primitive.EQ, 5);
         addAll(defs.INT_CLASS, Names.NE, Primitive.NE, 5);
         //addAll(defs.INT_CLASS, Names.equals, Primitive.EQUALS, 1);
@@ -586,6 +590,7 @@ public class Primitives {
         addAll(defs.INT_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Long
+        addAll(defs.LONG_CLASS, Names.coerce, Primitive.COERCE, 2);
         addAll(defs.LONG_CLASS, Names.EQ, Primitive.EQ, 4);
         addAll(defs.LONG_CLASS, Names.NE, Primitive.NE, 4);
         //addAll(defs.LONG_CLASS, Names.equals, Primitive.EQUALS, 1);
@@ -609,6 +614,7 @@ public class Primitives {
         addAll(defs.LONG_CLASS, Names.ASR, Primitive.ASR, 2);
 
         // scala.Float
+        addAll(defs.FLOAT_CLASS, Names.coerce, Primitive.COERCE, 1);
         addAll(defs.FLOAT_CLASS, Names.EQ, Primitive.EQ, 3);
         addAll(defs.FLOAT_CLASS, Names.NE, Primitive.NE, 3);
         //addAll(defs.FLOAT_CLASS, Names.equals, Primitive.EQUALS, 1);
