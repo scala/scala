@@ -112,7 +112,6 @@ public class SymSet {
     public final static SymSet EMPTY = new SymSet();
 
     private boolean less(Symbol s1, Symbol s2) {
-        return (s1.hashCode() < s2.hashCode())
-            || (s1.hashCode() == s2.hashCode() && s1.isLess(s2));
+        return s1.isLess(s2);
     }
 }
