@@ -640,7 +640,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
     val types: java.util.List  = new java.util.ArrayList();
     if (symbol != null) {
       val global: scalac_Global  = scalac_Global.instance;
-      if (global.currentPhase.id > global.PHASE.EXPLICITOUTER.id()) {
+      if (global.currentPhase.id > global.PHASE.ADDACCESSORS.id()) {
         val i: Scope$SymbolIterator = symbol.members().iterator();
         while (i.hasNext()) {
           val member: Symbol = i.next();

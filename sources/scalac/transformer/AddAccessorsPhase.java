@@ -16,7 +16,7 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
-import scalac.ast.Transformer;
+import scalac.ast.GenTransformer;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
 import scalac.ast.TreeList;
@@ -54,7 +54,7 @@ public class AddAccessorsPhase extends Phase {
     // Private Class - Tree transformer
 
     /** The tree transformer */
-    private final Transformer treeTransformer = new Transformer(global) {
+    private final GenTransformer treeTransformer = new GenTransformer(global) {
 
         /** The parameter to accessor method map */
         private final Map/*<Symbol,Symbol>*/ methods = new HashMap();
@@ -117,6 +117,11 @@ public class AddAccessorsPhase extends Phase {
                 impl = gen.Template(clasz.pos, impl.symbol(), parents, body);
                 return gen.ClassDef(clasz, impl);
             }
+            case AbsTypeDef(_, _, _, _):
+            case AliasTypeDef(_, _, _, _):
+                return Tree.Empty; // eliminate
+            case Typed(Tree expr, _):
+                return transform(expr); // eliminate
             case DefDef(_, _, _, _, _, _):
                 Symbol backup = this.method;
                 this.method = tree.symbol();

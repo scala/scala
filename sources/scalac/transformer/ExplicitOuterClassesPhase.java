@@ -338,16 +338,6 @@ public class ExplicitOuterClassesPhase extends Phase {
                 context = backup;
                 return gen.DefDef(method, rhs);
 
-                // !!!
-            case AbsTypeDef(_, _, _, _):
-            case AliasTypeDef(_, _, _, _):
-                // eliminate // !!!
-                return Tree.Empty;
-
-            case Typed(Tree expr, Tree tpe):
-                // eliminate // !!!
-                return transform(expr);
-
             case Apply(Tree vfun, Tree[] vargs):
                 switch (vfun) {
                 case TypeApply(Tree tfun, Tree[] targs):
