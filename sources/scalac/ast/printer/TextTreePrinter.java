@@ -313,13 +313,13 @@ public class TextTreePrinter implements TreePrinter {
             printOpt(TXT_EQUAL, rhs, true);
             break;
 
-            case DefDef(int mods,
-                        Name name,
-                        Tree.AbsTypeDef[] tparams,
-                        Tree.ValDef[][] vparams,
-                        Tree tpe,
-                        Tree rhs):
-                printModifiers(mods);
+        case DefDef(int mods,
+		    Name name,
+		    Tree.AbsTypeDef[] tparams,
+		    Tree.ValDef[][] vparams,
+		    Tree tpe,
+		    Tree rhs):
+	    printModifiers(mods);
             print(KW_DEF);
             print(Text.Space);
             if (name.isTypeName()) print(KW_THIS);

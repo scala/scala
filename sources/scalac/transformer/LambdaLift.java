@@ -444,9 +444,13 @@ public class LambdaLift extends OwnerTransformer
 		(sym.kind == TYPE || (sym.kind == VAL && !sym.isMethod()))) {
 		sym = descr.proxy(sym, currentOwner);
 	    }
-	    Tree tree1 = copy.Ident(tree, sym).setType(
-		sym.nextType());
-	    if (name != sym.name) ((Ident)tree1).name = sym.name;
+	    Tree tree1 = (sym.owner().kind == CLASS)
+		? gen.mkRef(tree.pos, sym)
+		: copy.Ident(tree, sym).setType(sym.nextType());
+	    if (name != sym.name) {
+		if (tree1 instanceof Ident) ((Ident)tree1).name = sym.name;
+		else ((Select)tree1).selector = sym.name;
+	    }
 	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, Names.elem);
 	    else return tree1;
 

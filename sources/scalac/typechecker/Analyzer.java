@@ -369,7 +369,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if ((bsym.flags & FINAL) != 0) {
 		error(constrs[i].pos, "illegal inheritance from final class");
 	    } else if (bsym.isSealed() ||
-		       bsym.isSubClass(definitions.ANYVAL_CLASS)) {
+		       bsym.isSubClass(definitions.ANYVAL_CLASS) ||
+		       bsym.isSubClass(definitions.ARRAY_CLASS)) {
 		// are we in same scope as base type definition?
 		Scope.Entry e = context.scope.lookupEntry(bsym.name);
 		if (e.sym != bsym || e.owner != context.scope) {
@@ -859,7 +860,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		    context.scope.unlink(e);
 		    context.scope.enter(sym);
-		} else if (sym.kind == VAL && other.kind == VAL) {
+		} else if (context.owner.kind == CLASS &&
+			   sym.kind == VAL && other.kind == VAL &&
+			   ((sym.flags & ACCESSOR) == 0 ||
+			    (other.flags & ACCESSOR) == 0)) {
 		    // it's an overloaded definition
 		    /*
 		    if (((sym.flags ^ other.flags) & SOURCEFLAGS) != 0) {
@@ -873,9 +877,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    */
 		    e.setSymbol(other.overloadWith(sym));
 		} else {
-		    error(sym.pos,
-			  sym.nameString() + " is already defined as " +
-			  other + other.locationString());
+		    if (context.owner.kind == CLASS)
+			error(sym.pos,
+			      sym.nameString() + " is already defined as " +
+			      other + other.locationString());
+		    else
+			error(sym.pos,
+			      sym.nameString() +
+			      " is already defined in local scope");
 		}
 	    } else {
 		context.scope.enter(sym);
@@ -2075,7 +2084,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				    .isSameAs(sym1.type()))
 				refinement.enter(sym1);
 			}
-			if (refinement.elems == Scope.Entry.NONE &&
+			if (refinement.isEmpty() &&
 			    parentTypes.length == 1)
 			    owntype = parentTypes[0];
 			else
@@ -2187,8 +2196,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				} else {
 				    // it was an alias type
 				    // todo: handle overloaded constructors
-				    fn1 = gen.TypeApply(
-					fn1, gen.mkTypes(fn1.pos, argtypes));
+				    if (argtypes.length != 0)
+					fn1 = gen.TypeApply(
+					    fn1, gen.mkTypes(fn1.pos, argtypes));
 				    if (tsym.typeParams().length != 0 &&
 					!(fn0 instanceof AppliedType))
 					fn1.type = Type.PolyType(

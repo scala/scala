@@ -69,14 +69,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    for (Scope.SymbolIterator it = closure[i].members().iterator(true);
 		 it.hasNext();) {
 		Symbol other = it.next();
-		Symbol members = ((other.flags & PRIVATE) != 0) ? other
+		Symbol member = ((other.flags & PRIVATE) != 0) ? other
 		    : clazz.info().lookup(other.name);
-		Symbol member = Symbol.NONE;
-		if (members.kind != NONE &&
-		    members.owner() != other.owner() &&
-		    (members.owner() == clazz ||
-		     !members.owner().isSubClass(other.owner())))
-		    member = checkOverride(pos, clazz, members, other);
+		if (member.owner() == other.owner())
+		    member = other;
+		else if (member.type() instanceof Type.OverloadedType)
+		    member = findOverriding(pos, clazz, member, other);
+		if (member.kind != NONE && member != other)
+		    checkOverride(pos, clazz, member, other);
 		if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
 		    if ((member.flags & DEFERRED) != 0) {
 			abstractClassError(
@@ -116,21 +116,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    clazz.flags |= ABSTRACTCLASS;
 	}
 
-    /** Check that all conditions for overriding `other' by `member' are met.
-     *  That is for overriding member M and overridden member O:
-     *
-     *    1. M must have the same or stronger access privileges as O.
-     *    2. O must not be final.
-     *    3. O is deferred, or M has `override' modifier.
-     *    4. O is not a class, nor a class constructor.
-     *    5. If O is a type alias, then M is an alias of O.
-     *    6. If O is an abstract type then
-     *         either M is an abstract type, and M's bounds are sharper than O's bounds.
-     *         or M is a type alias or class which conforms to O's bounds.
-     *    7. If O and M are values, then M's type is a subtype of O's type.
-     *    8. If O is an immutable value, then so is M.
-     */
-    Symbol checkOverride(int pos, Symbol clazz, Symbol members, Symbol other) {
+    Symbol findOverriding(int pos, Symbol clazz, Symbol members, Symbol other) {
 	Type self = clazz.thisType();
 	Symbol member = members;
 	Type memberinfo = normalizedInfo(self, member);
@@ -153,10 +139,29 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 	    }
-	    if (member == members) {
-	    }
 	}
-	if (member.owner() == clazz) pos = member.pos;
+	return member;
+    }
+
+    /** Check that all conditions for overriding `other' by `member' are met.
+     *  That is for overriding member M and overridden member O:
+     *
+     *    1. M must have the same or stronger access privileges as O.
+     *    2. O must not be final.
+     *    3. O is deferred, or M has `override' modifier.
+     *    4. O is not a class, nor a class constructor.
+     *    5. If O is a type alias, then M is an alias of O.
+     *    6. If O is an abstract type then
+     *         either M is an abstract type, and M's bounds are sharper than O's bounds.
+     *         or M is a type alias or class which conforms to O's bounds.
+     *    7. If O and M are values, then M's type is a subtype of O's type.
+     *    8. If O is an immutable value, then so is M.
+     */
+    void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
+	if (member.owner() == clazz)
+	    pos = member.pos;
+	else if (member.owner().isSubClass(other.owner()))
+	    return; // everything was already checked elsewhere
 
 	if ((member.flags & PRIVATE) != 0) {
 	    overrideError(pos, member, other, "has weaker access privileges; it should not be private");
@@ -177,6 +182,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		       ":\n both are inherited from mixin classes; " +
 		       "\n an overriding definition in the current template is required");
 	} else {
+	    Type self = clazz.thisType();
 	    switch (other.kind) {
 	    case CLASS:
  		overrideError(pos, member, other, "cannot override a class");
@@ -189,7 +195,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (other.isConstructor())
 		    overrideError(pos, member, other,
 				  "cannot override a class constructor");
-		if (!memberinfo.isSubType(otherinfo))
+		if (!normalizedInfo(self, member).isSubType(
+			normalizedInfo(self, other)))
 		    overrideTypeError(pos, member, other, self, false);
 		if (member.kind == TYPE &&
 		    !self.memberLoBound(other).isSubType(
@@ -198,7 +205,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	    }
 	}
-	return member;
     }
 
     void overrideError(int pos, Symbol member, Symbol other, String msg) {

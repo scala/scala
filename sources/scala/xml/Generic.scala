@@ -67,10 +67,10 @@ object Generic {
   def save( filename:String, doc:Any ):Unit = {
     import java.io.{FileOutputStream,Writer};
     import java.nio.channels.{Channels,FileChannel};
-    def toXML( xs: List[Any], fc:Writer ):Unit = xs match {
+    def toXMLList( xs: List[Any], fc:Writer ):Unit = xs match {
         case _::ys =>
                 toXML( xs.head, fc );
-                toXML( ys, fc );
+                toXMLList( ys, fc );
         case _ => ()
     }
     def toXML( doc: Any, fc:Writer ):Unit = doc match {
@@ -82,7 +82,7 @@ object Generic {
                 fc.write( Generic.toXML(( doc.asInstanceOf[ Attribbed ])
 					.attribs ));
                 fc.write( ">" );
-                toXML( xs, fc );
+                toXMLList( xs, fc );
                 fc.write( "</" );
                 fc.write( tag );
                 fc.write( ">" );

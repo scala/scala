@@ -199,8 +199,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return tsym;
 	}
 	void validate() {//debug
-	    for (Scope.Entry e = members.elems; e != Scope.Entry.NONE; e = e.next)
-		assert e.sym.owner() == tsym;
+	    for (Scope.SymbolIterator it = members.iterator(true); it.hasNext(); )
+		assert it.next().owner() == tsym;
 	}
     }
 
@@ -599,12 +599,27 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return sym.fullName().startsWith(Names.scala_Function) &&
 		args.length > 0;
 	case CompoundType(Type[] parents, Scope members):
-	    return members.elems == Scope.Entry.NONE &&
+	    return members.isEmpty() &&
 		parents.length == 2 &&
 		parents[0].symbol().fullName() == Names.scala_Object &&
 		parents[1].isFunctionType();
 	}
 	return false;
+    }
+
+    /** Is this a polymorphic method type?
+     */
+    public boolean isPolymorphic() {
+	return typeParams().length > 0;
+    }
+
+    /** Is this a parameterized or polymorphic method type?
+     */
+    public boolean isParameterized() {
+	switch (this) {
+	case MethodType(_, _): return true;
+	default: return isPolymorphic();
+	}
     }
 
 // Members and Lookup -------------------------------------------------------
@@ -1665,8 +1680,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** Does this type implement all symbols in scope `s' with same or stronger types?
      */
     public boolean specializes(Scope s) {
-	for (Scope.Entry e = s.elems; e != Scope.Entry.NONE; e = e.next)
-	    if (!specializes(e.sym)) return false;
+	for (Scope.SymbolIterator it = s.iterator(true); it.hasNext();) {
+	    if (!specializes(it.next())) return false;
+	}
 	return true;
     }
 
@@ -1689,6 +1705,20 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     public boolean specializes0(Symbol sym1) {
 	Symbol sym = lookup(sym1.name);
+	switch (sym.info()) {
+	case NoType:
+	    return false;
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    for (int i = 0; i < alts.length; i++) {
+		if (specializes0(alts[i], sym1)) return true;
+	    }
+	    return false;
+	default:
+	    return specializes0(sym, sym1);
+	}
+    }
+
+    private boolean specializes0(Symbol sym, Symbol sym1) {
 	Type self = narrow();
 	Symbol[] tparams = symbol().typeParams();
 	Type[] targs = typeArgs();
@@ -1888,8 +1918,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** Does scope `s1' define all symbols of scope `s2' with the same kinds and infos?
      */
     private boolean isSubScope(Scope s1, Scope s2) {
-	for (Scope.Entry e = s2.elems; e != Scope.Entry.NONE; e = e.next) {
-	    Symbol sym2 = e.sym;
+	for (Scope.SymbolIterator it = s2.iterator(); it.hasNext(); ) {
+	    Symbol sym2 = it.next();
 	    Symbol sym1 = s1.lookup(sym2.name);
 	    if (sym1.kind != sym2.kind ||
 		!sym1.info().isSameAs(
@@ -2166,17 +2196,17 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	Type[] rtps = new Type[tps.length];
 	Type[] rlbs = new Type[tps.length];
 	for (int i = 0; i < allBaseTypes.length; i++) {
-	    for (Scope.Entry e = allBaseTypes[i].members().elems;
-		 e != Scope.Entry.NONE;
-		 e = e.next) {
-		Name name = e.sym.name;
-		if ((e.sym.flags & PRIVATE) == 0 && lubType.lookup(name) == e.sym) {
-		    Type symType = memberTp(lubThisType, e.sym);
-		    Type symLoBound = lubThisType.memberLoBound(e.sym);
+	    for (Scope.SymbolIterator it = allBaseTypes[i].members().iterator();
+		 it.hasNext(); ) {
+		Symbol sym = it.next();
+		Name name = sym.name;
+		if ((sym.flags & PRIVATE) == 0 && lubType.lookup(name) == sym) {
+		    Type symType = memberTp(lubThisType, sym);
+		    Type symLoBound = lubThisType.memberLoBound(sym);
 		    int j = 0;
 		    while (j < tps.length) {
 			rsyms[j] = tps[j].lookupNonPrivate(name);
-			if (rsyms[j] == e.sym) break;
+			if (rsyms[j] == sym) break;
 			if (rsyms[j].isMethod()) break; // since methods cannot
 			                                // appear in refinements.
 			rtps[j] = memberTp(tps[j], rsyms[j])
@@ -2190,7 +2220,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    if (j == tps.length) {
 			Symbol lubSym = lub(rsyms, rtps, rlbs, lubType.symbol());
 			if (lubSym.kind != NONE &&
-			    !(lubSym.kind == e.sym.kind &&
+			    !(lubSym.kind == sym.kind &&
 			      lubSym.info().isSameAs(symType) &&
 			      lubSym.loBound().isSameAs(symType)))
 			    members.enter(lubSym);
@@ -2199,7 +2229,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    }
 	}
 	//System.out.print("lub "); System.out.print(ArrayApply.toString(tps)); System.out.println(" = " + lubType);//DEBUG
-	if (leastBaseTypes.length == 1 && members.elems == Scope.Entry.NONE)
+	if (leastBaseTypes.length == 1 && members.isEmpty())
 	    return leastBaseTypes[0];
 	else return lubType;
     }
@@ -2254,7 +2284,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		treftl = new Type.List(tps[i], treftl);
 		break;
 	    case CompoundType(Type[] parents, Scope members):
-		if (members.elems != Scope.Entry.NONE)
+		if (!members.isEmpty())
 		    comptl = new Type.List(tps[i], comptl);
 		for (int j = 0; j < parents.length; j++)
 		    treftl = new Type.List(parents[i], treftl);
@@ -2286,7 +2316,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 	// eliminate redudant typerefs
 	Type[] treftypes = elimRedundant(treftl.toArrayReverse(), false);
-	if (treftypes.length != 1 || glbType.members.elems != Scope.Entry.NONE) {
+	if (treftypes.length != 1 || !glbType.members.isEmpty()) {
 	    // step 4: replace all abstract types by their lower bounds.
 	    boolean hasAbstract = false;
 	    for (int i = 0; i < treftypes.length; i++) {
@@ -2321,7 +2351,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    if (lb != NoType) return lb;
 	}
 
-	if (treftypes.length == 1 && glbType.members.elems == Scope.Entry.NONE) {
+	if (treftypes.length == 1 && glbType.members.isEmpty()) {
 	    return treftypes[0];
 	} else {
 	    glbType.parts = treftypes;
@@ -2359,8 +2389,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     private static boolean setGlb(Scope result, Scope[] ss, Type glbThisType) {
 	for (int i = 0; i < ss.length; i++)
-	    for (Scope.Entry e = ss[i].elems; e != Scope.Entry.NONE; e = e.next)
-		if (!addMember(result, e.sym, glbThisType)) return false;
+	    for (Scope.SymbolIterator it = ss[i].iterator(); it.hasNext(); )
+		if (!addMember(result, it.next(), glbThisType)) return false;
 	return true;
     }
 
@@ -2631,16 +2661,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	int h = 0;
 	for (int i = 0; i < elems.length; i++)
 	    h = h * 41 + elems[i].hashCode();
-	return h;
-    }
-
-    public static int hashCode(Scope.Entry elems) {
-	int h = 0;
-	for (Scope.Entry e = elems; e != Scope.Entry.NONE; e = e.next)
-	    h = h * 41
-		+ e.sym.kind
-		+ e.sym.name.hashCode()
-		+ e.sym.info().hashCode();
 	return h;
     }
 

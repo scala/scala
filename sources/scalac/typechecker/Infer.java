@@ -65,23 +65,6 @@ public class Infer implements Modifiers, Kinds {
 	    (sym == null ? "expression" : sym) + " of type " + tp;
     }
 
-// Helper definitions ---------------------------------------------------------
-
-    /** Is type `tp' a polymorphic method type?
-     */
-    private boolean isPolymorphic(Type tp) {
-	return tp.typeParams().length > 0;
-    }
-
-    /** Is type `tp' a parameterized method type?
-     */
-    boolean isParameterized(Type tp) {
-	switch (tp) {
-	case MethodType(_, _): return true;
-	default: return isPolymorphic(tp);
-	}
-    }
-
 // Tree Substitution -------------------------------------------------------------
 
     static class Substituter extends Transformer {
@@ -954,8 +937,8 @@ public class Infer implements Modifiers, Kinds {
     }
     //where
 	private boolean improves(Type tp1, Type tp2) {
-	    return isParameterized(tp2) &&
-		(!isParameterized(tp1) || specializes(tp1, tp2));
+	    return tp2.isParameterized() &&
+		(!tp1.isParameterized() || specializes(tp1, tp2));
 	}
 
     /** Assign `tree' the type of an alternative

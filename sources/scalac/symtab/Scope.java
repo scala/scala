@@ -69,11 +69,11 @@ public class Scope {
 
 	/** the next entry in the hash bucket
 	 */
-	Entry tail;
+	private Entry tail;
 
 	/** the next entry in this scope
 	 */
-	public Entry next;
+	private Entry next;
 
 	/** The owner of the entry;
 	 */
@@ -109,7 +109,7 @@ public class Scope {
 
     /** all elements of this scope
      */
-    public Entry elems;
+    private Entry elems;
 
     /** the hash table
      */
@@ -163,6 +163,12 @@ public class Scope {
             new Entry(e.sym, clone);
         if (size >= MIN_HASH) clone.createHash();
         return clone;
+    }
+
+    /** is the scope empty?
+     */
+    public boolean isEmpty() {
+	return elems == Entry.NONE;
     }
 
     /** the number of entries in this scope

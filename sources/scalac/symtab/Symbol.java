@@ -1020,7 +1020,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 	assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
 	assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
 	assert this.isConstructor() == that.isConstructor();
-	int overflags = this.flags & that.flags & (JAVA | ACCESSFLAGS);
+	int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS)) |
+	    ((this.flags | that.flags) & ACCESSOR);
 	TermSymbol overloaded = (this.isConstructor())
 	    ? TermSymbol.newConstructor(this.constructorClass(), overflags)
 	    : new TermSymbol(pos, name, owner, overflags);
