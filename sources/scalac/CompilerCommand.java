@@ -86,6 +86,15 @@ public class CompilerCommand extends CommandParser {
     public final BooleanOptionParser Xnewmatch;
     public final BooleanOptionParser XpreserveWS;
 
+    /*
+     * Whole-program optimization options
+     */
+    public final StringOptionParser XrootClass;
+    public final StringOptionParser XappFile;
+    public final StringOptionParser XdotFile;
+    public final BooleanOptionParser Xrta;
+    public final BooleanOptionParser Xinline;
+
     //########################################################################
     // Public Constructors
 
@@ -249,6 +258,26 @@ public class CompilerCommand extends CommandParser {
         this.XpreserveWS = new BooleanOptionParser(this,
             "XpreserveWS", "don't trim whitespace in XML literals",
             false),
+
+	this.XrootClass = new StringOptionParser(this,
+            "XrootClass", "Specify the root class of the global application",
+            "class", "$"),
+
+	this.XappFile = new StringOptionParser(this,
+            "XappFile", "Specify the filename where to dump the whole-application inferred from the rootclass",
+            "file", "app.txt"),
+
+	this.XdotFile = new StringOptionParser(this,
+            "XdotFile", "Specify the filename where to print the AST in graphviz dot format",
+            "file", "$"),
+
+	this.Xrta = new BooleanOptionParser(this,
+            "Xrta", "Perform Rapid Type analysis for method call resolution",
+	     false),
+
+	this.Xinline = new BooleanOptionParser(this,
+            "Xinline", "Inline method calls that can be resolved statically",
+	     false),
 
         this.unknown_options = new UnknownOptionParser(this),
 
