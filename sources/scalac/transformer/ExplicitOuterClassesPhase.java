@@ -119,24 +119,24 @@ public class ExplicitOuterClassesPhase extends Phase {
     // Private Methods
 
     /** Returns the class context for the given symbol. */
-    private ClassContext getClassContext(Symbol clasz, TypeContext[] outers) {
+    private ClassContext getClassContext(Symbol clasz, TypeContext outer) {
         assert clasz.isClassType(): Debug.show(clasz);
         ClassContext context = (ClassContext)classes.get(clasz);
         if (context == null) {
-            context = createClassContext(clasz, outers);
+            context = createClassContext(clasz, outer);
             classes.put(clasz, context);
         }
         return context;
     }
 
     /** Creates the context for the given class. */
-    private ClassContext createClassContext(Symbol clasz, TypeContext[] outers) {
+    private ClassContext createClassContext(Symbol clasz, TypeContext outer) {
         // create outer value link
         Symbol vfield = null;
-        if (outers.length > 0) {
+        if (outer != null) {
             int vflags = Modifiers.SYNTHETIC | Modifiers.PRIVATE | Modifiers.STABLE;
             vfield = clasz.newField(clasz.pos, vflags, Names.OUTER(clasz));
-            vfield.setInfo(outers[0].clasz.thisType());
+            vfield.setInfo(outer.clasz.thisType());
             clasz.members().enter(vfield);
         }
         return new ClassContext(vfield);
@@ -170,41 +170,34 @@ public class ExplicitOuterClassesPhase extends Phase {
         Symbol clasz = constructor.constructorClass();
 
         // get outer contexts
-        TypeContext[] outers;
-        if (clasz.owner().isPackageClass()) {
-            outers = new TypeContext[0];
-        } else {
-            TypeContext outer = getTypeContextFor(clasz.owner());
-            outers = new TypeContext[1 + outer.outers.length];
-            outers[0] = outer;
-            for (int i = 1; i < outers.length; i++)
-                outers[i] = outer.outers[i - 1];
-        }
+        TypeContext outer = clasz.owner().isPackageClass()
+            ? null
+            : getTypeContextFor(clasz.owner());
 
         // create outer type links
-        Symbol[] tlinks = new Symbol[outers.length];
+        Symbol[] tlinks = new Symbol[outer == null ? 0 : outer.depth + 1];
         int tflags = Modifiers.PARAM | Modifiers.COVARIANT | Modifiers.SYNTHETIC | Modifiers.STABLE;
-        for (int i = 0; i < outers.length; i++) {
-            Name tname = Names.OUTER(constructor, outers[i].clasz);
-            tlinks[i] = constructor.newTParam(
-                constructor.pos, tflags, tname, outers[i].clasz.typeOfThis());
+        for (TypeContext o = outer; o != null; o = o.outer) {
+            Name tname = Names.OUTER(constructor, o.clasz);
+            tlinks[o.depth] = constructor.newTParam(
+                constructor.pos, tflags, tname, o.clasz.typeOfThis());
         }
 
         // create outer value link
         Symbol vlink = null;
         ClassContext context = null;
-        if (outers.length > 0) {
+        if (outer != null) {
             int vflags = Modifiers.SYNTHETIC;
             Name vname = Names.OUTER(constructor);
             vlink = constructor.newVParam(constructor.pos, vflags, vname);
-            vlink.setInfo(outers[0].clasz.thisType());
-            context = getClassContext(clasz, outers);
+            vlink.setInfo(outer.clasz.thisType());
+            context = getClassContext(clasz, outer);
         }
 
         // create new type parameters
         Map tparams = new HashMap();
-        for (int o = 0; o < outers.length; o++) {
-            Symbol[] oldtparams = outers[o].oldtparams;
+        for (TypeContext o = outer; o != null; o = o.outer) {
+            Symbol[] oldtparams = o.oldtparams;
             for (int i = 0; i < oldtparams.length; i++) {
                 Symbol oldtparam = oldtparams[i];
                 Symbol newtparam = oldtparam.cloneSymbol(constructor);
@@ -220,7 +213,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             tparams.put(oldtparam, newtparam.type());
         }
 
-        return new TypeContext(clasz, outers, tlinks, vlink, context, constructor.typeParams(), tparams);
+        return new TypeContext(clasz, outer, tlinks, vlink, context, constructor.typeParams(), tparams);
     }
 
 
@@ -230,15 +223,15 @@ public class ExplicitOuterClassesPhase extends Phase {
     // !!! returns old types
     private Type[] getNewArgsOf(Type prefix, Symbol clasz, Type[] args) {
         TypeContext context = getTypeContextFor(clasz);
-        int vlinks = context.outers.length; // !!!
+        int vlinks = context.depth; // !!!
         Type[] types = new Type[context.transformer.tparams.size() + vlinks];
         int p = types.length;
         for (int i = args.length; 0 < i; ) types[--p] = args[--i];
-        for (int o = 0; o < context.outers.length; o++) {
+        for (TypeContext o = context.outer; o != null; o = o.outer) {
             types[--p] = prefix;
-            Type base = prefix.baseType(context.outers[o].clasz);
-            assert base.symbol() == context.outers[o].clasz:
-                prefix + " -- " + Debug.show(clasz) + " -- " + context.outers[o].clasz + " -- " + base;
+            Type base = prefix.baseType(o.clasz);
+            assert base.symbol() == o.clasz:
+                prefix + " -- " + Debug.show(clasz) + " -- " + o.clasz + " -- " + base;
             prefix = base.prefix();
             args = base.typeArgs();
             for (int i = args.length; 0 < i; ) types[--p] = args[--i];
@@ -277,35 +270,39 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** The context class */
         private final Symbol clasz;
-        /** The outer contexts (from innermost to outermost) */
-        private final TypeContext[] outers;
+        /** The outer context */
+        private final TypeContext outer;
         /** The outer type links (null for stable outer contexts) */
         private final Symbol[] tlinks;
         /** The outer value link (null if all outer contexts are stable) */
         private final Symbol vlink;
         /** !!! */
         private final ClassContext context;
+
+        private final int depth;
+
         /** The old type parameters of the context class */
         private Symbol[] oldtparams;
+
 
         /** !!! */
         private TypeTransformer transformer; // !!! type
 
         /** !!! */
-        public TypeContext(Symbol clasz, TypeContext[] outers, Symbol[] tlinks, Symbol vlink, ClassContext context, Symbol[] oldtparams, Map tparams) {
+        public TypeContext(Symbol clasz, TypeContext outer, Symbol[] tlinks, Symbol vlink, ClassContext context, Symbol[] oldtparams, Map tparams) {
             this.clasz = clasz;
-            this.outers = outers;
+            this.outer = outer;
             this.tlinks = tlinks;
             this.vlink = vlink;
             this.context = context;
+            this.depth = outer == null ? 0 : outer.depth + 1;
             this.oldtparams = oldtparams;
             this.transformer = new TypeTransformer(this, tparams);
         }
 
         /** !!! */
         public Type getTypeLink(int level) {
-            if (outers[level].clasz.isPackageClass()) return Type.NoPrefix;
-            assert tlinks[level] != null: level + " - " + Debug.show(clasz);
+            assert tlinks[level] != null: level + " - " + Debug.show(clasz); // !!! useless ?
             return tlinks[level].type();
         }
 
@@ -316,9 +313,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 "\nvlink    = " + Debug.show(vlink) +
                 "\noldparams= " + Debug.show(oldtparams) +
                 "\ntparams  = " + Debug.show(transformer.tparams) +
-                (outers.length > 0
-                    ? ("\nouter    : " + "\n" + outers[0])
-                    : "");
+                "\nouter    : " + "\n" + outer;
         }
 
     }
@@ -365,9 +360,9 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (context != null) {
                     // !!! || clasz.isCompoundSym()
                     if (clasz == context.clasz || clasz.isCompoundSym()) return type;
-                    for (int i = 0; i < context.outers.length; i++)
-                        if (clasz == context.outers[i].clasz)
-                            return context.getTypeLink(i);
+                    for (TypeContext o = context; o != null; o = o.outer)
+                        if (clasz == o.clasz)
+                            return context.getTypeLink(o.depth);
                 }
                 throw Debug.abort("illegal ThisType", clasz);
             case CompoundType(Type[] parents, Scope members):
@@ -600,9 +595,9 @@ public class ExplicitOuterClassesPhase extends Phase {
         private Tree genOuterRef(int pos, Symbol clasz) {
             if (context.clasz == clasz) return gen.This(pos, clasz);
             TypeContext tcontext = null;
-            for (int i = 0; i < context.context.outers.length; i++)
-                if (context.context.outers[i].clasz == clasz)
-                    tcontext = context.context.outers[i];
+            for (TypeContext o = context.context; o != null; o = o.outer)
+                if (o.clasz == clasz)
+                    tcontext = o;
             assert tcontext != null: Debug.show(clasz, context.clasz);
             { // !!!
                 assert context.context.vlink != null:
