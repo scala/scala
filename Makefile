@@ -182,17 +182,10 @@ all		: compiler
 all		: interpreter
 all		: library
 
-force		:
-	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
-	$(RM) .generated
-	$(RM) .latest-interpreter
-	$(RM) .latest-compiler
-	$(RM) .latest-runtime
-	$(RM) .latest-generate
-	$(RM) .latest-meta
+force		: fastclean
 	@$(make) all
 
-clean		:
+fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
 	$(RM) .latest-interpreter
@@ -200,6 +193,8 @@ clean		:
 	$(RM) .latest-runtime
 	$(RM) .latest-generate
 	$(RM) .latest-meta
+
+clean		: fastclean
 	$(RM) -r $(PROJECT_OUTPUTDIR)/*
 
 distclean	: clean
@@ -226,11 +221,13 @@ library		: .latest-library
 
 .PHONY		: all
 .PHONY		: force
+.PHONY		: fastclean
 .PHONY		: clean
 .PHONY		: distclean
 .PHONY		: fixcvs
 .PHONY		: scripts
 .PHONY		: meta
+.PHONY		: generate
 .PHONY		: runtime
 .PHONY		: compiler
 .PHONY		: interpreter
@@ -246,6 +243,7 @@ library		: .latest-library
 	touch $@
 
 .latest-generate	: .latest-meta
+	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(strip $(JAVA) -cp $(JC_OUTPUTDIR) \
 	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
