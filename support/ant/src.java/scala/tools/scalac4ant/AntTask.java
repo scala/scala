@@ -1,6 +1,7 @@
 package scala.tools.scalac4ant;
 
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.Javac;
 import org.apache.tools.ant.util.*;
 import java.io.File;
@@ -22,15 +23,16 @@ public class AntTask extends Javac {
     private String source = null;
     private String target = null;
     private FileUtils fileUtils = FileUtils.newFileUtils();
+    private Project project = getProject();
 
     public void execute() {
         String old = project.getProperty("build.compiler");
         project.setProperty("build.compiler", "scala.tools.scalac4ant.AntAdaptor");
         super.execute();
         if (old == null)
-        	project.setProperty("build.compiler", "modern");
+            project.setProperty("build.compiler", "modern");
         else
-        	project.setProperty("build.compiler", old);
+            project.setProperty("build.compiler", old);
     }
 
     public void setForce(boolean fc) {
