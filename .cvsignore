@@ -1,4 +1,5 @@
 .emacs.desktop
+.generated
 .latest-*
 Makefile.private
 classes
