@@ -217,8 +217,19 @@ public class Definitions {
         return TYPE_CLASS.staticType();
     }
 
-    public final Symbol CONSTRUCTEDTYPE_CLASS;
+    public final Symbol SCALACLASSTYPE_CLASS;
+    public final Type   SCALACLASSTYPE_TYPE() {
+        return SCALACLASSTYPE_CLASS.staticType();
+    }
+
     public final Symbol SINGLETYPE_CLASS;
+
+    public final Symbol TYPECONSTRUCTOR_CLASS;
+    public final Type   TYPECONSTRUCTOR_TYPE() {
+        return TYPECONSTRUCTOR_CLASS.staticType();
+    }
+
+    public final Symbol JAVATYPEREPOSITORY_CLASS;
 
     /** The scala.Predef module */
     public final Symbol PREDEF;
@@ -351,6 +362,14 @@ public class Definitions {
         if (SCALAOBJECT_TAG == null)
             SCALAOBJECT_TAG = loadTerm(SCALAOBJECT_CLASS, Names.tag);
         return SCALAOBJECT_TAG;
+    }
+
+    private Symbol SCALAOBJECT_GETTYPE;
+
+    public Symbol SCALAOBJECT_GETTYPE() {
+        if (SCALAOBJECT_GETTYPE == null)
+            SCALAOBJECT_GETTYPE = loadTerm(SCALAOBJECT_CLASS, Names.getType);
+        return SCALAOBJECT_GETTYPE;
     }
 
     /** Some scala.Ref methods */
@@ -519,11 +538,12 @@ public class Definitions {
         return TYPE_NEWARRAY;
     }
 
-    private Symbol TYPE_HASASINSTANCE;
-    public Symbol TYPE_HASASINSTANCE() {
-        if (TYPE_HASASINSTANCE == null)
-            TYPE_HASASINSTANCE = loadTerm(TYPE_CLASS, Names.hasAsInstance);
-        return TYPE_HASASINSTANCE;
+    private Symbol TYPE_ISINSTANCE;
+    public Symbol TYPE_ISINSTANCE() {
+        if (TYPE_ISINSTANCE == null)
+            TYPE_ISINSTANCE = loadTerm(TYPE_CLASS, Names.isInstance);
+        assert TYPE_ISINSTANCE != Symbol.NONE;
+        return TYPE_ISINSTANCE;
     }
 
     private Symbol TYPE_CHECKCASTABILITY;
@@ -589,19 +609,30 @@ public class Definitions {
         return RTT_BOOLEAN;
     }
 
-    public Symbol CONSTRUCTEDTYPE_CTOR(int argsCount) {
-        int totalArgsCount = argsCount + 2;
-        CONSTRUCTEDTYPE_CLASS.info(); // HACK to make sure that I
-                                      // really get all constructors
-                                      // below
-        Symbol[] ctors =
-            CONSTRUCTEDTYPE_CLASS.allConstructors().alternativeSymbols();
+    private Symbol TYPECONSTRUCTOR_GETINSTANTIATION;
+    public Symbol TYPECONSTRUCTOR_GETINSTANTIATION() {
+        if (TYPECONSTRUCTOR_GETINSTANTIATION == null) {
+            TYPECONSTRUCTOR_GETINSTANTIATION =
+                loadTerm(TYPECONSTRUCTOR_CLASS, Names.getInstantiation);
+        }
+        return TYPECONSTRUCTOR_GETINSTANTIATION;
+    }
 
-        for (int i = 0; i < ctors.length; ++i)
-            if (ctors[i].valueParams().length == totalArgsCount)
-                return ctors[i];
+    private Symbol TYPECONSTRUCTOR_INSTANTIATE;
+    public Symbol TYPECONSTRUCTOR_INSTANTIATE() {
+        if (TYPECONSTRUCTOR_INSTANTIATE == null)
+            TYPECONSTRUCTOR_INSTANTIATE =
+                loadTerm(TYPECONSTRUCTOR_CLASS, Names.instantiate);
+        return TYPECONSTRUCTOR_INSTANTIATE;
+    }
 
-        throw Debug.abort("constructor not found for " + argsCount + " args");
+    private Symbol JAVATYPEREPOSITORY_GET;
+    public Symbol JAVATYPEREPOSITORY_GET() {
+        if (JAVATYPEREPOSITORY_GET == null)
+            JAVATYPEREPOSITORY_GET =
+                loadTerm(JAVATYPEREPOSITORY_CLASS.linkedModule().moduleClass(),
+                         Names.get);
+        return JAVATYPEREPOSITORY_GET;
     }
 
     //########################################################################
@@ -686,8 +717,10 @@ public class Definitions {
         LIST_CLASS = getClass("scala.List");
         ARRAY_CLASS = getClass("scala.Array");
         TYPE_CLASS = getClass("scala.Type");
-        CONSTRUCTEDTYPE_CLASS = getClass("scala.ConstructedType");
-        SINGLETYPE_CLASS = getClass("scala.SingleType");
+        SCALACLASSTYPE_CLASS = getClass("scala.runtime.types.ScalaClassType");
+        SINGLETYPE_CLASS = getClass("scala.runtime.types.SingleType");
+        TYPECONSTRUCTOR_CLASS = getClass("scala.runtime.types.TypeConstructor");
+        JAVATYPEREPOSITORY_CLASS = getClass("scala.runtime.types.JavaTypeRepository");
         PREDEF = getModule("scala.Predef");
         CONSOLE = getModule("scala.Console");
         MATCHERROR = getModule("scala.MatchError");
