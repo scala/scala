@@ -468,7 +468,7 @@ public class TextTreePrinter implements TreePrinter {
             for (int i = 0; i < tags.length; i++) {
                 print(KW_CASE);
                 print(Text.Space);
-                print("" + i);
+                print("" + tags[i]);
                 print(Text.Space);
                 print(TXT_RIGHT_ARROW);
                 print(Text.Space);

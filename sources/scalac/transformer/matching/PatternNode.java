@@ -33,6 +33,43 @@ public class PatternNode {
     public case VariablePat(Tree tree);
 
 
+    public PatternNode dup() {
+    	PatternNode res;
+    	switch (this) {
+			case Header(Tree selector, Header next):
+				res = Header(selector, next);
+				break;
+			case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body):
+				res = Body(bound, guard, body);
+				break;
+			case DefaultPat():
+				res = DefaultPat();
+				break;
+			case ConstrPat(Symbol casted):
+				res = ConstrPat(casted);
+				break;
+			case SequencePat(Symbol casted, int len):
+				res = SequencePat(casted, len);
+				break;
+			case SeqContainerPat(Symbol casted, Tree seqpat):
+				res = SeqContainerPat(casted, seqpat);
+				break;
+			case ConstantPat(Object value):
+				res = ConstantPat(value);
+				break;
+			case VariablePat(Tree tree):
+				res = VariablePat(tree);
+				break;
+			default:
+				throw new ApplicationError();
+    	}
+    	res.pos = pos;
+   		res.type = type;
+   		res.or = or;
+   		res.and = and;
+   		return res;
+    }
+
     public Symbol symbol() {
         switch (this) {
             case ConstrPat(Symbol casted):
