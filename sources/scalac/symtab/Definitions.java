@@ -66,6 +66,7 @@ public class Definitions {
     public final Symbol AS;
     public final Symbol EQEQ;
     public final Symbol BANGEQ;
+    public final Symbol EQUALS;
     public final Symbol TOSTRING;
     public final Symbol HASHCODE;
 
@@ -339,6 +340,12 @@ public class Definitions {
         BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE)},
 				       BOOLEAN_TYPE));
         ANY_CLASS.members().enter(BANGEQ);
+
+        EQUALS = new TermSymbol(
+	    Position.NOPOS, Names.equals, ANY_CLASS, 0);
+        EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, JAVA_OBJECT_TYPE)},
+				     BOOLEAN_TYPE));
+        ANY_CLASS.members().enter(EQUALS);
 
         TOSTRING = new TermSymbol(
 	    Position.NOPOS, Names.toString, ANY_CLASS, 0);

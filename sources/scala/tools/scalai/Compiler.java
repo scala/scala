@@ -103,8 +103,13 @@ public class Compiler {
                             Code.Null, Variable.Argument(0))},
                     0),
                 0));
-        // !!! any_methods.put(_, equals_code);
+        any_methods.put(definitions.EQUALS, equals_code);
         any_methods.put(equals_method, equals_code);
+        environment.insertFunction(definitions.EQUALS,
+            Function.JavaMethod(equals_method));
+        Override equals_override = Override.empty();
+        equals_override.insert(equals_method).insert(definitions.EQUALS);
+        environment.insertOverride(definitions.EQUALS, equals_override);
 
         // !!! method java.lang.Object.equals(Object)
         // !!! method java.lang.Object.finalize()
