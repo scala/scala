@@ -102,6 +102,10 @@ object SUnit {
 
   /** a TestSuite runs a composite of test cases */
   class TestSuite(tests:Test*) with Test {
+
+    def this(names:Seq[String], constr:String=>Test) =
+      this((names.toList map constr):_*);
+
     val buf =
       new scala.collection.mutable.ArrayBuffer[Test]();
 
