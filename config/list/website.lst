@@ -14,10 +14,11 @@ css/screen.css
 docu/index.html
 docu/rationale.html
 
-downloads/distrib/index.html
+downloads/changes.html
 downloads/index.html
 downloads/install.html
 downloads/instructions.html
+downloads/distrib/index.html
 downloads/js/ia.js
 downloads/js/ia_fr.js
 downloads/js/lamp.js
