@@ -566,7 +566,7 @@ trait List[+a] extends Seq[a] {
    *  @return the first element in the list satisfying <code>p</code>,
    *  or <code>None</code> if none exists.
    */
-  def find(p: a => Boolean): Option[a] = match {
+  override def find(p: a => Boolean): Option[a] = match {
     case Nil => None
     case head :: tail => if (p(head)) Some(head) else tail find p
   };
