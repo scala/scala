@@ -110,6 +110,7 @@ public class PackageParser extends SymbolLoader {
         // the file "<M>.symbl" ignore the ".class" file. Otherwise,
         // if M equals N, ignore the ".symbl" file.
         for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
+            if (symbols.isEmpty()) break;
             Entry entry = (Entry)i.next();
             String cname = (String)entry.getKey();
             AbstractFile cfile = (AbstractFile)entry.getValue();
@@ -134,6 +135,7 @@ public class PackageParser extends SymbolLoader {
         // version.
         boolean separate = global.separate;
         for (Iterator i = sources.entrySet().iterator(); i.hasNext(); ) {
+            if (symbols.isEmpty() && classes.isEmpty()) break;
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile sfile = (AbstractFile)entry.getValue();

@@ -81,6 +81,7 @@ public final class CLRPackageParser extends PackageParser {
         // version.
         boolean separate = global.separate;
         for (Iterator i = sources.entrySet().iterator(); i.hasNext(); ) {
+            if (types.isEmpty()) break;
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile sfile = (AbstractFile)entry.getValue();
