@@ -1,0 +1,67 @@
+In Emacs, this file should be read in -*- Outline -*- mode.
+
+* Introduction
+
+This directory contains an Emacs mode for Scala programs. This mode
+works only in GNU Emacs 21.1 or later. In particular, it doesn't work
+on any version of XEmacs, or any 20.x version of GNU Emacs.
+
+The mode is currently very basic, and offers:
+
+  - syntax highlighting,
+
+  - primitive automatic indentation,
+
+  - support for interaction with the Scala interpreter.
+
+* Installation
+
+Put all ".el" files in a location where Emacs can find them, i.e. a
+directory appearing in the "load-path" variable.
+
+Compile all ".el" files (optional but recommended).
+
+Add the following line to your Emacs startup file, usually "~/.emacs":
+
+  (require 'scala-mode-auto)
+
+Restart Emacs or evaluate the above line.
+
+From that point on, loading a file whose name ends in ".scala"
+automatically turns Scala mode on. It can also be turned on manually
+using the "scala-mode" command.
+
+* Known limitations
+
+This Emacs mode is currently very basic because we only have very
+little time to work on it. Patches for it will therefore be happily
+accepted.
+
+** Automatic indentation
+
+Automatic indentation is incredibly basic and doesn't work correctly
+in many situations, including:
+
+  - multi-line "case" statements, e.g.
+
+      case Pair(x,y) =>
+        Console.println(x);
+        Console.println(y);   // not indented correctly
+
+  - multi-line "case" patterns, e.g.
+
+      case 'a' | 'b' | 'c'
+         | 'd' | 'e' | 'f'    // not indented correctly
+
+  - multi-line comments, e.g.
+
+      /*
+       *                      // not indented correctly
+       */                     // not indented correctly
+
+  - other cases of single-line constructs as soon as they span
+    multiple lines.
+
+* Version
+
+$Id$
