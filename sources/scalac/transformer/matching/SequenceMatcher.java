@@ -157,35 +157,12 @@ public class SequenceMatcher extends PatternTool {
             j = stms.length + stms2.length ;
             items[ stms.length + stms2.length ] = body;
 
-            AttributedTreeCopier treeCopier = new AttributedTreeCopier(unit.global,
-							     cf.make) ;
-		    /* EXPERIMENT, might not work
-            TreeCopier treeCopier = new TreeCopier(unit.global,
-                                                   unit.global.currentPhase,
-                                                   cf.make) {
-                        // Substitute symbols
-                        public boolean mustSubstituteSymbol(Tree tree) {
-                              switch (tree) {
-                                    //                              case Select(_,_):
-                                      //                              return false;
-                              case Ident(Name n):
-
-                                    //System.out.println("tree.symbol:"+tree.symbol());
-                                    //return true;
-                                    return n.isVariable();
-
-                              default:
-                                    return mustCopySymbol(tree);
-                              }
-                        }
-                  };
-		    */
-
+	    AttributedTreeCopier treeCopier = new AttributedTreeCopier(unit.global, cf.make) ;
             //System.out.println("helpmap");
             //System.out.println( rtis.helpMap2 );
-            treeCopier.pushSymbolSubst( rtis.helpMap2 );
+	    treeCopier.pushSymbolSubst( rtis.helpMap2 );
 
-            items[ stms.length + stms2.length ] = treeCopier.copy( body );
+    items[ stms.length + stms2.length ] = treeCopier.copy( body );
 
             return cf.Block( body.pos, items, body.type );
       }

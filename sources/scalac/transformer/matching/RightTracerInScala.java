@@ -32,7 +32,7 @@ public class RightTracerInScala extends TracerInScala  {
       Symbol elemSym;
       Symbol targetSym;
 
-      HashMap helpMap2 ;
+    HashMap helpMap2 ;
       Vector  helpVarDefs;
 
 
@@ -89,33 +89,35 @@ public class RightTracerInScala extends TracerInScala  {
             makeHelpVar( realVar, false );
       }
 
+    /** makes a helpvar and puts mapping into helpMap, ValDef into helpVarDefs
+     */
+
       void makeHelpVar( Symbol realVar, boolean keepType ) {
-	  Symbol helpVar = new TermSymbol( //Kinds.VAR,
-                                             pos,
-                                             cf.fresh.newName( realVar.name
-                                                               .toString() ),
-                                             owner,
-                                             0);
+	  Symbol helpVar = new TermSymbol( pos,
+					   cf.fresh.newName( realVar.name
+							     .toString() ),
+					   owner,
+					   0);
 
-            //System.out.println("making helpvar : "+realVar+" -> "+helpVar);
+	  //System.out.println("making helpvar : "+realVar+" -> "+helpVar);
 
-            if( keepType )
-                  helpVar.setType( realVar.type() );
-            else
-                  helpVar.setType( cf.SeqListType( elementType ) );
+	  if( keepType )
+	      helpVar.setType( realVar.type() );
+	  else
+	      helpVar.setType( cf.SeqListType( elementType ) );
 
 
-            helpMap.put( realVar, helpVar );
+	  helpMap.put( realVar, helpVar );
 
-            Tree rhs;
-            if( keepType )
-                  rhs = cf.ignoreValue( realVar.type() );
-            else
-		rhs = /* cf.newRef( */ cf.newSeqNil( elementType ) /* ) */;
-	    helpVar.flags |= Modifiers.MUTABLE;
-            Tree varDef = gen.ValDef(helpVar, rhs);
-            //((ValDef) varDef).kind = Kinds.VAR;
-            helpVarDefs.add( varDef );
+	  Tree rhs;
+	  if( keepType )
+	      rhs = cf.ignoreValue( realVar.type() );
+	  else
+	      rhs = /* cf.newRef( */ cf.newSeqNil( elementType ) /* ) */;
+	  helpVar.flags |= Modifiers.MUTABLE;
+	  Tree varDef = gen.ValDef( helpVar, rhs );
+	  //((ValDef) varDef).kind = Kinds.VAR;
+	  helpVarDefs.add( varDef );
 
       }
 
@@ -279,22 +281,24 @@ public class RightTracerInScala extends TracerInScala  {
        *  now we care about free vars
        */
 
-      Tree handleBody( Object o ) {
-            HashMap helpMap = (HashMap) o;
-            Tree res[] = new Tree[ helpMap.keySet().size() + 1 ];
-            int j = 0;
-            for( Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
-                  Symbol vsym = (Symbol) it.next();
-                  Symbol hv   = (Symbol) helpMap.get( vsym );
-                  hv.setType( cf.SeqListType( elementType ) ) ;
-                  Tree refv   = gen.Ident(Position.NOPOS, vsym);
-                  Tree refhv  = gen.Ident(Position.NOPOS, hv);
-                  res[ j++ ] = gen.Assign( refhv, refv );
-            }
+    Tree handleBody1( HashMap helpMap3  ) {
+	  //System.out.println("Rtis.handleBody ... helpMap = " + helpMap );
+	  // todo: change helpMap s.t. symbols are not reused.
 
-            res[ j ] = super.handleBody( freeVars ); // just `true'
+	  Tree res[] = new Tree[ helpMap3.keySet().size() + 1 ];
+	  int j = 0;
+	  for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
+	      Symbol vsym = (Symbol) it.next();
+	      Symbol hv   = (Symbol) helpMap3.get( vsym );
+	      hv.setType( cf.SeqListType( elementType ) ) ;
+	      Tree refv   = gen.Ident(Position.NOPOS, vsym);
+	      Tree refhv  = gen.Ident(Position.NOPOS, hv);
+	      res[ j++ ] = gen.Assign( refhv, refv );
+	  }
 
-            return cf.Block(Position.NOPOS, res, res[j].type() );
+	  res[ j ] = super.handleBody( freeVars ); // just `true'
+
+	  return cf.Block(Position.NOPOS, res, res[j].type() );
       }
 
       // calling the AlgebraicMatcher here
@@ -308,31 +312,53 @@ public class RightTracerInScala extends TracerInScala  {
                                      currentElem(),
                                      defs.BOOLEAN_TYPE );
 
+	    // there could be regular expressions under Sequence node, export those later
             Vector varsToExport = NoSeqVariableTraverser.varsNoSeq( pat );
+	    HashMap freshenMap = new HashMap();
 
-            //System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
+	    HashMap helpMap3 = new HashMap();
+
+	    // "freshening": never use the same symbol more than once (in later invocations of _cur_match)
 
             for( Iterator it = varsToExport.iterator(); it.hasNext(); ) {
                   Symbol key = (Symbol) it.next();
                   this.helpMap2.put( key, helpMap.get( key ));
+		  // "freshening"
+		  Symbol newSym = key.cloneSymbol();
+		  newSym.name = key.name.append( Name.fromString("gu234") ); // is fresh now :-)
+		  freshenMap.put( key, newSym );
+		  helpMap3.put( newSym, helpMap.get( key ));
             }
 
+            //System.out.println("RightTracerInScala:: -pat :"+pat);
+            //System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
+            //System.out.println("RightTracerInScala::freshenMap :"+freshenMap);
+
+
+	    // "freshening"
+	    scalac.ast.SubstTransformer st = new SubstTransformer(cf.unit.global, cf.make);
+	    st.pushSymbolSubst( freshenMap );
+	    pat = st.transform( pat );
+            //System.out.println("RightTracerInScala:: -pat( after subst ) :"+pat);
+
+	    // val match { case <pat> => { <do binding>; true }
+	    //             case _     => false
+
             am.construct( m, new CaseDef[] {
-                  (CaseDef) cf.make.CaseDef( pat.pos,
-                                             pat,
-                                             Tree.Empty,
-                                             handleBody( helpMap2 )),
-                        (CaseDef) cf.make.CaseDef( pat.pos,
-                                                   cf.make.Ident(pat.pos, Names.WILDCARD)
-                                                   //DON'T .setSymbol( Symbol.NONE ) !!FIXED
-						   .setType( pat.type() ),
-                                                   Tree.Empty,
-                                                   gen.mkBooleanLit( pat.pos, false )) },
+		(CaseDef) cf.make.CaseDef( pat.pos,
+					   pat,           // if tree val matches pat -> update vars, return true
+					   Tree.Empty,
+					   /*st.transform( */handleBody1( helpMap3 )/*)*//* "freshening */),
+		(CaseDef) cf.make.CaseDef( pat.pos,
+					   cf.make.Ident( pat.pos, Names.WILDCARD )
+					   //DON'T .setSymbol( Symbol.NONE ) !!FIXED
+					   .setType( pat.type() ),
+					   Tree.Empty,
+					   gen.mkBooleanLit( pat.pos, false )) }, // else return false
                           true // do binding please
                           );
-            Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
-            //System.out.println("freeVars: "+freeVars);
-            return res;
+
+            return  am.toTree().setType( defs.BOOLEAN_TYPE );
       }
 
 
@@ -397,7 +423,7 @@ public class RightTracerInScala extends TracerInScala  {
        */
       Tree[] getStms( Tree trace ) {
 
-            //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
+	  //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
 
             Vector v = new Vector();
 
