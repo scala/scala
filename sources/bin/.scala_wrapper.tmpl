@@ -336,10 +336,10 @@ case "$SCRIPT" in
         warning "Deprecated command, use scalac${SCRIPT#socos} instead.";
         exec_compile scalac.Main "$@";;
     surus*     )
-        warning "Deprecated command, use scalarun${SCRIPT#socos} instead.";
+        warning "Deprecated command, use scalarun${SCRIPT#surus} instead.";
         exec_compile scalai.Main "$@";;
     siris*     )
-        warning "Deprecated command, use scalaint${SCRIPT#socos} instead.";
+        warning "Deprecated command, use scalaint${SCRIPT#siris} instead.";
         exec_compile scalai.Main -interactive "$@";;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
