@@ -139,7 +139,7 @@ public interface Modifiers {
             if (isProtected(flags)) buffer.append("protected ");
             if (isAbstract(flags)) buffer.append("abstract ");
             if (isFinal(flags)) buffer.append("final ");
-            if (isSealed(flags)) buffer.append("qualified ");
+            if (isSealed(flags)) buffer.append("sealed ");
             if (isInterface(flags)) buffer.append("interface ");
             if (isCase(flags)) buffer.append("case ");
             if (isDef(flags)) buffer.append("def ");

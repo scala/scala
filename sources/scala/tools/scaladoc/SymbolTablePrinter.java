@@ -152,6 +152,11 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
     public SymbolTablePrinter printShortSignature(Symbol symbol, boolean addLink) {
         String keyword = getSymbolKeywordForDoc(symbol);
         if (keyword != null) print(keyword).space();
+        // variance
+        if (symbol.variance() > 0)
+            print("+");
+        else if (symbol.variance() < 0)
+            print("-");
 	printSymbol(symbol, addLink);
         return printType(symbol.loBound(), ">:");
     }

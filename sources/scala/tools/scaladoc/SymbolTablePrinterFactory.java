@@ -33,6 +33,9 @@ class SymbolTablePrinterFactory {
 
 		public void printSymbol(Symbol sym, boolean addLink) {
 		    String name = sym.nameString();
+                    // remove the leading "?" for names that come from attributes
+                    if (name.startsWith("?"))
+                        name = name.substring(1);
 		    if (global.debug) name = sym.name.toString();
 		    if (isDocumented.apply(sym))
 			if (addLink)
