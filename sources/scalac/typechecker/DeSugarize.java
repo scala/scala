@@ -182,6 +182,9 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < length; i++)
 		argtpes[i] = vparams[i].tpe;
 	    argtpes[vparams.length] = restpe;
+            Tree objConstr = make.Select(tree.pos,
+                                         make.Ident(tree.pos, Names.scala),
+                                         Names.Object.toConstrName());
 	    Tree constr = make.TypeApply(tree.pos,
 		make.Select(tree.pos,
 			    make.Ident(tree.pos, Names.scala),
@@ -194,7 +197,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		restpe, body);
 
 	    Tree result = make.New(tree.pos,
-		make.Template(tree.pos, new Tree[]{constr}, new Tree[]{applyDef}));
+		make.Template(tree.pos, new Tree[]{objConstr, constr}, new Tree[]{applyDef}));
 	    print(tree, "mkfun", result);
 	    return result;
 	default:
