@@ -17,7 +17,7 @@ import scalac.transformer.OwnerTransformer;
 package scala.tools.scalac.transformer {
 
 import scalac.util.NewArray;
-
+/*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
@@ -33,6 +33,7 @@ import scalac.util.NewArray;
  *  - for every argument list that is an escaped sequence
  *       (a_1:_*) => (a_1)
  */
+/*</export>*/
 class UnCurry(global: scalac_Global, descr: UnCurryPhase) extends OwnerTransformer(global) {
 
   import Modifiers._;
