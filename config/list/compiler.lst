@@ -165,5 +165,6 @@ util/TypeNames.java
 util/UniqueID.java
 
 transformer/ICodePhase.java
+transformer/WholeProgPhase.java
 
 ##############################################################################

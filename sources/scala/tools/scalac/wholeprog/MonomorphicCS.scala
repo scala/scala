@@ -30,13 +30,15 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
   type CallGraphNode = GNode[Symbol, MethodNode];
   type CallGraphEdge = Edge[Symbol, CallEdge];
 
+  type InlinableCollection = HashMap[Tree, Tuple3[CallGraphNode, CallGraphNode, CallSite]];
+
   private val global = globall;
   val hierarchy = new Graph[Symbol, Symbol, String];
   val callGraph = new CallGraph;
 
   var instantiatedClasses = new HashSet[Symbol];
 
-  var inlinable: List[Tuple3[CallGraphNode, CallGraphNode, CallSite]] = Nil;
+  var inlinable: InlinableCollection = new InlinableCollection;
 
 
   /** create the class inheritance hierarchy */
@@ -88,8 +90,13 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     var closures: Int = 0;
 
     def logStatistics(e: CallGraphEdge): Unit = {
-      if (SymbolPrinter.fullName(cg.getNode(e.to).info.classz).startsWith("scala.Function"))
+      if (cg.getNode(e.to).info.method.name.toString().equals("apply")) {
 	closures = closures + 1;
+// 	Console.println("[closure] " + cg.getNode(e.from).info.classz.name + "." +
+// 		   cg.getNode(e.from).info.method.name + " -> " +
+// 		   cg.getNode(e.to).info.classz.name + "." +
+// 		   cg.getNode(e.to).info.method.name);
+      }
       if (cg.getNode(e.to).info.method.name.toString().equals("view"))
 	views = views + 1;
     }
@@ -99,11 +106,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
       val callee = cg.getNode(e.to);
 
       if (canInline(caller, callee))
-	inlinable = new Tuple3(caller, callee, e.info.site) :: inlinable;
-      else
-	Logger.log("[monomorphiccs] skipped monomorphic call site " +
-		   SymbolPrinter.fullName(caller.info.method) + " -> " +
-		   SymbolPrinter.fullName(callee.info.method));
+	inlinable += e.info.site.t -> new Tuple3(caller, callee, e.info.site);
     }
 
     def canInline(caller: CallGraphNode, callee: CallGraphNode): boolean =
@@ -116,53 +119,49 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 
     Logger.setFile("inlining.log");
 
-    Console.println("[start build callgraph]");
+    Console.println("[start build callgraph]"); StopWatch.start;
     buildCallGraph;
-    Console.println("[end build callgraph]");
+    Console.println("[end build callgraph] " + StopWatch.stop + " ms");
 
     if (global.args.Xrta.value) {
       // perform additional pruning
       Console.println("[start RTA]");
       rapidTypeAnalysis(instantiatedClasses);
-      Console.println("[end RTA]");
+      Console.println("[end RTA] " + StopWatch.stop + " ms");
     }
 
     if (!global.args.XdotFile.value.equals("$"))
       dumpCallGraph;
 
-    Console.println("[start Monomorphic call site identification]");
+    Console.println("[start Monomorphic call site identification]"); StopWatch.start;
     cg.nodes.foreach( (id: Symbol, n: CallGraphNode) => {
-      n.info.callSites.foreach( (site: CallSite) => {
-	val mcs = cg.getOutEdges(id).filter( e: CallGraphEdge => e.info.site == site );
+      n.info.callSites.foreach( (site) => {
+	val mcs = cg.getOutEdges(id).filter( e => e.info.site == site );
 
 	if (mcs.length == 1) {
 	  inlineCallSite(mcs.head);
-// 	  Console.println("Monomorphic call-site: " +
-// 			  SymbolPrinter.fullName(mcs.head.from) + " " +
-// 			  SymbolPrinter.fullName(mcs.head.to));
+//	  Console.println("Monomorphic call-site: " + mcs.head.from + " " + mcs.head.to);
 	  logStatistics(mcs.head);
 	  nr = nr + 1;
 	}
       });
     });
-
-    Console.println("[end Monomorphic call site identification]");
+    Console.println("[end Monomorphic call site identification] " + StopWatch.stop + " ms");
 
     Console.println("We identified " + nr + " monomorphic call-sites. ("
-		    + inlinable.length + " inlinable).");
-    Console.println("[closures = " + closures + ", views = " + views + "]");
+		    + inlinable.size + " inlinable).");
+    Console.println("[closures = " + closures + " out of " + closuresTotal +
+		    ", views = " + views + "out of " + viewsTotal + "]");
 
     if (global.args.Xinline.value) {
-      Console.println("[start inlining]");
-
-//      inlinable.foreach( (t) => Console.println("inline callsite " + t._3.t));
+      Console.println("[start inlining]"); StopWatch.start;
 
       doInline(inlinable);
-      Console.println("[end inlining]");
+      Console.println("[end inlining] " + StopWatch.stop + " ms");
     }
   }
 
-  /** Perform a (buggy) form of rapid type analysis, as described in Sundaresan 99
+  /** Perform a form of rapid type analysis, as described in Sundaresan 99
       The idea is that the call graph can be signifficanly pruned if all edges that go
       into a method of a class that was never instantiated in the program are removed.
 
@@ -183,35 +182,30 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     Logger.log("[RTA] Instantiated classes: ");
     instantiatedClasses.foreach( s => Logger.log("[RTA] " + SymbolPrinter.fullName(s)));
 
-//     callGraph.visitDFS( (n: CallGraphNode) => {
-//       if (n.info.classz != null &&
-// 	  !isInstatiated(n.info.classz)) {
-// 	callGraph.removeEdges(callGraph.getInEdges(n.id));
-// 	Logger.log("[RTA] Removed inedges for " + SymbolPrinter.fullName(n.id));
-//       }
-//     });
-
     Console.println("[Visiting call graph]");
-    callGraph.nodes.foreach( (id: Symbol, n: CallGraphNode) => {
-      n.info.callSites.foreach( (site: CallSite) => {
-	val targets = callGraph.getOutEdges(id).filter( e: CallGraphEdge => e.info.site == site );
+
+    val it = callGraph.nodeIterator;
+
+    while (it.hasNext) {
+      val n = it.next;
+
+      n.info.callSites.foreach( (site) => {
+	val targets = callGraph.getOutEdges(n.id).filter( e => e.info.site == site );
 
 	if (targets.length > 1) {
 	  // test for instantiation
 	  targets.foreach( (t: CallGraphEdge) => if ( !isInstatiated(callGraph.getNode(t.to).info.classz) ) {
 	    callGraph.removeEdge(t);
-	    Logger.log("[RTA] Removed edge " +
-		       SymbolPrinter.fullName(t.from) + " -> " +
-		       SymbolPrinter.fullName(t.to));
-
+	    Logger.log("[RTA] Removed edge to " + SymbolPrinter.fullName(t.to));
 	  });
 	}
       });
-    });
+    }
+
   }
 
   /** perform inlines */
-  def doInline(sites: List[Tuple3[CallGraphNode, CallGraphNode, CallSite]]): Unit = {
+  def doInline(sites: InlinableCollection): Unit = {
     val transformer: Transformer = new InlineMethods(sites, global);
 
     global.units.foreach( (u) => {
@@ -221,6 +215,11 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     Console.println("We inlined " + transformer.asInstanceOf[InlineMethods].inlines + " callsites");
     Logger.flush;
   }
+
+  var unknown = 0; // calls to "null" methods
+  var closuresTotal = 0; // calls to "apply" methods
+  var viewsTotal = 0; // calls to "view" methods
+
 
   def buildCallGraph: Unit = {
     createNodes(callGraph);
@@ -239,7 +238,7 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 
     Console.println("Call graph: " + nodes + " nodes, " +
 		    edges + " edges, [" /* + callGraph.edges.length */ + "]" +
-		    callsites + " callsites.");
+		    callsites + " callsites." + "(unknown = " + unknown + ")");
   }
 
   def dumpCallGraph: Unit = {
@@ -270,7 +269,6 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 	  val methSym = tree.symbol();
 
 	  cg.addNode(new CallGraphNode(methSym, new MethodNode(methSym, methSym.enclClass(), tree)));
-	  Logger.log("[callgraph] Created node " + SymbolPrinter.fullName(methSym));
 	}
 
 	case _ => ;
@@ -307,28 +305,20 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
 	case Tree$Apply(fun, args) => {
 
 	  if (enclMethod != null) {
+	    val targetMeth = fun.symbol();
 
-	    var targetMeth = fun.symbol();
-	    var callsiteTree = tree;
+	    if (targetMeth != null) {
+	      if (targetMeth.name.toString().equals("apply"))
+		closuresTotal = closuresTotal + 1;
+	      else if (targetMeth.name.toString().equals("view"))
+		viewsTotal = viewsTotal + 1;
 
-	    if (targetMeth == null)
-	      fun match {
-		case Tree$TypeApply(innerFun, args) => {
-		  targetMeth = innerFun.symbol();
-		  callsiteTree = innerFun;
-		  //Console.println("Hopla, a type apply for " + innerFun);
-		}
-		case _ => ;
-	      }
+	      createEdges(targetMeth, tree);
+	    }
+	    else
+	      unknown = unknown + 1;
 
-	    if (targetMeth == null)
-	      Console.println("Null symbol for method " + tree);
 
-	    //assert(targetMeth != null, "Null target method for " + tree);
-	    if (targetMeth != null)
-	      createEdges(targetMeth, callsiteTree);
-//	    else
-//	      Console.println("Null symbol: " + tree);
 // 	    fun match {
 // 	      case Tree$Select(qualifier, selector) => {
 // 		val target = typeToSymbol(qualifier.getType());
@@ -399,7 +389,6 @@ class MonomorphicCallSites(globall: scalac_Global, application: Set[Symbol]) {
     }
   }
 
-//  def makeNodeId(meth: Symbol): String = SymbolPrinter.fullName(meth);
 }
 
 /** Class that maintains information about nodes in the callgraph */
@@ -432,5 +421,21 @@ object SymbolPrinter {
 
 }
 
+
+object StopWatch {
+  var startTimeMillis: Long = 0;
+
+  /** arm the stop watch */
+  def start: Unit = {
+    startTimeMillis = System.currentTimeMillis();
+  }
+
+  /** Retrieve the elapsed time and arm the stopwatch again */
+  def stop: Long = {
+    val time = System.currentTimeMillis() - startTimeMillis;
+    start;
+    time
+  }
+}
 
 } // package wholeprog
