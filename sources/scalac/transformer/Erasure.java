@@ -251,6 +251,7 @@ public class Erasure extends Transformer implements Modifiers {
 	bridgeSyms.put(sym, bridgesOfSym);
 
 	// check that there is no overloaded symbol with same erasure as bridge
+	// todo: why only check for overloaded?
 	Symbol overSym = sym.owner().members().lookup(sym.name);
 	switch (overSym.type()) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):

@@ -183,7 +183,7 @@ public class Scope {
 
     public Scope enterOrOverload(Symbol sym) {
 	Entry e = lookupEntry(sym.name);
-	if (e.owner == this && (sym.flags & Modifiers.PRIVATE) == 0) {
+	if (e.owner == this/* && (sym.flags & Modifiers.PRIVATE) == 0*/) {
 	    e.setSymbol(e.sym.overloadWith(sym));
 	    return this;
 	} else {

@@ -871,6 +871,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  `base' must be a superclass of this.owner().
      */
     public Symbol overriddenSymbol(Type base) {
+	assert !isOverloaded() : this;
 	Symbol sym1 = base.lookupNonPrivate(name);
 	if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
 	    return Symbol.NONE;
@@ -884,7 +885,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    switch (sym1type) {
 	    case OverloadedType(Symbol[] alts, Type[] alttypes):
 		for (int i = 0; i < alts.length; i++) {
-		    if (symtype.isSameAs(alttypes[i])) return alts[i];
+		    if (symtype.isSubType(alttypes[i])) return alts[i];
 		}
 		return Symbol.NONE;
 	    default:
@@ -895,6 +896,16 @@ public abstract class Symbol implements Modifiers, Kinds {
 		}
 	    }
 	}
+    }
+
+    /** Does this symbol override that symbol?
+     */
+    public boolean overrides(Symbol that) {
+	return
+	    ((this.flags | that.flags) & (PRIVATE | STATIC)) == 0 &&
+	    this.name == that.name &&
+	    owner.thisType().memberType(this).isSubType(
+		owner.thisType().memberType(that));
     }
 
     public void reset(Type completer) {

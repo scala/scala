@@ -638,7 +638,8 @@ public class TreeGen implements Kinds, Modifiers {
 	    clazz.info().members().enter(meth);
 	    changeOwner(visitor, prevOwner, meth);
 	    Tree body = Apply(
-		Select(Ident(param), definitions.MATCH), new Tree[]{visitor});
+		Select(Ident(param), definitions.MATCH), new Tree[]{visitor})
+		.setType(restype);
 	    return DefDef(meth, body);
 	}
 
