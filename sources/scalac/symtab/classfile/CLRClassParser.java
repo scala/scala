@@ -30,6 +30,11 @@ public class CLRClassParser extends SymbolLoader {
 
     protected final CLRPackageParser importer;
 
+    public CLRClassParser(Global global, CLRPackageParser importer) {
+	super(global);
+	this.importer = importer;
+    }
+
     private static Name[] ENUM_CMP_NAMES = new Name[]
 	{ Names.EQ, Names.NE, Names.LT, Names.LE, Names.GT, Names.GE };
 
