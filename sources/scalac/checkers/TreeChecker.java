@@ -260,6 +260,29 @@ public class TreeChecker {
     }
 
     //########################################################################
+    // Private Methods - Checking type
+
+    private boolean type(Tree tree, Type expected, Type loBound) {
+        if (!loBound.isSubType(tree.type())) {
+            Type.explainSwitch = true;
+            assert loBound.isSubType(tree.type()): show(tree)
+                + format("loBound", expected);
+            Type.explainSwitch = false;
+        }
+        return type(tree, expected);
+    }
+
+    private boolean type(Tree tree, Type expected) {
+        if (!tree.type().isSubType(expected)) {
+            Type.explainSwitch = true;
+            assert tree.type().isSubType(expected): show(tree)
+                + format("expected", expected);
+            Type.explainSwitch = false;
+        }
+        return true;
+    }
+
+    //########################################################################
     // Private Methods - Declaring symbols
 
     /** Do the trees contain the given symbols? */
