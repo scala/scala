@@ -1,4 +1,4 @@
-package scala.tools.scalac4ant;
+package scala.tools.scala4ant;
 
 import scalac.*;
 import scalac.util.Reporter;

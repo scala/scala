@@ -1,4 +1,4 @@
-package scala.tools.scalac4ant;
+package scala.tools.scala4ant;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
