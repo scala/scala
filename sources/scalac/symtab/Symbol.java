@@ -1148,13 +1148,6 @@ public class ClassSymbol extends TypeSymbol {
      */
     final private Type thistp = Type.ThisType(this);
 
-    /** The sourcefile name form where the class symbol was or
-     *  needs to be loaded. only defined for Scala source library classes;
-     *  not for classes that exist in class files, or classes compiled
-     *  from the command line.
-     */
-    public String sourcefile = null;
-
     /** Principal Constructor
      */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
@@ -1177,7 +1170,6 @@ public class ClassSymbol extends TypeSymbol {
 	this.module = TermSymbol.newCompanionModule(this, 0, parser);
         this.mangled = name;
         this.setInfo(parser);
-	this.sourcefile = parser.filename;
     }
 
     /** Constructor for classes to load as class files.
@@ -1198,7 +1190,6 @@ public class ClassSymbol extends TypeSymbol {
 	other.constructor.setInfo(constructor.info());
 	other.mangled = mangled;
 	other.module = module;
-	other.sourcefile = sourcefile;
 	if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
     }
@@ -1354,6 +1345,9 @@ public final class ErrorSymbol extends Symbol {
     public Symbol enclClass() {
         return this;
     }
+
+    public void reset(Type completer) {
+    }
 }
 
 /** The class of Symbol.NONE
@@ -1399,6 +1393,9 @@ public final class NoSymbol extends Symbol {
 
     public Symbol owner() {
 	throw new ApplicationError();
+    }
+
+    public void reset(Type completer) {
     }
 }
 

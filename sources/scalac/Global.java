@@ -86,7 +86,7 @@ public class  Global {
 
     /** The set of currenttly compiled top-level symbols
      */
-    public HashSet/*Symbol*/ compiledNow = new HashSet();
+    public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();
 
     /** the current phase
      */
@@ -283,8 +283,10 @@ public class  Global {
         }
         if (reporter.errors() != 0) {
 	    imports.clear();
-	    for (Iterator it = compiledNow.iterator(); it.hasNext();) {
-		uninitialize((Symbol)it.next());
+	    for (Iterator it = compiledNow.keySet().iterator(); it.hasNext();) {
+		Symbol sym = (Symbol) it.next();
+		Sourcefile f = (Sourcefile) compiledNow.get(sym);
+		sym.reset(new SourceCompleter(this, f.filename));
 	    }
 	}
 	compiledNow.clear();
@@ -628,15 +630,5 @@ public class  Global {
         long start = ((Long)startTimes.pop()).longValue();
         reporter.inform("[" + message + " in " +
                 (System.currentTimeMillis() - start) + "ms]");
-    }
-
-    private void uninitialize(Symbol sym) {
-	if (sym instanceof ClassSymbol) {
-	    ClassSymbol clazz = (ClassSymbol)sym;
-	    if (clazz.sourcefile != null) {
-		clazz.reset(
-		    new SourceCompleter(this, clazz.sourcefile));
-	    }
-	}
     }
 }

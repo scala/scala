@@ -35,7 +35,7 @@ public class Sourcefile {
 
     /** the filename
      */
-    protected String        filename;
+    public String        filename;
     public String           shortname;
     public String           pathname;
 

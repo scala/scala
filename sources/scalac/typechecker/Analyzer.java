@@ -812,7 +812,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		    result = other;
 		} else if (sym.owner().isPackage()) {
-		    if (global.compiledNow.contains(other)) {
+		    if (global.compiledNow.get(other) != null) {
 			error(sym.pos, sym + " is compiled twice");
 		    }
 		    context.scope.unlink(e);
@@ -836,7 +836,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    } else {
 		context.scope.enter(sym);
 	    }
-	    if (result.owner().isPackage()) global.compiledNow.add(result);
+	    if (result.owner().isPackage())
+		global.compiledNow.put(result, unit.source);
 	    return result;
 	}
 
