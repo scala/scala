@@ -301,7 +301,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    Type[] grandparents = parents[i].parents();
 	    if (grandparents.length > 0 && !parents[0].isSubType(grandparents[0]))
 		error(constrs[i].pos, "illegal inheritance;\n " + parents[0] +
-		      "does not conform to " + parents[i] + "'s supertype");
+		      " does not conform to " + parents[i] + "'s supertype");
 	    Symbol bsym = parents[i].symbol();
 	    if ((bsym.flags & FINAL) != 0) {
 		// are we in same scope as base type definition?
@@ -444,7 +444,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	try {
 	    return checkNoEscapeMap.apply(tp);
 	} catch (Type.Error ex) {
-	    error(pos, ex.msg);
+	    error(pos, tp + "///" + ex.msg);
 	    return Type.ErrorType;
 	}
     }

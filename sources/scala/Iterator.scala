@@ -25,7 +25,7 @@ trait Iterator[a] {
   }
 
   def filter(p: a => Boolean): Iterator[a] = new BufferedIterator[a] {
-    private val source =
+    private val source: BufferedIterator[a] =
       Iterator.this.buffered;
     private def skip: Unit =
       while (source.hasNext && !p(source.head)) { source.next; () }
@@ -54,7 +54,7 @@ trait Iterator[a] {
       else head;
     def hasNext: Boolean =
       ahead || Iterator.this.hasNext;
-    override def buffered = this;
+    override def buffered: BufferedIterator[a] = this;
   }
 }
 
