@@ -193,11 +193,13 @@ IA_CONFIG_IMAGESDIR	 = $(IA_CONFIG_PREFIX)/images
 IA_CONFIG_LOCALESDIR	 = $(IA_CONFIG_PREFIX)/locales
 IA_CONFIG_CUSTOMCODEDIR	 = $(IA_CONFIG_PREFIX)/CustomCode
 
-IA_PROJECTFILE		 = $(IA_CONFIG_PREFIX)/$(PROJECT_NAME).iap_xml
 IA_XSLFILE			 = $(IA_CONFIG_PREFIX)/setversion.xsl
 IA_CUSTOMFILE	 	 = custom
 IA_LICENSEFILE		 = LICENSE
 IA_SPLASHFILE		 = $(IA_CONFIG_IMAGESDIR)/Splash.png
+
+IA_UNIX_PROJECTFILE	 = $(IA_CONFIG_PREFIX)/$(PROJECT_NAME)_unix.iap_xml
+IA_WIN32_PROJECTFILE = $(IA_CONFIG_PREFIX)/$(PROJECT_NAME)_win32.iap_xml
 
 IA_BUILD_PREFIX		 = /tmp/IA_Build_$(PROJECT_NAME)
 IA_BUILD_IMAGESDIR	 = $(IA_BUILD_PREFIX)/images
@@ -205,7 +207,7 @@ IA_BUILD_CUSTOMCODEDIR	 = $(IA_BUILD_PREFIX)/CustomCode
 IA_BUILD_LOCALESDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)locales
 IA_BUILD_ARCHIVE_TGZ	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).tar.gz
 IA_BUILD_ARCHIVE_ZIP	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).zip
-IA_BUILD_PROJECTFILE	 = $(IA_BUILD_PREFIX)/`$(BASENAME) $(IA_PROJECTFILE)`
+IA_BUILD_PROJECTFILE	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME).iap_xml
 IA_BUILD_SPLASHFILE	 = $(IA_BUILD_IMAGESDIR)/`$(BASENAME) $(IA_SPLASHFILE)`
 IA_BUILD_OUTPUTDIR	 = $(IA_BUILD_PREFIX)/$(PROJECT_NAME)_Build_Output
 
@@ -215,13 +217,11 @@ CONVERT_FLAGS		+= -gravity southeast -pointsize 12 -fill red
 CONVERT_FLAGS		+= -draw "text 4,4 'v$(INSTALL_VERSION)'"
 
 XSLTPROC_FLAGS		+= --stringparam version "$(INSTALL_VERSION)"
-XSLTPROC_FLAGS		+=  $(IA_XSLFILE)
+XSLTPROC_FLAGS		+= $(IA_XSLFILE)
 
-ia-build		:
+ia-build-common		:
 	$(RM) -r $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
-	$(INSTALL) -m 644 -p $(IA_CONFIG_PREFIX)/tools.zip $(IA_BUILD_PREFIX)
-	$(XSLTPROC) $(XSLTPROC_FLAGS) $(IA_PROJECTFILE) > $(IA_BUILD_PROJECTFILE)
 	$(INSTALL) -m 755 -d $(IA_BUILD_CUSTOMCODEDIR)
 	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/*.jar -type f`; do \
 	    if [ -z "$$file" ]; then continue; fi; \
@@ -241,18 +241,38 @@ ia-build		:
 	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_IMAGESDIR); \
 	done
 	$(CONVERT) $(CONVERT_FLAGS) $(IA_SPLASHFILE) $(IA_BUILD_SPLASHFILE)
+
+ia-build-unix		:
+	$(XSLTPROC) $(XSLTPROC_FLAGS) $(IA_UNIX_PROJECTFILE) > $(IA_BUILD_PROJECTFILE)
 	$(TAR) xzf $(INSTALL_PREFIX).tar.gz -C $(IA_BUILD_PREFIX)
 	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
 	    $(TAR) czf ../$(PROJECT_NAME).tar.gz .)
 	$(RM) -r $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION)
+	$(IA) $(IA_BUILD_PREFIX)/$(notdir $(IA_BUILD_PROJECTFILE))
+	$(INSTALL) -m 755 -d $(IA_INSTALL_PREFIX)
+	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers | \
+	    $(TAR) xf - -C $(IA_INSTALL_PREFIX))
+
+ia-build-windows	:
+	$(INSTALL) -m 644 -p $(IA_CONFIG_PREFIX)/tools.zip $(IA_BUILD_PREFIX)
+	$(XSLTPROC) $(XSLTPROC_FLAGS) $(IA_WIN32_PROJECTFILE) > $(IA_BUILD_PROJECTFILE)
 	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
 	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
 	    $(ZIP) -q -r ../$(PROJECT_NAME).zip .)
 	$(RM) -r $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION)
-	$(IA) $(IA_BUILD_PREFIX)/$(notdir $(IA_PROJECTFILE))
+	$(IA) $(IA_BUILD_PREFIX)/$(notdir $(IA_BUILD_PROJECTFILE))
 	$(INSTALL) -m 755 -d $(IA_INSTALL_PREFIX)
 	$(strip $(TAR) cf - -C $(IA_BUILD_OUTPUTDIR) Web_Installers | \
 	    $(TAR) xf - -C $(IA_INSTALL_PREFIX))
+
+ia-build-all		: ia-build-common
+ia-build-all		: ia-build-unix
+ia-build-all		: ia-build-windows
+
+.PHONY			: ia-build-all
+.PHONY			: ia-build-common
+.PHONY			: ia-build-unix
+.PHONY			: ia-build-windows
 
 ##############################################################################
 
@@ -294,7 +314,7 @@ distrib-build-windows	: install-windows
 	fi
 	$(call DISTRIB_GENMD5,$(DISTRIB_ARCHIVE).zip)
 
-distrib-build-ia	: ia-build
+distrib-build-ia	: ia-build-all
 
 distrib-build-addons	: install-addons
 
