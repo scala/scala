@@ -11,10 +11,10 @@ package scalac.ast;
 import scalac.util.Name;
 import Tree.*;
 
-public class LazyTreeFactory extends AbstractTreeCopyFactory {
+public class LazyTreeCopier extends AbstractTreeCopier {
     protected final TreeFactory make;
 
-    public LazyTreeFactory(TreeFactory make) {
+    public LazyTreeCopier(TreeFactory make) {
         this.make = make;
     }
 

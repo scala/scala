@@ -32,11 +32,11 @@ public class Transformer {
      */
     public final TreeFactory make;
 
-    /** a factory for copying trees; the attribution is preserved
-     *  or translated according to the TreeCopyFactory; trees are
-     *  only copied if new tree introduces changes
+    /** a factory for copying trees; the attribution is preserved or
+     *  translated according to the TreeCopier; trees are only copied
+     *  if new tree introduces changes
      */
-    public final TreeCopyFactory copy;
+    public final TreeCopier copy;
 
     /** a tree generator
      */
@@ -45,14 +45,14 @@ public class Transformer {
     /** various constructors
      */
     public Transformer(Global global) {
-        this(global, global.make, new LazyTreeFactory(global.make));
+        this(global, global.make, new LazyTreeCopier(global.make));
     }
 
     public Transformer(Global global, TreeFactory make) {
-        this(global, make, new LazyTreeFactory(make));
+        this(global, make, new LazyTreeCopier(make));
     }
 
-    public Transformer(Global global, TreeFactory make, TreeCopyFactory copy) {
+    public Transformer(Global global, TreeFactory make, TreeCopier copy) {
         this.global = global;
         this.make = make;
         this.copy = copy;

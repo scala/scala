@@ -13,10 +13,10 @@ package scalac.ast;
 import scalac.util.Name;
 import Tree.*;
 
-public class StrictTreeFactory extends AbstractTreeCopyFactory {
+public class StrictTreeCopier extends AbstractTreeCopier {
     protected final TreeFactory make;
 
-    public StrictTreeFactory(TreeFactory make) {
+    public StrictTreeCopier(TreeFactory make) {
         this.make = make;
     }
 

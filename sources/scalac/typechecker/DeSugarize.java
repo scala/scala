@@ -34,7 +34,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
     /** The copying factory
      */
-    protected TreeCopyFactory copy;
+    protected TreeCopier copy;
 
     /** the tree generator
      */

@@ -42,11 +42,11 @@ public class SubstTransformer extends Transformer {
             }
         };
 
-    protected final TreeCopyFactory simpleCopy;
+    protected final TreeCopier simpleCopy;
 
     public SubstTransformer(Global global, TreeFactory make) {
         super(global, make, new TCF(make));
-        this.simpleCopy = new StrictTreeFactory(make);
+        this.simpleCopy = new StrictTreeCopier(make);
 
         ((TCF)copy).setTransformer(this);
     }
@@ -210,7 +210,7 @@ public class SubstTransformer extends Transformer {
 
     //////////////////////////////////////////////////////////////////////
 
-    public static class TCF extends StrictTreeFactory {
+    public static class TCF extends StrictTreeCopier {
         protected SubstTransformer transformer;
         protected Map/*<Symbol,Symbol>*/ symbolMap;
         protected SymbolMapApplier smApplier;

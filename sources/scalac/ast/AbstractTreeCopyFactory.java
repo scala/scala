@@ -12,14 +12,14 @@ package scalac.ast;
 import scalac.ast.*;
 
 /**
- * Abstract superclass for all TreeCopyFactories, which provides only
- * the code to copy the attribution from the "old" to the "new" tree.
+ * Abstract superclass for all TreeCopier, which provides only the
+ * code to copy the attribution from the "old" to the "new" tree.
  *
  * @author Michel Schinz
  * @version 1.0
  */
 
-public abstract class AbstractTreeCopyFactory implements TreeCopyFactory {
+public abstract class AbstractTreeCopier implements TreeCopier {
     public void attribute(Tree newTree, Tree oldTree) {
         if (newTree != oldTree) {
             newTree.type = oldTree.type;

@@ -913,7 +913,7 @@ public class Tree {
     public static Transformer duplicator =
        new Transformer(
 	    Global.instance, Global.instance.make,
-	    new StrictTreeFactory(Global.instance.make));
+	    new StrictTreeCopier(Global.instance.make));
 
     public Tree duplicate() {
 	return duplicator.transform(this);

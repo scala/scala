@@ -18,7 +18,7 @@ import Tree.*;
  * @author Michel Schinz
  * @version 1.1
  */
-public interface TreeCopyFactory {
+public interface TreeCopier {
 
     public void attribute(Tree newTree, Tree oldTree);
 
