@@ -97,7 +97,7 @@ object testBM  {
 
                         => { x }
 
-                case List( 'a'*, x @ ('a', 'b')* , y @ (('a','b','c') *) )
+                case List( 'a'*, x @ (('a', 'b')*) , y @ (('a','b','c') *) )
 
                         => { y }
 
