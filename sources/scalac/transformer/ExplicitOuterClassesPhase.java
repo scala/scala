@@ -248,7 +248,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** !!! */
         public TypeContext(Symbol clasz, TypeContext[] outers, Symbol[] tlinks, Symbol vlink, Symbol[] oldtparams, Map tparams) {
             this.clasz = clasz;
-            this.isStable = clasz.isPackage() || clasz.isModuleClass();
+            this.isStable = clasz.isPackage() || (clasz.isModuleClass() && vlink == null);
             this.outers = outers;
             this.tlinks = tlinks;
             this.vlink = vlink;
@@ -319,13 +319,13 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (clasz == Symbol.NONE) return type;
                 if (clasz == context.clasz) return type;
                 if (clasz.isPackage()) return Type.localThisType;
+                for (int i = 0; i < context.outers.length; i++)
+                    if (clasz == context.outers[i].clasz)
+                        return context.getTypeLink(i);
                 if (clasz.isModuleClass()) {
                     Type prefix = clasz.owner().thisType();
                     return Type.singleType(apply(prefix), clasz.module());
                 }
-                for (int i = 0; i < context.outers.length; i++)
-                    if (clasz == context.outers[i].clasz)
-                        return context.getTypeLink(i);
                 throw Debug.abort("illegal ThisType", type);
             case CompoundType(Type[] parents, Scope members):
                 // !!! this case should not be needed
