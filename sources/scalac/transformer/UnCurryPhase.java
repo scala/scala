@@ -69,9 +69,32 @@ public class UnCurryPhase extends Phase implements Modifiers {
 	    }.map(tp);
 	case ConstantType(Type base, _):
 	    return base;
+        case CompoundType(Type[] parents, Scope scope):
+            Symbol symbol = tp.symbol();
+            if (!symbol.isClass() || symbol.isCompoundSym()) return tp;
+            Scope clone = new Scope();
+            for (Scope.SymbolIterator i = scope.iterator(true); i.hasNext();) {
+                Symbol member = i.next();
+                if (!isUnaccessedConstant(member))
+                    clone.enterOrOverload(member);
+            }
+            return Type.compoundType(parents, clone, symbol);
 	default:
 	    return tp;
 	}
+    }
+
+    boolean isUnaccessedConstant(Symbol symbol) {
+        if (!symbol.isTerm()) return false;
+        if ((symbol.flags & ACCESSED) != 0) return false;
+        switch (symbol.type()) {
+        case PolyType(Symbol[] params, ConstantType(_, _)):
+            return params.length == 0;
+        case ConstantType(_, _):
+            return true;
+        default:
+            return false;
+        }
     }
 
     public Checker[] postCheckers(Global global) {

@@ -125,23 +125,16 @@ public class UnCurry extends OwnerTransformer
 
 	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
-	    if ((sym.flags & ACCESSED) == 0) {
-		switch (sym.type()) {
-		case PolyType(Symbol[] tparams1, ConstantType(_, _)):
-		    if (tparams1.length == 0) return gen.mkUnitLit(tree.pos);
-		}
-	    }
+	    if (descr.isUnaccessedConstant(sym))
+                return gen.mkUnitLit(tree.pos);
 	    Tree rhs1 = transform(rhs, sym);
 	    return copy.DefDef(
 		tree, sym, tparams, uncurry(transform(vparams, sym)), tpe, rhs1);
 
 	case ValDef(_, _, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
-	    if ((sym.flags & ACCESSED) == 0) {
-		switch (sym.type()) {
-		case ConstantType(_, _): return gen.mkUnitLit(tree.pos);
-		}
-	    }
+	    if (descr.isUnaccessedConstant(sym))
+                return gen.mkUnitLit(tree.pos);
 	    if (sym.isDefParameter()) {
 		Type newtype = global.definitions.FUNCTION_TYPE(Type.EMPTY_ARRAY, tpe.type);
 		Tree tpe1 = gen.mkType(tpe.pos, newtype);
