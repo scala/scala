@@ -11,6 +11,7 @@ package scalac.checkers;
 import scalac.ast.Tree;
 import scalac.symtab.Symbol;
 import scalac.Global;
+import scalac.util.Debug;
 
 /**
  * Verify that all tree nodes for which hasSymbol() is true have a
@@ -32,5 +33,24 @@ public class CheckSymbols extends Checker {
                implies(tree.hasSymbol(), tree.symbol() != Symbol.NONE),
                "symbol not NONE",
                "hasSymbol => symbol not NONE");
+
+	switch (tree) {
+	case ValDef(_, _, _, _):
+	case DefDef(_, _, _, _, _, _):
+	    Symbol s1 = tree.symbol();
+	    Symbol owner = s1.owner();
+	    if (!owner.isClass())
+		break;
+	    Symbol[] ss = owner.nextInfo()
+		.members().lookup(s1.name).alternativeSymbols();
+	    int i;
+	    for (i = 0; i < ss.length; i++) {
+		if (s1 == ss[i]) break;
+	    }
+	    verify(tree, i < ss.length, "symbol " + Debug.show(s1)
+		   + " should be in its owner scope",
+		   Debug.show(owner.members()));
+	    break;
+	}
     }
 }
