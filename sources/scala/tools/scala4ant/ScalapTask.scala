@@ -35,6 +35,7 @@ class ScalapTask extends Task {
 
   private var showPrivateDefs = false;
   private var isVerbose       = false;
+  private var debug           = false;
 
   override def getTaskName(): String = PRODUCT;
 
@@ -48,6 +49,8 @@ class ScalapTask extends Task {
 
   def setVerbose(verbose: Boolean): Unit = isVerbose = verbose;
 
+  def setDebug(debug: Boolean): Unit = this.debug = debug;
+
   override def execute() = try {
     System.setProperty("scala.home", ScalaRuntime.home.toString());
     System.setProperty("scala.product", PRODUCT);
@@ -55,6 +58,10 @@ class ScalapTask extends Task {
     System.setProperty("scala.class.path", ".");
     System.setProperty("scala.boot.class.path", ScalaRuntime.bootclasspath.toString());
 
+    if (debug) {
+      for (val arg <- getArgs())
+        System.out.println(arg);
+    }
     scala.tools.scalap.Main.main(getArgs());
   }
   catch {

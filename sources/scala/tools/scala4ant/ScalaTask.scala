@@ -28,12 +28,24 @@ class ScalaTask extends Java {
 
   private val PRODUCT = "scala";
 
+  private val classpath = ScalaRuntime.scalapath;
+
+  private var debug = false;
+
   override def getTaskName(): String = PRODUCT;
 
   override def setClasspath(s: Path): Unit = {
-    val cp = ScalaRuntime.classpath;
-    cp.append(s);
-    super.setClasspath(cp)
+    classpath.append(s);
+    super.setClasspath(classpath)
+  }
+
+  def setDebug(debug: Boolean): Unit = this.debug = debug;
+
+  override def execute() = {
+    if (debug) {
+      log("CLASSPATH=" + classpath.toString());
+    }
+    super.execute()
   }
 
 }
