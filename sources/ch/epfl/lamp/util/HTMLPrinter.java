@@ -460,7 +460,7 @@ public class HTMLPrinter {
     /** Prints HTML preamble.
      */
     protected void printPreamble() {
-	print("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
+	println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
             representation.getType() + "//" + representation.getLanguage() + "\">");
 	printlnOTag("html").line();
     }
