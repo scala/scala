@@ -22,6 +22,7 @@ import scalac.util.Name;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
+import scalac.symtab.SymbolOrigin;
 
 import ch.epfl.lamp.compiler.msil.Type;
 import ch.epfl.lamp.compiler.msil.Attribute;
@@ -128,8 +129,9 @@ public final class CLRPackageParser extends PackageParser {
                 : new CLRClassParser(Global.instance, type);
 
             Name classname = Name.fromString(type.Name).toTypeName();
+            SymbolOrigin origin = SymbolOrigin.CLRAssembly(type.Assembly());
             Symbol clazz = clasz.newLoadedClass
-                (JAVA, classname, loader, members);
+                (JAVA, classname, loader, members, origin);
             clrTypes.map(clazz, type);
             //Type moduleType = getType(type.FullName + "$");
             //map(clazz, moduleType != null ? moduleType : type);

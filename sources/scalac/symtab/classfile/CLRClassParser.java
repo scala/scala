@@ -12,6 +12,7 @@ import scalac.Global;
 import scalac.atree.AConstant;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
+import scalac.symtab.SymbolOrigin;
 import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Type.*;
@@ -99,8 +100,9 @@ public class CLRClassParser extends SymbolLoader {
 	    // put the class at the level of its outermost class
 	    // the owner of a class is always its most specific package
 	    CLRClassParser loader = new CLRClassParser(global, ntype);
-	    Symbol nclazz =
-		clazz.owner().newLoadedClass(JAVA, classname, loader, null);
+            SymbolOrigin origin = SymbolOrigin.CLRAssembly(ntype.Assembly());
+	    Symbol nclazz = clazz.owner().newLoadedClass
+                (JAVA, classname, loader, null, origin);
 	    clrTypes.map(nclazz, ntype);
 	    // create an alias in the module of the outer class
 	    Symbol alias = staticsClass.newTypeAlias(Position.NOPOS,

@@ -20,6 +20,7 @@ import scalac.symtab.Scope;
 import scalac.symtab.SourceCompleter;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
+import scalac.symtab.SymbolOrigin;
 import scalac.symtab.Type;
 import scalac.util.Name;
 import scalac.util.Debug;
@@ -183,7 +184,8 @@ public class PackageParser extends SymbolLoader {
             AbstractFile sfile = (AbstractFile)entry.getValue();
             Name classname = Name.fromString(name).toTypeName();
             SymbolLoader loader = new SourceCompleter(global, sfile);
-            clasz.newLoadedClass(0, classname, loader, members);
+            SymbolOrigin origin = SymbolOrigin.ScalaFile(sfile);
+            clasz.newLoadedClass(0, classname, loader, members, origin);
         }
         for (Iterator i = symbols.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
@@ -191,7 +193,8 @@ public class PackageParser extends SymbolLoader {
             AbstractFile zfile = (AbstractFile)entry.getValue();
             Name classname = Name.fromString(name).toTypeName();
             SymbolLoader loader = new SymblParser(global, zfile);
-            clasz.newLoadedClass(0, classname, loader, members);
+            SymbolOrigin origin = SymbolOrigin.SymblFile(zfile);
+            clasz.newLoadedClass(0, classname, loader, members, origin);
         }
         for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
@@ -199,14 +202,17 @@ public class PackageParser extends SymbolLoader {
             AbstractFile cfile = (AbstractFile)entry.getValue();
             Name classname = Name.fromString(name).toTypeName();
             SymbolLoader loader = new ClassParser(global, cfile);
-            clasz.newLoadedClass(JAVA, classname, loader, members);
+            SymbolOrigin origin = SymbolOrigin.ClassFile(cfile, null);
+            clasz.newLoadedClass(JAVA, classname, loader, members, origin);
         }
         for (Iterator i = packages.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile dfile = (AbstractFile)entry.getValue();
+            Name packagename = Name.fromString(name);
             SymbolLoader loader = newPackageParser(dfile);
-            clasz.newLoadedPackage(Name.fromString(name), loader, members);
+            SymbolOrigin origin = SymbolOrigin.Directory(dfile);
+            clasz.newLoadedPackage(packagename, loader, members, origin);
         }
         return members;
     }

@@ -214,10 +214,11 @@ public abstract class Symbol implements Modifiers, Kinds {
      * the loader and enters it in the scope if it's non-null.
      */
     public final Symbol newLoadedPackage(Name name, SymbolLoader loader,
-        Scope scope)
+        Scope scope, SymbolOrigin origin)
     {
         assert loader != null: Debug.show(this) + " - " + name;
         Symbol peckage = newPackage(Position.NOPOS, name, loader);
+        peckage.moduleClass().setOrigin(origin);
         if (scope != null) scope.enterNoHide(peckage);
         return peckage;
     }
@@ -286,15 +287,17 @@ public abstract class Symbol implements Modifiers, Kinds {
      * and the module in the scope if it's non-null.
      */
     public final ClassSymbol newLoadedClass(int flags, Name name,
-        SymbolLoader loader, Scope scope)
+        SymbolLoader loader, Scope scope, SymbolOrigin origin)
     {
         assert isPackageClass(): Debug.show(this);
         assert loader != null: Debug.show(this) + " - " + name;
         ClassSymbol clasz = new LinkedClassSymbol(this, flags, name);
         clasz.setInfo(loader);
+        clasz.setOrigin(origin);
         clasz.allConstructors().setInfo(loader);
         clasz.linkedModule().setInfo(loader);
         clasz.linkedModule().moduleClass().setInfo(loader);
+        clasz.linkedModule().moduleClass().setOrigin(origin);
         if (scope != null) scope.enterNoHide(clasz);
         if (scope != null) scope.enterNoHide(clasz.linkedModule());
         return clasz;
