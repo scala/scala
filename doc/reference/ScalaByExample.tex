@@ -1200,7 +1200,7 @@ covered Scala's language elements to express expressions and types
 comprising of primitive data and functions.  The context-free syntax
 of these language elements is given below in extended Backus-Naur
 form, where `\code{|}' denotes alternatives, \code{[...]} denotes
-option (0 or 1 occurrences), and \code{{...}} denotes repetition (0 or
+option (0 or 1 occurrences), and \lstinline@{...}@ denotes repetition (0 or
 more occurrences).
 
 \subsection*{Characters}
@@ -1320,7 +1320,7 @@ operator applications, such as \code{-x} or \code{y + x},
 \item
 conditionals, such as \code{if (x < 0) -x else x},
 \item
-blocks, such as \code{{ val x = abs(y) ; x * 2 }},
+blocks, such as \lstinline@{ val x = abs(y) ; x * 2 }@,
 \item
 anonymous functions, such as \code{x => x + 1} or \code{(x: int, y: int) => x + y}.
 \end{itemize}
@@ -2572,7 +2572,7 @@ All such operators are treated as methods of their right operand. E.g.,
 Note, however, that operands of a binary operation are in each case
 evaluated from left to right.  So, if \code{D} and \code{E} are
 expressions with possible side-effects, \code{D :: E} is translated to
-\code{{val x = D; E.::(x)}} in order to maintain the left-to-right
+\lstinline@{val x = D; E.::(x)}@ in order to maintain the left-to-right
 order of operand evaluation.
 
 Another difference between operators ending in a `\code{:}' and other
