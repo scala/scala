@@ -67,22 +67,15 @@ META_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
 META_SOURCES		+= $(META_LIST:%=$(META_ROOT)/%)
 META_JC_FILES		+= $(META_SOURCES)
 
-# boot scala compiler
-BOOT_COMPILER_ROOT	 = $(PROJECT_SOURCEDIR)/scalac
-BOOT_COMPILER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
-BOOT_COMPILER_SOURCES	+= $(BOOT_COMPILER_LIST:%=$(BOOT_COMPILER_ROOT)/%)
-BOOT_COMPILER_JC_FILES	 = $(filter %.java,$(BOOT_COMPILER_SOURCES))
-BOOT_COMPILER_JC_CLASSPATH = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE):$(FJBG_JARFILE)
-
 # scala compiler
 COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
 COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
 COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
 COMPILER_JC_FILES	 = $(filter %.java,$(COMPILER_SOURCES))
 COMPILER_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE):$(FJBG_JARFILE)
-COMPILER_SC_COMPILER	 = BOOTSCALAC
 COMPILER_SC_FILES	 = $(filter %.scala,$(COMPILER_SOURCES))
 COMPILER_SC_CLASSPATH	 = $(COMPILER_JC_CLASSPATH)
+COMPILER_SCALAC		 = $(PROJECT_BOOTSTRAPDIR)/bin/scalac
 
 # scala library
 LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
@@ -146,15 +139,16 @@ SC_COMPILER		 = SCALAC
 SC_OUTPUTDIR		 = $(PROJECT_OUTPUTDIR)
 SC_CLASSPATH		 = $(PROJECT_OUTPUTDIR)
 
+# scala compiler
+SCALAC			?= $(PROJECT_BINARYDIR)/scalac
+SCALADOC		?= $(PROJECT_BINARYDIR)/scaladoc
+
 ##############################################################################
 # Commands
 
-all		: scripts
-all		: lamplib
-all		: meta
-all		: generate
-all		: compiler
-all		: library
+all		: sources
+#all		: bootstrap
+all		: system
 all		: interpreter
 all		: scaladoc
 all		: dtd2scala
@@ -167,18 +161,18 @@ force		: fastclean
 fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
-	$(RM) .latest-dtd2scala
-	$(RM) .latest-scalap
+	$(RM) .latest-dtd2scala-sc
+	$(RM) .latest-scalap-sc
 	$(RM) .latest-scaladoc-jc
 	$(RM) .latest-scaladoc-rsrc
-	$(RM) .latest-interpreter
+	$(RM) .latest-interpreter-jc
 	$(RM) .latest-library-sc
 	$(RM) .latest-library-jc
 	$(RM) .latest-compiler-sc
 	$(RM) .latest-compiler-jc
 	$(RM) .latest-generate
-	$(RM) .latest-meta
-	$(RM) .latest-lamplib
+	$(RM) .latest-meta-jc
+	$(RM) .latest-lamplib-jc
 
 clean		: fastclean
 	$(RM) -r $(PROJECT_OUTPUTDIR)
@@ -190,61 +184,40 @@ distclean	: clean
 	$(RM) $(LIBRARY_JAR_ARCHIVE)
 	$(RM) $(TOOLS_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
-	$(RM) -r $(PROJECT_ROOT)/bootstrap
 	$(RM) -r $(PROJECT_APIDOCDIR)
+	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
 
-boot		:
-	$(RM) -r $(PROJECT_ROOT)/bootstrap
-	$(MKDIR) $(PROJECT_ROOT)/bootstrap
-	$(MKDIR) $(PROJECT_ROOT)/bootstrap/bin
-	$(MKDIR) $(PROJECT_ROOT)/bootstrap/classes
-	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_ROOT)/bootstrap/bin/.scala_wrapper.tmpl
-	$(RM) .latest-boot-compiler
-	$(MAKE) \
-	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
-	    PROJECT_BINARYDIR=$(PROJECT_ROOT)/bootstrap/bin \
-	    INSTALL_PREFIX=$(PROJECT_ROOT)/bootstrap \
-	    scripts
-	$(RM) .latest-boot-compiler
-	$(RM) .latest-lamplib
-	$(MAKE) \
-	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
-	    lamplib
-	$(RM) .latest-lamplib
-	$(MAKE) \
-	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
-	    boot-compiler
-	$(RM) .latest-library-jc
-	$(RM) .latest-library-sc
-	$(MAKE) \
-	    PROJECT_OUTPUTDIR=$(PROJECT_ROOT)/bootstrap/classes \
-	    LIBRARY_SC_COMPILER=BOOTSCALAC \
-	    library
-	$(RM) .latest-library-jc
-	$(RM) .latest-library-sc
+sources		: lamplib
+sources		: meta
+sources		: generate
 
-BOOTSCALAC	= $(PROJECT_ROOT)/bootstrap/bin/scalac
+system		: scripts
+system		: lamplib
+system		: compiler
+system		: library
 
-boot-compiler	: .latest-boot-compiler
-
+bootstrap	: .latest-bootstrap
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
-lamplib		: .latest-lamplib
-meta		: .latest-meta
+lamplib		: .latest-$(boot)lamplib-jc
+meta		: .latest-meta-jc
 generate	: .latest-generate
-compiler	: .latest-compiler-jc
-compiler	: .latest-compiler-sc
-library		: .latest-library-jc
-library		: .latest-library-sc
-interpreter	: .latest-interpreter
+compiler	: .latest-$(boot)compiler-jc
+compiler	: .latest-$(boot)compiler-sc
+library		: .latest-$(boot)library-jc
+library		: .latest-$(boot)library-sc
+interpreter	: .latest-interpreter-jc
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-rsrc
-dtd2scala	: .latest-dtd2scala
-scalap		: .latest-scalap
+dtd2scala	: .latest-dtd2scala-sc
+scalap		: .latest-scalap-sc
 library-doc	: .latest-library-sdc
 scalac4ant	:
 	cd support/ant && ant
 
+.PHONY		: sources
+.PHONY		: system
 .PHONY		: fastclean
+.PHONY		: bootstrap
 .PHONY		: scripts
 .PHONY		: lamplib
 .PHONY		: meta
@@ -256,71 +229,81 @@ scalac4ant	:
 .PHONY		: dtd2scala
 .PHONY		: scalap
 .PHONY		: library-doc
+.PHONY		: scala4ant
 
 ##############################################################################
 # Targets
 
-.latest-lamplib		: $(LAMPLIB_JC_FILES)
+.latest-bootstrap		:
+	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
+	$(MKDIR) $(PROJECT_BOOTSTRAPDIR)
+	$(MKDIR) $(PROJECT_BOOTSTRAPDIR)/bin
+	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_BOOTSTRAPDIR)/bin/
+	@$(make) \
+	    INSTALL_PREFIX=$(PROJECT_BOOTSTRAPDIR) \
+	    PROJECT_BINARYDIR=$(PROJECT_BOOTSTRAPDIR)/bin \
+	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTSTRAPDIR)/classes \
+	    boot="bootstrap-" system
+	touch $@
+
+.latest-$(boot)lamplib-jc	: $(LAMPLIB_JC_FILES)
 	@$(make) jc target=LAMPLIB LAMPLIB_JC_FILES='$?'
 	touch $@
 
-.latest-meta		: $(META_JC_FILES)
+.latest-meta-jc			: $(META_JC_FILES)
 	@$(make) jc target=META META_JC_FILES='$?'
-	$(RM) .latest-compiler
-	$(RM) .latest-library-jc
-	$(RM) .latest-library-sc
+	$(RM) .latest-*compiler-jc
+	$(RM) .latest-*compiler-sc
+	$(RM) .latest-*library-jc
+	$(RM) .latest-*library-sc
 	touch $@
 
-.latest-generate	: .latest-meta
+.latest-generate		: .latest-meta-jc
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(strip $(JAVA) -cp $(JC_OUTPUTDIR) \
 	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
 
-.latest-boot-compiler	: $(BOOT_COMPILER_JC_FILES)
-	@$(make) jc target=BOOT_COMPILER BOOT_COMPILER_JC_FILES='$?'
-	touch $@
-
-.latest-compiler-jc	: $(COMPILER_JC_FILES)
+.latest-$(boot)compiler-jc	: $(COMPILER_JC_FILES)
 	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
 	touch $@
 
-.latest-compiler-sc	: $(COMPILER_SC_FILES)
-	@if [ -d $(PROJECT_ROOT)/bootstrap ]; then \
+.latest-$(boot)compiler-sc	: $(COMPILER_SC_FILES)
+	@if [ -d $(PROJECT_BOOTSTRAPDIR) -a -z "$(boot)" ]; then \
 	    $(make) sc target=COMPILER COMPILER_SC_FILES='$?'; \
 	fi;
 	touch $@
 
-.latest-library-jc	: $(LIBRARY_JC_FILES)
+.latest-$(boot)library-jc	: $(LIBRARY_JC_FILES)
 	@$(make) jc target=LIBRARY LIBRARY_JC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
-.latest-library-sc	: $(LIBRARY_SC_FILES)
+.latest-$(boot)library-sc	: $(LIBRARY_SC_FILES)
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
-.latest-library-sdc	: $(LIBRARY_SDC_FILES)
+.latest-library-sdc		: $(LIBRARY_SDC_FILES)
 	@$(make) sdc target=LIBRARY
 	touch $@
 
-.latest-interpreter	: $(INTERPRETER_JC_FILES)
+.latest-interpreter-jc		: $(INTERPRETER_JC_FILES)
 	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
 	touch $@
 
-.latest-scaladoc-jc	: $(SCALADOC_JC_FILES)
+.latest-scaladoc-jc		: $(SCALADOC_JC_FILES)
 	@$(make) jc target=SCALADOC SCALADOC_JC_FILES='$?'
 	touch $@
 
-.latest-scaladoc-rsrc	: $(SCALADOC_RSRC_FILES)
+.latest-scaladoc-rsrc		: $(SCALADOC_RSRC_FILES)
 	$(strip $(MIRROR) -m 644 -C $(SCALADOC_ROOT) $(SCALADOC_RSRC_LIST) \
 	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-dtd2scala	: $(DTD2SCALA_SC_FILES)
+.latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES)
 	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
 	touch $@
 
-.latest-scalap	: $(SCALAP_SC_FILES)
+.latest-scalap-sc		: $(SCALAP_SC_FILES)
 	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
 	touch $@
 
@@ -365,15 +348,15 @@ $(SCRIPTS_WRAPPER_LINKS): $(SCRIPTS_WRAPPER)
 	    $(call RUN,$(LN) -s $(notdir $(SCRIPTS_WRAPPER)) $@); \
 	fi
 
-$(FUNCTION_FILES)	: .latest-meta $(FUNCTION_TEMPLATE)
+$(FUNCTION_FILES)	: .latest-meta-jc $(FUNCTION_TEMPLATE)
 	$(RM) .latest-generate
 	@$(make) generate
 
-$(TUPLE_FILES)		: .latest-meta $(TUPLE_TEMPLATE)
+$(TUPLE_FILES)		: .latest-meta-jc $(TUPLE_TEMPLATE)
 	$(RM) .latest-generate
 	@$(make) generate
 
-%			: .latest-meta %.tmpl
+%			: .latest-meta-jc %.tmpl
 	$(RM) .latest-generate
 	@$(make) generate
 
