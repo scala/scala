@@ -136,8 +136,7 @@ public class Erasure extends Transformer implements Modifiers {
     public Tree unboxedSelect(Tree qual, Symbol sym) {
 	return make.Select(qual.pos, qual, sym.name)
 	    .setSymbol(sym)
-	    // !!! .setType(Prefix.TypePrefix(boxedType(qual.type)).memberType(sym).erasure());
-            .setType(Type.singleType(boxedType(qual.type),sym).erasure());
+            .setType(Type.singleType(boxedType(qual.type).symbol().thisType(),sym).erasure());
     }
 
     /** Subclass relation for class types; empty for other types.
