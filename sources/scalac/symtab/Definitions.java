@@ -646,13 +646,12 @@ public class Definitions {
         ALLREF_CLASS = newClass(SCALA_CLASS, Names.AllRef, 0);
         ALL_CLASS = newClass(SCALA_CLASS, Names.All, 0);
 
+        final boolean forMSIL = global.target == Global.TARGET_MSIL;
         // the java classes
-        OBJECT_CLASS = getClass(global.target != Global.TARGET_MSIL ?
-				"java.lang.Object" : "System.Object");
-        THROWABLE_CLASS = getClass("java.lang.Throwable");
-	//STRING_CLASS = getClass("java.lang.String");
-	STRING_CLASS = getClass(global.target != Global.TARGET_MSIL
-				? "java.lang.String": "System.String");
+        OBJECT_CLASS = getClass(forMSIL ? "System.Object" : "java.lang.Object");
+	STRING_CLASS = getClass(forMSIL ? "System.String" : "java.lang.String");
+        THROWABLE_CLASS =
+            getClass(forMSIL ? "System.Exception" : "java.lang.Throwable");
 
         // the scala value classes
         UNIT_CLASS = getClass("scala.Unit");
@@ -762,7 +761,7 @@ public class Definitions {
                     new Symbol[] {OBJECT_SYNCHRONIZED_VPARAM},
                     OBJECT_SYNCHRONIZED_TPARAM.type())));
 
-	if (global.target == Global.TARGET_MSIL) {
+	if (forMSIL) {
 	    Symbol WAIT0 = newMethod(OBJECT_CLASS, Names.wait, Modifiers.FINAL);
 	    initMethod(WAIT0, Type.EMPTY_ARRAY, UNIT_TYPE());
 
@@ -788,7 +787,7 @@ public class Definitions {
         STRING_PLUS = newMethod(STRING_CLASS, Names.PLUS, Modifiers.FINAL);
         initMethod(STRING_PLUS, new Type[]{ANY_TYPE()}, STRING_TYPE());
 
-	if (global.target == Global.TARGET_MSIL) {
+	if (forMSIL) {
 	    Symbol s = newMethod(STRING_CLASS, Name.fromString("length"), 0);
 	    initMethod(s, Type.EMPTY_ARRAY, INT_TYPE());
 
