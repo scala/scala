@@ -147,10 +147,11 @@ runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
 runtime/matching/Address.scala
+runtime/matching/TestAlphabet.scala
 #runtime/matching/Context.scala
 #runtime/matching/Grammar.scala
 #runtime/matching/Match.scala
-#runtime/matching/Matcher.scala 
+runtime/matching/Matcher.scala 
 runtime/matching/NonTerm.scala
 runtime/matching/PatternGrammar.scala
 #runtime/matching/Pebble.scala
@@ -160,7 +161,6 @@ testing/UnitTest.scala
 
 util/alphabet/Alphabet.scala
 util/alphabet/AlphabetPlusWildcard.scala
-util/alphabet/IntAlphabet.scala
 util/alphabet/WildcardLabel.scala
 #util/automata/NondetTreeHedgeAutom.scala
 util/automata/NondetWordAutom.scala
