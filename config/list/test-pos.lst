@@ -1,5 +1,5 @@
 ############################################################-*-Makefile-*-####
-# positive compilation test files (paths are relative to ./test)
+# positive compilation test files (paths are relative to ./test/files)
 ##############################################################################
 # $Id$
 
