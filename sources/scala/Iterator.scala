@@ -38,7 +38,7 @@ object Iterator {
     private var i = 0;
     private val len = str.length();
     def hasNext = i < len;
-    def next = str charAt i;
+    def next = { val c = str charAt i; i = i + 1; c };
   }
 
   def range(lo: Int, end: Int) = new Iterator[Int] {
