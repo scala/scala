@@ -14,7 +14,6 @@ object ListMap {
 	def Empty[A, B] = new ListMap[A, B];
 }
 
-
 /** This class implements immutable maps using a list-based data
  *  structure. Instances of <code>ListMap</code> represent
  *  empty maps; they can be either created by calling the constructor
@@ -37,6 +36,20 @@ class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
 
     override def toList: List[Pair[A, B]] = Nil;
 
+ 	override def equals(obj: Any): Boolean =
+		if (obj is scala.collection.Map[A, B]) {
+			val that = obj as scala.collection.Map[A, B];
+			if (size != that.size) false else toList.forall {
+				case Pair(key, value) => that.get(key) match {
+					case None => false;
+					case Some(v) => v == value;
+				}
+			};
+		} else
+			false;
+
+	override def hashCode(): Int = 0;
+
     protected class Node(key: A, value: B) extends ListMap[A, B] {
         override def size: Int = ListMap.this.size + 1;
        	override def isEmpty: Boolean = true;
@@ -47,14 +60,16 @@ class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
 			if (k == key) {
 				new ListMap.this.Node(k, v);
 			} else {
-				val y = ListMap.this.update(k, v); (new y.Node(key, value)): ListMap[A, B]
+				val tail = ListMap.this.update(k,v); new tail.Node(key, value)
 			}
 		override def -(k: A): ListMap[A, B] =
 			if (k == key)
 				ListMap.this
 			else {
-				val y = ListMap.this - k; (new y.Node(key, value)): ListMap[A, B]
+				val tail = ListMap.this - k; new tail.Node(key, value)
 			}
 		override def toList: List[Pair[A, B]] = Pair(key, value) :: ListMap.this.toList;
+		override def hashCode(): Int =
+			(key.hashCode() ^ value.hashCode()) + ListMap.this.hashCode();
     }
 }
