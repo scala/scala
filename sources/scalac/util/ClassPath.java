@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.util;
 
@@ -14,37 +14,44 @@ import java.util.*;
 import scala.tools.util.AbstractFile;
 
 
+/** This class represents a Java/Scala class path. */
 public class ClassPath {
 
-    /** the character separating files
-     */
-    protected static String FILE_SEP = File.separator;
+    //########################################################################
+    // Public Constants
 
-    /** the separator in class path specifications
-     */
-    protected static String PATH_SEP =
-        System.getProperty("path.separator");
+    /** The system-dependent filename-separator character */
+    public static final String FILE_SEPARATOR = File.separator;
 
-    /** the default class path
-     */
-    public static String CLASS_PATH =
-        System.getProperty("scala.class.path",
-            System.getProperty("java.class.path"));
+    /** The system-dependent path-separator character */
+    public static final String PATH_SEPARATOR =
+        System.getProperty("path.separator", ":");
 
-    /** the default source path
-     */
-    public static String SOURCE_PATH = null;
+    /** The default class path */
+    public static final String CLASSPATH =
+        System.getProperty("scala.class.path", ".");
 
-    /** the default boot class path
-     */
-    public static String BOOT_PATH =
-        appendPath(appendPath("", System.getProperty("sun.boot.class.path")),
-            System.getProperty("scala.boot.class.path")).substring(1);
+    /** The default source path */
+    public static final String SOURCEPATH = "";
 
-    /** the default extension path
-     */
-    public static String EXTENSION_PATH =
-        System.getProperty("java.ext.dirs");
+    /** The default boot class path */
+    public static final String BOOTCLASSPATH =
+        getDefaultBootClassPath();
+
+    /** The default extension directory path */
+    public static final String EXTDIRS =
+        System.getProperty("java.ext.dirs", "");
+
+    //########################################################################
+    // Private Functions
+
+    /** Returns the default boot class path. */
+    private static String getDefaultBootClassPath() {
+        String java = System.getProperty("sun.boot.class.path");
+        String scala = System.getProperty("scala.boot.class.path");
+        if (java == null) return scala == null ? "" : scala;
+        return scala == null ? java : java + PATH_SEPARATOR + scala;
+    }
 
     /** the various class path roots
      */
@@ -55,26 +62,34 @@ public class ClassPath {
     public boolean printSearch;
 
 
-    /** classpath constructor
-     */
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance with default paths. */
     public ClassPath() {
-        this(CLASS_PATH);
+        this(CLASSPATH);
     }
 
+    /**
+     * Initializes this instance with the specified class path and
+     * default source, boot class and extension directory paths.
+     */
     public ClassPath(String classpath) {
-        this(classpath, SOURCE_PATH, BOOT_PATH, EXTENSION_PATH);
+        this(classpath, SOURCEPATH, BOOTCLASSPATH, EXTDIRS);
     }
 
-    public ClassPath(String classpath, String sourcepath,
-        String bootclasspath, String extdirs)
+
+    /** Initializes this instance with the specified paths. */
+    public ClassPath(String classpath, String sourcepath, String bootclasspath,
+        String extdirs)
     {
-        // replace first empty path in bootclasspath by BOOT_PATH
-        if (!bootclasspath.equals(BOOT_PATH)) {
-            String path = PATH_SEP + bootclasspath + PATH_SEP;
-            int index = path.indexOf(PATH_SEP + PATH_SEP);
+        // replace first empty path in bootclasspath by BOOTCLASSPATH
+        if (!bootclasspath.equals(BOOTCLASSPATH)) {
+            String path = PATH_SEPARATOR + bootclasspath + PATH_SEPARATOR;
+            int index = path.indexOf(PATH_SEPARATOR + PATH_SEPARATOR);
             if (index >= 0)
                 bootclasspath =
-                    path.substring(1, index + 1) + BOOT_PATH +
+                    path.substring(1, index + 1) + BOOTCLASSPATH +
                     path.substring(index + 1, path.length() - 1);
         }
         String path = "";
@@ -88,25 +103,25 @@ public class ClassPath {
     /** append an additional path
      */
     protected static String appendPath(String path, String addpath) {
-        return addpath == null ? path : path + PATH_SEP + addpath;
+        return addpath == null ? path : path + PATH_SEPARATOR + addpath;
     }
 
     /** append files from the extension directories
      */
     protected String appendExtDirs(String path, String extdirs) {
         if (extdirs != null) {
-            extdirs += PATH_SEP;
+            extdirs += PATH_SEPARATOR;
             int length = extdirs.length();
             int i = 0;
             while (i < length) {
-                int k = extdirs.indexOf(PATH_SEP, i);
+                int k = extdirs.indexOf(PATH_SEPARATOR, i);
                 String dirname = extdirs.substring(i, k);
                 String[] ext;
                 if ((dirname != null) &&
                     (dirname.length() > 0) &&
                     ((ext = new File(dirname).list()) != null)) {
-                    if (!dirname.endsWith(FILE_SEP))
-                        dirname += FILE_SEP;
+                    if (!dirname.endsWith(FILE_SEPARATOR))
+                        dirname += FILE_SEPARATOR;
                     for (int j = 0; j < ext.length; j++)
                         if (ext[j].endsWith(".jar") ||
                             ext[j].endsWith(".zip"))
@@ -118,15 +133,18 @@ public class ClassPath {
         return path;
     }
 
+    //########################################################################
+    // Public Methods
+
     /** parse a class path specification and return an array
      *  of existing class file locations
      */
     public static String[] parse(String path) {
-        path += PATH_SEP;
+        path += PATH_SEPARATOR;
         Vector components = new Vector();
         int i = 0;
         while (i < path.length()) {
-            int j = path.indexOf(PATH_SEP, i);
+            int j = path.indexOf(PATH_SEPARATOR, i);
             String subpath = path.substring(i, j);
             if (new File(subpath).exists())
                 components.add(subpath);
@@ -166,7 +184,9 @@ public class ClassPath {
             return root[0];
         String path = root[0];
         for (int i = 1; i < root.length; i++)
-            path += PATH_SEP + root[i];
+            path += PATH_SEPARATOR + root[i];
         return path;
     }
+
+    //########################################################################
 }

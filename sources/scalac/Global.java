@@ -210,6 +210,7 @@ public abstract class Global {
         this.printtypes = args.types.value;
         this.printtokens = args.print.tokens;
         this.classPath = args.classpath();
+	if (reporter.verbose) reporter.inform("classpath = " + classPath);
         this.outpath = args.outpath();
         String encoding = args.encoding.value;
         Charset charset = null;

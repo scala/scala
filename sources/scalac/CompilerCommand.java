@@ -144,19 +144,19 @@ public class CompilerCommand extends CommandParser {
 
         this.classpath = new StringOptionParser(this,
             "classpath", "Specify where to find user class files",
-            "path", ClassPath.CLASS_PATH),
+            "path", ClassPath.CLASSPATH),
 
         this.sourcepath = new StringOptionParser(this,
             "sourcepath", "Specify where to find input source files",
-            "path", ClassPath.SOURCE_PATH),
+            "path", ClassPath.SOURCEPATH),
 
         this.bootclasspath = new StringOptionParser(this,
             "bootclasspath", "Override location of bootstrap class files",
-            "path", ClassPath.BOOT_PATH),
+            "path", ClassPath.BOOTCLASSPATH),
 
         this.extdirs = new StringOptionParser(this,
             "extdirs", "Override location of installed extensions",
-            "dirs", ClassPath.EXTENSION_PATH),
+            "dirs", ClassPath.EXTDIRS),
 
         this.outpath = new StringOptionParser(this,
             "d", "Specify where to place generated class files",

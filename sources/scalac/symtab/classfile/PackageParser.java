@@ -49,8 +49,6 @@ public class PackageParser extends SymbolLoader {
         this.classCompletion = new ClassParser(global);
 	this.importer = (global.target == global.TARGET_MSIL)
 	    ? CLRPackageParser.create(global) : null;
-	if (global.reporter.verbose)
-	    global.reporter.inform("classpath = " + global.classPath);
     }
 
     //########################################################################
