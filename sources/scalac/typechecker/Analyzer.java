@@ -2119,38 +2119,40 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 		    // convert type to constructor
 		    Symbol tsym = TreeInfo.methSymbol(fn1);
-		    assert tsym.isType() : tsym;
-		    Type tp = fn1.type.unalias();
-		    switch (tp) {
-		    case TypeRef(Type pre, Symbol c, Type[] argtypes):
-			if (c.kind == CLASS) {
-			    c.initialize();
-			    Tree fn0 = fn1;
-			    fn1 = gen.mkRef(tree.pos, pre, c.allConstructors());
-			    if (tsym == c) {
-				switch (fn0) {
-				case AppliedType(_, Tree[] targs):
-				    fn1 = gen.TypeApply(fn1, targs);
+		    if (tsym.kind != ERROR) {
+			assert tsym.isType() : tsym;
+			Type tp = fn1.type.unalias();
+			switch (tp) {
+			case TypeRef(Type pre, Symbol c, Type[] argtypes):
+			    if (c.kind == CLASS) {
+				c.initialize();
+				Tree fn0 = fn1;
+				fn1 = gen.mkRef(tree.pos, pre, c.allConstructors());
+				if (tsym == c) {
+				    switch (fn0) {
+				    case AppliedType(_, Tree[] targs):
+					fn1 = gen.TypeApply(fn1, targs);
+				    }
+				} else {
+				    // it was an alias type
+				    // todo: handle overloaded constructors
+				    fn1 = gen.TypeApply(
+					fn1, gen.mkTypes(tree.pos, argtypes));
+				    if (tsym.typeParams().length != 0 &&
+					!(fn0 instanceof AppliedType))
+					fn1.type = Type.PolyType(
+					    tsym.typeParams(), fn1.type);
 				}
+				//System.out.println(TreeInfo.methSymbol(fn1) + ":" + tp + " --> " + fn1.type + " of " + fn1);//DEBUG
 			    } else {
-				// it was an alias type
-				// todo: handle overloaded constructors
-				fn1 = gen.TypeApply(
-				    fn1, gen.mkTypes(tree.pos, argtypes));
-				if (tsym.typeParams().length != 0 &&
-				    !(fn0 instanceof AppliedType))
-				    fn1.type = Type.PolyType(
-					tsym.typeParams(), fn1.type);
+				error(tree.pos,
+				      tsym + " is not a class; cannot be instantiated");
 			    }
-			    //System.out.println(TreeInfo.methSymbol(fn1) + ":" + tp + " --> " + fn1.type + " of " + fn1);//DEBUG
-			} else {
+			    break;
+			default:
 			    error(tree.pos,
 				  tsym + " is not a class; cannot be instantiated");
 			}
-			break;
-		    default:
-			error(tree.pos,
-			      tsym + " is not a class; cannot be instantiated");
 		    }
 		}
 
