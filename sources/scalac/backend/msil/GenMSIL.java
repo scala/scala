@@ -120,53 +120,35 @@ public class GenMSIL /*implements Modifiers */ {
 
     /**
      */
-    public void apply() {
-	if (global.target == global.TARGET_MSIL) {
-	    currModule = getPackage("prog", true);
-	    main = (MethodBuilder) currModule.GetMethod("Main", Type.EmptyTypes);
-	    if (main == null) {
-		main = currModule.DefineGlobalMethod
-		    ("Main", MethodAttributes.Static,
-		     Type.GetType("System.Void"),
-		     new Type[] {Type.GetType("System.String[]")} );
-		main.DefineParameter(0, 0L, "args");
-	    }
+    public void initGen() {
+	currModule = getPackage("prog", true);
+	main = (MethodBuilder) currModule.GetMethod("Main", Type.EmptyTypes);
+	if (main == null) {
+	    main = currModule.DefineGlobalMethod
+		("Main", MethodAttributes.Static,
+		 Type.GetType("System.Void"),
+		 new Type[] {Type.GetType("System.String[]")} );
+	    main.DefineParameter(0, 0L, "args");
+	}
+    }
 
-	    // create mappings from Symbols to MSIL Types
-	    tc.traverse(global.units);
-
-	    try {
-                for (int i = 0; i < global.units.length; i++) {
-                    apply(global.units[i]);
-                }
-	    } catch (Throwable e) {
-		//log("params: " + params);
-		//log("locals: " + locals);
-		if (code != null) {
-		    MethodBase method = code.owner;
-		    log("Processing method " + method.DeclaringType +
-			"::" +method.Name);
-		}
-		if (global.debug) e.printStackTrace();
-		throw (Error) e;
+    public void finalizeGen() {
+	tc.createTypes();
+	main.GetILGenerator().Emit(OpCodes.Ret);
+	((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
+	try {
+	    Iterator iter = assemblies.values().iterator();
+	    while (iter.hasNext()) {
+		AssemblyBuilder assem = (AssemblyBuilder) iter.next();
+// 		log("Types defined in assembly: " + assem.FullName);
+// 		Type[] types = assem.GetTypes();
+// 		for (int i = 0; i < types.length; i++)
+// 		    log("\t" + types[i]);
+		assem.Save(assem.FullName + ".il");
 	    }
-	    tc.createTypes();
-	    main.GetILGenerator().Emit(OpCodes.Ret);
-	    ((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
-	    try {
-		Iterator iter = assemblies.values().iterator();
-		while (iter.hasNext()) {
-		    AssemblyBuilder assem = (AssemblyBuilder) iter.next();
-// 		    log("Types defined in assembly: " + assem.FullName);
-// 		    Type[] types = assem.GetTypes();
-// 		    for (int i = 0; i < types.length; i++)
-// 			log("\t" + types[i]);
-		    assem.Save(assem.FullName + ".il");
-		}
-	    }
-	    catch (IOException e) {
-		if (global.debug) e.printStackTrace();
-	    }
+	}
+	catch (IOException e) {
+	    if (global.debug) e.printStackTrace();
 	}
     }
 
@@ -277,6 +259,7 @@ public class GenMSIL /*implements Modifiers */ {
 	//log("\tfullName = " + clazz.fullName());
 	//log("\tqualifier = " + Debug.show(clazz.qualifier()));
 	//log("class members: " + clazz.members());
+	tc.getType(clazz);
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
 	if ( clazz.isModule() || clazz.isModuleClass() ) {
@@ -450,7 +433,7 @@ public class GenMSIL /*implements Modifiers */ {
 	//i = gen2(tree, toType);
 	try { i = gen2(tree, toType); }
 	catch (Throwable e) {
-	    logErr(tree.pos, "gen(): Exception");
+	    logErr(tree.pos, "GenMSIL.gen(): Exception caught!");
 	    if (global.debug) e.printStackTrace();
 	    System.exit(1);
 	    throw (Error) e;
@@ -816,6 +799,7 @@ public class GenMSIL /*implements Modifiers */ {
 	    switch (qualifier.type) {
 	    case TypeRef(_, _, _):
 	    case SingleType(_, _):
+	    case ThisType(_):
 
 // 		log("genApply.Select: " + dumpSym(sym));
 // 		log("\tfun: " + Debug.show(fun));
@@ -844,6 +828,12 @@ public class GenMSIL /*implements Modifiers */ {
 		return check(invokeMethod(sym, args, resType, virtualCall));
 
 	    default:
+		log("\tfun: " + Debug.show(fun));
+		log("\tqualifier: " + Debug.show(qualifier));
+		log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
+
+		log("\tqualifier.type: " + Debug.show(qualifier.type));
+
 		throw new ApplicationError();
 	    } // switch(qualifier.type)
 

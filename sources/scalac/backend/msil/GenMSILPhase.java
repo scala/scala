@@ -45,7 +45,9 @@ public class GenMSILPhase extends Phase {
 
     /** Applies this phase to the given compilation units. */
     public void apply(Unit[] units) {
+	translator.initGen();
         for (int i = 0; i < units.length; i++) translator.apply(units[i]);
+	translator.finalizeGen();
     }
 
     //########################################################################
