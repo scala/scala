@@ -27,6 +27,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   val  _AppendBuffer = Name.fromString("AppendBuffer");
   val  _collection = Name.fromString("collection");
   val  _Elem = Name.fromString("Elem");
+  val  _Seq = Name.fromString("Seq");
   val  _mutable = Name.fromString("mutable");
   val  _append = Name.fromString("append");
   val  _xml = Name.fromString("xml");
@@ -45,6 +46,16 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   // convenience methods
   private def _scala( pos: int, name: Name ) =
     make.Select( pos, make.Ident( pos, Names.scala ), name );
+
+  private def _scala_Seq( pos: int ) =
+    /*make.Apply( pos,
+               make.AppliedType(pos,*/
+                                p.convertToTypeId( _scala( pos, _Seq ))/*,
+                                (Predef.Array[Tree](
+                                  convertToTypeId(
+                                    _scala_xml_Node( pos ) ))
+                              ),
+               Tree.EMPTY_ARRAY)*/;
 
   private def _scala_xml( pos: int, name: Name ) =
     make.Select( pos, _scala( pos, _xml ), name );
@@ -175,6 +186,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       blocArr( i ) = t
     }
     make.Block( pos, blocArr, nIdent );
+  }
+
+  def makeXMLseqPat( pos:int, args:Array[Tree] ) = {
+    make.Apply( pos, _scala_Seq( pos ), args );
   }
 
   def makeXML(pos:int,n:Name,args:Array[Tree],attrMap:ListMap[Name,Tree]):Tree = {
@@ -349,10 +364,28 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     }
   }
 
-  /** @see xmlPattern. resynchronizes after succesful parse */
+  /** @see xmlPattern. resynchronizes after succesful parse
   def xLiteralPattern = {
     val t = xPattern; s.nextToken(); t
   }
+  */
+
+  /** @see xmlPattern. resynchronizes after succesful parse
+   * @return this xml pattern
+   * precondition: s.xStartsXML == true
+  */
+  def xLiteralPattern:Tree = {
+    val pos = s.pos;
+    var tree = xPattern; s.token = EMPTY; s.nextToken();
+    if( s.xStartsXML )  {
+      val ts = new myTreeList(); ts.append( tree );
+      while( s.xStartsXML ) { ts.append( xPattern ); s.nextToken(); }
+      tree = makeXMLseqPat( pos, ts.toArray() );
+    }
+    tree
+  }
+
+
 
   /** '<' xPattern  ::= Name [S] { xmlPattern | '{' pattern3 '}' } ETag
    *                  | Name [S] '/' '>'

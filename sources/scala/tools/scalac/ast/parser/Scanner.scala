@@ -428,8 +428,7 @@ class Scanner(_unit: Unit) extends TokenData {
                 case java.lang.Character.OTHER_SYMBOL => true;
                 case _ => false;}) {
                   putChar( ch );
-                  treatIdent;
-	          nextch();
+                  getOperatorRest;
                 } else {
 	          nextch();
 	          syntaxError("illegal character");
@@ -574,9 +573,19 @@ class Scanner(_unit: Unit) extends TokenData {
           } else {
             putChar( '/' );
           }
+
         case _ =>
-          treatIdent;
-          return;
+          if( java.lang.Character.getType( ch ).asInstanceOf[byte] match {
+            case java.lang.Character.MATH_SYMBOL => true;
+            case java.lang.Character.OTHER_SYMBOL => true;
+            case _ => false;
+          }) {
+            putChar( ch );
+            nextch();
+          } else {
+            treatIdent;
+            return;
+          }
       }
     }
   }
@@ -591,7 +600,15 @@ class Scanner(_unit: Unit) extends TokenData {
            '|' | '\\' | '/' =>
         getOperatorRest;
       case _ =>
-        treatIdent;
+         if( java.lang.Character.getType( ch ).asInstanceOf[byte] match {
+            case java.lang.Character.MATH_SYMBOL => true;
+            case java.lang.Character.OTHER_SYMBOL => true;
+            case _ => false;
+          }) {
+            getOperatorRest;
+          } else {
+            treatIdent;
+          }
     }
   }
 
@@ -944,7 +961,7 @@ class Scanner(_unit: Unit) extends TokenData {
    * see [4] and Appendix B of XML 1.0 specification
   */
   def xIsNameChar = xIsNameStart || (ch match {
-    case '.' | '-' => true;
+    case '.' | '-' | ':' => true;
     case _ => java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
       case java.lang.Character.COMBINING_SPACING_MARK => true; // Mc
       case java.lang.Character.ENCLOSING_MARK => true;         // Me
@@ -957,6 +974,7 @@ class Scanner(_unit: Unit) extends TokenData {
 
   /** NameStart == Unicode general category in { Ll, Lu, Lo, Lt, Nl }
    *
+   *  We do not allow a name to start with ':'.
    *  see [3] and Appendix B of XML 1.0 specification
    */
   def xIsNameStart =
@@ -967,7 +985,7 @@ class Scanner(_unit: Unit) extends TokenData {
       case  java.lang.Character.TITLECASE_LETTER => true;
       case  java.lang.Character.LETTER_NUMBER    => true;
       case _ => ch match {
-        case '_' | ':' => true
+        case '_' => true
         case _ => false;
       }
     }
