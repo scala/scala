@@ -4,20 +4,62 @@ import scala.collection.mutable;
 import scala.collection.Set;
 import scala.collection.Map;
 
-class ValidationException( e:String ) extends Exception( e );
 
-object ValidationException {
-  def fromFixedAttribute( k: String, value: String, actual: String ) =
-    new ValidationException("value of attribute " + k + " FIXED to \""+value+"\", but document tries \""+actual+"\"");
+class ElementValidator(namespace$$: String, elemSpec: RegExp) {
+  final val namespace = namespace$$.intern();
 
-  def fromUndefinedAttribute( key:String ) =
-    new ValidationException("undefined attribute " + key );
+  var autom:Autom = _;
 
-  def fromMissingAttribute( allKeys:Set[String] ) = {
-    new ValidationException("missing value for REQUIRED attribute"+
-                            { if( allKeys.size > 1 ) "s" else "" }+
-                            allKeys );
+  trait Autom {
+    def run(s:Seq[Node]):Unit;
   }
+
+  object TrivialAutom extends Autom {
+    def run(s:Seq[Node]):Unit = {};
+  }
+
+  object EmptyAutom extends Autom {
+    /** "not even entity references, PIs, etc" */
+    def run(s:Seq[Node]):Unit =
+      if( s.length != 0 )
+        throw MakeValidationException.fromNonEmptyElement();
+
+  }
+
+  object TextAutom extends Autom {
+    /** only text nodes, entity references, PIs, comments, etc" */
+    def run(s:Seq[Node]):Unit = {
+      val it = s.elements;
+      while( it.hasNext ) {
+        val n = it.next;
+        if( n.typeTag$ >= 0 )
+           throw MakeValidationException.fromUndefinedElement( n.label );
+      }
+    }
+  }
+
+  class MixedModeAutom(set:scala.collection.Set[String]) extends Autom {
+    def run(s:Seq[Node]):Unit = {
+      val it = s.elements;
+      while( it.hasNext ) {
+        val n = it.next;
+        if(( n.namespace == namespace )&& !set.contains( n.label ))
+          throw MakeValidationException.fromUndefinedElement( n.label );
+      }
+    }
+  }
+
+  autom = elemSpec match {
+    case ANY_ => TrivialAutom;
+    case Eps  => EmptyAutom;
+    case PCDATA_ | Sequ( PCDATA_ ) => TextAutom
+    case Star(z:Alt) if(( z.rs.length == 1 )&& (z.rs(0) match {
+      case PCDATA_   => true
+      case _         => false
+    })) => new MixedModeAutom( elemSpec.getLabels );
+    case _    => TrivialAutom;
+  }
+  def validate( nodes:Seq[Node] ):Unit = autom.run( nodes );
 }
 
 /** only CDATA attributes, ignores attributes that have different namespace
@@ -66,7 +108,7 @@ class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
         case Some( AttrDecl( key, tpe, df )) => df match {
           case DEFAULT( true, attValue ) =>
             if( b.value != attValue )
-              ValidationException.fromFixedAttribute( key, attValue, b.value );
+              MakeValidationException.fromFixedAttribute( key, attValue, b.value );
             else
               add( attribs, b )
           case REQUIRED =>
@@ -76,7 +118,7 @@ class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
             attribs = add( attribs, b )
         }
         case _ =>
-          ValidationException.fromUndefinedAttribute( b.key )
+          MakeValidationException.fromUndefinedAttribute( b.key )
       }
     }
     if( req - actualReq > 0 ) {
@@ -85,7 +127,7 @@ class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
         allKeys += key;
       for( val a <- attribs )
         allKeys -= a.key;
-      ValidationException.fromMissingAttribute( allKeys )
+      MakeValidationException.fromMissingAttribute( allKeys )
     }
     new AttributeSeq( (attribsTemplate:::attribs):_* )
   }

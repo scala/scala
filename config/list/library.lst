@@ -181,6 +181,7 @@ xml/dtd/RegExp.scala
 xml/dtd/Scanner.scala
 xml/dtd/Tokens.scala
 xml/dtd/Validation.scala
+xml/dtd/ValidationException.scala
 
 xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala

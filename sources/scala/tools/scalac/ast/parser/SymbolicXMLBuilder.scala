@@ -159,7 +159,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
    *  @todo map:       a map of attributes !!!
    */
 
-  def mkXML(pos:int, isPattern:boolean, namespace:Tree, label:Tree, attrs:Array[Tree], children:Array[Tree]):Tree = {
+  protected def mkXML(pos: int, isPattern: boolean, namespace: Tree, label: Tree, attrs: Array[Tree], children: Array[Tree]): Tree = {
     if( isPattern ) {
       val ts = new myTreeList();
       ts.append( namespace );
@@ -386,7 +386,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
   def qualified( pos:Int, name:String ):Pair[String,String] =
     getPrefix( name ).match {
       case Some( pref ) =>
-        val newLabel = name.substring( pref.length(), name.length() );
+        val newLabel = name.substring( pref.length()+1, name.length() );
         // if( newLabel.indexOf(':') != -1 )  syntaxError
         Pair( "namespace$"+pref, newLabel );
       case None =>
@@ -394,10 +394,10 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     }
 
   /** makes an element */
-  def makeXML(pos: int, labeln: Name, attrMap: ListMap[String,Tree], args: Array[Tree]): Tree={
+  def makeXML(pos: int, labeln: Name, attrMap1: ListMap[String,Tree], args: Array[Tree]): Tree={
     var label = labeln.toString();
     var setNS = ListMap.Empty[String, Tree];
-
+    var attrMap = attrMap1;
 
     for( val z <- attrMap.keys; z.startsWith("xmlns") ) {
       val i = z.indexOf(':');
@@ -407,6 +407,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         val zz = z.substring( i+1, z.length() );
         setNS = setNS.update( zz, attrMap( z ));
       }
+      attrMap = attrMap - z;
     }
     val i = label.indexOf(':');
     val Pair( namespace, newlabel ) = qualified( pos, label );

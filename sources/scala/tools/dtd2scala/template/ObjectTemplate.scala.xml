@@ -73,13 +73,20 @@
        new AttributeValidator(  
          <qstring ref="namespace"/>, <attributeDecls/>);
          }
+
+     private val &ccElementName;Validator = {
+       import scala.xml.dtd._;
+       new ElementValidator(<qstring ref="namespace"/>, <elemDecl/>);
+     }
+
      case class &ccElementName;( attrs:scala.xml.AttributeSeq, ch:scala.xml.Node* ) extends <string ref="objectName"/>Node$ {
 
+     &ccElementName;Validator.validate( ch );
 
     final override def typeTag$ = <refTag/>;
 
      final def label = &qElementName;;
-     final def child      = ch;
+     final def child      =  ch;
      final def attributes = theAttrs; 
 
      val theAttrs = &ccElementName;AttribValidator.validate( attrs );

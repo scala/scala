@@ -13,13 +13,33 @@ object Test {
     //val b: Node = dtd._factory.get("link").match { case Some(x) => x(Nil,null)}; // safe
     // !!! System.out.println(b.toXML);
 
-    // construct data using constructor
+    // construct data using constructor (valid)
     val c = Link(
       new AttributeSeq(
         Attribute("","target","http://www.scala.org")
       ),
       Name(n, scala.xml.Text("hello-link"))
     );
+
+    try {
+      val c2 = Name(
+        n,
+        Link( n )
+      );
+      Console.println("eh ?");
+    } catch {
+      case scala.xml.dtd.ValidationException(msg) => {
+        Console.print("validator throws exception: ");
+        Console.println( msg );
+      }
+      case z => // ignore
+        Console.println("whut??? "+z.getClass);
+
+    }
+
+
+
+
     //c.getAttribs.update("target", "http://www.scala.org");
     System.out.println( c );
 

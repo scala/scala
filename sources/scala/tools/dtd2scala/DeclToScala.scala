@@ -12,7 +12,7 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.dtd.{AttrDecl,RegExp,ANY_,PCDATA_,Eps,Star,RNode,Sequ,Alt}
+import scala.xml.dtd.{AttrDecl,ElemDecl,RegExp,ANY_,PCDATA_,Eps,Star,RNode,Sequ,Alt}
 import scala.xml.dtd.{REQUIRED,IMPLIED,DEFAULT};
 import scala.xml.nobinding.XML ;
 
@@ -29,7 +29,7 @@ class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elem
 
     val lookup : HashMap[String,String] = new HashMap[String,String]();
     var curAttribs: Map[String,AttrDecl] = null ;  /* of current elem */
-    var curModel : RegExp = null;
+    var curModel: RegExp = null;
 
     /** 1.populate with special "<R" and default
     **/
@@ -173,6 +173,9 @@ class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elem
                   sb.insert(0, aDecl.toString());
                 }
                 fOut.print(sb.toString());
+
+              case "elemDecl" =>
+                fOut.print(curModel.toString());
 
               case "template" => {
                 lookup.update("objectName", objectName);
