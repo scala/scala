@@ -196,6 +196,19 @@ public class TreeInfo {
             }
       }
 
+    /** returns true if the argument is an empty sequence pattern
+     */
+    public static boolean isEmptySequence( Tree tree ) {
+	switch( tree ) {
+	case Sequence( Tree ts[] ):
+	    return ( ts.length == 0 );
+	default:
+	    return false;
+	}
+    }
+
+    /** returns true if the argument is a wildcard pattern
+     */
     public static boolean isWildcardPattern( Tree tree ) {
 	switch( tree ) {
 	case Ident( Name n ):
