@@ -232,25 +232,25 @@ class ConstantFolder(global: scalac_Global) {
      */
     def cast(value: AConstant, tpe: Type): AConstant = value.kind() match {
       case UNIT =>
-        if (tpe.isSameAs(definitions.UNIT_CLASS.getType())) value
+        if (tpe.isSameAs(definitions.void_TYPE())) value // !!! -> UNIT_TYPE()
 	else null
       case BOOL =>
-        if (tpe.isSameAs(definitions.BOOLEAN_TYPE())) value
+        if (tpe.isSameAs(definitions.boolean_TYPE())) value
 	else null
       case U1 | U2 | U4 | U8 | I1 | I2 | I4 | I8 | R4 | R8 =>
-        if (tpe.isSameAs(definitions.BYTE_TYPE()))
+        if (tpe.isSameAs(definitions.byte_TYPE()))
           AConstant.BYTE(value.byteValue())
-        else if (tpe.isSameAs(definitions.SHORT_TYPE()))
+        else if (tpe.isSameAs(definitions.short_TYPE()))
           AConstant.SHORT(value.shortValue())
-        else if (tpe.isSameAs(definitions.CHAR_TYPE()))
+        else if (tpe.isSameAs(definitions.char_TYPE()))
           AConstant.CHAR(value.charValue())
-        else if (tpe.isSameAs(definitions.INT_TYPE()))
+        else if (tpe.isSameAs(definitions.int_TYPE()))
           AConstant.INT(value.intValue())
-        else if (tpe.isSameAs(definitions.LONG_TYPE()))
+        else if (tpe.isSameAs(definitions.long_TYPE()))
           AConstant.LONG(value.longValue())
-        else if (tpe.isSameAs(definitions.FLOAT_TYPE()))
+        else if (tpe.isSameAs(definitions.float_TYPE()))
           AConstant.FLOAT(value.floatValue())
-        else if (tpe.isSameAs(definitions.DOUBLE_TYPE()))
+        else if (tpe.isSameAs(definitions.double_TYPE()))
           AConstant.DOUBLE(value.doubleValue())
 	else null
       case STR =>

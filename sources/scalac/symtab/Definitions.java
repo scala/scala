@@ -82,57 +82,39 @@ public class Definitions {
 
     /** The scala.Unit class */
     public final Symbol UNIT_CLASS;
-    public final Type   UNIT_TYPE() {
-        return UNIT_TYPE.type().resultType();
-    }
+    public final Type   UNIT_TYPE() {return UNIT_CLASS.staticType();}
 
     /** The scala.Boolean class */
     public final Symbol BOOLEAN_CLASS;
-    public final Type   BOOLEAN_TYPE() {
-        return BOOLEAN_TYPE.type().resultType();
-    }
+    public final Type   BOOLEAN_TYPE() {return BOOLEAN_CLASS.staticType();}
 
     /** The scala.Byte class */
     public final Symbol BYTE_CLASS;
-    public final Type   BYTE_TYPE() {
-        return BYTE_TYPE.type().resultType();
-    }
+    public final Type   BYTE_TYPE() {return BYTE_CLASS.staticType();}
 
     /** The scala.Short class */
     public final Symbol SHORT_CLASS;
-    public final Type   SHORT_TYPE() {
-        return SHORT_TYPE.type().resultType();
-    }
+    public final Type   SHORT_TYPE() {return SHORT_CLASS.staticType();}
 
     /** The scala.Char class */
     public final Symbol CHAR_CLASS;
-    public final Type   CHAR_TYPE() {
-        return CHAR_TYPE.type().resultType();
-    }
+    public final Type   CHAR_TYPE() {return CHAR_CLASS.staticType();}
 
     /** The scala.Int class */
     public final Symbol INT_CLASS;
-    public final Type   INT_TYPE() {
-        return INT_TYPE.type().resultType();
-    }
+    public final Type   INT_TYPE() {return INT_CLASS.staticType();}
 
     /** The scala.Long class */
     public final Symbol LONG_CLASS;
-    public final Type   LONG_TYPE() {
-        return LONG_TYPE.type().resultType();
-    }
+    public final Type   LONG_TYPE() {return LONG_CLASS.staticType();}
 
     /** The scala.Float class */
     public final Symbol FLOAT_CLASS;
-    public final Type   FLOAT_TYPE() {
-        return FLOAT_TYPE.type().resultType();
-    }
+    public final Type   FLOAT_TYPE() {return FLOAT_CLASS.staticType();}
 
     /** The scala.Double class */
     public final Symbol DOUBLE_CLASS;
-    public final Type   DOUBLE_TYPE() {
-        return DOUBLE_TYPE.type().resultType();
-    }
+    public final Type   DOUBLE_TYPE() {return DOUBLE_CLASS.staticType();}
 
     //########################################################################
     // Public Fields & Methods - Scala reference classes
@@ -217,15 +199,7 @@ public class Definitions {
     /** The scala.Array class */
     public final Symbol ARRAY_CLASS;
     public final Type   ARRAY_TYPE(Type element) {
-        Type type = ARRAY_TYPE.type().resultType();
-        switch (type) {
-        case TypeRef(Type prefix, Symbol clasz, _):
-            return Type.typeRef(prefix, clasz, new Type[]{element});
-        case UnboxedArrayType(_):
-            return Type.UnboxedArrayType(element);
-        default:
-            throw Debug.abort("illegal case", type);
-        }
+        return ARRAY_CLASS.staticType(element);
     }
 
     /** The scala.Type class & its subclasses */
@@ -245,6 +219,67 @@ public class Definitions {
 
     /** The scala.MatchError module */
     public final Symbol MATCHERROR;
+
+    //########################################################################
+    // Public Fields & Methods - Scala primitive types
+
+    /** Returns the primitive type void. */
+    public final Type void_TYPE() {
+        return void_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type boolean. */
+    public final Type boolean_TYPE() {
+        return boolean_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type byte. */
+    public final Type byte_TYPE() {
+        return byte_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type short. */
+    public final Type short_TYPE() {
+        return short_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type char. */
+    public final Type char_TYPE() {
+        return char_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type int. */
+    public final Type int_TYPE() {
+        return int_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type long. */
+    public final Type long_TYPE() {
+        return long_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type float. */
+    public final Type float_TYPE() {
+        return float_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive type double. */
+    public final Type double_TYPE() {
+        return double_TYPE.type().resultType();
+    }
+
+    /** Returns the primitive array type of given element type. */
+    public final Type array_TYPE(Type element) {
+        Type type = array_TYPE.type().resultType();
+        switch (type) {
+        case TypeRef(Type prefix, Symbol clasz, _):
+            return Type.typeRef(prefix, clasz, new Type[]{element});
+        case UnboxedArrayType(_):
+            return Type.UnboxedArrayType(element);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
+    }
 
     //########################################################################
     // Public Fields & Methods - Top and bottom class methods
@@ -415,7 +450,7 @@ public class Definitions {
 
     public Symbol ARRAY_GET() {
         if (ARRAY_GET == null)
-            ARRAY_GET = loadTerm(ARRAY_CLASS, Names.apply, new Type[]{INT_TYPE()});
+            ARRAY_GET = loadTerm(ARRAY_CLASS, Names.apply, new Type[]{int_TYPE()});
         return ARRAY_GET;
     }
 
@@ -569,16 +604,16 @@ public class Definitions {
     //########################################################################
     // Private Fields - Symbol
 
-    private final Symbol UNIT_TYPE;
-    private final Symbol BOOLEAN_TYPE;
-    private final Symbol BYTE_TYPE;
-    private final Symbol SHORT_TYPE;
-    private final Symbol CHAR_TYPE;
-    private final Symbol INT_TYPE;
-    private final Symbol LONG_TYPE;
-    private final Symbol FLOAT_TYPE;
-    private final Symbol DOUBLE_TYPE;
-    private final Symbol ARRAY_TYPE;
+    private final Symbol void_TYPE;
+    private final Symbol boolean_TYPE;
+    private final Symbol byte_TYPE;
+    private final Symbol short_TYPE;
+    private final Symbol char_TYPE;
+    private final Symbol int_TYPE;
+    private final Symbol long_TYPE;
+    private final Symbol float_TYPE;
+    private final Symbol double_TYPE;
+    private final Symbol array_TYPE;
 
     //########################################################################
     // Public Constructor
@@ -651,17 +686,16 @@ public class Definitions {
         initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
 
         // create type symbols
-        UNIT_TYPE    = newTypeMethod(Names.Unit   ,UNIT_CLASS   .staticType());
-        BOOLEAN_TYPE = newTypeMethod(Names.Boolean,BOOLEAN_CLASS.staticType());
-        BYTE_TYPE    = newTypeMethod(Names.Byte   ,BYTE_CLASS   .staticType());
-        SHORT_TYPE   = newTypeMethod(Names.Short  ,SHORT_CLASS  .staticType());
-        CHAR_TYPE    = newTypeMethod(Names.Char   ,CHAR_CLASS   .staticType());
-        INT_TYPE     = newTypeMethod(Names.Int    ,INT_CLASS    .staticType());
-        LONG_TYPE    = newTypeMethod(Names.Long   ,LONG_CLASS   .staticType());
-        FLOAT_TYPE   = newTypeMethod(Names.Float  ,FLOAT_CLASS  .staticType());
-        DOUBLE_TYPE  = newTypeMethod(Names.Double ,DOUBLE_CLASS .staticType());
-        ARRAY_TYPE   = newTypeMethod(Names.Array  ,
-            ARRAY_CLASS.staticType(new Type[]{ANYREF_TYPE()}));
+        void_TYPE    = newTypeMethod(Names.Unit   ,UNIT_TYPE());
+        boolean_TYPE = newTypeMethod(Names.Boolean,BOOLEAN_TYPE());
+        byte_TYPE    = newTypeMethod(Names.Byte   ,BYTE_TYPE());
+        short_TYPE   = newTypeMethod(Names.Short  ,SHORT_TYPE());
+        char_TYPE    = newTypeMethod(Names.Char   ,CHAR_TYPE());
+        int_TYPE     = newTypeMethod(Names.Int    ,INT_TYPE());
+        long_TYPE    = newTypeMethod(Names.Long   ,LONG_TYPE());
+        float_TYPE   = newTypeMethod(Names.Float  ,FLOAT_TYPE());
+        double_TYPE  = newTypeMethod(Names.Double ,DOUBLE_TYPE());
+        array_TYPE   = newTypeMethod(Names.Array  ,ARRAY_TYPE(ANYREF_TYPE()));
 
         // add members to scala.Any
         ANY_EQ       = newMethod(ANY_CLASS,Names.eq          , 0);
@@ -675,16 +709,16 @@ public class Definitions {
         ANY_AS       = newMethod(ANY_CLASS,Names.asInstanceOf,Modifiers.FINAL);
         ANY_MATCH    = newMethod(ANY_CLASS,Names.match       ,Modifiers.FINAL);
 
-        initMethod(ANY_EQ      , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
-        initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
-        initMethod(ANY_BANGEQ  , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
-        initMethod(ANY_EQUALS  , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
-        initMethod(ANY_HASHCODE, new Type[]{}             , INT_TYPE());
+        initMethod(ANY_EQ      , new Type[]{ANY_TYPE()}   , boolean_TYPE());
+        initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , boolean_TYPE());
+        initMethod(ANY_BANGEQ  , new Type[]{ANY_TYPE()}   , boolean_TYPE());
+        initMethod(ANY_EQUALS  , new Type[]{ANY_TYPE()}   , boolean_TYPE());
+        initMethod(ANY_HASHCODE, new Type[]{}             , int_TYPE());
         initMethod(ANY_TOSTRING, new Type[]{}             , STRING_TYPE());
         // initMethod(ANY_PLUS , new Type[]{STRING_TYPE()}, STRING_TYPE());
 
         Symbol[] ANY_IS_TPARAMS = {newTParam(ANY_IS, 0, ANY_TYPE())};
-        ANY_IS.setInfo(Type.PolyType(ANY_IS_TPARAMS, BOOLEAN_TYPE()));
+        ANY_IS.setInfo(Type.PolyType(ANY_IS_TPARAMS, boolean_TYPE()));
 
         Symbol[] ANY_AS_TPARAMS = {newTParam(ANY_AS, 0, ANY_TYPE())};
         ANY_AS.setInfo(Type.PolyType(ANY_AS_TPARAMS,ANY_AS_TPARAMS[0].type()));

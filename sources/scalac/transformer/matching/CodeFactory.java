@@ -46,7 +46,7 @@ class CodeFactory extends PatternTool {
 
     /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
       Type SeqTraceType( Type elemType ) {
-          return defs.LIST_TYPE(pairType(defs.INT_TYPE(), elemType));
+          return defs.LIST_TYPE(pairType(defs.int_TYPE(), elemType));
       }
 
     /**  returns `Iterator[ elemType ]' */

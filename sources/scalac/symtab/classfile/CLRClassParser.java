@@ -199,7 +199,7 @@ public class CLRClassParser extends SymbolLoader {
 	    for (int i = 0; i < ENUM_CMP_NAMES.length; i++) {
 		scalac.symtab.Type enumCmpType =
 		    make.methodType(argTypes,
-				    global.definitions.BOOLEAN_TYPE(),
+				    global.definitions.boolean_TYPE(),
 				    scalac.symtab.Type.EMPTY_ARRAY);
 		Symbol enumCmp = clazz.newMethod
 		    (Position.NOPOS, mods, ENUM_CMP_NAMES[i]);

@@ -589,7 +589,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		tree.pos, PRIVATE | SYNTHETIC, m_eqname);
             Symbol m_eqarg = m_eq.newVParam(tree.pos, SYNTHETIC, name, sym.type());
             m_eq.setInfo(
-                Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE()));
+                Type.MethodType(new Symbol[] {m_eqarg}, defs.void_TYPE()));
             Tree m_eqdef = gen.DefDef(m_eq,
                 gen.Assign(gen.mkLocalRef(tree.pos, mvar), gen.Ident(tree.pos, m_eqarg)));
             sym.owner().members().enterOrOverload(m_eq);
@@ -693,7 +693,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol seSym =
             clazz.newMethod( clazz.pos, FINAL|OVERRIDE, Names.caseElement );
 	Symbol seParam =
-            seSym.newVParam( clazz.pos, 0, Names.n, defs.INT_TYPE() );
+            seSym.newVParam( clazz.pos, 0, Names.n, defs.int_TYPE() );
         seSym.setInfo(
             Type.MethodType( new Symbol[]{ seParam }, defs.ANY_TYPE() ));
 	clazz.info().members().enter( seSym );
@@ -717,7 +717,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol seSym =
             clazz.newMethod( clazz.pos, FINAL|OVERRIDE, Names.caseArity );
         seSym.setInfo(
-            Type.PolyType( Symbol.EMPTY_ARRAY, defs.INT_TYPE() ));
+            Type.PolyType( Symbol.EMPTY_ARRAY, defs.int_TYPE() ));
 	clazz.info().members().enter( seSym );
 	Tree[] fields = caseFields( clazz );
 	return gen.DefDef(seSym, gen.mkIntLit( clazz.pos, fields.length ));
@@ -729,7 +729,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol equalsParam = equalsSym.newVParam(
             clazz.pos, 0, Names.that, defs.ANY_TYPE());
 	equalsSym.setInfo(
-	    Type.MethodType(new Symbol[]{equalsParam}, defs.BOOLEAN_TYPE()));
+	    Type.MethodType(new Symbol[]{equalsParam}, defs.boolean_TYPE()));
 	clazz.info().members().enter(equalsSym);
 	Tree[] fields = caseFields(clazz);
 	Type testtp = clazz.type();
@@ -792,7 +792,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	private Tree tagMethod(ClassSymbol clazz) {
             int flags =clazz.isSubClass(defs.SCALAOBJECT_CLASS) ? OVERRIDE : 0;
 	    Symbol tagSym = clazz.newMethod(clazz.pos, flags, Names.tag)
-		.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE()));
+		.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.int_TYPE()));
 	    clazz.info().members().enter(tagSym);
 	    return gen.DefDef(
 		tagSym,
@@ -809,9 +809,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Tree[] fields = caseFields(clazz);
 	Symbol getClassMethod = getNullaryMemberMethod(clazz.type(), Names.getClass);
 	Symbol addMethod = getUnaryMemberMethod(
-	    defs.INT_TYPE(), Names.ADD, defs.INT_TYPE());
+	    defs.int_TYPE(), Names.ADD, defs.int_TYPE());
 	Symbol mulMethod = getUnaryMemberMethod(
-	    defs.INT_TYPE(), Names.MUL, defs.INT_TYPE());
+	    defs.int_TYPE(), Names.MUL, defs.int_TYPE());
 	Tree body =
 	    gen.Apply(
 		gen.Select(

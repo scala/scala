@@ -1824,7 +1824,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	val pat1: Tree = transform(pat, PATTERNmode, pattpe);
 	val guard1: Tree =
 	  if (guard == Tree.Empty) Tree.Empty
-	  else transform(guard, EXPRmode, definitions.BOOLEAN_TYPE());
+	  else transform(guard, EXPRmode, definitions.boolean_TYPE());
 	val body1: Tree = transform(body, EXPRmode, pt);
 	popContext();
 	return copy.CaseDef(tree, pat1, guard1, body1)
@@ -2223,7 +2223,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    else transform(
 	      rhs,
 	      if (name == Names.CONSTRUCTOR) CONSTRmode else EXPRmode,
-	      if (name == Names.CONSTRUCTOR) definitions.UNIT_TYPE() else tpe1.getType());
+	      if (name == Names.CONSTRUCTOR) definitions.void_TYPE() else tpe1.getType());
 	  popContext();
 	  if (name == Names.CONSTRUCTOR) {
 	    val enclClass = context.enclClass.owner;
@@ -2370,7 +2370,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      var restype: Type = pftargs(1);
 	      val isDefinedAtVisitor: Tree = transformVisitor(
 		desugarize.isDefinedAtVisitor(tree),
-		pattype, definitions.BOOLEAN_TYPE());
+		pattype, definitions.boolean_TYPE());
 	      val applyVisitor: Tree = transformVisitor(tree, pattype, restype);
 	      if (!infer.isFullyDefined(restype))
 		restype = applyVisitor.getType().deconst();
@@ -2398,7 +2398,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  } else if (varsym != null && (varsym.flags & MUTABLE) != 0) {
 	    val rhs1: Tree = transform(rhs, EXPRmode, lhs1.getType());
 	    copy.Assign(tree, lhs1, rhs1)
-	      .setType(definitions.UNIT_TYPE());
+	      .setType(definitions.void_TYPE());
 	  } else {
 	    if (!lhs1.getType().isError())
 	      error(tree.pos, "assignment to non-variable ");
@@ -2406,11 +2406,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  }
 
 	case Tree$If(cond, thenp, elsep) =>
-	  val cond1: Tree = transform(cond, EXPRmode, definitions.BOOLEAN_TYPE());
+	  val cond1: Tree = transform(cond, EXPRmode, definitions.boolean_TYPE());
 	  var thenp1: Tree = _;
 	  var elsep1: Tree = _;
 	  if (elsep == Tree.Empty) {
-	    thenp1 = transform(thenp, EXPRmode, definitions.UNIT_TYPE());
+	    thenp1 = transform(thenp, EXPRmode, definitions.void_TYPE());
 	    elsep1 = gen.mkUnitLit(tree.pos);
 	  } else {
 	    thenp1 = transform(thenp, EXPRmode, pt);
@@ -2885,12 +2885,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  pushContext(tree, context.owner, new Scope(context.scope));
 	  val lsym: Symbol = context.owner.newLabel(tree.pos, name);
 	  lsym.setInfo(
-	    new Type$MethodType(Symbol.EMPTY_ARRAY, definitions.UNIT_TYPE()));
+	    new Type$MethodType(Symbol.EMPTY_ARRAY, definitions.void_TYPE()));
 	  context.scope.enter(lsym);
 	  val body1: Tree = transform(body, mode, pt);
 	  popContext();
 	  copy.LabelDef(tree, lsym, params, body1)
-	    .setSymbol(lsym).setType(definitions.UNIT_TYPE());
+	    .setSymbol(lsym).setType(definitions.void_TYPE());
 
 	case Tree$TypeTerm() =>
 	  tree

@@ -144,8 +144,8 @@ public class Interpreter {
         Phase current = global.currentPhase;
         if (!erased) global.currentPhase = global.PHASE.ANALYZER.phase();
         Definitions definitions = global.definitions;
-        Type argument = definitions.ARRAY_TYPE(definitions.STRING_TYPE());
-        Type result = definitions.UNIT_TYPE();
+        Type argument = definitions.array_TYPE(definitions.STRING_TYPE());
+        Type result = definitions.void_TYPE();
         Symbol formal = Symbol.NONE.newTerm( // !!! should be newVParam
             Position.NOPOS, Modifiers.PARAM, ARGS_N);
         formal.setInfo(argument);

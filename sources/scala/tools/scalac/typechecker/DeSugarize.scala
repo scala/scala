@@ -446,7 +446,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 	      make.ValDef(
 		tree.pos, SYNTHETIC | PARAM, parameterName(0),
 		tpe.duplicate(), Tree.Empty))),
-	  gen.mkType(tree.pos, global.definitions.UNIT_TYPE()),
+	  gen.mkType(tree.pos, global.definitions.void_TYPE()),
 	  if ((mods1 & DEFERRED) != 0) Tree.Empty
 	  else make.Assign(
 	    tree.pos,

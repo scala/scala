@@ -95,7 +95,7 @@ public class AddConstructors extends GenTransformer {
 	    initializer.setInfo(
                 Type.MethodType(
                     constructor.valueParams(),
-                    global.definitions.UNIT_TYPE())
+                    global.definitions.void_TYPE())
                 .cloneType(constructor, initializer));
             initializer.owner().members().enterOrOverload(initializer);
 	    initializers.put(constructor, initializer);

@@ -242,13 +242,13 @@ public class TreeChecker {
             return true;
 
         case If(Tree cond, Tree thenp, Tree elsep):
-            expression(cond, definitions.BOOLEAN_TYPE());
+            expression(cond, definitions.boolean_TYPE());
             expression(thenp, expected);
             expression(elsep, expected);
             return true;
 
         case Switch(Tree test, _, Tree[] bodies, Tree otherwise):
-            expression(test, definitions.INT_TYPE());
+            expression(test, definitions.int_TYPE());
             for (int i = 0; i < bodies.length; i++)
                 expression(bodies[i], expected);
             expression(otherwise, expected);
@@ -266,7 +266,7 @@ public class TreeChecker {
         case New(Tree init):
             switch (init) {
             case Apply(Select(Create(_, Tree[] targs), _), Tree[] vargs):
-                return expression(init, definitions.UNIT_TYPE());
+                return expression(init, definitions.void_TYPE());
             default:
                 throw Debug.abort("illegal case", show(tree));
             }

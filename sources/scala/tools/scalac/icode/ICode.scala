@@ -339,7 +339,7 @@ class ICode(label: String, global: scalac_Global) {
       case ACode$Drop(value, typ) => {
 	var ctx1 = gen(value, ctx);
 	//global.log("Type de Drop: "+typ+" = unboxed:"+typ.unbox() );
-	if (! typ.isSameAs(global.definitions.UNIT_TYPE()))
+	if (! typ.isSameAs(global.definitions.void_TYPE()))
 	  typ.unbox() match { // !!! Hack
 	    case Type$UnboxedType(TypeTags.UNIT) =>
 	      global.log("it matches UNIT !"); // debug ; // NOP

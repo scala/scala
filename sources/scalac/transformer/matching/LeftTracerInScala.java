@@ -47,7 +47,7 @@ public class LeftTracerInScala extends TracerInScala {
         this.stateSym = owner.newVariable( pos,
                                            Modifiers.MUTABLE,
                                           cf.fresh.newName( "q" ))
-            .setType( defs.INT_TYPE() ) ;
+            .setType( defs.int_TYPE() ) ;
 
         this.accumType = _accumType( elementType );
         this.accumTypeArg = accumType.typeArgs()[0];
@@ -63,7 +63,7 @@ public class LeftTracerInScala extends TracerInScala {
 
         this.funSym
             .setType( new Type.MethodType( new Symbol[] {  // dummy symbol MethodType
-                funSym.newVParam( pos, 0, cf.fresh.newName( "q" ), defs.INT_TYPE()),
+                funSym.newVParam( pos, 0, cf.fresh.newName( "q" ), defs.int_TYPE()),
                 funSym.newVParam( pos, 0, cf.fresh.newName( "acc" ), accumType ) },
                                            accumType)); // result type = List[T]
 
@@ -76,7 +76,7 @@ public class LeftTracerInScala extends TracerInScala {
             .setType( elementType );
 
         this.hasnSym = owner.newVariable( pos, 0, HASNEXT )
-            .setType( defs.BOOLEAN_TYPE() );
+            .setType( defs.boolean_TYPE() );
 
     }
 
@@ -203,7 +203,7 @@ public class LeftTracerInScala extends TracerInScala {
 
         PartialMatcher m = new PartialMatcher( owner,
                                                currentElem(),
-                                               defs.BOOLEAN_TYPE() );
+                                               defs.boolean_TYPE() );
 
         if( CollectVariableTraverser.containsBinding( pat )) {
             switch( pat ) {

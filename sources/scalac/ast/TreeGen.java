@@ -737,7 +737,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Assign Assign(int pos, Tree lhs, Tree rhs) {
         Assign tree = make.Assign(pos, lhs, rhs);
         global.nextPhase();
-        tree.setType(definitions.UNIT_TYPE());
+        tree.setType(definitions.void_TYPE());
         global.prevPhase();
         return tree;
     }
@@ -895,7 +895,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         if (values.length == 0) return mkNewArray(pos, element, 0);
         Tree[] trees = new Tree[1 + values.length];
         Symbol array = newLocal(
-            owner, pos, FINAL, "array", definitions.ARRAY_TYPE(element));
+            owner, pos, FINAL, "array", definitions.array_TYPE(element));
         trees[0] = ValDef(array, mkNewArray(pos, element, values.length));
         for (int i = 0; i < values.length; i++)
             trees[1 + i] = mkArraySet(Ident(pos, array), i, values[i]);
@@ -1251,7 +1251,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             makeVisitorMethod(pos, Names.apply, applyVisitor,
                               pattype, restype, clazz, owner),
             makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
-                              pattype, definitions.BOOLEAN_TYPE(), clazz, owner)};
+                              pattype, definitions.boolean_TYPE(), clazz, owner)};
         Tree classDef = ClassDef(clazz, memberTrees);
 	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)));
 	return mkBlock(classDef, Typed(alloc, parentTypes[1])); // !!! Typed

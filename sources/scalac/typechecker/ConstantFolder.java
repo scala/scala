@@ -252,11 +252,11 @@ public class ConstantFolder {
     public AConstant cast(AConstant value, Type type) {
         switch (value.kind()) {
         case UNIT:
-            if (type.isSameAs(definitions.UNIT_CLASS.type()))
+            if (type.isSameAs(definitions.void_TYPE())) // !!! -> UNIT_TYPE()
                 return value;
             return null;
         case BOOL:
-            if (type.isSameAs(definitions.BOOLEAN_TYPE()))
+            if (type.isSameAs(definitions.boolean_TYPE()))
                 return value;
             return null;
         case U1:
@@ -269,19 +269,19 @@ public class ConstantFolder {
         case I8:
         case R4:
         case R8:
-            if (type.isSameAs(definitions.BYTE_TYPE()))
+            if (type.isSameAs(definitions.byte_TYPE()))
                 return AConstant.BYTE(value.byteValue());
-            if (type.isSameAs(definitions.SHORT_TYPE()))
+            if (type.isSameAs(definitions.short_TYPE()))
                 return AConstant.SHORT(value.shortValue());
-            if (type.isSameAs(definitions.CHAR_TYPE()))
+            if (type.isSameAs(definitions.char_TYPE()))
                 return AConstant.CHAR(value.charValue());
-            if (type.isSameAs(definitions.INT_TYPE()))
+            if (type.isSameAs(definitions.int_TYPE()))
                 return AConstant.INT(value.intValue());
-            if (type.isSameAs(definitions.LONG_TYPE()))
+            if (type.isSameAs(definitions.long_TYPE()))
                 return AConstant.LONG(value.longValue());
-            if (type.isSameAs(definitions.FLOAT_TYPE()))
+            if (type.isSameAs(definitions.float_TYPE()))
                 return AConstant.FLOAT(value.floatValue());
-            if (type.isSameAs(definitions.DOUBLE_TYPE()))
+            if (type.isSameAs(definitions.double_TYPE()))
                 return AConstant.DOUBLE(value.doubleValue());
             return null;
         case STR:

@@ -99,9 +99,9 @@ class ICTypeStack() {
     }
     case NEW(clasz) => clasz.getType()::Nil;
 
-    case CREATE_ARRAY(element) => definitions.ARRAY_TYPE(element)::Nil;
+    case CREATE_ARRAY(element) => definitions.array_TYPE(element)::Nil;
 
-    case IS_INSTANCE(_) => definitions.BOOLEAN_TYPE()::Nil;
+    case IS_INSTANCE(_) => definitions.boolean_TYPE()::Nil;
 
     case CHECK_CAST(typ) => typ::Nil;
 

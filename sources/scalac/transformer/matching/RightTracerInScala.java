@@ -134,7 +134,7 @@ public class RightTracerInScala extends TracerInScala  {
         this.stateSym = owner.newVariable ( pos,
                                             Modifiers.MUTABLE,
                                             cf.fresh.newName("q"))
-            .setType( defs.INT_TYPE() ) ;
+            .setType( defs.int_TYPE() ) ;
 
         this.curSym = owner.newVariable( pos,
                                          Modifiers.MUTABLE,
@@ -144,12 +144,12 @@ public class RightTracerInScala extends TracerInScala  {
         this.targetSym = owner.newVariable( pos,
                                          Modifiers.MUTABLE,
                                          cf.fresh.newName("p"))
-            .setType( defs.INT_TYPE() ) ;
+            .setType( defs.int_TYPE() ) ;
 
         funSym.setType( new Type.MethodType( new Symbol[] {  // dummy symbol MethodType
             funSym.newVParam( pos, 0, cf.fresh.newName("iter"), cf.SeqTraceType( elementType )),
-            funSym.newVParam( pos, 0, cf.fresh.newName( "q" ), defs.INT_TYPE()) },
-                                             defs.UNIT_TYPE() )); // result
+            funSym.newVParam( pos, 0, cf.fresh.newName( "q" ), defs.int_TYPE()) },
+                                             defs.void_TYPE() )); // result
 
     }
 
@@ -276,7 +276,7 @@ public class RightTracerInScala extends TracerInScala  {
         //System.err.println( "curT"+currentElem().type().widen() );
         PartialMatcher m = new PartialMatcher( owner,//funSym,//this.funSym,
                                                currentElem(),
-                                               defs.BOOLEAN_TYPE() );
+                                               defs.boolean_TYPE() );
 
         final HashMap freshenMap = new HashMap(); // sym2exp -> new sym
         HashMap helpMap3 = new HashMap();         // new sym -> original sym

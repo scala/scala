@@ -158,7 +158,7 @@ public class AlgebraicMatcher extends PatternMatcher {
 
 	  PartialMatcher m = new PartialMatcher( _m.owner,
                                                  selector,
-                                                 defs.BOOLEAN_TYPE() );
+                                                 defs.boolean_TYPE() );
 
 	  Tree pats[] = new Tree[ seqPatNodes.size() ];
 	  Tree body[] = new Tree[ seqPatNodes.size() ];

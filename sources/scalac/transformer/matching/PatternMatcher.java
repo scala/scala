@@ -500,7 +500,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected boolean isSimpleIntSwitch() {
-        if (selector.type.widen().isSameAs(defs.INT_TYPE())) {
+        if (selector.type.widen().isSameAs(defs.int_TYPE())) {
             PatternNode patNode = root.and;
             while (patNode != null) {
                 PatternNode node = patNode;
@@ -843,7 +843,7 @@ public class PatternMatcher extends PatternTool {
                           bodies,
                           (defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
                           : toTree(defaultCase.and),
-                          defs.BOOLEAN_TYPE());
+                          defs.boolean_TYPE());
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {

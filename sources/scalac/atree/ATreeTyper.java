@@ -53,7 +53,7 @@ public class ATreeTyper {
     public Type type(ACode code) {
         switch (code) {
         case Void:
-            return definitions.UNIT_TYPE();
+            return definitions.void_TYPE();
         case This(Symbol clasz):
             return clasz.thisType();
         case Constant(AConstant constant):
@@ -65,7 +65,7 @@ public class ATreeTyper {
         case Apply(AFunction function, Type[] targs, _):
             return apply(type(function), targs).resultType();
         case IsAs(_, Type type, boolean cast):
-            return cast ? type : definitions.BOOLEAN_TYPE();
+            return cast ? type : definitions.boolean_TYPE();
         case If(_, ACode success, ACode failure):
             return Type.lub(new Type[]{type(success), type(failure)});
         case Switch(_, _, ACode[] bodies):
@@ -129,7 +129,7 @@ public class ATreeTyper {
         case Primitive(APrimitive primitive):
             return type(primitive);
         case NewArray(Type element):
-            return definitions.ARRAY_TYPE(element);
+            return definitions.array_TYPE(element);
         default:
             throw Debug.abort("unknown case", function);
         }
@@ -165,7 +165,7 @@ public class ATreeTyper {
         case Conversion(ATypeKind src, ATypeKind dst):
             return getMethodType(type(src), type(dst));
         case ArrayLength(ATypeKind kind):
-            Type type = definitions.ARRAY_TYPE(type(kind));
+            Type type = definitions.array_TYPE(type(kind));
             return getMethodType(type, type(ATypeKind.I4));
         case StringConcat(ATypeKind lf, ATypeKind rg):
             return getMethodType(type(lf), type(rg), type(ATypeKind.STR));
@@ -187,15 +187,15 @@ public class ATreeTyper {
     /** Returns the base type of the given constant. */
     public Type basetype(AConstant constant) {
         switch (constant) {
-        case UNIT      : return definitions.UNIT_TYPE();
-        case BOOLEAN(_): return definitions.BOOLEAN_TYPE();
-        case BYTE(_)   : return definitions.BYTE_TYPE();
-        case SHORT(_)  : return definitions.SHORT_TYPE();
-        case CHAR(_)   : return definitions.CHAR_TYPE();
-        case INT(_)    : return definitions.INT_TYPE();
-        case LONG(_)   : return definitions.LONG_TYPE();
-        case FLOAT(_)  : return definitions.FLOAT_TYPE();
-        case DOUBLE(_) : return definitions.DOUBLE_TYPE();
+        case UNIT      : return definitions.void_TYPE(); // !!! -> UNIT_TYPE()
+        case BOOLEAN(_): return definitions.boolean_TYPE();
+        case BYTE(_)   : return definitions.byte_TYPE();
+        case SHORT(_)  : return definitions.short_TYPE();
+        case CHAR(_)   : return definitions.char_TYPE();
+        case INT(_)    : return definitions.int_TYPE();
+        case LONG(_)   : return definitions.long_TYPE();
+        case FLOAT(_)  : return definitions.float_TYPE();
+        case DOUBLE(_) : return definitions.double_TYPE();
         case STRING(_) : return definitions.STRING_TYPE();
         case NULL      : return definitions.ALLREF_TYPE();
         case ZERO      : return definitions.ALL_TYPE();
@@ -209,18 +209,18 @@ public class ATreeTyper {
     /** Returns the type of the given type kind. */
     public Type type(ATypeKind kind) {
         switch (kind) {
-        case UNIT: return definitions.UNIT_TYPE();
-        case BOOL: return definitions.BOOLEAN_TYPE();
+        case UNIT: return definitions.void_TYPE(); // !!! -> UNIT_TYPE()
+        case BOOL: return definitions.boolean_TYPE();
  // !!! case U1  : return ?;
-        case U2  : return definitions.CHAR_TYPE();
+        case U2  : return definitions.char_TYPE();
  // !!! case U4  : return ?;
  // !!! case U8  : return ?;
-        case I1  : return definitions.BYTE_TYPE();
-        case I2  : return definitions.SHORT_TYPE();
-        case I4  : return definitions.INT_TYPE();
-        case I8  : return definitions.LONG_TYPE();
-        case R4  : return definitions.FLOAT_TYPE();
-        case R8  : return definitions.DOUBLE_TYPE();
+        case I1  : return definitions.byte_TYPE();
+        case I2  : return definitions.short_TYPE();
+        case I4  : return definitions.int_TYPE();
+        case I8  : return definitions.long_TYPE();
+        case R4  : return definitions.float_TYPE();
+        case R8  : return definitions.double_TYPE();
         case REF : return definitions.ANYREF_TYPE();
         case STR : return definitions.STRING_TYPE();
         case NULL: return definitions.ALLREF_TYPE();

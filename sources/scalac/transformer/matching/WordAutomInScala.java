@@ -77,23 +77,23 @@ public class WordAutomInScala extends Autom2Scala {
         this.stateSym = owner.newVariable( pos,
                                            Modifiers.MUTABLE,
                                         cf.fresh.newName("q"))
-            .setType( defs.INT_TYPE() ) ;
+            .setType( defs.int_TYPE() ) ;
 
         this.resultSym = owner.newVariable( pos,
                                             Modifiers.MUTABLE,
                                             cf.fresh.newName("swRes"))
-            .setType( defs.INT_TYPE() ) ;
+            .setType( defs.int_TYPE() ) ;
 
         this.funSym
             .setType( new Type.MethodType( new Symbol[] {
-                funSym.newVParam( pos, 0, cf.fresh.newName("q"), defs.INT_TYPE())
-            }, defs.INT_TYPE() ));
+                funSym.newVParam( pos, 0, cf.fresh.newName("q"), defs.int_TYPE())
+            }, defs.int_TYPE() ));
 
         this.curSym = owner.newVariable( pos, 0, CURRENT_ELEM )
             .setType( elementType );
 
         this.hasnSym = owner.newVariable( pos, 0, HASNEXT )
-            .setType( defs.BOOLEAN_TYPE() );
+            .setType( defs.boolean_TYPE() );
 
     }
 
@@ -111,7 +111,7 @@ public class WordAutomInScala extends Autom2Scala {
     Tree _cur_match( Tree pat ) { // TE ST
         PartialMatcher m = new PartialMatcher( this.owner,   /* owner*/
                                                currentElem(), /* root */
-                                               defs.BOOLEAN_TYPE() /* restype */);
+                                               defs.boolean_TYPE() /* restype */);
 
         am.construct( m, new CaseDef[] {
             cf.gen.CaseDef( pat,

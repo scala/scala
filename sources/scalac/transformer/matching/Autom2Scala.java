@@ -169,7 +169,7 @@ public class Autom2Scala  {
     Tree _cur_match( Tree pat ) {
         PartialMatcher m = new PartialMatcher( this.funSym,   /* owner*/
                                                currentElem(), /* root */
-                                               defs.BOOLEAN_TYPE() /* restype */);
+                                               defs.boolean_TYPE() /* restype */);
 
         am.construct( m, new CaseDef[] {
             cf.gen.CaseDef( pat,
