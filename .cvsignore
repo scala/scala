@@ -2,6 +2,7 @@
 .generated
 .latest-*
 Makefile.private
+bootstrap
 classes
 distribs
 lib
