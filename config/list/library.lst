@@ -105,6 +105,7 @@ collection/immutable/ListMap.scala
 collection/immutable/TreeMap.scala
 collection/immutable/ListSet.scala
 collection/immutable/Map.scala
+collection/immutable/Order.scala
 collection/immutable/Queue.scala
 collection/immutable/Set.scala
 collection/immutable/Stack.scala
