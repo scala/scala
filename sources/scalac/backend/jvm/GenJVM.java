@@ -1659,6 +1659,12 @@ class GenJVM {
                                    argTypes,
                                    argNames);
 
+        if ((mSym.flags & Modifiers.BRIDGE) != 0)
+            method.addAttribute(fjbgContext.JOtherAttribute(ctx.clazz,
+                                                            method,
+                                                            "Bridge",
+                                                            new byte[]{}));
+
         return ctx.withMethod(method, locals, useWideJumps);
     }
 
