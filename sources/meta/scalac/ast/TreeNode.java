@@ -125,8 +125,7 @@ public class TreeNode {
     public JavaWriter printPrefix(JavaWriter writer, String prefix) {
         if (prefix != null) {
             writer.print(prefix);
-            if (fields != null && fields.length > 0 && prefix != null)
-                writer.print(", ");
+            if (fields != null && fields.length > 0) writer.print(", ");
         }
         return writer;
     }
