@@ -423,7 +423,7 @@ public class Erasure extends Transformer implements Modifiers {
             Symbol sym = fun.symbol();
             if (sym == definitions.AS || sym == definitions.IS) {
                 Type tp = args[0].type.erasure();
-                if (isUnboxed(tp)) {
+                if (isUnboxed(tp) && (sym != definitions.IS || (!isUnboxedArray(tp) && !tp.isSameAs(Type.UnboxedType(TypeTags.BOOLEAN))))) {
                     Tree qual1 = transform(getQualifier(currentClass, fun));
                     if (isUnboxed(qual1.type)) qual1 = box(qual1);
                     Symbol primSym = (sym == definitions.AS)
@@ -432,8 +432,7 @@ public class Erasure extends Transformer implements Modifiers {
                     qual1 = coerce(qual1, primSym.owner().type());
                     return gen.Select(qual1, primSym);
                 } else
-                    return copy.TypeApply(tree, transform(fun), transform(args))
-                        .setType(owntype);
+                    return copy.TypeApply(tree, transform(fun), tp.isSameAs(Type.UnboxedType(TypeTags.BOOLEAN)) ? args : transform(args)).setType(owntype);
             } else
                 return transform(fun);
 
@@ -453,6 +452,8 @@ public class Erasure extends Transformer implements Modifiers {
 	    case TypeApply(Tree poly, Tree[] targs):
 		if (poly.symbol() == definitions.IS) {
 		    isSelectorType = targs[0].type.erasure();
+                    if (isSelectorType.isSameAs(Type.UnboxedType(TypeTags.BOOLEAN)))
+                        isSelectorType = targs[0].type;
 		    isQualTree = poly;
 		}
 	    }
@@ -474,7 +475,7 @@ public class Erasure extends Transformer implements Modifiers {
 		    args1[i] = arg1;
 		}
 		Tree result = coerce(copy.Apply(tree, fun1, args1).setType(restpe), owntype);
-		if (isUnboxed(isSelectorType)) {
+		if (isUnboxed(isSelectorType) && !isUnboxedArray(isSelectorType)) {
 		    Symbol primSym = primitives.getInstanceTestSymbol(isSelectorType);
 		    Symbol ampAmpSym = definitions.AMPAMP();
 		    result = make.Apply(
