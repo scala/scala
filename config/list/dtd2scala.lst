@@ -1,0 +1,11 @@
+################################################################-*-text-*-####
+# scala dtd2scala source files (paths are relative to ./sources/scala)
+##############################################################################
+# $Id$
+
+xml/DeclToScala.java
+xml/dtd2scala.java
+xml/FactoryAdapter.java
+xml/XMLDecl.java
+
+##############################################################################

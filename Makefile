@@ -21,6 +21,7 @@ PROJECT_SOURCES		+= $(META_SOURCES)
 PROJECT_SOURCES		+= $(RUNTIME_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
 PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
+PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_OUTPUTDIR	 = $(PROJECT_ROOT)/classes
 PROJECT_CLASSPATH	 = $(PROJECT_OUTPUTDIR)
 PROJECT_LISTDIR		 = $(PROJECT_ROOT)/config/list
@@ -88,6 +89,12 @@ INTERPRETER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/interpreter.lst)
 INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
 INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
 
+# scala dtd2scala
+DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala
+DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
+DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
+DTD2SCALA_JC_FILES	 = $(DTD2SCALA_SOURCES)
+
 # scala library
 LIBRARY_ROOT		 = $(RUNTIME_ROOT)
 LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
@@ -131,6 +138,11 @@ BCEL_LICENSE		 = $(BCEL_HOME)/LICENSE
 # FJBG
 FJBG_HOME		?= /home/linuxsoft/apps/fjbg/
 FJBG_JARFILE             = $(FJBG_HOME)/jars/fjbg.jar
+
+# XERCES
+XERCES_HOME		?= /home/linuxsoft/apps/xerces-j/
+XERCES_JARFILE		 = $(XERCES_HOME)/xercesImpl.jar
+XERCES_LICENSE		 = $(XERCES_HOME)/LICENSE
 
 # needed for the .NET backend
 MSIL_HOME		?= /home/linuxsoft/apps/java2net
@@ -184,6 +196,7 @@ all		: generate
 all		: runtime
 all		: compiler
 all		: interpreter
+all		: dtd2scala
 all		: library
 
 force		: fastclean
@@ -192,6 +205,7 @@ force		: fastclean
 fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
+	$(RM) .latest-dtd2scala
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
@@ -222,6 +236,7 @@ generate	: .latest-generate
 runtime		: .latest-runtime
 compiler	: .latest-compiler
 interpreter	: .latest-interpreter
+dtd2scala	: .latest-dtd2scala
 library		: .latest-library
 
 .PHONY		: all
@@ -237,6 +252,7 @@ library		: .latest-library
 .PHONY		: runtime
 .PHONY		: compiler
 .PHONY		: interpreter
+.PHONY		: dtd2scala
 .PHONY		: library
 
 ##############################################################################
@@ -270,6 +286,10 @@ library		: .latest-library
 	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
 	touch $@
 
+.latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
+	@$(make) jc target=DTD2SCALA DTD2SCALA_JC_FILES='$?'
+	touch $@
+
 .latest-library		: $(LIBRARY_FILES)
 	touch $@
 
@@ -301,6 +321,7 @@ $(PROJECT_JAR_ARCHIVE)	: .latest-lamplib
 $(PROJECT_JAR_ARCHIVE)	: .latest-runtime
 $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
 $(PROJECT_JAR_ARCHIVE)	: .latest-interpreter
+$(PROJECT_JAR_ARCHIVE)	: .latest-dtd2scala
 $(PROJECT_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=PROJECT
 
