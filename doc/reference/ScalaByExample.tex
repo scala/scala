@@ -6387,13 +6387,6 @@ lists:
 class LinkedList[a] {
   var elem: a = _;
   var next: LinkedList[a] = null;
-  def insert(elem: a): LinkedList[a] = {
-    val nx = new LinkedList[a];
-    nx.elem = a;
-    nx.next = next;
-    next = nx;
-    next
-  }
 }
 \end{lstlisting}
 To facilitate insertion and deletion of elements into linked lists,
@@ -6409,8 +6402,12 @@ incrementing the \code{nreaders} field and waiting to be notified.
 package scala.concurrent;
 
 class Channel[a] with Monitor {
+  class LinkedList[a] {
+    var elem: a = _;
+    var next: LinkedList[a] = null;
+  }
   private var written = new LinkedList[a];
-  private var lastWritten = written;
+  private var lastWritten = new LinkedList[a];
   private var nreaders = 0;
 
   def write(x: a) = synchronized {
@@ -6424,8 +6421,9 @@ class Channel[a] with Monitor {
     if (written.next == null) {
       nreaders = nreaders + 1; wait(); nreaders = nreaders - 1;
     }
+    val x = written.elem;
     written = written.next;
-    written.elem;
+    x
   }
 }
 \end{lstlisting}
@@ -6712,17 +6710,17 @@ forwards all communication calls to an internal mailbox.
 \begin{lstlisting}
 abstract class Actor extends Thread {
 
-  type Message = Any;
+  type Message = AnyRef;
   
   private val mb = new MailBox;
   
   def send(msg: Message): unit = 
     mb.send(msg);
 
-  protected def receive[a](f: PartialFunction[Message, a]): a = 
+  def receive[a](f: PartialFunction[Message, a]): a = 
     mb.receive(f);
   
-  protected def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = 
+  def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = 
     mb.receiveWithin(msec)(f);
 }
 \end{lstlisting}

@@ -3,6 +3,18 @@ package test;
 import scala.concurrent._;
 
 class MailBox with Monitor {
+  private class LinkedList[a] {
+    var elem: a = _;
+    var next: LinkedList[a] = null;
+  }
+
+  def insert(l: LinkedList[a], x: a): LinkedList[a] {
+    l.next = new LinkedList[a];
+    l.next.elem = x;
+    l.next.next = l.next;
+    l
+  }
+
   private abstract class Receiver {
     def isDefined(msg: Any): boolean;
     var msg: Any = null;
@@ -21,7 +33,7 @@ class MailBox with Monitor {
     if (r1 != null) {
       r.next = r1.next; r1.elem.msg = msg; r1.elem.notify;
     } else {
-      lastSent = lastSent.insert(msg);
+      lastSent = insert(lastSent, msg);
     }
   }
 
@@ -34,7 +46,7 @@ class MailBox with Monitor {
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-	val r = lastReceiver.insert(new Receiver {
+	val r = insert(lastReceiver, new Receiver {
           def isDefined(msg: Any) = f.isDefinedAt(msg);
         });
 	lastReceiver = r;
@@ -54,7 +66,7 @@ class MailBox with Monitor {
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-        val r = lastReceiver.insert(new Receiver {
+        val r = insert(lastReceiver, new Receiver {
             def isDefined(msg: Any) = f.isDefinedAt(msg);
         });
         lastReceiver = r;
