@@ -12,8 +12,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import ch.epfl.lamp.util.Position;
+
 import scalac.Unit;
 import scalac.ast.Tree;
+import scalac.ast.Tree.AbsTypeDef;
+import scalac.ast.Tree.Template;
+import scalac.ast.Tree.ValDef;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
@@ -67,7 +72,108 @@ public class TreeChecker {
 
     /** Checks the unit. Returns true. */
     public boolean check(Unit unit) {
+        pushUnit(unit);
+        template(unit.body);
+        popUnit();
         return true;
+    }
+
+    //########################################################################
+    // Private Methods - Checking templates
+
+    /** Checks the templates. Returns true. */
+    private boolean template(Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) template(trees[i]);
+        return true;
+    }
+
+    /** Checks the template. Returns true. */
+    private boolean template(Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return true;
+
+        case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, _, Template(_, Tree[] body)):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isClass(): show(tree);
+            assert vparams.length == 1: show(tree);
+            assert containSymbols(tparams, symbol.typeParams()): show(tree);
+            assert containSymbols(vparams[0],symbol.valueParams()): show(tree);
+            registerSymbol(symbol);
+            scopeInsertParametersOf(symbol);
+            pushClass(symbol);
+            member(body);
+            popClass();
+            scopeRemoveParametersOf(symbol);
+            return true;
+
+        case PackageDef(Tree packaged, Template(Tree[] bases, Tree[] body)):
+            Symbol symbol = packaged.symbol();
+            assert symbol != null && symbol.isPackage(): show(packaged);
+            assert bases.length == 0: show(tree);
+            pushOwner(symbol);
+            template(body);
+            popOwner();
+            return true;
+
+        case ValDef(_, _, _, Tree rhs):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isModule(): show(tree);
+            pushOwner(symbol);
+            popOwner();
+            return true;
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    //########################################################################
+    // Private Methods - Checking members
+
+    /** Checks the members. Returns true. */
+    private boolean member(Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) member(trees[i]);
+        return true;
+    }
+
+    /** Checks the member. Returns true. */
+    private boolean member(Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return true;
+
+        case ClassDef(_, _, _, _, _, _):
+            return template(tree);
+
+        case ValDef(_, _, _, Tree rhs):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isTerm(): show(tree);
+            assert rhs == Tree.Empty: show(tree);
+            registerSymbol(symbol);
+            pushMember(symbol);
+            popMember();
+            return true;
+
+        case DefDef(_, _, AbsTypeDef[]tparams, ValDef[][]vparams, _, Tree rhs):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isMethod(): show(tree);
+            assert vparams.length == 1: show(tree);
+            assert containSymbols(tparams, symbol.typeParams()): show(tree);
+            assert containSymbols(vparams[0],symbol.valueParams()): show(tree);
+            assert symbol.isDeferred() == (rhs == Tree.Empty): show(tree);
+            registerSymbol(symbol);
+            scopeInsertParametersOf(symbol);
+            pushMember(symbol);
+            popMember();
+            scopeRemoveParametersOf(symbol);
+            return true;
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
     }
 
     //########################################################################
@@ -102,7 +208,7 @@ public class TreeChecker {
     /** Adds the value variable to the current scope. */
     private void scopeInsertVVariable(Symbol symbol, boolean isParameter) {
         assert !symbol.owner().isClass(): show(symbol);
-        assert symbol.isParameter() == isParameter: show(symbol);
+        // !!! assert symbol.isParameter() == isParameter: show(symbol);
         registerSymbol(symbol);
         vvars.add(symbol);
     }
@@ -247,7 +353,17 @@ public class TreeChecker {
 
     /** Returns the current position and given symbol. */
     private String show(Symbol symbol) {
-        return show("symbol", symbol);
+        return show("symbol", symbol)
+            + format("symbol.pos", Position.toString(symbol.pos))
+            + format("symbol.info", symbol.info());
+    }
+
+    /** Returns the current position and given tree. */
+    private String show(Tree tree) {
+        return show("tree", tree)
+            + format("tree.pos", Position.toString(tree.pos))
+            + (tree.hasSymbol() ? format("tree.symbol", tree.symbol()) : "")
+            + format("tree.type", tree.type());
     }
 
     /** Returns the current position and given pushed value. */
@@ -257,7 +373,7 @@ public class TreeChecker {
 
     /** Returns a string with the given header and value. */
     private String format(String header, Object value) {
-        while (header.length() < 10) header = header + ' ';
+        while (header.length() < 12) header = header + ' ';
         return "\n" + header + ": " + toString(value);
     }
 
