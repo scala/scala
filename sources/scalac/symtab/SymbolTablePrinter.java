@@ -560,7 +560,7 @@ public class SymbolTablePrinter {
     /** Returns the type to print for the given prefix (non-transitive). */
     public Type getTypeToPrintForPrefix0(Type prefix) {
         if (!global.debug) {
-            if (prefix.symbol().kind == Kinds.NONE) return null;
+            if (prefix.symbol().isNone()) return null;
             if (prefix.symbol().isRoot()) return null;
         }
         return getTypeToPrintForType0(prefix);
