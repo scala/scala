@@ -16,7 +16,7 @@ import scala.collection.immutable ;
  * @param text the text contained in this node
 **/
 
-case class EntityRef( entityName:String ) extends Node {
+case class EntityRef( entityName:String ) extends SpecialNode {
 
   final override def typeTag$:Int = -5;
 
@@ -24,19 +24,10 @@ case class EntityRef( entityName:String ) extends Node {
   */
   def label    = "#ENTITY";
 
-  /** always 0 */
-  final val namespaceCode = 0;
-
   final override def equals(x:Any) = x match {
     case EntityRef( s ) => entityName.equals( s );
     case _ => false;
   }
-
-  /** always empty */
-  final def attribute = immutable.TreeMap.Empty[String,String];
-
-  /** always empty */
-  final def child = Nil;
 
   override def hashCode() = entityName.hashCode();
 

@@ -17,7 +17,7 @@ import scala.collection.immutable ;
  * @param text text contained in this node, may not contain "--"
 **/
 
-case class Comment( text:String ) extends Node {
+case class Comment( text:String ) extends SpecialNode {
 
   final override def typeTag$:Int = -3;
 
@@ -31,15 +31,6 @@ case class Comment( text:String ) extends Node {
 
   /** the constant "#REM" */
   def label    = "#REM";
-
-  /** always 0 */
-  final val namespaceCode = 0;
-
-  /** always empty */
-  final def attribute = Node.NoAttributes;
-
-  /** always empty */
-  final def child = Nil;
 
   /** hashcode for this Comment */
   override def hashCode() = text.hashCode();

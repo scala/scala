@@ -19,7 +19,7 @@ object Node {
     immutable.TreeMap.Empty[String,String];
 
   /** the empty namespace */
-  val EmptyNamespace: Namespace = new Namespace("");
+  val EmptyNamespace = "";
 
 }
 /** Trait for representing XML using nodes of a labelled tree.
@@ -33,8 +33,8 @@ trait Node {
   /** QName (the label of this node). I.e. "foo" for &lt;foo/&gt;) */
   def label: String;
 
-  /** the namespace code of this node */
-  val namespaceCode: Int;
+  /** the namespace of this node */
+  def namespace: String;
 
   /** attribute axis */
   def attribute: Map[String,String] ;
@@ -91,7 +91,7 @@ trait Node {
       })
   }
 
-  override def hashCode() = Utility.hashCode(namespaceCode, label, attribute.toList.hashCode(), child);
+  override def hashCode() = Utility.hashCode(namespace, label, attribute.toList.hashCode(), child);
   /** string representation of this node */
   override def toString() = Utility.toXML(this);
 

@@ -170,6 +170,7 @@ xml/NodeSeq.scala
 xml/Parsing.scala
 xml/PrettyPrinter.scala
 xml/ProcInstr.scala
+xml/SpecialNode.scala
 xml/Text.scala
 xml/TextBuffer.scala
 xml/Utility.scala

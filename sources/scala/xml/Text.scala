@@ -16,7 +16,7 @@ import scala.collection.immutable ;
  * @param text the text contained in this node
 **/
 
-case class Text( text:String ) extends Node {
+case class Text( text:String ) extends SpecialNode {
 
   final override def typeTag$:Int = -1;
 
@@ -24,20 +24,11 @@ case class Text( text:String ) extends Node {
   */
   def label    = "#PCDATA";
 
-  /** always 0 */
-  final val namespaceCode = 0;
-
   final override def equals(x:Any) = x match {
     case s:String => text.equals( s );
     case Text( s ) => text.equals( s );
     case _ => false;
   }
-
-  /** always empty */
-  final def attribute = immutable.TreeMap.Empty[String,String];
-
-  /** always empty */
-  final def child = Nil;
 
   /** hashcode for this Text */
   override def hashCode() = text.hashCode();

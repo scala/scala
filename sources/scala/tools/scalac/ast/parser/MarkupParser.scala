@@ -156,11 +156,16 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
 
   // create scala xml tree
 
-  def mkXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
+  /**
+   *  @arg  namespace: a Tree of type defs.STRING_TYPE
+   *  @arg  label:     a Tree of type defs.STRING_TYPE
+   *  @todo map:       a map of attributes !!!
+   */
+  def mkXML(pos:int, isPattern:boolean, namespace:Tree, label:Tree, args:Array[Tree]):Tree = {
     if( isPattern ) {
       val ts = new myTreeList();
-      ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) );
-      ts.append( t );
+      ts.append( namespace );
+      ts.append( label );
       ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) );
       ts.append( convertToText( true, args ) );
       make.Apply(pos,
@@ -168,9 +173,9 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
                  ts.toArray())
     } else {
       val constrArgs = if( 0 == args.length ) {
-        Predef.Array[Tree]( gen.mkIntLit(pos, 0), t, _emptyMap( pos ) )
+        Predef.Array[Tree]( namespace, label, _emptyMap( pos ) )
       } else {
-        Predef.Array[Tree]( gen.mkIntLit(pos, 0), t, _emptyMap( pos ), make.Typed(
+        Predef.Array[Tree]( namespace, label, _emptyMap( pos ), make.Typed(
           pos, makeXMLseq(pos, args ), make.Ident(pos, TypeNames.WILDCARD_STAR)))
       };
       make.Apply( pos, _scala_xml_Elem( pos ), constrArgs )
@@ -283,11 +288,18 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
 
 
   def makeXMLpat(pos:int, n:Name, args:Array[Tree]):Tree =
-    mkXML(pos, true, gen.mkStringLit( pos, n.toString() ), args);
+    mkXML(pos, true, new Tree$Ident( Names.PATTERN_WILDCARD ), gen.mkStringLit( pos, n.toString() ), args);
 
-  def makeXML(pos:int, n:Name, args:Array[Tree]):Tree =
-    mkXML(pos, false, gen.mkStringLit( pos, n.toString() ), args);
-
+  def makeXML(pos:int, n:Name, args:Array[Tree]):Tree = {
+    var s = n.toString();
+    val i = n.indexOf(':');
+    var pref = "";
+    if( i > -1 ) {
+      pref = s.substring( 0, i );
+      s    = s.substring( i, s.length() );
+    }
+    mkXML(pos, false, gen.mkStringLit(pos, pref.toString()), gen.mkStringLit(pos, n.toString()), args);
+  }
   def convertToText(isPattern:Boolean, t:Tree):Tree = t match {
     case _:Tree$Literal => makeText(t.pos, isPattern, t);
     case _ => t

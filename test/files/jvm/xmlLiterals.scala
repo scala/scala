@@ -49,10 +49,10 @@ object Test  {
     val x3 = xx3.toString();          /* ws in element content */
 
     assertEquals( noWS( x3 ),
-                  Elem(0,"hello",e,
-                       Elem(0,"world",e),
-                       Elem(0,"test",e),
-                       Elem(0,"mars",e)).toString() );
+                  Elem("","hello",e,
+                       Elem("","world",e),
+                       Elem("","test",e),
+                       Elem("","mars",e)).toString() );
 
 
     Console.println("ws trimming in patterns");
@@ -72,11 +72,11 @@ object Test  {
           </html>.toString();
 
     assertEquals( noWS( z ), noWS(
-      Elem(0,"html",e,
-           Elem(0,"body",e,
-                Elem(0,"h1",e,Text("Hello World")),
-                Elem(0,"p",e,Text("Check the "),
-                     Elem(0,"a", e,Text("scala"))
+      Elem("","html",e,
+           Elem("","body",e,
+                Elem("","h1",e,Text("Hello World")),
+                Elem("","p",e,Text("Check the "),
+                     Elem("","a", e,Text("scala"))
                      % Pair("href","scala.epfl.ch"),
                      Text("page!"))
               ) % Pair("background","#FFFFFF")
@@ -100,16 +100,16 @@ object Test  {
     /*                                    === embedded Scala blocks  === */
 
     def computeDate() = {
-      Elem(0,"date", e, Text("now!"));
+      Elem("","date", e, Text("now!"));
     }
     /* embedding Scala strings as text and elements  */
     val sc = <hello>{ "World" }{ Text("42") }{ computeDate() }</hello>;
 
     assertEquals( sc.child.elements.toList,
-                 List( Text("World"), Text("42"), Elem(0, "date", e,Text("now!") ) ) );
+                 List( Text("World"), Text("42"), Elem("", "date", e,Text("now!") ) ) );
 
     assertEquals( sc.toString(),
-                 Elem(0,"hello",e,Text("World42"),Elem(0,"date",e,Text("now!"))).toString() );
+                 Elem("","hello",e,Text("World42"),Elem("","date",e,Text("now!"))).toString() );
 
     def foo( m:Node ):String = m match {
       case <hello/> => "hello node"
@@ -132,11 +132,11 @@ object Test  {
              </tr>;
 
     assertEquals( noWS( rows.toList.toString() ),
-                 noWS( List(Elem(0,"tr",e,
-                                 Elem(0,"td",e,Text("1.1")),Elem(0,"td",e,Text("1.2"))
+                 noWS( List(Elem("","tr",e,
+                                 Elem("","td",e,Text("1.1")),Elem("","td",e,Text("1.2"))
                                ),
-		            Elem(0,"tr",e,
-                                 Elem(0,"td",e,Text("2.1")),Elem(0,"td",e,Text("2.2"))
+		            Elem("","tr",e,
+                                 Elem("","td",e,Text("2.1")),Elem("","td",e,Text("2.2"))
                                )
                           ).toString() )
                );
@@ -144,9 +144,9 @@ object Test  {
     val rows3 = <tr> a <!-- an XML comment --> b <?pinotext?> c <?pi text?> d </tr>;
 
     // these are not equal as comments are valid XML Info items.
-    assertEquals( rows2, Elem(0,"tr",e,Comment(" an XML comment "),ProcInstr("pinotext",None),ProcInstr("pi",Some("text"))));
+    assertEquals( rows2, Elem("","tr",e,Comment(" an XML comment "),ProcInstr("pinotext",None),ProcInstr("pi",Some("text"))));
 
-    assertEquals( rows3, Elem(0,"tr",e,Text("a"),Comment(" an XML comment "),Text("b"),ProcInstr("pinotext",None),Text("c"),ProcInstr("pi",Some("text")),Text("d")));
+    assertEquals( rows3, Elem("","tr",e,Text("a"),Comment(" an XML comment "),Text("b"),ProcInstr("pinotext",None),Text("c"),ProcInstr("pi",Some("text")),Text("d")));
 
   }
 
@@ -192,8 +192,8 @@ object Test03Servlet {
     case <table>{ xs @ _* }</table> =>
           <table align="center">{ beautify( xs )}</table>
 
-    case Elem(0, label, _, xs @ _* ) =>
-          new Elem(0, label, beautify( xs ):_*)
+    case Elem("", label, _, xs @ _* ) =>
+          new Elem("", label, beautify( xs ):_*)
 
     case _ => n
   }
@@ -247,14 +247,14 @@ object Test03Servlet {
     Console.println( onlyOne );
 
     val tryBrace = <try>Now escaped {{ braces } </try>;
-    assertEquals( tryBrace, Elem(0,"try",e,Text("Now escaped { braces }")));
+    assertEquals( tryBrace, Elem("","try",e,Text("Now escaped { braces }")));
 
     val tryBrace2 = <try myAttrib={(3+4).toString() }> cool ?</try>;
     assertEquals( tryBrace2.attribute("myAttrib"), "7" );
 
     /* Scala comments are not allowed in XML literals. see neg(2) */
     val zzz = <hello>/* no comment */</hello>;
-    assertEquals( zzz, Elem(0,"hello", e, Text("/* no comment */")));
+    assertEquals( zzz, Elem("","hello", e, Text("/* no comment */")));
 
   }
 

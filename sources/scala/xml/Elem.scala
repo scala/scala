@@ -14,24 +14,27 @@ import scala.collection.immutable;
 /** The case class <code>Elem</code> implements the Node trait,
  *  providing an immutable data object representing an XML element.
  *
- *  @param nsCode the namespace code as assigned by NamespaceRegistry
+ *  @param namespace the namespace code as assigned by NamespaceRegistry
  *  @param label the element name
  *  @param attribute the attribute map
  *  @param child the children of this node
  *  @author  Burak Emir
  */
-case class Elem( nsCode:Int, label: String, attribute:immutable.Map[String,String], child: Node*) extends Node {
+case class Elem( namespace$$:String, label$$: String, attribute:immutable.Map[String,String], child: Node*) extends Node {
+
+  final val namespaceIntern     = namespace$$.intern();
+  final def namespace  = namespaceIntern;
+
+  final val labelIntern = label$$.intern();
+  final def label       = labelIntern;
 
   final override def typeTag$:Int = 0;
 
-  /** the namespace code of this node */
-  val namespaceCode: Int = nsCode;
-
-  def this(nsCode:Int, label: String, child: Node*) =
-    this(nsCode, label, Node.NoAttributes, child:_*);
+  def this(namespace: String, label: String, child: Node*) =
+    this(namespace, label, Node.NoAttributes, child:_*);
 
   def this(label: String, child: Node*) =
-    this(Node.EmptyNamespace.code, label, Node.NoAttributes, child:_*);
+    this(Node.EmptyNamespace, label, Node.NoAttributes, child:_*);
 
   /** Return a new element with updated attributes
    *
@@ -46,7 +49,7 @@ case class Elem( nsCode:Int, label: String, attribute:immutable.Map[String,Strin
     for ( val p <- attrs ) {
       newmap = newmap.update( p._1, p._2 )
     }
-    Elem(nsCode, label, newmap, child:_*)
+    Elem(namespace, label, newmap, child:_*)
   }
 
   /** Return a new symbol with updated attribute
@@ -60,7 +63,7 @@ case class Elem( nsCode:Int, label: String, attribute:immutable.Map[String,Strin
       newmap = newmap.update( p._1, p._2 )
     }
     newmap = newmap.update( attr._1, attr._2 );
-    Elem(nsCode,  label, newmap, child:_*)
+    Elem(namespace,  label, newmap, child:_*)
   }
 
 }

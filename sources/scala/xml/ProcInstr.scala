@@ -16,7 +16,7 @@ package scala.xml;
  * @param  text   text contained in this node, may not contain "?>"
 **/
 
-case class ProcInstr( target:String, text:Option[String] ) extends Node {
+case class ProcInstr( target:String, text:Option[String] ) extends SpecialNode {
 
   final override def typeTag$:Int = -2;
 
@@ -40,15 +40,6 @@ case class ProcInstr( target:String, text:Option[String] ) extends Node {
 
   /** the constant "#PI" */
   final def label    = "#PI";
-
-  /** always 0 */
-  final val namespaceCode = 0;
-
-  /** always empty */
-  final def attribute = Node.NoAttributes;
-
-  /** always empty */
-  final def child = Nil;
 
   /** hashcode for this PI */
   override def hashCode() = target.hashCode() * 7 + text.hashCode();
