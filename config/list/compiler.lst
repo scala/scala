@@ -6,7 +6,6 @@
 ApplicationError.java
 CompilerCommand.java
 CompilerPhases.java
-DocModule.java
 Global.java
 Main.java
 Phase.java
