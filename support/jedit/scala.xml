@@ -20,10 +20,6 @@
 		<PROPERTY NAME="wordBreakChars" VALUE=",+-=&lt;&gt;/?^&amp;*" />
 	</PROPS>
 	<RULES ESCAPE="\" IGNORE_CASE="FALSE" HIGHLIGHT_DIGITS="TRUE">
-		<!-- whitespace: (space and tab) -->
-		<WHITESPACE> </WHITESPACE>
-		<WHITESPACE>	</WHITESPACE>
-
 		<!-- Silly comment -->
 		<SEQ TYPE="COMMENT1">/**/</SEQ>
 
@@ -39,6 +35,20 @@
 			<END>*/</END>
 		</SPAN>
 
+		<!-- start of XML comment (griba2010@ya.com) -->	
+		<SEQ_REGEXP HASH_CHAR="<" AT_WHITESPACE_END="TRUE" TYPE="COMMENT2" 
+                        DELEGATE="XML_COMMENT">&lt;!--</SEQ_REGEXP>
+
+		<!-- start of xml tag (griba2010@ya.com) -->	
+		<SEQ_REGEXP HASH_CHAR="<" AT_WHITESPACE_END="TRUE" TYPE="LITERAL3" 
+                        DELEGATE="XML_TAG">&lt;\/?\w*</SEQ_REGEXP>
+
+		<!-- symbol literals -->
+                <!-- see http://jedit.org/users-guide/regexps.html -->	
+		<SEQ_REGEXP HASH_CHAR="'" TYPE="LITERAL4"
+                       >'[[:alnum:]]+[^',;})]</SEQ_REGEXP>	
+
+                <!-- string and character literals -->
 		<SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
 			<BEGIN>"</BEGIN>
 			<END>"</END>
@@ -49,6 +59,17 @@
 		</SPAN>
 
 		<EOL_SPAN TYPE="COMMENT1">//</EOL_SPAN>
+
+		<!-- type params between bracket pairs with -->
+                <!-- nested ones within (griba2010@ya.com) -->		
+		<SEQ_REGEXP HASH_CHAR="[" TYPE="LITERAL3"
+                       >\[[^\[\]]*(\[[^\[\]]*(\[[^\[\]]*\][^\[\]]*)*\][^\[\]]*)*\]</SEQ_REGEXP>	
+
+		<!-- type constraints (griba2010@ya.com) -->
+		<SEQ_REGEXP HASH_CHAR="<" TYPE="LITERAL2"
+			>&lt;:\s*\w+(\.\w+)*(#\w+)?</SEQ_REGEXP>
+		<SEQ_REGEXP HASH_CHAR=">" TYPE="LITERAL2"
+                       >&gt;:\s*\w+(\.\w+)*(#\w+)?</SEQ_REGEXP>
 
 		<SEQ TYPE="NULL">)</SEQ>
 		<SEQ TYPE="OPERATOR">=</SEQ>
@@ -79,6 +100,10 @@
 		<MARK_PREVIOUS TYPE="LABEL" EXCLUDE_MATCH="TRUE"
 			AT_LINE_START="TRUE">:</MARK_PREVIOUS>
 		<SEQ TYPE="NULL">:</SEQ>
+
+		<!-- after colon type descriptions (griba2010@ya.com) -->
+		<SEQ_REGEXP HASH_CHAR=":" TYPE="LITERAL2"
+                       >:\s*\w+(\.\w+)*(#\w+)?</SEQ_REGEXP>
 
 		<!-- Function calls -->
 		<MARK_PREVIOUS TYPE="FUNCTION" EXCLUDE_MATCH="TRUE">(</MARK_PREVIOUS>
@@ -126,34 +151,48 @@
 			<KEYWORD2>Integer</KEYWORD2>
 
 			<!-- scala.* primitive types -->
-			<KEYWORD3>Boolean</KEYWORD3>
-			<KEYWORD3>boolean</KEYWORD3>
-			<KEYWORD3>Byte</KEYWORD3>
-			<KEYWORD3>byte</KEYWORD3>
-			<KEYWORD3>Char</KEYWORD3>
-			<KEYWORD3>char</KEYWORD3>
-			<KEYWORD3>class</KEYWORD3>
-			<KEYWORD3>Double</KEYWORD3>
-			<KEYWORD3>double</KEYWORD3>
-			<KEYWORD3>Float</KEYWORD3>
-			<KEYWORD3>float</KEYWORD3>
-			<KEYWORD3>Int</KEYWORD3>
-			<KEYWORD3>int</KEYWORD3>
-			<KEYWORD3>Long</KEYWORD3>
-			<KEYWORD3>long</KEYWORD3>
-			<KEYWORD3>Short</KEYWORD3>
-			<KEYWORD3>short</KEYWORD3>
-			<KEYWORD3>trait</KEYWORD3>
-			<KEYWORD3>Unit</KEYWORD3>
-			<KEYWORD3>unit</KEYWORD3>
+			<KEYWORD2>Boolean</KEYWORD2>
+			<KEYWORD2>boolean</KEYWORD2>
+			<KEYWORD2>Byte</KEYWORD2>
+			<KEYWORD2>byte</KEYWORD2>
+			<KEYWORD2>Char</KEYWORD2>
+			<KEYWORD2>char</KEYWORD2>
+			<KEYWORD2>Double</KEYWORD2>
+			<KEYWORD2>double</KEYWORD2>
+			<KEYWORD2>Float</KEYWORD2>
+			<KEYWORD2>float</KEYWORD2>
+			<KEYWORD2>Int</KEYWORD2>
+			<KEYWORD2>int</KEYWORD2>
+			<KEYWORD2>Long</KEYWORD2>
+			<KEYWORD2>long</KEYWORD2>
+			<KEYWORD2>Short</KEYWORD2>
+			<KEYWORD2>short</KEYWORD2>
+			<KEYWORD2>Unit</KEYWORD2>
+			<KEYWORD2>unit</KEYWORD2>
+
+			<!-- scala.* predefined types -->
+			<KEYWORD3>Any</KEYWORD3>
+			<KEYWORD3>Array</KEYWORD3>
+			<KEYWORD3>Enumeration</KEYWORD3>
+			<KEYWORD3>Function</KEYWORD3>
+			<KEYWORD3>List</KEYWORD3>
+			<KEYWORD3>Option</KEYWORD3>
+			<KEYWORD3>PartialFunction</KEYWORD3>
+			<KEYWORD3>Ref</KEYWORD3>
+			<KEYWORD3>Some</KEYWORD3>
+			<KEYWORD3>Stream</KEYWORD3>
+			<KEYWORD3>String</KEYWORD3>
+			<KEYWORD3>Symbol</KEYWORD3>
+
+			<!-- scala.* predefined objects -->
+			<KEYWORD4>Iterable</KEYWORD4>
+			<KEYWORD4>Nil</KEYWORD4>
+			<KEYWORD4>None</KEYWORD4>
+			<KEYWORD4>Predef</KEYWORD4>
 		</KEYWORDS>
 	</RULES>
 
 	<RULES SET="SCALADOC" DEFAULT="COMMENT2" IGNORE_CASE="TRUE">
-		<!-- whitespace: (space and tab) -->
-		<WHITESPACE> </WHITESPACE>
-		<WHITESPACE>	</WHITESPACE>
-
 		<!-- so that @link{...} is highlighted -->
 		<SEQ TYPE="COMMENT2">{</SEQ>
 
@@ -229,4 +268,58 @@
 	</RULES>
 
 	<RULES SET="SCALADOC_PRE" DEFAULT="COMMENT2" />
+
+	<!-- inside xml tag default type label -->
+        <!-- for attribute names (griba2010@ya.com) -->
+	<RULES SET="XML_TAG" DEFAULT="LABEL" IGNORE_CASE="TRUE">
+                <!-- string and character literals -->
+		<SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+			<BEGIN>"</BEGIN>
+			<END>"</END>
+		</SPAN>
+
+		<SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+			<BEGIN>'</BEGIN>
+			<END>'</END>
+		</SPAN>
+
+		<!-- scala attribute value -->
+		<SPAN DELEGATE="MAIN">
+			<BEGIN>{</BEGIN>
+			<END>}</END>
+		</SPAN>
+
+		<!-- if ">;" goto main rule set -->
+		<SEQ_REGEXP HASH_CHAR=">" DELEGATE="MAIN" TYPE="LITERAL3"
+                        >&gt;\s*;</SEQ_REGEXP>
+
+		<!-- if ">" goto xml_text rule set -->
+		<SEQ DELEGATE="XML_TEXT" TYPE="LITERAL3">></SEQ>
+	</RULES>
+
+	<RULES SET="XML_TEXT" DEFAULT="COMMENT4">
+		<!-- scala expression -->
+		<SPAN DELEGATE="MAIN">
+			<BEGIN>{</BEGIN>
+			<END>}</END>
+		</SPAN>
+
+		<!-- if "<!--" goto xml_comment rule set -->
+		<SEQ_REGEXP HASH_CHAR="<" DELEGATE="XML_COMMENT" TYPE="COMMENT2"
+                        >&lt;!--</SEQ_REGEXP>
+		<!-- if "<" goto xml_tag rule set -->
+		<SEQ_REGEXP HASH_CHAR="<" DELEGATE="XML_TAG" TYPE="LITERAL3"
+                        >&lt;\/?\w*</SEQ_REGEXP>
+	</RULES>
+
+	<RULES SET="XML_COMMENT" DEFAULT="COMMENT2">
+		<!-- if end_of_comment with ";" goto main rule set -->
+		<SEQ_REGEXP HASH_CHAR="-" DELEGATE="MAIN" TYPE="COMMENT2"
+                        >-->\s*;</SEQ_REGEXP>
+
+		<!-- if end_of_comment goto xml_text rule set -->
+		<SEQ DELEGATE="XML_TEXT" TYPE="COMMENT2">--></SEQ>
+	</RULES>
 </MODE>
+
+<!-- $Id$ -->
