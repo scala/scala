@@ -609,7 +609,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    super(tree);
 	}
 	public void complete(Symbol sym) {
-	    Type constrtype = tree.symbol().constructor().type().instanceType();
+            Symbol constr = tree.symbol().constructor();
+	    Type constrtype = constr.type().instanceType();
+            constrtype = constrtype.cloneType(constr, sym);
 	    switch (tree) {
 	    case ClassDef(_, _, _, ValDef[][] vparams, _, _):
 		if (vparams.length == 0) {
