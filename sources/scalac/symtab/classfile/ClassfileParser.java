@@ -165,10 +165,7 @@ public class ClassfileParser implements ClassfileConstants {
         Type res = defs.getJavaType((Name)pool.readPool(i));
         if (res == Type.ErrorType)
             global.error("unknown class reference " + pool.readPool(i));
-        if (res.symbol() == defs.JAVA_OBJECT_TYPE.symbol())
-            return defs.ANYREF_TYPE;
-        else
-            return res;
+        return res;
     }
 
     /** read a signature and return it as a type
