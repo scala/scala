@@ -11,6 +11,8 @@ package scalac.util;
 import java.io.*;
 import java.util.*;
 
+import scala.tools.util.AbstractFile;
+
 
 public class ClassPath {
 

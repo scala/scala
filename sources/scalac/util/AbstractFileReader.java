@@ -8,8 +8,9 @@
 
 package scalac.util;
 
-import java.io.*;
+import java.io.IOException;
 
+import scala.tools.util.AbstractFile;
 
 public class AbstractFileReader {
 

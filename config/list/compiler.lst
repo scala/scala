@@ -149,7 +149,6 @@ typechecker/Infer.java
 typechecker/RefCheck.java
 typechecker/RefCheckPhase.java
 
-util/AbstractFile.java
 util/AbstractFileReader.java
 util/ArrayApply.java
 util/ClassPath.java

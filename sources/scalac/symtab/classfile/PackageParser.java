@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
 
 import scalac.Global;
@@ -21,7 +22,6 @@ import scalac.symtab.SourceCompleter;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.Type;
-import scalac.util.AbstractFile;
 import scalac.util.Name;
 import scalac.util.SourceRepresentation;
 

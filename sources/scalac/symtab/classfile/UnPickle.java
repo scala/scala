@@ -11,6 +11,7 @@ package scalac.symtab.classfile;
 import java.util.HashMap;
 import java.io.IOException;
 import java.io.PrintStream;
+import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
 import scalac.*;
 import scalac.atree.AConstant;

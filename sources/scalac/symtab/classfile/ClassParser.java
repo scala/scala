@@ -8,6 +8,7 @@
 
 package scalac.symtab.classfile;
 
+import scala.tools.util.AbstractFile;
 import scalac.*;
 import scalac.symtab.*;
 import scalac.util.*;

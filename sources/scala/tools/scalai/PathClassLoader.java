@@ -11,8 +11,9 @@ package scala.tools.scalai;
 
 import java.io.IOException;
 
+import scala.tools.util.AbstractFile;
+
 import scalac.util.ClassPath;
-import scalac.util.AbstractFile;
 
 public class PathClassLoader extends ClassLoader {
 

@@ -2,11 +2,11 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
 
-package scalac.util;
+// $Id$
+
+package scala.tools.util;
 
 import java.io.*;
 import java.util.*;
@@ -134,7 +134,7 @@ class PlainFile extends AbstractFile {
     }
 
     public long lastModified() {
-	return f.lastModified();
+        return f.lastModified();
     }
 
     public byte[] read() throws IOException {
@@ -205,7 +205,7 @@ class ZippedFile extends AbstractFile {
     }
 
     public long lastModified() {
-	return zipEntry.getTime();
+        return zipEntry.getTime();
     }
 
     public byte[] read() throws IOException {
@@ -267,7 +267,7 @@ class ZipDir extends AbstractFile {
     }
 
     public long lastModified() {
-	return -1;
+        return -1;
     }
 
     public byte[] read() throws IOException {
@@ -339,7 +339,7 @@ final class JarArchive extends AbstractFile {
     }
 
     public long lastModified() {
-	return -1;
+        return -1;
     }
 
     public byte[] read() throws IOException {
@@ -463,9 +463,9 @@ final class JarArchive extends AbstractFile {
             return true;
         }
 
-	public long lastModified() {
-	    return -1;
-	}
+        public long lastModified() {
+            return -1;
+        }
 
         public String[] list() throws IOException {
             throw new IOException("not a directory");
@@ -534,9 +534,9 @@ final class JarArchive extends AbstractFile {
             return false;
         }
 
-	public long lastModified() {
-	    return -1;
-	}
+        public long lastModified() {
+            return -1;
+        }
 
         public String[] list() throws IOException {
             throw new IOException("not a directory");
@@ -565,9 +565,9 @@ final class JarArchive extends AbstractFile {
             return true;
         }
 
-	public long lastModified() {
-	    return jarFile.getJarEntry(name).getTime();
-	}
+        public long lastModified() {
+            return jarFile.getJarEntry(name).getTime();
+        }
 
         public byte[] read() throws IOException {
             JarEntry jarEntry = jarFile.getJarEntry(name);
