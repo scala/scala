@@ -60,24 +60,31 @@ abstract class PatternTool {
      */
     Infer infer;
 
-      /** the statics of class Boolean
-       */
+    /** the statics of class Boolean
+     */
     Symbol statics; // REMOVE
 
-      /** the eqeq symbol
-       */
-      Symbol eqSymInt; // REMOVE
-      Symbol eqSymBool; // REMOVE
+    /** the eqeq symbol
+     */
+    Symbol eqSymInt; // REMOVE
+    Symbol eqSymBool; // REMOVE
 
+    /** the eqeq symbol
+     */
+    Symbol notSym;
 
-      // constructor
-      public PatternTool( Unit unit, Infer infer ) {
-            this.unit = unit;
-            this.infer = infer;
-            this.fresh = unit.global.freshNameCreator;
-            this.make = unit.global.make;
-            this.gen = unit.global.treeGen;
-            this.defs = unit.global.definitions;
-      } // PatternTool( Unit unit, .... )
+    // constructor
+    public PatternTool( Unit unit, Infer infer ) {
+	this.unit = unit;
+	this.infer = infer;
+	this.fresh = unit.global.freshNameCreator;
+	this.make = unit.global.make;
+	this.gen = unit.global.treeGen;
+	this.defs = unit.global.definitions;
+
+	this.notSym = defs.BOOLEAN_CLASS.lookup/*Term*/( NOT_N );
+	assert !(notSym instanceof NoSymbol) : " Boolean.! not found ";
+
+    } // PatternTool( Unit unit, .... )
 
 } // class PatternTool
