@@ -41,6 +41,8 @@ abstract class Element {
 	if( attrib != null ) iterate( attrib.keys.elements ) else "";
     }
 
+    override def toString() = getName.concat("(").concat(getChildren.toString().concat(")"));
+
   /*
                 def toXML : String = {
                         val attribs   = getAttribs;

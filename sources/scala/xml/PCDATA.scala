@@ -14,5 +14,7 @@ case class PCDATA( content:String ) extends Element  {
 
               override def toXML:String = content;
 
+	      override def toString() = "PCDATA("+content+")";
+
 } // PCDATA
 
