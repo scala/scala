@@ -7,7 +7,7 @@ class Point1(x: int) extends Object with Ordered[Point1] {
 }
 class Point2(x: int, y: int) extends Point1(x) with Ordered[Point2] {
   val yCoord = y;
-  def compareTo [b >: Point2 <% Ordered[b]](that: b): int = that match {
+  override def compareTo [b >: Point2 <% Ordered[b]](that: b): int = that match {
     case that1: Point2 =>
       val r = super.compareTo(that1);
       if (r == 0) this.yCoord.compareTo(that1.yCoord) else r
