@@ -11,7 +11,7 @@ module test {
   def g[Jg](h: Jg):G[Jg] = g[Jg](h);
 
   class M[P]() {
-      class I[X]() {
+      abstract class I[X]() {
 	  // Methods to check the type X and P as seen from instances of I
 	  def chk_ix(x: X): Unit = ();
 	  def chk_ip(p: P): Unit {}
@@ -30,7 +30,7 @@ module test {
   class N[Q]() extends M[F[Q]]() {
       val j:J[G[Q]] = null;
 
-      class J[Y]() extends I[G[Y]]() {
+      abstract class J[Y]() extends I[G[Y]]() {
 	  // Values with types Y and X as seen from instances of J
 	  def val_jy: Y = val_jy;
 	  def val_jx: G[Y] = g[Y](val_jy);
