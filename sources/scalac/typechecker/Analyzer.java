@@ -312,14 +312,17 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (parents.length == 0 || !checkClassType(constrs[0].pos, parents[0])) return;
 	for (int i = 0; i < parents.length; i++) {
 	    if (!checkClassType(constrs[i].pos, parents[i])) return;
-	    if (1 <= i) {
+	    Symbol bsym = parents[i].symbol();
+	    if (i == 0) {
+		if ((bsym.flags & INTERFACE) != 0)
+		    error(constrs[0].pos, "superclass may not be a Java interface");
+	    } else {
 		Type[] grandparents = parents[i].parents();
 		if (grandparents.length > 0 &&
 		    !parents[0].isSubType(grandparents[0]))
 		    error(constrs[i].pos, "illegal inheritance;\n " + parents[0] +
 			  " does not conform to " + parents[i] + "'s supertype");
 	    }
-	    Symbol bsym = parents[i].symbol();
 	    if ((bsym.flags & FINAL) != 0) {
 		// are we in same scope as base type definition?
 		Scope.Entry e = context.scope.lookupEntry(bsym.name);

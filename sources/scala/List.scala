@@ -263,7 +263,7 @@ trait List[a] extends Seq[a] {
   * <code>sep</code>.
   * <p>
   * Ex: <br>
-  * <code>[1, 2, 3].mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+  * <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
   * @param start starting string.
   * @param sep separator string.
   * @param end ending string.
@@ -345,9 +345,9 @@ trait List[a] extends Seq[a] {
 
 module List {
 
-  def range(lo: Int, hi: Int): List[Int] =
-    if (lo > hi) scala.Predef.List()
-    else lo :: range(lo + 1, hi);
+  def range(from: Int, end: Int): List[Int] =
+    if (from >= end) scala.Predef.List()
+    else from :: range(from + 1, end);
 
 }
 

@@ -1,6 +1,6 @@
 %% $Id$
 
-\documentclass[11pt]{report}
+\documentclass[11pt]{book}
 
 \usepackage{fleqn,a4wide,vquote,modefs,math,prooftree,scaladefs}
 \newcommand{\exercise}{\paragraph{Exercise:}}
@@ -8,24 +8,47 @@
 \title{Scala By Examples}
 
 \author{
-Martin Odersky
+Martin Odersky \\ EPFL
 }
 
 \sloppy
 \begin{document}
 \maketitle
+\bibliographystyle{alpha}
 
-\chapter{\label{sec:example-one}A First Example}
+\chapter{\label{chap:intro}Introduction}
+
+\input{rationale-chapter.tex}
+
+The rest of this document is structured as
+follows. Chapters~\ref{chap:example-one} and
+\ref{chap:example-auction} highlight some of the features that make
+Scala interesting. The following chapters introduce the language
+constructs of Scala in a more thorough
+way. Chapter~\ref{chap:simple-funs} introduces basic expressions and
+simple functions. Chapter~\ref{chap:first-class-funs} introduces
+higher-order functions. (to be continued).
+
+This document ows a great dept to Sussman and Abelson's wonderful book
+``Structure and Interpretation of Computer
+Programs''\cite{abelson-sussman:structure}. Many of their examples and
+exercises are also present here. Of course, the working language has
+in each case been changed from Scheme to Scala. Furthermore, the
+examples make use of Scala's object-oriented constructs where
+appropriate.
+
+
+\chapter{\label{chap:example-one}A First Example}
 
 As a first example, here is an implementation of Quicksort in Scala.
 \begin{verbatim}
-def sort(xs: Array[Int]): Unit = {
+def sort(xs: Array[int]): unit = {
 
-  def swap(i: Int, j: Int): Unit = {
+  def swap(i: int, j: int): unit = {
     val t = xs(i); xs(i) = xs(j); xs(j) = t;
   }
 
-  def sort1(l: Int, r: Int): Unit = {
+  def sort1(l: int, r: int): unit = {
     val pivot = xs((l + r) / 2);
     var i = l, j = r;
     while (i <= j) {
@@ -57,10 +80,11 @@ The declared type of a symbol is given after the symbol and a colon.
 The declared type can often be omitted, because the compiler can infer
 it from the context.
 \item
-We use \verb@Unit@ instead of \verb@void@ to define the result type of
+We use \verb@unit@ instead of \verb@void@ to define the result type of
 a procedure.
 \item
-Array types are written \verb@Array[$T$]@ rather than \verb@$T$[]@.
+Array types are written \verb@Array[T]@ rather than \verb@T[]@, 
+and array selections are written \verb@a(i)@ rather than \verb@a[i]@.
 \item
 Functions can be nested inside other functions. Nested functions can
 access parameters and local variables of enclosing functions. For
@@ -69,7 +93,7 @@ instance, the name of the array \verb@a@ is visible in functions
 parameter to them.
 \end{itemize}
 So far, Scala looks like a fairly conventional language with some
-syntactic particularitis. In fact it is possible to write programs in a
+syntactic pecularities. In fact it is possible to write programs in a
 conventional imperative or object-oriented style. This is important
 because it is one of the things that makes it easy to combine Scala
 components with components written in mainstream languages such as
@@ -80,7 +104,7 @@ completely different. Here is Quicksort again, this time written in
 functional style.
 
 \begin{verbatim}
-def sort(xs: List[Int]): List[Int] = {
+def sort(xs: List[int]): List[int] = {
   val pivot = a(a.length / 2);
   sort(a.filter(x => x < pivot))
     :::  a.filter(x => x == pivot)
@@ -88,9 +112,10 @@ def sort(xs: List[Int]): List[Int] = {
 }
 \end{verbatim}
 
-The functional program works with lists instead of arrays\footnote{
-This is necessary for now, because arrays do not yet support
-\verb@filter@ and \verb@:::@.}.
+The functional program works with lists instead of arrays.\footnote{In
+a future complete implemenetation of Scala, we could also have used arrays
+instead of lists, but at the moment arrays do not yet support
+\verb@filter@ and \verb@:::@.}
 It captures the essence of the quicksort algorithm in a concise way:
 \begin{itemize}
 \item Pick an element in the middle of the list as a pivot.
@@ -98,7 +123,7 @@ It captures the essence of the quicksort algorithm in a concise way:
 are less than, respectively greater than the pivot element, and a
 third list which contains elements equal to privot.
 \item Sort the first two sub-lists by a recursive invocation of
-the sort function\footnote{This is not quite what the imperative algorithm does;
+the sort function.\footnote{This is not quite what the imperative algorithm does;
 the latter partitions the array into two sub-arrays containing elements
 less than or greater or equal to pivot.}
 \item The result is obtained by appending the three sub-lists together.
@@ -119,22 +144,22 @@ Scala library, and which itself is implemented in Scala.
 
 In particular, there is the method \verb@filter@ which takes as
 argument a {\em predicate function} that maps list elements to
-Boolean values. The result of \verb@filter@ is a list consisting of
+boolean values. The result of \verb@filter@ is a list consisting of
 all the elements of the original list for which the given predicate
 function is true.  The \verb@filter@ method of an object of type
 \verb@List[t]@ thus has the signature
 \begin{verbatim}
-  def filter(p: t => Boolean): List[t]  .
+  def filter(p: t => boolean): List[t]  .
 \end{verbatim}
-Here, \verb@t => Boolean@ is the type of functions that take an element
-of type \verb@t@ and return a \verb@Boolean@.  Functions like
+Here, \verb@t => boolean@ is the type of functions that take an element
+of type \verb@t@ and return a \verb@boolean@.  Functions like
 \verb@filter@ that take another function as argument or return one as
 result are called {\em higher-order} functions.
 
 In the quicksort program, \verb@filter@ is applied three times to an
 anonymous function argument.  The first argument,
 \verb@x => x <= pivot@ represents the function that maps its parameter
-\verb@x@ to the Boolean value \verb@x <= pivot@. That is, it yields
+\verb@x@ to the boolean value \verb@x <= pivot@. That is, it yields
 true if \verb@x@ is smaller or equal than \verb@pivot@, false
 otherwise. The function is anonymous, i.e.\ it is not defined with a
 name. The type of the \verb@x@ parameter is omitted because a Scala
@@ -143,6 +168,7 @@ function is used. To summarize, \verb@xs.filter(x => x <= pivot)@
 returns a list consisting of all elements of the list \verb@xs@ that are
 smaller than \verb@pivot@.
 
+\comment{
 It is also possible to apply higher-order functions such as
 \verb@filter@ to named function arguments. Here is functional
 quicksort again, where the two anonymous functions are replaced by
@@ -150,16 +176,17 @@ named auxiliary functions that compare the argument to the
 \verb@pivot@ value.
 
 \begin{verbatim}
-def sort (xs: List[Int]): List[Int] = {
+def sort (xs: List[int]): List[int] = {
   val pivot = xs(xs.length / 2);
-  def leqPivot(x: Int) = x <= pivot;
-  def gtPivot(x: Int) = x > pivot;
-  def eqPivot(x: Int) = x == pivot;
+  def leqPivot(x: int) = x <= pivot;
+  def gtPivot(x: int) = x > pivot;
+  def eqPivot(x: int) = x == pivot;
   sort(xs filter leqPivot)  
     ::: sort(xs filter eqPivot)  
     ::: sort(xs filter gtPivot)
 }
 \end{verbatim}
+}
 
 An object of type \verb@List[t]@ also has a method ``\verb@:::@''
 which takes an another list and which returns the result of appending this
@@ -177,11 +204,11 @@ the two sub-lists resulting from the partition. In fact, any method
 can be used as an operator in Scala.  The binary operation $E;op;E'$
 is always interpreted as the method call $E.op(E')$. This holds also
 for binary infix operators which start with a letter. The recursive call
-to \verb@sort@ in the last quicksort example is hence equivalent to:
+to \verb@sort@ in the last quicksort example is thus equivalent to
 \begin{verbatim}
-  sort(a.filter(leqPivot))
-    .append(sort(a.filter(eqPivot)))
-    .append(sort(a.filter(gtPivot))) .
+  sort(a.filter(x => x < pivot))
+    .:::(sort(a.filter(x => x == pivot)))
+    .:::(sort(a.filter(x => x > pivot))) .
 \end{verbatim}
 
 Looking again in detail at the first, imperative implementation of
@@ -201,21 +228,21 @@ Control constructs such as \verb@while@ are also not primitive but are
 predefined functions in the standard Scala library. Here is the
 definition of \verb@while@ in Scala.
 \begin{verbatim}
-def while (def p: Boolean) (def s: Unit): Unit = if (p) { s ; while(p)(s) }
+def while (def p: boolean) (def s: unit): unit = if (p) { s ; while(p)(s) }
 \end{verbatim}
 The \verb@while@ function takes as first parameter a test function,
-which takes no parameters and yields a Boolean value. As second
+which takes no parameters and yields a boolean value. As second
 parameter it takes a command function which also takes no parameters
 and yields a trivial result. \verb@while@ invokes the command function
 as long as the test function yields true. Again, compilers are free to
 pick specialized implementations of \verb@while@ that have the same
 behavior as the invocation of the function given above.
 
-\chapter{\label{sec:ex-auction}Programming with Actors and Messages}
+\chapter{\label{chap:example-auction}Programming with Actors and Messages}
 
 Here's an example that shows an application area for which Scala is
 particularly well suited. Consider the task of implementing an
-electronic auction service. We will use an Erlang-style actor process
+electronic auction service. We use an Erlang-style actor process
 model to implement the participants of the auction. Actors are
 objects to which messages are sent. Every process has a ``mailbox'' of
 its incoming messages which is represented as a queue. It can work
@@ -236,22 +263,22 @@ clients.  These are defined as follows.
 \begin{verbatim}
 trait AuctionMessage;
 case class 
-  Offer(bid: Int, client: Actor),                     // make a bid
-  Inquire(client: Actor) extends AuctionMessage;      // inquire status
+  Offer(bid: int, client: Actor),                            \=// make a bid
+  Inquire(client: Actor) extends AuctionMessage;      \>// inquire status
 
 trait AuctionReply;
 case class
-  Status(asked: Int, expiration: Date),               // asked sum, expiration date
-  BestOffer(),                                        // yours is the best offer
-  BeatenOffer(maxBid: Int),                           // offer beaten by maxBid
-  AuctionConcluded(seller: Actor, client: Actor),     // auction concluded
-  AuctionFailed(),                                    // failed with no bids
-  AuctionOver() extends AuctionReply;                 // bidding is closed
+  Status(asked: int, expiration: Date),               \>// asked sum, expiration date
+  BestOffer(),                                        \>// yours is the best offer
+  BeatenOffer(maxBid: int),                           \>// offer beaten by maxBid
+  AuctionConcluded(seller: Actor, client: Actor),     \>// auction concluded
+  AuctionFailed(),                                    \>// failed with no bids
+  AuctionOver() extends AuctionReply;                 \>// bidding is closed
 \end{verbatim}
 
-\begin{figure}[h]
+\begin{figure}[htb]
 \begin{verbatim}
-class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
+class Auction(seller: Actor, minBid: int, closing: Date) extends Actor() {
   val timeToShutdown = 36000000; // msec
   val bidIncrement = 10;
   def execute {
@@ -263,9 +290,7 @@ class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
 	case Offer(bid, client) =>
 	  if (bid >= maxBid + bidIncrement) { 
             if (maxBid >= minBid) maxBidder send BeatenOffer(bid);
-            maxBid = bid;
-            maxBidder = client;
-            client send BestOffer();
+            maxBid = bid; maxBidder = client; client send BestOffer();
           } else {
             client send BeatenOffer(maxBid);
           }
@@ -276,26 +301,21 @@ class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
 	case TIMEOUT() =>
 	  if (maxBid >= minBid) {
 	    val reply = AuctionConcluded(seller, maxBidder);
-	    maxBidder send reply;
-	    seller send reply;
+	    maxBidder send reply; seller send reply;
 	  } else {
 	    seller send AuctionFailed();
           }
           receiveWithin(timeToShutdown) {
             case Offer(_, client) => client send AuctionOver()
             case TIMEOUT() => running = false;
-          }
-      }
-    }
-  }
-}
+          }}}}}
 \end{verbatim}
 \caption{\label{fig:simple-auction}Implementation of an Auction Service}
 \end{figure}
 
 For each base class, there are a number of {\em case classes} which
 define the format of particular messages in the class. These messages
-might well be ultimately implemented as small XML documents. We expect
+might well be ultimately mapped to small XML documents. We expect
 automatic tools to exist that convert between XML documents and
 internal data structures like the ones defined above.
 
@@ -315,8 +335,10 @@ repeatedly selects (using \verb@receiveWithin@) a message and reacts to it,
 until the auction is closed, which is signalled by a \verb@TIMEOUT@
 message. Before finally stopping, it stays active for another period
 determined by the \verb@timeToShutdown@ constant and replies to
-further offers that the auction is closed.  Here are some further
-explanations of the constructs used in this program:
+further offers that the auction is closed.  
+
+Here are some further explanations of the constructs used in this
+program:
 \begin{itemize}
 \item
 The \verb@receiveWithin@ method of class \verb@Actor@ takes as
@@ -367,28 +389,949 @@ library modules. For instance, the actor communication constructs
 presented above can be regarded as one such domain specific language,
 which conceptually extends the Scala core.
 
-\chapter{Simple Functions}
+\chapter{\label{chap:simple-funs}Expressions and Simple Functions}
 
 The previous examples gave an impression of what can be done with
 Scala.  We now introduce its constructs one by one in a more
 systematic fashion. We start with the smallest level, expressions and
-functions. 
+functions.
+
+\section{Expressions And Simple Functions}
 
 A Scala system comes with an interpreter which can be seen as a
-glorified calculator. A user interacts with the calculator by tying in
+fancy calculator. A user interacts with the calculator by typing in
 expressions and obtaining the results of their evaluation. Example:
 
+\begin{verbatim}
+? 87 + 145
+232
+
+? 1000 - 333
+667
+
+? 5 + 2 * 3
+11
+\end{verbatim}
+It is also possible to name a sub-expression and use the name instead
+of the expression afterwards:
+\begin{verbatim}
+? def size = 2
+def size: int
+
+? 5 * size
+10
+\end{verbatim}
+\begin{verbatim}
+? def pi = 3.14159
+def pi: double
+
+? def radius = 10
+def radius: int
+
+
+? 2 * pi * radius
+62.8318
+\end{verbatim}
+Definitions start with the reserved word \verb@def@; they introduce a
+name which stands for the expression following the \verb@=@ sign.  The
+interpreter will answer with the introduced name and its type.
+
+Executing a definition such as \verb@def x = e@ will not evaluate the
+expression \verb@e@.  Instead \verb@e@ is evaluated whenever \verb@x@
+is used. Alternatively, Scala offers a value definition 
+\verb@val x = e@, which does evaluate the right-hand-side \verb@e@ as part of the
+evaluation of the definition. If \verb@x@ is then used subsequently,
+it is immediately replaced by the pre-computed value of
+\verb@e@, so that the expression need not be evaluated again.
+ 
+How are expressions evaluated? An expression consisting of operators
+and operands is evaluated by repeatedly applying the following
+simplification steps.
+\begin{itemize}
+\item pick the left-most operation
+\item evaluate its operands
+\item apply the operator to the operand values.
+\end{itemize}
+A name defined by \verb@def@\ is evaluated by replacing the name by the
+definition's right hand side. A name defined by \verb@val@ is
+evaluated by replacing the name by the value of the definitions's
+right-hand side.  The evaluation process stops once we have reached a
+value. A value is some data item such as a string, a number, an array,
+or a list.
+
+\example
+Here is an evaluation of an arithmetic expression.
+\begin{verbatim}
+    \=(2 * pi) * radius
+->  \>(2 * 3.14159) * radius
+->  \>6.28318 * radius
+->  \>6.28318 * 10
+->  \>62.8318
+\end{verbatim}
+The process of stepwise simplification of expressions to values is
+called {\em reduction}.
+
+\section{Parameters}
+
+Using \verb@def@, one can also define functions with parameters. Example:
+\begin{verbatim}
+? def square(x: double) = x * x
+def square(x: double): double
+
+? square(2)
+4.0
+
+? square(5 + 4)
+81.0
+
+? square(square(4))
+256.0
+
+? def sumOfSquares(x: double, y: double) = square(x) + square(y)
+def sumOfSquares(x: double, y: double): double
+\end{verbatim}
+
+Function parameters follow the function name and are always enclosed
+in parentheses.  Every parameter comes with a type, which is indicated
+following the parameter name and a colon. At the present time, we only
+need basic numeric types such as the type \verb@double@ of double
+precision numbers. These are written as in Java.
+
+Functions with parameters are evaluated analogously to operators in
+expressions. First, the arguments of the function are evaluated (in
+left-to-right order). Then, the function application is replaced by
+the function's right hand side, and at the same time all formal
+parameters of the function are replaced by their corresponding actual
+arguments.
+
+\example\ 
+ 
+\begin{verbatim}
+    \=sumOfSquares(3, 2+2)
+->  \>sumOfSquares(3, 4)
+->  \>square(3) + square(4)
+->  \>3 * 3 + square(4)
+->  \>9 + square(4)
+->  \>9 + 4 * 4
+->  \>9 + 16
+->  \>25
+\end{verbatim}
+
+The example shows that the interpreter reduces function arguments to
+values before rewriting the function application.  One could instead
+have chosen to apply the function to unreduced arguments. This would
+have yielded the following reduction sequence:
+\begin{verbatim}
+    \= sumOfSquares(3, 2+2)
+->  \>square(3) + square(2+2)
+->  \>3 * 3 + square(2+2)
+->  \>9 + square(2+2)
+->  \>9 + (2+2) * (2+2)
+->  \>9 + 4 * (2+2)
+->  \>9 + 4 * 4
+->  \>9 + 16
+->  \>25
+\end{verbatim}
+
+The second evaluation order is known as \emph{call-by-name},
+whereas the first one is known as \emph{call-by-value}.  For
+expressions that use only pure functions and that therefore can be
+reduced with the substitution model, both schemes yield the same final
+values.  
+
+Call-by-value has the advantage that it avoids repeated evaluation of
+arguments. Call-by-name has the advantage that it avoids evaluation of
+arguments when the parameter is not used at all by the function.
+Call-by-value is usually more efficient than call-by-name, but a
+call-by-value evaluation might loop where a call-by-name evaluation
+would terminate. Consider:
+\begin{verbatim}
+? def loop: int = loop
+def loop: int
+
+? def first(x: int, y: int) = x
+def first(x: int, y: int): int
+\end{verbatim}
+Then \verb@first(1, loop)@ reduces with call-by-name to \verb@1@,
+whereas the same term reduces with call-by-value repeatedly to itself,
+hence evaluation does not terminate.
+\begin{verbatim}
+    \=first(1, loop)
+->  \>first(1, loop)
+->  \>first(1, loop)
+->  \>...
+\end{verbatim}
+Scala uses call-by-value by default, but it switches to call-by-name evaluation
+if the parameter is preceded by \verb@def@.
+
+\example\ 
+ 
+\begin{verbatim}
+? def constOne(x: int, def y: int) = 1
+constOne(x: int, def y: int): int
+
+? constOne(1, loop)
+1
+
+? constOne(loop, 2)                    // gives an infinite loop.
+^C
+\end{verbatim}
+
+\section{Conditional Expressions}
+
+Scala's \verb@if-else@ lets one choose between two alternatives.  Its
+syntax is like Java's \verb@if-else@. But where Java's \verb@if-else@
+can be used only as an alternative of statements, Scala allows the
+same syntax to choose between two expressions. Scala's \verb@if-else@
+hence also replaces Java's conditional expression \verb@ ... ? ... :
+...@.
+
+\example\ 
+
+\begin{verbatim}
+? def abs(x: double) = if (x >= 0) x else -x
+abs(x: double): double
+\end{verbatim}
+Scala's boolean expressions are similar to Java's; they are formed
+from the constants
+\verb@true@ and
+\verb@false@, comparison operators, boolean negation \verb@!@ and the
+boolean operators \verb@&&@ and \verb@||@.
+
+\section{\label{sec:sqrt}Example: Square Roots by Newton's Method}
+
+We now illustrate the language elements introduced so far in the
+construction of a more interesting program. The task is to write a
+function
+\begin{verbatim}
+def sqrt(x: double): double = ... 
+\end{verbatim}
+which computes the square root of \verb@x@.
+
+A common way to compute square roots is by Newton's method of
+successive approximations. One starts with an initial guess \verb@y@
+(say: \verb@y = 1@). One then repeatedly improves the current guess
+\verb@y@ by taking the average of \verb@y@ and \verb@x/y@.
+As an example, the next three columns indicate the guess \verb@y@, the
+quotient \verb@x/y@, and their average for the first approximations of
+$\sqrt 2$. 
+\begin{verbatim}
+1               \=2/1 = 2               \=1.5
+1.5		\>2/1.5 = 1.3333        \>1.4167
+1.4167		\>2/1.4167 = 1.4118	\>1.4142
+1.4142		\>...			\>...
+
+y               \>x/y                   \>(y + x/y)/2
+\end{verbatim}
+One can implement this algorithm in Scala by a set of small functions,
+which each represent one of the elements of the algorithm.  
+
+We first define a function for iterating from a guess to the result:
+\begin{verbatim}
+def sqrtIter(guess: double, x: double): double = 
+  if (isGoodEnough(guess, x)) guess
+  else sqrtIter(improve(guess, x), x);
+\end{verbatim}
+Note that \verb@sqrtIter@ calls itself recursively.  Loops in
+imperative programs can always be modelled by recursion in functional
+programs. 
+
+Note also that the definition of \verb@sqrtIter@ contains a return
+type, which follows the parameter section. Such return types are
+mandatory for recursive functions. For a non-recursive function, the
+return type is optional; if it is missing the type checker will
+compute it from the type of the function's right-hand side. However,
+even for non-recursive functions it is often a good idea to include a
+return type for better documentation.
+
+As a second step, we define the two functions called by
+\verb@sqrtIter@: a function to \verb@improve@ the guess and a
+termination test \verb@isGoodEnough@. Here's their definition.
+\begin{verbatim}
+def improve(guess: double, x: double) = 
+  (guess + x / guess) / 2;
+
+def isGoodEnough(guess: double, x: double) = 
+  abs(square(guess) - x) < 0.001;
+\end{verbatim}
+
+Finally, the \verb@sqrt@ function itself is defined by an aplication
+of \verb@sqrtIter@.
+\begin{verbatim}
+def sqrt(x: double) = sqrtIter(1.0, x);
+\end{verbatim}
+
+\exercise The \verb@isGoodEnough@ test is not very precise for small numbers
+and might lead to non-termination for very large ones (why?).
+Design a different version \verb@isGoodEnough@ which does not have these problems.
+
+\exercise Trace the execution of the \verb@sqrt(4)@ expression.
+
+\section{Nested Functions}
+
+The functional programming style encourages the construction of many
+small helper functions. In the last example, the implementation
+of \verb@sqrt@ made use of the helper functions
+\verb@sqrtIter@, \verb@improve@ and
+\verb@isGoodEnough@. The names of these functions 
+are relevant only for the implementation of
+\verb@sqrt@. We normally do not want users of \verb@sqrt@ to acess these functions
+directly.
+
+We can enforce this (and avoid name-space pollution) by including
+the helper functions within the calling function itself:
+\begin{verbatim}
+def sqrt(x: double) = {
+  def sqrtIter(guess: double, x: double): double = 
+    if (isGoodEnough(guess, x)) guess
+    else sqrtIter(improve(guess, x), x);
+
+  def improve(guess: double, x: double) = 
+    (guess + x / guess) / 2;
+
+  def isGoodEnough(guess: double, x: double) = 
+    abs(square(guess) - x) < 0.001;
+
+  sqrtIter(1.0, x)
+}
+\end{verbatim}
+In this program, the braces \verb@{ ... }@ enclose a {\em block}.
+Blocks in Scala are themselves expressions.  Every block ends in a
+result expression which defines its value.  The result expression may
+be preceded by auxiliary definitions, which are visible only in the
+block itself.
+
+Every definition in a block must be followed by a semicolon, which
+separates this definition from subsequent definitions or the result
+expression. However, a semicolon is inserted implicitly if the
+definition ends in a right brace and is followed by a new line.
+Therefore, the following are all legal:
+\begin{verbatim}
+def f(x) = x + 1; /* `;' mandatory */
+f(1) + f(2)
+
+def g(x) = {x + 1}
+g(1) + g(2)
+
+def h(x) = {x + 1};  /* `;' mandatory */  h(1) + h(2)
+\end{verbatim}
+Scala uses the usual block-structured scoping rules. A name defined in
+some outer block is visible also in some inner block, provided it is
+not redefined there. This rule permits us to simplify our
+\verb@sqrt@ example. We need not pass \verb@x@ around as an additional parameter of
+the nested functions, since it is always visible in them as a
+parameter of the outer function \verb@sqrt@. Here is the simplified code:
+\begin{verbatim}
+def sqrt(x: double) = {
+  def sqrtIter(guess: double): double = 
+    if (isGoodEnough(guess)) guess
+    else sqrtIter(improve(guess));
+
+  def improve(guess: double) = 
+    (guess + x / guess) / 2;
+
+  def isGoodEnough(guess: double) = 
+    abs(square(guess) - x) < 0.001;
+
+  sqrtIter(1.0)
+}
+\end{verbatim}
+
+\section{Tail Recursion}
+
+Consider the following function to compute the greatest common divisor
+of two given numbers.
+
+\begin{verbatim}
+def gcd(a: int, b: int): int = if (b == 0) a else gcd(b, a % b)
+\end{verbatim}
+
+Using our substitution model of function evaluation, 
+\verb@gcd(14, 21)@ evaluates as follows:
+
+\begin{verbatim}
+        \=gcd(14, 21)  
+->      \>if (21 == 0) 14 else gcd(21, 14 % 21)
+->      \>if (false) 14 else gcd(21, 14 % 21)
+->      \>gcd(21, 14 % 21)
+->      \>gcd(21, 14)
+->      \>if (14 == 0) 21 else gcd(14, 21 % 14)
+-> ->   \>gcd(14, 21 % 14)
+->      \>gcd(14, 7)
+->      \>if (7 == 0) 14 else gcd(7, 14 % 7)
+-> ->   \>gcd(7, 14 % 7)
+->      \>gcd(7, 0)
+->      \>if (0 == 0) 7 else gcd(0, 7 % 0)
+-> ->   \>7
+\end{verbatim}
+
+Contrast this with the evaluation of another recursive function, 
+\verb@factorial@:
+
+\begin{verbatim}
+def factorial(n: int): int = if (n == 0) 1 else n * factorial(n - 1)
+\end{verbatim}
+
+The application \verb@factorial(5)@ rewrites as follows:
+\begin{verbatim}
+        \=factorial(5)
+->      \>if (5 == 0) 1 else 5 * factorial(5 - 1)
+->      \>5 * factorial(5 - 1)
+->      \>5 * factorial(4)
+-> ... -> \>5 * (4 * factorial(3))
+-> ... -> \>5 * (4 * (3 * factorial(2)))
+-> ... -> \>5 * (4 * (3 * (2 * factorial(1))))
+-> ... -> \>5 * (4 * (3 * (2 * (1 * factorial(0))))
+-> ... -> \>5 * (4 * (3 * (2 * (1 * 1))))
+-> ... -> \>120
+
+\end{verbatim}
+There is an important difference between the two rewrite sequences:
+The terms in the rewrite sequence of \verb@gcd@ have again and again
+the same form. As evaluation proceeds, their size is bounded by a
+constant. By contrast, in the evaluation of factorial we get longer
+and longer chains of operands which are then multiplied in the last
+part of the evaluation sequence.
+
+Even though actual implementations of Scala do not work by rewriting
+terms, they nevertheless should have the same space behavior as in the
+rewrite sequences. In the implementation of \verb@gcd@, one notes that
+the recursive call to \verb@gcd@ is the last action performed in the
+evaluation of its body. One also says that \verb@gcd@ is
+``tail-recursive''. The final call in a tail-recursive function can be
+implemented by a jump back to the beginning of that function. The
+arguments of that call can overwrite the parameters of the current
+instantiation of \verb@gcd@, so that no new stack space is needed.
+Hence, tail recursive functions are iterative processes, which can be
+executed in constant space.
+
+By contrast, the recursive call in \verb@factorial@ is followed by a
+multiplication.  Hence, a new stack frame is allocated for the
+recursive instance of factorial, and is decallocated after that
+instance has finished. The given formulation of the factorial function
+is not tail-recursive; it needs space proportional to its input
+parameter for its execution.
+
+More generally, if the last action of a function is a call to another
+(possibly the same) function, only a single stack frame is needed for
+both functions. Such calls are called ``tail calls''. In principle,
+tail calls can always re-use the stack frame of the calling function.
+However, some run-time environments (such as the Java VM) lack the
+primititives to make stack frame re-use for tail calls efficient.  A
+production quality Scala implementation is therefore only required to re-use
+the stack frame of a directly tail-recursive function whose last
+action is a call to itself.  Other tail calls might be optimized also,
+but one should not rely on this across
+implementations\footnote{The current Scala implementation is not yet
+production quality; it never optimizes tail calls, not even directly
+recursive ones}.
+
+\exercise Design a tail-recursive version of
+\verb@factorial@.
+
+\chapter{\label{chap:first-class-funs}First-Class Functions}
+
+A function in Scala is a ``first-class value''. Like any other value,
+it may be passed as a parameter or returned as a result.  Functions
+which take other functions as parameters or return them as results are
+called {\em higher-order} functions. This chapter introduces
+higher-order functions and shows how they provide a flexible mechanism
+for program composition.
+
+As a motivating example, consider the following three related tasks:
+\begin{enumerate}
+\item
+Write a function to sum all integers between two given numbers \verb@a@ and \verb@b@:
+\begin{verbatim}
+def sumInts(a: int, b: int): double =
+  if (a > b) 0 else a + sumInts(a + 1, b)
+\end{verbatim}
+\item 
+Write a function to sum the cubes of all integers between two given numbers 
+\verb@a@ and \verb@b@:
+\begin{verbatim}
+def cube(x: int): double = x * x * x
+def sumCubes(a: int, b: int): double =
+  if (a > b) 0 else cube(a) + sumSqrts(a + 1, b)
+\end{verbatim}
+\item
+Write a function to sum the reciprocals of all integers between two given numbers 
+\verb@a@ and \verb@b@:
+\begin{verbatim}
+def sumReciprocals(a: int, b: int): double =
+  if (a > b) 0 else 1.0 / a + sumReciprocals(a + 1, b)
+\end{verbatim}
+\end{enumerate}
+These functions are all instances of
+\(\sum^b_a f(n)\) for different values of $f$. 
+We can factor out the common pattern by defining a function \verb@sum@:
+\begin{verbatim}
+def sum(f: int => double, a: int, b: int): double =
+  if (a > b) 0 else f(a) + sum(f, a + 1, b)
+\end{verbatim}
+The type \verb@int => double@ is the type of functions that
+take arguments of type \verb@int@ and return results of type
+\verb@double@. So \verb@sum@ is a function which takes another function as 
+a parameter. In other words, \verb@sum@ is a {\em higher-order}
+function.
+
+Using \verb@sum@, we can formulate the three summing functions as
+follows.
+\begin{verbatim}
+def sumInts(a: int, b: int): double = sum(id, a, b);
+def sumCubes(a: int, b: int): double = sum(cube, a, b);
+def sumReciprocals(a: int, b: int): double = sum(reciprocal, a, b);
+\end{verbatim}
+where
+\begin{verbatim}
+def id(x: int): double = x;
+def cube(x: int): double = x * x * x;
+def reciprocal(x: int): double = 1.0/x;
+\end{verbatim}
+
+\section{Anonymous Functions}
+
+Parameterization by functions tends to create many small functions. In
+the previous example, we defined \verb@id@, \verb@cube@ and
+\verb@reciprocal@ as separate functions, so that they could be 
+passed as arguments to \verb@sum@.
+
+Instead of using named function definitions for these small argument
+functions, we can formulate them in a shorter way as {\em anonymous
+functions}. An anonymous function is an expression that evaluates to a
+function; the function is defined without giving it a name. As an
+example consider the anonymous reciprocal function:
+\begin{verbatim}
+  x: int => 1.0/x
+\end{verbatim}
+The part before the arrow `\verb@=>@' is the parameter of the function,
+whereas the part following the `\verb@=>@' is its body. If there are
+several parameters, we need to enclose them in parentheses. For
+instance, here is an anonymous function which multiples its two arguments.
+\begin{verbatim}
+  (x: double, y: double) => x * y
+\end{verbatim}
+Using anonymous functions, we can reformulate the three summation
+functions without named auxiliary functions:
+\begin{verbatim}
+def sumInts(a: int, b: int): double = sum(x: int => x, a, b);
+def sumCubes(a: int, b: int): double = sum(x: int => x * x * x, a, b);
+def sumReciprocals(a: int, b: int): double = sum(x: int => 1.0/x, a, b);
+\end{verbatim}
+Often, the Scala compiler can deduce the parameter type(s) from the
+context of the anonymous function. In this case, they can be omitted.
+For instance, in the case of \verb@sumInts@, \verb@sumCubes@ and
+verb@sumReciprocals@, one knows from the type of
+\verb@sum@ that the first parameter must be a function of type
+\verb@int => double@.  Hence, the parameter type \verb@int@ is
+redundant and may be omitted:
+\begin{verbatim}
+def sumInts(a: int, b: int): double = sum(x => x, a, b);
+def sumCubes(a: int, b: int): double = sum(x => x * x * x, a, b);
+def sumReciprocals(a: int, b: int): double = sum(x => 1.0/x, a, b);
+\end{verbatim}
+
+Generally, the Scala term
+\verb@(x$_1$: T$_1$, ..., x$_n$: T$_n$) => E@ 
+defines a function which maps its parameters
+\verb@x$_1$, ..., x$_n$@ to the result of the expression \verb@E@
+(where \verb@E@ may refer to \verb@x$_1$, ..., x$_n$@).  Anonymous
+functions are not essential language elements of Scala, as they can
+always be expressed in terms of named functions. Indeed, the 
+anonymous function
+\verb@(x$_1$: T$_1$, ..., x$_n$: T$_n$) => E@ 
+is equivalent to the block
+\begin{verbatim}
+{ def f (x$_1$: T$_1$, ..., x$_n$: T$_n$) = E ; f }
+\end{verbatim}
+where \verb@f@ is fresh name which is used nowhere else in the program.
+We also say, anonymous functions are ``syntactic sugar''.
+
+\section{Currying}
+
+The latest formulation of the three summing function is already quite
+compact. But we can do even better. Note that
+\verb@a@ and \verb@b@ appear as parameters and arguments of every function
+but they do not seem to take part in interesting combinations. Is
+there a way to get rid of them?
+
+Let's try to rewrite \verb@sum@ so that it does not take the bounds
+\verb@a@ and \verb@b@ as parameters:
+\begin{verbatim}
+def sum(f: int => double) = {
+  def sumF(a: int, b: int): double = 
+    if (a > b) 0 else f(a) + sumF(a + 1, b);
+  sumF
+}
+\end{verbatim}
+In this formulation, \verb@sum@ is a function which returns another
+function, namely the specialized summing function \verb@sumF@. This
+latter function does all the work; it takes the bounds \verb@a@ and
+\verb@b@ as parameters, applies \verb@sum@'s function parameter \verb@f@ to all
+integers between them, and sums up the results. 
+
+Using this new formulation of \verb@sum@, we can now define:
+\begin{verbatim}
+def sumInts = sum(x => x);
+def sumCubes = sum(x => x * x * x);
+def sumReciprocals = sum(x => 1.0/x);
+\end{verbatim}
+Or, equivalently, with value definitions:
+\begin{verbatim}
+val sumInts = sum(x => x);
+val sumCubes = sum(x => x * x * x);
+val sumReciprocals = sum(x => 1.0/x);
+\end{verbatim}
+These functions can be applied like other functions. For instance,
+\begin{verbatim}
+? sumCubes(1, 10) + sumReciprocals (10, 20)
+3025.7687714031754
+\end{verbatim}
+How are function-returning functions applied? As an example, in the expression
+\begin{verbatim}
+sum (x => x * x * x) (1, 10) ,
+\end{verbatim}
+the function \verb@sum@ is applied to the cubing function 
+\verb@(x => x * x * x)@. The resulting function is then 
+applied to the second argument list, \verb@(1, 10)@.
+
+This notation is possible because function application associates to the left.
+That is, if $args_1$ and $args_2$ are argument lists, then 
+\bda{lcl}
+f(args_1)(args_2) & \ \ \mbox{is equivalent to}\ \ & (f(args_1))(args_2)
+\eda
+In our example, \verb@sum(x => x * x * x)(1, 10)@ is equivalent to 
+\verb@(sum(x => x * x * x))(1, 10)@.
+
+The style of function-returning functions is so useful that Scala has
+special syntax for it. For instance, the next definition of \verb@sum@
+is equivalent to the previous one, but is shorter:
+\begin{verbatim}
+def sum(f: int => double)(a: int, b: int): double =
+  if (a > b) 0 else f(a) + sum(f)(a + 1, b)
+\end{verbatim}
+Generally, a curried function definition 
+\begin{verbatim}
+def f (args$_1$) ... (args$_n$) = E
+\end{verbatim}
+where $n > 1$ expands to
+\begin{verbatim}
+def f (args$_1$) ... (args$_{n-1}$) = { def g (args$_n$) = E ; g }
+\end{verbatim}
+where \verb@g@ is a fresh identifier. Or, shorter, using an anonymous function:
+\begin{verbatim}
+def f (args$_1$) ... (args$_{n-1}$) = ( args$_n$ ) => E .
+\end{verbatim}
+Performing this step $n$ times yields that
+\begin{verbatim}
+def f (args$_1$) ... (args$_n$) = E
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+def f = (args$_1$) => ... => (args$_n$) => E .
+\end{verbatim}
+Or, equivalently, using a value definition:
+\begin{verbatim}
+val f = (args$_1$) => ... => (args$_n$) => E .
+\end{verbatim}
+This style of function definition and application is called {\em
+currying} after its promoter, Haskell B.\ Curry, a logician of the
+20th century, even though the idea goes back further to Moses
+Sch\"onfinkel and Gottlob Frege.
+
+The type of a function-returning function is expressed analogously to
+its parameter list. Taking the last formulation of \verb@sum@ as an example,
+the type of \verb@sum@ is \verb@(int => double) => (int, int) => double@.
+This is possible because function types associate to the right. I.e.
+\begin{verbatim}
+T$_1$ => T$_2$ => T$_3$       \=$\mbox{is equivalent to}$     \=T$_1$ => (T$_2$ => T$_3$) .
+\end{verbatim}
+
+\subsection*{Exercises:}
+
+1. The \verb@sum@ function uses a linear recursion. Can you write a
+tail-recursive one by filling in the ??'s?
+
+\begin{verbatim}
+def sum(f: int => double)(a: int, b: int): double = {
+  def iter (a, result) = {
+    if (??) ??
+    else iter (??, ??)
+  }
+  iter (??, ??)
+}
+\end{verbatim}
+
+2. Write a function \verb@product@ that computes the product of the
+values of functions at points over a given range.
+
+3. Write \verb@factorial@ in terms of \verb@product@.
+
+4. Can you write an even more general function which generalizes both
+\verb@sum@ and \verb@product@?
+
+\section{Example: Finding Fixed Points of Functions}
+
+A number \verb@x@ is called a {\em fixed point} of a function \verb@f@ if
+\begin{verbatim}
+f(x) = x .
+\end{verbatim}
+For some functions \verb@f@ we can locate the fixed point by beginning
+with an initial guess and then applying \verb@f@ repeatedly, until the
+value does not change anymore (or the change is within a small
+tolerance). This is possible if the sequence
+\begin{verbatim}
+x, f(x), f(f(x)), f(f(f(x))), ...
+\end{verbatim}
+converges to fixed point of $f$. This idea is captured in
+the following ``fixed-point finding function'':
+\begin{verbatim}
+val tolerance = 0.0001;
+def isCloseEnough(x: double, y: double) = abs((x - y) / x) < tolerance;
+def fixedPoint(f: double => double)(firstGuess: double) = {
+  def iterate(guess: double): double = {
+    val next = f(guess);
+    if (isCloseEnough(guess, next)) next
+    else iterate(next)
+  }
+  iterate(firstGuess)
+}
+\end{verbatim}
+We now apply this idea in a reformulation of the square root function.
+Let's start with a specification of \verb@sqrt@:
+\begin{verbatim}
+sqrt(x)  \==  $\mbox{the {\sl y} such that}$  y * y = x
+         \>=  $\mbox{the {\sl y} such that}$  y = x / y
+\end{verbatim}
+Hence, \verb@sqrt(x)@ is a fixed point of the function \verb@y => x / y@.
+This suggests that \verb@sqrt(x)@ can be computed by fixed point iteration:
+\begin{verbatim}
+def sqrt(x: double) = fixedPoint(y => x / y)(1.0)
+\end{verbatim}
+Unfortunately, this does not converge. Let's instrument the fixed point
+function with a print statement which keeps track of the current
+\verb@guess@ value:
+\begin{verbatim}
+def fixedPoint(f: double => double)(firstGuess: double) = {
+  def iterate(guess: double): double = {
+    val next = f(guess);
+    System.out.println(next);
+    if (isCloseEnough(guess, next)) next
+    else iterate(next)
+  }
+  iterate(firstGuess)
+}
+\end{verbatim}
+Then, \verb@sqrt(2)@ yields:
+\begin{verbatim}
+  2.0
+  1.0
+  2.0
+  1.0
+  2.0
+  ...
+\end{verbatim}
+One way to control such oscillations is to prevent the guess from changing too much. 
+This can be achieved by {\em averaging} successive values of the original sequence:
+\begin{verbatim}
+> def sqrt(x: double) = fixedPoint(y => (y + x/y) / 2)(1.0)
+> sqrt(2.0)
+  1.5
+  1.4166666666666665
+  1.4142156862745097
+  1.4142135623746899
+  1.4142135623746899
+\end{verbatim}
+In fact, expanding the \verb@fixedPoint@ function yields exactly our 
+previous definition of fixed point from Section~\ref{sec:sqrt}.
+
+The previous examples showed that the expressive power of a language
+is considerably enhanced if functions can be passed as arguments.  The
+next example shows that functions which return functions can also be
+very useful.
+
+Consider again fixed point iterations. We started with the observation
+that $\sqrt(x)$ is a fixed point of the function \verb@y => x / y@.
+Then we made the iteration converge by averaging successive values.
+This technique of {\em average dampening} is so general that it
+can be wrapped in another function.
+\begin{verbatim}
+def averageDamp(f: double => double)(x: double) = (x + f(x)) / 2
+\end{verbatim}
+Using \verb@averageDamp@, we can reformulate the square root function
+as follows.
+\begin{verbatim}
+def sqrt(x: double) = fixedPoint(averageDamp(y => x/y))(1.0)
+\end{verbatim}
+This expresses the elements of the algorithm as clearly as possible.
+
+\exercise Write a function for cube roots using \verb@fixedPoint@ and 
+\verb@averageDamp@.
+
+\section{Summary}
+
+We have seen in the previous chapter that functions are essential
+abstractions, because they permit us to introduce general methods of
+computing as explicit, named elements in our programming language.
+The current chapter has shown that these abstractions can be combined by
+higher-order functions to create further abstractions.  As
+programmers, we should look out for opportunities to abstract and to
+reuse. The highest possible level of abstraction is not always the
+best, but it is important to know abstraction techniques, so that one
+can use abstractions where appropriate.
+
+\section{Language Elements Seen So Far}
+
+Chapters~\ref{chap:simple-funs} and \ref{chap:first-class-funs} have
+covered Scala's language elements to express expressions and types
+comprising of primitive data and functions.  The context-free syntax
+of these language elements is given below in extended Backus-Naur
+form, where `\verb@|@' denotes alternatives, \verb@[...]@ denotes
+option (0 or 1 occurrences), and \verb@{...}@ denotes repetition (0 or
+more occurrences).
+
+\subsection*{Characters}
+
+Scala programs are sequences of (Unicode) characters. We distinguish the
+following character sets:
+\begin{itemize}
+\item
+whitespace, such as `\verb@ @', tabulator, or newline characters,
+\item
+letters `\verb@a@' to `\verb@z@', `\verb@A@' to `\verb@Z@',
+\item
+digits \verb@`0'@ to `\verb@9@',
+\item
+the delimiter characters
+\begin{verbatim}
+.    ,    ;    (    )    {    }    [    ]    \    "    '
+\end{verbatim}
+\item
+operator characters, such as `\verb@#@' `\verb@+@',
+`\verb@:@'. Essentially, these are printable characters which are
+in none of the character sets above.
+\end{itemize}
+
+\subsection*{Lexemes:}
+
+\begin{verbatim}
+ident      ::=   letter {letter | digit} | operator { operator } | ident `_' ident
+literal    ::=   $\mbox{``as in Java''}$
+\end{verbatim}
+
+Literals are as in Java. They define numbers, characters, strings, or
+boolean values.  Examples of literals as \verb@0@, \verb@1.0d10@, \verb@'x'@,
+\verb@"he said \"hi!\""@, or \verb@true@.
+
+Identifiers can be of two forms. They either start with a letter,
+which is followed by a (possibly empty) sequence of letters or
+symbols, or they start with an operator character, which is followed
+by a (possibly empty) sequence of operator characters.  Both forms of
+identifiers may contain underscore characters `\verb@_@'. Furthermore,
+an underscore character may be followed by either sort of
+identifier. Hence, the following are all legal identifiers:
+\begin{verbatim}
+x     Room10a     +     --     foldl_:     +_vector
+\end{verbatim}
+It follows from this rule that subsequent operator-identifiers need to
+be separated by whitespace. For instance, the input
+\verb@x+-y@ is parsed as the three token sequence \verb@x@, \verb@+-@,
+\verb@y@. If we want to express the sum of \verb@x@ with the
+negated value of \verb@y@, we need to add at least one space,
+e.g. \verb@x+ -y@.
+
+The `\verb@\$@' character is reserved for compiler-generated
+identifiers; it should not be used in source programs. %$
+
+The following are reserved words, they may not be used as identifiers:
+\begin{verbatim}
+abstract    case    class    def    do    else   
+extends    false    final    for    if    import    
+module    new    null    override    package    
+private    protected    super    this    trait
+true    type    val    var    with    yield
+\end{verbatim}
+
+\subsection*{Types:}
+
+\begin{verbatim}
+Type           \= = SimpleType | FunctionType
+FunctionType \> = SimpleType `=>' Type | `(' [Types] `)' `=>' Type
+SimpleType   \> = byte | short | char | int | long | double | float | boolean | unit | String
+Types        \> = Type {`,' Type}
+\end{verbatim}
+
+Types can be:
+\begin{itemize}
+\item number types \verb@byte@, \verb@short@, \verb@char@, \verb@int@, \verb@long@, \verb@float@ and \verb@double@ (these are as in Java),
+\item the type \verb@boolean@ with values \verb@true@ and \verb@false@,
+\item the type \verb@unit@ with the only value \verb@{}@,
+\item the type \verb@String@,
+\item function types such as \verb@(int, int) => int@ or \verb@String => Int => String@. 
+\end{itemize}
+
+\subsection*{Expressions:}
+
+\begin{verbatim}
+Expr               \= = InfixExpr | FunctionExpr | if `(' Expr `)' Expr else Expr
+InfixExpr   \> = PrefixExpr | InfixExpr Operator InfixExpr
+Operator    \> = ident
+PrefixExpr  \> = [`+' | `-' | `!' | `~' ] SimpleExpr
+SimpleExpr  \> = ident | literal | SimpleExpr `.' ident | Block
+FunctionExpr\> = Bindings `=> Expr
+Bindings    \> = ident [`:' SimpleType] | `(' [Binding {`,' Binding}] `)'
+Binding     \> = ident [`:' Type]
+Block       \> = `{' {Def `;'} Expr `}'
+\end{verbatim}
+
+Expressions can be:
+\begin{itemize}
+\item
+identifiers such as \verb@x@, \verb@isGoodEnough@, \verb@*@, or \verb@+-@,
+\item
+literals, such as \verb@0@, \verb@1.0@, or \verb@"abc"@,
+\item
+field and method selections, such as \verb@System.out.println@,
+\item
+function applications, such as \verb@sqrt(x)@, 
+\item
+operator applications, such as \verb@-x@ or \verb@y + x@,
+\item
+conditionals, such as \verb@if (x < 0) -x else x@,
+\item
+blocks, such as \verb@{ val x = abs(y) ; x * 2 }@,
+\item
+anonymous functions, such as \verb@x => x + 1@ or \verb@(x: int, y: int) => x + y@.
+\end{itemize}
+
+\subsection*{Definitions:}
+
+\begin{verbatim}
+Def                \= = \=FunDef  |  ValDef
+FunDef       \> = \>def ident {`(' [Parameters] `)'} [`:' Type] `=' Expr
+ValDef       \> = \>val ident [`:' Type] `=' Expr
+Parameters   \> = \>Parameter {`,' Parameter}
+Parameter    \> = \>[def] ident `:' Type
+\end{verbatim}
+Definitions can be:
+\begin{itemize}
+\item
+function definitions such as \verb@def square(x: int) = x * x@, 
+\item
+value definitions such as \verb@val y = square(2)@.
+\end{itemize}
+\bibliography{master}
+\end{document}
 
 \chapter{Classes and Objects}
 \label{chap:classes}
 
 Scala does not have a built-in type of rational numbers, but it is
-easy to define one, using a class. Here's a possible
-implementation.
+easy to define one, using a class. Here's a possible implementation.
 
 \begin{verbatim}
-class Rational(n: Int, d: Int) with {
-  private def gcd(x: Int, y: Int): Int = {
+class Rational(n: int, d: int) with {
+  private def gcd(x: int, y: int): int = {
     if (x == 0) y
     else if (x < 0) gcd(-x, y)
     else if (y < 0) -gcd(x, -y)
@@ -396,8 +1339,8 @@ class Rational(n: Int, d: Int) with {
   }
   private val g = gcd(n, d);
 
-  val numer: Int = n/g;
-  val denom: Int = d/g;
+  val numer: int = n/g;
+  val denom: int = d/g;
   def +(that: Rational) =
     new Rational(numer * that.denom + that.numer * denom, denom * that.denom);
   def -(that: Rational) =
@@ -447,7 +1390,7 @@ If a class does not mention a superclass in its definition, the root
 class \verb@Object@ is implicitly assumed. For instance, class
 \verb@Rational@ could equivalently be defined as
 \begin{verbatim}
-class Rational(n: Int, d: Int) extends Object with {
+class Rational(n: int, d: int) extends Object with {
   ... // as before
 }
 \end{verbatim}
@@ -467,7 +1410,7 @@ forms a string consisting of the object's class name and a number. It
 makes sense to redefine this method for objects that are rational
 numbers in order to get a more useful behavior:
 \begin{verbatim}
-class Rational(n: Int, d: Int) extends Object with {
+class Rational(n: int, d: int) extends Object with {
   ... // as before
   override def toString() = numer + "/" + denom;
 }
@@ -476,7 +1419,7 @@ Note that, unlike in Java, redefining definitions need to be preceded
 by an \verb@override@ modifier.
 
 If class $A$ extends class $B$, then objects of type $A$ may be used
-whereever objects of type $B$ are expected. We say in this case that
+wherever objects of type $B$ are expected. We say in this case that
 type $A$ {\em conforms} to type $B$.  For instance, \verb@Rational@
 conforms to \verb@Object@, so it is legal to assign a \verb@Rational@
 value to a variable of type \verb@Object@:
@@ -496,7 +1439,7 @@ Also unlike in Java, methods in Scala do not necessarily take a
 parameter list. An example is \verb@square@; the method is invoked by
 simply mentioning its name. For instance:
 \begin{verbatim}
-class Rational(n: Int, d: Int) extends Object with {
+class Rational(n: int, d: int) extends Object with {
   ... // as before
   def square = Rational(numer*numer, denom*denom);
 }
@@ -528,7 +1471,7 @@ comparison operators \verb@<, >, <=, >=@.
 %\end{verbatim}
 \begin{verbatim}
 abstract class Ord with {
-  def <(that: this): Boolean;
+  def <(that: this): boolean;
   def <=(that: this)  =  this < that || this == that;
   def >(that: this)  =  that < this;
   def >=(that: this)  =  that <= this;
@@ -553,11 +1496,11 @@ compatible with the class being defined (\verb@Ord@ in this case).
 We can now define a class of \verb@Rational@ numbers that
 support comparison operators.
 \begin{verbatim}
-final class OrderedRational(n: Int, d: Int)
+final class OrderedRational(n: int, d: int)
  extends Rational(n, d) with Ord with {
   override def ==(that: OrderedRational) =
     numer == that.numer && denom == that.denom;
-  def <(that: OrderedRational): Boolean =
+  def <(that: OrderedRational): boolean =
     numer * that.denom < that.numer * denom;
 }
 \end{verbatim}
@@ -568,7 +1511,7 @@ addition, it inherits all members of class \verb@Rational@ and all
 non-abstract members of class \verb@Ord@. The implementations of
 \verb@==@ and \verb@<@ replace the definition of \verb@==@ in class
 \verb@Object@ and the abstract declaration of \verb@<@ in class
-\verb@Ord@. The other inherited comparsion methods then refer to this
+\verb@Ord@. The other inherited comparison methods then refer to this
 implementation in their body.
 
 The clause ``\verb@Rational(d, d) with Ord@'' is an instance of {\em
@@ -613,10 +1556,10 @@ type parameters with iterators as an example. An iterator is an object
 which traverses a sequence of values, using two abstract methods.
 \begin{verbatim}
 abstract class Iterator[a] with {
-  def hasNext: Boolean;
+  def hasNext: boolean;
   def next: a;
 \end{verbatim}
-Method \verb@next@ returns succesive elements.  Method \verb@hasNext@
+Method \verb@next@ returns successive elements.  Method \verb@hasNext@
 indicates whether there are still more elements to be returned by
 \verb@next@. The type of elements returned by an iterator is
 arbitrary. We express that by giving the class \verb@Iterator@ the
@@ -626,9 +1569,9 @@ parentheses.  Iterators also support other methods, which are
 explained in the following.
 
 Method \verb@foreach@ applies a procedure (i.e. a function
-returning \verb@Unit@ to each element returned by the iterator:
+returning \verb@unit@ to each element returned by the iterator:
 \begin{verbatim}
-  def foreach(f: (a)Unit): Unit =
+  def foreach(f: a => unit): unit =
     while (hasNext) { f(next) }
 \end{verbatim}
 
@@ -643,7 +1586,7 @@ given iterator \verb@it@ after the current iterator has finished.
 The terms \verb@outer.next@ and \verb@outer.hasNext@ in the definition
 of \verb@append@ call the corresponding methods as they are defined in
 the enclosing \verb@Iterator@ class. Generally, an
-\verb@outer@ prefix in a selection indicates an identifer that is
+\verb@outer@ prefix in a selection indicates an identifier that is
 visible immediately outside the current class or template. If the
 \verb@outer@ prefix would have been missing,
 \verb@hasNext@ and \verb@next@ would have
@@ -653,25 +1596,25 @@ constructed by \verb@append@, which is not what we want.
 Method \verb@filter@ constructs an iterator which returns all elements
 of the original iterator that satisfy a criterion \verb@p@.
 \begin{verbatim}
-  def filter(p: (a)Boolean) = new Iterator[a] with {
+  def filter(p: a => boolean) = new Iterator[a] with {
     private class Cell[T](elem_: T) with { def elem = elem_; }
     private var head: Cell[a] = null;
-    private var isAhead = False;
-    def hasNext: Boolean =
-      if (isAhead) True
+    private var isAhead = false;
+    def hasNext: boolean =
+      if (isAhead) true
       else if (outer.hasNext) {
         head = Cell(outer.next); isAhead = p(head.elem); hasNext }
-      else False;
+      else false;
     def next: a =
-      if (hasNext) { isAhead = False; head.elem }
+      if (hasNext) { isAhead = false; head.elem }
       else error("next on empty iterator");
   }
 \end{verbatim}
 Method \verb@map@ constructs an iterator which returns all elements of
 the original iterator transformed by a given function \verb@f@.
 \begin{verbatim}
-  def map[b](f: (a)b) = new Iterator[b] with {
-    def hasNext: Boolean = outer.hasNext;
+  def map[b](f: a => b) = new Iterator[b] with {
+    def hasNext: boolean = outer.hasNext;
     def next: b = f(outer.next);
   }
 \end{verbatim}
@@ -686,10 +1629,10 @@ The result of \verb@flatMap@ is the iterator resulting from appending
 together all iterators returned from successive calls of \verb@f@.
 \begin{verbatim}
     private var cur: Iterator[b] = new EmptyIterator[b];
-    def hasNext: Boolean =
-      if (cur.hasNext) True
+    def hasNext: boolean =
+      if (cur.hasNext) true
       else if (outer.hasNext) { cur = f(outer.next); hasNext }
-      else False;
+      else false;
     def next: b =
       if (cur.hasNext) cur.next
       else if (outer.hasNext) { cur = f(outer.next); next }
@@ -712,7 +1655,7 @@ abstract methods \verb@next@ and \verb@hasNext@ in class
 which always returns an empty sequence:
 \begin{verbatim}
 class EmptyIterator[a] extends Iterator[a] with {
-  def hasNext = False;
+  def hasNext = false;
   def next: a = error("next on empty iterator");
 }
 \end{verbatim}
@@ -724,7 +1667,7 @@ types, whereas functions do not.
 \begin{verbatim}
 def arrayIterator[a](xs: Array[a]) = new Iterator[a] with {
   private var i = 0;
-  def hasNext: Boolean =
+  def hasNext: boolean =
     i < xs.length;
   def next: a =
     if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
@@ -733,11 +1676,11 @@ def arrayIterator[a](xs: Array[a]) = new Iterator[a] with {
 \end{verbatim}
 Another iterator enumerates an integer interval:
 \begin{verbatim}
-def range(lo: Int, hi: Int) = new Iterator[Int] with {
+def range(lo: int, hi: int) = new Iterator[int] with {
   private var i = lo;
-  def hasNext: Boolean =
+  def hasNext: boolean =
     i <= hi;
-  def next: Int =
+  def next: int =
     if (i <= hi) { i = i + 1 ; i - 1 }
     else error("next on empty iterator");
 }
@@ -745,46 +1688,46 @@ def range(lo: Int, hi: Int) = new Iterator[Int] with {
 %In fact, enumerating integer intervals is so common that it is
 %supported by a method
 %\begin{verbatim}
-%def to(hi: Int): Iterator[Int]
+%def to(hi: int): Iterator[int]
 %\end{verbatim}
-%in class \verb@Int@. Hence, one could also write \verb@l to h@ instead of
+%in class \verb@int@. Hence, one could also write \verb@l to h@ instead of
 %\verb@range(l, h)@.
 All iterators seen so far terminate eventually. It is also possible to
 define iterators that go on forever. For instance, the following
 iterator returns successive integers from some start
-value\footnote{Due to the finite representation of type \prog{Int},
+value\footnote{Due to the finite representation of type \prog{int},
 numbers will wrap around at $2^31$.}.
 \begin{verbatim}
-def from(start: Int) = new Iterator[Int] with {
+def from(start: int) = new Iterator[int] with {
   private var last = start - 1;
-  def hasNext = True;
+  def hasNext = true;
   def next = { last = last + 1; last }
 }
 \end{verbatim}
 Here are two examples how iterators are used. First, to print all
-elements of an array \verb@xs: Array[Int]@, one can write:
+elements of an array \verb@xs: Array[int]@, one can write:
 \begin{verbatim}
-  arrayIterator[Int](xs) foreach (x => System.out.println(x))
+  arrayIterator[int](xs) foreach (x => System.out.println(x))
 \end{verbatim}
-Here, \verb@[Int]@ is a type argument clause, which matches the type
+Here, \verb@[int]@ is a type argument clause, which matches the type
 parameter clause \verb@[a]@ of function \verb@arrayIterator@. It
-substitutes the formal argument \verb@Int@ for the formal argument
+substitutes the formal argument \verb@int@ for the formal argument
 \verb@a@ in the type of the method that follows. Hence,
-\verb@arrayIterator[a]@ is a function that takes an \verb@Array[Int]@
-and that returns an \verb@Iterator[Int]@.
+\verb@arrayIterator[a]@ is a function that takes an \verb@Array[int]@
+and that returns an \verb@Iterator[int]@.
 
-In this example, the formal type argument \verb@Int@ is redundant
+In this example, the formal type argument \verb@int@ is redundant
 since it could also have been inferred from the value \verb@xs@, which
-is, after all, an array of \verb@Int@. The Scala compiler contains a
+is, after all, an array of \verb@int@. The Scala compiler contains a
 fairly powerful type inferencer which infers type arguments for
 methods and constructors from the types of value arguments and the
-expected return type. In our example, the \verb@[Int]@ clause can be
+expected return type. In our example, the \verb@[int]@ clause can be
 inferred, so that one can abbreviate to:
 \begin{verbatim}
   arrayIterator(xs) foreach (x => System.out.println(x))
 \end{verbatim}
 %As a second example, consider the problem of finding the indices of
-%all the elements in an array of \verb@Double@s greater than some
+%all the elements in an array of \verb@double@s greater than some
 %\verb@limit@. The indices should be returned as an iterator.
 %This is achieved by the following expression.
 %\begin{verbatim}
@@ -837,8 +1780,8 @@ Here, \verb@s@ is a sequence of {\em generators} and {\em filters}.
 \item A {\em generator} is of the form \verb@val x <- e@,
 where \verb@e@ is a list-valued expression. It binds \verb@x@ to
 successive values in the list.
-\item A {\em filter} is an expression \verb@f@ of type \verb@Boolean@.
-It omits from consideration all bindings for which \verb@f@ is \verb@False@.
+\item A {\em filter} is an expression \verb@f@ of type \verb@boolean@.
+It omits from consideration all bindings for which \verb@f@ is \verb@false@.
 \end{itemize}
 The sequence must start with a generator.
 If there are several generators in a sequence, later generators vary
@@ -1003,10 +1946,10 @@ other types as well -- one only needs to define \verb@map@,
 That's also why we were able to define \verb@for@ at the same time for
 arrays, iterators, and lists -- all these types have the required
 three methods \verb@map@,\verb@flatMap@, and \verb@filter@ as members.
-Of course, it is also possible for users and librariy designers to
+Of course, it is also possible for users and library designers to
 define other types with these methods. There are many examples where
 this is useful: Databases, XML trees, optional values. We will see in
-Chapter~\ref{sec:parsers-results} how for-comprehesnions can be used in the
+Chapter~\ref{sec:parsers-results} how for-comprehensions can be used in the
 definition of parsers for context-free grammars that construct
 abstract syntax trees.
 
@@ -1020,7 +1963,7 @@ branch nodes:
 \begin{verbatim}
 abstract class Tree;
 case class Branch(left: Tree, right: Tree) extends Tree;
-case class Leaf(x: Int) extends Tree;
+case class Leaf(x: int) extends Tree;
 \end{verbatim}
 Note that the class \verb@Tree@ is not followed by an extends
 clause or a body. This defines \verb@Tree@ to be an empty
@@ -1038,7 +1981,7 @@ val tree1 = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
 Second, it lets us use constructors for these classes in patterns, as
 is illustrated in the following example.
 \begin{verbatim}
-def sumLeaves(t: Tree): Int = t match {
+def sumLeaves(t: Tree): int = t match {
   case Branch(l, r) => sumLeaves(l) + sumLeaves(r)
   case Leaf(x) => x
 }
@@ -1095,8 +2038,8 @@ find(xs, x) match {
 
 
 class MaxCounter with {
-  var maxVal: Option[Int] = None;
-  def set(x: Int) = maxVal match {
+  var maxVal: Option[int] = None;
+  def set(x: int) = maxVal match {
     case None => maxVal = Some(x)
     case Some(y) => maxVal = Some(Math.max(x, y))
   }
@@ -1128,7 +2071,7 @@ In each case, a search tree package is seen as an implementation
 of a class {\em MapStruct}.
 \begin{verbatim}
 abstract class MapStruct[kt, vt] with {
-  abstract type Map extends (kt)vt with {
+  abstract type Map extends kt => vt with {
     def apply(key: kt): vt;
     def extend(key: kt, value: vt): Map;
     def remove(key: kt): Map;
@@ -1143,7 +2086,7 @@ The \verb@MapStruct@ class is parameterized with a type of keys
 specifies an abstract type \verb@Map@ and an abstract value
 \verb@empty@, which represents empty maps.  Every implementation
 \verb@Map@ needs to conform to that abstract type, which
-extends the function type \verb@(kt)vt@
+extends the function type \verb@kt => vt@
 with four new
 methods. The method \verb@domain@ yields a stream that enumerates the
 map's domain, i.e. the set of keys that are mapped to non-null values.
@@ -1162,7 +2105,7 @@ class AlgBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] with {
     Empty extends Map,
     Node(key: kt, value: vt, l: Map, r: Map) extends Map
 
-  final class Map extends (kt)vt with {
+  final class Map extends kt => vt with {
     def apply(key: kt): vt = this match {
       case Empty => null
       case Node(k, v, l, r) =>
@@ -1233,7 +2176,7 @@ are constructed lazily.
 \begin{figure}[thb]
 \begin{verbatim}
 class OOBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] with {
-  abstract class Map extends (kt)vt with {
+  abstract class Map extends kt => vt with {
     def apply(key: kt): v
     def extend(key: kt, value: vt): Map
     def remove(key: kt): Map
@@ -1301,7 +2244,7 @@ modified.
 \begin{figure}
 \begin{verbatim}
 class MutBinTree[kt extends Ord, vt] extends MapStruct[kt, vt] with {
-  class Map(key: kt, value: vt) extends (kt)vt with {
+  class Map(key: kt, value: vt) extends kt => vt with {
     val k = key
     var v = value
     var l = empty, r = empty
@@ -1374,7 +2317,7 @@ As a program using the \verb@MapStruct@ abstraction, consider a function
 which creates a map from strings to integers and then applies it to a
 key string:
 \begin{verbatim}
-def mapTest(def mapImpl: MapStruct[String, Int]): Int = {
+def mapTest(def mapImpl: MapStruct[String, int]): int = {
   val map: mapImpl.Map = mapImpl.empty.extend("ab", 1).extend("bx", 3)
   val x = map("ab")             // returns 1
 }
@@ -1383,9 +2326,9 @@ The function is parameterized with the particular implementation of
 \verb@MapStruct@. It can be applied to any one of the three implementations
 described above. E.g.:
 \begin{verbatim}
-mapTest(AlgBinTree[String, Int])
-mapTest(OOBinTree[String, Int])
-mapTest(MutBinTree[String, Int])
+mapTest(AlgBinTree[String, int])
+mapTest(OOBinTree[String, int])
+mapTest(MutBinTree[String, int])
 \end{verbatim}
 }
 \chapter{Programming with Higher-Order Functions: Combinator Parsing}
@@ -1426,10 +2369,10 @@ also define constructors for the following primitive parsers:
 \\
 \verb@chr@      & The parser that accepts any character.
 \\
-\verb@chr(c: Char)@
+\verb@chr(c: char)@
 		& The parser that accepts the single-character string ``$c$''.
 \\
-\verb@chrWith(p: (Char)Boolean)@
+\verb@chrWith(p: char => boolean)@
 		& The parser that accepts single-character strings
                   ``$c$'' \\
 	        & for which $p(c)$ is true.
@@ -1475,9 +2418,9 @@ parameter and that yield a parse result.
 \begin{verbatim}
 module Parse with {
 
-  type Result = Option[List[Char]];
+  type Result = Option[List[char]];
 
-  abstract class Parser extends Function1[List[Char],Result] with {
+  abstract class Parser extends Function1[List[char],Result] with {
 \end{verbatim}
 \comment{
 The \verb@Option@ type is predefined as follows.
@@ -1492,25 +2435,25 @@ signifies that the parser did not recognize a legal input string, or
 it returns a value \verb@Some(in1)@ where \verb@in1@ represents that
 part of the input list that the parser did not consume.
 
-Parsers are instances of functions from \verb@List[Char]@ to
+Parsers are instances of functions from \verb@List[char]@ to
 \verb@Parse.Result@, which also implement the combinators
-for sequence and alternative. This is modelled by
+for sequence and alternative. This is modeled by
 defining \verb@Parser@ as a class that extends type
-\verb@Function1[List[Char],Result]@ and that defines an \verb@apply@
+\verb@Function1[List[char],Result]@ and that defines an \verb@apply@
 method, as well as methods \verb@&&&@ and \verb@|||@.
 \begin{verbatim}
-    abstract def apply(in: List[Char]): Result;
+    abstract def apply(in: List[char]): Result;
 \end{verbatim}
 \begin{verbatim}
     def &&& (def p: Parser) = new Parser with {
-      def apply(in: List[Char]) = outer.apply(in) match {
+      def apply(in: List[char]) = outer.apply(in) match {
         case Some(in1) => p(in1)
         case n => n
       }
     }
 
     def ||| (def p: Parser) = new Parser with {
-      def apply(in: List[Char]) = outer.apply(in) match {
+      def apply(in: List[char]) = outer.apply(in) match {
         case None => p(in)
         case s => s
       }
@@ -1521,18 +2464,18 @@ The implementations of the primitive parsers \verb@empty@, \verb@fail@,
 \verb@chrWith@ and \verb@chr@ are as follows.
 \begin{verbatim}
 
-  def empty = new Parser with { def apply(in: List[Char]) = Some(in) }
+  def empty = new Parser with { def apply(in: List[char]) = Some(in) }
 
-  def fail = new Parser with { def apply(in: List[Char]) = None[List[Char]] }
+  def fail = new Parser with { def apply(in: List[char]) = None[List[char]] }
 
-  def chrWith(p: (Char)Boolean) = new Parser with {
-    def apply(in: List[Char]) = in match {
-      case [] => None[List[Char]]
-      case (c :: in1) => if (p(c)) Some(in1) else None[List[Char]]
+  def chrWith(p: char => boolean) = new Parser with {
+    def apply(in: List[char]) = in match {
+      case [] => None[List[char]]
+      case (c :: in1) => if (p(c)) Some(in1) else None[List[char]]
     }
   }
 
-  def chr(c: Char): Parser = chrWith(d => d == c);
+  def chr(c: char): Parser = chrWith(d => d == c);
 \end{verbatim}
 The higher-order parser combinators \verb@opt@ and \verb@rep@ can be
 defined in terms of the combinators for sequence and alternative:
@@ -1579,8 +2522,8 @@ tree of the parsed expression. The class of syntax trees is given by:
 \begin{verbatim}
 abstract class Tree;
 case class Var(n: String) extends Tree;
-case class Num(n: Int) extends Tree;
-case class Binop(op: Char, l: Tree, r: Tree) extends Tree;
+case class Num(n: int) extends Tree;
+case class Binop(op: char, l: Tree, r: Tree) extends Tree;
 \end{verbatim}
 That is, a syntax tree is a named variable, an integer number, or a
 binary operation with two operand trees and a character indicating the
@@ -1591,14 +2534,14 @@ modify the ``micro-syntax'' parsers \verb@letter@, \verb@digit@,
 \verb@ident@ and \verb@number@ so that they return representations of
 the parsed input:
 \begin{verbatim}
-def letter: Parser[Char] = chrWith(c => c.isLetter);
-def digit : Parser[Char] = chrWith(c => c.isDigit);
+def letter: Parser[char] = chrWith(c => c.isLetter);
+def digit : Parser[char] = chrWith(c => c.isDigit);
 
 def ident: Parser[String] =
   for (val c <- letter; val cs <- rep(letter ||| digit))
   yield ((c :: cs) foldr "") {c, s => c+ s};
 
-def number: Parser[Int] =
+def number: Parser[int] =
   for (val d <- digit; val ds <- rep(digit))
   yield ((d - '0') :_foldl ds) {x, y => x * 10 + (y - '0')};
 \end{verbatim}
@@ -1616,7 +2559,7 @@ def expr: Parser[Tree] =
       for {
         val op <- chr('+') ||| chr('-');
 	val e <- expr1
-      } yield (x => Binop(op, x, e)) : (Tree)Tree
+      } yield (x => Binop(op, x, e)) : Tree => Tree
     )
   } yield applyAll(es, e1);
 \end{verbatim}
@@ -1628,7 +2571,7 @@ def expr1: Parser[Tree] =
       for {
         val op <- chr('*') ||| chr('/');
         val e <- expr2
-      } yield (x => Binop(op, x, e)) : (Tree)Tree
+      } yield (x => Binop(op, x, e)) : Tree => Tree
     )
   } yield applyAll(es, e1);
 \end{verbatim}
@@ -1649,7 +2592,7 @@ to the first operand in the sequence, which is represented by
 \verb@e1@. Here \verb@applyAll@ applies the list of functions passed as its first
 argument to its second argument. It is defined as follows.
 \begin{verbatim}
-def applyAll[a](fs: List[(a)a], e: a): a =
+def applyAll[a](fs: List[a => a], e: a): a =
   (e :_foldl fs) { x, f => f(x) }
 \end{verbatim}
 We now present the parser combinators that support the new
@@ -1658,7 +2601,7 @@ un-consumed input.
 \begin{verbatim}
 module Parse with {
 
-  type Result[a] = Option[(a, List[Char])]
+  type Result[a] = Option[(a, List[char])]
 \end{verbatim}
 Parsers are parameterized with the type of their result. The class
 \verb@Parser[a]@ now defines new methods \verb@map@, \verb@flatMap@
@@ -1668,33 +2611,33 @@ Chapter~\ref{sec:for-notation}.
 
 Here is the complete definition of the new \verb@Parser@ class.
 \begin{verbatim}
-  abstract class Parser[a] extends Function1[List[Char],Result[a]] with {
+  abstract class Parser[a] extends Function1[List[char],Result[a]] with {
 
-    def apply(in: List[Char]): Result[a];
+    def apply(in: List[char]): Result[a];
 
-    def filter(p: (a)Boolean) = new Parser[a] with {
-      def apply(in: List[Char]): Result[a] = outer.apply(in) match {
+    def filter(p: a => boolean) = new Parser[a] with {
+      def apply(in: List[char]): Result[a] = outer.apply(in) match {
         case Some((x, in1)) => if (p(x)) Some((x, in1)) else None
         case None => None
       }
     }
 
-    def map[b](f: (a)b) = new Parser[b] with {
-      def apply(in: List[Char]): Result[b] = outer.apply(in) match {
+    def map[b](f: a => b) = new Parser[b] with {
+      def apply(in: List[char]): Result[b] = outer.apply(in) match {
 	case Some((x, in1)) => Some((f(x), in1))
         case None => None
       }
     }
 
-    def flatMap[b](f: (a)Parser[b]) = new Parser[b] with {
-      def apply(in: List[Char]): Result[b] = outer.apply(in) match {
+    def flatMap[b](f: a => Parser[b]) = new Parser[b] with {
+      def apply(in: List[char]): Result[b] = outer.apply(in) match {
 	case Some((x, in1)) => f(x)(in1)
         case None => None
       }
     }
 
     def ||| (def p: Parser[a]) = new Parser[a] with {
-      def apply(in: List[Char]): Result[a] = outer.apply(in) match {
+      def apply(in: List[char]): Result[a] = outer.apply(in) match {
 	case None => p(in)
 	case s => s
       }
@@ -1719,22 +2662,22 @@ the current parser and then continues with the resulting parser.  The
 % Here is the code for fail, chrWith and chr
 %
 %\begin{verbatim}
-%  def fail[a] = new Parser[a] with { def apply(in: List[Char]) = None[(a,List[Char])] }
+%  def fail[a] = new Parser[a] with { def apply(in: List[char]) = None[(a,List[char])] }
 %
-%  def chrWith(p: (Char)Boolean) = new Parser[Char] with {
-%    def apply(in: List[Char]) = in match {
-%      case [] => None[(Char,List[Char])]
-%      case (c :: in1) => if (p(c)) Some((c,in1)) else None[(Char,List[Char])]
+%  def chrWith(p: char => boolean) = new Parser[char] with {
+%    def apply(in: List[char]) = in match {
+%      case [] => None[(char,List[char])]
+%      case (c :: in1) => if (p(c)) Some((c,in1)) else None[(char,List[char])]
 %    }
 %  }
 %
-%  def chr(c: Char): Parser[Char] = chrWith(d => d == c);
+%  def chr(c: char): Parser[char] = chrWith(d => d == c);
 %\end{verbatim}
 The primitive parser \verb@succeed@ replaces \verb@empty@. It consumes
 no input and returns its parameter as result.
 \begin{verbatim}
   def succeed[a](x: a) = new Parser[a] with {
-    def apply(in: List[Char]) = Some((x, in))
+    def apply(in: List[char]) = Some((x, in))
   }
 \end{verbatim}
 The \verb@fail@ parser is as before.  The parser combinators
@@ -1784,16 +2727,16 @@ module Types with {
   case class Tyvar(a: String) extends Type;
   case class Arrow(t1: Type, t2: Type) extends Type;
   case class Tycon(k: String, ts: List[Type]) extends Type;
-  private var n: Int = 0;
+  private var n: int = 0;
   def newTyvar: Type = { n = n + 1 ; Tyvar("a" + n) }
 }
 import Types;
 \end{verbatim}
 There are three type constructors: \verb@Tyvar@ for type variables,
 \verb@Arrow@ for function types and \verb@Tycon@ for type
-constructors such as \verb@Boolean@ or \verb@List@. Type constructors
+constructors such as \verb@boolean@ or \verb@List@. Type constructors
 have as component a list of their type parameters. This list is empty
-for type constants such as \verb@Boolean@. The data type is packaged
+for type constants such as \verb@boolean@. The data type is packaged
 in a module \verb@Types@. Also contained in that module is a function
 \verb@newTyvar@ which creates a fresh type variable each time it is
 called. The module definition is followed by an import clause
@@ -1854,7 +2797,7 @@ abstract class Subst extends Function1[Type,Type] with {
 case class EmptySubst extends Subst with { def lookup(t: Tyvar): Type = t }
 \end{verbatim}
 We represent substitutions as functions, of type
-\verb@(Type)Type@. To be an instance of this type, a
+\verb@Type => Type@. To be an instance of this type, a
 substitution \verb@s@ has to implement an \verb@apply@ method that takes a
 \verb@Type@ as argument and yields another \verb@Type@ as result. A function
 application \verb@s(t)@ is then interpreted as \verb@s.apply(t)@.
@@ -1872,8 +2815,8 @@ implementation of sets in some standard library.
 class ListSet[a](xs: List[a]) with {
   val elems: List[a] = xs;
 
-  def contains(y: a): Boolean = xs match {
-    case [] => False
+  def contains(y: a): boolean = xs match {
+    case [] => false
     case x :: xs1 => (x == y) || (xs1 contains y)
   }
 
@@ -1906,7 +2849,7 @@ module TypeChecker with {
   type Env = List[(String, TypeScheme)];
 \end{verbatim}
 There is also an exception \verb@TypeError@, which is thrown when type
-checking fails. Exceptions are modelled as case classes that inherit
+checking fails. Exceptions are modeled as case classes that inherit
 from the predefined \verb@Exception@ class.
 \begin{verbatim}
   case class TypeError(msg: String) extends Exception(msg);
@@ -1986,7 +2929,7 @@ The main task of the type checker is implemented by function
 term $e$ and a proto-type $t$. As a second parameter it takes a
 pre-existing substitution $s$.  The function yields a substitution
 $s'$ that extends $s$ and that
-turns $s'(env) \ts e: s'(t)$ into a derivable type judgement according
+turns $s'(env) \ts e: s'(t)$ into a derivable type judgment according
 to the derivation rules of the Hindley/Milner type system \cite{hindley-milner}.  A
 \verb@TypeError@ exception is thrown if no such substitution exists.
 \begin{verbatim}
@@ -2018,7 +2961,7 @@ The next function, \verb@typeOf@ is a simplified facade for
 \verb@tp@. It computes the type of a given term $e$ in a given
 environment $env$. It does so by creating a fresh type variable \verb$a$,
 computing a typing substitution that makes \verb@env $\ts$ e: a@ into
-a derivable type judgement, and finally by returning the result of
+a derivable type judgment, and finally by returning the result of
 applying the substitution to $a$.
 \begin{verbatim}
   def typeOf(env: Env, e: Term): Type = {
@@ -2073,7 +3016,7 @@ would give the response
 > TypeScheme([a0], Arrow(Tyvar(a0), Tycon("List", [Tyvar(a0)])));
 \end{verbatim}
 
-\paragraph{Exercise:}
+\exercise
 Add \verb@toString@ methods to the data constructors of class
 \verb@Type@ and \verb@TypeScheme@ which represent types in a more
 natural way.
@@ -2085,7 +3028,8 @@ how they can be implemented in Scala.
 
 \section{Signals and Monitors}
 
-\example Th {\em monitor} provides the basic means for mutual exclusion
+\example
+The {\em monitor} provides the basic means for mutual exclusion
 of processes in Scala. It is defined as follows.
 \begin{verbatim}
 class Monitor with {
@@ -2106,15 +3050,15 @@ signal are ignored. Here is the specification of the \verb@Signal@
 class.
 \begin{verbatim}
 class Signal with {
-  def wait: Unit;
-  def wait(msec: Long): Unit;
-  def notify: Unit;
-  def notifyAll: Unit;
+  def wait: unit;
+  def wait(msec: long): unit;
+  def notify: unit;
+  def notifyAll: unit;
 }
 \end{verbatim}
 A signal also implements a timed form of \verb@wait@, which blocks
-only as long as no signal was recieved or the specified amount of time
-(given in milliseconds) has elaosed. Furthermore, there is a
+only as long as no signal was received or the specified amount of time
+(given in milliseconds) has elapsed. Furthermore, there is a
 \verb@notifyAll@ method which unblocks all threads which wait for the
 signal. \verb@Signal@ and \verb@Monitor@ are primitive classes in
 Scala which are implemented in terms of the underlying runtime system.
@@ -2148,13 +3092,13 @@ And here is a program using a bounded buffer to communicate between a
 producer and a consumer process.
 \begin{verbatim}
 val buf = new BoundedBuffer[String](10)
-fork { while (True) { val s = produceString ; buf.put(s) } }
-fork { while (True) { val s = buf.get ; consumeString(s) } }
+fork { while (true) { val s = produceString ; buf.put(s) } }
+fork { while (true) { val s = buf.get ; consumeString(s) } }
 \end{verbatim}
 The \verb@fork@ method spawns a new thread which executes the
 expression given in the parameter. It can be defined as follows.
 \begin{verbatim}
-def fork(def e: Unit) = {
+def fork(def e: unit) = {
   val p = new Thread with { def run = e; }
   p.run
 }
@@ -2173,14 +3117,14 @@ Logic variables can be implemented as follows.
 \begin{verbatim}
 class LVar[a] extends Monitor with {
   private val defined = new Signal
-  private var isDefined: Boolean = False
+  private var isDefined: boolean = false
   private var v: a
   def value = synchronized {
     if (!isDefined) defined.wait
     v
   }
   def :=(x: a) = synchronized {
-    v = x ; isDefined = True ; defined.send
+    v = x ; isDefined = true ; defined.send
   }
 }
 \end{verbatim}
@@ -2197,19 +3141,19 @@ Synchronized variables can be implemented as follows.
 \begin{verbatim}
 class SyncVar[a] extends Monitor with {
   private val defined = new Signal;
-  private var isDefined: Boolean = False;
+  private var isDefined: boolean = false;
   private var value: a;
   def get = synchronized {
     if (!isDefined) defined.wait;
     value
   }
   def set(x: a) = synchronized {
-    value = x ; isDefined = True ; defined.send;
+    value = x ; isDefined = true ; defined.send;
   }
-  def isSet: Boolean =
+  def isSet: boolean =
     isDefined;
   def unset = synchronized {
-    isDefined = False;
+    isDefined = false;
   }
 }
 \end{verbatim}
@@ -2231,7 +3175,7 @@ val y = f(x()) + g(x());
 Futures can be implemented in Scala as follows.
 
 \begin{verbatim}
-def future[a](def p: a): (Unit)a = {
+def future[a](def p: a): unit => a = {
   val result = new SyncVar[a];
   fork { result.set(p) }
   (=> result.get)
@@ -2271,7 +3215,7 @@ number of replicates of a computation in parallel. Each
 replication instance is passed an integer number which identifies it.
 
 \begin{verbatim}
-def replicate(start: Int, end: Int)(def p: (Int)Unit): Unit = {
+def replicate(start: int, end: int)(def p: int => unit): unit = {
   if (start == end) {
   } else if (start + 1 == end) {
     p(start)
@@ -2286,7 +3230,7 @@ The next example shows how to use \verb@replicate@ to perform parallel
 computations on all elements of an array.
 
 \begin{verbatim}
-def parMap[a,b](f: (a)b, xs: Array[a]): Array[b] = {
+def parMap[a,b](f: a => b, xs: Array[a]): Array[b] = {
   val results = new Array[b](xs.length);
   replicate(0, xs.length) { i => results(i) = f(xs(i)) }
   results
@@ -2301,13 +3245,13 @@ A common mechanism for process synchronization is a {\em lock} (or:
 
 \begin{verbatim}
 class Lock extends Monitor with Signal with {
-  var available = True;
+  var available = true;
   def acquire = {
     if (!available) wait;
-    available = False
+    available = false
   }
   def release = {
-    available = True;
+    available = true;
     notify
   }
 }
@@ -2332,7 +3276,7 @@ The following implementation of a readers/writers lock is based on the
 \begin{verbatim}
 class ReadersWriters with {
   val m = new MessageSpace;
-  private case class Writers(n: Int), Readers(n: Int);
+  private case class Writers(n: int), Readers(n: int);
   Writers(0); Readers(0);
   def startRead = m receive {
     case Writers(n) if n == 0 => m receive {
@@ -2357,7 +3301,7 @@ class ReadersWriters with {
 
 \section{Asynchronous Channels}
 
-A fundamental way of interprocess comunication is the asynchronous
+A fundamental way of interprocess communication is the asynchronous
 channel. Its implementation makes use the following class for linked
 lists:
 \begin{verbatim}
@@ -2366,7 +3310,7 @@ class LinkedList[a](x: a) with {
   var next: LinkedList[a] = null;
 }
 \end{verbatim}
-To facilite insertion and deletion of elements into linked lists,
+To facilitate insertion and deletion of elements into linked lists,
 every reference into a linked list points to the node which precedes
 the node which conceptually forms the top of the list.
 Empty linked lists start with a dummy node, whose successor is \verb@null@.
@@ -2404,7 +3348,7 @@ three signals are used to coordinate reader and writer processes.
 class SyncChannel[a] with {
   val data = new SyncVar[a];
 
-  def write(x: a): Unit = synchronized {
+  def write(x: a): unit = synchronized {
     val empty = new Signal, full = new Signal, idle = new Signal;
     if (data.isSet) idle.wait;
     data.put(x);
@@ -2435,24 +3379,24 @@ the overhead inherent in context-switching several threads on a single
 processor.
 
 \begin{verbatim}
-class ComputeServer(n: Int) {
+class ComputeServer(n: int) {
   private abstract class Job with {
     abstract type t;
     def task: t;
-    def return(x: t): Unit;
+    def return(x: t): unit;
   }
 
   private val openJobs = new Channel[Job]
 
-  private def processor: Unit = {
-    while (True) {
+  private def processor: unit = {
+    while (true) {
       val job = openJobs.read;
       job.return(job.task)
     }
   }
 \end{verbatim}
 \begin{verbatim}
-  def future[a](def p: a): ()a = {
+  def future[a](def p: a): () => a = {
     val reply = new SyncVar[a];
     openJobs.write(
       new Job with {
@@ -2511,9 +3455,9 @@ case class TIMEOUT;
 Message spaces implement the following signature.
 \begin{verbatim}
 class MessageSpace with {
-  def send(msg: Any): Unit;
+  def send(msg: Any): unit;
   def receive[a](f: PartialFunction[Any, a]): a;
-  def receiveWithin[a](msec: Long)(f: PartialFunction[Any, a]): a;
+  def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a;
 }
 \end{verbatim}
 The state of a message space consists of a multi-set of messages.
@@ -2536,14 +3480,14 @@ one-place buffer:
 \begin{verbatim}
 class OnePlaceBuffer with {
   private val m = new MessageSpace;        \=// An internal message space
-  private case class Empty, Full(x: Int);    \>// Types of messages we deal with
+  private case class Empty, Full(x: int);    \>// Types of messages we deal with
 
   m send Empty;                           \>// Initialization
 
-  def write(x: Int): Unit =
+  def write(x: int): unit =
     m receive { case Empty => m send Full(x) }
 
-  def read: Int =
+  def read: int =
     m receive { case Full(x) => m send Empty ; x }
 }
 \end{verbatim}
@@ -2552,7 +3496,7 @@ Here's how the message space class can be implemented:
 class MessageSpace with {
 
   private abstract class Receiver extends Signal with {
-    def isDefined(msg: Any): Boolean;
+    def isDefined(msg: Any): boolean;
     var msg = null;
   }
 \end{verbatim}
@@ -2572,7 +3516,7 @@ needs to be applied to is stored in the \verb@msg@ variable of
 The message space class maintains two linked lists,
 one for sent but unconsumed messages, the other for waiting receivers.
 \begin{verbatim}
-  def send(msg: Any): Unit = synchronized {
+  def send(msg: Any): unit = synchronized {
     var r = receivers, r1 = r.next;
     while (r1 != null && !r1.elem.isDefined(msg)) {
       r = r1; r1 = r1.next;
@@ -2615,8 +3559,8 @@ The \verb@receive@ method first checks whether the message processor function
 was not yet consumed. If yes, the thread continues immediately by
 applying \verb@f@ to the message. Otherwise, a new receiver is created
 and linked into the \verb@receivers@ list, and the thread waits for a
-notification on this receiver. Once the thrad is woken up again, it
-continues by applying \verb@f@ to the message that was stored in te receiver.
+notification on this receiver. Once the thread is woken up again, it
+continues by applying \verb@f@ to the message that was stored in the receiver.
 
 The message space class also offers a method \verb@receiveWithin@
 which blocks for only a specified maximal amount of time.  If no
@@ -2625,7 +3569,7 @@ milliseconds), the message processor argument $f$ will be unblocked
 with the special \verb@TIMEOUT@ message.  The implementation of
 \verb@receiveWithin@ is quite similar to \verb@receive@:
 \begin{verbatim}
-  def receiveWithin[a](msec: Long)(f: PartialFunction[Any, a]): a = {
+  def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
       var s = sent, s1 = s.next;
       while (s1 != null && !f.isDefined(s1.elem)) {
@@ -2670,18 +3614,18 @@ As an extended example of an application that uses actors, we come
 back to the auction server example of Section~\ref{sec:ex-auction}.
 The following code implements:
 
-\begin{figure}[h]
+\begin{figure}[thb]
 \begin{verbatim}
 class AuctionMessage;
 case class
-  \=Offer(bid: Int, client: Process),                             \=// make a bid
+  \=Offer(bid: int, client: Process),                             \=// make a bid
      \>Inquire(client: Process) extends AuctionMessage  \>// inquire status
 
 class AuctionReply;
 case class
-  \=Status(asked; Int, expiration: Date),   \>// asked sum, expiration date
+  \=Status(asked; int, expiration: Date),   \>// asked sum, expiration date
      \>BestOffer,                                       \>// yours is the best offer
-     \>BeatenOffer(maxBid: Int),                        \>// offer beaten by maxBid
+     \>BeatenOffer(maxBid: int),                        \>// offer beaten by maxBid
      \>AuctionConcluded(seller: Process, client: Process), \>// auction concluded
      \>AuctionFailed                                     \>// failed with no bids
      \>AuctionOver extends AuctionReply                  \>// bidding is closed
@@ -2689,7 +3633,7 @@ case class
 \end{figure}
 
 \begin{verbatim}
-class Auction(seller: Process, minBid: Int, closing: Date)
+class Auction(seller: Process, minBid: int, closing: Date)
  extends Process with {
 
   val timeToShutdown = 36000000 // msec
@@ -2699,7 +3643,7 @@ class Auction(seller: Process, minBid: Int, closing: Date)
   def run = {
     var askedBid = minBid
     var maxBidder: Process = null
-    while (True) {
+    while (true) {
       receiveWithin ((closing - Date.currentDate).msec) {
 	case Offer(bid, client) => {
 	  if (bid >= askedBid) {
@@ -2709,9 +3653,7 @@ class Auction(seller: Process, minBid: Int, closing: Date)
             maxBidder = client
             askedBid = bid + delta
             client send BestOffer
-          } else {
-            client send BeatenOffer(maxBid)
-          }
+          } else client send BeatenOffer(maxBid)
         }
 \end{verbatim}
 \begin{verbatim}
@@ -2725,9 +3667,7 @@ class Auction(seller: Process, minBid: Int, closing: Date)
 	    val reply = AuctionConcluded(seller, maxBidder)
 	    maxBidder send reply
 	    seller send reply
-	  } else {
-	    seller send AuctionFailed
-          }
+	  } else seller send AuctionFailed
           receiveWithin (timeToShutdown) {
             case Offer(_, client) => client send AuctionOver ; discardAndContinue
             case _ => discardAndContinue
@@ -2742,9 +3682,9 @@ class Auction(seller: Process, minBid: Int, closing: Date)
   }
 \end{verbatim}
 \begin{verbatim}
-  def houseKeeping: Int = {
+  def houseKeeping: int = {
     val Limit = 100
-    var nWaiting: Int = 0
+    var nWaiting: int = 0
     receiveWithin(0) {
       case _ =>
         nWaiting = nWaiting + 1
@@ -2761,7 +3701,7 @@ class Auction(seller: Process, minBid: Int, closing: Date)
 }
 \end{verbatim}
 \begin{verbatim}
-class Bidder (auction: Process, minBid: Int, maxBid: Int)
+class Bidder (auction: Process, minBid: int, maxBid: int)
  extends Process with {
   val MaxTries = 3
   val Unknown = -1
@@ -2787,7 +3727,7 @@ class Bidder (auction: Process, minBid: Int, maxBid: Int)
   }
 \end{verbatim}
 \begin{verbatim}
-  def bid: Unit = {
+  def bid: unit = {
     if (nextBid < maxBid) {
       auction send Offer(nextBid, this)
       receive {
@@ -2818,7 +3758,7 @@ class Bidder (auction: Process, minBid: Int, maxBid: Int)
     if (nextBid != Unknown) bid
   }
 
-  def transferPayment(seller: Process, amount: Int)
+  def transferPayment(seller: Process, amount: int)
 }
 \end{verbatim}
 }
@@ -2854,7 +3794,7 @@ def sort(a:Array[String]): Array[String] = {
 
 def sort(a:Array[String]): Array[String] = {
 
-  def swap (i: Int, j: Int): unit = {
+  def swap (i: int, j: int): unit = {
     val t = a(i) ; a(i) = a(j) ; a(j) = t
   }
 
@@ -2884,7 +3824,7 @@ class Array[a] with {
   val apply(i: int): a
   val update(i: int, x: a): unit
 
-  def filter (p: a => Boolean): Array[a] = {
+  def filter (p: a => boolean): Array[a] = {
     val temp = new Array[a](a.length)
     var i = 0, j = 0
     for (i < a.length, i = i + 1) {

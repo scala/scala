@@ -549,7 +549,7 @@ public class Parser implements Tokens {
 	    return t;
     }
 
-    /** Type1 ::= SimpleType {with SimpleType} [with Refinement]
+    /** Type1 ::= SimpleType {with SimpleType} [Refinement]
      */
     Tree type1() {
 	int pos = s.pos;
@@ -559,10 +559,7 @@ public class Parser implements Tokens {
 	    ts.append(t);
 	    while (s.token == WITH) {
 		s.nextToken();
-		if (s.token == LBRACE)
-		    return make.CompoundType(pos, ts.toArray(), refinement());
-		else
-		    ts.append(simpleType());
+		ts.append(simpleType());
 	    }
 	    return make.CompoundType(pos, ts.toArray(), Tree.EMPTY_ARRAY);
 	} else {
@@ -650,7 +647,7 @@ public class Parser implements Tokens {
         return ts.toArray();
     }
 
-    /** Expr     ::= [Bindings `=>'] Expr
+    /** Expr     ::= Bindings `=>' Expr
      *             | if `(' Expr `)' Expr [[`;'] else Expr]
      *             | for `(' Enumerators `)' [do | yield] Expr
      *             | Designator `=' Expr
@@ -658,6 +655,7 @@ public class Parser implements Tokens {
      *             | PostfixExpr [`:' Type1 | as Type1 | is Type1]
      *  Bindings ::= Id [`:' Type1]
      *             | `(' [Binding {`,' Binding}] `)'
+     *  Binding  ::= Id [`:' Type]
      */
     Tree expr() {
 	if (s.token == IF) {
@@ -1423,8 +1421,7 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** FunDef ::= Id [TypeParamClause] {ParamClause} [`:' Type]
-     *             (`=' Expr | BlockExpr)
+    /** FunDef ::= Id [TypeParamClause] {ParamClause} [`:' Type] `=' Expr
      *  FunSig ::= Id [TypeParamClause] {ParamClause} `:' Type
      */
     Tree funDefOrSig(int mods) {
@@ -1444,8 +1441,7 @@ public class Parser implements Tokens {
                                tparams, vparams, restype, Tree.Empty);
     }
 
-    /*  ConstrDef ::= Id [TypeParamClause] [ParamClause] [`:' Type]
-     *                (`=' Constr | `=' BlockConstr | BlockConstr)
+    /*  ConstrDef ::= Id [TypeParamClause] [ParamClause] [`:' Type] `=' (Constr | BlockConstr)
      */
     Tree constrDefOrSig(int mods) {
         int pos = s.pos;
@@ -1507,14 +1503,18 @@ public class Parser implements Tokens {
 	    s.pos, mods, ident(), typedOpt(), classTemplate());
     }
 
-    /** ClassTemplate ::= extends Template
-     *                  | [TemplateBody]
+    /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
      */
     Template classTemplate() {
         int pos = s.pos;
 	if (s.token == EXTENDS) {
 	    s.nextToken();
 	    return template();
+	} else if (s.token == WITH) {
+	    s.nextToken();
+	    TreeList parents = new TreeList();
+	    parents.append(scalaDot(pos, Names.Object.toConstrName()));
+	    return template(parents);
 	} else if (s.token == LBRACE) {
 	    return (Template)make.Template(pos,
 		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
@@ -1537,15 +1537,15 @@ public class Parser implements Tokens {
     /** Template  ::= Constr {`with' Constr} [TemplateBody]
      */
     Template template() {
+	return template(new TreeList());
+    }
+
+    Template template(TreeList parents) {
 	int pos = s.pos;
-	TreeList parents = new TreeList();
 	parents.append(constr());
 	while (s.token == WITH) {
 	    s.nextToken();
-	    if (s.token == LBRACE)
-		return (Template)make.Template(pos, parents.toArray(), templateBody());
-	    else
-		parents.append(constr());
+	    parents.append(constr());
 	}
 	Tree[] stats = (s.token == LBRACE) ? templateBody() : Tree.EMPTY_ARRAY;
 	return (Template)make.Template(pos, parents.toArray(), stats);

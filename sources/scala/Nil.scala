@@ -7,7 +7,7 @@ package scala {
     def isEmpty = True;
     def head: c = error("head of empty list");
     def tail: List[c] = error("tail of empty list");
-    override def toString(): String = "[]";
+    override def toString(): String = "List()";
   }
 }
 

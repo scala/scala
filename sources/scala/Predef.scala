@@ -2,20 +2,26 @@ package scala;
 
 module Predef {
 
+  type byte = scala.Byte;
+  type short = scala.Short;
+  type char = scala.Char;
+  type int = scala.Int;
+  type long = scala.Long;
+  type float = scala.Float;
+  type double = scala.Double;
+  type boolean = scala.Boolean;
+  type unit = scala.Unit;
+
   val True = Boolean.True;
   val False = Boolean.False;
 
-  val List = scala.List;
-
   def List[a](x: a*): List[a] = x as List[a];
+  val List = scala.List;
 
   def error[err](x: String):err = new java.lang.RuntimeException(x).throw;
 
   def try[a](def block: a): Except[a] =
     new Except(scala.runtime.ResultOrException.tryBlock(block));
-
-  def range(lo: Int, hi: Int): List[Int] =
-    if (lo > hi) List() else lo :: range(lo + 1, hi);
 
   def while(def condition: Boolean)(def command: Unit): Unit =
     if (condition) {
