@@ -245,13 +245,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public Type loBound() {
 	switch (unalias()) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Type lb = Global.instance.definitions.ANY_TYPE;
+	    Type lb = Global.instance.definitions.ALL_TYPE;
 	    if (sym.kind == TYPE) {
 		lb = sym.loBound().asSeenFrom(pre, sym.owner());
 	    }
-	    if (lb.isSameAs(Global.instance.definitions.ANY_TYPE) &&
+	    if (lb.symbol() == Global.instance.definitions.ALL_CLASS &&
 		this.isSubType(Global.instance.definitions.ANYREF_TYPE)) {
-		lb = Global.instance.definitions.ANYREF_TYPE;
+		lb = Global.instance.definitions.ALLREF_TYPE;
 	    }
 	    return lb;
 	default:
@@ -1796,7 +1796,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	for (int j = 0; j < args.length; j++) {
 	    args[j] = commonType(argss[j]);
 	    if (args[j] == NoType) {
-		if ((tparams[j].flags & COVARIANT) != 0) args[j] = lub(argss[j]);
+		if ((tparams[j].flags & COVARIANT) != 0)
+		    args[j] = lub(argss[j]);
+		else if ((tparams[j].flags & CONTRAVARIANT) != 0)
+		    args[j] = glb(argss[j]);
 		else return NoType;
 	    }
 	}
@@ -2029,7 +2032,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	if (treftypes.length != 1) {
 	    // step 5: if there are conflicting instantiations of same
-	    // class, replace them by lower bound.
+	    // class, replace them by lub/glb of arguments or lower bound.
 	    Type lb = NoType;
 	    for (int i = 0;
 		 i < treftypes.length &&
@@ -2037,7 +2040,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		 i++) {
 		for (int j = 0; j < i; j++) {
 		    if (treftypes[j].symbol() == treftypes[i].symbol())
-			lb = treftypes[i].loBound();
+			lb = argglb(treftypes[j], treftypes[i]);
 		}
 	    }
 	    if (lb != NoType) return lb;
@@ -2049,6 +2052,32 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    glbType.parts = treftypes;
 	    return glbType;
 	}
+    }
+
+    private static Type argglb(Type tp1, Type tp2) {
+	switch (tp1) {
+	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
+	    switch (tp2) {
+	    case TypeRef(Type pre2, Symbol sym2, Type[] args2):
+		assert sym1 == sym2;
+		if (pre1.isSameAs(pre2)) {
+		    Symbol[] tparams = sym1.typeParams();
+		    Type[] args = new Type[tparams.length];
+		    for (int i = 0; i < tparams.length; i++) {
+			if (args1[i].isSameAs(args2[i]))
+			    args[i] = args1[i];
+			else if ((tparams[i].flags & COVARIANT) != 0)
+			    args[i]= lub(new Type[]{args1[i], args2[i]});
+			else if ((tparams[i].flags & CONTRAVARIANT) != 0)
+			    args[i]= glb(new Type[]{args1[i], args2[i]});
+			else
+			    return tp1.loBound();
+		    }
+		    return typeRef(pre1, sym1, args);
+		}
+	    }
+	}
+	return tp1.loBound();
     }
 
     private static boolean setGlb(Scope result, Scope[] ss, Type glbThisType) {
