@@ -1195,7 +1195,11 @@ final class TypeCreator {
 
 	if (nested) {
 	    if (Modifiers.Helper.isPrivate(mods))
-		attr |= TypeAttributes.NestedPrivate;
+		//attr |= TypeAttributes.NestedPrivate;
+                // Inner classes end up in the interface of a Scala class
+                // and are not accessible from the implementation class.
+                // Giving them assembly visibility fixes the problem.
+		attr |= TypeAttributes.NestedAssembly;
 	    else if (Modifiers.Helper.isProtected(mods))
 		attr |= TypeAttributes.NestedFamORAssem;
 	    else
