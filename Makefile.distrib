@@ -207,7 +207,7 @@ ia-build		:
 	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 644 -p $(IA_PROJECTFILE) $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_CUSTOMCODEDIR)
-	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/* -type f`; do \
+	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/*.jar -type f`; do \
 	    if [ -z "$$file" ]; then continue; fi; \
 	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_CUSTOMCODEDIR); \
 	done
