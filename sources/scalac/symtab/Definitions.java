@@ -737,7 +737,7 @@ public class Definitions {
     // Public Methods
 
     /** Returns the symbol of the module with the given fullname. */
-    public Symbol getModule(String fullname, boolean fail) {
+    public Symbol getModule(String fullname) {
         Scope scope = ROOT_CLASS.members();
         int i = 0;
         int j = fullname.indexOf('.', i);
@@ -756,14 +756,7 @@ public class Definitions {
                     if ((sym = alts[k]).isModule()) break;
             }
         }
-        if (fail)
-        	assert sym.isModule() : "no module '" + fullname + "'";
         return sym;
-    }
-
-    /** Returns the symbol of the module with the given fullname. */
-    public Symbol getModule(String fullname) {
-        return getModule(fullname, true);
     }
 
     /** Returns the symbol of the class with the given fullname. */
