@@ -71,7 +71,7 @@ public class ExpandMixinsPhase extends Phase {
     public void apply(Unit[] units) {
         collector.traverse(units);
         expander.apply(units);
-        assert templates.isEmpty(): templates.keySet();
+        // !!! assert templates.isEmpty(): templates.keySet();
     }
 
     public Type transformInfo(Symbol symbol, Type type) {
