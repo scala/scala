@@ -31,8 +31,8 @@ public class CompilerPhases {
     public final PhaseDescriptor LAMBDALIFT;
     public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDACCESSORS;
-    public final PhaseDescriptor TAILCALL;
     public final PhaseDescriptor ADDCONSTRUCTORS;
+    public final PhaseDescriptor TAILCALL;
     public final PhaseDescriptor ADDINTERFACES;
     public final PhaseDescriptor EXPANDMIXIN;
     public final PhaseDescriptor MAKEBOXINGEXPLICIT;
@@ -57,8 +57,8 @@ public class CompilerPhases {
     protected Class LAMBDALIFT_PHASE() { return scalac.transformer.LambdaLiftPhase.class; }
     protected Class EXPLICITOUTER_PHASE() { return scalac.transformer.ExplicitOuterClassesPhase.class; }
     protected Class ADDACCESSORS_PHASE() { return scalac.transformer.AddAccessorsPhase.class; }
-    protected Class TAILCALL_PHASE() { return scalac.transformer.TailCallPhase.class; }
     protected Class ADDCONSTRUCTORS_PHASE() { return scalac.transformer.AddConstructorsPhase.class; }
+    protected Class TAILCALL_PHASE() { return scalac.transformer.TailCallPhase.class; }
     protected Class ADDINTERFACES_PHASE() { return scalac.transformer.AddInterfacesPhase.class; }
     protected Class EXPANDMIXIN_PHASE() { return scalac.transformer.ExpandMixinsPhase.class; }
     protected Class ERASURE_PHASE() { return scalac.transformer.ErasurePhase.class; }
@@ -122,16 +122,16 @@ public class CompilerPhases {
                 "add accessors for constructor arguments",
                 "added accessors",
                 ADDACCESSORS_PHASE()),
-            this.TAILCALL = new PhaseDescriptor(
-                "tailcall",
-                "add tail-calls",
-                "added tail-calls",
-                TAILCALL_PHASE()),
             this.ADDCONSTRUCTORS = new PhaseDescriptor(
                 "addconstructors",
                 "add explicit constructor for each class",
                 "added constructors",
                 ADDCONSTRUCTORS_PHASE()),
+            this.TAILCALL = new PhaseDescriptor(
+                "tailcall",
+                "add tail-calls",
+                "added tail-calls",
+                TAILCALL_PHASE()),
             this.ADDINTERFACES = new PhaseDescriptor(
                 "addinterfaces",
                 "add one interface per class",
