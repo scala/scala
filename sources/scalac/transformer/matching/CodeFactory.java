@@ -74,6 +74,10 @@ class CodeFactory extends PatternTool {
 	return seqListSym().lookup( TAIL_N );
     }
 
+    Symbol seqListSym_length() {
+	return seqListSym().lookup( LENGTH_N );
+    }
+
     /*
     Symbol seqConsSym() {
 	return defs.getType( Names.scala_COLONCOLON ).symbol() ;
