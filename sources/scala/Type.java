@@ -20,6 +20,11 @@ import scala.runtime.types.TypeFloat;
 import scala.runtime.types.TypeInt;
 import scala.runtime.types.TypeLong;
 import scala.runtime.types.TypeShort;
+import scala.runtime.types.TypeUnit;
+import scala.runtime.types.TypeAll;
+import scala.runtime.types.TypeAllRef;
+import scala.runtime.types.TypeAny;
+import scala.runtime.types.TypeAnyVal;
 
 import scala.runtime.FNV_Hash;
 import scala.runtime.PearsonHash;
@@ -53,6 +58,11 @@ abstract public class Type {
         return (that instanceof Type) && this.isSameAs((Type)that);
     }
 
+    public int hashCode() {
+        throw new Error("missing hashCode implementation in class "
+                        + this.getClass());
+    }
+
     /**
      * Check that the given object can be cast to this type, and throw
      * an exception if this is not possible (implement Scala's
@@ -60,11 +70,11 @@ abstract public class Type {
      */
     public Object checkCastability(Object o) {
         if (! (o == null || isInstance(o)))
-            throw new ClassCastException(this.toString());
+            throw new ClassCastException("\n" + ((ScalaObject)o).getType() + "\n" + this.toString());
         return o;
     }
 
-    // Basic types
+    // Value types
     public static final TypeDouble  Double  = new TypeDouble();
     public static final TypeFloat   Float   = new TypeFloat();
     public static final TypeLong    Long    = new TypeLong();
@@ -73,6 +83,23 @@ abstract public class Type {
     public static final TypeChar    Char    = new TypeChar();
     public static final TypeByte    Byte    = new TypeByte();
     public static final TypeBoolean Boolean = new TypeBoolean();
+    public static final TypeUnit    Unit    = new TypeUnit();
+
+    // "Special" types
+    public static final TypeAny    Any    = new TypeAny();
+    public static final TypeAnyVal AnyVal = new TypeAnyVal();
+    public static final TypeAllRef AllRef = new TypeAllRef();
+    public static final TypeAll    All    = new TypeAll();
+
+    public static boolean isSameAs(Type[] these, Type[] those) {
+        if (these.length != those.length)
+            return false;
+        for (int i = 0; i < these.length; ++i) {
+            if (!these[i].isSameAs(those[i]))
+                return false;
+        }
+        return true;
+    }
 
     public static int hashCode(Type[] types) {
         final int len = types.length;
