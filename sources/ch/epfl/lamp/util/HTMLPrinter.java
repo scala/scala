@@ -224,8 +224,7 @@ public class HTMLPrinter {
     public HTMLPrinter printlnAhref(String dest, String text) {
 	printOTag("a", new XMLAttribute[]{ new XMLAttribute("href", dest) });
         print(text);
-        printlnCTag("a");
-        return this;
+        return printlnCTag("a");
     }
 
     /** Prints <A HREF=dest TARGET=target> text </a> tag followed by a new line. */
@@ -234,16 +233,14 @@ public class HTMLPrinter {
             new XMLAttribute("href", dest),
             new XMLAttribute("target", target)});
         print(text);
-        printlnCTag("a");
-        return this;
+        return printlnCTag("a");
     }
 
     /** Prints <A NAME=name> text </a> tag followed by a new line. */
     public HTMLPrinter printlnAname(String anchor, String text) {
         printOTag("a", new XMLAttribute[]{new XMLAttribute("name", anchor)});
         print(text);
-        printlnCTag("a");
-        return this;
+        return printlnCTag("a");
     }
 
     /** Prints text 'text' in bold followed by a new line. */
@@ -475,16 +472,17 @@ public class HTMLPrinter {
         }
     }
 
-    /** Prints HTML meta information.
+    /** Prints HTML meta informations.
      */
-    protected void printMetaInfo(XMLAttribute[] attrs) {
+    protected void printMetaInfo(XMLAttribute[] metaAttrs) {
 	printlnMeta(new XMLAttribute[]{
             new XMLAttribute("http-equiv", "content-type"),
-            new XMLAttribute("content", "text/html; charset=" + representation.getEncoding())});
-        for (int i = 0; i < attrs.length; i++) {
+            new XMLAttribute("content",
+                             "text/html; charset=" + representation.getEncoding())});
+        for (int i = 0; i < metaAttrs.length; i++) {
 	    printlnMeta(new XMLAttribute[]{
-                new XMLAttribute("name", attrs[i].name),
-                new XMLAttribute("content", attrs[i].value)});
+                new XMLAttribute("name", metaAttrs[i].name),
+                new XMLAttribute("content", metaAttrs[i].value)});
         }
     }
 
@@ -504,12 +502,12 @@ public class HTMLPrinter {
     /** Prints HTML header section.
      * @param metaXMLAttributes
      */
-    public void printHeader(XMLAttribute[] metaXMLAttributes, String generator, String[] stylesheets) {
+    public void printHeader(XMLAttribute[] metaAttrs, String generator, String[] stylesheets) {
 	printPreamble();
 	printlnOTag("head").indent();
         printlnTag("title", title);
         printGeneratedBy(generator);
-        printMetaInfo(metaXMLAttributes);
+        printMetaInfo(metaAttrs);
         printStyles(stylesheets);
 	undent().printlnCTag("head").line();
     }
@@ -519,23 +517,23 @@ public class HTMLPrinter {
      *  @param generator
      *  @param stylesheet
      */
-    public void printHeader(XMLAttribute[] metaXMLAttributes, String generator, String stylesheet) {
-	printHeader(metaXMLAttributes, generator, new String[]{ stylesheet });
+    public void printHeader(XMLAttribute[] metaAttrs, String generator, String stylesheet) {
+	printHeader(metaAttrs, generator, new String[]{ stylesheet });
     }
 
     /** Prints HTML header section.
      * @param metaXMLAttributes
      * @param generator
      */
-    public void printHeader(XMLAttribute[] metaXMLAttributes, String generator) {
-	printHeader(metaXMLAttributes, generator, DEFAULT_STYLESHEET);
+    public void printHeader(XMLAttribute[] metaAttrs, String generator) {
+	printHeader(metaAttrs, generator, DEFAULT_STYLESHEET);
     }
 
     /** Prints HTML header section.
      * @param metaXMLAttributes
      */
-    public void printHeader(XMLAttribute[] metaXMLAttributes) {
-	printHeader(metaXMLAttributes, null);
+    public void printHeader(XMLAttribute[] metaAttrs) {
+	printHeader(metaAttrs, null);
     }
 
     /** Open the body section.
