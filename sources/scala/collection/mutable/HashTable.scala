@@ -4,8 +4,9 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scala.collection.mutable;
 
@@ -39,7 +40,7 @@ abstract class HashTable[A] {
 
     /** The initial threshold
      */
-    protected val initialThreshold: Int = ((initialSize as Float) * loadFactor) as Int;
+    protected val initialThreshold: Int = newThreshold(initialSize);
 
     /** The actual hash table.
      */
@@ -111,6 +112,9 @@ abstract class HashTable[A] {
         if (n > 0) initTable(n - 1);
     }
 
+    private def newThreshold(size: Int) =
+        (size * loadFactor).asInstanceOf[Int];
+
     private def resize(newSize: Int) = {
         val newTable: Array[List[Entry]] = new Array(newSize);
         initTable(newSize - 1);
@@ -128,7 +132,7 @@ abstract class HashTable[A] {
         }
         rehash(table.length - 1);
         table = newTable;
-        threshold = ((newSize as Float) * loadFactor) as Int;
+        threshold = newThreshold(newSize);
     }
 
     protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2);
