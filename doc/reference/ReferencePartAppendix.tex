@@ -5,11 +5,12 @@ The lexical syntax of Scala is given by the following grammar in EBNF
 form.
 
 \begin{lstlisting}
-  upper          ::=  `A' | $\ldots$ | `Z' | `$\Dollar$' | `_'
-  lower          ::=  `a' | $\ldots$ | `z'
-  letter         ::=  upper | lower
+  upper          ::=  `A' | $\ldots$ | `Z' | `$\Dollar$' | `_' $\mbox{\rm\em and Unicode Lu}$
+  lower          ::=  `a' | $\ldots$ | `z' $\mbox{\rm\em and Unicode Ll}$
+  letter         ::=  upper | lower $\mbox{\rm\em and Unicode categories Lo, Lt, Nl}$
   digit          ::=  `0' | $\ldots$ | `9'
-  special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
+  special        ::=  $\mbox{\rm\em ``all other characters in \U{0020-007F} and Unicode categories Sm, So}$
+                      $\mbox{\rm\em except parentheses ([{}]) and periods''}$
 
   op             ::=  special {special} 
   varid          ::=  lower {letter | digit} [`_' {digit} [id]]
@@ -87,6 +88,7 @@ grammar.
                     |  SimpleExpr `.' id 
                     |  SimpleExpr TypeArgs
                     |  SimpleExpr ArgumentExprs
+                    |  XmlExpr
   ArgumentExprs    ::=  `(' [Exprs] ')'
                     |  BlockExpr
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
@@ -122,6 +124,7 @@ grammar.
                     |  Literal
                     |  StableId [ `(' [Patterns] `)' ]
                     |  `(' [Patterns] `)'
+                    |  XmlPattern
   Patterns        ::=  Pattern {`,' Pattern}
 
   TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
@@ -197,6 +200,52 @@ grammar.
                     |
   Packaging       ::=  package QualId `{' {TopStat `;'} TopStat `}'
   QualId          ::=  id {`.' id}
+
+  XmlExpr         ::=  Element {Element}
+
+  XmlPattern      ::=  ElementPattern {ElementPattern}
+  Element         ::=  EmptyElemTag
+                    |  STag Content ETag                                       
+
+  EmptyElemTag    ::=  `<' Name {S Attribute} [S] `/>'                         
+
+  STag            ::=  `<' Name {S Attribute} [S] `>'                          
+  ETag            ::=  `</' Name [S] '>'                                        
+  Content         ::=  [CharData] {Content1 [CharData]}
+  Content1        ::=  Element
+                    |  Reference
+                    |  Comment
+                    |  ScalaExpr
+  Attribute       ::=  Name Eq AttValue	                                 
+  AttValue        ::=  `"' {CharQ | CharRef} `"'
+                    |  `'' {CharA | CharRef} `''
+                    |  ScalaExp
+
+  ScalaExpr       ::=  `{' expr `}'
+
+  CharData        ::=  { CharNoRef } 
+                       $\mbox{\rm\em without}$ {CharNoRef}`{'CharB {CharNoRef} 
+                       $\mbox{\rm\em and without}$ {CharNoRef}`]]>'{CharNoRef}
+
+  Reference, Char, NameChar, S, Comment, CombiningChar, Extender      
+                  ::=   $\mbox{\rm\em ``as in W3C XML''}$
+
+  Char1             ::=  Char $\mbox{\rm\em without}$ `<' | `&'
+  CharQ             ::=  Char1 $\mbox{\rm\em without}$ `"'
+  CharA             ::=  Char1 $\mbox{\rm\em without}$ `''
+  CharB             ::=  Char1 $\mbox{\rm\em without}$ '{'
+
+  Name              ::=  $\mbox{\rm\em ``as in W3C XML'', but without }$ ':'
+
+  ElemPattern       ::=  EmptyElemTagP
+                    |    STagP ContentP ETagP                                       
+
+  EmptyElemTagP     ::=  '<' Name [S] '/>'
+  STagP             ::=  '<' Name [S] '>'                          
+  ETagP             ::=  '</' Name [S] '>'                                        
+  ContentP          ::=  [CharData] {(ElemPattern|ScalaPatterns) [CharData]}
+  ScalaPatterns     ::=  '{' patterns '}'
+
 \end{lstlisting}
 
 \chapter{Implementation Status}

@@ -21,23 +21,37 @@
 \newcommand{\ifpackaging}[1]{}
 \newcommand{\ifnewfor}[1]{}
 
+%\newcommand{\U}[1]{\mbox{U+$\backslash$u{#1}}}
+\newcommand{\U}[1]{\mbox{U+{#1}}}
+
 \chapter{Lexical Syntax}
 
-This chapter defines the syntax of Scala tokens. Tokens are
-constructed from characters in the following character sets:
+Scala programs are written using the Unicode character set.
+This chapter defines the two modes of Scala's lexical syntax, the
+Scala mode and the \textsc{Xml} mode. If not otherwise mentioned, the following 
+descriptions of Scala tokens refer to Scala mode, and literal characters `c' refer 
+to the ASCII fragment \U{0000-007F}. 
+
+In Scala mode, \textit{Unicode escapes} are replaced by the corresponding
+Unicode character as in Java.
+\begin{lstlisting}
+UnicodeEscape ::= \\{\\\\}u{u} HexDigit HexDigit HexDigit HexDigit
+HexDigit      ::= '0' | $\ldots$ | `9' | `A' | $\ldots$ | `F' | `a' | $\ldots$ | `f' |
+\end{lstlisting}
+To construct tokens, characters are distinguished according to the following classes 
+(Unicode general category given in parentheses):
 \begin{enumerate}
-\item Whitespace characters.
-\item Lower case letters ~\lstinline@`a' | $\ldots$ | `z'@~  and
-upper case letters ~\lstinline@`A' | $\ldots$ | `Z' | `$\Dollar$' | `_'@.
+\item Whitespace characters. \U{0020} | \U{0009} | \U{000D} | \U{000A}
+\item Letters, which include lower case letters(Ll), upper case letters(Lu), titlecase letters(Lt), other letters(Lo), letter numerals(Nl) and the 
+two characters \U{0024} ~\lstinline@`$\Dollar$'@ and \U{005F} ~\lstinline@`_'@, which
+both count as upper case letters
 \item Digits ~\lstinline@`0' | $\ldots$ | `9'@.
 \item Parentheses ~\lstinline@`(' | `)' | `[' | `]' | `{' | `}'@.
 \item Delimiter characters ~\lstinline@``' | `'' | `"' | `.' | `;' | `,'@.
-\item Operator characters. These include all printable ASCII characters
-which are in none of the sets above.
+\item Operator characters. These include all printable ASCII characters \U{0020-007F}. 
+which are in none of the sets above, mathematical symbols(Sm) and other symbols(So).
 \end{enumerate}
-
-These sets are extended in the usual way to Unicode. 
-
+\newpage
 \section{Identifiers}\label{sec:idents}
 
 \syntax\begin{lstlisting}
@@ -53,7 +67,7 @@ There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
 letters and digits. This may be followed by an underscore
 `\lstinline@_@' character and another string of characters that by
-themselves make up an identifier.  Second, an identifier can be start
+themselves make up an identifier.  Second, an identifier can be started
 with a special character followed by an arbitrary sequence of special
 characters.  Finally, an identifier may also be formed by an arbitrary
 string between back-quotes (host systems may impose some restrictions
@@ -95,7 +109,7 @@ The Unicode operator `$\Rightarrow$' (\textsc{U+21D2}) has the ASCII equivalent
 Here are examples of identifiers:
 \begin{lstlisting}
     x    Object        maxIndex        p2p      empty_?
-    +    +_field
+    +    +_field       $\alpha\rho\epsilon\tau\eta$
 \end{lstlisting}
 
 \section{Braces and Semicolons}
@@ -127,7 +141,7 @@ stringLit    ::=  $\mbox{\rm\em ``as in Java''}$
 
 \section{Whitespace and Comments}
 
-Tokens may be separated by whitespace characters (ASCII codes 0 to 32)
+Tokens may be separated by whitespace characters
 and/or comments. Comments come in two forms:
 
 A single-line comment is a sequence of characters which starts with
@@ -136,6 +150,31 @@ A single-line comment is a sequence of characters which starts with
 A multi-line comment is a sequence of characters between \lstinline@/*@ and
 \lstinline@*/@. Multi-line comments may be nested.
 
+\section{XML mode\label{sec::xmlMode}}
+
+In order to allow literal inclusion of XML fragments, lexical analysis switches
+from Scala mode to XML mode when encountering an opening angle bracket '<' 
+in the following circumstance: The '<' must be preceded either by whitespace, an 
+opening parenthesis or an opening brace and immediately followed by a character 
+starting an XML name.
+\syntax\begin{lstlisting}
+ ( whitespace | '(' | '{' ) '<' XNameStart
+\end{lstlisting}
+
+The scanner switches from XML mode to Scala mode if either
+\begin{itemize}
+\item the XML expression or the XML pattern started by the initial '<' has been 
+successfully parsed, or if
+
+\item the parser encounters an embedded Scala expression or pattern and forces the Scanner 
+back to normal mode, until the Scala expression or pattern is
+successully parsed. In this case, since code and XML fragments can be
+nested, the parser has to maintain a stack that reflects the nesting
+of XML and Scala expressions adequately.
+\end{itemize}
+
+Note that no Scala tokens are constructed in XML mode, and that comments are interpreted
+as text.
 
 \chapter{\label{sec:names}Identifiers, Names and Scopes}
 
@@ -2392,6 +2431,7 @@ module FileSystem {
                     |  SimpleExpr `.' id 
                     |  SimpleExpr TypeArgs
                     |  SimpleExpr ArgumentExprs
+                    |  XmlExpr
   ArgumentExprs   ::=  `(' [Exprs] ')'
                     |  BlockExpr
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
@@ -3405,7 +3445,8 @@ written.
 % 2003 July - changed to new pattern syntax + semantic Burak
 %      Nov  - incorporated changes to grammar, avoiding empty patterns
 %             definitions for value and sequence patterns
-%      Jan  - revert back to original version ?! move regexp to subsect
+% 2004 Jan  - revert back to original version ?! move regexp to subsect
+%      May  - XmlPattern
 
 \label{sec:patterns}
 
@@ -3417,6 +3458,7 @@ written.
                  |   `_'
                  |   literal
                  |   StableId {`(' [Patterns] `)'}
+                 |   XmlPattern
   Patterns      ::=  Pattern {`,' Pattern}
 \end{verbatim}
 
@@ -3774,6 +3816,101 @@ object HelloWord {
 \label{sec:local-type-inf}
 
 To be completed.
+
+\chapter{XML expressions and patterns}
+This chapter describes the syntactic structure of XML expressions and patterns.
+It follows as close as possible the XML 1.0 specification \cite{w3c:xml},
+changes being mandated by the possibility of embedding Scala code fragments.
+
+\section{XML expressions}
+XML expressions are expressions generated by the following production, where the 
+opening bracket `<' of the first element must be in a position to start the lexical
+XML mode (see \ref{sec::xmlMode}).
+
+\syntax\begin{lstlisting}
+XmlExpr ::= Element {Element}
+\end{lstlisting}
+Well-formedness constraints of the XML specification apply, which means for instance
+that start tags and end tags must match, and attributes may only be defined once, with
+the exception of constraints related to entity resolution.
+
+If an XML expression is a single element, its value is a runtime representation of
+an XML node. If the XML expression consists of more than one element, then its value
+is a runtime representation of a sequence of XML nodes.
+
+XML expressions may contain Scala expressions as attribute values or within nodes.
+
+\syntax\begin{lstlisting}
+Element       ::=    EmptyElemTag
+                |    STag Content ETag                                       
+
+EmptyElemTag  ::=    `<' Name {S Attribute} [S] `/>'                         
+
+STag          ::=    `<' Name {S Attribute} [S] `>'                          
+ETag          ::=    `</' Name [S] '>'                                        
+Content       ::=    [CharData] {Content1 [CharData]}
+Content1      ::=    Element
+                |    Reference
+                |    Comment
+                |    ScalaExpr
+\end{lstlisting}
+The following productions describe Scala's extensible markup language as close as possible
+to the W3C extensible markup language standard. Only the productions for
+attribute values and character data are changed. Scala does not support neither 
+declarations, CDATA sections nor processing instructions. Entity references are not
+resolved at runtime.
+
+\syntax\begin{lstlisting}
+Attribute     ::=    Name Eq AttValue	                                 
+
+AttValue      ::=    `"' {CharQ | CharRef} `"'
+                |    `'' {CharA | CharRef} `''
+                |    ScalaExp
+
+ScalaExpr      ::=    `{' expr `}'
+
+CharData      ::=   { CharNoRef } $\mbox{\rm\em without}$ {CharNoRef}`{'CharB {CharNoRef} 
+                                  $\mbox{\rm\em and without}$ {CharNoRef}`]]>'{CharNoRef}
+
+Reference, Char, NameChar, S, Comment, CombiningChar, Extender      
+              ::=   $\mbox{\rm\em ``as in W3C XML''}$
+
+Char1         ::=   Char $\mbox{\rm\em without}$ `<' | `&'
+CharQ         ::=   Char1 $\mbox{\rm\em without}$ `"'
+CharA         ::=   Char1 $\mbox{\rm\em without}$ `''
+CharB         ::=   Char1 $\mbox{\rm\em without}$ '{'
+
+Name          ::=  $\mbox{\rm\em ``as in W3C XML'', but without }$ ':'
+\end{lstlisting}
+\section{XML patterns}
+XML patterns are patterns generated by the following production, where the opening
+bracket `<' of the element patterns must be in a position to start the lexical
+XML mode (see \ref{sec::xmlMode}).
+\syntax\begin{lstlisting}
+XmlPattern  ::= ElementPattern {ElementPattern}
+\end{lstlisting}
+Well-formedness constraints of the XML specification apply.
+
+If an XML pattern is a single element pattern, it expects the type of runtime
+representation of an XML tree, and matches exactly one instance of this type
+that has the same structure as described by the pattern. If an XML pattern 
+consists of more than one element, then it expects the type of sequences
+of runtime representations of XML trees, and matches every sequence whose elements
+match the sequence pattern.
+
+XML patterns may contain Scala patterns(\ref{sec:pattern-match}).
+
+\begin{lstlisting}
+ElemPattern   ::=    EmptyElemTagP
+                |    STagP ContentP ETagP                                       
+
+EmptyElemTagP ::=    '<' Name [S] '/>'
+STagP         ::=    '<' Name [S] '>'                          
+ETagP         ::=    '</' Name [S] '>'                                        
+ContentP      ::=    [CharData] {(ElemPattern|ScalaPatterns) [CharData]}
+ScalaPatterns ::=    '{' patterns '}'
+\end{lstlisting}
+
 
 \chapter{The Scala Standard Library}
 
