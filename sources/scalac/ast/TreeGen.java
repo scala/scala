@@ -805,6 +805,18 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return tree;
     }
 
+    /** Builds an CaseDef node with given pattern, guard and body. */
+    public CaseDef CaseDef(Tree pattern, Tree guard, Tree body) {
+        CaseDef tree = make.CaseDef(pattern.pos, pattern, guard, body);
+        tree.setType(body.type());
+        return tree;
+    }
+
+    /** Builds an CaseDef node with given pattern and body. */
+    public CaseDef CaseDef(Tree pattern, Tree body) {
+        return CaseDef(pattern, Tree.Empty, body);
+    }
+
     //########################################################################
     // Private Methods
 
