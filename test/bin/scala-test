@@ -441,13 +441,13 @@ main() {
 
     if [ "$TEST_ALL" = "true" ]; then
         case "$TEST_TYPE" in
-            auto | run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
+                   run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-                   int ) FILES_INT="$FILES_INT $SRCDIR/run";;
+            auto | int ) FILES_INT="$FILES_INT $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-                   jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
+            auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
         esac;
         case "$TEST_TYPE" in
             auto | pos ) FILES_POS="$FILES_POS $PREFIX/pos $PREFIX/cours";;
