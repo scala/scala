@@ -2,6 +2,7 @@
 <!DOCTYPE html SYSTEM "xhtml.dtd">
 <html>
   <head>
+    <base/>
     <title>a basic xhtml page</title>
   </head>
   <body>

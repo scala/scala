@@ -1,2 +1,0 @@
-<html><head><title>a basic xhtml page</title></head><body><h1>Welcome to xhtml in scala</h1><p>a paragraph</p><p>another one, with a <a>link</a> to the LAMP homepage.</p></body></html>
-<html version="-//W3C//DTD XHTML Basic 1.0//EN"><head profile=""><title>a basic xhtml page</title></head><body><h1>Welcome to xhtml in scala</h1><p>a paragraph</p><p>another, with a <a href="http://lampwww.epfl.ch">example link</a> to lamp homepage</p></body></html>
