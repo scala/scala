@@ -31,9 +31,7 @@ ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
 # scala test
 TEST_ROOT		 = $(PROJECT_TESTDIR)
-TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-pos.lst)
-TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-neg.lst)
-TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-run.lst)
+TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test.lst)
 TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
 
 ##############################################################################
