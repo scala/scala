@@ -116,24 +116,4 @@ public abstract class Char    extends AnyVal {
     /** @meta method []scala.Int    ; */
     public int     coerce     (            ) { return  value        ; }
 
-    /** @meta method []scala.Boolean; */
-    public boolean isDigit() {
-        return Character.isDigit(value);
-    }
-
-    /** @meta method []scala.Boolean; */
-    public boolean isLetter() {
-        return Character.isLetter(value);
-    }
-
-    /** @meta method []scala.Boolean; */
-    public boolean isLetterOrDigit() {
-        return Character.isLetterOrDigit(value);
-    }
-
-    /** @meta method []scala.Boolean; */
-    public boolean isWhitespace() {
-        return Character.isWhitespace(value);
-    }
-
 }
