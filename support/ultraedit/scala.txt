@@ -1,7 +1,7 @@
 /L20"Scala" Line Comment = // Block Comment On = /* Block Comment Off = */ Escape Char = \ File Extensions = SCALA
 /Delimiters = ~!@%^&*()-+=|\/{}[]:;"'<> ,	.?
-/Function String = "%[ ^t]++[ps][a-z]+ [a-z,0-9]+ ^(*(*)^)*{$"
-/Function String 1 = "%[ ^t]++[ps][a-z]+ [a-z,0-9]+ ^(*(*)^)[ ^t]++$"
+/Function String = "%[ ^t]++[ps][a-zA-Z]+ [a-z,A-Z,0-9]+ ^(*(*)^)*{$"
+/Function String 1 = "%[ ^t]++[ps][a-zA-Z]+ [a-z,A-Z,0-9]+ ^(*(*)^)[ ^t]++$"
 /Indent Strings = "{"
 /Unindent Strings = "}"
 
@@ -30,18 +30,81 @@ DatabaseMetaData DataFlavor DataFormatException DatagramPacket DatagramSocket Da
 EmptyStackException Enumeration EOFException Event EventListener EventObject EventQueue EventSetDescriptor Exception ExceptionInInitializerError ExportException
 FeatureDescriptor Field FieldPosition File FileDescriptor FileDialog FileDialogPeer FileInputStream FilenameFilter FileNameMap FileNotFoundException FileOutputStream FileReader FileWriter FilteredImageSource FilterInputStream FilterOutputStream FilterReader FilterWriter Float FlowLayout FocusAdapter FocusEvent FocusListener Font FontMetrics FontPeer Format Frame FramePeer
 Graphics GregorianCalendar GridBagConstraints GridBagLayout GridLayout Group GZIPInputStream GZIPOutputStream
-Hashtable HttpURLConnection
-Identity IdentityScope IllegalAccessError IllegalAccessException IllegalArgumentException IllegalComponentStateException IllegalMonitorStateException IllegalStateException IllegalThreadStateException Image ImageConsumer ImageFilter ImageObserver ImageProducer IncompatibleClassChangeError IndexColorModel IndexedPropertyDescriptor IndexOutOfBoundsException InetAddress Inflater InflaterInputStream InputEvent InputStream InputStreamReader Insets InstantiationError InstantiationException Int Integer InternalError InterruptedException InterruptedIOException IntrospectionException Introspector InvalidClassException InvalidKeyException InvalidObjectException InvalidParameterException InvocationTargetException IOException ItemEvent ItemListener ItemSelectable
+Hashtable HashMap HashSet HttpURLConnection
+Identity IdentityScope IllegalAccessError IllegalAccessException IllegalArgumentException IllegalComponentStateException IllegalMonitorStateException IllegalStateException IllegalThreadStateException Image ImageConsumer ImageFilter ImageObserver ImageProducer IncompatibleClassChangeError IndexColorModel IndexedPropertyDescriptor IndexOutOfBoundsException InetAddress Inflater InflaterInputStream InputEvent InputStream InputStreamReader Insets InstantiationError InstantiationException Int Integer InternalError InterruptedException InterruptedIOException IntrospectionException Introspector InvalidClassException InvalidKeyException InvalidObjectException InvalidParameterException InvocationTargetException IOException ItemEvent ItemListener ItemSelectable Iterable Iterator
 Key KeyAdapter KeyEvent KeyException KeyListener KeyManagementException KeyPair KeyPairGenerator
-Label LabelPeer LastOwnerException LayoutManager LayoutManager2 Lease LightweightPeer LineNumberInputStream LineNumberReader LinkageError List ListPeer ListResourceBundle LoaderHandler Locale LocateRegistry LogStream Long
-MalformedURLException MarshalException Math MediaTracker Member MemoryImageSource Menu MenuBar MenuBarPeer MenuComponent MenuComponentPeer MenuContainer MenuItem MenuItemPeer MenuPeer MenuShortcut MessageDigest MessageFormat Method MethodDescriptor MissingResourceException Modifier MouseAdapter MouseEvent MouseListener MouseMotionAdapter MouseMotionListener MulticastSocket
-Naming NegativeArraySizeException NoClassDefFoundError NoRouteToHostException NoSuchAlgorithmException NoSuchElementException NoSuchFieldError NoSuchFieldException NoSuchMethodError NoSuchMethodException NoSuchObjectException NoSuchProviderException NotActiveException NotBoundException NotOwnerException NotSerializableException NullPointerException Number NumberFormat NumberFormatException
+Label LabelPeer LastOwnerException LayoutManager LayoutManager2 Lease LightweightPeer LineNumberInputStream LineNumberReader LinkageError LinkedList List ListMap ListPeer ListResourceBundle LoaderHandler Locale LocateRegistry LogStream Long
+MalformedURLException Map MapWrapper MarshalException Math MediaTracker Member MemoryImageSource Menu MenuBar MenuBarPeer MenuComponent MenuComponentPeer MenuContainer MenuItem MenuItemPeer MenuPeer MenuShortcut MessageDigest MessageFormat Method MethodDescriptor MissingResourceException Modifier Monitor MouseAdapter MouseEvent MouseListener MouseMotionAdapter MouseMotionListener MulticastSocket MultiMap MultiSet
+Naming NegativeArraySizeException Nil NoClassDefFoundError NoRouteToHostException NoSuchAlgorithmException NoSuchElementException NoSuchFieldError NoSuchFieldException NoSuchMethodError NoSuchMethodException NoSuchObjectException NoSuchProviderException NotActiveException NotBoundException NotOwnerException NotSerializableException NullPointerException Number NumberFormat NumberFormatException
 Object ObjectInput ObjectInputStream ObjectInputValidation ObjectOutput ObjectOutputStream ObjectStreamClass ObjectStreamException ObjID Observable Observer Operation OptionalDataException OutOfMemoryError OutputStream OutputStreamWriter Owner
 PaintEvent Pair Panel PanelPeer ParameterDescriptor ParseException ParsePosition Permission PipedInputStream PipedOutputStream PipedReader PipedWriter PixelGrabber Point Polygon PopupMenu PopupMenuPeer Predef PreparedStatement Principal PrintGraphics PrintJob PrintStream PrintWriter PrivateKey Process Properties PropertyChangeEvent PropertyChangeListener PropertyChangeSupport PropertyDescriptor PropertyEditor PropertyEditorManager PropertyEditorSupport PropertyResourceBundle PropertyVetoException ProtocolException Provider ProviderException PublicKey PushbackInputStream PushbackReader
 Random RandomAccessFile Reader Rectangle Registry RegistryHandler Remote RemoteCall RemoteException RemoteObject RemoteRef RemoteServer RemoteStub ReplicateScaleFilter ResourceBundle ResultSet ResultSetMetaData RGBImageFilter RMIClassLoader RMIFailureHandler RMISecurityException RMISecurityManager RMISocketFactory RuleBasedCollator Runnable Runtime RuntimeException
-Seq Scrollbar ScrollbarPeer ScrollPane ScrollPanePeer SecureRandom Security SecurityException SecurityManager SequenceInputStream Serializable ServerCloneException ServerError ServerException ServerNotActiveException ServerRef ServerRuntimeException ServerSocket Shape Short Signature SignatureException Signer SimpleBeanInfo SimpleDateFormat SimpleTimeZone Skeleton SkeletonMismatchException SkeletonNotFoundException Socket SocketException SocketImpl SocketImplFactory SocketSecurityException SQLException SQLWarning Stack StackOverflowError Statement Stream StreamCorruptedException StreamTokenizer String StringBuffer StringBufferInputStream StringCharacterIterator StringIndexOutOfBoundsException StringReader StringSelection StringTokenizer StringWriter StubNotFoundException SyncFailedException System SystemColor
+Seq Set SetWrapper Scrollbar ScrollbarPeer ScrollPane ScrollPanePeer SecureRandom Security SecurityException SecurityManager SequenceInputStream Serializable ServerCloneException ServerError ServerException ServerNotActiveException ServerRef ServerRuntimeException ServerSocket Shape Short Signature SignatureException Signer SimpleBeanInfo SimpleDateFormat SimpleTimeZone Skeleton SkeletonMismatchException SkeletonNotFoundException Socket SocketException SocketImpl SocketImplFactory SocketSecurityException SQLException SQLWarning Stack StackOverflowError Statement Stream StreamCorruptedException StreamTokenizer String StringBuffer StringBufferInputStream StringCharacterIterator StringIndexOutOfBoundsException StringReader StringSelection StringTokenizer StringWriter StubNotFoundException SyncFailedException System SystemColor
 TextArea TextAreaPeer TextComponent TextComponentPeer TextEvent TextField TextFieldPeer TextListener Thread ThreadDeath ThreadGroup Throwable Time Timestamp TimeZone Toolkit TooManyListenersException Transferable Triple Types
 UID UnexpectedException UnicastRemoteObject Unit UnknownError UnknownHostException UnknownServiceException UnmarshalException Unreferenced UnsatisfiedLinkError UnsupportedEncodingException UnsupportedFlavorException URL URLConnection URLEncoder URLStreamHandler URLStreamHandlerFactory UTFDataFormatException
 Vector VerifyError VetoableChangeListener VetoableChangeSupport VirtualMachineError Visibility VMID Void
 Window WindowAdapter WindowEvent WindowListener WindowPeer WriteAbortedException Writer
 ZipEntry ZipException ZipFile ZipInputStream ZipOutputStream
+
+/C3"Packages"
+Activation ActivationIDL 
+CORBA CORBA_2_3 CodecFactoryPackage CodecPackage CosNaming CurrentPackage
+DynAnyFactoryPackage DynAnyPackage Dynamic DynamicAny
+IOP InitialNameServicePackage Interceptors
+LocatorPackage
+Messaging
+NamingContextExtPackage NamingContextPackage
+ORBInitInfoPackage ORBPackage
+PCosNaming POA POAManagerPackage POAPackage PortableInterceptor PortableServer
+RepositoryPackage
+SendingContext ServantLocatorPackage
+TypeCodePackage
+accessibility acl activation apache applet attribute auth awt axes
+basic beancontext beans border
+callback cert channels charset client codec collection color colorchooser com common compiler concurrent connection corba core crimson css 
+datatransfer dgc directory dnd dom dom2dtm dtm
+event events ext extension extensions
+filechooser font functions
+geom gif
+helpers html
+ietf iiop im image imageio immutable interceptor interfaces internal io ior
+jar java javax jaxp jgss jpeg
+kerberos
+lang launcher ldap lib logging login
+math messages metadata metal module motif multi mutable
+naming net nio
+objects omg operations orbutil org
+parser parsers patterns peer plaf plugins png portable prefs print processor
+ref reflect reflection regex registry renderable res rmi rtf runtime
+sax sax2dtm scala se security serialize server spec spi sql standard stream stub stylesheets sun sunw swing synthetic 
+table templates text trace transform transformer traversal tree
+undo util utils
+views
+w3c windows
+x500 xalan xml xpath xslt
+zip
+
+/C4"Operators"
+|
+^
+&
+<: <
+>: >
+=> == =
+!
+:: :
++
+-
+*
+// /
+%
+
+/C5"Separs"
+[
+]
+(
+)
+,
+;
+{
+}
