@@ -29,6 +29,6 @@ public abstract class AnalyzerPhase extends Phase {
 
     public abstract void addConsoleImport(Symbol module);
 
-    public abstract void lateEnter(Global global, Unit unit, Symbol symbol);
+    public abstract void lateEnter(Unit unit);
 
 }

@@ -60,8 +60,8 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
   override def apply(units: Array[Unit]): unit =
     new Analyzer(global, this).apply(units);
 
-  override def lateEnter(global: scalac_Global, unit: Unit, symbol: Symbol): unit = {
-    new Analyzer(global, this).lateEnter(unit, symbol);
+  override def lateEnter(unit: Unit): unit = {
+    new Analyzer(global, this).lateEnter(unit);
   }
 
   override def postCheckers(global: scalac_Global): Array[Checker] =

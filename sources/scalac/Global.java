@@ -384,6 +384,19 @@ public abstract class Global {
         treePrinter.end();
     }
 
+    /** Compiles an additional source file. */
+    public void compileLate(SourceFile source, boolean mixinOnly) {
+        Unit unit = new Unit(this, source, false, mixinOnly);
+        Phase backup = currentPhase;
+        // !!! add code to print/skip/graph as in compile
+        currentPhase = PHASE.PARSER.phase();
+        PHASE.PARSER.phase().apply(new Unit[] {unit});
+        currentPhase = PHASE.ANALYZER.phase();
+        ((AnalyzerPhase)PHASE.ANALYZER.phase()).lateEnter(unit);
+        // !!! add code for later phases?
+        currentPhase = backup;
+    }
+
     private void print() {
         if (currentPhase.id == PHASE.MAKEBOXINGEXPLICIT.id()) {
             boolean html = args.printer.value.equals(PRINTER_HTML);

@@ -101,8 +101,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     this.context = null;
   }
 
-  def lateEnter(unit: Unit, sym: Symbol): unit = {
-    //System.out.println("late enter: " + sym + " " + sym.isModule());//DEBUG
+  def lateEnter(unit: Unit): unit = {
     enterUnit(unit);
     descr.newSources.add(unit);
   }
@@ -111,14 +110,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     assert(clasz.isClass() && !clasz.isModuleClass(), Debug.show(clasz));
     if (clasz.isExternal()) {
       try {
-        val filename = SourceRepresentation.externalizeFileName(clasz, ".scala");
-        val file = global.classPath.openFile(filename);
-        if (!file.exists()) throw new java.io.FileNotFoundException(file.getPath());
-        new SourceCompleter(global).complete(clasz);
+        global.compileLate(global.getSourceFile(clasz), true);
       } catch {
         case exception: java.io.IOException =>
           if (global.debug) exception.printStackTrace();
-          unit.error(pos, "source file for " + clasz + " not found; it is needed because class is used as a mixin");
+          unit.error(pos, exception.getMessage() + "; source file for "
+                     + clasz + " is needed because it is used as a mixin");
       }
     }
   }
