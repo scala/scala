@@ -414,7 +414,7 @@ class CodeFactory extends PatternTool {
     /** return the analyzed type
      */
     public Type typeOf0(Symbol sym) {
-        return sym.typeAt(unit.global.PHASE.ANALYZER.id);
+        return sym.typeAt(unit.global.PHASE.ANALYZER.id());
     }
 
 

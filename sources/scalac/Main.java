@@ -26,7 +26,7 @@ public class Main {
     public static void main(String[] args) {
         Reporter reporter = new Reporter();
         CompilerCommand command = new CompilerCommand(
-            PRODUCT, VERSION, reporter, new PhaseRepository());
+            PRODUCT, VERSION, reporter, new CompilerPhases());
         if (command.parse(args) && command.files.list.size() > 0) {
             Global global = new Global(command);
             global.compile(command.files.toArray(), false);

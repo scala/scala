@@ -8,29 +8,29 @@
 
 package scalac.transformer;
 
-import scalac.*;
+import scalac.Global;
+import scalac.Phase;
+import scalac.PhaseDescriptor;
+import scalac.Unit;
 import scalac.checkers.*;
 
-public class TransMatchPhase extends PhaseDescriptor {
+public class TransMatchPhase extends Phase {
 
-    public String name () {
-        return "transmatch";
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public TransMatchPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
     }
 
-    public String description () {
-        return "translate match expressions";
-    }
+    //########################################################################
+    // Public Methods
 
-    public String taskDescription() {
-        return "translated pattern matching";
-    }
-
-    public void apply(Global global) {
-        new TransMatch(global).apply();
-    }
-
-    public void apply(Unit unit) {
-    	new TransMatch(unit.global).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new TransMatch(global).apply(units[i]);
     }
 
     public Checker[] postCheckers(Global global) {
@@ -41,4 +41,6 @@ public class TransMatchPhase extends PhaseDescriptor {
 	    new CheckNames(global)
         };
     }
+
+    //########################################################################
 }

@@ -109,7 +109,7 @@ public class  Global {
 
     /** the current phase
      */
-    public PhaseDescriptor currentPhase;
+    public Phase currentPhase;
 
     /** the global definitions
      */
@@ -121,8 +121,8 @@ public class  Global {
 
     /** compilation phases.
      */
-    public final PhaseRepository PHASE;
-    public final PhaseDescriptor[] phases;
+    public final CompilerPhases PHASE;
+    public final Phase[] phases;
 
     public static final int START_PHASE_ID = 1;
     public static final int POST_ANALYZER_PHASE_ID = 3;
@@ -197,48 +197,24 @@ public class  Global {
 	this.docmodulePath = args.docmodulePath.value;
         this.freshNameCreator = new FreshNameCreator();
         this.make = new DefaultTreeFactory();
-        this.currentPhase = PhaseDescriptor.INITIAL;
+        this.PHASE = args.phases;
+        // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
+        if (target != TARGET_MSIL) PHASE.remove(args.phases.GENMSIL);
+        if (target != TARGET_JVM) PHASE.remove(args.phases.GENJVM);
+        if (target != TARGET_JVM_BCEL) PHASE.remove(args.phases.GENJVM_BCEL);
+        PHASE.freeze();
+        PhaseDescriptor[] descriptors = PHASE.phases();
+        this.phases = new Phase[descriptors.length];
+        this.currentPhase = phases[0] = descriptors[0].create(this);
         this.definitions = new Definitions(this);
         this.primitives = new Primitives(this);
         this.treeGen = new TreeGen(this, make);
-        this.PHASE = args.phases;
-        List phases = new ArrayList();
-        phases.add(PHASE.INITIAL);
-        phases.add(PHASE.PARSER);
-        phases.add(PHASE.ANALYZER);
-        phases.add(PHASE.REFCHECK);
-        phases.add(PHASE.UNCURRY);
-        /*
-        if (optimize) {
-            phases.add(PHASE.OPTIMIZE);
-        } */
-        phases.add(PHASE.TRANSMATCH);
-        phases.add(PHASE.LAMBDALIFT);
-        phases.add(PHASE.EXPLICITOUTER);
-        phases.add(PHASE.ADDACCESSORS);
-        phases.add(PHASE.ADDINTERFACES);
-        phases.add(PHASE.EXPANDMIXIN);
-        phases.add(PHASE.ERASURE);
-        if (target == TARGET_INT
-            || target == TARGET_MSIL
-            || target == TARGET_JVM
-            || target == TARGET_JVM_BCEL) {
-            phases.add(PHASE.ADDCONSTRUCTORS);
-        }
-        if (target == TARGET_MSIL) phases.add(PHASE.GENMSIL);
-        if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
-        if (target == TARGET_JVM_BCEL) phases.add(PHASE.GENJVM_BCEL);
-        phases.add(PHASE.TERMINAL);
-        this.phases = new PhaseDescriptor[phases.size()];
-        for (int i = 0; i < phases.size(); i++) {
-            PhaseDescriptor phase = (PhaseDescriptor)phases.get(i);
-            this.phases[i] = phase;
-            if (i > 0) this.phases[i - 1].flags |= phase.flags >>> 16;
-            phase.initialize(this, i);
-            assert phase.id == i;
-        }
-        assert PHASE.PARSER.id == START_PHASE_ID;
-        assert PHASE.ANALYZER.id + 1 == POST_ANALYZER_PHASE_ID;
+        for (int i = 1; i < descriptors.length; i++)
+            this.currentPhase = phases[i] = descriptors[i].create(this);
+        this.currentPhase = phases[0];
+
+        assert PHASE.PARSER.id() == START_PHASE_ID;
+        assert PHASE.ANALYZER.id() + 1 == POST_ANALYZER_PHASE_ID;
     }
 
     /** Move to next phase
@@ -290,28 +266,20 @@ public class  Global {
         // apply successive phases and pray that it works
         for (int i = 0; i < phases.length && reporter.errors() == 0; ++i) {
             currentPhase = phases[i];
-            if ((currentPhase.flags & PhaseDescriptor.SKIP) != 0) {
-                operation("skipping phase " + currentPhase.name());
-            } else {
-                start();
-                currentPhase.apply(this);
-                stop(currentPhase.taskDescription());
-            }
-            if ((currentPhase.flags & PhaseDescriptor.PRINT) != 0)
+            start();
+            currentPhase.apply(units);
+            stop(currentPhase.descriptor.taskDescription());
+            if (currentPhase.descriptor.hasPrintFlag())
                 currentPhase.print(this);
-            if ((currentPhase.flags & PhaseDescriptor.GRAPH) != 0)
+            if (currentPhase.descriptor.hasGraphFlag())
                 currentPhase.graph(this);
-            if ((currentPhase.flags & PhaseDescriptor.CHECK) != 0)
+            if (currentPhase.descriptor.hasCheckFlag())
                 currentPhase.check(this);
-            if ((currentPhase.flags & PhaseDescriptor.STOP) != 0) {
-                operation("stopped after phase " + currentPhase.name());
-                break;
-            }
-            if (currentPhase == PHASE.PARSER) fix1();
-            if (currentPhase == PHASE.ANALYZER) fix2();
-            if (currentPhase == PHASE.ANALYZER && doc) {
+            if (currentPhase == PHASE.PARSER.phase()) fix1();
+            if (currentPhase == PHASE.ANALYZER.phase()) fix2();
+            if (currentPhase == PHASE.ANALYZER.phase() && doc) {
 		DocModule.apply(this);
-		operation("stopped after phase " + currentPhase.name());
+		operation("stopped after phase " + currentPhase);
                 break;
 	    }
         }
@@ -330,22 +298,18 @@ public class  Global {
     /** transform a unit and stop at the current compilation phase
      */
     public void transformUnit(Unit unit) {
-       	PhaseDescriptor oldCurrentPhase = currentPhase;
-    	int i = PHASE.REFCHECK.id; // or PHASE.UNCURRY.id?
+       	Phase oldCurrentPhase = currentPhase;
+    	int i = PHASE.REFCHECK.id(); // or PHASE.UNCURRY.id?
         while ((i < oldCurrentPhase.id) && (reporter.errors() == 0)) {
             currentPhase = phases[i];
-            if ((currentPhase.flags & PhaseDescriptor.SKIP) != 0) {
-                operation("skipping phase " + currentPhase.name());
-            } else {
-                start();
-                currentPhase.apply(unit);
-                stop(currentPhase.taskDescription());
-            }
-            if ((currentPhase.flags & PhaseDescriptor.PRINT) != 0)
+            start();
+            currentPhase.apply(new Unit[] {unit}); // !!! pb with Analyzer
+            stop(currentPhase.descriptor.taskDescription());
+            if (currentPhase.descriptor.hasPrintFlag())
                 currentPhase.print(this);
-            if ((currentPhase.flags & PhaseDescriptor.GRAPH) != 0)
+            if (currentPhase.descriptor.hasGraphFlag())
                 currentPhase.graph(this);
-            if ((currentPhase.flags & PhaseDescriptor.CHECK) != 0)
+            if (currentPhase.descriptor.hasCheckFlag())
                 currentPhase.check(this);
         }
         currentPhase = oldCurrentPhase;
@@ -400,7 +364,7 @@ public class  Global {
         }
         for (int i = 0; i < imports.size(); i++) {
             Symbol module = (Symbol)imports.get(i);
-            PHASE.ANALYZER.addConsoleImport(this, module);
+            ((scalac.typechecker.AnalyzerPhase)PHASE.ANALYZER.phase()).addConsoleImport(this, module);
         }
     }
 
@@ -578,7 +542,7 @@ public class  Global {
     // the boolean return value is here to let one write "assert log( ... )"
     public boolean log(String message) {
         if (log()) {
-            reporter.report("[log " + currentPhase.name() + "] " + message);
+            reporter.report("[log " + currentPhase + "] " + message);
         }
         return true;
     }
@@ -586,7 +550,7 @@ public class  Global {
     /** return true if logging is switched on for the current phase
      */
     public boolean log() {
-        return (currentPhase.flags & PhaseDescriptor.LOG) != 0;
+        return currentPhase.descriptor.hasLogFlag();
     }
 
     /** start a new timer

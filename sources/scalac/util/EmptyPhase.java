@@ -6,20 +6,21 @@
 
 // $Id$
 
-package scalac.ast.parser;
+package scalac.util;
 
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.Unit;
 
-public class ParserPhase extends Phase {
+/** This class implements a phase that does nothing. */
+public class EmptyPhase extends Phase {
 
     //########################################################################
     // Public Constructors
 
     /** Initializes this instance. */
-    public ParserPhase(Global global, PhaseDescriptor descriptor) {
+    public EmptyPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
     }
 
@@ -28,11 +29,7 @@ public class ParserPhase extends Phase {
 
     /** Applies this phase to the given compilation units. */
     public void apply(Unit[] units) {
-        for (int i = 0; i < units.length; i++) {
-            global.start();
-            units[i].body = new Parser(units[i]).parse();
-            global.stop("parsed " + units[i].source);
-        }
+        // do nothing
     }
 
     //########################################################################

@@ -414,15 +414,16 @@ public class PhaseSetOptionParser extends OptionParser {
 
     public void consumePhase(String token) {
         if (token.equals("all")) {
-            for (int i = 0; i < phases.length; i++) phases[i].flags |= flag;
+            for (int i = 0; i < phases.length; i++)
+                phases[i].addFlag(flag, false);
             return;
         }
         PhaseDescriptor phase = lookup(getPhaseName(token));
         if (phase != null) {
             boolean before = getBeforeFlag(token);
             boolean after = getAfterFlag(token) || !before;
-            if (before) phase.flags |= flag << 16;
-            if (after) phase.flags |= flag;
+            if (before) phase.addFlag(flag, true);
+            if (after) phase.addFlag(flag, false);
         }
     }
 

@@ -10,34 +10,36 @@
 package scalac.transformer;
 
 import java.util.HashMap;
-import scalac.*;
+
+import scalac.Global;
+import scalac.Phase;
+import scalac.PhaseDescriptor;
+import scalac.Unit;
 import scalac.checkers.*;
 
+public class AddConstructorsPhase extends Phase {
 
-public class AddConstructorsPhase extends PhaseDescriptor {
+    //########################################################################
+    // Private Fields
 
-    /** Maps the old constructor symbols to the new ones
-     */
-    HashMap constructors = new HashMap();
+    /** A maps from old constructor symbols to new ones */
+    private final HashMap/*<Symbol,Symbol>*/ constructors = new HashMap();
 
-    public String name() {
-        return "addconstructors";
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public AddConstructorsPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
     }
 
-    public String description() {
-        return "add explicit constructor for each class";
-    }
+    //########################################################################
+    // Public Methods
 
-    public String taskDescription() {
-        return "added constructors";
-    }
-
-    public void apply(Global global) {
-        new AddConstructors(global, constructors).apply();
-    }
-
-    public void apply(Unit unit) {
-        new AddConstructors(unit.global, constructors).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new AddConstructors(global, constructors).apply(units[i]);
     }
 
     public Checker[] postCheckers(Global global) {
@@ -48,4 +50,6 @@ public class AddConstructorsPhase extends PhaseDescriptor {
             new CheckNames(global)
         };
     }
+
+    //########################################################################
 }

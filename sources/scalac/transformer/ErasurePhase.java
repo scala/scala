@@ -10,7 +10,9 @@
 package scalac.transformer;
 
 import scalac.Global;
-import scalac.*;
+import scalac.Phase;
+import scalac.PhaseDescriptor;
+import scalac.Unit;
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
 import scalac.checkers.Checker;
@@ -23,46 +25,30 @@ import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
 
-public class ErasurePhase extends PhaseDescriptor {
+public class ErasurePhase extends Phase {
 
-    public Definitions definitions;
-    public Primitives primitives;
+    //########################################################################
+    // Private Fields
 
-    public String name () {
-        return "erasure";
-    }
+    private final Definitions definitions;
+    private final Primitives primitives;
+    private final Erasure erasure;
 
-    public String description () {
-        return "type eraser";
-    }
+    //########################################################################
+    // Public Constructors
 
-    public String taskDescription() {
-        return "erased types";
-    }
-
-    public void apply(Global global) {
+    public ErasurePhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
         this.definitions = global.definitions;
         this.primitives = global.primitives;
-        new Erasure(global).apply();
+        this.erasure = new Erasure(global);
     }
 
-	public void apply(Unit unit) {
-		this.definitions = unit.global.definitions;
-        this.primitives = unit.global.primitives;
-        new Erasure(unit.global).apply(unit);
-	}
+    //########################################################################
+    // Public Methods
 
-    private Type eraseParams(Type tp) {
-        switch (tp) {
-        case PolyType(_, Type result):
-            return eraseParams(result);
-        case MethodType(Symbol[] params, Type result):
-            Symbol[] params1 = Type.erasureMap.map(params);
-            if (params1 == params) return tp;
-            else return Type.MethodType(params1, result);
-        default:
-            return tp;
-        }
+    public void apply(Unit[] units) {
+        erasure.apply(units);
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
@@ -85,4 +71,22 @@ public class ErasurePhase extends PhaseDescriptor {
             new CheckNames(global)
         };
     }
+
+    //########################################################################
+    // Private Methods
+
+    private Type eraseParams(Type tp) {
+        switch (tp) {
+        case PolyType(_, Type result):
+            return eraseParams(result);
+        case MethodType(Symbol[] params, Type result):
+            Symbol[] params1 = Type.erasureMap.map(params);
+            if (params1 == params) return tp;
+            else return Type.MethodType(params1, result);
+        default:
+            return tp;
+        }
+    }
+
+    //########################################################################
 }

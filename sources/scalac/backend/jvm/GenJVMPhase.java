@@ -9,9 +9,9 @@
 package scalac.backend.jvm;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.ApplicationError;
+import scalac.Unit;
 
 /**
  * Phase to generate Java bytecodes using the FJBG library.
@@ -20,26 +20,30 @@ import scalac.ApplicationError;
  * @version 1.0
  */
 
-public class GenJVMPhase extends PhaseDescriptor {
+public class GenJVMPhase extends Phase {
 
-    public String name () {
-        return "genjvm";
+    //########################################################################
+    // Private Fields
+
+    /** The tree to code translator */
+    private final GenJVM translator;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public GenJVMPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
+        this.translator = new GenJVM(global);
     }
 
-    public String description () {
-        return "generate JVM bytecodes";
+    //########################################################################
+    // Public Methods
+
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++) translator.translate(units[i]);
     }
 
-    public String taskDescription() {
-        return "generated JVM code";
-    }
-
-    public void apply(Global global) {
-        for (int i = 0; i < global.units.length; i++)
-            apply(global.units[i]);
-    }
-
-    public void apply(Unit unit) {
-        new GenJVM(unit.global).translate(unit);
-    }
+    //########################################################################
 }

@@ -12,7 +12,7 @@ import ch.epfl.lamp.util.SourceFile;
 
 import scalac.*;
 import scalac.ast.parser.*;
-import scalac.typechecker.Analyzer;
+import scalac.typechecker.AnalyzerPhase;
 import java.io.*;
 
 
@@ -39,8 +39,8 @@ public class SourceCompleter extends Type.LazyType {
 		    c.fullName()) + ".scala";
 		java.io.File f = global.classPath.openJavaFile(filename);
                 Unit unit = new Unit(global, new SourceFile(f), false);
-                global.PHASE.PARSER.apply(unit);
-                global.PHASE.ANALYZER.lateEnter(global, unit, c);
+                global.PHASE.PARSER.phase().apply(new Unit[] {unit});
+                ((AnalyzerPhase)global.PHASE.ANALYZER.phase()).lateEnter(global, unit, c);
                 global.operation("added " + filename + " in " +
                         (System.currentTimeMillis() - msec) + "ms");
             } catch (IOException e) {

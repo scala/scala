@@ -43,7 +43,7 @@ public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
     private void printCheckNode(TreeNode node) {
         if (node.start.constant != null) {
             writer.println("assert global.currentPhase.id >=  " +
-                "global.PHASE."+node.start.constant + ".id :").indent();
+                "phases."+node.start.constant + ".id() :").indent();
             writer.println("\"cannot create instance of " + node.name +
                 " before phase " + node.start.name + ", \" +");
             writer.println(
@@ -51,7 +51,7 @@ public class MetaCheckTreeNodes extends AbstractTreeCaseExpander {
         }
         if (node.stop.constant != null) {
             writer.println("assert global.currentPhase.id <=  " +
-                "global.PHASE."+node.stop.constant + ".id :").indent();
+                "phases."+node.stop.constant + ".id() :").indent();
             writer.println("\"cannot create instance of " + node.name +
                 " after phase " + node.stop.name + ", \" +");
             writer.println(

@@ -15,36 +15,21 @@ import scalac.symtab.*;
 import scalac.checkers.*;
 import java.util.ArrayList;
 
-public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers {
+public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
 
-    private Global global;
-    int nextPhase;
+    final int nextPhase;
 
-    public void initialize(Global global, int id) {
-        super.initialize(global, id);
-        this.global = global;
+    /** Initializes this instance. */
+    public LambdaLiftPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
         this.nextPhase = id + 1;
     }
 
-    public String name () {
-        return "lambdalift";
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new LambdaLift(global, this).apply(units[i]);
     }
-
-    public String description () {
-        return "lambda lifter";
-    }
-
-    public String taskDescription() {
-        return "lambda lifting";
-    }
-
-    public void apply(Global global) {
-        new LambdaLift(global, this).apply();
-    }
-
-	public void apply(Unit unit) {
-		new LambdaLift(unit.global, this).apply(unit);
-	}
 
     public Type transformInfo(Symbol sym, Type tp) {
 	/*

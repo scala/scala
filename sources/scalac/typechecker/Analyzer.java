@@ -54,11 +54,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private boolean inAlternative; // for pattern matching;
     private HashMap patternVars;   // for pattern matching; maps x to {true,false}
 
-    public void apply() {
-	for (int i = 0; i < global.units.length; i++) {
-            enterUnit(global.units[i]);
-        }
-	super.apply(); // this calls apply(u) for every unit `u'.
+    public void apply(Unit[] units) {
+//  	for (int i = 0; i < units.length; i++) {
+//              enterUnit(global.units[i]);
+//          }
+//  	super.apply(units); // this calls apply(u) for every unit `u'.
+ 	for (int i = 0; i < units.length; i++) enterUnit(units[i]);
+  	super.apply(units); // this calls apply(u) for every unit `u'.
 	int n = descr.newSources.size();
         while (n > 0) {
 	    int l = global.units.length;

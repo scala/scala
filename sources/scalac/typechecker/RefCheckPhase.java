@@ -12,26 +12,17 @@ import scalac.*;
 import scalac.ast.*;
 import scalac.checkers.*;
 
-public class RefCheckPhase extends PhaseDescriptor {
+public class RefCheckPhase extends Phase {
 
-    public String name() {
-        return "refcheck";
+    /** Initializes this instance. */
+    public RefCheckPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
     }
 
-    public String description () {
-        return "reference checking";
-    }
-
-    public String taskDescription () {
-        return "reference checking";
-    }
-
-    public void apply(Global global) {
-        new RefCheck(global).apply();
-    }
-
-	public void apply(Unit unit) {
-        new RefCheck(unit.global).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new RefCheck(global).apply(units[i]);
     }
 
     public Checker[] postCheckers(Global global) {

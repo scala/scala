@@ -8,153 +8,180 @@
 
 package scalac;
 
-import java.util.*;
-import scalac.ast.printer.*;
-import scalac.ast.*;
-import scalac.symtab.*;
-import scalac.checkers.*;
-import java.io.PrintWriter;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
-/**
- * Information about a compiler phase.
- *
- * @author Michel Schinz
- */
+import scalac.util.Debug;
 
-public abstract class PhaseDescriptor {
+/** Information about a compiler phase. */
+public final class PhaseDescriptor {
 
-    private static class InitialPhaseDescriptor extends PhaseDescriptor {
+    //########################################################################
+    // Public Constants
 
-        public String name() {
-            return "initial";
-        }
-
-        public String description() {
-            return "initializing compiler";
-        }
-
-        /** apply phase to all compilation units
-         */
-        public void apply(Global global) {}
-
-        public void apply(Unit unit) {}
-    }
-
-    private static class TerminalPhaseDescriptor extends PhaseDescriptor {
-
-        public String name() {
-            return "terminal";
-        }
-
-        public String description() {
-            return "compilation terminated ";
-        }
-
-        /** apply phase to all compilation units
-         */
-        public void apply(Global global) {}
-
-        public void apply(Unit unit) {}
-    }
-
-    public static PhaseDescriptor INITIAL = new InitialPhaseDescriptor();
-    public static PhaseDescriptor TERMINAL = new TerminalPhaseDescriptor();
-
-    public static final int SKIP  = 0x0001;
-    public static final int CHECK = 0x0002;
+    public static final int STOP  = 0x0001;
+    public static final int SKIP  = 0x0002;
     public static final int PRINT = 0x0004;
     public static final int GRAPH = 0x0008;
-    public static final int STOP  = 0x0010;
+    public static final int CHECK = 0x0010;
     public static final int LOG   = 0x0020;
 
-    public int flags;
-    public int id;
+    //########################################################################
+    // Public Functions
 
-    /** return a short, one-word name for the phase.
-     */
-    public abstract String name();
+    /** Freezes the given phases (patches flags and assigns ids). */
+    public static void freeze(PhaseDescriptor[] phases) {
+        if (phases.length == 0) return;
+        // propagate STOP and SKIP
+        for (int i = 0; i < phases.length - 1; i++) {
+            phases[i].flags |= (phases[i + 1].flags >>> 16) & (STOP | SKIP);
+            phases[i+1].flags &= ~((STOP | SKIP) << 16);
+        }
+        // add SKIP flags implied by STOP flag
+        boolean stop = false;
+        for (int i = 0; i < phases.length; i++) {
+            stop |= phases[i].hasStopFlag();
+            if (stop) phases[i].flags |= SKIP;
+        }
+        // propagate other flags and freeze remaing phases
+        PhaseDescriptor last = null;
+        for (int i = 0; i < phases.length; i++) {
+            if (phases[i].hasSkipFlag()) continue;
+            if (last != null) last.flags |= phases[i].flags >>> 16;
+            phases[i].flags &= 0x0000FFFF;
+            phases[i].freeze(last);
+            last = phases[i];
+        }
+    }
 
-    /** return a one-line description for the phase.
-     */
-    public abstract String description();
+    //########################################################################
+    // Private Fields
 
-    /** a one-line task description of this phase
-     */
+    /** The phase name */
+    private final String name;
+    /** The phase description */
+    private final String description;
+    /** The phase task description */
+    private final String task;
+    /** The phase implementation class */
+    private final Class clasz;
+
+    /** The flags of this phase */
+    private int flags;
+    /** The phase instance */
+    private Phase phase;
+    /** The phase identifier */
+    private int id = -1;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public PhaseDescriptor(String name, String description, String task,
+        Class clasz)
+    {
+        this.name = name;
+        this.description = description;
+        this.task = task;
+        this.clasz = clasz;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    /** Returns the one-word name of this phase. */
+    public String name() {
+        return name;
+    }
+
+    /** Returns a one-line description of this phase. */
+    public String description() {
+        return description;
+    }
+
+    /** Returns a one-line task description of this phase. */
     public String taskDescription() {
-        return description();
+        return task;
     }
 
-    /** initialize the phase
-     */
-    public final void initialize(Global global) {
-        throw new Error();
-    }
-    public void initialize(Global global, int id) {
-        this.id = id;
+    /** Freezes this phase by assigning it an identifier. */
+    public void freeze(PhaseDescriptor prev) {
+        assert id < 0 : "phase " + name + " already frozen";
+        id = prev != null ? prev.id + 1 : 0;
     }
 
-    /** Assume that `tp' is the info of symbol `sym' before this phase.
-     *  Return the info of `sym' after the phase.
-     */
-    public Type transformInfo(Symbol sym, Type tp) {
-        return tp;
+    /** Creates the object implementing this phase. */
+    public Phase create(Global global) {
+        assert id >= 0 : "phase " + name + " not yet frozen";
+        assert phase == null : "phase " + name + " already created";
+        try {
+            Class[] params = { Global.class, PhaseDescriptor.class };
+            Object[] args = { global, this };
+            Constructor constructor = clasz.getConstructor(params);
+            return phase = (Phase)constructor.newInstance(args);
+        } catch (NoSuchMethodException exception) {
+            throw Debug.abort(exception);
+        } catch (IllegalAccessException exception) {
+            throw Debug.abort(exception);
+        } catch (InstantiationException exception) {
+            throw Debug.abort(exception);
+        } catch (InvocationTargetException exception) {
+            throw Debug.abort(exception);
+        }
     }
 
-    /** apply phase to all compilation units
-     */
-    public abstract void apply(Global global);
-
-    /** apply this phase to a compilation unit
-     */
-    public abstract void apply(Unit unit);
-
-    /** check all compilation units
-     */
-    public void check(Global global) {
-        for (int i = 0; i < global.units.length; i++)
-            check(global.units[i]);
+    /** Returns the object implementing this phase. */
+    public Phase phase() {
+        assert phase != null : "phase " + name + " not yet created";
+        return phase;
     }
 
-    /** print all compilation units
-     */
-    public void print(Global global) {
-        TreePrinter printer = global.printer;
-        printer.beginSection(1, "Trees after phase " + name());
-        for (int i = 0; i < global.units.length; i++)
-            printer.print(global.units[i]);
+    /** Returns the identifier of this phase. */
+    public int id() {
+        assert id >= 0 : "phase " + name + " not yet frozen";
+        return id;
     }
 
-    /** graph all compilation units
-     */
-    public void graph(Global global) {
-        for (int i = 0; i < global.units.length; i++)
-            graph(global.units[i]);
+    /** Adds the given flag (to previous phase if prev is true). */
+    public void addFlag(int flag, boolean prev) {
+        assert id < 0 : "phase " + name + " already frozen";
+        flags |= flag << (prev ? 16 : 0);
     }
 
-    /** return an array of checkers which can be applied after the phase
-     */
-    public Checker[] postCheckers(Global global) {
-        return new Checker[0];
+    /** Has this phase the SKIP flag? */
+    public boolean hasSkipFlag() {
+        return (flags & SKIP) != 0;
     }
 
-    /** check the result of this phase for the given compilation unit
-     */
-    public void check(Unit unit) {
-        Checker[] checkers = postCheckers(unit.global);
-        for (int i = 0; i < checkers.length; i++)
-            checkers[i].traverse(unit);
+    /** Has this phase the CHECK flag? */
+    public boolean hasCheckFlag() {
+        return (flags & CHECK) != 0;
     }
 
-    /** graph the result of this phase for the given compilation unit
-     */
-    public void graph(Unit unit) {
-        /* todo: uncomment
-        new scala.compiler.gdl.TreePrinter().printInFile(
-            unit, unit.source + "-" + name() + ".gdl");
-        */
+    /** Has this phase the PRINT flag? */
+    public boolean hasPrintFlag() {
+        return (flags & PRINT) != 0;
     }
 
+    /** Has this phase the GRAPH flag? */
+    public boolean hasGraphFlag() {
+        return (flags & GRAPH) != 0;
+    }
+
+    /** Has this phase the STOP flag? */
+    public boolean hasStopFlag() {
+        return (flags & STOP) != 0;
+    }
+
+    /** Has this phase the LOG flag? */
+    public boolean hasLogFlag() {
+        return (flags & LOG) != 0;
+    }
+
+    /** Returns the name of this phase. */
     public String toString() {
         return name();
     }
+
+    //########################################################################
 }

@@ -9,7 +9,7 @@
 
 package scalai;
 
-import scalac.PhaseRepository;
+import scalac.CompilerPhases;
 import scalac.CompilerCommand;
 import scalac.util.Reporter;
 import scalac.util.StringOptionParser;
@@ -30,14 +30,14 @@ public class InterpreterCommand extends CompilerCommand {
     // Public Constructors
 
     public InterpreterCommand(String product, String version,
-        Reporter reporter, PhaseRepository phases)
+        Reporter reporter, CompilerPhases phases)
     {
         this(product, version, "<source files> [-- <module> <args>]",
             reporter, phases);
     }
 
     public InterpreterCommand(String product, String version, String syntax,
-        Reporter reporter, PhaseRepository phases)
+        Reporter reporter, CompilerPhases phases)
     {
         super(product, version, syntax, reporter, phases);
 

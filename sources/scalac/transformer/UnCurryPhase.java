@@ -14,33 +14,17 @@ import scalac.symtab.*;
 import scalac.typechecker.Infer;
 import scalac.checkers.*;
 
-public class UnCurryPhase extends PhaseDescriptor implements Modifiers {
+public class UnCurryPhase extends Phase implements Modifiers {
 
-    private Global global;
-
-    public void initialize(Global global, int id) {
-        super.initialize(global, id);
-	this.global = global;
+    /** Initializes this instance. */
+    public UnCurryPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
     }
 
-    public String name () {
-        return "uncurry";
-    }
-
-    public String description () {
-        return "uncurry function types and applications";
-    }
-
-    public String taskDescription() {
-        return "uncurried";
-    }
-
-    public void apply(Global global) {
-        new UnCurry(global, this).apply();
-    }
-
-    public void apply(Unit unit) {
-    	new UnCurry(unit.global, this).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new UnCurry(global, this).apply(units[i]);
     }
 
     /** - return symbol's transformed type,

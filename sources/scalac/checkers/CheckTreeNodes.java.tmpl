@@ -9,7 +9,7 @@
 package scalac.checkers;
 
 import scalac.Global;
-import scalac.symtab.Symbol;
+import scalac.CompilerPhases;
 {#Imports#}
 
 /** Class to check tree nodes. */
@@ -24,6 +24,7 @@ public class CheckTreeNodes {
     // Private Fields
 
     private final Global global = Global.instance;
+    private final CompilerPhases phases = global.PHASE;
 
     //########################################################################
     // Public Methods

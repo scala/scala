@@ -9,12 +9,19 @@
 package scalac.backend.msil;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.Phase;
 import scalac.PhaseDescriptor;
+import scalac.Unit;
 
 import java.util.HashMap;
 
-public class GenMSILPhase extends PhaseDescriptor {
+public class GenMSILPhase extends Phase {
+
+    //########################################################################
+    // Private Fields
+
+    /** The tree to code translator */
+    private final GenMSIL translator;
 
     final HashMap assemblies = new HashMap();
 
@@ -24,23 +31,22 @@ public class GenMSILPhase extends PhaseDescriptor {
     final HashMap symbols2methods = new HashMap();
     final HashMap symbols2moduleFields = new HashMap();
 
-    public String name () {
-        return "genmsil";
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public GenMSILPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
+        this.translator = new GenMSIL(global, this);
     }
 
-    public String description () {
-        return "generate MSIL code";
+    //########################################################################
+    // Public Methods
+
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++) translator.apply(units[i]);
     }
 
-    public String taskDescription() {
-        return "generated MSIL code";
-    }
-
-    public void apply(Global global) {
-        new GenMSIL(global, this).apply();
-    }
-
-    public void apply(Unit unit) {
-        new GenMSIL(unit.global, this).apply(unit);
-    }
+    //########################################################################
 }

@@ -9,30 +9,29 @@
 
 package scalac.transformer;
 
-import scalac.*;
+import scalac.Global;
+import scalac.Phase;
+import scalac.PhaseDescriptor;
+import scalac.Unit;
 import scalac.checkers.*;
 
-import java.util.*;
+public class AddAccessorsPhase extends Phase {
 
-public class AddAccessorsPhase extends PhaseDescriptor {
-    public String name () {
-        return "addaccessors";
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public AddAccessorsPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
     }
 
-    public String description () {
-        return "add accessors for constructor arguments";
-    }
+    //########################################################################
+    // Public Methods
 
-    public String taskDescription() {
-        return "added accessors";
-    }
-
-    public void apply(Global global) {
-        new AddAccessors(global).apply();
-    }
-
-    public void apply(Unit unit) {
-        new AddAccessors(unit.global).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new AddAccessors(global).apply(units[i]);
     }
 
     public Checker[] postCheckers(Global global) {
@@ -43,4 +42,6 @@ public class AddAccessorsPhase extends PhaseDescriptor {
 	    new CheckNames(global)
         };
     }
+
+    //########################################################################
 }

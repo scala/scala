@@ -18,25 +18,17 @@ import scalac.util.Name;
 import java.util.*;
 import scalac.util.Debug;
 
-public class AddInterfacesPhase extends PhaseDescriptor {
-    public String name () {
-        return "addinterfaces";
+public class AddInterfacesPhase extends Phase {
+
+    /** Initializes this instance. */
+    public AddInterfacesPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
     }
 
-    public String description () {
-        return "add one interface per class";
-    }
-
-    public String taskDescription() {
-        return "added interfaces";
-    }
-
-    public void apply(Global global) {
-        new AddInterfaces(global, this).apply();
-    }
-
-    public void apply(Unit unit) {
-        new AddInterfaces(unit.global, this).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new AddInterfaces(global, this).apply(units[i]);
     }
 
     public Type transformInfo(Symbol sym, Type tp) {

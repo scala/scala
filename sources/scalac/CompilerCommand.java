@@ -31,7 +31,7 @@ import scalac.util.Strings;
 
 public class CompilerCommand extends CommandParser {
 
-    public final PhaseRepository phases;
+    public final CompilerPhases phases;
 
     public final BooleanOptionParser nowarn;
     public final BooleanOptionParser verbose;
@@ -68,13 +68,13 @@ public class CompilerCommand extends CommandParser {
     public final UnknownArgumentParser unknown_arguments;
 
     public CompilerCommand(String product, String version,
-        Reporter reporter, PhaseRepository phases)
+        Reporter reporter, CompilerPhases phases)
     {
         this(product, version, "<source files>", reporter, phases);
     }
 
     protected CompilerCommand(String product, String version, String syntax,
-        Reporter reporter, PhaseRepository phases)
+        Reporter reporter, CompilerPhases phases)
     {
         super(product, version, syntax, reporter);
         this.phases = phases;
@@ -151,15 +151,15 @@ public class CompilerCommand extends CommandParser {
 
         this.skip = new PhaseSetOptionParser(this,
             "skip", "Skip <phases> (see below)",
-            phases.phases, PhaseDescriptor.SKIP),
+            phases.phases(), PhaseDescriptor.SKIP),
 
         this.check = new PhaseSetOptionParser(this,
             "check", "Check the tree after <phases> (see below)",
-            phases.phases, PhaseDescriptor.CHECK),
+            phases.phases(), PhaseDescriptor.CHECK),
 
         this.print = new PrintOptionParser(this,
             "print", "Print out program after <phases> (see below)",
-            phases.phases, PhaseDescriptor.PRINT),
+            phases.phases(), PhaseDescriptor.PRINT),
 
         this.printer = new ChoiceOptionParser(this,
             "printer", "Printer to use",
@@ -171,7 +171,7 @@ public class CompilerCommand extends CommandParser {
 
         this.graph = new PhaseSetOptionParser(this,
             "graph", "Graph the program after <phases> (see below)",
-            phases.phases, PhaseDescriptor.GRAPH),
+            phases.phases(), PhaseDescriptor.GRAPH),
 
         this.doc = new BooleanOptionParser(this,
             "doc", "Generate documentation",
@@ -187,11 +187,11 @@ public class CompilerCommand extends CommandParser {
 
         this.stop = new PhaseSetOptionParser(this,
             "stop", "Stop after first phase in <phases> (see below)",
-            phases.phases, PhaseDescriptor.STOP),
+            phases.phases(), PhaseDescriptor.STOP),
 
         this.log = new PhaseSetOptionParser(this,
             "log", "Log operations in <phases> (see below)",
-            phases.phases, PhaseDescriptor.LOG),
+            phases.phases(), PhaseDescriptor.LOG),
 
         this.version = new VersionOptionParser(this,
             "version", "Print product version and exit",
@@ -224,9 +224,10 @@ public class CompilerCommand extends CommandParser {
         buffer.append(Strings.EOL);
         buffer.append("and possible compilation phases include:");
         buffer.append(Strings.EOL);
-        List lines = new ArrayList(phases.phases.length);
-        for (int i = 0; i < phases.phases.length; i++) {
-            PhaseDescriptor phase = phases.phases[i];
+        PhaseDescriptor[] array = phases.phases();
+        List lines = new ArrayList(array.length);
+        for (int i = 0; i < array.length; i++) {
+            PhaseDescriptor phase = array[i];
             lines.add("  " + phase.name() + "\t  " + phase.description());
         }
         lines.add("  " + "all" + "\t  " + "matches all phases");

@@ -13,7 +13,7 @@ package scalac.symtab;
 import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
 import scalac.Global;
-import scalac.PhaseDescriptor;
+import scalac.Phase;
 import scalac.util.ArrayApply;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -676,7 +676,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	assert infos != TypeIntervalList.EMPTY : this;
 	int nextid = infos.limit;
 	if (nextid < id) {
-	    PhaseDescriptor curphase = Global.instance.currentPhase;
+	    Phase curphase = Global.instance.currentPhase;
 	    do {
 		Global.instance.currentPhase = Global.instance.phases[nextid];
 		Type newInfo =
@@ -1290,7 +1290,7 @@ public abstract class TypeSymbol extends Symbol {
 
     //todo: needed?
     private Type[] closureAt(int id) {
-	PhaseDescriptor savedPhase = Global.instance.currentPhase;
+	Phase savedPhase = Global.instance.currentPhase;
 	Global.instance.currentPhase = Global.instance.phases[id];
 	Type[] c = closure();
 	Global.instance.currentPhase = savedPhase;

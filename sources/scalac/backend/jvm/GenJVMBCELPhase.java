@@ -9,31 +9,42 @@
 package scalac.backend.jvm;
 
 import scalac.Global;
-import scalac.Unit;
+import scalac.Phase;
 import scalac.PhaseDescriptor;
-import scalac.ApplicationError;
+import scalac.Unit;
 
 
-public class GenJVMBCELPhase extends PhaseDescriptor {
+/**
+ * Phase to generate Java bytecodes using the BCEL library.
+ *
+ * @author Michel Schinz
+ * @version 1.0
+ */
 
-    public String name () {
-        return "genjvm-bcel";
+public class GenJVMBCELPhase extends Phase {
+
+    //########################################################################
+    // Private Fields
+
+    /** The tree to code translator */
+    private final GenJVMBCEL translator;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public GenJVMBCELPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
+        this.translator = new GenJVMBCEL(global);
     }
 
-    public String description () {
-        return "generate JVM bytecodes";
+    //########################################################################
+    // Public Methods
+
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++) translator.translate(units[i]);
     }
 
-    public String taskDescription() {
-        return "generated JVM code";
-    }
-
-    public void apply(Global global) {
-        for (int i = 0; i < global.units.length; i++)
-            apply(global.units[i]);
-    }
-
-    public void apply(Unit unit) {
-        new GenJVMBCEL(unit.global).translate(unit);
-    }
+    //########################################################################
 }

@@ -12,8 +12,9 @@ package scalac.transformer;
 import java.util.Map;
 import java.util.HashMap;
 
-import scalac.PhaseDescriptor;
 import scalac.Global;
+import scalac.Phase;
+import scalac.PhaseDescriptor;
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
@@ -21,6 +22,7 @@ import scalac.ast.Traverser;
 import scalac.ast.Transformer;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
+import scalac.checkers.*;
 import scalac.util.Debug;
 
 // TODO do not copy hidden members which are not accessible via
@@ -30,59 +32,43 @@ import scalac.util.Debug;
  * A phase to expand mixins using code copying. We assume that links
  * to outer classes have been made explicit by a previous phase.
  */
-public class ExpandMixinsPhase extends PhaseDescriptor {
+public class ExpandMixinsPhase extends Phase {
 
     //########################################################################
     // Private Fields
 
-    /** The global environment */
-    private Global global;
-
     /** A map from classes to their interface */
-    private Map interfaces;
+    private final Map/*<Symbol,Symbol>*/ interfaces;
 
     /** A map from classes to their expanded template */
-    private final Map/*<Symbol,Template>*/ expansions = new HashMap();
+    private final Map/*<Symbol,Template>*/ expansions;
 
     /** A map from classes to their original (unexpanded) template */
-    private final Map/*<Symbol,Template>*/ templates = new HashMap();
-
+    private final Map/*<Symbol,Template>*/ templates;
     /** A traverser that collects class definitions */
-    private Traverser collector;
+    private final Traverser collector;
 
     /** A transformer that expands classes that have mixins */
-    private Transformer expander;
+    private final Transformer expander;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public ExpandMixinsPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
+        Phase addinterfaces = global.PHASE.ADDINTERFACES.phase();
+        this.interfaces = ((AddInterfacesPhase)addinterfaces).classToIFace;
+        this.expansions = new HashMap();
+        this.templates = new HashMap();
+        this.collector = new Collector();
+        this.expander = new Expander(global);
+    }
 
     //########################################################################
     // Public Methods
 
-    public String name () {
-        return "expandmixins";
-    }
-
-    public String description () {
-        return "expand mixins by code copying";
-    }
-
-    public String taskDescription() {
-        return "expanded mixins";
-    }
-
-    public void apply(Global global) {
-        apply(global, global.units);
-    }
-
-    public void apply(Unit unit) {
-        apply(unit.global, new Unit[] { unit });
-    }
-
-    public void apply(Global global, Unit[] units) {
-        if (this.global == null) {
-            this.global = global;
-            this.interfaces = global.PHASE.ADDINTERFACES.classToIFace;
-            this.collector = new Collector();
-            this.expander = new Expander(global);
-        }
+    public void apply(Unit[] units) {
         collector.traverse(units);
         expander.apply(units);
         assert templates.isEmpty() : templates.keySet();
@@ -95,15 +81,14 @@ public class ExpandMixinsPhase extends PhaseDescriptor {
         return type;
     }
 
-    // !!!
-    // public Checker[] postCheckers(Global global) {
-    //     return new Checker[] {
-    //         new CheckSymbols(global),
-    //         new CheckTypes(global),
-    //         new CheckOwners(global),
-    //      new CheckNames(global)
-    //     };
-    // }
+    public Checker[] postCheckers(Global global) {
+        return new Checker[] {
+            new CheckSymbols(global),
+            new CheckTypes(global),
+            new CheckOwners(global),
+         new CheckNames(global)
+        };
+    }
 
     //########################################################################
     // Private Methods

@@ -17,15 +17,16 @@ import scalac.checkers.*;
 import java.util.HashMap;
 import java.util.ArrayList;
 
-public class AnalyzerPhase extends PhaseDescriptor {
+public class AnalyzerPhase extends Phase {
 
-    /* final */ Context startContext;
-    /* final */ Context consoleContext;
-    HashMap/*<Unit,Context>*/ contexts = new HashMap();
-    ArrayList/*<Unit>*/ newSources = new ArrayList();
+    final Context startContext;
+    final Context consoleContext;
+    final HashMap/*<Unit,Context>*/ contexts = new HashMap();
+    final ArrayList/*<Unit>*/ newSources = new ArrayList();
 
-    public void initialize(Global global, int id) {
-        super.initialize(global, id);
+    /** Initializes this instance. */
+    public AnalyzerPhase(Global global, PhaseDescriptor descriptor) {
+        super(global, descriptor);
         Definitions definitions = global.definitions;
         this.startContext = new Context(
             Tree.Empty,
@@ -102,24 +103,8 @@ public class AnalyzerPhase extends PhaseDescriptor {
             importConsole, new Scope(), consoleContext.imports);
     }
 
-    public String name() {
-        return "analyze";
-    }
-
-    public String description () {
-        return "name and type analysis";
-    }
-
-    public String taskDescription() {
-        return "type checking";
-    }
-
-    public void apply(Global global) {
-        new Analyzer(global, this).apply();
-    }
-
-    public void apply(Unit unit) {
-        new Analyzer(unit.global, this).apply(unit);
+    public void apply(Unit[] units) {
+        new Analyzer(global, this).apply(units);
     }
 
     public void lateEnter(Global global, Unit unit, Symbol symbol) {

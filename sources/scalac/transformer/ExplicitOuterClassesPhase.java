@@ -15,28 +15,19 @@ import scalac.symtab.*;
 import scalac.util.*;
 import java.util.HashMap;
 
-public class ExplicitOuterClassesPhase extends PhaseDescriptor {
+public class ExplicitOuterClassesPhase extends Phase {
     // Mapping from class constructor symbols to owner field symbols.
-    protected HashMap/*<Symbol,Symbol>*/ outerMap = new HashMap();
+    protected final HashMap/*<Symbol,Symbol>*/ outerMap = new HashMap();
 
-    public String name () {
-        return "explicitouterclasses";
+    /** Initializes this instance. */
+    public ExplicitOuterClassesPhase(Global global,PhaseDescriptor descriptor){
+        super(global, descriptor);
     }
 
-    public String description () {
-        return "make links from inner classes to enclosing one explicit";
-    }
-
-    public String taskDescription() {
-        return "made outer links explicit";
-    }
-
-    public void apply(Global global) {
-        new ExplicitOuterClasses(global).apply();
-    }
-
-    public void apply(Unit unit) {
-        new ExplicitOuterClasses(unit.global).apply(unit);
+    /** Applies this phase to the given compilation units. */
+    public void apply(Unit[] units) {
+        for (int i = 0; i < units.length; i++)
+            new ExplicitOuterClasses(global, this).apply(units[i]);
     }
 
     public Checker[] postCheckers(Global global) {

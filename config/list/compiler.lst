@@ -5,13 +5,13 @@
 
 ApplicationError.java
 CompilerCommand.java
+CompilerPhases.java
+DocModule.java
 Global.java
 Main.java
 Phase.java
 PhaseDescriptor.java
-PhaseRepository.java
 Unit.java
-DocModule.java
 
 ast/parser/PatternNormalizer.java
 ast/parser/Parser.java
@@ -144,6 +144,7 @@ util/AbstractFileReader.java
 util/ArrayApply.java
 util/ClassPath.java
 util/Debug.java
+util/EmptyPhase.java
 util/FreshNameCreator.java
 util/Name.java
 util/NameTransformer.java
