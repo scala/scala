@@ -1,3 +1,5 @@
+package examples.monads;
+
 object stateInterpreter {
 
   type State = int;
