@@ -22,17 +22,18 @@ ast/parser/Tokens.java
 
 ast/AbstractTreeCopyFactory.java
 ast/DefaultTreeFactory.java
-ast/LazyTreeFactory.java
-ast/StrictTreeFactory.java
+ast/LazyTreeCopier.java
+ast/StrictTreeCopier.java
 ast/SubstTransformer.java
 ast/Transformer.java
 ast/Traverser.java
 ast/Tree.java
-ast/TreeCopyFactory.java
+ast/TreeCopier.java
 ast/TreeFactory.java
 ast/TreeGen.java
 ast/TreeInfo.java
 ast/TreeList.java
+
 ast/printer/HTMLTreePrinter.java
 ast/printer/TextTreePrinter.java
 ast/printer/TreePrinter.java

@@ -1,0 +1,37 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
+package scalac.ast;
+
+{#Imports#}
+
+/**
+ * A tree copier that returns a new tree only if some fields have
+ * changed
+ */
+public class LazyTreeCopier implements TreeCopier {
+
+    //########################################################################
+    // Protected Fields
+
+    protected final TreeFactory make;
+
+    //########################################################################
+    // Public Constructors
+
+    public LazyTreeCopier(TreeFactory make) {
+        this.make = make;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    {#TreeMethods#}
+
+    //########################################################################
+}

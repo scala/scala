@@ -1,2 +1,5 @@
 DefaultTreeFactory.java
+LazyTreeCopier.java
+StrictTreeCopier.java
+TreeCopier.java
 TreeFactory.java

@@ -1,0 +1,34 @@
+/*     ____ ____  ____ ____  ______                                     *\
+**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+** /_____/\____/\___/\____/____/                                        **
+\*                                                                      */
+
+// $Id$
+
+package scalac.ast;
+
+{#Imports#}
+
+/** A tree copier that returns always a new tree */
+public class StrictTreeCopier implements TreeCopier {
+
+    //########################################################################
+    // Protected Fields
+
+    protected final TreeFactory make;
+
+    //########################################################################
+    // Public Constructors
+
+    public StrictTreeCopier(TreeFactory make) {
+        this.make = make;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    {#TreeMethods#}
+
+    //########################################################################
+}
