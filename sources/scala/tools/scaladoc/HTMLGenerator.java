@@ -1446,7 +1446,6 @@ public abstract class HTMLGenerator {
      * symbol (including itself).
      */
     protected void printPath(Symbol sym, String destinationFrame, Page page) {
-	sym = sym.isModuleClass() ? sym.module() : sym;
 	String name = removeHtmlSuffix(Location.getURI(sym).toString());
 	if (isDocumented.apply(sym)) {
 	    String target = definitionURL(sym, page);

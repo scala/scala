@@ -569,28 +569,22 @@ public class DocSyms {
 	    ScalaSearch.foreach(pack,
 				new ScalaSearch.SymFun() {
 				    public void apply(Symbol sym) {
-					syms.add(sym);
+					syms.add(sym.isModule() ? sym.moduleClass() : sym);
 				    }
 				}
 				);
 	    // add all super packages.
-	    if (!pack.isRoot()) {
-                Symbol owner = pack.owner();
-                while (!owner.isRoot()) {
-                    syms.add(owner.module());
-                    owner = owner.owner();
-                }
+            while (!pack.isRoot()) {
+                pack = pack.owner();
+                syms.add(pack);
             }
 	}
     }
 
     public boolean contains(Symbol sym) {
-	boolean res = false;
-	if (sym.isParameter())
-	    res = contains(sym.classOwner());
-	else
-	    res = sym.isRoot() || (syms.contains(sym) || (sym.isModuleClass() && syms.contains(sym.module())));
-	return res;
+	if (sym.isParameter()) return contains(sym.classOwner());
+        if (sym.isModule()) return contains(sym.moduleClass());
+        return syms.contains(sym);
     }
 }
 

@@ -38,9 +38,9 @@ public class Location {
 	if (uris.get(sym) == null) {
 	    URI uri;
 	    try {
-		if (sym.isModuleClass())
-		    uri = getURI(sym.module());
-		else if (sym.isRoot() || sym.isClass() || sym.isModule() || sym.isPackage() || sym.isPackageClass())
+		if (sym.isModule())
+		    uri = getURI(sym.moduleClass());
+		else if (sym.isClassType())
 		    uri = new URI(getPath(sym).toString() + HTML_SUFFIX);
 		else if (sym.isParameter())
 		    uri = getURI(sym.classOwner());
@@ -53,10 +53,9 @@ public class Location {
     }
     // where
     static private URI getPath(Symbol sym) {
+        assert sym.isClassType(): Debug.show(sym);
 	try {
-	    if (sym.isModuleClass())
-		return getPath(sym.module());
-	    else if (sym.isRoot())
+	    if (sym.isRoot())
 		return new URI(ROOT_NAME);
 	    else if (sym.owner().isRoot())
 		return new URI(getName(sym));
@@ -66,7 +65,11 @@ public class Location {
     }
     // where
     static public String getName(Symbol sym) {
-	return sym.isClass() ? sym.simpleName().toString() + CLASS_SUFFIX : sym.simpleName().toString();
+        if (sym.isModule()) return getName(sym.moduleClass());
+        assert sym.isClassType(): Debug.show(sym);
+        String name = sym.simpleName().toString();
+        if (!sym.isRoot() && !sym.isModuleClass()) name += CLASS_SUFFIX;
+        return name;
     }
     // where
     static private final Map/*<Symbol, Integer>*/ ids = new HashMap();
