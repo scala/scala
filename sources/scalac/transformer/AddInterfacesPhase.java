@@ -200,39 +200,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         else return className;
     }
 
-    /** Clone the symbol itself, and if it represents a method, clone
-     * its type and value arguments too, then update the symbol's type
-     * to use these new symbols. Also applies the given substitution
-     * to the cloned symbols' type. */
-    protected Symbol deepCloneSymbol(Symbol original,
-                                     Symbol oldOwner,
-                                     Symbol newOwner,
-                                     SymbolSubstTypeMap map) {
-        SymbolSubstTypeMap symMap;
-        Symbol clone = original.cloneSymbol(newOwner);
-        if (clone.isMethod()) {
-            Symbol[] tparams = clone.typeParams();
-            Symbol[] newTParams = new Symbol[tparams.length];
-            symMap = new SymbolSubstTypeMap(map);
-            for (int i = 0; i < tparams.length; ++i) {
-                newTParams[i] = tparams[i].cloneSymbol(clone);
-                symMap.insertSymbol(tparams[i], newTParams[i]);
-            }
-
-            Symbol[] vparams = clone.valueParams();
-            Symbol[] newVParams = new Symbol[vparams.length];
-            for (int i = 0; i < vparams.length; ++i) {
-                newVParams[i] = vparams[i].cloneSymbol(clone);
-                newVParams[i].updateInfo(symMap.apply(newVParams[i].info()));
-                symMap.insertSymbol(vparams[i], newVParams[i]);
-            }
-        } else
-            symMap = map;
-
-        updateMemberInfo(clone, oldOwner, newOwner, symMap);
-        return clone;
-    }
-
     protected void updateMemberInfo(Symbol member,
                                     Symbol oldOwner,
                                     Symbol newOwner,
@@ -311,10 +278,9 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                     } else if (ifaceMemberSym.isProtected())
                         ifaceMemberSym.flags ^= Modifiers.PROTECTED;
 
-                    classMemberSym = deepCloneSymbol(ifaceMemberSym,
-                                                     ifaceSym,
-                                                     classSym,
-                                                     paramsSubst);
+                    classMemberSym = ifaceMemberSym.cloneSymbol(classSym);
+                    classMemberSym.setInfo(classMemberSym.info().cloneType(ifaceMemberSym, classMemberSym));
+                    updateMemberInfo(classMemberSym, ifaceSym, classSym, paramsSubst);
                     ifaceMemberSym.flags |= Modifiers.DEFERRED;
 
                     classMembersMap.put(ifaceMemberSym, classMemberSym);
