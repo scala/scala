@@ -24,6 +24,7 @@ import scalac.transformer.AddConstructorsPhase;
 import scalac.optimizer.OptimizePhase;
 */
 import scalac.backend.jvm.GenJVMPhase;
+import scalac.backend.jvm.GenJVMBCELPhase;
 import scalac.backend.msil.GenMSILPhase;
 
 public class PhaseRepository {
@@ -55,6 +56,7 @@ public class PhaseRepository {
             ERASURE = new ErasurePhase(),
             ADDCONSTRUCTORS = new AddConstructorsPhase(),
             GENJVM = new GenJVMPhase(),
+            GENJVM_BCEL = new GenJVMBCELPhase(),
             GENMSIL = new GenMSILPhase(),
             TERMINAL = PhaseDescriptor.TERMINAL,
         };
@@ -80,6 +82,7 @@ public class PhaseRepository {
     public final ErasurePhase ERASURE;
     public final AddConstructorsPhase ADDCONSTRUCTORS;
     public final GenJVMPhase GENJVM;
+    public final GenJVMBCELPhase GENJVM_BCEL;
     public final GenMSILPhase GENMSIL;
     public final PhaseDescriptor TERMINAL;
 

@@ -4,7 +4,6 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $OldId: GenJVMPhase.java,v 1.1 2002/09/03 12:13:08 schinz Exp $
 // $Id$
 
 package scalac.backend.jvm;
@@ -14,6 +13,12 @@ import scalac.Unit;
 import scalac.PhaseDescriptor;
 import scalac.ApplicationError;
 
+/**
+ * Phase to generate Java bytecodes using the FJBG library.
+ *
+ * @author Michel Schinz
+ * @version 1.0
+ */
 
 public class GenJVMPhase extends PhaseDescriptor {
 

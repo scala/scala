@@ -113,12 +113,14 @@ public class  Global {
      */
     public static final String TARGET_INT;
     public static final String TARGET_JVM;
+    public static final String TARGET_JVM_BCEL;
     public static final String TARGET_MSIL;
 
     public static final String[] TARGETS = new String[] {
-        TARGET_INT  = "int".intern(),
-        TARGET_JVM  = "jvm".intern(),
-        TARGET_MSIL = "msil".intern(),
+        TARGET_INT      = "int".intern(),
+        TARGET_JVM      = "jvm".intern(),
+        TARGET_JVM_BCEL = "jvm-bcel".intern(),
+        TARGET_MSIL     = "msil".intern(),
     };
 
     /** tree printers
@@ -194,11 +196,15 @@ public class  Global {
         phases.add(PHASE.ADDINTERFACES);
         phases.add(PHASE.EXPANDMIXIN);
         phases.add(PHASE.ERASURE);
-        if (target == TARGET_INT || target == TARGET_MSIL || target == TARGET_JVM) {
+        if (target == TARGET_INT
+            || target == TARGET_MSIL
+            || target == TARGET_JVM
+            || target == TARGET_JVM_BCEL) {
             phases.add(PHASE.ADDCONSTRUCTORS);
         }
         if (target == TARGET_MSIL) phases.add(PHASE.GENMSIL);
         if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
+        if (target == TARGET_JVM_BCEL) phases.add(PHASE.GENJVM_BCEL);
         phases.add(PHASE.TERMINAL);
         this.phases = new PhaseDescriptor[phases.size()];
         for (int i = 0; i < phases.size(); i++) {
