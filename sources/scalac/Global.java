@@ -375,9 +375,11 @@ public abstract class Global {
         }
         if (reporter.errors() != 0) {
             imports.clear();
-            for (Iterator it = compiledNow.keySet().iterator(); it.hasNext();) {
-                Symbol sym = (Symbol) it.next();
-                sym.reset(new SourceCompleter(this));
+            for (Iterator i = compiledNow.entrySet().iterator(); i.hasNext();) {
+                Map.Entry entry = (Map.Entry)i.next();
+                Symbol clasz = (Symbol)entry.getKey();
+                AbstractFile file = ((SourceFile)entry.getValue()).getFile();
+                clasz.reset(new SourceCompleter(this, file));
             }
         }
         symdata.clear();

@@ -2,31 +2,46 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
+
+// $Id$
 
 package scalac.symtab.classfile;
 
+import java.io.IOException;
+
 import scala.tools.util.AbstractFile;
-import scalac.*;
-import scalac.symtab.*;
-import scalac.util.*;
-import java.io.*;
 
+import scalac.Global;
+import scalac.symtab.Symbol;
+import scalac.symtab.SymbolLoader;
 
+/** This class implements a SymbolLoader that reads a class file. */
 public class ClassParser extends SymbolLoader {
 
-    public ClassParser(Global global) {
+    //########################################################################
+    // Private Fields
+
+    /** The class file to read */
+    private final AbstractFile file;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance with the specified class file. */
+    public ClassParser(Global global, AbstractFile file) {
         super(global);
+        this.file = file;
     }
 
+    //########################################################################
+    // Protected Methods
+
+    /** Completes the specified symbol by reading the class file. */
     protected String doComplete(Symbol clasz) throws IOException {
-        AbstractFile file = global.classPath.openFile(
-            SourceRepresentation.externalizeFileName(clasz, ".class"));
-        ClassfileParser.parse(global, new AbstractFileReader(file), clasz);
+        ClassfileParser.parse(global, file, clasz);
         return "class file '" + file + "'";
     }
 
+    //########################################################################
 }
-

@@ -8,6 +8,7 @@
 
 package scalac.symtab.classfile;
 
+import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
 import scalac.*;
 import scalac.util.*;
@@ -67,7 +68,8 @@ public class ClassfileParser implements ClassfileConstants {
     /** parse the classfile and throw IO exception if there is an
      *  error in the classfile structure
      */
-    public static void parse(Global global, AbstractFileReader in, Symbol c) throws IOException {
+    public static void parse(Global global, AbstractFile file, Symbol c) throws IOException {
+        AbstractFileReader in = new AbstractFileReader(file);
         try {
             int magic = in.nextInt();
             if (magic != JAVA_MAGIC)

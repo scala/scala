@@ -34,9 +34,6 @@ public class PackageParser extends SymbolLoader {
     //########################################################################
     // Private Fields
 
-    /** The JVM class file parser */
-    private final ClassParser classCompletion;
-
     /** The CLR package parser */
     private final CLRPackageParser importer;
 
@@ -46,7 +43,6 @@ public class PackageParser extends SymbolLoader {
     /** Initializes this instance. */
     public PackageParser(Global global) {
         super(global);
-        this.classCompletion = new ClassParser(global);
 	this.importer = (global.target == global.TARGET_MSIL)
 	    ? CLRPackageParser.create(global) : null;
     }
@@ -112,8 +108,8 @@ public class PackageParser extends SymbolLoader {
             }
             packages.remove(name);
             Name classname = Name.fromString(name).toTypeName();
-            SourceCompleter completer = new SourceCompleter(global);
-            peckage.newLoadedClass(0, classname, completer, members);
+            SymbolLoader loader = new SourceCompleter(global, sfile);
+            peckage.newLoadedClass(0, classname, loader, members);
         }
         for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
@@ -121,7 +117,8 @@ public class PackageParser extends SymbolLoader {
             AbstractFile cfile = (AbstractFile)entry.getValue();
             packages.remove(name);
             Name classname = Name.fromString(name).toTypeName();
-            peckage.newLoadedClass(JAVA, classname, classCompletion, members);
+            SymbolLoader loader = new ClassParser(global, cfile);
+            peckage.newLoadedClass(JAVA, classname, loader, members);
         }
         for (Iterator i = packages.iterator(); i.hasNext(); ) {
             String name = (String)i.next();

@@ -8,28 +8,39 @@
 
 package scalac.symtab;
 
+import java.io.IOException;
+
 import scala.tools.util.AbstractFile;
-import scala.tools.util.SourceFile;
 
-import scalac.*;
-import scalac.ast.parser.*;
-import scalac.typechecker.AnalyzerPhase;
-import scalac.util.SourceRepresentation;
-import java.io.*;
+import scalac.Global;
+import scalac.symtab.Symbol;
 
-
+/** This class implements a SymbolLoader that reads a source file. */
 public class SourceCompleter extends SymbolLoader {
 
-    public SourceCompleter(Global global) {
+    //########################################################################
+    // Private Fields
+
+    /** The source file to read */
+    private final AbstractFile file;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance with the specified source file. */
+    public SourceCompleter(Global global, AbstractFile file) {
         super(global);
+        this.file = file;
     }
 
-    /** complete class symbol c by loading the unit
-     */
-    public String doComplete(Symbol clasz) throws IOException {
-        SourceFile source = global.getSourceFile(clasz);
-        global.compileLate(source, false);
-        return "source file '" + source + "'";
+    //########################################################################
+    // Protected Methods
+
+    /** Completes the specified symbol by reading the source file. */
+    protected String doComplete(Symbol clasz) throws IOException {
+        global.compileLate(global.getSourceFile(file), false);
+        return "source file '" + file + "'";
     }
 
+    //########################################################################
 }
