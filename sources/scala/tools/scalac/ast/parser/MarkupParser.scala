@@ -24,7 +24,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   import Tokens.{EMPTY, LBRACE, RBRACE} ;
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
-  val  _AppendBuffer = Name.fromString("AppendBuffer");
+  val  _ArrayBuffer = Name.fromString("ArrayBuffer");
   val  _collection = Name.fromString("collection");
   val  _Elem = Name.fromString("Elem");
   val  _Seq = Name.fromString("Seq");
@@ -48,14 +48,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     make.Select( pos, make.Ident( pos, Names.scala ), name );
 
   private def _scala_Seq( pos: int ) =
-    /*make.Apply( pos,
-               make.AppliedType(pos,*/
-                                p.convertToTypeId( _scala( pos, _Seq ))/*,
-                                (Predef.Array[Tree](
-                                  convertToTypeId(
-                                    _scala_xml_Node( pos ) ))
-                              ),
-               Tree.EMPTY_ARRAY)*/;
+    p.convertToTypeId( _scala( pos, _Seq ));
 
   private def _scala_xml( pos: int, name: Name ) =
     make.Select( pos, _scala( pos, _xml ), name );
@@ -75,11 +68,11 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   private def _scala_collection_mutable( pos: int, name: Name ) =
     make.Select(pos, _scala_collection(pos, _mutable ), name);
 
-  private def _scala_collection_mutable_AppendBuffer( pos: int ) =
+  private def _scala_collection_mutable_ArrayBuffer( pos: int ) =
     make.Apply( pos,
                make.AppliedType(pos,
                                 p.convertToConstr(
-                                  _scala_collection_mutable(pos, _AppendBuffer )),
+                                  _scala_collection_mutable(pos, _ArrayBuffer )),
                                 Predef.Array[Tree](
                                   convertToTypeId(
                                     _scala_xml_Node( pos ) ))
@@ -171,7 +164,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
 
   def makeXMLseq( pos:int, args:Array[Tree] ) = {
     val blocArr = new Array[Tree] ( 1 + args.length );
-    val constr = _scala_collection_mutable_AppendBuffer( pos );
+    val constr = _scala_collection_mutable_ArrayBuffer( pos );
     val n = p.fresh();
     val nIdent = make.Ident(pos, n);
     blocArr( 0 ) = make.ValDef(pos, Modifiers.MUTABLE, n, Tree.Empty,
