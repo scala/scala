@@ -416,6 +416,7 @@ public class Erasure extends Transformer implements Modifiers {
                     Symbol primSym = (sym == definitions.AS)
                         ? primitives.getUnboxValueSymbol(tp)
                         : primitives.getInstanceTestSymbol(tp);
+                    qual1 = coerce(qual1, primSym.owner().type());
                     return gen.Select(qual1, primSym);
                 } else
                     return copy.TypeApply(tree, transform(fun), transform(args))
