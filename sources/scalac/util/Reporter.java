@@ -8,13 +8,13 @@
 
 package scalac.util;
 
-import ch.epfl.lamp.util.Position;
-
-import java.io.InputStreamReader;
 import java.io.BufferedReader;
-import java.io.PrintWriter;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashSet;
+
+import ch.epfl.lamp.util.Position;
 
 import scalac.ApplicationError;
 
@@ -45,6 +45,8 @@ public class Reporter {
     public boolean verbose;
     /** Whether a prompt should be displayed after errors and warnings */
     public boolean prompt;
+    /** Whether a short file name should be displayed before errors */
+    public boolean shortname;
 
     //########################################################################
     // Public Constructors
@@ -152,7 +154,10 @@ public class Reporter {
             message = " " + message;
             if (position.line() != 0)
                 message = position.line() + ":" + message;
-            message = position.file().name() + ":" + message;
+            if (shortname)
+                message = position.file().getShortName() + ":" + message;
+            else
+                message = position.file().name() + ":" + message;
         }
         printMessage(message);
         printSourceLine(position);
