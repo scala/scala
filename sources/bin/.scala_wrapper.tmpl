@@ -848,6 +848,7 @@ test_add_file() {
                 abort "don't know what to do with '$1'";
             fi;;
     esac;
+    TEST_ALL="false";
     case "$TEST_TYPE" in
         auto ) ;;
         run  ) FILES_RUN="$FILES_RUN $1"; return;;
@@ -873,7 +874,6 @@ test_add_file() {
         msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
         * ) abort "don't known what to do with \`$1'";;
     esac;
-    TEST_ALL="false";
 }
 
 # Implements "scalatest ...".
