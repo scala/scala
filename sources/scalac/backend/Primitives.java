@@ -96,6 +96,7 @@ public class Primitives {
     private static final Name AS_FARRAY_N = Name.fromString("asFloatArray");
     private static final Name AS_DARRAY_N = Name.fromString("asDoubleArray");
     private static final Name AS_OARRAY_N = Name.fromString("asObjectArray");
+    private static final Name AS__ARRAY_N = Name.fromString("asArray");
 
     private static final Name IS_BVALUE_N = Name.fromString("isByte");
     private static final Name IS_SVALUE_N = Name.fromString("isShort");
@@ -173,6 +174,7 @@ public class Primitives {
     public final Symbol BOX_FARRAY;
     public final Symbol BOX_DARRAY;
     public final Symbol BOX_OARRAY;
+    public final Symbol BOX__ARRAY;
 
     public final Symbol AS_UVALUE;
     public final Symbol AS_ZVALUE;
@@ -193,6 +195,7 @@ public class Primitives {
     public final Symbol AS_FARRAY;
     public final Symbol AS_DARRAY;
     public final Symbol AS_OARRAY;
+    public final Symbol AS__ARRAY;
 
     public final Symbol IS_BVALUE;
     public final Symbol IS_SVALUE;
@@ -265,6 +268,7 @@ public class Primitives {
         this.BOX_FARRAY = getBoxArray(boxes, definitions.FLOAT_TYPE());
         this.BOX_DARRAY = getBoxArray(boxes, definitions.DOUBLE_TYPE());
         this.BOX_OARRAY = getBoxArray(boxes, definitions.JAVA_OBJECT_TYPE());
+        this.BOX__ARRAY = getBoxValue(boxes, definitions.ANY_TYPE());
         this.AS_UVALUE = getUniqueTerm(definitions.UNIT_CLASS, AS_UVALUE_N);
         this.AS_ZVALUE = getUniqueTerm(definitions.BOOLEAN_CLASS, AS_ZVALUE_N);
         this.AS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_BVALUE_N);
@@ -283,6 +287,7 @@ public class Primitives {
         this.AS_FARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_FARRAY_N);
         this.AS_DARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_DARRAY_N);
         this.AS_OARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS_OARRAY_N);
+        this.AS__ARRAY = getUniqueTerm(definitions.ARRAY_CLASS, AS__ARRAY_N);
         this.IS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_BVALUE_N);
         this.IS_SVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_SVALUE_N);
         this.IS_CVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, IS_CVALUE_N);
@@ -488,6 +493,7 @@ public class Primitives {
         addPrimitive(AS_FARRAY, Primitive.AS_FARRAY);
         addPrimitive(AS_DARRAY, Primitive.AS_DARRAY);
         addPrimitive(AS_OARRAY, Primitive.AS_OARRAY);
+        addPrimitive(AS__ARRAY, Primitive.AS__ARRAY);
         addAll(defs.ARRAY_CLASS, Names.length, Primitive.LENGTH, 1);
         addAll(defs.ARRAY_CLASS, Names.apply, Primitive.APPLY, 2);
         addAll(defs.ARRAY_CLASS, Names.update, Primitive.UPDATE, 1);
@@ -517,6 +523,7 @@ public class Primitives {
         addPrimitive(BOX_FARRAY, Primitive.BOX);
         addPrimitive(BOX_DARRAY, Primitive.BOX);
         addPrimitive(BOX_OARRAY, Primitive.BOX);
+        addPrimitive(BOX__ARRAY, Primitive.BOX);
         addPrimitive(NEW_ZARRAY, Primitive.NEW_ZARRAY);
         addPrimitive(NEW_BARRAY, Primitive.NEW_BARRAY);
         addPrimitive(NEW_SARRAY, Primitive.NEW_SARRAY);
