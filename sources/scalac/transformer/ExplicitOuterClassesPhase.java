@@ -258,7 +258,10 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** !!! */
         public Type getTypeLink(int level) {
-            if (tlinks.length <= level) return Type.localThisType;
+            if (level == outers.length - 1) {
+                assert outers[level].clasz.isRoot(): level + " - " + this; // !!! remove
+                return Type.localThisType;
+            }
             if (tlinks[level] != null) return tlinks[level].type();
             return Type.singleType(getTypeLink(level + 1), outers[level].clasz.module());
         }
@@ -315,7 +318,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             case SingleType(Type prefix, Symbol symbol):
                 return Type.singleType(apply(prefix), symbol);
             case ThisType(Symbol clasz):
-                if (clasz == Symbol.NONE) return type;
+                if (clasz.isNone()) return type;
                 if (clasz == context.clasz) return type;
                 for (int i = 0; i < context.outers.length; i++)
                     if (clasz == context.outers[i].clasz)
