@@ -241,4 +241,29 @@ public class TreeInfo {
 	    return false;
 	}
     }
+      /** this test should correspond to the one used in TransMatch phase */
+      public static boolean isRegularPattern( Tree tree ) {
+	    switch (tree) {
+	    case Alternative(_):
+                  return true;
+	    case Bind(_, Tree pat):
+                  return isRegularPattern( pat );
+	    case Ident(_):
+                  return false;
+	    case CaseDef(Tree pat, _, _):
+                  isRegularPattern(pat);
+                  break;
+	    case Sequence( Tree[] trees):
+                  return true;
+            case Apply( _, Tree[] trees ):
+                  for( int i = 0; i < trees.length; i++ )
+                        if( isRegularPattern( trees[i] ) )
+                              return true;
+            case Literal( _ ):
+                  return false;
+
+	    }
+            return false;
+      }
+
 }

@@ -43,6 +43,7 @@ public class PatternNormalizer {
     ///////// CHECKING patterns for well-formedness ///////////////////////////////
     //
 
+    int seqDepth;
 
     /** checks whether TO DO TO DO TO DO
      *  - @-recursion occurs only at the end just below a sequence
@@ -57,10 +58,16 @@ public class PatternNormalizer {
 	    return true;
 
 	case Apply( _, Tree[] args ):
-	    return check1( args, inAlt );
+              seqDepth++;
+              boolean res = check1( args, inAlt );
+              seqDepth--;
+              return res;
 
-	case Sequence( Tree[] trees ):
-	    return check1( trees, inAlt );
+	case Sequence( Tree[] trees ): // this is a hack to disallow deep binding
+              seqDepth++;
+              boolean res = check1( trees, inAlt );
+              seqDepth--;
+              return res;
 
 	case Alternative( Tree[] trees ):
 	    return check1( trees, true );
@@ -73,6 +80,12 @@ public class PatternNormalizer {
 			      "variable binding not allowed under alternative");
 		return false;
 	    }
+            if(( seqDepth > 2 )
+               &&( var.toString().lastIndexOf("$") == -1)) {
+		unit.error( t.pos,
+			      "sorry, deep binding not implemented");
+		return false;
+            }
 	    this.boundVars.put( var /*t.symbol()*/, Boolean.FALSE );
 	    /*
               boolean result = check( tree, inSeq );
@@ -110,13 +123,6 @@ public class PatternNormalizer {
 	case Select( _, _ ):
 	    return true;
 
-            /*
-	case Empty: // may appear just as Sequence Sequence
-	    if ( !inSeq )
-		unit.error( t.pos,
-			    "empty subsequence without surrounding '['']'");
-	    return inSeq;
-	    */
 	default:
 	    unit.error( t.pos, "whut'z dis ?"+t.toString()); // never happens
 	}
@@ -141,6 +147,10 @@ public class PatternNormalizer {
        */
       public boolean check( Tree pat ) {
             this.boundVars = new HashMap();
+            if( TreeInfo.isRegularPattern( pat ) )
+                  seqDepth = 0;
+            else
+                  seqDepth = -32;  // don't care about sequences. see above
             return check1( pat, false );
     }
 
