@@ -9,7 +9,6 @@
 package scalac.transformer.matching;
 
 import ch.epfl.lamp.util.Position;
-
 import scalac.*;
 import scalac.ast.*;
 import scalac.util.*;
@@ -254,6 +253,8 @@ public class PatternMatcher extends PatternTool {
 
     protected Tree[] patternArgs(Tree tree) {
         switch (tree) {
+        	case Bind(_, Tree pat):
+        		return patternArgs(pat);
             case Apply(_, Tree[] args):
                 if (args.length == 1  && (tree.type.symbol().flags & Modifiers.CASE) == 0)
                     switch (args[0]) {
@@ -270,6 +271,14 @@ public class PatternMatcher extends PatternTool {
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         switch (tree) {
+            case Bind(Name name, Tree pat):
+            	PatternNode node = patternNode(pat, header, env);
+            	if ((env != null) && (name != Names.WILDCARD))
+					env.newBoundVar(tree.pos,
+									tree.symbol(),
+									tree.type,
+									header.selector);
+				return node;
 			case Apply(Tree fn, Tree[] args):             // pattern with args
 				if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
 					switch (args[0]) {
