@@ -350,7 +350,7 @@ public class Erasure extends Transformer implements Modifiers {
 	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
 	    return copy.ValDef(tree, tpe1, rhs1).setType(owntype);
 
-	case TypeDef(_, _, _):
+	case TypeDef(_, _, _, _):
 	    // eliminate
 	    return Tree.Empty;
 

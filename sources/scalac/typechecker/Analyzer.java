@@ -467,6 +467,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		sym.flags |= LOCKED;
 		checkNonCyclic(
 		    pos, pre.memberInfo(sym).subst(sym.typeParams(), args));
+		if (sym.kind == TYPE)
+		    checkNonCyclic(
+			pos, sym.loBound().asSeenFrom(pre, sym.owner()));
 		sym.flags &= ~LOCKED;
 	    }
 	    break;
@@ -671,6 +674,91 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	return msg + note;
     }
 
+// Variance Checking --------------------------------------------------------
+
+    private final int
+        ContraVariance = -1,
+	NoVariance = 0,
+	CoVariance = 1,
+	AnyVariance = 2;
+
+    private String varianceString(int variance) {
+	if (variance == 1) return "covariant";
+	else if (variance == -1) return "contravariant";
+	else return "invariant";
+    }
+
+    /** The variance of symbol `base' relative to the class which defines `tvar'.
+     */
+    int flip(Symbol base, Symbol tvar) {
+	Symbol clazz = tvar.owner().primaryConstructorClass();
+	Symbol sym = clazz;
+	int flip = CoVariance;
+	while (sym != clazz && flip != AnyVariance) {
+	    if (sym.isParameter()) flip = -flip;
+	    else if (sym.owner().kind != CLASS) flip = AnyVariance;
+	    else if (sym.kind == ALIAS) flip = NoVariance;
+	    sym = sym.owner();
+	}
+	return flip;
+    }
+
+    /** Check variance of type variables in this type
+     */
+    void validateVariance(Symbol base, Type tp, int variance) {
+	validateVariance(base, tp, tp, variance);
+    }
+
+    void validateVariance(Symbol base, Type all, Type tp, int variance) {
+	switch (tp) {
+	case ErrorType:
+	case AnyType:
+	case NoType:
+	case ThisType(Symbol sym):
+	    break;
+	case SingleType(Type pre, Symbol sym):
+	    validateVariance(base, all, pre, variance);
+	    break;
+	case TypeRef(Type pre, Symbol sym, Type[] args):
+	    if (sym.variance() != 0) {
+		int f = flip(base, sym);
+		if (f != AnyVariance && sym.variance() != f * variance) {
+		    error(sym.pos,
+			  varianceString(sym.variance()) + " " + sym +
+			  " occurs in " + f * variance +
+			  " position in type " + all);
+		}
+	    }
+	    validateVariance(base, all, pre, variance);
+	    validateVariance(base, all, args, variance, sym.typeParams());
+	    break;
+	case CompoundType(Type[] parts, Scope members):
+	    validateVariance(base, all, parts, variance);
+	    break;
+	case MethodType(Symbol[] vparams, Type result):
+	    validateVariance(base, all, result, variance);
+	    break;
+	case PolyType(Symbol[] tparams, Type result):
+	    validateVariance(base, all, result, variance);
+	    break;
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    validateVariance(base, all, alttypes, variance);
+	    break;
+	case CovarType(Type tp1):
+	    validateVariance(base, all, tp1, CoVariance);
+	}
+    }
+
+    void validateVariance(Symbol base, Type all, Type[] tps, int variance) {
+	for (int i = 0; i < tps.length; i++)
+	    validateVariance(base, all, tps[i], variance);
+    }
+
+    void validateVariance(Symbol base, Type all, Type[] tps, int variance, Symbol[] tparams) {
+	for (int i = 0; i < tps.length; i++)
+	    validateVariance(base, all, tps[i], variance * tparams[i].variance());
+    }
+
 // Entering Symbols ----------------------------------------------------------
 
     Tree transformPackageId(Tree tree) {
@@ -759,9 +847,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case DefDef(int mods, Name name, _, _, _, _):
 	    return enterSym(tree, new TermSymbol(tree.pos, name, owner, mods));
 
-	case TypeDef(int mods, Name name, _):
-	    int kind = (mods & (DEFERRED | PARAM)) != 0 ? TYPE : ALIAS;
-	    return enterSym(tree, new TypeSymbol(kind, tree.pos, name, owner, mods));
+	case TypeDef(int mods, Name name, _, _):
+	    Symbol tsym = ((mods & (DEFERRED | PARAM)) != 0)
+		? new AbsTypeSymbol( tree.pos, name, owner, mods)
+		: new TypeSymbol(ALIAS, tree.pos, name, owner, mods);
+	    return enterSym(tree, tsym);
 
 	case Import(Tree expr, Name[] selectors):
 	    return enterImport(tree,
@@ -882,7 +972,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    throw new CyclicReference(sym, Type.NoType);
 		}
 		((ClassDef) tree).mods |= LOCKED;
-
 		pushContext(tree, sym.constructor(), new Scope(context.scope));
 		Symbol[] tparamSyms = enterParams(tparams);
 		Symbol[][] vparamSyms = enterParams(vparams);
@@ -964,12 +1053,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		//System.out.println("methtype " + name + ":" + owntype);//DEBUG
 		break;
 
-	    case TypeDef(int mods, Name name, Tree rhs):
-		//todo: alwyas have context.owner as owner.
+	    case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
+		//todo: always have context.owner as owner.
 		if (sym.kind == TYPE) {
 		    pushContext(rhs, context.owner, context.scope);
 		    context.delayArgs = true;
 		    owntype = transform(rhs, TYPEmode).type;
+		    sym.setLoBound(transform(lobound, TYPEmode).type);
 		    owntype.symbol().initialize();//to detect cycles
 		    popContext();
 		} else { // sym.kind == ALIAS
@@ -1014,8 +1104,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    templ.pos, templ.parents, true);
 
 	Type[] parents = new Type[constrs.length];
-	for (int i = 0; i < parents.length; i++)
+	for (int i = 0; i < parents.length; i++) {
 	    parents[i] = constrs[i].type;
+	}
 
 	// enter all members
 	Scope members = new Scope();
@@ -1830,12 +1921,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tpe1 = transform(tpe);
 		Tree.Template templ1 = transformTemplate(templ, sym);
 		popContext();
+		validateVariance(sym, sym.info(), CoVariance);
+		validateVariance(sym, sym.typeOfThis(), CoVariance);
 		return copy.ClassDef(tree, sym, tparams1, vparams1, tpe1, templ1)
 		    .setType(definitions.UNIT_TYPE);
 
 	    case ModuleDef(_, _, Tree tpe, Tree.Template templ):
 		Tree tpe1 = transform(tpe, TYPEmode);
 		Tree.Template templ1 = transformTemplate(templ, sym.moduleClass());
+		validateVariance(sym.moduleClass(), sym.type(), CoVariance);
+		validateVariance(sym.moduleClass(), sym.moduleClass().info(), CoVariance);
 		return copy.ModuleDef(tree, sym, tpe1, templ1)
 		    .setType(definitions.UNIT_TYPE);
 
@@ -1847,13 +1942,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
 		    if ((sym.flags & CASEACCESSOR) != 0) {
-			//rhs was already attribute
+			//rhs was already attributed
 		    } else {
 			pushContext(tree, sym, context.scope);
 			rhs1 = transform(rhs, EXPRmode, sym.type());
 			popContext();
 		    }
 		}
+		validateVariance(sym, sym.type(), CoVariance);
 		return copy.ValDef(tree, sym, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
@@ -1874,16 +1970,19 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			tpe1.type == Type.NoType ? Type.AnyType : tpe1.type);
 		}
 		popContext();
+		validateVariance(sym, sym.type(), CoVariance);
 		return copy.DefDef(tree, sym, tparams1, vparams1, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
-	    case TypeDef(_, _, Tree rhs):
+	    case TypeDef(_, _, Tree rhs, Tree lobound):
 		pushContext(tree, sym, new Scope(context.scope));
 		int mode = TYPEmode;
 		if (sym.kind == ALIAS) mode |= FUNmode;
 		Tree rhs1 = transform(rhs, mode);
+		Tree lobound1 = transform(lobound, TYPEmode);
 		popContext();
-		return copy.TypeDef(tree, sym, rhs1)
+		validateVariance(sym, sym.info(), NoVariance);
+		return copy.TypeDef(tree, sym, rhs1, lobound1)
 		    .setType(definitions.UNIT_TYPE);
 
 	    case Import(Tree expr, Name[] selectors):

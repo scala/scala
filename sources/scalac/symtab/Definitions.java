@@ -92,6 +92,16 @@ public class Definitions {
     public final Symbol OBJECT_CLASS;
     public final Type   OBJECT_TYPE;
 
+    /** the scala.All class
+     */
+    public final Symbol ALL_CLASS;
+    public final Type   ALL_TYPE;
+
+    /** the scala.AllRef class
+     */
+    public final Symbol ALLREF_CLASS;
+    public final Type   ALLREF_TYPE;
+
     /** the primitive types
      */
     public final Symbol BYTE_CLASS;
@@ -220,6 +230,22 @@ public class Definitions {
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
         ANYVAL_TYPE = ANYVAL_CLASS.typeConstructor();
 
+        // the scala.ALL class
+        ALL_CLASS = new ClassSymbol(
+	    Position.NOPOS, Names.All.toTypeName(), SCALA_CLASS, 0);
+        SCALA_CLASS.members().enter(ALL_CLASS);
+        ALL_TYPE = ALL_CLASS.typeConstructor();
+        ALL_CLASS.setInfo(Type.compoundType(new Type[]{ANY_TYPE}, new Scope(), ALL_CLASS));
+        ALL_CLASS.constructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALL_TYPE));
+
+        // the scala.ALLREF class
+        ALLREF_CLASS = new ClassSymbol(
+	    Position.NOPOS, Names.AllRef.toTypeName(), SCALA_CLASS, 0);
+        SCALA_CLASS.members().enter(ALLREF_CLASS);
+        ALLREF_TYPE = ALLREF_CLASS.typeConstructor();
+        ALLREF_CLASS.setInfo(Type.compoundType(new Type[]{ANYREF_TYPE}, new Scope(), ALLREF_CLASS));
+        ALLREF_CLASS.constructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALLREF_TYPE));
+
         // the primitive types
         DOUBLE_CLASS = getClass(Names.scala_Double);
         DOUBLE_TYPE = DOUBLE_CLASS.typeConstructor();
@@ -248,8 +274,7 @@ public class Definitions {
         JAVA_THROWABLE_TYPE = JAVA_THROWABLE_CLASS.typeConstructor();
         THROW = new TermSymbol(
 	    Position.NOPOS, Names.throw_, JAVA_THROWABLE_CLASS, Modifiers.FINAL);
-        Symbol tvar = newTypeParameter(THROW, ANY_TYPE);
-        THROW.setInfo(Type.PolyType(new Symbol[]{tvar}, tvar.type()));
+        THROW.setInfo(ALL_TYPE);
         JAVA_THROWABLE_CLASS.members().enter(THROW);
 
         // add the java.lang.String class to the scala package
@@ -292,7 +317,7 @@ public class Definitions {
 
         AS = new TermSymbol(
 	    Position.NOPOS, Names.as, ANY_CLASS, Modifiers.FINAL);
-        tvar = newTypeParameter(AS, ANY_TYPE);
+        Symbol tvar = newTypeParameter(AS, ANY_TYPE);
         AS.setInfo(Type.PolyType(new Symbol[]{tvar}, tvar.type()));
         ANY_CLASS.members().enter(AS);
 
@@ -327,8 +352,7 @@ public class Definitions {
         // add a null value to the root scope
 	NULL = new TermSymbol(
 	    Position.NOPOS, Names.null_, ROOT_CLASS, 0);
-	tvar = newTypeParameter(NULL, ANYREF_TYPE);
-        NULL.setInfo(Type.PolyType(new Symbol[]{tvar}, tvar.type()));
+        NULL.setInfo(ALLREF_TYPE);
         ROOT.members().enter(NULL);
     }
 
@@ -338,8 +362,8 @@ public class Definitions {
     }
 
     private Symbol newTypeParameter(Symbol owner, Type bound) {
-	return new TypeSymbol(
-	    Kinds.TYPE, Position.NOPOS, Name.fromString("T").toTypeName(), owner, Modifiers.PARAM)
+	return new AbsTypeSymbol(
+	    Position.NOPOS, Name.fromString("T").toTypeName(), owner, Modifiers.PARAM)
 	    .setInfo(bound);
     }
 

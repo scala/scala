@@ -548,12 +548,17 @@ public class Infer implements Modifiers, Kinds {
 	for (int i = 0; i < argtypes.length; i++) {
 	    if (!isCompatible(argtypes[i].subst(tparams, tvars),
 			      formals[i].subst(tparams, tvars))) {
-		if (needToSucceed)
+		if (needToSucceed) {
+		    Type.debugSwitch = true;
+		    argtypes[i].subst(tparams, tvars).isSubType(
+			formals[i].subst(tparams, tvars));
+		    Type.debugSwitch = false;
 		    throw new NoInstance(
 			typeErrorMsg(
 			    "argument expression's type is not compatible with formal parameter type",
 			    argtypes[i].subst(tparams, tvars),
 			    formals[i].subst(tparams, tvars)));
+		}
 		return null;
 	    }
 	}
@@ -564,6 +569,7 @@ public class Infer implements Modifiers, Kinds {
 		? Type.NoType
 		: instantiate(tvars[i]);
 	}
+	//System.out.println(" = " + ArrayApply.toString(targs));//DEBUG
 	return targs;
     }
 

@@ -35,7 +35,6 @@ public class AnalyzerPhase extends PhaseDescriptor {
 
         if (!global.noimports) {
             TreeFactory make = global.make;
-
             Tree java = make.Ident(Position.NOPOS, Names.java)
                 .setSymbol(definitions.JAVA)
                 .setType(Type.singleType(definitions.ROOT_TYPE, definitions.JAVA));

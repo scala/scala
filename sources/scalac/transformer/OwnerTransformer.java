@@ -127,11 +127,12 @@ public class OwnerTransformer extends Transformer {
                 transform(tpe),
 		transform(rhs, symbol));
 
-	case TypeDef(_, _, Tree rhs):
-            Symbol symbol = tree.symbol();
+	case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
+	    Symbol sym = tree.symbol();
 	    return copy.TypeDef(
-		tree, symbol,
-                transform(rhs, symbol));
+		tree, sym,
+		transform(rhs, sym),
+		transform(lobound, sym));
 
 	default:
 	    return super.transform(tree);

@@ -252,7 +252,8 @@ public class TreeGen implements Kinds, Modifiers {
 	    pos,
 	    sym.flags & SOURCEFLAGS,
 	    sym.name,
-	    TypeTerm(pos, symtype))
+	    TypeTerm(pos, symtype),
+	    TypeTerm(pos, sym.loBound()))
 	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }
 

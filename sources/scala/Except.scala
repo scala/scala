@@ -1,8 +1,8 @@
 package scala;
 
 class Except[a](r: scala.runtime.ResultOrException[a]) {
-  def except(handler: PartialFunction[Throwable, a]): a =
-    if (r.exc == null) r.result as a
+  def except[b >: a](handler: PartialFunction[Throwable, b]): b =
+    if (r.exc == null) r.result as b
     else if (handler isDefinedAt r.exc) handler(r.exc)
     else r.exc.throw;
   def finally(def handler: Unit): a =

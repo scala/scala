@@ -141,6 +141,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return this;
     }
 
+    /** Set the low bound of this type variable
+     */
+    public Symbol setLoBound(Type lobound) {
+	throw new ApplicationError("setLoBound inapplicable for " + this);
+    }
+
 // Symbol classification ----------------------------------------------------
 
     /** Does this symbol denote a type? */
@@ -339,6 +345,14 @@ public abstract class Symbol implements Modifiers, Kinds {
         case OverloadedType(_,_): return true;
         default                 : return false;
         }
+    }
+
+    /** The variance of this symbol as an integer
+     */
+    public int variance() {
+	if ((flags & COVARIANT) != 0) return 1;
+	else if ((flags & CONTRAVARIANT) != 0) return -1;
+	else return 0;
     }
 
 // Symbol names ----------------------------------------------------------------
@@ -590,6 +604,12 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Type typeConstructor() {
 	throw new ApplicationError("typeConstructor inapplicable for " + this);
+    }
+
+    /** The low bound of this type variable
+     */
+    public Type loBound() {
+	throw new ApplicationError("loBound inapplicable for " + this);
     }
 
     /** Get this.type corresponding to this symbol
@@ -1107,6 +1127,7 @@ public class TypeSymbol extends Symbol {
     private void computeClosure() {
 	assert closures.closure != BAD_CLOSURE : this;
 	closures.closure = BAD_CLOSURE; // to catch cycles.
+	// todo: why can't we do: inclClosure(SymSet.EMPTY, this) ?
 	SymSet closureClassSet = inclClosureBases(SymSet.EMPTY, this);
 	Symbol[] closureClasses = new Symbol[closureClassSet.size() + 1];
 	closureClasses[0] = this;
@@ -1116,6 +1137,7 @@ public class TypeSymbol extends Symbol {
 	//System.out.println(ArrayApply.toString(closures.closure));//DEBUG
 	adjustType(type());
 	//System.out.println("closure(" + this + ") at " + Global.instance.currentPhase.name() + " = " + ArrayApply.toString(closures.closure));//DEBUG
+
     }
     //where
 
@@ -1148,6 +1170,36 @@ public class TypeSymbol extends Symbol {
 	super.reset(completer);
 	closures = ClosureIntervalList.EMPTY;
 	tycon = null;
+    }
+}
+
+public class AbsTypeSymbol extends TypeSymbol {
+
+    private Type lobound = null;
+
+    /** Constructor */
+    public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags) {
+        super(TYPE, pos, name, owner, flags);
+    }
+
+    /** Return a fresh symbol with the same fields as this one.
+     */
+    public Symbol cloneSymbol() {
+	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " in phase " + Global.instance.currentPhase.name());
+        TypeSymbol other = new AbsTypeSymbol(pos, name, owner(), flags);
+        other.setInfo(info());
+	other.setLoBound(loBound());
+        return other;
+    }
+
+    public Type loBound() {
+	initialize();
+	return lobound == null ? Global.instance.definitions.ALL_TYPE : lobound;
+    }
+
+    public Symbol setLoBound(Type lobound) {
+	this.lobound = lobound;
+	return this;
     }
 }
 
@@ -1375,6 +1427,10 @@ public final class ErrorSymbol extends Symbol {
     /** Return the next enclosing class */
     public Symbol enclClass() {
         return this;
+    }
+
+    public Type loBound() {
+	return Type.ErrorType;
     }
 
     public void reset(Type completer) {

@@ -15,8 +15,6 @@ import scalac.symtab.Modifiers;
 import scalac.ast.*;
 import Tree.*;
 
-//todo: add type idents?
-
 /** A recursive descent parser for the programming language Scala.
  *
  *  @author     Martin Odersky, Matthias Zenger
@@ -1198,26 +1196,29 @@ public class Parser implements Tokens {
         return (ValDef)make.ValDef(pos, mods, name, tp, Tree.Empty);
     }
 
-    /** TypeParamClauseOpt ::= [`[' TypeSig {`,' TypeSig} `]']
+    /** TypeParamClauseOpt ::= [`[' TypeParam {`,' TypeParam} `]']
+     *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
      */
-    TypeDef[] typeParamClauseOpt() {
+    TypeDef[] typeParamClauseOpt(boolean variant) {
         TreeList params = new TreeList();
 	if (s.token == LBRACKET) {
 	    s.nextToken();
-	    params.append(typeSig(Modifiers.PARAM));
+	    params.append(typeParam(variant));
 	    while (s.token == COMMA) {
 		s.nextToken();
-		params.append(typeSig(Modifiers.PARAM));
+		params.append(typeParam(variant));
 	    }
 	    accept(RBRACKET);
 	}
         return (TypeDef[])params.copyTo(new TypeDef[params.length()]);
     }
 
-    /** TypeSig   ::= [+ | -] Id TypeBounds
+    /** TypeParam   ::= [`+' | `-'] FunTypeParam
+     *  FunTypeParam ::= Id TypeBounds
      */
-    Tree typeSig(int mods) {
-	if (s.token == IDENTIFIER) {
+    Tree typeParam(boolean variant) {
+	int mods = Modifiers.PARAM;
+	if (variant && s.token == IDENTIFIER) {
 	    if (s.name == PLUS) {
 		s.nextToken();
 		mods |= Modifiers.COVARIANT;
@@ -1229,7 +1230,7 @@ public class Parser implements Tokens {
 	return typeBounds(s.pos, mods, ident());
     }
 
-    /** TypeBounds ::= [>: Type] [<: Type]
+    /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
     Tree typeBounds(int pos, int mods, Name name) {
 	Tree lobound;
@@ -1246,7 +1247,7 @@ public class Parser implements Tokens {
 	} else {
 	    hibound = scalaDot(pos, Names.Any.toTypeName());
 	}
-	return make.TypeDef(pos, mods, name.toTypeName(), hibound);
+	return make.TypeDef(pos, mods, name.toTypeName(), hibound, lobound);
     }
 
 //////// DEFS ////////////////////////////////////////////////////////////////
@@ -1351,7 +1352,7 @@ public class Parser implements Tokens {
      *           | var ValSig {`,' ValSig}
      *           | def FunSig {`,' FunSig}
      *           | constr ConstrSig {`,' ConstrSig}
-     *           | type TypeSig {`,' TypeSig}
+     *           | type TypeDcl {`,' TypeDcl}
      */
     Tree[] defOrDcl(int mods) {
         TreeList ts = new TreeList();
@@ -1470,13 +1471,13 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** FunDef ::= Id [TypeParamClause] {ParamClause} [`:' Type] `=' Expr
-     *  FunSig ::= Id [TypeParamClause] {ParamClause} `:' Type
+    /** FunDef ::= Id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
+     *  FunSig ::= Id [FunTypeParamClause] {ParamClause} `:' Type
      */
     Tree funDefOrSig(int mods) {
         int pos = s.pos;
         Name name = ident();
-        TypeDef[] tparams = typeParamClauseOpt();
+        TypeDef[] tparams = typeParamClauseOpt(false);
         ValDef[][] vparams = paramClauses();
         Tree restype = typedOpt();
 	if (s.token == EQUALS || restype == Tree.Empty)
@@ -1487,12 +1488,12 @@ public class Parser implements Tokens {
                                tparams, vparams, restype, Tree.Empty);
     }
 
-    /*  ConstrDef ::= Id [TypeParamClause] [ParamClause] [`:' Type] `=' (Constr | BlockConstr)
+    /*  ConstrDef ::= Id [FunTypeParamClause] [ParamClause] [`:' Type] `=' (Constr | BlockConstr)
      */
     Tree constrDefOrSig(int mods) {
         int pos = s.pos;
         Name name = ident().toConstrName();
-        TypeDef[] tparams = typeParamClauseOpt();
+        TypeDef[] tparams = typeParamClauseOpt(false);
         ValDef[][] vparams = new ValDef[][]{paramClause()};
         Tree restype = typedOpt();
 	if (s.token == EQUALS || restype == Tree.Empty) {
@@ -1505,24 +1506,23 @@ public class Parser implements Tokens {
     }
 
     /** TypeDef ::= Id `=' Type
-     *  TypeSig ::= [`+' | `-'] Id [`>:' Type] [`<:' Type]
+     *  TypeDcl ::= Id TypeBounds
      */
     Tree typeDefOrSig(int mods) {
         int pos = s.pos;
-	if (s.token == IDENTIFIER && (s.name == PLUS || s.name == MINUS))
-	    return typeSig(mods | Modifiers.DEFERRED);
         Name name = ident().toTypeName();
-	if (s.token == SUPERTYPE || s.token == SUBTYPE) {
-	    return typeBounds(pos, mods | Modifiers.DEFERRED, name);
-	} else if (s.token == EQUALS) {
+	switch (s.token) {
+	case EQUALS:
 	    s.nextToken();
-            return make.TypeDef(pos, mods, name, type());
-	} else if (s.token == SEMI || s.token == COMMA || s.token == RBRACE) {
-	    return make.TypeDef(
-		pos, mods | Modifiers.DEFERRED, name,
-		scalaDot(pos, Names.Any.toTypeName()));
-	} else {
-	    return syntaxError("`=', `>:', or `<:' expected", true);
+            return make.TypeDef(pos, mods, name, type(), Tree.Empty);
+	case SUPERTYPE:
+	case SUBTYPE:
+	case SEMI:
+	case COMMA:
+	case RBRACE:
+	    return typeBounds(pos, mods | Modifiers.DEFERRED, name);
+	default:
+ 	    return syntaxError("`=', `>:', or `<:' expected", true);
 	}
     }
 
@@ -1531,7 +1531,7 @@ public class Parser implements Tokens {
     Tree classDef(int mods) {
 	int pos = s.pos;
 	Name name = ident();
-	TypeDef[] tparams = typeParamClauseOpt();
+	TypeDef[] tparams = typeParamClauseOpt(true);
 	ValDef[][] params = (s.token == LPAREN) ? new ValDef[][]{paramClause()}
 	    : Tree.ValDef_EMPTY_ARRAY_ARRAY;
         return make.ClassDef(pos, mods, name.toTypeName(), tparams, params,

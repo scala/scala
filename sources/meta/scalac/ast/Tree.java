@@ -176,7 +176,8 @@ public class Tree {
             setRange(Phase.PARSER, Phase.ERASURE). // !!! could/should be removed earlier?)
             addField(t_int, "mods", SymFlags).
             addField(t_TypeName, "name", SymName).
-            addField(t_TypeTree, "rhs");
+            addField(t_TypeTree, "rhs").
+	    addField(t_TypeTree, "lobound");
 
         n_Import.
             setDescription("Import declaration").

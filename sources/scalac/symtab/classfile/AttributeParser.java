@@ -187,7 +187,7 @@ public class AttributeParser implements ClassfileConstants {
                 }
                 Symbol s = tvars.lookup(Name.fromString(name).toTypeName());
                 if (s == Symbol.NONE) {
-                    s = new TypeSymbol(Kinds.TYPE,
+                    s = new AbsTypeSymbol(
                                        Position.NOPOS,
                                        Name.fromString(token).toTypeName(),
                                        owner,

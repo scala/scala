@@ -397,7 +397,7 @@ public class  Global {
         case PackageDef(_, _):
         case ModuleDef(_, _, _, _):
         case DefDef(_, _, _, _, _, _):
-        case TypeDef(_, _,_ ):
+        case TypeDef(_, _, _, _):
             if (!mustShow(tree.symbol())) return;
             body.append(
                 treeGen.Apply(

@@ -482,7 +482,7 @@ class AddInterfaces extends SubstTransformer {
                 List newBody = new LinkedList();
                 for (int i = 0; i < body.length; ++i) {
                     switch (body[i]) {
-                    case TypeDef(_, _, _):
+                    case TypeDef(_, _, _, _):
                         break;
                     default:
                         newBody.add(transform(body[i]));

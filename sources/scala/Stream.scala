@@ -6,8 +6,6 @@ trait Stream[a] {
   def head: a;
   def tail: Stream[a];
 
-  protected def error[a](x: String):a = (new java.lang.RuntimeException(x)).throw;
-
   def length: Int = if (isEmpty) 0 else tail.length + 1;
 
   def append(def rest: Stream[a]): Stream[a] =

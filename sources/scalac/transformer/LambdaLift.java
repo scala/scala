@@ -207,13 +207,14 @@ public class LambdaLift extends OwnerTransformer
 		}
 		return super.transform(tree);
 
-	    case TypeDef(_, _, Tree rhs):
+	    case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
 		// ignore type definition as owner.
 		// reason: it might be in a refinement
 		// todo: handle type parameters?
 		return copy.TypeDef(
 		    tree, sym,
-		    transform(rhs, currentOwner));
+		    transform(rhs, currentOwner),
+		    transform(lobound, currentOwner));
 
 	    case Ident(_):
 		if (sym.isLocal()) {
@@ -353,12 +354,14 @@ public class LambdaLift extends OwnerTransformer
 		    transform(rhs, sym));
 	    }
 
-	case TypeDef(_, _, Tree rhs):
+	case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
 	    // ignore type definition as owner.
 	    // reason: it might be in a refinement
 	    // todo: handle type parameters?
 	    return copy.TypeDef(
-                tree, tree.symbol(), transform(rhs, currentOwner));
+		tree, tree.symbol(),
+		transform(rhs, currentOwner),
+		transform(lobound, currentOwner));
 
 	case ValDef(_, _, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();

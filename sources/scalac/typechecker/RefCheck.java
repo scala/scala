@@ -118,12 +118,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return stats;
     }
 
-    public Tree nullTree(int pos, Type tp) {
-	return gen.TypeApply(
-	    gen.Ident(pos, defs.NULL),
-	    new Tree[]{gen.mkType(pos, tp)});
-    }
-
     private boolean isGlobalModule(Symbol sym) {
 	return
 	    sym.isModule() &&
@@ -150,20 +144,20 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree vdef = gen.ValDef(sym, alloc);
 	    return new Tree[]{cdef, vdef};
 	} else {
-	    // var m$: T = null[T];
+	    // var m$: T = null;
 	    Name varname = Name.fromString(name + "$");
 	    Symbol mvar = new TermSymbol(
 		tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
 		.setInfo(sym.type());
-	    Tree vdef = gen.ValDef(mvar, nullTree(tree.pos, sym.type()));
+	    Tree vdef = gen.ValDef(mvar, gen.Ident(tree.pos, defs.NULL));
 
-	    // { if (null[T] == m$) m$ = new m$class; m$ }
+	    // { if (null == m$) m$ = new m$class; m$ }
 	    Symbol eqMethod = getMemberMethod(
 		sym.type(), Names.EQEQ, defs.ANY_TYPE);
 	    Tree body = gen.Block(new Tree[]{
 		gen.If(
 		    gen.Apply(
-			gen.Select(nullTree(tree.pos, sym.type()), eqMethod),
+			gen.Select(gen.Ident(tree.pos, defs.NULL), eqMethod),
 			new Tree[]{gen.mkRef(tree.pos, mvar)}),
 		    gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
 		    gen.Block(tree.pos, Tree.EMPTY_ARRAY)),

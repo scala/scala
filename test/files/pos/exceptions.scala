@@ -7,7 +7,8 @@ object test {
   def main(): Unit = {
     try {
       try {
-        error("hi!");
+	System.out.println("hi!");
+        error("xx");
       } finally {
         System.out.println("ho!")
       }

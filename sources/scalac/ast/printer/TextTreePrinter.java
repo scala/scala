@@ -182,6 +182,7 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text TXT_DOT           = Text.Simple(".");
     protected static final Text TXT_COMMA         = Text.Simple(",");
     protected static final Text TXT_EQUAL         = Text.Simple("=");
+    protected static final Text TXT_SUPERTYPE     = Text.Simple(">:");
     protected static final Text TXT_SUBTYPE       = Text.Simple("<:");
     protected static final Text TXT_HASH          = Text.Simple("#");
     protected static final Text TXT_RIGHT_ARROW   = Text.Simple("=>");
@@ -317,13 +318,17 @@ public class TextTreePrinter implements TreePrinter {
 
         case TypeDef(int mods,
                      Name name,
-                     Tree rhs):
+                     Tree rhs,
+		     Tree lobound):
             printModifiers(mods);
             print(KW_TYPE);
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
-	    if ((mods & (Modifiers.DEFERRED | Modifiers.PARAM)) != 0) printOpt(TXT_SUBTYPE, rhs, true);
-            else printOpt(TXT_EQUAL, rhs, true);
+	    if ((mods & (Modifiers.DEFERRED | Modifiers.PARAM)) != 0) {
+		printBounds(lobound, rhs);
+	    } else {
+		printOpt(TXT_EQUAL, rhs, true);
+	    }
             break;
 
         case Import(Tree expr, Name[] selectors):
@@ -683,10 +688,10 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printParam(Tree tree) {
 	switch (tree) {
-	case TypeDef(int mods, Name name, Tree bound):
+	case TypeDef(int mods, Name name, Tree bound, Tree lobound):
             printModifiers(mods);
             printSymbolDefinition(tree.symbol(), name);
-            printOpt(TXT_SUBTYPE, bound, true);
+	    printBounds(lobound, bound);
             break;
 
         case ValDef(int mods, Name name, Tree tpe, Tree.Empty):
@@ -699,4 +704,12 @@ public class TextTreePrinter implements TreePrinter {
 	    Debug.abort("bad parameter: " + tree);
 	}
     }
+
+    protected void printBounds(Tree lobound, Tree hibound) {
+	if (lobound.toString() != "scala.All")
+	    printOpt(TXT_SUPERTYPE, lobound, true);
+	if (hibound.toString() != "scala.Any")
+            printOpt(TXT_SUBTYPE, hibound, true);
+    }
+
 }

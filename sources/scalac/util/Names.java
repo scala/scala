@@ -80,6 +80,8 @@ public class Names {
     public static final Name scala = Name.fromString("scala");
     public static final Name scala_COLONCOLON = Name.fromString("scala." + COLONCOLON);
     public static final Name scala_Algebraic = Name.fromString("scala.Algebraic");
+    public static final Name scala_All = Name.fromString("scala.All");
+    public static final Name scala_AllRef = Name.fromString("scala.AllRef");
     public static final Name scala_Any = Name.fromString("scala.Any");
     public static final Name scala_AnyRef = Name.fromString("scala.AnyRef");
     public static final Name scala_AnyVal = Name.fromString("scala.AnyVal");

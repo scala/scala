@@ -489,6 +489,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     /** Is this type a reference to an object type?
+     *  todo: replace by this.isSubType(global.definitions.ANY_TYPE)?
      */
     public boolean isObjectType() {
 	switch (unalias()) {
@@ -1266,7 +1267,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
        	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		if (sym == sym1 && pre.isSameAs(pre1) && isSubArgs(args, args1))
+		if (sym == sym1 && pre.isSameAs(pre1) &&
+		    isSubArgs(args, args1, sym.typeParams())
+		    ||
+		    sym.kind == TYPE && pre.memberInfo(sym).isSubType(that))
 		    return true;
 		break;
 	    }
@@ -1355,11 +1359,26 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		return constr.inst.isSubType(that);
 	    } else {
 		constr.hibounds = new List(that.dropVariance(), constr.hibounds);
+		assert that.dropVariance().symbol() != Global.instance.definitions.ALL_CLASS;//debug
 		return true;
 	    }
 
 	case TypeRef(_, Symbol sym, _):
-	    if (sym.kind == ALIAS) return this.unalias().isSubType(that);
+	    switch (that) {
+	    case TypeRef(Type pre1, Symbol sym1, _):
+		if (sym1.kind == TYPE &&
+		    this.isSubType(
+			sym1.loBound().asSeenFrom(pre1, sym1.owner())))
+		    return true;
+	    }
+	    if (sym.kind == ALIAS)
+		return this.unalias().isSubType(that);
+	    else if (sym == Global.instance.definitions.ALL_CLASS)
+		return that.isSubType(Global.instance.definitions.ANY_TYPE);
+	    else if (sym == Global.instance.definitions.ALLREF_CLASS)
+		return
+		    that.isSameAs(Global.instance.definitions.ANY_TYPE) ||
+		    that.isSubType(Global.instance.definitions.ANYREF_TYPE);
 	    break;
 
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -1390,7 +1409,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     /** Are types `these' arguments types conforming to corresponding types `those'?
      */
-    static boolean isSubArgs(Type[] these, Type[] those) {
+    static boolean isSubArgs(Type[] these, Type[] those, Symbol[] tparams) {
 	if (these.length != those.length) return false;
 	for (int i = 0; i < these.length; i++) {
 	    switch (those[i]) {
@@ -1404,8 +1423,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		}
 		break;
 	    default:
-		if (these[i].isCovarType() || !these[i].isSameAs(those[i]))
-		    return false;
+		if (these[i].isCovarType()) return false;
+		if ((tparams[i].flags & COVARIANT) != 0) {
+		    if (!these[i].isSubType(those[i])) return false;
+		} else {
+		    if (!these[i].isSameAs(those[i])) return false;
+		}
 	    }
 	}
 	return true;
@@ -1811,7 +1834,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
     static Type arglub(Type[] types) {
 	Type pre = types[0].prefix();
 	Symbol sym = types[0].symbol();
-	Type[] args = new Type[sym.typeParams().length];
+	Symbol[] tparams = sym.typeParams();
+	Type[] args = new Type[tparams.length];
 	Type[][] argss = new Type[args.length][types.length];
 	for (int i = 0; i < types.length; i++) {
 	    switch (types[i]) {
@@ -1828,9 +1852,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    }
 	}
 	for (int j = 0; j < args.length; j++) {
-	    args[j] = commonType(argss[j]);
-	    if (args[j] == NoType)
-		args[j] = CovarType(lub(argss[j]));
+	    if ((tparams[j].flags & COVARIANT) != 0) {
+		args[j] = commonType(argss[j]);
+		if (args[j] == NoType)
+		    args[j] = lub(argss[j]);
+	    } else { //todo: test if all same, return notype otherwise.
+		args[j] = commonType(argss[j]);
+		if (args[j] == NoType)
+		    args[j] = CovarType(lub(argss[j]));
+	    }
 	}
 	return typeRef(pre, sym, args);
     }
@@ -1861,16 +1891,55 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public static Type lub(Type[] tps) {
 	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
+
+	// remove All and AllRef types
+	boolean all = false;
+	boolean allref = false;
+	for (int i = 0; i < tps.length; i++) {
+	    if (!tps[i].isObjectType()) {
+		System.out.println("not an object type");
+		return Type.NoType;//todo: change
+	    }
+	    all |= tps[i].symbol() == Global.instance.definitions.ALL_CLASS;
+	    allref |= tps[i].symbol() == Global.instance.definitions.ALLREF_CLASS;
+	}
+
+	if (all | allref) {
+	    Type.List tl = Type.List.EMPTY;
+	    for (int i = 0; i < tps.length; i++) {
+		if (tps[i].symbol() != Global.instance.definitions.ALL_CLASS &&
+		    tps[i].symbol() != Global.instance.definitions.ALLREF_CLASS) {
+		    if (allref &&
+			!tps[i].isSubType(Global.instance.definitions.ANYREF_TYPE))
+			return Global.instance.definitions.ANY_TYPE;
+		    else
+			tl = new Type.List(tps[i], tl);
+		}
+	    }
+	    if (tl == Type.List.EMPTY) {
+		return allref ? Global.instance.definitions.ALLREF_TYPE
+		    : Global.instance.definitions.ALL_TYPE;
+	    }
+	    tps = tl.toArrayReverse();
+	}
+
+	// fast path if all types agree.
 	Type lubType = commonType(tps);
 	if (lubType != NoType) return lubType;
+
+	// intersect closures and build frontier.
 	Type[][] closures = new Type[tps.length][];
 	for (int i = 0; i < tps.length; i++) {
-	    if (!tps[i].isObjectType()) return Type.NoType;//todo: change
 	    closures[i] = tps[i].closure();
 	}
 	Type[] allBaseTypes = intersection(closures);
 	Type[] leastBaseTypes = frontier(allBaseTypes);
-	if (leastBaseTypes.length == 0) return Type.NoType;
+	if (leastBaseTypes.length == 0) {
+	    //System.out.println("empty intersection");//DEBUG
+	    return Type.NoType;
+	}
+
+	// add refinements where necessary
 	Scope members = new Scope();
 	lubType = compoundType(leastBaseTypes, members);
 	Type lubThisType = lubType.narrow();
@@ -1936,7 +2005,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    lubSym = new TermSymbol(syms[0].pos, syms[0].name, owner, 0);
 	    break;
 	case TYPE: case ALIAS: case CLASS:
-	    lubSym = new TypeSymbol(TYPE, syms[0].pos, syms[0].name, owner, 0);
+	    lubSym = new AbsTypeSymbol(syms[0].pos, syms[0].name, owner, 0);
 	    break;
 	default:
 	    throw new ApplicationError();
@@ -2022,10 +2091,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		Name fullname = sym.fullName();
 		if (fullname == Names.scala_Array && args.length == 1
 		    /*&& args[0].unalias().symbol().kind != TYPE Q: why needed?*/) {
-                    Global global = Global.instance;
                     Type bound = args[0].bound();
-                    if (bound.symbol() != global.definitions.ANY_CLASS &&
-                        bound.symbol() != global.definitions.ANYVAL_CLASS)
+                    if (bound.symbol() != Global.instance.definitions.ANY_CLASS &&
+                        bound.symbol() != Global.instance.definitions.ANYVAL_CLASS)
                     {
                         return UnboxedArrayType(args[0].erasure());
                     }
@@ -2051,10 +2119,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		return pre.memberInfo(sym).erasure();
 
 	    case CLASS:
-                if (Global.instance.definitions.UNIT_CLASS == sym) return this;
-		if (sym.fullName() == Names.java_lang_Object ||
-		    sym.fullName() == Names.scala_AnyRef ||
-		    sym.fullName() == Names.scala_AnyVal)
+                if (sym == Global.instance.definitions.UNIT_CLASS) return this;
+		Name fullname = sym.fullName();
+		if (fullname == Names.java_lang_Object ||
+		    fullname == Names.scala_AnyRef ||
+		    fullname == Names.scala_AnyVal ||
+		    fullname == Names.scala_All ||
+		    fullname == Names.scala_AllRef)
 		    return Global.instance.definitions.ANY_TYPE;
 		else {
 		    Type this1 = unbox();
