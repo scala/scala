@@ -24,6 +24,7 @@ import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Name;
+import scalac.util.Names;
 import scalac.util.Debug;
 
 public class ErasurePhase extends PhaseDescriptor {
@@ -47,12 +48,6 @@ public class ErasurePhase extends PhaseDescriptor {
         return new Erasure(global, this);
     }
 
-    private static final Name as_N = Name.fromString("as");
-    private static final Name is_N = Name.fromString("is");
-    private static final Name box_N = Name.fromString("box");
-    private static final Name scala_runtime_RunTime_N =
-       Name.fromString("scala.runtime.RunTime");
-
     private Type eraseParams(Type tp) {
 	switch (tp) {
 	case PolyType(_, Type result):
@@ -67,16 +62,18 @@ public class ErasurePhase extends PhaseDescriptor {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-	if ((sym.name == is_N || sym.name == as_N) &&
+	if ((sym.name == Names.is || sym.name == Names.as) &&
 	    sym.owner() == definitions.ANY_CLASS)
 	    return tp;
-	else if (sym.name == box_N &&
-		 sym.owner().fullName() == scala_runtime_RunTime_N)
+	else if (sym.name == Names.box &&
+		 sym.owner().fullName() == Names.scala_runtime_RunTime)
 	    return eraseParams(tp);
 	else if (sym.isClass())
 	    return Type.erasureMap.map(tp);
         else if (sym.isType())
             return tp;
+	else if (sym == definitions.NULL)
+	    return tp.resultType().erasure();
 	else
 	    return tp.erasure();
     }

@@ -56,6 +56,7 @@ public class Names {
     public static final Name Unit = Name.fromString("Unit");
     public static final Name apply = Name.fromString("apply");
     public static final Name as = Name.fromString("as");
+    public static final Name box = Name.fromString("box");
     public static final Name elem = Name.fromString("elem");
     public static final Name filter = Name.fromString("filter");
     public static final Name flatmap = Name.fromString("flatMap");
