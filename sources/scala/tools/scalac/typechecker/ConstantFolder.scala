@@ -42,24 +42,26 @@ class ConstantFolder(ana: Analyzer) {
             rsymbol = ana.definitions.INT_CLASS;
           }
       val optype: Type =
-        if (ltype.isSameAs(rtype)) {
+        if (ltype.isSameAs(rtype))
           ltype;
-        } else {
-          if (lsymbol == ana.definitions.INT_CLASS)
-            rtype;
-          else if (rsymbol == ana.definitions.INT_CLASS)
-            ltype;
-          else if (lsymbol == ana.definitions.LONG_CLASS)
-            rtype;
-          else if (rsymbol == ana.definitions.LONG_CLASS)
-            ltype;
-          else if (lsymbol == ana.definitions.FLOAT_CLASS)
-            rtype;
-          else if (rsymbol == ana.definitions.FLOAT_CLASS)
-            ltype;
-          else
-            throw Debug.abort("illegal case", ltype.toString() +" - "+ rtype);
-        }
+        else if (lsymbol == ana.definitions.JAVA_STRING_CLASS)
+          ltype;
+        else if (rsymbol == ana.definitions.JAVA_STRING_CLASS)
+          rtype;
+        else  if (lsymbol == ana.definitions.INT_CLASS)
+          rtype;
+        else if (rsymbol == ana.definitions.INT_CLASS)
+          ltype;
+        else if (lsymbol == ana.definitions.LONG_CLASS)
+          rtype;
+        else if (rsymbol == ana.definitions.LONG_CLASS)
+          ltype;
+        else if (lsymbol == ana.definitions.FLOAT_CLASS)
+          rtype;
+        else if (rsymbol == ana.definitions.FLOAT_CLASS)
+          ltype;
+        else
+          throw Debug.abort("illegal case", ltype.toString() +" - "+ rtype);
       var value: Object = null;
       optype.unbox() match {
 	case Type$UnboxedType(INT) =>

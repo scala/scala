@@ -46,24 +46,26 @@ class ConstantFolder implements /*imports*/ TypeTags {
                 rsymbol = ana.definitions.INT_CLASS;
             }
 	    Type optype;
-            if (ltype.isSameAs(rtype)) {
+            if (ltype.isSameAs(rtype))
                 optype = ltype;
-            } else {
-                if (lsymbol == ana.definitions.INT_CLASS)
-                    optype = rtype;
-                else if (rsymbol == ana.definitions.INT_CLASS)
-                    optype = ltype;
-                else if (lsymbol == ana.definitions.LONG_CLASS)
-                    optype = rtype;
-                else if (rsymbol == ana.definitions.LONG_CLASS)
-                    optype = ltype;
-                else if (lsymbol == ana.definitions.FLOAT_CLASS)
-                    optype = rtype;
-                else if (rsymbol == ana.definitions.FLOAT_CLASS)
-                    optype = ltype;
-                else
-                    throw Debug.abort("illegal case", ltype + " - " + rtype);
-            }
+            else if (lsymbol == ana.definitions.JAVA_STRING_CLASS)
+                optype = ltype;
+            else if (rsymbol == ana.definitions.JAVA_STRING_CLASS)
+                optype = rtype;
+            else if (lsymbol == ana.definitions.INT_CLASS)
+                optype = rtype;
+            else if (rsymbol == ana.definitions.INT_CLASS)
+                optype = ltype;
+            else if (lsymbol == ana.definitions.LONG_CLASS)
+                optype = rtype;
+            else if (rsymbol == ana.definitions.LONG_CLASS)
+                optype = ltype;
+            else if (lsymbol == ana.definitions.FLOAT_CLASS)
+                optype = rtype;
+            else if (rsymbol == ana.definitions.FLOAT_CLASS)
+                optype = ltype;
+            else
+                throw Debug.abort("illegal case", ltype + " - " + rtype);
 	    Object value = null;
 	    switch (optype.unbox()) {
 	    case UnboxedType(INT):
