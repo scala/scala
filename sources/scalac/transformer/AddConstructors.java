@@ -118,6 +118,7 @@ public class AddConstructors extends Transformer {
 		paramSyms[i] = vparams[0][i].symbol();
 
 	    ArrayList constrBody = new ArrayList();
+	    ArrayList constrBody2 = new ArrayList();
 	    ArrayList classBody = new ArrayList();
 	    Symbol constrSym =
 		getConstructor(treeSym.constructor(), paramSyms, treeSym);
@@ -128,6 +129,35 @@ public class AddConstructors extends Transformer {
 		"Wrong owner of the constructor: \n\tfound: " +
 		Debug.show(constrSym.owner()) + "\n\texpected: " +
 		Debug.show(treeSym);
+
+	    // for every ValDef move the initialization code into the constructor
+	    for (int i = 0; i < body.length; i++) {
+		Tree t = body[i];
+		if (t.definesSymbol()) {
+		    Symbol sym = t.symbol();
+		    switch (t) {
+		    case ValDef(_, _, _, Tree rhs):
+			if (rhs != Tree.Empty) {
+			    Tree lhs =
+			        gen.Select(gen.This(t.pos, treeSym), sym);
+			    Tree assign =
+				gen.Assign(t.pos, lhs, transform(rhs));
+			    t = gen.ValDef(sym, Tree.Empty);
+			    if (rhs.hasSymbol() && rhs.symbol().isParameter()) {
+				constrBody.add(assign);
+			    } else {
+				constrBody2.add(assign);
+			    }
+			}
+			break;
+		    }
+		    classBody.add(transform(t));
+		    classScope.enterOrOverload(sym);
+		} else {
+		    // move class-level expressions into the constructor
+		    constrBody2.add(transform(body[i]));
+		}
+	    }
 
 	    // inline the call to the super constructor
             Type superType = treeSym.parents()[0];
@@ -141,7 +171,8 @@ public class AddConstructors extends Transformer {
 		    constrBody.add(gen.Apply(superConstr, transform(args)));
 		    break;
 		default:
-		    new scalac.ast.printer.TextTreePrinter().print(baseClasses[0]).println().end();
+		    new scalac.ast.printer.TextTreePrinter().
+			print(baseClasses[0]).println().end();
 		    assert false;
 		}
 	    }
@@ -170,30 +201,8 @@ public class AddConstructors extends Transformer {
                 }
             }
 
-	    // for every ValDef move the initialization code into the constructor
-	    for (int i = 0; i < body.length; i++) {
-		Tree t = body[i];
-		if (t.definesSymbol()) {
-		    Symbol sym = t.symbol();
-		    switch (t) {
-		    case ValDef(_, _, _, Tree rhs):
-			if (rhs != Tree.Empty) {
-			    // !!!FIXME: revert to this.whatever when the bug is fixed
-			    //Tree ident = gen.Select(gen.This(t.pos, treeSym), sym);
-			    Tree ident = gen.Ident(sym);
-
-			    constrBody.add
-				(gen.Assign(t.pos, ident, transform(rhs)));
-			    t = gen.ValDef(sym, Tree.Empty);
-			}
-			break;
-		    }
-		    classBody.add(transform(t));
-		    classScope.enterOrOverload(sym);
-		} else
-		    // move every class-level expression into the constructor
-		    constrBody.add(transform(t));
-	    }
+	    // add valdefs and class-level expression to the constructorr body
+	    constrBody.addAll(constrBody2);
 
 	    // add result expression consistent with the
 	    // result type of the constructor
