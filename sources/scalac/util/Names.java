@@ -97,9 +97,39 @@ public class Names {
     public static final Name scala_Tuple = Name.fromString("scala.Tuple");
     public static final Name scala_Unit = Name.fromString("scala.Unit");
     public static final Name scala_runtime = Name.fromString("scala.runtime");
+    public static final Name scala_runtime_RunTime = Name.fromString("scala.runtime.RunTime");
+    public static final Name equals = Name.fromString("equals");
     public static final Name toString = Name.fromString("toString");
     public static final Name this_ = Name.fromString("this");
     public static final Name throw_ = Name.fromString("throw");
     public static final Name update = Name.fromString("update");
+    public static final Name length = Name.fromString("length");
+
+    public static final Name
+        ZNOT = encode("!"),
+        ZAND = encode("&&"),
+        ZOR  = encode("||"),
+        NOT  = encode("~"),
+        ADD  = encode("+"),
+        SUB  = encode("-"),
+        MUL  = encode("*"),
+        DIV  = encode("/"),
+        MOD  = encode("%"),
+        EQ   = encode("=="),
+        NE   = encode("!="),
+        LT   = encode("<"),
+        LE   = encode("<="),
+        GT   = encode(">"),
+        GE   = encode(">="),
+        OR   = encode("|"),
+        XOR  = encode("^"),
+        AND  = encode("&"),
+        LSL  = encode("<<"),
+        LSR  = encode(">>>"),
+        ASR  = encode(">>");
+
+    private static Name encode(String string) {
+        return NameTransformer.encode(Name.fromString(string));
+    }
 }
 
