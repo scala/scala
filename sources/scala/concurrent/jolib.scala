@@ -1,13 +1,14 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-04, LAMP/EPFL               **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 ** $Id$
-\*                                                                  */
+\*                                                                      */
 
 package scala.concurrent;
+
 
 /**
 * Library for using join-calculus concurrent primitives in Scala.
@@ -35,24 +36,24 @@ object jolib {
 
     def tryMatch =
       (ruls find { case Pair(p, _) => canMatch(p) }) match {
-	case None => () => ();
-	case Some(Pair(p, r)) => {
-	  val args = values(p);
-	  () => concurrent.ops.spawn(r(args))
-	}
+        case None => () => ();
+        case Some(Pair(p, r)) => {
+          val args = values(p);
+          () => concurrent.ops.spawn(r(args))
+        }
       }
 
   }
 
   /////////////////// SIGNALS /////////////////////////
 
-  abstract class Signal (join: Join) {
+  abstract class Signal(join: Join) {
     type C;
     val queue = new collection.mutable.Queue[C];
     def tryReduction(x: C): unit = {
       val continuation = join synchronized {
-	queue.enqueue(x);
-	join.tryMatch
+        queue.enqueue(x);
+        join.tryMatch
       };
       continuation()
     }
