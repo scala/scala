@@ -69,10 +69,9 @@ class FileUtils {
      *
      * @param f1
      * @param f2
-     * @param showDiff
      */
-    public static boolean compareFiles(File f1, File f2, boolean showDiff) {
-        boolean res = false;
+    public static String compareFiles(File f1, File f2) {
+        String res = null;
         try {
             ByteArrayOutputStream diffStream = new ByteArrayOutputStream();
             PrintStream diffOutput = new PrintStream(
@@ -82,15 +81,11 @@ class FileUtils {
             DiffPrint.main(new String[]{ f1.getCanonicalPath(), f2.getCanonicalPath() });
             System.setOut(System.out);
             System.setErr(System.err);
-            if (showDiff)
-                 System.out.println(diffStream.toString());
-            res = diffStream.toString().startsWith("No");
+            res = diffStream.toString();
+            if (res.startsWith("No"))
+                res = "";
         } catch (IOException e) {}
         return res;
-    }
-
-    public static boolean compareFiles(File f1, File f2) {
-        return compareFiles(f1, f2, false);
     }
 
 }
