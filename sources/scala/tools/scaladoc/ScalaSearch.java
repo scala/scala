@@ -492,8 +492,7 @@ public class ScalaSearch {
         // Rem: we use a dummy extends clause, otherwise the compiler
         // complains.
         queryCounter = queryCounter + 1;
-        InputStream in =
-            new BufferedInputStream(new ByteArrayInputStream(unitString.getBytes()));
+        InputStream in = new ByteArrayInputStream(unitString.getBytes());
         //            new BufferedInputStream(new StringBufferInputStream(unitString));
         SourceFile sourceFile = null;
         try {
