@@ -150,7 +150,6 @@ mobile/Location.scala
 
 runtime/InterpreterSupport.java
 runtime/NativeLoop.java
-# runtime/NativeMonitor.java
 runtime/ResultOrException.java
 runtime/RunTime.java
 runtime/ScalaRunTime.scala
@@ -162,6 +161,8 @@ runtime/matching/PatternGrammar.scala
 runtime/matching/PatternTests.scala
 runtime/matching/Rule.scala
 runtime/matching/TestAlphabet.scala
+
+text/Document.scala
 
 testing/UnitTest.scala
 
