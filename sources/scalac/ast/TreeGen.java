@@ -253,13 +253,13 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Build parameter sections corresponding to type.
      */
-    public ValDef[][] mkParams(int pos, Type type) {
+    public ValDef[][] mkParams(Type type) {
 	switch (type) {
         case PolyType(Symbol[] tparams, Type restype):
-	    return mkParams(pos, restype);
+	    return mkParams(restype);
         case MethodType(Symbol[] vparams, Type restype):
-             ValDef[] params1 = mkParams(pos, vparams);
-	     ValDef[][] paramss = mkParams(pos, restype);
+             ValDef[] params1 = mkParams(vparams);
+	     ValDef[][] paramss = mkParams(restype);
 	     if (paramss.length == 0) {
 		 return new ValDef[][]{params1};
 	     } else {
@@ -275,42 +275,34 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Build parameter section corresponding to given array of symbols .
      */
-    public ValDef[] mkParams(int pos, Symbol[] symbols) {
+    public ValDef[] mkParams(Symbol[] symbols) {
         ValDef[] res = new ValDef[symbols.length];
         for (int i = 0; i < symbols.length; i++) {
-	    res[i] = mkParam(pos, symbols[i]);
+	    res[i] = mkParam(symbols[i]);
         }
 	return res;
     }
 
     /** Build parameter corresponding to given symbol .
      */
-    public ValDef mkParam(int pos, Symbol sym) {
-	return ValDef(pos, sym, Tree.Empty);
-    }
-
     public ValDef mkParam(Symbol sym) {
-	return mkParam(sym.pos, sym);
+	return ValDef(sym.pos, sym, Tree.Empty);
     }
 
     /** Build type parameter section corresponding to given array of symbols .
      */
-    public AbsTypeDef[] mkTypeParams(int pos, Symbol[] symbols) {
+    public AbsTypeDef[] mkTypeParams(Symbol[] symbols) {
         AbsTypeDef[] res = new AbsTypeDef[symbols.length];
         for (int i = 0; i < symbols.length; i++) {
-	    res[i] = mkTypeParam(pos, symbols[i]);
+	    res[i] = mkTypeParam(symbols[i]);
         }
         return res;
     }
 
     /** Build type parameter corresponding to given symbol .
      */
-    public AbsTypeDef mkTypeParam(int pos, Symbol sym) {
-	return AbsTypeDef(pos, sym);
-    }
-
     public AbsTypeDef mkTypeParam(Symbol sym) {
-	return mkTypeParam(sym.pos, sym);
+	return AbsTypeDef(sym.pos, sym);
     }
 
     /** Build abstract type definition corresponding to given symbol .
@@ -338,7 +330,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	AliasTypeDef res = make.AliasTypeDef(
 	    pos,
 	    sym,
-            mkTypeParams(pos, sym.typeParams()),
+            mkTypeParams(sym.typeParams()),
 	    TypeTerm(pos, symtype));
         res.setType(definitions.UNIT_TYPE);
         return res;
@@ -552,8 +544,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	Global.instance.prevPhase();
         return make.DefDef(pos,
                            sym,
-                           mkTypeParams(pos, symtype.typeParams()),
-                           mkParams(pos, symtype),
+                           mkTypeParams(symtype.typeParams()),
+                           mkParams(symtype),
                            TypeTerm(pos, symtype.resultType()),
                            body)
             .setType(definitions.UNIT_TYPE);
@@ -572,8 +564,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return make.ClassDef(
             pos,
             clazz,
-            mkTypeParams(pos, constrtype.typeParams()),
-            mkParams(pos, constrtype),
+            mkTypeParams(constrtype.typeParams()),
+            mkParams(constrtype),
             Tree.Empty,
             template)
             .setType(definitions.UNIT_TYPE);
