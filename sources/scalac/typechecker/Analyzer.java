@@ -1246,7 +1246,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	// evaluate what was found
 	if (sym1.kind == NONE) {
 	    if (sym.kind == NONE) {
-		System.out.println(name);//debug
+		//System.out.println(name);//debug
 		return error(tree.pos, "not found: " + decode(name));
 	    } else {
 		sym.flags |= ACCESSED;
