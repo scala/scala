@@ -24,8 +24,7 @@ final class TreeList(ts: Array[Tree]) {
   def append(tree: Tree): TreeList = {
     if (len == trees.length) {
       val ts = new Array[Tree](if (len == 0) 4 else len * 2);
-      System.arraycopy(trees.asInstanceOf[Array[Object]], 0,
-		       ts.asInstanceOf[Array[Object]], 0, len);
+      System.arraycopy(trees, 0, ts, 0, len);
       trees = ts;
     }
     trees(len) = tree;
@@ -61,16 +60,14 @@ final class TreeList(ts: Array[Tree]) {
 
   def toArray(): Array[Tree] = {
     val ts = new Array[Tree](len);
-    System.arraycopy(trees.asInstanceOf[Array[Object]], 0,
-		     ts.asInstanceOf[Array[Object]], 0, len);
+    System.arraycopy(trees, 0, ts, 0, len);
     ts
   }
 
   def copyTo[t <: Tree](ts: Array[t]): Array[t] = copyTo(ts, 0);
 
   def copyTo[t <: Tree](ts: Array[t], from: int): Array[t] = {
-    System.arraycopy(trees.asInstanceOf[Array[java.lang.Object]], 0,
-		     ts.asInstanceOf[Array[java.lang.Object]], from, len);
+    System.arraycopy(trees, 0, ts, from, len);
     ts;
   }
 }
