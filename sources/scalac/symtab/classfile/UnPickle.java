@@ -167,7 +167,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    scope.enter(sym);
 		} else {
 		    assert sym == other
-			: "double enter: " + other + ":" + other.rawInfoAt(Symbol.FIRST_ID) + "," + sym + ":" + sym.rawInfoAt(Symbol.FIRST_ID);
+			: "double enter: " + other + ":" + other.rawFirstInfo() + "," + sym + ":" + sym.rawFirstInfo();
 		}
 	    }
 	}
@@ -230,14 +230,14 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    case TYPEsym:
 			entries[n] = sym = new AbsTypeSymbol(
 			    Position.NOPOS, name, owner, flags);
-			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
+			sym.setFirstInfo(getType(inforef));
 			sym.setLoBound(readTypeRef());
 			break;
 
 		    case ALIASsym:
 			entries[n] = sym = new AliasTypeSymbol(
 			    Position.NOPOS, name, owner, flags);
-			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
+			sym.setFirstInfo(getType(inforef));
 			Symbol constr = readSymbolRef();
 			break;
 
@@ -251,7 +251,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			    sym.copyTo(clr);
 			    entries[n] = sym = clr;
 			}
-			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
+			sym.setFirstInfo(getType(inforef));
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
 			if (constr != sym.primaryConstructor()) {
@@ -284,7 +284,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			    entries[n] = sym = moduleroot;
 			}
 			Type tp = getType(inforef);
-			sym.setInfo(setOwner(tp, sym), Symbol.FIRST_ID);
+			sym.setFirstInfo(setOwner(tp, sym));
 			break;
 
 		    default:
@@ -366,7 +366,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    params[i] = new TermSymbol(
 			Position.NOPOS, Name.fromString("$" + i),
 			Symbol.NONE, PARAM | flags[i]);
-		    params[i].setInfo(argtypes[i], Symbol.FIRST_ID);
+		    params[i].setFirstInfo(argtypes[i]);
 		}
 		tpe = Type.MethodType(params, restype);
 		break;

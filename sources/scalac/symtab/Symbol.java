@@ -56,8 +56,6 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The infos of the symbol */
     private TypeIntervalList infos = TypeIntervalList.EMPTY;
 
-    static public int FIRST_ID = Global.POST_ANALYZER_PHASE_ID;
-
 // Constructors -----------------------------------------------------------
 
     /** Generic symbol constructor */
@@ -135,10 +133,14 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Set information, except if symbol is both initialized and locked.
      */
     public Symbol setInfo(Type info) {
-	return setInfo(info, currentPhaseId());
+	return setInfoAt(info, currentPhaseId());
     }
 
-    public Symbol setInfo(Type info, int limit) {
+    public Symbol setFirstInfo(Type info) {
+        return setInfoAt(info, 0);
+    }
+
+    private Symbol setInfoAt(Type info, int limit) {
 	assert !isConstructor()
 	    || info instanceof Type.LazyType
 	    || info == Type.NoType
@@ -587,8 +589,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** the current phase id, or the id after analysis, whichever is larger.
      */
     static int currentPhaseId() {
-	int id = Global.instance.currentPhase.id;
-	return id < FIRST_ID ? FIRST_ID : id;
+	return Global.instance.currentPhase.id;
     }
 
     public int definedPhaseId() {
@@ -629,7 +630,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	//if (isModule()) moduleClass().initialize();
 	int id = currentPhaseId();
 	if ((flags & INITIALIZED) == 0) {
-	    Type info = rawInfoAt(FIRST_ID);
+	    Type info = rawFirstInfo();
 	    assert info != null : this;
 	    if ((flags & LOCKED) != 0) {
 	        setInfo(Type.ErrorType);
@@ -671,7 +672,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** get info at phase #id, without forcing lazy types.
      */
-    public Type rawInfoAt(int id) {
+    private Type rawInfoAt(int id) {
 	//if (infos == TypeIntervalList.EMPTY) return Type.NoType;//DEBUG
 	assert infos != TypeIntervalList.EMPTY : this;
 	int nextid = infos.limit;
@@ -697,6 +698,14 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    }
 	    return infos1.info;
 	}
+    }
+
+    public Type rawFirstInfo() {
+        TypeIntervalList infos1 = infos;
+        while (infos1.prev.limit >= 0) {
+            infos1 = infos1.prev;
+        }
+        return infos1.info;
     }
 
     public Type rawInfo() {

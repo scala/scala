@@ -96,7 +96,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     public void lateEnter(Unit unit, Symbol sym) {
 	enterUnit(unit);
-	if (sym.rawInfoAt(Symbol.FIRST_ID) instanceof SourceCompleter) {
+	if (sym.rawFirstInfo() instanceof SourceCompleter) {
             sym.setInfo(Type.ErrorType);
 	    String kind = (sym.name.isTermName()) ? "object " : "class ";
 	    throw new Type.Error("file " + unit.source + " does not define public " +

@@ -92,12 +92,12 @@ public class ClassfileParser implements ClassfileConstants {
             this.statics = new Scope();
             // set type of class
             Type classType = Type.compoundType(basetpes, locals, c);
-            c.setInfo(classType, Symbol.FIRST_ID);
+            c.setFirstInfo(classType);
             // set type of statics
 	    Symbol staticsClass = c.module().moduleClass();
 	    if (staticsClass.isModuleClass()) {
 		Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
-		staticsClass.setInfo(staticsInfo, Symbol.FIRST_ID);
+		staticsClass.setFirstInfo(staticsInfo);
 		c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
 					    staticsClass, Type.EMPTY_ARRAY));
 	    }
@@ -113,8 +113,8 @@ public class ClassfileParser implements ClassfileConstants {
 
 	    Symbol constr = c.primaryConstructor();
 	    if (!constr.isInitialized()) {
-		constr.setInfo(
-		    Type.MethodType(Symbol.EMPTY_ARRAY, ctype), Symbol.FIRST_ID);
+		constr.setFirstInfo(
+		    Type.MethodType(Symbol.EMPTY_ARRAY, ctype));
 		if ((c.flags & Modifiers.INTERFACE) == 0)
 		    constr.flags |= Modifiers.PRIVATE;
 	    }
@@ -185,7 +185,7 @@ public class ClassfileParser implements ClassfileConstants {
 	if ((flags & 0x0008) != 0)
 	    owner = c.module().moduleClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
-        s.setInfo(type, Symbol.FIRST_ID);
+        s.setFirstInfo(type);
         attrib.readAttributes(s, type, FIELD_ATTR);
 	((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
     }
@@ -212,7 +212,7 @@ public class ClassfileParser implements ClassfileConstants {
 	    default:
 		throw new ApplicationError();
 	    }
-	    s.setInfo(type, Symbol.FIRST_ID);
+	    s.setFirstInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
 	    Symbol constr = c.primaryConstructor();
 	    if (constr.isInitialized()) constr = c.addConstructor();
@@ -224,7 +224,7 @@ public class ClassfileParser implements ClassfileConstants {
 		Position.NOPOS,	name,
 		((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
 		transFlags(flags));
-	    s.setInfo(type, Symbol.FIRST_ID);
+	    s.setFirstInfo(type);
 	    attrib.readAttributes(s, type, METH_ATTR);
 	    ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
 	}

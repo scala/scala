@@ -343,7 +343,7 @@ public class SymbolTablePrinter {
 
     /** Prints the type of the given symbol with the given inner string. */
     public SymbolTablePrinter printSymbolType(Symbol symbol, String inner) {
-        Type type = symbol.rawInfoAt(global.POST_ANALYZER_PHASE_ID);
+        Type type = symbol.rawFirstInfo();
         if (!(type instanceof Type.LazyType)) type = symbol.info();
         boolean star = false;
         if ((symbol.flags & Modifiers.REPEATED) != 0 &&

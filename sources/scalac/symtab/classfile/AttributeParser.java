@@ -140,9 +140,8 @@ public class AttributeParser implements ClassfileConstants {
             case META_ATTR:
                 //System.out.println("parsing meta data for " + sym);
                 String meta = pool.readPool(in.nextChar()).toString().trim();
-                sym.setInfo(
-		    new MetaParser(meta, tvars, sym, type).parse(),
-		    Symbol.FIRST_ID);
+                sym.setFirstInfo(
+		    new MetaParser(meta, tvars, sym, type).parse());
                 return;
 
 	    default:
@@ -190,7 +189,7 @@ public class AttributeParser implements ClassfileConstants {
                 	Name.fromString(token).toTypeName(),
              		owner,
              		Modifiers.PARAM);
-         		s.setInfo(parser.defs.ANY_TYPE, Symbol.FIRST_ID);
+         		s.setFirstInfo(parser.defs.ANY_TYPE);
      			tvars.enter(s);
                 return s;
             } else
@@ -246,7 +245,7 @@ public class AttributeParser implements ClassfileConstants {
                         //System.out.println("new var " + s + ", " + token);//DEBUG
                         if (token.equals("<")) {
                             nextToken();
-                            s.setInfo(parseType(), Symbol.FIRST_ID);
+                            s.setFirstInfo(parseType());
                         }
                         syms.add(s);
                     } while (token.equals(","));
@@ -259,10 +258,9 @@ public class AttributeParser implements ClassfileConstants {
 		    Symbol constr = parser.c.primaryConstructor();
 		    switch (constr.rawInfo()) {
 		    case MethodType(Symbol[] vparams, _):
-			constr.setInfo(
+			constr.setFirstInfo(
 			    Type.PolyType(
-				smbls, Type.MethodType(vparams, clazztype)),
-			    Symbol.FIRST_ID);
+				smbls, Type.MethodType(vparams, clazztype)));
 			break;
 		    default:
 			throw new ApplicationError(constr.rawInfo());
@@ -330,12 +328,12 @@ public class AttributeParser implements ClassfileConstants {
                 			Name.fromString(token).toTypeName(),
              				owner,
              				Modifiers.PARAM);
-         					s.setInfo(parser.defs.ANY_TYPE, Symbol.FIRST_ID);
+         					s.setFirstInfo(parser.defs.ANY_TYPE);
      					locals.enter(s);
                         nextToken();
                         if (token.equals("<")) {
                             nextToken();
-                            s.setInfo(parseType(), Symbol.FIRST_ID);
+                            s.setFirstInfo(parseType());
                         }
                         syms.add(s);
                     } while (token.equals(","));
@@ -359,7 +357,7 @@ public class AttributeParser implements ClassfileConstants {
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            flags).setInfo(parseType(), Symbol.FIRST_ID));
+                            flags).setFirstInfo(parseType()));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);
@@ -412,7 +410,7 @@ public class AttributeParser implements ClassfileConstants {
                             Position.NOPOS,
                             Name.fromString("x" + (i++)),
                             owner,
-                            Modifiers.PARAM).setInfo(parseType(), Symbol.FIRST_ID));
+                            Modifiers.PARAM).setFirstInfo(parseType()));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);
