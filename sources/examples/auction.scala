@@ -21,7 +21,8 @@ class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
 
   val timeToShutdown = 36000000; // msec
   val bidIncrement = 10;
-  override def run() {
+  override def run() = execute;
+  def execute {
     var maxBid = minBid - bidIncrement;
     var maxBidder: Actor = _;
     var running = true;

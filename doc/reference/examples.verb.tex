@@ -19,34 +19,34 @@ Martin Odersky
 
 As a first example, here is an implementation of Quicksort in Scala.
 \begin{verbatim}
-def sort(a: Array[Int]): Unit = {
+def sort(xs: Array[Int]): Unit = {
 
   def swap(i: Int, j: Int): Unit = {
-    val t = a(i); a(i) = a(j); a(j) = t;
+    val t = xs(i); xs(i) = xs(j); xs(j) = t;
   }
 
   def sort1(l: Int, r: Int): Unit = {
-    val pivot = a((l + r) / 2);
+    val pivot = xs((l + r) / 2);
     var i = l, j = r;
     while (i <= j) {
-      while (a(i) < pivot) { i = i + 1 }
-      while (a(j) > pivot) { j = j - 1 }
-      if (i <= j) {
+      while (xs(i) < pivot) { i = i + 1 }
+      while (xs(j) > pivot) { j = j - 1 }
+      if (i <= j) { 
         swap(i, j);
         i = i + 1;
         j = j - 1;
       }
-    }
+    } 
     if (l < j) sort1(l, j);
     if (j < r) sort1(i, r);
   }
 
-  sort1(0, a.length - 1);
+  sort1(0, xs.length - 1);
 }
 \end{verbatim}
-The implementation looks quite similar to what one would write in
-Java or C.  In particular, we use the same operators and similar control
-structures.  There are also some minor syntactical differences. In particular:
+The implementation looks quite similar to what one would write in Java
+or C.  We use the same operators and similar control structures.
+There are also some minor syntactical differences. In particular:
 \begin{itemize}
 \item
 Definitions start with a reserved word. Function definitions start
@@ -69,7 +69,7 @@ instance, the name of the array \verb@a@ is visible in functions
 parameter to them.
 \end{itemize}
 So far, Scala looks like a fairly conventional language with some
-syntactic quirks. In fact it is possible to write programs in a
+syntactic particularitis. In fact it is possible to write programs in a
 conventional imperative or object-oriented style. This is important
 because it is one of the things that makes it easy to combine Scala
 components with components written in mainstream languages such as
@@ -80,51 +80,53 @@ completely different. Here is Quicksort again, this time written in
 functional style.
 
 \begin{verbatim}
-def sort(a: Array[Int]): Array[Int] = {
+def sort(xs: List[Int]): List[Int] = {
   val pivot = a(a.length / 2);
   sort(a.filter(x => x < pivot))
-    append  a.filter(x => x == pivot)
-    append  sort(a.filter(x => x > pivot))
+    :::  a.filter(x => x == pivot)
+    :::  sort(a.filter(x => x > pivot))
 }
 \end{verbatim}
 
-The functional program captures the essence of the quicksort algorithm
-in a concise way:
+The functional program works with lists instead of arrays\footnote{
+This is necessary for now, because arrays do not yet support
+\verb@filter@ and \verb@:::@.}.
+It captures the essence of the quicksort algorithm in a concise way:
 \begin{itemize}
-\item Pick an element in the middle of the array as a pivot.
-\item Partition the array into two sub-arrays containing elements that
+\item Pick an element in the middle of the list as a pivot.
+\item Partition the lists into two sub-lists containing elements that
 are less than, respectively greater than the pivot element, and a
-third array which contains elements equal to privot.
-\item Sort the first two sub-arrays by a recursive invocation of
+third list which contains elements equal to privot.
+\item Sort the first two sub-lists by a recursive invocation of
 the sort function\footnote{This is not quite what the imperative algorithm does;
-the latter partitions the array into two subarrays containing elements
+the latter partitions the array into two sub-arrays containing elements
 less than or greater or equal to pivot.}
-\item The result is obtained by appending the three sub-arrays together.
+\item The result is obtained by appending the three sub-lists together.
 \end{itemize}
 Both the imperative and the functional implementation have the same
 asymptotic complexity -- $O(N;log(N))$ in the average case and
 $O(N^2)$ in the worst case. But where the imperative implementation
 operates in place by modifying the argument array, the functional
-implementation returns a new sorted array and leaves the argument
-array unchanged. The functional implementation thus requires more
+implementation returns a new sorted list and leaves the argument
+list unchanged. The functional implementation thus requires more
 transient memory than the imperative one.
 
 The functional implementation makes it look like Scala is a language
-that's specialized for functional operations on arrays. In fact, it
+that's specialized for functional operations on lists. In fact, it
 is not; all of the operations used in the example are simple library
-methods of a class \verb@Array[t]@ which is part of the standard
+methods of a class \verb@List[t]@ which is part of the standard
 Scala library, and which itself is implemented in Scala.
 
 In particular, there is the method \verb@filter@ which takes as
-argument a {\em predicate function} that maps array elements to
-Boolean values. The result of \verb@filter@ is an array consisting of
-all the elements of the original array for which the given predicate
+argument a {\em predicate function} that maps list elements to
+Boolean values. The result of \verb@filter@ is a list consisting of
+all the elements of the original list for which the given predicate
 function is true.  The \verb@filter@ method of an object of type
-\verb@Array[t]@ thus has the signature
+\verb@List[t]@ thus has the signature
 \begin{verbatim}
-  def filter(p: (t)Boolean): Array[t]  .
+  def filter(p: t => Boolean): List[t]  .
 \end{verbatim}
-Here, \verb@(t)Boolean@ is the type of functions that take an element
+Here, \verb@t => Boolean@ is the type of functions that take an element
 of type \verb@t@ and return a \verb@Boolean@.  Functions like
 \verb@filter@ that take another function as argument or return one as
 result are called {\em higher-order} functions.
@@ -137,8 +139,8 @@ true if \verb@x@ is smaller or equal than \verb@pivot@, false
 otherwise. The function is anonymous, i.e.\ it is not defined with a
 name. The type of the \verb@x@ parameter is omitted because a Scala
 compiler can infer it automatically from the context where the
-function is used. To summarize, \verb@a.filter(x => x <= pivot)@
-returns an array consisting of all elements of the array \verb@a@ that are
+function is used. To summarize, \verb@xs.filter(x => x <= pivot)@
+returns a list consisting of all elements of the list \verb@xs@ that are
 smaller than \verb@pivot@.
 
 It is also possible to apply higher-order functions such as
@@ -148,29 +150,34 @@ named auxiliary functions that compare the argument to the
 \verb@pivot@ value.
 
 \begin{verbatim}
-def sort (a: Array[Int]): Array[Int] = {
-  val pivot = a(a.length / 2);
+def sort (xs: List[Int]): List[Int] = {
+  val pivot = xs(xs.length / 2);
   def leqPivot(x: Int) = x <= pivot;
   def gtPivot(x: Int) = x > pivot;
   def eqPivot(x: Int) = x == pivot;
-  sort(a filter leqPivot)
-    append sort(a filter eqPivot)
-    append sort(a filter gtPivot)
+  sort(xs filter leqPivot)  
+    ::: sort(xs filter eqPivot)  
+    ::: sort(xs filter gtPivot)
 }
 \end{verbatim}
 
-An object of type \verb@Array[t]@ also has an \verb@append@ method
-which takes an another array and returns the result of appending this
-array to itself. This method has the signature
+An object of type \verb@List[t]@ also has a method ``\verb@:::@''
+which takes an another list and which returns the result of appending this
+list to itself. This method has the signature
 \begin{verbatim}
-  def append(that: Array[t]): Array[t] .
+  def :::(that: List[t]): List[t] .
 \end{verbatim}
-\verb@append@ is used in the Quicksort example as a binary infix
-operator that connects the two sub-arrays resulting from the
-partition. In fact, any method can be used as an operator in Scala.
-The binary operation $E;op;E'$ is always interpreted as the method
-call $E.op(E')$. In the Quicksort example, we could have written
-equivalently
+Scala does not distinguish between identifiers and operator names. An
+identifier can be either a sequence of letters and digits which begins
+with a letter, or it can be a sequence of special characters, such as
+``\verb@+@'', ``\verb@*@'', or ``\verb@:@''.  The last definition thus
+introduced a new method identifier ``\verb@:::@''.  This identifier is
+used in the Quicksort example as a binary infix operator that connects
+the two sub-lists resulting from the partition. In fact, any method
+can be used as an operator in Scala.  The binary operation $E;op;E'$
+is always interpreted as the method call $E.op(E')$. This holds also
+for binary infix operators which start with a letter. The recursive call
+to \verb@sort@ in the last quicksort example is hence equivalent to:
 \begin{verbatim}
   sort(a.filter(leqPivot))
     .append(sort(a.filter(eqPivot)))
@@ -198,8 +205,8 @@ def while (def p: Boolean) (def s: Unit): Unit = if (p) { s ; while(p)(s) }
 \end{verbatim}
 The \verb@while@ function takes as first parameter a test function,
 which takes no parameters and yields a Boolean value. As second
-parameter it takes an action function which also takes no parameters
-and yields a trivial result. \verb@while@ invokes the action function
+parameter it takes a command function which also takes no parameters
+and yields a trivial result. \verb@while@ invokes the command function
 as long as the test function yields true. Again, compilers are free to
 pick specialized implementations of \verb@while@ that have the same
 behavior as the invocation of the function given above.
@@ -220,74 +227,77 @@ information about the traded item, that accepts offers from clients
 and that communicates with the seller and winning bidder to close the
 transaction. We present an overview of a simple implementation
 here.
-%More detailed explanations are given in Chapter~\ref{sec:actors}
-%where the implementation of actor primitives is discussed.
 
-As a first step, we define the messages that are exchanged during
-an auction. There are two base classes: \verb@AuctionMessage@ for messages
-from clients to the auction service, and \verb@AuctionReply@ for
-replies from the service to the clients. These are defined as follows.
+As a first step, we define the messages that are exchanged during an
+auction. There are two abstract base classes (called {\em traits}):
+\verb@AuctionMessage@ for messages from clients to the auction
+service, and \verb@AuctionReply@ for replies from the service to the
+clients.  These are defined as follows.
 \begin{verbatim}
-abstract class AuctionMessage;
-case class Offer(bid: Int, client: Actor) extends AuctionMessage;
-case class Inquire(client: Actor) extends AuctionMessage;
+trait AuctionMessage;
+case class 
+  Offer(bid: Int, client: Actor),                     // make a bid
+  Inquire(client: Actor) extends AuctionMessage;      // inquire status
 
-abstract class AuctionReply;
-case class Status(asked: Int, expiration: Date) extends AuctionReply;
-case class BestOffer extends AuctionReply;
-case class BeatenOffer(maxBid: Int) extends AuctionReply;
-case class AuctionConcluded(seller: Actor, client: Actor) extends AuctionReply;
-case class AuctionFailed extends AuctionReply;
-case class AuctionOver extends AuctionReply;
+trait AuctionReply;
+case class
+  Status(asked: Int, expiration: Date),               // asked sum, expiration date
+  BestOffer(),                                        // yours is the best offer
+  BeatenOffer(maxBid: Int),                           // offer beaten by maxBid
+  AuctionConcluded(seller: Actor, client: Actor),     // auction concluded
+  AuctionFailed(),                                    // failed with no bids
+  AuctionOver() extends AuctionReply;                 // bidding is closed
 \end{verbatim}
 
 \begin{figure}[h]
 \begin{verbatim}
-class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor with {
-
-  val timeToShutdown = 36000000; \=// msec
-  val increment = 10;                \>// bid increment
-
-  def run = {
-    var maxBid = minBid - increment;
-    var maxBidder: Actor;
-    while (True) {
-      receiveWithin ((closing - Date.currentDate).msec) {
+class Auction(seller: Actor, minBid: Int, closing: Date) extends Actor() {
+  val timeToShutdown = 36000000; // msec
+  val bidIncrement = 10;
+  def execute {
+    var maxBid = minBid - bidIncrement;
+    var maxBidder: Actor = _;
+    var running = true;
+    while (running) {
+      receiveWithin ((closing.getTime() - new Date().getTime())) {
 	case Offer(bid, client) =>
-	  if (bid >= askedBid) {
+	  if (bid >= maxBid + bidIncrement) { 
             if (maxBid >= minBid) maxBidder send BeatenOffer(bid);
             maxBid = bid;
             maxBidder = client;
-            client send BestOffer;
+            client send BestOffer();
           } else {
             client send BeatenOffer(maxBid);
           }
 
 	case Inquire(client) =>
-	  client send Status(askedBid, closing);
+	  client send Status(maxBid, closing);
 
-	case TIMEOUT =>
+	case TIMEOUT() =>
 	  if (maxBid >= minBid) {
 	    val reply = AuctionConcluded(seller, maxBidder);
 	    maxBidder send reply;
 	    seller send reply;
 	  } else {
-	    seller send AuctionFailed;
+	    seller send AuctionFailed();
           }
           receiveWithin(timeToShutdown) {
-            case Offer(_, client) => client send AuctionOver
-            case TIMEOUT => stop
+            case Offer(_, client) => client send AuctionOver()
+            case TIMEOUT() => running = false;
           }
       }
     }
   }
+}
 \end{verbatim}
 \caption{\label{fig:simple-auction}Implementation of an Auction Service}
 \end{figure}
 
-These messages might well be ultimately implemented as small XML
-documents. We expect automatic tools to exist that convert between XML
-documents and internal data structures like the ones defined above.
+For each base class, there are a number of {\em case classes} which
+define the format of particular messages in the class. These messages
+might well be ultimately implemented as small XML documents. We expect
+automatic tools to exist that convert between XML documents and
+internal data structures like the ones defined above.
 
 Figure~\ref{fig:simple-auction} presents a Scala implementation of a
 class \verb@Auction@ for auction processes that coordinate the bidding
@@ -318,9 +328,9 @@ the first message in the mailbox which matches one of these patterns
 and applies the corresponding action to it.
 \item
 The last case of \verb@receiveWithin@ is guarded by a
-\verb@TIMEOUT@ pattern. If no other messages are received in the meantime, this
+\verb@TIMEOUT()@ pattern. If no other messages are received in the meantime, this
 pattern is triggered after the time span which is passed as argument
-to the enclosing \verb@receiveWithin@ method. \verb@TIMEOUT@ is a
+to the enclosing \verb@receiveWithin@ method. \verb@TIMEOUT()@ is a
 particular instance of class \verb@Message@, which is triggered by the
 \verb@Actor@ implementation itself.
 \item
@@ -337,10 +347,9 @@ Scala. It might seem that Scala has a rich set of language constructs
 that support actor processes, message sending and receiving,
 programming with timeouts, etc. In fact, the opposite is true. All the
 constructs discussed above are offered as methods in the library class
-\verb@Actor@. That class is itself implemented in Scala; it is based
-on the more low-level process model of functional nets, and is thus
-closely related to modern foundational process calculi. The
-implementation of all features of class \verb@Actor@ used here is
+\verb@Actor@. That class is itself implemented in Scala, based on the underlying 
+thread model of the host language (e.g. Java, or .NET).
+The implementation of all features of class \verb@Actor@ used here is
 given in Section~\ref{sec:actors}.
 
 The advantages of this approach are relative simplicity of the core
@@ -357,6 +366,18 @@ convenient host language for domain specific languages implemented by
 library modules. For instance, the actor communication constructs
 presented above can be regarded as one such domain specific language,
 which conceptually extends the Scala core.
+
+\chapter{Simple Functions}
+
+The previous examples gave an impression of what can be done with
+Scala.  We now introduce its constructs one by one in a more
+systematic fashion. We start with the smallest level, expressions and
+functions. 
+
+A Scala system comes with an interpreter which can be seen as a
+glorified calculator. A user interacts with the calculator by tying in
+expressions and obtaining the results of their evaluation. Example:
+
 
 \chapter{Classes and Objects}
 \label{chap:classes}

@@ -1094,10 +1094,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return error(tree.pos, "not found: " + decode(name));
 	    } else {
 		sym.flags |= ACCESSED;
-		if (sym.owner().kind == CLASS)
+		if (sym.owner().kind == CLASS) {
 		    pre = nextcontext.enclClass.owner.thisType();
-		else
+		    if (!sym.owner().isPackage()) {
+			tree = make.Select(
+			    tree.pos, gen.mkStableId(tree.pos, pre), name);
+			//System.out.println(name + " :::> " + tree);//DEBUG
+		    }
+		} else {
 		    pre = Type.localThisType;
+		}
 	    }
 	} else if (sym.kind != NONE && !sym.isPreloaded()) {
 	    return error(tree.pos,
@@ -1867,6 +1873,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    new ValDef[][]{Tree.ExtValDef.EMPTY_ARRAY},
 			    Tree.Empty,
 			    templ);
+			//new TextTreePrinter().print(cd).println().end();//DEBUG
 			enterSym(cd);
 			cd = transform(cd);
 			Symbol clazz = cd.symbol();

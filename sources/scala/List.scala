@@ -127,6 +127,8 @@ trait List[a] extends Seq[a] {
    * @return the element at position <code>n</code> in this list.
    * @throws java.lang.RuntimeException if the list is too short.
    */
+  def apply(n: Int) = drop(n).head;
+
   def at(n: Int) = drop(n).head;
 
   /** Returns the list resulting from applying the given function <code>f</code> to each
