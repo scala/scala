@@ -1377,13 +1377,13 @@ class GenJVM {
     protected void addScalaAttr(JClass cls, Pickle pickle) {
         pickles.add(cls);
         pickles.add(pickle);
-        JOtherAttribute scalaAttr =
-            fjbgContext.JOtherAttribute(cls,
-                                        cls,
-                                        SCALA_ATTR,
-                                        pickle.bytes,
-                                        pickle.size());
-        cls.addAttribute(scalaAttr);
+//         JOtherAttribute scalaAttr =
+//             fjbgContext.JOtherAttribute(cls,
+//                                         cls,
+//                                         SCALA_ATTR,
+//                                         pickle.bytes,
+//                                         pickle.size());
+//         cls.addAttribute(scalaAttr);
     }
 
     /// Names
