@@ -17,7 +17,7 @@ import scalac.symtab.*;
 import Symbol.*;
 import Type.*;
 
-public class UnPickle implements Kinds, Modifiers, EntryTags {
+public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 
 /***************************************************
  * Symbol table attribute format: see EntryTags.java
@@ -89,6 +89,15 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	    x = (x << 7) + (b & 0x7f);
 	} while ((b & 0x80) != 0);
 	return x;
+    }
+
+    long readLong(int n) {
+	long x = 0;
+	for (int i = 0; i < n; i++) {
+	    x = (x << 8) + (readByte() & 0xff);
+	}
+	int leading = 64 - (n * 8);
+	return x << leading >> leading;
     }
 
     boolean isTypeEntry(int i) {
@@ -328,6 +337,11 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	    case SINGLEtpe:
 		tpe = Type.singleType(readTypeRef(), readSymbolRef());
 		break;
+	    case CONSTANTtpe:
+		Type base = readTypeRef();
+		Object value = readValueRef(base);
+		tpe = new Type.ConstantType(base, value);
+		break;
 	    case TYPEREFtpe:
 		tpe = Type.TypeRef(
 		    readTypeRef(), readSymbolRef(), readTypeRefs(end));
@@ -434,6 +448,44 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 	if ((n & REPEATEDflag) != 0) flags |= REPEATED;
 	if ((n & DEFflag) != 0) flags |= DEF;
 	return flags;
+    }
+
+    long getNumber(int n) {
+	int savedBp = bp;
+	bp = index[n];
+	int tag = bytes[bp++];
+	long x = readLong(readNat());
+	bp = savedBp;
+	return x;
+    }
+
+    long readNumberRef() {
+	return getNumber(readNat());
+    }
+
+    Object readValueRef(Type base) {
+	switch (base.unbox()) {
+	case UnboxedType(BYTE):
+	    return new Byte((byte)readNumberRef());
+	case UnboxedType(SHORT):
+	    return new Short((short)readNumberRef());
+	case UnboxedType(INT):
+	    return new Integer((int)readNumberRef());
+	case UnboxedType(CHAR):
+	    return new Character((char)readNumberRef());
+	case UnboxedType(LONG):
+	    return new Long(readNumberRef());
+	case UnboxedType(FLOAT):
+	    return new Float(Float.intBitsToFloat((int)readNumberRef()));
+	case UnboxedType(DOUBLE):
+	    return new Float(Double.longBitsToDouble(readNumberRef()));
+	case UnboxedType(BOOLEAN):
+	    return new Boolean(readNumberRef() == 0 ? false : true);
+	case UnboxedType(STRING):
+	    return readNameRef().toString();
+	default:
+	    return new ApplicationError("bad constant base type: " + base);
+	}
     }
 
     public static class BadSignature extends java.lang.Error {

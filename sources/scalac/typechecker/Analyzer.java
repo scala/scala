@@ -29,20 +29,22 @@ import java.util.*;
  */
 public class Analyzer extends Transformer implements Modifiers, Kinds {
 
-    private final Definitions definitions;
+    final Definitions definitions;
     private final DeSugarize desugarize;
     private final AnalyzerPhase descr;
     final Infer infer;
+    final ConstantFolder constfold;
 
     public Analyzer(Global global, AnalyzerPhase descr) {
         super(global);
         this.definitions = global.definitions;
 	this.descr = descr;
 	this.infer = new Infer(this);
+	this.constfold = new ConstantFolder(this);
 	this.desugarize = new DeSugarize(this, global);
     }
 
-    private Unit unit;
+    Unit unit;
     private Context context;
     private Type pt;
     private int mode;
@@ -595,17 +597,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	return fn.type == Type.ErrorType ? Type.ErrorType : Type.NoType;
     }
 
-    private Type value2Type(Object value) {
-	if (value instanceof Character) return definitions.CHAR_TYPE();
-	else if (value instanceof Integer) return definitions.INT_TYPE();
-	else if (value instanceof Long) return definitions.LONG_TYPE();
-	else if (value instanceof Float) return definitions.FLOAT_TYPE();
-	else if (value instanceof Double) return definitions.DOUBLE_TYPE();
-	else if (value instanceof String) return definitions.JAVA_STRING_TYPE();
-	else if (value instanceof Boolean) return definitions.BOOLEAN_TYPE();
-	else throw new ApplicationError();
-    }
-
     private boolean isSetterMethod(Symbol sym) {
 	return sym != null &&
 	    !sym.isLocal() &&
@@ -1050,6 +1041,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		} else {
 		    ((DefDef) tree).rhs = rhs = transform(rhs, EXPRmode);
 		    restype = rhs.type;
+		    if (!sym.isFinal())	restype = restype.deconst();
 		    // !!! restype = rhs.type.widen(); // !!!
 		}
 		restype = checkNoEscape(tpe.pos, restype);
@@ -1080,6 +1072,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    ((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
 			}
 			owntype = rhs.type;
+			if (sym.isVariable() || !sym.isFinal())
+			    owntype = owntype.deconst();
 			// !!! owntype = rhs.type.widen(); // !!!
 		    }
 		    popContext();
@@ -1188,10 +1182,18 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	this.context = curcontext;
 
 	Type selftype = transform(tree, TYPEmode).type;
-
-	sym.setInfo(
-	    Type.compoundType(
-		new Type[]{selftype, clazz.type()}, Scope.EMPTY));
+	switch (selftype) {
+	case CompoundType(Type[] parts, Scope members):
+	    Type[] parts1 = new Type[parts.length + 1];
+	    System.arraycopy(parts, 0, parts1, 0, parts.length);
+	    parts1[parts.length] = clazz.type();
+	    sym.setInfo(Type.compoundType(parts1, members));
+	    break;
+	default:
+	    sym.setInfo(
+		Type.compoundType(
+		    new Type[]{selftype, clazz.type()}, Scope.EMPTY));
+	}
 
 	this.unit = savedUnit;
 	this.context= savedContext;
@@ -1203,6 +1205,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *  context.
      */
     Tree mkStable(Tree tree, Type pre, int mode, Type pt) {
+	switch (tree.type) {
+	case ConstantType(Type base, Object value):
+	    return make.Literal(tree.pos, value).setType(tree.type);
+	}
 	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) &&
 	    pre.isStable()) {
 	    Symbol sym = tree.symbol();
@@ -1362,8 +1368,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    // this works as for superclass constructor calls the expected
 	    // type `pt' is always AnyType (see transformConstrInvocations).
 	}
-	if (!(owntype instanceof Type.PolyType ||
-	      owntype.isSubType(pt))) {
+	if (!(owntype instanceof Type.PolyType || owntype.isSubType(pt))) {
 	    switch (tree) {
 	    case Literal(Object value):
 		int n = Integer.MAX_VALUE;
@@ -1371,15 +1376,19 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    n = ((Integer) value).intValue();
 		else if (value instanceof Character)
 		    n = ((Character) value).charValue();
+		Object value1 = null;
 		if (pt.symbol() == definitions.BYTE_CLASS &&
 		    -128 <= n && n <= 127)
-		    return copy.Literal(tree, new Byte((byte) n)).setType(pt);
+		    value1 = new Byte((byte) n);
 		else if (pt.symbol() == definitions.SHORT_CLASS &&
 			 -32768 <= n && n <= 32767)
-		    return copy.Literal(tree, new Short((short) n)).setType(pt);
+		    value1 = new Short((short) n);
 		else if (pt.symbol() == definitions.CHAR_CLASS &&
 			 0 <= n && n <= 65535)
-		    return copy.Literal(tree, new Character((char) n)).setType(pt);
+		    value1 = new Character((char) n);
+		if (value1 != null)
+		    return make.Literal(tree.pos, value1)
+			.setType(Type.ConstantType(pt, value1));
 	    }
 	    typeError(tree.pos, owntype, pt);
 	    Type.explainTypes(owntype, pt);
@@ -1700,7 +1709,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (tparams.length == 0) {
 		for (int i = 0; i < args.length; i++) {
 		    args[i] = transform(args[i], argMode, formals[i]);
-		    argtypes[i] = args[i].type;
+		    argtypes[i] = args[i].type.deconst();
 		}
 	    } else {
 		// targs: the type arguments inferred from the prototype
@@ -1724,7 +1733,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			: tparams[i].type();
 
 		for (int i = 0; i < args.length; i++) {
-		    argtypes[i] = args[i].type;
+		    argtypes[i] = args[i].type.deconst();
 		    switch (argtypes[i]) {
 		    case PolyType(Symbol[] tparams1, Type restype1):
 			argtypes[i] = infer.argumentTypeInstance(
@@ -1757,14 +1766,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case Type.ErrorType:
 	    for (int i = 0; i < args.length; i++) {
 		args[i] = transform(args[i], argMode, Type.ErrorType);
-		argtypes[i] = args[i].type;
+		argtypes[i] = args[i].type.deconst();
 	    }
 	    return argtypes;
 
 	default:
 	    for (int i = 0; i < args.length; i++) {
 		args[i] = transform(args[i], argMode, Type.AnyType);
-		argtypes[i] = args[i].type;
+		argtypes[i] = args[i].type.deconst();
 	    }
 	    return argtypes;
 	}
@@ -2016,7 +2025,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                 if( name != Names.PATTERN_WILDCARD ) {
                     //assert body.type != null;
                     if( TreeInfo.isSequenceValued( body ) ) {
-                        vble.setType( definitions.listType(pt) );
+                        vble.setType( definitions.LIST_TYPE(pt) );
                     } else {
                         vble.setType( body.type );
                     }
@@ -2213,6 +2222,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree[] args1 = transform(args, TYPEmode);
 		Type[] argtypes = Tree.typeOf(args1);
 
+		// propagate errors in arguments
+		for (int i = 0; i < argtypes.length; i++) {
+		    if (argtypes[i] == Type.ErrorType) {
+			return tree.setType(Type.ErrorType);
+		    }
+		}
+
 		// resolve overloading
 		switch (fn1.type) {
 		case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -2226,9 +2242,26 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		// match against arguments
 		switch (fn1.type) {
 		case PolyType(Symbol[] tparams, Type restp):
-		    if (tparams.length == argtypes.length)
+		    if (tparams.length == argtypes.length) {
+			// constant fold asInstanceOf calls.
+			switch (fn1) {
+			case Select(Tree qual, Name name):
+			    if (fn1.symbol() == definitions.ANY_AS &&
+				qual.type instanceof Type.ConstantType) {
+				Type restp1 = constfold.foldAsInstanceOf(
+				    tree.pos,
+				    (Type.ConstantType)qual.type,
+				    argtypes[0]);
+				switch (restp1) {
+				case ConstantType(_, Object value):
+				    return make.Literal(tree.pos, value)
+					.setType(restp1);
+				}
+			    }
+			}
 			return copy.TypeApply(tree, fn1, args1)
 			    .setType(restp.subst(tparams, argtypes));
+		    }
 		    break;
 		case ErrorType:
 		    return tree.setType(Type.ErrorType);
@@ -2496,7 +2529,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 
 	    case Literal(Object value):
-		return tree.setType(value2Type(value));
+		return tree.setType(Type.constantType(value));
 
 	    case LabelDef(Name name, Ident[] params, Tree body):
 		assert params.length == 0;

@@ -3,6 +3,10 @@ package examples;
 import java.util.Date;
 import scala.concurrent._;
 
+/** A simple demonstrator program implementing an online auction service
+ *  The example uses the actor abstraction defined in the API of
+ *  package scala.concurrent.
+ */
 trait AuctionMessage;
 case class
   Offer(bid: int, client: Actor),                     // make a bid
@@ -62,7 +66,7 @@ class Auction(seller: Actor, minBid: int, closing: Date) extends Actor {
   }
 }
 
-////////////////////////// TEST /////////////////////////////////
+// ---- Test -------------------------------------------------------------
 
 object testAuction {
 

@@ -168,6 +168,10 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		putType(pre);
 		putSymbol(sym);
 		break;
+	    case ConstantType(Type base, Object value):
+		putType(base);
+		putEntry(value);
+		break;
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
 		putType(pre);
 		putSymbol(sym);
@@ -258,6 +262,15 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	if (y != 0) patchNatPrefix(pos, y);
     }
 
+    /** Write a long number in signed big endian format, base 256.
+     */
+    private void writeLong(long x) {
+	long y = x >> 8;
+	long z = x & 0xff;
+	if (-y != z >> 7) writeLong(y);
+	writeByte((int) z);
+    }
+
     /** Write a reference to object, i.e., the object's number in the index.
      */
     private void writeRef(Object ref) {
@@ -279,6 +292,15 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	name.copyAscii(bytes, bp);
 	if (debug) System.out.print(name);
 	bp = bp + name.length();
+    }
+
+    /** Write a long number in big endian format, base 128.
+     *  All but the last digits have bit 0x80 set.
+     */
+    private void writeNumber(long x) {
+	writeByte(NUMBER);
+	writeByte(0); // space for length
+	writeLong(x);
     }
 
     /** Write a symbol entry.
@@ -367,6 +389,13 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeRef(sym);
 	    break;
 
+	case ConstantType(Type base, Object value):
+	    writeByte(CONSTANTtpe);
+	    writeByte(0); // space for length
+	    writeRef(base);
+	    writeRef(value);
+	    break;
+
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    writeByte(TYPEREFtpe);
 	    writeByte(0); // space for length
@@ -425,11 +454,34 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 
     private void writeEntry(Object e) {
 	int startpos = bp;
-	if (e instanceof Symbol) writeSymbol((Symbol) e);
-	else if (e instanceof Type) writeType((Type) e);
-	else if (e instanceof Name) writeName((Name) e);
-	else if (e instanceof FlagsAndType) writeFlagsAndType((FlagsAndType) e);
-	else throw new ApplicationError();
+	if (e instanceof Symbol)
+	    writeSymbol((Symbol) e);
+	else if (e instanceof Type)
+	    writeType((Type) e);
+	else if (e instanceof Name)
+	    writeName((Name) e);
+	else if (e instanceof FlagsAndType)
+	    writeFlagsAndType((FlagsAndType) e);
+	else if (e instanceof String)
+	    writeName(Name.fromString((String)e));
+	else if (e instanceof Double)
+	    writeNumber(Double.doubleToLongBits(((Double)e).doubleValue()));
+	else if (e instanceof Float)
+	    writeNumber(Float.floatToIntBits(((Float)e).floatValue()));
+	else if (e instanceof Long)
+	    writeNumber(((Long)e).longValue());
+	else if (e instanceof Integer)
+	    writeNumber(((Integer)e).intValue());
+	else if (e instanceof Short)
+	    writeNumber(((Short)e).intValue());
+	else if (e instanceof Byte)
+	    writeNumber(((Byte)e).intValue());
+	else if (e instanceof Character)
+	    writeNumber(((Character)e).charValue());
+	else if (e instanceof Boolean)
+	    writeNumber(((Boolean)e).booleanValue() ? 1 : 0);
+	else
+	    throw new ApplicationError(e);
 	patchNat(startpos + 1, bp - (startpos + 2));
     }
 

@@ -526,6 +526,9 @@ public class SymbolTablePrinter {
             return this;
         case SingleType(Type pre, Symbol sym):
             return printPrefix(pre).printSymbolName(sym);
+	case ConstantType(Type base, Object value):
+	    return printType(base)
+		.print("(").print(value.toString()).print(")");
         case CompoundType(Type[] parts, Scope members):
             return printTypes(parts," with ").space()
                 .printScope(members,true)

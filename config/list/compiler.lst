@@ -129,6 +129,7 @@ transformer/matching/WordAutomInScala.java
 
 typechecker/Analyzer.java
 typechecker/AnalyzerPhase.java
+typechecker/ConstantFolder.java
 typechecker/Context.java
 typechecker/DeSugarize.java
 typechecker/ImportList.java

@@ -53,13 +53,13 @@ public class UnCurryPhase extends Phase implements Modifiers {
 		else return Type.MethodType(params, newtp1);
 	    }
 	case PolyType(Symbol[] tparams, Type tp1):
+	    Type newtp1 = uncurry(tp1);
 	    switch (tp1) {
 	    case MethodType(_, _):
-		Type newtp1 = uncurry(tp1);
 		if (newtp1 == tp1) return tp;
 		else return Type.PolyType(tparams, newtp1);
 	    default:
-		Type newtp1 = Type.MethodType(Symbol.EMPTY_ARRAY, tp1);
+		newtp1 = Type.MethodType(Symbol.EMPTY_ARRAY, newtp1);
 		if (tparams.length == 0) return newtp1;
 		else return Type.PolyType(tparams, newtp1);
 	    }
@@ -67,6 +67,8 @@ public class UnCurryPhase extends Phase implements Modifiers {
 	    return new Type.Map() {
 		public Type apply(Type t) { return uncurry(t); }
 	    }.map(tp);
+	case ConstantType(Type base, _):
+	    return base;
 	default:
 	    return tp;
 	}

@@ -166,11 +166,6 @@ floating point numbers (of types \code{Float} and \code{Double}), characters, an
 strings.  The syntax of these literals is in each case as in Java.
 
 \syntax\begin{lstlisting}
-literal      ::=  intLit
-               |  floatLit
-               |  charLit
-               |  stringLit
-               |  symbolLit
 intLit       ::=  $\mbox{\rm\em ``as in Java''}$
 floatLit     ::=  $\mbox{\rm\em ``as in Java''}$
 charLit      ::=  $\mbox{\rm\em ``as in Java''}$
@@ -2237,7 +2232,7 @@ module FileSystem with {
   InfixExpr       ::=  PrefixExpr
                     |  InfixExpr id InfixExpr
   PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
-  SimpleExpr      ::=  literal
+  SimpleExpr      ::=  Literal
                     |  Path
                     |  `(' [Expr] `)'
                     |  BlockExpr
@@ -2265,12 +2260,15 @@ $T$.
 \section{Literals}
 
 \syntax\begin{lstlisting}
-  SimpleExpr    ::=  literal
-  literal       ::=  intLit
+  SimpleExpr    ::=  Literal
+  Literal       ::=  intLit
                   |  floatLit
                   |  charLit
                   |  stringLit
                   |  symbolLit
+		  |  true
+		  |  false
+		  |  null
 \end{lstlisting}
 
 Typing and evaluation of numeric, character, and string literals are
@@ -2290,20 +2288,20 @@ actual parameters, as in ~\lstinline@'$x$($\args\,$)@, then the whole expression
 is taken to be a shorthand for
 ~\lstinline@scala.Labelled(scala.Symbol("$x$"), $\args\,$)@.
 
-\section{Boolean constants}
+\subsection{Boolean constants}
 
 \begin{lstlisting}
-  SimpleExpr ::=  true | false
+  Literal ::=  true | false
 \end{lstlisting}
 
 The boolean truth values are denoted by the reserved words \code{true}
 and \code{false}. The type of these expressions is \code{boolean}, and
 their evaluation is immediate. 
 
-\section{The $\NULL$ Reference}
+\subsection{The $\NULL$ Reference}
 
 \syntax\begin{lstlisting}
-  SimpleExpr    ::=  null
+  Literal    ::=  null
 \end{lstlisting}
 
 The \code{null} expression is of type \lstinline@scala.AllRef@. It
@@ -3280,7 +3278,7 @@ Pattern2       ::=  SimplePattern [ '*'  |'?' | '+' ]
                  |  SimplePattern { id SimplePattern }
 SimplePattern  ::=  varid [ '@' SimplePattern ]
                  |  `_'
-                 |  literal
+                 |  Literal
                  |  StableId [ `(' [Patterns] `)' ]
                  |  `(' Patterns `)'
                  |   
@@ -4149,11 +4147,14 @@ The context-free syntax of Scala is given by the following EBNF
 grammar.
 
 \begin{lstlisting}
-  literal        ::=  intLit
+  Literal        ::=  intLit
                    |  floatLit
                    |  charLit
                    |  stringLit
                    |  symbolLit
+		   |  true
+		   |  false
+		   |  null
 
   StableId       ::=  id
                    |  Path `.' id
@@ -4178,7 +4179,7 @@ grammar.
                     |
 
   Exprs           ::=  Expr {`,' Expr}
-  Expr            ::=  [Bindings `=>'] Expr
+  Expr            ::=  Bindings `=>' Expr
                     |  if `(' Expr `)' Expr [[`;'] else Expr]
                     |  try `{' block `}' [catch Expr] [finally Expr]
                     |  do Expr [`;'] while `(' Expr ')'
@@ -4192,10 +4193,7 @@ grammar.
   InfixExpr       ::=  PrefixExpr
                     |  InfixExpr id InfixExpr
   PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
-  SimpleExpr      ::=  literal
-                    |  true
-                    |  false
-                    |  null
+  SimpleExpr      ::=  Literal
                     |  Path
                     |  `(' [Expr] `)'
                     |  BlockExpr
@@ -4234,7 +4232,7 @@ grammar.
                     |  SimplePattern { id SimplePattern }
   SimplePattern   ::=  `_'
                     |  varid
-                    |  literal
+                    |  Literal
                     |  StableId [ `(' [Patterns] `)' ]
                     |  `(' [Patterns] `)'
   Patterns        ::=  Pattern {`,' Pattern}

@@ -232,7 +232,8 @@ public class Erasure extends Transformer implements Modifiers {
             return gen.Ident(tree.pos, symbol);
 
         case Literal(Object value):
-	    return gen.mkLit(tree.pos, value);
+	    return tree.setType(tree.type.erasure());
+	    //return gen.mkLit(tree.pos, value);
 
         case Block(_):
 	case If(_, _, _):

@@ -113,7 +113,8 @@ public class UnCurry extends OwnerTransformer
     public Tree transform(Tree tree) {
 	//new scalac.ast.printer.TextTreePrinter().print("uncurry: ").print(tree).println().end();//DEBUG
 	//uncurry type and symbol
-	if (tree.type != null) tree.type = descr.uncurry(tree.type);
+	Type prevtype = tree.type;
+	if (prevtype != null) tree.type = descr.uncurry(prevtype);
         switch (tree) {
 	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(

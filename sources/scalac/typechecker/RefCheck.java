@@ -842,16 +842,16 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
     }
 
-// Type node eliminiation ------------------------------------------------------
+// Tree node simplification---------------------------------------------------
 
     private Tree elimTypeNode(Tree tree) {
 	if (tree.isType() && !tree.isMissing())
-	    return gen.mkType(tree.pos, tree.type);
+	    return gen.mkType(tree.pos, tree.type.deconst());
 	else
 	    return tree;
     }
 
-// Transformation ---------------------------------------------------------------
+// Transformation ------------------------------------------------------------
 
     public Tree[] transformStats(Tree[] stats) {
 	pushLevel();

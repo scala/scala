@@ -281,6 +281,13 @@ public abstract class Symbol implements Modifiers, Kinds {
              (flags & MUTABLE) == 0 && type().isObjectType());
     }
 
+    /** Is this symbol final?
+     */
+    public final boolean isFinal() {
+	return
+	    (flags & (FINAL | PRIVATE)) != 0 || isLocal() || owner.isModuleClass();
+    }
+
     /** Does this symbol denote a variable? */
     public final boolean isVariable() {
         return kind == VAL && (flags & MUTABLE) != 0;

@@ -282,7 +282,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    Tree id = mkRef(pos, pre1, sym);
 	    switch (sym.type()) {
 	    case MethodType(Symbol[] params, _):
-		assert params.length == 0 : sym;
+		assert params.length == 0 : pre;
 		id = this.Apply(id, Tree.EMPTY_ARRAY);
 	    }
 	    return id;

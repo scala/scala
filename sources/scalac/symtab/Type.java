@@ -35,6 +35,17 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	assert this instanceof ExtSingleType;
     }
 
+    /** Type for a numeric or string constant.
+     */
+    public case ConstantType(Type base, Object value) {
+	if (base.symbol() == Global.instance.definitions.BYTE_CLASS)
+	    assert value instanceof Byte;
+	if (base.symbol() == Global.instance.definitions.CHAR_CLASS)
+	    assert value instanceof Character;
+	if (base.symbol() == Global.instance.definitions.SHORT_CLASS)
+	    assert value instanceof Short;
+    }
+
     /** pre.sym[args]
      *  sym represents a type
      *  for example: scala.List[java.lang.String] is coded as
@@ -134,6 +145,28 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	} else {
 	    throw new Type.Malformed(pre, sym.nameString() + ".type");
 	}
+    }
+
+    public static ConstantType constantType(Object value) {
+	return new ConstantType(value2type(value), value);
+    }
+
+    private static Type value2type(Object value) {
+	if (value instanceof Character)
+	    return Global.instance.definitions.CHAR_TYPE();
+	else if (value instanceof Integer)
+	    return Global.instance.definitions.INT_TYPE();
+	else if (value instanceof Long)
+	    return Global.instance.definitions.LONG_TYPE();
+	else if (value instanceof Float)
+	    return Global.instance.definitions.FLOAT_TYPE();
+	else if (value instanceof Double)
+	    return Global.instance.definitions.DOUBLE_TYPE();
+	else if (value instanceof String)
+	    return Global.instance.definitions.JAVA_STRING_TYPE();
+	else if (value instanceof Boolean)
+	    return Global.instance.definitions.BOOLEAN_TYPE();
+	else throw new ApplicationError();
     }
 
     public static Type singleTypeMethod(Type pre, Symbol sym) {
@@ -242,6 +275,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return sym;
 	case SingleType(_, Symbol sym):
 	    return sym;
+	case ConstantType(Type base, _):
+	    return base.symbol();
 	case TypeVar(Type origin, _):
 	    return origin.symbol();
 	case CompoundType(_, _):
@@ -282,6 +317,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return this;
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
             return singleDeref().bound();
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) return constr.inst.bound();
@@ -301,6 +337,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case SingleType(Type pre, Symbol sym):
 	    // overridden in ExtSingleType
 	    throw new ApplicationError();
+	case ConstantType(Type base, _):
+	    return base;
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) return constr.inst.singleDeref();
 	    else return this;
@@ -317,6 +355,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	switch (tp) {
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return tp.widen();
 	default:
 	    return tp;
@@ -342,6 +381,18 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    else return ThisType(sym);
 	case CompoundType(_, _):
 	    return symbol().thisType();
+	default:
+	    return this;
+	}
+    }
+
+    /** If this type is a constant type, its underlying basetype;
+     *  otherwise the type itself
+     */
+    public Type deconst() {
+	switch (this) {
+	case ConstantType(Type base, _):
+	    return base;
 	default:
 	    return this;
 	}
@@ -459,6 +510,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	switch (unalias()) {
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return singleDeref().parents();
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym.kind == CLASS) {
@@ -587,6 +639,62 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	return this;
     }
 
+    /** Numeric values
+     */
+    public int intValue() {
+	switch (this) {
+	case ConstantType(_, Object value):
+	    return toNumber(value).intValue();
+	default:
+	    throw new ApplicationError();
+	}
+    }
+    public long longValue() {
+	switch (this) {
+	case ConstantType(_, Object value):
+	    return toNumber(value).longValue();
+	default:
+	    throw new ApplicationError();
+	}
+    }
+    public float floatValue() {
+	switch (this) {
+	case ConstantType(_, Object value):
+	    return toNumber(value).floatValue();
+	default:
+	    throw new ApplicationError();
+	}
+    }
+    public double doubleValue() {
+	switch (this) {
+	case ConstantType(_, Object value):
+	    return toNumber(value).doubleValue();
+	default:
+	    throw new ApplicationError();
+	}
+    }
+    public boolean booleanValue() {
+	switch (this) {
+	case ConstantType(_, Object value):
+	    return ((Boolean)value).booleanValue();
+	default:
+	    throw new ApplicationError();
+	}
+    }
+    public String stringValue() {
+	switch (this) {
+	case ConstantType(_, Object value):
+	    return (String)value;
+	default:
+	    throw new ApplicationError();
+	}
+    }
+    private static Number toNumber(Object value) {
+	return (value instanceof Character)
+	    ? new Integer(((Character)value).charValue())
+	    : (Number)value;
+    }
+
 // Tests --------------------------------------------------------------------
 
     /** Is this type a this type or singleton type?
@@ -595,6 +703,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	switch (unalias()) {
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return true;
 	default:
 	    return false;
@@ -624,6 +733,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	switch (unalias()) {
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	case CompoundType(_, _):
 	case TypeRef(_, _, _):
 	    return true;
@@ -675,7 +785,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return new Scope();
 	case TypeRef(_, Symbol sym, _):
 	    return sym.info().members();
-	case SingleType(_, Symbol sym):
+	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return singleDeref().members();
 	case CompoundType(Type[] basetypes, Scope members):
 	    return members;
@@ -693,6 +804,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return Symbol.ERROR;
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return singleDeref().lookup(name);
 	case TypeRef(_, Symbol sym, _):
 	    return sym.info().lookup(name);
@@ -722,6 +834,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return Symbol.ERROR;
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return singleDeref().lookupNonPrivate(name);
 	case TypeRef(_, Symbol sym, _):
 	    return sym.info().lookupNonPrivate(name, start);
@@ -860,6 +973,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		Type pre1 = apply(pre);
 		if (pre1 == pre) return tp;
 		else return singleType(pre1, sym);
+	    case ConstantType(Type base, Object value):
+		Type base1 = apply(base);
+		if (base1 == base) return tp;
+		else return new ConstantType(base1, value);
 	    case CompoundType(Type[] parts, Scope members):
 		Type[] parts1 = map(parts);
 		Scope members1 = map(members);
@@ -1014,6 +1131,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return singleDeref().baseType(clazz);
 
 	case TypeRef(Type pre, Symbol sym, Type[] args):
@@ -1687,9 +1805,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    switch (this) {
 	    case ThisType(_):
 	    case SingleType(_, _):
+	    case ConstantType(_, _):
 		return this.isSameAs(that);
 	    }
 	    break;
@@ -1793,6 +1913,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return false;
 	case ThisType(_):
 	case SingleType(_, _):
+	    if (this.singleDeref().isSubType(that)) return true;
+	    break;
+	case ConstantType(_, Object value):
 	    if (this.singleDeref().isSubType(that)) return true;
 	    break;
 	case TypeVar(Type origin, Constraint constr):
@@ -1984,6 +2107,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    ||
 		    deAlias(this) != this &&
 		    deAlias(this).isSameAs(that);
+	    }
+	    break;
+
+	case ConstantType(Type base, Object value):
+	    switch (that) {
+	    case ConstantType(Type base1, Object value1):
+		return base.isSameAs(base1) && value.equals(value1);
 	    }
 	    break;
 
@@ -2560,6 +2690,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		break;
 	    case ThisType(_):
 	    case SingleType(_, _):
+	    case ConstantType(_, _):
 		return Global.instance.definitions.ALL_TYPE();
 	    }
 	}
@@ -2871,6 +3002,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	switch (this) {
 	case ThisType(_):
 	case SingleType(_, _):
+	case ConstantType(_, _):
 	    return singleDeref().erasure();
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    switch (sym.kind) {
@@ -2958,6 +3090,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return SINGLEtpe
 		^ (pre.hashCode() * 41)
 		^ (sym.hashCode() * (41*41));
+	case ConstantType(Type base, Object value):
+	    return CONSTANTtpe
+		^ (base.hashCode() * 41)
+		^ (value.hashCode() * (41*41));
 	case CompoundType(Type[] parts, Scope members):
 	    return symbol().hashCode();
 	    //return COMPOUNDtpe
@@ -3024,6 +3160,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		switch (that) {
 		case SingleType(Type pre1, Symbol sym1):
 		    return pre.equals(pre1) && sym == sym1;
+		default: return false;
+		}
+	    case ConstantType(Type base, Object value):
+		switch (that) {
+		case ConstantType(Type base1, Object value1):
+		    return base.equals(base1) && value.equals(value1);
 		default: return false;
 		}
 	    case CompoundType(Type[] parts, Scope members):
@@ -3194,6 +3336,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     case ThisType(Symbol sym):
     case TypeRef(Type pre, Symbol sym, Type[] args):
     case SingleType(Type pre, Symbol sym):
+    case ConstantType(Type base, Object value):
     case CompoundType(Type[] parts, Scope members):
     case MethodType(Symbol[] vparams, Type result):
     case PolyType(Symbol[] tparams, Type result):

@@ -252,7 +252,8 @@ public class Infer implements Modifiers, Kinds {
 	case ErrorType:
 	case AnyType:
 	case NoType:
-	case ThisType(Symbol sym):
+	case ThisType(_):
+	case ConstantType(_, _):
 	    return VARIANCES;
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym == tparam) return COVARIANT;
