@@ -14,14 +14,16 @@ import scala.tools.util.Position;
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
-import scala.collection.immutable.ListMap ;
-import scala.collection.mutable.Buffer;
+import scala.collection.immutable.{ Map, ListMap };
+import scala.collection.mutable;
 import scala.xml.{Text,TextBuffer};
+import scala.xml.parsing.{ AttribValue, MarkupHandler };
 import scalac.util.{ Name, Names, TypeNames } ;
+
 package scala.tools.scalac.ast.parser {
 
 /** this class builds instance of Tree that represent XML */
-class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS: Boolean ) {
+class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS: Boolean ) extends MarkupHandler[Tree,Tree] {
 
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
@@ -140,6 +142,12 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     _scala_xml( pos, _Attribute );
 
 
+  private def bufferToArray(buf: mutable.Buffer[Tree]): Array[Tree] = {
+    val arr = new Array[Tree]( buf.length );
+    var i = 0;
+    for (val x <- buf.elements) { arr(i) = x; i = i + 1; }
+    arr;
+  }
 
   /** convenience method */
   def convertToTypeId(t: Tree): Tree = t match {
@@ -159,16 +167,17 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
    *  @todo map:       a map of attributes !!!
    */
 
-  protected def mkXML(pos: int, isPattern: boolean, namespace: Tree, label: Tree, attrs: Array[Tree], children: Array[Tree]): Tree = {
+  protected def mkXML(pos: int, isPattern: boolean, namespace: Tree, label: Tree, attrs: Array[Tree], children: mutable.Buffer[Tree]): Tree = {
     if( isPattern ) {
-      val ts = new myTreeList();
+      val ts = new mutable.ArrayBuffer[Tree]();
       ts.append( namespace );
       ts.append( label );
       ts.append( new Tree$Ident( Names.PATTERN_WILDCARD ) ); // attributes?
-      ts.append( convertToTextPat( children ) );
+      convertToTextPat( children );
+      ts ++ children;
       make.Apply(pos,
                  convertToTypeId( _scala_xml_Elem( pos ) ),
-                 ts.toArray())
+                 bufferToArray( ts ))
     } else {
       val ab = new scala.collection.mutable.ArrayBuffer[Tree]();
       ab + namespace;
@@ -183,7 +192,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
                         attrs);
       if(( children.length ) > 0 )
         ab + make.Typed(pos,
-                        makeXMLseq(pos, children ),
+                        makeXMLseq( pos, children ),
                         make.Ident(pos, TypeNames.WILDCARD_STAR));
       val arr:Array[Tree] = new Array[Tree]( ab.length );
       ab.elements.copyToArray( arr, 0 );
@@ -199,24 +208,13 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     make.New( pos, constr );
   };
   // create scala.xml.Text here <: scala.xml.Node
-  def makeText( pos: int, isPattern:Boolean, txt:String ):Tree =  {
+  final def Text( pos: int, isPattern:Boolean, txt:String ):Tree =  {
     //makeText( pos, isPattern, gen.mkStringLit( pos, txt ));
     val txt1 = gen.mkStringLit( pos, txt );
     if( isPattern )
       makeTextPat( pos, txt1 );
     else
       makeText1( pos, txt1 );
-  }
-
-  def appendTrimmed(pos: int, mode:Boolean, ts:myTreeList, txt:String) = {
-    var textNodes =
-      if( !preserveWS )
-        new TextBuffer().append( txt ).toText;
-      else
-        List( Text( txt ));
-
-    for( val t <- textNodes )
-      ts.append( makeText( pos, mode, t.text ));
   }
 
   // create scala.xml.Text here <: scala.xml.Node
@@ -312,45 +310,40 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
   }
 
   /** @todo: attributes */
-  def makeXMLpat(pos: int, n: String, args: Array[Tree]): Tree =
+  def makeXMLpat(pos: int, n: String, args: mutable.Buffer[Tree]): Tree =
     mkXML(pos,
           true,
           new Tree$Ident( Names.PATTERN_WILDCARD ):Tree,
           gen.mkStringLit( pos, n ):Tree,
-          Tree.EMPTY_ARRAY:Array[Tree],
-          args:Array[Tree]);
+          Predef.Array[Tree](),
+          args);
 
   protected def convertToTextPat(t: Tree): Tree = t match {
     case _:Tree$Literal => makeTextPat(t.pos, t);
     case _ => t
   }
 
-  protected def convertToTextPat(ts: Array[Tree]): Array[Tree] = {
-    var res:Array[Tree] = null;
-    var i = 0; while( i < ts.length ) {
-        val t1 = ts( i );
-        val t2 = convertToTextPat( t1 );
-        if (!t1.eq(t2)) {
-          if( null == res ) {  // lazy copy
-            res = new Array[Tree]( ts.length );
-            System.arraycopy( ts, 0, res, 0, i );
-          }
-          res( i ) = t2;
-        }
-        i = i + 1;
+  protected def convertToTextPat(buf: mutable.Buffer[Tree]): Unit = {
+    var i = 0; while( i < buf.length ) {
+      val t1 = buf( i );
+      val t2 = convertToTextPat( t1 );
+      if (!t1.eq(t2)) {
+        buf.remove(i);
+        buf.insert(i,t2);
+      }
+      i = i + 1;
     }
-    if( null == res ) ts else res;
   }
 
   def isEmptyText(t:Tree) = t match {
     case Tree$Literal(atree.AConstant.STRING("")) => true;
     case _                   => false;
   }
-  def makeXMLseq( pos:int, args:Array[Tree] ) = {
+  def makeXMLseq( pos:int, args:mutable.Buffer[Tree] ) = {
     val ts = new TreeList();
     //val blocArr = new Array[Tree] ( 1 + args.length );
     //val constr = _scala_collection_mutable_ArrayBuffer( pos );
-    val _buffer = makeNodeBuffer( pos );
+    var _buffer = makeNodeBuffer( pos );
     val n = p.fresh();
     val nIdent = make.Ident(pos, n);
     //blocArr( 0 )
@@ -358,18 +351,17 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
                            0, n, Tree.Empty,
                            _buffer));
 
-    var i = 0; while( i < args.length ) {
-      val ipos = args(i).pos;
-      if( !isEmptyText( args( i ))) {
-        ts.append(
-          make.Apply( ipos,
-                     make.Select( ipos, nIdent, _plus /*_append*/ ),
-                     Predef.Array[Tree]( args( i ) ))
-        )
+    val it = args.elements;
+    while( it.hasNext ) {
+      val t = it.next;
+      val tpos = t.pos;
+      if( !isEmptyText( t )) {
+        _buffer = make.Apply( tpos,
+                              make.Select( tpos, _buffer, _plus ),
+                              Predef.Array[Tree]( t ));
       }
-      i = i + 1;
     }
-    make.Block( pos, ts.toArray(), nIdent );
+    _buffer;//make.Block( pos, ts.toArray(), nIdent );
   }
 
   def makeXMLseqPat( pos:int, args:Array[Tree] ) = {
@@ -404,20 +396,24 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     }
 
   /** makes an element */
-  def makeXML(pos: int, label: String, attrMap1: ListMap[String,Tree], args: Array[Tree]): Tree={
-    var setNS = ListMap.Empty[String, Tree];
-    var attrMap = attrMap1;
-
-    for( val z <- attrMap.keys; z.startsWith("xmlns") ) {
-      val i = z.indexOf(':');
-      if( i == -1 )
-        setNS = setNS.update("default", attrMap( z ));
-      else {
-        val zz = z.substring( i+1, z.length() );
-        setNS = setNS.update( zz, attrMap( z ));
+  def element(pos: int, label: String, attrMap: mutable.Map[String,AttribValue[Tree]], args: mutable.Buffer[Tree]): Tree = {
+    var setNS = new mutable.HashMap[String, Tree];
+    /* DEBUG */
+    val attrIt = attrMap.keys;
+    while( attrIt.hasNext ) {
+      val z = attrIt.next;
+      if( z.startsWith("xmlns") ) {
+        val i = z.indexOf(':');
+        if( i == -1 )
+          setNS.update("default", attrMap( z ).value );
+        else {
+          val zz = z.substring( i+1, z.length() );
+          setNS.update( zz, attrMap( z ).value );
+        }
+        attrMap -= z;
       }
-      attrMap = attrMap - z;
     }
+    /* */
     val i = label.indexOf(':');
     val Pair( namespace, newlabel ) = qualified( pos, label );
 
@@ -426,15 +422,18 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         Tree.EMPTY_ARRAY
       else {
         val attrs:Array[Tree] = new Array[Tree](attrMap.size);
+        /* DEBUG */
         var k = 0;
         var it = attrMap.elements;
         while( it.hasNext ) {
           val ansk = it.next;
           val Pair( ns, aname ) = qualifiedAttr( pos, namespace, ansk._1 );
-          attrs( k ) = makeAttribute( pos, ns, aname, ansk._2 );
+          attrs( k ) = makeAttribute( pos, ns, aname, ansk._2.value );
           k = k + 1;
         }
+        /* */
         attrs
+
       }
 
     var t = mkXML(pos,
@@ -442,7 +441,8 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
                   make.Ident(pos, Name.fromString(namespace)):Tree,
                   gen.mkStringLit(pos, newlabel):Tree,
                   attr:Array[Tree],
-                  args:Array[Tree]);
+                  args);
+    /* DEBUG */
     if( !setNS.isEmpty ) {
       val nsStms = new Array[Tree]( setNS.size );
       var i = 0;
@@ -451,8 +451,10 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         i = i + 1;
       }
       make.Block( pos, nsStms, t )
-    } else
+    } else {
+    /* */
       t
+    }
   }
 
   def setNamespacePrefix(pos:Int, pref:String, uri:Tree) =

@@ -213,6 +213,10 @@ xml/dtd/ValidationException.scala
 xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala
 
+xml/parsing/AttribValue.scala
+xml/parsing/FatalError.scala
+xml/parsing/MarkupParser.scala
+xml/parsing/MarkupHandler.scala
 xml/path/Expression.scala
 #xml/path/Tokens.scala
 #xml/path/Scanner.scala
