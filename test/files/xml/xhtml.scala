@@ -20,7 +20,6 @@ object Test {
     System.out.println(page.toXML) ;
 
     val doc = load(argv(0));
-    System.out.println(doc);
     System.out.println(doc.toXML);
   }
 
