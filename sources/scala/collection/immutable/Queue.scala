@@ -17,19 +17,32 @@ package scala.collection.immutable;
  */
 
 object Queue {
-    val Empty:Queue[All] = new Queue(Nil, Nil);
+    val Empty:Queue[All] = new Queue();
 }
 
-class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
-                                           with StructuralEquality[Queue[A]] {
+class Queue[+A](elem: A*)extends Seq[A]
+                          with StructuralEquality[Queue[A]] {
+    protected val in:List[A] = Nil;
+    protected val out:List[A] = itToList(elem.elements);
 
-    /** Returns the <code>n</code>-th element of this queue.
-     *  The first element is at position 0.
-     *
-     *  @param n index of the element to return
-     *  @return the element at position <code>n</code> in this list.
-     *  @throws java.lang.RuntimeException if the list is too short.
-     */
+    protected def itToList[B >: A](elems:Iterator[B]): List[B] =
+       if (elems.hasNext) { val hd = elems.next;
+                            hd::itToList(elems)}
+	else Nil;
+
+    protected def mkQueue[A](i:List[A], o:List[A]):Queue[A] = {
+	new Queue[A](){
+	    override protected val in = i;
+	    override protected val out = o
+	};
+    }
+
+  /** Returns the <code>n</code>-th element of this queue.
+   * The first element is at position 0.
+   * @param n index of the element to return
+   * @return the element at position <code>n</code> in this list.
+   * @throws java.lang.RuntimeException if the list is too short.
+   */
     def apply(n: Int): A =
         if (n < out.length) out.apply(n)
         else in.reverse.apply(n - out.length);
@@ -44,7 +57,7 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      */
     def isEmpty: Boolean = (in.isEmpty && out.isEmpty);
 
-    /** Returns the lenegth of the queue.
+    /** Returns the length of the queue.
      */
     def length = in.length + out.length;
 
@@ -53,9 +66,10 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      *
      *  @param  elem        the element to insert
      */
-    def +[B >: A](elem: B):Queue[B] = new Queue(elem::in,out);
 
-    /** Returns a new que with all all elements provided by
+    def +[B >: A](elem: B) = mkQueue(elem::in,out);
+
+    /** Returns a new queue with all all elements provided by
      *  an <code>Iterable</code> object added at the end of
      *  the queue.
      *  The elements are prepended in the order they
@@ -66,34 +80,34 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
     def +[B >: A](iter: Iterable[B]) = {
         var q:List[B] = in;
         iter.elements.foreach(e => q = (e::q));
-        new Queue(q,out);
+        mkQueue(q,out);
     }
 
     /** Returns a new queue with all elements added.
      *
      *  @param  elems       the elements to add.
      */
-    def enqueue [B >: A](elems: B*): Queue[B] = (this + elems);
+    def enqueue [B >: A](elems: B*) = (this + elems);
 
     /** Returns a tuple with the first element in the queue,
-     *  and a new queu with this element removed.
+     *  and a new queue with this element removed.
      *
      *  @returns the first element of the queue.
      */
-    def dequeue: Pair[A,Queue[A]] = {
+    def dequeue:Pair[A,Queue[A]] = {
         var newOut:List[A]=Nil;
         var newIn:List[A]=Nil;
-            if (out.isEmpty) {
-            newOut = in.reverse;
-            newIn = Nil;
-        } else {
-            newOut = out;
-            newIn = in;
-        }
-        if (newOut.isEmpty)
-            error("queue empty");
+           if (out.isEmpty) {
+           newOut = in.reverse;
+           newIn = Nil;
+         } else {
+	 newOut = out;
+	 newIn = in;
+         }
+         if (newOut.isEmpty)
+  	 error("queue empty");
         else
-            Pair(newOut.head,new Queue(newIn,newOut.tail));
+            Pair(newOut.head,mkQueue(newIn,newOut.tail));
     }
 
     /** Returns the first element in the queue, or throws an error if there
