@@ -9,7 +9,7 @@ Comment.java
 HTMLGenerator.java
 HTMLGeneratorCommand.java
 HTMLGeneratorPhase.scala
-HTMLGeneratorPhases.java
+HTMLGeneratorPhases.scala
 Main.scala
 ScalaSearch.java
 #DocModule.java

@@ -18,6 +18,7 @@ import scala.tools.util.ClassPath;
 import scala.tools.util.Reporter;
 
 import scalac.CompilerCommand;
+import scalac.CompilerPhases;
 import scalac.util.BooleanOptionParser;
 import scalac.util.OptionParser;
 import scalac.util.StringOptionParser;
@@ -61,7 +62,7 @@ public class HTMLGeneratorCommand extends CompilerCommand {
      * @param phases
      */
     public HTMLGeneratorCommand(String product, String version,
-        Reporter reporter, HTMLGeneratorPhases phases)
+        Reporter reporter, CompilerPhases phases)
     {
         this(product, version, "<source files> [-- <packages>]", reporter, phases);
     }
@@ -76,7 +77,7 @@ public class HTMLGeneratorCommand extends CompilerCommand {
      * @param phases
      */
     public HTMLGeneratorCommand(String product, String version, String syntax,
-        Reporter reporter, HTMLGeneratorPhases phases)
+        Reporter reporter, CompilerPhases phases)
     {
         super(product, version, syntax, reporter, phases);
 
