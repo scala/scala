@@ -96,8 +96,8 @@ public class OwnerTransformer extends Transformer {
 	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(
 		tree, mods, name,
-		transform(tparams, tree.symbol()),
-		transform(vparams, tree.symbol()),
+		transform(tparams, tree.symbol().constructor()),
+		transform(vparams, tree.symbol().constructor()),
 		transform(tpe),
 		transform(impl, tree.symbol()));
 
