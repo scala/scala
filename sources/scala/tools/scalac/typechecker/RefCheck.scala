@@ -1097,10 +1097,12 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
 	}
         super.transform(tree)
 
-      // optimized, buraq 2005-02-21 [RefCheck is identity on patterns]
+      /*
+       // oops, might not work because of forward value references(test?)
+       // optimized, buraq 2005-02-21 [RefCheck is identity on patterns]
         case Tree.CaseDef(pat, guard, body)=>
           copy.CaseDef(tree, pat,  transform(guard), transform(body));
-
+          */
       case Tree$Apply(fn, args) =>
 	// convert case methods to new's
 	val fsym = TreeInfo.methSymbol(fn);
