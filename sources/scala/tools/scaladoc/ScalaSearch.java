@@ -234,25 +234,33 @@ public class ScalaSearch {
      */
     public static Comparator symPathOrder = new Comparator() {
 	    public int compare(Object o1, Object o2) {
-		Symbol symbol1 = (Symbol) o1;
-		Symbol symbol2 = (Symbol) o2;
-                if (symbol1 == symbol2) return 0;
-                if (symbol1.isRoot()) return -1;
-                if (symbol2.isRoot()) return +1;
-                if (symbol1.isNone()) return -1;
-                if (symbol2.isNone()) return +1;
-                if (symbol1.isError()) return -1;
-                if (symbol2.isError()) return +1;
-                int owners = compare(symbol1.owner(), symbol2.owner());
-                if (owners < 0) return -1;
-                if (owners > 0) return +1;
-		String name1 = symbol1.nameString();
- 		String name2 = symbol2.nameString();
-		return name1.compareTo(name2);
+                LinkedList l1 = getOwners((Symbol)o1);
+                LinkedList l2 = getOwners((Symbol)o2);
+                for (int i = 0; true; i++) {
+                    if (i == l1.size() || i == l2.size())
+                        return l1.size() - l2.size();
+                    Symbol s1 = (Symbol)l1.get(i);
+                    Symbol s2 = (Symbol)l2.get(i);
+                    if (s1 == s2) continue;
+                    int c = s1.nameString().compareTo(s2.nameString());
+                    if (c != 0) return c;
+                    return s1.id - s2.id;
+                }
 	    }
 	    public boolean equals(Object o) {
 		return false;
 	    }
+            public LinkedList getOwners(Symbol symbol) {
+                LinkedList owners = new LinkedList();
+                while (true) {
+                    owners.addFirst(symbol);
+                    if (symbol.isRoot()) break;
+                    if (symbol.isNone()) break;
+                    if (symbol.isError()) break;
+                    symbol = symbol.owner();
+                }
+                return owners;
+            }
 	};
 
     ///////////////////////// COLLECTORS ////////////////////////////
