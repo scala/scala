@@ -4,9 +4,11 @@ object boundedbuffer {
 
   import concurrent.ops._;
 
-  class BoundedBuffer[a](N: Int) extends Monitor() {
+  class BoundedBuffer[a](N: Int) {
     var in = 0, out = 0, n = 0;
     val elems = new Array[a](N);
+
+    def await(def cond: Boolean) = while (!cond) { wait() }
 
     def put(x: a) = synchronized {
       await (n < N);
