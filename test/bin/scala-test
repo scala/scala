@@ -139,7 +139,8 @@ test_xml() {
     dtdfile="`expr "$source" : "\(.*\)\\.scala"`.dtd";
     xmlfile="`expr "$source" : "\(.*\)\\.scala"`.xml";
     objfile="$output/dtd.scala";
-    classpath="$SCALA:$output:`$SCALA_INFO --default XERCES_CLASSES`";
+#    classpath="$SCALA:$output:`$SCALA_INFO --default XERCES_CLASSES`";
+    classpath="$SCALA:$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
     fi;
