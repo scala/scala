@@ -1233,20 +1233,38 @@ public abstract class Symbol implements Modifiers, Kinds {
                 return info;
             case OverloadedType(Symbol[] alts, Type[] alttypes):
                 global.currentPhase = phase.next;
+		int n = 0;
+		boolean altChanged = false;
                 for (int i = 0; i < alts.length; i++) {
                     Type type = alts[i].info();
-                    if (type != alttypes[i]) {
-                        Type[] types = new Type[alttypes.length];
-                        for (int j = 0; j < i; j++) types[j] = alttypes[j];
-                        alttypes[i] = type;
-                        for (; i < alts.length; i++)
-                            types[i] = alts[i].info();
-                        global.currentPhase = current;
-                        return Type.OverloadedType(alts, types);
-                    }
-                }
-                global.currentPhase = current;
-                return info;
+		    if (alts[i].owner() == owner()) n++;
+		    if (alts[i].info() != alttypes[i]) altChanged = true;
+		}
+		Type result;
+		if (n < alts.length) {
+		    Symbol[] symbols = new Symbol[n];
+		    Type[] types = new Type[n];
+		    int j = 0;
+		    for (int i = 0; i < alts.length; i++) {
+			if (alts[i].owner() == owner()) {
+			    symbols[j] = alts[i];
+			    types[j] = alts[i].info();
+			    j++;
+			} else
+			    if (Global.instance.debug) Global.instance.log("removing inherited alternatve " + alts[i] + ":" + alttypes[i]);//debug
+		    }
+		    result = Type.OverloadedType(symbols, types);
+		} else if (altChanged) {
+		    Type[] types = new Type[alttypes.length];
+		    for (int i = 0; i < alts.length; i++) {
+			types[i] = alts[i].info();
+		    }
+		    result = Type.OverloadedType(alts, types);
+		} else {
+		    result = info;
+		}
+		global.currentPhase = current;
+		return result;
             default:
                 global.currentPhase = phase;
                 info = phase.transformInfo(this, info);
@@ -1645,7 +1663,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public void addInheritedOverloaded(Type owntype) {
-	if (false && owner().kind == CLASS && !isConstructor() && owner().lookup(name) == this) {
+	if (owner().kind == CLASS && !isConstructor() && owner().lookup(name) == this) {
 	    // it's a class member which is not an overloaded alternative
 	    Symbol sym = Type.lookupNonPrivate(owner().parents(), name);
 	    if (sym.kind == VAL) {
@@ -1664,15 +1682,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     private void addInheritedOverloaded(Type owntype, Symbol sym, Type symtype) {
 	if (!owntype.overrides(symtype)) {
-	    System.out.println(owner() + " inherits overloaded: " + sym + ":" + symtype + sym.locationString());//debug
+	    if (Global.instance.debug) Global.instance.log(owner() + " inherits overloaded: " + sym + ":" + symtype + sym.locationString());//debug
 	    owner().members().lookupEntry(name).setSymbol(overloadWith(sym));
 	    //System.out.println("type is now: " + owner().members().lookup(name).type());
 	}
     }
 
     public Type removeInheritedOverloaded(Type owntype) {
-	//assert name != Names.toString ||
-	//    Global.instance.currentPhase.id != Global.instance.PHASE.UNCURRY.id();
 	switch (owntype) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    int n = 0;
@@ -1687,9 +1703,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 			alts1[j] = alts[i];
 			alttypes1[j] = alttypes[i];
 			j++;
-		    } else {
-			System.out.println("removing inherited alternatve " + alts[i] + ":" + alttypes[i]);//debug
-		    }
+		    } else
+			if (Global.instance.debug) Global.instance.log("removing inherited alternatve " + alts[i] + ":" + alttypes[i]);//debug
 		}
 		return Type.OverloadedType(alts1, alttypes1);
 	    } else {
