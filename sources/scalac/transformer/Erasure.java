@@ -204,8 +204,8 @@ public class Erasure extends GenTransformer implements Modifiers {
 	case Select(Tree qualifier, _):
             Symbol symbol = tree.symbol();
             Type prefix = qualifier.type().baseType(symbol.owner()).erasure();
+            assert prefix != Type.NoType: tree;
 	    qualifier = transform(qualifier);
-	    assert prefix != Type.NoType: qualifier.type() + "/" + qualifier.type().singleDeref() + " basetype " + symbol.owner();
 	    qualifier = coerce(qualifier, prefix);
 
             // Might end up with "box(unbox(...))". That's needed by backend.
