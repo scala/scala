@@ -18,7 +18,8 @@ package scala.collection.immutable ;
  */
 class BitSet(n:Int, ba: Array[Byte], copy:Boolean) extends scala.collection.BitSet {
 
-  val size   = n;
+  final def size   = n;
+
   val array:Array[Byte]  =
     if( copy ) {
       val arr = new Array[Byte](ba.length);

@@ -18,12 +18,14 @@ class ResizableBitSet(initSize: Int) extends scala.collection.BitSet {
   /** default constructor, initial size of 16 bits */
   def this() = this( 16 );
 
+  final def byteSize(size:Int) = { (size >>> 3) + (if( (size & 0x07)!= 0 ) 1 else 0) };
+
   class ByteArray with ResizableArray[Byte] {
-    override protected val initialSize: Int = initSize >>> 3;
+    override protected val initialSize: Int = byteSize( initSize );
     override protected var array: Array[Byte] = new Array[Byte](initialSize);
 
     /** size of this bitset in nbits */
-    def ensureBits(nbits: Int): Unit = ensureSize(nbits >>> 3);
+    def ensureBits(nbits: Int): Unit = ensureSize( byteSize( nbits ));
 
     final def and(j: Int, mask:Int): Unit = {
       array.update( j, (array(j) & mask).asInstanceOf[Byte] );
@@ -45,23 +47,25 @@ class ResizableBitSet(initSize: Int) extends scala.collection.BitSet {
   protected val internal = new ByteArray();
 
   /** size of this bitset in nbytes */
-  var size: Int = 0;
+  var size: Int = initSize;
 
   /** size of this bitset in nbits */
   def ensureSize(nbits: Int): Unit = {
     internal.ensureBits( nbits );
-    size = nbits;
+    if( size < nbits ) size = nbits;
   }
 
   final def set(i: Int, b: Boolean): Unit = if( b ) set(i) else clear(i);
 
   final def set(i: Int): Unit = {
+    ensureSize(i+1);
     val j         = (i >>> 3);
     val mask      = (1 << (i & 0x07));
     internal.or(j, mask);
   }
 
   def clear(i: Int): Unit = {
+    ensureSize(i+1);
     val j    = (i >>> 3);
     val mask = (1 << (i & 0x07));
     internal.and(j, ~mask);

@@ -25,10 +25,22 @@ abstract class BitSet with Function1[Int,Boolean] {
   def apply(i: Int):Boolean;
 
   /** returns an iterator over the truth values of all bits */
-  final def booleanElements:Iterator[Boolean] = new Iterator[Boolean] {
+  final def booleanElements: Iterator[Boolean] = new Iterator[Boolean] {
     var i = 0;
     def hasNext: Boolean = i < size;
     def next: Boolean = { i = i + 1; apply(i-1) }
+  }
+
+  /** returns the subset of [0..size] whose elements are indices of bits set to v */
+  final def toSet( v:Boolean ) = {
+    var res = new immutable.TreeSet[Int]();
+    var j = 0;
+    while( j < size ) {
+      if( v == apply(j) )
+        res = res + j;
+      j = j + 1;
+    }
+    res
   }
 
 }
