@@ -151,23 +151,21 @@ public class SymbolSubstTypeMap extends Type.Map {
     public Type apply(Type type) {
         switch (type) {
 
-        case TypeRef(ThisType(_), Symbol symbol, Type[] args): {
+        case TypeRef(ThisType(_), Symbol symbol, Type[] args):
             Object value = types.get(symbol);
             if (value != null) return (Type)value;
             value = symbols.get(symbol);
             if (value == null) return super.map(type);
             Type prefix = ((Type.TypeRef)type).pre;
             return Type.typeRef(apply(prefix), (Symbol)value, map(args));
-        }
 
-        case SingleType(ThisType(_), Symbol symbol): {
+        case SingleType(ThisType(_), Symbol symbol):
             Object value = types.get(symbol);
             if (value != null) return (Type)value;
             value = symbols.get(symbol);
             if (value == null) return super.map(type);
             Type prefix = ((Type.SingleType)type).pre;
             return Type.singleType(apply(prefix), (Symbol)value);
-        }
 
         case ThisType(Symbol symbol):
             Object value = symbols.get(symbol);
