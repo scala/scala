@@ -693,7 +693,8 @@ class AddInterfaces extends SubstTransformer {
 
                 Scope newIFaceMembers = new Scope();
                 Scope classMembers = new Scope();
-                Scope.SymbolIterator symIt = ifaceSym.members().iterator();
+                Scope.SymbolIterator symIt =
+                    new Scope.UnloadIterator(ifaceSym.members().iterator());
                 while (symIt.hasNext()) {
                     Symbol ifaceMemberSym = symIt.next();
 
@@ -701,7 +702,7 @@ class AddInterfaces extends SubstTransformer {
 
                     if (! memberGoesInInterface(ifaceMemberSym)) {
                         ifaceMemberSym.setOwner(classSym);
-                        classMembers.enter(ifaceMemberSym);
+                        classMembers.enterOrOverload(ifaceMemberSym);
                         continue;
                     }
 
@@ -721,68 +722,60 @@ class AddInterfaces extends SubstTransformer {
                     }
                     ifaceMemberSym.flags &= ~Modifiers.PROTECTED;
 
-                    newIFaceMembers.enter(ifaceMemberSym);
-
                     // Type members are moved to the interface.
                     // Therefore, no symbol has to be created for
                     // their class equivalent.
                     if (ifaceMemberSym.kind == Kinds.TYPE
-                        || ifaceMemberSym.kind == Kinds.ALIAS)
+                        || ifaceMemberSym.kind == Kinds.ALIAS) {
+                        newIFaceMembers.enterOrOverload(ifaceMemberSym);
                         continue;
-
-                    Symbol[] alternatives = ifaceMemberSym.alternatives();
-                    Symbol classMemberSym = null;
-
-                    for (int a = 0; a < alternatives.length; ++a) {
-                        Symbol iSym = alternatives[a];
-                        Symbol cSym;
-
-                        if (Modifiers.Helper.isPrivate(iSym.flags)) {
-                            iSym.name = uniqueName(iSym);
-                            iSym.flags ^= Modifiers.PRIVATE;
-                        }
-                        iSym.flags &= ~Modifiers.PROTECTED;
-
-                        if (ifaceToClass.containsKey(iSym))
-                            cSym = (Symbol)ifaceToClass.get(iSym);
-                        else
-                            cSym = cloneAndMaybeRenameSymbol(iSym);
-
-                        iSym.updateInfo(tparamsSM.apply(iSym.info()));
-                        cSym.setInfo(tparamsSM.apply(cSym.info()));
-
-                        Symbol[] vpms = vparams(iSym.nextInfo());
-                        for (int p = 0; p < vpms.length; ++p)
-                            vpms[p].updateInfo(tparamsSM.apply(vpms[p].info()));
-
-                        // Clone parameter symbols for methods.
-                        if (cSym.isMethod()) {
-                            Map funSymMap = new HashMap();
-                            Type newInfo = cloneSymbolsInMethodType(cSym.info(),
-                                                                    cSym,
-                                                                    tparamsSM,
-                                                                    funSymMap);
-                            if (! funSymMap.isEmpty())
-                                funParamsMaps.put(cSym, funSymMap);
-                        }
-
-                        cSym.setOwner(classSym);
-                        classMemberSym = (classMemberSym == null
-                                          ? cSym
-                                          : classMemberSym.overloadWith(cSym));
-
-                        if (iSym.kind == Kinds.CLASS) {
-                            ifaceToClass.put(iSym, cSym);
-                            ifaceToClass.put(iSym.constructor(), cSym.constructor());
-                        } else {
-                            iSym.flags |= Modifiers.DEFERRED;
-                            ifaceMemberToClass.put(iSym, cSym);
-                        }
                     }
+
+                    if (Modifiers.Helper.isPrivate(ifaceMemberSym.flags)) {
+                        ifaceMemberSym.name = uniqueName(ifaceMemberSym);
+                        ifaceMemberSym.flags ^= Modifiers.PRIVATE;
+                    }
+                    ifaceMemberSym.flags &= ~Modifiers.PROTECTED;
+
+                    Symbol classMemberSym;
+                    if (ifaceToClass.containsKey(ifaceMemberSym))
+                        classMemberSym = (Symbol)ifaceToClass.get(ifaceMemberSym);
+                    else
+                        classMemberSym = cloneAndMaybeRenameSymbol(ifaceMemberSym);
+
+                    ifaceMemberSym.updateInfo(tparamsSM.apply(ifaceMemberSym.info()));
+                    classMemberSym.setInfo(tparamsSM.apply(classMemberSym.info()));
+
+                    Symbol[] vpms = vparams(ifaceMemberSym.nextInfo());
+                    for (int p = 0; p < vpms.length; ++p)
+                        vpms[p].updateInfo(tparamsSM.apply(vpms[p].info()));
+
+                    // Clone parameter symbols for methods.
+                    if (classMemberSym.isMethod()) {
+                        Map funSymMap = new HashMap();
+                        Type newInfo = cloneSymbolsInMethodType(classMemberSym.info(),
+                                                                classMemberSym,
+                                                                tparamsSM,
+                                                                funSymMap);
+                        if (! funSymMap.isEmpty())
+                            funParamsMaps.put(classMemberSym, funSymMap);
+                    }
+
+                    classMemberSym.setOwner(classSym);
+
+                    if (ifaceMemberSym.kind == Kinds.CLASS) {
+                        ifaceToClass.put(ifaceMemberSym, classMemberSym);
+                        ifaceToClass.put(ifaceMemberSym.constructor(),
+                                         classMemberSym.constructor());
+                    } else {
+                        ifaceMemberSym.flags |= Modifiers.DEFERRED;
+                        ifaceMemberToClass.put(ifaceMemberSym, classMemberSym);
+                    }
+                    newIFaceMembers.enterOrOverload(ifaceMemberSym);
                     if (!ifaceMemberToClass.containsKey(ifaceMemberSym)
                         && ifaceMemberSym.kind != Kinds.CLASS)
                         ifaceMemberToClass.put(ifaceMemberSym, classMemberSym);
-                    classMembers.enter(classMemberSym);
+                    classMembers.enterOrOverload(classMemberSym);
                 }
 
                 switch (classSym.info()) {
