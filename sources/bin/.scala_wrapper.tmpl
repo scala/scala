@@ -376,7 +376,7 @@ scala_info_option_x_variable() {
         JAVA_EXEC           ) variable=$2;;
         JAVA_ARGS           ) variable=$2;;
         EXEC                ) variable=$2;;
-        *                   ) abort "Unknown variable \`$1'";;
+        *                   ) abort "Unknown variable \`$2'";;
     esac;
     scala_info_print_variable_$1 $variable;
 }
@@ -391,8 +391,8 @@ scala_info_option_help() {
     echo "  -? --help             Print this help message";
     echo "";
     echo "valid variables include:";
-    echo "  SCALA_CLASSPATH       Default classpath";
-    echo "  SCALA_BOOTCLASSPATH   Default bootclasspath";
+    echo "  CLASSPATH             Default classpath";
+    echo "  BOOTCLASSPATH         Default bootclasspath";
     echo "  RUNTIME_SOURCES       Location of the Scala library sources";
     echo "  RUNTIME_CLASSES       Location of the Scala library and tools";
     echo "  DTD2SCALA_CLASSES     Location of the dtd2scala tool";
