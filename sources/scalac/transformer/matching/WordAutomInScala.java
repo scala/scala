@@ -22,9 +22,11 @@ import Tree.*;
 import java.util.*;
 
 
-/**
+/** translates a recognizer to scala code
  */
 public class WordAutomInScala extends Autom2Scala {
+
+    Tree theDefDef ;
 
     Tree getMatcherSwitch(Tree selector,
                           Tree failTree,
@@ -32,12 +34,12 @@ public class WordAutomInScala extends Autom2Scala {
                           Type resultType) {
 
         Tree run = callFun( new Tree[] {
-                       cf.newIterator(selector),
-                       gen.mkIntLit(Position.FIRSTPOS, 0) } );
+            cf.newIterator(selector),
+            gen.mkIntLit(Position.FIRSTPOS, 0) } );
 
         /* return code `var <swres>: scala.Int = <init>' */
 
-        run = _intvar(resultSym, run);
+        run = gen.ValDef( resultSym, run );
 
         Tree result;
 
@@ -73,7 +75,7 @@ public class WordAutomInScala extends Autom2Scala {
         if (target == null)
             switch (label) {
             case DefaultLabel:
-                return code_fail(); // this may not happen !
+                return code_error(); // this may not happen !
             default:
                 return null; // not good
             }
@@ -81,23 +83,25 @@ public class WordAutomInScala extends Autom2Scala {
             return code_fail();
 
         return callFun(new Tree[] { _iter(),
-            gen.mkIntLit(Position.FIRSTPOS, target.intValue())} );
+                                    gen.mkIntLit(Position.FIRSTPOS, target.intValue())} );
     }
 
-    /** ...
-     * @param dfa ...
-     * @param elementType ...
-     * @param owner ...
-     * @param cf ...
-     * @return ...
+    /** constructor
+     * @param dfa         the dfa that is to be translated
+     * @param elementType type of the objects in the sequence
+     * @param owner       the owner of the pattern match
+     * @param cf          code factory
+     * @param optim       flag that indicates whether to optimize
+     * @return            an object that translates the dfa
      */
-    public WordAutomInScala(DetWordAutom dfa,
+    public WordAutomInScala(int pos,
+                            DetWordAutom dfa,
                             Type elementType,
                             Symbol owner,
                             CodeFactory cf,
-			    boolean optim) {
+                            boolean optim) {
         super(dfa, elementType, owner, cf);
-
+        this.pos = pos;
         this.optimize &= optim;
 
     }

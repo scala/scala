@@ -15,32 +15,31 @@ import ch.epfl.lamp.util.Position;
 
 public class LeftTracerInScala extends TracerInScala {
 
-      Tree selector;
+    Tree selector;
 
-      /** symbol of the accumulator ( scala.SequenceList )
-       */
-      Symbol accumSym;
-      Type accumType;
-      Type accumTypeArg;
+    /** symbol of the accumulator ( scala.SequenceList )
+     */
+    Symbol accumSym;
+    Type accumType;
+    Type accumTypeArg;
 
-      Type _accumType( Type elemType ) {
-            return cf.SeqTraceType( elemType );
-      }
+    Type _accumType( Type elemType ) {
+        return cf.SeqTraceType( elemType );
+    }
 
 
-      Matcher _m ;
-      public LeftTracerInScala( DetWordAutom dfa,
-                                Type elementType,
-                                Matcher m,
-                                CodeFactory cf ) {
+    Matcher _m ;
+    public LeftTracerInScala( DetWordAutom dfa,
+                              Type elementType,
+                              Matcher m,
+                              CodeFactory cf ) {
 
-          super( dfa, elementType, m.owner, cf );
-          this._m = m;
-          this.selector = m.selector;
-          //helpMap = new HashMap(); moved up
-          helpVarDefs = new Vector();
+        super( dfa, elementType, m.owner, cf );
+        this._m = m;
+        this.selector = m.selector;
+        helpVarDefs = new Vector();
 
-      }
+    }
 
     Vector  helpVarDefs;
 
@@ -72,7 +71,6 @@ public class LeftTracerInScala extends TracerInScala {
         Tree varDef = gen.ValDef( helpVar,
                                   gen.mkDefaultValue( cf.pos,
                                                       defs.LIST_TYPE( pat.getType() ))
-                                  //cf.ignoreValue( )
                                   );
         helpVarDefs.add( varDef );
         return helpVar;
@@ -96,18 +94,17 @@ public class LeftTracerInScala extends TracerInScala {
 
         // 2 do: rename switchresultsym to something else...
 
-        this.resultSym = new TermSymbol( //Kinds.VAR,
-                                        pos,
+        this.resultSym = new TermSymbol(pos,
                                         cf.fresh.newName("trace"),
                                         owner,
                                         0 )
             .setType( accumType ) ;
     }
 
-    // should throw an exception here really, e.g. MatchError
+    /* should throw an exception here really, e.g. MatchError
+     */
     Tree code_fail() {
         return gen.Ident( accumSym.pos, accumSym );
-
     }
 
     /** returns translation of transition with label from i.
@@ -129,9 +126,9 @@ public class LeftTracerInScala extends TracerInScala {
         */
 
         /*
-        Tree newAcc = cf.newSeqTraceCons(new Integer(i),
-                                         currentElem(),
-                                         _ref( accumSym ));
+          Tree newAcc = cf.newSeqTraceCons(new Integer(i),
+          currentElem(),
+          _ref( accumSym ));
         */
         Tree hd = cf.newPair( gen.mkIntLit(cf.pos, i), currentElem() );
         Tree newAcc = gen.Cons(cf.pos,
@@ -143,13 +140,9 @@ public class LeftTracerInScala extends TracerInScala {
     }
 
 
-    Tree switchDefaultCase() {
-        return gen.Nil( cf.pos );
-    }
-
     public Tree code_body() {
 
-        Tree body = code_fail(); // never reached at runtime.
+        Tree body = code_error(); // never reached at runtime.
 
         // state [ nstates-1 ] is the dead state, so we skip it
 
@@ -191,7 +184,7 @@ public class LeftTracerInScala extends TracerInScala {
             Tree action = code_delta( i, (Label) label );
 
             if( action != null ) {
-                stateBody = gen.If( currentMatches((Label) label),// _cur_eq( _iter(), (Label) label ),
+                stateBody = gen.If( currentMatches((Label) label),
                                     action,
                                     stateBody);
             }
@@ -209,8 +202,8 @@ public class LeftTracerInScala extends TracerInScala {
         initializeSyms();
         //Tree tb = code_body();
         Tree tb = code_body_NEW();
-        theDefDef = gen.DefDef( this.funSym,
-                                tb );
+        Tree theDefDef = gen.DefDef( this.funSym,
+                                     tb );
 
         Vector v = new Vector();
 
@@ -248,10 +241,9 @@ public class LeftTracerInScala extends TracerInScala {
             v.add( bindVar( (Symbol) it.next()) );
         }
 
-        /* IF YOU NEED DEBUG OUTPUT AT RUNTIME
-           v.add( cf.debugPrintRuntime( "the trace is" ) );
-           v.add( cf.debugPrintRuntime( gen.Ident( pos, resultSym ) ) );
-           v.add( cf.debugPrintNewlineRuntime( "" ) );
+        /* DEBUG OUTPUT AT RUNTIME
+           v.add( gen.Console...( "the trace is" ) );
+           v.add( gen.Console...( gen.Ident( pos, resultSym ) ) );
         */
 
         Tree res[] = new Tree[ v.size() ];
@@ -301,7 +293,7 @@ public class LeftTracerInScala extends TracerInScala {
                             gen.mkBooleanLit( cf.pos, true )),
             cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
                             gen.mkBooleanLit( cf.pos, false)) },
-            false);
+                      false);
         Tree res = am.toTree();
         return res;
     }
