@@ -142,13 +142,16 @@ public class Interpreter {
     // Private Methods - Finding main method
 
     private Type getMainMethodType(boolean erased) {
+        scalac.Phase current = global.currentPhase; // !!!
+        if (!erased) global.currentPhase = global.getFirstPhase();
         Definitions definitions = global.definitions;
-        Type argument = definitions.arrayType(definitions.JAVA_STRING_TYPE);
+        Type argument = definitions.arrayType(definitions.JAVA_STRING_TYPE());
         Type result = definitions.UNIT_TYPE;
         if (erased) argument = argument.erasure();
         if (erased) result = result.fullErasure();
         Symbol formal = new TermSymbol(0, ARGS_N, null, Modifiers.PARAM);
         formal.setInfo(argument);
+        if (!erased) global.currentPhase = current;
         return Type.MethodType(new Symbol[] {formal}, result);
     }
 

@@ -164,7 +164,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    case MethodType(Symbol[] tparams, Type restp):
 		return Type.MethodType(tparams, Type.AnyType);
 	    default:
-		return defs.ANY_TYPE;
+		return defs.ANY_TYPE();
 	    }
 	}
 	private void abstractClassError(Symbol clazz, String msg) {
@@ -518,7 +518,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	    // { if (null == m$) m$ = new m$class; m$ }
 	    Symbol eqMethod = getUnaryMemberMethod(
-		sym.type(), Names.EQEQ, defs.ANY_TYPE);
+		sym.type(), Names.EQEQ, defs.ANY_TYPE());
 	    Tree body = gen.Block(new Tree[]{
 		gen.If(
 		    gen.Apply(
@@ -640,7 +640,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Symbol equalsSym = new TermSymbol(clazz.pos, Names.equals, clazz, OVERRIDE);
 	Symbol equalsParam =
 	    new TermSymbol(clazz.pos, Names.that, equalsSym, PARAM)
-	    .setInfo(defs.ANY_TYPE);
+	    .setInfo(defs.ANY_TYPE());
 	equalsSym.setInfo(
 	    Type.MethodType(new Symbol[]{equalsParam}, defs.BOOLEAN_TYPE));
 	clazz.info().members().enter(equalsSym);
@@ -651,7 +651,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    if (tparams.length != 0) {
 		Type[] targs = new Type[tparams.length];
 		for (int i = 0; i < targs.length; i++)
-		    targs[i] = defs.ANY_TYPE;
+		    targs[i] = defs.ANY_TYPE();
 		testtp = testtp.subst(tparams, targs);
 	    }
 	}

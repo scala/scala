@@ -191,7 +191,7 @@ public class AttributeParser implements ClassfileConstants {
                         Name.fromString(token).toTypeName(),
                         owner,
                         Modifiers.PARAM);
-                        s.setFirstInfo(parser.defs.ANY_TYPE);
+                        s.setFirstInfo(parser.make.anyType());
                         tvars.enter(s);
                 return s;
             } else
@@ -295,7 +295,7 @@ public class AttributeParser implements ClassfileConstants {
             nextToken();
             if (s != Symbol.NONE)
                 return s.type();
-            Symbol clazz = parser.defs.getClass(Name.fromString(name));
+            Type clazztype = parser.make.classType(Name.fromString(name)).unalias();
             if (token.equals("[")) {
                 Vector types = new Vector();
                 do {
@@ -306,9 +306,9 @@ public class AttributeParser implements ClassfileConstants {
                 nextToken();
                 Type[] args = new Type[types.size()];
                 types.toArray(args);
-                return Type.TypeRef(clazz.owner().thisType(), clazz, args).unalias();
+                return Type.appliedType(clazztype, args);
             } else {
-                return clazz.typeConstructor().unalias();
+                return clazztype;
             }
         }
 
@@ -330,7 +330,7 @@ public class AttributeParser implements ClassfileConstants {
                                         Name.fromString(token).toTypeName(),
                                         owner,
                                         Modifiers.PARAM);
-                                                s.setFirstInfo(parser.defs.ANY_TYPE);
+                                                s.setFirstInfo(parser.make.anyType());
                                         locals.enter(s);
                         nextToken();
                         if (token.equals("<")) {

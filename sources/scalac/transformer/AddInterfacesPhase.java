@@ -87,7 +87,7 @@ public class AddInterfacesPhase extends Phase {
                     && oldSym != definitions.ANY_CLASS
                     && oldSym != definitions.ANYREF_CLASS) {
                     newParents = new Type[oldParents.length];
-                    newParents[0] = definitions.ANYREF_TYPE;
+                    newParents[0] = definitions.ANYREF_TYPE();
                     for (int i = 1; i < oldParents.length; ++i)
                         newParents[i] = oldParents[i];
                 } else

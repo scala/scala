@@ -57,10 +57,8 @@ public class Definitions {
     /** the scala.Any class
      */
     public final Symbol ANY_CLASS;
-    public final Type   ANY_TYPE;
+    public final Type   ANY_TYPE() {return ANY_CLASS.type();}
 
-    /** some methods of the scala.Any class
-     */
     public final Symbol MATCH;
     public final Symbol IS;
     public final Symbol AS;
@@ -71,29 +69,47 @@ public class Definitions {
     public final Symbol TOSTRING;
     public final Symbol HASHCODE;
 
-    /** a method of class java.lang.Throwable
-     */
-    public final Symbol THROW;
-
     /** the scala.AnyVal class
      */
     public final Symbol ANYVAL_CLASS;
-    public final Type   ANYVAL_TYPE;
+    public final Type   ANYVAL_TYPE() {return ANYVAL_CLASS.type();}
 
     /** the scala.AnyRef class
      */
     public final Symbol ANYREF_CLASS;
-    public final Type   ANYREF_TYPE;
+    public final Type   ANYREF_TYPE() {return ANYREF_CLASS.type();}
+
+    /** the scala.AllRef class
+     */
+    public final Symbol ALLREF_CLASS;
+    public final Type   ALLREF_TYPE() {return ALLREF_CLASS.type();}
+
+    /** the scala.All class
+     */
+    public final Symbol ALL_CLASS;
+    public final Type   ALL_TYPE() {return ALL_CLASS.type();}
 
     /** the java.lang.Object class
      */
     public final Symbol JAVA_OBJECT_CLASS;
-    public final Type   JAVA_OBJECT_TYPE;
+    public final Type   JAVA_OBJECT_TYPE() {return JAVA_OBJECT_CLASS.type();}
+
+    /** the java.lang.String class
+     */
+    public final Symbol JAVA_STRING_CLASS;
+    public final Type   JAVA_STRING_TYPE() {return JAVA_STRING_CLASS.type();}
+
+    /** the java.lang.Throwable class
+     */
+    public final Symbol JAVA_THROWABLE_CLASS;
+    public final Type   JAVA_THROWABLE_TYPE() {return JAVA_THROWABLE_CLASS.type();}
+
+    public final Symbol THROW;
 
     /** the scala.Object class
      */
     public final Symbol OBJECT_CLASS;
-    public final Type   OBJECT_TYPE;
+    public final Type   OBJECT_TYPE() {return OBJECT_CLASS.type();}
 
     private Symbol OBJECT_TAG;
     public Symbol OBJECT_TAG() {
@@ -101,16 +117,6 @@ public class Definitions {
             OBJECT_TAG = loadTerm(OBJECT_CLASS, Names.tag);
         return OBJECT_TAG;
     }
-
-    /** the scala.All class
-     */
-    public final Symbol ALL_CLASS;
-    public final Type   ALL_TYPE;
-
-    /** the scala.AllRef class
-     */
-    public final Symbol ALLREF_CLASS;
-    public final Type   ALLREF_TYPE;
 
     /** the primitive types
      */
@@ -153,17 +159,10 @@ public class Definitions {
         return BOOLEAN_NOT;
     }
 
-    /** types from java.lang
-     */
-    public final Symbol JAVA_STRING_CLASS;
-    public final Type   JAVA_STRING_TYPE;
-    public final Symbol JAVA_THROWABLE_CLASS;
-    public final Type   JAVA_THROWABLE_TYPE;
-
-    /** types from scala
+    /** the scala.String class
      */
     public final Symbol STRING_CLASS;
-    public final Type   STRING_TYPE;
+    public final Type   STRING_TYPE() {return STRING_CLASS.type();}
 
     /** the scala.TupleX classes
      */
@@ -397,48 +396,13 @@ public class Definitions {
         ANY_CLASS = new ClassSymbol(
 	    Position.NOPOS, Names.Any.toTypeName(), SCALA_CLASS, Modifiers.JAVA);
         SCALA_CLASS.members().enter(ANY_CLASS);
-        ANY_TYPE = ANY_CLASS.typeConstructor();
         ANY_CLASS.setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), ANY_CLASS));
         ANY_CLASS.primaryConstructor().setInfo(
-	    Type.MethodType(Symbol.EMPTY_ARRAY, ANY_TYPE));
+	    Type.MethodType(Symbol.EMPTY_ARRAY, ANY_CLASS.typeConstructor()));
 
         // the java.lang.OBJECT class
         JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
-        JAVA_OBJECT_TYPE = JAVA_OBJECT_CLASS.typeConstructor();
-        JAVA_OBJECT_CLASS.setInfo(pparser.classCompletion);
-
-        // the scala.ANYREF class
-	ANYREF_CLASS = new AliasTypeSymbol(
-	    Position.NOPOS, Names.AnyRef.toTypeName(),
-	    SCALA_CLASS, Modifiers.JAVA)
-	    .setInfo(JAVA_OBJECT_TYPE);
-        SCALA_CLASS.members().enter(ANYREF_CLASS);
-	ANYREF_TYPE = JAVA_OBJECT_TYPE;
-	ANYREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ANYREF_TYPE));
-
-        // the scala.OBJECT class
-	OBJECT_CLASS = getClass(Names.scala_Object);
-        OBJECT_TYPE = OBJECT_CLASS.typeConstructor();
-
-        // the scala.ANYVAL class
-	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
-        ANYVAL_TYPE = ANYVAL_CLASS.typeConstructor();
-
-        // the scala.ALL class
-        ALL_CLASS = new ClassSymbol(
-	    Position.NOPOS, Names.All.toTypeName(), SCALA_CLASS, 0);
-        SCALA_CLASS.members().enter(ALL_CLASS);
-        ALL_TYPE = ALL_CLASS.typeConstructor();
-        ALL_CLASS.setInfo(Type.compoundType(new Type[]{ANY_TYPE}, new Scope(), ALL_CLASS));
-        ALL_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALL_TYPE));
-
-        // the scala.ALLREF class
-        ALLREF_CLASS = new ClassSymbol(
-	    Position.NOPOS, Names.AllRef.toTypeName(), SCALA_CLASS, 0);
-        SCALA_CLASS.members().enter(ALLREF_CLASS);
-        ALLREF_TYPE = ALLREF_CLASS.typeConstructor();
-        ALLREF_CLASS.setInfo(Type.compoundType(new Type[]{ANYREF_TYPE}, new Scope(), ALLREF_CLASS));
-        ALLREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALLREF_TYPE));
+        JAVA_OBJECT_CLASS.setInfo(pparser.classCompletion); // !!!
 
         // the primitive types
         DOUBLE_CLASS = getClass(Names.scala_Double);
@@ -460,26 +424,51 @@ public class Definitions {
         UNIT_CLASS = getClass(Names.scala_Unit);
         UNIT_TYPE = UNIT_CLASS.typeConstructor();
 
+        // the scala.ANYREF class
+	ANYREF_CLASS = new AliasTypeSymbol(
+	    Position.NOPOS, Names.AnyRef.toTypeName(),
+	    SCALA_CLASS, Modifiers.JAVA)
+	    .setInfo(JAVA_OBJECT_TYPE());
+        SCALA_CLASS.members().enter(ANYREF_CLASS);
+	ANYREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, JAVA_OBJECT_TYPE()));
+
+        // the scala.OBJECT class
+	OBJECT_CLASS = getClass(Names.scala_Object);
+
+        // the scala.ANYVAL class
+	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
+
+        // the scala.ALL class
+        ALL_CLASS = new ClassSymbol(
+	    Position.NOPOS, Names.All.toTypeName(), SCALA_CLASS, 0);
+        SCALA_CLASS.members().enter(ALL_CLASS);
+        ALL_CLASS.setInfo(Type.compoundType(new Type[]{ANY_TYPE()}, new Scope(), ALL_CLASS));
+        ALL_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALL_CLASS.typeConstructor()));
+
+        // the scala.ALLREF class
+        ALLREF_CLASS = new ClassSymbol(
+	    Position.NOPOS, Names.AllRef.toTypeName(), SCALA_CLASS, 0);
+        SCALA_CLASS.members().enter(ALLREF_CLASS);
+        ALLREF_CLASS.setInfo(Type.compoundType(new Type[]{ANYREF_TYPE()}, new Scope(), ALLREF_CLASS));
+        ALLREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ALLREF_CLASS.typeConstructor()));
+
         // the array class
         ARRAY_CLASS = getClass(Names.scala_Array);
 
         // add members to java.lang.Throwable
         JAVA_THROWABLE_CLASS = getClass(Names.java_lang_Throwable);
-        JAVA_THROWABLE_TYPE = JAVA_THROWABLE_CLASS.typeConstructor();
         THROW = new TermSymbol(
 	    Position.NOPOS, Names.throw_, JAVA_THROWABLE_CLASS, Modifiers.FINAL);
-        THROW.setInfo(Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE));
+        THROW.setInfo(Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
         JAVA_THROWABLE_CLASS.members().enter(THROW);
 
         // add the java.lang.String class to the scala package
         JAVA_STRING_CLASS = getClass(Names.java_lang_String);
-        JAVA_STRING_TYPE = JAVA_STRING_CLASS.typeConstructor();
         STRING_CLASS = new AliasTypeSymbol(
 	    Position.NOPOS, Names.String.toTypeName(), SCALA_CLASS, 0)
-	    .setInfo(JAVA_STRING_TYPE);
+	    .setInfo(JAVA_STRING_TYPE());
         SCALA_CLASS.members().enter(STRING_CLASS);
-	STRING_TYPE = STRING_CLASS.typeConstructor();
-	STRING_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE));
+	STRING_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_CLASS.typeConstructor()));
 
         for (int i = 1; i < TUPLE_count; i++) {
             TUPLE_CLASS[i] = getClass(Names.scala_Tuple(i));
@@ -510,15 +499,15 @@ public class Definitions {
 	    Position.NOPOS, Names.PLUS, JAVA_STRING_CLASS, Modifiers.FINAL);
         STRING_PLUS_ANY.setInfo(
 	    Type.MethodType(
-		new Symbol[]{newParameter(STRING_PLUS_ANY, ANY_TYPE)},
-		STRING_TYPE));
+		new Symbol[]{newParameter(STRING_PLUS_ANY, ANY_TYPE())},
+		STRING_TYPE()));
         JAVA_STRING_CLASS.members().enter(STRING_PLUS_ANY);
 
         // add members to class scala.Any
         MATCH = new TermSymbol(
 	    Position.NOPOS, Names.match, ANY_CLASS, Modifiers.FINAL);
-	Symbol matchTyParam1 = newTypeParameter(MATCH, ANY_TYPE);
-	Symbol matchTyParam2 = newTypeParameter(MATCH, ANY_TYPE);
+	Symbol matchTyParam1 = newTypeParameter(MATCH, ANY_TYPE());
+	Symbol matchTyParam2 = newTypeParameter(MATCH, ANY_TYPE());
         MATCH.setInfo(
 	    Type.PolyType(
 		new Symbol[]{matchTyParam1, matchTyParam2},
@@ -534,43 +523,43 @@ public class Definitions {
 
         AS = new TermSymbol(
 	    Position.NOPOS, Names.asInstanceOf, ANY_CLASS, Modifiers.FINAL);
-        Symbol tvar = newTypeParameter(AS, ANY_TYPE);
+        Symbol tvar = newTypeParameter(AS, ANY_TYPE());
         AS.setInfo(Type.PolyType(new Symbol[]{tvar}, tvar.type()));
         ANY_CLASS.members().enter(AS);
 
         IS = new TermSymbol(
 	    Position.NOPOS, Names.isInstanceOf, ANY_CLASS, Modifiers.FINAL);
-        IS.setInfo(Type.PolyType(new Symbol[]{newTypeParameter(IS, ANY_TYPE)},
+        IS.setInfo(Type.PolyType(new Symbol[]{newTypeParameter(IS, ANY_TYPE())},
 				 BOOLEAN_TYPE));
         ANY_CLASS.members().enter(IS);
 
         EQEQ = new TermSymbol(
 	    Position.NOPOS, Names.EQEQ, ANY_CLASS, Modifiers.FINAL);
-        EQEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQEQ, ANY_TYPE)},
+        EQEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQEQ, ANY_TYPE())},
 				     BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQEQ);
 
         BANGEQ = new TermSymbol(
 	    Position.NOPOS, Names.BANGEQ, ANY_CLASS, Modifiers.FINAL);
-        BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE)},
+        BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE())},
 				       BOOLEAN_TYPE));
         ANY_CLASS.members().enter(BANGEQ);
 
         EQUALS = new TermSymbol(
 	    Position.NOPOS, Names.equals, ANY_CLASS, 0);
-        EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, ANY_TYPE)},
+        EQUALS.setInfo(Type.MethodType(new Symbol[]{newParameter(EQUALS, ANY_TYPE())},
 				     BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQUALS);
 
 	EQ = new TermSymbol(
 	    Position.NOPOS, Names.eq, ANY_CLASS, 0);
-        EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, ANY_TYPE)},
+        EQ.setInfo(Type.MethodType(new Symbol[]{newParameter(EQ, ANY_TYPE())},
 				   BOOLEAN_TYPE));
         ANY_CLASS.members().enter(EQ);
 
         TOSTRING = new TermSymbol(
 	    Position.NOPOS, Names.toString, ANY_CLASS, 0);
-        TOSTRING.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE));
+        TOSTRING.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE()));
         ANY_CLASS.members().enter(TOSTRING);
 
         HASHCODE = new TermSymbol(
@@ -581,18 +570,18 @@ public class Definitions {
         // add a null value to the root scope
 	NULL = new TermSymbol(
 	    Position.NOPOS, Names.null_, ROOT_CLASS, 0);
-        NULL.setInfo(ALLREF_TYPE);
+        NULL.setInfo(ALLREF_TYPE());
         ROOT.members().enter(NULL);
 
         // add a null value to the root scope
 	ZERO = new TermSymbol(
 	    Position.NOPOS, Names.ZERO, ROOT_CLASS, 0);
-        ZERO.setInfo(ALL_TYPE);
+        ZERO.setInfo(ALL_TYPE());
         ROOT.members().enter(ZERO);
 
         PATTERN_WILDCARD = new TermSymbol(
             Position.NOPOS, Names.PATTERN_WILDCARD, Symbol.NONE, 0);
-        PATTERN_WILDCARD.setType(ALL_TYPE);
+        PATTERN_WILDCARD.setType(ALL_TYPE());
     }
 
     private Symbol newParameter(Symbol owner, Type tp) {
@@ -643,10 +632,6 @@ public class Definitions {
 
     public Type getType(Name fullname) {
 	return getClass(fullname).type();
-    }
-
-    public Type getJavaType(Name fullname) {
-	return getClass(fullname).typeConstructor();
     }
 
     private Symbol loadTerm(Symbol clasz, Name name) {

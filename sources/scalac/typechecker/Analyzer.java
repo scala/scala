@@ -601,7 +601,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	else if (value instanceof Long) return definitions.LONG_TYPE;
 	else if (value instanceof Float) return definitions.FLOAT_TYPE;
 	else if (value instanceof Double) return definitions.DOUBLE_TYPE;
-	else if (value instanceof String) return definitions.JAVA_STRING_TYPE;
+	else if (value instanceof String) return definitions.JAVA_STRING_TYPE();
 	else if (value instanceof Boolean) return definitions.BOOLEAN_TYPE;
 	else throw new ApplicationError();
     }
@@ -2084,7 +2084,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Throw(Tree expr):
 		Tree expr1 = transform(
-		    expr, EXPRmode, definitions.JAVA_THROWABLE_TYPE);
+		    expr, EXPRmode, definitions.JAVA_THROWABLE_TYPE());
 		return gen.Select(tree.pos, expr1, definitions.THROW);
 
 	    case Return(Tree expr):
@@ -2096,7 +2096,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Tree expr1 = transform(
 			    expr, EXPRmode, enclFun.type().resultType());
 			return copy.Return(tree, expr1)
-			    .setSymbol(enclFun).setType(definitions.ALL_TYPE);
+			    .setSymbol(enclFun).setType(definitions.ALL_TYPE());
 		    } else {
 			return error(tree.pos, "return outside method definition");
 		    }

@@ -287,6 +287,7 @@ public class Global {
         while (currentPhase.next != null && reporter.errors() == 0) {
             currentPhase = currentPhase.next;
             start();
+            // !!! new scalac.checkers.SymbolChecker(this).check();
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
             if (currentPhase.descriptor.hasPrintFlag()) {
@@ -436,7 +437,7 @@ public class Global {
                                 last,
                                 make.Literal(last.pos,
                                     show(last.type())).setType(
-                                        definitions.JAVA_STRING_TYPE)});
+                                        definitions.JAVA_STRING_TYPE())});
                 }
                 TreeList body = new TreeList();
                 for (int j = 0; j < impl.body.length; j++)
@@ -467,7 +468,7 @@ public class Global {
                         SHOW_DEFINITION()),
                     new Tree[] {
                         make.Literal(tree.pos, show(tree.symbol())).setType(
-                            definitions.JAVA_STRING_TYPE)}));
+                            definitions.JAVA_STRING_TYPE())}));
             return;
         case ValDef(_, _, _, _):
             if (!mustShow(tree.symbol())) return;
@@ -478,7 +479,7 @@ public class Global {
                         SHOW_VALUE_DEFINITION()),
                     new Tree[] {
                         make.Literal(tree.pos, show(tree.symbol())).setType(
-                            definitions.JAVA_STRING_TYPE),
+                            definitions.JAVA_STRING_TYPE()),
                         treeGen.Ident(tree.pos, tree.symbol())}));
             return;
         default:

@@ -62,7 +62,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             mkToType(definitions.DOUBLE_TYPE),
             mkToType(definitions.BOOLEAN_TYPE),
             mkToType(definitions.UNIT_TYPE),
-            mkToType(definitions.JAVA_STRING_TYPE),
+            mkToType(definitions.JAVA_STRING_TYPE()),
         };
     }
 
@@ -241,7 +241,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a default zero value according to given type. */
     public Tree mkDefaultValue(int pos, Type type) {
-	if (type.isSubType(definitions.ANYREF_TYPE)) return mkNullLit(pos);
+	if (type.isSubType(definitions.ANYREF_TYPE())) return mkNullLit(pos);
         switch (type.unbox()) {
         case UnboxedType(int tag): return mkDefaultValue(pos, tag);
         }
@@ -701,7 +701,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds a Return node of given method with given value. */
     public Return Return(int pos, Symbol method, Tree value) {
         Return tree = make.Return(pos, method, value);
-        tree.setType(definitions.ALL_TYPE);
+        tree.setType(definitions.ALL_TYPE());
         return tree;
     }
     public Return Return(Symbol method, Tree value) {
@@ -993,7 +993,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    argtypes[i] = params[i].type();
 	}
         Type[] parentTypes = {
-            definitions.OBJECT_TYPE,
+            definitions.OBJECT_TYPE(),
             definitions.functionType(argtypes, restype) };
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
@@ -1024,7 +1024,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
         Type[] parentTypes = {
-            definitions.OBJECT_TYPE,
+            definitions.OBJECT_TYPE(),
             definitions.partialFunctionType(pattype, restype)};
 	clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(

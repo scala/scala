@@ -12,6 +12,7 @@ import scalac.symtab.Type;
 import scalac.util.Name;
 
 public interface JavaTypeFactory {
+    Type anyType();
     Type byteType();
     Type shortType();
     Type charType();

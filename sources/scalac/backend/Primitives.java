@@ -267,7 +267,7 @@ public class Primitives {
         this.BOX_LARRAY = getBoxArray(boxes, definitions.LONG_TYPE);
         this.BOX_FARRAY = getBoxArray(boxes, definitions.FLOAT_TYPE);
         this.BOX_DARRAY = getBoxArray(boxes, definitions.DOUBLE_TYPE);
-        this.BOX_OARRAY = getBoxArray(boxes, definitions.JAVA_OBJECT_TYPE);
+        this.BOX_OARRAY = getBoxArray(boxes, definitions.JAVA_OBJECT_TYPE());
         this.AS_UVALUE = getUniqueTerm(definitions.UNIT_CLASS, AS_UVALUE_N);
         this.AS_ZVALUE = getUniqueTerm(definitions.BOOLEAN_CLASS, AS_ZVALUE_N);
         this.AS_BVALUE = getUniqueTerm(definitions.DOUBLE_CLASS, AS_BVALUE_N);
@@ -572,7 +572,7 @@ public class Primitives {
                     // !!! System.out.println("!!! Ignoring pico bridge method " + Debug.show(clasz) + "." + name);
                     break;
                 }
-                if (vparams[0].type().equals(definitions.JAVA_STRING_TYPE)) {
+                if (vparams[0].type().equals(definitions.JAVA_STRING_TYPE())) {
                     addPrimitive(alts[i], Primitive.CONCAT);
                     assert !concat;
                     concat = true;

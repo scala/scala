@@ -363,14 +363,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public Type loBound() {
 	switch (unalias()) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Type lb = Global.instance.definitions.ALL_TYPE;
+	    Type lb = Global.instance.definitions.ALL_TYPE();
 	    if (sym.kind == TYPE) {
 		lb = pre.memberLoBound(sym);
 	    }
 	    if (lb.symbol() == Global.instance.definitions.ALL_CLASS &&
 		this.symbol() != Global.instance.definitions.ALL_CLASS &&
-		this.isSubType(Global.instance.definitions.ANYREF_TYPE)) {
-		lb = Global.instance.definitions.ALLREF_TYPE;
+		this.isSubType(Global.instance.definitions.ANYREF_TYPE())) {
+		lb = Global.instance.definitions.ALLREF_TYPE();
 	    }
 	    return lb;
 	default:
@@ -618,7 +618,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     /** Is this type a reference to an object type?
-     *  todo: replace by this.isSubType(global.definitions.ANY_TYPE)?
+     *  todo: replace by this.isSubType(global.definitions.ANY_TYPE())?
      */
     public boolean isObjectType() {
 	switch (unalias()) {
@@ -1812,12 +1812,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    if (sym.kind == ALIAS && sym.typeParams().length == args.length)
 		return this.unalias().isSubType(that);
 	    else if (sym == Global.instance.definitions.ALL_CLASS)
-		return that.isSubType(Global.instance.definitions.ANY_TYPE);
+		return that.isSubType(Global.instance.definitions.ANY_TYPE());
 	    else if (sym == Global.instance.definitions.ALLREF_CLASS)
 		return
 		    that.symbol() == Global.instance.definitions.ANY_CLASS ||
 		    (that.symbol() != Global.instance.definitions.ALL_CLASS &&
-		     that.isSubType(Global.instance.definitions.ANYREF_TYPE));
+		     that.isSubType(Global.instance.definitions.ANYREF_TYPE()));
 	    break;
 
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -1835,7 +1835,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    break;
 
 	case UnboxedArrayType(_):
-            if (Global.instance.definitions.JAVA_OBJECT_TYPE.isSubType(that))
+            if (Global.instance.definitions.JAVA_OBJECT_TYPE().isSubType(that))
                 return true;
             // !!! we should probably also test for Clonable, Serializable, ...
 	}
@@ -2373,7 +2373,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public static Type lub(Type[] tps) {
 	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
 
-	if (tps.length == 0) return Global.instance.definitions.ALL_TYPE;
+	if (tps.length == 0) return Global.instance.definitions.ALL_TYPE();
 
 	//If all types are method types with same parameters,
 	//compute lub of their result types.
@@ -2538,7 +2538,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     public static Type glb(Type[] tps) {
-	if (tps.length == 0) return Global.instance.definitions.ANY_TYPE;
+	if (tps.length == 0) return Global.instance.definitions.ANY_TYPE();
 
 	// step one: eliminate redunandant types; return if one one is left
 	tps = elimRedundant(tps, false);
@@ -2560,7 +2560,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		break;
 	    case ThisType(_):
 	    case SingleType(_, _):
-		return Global.instance.definitions.ALL_TYPE;
+		return Global.instance.definitions.ALL_TYPE();
 	    }
 	}
 
@@ -2579,7 +2579,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		// by AllRef
 		glbType.members = Scope.EMPTY;
 		treftl = new Type.List(
-		    Global.instance.definitions.ALLREF_TYPE, treftl);
+		    Global.instance.definitions.ALLREF_TYPE(), treftl);
 	    }
 	}
 

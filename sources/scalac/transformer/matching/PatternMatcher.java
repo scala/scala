@@ -834,7 +834,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected boolean optimize(Type selType, PatternNode alternatives) {
-    	if (!optimize || !selType.isSubType(defs.OBJECT_TYPE))
+    	if (!optimize || !selType.isSubType(defs.OBJECT_TYPE()))
     		return false;
     	int cases = 0;
     	while (alternatives != null) {

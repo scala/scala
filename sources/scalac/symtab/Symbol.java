@@ -937,7 +937,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The low bound of this type variable
      */
     public Type loBound() {
-        return Global.instance.definitions.ALL_TYPE;
+        return Global.instance.definitions.ALL_TYPE();
     }
 
     /** Get this.type corresponding to this symbol
@@ -1654,7 +1654,7 @@ public class AbsTypeSymbol extends TypeSymbol {
 
     public Type loBound() {
         initialize();
-        return lobound == null ? Global.instance.definitions.ALL_TYPE : lobound;
+        return lobound == null ? Global.instance.definitions.ALL_TYPE() : lobound;
     }
 
     public Symbol setLoBound(Type lobound) {

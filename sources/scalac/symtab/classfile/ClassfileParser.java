@@ -46,7 +46,6 @@ public class ClassfileParser implements ClassfileConstants {
     protected Signatures sigs;
     protected ConstantPool pool;
     protected AttributeParser attrib;
-    protected Definitions defs;
 
 
     public ClassfileParser(Global global, AbstractFileReader in, Symbol c) {
@@ -54,11 +53,10 @@ public class ClassfileParser implements ClassfileConstants {
         this.in = in;
         this.c = c;
         this.ctype = c.typeConstructor();
-        this.make = new JavaTypeCreator(global);
+        this.make = new JavaTypeCreator(global.definitions);
         this.sigs = new Signatures(global, make);
         this.pool = new ConstantPool(in, sigs);
         this.attrib = new AttributeParser(in, pool, this);
-        this.defs = global.definitions;
     }
 
 
@@ -159,8 +157,8 @@ public class ClassfileParser implements ClassfileConstants {
      */
     protected Type readClassType(int i) {
         if (i == 0)
-            return defs.ANY_TYPE;
-        Type res = defs.getJavaType((Name)pool.readPool(i));
+            return make.anyType();
+        Type res = make.classType((Name)pool.readPool(i));
         if (res == Type.ErrorType)
             global.error("unknown class reference " + pool.readPool(i));
         return res;

@@ -9,7 +9,6 @@
 package scalac.symtab.classfile;
 
 import ch.epfl.lamp.util.Position;
-import scalac.Global;
 import scalac.util.*;
 import scalac.symtab.*;
 import Type.*;
@@ -17,54 +16,81 @@ import Type.*;
 
 public class JavaTypeCreator implements JavaTypeFactory {
 
-    protected Global global;
+    protected final Definitions definitions;
 
-    public JavaTypeCreator(Global global) {
-        this.global = global;
+    protected final Type ANY_TYPE;
+    protected final Type DOUBLE_TYPE;
+    protected final Type FLOAT_TYPE;
+    protected final Type LONG_TYPE;
+    protected final Type INT_TYPE;
+    protected final Type CHAR_TYPE;
+    protected final Type SHORT_TYPE;
+    protected final Type BYTE_TYPE;
+    protected final Type BOOLEAN_TYPE;
+    protected final Type UNIT_TYPE;
+    protected final Type JAVA_OBJECT_TYPE;
+
+    public JavaTypeCreator(Definitions definitions) {
+        this.definitions = definitions;
+        this.ANY_TYPE = definitions.ANY_CLASS.typeConstructor();
+        this.DOUBLE_TYPE = definitions.DOUBLE_CLASS.typeConstructor();
+        this.FLOAT_TYPE = definitions.FLOAT_CLASS.typeConstructor();
+        this.LONG_TYPE = definitions.LONG_CLASS.typeConstructor();
+        this.INT_TYPE = definitions.INT_CLASS.typeConstructor();
+        this.CHAR_TYPE = definitions.CHAR_CLASS.typeConstructor();
+        this.SHORT_TYPE = definitions.SHORT_CLASS.typeConstructor();
+        this.BYTE_TYPE = definitions.BYTE_CLASS.typeConstructor();
+        this.BOOLEAN_TYPE = definitions.BOOLEAN_CLASS.typeConstructor();
+        this.UNIT_TYPE = definitions.UNIT_CLASS.typeConstructor();
+        this.JAVA_OBJECT_TYPE =definitions.JAVA_OBJECT_CLASS.typeConstructor();
+    }
+
+    public Type anyType() {
+        return ANY_TYPE;
     }
 
     public Type byteType() {
-        return global.definitions.BYTE_TYPE;
+        return BYTE_TYPE;
     }
 
     public Type shortType() {
-        return global.definitions.SHORT_TYPE;
+        return SHORT_TYPE;
     }
 
     public Type charType() {
-        return global.definitions.CHAR_TYPE;
+        return CHAR_TYPE;
     }
 
     public Type intType() {
-        return global.definitions.INT_TYPE;
+        return INT_TYPE;
     }
 
     public Type longType() {
-        return global.definitions.LONG_TYPE;
+        return LONG_TYPE;
     }
 
     public Type floatType() {
-        return global.definitions.FLOAT_TYPE;
+        return FLOAT_TYPE;
     }
 
     public Type doubleType() {
-        return global.definitions.DOUBLE_TYPE;
+        return DOUBLE_TYPE;
     }
 
     public Type booleanType() {
-        return global.definitions.BOOLEAN_TYPE;
+        return BOOLEAN_TYPE;
     }
 
     public Type voidType() {
-        return global.definitions.UNIT_TYPE;
+        return UNIT_TYPE;
     }
 
     public Type classType(Name classname) {
-        return global.definitions.getJavaType(classname);
+        return definitions.getClass(classname).typeConstructor();
     }
 
     public Type arrayType(Type elemtpe) {
-        return global.definitions.arrayType(elemtpe);
+        return definitions.arrayType(elemtpe);
     }
 
     public Type methodType(Type[] argtpes, Type restpe, Type[] thrown) {
@@ -77,8 +103,8 @@ public class JavaTypeCreator implements JavaTypeFactory {
         return new MethodType(args, restpe);
     }
     private Type objToAny(Type tp) {
-	if (tp.isSameAs(global.definitions.JAVA_OBJECT_TYPE))
-	    return global.definitions.ANY_TYPE;
+	if (tp.isSameAs(JAVA_OBJECT_TYPE))
+	    return ANY_TYPE;
 	else
 	    return tp;
     }
