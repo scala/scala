@@ -685,6 +685,7 @@ class Scanner(_unit: Unit) extends TokenData {
   *   @todo: may XML contain SU, in CDATA sections ?
   */
   def xNext = {
+    lastpos = pos;
     nextch();
     ch match {
       case SU =>
@@ -816,7 +817,7 @@ class Scanner(_unit: Unit) extends TokenData {
     xToken('!');
     xToken('-');
     xToken('-');
-    xSkipToNext('-', false);
+    while ( ch != '-' ) { xNext; };
     xToken('-');
     xToken('-');
     xToken('>');
