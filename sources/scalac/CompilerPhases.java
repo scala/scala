@@ -11,11 +11,16 @@ package scalac;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * This class defines all compiler phases and maintains a list of
+ * active phases.
+ */
 public class CompilerPhases {
 
     //########################################################################
     // Public Fields
 
+    /** The compiler phases. */
     public final PhaseDescriptor INITIAL;
     public final PhaseDescriptor PARSER;
     public final PhaseDescriptor ANALYZER;
@@ -39,11 +44,13 @@ public class CompilerPhases {
     //########################################################################
     // Private Fields
 
+    /** The list containing the active phases */
     private final List phases;
 
     //########################################################################
     // Public Constructors
 
+    /** Initializes this instance. */
     public CompilerPhases() {
         this.phases = new ArrayList();
         PhaseDescriptor[] array = {
@@ -149,12 +156,14 @@ public class CompilerPhases {
     //########################################################################
     // Public Methods
 
+    /** Returns an array containing all active phases. */
     public PhaseDescriptor[] phases() {
         PhaseDescriptor[] array = new PhaseDescriptor[phases.size()];
         phases.toArray(array);
         return array;
     }
 
+    /** Freezes all active phases. */
     public void freeze() {
         PhaseDescriptor[] phases = phases();
         PhaseDescriptor.freeze(phases);
@@ -162,6 +171,21 @@ public class CompilerPhases {
             if (phases[i].hasSkipFlag()) remove(phases[i]);
     }
 
+    /** Activates phase "phase" by placing it before phase "where". */
+    public void insertBefore(PhaseDescriptor phase, PhaseDescriptor where) {
+        int index = phases.indexOf(where);
+        assert index >= 0 : "could not find phase " + where;
+        phases.add(index, phase);
+    }
+
+    /** Activates phase "phase" by placing it after phase "where". */
+    public void insertAfter(PhaseDescriptor phase, PhaseDescriptor where) {
+        int index = phases.indexOf(where);
+        assert index >= 0 : "could not find phase " + where;
+        phases.add(index + 1, phase);
+    }
+
+    /** Deactivates phase "phase". */
     public void remove(PhaseDescriptor phase) {
         phases.remove(phase);
     }
