@@ -223,6 +223,7 @@ public class Definitions {
     }
 
     public final Symbol JAVACLASSTYPE_CLASS;
+    public final Symbol JAVAREFARRAYTYPE_CLASS;
 
     public final Symbol SCALACLASSTYPE_CLASS;
     public final Type   SCALACLASSTYPE_TYPE() {
@@ -237,12 +238,6 @@ public class Definitions {
     }
 
     public final Symbol COMPOUNDTYPE_CLASS;
-    public final Symbol METHODTYPE_CLASS;
-
-    public final Symbol REFINEMENT_CLASS;
-    public final Type   REFINEMENT_TYPE() {
-        return REFINEMENT_CLASS.staticType();
-    }
 
     /** The scala.Predef module */
     public final Symbol PREDEF;
@@ -622,6 +617,41 @@ public class Definitions {
         return RTT_BOOLEAN;
     }
 
+    private Symbol RTT_UNIT;
+    public Symbol RTT_UNIT() {
+        if (RTT_UNIT == null)
+            RTT_UNIT = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Unit);
+        return RTT_UNIT;
+    }
+
+    private Symbol RTT_ANY;
+    public Symbol RTT_ANY() {
+        if (RTT_ANY == null)
+            RTT_ANY = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.Any);
+        return RTT_ANY;
+    }
+
+    private Symbol RTT_ANYVAL;
+    public Symbol RTT_ANYVAL() {
+        if (RTT_ANYVAL == null)
+            RTT_ANYVAL = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.AnyVal);
+        return RTT_ANYVAL;
+    }
+
+    private Symbol RTT_ALLREF;
+    public Symbol RTT_ALLREF() {
+        if (RTT_ALLREF == null)
+            RTT_ALLREF = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.AllRef);
+        return RTT_ALLREF;
+    }
+
+    private Symbol RTT_ALL;
+    public Symbol RTT_ALL() {
+        if (RTT_ALL == null)
+            RTT_ALL = loadTerm(TYPE_CLASS.linkedModule().moduleClass(), Names.All);
+        return RTT_ALL;
+    }
+
     private Symbol TYPECONSTRUCTOR_GETINSTANTIATION;
     public Symbol TYPECONSTRUCTOR_GETINSTANTIATION() {
         if (TYPECONSTRUCTOR_GETINSTANTIATION == null) {
@@ -637,6 +667,14 @@ public class Definitions {
             TYPECONSTRUCTOR_INSTANTIATE =
                 loadTerm(TYPECONSTRUCTOR_CLASS, Names.instantiate);
         return TYPECONSTRUCTOR_INSTANTIATE;
+    }
+
+    private Symbol SCALACLASSTYPE_SETPARENTS;
+    public Symbol SCALACLASSTYPE_SETPARENTS() {
+        if (SCALACLASSTYPE_SETPARENTS == null)
+            SCALACLASSTYPE_SETPARENTS =
+                loadTerm(SCALACLASSTYPE_CLASS, Names.setParents);
+        return SCALACLASSTYPE_SETPARENTS;
     }
 
     //########################################################################
@@ -724,12 +762,11 @@ public class Definitions {
 
         CLASSTYPE_CLASS = getJVMClass("scala.runtime.types.ClassType");
         JAVACLASSTYPE_CLASS = getJVMClass("scala.runtime.types.JavaClassType");
+        JAVAREFARRAYTYPE_CLASS = getJVMClass("scala.runtime.types.JavaRefArrayType");
         SCALACLASSTYPE_CLASS = getJVMClass("scala.runtime.types.ScalaClassType");
         SINGLETYPE_CLASS = getJVMClass("scala.runtime.types.SingleType");
         TYPECONSTRUCTOR_CLASS = getJVMClass("scala.runtime.types.TypeConstructor");
         COMPOUNDTYPE_CLASS = getJVMClass("scala.runtime.types.CompoundType");
-        METHODTYPE_CLASS = getJVMClass("scala.runtime.types.MethodType");
-        REFINEMENT_CLASS = getJVMClass("scala.runtime.types.Refinement");
 
         PREDEF = getModule("scala.Predef");
         CONSOLE = getModule("scala.Console");

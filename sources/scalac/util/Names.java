@@ -74,12 +74,16 @@ public class Names {
         return Name.fromString(TYPE_PREFIX + sym.name);
     }
 
-    public static Name INSTANTIATE(Symbol sym) {
-        return Name.fromString(INSTANTIATE_PREFIX + sym.name);
+    public static Name INSTANTIATE(Symbol sym, boolean isStatic) {
+        return Name.fromString(INSTANTIATE_PREFIX
+                               + sym.name
+                               + (isStatic ? "$" : ""));
     }
 
-    public static Name TYPECONSTRUCTOR(Symbol sym) {
-        return Name.fromString(TYPECONSTRUCTOR_PREFIX + sym.name);
+    public static Name TYPECONSTRUCTOR(Symbol sym, boolean isStatic) {
+        return Name.fromString(TYPECONSTRUCTOR_PREFIX
+                               + sym.name
+                               + (isStatic ? "$" : ""));
     }
 
     public static final Name ERROR = Name.fromString("<error>");
@@ -199,6 +203,7 @@ public class Names {
     public static final Name report = Name.fromString("report");
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
+    public static final Name setParents = Name.fromString("setParents");
     public static final Name synchronized_ = Name.fromString("synchronized");
     public static final Name tag = Name.fromString("$tag");
     public static final Name tail = Name.fromString("tail");
