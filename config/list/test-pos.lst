@@ -44,6 +44,7 @@ pos/bug76.scala
 pos/cls.scala
 pos/cls1.scala
 pos/clsrefine.scala
+pos/compile.scala
 pos/eta.scala
 pos/exceptions.scala
 pos/expressions-current.scala
