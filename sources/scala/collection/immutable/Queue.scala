@@ -131,8 +131,37 @@ class Queue[+A](in:List[A],out:List[A]) extends Seq[A] {
 
   /** Returns a string representation of this queue.
    */
-  override def toString() = (out:::(in.reverse)).toString();
+  override def toString() = (out:::(in.reverse)).mkString("Queue(", ",", ")");
 
+  /** Compares two queues for equality by comparing
+   *  each element in the queues.
+   */
+  override def equals(o :Any) = {
+      /* Make sure o is a Queue. */
+      if (o is Queue[Any]) {
+	  /* o is a queue so we cast it and store it in q. */
+	  val q:Queue[Any] = o as Queue[Any];
+	  /* A function that compares the element at
+	     position index in q with the element at
+	     the same position in this (queue).
+	     If they are equal the next element is
+	     compared.
+	  */
+	  def eqe(index: int):Boolean = {
+	      /* If all elements are compared
+		 the queues are equal. */
+	      index >= this.length ||
+	      /* Otherwise: compare the elements */
+	      (q.apply(index) == this.apply(index) &&
+	       /* if they are equal compare the rest. */
+	       eqe(index+1))
+	  }
+	  /* If the length of the ques are the same,
+	     compare each element, starting at index 0. */
+	  (q.length == this.length) && eqe(0);
+
+      } else false; /* o is not a queue: not equal to this. */
+  }
 }
 
 
