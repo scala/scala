@@ -187,14 +187,14 @@ abstract class FactoryAdapter
 
         captureText();
 
-        val attribMap = attribStack.top; attribStack.pop;
+        val attribMap = attribStack.pop;
 
         // reverse order to get it right
         var v:List[Node] = Nil;
-        var child:Node = hStack.top; hStack.pop;
+        var child:Node = hStack.pop;
         while( child != null ) {
             v = child::v;
-            child = hStack.top; hStack.pop;
+            child = hStack.pop;
         }
 
         // create element
@@ -202,7 +202,7 @@ abstract class FactoryAdapter
         hStack.push(rootElem);
 
         // set
-        curTag = tagStack.top; tagStack.pop;
+        curTag = tagStack.pop;
 
         if (curTag != null) // root level
             capture = nodeContainsText(curTag);

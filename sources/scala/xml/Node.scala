@@ -9,8 +9,6 @@
 
 package scala.xml ;
 
-import scala.collection.mutable.AppendBuffer ;
-
 /** Trait for representing XML using nodes of a labelled tree.
  *  This trait contains an implementation of a subset of XPath for navigation.
  */
