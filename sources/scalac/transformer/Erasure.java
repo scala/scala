@@ -496,6 +496,35 @@ public class Erasure extends GenTransformer implements Modifiers {
 	}
     }
 
+    /** Returns the boxed version of the given unboxed type. */
+    private Type boxUnboxedType(Type type) {
+	switch (type) {
+	case UnboxedType(TypeTags.UNIT):
+            return definitions.UNIT_CLASS.type();
+	case UnboxedType(TypeTags.BOOLEAN):
+            return definitions.BOOLEAN_CLASS.type();
+	case UnboxedType(TypeTags.BYTE):
+            return definitions.BYTE_CLASS.type();
+	case UnboxedType(TypeTags.SHORT):
+            return definitions.SHORT_CLASS.type();
+	case UnboxedType(TypeTags.CHAR):
+            return definitions.CHAR_CLASS.type();
+	case UnboxedType(TypeTags.INT):
+            return definitions.INT_CLASS.type();
+	case UnboxedType(TypeTags.LONG):
+            return definitions.LONG_CLASS.type();
+	case UnboxedType(TypeTags.FLOAT):
+            return definitions.FLOAT_CLASS.type();
+	case UnboxedType(TypeTags.DOUBLE):
+            return definitions.DOUBLE_CLASS.type();
+	case UnboxedArrayType(Type element):
+            return Type.appliedType(
+                definitions.ARRAY_CLASS.type(), new Type[] {element});
+	default:
+            throw Debug.abort("illegal case", type);
+	}
+    }
+
     /** Returns the element type of the given array type. */
     private Type getArrayElementType(Type type) {
         switch (type) {
