@@ -1302,14 +1302,22 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case UnboxedType(int tag1):
 	    switch (this) {
 	    case UnboxedType(int tag):
-		return tag <= tag1 && tag1 <= DOUBLE && tag1 != CHAR;
+		return tag == tag1 ||
+                    (tag < tag1 && tag1 <= DOUBLE && tag1 != CHAR);
+	    }
+	    break;
+
+	case UnboxedArrayType(UnboxedType(int tag1)):
+	    switch (this) {
+	    case UnboxedArrayType(UnboxedType(int tag)):
+		return tag1 == tag;
 	    }
 	    break;
 
 	case UnboxedArrayType(Type elemtp1):
 	    switch (this) {
 	    case UnboxedArrayType(Type elemtp):
-		return !(elemtp1 instanceof UnboxedType) && elemtp.isSubType(elemtp1);
+		return elemtp.isSubType(elemtp1);
 	    }
 	    break;
 
