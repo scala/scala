@@ -275,7 +275,7 @@ reserved keywords when used alone.")
   (scala-when-looking-at "\\s *[-+]\\s *")
   (scala-forward-ident)
   ;; bounds
-  (while (scala-when-looking-at "\\s *[<>]:\\s *")
+  (while (scala-when-looking-at "\\s *[<>][:%]\\s *")
     (scala-forward-type))
   t)
 
@@ -313,10 +313,22 @@ reserved keywords when used alone.")
   "Return the suggested indentation for the current line."
   (save-excursion
     (beginning-of-line)
-    (or (scala-indentation-from-following)
+    (or (and (scala-in-comment-p)
+             (not (= (char-after) ?\/))
+             (scala-comment-indentation))
+        (scala-indentation-from-following)
         (scala-indentation-from-preceding)
         (scala-indentation-from-block)
         0)))
+
+(defun scala-comment-indentation ()
+  ;; Return suggested indentation inside of a comment.
+  (forward-line -1)
+  (beginning-of-line)
+  (skip-syntax-forward " ")
+  (if (looking-at "/\\*")
+      (+ 1 (current-column))
+    (current-column)))
 
 (defun scala-block-indentation ()
   (let ((block-start-eol (scala-point-after (end-of-line)))
