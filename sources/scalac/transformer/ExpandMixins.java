@@ -39,7 +39,7 @@ public class ExpandMixins extends Transformer {
 
     protected final static int PRIVATE_FINAL = Modifiers.FINAL | Modifiers.PRIVATE;
 
-    protected final TreeCopier treeCopier;
+    protected final AttributedTreeCopier treeCopier;
     protected final Definitions defs;
 
     public ExpandMixins(Global global, ExpandMixinsPhase descr) {
@@ -53,7 +53,7 @@ public class ExpandMixins extends Transformer {
 
         freshNameCreator = global.freshNameCreator;
 
-        treeCopier = new TreeCopier(global, global.make) {
+        treeCopier = new AttributedTreeCopier(global, global.make) {
                 // Substitute symbols refering to this class only.
                 public boolean mustSubstituteSymbol(Tree tree) {
                     switch (tree) {
