@@ -27,7 +27,6 @@ PathClassLoader.java
 ScalaFunction.java
 ScalaObject.java
 ScalaTemplate.java
-SymbolWriter.java
 Template.java
 Variable.java
 
