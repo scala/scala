@@ -19,7 +19,8 @@ public interface EntryTags {
  *                  | 4 NONEsym len_Nat
  *                  | 5 TYPEsym len_Nat SymbolInfo lobound_Ref
  *                  | 6 ALIASsym len_Nat SymbolInfo constrsym_Ref
- *                  | 7 CLASSsym len_Nat SymbolInfo thistype_Ref constrsym_Ref
+ *                  | 7 CLASSsym len_Nat SymbolInfo [modulesym_Ref]
+ *                      thistype_Ref constrsym_Ref
  *                  | 8 VALsym len_Nat SymbolInfo [classsym_Ref]
  *                  | 9 EXTref len_Nat name_Ref [owner_Ref]
  *                  | 10 EXTMODCLASSref len_Nat name_Ref [owner_Ref]

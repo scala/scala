@@ -255,19 +255,18 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			break;
 
 		    case CLASSsym:
-			Symbol clr = ((flags & MODUL) == 0) ? classroot
-			    : moduleroot.moduleClass();
-			if (name == clr.name && owner == clr.owner()) {
-			    if (global.debug) global.log("overwriting " + clr);
-			    entries[n] = sym = clr;
+                        if ((flags & MODUL) != 0) {
+                            Symbol modulesym = readSymbolRef();
+                            entries[n] = sym = modulesym.moduleClass();
+                            sym.flags = flags;
+                        } else if (name == classroot.name && owner == classroot.owner()) {
+			    if (global.debug)
+                                global.log("overwriting " + classroot);
+			    entries[n] = sym = classroot;
 			    sym.flags = flags;
-			} else if ((flags & MODUL) == 0) {
+                        } else {
                             entries[n] = sym = owner.newClass(
                                 Position.NOPOS, flags, name);
-                        } else {
-                            entries[n] = sym = owner.newModule(
-                                Position.NOPOS, flags, name.toTermName())
-                                .moduleClass();
                         }
 			sym.setInfo(getType(inforef, sym));
 			sym.setTypeOfThis(readTypeRef(sym));
@@ -276,29 +275,30 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			break;
 
 		    case VALsym:
-                        Symbol tsym = bp < end ? readSymbolRef() : null;
 			if (name == moduleroot.name && owner == moduleroot.owner()) {
 			    if (global.debug)
 				global.log("overwriting " + moduleroot);
 			    entries[n] = sym = moduleroot;
                             sym.flags = flags;
-			} else if (tsym == null) {
-                            if (name == Names.CONSTRUCTOR) {
+                        } else if ((flags & MODUL) != 0) {
+                            entries[n] = sym = owner.newModule(
+                                Position.NOPOS, flags, name);
+                        } else if (name == Names.CONSTRUCTOR) {
+                            Symbol tsym = bp < end ? readSymbolRef() : null;
+                            if (tsym == null) {
                                 entries[n] = sym = owner.newConstructor(
                                     Position.NOPOS, flags);
                             } else {
-                                entries[n] = sym = owner.newTerm(
-                                    Position.NOPOS, flags, name);
+                                entries[n] = sym = tsym.allConstructors();
+                                sym.flags = flags;
                             }
                         } else {
-                            if (name == Names.CONSTRUCTOR) {
-                                entries[n] = sym = tsym.allConstructors();
-                            } else {
-                                assert (flags & MODUL) != 0: name;
-                                assert tsym.isModuleClass(): Debug.show(tsym);
-                                entries[n] = sym = tsym.module();
-                            }
-                            sym.flags = flags;
+                            entries[n] = sym = owner.newTerm(
+                                Position.NOPOS, flags, name);
+                        }
+                        if (sym.isModule()) {
+                            Symbol clasz = readSymbolRef();
+                            assert clasz == sym.moduleClass(): Debug.show(sym);
                         }
 			sym.setInfo(getType(inforef, sym));
 			break;

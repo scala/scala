@@ -80,7 +80,9 @@ class ScalaAttribute(in: ByteArrayReader) {
             case ALIAS_SYM =>
                 AliasSym(readSymInfo, in.nextNat)
             case CLASS_SYM =>
-                ClassSym(readSymInfo, in.nextNat, in.nextNat)
+              val info = readSymInfo;
+              if (Flags.is(info.flags, Flags.OBJECT)) in.nextNat;
+              ClassSym(info, in.nextNat, in.nextNat)
             case VAL_SYM =>
                 ValSym(readSymInfo, if (in.bp < end) in.nextNat else -1)
             case EXT_REF =>
