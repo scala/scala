@@ -273,15 +273,6 @@ public class ExpressionCompiler {
         // !!! return something ? raise exception ?
         if (!symbol.isValue()) return Code.Null;
 
-        // !!! we should remove this test and only test if is JAVA
-        if (symbol.isModule()) {
-            // !!! why don't we use type() ?
-            Symbol type = symbol.info().symbol(); // !!! simplify ?
-            switch (context.lookupTemplate(type)) {
-            case JavaClass(Class clasz): return Code.Literal(clasz);
-            }
-        }
-
         return Code.Load(object(target), context.lookupVariable(symbol));
     }
 

@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.HashMap;
 
+import scalac.symtab.Kinds;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
@@ -143,11 +144,27 @@ public class JavaMirror {
     }
 
     private Class getClass0(Symbol symbol) {
+        String name = getClassName(symbol, false);
         try {
-            return Class.forName(symbol.fullName().toString(), false, loader);
+            return Class.forName(name, false, loader);
         } catch (ClassNotFoundException exception) {
-            throw Debug.abort("no such class", symbol);
+            throw Debug.abort("no such class", Debug.show(symbol," - ",name));
         }
+    }
+
+    private String getClassName(Symbol symbol, boolean asPrefix) {
+        assert symbol.kind == Kinds.CLASS : Debug.show(symbol);
+        String name = getPrefix(symbol.owner()) + symbol.name;
+        if (!asPrefix && !symbol.isJava() && symbol.isModuleClass())
+            name = name + '$';
+        return name;
+    }
+
+    private String getPrefix(Symbol symbol) {
+        assert symbol.kind == Kinds.CLASS : Debug.show(symbol);
+        if (symbol.isRoot()) return "";
+        String prefix = getClassName(symbol, true);
+        return prefix + (symbol.isClass() ? '$' : '.');
     }
 
     //########################################################################
@@ -163,9 +180,19 @@ public class JavaMirror {
     }
 
     private Field getField0(Symbol symbol) {
-        Class owner = getClass(symbol.owner());
+        if (symbol.isModule()) {
+            assert !symbol.isJava() : Debug.show(symbol);
+            Class owner = getClass0(symbol.moduleClass());
+            return getField0(symbol, owner, "MODULE$");
+        } else {
+            Class owner = getClass(symbol.owner());
+            return getField0(symbol, owner, symbol.name.toString());
+        }
+    }
+
+    private Field getField0(Symbol symbol, Class owner, String name) {
         try {
-            return owner.getField(symbol.name.toString());
+            return owner.getField(name);
         } catch (NoSuchFieldException exception) {
             throw Debug.abort("no such field", symbol);
         }

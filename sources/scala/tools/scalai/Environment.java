@@ -98,7 +98,7 @@ public class Environment {
         assert symbol.isType() : Debug.show(symbol);
         Object value = templates.get(symbol);
         if (value != null) return (Template)value;
-        if (symbol.isJava()) {
+        if (symbol.isPreloaded()) {
             Template template = Template.JavaClass(mirror.getClass(symbol));
             return insertTemplate(symbol, template);
         } else {
@@ -110,7 +110,7 @@ public class Environment {
         assert symbol.isTerm() : Debug.show(symbol);
         Object value = functions.get(symbol);
         if (value != null) return (Function)value;
-        if (symbol.isJava()) {
+        if (symbol.isPreloaded()) {
             Function function = (symbol.name == Names.CONSTRUCTOR) ?
                 Function.JavaConstructor(mirror.getConstructor(symbol)) :
                 Function.JavaMethod(mirror.getMethod(symbol));
@@ -124,7 +124,12 @@ public class Environment {
         assert symbol.isTerm() : Debug.show(symbol);
         Object value = variables.get(symbol);
         if (value != null) return (Variable)value;
-        if (symbol.isJava()) {
+        if (symbol.isJava() && symbol.isModule()) {
+            // !!! This should never happen. This value will never be used.
+            Class clasz = mirror.getClass(symbol.moduleClass());
+            Variable variable = Variable.Global(clasz);
+            return insertVariable(symbol, variable);
+        } else if (symbol.isPreloaded()) {
             Variable variable = Variable.JavaField(mirror.getField(symbol));
             return insertVariable(symbol, variable);
         } else {
@@ -152,7 +157,7 @@ public class Environment {
     private void loadOwner(String what, Symbol symbol) {
         assert Debug.log("search ", what, ": ", symbol);
         assert symbol.owner().isType() : Debug.show(symbol);
-        assert!symbol.owner().isJava() : symbol;
+        assert!symbol.owner().isPreloaded() : Debug.show(symbol);
         loadTemplate(symbol.owner());
     }
 
@@ -193,7 +198,7 @@ public class Environment {
     private void loadMethodOverride(Type[] bases, Symbol symbol) {
         if (!symbol.isMethod()) return;
         Override override = Override.empty().insert(symbol);
-        if (symbol.isJava()) override.insert(mirror.getMethod(symbol));
+        if (symbol.isPreloaded()) override.insert(mirror.getMethod(symbol));
         for (int i = 0; i < bases.length; i++) {
             Symbol overridden = symbol.overriddenSymbol(bases[i]);
             if (overridden == Symbol.NONE) continue;
