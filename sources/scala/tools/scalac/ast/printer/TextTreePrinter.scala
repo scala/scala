@@ -855,35 +855,27 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
     print(tp.toString());
   }
 
-  /** Print attributed lower bound. */
-  def printALoBound(lobound: Type): Unit = {
-    if (lobound.symbol() != global.definitions.ALL_CLASS && !global.debug) {
+  /** Print attributed bound. */
+  def printABound(kind: Text, bound: Type, default: Symbol): Unit = {
+    if (bound.symbol() != default && !global.debug) {
       print(Space);
-      print(TXT_SUPERTYPE);
+      print(kind);
       print(Space);
-      printType(lobound);
+      printType(bound);
     }
   }
+
+  /** Print attributed lower bound. */
+  def printALoBound(lobound: Type): Unit =
+    printABound(TXT_SUPERTYPE, lobound, global.definitions.ALL_CLASS);
 
   /** Print attributed view bound. */
-  def printAVuBound(vubound: Type): Unit = {
-    if (vubound.symbol() != global.definitions.ANY_CLASS && !global.debug) {
-      print(Space);
-      print(TXT_VIEWBOUND);
-      print(Space);
-      printType(vubound);
-    }
-  }
+  def printAVuBound(vubound: Type): Unit =
+    printABound(TXT_VIEWBOUND, vubound, global.definitions.ANY_CLASS);
 
   /** Print attributed higher bound. */
-  def printAHiBound(hibound: Type): Unit = {
-    if (hibound.symbol() != global.definitions.ANY_CLASS && !global.debug) {
-      print(Space);
-      print(TXT_SUBTYPE);
-      print(Space);
-      printType(hibound);
-    }
-  }
+  def printAHiBound(hibound: Type): Unit =
+    printABound(TXT_SUBTYPE, hibound, global.definitions.ANY_CLASS);
 
   /** Print attributed bounds of symbol. */
   def printABoundsOf(symbol: Symbol): Unit = {
@@ -905,9 +897,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       else
         printAHiBound(hibound.getType());
     else if (!"scala.Any".equals(hibound.toString()) && !global.debug)
-      printOpt(
-	if ((mods & Modifiers.VIEWBOUND) != 0) TXT_VIEWBOUND else TXT_SUBTYPE,
-	hibound, true);
+      printOpt(if (isViewBounded) TXT_VIEWBOUND else TXT_SUBTYPE,hibound,true);
   }
 
   //##########################################################################
