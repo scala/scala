@@ -30,6 +30,7 @@ package scala.tools.scalac.typechecker {
 class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala.tools.scalac.typechecker.Infer, global: scalac_Global) {
 
   import Kinds._, Modifiers._;
+  import scalac.ast.TreeList;
 
   protected final val freshNameCreator = global.freshNameCreator;
 
@@ -85,14 +86,18 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
   */
   def FunType(tree: Tree): Tree = tree match {
     case Tree$FunType(argtpes, restpe) =>
+      mkFunType(tree.pos, argtpes, restpe)
+  }
+
+  def mkFunType(pos: int, argtpes: Array[Tree], restpe: Tree): Tree = {
       val types = new Array[Tree](argtpes.length + 1);
       System.arraycopy(argtpes, 0, types, 0, argtpes.length);
       types(argtpes.length) = restpe;
       make.AppliedType(
-	tree.pos,
+	pos,
 	make.Select(
-	  tree.pos,
-	  make.Ident(tree.pos, Names.scala),
+	  pos,
+	  make.Ident(pos, Names.scala),
 	  Name.fromString("Function" + argtpes.length).toTypeName()),
 	types);
   }
@@ -286,6 +291,50 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
     } else {
       stats;
     }
+  }
+
+  /** expands view-bounded class and method definitions
+  */
+  def Definition(tree: Tree) =
+    tree match {
+      case Tree$ClassDef(mods, name, tparams, vparams, tpe, templ) =>
+	make.ClassDef(tree.pos, mods, name, tparams,
+		      addViewParams(tparams, vparams), tpe, templ);
+      case Tree$DefDef(mods, name, tparams, vparams, tpe, rhs) =>
+	make.DefDef(tree.pos, mods, name, tparams,
+		    addViewParams(tparams, vparams), tpe, rhs)
+
+      case _ =>
+	tree
+    }
+
+  def addViewParams(tparams: Array[Tree$AbsTypeDef], vparams: Array[Array[Tree$ValDef]]): Array[Array[Tree$ValDef]] = {
+    var viewparams = new TreeList();
+    var i = 0;
+    while (i < tparams.length) {
+      tparams(i) match {
+	case Tree$AbsTypeDef(mods, tname, rhs, _) if (mods & VIEWBOUND) != 0 =>
+	  viewparams.append(
+	    make.ValDef(
+	      tparams(i).pos,
+	      PARAM | SYNTHETIC,
+	      Names.view,
+	      mkFunType(
+		tparams(i).pos,
+		NewArray.Tree(make.Ident(tparams(i).pos, tname)),
+		rhs.duplicate()),
+	      Tree.Empty));
+	case _ =>
+      }
+      i = i + 1
+    }
+    if (viewparams.length() > 0) {
+      val vparams1 = new Array[Array[Tree$ValDef]](vparams.length + 1);
+      vparams1(0) = new Array[Tree$ValDef](viewparams.length());
+      viewparams.copyTo(vparams1(0));
+      System.arraycopy(vparams, 0, vparams1, 1, vparams.length);
+      vparams1
+    } else vparams
   }
 
   /** expands pattern definitions

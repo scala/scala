@@ -2,8 +2,12 @@ package test;
 
 class A;
 
-class B {
+class B extends A {
   def foo: int = 1;
+}
+
+object B {
+  def view(x: B): B1 = null;
 }
 
 class B1 {
@@ -11,13 +15,12 @@ class B1 {
 }
 
 object C {
-  def view(x: B): B1 = null;
+  def view(x: A): B1 = null;
 }
 object Test {
   import C.view;
 
   val b: B = null;
 
-  System.out.println(C.view(b).bar);
   System.out.println(b.bar);
 }

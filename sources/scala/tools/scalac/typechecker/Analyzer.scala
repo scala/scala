@@ -48,7 +48,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   val definitions = global.definitions;
   val infer = new scala.tools.scalac.typechecker.Infer(this) {
-    override def getContextViewMeths = { context.viewMeths; }
+    override def getContext = context;
+    override def error(pos: int, msg: String) = Analyzer.this.error(pos, msg);
   }
   val desugarize = new DeSugarize(make, copy, gen, infer, global);
   val constfold = new ConstantFolder(global);
@@ -223,94 +224,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     error(pos, ex.msg);
   }
 
-// Name resolution -----------------------------------------------------------
-
   def decode(name: Name): String =
     if (name.isTypeName()) "type " + NameTransformer.decode(name);
     else "value " + NameTransformer.decode(name);
-
-  /** Check that `sym' is accessible as a member of tree `site' in current context.
-  */
-  def checkAccessible(pos: int, sym: Symbol, symtype: Type, site: Tree, sitetype: Type): Type = {
-    //System.out.println("check acc " + sym);//DEBUG
-    if ((sym.owner().flags & INCONSTRUCTOR) != 0 &&
-	!(sym.kind == TYPE && sym.isParameter()) &&
-	site.isInstanceOf[Tree$This]) {
-      error(pos, "" + sym + " cannot be accessed from constructor");
-      Type.ErrorType;
-    } else {
-      symtype match {
-	case Type$OverloadedType(alts, alttypes) =>
-	  var nacc: int = 0;
-	  var i = 0; while (i < alts.length) {
-	    if (isAccessible(alts(i), site, sitetype))
-	      nacc = nacc + 1;
-	    i = i + 1
-	  }
-	  if (nacc == 0) {
-	    error(pos, "" + sym + " cannot be accessed in " + sitetype.widen());
-	    Type.ErrorType
-	  } else {
-	    val alts1: Array[Symbol] = new Array[Symbol](nacc);
-	    val alttypes1: Array[Type] = new Array[Type](nacc);
-	    nacc = 0;
-	    var i = 0; while (i < alts.length) {
-	      if (isAccessible(alts(i), site, sitetype)) {
-		alts1(nacc) = alts(i);
-		alttypes1(nacc) = alttypes(i);
-		nacc = nacc + 1;
-	      }
-	      i = i + 1
-	    }
-	    new Type$OverloadedType(alts1, alttypes1)
-	  }
-	case _ =>
-	  if (isAccessible(sym, site, sitetype)) {
-	    symtype
-	  } else {
-	    error(pos, "" + sym + " cannot be accessed in " + sitetype.widen());
-	    Type.ErrorType
-	  }
-      }
-    }
-  }
-
-  /** Is `sym' accessible as a member of tree `site' in current context?
-  */
-  private def isAccessible(sym: Symbol, site: Tree, sitetype: Type): boolean = {
-
-    /** Are we inside definition of `owner'?
-    */
-    def accessWithin(owner: Symbol): boolean = {
-      var c: Context = context;
-      while (c != Context.NONE && c.owner != owner) {
-	c = c.outer.enclClass;
-      }
-      c != Context.NONE;
-    }
-
-    /** Is `clazz' a subclass of an enclosing class?
-    */
-    def isSubClassOfEnclosing(clazz: Symbol): boolean = {
-      var c: Context = context;
-      while (c != Context.NONE && !clazz.isSubClass(c.owner)) {
-	c = c.outer.enclClass;
-      }
-      c != Context.NONE;
-    }
-
-    (sym.flags & (PRIVATE | PROTECTED)) == 0
-    ||
-    {val owner = if (sym.isConstructor()) sym.constructorClass()
-		  else sym.owner();
-     accessWithin(owner)
-     ||
-     ((sym.flags & PRIVATE) == 0) &&
-     (site.isInstanceOf[Tree$Super] ||
-      (sitetype.symbol().isSubClass(owner) &&
-       isSubClassOfEnclosing(sitetype.symbol())))
-    }
-  }
 
 // Checking methods ----------------------------------------------------------
 
@@ -634,32 +550,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 // Views -----------------------------------------------------------------------
 
-  private def applyView(v: View, tree: Tree): Tree = {
-    val viewFn = {
-      val qual1 = v.qual.duplicate();
-      qual1.pos = tree.pos;
-      val viewType = checkAccessible(
-	tree.pos, v.sym, v.symtype, qual1, qual1.getType());
-      make.Select(tree.pos, qual1, v.sym.name)
-	.setSymbol(v.sym).setType(viewType)
-    }
-    gen.Apply(viewFn, NewArray.Tree(tree.setType(tree.getType().singleDeref())))
-  }
-
-  def addView(tparam: Symbol): unit = {
-    if (tparam.info().symbol() != definitions.ANY_CLASS) {
-      val viewSym =
-	context.owner.newTerm(tparam.pos, SYNTHETIC | PARAM, Names.view);
-      val viewParam =
-	viewSym.newTerm(tparam.pos, SYNTHETIC | PARAM, desugarize.getvar());
-      viewParam.setInfo(tparam.getType());
-      viewSym.setInfo(
-	new Type$MethodType(NewArray.Symbol(viewParam), tparam.info()));
-      global.viewOfTypeParam.put(tparam, viewSym);
-      context.scope.enterOrOverload(viewSym);
-      System.out.println("view: " + viewSym + ":" + viewSym.getType());//debug
-    }
-  }
+  private def applyView(v: View, tree: Tree, mode: int, pt: Type): Tree =
+    transform(
+      make.Apply(tree.pos, infer.viewExpr(tree.pos, v), NewArray.Tree(tree)),
+      mode, pt);
 
 // Contexts -------------------------------------------------------------------
 
@@ -1027,6 +921,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   */
   def enterSyms(stats: Array[Tree]): unit = {
     var i = 0; while (i < stats.length) {
+      stats(i) = desugarize.Definition(stats(i));
       enterSym(stats(i));
       i = i + 1
     }
@@ -1065,7 +960,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       //necessary since tsyms might have been unpickled
       tparams(i).setSymbol(tsyms(i));
       context.scope.enter(tsyms(i));
-      //addView(tsyms(i));
       i = i + 1
     }
   }
@@ -1126,7 +1020,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  if (vparamSyms.length == 0)
 	    vparamSyms = NewArray.SymbolArray{Symbol.EMPTY_ARRAY};
 	  if ((mods & CASE) != 0 && vparams.length > 0)
-	    templ.body = desugarize.addCaseElements(templ.body, vparams(0));
+	    templ.body = desugarize.addCaseElements(
+	      templ.body, vparams(vparams.length - 1));
 
 	  val constrtype: Type = makeMethodType(
 	    tparamSyms,
@@ -1502,7 +1397,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  // insert apply method
 	  val applyMeth: Symbol = tree.getType().lookup(Names.apply);
 	  if (applyMeth != Symbol.NONE) {
-	    val applyType: Type = checkAccessible(
+	    val applyType: Type = infer.checkAccessible(
 	      tree.pos, applyMeth, tree.getType().memberType(applyMeth),
 	      tree, tree.getType());
 	    val tree1 = make.Select(tree.pos, tree, Names.apply)
@@ -1554,12 +1449,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (pt.symbol() == definitions.UNIT_CLASS) {
 	  return gen.mkUnitBlock(tree);
 	} else if (infer.isCompatible(tree.getType(), pt)) {
-	  val v = infer.bestView(tree.getType(), pt);
-	  if (v != null) return adapt(applyView(v, tree), mode, pt);
+	  val v = infer.bestView(tree.getType(), pt, Names.EMPTY);
+	  if (v != null) return applyView(v, tree, mode, pt);
 	  // todo: remove
  	  val coerceMeth: Symbol = tree.getType().lookup(Names.coerce);
  	  if (coerceMeth != Symbol.NONE) {
- 	    val coerceType = checkAccessible(
+ 	    val coerceType = infer.checkAccessible(
  	      tree.pos, coerceMeth, tree.getType().memberType(coerceMeth),
  	      tree, tree.getType());
  	    val tree1 = make.Select(tree.pos, tree, Names.coerce)
@@ -1672,9 +1567,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       (if (sym.isType()) sym.typeConstructor() else sym.getType())
       .asSeenFrom(pre, sym.owner());
     if (qual != Tree.Empty)
-      symtype = checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
+      symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
     else if (sym.owner().isPackageClass())
-      symtype = checkAccessible(tree.pos, sym, symtype, qual, sym.owner().getType());
+      symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, sym.owner().getType());
     if (symtype == Type.NoType)
       return error(tree.pos, "not found: " + decode(name));
     //System.out.println(name + ":" + symtype);//DEBUG
@@ -1696,9 +1591,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     var sym: Symbol = qual.getType().lookup(name);
     if (sym.kind == NONE) {
       if (name != Names.view) {
-	val v = infer.bestView(qual.getType(), name);
+	val v = infer.bestView(qual.getType(), Type.AnyType, name);
 	if (v != null) {
-	  qual = applyView(v, qual);
+	  qual = applyView(
+	    v, qual.setType(qual.getType().singleDeref()), EXPRmode, Type.AnyType);
 	  sym = qual.getType().lookup(name);
 	  assert(sym.kind != NONE);
 	} else {
@@ -1718,7 +1614,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     if (symtype == Type.NoType)
       return error(tree.pos, "not found: " + decode(name));
     else
-      symtype = checkAccessible(tree.pos, sym, symtype, qual, qualtype);
+      symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, qualtype);
     //System.out.println(sym.name + ":" + symtype);//DEBUG
     if (uninst.length != 0) {
       symtype match {
@@ -2140,7 +2036,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  checkNoEscapeParams(vparams1);
 	  val tpe1: Tree = transform(tpe, TYPEmode);
 	  if ((sym.flags & CASE) != 0 && vparams.length > 0 && templ.getType() == null)
-	    templ.body = desugarize.addCaseElements(templ.body, vparams(0));
+	    templ.body = desugarize.addCaseElements(
+	      templ.body, vparams(vparams.length - 1));
 
 	  val templ1: Tree$Template = transformTemplate(templ, sym);
 	  checkNoEscape(tree.pos, sym.info());
@@ -2614,11 +2511,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    if (enclClassOrConstructorContext == Context.NONE) {
 		      fn1 match {
 			case Tree$Select(fn1qual, _) =>
-			  fn1.setType(checkAccessible(
+			  fn1.setType(infer.checkAccessible(
 			    fn1.pos, constr, fn1.getType(), fn1qual, fn1qual.getType()));
 			case _ =>
 			  if (constr.owner().isPackageClass())
-			    fn1.setType(checkAccessible(
+			    fn1.setType(infer.checkAccessible(
 			      fn1.pos, constr, fn1.getType(), Tree.Empty, constr.owner().getType()));
 		      }
 		    } else {
@@ -2626,14 +2523,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		      if (cowner.isConstructor())
 			// we are in a superclass constructor call
 			fn1.setType(
-			  checkAccessible(
+			  infer.checkAccessible(
 			    fn1.pos, constr, fn1.getType(),
 			    make.Super(tree.pos,
 				       Names.EMPTY.toTypeName(),
 				       Names.EMPTY.toTypeName()),
 			    cowner.constructorClass().typeConstructor()));
 		      else
-			fn1.setType(checkAccessible(
+			fn1.setType(infer.checkAccessible(
 			  fn1.pos, constr, fn1.getType(),
 			  enclClassOrConstructorContext.tree,
 			  cowner.typeConstructor()));
