@@ -25,6 +25,7 @@ import java.util.Vector;
 
 
 /** A tree traverser for handling fresh variables
+ * todo: access method instead of
  * @author  Burak Emir
  * @version 1.0
  */
@@ -36,7 +37,7 @@ class FreshVariableTraverser extends VariableTraverser {
 
     /**
      */
-    public HashMap helpMap;
+    private HashMap helpMap;
 
     /**
      * @param pos
@@ -53,6 +54,10 @@ class FreshVariableTraverser extends VariableTraverser {
         helpMap = new HashMap();
     }
 
+    public HashMap getHelpMap() {
+	return helpMap;
+    }
+
     /**
      * @param sym
      */
@@ -65,6 +70,12 @@ class FreshVariableTraverser extends VariableTraverser {
         helpVar.setType(sym.type());
 
         helpMap.put(sym, helpVar);
+    }
+
+    public static HashMap getVars( Tree t, Symbol owner, FreshNameCreator fresh ) {
+	FreshVariableTraverser fvt = new FreshVariableTraverser( t.pos, owner, fresh );
+	fvt.traverse( t );
+	return fvt.helpMap;
     }
 
 }

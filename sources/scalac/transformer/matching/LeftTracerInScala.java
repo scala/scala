@@ -332,14 +332,10 @@ public class LeftTracerInScala extends Autom2Scala {
                   }
             }
 
-            FreshVariableTraverser fv = new FreshVariableTraverser(pos,
-                                                                   owner,
-                                                                   cf.fresh);
-            fv.traverse( pat );
-            HashMap helpMap = fv.helpMap;
+            HashMap helpMap = FreshVariableTraverser.getVars( pat, owner, cf.fresh );
             //System.out.println("varMap: "+helpMap );
 
-            m.varMap = fv.helpMap;
+            m.varMap = helpMap;
 
             //replaceVars( pat );
 
@@ -347,7 +343,7 @@ public class LeftTracerInScala extends Autom2Scala {
                   (CaseDef) cf.make.CaseDef( pat.pos,
                                              pat,
                                              Tree.Empty,
-                                             handleBody( fv.helpMap )),
+                                             handleBody( helpMap )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
                                                    cf.make.Ident(pat.pos, Names.WILDCARD)
                                                    //.setSymbol( Symbol.NONE ) FIXED
