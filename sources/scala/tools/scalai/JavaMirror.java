@@ -137,7 +137,7 @@ public class JavaMirror {
         Object value = classes.get(symbol);
         if (value != null) return (Class)value;
         Class mirror = getClass0(symbol);
-        assert Debug.log("java mirror", Debug.show(symbol) + " -> " + mirror);
+        assert Debug.log("java mirror: ", symbol, " -> ", mirror);
         classes.put(symbol, mirror);
         return mirror;
     }
@@ -157,7 +157,7 @@ public class JavaMirror {
         Object value = fields.get(symbol);
         if (value != null) return (Field)value;
         Field mirror = getField0(symbol);
-        assert Debug.log("java mirror", Debug.show(symbol) + " -> " + mirror);
+        assert Debug.log("java mirror: ", symbol, " -> ", mirror);
         fields.put(symbol, mirror);
         return mirror;
     }
@@ -178,7 +178,7 @@ public class JavaMirror {
         Object value = methods.get(symbol);
         if (value != null) return (Method)value;
         Method mirror = getMethod0(symbol);
-        assert Debug.log("java mirror", Debug.show(symbol) + " -> " + mirror);
+        assert Debug.log("java mirror: ", symbol, " -> ", mirror);
         methods.put(symbol, mirror);
         return mirror;
     }
@@ -200,7 +200,7 @@ public class JavaMirror {
         Object value = constructors.get(symbol);
         if (value != null) return (Constructor)value;
         Constructor mirror = getConstructor0(symbol);
-        assert Debug.log("java mirror", Debug.show(symbol) + " -> " + mirror);
+        assert Debug.log("java mirror: ", symbol, " -> ", mirror);
         constructors.put(symbol, mirror);
         return mirror;
     }

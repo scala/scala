@@ -45,14 +45,14 @@ public class ExpressionContext {
 
     public Function insertLabel(Symbol symbol) {
         Function function = Function.Label(symbol);
-        assert Debug.log("insert label   ", Debug.show(symbol));
+        assert Debug.log("insert label   : ", symbol);
         assert !functions.containsKey(symbol) : Debug.show(symbol);
         functions.put(symbol, function);
         return function;
     }
 
     public Variable insertVariable(Symbol symbol, Variable variable) {
-        assert Debug.log("insert variable", Debug.show(symbol));
+        assert Debug.log("insert variable: ", symbol);
         assert !variables.containsKey(symbol) : Debug.show(symbol);
         variables.put(symbol, variable);
         return variable;

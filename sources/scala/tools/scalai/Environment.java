@@ -51,7 +51,7 @@ public class Environment {
 
     public ClassDef insertClassDef(Symbol symbol, ClassDef classdef) {
         assert symbol.isType() : Debug.show(symbol);
-        assert Debug.log("insert classdef", symbol);
+        assert Debug.log("insert classdef: ", symbol);
         Object value = classdefs.put(symbol, classdef);
         assert value == null : Debug.show(symbol);
         assert !templates.containsKey(symbol) : Debug.show(symbol);
@@ -60,7 +60,7 @@ public class Environment {
 
     private Template insertTemplate(Symbol symbol, Template template) {
         assert symbol.isType() : Debug.show(symbol);
-        assert Debug.log("insert template", symbol);
+        assert Debug.log("insert template: ", symbol);
         Object value = templates.put(symbol, template);
         assert !classdefs.containsKey(symbol) : Debug.show(symbol);
         assert value == null : Debug.show(symbol);
@@ -69,7 +69,7 @@ public class Environment {
 
     public Function insertFunction(Symbol symbol, Function function) {
         assert symbol.isTerm() : Debug.show(symbol);
-        assert Debug.log("insert function", symbol);
+        assert Debug.log("insert function: ", symbol);
         Object value = functions.put(symbol, function);
         assert value == null : Debug.show(symbol);
         return function;
@@ -77,7 +77,7 @@ public class Environment {
 
     public Variable insertVariable(Symbol symbol, Variable variable) {
         assert symbol.isTerm() : Debug.show(symbol);
-        assert Debug.log("insert variable", symbol);
+        assert Debug.log("insert variable: ", symbol);
         Object value = variables.put(symbol, variable);
         assert value == null : Debug.show(symbol);
         return variable;
@@ -85,7 +85,7 @@ public class Environment {
 
     public Override insertOverride(Symbol symbol, Override override) {
         assert symbol.isTerm() : Debug.show(symbol);
-        assert Debug.log("insert override", symbol);
+        assert Debug.log("insert override: ", symbol);
         Object value = overrides.put(symbol, override);
         assert value == null : Debug.show(symbol);
         return override;
@@ -150,7 +150,7 @@ public class Environment {
     }
 
     private void loadOwner(String what, Symbol symbol) {
-        assert Debug.log("search " + what, symbol);
+        assert Debug.log("search ", what, ": ", symbol);
         assert symbol.owner().isType() : Debug.show(symbol);
         assert!symbol.owner().isJava() : Debug.show(symbol);
         loadTemplate(symbol.owner());
@@ -176,7 +176,7 @@ public class Environment {
     // Private Methods - override loading
 
     private Override loadOwnerOverridesThenGet(Symbol symbol) {
-        assert Debug.log("search override", symbol);
+        assert Debug.log("search override: ", symbol);
         assert symbol.owner().isType() : Debug.show(symbol);
         loadTemplateOverrides(symbol.owner());
         Object value = overrides.get(symbol);
@@ -197,6 +197,7 @@ public class Environment {
         for (int i = 0; i < bases.length; i++) {
             Symbol overridden = symbol.overriddenSymbol(bases[i]);
             if (overridden == Symbol.NONE) continue;
+            assert Debug.log("update override: ", overridden, " -> ", symbol);
             override.insert(lookupOverride(overridden));
         }
         insertOverride(symbol, override);

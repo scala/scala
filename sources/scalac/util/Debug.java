@@ -72,12 +72,26 @@ public abstract class Debug {
     //########################################################################
     // Debug interface - log
 
-    public static boolean log(String message) {
-        return Global.instance.log(message);
+    public static boolean log(Object a) {
+        return log(new Object[] {a});
     }
 
-    public static boolean log(String message, Object object) {
-        return log(message + ": " + show(object));
+    public static boolean log(Object a, Object b) {
+        return log(new Object[] {a, b});
+    }
+
+    public static boolean log(Object a, Object b, Object c) {
+        return log(new Object[] {a, b, c});
+    }
+
+    public static boolean log(Object a, Object b, Object c, Object d) {
+        return log(new Object[] {a, b, c, d});
+    }
+
+    public static boolean log(Object[] args) {
+        StringBuffer buffer = new StringBuffer();
+        for (int i = 0; i < args.length; i++) append(buffer, args[i]);
+        return Global.instance.log(buffer.toString());
     }
 
     //########################################################################
