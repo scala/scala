@@ -10,6 +10,7 @@ package scala.tools.scaladoc;
 
 import java.io.Writer;
 import java.io.BufferedWriter;
+import java.io.StringWriter;
 import java.io.Reader;
 import java.io.InputStreamReader;
 import java.io.File;
@@ -561,7 +562,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return Location.getURI(sym).toString(); }
 
-        public void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             String title = Location.getName(sym);
             createPrinters(writer, Location.getURI(sym), title, SELF_FRAME);
             page.printHeader(ATTRS_META, getGenerator());
@@ -1072,7 +1073,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return FRAME_PAGE; }
 
-        public void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             createPrinters(writer, Location.makeURI(FRAME_PAGE), windowtitle, "");
             page.printHeader(ATTRS_META, getGenerator());
 
@@ -1136,7 +1137,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return name; }
 
-        public void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             String rsrcName = "resources/" + name;
             Reader reader = new InputStreamReader(HTMLGenerator.class.getResourceAsStream(rsrcName));
             if (reader == null)
@@ -1244,7 +1245,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return PACKAGE_INDEX_PAGE; }
 
-        public void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             createPrinters(writer, Location.makeURI(PACKAGE_INDEX_PAGE), "List of packages", CLASSES_FRAME);
             page.printHeader(ATTRS_META, getGenerator());
             page.printOpenBody();
@@ -1280,7 +1281,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return packageSummaryPage(sym); }
 
-        public void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             createPrinters(writer, Location.makeURI(packageSummaryPage(sym)), Location.getName(sym), ROOT_FRAME);
             page.printHeader(ATTRS_META, getGenerator());
             page.printOpenBody();
@@ -1324,7 +1325,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return INDEX_PAGE; }
 
-        public  void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             String title = "Scala Library Index";
             createPrinters(writer, Location.makeURI(INDEX_PAGE), title, SELF_FRAME);
             page.printHeader(ATTRS_META, getGenerator());
@@ -1384,7 +1385,7 @@ public abstract class HTMLGenerator {
 
         public String name() { return HELP_PAGE; }
 
-        public void writeOn(Writer writer) {
+        protected void computeIn(Writer writer) {
             String title = "API Help";
             createPrinters(writer, Location.makeURI(HELP_PAGE), title, ROOT_PAGE);
             page.printHeader(ATTRS_META, getGenerator());
@@ -2110,9 +2111,25 @@ public class SearchResult {
  */
 public abstract class Promise {
 
+    protected StringWriter cache = null;
+
     /** Name of the web page. */
     public abstract String name();
 
+    /**
+     * Print the web page on the given writer. Do not forget to close
+     * the writer afterwards. Cache the result for further reuse.
+     */
+    public void writeOn(Writer writer) {
+        if (cache == null) {
+            cache = new StringWriter();
+            computeIn(cache);
+        }
+        try {
+            writer.write(cache.toString());
+        } catch(IOException e) { e.printStackTrace(); }
+    }
+
     /** Print the web page on the given writer. */
-    public abstract void writeOn(Writer writer);
+    protected abstract void computeIn(Writer writer);
 }
