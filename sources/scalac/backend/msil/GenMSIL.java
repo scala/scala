@@ -21,7 +21,6 @@ import scalac.ast.Tree;
 import scalac.ast.TreeList;
 import scalac.atree.AConstant;
 import Tree.*;
-import scalac.symtab.AttrInfo;
 import scalac.symtab.Symbol;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Modifiers;
