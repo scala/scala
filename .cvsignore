@@ -3,6 +3,7 @@
 .latest-*
 Makefile.private
 bootstrap
+boottest
 classes
 distribs
 lib
