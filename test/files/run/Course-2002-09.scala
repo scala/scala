@@ -35,8 +35,8 @@ class Adder(a1: Quantity,a2: Quantity,sum: Quantity) extends Constraint {
 class Multiplier(m1: Quantity, m2: Quantity, prod: Quantity)
                 extends Constraint {
   def newValue = Triple(m1.getValue, m2.getValue, prod.getValue) match {
-    case Triple(Some( 0), _       , _      ) => prod.setValue(0, this);
-    case Triple(_       , Some( 0), _      ) => prod.setValue(0, this);
+    case Triple(Some(0d), _       , _      ) => prod.setValue(0, this);
+    case Triple(_       , Some(0d), _      ) => prod.setValue(0, this);
     case Triple(Some(x1), Some(x2), _      ) => prod.setValue(x1 * x2, this)
     case Triple(Some(x1), _       , Some(r)) => m2.setValue(r / x1, this)
     case Triple(_,        Some(x2), Some(r)) => m1.setValue(r / x2, this)

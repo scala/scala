@@ -206,9 +206,9 @@ object M9 {
   def inc(x: Int) = x + 1;
 
   def sum(f: Int => Double) =
-    accumulate((x: Double, y: Double) => x + y, 0, f, inc);
+    accumulate((x: Double, y: Double) => x + y, 0d, f, inc);
   def product(f: Int => Double) =
-    accumulate((x: Double, y: Double) => x * y, 1, f, inc);
+    accumulate((x: Double, y: Double) => x * y, 1d, f, inc);
 
   def sumInts = sum(x => x);
   def sumCubes = sum(x => x * x * x);

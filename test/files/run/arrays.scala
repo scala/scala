@@ -78,9 +78,9 @@ object arrays {
     check("sarray(0)", sarray(0), 0);
     check("carray(0)", carray(0), 0);
     check("iarray(0)", iarray(0), 0);
-    check("larray(0)", larray(0), 0);
-    check("farray(0)", farray(0), 0);
-    check("darray(0)", darray(0), 0);
+    check("larray(0)", larray(0), 0l);
+    check("farray(0)", farray(0), 0f);
+    check("darray(0)", darray(0), 0d);
     check("rarray(0)", rarray(0), null);
     System.out.println();
 
@@ -89,9 +89,9 @@ object arrays {
     check("sarray(1)", sarray(1), 0);
     check("carray(1)", carray(1), 0);
     check("iarray(1)", iarray(1), 0);
-    check("larray(1)", larray(1), 0);
-    check("farray(1)", farray(1), 0);
-    check("darray(1)", darray(1), 0);
+    check("larray(1)", larray(1), 0l);
+    check("farray(1)", farray(1), 0f);
+    check("darray(1)", darray(1), 0d);
     check("rarray(1)", rarray(1), null);
     System.out.println();
 
@@ -120,9 +120,9 @@ object arrays {
     check("sarray(0)", sarray(0), 2);
     check("carray(0)", carray(0),'3');
     check("iarray(0)", iarray(0), 4);
-    check("larray(0)", larray(0), 5);
-    check("farray(0)", farray(0), 6);
-    check("darray(0)", darray(0), 7);
+    check("larray(0)", larray(0), 5l);
+    check("farray(0)", farray(0), 6f);
+    check("darray(0)", darray(0), 7d);
     check("rarray(0)", rarray(0),"8");
     System.out.println();
 
@@ -131,9 +131,9 @@ object arrays {
     check("sarray(1)", sarray(1), 3);
     check("carray(1)", carray(1),'4');
     check("iarray(1)", iarray(1), 5);
-    check("larray(1)", larray(1), 6);
-    check("farray(1)", farray(1), 7);
-    check("darray(1)", darray(1), 8);
+    check("larray(1)", larray(1), 6l);
+    check("farray(1)", farray(1), 7f);
+    check("darray(1)", darray(1), 8d);
     check("rarray(1)", rarray(1),"9");
     System.out.println();
 
