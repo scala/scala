@@ -121,6 +121,10 @@ test_interpretation() {
     $SURUS $TEST_FLAGS $FLAGS "$source" -- Test;
 }
 
+test_shell() {
+    cat "$source" | $SURUS -interactive -nologo $TEST_FLAGS $FLAGS;
+}
+
 test_compilation() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     classpath="$SCALA:$output";
@@ -294,10 +298,12 @@ test_all() {
     printf_outline "scala runtime   : "; echo "$SCALA";
     echo "";
 
-    test_one "Testing interpreter" \
-        test_interpretation "int" $FILES_RUN $FILES_INT;
     test_one "Testing jvm backend" \
         test_compilation "jvm" $FILES_RUN $FILES_JVM;
+    test_one "Testing interpreter" \
+        test_interpretation "int" $FILES_RUN $FILES_INT;
+    test_one "Testing interpreter shell" \
+        test_shell "shl" $FILES_SHL;
     test_one "Testing dtd2scala tool" \
         test_xml "xml" $FILES_XML;
     test_one "Testing compiler (on files whose compilation should succeed)" \
@@ -320,8 +326,9 @@ print_help() {
     echo "";
     echo "--auto          use filenames to select the test to run";
     echo "--run           next files test the interpreter and all backends";
-    echo "--int           next files test the interpreter";
     echo "--jvm           next files test the jvm backend";
+    echo "--int           next files test the interpreter";
+    echo "--shl           next files test the interpreter shell";
     echo "--xml           next files test the dtd2scala tool";
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
@@ -422,8 +429,9 @@ add_file() {
     case "$TEST_TYPE" in
         auto ) ;;
         run  ) FILES_RUN="$FILES_RUN $1"; return;;
-        int  ) FILES_INT="$FILES_INT $1"; return;;
         jvm  ) FILES_JVM="$FILES_JVM $1"; return;;
+        int  ) FILES_INT="$FILES_INT $1"; return;;
+        shl  ) FILES_SHL="$FILES_SHL $1"; return;;
         xml  ) FILES_XML="$FILES_XML $1"; return;;
         pos  ) FILES_POS="$FILES_POS $1"; return;;
         neg  ) FILES_NEG="$FILES_NEG $1"; return;;
@@ -431,9 +439,14 @@ add_file() {
         *    ) abort "unknown test type \`$TEST_TYPE'";;
     esac;
     case "$1" in
-        run | */run | */run/* | run/* ) FILES_RUN="$FILES_RUN $1";;
-        pos | */pos | */pos/* | pos/* ) FILES_POS="$FILES_POS $1";;
-        neg | */neg | */neg/* | neg/* ) FILES_NEG="$FILES_NEG $1";;
+        run  | */run  | */run/*  | run/*  ) FILES_RUN="$FILES_RUN $1";;
+        jvm  | */jvm  | */jvm/*  | jvm/*  ) FILES_JVM="$FILES_JVM $1";;
+        int  | */int  | */int/*  | int/*  ) FILES_INT="$FILES_INT $1";;
+        shl  | */shl  | */shl/*  | shl/*  ) FILES_SHL="$FILES_SHL $1";;
+        xml  | */xml  | */xml/*  | xml/*  ) FILES_XML="$FILES_XML $1";;
+        pos  | */pos  | */pos/*  | pos/*  ) FILES_POS="$FILES_POS $1";;
+        neg  | */neg  | */neg/*  | neg/*  ) FILES_NEG="$FILES_NEG $1";;
+        msil | */msil | */msil/* | msil/* ) FILES_MSIL="$FILES_MSIL $1";;
         * ) abort "don't known what to do with \`$1'";;
     esac;
 }
@@ -453,8 +466,9 @@ main() {
     TEST_ALL="true";
     TEST_TYPE="auto";
     FILES_RUN="";
-    FILES_INT="";
     FILES_JVM="";
+    FILES_INT="";
+    FILES_SHL="";
     FILES_XML="";
     FILES_POS="";
     FILES_NEG="";
@@ -473,8 +487,10 @@ main() {
         case "$1" in
             --auto       ) TEST_TYPE="auto"; shift 1;;
             --run        ) TEST_TYPE="run"; shift 1;;
-            --int        ) TEST_TYPE="int"; shift 1;;
+            --shl        ) TEST_TYPE="shl"; shift 1;;
             --jvm        ) TEST_TYPE="jvm"; shift 1;;
+            --int        ) TEST_TYPE="int"; shift 1;;
+            --shl        ) TEST_TYPE="shl"; shift 1;;
             --xml        ) TEST_TYPE="xml"; shift 1;;
             --pos        ) TEST_TYPE="pos"; shift 1;;
             --neg        ) TEST_TYPE="neg"; shift 1;;
@@ -528,10 +544,13 @@ main() {
                    run ) FILES_RUN="$FILES_RUN $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
+            auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
+        esac;
+        case "$TEST_TYPE" in
             auto | int ) FILES_INT="$FILES_INT $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-            auto | jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
+            auto | shl ) FILES_SHL="$FILES_SHL $SRCDIR/shl";;
         esac;
         case "$TEST_TYPE" in
             auto | xml ) FILES_XML="$FILES_XML $SRCDIR/xml";;
