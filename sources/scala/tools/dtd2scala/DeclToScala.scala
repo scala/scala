@@ -54,6 +54,7 @@ class DeclToScala(fOut:PrintWriter,
                 lookup -= "elementName";
                 lookup -= "elementContainsText";
               }
+              /*
               case "attributeAssign" => {
                 for( val aDecl <- curAttribs.keys.elements ) {
                   lookup += "attributeName" -> aDecl;
@@ -61,6 +62,7 @@ class DeclToScala(fOut:PrintWriter,
                 }
                 lookup -= "attributeName";
               }
+              */
               case "attributeBinding" => {
                 for( val aDecl <- curAttribs.keys.elements ) {
                   lookup += "attributeName" -> aDecl;
