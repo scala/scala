@@ -14,33 +14,33 @@ package scala;
 class HashMap[A, B] extends MutableMap[A, B] with HashTable[A] {
 
     def get(key: A) = findEntry(key) match {
-		case None => None
-		case Some(e) => Some(e.value);
+        case None => None
+        case Some(e) => Some(e.value);
     }
 
     def update(key: A, value: B) = findEntry(key) match {
- 		case None => addEntry(new Entry(key, value));
-		case Some(e) => e.value = value;
+        case None => addEntry(new Entry(key, value));
+        case Some(e) => e.value = value;
     }
 
     def remove(key: A) = {
-    	val old = apply(key);
-    	removeEntry(key);
-    	old;
+        val old = apply(key);
+        removeEntry(key);
+        old;
     }
 
-  	def iterator = new Iterator[Pair[A, B]] {
-  		val iter = entries;
-  		def hasNext = iter.hasNext;
-    	def next = iter.next.toPair;
-  	}
+    def elements = new Iterator[Pair[A, B]] {
+        val iter = entries;
+        def hasNext = iter.hasNext;
+        def next = iter.next.toPair;
+    }
 
     protected class Entry(k: A, v: B) {
-    	def key = k;
-    	var value = v;
-    	def toPair = Pair(k, value);
-    	override def toString() = k.toString() + " -> " + value;
+        def key = k;
+        var value = v;
+        def toPair = Pair(k, value);
+        override def toString() = k.toString() + " -> " + value;
     }
 
- 	protected def entryKey(e: Entry) = e.key;
+    protected def entryKey(e: Entry) = e.key;
 }

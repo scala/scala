@@ -15,71 +15,71 @@ trait Map[A, +B] with Function1[A, B]
                  with PartialFunction[A, B]
                  with Iterable[Pair[A, B]] {
 
-	def size: Int;
+    def size: Int;
 
     def isEmpty: Boolean = (size == 0);
 
     def apply(key: A): B = get(key) match {
-    	case None => null
-    	case Some(value) => value
+        case None => null
+        case Some(value) => value
     }
 
-	def get(key: A): Option[B];
+    def get(key: A): Option[B];
 
-	def remove(key: A): B;
+    def remove(key: A): B;
 
-	def contains(key: A): Boolean = get(key) match {
-		case None => false
-		case Some(_) => true
-	}
+    def contains(key: A): Boolean = get(key) match {
+        case None => false
+        case Some(_) => true
+    }
 
-	def isDefinedAt(key: A) = contains(key);
+    def isDefinedAt(key: A) = contains(key);
 
-	def clear: Unit;
+    def clear: Unit;
 
-	def keys: Iterator[A] = new Iterator[A] {
-		val iter = iterator;
-  		def hasNext = iter.hasNext;
-    	def next = iter.next._1;
-	}
+    def keys: Iterator[A] = new Iterator[A] {
+        val iter = elements;
+        def hasNext = iter.hasNext;
+        def next = iter.next._1;
+    }
 
-	def values: Iterator[B] = new Iterator[B] {
-		val iter = iterator;
-  		def hasNext = iter.hasNext;
-    	def next = iter.next._2;
-	}
+    def values: Iterator[B] = new Iterator[B] {
+        val iter = elements;
+        def hasNext = iter.hasNext;
+        def next = iter.next._2;
+    }
 
-	def foreach(f: (A, B) => Unit) = {
-		val iter = iterator;
-		while (iter.hasNext) {
-			val Pair(key, value) = iter.next;
-			f(key, value);
-		}
-	}
+    def foreach(f: (A, B) => Unit) = {
+        val iter = elements;
+        while (iter.hasNext) {
+            val Pair(key, value) = iter.next;
+            f(key, value);
+        }
+    }
 
-	def filter(p: (A, B) => Boolean): Unit = toList foreach {
-		case Pair(key, value) => if (p(key, value)) { val old = remove(key); }
-	}
+    def filter(p: (A, B) => Boolean): Unit = toList foreach {
+        case Pair(key, value) => if (p(key, value)) { val old = remove(key); }
+    }
 
-	def toList: List[Pair[A, B]] = {
-		var res: List[Pair[A, B]] = Nil;
-		val iter = iterator;
-		while (iter.hasNext) {
-			res = iter.next :: res;
-		}
-		res;
-	}
+    def toList: List[Pair[A, B]] = {
+        var res: List[Pair[A, B]] = Nil;
+        val iter = elements;
+        while (iter.hasNext) {
+            res = iter.next :: res;
+        }
+        res;
+    }
 
-	override def toString() =
-  		if (size == 0)
-  			"{}"
-  		else
-  			"{" + {
-				val iter = iterator;
-				var res = iter.next.toString();
-				while (iter.hasNext) {
-					res = res + ", " + iter.next;
-				}
-				res;
-  			} + "}";
+    override def toString() =
+        if (size == 0)
+            "{}"
+        else
+            "{" + {
+                val iter = elements;
+                var res = iter.next.toString();
+                while (iter.hasNext) {
+                    res = res + ", " + iter.next;
+                }
+                res;
+            } + "}";
 }

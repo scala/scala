@@ -13,21 +13,21 @@ package scala;
  */
 class HashSet[A] extends Set[A] with HashTable[A] {
 
-	def contains(elem: A): Boolean = findEntry(elem) match {
-		case None => false
-		case Some(_) => true
-	}
+    def contains(elem: A): Boolean = findEntry(elem) match {
+        case None => false
+        case Some(_) => true
+    }
 
-	def add(elem: A): Unit = findEntry(elem) match {
-		case None => addEntry(elem);
-		case Some(_) =>
-	}
+    def add(elem: A): Unit = findEntry(elem) match {
+        case None => addEntry(elem);
+        case Some(_) =>
+    }
 
-	def remove(elem: A): Unit = removeEntry(elem);
+    def remove(elem: A): Unit = removeEntry(elem);
 
-  	def iterator = entries;
+    def elements = entries;
 
-	protected type Entry = A;
+    protected type Entry = A;
 
-	protected def entryKey(e: Entry) = e;
+    protected def entryKey(e: Entry) = e;
 }

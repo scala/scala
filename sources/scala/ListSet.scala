@@ -24,7 +24,7 @@ class ListSet[A] extends Set[A] {
 
 	def clear: Unit = { elems = Nil; }
 
-	def iterator: Iterator[A] = elems.iterator;
+	def elements: Iterator[A] = elems.elements;
 
 	override def toList: List[A] = elems;
 }

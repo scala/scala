@@ -1,12 +1,18 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
 package scala;
 
-trait Seq[+a] with Function1[Int, a] with Iterable[a] {
-  def length: Int;
-  def elements: Iterator[a];
-  def iterator: Iterator[a] = elements;
-  def apply(index: Int): a;
+trait Seq[+A] with Function1[Int, A] with Iterable[A] {
+    def length: Int;
 
-  /** @deprecated
-   */
-  def at(index: Int): a;
+    /** @deprecated
+     */
+    def at(index: Int): A;
 }

@@ -10,5 +10,5 @@
 package scala;
 
 trait Iterable[+A] {
-	def iterator: Iterator[A];
+	def elements: Iterator[A];
 }
