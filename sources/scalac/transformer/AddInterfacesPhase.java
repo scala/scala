@@ -32,13 +32,8 @@ public class AddInterfacesPhase extends Phase {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-        if (sym.isConstructor()) {
-            Symbol clazz = sym.constructorClass();
-            if (!(clazz.isClass() && needInterface(clazz))) return tp;
-            // The symbol is a constructor of a class which needs
-            // an interface. All its value arguments have to be
-            // removed.
-            return removeValueParams(tp);
+        if (sym.isConstructor() || sym.owner().isConstructor()) {
+            return tp;
         } else if (sym.isClass() && !sym.isJava()) {
             Definitions definitions = global.definitions;
             if (sym == definitions.ANY_CLASS) return tp;
@@ -182,10 +177,7 @@ public class AddInterfacesPhase extends Phase {
      * given symbol.
      */
     protected Symbol getClassSymbol(Symbol ifaceSym) {
-        if (ifaceSym.isPrimaryConstructor())
-            return getClassSymbol(ifaceSym.constructorClass())
-                .primaryConstructor();
-
+        assert ifaceSym.isClass(): Debug.show(ifaceSym);
         if (!needInterface(ifaceSym))
             return ifaceSym;
 
@@ -195,15 +187,6 @@ public class AddInterfacesPhase extends Phase {
             classSym.name = className(ifaceSym.name);
             ifaceSym.flags &= ~Modifiers.FINAL;
             classSym.flags &= ~Modifiers.INTERFACE;
-
-            // Remove non-primary constructors from interface
-            if (ifaceSym.allConstructors().isOverloaded()) {
-                Symbol primary = ifaceSym.primaryConstructor();
-                Symbol[] altsyms = { primary };
-                Type[] alttypes = { primary.nextType() };
-                Type allType = Type.OverloadedType(altsyms, alttypes);
-                ifaceSym.allConstructors().updateInfo(allType);
-            }
 
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);
@@ -215,19 +198,9 @@ public class AddInterfacesPhase extends Phase {
             SymbolSubstTypeMap classSubst = newClassSubst(classSym);
             Map classMemberMap = newClassMemberMap(classSym);
 
-            Symbol[] allClassConstrs=
-                classSym.allConstructors().alternativeSymbols();
-            Symbol[] allIFaceConstrs=
-                ifaceSym.allConstructors().alternativeSymbols();
-            for (int i = 0; i < allClassConstrs.length; ++i) {
-                Symbol iConstr = allIFaceConstrs[i];
-                Symbol cConstr = allClassConstrs[i];
-                classSubst.insertSymbol(iConstr.typeParams(),
-                                        cConstr.typeParams());
-                classSubst.insertSymbol(iConstr.valueParams(),
-                                        cConstr.valueParams());
-                classMemberMap.put(iConstr, cConstr);
-            }
+            Symbol[] ifaceTParams = ifaceSym.typeParams();
+            Symbol[] classTParams = classSym.typeParams();
+            classSubst.insertSymbol(ifaceTParams, classTParams);
 
             // Clone all members, entering them in the class scope.
             Scope classMembers = new Scope();
@@ -237,8 +210,7 @@ public class AddInterfacesPhase extends Phase {
                 Symbol ifaceMemberSym = ifaceMembersIt.next();
 
                 if (ifaceMemberSym.isType()
-                    || ifaceMemberSym.isDeferred()
-                    || ifaceMemberSym.isPrimaryConstructor())
+                    || ifaceMemberSym.isDeferred())
                     continue;
 
                 Symbol classMemberSym;
@@ -272,8 +244,6 @@ public class AddInterfacesPhase extends Phase {
 
                 classMemberMap.put(ifaceMemberSym, classMemberSym);
                 classMembers.enterOrOverload(classMemberSym);
-                if (classMemberSym.isClass())
-                    classMembers.enterOrOverload(classMemberSym.primaryConstructor());
             }
 
             // Give correct type to the class symbol by using class
