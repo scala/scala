@@ -103,7 +103,7 @@ public class Primitive {
 
     // RunTime operations
     public case BOX             { tag = 52; } // RunTime.box(x)
-    public case UNBOX           { tag = 53; } // RunTime.unbox(x)
+    public case UNBOX           { tag = 53; } // RunTime.<X>_unbox(x)
     public case NEW_ZARRAY      { tag = 54; } // RunTime.zarray(x)
     public case NEW_BARRAY      { tag = 55; } // RunTime.barray(x)
     public case NEW_SARRAY      { tag = 56; } // RunTime.sarray(x)

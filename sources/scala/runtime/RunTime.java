@@ -181,54 +181,54 @@ public abstract class RunTime {
     //########################################################################
     // Public Functions - Unboxing primitives
 
-    public static void    unbox(Unit    x) {        x.asUnit   (); }
-    public static boolean unbox(Boolean x) { return x.asBoolean(); }
-    public static byte    unbox(Byte    x) { return x.asByte   (); }
-    public static short   unbox(Short   x) { return x.asShort  (); }
-    public static char    unbox(Char    x) { return x.asChar   (); }
-    public static int     unbox(Int     x) { return x.asInt    (); }
-    public static long    unbox(Long    x) { return x.asLong   (); }
-    public static float   unbox(Float   x) { return x.asFloat  (); }
-    public static double  unbox(Double  x) { return x.asDouble (); }
+    public static void      unbox_uvalue(Unit    x) {        x.asUnit   (); }
+    public static boolean   unbox_zvalue(Boolean x) { return x.asBoolean(); }
+    public static byte      unbox_bvalue(Byte    x) { return x.asByte   (); }
+    public static short     unbox_svalue(Short   x) { return x.asShort  (); }
+    public static char      unbox_cvalue(Char    x) { return x.asChar   (); }
+    public static int       unbox_ivalue(Int     x) { return x.asInt    (); }
+    public static long      unbox_lvalue(Long    x) { return x.asLong   (); }
+    public static float     unbox_fvalue(Float   x) { return x.asFloat  (); }
+    public static double    unbox_dvalue(Double  x) { return x.asDouble (); }
 
     /** @meta method (scala.Array[scala.Boolean]) scala.Array[scala.Boolean];*/
-    public static boolean[] unbox(Array xs) {
+    public static boolean[] unbox_zarray(Array xs) {
         return xs == null ? null : xs.asBooleanArray();
     }
     /** @meta method (scala.Array[scala.Byte]) scala.Array[scala.Byte]; */
-    public static byte   [] unbox(Array xs) {
+    public static byte   [] unbox_barray(Array xs) {
         return xs == null ? null : xs.asByteArray   ();
     }
     /** @meta method (scala.Array[scala.Short]) scala.Array[scala.Short]; */
-    public static short  [] unbox(Array xs) {
+    public static short  [] unbox_sarray(Array xs) {
         return xs == null ? null : xs.asShortArray  ();
     }
     /** @meta method (scala.Array[scala.Char]) scala.Array[scala.Char]; */
-    public static char   [] unbox(Array xs) {
+    public static char   [] unbox_carray(Array xs) {
         return xs == null ? null : xs.asCharArray   ();
     }
     /** @meta method (scala.Array[scala.Int]) scala.Array[scala.Int]; */
-    public static int    [] unbox(Array xs) {
+    public static int    [] unbox_iarray(Array xs) {
         return xs == null ? null : xs.asIntArray    ();
     }
     /** @meta method (scala.Array[scala.Long]) scala.Array[scala.Long]; */
-    public static long   [] unbox(Array xs) {
+    public static long   [] unbox_larray(Array xs) {
         return xs == null ? null : xs.asLongArray   ();
     }
     /** @meta method (scala.Array[scala.Float]) scala.Array[scala.Float]; */
-    public static float  [] unbox(Array xs) {
+    public static float  [] unbox_farray(Array xs) {
         return xs == null ? null : xs.asFloatArray  ();
     }
     /** @meta method (scala.Array[scala.Double]) scala.Array[scala.Double]; */
-    public static double [] unbox(Array xs) {
+    public static double [] unbox_darray(Array xs) {
         return xs == null ? null : xs.asDoubleArray ();
     }
     /** @meta method [?T < scala.AnyRef](scala.Array[?T]) scala.Array[?T]; */
-    public static Object [] unbox(Array xs) {
+    public static Object [] unbox_oarray(Array xs) {
         return xs == null ? null : xs.asObjectArray ();
     }
     /** @meta method [?T](scala.Array[?T]) scala.Array[?T]; */
-    public static Object    unbox(Array xs) {
+    public static Object    unbox__array(Array xs) {
         return xs == null ? null : xs.asArray       ();
     }
 
