@@ -232,19 +232,19 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       case Tree.Empty =>
 	print(TXT_EMPTY);
 
-      case Tree$Attributed(attr, definition) =>
+      case Tree.Attributed(attr, definition) =>
 	print(TXT_LEFT_BRACKET);
 	print(attr);
 	print(TXT_RIGHT_BRACKET);
         printNewLine();
         print(definition);
 
-      case Tree$DocDef(comment, definition) =>
+      case Tree.DocDef(comment, definition) =>
         print(comment);
         printNewLine();
         print(definition);
 
-      case Tree$ClassDef(mods, name, tparams, vparams, tpe, impl) =>
+      case Tree.ClassDef(mods, name, tparams, vparams, tpe, impl) =>
 	printSModifiers(mods);
 	print(if ((mods & Modifiers.INTERFACE) != 0) KW_INTERFACE else KW_CLASS);
 	print(Space);
@@ -254,13 +254,13 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printOpt(TXT_COLON, tpe, false);
 	printTemplate(tree.symbol(), impl);
 
-      case Tree$PackageDef(packaged, impl) =>
+      case Tree.PackageDef(packaged, impl) =>
 	print(KW_PACKAGE);
 	print(Space);
 	print(packaged);
 	printTemplate(null, impl);
 
-      case Tree$ModuleDef(mods, name, tpe, impl) =>
+      case Tree.ModuleDef(mods, name, tpe, impl) =>
 	printSModifiers(mods);
 	print(KW_OBJECT);
 	print(Space);
@@ -268,7 +268,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printOpt(TXT_COLON, tpe, false);
 	printTemplate(null, impl);
 
-      case Tree$ValDef(mods, name, tpe, rhs) =>
+      case Tree.ValDef(mods, name, tpe, rhs) =>
 	printSModifiers(mods);
 	if ((mods & Modifiers.MUTABLE) != 0) {
 	  print(KW_VAR);
@@ -285,14 +285,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	  else print(rhs);
 	}
 
-      case Tree$PatDef(mods, pat, rhs) =>
+      case Tree.PatDef(mods, pat, rhs) =>
 	printSModifiers(mods);
 	print(KW_VAL);
 	print(Space);
 	print(pat);
 	printOpt(TXT_EQUAL, rhs, true);
 
-      case Tree$DefDef(mods, name, tparams, vparams, tpe, rhs) =>
+      case Tree.DefDef(mods, name, tparams, vparams, tpe, rhs) =>
 	printSModifiers(mods);
 	print(KW_DEF);
 	print(Space);
@@ -303,14 +303,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printOpt(TXT_COLON, tpe, false);
 	printOpt(TXT_EQUAL, rhs, true);
 
-      case Tree$AbsTypeDef(mods, name, rhs, lobound) =>
+      case Tree.AbsTypeDef(mods, name, rhs, lobound) =>
 	printSModifiers(mods);
 	print(KW_TYPE);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
 	printBounds(lobound, rhs, mods);
 
-      case Tree$AliasTypeDef(mods, name, tparams, rhs) =>
+      case Tree.AliasTypeDef(mods, name, tparams, rhs) =>
 	printSModifiers(mods);
 	print(KW_TYPE);
 	print(Space);
@@ -318,7 +318,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printParams(tparams);
 	printOpt(TXT_EQUAL, rhs, true);
 
-      case Tree$Import(expr, selectors) =>
+      case Tree.Import(expr, selectors) =>
 	print(KW_IMPORT);
 	print(Space);
 	print(expr);
@@ -336,13 +336,13 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	}
 	print(TXT_RIGHT_BRACE);
 
-      case template @ Tree$Template(bases, body) =>
+      case template @ Tree.Template(bases, body) =>
         val local = tree.symbol();
         val clasz = if (local != null) local.owner() else null;
         print(TXT_TEMPLATE);
         printTemplate(local, template);
 
-      case Tree$CaseDef(pat, guard, body) =>
+      case Tree.CaseDef(pat, guard, body) =>
 	print(KW_CASE);
 	print(Space);
 	print(pat);
@@ -352,12 +352,12 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(Space);
 	print(body);
 
-      case Tree$LabelDef(name, params, rhs) =>
+      case Tree.LabelDef(name, params, rhs) =>
 	printSymbolDefinition(tree.symbol(), name);
 	printArray(params.asInstanceOf[Array[Tree]], TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
 	print(rhs);
 
-      case Tree$Block(stats, value) =>
+      case Tree.Block(stats, value) =>
 	printArray(stats, TXT_BLOCK_BEGIN, TXT_SEMICOLON, TXT_BLOCK_SEP);
         indent();
         printNewLine();
@@ -366,23 +366,23 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
         print(TXT_BLOCK_END);
 	printType(tree);
 
-      case Tree$Sequence(trees) =>
+      case Tree.Sequence(trees) =>
 	printArray(trees, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
 
-      case Tree$Alternative(trees) =>
+      case Tree.Alternative(trees) =>
 	printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_BAR_SP);
 
-      case Tree$Bind(name, t) =>
+      case Tree.Bind(name, t) =>
 	printSymbolDefinition(tree.symbol(), name);
 	print(Space);
 	print(TXT_AT);
 	print(Space);
 	print( t );
 
-      case Tree$Visitor(cases) =>
+      case Tree.Visitor(cases) =>
 	printArray(cases.asInstanceOf[Array[Tree]], TXT_BLOCK_BEGIN, TXT_BLOCK_END, Newline);
 
-      case Tree$Function(vparams, body) =>
+      case Tree.Function(vparams, body) =>
 	print(TXT_LEFT_PAREN);
 	printParams(vparams);
 	print(Space);
@@ -391,14 +391,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(body);
 	print(TXT_RIGHT_PAREN);
 
-      case Tree$Assign(lhs, rhs) =>
+      case Tree.Assign(lhs, rhs) =>
 	print(lhs);
 	print(Space);
 	print(TXT_EQUAL);
 	print(Space);
 	print(rhs);
 
-      case Tree$If(cond, thenp, elsep) =>
+      case Tree.If(cond, thenp, elsep) =>
 	print(KW_IF);
 	print(Space);
 	print(TXT_LEFT_PAREN);
@@ -410,7 +410,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	indent(); printOpt(TXT_ELSE_NL, elsep, false); undent();
 	printType(tree);
 
-      case Tree$Switch(expr, tags, bodies, defaultBody) =>
+      case Tree.Switch(expr, tags, bodies, defaultBody) =>
 	print("<switch>");
 	print(Space);
 	print(TXT_LEFT_PAREN);
@@ -435,18 +435,18 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	undent();
 	print(TXT_BLOCK_END);
 
-      case Tree$Return(expr) =>
+      case Tree.Return(expr) =>
 	print(KW_RETURN);
 	print(Space);
 	print(expr);
 
-      case Tree$New(init) =>
+      case Tree.New(init) =>
         print(KW_NEW);
 	print(Space);
 	print(init);
 	printType(tree);
 
-      case Tree$Create(qualifier, targs) =>
+      case Tree.Create(qualifier, targs) =>
         if (qualifier != Tree.Empty) {
           print(qualifier);
           print(TXT_DOT);
@@ -456,7 +456,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	  printArray(targs, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
         }
 
-      case Tree$Typed(expr, tpe) =>
+      case Tree.Typed(expr, tpe) =>
 	print(TXT_LEFT_PAREN);
 	print(expr);
 	print(TXT_RIGHT_PAREN);
@@ -466,13 +466,13 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(tpe);
 	printType(tree);
 
-      case Tree$TypeApply(fun, targs) =>
+      case Tree.TypeApply(fun, targs) =>
 	print(fun);
 	printArray(targs, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
 	printType(tree);
 
-      case Tree$Apply(fun, vargs) =>
-	if (fun.isInstanceOf[Tree$TypeTerm]) {
+      case Tree.Apply(fun, vargs) =>
+	if (fun.isInstanceOf[Tree.TypeTerm]) {
           val result = fun.`type`.resultType();
 	  print(Type.appliedType(result, Type.EMPTY_ARRAY).toString());
         }
@@ -481,7 +481,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printArray(vargs, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
 	printType(tree);
 
-      case Tree$Super(qualifier, mixin) =>
+      case Tree.Super(qualifier, mixin) =>
 	if (qualifier != TypeNames.EMPTY) {
 	  printSymbolUse(tree.symbol(), qualifier);
 	  print(TXT_DOT);
@@ -494,7 +494,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	}
 	printType(tree);
 
-      case Tree$This(name) =>
+      case Tree.This(name) =>
 	if (name != TypeNames.EMPTY) {
 	  printSymbolUse(tree.symbol(), name);
 	  print(TXT_DOT);
@@ -502,7 +502,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(KW_THIS);
 	printType(tree);
 
-      case Tree$Select(qualifier, name) =>
+      case Tree.Select(qualifier, name) =>
         if (global.debug || qualifier.symbol() == null || !qualifier.symbol().isRoot()) {
 	  print(qualifier);
 	  print(TXT_DOT);
@@ -510,36 +510,36 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	printSymbolUse(tree.symbol(), name);
 	printType(tree);
 
-      case Tree$Ident(name) =>
+      case Tree.Ident(name) =>
 	printSymbolUse(tree.symbol(), name);
 	printType(tree);
 
-      case Tree$Literal(obj) =>
+      case Tree.Literal(obj) =>
 	print(Literal(obj.toString()));
 	printType(tree);
 
-      case Tree$TypeTerm() =>
+      case Tree.TypeTerm() =>
 	print(tree.`type`.toString());
 
-      case Tree$SingletonType(ref) =>
+      case Tree.SingletonType(ref) =>
 	print(ref);
 	print(TXT_DOT); print(KW_TYPE);
 
-      case Tree$SelectFromType(qualifier, selector) =>
+      case Tree.SelectFromType(qualifier, selector) =>
 	print(qualifier);
 	print(Space); print(TXT_HASH); print(Space);
 	printSymbolUse(tree.symbol(), selector);
 
-      case Tree$FunType(argtpes, restpe) =>
+      case Tree.FunType(argtpes, restpe) =>
 	printArray(argtpes, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
 	print(TXT_RIGHT_ARROW);
 	print(restpe);
 
-      case Tree$CompoundType(baseTypes, refinements) =>
+      case Tree.CompoundType(baseTypes, refinements) =>
 	printArray(baseTypes, None, None, TXT_WITH_SP);
 	printArray(refinements, TXT_BLOCK_BEGIN, TXT_BLOCK_END, Newline);
 
-      case Tree$AppliedType(tpe, args) =>
+      case Tree.AppliedType(tpe, args) =>
 	print(tpe);
 	indent();
 	print(TXT_LEFT_BRACKET);
@@ -550,7 +550,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	undent();
 	print(TXT_RIGHT_BRACKET);
 
-      case Tree$Template(parents, body) =>
+      case Tree.Template(parents, body) =>
 	Debug.abort("unexpected case: template");
 
       case _ =>
@@ -684,7 +684,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   // Public Methods - Printing templates
 
   /** Print template. */
-  def printTemplate(clasz: Symbol, template: Tree$Template): Unit = {
+  def printTemplate(clasz: Symbol, template: Tree.Template): Unit = {
     val local = template.symbol();
     val parents = template.parents;
     val body = template.body;
@@ -748,7 +748,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
   //##########################################################################
 
-  protected def printParams(tparams: Array[Tree$AbsTypeDef]): Unit =
+  protected def printParams(tparams: Array[Tree.AbsTypeDef]): Unit =
     if (tparams.length > 0) {
       print(TXT_LEFT_BRACKET);
       for (val i <- Iterator.range(0, tparams.length)) {
@@ -758,11 +758,11 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
       print(TXT_RIGHT_BRACKET);
     }
 
-  protected def printParams(vparamss: Array[Array[Tree$ValDef]]): Unit =
+  protected def printParams(vparamss: Array[Array[Tree.ValDef]]): Unit =
     for (val i <- Iterator.range(0, vparamss.length))
       printParams(vparamss(i));
 
-  protected def printParams(vparams: Array[Tree$ValDef]): Unit = {
+  protected def printParams(vparams: Array[Tree.ValDef]): Unit = {
     print(TXT_LEFT_PAREN);
     for (val i <- Iterator.range(0, vparams.length)) {
       if (i > 0) print(TXT_COMMA_SP);
@@ -772,12 +772,12 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   }
 
   protected def printParam(tree: Tree): Unit = tree match {
-    case Tree$AbsTypeDef(mods, name, bound, lobound) =>
+    case Tree.AbsTypeDef(mods, name, bound, lobound) =>
       printSModifiers(mods);
       printSymbolDefinition(tree.symbol(), name);
       printBounds(lobound, bound, mods);
 
-    case Tree$ValDef(mods, name, tpe, Tree.Empty) =>
+    case Tree.ValDef(mods, name, tpe, Tree.Empty) =>
       printSModifiers(mods);
       if ((mods & Modifiers.PARAMACCESSOR) != 0) {
         print(KW_VAL); print(Space);
