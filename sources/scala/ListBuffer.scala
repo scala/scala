@@ -9,13 +9,15 @@
 
 package scala;
 
+/** This class is still quite messy, because I wanted to implement
+ *  Map. I will soon clean it up and probably remove some of the
+ *  functionality. -- Matthias
+ */
 class ListBuffer[A] with Seq[A] with PartialFunction[Int, A] {
 
     protected var first: LinkedList[A] = null;
     protected var last: LinkedList[A] = null;
     protected var len: Int = 0;
-
-    def size: Int = len;
 
     def length: Int = len;
 
@@ -113,7 +115,7 @@ class ListBuffer[A] with Seq[A] with PartialFunction[Int, A] {
 
     def prependSeq(iter: Iterable[A]) = prependIterator(iter.elements);
 
-    protected def prependIterator(iter: Iterator[A]): Unit = if (iter.hasNext) {
+    private def prependIterator(iter: Iterator[A]): Unit = if (iter.hasNext) {
         val cur = iter.next;
         prependIterator(iter);
         prepend(cur);
