@@ -455,6 +455,7 @@ scala() {
 unset SCRIPT;
 UNAME=`uname`;
 SOURCE=$0;
+SCRIPT=`basename "$SOURCE"`;
 while [ -h "$SOURCE" ]; do
     SCRIPT=`basename "$SOURCE"`;
     LOOKUP=`ls -ld "$SOURCE"`;
