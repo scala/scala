@@ -1,0 +1,9 @@
+bug136.scala:5: type mismatch;
+ found   : Bar
+ required: Foo
+  val foo2: Foo = bar;
+                  ^
+bug136.scala:7: object bar does not implement Foo
+object bar: Foo  {
+       ^
+two errors found

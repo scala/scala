@@ -1,0 +1,4 @@
+bug140.scala:4: object bar does not implement Foo
+object bar: Foo {
+       ^
+one error found
