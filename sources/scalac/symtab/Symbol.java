@@ -73,14 +73,14 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Return a fresh symbol with the same fields as this one.
      */
-    public abstract Symbol cloneSymbol();
+    public final Symbol cloneSymbol() {
+        return cloneSymbol(owner);
+    }
 
     /** Return a fresh symbol with the same fields as this one and the
      * given owner.
      */
-    public Symbol cloneSymbol(Symbol owner) {
-        return cloneSymbol().setOwner(owner);
-    }
+    public abstract Symbol cloneSymbol(Symbol owner);
 
     /** copy all fields to `sym'
      */
@@ -1005,13 +1005,13 @@ public class TermSymbol extends Symbol {
 
     /** Return a fresh symbol with the same fields as this one.
      */
-    public Symbol cloneSymbol() {
+    public Symbol cloneSymbol(Symbol owner) {
         assert !isPrimaryConstructor() : Debug.show(this);
         TermSymbol other;
 	if (isModule()) {
-	    other = newModule(pos, name, owner(), flags);
+	    other = newModule(pos, name, owner, flags);
 	} else {
-	    other = new TermSymbol(pos, name, owner(), flags);
+	    other = new TermSymbol(pos, name, owner, flags);
 	    other.clazz = clazz;
 	}
         other.setInfo(info());
@@ -1055,8 +1055,8 @@ public class TypeSymbol extends Symbol {
 
     /** Return a fresh symbol with the same fields as this one.
      */
-    public Symbol cloneSymbol() {
-        TypeSymbol other = new TypeSymbol(kind, pos, name, owner(), flags);
+    public Symbol cloneSymbol(Symbol owner) {
+        TypeSymbol other = new TypeSymbol(kind, pos, name, owner, flags);
 	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " to " + other + " in phase " + Global.instance.currentPhase.name());
         other.setInfo(info());
         return other;
@@ -1200,8 +1200,8 @@ public class AbsTypeSymbol extends TypeSymbol {
 
     /** Return a fresh symbol with the same fields as this one.
      */
-    public Symbol cloneSymbol() {
-        TypeSymbol other = new AbsTypeSymbol(pos, name, owner(), flags);
+    public Symbol cloneSymbol(Symbol owner) {
+        TypeSymbol other = new AbsTypeSymbol(pos, name, owner, flags);
 	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString() + " to " + other + " in phase " + Global.instance.currentPhase.name());
         other.setInfo(info());
 	other.setLoBound(loBound());
@@ -1282,8 +1282,8 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Return a fresh symbol with the same fields as this one.
      */
-    public Symbol cloneSymbol() {
-        ClassSymbol other = new ClassSymbol(pos, name, owner(), flags, module);
+    public Symbol cloneSymbol(Symbol owner) {
+        ClassSymbol other = new ClassSymbol(pos, name, owner, flags, module);
         other.setInfo(info());
 	other.constructor.setInfo(constructor.info());
 	other.mangled = mangled;
@@ -1417,13 +1417,13 @@ public final class ErrorSymbol extends Symbol {
 
     /** Constructor */
     public ErrorSymbol() {
-        super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null,
-	      INITIALIZED);
-        this.setOwner(this);
-        this.setInfo(Type.ErrorType);
+        super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null, INITIALIZED);
+        super.setOwner(this);
+        super.setInfo(Type.ErrorType);
     }
 
-    public Symbol cloneSymbol() {
+    public Symbol cloneSymbol(Symbol owner) {
+        assert owner == this : Debug.show(owner);
 	return this;
     }
 
@@ -1434,16 +1434,14 @@ public final class ErrorSymbol extends Symbol {
 
     /** Set owner */
     public Symbol setOwner(Symbol owner) {
-        if (owner != this)
-            throw new ApplicationError("illegal operation on " + getClass());
-        return super.setOwner(owner);
+        assert owner == this : Debug.show(owner);
+        return this;
     }
 
     /** Set type */
     public Symbol setInfo(Type info) {
-        if (info != Type.ErrorType)
-            throw new ApplicationError("illegal operation on " + getClass());
-        return super.setInfo(info);
+        assert info == Type.ErrorType : info;
+        return this;
     }
 
     /** Get primary constructor */
@@ -1470,14 +1468,15 @@ public final class NoSymbol extends Symbol {
 
     /** Constructor */
     public NoSymbol() {
-        super(Kinds.NONE, Position.NOPOS, Name.fromString("<none>"), null, INITIALIZED);
-        this.setInfo(Type.NoType);
-        this.setOwner(this);
+        super(Kinds.NONE, Position.NOPOS, Names.NOSYMBOL, null, INITIALIZED);
+        super.setOwner(this);
+        super.setInfo(Type.NoType);
     }
 
     /** Return a fresh symbol with the same fields as this one.
      */
-    public Symbol cloneSymbol() {
+    public Symbol cloneSymbol(Symbol owner) {
+        assert owner == this : Debug.show(owner);
         return this;
     }
 
@@ -1488,16 +1487,14 @@ public final class NoSymbol extends Symbol {
 
     /** Set owner */
     public Symbol setOwner(Symbol owner) {
-        if (owner != this)
-            throw new ApplicationError("illegal operation on " + getClass());
-        return super.setOwner(owner);
+        assert owner == this : Debug.show(owner);
+        return this;
     }
 
     /** Set type */
     public Symbol setInfo(Type info) {
-        if (info != Type.NoType)
-            throw new ApplicationError("illegal operation on " + getClass());
-        return super.setInfo(info);
+        assert info == Type.NoType : info;
+        return this;
     }
 
     /** Return the next enclosing class */
