@@ -82,7 +82,6 @@ public class Tree {
         n_LabelDef       = node("LabelDef"      , Term, DefSym),
         n_Block          = node("Block"         , Term, NoSym),
         n_Sequence       = node("Sequence"      , Term, NoSym),
-        n_Subsequence    = node("Subsequence"   , Term, NoSym),
         n_Alternative    = node("Alternative"   , Term, NoSym),
         n_Bind           = node("Bind"          , Term, DefSym),
         n_Visitor        = node("Visitor"       , Term, NoSym),
@@ -214,12 +213,7 @@ public class Tree {
 
         n_Sequence.
             setDescription("Sequence of expressions (comma separated expressions)").
-            setRange(Phase.UNCURRY, Phase.LAMBDALIFT).
-            addField(t_TermTrees, "trees");
-
-        n_Subsequence.
-            setDescription("Subsequence of expressions/patterns").
-            setRange(Phase.PARSER, Phase.TRANSMATCH).
+            setRange(Phase.PARSER, Phase.LAMBDALIFT).
             addField(t_TermTrees, "trees");
 
         n_Alternative.
