@@ -66,3 +66,8 @@ true
 <<< bug 250
 >>> bug 250
 
+<<< bug 266
+hello
+4
+>>> bug 266
+

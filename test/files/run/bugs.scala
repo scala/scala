@@ -295,6 +295,59 @@ object Bug250Test {
 }
 
 //############################################################################
+// Bug 266
+
+// version - A
+
+abstract class Bug266AFoo {
+  type T <: AnyRef;
+  abstract class I0 { def f(x: T): Unit; f(null); }
+}
+
+object Bug266ATest extends Bug266AFoo {
+  type T = String;
+  class I1 extends I0 { def f(x: String): Unit = { System.out.println("hello"); ();} }
+  def main(args: Array[String]): Unit = { new I1; () }
+}
+
+// version - B
+
+abstract class Bug266BA {
+  type t;
+  abstract class P {
+    def f(x: t): unit;
+  }
+}
+
+abstract class Bug266BA1 extends Bug266BA {
+  def mkP: Bug266BA1.this.P;
+  val in: t;
+}
+
+class Bug266BB extends Bug266BA {
+  type t = int;
+  class P1 extends Bug266BB.this.P {
+    def f(x: int): unit = System.out.println(x + 1);
+  }
+  def mkP = new P1;
+  val in = 3;
+}
+
+object Bug266BTest with Executable {
+  val a: Bug266BA1 = new Bug266BA1 with Bug266BB;
+  a.mkP.f(a.in);
+}
+
+// main
+
+object Bug266Test {
+  def main(args: Array[String]): Unit = {
+    Bug266ATest.main(args);
+    Bug266BTest.main(args);
+  }
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -335,6 +388,7 @@ object Test  {
     test(226, Bug226Test.main(args));
     test(233, Bug233Test.main(args));
     test(250, Bug250Test.main(args));
+    test(266, Bug266Test.main(args));
 
     if (errors > 0) {
       System.out.println();
