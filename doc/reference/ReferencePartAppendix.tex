@@ -227,22 +227,25 @@ grammar.
                        $\mbox{\rm\em without}$ {CharNoRef}`{'CharB {CharNoRef} 
                        $\mbox{\rm\em and without}$ {CharNoRef}`]]>'{CharNoRef}
 
-  Reference, Char, NameChar, S, Comment, CombiningChar, Extender      
-                  ::=   $\mbox{\rm\em ``as in W3C XML''}$
+  BaseChar, Char, Comment, CombiningChar, Ideographic, NameChar, S, Reference
+                  ::=  $\mbox{\rm\em ``as in W3C XML''}$
 
-  Char1             ::=  Char $\mbox{\rm\em without}$ `<' | `&'
-  CharQ             ::=  Char1 $\mbox{\rm\em without}$ `"'
-  CharA             ::=  Char1 $\mbox{\rm\em without}$ `''
-  CharB             ::=  Char1 $\mbox{\rm\em without}$ '{'
+  Char1           ::=  Char $\mbox{\rm\em without}$ `<' | `&'
+  CharQ           ::=  Char1 $\mbox{\rm\em without}$ `"'
+  CharA           ::=  Char1 $\mbox{\rm\em without}$ `''
+  CharB           ::=  Char1 $\mbox{\rm\em without}$ '{'
 
-  Name              ::=  $\mbox{\rm\em ``as in W3C XML'', but without }$ ':'
+  Name            ::=  XNameStart {NameChar}
+
+  XNameStart      ::= `_' | BaseChar | Ideographic 
+                      $\mbox{\rm\em (as in W3C XML, but without }$ `:'
 
   ElemPattern       ::=  EmptyElemTagP
-                    |    STagP ContentP ETagP                                       
+                    |    STagP ContentP ETagP                                 
 
   EmptyElemTagP     ::=  '<' Name [S] '/>'
   STagP             ::=  '<' Name [S] '>'                          
-  ETagP             ::=  '</' Name [S] '>'                                        
+  ETagP             ::=  '</' Name [S] '>'                                   
   ContentP          ::=  [CharData] {(ElemPattern|ScalaPatterns) [CharData]}
   ScalaPatterns     ::=  '{' patterns '}'
 

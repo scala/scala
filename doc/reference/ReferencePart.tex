@@ -21,8 +21,9 @@
 \newcommand{\ifpackaging}[1]{}
 \newcommand{\ifnewfor}[1]{}
 
-%\newcommand{\U}[1]{\mbox{U+$\backslash$u{#1}}}
-\newcommand{\U}[1]{\mbox{U+{#1}}}
+\newcommand{\U}[1]{\mbox{$\backslash$u{#1}}}
+\newcommand{\Urange}[2]{\mbox{$\backslash$u{#1}-$\backslash$u{#2}}}
+%\newcommand{\U}[1]{\mbox{U+{#1}}}
 
 \chapter{Lexical Syntax}
 
@@ -30,10 +31,10 @@ Scala programs are written using the Unicode character set.
 This chapter defines the two modes of Scala's lexical syntax, the
 Scala mode and the \textsc{Xml} mode. If not otherwise mentioned, the following 
 descriptions of Scala tokens refer to Scala mode, and literal characters `c' refer 
-to the ASCII fragment \U{0000-007F}. 
+to the ASCII fragment \Urange{0000}{007F}. 
 
 In Scala mode, \textit{Unicode escapes} are replaced by the corresponding
-Unicode character as in Java.
+Unicode character with the given hexadecimal code.
 \begin{lstlisting}
 UnicodeEscape ::= \\{\\\\}u{u} HexDigit HexDigit HexDigit HexDigit
 HexDigit      ::= '0' | $\ldots$ | `9' | `A' | $\ldots$ | `F' | `a' | $\ldots$ | `f' |
@@ -48,7 +49,7 @@ both count as upper case letters
 \item Digits ~\lstinline@`0' | $\ldots$ | `9'@.
 \item Parentheses ~\lstinline@`(' | `)' | `[' | `]' | `{' | `}'@.
 \item Delimiter characters ~\lstinline@``' | `'' | `"' | `.' | `;' | `,'@.
-\item Operator characters. These include all printable ASCII characters \U{0020-007F}. 
+\item Operator characters. These consist of all printable ASCII characters \Urange{0020}{007F}. 
 which are in none of the sets above, mathematical symbols(Sm) and other symbols(So).
 \end{enumerate}
 \newpage
@@ -102,7 +103,7 @@ val    var    while    with   yield
 _    :    =    =>    <-    <:    >:    #    @
 \end{lstlisting}
 
-The Unicode operator `$\Rightarrow$' (\textsc{U+21D2}) has the ASCII equivalent
+The Unicode operator \U{21D2} `$\Rightarrow$' has the ASCII equivalent
 `$=>$', which is also reserved.
 
 \example
@@ -152,13 +153,16 @@ A multi-line comment is a sequence of characters between \lstinline@/*@ and
 
 \section{XML mode\label{sec::xmlMode}}
 
-In order to allow literal inclusion of XML fragments, lexical analysis switches
-from Scala mode to XML mode when encountering an opening angle bracket '<' 
-in the following circumstance: The '<' must be preceded either by whitespace, an 
-opening parenthesis or an opening brace and immediately followed by a character 
-starting an XML name.
+In order to allow literal inclusion of XML fragments, lexical analysis
+switches from Scala mode to XML mode when encountering an opening
+angle bracket '<' in the following circumstance: The '<' must be
+preceded either by whitespace, an opening parenthesis or an opening
+brace and immediately followed by a character starting an XML name.
+
 \syntax\begin{lstlisting}
  ( whitespace | '(' | '{' ) '<' XNameStart
+
+  XNameStart ::= `_' | BaseChar | Ideographic $\mbox{\rm\em (as in W3C XML, but without }$ `:'
 \end{lstlisting}
 
 The scanner switches from XML mode to Scala mode if either
@@ -166,7 +170,8 @@ The scanner switches from XML mode to Scala mode if either
 \item the XML expression or the XML pattern started by the initial '<' has been 
 successfully parsed, or if
 
-\item the parser encounters an embedded Scala expression or pattern and forces the Scanner 
+\item the parser encounters an embedded Scala expression or pattern and 
+forces the Scanner 
 back to normal mode, until the Scala expression or pattern is
 successully parsed. In this case, since code and XML fragments can be
 nested, the parser has to maintain a stack that reflects the nesting
@@ -3830,15 +3835,17 @@ XML mode (see \ref{sec::xmlMode}).
 \syntax\begin{lstlisting}
 XmlExpr ::= Element {Element}
 \end{lstlisting}
-Well-formedness constraints of the XML specification apply, which means for instance
-that start tags and end tags must match, and attributes may only be defined once, with
-the exception of constraints related to entity resolution.
+Well-formedness constraints of the XML specification apply, which
+means for instance that start tags and end tags must match, and
+attributes may only be defined once, with the exception of constraints
+related to entity resolution.
 
-If an XML expression is a single element, its value is a runtime representation of
-an XML node. If the XML expression consists of more than one element, then its value
-is a runtime representation of a sequence of XML nodes.
-
-XML expressions may contain Scala expressions as attribute values or within nodes.
+The following productions describe Scala's extensible markup language,
+designed as close as possible to the W3C extensible markup language
+standard. Only the productions for attribute values and character data
+are changed. Scala does not support neither declarations, CDATA
+sections nor processing instructions. Entity references are not
+resolved at runtime.
 
 \syntax\begin{lstlisting}
 Element       ::=    EmptyElemTag
@@ -3854,11 +3861,13 @@ Content1      ::=    Element
                 |    Comment
                 |    ScalaExpr
 \end{lstlisting}
-The following productions describe Scala's extensible markup language as close as possible
-to the W3C extensible markup language standard. Only the productions for
-attribute values and character data are changed. Scala does not support neither 
-declarations, CDATA sections nor processing instructions. Entity references are not
-resolved at runtime.
+
+If an XML expression is a single element, its value is a runtime
+representation of an XML node (an instance of a subclass of 
+\lstinline@scala.xml.Node@). If the XML expression consists of more
+than one element, then its value is a runtime representation of a
+sequence of XML nodes (an instance of a subclass of 
+\lstinline@scala.Seq[scala.xml.Node]@).
 
 \syntax\begin{lstlisting}
 Attribute     ::=    Name Eq AttValue	                                 
@@ -3867,25 +3876,38 @@ AttValue      ::=    `"' {CharQ | CharRef} `"'
                 |    `'' {CharA | CharRef} `''
                 |    ScalaExp
 
-ScalaExpr      ::=    `{' expr `}'
+ScalaExpr     ::=    `{' expr `}'
 
 CharData      ::=   { CharNoRef } $\mbox{\rm\em without}$ {CharNoRef}`{'CharB {CharNoRef} 
                                   $\mbox{\rm\em and without}$ {CharNoRef}`]]>'{CharNoRef}
+\end{lstlisting}
+XML expressions may contain Scala expressions as attribute values or
+within nodes. In the latter case, these are embedded using a single opening 
+brace `{' and ended by a closing brace `}'. To express a single opening braces 
+within XML text as generated by CharData, it must be doubled. Thus, `{{` 
+represents the XML text `{` and does not introduce an embedded Scala 
+expression.
 
-Reference, Char, NameChar, S, Comment, CombiningChar, Extender      
-              ::=   $\mbox{\rm\em ``as in W3C XML''}$
+\syntax\begin{lstlisting}
+BaseChar, Char, Comment, CombiningChar, Ideographic, NameChar, S, Reference
+              ::=  $\mbox{\rm\em ``as in W3C XML''}$
 
-Char1         ::=   Char $\mbox{\rm\em without}$ `<' | `&'
-CharQ         ::=   Char1 $\mbox{\rm\em without}$ `"'
-CharA         ::=   Char1 $\mbox{\rm\em without}$ `''
-CharB         ::=   Char1 $\mbox{\rm\em without}$ '{'
+Char1         ::=  Char $\mbox{\rm\em without}$ `<' | `&'
+CharQ         ::=  Char1 $\mbox{\rm\em without}$ `"'
+CharA         ::=  Char1 $\mbox{\rm\em without}$ `''
+CharB         ::=  Char1 $\mbox{\rm\em without}$ '{'
 
-Name          ::=  $\mbox{\rm\em ``as in W3C XML'', but without }$ ':'
+Name          ::=  XNameStart {NameChar}
+
+XNameStart    ::= `_' | BaseChar | Ideographic 
+                 $\mbox{\rm\em (as in W3C XML, but without }$ `:'
+
 \end{lstlisting}
 \section{XML patterns}
-XML patterns are patterns generated by the following production, where the opening
-bracket `<' of the element patterns must be in a position to start the lexical
-XML mode (see \ref{sec::xmlMode}).
+XML patterns are patterns generated by the following production, where
+the opening bracket `<' of the element patterns must be in a position
+to start the lexical XML mode (see \ref{sec::xmlMode}).
+
 \syntax\begin{lstlisting}
 XmlPattern  ::= ElementPattern {ElementPattern}
 \end{lstlisting}
@@ -3895,14 +3917,14 @@ If an XML pattern is a single element pattern, it expects the type of runtime
 representation of an XML tree, and matches exactly one instance of this type
 that has the same structure as described by the pattern. If an XML pattern 
 consists of more than one element, then it expects the type of sequences
-of runtime representations of XML trees, and matches every sequence whose elements
-match the sequence pattern.
+of runtime representations of XML trees, and matches every sequence whose 
+elements match the sequence described by the pattern.
 
 XML patterns may contain Scala patterns(\ref{sec:pattern-match}).
 
-\begin{lstlisting}
+\syntax\begin{lstlisting}
 ElemPattern   ::=    EmptyElemTagP
-                |    STagP ContentP ETagP                                       
+                |    STagP ContentP ETagP                                    
 
 EmptyElemTagP ::=    '<' Name [S] '/>'
 STagP         ::=    '<' Name [S] '>'                          
@@ -4359,6 +4381,79 @@ object Predef {
   def id[a](x: a): a = x;
   def fst[a](x: a, y: Any): a = x;
   def scd[a](x: Any, y: a): a = y;
+}
+\end{lstlisting}
+
+\section{Class Node}\label{cls:Node}
+\begin{lstlisting}
+package scala.xml ;
+
+trait Node {
+
+  /** the label of this node */
+  def label: String;              
+
+  /** attribute axis */
+  def attribute: Map[ String, String ];
+
+  /** child axis (all children of this node) */
+  def child: Seq[Node];         
+
+  /** descendant axis (all descendants of this node) */
+  def descendant:Seq[Node] = child.toList.flatMap { 
+    x => x::x.descendant.asInstanceOf[List[Node]] 
+  } ;
+
+  /** descendant axis (all descendants of this node) */
+  def descendant_or_self:Seq[Node] = this::child.toList.flatMap { 
+    x => x::x.descendant.asInstanceOf[List[Node]] 
+  } ;
+
+  override def equals( x:Any ):boolean = x match {
+    case that:Node => 
+      that.label == this.label && 
+        that.attribute.sameElements( this.attribute ) && 
+          that.child.sameElements( this.child )
+    case _ => false
+  }
+
+ /** XPath style projection function. Returns all children of this node
+  *  that are labelled with 'that. The document order is preserved.
+  */
+    def \(that:Symbol): NodeSeq = {
+      new NodeSeq({
+        that.name match {
+
+          case "_" => child.toList; 
+          case _ =>
+            var res:List[Node] = Nil;
+            for( val x <- child.elements; x.label == that.name ) {
+              res = x::res;
+            }
+            res.reverse
+        }
+      });
+    }
+
+ /** XPath style projection function. Returns all nodes labelled with the 
+  *  name 'that from the descendant_or_self axis. Document order is preserved.
+  */
+  def \\(that:Symbol): NodeSeq = {
+    new NodeSeq(
+      that.name match {
+        case "_" => this.descendant_or_self;
+        case _ => this.descendant_or_self.asInstanceOf[List[Node]].
+        filter( x => x.label == that.name );
+      })
+  }
+
+  /** hashcode for this XML node */
+  override def hashCode() = 
+    Utility.hashCode( label, attribute.toList.hashCode(), child);
+
+  /** string representation of this node */
+  override def toString() = Utility.toXML(this);
+
 }
 \end{lstlisting}
 
