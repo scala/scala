@@ -48,6 +48,9 @@ public interface Modifiers {
     int INCONSTRUCTOR = 0x01000000;   // transient flag for Analyzer
     int PARAMACCESSOR = 0x02000000;   // for methods: is an access method for a val parameter
                                       // for parameters: is a val parameter
+    int CLOSURELOCK   = PARAMACCESSOR;
+                                      // secondary meaning: a lock to test that closures of type
+                                      // symbols are non-cyclic.
 
     int ACCESSOR      = 0x04000000;   // function is an access function for a
                                       // value or variable

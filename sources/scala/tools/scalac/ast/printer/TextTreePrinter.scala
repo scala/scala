@@ -157,6 +157,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
   protected final val TXT_NULL    = Simple("<null>");
   protected final val TXT_OBJECT_COMMENT = Simple("/*object*/ ");
   protected final val TXT_EMPTY   = Simple("<empty>");
+  protected final val TXT_TEMPLATE   = Simple("<template>");
 
   protected final val TXT_QUOTE         = Simple("\"");
   protected final val TXT_PLUS          = Simple("+");
@@ -329,6 +330,9 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	  i = i + 2;
 	}
 	print(TXT_RIGHT_BRACE);
+
+      case templ @ Tree$Template(bases, body) =>
+        printTemplate(tree.symbol().owner(), TXT_TEMPLATE , templ, false);
 
       case Tree$CaseDef(pat, guard, body) =>
 	print(KW_CASE);

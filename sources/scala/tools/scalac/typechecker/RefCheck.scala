@@ -1028,7 +1028,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       transform(tree)
   }
 
-  override def transform(tree: Tree): Tree = {
+  override def transform(tree: Tree): Tree = try {
     val sym = tree.symbol();
     tree match {
       case Tree.Empty =>
@@ -1160,6 +1160,11 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       case _ =>
 	elimTypeNode(super.transform(tree))
     }
+  } catch {
+    case ex: Type$Error =>
+      if (global.debug) ex.printStackTrace();
+      unit.error(tree.pos, ex.msg);
+      tree
   }
 
   override def transform(trees: Array[Tree]): Array[Tree] =

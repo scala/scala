@@ -215,8 +215,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             throw new Type.Malformed(pre, sym.nameString());
         if (sym.isTypeAlias()) {
             Symbol[] params = sym.typeParams();
-            if (args.length == params.length)
-                return pre.memberInfo(sym).subst(params, args);
+            if (args.length == params.length) {
+                if (sym.isLocked()) throw new Type.Error(
+                    "illegal cyclic reference involving " + sym);
+                sym.flags |= LOCKED;
+                Type result = pre.memberInfo(sym).subst(params, args);
+                sym.flags &= ~LOCKED;
+                return result;
+            }
             assert args.length == 0 || args.length == params.length:
                 Debug.show(pre, sym, args, params);
         }
@@ -2690,7 +2696,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** Return the least upper bound of non-empty array of types `tps'.
      */
     public static Type lub0(Type[] tps) {
-        //System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
+        //for (int i = 0; i < recCount; i++) System.out.print("  "); System.out.println("lub" + ArrayApply.toString(tps));//debug
 
         if (tps.length == 0) return Global.instance.definitions.ALL_TYPE();
 

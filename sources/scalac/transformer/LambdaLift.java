@@ -441,6 +441,10 @@ public class LambdaLift extends OwnerTransformer
 	    return tree1;
               */
 
+        case Return(Block(Tree[] stats, Tree value)):
+            return transform(
+                gen.Block(stats, gen.Return(tree.pos, tree.symbol(), value)));
+
 	case Return(Tree expr):
 	    if (tree.symbol() != currentOwner.enclMethod()) {
 		unit.error(tree.pos, "non-local return not yet implemented");

@@ -2118,8 +2118,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     this.pt = pt;
     val tree1: Tree = adapt(transform(tree), mode, pt);
 
-    assert(tree.getType() != Type.AnyType, tree);//debug
-
     //new TextTreePrinter().print(tree1).print(": " + tree1.getType()).println().end();//DEBUG
 
     this.mode = savedMode;

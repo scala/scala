@@ -1970,7 +1970,12 @@ abstract class TypeSymbol extends Symbol {
      */
     public final Type[] closure() {
         if (kind == ALIAS) return info().symbol().closure();
-        return (Type[])closures.getValue(this);
+        if ((flags & CLOSURELOCK) != 0 && Global.instance.currentPhase.id <= Global.instance.PHASE.REFCHECK.id())
+            throw new Type.Error("illegal cyclic reference involving " + this);
+        flags |= CLOSURELOCK;
+        Type[] result = (Type[])closures.getValue(this);
+        flags &= ~CLOSURELOCK;
+        return result;
     }
 
     public void reset(Type completer) {
