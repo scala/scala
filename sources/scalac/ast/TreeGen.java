@@ -659,6 +659,7 @@ public class TreeGen implements Kinds, Modifiers {
 	return Block(new Tree[]{classDef, alloc});
     }
 
+
     public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
 				  Type pattype, Type restype, Symbol owner) {
 	Type pft = definitions.partialFunctionType(pattype, restype);
@@ -688,8 +689,12 @@ public class TreeGen implements Kinds, Modifiers {
 	    meth.setInfo(Type.MethodType(new Symbol[]{param}, restype));
 	    clazz.info().members().enter(meth);
 	    changeOwner(visitor, prevOwner, meth);
-	    Tree body = Apply(
-		Select(Ident(param), definitions.MATCH), new Tree[]{visitor})
+	    Tree body =
+		Apply(
+		    TypeApply(
+			Select(Ident(param), definitions.MATCH),
+			new Tree[]{mkType(pos, pattype), mkType(pos, restype)}),
+		    new Tree[]{visitor})
 		.setType(restype);
 	    return DefDef(meth, body);
 	}
@@ -709,5 +714,21 @@ public class TreeGen implements Kinds, Modifiers {
 	    }
 	};
 	lifter.traverse(tree);
+    }
+
+    /** Build a postfix function application
+     */
+    public Tree postfixApply(Tree obj, Tree fn, Symbol owner) {
+	if (TreeInfo.isPureExpr(obj) || TreeInfo.isPureExpr(fn)) {
+	    return Apply(Select(fn, Names.apply), new Tree[]{obj});
+	} else {
+	    Name tmpname = global.freshNameCreator.newName("tmp", '$');
+	    Symbol tmp = new TermSymbol(
+		obj.pos, tmpname, owner, SYNTHETIC | FINAL)
+		.setInfo(obj.type);
+	    Tree tmpdef = ValDef(tmp, obj);
+	    Tree expr = postfixApply(Ident(tmp), fn, owner);
+	    return Block(new Tree[]{tmpdef, expr});
+	}
     }
 }

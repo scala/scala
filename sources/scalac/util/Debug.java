@@ -506,7 +506,7 @@ public class DebugSymbol extends DebugAbstractHandler {
 
     public void append1(StringBuffer buffer, Symbol that) {
         if (that != Symbol.NONE && that != Symbol.ERROR) {
-            if (that.owner() != Global.instance.definitions.ROOT_CLASS) {
+            if (!that.owner().isRoot()) {
                 Debug.append(buffer, that.owner());
                 buffer.append(".");
             }

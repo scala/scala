@@ -102,6 +102,10 @@ public class TreeInfo {
 	    return tree.symbol().isStable();
 	case Select(Tree qual, _):
 	    return tree.symbol().isStable() && isPureExpr(qual);
+	case Apply(Tree fn, Tree[] args):
+	    return isPureExpr(fn) && args.length == 0;
+	case TypeApply(Tree fn, Tree[] targs):
+	    return isPureExpr(fn);
 	case Typed(Tree expr, _):
 	    return isPureExpr(expr);
 	case Literal(_):
@@ -167,18 +171,26 @@ public class TreeInfo {
     /** The method symbol of an application node, or Symbol.NONE, if none exists.
      */
     public static Symbol methSymbol(Tree tree) {
+	Tree meth = methPart(tree);
+	if (meth.hasSymbol()) return meth.symbol();
+	else return Symbol.NONE;
+    }
+
+    /** The method part of an application node
+     */
+    public static Tree methPart(Tree tree) {
 	switch (tree) {
 	case Apply(Tree fn, _):
-	    return methSymbol(fn);
+	    return methPart(fn);
 	case TypeApply(Tree fn, _):
-	    return methSymbol(fn);
+	    return methPart(fn);
 	case AppliedType(Tree fn, _):
-	    return methSymbol(fn);
+	    return methPart(fn);
 	default:
-	    if (tree.hasSymbol()) return tree.symbol();
-	    else return Symbol.NONE;
+	    return tree;
 	}
     }
+
 
       /** returns true if the tree is a sequence-valued pattern.
        *  precondition: tree is a pattern.

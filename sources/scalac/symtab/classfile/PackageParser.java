@@ -42,9 +42,7 @@ public class PackageParser extends Type.LazyType {
         String dirname = null;
         Name name = p.fullName();
 	HashMap/*<Symbol, AbstractFile>*/ symFile = new HashMap();
-        if (name.length() == 0) {
-            // includeMembers(AbstractFile.open(null, "."), p, members, false);
-        } else {
+        if (name.length() != 0) {
             dirname = SourceRepresentation.externalizeFileName(name);
             if (!dirname.endsWith("/"))
                 dirname += "/";
@@ -53,7 +51,7 @@ public class PackageParser extends Type.LazyType {
         for (int i = 0; i < base.length; i++) {
             includeMembers(
 		AbstractFile.open(base[i], dirname),
-		p, members, dirname != null, symFile);
+		p, members, symFile);
 	}
         p.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, p));
         if (dirname == null)
@@ -81,9 +79,10 @@ public class PackageParser extends Type.LazyType {
      *  in package/module scope
      */
     protected void includeMembers(AbstractFile dir, Symbol p, Scope locals,
-				  boolean inclClasses, HashMap symFile) {
+				  HashMap symFile) {
         if (dir == null)
             return;
+	boolean inclClasses = p != global.definitions.ROOT_CLASS;
         String[] filenames = null;
         try {
             if ((filenames = dir.list()) == null)
@@ -116,33 +115,6 @@ public class PackageParser extends Type.LazyType {
 		        }
 			symFile.put(clazz, f);
                     }
-                } else if (fname.endsWith("/") && !fname.equals("META-INF/")) {
-                    Name n = Name.fromString(fname.substring(0, fname.length() - 1));
-                    if (locals.lookup(n) == Symbol.NONE) {
-                        TermSymbol module = TermSymbol.newJavaPackageModule(n, p, this);
-                        locals.enter(module);
-			//todo: moduleClass needs to be entered?
-			locals.enter(module.moduleClass());
-		    }
-
-/*
-		} else if (inclClasses && fname.endsWith(".symbl")) {
-		    //todo: compare dates between symbl and scala.
-                    Name n = Name.fromString(fname.substring(0, fname.length() - 6))
-			.toTypeName();
-		    Symbol sym = locals.lookup(n);
-		    if (sym == Symbol.NONE ||
-			sym.isPackage() ||
-			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
-			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
-			ClassSymbol clazz = new ClassSymbol(n, p, symblCompletion);
-			//todo: needed
-			clazz.allConstructors().setInfo(symblCompletion);
-			clazz.module().setInfo(symblCompletion);
-			locals.enter(clazz);
-			locals.enter(clazz.module());
-		    }
-*/
                 } else if (inclClasses && fname.endsWith(".scala")) {
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
@@ -157,6 +129,14 @@ public class PackageParser extends Type.LazyType {
 			locals.enter(clazz.module());
 			symFile.put(clazz, f);
                     }
+                } else if (fname.endsWith("/") && !fname.equals("META-INF/")) {
+                    Name n = Name.fromString(fname.substring(0, fname.length() - 1));
+                    if (locals.lookup(n) == Symbol.NONE) {
+                        TermSymbol module = TermSymbol.newJavaPackageModule(n, p, this);
+                        locals.enter(module);
+			//todo: moduleClass needs to be entered?
+			locals.enter(module.moduleClass());
+		    }
                 }
             }
         } catch (IOException e) {

@@ -552,13 +552,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private Type matchQualType(Tree fn) {
 	switch (fn) {
 	case Select(Tree qual, _):
-	    if (fn.symbol() == definitions.OBJECT_TYPE.lookup(Names.match))
+	    if (fn.symbol() == definitions.MATCH)
 		return qual.type.widen();
 	    break;
 	case TypeApply(Tree fn1, _):
 	    return matchQualType(fn1);
 	case Ident(_):
-	    if (fn.symbol() == definitions.OBJECT_TYPE.lookup(Names.match))
+	    if (fn.symbol() == definitions.MATCH)
 		return context.enclClass.owner.typeOfThis();
 	    break;
 	}
@@ -642,10 +642,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 // Entering Symbols ----------------------------------------------------------
 
     Tree transformPackageId(Tree tree) {
+	if (tree.type != null) return tree;
 	switch (tree) {
 	case Ident(Name name):
 	    return tree
-		.setSymbol(packageSymbol(tree.pos, definitions.ROOT, name))
+		.setSymbol(packageSymbol(tree.pos, context.owner, name))
 	        .setType(tree.symbol().type());
 	case Select(Tree qual, Name name):
 	    Tree qual1 = transformPackageId(qual);
@@ -2225,7 +2226,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 
-		// resolve overloading
+		// resolve overloading1g
 		switch (fn1.type) {
 		case OverloadedType(Symbol[] alts, Type[] alttypes):
 		    try {

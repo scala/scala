@@ -16,7 +16,10 @@ import scalac.ast.*;
 import scalac.symtab.*;
 import Tree.*;
 import scalac.typechecker.DeSugarize ;
-/** Make all functions into one-argument functions
+
+/** (1) Make all functions into one-argument functions
+ *  (2) Convert `def' parameters to closures
+ *  (3) Convert matches with non-visitor arguments to postfix applications
  */
 public class UnCurry extends OwnerTransformer
                      implements Modifiers {
@@ -105,14 +108,26 @@ public class UnCurry extends OwnerTransformer
 	    Type ftype = fn.type;
 	    Tree fn1 = transform(fn);
 	    Tree[] args1 = transformArgs(tree.pos, args, ftype);
-	    switch (fn1) {
-	    case Apply(Tree fn2, Tree[] args2):
-		Tree[] newargs = new Tree[args1.length + args2.length];
-		System.arraycopy(args2, 0, newargs, 0, args2.length);
-		System.arraycopy(args1, 0, newargs, args2.length, args1.length);
-		return copy.Apply(tree, fn2, newargs);
-	    default:
-		return copy.Apply(tree, fn1, args1);
+	    if (TreeInfo.methSymbol(fn1) == global.definitions.MATCH &&
+		!(args1[0] instanceof Tree.Visitor)) {
+		switch (TreeInfo.methPart(fn1)) {
+		case Select(Tree qual, Name name):
+		    assert name == Names.match;
+		    return gen.postfixApply(qual, args1[0], currentOwner);
+		default:
+		    throw new ApplicationError("illegal prefix for match: " + tree);
+		}
+
+	    } else {
+		switch (fn1) {
+		case Apply(Tree fn2, Tree[] args2):
+		    Tree[] newargs = new Tree[args1.length + args2.length];
+		    System.arraycopy(args2, 0, newargs, 0, args2.length);
+		    System.arraycopy(args1, 0, newargs, args2.length, args1.length);
+		    return copy.Apply(tree, fn2, newargs);
+		default:
+		    return copy.Apply(tree, fn1, args1);
+		}
 	    }
 
 	case Select(_, _):

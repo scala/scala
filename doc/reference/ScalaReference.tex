@@ -3473,254 +3473,11 @@ object HelloWord {
 }
 \end{lstlisting}
 
-\appendix
-\chapter{Scala Syntax Summary}
-
-The lexical syntax of Scala is given by the following grammar in EBNF
-form.
-
-\begin{lstlisting}
-  upper          ::=  `A' | $\ldots$ | `Z' | `$\Dollar$' | `_'
-  lower          ::=  `a' | $\ldots$ | `z'
-  letter         ::=  upper | lower
-  digit          ::=  `0' | $\ldots$ | `9'
-  special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
-
-  op             ::=  special {special} [`_' [id]]
-  varid          ::=  lower {letter | digit} [`_' [id]]
-  id             ::=  upper {letter | digit} [`_' [id]]
-                   | varid
-                   | op
-
-  intLit         ::=  $\mbox{\rm\em ``as in Java''}$
-  floatLit       ::=  $\mbox{\rm\em ``as in Java''}$
-  charLit        ::=  $\mbox{\rm\em ``as in Java''}$
-  stringLit      ::=  $\mbox{\rm\em ``as in Java''}$
-  symbolLit      ::= `\'' id
-
-  comment        ::=  `/*' ``any sequence of characters'' `*/'
-                   |  `//' `any sequence of characters up to end of line''
-\end{lstlisting}
-
-The context-free syntax of Scala is given by the following EBNF
-grammar.
-
-\begin{lstlisting}
-  literal        ::=  intLit
-                   |  floatLit
-                   |  charLit
-                   |  stringLit
-                   |  symbolLit
-
-  StableId       ::=  id
-                   |  Path `.' id
-  Path           ::=  StableId
-                   |  [id `.'] this
-                   |  [id '.'] super [`[' id `]']`.' id
-
-  Type           ::=  Type1 `=>' Type
-                   |  `(' [Types] `)' `=>' Type
-                   |  Type1
-  Type1          ::=  SimpleType {with SimpleType} [Refinement]
-  SimpleType     ::=  SimpleType TypeArgs
-                   |  SimpleType `#' id
-                   |  StableId
-                   |  Path `.' type
-                   |  `(' Type ')'
-  TypeArgs        ::=  `[' Types `]'
-  Types           ::=  Type {`,' Type}
-  Refinement      ::=  `{' [RefineStat {`;' RefineStat}] `}'
-  RefineStat      ::=  Dcl
-                    |  type TypeDef {`,' TypeDef}
-                    |
-
-  Exprs           ::=  Expr {`,' Expr}
-  Expr            ::=  [Bindings `=>'] Expr
-                    |  if `(' Expr `)' Expr [[`;'] else Expr]
-                    |  try `{' block `}' [catch Expr] [finally Expr]
-                    |  do Expr [`;'] while `(' Expr ')'
-                    |  for `(' Enumerators `)' (do | yield) Expr
-                    |  [SimpleExpr `.'] id `=' Expr
-                    |  SimpleExpr ArgumentExpr `=' Expr
-                    |  PostfixExpr [`:' Type1]
-  PostfixExpr     ::=  InfixExpr [id]
-  InfixExpr       ::=  PrefixExpr
-                    |  InfixExpr id InfixExpr
-  PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
-  SimpleExpr      ::=  literal
-                    |  true
-                    |  false
-                    |  null
-                    |  Path
-                    |  `(' [Expr] `)'
-                    |  BlockExpr
-                    |  new Template 
-                    |  SimpleExpr `.' id 
-                    |  id `#' id 
-                    |  SimpleExpr TypeArgs
-                    |  SimpleExpr ArgumentExpr
-  ArgumentExpr    ::=  `(' Expr ')'
-                    |  BlockExpr
-  BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
-                    |  `{' Block `}'
-  Block           ::=  {BlockStat `;'} [Expr]
-
-  Enumerators     ::=  Generator {`;' Enumerator}
-  Enumerator      ::=  Generator
-                    |  Expr
-  Generator       ::=  val Pattern `<-' Expr
-  Block           ::=  {BlockStat `;'} [Expr]
-  BlockStat       ::=  Import
-                    |  Def
-                    |  {LocalModifier} ClsDef
-                    |  Expr
-                    |
-
-  CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
-
-  Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
-
-  Pattern         ::=  TreePattern { `|' TreePattern }
-
-  TreePattern     ::=  varid `:' Type
-                    |  `_' `:' Type
-                    |  SimplePattern [ '*' | '?' | '+' ]
-                    |  SimplePattern { id SimplePattern }
-
-  SimplePattern   ::=  varid [ '@' SimplePattern ]
-                    |  `_'
-                    |  literal
-                    |  StableId [ `(' [Patterns] `)' ]
-                    |  `(' Patterns `)'
-                    |   
-
-  Patterns        ::=  Pattern {`,' Pattern}
-
-  TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
-  FunTypeParamClause ::=  `[' TypeDcl {`,' TypeDcl} `]'
-  TypeParam       ::=  [`+' | `-'] TypeDcl
-  ParamClause     ::=  `(' [Param {`,' Param}] `)'
-  Param           ::=  [def] id `:' Type [`*']
-  Bindings        ::=  id [`:' Type1]
-                    |  `(' Binding {`,' Binding `)'
-  Binding         ::=  id [`:' Type]
-
-  Modifier        ::=  LocalModifier
-                    |  private
-                    |  protected
-                    |  override 
-  LocalModifier   ::=  abstract
-                    |  final
-                    |  sealed
-
-  Template        ::=  Constr {`with' Constr} [TemplateBody]
-  TemplateBody    ::=  `{' [TemplateStat {`;' TemplateStat}] `}'
-  TemplateStat    ::=   Import
-                    |  {Modifier} Def
-                    |  {Modifier} Dcl
-                    |  Expr
-                    |
-
-  Import          ::=  import ImportExpr {`,' ImportExpr}
-  ImportExpr      ::=  StableId `.' (id | `_' | ImportSelectors)
-  ImportSelectors ::=  `{' {ImportSelector `,'} 
-                       (ImportSelector | `_') `}'
-  ImportSelector  ::=  id [`=>' id | `=>' `_']
-
-  Dcl             ::=  val ValDcl {`,' ValDcl}
-                    |  var VarDcl {`,' VarDcl}
-                    |  def FunDcl {`,' FunDcl}
-                    |  type TypeDcl {`,' TypeDcl}
-  ValDcl          ::=  id `:' Type
-  VarDcl          ::=  id `:' Type
-  FunDcl          ::=  id [FunTypeParamClause] {ParamClause} `:' Type
-  TypeDcl         ::=  id [`>:' Type] [`<:' Type]
-
-  Def             ::=  val PatDef {`,' PatDef}
-                    |  var VarDef {`,' VarDef}
-                    |  def FunDef {`,' FunDef}
-                    |  type TypeDef {`,' TypeDef}
-                    |  ClsDef
-  PatDef          ::=  Pattern `=' Expr
-  VarDef          ::=  id [`:' Type] `=' Expr
-                    |  id `:' Type `=' `_'
-  FunDef          ::=  id [FunTypeParamClause] {ParamClause} 
-                       [`:' Type] `=' Expr
-                    |  this ParamClause `=' ConstrExpr
-  TypeDef         ::=  id [TypeParamClause] `=' Type
-  ClsDef          ::=  ([case] class | trait) ClassDef {`,' ClassDef}
-                    |  [case] object ObjectDef {`,' ObjectDef}
-  ClassDef        ::=  id [TypeParamClause] [ParamClause] 
-                       [`:' SimpleType] ClassTemplate
-  ObjectDef       ::=  id [`:' SimpleType] ClassTemplate
-  ClassTemplate   ::=  extends Template
-                    |  TemplateBody
-                    |
-  ConstrExpr      ::=  this ArgumentExpr
-                    |  `{' {BlockStat `;'} ConstrExpr `}'
-
-  CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
-  TopStat         ::=  {Modifier} ClsDef
-                    |  Import
-                    |  Packaging
-                    |
-  Packaging       ::=  package QualId `{' {TopStat `;'} TopStat `}'
-  QualId          ::=  id {`.' id}
-\end{lstlisting}
-
-\end{document}
-
-\chapter{Local Type Inference}
-\label{sec:local-type-inf}
-
-This needs to be specified in detail.
-Essentially, similar to what is done for GJ.
-
-\comment{
-\section{Definitions}
-
-For a possibly recursive definition such as $\LET;x_1 = e_1
-;\ldots; \LET x_n = e_n$, local type inference proceeds as
-follows.
-A first phase assigns {\em a-priori types} to the $x_i$. The a-priori
-type of $x$ is the declared type of $x$ if a declared type is
-given. Otherwise, it is the inherited type, if one is
-given. Otherwise, it is undefined.
-
-A second phase assigns completely defined types to the $x_i$, in some
-order.  The type of $x$ is the a-priori type, if it is completely
-defined. Otherwise, it is the a-priori type of $x$'s right hand side.
-The a-priori type of an expression $e$ depends on the form of $e$.
-\begin{enumerate}
-\item
-The a-priori type of a
-typed expression $e:T$ is $T$.
-\item
-The a-priori type of a class instance
-creation expression $c;\WITH;(b)$ is $C;\WITH;R$ where $C$ is the
-type of the class given in $c$ and $R$ is the a-priori type of block
-$b$.
-\item
-The a-priori type of a block is a record consisting the a-priori
-types of each non-private identifier which is declared in the block
-and which is visible at in last statement of the block.  Here, it is
-required that every import clause $\IMPORT;e_1 \commadots e_n$ refers
-to expressions whose type can be computed with the type information
-determined so far. Otherwise, a compile time error results.
-\item
-The a-priori type of any other expression is the expression's type, if
-that type can be computed with the type information determined so far.
-Otherwise, a compile time error results.
-\end{enumerate}
-The compiler will find an ordering in which types are assigned without
-compiler errors to all variables $x_1 \commadots x_n$, if such an
-ordering exists. This can be achieved by lazy evaluation.
-}
-
 \chapter{The Scala Standard Library}
 
 The Scala standard library consists of the package \code{scala} with a
-number of classes and modules.
+number of classes and modules. Some of these classes are described in
+the following.
 
 \section{Root Classes}
 \label{sec:cls-root}
@@ -3729,17 +3486,15 @@ number of classes and modules.
 
 The root of the Scala class hierarchy is formed by class \code{Any}.
 Every class in a Scala execution environment inherits directly or
-indirectly from this class.  Class \code{Any} has exactly two direct
+indirectly from this class.  Class \code{Any} has two direct
 subclasses: \code{AnyRef} and\code{AnyVal}.
 
 The subclass \code{AnyRef} represents all values which are represented
-as objects in the underlying host system. The type of the \code{null}
-value copnforms to every subclass of \code{AnyRef}.  A direct subclass
-of
-\code{AnyRef} is class \code{Object}. Every user-defined Scala
-class inherits directly or indirectly from this class. Classes written
-in other languages still inherit from \code{scala.AnyRef}, but not
-necessarily from \code{scala.Object}.
+as objects in the underlying host system. A subclass of \code{AnyRef}
+is class \code{Object}. Every user-defined Scala class inherits
+directly or indirectly from this class. Classes written in other
+languages still inherit from \code{scala.AnyRef}, but not necessarily
+from \code{scala.Object}. 
 
 The class \code{AnyVal} has a fixed number subclasses, which describe
 values which are not implemented as objects in the underlying host
@@ -3755,45 +3510,48 @@ The standard interfaces of these root classes is described by the
 following definitions.
 
 \begin{lstlisting}
-abstract class Any with {
-  /** Get runtime type descriptor */
-  def getType: Type = $\ldots$
+abstract class Any {
 
   /** Reference equality */
-  def eq (that: Any): Boolean = $\ldots$
+  final def eq(that: Any): boolean = $\ldots$
 
-  /** Hash code */
-  def def hashCode: Int = $\ldots$
-\end{lstlisting}
-\begin{lstlisting}
-  /** Type test */
-  def is [a]: Boolean = $\ldots$
-
-  /** Type cast */
-  def as[a]: a = if (is[a]) $\ldots$ else new CastException() throw
+  /** Defined equality */
+  def equals(that: Any): boolean = this eq that;
 
   /** Semantic equality between values of same type */
-  def == (that: Any): Boolean  =  this equals that
+  final def == (that: Any): boolean  =  this equals that
 
   /** Semantic inequality between values of same type */
-  def != (that: Any): Boolean  =  !(this == that)
+  final def != (that: Any): boolean  =  !(this == that)
 
-  /** Semantic equality between arbitrary values */
-  def equals (that: Any): Boolean  =  $\ldots$
+  /** Hash code */
+  def hashCode: Int = $\ldots$
+
+  /** Textual representation */
+  def toString(): String = $\ldots$
+
+  /** Type test */
+  def isInstanceOf[a]: Boolean = $\ldots$
+
+  /** Type cast */
+  def asInstanceOf[a]: a = 
+    if (isInstanceOf[a]) $\ldots$ 
+    else if (this eq null) this
+    else new ClassCastException().throw
+
+  /** Pattern match */
+  def match[a](cases: Any => a): a = cases(this);
 
   /** Representation as string */
-  def toString: String  =  getType.toString ++ "@" ++ hashCode
-
-  /** Concatenation of string representations */
-  final def + (that: Any)  =  toString.concat(that)
-
-  /** Pattern matching application */
-  final def match [a] (f: (Any)a): a  =  f(this)
+  def toString(): String  = $\ldots$
 }
 final class AnyVal extends Any
 class AnyRef extends Any
 class Object extends AnyRef
 \end{lstlisting}
+
+\section{Class String}
+
 
 
 \section{Value Classes}
@@ -4261,6 +4019,250 @@ module Array {
   }
 }
 \end{lstlisting}
+}
+
+\appendix
+\chapter{Scala Syntax Summary}
+
+The lexical syntax of Scala is given by the following grammar in EBNF
+form.
+
+\begin{lstlisting}
+  upper          ::=  `A' | $\ldots$ | `Z' | `$\Dollar$' | `_'
+  lower          ::=  `a' | $\ldots$ | `z'
+  letter         ::=  upper | lower
+  digit          ::=  `0' | $\ldots$ | `9'
+  special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
+
+  op             ::=  special {special} [`_' [id]]
+  varid          ::=  lower {letter | digit} [`_' [id]]
+  id             ::=  upper {letter | digit} [`_' [id]]
+                   | varid
+                   | op
+
+  intLit         ::=  $\mbox{\rm\em ``as in Java''}$
+  floatLit       ::=  $\mbox{\rm\em ``as in Java''}$
+  charLit        ::=  $\mbox{\rm\em ``as in Java''}$
+  stringLit      ::=  $\mbox{\rm\em ``as in Java''}$
+  symbolLit      ::= `\'' id
+
+  comment        ::=  `/*' ``any sequence of characters'' `*/'
+                   |  `//' `any sequence of characters up to end of line''
+\end{lstlisting}
+
+The context-free syntax of Scala is given by the following EBNF
+grammar.
+
+\begin{lstlisting}
+  literal        ::=  intLit
+                   |  floatLit
+                   |  charLit
+                   |  stringLit
+                   |  symbolLit
+
+  StableId       ::=  id
+                   |  Path `.' id
+  Path           ::=  StableId
+                   |  [id `.'] this
+                   |  [id '.'] super [`[' id `]']`.' id
+
+  Type           ::=  Type1 `=>' Type
+                   |  `(' [Types] `)' `=>' Type
+                   |  Type1
+  Type1          ::=  SimpleType {with SimpleType} [Refinement]
+  SimpleType     ::=  SimpleType TypeArgs
+                   |  SimpleType `#' id
+                   |  StableId
+                   |  Path `.' type
+                   |  `(' Type ')'
+  TypeArgs        ::=  `[' Types `]'
+  Types           ::=  Type {`,' Type}
+  Refinement      ::=  `{' [RefineStat {`;' RefineStat}] `}'
+  RefineStat      ::=  Dcl
+                    |  type TypeDef {`,' TypeDef}
+                    |
+
+  Exprs           ::=  Expr {`,' Expr}
+  Expr            ::=  [Bindings `=>'] Expr
+                    |  if `(' Expr `)' Expr [[`;'] else Expr]
+                    |  try `{' block `}' [catch Expr] [finally Expr]
+                    |  do Expr [`;'] while `(' Expr ')'
+                    |  for `(' Enumerators `)' (do | yield) Expr
+                    |  [SimpleExpr `.'] id `=' Expr
+                    |  SimpleExpr ArgumentExpr `=' Expr
+                    |  PostfixExpr [`:' Type1]
+  PostfixExpr     ::=  InfixExpr [id]
+  InfixExpr       ::=  PrefixExpr
+                    |  InfixExpr id InfixExpr
+  PrefixExpr      ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
+  SimpleExpr      ::=  literal
+                    |  true
+                    |  false
+                    |  null
+                    |  Path
+                    |  `(' [Expr] `)'
+                    |  BlockExpr
+                    |  new Template 
+                    |  SimpleExpr `.' id 
+                    |  id `#' id 
+                    |  SimpleExpr TypeArgs
+                    |  SimpleExpr ArgumentExpr
+  ArgumentExpr    ::=  `(' Expr ')'
+                    |  BlockExpr
+  BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
+                    |  `{' Block `}'
+  Block           ::=  {BlockStat `;'} [Expr]
+
+  Enumerators     ::=  Generator {`;' Enumerator}
+  Enumerator      ::=  Generator
+                    |  Expr
+  Generator       ::=  val Pattern `<-' Expr
+  Block           ::=  {BlockStat `;'} [Expr]
+  BlockStat       ::=  Import
+                    |  Def
+                    |  {LocalModifier} ClsDef
+                    |  Expr
+                    |
+
+  CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
+
+  Constr          ::=  StableId [TypeArgs] [`(' [Exprs] `)']  
+
+  Pattern         ::=  TreePattern { `|' TreePattern }
+
+  TreePattern     ::=  varid `:' Type
+                    |  `_' `:' Type
+                    |  SimplePattern [ '*' | '?' | '+' ]
+                    |  SimplePattern { id SimplePattern }
+
+  SimplePattern   ::=  varid [ '@' SimplePattern ]
+                    |  `_'
+                    |  literal
+                    |  StableId [ `(' [Patterns] `)' ]
+                    |  `(' Patterns `)'
+                    |   
+
+  Patterns        ::=  Pattern {`,' Pattern}
+
+  TypeParamClause ::=  `[' TypeParam {`,' TypeParam} `]'
+  FunTypeParamClause ::=  `[' TypeDcl {`,' TypeDcl} `]'
+  TypeParam       ::=  [`+' | `-'] TypeDcl
+  ParamClause     ::=  `(' [Param {`,' Param}] `)'
+  Param           ::=  [def] id `:' Type [`*']
+  Bindings        ::=  id [`:' Type1]
+                    |  `(' Binding {`,' Binding `)'
+  Binding         ::=  id [`:' Type]
+
+  Modifier        ::=  LocalModifier
+                    |  private
+                    |  protected
+                    |  override 
+  LocalModifier   ::=  abstract
+                    |  final
+                    |  sealed
+
+  Template        ::=  Constr {`with' Constr} [TemplateBody]
+  TemplateBody    ::=  `{' [TemplateStat {`;' TemplateStat}] `}'
+  TemplateStat    ::=   Import
+                    |  {Modifier} Def
+                    |  {Modifier} Dcl
+                    |  Expr
+                    |
+
+  Import          ::=  import ImportExpr {`,' ImportExpr}
+  ImportExpr      ::=  StableId `.' (id | `_' | ImportSelectors)
+  ImportSelectors ::=  `{' {ImportSelector `,'} 
+                       (ImportSelector | `_') `}'
+  ImportSelector  ::=  id [`=>' id | `=>' `_']
+
+  Dcl             ::=  val ValDcl {`,' ValDcl}
+                    |  var VarDcl {`,' VarDcl}
+                    |  def FunDcl {`,' FunDcl}
+                    |  type TypeDcl {`,' TypeDcl}
+  ValDcl          ::=  id `:' Type
+  VarDcl          ::=  id `:' Type
+  FunDcl          ::=  id [FunTypeParamClause] {ParamClause} `:' Type
+  TypeDcl         ::=  id [`>:' Type] [`<:' Type]
+
+  Def             ::=  val PatDef {`,' PatDef}
+                    |  var VarDef {`,' VarDef}
+                    |  def FunDef {`,' FunDef}
+                    |  type TypeDef {`,' TypeDef}
+                    |  ClsDef
+  PatDef          ::=  Pattern `=' Expr
+  VarDef          ::=  id [`:' Type] `=' Expr
+                    |  id `:' Type `=' `_'
+  FunDef          ::=  id [FunTypeParamClause] {ParamClause} 
+                       [`:' Type] `=' Expr
+                    |  this ParamClause `=' ConstrExpr
+  TypeDef         ::=  id [TypeParamClause] `=' Type
+  ClsDef          ::=  ([case] class | trait) ClassDef {`,' ClassDef}
+                    |  [case] object ObjectDef {`,' ObjectDef}
+  ClassDef        ::=  id [TypeParamClause] [ParamClause] 
+                       [`:' SimpleType] ClassTemplate
+  ObjectDef       ::=  id [`:' SimpleType] ClassTemplate
+  ClassTemplate   ::=  extends Template
+                    |  TemplateBody
+                    |
+  ConstrExpr      ::=  this ArgumentExpr
+                    |  `{' {BlockStat `;'} ConstrExpr `}'
+
+  CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
+  TopStat         ::=  {Modifier} ClsDef
+                    |  Import
+                    |  Packaging
+                    |
+  Packaging       ::=  package QualId `{' {TopStat `;'} TopStat `}'
+  QualId          ::=  id {`.' id}
+\end{lstlisting}
+
+\end{document}
+
+\chapter{Local Type Inference}
+\label{sec:local-type-inf}
+
+This needs to be specified in detail.
+Essentially, similar to what is done for GJ.
+
+\comment{
+\section{Definitions}
+
+For a possibly recursive definition such as $\LET;x_1 = e_1
+;\ldots; \LET x_n = e_n$, local type inference proceeds as
+follows.
+A first phase assigns {\em a-priori types} to the $x_i$. The a-priori
+type of $x$ is the declared type of $x$ if a declared type is
+given. Otherwise, it is the inherited type, if one is
+given. Otherwise, it is undefined.
+
+A second phase assigns completely defined types to the $x_i$, in some
+order.  The type of $x$ is the a-priori type, if it is completely
+defined. Otherwise, it is the a-priori type of $x$'s right hand side.
+The a-priori type of an expression $e$ depends on the form of $e$.
+\begin{enumerate}
+\item
+The a-priori type of a
+typed expression $e:T$ is $T$.
+\item
+The a-priori type of a class instance
+creation expression $c;\WITH;(b)$ is $C;\WITH;R$ where $C$ is the
+type of the class given in $c$ and $R$ is the a-priori type of block
+$b$.
+\item
+The a-priori type of a block is a record consisting the a-priori
+types of each non-private identifier which is declared in the block
+and which is visible at in last statement of the block.  Here, it is
+required that every import clause $\IMPORT;e_1 \commadots e_n$ refers
+to expressions whose type can be computed with the type information
+determined so far. Otherwise, a compile time error results.
+\item
+The a-priori type of any other expression is the expression's type, if
+that type can be computed with the type information determined so far.
+Otherwise, a compile time error results.
+\end{enumerate}
+The compiler will find an ordering in which types are assigned without
+compiler errors to all variables $x_1 \commadots x_n$, if such an
+ordering exists. This can be achieved by lazy evaluation.
 }
 \section{Exceptions}
 \label{sec:exceptions}

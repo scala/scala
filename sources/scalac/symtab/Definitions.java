@@ -315,10 +315,19 @@ public class Definitions {
         // add members to class scala.Any
         MATCH = new TermSymbol(
 	    Position.NOPOS, Names.match, ANY_CLASS, Modifiers.FINAL);
+	Symbol matchTyParam1 = newTypeParameter(MATCH, ANY_TYPE);
+	Symbol matchTyParam2 = newTypeParameter(MATCH, ANY_TYPE);
         MATCH.setInfo(
-	    Type.MethodType(
-		new Symbol[]{newParameter(MATCH, OBJECT_TYPE)},
-		OBJECT_TYPE));
+	    Type.PolyType(
+		new Symbol[]{matchTyParam1, matchTyParam2},
+		Type.MethodType(
+		    new Symbol[]{
+			newParameter(
+			    MATCH,
+			    functionType(
+				new Type[]{matchTyParam1.typeConstructor()},
+				matchTyParam2.typeConstructor()))},
+		    matchTyParam2.typeConstructor())));
         ANY_CLASS.members().enter(MATCH);
 
         AS = new TermSymbol(

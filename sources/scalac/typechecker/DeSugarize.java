@@ -61,7 +61,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
 // Auxiliary definitions and functions -------------------------------------------
 
-    /** introduce fresh variable of the form "deS$56"
+    /** introduce fresh variable of the form "ds$56"
      */
     Name getvar() {
         return freshNameCreator.newName("ds", '$');
