@@ -235,7 +235,6 @@ public class ScalaSearch {
     public static Comparator symPathOrder = new Comparator() {
 	    public int compare(Object o1, Object o2) {
                 int c = compare0(o1, o2);
-                System.out.println("!!! " + Debug.show(o1, " - ", o2) + " -> " + c);
                 return c;
             }
 	    public int compare0(Object o1, Object o2) {
