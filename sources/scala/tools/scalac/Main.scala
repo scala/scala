@@ -7,7 +7,8 @@
 \*                                                                      */
 
 import scalac.util.Reporter;
-import scalac.CompilerCommand;
+import scalac.{CompilerCommand, Global => scalac_Global};
+import scalac.symtab.classfile.CLRPackageParser;
 
 package scala.tools.scalac {
 
@@ -30,14 +31,21 @@ object Main {
     val reporter = new Reporter();
     val command = new CompilerCommand(
       PRODUCT, VERSION, reporter, new CompilerPhases());
+    var ok = true;
     if (command.parse(args) && command.files.list.size() > 0) {
-      val global = new Global(command);
-      global.compile(command.files.toArray(), false);
-      global.stop("total");
-      global.reporter.printSummary();
+      if (command.target.value == scalac_Global.TARGET_MSIL) {
+	try { CLRPackageParser.init(command); }
+	catch { case e: Error => ok = false; }
+      }
+      if (ok) {
+	val global = new Global(command);
+	global.compile(command.files.toArray(), false);
+	global.stop("total");
+	global.reporter.printSummary();
+      }
     }
     if( exitOnError ) {
-      System.exit(if (reporter.errors() > 0) 1 else 0);
+      System.exit(if (reporter.errors() > 0 || !ok) 1 else 0);
     }
   }
 }
