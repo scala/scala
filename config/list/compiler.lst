@@ -113,9 +113,9 @@ transformer/AddInterfaces.java
 transformer/AddInterfacesPhase.java
 transformer/Erasure.java
 transformer/ErasurePhase.java
-transformer/ExplicitOuterClassesPhase.java
 transformer/ExpandMixins.java
 transformer/ExpandMixinsPhase.java
+transformer/ExplicitOuterClassesPhase.java
 transformer/LambdaLift.java
 transformer/LambdaLiftPhase.java
 transformer/OwnerTransformer.java
