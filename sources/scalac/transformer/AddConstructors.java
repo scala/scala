@@ -54,9 +54,6 @@ public class AddConstructors extends Transformer {
 
     // True iff we generate code for INT backend.
     protected final boolean forINT;
-    // True iff we generate code for JVM backend.
-    protected final boolean forJVM;
-
 
     protected final HashMap/*<Symbol, Symbol>*/ constructors;
 
@@ -64,7 +61,6 @@ public class AddConstructors extends Transformer {
 	super(global);
         this.constructors = constructors;
         this.forINT = global.target == global.TARGET_INT;
-        this.forJVM = (global.target == global.TARGET_JVM);
     }
 
     /** return new constructor symbol if it isn't already defined
@@ -84,8 +80,8 @@ public class AddConstructors extends Transformer {
                 new TermSymbol(classConstr.pos, classConstr.name, owner, flags);
 
 	    Type constrType = Type.MethodType
-		(paramSyms, forJVM ?
-		 global.definitions.UNIT_TYPE() : owner.type());
+		(paramSyms, forINT ? owner.type()
+		 : global.definitions.UNIT_TYPE());
             if (tparamSyms.length != 0)
                 constrType = Type.PolyType(tparamSyms, constrType);
 
@@ -151,9 +147,9 @@ public class AddConstructors extends Transformer {
 			if (sym.isConstructor()) {
                             // add result expression consistent with the
                             // result type of the constructor
-                            Tree result = forJVM
-                                ? gen.mkUnitLit(t.pos)
-                                : gen.This(t.pos, treeSym);
+                            Tree result = forINT
+                                ? gen.This(t.pos, treeSym)
+                                : gen.mkUnitLit(t.pos);
                             rhs = gen.mkBlock(new Tree[] { rhs, result });
 			    t = gen.DefDef(getConstructor(sym), rhs);
 			}
@@ -175,7 +171,9 @@ public class AddConstructors extends Transformer {
 		    Tree superConstr = gen.Select
 			(gen.Super(pos, treeSym),
 			 getConstructor(fun.symbol()));
-		    constrBody.add(gen.mkApplyTV(superConstr, transform(targs), transform(args)));
+		    constrBody.add(gen.mkApplyTV(superConstr,
+						 transform(targs),
+						 transform(args)));
 		    break;
 		case Apply(Tree fun, Tree[] args):
 		    int pos = impl.parents[0].pos;
@@ -218,10 +216,8 @@ public class AddConstructors extends Transformer {
 
 	    // add result expression consistent with the
 	    // result type of the constructor
-            if (! forJVM)
-                constrBody.add(gen.This(tree.pos, treeSym));
-            else
-                constrBody.add(gen.mkUnitLit(tree.pos));
+	    constrBody.add(forINT ? gen.This(tree.pos, treeSym)
+			   : gen.mkUnitLit(tree.pos));
             Tree constrTree = constrBody.size() > 1 ?
                 gen.Block((Tree[])constrBody.
 			  toArray(new Tree[constrBody.size()])):
