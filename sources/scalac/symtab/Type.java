@@ -146,6 +146,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public static final Type[] EMPTY_ARRAY  = new Type[0];
 
     public static SingleType singleType(Type pre, Symbol sym) {
+        assert sym.isTerm(): pre + " -- " + Debug.show(sym);
         if (pre.isStable() || pre == ErrorType) {
             return new ExtSingleType(pre, sym);
         } else {
@@ -711,6 +712,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case SingleType(_, _):
         case ConstantType(_, _):
             return true;
+        case TypeRef(_, Symbol sym, _):
+            if (sym.isParameter() && sym.isSynthetic() && sym.hasStableFlag()) return true;
+            return false;
         default:
             return false;
         }
@@ -724,6 +728,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case SingleType(_, _):
             return true;
         case TypeRef(_, Symbol sym, _):
+            if (sym.isParameter() && sym.isSynthetic()) return true;
             return sym.kind == CLASS &&
                 ((sym.flags & JAVA) != 0 ||
                  (sym.flags & (TRAIT | ABSTRACT)) == 0);
@@ -2153,6 +2158,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     ||
                     deAlias(this) != this &&
                     deAlias(this).isSameAs(that);
+            default:
+                if (deAlias(this) != this)
+                    return deAlias(this).isSameAs(that);
             }
             break;
 
