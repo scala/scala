@@ -35,7 +35,7 @@ object Iterator {
   }
 
   def range(lo: Int, end: Int) = new Iterator[Int] {
-    private var i = 0;
+    private var i = lo;
     def hasNext: Boolean =
       i < end;
     def next: Int =

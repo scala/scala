@@ -37,20 +37,20 @@ public class Infer implements Modifiers, Kinds {
 
 // Error messages -------------------------------------------------------------
 
-    String applyErrorMsg(String msg1, Tree fn,
+    public String applyErrorMsg(String msg1, Tree fn,
 			 String msg2, Type[] argtypes, Type pt) {
 	return msg1 + toString(fn.symbol(), fn.type) + msg2 +
 	    ArrayApply.toString(argtypes, "(", ",", ")") +
 	    (pt == Type.AnyType ? "" : " with expected result type " + pt);
     }
 
-    String typeErrorMsg(String msg, Type found, Type req) {
+    public String typeErrorMsg(String msg, Type found, Type req) {
 	return msg +
 	    ";\n found   : " + found.toLongString() +
 	     "\n required: " + req;
     }
 
-    String overloadResolveErrorMsg(Symbol sym1, Type tpe1, Symbol sym2, Type tpe2) {
+    public String overloadResolveErrorMsg(Symbol sym1, Type tpe1, Symbol sym2, Type tpe2) {
 	return "ambiguous reference to overloaded definition,\n" +
 	    "both " + sym1 + ": " + tpe1 + "\n" +
 	    "and  " + sym2 + ": " + tpe2 + "\nmatch";
@@ -59,7 +59,7 @@ public class Infer implements Modifiers, Kinds {
     /** Give a string representation of symbol `sym' with type `tp'
      *  for error diagnostics. `sym' may be null.
      */
-    static String toString(Symbol sym, Type tp) {
+    public String toString(Symbol sym, Type tp) {
 	return
 	    (tp instanceof Type.OverloadedType ? "overloaded " : "") +
 	    (sym == null ? "expression" : sym) + " of type " + tp;
@@ -395,7 +395,7 @@ public class Infer implements Modifiers, Kinds {
 
     /** throw a type error if arguments not within bounds.
      */
-    void checkBounds(Symbol[] tparams, Type[] targs, String prefix) {
+    public void checkBounds(Symbol[] tparams, Type[] targs, String prefix) {
 	if (!isWithinBounds(tparams, targs)) {
 	    throw new Type.Error(
 		prefix + "type arguments " +
@@ -569,7 +569,7 @@ public class Infer implements Modifiers, Kinds {
 
     /** Is normalized type `tp' a subtype of prototype `pt'?
      */
-    boolean isCompatible(Type tp, Type pt) {
+    public boolean isCompatible(Type tp, Type pt) {
 	return normalize(tp).isSubType(pt);
     }
 
@@ -736,7 +736,7 @@ public class Infer implements Modifiers, Kinds {
      *  are replaced by `AnyType's. We try to instantiate first to `pt1' and then,
      *  if this fails, to `pt2'. If both attempts fail, a Type.Error is thrown.
      */
-    Type argumentTypeInstance(Symbol[] tparams, Type restype, Type pt1, Type pt2)
+    public Type argumentTypeInstance(Symbol[] tparams, Type restype, Type pt1, Type pt2)
 	                      throws Type.Error {
 	switch (restype) {
 	case PolyType(Symbol[] tparams1, Type restype1):
@@ -869,7 +869,7 @@ public class Infer implements Modifiers, Kinds {
     /** Is function type `ftpe' applicable to `argtypes' and
      *  does its result conform to `pt'?
      */
-    boolean isApplicable(Type ftpe, Type[] argtypes, Type pt) {
+    public boolean isApplicable(Type ftpe, Type[] argtypes, Type pt) {
 	switch (ftpe) {
 	case MethodType(Symbol[] params, Type restpe):
 	    // sequences ? List( a* )

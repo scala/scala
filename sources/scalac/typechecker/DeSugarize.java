@@ -50,13 +50,19 @@ public class DeSugarize implements Kinds, Modifiers {
 
     /** the constructor
      */
-    public DeSugarize(Analyzer analyzer, Global global) {
+    /** the constructor
+     */
+    public DeSugarize(TreeFactory make, TreeCopier copy, TreeGen gen,
+		      Infer infer, Global global) {
 	this.global = global;
-	this.make = analyzer.make;
-	this.copy = analyzer.copy;
-	this.gen = analyzer.gen;
-	this.infer = analyzer.infer;
+	this.make = make;
+	this.copy = copy;
+	this.gen = gen;
+	this.infer = infer;
         this.freshNameCreator = global.freshNameCreator;
+    }
+    public DeSugarize(Analyzer analyzer, Global global) {
+      this(analyzer.make, analyzer.copy, analyzer.gen, analyzer.infer, global);
     }
 
 // Auxiliary definitions and functions -------------------------------------------
@@ -180,7 +186,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		vparam.tpe = gen.mkType(vparam.pos, pt);
 	}
 
-    Tree isDefinedAtVisitor(Tree tree) {
+    public Tree isDefinedAtVisitor(Tree tree) {
 	switch (tree) {
 	case Visitor(CaseDef[] cases):
 	    CaseDef lastCase = cases[cases.length - 1];
@@ -220,7 +226,7 @@ public class DeSugarize implements Kinds, Modifiers {
      *  match[targs] => this.match[targs]
      *  IMPORTANT: tree is already attributed and attributes need to be preserved.
      */
-    Tree postMatch(Tree tree, Symbol currentclazz) {
+    public Tree postMatch(Tree tree, Symbol currentclazz) {
 	switch (tree) {
 	case Ident(Name name):
 	    return
@@ -626,7 +632,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
     /** Build value element definition name for case parameter.
      */
-    void addCaseElement(TreeList ts, ValDef vparam) {
+    public void addCaseElement(TreeList ts, ValDef vparam) {
 	//vparam.symbol().initialize();
 	ts.append(
 	    make.ValDef(
@@ -637,7 +643,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
     /** add case constructor, value defintiions and access functions.
      */
-    Tree[] addCaseElements(Tree[] body, ValDef[] vparams) {
+    public Tree[] addCaseElements(Tree[] body, ValDef[] vparams) {
 	TreeList stats = new TreeList();
 	for (int i = 0; i < vparams.length; i++) {
 	    addCaseElement(stats, vparams[i]);

@@ -975,6 +975,9 @@ public abstract class Symbol implements Modifiers, Kinds {
             tps[i] = syms[i].type();
         return tps;
     }
+    static public Type[] getType(Symbol[] syms) {
+	return type(syms);
+    }
 
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself, excluding

@@ -20,11 +20,18 @@ public class SourceCompleter extends Type.LazyType {
 
     /** the global compilation environment
      */
-    protected Global global;
+    protected final Global global;
+    private final boolean mixinOnly;
+
     private boolean completed = false;
 
     public SourceCompleter(Global global) {
+        this(global, false);
+    }
+
+    public SourceCompleter(Global global, boolean mixinOnly) {
         this.global = global;
+	this.mixinOnly = mixinOnly;
     }
 
     /** complete class symbol c by loading the unit
@@ -38,7 +45,7 @@ public class SourceCompleter extends Type.LazyType {
 		String filename = SourceRepresentation.externalizeFileName(
 		    c.fullName()) + ".scala";
 		java.io.File f = global.classPath.openJavaFile(filename);
-                Unit unit = new Unit(global, new SourceFile(f), false);
+                Unit unit = new Unit(global, new SourceFile(f), false, mixinOnly);
                 Phase phase = global.currentPhase;
                 global.currentPhase = global.PHASE.PARSER.phase();
                 global.PHASE.PARSER.phase().apply(new Unit[] {unit});

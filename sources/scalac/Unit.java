@@ -36,6 +36,10 @@ public class Unit {
      */
     public final boolean console;
 
+    /** is this unit only there for mixin expansion>
+     */
+    public final boolean mixinOnly;
+
     /** the content of the compilation unit in tree form
      */
     public Tree[] body;
@@ -45,10 +49,16 @@ public class Unit {
      */
     public NameMangler mangler = new NameMangler();
 
-    public Unit(Global global, SourceFile source, boolean console) {
+    public Unit(Global global, SourceFile source,
+		boolean console, boolean mixinOnly) {
         this.global = global;
         this.source = source;
         this.console = console;
+	this.mixinOnly = mixinOnly;
+    }
+
+    public Unit(Global global, SourceFile source, boolean console) {
+	this(global, source, console, false);
     }
 
     /** return the position representing the given encoded position

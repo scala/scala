@@ -217,8 +217,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     Type checkAccessible(int pos, Symbol sym, Type symtype, Tree site) {
 	if ((sym.owner().flags & INCONSTRUCTOR) != 0 &&
 	    !(sym.kind == TYPE && sym.isParameter())) {
-	    error(pos, sym + " cannot be accessed from constructor");
-	    return Type.ErrorType;
+	    switch (site) {
+	    case This(_):
+		error(pos, sym + " cannot be accessed from constructor");
+		return Type.ErrorType;
+	    }
 	}
 	switch (symtype) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -1547,6 +1550,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	Symbol sym = qual.type.lookup(name);
 	if (sym.kind == NONE) {
 	    //System.out.println(qual.type + " has members " + qual.type.members());//DEBUG
+
 	    return error(tree.pos,
 			 decode(name) + " is not a member of " + qual.type.widen());
 	} else {
@@ -1661,7 +1665,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    c.initialize();//to detect cycles
 		    if (i > 0 && (c.flags & JAVA) == 0 && c.isExternal()) {
 			// need to load tree for mixins
-			new SourceCompleter(global).complete(c);
+			new SourceCompleter(global, true).complete(c);
 		    }
 		}
 	    }
@@ -2075,7 +2079,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    restype = applyVisitor.type.deconst();
 			if (definitions.PARTIALFUNCTION_CLASS.isExternal())
 			    // need to load tree for mixins
-			    new SourceCompleter(global).complete(
+			    new SourceCompleter(global, true).complete(
 				definitions.PARTIALFUNCTION_CLASS);
 			return gen.mkPartialFunction(
 			    tree.pos, applyVisitor, isDefinedAtVisitor,
