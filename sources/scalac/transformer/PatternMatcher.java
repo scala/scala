@@ -367,8 +367,8 @@ public class PatternMatcher {
     }
 
     protected Type getConstrType(Type tpe) {
-    	return tpe;
-    	/*
+        return tpe;
+        /*
         switch (tpe) {
             case ConstructorType(Type result):
                 return result;
@@ -419,7 +419,8 @@ public class PatternMatcher {
             case Literal(Object value):
                 return makeConstantPat(tree.pos, getConstrType(tree.type), value);
             default:
-                throw new ApplicationError();
+                new scalac.ast.printer.TextTreePrinter().print(tree).flush();
+                throw new ApplicationError(tree);
         }
     }
 
@@ -530,6 +531,17 @@ public class PatternMatcher {
                 target.and = curHeader = makeHeader(
                     pat.pos,
                     getHeaderType(typeOf0(ts)),
+                    make.Select(
+                            pat.pos,
+                            make.Ident(pat.pos, casted.name)
+                                .setType(typeOf(casted))
+                                .setSymbol(casted),
+                            ts.name)
+                            .setType(getHeaderType(typeOf0(ts)))
+                            .setSymbol(ts));
+                /* target.and = curHeader = makeHeader(
+                    pat.pos,
+                    getHeaderType(typeOf0(ts)),
                     make.Apply(
                         pat.pos,
                         make.Select(
@@ -542,7 +554,7 @@ public class PatternMatcher {
                                       Symbol.EMPTY_ARRAY,
                                       getHeaderType(typeOf0(ts))))
                             .setSymbol(ts),
-                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts))));
+                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts)))); */
             }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);
@@ -776,20 +788,8 @@ public class PatternMatcher {
                 else if (tree.symbol() == falseSym)
                     return mkBoolean(tree.pos, true);
         }
-        Symbol fun = tree.type.lookup(NOT_N);
-        if (fun.name == NOT_N) {
-            //System.out.println(fun.typeAt(unit.global.UNCURRY_PHASE.id));//DEBUG
-            //System.out.println(fun.typeAt(unit.global.TRANSMATCH_PHASE.id));//DEBUG
-            //System.out.println(fun.type());//DEBUG
-        }
         return make.Apply(
                 tree.pos,
-/*
-                make.Select(
-                    tree.pos,
-                    tree,
-                    NOT_N).type(typeOf(fun)).symbol(fun),
-*/
                 gen.Select(tree, NOT_N),
                 Tree.EMPTY_ARRAY).setType(defs.BOOLEAN_TYPE);
     }
