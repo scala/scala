@@ -431,7 +431,7 @@ public class Tree {
     /**
      * Covariant type
      * - introduced by: parser
-     * - eliminated by: !!! ? (could be done by analyzer ?)
+     * - eliminated by: analyzer
      */
     public case CovariantType(Tree tpe) {
         assert tpe.isType();
