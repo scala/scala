@@ -312,10 +312,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     while (i < parents.length) {
       if (!checkClassType(constrs(i).pos, parents(i))) return;
       val bsym: Symbol = parents(i).symbol();
-      if (i == 0) {
-	if ((bsym.flags & (JAVA | INTERFACE)) == (JAVA | INTERFACE))
-	  error(constrs(0).pos, "superclass may not be a Java interface");
-      } else {
+      if (i > 0) {
 	if ((bsym.flags & (JAVA | INTERFACE)) == JAVA)
 	  error(constrs(i).pos, "Java class may not be used as mixin");
 	val grandparents = parents(i).parents();
@@ -1282,8 +1279,17 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   */
   def defineTemplate(templ: Tree$Template, clazz: Symbol, members: Scope): unit = {
     // attribute parent constructors
-    val constrs = transformConstrInvocations(templ.pos, templ.parents);
-    val parents = Tree.typeOf(constrs);
+    templ.parents = transformConstrInvocations(templ.pos, templ.parents);
+    if (templ.parents.length > 0 &&
+	(templ.parents(0).getType().symbol().flags & (JAVA | INTERFACE)) == (JAVA | INTERFACE)) {
+      val constrs1 = new Array[Tree](templ.parents.length + 1);
+      constrs1(0) = gen.mkApply__(
+	gen.mkPrimaryConstructorGlobalRef(
+	  templ.parents(0).pos, definitions.OBJECT_CLASS));
+      System.arraycopy(templ.parents, 0, constrs1, 1, templ.parents.length);
+      templ.parents = constrs1;
+    }
+    val parents = Tree.typeOf(templ.parents);
 
     // enter all members
     pushContext(templ, clazz, members);
@@ -1907,7 +1913,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     val parents = templ.parents;
     transformConstrInvocationArgs(parents);
     if (!owner.isError()) {
-      validateParentClasses(parents, owner.info().parents(), owner.typeOfThis());
+      validateParentClasses(
+	parents, owner.info().parents(), owner.typeOfThis());
     }
     pushContext(templ, owner, owner.members());
     /*
