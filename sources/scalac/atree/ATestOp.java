@@ -53,12 +53,12 @@ public class ATestOp {
     /** Returns a string representation of this operation. */
     public String toString() {
         switch (this) {
-        case EQ: return "NE";
-        case NE: return "EQ";
-        case LT: return "GE";
-        case GE: return "LT";
-        case LE: return "GT";
-        case GT: return "LE";
+        case EQ: return "EQ";
+        case NE: return "NE";
+        case LT: return "LT";
+        case GE: return "GE";
+        case LE: return "LE";
+        case GT: return "GT";
         default: throw Debug.abort("unknown case", this);
         }
     }
