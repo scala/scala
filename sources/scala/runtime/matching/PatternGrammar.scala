@@ -1,6 +1,5 @@
 package scala.runtime.matching ;
 
-import scala.util.alphabet.IntAlphabet ;
 import scala.collection.{ immutable, mutable, Map, Set };
 
 /** runtime representation of patterns. This class augments
@@ -9,9 +8,11 @@ import scala.collection.{ immutable, mutable, Map, Set };
  *  following pre-order of occurrence in pattern
  *  @caseVars an array, field i holding the number of variables in case i
  */
-abstract class PatternGrammar extends scala.util.grammar.ImmutableTreeHedgeGrammar[IntAlphabet] {
+abstract class PatternGrammar extends scala.util.grammar.ImmutableTreeHedgeGrammar[TestAlphabet] {
 
   val vars:Array[Int];
 
   def test(test:Int, inp:Any): Boolean;
+
+  def isSequenceType: Boolean = { treeInitials.toSet(true).isEmpty };
 }

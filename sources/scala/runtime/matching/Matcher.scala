@@ -5,29 +5,30 @@ import scala.collection.Map;
 import scala.collection.mutable;
 import scala.collection.immutable ;
 
+import scala.util.grammar.{ LabelledRHS, AnyTreeRHS, TreeRHS, ConsRHS, HedgeRHS };
 /** this class matches input against a grammar. A call to matchesT (matchesH)
 **  returns the list of initial tree (hedge) nonterminals that generate the
 **  input.
 **  @author Burak Emir
 **/
-class Matcher( pgram:Grammar )  {
+class Matcher( pgram:PatternGrammar )  {
 
   val treeTransitions = pgram.treeTransitions;
   val hedgeTransitions = pgram.hedgeTransitions;
 
   /** convenience method */
-  def singT( T:TreeNT ) = immutable.ListSet.Empty[TreeNT] + T;
+  def singT( T:Int ) = immutable.ListSet.Empty[Int] + T;
 
   /** convenience method */
-  def singH( H:HedgeNT ) = immutable.ListSet.Empty[HedgeNT] + H;
+  def singH( H:Int ) = immutable.ListSet.Empty[Int] + H;
 
   /** top-level call
   **  @todo remove sanity check
   **  @return index of the first applicable nonterminal in initials
   **/
-  def matchesT( input:Any ):Iterator[TreeNT] =
+  def matchesT( input:Any ):Iterator[Int] =
     if( !pgram.isSequenceType )
-      isApplicableTree( pgram.treeInitials, input ).elements;
+      isApplicableTree( pgram.treeInitials.toSet(true), input ).elements;
     else
       error("trying to match hedge against tree grammar");
 
@@ -35,20 +36,20 @@ class Matcher( pgram:Grammar )  {
   **  @todo remove sanity check
   **  @return index of the first applicable nonterminal in initials
   **/
-  def matchesH( h:Seq[Any] ):Iterator[HedgeNT] =
+  def matchesH( h:Seq[Any] ):Iterator[Int] =
     if( pgram.isSequenceType )
-      isApplicableHedge( pgram.hedgeInitials, h.elements ).elements;
+      isApplicableHedge( pgram.hedgeInitials.toSet(true), h.elements ).elements;
     else
       error("trying to match tree against hedge grammar");
 
   /** top-level call
   **/
-  def isApplicableTree1( T:TreeNT, t:Any ):boolean =
+  def isApplicableTree1( T:Int, t:Any ):boolean =
     !isApplicableTree( singT( T ), t ).isEmpty;
 
   /** top-level call
   **/
-  def isApplicableHedge1( H:HedgeNT, h:Iterator[Any] ):boolean =
+  def isApplicableHedge1( H:Int, h:Iterator[Any] ):boolean =
     !isApplicableHedge( singH( H ), h ).isEmpty;
 
 
@@ -64,41 +65,52 @@ class Matcher( pgram:Grammar )  {
   **        T -> a&lt;H> in rules,
   **        isApplicable( H, t.children ) }
   */
-  protected def isApplicableTree( initialNTs:Set[TreeNT],
-                                  t:Any ):immutable.Set[TreeNT] = {
-    var hedgeNTs = immutable.ListSet.Empty[HedgeNT];
-    var tmpNTs = immutable.ListSet.Empty[TreeNT];
-    var result = immutable.ListSet.Empty[TreeNT];
+  protected def isApplicableTree( initialNTs:Set[Int/*TreeNT*/],
+                                  t:Any ):immutable.Set[Int/*TreeNT*/] = {
+    var hedgeNTs = immutable.ListSet.Empty[Int];
+    var tmpNTs = immutable.ListSet.Empty[Int];
+    var result = immutable.ListSet.Empty[Int];
 
     //Console.println("isApplicableTree("+ initialNTs+","+t+")");
     for( val n <- initialNTs ) {
-      for( val rule <- treeTransitions( n.i ) ) {
-        val N = n;
+      //Console.println("checking nt "+n);
+      for( val rule <- treeTransitions( n ) ) {
+        //Console.println("checking rule"+rule);
         rule match {
-          case TreeRule( N, test, newNT ) if pgram.test( test, t ) => {
+
+          case AnyTreeRHS =>
+            result = result + n;
+
+          case LabelledRHS( AnyNode, newNT ) =>
             tmpNTs = tmpNTs + n;
             hedgeNTs = hedgeNTs + newNT;
-          }
-          case AnyTreeRule( N ) =>
-            result = result + N;
-          case AnyNodeRule( N, newNT ) =>
-            tmpNTs = tmpNTs + n;
-            hedgeNTs = hedgeNTs + newNT;
+
+          case LabelledRHS( TestLabel(test), newNT )
+            if pgram.test( test, t ) =>
+              //Console.println("success for test "+test);
+              tmpNTs = tmpNTs + n;
+              hedgeNTs = hedgeNTs + newNT;
+
+
           case _ =>
+            //Console.println("no use");
         }
       }
     }
     if( !hedgeNTs.isEmpty ) {
       val applHedgeNTs = isApplicableHedge( hedgeNTs, getChildren( t ) );
         for( val tn <- tmpNTs ) {
-          for( val rule <- treeTransitions( tn.i )) {
+          for( val rule <- treeTransitions( tn )) {
           rule match {
-            case TreeRule( ttn, _ , nt ) /** type test in rule determined by ttn and nt */
-            if (( ttn == tn ) && applHedgeNTs.contains( nt )) =>
-              result = result + tn;
-            case AnyNodeRule( ttn, nt )
-            if (( ttn == tn ) && applHedgeNTs.contains( nt )) =>
-              result = result + tn;
+
+            case LabelledRHS( AnyNode, nt )
+              if applHedgeNTs.contains( nt )  =>
+                result = result + tn;
+
+            case LabelledRHS( _ , nt ) /** type test in rule determined by ttn and nt */
+              if  applHedgeNTs.contains( nt ) =>
+                result = result + tn;
+
             case _ =>
           }
         }
@@ -113,28 +125,28 @@ class Matcher( pgram:Grammar )  {
   **        T -> a&lt;H> in rules,
   **        isApplicable( H, t.children )
   */
-  def isApplicableHedge( initialNTs:Set[HedgeNT],
-                         it:Iterator[Any] ):immutable.Set[HedgeNT] = {
+  def isApplicableHedge( initialNTs:Set[Int/*HedgeNT*/],
+                         it:Iterator[Any] ):immutable.Set[Int/*HedgeNT*/] = {
 
-      //Console.println("isApplicableHedge("+initialNTs+","+h+")");
+      //Console.println("isApplicableHedge("+initialNTs+",...)");
 
     if( !it.hasNext ) {
-      var set = immutable.ListSet.Empty[HedgeNT];
+      var set = immutable.ListSet.Empty[Int];
       for( val h <- initialNTs ) {
-        if( h.nullable ) { set = set + h; }
+        if( pgram.isNullable( h )) { set = set + h; }
       }
       //Console.println("RET isApplicableHedge("+initialNTs+","+h+") " + set.toString());
       set /*+ EmptySeqNT */
 
     } else {
       val first = it.next;
-      var treeNTs = immutable.ListSet.Empty[TreeNT];
+      var treeNTs = immutable.ListSet.Empty[Int];
 
       for( val h <- initialNTs ) {
-        for( val rule <- hedgeTransitions( h.i ) ) {
+        for( val rule <- hedgeTransitions( h ) ) {
           /* all non-empty rules that start with some H in initialHedgeNTs */
           rule match {
-            case HedgeRule( _, treeNT , _ ) => {
+            case ConsRHS( treeNT , _ ) => {
               treeNTs = treeNTs + treeNT
             }
             case _ =>
@@ -143,14 +155,14 @@ class Matcher( pgram:Grammar )  {
       }
       val applTreeNTs = isApplicableTree( treeNTs, first );
 
-      var nextHedgeNTs = immutable.ListSet.Empty[HedgeNT];
+      var nextHedgeNTs = immutable.ListSet.Empty[Int/*HedgeNT*/];
       for( val h   <- initialNTs;
-          val rule <- hedgeTransitions( h.i ) ) {
+           val rule <- hedgeTransitions( h ) ) {
           /* all non-empty rules that start with some H in initialHedgeNTs */
           rule match {
-            case HedgeRule( _ , treeNT , nH )
-            if( applTreeNTs.contains( treeNT ) ) =>
-              nextHedgeNTs = nextHedgeNTs + nH
+            case ConsRHS( treeNT , nH )
+              if( applTreeNTs.contains( treeNT )) =>
+                nextHedgeNTs = nextHedgeNTs + nH
 
             case _ =>
           }
@@ -158,15 +170,15 @@ class Matcher( pgram:Grammar )  {
 
       val applNextHedgeNTs = isApplicableHedge( nextHedgeNTs, it );
 
-      var applHedgeNTs = immutable.ListSet.Empty[HedgeNT];
+      var applHedgeNTs = immutable.ListSet.Empty[Int/*HedgeNT*/];
 
       for( val nH   <- applNextHedgeNTs;
            val h    <- initialNTs;
-           val rule <- hedgeTransitions( h.i ) ) {
+           val rule <- hedgeTransitions( h ) ) {
             /* all non-empty rules that start with some H in initialHedgeNTs */
             val H = nH;
             rule match {
-              case HedgeRule( _, treeNT , H ) => {
+              case ConsRHS( treeNT , H ) => {
                 applHedgeNTs = applHedgeNTs + h
               }
               case _ =>

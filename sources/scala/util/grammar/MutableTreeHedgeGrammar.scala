@@ -55,7 +55,7 @@ class MutableTreeHedgeGrammar[ A <: Alphabet ] extends TreeHedgeGrammar[ A ] {
     hedgeTransitions( hnt ) += rhs;
 
   def addTreeRule(tnt: Int, label: A, hnt: Int): Unit =
-    addTreeRule(tnt, LabelledTreeRHS( label, hnt ));
+    addTreeRule(tnt, LabelledRHS( label, hnt ));
 
   def addAnyTreeRule(tnt: Int): Unit =
     addTreeRule(tnt, AnyTreeRHS);
