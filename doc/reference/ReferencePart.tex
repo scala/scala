@@ -315,7 +315,7 @@ equivalent to the type projection \lstinline@$p$.type#$x$@.
 
 \example 
 Some type designators and their expansions are listed below. We assume
-a local type parameter $t$, a value \code{mytable}
+a local type parameter $t$, a value \code{maintable}
 with a type member \code{Node} and the standard class \lstinline@scala.Int@, 
 \begin{lstlisting}
   t                     $\epsilon$.type#t
@@ -528,7 +528,7 @@ Types, bounds and base classes of class members depend on the way the
 members are referenced.  Central here are three notions, namely:
 \begin{enumerate}
 \item the notion of the set of base classes of a type $T$,
-\item the notion of a type $T$ in some class $C$ seem from some 
+\item the notion of a type $T$ in some class $C$ seen from some 
       prefix type $S$,
 \item the notion of a member binding of some type $T$.
 \end{enumerate}
@@ -602,7 +602,7 @@ has a type instance of class $C$ as a base class, say
    \begin{itemize}
    \item
    If $D$ is a subclass of $C$ and 
-   $S$ has a type instance of class $D$ among its base classes.
+   $S$ has a type instance of class $D$ among its base classes,
    then $T$ in $C$ seen from $S$ is $S$.
    \item
    Otherwise, if $C$ is defined in a class $C'$, then
@@ -619,7 +619,7 @@ has a type instance of class $C$ as a base class, say
 If $T$ is a possibly parameterized class type, where $T$'s class
 is defined in some other class $D$, and $S$ is some prefix type,
 then we use ``$T$ seen from $S$'' as a shorthand for
-``$T$ in $D$ seen from $S$.
+``$T$ in $D$ seen from $S$''.
 
 3. The {\em member bindings} of a type $T$ are all bindings $d$ such that
 there exists a type instance of some class $C$ among the base classes of $T$
