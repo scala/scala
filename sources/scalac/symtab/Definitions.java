@@ -473,27 +473,16 @@ public class Definitions {
         initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
         // create type symbols
-        UNIT_TYPE    = newTerm(ROOT_CLASS, Names.Unit   , 0);
-        BOOLEAN_TYPE = newTerm(ROOT_CLASS, Names.Boolean, 0);
-        BYTE_TYPE    = newTerm(ROOT_CLASS, Names.Byte   , 0);
-        SHORT_TYPE   = newTerm(ROOT_CLASS, Names.Short  , 0);
-        CHAR_TYPE    = newTerm(ROOT_CLASS, Names.Char   , 0);
-        INT_TYPE     = newTerm(ROOT_CLASS, Names.Int    , 0);
-        LONG_TYPE    = newTerm(ROOT_CLASS, Names.Long   , 0);
-        FLOAT_TYPE   = newTerm(ROOT_CLASS, Names.Float  , 0);
-        DOUBLE_TYPE  = newTerm(ROOT_CLASS, Names.Double , 0);
-        ARRAY_TYPE   = newTerm(ROOT_CLASS, Names.Array  , 0);
-
-        initMethod(UNIT_TYPE   , Type.EMPTY_ARRAY, UNIT_CLASS.type());
-        initMethod(BOOLEAN_TYPE, Type.EMPTY_ARRAY, BOOLEAN_CLASS.type());
-        initMethod(BYTE_TYPE   , Type.EMPTY_ARRAY, BYTE_CLASS.type());
-        initMethod(SHORT_TYPE  , Type.EMPTY_ARRAY, SHORT_CLASS.type());
-        initMethod(CHAR_TYPE   , Type.EMPTY_ARRAY, CHAR_CLASS.type());
-        initMethod(INT_TYPE    , Type.EMPTY_ARRAY, INT_CLASS.type());
-        initMethod(LONG_TYPE   , Type.EMPTY_ARRAY, LONG_CLASS.type());
-        initMethod(FLOAT_TYPE  , Type.EMPTY_ARRAY, FLOAT_CLASS.type());
-        initMethod(DOUBLE_TYPE , Type.EMPTY_ARRAY, DOUBLE_CLASS.type());
-        initMethod(ARRAY_TYPE  , Type.EMPTY_ARRAY,
+        UNIT_TYPE    = newTypeSymbol(Names.Unit   , UNIT_CLASS.type   ());
+        BOOLEAN_TYPE = newTypeSymbol(Names.Boolean, BOOLEAN_CLASS.type());
+        BYTE_TYPE    = newTypeSymbol(Names.Byte   , BYTE_CLASS.type   ());
+        SHORT_TYPE   = newTypeSymbol(Names.Short  , SHORT_CLASS.type  ());
+        CHAR_TYPE    = newTypeSymbol(Names.Char   , CHAR_CLASS.type   ());
+        INT_TYPE     = newTypeSymbol(Names.Int    , INT_CLASS.type    ());
+        LONG_TYPE    = newTypeSymbol(Names.Long   , LONG_CLASS.type   ());
+        FLOAT_TYPE   = newTypeSymbol(Names.Float  , FLOAT_CLASS.type  ());
+        DOUBLE_TYPE  = newTypeSymbol(Names.Double , DOUBLE_CLASS.type ());
+        ARRAY_TYPE   = newTypeSymbol(Names.Array  ,
             Type.appliedType(ARRAY_CLASS.type(), new Type[]{ANYREF_TYPE()}));
 
         // add members to scala.Any
@@ -637,6 +626,13 @@ public class Definitions {
         Name name = Name.fromString("v" + index);
         return new TermSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
 	    .setInfo(type);
+    }
+
+    /** Creates a new type symbol */
+    private Symbol newTypeSymbol(Name name, Type type) {
+        Symbol symbol = new TermSymbol(Position.NOPOS, name, ROOT_CLASS, 0);
+        initMethod(symbol, Type.EMPTY_ARRAY, type);
+        return symbol;
     }
 
     /** Initializes the given class */
