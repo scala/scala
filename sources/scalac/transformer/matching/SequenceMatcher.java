@@ -92,11 +92,11 @@ public class SequenceMatcher extends PatternTool {
      *  precondition: pat.type() corresponds to element type
      */
       Tree addBinderToBody( Tree pat, Tree body ) {
-
+	  /*
             SplitNested spn = new SplitNested( pat, _m.owner, cf );
 
 
-            pat = spn.flatPat; // flat pattern - no nested sequences present
+            pat = spn.flatPat; //
 
             for( Iterator it = spn.nestedVarToPats.keySet().iterator();
                  it.hasNext(); ){
@@ -110,7 +110,7 @@ public class SequenceMatcher extends PatternTool {
                   _m = saveM;
                   body = nbody;
             }
-
+	  */
             Type elementType = cf.getElemType_Sequence( pat.type() );
 
             BindingBerrySethi build = new BindingBerrySethi();

@@ -156,28 +156,13 @@ public class AlgebraicMatcher extends PatternTool {
       /** adds a case definition to the intermediate presentation
        */
     protected CaseEnv addCase(int pos, Tree pat, Tree guard, Tree body, int case_index) {
-          // TMP
-          /*
-          System.out.print("AM: addCase... pattern has variables:");
-          CollectVariableTraverser cvt = new CollectVariableTraverser();
-          cvt.traverse( pat );
-          System.out.println(cvt.vars);
-          */
 
-          // TMP
         CaseEnv env = new CaseEnv( _m.owner, unit );
 
         //PatternNode matched = match(pat, root);
         PatternNode target = enter1(pat, /*null*/ -1, root, root.symbol(), env, case_index);
         //if (target.and != null)
         //    unit.error(pat.pos, "duplicate case");
-
-        /*
-        System.out.print( "AM.addCase  boundvars:{");
-        ValDef bvs[] = env.boundVars();
-        for( int j = 0; j < bvs.length; j++ )
-              System.out.print(" "+bvs[ j ].symbol() );
-        */
 
         if (target.and == null)
               target.and = mk.Body(pos, env.boundVars(), guard, body);
@@ -279,25 +264,12 @@ public class AlgebraicMatcher extends PatternTool {
           case Literal(Object value):
 	      return mk.ConstantPat(tree.pos, theType, value);
 
-	      case Sequence( _ ):
-		  throw new ApplicationError("Illegal pattern");
-	      //return mk.SeqContainerPat(tree.pos, tree, case_index);
-	      //return mk.SeqContainerPat(tree.pos, null, 0, tree);
-
-	      //case Subsequence( _ ): // this may not appear here.
-                /*case Bind( Name n, Tree t ): // ignore for now, treat as var x
-
-                return patternN( gen.Ident( tree.pos, tree.symbol() ),
-                                    castType,
-                                    headerSel
-                                    env,
-                                    case_index);
-                */
-                //case Alternative( _ ): // ignore for now
-            default:
-                throw new ApplicationError("cannot handle "+tree);
-        }
-    }
+	  case Sequence( _ ):
+	      throw new ApplicationError("Illegal pattern");
+	  default:
+	      throw new ApplicationError("cannot handle "+tree);
+	  }
+      }
 
       /** returns true if p and q are pattern nodes of the same kind and p matches
        *  whenever q matches, possibly even more often

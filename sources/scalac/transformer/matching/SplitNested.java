@@ -9,7 +9,10 @@ import java.util.* ;
 import scalac.ast.printer.TextTreePrinter ;
 
 /** given Sequence pattern pat, create flatpatterns flatPat and
- *  extract the nested (not necessarily flat) patterns pat_1,...,pat_n */
+ *  extract the nested (not necessarily flat) patterns pat_1,...,pat_n
+ *
+ *  this class does not do anything useful anymore. soon to be removed
+ */
 public class SplitNested {
 
       CodeFactory cf;
@@ -30,20 +33,7 @@ public class SplitNested {
 
             case Sequence( Tree[] trees ):  // FIXED like Subseq now// remove nested sequences, make vars
 		return Tree.Sequence( split( trees ));
-		/*
-                  Name n = cf.fresh.newName("nestseq");
-                  Symbol v = new TermSymbol( 0,
-                                             n,
-                                             owner,
-                                             0)
-                        .setType( pat.type() );
-                  nestedVarToPats.put( v, pat );
-                  return new Tree.ExtBind( n,
-                                           cf.make.Ident( 0, Name.fromString("_"))
-                                           .setType( v.type() ))
-                        .setSymbol( v )
-                        .setType( v.type() );
-		*/
+
             case Bind(Name name, Tree subtree):  // remove nested sequences, make vars
                   return new Tree.ExtBind(name, split( subtree ))
                         .setType( pat.type() )

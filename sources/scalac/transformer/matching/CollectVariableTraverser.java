@@ -8,7 +8,7 @@ import java.util.Vector;
 
 class CollectVariableTraverser extends VariableTraverser {
 
-      Vector vars;
+      protected Vector vars;
 
       boolean isVariableName( Name name ) {
             return ( name.toString().indexOf("$") == -1 )
@@ -24,12 +24,18 @@ class CollectVariableTraverser extends VariableTraverser {
             this.vars = new Vector();
       }
 
-      static  boolean containsBinding( Tree  pat ) {
+      static boolean containsBinding( Tree  pat ) {
 
             CollectVariableTraverser cvt = new CollectVariableTraverser();
             cvt.traverse( pat );
             return !cvt.vars.isEmpty();
 
       }
+
+    static Vector collectVars( Tree pat ) {
+	CollectVariableTraverser cvt = new CollectVariableTraverser();
+	cvt.traverse( pat );
+	return cvt.vars;
+    }
 
 }

@@ -58,17 +58,7 @@ public class RightTracerInScala extends Autom2Scala  {
             }
 
             this.seqVars = seqVars;
-
-            //System.out.println("seqVars:" +seqVars);
-            //Vector varsToExport = NoSeqVariableTraverser.varsNoSeq( pat );
-            //System.out.println("var2expo:" +varsToExport);
-
-
-            CollectVariableTraverser cv = new CollectVariableTraverser();
-            cv.traverse( pat );
-
-            //System.out.println("allVars:" +allVars);
-            this.allVars = cv.vars;
+            this.allVars = CollectVariableTraverser.collectVars( pat );
 
             helpMap = new HashMap();
             helpMap2 = new HashMap();
