@@ -8,13 +8,12 @@
 
 ROOT			 = .
 
-include $(ROOT)/Makefile.config
+include $(ROOT)/Makefile.import
 
 ##############################################################################
 # Variables
 
-# project
-PROJECT_VERSION		 = $(shell $(TAIL) -1 $(VERSION_FILE))
+# project sources
 PROJECT_SOURCES		+= $(LAMPLIB_SOURCES)
 PROJECT_SOURCES		+= $(META_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
@@ -24,10 +23,6 @@ PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_SOURCES		+= $(SCALAP_SOURCES)
 PROJECT_SOURCES		+= $(SCALATEST_SOURCES)
-
-# version management
-VERSION_FILE		 = $(PROJECT_ROOT)/VERSION
-VERSION_SCRIPT		 = $(PROJECT_SUPPORTDIR)/scripts/version-manager
 
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
@@ -154,10 +149,6 @@ SC_COMPILER		 = SCALAC
 SC_OUTPUTDIR		 = $(PROJECT_OUTPUTDIR)
 SC_CLASSPATH		 = $(PROJECT_OUTPUTDIR)
 
-# scala compiler
-SCALAC			?= $(PROJECT_BINARYDIR)/scalac
-SCALADOC		?= $(PROJECT_BINARYDIR)/scaladoc
-
 ##############################################################################
 # Commands
 
@@ -273,6 +264,17 @@ version-increment	:
 .PHONY			: version-set
 .PHONY			: version-update
 .PHONY			: version-increment
+
+##############################################################################
+# Commands - CVS management
+
+cvs-fix-perms		:
+	$(strip \
+	    $(FIND) . -type f -perm +a=x | \
+	    $(GREP) -v '.*/bin/.*' | \
+	    $(XARGS) -r $(CHMOD) a-x)
+
+.PHONY			: cvs-fix-perms
 
 ##############################################################################
 # Targets

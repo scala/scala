@@ -8,7 +8,7 @@
 
 ROOT			 = ../..
 
-include $(ROOT)/Makefile.config
+include $(ROOT)/Makefile.import
 
 ##############################################################################
 # Variables
