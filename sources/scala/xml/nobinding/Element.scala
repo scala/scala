@@ -5,7 +5,7 @@ import scala.collection.immutable.ListMap ;
 
 /** an XML node. use this when data binding is not desired.
 **/
-case class Element( symbol: Symbol, ch: List[Node] ) extends AttributedNode {
+class Element( symbol: Symbol, ch: Seq[Node] ) extends AttributedNode {
 
   def label = symbol.name;
   def children = ch;

@@ -36,13 +36,17 @@ import scala.collection.mutable.HashMap ;<br/>
     <elementBinding>
       def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = 
     new &ccElementName;(ch:_*) { <inc/><br/>
-      override def attributes : Map[String,String] = attrs; <br/>   
+      def attributes : Map[String,String] = attrs; <br/>   
       <attributeAssign>    
       override val &cAttributeName; = attrs.get(&qAttributeName;); <br/>
-      val attribHashCode: int = attrs.hashCode() ;<br/>
       </attributeAssign>
+      val attribHashCode: int = attrs.toList.hashCode() ;<br/>
     };<dec/><br/>
-      case class &ccElementName;( ch:Node* ) extends scala.xml.AttributedNode {<inc/><br/>
+    def &ccElementName;( ch:Node* ) = new &ccElementName;(ch:_*){<inc/><br/>
+      def attributes = scala.collection.immutable.ListMap.Empty[String,String];<br/>
+      val attribHashCode = 0;
+    };
+      abstract case class &ccElementName;( ch:Node* ) extends scala.xml.AttributedNode {<inc/><br/>
           def label = &qElementName;; <br/>
           def children = ch;<br/>
       <attributeBinding>
