@@ -83,7 +83,7 @@ class GBTree[A <: Ord[A], B]() with scala.collection.immutable.Map[A, B, GBTree[
   private def mkGBTree[C >: A <: Ord[C],D>:B](sz:int,t:Tree[C,D]) =
       new GBTree[A,B](){
 	  override def size=sz;
-	  override protected val tree:this.Tree[A,B]=t as this.Tree[A,B];
+	  override protected val tree:this.Tree[A,B]=t.asInstanceOf[this.Tree[A,B]];
       };
 
 

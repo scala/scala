@@ -37,8 +37,8 @@ class ListSet[A] with Set[A, ListSet[A]] {
     override def toList: List[A] = Nil;
 
     override def equals(obj: Any): Boolean =
-        if (obj is scala.collection.Set[A]) {
-            val that = obj as scala.collection.Set[A];
+        if (obj.isInstanceOf[scala.collection.Set[A]]) {
+            val that = obj.asInstanceOf[scala.collection.Set[A]];
             if (size != that.size) false else toList.forall(that.contains);
         } else
             false;

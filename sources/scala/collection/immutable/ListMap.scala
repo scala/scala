@@ -37,8 +37,8 @@ class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
     override def toList: List[Pair[A, B]] = Nil;
 
     override def equals(obj: Any): Boolean =
-        if (obj is scala.collection.Map[A, B]) {
-            val that = obj as scala.collection.Map[A, B];
+        if (obj.isInstanceOf[scala.collection.Map[A, B]]) {
+            val that = obj.asInstanceOf[scala.collection.Map[A, B]];
             if (size != that.size) false else toList.forall {
                 case Pair(key, value) => that.get(key) match {
                     case None => false;
