@@ -116,6 +116,16 @@ public class AddAccessors extends Transformer {
                                  copy.Template(impl, newParents, newBodyA));
         }
 
+        case ValDef(_, _, _, _): {
+            // Do not go into RHS of value definitions which reference
+            // case class constructor arguments, to avoid creating
+            // another accessor.
+            if (Modifiers.Helper.isCase(tree.symbol().flags)) {
+                return tree;
+            } else
+                return super.transform(tree);
+        }
+
         case Select(Tree qualifier, Name selector): {
             Symbol sym = tree.symbol();
             if (sym.owner().isPrimaryConstructor())
