@@ -159,9 +159,9 @@ runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
 runtime/matching/Address.scala
-runtime/matching/Matcher.scala 
+#runtime/matching/Matcher.scala 
 runtime/matching/NonTerm.scala
-runtime/matching/PatternGrammar.scala
+#runtime/matching/PatternGrammar.scala
 runtime/matching/PatternTests.scala
 runtime/matching/Rule.scala
 runtime/matching/TestAlphabet.scala
@@ -195,9 +195,9 @@ util/automata/DetWordAutom.scala
 util/automata/NondetWordAutom.scala
 util/automata/WordBerrySethi.scala
 util/grammar/HedgeRHS.scala
-util/grammar/ImmutableTreeHedgeGrammar.scala
-util/grammar/MutableTreeHedgeGrammar.scala
-util/grammar/TreeHedgeGrammar.scala
+#util/grammar/ImmutableTreeHedgeGrammar.scala
+#util/grammar/MutableTreeHedgeGrammar.scala
+#util/grammar/TreeHedgeGrammar.scala
 util/grammar/TreeRHS.scala
 util/regexp/Base.scala
 util/regexp/PointedHedgeExp.scala

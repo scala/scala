@@ -169,14 +169,40 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         delta1 = delta1.update( i, deltaq( i ));
         i = i + 1;
       }
+      val finalsArr = new Array[Int](pos);
+      {
+        var k = 0; while(k < pos) {
+          finalsArr(k) = finals.get(k).match {
+            case Some(z) => z;
+            case None => -1;
+          };
+          k = k + 1;
+        }
+      }
 
+      val initialsArr = new Array[Int](initials.size);
+      val it = initials.elements;
+      {
+        var k = 0; while(k < initials.size) {
+          initialsArr(k) = it.next;
+          k = k + 1;
+        }
+      }
+
+      val deltaArr = new Array[Map[T_label,List[Int]]](pos);
+      {
+        var k = 0; while(k < pos) {
+          deltaArr(k) = delta1(k);
+          k = k + 1;
+        }
+      }
       new NondetWordAutom {
 	type T_label = WordBerrySethi.this.T_label;
         val nstates  = pos;
-        val labels   = WordBerrySethi.this.labels;
-        val initials = WordBerrySethi.this.initials;
-        val finals   = WordBerrySethi.this.finals;
-        val delta    = delta1;
+        //val labels   = WordBerrySethi.this.labels;
+        val initials = initialsArr;
+        val finals   = finalsArr;
+        val delta    = deltaArr;
         val default  = defaultq;
       }
       case _ => error("expected Sequ");
