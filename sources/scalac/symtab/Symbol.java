@@ -801,7 +801,12 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Get info at start of given phase
      */
     protected final Type infoAt(Phase phase) {
-        return initialize().rawInfoAt(phase);
+        Global global = phase.global;
+        Phase current = global.currentPhase;
+        global.currentPhase = phase;
+        Type info = info();
+        global.currentPhase = current;
+        return info;
     }
 
     /** Get info at start of current phase, without forcing lazy types.
