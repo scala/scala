@@ -244,10 +244,6 @@ public final class CLRTypes {
     //##########################################################################
     // collect the members contained in a given namespace
 
-    private Symbol pakage;
-    private Map/*<String,Type>*/ typesMap;
-    private Set/*<String>*/ namespacesSet;
-
     /** Find the position of the first type whose name starts with
      *  the given prefix; return the length of the types array if no match
      *  is found so the result can be used to terminate loop conditions
@@ -265,14 +261,10 @@ public final class CLRTypes {
 
     /** Collects the members contained in the given Scala package (namespace)
      */
-    private void enumerateMembers(Symbol pakage) {
-	if (this.pakage == pakage)
-	    return;
-	this.pakage = pakage;
-	typesMap = new HashMap();
-	namespacesSet = new LinkedHashSet();
-
-	String namespace = getNameSpaceOf(pakage);
+    void collectMembers(Symbol pakage, Map/*<String,Type>*/ typesMap,
+        Set/*<String>*/ namespacesSet)
+    {
+	String namespace = pakage.isRoot() ? "" : snw.toString(pakage) + ".";
 	int nl = namespace.length();
 	for (int i = findFirst(namespace);
 	     i < types.length && types[i].FullName.startsWith(namespace);
@@ -292,26 +284,10 @@ public final class CLRTypes {
 	}
     }
 
-    /** return a mapping from type names to types contained
-     *  in the given Scala package (namespace)
-     */
-    Map getTypes(Symbol pakage) {
-	enumerateMembers(pakage);
-	return typesMap;
-    }
-
-    /** Returns a set of the namespaces contained
-     *  in the given Scala package (namespace)
-     */
-    Set getNamespaces(Symbol pakage) {
-	enumerateMembers(pakage);
-	return namespacesSet;
-    }
-
     /** Returns the namespace of the given package */
     String getNameSpaceOf(Symbol pakage) {
         assert pakage.hasPackageFlag() || pakage.isRoot(): Debug.show(pakage);
-        return pakage.isRoot() ? "" : snw.toString(pakage) + ".";
+        return pakage.isRoot() ? "" : snw.toString(pakage);
     }
 
     //##########################################################################

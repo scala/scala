@@ -9,22 +9,19 @@
 package scalac.symtab.classfile;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.HashSet;
 
 import scala.tools.util.AbstractFile;
 import scala.tools.util.ByteArrayFile;
+import scala.tools.util.VirtualDirectory;
 
 import scalac.Global;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
-import scalac.symtab.Modifiers;
 import scalac.symtab.SymbolLoader;
-import scalac.symtab.SourceCompleter;
-import scalac.symtab.SymbolNameWriter;
 
 import ch.epfl.lamp.compiler.msil.Type;
 import ch.epfl.lamp.compiler.msil.Attribute;
@@ -34,63 +31,89 @@ import ch.epfl.lamp.compiler.msil.Attribute;
  */
 public final class CLRPackageParser extends PackageParser {
 
-    //##########################################################################
+    //########################################################################
+    // Private Constants
+
+    /** An empty directory */
+    private static final AbstractFile EMPTY = new VirtualDirectory("<empty>");
+
+    //########################################################################
+    // Protected Fields
+
+    /** A table to collect types */
+    protected final HashMap types = new HashMap();
+
+    //########################################################################
+    // Public Constructors
 
     public CLRPackageParser(Global global, AbstractFile directory) {
         super(global, directory);
     }
 
-    private final SymbolNameWriter snw = new SymbolNameWriter();
+    //########################################################################
+    // Protected Methods
 
-    protected String doComplete(Symbol root) {
-        assert root.isRoot() || root.isPackage(): Debug.show(root);
-        Symbol peckage = root.isRoot() ? root : root.moduleClass();
-        if (directory != null)
-            preInitialize(peckage, false);
+    protected PackageParser newPackageParser(AbstractFile directory) {
+        return new CLRPackageParser(global, directory);
+    }
 
-        final CLRTypes clrTypes = CLRTypes.instance();
-        java.util.Map types = clrTypes.getTypes(peckage);
-        Set namespaces = clrTypes.getNamespaces(peckage);
+    protected void collectAllMembers(Symbol clasz) {
+        super.collectAllMembers(clasz);
+        HashSet namespaces = new HashSet();
+        CLRTypes.instance().collectMembers(clasz, types, namespaces);
+        for (Iterator i = namespaces.iterator(); i.hasNext(); ) {
+            String namespace = (String)i.next();
+            if (!packages.containsKey(namespace))
+                packages.put(namespace, EMPTY);
+        }
+    }
 
-        // create JVM and source members
-        Scope members = new Scope();
+    protected void removeHiddenMembers(Symbol clasz) {
+        // Ignore all ".class" files.
+        classes.clear();
+        super.removeHiddenMembers(clasz);
+        // Classes/Objects in the root package are hidden.
+        if (clasz.isRoot()) { types.clear(); }
+        // Source versions hide compiled versions except if separate
+        // compilation is enabled and the compiled version is more
+        // recent. In that case the compiled version hides the source
+        // version.
+        boolean separate = global.separate;
         for (Iterator i = sources.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile sfile = (AbstractFile)entry.getValue();
-            Type type = (Type)types.remove(name);
-            if (global.separate && type != null
-                /*&& type.Assembly().getFile().lastModified() > sfile.lastModified()*/
-                )
-            {
-                types.put(name, type);
-            } else {
-                packages.remove(name);
-                Name classname = Name.fromString(name).toTypeName();
-                SymbolLoader loader = new SourceCompleter(global, sfile);
-                peckage.newLoadedClass(0, classname, loader, members);
-            }
+            Type type = (Type)types.get(name);
+            boolean hidden = false;
+            if (type != null)
+                if (separate /* !!! && type.Assembly().getFile().lastModified() > sfile.lastModified() */)
+                    hidden = true;
+                else
+                    types.remove(name);
+            if (hidden) i.remove();
         }
+        // Packages are hidden by classes/objects with the same name.
+        packages.keySet().removeAll(types.keySet());
+    }
+
+    protected Scope createMemberSymbols(Symbol clasz) {
+        CLRTypes clrTypes = CLRTypes.instance();
+        String namespace = clrTypes.getNameSpaceOf(clasz);
+        Scope members = super.createMemberSymbols(clasz);
 
         // import the CLR types contained in the package (namespace)
         for (Iterator i = types.values().iterator(); i.hasNext(); ) {
             Type type = (Type)i.next();
 
-            // discard top level types
-            if (type.Namespace.equals("")) {
-                Global.instance.operation("Ignoring top-level type " + type);
-                continue;
-            }
-
-            assert snw.toString(peckage).equals(type.Namespace)
-                : Debug.show(peckage) + " << " + type.FullName;
+            assert namespace.equals(type.Namespace)
+                : Debug.show(clasz, namespace) + " << " + type.FullName;
             AbstractFile symfile = null;
             if (type.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
                 Object[] attrs = type.GetCustomAttributes
                     (clrTypes.SCALA_SYMTAB_ATTR, false);
                 assert attrs.length == 1 : attrs.length;
                 Attribute a = (Attribute)attrs[0];
-                assert a.GetType() == clrTypes.SCALA_SYMTAB_ATTR : a.toString();
+               assert a.GetType() == clrTypes.SCALA_SYMTAB_ATTR : a.toString();
                 byte[] symtab = (byte[])a.getConstructorArguments()[0];
                 symfile = new ByteArrayFile
                     (type.FullName, "[" + type.Assembly().GetName() + "]",
@@ -101,40 +124,22 @@ public final class CLRPackageParser extends PackageParser {
                 : new CLRClassParser(Global.instance, type);
 
             Name classname = Name.fromString(type.Name).toTypeName();
-            Symbol clazz = peckage.newLoadedClass
-                (Modifiers.JAVA, classname, loader, members);
+            Symbol clazz = clasz.newLoadedClass
+                (JAVA, classname, loader, members);
             clrTypes.map(clazz, type);
             //Type moduleType = getType(type.FullName + "$");
             //map(clazz, moduleType != null ? moduleType : type);
         }
 
-        for (Iterator i = packages.entrySet().iterator(); i.hasNext(); ) {
-            HashMap.Entry entry = (HashMap.Entry)i.next();
-            String name = (String)entry.getKey();
-            AbstractFile dfile = (AbstractFile)entry.getValue();
-            SymbolLoader loader = new CLRPackageParser(global, dfile);
-            peckage.newLoadedPackage(Name.fromString(name), loader, members);
-            namespaces.remove(name);
-        }
-
-        // import the CLR namespaces contained in the package (namespace)
-        for (Iterator i = namespaces.iterator(); i.hasNext(); ) {
-            String namespace = (String)i.next();
-            Name name = Name.fromString(namespace);
-            Symbol p = members.lookup(name);
-            if (p == Symbol.NONE) {
-                SymbolLoader loader = new CLRPackageParser(global, null);
-                peckage.newLoadedPackage(name, this, members);
-            } else {
-                System.out.println("package already in scope: " + Debug.show(p));
-            }
-        }
-
-        // initialize package
-        peckage.setInfo(scalac.symtab.Type.compoundType
-                        (scalac.symtab.Type.EMPTY_ARRAY, members, peckage));
-        return "namespace '" + snw.toString(peckage) + "'";
+        return members;
     }
 
-    //##########################################################################
+    protected String doComplete(Symbol root) {
+        String base = super.doComplete(root);
+        base = directory == EMPTY ? "" : base + " and ";
+        String namespace = CLRTypes.instance().getNameSpaceOf(root);
+        return base + "namespace '" + namespace + "'";
+    }
+
+    //########################################################################
 }  // CLRPackageParser

@@ -9,11 +9,9 @@
 package scalac.symtab.classfile;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.HashMap;
 
 import scala.tools.util.AbstractFile;
-import scala.tools.util.Position;
 
 import scalac.Global;
 import scalac.symtab.Scope;
@@ -24,8 +22,6 @@ import scalac.symtab.Type;
 import scalac.util.Name;
 import scalac.util.Debug;
 
-import scalac.symtab.SymbolNameWriter;
-
 /**
  * This class implements a package member loader. It can be used to
  * complete package class symbols.
@@ -33,10 +29,17 @@ import scalac.symtab.SymbolNameWriter;
 public class PackageParser extends SymbolLoader {
 
     //########################################################################
-    // Private Fields
+    // Protected Fields
 
     /** The directory to read */
     protected final AbstractFile directory;
+
+    /** A table to collect .scala files */
+    protected final HashMap/*<String,AbstractFile>*/ sources = new HashMap();
+    /** A table to collect .class files */
+    protected final HashMap/*<String,AbstractFile>*/ classes = new HashMap();
+    /** A table to collect subdirectories */
+    protected final HashMap/*<String,AbstractFile>*/ packages = new HashMap();
 
     //########################################################################
     // Public Constructors
@@ -45,18 +48,22 @@ public class PackageParser extends SymbolLoader {
     public PackageParser(Global global, AbstractFile directory) {
         super(global);
         this.directory = directory;
+        assert directory != null;
     }
 
     //########################################################################
     // Protected Methods
 
-    protected java.util.Map sources = new HashMap();
-    protected java.util.Map classes = new HashMap();
-    protected java.util.Map packages = new HashMap();
+    /** Returns a new package parser for the given directory. */
+    protected PackageParser newPackageParser(AbstractFile directory) {
+        return new PackageParser(global, directory);
+    }
 
-    // collect JVM and source members
-    protected void preInitialize(Symbol root, boolean loadClassfiles) {
-	boolean isRoot = root.isRoot();
+    /**
+     * Collects all members of the package. This method is invoked by
+     * method "doComplete". It should not be invoked otherwise.
+     */
+    protected void collectAllMembers(Symbol clasz) {
         for (Iterator i = directory.list(); i.hasNext(); ) {
             AbstractFile file = (AbstractFile)i.next();
             String filename = file.getName();
@@ -65,12 +72,12 @@ public class PackageParser extends SymbolLoader {
                 packages.put(filename, file);
                 continue;
             }
-            if (!isRoot && loadClassfiles && filename.endsWith(".class")) {
+            if (filename.endsWith(".class")) {
                 String name = filename.substring(0, filename.length() - 6);
                 if (!classes.containsKey(name)) classes.put(name, file);
                 continue;
             }
-            if (!isRoot && filename.endsWith(".scala")) {
+            if (filename.endsWith(".scala")) {
                 String name = filename.substring(0, filename.length() - 6);
                 if (!sources.containsKey(name)) sources.put(name, file);
                 continue;
@@ -78,52 +85,78 @@ public class PackageParser extends SymbolLoader {
 	}
     }
 
-    /** Completes the package symbol by loading all its members. */
-    protected String doComplete(Symbol root) {
-        assert root.isRoot() || root.isPackage(): Debug.show(root);
-        Symbol peckage = root.isRoot() ? root : root.moduleClass();
-        preInitialize(peckage, true);
+    /**
+     * Removes from the members collected by "collectAllMembers" all
+     * those that are hidden. This method is invoked by method
+     * "doComplete". It should not be invoked otherwise.
+     */
+    protected void removeHiddenMembers(Symbol clasz) {
+        // Classes/Objects in the root package are hidden.
+        if (clasz.isRoot()) { sources.clear(); classes.clear(); }
+        // Source versions hide compiled versions except if separate
+        // compilation is enabled and the compiled version is more
+        // recent. In that case the compiled version hides the source
+        // version.
+        boolean separate = global.separate;
+        for (Iterator i = sources.entrySet().iterator(); i.hasNext(); ) {
+            HashMap.Entry entry = (HashMap.Entry)i.next();
+            String name = (String)entry.getKey();
+            AbstractFile sfile = (AbstractFile)entry.getValue();
+            AbstractFile cfile = (AbstractFile)classes.get(name);
+            boolean hidden = false;
+            if (cfile != null)
+                if (separate && cfile.lastModified() > sfile.lastModified())
+                    hidden = true;
+                else
+                    classes.remove(name);
+            if (hidden) i.remove();
+        }
+        // Packages are hidden by classes/objects with the same name.
+        packages.keySet().removeAll(sources.keySet());
+        packages.keySet().removeAll(classes.keySet());
+    }
 
-        // create JVM and source members
+    /**
+     * Creates symbols for all members left by method
+     * "removeHiddenMembers". This method is invoked by method
+     * "doComplete". It should not be invoked otherwise.
+     */
+    protected Scope createMemberSymbols(Symbol clasz) {
         Scope members = new Scope();
         for (Iterator i = sources.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile sfile = (AbstractFile)entry.getValue();
-            AbstractFile cfile = (AbstractFile)classes.remove(name);
-	    if (global.separate && cfile != null) {
-                if (cfile.lastModified() > sfile.lastModified()) {
-		    classes.put(name, cfile);
-		    continue;
-                }
-            }
-            packages.remove(name);
             Name classname = Name.fromString(name).toTypeName();
             SymbolLoader loader = new SourceCompleter(global, sfile);
-            peckage.newLoadedClass(0, classname, loader, members);
+            clasz.newLoadedClass(0, classname, loader, members);
         }
-
         for (Iterator i = classes.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
-	    //assert !types.containsKey(name) : types.get(name);
             AbstractFile cfile = (AbstractFile)entry.getValue();
-            packages.remove(name);
             Name classname = Name.fromString(name).toTypeName();
             SymbolLoader loader = new ClassParser(global, cfile);
-            peckage.newLoadedClass(JAVA, classname, loader, members);
+            clasz.newLoadedClass(JAVA, classname, loader, members);
         }
-
         for (Iterator i = packages.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
             AbstractFile dfile = (AbstractFile)entry.getValue();
-            SymbolLoader loader = new PackageParser(global, dfile);
-            peckage.newLoadedPackage(Name.fromString(name), loader, members);
+            SymbolLoader loader = newPackageParser(dfile);
+            clasz.newLoadedPackage(Name.fromString(name), loader, members);
         }
+        return members;
+    }
 
-        // initialize package
-        peckage.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, peckage));
+    /** Completes the package symbol by loading all its members. */
+    protected String doComplete(Symbol root) {
+        assert root.isRoot() || root.isPackage(): Debug.show(root);
+        Symbol clasz = root.isRoot() ? root : root.moduleClass();
+        collectAllMembers(clasz);
+        removeHiddenMembers(clasz);
+        Scope members = createMemberSymbols(clasz);
+        clasz.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, clasz));
         return "directory path '" + directory + "'";
     }
 
