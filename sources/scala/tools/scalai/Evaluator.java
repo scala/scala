@@ -76,6 +76,14 @@ public class Evaluator {
     //########################################################################
     // Public Methods
 
+    public Object toString(Object object) {
+        try {
+            return object.toString();
+        } catch (Throwable exception) {
+            return throw_(exception);
+        }
+    }
+
     public Object evaluate(CodeContainer code) {
         return evaluate(code, null, new Object[0]);
     }
