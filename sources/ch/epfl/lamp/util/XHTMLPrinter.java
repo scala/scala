@@ -28,11 +28,26 @@ public class XHTMLPrinter extends HTMLPrinter {
      * @param title
      * @param representation
      * @param stylesheet
+     * @param script
+     */
+    public XHTMLPrinter(Writer writer, String title, HTMLRepresentation representation,
+        String stylesheet, String script)
+    {
+        super(writer, title, representation, stylesheet, script);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param writer
+     * @param title
+     * @param representation
+     * @param stylesheet
      */
     public XHTMLPrinter(Writer writer, String title, HTMLRepresentation representation,
         String stylesheet)
     {
-        super(writer, title, representation, stylesheet);
+        this(writer, title, representation, stylesheet, DEFAULT_JAVASCRIPT);
     }
 
     /**
