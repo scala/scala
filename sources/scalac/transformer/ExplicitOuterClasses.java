@@ -75,40 +75,6 @@ public class ExplicitOuterClasses extends Transformer {
         return global.freshNameCreator.newName(Names.OUTER_PREFIX);
     }
 
-    // Return the given class with an explicit link to its outer
-    // class, if any.
-    protected Tree addOuterLink(ClassDef classDef) {
-        Symbol classSym = classDef.symbol();
-        Symbol constSym = classSym.constructor();
-        Symbol outerSym = outerSym(constSym);
-        assert (outerSym.owner() == constSym) : outerSym;
-        outerLinks.addFirst(outerSym);
-
-        // Add the outer parameter, both to the type and the tree.
-        Type newConstType = newConstType(constSym);
-        ValDef[][] vparams = classDef.vparams;
-        ValDef[] newVParamsI;
-        if (vparams.length == 0)
-            newVParamsI = new ValDef[] { gen.ValDef(outerSym) };
-        else {
-            newVParamsI = new ValDef[vparams[0].length + 1];
-            newVParamsI[0] = gen.ValDef(outerSym);
-            System.arraycopy(vparams[0], 0, newVParamsI, 1, vparams[0].length);
-        }
-        ValDef[][] newVParams = new ValDef[][] { newVParamsI };
-
-        constSym.updateInfo(newConstType);
-
-        classSym.flags |= Modifiers.STATIC;
-
-        return copy.ClassDef(classDef,
-                             classSym,
-                             transform(classDef.tparams),
-                             transform(newVParams),
-                             transform(classDef.tpe),
-                             (Template)transform((Tree)classDef.impl));
-    }
-
     // Return the number of outer links to follow to find the given
     // symbol.
     protected int outerLevel(Symbol sym) {
@@ -141,25 +107,108 @@ public class ExplicitOuterClasses extends Transformer {
         }
     }
 
+    protected LinkedList/*<HashMap<Symbol,Symbol>>*/ superSymsStack =
+        new LinkedList();
+
+    protected Symbol outerSuperSym(int level, Symbol funSym) {
+        assert level > 0 : level;
+
+        HashMap symMap = (HashMap)superSymsStack.get(level);
+        Symbol outerSuperSym = (Symbol)symMap.get(funSym);
+        if (outerSuperSym == null) {
+            Name outerSuperName =
+                Name.fromString("super$" + funSym.name.toString());
+            outerSuperSym = new TermSymbol(funSym.pos,
+                                           outerSuperName,
+                                           (Symbol)classStack.get(level),
+                                           Modifiers.PRIVATE);
+
+            global.log("created forwarding symbol: " + Debug.show(outerSuperSym));
+
+            outerSuperSym.setInfo(funSym.info().cloneType(funSym, outerSuperSym));
+            symMap.put(funSym, outerSuperSym);
+        }
+        return outerSuperSym;
+    }
+
     public Tree transform(Tree tree) {
         switch (tree) {
         case ClassDef(int mods, _, _, _, _, _) : {
             // Add outer link
             ClassDef classDef = (ClassDef) tree;
+            Symbol classSym = classDef.symbol();
+            ValDef[][] newVParams;
 
-            Symbol sym = classDef.symbol();
-            Tree newTree;
-
-            classStack.addFirst(sym);
+            classStack.addFirst(classSym);
+            superSymsStack.addFirst(new HashMap());
             if (classStack.size() == 1 || Modifiers.Helper.isStatic(mods)) {
                 outerLinks.addFirst(null);
-                newTree = super.transform(tree);
-            } else
-                newTree = addOuterLink(classDef);
+                newVParams = classDef.vparams;
+            } else {
+                // Add the outer parameter, both to the type and the tree.
+                Symbol constSym = classSym.constructor();
+                Symbol outerSym = outerSym(constSym);
+                assert (outerSym.owner() == constSym) : outerSym;
+                outerLinks.addFirst(outerSym);
+
+                Type newConstType = newConstType(constSym);
+                ValDef[][] vparams = classDef.vparams;
+                ValDef[] newVParamsI;
+                if (vparams.length == 0)
+                    newVParamsI = new ValDef[] { gen.ValDef(outerSym) };
+                else {
+                    newVParamsI = new ValDef[vparams[0].length + 1];
+                    newVParamsI[0] = gen.ValDef(outerSym);
+                    System.arraycopy(vparams[0], 0, newVParamsI, 1, vparams[0].length);
+                }
+                newVParams = new ValDef[][] { newVParamsI };
+
+                constSym.updateInfo(newConstType);
+
+                classSym.flags |= Modifiers.STATIC;
+            }
+
+            // Add forwarding "super" methods and add them to the
+            // class members.
+            Scope newMembers = new Scope(classSym.members());
+            TreeList newBody = new TreeList(transform(classDef.impl.body));
+            HashMap/*<Symbol,Symbol>*/ symMap =
+                (HashMap)superSymsStack.removeFirst();
+            Iterator symIt = symMap.entrySet().iterator();
+            while (symIt.hasNext()) {
+                Map.Entry symPair = (Map.Entry)symIt.next();
+                Symbol funSym = (Symbol)symPair.getKey();
+                Symbol fwdSym = (Symbol)symPair.getValue();
+
+                Symbol[] argsSym = fwdSym.valueParams();
+                Tree[] args = new Tree[argsSym.length];
+                for (int i = 0; i < argsSym.length; ++i)
+                    args[i] = gen.mkRef(argsSym[i].pos, argsSym[i]);
+                Tree fwdBody =
+                    gen.Apply(gen.Select(gen.Super(classSym.pos, classSym.type()),
+                                         funSym),
+                              args);
+
+                newBody.append(gen.DefDef(fwdSym, fwdBody));
+                newMembers.enter(fwdSym);
+            }
+            classSym.updateInfo(Type.compoundType(classSym.parents(),
+                                                  newMembers,
+                                                  classSym));
+
+            Tree[] newParents = transform(classDef.impl.parents);
+
             outerLinks.removeFirst();
             classStack.removeFirst();
 
-            return newTree;
+            return copy.ClassDef(classDef,
+                                 classSym,
+                                 transform(classDef.tparams),
+                                 transform(newVParams),
+                                 transform(classDef.tpe),
+                                 copy.Template(classDef.impl,
+                                               newParents,
+                                               newBody.toArray()));
         }
 
         case Ident(_): {
@@ -182,6 +231,17 @@ public class ExplicitOuterClasses extends Transformer {
             int level = qualifier.hasSymbol() ? outerLevel(qualifier.symbol()) : 0;
             if (level > 0)
                 return outerRef(level);
+            else
+                return super.transform(tree);
+        }
+
+        case Select(Super(Tree qualifier), Name selector): {
+            // If "super" refers to an outer class, access the value
+            // (a method) through outer link(s).
+            int level = outerLevel(qualifier.type.symbol());
+            if (level > 0)
+                return gen.Select(outerRef(level),
+                                  outerSuperSym(level, tree.symbol()));
             else
                 return super.transform(tree);
         }
