@@ -1316,6 +1316,30 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
+    /**
+     * Clones a type i.e. returns a new type where all symbols in
+     * MethodTypes and PolyTypes have been cloned. This method
+     * performs no substitution on the type of the cloned symbols.
+     * Typically, the type of those symbols will be fixed later by
+     * applying some Map.applyParams method to the returned type.
+     */
+    public Type cloneTypeNoSubst(SymbolCloner cloner) {
+        switch (this) {
+
+        case MethodType(Symbol[] vparams, Type result):
+            Symbol[] clones = cloner.cloneSymbols(vparams);
+            return Type.MethodType(clones, result.cloneTypeNoSubst(cloner));
+
+        case PolyType(Symbol[] tparams, Type result):
+            Symbol[] clones = cloner.cloneSymbols(tparams);
+            return Type.PolyType(clones, result.cloneTypeNoSubst(cloner));
+
+        default:
+            return this;
+        }
+    }
+
+
 // Comparisons ------------------------------------------------------------------
 
     /** Is this type a subtype of that type?
