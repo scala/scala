@@ -106,14 +106,13 @@ object pilib with Monitor {
   private var sums: List[Sum] = Nil;
 
   /** Test if two lists of guarded processes can communicate. */
-  private def matches(gs1: List[GP], gs2: List[GP]):
-  Option[Tuple4[Any, Any => unit, Any, Any => unit]] =
+  private def matches(gs1: List[GP], gs2: List[GP]): Option[Pair[() => unit, () => unit]] =
     Pair(gs1, gs2) match {
       case Pair(Nil, _) => None
       case Pair(_, Nil) => None
       case Pair(GP(a1, d1, v1, c1) :: rest1, GP(a2, d2, v2, c2) :: rest2) =>
 	if (a1 == a2 && d1 == !d2)
-	  Some(Tuple4(v1, c1, v2, c2))
+	  Some(Pair(() => c1(v2), () => c2(v1)))
 	else matches(gs1, rest2) match {
 	  case None => matches(rest1, gs2)
 	  case Some(t) => Some(t)
@@ -130,9 +129,9 @@ object pilib with Monitor {
       case Nil => ss ::: List(s1)
       case s2 :: rest => matches(s1.gs, s2.gs) match {
 	case None => s2 :: compare(s1, rest)
-	case Some(Tuple4(v1, c1, v2, c2)) => {
-	  s1.set(() => c1(v2));
-	  s2.set(() => c2(v1));
+	case Some(Pair(c1, c2)) => {
+	  s1.set(c1);
+	  s2.set(c2);
 	  rest
 	}
       }
