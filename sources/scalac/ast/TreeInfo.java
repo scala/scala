@@ -72,6 +72,7 @@ public class TreeInfo {
      */
     public static boolean isPureDef(Tree tree) {
 	switch (tree) {
+	case Tree.Empty:
 	case ClassDef(_, _, _, _, _, _):
 	case ModuleDef(_, _, _, _):
 	case DefDef(_, _, _, _, _, _):
