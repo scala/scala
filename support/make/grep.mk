@@ -23,6 +23,11 @@
 ##############################################################################
 
 ##############################################################################
+# Defaults
+
+GREP			?= grep
+
+##############################################################################
 # Variables
 
 GREP_BINARY		?= $(GREP)
@@ -35,7 +40,7 @@ GREP_FILES		?= $(if $(FILES),$(FILES),$(PROJECT_SOURCES))
 
 grep		:
 	@if [ -z '$(GREP_REGEX)' ]; then \
-	    $(ECHO) "Usage:" \
+	    echo "Usage:" \
 	       "$(MAKE) $@ [FLAGS=<flags>] REGEX=<regex> [FILES=<files>]";\
 	    exit 1; \
 	fi
