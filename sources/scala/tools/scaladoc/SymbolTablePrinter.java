@@ -121,28 +121,6 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
         return this;
     }
 
-    /**
-     * Prints the type of the given symbol with the given inner string.
-     *
-     * @param symbol
-     * @param inner
-     */
-    public SymbolTablePrinter printSymbolType(Symbol symbol, String inner) {
-        Type type = symbol.rawFirstInfo();
-        if (!(type instanceof Type.LazyType)) type = symbol.info();
-        boolean star = false;
-        if ((symbol.flags & Modifiers.REPEATED) != 0 &&
-            type.symbol() == global.definitions.SEQ_CLASS &&
-            type.typeArgs().length == 1)
-        {
-            type = type.typeArgs()[0];
-            star = true;
-        }
-	printType(type, inner);
-        if (star) print("*");
-        return this;
-    }
-
     public SymbolTablePrinter printSeqType(Symbol symbol, Type t, String inner) {
         Type type = t;
         boolean star = false;
@@ -185,6 +163,25 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
     public SymbolTablePrinter printSignature(Symbol symbol, boolean addLink) {
 	return printShortSignature(symbol, addLink)
 	    .printSymbolType(symbol, getSymbolInnerString(symbol));
+    }
+
+    public SymbolTablePrinter printTypeParams(Symbol[] tparams) {
+        print('[');
+        for (int i = 0; i < tparams.length; i++) {
+            if (i > 0) print(",");
+            printSignature(tparams[i], false);
+        }
+        return print(']');
+    }
+
+    public SymbolTablePrinter printValueParams(Symbol[] vparams) {
+        print('(');
+        for (int i = 0; i < vparams.length; i++) {
+            if (i > 0) print(", ");
+            if (vparams[i].isDefParameter()) print("def ");
+            defString(vparams[i], false);
+        }
+        return print(')');
     }
 
     /** The keyword of a symbol from the user side. */
@@ -259,116 +256,6 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
     // Public Methods - Printing types
 
     /**
-     * Prints the given types separated by infix.
-     *
-     * @param types
-     * @param infix
-     */
-    public SymbolTablePrinter printTypes(Type[] types, String infix) {
-        for (int i = 0; i < types.length; i++) {
-            if (i > 0) print(infix);
-            printType(types[i]);
-        }
-        return this;
-    }
-
-    /**
-     * Prints the given type.
-     *
-     * @param type
-     */
-    public SymbolTablePrinter printType(Type type) {
-        return printType0(getTypeToPrintForType(type));
-    }
-
-    /**
-     * ..
-     *
-     * @param type
-     */
-    public SymbolTablePrinter printType0(Type type) {
-        printCommonPart(type);
-        switch (type) {
-        case NoPrefix:
-        case ThisType(_):
-        case SingleType(_,_):
-            print(".type");
-            return this;
-        default:
-            return this;
-        }
-    }
-
-    /** Prints the given type with the given inner string. */
-    public SymbolTablePrinter printType(Type type, String inner) {
-	super.printType(type, inner);
-	return this;
-    }
-
-    /**
-     * ..
-     *
-     * @param type
-     * @param inner
-     */
-    public SymbolTablePrinter printType0(Type type, String inner) {
-        switch (type) {
-        case MethodType(Symbol[] vparams, Type result):
-            print('(');
-            for (int i = 0; i < vparams.length; i++) {
-                if (i > 0) print(", ");
-		if (vparams[i].isDefParameter()) print("def ");
-		defString(vparams[i], false);
-            }
-            print(')');
-            return printType(result, inner);
-        case PolyType(Symbol[] tparams, Type result):
-            if (tparams.length != 0 || global.debug) {
-                print('[');
-                for (int i = 0; i < tparams.length; i++) {
-                    if (i > 0) print(",");
-                    printSignature(tparams[i], false);
-                }
-                print(']');
-            }
-            return printType(result, inner);
-        default:
-            if (inner != null) {
-                if (!inner.startsWith(":")) space();
-                print(inner).space();
-            }
-            return printType0(type);
-        }
-    }
-
-    /**
-     * Prints a function type with the given type arguments.
-     *
-     * @param types
-     */
-    public SymbolTablePrinter printFunctionType(Type[] types) {
-        Type[] args = new Type[types.length - 1];
-        for (int i = 0; i < args.length; i++) args[i] = types[i];
-        print('(');
-        printTypes(args, ", ");
-        print(") => ");
-        printType(types[types.length - 1]);
-        return this;
-    }
-
-    /**
-     * Prints a template type with the given base types.
-     *
-     * @param types
-     */
-    public SymbolTablePrinter printTemplateType(Type[] types) {
-        print("<template: ");
-        printTypes(types, " with ");
-        print(" {...}>");
-        return this;
-    }
-
-    /**
      * Prints the type and prefix common part of the given type.
      *
      * @param type
@@ -407,7 +294,7 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 		if (sym.isAnonymousClass() || sym.isCompoundSym())
                     printTemplateType(pre.memberInfo(sym).parents());
             }
-            printPrefix(pre, sym);
+            printPrefix(pre);
             printUsedSymbolName(sym);
 	    if (args.length != 0) {
                 print('[');
@@ -417,7 +304,7 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
             return this;
 
 	case SingleType(Type pre, Symbol sym):
-            printPrefix(pre, sym);
+            printPrefix(pre);
             printUsedSymbolName(sym);
             return this;
 
@@ -467,61 +354,6 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 	    print("<unknown type ").print(classname).print(">");
             return this;
         }
-    }
-
-    //########################################################################
-    // Public Methods - Printing prefixes
-
-    /**
-     * Prints the given type as a prefix.
-     *
-     * @param prefix
-     */
-    public SymbolTablePrinter printPrefix(Type prefix, Symbol sym) {
-        prefix = getTypeToPrintForPrefix(prefix/*, sym*/);
-        return prefix == null ? this : printPrefix0(prefix);
-    }
-
-    /**
-     * Returns the type to print for the given prefix (non-transitive).
-     *
-     * @param prefix
-     */
-    public Type getTypeToPrintForPrefix0(Type prefix) {
-        if (!global.debug) {
-            if (prefix.symbol().kind == Kinds.NONE) return null;
-            if (prefix.symbol().isRoot()) return null;
-        }
-        return getTypeToPrintForType0(prefix);
-    }
-
-    /**
-     * ..
-     *
-     * @param prefix
-     */
-    public SymbolTablePrinter printPrefix0(Type prefix) {
-        printCommonPart(prefix);
-        switch (prefix) {
-        case NoPrefix:
-        case ThisType(_):
-        case SingleType(_,_):
-            print(".");
-            return this;
-        default:
-            print("#");
-            return this;
-        }
-    }
-
-    //########################################################################
-    // Public Methods - Converting
-
-    /**
-     * Returns the string representation of this.
-     */
-    public String toString() {
-        return toString();
     }
 
     //########################################################################
