@@ -170,23 +170,27 @@ public class AddConstructors extends GenTransformer {
 	    }
 
 	    // inline the call to the super constructor
-            switch (impl.parents[0]) {
+            for (int i = 0; i < impl.parents.length; i++) {
+            switch (impl.parents[i]) {
             case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] args):
-                assert fun.symbol().isConstructor(): impl.parents[0];
-                int pos = impl.parents[0].pos;
+                assert fun.symbol().isConstructor(): impl.parents[i];
+                if (fun.symbol().constructorClass().isInterface()) continue;
+                int pos = impl.parents[i].pos;
                 Tree superConstr = gen.Select
                     (gen.Super(pos, treeSym), getInitializer(fun.symbol()));
                 constrBody.add(gen.mkApply_V(superConstr, args));
                 break;
             case Apply(Tree fun, Tree[] args):
-                assert fun.symbol().isConstructor(): impl.parents[0];
-                int pos = impl.parents[0].pos;
+                assert fun.symbol().isConstructor(): impl.parents[i];
+                if (fun.symbol().constructorClass().isInterface()) continue;
+                int pos = impl.parents[i].pos;
                 Tree superConstr = gen.Select
                     (gen.Super(pos, treeSym), getInitializer(fun.symbol()));
                 constrBody.add(gen.mkApply_V(superConstr, args));
                 break;
             default:
-                throw Debug.abort("illegal case", impl.parents[0]);
+                throw Debug.abort("illegal case", impl.parents[i]);
+            }
             }
 
 	    // inline initialization of module values
