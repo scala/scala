@@ -120,19 +120,19 @@ final class TypeCreator {
 	symbols2methods = phase.symbols2methods;
 	symbols2moduleFields = phase.symbols2moduleFields;
 
-	BYTE    = Type.GetType("System.SByte");
-	CHAR    = Type.GetType("System.Char");
-	SHORT   = Type.GetType("System.Int16");
-	INT     = Type.GetType("System.Int32");
-	LONG    = Type.GetType("System.Int64");
-	FLOAT   = Type.GetType("System.Single");
-	DOUBLE  = Type.GetType("System.Double");
-	BOOLEAN = Type.GetType("System.Boolean");
-	VOID    = Type.GetType("System.Void");
-	ENUM    = Type.GetType("System.Enum");
+	BYTE    = ti.BYTE;
+	CHAR    = ti.CHAR;
+	SHORT   = ti.SHORT;
+	INT     = ti.INT;
+	LONG    = ti.LONG;
+	FLOAT   = ti.FLOAT;
+	DOUBLE  = ti.DOUBLE;
+	BOOLEAN = ti.BOOLEAN;
+	VOID    = ti.VOID;
+	ENUM    = ti.ENUM;
 
-	OBJECT = Type.GetType("System.Object");
-	STRING = Type.GetType("System.String");
+	OBJECT = ti.OBJECT;
+	STRING = ti.STRING;
 	STRING_ARRAY = Type.GetType("System.String[]");
 
 	MONITOR = Type.GetType("System.Threading.Monitor");
@@ -310,7 +310,7 @@ final class TypeCreator {
 	    StringBuffer s = new StringBuffer();
 	    s.append(result); s.append(' ');
 	    s.append(Debug.show(sym.owner())); s.append('.');
-	    s.append(sym.name.toString()); s.append('(');
+	    s.append(sym.name.toString());s.append('(');
 	    for (int i = 0; i < vparams.length; i++) {
 		if (i > 0) s.append(", ");
 		//s.append(Debug.show(vparams[i].info()));
@@ -321,6 +321,18 @@ final class TypeCreator {
 	default:
 	    return "Symbol doesn't have a method type: " + Debug.show(sym);
 	}
+    }
+
+    private static String methodSignature(Type[] params) {
+	StringBuffer s = new StringBuffer();
+	s.append('(');
+	for (int i = 0; i < params.length; i++) {
+	    if (i > 0)
+		s.append(", ");
+	    s.append(params[i]);
+	}
+	s.append(')');
+	return s.toString();
     }
 
     /**
@@ -422,7 +434,7 @@ final class TypeCreator {
      * Return the System.Type object corresponding to the type of the symbol
      */
     public Type getType(Symbol sym) {
-	if (sym == null) return null;
+	if (sym == null) return null; // FIXME: assert sym != null ?
 	Type type = (Type) symbols2types.get(sym);
 	if (type != null)
 	    return type;
@@ -432,6 +444,9 @@ final class TypeCreator {
  	else if (sym.isJava()) {
 // 	if (sym.isExternal()) {
 	    type = getType(global.primitives.getCLRClassName(sym));
+	    if (type == null)
+		System.out.println("getType: resolution failed for "
+				   + global.primitives.getCLRClassName(sym));
 	}
 	if (type == null) {
 	    final Symbol owner = sym.owner();
@@ -500,15 +515,25 @@ final class TypeCreator {
 	return null;
     }
 
+    public Type createType(Symbol clazz) {
+	try { return createType0(clazz); }
+	catch (RuntimeException e) {
+	    System.err.println("while creating type for " + Debug.show(clazz));
+	    System.err.println("" + clazz.members());
+	    throw e;
+	}
+    }
+
     /**
      * Creates the TypeBuilder for a class.
      */
-    public Type createType(Symbol clazz) {
+    public Type createType0(Symbol clazz) {
 	assert !clazz.isExternal() : "Can not create type " + Debug.show(clazz);
 	Type type = (Type)symbols2types.get(clazz);
 	assert type == null : "Type " + type +
 	    " already defined for symbol: " + Debug.show(clazz);
 
+	//System.out.println("createType: " + Debug.show(clazz));
 
 	final Symbol owner = clazz.owner();
 	final String typeName =
@@ -540,6 +565,11 @@ final class TypeCreator {
 		for (int i = 1; i < inum; i++)
 		    interfaces[i - 1] = getType(baseTypes[i].symbol());
 	    }
+
+	    type = (Type) symbols2types.get(clazz);
+	    if (type != null)
+		return type;
+
 	    if (owner.isRoot() || owner.isPackageClass()) {  // i.e. top level class
 		type = module.DefineType
 		    (typeName, translateTypeAttributes(clazz.flags, false),
@@ -548,9 +578,6 @@ final class TypeCreator {
 		final Type outerType = (Type) getType(owner);
 		// check if the type have not been created by
 		// the (possible) creation of the outer type
-		type = (Type) symbols2types.get(clazz);
-		if (type != null)
-		    return type;
 		if (outerType instanceof TypeBuilder)
 		    type = ((TypeBuilder)outerType).DefineNestedType
 			(typeName, translateTypeAttributes(clazz.flags, true),
@@ -585,6 +612,7 @@ final class TypeCreator {
 		}
 	    }
 
+	//System.out.println("created type: " + Debug.show(clazz));
 
 	return type;
     } // createType()
@@ -600,8 +628,7 @@ final class TypeCreator {
 	MemberInfo m = ti.getMember(sym);
 	if (m != null && m instanceof MethodBase) {
 	    method = (MethodBase) m;
-	}
-	else {
+	} else {
 	    // force the creation of the declaring type
 	    Type owner = getType(sym.owner());
 	    method = (MethodBase) symbols2methods.get(sym);
@@ -615,15 +642,17 @@ final class TypeCreator {
 		if (sym.isInitializer()) {
 		    // The owner of a constructor is the outer class
 		    // so get the result type of the constructor
-		    Type type = getType(sym.owner());
-		    method = type.GetConstructor(params);
+		    method = owner.GetConstructor(params);
+		    if (method == null) {
+			System.out.println("cannot find " + owner + "::.ctor"
+					 + methodSignature(params));
+		    }
 		} else {
 		    String name = sym.name.toString();
 		    if (sym.name == Names.toString) name = "ToString";
 		    else if (sym.name == Names.hashCode) name = "GetHashCode";
 		    else if (sym.name == Names.equals) name = "Equals";
-		    Type type = getType(sym.owner());
-		    method = type.GetMethod(name, params);
+		    method = owner.GetMethod(name, params);
 		}
 		break;
 	    default:
@@ -650,6 +679,7 @@ final class TypeCreator {
 	default:
 	    assert false : "Symbol doesn't have a method type: " + Debug.show(sym);
 	}
+	System.out.println(method);
 	assert method != null;
 	symbols2methods.put(sym, method);
 	return method;
