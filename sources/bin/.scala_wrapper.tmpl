@@ -365,6 +365,12 @@ scala_info_option_home() {
     echo "$PREFIX";
 }
 
+# Implements "scala-info --version".
+scala_info_option_version() {
+    [ $# -gt 0 ] && abort "too many arguments";
+    echo "$VERSION";
+}
+
 # Implements "scala-info --$1 <variable>"
 scala_info_option_x_variable() {
     [ $# -lt 2 ] && abort "missing variable name";
@@ -390,6 +396,7 @@ scala_info_option_help() {
     echo "usage: $0 <option>";
     echo "where possible options include:";
     echo "  --home                Print Scala home directory";
+    echo "  --version             Print Scala version";
     echo "  --default <variable>  Print default value of variable";
     echo "  --current <variable>  Print current value of variable";
     echo "  -? --help             Print this help message";
@@ -413,6 +420,7 @@ scala_info() {
 
     case "$1" in
         --home      ) shift 1; scala_info_option_home "$@";;
+        --version   ) shift 1; scala_info_option_version "$@";;
         --default   ) shift 1; scala_info_option_x_variable default "$@";;
         --current   ) shift 1; scala_info_option_x_variable current "$@";;
         -? | --help ) shift 1; scala_info_option_help "$@";;
