@@ -13,6 +13,7 @@ import scalac.util.*;
 import scalac.parser.*;
 import scalac.symtab.*;
 import scalac.checkers.*;
+import java.util.ArrayList;
 
 public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers {
 
@@ -43,7 +44,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 
     public Type transformInfo(Symbol sym, Type tp) {
 	if (global.debug)
-	    global.log("transform info for " + sym + sym.locationString());
+	    global.log("transform info for " + sym + ":" + tp + sym.locationString());
 	Type tp1 = tp;
 	if (sym != Symbol.NONE) {
 	    switch (tp) {
@@ -53,7 +54,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 		break;
 	    default:
 		if (sym.kind == CLASS)
-		    tp = transform(tp, sym);
+		    tp1 = transform(tp, sym);
 		else
 		    tp1 = transform(tp, sym.owner());
 	    }
@@ -70,6 +71,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 
     private class TransformTypeMap extends Type.MapOnlyTypes {
 	Symbol owner;
+//	ArrayList/*<Symbol>*/ excluded = new ArrayList();
         Type.Map setOwner(Symbol owner) { this.owner = owner; return this; }
 
 	public Type apply(Type tp) {
@@ -95,9 +97,24 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 			    }
 			    return Type.TypeRef(pre, sym, targs1);
 			}
+		    } else if (sym.isLocal()) {
+			assert targs.length == 0;
+			return proxy(sym, owner).type();
 		    }
 		}
 		break;
+/*
+	    case PolyType(Symbol[] tparams, _):
+		if (tparams.length != 0) {
+		    int len = excluded.size();
+		    for (int i = 0; i < tparams.length; i++)
+			excluded.add(tparams[i]);
+		    Type tp1 = map(tp);
+		    for (int i = 0; i < tparams.length; i++)
+			excluded.remove(excluded.size() - 1);
+		    return tp1;
+		}
+*/
 	    }
 	    return map(tp);
 	}
@@ -116,7 +133,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
      */
     Symbol proxy(Symbol fv, Symbol owner) {
 	if (global.debug)
-	    global.log("proxy " + fv + " in " + LambdaLift.asFunction(owner));
+	    global.log("proxy " + fv + " of " + fv.owner() + " in " + LambdaLift.asFunction(owner));
 	Symbol o = owner;
 	while (o.kind != NONE) {
 	    if (global.debug)
@@ -134,9 +151,9 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 	    }
 	    assert o.owner() != o;
 	    o = o.owner();
-
 	}
-	throw new ApplicationError("proxy " + fv + " in " + owner);
+	return fv;
+	//throw new ApplicationError("proxy " + fv + " in " + owner);
     }
 
     /** The type scala.Ref[tp]

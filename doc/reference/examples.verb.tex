@@ -2428,8 +2428,9 @@ abstract class List[+a] {
 \verb@List@ is an abstract class, so one cannot define elements by
 calling the empty \verb@List@ constructor (e.g. by
 \verb@new List).  The class has a type parameter \verb@a@. It is
-co-variant in this parameter, which means \verb@T <: S@ implies that
-\verb@List[T] <: List[S]@.  The class is situated in the package
+co-variant in this parameter, which means that
+\verb@List[S] <: List[T]@ for all types \verb@S@ and \verb@T@ such that
+\verb@S <: T@.  The class is situated in the package
 \verb@scala@. This is a package containing the most important standard
 classes of Scala. \verb@List@ defines a number of methods, which are
 explained in the following.
@@ -2557,8 +2558,15 @@ left-associative.  E.g.,
 The definition of \verb@::@ as a method in
 class \verb@List@ is as follows:
 \begin{verbatim}
-def ::[b >: a](x: a): List[a] = new scala.::(x, this);
+def ::[b >: a](x: b): List[b] = new scala.::(x, this);
 \end{verbatim}
+Note that \verb@::@ is defined for all elements \verb@x@ of type
+\verb@B@ and lists of type \verb@List[A]@ such that the type \verb@B@
+of \verb@x@ is a supertype of the list's element type \verb@A@. The result
+is in this case a list of \verb@B@'s. This
+is expressed by the type parameter \verb@b@ with lower bound \verb@a@
+in the signature of \verb@::@. 
+
 An operation similar to \verb@::@ is list concatenation, written
 `\verb@:::@'. The result of \verb@(xs ::: ys)@ is a list consisting of
 all elements of \verb@xs@, followed by all elements of \verb@ys@.
@@ -2570,7 +2578,7 @@ xs ::: ys ::: zs  \= =   xs ::: (ys ::: zs)
 \end{verbatim}
 Here is the implementation of the \verb@:::@ method:
 \begin{verbatim}
-  def :::(prefix: List[a]): List[a] = prefix match {
+  def :::[b >: a](prefix: List[b]): List[b] = prefix match {
     case Nil => this
     case p :: ps => this.:::(ps).::(p)
   }
@@ -2579,7 +2587,7 @@ Here is the implementation of the \verb@:::@ method:
 \paragraph{Example: Reverse.} As another example of how to program with
 lists consider a list reversal. There is a method \verb@reverse@ in
 \verb@List@ to that effect, but let's implement it as a function
-outside the class. Here is the a possible implementation of
+outside the class. Here is a possible implementation of
 \verb@reverse@:
 \begin{verbatim}
 def reverse[a](xs: List[a]): List[a] = xs match {
@@ -2658,11 +2666,139 @@ msort(iless)(List(5, 7, 1, 3))
 The definition of \verb@msort@ is curried, to make it easy to specialize it with particular
 comparison functions. For instance,
 \begin{verbatim}
+
 val intSort = msort(iless)
 val reverseSort = msort(x: int, y: int => x > y)
 \end{verbatim}
 
 \section*{Higher-Order Methods}
+
+\chapter{Computing with Streams}
+
+The previous chapters have introduced variables, assignment and
+stateful objects.  We have seen how real-world objects that change
+with time can be modelled by changing the state of variables in a
+computation.  Time changes in the real world thus are modelled by time
+changes in program execution. Of course, such time changes are usually
+stretched out or compressed, but their relative order is the same.
+This seems quite natural, but there is a also price to pay: Our simple
+and powerful substitution model for functional computation is no
+longer applicable once we introduce variables and assignment.
+
+Is there another way? Can we model state change in the real world
+using only immutable functions? Taking mathematics as a guide, the
+answer is clearly yes: A time-changing quantity is simply modelled by
+a function \verb@f(t)@ with a time parameter \verb@t@. The same can be
+done in computation. Instead of overwriting a variable with successive
+values, we represent all these values as successive elements in a
+list. So, a mutabel variable \verb@var x: T@ gets replaced by an
+immutable value \verb@val x: List[T]@. In a sense, we trade space for
+time -- the different values of the variable now all exit concurrently
+as different elements of the list.  One advantage of the list-based
+view is that we can ``time-travel'', i.e. view several successive
+values of the variable at the same time. Another advantage is that we
+can make use of the powerful library of list processing functions,
+which often simplifies computation. For instance, consider the way
+imperative way to compute the sum of all prime numbers in an interval:
+\begin{verbatim}
+def sumPrimes(start: int, end: int): int = {
+  var i = start;
+  var acc = 0;
+  while (i < end) {
+    if (isPrime(i)) acc = acc + i;
+    i = i + 1;
+  }
+  acc
+}
+\end{verbatim}
+Note that the variable \verb@i@ ``steps through'' all values of the interval
+\verb@[start .. end-1]@.
+\es\bs
+A more functional way is to represent the list of values of variable \verb@i@ directly as \verb@range(start, end)@. Then the function can be rewritten as follows.
+\begin{verbatim}
+def sumPrimes(start: int, end: int) =
+  sum(range(start, end) filter isPrime);
+\end{verbatim}
+
+No contest which program is shorter and clearer!  However, the
+functional program is also considerably less efficient since it
+constructs a list of all numbers in the interval, and then another one
+for the prime numbers. Even worse from an efficiency point of view is
+the following example:
+
+To find the second prime number between \verb@1000@ and \verb@10000@:
+\begin{verbatim}
+  range(1000, 10000) filter isPrime at 1
+\end{verbatim}
+Here, the list of all numbers between \verb@1000@ and \verb@10000@ is
+constructed.  But most of that list is never inspected!
+
+However, we can obtain efficient execution for examples like these by
+a trick:
+\begin{quote}
+\red Avoid computing the tail of a sequence unless that tail is actually
+     necessary for the computation.
+\end{quote}
+We define a new class for such sequences, which is called \verb@Stream@.
+
+Streams are created using the constant \verb@empty@ and the constructor \verb@cons@,
+which are both defined in module \verb@scala.Stream@. For instance, the following
+expression constructs a stream with elements \verb@1@ and \verb@2@:
+\begin{verbatim}
+Stream.cons(1, Stream.cons(2, Stream.empty))
+\end{verbatim}
+As another example, here is the analogue of \verb@List.range@,
+but returning a stream instead of a list:
+\begin{verbatim}
+def range(start: Int, end: Int): Stream[Int] = 
+  if (start >= end) Stream.empty
+  else Stream.cons(start, range(start + 1, end));
+\end{verbatim}
+(This function is also defined as given above in module
+\verb@Stream@).  Even though \verb@Stream.range@ and \verb@List.range@
+look similar, their execution behavior is completely different: 
+
+\verb@Stream.range@ immediately returns with a \verb@Stream@ object
+whose first element is \verb@start@.  All other elements are computed
+only when they are \emph{demanded} by calling the \verb@tail@ method
+(which might be never at all).  
+
+Streams are accessed just as lists. as for lists, the basic access
+methods are \verb@isEmpty@, \verb@head@ and \verb@tail@. For instance,
+we can print all elements of a stream as follows.
+\begin{verbatim}
+def print(xs: Stream[a]): unit = 
+  if (!xs.isEmpty) { System.out.println(xs.head); print(xs.tail) }
+\end{verbatim}
+Streams also support almost all other methods defined on lists (see
+below for where their methods sets differ). For instance, we can find
+the second prime number between \verb@1000@ and \verb@10000@ by applying methods
+\verb@filter@ and \verb@at@ on an interval stream:
+\begin{verbatim}
+  Stream.range(1000, 10000) filter isPrime at 1
+\end{verbatim}
+The difference to the previous list-based implementation is that now
+we do not needlessly construct and test for primality any numbers
+beyond 3.
+
+\paragraph{Consing and appending streams.} Two methods in class \verb@List@
+which are not supported by class \verb@Stream@ are \verb@::@ and
+\verb@:::@.  The reason is that these methods are dispatched on their
+right-hand side argument, which means that this argument needs to be
+evaluated before the method is called. For instance, in the case of
+\verb@x :: xs@ on lists, the tail \verb@xs@ needs to be evaluated
+before \verb@::@ can be called and the new list can be constructed.
+This does not work for streams, where we require that the tail of a
+stream should not be evaluated until it is demanded by a \verb@tail@ operation.
+The argument why list-append \verb@:::@ cannot be adapted to streams is analogous.
+
+Intstead of \verb@x :: xs@, one uses \verb@Stream.cons(x, xs)@ for
+constructing a stream with first element \verb@x@ and (unevaluated)
+rest \verb@xs@.  Instead of \verb@xs ::: ys@, one uses the operation
+\verb@xs append ys@.  
+
+\redtext{Is there another way?}
+
 
 
 \bibliography{examples}

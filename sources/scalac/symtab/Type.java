@@ -141,6 +141,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	public Type widen() {
 	    return type().widen();
 	}
+
 	/** If this type is a singleton type whose type is another, the end of the chain,
 	 *  otherwise the type itself.
 	 */
@@ -233,6 +234,25 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public Type aliasedType() {
 	return this;
+    }
+
+    /** The lower approximation of this type (which must be a typeref)
+     */
+    public Type loBound() {
+	switch (unalias()) {
+	case TypeRef(Type pre, Symbol sym, Type[] args):
+	    Type lb = Global.instance.definitions.ANY_TYPE;
+	    if (sym.kind == TYPE) {
+		lb = sym.loBound().asSeenFrom(pre, sym.owner());
+	    }
+	    if (lb.isSameAs(Global.instance.definitions.ANY_TYPE) &&
+		this.isSubType(Global.instance.definitions.ANYREF_TYPE)) {
+		lb = Global.instance.definitions.ANYREF_TYPE;
+	    }
+	    return lb;
+	default:
+	    throw new ApplicationError();
+	}
     }
 
     /** The thistype or singleton type corresponding to values of this type.
@@ -1306,9 +1326,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case TypeRef(_, Symbol sym, _):
 	    switch (that) {
 	    case TypeRef(Type pre1, Symbol sym1, _):
-		if (sym1.kind == TYPE &&
-		    this.isSubType(
-			sym1.loBound().asSeenFrom(pre1, sym1.owner())))
+		if (sym1.kind == TYPE && this.isSubType(that.loBound()))
 		    return true;
 	    }
 	    if (sym.kind == ALIAS)
@@ -1826,7 +1844,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     /** Return the least upper bound of non-empty array of types `tps'.
-     *  todo: treat types with refinements
      */
     public static Type lub(Type[] tps) {
 	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
@@ -1922,10 +1939,129 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     private static Type glb(Type[] tps) {
+	// step one: eliminate redunandant types; return if one one is left
 	tps = elimRedundant(tps, false);
 	if (tps.length == 1) return tps[0];
-	else return NoType;
+
+	// step two: build arrays of all typerefs and all refinements
+	Type.List treftl = Type.List.EMPTY;
+	Type.List comptl = Type.List.EMPTY;
+	for (int i = 0; i < tps.length; i++) {
+	    switch (tps[i]) {
+	    case TypeRef(_, _, _):
+		treftl = new Type.List(tps[i], treftl);
+		break;
+	    case CompoundType(Type[] parents, Scope members):
+		if (members.elems != Scope.Entry.NONE)
+		    comptl = new Type.List(tps[i], comptl);
+		for (int j = 0; j < parents.length; j++)
+		    treftl = new Type.List(parents[i], treftl);
+		break;
+	    case ThisType(_):
+	    case SingleType(_, _):
+		return Global.instance.definitions.ALL_TYPE;
+	    }
+	}
+
+	CompoundType glbType = compoundType(Type.EMPTY_ARRAY, new Scope());
+	Type glbThisType = glbType.narrow();
+
+	// step 3: compute glb of all refinements.
+	Scope members = Scope.EMPTY;
+	if (comptl != List.EMPTY) {
+	    Type[] comptypes = comptl.toArrayReverse();
+	    Scope[] refinements = new Scope[comptypes.length];
+	    for (int i = 0; i < comptypes.length; i++)
+		refinements[i] = comptypes[i].members();
+	    if (!setGlb(glbType.members, refinements, glbThisType)) {
+		// refinements don't have lower bound, so approximate
+		// by AllRef
+		glbType.members = Scope.EMPTY;
+		treftl = new Type.List(
+		    Global.instance.definitions.ALLREF_TYPE, treftl);
+	    }
+	}
+
+	// eliminate redudant typerefs
+	Type[] treftypes = elimRedundant(treftl.toArrayReverse(), false);
+	if (treftypes.length != 1 || glbType.members.elems != Scope.Entry.NONE) {
+	    // step 4: replace all abstract types by their lower bounds.
+	    boolean hasAbstract = false;
+	    for (int i = 0; i < treftypes.length; i++) {
+		if (treftypes[i].unalias().symbol().kind == TYPE)
+		    hasAbstract = true;
+	    }
+	    if (hasAbstract) {
+		treftl = Type.List.EMPTY;
+		for (int i = 0; i < treftypes.length; i++) {
+		    if (treftypes[i].unalias().symbol().kind == TYPE)
+			treftl = new Type.List(treftypes[i].loBound(), treftl);
+		    else
+			treftl = new Type.List(treftypes[i], treftl);
+		}
+		treftypes = elimRedundant(treftl.toArrayReverse(), false);
+	    }
+	}
+
+	if (treftypes.length != 1) {
+	    // step 5: if there are conflicting instantiations of same
+	    // class, replace them by lower bound.
+	    Type lb = NoType;
+	    for (int i = 0;
+		 i < treftypes.length &&
+		     lb != Global.instance.definitions.ALL_TYPE;
+		 i++) {
+		for (int j = 0; j < i; j++) {
+		    if (treftypes[j].symbol() == treftypes[i].symbol())
+			lb = treftypes[i].loBound();
+		}
+	    }
+	    if (lb != NoType) return lb;
+	}
+
+	if (treftypes.length == 1 && glbType.members.elems == Scope.Entry.NONE) {
+	    return treftypes[0];
+	} else {
+	    glbType.parts = treftypes;
+	    return glbType;
+	}
     }
+
+    private static boolean setGlb(Scope result, Scope[] ss, Type glbThisType) {
+	for (int i = 0; i < ss.length; i++)
+	    for (Scope.Entry e = ss[i].elems; e != Scope.Entry.NONE; e = e.next)
+		if (!addMember(result, e.sym, glbThisType)) return false;
+	return true;
+    }
+
+    private static boolean addMember(Scope s, Symbol sym, Type glbThisType) {
+	Type syminfo = sym.info().substThis(sym.owner(), glbThisType);
+	Scope.Entry e = s.lookupEntry(sym.name);
+	if (e == Scope.Entry.NONE) {
+	    Symbol sym1 = sym.cloneSymbol();
+	    sym1.setOwner(glbThisType.symbol());
+	    sym1.setInfo(syminfo);
+	    s.enter(sym1);
+	    return true;
+	} else {
+	    Type einfo = e.sym.info();
+	    if (einfo.isSameAs(syminfo)) {
+		return true;
+	    } else if (einfo.isSubType(syminfo) && sym.kind != ALIAS) {
+		return true;
+	    } else if (syminfo.isSubType(einfo) && e.sym.kind != ALIAS) {
+		e.sym.setInfo(syminfo);
+		return true;
+	    } else if (sym.kind == VAL && e.sym.kind == VAL ||
+		       sym.kind == TYPE && e.sym.kind == TYPE) {
+		e.sym.setInfo(glb(new Type[]{einfo, syminfo}));
+		return true;
+	    } else {
+		return false;
+	    }
+	}
+    }
+
 
 // Erasure --------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
-trait Option[a] {}
+trait Option[+a] {}
 case class Some[a](x: a) extends Option[a];
-case class None[a] extends Option[a];
+case object None extends Option[All];
 
 object test {
 

@@ -310,7 +310,9 @@ public class LambdaLift extends OwnerTransformer
 
     public Tree transform(Tree tree) {
 	//global.debugPrinter.print("lifting ").print(tree).println().end();//DEBUG
+	//System.out.print(tree.type + " --> ");//DEBUG
 	tree.type = descr.transform(tree.type, currentOwner);
+	//System.out.println(tree.type);//DEBUG
         switch (tree) {
 	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    Symbol sym = tree.symbol();
@@ -403,7 +405,7 @@ public class LambdaLift extends OwnerTransformer
 	    return copy.Apply(
 		tree, fn1, addFreeArgs(tree.pos, get(free.fvs, fsym), args1));
 
-	case Ident(_):
+	case Ident(Name name):
 	    Symbol sym = tree.symbol();
 	    if (sym.isLocal() &&
 		(sym.kind == TYPE || (sym.kind == VAL && !sym.isMethod()))) {
@@ -411,6 +413,7 @@ public class LambdaLift extends OwnerTransformer
 	    }
 	    Tree tree1 = copy.Ident(tree, sym).setType(
 		sym.typeAt(descr.nextPhase));
+	    if (name != sym.name) ((Ident)tree1).name = sym.name;
 	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, Names.elem);
 	    else return tree1;
 
@@ -563,7 +566,7 @@ public class LambdaLift extends OwnerTransformer
 		    gen.mkRef(
 			pos,
 			global.definitions.getClass(Names.scala_COLONCOLON).constructor()),
-		    new Tree[]{gen.mkType(pos, elemtpe), gen.mkType(pos, elemtpe)}),
+		    new Tree[]{gen.mkType(pos, elemtpe)}),
 		new Tree[]{hd, tl}));
     }
 }

@@ -35,7 +35,7 @@ trait List[+a] extends Seq[a] {
   * @return the list with <code>x</code> appended at the beginning.
   */
   def ::[b >: a](x: b): List[b] =
-    new scala.::[b, a](x, this);
+    new scala.::(x, this);
 
   /** Returns a list resulting from the concatenation of the given
   * list <code>prefix</code> and this list.
@@ -255,8 +255,8 @@ trait List[+a] extends Seq[a] {
   * @return the given array <code>xs</code> filled with this list.
   * @throws error if the list is empty.
   */
-  def copyToArray[b >: a](xs: Array[b], start: Int): Array[b] = match {
-    case Nil => xs
+  def copyToArray[b >: a](xs: Array[b], start: Int): int = match {
+    case Nil => start
     case y :: ys => xs(start) = y; ys.copyToArray(xs, start + 1)
   }
 
@@ -275,7 +275,7 @@ trait List[+a] extends Seq[a] {
   */
   def mkString(start: String, sep: String, end: String): String =
     start +
-  (if (isEmpty) end
+   (if (isEmpty) end
    else if (tail.isEmpty) head.toString() + end
    else head.toString().concat(sep).concat(tail.mkString("", sep, end)));
 

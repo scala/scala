@@ -380,39 +380,38 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      */
     void validateBaseTypes(Symbol clazz) {
 	validateBaseTypes(clazz, clazz.type().parents(),
-			  new boolean[clazz.closure().length], 0);
+			  new Type[clazz.closure().length], 0);
     }
     //where
-        void validateBaseTypes(Symbol clazz, Type[] tps, boolean[] seen, int start) {
+        void validateBaseTypes(Symbol clazz, Type[] tps, Type[] seen, int start) {
 	    for (int i = tps.length - 1; i >= start; i--) {
 		validateBaseTypes(clazz, tps[i].unalias(), seen, i == 0 ? 0 : 1);
 	    }
 	}
 
-	void validateBaseTypes(Symbol clazz, Type tp, boolean[] seen, int start) {
+	void validateBaseTypes(Symbol clazz, Type tp, Type[] seen, int start) {
 	    Symbol baseclazz = tp.symbol();
 	    if (baseclazz.kind == CLASS) {
 		int index = clazz.closurePos(baseclazz);
                 if (index < 0) return;
-		if (seen[index]) {
+		if (seen[index] != null) {
 		    // check that only uniform classes are inherited several times.
 		    if (!clazz.isCompoundSym() && !baseclazz.isTrait()) {
 			error(clazz.pos, "illegal inheritance;\n" + clazz +
 			      " inherits " + baseclazz + " twice");
 		    }
-		    // check no two different type instances of same class
-		    // are inherited.
-		    Type tp1 = clazz.closure()[index];
-		    if (!tp1.isSameAs(tp)) {
+		    // if there are two different type instances of same class
+		    // check that second is a subtype of first.
+		    if (!seen[index].isSubType(tp)) {
 			if (clazz.isCompoundSym())
 			    error(clazz.pos,
 				  "illegal combination;\n " + "compound type " +
 				  " combines different type instances of " +
-				  baseclazz + ":\n" + tp + " and " + tp1);
+				  baseclazz + ":\n" + tp + " and " + seen[index]);
 			else
 			    error(clazz.pos, "illegal inheritance;\n " + clazz +
 				  " inherits different type instances of " +
-				  baseclazz + ":\n" + tp + " and " + tp1);
+				  baseclazz + ":\n" + tp + " and " + seen[index]);
 		    }
 		}
 		// check that case classes do not inherit from case classes
@@ -420,7 +419,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    error(clazz.pos, "illegal inheritance;\n " + "case " + clazz +
 			  " inherits from other case " + baseclazz);
 
-		seen[index] = true;
+		seen[index] = tp;
 		validateBaseTypes(clazz, tp.parents(), seen, start);
 	    }
 	}
@@ -468,8 +467,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		checkNonCyclic(
 		    pos, pre.memberInfo(sym).subst(sym.typeParams(), args));
 		if (sym.kind == TYPE)
-		    checkNonCyclic(
-			pos, sym.loBound().asSeenFrom(pre, sym.owner()));
+		    checkNonCyclic(pos, tp.loBound());
 		sym.flags &= ~LOCKED;
 	    }
 	    break;
@@ -755,7 +753,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     void validateVariance(Symbol base, Type all, Type[] tps, int variance, Symbol[] tparams) {
 	for (int i = 0; i < tps.length; i++)
-	    if (tps[i] != tparams[i].type())
+//	    if (tps[i] != tparams[i].type())
 		validateVariance(base, all, tps[i], variance * tparams[i].variance());
     }
 
@@ -825,12 +823,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (clazz.isLocalClass()) unit.mangler.setMangledName(clazz);
 
 	    enterSym(tree, clazz.constructor());
-	    if ((mods & (ABSTRACTCLASS | CASE)) == CASE) {
-		// enter case constructor method.
-		enterInScope(
-		    new TermSymbol(
-			tree.pos, name.toTermName(), owner, mods & (ACCESSFLAGS | CASE))
-		    .setInfo(new LazyConstrMethodType(tree)));
+	    if ((mods & CASE) != 0) {
+		if (vparams.length == 0) {
+		    error(tree.pos, "case class needs () parameter section");
+		} else if ((mods & ABSTRACTCLASS) == 0) {
+		    // enter case constructor method.
+		    enterInScope(
+			new TermSymbol(
+			    tree.pos, name.toTermName(), owner, mods & (ACCESSFLAGS | CASE))
+			.setInfo(new LazyConstrMethodType(tree)));
+		}
 	    }
 	    return enterSym(tree, clazz);
 
@@ -1755,30 +1757,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return tree;
 	    } else {
 		Symbol sym = tree.symbol();
-		// convert nullary case methods to types
-		// check that other idents or selects are stable.
+		// check that idents or selects are stable.
 		switch (tree) {
 		case Ident(_):
-		    if (sym != null && isNullaryMethod(sym) && (sym.flags & CASE) != 0)
-			return transform(
-			    make.Apply(
-				tree.pos,
-				copy.Ident(tree, sym.type().resultType().symbol()),
-				Tree.EMPTY_ARRAY),
-			    mode, pt);
-		    else
-			checkStable(tree);
-		    break;
-		case Select(Tree qual, _):
-		    if (sym != null && isNullaryMethod(sym) && (sym.flags & CASE) != 0)
-			return transform(
-			    make.Apply(
-				tree.pos,
-				copy.Select(tree, sym.type().resultType().symbol(), qual),
-				Tree.EMPTY_ARRAY),
-			    mode, pt);
-		    else
-			checkStable(tree);
+		case Select(_, _):
+		    checkStable(tree);
 		}
 	    }
 	} else if ((mode & EXPRmode) != 0) {
@@ -1815,15 +1798,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	return tree;
     }
     //where
-	boolean isNullaryMethod(Symbol sym) {
-	    switch (sym.type()) {
-	    case PolyType(_, Type restpe):
-		return !(restpe instanceof Type.MethodType);
-	    default:
-		return false;
-	    }
-	}
-
 	Type seqConstructorType(Type paramtp, Type resulttp) {
 	    Symbol constr = resulttp.symbol().constructor();
 	    Symbol param = new TermSymbol(

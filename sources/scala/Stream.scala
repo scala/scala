@@ -1,16 +1,22 @@
 package scala;
 
-trait Stream[+a] {
+trait Stream[+a] extends Seq[a] {
 
   def isEmpty: Boolean;
   def head: a;
   def tail: Stream[a];
 
-  def length: Int = if (isEmpty) 0 else tail.length + 1;
+  def length: int = if (isEmpty) 0 else tail.length + 1;
 
-  def append(def rest: Stream[a]): Stream[a] =
+  def append[b >: a](def rest: Stream[b]): Stream[b] =
     if (isEmpty) rest
     else Stream.cons(head, tail.append(rest));
+
+  def elements: Iterator[a] = new Iterator[a] {
+    var current = Stream.this;
+    def hasNext: boolean = !current.isEmpty;
+    def next: a = { val result = current.head; current = current.tail; result }
+  }
 
   def init: Stream[a] =
     if (isEmpty) error("Stream.empty.init")
@@ -22,6 +28,17 @@ trait Stream[+a] {
     else if (tail.isEmpty) head
     else tail.last;
 
+  def take(n: int): Stream[a] =
+    if (n == 0) Stream.empty
+    else Stream.cons(head, tail.take(n-1));
+
+  def drop(n: int): Stream[a] =
+    if (n == 0) this
+    else tail.drop(n-1);
+
+  def apply(n: int) = drop(n).head;
+  def at(n: int) = drop(n).head;
+
   def takeWhile(p: a => Boolean): Stream[a] =
     if (isEmpty || !p(head)) Stream.empty
     else Stream.cons(head, tail.takeWhile(p));
@@ -30,21 +47,11 @@ trait Stream[+a] {
     if (isEmpty || !p(head)) this
     else tail.dropWhile(p);
 
-  def take(n: Int): Stream[a] =
-    if (n == 0) Stream.empty
-    else Stream.cons(head, tail.take(n-1));
-
-  def drop(n: Int): Stream[a] =
-    if (n == 0) this
-    else tail.drop(n-1);
-
-  def at(n: Int) = drop(n).head;
-
   def map[b](f: a => b): Stream[b] =
     if (isEmpty) Stream.empty
     else Stream.cons(f(head), tail.map(f));
 
-  def foreach(f: a => Unit): Unit =
+  def foreach(f: a => unit): unit =
     if (isEmpty) {}
     else { f(head); tail.foreach(f) }
 
@@ -83,10 +90,8 @@ trait Stream[+a] {
     if (isEmpty) Stream.empty
     else f(head).append(tail.flatMap(f));
 
-  def reverse: Stream[a] = {
-    def snoc(xs: Stream[a], x: a): Stream[a] = Stream.cons(x, xs);
-    foldLeft(Stream.empty: Stream[a])(snoc)
-  }
+  def reverse: Stream[a] =
+    foldLeft(Stream.empty: Stream[a])((xs, x) => Stream.cons(x, xs));
 
   // The following method is not compilable without run-time type
   // information. It should therefore be left commented-out for
@@ -97,22 +102,26 @@ trait Stream[+a] {
   //         xs
   //       }
 
-  def copyToArray[b >: a](xs: Array[b], start: Int): Int = {
-    xs(start) = head;
-    tail.copyToArray(xs, start + 1)
-  }
+  def copyToArray[b >: a](xs: Array[b], start: int): int =
+    if (isEmpty) start
+    else { xs(start) = head; tail.copyToArray(xs, start + 1) }
 
   def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
     if (this.isEmpty || that.isEmpty) Stream.empty
     else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail));
 
-  def print: Unit =
+  def print: unit =
     if (isEmpty) System.out.println("Stream.empty")
     else {
       System.out.print(head as java.lang.Object);
       System.out.print(", ");
       tail.print
     }
+
+  override def toString() =
+    "Stream(" + printElems(new StringBuffer(), "") + ")";
+
+  def printElems(buf: StringBuffer, prefix: String): StringBuffer;
 }
 
 object Stream {
@@ -121,19 +130,22 @@ object Stream {
     def isEmpty = true;
     def head: All = error("head of empty stream");
     def tail: Stream[All] = error("tail of empty stream");
-    override def toString(): String = "Stream.empty";
+    def printElems(buf: StringBuffer, prefix: String): StringBuffer = buf;
   }
 
-  def cons[b](hd: b, def tl: Stream[b]): Stream[b] = new Stream[b] {
+  def cons[a](hd: a, def tl: Stream[a]) = new Stream[a] {
     def isEmpty = false;
     def head = hd;
-    private var tlVal: Stream[b] = _;
-    private var tlDefined: Boolean = false;
-    def tail: Stream[b] = {
+    private var tlVal: Stream[a] = _;
+    private var tlDefined = false;
+    def tail: Stream[a] = {
       if (!tlDefined) { tlVal = tl; tlDefined = true; }
       tlVal
     }
-    override def toString(): String = "ConsStream(" + hd + ", ?)";
+    def printElems(buf: StringBuffer, prefix: String): StringBuffer = {
+      val buf1 = buf.append(prefix).append(hd as java.lang.Object);
+      if (tlDefined) printElems(buf1, ", ") else buf1 append ", ?";
+    }
   }
 
   def concat[a](xs: Seq[Stream[a]]): Stream[a] = concat(xs.elements);
@@ -142,4 +154,8 @@ object Stream {
     if (xs.hasNext) xs.next append concat(xs)
     else empty;
   }
+
+  def range(start: int, end: int): Stream[int] =
+    if (start >= end) empty
+    else cons(start, range(start + 1, end));
 }

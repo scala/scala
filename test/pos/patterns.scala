@@ -1,4 +1,4 @@
-trait Option[a] {}
+trait Option[+a] {}
 case class Some[a](x: a) extends Option[a] {
   override def toString(): scala.String = "Some(" + x + ")";
   override def equals(that: Any): Boolean = that match {
@@ -7,7 +7,7 @@ case class Some[a](x: a) extends Option[a] {
   }
   override def hashCode(): scala.Int = getClass().hashCode() * 41 + x.hashCode();
 }
-case class None[a] extends Option[a] {
+case object None extends Option[All] {
   override def toString(): scala.String = "None";
   override def equals(that: Any) = that match {
     case None => true
