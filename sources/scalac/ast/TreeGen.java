@@ -673,19 +673,35 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a Switch node with given components and type. */
     public Switch Switch(int pos, Tree test, int[] tags, Tree[] bodies,
-        Tree defavlt, Type type)
+        Tree otherwise, Type type)
     {
         for (int i = 0; i < bodies.length; i++)
             assert assertTreeSubTypeOf(bodies[i], type);
-        assert assertTreeSubTypeOf(defavlt, type);
-        Switch tree = make.Switch(pos, test, tags, bodies, defavlt);
+        assert assertTreeSubTypeOf(otherwise, type);
+        Switch tree = make.Switch(pos, test, tags, bodies, otherwise);
         tree.setType(type);
         return tree;
     }
-    public Switch Switch(Tree test, int[] tags, Tree[] bodies, Tree defavlt,
+    public Switch Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise,
         Type type)
     {
-        return Switch(test.pos, test, tags, bodies, defavlt, type);
+        return Switch(test.pos, test, tags, bodies, otherwise, type);
+    }
+
+    /** Builds a Switch node with given components. */
+    public Switch Switch(int pos, Tree test, int[] tags, Tree[] bodies,
+        Tree otherwise)
+    {
+        Type[] types = new Type[bodies.length + 1];
+        for (int i = 0; i < bodies.length; i++) types[i] = bodies[i].type();
+        types[bodies.length] = otherwise.type();
+        global.nextPhase();
+        Type type = Type.lub(types);
+        global.prevPhase();
+        return Switch(pos, test, tags, bodies, otherwise, type);
+    }
+    public Switch Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise){
+        return Switch(test.pos, test, tags, bodies, otherwise);
     }
 
     /** Builds a Return node of given method with given value. */
