@@ -89,7 +89,7 @@ configure() {
 
 # Prints a warning message on stderr.
 warning() {
-    echo "$0: warning: " "$@" 1>&2;
+    echo "$0: warning:" "$@" 1>&2;
 }
 
 # Prints an error message on stderr.
@@ -327,10 +327,20 @@ configure;
 
 case "$SCRIPT" in
     scala-info ) scala_info "$@";;
-    socos*     ) exec_compile scalac.Main "$@";;
-    surus*     ) exec_compile scalai.Main "$@";;
-    siris*     ) exec_compile scalai.Main -interactive "$@";;
+    scalac*    ) exec_compile scalac.Main "$@";;
+    scaladoc*  ) exec_compile scalac.Main -doc "$@";;
+    scalarun*  ) exec_compile scalai.Main "$@";;
+    scalaint*  ) exec_compile scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala dtd2scala.Main "$@";;
+    socos*     )
+        warning "Deprecated command, use scalac${SCRIPT#socos} instead.";
+        exec_compile scalac.Main "$@";;
+    surus*     )
+        warning "Deprecated command, use scalarun${SCRIPT#socos} instead.";
+        exec_compile scalai.Main "$@";;
+    siris*     )
+        warning "Deprecated command, use scalaint${SCRIPT#socos} instead.";
+        exec_compile scalai.Main -interactive "$@";;
     *          ) abort "Don't know what to do for $SCRIPT.";;
 esac;
 
