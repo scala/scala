@@ -29,11 +29,38 @@ case class Text(str: String) extends Entity {
     override def toString(): String = str;
 }
 
-/** Value refers to a constant integer.
+/** Value refers to a constant.
  */
-case class Value(value: Long) extends Entity {
+class Value extends Entity {
     override def isValue: Boolean = true;
-    override def toString(): String = value.toString();
+}
+
+case class SimpleValue(tag: Value.Value) extends Value {
+	import Value._;
+	override def toString(): String = tag match {
+    	case UNIT => "()"
+    	case NULL => "null"
+    	case ZERO => "0"
+    }
+}
+
+case class NumberValue(tag: Value.Value, value: Long) extends Value {
+    import Value._;
+    override def toString(): String = tag match {
+    	case BOOLEAN => if (value == 0) "false" else "true"
+    	case BYTE | SHORT | CHAR | INT | LONG => value.toString()
+    	case FLOAT => java.lang.Float.intBitsToFloat(value.asInstanceOf[Int]).toString()
+    	case DOUBLE => java.lang.Double.longBitsToDouble(value).toString()
+    }
+}
+
+case class StringValue(str: String) extends Value {
+    override def toString(): String = "\"" + str + "\"";
+}
+
+object Value extends Enumeration {
+	val UNIT, BOOLEAN, BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE,
+	    NULL, ZERO = Value;
 }
 
 /** Types
@@ -64,7 +91,7 @@ case class PolyType(tpe: Type, tvars: List[Symbol]) extends Type;
 
 case class OverloadedType(members: List[Symbol], tpes: List[Type]) extends Type;
 
-case class ConstantType(base: Type, value: Long) extends Type;
+case class ConstantType(base: Type, value: Entity) extends Type;
 
 case class TypeFlag(tpe: Type, flags: Int) extends Type;
 

@@ -36,6 +36,18 @@ class ScalaAttribute(in: ByteArrayReader) {
     final val UNBOXEDARRAY_TYPE = 21;
     final val FLAGGED_TYPE = 22;
     final val ERROR_TYPE = 23;
+    final val UNIT_LIT = 24;
+    final val BOOL_LIT = 25;
+    final val BYTE_LIT = 26;
+    final val SHORT_LIT = 27;
+    final val CHAR_LIT = 28;
+    final val INT_LIT = 29;
+    final val LONG_LIT = 30;
+    final val FLOAT_LIT = 31;
+    final val DOUBLE_LIT = 32;
+    final val STRING_LIT = 33;
+    final val NULL_LIT = 34;
+    final val ZERO_LIT = 35;
 
     val table = readTable;
 
@@ -51,8 +63,8 @@ class ScalaAttribute(in: ByteArrayReader) {
 
     def readTableEntry: AttribEntry = {
         val tag = in.nextByte;
+        Console.println("tag = " + tag);
         val len = in.nextNat;
-        //Console.println("" + tag + ": " + len);
         val end = in.bp + len;
         tag match {
             case TERM_NAME =>
@@ -95,6 +107,24 @@ class ScalaAttribute(in: ByteArrayReader) {
                 OverloadedTypeRef(readRefs(end))
             case FLAGGED_TYPE =>
                 FlaggedType(in.nextNat, in.nextNat)
+            case UNIT_LIT |
+                 NULL_LIT |
+                 ZERO_LIT =>
+                Literal(tag, 0)
+            case BOOL_LIT =>
+                Literal(tag, in.nextByte)
+            case STRING_LIT =>
+                Literal(tag, in.nextNat)
+            case BYTE_LIT |
+                 CHAR_LIT |
+                 SHORT_LIT |
+                 INT_LIT |
+                 LONG_LIT |
+                 FLOAT_LIT |
+                 DOUBLE_LIT =>
+            	Literal(tag, in.nextLong)
+           	case _ =>
+           		error("unknown meta data tag: " + tag);
         }
     }
 
@@ -128,6 +158,7 @@ class ScalaAttribute(in: ByteArrayReader) {
     case class OverloadedTypeRef(symandtpe: List[Int]) extends AttribEntry;
     case class ConstantTypeRef(baseref: Int, numref: Int) extends AttribEntry;
     case class FlaggedType(flags: Int, tpe: Int) extends AttribEntry;
+    case class Literal(tag: Int, data: Long) extends AttribEntry;
 
     case class SymbolInfo(name: Int, owner: Int, flags: Int, info: Int);
 }

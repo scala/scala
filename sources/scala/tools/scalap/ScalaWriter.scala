@@ -205,7 +205,12 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
 
     def printTVar(tvar: Symbol): Unit = tvar match {
         case sym: TypeSymbol =>
-            print(sym.name);
+            if (Flags.is(Flags.COVAR, sym.flags))
+            	print("+" + sym.name)
+            else if (Flags.is(Flags.CONTRAVAR, sym.flags))
+            	print("-" + sym.name);
+            else
+            	print(sym.name);
             if (!isExternalType(sym.tpe, "Any")) {
                 print(" <: ")*;
                 printType(sym.tpe);
@@ -220,7 +225,7 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
 
     def isExternalType(tpe: Type, name: String): Boolean = tpe match {
         case TypeRef(SingletonType(ThisType(root), pck), sym, Nil) =>
-            (root.name.length() == 0) &&
+            root.name.equals("<root>") &&
             pck.name.equals("scala") &&
             sym.name.equals(name)
         case _ => false

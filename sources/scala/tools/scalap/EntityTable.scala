@@ -24,7 +24,7 @@ class EntityTable(attrib: ScalaAttribute) {
             table(i) = attrib.table(i) match {
                 case TermName(str) => Text(Names.decode(str));
                 case TypeName(str) => Text(Names.decode(str));
-                case Number(x) => Value(x);
+                case Number(x) => NumberValue(Value.LONG, x);
                 case _ => null;
             }
             i = i + 1;
@@ -51,6 +51,30 @@ class EntityTable(attrib: ScalaAttribute) {
                 case ExtRef(mod, nameId, _) =>
                     fixupIds = i :: fixupIds;
                     new ExternalSymbol(getText(nameId), mod)
+                case Literal(UNIT_LIT, _) =>
+                    SimpleValue(Value.UNIT)
+                case Literal(NULL_LIT, _) =>
+                    SimpleValue(Value.NULL)
+                case Literal(ZERO_LIT, _) =>
+                    SimpleValue(Value.ZERO)
+                case Literal(BOOL_LIT, data) =>
+                    NumberValue(Value.BOOLEAN, data)
+                case Literal(BYTE_LIT, data) =>
+                    NumberValue(Value.BYTE, data)
+                case Literal(SHORT_LIT, data) =>
+                    NumberValue(Value.SHORT, data)
+                case Literal(CHAR_LIT, data) =>
+                    NumberValue(Value.CHAR, data)
+                case Literal(INT_LIT, data) =>
+                    NumberValue(Value.INT, data)
+                case Literal(LONG_LIT, data) =>
+                    NumberValue(Value.LONG, data)
+                case Literal(FLOAT_LIT, data) =>
+                    NumberValue(Value.FLOAT, data)
+                case Literal(DOUBLE_LIT, data) =>
+                    NumberValue(Value.DOUBLE, data)
+                case Literal(STRING_LIT, data) =>
+                    StringValue(getText(data.asInstanceOf[Int]))
                 case _ =>
                     table(i)
             }
@@ -94,10 +118,6 @@ class EntityTable(attrib: ScalaAttribute) {
         case Text(str) => str;
     }
 
-    def getValue(i: Int): Long = table(i) match {
-        case Value(x) => x;
-    }
-
     def getSymbol(i: Int): Symbol =
         if (i < 0) NoSymbol else table(i).asInstanceOf[Symbol];
 
@@ -133,7 +153,7 @@ class EntityTable(attrib: ScalaAttribute) {
                     }
                     OverloadedType(getSymbols(symIds), getTypes(typeIds))
                 case ConstantTypeRef(baseId, valId) =>
-                    ConstantType(getType(baseId), getValue(valId))
+                    ConstantType(getType(baseId), table(valId))
                 case FlaggedType(flags, typeId) =>
                     TypeFlag(getType(typeId), flags)
             }
