@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This script was automatically generated using Zero G's InstallAnywhere 5.5.1 Standard, Build 2032
      STATUS: Fully Functional LICENSED Edition
-     DATE:   Mon Jul 26 11:04:33 CEST 2004 -->
-<InstallAnywhere_Deployment_Project increments="1723">
+     DATE:   Tue Jul 27 17:40:12 CEST 2004 -->
+<InstallAnywhere_Deployment_Project increments="1676">
 	<!-- ** DO NOT EDIT ** Essential authorization and configuration data ** DO NOT EDIT ** -->
 	<essentialScriptInfo>
 		<versionID major="5" minor="5" revision="1"/>
@@ -10,9 +10,9 @@
 		<scriptID>12,42,11,90,77,49,48,53,53,85,78,57,55,55,50,65</scriptID>
 		<buildID>3,13,71,76,105,110,117,120,44,32,50,46,52,46,50,48,45,51,49,46,57,44,32,105,51,56,54,59,32,74,97,118,97,32,49,46,51,46,49,95,48,56,44,32,83,117,110,32,77,105,99,114,111,115,121,115,116,101,109,115,32,73,110,99,46,44,32,104,116,116,112,58,47,47,106,97,118,97,46,115,117,110,46,99,111,109,47,59,32,101,110,44,32,85,83,59,32,85,84,70,45,56</buildID>
 		<!-- The authorizationID may change between project saves and builds.  This does not effect the integrity of the project, nor do changes in this value represent changes in the actual InstallAnywhere project. -->
-		<authorizationID>1,0,0,-16,-13,-71,-96,-16,80,112,112,97,87,98,113,97,113,65,83,67,74,65,74,67,89,70,64,69,66,69,48,79,87,5,2,11,10,17,122,13,0,0,0</authorizationID>
+		<authorizationID>1,0,0,-16,3,73,64,16,80,112,112,97,87,98,113,97,113,65,83,67,74,65,74,67,89,70,64,69,66,69,48,79,87,5,2,14,2,18,113,14,0,0,0</authorizationID>
 	</essentialScriptInfo>
-	<installationObjects uniqueObjects="74">
+	<installationObjects uniqueObjects="72">
 		<object class="com.zerog.ia.installer.Installer" objectID="3c471adea52a">
 			<property name="classpath">
 				<object class="java.util.Vector"/>
@@ -48,9 +48,6 @@
 						<string><![CDATA[License Agreement]]></string>
 					</method>
 					<method name="addElement">
-						<string><![CDATA[Choose Java Virtual Machine]]></string>
-					</method>
-					<method name="addElement">
 						<string><![CDATA[Choose Install Folder]]></string>
 					</method>
 					<method name="addElement">
@@ -65,7 +62,7 @@
 				</object>
 			</property>
 			<property name="installProgressLabelIndex">
-				<int>5</int>
+				<int>4</int>
 			</property>
 			<property name="installProgressLabelOption">
 				<int>2</int>
@@ -206,44 +203,6 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 						</object>
 					</method>
 					<method name="addElement">
-						<object class="com.zerog.ia.installer.actions.ChooseJavaVMAction" objectID="55fb9178abea">
-							<property name="imageOption">
-								<int>1</int>
-							</property>
-							<property name="userHasVMChoice">
-								<boolean>false</boolean>
-							</property>
-							<property name="title">
-								<string><![CDATA[Choose Java Virtual Machine]]></string>
-							</property>
-							<property name="header">
-								<string><![CDATA[Please Choose a Java VM for Use by the Installed Application]]></string>
-							</property>
-							<property name="canUseJRE">
-								<boolean>true</boolean>
-							</property>
-							<property name="canUseMicrosoft">
-								<boolean>false</boolean>
-							</property>
-							<property name="canUseJDK">
-								<boolean>true</boolean>
-							</property>
-							<property name="labelOption">
-								<int>2</int>
-							</property>
-							<property name="labelIndex">
-								<int>2</int>
-							</property>
-							<property name="help">
-								<object class="com.zerog.ia.installer.util.Help" objectID="55fb9179abea">
-									<property name="showHelp">
-										<boolean>false</boolean>
-									</property>
-								</object>
-							</property>
-						</object>
-					</method>
-					<method name="addElement">
 						<object class="com.zerog.ia.installer.actions.InstallDirAction" objectID="3c471b29a52f">
 							<property name="imageOption">
 								<int>1</int>
@@ -267,7 +226,7 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<int>2</int>
 							</property>
 							<property name="labelIndex">
-								<int>3</int>
+								<int>2</int>
 							</property>
 							<property name="help">
 								<object class="com.zerog.ia.installer.util.Help" objectID="3c471b2ba52f">
@@ -308,7 +267,7 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<boolean>false</boolean>
 							</property>
 							<property name="showJREDir">
-								<boolean>true</boolean>
+								<boolean>false</boolean>
 							</property>
 							<property name="showDiskSpace">
 								<boolean>true</boolean>
@@ -317,7 +276,7 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<int>2</int>
 							</property>
 							<property name="labelIndex">
-								<int>4</int>
+								<int>3</int>
 							</property>
 							<property name="fieldList">
 								<object class="java.util.Vector"/>
@@ -635,7 +594,7 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<int>2</int>
 							</property>
 							<property name="labelIndex">
-								<int>6</int>
+								<int>5</int>
 							</property>
 							<property name="help">
 								<object class="com.zerog.ia.installer.util.Help" objectID="3c471b2ca531">
@@ -651,6 +610,8 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<string><![CDATA[Congratulations! $PRODUCT_NAME$ $PRODUCT_VERSION_NUMBER$ has been successfully installed to:
 
      $USER_INSTALL_DIR$
+
+The $PRODUCT_NAME$ tools rely on the PATH variable to find a Java VM.
 
 Press "Done" to quit the installer.]]></string>
 							</property>
@@ -797,7 +758,7 @@ Press "Done" to quit the installer.]]></string>
 				<object class="java.util.Properties">
 					<method name="put">
 						<string><![CDATA[com.zerog.ia.project.save.last.date]]></string>
-						<string><![CDATA[Mon Jul 26 11:04:33 CEST 2004]]></string>
+						<string><![CDATA[Tue Jul 27 17:40:12 CEST 2004]]></string>
 					</method>
 					<method name="put">
 						<string><![CDATA[com.zerog.ia.build.options.optimization.platform.merge]]></string>
