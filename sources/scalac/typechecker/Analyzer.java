@@ -1754,7 +1754,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 						    pt,
 						    pt,
 						    elemType);
-		    System.err.println("subtree ["+i+"] has tpe "+tpe);
+		    //System.err.println("subtree ["+i+"] has tpe "+tpe);
 		    trees[ i ] = transform( trees[ i ],
 					    this.mode | SEQUENCEmode,
 					    tpe);
@@ -2173,7 +2173,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tree, adapt(qual1, qualmode, Type.AnyType), name);
 
 	    case Ident(Name name):
-		if (mode  == PATTERNmode && name.isVariable()) {
+		if (((mode & PATTERNmode) != 0) && name.isVariable()) {
                       //System.out.println("pat var " + name + ":" + pt);//DEBUG
 
                       Symbol vble, vble2 = null;
