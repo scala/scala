@@ -1481,6 +1481,12 @@ class GenJVM {
      */
     protected JType typeStoJ(Type tp) {
         switch (tp) {
+        case TypeRef(_, Symbol sym, _):
+            Object value = typeMap.get(sym);
+            if (value != null) return (JType)value;
+            JType jTp = new JObjectType(javaName(sym));
+            typeMap.put(sym, jTp);
+            return jTp;
         case UnboxedType(TypeTags.BYTE):
             return JType.BYTE;
         case UnboxedType(TypeTags.CHAR):
@@ -1503,24 +1509,13 @@ class GenJVM {
             return JObjectType.JAVA_LANG_STRING;
         case UnboxedArrayType(Type elementType):
             return new JArrayType(typeStoJ(elementType));
-        case MethodType(Symbol[] vparams, Type result): {
+        case MethodType(Symbol[] vparams, Type result):
             JType[] argTypes = new JType[vparams.length];
             for (int i = 0; i < vparams.length; ++i)
                 argTypes[i] = typeStoJ(vparams[i].info());
             return new JMethodType(typeStoJ(result), argTypes);
-        }
-        default: {
-            Symbol sym = tp.symbol();
-            if (sym == Symbol.NONE)
-                throw global.fail("invalid type ", tp);
-            else if (typeMap.containsKey(sym))
-                return (JType)typeMap.get(sym);
-            else {
-                JType jTp = new JObjectType(javaName(sym));
-                typeMap.put(sym, jTp);
-                return jTp;
-            }
-        }
+        default:
+            throw Debug.abort("invalid type", tp);
         }
     }
 
