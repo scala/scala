@@ -177,7 +177,8 @@ public class ClassfileParser implements ClassfileConstants {
      */
     protected Type readType(int i) {
         Name sig = pool.readExternal(i);
-        return sigs.sigToType(Name.names, sig.index, sig.length());
+        byte[] ascii = SourceRepresentation.string2ascii(sig.toString());
+        return sigs.sigToType(ascii, 0, ascii.length);
     }
 
     /** read a field

@@ -40,18 +40,25 @@ public class NameTransformer {
     /** Replace operator symbols by corresponding "$op_name" in names.
      */
     public static Name encode(Name name) {
-       int i = name.index;
-       int len = i + name.length();
-       StringBuffer res = new StringBuffer();
-       while (i < len) {
-         byte c = Name.names[i++];
-         String nop = operatorName[c];
-         if (nop == null)
-             res.append((char)c);
-         else
-             res.append(nop);
-       }
-       return Name.fromString(res.toString());
+        String string = name.toString();
+        StringBuffer buffer = null;
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+            if (c < 128) {
+                String operator = operatorName[c];
+                if (operator != null) {
+                    if (buffer == null) {
+                        int capacity = string.length() - 1 + operator.length();
+                        buffer = new StringBuffer(capacity);
+                        buffer.append(string.substring(0, i));
+                    }
+                    buffer.append(operator);
+                    continue;
+                }
+            }
+            if (buffer != null) buffer.append(c);
+        }
+        return buffer == null ? name : Name.fromString(buffer.toString());
     }
 
     /** Replace "$op_name" by corresponding operator symbols in names.

@@ -8,93 +8,38 @@
 
 package scalac.util;
 
+import java.util.HashMap;
+
 public final class Name {
 
 /** address in the name memory
  */
     public int index;
 
-/** length of the name
- */
-    private int len;
-
-/** next name in the same hash bucket
- */
-    private Name next;
-
-    private final static int HASH_SIZE = 0x8000;
-    private final static int HASH_MASK = 0x7FFF;
-    private final static int NAME_SIZE = 0x20000;
-
-/** memory to store all names sequentially
- */
-    public static byte[] names = new byte[NAME_SIZE];
-    private static int nc = 0;
+    private final String string;
 
 /** hashtable for finding term names quickly
  */
-    private static Name[] termHashtable = new Name[HASH_SIZE];
+    private static HashMap/*<String,TermName>*/ terms = new HashMap();
 
-/** hashtable for finding type names quickly
- */
-    private static Name[] typeHashtable = new Name[HASH_SIZE];
+    private final Name term;
+    private Name type;
 
 /** Constructor
  */
-    Name(int index, int len, Name[] table, int hash) {
-	this.index = index;
-	this.len = len;
-	this.next = table[hash];
-	table[hash] = this;
-    }
-
-/** the hashcode of a name
- */
-    private static int hashValue(byte cs[], int offset, int len) {
-        if (len > 0)
-            return
-                len * (41 * 41 * 41) +
-                cs[offset] * (41 * 41) +
-                cs[offset + len - 1] * 41 +
-                cs[offset + (len >> 1)];
-        else
-            return 0;
-    }
-
-/** is (the ascii representation of) name equal to
- *  cs[offset..offset+len-1]?
- */
-    private static boolean equals(int index, byte cs[], int offset, int len) {
-        int i = 0;
-        while ((i < len) && (names[index + i] == cs[offset + i]))
-            i++;
-        return i == len;
+    private Name(String string, Name dual) {
+	this.string = string;
+        this.index = dual != null ? dual.index + 1 : 2 * terms.size();
+        this.term = dual != null ? dual : this;
+        this.type = dual != null ? this : null;
+        if (dual == null) terms.put(string, this);
     }
 
 /** create a term name from the bytes in cs[offset..offset+len-1].
  *  assume that bytes are in ascii format.
  */
     public static Name fromAscii(byte cs[], int offset, int len) {
-        int     h = hashValue(cs, offset, len) & HASH_MASK;
-        Name    n = termHashtable[h];
-        while ((n != null) && (n.len != len || !equals(n.index, cs, offset, len)))
-            n = n.next;
-        if (n == null) {
-            n = new Name(nc, len, termHashtable, h);
-            for (int i = 0; i < len; i++)
-            {
-                if (nc == names.length)
-                {
-                    byte[] newnames = new byte[names.length * 2];
-                    System.arraycopy(names, 0, newnames, 0, names.length);
-                    names = newnames;
-                }
-                names[nc++] = cs[offset + i];
-            }
-            if (len == 0)
-                nc++;
-        }
-        return n;
+        return fromString(SourceRepresentation.ascii2string(cs, offset, len));
     }
 
 /** create a name from the bytes in cs[offset..offset+len-1];
@@ -109,84 +54,39 @@ public final class Name {
 /** create a name from the characters in string s
  */
     public static Name fromString(String s) {
-        byte[] source = SourceRepresentation.string2source(s);
-        return fromSource(source, 0, source.length);
-    }
-
-/** copy bytes of this name to buffer cs, starting at offset
- */
-    public void copyAscii(byte cs[], int offset) {
-        System.arraycopy(names, index, cs, offset, len);
-    }
-
-/** return the ascii representation of this name
- */
-    public byte[] toAscii() {
-        byte[]  ascii = new byte[len];
-        System.arraycopy(names, index, ascii, 0, len);
-        return ascii;
-    }
-
-/** return the source representation of this name
- */
-    public byte[] toSource() {
-        return SourceRepresentation.string2source(toString());
+        Object value = terms.get(s);
+        if (value != null) return (Name)value;
+        return new Name(s, null);
     }
 
 /** return the string representation of this name
  */
     public String toString() {
-	return SourceRepresentation.ascii2string(names, index, len);
+	return string;
     }
 
 /** is this name a term name?
  */
     public boolean isTermName() {
-        if (this == ERROR) return true;
-	int  h = hashValue(names, index, len) & HASH_MASK;
-	Name n = termHashtable[h];
-        while (n != null && n != this)
-	    n = n.next;
-	return n == this;
+        return this == term;
     }
 
 /** is this name a type name?
  */
     public boolean isTypeName() {
-        if (this == ERROR) return true;
-	int  h = hashValue(names, index, len) & HASH_MASK;
-	Name n = typeHashtable[h];
-        while (n != null && n != this)
-	    n = n.next;
-	return n == this;
+        return this == type;
     }
 
 /** create a term name corresponding to this name
  */
     public Name toTermName() {
-        if (this == ERROR) return this;
-	int  h = hashValue(names, index, len) & HASH_MASK;
-        Name n = termHashtable[h];
-        while (n != null && n.index != index)
-            n = n.next;
-	if (n == null) {
-	    n = new Name(index, len, termHashtable, h);
-	}
-	return n;
+        return term;
     }
 
 /** create a type name corresponding to this name
  */
     public Name toTypeName() {
-        if (this == ERROR) return this;
-	int  h = hashValue(names, index, len) & HASH_MASK;
-        Name n = typeHashtable[h];
-        while (n != null && n.index != index)
-            n = n.next;
-	if (n == null) {
-	    n = new Name(index, len, typeHashtable, h);
-	}
-	return n;
+        return type != null ? type : (type = new Name(string, this));
     }
 
 /** return the string hash value of this name
@@ -198,13 +98,13 @@ public final class Name {
 /** returns the length of this name
  */
     public int length() {
-        return len;
+        return string.length();
     }
 
 /** returns i'th char of this name
  */
     public char charAt(int i) {
-        return (char)names[index + i];
+        return string.charAt(i);
     }
 
 /** returns first occurrence of char c in this name, -1 if not found
@@ -216,82 +116,58 @@ public final class Name {
 /** returns first occurrence of char c in this name from `start', -1 if not found
  */
     public int indexOf(char c, int start) {
-        byte b = (byte)c;
-        for (int i = start; i < len; i++) if (names[index + i] == b) return i;
-        return -1;
+	return string.indexOf(c, start);
     }
 
 /** returns last occurrence of char c in this name, -1 if not found.
  */
     public int lastIndexOf(char c) {
-        byte b = (byte)c;
-        int i = len - 1;
-        while (i >= 0 && names[index + i] != b)
-            i--;
-        return i;
+	return string.lastIndexOf(c);
     }
 
 /** does this name start with prefix?
  */
     public boolean startsWith(Name prefix) {
-        int i = 0;
-        while ((i < prefix.len) &&
-                (i < len) &&
-                (names[index + i] == names[prefix.index + i]))
-            i++;
-        return i == prefix.len;
+        return string.startsWith(prefix.string);
     }
 
 /** does this name end with suffix?
  */
     public boolean endsWith(Name suffix) {
-        int i = len - 1;
-        int j = suffix.len - 1;
-        while ((j >= 0) && (i >= 0) &&
-                (names[index + i] == names[suffix.index + j])) {
-                i--;
-                j--;
-        }
-        return j < 0;
+        return string.endsWith(suffix.string);
     }
 
 /** returns the subName starting at position start, excluding position end
  */
     public Name subName(int start, int end) {
-        if (end < start)
-            end = start;
-        byte[]  ascii = new byte[end - start];
-        System.arraycopy(names, index + start, ascii, 0, end - start);
-        return fromAscii(ascii, 0, ascii.length);
+        return fromString(string.substring(start, end));
     }
 
 /** returns the concatenation of this name and n
  */
     public Name append(Name n) {
-        byte[] ascii = new byte[len + n.len];
-        copyAscii(ascii, 0);
-        n.copyAscii(ascii, len);
-        return fromAscii(ascii, 0, ascii.length);
+        return fromString(string + n.string);
     }
 
 /** is this name a variable identifier?
  */
     public boolean isVariable() {
-        return ((names[index] >= 'a' && names[index] <= 'z') ||
-		names[index] == '_') &&
+        char first = string.charAt(0);
+        return ((first >= 'a' && first <= 'z') || first == '_') &&
 	    this != Names.null_ &&
 	    this != Names.true_ &&
 	    this != Names.false_;
     }
 
     public static final Name ERROR = Name.fromString("<error>");
+    static { ERROR.type = ERROR; }
 
 /** precedence of this name
  */
     public int precedence() {
         if (this == ERROR)
             return -1;
-        byte ch = names[index];
+        char ch = string.charAt(0);
         if (((ch >= 'A') && (ch <= 'Z')) ||
             ((ch >= 'a') && (ch <= 'z')))
             return 1;
@@ -325,6 +201,7 @@ public final class Name {
 /** is this operator left associative
  */
     public boolean isLeftAssoc() {
-        return names[index + len -1] != ':';
+        int length = string.length();
+        return length > 0 && string.charAt(length - 1) != ':';
     }
 }
