@@ -54,12 +54,69 @@ object Predef {
    *  @return the array containing elements xs.
    */
   def Array[A](xs: A*): Array[A] = {
-    val array: Array[A] = new Array[A](xs.length);
+    val array = new Array[A](xs.length);
     var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-
+/*
+  def Array(x: boolean, xs: boolean*): Array[boolean] = {
+    val array = new Array[boolean](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: byte, xs: byte*): Array[byte] = {
+    val array = new Array[byte](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: short, xs: short*): Array[short] = {
+    val array = new Array[short](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: char, xs: char*): Array[char] = {
+    val array = new Array[char](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: int, xs: int*): Array[int] = {
+    val array = new Array[int](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: long, xs: long*): Array[long] = {
+    val array = new Array[long](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: float, xs: float*): Array[float] = {
+    val array = new Array[float](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+  def Array(x: double, xs: double*): Array[double] = {
+    val array = new Array[double](xs.length + 1);
+    array(0) = x;
+    var i = 1;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+*/
   // errors and asserts -------------------------------------------------
 
   def error(message: String): All = throw new Error(message);

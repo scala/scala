@@ -1239,7 +1239,12 @@ new Pair[Int, Int](1, 2) .
 
 
 Type parameters appear in type definitions, class definitions, and
-function definitions.  The most general form of a type parameter is
+function definitions.  In this section we consider only type parameter
+definitions with lower bounds ~\lstinline@>: $L$@~ and upper bounds
+~\lstinline@<: $U$@~ whereas a discussion of view bounds
+~\lstinline@<% $U$@~ are deferred to Section~\ref{sec:view-bounds}.
+
+The most general form of a type parameter is
 ~\lstinline@$\pm t$ >: $L$ <: $U$@.  Here, $L$, and $U$ are lower
 and upper bounds that constrain possible type arguments for the
 parameter, and $\pm$ is a {\em variance}, i.e.\ an optional prefix 
@@ -3968,7 +3973,7 @@ implicitly augmented to
 val x: C = B.view(new B)
 \end{lstlisting}
 
-\section{View-Bounds}
+\section{View-Bounds}\label{sec:view-bounds}
 
 \syntax\begin{lstlisting}
   TypeParam       ::=  id [>: Type] [<% Type]

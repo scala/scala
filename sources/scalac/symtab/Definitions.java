@@ -506,7 +506,7 @@ public class Definitions {
 
     public Symbol PREDEF_ARRAY() {
         if (PREDEF_ARRAY == null)
-            PREDEF_ARRAY = loadTerm(PREDEF, Names.Array);
+            PREDEF_ARRAY = PREDEF.lookup(Names.Array).firstAlternative();
         return PREDEF_ARRAY;
     }
 

@@ -243,7 +243,7 @@ abstract class MarkupParser[MarkupType] {
       }
       nextch;
     }
-    new String(Predef.Array[char](i.asInstanceOf[char]))
+    new String(Predef.Array(i.asInstanceOf[char]))
   }
 
 

@@ -1224,7 +1224,19 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   */
   def specializes(ftpe1: Type, ftpe2: Type): boolean = ftpe1 match {
     case Type$MethodType(params, _) =>
-      isApplicable(ftpe2, Symbol.getType(params), Type.AnyType)
+      //System.out.println("does " + ftpe1 + " specialize " + ftpe2);//DEBUG
+      val argtypes = Symbol.getType(params);
+      // if both formal and actual have REPEATED flag set on corresponding parameters,
+      // change actual to its element type.
+      // this is a hack which should be corrected once REPEATED is part of a type.
+      if (params.length > 0 && (params(params.length-1).flags & REPEATED) != 0) {
+        val params2 = ftpe2.firstParams();
+        if (params2.length == params.length  && (params2(params2.length-1).flags & REPEATED) != 0) {
+          argtypes(params.length-1) = argtypes(params.length-1)
+            .baseType(definitions.SEQ_CLASS).typeArgs()(0);
+        }
+      }
+      isApplicable(ftpe2, argtypes, Type.AnyType)
     case Type$PolyType(tparams, restype) =>
       skipViewParams(tparams, restype) match {
 	case Type$MethodType(params, _) =>

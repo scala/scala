@@ -1063,7 +1063,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /** if type is a overloaded type, return first stable alternative
-     *  else return array symbol itself
+     *  else return symbol itself
      */
     public Symbol stableAlternative() {
         switch (type()) {
