@@ -2,7 +2,7 @@ package scala.xml ;
 
 import java.lang.StringBuffer ; /* Java dependency! */
 import scala.collection.Map ;
-import scala.xml.nobinding.Element ;
+
 /** Utility functions for processing instances of bound and not bound XML classes.
 **/
 
