@@ -171,9 +171,9 @@ object Lisp {
   }
 
   val globalEnv = EmptyEnvironment
-    .extend("=",FUN({
-      case List(NUM(arg1),NUM(arg2)) => NUM(if(arg1 == arg2) 1 else 0)
-      case List(STR(arg1),STR(arg2)) => NUM(if(arg1 == arg2) 1 else 0)}))
+    .extend("=", FUN({
+      case List(NUM(arg1),NUM(arg2)) => NUM(if (arg1 == arg2) 1 else 0)
+      case List(STR(arg1),STR(arg2)) => NUM(if (arg1 == arg2) 1 else 0)}))
     .extend("+", FUN({
       case List(NUM(arg1),NUM(arg2)) => NUM(arg1 + arg2)
       case List(STR(arg1),STR(arg2)) => STR(arg1 + arg2)}))
