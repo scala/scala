@@ -33,7 +33,7 @@ public class AddInterfacesPhase extends Phase {
 
     public Type transformInfo(Symbol sym, Type tp) {
         if (sym.isPrimaryConstructor()) {
-            Symbol clazz = sym.primaryConstructorClass();
+            Symbol clazz = sym.constructorClass();
             if (!(clazz.isClass() && needInterface(clazz))) return tp;
             // The symbol is a constructor of a class which needs
             // an interface. All its value arguments have to be
@@ -195,7 +195,7 @@ public class AddInterfacesPhase extends Phase {
      */
     protected Symbol getClassSymbol(Symbol ifaceSym) {
         if (ifaceSym.isPrimaryConstructor())
-            return getClassSymbol(ifaceSym.primaryConstructorClass())
+            return getClassSymbol(ifaceSym.constructorClass())
                 .primaryConstructor();
 
         if (!needInterface(ifaceSym))

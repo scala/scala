@@ -82,7 +82,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	return
 	    sym.name.toTermName() == rootname && sym.owner() == rootowner
 	    ||
-	    sym.isConstructor() && isLocal(sym.primaryConstructorClass())
+	    sym.isConstructor() && isLocal(sym.constructorClass())
 	    ||
 	    (sym.kind != NONE && isLocal(sym.owner()));
     }
@@ -134,7 +134,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    break;
 		case VAL:
 		    if (sym.isPrimaryConstructor())
-			putSymbol(sym.primaryConstructorClass());
+			putSymbol(sym.constructorClass());
 		    else if (sym.isModule())
 			putSymbol(sym.moduleClass());
 		    break;
@@ -319,7 +319,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		break;
 	    case VAL:
 		if (sym.isPrimaryConstructor())
-		    writeRef(sym.primaryConstructorClass());
+		    writeRef(sym.constructorClass());
 		else if (sym.isModule())
 		    writeRef(sym.moduleClass());
 		break;

@@ -276,7 +276,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    error(sym.pos, "`override' modifier not allowed for classes");
 	}
 	if ((sym.flags & DEF) != 0 && sym.owner().isPrimaryConstructor() &&
-	    (sym.owner().primaryConstructorClass().flags & CASE) != 0) {
+	    (sym.owner().constructorClass().flags & CASE) != 0) {
 	    error(sym.pos, "`def' modifier not allowed for case class parameters");
 	}
 	/*!!!
@@ -1540,7 +1540,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    constrs[i] = transform(constrs[i], CONSTRmode | SUPERmode, Type.AnyType);
 	    Symbol f = TreeInfo.methSymbol(constrs[i]);
 	    if (f != null) {
-		Symbol c = f.primaryConstructorClass();
+		Symbol c = f.constructorClass();
 		if (c.kind == CLASS) {
 		    c.initialize();//to detect cycles
 		    if (i > 0 && (c.flags & JAVA) == 0 && c.isExternal()) {

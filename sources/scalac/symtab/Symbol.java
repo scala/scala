@@ -395,7 +395,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol the primary constructor of a type? */
     public final boolean isPrimaryConstructor() {
-	return isConstructor() && this == primaryConstructorClass().primaryConstructor();
+	return isConstructor() && this == constructorClass().primaryConstructor();
     }
 
     public final boolean isGenerated() {
@@ -490,7 +490,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public Symbol classOwner() {
 	Symbol owner = owner();
-	Symbol clazz = owner.primaryConstructorClass();
+	Symbol clazz = owner.constructorClass();
 	if (clazz.primaryConstructor() == owner) return clazz;
 	else return owner;
     }
@@ -514,7 +514,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      /* If this is a primary constructor, return the class it constructs.
      *  Otherwise return the symbol itself.
      */
-    public Symbol primaryConstructorClass() {
+    public Symbol constructorClass() {
 	return this;
     }
 
@@ -913,10 +913,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	assert (this.flags & that.flags & JAVA) != 0 ||
 	    (this.flags & OVERLOADFLAGS) == (that.flags & OVERLOADFLAGS)
 	    : Integer.toHexString(this.flags) + "@" + Debug.show(this) + " <> " + Integer.toHexString(that.flags) + "@" + Debug.show(that);
-        TermSymbol overloaded = new TermSymbol(
-            pos, name, owner,
+	assert this.isConstructor() == that.isConstructor();
+	int overflags =
 	    ((this.flags | that.flags) & (JAVA | OVERLOADFLAGS)) |
-	    (this.flags & that.flags & ACCESSFLAGS));
+	    (this.flags & that.flags & ACCESSFLAGS);
+	TermSymbol overloaded = (this.isConstructor())
+	    ? TermSymbol.newConstructor(this.constructorClass(), overflags)
+	    : new TermSymbol(pos, name, owner, overflags);
         overloaded.setInfo(new LazyOverloadedType(this, that));
         return overloaded;
     }
@@ -1123,7 +1126,7 @@ public class TermSymbol extends Symbol {
 	return type().valueParams();
     }
 
-    public Symbol primaryConstructorClass() {
+    public Symbol constructorClass() {
 	return isConstructor() && clazz != null ? clazz : this;
     }
 

@@ -292,7 +292,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     /** The variance of symbol `base' relative to the class which defines `tvar'.
      */
     int flip(Symbol base, Symbol tvar) {
-	Symbol clazz = tvar.owner().primaryConstructorClass();
+	Symbol clazz = tvar.owner().constructorClass();
 	Symbol sym = base;
 	int flip = CoVariance;
 	while (sym != clazz && flip != AnyVariance) {

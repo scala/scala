@@ -73,7 +73,7 @@ public class AddConstructors extends Transformer {
     Symbol getConstructor(Symbol classConstr) {
 	return getConstructor(classConstr,
 			      (((Type.MethodType)classConstr.info()).vparams),
-			      classConstr.primaryConstructorClass());
+			      classConstr.constructorClass());
     }
 
     Symbol getConstructor(Symbol classConstr, Symbol[] paramSyms, Symbol owner) {

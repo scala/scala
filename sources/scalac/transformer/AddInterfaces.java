@@ -170,7 +170,7 @@ class AddInterfaces extends Transformer {
             if (sym.isConstructor()) {
                 // If the constructor now refers to the interface
                 // constructor, use the class constructor instead.
-                Symbol clsSym = sym.primaryConstructorClass();
+                Symbol clsSym = sym.constructorClass();
                 if (phase.needInterface(clsSym))
                     return gen.Select(qualifier,
                                       phase.getClassSymbol(clsSym).primaryConstructor());
@@ -205,7 +205,7 @@ class AddInterfaces extends Transformer {
             if (sym.isConstructor()) {
                 // If the constructor now refers to the interface
                 // constructor, use the class constructor instead.
-                Symbol clsSym = sym.primaryConstructorClass();
+                Symbol clsSym = sym.constructorClass();
                 if (phase.needInterface(clsSym))
                     return gen.Ident(phase.getClassSymbol(clsSym).primaryConstructor());
                 else

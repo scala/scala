@@ -989,7 +989,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         Type toInstance(Symbol sym, Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    Symbol ownclass = sym.owner().primaryConstructorClass();
+	    Symbol ownclass = sym.owner().constructorClass();
 	    if (ownclass == clazz &&
 		pre.widen().symbol().isSubClass(ownclass)) {
 		switch (pre.baseType(ownclass)) {
