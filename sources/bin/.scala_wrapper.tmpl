@@ -967,10 +967,10 @@ test_main() {
     fi;
 
     if [ -n "$OBJDIR" ]; then
-        if [ -d "$OBJDIR" ]; then
+        if [ -d "$OBJDIR" ] || mkdir -p "$OBJDIR"; then
             OBJDIR=`cd "$OBJDIR"; pwd`/;
         else
-            abort "could not access directory '$OBJDIR'";
+            abort "could not create directory '$OBJDIR'";
         fi
     fi
 
