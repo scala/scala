@@ -11,16 +11,22 @@ futures.scala
 iterators.scala
 maps.scala
 parsers.scala
-parsers1.scala
+# parsers1.scala
 patterns.scala
 sort.scala
 sort1.scala
 sort2.scala
-typeinf.scala
+# typeinf.scala
+
+expressions/expressions-current.scala
+
+# jolib/Ref.scala
+# jolib/parallelOr.scala
 
 pilib/elasticBuffer.scala
 pilib/handover.scala
 pilib/mobilePhoneProtocol.scala
+pilib/piNat.scala
 pilib/rwlock.scala
 pilib/scheduler.scala
 pilib/semaphore.scala
