@@ -138,46 +138,4 @@ public final class Name {
     public static final Name ERROR = Name.fromString("<error>");
     static { ERROR.type = ERROR; }
 
-/** precedence of this name
- */
-    public int precedence() {
-        if (this == ERROR)
-            return -1;
-        char ch = string.charAt(0);
-        if (((ch >= 'A') && (ch <= 'Z')) ||
-            ((ch >= 'a') && (ch <= 'z')))
-            return 1;
-        switch (ch) {
-            case '|':
-                return 2;
-            case '^':
-                return 3;
-            case '&':
-                return 4;
-            case '<':
-            case '>':
-                return 5;
-            case '=':
-            case '!':
-                return 6;
-            case ':':
-                return 7;
-            case '+':
-            case '-':
-                return 8;
-            case '*':
-            case '/':
-            case '%':
-                return 9;
-            default:
-                return 10;
-        }
-    }
-
-/** is this operator left associative
- */
-    public boolean isLeftAssoc() {
-        int length = string.length();
-        return length > 0 && string.charAt(length - 1) != ':';
-    }
 }

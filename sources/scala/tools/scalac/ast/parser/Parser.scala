@@ -214,7 +214,7 @@ class Parser(unit: Unit) {
   */
   def makeBinop(isExpr: boolean, pos: int, left: Tree, op: Name, right: Tree): Tree =
     if (isExpr) {
-      if (op.isLeftAssoc()) {
+      if (isLeftAssoc(op)) {
         make.Apply(
           pos,
           make.Select(pos, left, NameTransformer.encode(op)),
@@ -432,6 +432,30 @@ class Parser(unit: Unit) {
   var operators = new Array[Name](8);
   var sp = 0;
 
+  def precedence(operator: Name): int =
+    if (operator eq Names.ERROR) -1
+    else {
+      val first_ch = operator.charAt(0);
+      if (((first_ch >= 'A') && (first_ch <= 'Z')) ||
+          ((first_ch >= 'a') && (first_ch <= 'z')))
+        1
+      else
+        first_ch match {
+          case '|'             => 2
+          case '^'             => 3
+          case '&'             => 4
+          case '<' | '>'       => 5
+          case '=' | '!'       => 6
+          case ':'             => 7
+          case '+' | '-'       => 8;
+          case '*' | '/' | '%' => 9;
+          case _               => 10;
+        }
+    }
+
+  def isLeftAssoc(operator: Name): boolean =
+    operator.length() > 0 && operator.charAt(operator.length() - 1) != ':';
+
   def push(od: Tree, pos: int, op: Name): unit = {
     if (sp == operands.length) {
       val operands1 = new Array[Tree](sp * 2);
@@ -453,16 +477,16 @@ class Parser(unit: Unit) {
   def reduceStack(isExpr: boolean, base: int, _top: Tree, prec: int, leftAssoc: boolean): Tree = {
     var top = _top;
     if (sp != base &&
-        operators(sp-1).precedence() == prec &&
-        operators(sp-1).isLeftAssoc() != leftAssoc) {
+        precedence(operators(sp-1)) == prec &&
+        isLeftAssoc(operators(sp-1)) != leftAssoc) {
       syntaxError(
         positions(sp-1),
         "left- and right-associative operators with same precedence may not be mixed",
         false);
     }
     while (sp != base &&
-           (prec < operators(sp-1).precedence() ||
-            (leftAssoc && prec == operators(sp-1).precedence()))) {
+           (prec < precedence(operators(sp-1)) ||
+            (leftAssoc && prec == precedence(operators(sp-1))))) {
       sp = sp - 1;
       top = makeBinop(isExpr, positions(sp), operands(sp), operators(sp), top);
     }
@@ -903,7 +927,7 @@ class Parser(unit: Unit) {
     var top = prefixExpr();
     while (s.token == IDENTIFIER) {
       top = reduceStack(
-        true, base, top, s.name.precedence(), s.name.isLeftAssoc());
+        true, base, top, precedence(s.name), isLeftAssoc(s.name));
       push(top, s.pos, s.name);
       ident();
       if (isExprIntro()) {
@@ -1242,7 +1266,7 @@ class Parser(unit: Unit) {
     while ((s.token == IDENTIFIER) && (s.name != BAR)) {
       val tokn = s.name; // for error message
       top = reduceStack(
-        false, base, top, s.name.precedence(), s.name.isLeftAssoc());
+        false, base, top, precedence(s.name), isLeftAssoc(s.name));
       push(top, s.pos, s.name);
       ident();
       top = simplePattern();
