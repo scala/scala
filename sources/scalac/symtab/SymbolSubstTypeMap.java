@@ -135,7 +135,7 @@ public class SymbolSubstTypeMap extends Type.Map {
             if (value != null) return (Type)value;
             value = symbols.get(symbol);
             if (value == null) return super.map(type);
-            Type prefix = ((Type.TypeRef)type).pre;
+            Type prefix = ((Type.SingleType)type).pre;
             return Type.singleType(apply(prefix), (Symbol)value);
         }
 
@@ -144,6 +144,13 @@ public class SymbolSubstTypeMap extends Type.Map {
         default:
             return super.map(type);
         }
+    }
+
+    //########################################################################
+    // Public Methods - Printing
+
+    public String toString() {
+        return "{ symbols=" + symbols + " types=" + types + " }";
     }
 
     //########################################################################
