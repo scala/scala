@@ -19,6 +19,7 @@ public class ClassParser extends Type.LazyType {
     /** the global compilation environment
      */
     protected Global global;
+    private boolean completed = false;
 
     public ClassParser(Global global) {
         this.global = global;

@@ -56,7 +56,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The infos of the symbol */
     private TypeIntervalList infos = TypeIntervalList.EMPTY;
 
-    static int FIRST_ID = Global.POST_ANALYZER_PHASE_ID;
+    static public int FIRST_ID = Global.POST_ANALYZER_PHASE_ID;
 
 // Constructors -----------------------------------------------------------
 
@@ -167,6 +167,10 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
 // Symbol classification ----------------------------------------------------
+
+    public final boolean isDefined() {
+	return !(rawInfoAt(FIRST_ID) instanceof Type.LazyType);
+    }
 
     /** Does this symbol denote a type? */
     public final boolean isType() {
@@ -961,15 +965,23 @@ public class TermSymbol extends Symbol {
 	return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | JAVA));
     }
 
-    public static TermSymbol newModule(int pos, Name name, Symbol owner, int flags) {
+    public static TermSymbol newModule(int pos, Name name, Symbol owner,
+				       int flags, ClassSymbol clazz) {
 	TermSymbol sym = new TermSymbol(pos, name, owner, flags | MODUL | FINAL);
-        Symbol clazz = new ClassSymbol(
-	    pos, name.toTypeName(), owner, flags | MODUL | FINAL, sym);
-        clazz.constructor().setInfo(
-	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 	sym.clazz = clazz;
+	clazz.setModule(sym);
 	sym.setInfo(clazz.typeConstructor());
 	return sym;
+    }
+
+    public static TermSymbol newModule(int pos, Name name, Symbol owner,
+				       int flags) {
+        ClassSymbol clazz = new ClassSymbol(
+	    pos, name.toTypeName(), owner, flags | MODUL | FINAL);
+        clazz.constructor().setInfo(
+	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
+
+	return newModule(pos, name, owner, flags, clazz);
     }
 
     /** Constructor for companion modules to classes, which need to be completed.
@@ -1257,11 +1269,11 @@ public class ClassSymbol extends TypeSymbol {
     }
 
     /** Constructor for module classes and classes with static members.
-     */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags, Symbol module) {
 	this(pos, name, owner, flags);
 	this.module = module;
     }
+     */
 
     /** Constructor for classes to load as source files
      */
@@ -1282,7 +1294,8 @@ public class ClassSymbol extends TypeSymbol {
     /** Return a fresh symbol with the same fields as this one.
      */
     public Symbol cloneSymbol(Symbol owner) {
-        ClassSymbol other = new ClassSymbol(pos, name, owner, flags, module);
+        ClassSymbol other = new ClassSymbol(pos, name, owner, flags);
+	other.module = module;
         other.setInfo(info());
 	other.constructor.setInfo(
             fixClonedConstrType(
@@ -1319,6 +1332,10 @@ public class ClassSymbol extends TypeSymbol {
     public Symbol module() {
         return module;
     }
+
+    /** Set module; only used internally from TermSymbol
+     */
+    void setModule(Symbol module) { this.module = module; }
 
     /** Set the mangled name of this Symbol */
     public Symbol setMangledName(Name name) {

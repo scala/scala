@@ -66,9 +66,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    for (Scope.SymbolIterator it = closure[i].members().iterator();
 		 it.hasNext();) {
 		Symbol other = it.next();
-		Symbol member = clazz.info().lookup(other.name);
-		if (other != member && (other.flags & PRIVATE) == 0 &&
-		    member.kind != NONE)
+		Symbol member = ((other.flags & PRIVATE) != 0) ? other
+		    : clazz.info().lookup(other.name);
+		if (member != other && member.kind != NONE)
 		    checkOverride(pos, clazz, member, other);
 		if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
 		    if ((member.flags & DEFERRED) != 0) {

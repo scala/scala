@@ -226,8 +226,7 @@ public class ClassfileParser implements ClassfileConstants {
 		transFlags(flags));
 	    s.setInfo(type, phaseId);
 	    attrib.readAttributes(s, type, METH_ATTR);
-            if (!s.isPrivate()) // Don't include PRIVATE methods
-                ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+	    ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
 	}
     }
 }

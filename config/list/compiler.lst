@@ -63,6 +63,8 @@ symtab/classfile/JavaTypeCreator.java
 symtab/classfile/JavaTypeFactory.java
 symtab/classfile/PackageParser.java
 symtab/classfile/Signatures.java
+symtab/classfile/UnPickle.java
+symtab/classfile/EntryTags.java
 
 symtab/Definitions.java
 symtab/Kinds.java

@@ -29,7 +29,7 @@ public class SourceCompleter extends Type.LazyType {
         this.filename = filename;
     }
 
-    /** complete class symbol c by loading the class
+    /** complete class symbol c by loading the unit
      */
     public void complete(Symbol c) {
         if (completed) {

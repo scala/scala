@@ -21,6 +21,7 @@ import scalac.util.*;
 import scalac.ast.*;
 import scalac.ast.printer.*;
 import scalac.symtab.*;
+import scalac.symtab.classfile.UnPickle;
 import Tree.*;
 import java.util.HashMap;
 
@@ -88,12 +89,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     }
 
     public void lateEnter(Unit unit, Symbol sym) {
-	assert sym.pos == Position.NOPOS : sym;
+	assert sym.rawInfoAt(Symbol.FIRST_ID) instanceof SourceCompleter;
 	enterUnit(unit);
-	if (sym.pos == Position.NOPOS) {
+	if (sym.rawInfoAt(Symbol.FIRST_ID) instanceof SourceCompleter) {
             sym.setInfo(Type.ErrorType);
 	    String kind;
-	    if (sym.name.isTermName()) kind = "object or method ";
+	    if (sym.name.isTermName()) kind = "object ";
 	    else if (sym.name.isTypeName()) kind = "class ";
 	    else kind = "constructor ";
 	    throw new Type.Error("file " + unit.source + " does not define public " +
@@ -794,18 +795,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (other.isPreloaded()) {
 		    // symbol was preloaded from package;
 		    // need to overwrite definition.
-		    if (global.debug) System.out.println(sym + " overwrites " + other);//debug
-		    sym.copyTo(other);
-		    if (sym.isModule()) {
-			sym.moduleClass().copyTo(
-			    other.moduleClass());
-			sym.moduleClass().constructor().copyTo(
-			    other.moduleClass().constructor());
-			other.moduleClass().constructor().setInfo(
-			    Type.MethodType(
-				Symbol.EMPTY_ARRAY,
-				other.moduleClass().typeConstructor()));
-		    }
+		    UnPickle.overwrite(sym, other);
 		    result = other;
 		} else if (sym.owner().isPackage()) {
 		    if (global.compiledNow.get(other) != null) {
@@ -2107,7 +2097,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		} else {
 		    qual1 = transform(qual, TYPEmode | FUNmode);
-		    clazz = qual1.symbol();
+		    clazz = qualifyingClass(qual1);
+		    if (clazz.kind == CLASS && !(qual1 instanceof Tree.Ident))
+			qual1 = gen.Ident(tree.pos, clazz);
 		}
 		switch (clazz.info()) {
 		case CompoundType(Type[] parents, _):
@@ -2133,20 +2125,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		} else {
 		    Tree qual1 = transform(qual, TYPEmode | FUNmode);
-		    clazz = qual1.symbol();
-		    if (clazz.kind == CLASS) {
-			Context clazzContext = context.outerContext(clazz);
-			if (clazzContext != Context.NONE) {
-			    if (!(qual1 instanceof Tree.Ident))
-				qual1 = gen.Ident(tree.pos, clazz);
-			    tree1 = copy.This(tree, qual1);
-			} else {
-			    return error(qual.pos,
-				clazz.name + " is not an enclosing class");
-			}
-		    } else {
-			return error(qual.pos, "class identifier expected");
-		    }
+		    clazz = qualifyingClass(qual1);
+		    if (clazz.kind == CLASS && !(qual1 instanceof Tree.Ident))
+			qual1 = gen.Ident(tree.pos, clazz);
+		    tree1 = copy.This(tree, qual1);
 		}
 		return tree1.setType(
 		    (pt != null && pt.isStable() || (mode & QUALmode) != 0)
@@ -2253,6 +2235,24 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    return tree;
 	}
     }
+    //where
+	private Symbol qualifyingClass(Tree qual) {
+	    Tree qual1 = transform(qual, TYPEmode | FUNmode);
+	    Symbol clazz = qual1.symbol();
+	    if (clazz.kind == CLASS) {
+		Context clazzContext = context.outerContext(clazz);
+		if (clazzContext != Context.NONE) {
+		    return clazz;
+		} else {
+		    error(qual.pos, clazz.name + " is not an enclosing class");
+		    return Symbol.NONE;
+		}
+	    } else {
+		error(qual.pos, "class identifier expected");
+		return Symbol.NONE;
+	    }
+
+	}
 
     // ///////////////
     // sequence helper function
@@ -2266,20 +2266,19 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     public void desug_allIdentPatterns( Tree trees[], Symbol currentOwner ) {
 	for( int i = 0; i < trees.length; i ++ )
-	    switch( trees[ i ] ) {
+	    switch(trees[i]) {
 	    case Ident( Name name ):
-		if( name != Names.WILDCARD )
-		    {
-			Symbol vble = context.scope.lookup( name );
-			/*
-			Symbol vble = new TermSymbol( trees[ i ].pos, name, currentOwner, 0)
-			    .setType( trees[ i ].type() );
+		if( name != Names.WILDCARD ) {
+		    Symbol vble = context.scope.lookup( name );
+		    /*
+		      Symbol vble = new TermSymbol( trees[ i ].pos, name, currentOwner, 0)
+		      .setType( trees[ i ].type() );
 
-			vble = enterInScope( vble );
-			*/
-			trees[ i ] = desugarize.IdentPattern( trees[ i ] ).setSymbol( vble )
-			    .setType( vble.type() );
-		    }
+		      vble = enterInScope( vble );
+		    */
+		    trees[i] = desugarize.IdentPattern(trees[i]).setSymbol(vble)
+			.setType(vble.type());
+		}
 	    }
     }
 
