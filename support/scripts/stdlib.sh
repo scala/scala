@@ -30,6 +30,12 @@ function runO() {
     run_ "$@" 1> "$stdout";
 }
 
+function runOO() {
+    local stdout="$1"; shift 1;
+    [ "$verbose" = "true" ] && echo "$@" "1>>" "$stdout";
+    run_ "$@" 1>> "$stdout";
+}
+
 ##############################################################################
 
 # usage: args-loop <script> "$@"
