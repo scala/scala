@@ -449,39 +449,38 @@ public class Infer implements Modifiers, Kinds {
 			: !upper;
 		    tvars[i] = Type.NoType;
 		    Type bound = up ? tparams[i].info() : tparams[i].loBound();
-		    if (up && bound.symbol() != Global.instance.definitions.ANY_CLASS ||
-			!up && bound.symbol() != Global.instance.definitions.ALL_CLASS) {
-			boolean cyclic = false;
-			for (int j = 0; j < tvars.length; j++) {
-			    if (bound.contains(tparams[j]) ||
-				up && tparams[j].loBound().isSameAs(tparams[i].type()) ||
-				!up && tparams[j].info().isSameAs(tparams[i].type())) {
-				cyclic |= tvars[j] == Type.NoType;
-				solve(tparams, upper, variances, tvars, j);
-			    }
+		    boolean cyclic = false;
+		    for (int j = 0; j < tvars.length; j++) {
+			if (bound.contains(tparams[j]) ||
+			    up && tparams[j].loBound().isSameAs(tparams[i].type()) ||
+			    !up && tparams[j].info().isSameAs(tparams[i].type())) {
+			    cyclic |= tvars[j] == Type.NoType;
+			    solve(tparams, upper, variances, tvars, j);
 			}
-			if (!cyclic) {
-			    if (up) {
+		    }
+		    if (!cyclic) {
+			if (up) {
+			    if (bound.symbol() != Global.instance.definitions.ANY_CLASS)
 				constr.hibounds = new Type.List(
 				    bound.subst(tparams, tvars), constr.hibounds);
-				for (int j = 0; j < tvars.length; j++) {
-				    if (tparams[j].loBound().isSameAs(
-					    tparams[i].type())) {
-					constr.hibounds = new Type.List(
-					    tparams[j].type().subst(tparams, tvars),
-					    constr.hibounds);
-				    }
+			    for (int j = 0; j < tvars.length; j++) {
+				if (tparams[j].loBound().isSameAs(
+					tparams[i].type())) {
+				    constr.hibounds = new Type.List(
+					tparams[j].type().subst(tparams, tvars),
+					constr.hibounds);
 				}
-			    } else {
+			    }
+			} else {
+			    if (bound.symbol() != Global.instance.definitions.ALL_CLASS)
 				constr.lobounds = new Type.List(
 				    bound.subst(tparams, tvars), constr.lobounds);
-				for (int j = 0; j < tvars.length; j++) {
-				    if (tparams[j].info().isSameAs(
-					    tparams[i].type())) {
-					constr.lobounds = new Type.List(
-					    tparams[j].type().subst(tparams, tvars),
-					    constr.lobounds);
-				    }
+			    for (int j = 0; j < tvars.length; j++) {
+				if (tparams[j].info().isSameAs(
+					tparams[i].type())) {
+				    constr.lobounds = new Type.List(
+					tparams[j].type().subst(tparams, tvars),
+					constr.lobounds);
 				}
 			    }
 			}

@@ -1243,8 +1243,10 @@ be omitted.  If the lower bound \verb@L@ is missing, the bottom type
 the top type \verb@scala.Any@ is assumed.
 
 A {\em type alias} \verb@type t = T@ defines \verb@t@ to be an alias
-name for the type \verb@T@. Type declarations and type aliases are
-collectively called {\em type bindings}.
+name for the type \verb@T@.  The left hand side of a type alias may
+have a type parameter clause, e.g. \verb@type t[tps] = T@.  The scope
+of a type parameter extends over the right hand side \verb@T@ and the
+type parameter clause \verb@tps@ itself.  
 
 The scope rules for definitions (\sref{sec:defs}) and type parameters
 (\sref{sec:funsigs}) make it possible that a type name appears in its
@@ -2498,17 +2500,17 @@ class Shape {
   ...
 }
 trait Bordered extends Shape {
-  val thinkness: int
+  val thickness: int;
   def equals(other: Any) = other match {
-    case that: Bordered => this.thickness == that.thickness;
+    case that: Bordered => this.thickness == that.thickness
     case _ => false
   }
   ...
 }
 trait Colored extends Shape {
-  val color: Color
+  val color: Color;
   def equals(other: Any) = other match {
-    case that: Colored => this.color == that.color;
+    case that: Colored => this.color == that.color
     case _ => false
   }
   ...

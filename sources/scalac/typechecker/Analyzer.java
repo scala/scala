@@ -2127,7 +2127,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    if (c.kind == CLASS) {
 				c.initialize();
 				Tree fn0 = fn1;
-				fn1 = gen.mkRef(tree.pos, pre, c.allConstructors());
+				Symbol constr = c.allConstructors();
+				fn1 = gen.mkRef(fn1.pos, pre, constr);
+				switch (fn1) {
+				case Select(Tree fn1qual, _):
+				    checkAccessible(fn1.pos, constr, fn1qual);
+				}
 				if (tsym == c) {
 				    switch (fn0) {
 				    case AppliedType(_, Tree[] targs):
@@ -2137,7 +2142,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				    // it was an alias type
 				    // todo: handle overloaded constructors
 				    fn1 = gen.TypeApply(
-					fn1, gen.mkTypes(tree.pos, argtypes));
+					fn1, gen.mkTypes(fn1.pos, argtypes));
 				    if (tsym.typeParams().length != 0 &&
 					!(fn0 instanceof AppliedType))
 					fn1.type = Type.PolyType(
@@ -2350,8 +2355,39 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    .setType(checkObjectType(tree.pos, ref1.type.resultType()));
 
 	    case SelectFromType(Tree qual, Name name):
-		Tree qual1 = transform(qual, TYPEmode);
-		return transformSelect(tree, qual1, name);
+		if ((mode & TYPEmode) != 0) {
+		    Tree qual1 = transform(qual, TYPEmode);
+		    return transformSelect(tree, qual1, name);
+		} else {
+		    Symbol clazz = context.enclClass.owner;
+		    if (clazz != null) {
+			Type[] parents = clazz.parents();
+			Name qualname = ((Ident) qual).name;
+			for (int i = 1; i < parents.length; i++) {
+			    if (parents[i].symbol().name == qualname) {
+				Symbol bsym = parents[i].lookup(name);
+				if (bsym.kind == NONE) {
+				    return error(tree.pos,
+					decode(name) + " is not a member of " +
+					parents[i]);
+				} else if ((bsym.flags & PRIVATE) != 0) {
+				    return error(tree.pos,
+					decode(name) + " is not accessible in " +
+					parents[i]);
+				}
+				return gen.Select(
+				    tree.pos,
+				    gen.mkStableId(tree.pos, clazz.thisType()),
+				    bsym);
+			    }
+			}
+			return error(qual.pos,
+			    qual + " does not name a mixin base class");
+		    } else {
+			return error(tree.pos, tree +
+			    " can be used only in a class, object, or template");
+		    }
+		}
 
 	    case CompoundType(Tree[] parents, Tree[] refinements):
 		Tree[] parents1 = transform(parents, TYPEmode);

@@ -327,7 +327,7 @@ public class Tree {
             setDescription("Type selection").
             setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TypeTree, "qualifier").
-            addField(t_TypeName, "selector", SymName);
+            addField(t_TestName, "selector", SymName);
 
         n_FunType.
             setDescription("Function type").
