@@ -30,6 +30,7 @@ public class Tree {
 
     private final Type
         t_int       = TreeType.INT,
+        t_ints      = TreeType.Array(t_int),
         t_Object    = TreeType.Reference(null, "Object"),
         t_Global    = TreeType.Reference("scalac", "Global"),
         t_Unit      = TreeType.Reference("scalac", "Unit"),
@@ -98,6 +99,7 @@ public class Tree {
         n_Select         = node("Select"        , Test, HasSym),
         n_Ident          = node("Ident"         , Test, HasSym),
         n_Literal        = node("Literal"       , Term, NoSym),
+        n_Switch         = node("Switch"        , Term, NoSym),
         n_TypeTerm       = node("TypeTerm"      , Type, NoSym),
         n_SingletonType  = node("SingletonType" , Type, NoSym),
         n_SelectFromType = node("SelectFromType", Type, HasSym),
@@ -314,6 +316,14 @@ public class Tree {
             setDescription("Literal").
             setRange(Phase.PARSER, Phase.END).
             addField(t_Object, "value");
+
+        n_Switch.
+            setDescription("Switch").
+            setRange(Phase.TRANSMATCH, Phase.END).
+            addField(t_TermTree, "test").
+            addField(t_ints, "tags").
+            addField(t_TermTrees, "bodies").
+            addField(t_TermTree, "otherwise");
 
         n_TypeTerm.
             setDescription("TypeTerm").
