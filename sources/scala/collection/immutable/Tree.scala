@@ -43,18 +43,18 @@ package scala.collection.immutable;
 ** Balanced Trees. These have no storage overhead compared to plain
 ** unbalanced binary trees, and their performance is in general better
 ** than AVL trees.
-** <p>
+** <p/>
 ** This implementation does not balance the trees after deletions.
 ** Since deletions
 ** don't increase the height of a tree, this should be OK in most
 ** applications. A balance method is provided for those cases
 ** where rebalancing is needed.
-** <p>
+** <p/>
 ** The tree consists of entries conatining a key with an order.
 ** Concrete implementations of the tree class has to suply the
 ** function entryKey that given an entry in the tree return
 ** its key.
-** <p>
+** <p/>
 ** When instanciating the tree an order for the keys has to be
 ** supplied.
 **
@@ -129,7 +129,7 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
 
   /**
   *   A new tree with the entry added is returned,
-  *   assuming that key is <emph>not</emph> in the tree.
+  *   assuming that key is <em>not</em> in the tree.
   */
   def add(key:KEY,entry:Entry):This = {
     val newSize = size+1;
@@ -141,7 +141,7 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
 
   /**
   *   A new tree with the entry added is returned,
-  *   if key is <emph>not</emph> in the tree, otherwise
+  *   if key is <em>not</em> in the tree, otherwise
   *   the key is updated with the new entry.
   */
   def update_or_add(key:KEY, entry:Entry):This = {

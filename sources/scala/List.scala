@@ -155,8 +155,8 @@ trait List[+a] extends Seq[a] {
   def tail: List[a];
 
   /** Add an element <code>x</code> at the beginning of this list.
-   *  <p>
-   *  Ex:<br>
+   *  <p/>
+   *  Ex:<br/>
    *  <code>1 :: [2, 3] = [2, 3].::(1) = [1, 2, 3]</code>.
    *  @param x the element to append.
    *  @return the list with <code>x</code> appended at the beginning.
@@ -166,8 +166,8 @@ trait List[+a] extends Seq[a] {
 
   /** Returns a list resulting from the concatenation of the given
    *  list <code>prefix</code> and this list.
-   *  <p>
-   *  Ex:<br>
+   *  <p/>
+   *  Ex:<br/>
    *  <code>[1, 2] ::: [3, 4] = [3, 4].:::([1, 2]) = [1, 2, 3, 4]</code>.
    *  @param prefix the list to concatenate at the beginning of this list.
    *  @return the concatenation of the two lists.
@@ -420,7 +420,7 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Sort the list according to the comparison function
-   *  <(e1: a, e2: a) => Boolean,
+   *  &lt;(e1: a, e2: a) => Boolean,
    *  which should be true iff e1 is smaller than e2.
    *  Note: The current implementation is inefficent for
    *  already sorted lists.
@@ -566,8 +566,8 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Reverses the elements of this list.
-   *  <p>
-   *  Ex: <br>
+   *  <p/>
+   *  Ex: <br/>
    *  <code>[1, 2, 3] reverse = [3, 2, 1]</code>.
    *  @return the elements of this list in reverse order.
    */
@@ -592,8 +592,8 @@ trait List[+a] extends Seq[a] {
    *  <code>end</code>. Inside, the string representations of elements (w.r.t.
    *  the method <code>toString()</code>) are separated by the string
    *  <code>sep</code>.
-   *  <p>
-   *  Ex: <br>
+   *  <p/>
+   *  Ex: <br/>
    *  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
    *  @param start starting string.
    *  @param sep separator string.

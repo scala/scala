@@ -203,6 +203,7 @@ public class Comment extends DefaultHandler {
         String msg = "";
         msg += "documentation comments should be written in XHTML" + "\n";
         msg += e.getMessage() + "\n";
+        msg += rawText;
         if (unit != null)
             unit.warning(holder.pos, msg);
     }

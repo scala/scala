@@ -39,14 +39,14 @@ package scala.collection.immutable;
 
    /**
    *   A new TreeMap with the entry added is returned,
-   *   if key is <emph>not</emph> in the TreeMap, otherwise
+   *   if key is <em>not</em> in the TreeMap, otherwise
    *   the key is updated with the new entry.
    */
    def update(key:KEY, value:VALUE) = update_or_add(key,Pair(key,value));
 
    /**
    *   A new TreeMap with the entry added is returned,
-   *   assuming that key is <emph>not</emph> in the TreeMap.
+   *   assuming that key is <em>not</em> in the TreeMap.
    */
    def insert(key:KEY,value:VALUE) = add(key,Pair(key,value));
 

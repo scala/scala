@@ -9,7 +9,7 @@ object pilib {
 
   /**
   * Run several processes in parallel using the following syntax:
-  * spawn < p_1 | ... | p_n >
+  * spawn &lt; p_1 | ... | p_n &gt;
   */
   trait Spawn {
     def <(def p: unit): Spawn;

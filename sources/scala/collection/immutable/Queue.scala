@@ -125,8 +125,8 @@ class Queue[+A](elem: A*) extends Seq[A] {
      *    <code>end</code>. Inside, the string representations of elements (w.r.t.
      *  the method <code>toString()</code>) are separated by the string
      *  <code>sep</code>.
-     *  <p>
-     *  Ex: <br>
+     *  <p/>
+     *  Ex: <br/>
      *  <code>Queue(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
      *
      *  @param start starting string.

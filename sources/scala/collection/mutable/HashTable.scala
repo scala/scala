@@ -15,7 +15,7 @@ package scala.collection.mutable;
  *  that maps keys of type <code>A</code> to values of the fully abstract
  *  member type <code>Entry</code>. Classes that make use of <code>HashTable</code>
  *  have to provide an implementation for <code>Entry</code> and implement the
- *  function <code>entryKey</code>.<p>
+ *  function <code>entryKey</code>.<p/>
  *
  *  There are mainly two parameters that affect the performance of a hashtable:
  *  the <i>initial size</i> and the <i>load factor</i>. The <i>size</i>

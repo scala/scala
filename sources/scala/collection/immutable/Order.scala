@@ -30,13 +30,16 @@ object Order {
   */
   def make[A](inferiority:(A,A) => Boolean, equality:(A,A) => Boolean) =
     new Order[A](inferiority,equality);
+
   /**
-  *  Creates a 'standard' order between objects. <strong>NOTE:</strong>
-  *  The order is arbitrary and uses the <code>hashCode()</code> of
-  *  objects which might mean that the order is not really total
-  *  for some objects <code>(!(e1 &lt; e2) && !(e2 &lt; e1) && !(e1==e2))</code>
-  *  is true. This function should only be used when no other
-  *  comparision predicates can be defined.
+  * Creates a 'standard' order between objects.
+  * <strong>NOTE:</strong>
+  * The order is arbitrary and uses the <code>hashCode()</code> of
+  * objects which might mean that the order is not really total
+  * for some objects
+  * <code>(!(e1 &lt; e2) &amp;&amp; !(e2 &lt; e1) &amp;&amp; !(e1==e2))</code>
+  * is true. This function should only be used when no other
+  * comparision predicates can be defined.
   */
   def make =
     new Order[Any](
