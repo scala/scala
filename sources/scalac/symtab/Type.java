@@ -578,8 +578,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    return tp;
 		} else {
 		    Scope members2 = new Scope();
-		    Type tp1 = (tp.symbol().isCompoundSym()) ? compoundType(parts1, members2)
-			: compoundType(parts1, members2, tp.symbol());
+		    Type tp1 = compoundType(parts1, members2);
+		    //Type tp1 = (tp.symbol().isCompoundSym()) ? compoundType(parts1, members2)
+		    //	: compoundType(parts1, members2, tp.symbol());
 		    Symbol[] syms1 = members1.elements();
 		    Symbol[] syms2 = new Symbol[syms1.length];
 		    for (int i = 0; i < syms2.length; i++) {
@@ -886,7 +887,6 @@ public class Type implements Modifiers, Kinds, TypeTags {
     private Type memberTransform(Symbol sym, Type tp) {
 	Type tp1 = tp.asSeenFrom(narrow(), sym.owner());
 	Type tp2 = tp1.asSeenFrom(this, widen().symbol());
-	//todo: sym.owner()?
 	//if (Global.instance.debug) System.out.println(this + "/" + widen() + ".memberType(" + sym + ":" + tp + ") = " + tp1 + "/" + tp2);//DEBUG
 	return tp2;
     }
@@ -2054,7 +2054,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    boolean first = true;
 	    for (Scope.SymbolIterator it = members.iterator(); it.hasNext(); ) {
 		Symbol sym = it.next();
-		buf.append(first ? "{" : ", ");
+		buf.append(first ? " with {" : ", ");
 		first = false;
 		buf.append(sym.defString());
 	    }

@@ -183,7 +183,7 @@ public class LambdaLift extends OwnerTransformer
         };
 
 	public Tree transform(Tree tree) {
-	    global.debugPrinter.print("free ").print(tree).println().end();//debug
+	    //global.debugPrinter.print("free ").print(tree).println().end();//DEBUG
 	    traverseTypeMap.apply(tree.type.widen());
 	    Symbol sym = tree.symbol();
 	    switch(tree) {
@@ -287,7 +287,7 @@ public class LambdaLift extends OwnerTransformer
     }
 
     public Tree transform(Tree tree) {
-	global.debugPrinter.print("lifting ").print(tree).println().end();//debug
+	//global.debugPrinter.print("lifting ").print(tree).println().end();//DEBUG
 	tree.type = descr.transform(tree.type, currentOwner);
         switch (tree) {
 	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):

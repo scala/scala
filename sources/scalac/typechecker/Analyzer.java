@@ -617,6 +617,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, _, Tree.Template templ):
 	    ClassSymbol clazz = new ClassSymbol(tree.pos, name, owner, mods);
 	    if (clazz.isLocalClass()) unit.mangler.setMangledName(clazz);
+
 	    enterSym(tree, clazz.constructor());
 	    if ((mods & CASE) != 0) {
 		// enter case constructor method.
@@ -1045,6 +1046,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (sym.isTerm() && (sym.flags & MUTABLE) == 0 && symtype.isObjectType() &&
 		qual.type.isStable())
 		symtype = Type.singleType(qual.type, sym);
+	    //System.out.println(qual.type + ".member: " + sym + ":" + symtype);//DEBUG
 	    return copy.Select(tree, qual, name)
 		.setSymbol(sym).setType(symtype);
 	}
@@ -1658,8 +1660,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			Scope.SymbolIterator it = clazz.members().iterator();
 			while (it.hasNext()) {
 			    Symbol sym1 = it.next();
-			    if (base.lookupNonPrivate(sym1.name).kind != NONE &&
-				!base.memberType(sym1).isSameAs(sym1.type()))
+			    Symbol basesym1 = base.lookupNonPrivate(sym1.name);
+			    if (basesym1.kind != NONE && !basesym1.info().isSameAs(sym1.info()))
 				refinement.enter(sym1);
 			}
 			if (refinement.elems == Scope.Entry.NONE &&

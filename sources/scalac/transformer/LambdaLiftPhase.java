@@ -64,7 +64,6 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 		switch (pre) {
 		case ThisType(_):
 		    if (sym.constructor().isUpdated(nextPhase)) {
-			System.out.println("updated: " + sym.constructor());//debug
 			Symbol[] tparams =
 			    sym.constructor().infoAt(nextPhase).typeParams();
 			int i = tparams.length;

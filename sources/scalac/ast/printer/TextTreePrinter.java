@@ -313,7 +313,7 @@ public class TextTreePrinter implements TreePrinter {
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
 	    printParams(tparams);
-	    if ((mods & Modifiers.ABSTRACT) != 0) printOpt(TXT_SUBTYPE, rhs, true);
+	    if ((mods & (Modifiers.ABSTRACT | Modifiers.PARAM)) != 0) printOpt(TXT_SUBTYPE, rhs, true);
             else printOpt(TXT_EQUAL, rhs, true);
             break;
 
@@ -667,7 +667,7 @@ public class TextTreePrinter implements TreePrinter {
 	case TypeDef(int mods, Name name, _, Tree bound):
             printModifiers(mods);
             printSymbolDefinition(tree.symbol(), name);
-            printOpt(KW_EXTENDS, bound, true);
+            printOpt(TXT_SUBTYPE, bound, true);
             break;
 
         case ValDef(int mods, Name name, Tree tpe, Tree.Empty):
