@@ -121,14 +121,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return stats;
     }
 
-    private boolean isGlobalModule(Symbol sym) {
-	return
-	    sym.isModule() &&
-	    (sym.owner().isPackage()
-	     //|| isGlobalModule(sym.owner().module()) // add later? translation does not work (yet?)
-		);
-    }
-
     private Tree[] transformModule(Tree tree, int mods, Name name, Tree tpe, Tree.Template templ) {
 	Symbol sym = tree.symbol();
 	Tree cdef = make.ClassDef(
@@ -145,7 +137,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    sym.type().prefix(),
 	    sym.moduleClass(),
 	    Tree.EMPTY_ARRAY);
-	if (isGlobalModule(sym)) {
+	if (sym.isGlobalModule()) {
 	    Tree vdef = gen.ValDef(sym, alloc);
 	    return new Tree[]{cdef, vdef};
 	} else {
@@ -172,7 +164,20 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    sym.updateInfo(Type.PolyType(Symbol.EMPTY_ARRAY, sym.type()));
 	    sym.flags |= STABLE;
 	    Tree ddef = gen.DefDef(sym, body);
-	    return new Tree[]{cdef, vdef, ddef};
+
+	    // def m_eq(m: T): Unit = { m$ = m }
+            Name m_eqname = name.append(Names._EQ);
+	    Symbol m_eq = new TermSymbol(
+		tree.pos, m_eqname, sym.owner(), PRIVATE | SYNTHETIC);
+            Symbol m_eqarg = new TermSymbol(tree.pos, name, m_eq, 0)
+                .setType(sym.type());
+            m_eq.setInfo(
+                Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE));
+            Tree m_eqdef = gen.DefDef(m_eq,
+                gen.Assign(gen.mkRef(tree.pos, mvar), gen.Ident(m_eqarg)));
+            sym.owner().members().enterOrOverload(m_eq);
+
+	    return new Tree[]{cdef, vdef, ddef, m_eqdef};
 	}
     }
 
