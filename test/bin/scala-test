@@ -208,8 +208,9 @@ test_compilation_failure() {
 }
 
 test_msil() {
-    IL_FILE="prog.il"
-    PE_FILE="prog.EXE"
+    ASSEM="Test"
+    IL_FILE=${ASSEM}".il"
+    PE_FILE=${ASSEM}".EXE"
 
     ILASM=ilasm
     ILASM_ARGS="/qui /nol /out=${PE_FILE}"
@@ -220,7 +221,7 @@ test_msil() {
     rm -f $IL_FILE
     rm -f $PE_FILE
 
-    $SOCOS -target:msil $FLAGS "$source" &&
+    $SOCOS -nowarn -target:msil -o ${ASSEM} $FLAGS "$source" &&
 
     ${ILASM} ${ILASM_ARGS} ${IL_FILE} > /dev/null &&
     if [ ! $? ] ; then
