@@ -7,7 +7,7 @@ module test {
   def main(): Unit {
     try {
       try {
-        error[Unit]("hi!");
+        error("hi!");
       } finally {
         System.out.println("ho!")
       }

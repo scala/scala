@@ -87,6 +87,7 @@ public class Infer implements Modifiers, Kinds {
 	Symbol[] tparams;
 	Type[] targs;
 	TreeGen gen;
+	Type.SubstTypeMap typeSubstituter;
 
 	public Substituter(Global global, PhaseDescriptor descr, TreeGen gen) {
 	    super(global, descr);
@@ -96,6 +97,12 @@ public class Infer implements Modifiers, Kinds {
         public Tree apply(Tree tree, Symbol[] tparams, Type[] targs) {
 	    this.tparams = tparams;
 	    this.targs = targs;
+	    this.typeSubstituter = new Type.SubstTypeMap(tparams, targs) {
+  	        public boolean matches(Symbol sym1, Symbol sym2) {
+		    return
+			sym1.name == sym2.name && sym1.owner() == sym2.owner();
+		}
+	    };
 	    return transform(tree);
 	}
 
@@ -116,20 +123,32 @@ public class Infer implements Modifiers, Kinds {
 
 	public Tree transform(Tree tree) {
 //	    System.out.println("[" + ArrayApply.toString(targs,"",",","") + "/" + ArrayApply.toString(tparams,"",",","") + "]" + tree + "@" + tree.symbol());//DEBUG
-	    if (tree.type == null) return tree;
-	    tree.type = elimInferredPolyMap.apply(tree.type).subst(tparams, targs);
+	    if (tree.type != null) {
+		tree.type = typeSubstituter.apply(
+		    elimInferredPolyMap.apply(tree.type));
+	    }
 	    switch (tree) {
 	    case Ident(Name name):
 		if (name.isTypeName()) {
 		    Symbol sym = tree.symbol();
 		    for (int i = 0; i < tparams.length; i++) {
-			if (tparams[i].name == sym.name &&
-			    tparams[i].owner() == sym.owner()) {
+			if (typeSubstituter.matches(tparams[i], sym)) {
 			    return gen.mkType(tree.pos, targs[i]);
 			}
 		    }
 		}
 		return tree;
+/*
+	    case TypeTerm():
+		Symbol sym = tree.type.symbol();
+		for (int i = 0; i < tparams.length; i++) {
+		    if (tparams[i].name == sym.name &&
+			tparams[i].owner() == sym.owner()) {
+			return gen.mkType(tree.pos, targs[i]);
+		    }
+		}
+		return tree;
+*/
 	    default:
 		return super.transform(tree);
 	    }

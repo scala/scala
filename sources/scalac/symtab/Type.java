@@ -924,35 +924,39 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     /** A common map superclass for symbol/symbol and type/symbol substitutions.
      */
-    static abstract class SubstMap extends Map {
+    public static abstract class SubstMap extends Map {
 	private Symbol[] from;
 
 	SubstMap(Symbol[] from) {
 	    this.from = from;
 	}
 
+	public boolean matches(Symbol sym1, Symbol sym2) {
+	    return sym1 == sym2;
+	}
+
 	/** Produce replacement type
 	 *  @param i          The index in `from' of the symbol to be replaced.
 	 *  @param fromtp     The type referring to this symbol.
 	 */
-	abstract Type replacement(int i, Type fromtp);
+	protected abstract Type replacement(int i, Type fromtp);
 
 	/** Produce new substitution where some symbols are excluded.
 	 *  @param newfrom    The new array of from symbols (without excluded syms)
 	 *  @param excluded   The array of excluded sysmbols
 	 */
-	abstract SubstMap exclude(Symbol[] newfrom, Symbol[] excluded);
+	protected abstract SubstMap exclude(Symbol[] newfrom, Symbol[] excluded);
 
 	public Type apply(Type t) {
 	    switch (t) {
 	    case TypeRef(ThisType(_), Symbol sym, Type[] args):
 		for (int i = 0; i < from.length; i++) {
-		    if (sym == from[i]) return replacement(i, t);
+		    if (matches(sym, from[i])) return replacement(i, t);
 		}
 		break;
 	    case SingleType(ThisType(_), Symbol sym):
 		for (int i = 0; i < from.length; i++) {
-		    if (sym == from[i]) return replacement(i, t);
+		    if (matches(sym, from[i])) return replacement(i, t);
 		}
 		break;
 	    case PolyType(Symbol[] tparams, Type result):
@@ -1015,13 +1019,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     /** A map for symbol/symbol substitutions
      */
-    static class SubstSymMap extends SubstMap {
+    public static class SubstSymMap extends SubstMap {
 	Symbol[] to;
-	SubstSymMap(Symbol[] from, Symbol[] to) {
+	protected SubstSymMap(Symbol[] from, Symbol[] to) {
 	    super(from);
 	    this.to = to;
 	}
-	Type replacement(int i, Type fromtp) {
+	protected Type replacement(int i, Type fromtp) {
 	    switch (fromtp) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
 		return TypeRef(pre, to[i], args);
@@ -1031,23 +1035,23 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		throw new ApplicationError();
 	    }
 	}
-	SubstMap exclude(Symbol[] newfrom, Symbol[] excluded) {
+	protected SubstMap exclude(Symbol[] newfrom, Symbol[] excluded) {
 	    return new SubstSymMap(newfrom, excludeSyms(from, excluded, to));
 	}
     }
 
     /** A map for type/symbol substitutions
      */
-    static class SubstTypeMap extends SubstMap {
+    public static class SubstTypeMap extends SubstMap {
 	Type[] to;
-	SubstTypeMap(Symbol[] from, Type[] to) {
+	protected SubstTypeMap(Symbol[] from, Type[] to) {
 	    super(from);
 	    this.to = to;
 	}
-	Type replacement(int i, Type fromtp) {
+	protected Type replacement(int i, Type fromtp) {
 	    return to[i];
 	}
-	SubstMap exclude(Symbol[] newfrom, Symbol[] excluded) {
+	protected SubstMap exclude(Symbol[] newfrom, Symbol[] excluded) {
 	    return new SubstTypeMap(newfrom, excludeTypes(from, excluded, to));
 	}
     }
@@ -1092,10 +1096,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     /** A map for substitutions of thistypes.
      */
-    static class SubstThisMap extends Map {
+    public static class SubstThisMap extends Map {
 	Symbol from;
 	Type to;
-	SubstThisMap(Symbol from, Type to) {
+	protected SubstThisMap(Symbol from, Type to) {
 	    this.from = from;
 	    this.to = to;
 	}

@@ -1662,9 +1662,15 @@ public class Parser implements Tokens {
 	    } else if (isDefIntro()) {
 		stats.append(defOrDcl(0));
 		accept(SEMI);
+		if (s.token == RBRACE) {
+		    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
+		}
 	    } else if (isLocalClassModifier()) {
 		stats.append(topDef(localClassModifiers()));
 		accept(SEMI);
+		if (s.token == RBRACE) {
+		    stats.append(make.Block(s.pos, Tree.EMPTY_ARRAY));
+		}
 	    } else if (s.token == SEMI) {
 		s.nextToken();
 	    } else {
