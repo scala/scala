@@ -191,6 +191,10 @@ public class Names {
     public static final Name update = Name.fromString("update");
     public static final Name view = Name.fromString("view");
     public static final Name tag = Name.fromString("$tag");
+    public static final Name finalize = Name.fromString("finalize");
+    public static final Name wait = Name.fromString("wait");
+    public static final Name notify = Name.fromString("notify");
+    public static final Name notifyAll = Name.fromString("notifyAll");
 
     public static final Name
         ZNOT = encode("!"),
