@@ -31,28 +31,40 @@
     type cT = scala.Seq[scala.xml.Node];
     type aT = Map[String,String];
 
+    abstract class <string ref="objectName"/>Node$ extends scala.xml.Node;
+
     <elementBinding>
+      val $TagOf&ccElementName;:int = <elementTag/>;
     def constr_&ccElementName;( ch:cT, attrs:aT ) = new &ccElementName;(ch:_*) { 
       override var hmap = attrs;
       override val attribHashCode = attrs.toList.hashCode() ;
     };
+
+    def shallowValidate&ccElementName;Children( ch:Seq[scala.xml.Node] ) = 
+      <shallowContentRegExp/>;
+
     
-     case class &ccElementName;( ch:scala.xml.Node* ) extends scala.xml.Node {
-     
+     case class &ccElementName;( ch:scala.xml.Node* ) extends <string ref="objectName"/>Node$ {
+
+       final override def typeTag$ = $TagOf&ccElementName;;
+
+     if( !shallowValidate&ccElementName;Children( ch ) )
+       error("trying to construct invalid &elementName;");
+
      def label = &qElementName;;
      def child = ch;
 
-      protected var hmap:aT = new immutable.TreeMap[String,String]();
+      protected var hmap:aT = scala.xml.Node.NoAttributes;
       final def attribute:aT = hmap;
 
       <attributeBinding>
-        def &cAttributeName; : scala.Option[String] = hmap.get(&qAttributeName;);
+        final def &cAttributeName; : scala.Option[String] = hmap.get(&qAttributeName;);
       </attributeBinding>
       val attribHashCode: int = hmap.toList.hashCode() ;
 
      /** returns a new &ccElementName; with updated attributes */
      final def %(attrs: Seq[Pair[String, String]]) = {
-       var newmap = new immutable.TreeMap[String,String]();
+       var newmap = scala.xml.Node.NoAttributes;
        for( val p &lt;- attribute.elements ) { 
           newmap = newmap.update( p._1, p._2 )
        }
@@ -64,7 +76,7 @@
   
      /** returns a new &ccElementName; with updated attribute */
      final def %(attr: Pair[String, String])  = {
-       var newmap = new immutable.TreeMap[String,String]();
+       var newmap = scala.xml.Node.NoAttributes;
        for( val p &lt;- attribute.elements ) { 
           newmap = newmap.update( p._1, p._2 );
        };

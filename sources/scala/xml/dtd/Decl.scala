@@ -11,7 +11,16 @@ case class ElemDecl( name:String ,
                      attribs:Map[String,AttrDecl] )
      extends MarkupDecl {
 
-       //final val parsedContentModel = RegExp.parse( contentModel );
+       final val parsedContentModel:RegExp = {
+         try {
+           RegExp.parse( contentModel );
+         } catch {
+           case _:Error =>
+             Console.println( "error parsing declaration of " + name );
+             Console.println( "content model was:\n" + contentModel );
+             null
+         }
+       }
 
        def containsText = contentModel.indexOf("#PCDATA") != -1 ;
 };

@@ -53,6 +53,24 @@ public class TestRegTraverser extends Traverser {
 		//result = true;
 		break;
 
+                // Matthias PatternMatcher cannot handle this case
+	    case Apply( Tree fn, Tree[] trees ):
+                if( trees.length == 1 ) {
+                    switch (trees[ 0 ]) {
+                    case Sequence( Tree[] trees2 ):
+                        if( trees2.length == 1 ) {
+                            switch (trees2[ 0 ]) {
+                            case Sequence( _ ):
+                                result = true;
+                                break;
+                            };
+                            //System.out.println( fn );
+                            //System.out.println( tree.type() );
+                        }
+                    }
+                }
+                super.traverse( tree );
+		break;
 	    default:
 		super.traverse( tree );
 	    }

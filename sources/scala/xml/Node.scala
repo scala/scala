@@ -15,7 +15,7 @@ import scala.collection.immutable ;
 object Node {
 
   /** the constant empty attribute map */
-  val NoAttributes: Map[String,String] =
+  val NoAttributes: immutable.TreeMap[String,String] =
     immutable.TreeMap.Empty[String,String];
 
 }
@@ -23,6 +23,8 @@ object Node {
  *  This trait contains an implementation of a subset of XPath for navigation.
  */
 trait Node {
+
+  def typeTag$:Int = 0;
 
   /** QName (the label of this node). I.e. "foo" for &lt;foo/&gt;) */
   def label: String;

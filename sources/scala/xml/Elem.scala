@@ -19,6 +19,8 @@ import scala.collection.immutable;
  */
 case class Elem( label: String, attribute:immutable.Map[String,String], child: Node*) extends Node {
 
+  final override def typeTag$:Int = 0;
+
   def this(label: String, child: Node*) = this(label,immutable.ListMap.Empty[String,String],child:_*);
 
   /** Return a new element with updated attributes

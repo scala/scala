@@ -10,7 +10,7 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.dtd.AttrDecl;
+import scala.xml.dtd.{AttrDecl,RegExp,ANY_,PCDATA_,Eps,Star,RNode,Sequ,Alt};
 import scala.xml.nobinding.XML ;
 
 /** transforms a set of DTD declaraion to a scala source file.
@@ -29,7 +29,88 @@ class DeclToScala(fOut:PrintWriter,
 
     val lookup : HashMap[String,String] = new HashMap[String,String]();
     var curAttribs: Map[String,AttrDecl] = null ;  /* of current elem */
+    var curModel : RegExp = null;
 
+    def shallowValidate( r:RegExp ):String = {
+
+    def shallowContentModel1(rs:List[RegExp],sep:Char):String = {
+      val it = rs.elements;
+      val sb = new StringBuffer();
+      sb.append('(');
+      sb.append(  shallowContentModel( it.next ) );
+      for( val z <- it ) {
+        sb.append( sep );
+        sb.append( shallowContentModel( z ) );
+      }
+      sb.append( ')' );
+      sb.toString()
+    }
+
+    def shallowContentModel(r:RegExp):String = {
+      //Console.println("sCM:"+ r.getClass() + " r:"+r );
+      r match {
+        case Eps   => ""
+        case RNode(name) => "$TagOf" + cookedCap( name );
+        case Star(r) => "("+shallowContentModel( r ) +") *"
+        case Alt( rs @ _* )  => shallowContentModel1( rs, '|' )
+        case Sequ( rs @ _* ) =>  shallowContentModel1( rs, ',' )
+        case _ => error("unexpected regexp:"+r);
+      }
+    }
+
+      //Console.println("shallowValid:"+ r.getClass() + " r:"+r );
+      r match {
+      case ANY_ => "true";
+      case Eps  => "ch.length == 0"
+      case PCDATA_ | Sequ( PCDATA_ ) =>
+        val sb = new StringBuffer("ch.elements.forall( x:scala.xml.Node => x match {\n");
+        sb.append("                          case _:scala.xml.Text      => true \n");
+        sb.append("                          case _:scala.xml.EntityRef => true \n");
+        sb.append("                          case _:scala.xml.CharData  => true \n");
+        sb.append("                          case _:scala.xml.Comment   => true \n");
+        sb.append("                          case _:scala.xml.ProcInstr  => true \n");
+        sb.append("case _ => false })");
+        sb.toString();
+      case Star(Alt(PCDATA_, alts @ _*)) => {
+        val sb = new StringBuffer("ch.elements.forall( x:scala.xml.Node => x match {\n");
+        sb.append("                          case _:scala.xml.Text      => true \n");
+        sb.append("                          case _:scala.xml.EntityRef => true \n");
+        sb.append("                          case _:scala.xml.CharData  => true \n");
+        sb.append("                          case _:scala.xml.Comment   => true \n");
+        sb.append("                          case _:scala.xml.ProcInstr  => true \n");
+        // classes created with mixin composition... types won't work
+        sb.append("                          case _ => x.typeTag$ match {\n");
+        // no type tag -> is scala.xml.Elem
+        sb.append("                            case 0  => x.label match {");
+        for( val alt <- alts.elements ) {
+          sb.append("                          case \"");
+          alt match { case RNode( name ) => sb.append( name );}
+          sb.append("\" => true \n");
+        }
+        sb.append("case _ =>  Console.println(\"ELEM\"); for( val z <- ch ) { Console.println( z.getClass() ); Console.println( z.label ); Console.println( z.toString() )}; false}\n");
+        for( val alt <- alts.elements ) {
+          sb.append("                          case $TagOf");
+          alt match { case RNode( name ) => sb.append( cookedCap( name ));}
+          sb.append(" => true \n");
+        }
+        sb.append("case _ => Console.println(ch.toList); for( val z <- ch ) { Console.println( z.getClass() ); Console.println( z.label ); Console.println( z.toString() )};  false }})");
+        sb.toString();
+      }
+        case _ =>  val sb = new StringBuffer("(ch.elements.foldLeft (Nil:List[Int]) { (e:List[Int],x:scala.xml.Node) => val i = x.typeTag$; if( i!=0 ) i::e else e }).reverse match {");
+        sb.append("         case Seq( ");
+        sb.append( shallowContentModel( r ) );
+        sb.append( ") => true ");
+        sb.append( "case _ => Console.println(\"reg match fails for \"+ch.elements.foldLeft (Nil:List[Int]) { (e:List[Int],x:scala.xml.Node) => val i = x.typeTag$; if( i!=0 ) i::e else e }); false}");
+        sb.toString();
+      }
+    }
+
+    var tagCounter = 0;
+    def newTag = {
+      val i = tagCounter;
+      tagCounter = tagCounter + 1;
+      i
+    }
     def write:Unit = {
       def writeNode( x:Node ):Unit = {
         //Console.println("visiting "+x);
@@ -43,14 +124,22 @@ class DeclToScala(fOut:PrintWriter,
                 lookup.update("compressDefault", compress.toString());
                 n.child.elements.foreach { n => writeNode(n) }
               }
+              case "shallowContentRegExp" =>
+                fOut.print(  shallowValidate( curModel ) );
+              case "elementTag" =>
+                fOut.print( newTag.toString() );
               case "elementBinding" => {
                 for( val decl <- elemMap.values ) {
                   lookup += "elementName" -> decl.name;
                   lookup += "elementContainsText" -> decl.containsText.toString();
                   lookup += "elementContentModel" -> decl.contentModel;
+                  //Console.println("elemName="+decl.name);
+                  curModel = decl.parsedContentModel ;
+                  //Console.println("curModel="+curModel);
                   curAttribs = decl.attribs;
                   n.child.elements.foreach{ n => writeNode( n ) }
                 }
+                curModel = null;
                 curAttribs = null;
                 lookup -= "elementName";
                 lookup -= "elementContainsText";

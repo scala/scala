@@ -55,6 +55,7 @@ public class BindingBerrySethi extends BerrySethi {
             switch( pat ) {
             case Apply(_, _):
             case Literal( _ ):
+            case Select(_, _):
             case Typed(_,_):
                   this.varAt.put( i, activeBinders.clone() ); // below @ ?
                   break;
