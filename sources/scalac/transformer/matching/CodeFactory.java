@@ -20,11 +20,13 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
-    static final Name SEQ_N        = Name.fromString("scala.Sequence");
-    static final Name SEQ_ITER_N     = Name.fromString("scala.SequenceIterator");
-    static final Name NEW_ITERATOR_N = Name.fromString("newIterator");
-    static final Name HAS_CUR_N      = Name.fromString("hasCur");
-    static final Name CUR_N          = Name.fromString("cur");
+    /** I changed the names so that the compiler is still usable. -- Matthias
+     */
+    static final Name SEQ_N          = Name.fromString("scala.Seq");
+    static final Name SEQ_ITER_N     = Name.fromString("scala.Iterator");
+    static final Name NEW_ITERATOR_N = Name.fromString("elements");
+    static final Name HAS_CUR_N      = Name.fromString("hasNext");
+    static final Name CUR_N          = Name.fromString("next");
     static final Name NEXT_N         = Name.fromString("next");
 
     /** symbol of `scala.SequenceIterator'
@@ -48,13 +50,15 @@ class CodeFactory extends PatternTool {
 	Scope scp = sequenceSym.members();
 
 	this.newIterSym = scp.lookup/*Term */( NEW_ITERATOR_N );
-	assert !( newIterSym == Symbol.NONE ) : " did not find newIterator ";
+	// commented out the next line. -- Matthias
+	// assert !( newIterSym == Symbol.NONE ) : " did not find newIterator ";
 
 	this.seqIterSym = defs.getType( SEQ_ITER_N ).symbol();
 
 	scp = seqIterSym.members();
 	curSym = scp.lookup/*Term*/ ( CUR_N );
-	assert !( curSym == Symbol.NONE ) : "did not find cur";
+	// commented out the next line. -- Matthias
+	//assert !( curSym == Symbol.NONE ) : "did not find cur";
     }
 
     // --------- these are new
