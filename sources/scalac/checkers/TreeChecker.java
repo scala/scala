@@ -369,9 +369,8 @@ public class TreeChecker {
         case Ident(_):
             if (symbol.isInitializer()) return true;
             assert labels.contains(symbol): show(tree);
-            // !!! assert symbol.owner() == currentMember(): show(tree);
+            assert symbol.owner() == currentMember(): show(tree);
             return true;
-
 
         default:
             throw Debug.abort("illegal case", tree);
@@ -391,7 +390,7 @@ public class TreeChecker {
         case Ident(_):
             if (symbol.isModule()) return true;
             assert vvars.contains(symbol): show(tree);
-            // !!! assert symbol.owner() == currentMember(): show(tree);
+            assert symbol.owner() == currentMember(): show(tree);
             return true;
 
         default:
