@@ -232,13 +232,13 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 	printParams(tparams);
 	printParams(vparams);
 	printOpt(TXT_COLON, tpe, false);
-	printTemplate(KW_EXTENDS, impl, true);
+	printTemplate(tree.symbol(), KW_EXTENDS, impl, true);
 
       case Tree$PackageDef(packaged, impl) =>
 	print(KW_PACKAGE);
 	print(Space);
 	print(packaged);
-	printTemplate(KW_WITH, impl, true);
+	printTemplate(null, KW_WITH, impl, true);
 
       case Tree$ModuleDef(mods, name, tpe, impl) =>
 	printModifiers(mods);
@@ -246,7 +246,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
 	printOpt(TXT_COLON, tpe, false);
-	printTemplate(KW_EXTENDS, impl, true);
+	printTemplate(null, KW_EXTENDS, impl, true);
 
       case Tree$ValDef(mods, name, tpe, rhs) =>
 	printModifiers(mods);
@@ -410,7 +410,7 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 	print(expr);
 
       case Tree$New(templ) =>
-	printTemplate(KW_NEW, templ, false);
+	printTemplate(null, KW_NEW, templ, false);
 	printType(tree);
 
       case Tree$Typed(expr, tpe) =>
@@ -602,9 +602,11 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     }
   }
 
-  protected def printTemplate(prefix: Text,
+  protected def printTemplate(symbol: Symbol,
+                              prefix: Text,
                               templ: Tree$Template,
-                              spaceBefore: boolean): unit = {
+                              spaceBefore: boolean): unit =
+  {
     if (! (templ.parents.length == 0
            || (templ.parents.length == 1
                && templ.parents(0) == Tree.Empty))) {
@@ -614,6 +616,48 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
       print(Space);
       printArray(templ.parents, None, None, TXT_WITH_SP);
     }
+
+    val types: java.util.List  = new java.util.ArrayList();
+    if (symbol != null) {
+      val global: Global  = Global.instance;
+      if (global.currentPhase.id > global.PHASE.EXPLICITOUTER.id()) {
+        val i: Scope$SymbolIterator = symbol.members().iterator(true);
+        while (i.hasNext()) {
+          val member: Symbol = i.next();
+          if (member.isTypeAlias() || member.isAbstractType())
+            types.add(member);
+        }
+      }
+    }
+    if (templ.body.length > 0 || types.size() > 0) {
+      print(Space);
+      indent();
+      print(TXT_BLOCK_BEGIN);
+      if (types.size() > 0) {
+        val printer: SymbolTablePrinter = new SymbolTablePrinter(
+          INDENT_STRING.substring(0, indentMargin));
+        printer.indent();
+        var i: Int = 0;
+        while (i < types.size()) {
+          if (i > 0) printer.line();
+          val type0: Symbol = types.get(i).asInstanceOf[Symbol];
+          printer.printSignature(type0).print(';');
+          i = i + 1;
+        }
+        printer.undent();
+        print(printer.toString().substring(indentMargin));
+        print(Newline);
+      }
+      var i: Int = 0;
+      while (i < templ.body.length) {
+        if (i > 0) print(TXT_BLOCK_SEP);
+        print(templ.body(i));
+        i = i + 1;
+      }
+      undent();
+      print(TXT_BLOCK_END);
+    }
+
     if (templ.body.length > 0) {
       print(Space);
       printArray(templ.body, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
