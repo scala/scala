@@ -8,7 +8,6 @@
 
 package scalac;
 
-import scalac.ast.printer.TreePrinter;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 

@@ -16,7 +16,6 @@ import scalac.ast._;
 import scalac.typechecker.Infer;
 import scalac.{Global => scalac_Global, CompilationUnit => scalac_CompilationUnit}
 
-import scala.tools.scalac.ast.printer.TextTreePrinter;
 import scala.tools.scalac.util.NewArray;
 
 package scala.tools.scalac.typechecker {

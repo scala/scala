@@ -18,7 +18,6 @@ import scala.tools.util.Position;
 import scalac._;
 import scalac.util._;
 import scalac.ast._;
-import scalac.ast.printer._;
 import scalac.atree.AConstant;
 import scalac.atree.AConstant$CHAR;
 import scalac.atree.AConstant$INT;
@@ -1731,7 +1730,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       sym = sym1;
       qual = lastimpcontext.importPrefix().duplicate();
       pre = qual.getType();
-      //new TextTreePrinter().print(name + " => ").print(lastimpcontext.tree).print("." + name).println().end();//DEBUG
+      //System.out.println(name + " => " + lastimpcontext.tree + "." + name);//DEBUG
       tree = make.Select(tree.pos, qual, name);
     }
 
@@ -2104,7 +2103,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     this.pt = pt;
     val tree1: Tree = adapt(transform(tree), mode, pt);
 
-    //new TextTreePrinter().print(tree1).print(": " + tree1.getType()).println().end();//DEBUG
+    //System.out.println(tree1 + ": " + tree1.getType());//DEBUG
 
     this.mode = savedMode;
     this.pt = savedPt;

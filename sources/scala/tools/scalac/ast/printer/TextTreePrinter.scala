@@ -38,14 +38,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   val out: PrintWriter = out0;
 
   //##########################################################################
-  // Public Constructors
-
-  def this(global0: scalac_Global, out0: Writer) =
-    this(global0, new PrintWriter(out0));
-  def this(global0: scalac_Global, stream: OutputStream) =
-    this(global0, new PrintWriter(stream));
-  def this(global0: scalac_Global) =
-    this(global0, System.out);
+  // Protected Fields
 
   protected var indentMargin = 0;
   protected val INDENT_STEP = 2;

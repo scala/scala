@@ -437,7 +437,7 @@ public class LambdaLift extends OwnerTransformer
               throw new ApplicationError("this should not happen");
               /* // moved this to Uncurry
 	    Tree tree1 = gen.mkNewList(tree.pos, tree.type.typeArgs()[0], transform(args));
-	    //new scalac.ast.printer.TextTreePrinter().print("TUPLE: ").print(tree).print("\n ==> \n").print(tree1).println().end();//DEBUG
+	    //System.out.println("TUPLE: " + tree + "\n ==> \n" + tree1);//DEBUG
 	    return tree1;
               */
 

@@ -11,7 +11,6 @@ import scala.collection.mutable.HashMap;
 import scalac._;
 import scalac.util._;
 import scalac.ast._;
-import scalac.ast.printer._;
 import scalac.symtab._;
 import Tree._;
 import scalac.{Global => scalac_Global}

@@ -9,7 +9,6 @@
 import scalac.CompilationUnit;
 import scalac.symtab._;
 import scalac.ast.Tree;
-import scalac.ast.printer._;
 
 import scalac.{Global => scalac_Global, Phase};
 import scalac.CompilationUnit;

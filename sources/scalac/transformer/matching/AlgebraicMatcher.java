@@ -18,7 +18,6 @@ import Tree.*;
 
 import scalac.util.Name ;
 import scalac.util.Names ;
-//import scalac.ast.printer.TextTreePrinter ;
 
 import java.util.Vector ;
 import java.util.Iterator ;

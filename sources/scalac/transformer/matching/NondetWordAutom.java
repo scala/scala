@@ -7,8 +7,6 @@ import Tree.* ;
 
 import java.util.* ;
 
-//import scala.compiler.printer.TextTreePrinter ;
-
 /** a nondeterministic word automaton.
  *  states are represented (implicitly) as Integer objects.
  */

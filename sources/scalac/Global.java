@@ -31,7 +31,7 @@ import scala.tools.util.Reporter;
 
 import scalac.ast.*;
 import scalac.ast.parser.*;
-import scalac.ast.printer.*;
+import scalac.ast.printer.TreePrinter;
 import scalac.atree.ATreePrinter;
 import scalac.backend.Primitives;
 // !!! <<< Interpreter stuff

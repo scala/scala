@@ -4,7 +4,6 @@ import scalac.*;
 import scalac.ast.Tree;
 import Tree.*;
 
-//import scala.compiler.printer.TextTreePrinter ; // DEBUGGING\
     //import scala.compiler.printer.XMLAutomPrinter ; // DEBUGGING\
 
 import scalac.ast.* ;

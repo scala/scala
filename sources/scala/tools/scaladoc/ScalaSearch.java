@@ -33,7 +33,6 @@ import scalac.util.Name;
 import scalac.util.NameTransformer;
 
 import java.io.*;
-import scalac.ast.printer.*;
 import scala.tools.scalac.ast.parser.Parser$class;
 import scalac.CompilationUnit;
 
@@ -552,8 +551,7 @@ public class ScalaSearch {
         SourceFile sourceFile = global.getSourceFile("tmp.scala", unitString);
         CompilationUnit tmpUnit = new CompilationUnit(global, sourceFile, false);
         tmpUnit.body = new Parser$class(tmpUnit).parse();
-        //TreePrinter treePrinter = new TextTreePrinter(global, System.out);
-        //treePrinter.print(tmpUnit);
+
         global.PHASE.ANALYZER.phase().apply(new CompilationUnit[]{ tmpUnit });
         if (global.reporter.errors() == errorNumber) {
             Scope tmpScope = tmpUnit.body[0].symbol().members();
