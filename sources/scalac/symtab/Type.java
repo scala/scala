@@ -1320,7 +1320,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		if (!isSubType(alttypes1[i]))
 		    return false;
 	    }
-	    break;
+	    return true;
 
 	case UnboxedType(int tag1):
 	    switch (this) {
@@ -1948,13 +1948,14 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		 e = e.next) {
 		Name name = e.sym.name;
 		if ((e.sym.flags & PRIVATE) == 0 && lubType.lookup(name) == e.sym) {
-		    //todo: not info?
 		    Type symType = memberTp(lubThisType, e.sym);
 		    Type symLoBound = lubThisType.memberLoBound(e.sym);
 		    int j = 0;
 		    while (j < tps.length) {
 			rsyms[j] = tps[j].lookupNonPrivate(name);
 			if (rsyms[j] == e.sym) break;
+			if (rsyms[j].isMethod()) break; // since methods cannot
+			                                // appear in refinements.
 			rtps[j] = memberTp(tps[j], rsyms[j])
 			    .substThis(tps[j].symbol(), lubThisType);
 			rlbs[j] = tps[j].memberLoBound(rsyms[j])

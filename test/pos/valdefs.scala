@@ -10,7 +10,7 @@ object test {
       override val y = 1;
     }
 
-    class Sub2() extends Base() {
+    abstract class Sub2() extends Base() {
       override val Pair(x, y) = Pair("abc", 1);
     }
 }

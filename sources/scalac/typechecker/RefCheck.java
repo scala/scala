@@ -55,7 +55,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 // Override checking ------------------------------------------------------------
 
-    /** Check all members of class `clazz' for overriding conditions.
+    /** 1. Check all members of class `clazz' for overriding conditions.
+     *  2. Check that only abstract classes have deferred members
+     *  3. Check that every member with an `override' modifier
+     *     overrides a concrete member.
      */
     void checkAllOverrides(int pos, Symbol clazz) {
 	Type[] closure = clazz.closure();
@@ -67,28 +70,56 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (other != member && (other.flags & PRIVATE) == 0 &&
 		    member.kind != NONE)
 		    checkOverride(pos, clazz, member, other);
-		if ((member.flags & DEFERRED) != 0 &&
-		    clazz.kind == CLASS &&
-		    (clazz.flags & ABSTRACTCLASS) == 0) {
-		    if (clazz.isAnonymousClass())
-			unit.error(
-			    clazz.pos, "object creation impossible, since " +
+		if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
+		    if ((member.flags & DEFERRED) != 0) {
+			abstractClassError(
+			    clazz,
 			    member + member.locationString() + " is not defined" +
 			    (((member.flags & MUTABLE) == 0) ? ""
 			     : "\n(Note that variables need to be initialized to be defined)"));
-		    else
-			unit.error(clazz.pos,
-			    clazz + " needs to be abstract; it does not define " +
-			    member + member.locationString() +
-			    (((member.flags & MUTABLE) == 0) ? ""
-			     : "\n(Note that variables need to be initialized to be defined)"));
-		    clazz.flags |= ABSTRACTCLASS;
+		    }
+		    if ((other.flags & OVERRIDE) != 0) {
+			Type[] clparents = closure[i].parents();
+			Symbol sym1 = null;
+			for (int j = clparents.length - 1; sym1 == null && j > 0; j--)
+			    sym1 = clparents[j].lookup(other.name);
+			if (sym1 == null) {
+			    Symbol superclazz = clazz.info().parents()[0].symbol();
+			    if (superclazz.isSubClass(closure[i].symbol()))
+				superclazz = clparents[0].symbol();
+			    sym1 = superclazz.lookup(other.name);
+			}
+			if (sym1 != null && (sym1.flags & DEFERRED) != 0)
+			    abstractClassError(
+				clazz, other + other.locationString() +
+				" is marked `override' and overrides an abstract member" + sym1.locationString());
+		    }
 		}
 	    }
 	}
     }
+    //where
+	private void abstractClassError(Symbol clazz, String msg) {
+	    if (clazz.isAnonymousClass())
+		unit.error(clazz.pos, "object creation impossible, since " + msg);
+	    else
+		unit.error(clazz.pos, clazz + " needs to be abstract, since " + msg);
+	    clazz.flags |= ABSTRACTCLASS;
+	}
 
     /** Check that all conditions for overriding `other' by `member' are met.
+     *  That is for overriding member M and overridden member O:
+     *
+     *    1. M must have the same or stronger access priviliges as O.
+     *    2. O must not be final.
+     *    3. O is deferred, or M has `override' modifier.
+     *    4. O is not a class, nor a class constructor.
+     *    5. If O is a type alias, then M is an alias of O.
+     *    6. If O is an abstract type then
+     *         either M is an abstract type, and M's bounds are sharper than O's bounds.
+     *         or M is a type alias or class which conforms to O's bounds.
+     *    7. If O and M are values, then M's type is a subtype of O's type.
+     *    8. If O is an immutable value, then so is M.
      */
     void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
 	if (member.owner() == clazz) pos = member.pos;

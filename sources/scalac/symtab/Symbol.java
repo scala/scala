@@ -195,8 +195,14 @@ public abstract class Symbol implements Modifiers, Kinds {
 	if (infos.limit < 0) return false;
 	switch (rawInfo()) {
 	case MethodType(_, _):
-	case PolyType(_, _): return true;
-	default: return false;
+	case PolyType(_, _):
+	    return true;
+	case OverloadedType(Symbol[] alts, _):
+	    for (int i = 0; i < alts.length; i++)
+		if (alts[i].isMethod()) return true;
+	    return false;
+	default:
+	    return false;
 	}
     }
 

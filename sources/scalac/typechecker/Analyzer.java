@@ -133,7 +133,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                                              // expressions may be packages and
                                              // Java statics modules.
 
-    static final int SUPERmode     = 0x080;  // orthogonal to above. When set
+    static final int SUPERmode     = 0x080;  // Goes with CONSTRmode. When set
                                              // we are checking a superclass
                                              // constructor invocation.
 
@@ -191,6 +191,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     void checkAccessible(int pos, Symbol sym, Tree site) {
 	if (!isAccessible(sym, site)) {
 	    error(pos, sym + " cannot be accessed in " + site.type);
+	}
+	if (site instanceof Tree.Super && (sym.flags & DEFERRED) != 0) {
+	    Symbol sym1 = context.enclClass.owner.thisSym().info().lookup(sym.name);
+	    if ((sym1.flags & OVERRIDE) == 0 || (sym1.flags & DEFERRED) != 0)
+		error(pos, "symbol accessed from super may not be abstract");
 	}
     }
 
