@@ -608,6 +608,33 @@ public final class GenMSIL {
 	    sym2label.put(sym, l);
 	    return gen(rhs, toType);
 
+	case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+	    LocalBuilder testLoc = code.DeclareLocal(tc.INT);
+	    Item loc = items.LocalItem(MSILType.I4, testLoc);
+	    boolean tmpLastStatement = lastStatement;
+	    lastStatement = false;
+	    load(gen(test));
+	    store(loc);
+	    lastStatement = tmpLastStatement;
+	    Label exit = code.DefineLabel();
+	    Label nextCase = code.DefineLabel();
+	    assert tags.length == bodies.length;
+	    for (int i = 0; i < tags.length; i++) {
+		load(loc);
+		loadLiteral(MSILType.I4, new Integer(tags[i]));
+		code.Emit(OpCodes.Bne_Un, nextCase);
+		load(gen(bodies[i]));
+		if (lastStatement)
+		    code.Emit(OpCodes.Ret);
+		else
+		    code.Emit(OpCodes.Br, exit);
+		code.MarkLabel(nextCase);
+		nextCase = code.DefineLabel();
+	    }
+	    Item i = load(gen(otherwise));
+	    code.MarkLabel(exit);
+	    return i;
+
 	default:
 	    throw new ApplicationError("Dunno what to do: " + tree.getClass());
 	}
@@ -714,6 +741,7 @@ public final class GenMSIL {
 
     void emitConvert(MSILType toType) {
 	switch (toType) {
+	case BOOL: code.Emit(OpCodes.Conv_I4); break; // TODO: is this correct/best?
 	case I1: code.Emit(OpCodes.Conv_I1); break;
 	case I2: code.Emit(OpCodes.Conv_I2); break;
 	case I4: code.Emit(OpCodes.Conv_I4); break;
@@ -1884,7 +1912,7 @@ class MSILType {
     public static final MSILType OBJECT = REF(Type.GetType("System.Object"));
     public static final MSILType STRING_REF = REF(Type.GetType("System.String"));
     public static final MSILType [] ARITHM_PRECISION =
-	new MSILType[] {I1, I2, I4, I8, R4, R8};
+	new MSILType[] {I1, I2, CHAR, I4, I8, R4, R8};
 
     public static MSILType fromKind(int kind) {
 	switch (kind) {
