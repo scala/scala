@@ -1137,7 +1137,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public Type subst(Symbol[] from, Type[] to) {
 	assert from.length == to.length
-	    : this + ": " + from.length + " != " + to.length;
+	    : this + ": " + Debug.show(from) + " <> " + ArrayApply.toString(to);
 	if (from.length != 0)
 	    return new SubstTypeMap(from, to).apply(this);
 	else return this;
