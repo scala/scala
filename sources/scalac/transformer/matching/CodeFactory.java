@@ -12,6 +12,7 @@ import scala.tools.util.Position;
 
 import scalac.*;
 import scalac.ast.*;
+import scalac.atree.AConstant.*;
 import scalac.util.*;
 import scalac.symtab.*;
 import PatternNode.*;
@@ -21,9 +22,41 @@ class CodeFactory extends PatternTool {
 
     public int pos = Position.FIRSTPOS ;
 
+    private final Symbol CHAR_EQEQ_INT;
+    private Symbol CHAR_COERCE_INT;
+
     public CodeFactory( CompilationUnit unit, int pos ) {
 	super( unit );
 	this.pos = pos;
+        CHAR_EQEQ_INT = getFun(defs.CHAR_CLASS.lookup(Names.EQEQ), defs.INT_TYPE());
+
+        Symbol[] ss = defs.CHAR_CLASS.lookup(Names.coerce).alternativeSymbols();
+        for (int i = 0; i < ss.length && CHAR_COERCE_INT == null; i++) {
+            switch (ss[i].info()) {
+            case MethodType(_, Type restpe):
+                if (restpe.isSameAs(defs.INT_TYPE()))
+                    CHAR_COERCE_INT = ss[i];
+            }
+        }
+        assert CHAR_COERCE_INT != null;
+    }
+
+    private Symbol getFun(Symbol sym, Type paramType) {
+        Symbol fun = null;
+        Type ftype = defs.ANY_TYPE();
+        Symbol[] syms = sym.alternativeSymbols();
+        for (int i = 0; i < syms.length; i++) {
+            Symbol[] vparams = syms[i].valueParams();
+            if (vparams.length == 1) {
+                Type vptype = vparams[0].info();
+                if (paramType.isSubType(vptype) && vptype.isSubType(ftype)) {
+                    fun = syms[i];
+                    ftype = vptype;
+                }
+            }
+        }
+        assert fun != null : Debug.show(sym.info());
+        return fun;
     }
 
     // --------- these are new
@@ -181,8 +214,14 @@ class CodeFactory extends PatternTool {
     }
 
     protected Tree Equals(Tree left, Tree right) {
-        Symbol fun = unit.global.definitions.ANY_EQEQ;
-        return gen.mkApply_V(gen.Select(left, fun), new Tree[]{right});
+        Type ltype = left.type.widen(), rtype = right.type.widen();
+        Symbol eqsym = null;
+        if (ltype.isSameAs(defs.CHAR_TYPE()) && rtype.isSameAs(defs.CHAR_TYPE())) {
+            right = gen.mkApply__(gen.Select(right, CHAR_COERCE_INT));
+            eqsym = CHAR_EQEQ_INT;
+        } else
+            eqsym = getFun(ltype.lookupNonPrivate(Names.EQEQ), rtype);
+        return gen.mkApply_V(gen.Select(left, eqsym), new Tree[]{right});
     }
 
     protected Tree ThrowMatchError(int pos, Type type) {
