@@ -19,7 +19,7 @@ import Tree.*;
 
 public class PatternMatcher extends PatternTool {
 
-    protected boolean optimize = true;
+      protected boolean optimize = true;
     protected boolean delegateSequenceMatching = false;
     protected boolean doBinding = true;
 
@@ -290,24 +290,29 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
-        switch (tree) {
-        case Bind(Name name, Typed( Ident( Names.PATTERN_WILDCARD ), Tree tpe)): // little opt. for x@_:Type
-            if(header.type.isSubType(tpe.type)) {
-                PatternNode node = mk.DefaultPat(tree.pos, tpe.type);
-                env.newBoundVar( tree.symbol(), tree.type, header.selector );
-                return node;
-            } else {
-                ConstrPat node = mk.ConstrPat(tree.pos, tpe.type);
-                env.newBoundVar( tree.symbol(), tree.type, gen.Ident(tree.pos, node.casted));
-                return node;
-            }
-        case Bind(Name name, Ident( Names.PATTERN_WILDCARD )): // little opt. for x@_
+          //System.out.println("patternNode("+tree+","+header+")");
+          switch (tree) {
+
+        case Bind(Name name,
+                  Typed( Ident( Names.PATTERN_WILDCARD ), Tree tpe)): // x@_:Type
+
+              if(header.type.isSubType(tpe.type)) {
+                    PatternNode node = mk.DefaultPat(tree.pos, tpe.type);
+                    env.newBoundVar( tree.symbol(), tree.type, header.selector );
+                    return node;
+              } else {
+                    ConstrPat node = mk.ConstrPat(tree.pos, tpe.type);
+                    env.newBoundVar( tree.symbol(), tree.type, gen.Ident(tree.pos, node.casted));
+                    return node;
+              }
+
+        case Bind( Name name, Ident( Names.PATTERN_WILDCARD )): // x @ _
             PatternNode node = mk.DefaultPat(tree.pos, header.type);
             if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD))
                 env.newBoundVar( tree.symbol(), tree.type, header.selector);
             return node;
 
-        case Bind(Name name, Tree pat):
+        case Bind( Name name, Tree pat):
             PatternNode node = patternNode(pat, header, env);
             if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD)) {
                 Symbol casted = node.symbol();
@@ -332,23 +337,23 @@ public class PatternMatcher extends PatternTool {
                 return mk.VariablePat(tree.pos, tree);
             return mk.ConstrPat(tree.pos, tree.type);
         case Typed(Ident ident, Tree tpe):       // variable pattern
-            boolean doTest = header.type.isSubType(tpe.type);
-            PatternNode node = doTest ?
-                mk.DefaultPat(tree.pos, tpe.type)
-                : mk.ConstrPat(tree.pos, tpe.type);
-            if ((env != null) && (ident.symbol() != defs.PATTERN_WILDCARD))
-                switch (node) {
-                case ConstrPat(Symbol casted):
-                    env.newBoundVar(
-                                    ((Tree.Typed)tree).expr.symbol(),
-                                    tpe.type,
-                                    gen.Ident(tree.pos, casted));
-                    break;
-                default:
-                    env.newBoundVar(
-                                    ((Tree.Typed)tree).expr.symbol(),
-                                    tpe.type,
-                                    doTest ? header.selector : gen.Ident(tree.pos, ((ConstrPat) node).casted));
+              boolean doTest = header.type.isSubType(tpe.type);
+              PatternNode node = doTest ?
+                    mk.DefaultPat(tree.pos, tpe.type)
+                    : mk.ConstrPat(tree.pos, tpe.type);
+              if ((env != null) && (ident.symbol() != defs.PATTERN_WILDCARD))
+                    switch (node) {
+                    case ConstrPat(Symbol casted):
+                          env.newBoundVar(
+                                          ((Tree.Typed)tree).expr.symbol(),
+                                          tpe.type,
+                                          gen.Ident(tree.pos, casted));
+                          break;
+                    default:
+                          env.newBoundVar(
+                                          ((Tree.Typed)tree).expr.symbol(),
+                                          tpe.type,
+                                          doTest ? header.selector : gen.Ident(tree.pos, ((ConstrPat) node).casted));
                 }
             return node;
         case Ident(Name name):                  // pattern without args or variable
@@ -447,7 +452,7 @@ public class PatternMatcher extends PatternTool {
                               PatternNode target,
                               Symbol casted,
                               CaseEnv env) {
-        //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
+          //System.err.println("enter(" + pat + ", " + index + ", " + target + ", " + casted + ")");
 
         Tree[] patArgs = patternArgs(pat);        // get pattern arguments
         Header curHeader = (Header)target.and;    // advance one step in intermediate representation
@@ -467,11 +472,20 @@ public class PatternMatcher extends PatternTool {
 
         // add branch to curHeader, but reuse tests if possible
         while (true)
-            if ( next.isSameAs( patNode ) )            // test for patNode already present --> reuse
-                return enter(patArgs, next, casted, env);
+            if ( next.isSameAs( patNode ) ) {           // test for patNode already present --> reuse
+                  // substitute... !!!
+                  switch( patNode ) {
+                  case ConstrPat( Symbol ocasted ):
+                        env.substitute( ocasted, gen.Ident(patNode.pos,
+                                                           ((ConstrPat) next).casted));
+                  }
+                  return enter(patArgs, next, casted, env);
+            }
             else if ( next.isDefaultPat() ||         // default case reached, or
                       ((next.or == null) &&          //  no more alternatives and
-                       ( patNode.isDefaultPat() || next.subsumes( patNode )))) // new node is default or subsumed
+                       ( patNode.isDefaultPat() || next.subsumes( patNode )))) {
+                  // new node is default or subsumed
+
                 return enter(                        // create independent new header , because cannot use this one
                              patArgs,
                              (curHeader = (curHeader.next =
@@ -479,8 +493,10 @@ public class PatternMatcher extends PatternTool {
                              = patNode,
                              casted,
                              env);
-            else if (next.or == null)
+            }
+            else if (next.or == null) {
                 return enter(patArgs, next.or = patNode, casted, env); // add new branch
+            }
             else
                 next = next.or;
     }
@@ -895,7 +911,7 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {
-        //System.err.println("pm.toTree called"+node);
+          //System.err.println("pm.toTree("+node+","+selector+")");
         if (node == null)
             return gen.mkBooleanLit(selector.pos, false);
         switch (node) {
