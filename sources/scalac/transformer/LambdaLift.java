@@ -525,10 +525,14 @@ public class LambdaLift extends OwnerTransformer
 	return newparams;
     }
 
-    /** change symbol of tree so that
+    /** For members:
+     *  change symbol of tree so that
      *  owner = currentClass
      *  newparams are added
      *  enter symbol in scope of currentClass
+     *  For non-members:
+     *  change symbol of tree so that
+     *  owner = currentMember
      */
     void liftSymbol(Tree tree) {
 	switch (tree) {
@@ -549,6 +553,18 @@ public class LambdaLift extends OwnerTransformer
 	    liftSymbol(
 		sym, get(free.ftvs, sym).toArray(),
 		ftvsParams(sym), fvsParams(sym));
+            break;
+
+        case ValDef(_, _, _, _):
+        case LabelDef(_, _, _):
+            Symbol sym = tree.symbol();
+	    assert sym.isLocal() : sym;
+            if (!sym.owner().owner().isClass()) {
+                assert sym.owner().owner().owner().isClass(): tree;
+                sym.setOwner(sym.owner().owner());
+            }
+            break;
+
 	}
     }
 
