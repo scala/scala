@@ -4212,6 +4212,7 @@ grammar.
   Pattern3        ::=  SimplePattern [ '*' | '?' | '+' ]
                     |  SimplePattern { id SimplePattern }
   SimplePattern   ::=  `_'
+                    |  varid
                     |  literal
                     |  StableId [ `(' [Patterns] `)' ]
                     |  `(' [Patterns] `)'
