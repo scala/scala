@@ -993,10 +993,14 @@ parameters (\sref{sec:parameters}) of type $[]T$, because its result
 would violate the well-formedness rules for anonymous functions
 (\sref{sec:closures}). Hence, methods with call-by-name
 parameters always need to be applied to arguments immediately.
-\end{itemize}
-
+\item
 If $p$ is a path (\sref{sec:paths}), then $p$ is implicitly converted to a
 value of type \verb@p.type@ if the context requires it.
+\item If an integer literal appears in a context which requires
+one of the types \ver@byte@, \verb@short@, or \verb@char@, it 
+is implicity converted to that type, provided the value of the literal fits in
+the numeric range described by the type.
+\end{itemize}
 
 \chapter{Basic Declarations and Definitions}
 \label{sec:defs}
@@ -1245,13 +1249,13 @@ d.hours = 25;                 \=// throws a DateError exception
 \label{sec:typealias}
 
 \syntax\begin{verbatim}
-  Dcl             \=::= \= class TypeDcl {`,' TypeDcl}
+  Dcl             \=::= \= type TypeDcl {`,' TypeDcl}
   TypeDcl         \>::= \> Id [>: Type] [<: Type]
   Def             \>::= \> type TypeDef {`,' TypeDef}
   TypeDef         \>::= \> Id `=' Type
 \end{verbatim}
 
-A {\em type declaration} \verb@class t >: L <: U@ declares \verb@t@ to
+A {\em type declaration} \verb@type t >: L <: U@ declares \verb@t@ to
 be an abstract type with lower bound type \verb@L@ and upper bound
 type \verb@U@.  If such a declaration appears as a member declaration
 of a type, implementations of the type may implement \verb@t@ with any
@@ -1260,7 +1264,7 @@ be omitted.  If the lower bound \verb@L@ is missing, the bottom type
 \verb@scala.All@ is assumed.  If the upper bound \verb@U@ is missing,
 the top type \verb@scala.Any@ is assumed.
 
-A {\em type alias} \verb@class t = T@ defines \verb@t@ to be an alias
+A {\em type alias} \verb@type t = T@ defines \verb@t@ to be an alias
 name for the type \verb@T@. Type declarations and type aliases are
 collectively called {\em type bindings}.
 
@@ -1268,27 +1272,27 @@ The scope rules for definitions (\sref{sec:defs}) and type parameters
 (\sref{sec:funsigs}) make it possible that a type name appears in its
 own bound or in its right-hand side.  However, it is a static error if
 a type alias refers recursively to the defined type itself.  That is,
-the type \verb@T@ in a type alias \verb@class t = T@ may not refer
+the type \verb@T@ in a type alias \verb@type t = T@ may not refer
 directly or indirectly to the name \verb@t@.  It is also an error if
 an abstract type is directly or indirectly its own bound.
 
 \example The following are legal type declarations and definitions:
 \begin{verbatim}
-class IntList = List[Integer];
-class T extends Comparable[T];
+type IntList = List[Integer];
+type T extends Comparable[T];
 \end{verbatim}
 
 The following are illegal:
 \begin{verbatim}
-class Abs = Comparable[Abs];	                 \=// recursive type alias
+type Abs = Comparable[Abs];	                 \=// recursive type alias
 
-class S <: T;                       \>// S, T are bounded by themselves.
-class T <: S;
+type S <: T;                       \>// S, T are bounded by themselves.
+type T <: S;
 
-class T <: Object with T;	    \>// T is abstract, may not be part of
+type T <: Object with T;	    \>// T is abstract, may not be part of
                                     \>// compound type
 
-class T >: Comparable[T.That];       \>// Cannot select from T.
+type T >: Comparable[T.That];       \>// Cannot select from T.
 			            \>// T is a type, not a value
 \end{verbatim}
 
@@ -1299,7 +1303,7 @@ parameterized type, as is shown in the following example.
 \example The \verb@Predef@ module contains a definition which establishes \verb@Pair@ 
 as an alias of the parameterized class \verb@Tuple2@:
 \begin{verbatim}
-class Pair = Tuple2;
+type Pair = Tuple2;
 \end{verbatim}
 As a consequence, for any two types \verb@S@ and \verb@T@, the type
 \verb@Pair[S, T]@ is equivalent to the type \verb@Tuple2[S, T]@.
@@ -2209,6 +2213,7 @@ module FileSystem with {
 		  \>  |\> BlockExpr
 		  \>  |\> new Template 
 		  \>  |\> SimpleExpr `.' Id 
+		  \>  |\> Id `#' Id 
 		  \>  |\> SimpleExpr TypeArgs
 		  \>  |\> SimpleExpr ArgumentExpr
   Exprs           \>::= \> Expr {`,' Expr}
@@ -2256,7 +2261,7 @@ argument \verb@x@ is also the ``null'' object.
 \verb@toString@ returns the string ``\verb@null@''.
 \end{itemize}
 A reference to any other member of the ``null'' object causes a
- \verb@NullPointerException@ to be thrown. 
+\verb@NullPointerException@ to be thrown. 
 
 \section{Designators}
 \label{sec:designators}
@@ -2282,40 +2287,32 @@ selector identifier is bound in the selected object designated by $e$.
 \label{sec:this-super}
 
 \syntax\begin{verbatim}
-  SimpleExpr    \=::= \= $\This$
-                \>  | \> super `.' Id
+  SimpleExpr    \=::= \= [Ident `.'] $\This$
+                \>  | \> [Ident `.'] super `.' Id
 \end{verbatim}
-\ifqualified{
-  Super       \>::= \> $\SUPER$
-	      \>  | \> `(' $\SUPER$ `:' Type `)'
-}
-The reserved name \verb@this@ may be used in the statement part of a
-template, where it stands for the object of which the currently
-evaluated expression forms part. The type of \verb@this@ is the self
-type which is also written \verb@this@ (\sref{sec:self-type}).
 
-A reference \verb@super.$m$@ in a template refers to one of the
-following.
-\begin{itemize}
-\item
-A binding of $m$ in a mixin base class (\sref{sec:base-classes}) $bc$
-of the template, provided no mixin base class following $bc$ in the template's base class sequence also defines $m$, or
-\item
-The definition of $m$ in the actual superclass
-(\sref{sec:base-classes}) of the template, provided no
-mixin base class of the template also
-defines $m$.
-\end{itemize}
+The expression \verb@this@ can appear in the statement part of a
+template or compound typw. It stands for the object being defined by
+the innermost template or compound type enclosing the reference. If
+this is a template forming part of a module or class definition, the
+type of \verb@this@ is the self type of the definition; otherwise the
+type of \verb@this@ is the type of the innermost enclosing template or
+compund type itself.
 
-\comment{
-\verb@super@ may be declared to be of a specific type, as in
-\verb@(super:T).x@. The least proper supertype of the class or module containing
-the reference must then conform to $T$. The meaning is the same as
-$\SUPER.x$ except that the qualifier's static type is taken to be
-$T$. The static type affects the definition of qualified expansion
-(\sref{sec:names}) and with it the member resolution process
-(\ref{ex:qualified-super} provides an illustration).
-}
+The expression \verb@C.this@ is legal in the statement part of an
+enclosing class or object definition with simple name \verb@C@. It
+stands for the object being defined by the innermost such definition.
+Its type is the self type of that definition. 
+
+A reference \verb@super.$m$@ in a template refers to the definition of
+\verb@m@ in the actual superclass (\sref{sec:base-classes}) of the
+template.  A reference \verb@C.super.m@ refers to the definition of
+\verb@m@ in the actual superclass of the innermost enclosing class or
+object definition enclosing the reference. The referred-to definition
+of \verb@m@ must be concrete, or the template containing the reference
+must contain a definition which has an \verb@override@ modifier and
+which overrides \verb@m@.
+
 
 \example\label{ex:super}
 Consider the following class definitions
@@ -2339,22 +2336,52 @@ new E.superA = "Root", new E.superB = "A", new E.superC = "A",
 Note that the \verb@superB@ function returns different results
 depending on whether \verb@B@ is used as defining class or as a mixin class.
 
-\ifqualified{
-\example\label{ex:qualified-super}
-Consider the class definitions
-\begin{verbatim}
-qualified class C with { def f: String = "C" }
-qualified class D with { def f: String = "D" }
+\section{Mixin Super}
+\label{sec:this-mxin-super}
+
+\syntax\begin{verbatim}
+  SimpleExpr    \=::= \= Id `#' Id
 \end{verbatim}
-Here is a subclass of \verb@C@ and \verb@D@ which overrides both
-versions of \verb@f@ and invokes both previous definitions via \verb@super@:
+
+In the statement part of a template
+the reference \verb@M # m@ refers to the definition of the member \verb@m@ in
+the mixin parent class of the template with simple name \verb@@M.
+
+\example Consider the following class definitions:
 \begin{verbatim}
-class B extends C with D with {
-  override C def f = (super:C).f ++ "B"
-  override D def f = (super:D).f ++ "B"
+class Shape {
+  def equals(other: Shape);
+  ...
+}
+trait Bordered extends Shape {
+  val thinkness: int
+  def equals(other: Any) = other match {
+    case that: Bordered => this.thickness == that.thickness;
+    case _ => false
+  }
+  ...
+}
+trait Colored extends Shape {
+  val color: Color
+  def equals(other: Any) = other match {
+    case that: Colored => this.color == that.color;
+    case _ => false
+  }
+  ...
 }
 \end{verbatim}
+
+All three definitions of \verb@equals@ are combined in the class below, which makes use of \verb@super@ as well as mixin
+super references.
+\begin{verbatim}
+class BorderedColoredShape extends Shape with Bordered with Colored {
+  def equals(other: Any) = other match {
+    case that: BorderedColoredShape => 
+      super.equals(that) && Bordered # equals(that) && Colored # equals(that)
+    case _ => false
+  }
 }
+\end{verbatim}
 
 \section{Function Applications}
 \label{sec:apply}
@@ -2363,44 +2390,44 @@ class B extends C with D with {
   SimpleExpr    \=::= \= SimpleExpr ArgumentExpr
 \end{verbatim}
 
-An application $f(e_1 \commadots e_n)$ applies the function $f$ to the
-argument expressions $e_1 \commadots e_n$. If $f$ has some method type
-$(x_1: T_1 \commadots x_n: T_n)U$, the type of each argument
-expression $e_i$ must conform to the corresponding parameter type
-$T_i$ of. if $f$ has some value type, the application is taken to be
-equivalent to \verb@$f$.apply($e_1 \commadots e_n$)@, i.e.\ the
-application of an \verb@apply@ function defined by $f$.
+An application \verb@f(e$_1$ \commadots e$_n$)@ applies the function \verb@f@ to the
+argument expressions \verb@e$_1$ \commadots e$_n$@. If \verb@f@ has a method type
+\verb@(x$_1$: T$_1$ \commadots x$_n$: T$_n$)U@, the type of each argument
+expression \verb@e$_i$@ must conform to the corresponding parameter type
+\verb@T$_i$@. If \verb@f@ has some value type, the application is taken to be
+equivalent to \verb@f.apply(e$_1$ \commadots e$_n$)@, i.e.\ the
+application of an \verb@apply@ function defined by \verb@f@.
 
 %Class constructor functions
 %(\sref{sec:classes}) can only be applied in constructor invocations
 %(\sref{sec:constr-invoke}), never in expressions.
 
-Evaluation of $f(e_1 \commadots e_n)$ usually entails evaluation of
-$f$ and $e_1 \commadots e_n$ in that order. Each argument expression
+Evaluation of \verb@f(e$_1$ \commadots e$_n$)@ usually entails evaluation of
+\verb@f@ and \verb@e$_1$ \commadots e$_n$@ in that order. Each argument expression
 is converted to the type of its corresponding formal parameter.  After
 that, the application is rewritten to the function's right hand side,
 with actual arguments substituted for formal parameters.  The result
 of evaluating the rewritten right-hand side is finally converted to
 the function's declared result type, if one is given.
 
-The case where a formal parameter has a parameterless method type
-$[\,]T$ is treated specially. In this case, the corresponding
-actual argument expression is not evaluated before the
+The case where of a formal \verb@def@-parameter with a parameterless
+method type \verb@[\,]T@ is treated specially. In this case, the
+corresponding actual argument expression is not evaluated before the
 application. Instead, every use of the formal parameter on the
 right-hand side of the rewrite rule entails a re-evaluation of the
 actual argument expression. In other words, the evaluation order for
-$\DEF$-parameters is {\em call-by-name} whereas the evaluation order
-for normal parameters is {\em call-by-value}.
+\verb@def@-parameters is {\em call-by-name} whereas the evaluation
+order for normal parameters is {\em call-by-value}.
 
-\example The function \verb@while@ is defined as:
+\example A function equivalent to a \verb@while@-loop could be defined as:
 
 \begin{verbatim}
-  def while(def c: Boolean)(def s: Unit): Unit  =
+  def whileLoop(def c: boolean)(def s: unit): unit  =
     if (c) { s ; while(c)(s) } else {}
 \end{verbatim}
 Therefore the call
 \begin{verbatim}
-  while (x != 0) { y = y + 1/x ; x = x - 1 }
+  whileLoop (x != 0) { y = y + 1/x ; x = x - 1 }
 \end{verbatim}
 will never produce a division-by-zero error at run-time, since the
 expression \verb@(y = 1/x)@ will be evaluated in the body of
@@ -2409,42 +2436,79 @@ expression \verb@(y = 1/x)@ will be evaluated in the body of
 \subsection{References to Overloaded Bindings}
 \label{sec:overloaded-refs}
 
-If a name $f$ referenced in an identifier or selection is overloaded
-(\sref{sec:overloaded-types}), the context of the reference has to
-identify a unique alternative of the overloaded binding. This is done
-as follows. Let $\AA$ be the set of all type alternatives of $f$. Let
-$n \geq 0$ be maximal such that there is a method type of arity $\geq
-n$ in $\AA$, and $f$ is a applied to at least $n$ argument lists,
-e.g.\ it is used as in $f;(args_1) \ldots (args_n)$.  Let $T_p$ be the
-expected type of $f;(args_1) \ldots (args_n)$ (which may be partially
-undefined).  For $i \in 1 \commadots n$ let ${ts_i}$ be the list of
-types of ${args_i}$ which are obtained by typing each argument in
-${args_i}$ with a completely undefined prototype.
+If a name \verb@f@ referenced in an identifier or selection is
+overloaded (\sref{sec:overloaded-types}), the context of the reference
+has to identify a unique alternative of the overloaded binding. The
+way this is done depends on whether or not \verb@f@ is used as a
+function.  Let $\AA$ be the set of all type alternatives of
+\verb@f@.
 
-Among all {\em applicable} alternative types in $\AA$ the compiler
+Assume first that \verb@f@ is used as a function, as in
+\verb@f(args)@.  If there is precisely one alternative in \verb@\AA@
+which is a (possibly polymorphic) method type whose arity matches the
+number of arguments given, that alternative is chosen.
+
+Otherwise, let \verb@argtypes@ be the vector of types obtained by
+typing each argument with an undefined prototype. One determines first
+the set of applicable alternatives. A method type alternative is
+applicable if each type in \verb@argtypes@ conforms to the
+corresponding formal parameter type in the alternative, and, if a
+prototype is given, the method's result type conforms to it.  A
+polymorphic method type is applicable if local type inference can
+determine type arguments so that the instantiated method type is
+applicable. 
+
+Let $\BB$ be the set of applicable alternatives. It is an error of
+$\BB$ is empty. Otherwise, one chooses the most specific alternative
+
+ 
+
+
+
+
+
+
+
+and let \veeb@pt@ be the expected (result-) type of the expression.
+
+
+
+
+
+Let \verb@n $\geq$ 0@ be maximal such that there is a method
+type of arity \verb@\geq n@ in \verb@\AA@, and \verb@f@ is a applied
+to at least \verb@n@ argument lists, e.g.\ it is used as in
+\verb@f;(args$_1$) \ldots (args$_n$)@.  Let \verb@T$_p$@ be the
+expected type of \verb@f;(args$_1$) \ldots (args$_n$)@ (which may be
+partially undefined).  For \verb@i \in 1 \commadots n@ let
+\verb@{ts$_i$}@ be the list of types of \verb@{args$_i$}@ which are
+obtained by typing each argument in \verb@{args$_i$}@ with a
+completely undefined prototype.
+
+Among all {\em applicable} alternative types in \verb@\AA@ the compiler
 selects one which {\em specializes} all others.
 
-A method type alternative of arity $m \geq n$ is {\em applicable} if a
+A method type alternative of arity \verb@m \geq n@ is {\em applicable} if a
 non-overloaded function of that type could legally be applied to
-stable identifier lists ${xs_1} \commadots xs_n$ of the argument types
-${ts_1}
-\commadots {ts_n}$, and the application's result type would match
-$T_p$.
+stable identifier lists \verb@{xs$_1$} \commadots xs$_n$@ of the argument types
+\verb@{ts$_1$}
+\commadots {ts$_n$}@, and the application's result type would match
+\verb@T$_p$@.
 
 \comment{
 Method types which do not have a class constructor
 \verb@class T@ as their result type always specialize
 method types which do. For other pairs of method types, the
 following applies: }
-A parameterized method type $(ps_1)
-\ldots (ps_m) T$ where $m > 0$ {\em specializes} some other
-type $U$ if $U$ is applicable to arguments $(ps_1)$ \ldots $(ps_m)$.
-A polymorphic method type $[a_1
-\extends S_1
-\commadots a_k \extends S_k] (ps_1) \ldots (ps_m) T$ specializes
-a type $U$ if $(ps_1) \ldots (ps_m) T$ is more
-specific than $U$ under the assumption that for $i = 1 \commadots k$
-each $a_i$ is an abstract type name bounded by $S_i$.
+A parameterized method type \verb@(ps$_1$)
+\ldots (ps$_m$) T@ where \verb@m > 0@ {\em specializes} some other
+type \verb@U@ if \verb@U@ is applicable to arguments \verb@(ps$_1$)@ \ldots \verb@(ps$_m$)@.
+A polymorphic method type \verb@[a$_1$
+\extends S$_1$
+\commadots a$_k$ \extends S$_k$] (ps$_1$) \ldots (ps$_m$) T@ specializes
+a type \verb@U@ if \verb@(ps$_1$) \ldots (ps$_m$) T@ is more
+specific than \verb@U@ under the assumption that for \verb@i = 1 \commadots k@
+each \verb@a$_i$@ is an abstract type name bounded by \verb@S$_i$@.
 
 If there is no applicable signature which specializes all other
 applicable signatures, or if there is more than one, the application
@@ -2476,8 +2540,8 @@ Then the application \verb@f(s)(s)@ is rejected for being ambiguous, since
 \end{verbatim}
 
 Then the term namespace contains the overloaded binding
-\verb@Point: ()constr Point $\overload$ Point$\Dollar$class@
-where $C_{Point}$  stands for the (invisible) type of the module
+\verb@Point: ()constr Point \verb@\overload@ Point\verb@\Dollar@class@
+where \verb@C_{Point}@  stands for the (invisible) type of the module
 \verb@Point@.  Therefore the name \verb@Point@ identifies the
 \verb@Point@ module, the expression \verb@Point.origin@ selects its \verb@origin@
 field, but \verb@Point()@ is an invocation of the \verb@Point@
@@ -2490,21 +2554,21 @@ constructor.
   SimpleExpr    \=::= \= SimpleExpr `[' Types `]'
 \end{verbatim}
 
-A type application $f[T_1\commadots T_n]$ instantiates a polymorphic
-value $f$ of type $[a_1 \extends B_1 \commadots a_n \extends B_n] U$ with
-argument types $T_1 \commadots T_n$.  Every argument type $T_i$ must
-conform to the corresponding bound type $B_i$. That is, for each $i = 1
-\commadots n$, we must have $T_i \conforms B_i\sigma$, where $\sigma$ is
-the substitution $[a_1 := T_1, ..., a_n := T_n]$.  The type of the
-application is $U\sigma$.  If the function part $f$ has an overloaded
-type $T_1 \overload \ldots \overload T_n$ then excatly one alternative
-$T_i$ must have an $n$-ary type parameter list, and this alternative
+A type application \verb@f[T$_1$\commadots T$_n$]@ instantiates a polymorphic
+value \verb@f@ of type \verb@[a$_1$ \extends B$_1$ \commadots a$_n$ \extends B$_n$] U@ with
+argument types \verb@T$_1$ \commadots T$_n$@.  Every argument type \verb@T$_i$@ must
+conform to the corresponding bound type \verb@B$_i$@. That is, for each \verb@i = 1
+\commadots n@, we must have \verb@T$_i$ \conforms B$_i$\sigma@, where \verb@\sigma@ is
+the substitution \verb@[a$_1$ := T$_1$, ..., a$_n$ := T$_n$]@.  The type of the
+application is \verb@U\sigma@.  If the function part \verb@f@ has an overloaded
+type \verb@T$_1$ \overload \ldots \overload T$_n$@ then excatly one alternative
+\verb@T$_i$@ must have an \verb@n@-ary type parameter list, and this alternative
 will be instantiated.
 
-The function part $f$ may also have some value type. In this case the
+The function part \verb@f@ may also have some value type. In this case the
 type application is taken to be equivalent to
-\verb@$f$.apply[$T_1\commadots T_n$]@,
-i.e.\ the application of an \verb@apply@ function defined by $f$.
+\verb@\verb@f@.apply[\verb@T$_1$\commadots T$_n$@]@,
+i.e.\ the application of an \verb@apply@ function defined by \verb@f@.
 
 Type applications can be omitted if local type inference
 (\sref{sec:local-type-inf}) can infer best type parameters for a
@@ -2518,8 +2582,8 @@ and the expected result type.
   Expr4     \=::= \= new Template
 \end{verbatim}
 
-A simple instance creation expression is $\NEW;c$ where $c$ is a
-constructor invocation (\sref{sec:constr-invoke}).  If $c$ has type
+A simple instance creation expression is \verb@\NEW;c@ where \verb@c@ is a
+constructor invocation (\sref{sec:constr-invoke}).  If \verb@c@ has type
 \verb@class T@, then \verb@new c@ has type \verb@T@.
 This type must conform to
 type \verb@scala.AnyRef@.
@@ -2528,19 +2592,19 @@ is evaluated by creating a fresh object of type \verb@T@, which is is
 initialized by evaluating \verb@c@.
 
 A general instance creation expression is
-$$\NEW;sc;\WITH;mc_1;\WITH;\ldots;\WITH;mc_n;\WITH;(stats)$$ where $n \geq
-0$, $sc$ as well as $mc_1 \commadots mc_n$ are constructor invocations
-(of types $\CLASS;S, \CLASS;T_1 \commadots \CLASS;T_n$, say) and
-$stats$ is a statement sequence containing initializer statements
+\verb@@\NEW;sc;\WITH;mc$_1$;\WITH;\ldots;\WITH;mc$_n$;\WITH;(stats)\verb@@ where \verb@n \geq
+0@, \verb@sc@ as well as \verb@mc$_1$ \commadots mc$_n$@ are constructor invocations
+(of types \verb@\CLASS;S, \CLASS;T$_1$ \commadots \CLASS;T$_n$@, say) and
+\verb@stats@ is a statement sequence containing initializer statements
 and member definitions (\sref{sec:members}). The type of such an
 instance creation expression is then the compound type
-$S;\WITH;T_1;\WITH;\ldots;\WITH;T_n;\WITH;R$, where $R$ is a
+\verb@S;\WITH;T$_1$;\WITH;\ldots;\WITH;T$_n$;\WITH;R@, where \verb@R@ is a
 refinement (\sref{sec:refinements}) which declares exactly those
-members of $stats$ that override a member of $S$ or $T_1 \commadots
-T_n$. This type must conform to
+members of \verb@stats@ that override a member of \verb@S@ or \verb@T$_1$ \commadots
+T$_n$@. This type must conform to
 type \verb@scala.AnyRef@.
-For this type to be well-formed, $R$ may not reference types
-defined in $stats$ which do not themselves form part of $R$.
+For this type to be well-formed, \verb@R@ may not reference types
+defined in \verb@stats@ which do not themselves form part of \verb@R@.
 
 The instance creation expression is evaluated by creating a fresh
 object, which is initialized by evaluating the expression template.
@@ -2585,9 +2649,9 @@ override a member of \verb@C@.
 \end{verbatim}
 
 Expressions can be constructed from operands and operators.  A prefix
-operation $op;e$ consists of a prefix operator $op$, which must be one
-of \verb@+@, \verb@-@, \verb@!@, and a simple expression $e$.  The
-expression is equivalent to the postfix method application $e.op$.
+operation \verb@op;e@ consists of a prefix operator \verb@op@, which must be one
+of \verb@+@, \verb@-@, \verb@!@, and a simple expression \verb@e@.  The
+expression is equivalent to the postfix method application \verb@e.op@.
 
 Prefix operators are different from normal function applications in
 that their operand expression need not be atomic. For instance, the
@@ -2629,23 +2693,23 @@ parts of an expression as follows.
 expression, then operators with higher precedence bind more closely
 than operators with lower precedence.
 \item If there are consecutive infix
-operations $e_0;op_1;e_1;op_2\ldots;op_n;e_n$ with operators $op_1
-\commadots op_n$ of the same precedence, then all these operators must
+operations \verb@e$_0$;op$_1$;e$_1$;op$_2$\ldots;op$_n$;e$_n$@ with operators \verb@op$_1$
+\commadots op$_n$@ of the same precedence, then all these operators must
 have the same associativity. If all operators are left-associative,
-the sequence is interpreted as $(\ldots(e_0;op_1;e_1);op_2;\ldots);
-op_n;e_n$. Otherwise, if all operators are right-associative, the
+the sequence is interpreted as \verb@(\ldots(e$_0$;op$_1$;e$_1$);op$_2$;\ldots);
+op$_n$;e$_n$@. Otherwise, if all operators are right-associative, the
 sequence is interpreted as
-$e_0;op_1;(e_1;op_2;(\ldots;op_n;e_n)\ldots)$.
+\verb@e$_0$;op$_1$;(e$_1$;op$_2$;(\ldots;op$_n$;e$_n$)\ldots)@.
 \item
 Postfix operators always have lower precedence than infix
-operators. E.g.\ $e_1;op_1;e_2;op_2$ is always equivalent to
-$(e_1;op_1;e_2);op_2$.
+operators. E.g.\ \verb@e$_1$;op$_1$;e$_2$;op$_2$@ is always equivalent to
+\verb@(e$_1$;op$_1$;e$_2$);op$_2$@.
 \end{itemize}
-A postfix operation $e;op$ is interpreted as $e.op$. A
-left-associative binary operation $e_1;op;e_2$ is interpreted as
-$e_1.op(e_2)$. If $op$ is right-associative, the same operation is
-interpreted as $(\VAL;x=e_1
-\semi e_2.op(x))$, where $x$ is a fresh name.
+A postfix operation \verb@e;op@ is interpreted as \verb@e.op@. A
+left-associative binary operation \verb@e$_1$;op;e$_2$@ is interpreted as
+\verb@e$_1$.op(e$_2$)@. If \verb@op@ is right-associative, the same operation is
+interpreted as \verb@(\VAL;x=e$_1$
+\semi e$_2$.op(x))@, where \verb@x@ is a fresh name.
 
 \section{Typed Expressions}
 
@@ -2653,9 +2717,9 @@ interpreted as $(\VAL;x=e_1
   Expr1	       \=::= \= Expr2 [`:' Type]
 \end{verbatim}
 
-The typed expression $e: T$ has type $T$. The type of expression $e$
-is required to conform to $T$. The result of the expression is the
-value of $e$ converted to type $T$.
+The typed expression \verb@e: T@ has type \verb@T@. The type of expression \verb@e@
+is required to conform to \verb@T@. The result of the expression is the
+value of \verb@e@ converted to type \verb@T@.
 
 \example Here are examples of well-typed and illegal typed expressions.
 
@@ -2672,31 +2736,31 @@ value of $e$ converted to type $T$.
 	       \>  | \> SimpleExpr ArgumentExpr `=' Expr
 \end{verbatim}
 
-An assignment to a simple variable $x = e$ is interpreted as the invocation
-\verb@$x$_=($e$)@ of the setter function for variable
-$x$ (\sref{sec:vardef}).
-Analogously, an assignment $f.a = e$ to a field $a$ is interpreted
-as the invocation \verb@$f.a$_=($e$)@.
+An assignment to a simple variable \verb@x = e@ is interpreted as the invocation
+\verb@\verb@x@$_=$(\verb@e@)@ of the setter function for variable
+\verb@x@ (\sref{sec:vardef}).
+Analogously, an assignment \verb@f.a = e@ to a field \verb@a@ is interpreted
+as the invocation \verb@\verb@f.a@_=(\verb@e@)@.
 
-An assignment $f(is) = e$ with a function application to the
-left of the ``$=$' operator is interpreted as \verb@$f$.update($is, e$)@, i.e.\
-the invocation of an \verb@update@ function defined by $f$.
+An assignment \verb@f(is) = e@ with a function application to the
+left of the ``\verb@=@' operator is interpreted as \verb@\verb@f@.update(\verb@is, e@)@, i.e.\
+the invocation of an \verb@update@ function defined by \verb@f@.
 
 \section{Conditional Expressions}
 
 \syntax\begin{verbatim}
-  Expr	       \=::= \= $\IF$ `(' Expr `)' Expr [$\ELSE$ Expr]
+  Expr	       \=::= \= \verb@\IF@ `(' Expr `)' Expr [\verb@\ELSE@ Expr]
 \end{verbatim}
 
-The conditional expression \verb@if ($e_1$) $e_2$ else $e_3$@ is treated as
+The conditional expression \verb@if (\verb@e$_1$@) \verb@e$_2$@ else \verb@e$_3$@@ is treated as
 a shorthand for the expression
 \begin{verbatim}
-$e_1$.ifThenElse($e_2$)($e_3$)  .
+\verb@e$_1$@.ifThenElse(\verb@e$_2$@)(\verb@e$_3$@)  .
 \end{verbatim}
-The conditional expression \verb@if ($e_1$) $e_2$@ without an
+The conditional expression \verb@if (\verb@e$_1$@) \verb@e$_2$@@ without an
 else-part is treated as a shorthand for the expression
 \begin{verbatim}
-$e_1$.ifThen($e_2$)  .
+\verb@e$_1$@.ifThen(\verb@e$_2$@)  .
 \end{verbatim}
 The predefined type \verb@Boolean@ (\sref{sec:cls-Boolean})
 contains implementations of
@@ -2715,11 +2779,11 @@ methods \verb@ifThen@ and \verb@ifThenElse@.
   Generator       \>::=\> val Pattern `<-' Expr
 \end{verbatim}
 
-A comprehension \verb@for (g) e@ evaluates expression $e$ for each
-binding generated by the enumerator $g$. An enumerator is a generator,
+A comprehension \verb@for (g) e@ evaluates expression \verb@e@ for each
+binding generated by the enumerator \verb@g@. An enumerator is a generator,
 possibly followed by further generators or filters.  A generator
-\verb@val p <- e@ produces bindings from an expression $e$ which is
-matched in some way against pattern $p$. Filters are expressions which
+\verb@val p <- e@ produces bindings from an expression \verb@e@ which is
+matched in some way against pattern \verb@p@. Filters are expressions which
 restrict enumerated bindings. The precise meaning of generators and
 filters is defined by translation to invocations of four methods:
 \verb@map@, \verb@filter@, \verb@flatMap@, and \verb@foreach@. These
@@ -2731,24 +2795,24 @@ The translation scheme is by repeated applications of the following
 rules, until the comprehension has been eliminated.
 
 \ifnewfor{
-First, a definition: A pattern $P$ is a {\em binding} if $P$ is a
+First, a definition: A pattern \verb@P@ is a {\em binding} if \verb@P@ is a
 variable pattern or a tuple pattern consisting only of pattern
-variables. In the following, we let $B$ range over bindings, $P$ over
-patterns other than bindings, $E, F$ over expressions, and $G$ over
+variables. In the following, we let \verb@B@ range over bindings, \verb@P@ over
+patterns other than bindings, \verb@E, F@ over expressions, and \verb@G@ over
 enumerators.
 
 %\begin{itemize}
 %\item
 If
-$x_1 \commadots x_n$ are the free variables of $p$, then
+\verb@x$_1$ \commadots x$_n$@ are the free variables of \verb@p@, then
 the generator \verb@p <- e@ is translated to:
 \begin{verbatim}
-$(x_1 \commadots x_n)$ <- e.filter(case p => True case _ => False).map(case p => $(x_1 \commadots x_n)$)
+\verb@(x$_1$ \commadots x$_n$)@ <- e.filter(case p => True case _ => False).map(case p => \verb@(x$_1$ \commadots x$_n$)@)
 \end{verbatim}
 
 %\item
 A generator \verb@P <- E@ followed by a filter \verb@F@ is translated to
-a single generator \verb@P <- E.filter(x_1 \commadots x_n => F)@.
+a single generator \verb@P <- E.filter(x$_1$ \commadots x$_n$ => F)@.
 
 %\item
 The comprehension \verb@for (B <- E) E'@ is translated to
@@ -4257,6 +4321,7 @@ grammar.
 		  \>  |\> BlockExpr
 		  \>  |\> new Template 
 		  \>  |\> SimpleExpr `.' Id 
+		  \>  |\> Id `#' Id 
 		  \>  |\> SimpleExpr TypeArgs
 		  \>  |\> SimpleExpr ArgumentExpr
   ArgumentExpr    \>::=\> `(' Expr ')'

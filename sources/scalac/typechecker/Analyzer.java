@@ -110,41 +110,32 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
         assert this.context != null : "could not find context for " + unit;
 	unit.body = transformStatSeq(unit.body, Symbol.NONE);
 	if (global.target != global.TARGET_INT && global.reporter.errors() == 0) {
-	    genSymData(unit.symdata, unit.body);
-	    finalizeSymData(unit.symdata);
+	    genSymData(unit.body);
 	}
         this.unit = null;
         this.context = null;
 	global.operation("checked " + unit);
     }
 
-    public void genSymData(HashMap/*<Name, Pickle>*/ symdata, Tree[] stats) {
+    public void genSymData(Tree[] stats) {
 	for (int i = 0; i < stats.length; i++) {
 	    switch (stats[i]) {
 	    case ClassDef(_, _, _, _, _, _):
 	    case ModuleDef(_, _, _, _):
 		Symbol sym = stats[i].symbol();
 		Name fullname = sym.fullName();
-		Pickle pickle = (Pickle) unit.symdata.get(fullname);
-		if (pickle == null) {
-		    pickle = new Pickle();
-		    unit.symdata.put(fullname, pickle);
+		if (global.symdata.get(fullname) == null) {
+		    Pickle pickle = new Pickle();
+		    pickle.add(sym.owner().info().lookup(sym.name.toTermName()));
+		    pickle.add(sym.owner().info().lookup(sym.name.toTypeName()));
+		    pickle.pickle();
+		    pickle.writeFile(fullname);
+		    global.symdata.put(fullname, pickle);
 		}
-		pickle.add(sym.owner().info().lookup(sym.name.toTermName()));
-		pickle.add(sym.owner().info().lookup(sym.name.toTypeName()));
 		break;
 	    case PackageDef(Tree packaged, Tree.Template templ):
-		genSymData(symdata, templ.body);
+		genSymData(templ.body);
 	    }
-	}
-    }
-
-    public void finalizeSymData(HashMap/*<Name, Pickle>*/ symdata) {
-	for (Iterator it = symdata.entrySet().iterator(); it.hasNext();) {
-	    Map.Entry entry = (Map.Entry) it.next();
-	    Name fullname = (Name) entry.getKey();
-	    Pickle pickle = (Pickle) entry.getValue();
-	    pickle.finalize(fullname);
 	}
     }
 

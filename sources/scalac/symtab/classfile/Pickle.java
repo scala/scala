@@ -58,13 +58,18 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 
     /** Finalize pickler with given fullname.
      */
-    public void finalize(Name fullname) {
+    public void pickle() {
 	bytes = new byte[4096];
 	bp = 0;
 	writeAttr();
 	this.index = null;
 	this.entries = null;
-	writeFile(fullname);
+    }
+
+    /** The number of elements defined in `bytes'.
+     */
+    public int size() {
+	return bp;
     }
 
     /** Create output file with given extension for given class.
@@ -94,7 +99,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	}
     }
 
-    private void writeFile(Name fullname) {
+    public void writeFile(Name fullname) {
 	File outfile = outputFile(fullname, ".symbl");
 	try {
 	    createPath(outfile);

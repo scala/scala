@@ -94,6 +94,8 @@ public class  Global {
      */
     public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
 
+    public final Map/*<FullName, Pickle>*/ symdata = new HashMap();
+
     /** scaladoc option (with docmodule and docmodulepath)
      */
     public final boolean doc;
@@ -318,6 +320,7 @@ public class  Global {
                 sym.reset(new SourceCompleter(this));
             }
         }
+	symdata.clear();
         compiledNow.clear();
         printer.end();
     }

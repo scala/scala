@@ -39,10 +39,6 @@ public class Unit {
      */
     public Tree[] body;
 
-    /** the generated symbol data; Symbol -> byte[]
-     */
-    public HashMap/*<Name,Pickle>*/ symdata = new HashMap();
-
     /** the name mangler
      */
     public NameMangler mangler = new NameMangler();
