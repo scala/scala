@@ -1,0 +1,12 @@
+############################################################-*-Makefile-*-####
+# scala4ant source files (paths are relative to ./sources/scala/tools/scala4ant)
+##############################################################################
+# $Id$
+
+AntAdaptor.scala
+AntTask.scala
+ScalaRuntime.scala
+ScalaTask.scala
+ScalapTask.scala
+
+##############################################################################
