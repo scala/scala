@@ -127,9 +127,15 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an integer literal */
     public Tree mkIntLit(int pos, int value) {
-        return make.Literal(pos, new Integer(value)).
-            setType(definitions.INT_TYPE);
+        return mkIntLit( pos, new Integer(value));
     }
+
+    /** Builds an integer literal */
+    public Tree mkIntLit(int pos, Integer value) {
+        return make.Literal(pos, value)
+	    .setType(definitions.INT_TYPE);
+    }
+
 
     /** Builds a long literal. */
     public Tree mkLongLit(int pos, long value) {
@@ -799,4 +805,20 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    return Block(new Tree[]{tmpdef, expr});
 	}
     }
+
+    // refactoring duplicate code of LambdaLift and CodeFactory
+
+    public Tree Nil(int pos) {
+	return mkRef(pos, global.definitions.getModule(Names.scala_Nil));
+    }
+
+    public Tree Cons(int pos, Type elemtpe, Tree hd, Tree tl) {
+	return New(mkPrimaryConstr(pos,
+				   global.definitions
+				   .getClass( Names.scala_COLONCOLON ),
+				   new Type[] { elemtpe },
+				   new Tree[] { hd, tl }));
+
+    }
+
 }
