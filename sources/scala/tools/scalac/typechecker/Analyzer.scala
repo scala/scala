@@ -2708,29 +2708,23 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  }
 
 	  // if function is overloaded with one alternative
-	  // whose arity matches argument length, preselect this alternative.
+	  // whose arity matches argument length and whose result type matches prototype,
+          // preselect this alternative.
 	  fn1.getType() match {
 	    case Type$OverloadedType(alts, alttypes) =>
+              val argtypes = new Array[Type](args.length);
+              { var i = 0; while (i < argtypes.length) {
+                argtypes(i) = definitions.ALL_TYPE(); i = i + 1
+              }}
 	      var matching1: int = -1;
 	      var matching2: int = -1;
-	      for (val i <- Iterator.range(0, alttypes.length)) {
-		// can't replace with while because of backend crash???
-		val alttp: Type = alttypes(i) match {
-		  case Type$PolyType(_, restp) => restp;
-		  case t => t
+	      { var i = 0; while (i < alttypes.length) {
+                if (infer.isApplicable(alttypes(i), argtypes, pt)) {
+                  System.out.println("matches: " + alttypes(i) + " with " + pt);//debug
+		  matching2 = matching1;
+		  matching1 = i;
 		}
-		alttp match {
-		  case Type$MethodType(params, _) =>
-		    if (params.length == args.length ||
-			params.length > 0 &&
-			args.length > params.length - 1 &&
-			(params(params.length-1).flags & REPEATED) != 0) {
-		      matching2 = matching1;
-		      matching1 = i;
-		    }
-		  case _ =>
-		}
-	      }
+	      }}
 	      if (matching1 >= 0 && matching2 < 0)
 		fn1.setSymbol(alts(matching1)).setType(alttypes(matching1));
 	    case _ =>

@@ -1314,6 +1314,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   *  If pt is AnyType, leave tree unchanged.
   */
   def methodAlternative(tree: Tree, alts: Array[Symbol], alttypes: Array[Type], argtypes: Array[Type], pt: Type): unit = {
+    //System.out.println("meth alt " + ArrayApply.toString(argtypes.asInstanceOf[Array[Object]], "[", ",", "]") + pt);//debug
     if (alts.length == 1) {
       tree.setSymbol(alts(0)).setType(alttypes(0));
       return;

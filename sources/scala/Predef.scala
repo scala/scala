@@ -66,6 +66,7 @@ object Predef {
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
+
   def Array(x: boolean, xs: boolean*): Array[boolean] = {
     val array = new Array[boolean](xs.length + 1);
     array(0) = x;
