@@ -237,10 +237,11 @@ public class UnCurry extends OwnerTransformer
     }
 
     /** converts `a_1,...,a_n' to Seq(a_1,...,a_n)
-     *  if a_1 is an escaped sequence  as in  x:_*, takes care of
-     *  escaping
+     *  if a_n is an escaped sequence x:_*, takes care of escaping
+     *
+     *  precondition: params[params.length-1].flags & REPEATED != 0
      */
-    private Tree[] toSequence(int pos, Symbol[] params, Tree[] args) {
+    private Tree[] toSequence( int pos, Symbol[] params, Tree[] args ) {
 	Tree[] result = new Tree[params.length];
 	for (int i = 0; i < params.length - 1; i++)
 	    result[i] = args[i];
