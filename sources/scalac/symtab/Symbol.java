@@ -776,6 +776,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return false;
     }
 
+    /** Is this symbol locked? */
+    public final boolean isLocked() {
+        return (flags & LOCKED) != 0;
+    }
+
     /** Is this symbol initialized? */
     public final boolean isInitialized() {
         return (flags & INITIALIZED) != 0;
