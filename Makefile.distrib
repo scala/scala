@@ -69,7 +69,7 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(ECHO) $(INSTALL_VERSION) > $(INSTALL_PREFIX)/VERSION
 	$(CHMOD) 644 $(INSTALL_PREFIX)/VERSION
 	$(INSTALL) -m 755 -d $(INSTALL_BINDIR)
-	$(INSTALL) -m 644 -p $(SCRIPTS_WRAPPER).tmpl $(INSTALL_BINDIR)
+	$(INSTALL) -m 644 -p $(SCRIPTS_TEMPLATE_FILE) $(INSTALL_BINDIR)
 	@$(make) \
 	    SCRIPTS_PREFIX=$(INSTALL_BINDIR) \
 	    INSTALL_PREFIX=$(INSTALL_PREFIX) \
@@ -81,8 +81,8 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	    MACRO_MSIL_CLASSES=$(INSTALL_MSIL_JARFILE) \
 	    MACRO_JAVA_ARGS= \
 	    scripts
-	$(CHMOD) u+w $(INSTALL_BINDIR)/$(notdir $(SCRIPTS_WRAPPER))
-	$(RM) $(INSTALL_BINDIR)/$(notdir $(SCRIPTS_WRAPPER)).tmpl
+	$(CHMOD) u+w $(INSTALL_BINDIR)/$(SCRIPTS_WRAPPER_NAME)
+	$(RM) $(INSTALL_BINDIR)/$(SCRIPTS_TEMPLATE_NAME)
 	$(INSTALL) -m 755 -d $(INSTALL_LIBDIR)
 	$(INSTALL) -m 644 -p $(LIBRARY_JAR_ARCHIVE) $(INSTALL_RUNTIME_JARFILE)
 	$(INSTALL) -m 644 -p $(TOOLS_JAR_ARCHIVE) $(INSTALL_TOOLS_JARFILE)
@@ -148,12 +148,12 @@ install-windows		: install
 	$(UNIX2DOS) $(INSTALL_PREFIX)/VERSION
 	$(TOUCH) $(INSTALL_PREFIX)/VERSION-$(INSTALL_VERSION)
 	@root=`cd "$(INSTALL_PREFIX)"; pwd`; \
-	for file in "" $(SCRIPTS_WRAPPER_ALIASES); do \
-	    if [ -z "$$file" ]; then continue; fi; \
-	    echo -n "Generating $$file.bat ... "; \
+	for name in "" $(SCRIPTS_ALIASES_NAMES); do \
+	    if [ -z "$$name" ]; then continue; fi; \
+	    echo -n "Generating $$name.bat ... "; \
 	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
-	    nixfile="$(INSTALL_PREFIX)/bin/$$file"; \
-	    winfile="$(INSTALL_PREFIX)/bin/$$file.bat"; \
+	    nixfile="$(INSTALL_PREFIX)/bin/$$name"; \
+	    winfile="$(INSTALL_PREFIX)/bin/$$name.bat"; \
 	    nixexec=`SCALA_EXEC=echo SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
 	    winexec="$$nixexec"; \
 	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%SCALA_HOME%\"#g"`; \
