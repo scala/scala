@@ -12,6 +12,10 @@ trait AttributedNode extends Node {
   /** returns a mapping from all present attributes to values */
   def attributes: Map[String,String];
 
+  /** destructively updated attributes
+  */
+  def % (attrs:List[Symbol#AttrDef]):AttributedNode ;
+
   /** hashcode for this node*/
   override def hashCode() = Utility.hashCode( label, attributes.toList.hashCode(), children );
 
