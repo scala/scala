@@ -3,9 +3,9 @@
 ##############################################################################
 # $Id$
 
-xml/DeclToScala.java
-xml/dtd2scala.java
-xml/FactoryAdapter.java
-xml/XMLDecl.java
+../dtd2scala/DeclToScala.java
+../dtd2scala/Main.java
+../dtd2scala/FactoryAdapter.java
+../dtd2scala/XMLDecl.java
 
 ##############################################################################
