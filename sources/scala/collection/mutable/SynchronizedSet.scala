@@ -7,10 +7,16 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-trait SynchronizedSet[A] extends MutableSet[A] with Monitor {
+/** This trait should be used as a mixin. It synchronizes the <code>Set</code>
+ *  functions of the class into which it is mixed in.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
 
     override def size: Int = synchronized {
         super.size

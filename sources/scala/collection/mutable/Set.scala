@@ -7,10 +7,18 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-trait MutableSet[A] with Set[A] {
+/** This trait represents mutable sets. Concrete set implementations
+ *  just have to provide functionality for the abstract methods in
+ *  <code>scala.collection.Set</code> as well as for <code>add</code>,
+ *  <code>remove</code>, and <code>clear</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+trait Set[A] with scala.collection.Set[A] {
 
     def add(elem: A): Unit;
 
@@ -29,7 +37,7 @@ trait MutableSet[A] with Set[A] {
     def removeSet(that: Iterable[A]): Unit =
         that.elements.foreach(elem => remove(elem));
 
-    def intersect(that: Set[A]): Unit = filter(that.contains);
+    def intersect(that: scala.collection.Set[A]): Unit = filter(that.contains);
 
     def clear: Unit;
 

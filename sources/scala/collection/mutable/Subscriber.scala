@@ -7,11 +7,15 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-/** <tt>Subscriber[-A, -B]</tt> objects may subscribe to events of
- *  type <tt>A</tt> published by an object of type <tt>B</tt>.
+/** <code>Subscriber[A, B]</code> objects may subscribe to events of
+ *  type <code>A</code> published by an object of type <code>B</code>.
+ *  <code>B</code> is typically a subtype of <code>Publisher</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
 trait Subscriber[-A, -B] {
     def update(pub: B, event: A): Unit;

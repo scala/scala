@@ -7,10 +7,16 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-trait SynchronizedMap[A, B] extends MutableMap[A, B] with Monitor {
+/** This trait should be used as a mixin. It synchronizes the <code>Map</code>
+ *  functions of the class into which it is mixed in.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] with Monitor {
 
     override def size: Int = synchronized {
         super.size;

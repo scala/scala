@@ -7,9 +7,22 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection;
 
 
+/** This trait defines the interface of collections that do not contain
+ *  duplicate elements. Trait <code>Set</code> may only be used for
+ *  accessing elements from set implementations. Two different extensions
+ *  of trait <code>Set</code> in the package <code>scala.collections.mutable</code>
+ *  and  <code>scala.collections.immutable</code> provide functionality for
+ *  adding new elements to a set. The trait in the first package is implemented
+ *  by sets the are modified destructively, whereas the trait in the second
+ *  package is used by functional set implementations that rely on immutable
+ *  data structures.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
 trait Set[A] with Iterable[A] {
 
     def size: Int;

@@ -7,9 +7,10 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.immutable;
 
-trait ImmutableMap[A, B, This <: ImmutableMap[A, B, This]]: This with Map[A, B] {
+
+trait Map[A, B, This <: scala.collection.immutable.Map[A, B, This]]: This with scala.collection.Map[A, B] {
 
     def update(key: A, value: B): This;
 

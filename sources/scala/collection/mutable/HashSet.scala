@@ -7,11 +7,15 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
-/** I promise, there will be some documentation soon! :-) Matthias
+
+/** This class implements mutable sets using a hashtable.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
-class HashSet[A] extends MutableSet[A] with HashTable[A] {
+class HashSet[A] extends scala.collection.mutable.Set[A] with HashTable[A] {
 
     def contains(elem: A): Boolean = findEntry(elem) match {
         case None => false

@@ -7,11 +7,17 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
-
-trait MultiMap[A, B] extends MutableMap[A, MutableSet[B]] {
-    protected def makeSet: MutableSet[B] = new HashSet[B];
+/** This class is typically used as a mixin. It turns maps which map <code>A</code>
+ *  to <code>Set[B]</code> objects into multi maps which map <code>A</code> to
+ *  <code>B</code> objects.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+trait MultiMap[A, B] extends scala.collection.mutable.Map[A, scala.collection.mutable.Set[B]] {
+    protected def makeSet: scala.collection.mutable.Set[B] = new HashSet[B];
 
     def add(key: A, value: B): Unit = get(key) match {
         case None => val set = makeSet;

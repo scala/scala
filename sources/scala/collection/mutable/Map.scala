@@ -7,11 +7,18 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
-/** I promise, there will be some documentation soon! :-) Matthias
+
+/** This trait represents mutable maps. Concrete map implementations
+ *  just have to provide functionality for the abstract methods in
+ *  <code>scala.collection.Map</code> as well as for <code>update</code>,
+ *  and <code>remove</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
-trait MutableMap[A, B] with Map[A, B] {
+trait Map[A, B] with scala.collection.Map[A, B] {
 
     def update(key: A, value: B): Unit;
 

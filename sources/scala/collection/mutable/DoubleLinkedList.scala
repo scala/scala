@@ -7,9 +7,16 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
-
+/** This extensible class may be used as a basis for implementing double
+ *  linked lists. Type variable <code>A</code> refers to the element type
+ *  of the list, type variable <code>This</code> is used to model self
+ *  types of linked lists.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
 abstract class DoubleLinkedList[A, This <: DoubleLinkedList[A, This]]: This
 	extends SingleLinkedList[A, This] {
 

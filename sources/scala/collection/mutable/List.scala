@@ -7,10 +7,16 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
-
-class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
+/** This class is used internally to represent mutable lists. It is the
+ *  basis for the implementation of the classes <code>Buffer</code>,
+ *  <code>Stack</code>, and <code>Queue</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+class List[A] with Seq[A] with PartialFunction[Int, A] {
 
     protected var first: LinkedList[A] = null;
     protected var last: LinkedList[A] = null;

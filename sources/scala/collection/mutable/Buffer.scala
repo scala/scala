@@ -7,10 +7,18 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-class Buffer[A] with MutableList[A] {
+/** Buffers are used to create sequences of elements incrementally by
+ *  appending or prepending new elements. It is also possible to
+ *  access and modify elements in a random access fashion via the
+ *  index of the element in the sequence.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+class Buffer[A] with scala.collection.mutable.List[A] {
 
     def prepend(elem: A) = prependElem(elem);
 

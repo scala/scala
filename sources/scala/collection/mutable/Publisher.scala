@@ -7,14 +7,22 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-/** <tt>Publisher[A, This]</tt> objects publish events of type <tt>A</tt>
- *  to all registered subscribers.
+/** <code>Publisher[A,This]</code> objects publish events of type <code>A</code>
+ *  to all registered subscribers. When subscribing, a subscriber may specify
+ *  a filter which can be used to constrain the number of events sent to the
+ *  subscriber. Subscribers may suspend their subscription, or reactivate a
+ *  suspended subscription. Class <code>Publisher</code> is typically used
+ *  as a mixin. The type variable <code>This</code> models self types.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
 class Publisher[A, This <: Publisher[A, This]]: This {
-    private val filters = new HashMap[Subscriber[A, This], MutableSet[A => Boolean]]
+    private val filters = new HashMap[Subscriber[A, This],
+                                      scala.collection.mutable.Set[A => Boolean]]
                             with MultiMap[Subscriber[A, This], A => Boolean];
     private val suspended = new HashSet[Subscriber[A, This]];
 

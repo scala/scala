@@ -9,10 +9,10 @@
 // $Id$
 
 
-package scala;
+package scala.collections.immutable;
 
 
-class ListMap[A, B] extends MutableMap[A, B] with DefaultMapModel[A, B] {
+class ListMap[A, B] extends Map[A, B] with DefaultMapModel[A, B] {
 
     var xs: List[Entry] = Nil;
 

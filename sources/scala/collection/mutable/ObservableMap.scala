@@ -7,11 +7,19 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
+/** This class is typically used as a mixin. It adds a subscription
+ *  mechanism to the <code>Map</code> class into which this abstract
+ *  class is mixed in. Class <code>ObservableMap</code> publishes
+ *  events of the type <code>ObservableUpdate</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
 abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
-                    extends MutableMap[A, B]
+                    extends scala.collection.mutable.Map[A, B]
                     with Publisher[ObservableUpdate[Pair[A, B]] with Undo, This] {
 
     override def update(key: A, value: B): Unit = get(key) match {

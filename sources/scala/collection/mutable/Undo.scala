@@ -7,9 +7,18 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
+/** Classes that implement the <code>Undo</code> trait provide an operation
+ *  <code>undo</code> which can be used to undo the last operation.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
 trait Undo {
+
+    /** Undo the last operation.
+     */
     def undo: Unit;
 }

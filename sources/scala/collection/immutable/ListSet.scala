@@ -4,16 +4,15 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
+** $Id$
 \*                                                                      */
 
-// $Id$
 
-
-package scala;
+package scala.collection.immutable;
 
 /** I promise, there will be some documentation soon! :-) Matthias
  */
-class ListSet[A] extends MutableSet[A] {
+class ListSet[A] extends Set[A] {
 
     protected var elems: List[A] = Nil;
 

@@ -7,14 +7,21 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-/** <tt>Subscriber[-A, -B]</tt> objects may subscribe to events of
- *  type <tt>A</tt> published by an object of type <tt>B</tt>.
+/** A revertable history is a <code>History</code> object which supports
+ *  an undo operation. Type variable <code>A</code> refers to the type
+ *  of the published events, <code>B</code> denotes the publisher type.
+ *  Type <code>B</code> is typically a subtype of <code>Publisher</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
 class RevertableHistory[A <: Undo, B] extends History[A, B] with Undo {
 
+    /** Rollback the full history.
+     */
     def undo: Unit = {
     	val old = log.toList.reverse;
     	clear;

@@ -7,13 +7,16 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.mutable;
 
 
-/** <tt>History[A, B]</tt> objects may subscribe to events of
- *  type <tt>A</tt> published by an object of type <tt>B</tt>.
+/** <code>History[A, B]</code> objects may subscribe to events of
+ *  type <code>A</code> published by an object of type <code>B</code>.
  *  The history subscriber object records all published events
- *  up to maximum number of <tt>maxHistory</tt> events.
+ *  up to maximum number of <code>maxHistory</code> events.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
 class History[A, B] with Subscriber[A, B] {
 

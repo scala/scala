@@ -7,9 +7,22 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection;
 
-/** I promise, there will be some documentation soon! :-) Matthias
+
+/** This trait defines the interface of collections that unambiguously map
+ *  keys to values (i.e. a key is mapped to at least one value).
+ *  Trait <code>Map</code> may only be used for
+ *  accessing elements from map implementations. Two different extensions
+ *  of trait <code>Map</code> in the package <code>scala.collections.mutable</code>
+ *  and  <code>scala.collections.immutable</code> provide functionality for
+ *  adding new key/value mappings to a map. The trait in the first package is
+ *  implemented by maps that are modified destructively, whereas the trait in
+ *  the second package is used by functional map implementations that rely on
+ *  immutable data structures.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
  */
 trait Map[A, +B] with PartialFunction[A, B]
                  with Iterable[Pair[A, B]] {

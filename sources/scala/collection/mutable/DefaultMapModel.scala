@@ -4,15 +4,20 @@
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
+** $Id$
 \*                                                                      */
 
-// $Id$
+package scala.collection.mutable;
 
 
-package scala;
-
-
-trait DefaultMapModel[A, B] extends MutableMap[A, B] {
+/** This trait is used internally. It implements the mutable <code>Map</code>
+ *  trait in terms of three functions: <code>findEntry</code>, <code>addEntry</code>,
+ *  and <code>entries</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 08/07/2003
+ */
+trait DefaultMapModel[A, B] extends scala.collection.mutable.Map[A, B] {
 
 	protected def findEntry(key: A): Option[Entry];
 

@@ -7,10 +7,10 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.collection.immutable;
 
 
-trait ImmutableSet[A, This <: ImmutableSet[A, This]]: This with Set[A] {
+trait Set[A, This <: ImmutableSet[A, This]]: This with scala.collection.Set[A] {
 
     def add(elem: A): This;
 
