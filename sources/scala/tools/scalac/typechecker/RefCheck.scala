@@ -649,8 +649,9 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
 	val params = sym.getType().firstParams();
 	if (params.length == 1 && paramtype.isSubType(params(0).getType())) return sym;
     }
+    System.out.println(paramtype.widen());//debug
     throw new ApplicationError(
-      " no method " + name + " of required kind among " + sym.getType() + " at " + site);
+      " no method " + name + " of required kind among " + sym.getType() + " at " + site.widen());
   }
 
 

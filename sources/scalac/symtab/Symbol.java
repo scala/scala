@@ -1057,6 +1057,18 @@ public abstract class Symbol implements Modifiers, Kinds {
         return type().alternativeTypes();
     }
 
+    /** if type is a overloaded type, return first stable alternative
+     *  else return array symbol itself
+     */
+    public Symbol stableAlternative() {
+        switch (type()) {
+        case OverloadedType(Symbol[] alts, _):
+            for (int i = 0; i < alts.length; i++)
+                if (alts[i].isStable()) return alts[i];
+        }
+        return this;
+    }
+
     /** The symbol accessed by this accessor function.
      */
     public Symbol accessed() {
@@ -2151,7 +2163,7 @@ public class ClassSymbol extends TypeSymbol {
             //System.out.println("field accessor = " + sym);//DEBUG
         }
         assert sym != null : this;
-        return sym;
+        return sym.stableAlternative();
     }
 
     public final Symbol rebindSym() {

@@ -152,7 +152,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             if (rebind.isNone()) break rebind;
             if (rebind.isLocked()) throw new Type.Error(
                 "illegal cyclic reference involving " + rebind);
-            sym = rebind.rebindSym();
+            sym = rebind.rebindSym().stableAlternative();
         }
         if (pre.isStable() || pre.isError()) {
             return new ExtSingleType(pre, sym);

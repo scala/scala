@@ -1260,7 +1260,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       while (i < alts.length && alts(i).isConstructor() && alttypes(i).isInstanceOf[Type$MethodType])
 	i = i + 1;
       if (i == alts.length)
-	throw new Type$Error("missing rguments for " + alts(0));
+	throw new Type$Error("missing arguments for " + alts(0));
     }
     // second, do the normal case.
     var best: int = -1;

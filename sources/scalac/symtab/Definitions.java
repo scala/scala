@@ -682,8 +682,8 @@ public class Definitions {
         ANY_CLASS = newClass(SCALA_CLASS, Names.Any, 0);
         ANYVAL_CLASS = getClass("scala.AnyVal");
         ANYREF_CLASS = newAlias(SCALA_CLASS, Names.AnyRef, 0);
-        ALLREF_CLASS = newClass(SCALA_CLASS, Names.AllRef, 0);
-        ALL_CLASS = newClass(SCALA_CLASS, Names.All, 0);
+        ALLREF_CLASS = newClass(SCALA_CLASS, Names.AllRef, Modifiers.ABSTRACT | Modifiers.FINAL);
+        ALL_CLASS = newClass(SCALA_CLASS, Names.All, Modifiers.ABSTRACT | Modifiers.FINAL);
 
         final boolean forMSIL = global.target == Global.TARGET_MSIL;
         // the java classes
