@@ -132,6 +132,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.dtd) 2>/dev/null) \
 	    $(INSTALL_TESTDIR)/files)
 	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
+	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.namespace) 2>/dev/null) \
+	    $(INSTALL_TESTDIR)/files)
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
 	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.xml) 2>/dev/null) \
 	    $(INSTALL_TESTDIR)/files)
 
