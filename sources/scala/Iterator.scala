@@ -176,7 +176,6 @@ trait Iterator[+a] with Iterable[a] {
   }
 
   /** converts a prefix of this iterator to a sequence
-  */
   def toSeq( len:int ):Seq[a] = new Seq[a] {
     def length: Int = len;
     def elements = Iterator.this;
@@ -188,5 +187,6 @@ trait Iterator[+a] with Iterable[a] {
   }
 
   def toSeq:Seq[a] = toList;
+  */
 
 }
