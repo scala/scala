@@ -65,7 +65,6 @@ collection/MapProxy.scala
 collection/Set.scala
 collection/SetProxy.scala
 
-collection/mutable/AppendBuffer.scala
 collection/mutable/ArrayBuffer.scala
 collection/mutable/Buffer.scala
 collection/mutable/BufferProxy.scala
