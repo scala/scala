@@ -237,6 +237,9 @@ public class ExpressionCompiler {
         if (symbol == definitions.BOOLEAN_AND()) {
             return Code.And(object, compute(trees[0]));
         }
+        if (symbol == definitions.ANYREF_SYNCHRONIZED) {
+            return Code.Synchronized(object, compute(trees[0]));
+        }
         // !!! System.out.println("!!! method: " + Debug.show(symbol));
         // !!! System.out.println("!!! -owner: " + Debug.show(symbol.owner()));
         Function function = context.lookupFunction(symbol);

@@ -153,6 +153,10 @@ public class Evaluator {
                     }
                 }
 
+        case Synchronized(Code object, Code expression):
+            Object value = evaluate(object);
+            synchronized (value) { return evaluate(expression); }
+
         case If(Code cond, Code thenp, Code elsep):
             Object value = evaluate(cond);
             assert value instanceof Boolean : value.getClass();

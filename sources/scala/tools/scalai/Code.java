@@ -26,6 +26,7 @@ public class Code {
     public case Load(Code target, Variable variable);
     public case Store(Code target, Variable variable, Code expression);
 
+    public case Synchronized(Code object, Code expression);
     public case If(Code cond, Code thenp, Code elsep);
     public case Or(Code lf, Code rg);
     public case And(Code lf, Code rg);
