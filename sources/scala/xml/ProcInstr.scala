@@ -25,7 +25,7 @@ case class ProcInstr( target:String, text:Option[String] ) extends Node {
       throw new IllegalArgumentException(target+" is reserved");
     case _ =>
   }
-  if( !Utility.isName( target ) )
+  if( !Parsing.isName( target ) )
     throw new IllegalArgumentException(target+" must be an XML Name");
   else text match {
     case Some(txt) => if( txt.indexOf("?>" ) != -1 )

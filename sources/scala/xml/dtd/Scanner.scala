@@ -63,7 +63,7 @@ class Scanner with Tokens {
     case '#'   => next; accS( "PCDATA" ); TOKEN_PCDATA
     case ENDCH => END;
     case _     =>
-      if( Utility.isNameStart( c ) )      name; // NAME
+      if( Parsing.isNameStart( c ) )      name; // NAME
       else {
         error("unexpected character:"+c); END
       }
@@ -71,7 +71,7 @@ class Scanner with Tokens {
 
   final def name = {
     val sb = new StringBuffer();
-    do { sb.append( c ); next } while ( Utility.isNameChar( c ) ) ;
+    do { sb.append( c ); next } while ( Parsing.isNameChar( c ) ) ;
     value = sb.toString();
     NAME
   }

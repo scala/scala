@@ -19,7 +19,7 @@ package scala.xml;
 
 case class DocType( name:String, extId:Option[ExternalID], intSubset:Seq[dtd.Decl]) extends Node {
 
-  if( !Utility.isName( name ) )
+  if( !Parsing.isName( name ) )
     throw new IllegalArgumentException(target+" must be an XML Name");
 
   /** the constant "#DOCTYPE" */

@@ -390,7 +390,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   */
   def xAttributes = {
     var aMap = ListMap.Empty[Name,Tree];
-    while( s.xIsNameStart ) {
+    while( xml.Parsing.isNameStart( s.ch )) {
       val key = s.xName;
       s.xEQ;
       val delim = s.ch;
@@ -425,7 +425,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   def xTag = {
     val elemName = s.xName;
     s.xSpaceOpt;
-    val aMap = if( s.xIsNameStart ) {
+    val aMap = if(xml.Parsing.isNameStart( s.ch )) {
       xAttributes;
     } else {
       ListMap.Empty[Name,Tree];
