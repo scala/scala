@@ -10,20 +10,18 @@ import scala.xml.Utility ;
 **/
 object XML {
 
-  def < (def s:Symbol) = s;
-
   // functions for generic xml loading, saving
 
   /** loads XML from a given file*/
-  def load( filename:String ):Element =
+  def load( filename:String ):Symbol =
     new NoBindingFactoryAdapter().loadXML( filename );
 
   /** loads XML from a (file) URL */
-  def load( url:URL ):Element =
+  def load( url:URL ):Symbol =
     new NoBindingFactoryAdapter().loadXML( url );
 
   /** saves XML to filename with encoding ISO-8859-1 */
-  def save( filename:String, doc:Element ):Unit = {
+  def save( filename:String, doc:Symbol ):Unit = {
     /* using NIO classes of JDK 1.4 */
     import java.io.{FileOutputStream,Writer};
     import java.nio.channels.{Channels,FileChannel};
