@@ -38,14 +38,14 @@ class DeclToSQL(fOut:PrintWriter,mName:String,elemMap:Map[String,ElemDecl ] ) {
     def mults( r:RegExp ):Unit = r match {
       case x:Node       => rhs.addMult( x )
       case Star( s )    => mults( s );
-      case Seq( rs@_* ) => rs.map( mults ); { }
+      case scala.tools.dtd2scala.regexp.Seq( rs@_* ) => rs.map( mults ); { }
       case Alt( rs@_* ) => rs.map( mults ); { }
       case _            => ;
     }
     def singles( r:RegExp ):Unit = r match {
       case x:Node       => rhs.addSingle( x )
       case Star( s )    => mults( s );
-      case Seq( rs@_* ) => rs.map( singles ); { }
+      case scala.tools.dtd2scala.regexp.Seq( rs@_* ) => rs.map( singles ); { }
       case Alt( rs@_* ) => rs.map( singles ); { }
       case _            => ;
     }

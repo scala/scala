@@ -23,16 +23,16 @@ object Main {
 
   /** translates dtd to scala class definitions. see also printUsage */
   def main(argv:Array[String]):Unit = {
-    import scala.Seq ; // to shadow case class Seq RegExp
+    //import scala.Seq ; // to shadow case class Seq RegExp
 
     new IterableArray( argv ) match {
       case Seq( "-d", outdir, sysID, objName ) =>
-	continue( new File( outdir ), sysID, objName );
+        continue( new File( outdir ), sysID, objName );
       case Seq( "-sql", sysID ) => dosql( sysID );
       case Seq( sysID, objName ) =>
-	continue( new File( sysID ).getParentFile(), sysID, objName );
+        continue( new File( sysID ).getParentFile(), sysID, objName );
       case _ =>
-	{ printUsage; System.exit(-1); }
+        { printUsage; System.exit(-1); }
     }
   }
 
@@ -42,7 +42,7 @@ object Main {
     // myH.print(); // DEBUG
 
     val p = new PrintWriter(new FileWriter(new File(outdir,
-						    objName+".scala" )));
+                                                    objName+".scala" )));
     new DeclToScala( p, objName, myH.elemMap ).run;
   }
 
@@ -51,7 +51,7 @@ object Main {
     parse( sysID, myH );
     /*
     val q = new PrintWriter(new FileWriter(new File(outdir,
-						    objName+".sql" )));
+                                                    objName+".sql" )));
     */
     val q = new PrintWriter(System.out);
     new DeclToSQL( q, null:String, myH.elemMap ).run;
@@ -78,13 +78,13 @@ object Main {
     try { parser.parse( inputsrc( sysID )); }
     catch {
       case e:SAXParseException =>
-	System.err.println("SaxParseEx");e.printStackTrace( System.err );
+        System.err.println("SaxParseEx");e.printStackTrace( System.err );
       case e:Exception => {
-	System.err.println("error: Parse error occurred - "+e.getMessage());
-	if( e.isInstanceOf[SAXException] )
-	  e.asInstanceOf[SAXException].getException()
-	.printStackTrace( System.err )
-	else e.printStackTrace()
+        System.err.println("error: Parse error occurred - "+e.getMessage());
+        if( e.isInstanceOf[SAXException] )
+          e.asInstanceOf[SAXException].getException()
+        .printStackTrace( System.err )
+        else e.printStackTrace()
       }
     }
 
