@@ -113,6 +113,7 @@ DTD2SCALA_JC_FILES	 = $(DTD2SCALA_SOURCES)
 SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scalap
 SCALAP_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalap.lst)
 SCALAP_SOURCES	+= $(SCALAP_LIST:%=$(SCALAP_ROOT)/%)
+SCALAP_SC_FILES	 = $(SCALAP_SOURCES)
 
 # tools archive
 TOOLS_NAME		 = tools
@@ -191,7 +192,7 @@ interpreter	: .latest-interpreter
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-rsrc
 dtd2scala	: .latest-dtd2scala
-scalap	: .latest-scalap
+scalap		: .latest-scalap
 library-doc	: .latest-library-sdc
 
 .PHONY		: fastclean
@@ -260,8 +261,8 @@ library-doc	: .latest-library-sdc
 	@$(make) jc target=DTD2SCALA DTD2SCALA_JC_FILES='$?'
 	touch $@
 	
-.latest-scalap	: $(SCALAP_FILES)
-	@$(make) sc target=SCALAP SCALAP_FILES='$(subst $$,$$$$,$?)'
+.latest-scalap	: $(SCALAP_SC_FILES)
+	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
 	touch $@
 
 ##############################################################################
