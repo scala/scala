@@ -331,10 +331,7 @@ function website-build() {
 
     # remove old repository and create new one
     local websitedir="$archivedir/website";
-    if [ -d "$websitedir" ]; then
-        [ -d "$websitedir.old" ] && run rm -rf "$websitedir.old";
-        run mv "$websitedir" "$websitedir.old";
-    fi;
+    [ -d "$websitedir" ] && run rm -rf "$websitedir";
     run mkdir "$websitedir";
     run mkdir "$websitedir/doc";
 
@@ -352,11 +349,13 @@ function website-build() {
     $program-pdf-link "$installdir/doc" "ScalaReference" "$websitedir/doc";
     $program-pdf-link "$installdir/doc" "ScalaByExample" "$websitedir/doc";
     $program-pdf-link "$installdir/doc" "ScalaTutorial" "$websitedir/doc";
+    $program-pdf-link "$addonsdir/doc" "ScalaRationale" "$websitedir/doc";
     $program-pdf-link "$addonsdir/doc" "ProgrammingInScala" "$websitedir/doc";
 
     # copy old PDF and PostScript version of overview
-    run cp -a "$websitedir.old/doc/ScalaOverview.pdf" "$websitedir/doc/";
-    run cp -a "$websitedir.old/doc/ScalaOverview.ps.gz" "$websitedir/doc/";
+    local resourcesdir="$websitedir-resources"
+    run cp -a "$resourcesdir/doc/ScalaOverview.pdf" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/ScalaOverview.ps.gz" "$websitedir/doc/";
 }
 
 ##############################################################################
