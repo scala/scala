@@ -178,11 +178,25 @@ public class Scope {
     /** enter a symbol
      */
     public Scope enter(Symbol sym) {
+        assert lookupEntry(sym.name).owner != this : Debug.show(sym);
 	return enter(new Entry(sym, this));
     }
 
     public Scope enterOrOverload(Symbol sym) {
 	Entry e = lookupEntry(sym.name);
+        /* !!!
+        if (e == Entry.NONE) {
+            return enter(sym);
+        } else {
+            sym = e.sym.overloadWith(sym);
+            if (e.owner == this) {
+                e.setSymbol(sym);
+                return this;
+            } else {
+                return enter(new Entry(sym, this));
+            }
+        }
+        */
 	if (e.owner == this && (sym.flags & Modifiers.PRIVATE) == 0) {
 	    e.setSymbol(e.sym.overloadWith(sym));
 	    return this;
@@ -229,6 +243,17 @@ public class Scope {
 	elemsCache = null;
     }
 
+    public boolean contains(Symbol sym) {
+        Entry e = lookupEntry(sym.name);
+        if (e.sym == sym) return true;
+        switch (e.sym.type()) {
+        case OverloadedType(Symbol[] alts, _):
+            for (int i = 0; i < alts.length; i++)
+                if (alts[i] == sym) return true;
+        }
+        return false;
+    }
+
     /** lookup a symbol
      */
     public Symbol lookup(Name name) {
@@ -266,6 +291,11 @@ public class Scope {
      *  in the order they were entered in this scope.
      */
     public SymbolIterator iterator() { return new MySymbols(); }
+
+    public SymbolIterator iterator(boolean unload) {
+        SymbolIterator iterator = iterator();
+        return unload ? new UnloadIterator(iterator) : iterator;
+    }
 
     class MySymbols extends SymbolIterator {
 
