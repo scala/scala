@@ -356,6 +356,8 @@ public class DebugType extends DebugAbstractHandler {
             Debug.append(buffer, basetypes);
             buffer.append(',');
             Debug.append(buffer, members);
+            buffer.append(',');
+            Debug.append(buffer, that.symbol());
             buffer.append(')');
             return;
 
