@@ -54,7 +54,7 @@ class AddInterfaces extends Transformer {
     protected Pair/*<Symbol,Symbol>*/ ownerSubst = null;
     protected StackedHashMap identSubst = new StackedHashMap();
     protected SymbolSubstTypeMap typeSubst = new SymbolSubstTypeMap();
-    protected ThisTypeMap thisTypeSubst = null;
+    protected Type.SubstThisMap thisTypeSubst = null;
 
     protected LinkedList/*<List<Tree>>*/ bodyStack = new LinkedList();
 
@@ -279,7 +279,7 @@ class AddInterfaces extends Transformer {
         Map classMemberMap = phase.getClassMemberMap(classSym);
 
         assert thisTypeSubst == null;
-        thisTypeSubst = new ThisTypeMap(ifaceSym, new Type.ThisType(classSym));
+        thisTypeSubst = new Type.SubstThisMap(ifaceSym, classSym);
 
         for (int i = 0; i < classBody.length; ++i) {
             Tree t = classBody[i];

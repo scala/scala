@@ -214,7 +214,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         } else
             symMap = map;
 
-        ThisTypeMap thisTypeMap = new ThisTypeMap(oldOwner, newOwner);
+        Type.SubstThisMap thisTypeMap = new Type.SubstThisMap(oldOwner, newOwner);
         Type newTp = thisTypeMap.apply(substParams(clone.info(), symMap));
         clone.updateInfo(newTp);
         return clone;
@@ -263,8 +263,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             // modified anymore.
             classSubst = Collections.unmodifiableMap(classSubst);
 
-            ThisTypeMap thisTpMap =
-                new ThisTypeMap(ifaceSym, new Type.ThisType(classSym));
+            Type.SubstThisMap thisTpMap = new Type.SubstThisMap(ifaceSym, classSym);
 
             Symbol[] vparams = classConstrSym.valueParams();
             for (int i = 0; i < vparams.length; ++i) {
@@ -445,28 +444,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             return new Type.TypeRef(pre, classSym, args);
         default:
             throw Debug.abort("unexpected constructor type");
-        }
-    }
-}
-
-class ThisTypeMap extends Type.Map {
-    private Symbol sym;
-    private Type tp;
-
-    public ThisTypeMap(Symbol sym, Type tp) {
-        this.sym = sym; this.tp = tp;
-    }
-
-    public ThisTypeMap(Symbol oldSym, Symbol newSym) {
-        this(oldSym, new Type.ThisType(newSym));
-    }
-
-    public Type apply(Type t) {
-        switch (t) {
-        case ThisType(Symbol s):
-            return (s == sym) ? tp : t;
-        default:
-            return map(t);
         }
     }
 }
