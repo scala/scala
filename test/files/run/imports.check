@@ -1,11 +1,3 @@
-In C_coi, v_coi .toString() returns C_coi -> ok
-In C_coi, field .toString() returns C_coi -> ok
-In C_coi, method.toString() returns C_coi -> ok
-
-In C_cio, v_cio .toString() returns C_cio -> ok
-In C_cio, field .toString() returns C_cio -> ok
-In C_cio, method.toString() returns C_cio -> ok
-
 In C_ico, v_ico .toString() returns C_ico -> ok
 In C_ico, field .toString() returns C_ico -> ok
 In C_ico, method.toString() returns C_ico -> ok
@@ -17,8 +9,4 @@ In C_ioc, method.toString() returns C_ioc -> ok
 In C_oic, v_oic .toString() returns C_oic -> ok
 In C_oic, field .toString() returns C_oic -> ok
 In C_oic, method.toString() returns C_oic -> ok
-
-In C_oci, v_oci .toString() returns C_oci -> ok
-In C_oci, field .toString() returns C_oci -> ok
-In C_oci, method.toString() returns C_oci -> ok
 
