@@ -65,11 +65,8 @@ public class ATreeTyper {
             return cast ? type : definitions.BOOLEAN_TYPE();
         case If(_, ACode success, ACode failure):
             return Type.lub(new Type[]{type(success), type(failure)});
-        case Switch(_, _, ACode[] bodies, ACode other):
-            Type[] types = new Type[bodies.length + 1];
-            for (int i = 0; i < bodies.length; i++) types[i] = type(bodies[i]);
-            types[bodies.length] = type(other);
-            return Type.lub(types);
+        case Switch(_, _, ACode[] bodies):
+            return Type.lub(type(bodies));
         case Synchronized(_, ACode value):
             return type(value);
         case Block(_, _, ACode value):

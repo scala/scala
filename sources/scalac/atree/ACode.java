@@ -48,7 +48,7 @@ public class ACode {
     public case If(ACode test, ACode success, ACode failure);
 
     // jvm  : {tables, lookup}switch
-    public case Switch(ACode test, int[][] tags, ACode[] bodies, ACode other);
+    public case Switch(ACode test, int[][] tags, ACode[] bodies);
 
     // jvm  : monitor{enter, exit}
     public case Synchronized(ACode lock, ACode value);

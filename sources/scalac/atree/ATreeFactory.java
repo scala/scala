@@ -83,10 +83,8 @@ public class ATreeFactory {
     }
 
     /** Builds a Switch node. */
-    public ACode Switch(Tree t, ACode test, int[][] tags, ACode[] bodies,
-        ACode other)
-    {
-        ACode.Switch code = ACode.Switch(test, tags, bodies, other);
+    public ACode Switch(Tree t, ACode test, int[][] tags, ACode[] bodies) {
+        ACode.Switch code = ACode.Switch(test, tags, bodies);
         code.pos = t.pos;
         return code;
     }

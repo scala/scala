@@ -385,7 +385,7 @@ public class ATreePrinter {
             rbrace().space().print("else").space().lbrace();
             printCode(failure).line();
             return rbrace();
-        case Switch(ACode test, int[][] tags, ACode[] bodies, ACode other):
+        case Switch(ACode test, int[][] tags, ACode[] bodies):
             print("switch").space().print('(').printCode(test).print(')');
             lbrace();
             for (int i = 0; i < tags.length; i++) {
@@ -394,7 +394,7 @@ public class ATreePrinter {
                 indent().printCode(bodies[i]).undent().line();
             }
             print("case").space().print('_').print(':').line();
-            indent().printCode(other).undent();
+            indent().printCode(bodies[tags.length]).undent();
             return rbrace();
         case Synchronized(ACode lock, ACode value):
             print("synchronized").space();
