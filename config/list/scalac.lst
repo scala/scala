@@ -66,8 +66,9 @@
 ../../../scalac/framework/Promise.java
 
 ../../../scalac/symtab/classfile/AttributeParser.java
-../../../scalac/symtab/classfile/CLRPackageParser.java
 ../../../scalac/symtab/classfile/CLRClassParser.java
+../../../scalac/symtab/classfile/CLRPackageParser.java
+../../../scalac/symtab/classfile/CLRTypes.java
 ../../../scalac/symtab/classfile/ClassParser.java
 ../../../scalac/symtab/classfile/ClassfileConstants.java
 ../../../scalac/symtab/classfile/ClassfileParser.java
