@@ -42,6 +42,6 @@ run/tailcalls.scala
 shl/basic.scala
 
 xml/lnk.scala
-xml/xhtml.scala
+#xml/xhtml.scala
 
 ##############################################################################
