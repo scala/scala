@@ -2165,7 +2165,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   /** The main attribution function
   */
   override def transform(tree: Tree): Tree = {
-
     //System.out.println("transforming " + tree + ":" + pt);//DEBUG
     if (tree.getType() != null) {
       checkDefined.all = tree; checkDefined.traverse(tree);//debug
@@ -2206,10 +2205,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           }
 
 	  val attr1 = transform(attr, CONSTRmode, definitions.ATTRIBUTE_TYPE());
-	  var attrs = global.mapSymbolAttr.get(sym).asInstanceOf[List[AttrInfo]];
+          val res = transform(definition);
+          val defsym = res.symbol();
+	  var attrs = global.mapSymbolAttr.get(defsym).asInstanceOf[List[AttrInfo]];
 	  if (attrs == null) attrs = List();
-	  global.mapSymbolAttr.put(sym, attrInfo(attr1) :: attrs);
-          transform(definition)
+	  global.mapSymbolAttr.put(defsym, attrInfo(attr1) :: attrs);
+          res
 
    	case Tree.DocDef(comment, definition) =>
           transform(definition)
