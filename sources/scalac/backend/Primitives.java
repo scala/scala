@@ -167,6 +167,8 @@ public class Primitives {
     private static final Name D2F_N = Name.fromString("d2f");
     private static final Name D2D_N = Name.fromString("d2d");
 
+    private static final Name SYNCHRONIZED_N = Name.fromString("synchronised");
+
     //########################################################################
     // Primitives state
 
@@ -308,6 +310,8 @@ public class Primitives {
     public final Symbol D2F;
     public final Symbol D2D;
 
+    public final Symbol SYNCHRONIZED;
+
     //########################################################################
     // Primitives constructor
 
@@ -439,6 +443,7 @@ public class Primitives {
         this.D2L = getUniqueTerm(RUNTIME, D2L_N);
         this.D2F = getUniqueTerm(RUNTIME, D2F_N);
         this.D2D = getUniqueTerm(RUNTIME, D2D_N);
+        this.SYNCHRONIZED = getUniqueTerm(RUNTIME, SYNCHRONIZED_N);
         initPrimitives();
     }
 

@@ -172,6 +172,8 @@ public class Primitive {
     public case D2F;                          // RunTime.d2f(x)
     public case D2D;                          // RunTime.d2d(x)
 
+    public case SYNCHRONIZED;                 // RunTime.synchronised(x,y)
+
     /** Return negated version of comparison primitive. */
     public Primitive negate() {
         switch (this) {
