@@ -74,7 +74,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             }
             // Add outer type links
             if (hasOuterTypeLinks(symbol)) {
-                Symbol[] oldtparams = nextTypeParams(getOuterClass(symbol));
+                Symbol[] oldtparams = getOuterTypeParams(symbol);
                 Symbol[] tlinks = Symbol.cloneArray(oldtparams);
                 for (int i = 0; i < tlinks.length; i++) {
                     tlinks[i] = oldtparams[i].cloneSymbol(symbol);
@@ -150,11 +150,22 @@ public class ExplicitOuterClassesPhase extends Phase {
     /** Returns the type substitution for the given class or constructor. */
     private Type.Map getOuterTypeSubst(Symbol symbol, boolean update) {
         if (!hasOuterTypeLinks(symbol)) return Type.IdMap;
-        Symbol[] oldtparams = nextTypeParams(getOuterClass(symbol));
+        Symbol[] oldtparams = getOuterTypeParams(symbol);
         Symbol[] newtparams = nextTypeParams(symbol);
         Symbol[] tlinks = new Symbol[oldtparams.length];
         for (int i = 0; i < tlinks.length; i++) tlinks[i] = newtparams[i];
         return Type.getSubst(oldtparams, tlinks, update);
+    }
+
+    /** Returns the outer type parameters of the given class or constructor. */
+    private Symbol[] getOuterTypeParams(Symbol symbol) {
+        Symbol outer = getOuterClass(symbol);
+        Symbol[] tparams = Symbol.cloneArray(nextTypeParams(outer));
+        for (int i = tparams.length; i != 0; outer = getOuterClass(outer)) {
+            Symbol[] symbols = outer.typeParams();
+            for (int j = symbols.length; j != 0; ) tparams[--i] = symbols[--j];
+        }
+        return tparams;
     }
 
     /**
