@@ -116,6 +116,10 @@ class AddInterfaces extends SubstTransformer {
         else return className;
     }
 
+    // Modifiers added to interfaces
+    // TODO we should put ABSTRACT_CLASS too but that doesn't work now.
+    protected int INTERFACE_MODS = Modifiers.INTERFACE | Modifiers.STATIC;
+
     // Modifiers for which we do not create interfaces.
     protected int NO_INTERFACE_MODS =
         (Modifiers.MODUL | Modifiers.SYNTHETIC | Modifiers.JAVA);
@@ -305,10 +309,7 @@ class AddInterfaces extends SubstTransformer {
         ifaceTmpl.setSymbol(impl.symbol().cloneSymbol());
         ifaceTmpl.setType(ifaceSym.nextInfo());
 
-        int ifaceMods = classDef.mods
-            | Modifiers.ABSTRACTCLASS
-            | Modifiers.INTERFACE
-            | Modifiers.STATIC;
+        int ifaceMods = classDef.mods | INTERFACE_MODS;
         ClassDef interfaceDef = (ClassDef)make.ClassDef(classDef.pos,
                                                         ifaceMods,
                                                         classDef.name,
@@ -792,8 +793,7 @@ class AddInterfaces extends SubstTransformer {
                 classConstrSym.updateInfo(cConstrType.subst(new Symbol[]{ifaceSym},
                                                             new Symbol[]{classSym}));
 
-                ifaceSym.flags |=
-                    (Modifiers.ABSTRACTCLASS | Modifiers.INTERFACE | Modifiers.STATIC);
+                ifaceSym.flags |= INTERFACE_MODS;
 
                 classToInterface.put(classSym, ifaceSym);
                 super.traverse(impl);
