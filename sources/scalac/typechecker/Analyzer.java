@@ -47,6 +47,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private Type pt;
     private int mode;
 
+    private boolean inAlternative; // for pattern matching;
+    private HashMap patternVars;   // for pattern matching; maps x to {true,false}
+
     public void apply() {
 	for (int i = 0; i < global.units.length; i++) {
             enterUnit(global.units[i]);
@@ -76,6 +79,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
         assert this.unit == null : "start unit non null for " + unit;
 	this.unit = unit;
 	this.context = context;
+	this.patternVars = new HashMap();
 	ImportList prevImports = context.imports;
         descr.contexts.put(unit, context);
 	enterSyms(unit.body);
@@ -140,6 +144,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                                              // constructor invocation.
 
     static final int baseModes     = EXPRmode | PATTERNmode | CONSTRmode;
+
+    static final int SEQUENCEmode  = 0x1000;  // orthogonal to above. When set
+                                              // we turn "x" into "x@_"
+
+    static final int notSEQUENCEmode  = Integer.MAX_VALUE - SEQUENCEmode;
 
 // Diagnostics ----------------------------------------------------------------
 
@@ -1360,6 +1369,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	switch (tree) {
 	case CaseDef(Tree pat, Tree guard, Tree body):
 	    pushContext(tree, context.owner, new Scope(context.scope));
+	    this.inAlternative = false;       // no vars allowed below Alternative
 	    Tree pat1 = transform(pat, PATTERNmode, pattpe);
 	    Tree guard1 = (guard == Tree.Empty) ? Tree.Empty
 		: transform(guard, EXPRmode, definitions.BOOLEAN_TYPE);
@@ -1692,24 +1702,83 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return copy.Block(tree, stats1)
 		    .setType(owntype);
 
-	    case Subsequence(Tree[] trees):
-		return copy.Subsequence( tree, trees ).setType( pt );
+            case Sequence(Tree[] trees):
+		Symbol seqClass = definitions.getType( Name.fromString("scala.Seq") ).symbol();
+		assert seqClass != Symbol.NONE : "did not find Seq";
 
-	    case Alternative(Tree[] choices): 		// todo: sanity check for variables
+                Type seqType = pt.baseType( seqClass );
+                Type elemType;
+                switch( seqType ) {
+                case TypeRef(_, _, Type[] args):
+                      assert args.length == 1;
+                      elemType = args[ 0 ];
+                      break;
+                default:
+                      System.out.println( pt.isSameAs(definitions.ANY_TYPE ));
+                      System.out.println(pt.getClass());
+                      System.out.println(pt.toString());
+                      System.out.println(seqType.toString());
+                            return error(tree.pos, "not a sequence");
+                }
+
+
+                for( int i = 0; i < trees.length; i++ ) {
+                      Type tpe = revealSeqOrElemType( trees[ i ],
+                                                      pt,
+                                                      pt,
+                                                      elemType);
+                      trees[ i ] = transform( trees[ i ],
+                                              this.mode | SEQUENCEmode,
+                                              tpe);
+                }
+                return copy.Sequence( tree, trees ).setType( pt );
+
+	    case Subsequence(Tree[] trees):
+                  		Type seqType = pt;
+		switch( seqType ) {
+		case TypeRef(_, _, Type[] args):
+                      //assert args.length == 1:"encountered "+seqType.toString();
+                      // HACK
+                      Type elemType;
+                      if( args.length == 1 )
+                           elemType = args[ 0 ];
+                      else
+                           elemType = pt;
+                      for( int i = 0; i < trees.length; i++ ) {
+			Type tpe = revealSeqOrElemType( trees[ i ], pt, seqType, elemType);
+                        //System.out.println("hello");
+			trees[ i ] = transform( trees[ i ], this.mode, tpe);
+		    }
+		    return copy.Subsequence( tree, trees ).setType( pt );
+		default:
+		    return error( tree.pos, "not a (sub)sequence" );
+		    }
+
+	    case Alternative(Tree[] choices):
+		boolean save = this.inAlternative;
+		this.inAlternative = true;
+
 		Tree[] newts = new Tree[ choices.length ];
 		for (int i = 0; i < choices.length; i++ )
 		    newts[ i ] = transform( choices[ i ], this.mode, pt );
 
 		Type tpe = Type.lub( Tree.typeOf( newts ));
 
+		this.inAlternative = save;
+
 		return copy.Alternative( tree, newts )
 		    .setType( tpe );
 
 	    case Bind( Name name, Tree body ):
-		Symbol vble = new TermSymbol(tree.pos, name, context.owner, 0x00000000 ).setType( pt );
+		Symbol vble = new TermSymbol(tree.pos,
+                                             name,
+                                             context.owner,
+                                             0x00000000 ).setType( pt );
 		vble = enterInScope( vble );
-		//patternVars.put( vble, new Boolean( this.inAlternative ));
-		//System.out.println("put symbol vble="+vble+" in scope and patternVars.");
+                //System.out.println("Bind("+name+",...) enters in scope:"+vble.fullNameString());
+
+		patternVars.put( vble, new Boolean( this.inAlternative ));
+		//System.out.println("case Bind.. put symbol vble="+vble+" in scope and patternVars.");
 
 		body = transform( body );
 		//assert body.type != null;
@@ -2063,9 +2132,20 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Ident(Name name):
 		if (mode  == PATTERNmode && name.isVariable()) {
-		    //System.out.println("pat var " + name + ":" + pt);//DEBUG
-		    Symbol vble = new TermSymbol(
-			tree.pos, name, context.owner, 0).setType(pt);
+                      //System.out.println("pat var " + name + ":" + pt);//DEBUG
+
+                      Symbol vble, vble2 = null;
+                      if( name != Names.WILDCARD )
+                            vble2 = context.scope.lookup(/*false,*/ name );
+                      //System.out.println("looked up \""+name+"\", found symbol "+vble2.fullNameString());
+                      //System.out.println("patternVars.containsKey?"+patternVars.containsKey( vble2 ) );
+                      if ( patternVars.containsKey( vble2 ) )
+                            vble = vble2;
+                      else
+                            vble = new TermSymbol(tree.pos,
+                                                  name,
+                                                  context.owner,
+                                                  0).setType(pt);
 		    if (name != Names.WILDCARD) enterInScope(vble);
 		    return tree.setSymbol(vble).setType(pt);
 		} else {
@@ -2135,5 +2215,32 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    return tree;
 	}
     }
+
+    // ///////////////
+    // sequence helper function
+    // ///////////////
+
+    // get first elementary type in a sequence
+    // precondition: tree is successor of a sequence node
+
+    Type revealSeqOrElemType( Tree tree, Type proto, Type seqType, Type elemType ) {
+	switch( tree ) {
+	case Subsequence(_):
+	    return proto;
+	case Sequence(_):
+	    return elemType;
+	case Alternative( Tree[] choices ):
+	    // after normalization, choices.length >= 2
+	    // and if there is one subsequence branch, all
+	    // branches are subsequence nodes
+	    return revealSeqOrElemType( choices[ 0 ], proto, seqType, elemType );
+	case Bind( _, Tree body ):
+	    // here, we forget the (concrete) prototype (if we have one)
+	    return revealSeqOrElemType( body, seqType, seqType, elemType );
+	default:
+	    return elemType;
+	}
+    }
+
 }
 

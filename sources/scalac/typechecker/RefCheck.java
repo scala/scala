@@ -884,7 +884,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return elimTypeNode(super.transform(tree));
 
 	case Ident(Name name):
+              //System.out.println("name: "+name);
 	    Scope.Entry e = scopes[level].lookupEntry(name);
+            //System.out.println("sym: "+sym);
 	    if (sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;
