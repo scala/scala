@@ -6,7 +6,7 @@
 ##############################################################################
 # Usage
 #
-#   make jc [target=<target>] {<VARIABLE>=<value>}
+#   make jar [target=<target>] {<VARIABLE>=<value>}
 #
 ##############################################################################
 # Variables
@@ -51,6 +51,7 @@ jar_FLAGS		 = $(call JAR_LOOKUP,JAR_FLAGS)
 jar_ARCHIVE		 = $(call JAR_LOOKUP,JAR_ARCHIVE)
 jar_MANIFEST		 = $(call JAR_LOOKUP,JAR_MANIFEST)
 jar_INPUTDIR		 = $(call JAR_LOOKUP,JAR_INPUTDIR)
+jar_inputdir		 = $(jar_INPUTDIR:%=-C %)
 jar_FILES		 = $(call JAR_LOOKUP,JAR_FILES)
 
 ##############################################################################
@@ -59,8 +60,7 @@ jar_FILES		 = $(call JAR_LOOKUP,JAR_FILES)
 jar			+= c$(jar_FLAGS)f$(jar_MANIFEST:%=m)
 jar			+= $(jar_ARCHIVE)
 jar			+= $(jar_MANIFEST)
-jar			+= $(jar_INPUTDIR:%=-C %)
-jar			+= $(jar_FILES)
+jar			+= $(jar_FILES:%=$(jar_inputdir) %)
 
 ##############################################################################
 # Functions
@@ -71,7 +71,8 @@ JAR_LOOKUP		 = $(if $($(target)_$(1)),$($(target)_$(1)),$($(1)))
 # Rules
 
 jar:
-	$(strip $(jar))
+	@[ -d "$(dir $(jar_ARCHIVE))" ] || $(MKDIR) -p "$(dir $(jar_ARCHIVE))"
+	$(strip $(jar)) || ( $(RM) $(jar_ARCHIVE) && exit 1 )
 
 .PHONY		: jar
 
