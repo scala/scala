@@ -18,9 +18,10 @@ import scala.runtime.FNV_Hash;
 import scala.runtime.PearsonHash;
 
 public class ScalaClassType extends ClassType {
-    private static ScalaClassType[] EMPTY_DISPLAY_ROW =
+    public static final ScalaClassType[] EMPTY_ARRAY =
         new ScalaClassType[0];
-    private static ScalaClassType[][] EMPTY_DISPLAY =
+
+    private static final ScalaClassType[][] EMPTY_DISPLAY =
         new ScalaClassType[0][];
 
     private final TypeConstructor constr;
@@ -31,7 +32,9 @@ public class ScalaClassType extends ClassType {
 
     private final int hashCode;
 
-    public ScalaClassType(TypeConstructor constr, Type[] inst) {
+    public ScalaClassType(TypeConstructor constr,
+                          Type[] inst,
+                          ScalaClassType[] parents) {
         super(constr.clazz, constr.isTrivial);
 
         this.constr = constr;
@@ -44,6 +47,7 @@ public class ScalaClassType extends ClassType {
                                      PearsonHash.hash8(inst[i].hashCode()));
         }
         this.hashCode = hash;
+        this.parents = parents;
     }
 
     public boolean isInstance(Object o) {
@@ -79,7 +83,7 @@ public class ScalaClassType extends ClassType {
         // invariant parameters
         final int firstM = this.constr.zCount;
         while (i < firstM) {
-            if (!thisInst[i].isSameAs(thatInst[i]))
+            if (!thisInst[i].isSameType(thatInst[i]))
                 return false;
             ++i;
         }
@@ -100,8 +104,8 @@ public class ScalaClassType extends ClassType {
         return true;
     }
 
-    public boolean isSameAs(Type that) {
-        if (super.isSameAs(that)) {
+    public boolean isSameType(Type that) {
+        if (super.isSameType(that)) {
             ScalaClassType thatCT = (ScalaClassType)that;
             ScalaClassType parentCT = myInstantiationFor(thatCT);
             return (parentCT != null)
@@ -115,7 +119,7 @@ public class ScalaClassType extends ClassType {
         final Type[] thatInst = that.inst;
 
         for (int i = 0; i < thisInst.length; ++i) {
-            if (!thisInst[i].isSameAs(thatInst[i]))
+            if (!thisInst[i].isSameType(thatInst[i]))
                 return false;
         }
         return true;
@@ -157,7 +161,7 @@ public class ScalaClassType extends ClassType {
     }
 
     public ScalaClassType setParents(ScalaClassType[] parents) {
-        assert this.parents == null || Type.isSameAs(this.parents, parents);
+        assert this.parents == null || Type.isSameType(this.parents, parents);
         this.parents = parents;
         // TODO notifyAll?
         return this;
@@ -203,7 +207,7 @@ public class ScalaClassType extends ClassType {
             if (l < initialDisplay.length)
                 initialRow = initialDisplay[l];
             else
-                initialRow = EMPTY_DISPLAY_ROW;
+                initialRow = ScalaClassType.EMPTY_ARRAY;
 
             if (toAdd == 0) {
                 display[l] = initialRow;
