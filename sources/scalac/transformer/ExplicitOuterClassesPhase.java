@@ -501,7 +501,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             if (access == null) {
                 // !!! generate static access methods ?
                 Name name = Names.ACCESS(member, svper != null);
-                access = context.clasz.newAccessMethod(member.pos, name);
+                access = context.clasz.newAccessMethod(context.clasz.pos,name);
                 global.nextPhase();
                 Type info = member.isMethod()
                     ? member.info().cloneType(member, access)
