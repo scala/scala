@@ -1873,7 +1873,7 @@ public class ClassSymbol extends TypeSymbol {
     /** Initializes this instance. */
     ClassSymbol(TermSymbol module) {
         this(module.pos, module.name.toTypeName(), module.owner(),
-            (module.flags & MODULE2CLASSFLAGS) | MODUL | FINAL | SYNTHETIC, 0,
+            (module.flags & MODULE2CLASSFLAGS) | MODUL | FINAL, 0,
             module);
         primaryConstructor().flags |= PRIVATE;
         primaryConstructor().setInfo(
@@ -1900,7 +1900,7 @@ public class ClassSymbol extends TypeSymbol {
         int pos = Position.NOPOS;
         Name name = Names.ROOT.toTypeName();
         Symbol owner = Symbol.NONE;
-        int flags = JAVA | PACKAGE | FINAL | SYNTHETIC;
+        int flags = JAVA | PACKAGE | FINAL;
         int attrs = IS_ROOT;
         Symbol clasz = new ClassSymbol(pos, name, owner, flags, attrs, NONE);
         clasz.setInfo(global.getRootLoader());
