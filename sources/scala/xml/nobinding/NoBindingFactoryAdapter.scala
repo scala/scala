@@ -8,16 +8,13 @@
 \*                                                                      */
 package scala.xml.nobinding;
 
-import scala.collection.{ immutable, mutable };
-//import scala.xml.{ Elem, Node, Text, FactoryAdapter, Utility };
+import scala.collection.mutable;
 import org.xml.sax.InputSource;
 
 /** nobinding adaptor providing callbacks to parser to create elements.
 *   implements hash-consing
 */
 class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
-
-  type Elem = scala.xml.Elem;
 
   // FactoryAdapter methods
 
