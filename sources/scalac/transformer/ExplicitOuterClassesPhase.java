@@ -364,7 +364,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Tree[] targs = gen.mkTypeRefs(pos, nextTypeParams(forward));
                 Tree[] vargs = gen.mkRefs(pos, nextValueParams(forward));
                 Tree fun = gen.Select(gen.Super(pos, context.clasz), method);
-                trees[i] = gen.DefDef(forward, gen.mkApply(fun, targs, vargs));
+                trees[i] = gen.DefDef(forward, gen.mkApplyTV(fun,targs,vargs));
             }
             return trees;
         }

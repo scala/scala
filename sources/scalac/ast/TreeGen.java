@@ -385,7 +385,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         global.nextPhase();
         Symbol constr = clazz.primaryConstructor();
         global.prevPhase();
-        return mkApply(pos, mkRef(pos, constr), targs, vargs);
+        return mkApplyTV(pos, mkRef(pos, constr), targs, vargs);
     }
     public Tree mkPrimaryConstr(int pos, Symbol clazz,Type[]targs,Tree[]vargs){
         return mkPrimaryConstr(pos,clazz.owner().thisType(),clazz,targs,vargs);
@@ -413,37 +413,62 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return mkPrimaryConstr(pos, clazz.owner().thisType(), clazz);
     }
 
-    /** Builds an application with given function and arguments. */
-    public Tree mkApply(int pos, Tree fn, Type[] targs, Tree[] vargs) {
+    /**
+     * Builds an application with given function, type arguments and
+     * value arguments.
+     */
+    public Tree mkApplyTV(int pos, Tree fn, Type[] targs, Tree[] vargs) {
         if (targs.length != 0) fn = TypeApply(pos, fn, mkTypes(pos, targs));
         return Apply(pos, fn, vargs);
     }
-    public Tree mkApply(Tree fn, Type[] targs, Tree[] vargs) {
-        return mkApply(fn.pos, fn, targs, vargs);
+    public Tree mkApplyTV(Tree fn, Type[] targs, Tree[] vargs) {
+        return mkApplyTV(fn.pos, fn, targs, vargs);
     }
-    public Tree mkApply(int pos, Tree fn, Tree[] targs, Tree[] vargs) {
+    public Tree mkApplyTV(int pos, Tree fn, Tree[] targs, Tree[] vargs) {
         if (targs.length != 0) fn = TypeApply(pos, fn, targs);
         return Apply(pos, fn, vargs);
     }
-    public Tree mkApply(Tree fn, Tree[] targs, Tree[] vargs) {
-        return mkApply(fn.pos, fn, targs, vargs);
+    public Tree mkApplyTV(Tree fn, Tree[] targs, Tree[] vargs) {
+        return mkApplyTV(fn.pos, fn, targs, vargs);
     }
 
     /**
      * Builds an application with given function and type arguments
      * and with no value arguments.
      */
-    public Tree mkApply(int pos, Tree fn, Type[] targs) {
-        return mkApply(pos, fn, targs, Tree.EMPTY_ARRAY);
+    public Tree mkApplyT_(int pos, Tree fn, Type[] targs) {
+        return mkApplyTV(pos, fn, targs, Tree.EMPTY_ARRAY);
     }
-    public Tree mkApply(Tree fn, Type[] targs) {
-        return mkApply(fn.pos, fn, targs);
+    public Tree mkApplyT_(Tree fn, Type[] targs) {
+        return mkApplyT_(fn.pos, fn, targs);
     }
-    public Tree mkApply(int pos, Tree fn, Tree[] targs) {
-        return mkApply(pos, fn, targs, Tree.EMPTY_ARRAY);
+    public Tree mkApplyT_(int pos, Tree fn, Tree[] targs) {
+        return mkApplyTV(pos, fn, targs, Tree.EMPTY_ARRAY);
     }
-    public Tree mkApply(Tree fn, Tree[] targs) {
-        return mkApply(fn.pos, fn, targs);
+    public Tree mkApplyT_(Tree fn, Tree[] targs) {
+        return mkApplyT_(fn.pos, fn, targs);
+    }
+
+    /**
+     * Builds an application with given function, no type arguments
+     * and given value arguments.
+     */
+    public Tree mkApply_V(int pos, Tree fn, Tree[] vargs) {
+        return mkApplyTV(pos, fn, Tree.EMPTY_ARRAY, vargs);
+    }
+    public Tree mkApply_V(Tree fn, Tree[] vargs) {
+        return mkApply_V(fn.pos, fn, vargs);
+    }
+
+    /**
+     * Builds an application with given function and no type arguments
+     * and no value arguments.
+     */
+    public Tree mkApply__(int pos, Tree fn) {
+        return mkApplyTV(pos, fn, Tree.EMPTY_ARRAY, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkApply__(Tree fn) {
+        return mkApply__(fn.pos, fn);
     }
 
     /** Builds a TypeApply node with given function and arguments. */
@@ -505,7 +530,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a cast with given value and type. */
     public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
-        return mkApply(pos, Select(value, definitions.AS), new Type[] {type});
+        return mkApplyT_(pos, Select(value, definitions.AS), new Type[]{type});
     }
     public Tree mkAsInstanceOf(Tree value, Type type) {
         return mkAsInstanceOf(value.pos, value, type);
@@ -806,7 +831,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    clazz.info().members().enter(meth);
 	    changeOwner(visitor, prevOwner, meth);
 	    Tree body =
-		mkApply(
+		mkApplyTV(
                     Select(Ident(pos, param), definitions.MATCH),
                     new Tree[]{mkType(pos, pattype), mkType(pos, restype)},
                     new Tree[]{visitor});
