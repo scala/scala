@@ -16,6 +16,7 @@ import java.util.{Map, Stack, ArrayList, LinkedList};
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
+import scala.collection.immutable.ListMap ;
 import scala.collection.mutable.Buffer;
 
 package scala.tools.scalac.ast.parser {
@@ -358,6 +359,42 @@ class Parser(unit: Unit) {
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs)
   }
 
+  def makeXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
+      var symt = scalaDot(s.pos, Names.Symbol);
+      if( isPattern ) symt = convertToTypeId(symt);
+      val ts = new myTreeList();
+      ts.append(t);
+      ts.append(args);
+      make.Apply(pos, symt, ts.toArray());
+  }
+
+  def makeXML(pos:int, n:Name, args:Array[Tree]):Tree =
+    makeXML(pos, false, gen.mkStringLit( pos, n.toString() ), args);
+
+  def makeXML(pos:int, n:Name, args:Array[Tree], attrMap:ListMap[Name,String]):Tree = {
+    val t = makeXML( pos, n, args );
+    val attrs = new Array[Tree]( attrMap.size );
+    var i = 0;
+    for( val Pair( key, value ) <- attrMap.toList ) {
+      attrs.update( i, make.Apply(pos,
+                                  scalaDot(s.pos, Names.Tuple2),
+                                  { val x = new Array[Tree](2);
+                                   x(0) = gen.mkStringLit( pos, key.toString() );
+                                   x(1) = gen.mkStringLit( pos, value.toString() );
+                                   x }
+                                  ));
+      i = i + 1;
+    };
+    make.Apply(pos,
+               make.Select( pos, t, Names.PERCENT ),
+               { val x = new Array[Tree](1);
+                x( 0 ) = make.Apply(pos,
+                                    scalaDot(s.pos, Names.List),
+                                    attrs);
+               x })
+
+  }
+
   /** Convert tree to formal parameter list
   */
   def convertToParams(t: Tree): Array[Tree$ValDef] = t match {
@@ -480,6 +517,7 @@ class Parser(unit: Unit) {
   final val STAR = Name.fromString("*");
   final val BAR  = Name.fromString("|");
   final val OPT  = Name.fromString("?");
+  final val LT   = Name.fromString("<");
 
   def ident(): Name =
     if (s.token == IDENTIFIER) {
@@ -602,13 +640,10 @@ class Parser(unit: Unit) {
     s.nextToken();
     if (isSymLit) {
       val pos = s.pos;
-      var symt = scalaDot(s.pos, Names.Symbol);
-      if (isPattern) symt = convertToTypeId(symt);
-      val ts = new myTreeList();
-      ts.append(t);
       if (s.token == LPAREN || s.token == LBRACE)
-        ts.append(argumentExprs());
-      make.Apply(pos, symt, ts.toArray());
+        makeXML( pos, isPattern, t, argumentExprs() );
+      else
+        makeXML( pos, isPattern, t, Tree.EMPTY_ARRAY );
     } else {
       t
     }
@@ -932,6 +967,7 @@ class Parser(unit: Unit) {
     }
 
   /* SimpleExpr    ::= literal
+  *                 | xmlExpr
   *                 | StableRef
   *                 | `(' [Expr] `)'
   *                 | BlockExpr
@@ -947,7 +983,13 @@ class Parser(unit: Unit) {
            SYMBOLLIT | TRUE | FALSE | NULL =>
         t = literal(false);
       case IDENTIFIER | THIS | SUPER =>
-        t = stableRef(true, false);
+        t = if( s.name == LT ) {
+          val tt = xmlExpr();  /* top-level xml expression */
+          s.nextToken();
+          tt
+        } else {
+          stableRef(true, false);
+        }
       case LPAREN =>
         val pos = s.skipToken();
         if (s.token == RPAREN) {
@@ -998,6 +1040,91 @@ class Parser(unit: Unit) {
     null;//dummy
   }
 
+  /** xmlExpr ::= '<' ident '>' { xmlExpr | '{' simpleExpr '}' } '<''/'ident'>'
+   */
+  def xmlExpr():Tree = {
+    val pos = s.pos;
+
+    var empty = false;
+
+    /* [40] STag	   ::=   	'<' Name (S Attribute)* S? '>'
+    */
+    val elemName = s.xmlName();
+    s.xmlSpaceOpt();
+    var attrMap = ListMap.Empty[Name,String];
+    /* [41] Attribute    ::=    Name Eq AttValue
+    *  [44] EmptyElemTag ::=          '<' Name (S Attribute)* S? '/>'
+    */
+    while(( s.ch != '>' )&&( !empty )) {
+      if( s.ch == '/' ) {
+        s.nextch();
+        empty = true;
+      } else if( s.xml_isNameStart() ) {
+        val attrName:Name = s.xmlName();
+        s.xmlSpaceOpt();
+        s.xmlToken('=');
+        s.xmlSpaceOpt();
+        var attrValue:String = "";
+        val endch:char = s.ch.asInstanceOf[char];
+        endch match {
+          case '"' | '\'' => {
+            s.nextch();
+            attrValue = s.xmlValue( endch );
+            s.xmlToken( endch.asInstanceOf[char] );
+            s.xmlSpaceOpt();
+          }
+          case _ => s.xml_syntaxError("' or \" delimited value expected here");
+        }
+        if( attrMap.contains( attrName )) {
+          s.xml_syntaxError("attribute "+attrName+" may only be defined once");
+        }
+        attrMap = attrMap.update( attrName, attrValue );
+      } else {
+        s.xml_syntaxError("attribute, > or /> expected in element declaration");
+      }
+    }
+    s.xmlToken('>');
+    /* Console.println("startTag of:"+elemName); */
+    s.xmlSpaceOpt();
+    if( empty ) {
+      makeXML( pos, elemName, Tree.EMPTY_ARRAY );
+    } else {
+
+      val ts = new myTreeList();
+
+      var exit = false;
+      while( !exit ) {
+        s.ch match {
+          case '<' => {
+            s.nextch();
+            if( s.ch != '/' ) { /* search end tag */
+              ts.append( xmlExpr() );
+            } else {
+              exit = true
+            }
+          }
+          case _ => {
+            val pos = s.pos;
+            val str = s.xmlText();/* text node */
+            ts.append( gen.mkStringLit( pos, str ));
+          }
+
+        }
+      }
+
+      /* [42]           ETag       ::=          '</' Name S? '>' */
+      s.xmlToken('/');
+      if( elemName != s.xmlName() )
+        s.xml_syntaxError("expected closing tag of "+elemName);
+      else {
+        s.xmlSpaceOpt();
+        s.xmlToken('>')
+      }
+      /* Console.println("endTag of:"+elemName); */
+      s.xmlSpaceOpt();
+      makeXML( pos, elemName, ts.toArray(), attrMap );
+    }
+  }
   /** ArgumentExprs ::= `(' [Exprs] `)'
    *                  | BlockExpr
    */

@@ -651,12 +651,138 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
+  /*       X                                L
+  */
+
+  /* methods for XML tokenizing, see XML 1.0 rec, available from www.w3.org/xml  */
+
+  /*                       M
+  */
+
+  def xml_syntaxError(s:String) = {
+    syntaxError("in XML literal: "+s);
+    xml_nextch();
+  }
+
+  /* this helper functions updates ccol and cline, only necessary in whitespace
+  *  production
+  */
+  def xml_nextch() = {
+    nextch();
+    ch match {
+      case '\r' => {
+        cline = cline + 1;
+        ccol = 0;
+        nextch(); /* in compliance with XML spec */
+        if( ch == '\n' ) {
+          ccol = 0;
+        }
+      }
+      case '\n' => {
+        cline = cline + 1;
+        ccol = 0;
+      }
+      case _ =>
+    }
+  }
+
+  def xml_isSpace() = ch match {
+    case ' ' | '\t' | '\r' | '\n' => true
+    case _ => false;
+  }
+
+  def xmlSpaceOpt() = {
+    while( xml_isSpace() ) {
+      xml_nextch();
+    }
+    pos = Position.encode(cline, ccol);
+  }
+
+  /** [3] S ::= (#x20 | #x9 | #xD | #xA)+
+  */
+  def xmlSpace() = {
+    if( xml_isSpace() ) {
+      xml_nextch();
+      xmlSpaceOpt()
+    } else {
+      pos = Position.encode(cline, ccol);
+      xml_syntaxError("whitespace expected");
+    }
+  }
+
+  /** a subset of
+   *  [4] NameChar ::= Letter | Digit | '.' | '-' | '_' | ':' | CombiningChar | Extender
+   *
+   * todo: add unicode letters and digits as well as combining chars and extenders
+  **/
+  def xml_isNameChar() = ch match {
+    case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' |
+    'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
+    'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b' | 'c' | 'd' | 'e' |
+    'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' |
+    'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' |
+    '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' |
+    '.' | '-' | '_' | ':'  => true;
+    case _ => false
+  }
+
+  def xml_isNameStart() = ch match {
+    case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' |
+    'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
+    'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b' | 'c' | 'd' | 'e' |
+    'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' |
+    'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' |
+    '_' | ':'  => true;
+    case _ => false
+  }
+  /** a subset of (see isNameChar() )
+  *   [5] Name ::= (Letter | '_' | ':') (NameChar)*
+  */
+  def xmlName():Name = {
+    if( xml_isNameStart() ) {
+      val index = bp;
+      while( xml_isNameChar() ) {
+        nextch();
+      }
+      pos = Position.encode(cline, ccol);
+      Name.fromAscii(buf, index, bp - index);
+    } else {
+      xml_syntaxError("name expected");
+      Name.fromString("-error-");
+    }
+  }
+
+  def xmlValue(endch:char):String = {
+    pos = Position.encode(cline, ccol);
+    val index = bp;
+    while ( ch != endch ) {
+      if(( ch == '<' )||( ch == '&' ))
+        syntaxError(ch.asInstanceOf[char]+" not allowed here");
+      xml_nextch();
+    };
+    pos = Position.encode(cline, ccol);
+    new String(buf, index, bp-index);
+  }
+
+  def xmlText():String = xmlValue('<');
+
+  def xmlToken(that:char):unit = {
+    if( ch == that ) {
+      xml_nextch();
+      pos = Position.encode(cline, ccol);
+    } else {
+      pos = Position.encode(cline, ccol);
+      xml_syntaxError("'"+that+"' expected instead of '"+ch.asInstanceOf[char]+"'");
+    }
+  }
+  /* end XML tokenizing */
+
   def name2token(name: Name): int =
     if (name.index <= maxKey) key(name.index) else IDENTIFIER;
 
   def token2string(token: int): String = token match {
     case IDENTIFIER =>
-      "identifier"
+      "identifier"/* + \""+name+"\""*/
     case CHARLIT =>
       "character literal"
     case INTLIT =>
