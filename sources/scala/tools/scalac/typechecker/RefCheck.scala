@@ -981,7 +981,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
           resultArgs.length == 1 &&
           resultArgs(0).symbol() == defs.ANY_CLASS)
         {
-          unit.warning(tree.pos, "Array[Any] not supported");
+          //unit.warning(tree.pos, "Array[Any] not supported");
         }
       gen.mkType(tree.pos, resultType);
     } else tree;
