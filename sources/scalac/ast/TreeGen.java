@@ -252,9 +252,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 		infer.methodAlternative(
 		    ref, alts, alttypes, Tree.typeOf(parentArgs), Type.AnyType);
 	    }
-	    Tree constr = (args.length == 0) ? ref
-		: TypeApply(ref, mkTypes(sym.pos, args));
-	    return Apply(constr, parentArgs);
+	    return mkApply(ref, mkTypes(pos, args), parentArgs);
 	default:
 	    throw global.fail("invalid parent type", parentType);
 	}
@@ -419,10 +417,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Tree New(int pos, Type pre, Symbol clazz,
 		    Type[] targs, Tree[] args) {
 	Tree constr = mkRef(pos, pre, clazz.primaryConstructor());
-	if (targs.length != 0)
-	    constr = TypeApply(constr, mkTypes(pos, targs));
-	Tree base = Apply(constr, args);
-	return New(base);
+	return New(mkApply(constr, mkTypes(pos, targs), args));
     }
 
     /** Build a monomorphic allocation   new P.C(ARGS)
@@ -759,12 +754,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    clazz.info().members().enter(meth);
 	    changeOwner(visitor, prevOwner, meth);
 	    Tree body =
-		Apply(
-		    TypeApply(
-			Select(Ident(param), definitions.MATCH),
-			new Tree[]{mkType(pos, pattype), mkType(pos, restype)}),
-		    new Tree[]{visitor})
-		.setType(restype);
+		mkApply(
+                    Select(Ident(param), definitions.MATCH),
+                    new Tree[]{mkType(pos, pattype), mkType(pos, restype)},
+                    new Tree[]{visitor});
 	    return DefDef(meth, body);
 	}
 
