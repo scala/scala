@@ -513,6 +513,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Symbol mvar = new TermSymbol(
 		tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
 		.setInfo(sym.type());
+	    sym.owner().members().enterOrOverload(mvar);
 	    Tree vdef = gen.ValDef(mvar, gen.Ident(tree.pos, defs.NULL));
 
 	    // { if (null == m$) m$ = new m$class; m$ }
