@@ -4,6 +4,7 @@
 # $Id$
 
 AbstractFile.java
+ByteArrayFile.java
 CharArrayFile.java
 ClassPath.java
 DirectoryPath.java
