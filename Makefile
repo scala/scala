@@ -424,7 +424,7 @@ $(SCRIPTS_WRAPPER)	: $(SCRIPTS_WRAPPER).tmpl
 	    $(RM) $@; \
 	    exit 1; \
 	fi;
-	$(CHMOD) 755 $@
+	$(CHMOD) 555 $@
 
 $(SCRIPTS_WRAPPER_LINKS): $(SCRIPTS_WRAPPER)
 	@if [ ! -h $@ ]; then \
