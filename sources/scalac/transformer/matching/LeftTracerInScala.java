@@ -90,10 +90,10 @@ public class LeftTracerInScala extends TracerInScala {
           _ref( accumSym ));
         */
         Tree hd = cf.newPair( gen.mkIntLit(cf.pos, i), currentElem() );
-        Tree newAcc = gen.Cons(cf.pos,
-                               accumTypeArg,
-                               hd,
-                               gen.Ident( cf.pos, accumSym ));
+        Tree newAcc = gen.mkNewCons( cf.pos,
+                                     accumTypeArg,
+                                     hd,
+                                     gen.Ident( cf.pos, accumSym ));
 
         return callFun( new Tree[] { newAcc , _iter(), gen.mkIntLit( cf.pos, target )} );
     }
@@ -170,7 +170,7 @@ public class LeftTracerInScala extends TracerInScala {
         // `def leftTracer(...) = ...'                 the function definition
         v.add( theDefDef );
 
-        Tree emptyAcc    = gen.Nil( cf.pos ); //cf._seqTraceNil( elementType );
+        Tree emptyAcc    = gen.mkNil( cf.pos ); //cf._seqTraceNil( elementType );
 
         // the valdef is needed, because passing emptyAcc as a parameter
         //   results in a ClassCastException at runtime (?!)
@@ -237,10 +237,10 @@ public class LeftTracerInScala extends TracerInScala {
                               gen.mkDefaultValue(cf.pos,
                                                  elementType));
         //System.err.println(hd.type);
-        return gen.Cons(  cf.pos,
-                          accumTypeArg,
-                          hd,
-                          gen.Ident( cf.pos, accumSym ));
+        return gen.mkNewCons(  cf.pos,
+                               accumTypeArg,
+                               hd,
+                               gen.Ident( cf.pos, accumSym ));
     }
 
 }

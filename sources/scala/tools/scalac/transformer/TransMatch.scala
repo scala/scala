@@ -91,11 +91,11 @@ class TransMatch( global:scalac_Global )
         var it:Iterator = nilvars.iterator();
         while( it.hasNext() ) {
           val v:Symbol = it.next().asInstanceOf[ Symbol ];
-          val n = cunit.global.treeGen.Nil(cases(i).pos);
-          newBody.update( {j = j + 1; j} , cunit.global.treeGen.ValDef(v, n));
+          val n = gen.mkNil(cases(i).pos);
+          newBody.update( {j = j + 1; j} , gen.ValDef(v, n));
         }
         newBody.update( newBody.length - 1, cases(i).body);
-        cases(i).body = cunit.global.treeGen.mkBlock( newBody );
+        cases(i).body = gen.mkBlock( newBody );
       }
       i = i+1;
     }

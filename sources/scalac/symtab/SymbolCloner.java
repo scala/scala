@@ -16,8 +16,9 @@ import scalac.util.Debug;
 
 /**
  * This class implements a symbol cloner. It automatically determines
- * the new owner of cloned symbols and keeps track of all cloned
- * symbols.
+ * the new owner of cloned symbols, clones their type and keeps track
+ * of all cloned symbols. Clone a type means clone all symbol declared
+ * in that type (for example parameters of a MethodType).
  */
 public class SymbolCloner {
 
@@ -90,6 +91,7 @@ public class SymbolCloner {
 	    clone.name = renamer.newName(symbol.name);
 	}
         clones.put(symbol, clone);
+        //clone.setType(cloneType(clone.info()));
         return clone;
     }
 
@@ -100,10 +102,25 @@ public class SymbolCloner {
 
     /** Clones the given symbols and renames them if rename is true. */
     public Symbol[] cloneSymbols(Symbol[] symbols, boolean rename) {
+        if (symbols.length == 0) return Symbol.EMPTY_ARRAY;
         Symbol[] clones = new Symbol[symbols.length];
         for (int i = 0; i < clones.length; i++)
             clones[i] = cloneSymbol(symbols[i], rename);
         return clones;
+    }
+
+    /** Clones the given type. */
+    public Type cloneType(Type type) {
+        switch (type) {
+        case PolyType(Symbol[] tparams, Type result):
+            Symbol[] clones = cloneSymbols(tparams);
+            Type clone = Type.PolyType(clones, cloneType(result));
+            return Type.getSubst(tparams, clones).applyParams(clone);
+        case MethodType(Symbol[] vparams, Type result):
+            return Type.MethodType(cloneSymbols(vparams), cloneType(result));
+        default:
+            return type;
+        }
     }
 
     //########################################################################

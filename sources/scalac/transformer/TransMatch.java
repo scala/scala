@@ -98,11 +98,10 @@ public class TransMatch extends OwnerTransformer {
                 int j=0;
                 for( Iterator it = nilvars.iterator(); it.hasNext(); ) {
                     Symbol v = (Symbol) it.next();
-                    newBody[ j++ ] = unit.global.treeGen.ValDef(v,
-                                                                unit.global.treeGen.Nil(cases[i].pos));
+                    newBody[ j++ ] = gen.ValDef(v, gen.mkNil(cases[i].pos));
                 }
                 newBody[ newBody.length - 1 ] = cases[i].body;
-                cases[i].body = unit.global.treeGen.mkBlock( newBody );
+                cases[i].body = gen.mkBlock( newBody );
             }
             i++;
         }

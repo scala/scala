@@ -104,7 +104,7 @@ public class RightTracerInScala extends TracerInScala  {
         if( keepType )
             rhs = gen.mkDefaultValue( cf.pos, realVar.type() );
         else
-            rhs = gen.Nil( cf.pos );
+            rhs = gen.mkNil( cf.pos );
         helpVar.flags |= Modifiers.MUTABLE;
         Tree varDef = gen.ValDef( helpVar, rhs );
         //((ValDef) varDef).kind = Kinds.VAR;
@@ -114,7 +114,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     Tree prependToHelpVar( Symbol realVar, Tree elem ) {
         Tree hv = refHelpVar( realVar );
-        return gen.Assign( hv, gen.Cons( cf.pos, elementType, elem, hv ));
+        return gen.Assign( hv, gen.mkNewCons( cf.pos, elementType, elem, hv ));
         /*
           return cf.Block(pos,
           new Tree [] {

@@ -431,7 +431,7 @@ public class LambdaLift extends OwnerTransformer
 	    return copy.ValDef(tree, sym, tpe1, rhs1);
 
 	case Sequence(Tree[] args):
-	    Tree tree1 = mkList(tree.pos, tree.type, transform(args));
+	    Tree tree1 = gen.mkNewList(tree.pos, tree.type.typeArgs()[0], transform(args));
 	    //new scalac.ast.printer.TextTreePrinter().print("TUPLE: ").print(tree).print("\n ==> \n").print(tree1).println().end();//DEBUG
 	    return tree1;
 
@@ -671,30 +671,4 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
-    //todo: remove type parameters
-    Tree mkList(int pos, Type tpe, Tree[] args) {
-	return mkList(pos, tpe.typeArgs()[0], args, 0);
-    }
-
-    Tree mkList(int pos, Type elemtpe, Tree[] args, int start) {
-	if (start == args.length) return gen.Nil(pos);
-	else return gen.Cons(pos, elemtpe, args[start],
-				       mkList(pos, elemtpe, args, start + 1));
-    }
-    /*
-    Tree mkNil(int pos) {
-	return gen.mkRef(pos, global.definitions.getModule(Names.scala_Nil));
-    }
-
-    Tree mkCons(int pos, Type elemtpe, Tree hd, Tree tl) {
-	return gen.New(
-	    gen.Apply(
-		gen.TypeApply(
-		    gen.mkRef(
-			pos,
-			global.definitions.getClass(Names.scala_COLONCOLON).primaryConstructor()),
-		    new Tree[]{gen.mkType(pos, elemtpe)}),
-		new Tree[]{hd, tl}));
-    }
-    */
 }

@@ -1264,16 +1264,6 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	}
     }
 
-    // refactoring duplicate code of LambdaLift and CodeFactory
-
-    public Tree Nil(int pos) {
-        return mkNil(pos);
-    }
-
-    public Tree Cons(int pos, Type elemtpe, Tree hd, Tree tl) {
-        return mkNewCons(pos, elemtpe, hd, tl);
-    }
-
     // for insert debug printing code
 
     public Tree Console_print(int pos, String str) {
