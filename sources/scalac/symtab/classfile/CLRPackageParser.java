@@ -18,6 +18,7 @@ import java.io.File;
 
 import ch.epfl.lamp.compiler.msil.*;
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolLoader;
 import scalac.symtab.TermSymbol;
 import scalac.symtab.ClassSymbol;
 import scalac.symtab.Scope;
@@ -28,7 +29,7 @@ import scalac.Global;
 
 /**
  */
-public class CLRPackageParser extends MetadataParser {
+public class CLRPackageParser extends SymbolLoader {
 
     //##########################################################################
 
@@ -224,8 +225,9 @@ public class CLRPackageParser extends MetadataParser {
     //##########################################################################
     // main functionality
 
-    protected void doComplete(Symbol p) {
+    protected String doComplete(Symbol p) {
 	// for future use
+        return "!!!";
     }
 
     /**

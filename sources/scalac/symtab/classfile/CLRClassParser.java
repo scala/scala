@@ -10,6 +10,7 @@ package scalac.symtab.classfile;
 
 import scalac.Global;
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolLoader;
 import scalac.symtab.TermSymbol;
 import scalac.symtab.ClassSymbol;
 import scalac.symtab.AliasTypeSymbol;
@@ -23,7 +24,7 @@ import scalac.util.Debug;
 import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.compiler.msil.*;
 
-public class CLRClassParser extends ClassParser {
+public class CLRClassParser extends SymbolLoader {
 
     protected JavaTypeFactory make;
 

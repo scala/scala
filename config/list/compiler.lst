@@ -77,7 +77,6 @@ symtab/classfile/ClassfileParser.java
 symtab/classfile/ConstantPool.java
 symtab/classfile/JavaTypeCreator.java
 symtab/classfile/JavaTypeFactory.java
-symtab/classfile/MetadataParser.java
 symtab/classfile/PackageParser.java
 symtab/classfile/Signatures.java
 symtab/classfile/SymblParser.java

@@ -815,9 +815,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public final void preInitialize() {
         //todo: clean up
-        if (infos.info instanceof ClassParser ||
-            infos.info instanceof SourceCompleter ||
-            infos.info instanceof ClassParser.StaticsParser)
+        if (infos.info instanceof SymbolLoader)
             infos.info.complete(this);
     }
 
@@ -1797,9 +1795,9 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Constructor for classes to load as class files.
      */
-    public ClassSymbol(Name name, Symbol owner, ClassParser parser) {
+    public ClassSymbol(Name name, Symbol owner, SymbolLoader parser) {
         this(Position.NOPOS, name, owner, JAVA);
-        this.module = TermSymbol.newCompanionModule(this, JAVA, parser.staticsParser(this));
+        this.module = TermSymbol.newCompanionModule(this, JAVA, parser);
         this.setInfo(parser);
     }
 
