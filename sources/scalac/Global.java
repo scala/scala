@@ -277,13 +277,20 @@ public abstract class Global {
 	if (target != TARGET_JVMFROMICODE) args.phases.ICODE.addSkipFlag();
         PHASE.freeze();
         PhaseDescriptor[] descriptors = PHASE.phases();
-        for (int i = 0; i <= PHASE.ANALYZER.id(); i++)
+        int i = 0;
+        for (; i < descriptors.length; i++) {
             if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
+            if (descriptors[i] == PHASE.ANALYZER) { i++; break; }
+        }
         this.treeGen = ((AnalyzerPhase)PHASE.ANALYZER.phase()).gen;
         this.primitives = new Primitives(this);
-        assert !descriptors[0].hasSkipFlag();
-        for (int i = PHASE.ANALYZER.id() + 1; i < descriptors.length; i++)
+        for (; i < descriptors.length; i++)
             if (!descriptors[i].hasSkipFlag()) descriptors[i].create(this);
+        assert descriptors.length >= 2
+            && descriptors[0] == PHASE.INITIAL
+            && descriptors[descriptors.length - 1] == PHASE.TERMINAL:
+            Debug.show(descriptors);
+        assert !PHASE.INITIAL.hasSkipFlag();
         this.currentPhase = PHASE.INITIAL.phase();
     }
 
