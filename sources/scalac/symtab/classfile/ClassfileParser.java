@@ -201,11 +201,11 @@ public class ClassfileParser implements ClassfileConstants {
         int flags = in.nextChar();
         int sflags = transFlags(flags);
         if ((flags & 0x0040) != 0)
-        	sflags |= Modifiers.BRIDGE;
+                sflags |= Modifiers.BRIDGE;
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
         if (CONSTR_N.equals(name)) {
-            Symbol s = TermSymbol.newConstructor(c, transFlags(flags));
+            Symbol s = TermSymbol.newConstructor(c, sflags);
             // kick out package visible or private constructors
             if (((flags & 0x0002) != 0) ||
                 ((flags & 0x0007) == 0)) {
@@ -213,11 +213,11 @@ public class ClassfileParser implements ClassfileConstants {
                 return;
             }
             switch (type) {
-		case MethodType(Symbol[] vparams, _):
-		    type = Type.MethodType(vparams, ctype);
-		    break;
-		default:
-		    throw new ApplicationError();
+                case MethodType(Symbol[] vparams, _):
+                    type = Type.MethodType(vparams, ctype);
+                    break;
+                default:
+                    throw new ApplicationError();
             }
             Symbol constr = c.primaryConstructor();
             if (constr.isInitialized())
@@ -232,7 +232,7 @@ public class ClassfileParser implements ClassfileConstants {
             Symbol s = new TermSymbol(
                 Position.NOPOS, name,
                 ((flags & 0x0008) != 0) ? c.module().moduleClass() : c,
-                transFlags(flags));
+                sflags);
             setParamOwners(type, s);
             s.setFirstInfo(type);
             attrib.readAttributes(s, type, METH_ATTR);
