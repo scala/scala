@@ -212,9 +212,14 @@ public class AddConstructors extends GenTransformer {
 
         case ValDef(_, _, _, _):
         case LabelDef(_, _, _):
-            if (primaryInitializer != null)
-                if (tree.symbol().owner() != primaryInitializer)
-                    tree.symbol().setOwner(primaryInitializer);
+            Symbol symbol = tree.symbol();
+            if (symbol.owner().isConstructor()) {
+                // update symbols like x in these examples
+                //    ex 1: class C { { val x = ...; ... } }
+                //    ex 2: class C { def this(i: Int) { val x = i; ... } }
+                symbol.setOwner(getInitializer(symbol.owner()));
+                symbol.updateInfo(subst.apply(symbol.info()));
+            }
             return super.transform(tree);
 
         case New(Tree init):
