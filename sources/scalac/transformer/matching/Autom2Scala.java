@@ -156,9 +156,7 @@ public class Autom2Scala  {
             body });
     }
 
-    Tree currentElem() {
-        return gen.Ident( Position.FIRSTPOS, curSym );
-    }
+    Tree currentElem() { return gen.Ident( Position.FIRSTPOS, curSym ); }
 
     Tree currentMatches( Label label ) {
         switch( label ) {

@@ -15,7 +15,6 @@ class CollectVariableTraverser extends VariableTraverser {
                   && super.isVariableName( name );
       }
 
-
       void handleVariableSymbol( Symbol sym ) {
             vars.add( sym );
       }
