@@ -626,6 +626,11 @@ public abstract class Symbol implements Modifiers, Kinds {
             this != Global.instance.definitions.ARRAY_CLASS;
     }
 
+    public final boolean isOverride() {
+        preInitialize();
+        return (flags & OVERRIDE) != 0;
+    }
+
     public final boolean isAbstractOverride() {
         preInitialize();
         return (flags & (ABSTRACT | OVERRIDE)) == (ABSTRACT | OVERRIDE);
