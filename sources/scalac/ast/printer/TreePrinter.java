@@ -8,8 +8,7 @@
 
 package scalac.ast.printer;
 
-import java.io.OutputStream;
-
+import scalac.Global;
 import scalac.Unit;
 import scalac.ast.Tree;
 
@@ -24,8 +23,7 @@ public interface TreePrinter {
     public void end();
     public void flush();
 
-    public void beginSection(int level, String title);
-
+    public void print(Global global);
     public void print(Unit unit);
 
     public TreePrinter print(Tree tree);

@@ -8,11 +8,14 @@
 
 package scalac;
 
+import ch.epfl.lamp.util.CodePrinter;
 import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.SourceFile;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
@@ -20,6 +23,7 @@ import java.util.*;
 import scalac.ast.*;
 import scalac.ast.parser.*;
 import scalac.ast.printer.*;
+import scalac.atree.ATreePrinter;
 import scalac.backend.Primitives;
 // !!! <<< Interpreter stuff
 import scalac.symtab.*;
@@ -86,9 +90,8 @@ public class Global {
 
     /** the global tree printer
      */
-    public final TreePrinter printer;
-    public OutputStream printStream;
-    public final TreePrinter debugPrinter;
+    public final PrintWriter writer;
+    public final TreePrinter treePrinter;
 
     /** documentation comments of trees
      */
@@ -135,9 +138,9 @@ public class Global {
     public static final String TARGET_MSIL;
 
     public static final String[] TARGETS = new String[] {
-        TARGET_INT      = "int".intern(),
-        TARGET_JVM      = "jvm".intern(),
-        TARGET_MSIL     = "msil".intern(),
+        TARGET_INT      = "int",
+        TARGET_JVM      = "jvm",
+        TARGET_MSIL     = "msil",
     };
 
     /** tree printers
@@ -146,8 +149,8 @@ public class Global {
     public static final String PRINTER_HTML;
 
     public static final String[] PRINTERS = new String[] {
-        PRINTER_TEXT = "text".intern(),
-        PRINTER_HTML = "html".intern(),
+        PRINTER_TEXT = "text",
+        PRINTER_HTML = "html",
     };
 
     /**
@@ -161,11 +164,11 @@ public class Global {
 
     /** hooks for installing printers
      */
-    protected TreePrinter newTextTreePrinter(OutputStream printStream) {
-        return new TextTreePrinter(printStream);
+    protected TreePrinter newTextTreePrinter(PrintWriter writer) {
+        return new TextTreePrinter(writer);
     }
-    protected TreePrinter newHTMLTreePrinter(OutputStream printStream) {
-        return new HTMLTreePrinter(printStream);
+    protected TreePrinter newHTMLTreePrinter(PrintWriter writer) {
+        return new HTMLTreePrinter(writer);
     }
 
     /**
@@ -198,20 +201,23 @@ public class Global {
             args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
         this.uniqueID = new UniqueID();
         String printFile = args.printfile.value;
+        OutputStream stream;
         try {
-            this.printStream = "-".equals(printFile)
+            stream = "-".equals(printFile)
                 ? System.out
                 : new FileOutputStream(printFile);
         } catch (FileNotFoundException e) {
             error("unable to open file " + printFile + ". Printing on console");
-            this.printStream = System.out;
+            stream = System.out;
         }
-        String printerName = args.printer.value.intern();
-        if (printerName == PRINTER_TEXT)
-            this.printer = newTextTreePrinter(printStream);
-        else
-            this.printer = newHTMLTreePrinter(printStream);
-        this.debugPrinter = new TextTreePrinter(System.err, true);
+        this.writer = new PrintWriter(stream, debug);
+        if (args.printer.value.equals(PRINTER_HTML)) {
+            this.treePrinter = newHTMLTreePrinter(writer);
+        } else {
+            if (!args.printer.value.equals(PRINTER_TEXT))
+                error("unknown printer kind: " +  args.printer.value);
+            this.treePrinter = newTextTreePrinter(writer);
+        }
         this.freshNameCreator = new FreshNameCreator();
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
@@ -289,7 +295,7 @@ public class Global {
     /** compile all compilation units
      */
     private void compile() {
-        printer.begin();
+        treePrinter.begin();
 
         currentPhase = firstPhase;
         // apply successive phases and pray that it works
@@ -299,14 +305,7 @@ public class Global {
             // !!! new scalac.checkers.SymbolChecker(this).check();
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
-            if (currentPhase.descriptor.hasPrintFlag()) {
-                printer.beginSection(1, "Trees after phase " + currentPhase);
-                // go to next phase to print symbols with their new type
-                boolean next = currentPhase.next != null;
-                if (next) currentPhase = currentPhase.next;
-                (next ? currentPhase.prev : currentPhase).print(this);
-                if (next) currentPhase = currentPhase.prev;
-            }
+            if (currentPhase.descriptor.hasPrintFlag()) print();
             if (currentPhase.descriptor.hasGraphFlag())
                 currentPhase.graph(this);
             if (currentPhase.descriptor.hasCheckFlag())
@@ -323,33 +322,26 @@ public class Global {
         }
         symdata.clear();
         compiledNow.clear();
-        printer.end();
+        treePrinter.end();
     }
 
-    /** transform a unit and stop at the current compilation phase
-     */
-    public void transformUnit(Unit unit) {
-        Phase oldCurrentPhase = currentPhase;
-        currentPhase = PHASE.ANALYZER.phase().next; // or REFCHECK.next?
-        while ((currentPhase.id < oldCurrentPhase.id) && (reporter.errors() == 0)) {
-            start();
-            currentPhase.apply(new Unit[] {unit}); // !!! pb with Analyzer
-            stop(currentPhase.descriptor.taskDescription());
-            if (currentPhase.descriptor.hasPrintFlag()) {
-                printer.beginSection(1, "Trees after phase " + currentPhase);
-                // go to next phase to print symbols with their new type
-                boolean next = currentPhase.next != null;
-                if (next) currentPhase = currentPhase.next;
-                (next ? currentPhase.prev : currentPhase).print(this);
-                if (next) currentPhase = currentPhase.prev;
-            }
-            if (currentPhase.descriptor.hasGraphFlag())
-                currentPhase.graph(this);
-            if (currentPhase.descriptor.hasCheckFlag())
-                currentPhase.check(this);
-            currentPhase = currentPhase.next;
+    private void print() {
+        if (currentPhase.id == PHASE.MAKEBOXINGEXPLICIT.id()) {
+            boolean html = args.printer.value.equals(PRINTER_HTML);
+            if (html) writer.println("<pre>");
+            ATreePrinter printer = new ATreePrinter(new CodePrinter(writer));
+            boolean next = currentPhase.next != null;
+            if (next) currentPhase = currentPhase.next;
+            printer.printGlobal(this);
+            if (next) currentPhase = currentPhase.prev;
+            if (html) writer.println("</pre>");
+        } else {
+            // go to next phase to print symbols with their new type
+            boolean next = currentPhase.next != null;
+            if (next) currentPhase = currentPhase.next;
+            treePrinter.print(this);
+            if (next) currentPhase = currentPhase.prev;
         }
-        currentPhase = oldCurrentPhase;
     }
 
     // !!! <<< Interpreter stuff

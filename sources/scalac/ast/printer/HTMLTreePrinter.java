@@ -13,7 +13,6 @@ import scalac.Unit;
 import scalac.symtab.Symbol;
 import scalac.util.Name;
 
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.Math;
 import java.util.HashMap;
@@ -29,8 +28,8 @@ public class HTMLTreePrinter extends TextTreePrinter {
     protected int outSectionLevel = 1;
     protected boolean started = false;
 
-    public HTMLTreePrinter(OutputStream stream) {
-        super(stream);
+    public HTMLTreePrinter(PrintWriter writer) {
+        super(writer);
     }
 
     public void begin() {

@@ -65,13 +65,6 @@ public abstract class Phase {
     /** Applies this phase to the given compilation units. */
     public abstract void apply(Unit[] units);
 
-    /** Prints all compilation units. */
-    public void print(Global global) {
-        TreePrinter printer = global.printer;
-        for (int i = 0; i < global.units.length; i++)
-            printer.print(global.units[i]);
-    }
-
     /** Graphs all compilation units. */
     public void graph(Global global) {
         for (int i = 0; i < global.units.length; i++) graph(global.units[i]);

@@ -11,7 +11,7 @@ import scalac.ast.printer._;
 import scalac.ast._;
 import scalac.symtab._;
 import scalac.util.Debug;
-import scalac.{Global => scalac_Global};
+import scalac.{Global => scalac_Global, Phase};
 import scalac.Unit;
 import scalac.util.Name;
 import scalac.util.TypeNames;
@@ -26,20 +26,12 @@ import java.io._;
  * @author Michel Schinz, Matthias Zenger
  * @version 1.0
  */
-class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
+class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 
-  val out = _out;
+  val out = writer;
 
-  def this(stream: OutputStream, autoFlush: boolean) =
-    this(new PrintWriter(stream), autoFlush);
-
-  def this(stream: OutputStream) = this(stream, false);
-
-  def this(stream: Writer, autoFlush: boolean) =
-    this(new PrintWriter(stream), autoFlush);
-
-  def this(stream: Writer) = this(stream, false);
-
+  def this(writer: Writer) = this(new PrintWriter(writer));
+  def this(stream: OutputStream) = this(new PrintWriter(stream));
   def this() = this(System.out);
 
   protected var indentMargin = 0;
@@ -54,13 +46,11 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 
   def print(str: String) = {
     out.print(str);
-    if (autoFlush) flush();
     this
   }
 
   def println() = {
     out.println();
-    if (autoFlush) flush();
     this
   }
 
@@ -79,7 +69,6 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 
   protected def printString(str: String) = {
     out.print(str);
-    if (autoFlush) flush();
   }
 
   protected def printNewLine() = {
@@ -89,7 +78,6 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     }
     if (indentMargin > 0)
       out.write(INDENT_STRING, 0, indentMargin);
-    if (autoFlush) flush();
   }
 
   abstract class Text;
@@ -203,6 +191,13 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     Sequence(Predef.List(KW_ELSE, Newline));
   protected final val TXT_BAR_SP =
     Sequence(Predef.List(Space, TXT_BAR, Space));
+
+  def print(global: scalac_Global): unit = {
+    val phase: Phase = global.currentPhase;
+    beginSection(1, "syntax trees at "+phase+" (after "+phase.prev+")");
+    for (val i <- Iterator.range(0, global.units.length))
+      print(global.units(i));
+  }
 
   def print(unit: Unit): unit = {
     printUnitHeader(unit);
@@ -522,8 +517,6 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
       case _ =>
 	print(TXT_UNKNOWN);
     }
-    if (autoFlush)
-      flush();
     return this;
   }
 

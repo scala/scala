@@ -12,7 +12,7 @@ import scalac.ast.printer.TreePrinter;
 package scala.tools.scalac {
 
 import ast.printer._;
-import java.io.OutputStream;
+import java.io.PrintWriter;
 
 /** The global environment of a compiler run
  *
@@ -21,10 +21,10 @@ class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(ar
 
   def this(args: CompilerCommand) = this(args, false);
 
-  protected override def newTextTreePrinter(printStream: OutputStream): TreePrinter =
-    new TextTreePrinter(printStream);
-  protected override def newHTMLTreePrinter(printStream: OutputStream): TreePrinter =
-    new HTMLTreePrinter(printStream);
+  protected override def newTextTreePrinter(writer: PrintWriter): TreePrinter =
+    new TextTreePrinter(writer);
+  protected override def newHTMLTreePrinter(writer: PrintWriter): TreePrinter =
+    new HTMLTreePrinter(writer);
 
 }
 }

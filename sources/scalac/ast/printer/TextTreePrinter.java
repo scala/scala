@@ -13,6 +13,7 @@ import scalac.ast.*;
 import scalac.symtab.*;
 import scalac.util.Debug;
 import scalac.Global;
+import scalac.Phase;
 import scalac.Unit;
 import scalac.util.Name;
 import scalac.util.TypeNames;
@@ -27,8 +28,7 @@ import java.util.*;
  * @version 1.0
  */
 public class TextTreePrinter implements TreePrinter {
-    protected PrintWriter out;
-    protected final boolean autoFlush;
+    protected final PrintWriter out;
 
     protected int indent = 0;
     protected final int INDENT_STEP = 2;
@@ -36,22 +36,16 @@ public class TextTreePrinter implements TreePrinter {
         "                                        ";
     protected final int MAX_INDENT = INDENT_STRING.length();
 
+    public TextTreePrinter(PrintWriter writer) {
+        this.out = writer;
+    }
+
+    public TextTreePrinter(Writer writer) {
+        this(new PrintWriter(writer));
+    }
+
     public TextTreePrinter(OutputStream stream) {
-        this(stream, false);
-    }
-
-    public TextTreePrinter(OutputStream stream, boolean autoFlush) {
-        this.autoFlush = autoFlush;
-        this.out = new PrintWriter(stream);
-    }
-
-    public TextTreePrinter(Writer stream) {
-        this(stream, false);
-    }
-
-    public TextTreePrinter(Writer stream, boolean autoFlush) {
-        this.autoFlush = autoFlush;
-        this.out = new PrintWriter(stream);
+        this(new PrintWriter(stream));
     }
 
     public TextTreePrinter() {
@@ -70,13 +64,11 @@ public class TextTreePrinter implements TreePrinter {
 
     public TreePrinter print(String str) {
         out.print(str);
-        if (autoFlush) flush();
         return this;
     }
 
     public TreePrinter println() {
         out.println();
-        if (autoFlush) flush();
         return this;
     }
 
@@ -95,7 +87,6 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printString(String str) {
         out.print(str);
-        if (autoFlush) flush();
     }
 
     protected void printNewLine() {
@@ -105,7 +96,6 @@ public class TextTreePrinter implements TreePrinter {
         }
         if (indent > 0)
             out.write(INDENT_STRING, 0, indent);
-        if (autoFlush) flush();
     }
 
     public static class SymbolUsage {
@@ -225,6 +215,12 @@ public class TextTreePrinter implements TreePrinter {
         Text.Sequence(new Text[]{ KW_ELSE, Text.Newline });
     protected static final Text TXT_BAR_SP =
         Text.Sequence(new Text[]{ Text.Space, TXT_BAR, Text.Space });
+
+    public void print(Global global) {
+        Phase phase = global.currentPhase;
+        beginSection(1, "syntax trees at "+phase+" (after "+phase.prev+")");
+        for (int i = 0; i < global.units.length; i++) print(global.units[i]);
+    }
 
     public void print(Unit unit) {
         printUnitHeader(unit);
@@ -621,8 +617,6 @@ public class TextTreePrinter implements TreePrinter {
             break;
         }
         //print("{" + tree.type + "}");//DEBUG
-        if (autoFlush)
-            flush();
         return this;
     }
 

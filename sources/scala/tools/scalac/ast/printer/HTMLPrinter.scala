@@ -25,7 +25,7 @@ import java.util.HashMap;
  * @version 1.0
  */
 
-class HTMLTreePrinter(stream: OutputStream) extends TextTreePrinter(stream) {
+class HTMLTreePrinter(writer: PrintWriter) extends TextTreePrinter(writer) {
   protected var outSectionLevel = 1;
   protected var started = false;
 
