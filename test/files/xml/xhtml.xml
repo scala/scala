@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <!DOCTYPE html SYSTEM "xhtml.dtd">
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <base href="here.com"/>
     <title>a basic xhtml page</title>
