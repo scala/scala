@@ -227,19 +227,6 @@ XSLTPROC_FLAGS		+= $(IA_XSLFILE)
 ia-build-common		:
 	$(RM) -r $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
-	$(INSTALL) -m 755 -d $(IA_BUILD_CUSTOMCODEDIR)
-	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/*.jar -type f`; do \
-	    if [ -z "$$file" ]; then continue; fi; \
-	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_CUSTOMCODEDIR); \
-	done
-	$(INSTALL) -m 755 -d $(IA_BUILD_LOCALESDIR)
-	@for locale in "" `ls -d $(IA_CONFIG_LOCALESDIR)/?? | $(XARGS) -n 1 $(BASENAME)`; do \
-	    if [ -z "$$locale" ]; then continue; fi; \
-	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_CUSTOMFILE) \
-	        $(IA_BUILD_LOCALESDIR)/$(IA_CUSTOMFILE)"_$$locale"; \
-	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_LICENSEFILE).html \
-	        $(IA_BUILD_PREFIX)/$(IA_LICENSEFILE)"_$$locale".html; \
-	done
 	$(INSTALL) -m 755 -d $(IA_BUILD_IMAGESDIR)
 	@for file in "" `$(FIND) $(IA_CONFIG_IMAGESDIR)/* -type f`; do \
 	    if [ -z "$$file" ]; then continue; fi; \
@@ -248,6 +235,14 @@ ia-build-common		:
 	$(CONVERT) $(CONVERT_FLAGS) $(IA_SPLASHFILE) $(IA_BUILD_SPLASHFILE)
 
 ia-build-unix		:
+	$(INSTALL) -m 755 -d $(IA_BUILD_LOCALESDIR)
+	@for locale in "" `ls -d $(IA_CONFIG_LOCALESDIR)/?? | $(XARGS) -n 1 $(BASENAME)`; do \
+	    if [ -z "$$locale" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_CUSTOMFILE)_unix \
+	        $(IA_BUILD_LOCALESDIR)/$(IA_CUSTOMFILE)"_$$locale"; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_LICENSEFILE).html \
+	        $(IA_BUILD_PREFIX)/$(IA_LICENSEFILE)"_$$locale".html; \
+	done
 	$(XSLTPROC) $(XSLTPROC_FLAGS) $(IA_UNIX_PROJECTFILE) > $(IA_BUILD_PROJECTFILE)
 	$(TAR) xzf $(INSTALL_PREFIX).tar.gz -C $(IA_BUILD_PREFIX)
 	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
@@ -262,6 +257,19 @@ ia-build-unix		:
 	    $(IA_INSTALL_PREFIX)/Web_Installers/install-unix.htm)
 
 ia-build-windows	:
+	$(INSTALL) -m 755 -d $(IA_BUILD_CUSTOMCODEDIR)
+	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/*.jar -type f`; do \
+	    if [ -z "$$file" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_CUSTOMCODEDIR); \
+	done
+	$(INSTALL) -m 755 -d $(IA_BUILD_LOCALESDIR)
+	@for locale in "" `ls -d $(IA_CONFIG_LOCALESDIR)/?? | $(XARGS) -n 1 $(BASENAME)`; do \
+	    if [ -z "$$locale" ]; then continue; fi; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_CUSTOMFILE)_win32 \
+	        $(IA_BUILD_LOCALESDIR)/$(IA_CUSTOMFILE)"_$$locale"; \
+	    $(INSTALL) -m 644 -p $(IA_CONFIG_LOCALESDIR)/"$$locale"/$(IA_LICENSEFILE).html \
+	        $(IA_BUILD_PREFIX)/$(IA_LICENSEFILE)"_$$locale".html; \
+	done
 	$(INSTALL) -m 644 -p $(IA_CONFIG_PREFIX)/tools.zip $(IA_BUILD_PREFIX)
 	$(XSLTPROC) $(XSLTPROC_FLAGS) $(IA_WIN32_PROJECTFILE) > $(IA_BUILD_PROJECTFILE)
 	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
