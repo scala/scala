@@ -10,6 +10,14 @@
 package scala.collection.immutable;
 
 
+/** This trait represents immutable sets. Concrete set implementations
+ *  just have to provide functionality for the abstract methods in
+ *  <code>scala.collection.Set</code> as well as for <code>+</code> and
+ *  <code>-</code>.
+ *
+ *  @author  Matthias Zenger
+ *  @version 1.0, 19/07/2003
+ */
 trait Set[A, This <: Set[A, This]]: This with scala.collection.Set[A] {
 
     def +(elem: A): This;
