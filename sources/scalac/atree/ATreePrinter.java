@@ -343,6 +343,78 @@ public class ATreePrinter {
             return printSymbol(clasz).print('.').print("this");
         case Constant(AConstant constant):
             return printConstant(constant);
+        case Load(ALocation location):
+            return printLocation(location);
+        case Store(ALocation location, ACode value):
+            printLocation(location).space().print('=').space();
+            return printCode(value);
+        case Apply(AFunction function, Type[] targs, ACode[] vargs):
+            printFunction(function);
+            if (targs.length > 0){
+                print('[');
+                for (int i = 0; i < targs.length; i++)
+                    (i == 0 ? this : print(',').space()).printType(targs[i]);
+                print(']');
+            }
+            print('(');
+            for (int i = 0; i < vargs.length; i++)
+                (i == 0 ? this : print(',').space()).printCode(vargs[i]);
+            print(')');
+            return this;
+        case IsAs(ACode value, Type type, boolean cast):
+            printCode(value).print('.');
+            print(cast ? "asInstanceOf" : "isInstanceOf");
+            return print('[').printType(type).print(']');
+        case If(ACode test, ACode success, ACode failure):
+            print("if").space().print('(').printCode(test).print(')').lbrace();
+            printCode(success).line();
+            rbrace().space().print("else").space().lbrace();
+            printCode(failure).line();
+            return rbrace();
+        case Switch(ACode test, int[][] tags, ACode[] bodies, ACode other):
+            print("switch").space().print('(').printCode(test).print(')');
+            lbrace();
+            for (int i = 0; i < tags.length; i++) {
+                for (int j = 0; j < tags[i].length; j++)
+                    print("case").space().print(tags[i][j]).print(':').line();
+                indent().printCode(bodies[i]).undent().line();
+            }
+            print("case").space().print('_').print(':').line();
+            indent().printCode(other).undent();
+            return rbrace();
+        case Synchronized(ACode lock, ACode value):
+            print("synchronized").space();
+            print('(').printCode(lock).print(')');
+            return lbrace().printCode(value).rbrace();
+        case Block(Symbol[] locals, ACode[] statements, ACode value):
+            lbrace();
+            for (int i = 0; i < locals.length; i++) {
+                print("var").space().printSymbol(locals[i]);
+                print(":").space().printType(locals[i].type());
+                println(";");
+            }
+            for (int i = 0; i < statements.length; i++)
+                printCode(statements[i]).println(';');
+            return printCode(value).line().rbrace();
+        case Label(Symbol label, Symbol[] locals, ACode value):
+            print("label").space().printSymbol(label).print('(');
+            for (int i = 0; i < locals.length; i++)
+                (i == 0 ? this : print(',').space()).printSymbol(locals[i]);
+            print(')').space().print('=').lbrace();
+            return printCode(value).rbrace();
+        case Goto(Symbol label, ACode[] vargs):
+            print("goto").space().printSymbol(label).print('(');
+            for (int i = 0; i < vargs.length; i++)
+                (i == 0 ? this : print(',').space()).printCode(vargs[i]);
+            return print(')');
+        case Return(Symbol function, ACode value):
+            print("return").symtab.printSymbolUniqueId(function).space();
+            return printCode(value);
+        case Throw(ACode value):
+            return print("throw").space().printCode(value);
+        case Drop(ACode value, Type type):
+            print("drop").print('[').printType(type).print(']').space();
+            return printCode(value);
         default:
             throw Debug.abort("unknown case", code);
         }
