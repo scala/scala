@@ -1,6 +1,7 @@
 package scala.xml.nobinding;
 
 import scala.collection.mutable.HashMap ;
+import scala.collection.immutable.ListMap ;
 import scala.xml.{Node,Text,FactoryAdapter,Utility} ;
 import org.xml.sax.InputSource;
 
@@ -18,19 +19,21 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
 
     val elHashCode = Utility.hashCode( label, attrs, children ) ;
 
+    val attrList = attrs.toList;
+
     cache.get( elHashCode ).match{
       case Some(cachedElem) =>
         //System.err.println("[using cached elem +"+cachedElem.toXML+"!]");
       cachedElem
       case None => val el = if( children.isEmpty ) {
        new Symbol( label ) {
-          override def attributes = attrs;
-          override def hashCode() = Utility.hashCode( label, attrs.toList.hashCode(), children );
+          override def attributes = ListMap.Empty[String,String].incl( attrList );
+          override def hashCode() = Utility.hashCode( label, attrList.hashCode(), children );
         };
       } else {
        new Symbol( label, children:_* ) {
-          override def attributes = attrs;
-          override def hashCode() = Utility.hashCode( label, attrs.toList.hashCode(), children );
+          override def attributes = ListMap.Empty[String,String].incl( attrList );
+          override def hashCode() = Utility.hashCode( label, attrList.hashCode(), children );
         };
       }
       cache.update( elHashCode, el );
