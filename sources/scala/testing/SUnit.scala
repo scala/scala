@@ -9,7 +9,28 @@
 
 package scala.testing;
 
-/** unit testing methods in the spirit of JUnit
+/** unit testing methods in the spirit of JUnit framework.
+ *  use these classes like this:
+<code>
+ import scala.testing.SUnit;
+  import SUnit._;
+
+
+  class MyTest(n:String) extends TestCase(n) {
+
+    override def runTest() = n match {
+      case "myTest1" =>   assertTrue( true );
+      case "myTest2" =>   assertTrue( "hello", false );
+    }
+  }
+
+  val r = new TestResult();
+  suite.run(r);
+  for(val tf &lt;- r.failures()) {
+    Console.println(tf.toString())
+  }
+}
+</code>
  */
 object SUnit {
 
