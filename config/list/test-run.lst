@@ -23,10 +23,12 @@ files/run/imports.scala
 files/run/iq.scala
 files/run/lisp.scala
 files/run/misc.scala
+files/run/map_test.scala
 files/run/overloads.scala
 files/run/regularpatmat.scala
 
 files/xml/lnk.scala
 files/xml/xhtml.scala
+
 
 ##############################################################################
