@@ -183,14 +183,14 @@ public class Definitions {
      *  evaluated on demand to make bootstrap possible.
      */
     public final Symbol NIL() {
-	return getModule("scala.Nil");
+        return getModule("scala.Nil");
     }
 
     /** The scala.:: class
      *  evaluated on demand to make bootstrap possible.
      */
     public final Symbol CONS_CLASS() {
-	return getClass("scala.$colon$colon");
+        return getClass("scala.$colon$colon");
     }
     public final Type   CONS_TYPE(Type element) {
         return CONS_CLASS().staticType(element);
