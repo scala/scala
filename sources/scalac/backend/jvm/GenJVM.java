@@ -106,9 +106,13 @@ class GenJVM {
      * Generate code for the given unit.
      */
     public void translate(Unit unit) {
-        for (int i = 0; i < unit.body.length; ++i)
-            gen(Context.EMPTY.withSourceFileName(unit.source.toString()),
-                unit.body[i]);
+        try {
+            for (int i = 0; i < unit.body.length; ++i)
+                gen(Context.EMPTY.withSourceFileName(unit.source.toString()),
+                    unit.body[i]);
+        } catch (JCode.OffsetTooBigException e) {
+            throw global.fail(e);
+        }
     }
 
     /**
@@ -116,7 +120,7 @@ class GenJVM {
      * given tree (i.e. no value should remain on the stack
      * afterwards).
      */
-    protected void gen(Context ctx, Tree tree) {
+    protected void gen(Context ctx, Tree tree) throws JCode.OffsetTooBigException {
         startCodeForTree(ctx, tree);
 
         Symbol sym = tree.symbol();
@@ -159,13 +163,24 @@ class GenJVM {
 
         case DefDef(_, _, _, _, _, Tree rhs): {
             Tree.DefDef defDef = (Tree.DefDef)tree;
-            Context ctx1 = enterMethod(ctx, defDef);
-            if (! Modifiers.Helper.isAbstract(sym.flags)) {
-                JType retType = ctx1.method.getReturnType();
-                genLoad(ctx1, rhs, retType);
-                ctx1.code.emitRETURN(retType);
-            }
-            leaveMethod(ctx1);
+            boolean retry = false;
+            do {
+                Context ctx1 = enterMethod(ctx, defDef, retry);
+                try {
+                    if (! Modifiers.Helper.isAbstract(sym.flags)) {
+                        JType retType = ctx1.method.getReturnType();
+                        genLoad(ctx1, rhs, retType);
+                        ctx1.code.emitRETURN(retType);
+                        ctx1.method.freeze();
+                    }
+                    leaveMethod(ctx1);
+                    break;
+                } catch (JCode.OffsetTooBigException e) {
+                    ctx1.clazz.removeMethod(ctx1.method);
+                    assert !retry;
+                    retry = true;
+                }
+            } while (retry);
         } break;
 
         case Return(Tree expr): {
@@ -194,7 +209,8 @@ class GenJVM {
         endCodeForTree(ctx, tree);
     }
 
-    protected void gen(Context ctx, Tree[] trees) {
+    protected void gen(Context ctx, Tree[] trees)
+        throws JCode.OffsetTooBigException {
         for (int i = 0; i < trees.length; ++i)
             gen(ctx, trees[i]);
     }
@@ -203,7 +219,8 @@ class GenJVM {
      * Generate code to load the value of the given tree on the
      * stack, and make sure it is of the given expected type.
      */
-    protected JType genLoad(Context ctx, Tree tree, JType expectedType) {
+    protected JType genLoad(Context ctx, Tree tree, JType expectedType)
+        throws JCode.OffsetTooBigException {
         startCodeForTree(ctx, tree);
 
         JType generatedType = null;
@@ -276,7 +293,7 @@ class GenJVM {
                     genLoad(ctx, args[i], typeStoJ(args[i].type));
                 for (int i = idents.length; i > 0; --i)
                     genStoreEpilogue(ctx, idents[i-1]);
-                ctx.code.emitGOTO(label);
+                ctx.code.emitGOTO_maybe_W(label, ctx.useWideJumps);
                 generatedType = funType.getReturnType();
             } else if (isKnownPrimitive(funSym)) {
                 Primitive prim = prims.getPrimitive(funSym);
@@ -305,7 +322,7 @@ class GenJVM {
                     JCode.Label afterLabel = ctx.code.newLabel();
                     genCond(ctx, tree, falseLabel, false);
                     ctx.code.emitICONST_1();
-                    ctx.code.emitGOTO(afterLabel);
+                    ctx.code.emitGOTO_maybe_W(afterLabel, ctx.useWideJumps);
                     falseLabel.anchorToNext();
                     ctx.code.emitICONST_0();
                     afterLabel.anchorToNext();
@@ -434,6 +451,7 @@ class GenJVM {
         } break;
 
         case Select(Tree qualifier, Name selector): {
+            sym.info();
             if (sym.isModule())
                 generatedType = genLoadModule(ctx, sym);
             else {
@@ -464,7 +482,7 @@ class GenJVM {
             genCond(ctx, cond, elseLabel, false);
             genLoad(ctx, thenp, finalType);
             JCode.Label afterLabel = ctx.code.newLabel();
-            ctx.code.emitGOTO(afterLabel);
+            ctx.code.emitGOTO_maybe_W(afterLabel, ctx.useWideJumps);
             elseLabel.anchorToNext();
             if (elsep == Tree.Empty)
                 maybeGenLoadUnit(ctx, finalType);
@@ -484,7 +502,7 @@ class GenJVM {
             for (int i = 0; i < bodies.length; ++i) {
                 labels[i].anchorToNext();
                 genLoad(ctx, bodies[i], expectedType);
-                ctx.code.emitGOTO(afterLabel);
+                ctx.code.emitGOTO_maybe_W(afterLabel, ctx.useWideJumps);
             }
             defaultLabel.anchorToNext();
             genLoad(ctx, otherwise, expectedType);
@@ -590,7 +608,8 @@ class GenJVM {
      * Generate code to load the qualifier of the given tree, which
      * can be implicitely "this".
      */
-    protected void genLoadQualifier(Context ctx, Tree tree, boolean implicitThis) {
+    protected void genLoadQualifier(Context ctx, Tree tree, boolean implicitThis)
+        throws JCode.OffsetTooBigException {
         switch (tree) {
         case Ident(_):
             if (implicitThis)
@@ -619,7 +638,8 @@ class GenJVM {
      * Generate code to prepare the storage of a value in the location
      * represented by the tree.
      */
-    protected void genStorePrologue(Context ctx, Tree tree) {
+    protected void genStorePrologue(Context ctx, Tree tree)
+        throws JCode.OffsetTooBigException {
         Symbol sym = tree.symbol();
         switch (tree) {
         case Ident(_):
@@ -667,7 +687,8 @@ class GenJVM {
     protected void genCond(Context ctx,
                            Tree tree,
                            JCode.Label target,
-                           boolean when) {
+                           boolean when)
+        throws JCode.OffsetTooBigException {
         switch (tree) {
         case Apply(Tree fun, Tree[] args):
             if (isKnownPrimitive(fun.symbol())) {
@@ -774,7 +795,8 @@ class GenJVM {
                                 Primitive prim,
                                 Tree[] args,
                                 JType resType,
-                                JType expectedType) {
+                                JType expectedType)
+        throws JCode.OffsetTooBigException {
         int arity = args.length;
         int resTypeIdx = getTypeIndex(resType);
 
@@ -817,7 +839,8 @@ class GenJVM {
                              Primitive prim,
                              Tree[] args,
                              JCode.Label target,
-                             boolean when) {
+                             boolean when)
+        throws JCode.OffsetTooBigException {
         JType maxType = getMaxType(args);
         assert maxType.isReferenceType(): args[0]+" - "+args[1]+" : "+maxType;
         // Generate code for all arguments
@@ -852,7 +875,7 @@ class GenJVM {
             else
                 ctx.code.emitIFNONNULL(target);
             JCode.Label afterLabel = ctx.code.newLabel();
-            ctx.code.emitGOTO(afterLabel);
+            ctx.code.emitGOTO_maybe_W(afterLabel, ctx.useWideJumps);
             ifNonNullLabel.anchorToNext();
             ctx.code.emitLOAD(eqEqTempVar);
             JMethodType equalsType =
@@ -875,7 +898,8 @@ class GenJVM {
                                Primitive prim,
                                Tree[] args,
                                JCode.Label target,
-                               boolean when) {
+                               boolean when)
+        throws JCode.OffsetTooBigException {
         JType maxType = getMaxType(args);
         assert !maxType.isReferenceType(): args[0]+" - "+args[1]+" : "+maxType;
         int maxTypeIdx = getTypeIndex(maxType);
@@ -944,7 +968,8 @@ class GenJVM {
     /**
      * Generate code to throw the value returned by the argument.
      */
-    protected void genThrow(Context ctx, Tree arg) {
+    protected void genThrow(Context ctx, Tree arg)
+        throws JCode.OffsetTooBigException {
         genLoad(ctx, arg, JAVA_LANG_OBJECT_T);
         ctx.code.emitCHECKCAST(JAVA_LANG_THROWABLE_T);
         ctx.code.emitATHROW();
@@ -976,7 +1001,8 @@ class GenJVM {
      * Generate code to create an array of some basic type, whose size
      * will be dynamically computed.
      */
-    protected void genArrayCreate(Context ctx, Primitive prim, Tree size) {
+    protected void genArrayCreate(Context ctx, Primitive prim, Tree size)
+        throws JCode.OffsetTooBigException {
         genLoad(ctx, size, JType.INT);
         JType type;
         switch (prim) {
@@ -997,7 +1023,8 @@ class GenJVM {
      * Generate code to create an array of references, whose size will
      * be dynamically computed.
      */
-    protected void genRefArrayCreate(Context ctx, Tree size, Tree classNameLit) {
+    protected void genRefArrayCreate(Context ctx, Tree size, Tree classNameLit)
+        throws JCode.OffsetTooBigException {
         genLoad(ctx, size, JType.INT);
 
         String className;
@@ -1019,7 +1046,8 @@ class GenJVM {
     /**
      * Generate code to update an array.
      */
-    protected void genArrayUpdate(Context ctx, Tree array, Tree index, Tree value) {
+    protected void genArrayUpdate(Context ctx, Tree array, Tree index, Tree value)
+        throws JCode.OffsetTooBigException {
         genLoad(ctx, array, JAVA_LANG_OBJECT_T);
         genLoad(ctx, index, JType.INT);
         JType elemType = getArrayElementType(array);
@@ -1032,7 +1060,8 @@ class GenJVM {
     /**
      * Generate code to load an element of an array.
      */
-    protected void genArrayAccess(Context ctx, Tree array, Tree index) {
+    protected void genArrayAccess(Context ctx, Tree array, Tree index)
+        throws JCode.OffsetTooBigException {
         genLoad(ctx, array, JAVA_LANG_OBJECT_T);
         genLoad(ctx, index, JType.INT);
         ctx.code.emitALOAD(getArrayElementType(array));
@@ -1041,7 +1070,8 @@ class GenJVM {
     /**
      * Generate code to load the length of an array.
      */
-    protected void genArrayLength(Context ctx, Tree array) {
+    protected void genArrayLength(Context ctx, Tree array)
+        throws JCode.OffsetTooBigException {
         genLoad(ctx, array, JAVA_LANG_OBJECT_T);
         ctx.code.emitARRAYLENGTH();
     }
@@ -1084,7 +1114,8 @@ class GenJVM {
      * Generate code to concatenate a list of expressions which return
      * strings.
      */
-    protected void genStringConcatenation(Context ctx, Tree[] elements) {
+    protected void genStringConcatenation(Context ctx, Tree[] elements)
+        throws JCode.OffsetTooBigException {
         // Create string buffer
         ctx.code.emitNEW(JAVA_LANG_STRINGBUFFER);
         ctx.code.emitDUP();
@@ -1571,11 +1602,14 @@ class GenJVM {
      * Record the entry into a method, and return the appropriate
      * context.
      */
-    protected Context enterMethod(Context ctx, Tree.DefDef mDef) {
+    protected Context enterMethod(Context ctx,
+                                  Tree.DefDef mDef,
+                                  boolean useWideJumps) {
         Symbol mSym = mDef.symbol();
 
         global.log("entering method " + Debug.toString(mSym)
-                   + " (type: " + Debug.toString(mSym.info()) + ")");
+                   + " (type: " + Debug.toString(mSym.info()) + ")"
+                   + " wide jumps? " + useWideJumps);
 
         Map locals = new HashMap();
 
@@ -1598,11 +1632,11 @@ class GenJVM {
                                    argTypes,
                                    argNames);
 
-        return ctx.withMethod(method, locals);
+        return ctx.withMethod(method, locals, useWideJumps);
     }
 
     protected void leaveMethod(Context ctx) {
-        global.log(" leaving method ");
+        global.log("leaving method");
     }
 
     /// Misc.
@@ -1646,16 +1680,18 @@ class Context {
     public final JExtendedCode code;
     public final Map/*<Symbol,JLocalVariable>*/ locals;
     public final Map/*<Symbol,Pair<JCode.Label,Tree[]>>*/ labels;
+    public final boolean useWideJumps;
     public final boolean isModuleClass;
 
     public final static Context EMPTY =
-        new Context(null, null, null, null, null, false);
+        new Context(null, null, null, null, null, false, false);
 
     private Context(String sourceFileName,
                     JClass clazz,
                     JMethod method,
                     Map locals,
                     Map labels,
+                    boolean useWideJumps,
                     boolean isModuleClass) {
         this.sourceFileName = sourceFileName;
         this.clazz = clazz;
@@ -1666,24 +1702,32 @@ class Context {
             this.code = (JExtendedCode)method.getCode();
         this.locals = locals;
         this.labels = labels;
+        this.useWideJumps = useWideJumps;
         this.isModuleClass = isModuleClass;
     }
 
     public Context withSourceFileName(String sourceFileName) {
-        return new Context(sourceFileName, null, null, null, null, false);
+        return new Context(sourceFileName, null, null, null, null, false, false);
     }
 
     public Context withClass(JClass clazz, boolean isModuleClass) {
-        return new Context(this.sourceFileName, clazz, null, null, null, isModuleClass);
+        return new Context(this.sourceFileName,
+                           clazz,
+                           null,
+                           null,
+                           null,
+                           false,
+                           isModuleClass);
     }
 
-    public Context withMethod(JMethod method, Map locals) {
+    public Context withMethod(JMethod method, Map locals, boolean useWideJumps) {
         assert this.clazz == method.getOwner();
         return new Context(this.sourceFileName,
                            this.clazz,
                            method,
                            locals,
                            new HashMap(),
+                           useWideJumps,
                            this.isModuleClass);
     }
 }
