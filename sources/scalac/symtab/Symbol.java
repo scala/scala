@@ -41,6 +41,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public static final int IS_LABEL        = 0x00000010;
     public static final int IS_CONSTRUCTOR  = 0x00000020;
     public static final int IS_ACCESSMETHOD = 0x00000100;
+    public static final int IS_STATIC       = 0x00000200;
     public static final int IS_ERROR        = 0x10000000;
     public static final int IS_THISTYPE     = 0x20000000;
     public static final int IS_LOCALDUMMY   = 0x40000000;
@@ -108,6 +109,12 @@ public abstract class Symbol implements Modifiers, Kinds {
         return newTerm(pos, flags, name, 0);
     }
 
+    /** Creates a new static method owned by this symbol. */
+    public final Symbol newStaticMethod(int pos, int flags, Name name) {
+        assert isClass(): Debug.show(this);
+        return newTerm(pos, flags, name, IS_STATIC);
+    }
+
     /** Creates a new access method owned by this symbol. */
     public final Symbol newAccessMethod(int pos, Name name) {
         assert isClass(): Debug.show(this);
@@ -137,6 +144,12 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final Symbol newField(int pos, int flags, Name name) {
         assert isClass(): Debug.show(this);
         return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new static field owned by this symbol. */
+    public final Symbol newStaticField(int pos, int flags, Name name) {
+        assert isClass(): Debug.show(this);
+        return newTerm(pos, flags, name, IS_STATIC);
     }
 
     /** Creates a new variable owned by this symbol. */
@@ -539,7 +552,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Is this symbol static (i.e. with no outer instance)? */
     public final boolean isStatic() {
-        return isRoot() || owner.isStaticOwner();
+        return isRoot() || (attrs & IS_STATIC) != 0 || owner.isStaticOwner();
     }
 
     /** Does this symbol denote a class that defines static symbols? */
