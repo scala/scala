@@ -451,17 +451,21 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
   /** Is normalized type `tp' a subtype of prototype `pt'?
   */
   def isCompatible(tp: Type, pt: Type): boolean = {
+    def canCoerce(tp: Type): boolean = tp match {
+      case Type$OverloadedType(_, alttypes) =>
+	var i = 0;
+	while (i < alttypes.length && !canCoerce(alttypes(i))) i = i + 1;
+	i < alttypes.length
+      case Type$PolyType(tparams, restype) if tparams.length == 0 =>
+	restype.isSubType(pt)
+      case _ =>
+	false
+    }
     val tp1 = normalize(tp);
     if (tp1.isSubType(pt)) true
     else {
       val coerceMeth: Symbol = tp1.lookup(Names.coerce);
-      if (coerceMeth.kind == NONE) false
-      else tp1.memberType(coerceMeth) match {
-	case Type$PolyType(tparams, restype) if tparams.length == 0 =>
-	  restype.isSubType(pt)
-	case _ =>
-	  false
-      }
+      coerceMeth.kind != NONE && canCoerce(tp1.memberType(coerceMeth));
     }
   }
 
@@ -807,7 +811,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
       false
   }
 
-  /** Does function type `ftpe1' specialize function type `ftpe2'
+  /** Does type `ftpe1' specialize type `ftpe2'
   *  when both are alternatives in an overloaded function?
   */
   def specializes(ftpe1: Type, ftpe2: Type): boolean = ftpe1 match {
@@ -828,6 +832,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
   def exprAlternative(tree: Tree, alts: Array[Symbol], alttypes: Array[Type], pt: Type): unit = {
 
     def improves(tp1: Type, tp2: Type): boolean =
+      !normalize(tp2).isSubType(pt) && normalize(tp1).isSubType(pt) ||
       tp2.isParameterized() &&
       (!tp1.isParameterized() || specializes(tp1, tp2));
 
@@ -838,10 +843,16 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) {
       while (i < alts.length && alts(i).isConstructor() && alttypes(i).isInstanceOf[Type$MethodType])
 	i = i + 1;
       if (i == alts.length)
-	throw new Type$Error("missing arguments for " + alts(0));
+	throw new Type$Error("missing rguments for " + alts(0));
     }
     // second, do the normal case.
     var best: int = -1;
+    { var i = 0; while (i < alttypes.length) {
+      if (isCompatible(alttypes(i), pt) && (best < 0 || improves(alttypes(i), alttypes(best)))) {
+	best = i;
+      }
+      i = i + 1
+    }}
     { var i = 0; while (i < alttypes.length) {
       if (isCompatible(alttypes(i), pt) && (best < 0 || improves(alttypes(i), alttypes(best)))) {
 	best = i;
