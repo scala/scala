@@ -223,7 +223,6 @@ public class Global {
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
         // TODO: Enable TailCall for other backends when they handle LabelDefs
-        if (target != TARGET_JVM) args.phases.TAILCALL.addSkipFlag();
         if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
         if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
         PHASE.freeze();
