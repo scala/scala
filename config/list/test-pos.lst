@@ -27,9 +27,11 @@ pos/cours2c.scala
 pos/eta.scala
 pos/exceptions.scala
 pos/imports.scala
+pos/infer.scala
 pos/lambda.scala
 pos/lambdalift.scala
 pos/lambdalift1.scala
+pos/localmodules.scala
 pos/matthias1.scala
 pos/matthias3.scala
 pos/matthias4.scala
@@ -48,12 +50,12 @@ pos/null.scala
 pos/override.scala
 pos/partialfun.scala
 pos/patterns.scala
+pos/patterns1.scala
 pos/patterns2.scala
 pos/philippe1.scala
 pos/philippe2.scala
 pos/philippe3.scala
 pos/reftest.scala
-pos/scall.bat
 pos/sort1.scala
 pos/sqrt.scala
 pos/stable.scala
@@ -67,6 +69,7 @@ pos/test5.scala
 pos/test5refine.scala
 pos/thistypes.scala
 pos/valdefs.scala
+pos/vincent.scala
 
 cours/constr.scala
 cours/lisp.scala
