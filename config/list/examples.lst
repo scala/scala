@@ -18,4 +18,12 @@ sort1.scala
 sort2.scala
 typeinf.scala
 
+pilib/elasticBuffer.scala
+pilib/handover.scala
+pilib/mobilePhoneProtocol.scala
+pilib/rwlock.scala
+pilib/scheduler.scala
+pilib/semaphore.scala
+pilib/twoPlaceBuffer.scala
+
 ##############################################################################
