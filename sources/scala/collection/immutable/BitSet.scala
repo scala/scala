@@ -14,28 +14,28 @@ package scala.collection.immutable;
  *  <code>mutable.ResizableBitSet</code>.
  *
  *  @param <code>n</code> represents the number of relevant bits
- *  @param ba:   array of bytes of length <code>n</code>&gt;&gt;&gt;3
+ *  @param ba:   array of ints of length <code>n</code>&gt;&gt;&gt;5
  *  @param copy: if yes, then <code>ba</code> is copied and updates will
  *               not affect this bitset
  *
  *  @author  Burak Emir
  *  @version 1.0
  */
-class BitSet(n:Int, ba: Array[Byte], copy: Boolean) extends scala.collection.BitSet {
+class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet {
 
   final def size = n;
 
-  val array: Array[Byte]  =
+  protected val array: Array[Int]  =
     if (copy) {
-      val arr = new Array[Byte](ba.length);
+      val arr = new Array[Int](ba.length);
       java.lang.System.arraycopy(ba, 0, arr, 0, ba.length);
       arr
     }
     else
       ba;
 
-  def this(rbs: scala.collection.mutable.ResizableBitSet) = {
-    this(rbs.size, rbs.toByteArray, false);
+  def this(rbs: mutable.BitSet) = {
+    this(rbs.size, rbs.toArray, false);
   }
 
   /** returns true if bit i is set
@@ -43,9 +43,14 @@ class BitSet(n:Int, ba: Array[Byte], copy: Boolean) extends scala.collection.Bit
    * @param i
    */
   def apply(i: Int):Boolean = {
-    val j    = (i >>> 3);
-    val mask = (1 << (i & 0x07));
+    val j    = (i >>> 5);
+    val mask = (1 << (i & 0x1F));
     (array(j) & mask) != 0;
   }
 
+  def toArray: Array[Int] = {
+    val arr = new Array[Int](array.length);
+    java.lang.System.arraycopy(arr, 0, array, 0, array.length);
+    arr
+  }
 }

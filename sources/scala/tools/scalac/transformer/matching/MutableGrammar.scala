@@ -87,8 +87,8 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
 
   /** converts this grammar in a pattern grammar (an ImmutableTreeHedgeGrammar with variable info)
   */
-  def toGrammar:PatternGrammar = {
-    val rbsNullable = new mutable.ResizableBitSet();
+  def toGrammar: PatternGrammar = {
+    val rbsNullable = new mutable.BitSet();
     val _treeTransitions:Array[immutable.Set[TreeRHS]] = {
       val theTreeTransitionsMap: immutable.TreeMap[Int,immutable.Set[TreeRHS]] = {
         var tmp =
@@ -143,7 +143,7 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
     }
 
     val _treeInitials = {
-      val rbs = new mutable.ResizableBitSet( _nTreeNT );
+      val rbs = new mutable.BitSet( _nTreeNT );
       for( val k <- make.treeInitials ) {
         rbs.set( k.i )
       }
@@ -151,7 +151,7 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
     }
 
     val _hedgeInitials = {
-      val rbs = new mutable.ResizableBitSet( _nHedgeNT );
+      val rbs = new mutable.BitSet( _nHedgeNT );
       for( val k <- make.hedgeInitials ) {
         rbsNullable.ensureSize( k.i );
         rbsNullable.set( k.i, k.nullable );

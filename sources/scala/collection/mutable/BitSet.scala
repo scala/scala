@@ -9,36 +9,36 @@
 
 package scala.collection.mutable ;
 
-/** resizable bit sets, to represent small sets of integers
+/** mutable, resizable bit sets, to represent dense sets of small integers
  *  @author  Burak Emir
  *  @param initSize: initial size in nbits
  */
-class ResizableBitSet(initSize: Int) extends scala.collection.BitSet {
+class BitSet(initSize: Int) extends scala.collection.BitSet {
 
   /** default constructor, initial size of 16 bits */
   def this() = this( 16 );
 
-  final def byteSize(size:Int) = { (size >>> 3) + (if( (size & 0x07)!= 0 ) 1 else 0) };
+  final def byteSize(size:Int) = { (size >>> 5) + (if( (size & 0x1F)!= 0 ) 1 else 0) };
 
-  class ByteArray with ResizableArray[Byte] {
+  class ByteArray with ResizableArray[Int] {
     override protected val initialSize: Int = byteSize( initSize );
-    override protected var array: Array[Byte] = new Array[Byte](initialSize);
+    override protected var array: Array[Int] = new Array[Int](initialSize);
 
     /** size of this bitset in nbits */
     def ensureBits(nbits: Int): Unit = ensureSize( byteSize( nbits ));
 
     final def and(j: Int, mask:Int): Unit = {
-      array.update( j, (array(j) & mask).asInstanceOf[Byte] );
+      array.update( j, array(j) & mask );
     }
     final def or(j: Int, mask:Int): Unit = {
-      array.update( j, (array(j) | mask).asInstanceOf[Byte] );
+      array.update( j, array(j) | mask );
     }
     def get(j:Int, mask:Int):Boolean = {
       (array(j) & mask) != 0;
     }
 
-    def freeze: Array[Byte] = {
-      val arr = new Array[Byte]( array.length );
+    def freeze: Array[Int] = {
+      val arr = new Array[Int]( array.length );
       java.lang.System.arraycopy(array, 0, arr, 0, arr.length);
       arr
     }
@@ -59,23 +59,23 @@ class ResizableBitSet(initSize: Int) extends scala.collection.BitSet {
 
   final def set(i: Int): Unit = {
     ensureSize(i+1);
-    val j         = (i >>> 3);
-    val mask      = (1 << (i & 0x07));
+    val j         = (i >>> 5);
+    val mask      = (1 << (i & 0x1F));
     internal.or(j, mask);
   }
 
   def clear(i: Int): Unit = {
     ensureSize(i+1);
-    val j    = (i >>> 3);
-    val mask = (1 << (i & 0x07));
+    val j    = (i >>> 5);
+    val mask = (1 << (i & 0x1F));
     internal.and(j, ~mask);
   }
 
   def apply(i: Int):Boolean = {
-    val j    = (i >>> 3);
-    val mask = (1 << (i & 0x07));
+    val j    = (i >>> 5);
+    val mask = (1 << (i & 0x1F));
     internal.get(j, mask);
   }
 
-  def toByteArray: Array[Byte] = internal.freeze;
+  def toArray: Array[Int] = internal.freeze;
 }

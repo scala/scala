@@ -16,11 +16,11 @@ class MutableTreeHedgeGrammar[ A <: Alphabet ] extends TreeHedgeGrammar[ A ] {
   /** number of hedge nonterminals*/
   var nHedgeNT: Int = 0;
   /** inv: treeInitials.length == nTreeNT */
-  val treeInitials    = new mutable.ResizableBitSet();
+  val treeInitials    = new mutable.BitSet();
   /** inv: hedgeInitials.length == nHedgeNT */
-  val hedgeInitials   = new mutable.ResizableBitSet();
+  val hedgeInitials   = new mutable.BitSet();
   /** inv: hedgeIsNullable.length == nHedgeNT */
-  val isNullable      = new mutable.ResizableBitSet();;
+  val isNullable      = new mutable.BitSet();;
   val treeTransitions:  mutable.Map[Int, mutable.Set[TreeRHS]] =
     new mutable.HashMap[Int, mutable.Set[TreeRHS]];
   val hedgeTransitions: mutable.Map[Int, mutable.Set[HedgeRHS]] =

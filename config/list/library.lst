@@ -72,6 +72,7 @@ collection/SetProxy.scala
 collection/BitSet.scala
 
 collection/mutable/ArrayBuffer.scala
+collection/mutable/BitSet.scala
 collection/mutable/Buffer.scala
 collection/mutable/BufferProxy.scala
 collection/mutable/DefaultMapModel.scala
@@ -101,7 +102,6 @@ collection/mutable/Publisher.scala
 collection/mutable/Queue.scala
 collection/mutable/QueueProxy.scala
 collection/mutable/ResizableArray.scala
-collection/mutable/ResizableBitSet.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Scriptable.scala
 collection/mutable/Set.scala
