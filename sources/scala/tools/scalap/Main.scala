@@ -21,9 +21,11 @@ object Main {
     def usage: Unit = {
         Console.println("usage: scalap {<option>} <name>");
         Console.println("where <option> is");
-        Console.println("  -verbose             print out additional information");
-        Console.println("  -version             print out the version number of scalap");
-        Console.println("  -classpath <path>    set the classpath");
+        Console.println("  -verbose               print out additional information");
+        Console.println("  -version               print out the version number of scalap");
+        Console.println("  -help                  display this usage message");
+        Console.println("  -classpath <pathlist>  specify where to find user class files");
+        Console.println("  -cp <pathlist>         specify where to find user class files");
     }
 
     def process(path: ClassPath)(classname: String): Unit = {
@@ -62,13 +64,20 @@ object Main {
         	val arguments = Arguments.Parser('-')
         		                     .withOption("-verbose")
         		                     .withOption("-version")
+        		                     .withOption("-help")
         		                     .withOptionalArg("-classpath")
+        		                     .withOptionalArg("-cp")
                                      .parse(args);
             if (arguments contains "-version")
                 Console.println("scalap " + VERSION);
+            if (arguments contains "-help")
+            	usage;
             verbose = arguments contains "-verbose";
             val path = arguments.getArgument("-classpath") match {
-            	case None => new ClassPath
+            	case None => arguments.getArgument("-cp") match {
+            		case None => new ClassPath
+            		case Some(path) => new ClassPath { override val classPath = path }
+            	}
             	case Some(path) => new ClassPath { override val classPath = path }
             }
             if (verbose)
