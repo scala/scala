@@ -29,7 +29,7 @@ public class AbortError extends Error {
 
     /** Initializes this instance with the specified cause. */
     protected AbortError(Throwable cause) {
-        this(cause);
+        super(cause);
     }
 
     /**
