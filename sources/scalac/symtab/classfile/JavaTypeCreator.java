@@ -8,7 +8,7 @@
 
 package scalac.symtab.classfile;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 import scalac.atree.AConstant;
 import scalac.util.Debug;
 import scalac.util.Name;

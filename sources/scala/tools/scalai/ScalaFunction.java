@@ -9,7 +9,7 @@
 
 package scala.tools.scalai;
 
-import ch.epfl.lamp.util.SourceFile;
+import scala.tools.util.SourceFile;
 
 import scalac.ast.Tree;
 import scalac.ast.Tree.ValDef;

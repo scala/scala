@@ -8,7 +8,7 @@
 
 package scalac.transformer.matching;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 import scalac.*;
 import scalac.ast.Tree;

@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 import scalac.ApplicationError;
 

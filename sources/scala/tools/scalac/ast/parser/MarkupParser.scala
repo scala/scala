@@ -3,7 +3,7 @@ import scalac.ast._;
 import scalac.atree.AConstant;
 import scalac._;
 import scalac.util._;
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;

@@ -12,7 +12,7 @@ package scala.tools.scalai;
 import java.util.Map;
 import java.util.HashMap;
 
-import ch.epfl.lamp.util.SourceFile;
+import scala.tools.util.SourceFile;
 
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;

@@ -20,6 +20,8 @@ import java.util.HashSet;
 
 import ch.epfl.lamp.util.Pair;
 
+import scala.tools.util.SourceFile;
+
 import scalac.Global;
 import scalac.symtab.Scope;
 import scalac.symtab.Scope.SymbolIterator;
@@ -32,7 +34,6 @@ import scalac.util.NameTransformer;
 
 import java.io.*;
 import scalac.ast.printer.*;
-import ch.epfl.lamp.util.SourceFile;
 import scala.tools.scalac.ast.parser.Parser$class;
 import scalac.Unit;
 

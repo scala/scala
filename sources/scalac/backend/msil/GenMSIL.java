@@ -34,9 +34,10 @@ import Scope.SymbolIterator;
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
 
+import scala.tools.util.Position;
+
 import ch.epfl.lamp.compiler.msil.*;
 import ch.epfl.lamp.compiler.msil.emit.*;
-import ch.epfl.lamp.util.Position;
 
 import Item.*;
 

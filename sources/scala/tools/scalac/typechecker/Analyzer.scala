@@ -13,8 +13,8 @@
 // todo: synchronize on module instantiation.
 // todo: empty package
 
-import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.Pair;
+import scala.tools.util.Position;
 import scalac._;
 import scalac.util._;
 import scalac.ast._;

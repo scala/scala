@@ -11,7 +11,7 @@ package scalac.symtab;
 
 import java.util.HashMap;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 import scalac.ApplicationError;
 import scalac.atree.AConstant;
 import scalac.util.*;

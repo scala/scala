@@ -19,7 +19,7 @@ import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Debug;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 import ch.epfl.lamp.compiler.msil.*;
 
 public class CLRClassParser extends SymbolLoader {

@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 import scalac.Unit;
 import scalac.ast.Tree;

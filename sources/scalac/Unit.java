@@ -8,8 +8,8 @@
 
 package scalac;
 
-import ch.epfl.lamp.util.SourceFile;
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
+import scala.tools.util.SourceFile;
 
 import scalac.ast.Tree;
 import scalac.atree.ARepository;

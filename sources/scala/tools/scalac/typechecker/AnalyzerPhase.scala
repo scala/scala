@@ -6,7 +6,7 @@
 
 // $Id$
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 import scalac._;
 import scalac.util._;
 import scalac.ast._;

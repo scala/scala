@@ -8,7 +8,7 @@
 
 package scalac.util;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 import java.text.Format;
 import java.text.MessageFormat;

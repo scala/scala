@@ -8,7 +8,7 @@
 
 package scalac.symtab;
 
-import ch.epfl.lamp.util.SourceFile;
+import scala.tools.util.SourceFile;
 
 import scalac.*;
 import scalac.ast.parser.*;

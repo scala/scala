@@ -21,8 +21,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-import ch.epfl.lamp.util.Position;
-import ch.epfl.lamp.util.SourceFile;
+import scala.tools.util.Position;
+import scala.tools.util.SourceFile;
 
 import scala.runtime.RunTime;
 

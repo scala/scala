@@ -14,7 +14,8 @@ import java.util.*;
 
 import ch.epfl.lamp.fjbg.*;
 import ch.epfl.lamp.util.Pair;
-import ch.epfl.lamp.util.Position;
+
+import scala.tools.util.Position;
 
 import scalac.*;
 import scalac.ast.Tree;

@@ -17,7 +17,7 @@ import Scope.SymbolIterator;
 import scalac.util.Name ;
 import scalac.util.Names ;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 public class RightTracerInScala extends TracerInScala  {
 

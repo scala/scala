@@ -13,7 +13,7 @@ import java.util.Iterator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 import scalac.Global;
 import scalac.symtab.Scope;

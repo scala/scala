@@ -11,7 +11,7 @@ import scalac.transformer.TransMatch.Matcher ;
 
 import java.util.* ;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 
 /** 2do: factor common things of LeftTracerInScala and RightTracerInScala

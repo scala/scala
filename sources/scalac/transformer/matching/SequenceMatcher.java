@@ -13,7 +13,7 @@ import scalac.symtab.* ;
 
 import java.util.* ;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 /** constructs a matcher for a sequence pattern. plays two roles in
  *  described in design pattern Builder.

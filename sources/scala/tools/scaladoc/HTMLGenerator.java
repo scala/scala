@@ -32,8 +32,9 @@ import ch.epfl.lamp.util.XMLAttribute;
 import ch.epfl.lamp.util.HTMLPrinter;
 import ch.epfl.lamp.util.HTMLRepresentation;
 import ch.epfl.lamp.util.Pair;
-import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.XHTMLPrinter;
+
+import scala.tools.util.Position;
 
 import scalac.Global;
 import scalac.Unit;

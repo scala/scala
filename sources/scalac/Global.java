@@ -9,8 +9,6 @@
 package scalac;
 
 import ch.epfl.lamp.util.CodePrinter;
-import ch.epfl.lamp.util.Position;
-import ch.epfl.lamp.util.SourceFile;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -19,6 +17,9 @@ import java.io.PrintWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
+
+import scala.tools.util.Position;
+import scala.tools.util.SourceFile;
 
 import scalac.ast.*;
 import scalac.ast.parser.*;

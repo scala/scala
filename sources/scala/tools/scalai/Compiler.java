@@ -19,8 +19,8 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import ch.epfl.lamp.util.Position;
-import ch.epfl.lamp.util.SourceFile;
+import scala.tools.util.Position;
+import scala.tools.util.SourceFile;
 
 import scalac.Unit;
 import scalac.Global;

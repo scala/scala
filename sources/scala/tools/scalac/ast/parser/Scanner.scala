@@ -13,8 +13,8 @@ import scalac.util.SourceRepresentation;
 
 package scala.tools.scalac.ast.parser {
 
-import ch.epfl.lamp.util.Position;
-import ch.epfl.lamp.util.SourceFile;
+import scala.tools.util.Position;
+import scala.tools.util.SourceFile;
 
 
 /** A scanner for the programming language Scala.

@@ -12,7 +12,7 @@ package scala.tools.scalai;
 import java.util.Map;
 import java.util.HashMap;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 import scalac.Global;
 import scalac.Phase;

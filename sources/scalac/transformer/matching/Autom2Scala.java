@@ -14,7 +14,7 @@ import Tree.*;
 import scalac.transformer.TransMatch.Matcher ;
 import java.util.* ;
 
-import ch.epfl.lamp.util.Position;
+import scala.tools.util.Position;
 
 public class Autom2Scala  {
 
