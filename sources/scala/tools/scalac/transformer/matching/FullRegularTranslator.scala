@@ -145,8 +145,8 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
               DEBUGPRINT( "2a.nullable" + a.nullable );
 	      for( val brule <- cur.hedgeRules ) {
 		brule match {
-		  case HedgeRule( B, Pair( t, h )) =>
-		    cur.hedgeRules += new HedgeRule( a, Pair( t, h ));
+		  case HedgeRule( B, t, h ) =>
+		    cur.hedgeRules += new HedgeRule( a, t, h );
 		  case HedgeChainRule( B, h ) =>
 		    cur.hedgeRules += new HedgeChainRule( a, h )
                   case _ =>
@@ -170,7 +170,7 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
         changed = false;
         for( val rule <- rules ) {
           rule match {
-            case HedgeRule( h, Pair(_,h2) ) =>
+            case HedgeRule( h, _,h2 ) =>
               if( !reached.contains(h2) ) {
                 changed = true;
                 reached += h2;
@@ -181,7 +181,7 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
       };
       for( val rule <- rules ) {
         rule match {
-          case HedgeRule( h, Pair(_,h2) ) =>
+          case HedgeRule( h, _,h2 ) =>
             if( !reached.contains(h) ) {
               rules = rules - rule;
             }
@@ -300,20 +300,20 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
           try {
  	    val trNT = cur.make.TreeNT( vset );
 	    MakeTreeRule( trNT, vset, pat );
-	    cur.hedgeRules += new HedgeRule( in, Pair( trNT, nt ));
+	    cur.hedgeRules += new HedgeRule( in, trNT, nt );
           } catch {
             case _:WildcardException =>
-	      cur.hedgeRules += new HedgeRule( in, Pair( ANYTREE, nt ));
+	      cur.hedgeRules += new HedgeRule( in, ANYTREE, nt );
           }
         }
       case _ =>
         try {
 	  val trNT = cur.make.TreeNT( vset );
 	  MakeTreeRule( trNT, vset, pat );
-	  cur.hedgeRules += new HedgeRule( in, Pair( trNT, nt ));
+	  cur.hedgeRules += new HedgeRule( in, trNT, nt );
         } catch {
           case _:WildcardException =>
-	    cur.hedgeRules += new HedgeRule( in, Pair( ANYTREE, nt ));
+	    cur.hedgeRules += new HedgeRule( in, ANYTREE, nt );
 
         }
     }
@@ -339,7 +339,7 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
       case Tree$Apply( theTest, xs ) =>
         val test = newTest( theTest ); //p.type
         val childrenNT = cur.make.HedgeNT; // make a new NT
-        cur.treeRules += new TreeRule(in, new Pair( test, childrenNT ));
+        cur.treeRules += new TreeRule(in, test, childrenNT );
         MakeHedgeRule( childrenNT, EMPTYHEDGE, emptyVars, Iterator.fromArray( xs ));
 
       case Tree$Alternative( xs ) => // is tree valued

@@ -67,7 +67,7 @@ class NonTermFactory {
   }
 
   def TreeNT( vs:immutable.Set[Int] ): TreeNT = {
-    val x = new TreeNT( treeCounter, vs );
+    val x = new TreeNT( treeCounter );
     x.vset = vs;
     treeCounter = treeCounter + 1;
     x

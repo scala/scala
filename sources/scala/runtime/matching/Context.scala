@@ -79,10 +79,10 @@ case class RuleContext( r:Rule, up:PathContext ) extends PathContext {
   }
 
   override def address:List[Int] = r match {
-    case HedgeRule( _, _ ) => right( up.address );
-    case AnyNodeRule( _, _ ) => down( up.address );
-    case TreeRule( _, _ ) =>  down( up.address );
-    case AnyTreeRule( _ ) =>  down( up.address );
+    case _:HedgeRule   => right( up.address );
+    case _:AnyNodeRule => down( up.address );
+    case _:TreeRule    =>  down( up.address );
+    case _:AnyTreeRule =>  down( up.address );
   }
 
   /* if have common prefix */
@@ -109,11 +109,11 @@ case class RuleContext( r:Rule, up:PathContext ) extends PathContext {
 
   override def ~( other:PathContext ) = {
     def matchesH( H:HedgeNT, r2:Rule ) = r2 match {
-      case HedgeRule( H, _ ) => true
+      case HedgeRule( H, _, _ ) => true
       case _ => false;
     };
     def matchesT( T:TreeNT, r2:Rule ) = r2 match {
-      case TreeRule( T, _ ) => true
+      case TreeRule( T, _, _ ) => true
       case AnyTreeRule( T ) => true
       case AnyNodeRule( T, _ ) => true
       case _ => false;
@@ -122,7 +122,7 @@ case class RuleContext( r:Rule, up:PathContext ) extends PathContext {
       case RuleContext( r2, up2 ) =>
       ( (up == up2) && (this.up match {
 
-        case RuleContext(HedgeRule(h, Pair(t1,h1)),_) =>
+        case RuleContext( HedgeRule( h, t1, h1 ), _ ) =>
           ( matchesT( t1, this.r ) && matchesH( h1, r2 ) )
           ||( matchesT( t1, r2 ) && matchesH( h1, this.r ) )
 

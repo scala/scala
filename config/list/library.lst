@@ -147,6 +147,7 @@ runtime/matching/Address.scala
 runtime/matching/Context.scala
 runtime/matching/Grammar.scala
 runtime/matching/Match.scala
+runtime/matching/Matcher.scala 
 runtime/matching/NonTerm.scala
 runtime/matching/Pebble.scala
 runtime/matching/Rule.scala

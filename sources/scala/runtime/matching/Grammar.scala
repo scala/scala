@@ -9,8 +9,8 @@ import scala.collection.mutable;
 /** runtime representation of patterns. This class treats all variable
  *  indices as sequence variables
  */
-abstract class Grammar( theTreeTransitions:Map[Int,Set[Rule]],
-                        theHedgeTransitions:Map[Int,Set[Rule]],
+abstract class Grammar( theTreeTransitions:Map[Int,Set[TRule]],
+                        theHedgeTransitions:Map[Int,Set[HRule]],
                         caseVars:Array[Int] ) {
 
   final val treeTransitions = theTreeTransitions ;
@@ -23,4 +23,5 @@ abstract class Grammar( theTreeTransitions:Map[Int,Set[Rule]],
 
   def test( test:int, inp:Any ):boolean ;
 
+  final def isSequenceType = treeInitials.isEmpty;
 }
