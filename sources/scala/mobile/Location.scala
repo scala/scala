@@ -88,7 +88,7 @@ class Location(url: URL) {
  *
  *  Example:<pre>
  *    <b>val</b> obj = Location.create("xcode.Math");
- *    <b>val</b> x = obj[Int, Int]("square")(5));</pre>
+ *    <b>val</b> x = obj[Int, Int]("square")(5);</pre>
  *
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004
