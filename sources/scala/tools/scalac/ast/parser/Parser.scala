@@ -1491,7 +1491,8 @@ class Parser(unit: CompilationUnit) {
       .asInstanceOf[Array[Tree$ValDef]]
   }
 
-  /** Param ::= Id `:' [`=>'] Type [`*']
+  /** Param ::= Id `:' ParamType
+   *  ParamType ::= Type | Type `*' | `=>' Type
    *  ClassParam ::= [[modifiers] val] Param
    */
   def param(ofPrimaryConstructor: boolean): Tree$ValDef = {
@@ -1512,18 +1513,21 @@ class Parser(unit: CompilationUnit) {
     }
     val name = ident();
     accept(COLON);
+    var tp: Tree = null;
     if (s.token == ARROW) {
       mods = mods | Modifiers.DEF;
       s.nextToken();
-    }
-    var tp = typ();
-    if (s.token == IDENTIFIER && s.name == STAR) {
-      s.nextToken();
-      mods = mods | Modifiers.REPEATED;
-      tp = make.AppliedType(
-        tp.pos,
-        scalaDot(tp.pos, Names.Seq.toTypeName()),
-        NewArray.Tree(tp));
+      tp = typ();
+    } else {
+      tp = typ();
+      if (s.token == IDENTIFIER && s.name == STAR) {
+        s.nextToken();
+        mods = mods | Modifiers.REPEATED;
+        tp = make.AppliedType(
+          tp.pos,
+          scalaDot(tp.pos, Names.Seq.toTypeName()),
+          NewArray.Tree(tp));
+      }
     }
     make.ValDef(pos, mods, name, tp, Tree.Empty)
   }
