@@ -25,14 +25,23 @@ object Generic {
 
     def   elementContainsText( name:java.lang.String ):boolean = true;
 
+    // default behaviour is hash-consing
+    val cache = new HashMap();
+
     def   createElement( elemName:String,
                          attribs :java.util.Map, // ignore attributes.
                          children:java.util.Iterator ):scala.Object = {
 
+          val el = Labelled( Symbol( elemName), iterToList[ Any ]( children ));
+	  val el_cache = cache.get( el as scala.All ) as scala.Object;
+	  if ( el_cache != null ) {
+	    System.err.println("[using cached elem!]");
+	    el_cache
+	  } else {
+	    cache.put( el as scala.All, el as scala.All );
+	    el
+	  }
 
-
-
-          Labelled( Symbol( elemName), iterToList[ Any ]( children ))
 
     }
 

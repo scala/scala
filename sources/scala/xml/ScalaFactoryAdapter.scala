@@ -46,16 +46,37 @@ abstract class ScalaFactoryAdapter
 
     val g: Map[ String, boolean ] ;
 
+    val compress: boolean ;
+
     def   elementContainsText( name:java.lang.String ):boolean =
          g.get( name ) ;
+
+    // if compress is set, used for hash-consing
+    val cache = new HashMap();
 
     def   createElement(elemName:String,
                         attribs:java.util.Map,
                         children:java.util.Iterator ):scala.Object = {
-          val c = f.get( elemName ); // constructor
-          val el = c( iterToList[Element]( children ) );
-          el.setAttribs( mapToMap[String,String]( attribs ) );
-	  el
+	  val _children = iterToList[Element]( children ); // 2do:optimize
+	  if( !compress ) {
+            val c = f.get( elemName ); // get constructor
+            val el = c( _children );
+            el.setAttribs( mapToMap[String,String]( attribs ) );
+	    el
+	  } else { // do hash-consing
+
+	    val h = Element.hashValue( elemName, attribs, _children );
+	    val el_cache = cache.get( h as scala.All ) as scala.Object;
+	    if ( el_cache != null ) {  // return cached elem
+	      el_cache
+	    } else {
+	      val c = f.get( elemName ); // get constructor
+              val el = c( _children );
+              el.setAttribs( mapToMap[String,String]( attribs ) );
+	      cache.put( h as scala.All, el as scala.All );
+	      el
+	    }
+	  }
     }
 
     def createPCDATA( text:String ):scala.Object  = {

@@ -15,6 +15,8 @@ abstract class Element {
     def getAttribs:  Map[ String, String ]; // disabled
     def setAttribs( m:Map[ String, String ] ):Unit ;
 
+    override def hashCode() = Element.hashValue( getName, getAttribs, getChildren );
+
     def toXML: String = {
         "<" + getName + toXML_( getAttribs ) + ">"
         + toXML_( getChildren )
@@ -59,3 +61,14 @@ abstract class Element {
                 } // def toXML
 */
 } // abstract class
+
+object Element {
+  def hashValue( name:String, attribs:Map[ String, String ], children:Seq[ Element ] ) = {
+    name.hashCode() + attribs.hashCode() + children.hashCode()
+  }
+
+  def hashValue( name:String, attribs:java.util.Map, children:Seq[ Element ] ) = {
+    name.hashCode() + attribs.hashCode() + children.hashCode()
+  }
+
+}
