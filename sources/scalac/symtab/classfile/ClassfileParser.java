@@ -13,6 +13,7 @@ import scala.tools.util.Position;
 import scalac.*;
 import scalac.util.*;
 import scalac.symtab.*;
+import scalac.symtab.Scope.SymbolIterator;
 import java.io.*;
 import java.util.*;
 
@@ -142,6 +143,32 @@ public class ClassfileParser implements ClassfileConstants {
             //System.out.println("statics class: " + staticsClass);
             //System.out.println("module: " + m);
             //System.out.println("modules class: " + m.type().symbol());
+
+            // Add static members of superclass
+            Symbol superclass = supertpe.symbol();
+            if (m.isJava() && superclass.isJava()) {
+                Symbol mclass = m.moduleClass();
+                SymbolIterator i = superclass.linkedModule().moduleClass()
+                    .members().iterator(true);
+                outer:
+                while (i.hasNext()) {
+                    Symbol member = i.next();
+                    Symbol current = statics.lookup(member.name);
+                    if (!current.isNone()) {
+                        if (!member.isTerm()) continue outer;
+                        Type info = member.info();
+                        Symbol[] currents = current.alternativeSymbols();
+                        inner:
+                        for (int j = 0; j < currents.length; j++) {
+                            if (currents[j].owner() != mclass)
+                                continue inner;
+                            if (currents[j].info().isSubType(info))
+                                continue outer;
+                        }
+                    }
+                    statics.enterOrOverload(member);
+                }
+            }
         }
     }
 
