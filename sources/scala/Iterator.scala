@@ -15,9 +15,9 @@ trait Iterator[a] {
   def flatMap[b](f: a => Iterator[b]): Iterator[b] = new Iterator[b] {
     private var cur: Iterator[b] = Iterator.empty;
     def hasNext: Boolean =
-      if (cur.hasNext) True
+      if (cur.hasNext) true
       else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); hasNext }
-      else False;
+      else false;
     def next: b =
       if (cur.hasNext) cur.next
       else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); next }
@@ -44,13 +44,13 @@ trait Iterator[a] {
 
   def buffered: BufferedIterator[a] = new BufferedIterator[a] {
     private var hd: a = _;
-    private var ahead: Boolean = False;
+    private var ahead: Boolean = false;
     def head: a = {
-      if (!ahead) { hd = Iterator.this.next; ahead = True }
+      if (!ahead) { hd = Iterator.this.next; ahead = true }
       hd
     }
     def next: a =
-      if (ahead) { ahead = False; hd }
+      if (ahead) { ahead = false; hd }
       else head;
     def hasNext: Boolean =
       ahead || Iterator.this.hasNext;
@@ -61,7 +61,7 @@ trait Iterator[a] {
 module Iterator {
 
   def empty[a] = new Iterator[a] {
-    def hasNext = False;
+    def hasNext = false;
     def next: a = error("next on empty iterator");
   }
 
@@ -86,7 +86,7 @@ module Iterator {
   def from(lo: Int) = new Iterator[Int] {
     private var i = 0;
     def hasNext: Boolean =
-      True;
+      true;
     def next: Int =
       { i = i + 1 ; i - 1 }
   }

@@ -150,7 +150,7 @@ module M5 {
   type Action = () => Unit;
 
   class Wire() {
-    private var sigVal = False;
+    private var sigVal = false;
     private var actions: List[Action] = List();
     def getSignal = sigVal;
     def setSignal(s: Boolean) =
@@ -272,7 +272,7 @@ module M5 {
       def result = if (cout.getSignal) 1 else 0;
 
       def test(a: Int) = {
-        ain setSignal (if (a == 0) False else True);
+        ain setSignal (if (a == 0) false else true);
         run;
         System.out.println("!" + a + " = " + result);
         System.out.println();
@@ -293,8 +293,8 @@ module M5 {
       def result = if (cout.getSignal) 1 else 0;
 
       def test(a: Int, b: Int) = {
-        ain setSignal (if (a == 0) False else True);
-        bin setSignal (if (b == 0) False else True);
+        ain setSignal (if (a == 0) false else true);
+        bin setSignal (if (b == 0) false else true);
         run;
         System.out.println(a + " & " + b + " = " + result);
         System.out.println();
@@ -318,8 +318,8 @@ module M5 {
       def result = if (cout.getSignal) 1 else 0;
 
       def test(a: Int, b: Int) = {
-        ain setSignal (if (a == 0) False else True);
-        bin setSignal (if (b == 0) False else True);
+        ain setSignal (if (a == 0) false else true);
+        bin setSignal (if (b == 0) false else true);
         run;
         System.out.println(a + " | " + b + " = " + result);
         System.out.println();
@@ -346,8 +346,8 @@ module M5 {
         (if (cout.getSignal) 2 else 0);
 
       def test(a: Int, b: Int) = {
-        ain setSignal (if (a == 0) False else True);
-        bin setSignal (if (b == 0) False else True);
+        ain setSignal (if (a == 0) false else true);
+        bin setSignal (if (b == 0) false else true);
         run;
         System.out.println(a + " + " + b + " = " + result);
         System.out.println();
@@ -376,9 +376,9 @@ module M5 {
         (if (cout.getSignal) 2 else 0);
 
       def test(a: Int, b: Int, c: Int) = {
-        ain setSignal (if (a == 0) False else True);
-        bin setSignal (if (b == 0) False else True);
-        cin setSignal (if (c == 0) False else True);
+        ain setSignal (if (a == 0) false else true);
+        bin setSignal (if (b == 0) false else true);
+        cin setSignal (if (c == 0) false else true);
         run;
         System.out.println(a + " + " + b + " + " + c + " = " + result);
         System.out.println();
@@ -448,7 +448,7 @@ class Simulator() {
 }
 
 class Wire() {
-  private var sigVal = False;
+  private var sigVal = false;
   private var actions: List[() => Unit] = List();
   def getSignal = sigVal;
   def setSignal(s: Boolean) =
@@ -564,15 +564,15 @@ class Main() extends CircuitSimulator() {
     for (val Pair(x,c) <- range(0,n) zip ctrl) do { probe("ctrl" + x, c) }
     for (val Pair(x,o) <- range(0,outNum) zip out) do { probe("out" + x, o) }
 
-    in.setSignal(True);
+    in.setSignal(true);
     run;
-    ctrl.at(0).setSignal(True);
+    ctrl.at(0).setSignal(true);
     run;
-    ctrl.at(1).setSignal(True);
+    ctrl.at(1).setSignal(true);
     run;
-    ctrl.at(2).setSignal(True);
+    ctrl.at(2).setSignal(true);
     run;
-    ctrl.at(0).setSignal(False);
+    ctrl.at(0).setSignal(false);
     run;
   }
 }

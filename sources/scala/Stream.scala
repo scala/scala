@@ -119,19 +119,19 @@ trait Stream[a] {
 module Stream {
 
   def empty[c]: Stream[c] = new Stream[c] {
-    def isEmpty = True;
+    def isEmpty = true;
     def head: c = error("head of empty stream");
     def tail: Stream[c] = error("tail of empty stream");
     override def toString(): String = "Stream.empty";
   }
 
   def cons[b](hd: b, def tl: Stream[b]): Stream[b] = new Stream[b] {
-    def isEmpty = False;
+    def isEmpty = false;
     def head = hd;
     private var tlVal: Stream[b] = _;
-    private var tlDefined: Boolean = False;
+    private var tlDefined: Boolean = false;
     def tail: Stream[b] = {
-      if (!tlDefined) { tlVal = tl; tlDefined = True; }
+      if (!tlDefined) { tlVal = tl; tlDefined = true; }
       tlVal
     }
     override def toString(): String = "ConsStream(" + hd + ", ?)";

@@ -1,13 +1,13 @@
 package scala.concurrent;
 
 class Lock() extends Monitor() {
-  var available = True;
+  var available = true;
   def acquire = {
     if (!available) wait();
-    available = False
+    available = false
   }
   def release = {
-    available = True;
+    available = true;
     notify()
   }
 }

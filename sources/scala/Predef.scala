@@ -12,9 +12,6 @@ module Predef {
   type boolean = scala.Boolean;
   type unit = scala.Unit;
 
-  val True = Boolean.True;
-  val False = Boolean.False;
-
   def List[a](x: a*): List[a] = x as List[a];
   val List = scala.List;
 

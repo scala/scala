@@ -61,7 +61,7 @@ module Lisp {
     CONS(x0, list(x1, x2, x3, x4, x5, x6, x7, x8, x9));
 
   var curexp: Data = null;
-  var trace: Boolean = False;
+  var trace: Boolean = false;
   var indent: Int = 0;
 
   def lispError[a](msg: String): a =
@@ -87,8 +87,8 @@ module Lisp {
   }
 
   def toBoolean(x: Data) = x match {
-    case NUM(0) => False
-    case _ => True
+    case NUM(0) => false
+    case _ => true
   }
 
   def normalize(x: Data): Data = x match {

@@ -8,13 +8,13 @@ module lists {
   }
 
   def Nil[a] = new List[a] {
-    def isEmpty: Boolean = True;
+    def isEmpty: Boolean = true;
     def head = error[a]("head of Nil");
     def tail = error[List[a]]("tail of Nil");
   }
 
   def Cons[a](x: a, xs: List[a]): List[a] = new List[a] {
-    def isEmpty = Boolean.False;
+    def isEmpty = false;
     def head = x;
     def tail = xs;
   }
@@ -30,7 +30,7 @@ module lists {
   }
 
   class IntList() extends List[Int] {
-    def isEmpty: Boolean = False;
+    def isEmpty: Boolean = false;
     def head: Int = 1;
     def foo: List[Int] { def isEmpty: Boolean; def head: Int; def tail: List[Int] } = Nil[Int];
     def tail0: List[Int] = foo.prepend(1).prepend(1+1);
