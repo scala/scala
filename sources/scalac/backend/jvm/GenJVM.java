@@ -1317,57 +1317,73 @@ class GenJVM {
         code.emitRETURN();
     }
 
+    protected JMethod addNewScalaMethod(JClass clazz,
+                                        Symbol method,
+                                        int addFlags) {
+        JMethodType methodType = (JMethodType)typeStoJ(method.type());
+
+        Symbol[] params = method.valueParams();
+        String[] argNames = new String[params.length];
+
+        for (int i = 0; i < argNames.length; ++i)
+            argNames[i] = params[i].name.toString();
+
+        return clazz.addNewMethod(modifiersStoJ(method.flags) | addFlags,
+                                  method.name.toString(),
+                                  methodType.getReturnType(),
+                                  methodType.getArgumentTypes(),
+                                  argNames);
+    }
+
     /**
      * Create a class which mirrors all public methods of the given
      * module class as static methods, to enable the use of the module
      * from Java.
      */
-    protected void dumpModuleMirrorClass(Context ctx, JClass modClass) {
-        String mirrorName = modClass.getName();
-        String mainClassName = mirrorName.substring(0, mirrorName.length() - 1);
+    protected void dumpModuleMirrorClass(Context ctx, Symbol cSym) {
+        String mainName = javaName(cSym);
+        String mirrorName = mainName.substring(0, mainName.length() - 1);
 
-        JClass mainClass = fjbgContext.JClass(JAccessFlags.ACC_SUPER
-                                              | JAccessFlags.ACC_PUBLIC
-                                              | JAccessFlags.ACC_FINAL,
-                                              mainClassName,
-                                              JAVA_LANG_OBJECT,
-                                              JClass.NO_INTERFACES,
-                                              ctx.sourceFileName);
-
-        JMethod[] methods = modClass.getMethods();
-        for (int i = 0; i < methods.length; ++i) {
-            JMethod m = methods[i];
-            if (m.isProtected() || m.isPrivate() || m.isStatic()
-                || m.getName().equals("<init>"))
+        JClass mirrorClass = fjbgContext.JClass(JAccessFlags.ACC_SUPER
+                                                | JAccessFlags.ACC_PUBLIC
+                                                | JAccessFlags.ACC_FINAL,
+                                                mirrorName,
+                                                JAVA_LANG_OBJECT,
+                                                JClass.NO_INTERFACES,
+                                                ctx.sourceFileName);
+        Scope.SymbolIterator memberIt =
+            new Scope.UnloadIterator(cSym.members().iterator());
+        while (memberIt.hasNext()) {
+            Symbol member = memberIt.next();
+            if (!member.isMethod() || member.isInitializer())
                 continue;
 
-            JType retType = m.getReturnType();
-            JType[] argTypes = m.getArgumentTypes();
-            JMethod mirror =
-                mainClass.addNewMethod(m.getAccessFlags()
-                                       | JAccessFlags.ACC_STATIC,
-                                       m.getName(),
-                                       retType,
-                                       argTypes,
-                                       m.getArgumentNames());
-            JExtendedCode mirrorCode = (JExtendedCode)mirror.getCode();
+            JMethod mirrorMeth =
+                addNewScalaMethod(mirrorClass, member, JAccessFlags.ACC_STATIC);
+            JExtendedCode mirrorCode = (JExtendedCode)mirrorMeth.getCode();
 
-            mirrorCode.emitGETSTATIC(mirrorName,
+            mirrorCode.emitGETSTATIC(mainName,
                                      MODULE_INSTANCE_FIELD_NAME,
-                                     new JObjectType(mirrorName));
-            int index = 0;
-            for (int j = 0; j < argTypes.length; ++j) {
-                mirrorCode.emitLOAD(index, argTypes[j]);
-                index += argTypes[j].getSize();
+                                     new JObjectType(mainName));
+            JType[] argTypes = mirrorMeth.getArgumentTypes();
+            for (int index = 0, i = 0; i < argTypes.length; ++i) {
+                mirrorCode.emitLOAD(index, argTypes[i]);
+                index += argTypes[i].getSize();
             }
-            mirrorCode.emitINVOKE(m);
-            mirrorCode.emitRETURN(retType);
-        }
+            mirrorCode.emitINVOKEVIRTUAL(mainName,
+                                         mirrorMeth.getName(),
+                                         (JMethodType)mirrorMeth.getType());
+            mirrorCode.emitRETURN(mirrorMeth.getReturnType());
 
-        addScalaAttr(mainClass);
+            mirrorCode.setLineNumber(0,
+                                     mirrorCode.getPC(),
+                                     Position.line(member.pos));
+        }
+        addScalaAttr(mirrorClass);
+
         try {
-            String fileName = javaFileName(mainClassName);
-            mainClass.writeTo(fileName);
+            String fileName = javaFileName(mirrorName);
+            mirrorClass.writeTo(fileName);
             global.operation("wrote " + fileName);
         } catch (java.io.IOException e) {
             throw global.fail(e.getMessage());
@@ -1635,7 +1651,7 @@ class GenJVM {
     protected HashSet seenClasses = new HashSet();
     protected void leaveClass(Context ctx, Symbol cSym) {
         if (ctx.isModuleClass && !seenClasses.contains(cSym.fullName()))
-            dumpModuleMirrorClass(ctx, ctx.clazz);
+            dumpModuleMirrorClass(ctx, cSym);
         seenClasses.add(cSym.fullName());
 
         addScalaAttr(ctx.clazz);
@@ -1661,26 +1677,16 @@ class GenJVM {
                    + " (type: " + Debug.toString(mSym.info()) + ")"
                    + " wide jumps? " + useWideJumps);
 
+        JMethod method = addNewScalaMethod(ctx.clazz, mSym, 0);
+
         Map locals = new HashMap();
+        Symbol[] args = mSym.valueParams();
+        JType[] argTypes = method.getArgumentTypes();
 
-        Tree.ValDef[] args = mDef.vparams[0];
-        int argsNum = args.length;
-
-        JType[] argTypes = new JType[argsNum];
-        String[] argNames = new String[argsNum];
-        for (int i = 0, pos = 1; i < argsNum; ++i) {
-            argTypes[i] = typeStoJ(args[i].symbol().info());
-            argNames[i] = args[i].name.toString();
-            locals.put(args[i].symbol(), new Integer(pos));
+        for (int i = 0, pos = 1; i < argTypes.length; ++i) {
+            locals.put(args[i], new Integer(pos));
             pos += argTypes[i].getSize();
         }
-
-        JMethod method =
-            ctx.clazz.addNewMethod(modifiersStoJ(mSym.flags),
-                                   mSym.name.toString(),
-                                   typeStoJ(mSym.info().resultType()),
-                                   argTypes,
-                                   argNames);
 
         if ((mSym.flags & Modifiers.BRIDGE) != 0)
             method.addAttribute(fjbgContext.JOtherAttribute(ctx.clazz,
