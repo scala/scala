@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 import scalac.Global;
+import scalac.Phase;
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
@@ -30,8 +31,10 @@ import scalac.symtab.Type;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
+import scalac.symtab.Scope.SymbolIterator;
 import scalac.symtab.SymSet;
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolTablePrinter;
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
 import scalac.util.Name;
@@ -87,6 +90,15 @@ public class Erasure extends Transformer implements Modifiers {
         super(global);
 	this.definitions = global.definitions;
         this.primitives = global.primitives;
+    }
+
+    //########################################################################
+    // Public Methods
+
+    /** Transforms the given unit. */
+    public void apply(Unit unit) {
+	this.unit = unit;
+	super.apply(unit);
     }
 
     //########################################################################
@@ -178,14 +190,53 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
     //########################################################################
-    //########################################################################
-    //########################################################################
-    //########################################################################
+    // Private Methods - Overlapping signatures detection
 
-    public void apply(Unit unit) {
-	this.unit = unit;
-	unit.body = transform(unit.body);
+    /**
+     * Checks that overloaded terms of the given class have no
+     * overlapping erased signatures.
+     */
+    private void checkOverloadedTermsOf(Symbol clasz) {
+        for (SymbolIterator si = clasz.members().iterator(); si.hasNext(); ) {
+            Symbol symbol = si.next();
+            if (!symbol.isTerm()) continue;
+            switch (symbol.info()) {
+            case OverloadedType(Symbol[] symbols, _):
+                Type[] types = new Type[symbols.length];
+                for (int i = 0; i < symbols.length; i++) {
+                    types[i] = symbols[i].nextType();
+                    for (int j = 0; j < i; j++) {
+                        if (!types[i].isSameAs(types[j])) continue;
+                        errorOverlappingSignatures(symbols[j], symbols[i]);
+                        break;
+                    }
+                }
+            }
+        }
     }
+
+    /** Reports an overlapping signature error for given symbols. */
+    private void errorOverlappingSignatures(Symbol symbol1, Symbol symbol2) {
+        SymbolTablePrinter printer = new SymbolTablePrinter(" ");
+        printer.print("overlapping overloaded alternatives;").space();
+        printer.print("the two following alternatives of").space();
+        printer.printSymbol(symbol1).space();
+        printer.print("have the same erasure:").space();
+        printer.printType(symbol1.nextType());
+        Phase phase = global.currentPhase;
+        global.currentPhase = global.PHASE.ANALYZER.phase();
+        printer.indent();
+        printer.line().print("alternative 1:").space().printSignature(symbol1);
+        printer.line().print("alternative 2:").space().printSignature(symbol2);
+        printer.undent();
+        global.currentPhase = phase;
+        unit.error(symbol2.pos, printer.toString());
+    }
+
+    //########################################################################
+    //########################################################################
+    //########################################################################
+    //########################################################################
 
 //////////////////////////////////////////////////////////////////////////////////
 // Box/Unbox and Coercions
@@ -250,7 +301,7 @@ public class Erasure extends Transformer implements Modifiers {
     }
 
     boolean isBoxed(Type type) {
-	return type.unbox() != type || type.symbol().fullName() == Names.scala_Array;
+	return type.unbox() != type || type.symbol() == definitions.ARRAY_CLASS;
     }
 
     Type boxedType(Type tp) {
@@ -566,6 +617,7 @@ public class Erasure extends Transformer implements Modifiers {
 	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
             Symbol clasz = tree.symbol();
             TreeList members = new TreeList(transform(body));
+            checkOverloadedTermsOf(clasz);
             addBridges(clasz, members);
             return gen.ClassDef(clasz, members.toArray());
 
