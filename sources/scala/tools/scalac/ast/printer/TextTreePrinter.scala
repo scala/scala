@@ -249,8 +249,8 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(if ((mods & Modifiers.INTERFACE) != 0) KW_INTERFACE else KW_CLASS);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
-	printParams(tparams);
-	printParams(vparams);
+	printSTypeParams(tparams);
+	printSValueParams(vparams);
 	printOpt(TXT_COLON, tpe, false);
 	printTemplate(tree.symbol(), impl);
 
@@ -298,8 +298,8 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(Space);
 	if (name.isTypeName()) print(KW_THIS);
 	else printSymbolDefinition(tree.symbol(), name);
-	printParams(tparams);
-	printParams(vparams);
+	printSTypeParams(tparams);
+	printSValueParams(vparams);
 	printOpt(TXT_COLON, tpe, false);
 	printOpt(TXT_EQUAL, rhs, true);
 
@@ -308,14 +308,14 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 	print(KW_TYPE);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
-	printBounds(lobound, rhs, mods);
+	printSBounds(lobound, rhs, mods);
 
       case Tree.AliasTypeDef(mods, name, tparams, rhs) =>
 	printSModifiers(mods);
 	print(KW_TYPE);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
-	printParams(tparams);
+	printSTypeParams(tparams);
 	printOpt(TXT_EQUAL, rhs, true);
 
       case Tree.Import(expr, selectors) =>
@@ -384,7 +384,7 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
 
       case Tree.Function(vparams, body) =>
 	print(TXT_LEFT_PAREN);
-	printParams(vparams);
+	printSValueParams(vparams);
 	print(Space);
 	print(TXT_RIGHT_ARROW);
 	print(Space);
@@ -589,6 +589,9 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   protected def printSymbolUse(symbol: Symbol, name: Name): Unit =
     print(Identifier(symbol, name, Use));
 
+  def printSymbol(symbol: Symbol, usage: SymbolUsage): Unit =
+    print(Identifier(symbol, symbol.name, usage));
+
   /** Print unique identifier of symbol */
   protected def printUniqueIdOf(symbol: Symbol): Unit = {
     print(TXT_HASH);
@@ -747,65 +750,166 @@ class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
   }
 
   //##########################################################################
+  // Public Methods - Printing parameters
 
-  protected def printParams(tparams: Array[Tree.AbsTypeDef]): Unit =
-    if (tparams.length > 0) {
+  /** Print attributed parameter lists. */
+  def printAParams(tpe: Type): Unit = tpe match {
+    case Type.PolyType(params, result) =>
+      printATypeParams(params);
+      printAParams(result);
+    case Type.MethodType(params, result) =>
+      printAValueParams(params);
+      printAParams(result);
+    case _ =>
+      throw Debug.abort("illegal case", tpe);
+  }
+
+  /** Print attributed type parameter list. */
+  def printATypeParams(tparams: Array[Symbol]): Unit =
+    if (tparams.length > 0 && !global.debug) {
       print(TXT_LEFT_BRACKET);
       for (val i <- Iterator.range(0, tparams.length)) {
         if (i > 0) print(TXT_COMMA_SP);
-        printParam(tparams(i));
+        printATypeParam(tparams(i));
       }
       print(TXT_RIGHT_BRACKET);
     }
 
-  protected def printParams(vparamss: Array[Array[Tree.ValDef]]): Unit =
-    for (val i <- Iterator.range(0, vparamss.length))
-      printParams(vparamss(i));
+  /** Print attributed type parameter. */
+  def printATypeParam(tparam: Symbol): Unit = {
+    printAModifiers(tparam);
+    printSymbol(tparam, Definition);
+    printABoundsOf(tparam);
+  }
 
-  protected def printParams(vparams: Array[Tree.ValDef]): Unit = {
+  /** Print attributed value parameter list. */
+  def printAValueParams(vparams: Array[Symbol]): Unit = {
     print(TXT_LEFT_PAREN);
     for (val i <- Iterator.range(0, vparams.length)) {
       if (i > 0) print(TXT_COMMA_SP);
-      printParam(vparams(i));
+      printAValueParam(vparams(i));
     }
     print(TXT_RIGHT_PAREN);
   }
 
-  protected def printParam(tree: Tree): Unit = tree match {
-    case Tree.AbsTypeDef(mods, name, bound, lobound) =>
-      printSModifiers(mods);
-      printSymbolDefinition(tree.symbol(), name);
-      printBounds(lobound, bound, mods);
-
-    case Tree.ValDef(mods, name, tpe, Tree.Empty) =>
-      printSModifiers(mods);
-      if ((mods & Modifiers.PARAMACCESSOR) != 0) {
-        print(KW_VAL); print(Space);
-      }
-      printSymbolDefinition(tree.symbol(), name);
-      printOpt(TXT_COLON, tpe, false);
-
-    case _ =>
-      Debug.abort("bad parameter: " + tree);
+  /** Print attributed value parameter. */
+  def printAValueParam(vparam: Symbol): Unit = {
+    printAModifiers(vparam);
+    if (vparam.hasParamAccessorFlag()) {
+      print(KW_VAL); print(Space);
+    }
+    printSymbol(vparam, Definition);
+    print(TXT_COLON);
+    print(Space);
+    printType(vparam.info());
   }
 
-  protected def printBounds(lobound: Tree, hibound: Tree, mods: Int): Unit = {
-    val definitions: Definitions = global.definitions;
-    val printLoBound: Boolean =
-      if (lobound.getType() != null)
-        lobound.getType().symbol() != definitions.ALL_CLASS
+  /** Print syntactic type parameter list. */
+  def printSTypeParams(tparams: Array[Tree.AbsTypeDef]): Unit =
+    if (tparams.length > 0) {
+      print(TXT_LEFT_BRACKET);
+      for (val i <- Iterator.range(0, tparams.length)) {
+        if (i > 0) print(TXT_COMMA_SP);
+        printSTypeParam(tparams(i));
+      }
+      print(TXT_RIGHT_BRACKET);
+    }
+
+  /** Print syntactic type parameter. */
+  def printSTypeParam(tparam: Tree.AbsTypeDef): Unit = {
+    printSModifiers(tparam.mods);
+    printSymbolDefinition(tparam.symbol(), tparam.name);
+    printSBounds(tparam.lobound, tparam.rhs, tparam.mods);
+  }
+
+  /** Print syntactic value parameter lists. */
+  def printSValueParams(vparamss: Array[Array[Tree.ValDef]]): Unit =
+    for (val i <- Iterator.range(0, vparamss.length))
+      printSValueParams(vparamss(i));
+
+  /** Print syntactic value parameter list. */
+  def printSValueParams(vparams: Array[Tree.ValDef]): Unit = {
+    print(TXT_LEFT_PAREN);
+    for (val i <- Iterator.range(0, vparams.length)) {
+      if (i > 0) print(TXT_COMMA_SP);
+      printSValueParam(vparams(i));
+    }
+    print(TXT_RIGHT_PAREN);
+  }
+
+  /** Print syntactic value parameter. */
+  def printSValueParam(vparam: Tree.ValDef): Unit = {
+    printSModifiers(vparam.mods);
+    if ((vparam.mods & Modifiers.PARAMACCESSOR) != 0) {
+      print(KW_VAL); print(Space);
+    }
+    printSymbolDefinition(vparam.symbol(), vparam.name);
+    printOpt(TXT_COLON, vparam.tpe, false);
+  }
+
+  //##########################################################################
+  // Public Methods - Printing types and bounds
+
+  /** Print attributed type. */
+  def printType(tp: Type): Unit = {
+    print(tp.toString());
+  }
+
+  /** Print attributed lower bound. */
+  def printALoBound(lobound: Type): Unit = {
+    if (lobound.symbol() != global.definitions.ALL_CLASS && !global.debug) {
+      print(Space);
+      print(TXT_SUPERTYPE);
+      print(Space);
+      printType(lobound);
+    }
+  }
+
+  /** Print attributed view bound. */
+  def printAVuBound(vubound: Type): Unit = {
+    if (vubound.symbol() != global.definitions.ANY_CLASS && !global.debug) {
+      print(Space);
+      print(TXT_VIEWBOUND);
+      print(Space);
+      printType(vubound);
+    }
+  }
+
+  /** Print attributed higher bound. */
+  def printAHiBound(hibound: Type): Unit = {
+    if (hibound.symbol() != global.definitions.ANY_CLASS && !global.debug) {
+      print(Space);
+      print(TXT_SUBTYPE);
+      print(Space);
+      printType(hibound);
+    }
+  }
+
+  /** Print attributed bounds of symbol. */
+  def printABoundsOf(symbol: Symbol): Unit = {
+    printALoBound(symbol.loBound());
+    if (symbol.isViewBounded()) printAVuBound(symbol.vuBound());
+    printAHiBound(symbol.info());
+  }
+
+  /** Print syntactic bounds. */
+  def printSBounds(lobound: Tree, hibound: Tree, mods: Int): Unit = {
+    if (lobound.getType() != null)
+      printALoBound(lobound.getType());
+    else if (!"scala.All".equals(lobound.toString()) && !global.debug)
+      printOpt(TXT_SUPERTYPE, lobound, true);
+    val isViewBounded = (mods & Modifiers.VIEWBOUND) != 0;
+    if (hibound.getType() != null)
+      if (isViewBounded)
+        printAVuBound(hibound.getType());
       else
-        !"scala.All".equals(lobound.toString());
-    if (printLoBound) printOpt(TXT_SUPERTYPE, lobound, true);
-    val printHiBound: Boolean =
-      if (hibound.getType() != null)
-        hibound.getType().symbol() != definitions.ANY_CLASS
-      else
-        !"scala.Any".equals(hibound.toString());
-    if (printHiBound)
+        printAHiBound(hibound.getType());
+    else if (!"scala.Any".equals(hibound.toString()) && !global.debug)
       printOpt(
 	if ((mods & Modifiers.VIEWBOUND) != 0) TXT_VIEWBOUND else TXT_SUBTYPE,
 	hibound, true);
   }
+
+  //##########################################################################
 }
 }
