@@ -203,7 +203,7 @@ public class LambdaLift extends OwnerTransformer
 	    public Type apply(Type tp) {
 		if (global.debug) global.log("traverse " + tp);//debug
 	        switch (tp) {
-		case TypeRef(ThisType(_), Symbol sym, Type[] targs):
+		case TypeRef(NoPrefix, Symbol sym, Type[] targs):
 		    if (isLocal(sym, currentOwner) &&
 			sym.kind == TYPE &&
 			!excluded.contains(sym))

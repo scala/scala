@@ -103,7 +103,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 
     boolean isTypeEntry(int i) {
 	int tag = bytes[index[i]];
-	return (firstTypeTag <= tag && tag <= lastTypeTag);
+	return (firstTypeTag <= tag && tag <= lastTypeTag) || tag == NOpre;
     }
 
     boolean isSymbolEntry(int i) {
@@ -333,10 +333,15 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	    case NOtpe:
 		tpe = Type.NoType;
 		break;
+	    case NOpre:
+		tpe = Type.NoPrefix;
+		break;
 	    case THIStpe:
 		Symbol sym = readSymbolRef();
-		tpe = (sym.kind == NONE) ? Type.localThisType
-		    : Type.ThisType(sym);
+		tpe = (sym.kind == NONE) ? Type.NoPrefix : Type.ThisType(sym);
+                // !!! code above is usefull for the transition
+                // !!! after some time, replace it by the following line:
+		// !!! tpe = Type.ThisType(readSymbolRef());
 		break;
 	    case SINGLEtpe:
                 Type prefix = readTypeRef();

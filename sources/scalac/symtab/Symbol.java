@@ -1907,6 +1907,10 @@ public final class NoSymbol extends Symbol {
         throw new ApplicationError();
     }
 
+    public Type thisType() {
+        return Type.NoPrefix;
+    }
+
     public void reset(Type completer) {
     }
 }

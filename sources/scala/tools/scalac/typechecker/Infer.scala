@@ -146,7 +146,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   /** Does given `tparam' occur with variance `v' in type?
   */
   private def variance(tparam: Symbol, tp: Type): int = tp match {
-    case Type.ErrorType | Type.AnyType | Type.NoType |
+    case Type.ErrorType | Type.AnyType | Type.NoType | Type.NoPrefix |
          Type$ThisType(_) | Type$ConstantType(_, _) =>
       VARIANCES
     case Type$TypeRef(pre, sym, args) =>

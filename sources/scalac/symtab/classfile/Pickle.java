@@ -163,6 +163,8 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    switch (tp) {
 	    case NoType:
 		break;
+	    case NoPrefix:
+		break;
 	    case ThisType(Symbol sym):
 		putSymbol(sym);
 		break;
@@ -378,7 +380,10 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeByte(NOtpe);
 	    writeByte(0); // space for length
 	    break;
-
+	case NoPrefix:
+	    writeByte(NOpre);
+	    writeByte(0); // space for length
+	    break;
 	case ThisType(Symbol sym):
 	    writeByte(THIStpe);
 	    writeByte(0); // space for length

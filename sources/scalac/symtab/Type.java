@@ -25,10 +25,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public case ErrorType;  // not used after analysis
     public case AnyType;    // not used after analysis
     public case NoType;
+    public case NoPrefix;
 
     /** C.this.type
      */
-    public case ThisType(Symbol sym);
+    public case ThisType(Symbol sym) {
+        assert sym.isClassType(): Debug.show(sym);
+    }
 
     /** pre.sym.type
      *  sym represents a valueS
@@ -134,7 +137,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     /** An owner-less ThisType
      */
-    public static Type localThisType = ThisType(Symbol.NONE);
+    public static Type localThisType = NoPrefix;
 
     /** An empty Type array */
     public static final Type[] EMPTY_ARRAY  = new Type[0];
@@ -658,6 +661,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public boolean isStable() {
         switch (unalias()) {
+        case NoPrefix:
         case ThisType(_):
         case SingleType(_, _):
         case ConstantType(_, _):
@@ -674,6 +678,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public boolean isLegalPrefix() {
         switch (unalias()) {
+        case NoPrefix:
         case ThisType(_):
         case SingleType(_, _):
             return true;
@@ -993,6 +998,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             case ErrorType:
             case AnyType:
             case NoType:
+            case NoPrefix:
             case UnboxedType(_):
             case TypeVar(_, _):
             case ThisType(_):
@@ -1342,12 +1348,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         public Type apply(Type t) {
             switch (t) {
-            case TypeRef(ThisType(_), Symbol sym, Type[] args):
+            case TypeRef(NoPrefix, Symbol sym, Type[] args):
                 for (int i = 0; i < from.length; i++) {
                     if (matches(sym, from[i])) return replacement(i, t);
                 }
                 break;
-            case SingleType(ThisType(_), Symbol sym):
+            case SingleType(NoPrefix, Symbol sym):
                 for (int i = 0; i < from.length; i++) {
                     if (matches(sym, from[i])) return replacement(i, t);
                 }
@@ -1575,9 +1581,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         private void initialize(Symbol clasz, Type type) {
             switch (type) {
+            case NoPrefix:
+                return;
             case ThisType(Symbol symbol):
                 if (symbol == clasz) return;
-                if (symbol.isNone()) return; // !!!
             }
             subst.put(clasz, type);
             Type base = type.baseType(clasz);
@@ -1839,6 +1846,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return true;
 
         case NoType:
+        case NoPrefix:
             return false;
 
         case ThisType(_):
@@ -1944,6 +1952,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         switch (this) {
         case NoType:
+        case NoPrefix:
             return false;
         case ThisType(_):
         case SingleType(_, _):
@@ -2218,6 +2227,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case AnyType:
             return true;
         case NoType:
+        case NoPrefix:
             return false;
         case TypeVar(Type origin, Constraint constr):
             if (constr.inst != NoType) return constr.inst.isSameAs(this);
@@ -2226,6 +2236,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         switch (this) {
         case NoType:
+        case NoPrefix:
             return false;
         case TypeVar(Type origin, Constraint constr):
             if (constr.inst != NoType) return constr.inst.isSameAs(that);
@@ -3129,6 +3140,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return ERROR;
         case NoType:
             return NOtpe;
+        case NoPrefix:
+            return NOpre;
         case ThisType(Symbol sym):
             return THIStpe
                 ^ (sym.hashCode() * 41);
@@ -3195,6 +3208,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return that == ErrorType;
             case NoType:
                 return that == NoType;
+            case NoPrefix:
+                return that == NoPrefix;
             case ThisType(Symbol sym):
                 switch (that) {
                 case ThisType(Symbol sym1):

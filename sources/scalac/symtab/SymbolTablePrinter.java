@@ -440,6 +440,7 @@ public class SymbolTablePrinter {
     public SymbolTablePrinter printType0(Type type) {
         printCommonPart(type);
         switch (type) {
+        case NoPrefix:
         case ThisType(_):
         case SingleType(_,_):
             return print(".type");
@@ -496,8 +497,9 @@ public class SymbolTablePrinter {
             return print("<any type>");
         case NoType:
             return print("<notype>");
+        case NoPrefix:
+            return print("<noprefix>");
         case ThisType(Symbol sym):
-            if (sym == Symbol.NONE) return print("<local>.this");
             if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
                 return print("this");
             return printSymbolName(sym).print(".this");
@@ -572,6 +574,7 @@ public class SymbolTablePrinter {
     public SymbolTablePrinter printPrefix0(Type prefix) {
         printCommonPart(prefix);
         switch (prefix) {
+        case NoPrefix:
         case ThisType(_):
         case SingleType(_,_):
             return print(".");

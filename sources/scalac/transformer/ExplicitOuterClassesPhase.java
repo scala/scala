@@ -318,7 +318,6 @@ public class ExplicitOuterClassesPhase extends Phase {
             case SingleType(Type prefix, Symbol symbol):
                 return Type.singleType(apply(prefix), symbol);
             case ThisType(Symbol clasz):
-                if (clasz.isNone()) return type;
                 if (clasz == context.clasz) return type;
                 for (int i = 0; i < context.outers.length; i++)
                     if (clasz == context.outers[i].clasz)

@@ -251,6 +251,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      */
     public Tree mkRef(int pos, Type stable, Symbol symbol) {
         switch (stable) {
+	case NoPrefix:
+            return Ident(pos, symbol);
 	case ThisType(Symbol clasz):
             if (clasz.isRoot() || clasz.isNone()) return Ident(pos, symbol);
 	    if (clasz.isPackage()) return mkRef(pos, mkGlobalRef(pos, clasz.module()), symbol); // !!!

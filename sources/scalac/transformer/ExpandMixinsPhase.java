@@ -424,8 +424,7 @@ public class ExpandMixinsPhase extends Phase {
                 Symbol clone = (Symbol)cloner.clones.get(symbol);
                 prefix = apply(prefix);
                 return Type.singleType(prefix, clone != null ? clone : symbol);
-            case ThisType(Symbol symbol):
-                if (symbol.isNone()) return type;
+            case ThisType(_):
                 return clasz.thisType();
             case CompoundType(Type[] parents, Scope members):
                 if (type.symbol() != clasz) return map(type);

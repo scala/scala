@@ -498,9 +498,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     val checkNoEscapeMap = new Type$Map() {
       override def apply(t: Type): Type = {
 	t.unalias() match {
-	  case Type$TypeRef(pre, sym, args) =>
-	    if (pre.isInstanceOf[Type$ThisType]) checkNoEscape(t, sym);
-	  case Type$SingleType(Type$ThisType(_), sym) =>
+	  case Type$TypeRef(Type.NoPrefix, sym, args) =>
+	    checkNoEscape(t, sym);
+	  case Type$SingleType(Type.NoPrefix, sym) =>
 	    checkNoEscape(t, sym);
 	  case _ =>
 	}

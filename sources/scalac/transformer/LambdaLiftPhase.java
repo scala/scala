@@ -70,14 +70,18 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
             case TypeRef(Type pre, Symbol sym, Type[] targs):
                 if (sym.kind == CLASS) {
                     switch (pre) {
-                    case ThisType(Symbol s):
-                        if (s == Symbol.NONE) {
-                            pre = sym.owner().enclClass().thisType();
-                            tp = Type.typeRef(pre, sym, targs);
-                        }
+                    case NoPrefix:
+                        pre = sym.owner().enclClass().thisType();
+                        tp = Type.typeRef(pre, sym, targs);
                     }
                 }
                 switch (pre) {
+                case NoPrefix:
+                    if (LambdaLift.isLocal(sym, owner)) {
+                        assert targs.length == 0;
+                        return proxy(sym, owner).type();
+                    }
+                    break;
                 case ThisType(_):
                     if (sym.kind == CLASS &&
 			sym.primaryConstructor().isUpdatedAt(LambdaLiftPhase.this)) {
@@ -97,9 +101,6 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
                             }
                             return Type.typeRef(pre, sym, targs1);
                         }
-                    } else if (LambdaLift.isLocal(sym, owner)) {
-                        assert targs.length == 0;
-                        return proxy(sym, owner).type();
                     }
                 }
                 break;

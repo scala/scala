@@ -86,7 +86,8 @@ public interface EntryTags {
         LITERALdouble = 32,
         LITERALstring = 33,
         LITERALnull = 34,
-        LITERALzero = 35;
+        LITERALzero = 35,
+	NOpre = 36;
 
     int firstSymTag = NONEsym, lastSymTag = VALsym;
     int firstTypeTag = NOtpe, lastTypeTag = FLAGGEDtpe;

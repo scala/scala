@@ -151,6 +151,7 @@ public class SymbolCloner {
         switch (type) {
         case ErrorType:
         case NoType:
+        case NoPrefix:
             return type;
         case ThisType(Symbol symbol):
             Symbol clone = (Symbol)clones.get(symbol);
