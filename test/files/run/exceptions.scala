@@ -35,7 +35,7 @@ object exceptions {
         val value = try {
             map.lookup(key)
         } catch {
-            case e => e.getMessage()
+            case e => scala.runtime.compat.Platform.getMessage(e)
         }
         check("lookup(" + key + ")", value, "KO");
     }
