@@ -31,7 +31,7 @@ public class Main {
             PRODUCT, VERSION, reporter, new PhaseRepository());
         if (command.parse(args)) {
             InterpreterShell shell = new InterpreterShell(command);
-            shell.main(command.files.toArray(),
+            shell.main(command.files.toArray(), command.script.value,
                 command.program.main, command.program.args);
         }
         System.exit((reporter.errors() > 0) ? 1 : 0);

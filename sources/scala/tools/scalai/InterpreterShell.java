@@ -86,16 +86,16 @@ public class InterpreterShell {
     //########################################################################
     // Public Methods - shell
 
-    public void main(String[] program, String main, String[] args) {
+    public void main(String[] files, String script, String main, String[]args){
         if (interactive) showBanner();
-        if (program.length > 0) load(lfiles = program);
+        if (files.length > 0) load(lfiles = files);
         global.stop("total"); // !!! remove ?
-        if (global.reporter.errors() == 0) {
-            if (main != null) call(main, args);
-        } else {
-            if (!interactive) global.reporter.printSummary();
-        }
-        if (interactive) loop();
+        if (global.reporter.errors() == 0 && script != null) eval(script);
+        if (global.reporter.errors() == 0 && main != null) call(main, args);
+        if (interactive)
+            loop();
+        else
+            global.reporter.printSummary();
     }
 
     public void loop() {

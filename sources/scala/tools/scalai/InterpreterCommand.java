@@ -12,6 +12,7 @@ package scalai;
 import scalac.PhaseRepository;
 import scalac.CompilerCommand;
 import scalac.util.Reporter;
+import scalac.util.StringOptionParser;
 import scalac.util.BooleanOptionParser;
 import scalac.util.ScalaProgramArgumentParser;
 
@@ -20,6 +21,7 @@ public class InterpreterCommand extends CompilerCommand {
     //########################################################################
     // Public Fields
 
+    public final StringOptionParser script;
     public final BooleanOptionParser interactive;
     public final BooleanOptionParser emacs;
     public final ScalaProgramArgumentParser program;
@@ -39,6 +41,10 @@ public class InterpreterCommand extends CompilerCommand {
     {
         super(product, version, syntax, reporter, phases);
 
+        this.script = new StringOptionParser(this,
+            "c", "Evaluate <string> and print result",
+            "string", null);
+
         this.interactive = new BooleanOptionParser(this,
             "interactive", "Start interpreter in interactive mode",
             false);
@@ -52,8 +58,9 @@ public class InterpreterCommand extends CompilerCommand {
         remove(outpath);
         remove(target);
 
-        add(0, interactive);
-        add(1, emacs);
+        add(0, script);
+        add(1, interactive);
+        add(2, emacs);
         add(parsers().indexOf(unknown_options), program);
     }
 
