@@ -152,7 +152,7 @@ public class ExpressionCompiler {
                 invoke.target = Code.Load(Code.Null, variable);
                 context.insertVariable(symbol, variable);
                 Code module = template.getSymbol().isModuleClass()
-                    && template.getSymbol().module().isGlobalModule()
+                    && template.getSymbol().isStatic()
                     ? Code.Store(
                         Code.Null,
                         context.lookupVariable(template.getSymbol().module()),
