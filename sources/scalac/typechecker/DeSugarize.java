@@ -100,6 +100,16 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < elems.length; i++)
 		getVariables(elems[i], vars);
 	    break;
+	case Literal( _ ):
+	    break;
+	case Bind( Name name, Tree t ):
+	    if (name.isVariable() && name != Names.WILDCARD) vars.add(name);
+	    getVariables( t, vars );
+	    break;
+	case Alternative( Tree ts[] ):
+	    for (int i = 0; i < ts.length; i++)
+		getVariables( ts[i], vars );
+	    break;
 	default:
 	    throw new ApplicationError ("illegal pattern", tree);
 	}
