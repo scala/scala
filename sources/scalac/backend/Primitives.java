@@ -999,15 +999,15 @@ public class Primitives {
     /** Return unbox method returning values of the given kind. */
     public Symbol getUnboxValueSymbol(int kind) {
         switch (kind) {
-        case TypeTags.UNIT   : return AS_UVALUE;
-        case TypeTags.BOOLEAN: return AS_ZVALUE;
-        case TypeTags.BYTE   : return AS_BVALUE;
-        case TypeTags.SHORT  : return AS_SVALUE;
-        case TypeTags.CHAR   : return AS_CVALUE;
-        case TypeTags.INT    : return AS_IVALUE;
-        case TypeTags.LONG   : return AS_LVALUE;
-        case TypeTags.FLOAT  : return AS_FVALUE;
-        case TypeTags.DOUBLE : return AS_DVALUE;
+        case TypeTags.UNIT   : return UNBOX_UVALUE;
+        case TypeTags.BOOLEAN: return UNBOX_ZVALUE;
+        case TypeTags.BYTE   : return UNBOX_BVALUE;
+        case TypeTags.SHORT  : return UNBOX_SVALUE;
+        case TypeTags.CHAR   : return UNBOX_CVALUE;
+        case TypeTags.INT    : return UNBOX_IVALUE;
+        case TypeTags.LONG   : return UNBOX_LVALUE;
+        case TypeTags.FLOAT  : return UNBOX_FVALUE;
+        case TypeTags.DOUBLE : return UNBOX_DVALUE;
         default              : throw Debug.abort("illegal kind " + kind);
         }
     }
@@ -1018,21 +1018,21 @@ public class Primitives {
         case UnboxedType(int kind):
             return getUnboxArraySymbol(kind);
         default:
-            return AS_OARRAY;
+            return UNBOX_OARRAY;
         }
     }
 
     /** Return unbox method returning arrays of elements of the given kind. */
     public Symbol getUnboxArraySymbol(int kind) {
         switch (kind) {
-        case TypeTags.BOOLEAN: return AS_ZARRAY;
-        case TypeTags.BYTE   : return AS_BARRAY;
-        case TypeTags.SHORT  : return AS_SARRAY;
-        case TypeTags.CHAR   : return AS_CARRAY;
-        case TypeTags.INT    : return AS_IARRAY;
-        case TypeTags.LONG   : return AS_LARRAY;
-        case TypeTags.FLOAT  : return AS_FARRAY;
-        case TypeTags.DOUBLE : return AS_DARRAY;
+        case TypeTags.BOOLEAN: return UNBOX_ZARRAY;
+        case TypeTags.BYTE   : return UNBOX_BARRAY;
+        case TypeTags.SHORT  : return UNBOX_SARRAY;
+        case TypeTags.CHAR   : return UNBOX_CARRAY;
+        case TypeTags.INT    : return UNBOX_IARRAY;
+        case TypeTags.LONG   : return UNBOX_LARRAY;
+        case TypeTags.FLOAT  : return UNBOX_FARRAY;
+        case TypeTags.DOUBLE : return UNBOX_DARRAY;
         default              : throw Debug.abort("illegal kind " + kind);
         }
     }

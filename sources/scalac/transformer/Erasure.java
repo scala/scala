@@ -301,20 +301,35 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Coerces the given tree to the given type. */
     private Tree coerce(Tree tree, Type pt) {
-        if (isSubType(tree.getType(), pt)) {
-            if (tree.getType().symbol() == definitions.ARRAY_CLASS) {
+        if (isSubType(tree.type(), pt)) {
+            if (tree.type().symbol() == definitions.ARRAY_CLASS) {
                 if (pt.symbol() != definitions.ARRAY_CLASS) {
-                    Symbol symbol = primitives.AS__ARRAY;
-                    return coerce(gen.mkApply__(gen.Select(tree, symbol)), pt);
+                    Symbol symbol = primitives.UNBOX__ARRAY;
+                    Tree unboxtree = gen.mkRef(tree.pos, symbol);
+                    tree = gen.mkApply_V(unboxtree, new Tree[] {tree});
+                    return coerce(tree, pt);
                 }
             }
             return tree;
         }
-        if (isUnboxedType(tree.getType())) {
-            if (!isUnboxedType(pt)) return coerce(box(tree), pt);
-        } else if (isUnboxedType(pt)) {
-            if (tree.type.symbol() == definitions.ARRAY_CLASS
-                || isUnboxedSimpleType(pt)) return unbox(tree, pt);
+        if (isUnboxedSimpleType(tree.type())) {
+            if (isUnboxedSimpleType(pt)) return convert(tree, pt);
+            Type to = pt.erasure();
+            if (!isUnboxedSimpleType(to) || to.isSameAs(tree.type()))
+                return box(tree);
+            else
+                return coerce(convert(tree, to), pt);
+        } else if (isUnboxedArrayType(tree.type())) {
+            if (!isUnboxedArrayType(pt)) return coerce(box(tree), pt);
+        } else if (isUnboxedSimpleType(pt)) {
+            Type from = tree.type().erasure();
+            if (isUnboxedSimpleType(from))
+                return convert(unbox(tree, from), pt);
+            else
+                return unbox(coerce(tree, boxUnboxedType(pt)), pt);
+        } else if (isUnboxedArrayType(pt)) {
+            if (tree.type.symbol() == definitions.ARRAY_CLASS)
+                return unbox(tree, pt);
         } else if (pt.symbol() == definitions.ARRAY_CLASS) {
             Tree boxtree = gen.mkRef(tree.pos, primitives.BOX__ARRAY);
             return gen.mkApply_V(boxtree, new Tree[]{tree});
@@ -334,8 +349,13 @@ public class Erasure extends GenTransformer implements Modifiers {
     /** Unboxes the given tree to the given type. */
     private Tree unbox(Tree tree, Type pt) {
         Symbol symbol = primitives.getUnboxValueSymbol(pt);
-        tree = coerce(tree, symbol.owner().nextType());
-        return gen.mkApply__(gen.Select(tree, symbol));
+        return gen.mkApply_V(gen.mkRef(tree.pos, symbol), new Tree[]{tree});
+    }
+
+    /** Converts the given tree to the given type. */
+    private Tree convert(Tree tree, Type to) {
+        Symbol symbol = primitives.getConvertSymbol(tree.type(), to);
+        return gen.mkApply_V(gen.mkRef(tree.pos, symbol), new Tree[]{tree});
     }
 
     //########################################################################
