@@ -191,7 +191,7 @@ public class Environment {
 
     private void loadTemplateOverrides(Symbol symbol) {
         Type[] bases = symbol.parents();
-        SymbolIterator i = new Scope.UnloadIterator(symbol.members().iterator());
+        SymbolIterator i = symbol.members().iterator(true);
         while (i.hasNext()) loadMethodOverride(bases, i.next());
     }
 
