@@ -358,6 +358,9 @@ public class Evaluator {
             // !!! System.out.println("!!! store Context: level = " + level + ", index = " + index);
             return variables[level][index] = value;
 
+        case Module(_, _):
+            return ((Variable.Module)variable).value = value;
+
         case Member(int index):
             // !!! handle case where object is null
             // !!! System.out.println("!!! store Member: index = " + index + ", length = " + getScalaObject(object).variables.length);
@@ -405,12 +408,10 @@ public class Evaluator {
             return variables[level][index];
 
         case Module(CodePromise body, Object value):
-            if (value == null) {
-                // !!!
-                ((Variable.Module)variable).value = value = evaluate(body.force().code);
-                ((Variable.Module)variable).body = null;
-            }
-            return value;
+            if (value != null) return value;
+            ((Variable.Module)variable).body = null;
+            evaluate(body.force().code);
+            return load(object, variable);
 
         case Member(int index):
             // !!! handle case where object is null
