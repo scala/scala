@@ -169,7 +169,7 @@ $(LATEST)bootstrap-%	:
 	    LIBRARY_SCALAC=$(BOOTSTRAP_SCALAC) \
 	    prefix="bootstrap-" $@;
 
-boottest-%		:
+boottest-%		\
 $(LATEST)boottest-%	:
 	@$(make) \
 	    INSTALL_PREFIX=$(PROJECT_BOOTTESTDIR) \
