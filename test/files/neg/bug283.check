@@ -1,0 +1,4 @@
+bug283.scala:7: illegal cyclic reference involving constructor A
+  type A[t1] = P[A[t1],t1];
+                 ^
+one error found
