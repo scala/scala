@@ -154,6 +154,7 @@ util/PrefixMatcher.java
 util/Reporter.java
 util/SourceRepresentation.java
 util/Strings.java
+util/TypeNames.java
 util/UniqueID.java
 
 ##############################################################################
