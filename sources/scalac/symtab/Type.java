@@ -727,6 +727,42 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
     }
 
+    /**
+     * Looks up in the current type a symbol with the same name as the
+     * given symbol and whose type (as seen from the given prefix) is
+     * in the given relation to the type (as seen from the given
+     * prefix) of the given symbol. If no such symbol is found,
+     * returns NONE. Note that in some cases, the returned symbol may
+     * be equal to the given one. The main purpose of this method is
+     * look up overridden and overriding symbols.
+     */
+    public Symbol lookup(Symbol sym, Type pre, Relation relation) {
+        assert !sym.isOverloaded(): Debug.show(sym);
+        Symbol sym1 = lookupNonPrivate(sym.name);
+        if (sym1.kind == Kinds.NONE || sym1.isStatic()) {
+            return Symbol.NONE;
+        } else {
+            //System.out.println(sym1 + ":" + sym1.type() + sym1.locationString() + " is" + relation + " to " + sym + ":" + sym.type() + sym.locationString() + " in " + pre + " ?"); //DEBUG
+
+            Type symtype = pre.memberType(sym).derefDef();
+            Type sym1type = pre.memberType(sym1).derefDef();
+            switch (sym1type) {
+            case OverloadedType(Symbol[] alts, Type[] alttypes):
+                for (int i = 0; i < alts.length; i++) {
+                    if (alttypes[i].derefDef().compareTo(symtype, relation))
+                        return alts[i];
+                }
+                return Symbol.NONE;
+            default:
+                if (sym1type.compareTo(symtype, relation)) return sym1;
+                else {
+                    if (Global.instance.debug) System.out.println(sym1 + sym1.locationString() + " is not" + relation + "to " + sym + sym.locationString() + " in " + pre + ", since " + sym1type + relation.toString(true) + symtype);//DEBUG
+                    return Symbol.NONE;
+                }
+            }
+        }
+    }
+
 // Set Owner ------------------------------------------------------------------
 
     public Type setOwner(Symbol owner) {
@@ -1553,6 +1589,36 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 
 // Comparisons ------------------------------------------------------------------
+
+    /** Type relations */
+    public static class Relation {
+        public case SubType;   // this SubType   that <=> this.isSubType(that)
+        public case SameType;  // this SameType  that <=> this.isSameAs(that)
+        public case SuperType; // this SuperType that <=> that.isSubType(this)
+
+        public String toString() {
+            return toString(false);
+        }
+        public String toString(boolean negate) {
+            switch (this) {
+            case SubType  : return negate ? " <= " : " !<= ";
+            case SameType : return negate ? " == " : " != ";
+            case SuperType: return negate ? " >= " : " !>= ";
+            default       : throw Debug.abort("unknown relation", this);
+            }
+        }
+    }
+
+    /** Is this type in given relation to that type?
+     */
+    public boolean compareTo(Type that, Relation relation) {
+        switch (relation) {
+        case SubType  : return this.isSubType(that);
+        case SameType : return this.isSameAs(that);
+        case SuperType: return that.isSubType(this);
+        default       : throw Debug.abort("unknown relation", relation);
+        }
+    }
 
     /** Is this type a subtype of that type?
      */
