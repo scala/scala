@@ -8,10 +8,6 @@
 
 package scalac.transformer;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Iterator;
-
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
@@ -20,15 +16,25 @@ import scalac.symtab.Definitions;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
+import scalac.symtab.Modifiers;
 import scalac.atree.AConstant;
 import scalac.ast.Transformer;
 import scalac.ast.GenTransformer;
 import scalac.ast.Tree;
+import scalac.ast.TreeList;
 import scalac.backend.Primitives;
 
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Debug;
+
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Arrays;
 
 /**
  * Turn types into values by applying the following transformations:
@@ -51,14 +57,36 @@ import scalac.util.Debug;
  * @version 1.0
  */
 
+// TODO vérifier tous les appels à scalaClassType et à typeAsValue
+// pour s'assurer qu'ils n'ont effectivement pas d'env. à passer
+
 public class TypesAsValuesPhase extends Phase {
     private final TV_Transformer transformer;
 
-    private static final HashMap/*<Symbol,Map<Symbol,Symbol>>*/ membersToAdd =
+    /**
+     * The list of members to add to a given class (either type
+     * accessors or instantiation methods).
+     */
+    private final HashMap/*<Symbol,NewMember[]>*/ membersToAdd =
         new HashMap();
-    private static final HashMap/*<Symbol,Map<Symbol,Symbol>>*/ paramsToAdd =
+
+    /** The list of parameters to add to a given method. */
+    private final HashMap/*<Symbol,List<Symbol>>*/ paramsToAdd =
         new HashMap();
-    private static final HashMap/*<Symbol,Symbol>*/ accessors =
+
+    /** The accessor method corresponding to a given type (or class) member. */
+    private final HashMap/*<Symbol, Symbol>*/ typeAccessor =
+        new HashMap();
+
+    /** The instanciation method corresponding to a given class. */
+    private final HashMap/*<Symbol,Symbol>*/ instantiator =
+        new HashMap();
+
+    /** The class constructor corresponding to a given class. */
+    private final HashMap/*<Symbol,Symbol>*/ classInitialiser =
+        new HashMap();
+
+    private final HashMap/*<Symbol,Symbol>*/ tConstructor =
         new HashMap();
 
     private final Definitions defs = global.definitions;
@@ -68,11 +96,14 @@ public class TypesAsValuesPhase extends Phase {
     private final Type.MethodType typeAccessorType =
         new Type.MethodType(new Symbol[]{}, typeType);
 
-    private final Symbol singleTypeClass = defs.SINGLETYPE_CLASS;
+    private final Symbol SINGLETYPE_CLASS =
+        defs.SINGLETYPE_CLASS;
     private final Symbol ARRAY_CONSTRUCTOR =
         defs.ARRAY_CLASS.primaryConstructor();
 
     private final Map/*<Symbol, Symbol>*/ basicTypes;
+
+    private HashMap/*<Symbol, Ancestor[][]>*/ displayCache = new HashMap();
 
     public TypesAsValuesPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
@@ -87,81 +118,153 @@ public class TypesAsValuesPhase extends Phase {
         basicTypes.put(defs.CHAR_CLASS,    defs.RTT_CHAR());
         basicTypes.put(defs.BYTE_CLASS,    defs.RTT_BYTE());
         basicTypes.put(defs.BOOLEAN_CLASS, defs.RTT_BOOLEAN());
-    }
 
-    /**
-     * Return a map associating symbols for type accessors to the
-     * symbol of their type.
-     */
-    private HashMap typeAccessors(Symbol classSym) {
-        HashMap/*<Symbol, Symbol>*/ newSymbols =
-            (HashMap)membersToAdd.get(classSym);
+        membersToAdd.put(defs.ARRAY_CLASS, new NewMember[0]);
+        paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
 
-        if (newSymbols == null) {
-            newSymbols = new HashMap();
-
-            Scope.SymbolIterator membersIt =
-		classSym.members().iterator();
-            while (membersIt.hasNext()) {
-                Symbol member = membersIt.next();
-                if (member.isType() /*&& !member.isClass()*/) {
-                    Symbol typeAccessorSym = getAccessorSymbol(member);
-                    newSymbols.put(member, typeAccessorSym);
-                }
-            }
-            membersToAdd.put(classSym, newSymbols);
-        }
-        return newSymbols;
-    }
-
-    private HashMap typeParams(Symbol funSym) {
-        HashMap newSymbols = (HashMap)paramsToAdd.get(funSym);
-        if (newSymbols == null) {
-            Symbol[] tparams = funSym.typeParams();
-            assert tparams.length > 0;
-
-            newSymbols = new HashMap();
-            for (int i = 0; i < tparams.length; ++i) {
-                Symbol param = tparams[i];
-                Symbol valueSym = getAccessorSymbol(param);
-                newSymbols.put(param, valueSym);
-            }
-            paramsToAdd.put(funSym, newSymbols);
-        }
-
-        return newSymbols;
+        displayCache.put(defs.OBJECT_CLASS,
+                         new Ancestor[][] {
+                             new Ancestor[] {
+                                 new Ancestor(defs.OBJECT_CLASS, -1, -1)
+                             }
+                         });
     }
 
     /**
      * Return the symbol of the accessor for the given type symbol.
      */
-    private Symbol getAccessorSymbol(Symbol typeSym) {
+    private Symbol getAccessorSym(Symbol typeSym) {
         assert typeSym.isType();
-        Symbol accessorSym = (Symbol)accessors.get(typeSym);
+        Symbol accessorSym = (Symbol)typeAccessor.get(typeSym);
         if (accessorSym == null) {
             accessorSym = typeSym.owner().newVariable(typeSym.pos,
                                                       typeSym.flags,
                                                       Names.TYPE(typeSym));
-            accessorSym.setInfo(typeSym.owner().isClass()
-                                ? typeAccessorType
-                                : typeType);
-            accessors.put(typeSym, accessorSym);
+            accessorSym.setInfo(typeType);
+            typeAccessor.put(typeSym, accessorSym);
         }
         return accessorSym;
     }
 
+    private Symbol getInstMethSym(Symbol classSym) {
+        Symbol imSym = (Symbol)instantiator.get(classSym);
+        if (imSym == null) {
+            int pos = classSym.pos;
+            Name imName = Names.INSTANTIATE(classSym);
+
+            imSym = isNestedClass(classSym)
+                ? classSym.owner().newMethod(pos, 0, imName)
+                : classSym.newStaticMethod(pos, 0, imName);
+
+            // TODO special case for monomorphic instantiations
+            Symbol[] argTypes;
+            if (true || classSym.typeParams().length > 0) {
+                Symbol typesP =
+                    imSym.newVParam(pos, 0, Name.fromString("types"));
+                typesP.setInfo(defs.ARRAY_TYPE(typeType));
+                argTypes = new Symbol[]{ typesP };
+            } else
+                argTypes = Symbol.EMPTY_ARRAY;
+
+            imSym.setInfo(new Type.MethodType(argTypes,
+                                              defs.SCALACLASSTYPE_TYPE()));
+
+            instantiator.put(classSym, imSym);
+        }
+        return imSym;
+    }
+
+    private Symbol getTConstructorSym(Symbol classSym) {
+        Symbol tcSym = (Symbol)tConstructor.get(classSym);
+        if (tcSym == null) {
+            int pos = classSym.pos;
+            Name tcName = Names.TYPECONSTRUCTOR(classSym);
+
+            tcSym = isNestedClass(classSym)
+                ? classSym.owner().newField(pos, 0, tcName)
+                : classSym.newStaticField(pos, 0, tcName);
+            tcSym.setInfo(defs.TYPECONSTRUCTOR_TYPE());
+
+            tConstructor.put(classSym, tcSym);
+        }
+        return tcSym;
+    }
+
+    private Symbol getClassInitSym(Symbol classSym) {
+        Symbol ciSym = (Symbol)classInitialiser.get(classSym);
+        if (ciSym == null) {
+            int pos = classSym.pos;
+
+            ciSym = classSym.newStaticMethod(pos, 0, Names.CLASS_CONSTRUCTOR);
+            ciSym.setInfo(new Type.MethodType(Symbol.EMPTY_ARRAY,
+                                              defs.UNIT_TYPE()));
+
+            classInitialiser.put(classSym, ciSym);
+        }
+        return ciSym;
+    }
+
+    private NewMember[] membersToAdd(Symbol classSym) {
+        NewMember[] toAdd = (NewMember[])membersToAdd.get(classSym);
+        if (toAdd == null) {
+            ArrayList toAddL = new ArrayList();
+            Scope.SymbolIterator membersIt = classSym.members().iterator();
+            while (membersIt.hasNext()) {
+                Symbol member = membersIt.next();
+                if (member.isClass()) {
+                    Symbol tcSym = getTConstructorSym(member);
+                    toAddL.add(NewMember.TypeConstructor(member, tcSym));
+                    Symbol imSym = getInstMethSym(member);
+                    toAddL.add(NewMember.Instantiator(member, imSym));
+                } else if (member.isType()) {
+                    Symbol accSym = getInstMethSym(member);
+                    toAddL.add(NewMember.TypeAccessor(member, accSym));
+                }
+            }
+
+            if (!isNestedClass(classSym)) {
+                Symbol tcSym = getTConstructorSym(classSym);
+                toAddL.add(NewMember.TypeConstructor(classSym, tcSym));
+                Symbol ciSym = getClassInitSym(classSym);
+                toAddL.add(NewMember.ClassInitialiser(classSym, ciSym, tcSym));
+                Symbol imSym = getInstMethSym(classSym);
+                toAddL.add(NewMember.Instantiator(classSym, imSym));
+            }
+
+            toAdd = (NewMember[])toAddL.toArray(new NewMember[toAddL.size()]);
+            membersToAdd.put(classSym, toAdd);
+        }
+        return toAdd;
+    }
+
+    private Symbol[] paramsToAdd(Symbol methSym) {
+        Symbol[] toAdd = (Symbol[])paramsToAdd.get(methSym);
+        if (toAdd == null) {
+            Symbol[] tparams = methSym.typeParams();
+
+            ArrayList toAddL = new ArrayList();
+            for (int i = 0; i < tparams.length; ++i)
+                toAddL.add(getAccessorSym(tparams[i]));
+
+            toAdd = (Symbol[])toAddL.toArray(new Symbol[toAddL.size()]);
+            paramsToAdd.put(methSym, toAdd);
+        }
+
+        return toAdd;
+    }
+
     public Type transformInfo(Symbol symbol, Type type) {
         if (symbol.isClass()) {
-            // Class:
-            // - add an accessor per type member.
-            HashMap newSymbols = typeAccessors(symbol);
-            if (newSymbols.isEmpty())
+            NewMember[] toAdd = membersToAdd(symbol);
+
+            if (toAdd.length == 0)
                 return type;
             else {
                 Scope newMembers = new Scope(symbol.members());
-                Iterator newSymbolsIt = newSymbols.values().iterator();
-                while (newSymbolsIt.hasNext())
-                    newMembers.enterOrOverload((Symbol)newSymbolsIt.next());
+
+                for (int i = 0; i < toAdd.length; ++i)
+                    newMembers.enterOrOverload(toAdd[i].symbolToAdd());
+
                 return Type.compoundType(type.parents(), newMembers, symbol);
             }
         } else if (type.typeParams().length > 0 && !isPrimitive(symbol)) {
@@ -170,18 +273,14 @@ public class TypesAsValuesPhase extends Phase {
             switch (type) {
             case PolyType(Symbol[] tparams, // :
                           Type.MethodType(Symbol[] vparams, Type result)):
-                HashMap newVParams = typeParams(symbol);
-                Symbol[] allVParams =
-                    new Symbol[newVParams.size() + vparams.length];
-                for (int i = 0; i < tparams.length; ++i)
-                    allVParams[i] = (Symbol)newVParams.get(tparams[i]);
-                System.arraycopy(vparams,
-                                 0,
-                                 allVParams,
-                                 tparams.length,
-                                 vparams.length);
+                List newVParams =
+                    new LinkedList(Arrays.asList(paramsToAdd(symbol)));
+                newVParams.addAll(Arrays.asList(vparams));
+                Symbol[] newVParamsA = (Symbol[])
+                    newVParams.toArray(new Symbol[newVParams.size()]);
+
                 return new Type.PolyType(tparams,
-                                         new Type.MethodType(allVParams,
+                                         new Type.MethodType(newVParamsA,
                                                              result));
 
             default:
@@ -192,7 +291,12 @@ public class TypesAsValuesPhase extends Phase {
     }
 
     private boolean isPrimitive(Symbol sym) {
-        throw new Error();      // TODO
+        return sym == defs.ANY_IS
+            || sym == defs.ANY_AS;
+    }
+
+    private boolean isNestedClass(Symbol classSym) {
+        return !classSym.owner().isPackageClass();
     }
 
     public void apply(CompilationUnit[] units) {
@@ -215,37 +319,49 @@ public class TypesAsValuesPhase extends Phase {
                           Tree tpe,
                           Tree.Template impl):
                 Symbol sym = tree.symbol();
-                Tree[] newBody = transform(impl.body, impl.symbol());
 
-                // Add accessors for type members
-                Tree[] finalBody;
-                HashMap/*<Symbol, Symbol>*/ membersToAdd = typeAccessors(sym);
-                if (!membersToAdd.isEmpty()) {
-                    finalBody = new Tree[newBody.length + membersToAdd.size()];
-                    for (int n = 0, nn = 0; n < newBody.length; ++n) {
-                        finalBody[nn++] = newBody[n];
-                        Symbol memberSym = newBody[n].symbol();
-                        if (membersToAdd.containsKey(memberSym)) {
-                            Symbol symToAdd =
-                                (Symbol)membersToAdd.get(memberSym);
-                            Tree rhs = memberSym.isAbstractType()
-                                ? Tree.Empty
-                                : typeAsValue(newBody[n].pos,
-                                              memberSym.type(),
-                                              symToAdd);
-                            finalBody[nn++] = gen.DefDef(symToAdd, rhs);
-                        }
+                TreeList newBody =
+                    new TreeList(transform(impl.body, impl.symbol()));
+                // Add members (accessors and instantiators)
+                NewMember[] toAdd = membersToAdd(sym);
+                for (int i = 0; i < toAdd.length; ++i) {
+                    switch (toAdd[i]) {
+                    case TypeAccessor(Symbol memSym, Symbol accSym):
+                        newBody.append(typeAccessorBody(memSym, accSym));
+                        break;
+                    case TypeConstructor(Symbol memSym, Symbol tcSym):
+                        newBody.append(tConstructorVal(memSym, tcSym));
+                        break;
+                    case Instantiator(Symbol memSym, Symbol insSym):
+                        newBody.append(instantiatorBody(memSym, insSym));
+                        break;
+                    case ClassInitialiser(Symbol memSym,
+                                          Symbol ciSym,
+                                          Symbol tcSym):
+                        newBody.append(classInitialiser(memSym, ciSym, tcSym));
+                        break;
                     }
-                } else
-                    finalBody = newBody;
+                }
 
                 return gen.ClassDef(sym,
                                     transform(impl.parents),
                                     impl.symbol(),
-                                    finalBody);
+                                    newBody.toArray());
 
             case DefDef(_, _, _, _, _, Tree rhs):
                 Symbol symbol = getSymbolFor(tree);
+
+                // TODO maybe use "overrides" method instead of name
+                // to identify the "getType" method.
+                if (symbol.name == Names.getType) {
+                    // Correct the body of the getType method which,
+                    // until now, was a placeholder (introduced by
+                    // RefCheck).
+                    rhs = scalaClassType(symbol.pos,
+                                         symbol.owner().type(),
+                                         currentOwner);
+                }
+
                 return gen.DefDef(symbol, transform(rhs, symbol));
 
             case ValDef(_, _, Tree tpe, Literal(AConstant.ZERO)):
@@ -266,7 +382,7 @@ public class TypesAsValuesPhase extends Phase {
                 return gen.ValDef(symbol, transform(rhs, symbol));
 
             case New(Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs)):
-                if (fun.symbol() == ARRAY_CONSTRUCTOR) {
+                if (fun.symbol() == ARRAY_CONSTRUCTOR && false) {
                     // Transform array creations:
                     //   new Array[T](size)
                     // becomes
@@ -286,27 +402,12 @@ public class TypesAsValuesPhase extends Phase {
                 Symbol funSym = fun.symbol();
 
                 if (funSym == defs.ANY_IS) {
-                    // Transform instance tests:
-                    //   e.isInstanceOf[T]
-                    // becomes:
-                    //   asValue(T).hasAsInstance(e)
-                    // unless T is a "simple" type for which a Java
-                    // instance test is sufficient, in which case the
-                    // expression is left as is.
                     assert targs.length == 1 && vargs.length == 0;
-                    Tree tp = targs[0];
-                    if (isTrivialType(tp.type))
-                        return super.transform(tree);
-                    else {
-                        Tree tpV = typeAsValue(tp.pos, tp.type, currentOwner);
-                        Tree hasAsInst =
-                            gen.Select(tp.pos, tpV, defs.TYPE_HASASINSTANCE());
-                        return gen.mkApply_V(tree.pos,
-                                             hasAsInst,
-                                             new Tree[] {
-                                                 extractQualifier(fun)
-                                             });
-                    }
+                    Type type = targs[0].type;
+                    Tree expr = transform(qualifierOf(fun));
+                    return isTrivialType(type)
+                        ? super.transform(tree)
+                        : genInstanceTest(tree.pos, expr, type);
                 } else if (funSym == defs.ANY_AS) {
                     // Transform instance tests:
                     //   e.asInstanceOf[T]
@@ -316,26 +417,34 @@ public class TypesAsValuesPhase extends Phase {
                     // instance test is sufficient, in which case the
                     // expression is left as is.
                     assert targs.length == 1 && vargs.length == 0;
-                    return super.transform(tree); // TODO
+                    Type type = targs[0].type;
+                    Tree expr = transform(qualifierOf(fun));
+                    return isTrivialType(type)
+                        ? super.transform(tree)
+                        : genTypeCast(tree.pos, expr, type);
                 } else {
                     // Transform applications to pass types as values:
                     //   f[T1, ...](v1, ...)
                     // becomes
                     //   f[T1, ...](asValue(T1), ..., v1, ...)
-                    Tree[] newVArgs = transform(vargs);
-                    Tree[] finalVArgs =
-                        new Tree[newVArgs.length + targs.length];
-                    for (int i = 0; i < targs.length; ++i)
-                        finalVArgs[i] = typeAsValue(targs[i].pos,
-                                                    targs[i].type,
-                                                    currentOwner);
-                    System.arraycopy(newVArgs, 0,
-                                     finalVArgs, targs.length,
-                                     newVArgs.length);
-                    return gen.mkApplyTV(tree.pos,
-                                         transform(fun),
-                                         targs,
-                                         finalVArgs);
+                    if (funSym == ARRAY_CONSTRUCTOR)
+                        return super.transform(tree);
+                    else {
+                        Tree[] newVArgs = transform(vargs);
+                        Tree[] finalVArgs =
+                            new Tree[newVArgs.length + targs.length];
+                        for (int i = 0; i < targs.length; ++i)
+                            finalVArgs[i] = typeAsValue(targs[i].pos,
+                                                        targs[i].type,
+                                                        currentOwner);
+                        System.arraycopy(newVArgs, 0,
+                                         finalVArgs, targs.length,
+                                         newVArgs.length);
+                        return gen.mkApplyTV(tree.pos,
+                                             transform(fun),
+                                             targs,
+                                             finalVArgs);
+                    }
                 }
 
             default:
@@ -357,6 +466,195 @@ public class TypesAsValuesPhase extends Phase {
             Tree[] newTrees = transform(trees);
             this.currentOwner = bkpOwner;
             return newTrees;
+        }
+
+        private int level(Symbol sym) {
+            Symbol superClass = sym.parents()[0].symbol();
+            assert superClass != Symbol.NONE : sym;
+            if (superClass == defs.ANY_CLASS)
+                return 0;
+            else
+                return 1 + level(superClass);
+        }
+
+        /**
+         * Return a method giving access to the given type, as a
+         * value.
+         */
+        private Tree.DefDef typeAccessorBody(Symbol typSym, Symbol accSym) {
+            Tree rhs;
+            if (typSym.isAbstractType())
+                rhs = Tree.Empty;
+            else if (typSym.isClass())
+                rhs = scalaClassType(typSym.pos, typSym.type(), accSym);
+            else
+                rhs = typeAsValue(typSym.pos, typSym.type(), accSym);
+            return gen.DefDef(accSym, rhs);
+        }
+
+        private Tree tConstructorVal(Symbol clsSym, Symbol tcSym) {
+            return gen.ValDef(tcSym,
+                              tcSym.isStatic()
+                              ? Tree.Empty
+                              : tConstructorRHS(tcSym.pos, clsSym, tcSym));
+        }
+
+        private Tree classInitialiser(Symbol clsSym,
+                                      Symbol ciSym,
+                                      Symbol tcSym) {
+            if (tcSym.isStatic()) {
+                int pos = tcSym.pos;
+                Tree rhs = tConstructorRHS(pos, clsSym, ciSym);
+                Tree assign = gen.Assign(pos, gen.Ident(pos, tcSym), rhs);
+
+                return gen.DefDef(ciSym, assign);
+            } else
+                return Tree.Empty;
+        }
+
+        private Tree tConstructorRHS(int pos, Symbol clsSym, Symbol owner) {
+            int zCount = 0, mCount = 0, pCount = 0;
+            Symbol[] tparams = clsSym.typeParams();
+
+            for (int i = 0; i < tparams.length; ++i) {
+                if ((tparams[i].flags & Modifiers.COVARIANT) != 0)
+                    ++pCount;
+                else if ((tparams[i].flags & Modifiers.CONTRAVARIANT) != 0)
+                    ++mCount;
+                else
+                    ++zCount;
+            }
+
+            int[] displayCode = getDisplayCode(computeDisplay(clsSym));
+
+            Tree[] tcArgs = new Tree[] {
+                gen.mkIntLit(pos, level(clsSym)),
+                gen.mkStringLit(pos, prims.getJREClassName(clsSym)),
+                isNestedClass(clsSym)
+                ? gen.This(pos, clsSym.owner())
+                : gen.mkNullLit(pos),
+                gen.mkIntLit(pos, zCount),
+                gen.mkIntLit(pos, mCount),
+                gen.mkIntLit(pos, pCount),
+                mkNewIntLitArray(pos, displayCode, owner)
+            };
+
+            Symbol tcConst = defs.TYPECONSTRUCTOR_CLASS.primaryConstructor();
+            Tree tcCall =
+                gen.mkApply_V(pos, gen.mkGlobalRef(pos, tcConst), tcArgs);
+            return gen.New(pos, tcCall);
+        }
+
+        private Tree mkNewIntLitArray(int pos, int[] values, Symbol owner) {
+            Tree[] intLits = new Tree[values.length];
+            for (int i = 0; i < values.length; ++i)
+                intLits[i] = gen.mkIntLit(pos, values[i]);
+            return gen.mkNewArray(pos, defs.INT_TYPE(), intLits, owner);
+        }
+
+        /**
+         * Return a method to instantiate the given type.
+         */
+        private Tree.DefDef instantiatorBody(Symbol clsSym, Symbol insSym) {
+            // TODO fix flags for all symbols below
+            final int pos = clsSym.pos;
+            final Symbol[] vparams = insSym.valueParams();
+
+            Tree[] body = new Tree[2];
+
+            // Generate call to "getInstantiation" method of
+            // constructor.
+            Tree getInstFun =
+                gen.Select(pos,
+                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
+                           defs.TYPECONSTRUCTOR_GETINSTANTIATION());
+
+            Tree[] getInstArgs = new Tree[]{ gen.mkLocalRef(pos, vparams[0]) };
+
+            Symbol instVal =
+                insSym.newVariable(pos, 0, Name.fromString("inst"));
+            instVal.setInfo(defs.SCALACLASSTYPE_TYPE());
+
+            Tree instValDef =
+                gen.ValDef(instVal,
+                           gen.mkApply_V(pos, getInstFun, getInstArgs));
+
+            // Generate test to see if a call to "instantiate" is
+            // necessary.
+            Tree cond =
+                gen.mkApply_V(pos,
+                              gen.Select(pos,
+                                         gen.mkLocalRef(pos, instVal),
+                                         defs.ANY_BANGEQ),
+                              new Tree[] { gen.mkNullLit(pos) });
+            Tree thenP = gen.mkLocalRef(pos, instVal);
+
+            final HashMap varMap = new HashMap();
+            Symbol[] tparams = clsSym.typeParams();
+            for (int i = 0; i < tparams.length; ++i)
+                varMap.put(tparams[i], new Integer(i));
+
+            // Type environment mapping the type parameters of the
+            // class to their corresponding element in the "types"
+            // array passed to this instantiator.
+            TEnv tEnv = new TEnv() {
+                    public boolean definesVar(Symbol sym) {
+                        return varMap.containsKey(sym);
+                    }
+
+                    public Tree treeForVar(Symbol sym) {
+                        int idx = ((Integer)varMap.get(sym)).intValue();
+                        Tree array = gen.mkLocalRef(pos, vparams[0]);
+                        return gen.mkArrayGet(pos, array, idx);
+                    }
+                };
+
+            Type[] parents = clsSym.parents();
+            TreeList parentTypes = new TreeList();
+            for (int i = 0; i < parents.length; ++i) {
+                Type parent = parents[i];
+                if (!parent.symbol().isJava())
+                    parentTypes.append(typeAsValue(pos, parent, insSym, tEnv));
+            }
+
+            Tree parentsArray = gen.mkNewArray(pos,
+                                               defs.SCALACLASSTYPE_TYPE(),
+                                               parentTypes.toArray(),
+                                               insSym);
+            Tree instFun =
+                gen.Select(pos,
+                           gen.mkLocalRef(pos, getTConstructorSym(clsSym)),
+                           defs.TYPECONSTRUCTOR_INSTANTIATE());
+            Tree[] instArgs = new Tree[] {
+                gen.mkLocalRef(pos, vparams[0]),
+                parentsArray
+            };
+            Tree elseP = gen.mkApply_V(pos, instFun, instArgs);
+
+            Tree ifExpr =
+                gen.If(pos, cond, thenP, elseP, defs.SCALACLASSTYPE_TYPE());
+
+            return gen.DefDef(insSym, gen.mkBlock(pos, instValDef, ifExpr));
+        }
+
+        /**
+         * Generate code to test if the given expression is an
+         * instance of the given type.
+         */
+        private Tree genInstanceTest(int pos, Tree expr, Type tp) {
+            Tree tpVal = typeAsValue(pos, tp, currentOwner);
+            Tree fun = gen.Select(pos, tpVal, defs.TYPE_ISINSTANCE());
+            return gen.mkApply_V(pos, fun, new Tree[] { expr });
+        }
+
+        /**
+         * Generate code to cast the given value to the given type.
+         */
+        private Tree genTypeCast(int pos, Tree expr, Type tp) {
+            Tree tpVal = typeAsValue(pos, tp, currentOwner);
+            Tree fun = gen.Select(pos, tpVal, defs.TYPE_CHECKCASTABILITY());
+            Tree checkCastCall = gen.mkApply_V(pos, fun, new Tree[] { expr });
+            return gen.mkAsInstanceOf(pos, checkCastCall, tp);
         }
 
         /**
@@ -382,63 +680,126 @@ public class TypesAsValuesPhase extends Phase {
         /**
          * Transform a type into a tree representing it.
          */
-        private Tree typeAsValue(int pos, Type tp, Symbol owner) {
+        private Tree typeAsValue(int pos, Type tp, Symbol owner, TEnv env) {
             switch (tp) {
             case ConstantType(Type base, _):
-                return typeAsValue(pos, base, owner);
+                return typeAsValue(pos, base, owner, env);
 
-            case TypeRef(Type pre, Symbol sym, Type[] args): {
-                Symbol symOwner = sym.owner();
-
-                if (basicTypes.containsKey(sym)) {
+            case TypeRef(Type pre, Symbol sym, Type[] args):
+                if (env.definesVar(sym)) {
+                    assert args.length == 0;
+                    return env.treeForVar(sym);
+                } else if (basicTypes.containsKey(sym)) {
                     return gen.mkGlobalRef(pos, (Symbol)basicTypes.get(sym));
-                } else if (symOwner.isClass() || symOwner.isMethod()) {
-                    // Reference to a "local" type.
-                    Symbol accessor = getAccessorSymbol(sym);
-                    if (accessor.isMethod())
-                        return gen.mkApply__(gen.mkLocalRef(pos, accessor));
-                    else
-                        return gen.mkLocalRef(pos, accessor);
+                } else if (sym.isJava()) {
+                    assert args.length == 0;
+                    return javaType(pos, sym);
+                } else if (!sym.owner().isMethod()) {
+                    // Reference to a "global" type.
+                    return scalaClassType(pos, tp, owner, env);
                 } else {
-                    // Reference to a "non-local" type.
-                    Tree[] ctorArgs = new Tree[args.length + 2];
-                    ctorArgs[0] = symOwner.isPackage()
-                        ? gen.mkNullLit(pos)
-                        : prefixAsValue(pos, pre);
-                    ctorArgs[1] =
-                        gen.mkStringLit(pos, prims.getJREClassName(sym));
-                    for (int i = 0; i < args.length; ++i)
-                        ctorArgs[i + 2] = typeAsValue(pos, args[i], owner);
-
-                    Symbol typeConstr =
-                        defs.CONSTRUCTEDTYPE_CTOR(args.length);
-
-                    return gen.New(pos,
-                                   gen.mkApply_V(gen.mkGlobalRef(pos,
-                                                                 typeConstr),
-                                                 ctorArgs));
+                    assert !isValuePrefix(pre) : tp;
+                    return gen.mkLocalRef(pos, getAccessorSym(sym));
                 }
-            }
 
-            case SingleType(Type pre, Symbol sym): {
+            case SingleType(Type pre, Symbol sym):
                 Tree constr =
-                    gen.mkPrimaryConstructorGlobalRef(pos, singleTypeClass);
+                    gen.mkPrimaryConstructorGlobalRef(pos, SINGLETYPE_CLASS);
                 Tree[] args = new Tree[] { gen.mkRef(pos, pre, sym) };
                 return gen.New(pos, gen.mkApply_V(constr, args));
-            }
 
             default:
                 throw global.fail("unexpected type: ", tp);
             }
         }
 
+        private Tree typeAsValue(int pos, Type tp, Symbol owner) {
+            return typeAsValue(pos, tp, owner, new TEnv());
+        }
+
+        private Tree javaType(int pos, Symbol sym) {
+            Tree nameLit = gen.mkStringLit(pos, prims.getJREClassName(sym));
+            Tree getRef = gen.mkGlobalRef(pos, defs.JAVATYPEREPOSITORY_GET());
+            return gen.mkApply_V(pos, getRef, new Tree[] { nameLit });
+        }
+
+        private Tree scalaClassType(int pos, Type tp, Symbol owner) {
+            return scalaClassType(pos, tp, owner, new TEnv());
+        }
+
+        private Tree scalaClassType(int pos, Type tp, Symbol owner, TEnv env) {
+            switch (tp) {
+            case TypeRef(Type pre, Symbol sym, Type[] args):
+                Symbol insSym = getInstMethSym(sym);
+                Tree preFun = isNestedClass(sym)
+                    ? gen.Select(pos, prefixAsValue(pos, pre), insSym)
+                    : gen.Ident(pos, insSym);
+
+                // TODO special case for monomorphic cases
+                Tree[] insArgs;
+                if (true || args.length > 0) {
+                    Tree[] elems = new Tree[args.length];
+                    int[] perm = typeParamsPermutation(sym.typeParams());
+                    for (int i = 0; i < args.length; ++i)
+                        elems[i] = typeAsValue(pos, args[perm[i]], owner, env);
+                    insArgs = new Tree[] {
+                        gen.mkNewArray(pos, typeType, elems, owner)
+                    };
+                } else
+                    insArgs = Tree.EMPTY_ARRAY;
+
+                return gen.mkApply_V(pos, preFun, insArgs);
+
+            default:
+                throw Debug.abort("unexpected type: ", tp);
+            }
+        }
+
+        private final int VARIANT =
+            Modifiers.COVARIANT | Modifiers.CONTRAVARIANT;
+
+        /**
+         * Compute the (unique) permutation which puts all invariant
+         * type parameters first, followed by the contravariant ones,
+         * then the covariants, preserving the relative ordering of
+         * arguments with same variance.
+         */
+        private int[] typeParamsPermutation(Symbol[] params) {
+            int[] tparamsPerm = new int[params.length];
+            int permIdx = 0;
+
+            for (int i = 0; i < params.length; ++i)
+                if ((params[i].flags & VARIANT) == 0)
+                    tparamsPerm[permIdx++] = i;
+            for (int i = 0; i < params.length; ++i)
+                if ((params[i].flags & Modifiers.CONTRAVARIANT) != 0)
+                    tparamsPerm[permIdx++] = i;
+            for (int i = 0; i < params.length; ++i)
+                if ((params[i].flags & Modifiers.COVARIANT) != 0)
+                    tparamsPerm[permIdx++] = i;
+            assert permIdx == tparamsPerm.length;
+
+            return tparamsPerm;
+        }
+
         /**
          * Extract qualifier from a tree, which must be a Select node.
          */
-        private Tree extractQualifier(Tree tree) {
+        private Tree qualifierOf(Tree tree) {
             switch (tree) {
             case Select(Tree qualifier, _): return qualifier;
             default: throw Debug.abort("cannot extract qualifier from ", tree);
+            }
+        }
+
+        private boolean isValuePrefix(Type pre) {
+            switch (pre) {
+            case ThisType(Symbol clazz):
+                return !(clazz.isPackage() || clazz.isNone());
+            case NoPrefix:
+                return false;
+            default:
+                return true;
             }
         }
 
@@ -446,12 +807,10 @@ public class TypesAsValuesPhase extends Phase {
          * Transform a prefix into a tree representing it.
          */
         private Tree prefixAsValue(int pos, Type pre) {
+            assert isValuePrefix(pre);
             switch (pre) {
             case ThisType(Symbol clazz):
-                if (clazz.isPackage() || clazz.isNone())
-                    return gen.mkNullLit(pos);
-                else
-                    return gen.This(pos, clazz);
+                return gen.This(pos, clazz);
             case SingleType(Type prefix, Symbol member):
                 return gen.mkApply__(pos,
                                      gen.mkRef(pos,
@@ -460,6 +819,157 @@ public class TypesAsValuesPhase extends Phase {
             default:
                 throw Debug.abort("unexpected prefix", pre);
             }
+        }
+
+        private Ancestor[][] computeDisplay0(Symbol classSym) {
+            Type[] parentTypes = classSym.parents();
+
+            Ancestor[][] superDisplay =
+                computeDisplay(parentTypes[0].symbol());
+            int level = superDisplay.length;
+            ArrayList/*<Ancestor>*/[] display = new ArrayList[level + 1];
+
+            // Start with the display of the super-class
+            for (int l = 0; l < level; ++l) {
+                Ancestor[] superRow = superDisplay[l];
+                ArrayList newRow = new ArrayList();
+                for (int i = 0; i < superRow.length; ++i)
+                    newRow.add(new Ancestor(superRow[i].symbol, 0, i));
+                display[l] = newRow;
+            }
+
+            display[level] = new ArrayList();
+            display[level].add(new Ancestor(classSym, -1, -1));
+
+            // Go over parents from left to right and add missing
+            // ancestors to the display, remembering where they come
+            // from.
+            int parentIndex = 0;
+            for (int p = 1; p < parentTypes.length; ++p) {
+                Symbol parentSymbol = parentTypes[p].symbol();
+                assert parentSymbol != Symbol.NONE;
+
+                if (parentSymbol.isJava())
+                    continue;
+
+                ++parentIndex;
+                Ancestor[][] parentDisplay = computeDisplay(parentSymbol);
+                assert parentDisplay.length <= display.length;
+
+                for (int l = 0; l < parentDisplay.length; ++l) {
+                    ArrayList/*<Ancestor>*/ myRow = display[l];
+                    Ancestor[] parentRow = parentDisplay[l];
+                    for (int i = 0; i < parentRow.length; ++i) {
+                        Symbol sym = parentRow[i].symbol;
+
+                        Iterator myRowIt = myRow.iterator();
+                        boolean alreadyExists = false;
+                        while (!alreadyExists && myRowIt.hasNext()) {
+                            Ancestor myAncestor = (Ancestor)myRowIt.next();
+                            if (myAncestor.symbol == sym)
+                                alreadyExists = true;
+                        }
+
+                        if (!alreadyExists)
+                            myRow.add(new Ancestor(sym, parentIndex, i));
+                    }
+                }
+            }
+
+            Ancestor[][] finalDisplay = new Ancestor[level + 1][];
+            for (int i = 0; i < finalDisplay.length; ++i) {
+                finalDisplay[i] = (Ancestor[])
+                    display[i].toArray(new Ancestor[display[i].size()]);
+            }
+
+            return finalDisplay;
+        }
+
+        private Ancestor[][] computeDisplay(Symbol classSym) {
+            Ancestor[][] display = (Ancestor[][])displayCache.get(classSym);
+            if (display == null) {
+                display = computeDisplay0(classSym);
+                displayCache.put(classSym, display);
+            }
+            return display;
+        }
+
+        private int[] getDisplayCode(Ancestor[][] display) {
+            ArrayList/*<List<Ancestor>>*/ prunedRows = new ArrayList();
+
+            int totalSize = 0;
+            for (int l = 0; l < display.length; ++l) {
+                Ancestor[] row = display[l];
+                ArrayList/*<Ancestor>*/ prunedRow = new ArrayList(row.length);
+                for (int i = 0; i < row.length; ++i) {
+                    if (row[i].parentIndex > 0)
+                        prunedRow.add(row[i]);
+                }
+
+                prunedRows.add(prunedRow);
+                totalSize += 1 + 2 * prunedRow.size();
+            }
+
+            int[] res = new int[totalSize];
+            int i = 0;
+            Iterator rowsIt = prunedRows.iterator();
+            while (rowsIt.hasNext()) {
+                ArrayList row = (ArrayList)rowsIt.next();
+                res[i++] = row.size();
+                Iterator ancIt = row.iterator();
+                while (ancIt.hasNext()) {
+                    Ancestor anc = (Ancestor)ancIt.next();
+                    res[i++] = anc.parentIndex;
+                    res[i++] = anc.position;
+                }
+            }
+            assert i == totalSize;
+            return res;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    private static class TEnv {
+        public boolean definesVar(Symbol sym) {
+            return false;
+        }
+        public Tree treeForVar(Symbol sym) {
+            throw Debug.abort("no tree for variable " + sym);
+        }
+    }
+
+    private static class NewMember {
+        public Symbol symbolToAdd() {
+            switch (this) {
+            case TypeAccessor(_, Symbol accSym):
+                return accSym;
+            case TypeConstructor(_, Symbol tcSym):
+                return tcSym;
+            case Instantiator(_, Symbol insSym):
+                return insSym;
+            case ClassInitialiser(_, Symbol ciSym, _):
+                return ciSym;
+            default:
+                throw Debug.abort("unexpected case");
+            }
+        }
+
+        public case TypeAccessor(Symbol memSym, Symbol accSym);
+        public case TypeConstructor(Symbol memSym, Symbol tcSym);
+        public case Instantiator(Symbol memSym, Symbol insSym);
+        public case ClassInitialiser(Symbol memSym, Symbol ciSym, Symbol tcSym);
+    }
+
+    private static class Ancestor {
+        public final Symbol symbol;
+        public final int parentIndex;
+        public final int position;
+
+        public Ancestor(Symbol symbol, int parentIndex, int position) {
+            this.symbol = symbol;
+            this.parentIndex = parentIndex;
+            this.position = position;
         }
     }
 }
