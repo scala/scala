@@ -34,13 +34,16 @@ object Iterator {
       else error("next on empty iterator");
   }
 
-  def range(lo: Int, end: Int) = new Iterator[Int] {
+  def range(lo: Int, end: Int) = new BufferedIterator[Int] {
     private var i = lo;
     def hasNext: Boolean =
       i < end;
     def next: Int =
       if (i < end) { i = i + 1 ; i - 1 }
       else error("next on empty iterator");
+    def head: Int =
+      if (i < end) i
+      else error("head on empty iterator");
   }
 
   def from(lo: Int) = new Iterator[Int] {
@@ -100,6 +103,13 @@ trait Iterator[+a] with Iterable[a] {
       acc = f( acc, next)
     }
     acc
+  }
+
+  def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
+
+  def append[b >: a](that: Iterator[b]) = new Iterator[b] {
+    def hasNext = Iterator.this.hasNext || that.hasNext;
+    def next = if (Iterator.this.hasNext) Iterator.this.next else that.next;
   }
 
   def flatMap[b](f: a => Iterator[b]): Iterator[b] = new Iterator[b] {
