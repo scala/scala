@@ -704,6 +704,15 @@ public class Definitions {
         return SCALACLASSTYPE_EMPTYARRAY;
     }
 
+    private Symbol JAVACLASSTYPE_JAVACLASSTYPE;
+    public Symbol JAVACLASSTYPE_JAVACLASSTYPE() {
+        if (JAVACLASSTYPE_JAVACLASSTYPE == null)
+            JAVACLASSTYPE_JAVACLASSTYPE =
+                loadTerm(JAVACLASSTYPE_CLASS.linkedModule().moduleClass(),
+                         Names.javaClassType);
+        return JAVACLASSTYPE_JAVACLASSTYPE;
+    }
+
     //########################################################################
     // Public Fields - Global values
 

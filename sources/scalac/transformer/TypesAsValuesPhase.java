@@ -780,7 +780,10 @@ public class TypesAsValuesPhase extends Phase {
         private boolean isTrivial(Type tp) {
             switch (tp) {
             case TypeRef(_, Symbol sym, Type[] args):
-                return sym.isStatic() && args.length == 0;
+                if (sym == defs.ARRAY_CLASS)
+                    return isTrivial(args[0]);
+                else
+                    return sym.isStatic() && args.length == 0;
             case SingleType(_, _):
             case ThisType(_):
             case CompoundType(_, _):
@@ -881,11 +884,10 @@ public class TypesAsValuesPhase extends Phase {
 
         private Tree javaType(int pos, Symbol sym) {
             Tree constr =
-                gen.mkPrimaryConstructorGlobalRef(pos,
-                                                  defs.JAVACLASSTYPE_CLASS);
+                gen.mkGlobalRef(pos, defs.JAVACLASSTYPE_JAVACLASSTYPE());
             Tree nameLit = gen.mkSymbolNameLit(pos, sym);
             Tree[] args = new Tree[] { nameLit };
-            return gen.New(pos, gen.mkApply_V(constr, args));
+            return gen.mkApply_V(constr, args);
         }
 
         private Tree thisType(int pos, Symbol sym) {
