@@ -300,6 +300,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & PRIVATE) != 0;
     }
 
+    /** Does this symbol denote a deferred symbol? */
+    public final boolean isDeferred() {
+        return (flags & DEFERRED) != 0;
+    }
+
     /** Does this symbol denote a synthetic symbol? */
     public final boolean isSynthetic() {
         return (flags & SYNTHETIC) != 0;
@@ -728,7 +733,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return -1;
     }
 
-    Type baseType(Symbol sym) {
+    public Type baseType(Symbol sym) {
 	int i = closurePos(sym);
 	if (i >= 0) return closure()[i];
 	else return Type.NoType;
