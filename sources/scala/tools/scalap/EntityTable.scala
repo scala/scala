@@ -15,7 +15,7 @@ class EntityTable(attrib: ScalaAttribute) {
     import attrib._;
 
     val table: Array[Entity] = new Array(attrib.table.length);
-    var root: Buffer[Symbol] = new Buffer;
+    var root: Buffer[Symbol] = new ListBuffer;
 
     {
         //Console.println("created table");

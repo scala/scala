@@ -17,7 +17,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
+class MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
 
     protected var first: LinkedList[A] = null;
     protected var last: LinkedList[A] = null;
@@ -60,5 +60,5 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
 
     override def toList: List[A] = if (first == null) Nil else first.toList;
 
-    override def toString() = toList.toString();
+	override protected def stringPrefix: String = "MutableList";
 }

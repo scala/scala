@@ -139,7 +139,7 @@ class Arguments {
     private val arguments: Map[String, String] = new HashMap;
     private val prefixes: Map[String, Set[String]] = new HashMap;
     private val bindings: Map[String, Map[String, String]] = new HashMap;
-    private val others: Buffer[String] = new Buffer;
+    private val others: Buffer[String] = new ListBuffer;
 
     def addOption(option: String): Unit = options += option;
 

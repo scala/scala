@@ -145,7 +145,7 @@ class AliasSymbol(name: String, flags: Int) extends Symbol(name, flags) {
 class ClassSymbol(name: String, flags: Int) extends Symbol(name, flags) {
     var thistpe: Type = NoType;
     var constr: Symbol = NoSymbol;
-    var scope: Buffer[Symbol] = new Buffer;
+    var scope: Buffer[Symbol] = new ListBuffer;
     override def fix(tpe: Type): Unit = {
         thistpe = tpe;
     }

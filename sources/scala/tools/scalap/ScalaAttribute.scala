@@ -132,7 +132,7 @@ class ScalaAttribute(in: ByteArrayReader) {
         SymbolInfo(in.nextNat, in.nextNat, in.nextNat, in.nextNat);
 
     def readRefs(end: Int): List[Int] = {
-        var res = new Buffer[Int];
+        var res = new ListBuffer[Int];
         while (in.bp < end)
             res += in.nextNat;
         res.toList

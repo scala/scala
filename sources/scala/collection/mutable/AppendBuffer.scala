@@ -21,12 +21,12 @@ final class AppendBuffer[ A ] with Seq[ A ] {
 
   private var len = 0;
 
-  class MyElemList with MutableList[ Option[A] ]  {
+  class MyElemList extends MutableList[ Option[A] ]  {
     def append( e: Option[A] ) = appendElem( e );
   }
   private val elemList = new MyElemList();
 
-  class MySeqList with MutableList[ Seq[A] ]  {
+  class MySeqList extends MutableList[ Seq[A] ]  {
     def append( seq:Seq[A] ) =  appendElem( seq );
   }
   private val seqList = new MySeqList();

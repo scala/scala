@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Stack[A] with MutableList[A] {
+class Stack[A] extends MutableList[A] {
 
     /** Checks if the stack is empty.
      *

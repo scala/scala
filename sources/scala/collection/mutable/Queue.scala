@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Queue[A] with MutableList[A] {
+class Queue[A] extends MutableList[A] {
 
     /** Checks if the queue is empty.
      *

@@ -17,7 +17,7 @@ import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
 import scala.collection.immutable.ListMap ;
-import scala.collection.mutable.Buffer;
+import scala.collection.mutable.ListBuffer;
 
 package scala.tools.scalac.ast.parser {
 
@@ -1667,7 +1667,7 @@ class Parser(unit: Unit) {
    */
   def varDefOrDcl(mods: int): Array[Tree] = {
     var newmods = mods | Modifiers.MUTABLE;
-    val names = new Buffer[Pair[Int, Name]];
+    val names = new ListBuffer[Pair[Int, Name]];
 	do {
 	  s.nextToken();
 	  names.append(Pair(s.pos, ident()));
@@ -1711,7 +1711,7 @@ class Parser(unit: Unit) {
         	constrExpr()));
     } else {
 	  var newmods = mods;
-	  val lhs = new Buffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+	  val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
 	  var loop = true;
 	  while (loop) {
 		lhs.append(Tuple4(s.pos, ident(),
@@ -1789,7 +1789,7 @@ class Parser(unit: Unit) {
   /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
    */
   def classDef(mods: int): Array[Tree] = {
-	val lhs = new Buffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+	val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
 	do {
 	  s.nextToken();
 	  lhs.append(Tuple4(s.pos,
@@ -1812,7 +1812,7 @@ class Parser(unit: Unit) {
   /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate
    */
   def objectDef(mods: int): Array[Tree] = {
-    val lhs = new Buffer[Pair[Int, Name]];
+    val lhs = new ListBuffer[Pair[Int, Name]];
 	do {
 	  s.nextToken();
 	  lhs.append(Pair(s.pos, ident()));
