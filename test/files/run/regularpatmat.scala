@@ -7,7 +7,7 @@ import java.lang.System; // to avoid name clash with .NET's library
 // analyzer related (no execution)
 object bug179 {
   case class One();
-  object Foo with Executable {
+  object Foo with Application {
     def test(xs: List[Any]) = xs match {
       case List(((((One(), One())*) | (One(), One())), One())) =>
 	Console.println("case")
