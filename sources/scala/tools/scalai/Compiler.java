@@ -159,56 +159,10 @@ public class Compiler {
         // !!! method java.lang.Object.wait(long)
         // !!! method java.lang.Object.wait(long, int)
 
-        java.lang.reflect.Method bang_method = null;
-        try {
-            bang_method = scala.Boolean.class.getMethod("$bang",
-                new Class[0]);
-        } catch (Exception exception) {
-            throw Debug.abort("$bang", exception);
-        }
-        java.lang.reflect.Method box_boolean_method = null;
-        try {
-            box_boolean_method =
-                RunTime.class.getMethod("box", new Class[] { boolean.class });
-        } catch (Exception exception) {
-            throw Debug.abort("RunTime.box(boolean)", exception);
-        }
-
-        CodePromise eqeq_code = new CodePromise(
-            new CodeContainer(
-                definitions.EQEQ,
-                Code.Invoke(
-                    Code.Self, Function.JavaMethod(equals_method), new Code[] {
-                        Code.Load(
-                            Code.Null,
-                            Variable.Argument(0)) },
-                    0),
-                0));
-        any_methods.put(definitions.EQEQ, eqeq_code);
         environment.insertFunction(definitions.EQEQ, Function.EqEq);
         Override eqeq_override = Override.empty().insert(definitions.EQEQ);
         environment.insertOverride(definitions.EQEQ, eqeq_override);
 
-        CodePromise bangeq_code = new CodePromise(
-            new CodeContainer(
-                definitions.BANGEQ,
-                Code.Invoke(
-                    Code.Invoke(
-                        Code.Null,
-                        Function.JavaMethod(box_boolean_method),
-                        new Code[] {
-                            Code.Invoke(
-                                Code.Self, Function.EqEq, new Code[] {
-                                Code.Load(
-                                    Code.Null,
-                                    Variable.Argument(0)) },
-                                0)},
-                        0),
-                    Function.JavaMethod(bang_method),
-                    new Code[0],
-                    0),
-                0));
-        any_methods.put(definitions.BANGEQ, bangeq_code);
         environment.insertFunction(definitions.BANGEQ, Function.BangEq);
         Override bangeq_override = Override.empty().insert(definitions.BANGEQ);
         environment.insertOverride(definitions.BANGEQ, bangeq_override);

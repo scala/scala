@@ -262,11 +262,11 @@ public class Evaluator {
 
         case EqEq:
             assert args.length == 1 : Debug.show(args);
-            return object == null ? new Boolean(args[0] == null) : isScalaObject(object) ? getScalaObject(object).invoke(object, scalac.Global.instance.definitions.EQEQ, args) : new Boolean(object.equals(args[0])); // !!!
+            return object == null ? new Boolean(args[0] == null) : new Boolean(object.equals(args[0])); // !!!
 
         case BangEq:
             assert args.length == 1 : Debug.show(args);
-            return object == null ? new Boolean(args[0] != null) : isScalaObject(object) ? getScalaObject(object).invoke(object, scalac.Global.instance.definitions.BANGEQ, args) : new Boolean(!object.equals(args[0])); // !!!
+            return object == null ? new Boolean(args[0] != null) : new Boolean(!object.equals(args[0])); // !!!
 
         case HashCode:
             assert args.length == 0 : Debug.show(args);
