@@ -15,7 +15,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Queue[A] with MutableList[A] {
+class Queue[A] with MutableList[A] with StructuralEquality[Queue[A]] {
 
     /** Checks if the queue is empty.
      *
@@ -39,7 +39,7 @@ class Queue[A] with MutableList[A] {
 
     /** Adds all elements to the queue.
      *
-     *  @param  elems		the elements to add.
+     *  @param  elems       the elements to add.
      */
     def enqueue(elems: A*): Unit = (this += elems);
 
@@ -69,4 +69,16 @@ class Queue[A] with MutableList[A] {
      *  the queue will be empty.
      */
     def clear: Unit = reset;
+
+    /** Checks if two queues are structurally identical.
+     *
+     *  @returns true, iff both queues contain the same sequence of elements.
+     */
+    override def ===[B >: Queue[A]](that: B) =
+        that.isInstanceOf[Queue[A]] &&
+        { val other = that.asInstanceOf[Queue[A]];
+          elements.zip(other.elements).forall {
+            case Pair(thiselem, thatelem) => thiselem == thatelem;
+        }};
 }
+

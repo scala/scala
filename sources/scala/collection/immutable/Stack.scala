@@ -106,9 +106,9 @@ class Stack[+A] with Seq[A] with StructuralEquality[Stack[A]] {
      */
     override def equals(obj: Any): Boolean =
         if (obj.isInstanceOf[Stack[A]])
-        	toList.equals((obj.asInstanceOf[Stack[A]]).toList);
+            toList.equals((obj.asInstanceOf[Stack[A]]).toList);
         else
-        	false;
+            false;
 
     /** Returns the hash code for this stack.
      *

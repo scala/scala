@@ -17,6 +17,6 @@ package scala.collection.mutable;
  */
 
 class LinkedList[A](head: A, tail: LinkedList[A]) extends SingleLinkedList[A, LinkedList[A]] {
-	elem = head;
-	next = tail;
+    elem = head;
+    next = tail;
 }

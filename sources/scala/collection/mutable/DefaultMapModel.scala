@@ -19,9 +19,9 @@ package scala.collection.mutable;
  */
 trait DefaultMapModel[A, B] extends scala.collection.mutable.Map[A, B] {
 
-	protected def findEntry(key: A): Option[Entry];
+    protected def findEntry(key: A): Option[Entry];
 
-	protected def addEntry(e: Entry): Unit;
+    protected def addEntry(e: Entry): Unit;
 
     protected def entries: Iterator[Entry];
 

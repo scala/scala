@@ -18,31 +18,31 @@ package scala.collection.mutable;
  *  @version 1.0, 08/07/2003
  */
 abstract class DoubleLinkedList[A, This <: DoubleLinkedList[A, This]]: This
-	extends SingleLinkedList[A, This] {
+    extends SingleLinkedList[A, This] {
 
-	var prev: This = _;
+    var prev: This = _;
 
-	override def append(that: This): Unit =
-		if (that == null)
-			()
-		else if (next == null) {
-			next = that;
-			that.prev = this;
-		} else
-			next.append(that);
+    override def append(that: This): Unit =
+        if (that == null)
+            ()
+        else if (next == null) {
+            next = that;
+            that.prev = this;
+        } else
+            next.append(that);
 
-	override def insert(that: This): Unit = if (that != null) {
-		that.append(next);
-		next = that;
-		that.prev = this;
-	}
+    override def insert(that: This): Unit = if (that != null) {
+        that.append(next);
+        next = that;
+        that.prev = this;
+    }
 
-	def remove: Unit = {
-		if (next != null)
-			next.prev = prev;
-		if (prev != null)
-			prev.next = next;
-		prev = null;
-		next = null;
-	}
+    def remove: Unit = {
+        if (next != null)
+            next.prev = prev;
+        if (prev != null)
+            prev.next = next;
+        prev = null;
+        next = null;
+    }
 }

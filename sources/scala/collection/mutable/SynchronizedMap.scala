@@ -75,11 +75,11 @@ trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] with Moni
     }
 
     override def excl(keys: A*): Unit = synchronized {
-    	super.excl(keys);
+        super.excl(keys);
     }
 
     override def excl(keys: Iterable[A]): Unit = synchronized {
-    	super.excl(keys);
+        super.excl(keys);
     }
 
     override def clear: Unit = synchronized {

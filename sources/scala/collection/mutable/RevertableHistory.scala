@@ -23,10 +23,10 @@ class RevertableHistory[A <: Undo, B] extends History[A, B] with Undo {
     /** Rollback the full history.
      */
     def undo: Unit = {
-    	val old = log.toList.reverse;
-    	clear;
-    	old.foreach {
-    		case Pair(sub, event) => event.undo;
-    	}
+        val old = log.toList.reverse;
+        clear;
+        old.foreach {
+            case Pair(sub, event) => event.undo;
+        }
     }
 }

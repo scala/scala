@@ -22,14 +22,14 @@ abstract class ObservableSet[A, This <: ObservableSet[A, This]]: This
                     with Publisher[ObservableUpdate[A] with Undo, This] {
 
     override def +=(elem: A): Unit = if (!contains(elem)) {
-   		super.+=(elem);
-   		publish(new Inclusion(elem) with Undo { def undo = -=(elem); });
-   	}
+        super.+=(elem);
+        publish(new Inclusion(elem) with Undo { def undo = -=(elem); });
+    }
 
-	override def -=(elem: A): Unit = if (contains(elem)) {
-		super.-=(elem);
-		publish(new Removal(elem) with Undo { def undo = +=(elem); });
-	}
+    override def -=(elem: A): Unit = if (contains(elem)) {
+        super.-=(elem);
+        publish(new Removal(elem) with Undo { def undo = +=(elem); });
+    }
 
     override def clear: Unit = {
         super.clear;

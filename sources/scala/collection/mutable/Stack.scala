@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Stack[A] with MutableList[A] {
+class Stack[A] with MutableList[A] with StructuralEquality[Stack[A]] {
 
     /** Checks if the stack is empty.
      *
@@ -26,7 +26,7 @@ class Stack[A] with MutableList[A] {
 
     /** Pushes a single element on top of the stack.
      *
-     *  @param  elem		the element to push onto the stack
+     *  @param  elem        the element to push onto the stack
      */
     def +=(elem: A): Unit = prependElem(elem);
 
@@ -34,14 +34,14 @@ class Stack[A] with MutableList[A] {
      *  on top of the stack. The elements are pushed in the order they
      *  are given out by the iterator.
      *
-     *  @param  iter		an iterable object
+     *  @param  iter        an iterable object
      */
     def +=(iter: Iterable[A]): Unit = iter.elements.foreach(e => prependElem(e));
 
     /** Pushes a sequence of elements on top of the stack. The first element
      *  is pushed first, etc.
      *
-     *  @param  elems		a sequence of elements
+     *  @param  elems       a sequence of elements
      */
     def push(elems: A*): Unit = (this += elems);
 
@@ -77,4 +77,15 @@ class Stack[A] with MutableList[A] {
      *  @returns the created list.
      */
     override def toList: List[A] = super.toList.reverse;
+
+    /** Checks if two stacks are structurally identical.
+     *
+     *  @returns true, iff both stacks contain the same sequence of elements.
+     */
+    override def ===[B >: Stack[A]](that: B) =
+        that.isInstanceOf[Stack[A]] &&
+        { val other = that.asInstanceOf[Stack[A]];
+          elements.zip(other.elements).forall {
+            case Pair(thiselem, thatelem) => thiselem == thatelem;
+        }};
 }

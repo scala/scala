@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Buffer[A] with MutableList[A] {
+class Buffer[A] with MutableList[A] with StructuralEquality[Buffer[A]] {
 
     def prepend(elem: A) = prependElem(elem);
 
@@ -85,4 +85,15 @@ class Buffer[A] with MutableList[A] {
     }
 
     def clear: Unit = reset;
+
+    /** Checks if two buffers are structurally identical.
+     *
+     *  @returns true, iff both buffers contain the same sequence of elements.
+     */
+    override def ===[B >: Buffer[A]](that: B) =
+        that.isInstanceOf[Buffer[A]] &&
+        { val other = that.asInstanceOf[Buffer[A]];
+          elements.zip(other.elements).forall {
+            case Pair(thiselem, thatelem) => thiselem == thatelem;
+        }};
 }

@@ -31,8 +31,8 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      *  @throws java.lang.RuntimeException if the list is too short.
      */
     def apply(n: Int): A =
-    	if (n < out.length) out.apply(n)
-	    else in.reverse.apply(n - out.length);
+        if (n < out.length) out.apply(n)
+        else in.reverse.apply(n - out.length);
 
     /** Returns the elements in the list as an iterator
      */
@@ -64,14 +64,14 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      *  @param  iter        an iterable object
      */
     def +[B >: A](iter: Iterable[B]) = {
-		var q:List[B] = in;
-		iter.elements.foreach(e => q = (e::q));
-		new Queue(q,out);
+        var q:List[B] = in;
+        iter.elements.foreach(e => q = (e::q));
+        new Queue(q,out);
     }
 
     /** Returns a new queue with all elements added.
      *
-     *  @param  elems		the elements to add.
+     *  @param  elems       the elements to add.
      */
     def enqueue [B >: A](elems: B*): Queue[B] = (this + elems);
 
@@ -81,17 +81,17 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      *  @returns the first element of the queue.
      */
     def dequeue: Pair[A,Queue[A]] = {
-		var newOut:List[A]=Nil;
-		var newIn:List[A]=Nil;
-        	if (out.isEmpty) {
-	    	newOut = in.reverse;
-	    	newIn = Nil;
-		} else {
-	    	newOut = out;
-	    	newIn = in;
-		}
-		if (newOut.isEmpty)
-  	  		error("queue empty");
+        var newOut:List[A]=Nil;
+        var newIn:List[A]=Nil;
+            if (out.isEmpty) {
+            newOut = in.reverse;
+            newIn = Nil;
+        } else {
+            newOut = out;
+            newIn = in;
+        }
+        if (newOut.isEmpty)
+            error("queue empty");
         else
             Pair(newOut.head,new Queue(newIn,newOut.tail));
     }
@@ -102,10 +102,10 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      *  @returns the first element.
      */
     def front: A =
-		if (out.isEmpty) {
-	    	if (in.isEmpty) error("queue empty") else in.last;
-		} else
-			out.head;
+        if (out.isEmpty) {
+            if (in.isEmpty) error("queue empty") else in.last;
+        } else
+            out.head;
 
     /** Returns a string representation of this queue. The resulting string
      * begins with the string <code>start</code> and is finished by the string
@@ -120,7 +120,7 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      * @param end ending string.
      * @return a string representation of this list.
      */
-	def mkString(start: String, sep: String, end: String): String =
+    def mkString(start: String, sep: String, end: String): String =
         (out ::: (in.reverse)).mkString(start,sep,end);
 
     /** Returns a string representation of this queue.
@@ -133,26 +133,26 @@ class Queue[+A](in: List[A], out: List[A]) extends Seq[A]
      *  @returns true, iff the two queues are structurally equal.
      */
     override def equals(o: Any): Boolean = o match {
-		case q: Queue[Any] =>
-		  /* A function that compares the element at
-			 position index in q with the element at
-			 the same position in this (queue).
-			 If they are equal the next element is
-			 compared. */
-		  def eqe(index: int):Boolean = {
-		/* If all elements are compared
-		the queues are equal. */
-		index >= this.length ||
-		/* Otherwise: compare the elements */
-		(q.apply(index) == this.apply(index) &&
-		 /* if they are equal compare the rest. */
-		   eqe(index+1))
-		  }
-		  /* If the length of the ques are the same,
-			 compare each element, starting at index 0. */
-		  (q.length == this.length) && eqe(0);
+        case q: Queue[Any] =>
+          /* A function that compares the element at
+             position index in q with the element at
+             the same position in this (queue).
+             If they are equal the next element is
+             compared. */
+          def eqe(index: int):Boolean = {
+        /* If all elements are compared
+        the queues are equal. */
+        index >= this.length ||
+        /* Otherwise: compare the elements */
+        (q.apply(index) == this.apply(index) &&
+         /* if they are equal compare the rest. */
+           eqe(index+1))
+          }
+          /* If the length of the ques are the same,
+             compare each element, starting at index 0. */
+          (q.length == this.length) && eqe(0);
 
-		case _ => false; /* o is not a queue: not equal to this. */
+        case _ => false; /* o is not a queue: not equal to this. */
     }
 }
 

@@ -37,7 +37,7 @@ trait Map[A, +B] with PartialFunction[A, B]
     /** Check if this map maps <code>key</code> to a value and return the
      *  value if it exists.
      *
-     *  @param	key		the key of the mapping of interest
+     *  @param  key     the key of the mapping of interest
      *  @returns the value of the mapping, if it exists
      */
     def get(key: A): Option[B];
@@ -52,7 +52,7 @@ trait Map[A, +B] with PartialFunction[A, B]
      *  method throws an exception if there is no mapping from the given
      *  key to a value.
      *
-     *  @param	key		the key
+     *  @param  key     the key
      *  @returns the value associated with the given key.
      */
     def apply(key: A): B = get(key) match {
@@ -62,7 +62,7 @@ trait Map[A, +B] with PartialFunction[A, B]
 
     /** Is the given key mapped to a value by this map?
      *
-     *  @param	 key		the key
+     *  @param   key        the key
      *  @returns true, iff there is a mapping for key in this map
      */
     def contains(key: A): Boolean = get(key) match {
@@ -72,7 +72,7 @@ trait Map[A, +B] with PartialFunction[A, B]
 
     /** Does this map contain a mapping from the given key to a value?
      *
-     *  @param	 key		the key
+     *  @param   key        the key
      *  @returns true, iff there is a mapping for key in this map
      */
     def isDefinedAt(key: A) = contains(key);
@@ -100,7 +100,7 @@ trait Map[A, +B] with PartialFunction[A, B]
     /** Executes the given function for all (key, value) pairs
      *  contained in this map.
      *
-     *  @param		f	the function to execute.
+     *  @param      f   the function to execute.
      */
     def foreach(f: (A, B) => Unit) = {
         val iter = elements;
@@ -110,33 +110,33 @@ trait Map[A, +B] with PartialFunction[A, B]
         }
     }
 
-	/** Applies the given predicate to all (key, value) mappings
-	 *  contained in this map and returns true if this predicate
-	 *  yields true for all mappings.
-	 *
-	 *  @param		p	the predicate
-	 *  @returns	true, iff p yields true for all mappings.
-	 */
-	def forall(p: (A, B) => Boolean): Boolean = elements.forall {
-		case Pair(key, value) => p(key, value)
-	}
+    /** Applies the given predicate to all (key, value) mappings
+     *  contained in this map and returns true if this predicate
+     *  yields true for all mappings.
+     *
+     *  @param      p   the predicate
+     *  @returns    true, iff p yields true for all mappings.
+     */
+    def forall(p: (A, B) => Boolean): Boolean = elements.forall {
+        case Pair(key, value) => p(key, value)
+    }
 
     /** Applies the given predicate to all (key, value) mappings
-	 *  contained in this map and returns true if there is at least
-	 *  one mapping for which this predicate yields true.
-	 *
-	 *  @param		p	the predicate
-	 *  @returns	true, iff there is at least one mapping for which
-	 *              p yields true.
-	 */
+     *  contained in this map and returns true if there is at least
+     *  one mapping for which this predicate yields true.
+     *
+     *  @param      p   the predicate
+     *  @returns    true, iff there is at least one mapping for which
+     *              p yields true.
+     */
     def exists(p: (A, B) => Boolean): Boolean = elements.exists {
-		case Pair(key, value) => p(key, value)
-	}
+        case Pair(key, value) => p(key, value)
+    }
 
-	/** Creates a list of all (key, value) mappings.
-	 *
-	 *  @returns	the list of all mappings
-	 */
+    /** Creates a list of all (key, value) mappings.
+     *
+     *  @returns    the list of all mappings
+     */
     def toList: List[Pair[A, B]] = {
         var res: List[Pair[A, B]] = Nil;
         elements.foreach { mapping => res = mapping :: res; };
@@ -147,22 +147,22 @@ trait Map[A, +B] with PartialFunction[A, B]
      *  contained in this map are also contained in the other map,
      *  and vice versa.
      *
-     *  @returns	true, iff both maps contain exactly the same mappings.
+     *  @returns    true, iff both maps contain exactly the same mappings.
      */
-	override def ===[C >: Map[A, B]](that: C): Boolean =
-    	that.isInstanceOf[Map[A, B]] &&
-    	{ val other = that.asInstanceOf[Map[A, B]];
-    	  this.size == other.size &&
-    	  this.elements.forall {
-    	      case Pair(key, value) => other.get(key) match {
-    	          case None => false;
-    	          case Some(otherval) => value == otherval;
-    	      }
-    	  }};
+    override def ===[C >: Map[A, B]](that: C): Boolean =
+        that.isInstanceOf[Map[A, B]] &&
+        { val other = that.asInstanceOf[Map[A, B]];
+          this.size == other.size &&
+          this.elements.forall {
+              case Pair(key, value) => other.get(key) match {
+                  case None => false;
+                  case Some(otherval) => value == otherval;
+              }
+          }};
 
     /** Creates a string representation for this map.
      *
-     *  @returns	a string showing all mappings
+     *  @returns    a string showing all mappings
      */
     override def toString() =
         if (size == 0)

@@ -33,7 +33,7 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
     def get(n: Int): Option[A] = first.get(n);
 
     protected def prependElem(elem: A): Unit = {
-    	first = new LinkedList[A](elem, first);
+        first = new LinkedList[A](elem, first);
         if (len == 0)
             last = first;
         len = len + 1;
@@ -50,13 +50,13 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
     }
 
     protected def reset: Unit = {
-    	first = null;
-    	last = null;
-    	len = 0;
+        first = null;
+        last = null;
+        len = 0;
     }
 
     def elements: Iterator[A] =
-    	if (first == null) Nil.elements else first.elements;
+        if (first == null) Nil.elements else first.elements;
 
     def toList: List[A] = if (first == null) Nil else first.toList;
 

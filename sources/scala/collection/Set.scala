@@ -47,10 +47,10 @@ trait Set[A] with Iterable[A]
     }
 
     override def ===[B >: Set[A]](that: B): Boolean =
-    	that.isInstanceOf[Set[A]] &&
-    	{ val other = that.asInstanceOf[Set[A]];
-    	  this.size == other.size &&
-    	  this.elements.forall(other.contains) };
+        that.isInstanceOf[Set[A]] &&
+        { val other = that.asInstanceOf[Set[A]];
+          this.size == other.size &&
+          this.elements.forall(other.contains) };
 
     override def toString(): String =
         if (size == 0)
