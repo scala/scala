@@ -39,6 +39,7 @@ ast/printer/TextTreePrinter.java
 ast/printer/TreePrinter.java
 
 atree/AArithmeticOp.java
+atree/ACode.java
 atree/AComparisonOp.java
 atree/AConstant.java
 atree/ALogicalOp.java

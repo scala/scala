@@ -237,6 +237,16 @@ public class ATreePrinter {
     //########################################################################
     // Public Methods - Printing trees
 
+    /** Prints the code. */
+    public ATreePrinter printCode(ACode code) {
+        switch (code) {
+        case Void:
+            return print("<void>");
+        default:
+            throw Debug.abort("unknown case", code);
+        }
+    }
+
     /** Prints the primitive. */
     public ATreePrinter printPrimitive(APrimitive primitive) {
         switch (primitive) {
