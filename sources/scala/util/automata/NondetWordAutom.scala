@@ -14,8 +14,8 @@ abstract class NondetWordAutom {
   type T_label;
 
   val nstates:  Int;
-  val finals:   PartialFunction[Int,Int] ;
-  val delta:    Function1[Int,Map[T_label,List[Int]]];
+  val finals:   Array[Int] ;
+  val delta:    Array[Map[T_label,List[Int]]];
   val default:  Array[List[Int]];
 
   /** returns true if the state is final */
@@ -44,6 +44,8 @@ abstract class NondetWordAutom {
   }
 
   override def toString() = {
+    "NondetWordAutom"
+    /*
     val sb = new StringBuffer();
     sb.append("[nfa nstates=");
     sb.append(nstates);
@@ -65,5 +67,6 @@ abstract class NondetWordAutom {
       sb.append('\n');
     }
     sb.toString();
+    */
   }
 }

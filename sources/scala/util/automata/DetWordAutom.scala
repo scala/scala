@@ -14,11 +14,13 @@ abstract class DetWordAutom {
   type T_label;
 
   val nstates:  Int;
-  val finals:   PartialFunction[Int,Int] ;
-  val delta:    Function1[Int,Map[T_label,Int]];
-  val default:  PartialFunction[Int,Int] ;
+  val finals:   Array[Int] ;
+  val delta:    Array[Map[T_label,Int]];
+  val default:  Array[Int] ;
 
   override def toString() = {
+    "DetWordAutom"
+    /*
     val sb = new StringBuffer();
     sb.append("[nfa nstates=");
     sb.append(nstates);
@@ -42,5 +44,6 @@ abstract class DetWordAutom {
       }
     }
     sb.toString();
+    */
   }
 }
