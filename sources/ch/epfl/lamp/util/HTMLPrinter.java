@@ -304,7 +304,7 @@ public class HTMLPrinter {
      * @param text
      */
     public HTMLPrinter printlnTag(String label, String text) {
-        printOTag(label);
+        printlnOTag(label);
         print(text);
         return printlnCTag(label);
     }
