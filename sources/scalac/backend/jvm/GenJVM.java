@@ -1177,7 +1177,7 @@ class GenJVM {
         for (int i = 0; i < elements.length; ++i) {
             JType elemType = typeStoJ(elements[i].type);
             if (!elemType.equals(JObjectType.JAVA_LANG_STRING)
-                && elemType.isObjectType())
+                && elemType.isReferenceType())
                 elemType = JObjectType.JAVA_LANG_OBJECT;
             genLoad(ctx, elements[i], elemType);
             ctx.code.emitINVOKEVIRTUAL(JAVA_LANG_STRINGBUFFER,
