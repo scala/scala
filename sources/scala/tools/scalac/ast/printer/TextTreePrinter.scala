@@ -657,11 +657,6 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
       undent();
       print(TXT_BLOCK_END);
     }
-
-    if (templ.body.length > 0) {
-      print(Space);
-      printArray(templ.body, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
-    }
   }
 
   protected def printParams(tparams: Array[Tree$AbsTypeDef]): unit =
