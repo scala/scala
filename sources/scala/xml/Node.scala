@@ -24,7 +24,7 @@ object Node {
 /** Trait for representing XML using nodes of a labelled tree.
  *  This trait contains an implementation of a subset of XPath for navigation.
  */
-trait Node extends NodeSeq {
+abstract class Node extends NodeSeq {
 
   final def theSeq = this :: Nil;
   /*
@@ -46,20 +46,25 @@ trait Node extends NodeSeq {
   /** the namespace of this node */
   def namespace: String;
 
+  private var internalAttrMap:Map[String, String] = null;
+
   /** attribute map for attributes with the same namespace as this element  */
-  final def attribute: Map[String,String] = new Map[String, String] {
-    def size = attributes.length;
-    def elements =
-      attributes.elements
-      .filter( x => x.namespace == namespace )
-      .map( x => Pair(x.key, x.value) );
-    def get(x:String) = {
-      attributes.lookup( namespace, x ) match {
-        case Some( x ) => Some( x.value );
-        case _         => None
-      }
-    }
+  final def attribute: Map[String,String] = {
+    if( internalAttrMap == null )
+      internalAttrMap = new Map[String,String] {
+	val theMap = new collection.mutable.HashMap[String,String];
+	theMap ++=
+	attributes.elements
+	.filter( x => x.namespace == namespace )
+	.map( x => Pair(x.key, x.value) );
+
+	def size = theMap.size;
+	def elements = theMap.elements;
+	def get(x:String) = theMap.get(x);
+      };
+    internalAttrMap
   }
+
   /** attribute axis - all attributes of this node, in order defined by attrib
   */
   def attributes: AttributeSeq;
