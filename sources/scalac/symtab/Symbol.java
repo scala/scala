@@ -43,6 +43,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public static final int IS_ANONYMOUS    = 0x00000002;
     public static final int IS_LABEL        = 0x00000010;
     public static final int IS_ACCESSMETHOD = 0x00000100;
+    public static final int IS_ERROR        = 0x10000000;
     public static final int IS_THISTYPE     = 0x20000000;
     public static final int IS_LOCALDUMMY   = 0x40000000;
     public static final int IS_COMPOUND     = 0x80000000;
@@ -211,6 +212,16 @@ public abstract class Symbol implements Modifiers, Kinds {
         return peckage;
     }
 
+    /**
+     * Creates a new error value owned by this symbol and initializes
+     * it with an error type.
+     */
+    public Symbol newErrorValue(Name name) {
+        Symbol symbol = newTerm(pos, SYNTHETIC, name, IS_ERROR);
+        symbol.setInfo(Type.ErrorType);
+        return symbol;
+    }
+
     /** Creates a new type alias owned by this symbol. */
     public final Symbol newTypeAlias(int pos, int flags, Name name) {
         return new AliasTypeSymbol(pos, name, this, flags, 0);
@@ -263,6 +274,17 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert isTerm(): Debug.show(this);
         Name name = Names.ANON_CLASS_NAME.toTypeName();
         return newClass(pos, 0, name, IS_ANONYMOUS, NONE);
+    }
+
+    /**
+     * Creates a new error class owned by this symbol and initializes
+     * it with an error type.
+     */
+    public ClassSymbol newErrorClass(Name name) {
+        ClassSymbol symbol = newClass(pos, SYNTHETIC, name, IS_ERROR, NONE);
+        symbol.setInfo(Type.ErrorType);
+        symbol.allConstructors().setInfo(Type.ErrorType);
+        return symbol;
     }
 
     /**
@@ -493,9 +515,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Symbol classification ----------------------------------------------------
 
-    /** Does this symbol denote the error symbol? */
+    /** Does this symbol denote an error symbol? */
     public final boolean isError() {
-        return kind == Kinds.ERROR;
+        return (attrs & IS_ERROR) != 0;
     }
 
     /** Does this symbol denote the none symbol? */
@@ -1933,7 +1955,7 @@ final class ErrorSymbol extends Symbol {
 
     /** Constructor */
     public ErrorSymbol() {
-        super(Kinds.ERROR, Position.NOPOS, Names.ERROR, null, 0, 0);
+        super(Kinds.ERROR, Position.NOPOS, Names.ERROR, null, 0, IS_ERROR);
         super.setInfo(Type.ErrorType);
     }
 
