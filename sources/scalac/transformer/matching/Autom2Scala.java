@@ -1,7 +1,6 @@
 package scalac.transformer.matching ;
 
 import scalac.* ;
-import scalac.typechecker.* ;
 import scalac.symtab.Symbol ;
 import scalac.symtab.Type ;
 import scalac.symtab.TermSymbol ;
@@ -138,7 +137,7 @@ public class Autom2Scala  {
             this.owner = owner;
             this.pos = Position.FIRSTPOS;
             this.cf = cf;
-            this.am = new AlgebraicMatcher( cf.unit, cf.infer );
+            this.am = new AlgebraicMatcher( cf.unit );
             //this.mdefs = new Vector();
 
             //this.freeVars = new Vector();

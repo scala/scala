@@ -13,7 +13,6 @@ import scalac.*;
 import scalac.ast.*;
 import scalac.util.*;
 import scalac.symtab.*;
-import scalac.typechecker.*;
 import PatternNode.*;
 import Tree.*;
 
@@ -48,23 +47,23 @@ public class PatternMatcher extends PatternTool {
 
     /** constructor
      */
-    public PatternMatcher(Unit unit, Infer infer, Tree selector,
+    public PatternMatcher(Unit unit, Tree selector,
                           Symbol owner, Type resultType) {
-        super(unit, infer);
+        super(unit);
 		initialize(selector, owner, resultType);
     }
 
     /** constructor, used in subclass ALgebraicMatcher
      */
-    protected PatternMatcher(Unit unit, Infer infer) {
-		super(unit, infer);
+    protected PatternMatcher(Unit unit) {
+		super(unit);
     }
 
     /** init method, also needed in subclass AlgebraicMatcher
      */
     protected void initialize(Tree selector, Symbol owner, Type resultType) {
-        this.mk = new PatternNodeCreator(unit, infer, owner);
-        this.cf = new CodeFactory(unit, infer, selector.pos);
+        this.mk = new PatternNodeCreator(unit, owner);
+        this.cf = new CodeFactory(unit, selector.pos);
         this.root = mk.ConstrPat(selector.pos, selector.type.widen());
         this.root.and = mk.Header(selector.pos,
                                   selector.type.widen(),

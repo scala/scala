@@ -11,7 +11,6 @@ package scalac.transformer.matching;
 import scalac.*;
 import scalac.ast.*;
 import scalac.symtab.*;
-import scalac.typechecker.*;
 
 import PatternNode.*;
 import Tree.*;
@@ -36,8 +35,8 @@ public class AlgebraicMatcher extends PatternMatcher {
 
       /** constructor
        */
-      public AlgebraicMatcher( Unit unit, Infer infer ) {
-            super( unit, infer );
+      public AlgebraicMatcher( Unit unit ) {
+            super( unit );
       }
 
       /** constructs an algebraic pattern matcher from cases
@@ -485,7 +484,7 @@ public class AlgebraicMatcher extends PatternMatcher {
 
 	  Tree defaultCase = toTree( defaultNode, selector );
 
-	  SequenceMatcher wordRec = new SequenceMatcher(unit, infer);
+	  SequenceMatcher wordRec = new SequenceMatcher(unit);
 
 	  Matcher m = new Matcher( _m.owner,
 				   selector,

@@ -13,7 +13,6 @@ import java.util.*;
 import scalac.*;
 import scalac.ast.*;
 import scalac.symtab.*;
-import scalac.typechecker.*;
 import scalac.util.*;       // Names
 import Tree.*;
 
@@ -78,17 +77,12 @@ public class TransMatch extends OwnerTransformer {
 
     Unit unit;
 
-    /** type inference engine
-     */
-    Infer infer;
-
     public TransMatch(Global global) {
         super(global);
     }
 
     public void apply(Unit unit) {
         this.unit = unit;
-        this.infer = new Infer(this);
         super.apply(unit);
     }
 
@@ -98,12 +92,12 @@ public class TransMatch extends OwnerTransformer {
         while(!containsReg && (i < cases.length))
             containsReg = TestRegTraverser.apply(cases[i++]);
         if (containsReg) {
-        	AlgebraicMatcher am = new AlgebraicMatcher( unit, infer );
+        	AlgebraicMatcher am = new AlgebraicMatcher( unit );
             Matcher matcher = new Matcher( currentOwner, root, restpe );
             am.construct( matcher, cases );
             return matcher.tree;
         } else {
-            PatternMatcher pm = new PatternMatcher(unit, infer, root,
+            PatternMatcher pm = new PatternMatcher(unit, root,
                                                    currentOwner, restpe);
             pm.enter(cases);
             if (global.log()) {

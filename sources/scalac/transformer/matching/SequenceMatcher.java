@@ -2,7 +2,6 @@ package scalac.transformer.matching ;
 
 import scalac.*;
 import scalac.ast.Tree;
-import scalac.typechecker.*;
 import Tree.*;
 
 //import scala.compiler.printer.TextTreePrinter ; // DEBUGGING\
@@ -152,7 +151,7 @@ public class SequenceMatcher extends PatternTool {
             assert body.length == pat.length;
             this._m = _m;
 
-            this.cf = new CodeFactory( unit, infer, _m.pos );
+            this.cf = new CodeFactory( unit, _m.pos );
 
             Type seqType = pat[ 0 ].type();
 
@@ -201,8 +200,8 @@ public class SequenceMatcher extends PatternTool {
 
       /** constructor, invoked  by AlgebraicMatcher
        */
-      SequenceMatcher( Unit unit, Infer infer ) {
-            super( unit, infer );
+      SequenceMatcher( Unit unit ) {
+            super( unit );
             //Symbol predefSym = defs.getModule( defs.SCALA, Names.Predef );
             //Scope predefScope = predefSym.members();
       }

@@ -14,7 +14,6 @@ import scalac.*;
 import scalac.ast.*;
 import scalac.util.*;
 import scalac.symtab.*;
-import scalac.typechecker.*;
 import PatternNode.*;
 import Tree.*;
 
@@ -132,8 +131,8 @@ class CodeFactory extends PatternTool {
     }
 
 
-    public CodeFactory( Unit unit, Infer infer, int pos ) {
-	super( unit, infer );
+    public CodeFactory( Unit unit, int pos ) {
+	super( unit );
 	this.pos = pos;
     }
 

@@ -13,7 +13,6 @@ import scalac.*;
 import scalac.ast.*;
 import scalac.util.*;
 import scalac.symtab.*;
-import scalac.typechecker.*;
 import PatternNode.*;
 import Tree.*;
 
@@ -51,10 +50,6 @@ abstract class PatternTool {
      */
     TreeGen gen;
 
-    /** type inference engine
-     */
-    Infer infer;
-
     /** the statics of class Boolean
      */
     Symbol statics; // REMOVE
@@ -69,9 +64,8 @@ abstract class PatternTool {
     Symbol notSym;
 
     // constructor
-    public PatternTool( Unit unit, Infer infer ) {
+    public PatternTool( Unit unit ) {
 	this.unit = unit;
-	this.infer = infer;
 	this.fresh = unit.global.freshNameCreator;
 	this.gen = unit.global.treeGen;
 	this.defs = unit.global.definitions;
