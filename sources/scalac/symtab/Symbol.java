@@ -39,6 +39,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public static final int IS_ROOT         = 0x00000001;
     public static final int IS_ANONYMOUS    = 0x00000002;
     public static final int IS_LABEL        = 0x00000010;
+    public static final int IS_CONSTRUCTOR  = 0x00000020;
     public static final int IS_ACCESSMETHOD = 0x00000100;
     public static final int IS_ERROR        = 0x10000000;
     public static final int IS_THISTYPE     = 0x20000000;
@@ -786,8 +787,8 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /** Is this symbol a constructor? */
-    public boolean isConstructor() {
-        return false;
+    public final boolean isConstructor() {
+        return (attrs & IS_CONSTRUCTOR) != 0;
     }
 
     /** Is this symbol the primary constructor of a type? */
@@ -1476,10 +1477,8 @@ public abstract class Symbol implements Modifiers, Kinds {
         if (owner.kind == CLASS &&
             !owner.isAnonymousClass() && !owner.isCompoundSym() ||
             Global.instance.debug)
-            return " in " + owner;
-        /*
-		(owner.isModuleClass() ? ((ClassSymbol) owner).module() : owner);
-        */
+            return " in " +
+                (owner.isModuleClass() ? owner.sourceModule() : owner);
         else
             return "";
     }
@@ -1677,16 +1676,12 @@ final class ConstructorSymbol extends TermSymbol {
 
     /** Initializes this instance. */
     ConstructorSymbol(Symbol clasz, int pos, int flags) {
-        super(clasz.owner(), pos, flags, Names.CONSTRUCTOR, 0);
+        super(clasz.owner(), pos, flags, Names.CONSTRUCTOR, IS_CONSTRUCTOR);
         this.clasz = clasz;
     }
 
     public boolean isInitializer() {
         return false;
-    }
-
-    public boolean isConstructor() {
-        return true;
     }
 
     public Symbol constructorClass() {
