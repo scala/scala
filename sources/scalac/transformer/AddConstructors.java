@@ -202,7 +202,7 @@ public class AddConstructors extends Transformer {
 		Type.compoundType(treeSym.parents(), classScope, treeSym);
 	    Symbol classSym = treeSym.updateInfo(classType);
 	    Tree[] newBody = (Tree[]) classBody.toArray(Tree.EMPTY_ARRAY);
-	    return gen.ClassDef(classSym, newBody);
+	    return gen.ClassDef(classSym, baseClasses, newBody);
 
 	// Substitute the constructor into the 'new' expressions
 	case New(Template(Tree[] baseClasses, _)):
