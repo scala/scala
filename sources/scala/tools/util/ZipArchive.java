@@ -119,7 +119,7 @@ public final class ZipArchive extends PlainFile {
                 String home = index < 0 ? "/"  : path.substring(0, index + 1);
                 DirEntry parent = getDir(dirs, home);
                 assert !parent.entries.containsKey(path): this + " - " + path;
-                parent.entries.put(path, new FileEntry(name, path, entry));
+                parent.entries.put(name, new FileEntry(name, path, entry));
             }
         }
     }
