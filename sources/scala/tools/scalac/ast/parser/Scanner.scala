@@ -668,7 +668,15 @@ class Scanner(_unit: Unit) extends TokenData {
   *  production
   */
   def xml_nextch() = {
-    nextch();
+    try {
+      nextch();
+    } catch {
+      case e:ArrayIndexOutOfBoundsException =>  {
+	token = EOF;
+	syntaxError(lastpos, "unclosed XML literal");
+	throw new ApplicationError("unclosed XML literal");
+      }
+    }
     ch match {
       case '\r' => {
         cline = cline + 1;
@@ -753,11 +761,13 @@ class Scanner(_unit: Unit) extends TokenData {
   }
 
   def xmlValue(endch:char):String = {
-    pos = Position.encode(cline, ccol);
+    lastpos = pos;
     val index = bp;
     while ( ch != endch ) {
-      if(( ch == '<' )||( ch == '&' ))
+      if(( ch == '<' )||( ch == '&' )) {
+	pos = Position.encode(cline, ccol);
         xml_syntaxError(ch.asInstanceOf[char]+" not allowed here");
+      }
       xml_nextch();
     };
     pos = Position.encode(cline, ccol);

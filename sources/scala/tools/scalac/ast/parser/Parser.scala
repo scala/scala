@@ -360,17 +360,25 @@ class Parser(unit: Unit) {
     make.LabelDef(pos, lname, new Array[Tree$Ident](0), rhs)
   }
 
-  def makeXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
-      var symt = scalaDot(s.pos, Names.Symbol);
-      if( isPattern ) symt = convertToTypeId(symt);
-      val ts = new myTreeList();
-      ts.append(t);
-      ts.append(args);
-      make.Apply(pos, symt, ts.toArray());
+  def mkXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
+    var symt = scalaDot(s.pos, Names.Symbol);
+    if( isPattern ) symt = convertToTypeId(symt);
+    val ts = new myTreeList();
+    ts.append(t);
+    ts.append(args);
+    make.Apply(pos, symt, ts.toArray());
   }
 
+  def makeXMLpat(pos:int, n:Name, args:Array[Tree]):Tree =
+    mkXML(pos, true, gen.mkStringLit( pos, n.toString() ), args);
+
   def makeXML(pos:int, n:Name, args:Array[Tree]):Tree =
-    makeXML(pos, false, gen.mkStringLit( pos, n.toString() ), args);
+    mkXML(pos, false, gen.mkStringLit( pos, n.toString() ), args);
+
+  def makeXMLseq( pos:int, args:Array[Tree] ) = {
+    var symt = scalaDot(s.pos, Names.List);
+    make.Apply(pos, symt, args);
+  }
 
   def makeXML(pos:int, n:Name, args:Array[Tree], attrMap:ListMap[Name,String]):Tree = {
     val t = makeXML( pos, n, args );
@@ -383,7 +391,7 @@ class Parser(unit: Unit) {
                                    x(0) = gen.mkStringLit( pos, key.toString() );
                                    x(1) = gen.mkStringLit( pos, value.toString() );
                                    x }
-                                  ));
+                                ));
       i = i + 1;
     };
     make.Apply(pos,
@@ -392,7 +400,7 @@ class Parser(unit: Unit) {
                 x( 0 ) = make.Apply(pos,
                                     scalaDot(s.pos, Names.List),
                                     attrs);
-               x })
+		x })
 
   }
 
@@ -642,9 +650,9 @@ class Parser(unit: Unit) {
     if (isSymLit) {
       val pos = s.pos;
       if (s.token == LPAREN || s.token == LBRACE)
-        makeXML( pos, isPattern, t, argumentExprs() );
+        mkXML( pos, isPattern, t, argumentExprs() );
       else
-        makeXML( pos, isPattern, t, Tree.EMPTY_ARRAY );
+        mkXML( pos, isPattern, t, Tree.EMPTY_ARRAY );
     } else {
       t
     }
@@ -985,9 +993,7 @@ class Parser(unit: Unit) {
         t = literal(false);
       case IDENTIFIER | THIS | SUPER =>
         t = if( s.name == LT ) {
-          val tt = xmlExpr();  /* top-level xml expression */
-          s.nextToken();
-          tt
+          xmlExprTop();  /* top-level xml expression */
         } else {
           stableRef(true, false);
         }
@@ -1041,104 +1047,25 @@ class Parser(unit: Unit) {
     null;//dummy
   }
 
-  /** '<' xmlExpr ::= STag  { xmlExpr | '{' simpleExpr '}' } ETag
-   ** '<' xmlExpr ::= EmptyElemTag
-   */
-  def xmlExpr():Tree = {
+  /** top level xml expression, resynchronizes after succesful parse
+   *  see xmlExpr
+  */
+  def xmlExprTop():Tree = {
     val pos = s.pos;
-    var empty = false;
-
-    /* [40] STag         ::= '<' Name (S Attribute)* S? '>'
-     * [41] Attribute    ::= Name Eq AttValue
-    *  [44] EmptyElemTag ::= '<' Name (S Attribute)* S? '/>'
-    */
-    val elemName = s.xmlName();
-    s.xmlSpaceOpt();
-    var attrMap = ListMap.Empty[Name,String];
-    while(( s.ch != '>' )&&( !empty )) {
-      if( s.ch == '/' ) {
-        s.nextch();
-        empty = true;
-      } else if( s.xml_isNameStart() ) {
-        val attrName:Name = s.xmlName();
-        s.xmlSpaceOpt();
-        s.xmlToken('=');
-        s.xmlSpaceOpt();
-        var attrValue:String = "";
-        val endch:char = s.ch.asInstanceOf[char];
-        endch match {
-          case '"' | '\'' => {
-            s.nextch();
-            attrValue = s.xmlValue( endch );
-            s.xmlToken( endch.asInstanceOf[char] );
-            s.xmlSpaceOpt();
-          }
-          case _ => s.xml_syntaxError("' or \" delimited value expected here");
-        }
-        if( attrMap.contains( attrName )) {
-          s.xml_syntaxError("attribute "+attrName+" may only be defined once");
-        }
-        attrMap = attrMap.update( attrName, attrValue );
-      } else {
-        s.xml_syntaxError("attribute, > or /> expected in element declaration");
-      }
-    }
-    s.xmlToken('>');
-    /* Console.println("startTag of:"+elemName);*/
-    s.xmlSpaceOpt();
-    if( empty ) {
-      makeXML( pos, elemName, Tree.EMPTY_ARRAY );
-    } else {                                             /* possible XML content: */
-
+    var t = xmlExpr();
+    s.nextToken();
+    if(( s.token == IDENTIFIER ) && ( s.name == LT ))  {
       val ts = new myTreeList();
-      var exit = false;
-      while( !exit ) {
-        /* Console.println("read '"+s.ch.asInstanceOf[char]+"'"); */
-        s.ch match {
-          case '<' => {                                  /* tag */
-            s.nextch();
-            if( s.ch != '/' ) { /* search end tag */
-              ts.append( xmlExpr() );
-            } else {
-              exit = true
-            }
-          }
-          case '{' => {                                 /* Scala block */
-            while( s.ch == '{' ) {
-              s.nextToken();
-              /* Console.println("{"); */
-              s.nextToken();
-              val bs = new myTreeList();
-              val b = block( s.pos );
-              if( s.token != RBRACE ) {
-                s.xml_syntaxError(" expected end of Scala block");
-              }
-              /* Console.println("}"); */
-              ts.append( b );
-            }
-        }
-          case _ => {                                   /* text  */
-            val pos = s.pos;
-            val str = s.xmlText();/* text node */
-            ts.append( gen.mkStringLit( pos, str ));
-          }
-
-        }
+      ts.append( t );
+      while(( s.token == IDENTIFIER ) && ( s.name == LT )) {
+	ts.append( xmlExpr() );
+	s.nextToken();
       }
-
-      /* [42]   ETag ::=  '</' Name S? '>' */
-      s.xmlToken('/');
-      if( elemName != s.xmlName() )
-        s.xml_syntaxError("expected closing tag of "+elemName);
-      else {
-        s.xmlSpaceOpt();
-        s.xmlToken('>')
-      }
-      /* Console.println("endTag of:"+elemName); */
-      s.xmlSpaceOpt();
-      makeXML( pos, elemName, ts.toArray(), attrMap );
+      t = makeXMLseq( pos, ts.toArray() );
     }
+    t
   }
+
   /** ArgumentExprs ::= `(' [Exprs] `)'
    *                  | BlockExpr
    */
@@ -1382,9 +1309,10 @@ class Parser(unit: Unit) {
     reduceStack(false, base, top, 0, true)
   }
 
-  /** SimplePattern ::= varid
+  /** simplePattern ::= varid
   *                 | `_'
   *                 | literal
+  *                 | `<' xmlPatternTop
   *                 | StableId [ `(' [Patterns] `)' ]
   *                 | `(' [Patterns] `)'
   *                 |                     (word: empty - nothing)
@@ -1395,6 +1323,8 @@ class Parser(unit: Unit) {
     case IDENTIFIER | THIS =>
       if (s.name == BAR) {
         make.Sequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
+      } else if (s.name == LT) {
+        xmlPatternTop()
       } else {
         var t = stableId();
         while (s.token == LPAREN) {
@@ -1428,6 +1358,159 @@ class Parser(unit: Unit) {
       syntaxError("illegal start of pattern", true)
   }
 
+  def xmlTag():Tuple2[Name, ListMap[Name,String]] = {
+    var empty = false;
+
+    /* [40] STag         ::= '<' Name (S Attribute)* S?
+     * [41] Attribute    ::= Name Eq AttValue
+    *  [44] EmptyElemTag ::= '<' Name (S Attribute)* S?
+    */
+    val elemName = s.xmlName();
+    s.xmlSpaceOpt();
+    var attrMap = ListMap.Empty[Name,String];
+    while( s.xml_isNameStart() ) {
+      val attrName:Name = s.xmlName();
+      s.xmlSpaceOpt();
+      s.xmlToken('=');
+      s.xmlSpaceOpt();
+      var attrValue:String = "";
+      val endch:char = s.ch.asInstanceOf[char];
+      endch match {
+        case '"' | '\'' => {
+          s.nextch();
+          attrValue = s.xmlValue( endch );
+          s.xmlToken( endch.asInstanceOf[char] );
+          s.xmlSpaceOpt();
+        }
+        case _ => s.xml_syntaxError("' or \" delimited value expected here");
+      }
+      if( attrMap.contains( attrName )) {
+        s.xml_syntaxError("attribute "+attrName+" may only be defined once");
+      }
+      attrMap = attrMap.update( attrName, attrValue );
+    }
+    Tuple2( elemName, attrMap );
+  }
+
+  /* [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'                 */
+  def xmlEndTag(n:Name) = {
+    s.xmlToken('/');
+    if( n != s.xmlName() ) s.xml_syntaxError("expected closing tag of "+n);
+    s.xmlSpaceOpt();
+    s.xmlToken('>')
+  }
+
+  /** '<' xmlExpr ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
+   **               | xmlTag1 '\' '>'
+   */
+  def xmlExpr():Tree = {
+    val pos = s.pos;
+    val Tuple2(elemName, attrMap) = xmlTag();
+    if( s.ch == '/' ) {
+      s.xmlToken('/');
+      s.xmlToken('>');
+      makeXML( pos, elemName, Tree.EMPTY_ARRAY );
+    } else {
+      s.xmlToken('>');                      /* handle XML content: */
+      s.xmlSpaceOpt();
+      val ts = new myTreeList();
+      var exit = false;
+      while( !exit ) {
+        /* Console.println("read '"+s.ch.asInstanceOf[char]+"'"); */
+        s.ch match {
+          case '<' => {                                  /* tag */
+            s.nextch();
+            if( s.ch != '/' ) { /* search end tag */
+              ts.append( xmlExpr() );
+	      s.xmlSpaceOpt();
+            } else {
+              exit = true
+            }
+          }
+          case '{' => {                                 /* Scala block */
+            while( s.ch == '{' ) {
+              s.nextToken();
+              s.nextToken();
+              val bs = new myTreeList();
+              val b = block( s.pos );
+              if( s.token != RBRACE ) {
+                s.xml_syntaxError(" expected end of Scala block");
+              }
+	      s.xmlSpaceOpt();
+              ts.append( b );
+            }
+          }
+          case _ => {                                   /* text ? */
+            val pos = s.pos;
+            ts.append( gen.mkStringLit( pos, s.xmlText() ));
+          }
+        }
+      }
+      xmlEndTag( elemName );
+      s.xmlSpaceOpt();
+      if( attrMap.isEmpty )
+	makeXML( pos, elemName, ts.toArray() );
+      else
+	makeXML( pos, elemName, ts.toArray(), attrMap );
+    }
+  }
+
+  /** top level xml pattern, resynchronizes after succesful parse
+   *  see xmlPattern
+  */
+  def xmlPatternTop():Tree = {
+    val t = xmlPattern();
+    s.nextToken();
+    t
+  }
+
+  /** '<' xmlPattern  ::= Name [S] { xmlPattern | '{' pattern3 '}' } ETag
+   *                    | Name [S] '\' '>'
+   */
+  def xmlPattern():Tree = {
+    val pos = s.pos;
+    val elemName = s.xmlName();
+    s.xmlSpaceOpt();
+    if( s.ch == '/' ) {
+      s.xmlToken('/');
+      s.xmlToken('>');
+      makeXMLpat( pos, elemName, Tree.EMPTY_ARRAY );
+    } else { /* handle XML content: */
+      s.xmlToken('>');
+      val ts = new myTreeList();
+      var exit = false;
+      while( !exit ) {
+        //Console.print("["+s.ch.asInstanceOf[char]+"]");
+        s.ch match {
+          case '<' => {                                  /* tag */
+            s.nextch();
+            if( s.ch != '/' ) { /* search end tag */
+              ts.append( xmlPattern() );
+            } else {
+              exit = true
+            }
+          }
+          case '{' => {                            /* Scala patterns */
+            while( s.ch == '{' ) {
+              s.nextToken();
+              s.nextToken();
+              val ps = patterns();
+              if( s.token != RBRACE ) {
+                s.xml_syntaxError(" expected end of Scala block");
+              }
+              ts.append( ps );
+            }
+          }
+          case _ => {                                   /* text  */
+            val pos = s.pos;
+            ts.append( gen.mkStringLit( pos, s.xmlText() ));
+          }
+	}
+      }
+      xmlEndTag( elemName );
+      makeXMLpat( pos, elemName, ts.toArray() );
+    }
+  }
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
 
   /** Modifiers ::= {Modifier}
