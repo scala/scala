@@ -43,6 +43,6 @@ abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
 
     abstract override def clear: Unit = {
         super.clear;
-        publish(new Reset() with Undo { def undo = error("cannot undo"); });
+        publish(new Reset() with Undo { def undo: Unit = error("cannot undo"); });
     }
 }

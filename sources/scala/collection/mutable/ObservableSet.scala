@@ -33,6 +33,6 @@ abstract class ObservableSet[A, This <: ObservableSet[A, This]]: This
 
     abstract override def clear: Unit = {
         super.clear;
-        publish(new Reset() with Undo { def undo = error("cannot undo"); });
+        publish(new Reset() with Undo { def undo: Unit = error("cannot undo"); });
     }
 }
