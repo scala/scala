@@ -128,56 +128,89 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    (sym.owner().isPackage() || isGlobalModule(sym.owner().module()));
     }
 
+    private Tree[] transformModule(Tree tree) {
+	Symbol sym = tree.symbol();
+	Tree cdef = make.ClassDef(
+	    tree.pos,
+	    mods | FINAL | MODUL,
+	    name.toTypeName(),
+	    Tree.ExtTypeDef.EMPTY_ARRAY,
+	    Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
+	    Tree.Empty,
+	    templ)
+	    .setSymbol(sym.moduleClass()).setType(tree.type);
+	Tree alloc = gen.New(
+	    tree.pos,
+	    sym.type().prefix(),
+	    sym.moduleClass(),
+	    Tree.EMPTY_ARRAY);
+	if (isGlobalModule(sym)) {
+	    Tree vdef = gen.ValDef(sym, alloc);
+	    return new Tree[]{cdef, vdef};
+	} else {
+	    // var m$: T = null[T];
+	    Name varname = Name.fromString(name + "$");
+	    Symbol mvar = new TermSymbol(
+		tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
+		.setInfo(sym.type());
+	    Tree vdef = gen.ValDef(mvar, nullTree(tree.pos, sym.type()));
+
+	    // { if (m$ == null[T]) m$ = new m$class; m$ }
+	    Tree body = gen.Block(new Tree[]{
+		gen.If(
+		    gen.Apply(
+			gen.Select(gen.mkRef(tree.pos, mvar), global.definitions.EQEQ),
+			new Tree[]{nullTree(tree.pos, sym.type())}),
+		    gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
+		    gen.Block(tree.pos, Tree.EMPTY_ARRAY)),
+		gen.mkRef(tree.pos, mvar)});
+
+	    // def m: T = { if (m$ == null[T]) m$ = new m$class; m$ }
+	    sym.updateInfo(Type.PolyType(Symbol.EMPTY_ARRAY, sym.type()));
+	    sym.flags |= STABLE;
+	    Tree ddef = gen.DefDef(sym, body);
+	    return new Tree[]{cdef, vdef, ddef};
+	}
+    }
+
+    private boolean hasImplementation(Symbol clazz, Name name) {
+	Symbol sym = clazz.lookupNonPrivate(name);
+	return sym.kind == VAL &&
+	    sym.owner() != Definitions.ANY_CLASS &&
+	    (sym.flags & DEFERRED) == 0;
+    }
+
+    private Tree toStringMethod(Symbol clazz) {
+
+
+
+    private Tree[] addCaseMethods(Tree[] stats, Symbol clazz) {
+	if ((clazz.flags & CASE) != 0) {
+	    TreeList ts = new TreeList();
+	    if (!hasImplementation(clazz, Names.toString))
+		ts.append(toStringMethod(clazz))
+	    if (!hasImplementation(clazz, Names.EQEQ))
+		ts.append(equalsMethod(clazz));
+	    if (!hasImplementation(clazz, Names.hashCode))
+		ts.append(hashCodeMethod(clazz));
+	    if (ts.length() > 0) {
+		Tree[] stats1 = new Tree[stats.length + ts.length());
+		System.arraycopy(stats, 0, stats1, 0, stats.length);
+		ts.copyTo(stats1, stats.length);
+		return stats1;
+	    }
+	}
+	return stats;
+    }
+
+
     /** The main checking functions
      */
     public Tree[] transformStat(Tree tree, int index) {
 	Tree resultTree;
 	switch (tree) {
 	case ModuleDef(int mods, Name name, Tree tpe, Tree.Template templ):
-	    Symbol sym = tree.symbol();
-	    Tree cdef = make.ClassDef(
-		tree.pos,
-		mods | FINAL | MODUL,
-		name.toTypeName(),
-		Tree.ExtTypeDef.EMPTY_ARRAY,
-		Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
-		Tree.Empty,
-		templ)
-		.setSymbol(sym.moduleClass()).setType(tree.type);
-	    Tree alloc = gen.New(
-		tree.pos,
-		sym.type().prefix(),
-		sym.moduleClass(),
-		Tree.EMPTY_ARRAY);
-	    Tree[] result;
-	    if (isGlobalModule(sym)) {
-		Tree vdef = gen.ValDef(sym, alloc);
-		result = new Tree[]{cdef, vdef};
-	    } else {
-		// var m$: T = null[T];
-		Name varname = Name.fromString(name + "$");
-		Symbol mvar = new TermSymbol(
-		    tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
-		    .setInfo(sym.type());
-		Tree vdef = gen.ValDef(mvar, nullTree(tree.pos, sym.type()));
-
-		// { if (m$ == null[T]) m$ = new m$class; m$ }
-		Tree body = gen.Block(new Tree[]{
-		    gen.If(
-			gen.Apply(
-			    gen.Select(gen.mkRef(tree.pos, mvar), global.definitions.EQEQ),
-			    new Tree[]{nullTree(tree.pos, sym.type())}),
-			gen.Assign(gen.mkRef(tree.pos, mvar), alloc),
-			gen.Block(tree.pos, Tree.EMPTY_ARRAY)),
-		    gen.mkRef(tree.pos, mvar)});
-
-		// def m: T = { if (m$ == null[T]) m$ = new m$class; m$ }
-		sym.updateInfo(Type.PolyType(Symbol.EMPTY_ARRAY, sym.type()));
-		sym.flags |= STABLE;
-		Tree ddef = gen.DefDef(sym, body);
-		result = new Tree[]{cdef, vdef, ddef};
-	    }
-	    return transform(result);
+	    return transform(transformModule(tree));
 
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
@@ -192,6 +225,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    normalize(name));
 	    }
 	    break;
+
 	default:
 	    resultTree = transform(tree);
 	}
@@ -203,7 +237,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	switch (tree) {
 	case Template(Tree[] bases, Tree[] body):
 	    Tree[] bases1 = transform(bases);
-	    Tree[] body1 = transformStats(body);
+	    Tree[] body1 = addCaseMethods(
+		transformStats(body), tree.symbol().owner());
 	    return copy.Template(tree, bases1, body1);
 	case Block(Tree[] stats):
 	    Tree[] stats1 = transformStats(stats);

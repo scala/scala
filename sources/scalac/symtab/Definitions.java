@@ -309,7 +309,7 @@ public class Definitions {
         ANY_CLASS.members().enter(EQEQ);
 
         BANGEQ = new TermSymbol(
-	    Position.NOPOS, Names.BANGEQ, ANY_CLASS, 0);
+	    Position.NOPOS, Names.BANGEQ, ANY_CLASDeS, 0);
         BANGEQ.setInfo(Type.MethodType(new Symbol[]{newParameter(BANGEQ, ANY_TYPE)},
 				       BOOLEAN_TYPE));
         ANY_CLASS.members().enter(BANGEQ);

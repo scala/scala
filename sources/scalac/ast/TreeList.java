@@ -65,7 +65,11 @@ public final class TreeList {
     }
 
     public Tree[] copyTo(Tree[] ts) {
-        System.arraycopy(trees, 0, ts, 0, len);
+	return copyTo(ts, 0);
+    }
+
+    public Tree[] copyTo(Tree[] ts, int from) {
+        System.arraycopy(trees, 0, ts, from, len);
         return ts;
     }
 }
