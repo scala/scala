@@ -1297,9 +1297,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 				clazz.primaryConstructor());
 			// MZ: this is a hack, but I didn't know how to do it better
 			if ((clazz.flags & (JAVA | CASE)) == (JAVA | CASE)) {
-				Symbol[] altconstr = clazz.allConstructors().alternativeSymbols();
-				tree.type = tree.type.prefix().memberType(
-					altconstr[altconstr.length - 1]);
+			    Symbol[] altconstr = clazz.allConstructors().alternativeSymbols();
+			    tree.type = tree.type.prefix().memberType(
+				altconstr[altconstr.length - 1]);
 			}
 		    switch (tree.type) {
 		    case PolyType(Symbol[] tparams, Type restp):
@@ -1397,10 +1397,24 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (value1 != null)
 		    return make.Literal(tree.pos, value1)
 			.setType(Type.ConstantType(pt, value1));
+		break;
 	    }
-	    typeError(tree.pos, owntype, pt);
-	    Type.explainTypes(owntype, pt);
-	    tree.type = Type.ErrorType;
+	    if ((mode & EXPRmode) != 0) {
+		Symbol coerceMeth = tree.type.lookup(Names.coerce);
+		if (coerceMeth != Symbol.NONE) {
+		    Type coerceType = checkAccessible(
+			tree.pos, coerceMeth, tree.type.memberType(coerceMeth),
+			tree);
+		    tree = make.Select(tree.pos, tree, Names.coerce)
+			.setSymbol(coerceMeth)
+			.setType(coerceType);
+		    return adapt(tree, mode, pt);
+		}
+	    } else if ((mode & CONSTRmode) == 0) {
+		typeError(tree.pos, owntype, pt);
+		Type.explainTypes(owntype, pt);
+		tree.type = Type.ErrorType;
+	    } // for constructors, delay until after the `new'.
 	}
 	return tree;
     }

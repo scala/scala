@@ -96,16 +96,21 @@ varid     ::=  lower {letter $|$ digit} [`_' [id]]
 id        ::=  upper {letter $|$ digit} [`_' [id]]
             |  varid
             |  op
+	    |  `\' stringLit
 \end{lstlisting}
 
-There are two ways to form an identifier. First, an identifier can
+There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
 letters and digits. Second, an identifier can be start with a special
 character followed by an arbitrary sequence of special characters.  In
 the first case, the identifier prefix may be immediately followed by
 an underscore `\lstinline@_@' character and another string of
-characters that by themselves make up an identifier.  As usual, a
-longest match rule applies. For instance, the string
+characters that by themselves make up an identifier.  Finally, an
+identifier may also start with an escape character \lstinline@`\'@
+which is followed by an arbitrary string in apostrophes (host systems
+may impose some restrictions on which strings are legal for
+identifiers).  As usual, a longest match rule applies. For instance,
+the string
 
 \begin{lstlisting}
 big_bob++=z3
@@ -4132,6 +4137,7 @@ form.
   id             ::=  upper {letter | digit} [`_' [id]]
                    | varid
                    | op
+		   | `\'stringLit
 
   intLit         ::=  $\mbox{\rm\em ``as in Java''}$
   floatLit       ::=  $\mbox{\rm\em ``as in Java''}$
@@ -4207,17 +4213,16 @@ grammar.
   BlockExpr       ::=  `{' CaseClause {CaseClause} `}'
                     |  `{' Block `}'
   Block           ::=  {BlockStat `;'} [Expr]
-
-  Enumerators     ::=  Generator {`;' Enumerator}
-  Enumerator      ::=  Generator
-                    |  Expr
-  Generator       ::=  val Pattern1 `<-' Expr
-  Block           ::=  {BlockStat `;'} [Expr]
   BlockStat       ::=  Import
                     |  Def
                     |  {LocalModifier} ClsDef
                     |  Expr
                     |
+
+  Enumerators     ::=  Generator {`;' Enumerator}
+  Enumerator      ::=  Generator
+                    |  Expr
+  Generator       ::=  val Pattern1 `<-' Expr
 
   CaseClause      ::=  case Pattern [`if' PostfixExpr] `=>' Block 
 

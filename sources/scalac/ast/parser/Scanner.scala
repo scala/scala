@@ -202,6 +202,13 @@ class Scanner(unit: Unit) extends TokenData {
 	nextch();
 	getOperatorRest(index);
 	return;
+      case `\\' =>
+	nextch();
+        if (ch == '"')//"
+	  getStringLit();
+        else
+	  syntaxError(pos, "illegal character");
+	return;
       case '/' =>
 	nextch();
 	if (!skipComment()) {
@@ -222,17 +229,7 @@ class Scanner(unit: Unit) extends TokenData {
 	getNumber(index, 10);
 	return;
       case '\"' => //"   scala-mode: need to understand literals
-	nextch();
-	litlen = 0;
-	while (ch != '\"'/*"*/ && ch != CR && ch != LF && ch != SU)
-	  getlitch();
-	if (ch == '\"'/*"*/) {
-	  token = STRINGLIT;
-	  name = Name.fromSource(lit, 0, litlen);
-	  nextch();
-	} else {
-	  syntaxError("unclosed character literal");
-	}
+	getStringLit();
 	return;
       case '\'' =>
 	nextch();
@@ -443,6 +440,20 @@ class Scanner(unit: Unit) extends TokenData {
         getOperatorRest(index);
       case _ =>
         treatIdent(index, bp);
+    }
+  }
+
+  private def getStringLit(): unit = {
+    nextch();
+    litlen = 0;
+    while (ch != '\"'/*"*/ && ch != CR && ch != LF && ch != SU)
+      getlitch();
+    if (ch == '\"'/*"*/) {
+      token = STRINGLIT;
+      name = Name.fromSource(lit, 0, litlen);
+      nextch();
+    } else {
+      syntaxError("unclosed character literal");
     }
   }
 

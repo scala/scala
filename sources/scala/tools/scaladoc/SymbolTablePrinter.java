@@ -490,8 +490,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             return this;
 
 	case ConstantType(Type base, Object value):
-	    print("(");
 	    printType(base, user);
+	    print("(");
 	    print(value.toString());
 	    print(")");
 	    return this;
