@@ -169,7 +169,6 @@ public class Names {
     public static final Name nobinding = Name.fromString("nobinding");
     public static final Name next = Name.fromString("next");
     public static final Name newArray = Name.fromString("newArray");
-    public static final Name numberOfElements = Name.fromString("numberOfElements");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
     public static final Name print = Name.fromString("print");
@@ -177,9 +176,10 @@ public class Names {
     public static final Name scala = Name.fromString("scala");
     public static final Name xml = Name.fromString("xml");
     public static final Name synchronized_ = Name.fromString("synchronized");
+    public static final Name caseArity = Name.fromString("caseArity");
+    public static final Name caseElement = Name.fromString("caseElement");
     public static final Name eq = Name.fromString("eq");
     public static final Name equals = Name.fromString("equals");
-    public static final Name selectElement = Name.fromString("selectElement");
     public static final Name tail = Name.fromString("tail");
     public static final Name toString = Name.fromString("toString");
     public static final Name that = Name.fromString("that");

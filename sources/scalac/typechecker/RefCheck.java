@@ -29,8 +29,9 @@ import Tree.*;
  *  It preforms the following transformations.
  *
  *   - Local modules are replaced by variables and classes
- *   - equals, and hashCode, selectElement and toString methods are added to
- *     case classes, unless they are defined in the class or a baseclass
+ *   - caseArity, caseElement implementations added to case classes
+ *   - equals, and hashCode and toString methods are added to case classes,
+ *     unless they are defined in the class or a baseclass
  *     different from java.lang.Object
  *   - Calls to case factory methods are replaced by new's.
  *   - Type nodes are replaced by TypeTerm nodes.
@@ -688,10 +689,11 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return gen.DefDef(toStringSym, body);
     }
 
-    private Tree selectElementMethod( ClassSymbol clazz ) {
-	Symbol seSym = clazz.newMethod( clazz.pos, OVERRIDE, Names.selectElement );
-	Symbol seParam = seSym.newVParam(
-            clazz.pos, 0, Names.n, defs.INT_TYPE());
+    private Tree caseElementMethod( ClassSymbol clazz ) {
+	Symbol seSym =
+            clazz.newMethod( clazz.pos, FINAL|OVERRIDE, Names.caseElement );
+	Symbol seParam =
+            seSym.newVParam( clazz.pos, 0, Names.n, defs.INT_TYPE() );
         seSym.setInfo(
             Type.MethodType( new Symbol[]{ seParam }, defs.ANY_TYPE() ));
 	clazz.info().members().enter( seSym );
@@ -711,8 +713,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return gen.DefDef(seSym, body);
     }
 
-    private Tree numberOfElementsMethod( ClassSymbol clazz ) {
-	Symbol seSym = clazz.newMethod( clazz.pos, OVERRIDE, Names.numberOfElements );
+    private Tree caseArityMethod( ClassSymbol clazz ) {
+	Symbol seSym =
+            clazz.newMethod( clazz.pos, FINAL|OVERRIDE, Names.caseArity );
         seSym.setInfo(
             Type.PolyType( Symbol.EMPTY_ARRAY, defs.INT_TYPE() ));
 	clazz.info().members().enter( seSym );
@@ -858,9 +861,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	if (!hasImplementation(clazz, Names.hashCode))
 	    ts.append(hashCodeMethod(clazz));
 
-        // will it report error if impl exists?
-        ts.append(selectElementMethod(clazz));
-        ts.append(numberOfElementsMethod(clazz));
+        // the following report error if impl exists
+        ts.append( caseElementMethod( clazz ));
+        ts.append( caseArityMethod( clazz ));
+
 	ts.append(tagMethod(clazz));
 	if (ts.length() > 0) {
 	    Tree[] stats1 = new Tree[stats.length + ts.length()];

@@ -43,9 +43,9 @@ object Iterator {
 
   def fromCaseClass(n:CaseClass): Iterator[Any] = new Iterator[Any] {
     private var c:Int = 0;
-    private val cmax = n.numberOfElements;
+    private val cmax = n.caseArity;
     def hasNext = c < cmax;
-    def next = { val a = n.selectElement( c ); c = c + 1; a }
+    def next = { val a = n caseElement c; c = c + 1; a }
 
   }
 

@@ -234,13 +234,13 @@ System.out.println();
   case class Foo(i:int, j:char, c:Bar) ;
 
   Console.println(
-    Foo(3,'a',Bar()).selectElement( -1 ) == null
-    && Foo(3,'a',Bar()).selectElement( 0 ) == 3
-    && Foo(3,'a',Bar()).selectElement( 1 ) == 'a'
-    && Foo(3,'a',Bar()).selectElement( 2 ) == Bar()
-    && Foo(3,'a',Bar()).selectElement( 3 ) == null
-    && Bar().numberOfElements == 0
-    && Foo(3,'a',Bar()).numberOfElements == 3);
+    Foo(3,'a',Bar()).caseElement( -1 ) == null
+    && Foo(3,'a',Bar()).caseElement( 0 ) == 3
+    && Foo(3,'a',Bar()).caseElement( 1 ) == 'a'
+    && Foo(3,'a',Bar()).caseElement( 2 ) == Bar()
+    && Foo(3,'a',Bar()).caseElement( 3 ) == null
+    && Bar().caseArity == 0
+    && Foo(3,'a',Bar()).caseArity == 3);
 
 //############################################################################
 
