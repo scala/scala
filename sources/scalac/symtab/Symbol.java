@@ -2,9 +2,9 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**
-
 \*                                                                      */
+
+// $Id$
 
 //todo check significance of JAVA flag.
 
@@ -1718,7 +1718,8 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 /** A class for term symbols
  */
-public class TermSymbol extends Symbol {
+public // !!! for java -Xfuture
+class TermSymbol extends Symbol {
 
     /** Constructor */
     TermSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
@@ -1809,7 +1810,8 @@ public class ModuleSymbol extends TermSymbol {
  *
  * @see Symbol#linkedModule()
  */
-public final class LinkedModuleSymbol extends ModuleSymbol {
+public // !!! for java -Xfuture
+final class LinkedModuleSymbol extends ModuleSymbol {
 
     /** The linked class */
     private final LinkedClassSymbol clasz;
@@ -1830,7 +1832,8 @@ public final class LinkedModuleSymbol extends ModuleSymbol {
 /** A base class for all type symbols.
  *  It has AliasTypeSymbol, AbsTypeSymbol, ClassSymbol as subclasses.
  */
-public abstract class TypeSymbol extends Symbol {
+public // !!! for java -Xfuture
+abstract class TypeSymbol extends Symbol {
 
      /** The history of closures of this symbol */
     private final History/*<Type[]>*/ closures;
@@ -1967,7 +1970,8 @@ public abstract class TypeSymbol extends Symbol {
     protected abstract TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs);
 }
 
-public final class AliasTypeSymbol extends TypeSymbol {
+public // !!! for java -Xfuture
+final class AliasTypeSymbol extends TypeSymbol {
 
     /** Initializes this instance. */
     AliasTypeSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
@@ -2176,7 +2180,8 @@ public final class ModuleClassSymbol extends ClassSymbol {
  *
  * @see Symbol#linkedModule()
  */
-public final class LinkedClassSymbol extends ClassSymbol {
+public // !!! for java -Xfuture
+final class LinkedClassSymbol extends ClassSymbol {
 
     /** The linked module */
     private final LinkedModuleSymbol module;
@@ -2195,7 +2200,8 @@ public final class LinkedClassSymbol extends ClassSymbol {
 
 /** The class of Symbol.NONE
  */
-public final class NoSymbol extends Symbol {
+public // !!! for java -Xfuture
+final class NoSymbol extends Symbol {
 
     /** Constructor */
     public NoSymbol() {
@@ -2249,7 +2255,8 @@ public class CyclicReference extends Type.Error {
 }
 
 /** A base class for values indexed by phases. */
-public abstract class IntervalList {
+public // !!! for java -Xfuture
+abstract class IntervalList {
 
     /** Interval starts at start of phase "start" (inclusive) */
     public final Phase start;
@@ -2279,7 +2286,8 @@ public abstract class IntervalList {
 }
 
 /** A class for types indexed by phases. */
-public class TypeIntervalList extends IntervalList {
+public // !!! for java -Xfuture
+class TypeIntervalList extends IntervalList {
 
     /** Previous interval */
     public final TypeIntervalList prev;
