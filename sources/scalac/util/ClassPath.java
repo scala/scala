@@ -24,9 +24,6 @@ public class ClassPath {
     //########################################################################
     // Public Constants
 
-    /** The system-dependent filename-separator character */
-    public static final String FILE_SEPARATOR = File.separator;
-
     /** The system-dependent path-separator character */
     public static final String PATH_SEPARATOR =
         System.getProperty("path.separator", ":");
