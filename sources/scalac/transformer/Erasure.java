@@ -28,6 +28,7 @@ import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
 import scalac.symtab.SymSet;
 import scalac.symtab.Symbol;
+import scalac.backend.Primitive;
 import scalac.backend.Primitives;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -71,6 +72,19 @@ public class Erasure extends Transformer implements Modifiers {
     /** The global primitives */
     private final Primitives primitives;
 
+    /** The current unit */
+    private Unit unit;
+
+    //########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
+    public Erasure(Global global) {
+        super(global);
+	this.definitions = global.definitions;
+        this.primitives = global.primitives;
+    }
+
     //########################################################################
     // Private Methods - Tree generation
 
@@ -84,7 +98,7 @@ public class Erasure extends Transformer implements Modifiers {
                 Tree arg1 = coerce(arg, params[i].nextType());
                 if (arg1 != arg && args1 == args) {
                     args1 = new Tree[args.length];
-                    System.arraycopy(args, 0, args1, 0, i - 1);
+                    for (int j = 0; j < i; j++) args1[j] = args[j];
                 }
                 args1[i] = arg1;
             }
@@ -155,14 +169,6 @@ public class Erasure extends Transformer implements Modifiers {
     //########################################################################
     //########################################################################
 
-    private Unit unit;
-
-    public Erasure(Global global) {
-        super(global);
-	this.definitions = global.definitions;
-        this.primitives = global.primitives;
-    }
-
     public void apply(Unit unit) {
 	this.unit = unit;
 	unit.body = transform(unit.body);
@@ -171,6 +177,42 @@ public class Erasure extends Transformer implements Modifiers {
 //////////////////////////////////////////////////////////////////////////////////
 // Box/Unbox and Coercions
 /////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Return the unboxed version of the given tree.
+     */
+    private Tree removeBoxing(Tree tree) {
+        switch (tree) {
+        case Apply(Tree fun, Tree[] args):
+            assert primitives.getPrimitive(fun.symbol())==Primitive.BOX: tree;
+            assert args.length == 1: tree;
+            return args[0];
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    private boolean isUnboxedType(Type type) {
+	switch (type) {
+	case UnboxedType(_)     : return true;
+	case UnboxedArrayType(_): return true;
+	default                 : return false;
+	}
+    }
+
+    private boolean isUnboxedValueType(Type type) {
+	switch (type) {
+	case UnboxedType(_)     : return true;
+	default                 : return false;
+	}
+    }
+
+    private boolean isUnboxedArrayType(Type type) {
+	switch (type) {
+	case UnboxedArrayType(_): return true;
+	default                 : return false;
+	}
+    }
 
     boolean isUnboxed(Type type) {
 	switch (type) {
@@ -519,7 +561,7 @@ public class Erasure extends Transformer implements Modifiers {
             return gen.Block(tree.pos, newStats);
 
 	case Assign(Tree lhs, Tree rhs):
-	    Tree lhs1 = transformLhs(lhs);
+	    Tree lhs1 = transform(lhs);
 	    Tree rhs1 = transform(rhs, lhs1.type);
 	    return copy.Assign(tree, lhs1, rhs1).setType(owntype.fullErasure());
 
@@ -624,25 +666,8 @@ public class Erasure extends Transformer implements Modifiers {
 
             if (fun1.symbol() == definitions.NULL) return fun1.setType(owntype);
 	    if (global.debug) global.log("fn: " + fun1.symbol() + ":" + fun1.type);//debug
-	    switch (fun1.type) {
-	    case MethodType(Symbol[] params, Type restpe):
-                assert params.length == args.length:
-                    "\nclass    : " + Debug.show(currentClass) +
-                    "\ntree     : " + tree +
-                    "\nfun1     : " + fun1 +
-                    "\nfun1.type: " + fun1.type;
-		Tree[] args1 = args;
-		for (int i = 0; i < args.length; i++) {
-		    Tree arg = args[i];
-		    Type pt1 = params[i].type().erasure();
-		    Tree arg1 = cast(transform(arg, pt1), pt1);
-		    if (arg1 != arg && args1 == args) {
-			args1 = new Tree[args.length];
-			System.arraycopy(args, 0, args1, 0, i);
-		    }
-		    args1[i] = arg1;
-		}
-		Tree result = coerce(copy.Apply(tree, fun1, args1).setType(restpe), owntype);
+
+                Tree result = genApply(tree.pos, fun1, transform(args));
 		if (isUnboxed(isSelectorType) && !isUnboxedArray(isSelectorType)) {
 		    Symbol primSym = primitives.getInstanceTestSymbol(isSelectorType);
 		    Symbol ampAmpSym = definitions.BOOLEAN_AND();
@@ -671,17 +696,19 @@ public class Erasure extends Transformer implements Modifiers {
 
 		return result;
 
-	    default:
-		global.debugPrinter.print(fun1);
-		throw Debug.abort("bad method type: " + Debug.show(fun1.type) + " " + Debug.show(fun1.symbol()));
-	    }
 
-	case Select(_, _):
+	case Select(Tree qualifier, _):
+            Symbol symbol = tree.symbol();
+            qualifier = transform(qualifier);
+            qualifier = coerce(qualifier, symbol.owner().type().erasure());
+            if (isUnboxedValueType(qualifier.type())) // !!! Value
+                qualifier = box(qualifier);
+	    return gen.Select(tree.pos, qualifier, symbol);
+
 	case Ident(_):
-	    Tree tree1 = transformLhs(tree);
-	    //global.log("id: " + tree1+": "+tree1.type+" -> "+owntype);//DEBUG
-	    return (tree1.type instanceof Type.MethodType) ? tree1
-		: coerce(tree1, owntype);
+            Symbol symbol = tree.symbol();
+	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
+            return gen.Ident(tree.pos, symbol);
 
         case LabelDef(Name name, Tree.Ident[] params,Tree body):
 	    Tree.Ident[] new_params = new Tree.Ident[params.length];
@@ -747,30 +774,6 @@ public class Erasure extends Transformer implements Modifiers {
             if (!member.isTerm() || !member.isDeferred()) continue;
             addInterfaceBridges(owner, member);
         }
-    }
-
-    /** Transform without keeping the previous transform's contract.
-     */
-    Tree transformLhs(Tree tree) {
-	Tree tree1;
-	switch (tree) {
-	case Ident(Name name):
-	    if (name == Names.ZERO) tree1 = gen.mkNullLit(tree.pos);
-	    else tree1 = tree;
-	    break;
-	case Select(Tree qual, _):
-            Symbol sym = tree.symbol();
-	    Tree qual1 = transform(qual);
-	    if (isUnboxed(qual1.type))
-                if (!isUnboxedArray(qual1.type) || sym == definitions.ARRAY_CLASS)
-                    qual1 = box(qual1);
-	    tree1 = copy.Select(tree, sym, qual1);
-	    break;
-	default:
-	    throw Debug.abort("illegal case", tree);
-	}
-	if (global.debug) global.log("id: " + tree1.symbol() + ":" + tree1.symbol().type().erasure());//debug
-	return tree1.setType(tree1.symbol().type().erasure());
     }
 
     /** Transform with prototype
