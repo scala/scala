@@ -1724,37 +1724,44 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
             case Sequence(Tree[] trees):
 		//System.err.println("sequence with pt  "+pt);
-		Symbol seqClass = definitions.getType( Name.fromString("scala.Seq") ).symbol();
-		assert seqClass != Symbol.NONE : "did not find Seq";
+		Symbol seqSym = definitions.getType( Name.fromString("scala.Seq") ).symbol();
+		assert seqSym != Symbol.NONE : "did not find Seq";
 
-                Type seqType = pt.baseType( seqClass );
+                Type seqType = pt.baseType( seqSym );
                 Type elemType;
                 switch( seqType ) {
                 case TypeRef(_, _, Type[] args):
-                      assert args.length == 1;
-                      elemType = args[ 0 ];
-                      break;
+		    assert args.length == 1;
+		    elemType = args[ 0 ];
+		    break;
                 default:
-                      System.out.println( pt.isSameAs(definitions.ANY_TYPE ));
-                      System.out.println(pt.getClass());
-                      System.out.println(pt.toString());
-                      System.out.println(seqType.toString());
-                            return error(tree.pos, "not a sequence");
+		    // make a sequence type
+		    elemType = pt;
+		    seqType = new Type.TypeRef(definitions.SCALA_TYPE, seqSym, new Type[] { pt });
+		    break;
+		    /*
+		    System.out.println( pt.isSameAs(definitions.ANY_TYPE ));
+		    System.out.println(pt.getClass());
+		    System.out.println(pt.toString());
+		    System.out.println(seqType.toString());
+		    return error(tree.pos, "not a sequence");
+		    */
                 }
 
 
                 for( int i = 0; i < trees.length; i++ ) {
-                      Type tpe = revealSeqOrElemType( trees[ i ],
-                                                      pt,
-                                                      pt,
-                                                      elemType);
-		      System.err.println("subtree ["+i+"] has tpe "+tpe);
-                      trees[ i ] = transform( trees[ i ],
-                                              this.mode | SEQUENCEmode,
-                                              tpe);
+		    Type tpe = revealSeqOrElemType( trees[ i ],
+						    pt,
+						    pt,
+						    elemType);
+		    System.err.println("subtree ["+i+"] has tpe "+tpe);
+		    trees[ i ] = transform( trees[ i ],
+					    this.mode | SEQUENCEmode,
+					    tpe);
                 }
                 return copy.Sequence( tree, trees ).setType( pt );
 
+		/*
 	    case Subsequence(Tree[] trees):
 		//System.err.println("subsequence with pt  "+pt);
 
@@ -1779,6 +1786,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 		System.err.println("subsequence pattern with type: "+seqType);
 		return copy.Subsequence( tree, trees ).setType( seqType );
+		*/
 
 	    case Alternative(Tree[] choices):
 		//System.err.println("alternative with pt  "+pt);
@@ -2259,8 +2267,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     Type revealSeqOrElemType( Tree tree, Type proto, Type seqType, Type elemType ) {
 	switch( tree ) {
-	case Subsequence(_):
-	    return proto;
+	    //case Subsequence(_): NEW
+	    //return proto; NEW
 	case Sequence(_):
 	    return elemType;
 	case Alternative( Tree[] choices ):
