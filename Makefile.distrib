@@ -344,7 +344,7 @@ distrib-official	: version-update
 	@$(make) all
 	@$(make) -C doc/reference all
 	@$(make) -C doc/tutorial all
-	@$(make) boottest
+	@$(make) test
 	@$(make) distrib INSTALL_VERSION='$$(PROJECT_VERSION)'
 #	$(CVS) tag "release-$(subst .,_,$(PROJECT_VERSION))" $(PROJECT_ROOT)
 	@$(make) version-increment

@@ -18,14 +18,6 @@ PROJECT_VERSION		 = $(shell $(TAIL) -1 $(VERSION_FILE))
 VERSION_FILE		 = $(PROJECT_ROOT)/VERSION
 VERSION_SCRIPT		 = $(PROJECT_SUPPORTDIR)/scripts/version-manager
 
-# scala tools
-SCALAC			 = $(PROJECT_BINARYDIR)/scalac
-SCALAP			 = $(PROJECT_BINARYDIR)/scalap
-SCALAINT		 = $(PROJECT_BINARYDIR)/scalaint
-SCALARUN		 = $(PROJECT_BINARYDIR)/scalarun
-SCALADOC		 = $(PROJECT_BINARYDIR)/scaladoc
-DTD2SCALA		 = $(PROJECT_BINARYDIR)/dtd2scala
-
 ##############################################################################
 # Makefile functions
 
