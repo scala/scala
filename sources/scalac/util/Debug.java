@@ -208,11 +208,28 @@ public abstract class Debug {
 
     public static void appendDefault(StringBuffer buffer, Object that) {
         if (that == null) { buffer.append("null"); return; }
-        if (!that.getClass().isArray()) {
+        if (!that.getClass().isArray())
             appendObject(buffer, that);
-        } else {
-            appendArray(buffer, (Object[])that);
-        }
+        else if (that instanceof Object [])
+            appendArray(buffer, (Object [])that);
+        else if (that instanceof boolean[])
+            appendArray(buffer, (boolean[])that);
+        else if (that instanceof byte   [])
+            appendArray(buffer, (byte   [])that);
+        else if (that instanceof short  [])
+            appendArray(buffer, (short  [])that);
+        else if (that instanceof char   [])
+            appendArray(buffer, (char   [])that);
+        else if (that instanceof int    [])
+            appendArray(buffer, (int    [])that);
+        else if (that instanceof long   [])
+            appendArray(buffer, (long   [])that);
+        else if (that instanceof float  [])
+            appendArray(buffer, (float  [])that);
+        else if (that instanceof double [])
+            appendArray(buffer, (double [])that);
+        else
+            appendObject(buffer, that);
     }
 
     public static void appendObject(StringBuffer buffer, Object that) {
@@ -236,6 +253,86 @@ public abstract class Debug {
         for (int i = 0; i < that.length; i++) {
             if (i > 0) buffer.append(',');
             append(buffer, that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, boolean[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, byte[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, short[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, char[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, int[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, long[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, float[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
+        }
+        buffer.append(']');
+    }
+
+    public static void appendArray(StringBuffer buffer, double[] that) {
+        if (that == null) { buffer.append("null"); return; }
+        buffer.append('[');
+        for (int i = 0; i < that.length; i++) {
+            if (i > 0) buffer.append(',');
+            buffer.append(that[i]);
         }
         buffer.append(']');
     }
