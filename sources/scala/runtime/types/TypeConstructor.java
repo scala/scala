@@ -105,7 +105,10 @@ public class TypeConstructor implements java.io.Serializable {
     }
 
     public ScalaClassType getInstantiation(Type[] args) {
-        return instMapModule.get((InstantiationMap.T)instances.get(), args);
+        ScalaClassType inst =
+            instMapModule.get((InstantiationMap.T)instances.get(), args);
+        assert Statistics.incInstantiations(inst == null);
+        return inst;
     }
 
     public ScalaClassType instantiate(Type[] args, ScalaClassType[] parents) {

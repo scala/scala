@@ -20,6 +20,7 @@ public class TypeLong extends ValueType {
         return RunTime.box_larray(new long[size]);
     }
     public Object checkCastability(Object o) {
+        assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Long))
             throw new ClassCastException(); // TODO error message
         return o;

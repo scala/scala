@@ -130,9 +130,12 @@ public class ScalaClassType extends ClassType {
         ScalaClassType[] thisSlice = getDisplay()[that.constr.level];
 
         for (int i = 0; i < thisSlice.length; ++i) {
-            if (thisSlice[i].constr == that.constr)
+            if (thisSlice[i].constr == that.constr) {
+                assert Statistics.addDisplaySearchIterations(i + 1);
                 return thisSlice[i];
+            }
         }
+        assert Statistics.addDisplaySearchIterations(thisSlice.length);
 
         return null;
     }

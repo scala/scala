@@ -14,7 +14,7 @@ import scala.Type;
 import scala.Array;
 import scala.runtime.RunTime;
 
-public class ClassType extends Type {
+public abstract class ClassType extends Type {
     public final Class clazz;
     public final boolean isTrivial;
 
@@ -35,6 +35,7 @@ public class ClassType extends Type {
     }
 
     public boolean isInstance(Object o) {
+        assert Statistics.incInstanceOf();
         return clazz.isInstance(o);
     }
 

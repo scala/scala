@@ -20,6 +20,7 @@ public class TypeFloat extends ValueType {
         return RunTime.box_farray(new float[size]);
     }
     public Object checkCastability(Object o) {
+        assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Float))
             throw new ClassCastException(); // TODO error message
         return o;

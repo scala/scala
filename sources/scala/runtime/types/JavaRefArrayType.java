@@ -36,6 +36,7 @@ public class JavaRefArrayType extends Type {
     }
 
     public boolean isInstance(Object o) {
+        assert Statistics.incInstanceOf();
         // TODO plus fin: on doit tenir compte de la version effacée
         // de elemType.
         return (o instanceof Object[]);

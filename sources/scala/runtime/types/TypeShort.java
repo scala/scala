@@ -20,6 +20,7 @@ public class TypeShort extends ValueType {
         return RunTime.box_sarray(new short[size]);
     }
     public Object checkCastability(Object o) {
+        assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Short))
             throw new ClassCastException(); // TODO error message
         return o;

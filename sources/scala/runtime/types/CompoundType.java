@@ -42,6 +42,7 @@ public class CompoundType extends Type {
     }
 
     public boolean isInstance(Object o) {
+        assert Statistics.incInstanceOf();
         for (int i = 0; i < components.length; ++i) {
             if (!components[i].isInstance(o))
                 return false;

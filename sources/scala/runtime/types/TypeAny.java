@@ -16,6 +16,7 @@ import scala.Array;
 
 public class TypeAny extends SpecialType {
     public boolean isInstance(Object o) {
+        assert Statistics.incInstanceOf();
         return true;
     }
 

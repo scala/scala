@@ -21,6 +21,7 @@ public class TypeUnit extends ValueType {
         return RunTime.box_oarray(new Object[size]);
     }
     public Object checkCastability(Object o) {
+        assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Unit))
             throw new ClassCastException(); // TODO error message
         return o;

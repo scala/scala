@@ -29,6 +29,7 @@ public class SingleType extends Type {
     }
 
     public boolean isInstance(Object o) {
+        assert Statistics.incInstanceOf();
         return o == instance;
     }
 

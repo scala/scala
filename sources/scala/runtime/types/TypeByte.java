@@ -21,6 +21,7 @@ public class TypeByte extends ValueType {
         return RunTime.box_barray(new byte[size]);
     }
     public Object checkCastability(Object o) {
+        assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Byte))
             throw new ClassCastException(); // TODO error message
         return o;
