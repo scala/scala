@@ -917,9 +917,8 @@ public class TypesAsValuesPhase extends Phase {
 
         private Ancestor[][] computeDisplay0(Symbol classSym) {
             Type[] parentTypes = classSym.parents();
-
-            Ancestor[][] superDisplay =
-                computeDisplay(parentTypes[0].symbol());
+            Symbol superClassSym = parentTypes[0].symbol();
+            Ancestor[][] superDisplay = computeDisplay(superClassSym);
             int level = superDisplay.length;
             ArrayList/*<Ancestor>*/[] display = new ArrayList[level + 1];
 
@@ -938,7 +937,7 @@ public class TypesAsValuesPhase extends Phase {
             // Go over parents from left to right and add missing
             // ancestors to the display, remembering where they come
             // from.
-            int parentIndex = 0;
+            int parentIndex = superClassSym.isJava() ? 0 : 1;
             for (int p = 1; p < parentTypes.length; ++p) {
                 Symbol parentSymbol = parentTypes[p].symbol();
                 assert parentSymbol != Symbol.NONE;
@@ -1019,6 +1018,21 @@ public class TypesAsValuesPhase extends Phase {
             }
             assert i == totalSize;
             return res;
+        }
+    }
+
+    // Debugging function
+    private void debugPrintDisplay(Symbol sym, Ancestor[][] display) {
+        System.out.println("display for " + Debug.show(sym));
+        for (int l = 0; l < display.length; ++l) {
+            System.out.print("  [" + l + "] ");
+            for (int i = 0; i < display[l].length; ++i) {
+                if (i > 0)
+                    System.out.print("      ");
+                System.out.println(" " + Debug.show(display[l][i].symbol)
+                                   + "/par" + display[l][i].parentIndex
+                                   + "/pos" + display[l][i].position);
+            }
         }
     }
 
