@@ -35,9 +35,11 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** The tree factory */
     private final TreeFactory make;
 
-    /** the type inferencer
-     */
-    final Infer infer;
+    /** The type inferencer */
+    private final Infer infer;
+
+    /** Symbols used to retrieve type of class instances */
+    private final Symbol[] toType;
 
     /** Initializes this instance. */
     public TreeGen(Global global) {
@@ -50,6 +52,18 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	this.definitions = global.definitions;
         this.make = make;
 	this.infer = new Infer(global, this, make);
+        this.toType = new Symbol[] {
+            mkToType(definitions.BYTE_TYPE),
+            mkToType(definitions.CHAR_TYPE),
+            mkToType(definitions.SHORT_TYPE),
+            mkToType(definitions.INT_TYPE),
+            mkToType(definitions.LONG_TYPE),
+            mkToType(definitions.FLOAT_TYPE),
+            mkToType(definitions.DOUBLE_TYPE),
+            mkToType(definitions.BOOLEAN_TYPE),
+            mkToType(definitions.UNIT_TYPE),
+            mkToType(definitions.JAVA_STRING_TYPE),
+        };
     }
 
     //########################################################################
@@ -111,8 +125,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a unit literal. */
     public Tree mkUnitLit(int pos) {
-        return make.Block(pos, Tree.EMPTY_ARRAY).
-            setType(definitions.UNIT_TYPE);
+        return Block(pos, Tree.EMPTY_ARRAY);
     }
 
     /** Builds a boolean literal. */
@@ -122,7 +135,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a boolean literal. */
     public Tree mkBooleanLit(int pos, Boolean value) {
-        return make.Literal(pos, value).setType(definitions.BOOLEAN_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(BOOLEAN));
     }
 
     /** Builds a byte literal. */
@@ -132,7 +145,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a byte literal. */
     public Tree mkByteLit(int pos, Byte value) {
-        return make.Literal(pos, value).setType(definitions.BYTE_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(BYTE));
     }
 
     /** Builds a short literal. */
@@ -142,7 +155,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a short literal. */
     public Tree mkShortLit(int pos, Short value) {
-        return make.Literal(pos, value).setType(definitions.SHORT_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(SHORT));
     }
 
     /** Builds a character literal. */
@@ -152,7 +165,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a character literal. */
     public Tree mkCharLit(int pos, Character value) {
-        return make.Literal(pos, value).setType(definitions.CHAR_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(CHAR));
     }
 
     /** Builds an integer literal */
@@ -162,7 +175,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an integer literal */
     public Tree mkIntLit(int pos, Integer value) {
-        return make.Literal(pos, value).setType(definitions.INT_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(INT));
     }
 
     /** Builds a long literal. */
@@ -172,7 +185,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a long literal. */
     public Tree mkLongLit(int pos, Long value) {
-        return make.Literal(pos, value).setType(definitions.LONG_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(LONG));
     }
 
     /** Builds a float literal. */
@@ -182,7 +195,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a float literal. */
     public Tree mkFloatLit(int pos, Float value) {
-        return make.Literal(pos, value).setType(definitions.FLOAT_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(FLOAT));
     }
 
     /** Builds a double literal. */
@@ -192,12 +205,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a double literal. */
     public Tree mkDoubleLit(int pos, Double value) {
-        return make.Literal(pos, value).setType(definitions.DOUBLE_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(DOUBLE));
     }
 
     /** Builds a string literal. */
     public Tree mkStringLit(int pos, String value) {
-        return make.Literal(pos, value).setType(definitions.JAVA_STRING_TYPE);
+        return make.Literal(pos, value).setType(nextTypeOf(STRING));
     }
 
     /** Builds a null literal. */
@@ -607,7 +620,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Tree Block(int pos, Tree[] stats) {
         Block tree = make.Block(pos, stats);
         tree.setType(stats.length == 0
-            ? definitions.UNIT_TYPE
+            ? nextTypeOf(UNIT)
             : stats[stats.length - 1].type);
 	return tree;
     }
@@ -620,23 +633,33 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Builds an Assign node corresponding to "<lhs> = <rhs>". */
     public Assign Assign(int pos, Tree lhs, Tree rhs) {
         Assign tree = make.Assign(pos, lhs, rhs);
-        tree.setType(definitions.UNIT_TYPE);
+        tree.setType(nextTypeOf(UNIT));
         return tree;
     }
     public Assign Assign(Tree lhs, Tree rhs) {
         return Assign(lhs.pos, lhs, rhs);
     }
 
+    /** Builds an If node with given components and type. */
+    public If If(int pos, Tree cond, Tree thenpart, Tree elsepart, Type type) {
+        assert assertTreeSubTypeOf(thenpart, type);
+        assert assertTreeSubTypeOf(elsepart, type);
+	If tree = make.If(pos, cond, thenpart, elsepart);
+        tree.setType(type);
+        return tree;
+    }
+    public If If(Tree cond, Tree thenpart, Tree elsepart, Type type) {
+	return If(cond.pos, cond, thenpart, elsepart, type);
+    }
+
     /** Builds an If node with given condition and branches. */
     public If If(int pos, Tree cond, Tree thenpart, Tree elsepart) {
-	If tree = make.If(pos, cond, thenpart, elsepart);
         global.nextPhase();
-        if (thenpart.type.isSameAs(elsepart.type))
-            tree.setType(thenpart.type);
-        else
-            tree.setType(Type.lub(new Type[] {thenpart.type, elsepart.type}));
+        Type type = thenpart.type().isSameAs(elsepart.type())
+            ? thenpart.type
+            : Type.lub(new Type[] {thenpart.type(), elsepart.type()});
         global.prevPhase();
-        return tree;
+        return If(pos, cond, thenpart, elsepart, type);
     }
     public If If(Tree cond, Tree thenpart, Tree elsepart) {
 	return If(cond.pos, cond, thenpart, elsepart);
@@ -657,6 +680,16 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         Type type)
     {
         return Switch(test.pos, test, tags, bodies, defavlt, type);
+    }
+
+    /** Builds a Return node of given method with given value. */
+    public Return Return(int pos, Symbol method, Tree value) {
+        Return tree = make.Return(pos, method, value);
+        tree.setType(definitions.ALL_TYPE);
+        return tree;
+    }
+    public Return Return(Symbol method, Tree value) {
+        return Return(value.pos, method, value);
     }
 
     /** Builds a New node corresponding to "new <constr>". */
@@ -745,6 +778,26 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	return ValDef(sym, Tree.Empty);
     }
 
+    /** Builds a PackageDef with given package and template. */
+    public PackageDef PackageDef(Tree peckage, Template template) {
+        PackageDef tree = make.PackageDef(peckage.pos, peckage, template);
+        tree.setType(Type.NoType);
+        return tree;
+    }
+    public PackageDef PackageDef(Symbol peckage, Template template) {
+        return PackageDef(mkRef(peckage.pos, peckage), template);
+    }
+
+    /** Builds a PackageDef with given package and body. */
+    public PackageDef PackageDef(Tree peckage, Tree[] body) {
+        return PackageDef(
+            peckage,
+            Template(peckage.pos, Symbol.NONE, Tree.EMPTY_ARRAY, body));
+    }
+    public PackageDef PackageDef(Symbol peckage, Tree[] body) {
+        return PackageDef(mkRef(peckage.pos, peckage), body);
+    }
+
     /** Builds a ClassDef node for given class with given template. */
     public ClassDef ClassDef(Symbol clazz, Template template) {
         ClassDef tree = make.ClassDef(
@@ -754,7 +807,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             mkParamsOf(clazz),
             Tree.Empty,
             template);
-        tree.setType(definitions.UNIT_TYPE);
+        tree.setType(Type.NoType);
         return tree;
     }
 
@@ -790,7 +843,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             sym,
             TypeTerm(sym.pos, sym.nextType()),
             rhs);
-        tree.setType(definitions.UNIT_TYPE);
+        tree.setType(Type.NoType);
         return tree;
     }
 
@@ -803,7 +856,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             mkParamsOf(sym),
             TypeTerm(sym.pos, sym.nextType().resultType()),
             body);
-        tree.setType(definitions.UNIT_TYPE);
+        tree.setType(Type.NoType);
         return tree;
     }
 
@@ -814,7 +867,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             sym,
             TypeTerm(sym.pos, sym.nextInfo()),
             TypeTerm(sym.pos, sym.loBound()));
-        tree.setType(definitions.UNIT_TYPE);
+        tree.setType(Type.NoType);
         return tree;
     }
 
@@ -825,7 +878,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    sym,
             mkTypeParamsOf(sym),
 	    TypeTerm(sym.pos, sym.nextInfo()));
-        tree.setType(definitions.UNIT_TYPE);
+        tree.setType(Type.NoType);
         return tree;
     }
 
@@ -841,6 +894,22 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return CaseDef(pattern, Tree.Empty, body);
     }
 
+    /**
+     * Builds a LabelDef node for given label with given parameters
+     * and body.
+     */
+    public LabelDef LabelDef(Symbol label, Ident[] params, Tree body) {
+        LabelDef tree = make.LabelDef(label.pos, label, params, body);
+        tree.setType(label.nextType().resultType());
+        return tree;
+    }
+    public LabelDef LabelDef(Symbol label, Symbol[] params, Tree body) {
+        Ident[] idents = new Ident[params.length];
+        for (int i = 0; i < params.length; i++)
+            idents[i] = Ident(params[i].pos, params[i]);
+        return LabelDef(label, idents, body);
+    }
+
     //########################################################################
     // Private Methods
 
@@ -853,6 +922,19 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             "\nexpected: " + expected;
         global.prevPhase();
         return true;
+    }
+
+    /** Returns the type in next phase of values with given tag. */
+    private Type nextTypeOf(int tag) {
+        return toType[tag - FirstUnboxedTag].nextType().resultType();
+    }
+
+    /** Creates a toType symbol with given return type. */
+    private Symbol mkToType(Type type) {
+        Name name = Name.fromString("to" + type.symbol().name);
+        Symbol symbol = new TermSymbol(0, name, Symbol.NONE, 0);
+        symbol.setType(Type.MethodType(Symbol.EMPTY_ARRAY, type));
+        return symbol;
     }
 
     //########################################################################
