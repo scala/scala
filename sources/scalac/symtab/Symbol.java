@@ -374,6 +374,12 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & PRIVATE) != 0;
     }
 
+    /** Has this symbol been lifted? */
+    public final boolean isLifted() {
+	preInitialize();
+        return (flags & LIFTED) != 0;
+    }
+
     /** Does this symbol denote a deferred symbol? */
     public final boolean isDeferred() {
         return (flags & DEFERRED) != 0;

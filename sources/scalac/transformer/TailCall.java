@@ -143,13 +143,20 @@ public class TailCall extends Transformer {
 		switch (fun) {
 		case Select(Tree qual, Name name):
 		    if (state.currentFunction == fun.symbol()) { // Is is self-recursive?
-			// Make sure that function is from the same class as we are in.
-			if (qual.type.isSameAs(state.currentClass.thisType().widen())) {
+			// Make sure that function is from the same instance of the class as we are in.
+			// If it is an Object (Module) we don't necessarily have a THIS, so we compare
+			// the types.
+			// If it's a class we have to make sure that the qulifier is a THIS node.
+			if ((state.currentClass.isModuleClass() &&
+			     qual.type.isSameAs(state.currentClass.thisType().widen())) ||
+			    (qual instanceof This && qual.symbol() == state.currentClass)){
+
 			    // We can only rewrite final functions in a safe way.
-			    // (Local lifted functions should be safe but they should
-			    //  have the final flag set.)
-			    Modifiers.Helper H = new Modifiers.Helper();
-			    if(H.isFinal(state.currentFunction.flags)) { // Is the function final?
+			    if(state.currentFunction.isFinal() ||
+			       state.currentFunction.isPrivate() ||
+			       state.currentFunction.isLifted()
+			       ) { // It would be nice if we had a cant-be-overridden function in symbol...
+
 				Tree[] newArgs = tail_transform(args,false);
 				// Redirect the call to the LabelDef.
 				Tree newTarget = new ExtIdent(state.newLabel).setType(fun.type());
@@ -160,6 +167,8 @@ public class TailCall extends Transformer {
 			}
 		    }
 		    break;
+		    // TODO: Handle the case of Apply(TypeApply(T))
+		    // Have to check that the type T is the same as currentFunction.type()
 		default:
 		    break;
 		}
