@@ -1,3 +1,15 @@
+<<< bug 98
+mycase
+>>> bug 98
+
+<<< bug 120
+one
+A
+two
+B
+C
+>>> bug 120
+
 <<< bug 135
 Some(The answer)
 >>> bug 135
@@ -50,4 +62,7 @@ ok
 <<< bug 233
 true
 >>> bug 233
+
+<<< bug 250
+>>> bug 250
 

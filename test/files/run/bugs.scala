@@ -6,6 +6,39 @@
 import java.lang.System; // to avoid name clash with .NET's library
 
 //############################################################################
+// Bug 98
+
+object Bug98Test {
+  object MyCase { def name = "mycase" };
+  def main(args: Array[String]) = {
+    System.out.println(MyCase.name);
+  }
+}
+
+//############################################################################
+// Bug 120
+
+class Bug120A(x: Int) {
+  System.out.println("A");
+}
+class Bug120B(x: Int) {
+  System.out.println("B");
+}
+class Bug120C(x: Int)
+    with Bug120A(Bug120Test.print("one", 1))
+    with Bug120B(Bug120Test.print("two", 2)) {
+  System.out.println("C");
+}
+object Bug120Test {
+  def print[A](str: String, res: A): A = {
+    System.out.println(str); res
+  }
+  def main(args: Array[String]) = {
+    val c = new Bug120C(1);
+  }
+}
+
+//############################################################################
 // Bug 135
 
 object Bug135Test {
@@ -252,6 +285,16 @@ object Bug233Test {
 }
 
 //############################################################################
+// Bug 250
+
+object Bug250Test {
+  def main(args: Array[String]): Unit = {
+    if (true) null;
+    ()
+  }
+}
+
+//############################################################################
 // Main
 
 object Test  {
@@ -275,6 +318,8 @@ object Test  {
 
   def main(args: Array[String]): Unit = {
 
+    test( 98, Bug98Test.main(args));
+    test(120, Bug120Test.main(args));
     test(135, Bug135Test.main(args));
     test(142, Bug142Test.main(args));
     test(166, Bug166Test.main(args));
@@ -289,6 +334,7 @@ object Test  {
     test(225, Bug225Test.main(args));
     test(226, Bug226Test.main(args));
     test(233, Bug233Test.main(args));
+    test(250, Bug250Test.main(args));
 
     if (errors > 0) {
       System.out.println();
