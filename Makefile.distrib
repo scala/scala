@@ -7,7 +7,7 @@
 DOCUMENTS_ROOT		 = $(PROJECT_DOCUMENTDIR)
 DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/reference/ScalaReference.pdf
 DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/reference/ScalaByExample.pdf
-DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/tutorial/tutorial.pdf
+DOCUMENTS_FILES		+= $(DOCUMENTS_ROOT)/tutorial/ScalaTutorial.pdf
 
 # scala examples
 EXAMPLES_ROOT		 = $(PROJECT_SOURCEDIR)/examples
