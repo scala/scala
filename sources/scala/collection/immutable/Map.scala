@@ -129,7 +129,7 @@ trait Map[A, B] with scala.collection.Map[A, B] {
             } + "}";
 
     override def hashCode() = {
-      elements.foldLeft(0)((hash:Int,pair:Object) => hash + pair.hashCode());
+      elements.foldLeft(0)((hash:Int,pair:AnyRef) => hash + pair.hashCode());
     }
 
     /** This method controls how a mapping is represented in the string
