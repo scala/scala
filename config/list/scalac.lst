@@ -74,6 +74,7 @@
 ../../../scalac/symtab/classfile/ConstantPool.java
 ../../../scalac/symtab/classfile/JavaTypeCreator.java
 ../../../scalac/symtab/classfile/JavaTypeFactory.java
+../../../scalac/symtab/classfile/MetaParser.java
 ../../../scalac/symtab/classfile/PackageParser.java
 ../../../scalac/symtab/classfile/Signatures.java
 ../../../scalac/symtab/classfile/SymblParser.java
