@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 
+import ch.epfl.lamp.util.ForwardingMap;
+
 import scalac.util.Debug;
 
 /** A type map that substitues symbols and types for symbols. */
@@ -56,11 +58,13 @@ public class SymbolSubstTypeMap extends Type.Map {
     }
 
     public void insertSymbol(Symbol key, Symbol value) {
+        assert !symbols.containsKey(key) : Debug.show(key);
         assert !types.containsKey(key) : Debug.show(key);
         symbols.put(key, value);
     }
 
     public void insertSymbol(Map map) {
+        assert checkLeftContainsNoKeyFromRight(symbols, map);
         assert checkLeftContainsNoKeyFromRight(types, map);
         symbols.putAll(map);
     }
@@ -81,6 +85,18 @@ public class SymbolSubstTypeMap extends Type.Map {
         return (Symbol)symbols.get(key);
     }
 
+    public Map getSymbols() {
+        return new ForwardingMap(symbols) {
+            public Object put(Object key, Object value) {
+                insertSymbol((Symbol)key, (Symbol)value);
+                return null;
+            }
+            public void putAll(Map map) {
+                insertSymbol(map);
+            }
+        };
+    }
+
     //########################################################################
     // Public Methods - Inserting and removing symbol to type substitutions
 
@@ -91,11 +107,13 @@ public class SymbolSubstTypeMap extends Type.Map {
 
     public void insertType(Symbol key, Type value) {
         assert !symbols.containsKey(key) : Debug.show(key);
+        assert !types.containsKey(key) : Debug.show(key);
         types.put(key, value);
     }
 
     public void insertType(Map map) {
         assert checkLeftContainsNoKeyFromRight(symbols, map);
+        assert checkLeftContainsNoKeyFromRight(types, map);
         types.putAll(map);
     }
 
@@ -113,6 +131,18 @@ public class SymbolSubstTypeMap extends Type.Map {
 
     public Type lookupType(Symbol key) {
         return (Type)types.get(key);
+    }
+
+    public Map getTypes() {
+        return new ForwardingMap(types) {
+            public Object put(Object key, Object value) {
+                insertType((Symbol)key, (Type)value);
+                return null;
+            }
+            public void putAll(Map map) {
+                insertType(map);
+            }
+        };
     }
 
     //########################################################################
@@ -139,7 +169,10 @@ public class SymbolSubstTypeMap extends Type.Map {
             return Type.singleType(apply(prefix), (Symbol)value);
         }
 
-            // TODO what should we do with PolyTypes?
+        case ThisType(Symbol symbol):
+            Object value = symbols.get(symbol);
+            if (value == null) return super.map(type);
+            return Type.ThisType((Symbol)value);
 
         default:
             return super.map(type);
