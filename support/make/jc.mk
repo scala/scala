@@ -29,7 +29,7 @@
 # normal value. Those values are specified by variables whose name is
 # prefixed with the target name. For example, to override the value of
 # the variable JC_CLASSPATH with target COMPILER, one may define the
-# variable COMPILER_JC_CLASSPATH
+# variable COMPILER_JC_CLASSPATH.
 #
 ##############################################################################
 # Examples
