@@ -237,6 +237,12 @@ public class ATreePrinter {
     //########################################################################
     // Public Methods - Printing trees
 
+    /** Prints the unit. */
+    public ATreePrinter printUnit(Unit unit) {
+        println("// Scala source: " + unit.source);
+        return printRepository(unit.repository);
+    }
+
     /** Prints the repository. */
     public ATreePrinter printRepository(ARepository repository) {
         AClass[] classes = repository.classes();

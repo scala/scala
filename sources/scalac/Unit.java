@@ -13,6 +13,7 @@ import ch.epfl.lamp.util.Position;
 
 import scalac.symtab.NameMangler;
 import scalac.ast.Tree;
+import scalac.atree.ARepository;
 import java.util.HashMap;
 
 
@@ -38,6 +39,7 @@ public class Unit {
     /** the content of the compilation unit in tree form
      */
     public Tree[] body;
+    public ARepository repository;
 
     /** the name mangler
      */
