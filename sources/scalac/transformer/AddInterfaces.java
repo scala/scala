@@ -468,8 +468,11 @@ class AddInterfaces extends SubstTransformer {
                     if (member.hasSymbol()) {
                         Symbol sym = member.symbol();
                         if (sym.kind != Kinds.CLASS
-                            && ifaceMemberToClass.containsKey(sym))
-                            member.setSymbol((Symbol)ifaceMemberToClass.get(sym));
+                            && ifaceMemberToClass.containsKey(sym)) {
+                            Symbol cSym = (Symbol)ifaceMemberToClass.get(sym);
+                            cSym.updateInfo(thisTypeSubst.apply(cSym.info()));
+                            member.setSymbol(cSym);
+                        }
                     }
                 }
 
@@ -517,7 +520,7 @@ class AddInterfaces extends SubstTransformer {
                 .setType(fixClassSymbols(tree.type));
         }
 
-        case DefDef(_, _, _, _, Tree tpe, _): {
+        case DefDef(_, _, _, _, _, _): {
             Symbol sym = tree.symbol();
             if (funParamsMaps.containsKey(sym)) {
                 Map funParamsMap = (Map)funParamsMaps.get(sym);
