@@ -1393,6 +1393,15 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return clone;
     }
 
+    /** Returns the concatenation of the two arrays. */
+    public static Type[] concat(Type[] array1, Type[] array2) {
+        if (array1.length == 0) return array2;
+        if (array2.length == 0) return array1;
+        Type[] clone = cloneArray(array1.length, array2);
+        for (int i = 0; i < array1.length; i++) clone[i] = array1[i];
+        return clone;
+    }
+
     /**
      * Clones a type i.e. returns a new type where all symbols in
      * MethodTypes and PolyTypes have been cloned.

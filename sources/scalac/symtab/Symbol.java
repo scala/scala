@@ -118,6 +118,15 @@ public abstract class Symbol implements Modifiers, Kinds {
         return clone;
     }
 
+    /** Returns the concatenation of the two arrays. */
+    public static Symbol[] concat(Symbol[] array1, Symbol[] array2) {
+        if (array1.length == 0) return array2;
+        if (array2.length == 0) return array1;
+        Symbol[] clone = cloneArray(array1.length, array2);
+        for (int i = 0; i < array1.length; i++) clone[i] = array1[i];
+        return clone;
+    }
+
     /** copy all fields to `sym'
      */
     public void copyTo(Symbol sym) {
