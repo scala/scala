@@ -566,7 +566,8 @@ class JVMGenerator {
     // Add value members (i.e. fields) to current class.
     protected void addValueClassMembers(Tree.ClassDef cDef) {
         Symbol cSym = cDef.symbol();
-        Scope.SymbolIterator memberIt = cSym.members().iterator();
+        Scope.SymbolIterator memberIt =
+            new Scope.UnloadIterator(cSym.members().iterator());
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
             if (member.isTerm() && !member.isMethod()) {
