@@ -242,9 +242,14 @@ class PatternMatcher(unit: CompilationUnit) extends PatternTool(unit) {
    *  - if true, tree.fn must be ignored. The analyzer ensures that the selector will be a subtype
    *    of fn; it thus assigns the expected type from the context (which is surely a subtype,
    *    but may have different flags etc.
+   *
+   *  - so should be
+   *     (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
+   *     but fails
    */
   protected def isSeqApply( tree: Tree.Apply  ): Boolean =
-    (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence]);
+    (( tree.args.length == 1 ) && tree.args(0).isInstanceOf[Sequence])
+    && (tree.getType().symbol().flags & Modifiers.CASE) == 0;
 
   protected def patternNode(tree:Tree , header:Header , env: CaseEnv ): PatternNode  = {
     //Console.println("patternNode("+tree+","+header+")");
