@@ -3054,9 +3054,9 @@ for $x$ is given; hence this type needs to be inferrable from the
 context of the expression.
 
 \example The following method returns the $n$'th column of a given
-list of row-lists $xss$, using methods \lstlistinline@map@,
-\lstlistinline@drop@ and \lstlistinline@head@ defined in class
-\lstlinline@scala.List@.
+list of row-lists $xss$, using methods \lstinline@map@,
+\lstinline@drop@ and \lstinline@head@ defined in class
+\lstinline@scala.List@.
 \begin{lstlisting}
 def column[T](xss: List[List[T]], n: int): List[T] = 
   xss.map(.drop(i)).map(.head)
