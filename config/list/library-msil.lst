@@ -5,6 +5,7 @@
 
 AnyVal.java
 Array.java
+Attribute.scala
 Boolean.java
 BufferedIterator.scala
 Byte.java
@@ -14,7 +15,7 @@ Char.java
 Console.scala
 Double.java
 Application.scala
-Enumeration.scala
+../msil/scala/Enumeration.scala
 Float.java
 Function0.java
 Function1.java
@@ -38,12 +39,14 @@ Option.scala
 Ordered.scala
 PartiallyOrdered.scala
 PartialFunction.scala
-Predef.scala
+../msil/scala/Predef.scala
 Proxy.scala
 Ref.java
 ScalaObject.java
 Seq.scala
 SeqProxy.scala
+Serializable.scala
+SerialVersionUID.scala
 Short.java
 Some.scala
 Stream.scala
@@ -59,55 +62,59 @@ Tuple8.scala
 Tuple9.scala
 Type.java
 Unit.java
+transient.scala
+volatile.scala
 
 collection/Map.scala
 collection/MapProxy.scala
 collection/Set.scala
 collection/SetProxy.scala
+collection/BitSet.scala
 
-collection/mutable/ArrayBuffer.scala
-collection/mutable/Buffer.scala
-collection/mutable/BufferProxy.scala
+../msil/scala/collection/mutable/ArrayBuffer.scala
+../msil/scala/collection/mutable/Buffer.scala
+../msil/scala/collection/mutable/BufferProxy.scala
 collection/mutable/DefaultMapModel.scala
 collection/mutable/DoubleLinkedList.scala
-collection/mutable/HashMap.scala
-collection/mutable/HashSet.scala
+../msil/scala/collection/mutable/HashMap.scala
+../msil/scala/collection/mutable/HashSet.scala
 collection/mutable/HashTable.scala
 collection/mutable/History.scala
 collection/mutable/ImmutableMapAdaptor.scala
 collection/mutable/ImmutableSetAdaptor.scala
-collection/mutable/JavaMapAdaptor.scala
-collection/mutable/JavaSetAdaptor.scala
+../msil/scala/collection/mutable/JavaMapAdaptor.scala
+../msil/scala/collection/mutable/JavaSetAdaptor.scala
 collection/mutable/LinkedList.scala
-collection/mutable/ListBuffer.scala
+../msil/scala/collection/mutable/ListBuffer.scala
 collection/mutable/Location.scala
-collection/mutable/Map.scala
-collection/mutable/MapProxy.scala
+../msil/scala/collection/mutable/Map.scala
+../msil/scala/collection/mutable/MapProxy.scala
 collection/mutable/Message.scala
 collection/mutable/MultiMap.scala
 collection/mutable/MutableList.scala
 collection/mutable/ObservableBuffer.scala
 collection/mutable/ObservableMap.scala
 collection/mutable/ObservableSet.scala
-collection/mutable/PriorityQueue.scala
-collection/mutable/PriorityQueueProxy.scala
+../msil/scala/collection/mutable/PriorityQueue.scala
+../msil/scala/collection/mutable/PriorityQueueProxy.scala
 collection/mutable/Publisher.scala
-collection/mutable/Queue.scala
-collection/mutable/QueueProxy.scala
+../msil/scala/collection/mutable/Queue.scala
+../msil/scala/collection/mutable/QueueProxy.scala
 collection/mutable/ResizableArray.scala
+collection/mutable/ResizableBitSet.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Scriptable.scala
-collection/mutable/Set.scala
-collection/mutable/SetProxy.scala
+../msil/scala/collection/mutable/Set.scala
+../msil/scala/collection/mutable/SetProxy.scala
 collection/mutable/SingleLinkedList.scala
-collection/mutable/Stack.scala
-collection/mutable/StackProxy.scala
+../msil/scala/collection/mutable/Stack.scala
+../msil/scala/collection/mutable/StackProxy.scala
 collection/mutable/Subscriber.scala
-collection/mutable/SynchronizedBuffer.scala
-collection/mutable/SynchronizedMap.scala
+../msil/scala/collection/mutable/SynchronizedBuffer.scala
+../msil/scala/collection/mutable/SynchronizedMap.scala
 collection/mutable/SynchronizedPriorityQueue.scala
 collection/mutable/SynchronizedQueue.scala
-collection/mutable/SynchronizedSet.scala
+../msil/scala/collection/mutable/SynchronizedSet.scala
 collection/mutable/SynchronizedStack.scala
 collection/mutable/Undoable.scala
 
@@ -145,16 +152,38 @@ runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
 runtime/matching/Address.scala
-runtime/matching/Context.scala
-runtime/matching/Grammar.scala
-runtime/matching/Match.scala
+runtime/matching/TestAlphabet.scala
+#runtime/matching/Context.scala
+#runtime/matching/Grammar.scala
+#runtime/matching/Match.scala
 runtime/matching/Matcher.scala 
 runtime/matching/NonTerm.scala
-runtime/matching/Pebble.scala
+runtime/matching/PatternGrammar.scala
+#runtime/matching/Pebble.scala
 runtime/matching/Rule.scala
 
 testing/UnitTest.scala
 
+util/alphabet/Alphabet.scala
+util/alphabet/AlphabetPlusWildcard.scala
+util/alphabet/WildcardLabel.scala
+#util/automata/NondetTreeHedgeAutom.scala
+util/automata/NondetWordAutom.scala
+../msil/scala/util/automata/BaseBerrySethi.scala
+util/automata/WordBerrySethi.scala
+util/grammar/TreeRHS.scala
+util/grammar/HedgeRHS.scala
+util/grammar/TreeHedgeGrammar.scala
+util/grammar/ImmutableTreeHedgeGrammar.scala
+util/grammar/MutableTreeHedgeGrammar.scala
+util/regexp/Base.scala
+util/regexp/WildcardBase.scala
+util/regexp/WordExp.scala
+util/regexp/PointedHedgeExp.scala
+util/regexp/SyntaxError.scala
+
+# xml/Attribute.scala
+# xml/AttributeSeq.scala
 # xml/BindingFactoryAdapter.scala
 # xml/CharData.scala
 # xml/Comment.scala
@@ -163,24 +192,35 @@ testing/UnitTest.scala
 # xml/EntityRef.scala
 # xml/FactoryAdapter.scala
 # xml/Node.scala
+# xml/NodeBuffer.scala
 # xml/NodeSeq.scala
+# xml/Parsing.scala
 # xml/PrettyPrinter.scala
 # xml/ProcInstr.scala
+# xml/SpecialNode.scala
 # xml/Text.scala
+# xml/TextBuffer.scala
 # xml/Utility.scala
 
+# xml/dtd/ContentModel.scala
 # xml/dtd/Decl.scala
 # xml/dtd/Parser.scala
-# xml/dtd/RegExp.scala
 # xml/dtd/Scanner.scala
 # xml/dtd/Tokens.scala
+# xml/dtd/Validation.scala
+# xml/dtd/ValidationException.scala
 
 # xml/nobinding/NoBindingFactoryAdapter.scala
 # xml/nobinding/XML.scala
 
+# xml/parsing/AttribValue.scala
+# xml/parsing/ConstructingHandler.scala
+# xml/parsing/FatalError.scala
+# xml/parsing/MarkupParser.scala
+# xml/parsing/MarkupHandler.scala
 # xml/path/Expression.scala
-# xml/path/Tokens.scala
-# xml/path/Scanner.scala
-# xml/path/Parser.scala
+#xml/path/Tokens.scala
+#xml/path/Scanner.scala
+#xml/path/Parser.scala
 
 ##############################################################################
