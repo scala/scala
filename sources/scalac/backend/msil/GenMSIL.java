@@ -23,14 +23,11 @@ import scalac.ast.TreeList;
 import scalac.atree.AConstant;
 import Tree.*;
 import scalac.symtab.Symbol;
-import scalac.symtab.Scope;
-import scalac.symtab.Kinds;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Definitions;
 import scalac.symtab.classfile.Pickle;
 import scalac.symtab.classfile.CLRPackageParser;
-import Scope.SymbolIterator;
 
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
@@ -105,7 +102,8 @@ public final class GenMSIL {
     void initGen() {
 	tc.init();
 	AssemblyName an = new AssemblyName();
-	an.Name = "prog";
+	String assemname = global.args.assemname.value;
+	an.Name = assemname != null ? assemname : "prog";
 	currAssembly = AssemblyBuilder.DefineDynamicAssembly(an);
 	currModule = (ModuleBuilder) currAssembly.GetModule(an.Name);
 	if (currModule == null) {
@@ -124,7 +122,8 @@ public final class GenMSIL {
 	    main.DefineParameter(0, 0, "args");
 	    ((AssemblyBuilder)currModule.Assembly).SetEntryPoint(main);
 	    code = main.GetILGenerator();
-	    code.setPosition(mainLineNum, mainSourceFilename);
+	    if (global.args.debuginfo.value)
+		code.setPosition(mainLineNum, mainSourceFilename);
 	    code.Emit(OpCodes.Ldsfld, mainObjectField);
 	    code.Emit(OpCodes.Ldarg_0);
 	    code.Emit(OpCodes.Callvirt, mainMethod);
@@ -254,8 +253,12 @@ public final class GenMSIL {
 	    System.arraycopy(pickle.bytes, 0, symtab, 6, pickle.size());
 	    TypeBuilder type = (TypeBuilder) tc.getType(clazz);
 	    if (clazz.isModuleClass()) {
-		type = tc.getStaticType(clazz);
-		type.setPosition(Position.line(clazz.pos), getSourceFilename());
+		TypeBuilder t = tc.getStaticType(clazz);
+		if (t != null) {
+		    type = t;
+		    if (global.args.debuginfo.value)
+			type.setPosition(Position.line(clazz.pos), getSourceFilename());
+		}
 	    }
 	    type.SetCustomAttribute(tc.SCALA_SYMTAB_ATTR_CONSTR, symtab);
 	}
@@ -271,7 +274,8 @@ public final class GenMSIL {
 	    tc.getModuleField(clazz);
 	}
 	final TypeBuilder type = (TypeBuilder)tc.getType(clazz);
-	type.setPosition(Position.line(clazz.pos), getSourceFilename());
+	if (global.args.debuginfo.value)
+	    type.setPosition(Position.line(clazz.pos), getSourceFilename());
 	emitSymtab(clazz);
 	for (int i = 0; i < body.length; i++) {
 	    Symbol sym = body[i].symbol();
@@ -337,7 +341,8 @@ public final class GenMSIL {
 	if (method.IsConstructor()) {
 	    ConstructorInfo ctor = (ConstructorInfo) method;
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
-	    code.setPosition(Position.line(rhs.pos));
+	    if (global.args.debuginfo.value)
+		code.setPosition(Position.line(rhs.pos));
 	    if (sym.owner().isModuleClass()
 		&& sym.owner().owner().isPackageClass()) {
 		Tree[] cstats = null;
@@ -376,7 +381,8 @@ public final class GenMSIL {
 				      Type.EmptyTypes);
 		currentMethod = cctor;
 		code = cctor.GetILGenerator();
-		code.setPosition(Position.line(sym.owner().pos));
+		if (global.args.debuginfo.value)
+		    code.setPosition(Position.line(sym.owner().pos));
 		// initialize the static module reference
 		code.Emit(OpCodes.Newobj, ctor);
 		code.Emit(OpCodes.Stsfld, tc.getModuleField(currentClass));
@@ -391,7 +397,8 @@ public final class GenMSIL {
 	} else if (!method.IsAbstract()) {
 	    lastExpr = true;
 	    code = ((MethodBuilder)method).GetILGenerator();
-	    code.setPosition(Position.line(rhs.pos));
+	    if (global.args.debuginfo.value)
+		code.setPosition(Position.line(rhs.pos));
 	    Item item = gen(rhs, toType);
 	    if (returnsVoid(method))
 		drop(item);
@@ -402,7 +409,8 @@ public final class GenMSIL {
 		MethodBuilder staticMethod = tc.getStaticObjectMethod(sym);
 		if (staticMethod != null) {
 		    code = staticMethod.GetILGenerator();
-		    code.setPosition(Position.line(sym.pos));
+		    if (global.args.debuginfo.value)
+			code.setPosition(Position.line(sym.pos));
 		    code.Emit(OpCodes.Ldsfld, tc.getModuleField(currentClass));
 		    for (int i = 0; i < parameters.length; i++)
 			emitLdarg(i);
@@ -480,9 +488,12 @@ public final class GenMSIL {
      */
     private Item gen(Tree tree, MSILType toType) {
 	willReturn = true;
- 	if (code != null && tree.pos != Position.NOPOS
+ 	if (global.args.debuginfo.value
+	    && code != null && tree.pos != Position.NOPOS
 	    && Position.line(tree.pos) != Position.line(pos))
- 	    code.setPosition(Position.line(tree.pos));
+	    {
+		code.setPosition(Position.line(tree.pos));
+	    }
 	int tmpPos = pos;
 	pos = tree.pos;
 	Item item = null;
@@ -493,13 +504,15 @@ public final class GenMSIL {
 		+ "; tree = " + tree.getClass();
 	}
 	catch (Throwable e) {
-// 	    currUnit.error(tree.pos,
-// 		 "Exception caught: " + e.getMessage()
+ 	    currUnit.error(tree.pos, "Exception caught: " + e.getMessage());
+	    e.printStackTrace();
+	    System.exit(1);
 // 		 + (global.debug ? "" : "; Use -debug to get a stack trace."));
 // 	    //if (global.debug)
 // 		e.printStackTrace();
 // 	    //System.exit(1);
-	    throw Debug.abort(tree, e);
+	    //throw Debug.abort(tree, e);
+	    throw Debug.abort(e);
 	}
 	pos = tmpPos;
 	return check(item);
@@ -1569,7 +1582,8 @@ public final class GenMSIL {
         case SHORT(short value):
             return loadI4(value);
         case CHAR(char value):
-            return loadI4(value);
+	    loadI4(value);
+            return items.StackItem(MSILType.CHAR);
         case INT(int value):
             return loadI4(value);
         case LONG(long value):
@@ -1595,7 +1609,9 @@ public final class GenMSIL {
 	case I1:
 	case I2:
 	case I4:
-	case CHAR: loadI4(constant.intValue()); return items.StackItem(MSILType.I4);
+	    loadI4(constant.intValue()); return items.StackItem(MSILType.I4);
+	case CHAR:
+	    loadI4(constant.intValue()); return items.StackItem(MSILType.CHAR);
 	case I8: loadI8(constant.longValue()); return items.StackItem(ofType);
 	case R4: loadR4(constant.floatValue()); return items.StackItem(ofType);
 	case R8: loadR8(constant.doubleValue()); return items.StackItem(ofType);
