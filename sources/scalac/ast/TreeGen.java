@@ -179,25 +179,35 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build a tree to be used as a base class constructor for a template.
      */
-    public Tree mkParentConstr(int pos, Type parentType) {
+    public Tree mkParentConstr(int pos, Type parentType, Tree[] parentArgs) {
 	switch (parentType) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    Tree ref = mkRef(pos, pre, sym.constructor());
 	    Tree constr = (args.length == 0) ? ref
 		: TypeApply(ref, mkTypes(sym.pos, args));
-	    return Apply(constr, Tree.EMPTY_ARRAY);
+	    return Apply(constr, parentArgs);
 	default:
 	    throw global.fail("invalid parent type", parentType);
 	}
     }
 
+    public Tree mkParentConstr(int pos, Type parentType) {
+        return mkParentConstr(pos, parentType, Tree.EMPTY_ARRAY);
+    }
+
     /** Build an array of trees to be used as base classes for a template.
      */
-    public Tree[] mkParentConstrs(int pos, Type[] parents) {
+    public Tree[] mkParentConstrs(int pos, Type[] parents, Tree[][] parentArgs) {
         Tree[] constrs = new Tree[parents.length];
         for (int i = 0; i < parents.length; ++i)
-	    constrs[i] = mkParentConstr(pos, parents[i]);
+	    constrs[i] = (parentArgs == null ?
+                          mkParentConstr(pos, parents[i])
+                          : mkParentConstr(pos, parents[i],  parentArgs[i]));
         return constrs;
+    }
+
+    public Tree[] mkParentConstrs(int pos, Type[] parents) {
+        return mkParentConstrs(pos, parents, null);
     }
 
     /** Build parameter sections corresponding to type.
@@ -257,7 +267,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }
 
-    public Tree TypeDef(Symbol sym) {
+    public TypeDef TypeDef(Symbol sym) {
 	return TypeDef(sym.pos, sym);
     }
 
