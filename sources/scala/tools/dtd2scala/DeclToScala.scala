@@ -1,25 +1,18 @@
 package scala.tools.dtd2scala ;
 
-import java.io.Writer ;
 import java.io.PrintWriter ;
-import java.io.File ;
-import java.io.FileWriter ;
-import java.io.OutputStream ;
-import java.io.OutputStreamWriter ;
 
-import java.io.IOException ;
-
-//import java.util.Map ;
-//import java.util.Iterator ;
 import scala.collection.Map ;
 import scalac.util.Name ;
-import scalac.ast.parser.Scanner ;
+import scalac.ast.parser.Scanner ; // for keywords
 
-// 2do: remove setChildren, use escaped sequence in constructor call "Elem( x:_* )"
+/** transforms a set of DTD declaraion to a scala source file.
+ */
+class DeclToScala(fOut:PrintWriter,
+		  moduleName:String,
+		  elemMap:Map[ String, ElemDecl ] ) {
 
-class DeclToScala(fOut:PrintWriter, moduleName:String) {
-
-  val DEFAULT_moduleName = "myXML";
+  final val DEFAULT_moduleName = "myXML";
 
   final val COMPRESS_DEFAULT:String  = "true"; // do hash-consing on load
 
@@ -43,16 +36,10 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
   //static final String HASHCODE_DEF =  "override def hashCode():int = { getChildren.hashCode() + getAttribs.hashCode() + getName.hashCode() }";
 
   final val IND_STEP:int  = 5;
-/*
-  def this() = { this(new PrintWriter( System.out ), DEFAULT_moduleName) }
 
-  def this( outdir:File, moduleName:String ) = { this(
-            new PrintWriter( new FileWriter( new File( outdir, moduleName+".scala" ))),
-	    moduleName) }
-*/
   var fIndent:int = 0;
 
-  def begin():Unit = {
+  def begin = {
     fOut.println( "// this file is generated from a DTD");
     fOut.print( "object " );
     fOut.print( moduleName );
@@ -64,7 +51,7 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fOut.println("import scala.collection.mutable.HashMap ;");
   }
 
-  def end():Unit = {
+  def end = {
     fOut.println("}");
     fOut.flush();
     fOut.close();
@@ -169,7 +156,7 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fOut.println( " ).match { Some(x) => x };");
   }
 
-  def printFactory( elemMap:Map[String,ElemDecl] ):Unit = {
+  def printFactory:Unit = {
 
     printIndent();
     fOut.println(
@@ -180,14 +167,14 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
       //"val res = new scala.HashMap[String,(scala.Map[String,String],scala.Seq[Element])=>Element] ;");
       "val res = new HashMap[String, scala.Seq[scala.xml.Element] => scala.xml.Element] ;");
     //JAVA: for(Iterator it = elemMap.keySet().iterator(); it.hasNext(); )
-    elemMap.values.foreach( decl => {
+    for( val decl <- elemMap.values.elements ) do {
 	printIndent();
 	fOut.print( "res.update(\"" );
 	fOut.print( decl.name );
         fOut.print( "\",(x:scala.Seq[scala.xml.Element] => ");
         fOut.print( cookedCap( decl.name ));
         fOut.println("( x:_* ) ));");
-    });
+    };
     printIndent();
     fOut.println("res");
     printIndent();
@@ -196,24 +183,21 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
 
   }
 
-  def printContainsTextDef( elemMap:Map[String,ElemDecl] ):Unit = {
+  def printContainsTextDef:Unit = {
     printIndent();
     fOut.println("val _containsMap: Map[scala.String, boolean] = {");
     fIndent = fIndent + IND_STEP;
     printIndent();
     fOut.println("val res = new HashMap[scala.String, boolean] ;");
 
-    elemMap.values.foreach( decl => {
+    for( val decl <- elemMap.values.elements ) do {
 	printIndent();
         fOut.print( "res.update(\"" );
         fOut.print( decl.name );
         fOut.print( "\",");
-        if( decl.contentModel.indexOf("#PCDATA") != -1 )
-          fOut.print("true")
-        else
-          fOut.print("false");
+        fOut.print( decl.containsText ); //write a boolean literal
         fOut.println(");");
-    });
+    };
     printIndent();
     fOut.println("res");
     fIndent = fIndent - IND_STEP;
@@ -221,7 +205,7 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fOut.println( "}");
   }
 
-  def printLoaderDef():Unit = {
+  def printLoaderDef:Unit = {
     printIndent();
     fOut.print("def load( filename:String ):Element = load( filename, ");
     fOut.print( COMPRESS_DEFAULT );
@@ -248,12 +232,10 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
     fIndent = fIndent - IND_STEP;
   };
 
-  def toScala( elemMap:Map[String,ElemDecl] ):Unit = {
-    begin();
-
+def comment = {
     fOut.println("/** the following elements are there");
 
-    elemMap.values.foreach( decl => {
+    for( val decl <- elemMap.values.elements ) do {
 	fOut.print(" * ");
         fOut.print( decl.name );
         fOut.print(" : [");
@@ -261,44 +243,42 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
         fOut.println(']');
         fOut.print(" * ");
         fOut.println( "attribs: "+decl.attribs );
-    } );
+    };
     fOut.println("*/");
+}
 
-    elemMap.values.foreach( decl => toScala( decl ) );
-
-    printContainsTextDef( elemMap );
-    printFactory( elemMap );
-    printLoaderDef();
-
-    end();
+  def run:Unit = {
+    begin;
+    comment;
+    for( val decl <- elemMap.values.elements ) do toScala( decl );
+    printContainsTextDef;
+    printFactory;
+    printLoaderDef;
+    end;
   }
 
   def toScala( decl:XMLDecl ):Unit = decl.match {
 
-    case x:ElemDecl =>
-      printClassDef( x );
-
-    case AttrDecl( name, attrType ) =>
-      if( attrType.equals("CDATA") ) {
-        //printSetMethod(name);
-        printGetMethod(name);
-
-      } else { // ignore non-CDATA attribs
-
-        System.err.print("[ignoring attribute \""
-                         +name+"\" of type \""
-                         +attrType+"\"]");
-      }
-    case _ =>
-      System.err.println("unexpected XMLDecl"); System.exit(-1);
+    case x:ElemDecl                => printClassDef( x );
+    case AttrDecl( name, "CDATA" ) => printGetMethod(name);
+    case AttrDecl( name, tpe )     => warning_attrib( name, tpe )
+    case _ => error("unexpected decl:"+decl);
   } // toScala
+
+  private def warning_attrib(name:String,tpe:String) = {
+    System.err.print( "[ignoring attribute \"" );
+    System.err.print( name );
+    System.err.print( "\" of type \"" );
+    System.err.print( tpe );
+    System.err.print( "\"]" );
+  }
 
 
 //
 // cooking raw names
 //
 
-def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
+private def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
   for( val i <- List.range( off, raw.length()) ) do {
     val _ = raw.charAt( i ).match {
       case '-' =>
@@ -320,19 +300,19 @@ def cooked( ckd:StringBuffer, raw:String, off:int ):String = {
 // type       -> type$
 // http-equiv -> http_equiv
 
-def cooked( raw:String ):String  = {
+private def cooked( raw:String ):String  = {
   return cooked(new StringBuffer(), raw, 0);
 }
 
 // type       -> Type$
 // http-equiv -> Http_equiv
 
-def cookedCap( raw:String ):String = {
+private def cookedCap( raw:String ):String = {
   val ckd:StringBuffer = new StringBuffer();
   ckd.append( Character.toUpperCase( raw.charAt( 0 ) ));
   return cooked( ckd, raw, 1);
 }
 
-  val toy:Scanner = new Scanner()
+  private val toy:Scanner = new Scanner()
 
 }
