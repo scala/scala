@@ -11,7 +11,7 @@ package scala;
 
 
 class ListMap[A, B] extends MutableMap[A, B]
-                    with MapImpl[A, B] {
+                    with DefaultMapModel[A, B] {
 
 	var xs: List[Entry] = Nil;
 

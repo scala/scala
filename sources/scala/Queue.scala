@@ -9,7 +9,24 @@
 
 package scala;
 
-class LinkedList[A](head: A, tail: LinkedList[A]) extends SingleLinkedList[A, LinkedList[A]] {
-	elem = head;
-	next = tail;
+
+class Queue[A] with MutableList[A] {
+
+    def +=(elem: A) = appendElem(elem);
+
+    def +=(iter: Iterable[A]) = iter.elements.foreach(e => appendElem(e));
+
+    def enqueue(elems: A*): Unit = (this += elems);
+
+    def dequeue(): A = {
+    	if (first == null)
+    		error("queue empty");
+    	else {
+    		val res = first.elem;
+    		first = first.next;
+    		res;
+    	}
+    }
+
+    def clear: Unit = reset;
 }

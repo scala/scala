@@ -13,7 +13,7 @@ package scala;
  */
 class HashMap[A, B] extends MutableMap[A, B]
                     with HashTable[A]
-                    with MapImpl[A, B] {
+                    with DefaultMapModel[A, B] {
 
     protected def entryKey(e: Entry) = e.key;
 }
