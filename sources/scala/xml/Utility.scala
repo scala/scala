@@ -34,23 +34,68 @@ object Utility {
   }
 
   /** serializes an instance of Node to a string that contains well-formed XML **/
-  def toXML( n:Node ):String = { n match {
+  def toXML( n:Node ):String = n match {
     case Text( t ) =>
       escape( t );
-    case x:AttributedNode =>
+    case x:AttributedNode => {
       val s = new StringBuffer();
-      s.append("<");
+      s.append('<');
       s.append( x.label );
       if( null != x.attributes ) {
         s.append( attr2xml( x.attributes.elements ) );{}
       }
-      s.append(">");
-      s.append( toXML( x.children.elements ) );
+      s.append('>');
+      s.append( toXML( x.children.elements )  );
       s.append("</");
       s.append( x.label );
-      s.append(">");
+      s.append('>');
       s.toString()
+    }
+  }
+
+  /** serializes an instance of Node to a string that contains well-formed XML **/
+/*
+  def toPrettyXML( n:Node, indent:int ):String = { n match {
+    case Text( t ) =>
+      escape( t );
+    case x:AttributedNode =>
+      val s = new StringBuffer();
+      for( val i<-List.range(0,indent) ) {
+        val _  = s.append(" ");
+        {}
+      }
+      val spaces = s.toString();
+      s.append('<');
+      s.append( x.label );
+      if( null != x.attributes ) {
+        s.append( attr2xml( x.attributes.elements ) );{}
+      }
+      s.append('>');
+    val childrenString = toXML( x.children.elements, 0 );
+    if( indent + 2 * x.label.length() + 4 + childrenString.length() < COLS ) {
+      s.append( childrenString );
+      s.append("</");
+      s.append( x.label );
+      s.append('>');
+      s.append('\n');
+    } else {
+      s.append('\n');
+      val childrenString = toXML( x.children.elements, indent+1 ) ;
+      s.append( childrenString );
+      s.append('\n');
+      s.append( spaces );
+      s.append("</");
+      s.append( x.label );
+      s.append('>');
+    }
+    s.toString()
   }}
+  def toXML( ch:Iterator[Node], ind:int ):String = {
+    ch.foldLeft ("") { (s:String,n:Node) => {
+      val t:String = toPrettyXML( n, ind ); s + t
+    }}
+  }
+todo: better pretty printing */
 
   def toXML( ch:Iterator[Node] ):String = {
     ch.foldLeft ("") { (s:String,n:Node) => { val t:String = toXML( n ); s + t }}
