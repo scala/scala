@@ -362,6 +362,8 @@ function website-build() {
 
     # copy old PDF and PostScript version of overview
     local resourcesdir="$websitedir-resources"
+    run cp -a "$resourcesdir/doc/ScalaIntro.pdf" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/ScalaIntro.ps.gz" "$websitedir/doc/";
     run cp -a "$resourcesdir/doc/ScalaOverview.pdf" "$websitedir/doc/";
     run cp -a "$resourcesdir/doc/ScalaOverview.ps.gz" "$websitedir/doc/";
 }
