@@ -1,5 +1,7 @@
 package examples;
 
+object parsers {
+
 abstract class Parsers {
 
   type intype;
@@ -42,71 +44,75 @@ abstract class Parsers {
   def rep1(p: Parser): Parser = p &&& rep(p);  // p+ = p p*
 }
 
-abstract class ListParsers extends Parsers {
+  abstract class ListParsers extends Parsers {
+    def chr(p: char => boolean): Parser;
+    def chr(c: char): Parser = chr(d: char => d == c);
 
-  def chr(p: char => boolean): Parser;
+    def letter    : Parser = chr(Character.isLetter);
+    def digit     : Parser = chr(Character.isDigit);
 
-  def chr(c: char): Parser = chr(d: char => d == c);
-
-  def letter    : Parser = chr(Character.isLetter);
-  def digit     : Parser = chr(Character.isDigit);
-
-  def ident     : Parser = letter &&& rep(letter ||| digit);
-  def number    : Parser = digit &&& rep(digit);
-  def list      : Parser = chr('(') &&& listElems &&& chr(')');
-  def listElems : Parser = expr &&& (chr(',') &&& listElems ||| empty);
-  def expr      : Parser = ident ||| number ||| list;
-}
-
-abstract class ExprParsers extends Parsers {
-  def chr(p: char => boolean): Parser;
-  def chr(c: char): Parser = chr(d: char => d == c);
-
-  def digit     : Parser = chr(Character.isDigit);
-  def number    : Parser = digit &&& rep(digit);
-  def summand   : Parser = number ||| chr('(') &&& expr &&& chr(')');
-  def expr      : Parser = summand &&& rep(chr('+') &&& summand)
-}
-
-class ParseString(s: String) extends Parsers {
-  type intype = int;
-  val input = 0;
-  def chr(p: char => boolean) = new Parser {
-    def apply(in: int): Parser#Result =
-      if (in < s.length() && p(s charAt in)) Some(in + 1);
-      else None;
+    def ident     : Parser = letter &&& rep(letter ||| digit);
+    def number    : Parser = digit &&& rep(digit);
+    def list      : Parser = chr('(') &&& listElems &&& chr(')');
+    def listElems : Parser = expr &&& (chr(',') &&& listElems ||| empty);
+    def expr      : Parser = ident ||| number ||| list;
   }
-}
 
-object TestList {
+  abstract class ExprParsers extends Parsers {
+    def chr(p: char => boolean): Parser;
+    def chr(c: char): Parser = chr(d: char => d == c);
 
-  def main(args: Array[String]): unit =
-    if (args.length == 1) {
-      val ps = new ListParsers with ParseString(args(0));
-      ps.expr(ps.input) match {
-	case Some(n) =>
-	  System.out.println("parsed: " + args(0).substring(0, n));
-	case None =>
-	  System.out.println("nothing parsed");
+    def digit     : Parser = chr(Character.isDigit);
+    def number    : Parser = digit &&& rep(digit);
+    def summand   : Parser = number ||| chr('(') &&& expr &&& chr(')');
+    def expr      : Parser = summand &&& rep(chr('+') &&& summand)
+  }
+
+  class ParseString(s: String) extends Parsers {
+    type intype = int;
+    val input = 0;
+    def chr(p: char => boolean) = new Parser {
+      def apply(in: int): Parser#Result =
+        if (in < s.length() && p(s charAt in)) Some(in + 1);
+        else None;
+    }
+  }
+
+  object TestList {
+
+    def main(args: Array[String]): unit =
+      if (args.length == 1) {
+        val ps = new ListParsers with ParseString(args(0));
+        ps.expr(ps.input) match {
+          case Some(n) =>
+            Console.println("parsed: " + args(0).substring(0, n));
+          case None =>
+            Console.println("nothing parsed");
+        }
       }
-    } else System.out.println("usage: java examples.TestList <expr-string>");
-}
+      else
+        Console.println("usage: java examples.TestList <expr-string>");
+  }
 
-object TestExpr {
+  object TestExpr {
 
-  def main(args: Array[String]): unit =
-    if (args.length == 1) {
-      val ps = new ExprParsers with ParseString(args(0));
-      ps.expr(ps.input) match {
-	case Some(n) =>
-	  System.out.println("parsed: " + args(0).substring(0, n));
-	case None =>
-	  System.out.println("nothing parsed");
+    def main(args: Array[String]): unit =
+      if (args.length == 1) {
+        val ps = new ExprParsers with ParseString(args(0));
+        ps.expr(ps.input) match {
+          case Some(n) =>
+            Console.println("parsed: " + args(0).substring(0, n));
+          case None =>
+            Console.println("nothing parsed");
+        }
       }
-    } else System.out.println("usage: java examples.TestExpr <expr-string>");
-}
+      else
+        Console.println("usage: java examples.TestExpr <expr-string>");
+  }
 
-object parsers with Application {
-  TestList.main(Array("(a,b,(1,2))"));
-  TestExpr.main(Array("2+3+(4+1)"))
+  def main(args: Array[String]): Unit = {
+    TestList.main(Array("(a,b,(1,2))"));
+    TestExpr.main(Array("2+3+(4+1)"))
+  }
+
 }
