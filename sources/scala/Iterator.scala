@@ -277,6 +277,14 @@ trait Iterator[+A] {
         res
     }
 
+    /** Tests if the given value <code>elem</code> is a member of this list.
+     *
+     *  @param elem element whose membership has to be tested.
+     *  @return True iff there is an element of this list which is
+     *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
+     */
+    def contains(elem: Any): boolean = exists { x => x == elem };
+
     /** Find and return the first element of the iterable object satisfying a
      *  predicate, if any.
      *

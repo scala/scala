@@ -1995,6 +1995,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             return false;
         case ThisType(_):
         case SingleType(_, _):
+            if (this.isSameAs(that)) return true;
             if (this.singleDeref().isSubType(that)) return true;
             break;
         case ConstantType(_, _):
@@ -2163,15 +2164,20 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return sym1.isModule()
                     && sym == sym1.moduleClass()
                     && sym.owner().thisType().isSameAs(pre1)
+/*
                     ||
                     this.singleDeref().isSingletonType() &&
                     this.singleDeref().isSameAs(that)
                     ||
                     that.singleDeref().isSingletonType() &&
                     this.isSameAs(that.singleDeref())
+*/
                     ||
                     deAlias(that) != that &&
                     this.isSameAs(deAlias(that));
+            default:
+                if (deAlias(this) != this)
+                    return deAlias(this).isSameAs(that);
             }
             break;
 
@@ -2179,12 +2185,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             switch (that) {
             case SingleType(Type pre1, Symbol sym1):
                 return sym == sym1 && pre.isSameAs(pre1)
+/*
                     ||
                     this.singleDeref().isSingletonType() &&
                     this.singleDeref().isSameAs(that)
                     ||
                     that.singleDeref().isSingletonType() &&
                     this.isSameAs(that.singleDeref())
+*/
                     ||
                     (deAlias(this) != this || deAlias(that) != that) &&
                     deAlias(this).isSameAs(deAlias(that));
@@ -2192,12 +2200,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return sym.isModule()
                     && sym.moduleClass() == sym1
                     && pre.isSameAs(sym1.owner().thisType())
+/*
                     ||
                     this.singleDeref().isSingletonType() &&
                     this.singleDeref().isSameAs(that)
                     ||
                     that.singleDeref().isSingletonType() &&
                     this.isSameAs(that.singleDeref())
+*/
                     ||
                     deAlias(this) != this &&
                     deAlias(this).isSameAs(that);
@@ -2293,6 +2303,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case TypeVar(Type origin, Constraint constr):
             if (constr.inst != NoType) return constr.inst.isSameAs(this);
             else return constr.instantiate(this.any2typevar());
+        case ThisType(_):
+        case SingleType(_, _):
+            if (deAlias(that) != that)
+                return this.isSameAs(deAlias(that));
         }
 
         switch (this) {
@@ -2310,6 +2324,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
         static Type deAlias(Type tp) {
             switch (tp) {
+            case ThisType(_):
             case SingleType(_, _):
                 Type tp1 = tp.singleDeref();
                 if (tp1.isStable()) return deAlias(tp1);
@@ -2696,6 +2711,18 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         // remove types that are subtypes of some other type.
         tps = elimRedundant(tps, true);
         if (tps.length == 1) return tps[0];
+
+        // singleDeref singletypes and try again
+        Type[] tps1 = tps;
+        for (int i = 0; i < tps.length; i++) {
+            Type tp1 = tps[i].singleDeref();
+            if (tp1 != tps[i] && tps1 == tps) {
+                tps1 = new Type[tps.length];
+                System.arraycopy(tps, 0, tps1, 0, i);
+            }
+            tps1[i] = tp1;
+        }
+        if (tps1 != tps) return lub0(tps1);
 
         // intersect closures and build frontier.
         Type[][] closures = new Type[tps.length][];

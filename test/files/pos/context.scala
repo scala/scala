@@ -1,34 +1,34 @@
 class Context {
-  object symswrap extends SymsWrapper {
+  object symwrap extends SymbolWrapper {
     val context: Context.this.type = Context.this
   }
-  object typswrap extends TypsWrapper {
+  object typewrap extends TypeWrapper {
     val context: Context.this.type = Context.this
   }
-  object syms extends symswrap.Syms;
-  object typs extends typswrap.Typs;
+  object symbols extends symwrap.Symbols;
+  object types extends typewrap.Types;
 }
 
-abstract class SymsWrapper {
+abstract class SymbolWrapper {
   val context: Context;
   import context._;
 
-  class Syms: context.syms.type {
-    abstract class Sym: context.syms.Sym {
-      def typ: typs.Typ;
-      def sym: Sym = typ.sym;
+  class Symbols: context.symbols.type {
+    abstract class Symbol {
+      def typ: types.Type;
+      def sym: Symbol = typ.sym;
     }
   }
 }
 
-abstract class TypsWrapper {
+abstract class TypeWrapper {
   val context: Context;
   import context._;
 
-  class Typs: context.typs.type {
-    abstract class Typ {
-      def sym: syms.Sym;
-      def typ: Typ = sym.typ;
+  class Types: context.types.type {
+    abstract class Type {
+      def sym: symbols.Symbol;
+      def typ: Type = sym.typ;
     }
   }
 }

@@ -111,6 +111,14 @@ object List {
     if (it.hasNext) it.next :: fromIterator(it);
     else Nil;
 
+  /** Converts an array into a list.
+   *
+   *  @param arr the array to convert
+   *  @return a list that contains the same elements than <code>arr</code>
+   *           in the same order
+   */
+  def fromArray[a](arr: Array[a]): List[a] = fromArray(arr, 0, arr.length);
+
   /** Converts a range of an array into a list.
    *
    *  @param arr the array to convert
@@ -128,6 +136,8 @@ object List {
     }
     res
   }
+
+
 
   /** Parses a string which contains substrings separated by a
    *
@@ -188,9 +198,9 @@ object List {
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>m = min(k,l)</code>
    */
-  def map2[a,b,c](xs: List[a], ys: List[b], f: (a, b) => c): List[c] =
+  def map2[a,b,c](xs: List[a], ys: List[b])(f: (a, b) => c): List[c] =
     if (xs.isEmpty || ys.isEmpty) Nil
-    else f(xs.head, ys.head) :: map2(xs.tail, ys.tail, f);
+    else f(xs.head, ys.head) :: map2(xs.tail, ys.tail)(f);
 
   /** Tests whether the given predicate <code>p</code> holds
    *  for all corresponding elements of the argument lists.
@@ -200,9 +210,9 @@ object List {
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>m = min(k,l)</code>
    */
-  def forall2[a,b](xs: List[a], ys: List[b], f: (a, b) => boolean): boolean =
+  def forall2[a,b](xs: List[a], ys: List[b])(f: (a, b) => boolean): boolean =
     if (xs.isEmpty || ys.isEmpty) true
-    else f(xs.head, ys.head) && forall2(xs.tail, ys.tail, f);
+    else f(xs.head, ys.head) && forall2(xs.tail, ys.tail)(f);
 
   /** Tests whether the given predicate <code>p</code> holds
    *  for some corresponding elements of the argument lists.
@@ -212,9 +222,9 @@ object List {
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>m = min(k,l)</code>
    */
-  def exists2[a,b](xs: List[a], ys: List[b], f: (a, b) => boolean): boolean =
+  def exists2[a,b](xs: List[a], ys: List[b])(f: (a, b) => boolean): boolean =
     if (xs.isEmpty || ys.isEmpty) false
-    else f(xs.head, ys.head) || exists2(xs.tail, ys.tail, f);
+    else f(xs.head, ys.head) || exists2(xs.tail, ys.tail)(f);
 
   /** Transposes a list of lists.
    *  pre: All element lists have the same length.
@@ -646,6 +656,15 @@ sealed trait List[+a] extends Seq[a] {
   override def exists(p: a => Boolean): Boolean =
     !isEmpty && (p(head) || (tail exists p));
 
+  /** Tests if the given value <code>elem</code> is a member of this
+   *  iterable object.
+   *
+   *  @param elem element whose membership has to be tested.
+   *  @return True iff there is an element of this list which is
+   *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
+   */
+  def contains(elem: Any): boolean = exists { x => x == elem };
+
   /** Find and return the first element of the list satisfying a
    *  predicate, if any.
    *
@@ -748,14 +767,6 @@ sealed trait List[+a] extends Seq[a] {
   def zip[b](that: List[b]): List[Pair[a,b]] =
     if (this.isEmpty || that.isEmpty) Nil
     else Pair(this.head, that.head) :: this.tail.zip(that.tail);
-
-  /** Tests if the given value <code>elem</code> is a member of this list.
-   *
-   *  @param elem element whose membership has to be tested.
-   *  @return True iff there is an element of this list which is
-   *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
-   */
-  def contains(elem: Any): boolean = exists { x => x == elem };
 
   /** Computes the union of this list and the given list
    *  <code>that</code>.

@@ -181,7 +181,7 @@ class ApplicationBuilder(globall: scalac_Global) {
 //    updateClassHierarchy(clsSym);
 
     // superclasses
-    addTypesToWorklist(List.fromArray[Type](parents, 0, parents.length));
+    addTypesToWorklist(List.fromArray(parents, 0, parents.length));
 
     addReferences(cls);
   }
