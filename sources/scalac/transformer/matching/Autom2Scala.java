@@ -147,7 +147,7 @@ public class Autom2Scala  {
             this.defs = cf.defs;
             this.gen = cf.gen;
             this.owner = owner;
-            this.pos = 0;
+            this.pos = Position.FIRSTPOS;
             this.cf = cf;
             this.am = new AlgebraicMatcher( cf.unit, cf.infer );
             this.mdefs = new Vector();
@@ -161,11 +161,11 @@ public class Autom2Scala  {
       Symbol hasnSym;
 
       Tree loadCurrentElem( Tree body ) {
-	  return cf.Block( Position.NOPOS, new Tree[] {
-	      cf.gen.ValDef( 0,
+	  return cf.Block( Position.FIRSTPOS, new Tree[] {
+	      cf.gen.ValDef( Position.FIRSTPOS,
 			     this.hasnSym,
 			     cf._hasNext( _iter() ) ),
-	      cf.gen.ValDef( 0,
+	      cf.gen.ValDef( Position.FIRSTPOS,
 			     this.curSym,
 			     cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
 				    cf._next( _iter() ),
@@ -175,7 +175,7 @@ public class Autom2Scala  {
       }
 
       Tree currentElem() {
-            return gen.Ident(0, curSym);
+            return gen.Ident(Position.FIRSTPOS, curSym);
       }
 
       Tree currentMatches( Label label ) {
@@ -205,7 +205,7 @@ public class Autom2Scala  {
       Tree code_assignInt( Symbol sym, Integer val ){
             return make.Assign(pos,
                                code_ref( sym ),
-                               gen.mkIntLit(Position.NOPOS, val ))
+                               gen.mkIntLit(Position.FIRSTPOS, val ))
                   .setType( defs.UNIT_TYPE );
       }
        */
@@ -279,7 +279,7 @@ public class Autom2Scala  {
       // returns a Tree whose type is boolean.
       Tree handleBody( Object help ) {
             // don't care about free vars
-            return gen.mkBooleanLit( Position.NOPOS, true );
+            return gen.mkBooleanLit( Position.FIRSTPOS, true );
       }
 
       // calling the /*AlgebraicMatcher*/PatternMatcher here
@@ -312,16 +312,16 @@ public class Autom2Scala  {
       }
 
       Tree code_fail() {
-            return gen.mkIntLit(Position.NOPOS, FAIL );
+            return gen.mkIntLit(Position.FIRSTPOS, FAIL );
       }
 
       /** code for the return value of the automaton translation
        */
       Tree run_finished( int state ) {
             if( dfa.isFinal( state )) {
-                  return gen.mkIntLit(Position.NOPOS, ((Integer) dfa.finals.get( new Integer( state ) )).intValue() );
+                  return gen.mkIntLit(Position.FIRSTPOS, ((Integer) dfa.finals.get( new Integer( state ) )).intValue() );
             }
-            return gen.mkIntLit(Position.NOPOS, FAIL );
+            return gen.mkIntLit(Position.FIRSTPOS, FAIL );
       }
 
     /*
@@ -338,7 +338,7 @@ public class Autom2Scala  {
       Tree wrapStateBody0( Tree stateBody,
                            Tree elseBody,
                            int i ) {
-            return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.NOPOS, i )),
+            return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.FIRSTPOS, i )),
                           stateBody ,
                           elseBody );
       }
@@ -371,7 +371,7 @@ public class Autom2Scala  {
 
 
 	if( dfa.isSink( i ) )  // state won't change anymore (binding?)
-	    return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.NOPOS, i )),
+	    return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.FIRSTPOS, i )),
 			  runFinished,
 			  elseBody );
 

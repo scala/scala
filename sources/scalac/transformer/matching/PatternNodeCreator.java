@@ -19,14 +19,14 @@ import java.util.Vector ;
 public class PatternNodeCreator extends PatternTool {
 
     public SequencePat SequencePat(int pos, Type type, int len) {
-        Symbol sym = newVar(Position.NOPOS, type);
+        Symbol sym = newVar(Position.FIRSTPOS, type);
         SequencePat node = new SequencePat(sym, len);
         node.pos = pos;
         node.type = type;
         return node;
     }
     public SeqContainerPat SeqContainerPat(int pos, Type type, Tree seqpat) {
-        Symbol sym = newVar(Position.NOPOS, type);
+        Symbol sym = newVar(Position.FIRSTPOS, type);
         SeqContainerPat node = new SeqContainerPat(sym, seqpat);
         node.pos = pos;
         node.type = type;

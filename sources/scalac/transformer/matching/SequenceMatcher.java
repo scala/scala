@@ -57,7 +57,7 @@ public class SequenceMatcher extends PatternTool {
                                                cf );
                   Tree stmsLeftNest[] = ltisNest.getTrace();
 
-                  Tree selNest = gen.Ident( 0, ltisNest.resultSym );
+                  Tree selNest = gen.Ident( Position.FIRSTPOS, ltisNest.resultSym );
 
                   DetWordAutom dRightNest =
                         new DetWordAutom( rightNest, leftNest, dLeftNest);
@@ -66,7 +66,7 @@ public class SequenceMatcher extends PatternTool {
                         new RightTracerInScala( dRightNest, leftNest, mNest,
                                                 cf, pat, cf.getElemType(pat.type()));
 
-                  Tree stmsRightNest[] = rtisNest.getStms( gen.Ident( 0, v ) );
+                  Tree stmsRightNest[] = rtisNest.getStms( gen.Ident( Position.FIRSTPOS, v ) );
                   stmsNest[ i ] = new Tree[ stmsLeftNest.length
                                             + stmsRightNest.length ];
 
@@ -102,7 +102,7 @@ public class SequenceMatcher extends PatternTool {
                  it.hasNext(); ){
                   Symbol v = (Symbol) it.next();
                   Tree nestPat = (Tree) spn.nestedVarToPats.get( v );
-                  Matcher mNest = new Matcher( _m.owner, gen.Ident(0, v), null );
+                  Matcher mNest = new Matcher( _m.owner, gen.Ident(Position.FIRSTPOS, v), null );
 
                   Matcher saveM = _m; _m = mNest;
 
@@ -129,7 +129,7 @@ public class SequenceMatcher extends PatternTool {
 
             Tree stms[] = ltis.getTrace();
 
-            Tree sel = gen.Ident( 0, ltis.resultSym );
+            Tree sel = gen.Ident( Position.FIRSTPOS, ltis.resultSym );
 
             // <- - - right
 
@@ -244,7 +244,7 @@ public class SequenceMatcher extends PatternTool {
             scalaAut.translate();
 
             if( defaultCase == null )
-                  defaultCase = cf.ThrowMatchError( Position.NOPOS, _m.resultType );
+                  defaultCase = cf.ThrowMatchError( Position.FIRSTPOS, _m.resultType );
 
             Tree newbody[] = doBinding ? addBindersToBodies( body ): body;
 

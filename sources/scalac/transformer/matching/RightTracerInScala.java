@@ -291,14 +291,14 @@ public class RightTracerInScala extends TracerInScala  {
 	      Symbol vsym = (Symbol) it.next();
 	      Symbol hv   = (Symbol) helpMap3.get( vsym );
 	      hv.setType( cf.SeqListType( elementType ) ) ;
-	      Tree refv   = gen.Ident(Position.NOPOS, vsym);
-	      Tree refhv  = gen.Ident(Position.NOPOS, hv);
+	      Tree refv   = gen.Ident(Position.FIRSTPOS, vsym);
+	      Tree refhv  = gen.Ident(Position.FIRSTPOS, hv);
 	      res[ j++ ] = gen.Assign( refhv, refv );
 	  }
 
 	  res[ j ] = super.handleBody( freeVars ); // just `true'
 
-	  return cf.Block(Position.NOPOS, res, res[j].type() );
+	  return cf.Block(Position.FIRSTPOS, res, res[j].type() );
       }
 
       // calling the AlgebraicMatcher here
@@ -462,7 +462,7 @@ public class RightTracerInScala extends TracerInScala  {
        *  todo: move tree generation of Unit somewhere else
        */
       Tree run_finished( int state ) {
-	  return gen.Block(0, Tree.EMPTY_ARRAY).setType( defs.UNIT_TYPE );
+	  return gen.Block(Position.FIRSTPOS, Tree.EMPTY_ARRAY).setType( defs.UNIT_TYPE );
       }
 
       Tree current() {

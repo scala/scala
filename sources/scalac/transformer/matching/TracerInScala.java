@@ -34,7 +34,7 @@ public class TracerInScala extends Autom2Scala {
       Tree refHelpVar( Symbol realVar ) {
             Symbol hv = (Symbol)helpMap.get( realVar );
             assert hv != null : realVar;
-            return gen.Ident(Position.NOPOS, hv);
+            return gen.Ident(Position.FIRSTPOS, hv);
       }
 
       Tree assignToHelpVar( Symbol realVar, Tree rhs ) {

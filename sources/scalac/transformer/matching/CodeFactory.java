@@ -20,7 +20,7 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
-    private int pos = Position.NOPOS ;
+    private int pos = Position.FIRSTPOS ;
 
       static final Name HEAD_N       = Name.fromString("head");
 
@@ -158,7 +158,7 @@ class CodeFactory extends PatternTool {
     /**  returns `<seqObj.elements>' */
     Tree newIterator( Tree seqObj, Type elemType ) {
 	Symbol newIterSym = newIterSym();
-	Tree t1 = gen.Select( Position.NOPOS, seqObj, newIterSym)
+	Tree t1 = gen.Select( Position.FIRSTPOS, seqObj, newIterSym)
 	    .setType( Type.MethodType(new Symbol[] {},_seqIterType( elemType )));
 
 	Tree theIterator = gen.Apply(seqObj.pos,
@@ -181,29 +181,29 @@ class CodeFactory extends PatternTool {
      */
       Tree ignoreValue( Type asType ) {
             if( asType.isSameAs(defs.BYTE_TYPE ))
-                  return make.Literal(Position.NOPOS, new Integer( 0 ))
+                  return make.Literal(Position.FIRSTPOS, new Integer( 0 ))
                         .setType( defs.INT_TYPE );
             else if( asType.isSameAs( defs.CHAR_TYPE ))
-                  return make.Literal(Position.NOPOS, new Character( 'a' ))
+                  return make.Literal(Position.FIRSTPOS, new Character( 'a' ))
                         .setType( defs.CHAR_TYPE );
             else if( asType.isSameAs(defs.SHORT_TYPE ))
-		return make.Literal(Position.NOPOS, new Integer/*Short?*/( 0 ))
+		return make.Literal(Position.FIRSTPOS, new Integer/*Short?*/( 0 ))
                         .setType( defs.SHORT_TYPE );
             else if( asType.isSameAs(defs.INT_TYPE ))
                   return Int( 0 );
             else if( asType.isSameAs(defs.LONG_TYPE ))
-                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                  return make.Literal(Position.FIRSTPOS, new Long( 0 ))
                         .setType( defs.LONG_TYPE );
             else if( asType.isSameAs(defs.FLOAT_TYPE ))
-                  return make.Literal(Position.NOPOS, new Float( 0 ))
+                  return make.Literal(Position.FIRSTPOS, new Float( 0 ))
                         .setType( defs.FLOAT_TYPE );
             else if( asType.isSameAs(defs.DOUBLE_TYPE ))
-                  return make.Literal(Position.NOPOS, new Double( 0 ))
+                  return make.Literal(Position.FIRSTPOS, new Double( 0 ))
                         .setType( defs.DOUBLE_TYPE );
             else if( asType.isSameAs(defs.BOOLEAN_TYPE ))
-                  return gen.mkBooleanLit(Position.NOPOS, false);
+                  return gen.mkBooleanLit(Position.FIRSTPOS, false);
             else if( asType.isSameAs(defs.STRING_TYPE ))
-                  return make.Literal(Position.NOPOS, "")
+                  return make.Literal(Position.FIRSTPOS, "")
                         .setType( defs.STRING_TYPE );
             /** FIX ME FOR THE NEW VERSION*/
 	    else
@@ -222,7 +222,7 @@ class CodeFactory extends PatternTool {
 
     // the caller needs to set the type !
     Tree  _applyNone( Tree arg ) {
-	return make.Apply(Position.NOPOS, arg, Tree.EMPTY_ARRAY );
+	return make.Apply(Position.FIRSTPOS, arg, Tree.EMPTY_ARRAY );
     }
 
     /** code `new SeqTraceNil[ elemType ]()'
@@ -230,7 +230,7 @@ class CodeFactory extends PatternTool {
 
     Tree _seqTraceNil( Type elemType ) {
 	assert elemType != null : "elemType = null??";
-	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqTraceNilSym(),
+	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqTraceNilSym(),
 			new Type[] { elemType },
 			new Tree[] {});
     }
@@ -243,7 +243,7 @@ class CodeFactory extends PatternTool {
       }
 
       Tree Int( Integer valI ) {
-            return make.Literal( Position.NOPOS, valI )
+            return make.Literal( Position.FIRSTPOS, valI )
                   .setType( defs.INT_TYPE );
 
       }
@@ -254,7 +254,7 @@ class CodeFactory extends PatternTool {
 	  assert head != null : "head null";
 	  assert tail != null : "tail null";
 	  assert state != null : "state null";
-            return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqTraceConsSym(),
+            return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqTraceConsSym(),
                             new Type[] { head.type() },
                             new Tree[] { Int( state ), head, tail });
       }
@@ -279,28 +279,28 @@ class CodeFactory extends PatternTool {
     Tree newSeqNil( Type tpe ) {
 	/*
 	assert tpe != null :"tpe = null !?";
-	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqNilSym(),
+	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqNilSym(),
 			new Type[] { tpe },
 			new Tree[] {});
 	*/
-	return gen.Select(gen.Ident(0, defs.SCALA), Names.Nil/*seqNilSym()*/);
+	return gen.Select(gen.Ident(Position.FIRSTPOS, defs.SCALA), Names.Nil/*seqNilSym()*/);
     }
 
     // EXPERIMENTAL
     Tree newRef( Tree init ) {
 	//System.out.println( "hello:"+refSym().type() );
-	return gen.New( 0, defs.SCALA_TYPE, refSym(),
+	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, refSym(),
 			new Type[] { init.type() },
 			new Tree[] { init } );
 	/*
-	return gen.Apply( gen.TypeApply(0, gen.Select(gen.Ident(0, defs.SCALA), Names.Ref),
-					new Tree[] { gen.mkType(0, init.type() ) } ),
+	return gen.Apply( gen.TypeApply(Position.FIRSTPOS, gen.Select(gen.Ident(Position.FIRSTPOS, defs.SCALA), Names.Ref),
+					new Tree[] { gen.mkType(Position.FIRSTPOS, init.type() ) } ),
 			  new Tree[] { init } );
 	*/
     }
 
     Tree newSeqCons( Tree head, Tree tail ) {
-	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqConsSym(),
+	return gen.New( Position.FIRSTPOS, defs.SCALA_TYPE, seqConsSym(),
 			new Type[] { head.type() },
 			new Tree[] { head, tail });
     }

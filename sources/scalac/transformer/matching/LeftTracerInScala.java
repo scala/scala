@@ -96,14 +96,14 @@ public class LeftTracerInScala extends TracerInScala {
       Symbol vsym = (Symbol) it.next();
       Symbol hv   = (Symbol) helpMap.get( vsym );
       hv.type( cf.SeqListType( elementType ) ) ;
-      Tree refv   = gen.Ident(Position.NOPOS, vsym);
-      Tree refhv  = gen.Ident(Position.NOPOS, hv);
+      Tree refv   = gen.Ident(Position.FIRSTPOS, vsym);
+      Tree refhv  = gen.Ident(Position.FIRSTPOS, hv);
       res[ j++ ] = gen.Assign( refhv, refv );
       }
 
       res[ j ] = super.handleBody( freeVars ); // just `true'
 
-      return cf.Block(Position.NOPOS, res, res[j].type() );
+      return cf.Block(Position.FIRSTPOS, res, res[j].type() );
       }
     */
     protected void initializeSyms() {
@@ -243,7 +243,7 @@ public class LeftTracerInScala extends TracerInScala {
 	    cf.newIterator( selector, selector.type() ),
 	    cf.Int( 0 )  });
 
-	run = gen.ValDef( Position.NOPOS, resultSym, run );
+	run = gen.ValDef( Position.FIRSTPOS, resultSym, run );
 
 	v.add( run );
 
@@ -285,11 +285,11 @@ public class LeftTracerInScala extends TracerInScala {
 		//System.out.println("ouch! v Left");
 		Symbol hv = makeHelpVarSEQ( pat );
 		nestedMap.put( pat, hv );
-		Tree stm  = gen.Assign( gen.Ident(0, hv), currentElem() );
+		Tree stm  = gen.Assign( gen.Ident(Position.FIRSTPOS, hv), currentElem() );
 		m.stms = new Tree[2];
 		m.stms[0] = stm;
-		m.stms[1] = gen.mkBooleanLit(Position.NOPOS, true);
-		return cf.Block( 0, m.stms, m.stms[1].type() );
+		m.stms[1] = gen.mkBooleanLit(Position.FIRSTPOS, true);
+		return cf.Block( Position.FIRSTPOS, m.stms, m.stms[1].type() );
 	    }
 	}
 
@@ -310,7 +310,7 @@ public class LeftTracerInScala extends TracerInScala {
 				       //DON'T .setSymbol( Symbol.NONE ) !
 				       .setType(pat.type()),
 				       Tree.Empty,
-				       gen.mkBooleanLit(Position.NOPOS, false)) },
+				       gen.mkBooleanLit(Position.FIRSTPOS, false)) },
 		      false
 		      );
 	Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );

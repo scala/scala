@@ -33,7 +33,7 @@ public class WordAutomInScala extends Autom2Scala {
 
         Tree run = callFun( new Tree[] {
                        cf.newIterator(selector),
-                       gen.mkIntLit(Position.NOPOS, 0) } );
+                       gen.mkIntLit(Position.FIRSTPOS, 0) } );
 
         /* return code `var <swres>: scala.Int = <init>' */
 
@@ -45,7 +45,7 @@ public class WordAutomInScala extends Autom2Scala {
         Tree cond[] = new Tree[body.length];
         //Tree bbody[] = new Tree[body.length];
         for (int i = body.length - 1; i >= 0; i--)
-            cond[i] = cf.Equals(_swres(), gen.mkIntLit(Position.NOPOS, i));
+            cond[i] = cf.Equals(_swres(), gen.mkIntLit(Position.FIRSTPOS, i));
 
         result = cf.Switch( selector, cond, body, failTree );
 
@@ -82,7 +82,7 @@ public class WordAutomInScala extends Autom2Scala {
             return code_fail();
 
         return callFun(new Tree[] { _iter(),
-            gen.mkIntLit(Position.NOPOS, target.intValue())} );
+            gen.mkIntLit(Position.FIRSTPOS, target.intValue())} );
     }
 
     /** ...

@@ -157,7 +157,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public static CompoundType compoundType(Type[] parts, Scope members) {
 	ExtCompoundType res = new ExtCompoundType(parts, members);
 	res.tsym = new ClassSymbol(
-	    Position.NOPOS, Names.COMPOUND_NAME.toTypeName(), Symbol.NONE,
+	    Position.FIRSTPOS, Names.COMPOUND_NAME.toTypeName(), Symbol.NONE,
 	    SYNTHETIC | ABSTRACTCLASS);
 	res.tsym.setInfo(res);
 	res.tsym.primaryConstructor().setInfo(

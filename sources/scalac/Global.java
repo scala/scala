@@ -8,6 +8,7 @@
 
 package scalac;
 
+import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.SourceFile;
 
 import java.io.*;
@@ -405,11 +406,12 @@ public class  Global {
 
     private void fix1(Unit unit) {
         unit.body = new Tree[] {
-            make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
-                make.Template(0, new Tree[]{
-                    make.Apply(0,
-                        make.Select(0,
-                            make.Ident(0, Names.scala),
+            make.ModuleDef(Position.FIRSTPOS,
+                0, Name.fromString(CONSOLE_S+module), Tree.Empty,
+                make.Template(Position.FIRSTPOS, new Tree[]{
+                    make.Apply(Position.FIRSTPOS,
+                        make.Select(Position.FIRSTPOS,
+                            make.Ident(Position.FIRSTPOS, Names.scala),
                             Names.Object.toTypeName()),
                         new Tree[0])},
                     unit.body))};
@@ -435,14 +437,15 @@ public class  Global {
                 Tree last = impl.body[impl.body.length - 1];
                 if (last.isTerm()) {
                     impl.body[impl.body.length - 1] =
-                        treeGen.Apply(
-                            treeGen.Select(
-                                treeGen.mkRef(0, INTERPRETER()),
+                        treeGen.Apply(last.pos,
+                            treeGen.Select(last.pos,
+                                treeGen.mkRef(last.pos, INTERPRETER()),
                                 SET_EVALUATION_RESULT()),
                             new Tree[] {
                                 last,
-                                make.Literal(0, show(last.type())).setType(
-                                    definitions.JAVA_STRING_TYPE)});
+                                make.Literal(last.pos,
+                                    show(last.type())).setType(
+                                        definitions.JAVA_STRING_TYPE)});
                 }
                 TreeList body = new TreeList();
                 for (int j = 0; j < impl.body.length; j++)
@@ -466,25 +469,25 @@ public class  Global {
         case TypeDef(_, _, _, _):
             if (!mustShow(tree.symbol())) return;
             body.append(
-                treeGen.Apply(
-                    treeGen.Select(
-                        treeGen.mkRef(0, INTERPRETER()),
+                treeGen.Apply(tree.pos,
+                    treeGen.Select(tree.pos,
+                        treeGen.mkRef(tree.pos, INTERPRETER()),
                         SHOW_DEFINITION()),
                     new Tree[] {
-                        make.Literal(0, show(tree.symbol())).setType(
+                        make.Literal(tree.pos, show(tree.symbol())).setType(
                             definitions.JAVA_STRING_TYPE)}));
             return;
         case ValDef(_, _, _, _):
             if (!mustShow(tree.symbol())) return;
             body.append(
-                treeGen.Apply(
-                    treeGen.Select(
-                        treeGen.mkRef(0, INTERPRETER()),
+                treeGen.Apply(tree.pos,
+                    treeGen.Select(tree.pos,
+                        treeGen.mkRef(tree.pos, INTERPRETER()),
                         SHOW_VALUE_DEFINITION()),
                     new Tree[] {
-                        make.Literal(0, show(tree.symbol())).setType(
+                        make.Literal(tree.pos, show(tree.symbol())).setType(
                             definitions.JAVA_STRING_TYPE),
-                        treeGen.Ident(tree.symbol())}));
+                        treeGen.Ident(tree.pos, tree.symbol())}));
             return;
         default:
             return;

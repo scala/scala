@@ -18,7 +18,7 @@ import scalac.typechecker.*;
  */
 
 public class PatternNode {
-    public int pos = Position.NOPOS;
+    public int pos = Position.FIRSTPOS;
     public Type type;
     public PatternNode or;
     public PatternNode and;

@@ -483,7 +483,7 @@ public class PatternMatcher extends PatternTool {
         // check if we have to add a new header
         if (curHeader == null) {
             assert index >= 0 : casted;
-            if (casted.pos == Position.NOPOS) {
+            if (casted.pos == Position.FIRSTPOS) {
                 Symbol atSym = casted.type().lookup(APPLY_N);
                 //System.out.println("casted type = " + typeOf(casted));
                 Type seqType = casted.type().baseType(defs.SEQ_CLASS).typeArgs()[0];
