@@ -50,7 +50,7 @@ public class MetaTree extends AbstractTreeExpander {
         if (node.fields != null) {
             node.printParams(writer.print("(")).print(")");
             writer.lbrace();
-            writer.println("// !!! assert TreeChecker.instance.check(this);");
+            writer.println("assert CheckTreeNodes.instance.checkNode(this);");
             writer.rbrace();
         } else if (node == tree.n_Empty) {
             writer.print("; static { "+node.name+".type = ").
