@@ -8,16 +8,16 @@
   <property name="sources" value="src.java" />            <!-- the source directory -->
   <property name="classes" value="../../classes" />       <!-- the target directory -->
 
-  <!-- task definitions for pico -->
+  <!-- task definitions for pico                                       -->
+  <!-- your classpath must contain "jaco.jar"                          -->
   <taskdef name="pico"
-           classname="jaco.pizza.AntTask">
-    <classpath path="${bootstrap.jar}"/>
-  </taskdef>
+           classname="jaco.pizza.AntTask"/>
 
   <!-- compiling the ant task -->
 
   <target name="build.anttask">
-      <pico srcdir="${sources}" destdir="${classes}" source="1.4" classpath="${classes}">
+      <pico srcdir="${sources}" destdir="${classes}" 
+            source="1.4" classpath="${classes}">
          <include name="scala/tools/scalac4ant/*.java"/>
       </pico>
   </target>
@@ -31,10 +31,25 @@
     </jar>
   </target>
 
+  <!-- testing scalac4ant.jar -->
+  
+  <target name="test">
+  <!-- your classpath must contain                                    -->
+  <!--    "scalac4ant.jar", "tools.jar", scala.jar", "fjbg.jar"       -->
+  <!--                                                                -->
+  <taskdef name="scalac"
+	   classname="scala.tools.scalac4ant.AntTask"/>
+    <scalac srcdir="src.scala" destdir="/tmp/classes" force="true"
+	    scalaClasspath="/tmp/classes" 
+	    scalaBootClasspath="/tmp/classes:/home/buraq/scala/sources">
+	    <include name="**/*.scala"/>
+      </scalac>
+    </target>
+
   <!-- clean up -->
 
   <target name="clean">
     <delete file="${jar.file}"/>
-    <delete file="${classes}/scala/tools/scalac4ant/*.class"/>
+    <delete dir="${classes}/scala/tools/scalac4ant"/>
   </target>
 </project>
