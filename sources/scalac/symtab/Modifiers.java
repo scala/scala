@@ -67,7 +67,7 @@ public interface Modifiers {
     int VARIANCES     = COVARIANT | CONTRAVARIANT;
     int CONSTRFLAGS   = CASE | JAVA;
     /** Module flags inherited by their module-class */
-    int MODULE2CLASSFLAGS = ACCESSFLAGS | DEPRECATED | SYNTHETIC | JAVA | PACKAGE;
+    int MODULE2CLASSFLAGS = ACCESSFLAGS | DEPRECATED | SYNTHETIC | JAVA | PACKAGE | CASE;
 
     public static class Helper {
 

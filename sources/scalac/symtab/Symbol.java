@@ -661,17 +661,15 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == CLASS && (flags & PACKAGE) == 0;
     }
 
-    /** Does this symbol denote a case class?
-     */
+    /** Does this symbol denote a case class? */
     public final boolean isCaseClass() {
         preInitialize();
         return kind == CLASS && (flags & CASE) != 0;
     }
 
-    /** Does this symbol denote a case object?
-     */
-    public final boolean isCaseObject() {
-        return isModuleClass() && (sourceModule().flags & CASE) != 0;
+    /** Does this symbol denote a case object? */
+    public final boolean isCaseModuleClass() {
+        return isModuleClass() && isCaseClass();
     }
 
     /** Does this symbol denote a uniform (i.e. parameterless) class? */

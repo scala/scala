@@ -854,18 +854,17 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       if (!hasImplementation(clazz, Names.toString)) {
 	ts.append(toStringMethod(clazz));
       }
-      if (!hasImplementation(clazz, Names.equals))
-	ts.append(equalsMethod(clazz));
-      if (!hasImplementation(clazz, Names.hashCode))
-	ts.append(hashCodeMethod(clazz));
+      if (!clazz.isModuleClass()) {
+        if (!hasImplementation(clazz, Names.equals))
+	  ts.append(equalsMethod(clazz));
+        if (!hasImplementation(clazz, Names.hashCode))
+	  ts.append(hashCodeMethod(clazz));
+      }
 
       // the following report error if impl exists
-      ts.append(caseElementMethod(clazz));
-      ts.append(caseArityMethod(clazz));
-      ts.append(tagMethod(clazz));
-    } else if  (clazz.isCaseObject()) {
-      if (!hasImplementation(clazz, Names.toString)) {
-	ts.append(toStringMethod(clazz));
+      if (!clazz.isModuleClass()) {
+        ts.append(caseElementMethod(clazz));
+        ts.append(caseArityMethod(clazz));
       }
       ts.append(tagMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
