@@ -85,9 +85,8 @@ public class TreeCreator implements TreeFactory {
     public Tree TypeDef(int pos,
                         int mods,
                         Name name,
-			TypeDef[] tparams,
                         Tree rhs) {
-        Tree t = new ExtTypeDef(mods, name, tparams, rhs);
+        Tree t = new ExtTypeDef(mods, name, rhs);
         t.pos = pos;
         return t;
     }
@@ -238,6 +237,12 @@ public class TreeCreator implements TreeFactory {
         return t;
     }
 
+
+    public Tree TypeTerm(int pos) {
+	Tree t = new TypeTerm();
+	t.pos = pos;
+	return t;
+    }
 
     public Tree SingletonType(int pos, Tree ref) {
         Tree t = new SingletonType(ref);

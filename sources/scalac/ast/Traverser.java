@@ -83,8 +83,7 @@ public class Traverser {
             traverse(rhs);
             return;
 
-        case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs):
-	    traverse(tparams);
+        case TypeDef(int mods, Name name, Tree rhs):
             traverse(rhs);
             return;
 
@@ -166,6 +165,9 @@ public class Traverser {
         case Select(Tree qualifier, Name selector):
             traverse(qualifier);
             return;
+
+	case TypeTerm():
+	    return;
 
 	case SingletonType(Tree ref):
 	    traverse(ref);

@@ -55,7 +55,6 @@ public interface TreeFactory {
     public Tree TypeDef(int pos,
                         int mods,
                         Name name,
-			TypeDef[] tparams,
                         Tree rhs);
 
     public Tree Import(int pos,
@@ -127,6 +126,8 @@ public interface TreeFactory {
 
     public Tree Literal(int pos,
                         Object value);
+
+    public Tree TypeTerm(int pos);
 
     public Tree SingletonType(int pos,
 			      Tree ref);

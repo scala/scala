@@ -222,12 +222,10 @@ public class Transformer extends Phase {
 			       transform(rhs));
 	case TypeDef(int mods,
 		     Name name,
-		     TypeDef[] tparams,
 		     Tree rhs):
 	    return copy.TypeDef(tree,
 				mods,
 				name,
-				transform(tparams),
 				transform(rhs));
 	case Import(Tree expr, Name[] selectors):
 	    return copy.Import(tree,
@@ -297,6 +295,8 @@ public class Transformer extends Phase {
 	    return copy.Ident(tree, name);
 	case Literal(Object value):
 	    return copy.Literal(tree, value);
+	case TypeTerm():
+	    return copy.TypeTerm(tree);
 	case SingletonType(Tree ref):
 	    return copy.SingletonType(tree,
 				      transform(ref));
@@ -340,7 +340,7 @@ public class Transformer extends Phase {
 	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams,
 	            Tree tpe, Tree rhs):
 
-	case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs):
+	case TypeDef(int mods, Name name, Tree rhs):
 
 	case Import(Tree expr):
 
@@ -377,6 +377,8 @@ public class Transformer extends Phase {
 	case Ident(Name name):
 
 	case Literal(int kind, Object value):
+
+	case TypeTerm():
 
 	case SingletonType(Tree ref):
 

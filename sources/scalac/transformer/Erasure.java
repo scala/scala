@@ -345,7 +345,7 @@ public class Erasure extends Transformer implements Modifiers {
 		tree, mods, name, tpe1, rhs1)
 		.setType(owntype);
 
-	case TypeDef(_, _, _, _):
+	case TypeDef(_, _, _):
 	    // eliminate
 	    return Tree.Empty;
 

@@ -94,10 +94,9 @@ public class StrictTreeFactory extends AbstractTreeCopyFactory {
     public Tree TypeDef(Tree tree,
                         int mods,
                         Name name,
-                        TypeDef[] tparams,
                         Tree rhs) {
         TypeDef t = (TypeDef)tree;
-        tree = make.TypeDef(t.pos, mods, name, tparams, rhs);
+        tree = make.TypeDef(t.pos, mods, name, rhs);
         attribute(tree, t);
         return tree;
     }
@@ -264,6 +263,13 @@ public class StrictTreeFactory extends AbstractTreeCopyFactory {
         tree = make.Literal(t.pos, value);
         attribute(tree, t);
         return tree;
+    }
+
+    public Tree TypeTerm(Tree tree) {
+	TypeTerm t = (TypeTerm) tree;
+	tree = make.TypeTerm(t.pos);
+	attribute(tree, t);
+	return tree;
     }
 
     public Tree SingletonType(Tree tree, Tree ref) {

@@ -9,12 +9,8 @@
 // $Id$
 
 package scala {
-  abstract class PartialFunction[A, B]() {
-
+  trait PartialFunction[A, B] {
     def apply(x: A): B;
-
     def isDefinedAt(x: A): scala.Boolean;
-
   }
-
 }

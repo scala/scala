@@ -67,7 +67,7 @@ public class CheckOwners extends Checker {
             case ModuleDef(_,_,_,_):
             case DefDef(_,_,_,_,_,_):
             case ValDef(_,_,_,_):
-            case TypeDef(_,_,_,_):
+            case TypeDef(_,_,_):
                 traverse(body[i], owner);
                 break;
             default:
@@ -134,9 +134,8 @@ public class CheckOwners extends Checker {
             traverse(rhs, tree.symbol());
         } break;
 
-        case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs): {
+        case TypeDef(int mods, Name name, Tree rhs): {
             check(tree);
-            traverse(tparams, tree.symbol());
             traverse(rhs, tree.symbol());
         } break;
 
@@ -152,7 +151,7 @@ public class CheckOwners extends Checker {
         case ModuleDef(_,_,_,_):
         case DefDef(_,_,_,_,_,_):
         case ValDef(_,_,_,_):
-        case TypeDef(_,_,_,_): {
+        case TypeDef(_,_,_): {
             Symbol sym = tree.symbol();
             if (sym != null && sym != Symbol.NONE) {
                 checkOwner(tree, sym);

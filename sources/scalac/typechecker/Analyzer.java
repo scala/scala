@@ -655,7 +655,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case DefDef(int mods, Name name, _, _, _, _):
 	    return enterSym(tree, new TermSymbol(tree.pos, name, owner, mods));
 
-	case TypeDef(int mods, Name name, _, _):
+	case TypeDef(int mods, Name name, _):
 	    int kind = (mods & (DEFERRED | PARAM)) != 0 ? TYPE : ALIAS;
 	    return enterSym(tree, new TypeSymbol(kind, tree.pos, name, owner, mods));
 
@@ -798,6 +798,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    if (tpe == Tree.Empty) {
+		pushContext(tree, sym, context.scope);
 		if (rhs == Tree.Empty) {
 		    if ((sym.owner().flags & ACCESSOR) != 0) {
 			// this is the paremeter of a variable setter method.
@@ -813,6 +814,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    ((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
 		    owntype = rhs.type.widen();
 		}
+		popContext();
 	    }  else {
 		owntype = transform(tpe, TYPEmode).type;
 	    }
@@ -835,7 +837,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    owntype = makeMethodType(tparamSyms, vparamSyms, restpe);
 	    break;
 
-	case TypeDef(int mods, Name name, Tree.TypeDef[] tparams, Tree rhs):
+	case TypeDef(int mods, Name name, Tree rhs):
 	    //todo: alwyas have context.owner as owner.
 	    if (sym.kind == TYPE) {
 		pushContext(rhs, context.owner, context.scope);
@@ -1073,8 +1075,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		qual.type.isStable())
 		symtype = Type.singleType(qual.type, sym);
 	    //System.out.println(qual.type + ".member: " + sym + ":" + symtype);//DEBUG
-	    return copy.Select(tree, qual, name)
-		.setSymbol(sym).setType(symtype);
+	    switch (tree) {
+	    case Select(_, _):
+		return copy.Select(tree, qual, name)
+		    .setSymbol(sym).setType(symtype);
+	    case SelectFromType(_, _):
+		return make.TypeTerm(tree.pos).setType(symtype);
+	    default:
+		throw new ApplicationError();
+	    }
 	}
     }
 
@@ -1600,7 +1609,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tpe1 = gen.mkType(rhs1.pos, rhs.type.widen());
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
+		    pushContext(tree, sym, context.scope);
 		    rhs1 = transform(rhs1, EXPRmode, sym.type());
+		    popContext();
 		}
 		return copy.ValDef(tree, mods, name, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
@@ -1624,15 +1635,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		return copy.DefDef(tree, mods, name, tparams1, vparams1, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
-	    case TypeDef(int mods, Name name, Tree.TypeDef[] tparams, Tree rhs):
+	    case TypeDef(int mods, Name name, Tree rhs):
 		pushContext(tree, sym, new Scope(context.scope));
-		reenterParams(tparams);
-		Tree.TypeDef[] tparams1 = transform(tparams);
 		int mode = TYPEmode;
 		if (sym.kind == ALIAS) mode |= FUNmode;
 		Tree rhs1 = transform(rhs, mode);
 		popContext();
-		return copy.TypeDef(tree, mods, name, tparams1, rhs1)
+		return copy.TypeDef(tree, mods, name, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
 	    case Import(Tree expr, Name[] selectors):
@@ -1913,9 +1922,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Literal(Object value):
 		return tree.setType(definitions.getType(value2TypeName(value)));
 
+	    case TypeTerm():
+		return tree;
+
 	    case SingletonType(Tree ref):
 		Tree ref1 = transform(ref, EXPRmode, Type.AnyType);
-		return copy.SingletonType(tree, ref1)
+		return make.TypeTerm(tree.pos)
 		    .setType(checkObjectType(tree.pos, ref1.type));
 
 	    case SelectFromType(Tree qual, Name name):
@@ -1936,40 +1948,43 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree[] refinements1 = transformStatSeq(refinements, Symbol.NONE);
 		checkAllOverrides(clazz);
 		popContext();
-		return copy.CompoundType(tree, parents1, refinements1)
+		return make.TypeTerm(tree.pos)
 		    .setType(self);
 
 	    case AppliedType(Tree tpe, Tree[] args):
 		Tree tpe1 = transform(tpe, TYPEmode | FUNmode);
 		Tree[] args1 = transform(args, TYPEmode);
 		Type[] argtypes = Tree.typeOf(args);
-		Symbol[] tparams = tpe1.type.typeParams();
+		//todo: this needs to be refined.
+		Symbol[] tparams =
+		    (Type.isSameAs(tpe1.type.typeArgs(), Symbol.type(tpe1.type.typeParams())))
+		    ? tpe1.type.typeParams()
+		    : Symbol.EMPTY_ARRAY;
+		Type owntype = Type.ErrorType;
 		if (tpe1.type != Type.ErrorType) {
-		    if (tparams.length != args.length) {
-			if (tparams.length == 0)
-			    return error(tree, tpe1.type +
-					 " does not take type parameters");
-			else
-			    return error(tree,
-					 "wrong number of type arguments for " +
-					 tpe1.type);
-		    } else {
+		    if (tparams.length == args.length) {
 			try {
 			    if (!context.delayArgs)
 				infer.checkBounds(tparams, argtypes, "");
+			    owntype = Type.appliedType(tpe1.type, argtypes);
 			} catch (Type.Error ex) {
-			    return error(tree, ex.msg);
+			    error(tree.pos, ex.msg);
 			}
+		    } else {
+			if (tparams.length == 0)
+			    error(tree.pos, tpe1.type +
+				  " does not take type parameters");
+			else
+			    error(tree.pos,
+				  "wrong number of type arguments for " +
+				  tpe1.type);
 		    }
-		    return copy.AppliedType(tree, tpe1, args1)
-			.setType(Type.appliedType(tpe1.type, argtypes));
-		} else {
-		    return tpe1;
 		}
+		return make.TypeTerm(tree.pos).setType(owntype);
 
 	    case CovariantType(Tree tpe):
 		Tree tpe1 = transform(tpe, TYPEmode);
-		return copy.CovariantType(tree, tpe1)
+		return make.TypeTerm(tree.pos)
 		    .setType(Type.covarType(tpe1.type));
 
 	    case FunType(_, _):

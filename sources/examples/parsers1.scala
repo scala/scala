@@ -7,35 +7,35 @@ case class Binop(op: Char, l: Tree, r: Tree): Tree extends Tree {}
 
 module Parse {
 
-  type Result[b] = Option[Pair[b, List[Char]]];
+  trait Parser[p] {
 
-  trait Parser[p] extends Function1[List[Char], Result[p]] {
+    type Result = Option[Pair[p, List[Char]]];
 
-    def apply(in: List[Char]): Result[p];
+    def apply(in: List[Char]): Result;
 
     def filter(p: p => Boolean) = new Parser[p] {
-      def apply(in: List[Char]): Result[p] = Parser.this.apply(in) match {
+      def apply(in: List[Char]): Result = Parser.this.apply(in) match {
         case Some(Pair(x, in1)) => if (p(x)) Some(Pair(x, in1)) else None()
         case n => n
       }
     }
 
     def map[b](f: p => b) = new Parser[b] {
-      def apply(in: List[Char]): Result[b] = Parser.this.apply(in) match {
+      def apply(in: List[Char]): Result = Parser.this.apply(in) match {
 	case Some(Pair(x, in1)) => Some(Pair(f(x), in1))
         case None() => None()
       }
     }
 
     def flatMap[b](f: p => Parser[b]) = new Parser[b] {
-      def apply(in: List[Char]): Result[b] = Parser.this.apply(in) match {
+      def apply(in: List[Char]): Result = Parser.this.apply(in) match {
 	case Some(Pair(x, in1)) => f(x)(in1)
         case None() => None()
       }
     }
 
     def ||| (def p: Parser[p]) = new Parser[p] {
-      def apply(in: List[Char]): Result[p] = Parser.this.apply(in) match {
+      def apply(in: List[Char]): Result = Parser.this.apply(in) match {
 	case None() => p(in)
 	case s => s
       }
@@ -64,7 +64,7 @@ module ExprParser {
   import Parse._;
 
   def chrWith(p: Char => Boolean) = new Parser[Char] {
-    def apply(in: List[Char]): Result[Char] = in match {
+    def apply(in: List[Char]): Result = in match {
       case List() => None()
       case (c :: in1) => if (p(c)) Some(Pair(c, in1)) else None()
     }

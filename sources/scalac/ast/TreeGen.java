@@ -86,66 +86,23 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute tree corresponding to given type.
      */
     public Tree mkType(int pos, Type type) {
-	Tree tree = mkTycon(pos, type);
-	switch (type) {
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (args.length != 0)
-		return make.AppliedType(pos, tree, mkType(pos, args))
-		    .setType(type);
-	}
-	return tree;
-    }
-
-    /** Build and attribute tree corresponding to given type constructor.
-     */
-    public Tree mkTycon(int pos, Type type) {
-	//System.out.println("making type " + type);//DEBUG
-        switch (type) {
-
-        case NoType:
-	    return Tree.Empty;
-
-	case ErrorType:
-	case AnyType:
-	    return make.Bad(pos).setSymbol(Symbol.ERROR).setType(type);
-
-	case ThisType(_):
-	case SingleType(_, _):
-	    return make.SingletonType(pos, mkStableId(pos, type)).setType(type);
-
-        case TypeRef(Type pre, Symbol sym, Type[] args):
-	    return mkRef(pos, pre, sym);
-
-	case CompoundType(Type[] parents, Scope members):
-	    if (parents.length == 1 && members.elems == Scope.Entry.NONE)
-		return mkType(pos, parents[0]);
-	    else
-		return make.CompoundType(
-		    pos, mkType(pos, parents), mkDefs(pos, members.elements()))
-		    .setType(type);
-
-	case CovarType(Type tp):
-	    return make.CovariantType(pos, mkType(pos, tp))
-		.setType(type);
-
-	case UnboxedType(_):
-	case UnboxedArrayType(_):
-	    return make.Ident(pos, Name.fromString(type.toString()).toTypeName())
-		.setType(type);
-
-	default:
-	    throw new ApplicationError("illegal type", type);
-        }
+	return TypeTerm(pos, type);
     }
 
     /** Build and attribute tree array corresponding to given type array.
      */
-    public Tree[] mkType(int pos, Type[] types) {
+    public Tree[] mkTypes(int pos, Type[] types) {
         Tree[] res = new Tree[types.length];
         for (int i = 0; i < types.length; i++) {
-	    res[i] = mkType(pos, types[i]);
+          res[i] = mkType(pos, types[i]);
         }
         return res;
+    }
+
+    /** Build and attribute tree corresponding to given type.
+     */
+    public Tree TypeTerm(int pos, Type type) {
+	return make.TypeTerm(pos).setType(type);
     }
 
     /** Build and attribute tree corresponding to symbol's declaration.
@@ -181,7 +138,7 @@ public class TreeGen implements Kinds, Modifiers {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    Tree ref = mkRef(pos, pre, sym.constructor());
 	    Tree constr = (args.length == 0) ? ref
-		: TypeApply(ref, mkType(sym.pos, args));
+		: TypeApply(ref, mkTypes(sym.pos, args));
 	    switch (parentType) {
 	    case MethodType(Symbol[] params, Type restpe):
 		assert params.length == 0 : parentType;
@@ -255,8 +212,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    pos,
 	    sym.flags & SOURCEFLAGS,
 	    sym.name,
-	    mkTypeParams(pos, sym.typeParams()),
-	    mkType(pos, symtype))
+	    TypeTerm(pos, symtype))
 	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }
 
@@ -301,7 +257,7 @@ public class TreeGen implements Kinds, Modifiers {
     }
 
     public Tree Typed(Tree tree, Type tp) {
-	return make.Typed(tree.pos, tree, mkType(tree.pos, tp)).setType(tp);
+	return make.Typed(tree.pos, tree, TypeTerm(tree.pos, tp)).setType(tp);
     }
 
     /** Build and attribute the assignment lhs = rhs
@@ -329,7 +285,8 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree New(int pos, Type pre, Symbol clazz,
 		    Type[] targs, Tree[] args) {
 	Tree constr = mkRef(pos, pre, clazz.constructor());
-	if (targs.length != 0) constr = TypeApply(constr, mkType(pos, targs));
+	if (targs.length != 0)
+	    constr = TypeApply(constr, mkTypes(pos, targs));
 	Tree base = Apply(constr, args);
 	return New(base);
     }
@@ -435,7 +392,7 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute super node with given type.
      */
     public Tree Super(int pos, Type type) {
-        return make.Super(pos, mkType(pos, type)).setType(type);
+        return make.Super(pos, TypeTerm(pos, type)).setType(type);
     }
 
     /** Build and attribute value/variable/let definition node whose signature
@@ -448,7 +405,7 @@ public class TreeGen implements Kinds, Modifiers {
 	return make.ValDef(pos,
 			   sym.flags & SOURCEFLAGS,
 			   sym.name,
-			   mkType(pos, symtype),
+			   TypeTerm(pos, symtype),
 			   rhs)
 	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }
@@ -469,7 +426,7 @@ public class TreeGen implements Kinds, Modifiers {
                            sym.name,
                            mkTypeParams(pos, symtype.typeParams()),
                            mkParams(pos, symtype),
-                           mkType(pos, symtype.resultType()),
+                           TypeTerm(pos, symtype.resultType()),
                            body)
             .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }

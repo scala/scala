@@ -451,7 +451,7 @@ class JVMGenerator {
             break;
 
         case Empty:
-        case TypeDef(_, _, _, _):
+        case TypeDef(_, _, _):
         case TypeApply(_, _):
         case FunType(_, _):
         case CompoundType(_, _):

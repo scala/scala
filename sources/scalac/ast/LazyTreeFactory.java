@@ -123,15 +123,13 @@ public class LazyTreeFactory extends AbstractTreeCopyFactory {
     public Tree TypeDef(Tree tree,
                         int mods,
                         Name name,
-			TypeDef[] tparams,
                         Tree rhs) {
         TypeDef t = (TypeDef)tree;
         if ((t.mods == mods) &&
             (t.name == name) &&
-	    (t.tparams == tparams) &&
             (t.rhs == rhs))
             return t;
-        tree = make.TypeDef(t.pos, mods, name, tparams, rhs);
+        tree = make.TypeDef(t.pos, mods, name, rhs);
         attribute(tree, t);
         return tree;
     }
@@ -349,6 +347,10 @@ public class LazyTreeFactory extends AbstractTreeCopyFactory {
         tree = make.Literal(t.pos, value);
         attribute(tree, t);
         return tree;
+    }
+
+    public Tree TypeTerm(Tree tree) {
+	return tree;
     }
 
     public Tree SingletonType(Tree tree,

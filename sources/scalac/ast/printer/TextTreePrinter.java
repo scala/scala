@@ -308,13 +308,11 @@ public class TextTreePrinter implements TreePrinter {
 
         case TypeDef(int mods,
                      Name name,
-		     Tree.TypeDef[] tparams,
                      Tree rhs):
             printModifiers(mods);
             print(KW_TYPE);
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
-	    printParams(tparams);
 	    if ((mods & (Modifiers.DEFERRED | Modifiers.PARAM)) != 0) printOpt(TXT_SUBTYPE, rhs, true);
             else printOpt(TXT_EQUAL, rhs, true);
             break;
@@ -470,6 +468,10 @@ public class TextTreePrinter implements TreePrinter {
             print(Text.Literal(str));
             printType(tree);
             break;
+
+	case TypeTerm():
+	    print(tree.type.toString());
+	    break;
 
 	case SingletonType(Tree ref):
 	    print(ref);
@@ -662,7 +664,7 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printParam(Tree tree) {
 	switch (tree) {
-	case TypeDef(int mods, Name name, _, Tree bound):
+	case TypeDef(int mods, Name name, Tree bound):
             printModifiers(mods);
             printSymbolDefinition(tree.symbol(), name);
             printOpt(TXT_SUBTYPE, bound, true);

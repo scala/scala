@@ -93,7 +93,7 @@ public class UnCurry extends OwnerTransformer
 		Tree tpe1 = gen.mkType(tpe.pos, newtype);
 		return copy.ValDef(tree, mods1, name, tpe1, rhs).setType(newtype);
 	    } else {
-		return tree;
+		return super.transform(tree);
 	    }
 
 	case TypeApply(Tree fn, Tree[] args):

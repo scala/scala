@@ -136,7 +136,6 @@ public class Tree {
      */
     public case TypeDef(int mods,
                         Name name,
-			TypeDef[] tparams,
                         Tree rhs) {
 	assert name.isTypeName();
 	if (!rhs.isType())
@@ -361,9 +360,16 @@ public class Tree {
     public case Literal(Object value);
 
     /**
+     * TypeTerm
+     * - introduced by: Analyzer
+     * - eliminated by: -
+     */
+    public case TypeTerm();
+
+    /**
      * Singleton type
      * - introduced by: parser
-     * - eliminated by: !!! ? (could be done by analyzer ?)
+     * - eliminated by: Analyzer
      */
     public case SingletonType(Tree ref) {
 	if (!ref.isTerm())
@@ -373,7 +379,7 @@ public class Tree {
     /**
      * Type selection
      * - introduced by: parser
-     * - eliminated by: !!! ? (could be done by analyzer ?)
+     * - eliminated by: Analyzer
      */
     public case SelectFromType(Tree qualifier,
 			       Name selector) {
@@ -385,7 +391,7 @@ public class Tree {
     /**
      * Function type
      * - introduced by: parser
-     * - eliminated by: !!! ? (could be done by analyzer ?)
+     * - eliminated by: Analyzer
      */
     public case FunType(Tree[] argtpes,
                         Tree restpe) {
@@ -399,7 +405,7 @@ public class Tree {
     /**
      * Object type (~ Template)
      * - introduced by: parser
-     * - eliminated by: !!! ? (could be done by analyzer ?)
+     * - eliminated by: Analyzer
      */
     public case CompoundType(Tree[] parents,
                              Tree[] refinements) {
@@ -415,7 +421,7 @@ public class Tree {
     /**
      * Applied type
      * - introduced by: parser
-     * - eliminated by: !!! ? (could be done by analyzer ?)
+     * - eliminated by: Analyzer
      */
     public case AppliedType(Tree tpe, Tree[] args) {
 	assert tpe.isType() : this;
@@ -468,6 +474,7 @@ public class Tree {
 	switch(this) {
         case Bad():
 	case Empty:
+	case TypeTerm():
 	case SingletonType(_):
 	case SelectFromType(_, _):
 	case CompoundType(_, _):
@@ -723,9 +730,9 @@ public class Tree {
 
 	public static final TypeDef[] EMPTY_ARRAY = new TypeDef[0];
 
-        public ExtTypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs)
+        public ExtTypeDef(int mods, Name name, Tree rhs)
         {
-            super(mods, name, tparams, rhs);
+            super(mods, name, rhs);
         }
 
         public boolean hasSymbol() {

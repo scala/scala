@@ -117,13 +117,11 @@ public class OwnerTransformer extends Transformer {
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    return copy.ValDef(
 		tree, mods, name, transform(tpe),
-		transform(rhs));
-
-	case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs):
-	    return copy.TypeDef(
-		tree, mods, name,
-		transform(tparams, tree.symbol()),
 		transform(rhs, tree.symbol()));
+
+	case TypeDef(int mods, Name name, Tree rhs):
+	    return copy.TypeDef(
+		tree, mods, name, transform(rhs, tree.symbol()));
 
 	default:
 	    return super.transform(tree);

@@ -64,7 +64,6 @@ public interface TreeCopyFactory {
     public Tree TypeDef(Tree tree,
                         int mods,
                         Name name,
-			TypeDef[] tparams,
                         Tree rhs);
 
     public Tree Import(Tree tree,
@@ -136,6 +135,8 @@ public interface TreeCopyFactory {
 
     public Tree Literal(Tree tree,
                         Object value);
+
+    public Tree TypeTerm(Tree tree);
 
     public Tree SingletonType(Tree tree,
 			      Tree ref);

@@ -71,6 +71,9 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 			while (i > 0 && (tparams[i-1].flags & SYNTHETIC) != 0)
 			    i--;
 			if (i < tparams.length) {
+			    if (global.debug)
+				global.log("adding proxies for " + sym + ": " + ArrayApply.toString(tparams));
+
 			    Type[] targs1 = new Type[tparams.length];
 			    System.arraycopy(map(targs), 0, targs1, 0, targs.length);
 			    while (i < tparams.length) {
@@ -103,6 +106,9 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 	    global.log("proxy " + fv + " in " + LambdaLift.asFunction(owner));
 	Symbol o = owner;
 	while (o.kind != NONE) {
+	    if (global.debug)
+		global.log("looking in " +  LambdaLift.asFunction(o) + " " +
+		    ArrayApply.toString(o.typeParams()));
 	    Symbol fowner = LambdaLift.asFunction(o);
 	    if (fv.owner() == fowner) return fv;
 	    Type ft = (fowner.isUpdated(nextPhase)) ? fowner.typeAt(nextPhase)

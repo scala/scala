@@ -1176,8 +1176,7 @@ public class Parser implements Tokens {
 	} else {
 	    tp = scalaDot(pos, Names.Any.toTypeName());
 	}
-	return make.TypeDef(pos, Modifiers.PARAM, name.toTypeName(),
-			    Tree.ExtTypeDef.EMPTY_ARRAY, tp);
+	return make.TypeDef(pos, Modifiers.PARAM, name.toTypeName(), tp);
     }
 
 //////// DEFS ////////////////////////////////////////////////////////////////
@@ -1454,16 +1453,14 @@ public class Parser implements Tokens {
         Name name = ident().toTypeName();
 	if (s.token == SUBTYPE) {
 	    s.nextToken();
-	    return make.TypeDef(pos, mods | Modifiers.DEFERRED, name,
-				Tree.ExtTypeDef.EMPTY_ARRAY, type());
+	    return make.TypeDef(pos, mods | Modifiers.DEFERRED, name, type());
 	} else if (s.token == EQUALS) {
 	    s.nextToken();
-            return make.TypeDef(pos, mods, name,
-				Tree.ExtTypeDef.EMPTY_ARRAY, type());
+            return make.TypeDef(pos, mods, name, type());
 	} else if (s.token == SEMI || s.token == COMMA) {
 	    return make.TypeDef(
 		pos, mods | Modifiers.DEFERRED, name,
-		Tree.ExtTypeDef.EMPTY_ARRAY, scalaDot(pos, Names.Any.toTypeName()));
+		scalaDot(pos, Names.Any.toTypeName()));
 	} else {
 	    return syntaxError("`=' or `<:' expected", true);
 	}
