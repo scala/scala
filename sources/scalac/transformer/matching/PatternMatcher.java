@@ -301,6 +301,8 @@ public class PatternMatcher extends PatternTool {
                     }
                 return args;
             case Sequence(Tree[] ts):
+		//if( TestRegTraverser.apply( tree ) )
+		//  return Tree.EMPTY_ARRAY; // let sequence matcher handle it
             	return ts;
             default:
                 return Tree.EMPTY_ARRAY;
@@ -381,8 +383,6 @@ public class PatternMatcher extends PatternTool {
 	case Literal(Object value):
 	    return mk.ConstantPat(tree.pos, getConstrType(tree.type), value);
 	case Sequence(Tree[] ts):
-	    return mk.SequencePat(tree.pos, tree.type, ts.length, tree);
-	case Subsequence(Tree[] ts):
 	    return mk.SequencePat(tree.pos, tree.type, ts.length, tree);
 	case Alternative(Tree[] ts): // CAN THIS WORK ?
 	    assert ts.length > 0;
@@ -687,6 +687,8 @@ public class PatternMatcher extends PatternTool {
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
             case SequencePat(Symbol casted, int len, Tree tree):
+		//return callSequenceMatcher( node, selector );
+
 		if( TestRegTraverser.apply( tree ) )
 		    {
 			//System.err.println("calling sequence matcher");
@@ -766,12 +768,14 @@ public class PatternMatcher extends PatternTool {
 		    defaultNode = node;
 		}
 	} while (defaultNode == null) ;
-
+	System.out.println("collectSeqPats(1):"+seqPatNodes);
+	System.out.println("collectSeqPats(2):"+bodies);
 	return defaultNode;
     }
 
     Tree callSequenceMatcher( PatternNode node,
 			      Tree selector) {
+	System.out.println("callSequenceMatcher("+node+","+selector+")");
 
 	/*    ???????????????????????? necessary to test whether is a Seq?
 	      make.If(selector.pos,

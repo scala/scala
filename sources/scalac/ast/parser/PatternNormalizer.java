@@ -42,37 +42,26 @@ public class PatternNormalizer {
     //
 
 
-    /** checks whether
-     *  - subsequences appear properly below sequence nodes only.
+    /** checks whether TO DO TO DO TO DO
      *  - @-recursion occurs only at the end just below a sequence
      *  returns true if the tree is ok.
      *  inSeq: flag, true if we are in a sequence '[' ... ']'
      *  t: the tree to be checked
      */
-    protected boolean check( Tree t, boolean inSeq ) {
+    protected boolean check1( Tree t ) {
 	switch( t ) {
 
 	case Literal( _ ):
 	    return true;
 
 	case Apply( _, Tree[] args ):
-	    return check( args, true ); // could be in sequence !
+	    return check1( args );
 
 	case Sequence( Tree[] trees ):
-	    return check( trees, true ); // in seq now
-
-	case Subsequence( Tree[] trees ):
-	    //System.out.println( t.toString() + inSeq ); // CHECK
-	    if( !inSeq ) {
-		unit.error( t.pos ,
-			    "subsequence without surrounding '[' ']'");
-		return false;
-	    }
-	    return check( trees, inSeq );
+	    return check1( trees );
 
 	case Alternative( Tree[] trees ):
-	    //System.out.println( t.toString() );
-	    return check( trees, inSeq );
+	    return check1( trees );
 
 	case Bind( Name var, Tree tree ):
               this.boundVars.put( t.symbol(), Boolean.FALSE );
@@ -83,7 +72,7 @@ public class PatternNormalizer {
                     // do something to RESTRICT recursion
               }
               */
-              return check( tree, inSeq );
+              return check1( tree );
 
 	case Typed( _, _):
 	    return true;
@@ -103,7 +92,7 @@ public class PatternNormalizer {
 	    return true;
 
             /*
-	case Empty: // may appear just as Subsequence Subsequence
+	case Empty: // may appear just as Sequence Sequence
 	    if ( !inSeq )
 		unit.error( t.pos,
 			    "empty subsequence without surrounding '['']'");
@@ -118,9 +107,9 @@ public class PatternNormalizer {
 
     /** checkPat for every tree in array of trees, see below
      */
-      protected boolean check( Tree[] trees, boolean inSeq ) {
+      protected boolean check1( Tree[] trees ) {
 	for( int i = 0; i < trees.length; i++ )
-	    if( !check(  trees[ i ], inSeq ))
+	    if( !check1(  trees[ i ] ))
 		return false;
 	return true;
     }
@@ -133,7 +122,7 @@ public class PatternNormalizer {
        */
       public boolean check( Tree pat ) {
             this.boundVars = new HashMap();
-            return check( pat, false );
+            return check1( pat );
     }
 
 
@@ -141,9 +130,9 @@ public class PatternNormalizer {
     /////////////// NORMALIZING patterns /////////////////////////////////////////////////////////////
     //
 
-    boolean isEmptySubsequence( Tree tree ) {
+    boolean isEmptySequence( Tree tree ) {
 	switch( tree ) {
-	case Subsequence( Tree[] trees ):
+	case Sequence( Tree[] trees ):
 	    //return ((trees.length == 1)&&( trees[ 0 ] == Tree.Empty ));
 	    return trees.length == 0;
 	default:
@@ -151,9 +140,9 @@ public class PatternNormalizer {
 	}
     }
 
-    boolean isSubsequence( Tree tree ) {
+    boolean isSequence( Tree tree ) {
 	switch( tree ) {
-	case Subsequence( _ ):
+	case Sequence( _ ):
 	    return true;
 	default:
 	    return false;
@@ -165,23 +154,23 @@ public class PatternNormalizer {
      */
     void appendNonEmpty( TreeList ts, Tree[] trees ) {
 	for( int i = 0; i < trees.length; i++ )
-	    if( !isEmptySubsequence( trees[ i ] ) )
+	    if( !isEmptySequence( trees[ i ] ) )
 		ts.append( trees[ i ] );
     }
     /** appends tree to ts if it is non-empty, leaves ts unchanged.
      */
     void appendNonEmpty( TreeList ts, Tree tree ) {
 	//if( tree != Tree.Empty )
-	if ( !isEmptySubsequence(tree))
+	if ( !isEmptySequence(tree))
 	    ts.append( tree );
     }
 
-    /** takes a (possibly empty) TreeList and make a Subsequence out of it
+    /** takes a (possibly empty) TreeList and make a Sequence out of it
      */
-    Tree treeListToSubsequence( int pos, TreeList ts ) {
-	if( ts.length() == 0 )
-              return make.Subsequence( pos, Tree.EMPTY_ARRAY);
-	return make.Subsequence( pos, ts.toArray() );
+    Tree treeListToSequence( int pos, TreeList ts ) {
+	//if( ts.length() == 0 ) // artefact of old version, where empty sequence was Subsequence node. delete soon
+	//return make.Sequence( pos, Tree.EMPTY_ARRAY);
+	return make.Sequence( pos, ts.toArray() );
     }
 
 
@@ -220,16 +209,14 @@ public class PatternNormalizer {
 	    case 1:
 		return newtrees[ 0 ];
 	    case 0:
-		return make.Subsequence( tree.pos, Tree.EMPTY_ARRAY );
+		return make.Sequence( tree.pos, Tree.EMPTY_ARRAY );
 	    default:
 		return make.Alternative( tree.pos, cs.toArray() );
 	    }
 
 	    // recursive call
-	case Sequence( Tree[] trees ):
-	    return make.Sequence( tree.pos, flattenAlternatives( trees ) );
-	case Subsequence( Tree[] trees):
-	    return make.Subsequence( tree.pos, flattenAlternatives( trees ));
+	case Sequence( Tree[] trees):
+	    return make.Sequence( tree.pos, flattenAlternatives( trees ));
 	case Bind( Name var, Tree body ):
 	    return make.Bind( tree.pos, var, flattenAlternative( body ));
 	default:
@@ -256,55 +243,66 @@ public class PatternNormalizer {
 
 
 
-    /** (2) nested `Subsequence' nodes are flattened (( clique elimination ))
+    /** (2) nested `Sequence' nodes are flattened (( clique elimination ))
      *      nested empty subsequences get deleted
      */
 
-    // apply `flattenSubsequence' to each tree in trees
-    Tree[] flattenSubsequences( Tree[] trees ) {
+    // apply `flattenSequence' to each tree in trees
+    Tree[] flattenSequences( Tree[] trees ) {
 	Tree[] res = new Tree[ trees.length ];
 	for( int i = 0; i < trees.length; i++ )
-	    res[ i ] = flattenSubsequence( trees[ i ] );
+	    res[ i ] = flattenSequence( trees[ i ] );
 	return res;
     }
     // main algo for (2)
-    Tree flattenSubsequence( Tree tree ) {
+    Tree flattenSequence( Tree tree ) {
+	//System.out.println("flattenSequence of "+tree);
 	switch( tree ) {
+	    /*
 	case Sequence( Tree[] trees ):
-	    trees = flattenSubsequences( trees );
-	    if(( trees.length == 1 )&&( isEmptySubsequence( trees[ 0 ] )))
+	    trees = flattenSequences( trees );
+	    if(( trees.length == 1 )&&( isEmptySequence( trees[ 0 ] )))
 		trees = Tree.EMPTY_ARRAY;
 	    return make.Sequence( tree.pos, trees );
-	case Subsequence( Tree[] trees ):
+	    */
+	case Sequence( Tree[] trees ):
 	    TreeList ts = new TreeList();
 	    for( int i = 0; i < trees.length; i++ ) {
 		Tree child = trees[ i ];
 		switch( child ) {
-		case Subsequence( Tree[] child_trees ): // grab its flattened children
-		    ts.append( flattenSubsequenceChildren( child_trees ) );
+		case Sequence( Tree[] child_trees ): // grab its flattened children
+		    ts.append( flattenSequenceChildren( child_trees ) );
 		    break;
 		default:
 		    ts.append( child );
 		}
 	    }
-	    return treeListToSubsequence( tree.pos, ts );
+	    /*
+	      System.out.print("ts = ");
+	    for(int jj = 0; jj<ts.length(); jj++) {
+		System.out.print(ts.get( jj ).toString()+" ");
+	    }
+	    System.out.println();
+	    */
+	    return treeListToSequence( tree.pos, ts ) ;
+
 	    // recursive call
 	case Alternative( Tree[] choices ):
-	    return make.Alternative( tree.pos, flattenSubsequences( choices ));
+	    return make.Alternative( tree.pos, flattenSequences( choices ));
 	case Bind( Name var, Tree body ):
-	    return make.Bind( tree.pos, var, flattenSubsequence( body ));
+	    return make.Bind( tree.pos, var, flattenSequence( body ));
 	default:
 	    return tree;
 	}
     }
 
-    // main algo for (2), precondition: trees are children of a Subsequence node
-    TreeList flattenSubsequenceChildren( Tree[] trees ) {
+    // main algo for (2), precondition: trees are children of a Sequence node
+    public TreeList flattenSequenceChildren( Tree[] trees ) {
 	TreeList ts = new TreeList();
 	for( int j = 0; j < trees.length; j++ ) {
-	    Tree tree = flattenSubsequence( trees[ j ] );
+	    Tree tree = flattenSequence( trees[ j ] );
 	    switch( tree ) {
-	    case Subsequence( Tree[] child_trees ):
+	    case Sequence( Tree[] child_trees ):
 		appendNonEmpty( ts, child_trees );
 		break;
 	    default:
@@ -316,51 +314,51 @@ public class PatternNormalizer {
 
 
     /** (3) in `Sequence':
-     *             children of direct successor nodes labelled `Subsequence' are moved up
+     *             children of direct successor nodes labelled `Sequence' are moved up
      *      (( tree traversal, left-to-right traversal ))
      */
 
-    /** applies `elimSubsequence' to each tree is ts
+    /** applies `elimSequence' to each tree is ts
      */
-    Tree[] elimSubsequences( Tree[] ts ) {
+    Tree[] elimSequences( Tree[] ts ) {
 	Tree[] res = new Tree[ ts.length ];
 	for( int i = 0; i < ts.length; i++ )
-	    res[ i ] = elimSubsequence( ts[ i ] );
+	    res[ i ] = elimSequence( ts[ i ] );
 	return res;
     }
 
-    Tree elimSubsequence( Tree tree ) {
+    Tree elimSequence( Tree tree ) {
 	switch( tree ) {
 	case Sequence( Tree[] trees ):
 	    // might be empty ...
 	    Tree[] newtrees = mergeHedge( trees ).toArray();
-	    if(( newtrees.length == 1 )&&( isEmptySubsequence( newtrees[ 0 ] )))
+	    if(( newtrees.length == 1 )&&( isEmptySequence( newtrees[ 0 ] )))
 		return make.Sequence( tree.pos, Tree.EMPTY_ARRAY );
 	    return make.Sequence( tree.pos, newtrees );
 
 	    // recurse
-	case Subsequence( Tree[] trees ): // after normalization (2), Subsequence is flat
+	    //case Sequence( Tree[] trees ): // after normalization (2), Sequence is flat
 	    /*
 	    TreeList ts = new TreeList();
 	    for( int i = 0; i < trees.length; i++ ) {
 		Tree t = trees[ i ];
 		//if( t != Tree.Empty )                          // forget empty subsequences
-		    ts.append( elimSubsequence( t )); // recurse
+		    ts.append( elimSequence( t )); // recurse
 	    }
-	    return treeListToSubsequence( tree.pos, ts );
+	    return treeListToSequence( tree.pos, ts );
 	    */
-	    return make.Subsequence( tree.pos, elimSubsequences( trees ));
+	    //return make.Sequence( tree.pos, elimSequences( trees ));
 	case Alternative( Tree[] choices ):
-	    Tree result = make.Alternative( tree.pos, elimSubsequences( choices ) );
+	    Tree result = make.Alternative( tree.pos, elimSequences( choices ) );
 	    return flattenAlternative( result ); // apply
 	case Bind( Name var, Tree body ):
-	    return make.Bind( tree.pos, var, elimSubsequence( body ));
+	    return make.Bind( tree.pos, var, elimSequence( body ));
 	default:
 	    return tree; // nothing to do
 	}
     }
 
-    /** runs through an array of trees, merging adjacent `Subsequence' nodes if possible
+    /** runs through an array of trees, merging adjacent `Sequence' nodes if possible
      *  returns a (possibly empty) TreeList
      *  precondition: trees are children of a Sequence node
      */
@@ -399,25 +397,25 @@ public class PatternNormalizer {
      */
     Tree mergeThem( Tree left, Tree right ) {
 	switch( left ) {
-	case Subsequence( Tree[] treesLeft ):             // left tree is subsequence
+	case Sequence( Tree[] treesLeft ):             // left tree is subsequence
 	    TreeList ts = new TreeList();
 	    appendNonEmpty( ts, treesLeft );
 	    switch( right ) {
-	    case Subsequence( Tree[] treesRight ):
+	    case Sequence( Tree[] treesRight ):
 		appendNonEmpty( ts, treesRight ); // ...and right tree is subsequence
 		break;
 	    default:
 		ts.append( right );                       // ...and right tree is atom
 	    }
-	    return treeListToSubsequence( left.pos, ts );
+	    return treeListToSequence( left.pos, ts );
 
 	default:                                          // left tree is atom
 	    switch( right ) {
-	    case Subsequence( Tree[] treesRight ):
+	    case Sequence( Tree[] treesRight ):
 		TreeList ts = new TreeList();
 		ts.append( left );
 		appendNonEmpty( ts, treesRight ); // ...and right tree is subsequence
-		return treeListToSubsequence( left.pos, ts );
+		return treeListToSequence( left.pos, ts );
 	    }
 	}
 	return null;                                      // ...and right tree is atom -- no merge
@@ -426,7 +424,7 @@ public class PatternNormalizer {
 
 
     /* (4) If `Alternative' at least one subsequence branch, then we wrap every atom that may
-     *        occur in a `Subsequence' tree
+     *        occur in a `Sequence' tree
      *       (( tree traversal ))
      */
 
@@ -448,8 +446,6 @@ public class PatternNormalizer {
                   // recursive
             case Sequence( Tree[] trees ):
                   return make.Sequence( tree.pos, wrapAlternatives( trees ));
-            case Subsequence( Tree[] trees ):
-                  return make.Subsequence( tree.pos, wrapAlternatives( trees ));
             case Bind(Name var, Tree body ):
                   return make.Bind( tree.pos, var, wrapAlternative( body ));
 
@@ -486,7 +482,7 @@ public class PatternNormalizer {
 	for( int i = 0; i < choices.length; i++ )
 	    newchoices[ i ] = wrapAlternative( choices[ i ] ); // recursive call
 
-	if( hasSubsequenceBranch( newchoices ))
+	if( hasSequenceBranch( newchoices ))
 	    for( int i = 0; i < choices.length; i++ )
 		newchoices[ i ] = wrapElement( choices[ i ] );
 	return newchoices;
@@ -494,30 +490,30 @@ public class PatternNormalizer {
 
     /** returns true if at least one tree in etrees is a subsequence value
      */
-    boolean hasSubsequenceBranch( Tree[] trees ) {
+    boolean hasSequenceBranch( Tree[] trees ) {
 	boolean isSubseq = false;
 	for( int i = 0; i < trees.length && !isSubseq; i++ )
-	    isSubseq |= isSubsequenceBranch( trees[ i ] );
+	    isSubseq |= isSequenceBranch( trees[ i ] );
 	return isSubseq;
     }
 
     /*  returns true if the argument is a subsequence value, i.e. if
-     *  is is labelled `Subsequence' or  a `Bind' or an `Alternative' with a `Subsequence' node below
+     *  is is labelled `Sequence' or  a `Bind' or an `Alternative' with a `Sequence' node below
      *  precondition: choices are in normal form w.r.t. to (4)
      */
-    boolean isSubsequenceBranch( Tree tree ) {
+    boolean isSequenceBranch( Tree tree ) {
 	switch( tree ) {
-	case Subsequence( _ ):
+	case Sequence( _ ):
 	    return true;
 	case Alternative( Tree[] trees ): // normal form -> just check first child
 	    switch( trees[ 0 ] ) {
-	    case Subsequence( _ ):
+	    case Sequence( _ ):
 		return true;
 	    default:
 		return false;
 	    }
 	case Bind( _, Tree body ):
-	    return isSubsequenceBranch( body );
+	    return isSequenceBranch( body );
 	default:
 	    return false;
 	}
@@ -525,10 +521,10 @@ public class PatternNormalizer {
 
     Tree wrapElement( Tree tree ) {
 	switch( tree ) {
-	case Subsequence(_):
+	case Sequence(_):
 	    return tree;
 	default:
-	    return make.Subsequence(tree.pos, new Tree[] { tree } );
+	    return make.Sequence(tree.pos, new Tree[] { tree } );
 	}
     }
 

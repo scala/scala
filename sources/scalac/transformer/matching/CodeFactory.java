@@ -267,7 +267,7 @@ class CodeFactory extends PatternTool {
     }
 
     Type getElemType( Type seqType ) {
-	System.err.println("getElemType("+seqType+")");
+	//System.err.println("getElemType("+seqType+")");
 	Symbol seqClass = defs.getType( Name.fromString("scala.Seq") ).symbol();
 	assert seqClass != Symbol.NONE : "did not find Seq";
 

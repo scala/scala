@@ -1004,7 +1004,7 @@ public class Parser implements Tokens {
 
 	if( this.pN.check( pat ) ) { // reports syntax errors as side effect
 	    // normalize
-	    Tree res = pN.wrapAlternative( pN.elimSubsequence( pN.flattenSubsequence ( pat )));
+	    Tree res = pN.wrapAlternative( pN.elimSequence( pN.flattenSequence ( pat )));
 	    return res;
         }
 	//syntaxError( pos, "invalid pattern", false );
@@ -1063,8 +1063,8 @@ public class Parser implements Tokens {
                 return make.Bind(s.pos, zname,
                     pN.flattenAlternative(
                         make.Alternative(s.pos, new Tree[] {
-                            make.Subsequence(s.pos, Tree.EMPTY_ARRAY),
-                            pN.flattenSubsequence(make.Subsequence(s.pos, new Tree[] {
+                            make.Sequence(s.pos, Tree.EMPTY_ARRAY),
+                            pN.flattenSequence(make.Sequence(s.pos, new Tree[] {
                                 top,
                                 zvar
                             }))
@@ -1076,11 +1076,11 @@ public class Parser implements Tokens {
                 Tree zvar = make.Ident(s.pos, zname);
 
                 return make.Bind(s.pos, zname,
-                    pN.flattenSubsequence(make.Subsequence(s.pos, new Tree[] {
+                    pN.flattenSequence(make.Sequence(s.pos, new Tree[] {
                         top,
                         pN.flattenAlternative(make.Alternative(s.pos, new Tree[] {
                             zvar,
-                            make.Subsequence(s.pos, Tree.EMPTY_ARRAY)
+                            make.Sequence(s.pos, Tree.EMPTY_ARRAY)
                         }))
                     })));
             }
@@ -1088,7 +1088,7 @@ public class Parser implements Tokens {
                 s.nextToken();
                 return pN.flattenAlternative(make.Alternative(s.pos, new Tree[] {
                     top,
-                    make.Subsequence(s.pos, Tree.EMPTY_ARRAY)}));
+                    make.Sequence(s.pos, Tree.EMPTY_ARRAY)}));
             }
         }
         while ((s.token == IDENTIFIER)&&( s.name != BAR )) {
@@ -1112,10 +1112,10 @@ public class Parser implements Tokens {
         switch (s.token) {
         case RPAREN:
         case COMMA:
-            return make.Subsequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
+            return make.Sequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
         case IDENTIFIER:
             if (s.name == BAR) {
-                return make.Subsequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
+                return make.Sequence(s.pos, Tree.EMPTY_ARRAY); // ((nothing))
             }
             // else fall through to case THIS
         case THIS:
@@ -1153,8 +1153,8 @@ public class Parser implements Tokens {
             if (ts.length == 1)
                 t = ts[0];
             else {
-                t = pN.flattenSubsequence(make.Subsequence(s.pos, ts));
-                t = pN.elimSubsequence(t);
+                t = pN.flattenSequence(make.Sequence(s.pos, ts));
+                t = pN.elimSequence(t);
             }
             accept(RPAREN);
             return t;

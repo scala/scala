@@ -21,7 +21,6 @@ import Tree.Bind;
 	switch (tree) {
 	case Alternative(Tree[] ts):
 	case Bind(_, _):
-	case Subsequence(_):
 	    result = true;
 	    break;
 	default:

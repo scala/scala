@@ -48,9 +48,9 @@ class BerrySethi {
             case Apply(_, _):
                   return false;
             case Sequence( Tree[] trees ):
-                  return trees.length == 0;
-            case Subsequence( Tree[] trees ):
-                  return nullable( trees );
+                  return (trees.length == 0) || nullable( trees );
+		  //case Subsequence( Tree[] trees ):
+                  //return
             case Bind(Name n, Tree t):
                   /*
                      if( isStar( n ) ) // generated for star/plus(?)
@@ -110,8 +110,8 @@ class BerrySethi {
                   TreeSet tmp = new TreeSet();
                   tmp.add( (Integer) posMap.get( pat )); // singleton set
                   return tmp;
-            case Subsequence( Tree[] trees ):
-                  return compFirst( trees );
+		  //case Subsequence( Tree[] trees ):
+                  //return compFirst( trees );
             case Alternative( Tree[] trees ):
                   TreeSet tmp = new TreeSet();
                   for( int i = 0; i < trees.length; i++ ) {
@@ -149,8 +149,8 @@ class BerrySethi {
                   TreeSet tmp = new TreeSet();
                   tmp.add( (Integer) posMap.get( pat )); // singleton set
                   return tmp;
-            case Subsequence( Tree[] trees ):
-                  return compLast( trees );
+		  //case Subsequence( Tree[] trees ):
+                  //return compLast( trees );
             case Alternative( Tree[] trees ):
                   TreeSet tmp = new TreeSet();
                   for( int i = 0; i < trees.length; i++ ) {
@@ -250,7 +250,7 @@ class BerrySethi {
        */
       TreeSet compFollow1( TreeSet fol, Tree pat ) {
             switch( pat ) {
-            case Subsequence(Tree[] trees):
+            case Sequence(Tree[] trees):
                   TreeSet first = null;
                   int i = trees.length;
                   if( i > 0 ) { // is nonempty
@@ -265,6 +265,7 @@ class BerrySethi {
                   }
                   if( null == first ) first = new TreeSet();
                   return first;
+
             case Alternative(Tree[] choices):
                   TreeSet first = new TreeSet();
                   for( int i = choices.length - 1; i >= 0; --i ) {
@@ -327,7 +328,6 @@ class BerrySethi {
                   //System.out.println("Ident("+n+",...) follow:"+tset);
                   return first;
 
-            case Sequence( _ ):
             case Apply(_, _):
             case Literal( _ ):
             case Typed(_,_):
@@ -369,7 +369,6 @@ class BerrySethi {
             switch( pat ) {
 
                   // (is tree automaton stuff, more than Berry-Sethi)
-            case Sequence( _ ):
             case Apply( _, _ ):
             case Typed( _, _ ):
             case Select( _, _ ):
@@ -384,7 +383,7 @@ class BerrySethi {
 
                   return ;
 
-            case Subsequence( Tree[] trees ):
+            case Sequence( Tree[] trees ):
                   for( int i = 0; i < trees.length; i++ ) {
                         traverse( trees[ i ] );
                   }
@@ -553,8 +552,8 @@ class BerrySethi {
             */
             //System.out.println( nullableSequence( pat )); // UNIT TEST
             switch( pat ) {
-            case Subsequence( Tree[] subexpr ): // NEW VERSION
-		return automatonFrom( new Tree.Sequence( subexpr ), finalTag ); // NEW VERSION
+		//case Subsequence( Tree[] subexpr ): // NEW VERSION
+		//return automatonFrom( new Tree.Sequence( subexpr ), finalTag ); // NEW VERSION
             case Sequence( Tree[] subexpr ):
                   initialize( subexpr );
 

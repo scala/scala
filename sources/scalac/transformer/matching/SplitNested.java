@@ -51,8 +51,8 @@ public class SplitNested {
                   return new Tree.Alternative( split( trees )) ;
 
 
-            case Subsequence(Tree[] trees):
-                  return new Tree.Subsequence( split( trees )) ;
+		  //case Subsequence(Tree[] trees):
+                  //return new Tree.Subsequence( split( trees )) ;
 
             default:
                   return pat;
