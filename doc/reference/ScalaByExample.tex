@@ -2732,7 +2732,7 @@ val plus1: (int => int)  =  (x: int) => x + 1;
 plus1(2)
 \end{lstlisting}
 This is expanded into the following object code.
-\begin{verbatim}
+\begin{lstlisting}
 val plus1: Function1[int, int] = new Function1[int, int] {
   def apply(x: int): int = x + 1
 }
