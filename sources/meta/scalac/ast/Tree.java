@@ -37,6 +37,9 @@ public class Tree {
     private static final TreeSymbol HasSym = TreeSymbol.HasSym;
     private static final TreeSymbol DefSym = TreeSymbol.DefSym;
 
+    private static final TreeFieldLink SymFlags = TreeFieldLink.SymFlags;
+    private static final TreeFieldLink SymName  = TreeFieldLink.SymName;
+
     private final List list = new ArrayList();
 
     //########################################################################
@@ -131,8 +134,8 @@ public class Tree {
         n_ClassDef.
             setDescription("Class and data declaration").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_int, "mods").
-            addField(t_TypeName, "name").
+            addField(t_int, "mods", SymFlags).
+            addField(t_TypeName, "name", SymName).
             addField(t_TypeDefs, "tparams").
             addField(t_ValDefss, "vparams").
             addField(t_TypeTree, "tpe").
@@ -147,16 +150,16 @@ public class Tree {
         n_ModuleDef.
             setDescription("Module declaration").
             setRange(Phase.PARSER, Phase.UNKNOWN).
-            addField(t_int, "mods").
-            addField(t_TermName, "name").
+            addField(t_int, "mods", SymFlags).
+            addField(t_TermName, "name", SymName).
             addField(t_TypeTree, "tpe").
             addField(t_Template, "impl");
 
         n_ValDef.
             setDescription("Value declaration (var or let)").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_int, "mods").
-            addField(t_TermName, "name").
+            addField(t_int, "mods", SymFlags).
+            addField(t_TermName, "name", SymName).
             addField(t_TypeTree, "tpe").
             addField(t_TermTree, "rhs");
 
@@ -171,8 +174,8 @@ public class Tree {
         n_DefDef.
             setDescription("Function declaration (def)").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_int, "mods").
-            addField(t_TermName, "name").
+            addField(t_int, "mods", SymFlags).
+            addField(t_TermName, "name", SymName).
             addField(t_TypeDefs, "tparams").
             addField(t_ValDefss, "vparams").
             addField(t_TypeTree, "tpe").
@@ -181,8 +184,8 @@ public class Tree {
         n_TypeDef.
             setDescription("Type declaration").
             setRange(Phase.PARSER, Phase.ERASURE). // !!! could/should be removed earlier?)
-            addField(t_int, "mods").
-            addField(t_TypeName, "name").
+            addField(t_int, "mods", SymFlags).
+            addField(t_TypeName, "name", SymName).
             addField(t_TypeTree, "rhs");
 
         n_Import.
@@ -284,12 +287,12 @@ public class Tree {
             setDescription("Designator").
             setRange(Phase.START, Phase.END).
             addField(t_TermTree, "qualifier").
-            addField(t_TestName, "selector");
+            addField(t_TestName, "selector", SymName);
 
         n_Ident.
             setDescription("Identifier").
             setRange(Phase.START, Phase.END).
-            addField(t_TestName, "name");
+            addField(t_TestName, "name", SymName);
 
         n_Literal.
             setDescription("Literal").
@@ -309,7 +312,7 @@ public class Tree {
             setDescription("Type selection").
             setRange(Phase.PARSER, Phase.ANALYZER).
             addField(t_TypeTree, "qualifier").
-            addField(t_TypeName, "selector");
+            addField(t_TypeName, "selector", SymName);
 
         n_FunType.
             setDescription("Function type").

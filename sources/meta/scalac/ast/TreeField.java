@@ -18,13 +18,15 @@ public class TreeField {
 
     public final Type type;
     public final String name;
+    public final TreeFieldLink link;
 
     //########################################################################
     // Public Constructors
 
-    public TreeField(Type type, String name) {
+    public TreeField(Type type, String name, TreeFieldLink link) {
         this.type = type;
         this.name = name;
+        this.link = link;
     }
 
     //########################################################################

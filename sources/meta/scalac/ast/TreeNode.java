@@ -54,6 +54,12 @@ public class TreeNode {
         return symbol == symbol.HasSym || symbol == symbol.DefSym;
     }
 
+    public boolean hasLinkedFields() {
+        for (int i = 0; i < fields.length; i++)
+            if (fields[i].link != null) return true;
+        return false;
+    }
+
     public boolean definesSymbol() {
         return symbol == symbol.DefSym;
     }
@@ -80,9 +86,16 @@ public class TreeNode {
     }
 
     public TreeNode addField(Type type, String name) {
+        return addField(type, name, null);
+    }
+
+    public TreeNode addField(Type type, String name, TreeFieldLink link) {
+        if (link != null)
+            if (symbol != TreeSymbol.HasSym && symbol != TreeSymbol.DefSym)
+                throw new Error("node "+this+" may not have linked fields");
         TreeField[] array = new TreeField[fields.length + 1];
         for (int i = 0; i < fields.length; i++) array[i] = fields[i];
-        array[fields.length] = new TreeField(type, name);
+        array[fields.length] = new TreeField(type, name, link);
         fields = array;
         return this;
     }
