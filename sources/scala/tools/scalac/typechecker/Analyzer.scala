@@ -2720,7 +2720,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      var matching2: int = -1;
 	      { var i = 0; while (i < alttypes.length) {
                 if (infer.isApplicable(alttypes(i), argtypes, pt)) {
-                  System.out.println("matches: " + alttypes(i) + " with " + pt);//debug
+                  //System.out.println("matches: " + alttypes(i) + " with " + pt);//debug
 		  matching2 = matching1;
 		  matching1 = i;
 		}
