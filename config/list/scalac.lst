@@ -54,7 +54,6 @@ backend/GenJVMFromICodePhase.scala
 MyCompilerPhases.scala
 
 wholeprog/ApplicationBuilder.scala
-wholeprog/ClassHierarchy.scala
 wholeprog/PrintDotFile.scala
 wholeprog/MonomorphicCS.scala
 wholeprog/Inline.scala
