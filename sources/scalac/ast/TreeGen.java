@@ -747,6 +747,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds an If node with given components and type. */
     public If If(int pos, Tree cond, Tree thenpart, Tree elsepart, Type type) {
+        //if (!thenpart.type.isSubType(type)) System.out.println(type + "!>:(" + thenpart.type + "," + elsepart.type + ")");//debug
         assert assertTreeSubTypeOf(thenpart, type);
         assert assertTreeSubTypeOf(elsepart, type);
 	If tree = make.If(pos, cond, thenpart, elsepart);

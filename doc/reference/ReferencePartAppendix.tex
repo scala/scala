@@ -192,7 +192,7 @@ grammar.
   TmplDef         ::=  ([case] class | trait) ClassDef
                     |  [case] object ObjectDef
   ClassDef        ::=  ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate
-  ClassSig        ::=  id [TypeParamClause] [ParamClause]
+  ClassSig        ::=  id [TypeParamClause] [ClassParamClause]
   ObjectDef       ::=  id {`,' id} [`:' SimpleType] ClassTemplate
 
   ClassTemplate   ::=  extends Template

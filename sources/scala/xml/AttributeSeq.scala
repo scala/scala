@@ -26,7 +26,7 @@ object AttributeSeq {
     }:_* )
   }
 
-  /** construct from a map, fixing namespaces to ns
+  /** construct from a map, fixing namespacePs to ns
    *  each Attribute with an empty namespace will get the namespace ns.
    *  @param ns the namespace to use instead of the empty one
    *  @param as a map from Pair(uri,key) to value
@@ -66,7 +66,8 @@ object AttributeSeq {
     var ts = new TreeSet[Attribute];
     for( val a <- as ) {
       if( a.key != "xmlns" ) {
-        val url = if( a.namespace.length() == 0) ns else a.namespace;
+        var url: String = _;
+        if ( a.namespace.length() == 0) url = ns else url = a.namespace;
         ts = ts + Attribute(url,a.key,a.value) ;
       }
     }
