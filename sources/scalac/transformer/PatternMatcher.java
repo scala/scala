@@ -692,11 +692,7 @@ public class PatternMatcher {
                         toTree(node.or, selector)).setType(defs.BOOLEAN_TYPE);
             case SequencePat(Symbol casted, int len):
                 Symbol lenSym = casted.type().lookup(LENGTH_N);
-                Tree t = make.Select(selector.pos,
-                                     make.Ident(selector.pos, casted.name)
-                                        .setSymbol(casted)
-                                        .setType(node.type),
-                                     LENGTH_N);
+                Tree t = make.Select(selector.pos, mkAs(selector, node.type), LENGTH_N);
                 switch (typeOf(lenSym)) {
                     case OverloadedType(Symbol[] alts, Type[] alttypes):
                         infer.methodAlternative(t, alts, alttypes, new Type[0], defs.INT_TYPE);
@@ -707,7 +703,14 @@ public class PatternMatcher {
                 }
                 return make.If(
                         selector.pos,
-                        mkIs(selector, node.type),
+                        mkAnd(
+                            mkIs(selector, node.type),
+                            mkEquals(
+                                make.Apply(
+                                    selector.pos, t,
+                                    Tree.EMPTY_ARRAY).setType(defs.INT_TYPE),
+                                make.Literal(selector.pos, new Integer(len))
+                            .setType(defs.INT_TYPE))),
                         mkBlock(selector.pos,
                             new Tree[]{
                                 make.ValDef(selector.pos,
@@ -716,15 +719,7 @@ public class PatternMatcher {
                                             gen.mkType(selector.pos, node.type),
                                             mkAs(selector, node.type))
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
-                                mkAnd(
-                                    mkEquals(
-                                        make.Apply(
-                                            selector.pos, t,
-                                            Tree.EMPTY_ARRAY)
-                                                .setType(defs.INT_TYPE),
-                                        make.Literal(selector.pos, new Integer(len))
-                                            .setType(defs.INT_TYPE)),
-                                    toTree(node.and))}, defs.BOOLEAN_TYPE),
+                                toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector))
                             .setType(defs.BOOLEAN_TYPE);
             case ConstantPat(Object value):
