@@ -102,7 +102,6 @@ symtab/SymbolTablePrinter.java
 symtab/Type.java
 symtab/TypeTags.java
 
-transformer/AddAccessors.java
 transformer/AddAccessorsPhase.java
 transformer/AddConstructors.java
 transformer/AddConstructorsPhase.java
