@@ -731,7 +731,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, _, Tree.Template templ):
 	    ClassSymbol clazz = new ClassSymbol(tree.pos, name, owner, mods);
 	    if (clazz.isLocalClass()) unit.mangler.setMangledName(clazz);
-
 	    enterSym(tree, clazz.constructor());
 	    if ((mods & CASE) != 0) {
 		/* todo: remove
@@ -793,6 +792,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		sym.flags |= FINAL;
 	    sym = enterInScope(sym);
 	    tree.setSymbol(sym);
+
+	    // set the comment associated with a symbol
+	    String comment = (String) global.mapTreeComment.get(tree);
+	    if (comment != null)
+		global.mapSymbolComment.put(sym, comment);
+
 	    return sym;
 	}
 

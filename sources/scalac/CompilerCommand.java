@@ -56,6 +56,9 @@ public class CompilerCommand extends CommandParser {
     public final ChoiceOptionParser printer;
     public final StringOptionParser printfile;
     public final PhaseSetOptionParser graph;
+    public final BooleanOptionParser doc;
+    public final StringOptionParser docmodule;
+    public final StringOptionParser docmodulePath;
     public final PhaseSetOptionParser stop;
     public final PhaseSetOptionParser log;
     public final VersionOptionParser version;
@@ -169,6 +172,18 @@ public class CompilerCommand extends CommandParser {
         this.graph = new PhaseSetOptionParser(this,
             "graph", "Graph the program after <phases> (see below)",
             phases.phases, PhaseDescriptor.GRAPH),
+
+        this.doc = new BooleanOptionParser(this,
+            "doc", "Generate documentation",
+            false),
+
+        this.docmodule = new StringOptionParser(this,
+	    "docmodule", "Specify module used by scaladoc",
+            "class", "scaladoc.StandardDocModule"),
+
+        this.docmodulePath = new StringOptionParser(this,
+            "docmodulepath", "Specify where to find doc module class files",
+            "path", ClassPath.CLASS_PATH),
 
         this.stop = new PhaseSetOptionParser(this,
             "stop", "Stop after first phase in <phases> (see below)",

@@ -394,6 +394,17 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
     }
 
+    /** make a set of trees share the same documentation comment as a
+     * given tree (used for pattern and val definitions)
+     */
+    Tree[] shareComment(Tree[] trees, Tree tree) {
+	String comment = (String) global.mapTreeComment.get(tree);
+	if (comment != null)
+	    for(int i = 0; i < trees.length; i++)
+		global.mapTreeComment.put(trees[i], comment);
+	return trees;
+    }
+
     /** expand pattern definitions and variable definitions in templates.
      */
     public Tree[] Statements(Tree[] stats, boolean isLocal) {
@@ -458,13 +469,13 @@ public class DeSugarize implements Kinds, Modifiers {
 
 	case PatDef(int mods, Ident(Name name), Tree rhs):
 	    // val x = e     ==>  val x = e
-	    return new Tree[]{
-		make.ValDef(tree.pos, mods, name, Tree.Empty, rhs)};
+	    return shareComment(new Tree[]{
+		make.ValDef(tree.pos, mods, name, Tree.Empty, rhs)}, tree);
 
 	case PatDef(int mods, Typed(Ident(Name name), Tree type), Tree rhs):
 	    // val x: T = e  ==> val x: T = e
-	    return new Tree[]{
-		make.ValDef(tree.pos, mods, name, type, rhs)};
+	    return shareComment(new Tree[]{
+		make.ValDef(tree.pos, mods, name, type, rhs)}, tree);
 
 	case PatDef(int mods, Tree pat, Tree rhs):
 	    int pos = tree.pos;
@@ -494,7 +505,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		// val x_1 = e.match (case p => x_1)
 		Tree valdef = make.ValDef(pos, mods, vars[0], Tree.Empty, match);
 		print(pat, "patdef", valdef);
-		return new Tree[]{valdef};
+		return shareComment(new Tree[]{valdef}, tree);
 	    } else {
 		// t$
 		Name var = getvar();
@@ -510,7 +521,7 @@ public class DeSugarize implements Kinds, Modifiers {
 			make.Select(pos, make.Ident(pos, var), tupleSelectorName(i + 1)));
 		}
 		print(pat, "patdef", new Block(res));//debug
-		return res;
+		return shareComment(res, tree);
 	    }
 	default:
 	    throw new ApplicationError("pattern definition expected", tree);
@@ -533,8 +544,8 @@ public class DeSugarize implements Kinds, Modifiers {
 		((mods & DEFERRED) != 0) ? Tree.Empty
 		    : make.Ident(tree.pos, valname));
 	    if ((mods1 & MUTABLE) == 0) {
-		if ((mods1 & DEFERRED) != 0) return new Tree[]{getter};
-		else return new Tree[]{valdef1, getter};
+		if ((mods1 & DEFERRED) != 0) return shareComment(new Tree[]{getter}, tree);
+		else return shareComment(new Tree[]{valdef1, getter}, tree);
 	    } else {
 		Tree setter = make.DefDef(
 		    tree.pos, mods1, setterName(name),
@@ -548,8 +559,8 @@ public class DeSugarize implements Kinds, Modifiers {
 			    tree.pos,
 			    make.Ident(tree.pos, valname),
 			    make.Ident(tree.pos, parameterName(0))));
-		if ((mods1 & DEFERRED) != 0) return new Tree[]{getter, setter};
-		else return new Tree[]{valdef1, getter, setter};
+		if ((mods1 & DEFERRED) != 0) return shareComment(new Tree[]{getter, setter}, tree);
+		else return shareComment(new Tree[]{valdef1, getter, setter}, tree);
 	    }
 	default:
 	    throw new ApplicationError();

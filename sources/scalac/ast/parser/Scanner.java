@@ -23,6 +23,16 @@ import scalac.util.Name;
  */
 public class Scanner extends TokenData {
 
+    /** buffer for the documentation comment
+     */
+    protected StringBuffer docBuffer = null;
+
+    /** add the given character to the documentation buffer
+     */
+    protected void addCharToDoc(byte ch) {
+	if (docBuffer != null) docBuffer.append((char) ch);
+    }
+
     /** layout & character constants
      */
     public int tabinc = 8;
@@ -342,38 +352,43 @@ public class Scanner extends TokenData {
 	    } while ((ch != CR) && (ch != LF) && (ch != SU));
 	    return true;
 	} else if (ch == '*') {
+	    docBuffer = null;
 	    int openComments = 1;
+	    nextch();
+	    if (ch == '*') {
+		docBuffer = new StringBuffer("/**");
+	    }
 	    while (openComments > 0) {
 		do {
 		    do {
 			if (ch == CR) {
 			    cline++;
 			    ccol = 0;
-			    nextch();
+			    nextch(); addCharToDoc(ch);
 			    if (ch == LF) {
 				ccol = 0;
-				nextch();
+				nextch(); addCharToDoc(ch);
 			    }
 			} else if (ch == LF) {
 			    cline++;
 			    ccol = 0;
-			    nextch();
+			    nextch(); addCharToDoc(ch);
 			}
 			else if (ch == '\t') {
 			    ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
-			    nextch();
+			    nextch(); addCharToDoc(ch);
 			} else if (ch == '/') {
-			    nextch();
+			    nextch(); addCharToDoc(ch);
 			    if (ch == '*') {
-				nextch();
+				nextch(); addCharToDoc(ch);
 				openComments++;
 			    }
 			} else {
-			    nextch();
+			    nextch(); addCharToDoc(ch);
 			}
 		    } while ((ch != '*') && (ch != SU));
 		    while (ch == '*') {
-			nextch();
+			nextch(); addCharToDoc(ch);
 		    }
 		} while (ch != '/' && ch != SU);
 		if (ch == '/') {

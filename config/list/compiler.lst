@@ -11,6 +11,7 @@ Phase.java
 PhaseDescriptor.java
 PhaseRepository.java
 Unit.java
+DocModule.java
 
 ast/parser/PatternNormalizer.java
 ast/parser/Parser.java

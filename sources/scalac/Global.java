@@ -86,6 +86,20 @@ public class  Global {
     public OutputStream printStream;
     public final TreePrinter debugPrinter;
 
+    /** documentation comments of trees
+     */
+    public final Map/*<Tree, String>*/ mapTreeComment = new HashMap();
+
+    /** documentation comments of symbols
+     */
+    public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
+
+    /** scaladoc option (with docmodule and docmodulepath)
+     */
+    public final boolean doc;
+    public final String docmodule;
+    public final String docmodulePath;
+
     /** The set of currenttly compiled top-level symbols
      */
     public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();
@@ -174,6 +188,9 @@ public class  Global {
         else
             this.printer = new HTMLTreePrinter(printStream);
         this.debugPrinter = new TextTreePrinter(System.err, true);
+	this.doc = args.doc.value;
+	this.docmodule = args.docmodule.value;
+	this.docmodulePath = args.docmodulePath.value;
         this.freshNameCreator = new FreshNameCreator();
         this.make = new DefaultTreeFactory();
         this.currentPhase = PhaseDescriptor.INITIAL;
@@ -288,6 +305,11 @@ public class  Global {
             }
             if (currentPhase == PHASE.PARSER) fix1();
             if (currentPhase == PHASE.ANALYZER) fix2();
+            if (currentPhase == PHASE.ANALYZER && doc) {
+		DocModule.apply(this);
+		operation("stopped after phase " + currentPhase.name());
+                break;
+	    }
         }
         if (reporter.errors() != 0) {
             imports.clear();

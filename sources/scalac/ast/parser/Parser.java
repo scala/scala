@@ -40,6 +40,7 @@ public class Parser implements Tokens {
         s = new Scanner(unit);
         make = unit.global.make;
 	pN = new PatternNormalizer( unit );
+	mapTreeComment = unit.global.mapTreeComment;
     }
 
     /** this is the general parse method
@@ -159,6 +160,38 @@ public class Parser implements Tokens {
 	default:
 	    return false;
 	}
+    }
+
+/////// COMMENT COLLECTION ///////////////////////////////////////////////////
+
+    /** keep the comments associated with a given tree
+     */
+    protected Map mapTreeComment;
+
+    /** stack of comments
+     */
+    protected final Stack commentStack = new Stack();
+
+    /** positive if we are inside a block
+     */
+    protected int local = 0;
+
+    /** push last encountered comment and reset the buffer
+     */
+    protected void pushComment() {
+	if (local == 0) {
+	    commentStack.push(s.docBuffer == null ? null : s.docBuffer.toString());
+	    s.docBuffer = null;
+	}
+    }
+
+    /** pop a comment from the stack and associate it with the given tree
+     */
+    protected Tree popComment(Tree tree) {
+	if (local == 0)
+	    if (!commentStack.empty())
+		mapTreeComment.put(tree, (String) commentStack.pop());
+	return tree;
     }
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
@@ -995,6 +1028,7 @@ public class Parser implements Tokens {
      *              | `{' Block `}'
      */
     Tree blockExpr() {
+	local++;
 	Tree res;
 	int pos = accept(LBRACE);
 	if (s.token == CASE) {
@@ -1008,6 +1042,7 @@ public class Parser implements Tokens {
 	    res = block(pos);
 	}
 	accept(RBRACE);
+	local--;
 	return res;
     }
 
@@ -1265,6 +1300,7 @@ public class Parser implements Tokens {
      *              | abstract
      */
     int modifiers() {
+	pushComment();
 	int mods = 0;
         while (true) {
 	    int mod;
@@ -1551,25 +1587,25 @@ public class Parser implements Tokens {
 	case VAL:
 	    do {
 		s.nextToken();
-		ts.append(patDefOrDcl(mods));
+		ts.append(popComment(patDefOrDcl(mods)));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case VAR:
 	    do {
 		s.nextToken();
-		ts.append(varDefOrDcl(mods));
+		ts.append(popComment(varDefOrDcl(mods)));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case DEF:
 	    do {
 		s.nextToken();
-		ts.append(funDefOrDcl(mods));
+		ts.append(popComment(funDefOrDcl(mods)));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	case TYPE:
 	    do {
 		s.nextToken();
-		ts.append(typeDefOrDcl(mods));
+		ts.append(popComment(typeDefOrDcl(mods)));
 	    } while (s.token == COMMA);
 	    return ts.toArray();
 	default:
@@ -1725,11 +1761,11 @@ public class Parser implements Tokens {
 	ValDef[][] params = paramClauseOpt();
 	TreeList result = new TreeList();
         result.append(
-	    make.ClassDef(pos, mods, clazzname, tparams, params,
-			  simpleTypedOpt(), classTemplate()));
+	    popComment(make.ClassDef(pos, mods, clazzname, tparams, params,
+			  simpleTypedOpt(), classTemplate())));
 	while (s.token == CONSTR) {
 	    s.nextToken();
-	    result.append(constrDef(mods, clazzname, tparams));
+	    result.append(popComment(constrDef(mods, clazzname, tparams)));
 	}
 	return result.toArray();
     }
@@ -1737,8 +1773,8 @@ public class Parser implements Tokens {
     /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate
      */
     Tree objectDef(int mods) {
-        return make.ModuleDef(
-	    s.pos, mods, ident(), simpleTypedOpt(), classTemplate());
+        return popComment(make.ModuleDef(
+	    s.pos, mods, ident(), simpleTypedOpt(), classTemplate()));
     }
 
     /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
