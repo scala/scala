@@ -517,15 +517,15 @@ abstract class CircuitSimulator() extends BasicCircuitSimulator() {
     val ctrlN = ctrl.map(w => { val iw = new Wire(); inverter(w,iw); iw});
     val w0 = new Wire(), w1 = new Wire(), w2 = new Wire(), w3 = new Wire();
 
-    andGate(in, ctrl.at(1), w3);
-    andGate(in, ctrl.at(1), w2);
-    andGate(in, ctrlN.at(1), w1);
-    andGate(in, ctrlN.at(1), w0);
+    andGate(in, ctrl.apply(1), w3);
+    andGate(in, ctrl.apply(1), w2);
+    andGate(in, ctrlN.apply(1), w1);
+    andGate(in, ctrlN.apply(1), w0);
 
-    andGate(w3, ctrl.at(0), out.at(3));
-    andGate(w2, ctrlN.at(0), out.at(2));
-    andGate(w1, ctrl.at(0), out.at(1));
-    andGate(w0, ctrlN.at(0), out.at(0));
+    andGate(w3, ctrl.apply(0), out.apply(3));
+    andGate(w2, ctrlN.apply(0), out.apply(2));
+    andGate(w1, ctrl.apply(0), out.apply(1));
+    andGate(w0, ctrlN.apply(0), out.apply(0));
   }
 
   def connect(in: Wire, out: Wire) = {
@@ -566,13 +566,13 @@ class Main() extends CircuitSimulator() {
 
     in.setSignal(true);
     run;
-    ctrl.at(0).setSignal(true);
+    ctrl.apply(0).setSignal(true);
     run;
-    ctrl.at(1).setSignal(true);
+    ctrl.apply(1).setSignal(true);
     run;
-    ctrl.at(2).setSignal(true);
+    ctrl.apply(2).setSignal(true);
     run;
-    ctrl.at(0).setSignal(false);
+    ctrl.apply(0).setSignal(false);
     run;
   }
 }
