@@ -20,9 +20,9 @@ import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
 import scalac.ast.Traverser;
 import scalac.ast.Transformer;
+import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.checkers.*;
 import scalac.util.Debug;
 
 // TODO do not copy hidden members which are not accessible via
@@ -71,30 +71,45 @@ public class ExpandMixinsPhase extends Phase {
     public void apply(Unit[] units) {
         collector.traverse(units);
         expander.apply(units);
-        assert templates.isEmpty() : templates.keySet();
+        assert templates.isEmpty(): templates.keySet();
     }
 
     public Type transformInfo(Symbol symbol, Type type) {
         // !!! make this work and remove *1 in ClassExpander
         // if (!symbol.isJava() && symbol.isClass() && !symbol.isInterface())
         //     type = getExpandedTemplate(symbol).type();
+        if (symbol.isClass() && !symbol.isInterface()) {
+            switch (type) {
+            case CompoundType(Type[] parents, Scope members):
+                Type[] types = parents;
+                for (int i = 1; i < parents.length; i++) {
+                    switch (parents[i]) {
+                    case TypeRef(Type prefix, Symbol parent, Type[] args):
+                        if (parent.isInterface()) continue;
+                        if (types == parents) types = Type.cloneArray(parents);
+                        parent = (Symbol)interfaces.get(parent);
+                        assert parent != null: parents[i];
+                        types[i] = Type.TypeRef(prefix, parent, args);
+                        continue;
+                    default:
+                        throw Debug.abort("illegal case", parents[i]);
+                    }
+                }
+                if (types != parents)
+                    type = Type.compoundType(types, members, symbol);
+                break;
+            default:
+                throw Debug.abort("illegal case", type);
+            }
+        }
         return type;
-    }
-
-    public Checker[] postCheckers(Global global) {
-        return new Checker[] {
-            new CheckSymbols(global),
-            new CheckTypes(global),
-            new CheckOwners(global),
-         new CheckNames(global)
-        };
     }
 
     //########################################################################
     // Private Methods
 
     private Template getExpandedTemplate(Symbol clasz) {
-	if (global.debug) global.log("get expanded " + clasz + " in " + clasz.owner());
+	assert Debug.log("get expanded " + clasz + " in " + clasz.owner());
         Template template = (Template)expansions.get(clasz);
         if (template == null) {
             template = (Template)templates.remove(clasz);
@@ -107,18 +122,20 @@ public class ExpandMixinsPhase extends Phase {
 
     private Template expandTemplate(Symbol clasz, Template template) {
         assert Debug.log("expanding ", clasz);
-        ClassExpander expander = null;
+        ClassExpander expander = new ClassExpander(global, clasz, template);
         Type[] parents = clasz.parents();
+        // force expansion of superclass
+        if (!parents[0].symbol().isExternal())
+            getExpandedTemplate(parents[0].symbol());
+        // inline mixins
         for (int i = parents.length - 1; i > 0; --i) {
             Symbol parent = parents[i].symbol();
             if (parent.isInterface()) continue;
-            if (expander == null)
-                expander = new ClassExpander(global, clasz, template);
             assert Debug.log("expanding ", clasz, ": inlining ", parent);
             expander.inlineMixin(i, parents[i], (Symbol)interfaces.get(parent),
                 getExpandedTemplate(parent));
         }
-        return expander == null ? template : expander.getTemplate();
+        return expander.getTemplate();
     }
 
     //########################################################################
@@ -148,7 +165,7 @@ public class ExpandMixinsPhase extends Phase {
         }
         public void apply(Unit unit) {
             if (unit.mixinOnly) {
-                global.log("removing " + unit + " after mixin expansion");
+                assert Debug.log("removing " +unit+ " after mixin expansion");
                 unit.body = Tree.EMPTY_ARRAY;
             } else
                 super.apply(unit);

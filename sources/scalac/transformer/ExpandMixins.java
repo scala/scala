@@ -22,7 +22,7 @@ import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
 import scalac.ast.TreeList;
 import scalac.ast.TreeGen;
-import scalac.ast.TreeCloner;
+import scalac.ast.GenTreeCloner;
 import scalac.ast.TreeSymbolCloner;
 import scalac.ast.Transformer;
 import scalac.symtab.Modifiers;
@@ -78,7 +78,7 @@ public class ClassExpander {
         this.gen = global.treeGen;
         this.clasz = clasz;
         this.parents = Type.cloneArray(clasz.parents());
-        this.members = clasz.members().cloneScope();
+        this.members = clasz.members(); // !!! .cloneScope();
         this.template = gen.Template(template.pos, template.symbol(),
             Tree.cloneArray(template.parents), template.body);
         this.body = new LinkedList();
@@ -86,23 +86,31 @@ public class ClassExpander {
         this.cloner = new SymbolCloner(
             global.freshNameCreator, new HashMap(), map.getSymbols());
         this.state = parents.length;
+
+        this.mixinMemberCloner = new MixinMemberCloner(this);
+        this.superFixer = new SuperFixer(global);
     }
 
     //########################################################################
     // Public Methods
 
+    // !!! remove this.parents
+    /** Inlines the ith mixin with given type, interface and body. */
     public void inlineMixin(int i, Type type, Symbol iface, Template impl) {
         assert 0 < i && i < state : "state = " + state + ", i = " + i;
         switch (parents[i]) {
         case TypeRef(Type prefix, Symbol mixin, Type[] args):
+            // relpace "This/Super(mixin)" by "This/Super(clasz)"
             map.insertSymbol(mixin, clasz);
+            // owner of inlined value parameters and constructor is "clasz"
             cloner.owners.put(mixin.primaryConstructor(), clasz);
-            inlineMixinTParams(type);
+            // map mixin type parameters to mixin type arguments
+            map.insertType(type.symbol().typeParams(), type.typeArgs());
             Tree.Apply constr = (Tree.Apply)template.parents[i];
             Symbol[] vparams = mixin.valueParams();
             inlineMixinVParams(vparams, constr.args, 0);
-            handleMixinInterfaceMembers(mixin);
-            inlineMixinMembers(mixin.nextInfo().members(), impl, vparams.length);
+            createMixedInMemberSymbols(mixin.nextInfo().members());
+            inlineMixedInCode(impl, vparams.length);
             parents[i] = Type.TypeRef(prefix, iface, args);
             template.parents[i] = gen.mkPrimaryConstr(constr.pos, parents[i]);
             state = i;
@@ -119,32 +127,25 @@ public class ClassExpander {
                 switch (tree) {
                 case Select(Super(_, _), _):
                     Symbol symbol = map.lookupSymbol(tree.symbol());
-                    if (symbol != null)
-                        return gen.Select(gen.This(tree.pos, clasz), symbol);
+                    if (symbol != null) {
+                        Tree qualifier = gen.This(tree.pos, clasz);
+                assert qualifier.type().baseType(symbol.owner()) != Type.NoType: tree; // !!!
+                        return gen.Select(qualifier, symbol);
+                    }
                 }
                 return super.transform(tree);
             }
         };
-        body.addAll(Arrays.asList(superFixer.transform(template.body)));
+        body.addAll(Arrays.asList(this.superFixer.transform(
+superFixer.transform(template.body))));
         template.body = (Tree[])body.toArray(new Tree[body.size()]);
         // !!! *1 fix ExpandMixinsPhase.transformInfo and remove next line
-        clasz.updateInfo(Type.compoundType(parents, members, clasz));
         state = 0;
         return template;
     }
 
     //########################################################################
     // Private Methods
-
-    private void inlineMixinTParams(Type type) {
-        switch (type) {
-        case TypeRef(Type prefix, Symbol symbol, Type[] args):
-            map.insertType(symbol.typeParams(), args);
-            return;
-        default:
-            throw Debug.abort("illegal case", type);
-        }
-    }
 
     private void inlineMixinVParams(Symbol[] params, Tree[] args, int fstPos) {
         for (int i = 0; i < params.length; i++) {
@@ -153,6 +154,7 @@ public class ClassExpander {
             member.flags |= Modifiers.PRIVATE;
             members.enter(member);
         }
+        // !!! remove double loop
         // We need two loops because parameters may appear in their types.
         for (int i = 0; i < params.length; i++) {
             Symbol member = map.lookupSymbol(params[i]);
@@ -161,45 +163,7 @@ public class ClassExpander {
         }
     }
 
-    // !!! This is just rapid fix. Needs to be reviewed.
-    private void handleMixinInterfaceMembers(Symbol mixin) {
-        Type[] parents = mixin.info().parents();
-        //assert parents.length == 2: Debug.show(mixin) +" -- "+ mixin.info();
-        for (int i = 1; i < parents.length; i++)
-            handleMixinInterfaceMembersRec(parents[i].symbol());
-    }
-    private void handleMixinInterfaceMembersRec(Symbol interfase) {
-        handleMixinInterfaceMembersAux(interfase.nextInfo().members());
-        Type[] parents = interfase.parents();
-        for (int i = 0; i < parents.length; i++) {
-            Symbol clasz = parents[i].symbol();
-            if (clasz.isInterface()) handleMixinInterfaceMembersRec(clasz);
-        }
-    }
-    private void handleMixinInterfaceMembersAux(Scope symbols) {
-        for (SymbolIterator i = symbols.iterator(true); i.hasNext();) {
-            Symbol member = i.next();
-            if (!member.isAbstractType()) continue;
-            // !!! use same trick as in erasure?
-            //Symbol clone = member.cloneSymbol(clasz);
-            //clone.setInfo(clasz.thisType().memberInfo(member));
-            //Symbol subst = clasz.thisType().memberType(clone).symbol();
-            Symbol subst = clasz.thisType().memberType(member).symbol();
-            if (subst == member) continue;
-            Type subst1 = map.lookupType(member);
-            assert subst1 == null || subst1.symbol() == subst:
-                Debug.show(member," -> ",subst," + ",subst1);
-            if (subst1 == null) {
-                Type prefix = Type.localThisType;
-                // compute outer type links of subst
-                Type[] args = Symbol.type(subst.owner().typeParams());
-                args = Type.asSeenFrom(args, clasz.thisType(), subst.owner());
-                map.insertType(member, Type.TypeRef(prefix, subst, args));
-            }
-        }
-    }
-
-    private void inlineMixinMembers(Scope symbols, Template mixin, int fstPos) {
+    private void createMixedInMemberSymbols(Scope symbols) {
         // The map names is used to implement an all or nothing
         // strategy for overloaded symbols.
         Map/*<Name,Name>*/ names = new HashMap();
@@ -223,43 +187,69 @@ public class ClassExpander {
             if (member == null) continue;
             member.setType(map.applyParams(member.type()));
         }
+    }
+
+    private void inlineMixedInCode(Template mixin, int fstPos) {
         cloner.owners.put(mixin.symbol(), template.symbol());
-        final Set clones = new HashSet();
-        TreeSymbolCloner mixinSymbolCloner = new TreeSymbolCloner(cloner) {
-            public Symbol cloneSymbol(Symbol symbol) {
-                Symbol clone = super.cloneSymbol(symbol);
-                clones.add(clone);
-                return clone;
-            }
-        };
-        TreeCloner mixinTreeCloner = new TreeCloner(global, map) {
-            public Tree transform(Tree tree) {
-                switch (tree) {
-                case Select(Super(_, _), _):
-                    Tree qualifier = ((Tree.Select)tree).qualifier;
-                    qualifier = gen.Super(qualifier.pos, clasz);
-                    Symbol symbol = tree.symbol().overridingSymbol(parents[0]);
-                    assert symbol != Symbol.NONE: Debug.show(tree.symbol());
-                    return gen.Select(tree.pos, qualifier, symbol);
-                default:
-                    return super.transform(tree);
-                }
-            }
-        };
         int pos = 0;
         for (int i = 0; i < mixin.body.length; i++) {
             Tree tree = mixin.body[i];
             // Inline local code and members whose symbol has been cloned.
             if (!tree.definesSymbol() ||
                 map.lookupSymbol(tree.symbol()) != null) {
-                mixinSymbolCloner.traverse(tree);
-                for (Iterator j = clones.iterator(); j.hasNext();) {
-                    Symbol clone = (Symbol)j.next();
-                    clone.setType(map.apply(clone.type()));
-                }
-                clones.clear();
-                body.add(fstPos + pos, mixinTreeCloner.transform(tree));
+                body.add(fstPos + pos, mixinMemberCloner.transform(tree));
                 ++pos;
+            }
+        }
+    }
+
+    private final GenTreeCloner mixinMemberCloner;
+
+    private class MixinMemberCloner extends GenTreeCloner {
+        public MixinMemberCloner(ClassExpander expander) {
+            super(expander.global, expander.map, expander.cloner);
+        }
+
+        public Symbol getSymbolFor(Tree tree) {
+            switch (tree) {
+            case Select(Super(_, _), _):
+                // !!! check
+                global.nextPhase();
+                Symbol symbol = tree.symbol().overridingSymbol(parents[0]);
+                global.prevPhase();
+                assert !symbol.isNone(): tree;
+                return symbol;
+            case Super(_, _):
+            case This(_):
+                return clasz;
+            default:
+                return super.getSymbolFor(tree);
+            }
+        }
+
+    }
+
+    private final Transformer superFixer;
+
+    private class SuperFixer extends Transformer {
+        private final Type parent;
+
+        public SuperFixer(Global global) {
+            super(global);
+            this.parent = clasz.parents()[0];
+        }
+        public Tree transform(Tree tree) {
+            if (tree.definesSymbol() && tree.symbol().owner().isClass())
+                return tree;
+            switch (tree) {
+            case Select(Super(_, _), _):
+                Tree qualifier = ((Tree.Select)tree).qualifier;
+                qualifier = gen.Super(qualifier.pos, clasz);
+                Symbol symbol = tree.symbol().overridingSymbol(parent);
+                assert !symbol.isNone(): tree + " -- " + parent  + " -- " + Debug.show(clasz.parents()) + " -- " + Debug.show(clasz);
+                return gen.Select(tree.pos, qualifier, symbol);
+            default:
+                return super.transform(tree);
             }
         }
     }
