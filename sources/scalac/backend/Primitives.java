@@ -1230,21 +1230,7 @@ public class Primitives {
 
     /* Return name to use in "Class.forName(<name>)" for the given symbol. */
     public String getNameForClassForName(Symbol symbol) {
-        if (symbol == definitions.ANY_CLASS ||
-            symbol == definitions.ANYREF_CLASS)
-            symbol = definitions.JAVA_OBJECT_CLASS;
-        StringBuffer buffer = new StringBuffer(symbol.name.toString());
-        for (symbol = symbol.owner();
-             symbol != definitions.ROOT_CLASS && !symbol.isPackage();
-             symbol = symbol.owner()) {
-            buffer.insert(0, '$');
-            buffer.insert(0, symbol.name);
-        }
-        if (symbol != definitions.ROOT_CLASS) {
-            buffer.insert(0, '.');
-            buffer.insert(0, symbol.fullName());
-        }
-        return buffer.toString();
+        return getJavaSignature(symbol);
     }
 
     /* Return name to use in "Class.forName(<name>)" for the given kind. */
@@ -1260,6 +1246,24 @@ public class Primitives {
         case TypeTags.DOUBLE : return "D";
         default              : throw Debug.abort("illegal kind " + kind);
         }
+    }
+
+    /** Return the Java signature of given symbol. */
+    public String getJavaSignature(Symbol symbol) {
+        if (symbol == definitions.ANY_CLASS ||
+            symbol == definitions.ANYREF_CLASS)
+            return getJavaSignature(definitions.JAVA_OBJECT_CLASS);
+        String name = symbol.name.toString();
+        return getJavaPrefix(symbol.owner(), name.length())
+            .append(name).toString();
+    }
+
+    /** Return the Java prefix of given symbol. */
+    private StringBuffer getJavaPrefix(Symbol symbol, int length) {
+        if (symbol.isRoot()) return new StringBuffer(length);
+        String name = symbol.name.toString();
+        return getJavaPrefix(symbol.owner(), name.length() + 1 + length)
+            .append(name).append(symbol.isPackage() ? '.' : '$');
     }
 
     //########################################################################

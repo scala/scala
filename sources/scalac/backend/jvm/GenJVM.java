@@ -1412,29 +1412,22 @@ class GenJVM {
     /// Names
     //////////////////////////////////////////////////////////////////////
 
+    protected HashMap nameMap/*<Symbol,String>*/ = new HashMap();
+
     /**
      * Return a Java-compatible version of the name of the given
      * symbol. The returned name is mangled and includes the names of
      * the owners.
      */
     protected String javaName(Symbol sym) {
+        Object value = nameMap.get(sym);
+        if (value != null) return (String)value;
         assert sym.isClass() || sym.isModule() : Debug.show(sym);
-        if (sym == defs.ANY_CLASS || sym == defs.ANYREF_CLASS)
-            return JAVA_LANG_OBJECT;
-        else {
-            StringBuffer buf = new StringBuffer(sym.name.toString());
-            if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
-                buf.append('$');
-            for (sym = sym.owner(); !sym.isPackage(); sym = sym.owner()) {
-                buf.insert(0, '$');
-                buf.insert(0, sym.name);
-            }
-            if (!sym.isRoot()) {
-                buf.insert(0, '.');
-                buf.insert(0, sym.fullName());
-            }
-            return buf.toString();
-        }
+        String signature = prims.getJavaSignature(sym);
+        if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
+            signature = signature + '$';
+        nameMap.put(sym, signature);
+        return signature;
     }
 
     /**
