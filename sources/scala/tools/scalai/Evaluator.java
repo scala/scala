@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
 import scala.runtime.RunTime;
+import scala.MatchError;
 
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
@@ -301,6 +302,8 @@ public class Evaluator {
             // !!! System.out.println("!!! constr " + constructor);
             // !!! System.out.println("!!! nbargs " + args.length);
             return constructor.newInstance(args);
+        } catch (MatchError exception) {
+            return exception(exception);
         } catch (ExceptionInInitializerError exception) {
             return exception(exception.getException());
         } catch (InvocationTargetException exception) {
@@ -326,6 +329,8 @@ public class Evaluator {
     private Object invoke(Object object, Method method, Object[] args) {
         try {
             return method.invoke(object, args);
+        } catch (MatchError exception) {
+            return exception(exception);
         } catch (NullPointerException exception) {
             return exception(exception);
         } catch (ExceptionInInitializerError exception) {
@@ -523,6 +528,9 @@ public class Evaluator {
         // !!! return an exception result
         if (exception instanceof EvaluatorException) {
             throw (EvaluatorException)exception;
+        }
+        if (exception instanceof MatchError) {
+            throw new EvaluatorException(exception, new Error());
         }
         if (exception instanceof Error) {
             throw (Error)exception;
