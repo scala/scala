@@ -17,10 +17,10 @@ trait CaseClass {
 
   /** for a case class A(x1,...,xk), returns x_i for 1<= i <= k, null otherwise
   */
-  def selectElement(n:int):Any = null;
+  def selectElement(n:int):Any ;
 
   /** for a case class A(x1,...,xk), returns k
   */
-  def numberOfElements(): int = 0;
+  def numberOfElements(): int ;
 
 }
