@@ -86,8 +86,8 @@ latex.distclean		:
 %.pdf			: %.tex $(LATEX_SOURCES)
 	$(LATEXMK) -pdf $<
 
-.PRECIOUS	: %.dvi
-.PRECIOUS	: %.ps
-.PRECIOUS	: %.pdf
+.PRECIOUS		: %.dvi
+.PRECIOUS		: %.ps
+.PRECIOUS		: %.pdf
 
 ##############################################################################
