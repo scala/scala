@@ -3,7 +3,10 @@
 ##############################################################################
 # $Id$
 
+dis/List.scala
+
 jvm/JavaInteraction.scala
+jvm/xmlstuff.scala
 
 run/Course-2002-01.scala
 run/Course-2002-02.scala
@@ -20,18 +23,24 @@ run/NestedClasses.scala
 run/arrays.scala
 run/bridges.scala
 run/bugs.scala
+run/constructors.scala
 run/exceptions.scala
 run/imports.scala
 run/iq.scala
 run/lisp.scala
+run/literals.scala
 run/map_test.scala
 run/misc.scala
+run/mixins.scala
 run/overloads.scala
 run/regularpatmat.scala
 run/runtime.scala
 run/tailcalls.scala
 run/xmlLiterals.scala
 run/xmlParsing.scala
+run/xmlParsing_attr.scala
+run/xmlParsing_servlet.scala
+run/xmlRef.scala
 
 shl/basic.scala
 

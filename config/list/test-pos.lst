@@ -3,7 +3,10 @@
 ##############################################################################
 # $Id$
 
+pos/304.scala
 pos/A.scala
+pos/List1.scala
+pos/MailBox.scala
 pos/S1.scala
 pos/S3.scala
 pos/S5.scala
@@ -13,9 +16,17 @@ pos/Y.scala
 pos/Z.scala
 pos/abstract.scala
 pos/aliases.scala
+pos/arrays2.scala
+pos/bug082.scala
 pos/bug1.scala
+pos/bug115.scala
 pos/bug116.scala
+pos/bug119.scala
 pos/bug121.scala
+pos/bug123.scala
+pos/bug124.scala
+pos/bug151.scala
+pos/bug159.scala
 pos/bug160.scala
 pos/bug17.scala
 pos/bug175.scala
@@ -24,12 +35,20 @@ pos/bug183.scala
 pos/bug193.scala
 pos/bug2.scala
 pos/bug20.scala
+pos/bug201.scala
+pos/bug204.scala
+pos/bug210.scala
+pos/bug211.scala
+pos/bug229.scala
+pos/bug245.scala
 pos/bug267.scala
 pos/bug289.scala
 pos/bug29.scala
 pos/bug30.scala
+pos/bug304.scala
 pos/bug31.scala
 pos/bug318.scala
+pos/bug32.scala
 pos/bug36.scala
 pos/bug39.scala
 pos/bug49.scala
@@ -41,12 +60,20 @@ pos/bug66.scala
 pos/bug68.scala
 pos/bug69.scala
 pos/bug76.scala
+pos/bug81.scala
+pos/bug85.scala
+pos/bug91.scala
+pos/bug93.scala
 pos/cls.scala
 pos/cls1.scala
+pos/clsrefine.scala
 pos/compile.scala
+pos/compound.scala
+pos/constfold.scala
 pos/eta.scala
 pos/exceptions.scala
 pos/expressions-current.scala
+pos/gui.scala
 pos/imports.scala
 pos/infer.scala
 pos/infer2.scala
@@ -55,7 +82,9 @@ pos/lambdalift.scala
 pos/lambdalift1.scala
 pos/localmodules.scala
 pos/matthias1.scala
+pos/matthias3.scala
 pos/matthias4.scala
+pos/matthias5.scala
 pos/maxim1.scala
 pos/michel1.scala
 pos/michel2.scala
@@ -63,6 +92,7 @@ pos/michel3.scala
 pos/michel4.scala
 pos/michel5.scala
 pos/michel6.scala
+pos/mixins.scala
 pos/modules.scala
 pos/modules1.scala
 pos/moduletrans.scala
@@ -78,7 +108,10 @@ pos/philippe1.scala
 pos/philippe2.scala
 pos/philippe3.scala
 pos/philippe4.scala
+pos/pmbug.scala
 pos/propagate.scala
+pos/rebind.scala
+pos/refine.scala
 pos/reftest.scala
 pos/scoping1.scala
 pos/scoping2.scala
@@ -91,8 +124,16 @@ pos/test1.scala
 pos/test2.scala
 pos/test4.scala
 pos/test4a.scala
+pos/test4refine.scala
 pos/test5.scala
+pos/test5refine.scala
+pos/testcast.scala
+pos/thistype.scala
 pos/thistypes.scala
+pos/traits.scala
 pos/valdefs.scala
+pos/viewtest1.scala
+pos/viewtest2.scala
+pos/vincent.scala
 
 ##############################################################################
