@@ -1,6 +1,6 @@
-object scheduler {
+import scala.concurrent.pilib._;
 
-  import scala.concurrent.pilib._;
+object scheduler {
 
   /**
   * Random number generator.
@@ -13,60 +13,60 @@ object scheduler {
   * A cell of the scheduler whose attached agent is allowed to start.
   */
   def A(a: Chan[unit], b: Chan[unit])(d: Chan[unit], c: Chan[unit]): unit = {
-    a.read;
-    C(a,b)(d,c)
+    ///- ... complete here ...
+    choice ( a * { x => C(a, b)(d, c) })
+    ///+
   }
-
-  /**
-  * A cell of the scheduler in an intermediate state (incorrect)
-  */
-//   def B(a: Chan[unit], b: Chan[unit])(d: Chan[unit], c: Chan[unit]): unit = {
-//     b.read;
-//     D(a,b)(d,c)
-//   }
-
-  /**
-  * A cell of the scheduler in an intermediate state (correct).
-  */
-  def B(a: Chan[unit], b: Chan[unit])(d: Chan[unit], c: Chan[unit]): unit =
-    choice (
-      b * (x => D(a,b)(d,c)),
-      d(()) * ({ b.read; A(a,b)(d,c)})
-    );
 
   /**
   * A cell of the scheduler in another intermediate state.
   */
   def C(a: Chan[unit], b: Chan[unit])(d: Chan[unit], c: Chan[unit]): unit = {
-    c.read;
-    B(a,b)(d,c)
+    ///- ... complete here ...
+    choice (c * { x => B(a, b)(d, c) })
+    ///+
   }
+
+  /**
+  * A cell of the scheduler whose attached agent is allowed to finish.
+  */
+  def B(a: Chan[unit], b: Chan[unit])(d: Chan[unit], c: Chan[unit]): unit = {
+    ///- ... complete here ...
+    //     choice (b * { x => D(a, b)(d, c) }) // incorrect naive solution
+    choice (
+      b * { x => choice ( d(()) * A(a, b)(d, c) ) }, // b.'d.A
+      d(()) * (choice (b * { x => A(a, b)(d, c) }))  // 'd.b.A
+    )
+    ///+
+   }
 
   /**
   * A cell of the scheduler whose attached agent is not yet allowed to start.
   */
   def D(a: Chan[unit], b: Chan[unit])(d: Chan[unit], c: Chan[unit]): unit = {
-    d.write(());
-    A(a,b)(d,c)
+    ///- ... complete here ...
+    choice (d(()) * A(a, b)(d, c))
+    ///+
   }
 
   //***************** Agents ******************//
 
   def agent(i: Int)(a: Chan[unit], b: Chan[unit]): unit = {
-    Thread.sleep(random.nextInt(1000) + 1);
-    a.write(());
-    System.out.println("Starting agent " + i);
-    Thread.sleep(random.nextInt(1000) + 1);
-
-    // 10% chance that we sleep for a long while.
-    if(random.nextInt(10) == 0) {
-      System.out.println("Agent " + i + " sleeps");
-      Thread.sleep(20000);
+    // 50% chance that we sleep forever
+    if (i == 0 && random.nextInt(10) < 5) {
+      a.attach(x => System.out.println("Start and sleeps ----> " + i));
+      Thread.sleep(random.nextInt(1000));
+      a.write(());
     }
-
-    b.write(());
-    System.out.println("Ending agent " + i);
-    agent(i)(a, b)
+    else {
+      a.attach(x => System.out.println("Start ----> " + i));
+      b.attach(x => System.out.println("Stop -> " + i));
+      Thread.sleep(random.nextInt(1000));
+      a.write(());
+      Thread.sleep(random.nextInt(1000));
+      b.write(());
+	agent(i)(a, b)
+    }
   }
 
   //***************** Entry function ******************//
@@ -77,7 +77,7 @@ object scheduler {
 
   def main(args: Array[String]): unit = {
     val agentNb = 5;
-    val agents = for(val i <- List.range(0, agentNb)) yield agent(i);
+    val agents = List.range(0, agentNb) map agent;
     scheduleAgents(agents);
   }
 

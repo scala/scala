@@ -1,74 +1,65 @@
-/** Two-place buffer specification and implementation. */
-object twoPlaceBuffer {
+import scala.concurrent.pilib._;
 
-  import scala.concurrent.pilib._;
+/** Two-place buffer specification and implementation. */
+object twoPlaceBuffer with Executable {
 
   /**
   * Specification.
   */
-  def Spec[a](put: Chan[a], get: Chan[a]): unit =  {
+  def Spec[a](in: Chan[a], out: Chan[a]): unit =  {
 
-    def B0: unit = {
-      val x = put.read;
-      B1(x)
-    }
-
-    def B1(x: a): unit = choice (
-      get(x) * (B0),
-      put * (y => B2(x, y))
+    def B0: unit = choice (
+      in * (x => B1(x))
     );
 
-    def B2(x: a, y: a): unit = {
-      get.write(x);
-      B1(y)
-    };
+    def B1(x: a): unit = choice (
+      out(x) * (B0),
+      in * (y => B2(x, y))
+    );
+
+    def B2(x: a, y: a): unit = choice (
+      out(x) * (B1(y))
+    );
 
     B0
   }
 
   /**
-  * Implementation.
+  * Implementation using two one-place buffers.
   */
-  def Impl[a](put: Chan[a], get: Chan[a]): unit =  {
-
-    // An empty one-place buffer.
-    def B0(in: Chan[a], out: Chan[a]): unit = {
-      val x = in.read;
-      B1(in, out, x)
+  def Impl[a](in: Chan[a], out: Chan[a]): unit =  {
+    ///- ... complete here ...
+    // one-place buffer
+    def OnePlaceBuffer[a](in: Chan[a], out: Chan[a]): unit =  {
+      def B0: unit = choice ( in * (x => B1(x)) );
+      def B1(x: a): unit = choice ( out(x) * (B0));
+      B0
     }
-
-    // A full one-place buffer containing x.
-    def B1(in: Chan[a], out: Chan[a], x: a): unit = {
-      out.write(x);
-      B0(in, out)
-    };
-
     val hidden = new Chan[a];
-    spawn < B0(put, hidden) | B0(hidden, get) >
+    spawn < OnePlaceBuffer(in, hidden) | OnePlaceBuffer(hidden, out) >
+    ///+
   }
 
   val random = new java.util.Random();
 
-  def Producer(n: Int, put: Chan[String]): unit = {
-    Thread.sleep(1 + random.nextInt(1000));
-    val msg = "object " + n;
-    put.write(msg);
-    System.out.println("Producer gave " + msg);
-    Producer(n + 1, put)
+  def Producer(n: Int, in: Chan[String]): unit = {
+    Thread.sleep(random.nextInt(1000));
+    val msg = "" + n;
+    choice (in(msg) * {});
+    Producer(n + 1, in)
   }
 
-  def Consumer(get: Chan[String]): unit = {
-    Thread.sleep(1 + random.nextInt(1000));
-    val msg = get.read;
-    System.out.println("Consummer took " + msg);
-    Consumer(get)
+  def Consumer(out: Chan[String]): unit = {
+    Thread.sleep(random.nextInt(1000));
+    choice (out * { msg => () });
+    Consumer(out)
   }
 
-  def main(args: Array[String]): unit = {
-    val put = new Chan[String];
-    val get = new Chan[String];
-    spawn < Producer(0, put) | Consumer(get) | Spec(put, get) >
-    //spawn < Producer(0, put) | Consumer(get) | Impl(put, get) >
-  }
+  val in = new Chan[String];
+  in.attach(s => System.out.println("put " + s));
+  val out = new Chan[String];
+  out.attach(s => System.out.println("get " + s));
+  //spawn < Producer(0, in) | Consumer(out) | Spec(in, out) >
+  spawn < Producer(0, in) | Consumer(out) | Impl(in, out) >
 
 }
