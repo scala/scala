@@ -916,7 +916,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
     ch = srcIterator.raw; ccol = ccol + 1; // = nextch() without unicode
     ch match {
       case SU =>
-	syntaxError( lastpos, "unclosed XML literal" );
+	//syntaxError( lastpos, "missing end tag in XML literal" );
 	token = EOF;
       case LF =>
         ccol = 0; cline = cline + 1;

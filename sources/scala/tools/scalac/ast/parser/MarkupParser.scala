@@ -55,6 +55,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       reportSyntaxError("'" + that + "' expected instead of '" + ch + "'");
   }
 
+  var debugLastStartElement = new mutable.Stack[Pair[Int,String]];
+
   /** checks whether next character starts a Scala block, if yes, skip it.
    * @return true if next character starts a scala block
    */
@@ -288,7 +290,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *               | xmlTag1 '/' '>'
    */
   /*[Duplicate]*/ def element: Tree = {
-    var pos1 = pos;
+    val pos1 = pos;
     val Tuple2(qname, attrMap) = xTag;
     if(ch == '/') { // empty element
       xToken('/');
@@ -296,8 +298,10 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
       handle.element( pos1, qname, attrMap, new mutable.ListBuffer[Tree] );
     } else { // handle content
       xToken('>');
+      debugLastStartElement.push(Pair(pos1,qname));
       val ts = content;
       xEndTag( qname );
+      debugLastStartElement.pop;
       handle.element( pos1, qname, attrMap, ts );
     }
   }
@@ -401,7 +405,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    * @return Scala representation of this xml literal
    * precondition: s.xStartsXML == true
   */
-  def xLiteral: Tree = {
+  def xLiteral: Tree = try {
     init;
     handle.isPattern = false;
     val pos = s.pos;
@@ -418,13 +422,19 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //Console.println("out of xLiteral, parsed:"+tree.toString());
     s.xSync2;
     tree
+  } catch {
+    case _:ArrayIndexOutOfBoundsException =>
+      s.syntaxError(debugLastStartElement.top._1,
+                    "missing end tag in XML literal for <"
+                    +debugLastStartElement.top._2+">");
+      Tree.Empty;
   }
 
   /** @see xmlPattern. resynchronizes after succesful parse
    * @return this xml pattern
    * precondition: s.xStartsXML == true
   */
-  def xLiteralPattern:Tree = {
+  def xLiteralPattern:Tree = try {
     init;
     val oldMode = handle.isPattern;
     handle.isPattern = true;
@@ -443,6 +453,12 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //Console.println("out of xLiteralPattern, parsed:"+tree.toString());
     s.xSync2;
     tree
+  }catch {
+    case _:ArrayIndexOutOfBoundsException =>
+      s.syntaxError(debugLastStartElement.top._1,
+                    "missing end tag in XML literal for <"
+                    +debugLastStartElement.top._2+">");
+      Tree.Empty;
   }
 
   def xEmbeddedExpr:Tree = {
@@ -475,6 +491,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
 
   def init: Unit = {
     ch = s.ch;
+    pos = s.pos;
     //Console.println("\ninit! ch = "+ch);
   }
 
@@ -532,6 +549,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
     //Console.println("xPattern");
     val pos1 = pos;
     val qname = xName;
+    debugLastStartElement.push(Pair(pos1,qname));
     xSpaceOpt;
     if( ch == '/' ) { // empty tag
       nextch;
@@ -571,6 +589,7 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
 	}
     }
     xEndTag( qname );
+    debugLastStartElement.pop;
     handle.makeXMLpat( pos1, qname, ts );
   }
 
