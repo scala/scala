@@ -31,7 +31,7 @@ public class CodeFactory extends PatternTool {
 
     /** a faked switch statement
      */
-    Tree Switch( Tree condition[],
+    public Tree Switch( Tree condition[],
 		 Tree body[],
 		 Tree defaultBody ) {
 	assert condition != null:"cond is null";
@@ -157,7 +157,7 @@ public class CodeFactory extends PatternTool {
        return gen.mkApply__(gen.Select(tree, defs.BOOLEAN_NOT()));
        }
 
-    /*protected*/ Tree And(Tree left, Tree right) {
+    /*protected*/ public Tree And(Tree left, Tree right) {
         switch (left) {
 	case Literal(BOOLEAN(boolean value)):
 	    return value ? right : left;
@@ -169,7 +169,7 @@ public class CodeFactory extends PatternTool {
         return gen.mkApply_V(gen.Select(left, defs.BOOLEAN_AND()), new Tree[]{right});
     }
 
-    /*protected*/ Tree Or(Tree left, Tree right) {
+    /*protected*/ public Tree Or(Tree left, Tree right) {
         switch (left) {
 	case Literal(BOOLEAN(boolean value)):
 	    return value ? left : right;
@@ -265,7 +265,7 @@ public class CodeFactory extends PatternTool {
     }
 
 
-    Type pairType( Type left, Type right ) {
+    public Type pairType( Type left, Type right ) {
 	return defs.TUPLE_TYPE(new Type[] { left, right } );
     }
 

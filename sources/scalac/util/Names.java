@@ -202,6 +202,7 @@ public class Names {
     public static final Name print = Name.fromString("print");
     public static final Name readResolve = Name.fromString("readResolve");
     public static final Name report = Name.fromString("report");
+    public static final Name result = Name.fromString("$result");
     public static final Name runtime = Name.fromString("runtime");
     public static final Name scala = Name.fromString("scala");
     public static final Name setParents = Name.fromString("setParents");

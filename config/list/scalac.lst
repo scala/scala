@@ -127,7 +127,7 @@
 ../../../scalac/transformer/matching/NondetWordAutom.java
 ../../../scalac/transformer/matching/NoSeqVariableTraverser.java
 ../../../scalac/transformer/matching/PartialMatcher.java
-../../../scalac/transformer/matching/PatternMatcher.java
+#../../../scalac/transformer/matching/PatternMatcher.java
 ../../../scalac/transformer/matching/PatternNode.java
 ../../../scalac/transformer/matching/PatternNodeCreator.java
 ../../../scalac/transformer/matching/PatternTool.java
@@ -184,9 +184,10 @@ transformer/UnCurry.scala
 transformer/UnCurryPhase.scala
 transformer/matching/AlgebraicMatcher.scala
 transformer/matching/Autom2Scala.scala
-transformer/matching/TracerInScala.scala
 transformer/matching/LeftTracerInScala.scala
+transformer/matching/PatternMatcher.scala
 transformer/matching/RightTracerInScala.scala
+transformer/matching/TracerInScala.scala
 transformer/matching/WordAutomInScala.scala
 transformer/matching/SequenceMatcher.scala
 

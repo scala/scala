@@ -17,7 +17,7 @@ import Tree.ValDef;
 /** the environment for a body of a case
  */
 
-class CaseEnv {
+public class CaseEnv {
 
     /** the owner of the variables created here
      */
@@ -33,7 +33,7 @@ class CaseEnv {
 
     /** constructor
      */
-    CaseEnv( Symbol owner, CompilationUnit unit ) {
+    public CaseEnv( Symbol owner, CompilationUnit unit ) {
 	this.owner = owner;
 	this.defs = unit.global.definitions;
 	this.gen = unit.global.treeGen;

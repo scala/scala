@@ -18,7 +18,7 @@ import scala.tools.scalac.util.NewArray;
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
 
 import scalac.transformer.matching.PartialMatcher ;
-import scalac.transformer.matching.PatternMatcher ;
+//import scalac.transformer.matching.PatternMatcher ;
 
 import scalac.transformer.matching.PatternNode ;
 //import scalac.transformer.matching.SequenceMatcher ;

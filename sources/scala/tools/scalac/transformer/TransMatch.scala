@@ -16,8 +16,9 @@ import scalac.util._;       // Names
 
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
 
+
 import scalac.transformer.matching.PartialMatcher ;
-import scalac.transformer.matching.PatternMatcher ;
+//import scalac.transformer.matching.PatternMatcher ;
 //import scalac.transformer.matching.AlgebraicMatcher ;
 
 /** A transformer for expanding match expressions into
@@ -28,6 +29,7 @@ import scalac.transformer.matching.PatternMatcher ;
  */
 package scala.tools.scalac.transformer {
 
+  import matching.PatternMatcher ;
 //import matching.FullRegularTranslator ;
 
 class TransMatch( global:scalac_Global )
@@ -147,7 +149,8 @@ class TransMatch( global:scalac_Global )
       am.construct( matcher, cases.asInstanceOf[ Array[Tree] ] );
       matcher.tree
     } else {
-      val pm = new PatternMatcher( cunit, root, currentOwner, restpe );
+      val pm = new matching.PatternMatcher( cunit );
+      pm.initialize(root, currentOwner, restpe, true );
       try{
       pm.construct( cases.asInstanceOf[ Array[Tree] ] );
       } catch {

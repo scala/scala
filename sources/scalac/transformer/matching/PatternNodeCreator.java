@@ -43,39 +43,39 @@ public class PatternNodeCreator extends PatternTool {
         return node;
     }
 
-    public static DefaultPat DefaultPat(int pos, Type type) {
-		DefaultPat node = new DefaultPat();
-		node.pos = pos;
-		node.type = type;
-		return node;
+    public DefaultPat DefaultPat(int pos, Type type) {
+        DefaultPat node = new DefaultPat();
+        node.pos = pos;
+        node.type = type;
+        return node;
     }
 
     public ConstrPat ConstrPat(int pos, Type type) {
-		ConstrPat node = new ConstrPat(newVar(pos, type));
-		node.pos = pos;
-		node.type = type;
-		return node;
+        ConstrPat node = new ConstrPat(newVar(pos, type));
+        node.pos = pos;
+        node.type = type;
+        return node;
     }
 
-    public static ConstantPat ConstantPat(int pos, Type type, AConstant value) {
-		ConstantPat node = new ConstantPat( value );
-		node.pos = pos;
-		node.type = type;
-		return node;
+    public ConstantPat ConstantPat(int pos, Type type, AConstant value) {
+        ConstantPat node = new ConstantPat( value );
+        node.pos = pos;
+        node.type = type;
+        return node;
     }
 
-    public static VariablePat VariablePat(int pos, Tree tree) {
-		VariablePat node = new VariablePat( tree );
-		node.pos = pos;
-		node.type = tree.type;
-		return node;
+    public VariablePat VariablePat(int pos, Tree tree) {
+        VariablePat node = new VariablePat( tree );
+        node.pos = pos;
+        node.type = tree.type;
+        return node;
     }
 
-  	public static AltPat AltPat(int pos, Header header) {
-		AltPat node = new AltPat(header);
-		node.pos = pos;
-		node.type = header.type;
-		return node;
+    public AltPat AltPat(int pos, Header header) {
+        AltPat node = new AltPat(header);
+        node.pos = pos;
+        node.type = header.type;
+        return node;
     }
 
     // factories
