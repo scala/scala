@@ -23,6 +23,7 @@ PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(SCALAP_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
+PROJECT_SOURCES		+= $(SCALAC4ANT_SOURCES)
 PROJECT_SOURCES		+= $(SCALATEST_SOURCES)
 
 # scala scripts wrapper
@@ -128,6 +129,14 @@ DTD2SCALA_RSRC_LIST	+= $(filter %.xml,$(DTD2SCALA_LIST))
 DTD2SCALA_RSRC_FILES	+= $(filter %.xml,$(DTD2SCALA_SOURCES))
 DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 
+# scala ant task
+SCALAC4ANT_ROOT		 = $(PROJECT_SUPPORTDIR)/ant
+SCALAC4ANT_LIST		+= src.java/scala/tools/scalac4ant/AntAdaptor.java
+SCALAC4ANT_LIST		+= src.java/scala/tools/scalac4ant/AntTask.java
+SCALAC4ANT_SOURCES	+= $(SCALAC4ANT_LIST:%=$(SCALAC4ANT_ROOT)/%)
+SCALAC4ANT_JC_FILES	+= $(SCALAC4ANT_SOURCES)
+SCALAC4ANT_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(ANT_JARFILE)
+
 # scalatest
 SCALATEST_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalatest
 SCALATEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scalatest.lst)
@@ -144,6 +153,7 @@ TOOLS_JAR_FILES		+= scala/tools/scaladoc
 TOOLS_JAR_FILES		+= scala/tools/scalai
 TOOLS_JAR_FILES		+= scala/tools/dtd2scala
 TOOLS_JAR_FILES		+= scala/tools/scalap
+TOOLS_JAR_FILES		+= scala/tools/scalac4ant
 TOOLS_JAR_FILES		+= scala/tools/scalatest
 
 # java compilation
@@ -166,6 +176,7 @@ all		: interpreter
 all		: scaladoc
 all		: scalap
 all		: dtd2scala
+all		: scalac4ant
 all		: scalatest
 all		: library-doc
 
@@ -213,10 +224,9 @@ scaladoc	: .latest-scaladoc-rsrc
 scalap		: .latest-scalap-sc
 dtd2scala	: .latest-dtd2scala-sc
 dtd2scala	: .latest-dtd2scala-rsrc
+scalac4ant	: .latest-scalac4ant-jc
 scalatest	: .latest-scalatest-jc
 library-doc	: .latest-library-sdc
-scalac4ant	:
-	cd support/ant && ant
 
 .PHONY		: fastclean
 .PHONY		: sources
@@ -232,9 +242,10 @@ scalac4ant	:
 .PHONY		: scaladoc
 .PHONY		: scalap
 .PHONY		: dtd2scala
+.PHONY		: scalac4ant
 .PHONY		: scalatest
 .PHONY		: library-doc
-.PHONY		: scala4ant
+.PHONY		: scalac4ant
 
 ##############################################################################
 # Commands - Version management
@@ -354,6 +365,10 @@ cvs-fix-perms		:
 	    $(DTD2SCALA_RSRC_OUTPUTDIR))
 	touch $@
 
+.latest-scalac4ant-jc		: $(SCALAC4ANT_JC_FILES)
+	@$(make) jc target=SCALAC4ANT SCALAC4ANT_JC_FILES='$?'
+	touch $@
+
 .latest-scalatest-jc		: $(SCALATEST_JC_FILES)
 	@$(make) jc target=SCALATEST SCALATEST_JC_FILES='$?'
 	touch $@
@@ -422,9 +437,10 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalap-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-dtd2scala-rsrc
-$(TOOLS_JAR_ARCHIVE)	: .latest-scalap-sc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalac4ant-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalatest-jc
 $(TOOLS_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=TOOLS
