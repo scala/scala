@@ -71,7 +71,7 @@ public class CodePrinter {
         this.writer = writer;
         this.step = step;
         this.level = 0;
-        this.align = false;
+        this.align = true;
         this.space = false;
         this.line = false;
     }
