@@ -360,7 +360,7 @@ abstract class Tree[KEY,Entry](order:Order[KEY]) {
 
 } // End of class Tree...
 
-abstract class InsertTree[KEY,Entry]() {
+private abstract class InsertTree[KEY,Entry]() {
   type aNode = GBTree[KEY,Entry];
   type anInsertTree = InsertTree[KEY,Entry];
 
@@ -373,7 +373,7 @@ abstract class InsertTree[KEY,Entry]() {
 *  GBTree is an internal class used by Tree.
 */
 
-abstract class GBTree[KEY,Entry] {
+private abstract class GBTree[KEY,Entry] {
   type aNode = GBTree[KEY,Entry];
   type anInsertTree = InsertTree[KEY,Entry];
 
