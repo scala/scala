@@ -714,7 +714,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	//vparam.symbol().initialize();
 	ts.append(
 	    make.ValDef(
-		vparam.pos, CASEACCESSOR, vparam.name, vparam.tpe,
+		vparam.pos, CASEACCESSOR, vparam.name, Tree.Empty,
 		make.Ident(vparam.pos, vparam.name)
 		.setSymbol(vparam.symbol())));
     }

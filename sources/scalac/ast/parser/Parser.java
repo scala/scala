@@ -1841,6 +1841,8 @@ public class Parser implements Tokens {
     Tree[] templateBody() {
 	accept(LBRACE);
 	Tree[] body = templateStatSeq();
+	if (body.length == 0)
+	    body = new Tree[]{Tree.Empty};
 	accept(RBRACE);
 	return body;
     }

@@ -1022,7 +1022,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    owntype = Type.ErrorType;
 			}
 		    } else {
-			((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
+			if ((sym.flags & CASEACCESSOR) != 0) {
+			    rhs.type = rhs.symbol().type();
+			} else {
+			    ((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
+			}
 			owntype = rhs.type;
 		    }
 		    popContext();
@@ -1429,12 +1433,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    qual = infer.mkTypeApply(qual, tparams, restype, Symbol.type(tparams));
 	    uninst = tparams;
 	}
-	Symbol sym = typeToConstructor(tree.pos, qual.type.lookup(name));
+	Symbol sym = qual.type.lookup(name);
 	if (sym.kind == NONE) {
 	    //System.out.println(qual.type + " has members " + qual.type.members());//DEBUG
 	    return error(tree.pos,
 			 decode(name) + " is not a member of " + qual.type.widen());
 	} else {
+	    sym = typeToConstructor(tree.pos, sym);
 	    checkAccessible(tree.pos, sym, qual);
 	    sym.flags |= ACCESSED;
 	    if (!TreeInfo.isSelf(qual, context.enclClass.owner))
@@ -1835,10 +1840,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree rhs1 = rhs;
 		if (rhs != Tree.Empty) {
 		    pushContext(tree, sym, context.scope);
-		    if ((sym.flags & CASEACCESSOR) != 0)
-			rhs1.type = rhs1.symbol().type();
-		    else
-			rhs1 = transform(rhs, EXPRmode, tpe1.type);
+		    rhs1 = transform(rhs, EXPRmode, tpe1.type);
 		    popContext();
 		}
 		sym.flags |= LOCKED;
