@@ -135,6 +135,7 @@ testing/UnitTest.scala
 
 xml/AttributedNode.scala
 xml/BindingFactoryAdapter.scala
+xml/Elem.scala
 xml/FactoryAdapter.scala
 xml/Node.scala
 xml/Text.scala
