@@ -213,7 +213,7 @@ public class Erasure extends GenTransformer implements Modifiers {
 	    qualifier = coerce(qualifier, prefix);
 
             // Might end up with "box(unbox(...))". That's needed by backend.
-            if (isUnboxedType(prefix)) qualifier = box(qualifier);
+            if (isUnboxedType(prefix)) qualifier = box(qualifier, true);
 	    return gen.Select(tree.pos, qualifier, symbol);
 
 	case Ident(_):
@@ -343,6 +343,18 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Boxes the given tree. */
     private Tree box(Tree tree) {
+        return box(tree, false);
+    }
+
+    /** Boxes the given tree. */
+    private Tree box(Tree tree, boolean force) {
+        switch (tree) {
+        case Apply(Tree fun, Tree[] args):
+            if (primitives.getPrimitive(fun.symbol()) == Primitive.UNBOX) {
+                assert args.length == 1: tree;
+                if (!force) return args[0];
+            }
+        }
         Symbol symbol = primitives.getBoxValueSymbol(tree.getType());
 	Tree boxtree = gen.mkRef(tree.pos, symbol);
         return tree.getType().equals(UNBOXED_UNIT)
@@ -352,6 +364,13 @@ public class Erasure extends GenTransformer implements Modifiers {
 
     /** Unboxes the given tree to the given type. */
     private Tree unbox(Tree tree, Type pt) {
+        switch (tree) {
+        case Apply(Tree fun, Tree[] args):
+            if (primitives.getPrimitive(fun.symbol()) == Primitive.BOX) {
+                assert args.length == 1: tree;
+                return args[0];
+            }
+        }
         Symbol symbol = primitives.getUnboxValueSymbol(pt);
         return gen.mkApply_V(gen.mkRef(tree.pos, symbol), new Tree[]{tree});
     }
