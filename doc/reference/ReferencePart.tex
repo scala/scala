@@ -1124,21 +1124,23 @@ hand, accesses these fields just like normal variables.
 
 \begin{lstlisting}
 class TimeOfDayVar {
-  private var h: int = 0, m: int = 0, s: int = 0;
+  private var h: int = 0;
+  private var m: int = 0;
+  private var s: int = 0;
 
   def hours              =  h;
   def hours_= (h: int)   =  if (0 <= h && h < 24) this.h = h 
                             else throw new DateError();
 
-  def minutes            =  m
+  def minutes            =  m;
   def minutes_= (m: int) =  if (0 <= m && m < 60) this.m = m
                             else throw new DateError();
 
-  def seconds            =  s
+  def seconds            =  s;
   def seconds_= (s: int) =  if (0 <= s && s < 60) this.s = s
                             else throw new DateError();
 }
-val t = new TimeOfDayVar;
+val d = new TimeOfDayVar;
 d.hours = 8; d.minutes = 30; d.seconds = 0;
 d.hours = 25;                 // throws a DateError exception
 \end{lstlisting}
