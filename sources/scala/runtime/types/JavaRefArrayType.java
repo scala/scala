@@ -41,13 +41,13 @@ public class JavaRefArrayType extends Type {
         return (o instanceof Object[]);
     }
 
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         return (that instanceof JavaRefArrayType)
-            && (elemType.isSameAs(((JavaRefArrayType)that).elemType));
+            && (elemType.isSameType(((JavaRefArrayType)that).elemType));
     }
 
     public boolean isSubType(Type that) {
-        return isSameAs(that);
+        return isSameType(that);
     }
 
     public String toString() {

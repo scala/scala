@@ -45,7 +45,7 @@ public class MethodType extends Type {
                 return false;
 
             for (int i = 0; i < argTypes.length; ++i) {
-                if (! argTypes[i].isSameAs(thatMT.argTypes[i]))
+                if (! argTypes[i].isSameType(thatMT.argTypes[i]))
                     return false;
             }
             return returnType.isSubType(thatMT.returnType);
@@ -53,7 +53,7 @@ public class MethodType extends Type {
             return false;
     }
 
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         if (that instanceof MethodType) {
             MethodType thatMT = (MethodType)that;
 
@@ -61,10 +61,10 @@ public class MethodType extends Type {
                 return false;
 
             for (int i = 0; i < argTypes.length; ++i) {
-                if (! argTypes[i].isSameAs(thatMT.argTypes[i]))
+                if (! argTypes[i].isSameType(thatMT.argTypes[i]))
                     return false;
             }
-            return returnType.isSameAs(thatMT.returnType);
+            return returnType.isSameType(thatMT.returnType);
         }
         else
             return false;

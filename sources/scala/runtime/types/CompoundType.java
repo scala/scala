@@ -67,7 +67,7 @@ public class CompoundType extends Type {
         }
     }
 
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         if (that instanceof CompoundType) {
             CompoundType thatCT = (CompoundType)that;
 
@@ -75,7 +75,7 @@ public class CompoundType extends Type {
                 return false;
 
             for (int i = 0; i < components.length; ++i) {
-                if (!components[i].isSameAs(thatCT.components[i]))
+                if (!components[i].isSameType(thatCT.components[i]))
                     return false;
             }
 

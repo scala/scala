@@ -60,7 +60,7 @@ public class ClassType extends Type {
         return true;
     }
 
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         return (that instanceof ClassType)
             && (((ClassType)that).clazz == this.clazz);
     }

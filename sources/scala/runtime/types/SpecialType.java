@@ -31,7 +31,7 @@ abstract public class SpecialType extends Type {
         return null;
     }
 
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         return this == that;
     }
 }

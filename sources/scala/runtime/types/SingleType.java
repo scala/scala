@@ -36,7 +36,7 @@ public class SingleType extends Type {
         return that.isInstance(instance);
     }
 
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         return (that instanceof SingleType)
             && (this.instance == ((SingleType)that).instance);
     }

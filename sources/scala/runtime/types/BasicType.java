@@ -26,7 +26,7 @@ abstract public class BasicType extends Type {
     public boolean isSubType(Type that) {
         return false;           // TODO
     }
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         return this == that;
     }
 }

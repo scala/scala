@@ -28,7 +28,7 @@ abstract public class ValueType extends Type {
             || that == Type.AnyVal
             || that == this;
     }
-    public boolean isSameAs(Type that) {
+    public boolean isSameType(Type that) {
         return this == that;
     }
 }

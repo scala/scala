@@ -37,8 +37,6 @@ import scala.runtime.PearsonHash;
  */
 
 abstract public class Type implements java.io.Serializable {
-    public static final Type[] EMPTY_ARRAY = new Type[]{};
-
     /** @meta method [?T](scala.Int) scala.Array[?T]; */
     abstract public Array newArray(int size);
 
@@ -51,11 +49,11 @@ abstract public class Type implements java.io.Serializable {
      */
     abstract public boolean isInstance(Object o);
 
-    abstract public boolean isSameAs(Type that);
+    abstract public boolean isSameType(Type that);
     abstract public boolean isSubType(Type that);
 
     public boolean equals(Object that) {
-        return (that instanceof Type) && this.isSameAs((Type)that);
+        return (that instanceof Type) && this.isSameType((Type)that);
     }
 
     public int hashCode() {
@@ -91,11 +89,11 @@ abstract public class Type implements java.io.Serializable {
     public static final TypeAllRef AllRef = new TypeAllRef();
     public static final TypeAll    All    = new TypeAll();
 
-    public static boolean isSameAs(Type[] these, Type[] those) {
+    public static boolean isSameType(Type[] these, Type[] those) {
         if (these.length != those.length)
             return false;
         for (int i = 0; i < these.length; ++i) {
-            if (!these[i].isSameAs(those[i]))
+            if (!these[i].isSameType(those[i]))
                 return false;
         }
         return true;
