@@ -55,7 +55,7 @@ if [ -z "$SCRIPT" ]; then
 fi;
 
 case "$SCRIPT" in
-    socos* | siris* | surus* )
+    socos* | siris* | surus* | dtd2scala* )
         true;;
     *)
         echo "unknown script \`$SCRIPT'" 1>&2;
@@ -69,6 +69,7 @@ if [ "$CVSTREE" = "true" ]; then
     BCEL_PATH="${BCEL_PATH:-/home/linuxsoft/apps/BCEL-5/bcel.jar}";
     FJBG_PATH="${FJBG_PATH:-/home/linuxsoft/apps/fjbg/jars/fjbg.jar}";
     MSIL_PATH="${MSIL_PATH:-/home/linuxsoft/apps/java2net/msil.jar}";
+    XERCES_PATH="${XERCES_PATH:-/home/linuxsoft/apps/xerces-j/xercesImpl.jar}";
     SCALA_CLASSES="$PREFIX/classes";
     SCALA_SOURCES="$PREFIX/sources";
 else
@@ -78,6 +79,7 @@ else
     BCEL_PATH="$LIBDIR/bcel.jar";
     FJBG_PATH="$LIBDIR/fjbg.jar";
     MSIL_PATH="$LIBDIR/msil.jar";
+    XERCES_PATH="$LIBDIR/xercesImpl.jar";
     SCALA_CLASSES="$LIBDIR/$PROJECT_NAME.jar";
     SCALA_SOURCES="$DATADIR/$PROJECT_NAME/library";
 fi;
@@ -132,8 +134,13 @@ case "$SCRIPT" in
         JAVA_MAIN="scalai.Main";
         ;;
     siris* )
+        SCALA_WRAPPER_EXEC=${SCALA_WRAPPER_EXEC:="exec ledit"};
         JAVA_MAIN="scalai.Main";
         MAIN_ARGS="$MAIN_ARGS -interactive";
+        ;;
+    dtd2scala* )
+        JAVA_CLASSPATH="$JAVA_CLASSPATH:$XERCES_PATH";
+        JAVA_MAIN="scala.xml.dtd2scala";
         ;;
 esac;
 
