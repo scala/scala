@@ -8,9 +8,9 @@ object Test {
   def main( argv:Array[String] ) = {
     val link = A(PCDATA("link"));
 
-    val m = new scala.xml.javaAdapter.HashMap[String, String];
-    m.put("href","http://lampwww.epfl.ch");
-    link.setAttribs(m);
+    //val m = new scala.collection.mutable.HashMap[String, String];
+    //m.put("href","http://lampwww.epfl.ch");
+    //link.setAttribs(m);
 
     val body = Body(
       H1(PCDATA("Welcome to xhtml in scala")),
