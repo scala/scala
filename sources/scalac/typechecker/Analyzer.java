@@ -2000,27 +2000,30 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    .setType( pt );
 
 	    case Bind( Name name, Tree body ):
-		Symbol vble = new TermSymbol(tree.pos,
-                                             name,
-                                             context.owner,
-                                             0x00000000 ).setType( pt );
-		vble = enterInScope( vble );
-                //System.out.println("Bind("+name+",...) enters in scope:"+vble.fullNameString());
+                Symbol vble = null;
+                if( name != Names.PATTERN_WILDCARD ) {
+                    vble = new TermSymbol(tree.pos,
+                                          name,
+                                          context.owner,
+                                          0x00000000 ).setType( pt );
+                    vble = enterInScope( vble );
+                    //System.out.println("Bind("+name+",...) enters in scope:"+vble.fullNameString());
 
-		patternVars.put( vble, new Boolean( this.inAlternative ));
-		//System.out.println("case Bind.. put symbol vble="+vble+" in scope and patternVars.");
-
-		body = transform( body );
-		//assert body.type != null;
-		if( TreeInfo.isSequenceValued( body ) ) {
-                    vble.setType( definitions.LIST_TYPE(pt) );
-                } else {
-                    vble.setType( body.type );
+                    patternVars.put( vble, new Boolean( this.inAlternative ));
+                    //System.out.println("case Bind.. put symbol vble="+vble+" in scope and patternVars.");
                 }
-
-		return copy.Bind( tree, name, body )
-		    .setSymbol( vble ).setType( body.type );
-
+		body = transform( body );
+                if( name != Names.PATTERN_WILDCARD ) {
+                    //assert body.type != null;
+                    if( TreeInfo.isSequenceValued( body ) ) {
+                        vble.setType( definitions.listType(pt) );
+                    } else {
+                        vble.setType( body.type );
+                    }
+                    return copy.Bind( tree, name, body )
+                        .setSymbol( vble ).setType( body.type );
+		}
+                return body;
 	    case Visitor(Tree.CaseDef[] cases):
 		if (pt.symbol().isSubClass(definitions.PARTIALFUNCTION_CLASS)) {
 		    Type pft = pt.baseType(definitions.PARTIALFUNCTION_CLASS);
@@ -2166,6 +2169,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 
 	    case Typed(Tree expr, Tree tpe):
+                switch( expr ) {
+		case Ident(Name n):
+                    if ((n!=Names.PATTERN_WILDCARD)
+                        &&((mode & PATTERNmode) != 0)) {
+                        return transform( desugarize.TypedPattern( (Typed) tree ),
+                                          mode,
+                                          pt );
+                    }
+                }
 		Tree expr1;
 		Tree tpe1;
 		switch (tpe) {
@@ -2178,8 +2190,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			: Type.ErrorType;
 		    tpe1 = tpe.setType(elemtp);
 		    break;
-		default:
-		    tpe1 = transform(tpe, TYPEmode);
+                default:
+                    tpe1 = transform(tpe, TYPEmode);
 		    expr1 = transform(expr, mode & baseModes, tpe1.type);
 		}
 		return copy.Typed(tree, expr1, tpe1).setType(tpe1.type);
@@ -2470,7 +2482,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                                                   context.owner,
                                                   0).setType( pt );
 
-			    if((( mode & SEQUENCEmode) != 0)&&( name != Names.PATTERN_WILDCARD )) {
+			    //if((( mode & SEQUENCEmode) != 0)&&( name != Names.PATTERN_WILDCARD )) {
+			    if( name != Names.PATTERN_WILDCARD ) {
 				// x => x @ _ in sequence patterns
 				tree = desugarize.IdentPattern( tree );
 			    }

@@ -535,8 +535,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
     }
 
-    /**  x  => x @ _
-     *   only within sequence patterns, for now. BE
+    /**  in patterns x  => x @ _
      *   precondition:  name != '_'
      *   post: returns *unattributed* Bind tree
      */
@@ -544,14 +543,37 @@ public class DeSugarize implements Kinds, Modifiers {
       public Tree IdentPattern( Tree tree ) {
             switch( tree ) {
             case Ident( Name name ):
-		if( name == Names.PATTERN_WILDCARD ) throw new ApplicationError("nothing to desugarize");
+		if( name == Names.PATTERN_WILDCARD )
+                    throw new ApplicationError("nothing to desugarize");
 		return make.Bind( tree.pos,
 				  name,
-				  gen.Ident( tree.pos, global.definitions.PATTERN_WILDCARD )).setType( tree.type );
+				  gen.Ident( tree.pos,
+                                             global.definitions.PATTERN_WILDCARD ))
+                    .setType( tree.type );
             default:
 		throw new ApplicationError("ident expected");
             }
       }
+
+    /**  in patterns x:T  => x @ _ : T
+     *   pre: t is a typed variable.
+     *   post: returns *unattributed* Bind tree
+     */
+
+    public Tree TypedPattern( Tree.Typed t ) {
+        switch( t ) {
+        case Typed(Ident(Name name), Tree tpe):
+            return make.Bind(t.pos,
+                             name,
+                             make.Typed(t.pos,
+                                        gen.Ident( t.pos,
+                                                   global.definitions.PATTERN_WILDCARD ),
+                                        tpe));
+        default:
+            throw new ApplicationError("unexpected Typed node");
+        }
+    }
+
 
     /** f, (syms_1)...(syms_n)T    ==>    f(ps_1)...(ps_n)
      */
