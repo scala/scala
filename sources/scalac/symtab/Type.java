@@ -1257,18 +1257,10 @@ public class Type implements Modifiers, Kinds, TypeTags {
 // Cloning ---------------------------------------------------------------
 
     /**
-     * Clones a type i.e. returns a new type "as seen from" the new
-     * owner and where all symbols in MethodTypes and PolyTypes have
-     * been cloned.
+     * Clones a type i.e. returns a new type where all symbols in
+     * MethodTypes and PolyTypes have been cloned.
      */
     public Type cloneType(Symbol oldOwner, Symbol newOwner) {
-        Type clone = cloneType0(oldOwner, newOwner);
-        if (oldOwner != newOwner && oldOwner.isClass())
-            clone = new SubstThisMap(oldOwner, newOwner).applyParams(clone);
-        return clone;
-    }
-
-    private Type cloneType0(Symbol oldOwner, Symbol newOwner) {
         switch (this) {
 
         case MethodType(Symbol[] vparams, Type result):
@@ -1277,7 +1269,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
                 assert vparams[i].owner() == oldOwner : Debug.show(vparams[i]);
                 clones[i] = vparams[i].cloneSymbol(newOwner);
             }
-            result = result.cloneType0(oldOwner, newOwner);
+            result = result.cloneType(oldOwner, newOwner);
             Type clone = Type.MethodType(clones, result);
             if (vparams.length != 0)
                 clone = new SubstSymMap(vparams, clones).applyParams(clone);
@@ -1289,7 +1281,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
                 assert tparams[i].owner() == oldOwner : Debug.show(tparams[i]);
                 clones[i] = tparams[i].cloneSymbol(newOwner);
             }
-            result = result.cloneType0(oldOwner, newOwner);
+            result = result.cloneType(oldOwner, newOwner);
             Type clone = Type.PolyType(clones, result);
             if (tparams.length != 0)
                 clone = new SubstSymMap(tparams, clones).applyParams(clone);
