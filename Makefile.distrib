@@ -31,6 +31,12 @@ JEDIT_LIST		+= scala.xml
 JEDIT_LIST		+= README
 JEDIT_FILES		 = $(JEDIT_LIST:%=$(JEDIT_ROOT)/%)
 
+# scite scala-mode
+SCITE_ROOT		 = $(PROJECT_SUPPORTDIR)/scite
+SCITE_LIST		+= scala.properties
+SCITE_LIST		+= README
+SCITE_FILES		 = $(SCITE_LIST:%=$(SCITE_ROOT)/%)
+
 # textpad scala-mode
 TEXTPAD_ROOT		 = $(PROJECT_SUPPORTDIR)/textpad
 TEXTPAD_LIST		+= scala.syn
@@ -40,6 +46,7 @@ TEXTPAD_FILES		 = $(TEXTPAD_LIST:%=$(TEXTPAD_ROOT)/%)
 # ultraedit scala-mode
 ULTRAEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/ultraedit
 ULTRAEDIT_LIST		+= scala.txt
+ULTRAEDIT_LIST		+= README
 ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
 # scala test
@@ -132,6 +139,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/jedit
 	$(strip $(MIRROR) -m 644 -p -C $(JEDIT_ROOT) $(JEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/jedit)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/scite
+	$(strip $(MIRROR) -m 644 -p -C $(SCITE_ROOT) $(SCITE_LIST) \
+	    $(INSTALL_SUPPORTDIR)/scite)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/textpad
 	$(strip $(MIRROR) -m 644 -p -C $(TEXTPAD_ROOT) $(TEXTPAD_LIST) \
 	    $(INSTALL_SUPPORTDIR)/textpad)
