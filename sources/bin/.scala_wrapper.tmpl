@@ -690,10 +690,10 @@ test_run_xml() {
 
 # Tests the .NET backend.
 test_run_msil() {
-    assemblies={#TEST_ASSEMBLIES#};
+    assemblies=`get_os_filename {#TEST_ASSEMBLIES#}`;
     rm -f "$dstbase".il &&
     rm -f "$dstbase".EXE &&
-    $SOCOS -nowarn -target:msil -o "$os_dstbase" $assemblies "$@" \
+    $SOCOS -nowarn -target:msil -o "$os_dstbase" -r $assemblies "$@" \
         "$os_srcbase".scala &&
     case "$UNAME" in
         CYGWIN* )
