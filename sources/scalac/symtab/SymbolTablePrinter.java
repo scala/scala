@@ -360,7 +360,6 @@ public class SymbolTablePrinter {
 
     /** Prints the given symbol */
     public SymbolTablePrinter printSymbol(Symbol symbol) {
-        if (symbol.isRoot()) return print("<root package>");
         if (symbol.isAnonymousClass()) {
             print("<template>");
             return printSymbolUniqueId(symbol);
@@ -504,12 +503,10 @@ public class SymbolTablePrinter {
             return print("<notype>");
         case ThisType(Symbol sym):
             if (sym == Symbol.NONE) return print("<local>.this");
-            if (sym.isRoot()) return print("<root>.this");
             if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
                 return print("this");
             return printSymbolName(sym).print(".this");
         case TypeRef(Type pre, Symbol sym, Type[] args):
-            if (sym.isRoot()) return print("<root>");
             if (!global.debug) {
                 if (type.isFunctionType())
                     return printFunctionType(args);
@@ -521,7 +518,6 @@ public class SymbolTablePrinter {
             if (args.length != 0) print('[').printTypes(args, ",").print(']');
             return this;
         case SingleType(Type pre, Symbol sym):
-            if (sym.isRoot()) return print("<root>");
             return printPrefix(pre).printSymbolName(sym);
         case CompoundType(Type[] parts, Scope members):
             return printTypes(parts," with ").space()

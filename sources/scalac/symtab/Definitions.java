@@ -202,7 +202,7 @@ public class Definitions {
         // this is the root value; all top-level functions,
         // modules etc. are a member of this value
         ROOT = TermSymbol.newJavaPackageModule(
-            Names.EMPTY, Symbol.NONE, pparser);
+            Names.ROOT, Symbol.NONE, pparser);
         ROOT_CLASS = ROOT.moduleClass();
         // this is a prefix for all types inside of the anonymous package
         ROOT_TYPE = ROOT_CLASS.thisType();
