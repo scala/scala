@@ -78,13 +78,13 @@ latex.distclean		:
 
 
 %.dvi			: %.tex $(LATEX_SOURCES)
-	$(LATEXMK) $<
+	$(LATEXMK) $(LATEXMK_FLAGS) -g $<
 
-%.ps			: %.tex $(LATEX_SOURCES)
-	$(LATEXMK) -ps $<
+%.ps			: %.dvi
+	$(LATEXMK) $(LATEXMK_FLAGS) -ps $*.tex
 
 %.pdf			: %.tex $(LATEX_SOURCES)
-	$(LATEXMK) -pdf $<
+	$(LATEXMK) $(LATEXMK_FLAGS) -g -pdf $<
 
 .PRECIOUS		: %.dvi
 .PRECIOUS		: %.ps
