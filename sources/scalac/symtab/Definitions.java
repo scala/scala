@@ -506,7 +506,7 @@ public class Definitions {
 	SEQ_CLASS = getClass(Names.scala_Seq);
 	LIST_CLASS = getClass(Names.scala_List);
         NIL = getModule(Names.scala_Nil);
-        CONS_CLASS = getModule(Names.scala_COLONCOLON);
+        CONS_CLASS = getClass(Names.scala_COLONCOLON);
         ARRAY_CLASS = getClass(Names.scala_Array);
         PREDEF = getModule(Names.scala_Predef);
         CONSOLE = getModule(Names.scala_Console);
