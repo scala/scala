@@ -64,8 +64,6 @@ class GenJVM {
     protected final static String JAVA_RMI_REMOTEEXCEPTION = "java.rmi.RemoteException";
 
     protected final static String SCALA_RUNTIME_RUNTIME = "scala.runtime.RunTime";
-    protected final static String SCALA_UNIT = "scala.Unit";
-    protected final static String SCALA_UNIT_VALUE = "UNIT_VAL";
 
     protected final static String SCALA_ATTR = ClassfileConstants.SCALA_N.toString();
 
@@ -82,8 +80,6 @@ class GenJVM {
         new JObjectType (JAVA_LANG_STRINGBUFFER);
     protected final JObjectType JAVA_LANG_THROWABLE_T =
         new JObjectType("java.lang.Throwable");
-    protected final JObjectType SCALA_UNIT_T =
-        new JObjectType(SCALA_UNIT);
 
     protected final Symbol JAVA_RMI_REMOTE_CLASS;
 
@@ -506,10 +502,7 @@ class GenJVM {
             JCode.Label afterLabel = ctx.code.newLabel();
             ctx.code.emitGOTO_maybe_W(afterLabel, ctx.useWideJumps);
             elseLabel.anchorToNext();
-            if (elsep == Tree.Empty)
-                maybeGenLoadUnit(ctx, finalType);
-            else
-                genLoad(ctx, elsep, finalType);
+            genLoad(ctx, elsep, finalType);
             afterLabel.anchorToNext();
             generatedType = finalType;
         } break;
@@ -601,8 +594,7 @@ class GenJVM {
     protected JType genLoadLiteral(Context ctx, AConstant lit, JType type) {
         switch (lit) {
         case UNIT:
-            maybeGenLoadUnit(ctx, type);
-            return type;
+            return JType.VOID;
         case BOOLEAN(boolean value):
             ctx.code.emitPUSH(value);
             return JType.BOOLEAN;
@@ -636,17 +628,6 @@ class GenJVM {
         default:
             throw Debug.abort("unknown literal", lit);
         }
-    }
-
-    /**
-     * Generate code to load the Unit value, iff the given type is an
-     * object type (i.e. something really has to be loaded on stack).
-     */
-    protected void maybeGenLoadUnit(Context ctx, JType type) {
-        if (type != JType.VOID)
-            ctx.code.emitGETSTATIC(SCALA_RUNTIME_RUNTIME,
-                                   SCALA_UNIT_VALUE,
-                                   SCALA_UNIT_T);
     }
 
     /**
