@@ -7,7 +7,7 @@
 \*                                                                      */
 
 import scalac._;
-import scalac.util.Name;
+import scalac.util.{Name, Names};
 import scalac.util.SourceRepresentation;
 
 package scala.tools.scalac.ast.parser {
@@ -571,7 +571,6 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
           } else {
             putChar( '/' );
           }
-
         case _ =>
           if( java.lang.Character.getType( ch ).asInstanceOf[byte] match {
             case java.lang.Character.MATH_SYMBOL => true;
@@ -622,6 +621,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
       nextch();
     } else {
       syntaxError("unclosed string literal");
+      name = Names.ERROR;
     }
   }
 
@@ -721,6 +721,7 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
             case 'r'  => putChar('\r')
             case '\"' => putChar('\"')
             case '\'' => putChar('\'')
+            case '`' => putChar('`') /* tentative */
             case '\\' => putChar('\\')
             case _    =>
               syntaxError(Position.encode(cline, ccol) - 1, "invalid escape character");
