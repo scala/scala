@@ -17,6 +17,7 @@ import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.symtab.Scope;
 import scalac.symtab.Scope.SymbolIterator;
+import scalac.util.Names;
 import scalac.util.Debug;
 
 public class Environment {
@@ -110,7 +111,7 @@ public class Environment {
         Object value = functions.get(symbol);
         if (value != null) return (Function)value;
         if (symbol.isJava()) {
-            Function function = symbol.isConstructor() ?
+            Function function = (symbol.name == Names.CONSTRUCTOR) ?
                 Function.JavaConstructor(mirror.getConstructor(symbol)) :
                 Function.JavaMethod(mirror.getMethod(symbol));
             return insertFunction(symbol, function);
