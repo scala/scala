@@ -75,8 +75,9 @@ public class UnCurryPhase extends Phase implements Modifiers {
             Scope clone = new Scope();
             for (Scope.SymbolIterator i = scope.iterator(true); i.hasNext();) {
                 Symbol member = i.next();
-                if (!isUnaccessedConstant(member))
-                    clone.enterOrOverload(member);
+                if (isUnaccessedConstant(member)) continue;
+                if (member.isCaseFactory() && !member.isModule()) continue;
+                clone.enterOrOverload(member);
             }
             return Type.compoundType(parents, clone, symbol);
 	default:
