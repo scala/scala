@@ -690,7 +690,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
       case Tree$Select(qual, name) =>
 	val qual1: Tree = transformPackageId(qual);
-	val sym: Symbol = packageSymbol(tree.pos, qual1.symbol(), name);
+	val sym: Symbol = packageSymbol(tree.pos, qual1.symbol().moduleClass(), name);
 	copy.Select(tree, sym, qual1).setType(sym.getType())
 
       case _ =>
@@ -700,11 +700,20 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   def packageSymbol(pos: int, base: Symbol, name: Name): Symbol = {
     var p: Symbol = base.members().lookup(name);
-    if (p.kind == NONE) {
-      p = base.moduleClass().newPackage(name);
-    } else if (!p.isPackage()) {
-      error(pos, "package and class with same name");
-      p = Symbol.ERROR;
+    if (p.isNone()) {
+      p = base.newPackage(pos, name);
+      base.members().enterNoHide(p);
+    } else if (p.isPackage()) {
+      // as the package is used, we change its position to make sure
+      // its symbol is not reused for a module definition with the
+      // same name
+      p.pos = Position.FIRSTPOS;
+      p.moduleClass().pos = Position.FIRSTPOS;
+    } else {
+      val dst = if ((p.flags & CASE) != 0) "case class " + name;
+                else "" + p;
+      error(pos, "package " + name + " has the same name as existing " + dst);
+      p = base.newPackage(pos, name);
     }
     p
   }
@@ -735,11 +744,17 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } else if (e.owner == context.scope) {
       assert(!other.isExternal(), other);
       if (sym.owner().isPackageClass()) {
-	if (global.compiledNow.get(other) != null) {
-	  error(sym.pos, "" + sym + " is compiled twice");
-	}
-	context.scope.unlink(e);
-	context.scope.enter(sym);
+        if (other.isPackage()) {
+          val src = if ((sym.flags & CASE) != 0) "case class " + sym.name;
+                    else "" + sym;
+          error(sym.pos, "" + src + " has the same name as existing " + other);
+        } else {
+	  if (global.compiledNow.get(other) != null) {
+	    error(sym.pos, "" + sym + " is compiled twice");
+	  }
+	  context.scope.unlink(e);
+	  context.scope.enter(sym);
+        }
       } else if (context.owner.kind == CLASS && sym.kind == VAL && other.kind == VAL && ((sym.flags & ACCESSOR) == 0 || (other.flags & ACCESSOR) == 0)) {
 		    e.setSymbol(other.overloadWith(sym));
        } else {
@@ -853,13 +868,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           modul = owner.newModule(tree.pos, mods, name);
         } else {
           // The symbol has already been created by some symbol
-          // loader. It must be a real module.
+          // loader. It must be a real module (or package).
           assert(modul.moduleClass() != modul, Debug.show(modul));
           val clasz = modul.moduleClass();
-          clasz.flags = clasz.flags & (~JAVA);
+          clasz.flags = clasz.flags & ~(JAVA | PACKAGE);
           clasz.pos = tree.pos;
           val constr = clasz.primaryConstructor();
-          constr.flags = constr.flags & (~JAVA);
+          constr.flags = constr.flags & ~JAVA;
           constr.pos = tree.pos;
         }
 	val clazz: Symbol = modul.moduleClass();

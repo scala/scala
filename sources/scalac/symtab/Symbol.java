@@ -100,13 +100,11 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /**
-     * Creates a new package owned by this symbol, initializes it with
-     * an empty scope and adds it to this symbol's members.
+     * Creates a new package owned by this symbol and initializes it
+     * with an empty scope.
      */
-    public final TermSymbol newPackage(Name name) {
-        TermSymbol peckage = newPackage(name, null);
-        members().enterNoHide(peckage);
-        return peckage;
+    public final TermSymbol newPackage(int pos, Name name) {
+        return newPackage(pos, name, null);
     }
 
     /**
@@ -117,8 +115,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         Scope scope)
     {
         assert loader != null: Debug.show(this) + " - " + name;
-        TermSymbol peckage = newPackage(name, loader);
-        peckage.moduleClass().setInfo(loader);
+        TermSymbol peckage = newPackage(Position.NOPOS, name, loader);
         if (scope != null) scope.enterNoHide(peckage);
         return peckage;
     }
@@ -143,7 +140,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     {
         assert isPackageClass(): Debug.show(this);
         assert loader != null: Debug.show(this) + " - " + name;
-        ClassSymbol clasz = newClass(pos, flags, name, 0, null);
+        ClassSymbol clasz = newClass(Position.NOPOS, flags, name, 0, null);
         clasz.setInfo(loader);
         clasz.allConstructors().setInfo(loader);
         clasz.dualClass().setInfo(loader);
@@ -154,9 +151,9 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     /** Creates a new package owned by this symbol. */
-    final TermSymbol newPackage(Name name, Type info) {
+    final TermSymbol newPackage(int pos, Name name, Type info) {
         assert isPackageClass(): Debug.show(this);
-        TermSymbol peckage = newModule(Position.NOPOS, JAVA | PACKAGE, name);
+        TermSymbol peckage = newModule(pos, JAVA | PACKAGE, name);
         if (info == null) info = Type.compoundType(
             Type.EMPTY_ARRAY, new Scope(), peckage.moduleClass());
         peckage.moduleClass().setInfo(info);
