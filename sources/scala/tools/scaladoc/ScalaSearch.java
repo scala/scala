@@ -69,12 +69,20 @@ public class ScalaSearch {
 	    NameTransformer.decode(sym.name).toString().endsWith("_=");
     }
 
+    /** Test if the given symbol is an empty java module generated to
+     * contain static fields and methods of a java class.
+     */
+    public static boolean isEmptyJavaModule(Symbol sym) {
+        return sym.isModule() && sym.isJava() && !sym.isPackage() && (members(sym).length == 0);
+    }
+
+
     /** Test if the given symbol is relevant for the documentation.
      */
     public static boolean isRelevant(Symbol sym) {
 	return !isGenerated(sym) && !isLazy(sym) && !isPrivate(sym) &&
 	    !(sym.isPackage() && sym.isClass()) && !sym.isConstructor() &&
-            !sym.isCaseFactory();
+            !sym.isCaseFactory() && !isEmptyJavaModule(sym);
     }
 
     //////////////////////// SCOPE ITERATOR //////////////////////////////
