@@ -22,10 +22,9 @@ import scalac.transformer.ErasurePhase;
 import scalac.transformer.AddConstructorsPhase;
 /*
 import scalac.optimizer.OptimizePhase;
-import scalac.backend.msil.GenMSILPhase;
-import scalac.jaco.GenJavaPhase;
 */
 import scalac.backend.jvm.GenJVMPhase;
+import scalac.backend.msil.GenMSILPhase;
 
 public class PhaseRepository {
 
@@ -55,11 +54,8 @@ public class PhaseRepository {
             EXPANDMIXIN = new ExpandMixinsPhase(),
             ERASURE = new ErasurePhase(),
             ADDCONSTRUCTORS = new AddConstructorsPhase(),
-	    /*
-            GENMSIL = new GenMSILPhase(),
-            GENJAVA = new GenJavaPhase(),
-	    */
             GENJVM = new GenJVMPhase(),
+            GENMSIL = new GenMSILPhase(),
             TERMINAL = PhaseDescriptor.TERMINAL,
         };
     }
@@ -83,11 +79,8 @@ public class PhaseRepository {
     public final ExpandMixinsPhase EXPANDMIXIN;
     public final ErasurePhase ERASURE;
     public final AddConstructorsPhase ADDCONSTRUCTORS;
-    /*
-    public final GenMSILPhase GENMSIL;
-    public final GenJavaPhase GENJAVA;
-    */
     public final GenJVMPhase GENJVM;
+    public final GenMSILPhase GENMSIL;
     public final PhaseDescriptor TERMINAL;
 
     //########################################################################
