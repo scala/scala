@@ -516,6 +516,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	case THIStpe: return "THIStpe";
 	case SINGLEtpe: return "SINGLEtpe";
 	case TYPEREFtpe: return "TYPEREFtpe";
+	case CONSTANTtpe: return "CONSTANTtpe";
 	case COMPOUNDtpe: return "COMPOUNDtpe";
 	case METHODtpe: return "METHODtpe";
 	case POLYtpe: return "POLYtpe";
