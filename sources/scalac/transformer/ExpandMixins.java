@@ -227,6 +227,17 @@ superFixer.transform(template.body))));
             }
         }
 
+        public Tree transform(Tree tree) {
+            if (tree.hasSymbol() && tree.symbol().isParameter()) {
+                Symbol symbol = getSymbolFor(tree);
+                if (!symbol.isParameter()) {
+                    assert tree instanceof Tree.Ident: tree;
+                    return gen.Select(gen.This(tree.pos, clasz),  symbol);
+                }
+            }
+            return super.transform(tree);
+        }
+
     }
 
     private final Transformer superFixer;
