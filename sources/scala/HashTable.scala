@@ -113,7 +113,7 @@ abstract class HashTable[A] {
         }
         rehash(table.length - 1);
         table = newTable;
-        threshold = ((initialSize as Float) * loadFactor) as Int;
+        threshold = ((newSize as Float) * loadFactor) as Int;
     }
 
     protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2);
