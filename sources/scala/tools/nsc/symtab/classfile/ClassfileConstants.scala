@@ -1,11 +1,8 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
-** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
-\*                                                                      */
-
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab.classfile;
 
 object ClassfileConstants {

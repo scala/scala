@@ -1,5 +1,8 @@
-/** $Id: MetaParser.scala
-*/
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab.classfile;
 
 import java.util.{StringTokenizer, NoSuchElementException}
@@ -110,8 +113,8 @@ abstract class MetaParser{
           nextToken(); tps append parseType()
 	} while (token == "with");
 	ownertype match {
-          case ClassInfoType(parents, defs, clazz) =>
-            ClassInfoType(tps.toList, defs, clazz)
+          case ClassInfoType(parents, decls, clazz) =>
+            ClassInfoType(tps.toList, decls, clazz)
 	}
       } else ownertype
     }

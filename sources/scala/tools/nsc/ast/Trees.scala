@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.ast;
 
 import java.io.StringWriter;
@@ -237,7 +242,7 @@ class Trees: Global {
        extends TypeTree;
 
   /** Refinement type, eliminated by RefCheck */
-  case class RefinementTypeTree(base: Tree, members: List[Tree])
+  case class RefinementTypeTree(base: Tree, decls: List[Tree])
        extends TypeTree;
 
   /** Applied type, eliminated by RefCheck */
@@ -287,7 +292,7 @@ class Trees: Global {
   case SelectFromTypeTree(qualifier, selector) =>
   case FunctionTypeTree(argtpes, restpe) =>
   case IntersectionTypeTree(parents) =>
-  case RefinementTypeTree(base, members) =>
+  case RefinementTypeTree(base, decls) =>
   case AppliedTypeTree(tp, args) =>
 */
 
@@ -333,7 +338,7 @@ class Trees: Global {
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree;
     def FunctionTypeTree(tree: Tree, argtpes: List[Tree], restpe: Tree): FunctionTypeTree;
     def IntersectionTypeTree(tree: Tree, parents: List[Tree]): IntersectionTypeTree;
-    def RefinementTypeTree(tree: Tree, base: Tree, members: List[Tree]): RefinementTypeTree;
+    def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]): RefinementTypeTree;
     def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]): AppliedTypeTree;
   }
 
@@ -420,8 +425,8 @@ class Trees: Global {
       { val t = new FunctionTypeTree(argtpes, restpe); t.setPos(tree.pos); t }
     def IntersectionTypeTree(tree: Tree, parents: List[Tree]) =
       { val t = new IntersectionTypeTree(parents); t.setPos(tree.pos); t }
-    def RefinementTypeTree(tree: Tree, base: Tree, members: List[Tree]) =
-      { val t = new RefinementTypeTree(base, members); t.setPos(tree.pos); t }
+    def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]) =
+      { val t = new RefinementTypeTree(base, decls); t.setPos(tree.pos); t }
     def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]) =
       { val t = new AppliedTypeTree(tp, args); t.setPos(tree.pos); t }
   }
@@ -632,10 +637,10 @@ class Trees: Global {
       if (parents0 == parents) => t
       case _ => copy.IntersectionTypeTree(tree, parents)
     }
-    def RefinementTypeTree(tree: Tree, base: Tree, members: List[Tree]) = tree match {
-      case t @ RefinementTypeTree(base0, members0)
-      if (base0 == base && members0 == members) => t
-      case _ => copy.RefinementTypeTree(tree, base, members)
+    def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]) = tree match {
+      case t @ RefinementTypeTree(base0, decls0)
+      if (base0 == base && decls0 == decls) => t
+      case _ => copy.RefinementTypeTree(tree, base, decls)
     }
     def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]) = tree match {
       case t @ AppliedTypeTree(tp0, args0)
@@ -731,8 +736,8 @@ class Trees: Global {
         copy.FunctionTypeTree(tree, transformTrees(argtpes), transform(restpe))
       case IntersectionTypeTree(parents) =>
         copy.IntersectionTypeTree(tree, transformTrees(parents))
-      case RefinementTypeTree(base, members) =>
-        copy.RefinementTypeTree(tree, transform(base), transformTrees(members))
+      case RefinementTypeTree(base, decls) =>
+        copy.RefinementTypeTree(tree, transform(base), transformTrees(decls))
       case AppliedTypeTree(tp, args) =>
         copy.AppliedTypeTree(tree, transform(tp), transformTrees(args))
     }
@@ -827,8 +832,8 @@ class Trees: Global {
         traverseTrees(argtpes); traverse(restpe)
       case IntersectionTypeTree(parents) =>
         traverseTrees(parents)
-      case RefinementTypeTree(base, members) =>
-        traverse(base); traverseTrees(members)
+      case RefinementTypeTree(base, decls) =>
+        traverse(base); traverseTrees(decls)
       case AppliedTypeTree(tp, args) =>
         traverse(tp); traverseTrees(args)
       case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | EmptyTypeTree() =>

@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.Position;
@@ -9,8 +14,6 @@ abstract class Types: SymbolTable {
   private var explainSwitch = false;
 
   val emptyTypeArray = new Array[Type](0);
-
-  val emptySymbolIterator = Iterator.empty[Symbol];
 
   /** The base class for all types */
   trait Type {
@@ -30,7 +33,7 @@ abstract class Types: SymbolTable {
     /** Map to a this type which is a subtype of this type.
      */
     def narrow: Type = {
-      val reftpe = refinedType(this, commonOwner(this), EmptyScope);
+      val reftpe = refinedType(List(this), commonOwner(this), EmptyScope);
       ThisType(reftpe.symbol);
     }
 
@@ -85,49 +88,46 @@ abstract class Types: SymbolTable {
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: boolean = false;
 
-    /** For a classtype or refined type, its members;
+    /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
      *  The empty scope for all other types */
-    def members: Scope = EmptyScope;
+    def decls: Scope = EmptyScope;
 
-    /** An iterator that enumerates all members of this type and its base types
-     *  Members of any type precede members of its base types in the ordering
-     *  Members of parents of a type are enumerated right to left. */
-    def rawMembersIterator: Iterator[Symbol] = emptySymbolIterator;
+    /** The defined or declared members with name `name' in this type;
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist.
+     *  Alternatives of overloaded symbol appear in the order they are declared.
+     */
+    def decl(name: Name): Symbol = findDecl(name, 0);
 
-    /** An iterator that enumerates all members of this type
-     *  (defined or inherited).
-     *  Defined members of a type precede members inherited from its base types
-     *  in the ordering.
-     *  Members of parents of a type are enumerated right to left. */
-    def allPublicMembersIterator: Iterator[Symbol] =
-      for (val sym <- rawMembersIterator;
-           !sym.hasFlag(PRIVATE) && (lookup(sym.name).alternatives contains sym))
-      yield sym;
+    /** The non-orivate defined or declared members with name `name' in this type;
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist.
+     *  Alternatives of overloaded symbol appear in the order they are declared.
+     */
+    def nonPrivateDecl(name: Name): Symbol = findDecl(name, PRIVATE);
 
-    /** The member with given name of this type, NoSymbol if none exists */
-    def lookup(name: Name): Symbol = lookupExclude(name, 0);
+    /** A list of all members of this type (defined or inherited)
+     *  Members appear in linearization order of their owners.
+     *  Members with the same owner appear in reverse order of their declarations.
+     */
+    def members: List[Symbol] = findMember(nme.ANYNAME, 0).alternatives;
 
-    /** The non-private member with given name of this type,
-     *  NoSymbol if none exists. */
-    def lookupNonPrivate(name: Name): Symbol = lookupExclude(name, PRIVATE);
+    /** A list of all non-private members of this type (defined or inherited) */
+    def nonPrivateMembers: List[Symbol] = findMember(nme.ANYNAME, PRIVATE).alternatives;
 
-    protected def lookupExclude(name: Name, excludeFlags: int): Symbol = {
-      val buf = new ListBuffer;
-      appendMembers(name, buf, excludeFlags | DEFERRED);
-      appendMembers(name, buf, excludeFlags);
-      if (buf.length == 0) NoSymbol
-      else if (buf.length == 1) buf(0)
-      else overloadedSymbol(this, buf.elements.toList)
-    }
+    /** The member with given name,
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist */
+    def member(name: Name): Symbol = findMember(name, 0);
 
-    protected def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit;
+    /** The non-private member with given name,
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist */
+    def nonPrivateMember(name: Name): Symbol = findMember(name, PRIVATE);
 
     /** The least type instance of given class which is a supertype
      *  of this type */
     def baseType(clazz: Symbol): Type = NoType;
 
-    /** This type as seen from prefix `pre' and class `clazz'. This means:
+    /** This type as seen from prefix `
+    pre' and class `clazz'. This means:
      *  Replace all thistypes of `clazz' or one of its subclasses by `pre'
      *  and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes. */
@@ -263,6 +263,69 @@ abstract class Types: SymbolTable {
 
     /** If this is a lazy type, assign a new type to `sym'. */
     def complete(sym: Symbol): unit = {}
+
+    private def findDecl(name: Name, excludedFlags: int): Symbol = {
+      var alts: List[Symbol] = List();
+      var sym: Symbol = NoSymbol;
+      var e = decls.lookupEntry(name);
+      while (e != null) {
+	if ((e.sym.rawflags & excludedFlags) == 0) {
+	  if (sym == NoSymbol) sym = e.sym
+	  else {
+	    if (alts.isEmpty) alts = List(sym);
+	    alts = e.sym :: alts
+	  }
+	}
+	e = decls.lookupNextEntry(e)
+      }
+      if (alts.isEmpty) sym
+      else baseClasses.head.newOverloaded(this, alts)
+    }
+
+    protected def findMember(name: Name, excludedFlags: int): Symbol = {
+      var members: Scope = null;
+      var member: Symbol = NoSymbol;
+      var excluded = excludedFlags | DEFERRED;
+      var continue = true;
+      while (continue) {
+	continue = false;
+	var bcs = baseClasses;
+	while (!bcs.isEmpty) {
+	  val decls = bcs.head.info.decls;
+	  bcs = bcs.tail;
+	  var entry = if (name == nme.ANYNAME) decls.elems else decls lookupEntry name;
+	  while (entry != null) {
+	    val sym = entry.sym;
+	    val excl = sym.rawflags & excluded;
+	    if (excl == 0) {
+	      if (name.isTypeName)
+		return sym
+	      else if (member == NoSymbol)
+		member = sym
+	      else if (members == null &&
+		       !(member.name == sym.name &&
+			 (memberType(member) matches memberType(sym))))
+		members = new Scope(List(member, sym))
+	      else {
+		var prevEntry = members lookupEntry sym.name;
+		while (prevEntry != null &&
+		       !(memberType(prevEntry.sym) matches memberType(sym)))
+		  prevEntry = members lookupNextEntry prevEntry;
+		if (prevEntry == null)
+		  members enter sym
+	      }
+	    } else if (excl == DEFERRED) {
+	      continue = true;
+	    }
+	    entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
+	  } // while (entry != null)
+	  excluded = excluded | PRIVATE
+	} // while (!bcs.isEmpty)
+	excluded = excludedFlags
+      } // while (continue)
+      if (members == null) member
+      else baseClasses.head.newOverloaded(this, members.toList)
+    }
   }
 
 // Subclasses ------------------------------------------------------------
@@ -273,10 +336,7 @@ abstract class Types: SymbolTable {
   abstract trait SubType extends Type {
     protected def supertype: Type;
     override def parents: List[Type] = supertype.parents;
-    override def members: Scope = supertype.members;
-    override def rawMembersIterator: Iterator[Symbol] = supertype.rawMembersIterator;
-    override def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit =
-      supertype.appendMembers(name, bug, excludeFlags);
+    override def decls: Scope = supertype.decls;
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz);
     override def closure: Array[Type] = supertype.closure;
     override def baseClasses: List[Symbol] = supertype.baseClasses;
@@ -296,9 +356,9 @@ abstract class Types: SymbolTable {
 
   /** An object representing an erroneous type */
   case object ErrorType extends Type {
-    override def members: Scope = new ErrorScope(NoSymbol);
-    override def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit =
-      buf += (members lookup name);
+    // todo see whether we can do without
+    override def decls: Scope = new ErrorScope(NoSymbol);
+    override def findMember(name: Name, excludedFlags: int): Symbol = decls lookup name;
     override def baseType(clazz: Symbol): Type = this;
     override def toString(): String = "<error>";
     override def narrow: Type = this;
@@ -364,18 +424,7 @@ abstract class Types: SymbolTable {
    */
   abstract class CompoundType extends Type {
     override val parents: List[Type];
-    override val members: Scope;
-
-    override def appendMembers(name: Name, scope: Scope, buf: List[Buffer], excludeFlags: int): unit = {
-      for (val sym <- scope.lookupAll(name, false)) {
-	if ((sym.rawflags & excludeFlags) == 0)
-	  if (buf.length == 0 ||
-	      !buf.elements.exists(m => memberType(m) matches memberType(sym)))
-	    buf += sym
-      }
-      for (val bc <- baseClasses)
-	baseType(bc).appendMembers(name, buf, excludeFlags | PRIVATE)
-    }
+    override val decls: Scope;
 
     private var closureCache: Array[Type] = _;
     private var baseClassCache: List[Symbol] = _;
@@ -402,13 +451,13 @@ abstract class Types: SymbolTable {
 
     override def baseClasses: List[Symbol] = {
       def computeBaseClasses: List[Symbol] =
-	if (parents.isEmpty) List()
+	if (parents.isEmpty) List(symbol)
 	else {
 	  var bcs: List[Symbol] = parents.head.baseClasses;
-	  val mixins = parents.tail map (.symbol);
-	  def isNew(limit: List[Symbol])(clazz: Symbol): boolean = {
+	  val mixins = parents.tail;
+	  def isNew(limit: List[Type])(clazz: Symbol): boolean = {
 	    var ms = mixins;
-	    while (!(ms eq limit) && !(ms.head.isSubClass clazz)) ms = ms.tail;
+	    while (!(ms eq limit) && !(ms.head.symbol isSubClass clazz)) ms = ms.tail;
 	    ms eq limit
 	  }
 	  var ms = mixins;
@@ -424,7 +473,7 @@ abstract class Types: SymbolTable {
 	baseClassCache = null;
 	baseClassCache = computeBaseClasses;
       }
-      if (baseClassCache = null)
+      if (baseClassCache == null)
         throw new TypeError("illegal cyclic reference involving " + symbol);
       baseClassCache
     }
@@ -436,33 +485,28 @@ abstract class Types: SymbolTable {
 
     override def narrow: Type = symbol.thisType;
 
-    override def rawMembersIterator: Iterator[Symbol] =
-      scope.toList.elements append
-      (for (val parent <- parents.reverse.elements;
-	   val sym <- parent.rawMembersIterator) yield sym);
-
     override def erasure: Type =
       if (parents.isEmpty) this else parents.head.erasure;
 
     override def toString(): String =
-      parents.mkString("", " with ", "") + members.toString()
+      parents.mkString("", " with ", "") + decls.toString()
   }
 
   /** A class representing intersection types with refinements of the form
-   *    <parents_0> with ... with <parents_n> { members }
+   *    <parents_0> with ... with <parents_n> { decls }
    *  Cannot be created directly;
    *  one should always use `refinedType' for creation.
    */
   abstract case class RefinedType(override val parents: List[Type],
-				  override val members: Scope) extends CompoundType;
+				  override val decls: Scope) extends CompoundType;
 
   /** A class representing a class info
    */
   case class ClassInfoType(override val parents: List[Type],
-			   override val members: Scope,
+			   override val decls: Scope,
 			   override val symbol: Symbol) extends CompoundType;
 
-  class PackageClassInfoType(defs: Members, clazz: Symbol) extends ClassInfoType(List(), defs, clazz);
+  class PackageClassInfoType(decls: Scope, clazz: Symbol) extends ClassInfoType(List(), decls, clazz);
 
   /** A class representing a constant type */
   case class ConstantType(base: Type, value: Any)
@@ -504,13 +548,7 @@ abstract class Types: SymbolTable {
     override def typeParams: List[Symbol] =
       if (args.isEmpty) symbol.typeParams else List();
 
-    override def members: Scope = sym.info.members;
-
-    override def rawMembersIterator: Iterator[Symbol] =
-      sym.info.rawMembersIterator;
-
-    override def appendMembers(name: Name, buf: List[Buffer], excludeFlags: int): unit =
-      sym.info.appendMembers(name, buf, excludeFlags);
+    override def decls: Scope = sym.info.decls;
 
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this
@@ -627,7 +665,7 @@ abstract class Types: SymbolTable {
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner;
     if (owner.isClass && owner != pre.symbol && !sym.isFinal) {
-      val rebind = pre lookupNonPrivate sym.name;
+      val rebind = pre.nonPrivateMember(sym.name).suchThat(.isStable);
       if (rebind == NoSymbol) sym else rebind
     } else sym
   }
@@ -657,9 +695,9 @@ abstract class Types: SymbolTable {
   }
 
   /** the canonical creator for a refined type with a given scope */
-  def refinedType(parents: List[Type], owner: Symbol, members: Scope): RefinedType = {
+  def refinedType(parents: List[Type], owner: Symbol, decls: Scope): RefinedType = {
     val clazz = owner.newRefinementClass(Position.NOPOS);
-    val result = new RefinedType(parents, members) {
+    val result = new RefinedType(parents, decls) {
       override def symbol: Symbol = clazz
     }
     clazz.setInfo(result);
@@ -674,7 +712,7 @@ abstract class Types: SymbolTable {
    *  replaced by the type itself. */
   def intersectionType(tps: List[Type]): Type = tps match {
     case List(tp) => tp
-    case _ => refinedType(tps, commonOnwer(tps))
+    case _ => refinedType(tps, commonOwner(tps))
   }
 
   /** A creator for type applications */
@@ -683,12 +721,6 @@ abstract class Types: SymbolTable {
       if (args eq args1) tycon
       else typeRef(pre, sym, args)
     case ErrorType => tycon
-  }
-
-  def overloadedSymbol(pre: Type, alternatives: List[Symbol]): Symbol = {
-    pre.symbol.newValue(alternatives.head.pos, alternatives.head.name)
-    .setFlag(OVERLOADED)
-    .setInfo(OverloadedType(pre, alternatives))
   }
 
 // Helper Classes ---------------------------------------------------------
@@ -741,8 +773,8 @@ abstract class Types: SymbolTable {
           val result = refinedType(parents1, tp.symbol.owner);
           val syms1 = refinement1.toList;
           for (val sym <- syms1)
-            result.members.enter(sym.cloneSymbol(result.symbol));
-          val syms2 = result.members.toList;
+            result.decls.enter(sym.cloneSymbol(result.symbol));
+          val syms2 = result.decls.toList;
           val resultThis = ThisType(result.symbol);
           for (val sym <- syms2)
             sym.setInfo(sym.info.substSym(syms1, syms2).substThis(tp.symbol, resultThis));
@@ -1060,7 +1092,7 @@ abstract class Types: SymbolTable {
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else { constr1.hibounds = tp2 :: constr1.hibounds; true }
       case Pair(_, RefinedType(parents2, ref2)) =>
-        parents2 forall (tp1.<:<) && (ref2.toList forall (tp1 specializes))
+        (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes)
       case Pair(RefinedType(parents1, ref1), _) =>
         parents1 exists (.<:<(tp2))
       case Pair(ThisType(_), _)
@@ -1088,7 +1120,7 @@ abstract class Types: SymbolTable {
   def specializesSym(tp: Type, sym: Symbol): boolean =
     tp.symbol == AllClass ||
     tp.symbol == AllRefClass && (sym.owner isSubClass AnyRefClass) ||
-    (tp.lookupNonPrivate(sym.name).alternatives exists
+    (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, ThisType(sym.owner), sym)));
 
   /** Does member `sym1' of `tp1' have a stronger type than member `sym2' of `tp2'? */
@@ -1116,6 +1148,7 @@ abstract class Types: SymbolTable {
       !phase.exactMatch || tp1 =:= tp2
   }
 
+  /** Prepend type `tp' to closure `cl' */
   private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {
     val cl1 = new Array[Type](cl.length + 1);
     cl1(0) = tp;
@@ -1259,8 +1292,8 @@ abstract class Types: SymbolTable {
         def lubsym(proto: Symbol): Symbol = {
           val prototp = lubThisType.memberInfo(proto);
           val syms = narrowts map (t =>
-            t.lookup(proto.name)
-             .matching(NoPrefix, prototp.substThis(lubThisType.symbol, t)));
+	    t.nonPrivateMember(proto.name).suchThat(sym =>
+	      sym.tpe matches prototp.substThis(lubThisType.symbol, t)));
           val symtypes = List.map2(narrowts, syms)
             ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType));
           if (syms contains NoSymbol)
@@ -1276,18 +1309,16 @@ abstract class Types: SymbolTable {
               .setInfo(lubBounds(symtypes map (.bounds)))
           }
         }
-        def refines(tp: Type, sym: Symbol) = {
-          val sym1 = tp.lookupNonPrivate(sym.name);
-          (sym1 != NoSymbol) &&
-          (sym1.alternatives forall (
-            alt => !specializesSym(lubThisType, sym, tp, alt)))
+        def refines(tp: Type, sym: Symbol): boolean = {
+	  val syms = tp.nonPrivateMember(sym.name).alternatives;
+	  !syms.isEmpty && (syms forall (alt => !specializesSym(lubThisType, sym, tp, alt)))
         }
-        for (val sym <- lubBase.allPublicMembersIterator)
+        for (val sym <- lubBase.nonPrivateMembers)
           // add a refinement symbol for all non-class members of lubBase
           // which are refined by every type in ts.
           if (!sym.isClass && (narrowts forall (t => refines(t, sym))))
-            addMember(lubThisType, lubType.members, lubsym(sym));
-        if (lubType.members.isEmpty) lubBase else lubType;
+            addMember(lubThisType, lubType, lubsym(sym));
+        if (lubType.decls.isEmpty) lubBase else lubType;
     }
     limitRecursion(ts, "least upper", lub0);
   }
@@ -1311,9 +1342,10 @@ abstract class Types: SymbolTable {
           val glbThisType = glbType.symbol.thisType;
           def glbsym(proto: Symbol): Symbol = {
             val prototp = glbThisType.memberInfo(proto);
-            val syms = for (val t <- ts;
-                            val alt <- List.fromIterator(t.lookup(proto.name).alternatives);
-                            glbThisType.memberInfo(alt) matches prototp) yield alt;
+            val syms = for (
+	      val t <- ts;
+              val alt <- t.nonPrivateMember(proto.name).alternatives;
+              glbThisType.memberInfo(alt) matches prototp) yield alt;
             val symtypes = syms map glbThisType.memberInfo;
             assert(!symtypes.isEmpty);
             proto.cloneSymbol.setInfo(
@@ -1340,10 +1372,10 @@ abstract class Types: SymbolTable {
                 result
               })
           }
-          for (val t <- ts; val sym <- t.allPublicMembersIterator)
+          for (val t <- ts; val sym <- t.nonPrivateMembers)
             if (!(sym.isClass || (glbThisType specializes sym)))
-	      addMember(glbThisType, glbType.members, glbsym(sym));
-	  if (glbType.members.isEmpty) glbBase else glbType;
+	      addMember(glbThisType, glbType, glbsym(sym));
+	  if (glbType.decls.isEmpty) glbBase else glbType;
 	} catch {
           case _: MalformedClosure =>
             if (ts forall (t => t <:< AnyRefClass.tpe)) AllRefClass.tpe
@@ -1403,15 +1435,15 @@ abstract class Types: SymbolTable {
       }
   }
 
-  /** Make symbol `sym' a member of scope `members' where `thistp' is the narrowed
+  /** Make symbol `sym' a member of scope `tp.decls' where `thistp' is the narrowed
    *  owner type of the scope */
-  private def addMember(thistp: Type, members: Scope, sym: Symbol): unit = {
+  private def addMember(thistp: Type, tp: Type, sym: Symbol): unit = {
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
-        for (val alt <- members.lookup(sym.name).alternatives)
+        for (val alt <- tp.nonPrivateDecl(sym.name).alternatives)
           if (specializesSym(thistp, sym, thistp, alt))
-	    members.unlink(alt);
-      members.enter(sym)
+	    tp.decls unlink alt;
+      tp.decls enter sym
     }
   }
 

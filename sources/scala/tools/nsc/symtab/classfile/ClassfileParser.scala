@@ -1,11 +1,8 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
-** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
-\*                                                                      */
-
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab.classfile;
 
 import scala.tools.util._;
@@ -22,8 +19,8 @@ abstract class ClassfileParser {
   private var in: AbstractFileReader = _;  // the class file
   private var clazz: Symbol = _;           // the class symbol containing dynamic members
   private var statics: Symbol = _;         // the module class symbol containing static members
-  private var classMembers: Scope = _;     // the scope of all dynamic members
-  private var staticMembers: Scope = _;    // the scope of all static members
+  private var instanceDefs: Scope = _;     // the scope of all instance definitions
+  private var staticDefs: Scope = _;       // the scope of all static definitions
   private var pool: ConstantPool = _;      // the classfile's constant pool
   private var isScala: boolean = _;        // does class file describe a scala class?
   private var hasMeta: boolean = _;        // does class file contain jaco meta attribute?s
@@ -227,10 +224,10 @@ abstract class ClassfileParser {
     val parents = superType ::
       (for (val i <- List.range(0, ifaceCount))
        yield pool.getSuperClass(in.nextChar()).tpe);
-    classMembers = new Scope();
-    staticMembers = new Scope();
-    val classInfo = ClassInfoType(parents, classMembers, clazz);
-    val staticInfo = ClassInfoType(List(), staticMembers, statics);
+    instanceDefs = new Scope();
+    staticDefs = new Scope();
+    val classInfo = ClassInfoType(parents, instanceDefs, clazz);
+    val staticInfo = ClassInfoType(List(), staticDefs, statics);
 
     val curbp = in.bp;
     skipMembers(); // fields
@@ -365,7 +362,7 @@ abstract class ClassfileParser {
     if ((flags & JAVA_ACC_STATIC) != 0) statics else clazz;
 
   private def getScope(flags: int): Scope =
-    if ((flags & JAVA_ACC_STATIC) != 0) staticMembers else classMembers;
+    if ((flags & JAVA_ACC_STATIC) != 0) staticDefs else instanceDefs;
 
   private def transFlags(flags: int): long = {
     var res = 0l;

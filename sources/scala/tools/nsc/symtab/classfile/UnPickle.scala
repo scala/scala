@@ -1,5 +1,8 @@
-//import scalac.{symtab => scalac_symtab}
-
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab.classfile {
 
 //import scalac_symtab.Modifiers;
@@ -134,9 +137,9 @@ abstract class UnPickle {
                   assert(tag != EXTref);
                   global.definitions.RootClass
                 } else if (tag == EXTMODCLASSref) {
-                  owner.info.lookup(name).moduleClass
+                  owner.info.decl(name).moduleClass
                 } else {
-                  owner.info.lookup(name)
+                  owner.info.decl(name)
                 }
               entries(i) = sym;
               if (sym == NoSymbol)
@@ -230,7 +233,7 @@ abstract class UnPickle {
   def enterSymbol(sym: Symbol): unit =
     if (sym.owner.isClass && !sym.isModuleClass) {
       if (settings.debug.value) global.log("entering " + sym + ":" + sym.tpe + " in " + sym.owner);//debug
-      val scope = sym.owner.info.members;
+      val scope = sym.owner.info.decls;
       val other = scope.lookup(sym.name);
       if (other != sym) {
         sym.info match {

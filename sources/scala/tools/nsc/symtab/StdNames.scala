@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab;
 
 import scala.tools.nsc.util.NameTransformer;
@@ -25,6 +30,7 @@ abstract class StdNames: SymbolTable {
 
     val NOSYMBOL = newTermName("<none>");
     val EMPTY = newTermName("");
+    val ANYNAME = newTermName("<anyname>");
     val WILDCARD = newTermName("_");
     val WILDCARD_STAR = newTermName("_*");
     val COMPOUND_NAME = newTermName("<ct>");

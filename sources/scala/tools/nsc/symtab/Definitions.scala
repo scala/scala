@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.Position;
@@ -86,15 +91,12 @@ abstract class Definitions: SymbolTable {
       var i = 0;
       var j = fullname.pos('.', i);
       while (j < fullname.length) {
-        sym = sym.info.lookup(fullname.subName(i, j));
+        sym = sym.info.nonPrivateMember(fullname.subName(i, j));
         i = j + 1;
         j = fullname.pos('.', i)
       }
-      val result =
-	if (module)
-	  sym.info.lookup(fullname.subName(i, j)).withFlag(MODULE | PACKAGE)
-	else
-          sym.info.lookup(fullname.subName(i, j).toTypeName);
+      val result = sym.info.nonPrivateMember(fullname.subName(i, j).toTypeName)
+	.suchThat(.hasFlag(MODULE));
       if (result == NoSymbol)
 	throw new FatalError((if (module) "object " else "class ") + fullname + " not found.");
       result
@@ -103,20 +105,20 @@ abstract class Definitions: SymbolTable {
     private def newClass(owner: Symbol, name: Name, parents: List[Type]): Symbol = {
       val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
       clazz.setInfo(ClassInfoType(parents, new Scope(), clazz));
-      owner.info.members.enter(clazz);
+      owner.info.decls.enter(clazz);
       clazz
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {
       val tpsym = owner.newAliasType(Position.NOPOS, name.toTypeName);
       tpsym.setInfo(alias);
-      owner.info.members.enter(tpsym);
+      owner.info.decls.enter(tpsym);
       tpsym
     }
 
     private def newMethod(owner: Symbol, name: Name): Symbol = {
       val msym = owner.newMethod(Position.NOPOS, name);
-      owner.info.members.enter(msym);
+      owner.info.decls.enter(msym);
       msym
     }
 

@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab;
 
 import scala.tools.util.Position;
@@ -50,6 +55,11 @@ abstract class Symbols: SymbolTable {
       newValue(pos, nme.this_).setFlag(SYNTHETIC);
     final def newImport(pos: int) =
       newValue(pos, nme.IMPORT).setFlag(SYNTHETIC);
+    final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
+      newValue(alternatives.head.pos, alternatives.head.name)
+      .setFlag(OVERLOADED)
+      .setInfo(OverloadedType(pre, alternatives));
+
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType);
     final def newAliasType(pos: int, name: Name) =
@@ -69,7 +79,8 @@ abstract class Symbols: SymbolTable {
       clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz));
       clazz
     }
-
+    final def newErrorSymbol(name: Name) =
+      if (name.isTypeName) newErrorClass(name) else newErrorValue(name);
 
 // Tests ----------------------------------------------------------------------
 
@@ -270,6 +281,14 @@ abstract class Symbols: SymbolTable {
     /** The type parameters of this symbol */
     def typeParams: List[Symbol] = rawInfo.typeParams;
 
+    /** Reset symbol to initial state
+     */
+    def reset(completer: Type): unit = {
+      resetFlags;
+      pos = Position.NOPOS;
+      infos = null;
+      setInfo(completer)
+    }
 // Comparisons ----------------------------------------------------------------
 
     /** A total ordering between symbols that refines the class
@@ -302,37 +321,14 @@ abstract class Symbols: SymbolTable {
 
 // Overloaded Alternatives ---------------------------------------------------------
 
-    /** All overloaded alternatives of this symbol */
-    def alternatives: Iterator[Symbol] =
-      Iterator.fromValues(this);
+    def alternatives: List[Symbol] =
+      if (hasFlag(OVERLOADED)) info.asInstanceOf[OverloadedType].alternatives
+      else List(this);
 
-    private def findUnique(alts: Iterator[Symbol], p: Symbol => boolean): Symbol = {
-      if (alts.hasNext) {
-        val alt = alts.next;
-        if (p(alt)) {
-          while (alts.hasNext) assert(!p(alts.next));
-          alt
-        } else findUnique(alts, p)
-      } else NoSymbol
-    }
-
-    /** The unique alternative whose type at given prefix `pre' matches `tp'
-     *  or NoSymbol, if no such alternatives exist.
-     */
-    final def matching(pre: Type, tp: Type): Symbol =
-      findUnique(alternatives, alt => pre.memberType(alt).matches(tp));
-
-    final def withFlag(mask: long): Symbol =
-      findUnique(alternatives, .hasFlag(mask));
-
-    /** Reset symbol to initial state
-     */
-    def reset(completer: Type): unit = {
-      resetFlags;
-      pos = Position.NOPOS;
-      infos = null;
-      setInfo(completer)
-    }
+    def suchThat(cond: Symbol => boolean): Symbol =
+      if (hasFlag(OVERLOADED)) uniqueSymbolIn(alternatives.elements, cond)
+      else if (cond(this)) this
+      else NoSymbol;
 
 // Cloneing -------------------------------------------------------------------
 
@@ -357,12 +353,7 @@ abstract class Symbols: SymbolTable {
     def enclMethod: Symbol = if (isMethod) this else owner.enclMethod;
 
     /** The primary constructor of a class */
-    def primaryConstructor: Symbol = {
-      var constr: Symbol = NoSymbol;
-      val syms = info.members.lookupAll(nme.CONSTRUCTOR, true);
-      while (syms.hasNext) constr = syms.next;
-      constr
-    }
+    def primaryConstructor: Symbol = info.decl(nme.CONSTRUCTOR).alternatives.head;
 
     /** The self symbol of a class with explicit self type, or else the symbol itself.
      */
@@ -380,7 +371,7 @@ abstract class Symbols: SymbolTable {
     /** Return every accessor of a primary constructor parameter in this case class */
     final def caseFieldAccessors: List[Symbol] = {
       assert(isClass && hasFlag(CASE));
-      info.members.toList.filter(sym => sym.isMethod && sym.hasFlag(PARAMACCESSOR))
+      info.decls.toList.filter(sym => sym.isMethod && sym.hasFlag(PARAMACCESSOR))
     }
 
     /** The symbol accessed by this accessor function.
@@ -389,30 +380,26 @@ abstract class Symbols: SymbolTable {
       assert((rawflags & ACCESSOR) != 0);
       val name1 = if (name.endsWith(nme._EQ)) name.subName(0, name.length - nme._EQ.length)
 	          else name;
-      owner.info.lookup(name1.toString() + "$")
+      owner.info.decl(name1.toString() + "$")
     }
 
     /** The class with the same name in the same package as this module or
      *  case class factory
      */
     final def linkedClass: Symbol = {
-      if (!owner.isPackageClass) NoSymbol
-      else {
-	val clazz = owner.info.lookup(name.toTypeName);
-	if (clazz.rawInfo == NoType) NoSymbol else clazz
-      }
+      if (owner.isPackageClass)
+	owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo != NoType)
+      else NoSymbol;
     }
 
     /** The module or case class factory with the same name in the same
      *  package as this class.
      */
-    final def linkedModule: Symbol = {
-      if (!owner.isPackageClass) NoSymbol
-      else {
-	val module = owner.info.lookup(name.toTermName).withFlag(MODULE);
-	if (module.rawInfo == NoType) NoSymbol else module
-      }
-    }
+    final def linkedModule: Symbol =
+      if (owner.isPackageClass)
+	owner.info.decl(name.toTermName).suchThat(
+          sym => (sym hasFlag MODULE) && (sym.rawInfo != NoType));
+      else NoSymbol;
 
     /** The module corresponding to this module class (note that this
      *  is not updated when a module is cloned).
@@ -425,11 +412,13 @@ abstract class Symbols: SymbolTable {
 
     /** The symbol overridden by this symbol in given base class */
     final def overriddenSymbol(base: Symbol): Symbol =
-      base.info.lookupNonPrivate(name).matching(owner.thisType, info);
+      base.info.nonPrivateDecl(name).suchThat(sym =>
+        sym.isType || (owner.thisType.memberType(sym) matches tpe));
 
     /** The symbol overriding this symbol in given subclass */
     final def overridingSymbol(base: Symbol): Symbol =
-      base.info.lookupNonPrivate(name).matching(base.thisType, base.tpe.memberType(this));
+      base.info.nonPrivateDecl(name).suchThat(sym =>
+        sym.isType || (base.thisType.memberType(sym) matches base.thisType.memberType(this)));
 
 // ToString -------------------------------------------------------------------
 
@@ -562,9 +551,6 @@ abstract class Symbols: SymbolTable {
   /** A class for term symbols */
   class TermSymbol(initOwner: Symbol, initPos: int, initName: Name) extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true;
-    override def alternatives: Iterator[Symbol] =
-      if (owner.isClass) owner.info.members.lookupAll(name, true)
-      else super.alternatives;
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TermSymbol(owner, pos, name);
   }
@@ -651,8 +637,8 @@ abstract class Symbols: SymbolTable {
     override def enclClass: Symbol = this;
     override def enclMethod: Symbol = this;
     override def owner: Symbol = throw new Error();
+    override def alternatives: List[Symbol] = List();
     override def reset(completer: Type): unit = {}
-    override def alternatives: Iterator[Symbol] = Iterator.empty[Symbol];
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error();
   }
 
@@ -661,4 +647,16 @@ abstract class Symbols: SymbolTable {
 
   /** A class for type histories */
   private class TypeHistory(val start: Phase, val info: Type, val prev: TypeHistory);
+
+
+  /** Return unique element in list of symbols satisfying condition,
+   *  or NoSymbol if no element satisfies condition,
+   *  pre: at most one element satisfies condition.
+   */
+  def uniqueSymbolIn(syms: Iterator[Symbol], cond: Symbol => boolean): Symbol =
+    if (syms.hasNext) {
+      val sym = syms.next;
+      if (cond(sym)) { assert(!syms.exists(cond)); sym }
+      else uniqueSymbolIn(syms, cond)
+    } else NoSymbol;
 }

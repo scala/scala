@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc;
 
 import java.io._;
@@ -204,7 +209,7 @@ class Global(val settings: Settings, val reporter: Reporter)
         val root = getSym(name.subName(0, i), name(i) == '.');
         var selector = name.subName(i+1, name.length);
         if (module) selector = selector.toTypeName;
-        root.info.lookup(selector)
+        root.info.member(selector)
       }
     }
     val sym = getSym(name, module);

@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.ast;
 
 import symtab.Flags._;
@@ -106,7 +111,7 @@ abstract class TreeInfo {
   /** The first constructor in a list of statements */
   def firstConstructor(stats: List[Tree]): Tree = stats.head match {
     case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => stats.head
-    case _ => primaryConstrTree(stats.tail)
+    case _ => firstConstructor(stats.tail)
   }
 
   /** Is name a variable name */
@@ -141,9 +146,8 @@ abstract class TreeInfo {
   }
 
   /** Is name imported explicitly, not via wildcard? */
-  def isExplicitImport(tree: Import, name: Name): Symbol = {
-    tree.selectors exists (.2.==(name.toTermName))
-  }
+  def isExplicitImport(tree: Import, name: Name): boolean =
+    tree.selectors exists (._2.==(name.toTermName));
 
   /** The symbol with name `name' imported from import clause `tree'.
    */
@@ -153,12 +157,12 @@ abstract class TreeInfo {
     var selectors = tree.selectors;
     while (selectors != Nil && result == NoSymbol) {
       if (selectors.head._2 == name.toTermName)
-	result = tree.expr.tpe.lookupNonPrivate(
+	result = tree.expr.tpe.member(
           if (name.isTypeName) selectors.head._1.toTypeName else selectors.head._1);
       else if (selectors.head._1 == name.toTermName)
         renamed = true
       else if (selectors.head._1 == nme.WILDCARD && !renamed)
-        result = tree.expr.tpe.lookupNonPrivate(name)
+        result = tree.expr.tpe.member(name);
       selectors = selectors.tail
     }
     result

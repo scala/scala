@@ -1,12 +1,8 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
-** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-\*                                                                      */
-
-// $Id: TreePrinter.scala
-
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.ast;
 
 import java.io._;
@@ -261,8 +257,8 @@ abstract class TreePrinters {
         case IntersectionTypeTree(parents) =>
           printRow(parents, " with ")
 
-        case RefinementTypeTree(base, members) =>
-          print(base); printColumn(members, "{", ";", "}")
+        case RefinementTypeTree(base, decls) =>
+          print(base); printColumn(decls, "{", ";", "}")
 
         case AppliedTypeTree(tp, args) =>
           print(tp); printRow(args, "[", ", ", "]")

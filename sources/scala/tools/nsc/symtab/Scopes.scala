@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab;
 
 abstract class Scopes: SymbolTable {
@@ -22,23 +27,6 @@ abstract class Scopes: SymbolTable {
   }
 
   object NoScopeEntry extends ScopeEntry(NoSymbol, null);
-
-  private val emptyIterator: Iterator[ScopeEntry] = Iterator.empty;
-
-  private class EntryIterator(init: ScopeEntry, godeep: boolean) extends Iterator[ScopeEntry] {
-    private var e: ScopeEntry = init;
-    val owner = init.owner;
-    def hasNext: boolean = e != null && (godeep || e.owner == owner)
-    def next: ScopeEntry = {
-      val result = e;
-      if (e != null)
-        if (hashtable != null)
-	  do { e = e.tail } while (e != null && e.sym.name != name)
-	else
-	  do { e = e.next } while (e != null && e.sym.name != name);
-      result
-    }
-  }
 
   class Scope(initElems: ScopeEntry)  {
 
@@ -74,9 +62,9 @@ abstract class Scopes: SymbolTable {
       }
     }
 
-    def this(members: List[Symbol]) = {
+    def this(decls: List[Symbol]) = {
       this();
-      members foreach enter
+      decls foreach enter
     }
 
     /** Returns a new scope with the same content as this one. */
@@ -157,9 +145,13 @@ abstract class Scopes: SymbolTable {
     }
 
     /** remove symbol */
-    def unlink(sym: Symbol): unit =
-      for (val e <- lookupAllEntries(sym.name, true))
+    def unlink(sym: Symbol): unit = {
+      var e = lookupEntry(sym.name);
+      while (e != null) {
         if (e.sym == sym) unlink(e);
+	e = lookupNextEntry(e)
+      }
+    }
 
     /** lookup a symbol
      */
@@ -182,19 +174,15 @@ abstract class Scopes: SymbolTable {
       e
     }
 
-    /** Iterates through all symbol entries matching given name.
-     *  Iteration is from last declared to first declared.
-     */
-    def lookupAllEntries(name: Name, godeep: boolean): Iterator[ScopeEntry] = {
-      val e = lookupEntry(name);
-      if (e == null) emptyIterator else new EntryIterator(e, godeep);
+    /** lookup next entry with same name as this one */
+    def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
+      var e = entry;
+      if (hashtable != null)
+	do { e = e.tail } while (e != null && e.sym.name != entry.sym.name)
+      else
+	do { e = e.next } while (e != null && e.sym.name != entry.sym.name);
+      e
     }
-
-    /** Iterates through all symbols matching given name.
-     *  Iteration is from last declared to first declared.
-     */
-    def lookupAll(name: Name, godeep: boolean): Iterator[Symbol] =
-      lookupAllEntries(name, godeep) map (.sym);
 
     /** Return all symbols as a list in the order they were entered in this scope.
      */
@@ -209,6 +197,10 @@ abstract class Scopes: SymbolTable {
       }
       elemsCache
     }
+
+    /** Return all symbols as an interator in the order they were entered in this scope.
+     */
+    def elements: Iterator[Symbol] = toList.elements;
 
     override def toString(): String =
       toList.map(.defString).mkString("{\n  ", ";\n  ", "\n}");

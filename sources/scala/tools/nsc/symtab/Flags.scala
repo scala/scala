@@ -1,3 +1,8 @@
+/* NSC -- new scala compiler
+ * Copyright 2005 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
 package scala.tools.nsc.symtab;
 
 object Flags {
@@ -53,8 +58,9 @@ object Flags {
 
   val INTERFACE     = 0x100000000l; // symbol is an interface
   val IS_ERROR      = 0x200000000l; // symbol is an error symbol
+  val OVERLOADED    = 0x400000000l; // symbol is overloaded
 
-  val TRANS_FLAG    = 0x400000000l;   // transient flag guaranteed to be reset after each phase.
+  val TRANS_FLAG    = 0x1000000000l;   // transient flag guaranteed to be reset after each phase.
   val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
   val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
 
@@ -66,7 +72,8 @@ object Flags {
 
   /** Flags already set by object creation and never set afterwards */
   val CREATIONFLAGS = ACCESSFLAGS | METHOD | MODULE | MUTABLE | PARAM | PACKAGE |
-    COVARIANT | CONTRAVARIANT | SYNTHETIC | STABLE | ACCESSOR | PARAMACCESSOR | LOCAL | IS_ERROR;
+    COVARIANT | CONTRAVARIANT | SYNTHETIC | STABLE | ACCESSOR | PARAMACCESSOR | LOCAL |
+    IS_ERROR | OVERLOADED;
 
   /** Module flags inherited by their module-class */
   val MODULE2CLASSFLAGS = ACCESSFLAGS | PACKAGE;
