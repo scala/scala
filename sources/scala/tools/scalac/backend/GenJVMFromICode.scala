@@ -40,6 +40,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
   private val clasz = new HashMap[Symbol, JVMClass];
 
+  private val nameMap = new HashMap[Symbol, String];
   private val typeMap = new HashMap[Symbol, JType];
 
   // ##################################################
@@ -626,29 +627,18 @@ class GenJVMFromICode(global: scalac_Global) {
   * symbol. The returned name is mangled and includes the names of
   * the owners.
   */
-  private def javaName(theSym: Symbol) = {
-    var sym = theSym;
-    sym match {
-      case defs.ANY_CLASS    => JAVA_LANG_OBJECT;
-      case defs.ANYREF_CLASS => JAVA_LANG_OBJECT;
-      case _                 => {
-	val buf = new StringBuffer(sym.name.toString());
-	  if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
-	    buf.append('$');
-	sym = sym.owner();
-	while (!sym.isPackage()) {
-	  buf.insert(0,'$');
-	  buf.insert(0,sym.name);
-	  sym = sym.owner();
-	}
-	if (!sym.isRoot()) {
-	    buf.insert(0, '.');
-	buf.insert(0, sym.fullName());
-	}
-	buf.toString();
+  private def javaName(sym: Symbol) =
+    nameMap.get(sym) match {
+      case Some(signature) => signature;
+      case None => {
+        assert(sym.isClass() || sym.isModule(), Debug.show(sym));
+        var signature = global.primitives.getJavaSignature(sym);
+        if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
+          signature = signature + '$';
+        nameMap += sym -> signature;
+        signature;
       }
     }
-  }
 
     /**
     * Return the name of the file in which to store the given class.
@@ -666,6 +656,15 @@ class GenJVMFromICode(global: scalac_Global) {
   * Return the Java type corresponding to the given Scala type.
   */
   private def typeStoJ(tp: Type) : JType = tp match {
+    case Type$TypeRef(_, sym, _) =>
+      typeMap.get(sym) match {
+        case Some(jTp) => jTp
+        case None => {
+	  val jTp = new JObjectType(javaName(sym));
+	  typeMap += sym -> jTp;
+	  jTp;
+        }
+      }
     case Type$UnboxedType(TypeTags.BYTE)         => JType.BYTE;
     case Type$UnboxedType(TypeTags.CHAR)         => JType.CHAR;
     case Type$UnboxedType(TypeTags.SHORT)        => JType.SHORT;
@@ -688,18 +687,8 @@ class GenJVMFromICode(global: scalac_Global) {
       new JMethodType(typeStoJ(result), argTypes_a);
     }
 
-    case _ => {
-      val sym = tp.symbol();
-      if (sym == Symbol.NONE)
-	throw global.fail("invalid type ",tp);
-      else if (typeMap.contains(sym))
-	typeMap.apply(sym).asInstanceOf[JType];
-      else {
-	val jTp = new JObjectType(javaName(sym));
-	typeMap += sym -> jTp;
-	jTp;
-      }
-    }
+    case _ =>
+      throw Debug.abort("invalid type", tp);
   }
 }
 
