@@ -292,6 +292,7 @@ public class  Global {
         SHOW_VALUE_DEFINITION_N = Name.fromString("showValueDefinition"),
         SHOW_VALUE_N            = Name.fromString("showValue");
     private Symbol INTERPRETER;
+    private Symbol SHOW_VALUE;
     private Symbol SHOW_DEFINITION;
     private Symbol SHOW_VALUE_DEFINITION;
 
@@ -299,6 +300,12 @@ public class  Global {
         if (INTERPRETER == null)
             INTERPRETER = definitions.getModule(SCALA_INTERPRETER_N);
         return INTERPRETER;
+    }
+
+    private Symbol SHOW_VALUE() {
+        if (SHOW_VALUE == null)
+            SHOW_VALUE = INTERPRETER().lookup(SHOW_VALUE_N);
+        return SHOW_VALUE;
     }
 
     private Symbol SHOW_DEFINITION() {
@@ -327,20 +334,8 @@ public class  Global {
     }
 
     private void fix1(Unit unit) {
-        if (unit.body.length > 0 && unit.body[unit.body.length - 1].isTerm()) {
-            unit.body[unit.body.length - 1] =
-                make.Apply(0,
-                    make.Select(0,
-                        make.Select(0,
-                            make.Ident(0, Names.scala),
-                            INTERPRETER_N),
-                        SHOW_VALUE_N),
-                    new Tree[] {
-                        unit.body[unit.body.length - 1]});
-        } else if (module == 0) {
-            // !!! make sure that Interpreter.scala is compiled
-            SHOW_DEFINITION();
-        }
+        // !!! make sure that Interpreter.scala is compiled
+        SHOW_DEFINITION();
         unit.body = new Tree[] {
             make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
                 make.Template(0, new Tree[]{
@@ -363,7 +358,20 @@ public class  Global {
             switch (unit.body[i]) {
             case ModuleDef(_, Name name, _, Tree.Template impl):
                 if (!name.toString().startsWith(CONSOLE_S)) break;
+                if (impl.body.length <= 0) break;
                 imports.add(unit.body[i].symbol());
+                Tree last = impl.body[impl.body.length - 1];
+                if (last.isTerm()) {
+                    impl.body[impl.body.length - 1] =
+                        treeGen.Apply(
+                            treeGen.Select(
+                                treeGen.mkRef(0, INTERPRETER()),
+                                SHOW_VALUE()),
+                            new Tree[] {
+                                last,
+                                make.Literal(0, show(last.type())).setType(
+                                    definitions.JAVA_STRING_TYPE)});
+                }
                 TreeList body = new TreeList();
                 for (int j = 0; j < impl.body.length; j++)
                     fix2(body, impl.body[j]);
@@ -427,6 +435,10 @@ public class  Global {
         else
             append(buffer, symbol.info());
         return buffer.toString();
+    }
+
+    private String show(Type type) {
+        return append(new StringBuffer(), type).toString();
     }
 
     private String inner(Symbol symbol) {

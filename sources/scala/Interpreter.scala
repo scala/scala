@@ -12,11 +12,17 @@ package scala;
 
 module Interpreter {
 
-  def showValue(value: Any): Unit = {
+  def printValue(value: Any): Unit = {
     if (value == null)
-      java.lang.System.out.println("null");
+      java.lang.System.out.print("null");
     else
-      java.lang.System.out.println(value.toString());
+      java.lang.System.out.print(value.toString());
+  }
+
+  def showValue(value: Any, tp: String): Unit = {
+    printValue(value);
+    java.lang.System.out.print(": ");
+    java.lang.System.out.println(tp);
   }
 
   def showDefinition(definition: String): Unit = {
@@ -26,7 +32,8 @@ module Interpreter {
   def showValueDefinition(definition: String, value: Any): Unit = {
       java.lang.System.out.print(definition);
       java.lang.System.out.print(" = ");
-      showValue(value);
+      printValue(value);
+      java.lang.System.out.println();
   }
 
 }
