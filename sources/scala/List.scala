@@ -62,7 +62,10 @@ trait List[+a] extends Seq[a] {
   def elements: Iterator[a] = new Iterator[a] {
     var current = List.this;
     def hasNext: Boolean = !current.isEmpty;
-    def next: a = { val result = current.head; current = current.tail; result }
+    def next: a = { if( !hasNext )
+		      { error( "next on empty Iterator" ) }
+		    else
+                      { val result = current.head; current = current.tail; result } }
   }
 
   /** Returns the list without its last element.
