@@ -1,4 +1,4 @@
-bug236.scala:4: constructor A of type ()A cannot be applied to (scala.Int)
+bug236.scala:4: wrong number of arguments for constructor A()
   class B extends A(1) {
                    ^
 one error found
