@@ -13,9 +13,15 @@ import scalac.CompilationUnit;
 
 package scala.tools.scaladoc {
 
-  class HTMLGeneratorPhase(global: Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
+class HTMLGeneratorPhase(global: Global, descriptor: PhaseDescriptor)
+  extends Phase(global, descriptor)
+{
 
-    def apply(units: Array[CompilationUnit]): unit = new HTMLGeneratorScala(global).apply();
+  def apply(units: Array[CompilationUnit]): Unit =
+    (new HTMLGenerator(global) {
+      def newTypeIso(global: Global): TypeIsomorphism = new ScalaML(global);
+    }).apply();
 
-  }
+}
+
 }
