@@ -89,6 +89,20 @@ public class SourceFile {
         this.encoding = encoding;
     }
 
+    /** Returns the short name (name without path) of this source file. */
+    public String getShortName() {
+        int start = name.lastIndexOf(File.separatorChar);
+        return start < 0 ? name : name.substring(start + 1);
+    }
+
+    /**
+     * Returns an instance of Position representing the given line and
+     * column of this source file.
+     */
+    public Position getPosition(int line, int column) {
+        return new Position(this, line, column);
+    }
+
     /** Returns the content of the given line. */
     public String getLine(int line) {
         int index = lineNumber <= line ? nextIndex : (lineNumber = 0);
@@ -112,14 +126,6 @@ public class SourceFile {
         } catch (UnsupportedEncodingException exception) {
             throw new Error(exception); // !!! use ApplicationError
         }
-    }
-
-    /**
-     * Returns an instance of Position representing the given line and
-     * column of this source file.
-     */
-    public Position getPosition(int line, int column) {
-        return new Position(this, line, column);
     }
 
     /** Returns the name of this source file. */
