@@ -9,7 +9,7 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.nobinding.{Element,XML} ;
+import scala.xml.nobinding.XML ;
 
 /** transforms a set of DTD declaraion to a scala source file.
  *  2do: parameterize with destination package.
@@ -30,11 +30,11 @@ class DeclToScala(fOut:PrintWriter,
 
     def write:Unit = {
       def writeNode( x:Node ):Unit = {
-        /*Console.println("visiting "+x);*/
+        //Console.println("visiting "+x);
         x match {
           case Text(text) =>
             fOut.print( text );
-          case n:AttributedNode =>
+          case n:Symbol =>
             n.label match {
               case "template" => {
                 lookup.update("objectName", objectName);
