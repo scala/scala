@@ -257,17 +257,6 @@ public abstract class Symbol implements Modifiers, Kinds {
         return clone;
     }
 
-    /** copy all fields to `sym'
-     */
-    public void copyTo(Symbol sym) {
-        sym.kind = kind;
-        sym.pos = pos;
-        sym.name = name;
-        sym.flags = flags;
-        sym.owner = owner;
-        sym.infos = infos;
-    }
-
 // Setters ---------------------------------------------------------------
 
     /** Set owner */
@@ -1528,16 +1517,6 @@ public abstract class TypeSymbol extends Symbol {
         constructor.pos = pos;
     }
 
-    /** copy all fields to `sym'
-     */
-    public void copyTo(Symbol sym) {
-        super.copyTo(sym);
-        Symbol symconstr = ((TypeSymbol) sym).constructor;
-        constructor.copyTo(symconstr);
-        if (constructor.isInitialized())
-            symconstr.setInfo(fixConstrType(symconstr.type(), sym));
-    }
-
     protected final void copyConstructorInfo(TypeSymbol other) {
         {
             Type info = primaryConstructor().info().cloneType(
@@ -1712,13 +1691,6 @@ public class AbsTypeSymbol extends TypeSymbol {
         return other;
     }
 
-    /** copy all fields to `sym'
-     */
-    public void copyTo(Symbol sym) {
-        super.copyTo(sym);
-        ((AbsTypeSymbol) sym).lobound = lobound;
-    }
-
     public Type loBound() {
         initialize();
         return lobound == null ? Global.instance.definitions.ALL_TYPE() : lobound;
@@ -1845,13 +1817,6 @@ public class ClassSymbol extends TypeSymbol {
         copyConstructorInfo(other);
         if (thisSym != this) other.setTypeOfThis(typeOfThis());
         return other;
-    }
-
-    /** copy all fields to `sym'
-     */
-    public void copyTo(Symbol sym) {
-        super.copyTo(sym);
-        if (thisSym != this) sym.setTypeOfThis(typeOfThis());
     }
 
    /** Get module */
