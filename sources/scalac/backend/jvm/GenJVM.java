@@ -321,6 +321,12 @@ class GenJVM {
                     generatedType = expectedType;
                     break;
 
+                case NEW_OARRAY: {
+                    assert args.length == 2;
+                    genRefArrayCreate(ctx, args[0], args[1]);
+                    generatedType = expectedType;
+                } break;
+
                 case NEW_ZARRAY : case NEW_BARRAY : case NEW_SARRAY :
                 case NEW_CARRAY : case NEW_IARRAY : case NEW_LARRAY :
                 case NEW_FARRAY : case NEW_DARRAY :
@@ -695,17 +701,17 @@ class GenJVM {
 
                 case ZOR:
                 case ZAND:
-                    JCode.Label afterLabel = ctx.code.newLabel();
                     if (when ^ (prim == Primitive.ZAND)) {
                         // x || y jump if true  -or-  x && y jump if false
                         genCond(ctx, unbox(allArgs[0]), target, when);
                         genCond(ctx, allArgs[1], target, when);
                     } else {
                         // x || y jump if false  -or-  x && y jump if true
+                        JCode.Label afterLabel = ctx.code.newLabel();
                         genCond(ctx, unbox(allArgs[0]), afterLabel, !when);
                         genCond(ctx, allArgs[1], target, when);
+                        afterLabel.anchorToNext();
                     }
-                    afterLabel.anchorToNext();
                     return;
                 }
             }
@@ -967,8 +973,8 @@ class GenJVM {
     //////////////////////////////////////////////////////////////////////
 
     /**
-     * Generate code to create an array, whose size will be
-     * dynamically computed.
+     * Generate code to create an array of some basic type, whose size
+     * will be dynamically computed.
      */
     protected void genArrayCreate(Context ctx, Primitive prim, Tree size) {
         genLoad(ctx, size, JType.INT);
@@ -985,6 +991,29 @@ class GenJVM {
         default: throw Debug.abort("unexpected primitive", prim);
         }
         ctx.code.emitNEWARRAY(type);
+    }
+
+    /**
+     * Generate code to create an array of references, whose size will
+     * be dynamically computed.
+     */
+    protected void genRefArrayCreate(Context ctx, Tree size, Tree classNameLit) {
+        genLoad(ctx, size, JType.INT);
+
+        String className;
+        switch (classNameLit) {
+        case Literal(Object name): className = (String)name; break;
+        default: throw global.fail("invalid argument for oarray " + classNameLit);
+        }
+
+        JReferenceType elemType;
+        switch (className.charAt(0)) {
+        case '[': case 'L':
+            elemType = (JReferenceType)JType.parseSignature(className); break;
+        default:
+            elemType = new JObjectType(className);
+        }
+        ctx.code.emitANEWARRAY(elemType);
     }
 
     /**
@@ -1124,12 +1153,11 @@ class GenJVM {
             case AS_CARRAY : case AS_IARRAY : case AS_LARRAY :
             case AS_FARRAY : case AS_DARRAY : case AS_OARRAY :
             case AS__ARRAY :
-            case NEW_OARRAY :
             case EQUALS  :
             case HASHCODE :
             case TOSTRING :
             case BOX :
-            case APPLY : case UPDATE : case LENGTH :
+            case APPLY : case UPDATE : case LENGTH : case NEW_OARRAY :
                 return false;
             default:
                 throw Debug.abort("unknown primitive", sym);
