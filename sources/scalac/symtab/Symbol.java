@@ -1776,6 +1776,8 @@ public class ClassSymbol extends TypeSymbol {
     }
 
     public Type thisType() {
+        Global global = Global.instance;
+        if (global.currentPhase.id > global.PHASE.ERASURE.id()) return type();
         return thistp;
     }
 
