@@ -35,6 +35,7 @@ scalac/ast/MetaTreeFactory.java
 
 scalac/ast/Tree.java
 scalac/ast/TreeField.java
+scalac/ast/TreeFieldLink.java
 scalac/ast/TreeKind.java
 scalac/ast/TreeNode.java
 scalac/ast/TreeSymbol.java
