@@ -813,16 +813,6 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     gen.DefDef(equalsSym, body)
   }
 
-  private def tagMethod(clazz: ClassSymbol): Tree = {
-    val flags = if (clazz.isSubClass(defs.SCALAOBJECT_CLASS)) OVERRIDE else 0;
-    val tagSym = clazz.newMethod(clazz.pos, flags, Names.tag)
-      .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.int_TYPE()));
-    clazz.info().members().enter(tagSym);
-    gen.DefDef(
-      tagSym,
-      gen.mkIntLit(clazz.pos, if (clazz.isCaseClass()) clazz.tag() else 0));
-  }
-
   private def getTypeMethod(clazz: ClassSymbol): Tree = {
     val flags = if (clazz.isSubClass(defs.SCALAOBJECT_CLASS)) OVERRIDE else 0;
     val getTypeSym = clazz
@@ -889,11 +879,13 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       // the following report error if impl exists
       ts.append(caseElementMethod(clazz));
       ts.append(caseArityMethod(clazz));
-      ts.append(tagMethod(clazz));
-      ts.append(getTypeMethod(clazz));
+      ts.append(gen.mkTagMethod(clazz));
+      if (global.target != Global.TARGET_MSIL)
+        ts.append(getTypeMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
-      ts.append(tagMethod(clazz));
-      ts.append(getTypeMethod(clazz));
+      ts.append(gen.mkTagMethod(clazz));
+      if (global.target != Global.TARGET_MSIL)
+        ts.append(getTypeMethod(clazz));
     }
     if (clazz.isModuleClass() && clazz.isSubClass(defs.SERIALIZABLE_CLASS)) {
       // If you serialize a singleton and then deserialize it twice,
