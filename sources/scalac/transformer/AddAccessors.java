@@ -37,6 +37,7 @@ public class AddAccessors extends Transformer {
 
     protected final HashMap/*<Symbol,Symbol>*/ accessorMap = new HashMap();
     protected boolean inClassContext;
+    protected Symbol clasz;
 
     protected Symbol accessor(Symbol sym) {
         Symbol accessor = (Symbol)accessorMap.get(sym);
@@ -61,7 +62,8 @@ public class AddAccessors extends Transformer {
                       Tree.ValDef[][] vparams,
                       Tree tpe,
                       Tree.Template impl): {
-            Symbol clsSym = tree.symbol();
+            Symbol backup = clasz;
+            Symbol clsSym = clasz = tree.symbol();
             assert vparams.length == 1;
             Tree.ValDef[] params = vparams[0];
 
@@ -109,6 +111,7 @@ public class AddAccessors extends Transformer {
 
             Tree[] newBodyA = (Tree[])newBody.toArray(new Tree[newBody.size()]);
 
+            clasz = backup;
             return copy.ClassDef(tree,
                                  clsSym,
                                  transform(tparams),
@@ -131,7 +134,7 @@ public class AddAccessors extends Transformer {
             if (inClassContext
                 && sym.name.isTermName()
                 && sym.owner().isPrimaryConstructor())
-                return gen.Apply(gen.Ident(tree.pos, accessor(sym)));
+                return gen.Apply(gen.Select(gen.This(tree.pos, clasz), accessor(sym)));
             else
                 return copy.Ident(tree, sym);
         }
