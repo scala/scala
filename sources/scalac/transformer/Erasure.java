@@ -420,8 +420,7 @@ public class Erasure extends GenTransformer implements Modifiers {
             Tree[] targs = {gen.mkType(pos, element)};
             Tree[] vargs = {coerce(size, UNBOXED_INT)};
             Tree fun = gen.mkGlobalRef(pos, primitives.NEW_OARRAY);
-            Tree array = gen.mkApplyTV(fun, targs, vargs);
-            return gen.mkAsInstanceOf(array, Type.UnboxedArrayType(element));
+            return gen.mkApplyTV(fun, targs, vargs);
         }
         switch (element) {
         case UnboxedType(int kind): return genNewUnboxedArray(pos, kind, size);
