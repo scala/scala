@@ -241,7 +241,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Builds a default zero value according to given type. */
     public Tree mkDefaultValue(int pos, Type type) {
-	if (type.isSubType(definitions.ANYREF_TYPE())) return mkNullLit(pos);
+	if (definitions.ALLREF_TYPE().isSubType(type)) return mkNullLit(pos);
         switch (type.unbox()) {
         case UnboxedType(int tag): return mkDefaultValue(pos, tag);
         }
