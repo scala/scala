@@ -63,10 +63,86 @@ class Queue[A] extends MutableList[A] with Cloneable {
         else {
             val res = first.elem;
             first = first.next;
-        len = len - 1;
+            if (first == null)
+                last = null;
+            len = len - 1;
             res;
         }
     }
+
+    /** Returns the first element in the queue which satisfies the
+     *  given predicate, and removes this element from the queue.
+     *
+     *  @param p   the predicate used for choosing the first element
+     *  @return the first element of the queue for which p yields true
+     */
+    def dequeueFirst(p: A => Boolean): Option[A] = {
+    	if (first == null)
+			None
+		else if (p(first.elem)) {
+			val res = Some(first.elem);
+			first = first.next;
+			len = len - 1;
+			if (first == null) {
+				last = null;
+			} else if (first.next == null) {
+				last = first;
+			}
+			res
+		} else
+			extractFirst(first, p) match {
+				case None => None
+				case Some(cell) => Some(cell.elem)
+			}
+    }
+
+    /** Returns all elements in the queue which satisfy the
+     *  given predicate, and removes those elements from the queue.
+     *
+     *  @param p   the predicate used for choosing elements
+     *  @return    a sequence of all elements in the queue for which
+     *             p yields true.
+     */
+    def dequeueAll(p: A => Boolean): Seq[A] = {
+    	val res = new ArrayBuffer[A];
+ 		if (first == null)
+ 			res;
+ 		else {
+ 			while (p(first.elem)) {
+				res += first.elem;
+				first = first.next;
+				len = len - 1;
+				if (first == null) {
+					last = null;
+				} else if (first.next == null) {
+					last = first;
+				}
+			}
+			var cell: Option[LinkedList[A]] = extractFirst(first, p);
+			while (!cell.isEmpty) {
+				res += cell.get.elem;
+				cell = extractFirst(cell.get, p);
+			}
+			res
+		}
+    }
+
+    private def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
+		var cell = start;
+		while ((cell.next != null) && !p(cell.next.elem)) {
+			cell = cell.next;
+		}
+		if (cell.next == null)
+			None
+		else {
+			val res = Some(cell.next);
+			cell.next = cell.next.next;
+			if (cell.next == null)
+				last = cell;
+			len = len - 1;
+			res
+		}
+	}
 
     /** Returns the first element in the queue, or throws an error if there
      *  is no element contained in the queue.
