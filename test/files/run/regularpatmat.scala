@@ -20,7 +20,7 @@ object Test {
     testBO.main( args );
     testMZ.main;
     //testNN.main;
-    ()
+    testBugSequenceApply.main;
   }
 }
 
@@ -715,4 +715,30 @@ object testNO {   // this does not need to be run, only compiled
   case class Operation (e: Expression, o: Operator) extends Expression;
 
 
+}
+
+/** see comments in scala.tools.scalac.transformer.matching.PatternMatcher::isSeqApply 2005-02-17
+ */
+object testBugSequenceApply {
+
+  val x = List(1,2,3);
+
+  case class ThreeBars extends Seq[Int] {
+    override def length = 3;
+    def elements = x.elements;
+    def apply(i:Int) = x.apply(i);
+  }
+
+  // this works
+  def main:Unit = {
+    Console.print("testBugSequenceApply ");
+    val z: Seq[Int] = new ThreeBars();
+    Console.print(z.match {
+      case Seq(1,2,3) => "hello" // but ThreeBars is a case class...
+    });
+
+    Console.print(ThreeBars().match {
+      case Seq(1,2,3) => " hello" // but ThreeBars is a case class...
+    });
+  }
 }
