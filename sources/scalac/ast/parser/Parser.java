@@ -1556,8 +1556,8 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** FunDef ::= Id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
-     *  FunSig ::= Id [FunTypeParamClause] {ParamClause} `:' Type
+    /** FunDef ::= Id [FunTypeParamClause] {ParamClauses} [`:' Type] `=' Expr
+     *  FunSig ::= Id [FunTypeParamClause] {ParamClauses} `:' Type
      */
     Tree funDefOrSig(int mods) {
         int pos = s.pos;
