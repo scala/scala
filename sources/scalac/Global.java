@@ -202,10 +202,9 @@ public abstract class Global {
      * @param interpret
      */
     public Global(CompilerCommand args, boolean interpret) {
-        if (Global.instance != null) { // jaco bug: can't use assert here
-            new Error("Duplicate creation of Global").printStackTrace();
-            System.exit(1);
-        };
+        assert Debug.initialize() || true;
+        if (Global.instance != null) // jaco bug: can't use assert here
+            /* throw */ Debug.abort("duplicate creation of Global");
         Global.instance = this;
         this.args = args;
         this.reporter = args.reporter();

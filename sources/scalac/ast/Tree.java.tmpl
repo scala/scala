@@ -119,10 +119,7 @@ public class Tree {
     //########################################################################
     // Public Methods - duplication
 
-    public static Transformer duplicator =
-       new Transformer(
-	    Global.instance, Global.instance.make,
-	    new StrictTreeCopier(Global.instance.make));
+    public static Transformer duplicator;
 
     /** Returns a shallow copy of the given array. */
     public static Tree[] cloneArray(Tree[] array) {
@@ -168,6 +165,9 @@ public class Tree {
     }
 
     public Tree duplicate() {
+        if (duplicator == null) duplicator =new Transformer(
+	    Global.instance, Global.instance.make,
+	    new StrictTreeCopier(Global.instance.make));
 	return duplicator.transform(this);
     }
 

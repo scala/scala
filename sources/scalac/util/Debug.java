@@ -2,25 +2,20 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
 \*                                                                      */
 
 // $Id$
 
 package scalac.util;
 
-import java.util.HashMap;
-
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Method;
-import java.lang.reflect.Field;
+import scala.tools.util.debug.Debugger;
+import scala.tools.util.debug.ToStringDebugger;
 
 import scalac.Global;
-import scalac.ApplicationError;
 import scalac.ast.Tree;
-import scalac.symtab.Type;
-import scalac.symtab.Symbol;
 import scalac.symtab.Scope;
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 
 /**
  * Debugging class, used e.g. to obtain string representations of
@@ -32,46 +27,29 @@ import scalac.symtab.Scope;
  * @author Michel Schinz
  * @version 1.0
  */
-
-public abstract class Debug {
+public class Debug extends scala.tools.util.debug.Debug {
 
     //########################################################################
-    // Debug interface - abort
+    // Private Initialization
 
-    public static Error abort() {
-        return new ApplicationError();
+    /**
+     * Forces the initialization of this class. Returns the boolean
+     * value true so that it can be invoked from an assert statement.
+     */
+    public static boolean initialize() {
+        // nothing to do, everything is done in the static initializer
+        return true;
     }
 
-    public static Error abort(String message) {
-        return new ApplicationError(message);
-    }
-
-    public static Error abort(Object object) {
-        return new ApplicationError(object);
-    }
-
-    public static Error abort(Throwable cause) {
-        return new ApplicationError(cause);
-    }
-
-    public static Error abort(String message, Object object) {
-        return new ApplicationError(message, object);
-    }
-
-    public static Error abort(String message, Throwable cause) {
-        return new ApplicationError(message, cause);
-    }
-
-    public static Error abort(Object object, Throwable cause) {
-        return new ApplicationError(object, cause);
-    }
-
-    public static Error abort(String message, Object object, Throwable cause) {
-        return new ApplicationError(message, object, cause);
+    static {
+        addDebugger(new ToStringDebugger(Tree.class));
+        addDebugger(new ToStringDebugger(Type.class));
+        addDebugger(SymbolDebugger.object);
+        addDebugger(ScopeDebugger.object);
     }
 
     //########################################################################
-    // Debug interface - log
+    // Public Methods - Logging
 
     public static boolean log(Object a) {
         return logAll(new Object[] {a});
@@ -90,427 +68,173 @@ public abstract class Debug {
     }
 
     public static boolean logAll(Object[] args) {
-        return Global.instance.log(showAll(args, true));
+        return Global.instance.log(showAll(args, null));
     }
 
     //########################################################################
-    // Debug interface - handlers
+    // Public Methods - Bootstrapping
 
-    public static final HashMap/*<Class,DebugHandler>*/ handlers;
+    // !!! all the following methods are only needed for bootstraping
+    // !!! remove them after next release (current is 1.2.0.0)
 
-    static {
-        handlers = new HashMap();
-        handlers.put(String.class, DebugToStringHandler.instance);
-        handlers.put(Tree.class, DebugToStringHandler.instance);
-        handlers.put(Type.class, DebugToStringHandler.instance);
-        handlers.put(Symbol.class, DebugSymbol.instance);
-        handlers.put(Scope.class, DebugScope.instance);
+    public static Error abort() {
+        return scala.tools.util.debug.Debug.abort();
+    }
+    public static Error abort(Throwable cause) {
+        return scala.tools.util.debug.Debug.abort(cause);
+    }
+    public static Error abort(Object object) {
+        return scala.tools.util.debug.Debug.abort(object);
+    }
+    public static Error abort(Object object, Throwable cause) {
+        return scala.tools.util.debug.Debug.abort(object, cause);
+    }
+    public static Error abort(String message) {
+        return scala.tools.util.debug.Debug.abort(message);
+    }
+    public static Error abort(String message, Throwable cause) {
+        return scala.tools.util.debug.Debug.abort(message, cause);
+    }
+    public static Error abort(String message, Object object) {
+        return scala.tools.util.debug.Debug.abort(message, object);
+    }
+    public static Error abort(String message, Object object, Throwable cause) {
+        return scala.tools.util.debug.Debug.abort(message, object, cause);
     }
 
-    public static DebugHandler getHandler(Object that) {
-        if (that == null) return DebugDefaultHandler.instance;
-        return getHandler(that.getClass());
+    public static Error abortIllegalCase(int value) {
+        return scala.tools.util.debug.Debug.abortIllegalCase(value);
     }
-
-    public static DebugHandler getHandler(Class clasz) {
-        if (clasz == null) return DebugDefaultHandler.instance;
-        Object handler = handlers.get(clasz);
-        if (handler != null) return (DebugHandler)handler;
-        return getHandler(clasz.getSuperclass());
+    public static Error abortIllegalCase(Object object) {
+        return scala.tools.util.debug.Debug.abortIllegalCase(object);
     }
-
-    //########################################################################
-    // Debug interface - toString
-
-    public static String toString(Object that) {
-        return show(that);
-    }
-
-    //########################################################################
-    // Debug interface - show
 
     public static String show(Object a) {
-        return showAll(new Object[] {a});
+        return scala.tools.util.debug.Debug.show(a);
     }
-
     public static String show(Object a, Object b) {
-        return showAll(new Object[] {a, b});
+        return scala.tools.util.debug.Debug.show(a, b);
     }
-
     public static String show(Object a, Object b, Object c) {
-        return showAll(new Object[] {a, b, c});
+        return scala.tools.util.debug.Debug.show(a, b, c);
     }
-
     public static String show(Object a, Object b, Object c, Object d) {
-        return showAll(new Object[] {a, b, c, d});
+        return scala.tools.util.debug.Debug.show(a, b, c, d);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e)
     {
-        return showAll(new Object[] {a, b, c, d, e});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f)
     {
-        return showAll(new Object[] {a, b, c, d, e, f});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g)
     {
-        return showAll(new Object[] {a, b, c, d, e, f, g});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f, g);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h)
     {
-        return showAll(new Object[] {a, b, c, d, e, f, g, h});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f, g, h);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i)
     {
-        return showAll(new Object[] {a, b, c, d, e, f, g, h, i});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f, g, h, i);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i, Object j)
     {
-        return showAll(new Object[] {a, b, c, d, e, f, g, h, i, j});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f, g, h, i, j);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i, Object j, Object k)
     {
-        return showAll(new Object[] {a, b, c, d, e, f, g, h, i, j, k});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f, g, h, i, j, k);
     }
-
     public static String show(Object a, Object b, Object c, Object d, Object e,
         Object f, Object g, Object h, Object i, Object j, Object k, Object l)
     {
-        return showAll(new Object[] {a, b, c, d, e, f, g, h, i, j, k, l});
+        return scala.tools.util.debug.Debug.show(a, b, c, d, e, f, g, h, i, j, k, l);
     }
 
-    public static String showAll(Object[] args) {
-        return showAll(args, false);
+    public static String showAll(Object[] objects) {
+        return scala.tools.util.debug.Debug.showAll(objects);
     }
-
-    public static String showAll(Object[] args, boolean nosep) {
-        if (args == null) return "null";
-        StringBuffer buffer = new StringBuffer();
-        for (int i = 0; i < args.length; i++)
-            append(nosep || i == 0 ? buffer : buffer.append(" - "), args[i]);
-        return buffer.toString();
-    }
-
-    //########################################################################
-    // Debug interface - append
-
-    public static void append(StringBuffer buffer, Object that) {
-        getHandler(that).append0(buffer, that);
-    }
-
-    public static void appendDefault(StringBuffer buffer, Object that) {
-        if (that == null) { buffer.append("null"); return; }
-        if (!that.getClass().isArray())
-            appendObject(buffer, that);
-        else if (that instanceof Object [])
-            appendArray(buffer, (Object [])that);
-        else if (that instanceof boolean[])
-            appendArray(buffer, (boolean[])that);
-        else if (that instanceof byte   [])
-            appendArray(buffer, (byte   [])that);
-        else if (that instanceof short  [])
-            appendArray(buffer, (short  [])that);
-        else if (that instanceof char   [])
-            appendArray(buffer, (char   [])that);
-        else if (that instanceof int    [])
-            appendArray(buffer, (int    [])that);
-        else if (that instanceof long   [])
-            appendArray(buffer, (long   [])that);
-        else if (that instanceof float  [])
-            appendArray(buffer, (float  [])that);
-        else if (that instanceof double [])
-            appendArray(buffer, (double [])that);
-        else
-            appendObject(buffer, that);
-    }
-
-    public static void appendObject(StringBuffer buffer, Object that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append(getClassName(that));
-        Class owner = null;
-        if (hasToString(that.getClass())) {
-            buffer.append('(');
-            buffer.append(that);
-            buffer.append(')');
-        } else {
-            int code = System.identityHashCode(that);
-            buffer.append('@');
-            buffer.append(Integer.toHexString(code));
-        }
-    }
-
-    public static void appendArray(StringBuffer buffer, Object[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            append(buffer, that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, boolean[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, byte[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, short[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, char[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, int[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, long[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, float[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    public static void appendArray(StringBuffer buffer, double[] that) {
-        if (that == null) { buffer.append("null"); return; }
-        buffer.append('[');
-        for (int i = 0; i < that.length; i++) {
-            if (i > 0) buffer.append(',');
-            buffer.append(that[i]);
-        }
-        buffer.append(']');
-    }
-
-    //########################################################################
-    // Debug interface - utils
-
-    public static final Class OBJECT_CLASS = Object.class;
-
-    public static boolean hasToString(Class clasz) {
-        try {
-            Method toString = clasz.getMethod("toString", new Class[0]);
-            return toString.getDeclaringClass() != OBJECT_CLASS;
-        } catch (NoSuchMethodException excpetion) {
-            return false;
-        } catch (SecurityException excpetion) {
-            return false;
-        }
-    }
-
-    public static String getClassName(Object object) {
-        if (object == null) return "null";
-        Class clasz = object.getClass();
-        String name = clasz.getName();
-        if (!name.endsWith("$$Var")) return name;
-        Class superclass = clasz.getSuperclass();
-        Field[] fields = superclass.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            try {
-                Field field = fields[i];
-                if (field.getType() != clasz) continue;
-                if (!Modifier.isStatic(field.getModifiers())) continue;
-                Object value = field.get(null);
-                if (value != object) continue;
-                return name + "[" + field.getName() + "]";
-            } catch (IllegalAccessException exception) {
-                // continue
-            }
-        }
-        return name;
+    public static String showAll(Object[] objects, String separator) {
+        return scala.tools.util.debug.Debug.showAll(objects, separator);
     }
 
     //########################################################################
 }
 
-public interface DebugHandler {
+/** This class implements a debugger for symbols. */
+public class SymbolDebugger implements Debugger {
 
     //########################################################################
-    // DebugHandler interface
+    // Public Constants
 
-    public void append0(StringBuffer buffer, Object that);
-
-    //########################################################################
-}
-
-public abstract class DebugAbstractHandler implements DebugHandler {
-}
-
-public class DebugDefaultHandler extends DebugAbstractHandler {
+    /** The unique instance of this class. */
+    public static final SymbolDebugger object = new SymbolDebugger();
 
     //########################################################################
-    // DebugDefaultHandler interface
+    // Protected Constructors
 
-    public static DebugDefaultHandler instance = new DebugDefaultHandler();
+    /** Initializes this instance. */
+    protected SymbolDebugger() {}
 
     //########################################################################
-    // DebugHandler interface
+    // Public Methods
 
-    public void append0(StringBuffer buffer, Object that) {
-        Debug.appendDefault(buffer, that);
+    public boolean canAppend(Object object) {
+        return object instanceof Symbol;
     }
 
-    //########################################################################
-}
-
-public class DebugToStringHandler extends DebugAbstractHandler {
-
-    //########################################################################
-    // DebugToStringHandler interface
-
-    public static DebugToStringHandler instance = new DebugToStringHandler();
-
-    //########################################################################
-    // DebugHandler interface
-
-    public void append0(StringBuffer buffer, Object that) {
-        buffer.append(that);
-    }
-
-    //########################################################################
-}
-
-public class DebugObject extends DebugAbstractHandler {
-
-    //########################################################################
-    // DebugObject interface
-
-    public static DebugObject instance = new DebugObject();
-
-    public void append1(StringBuffer buffer, Object that) {
-        Debug.appendObject(buffer, that);
-    }
-
-    //########################################################################
-    // DebugHandler interface
-
-    public void append0(StringBuffer buffer, Object that) {
-        append1(buffer, (Object)that);
-    }
-
-    //########################################################################
-}
-
-public class DebugArray extends DebugAbstractHandler {
-
-    //########################################################################
-    // DebugArray interface
-
-    public static DebugArray instance = new DebugArray();
-
-    public void append1(StringBuffer buffer, Object[] that) {
-        Debug.appendArray(buffer, that);
-    }
-
-    //########################################################################
-    // DebugHandler interface
-
-    public void append0(StringBuffer buffer, Object that) {
-        append1(buffer, (Object[])that);
-    }
-
-    //########################################################################
-}
-
-public class DebugSymbol extends DebugAbstractHandler {
-
-    //########################################################################
-    // DebugSymbol interface
-
-    public static DebugSymbol instance = new DebugSymbol();
-
-    public void append1(StringBuffer buffer, Symbol that) {
-        if (!that.isNone() && !that.owner().isRoot() && !that.isRoot()) {
-            Debug.append(buffer, that.owner());
+    public void append(StringBuffer buffer, Object object) {
+        Symbol symbol = (Symbol)object;
+        if (!symbol.isNone() && !symbol.owner().isRoot() && !symbol.isRoot()) {
+            Debug.append(buffer, symbol.owner());
             buffer.append(".");
         }
-        buffer.append(that.name);
+        buffer.append(symbol.name);
         if (Global.instance.uniqid) {
             buffer.append('#');
-            buffer.append(Global.instance.uniqueID.id(that));
+            buffer.append(Global.instance.uniqueID.id(symbol));
         }
-    }
-
-    //########################################################################
-    // DebugHandler interface
-
-    public void append0(StringBuffer buffer, Object that) {
-        append1(buffer, (Symbol)that);
     }
 
     //########################################################################
 }
 
-public class DebugScope extends DebugAbstractHandler {
+/** This class implements a debugger for scopes. */
+public class ScopeDebugger implements Debugger {
 
     //########################################################################
-    // DebugScope interface
+    // Public Constants
 
-    public static DebugScope instance = new DebugScope();
+    /** The unique instance of this class. */
+    public static final ScopeDebugger object = new ScopeDebugger();
 
-    public void append1(StringBuffer buffer, Scope that) {
+    //########################################################################
+    // Protected Constructors
+
+    /** Initializes this instance. */
+    protected ScopeDebugger() {}
+
+    //########################################################################
+    // Public Methods
+
+    public boolean canAppend(Object object) {
+        return object instanceof Scope;
+    }
+
+    public void append(StringBuffer buffer, Object object) {
+        Scope scope = (Scope)object;
         buffer.append('{');
-        for (Scope.SymbolIterator i = that.iterator(); i.hasNext();) {
+        for (Scope.SymbolIterator i = scope.iterator(true); i.hasNext();) {
             Debug.append(buffer, i.next());
             if (i.hasNext()) buffer.append(',');
         }
@@ -518,12 +242,4 @@ public class DebugScope extends DebugAbstractHandler {
     }
 
     //########################################################################
-    // DebugHandler interface
-
-    public void append0(StringBuffer buffer, Object that) {
-        append1(buffer, (Scope)that);
-    }
-
-    //########################################################################
 }
-
