@@ -152,13 +152,14 @@ TOOLS_NAME		 = tools
 TOOLS_JAR_ARCHIVE	 = $(PROJECT_LIBRARYDIR)/$(TOOLS_NAME).jar
 TOOLS_JAR_INPUTDIR	 = $(PROJECT_OUTPUTDIR)
 TOOLS_JAR_FILES		+= ch
-TOOLS_JAR_FILES		+= scalac
+TOOLS_JAR_FILES		+= scala/tools/dtd2scala
+TOOLS_JAR_FILES		+= scala/tools/scalac
+TOOLS_JAR_FILES		+= scala/tools/scalac4ant
 TOOLS_JAR_FILES		+= scala/tools/scaladoc
 TOOLS_JAR_FILES		+= scala/tools/scalai
-TOOLS_JAR_FILES		+= scala/tools/dtd2scala
 TOOLS_JAR_FILES		+= scala/tools/scalap
-TOOLS_JAR_FILES		+= scala/tools/scalac4ant
 TOOLS_JAR_FILES		+= scala/tools/scalatest
+TOOLS_JAR_FILES		+= scalac
 
 # java compilation
 JC_COMPILER		 = PICO
