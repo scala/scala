@@ -1173,6 +1173,7 @@ class GenJVM {
             case EQUALS  :
             case HASHCODE :
             case TOSTRING :
+            case COERCE :
             case BOX :
             case UNBOX :
             case APPLY : case UPDATE : case LENGTH :

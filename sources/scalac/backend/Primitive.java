@@ -79,6 +79,9 @@ public class Primitive {
     // Throwable operations
     public case THROW;                        // throw x
 
+    // Value types conversions
+    public case COERCE;                       // x.coerce()
+
     // RunTime operations
     public case BOX;                          // RunTime.box_<X>(x)
     public case UNBOX;                        // RunTime.unbox_<X>(x)
