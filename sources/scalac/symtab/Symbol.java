@@ -10,6 +10,10 @@
 
 package scalac.symtab;
 
+import java.util.Comparator;
+import java.util.Map;
+import java.util.TreeMap;
+
 import ch.epfl.lamp.util.Position;
 import scalac.ApplicationError;
 import scalac.Global;
@@ -1619,60 +1623,41 @@ public abstract class TypeSymbol extends Symbol {
     private final void computeClosureAt(Phase phase) {
         Phase current = Global.instance.currentPhase;
         Global.instance.currentPhase = phase;
-        // todo: why can't we do: inclClosure(SymSet.EMPTY, this) ?
-        //System.out.println("computing closure of " + this);//DEBUG
-        Type[] parents = type().parents(); // evals info before use of LOCKED
-        assert (flags & LOCKED) == 0 : Debug.show(this) + " -- " + phase;
-        flags |= LOCKED;
-        SymSet closureClassSet = inclClosure(SymSet.EMPTY, parents);
-        flags &= ~LOCKED;
-        Symbol[] closureClasses = new Symbol[closureClassSet.size() + 1];
-        closureClasses[0] = this;
-        closureClassSet.copyToArray(closureClasses, 1);
-        //System.out.println(ArrayApply.toString(closureClasses));//DEBUG
-        closures = new ClosureIntervalList(closures, Symbol.type(closureClasses), phase.prev == null ? phase : phase.prev);
-        //System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
-
-        adjustType(type());
-        //System.out.println("closure(" + this + ") = " + ArrayApply.toString(closures.closure));//DEBUG
+        Map parents = inclClosure(new TreeMap(comparator), info());
+        Type[] closure = new Type[parents.size() + 1];
+        closures = new ClosureIntervalList(
+            closures, closure, phase.prev == null ? phase : phase.prev);
+        // the next put needs a defined closure size because of isLess
+        parents.put(this, type());
+        parents.values().toArray(closure);
         Global.instance.currentPhase = current;
-
     }
     //where
-        private static SymSet inclClosure(SymSet set, Type[] tps) {
-            for (int i = 0; i < tps.length; i++) set = inclClosure(set,tps[i]);
-            return set;
-        }
-        private static SymSet inclClosure(SymSet set, Type tp) {
-            tp = tp.unalias();
-            switch (tp) {
+        private static Map inclClosure(Map closure, Type type) {
+            type = type.unalias();
+            switch (type) {
+            case ErrorType:
+                return closure;
+            case TypeRef(_, Symbol symbol, _):
+                Type.Map map = Type.getThisTypeMap(symbol, type);
+                Type[] parents = symbol.closure();
+                for (int i = 0; i < parents.length; i++)
+                    closure.put(parents[i].symbol(), map.apply(parents[i]));
+                return closure;
             case CompoundType(Type[] parents, _):
-                return inclClosure(set, parents);
+                for (int i = 0; i < parents.length; i++)
+                    inclClosure(closure, parents[i]);
+                return closure;
             default:
-                return inclClosure(set, tp.symbol());
+                throw Debug.abort("illegal case", type);
             }
         }
-        private static SymSet inclClosure(SymSet set, Symbol sym) {
-            while (sym.kind == ALIAS) sym = sym.info().symbol();
-            return inclClosure(set.incl(sym), sym.type().parents());
-        }
-
-        private void adjustType(Type tp) {
-            Type tp1 = tp.unalias();
-            switch (tp) {
-            case CompoundType(Type[] parents, _):
-                break;
-            default:
-                Symbol sym = tp1.symbol();
-                int pos = closurePos(sym);
-                assert pos >= 0 : this + " " + tp1 + " " + tp1.symbol() + " " + pos;
-                closures.closure[pos] = tp1;
+        private static Comparator comparator = new Comparator() {
+            public int compare(Object lf, Object rg) {
+                if (lf == rg) return 0;
+                return ((Symbol)lf).isLess((Symbol)rg) ? -1 : 1;
             }
-            Type[] parents = tp1.parents();
-            for (int i = 0; i < parents.length; i++) {
-                adjustType(parents[i]);
-            }
-        }
+        };
 
     public void reset(Type completer) {
         super.reset(completer);
