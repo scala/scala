@@ -4,6 +4,7 @@
 # $Id$
 
 util/CodePrinter.java
+util/ForwardingMap.java
 util/Pair.java
 util/Position.java
 util/SourceFile.java
