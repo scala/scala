@@ -82,8 +82,7 @@ class Context {
 	def isUnShadowed(view: View) =
 	  view.context == this || !infer.specializes(view.symtype, symtype);
         */
-	if (viewCache.forall(v => v.sym != sym) &&
-	    symtype.resultType() != Type.ErrorType) {
+	if (viewCache.forall(v => v.sym != sym)) {
 	  val v = View(sym, symtype, qual, this);
 	  //System.out.println("VIEW " + sym + ":" + symtype + " " + qual);//DEBUG
 	  viewCache = v :: viewCache;//.filter(isUnShadowed);

@@ -648,7 +648,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private Tree[] caseFields(ClassSymbol clazz) {
-	Symbol[] vparams = clazz.primaryConstructor().type().firstParams();
+	Type ct = clazz.primaryConstructor().type();
+	switch (ct) {
+	case Type.PolyType(Symbol[] tparams, Type restp):
+	    ct = infer.skipViewParams(tparams, restp);
+	}
+	Symbol[] vparams = ct.firstParams();
 	Tree[] fields = new Tree[vparams.length];
 	for (int i = 0; i < fields.length; i++) {
 	    fields[i] = gen.mkRef(clazz.pos, clazz.thisType(), clazz.caseFieldAccessor(i));

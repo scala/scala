@@ -10,6 +10,8 @@ import scalac.ast._;
 
 package scala.tools.scalac.typechecker {
 
-case class View(sym: Symbol, symtype: Type, qual: Tree, context: Context);
+case class View(sym: Symbol, symtype: Type, qual: Tree, context: Context) {
+  var locked = false;
+}
 
 }

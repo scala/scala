@@ -17,4 +17,7 @@ public abstract class Infer {
      */
     public abstract void checkBounds(Symbol[] tparams, Type[] targs, String prefix);
 
+
+    public abstract Type skipViewParams(Symbol[] tparams, Type tp);
+
 }

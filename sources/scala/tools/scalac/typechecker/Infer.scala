@@ -263,8 +263,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
   val memberViewCache = new HashMap[Symbol, List[View]];
 
-//  private def memberViews(tp: Type): List[View] = List();
-
+  /** Return all views which are members of one of the objects associated
+   *  with the base types of `tp'.
+   */
   private def memberViews(tp: Type): List[View] = {
     val tpsym = tp.widen().symbol();
     memberViewCache.get(tpsym) match {
@@ -281,6 +282,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
   }
 
+  /** Return all views which are member of the companion object of
+   *  base class `clazz' of type `tp', empty if no companion object exists.
+   */
   private def companionObjViews(tp: Type, clazz: Symbol): List[View] = {
     if (clazz.kind == CLASS && !clazz.isModuleClass() && !clazz.isCaseClass()) {
       var obj = clazz.owner().info().lookupNonPrivate(clazz.name.toTermName());
@@ -304,15 +308,12 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 		var i = alttypes.length - 1;
 		var vs: List[View] = List();
 		while (i >= 0) {
-		  if (alttypes(i).resultType() != Type.ErrorType)
-		    vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
+		  vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
 		  i = i - 1
 		}
 		vs
 	      case viewtype =>
-		if (viewtype.resultType() != Type.ErrorType)
-		  List(View(viewsym, viewtype, qual, Context.NONE))
-		else List()
+		List(View(viewsym, viewtype, qual, Context.NONE))
 	    }
 	  } else List()
 	} else List()
@@ -320,11 +321,34 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     } else List()
   }
 
-  private def getViews(tp: Type): List[View] = {
+  /** Return all available views for type `tp'
+   */
+  private def availableViews(tp: Type): List[View] = {
     //System.out.println("view for " + tp + " = " + (memberViews(tp) ::: getContext.viewMeths));//DEBUG
     memberViews(tp) ::: getContext.viewMeths
   }
 
+  def containsSymbol(syms: Array[Symbol], sym: Symbol): boolean = {
+    var i = 0;
+    while (i < syms.length && syms(i) != sym) i = i + 1;
+    i < syms.length
+  }
+
+  def isContractive(tp: Type): boolean = {
+    tp match {
+      case Type$PolyType(tparams, tp1) =>
+	skipViewParams(tparams, tp1) match {
+	  case Type$MethodType(vparams, _) =>
+	    vparams.length != 1 ||
+	    !containsSymbol(tparams, vparams(0).getType().symbol())
+	  case _ => true
+	}
+      case _ => true
+    }
+  }
+
+  /** Construct a tree referring to the view method in `v' at position `pos'.
+   */
   def viewExpr(pos: int, v: View): Tree = {
     val viewType = checkAccessible(
       pos, v.sym, v.symtype, v.qual, v.qual.getType());
@@ -340,7 +364,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
   }
 
-  private def viewObj(meth: Tree) = meth.getType() match {
+  /** Construct a function value tree from method reference `meth'.
+   */
+  private def viewObj(meth: Tree): Tree = meth.getType() match {
     case Type$MethodType(params: Array[Symbol], _) =>
       assert(params.length == 1);
       val paramsym = params(0).cloneSymbol(getContext.owner);
@@ -354,6 +380,11 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       meth
   }
 
+  /** Construct an implicit view argument for a formal type parameter
+   *  with type `vtype'. `targs' is the vector of type arguments
+   *  in the current application for which a view argument is needed.
+   *  This is needed for error diagnostics only.
+   */
   private def viewArg(pos: int, vtype: Type, targs: Array[Type]): Tree = {
     val vargs = vtype.typeArgs();
     if (vargs(0).isSubType(vargs(1))) {
@@ -361,17 +392,26 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     } else {
       val v = bestView(vargs(0), vargs(1), Names.EMPTY);
       if (v != null) {
-	var vmeth = viewExpr(pos, v);
-	vmeth.getType() match {
-	  case Type$PolyType(vtparams, vrestype) =>
-	    assert(vtparams.length != 0);
-	    vmeth = exprInstance(vmeth, vtparams, vrestype, vtype);
-	  case _ =>
+	if (v.locked) {
+	  error(pos, "recursive view instantiation of non-contractive " +
+		     v.sym + v.sym.locationString() + " with type " +
+		     v.sym.getType());
+	  gen.mkDefaultValue(pos, vtype)
+	} else {
+	  v.locked = !isContractive(v.symtype);
+	  var vmeth = viewExpr(pos, v);
+	  vmeth.getType() match {
+	    case Type$PolyType(vtparams, vrestype) =>
+	      assert(vtparams.length != 0);
+	      vmeth = exprInstance(vmeth, vtparams, vrestype, vtype);
+	    case _ =>
+	  }
+	  val vobj = viewObj(vmeth);
+	  if (!vobj.getType().isSubType(vtype))
+	    assert(false, "view argument " + vobj + ":" + vobj.getType() + " is not a subtype of view param type " + vtype);
+	  v.locked = false;
+	  vobj
 	}
-	val vobj = viewObj(vmeth);
-	if (!vobj.getType().isSubType(vtype))
-	  assert(false, "view argument " + vobj + ":" + vobj.getType() + " is not a subtype of view param type " + vtype);
-	vobj
       } else {
 	error(pos,
 	      "type instantiation with [" +
@@ -382,6 +422,14 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
   }
 
+  /** Augment type application tree with implicit view arguments.
+   *  @param tree     The type application
+   *  @param tparams  The formal parameters of the application.
+   *  @param restype  The result type of the type application (which
+   *                  must be a method type containing the view parameters,
+   *                  unless it is an error type.
+   *  @param targs    The actual type arguments.
+   */
   private def passViewArgs(tree: Tree, tparams: Array[Symbol], restype: Type,
 			   targs: Array[Type]): Tree =
     restype match {
@@ -398,6 +446,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	tree
     }
 
+  /** Do type parameters `tparams' contain a view bounded parameter?
+   */
   def isViewBounded(tparams: Array[Symbol]) = {
     var viewbounded = false;
     var j = 0; while (j < tparams.length) {
@@ -407,6 +457,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     viewbounded
   }
 
+  /** Skip view parameters in type `tp' in the case where `tparams' contains
+   *  a view bound.
+   */
   def skipViewParams(tparams: Array[Symbol], tp: Type): Type = tp match {
     case Type$MethodType(_, restp) if isViewBounded(tparams) =>
       restp
@@ -414,6 +467,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       tp
   }
 
+  /** If tree is a type application, pass implicit view arguments where
+   *  necessary.
+   */
   def completeTypeApply(tree: Tree): Tree = {
     //System.out.println("complete type apply: " + tree + ":" + tree.getType());//DEBUG
     tree match {
@@ -742,7 +798,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     if (tp1.isSubType(pt)) true
     else if (regularValue) {
       val argtypes = NewArray.Type(tp1);
-      var viewMeths = getViews(tp1);
+      var viewMeths = availableViews(tp1);
       while (!viewMeths.isEmpty &&
 	     !isApplicable(viewMeths.head.symtype, argtypes, pt, Names.EMPTY, false))
 	viewMeths = viewMeths.tail;
@@ -1167,8 +1223,13 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   def specializes(ftpe1: Type, ftpe2: Type): boolean = ftpe1 match {
     case Type$MethodType(params, _) =>
       isApplicable(ftpe2, Symbol.getType(params), Type.AnyType)
-    case Type$PolyType(_, Type$MethodType(params, _)) =>
-      isApplicable(ftpe2, Symbol.getType(params), Type.AnyType);
+    case Type$PolyType(tparams, restype) =>
+      skipViewParams(tparams, restype) match {
+	case Type$MethodType(params, _) =>
+	  isApplicable(ftpe2, Symbol.getType(params), Type.AnyType);
+	case _ =>
+	  false
+      }
     case _ =>
       false
   }
@@ -1301,7 +1362,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   */
   def bestView(tp: Type, pt: Type, name: Name): View = {
     var best: View = null;
-    var viewMeths = getViews(tp);
+    var viewMeths = availableViews(tp);
     //System.out.println("best view for " + tp + "/" + pt + "/" + name + " in " + viewMeths);//DEBUG
     val argtypes = NewArray.Type(tp);
     while (!viewMeths.isEmpty) {
@@ -1311,7 +1372,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       viewMeths = viewMeths.tail
     }
     if (best != null) {
-      viewMeths = getViews(tp);
+      viewMeths = availableViews(tp);
       while (!viewMeths.isEmpty) {
 	if (viewMeths.head != best &&
 	    isApplicable(viewMeths.head.symtype, argtypes, pt, name, false) &&

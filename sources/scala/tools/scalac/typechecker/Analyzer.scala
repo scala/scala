@@ -622,24 +622,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     } else vapp
   }
 
-  private def checkLegalView(pos: int, tparams: Array[Symbol], vparam: Symbol, restype: Type): boolean = {
-    var i = 0;
-    while (i < tparams.length && tparams(i) != vparam.getType().symbol())
-      i = i + 1;
-    if (i < tparams.length) {
-      val vb = tparams(i).vuBound();
-      if (vb != Global.instance.definitions.ANY_TYPE()) {
-	val vb1 = vb.subst(tparams, infer.freshVars(tparams));
-	if (restype.isSubType(vb1)) {
-	  error(pos, "view is potentially self-referential since its result type " + restype +
-		     " is a subtype of its type parameter view bound " + vb1);
-	  return false;
-	}
-      }
-    }
-    true
-  }
-
 // Contexts -------------------------------------------------------------------
 
   /** Push new context associated with given tree, owner, and scope on stack.
@@ -1173,15 +1155,15 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    if (!sym.isFinal())	restype = restype.deconst();
 	  }
 	  restype = checkNoEscape(tpe.pos, restype);
+	  if (name == Names.view &&
+	      infer.containsSymbol(tparamSyms, restype.symbol())) {
+	    error(tree.pos, "result type of view may not be a type variable");
+	    restype = definitions.ANY_TYPE();
+	  }
 	  popContext();
+
 	  owntype = makeMethodType(tparamSyms, vparamSyms, restype);
 	  //System.out.println("methtype " + name + ":" + owntype);//DEBUG
-
-	  if (name == Names.view &&
-	      infer.isViewBounded(tparamSyms) &&
-	      vparamSyms.length == 2 && vparamSyms(1).length == 1 &&
-	      !checkLegalView(tree.pos, tparamSyms, vparamSyms(1)(0), restype))
-	    owntype = makeMethodType(tparamSyms, vparamSyms, Type.ErrorType);
 
 	case Tree$ValDef(mods, name, _tpe, _rhs) =>
 	  var tpe = _tpe;
@@ -1361,7 +1343,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       case _ =>
     }
-    if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) && pre.isStable()) {
+    if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) &&
+	(pre != null) && pre.isStable()) {
       var sym: Symbol = tree.symbol();
       tree.getType() match {
 	case Type$OverloadedType(alts, alttypes) =>

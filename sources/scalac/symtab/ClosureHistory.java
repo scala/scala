@@ -54,7 +54,7 @@ public class ClosureHistory extends History {
     /** Adds all parents of given type to given parent table. */
     private static void addParents(TreeMap/*<Symbol,Type>*/ table, Type type) {
         switch (type) {
-        case ErrorType:
+        case ErrorType: case NoType:
             return;
         case TypeRef(_, Symbol symbol, _):
             Type.Map map = Type.getThisTypeMap(symbol, type);

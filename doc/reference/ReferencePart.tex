@@ -4057,15 +4057,35 @@ type parameters are translated to implicit \code{view} arguments. In
 this case, the \code{view} method over lists would receive the
 \code{view} method over list elements as implicit parameter.
 
-This opens up the risk that view methods might be passed themselves as
-parameters, thus leading to an infinite instantiation. For instance,
-one might try to define the following ``magic'' universal converter:
+This opens up the risk of infinite instantiations because view methods
+are be passed to themselves as parameters. For instance, one might try
+to define the following ``magic'' universal converter:
 \begin{lstlisting}
 def view[b, a <% b](x: a): b = x // illegal!
 \end{lstlisting}
 Application of this view would entail an inifinite expansion with view
-parameters. To prevent this sitauation, we require that all defined
-views are {\em contractive}, according to the following definition:
+parameters. To prevent this situation, we impose the following
+restrictions on view definitions and applications.
+
+Suppose a view definition
+\begin{lstlisting}
+def view [$tps$](x: $T$): $S$
+\end{lstlisting}
+where the list of type parameters $tps$ might be empty.  The view
+definition is legal only if the result type $S$ is not a type variable
+in $tps$.  Furthermore, we say the view definition is {\em
+contractive} if the parameter type $T$ is not a type variable in
+$tps$.  Contractive views can never lead to infinite expansions, as
+the view argument type becomes strictly smaller for each nested view
+argument.
+
+For non-contractive views we require that every such view can be used
+only once on a path of implicit view parameters. That is, a
+non-contractive view may not be passed to itself as implicit view
+argument, either directly or indirectly.  On the other hand,
+contractive view methods may be passed to themselves as arguments. In the
+examples above this case arises if a list of lists of strings is seen
+as a \code{Comparable}.
 
 \chapter{Top-Level Definitions}
 \label{sec:topdefs}
