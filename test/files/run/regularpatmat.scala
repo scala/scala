@@ -60,13 +60,14 @@ object testBK  {
 
     def test1:Unit = {
                 System.out.println("testBK");
-                test[List[Char],Int]( doit1, s0, 321);
-                test[List[Char],Int]( doit1, s1, 321);
-                test[List[Char],Int]( doit1, s2, 321);
-                test[List[Char],Int]( doit1, s3, 100);
-                test[List[Char],Int]( doit1, s4, 321);
-                test[List[Char],Int]( doit1, s5, 321);
-                test[List[Char],Int]( doit1, s6, 321)
+                //test[List[Char],Int]( doit1, s0, 321);
+      assertEquals( doit1( s0 ), 321);
+      assertEquals( doit1( s1 ),321);
+      assertEquals( doit1( s2 ),321);
+      assertEquals( doit1( s3 ),100);
+      assertEquals( doit1( s4 ),321);
+      assertEquals( doit1( s5 ),321);
+      assertEquals( doit1( s6 ),321)
     };
 
     def main( args:Array[ String ] ) = {
@@ -94,12 +95,11 @@ object testBL {
 
   def main(args:Array[String]):Unit = {
 
-       val a = "John";
-       val b = "John";
+    val a = "John";
+    val b = "John";
 
-        test2[String,String,boolean](preTest,a,b,true);
-        test[List[String],String]( doit, List( b ), "John" )
-
+    assertEquals( a == b, true );
+    assertEquals( doit( List( b ) ), "John" )
 
   }
 }
@@ -125,20 +125,19 @@ object testBM  {
 
     def test1:Unit = {
                 System.out.println("testBM");
-                test[List[Char],List[Char]]( doit1, s0, Nil);
-                test[List[Char],List[Char]]( doit1, s1, s1);
-                test[List[Char],List[Char]]( doit1, s2, s2);
+                assertEquals( doit1( s0 ), Nil);
+                assertEquals( doit1( s1 ), s1);
+                assertEquals( doit1( s2 ), s2);
 
-                test[List[Char],List[Char]]( doit1, s3, List('a'));
-                test[List[Char],List[Char]]( doit1, s4, Nil);
-                test[List[Char],List[Char]]( doit1, s5, Nil);
-                test[List[Char],List[Char]]( doit1, s6, Nil);
+                assertEquals( doit1( s3 ), List('a'));
+                assertEquals( doit1( s4 ), Nil);
+                assertEquals( doit1( s5 ), Nil);
+                assertEquals( doit1( s6 ), Nil);
 
                 val t7:List[Char] = 'a'::'a'::'a'::'b'::'b'::'b'::Nil;
                 //val t7ex:List[Char] = 'a'::'a'::'b'::Nil; // with longest match policy
 
-                test[List[Char],List[Char]]( doit1, t7, List('a') );
-                ()
+                assertEquals( doit1( t7 ), List('a') );
     };
 
     def main( args:Array[ String ] ) = {
@@ -165,26 +164,26 @@ object testBN {
                 System.out.println( Nil == Nil );
                 System.out.println("testBN");
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s0), Nil);
+                assertEquals
+                        ( doit1( testA(s0)), Nil);
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s1), 'b'::'c'::Nil);
+                assertEquals
+                        ( doit1( testA(s1)), 'b'::'c'::Nil);
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s2), Nil);
+                assertEquals
+                        ( doit1( testA(s2)), Nil);
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s3), 'a'::'a'::Nil);
+                assertEquals
+                        ( doit1( testA(s3)), 'a'::'a'::Nil);
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s4), Nil);
+                assertEquals
+                        ( doit1( testA(s4)), Nil);
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s5), Nil);
+                assertEquals
+                        ( doit1( testA(s5)), Nil);
 
-                test[testClass,List[Char]]
-                        ( doit1, testA(s6), Nil);
+                assertEquals
+                        ( doit1( testA(s6)), Nil);
 
     };
 
@@ -271,23 +270,23 @@ object testBO  {
 
                 System.out.println("testBO");
 
-                test[ List[Person], List[ String ]]
-                        ( onlyJohn, db, Nil );
+          assertEquals
+                        ( onlyJohn( db ), Nil );
 
-                test[ List[Person], List[ String ]]
-                        ( onlyJohn, db2, "Le Carre"::Nil );
+          assertEquals
+                        ( onlyJohn( db2 ), "Le Carre"::Nil );
 
-                test[ List[Person], String ]
-                        ( searchFirstJohn, db, "Le Carre" );
+          assertEquals
+                        ( searchFirstJohn( db ), "Le Carre" );
 
-                test[ List[Person], String ]
-                        ( searchFirstJohn, db2, "Le Carre" );
+          assertEquals
+                        ( searchFirstJohn( db2 ), "Le Carre" );
 
-                test[ List[Person], List[ String ]]
-                        ( searchJohns, db, "Le Carre"::"Smith"::Nil );
+          assertEquals
+                        ( searchJohns( db ), "Le Carre"::"Smith"::Nil );
 
-                test[ List[Person], List[ String ]]
-                        ( searchJohns, db2, "Le Carre"::Nil );
+          assertEquals
+                        ( searchJohns( db2 ), "Le Carre"::Nil );
 
         }
 
@@ -305,13 +304,13 @@ object testWR  {
 
     def test1:Unit = {
                 System.out.println("testWR_1");
-                test[List[Char],Int]( doit1, s0, 321);
-                test[List[Char],Int]( doit1, s1, 100);
-                test[List[Char],Int]( doit1, s2, 321);
-                test[List[Char],Int]( doit1, s3, 321);
-                test[List[Char],Int]( doit1, s4, 321);
-                test[List[Char],Int]( doit1, s5, 321);
-                test[List[Char],Int]( doit1, s6, 321)
+                assertEquals( doit1( s0 ),321);
+                assertEquals( doit1( s1 ),100);
+                assertEquals( doit1( s2 ),321);
+                assertEquals( doit1( s3 ),321);
+                assertEquals( doit1( s4 ),321);
+                assertEquals( doit1( s5 ),321);
+                assertEquals( doit1( s6 ),321)
     };
 
     def doit2(e: List[Char]):Int = e.match {
@@ -321,13 +320,13 @@ object testWR  {
 
     def test2:Unit = {
                 System.out.println("testWR_2");
-                test[List[Char],Int]( doit2, s0, 1000);
-                test[List[Char],Int]( doit2, s1, 1000);
-                test[List[Char],Int]( doit2, s2, 321);
-                test[List[Char],Int]( doit2, s3, 321);
-                test[List[Char],Int]( doit2, s4, 321);
-                test[List[Char],Int]( doit2, s5, 321);
-                test[List[Char],Int]( doit2, s6, 321);
+                assertEquals( doit2( s0 ),1000);
+                assertEquals( doit2( s1 ),1000);
+                assertEquals( doit2( s2 ),321);
+                assertEquals( doit2( s3 ),321);
+                assertEquals( doit2( s4 ),321);
+                assertEquals( doit2( s5 ),321);
+                assertEquals( doit2( s6 ),321);
     }
 
 
@@ -338,13 +337,13 @@ object testWR  {
 
     def test3:Unit = {
                 System.out.println("testWR_3");
-                test[List[Char],String]( doit3, s0, "ok");
-                test[List[Char],String]( doit3, s1, "fail");
-                test[List[Char],String]( doit3, s2, "fail");
-                test[List[Char],String]( doit3, s3, "ok");
-                test[List[Char],String]( doit3, s4, "fail");
-                test[List[Char],String]( doit3, s5, "fail");
-                test[List[Char],String]( doit3, s6, "fail");
+                assertEquals( doit3( s0 ), "ok");
+                assertEquals( doit3( s1 ),"fail");
+                assertEquals( doit3( s2 ), "fail");
+                assertEquals( doit3( s3 ),"ok");
+                assertEquals( doit3( s4 ),"fail");
+                assertEquals( doit3( s5 ),"fail");
+                assertEquals( doit3( s6 ),"fail");
     }
 
     def doit4(e: List[Char]):String = e.match {
@@ -354,13 +353,13 @@ object testWR  {
 
     def test4:Unit = {
                 System.out.println("testWR_4");
-                test[List[Char],String]( doit4, s0, "gu");
-                test[List[Char],String]( doit4, s1, "ga!!!!");
-                test[List[Char],String]( doit4, s2, "ga!!!!");
-                test[List[Char],String]( doit4, s3, "ga!!!!");
-                test[List[Char],String]( doit4, s4, "ga!!!!");
-                test[List[Char],String]( doit4, s5, "ga!!!!");
-                test[List[Char],String]( doit4, s6, "ga!!!!");
+                assertEquals( doit4( s0 ), "gu");
+                assertEquals( doit4( s1 ), "ga!!!!");
+                assertEquals( doit4( s2 ), "ga!!!!");
+                assertEquals( doit4( s3 ), "ga!!!!");
+                assertEquals( doit4( s4 ), "ga!!!!");
+                assertEquals( doit4( s5 ), "ga!!!!");
+                assertEquals( doit4( s6 ), "ga!!!!");
     }
 
     def doit5(e: List[Int]):String = e.match {
@@ -370,9 +369,9 @@ object testWR  {
 
     def test5:Unit = {
                 System.out.println("testWR_5");
-                test[List[Int],String]( doit5, s7, "not binary");
-                test[List[Int],String]( doit5, s8, "binary");
-                test[List[Int],String]( doit5, s9, "not binary");
+                assertEquals( doit5( s7 ), "not binary");
+                assertEquals( doit5( s8 ), "binary");
+                assertEquals( doit5( s9 ), "not binary");
     }
 
     //  { ('0'..'9')*;'.';('0'..'9');('0'..'9')* ]
@@ -388,8 +387,8 @@ object testWR  {
 
     def test6:Unit = {
                 System.out.println("testWR_6");
-                test[List[Char],String]( doit6, s3, "not decimal");
-                test[List[Char],String]( doit6, s10, "decimal number");
+                assertEquals( doit6( s3 ), "not decimal");
+                assertEquals( doit6( s10 ), "decimal number");
     }
 
     def main( args:Array[String] ) = {
@@ -466,13 +465,13 @@ object testWS {
 
     def test1:Unit = {
                 System.out.println("testWS");
-                test[List[Char],Int]( doit1, s0, 1004);
-                test[List[Char],Int]( doit1, s1, 100);
-                test[List[Char],Int]( doit1, s2, 321);
-                test[List[Char],Int]( doit1, s3, 50);
-                test[List[Char],Int]( doit1, s4, 321);
-                test[List[Char],Int]( doit1, s5, 700);
-                test[List[Char],Int]( doit1, s6, 700);
+                assertEquals( doit1( s0 ),1004);
+                assertEquals( doit1( s1 ),100);
+                assertEquals( doit1( s2 ),321);
+                assertEquals( doit1( s3 ),50);
+                assertEquals( doit1( s4 ),321);
+                assertEquals( doit1( s5 ),700);
+                assertEquals( doit1( s6 ),700);
     };
 
     def main( args:Array[String] ) = {
@@ -496,13 +495,13 @@ object testWT  {
 
     def test1:Unit = {
                 System.out.println("testWT");
-                test[List[Char],Int]( doit1, s0, 321);
-                test[List[Char],Int]( doit1, s1, 100);
-                test[List[Char],Int]( doit1, s2, 321);
-                test[List[Char],Int]( doit1, s3, 100);
-                test[List[Char],Int]( doit1, s4, 321);
-                test[List[Char],Int]( doit1, s5, 321);
-                test[List[Char],Int]( doit1, s6, 321)
+                assertEquals( doit1( s0 ),321);
+                assertEquals( doit1( s1 ),100);
+                assertEquals( doit1( s2 ),321);
+                assertEquals( doit1( s3 ),100);
+                assertEquals( doit1( s4 ),321);
+                assertEquals( doit1( s5 ),321);
+                assertEquals( doit1( s6 ),321)
     };
 
     def main( args:Array[ String ] ) = {
@@ -532,13 +531,13 @@ object testWV {
 
     def test1:Unit = {
                 System.out.println("testWV");
-                test[testClass,Int]( doit1, testA(s0), 1004);
-                test[testClass,Int]( doit1, testA(s1), 100);
-                test[testClass,Int]( doit1, testA(s2), 321);
-                test[testClass,Int]( doit1, testA(s3), 50);
-                test[testClass,Int]( doit1, testA(s4), 321);
-                test[testClass,Int]( doit1, testA(s5), 700);
-                test[testClass,Int]( doit1, testA(s6), 700);
+                assertEquals( doit1( testA(s0) ),1004);
+                assertEquals( doit1( testA(s1) ),100);
+                assertEquals( doit1( testA(s2) ),321);
+                assertEquals( doit1( testA(s3) ),50);
+                assertEquals( doit1( testA(s4) ),321);
+                assertEquals( doit1( testA(s5) ),700);
+                assertEquals( doit1( testA(s6) ),700);
     };
 
 
@@ -571,11 +570,11 @@ object testWW {
 
                 System.out.println("testWW");
 
-                test[List[testClass],Int]( doit1, x1, 321 );
+                assertEquals( doit1( x1 ), 321 );
 
                 val x2 = List( testA(Nil), testA('a'::'b'::Nil) );
 
-                test[List[testClass],Int]( doit1, x2, 100 );
+                assertEquals( doit1( x2 ), 100 );
 
         }
 
@@ -586,7 +585,7 @@ object testWW {
 }
 
 object testMZ {
-        import scala.testing.UnitTest.test ;
+        import scala.testing.UnitTest.assertEquals ;
   class Expr;
   case class One(xs: List[Expr]) extends Expr;
   case class Two() extends Expr;
@@ -627,23 +626,23 @@ object testMZ {
 
   def main:Unit = {
                 System.out.println("testMZ - bugs #132 #133b #180 #195 #196");
-    test[List[Expr],String](testFoo, List(Two(),Two(),Two(),Two()), "b = Two");
-    test[List[Expr],String](testFoo, List(Two(),Two(),Two()), "a = Two");
-    test[List[Expr],String](testFoo, List(Two(),Two()), "a = Two");
-    test[List[Expr],String](testFoo, List(Two()), "a = Two");
-    test[List[Expr],String](testFoo, List(), "no match");
-    test[List[Any],String](bind, List(OneN(),OneN()), "case");
-    test[List[Any],String](testBar, List(), "default");
-    test[List[Any],String](testBar, List(On()), "case");
-    test[List[Any],String](testBar, List(On(), On()), "default");
-    test[List[Any],String](testBar, List(On(), On(), On()), "case");
-    test[List[Any],String](testBar, List(On(), On(), On(), On()), "default");
-    test[List[Any],String](testBar, List(On(), On(), On(), On(), On()), "default");
-    test[Expr, String](mat195, One(List(Two(),Two())), "x = List(Two,Two)");
-    test[Expr, String](mat195, One(List()), "x = List()");
-    test[Expr, String](mat195, Two(), "default");
-    test[List[Any], String](mat196, List(1), "default");
-    test[List[Any], String](mat196, List(), "case, b = List()");
+    assertEquals(testFoo( List(Two(),Two(),Two(),Two()) ),"b = Two");
+    assertEquals(testFoo( List(Two(),Two(),Two()) ),"a = Two");
+    assertEquals(testFoo( List(Two(),Two()) ),"a = Two");
+    assertEquals(testFoo( List(Two()) ),"a = Two");
+    assertEquals(testFoo( List() ),"no match");
+    assertEquals(bind( List(OneN(),OneN()) ),"case");
+    assertEquals(testBar( List() ),"default");
+    assertEquals(testBar( List(On()) ),"case");
+    assertEquals(testBar( List(On(), On())), "default");
+    assertEquals(testBar( List(On(), On(), On()) ),"case");
+    assertEquals(testBar( List(On(), On(), On(), On()) ),"default");
+    assertEquals(testBar( List(On(), On(), On(), On(), On()) ),"default");
+    assertEquals(mat195( One(List(Two(),Two())) ),"x = List(Two,Two)");
+    assertEquals(mat195( One(List()) ),"x = List()");
+    assertEquals(mat195( Two() ),"default");
+    assertEquals(mat196( List(1) ),"default");
+    assertEquals(mat196( List() ),"case, b = List()");
 
     ()
   }
@@ -662,11 +661,11 @@ object testNN {
   }
 
   def main:Unit = {
-                System.out.println("testNN");
-    test[K,boolean](mtch, F(F(G()),G(),F(G())), true);
-    test[K,boolean](mtch, F(F(),G(),F(G(),G(),G(),G())), true);
-    test[K,boolean](mtch, G(), false);
-    test[K,boolean](mtch, F(G()), false);
+    System.out.println("testNN");
+    assertEquals(mtch( F(F(G()),G(),F(G()))), true);
+    assertEquals(mtch( F(F(),G(),F(G(),G(),G(),G())) ), true);
+    assertEquals(mtch( G() ), false);
+    assertEquals(mtch( F(G()) ), false);
   }
 }
 
