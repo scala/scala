@@ -18,7 +18,7 @@ import scalac.{Global => scalac_Global}
 package scala.tools.scalac.typechecker {
 
 import scalac.util.NewArray;
-
+/*<export>*/
 /** Post-attribution checking and transformation.
  *
  *  This phase performs the following checks.
@@ -28,7 +28,7 @@ import scalac.util.NewArray;
  *   - All type variable uses conform to variance annotations.
  *   - No forward reference to a term symbol extends beyond a value definition.
  *
- *  It preforms the following transformations.
+ *  It performs the following transformations.
  *
  *   - Local modules are replaced by variables and classes
  *   - caseArity, caseElement implementations added to case classes
@@ -42,6 +42,7 @@ import scalac.util.NewArray;
  *   - Type nodes are replaced by TypeTerm nodes.
  *   - Eliminate constant definitions
  */
+/*</export>*/
 class RefCheck(globl: scalac.Global) extends Transformer(globl) {
 
   import Modifiers._;
