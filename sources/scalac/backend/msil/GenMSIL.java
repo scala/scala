@@ -245,6 +245,10 @@ public final class GenMSIL {
 
     private Label methodEnd = null;
 
+    private boolean unreachable = false;
+
+    private Label exitLabel;
+
     /*
      * Generate code for constructors and methods.
      */
@@ -420,6 +424,7 @@ public final class GenMSIL {
      * the current position in the tree for better error messages
      */
     private Item gen(Tree tree, MSILType toType) {
+        unreachable = false;
  	if (global.args.debuginfo.value
 	    && code != null && tree.pos != Position.NOPOS
 	    && Position.line(tree.pos) != Position.line(pos))
@@ -464,10 +469,12 @@ public final class GenMSIL {
 
 	case Block(Tree[] stats, Tree value):
             boolean tmpLastExpr = lastExpr; lastExpr = false;
+            Label tmpExitLabel = exitLabel; exitLabel = null;
             for (int i = 0; i < stats.length; i++) {
                 drop(gen(stats[i], MSILType.VOID));
             }
             lastExpr = tmpLastExpr;
+            exitLabel = tmpExitLabel;
             return gen(value, toType);
 
 	case ValDef(_, Name name, Tree tpe, Tree rhs):
@@ -544,10 +551,15 @@ public final class GenMSIL {
 	case New(Tree init):
 	    switch (init) {
 	    case Apply(Tree fun, Tree[] args):
+                boolean tmpLastExpr = lastExpr; lastExpr = false;
+                Label tmpExitLabel = exitLabel; exitLabel = null;
 		ConstructorInfo ctor = (ConstructorInfo) tc.getMethod(fun.symbol());
 		loadArgs(args, ctor.GetParameters());
 		code.Emit(OpCodes.Newobj, ctor);
-		return coerce(items.StackItem(msilType(ctor.DeclaringType)), toType);
+                lastExpr = tmpLastExpr;
+                exitLabel = tmpExitLabel;
+		return coerce(items.StackItem(msilType(ctor.DeclaringType)),
+                              toType);
 	    default:
 		throw Debug.abort("Incorrect tree", init);
 	    }
@@ -597,7 +609,10 @@ public final class GenMSIL {
 	    genLoad(test, MSILType.I4);
 	    store(loc);
 	    lastExpr = tmpLastExpr;
-	    Label exit = code.DefineLabel();
+            Label tmpExitLabel = exitLabel;
+            if (exitLabel == null)
+                exitLabel = code.DefineLabel();
+
 	    Label nextCase = code.DefineLabel();
 	    assert tags.length == bodies.length;
 	    for (int i = 0; i < tags.length; i++) {
@@ -608,29 +623,33 @@ public final class GenMSIL {
 // 		if (lastExpr)
 // 		    code.Emit(OpCodes.Ret);
 // 		else
-                code.Emit(OpCodes.Br, exit);
+                if (!unreachable)
+                    code.Emit(OpCodes.Br, exitLabel);
 		code.MarkLabel(nextCase);
 		nextCase = code.DefineLabel();
 	    }
 	    Item i = genLoad(otherwise, toType);
-	    code.MarkLabel(exit);
+            if (tmpExitLabel == null)
+                resolve(exitLabel);
+            exitLabel = tmpExitLabel;
 	    return i;
 
 	default:
 	    throw Debug.abort("Dunno what to do", tree);
 	}
-
     } //gen()
 
     /* Generate code for conditional expressions.
      */
     private Item genIf(Tree condp, Tree thenp, Tree elsep, MSILType toType) {
 	Item iThen = null;
+        boolean tmpLastExpr = lastExpr; lastExpr = false;
+        Label tmpExitLabel = exitLabel; exitLabel = null;
+        Item.CondItem cond = mkCond(gen(condp, msilType(condp.type)));
+        lastExpr = tmpLastExpr;
+        exitLabel = tmpExitLabel;
+
 	if (elsep == Tree.Empty && toType == MSILType.VOID) {
-	    boolean tmpLastExpr = lastExpr; lastExpr = false;
-	    Item condi = gen(condp, msilType(condp.type));
-	    Item.CondItem cond = mkCond(condi);
-	    lastExpr = tmpLastExpr;
 	    if (cond.success == null) {
 		Chain success = new Chain(code.DefineLabel(), null);
 		branch(cond.test, success);
@@ -646,27 +665,24 @@ public final class GenMSIL {
 		resolve(fail);
 	    }
 	} else {
-	    boolean tmpLastExpr = lastExpr; lastExpr = false;
-	    Item condi = gen(condp, msilType(condp.type));
-	    Item.CondItem cond = mkCond(condi);
-	    lastExpr = tmpLastExpr;
-
 	    Chain fail = cond.failure != null ?
 		cond.failure : new Chain(code.DefineLabel(), null);
 	    branch(cond.test, fail);
 	    resolve(cond.success);
+            if (exitLabel == null)
+                exitLabel = code.DefineLabel();
 	    Item thenItem = gen(thenp, toType);
 	    iThen = load(coerce(thenItem, toType));
-	    Label exit = null;
-	    /*if (lastExpr) {
-		code.Emit(OpCodes.Ret);
-		} else */
-
-            exit = code.DefineLabel();
-            code.Emit(OpCodes.Br, exit);
+// 	    if (lastExpr)
+// 		code.Emit(OpCodes.Ret);
+//             else
+            if (!unreachable)
+                code.Emit(OpCodes.Br, exitLabel);
 	    resolve(fail);
-	    Item iElse = load(gen(elsep, toType));
-	    resolve(exit);
+	    Item iElse = genLoad(elsep, toType);
+            if (tmpExitLabel == null)
+                resolve(exitLabel);
+            exitLabel = tmpExitLabel;
 	}
 	return iThen;
     } //genIf
@@ -772,13 +788,15 @@ public final class GenMSIL {
     }
 
     private Item genApply(Tree fun, Tree[] args, MSILType resType) {
-        Item i = genApply0(fun, args, resType);
-        //System.out.println(Debug.show(fun.symbol()) + " -> " + i);
-        return i;
+	boolean tmpLastExpr = lastExpr; lastExpr = false;
+        Label tmpExitLabel = exitLabel; exitLabel = null;
+        Item item = genApply0(fun, args, resType);
+        lastExpr = tmpLastExpr;
+        exitLabel = tmpExitLabel;
+        return item;
     }
     /** Generate the code for an Apply node */
     private Item genApply0(Tree fun, Tree[] args, MSILType resType) {
-	boolean tmpLastExpr = lastExpr; lastExpr = false;
 	Symbol sym = fun.symbol();
 	switch (fun) {
 	case Ident(_):
@@ -794,13 +812,13 @@ public final class GenMSIL {
                     store(ident);
                 }
 		code.Emit(OpCodes.Br, ld.label);
+                unreachable = true;
 		MSILType retType = msilType(sym.info().resultType());
 		Item i = retType == MSILType.VOID ? items.VoidItem()
 		    : items.StackItem(retType);
 		return coerce(i, resType);
 	    }
 	    assert sym.isStatic() : Debug.show(sym);
-	    lastExpr = tmpLastExpr;
 
 	    Primitive p = primitives.getPrimitive(sym);
 	    switch (p) {
@@ -941,7 +959,6 @@ public final class GenMSIL {
 			virtualCall = !msilType(qualifier).isValueType();
 		    }
 		}
-		lastExpr = tmpLastExpr;
 		return check(invokeMethod(sym, args, resType,
                                           virtualCall || method.IsAbstract()));
 
@@ -1261,12 +1278,10 @@ public final class GenMSIL {
      * Load function arguments on the stack.
      */
     private void loadArgs(Tree[] args, ParameterInfo[] params) {
-	boolean tmpLastExpr = lastExpr; lastExpr = false;
 	for (int i = 0; i < args.length; i++) {
 	    MSILType toType = msilType(params[i].ParameterType); //msilType(args[i].type);
 	    genLoad(args[i], toType);
 	}
-	lastExpr = tmpLastExpr;
     }
 
     /*
@@ -1555,7 +1570,8 @@ public final class GenMSIL {
 		    code.Emit(OpCodes.Ret);
 		    else */ {
 		    exit = code.DefineLabel();
-		    code.Emit(OpCodes.Br, exit);
+                    if (!unreachable)
+                        code.Emit(OpCodes.Br, exit);
 		}
 		if (failure != null) {
 		    resolve(failure);
@@ -1564,7 +1580,8 @@ public final class GenMSIL {
 			/*if (lastExpr)
 			    code.Emit(OpCodes.Ret);
 			    else*/
-                        code.Emit(OpCodes.Br, exit);
+                        if (!unreachable)
+                            code.Emit(OpCodes.Br, exit);
 		    }
 		}
 		if (success != null) {
