@@ -356,14 +356,16 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      */
     public Tree mkApplyTV(int pos, Tree fn, Type[] targs, Tree[] vargs) {
         if (targs.length != 0) fn = TypeApply(pos, fn, mkTypes(pos, targs));
-        return Apply(pos, fn, vargs);
+	if (vargs.length == 0 && fn.getType().isObjectType()) return fn;
+        else return Apply(pos, fn, vargs);
     }
     public Tree mkApplyTV(Tree fn, Type[] targs, Tree[] vargs) {
         return mkApplyTV(fn.pos, fn, targs, vargs);
     }
     public Tree mkApplyTV(int pos, Tree fn, Tree[] targs, Tree[] vargs) {
         if (targs.length != 0) fn = TypeApply(pos, fn, targs);
-        return Apply(pos, fn, vargs);
+	if (vargs.length == 0 && fn.getType().isObjectType()) return fn;
+        else return Apply(pos, fn, vargs);
     }
     public Tree mkApplyTV(Tree fn, Tree[] targs, Tree[] vargs) {
         return mkApplyTV(fn.pos, fn, targs, vargs);

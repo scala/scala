@@ -75,6 +75,13 @@ class Node[+a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
     l.elements ::: List(elem) ::: r.elements
 }
 
+case class Str(elem: String) extends Ordered[Str] {
+  def compareTo[b >: Str <% Ordered[b]](that: b): int = that match {
+    case that1: Str => this.elem compareTo that1.elem
+    case _ => -(that compareTo this)
+  }
+}
+
 object Test {
   import O.view;
 
@@ -87,6 +94,13 @@ object Test {
       var t: Tree[String] = Empty;
       for (val s <- args) {
 	t = t insert s
+      }
+      System.out.println(t.elements)
+    }
+    {
+      var t: Tree[Str] = Empty;
+      for (val s <- args) {
+	t = t insert Str(s)
       }
       System.out.println(t.elements)
     }
