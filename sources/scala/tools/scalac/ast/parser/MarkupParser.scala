@@ -4,7 +4,6 @@ import scalac.atree.AConstant;
 import scalac._;
 import scalac.util._;
 import ch.epfl.lamp.util.Position;
-import java.util.{Map, Stack, ArrayList, LinkedList};
 import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
@@ -15,7 +14,7 @@ package scala.tools.scalac.ast.parser {
 
 class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
 
-  import Tokens.{EMPTY, RBRACE} ;
+  import Tokens.{EMPTY, LBRACE, RBRACE} ;
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
   val  _AppendBuffer = Name.fromString("AppendBuffer");
@@ -220,8 +219,11 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
           s.xNext; s.xSpaceOpt;
           gen.mkStringLit( pos, tmp )
         case '{' =>
+          Console.println("LBRACE, s.pos = " + s.pos);
           s.nextToken(); // = LBRACE
+          Console.println("(2), s.pos = " + s.pos);
           s.nextToken();
+          Console.println("(3), is LBRACE ?"+s.token == LBRACE+" s.pos = " + s.pos);
           val tmp = p.expr(false,false);
           if( s.token != RBRACE ) {
             s.xSyntaxError("expected end of Scala block");
@@ -287,14 +289,20 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
             }
           case '{' => // Scala block(s)
             while( s.ch == '{' ) {
+              var lastbp = s.bp;
+              s.nextToken(); // = LBRACE
+              lastbp = s.bp - lastbp;
               s.nextToken();
-              s.nextToken();
-              val bs = new myTreeList();
-              val b = p.expr(true,false); //block( s.pos );
-              if( s.token != RBRACE ) {
-                s.xSyntaxError(" expected end of Scala block");
+              if(( s.token == LBRACE )&&( 1 == lastbp )) { // {{ => "{"
+                ts.append( makeText( s.pos, "{" ));
+              } else {
+                val bs = new myTreeList();
+                val b = p.expr(true,false); //block( s.pos );
+                if( s.token != RBRACE ) {
+                  s.xSyntaxError(" expected end of Scala block");
+                }
+                ts.append( b );
               }
-              ts.append( b );
             }
           case _ => // text content
             ts.append( makeText( s.pos, s.xText ));
