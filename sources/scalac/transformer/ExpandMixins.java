@@ -244,7 +244,7 @@ public class ExpandMixins extends Transformer {
                 Symbol memSymM = bcType.lookupNonPrivate(memName);
 
                 if (memSymT != memSymM) {
-                    if ((memSym.flags & Modifiers.ABSTRACT) != 0)
+                    if ((memSym.flags & Modifiers.DEFERRED) != 0)
                         leftOutMembers.add(member);
                     else
                         renameSymbol(symbolMap, memSym);

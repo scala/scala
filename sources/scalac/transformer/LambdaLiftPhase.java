@@ -43,7 +43,8 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-	Type tp1 = transform(tp, sym.owner());
+	Type tp1 = tp;
+	if (sym != Symbol.NONE) tp1 = transform(tp, sym.owner());
 	if ((sym.flags & Modifiers.CAPTURED) != 0) return refType(tp1);
 	else return tp1;
     }
@@ -74,6 +75,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 			    System.arraycopy(map(targs), 0, targs1, 0, targs.length);
 			    while (i < tparams.length) {
 				targs1[i] = proxy(tparams[i], owner).type();
+				i++;
 			    }
 			    return Type.TypeRef(pre, sym, targs1);
 			}
@@ -111,7 +113,9 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 		if (ownerparams[i].name == fv.name)
 		    return ownerparams[i];
 	    }
+	    assert o.owner() != o;
 	    o = o.owner();
+
 	}
 	throw new ApplicationError("proxy " + fv + " in " + owner);
     }

@@ -86,8 +86,8 @@ public class ClassfileParser implements ClassfileConstants {
                                       "' contains wrong class " + name);
             // todo: correct flag transition
             c.flags = transFlags(flags);
-	    if ((c.flags & Modifiers.ABSTRACT) != 0)
-		c.flags = c.flags & ~Modifiers.ABSTRACT | Modifiers.ABSTRACTCLASS;
+	    if ((c.flags & Modifiers.DEFERRED) != 0)
+		c.flags = c.flags & ~Modifiers.DEFERRED | Modifiers.ABSTRACTCLASS;
             Type supertpe = readClassType(in.nextChar());
             Type[] basetpes = new Type[in.nextChar() + 1];
             this.locals = new Scope();
@@ -143,7 +143,7 @@ public class ClassfileParser implements ClassfileConstants {
         else if ((flags & 0x0004) != 0)
             res |= Modifiers.PROTECTED;
         if ((flags & 0x0400) != 0)
-            res |= Modifiers.ABSTRACT;
+            res |= Modifiers.DEFERRED;
         if ((flags & 0x0010) != 0)
             res |= Modifiers.FINAL;
         if ((flags & 0x0200) != 0)

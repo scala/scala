@@ -15,6 +15,8 @@ import scalac.symtab.Modifiers;
 import scalac.ast.*;
 import Tree.*;
 
+//todo: add type idents?
+
 /** A recursive descent parser for the programming language Scala.
  *
  *  @author     Martin Odersky, Matthias Zenger
@@ -186,71 +188,32 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** Create tree representing type scala.Any
-     */
-    Tree scalaAnyType(int pos) {
-	return make.Select(pos, make.Ident(pos, Names.scala), Names.Any.toTypeName());
-    }
 
-    /** Create tree representing type scala.Seq
-     */
-    Tree scalaSeqType(int pos) {
-	return make.Select(pos, make.Ident(pos, Names.scala), Names.Seq.toTypeName());
-    }
-
-    /** Create tree representing constructor scala.Object
-     */
-    Tree scalaObjectConstr(int pos) {
-	return make.Select(pos, make.Ident(pos, Names.scala), Names.Object.toConstrName());
-    }
-
-    /** Create tree representing method scala.Symbol
-     */
-    Tree scalaSymbol(int pos) {
-	return make.Select(pos, make.Ident(pos, Names.scala), Names.Symbol);
-    }
-
-    /** Create tree representing method scala.Labelled
-     */
-    Tree scalaLabelled(int pos) {
-	return make.Select(pos, make.Ident(pos, Names.scala), Names.Labelled);
-    }
-
-    /** Create tree representing method scala.Predef.List
-     */
-    Tree scalaPredefList(int pos) {
-	return make.Select(pos,
-	    make.Select(pos, make.Ident(pos, Names.scala), Names.Predef),
-	    Names.List);
-    }
-
-    /** Create tree representing type scala.List
-     */
-    Tree scalaListType(int pos) {
-	return make.Select(pos, make.Ident(pos, Names.scala), Names.List.toTypeName());
+    Tree scalaDot(int pos, Name name) {
+	return make.Select(pos, make.Ident(pos, Names.scala), name);
     }
 
     /** Create tree for for-comprehension <for (enums) do body> or
      *   <for (enums) yield body> where mapName and flatmapName are chosen
      *  corresponding to whether this is a for-do or a for-yield.
      */
-    Tree makeFor(Tree[] enums, Name mapName, Name flatmapName, Tree body) {
+    Tree makeFor(int pos, Tree[] enums, Name mapName, Name flatmapName, Tree body) {
         switch (enums[0]) {
 	case PatDef(int mods, Tree pat, Tree rhs):
 	    if (enums.length == 1)
-		return makeFor1(enums[0].pos, mapName, pat, rhs, body);
+		return makeFor1(pos, mapName, pat, rhs, body);
 	    Tree[] newenums = new Tree[enums.length - 1];
 	    switch (enums[1]) {
 	    case PatDef(int mods2, Tree pat2, Tree rhs2):
 		System.arraycopy(enums, 1, newenums, 0, newenums.length);
-		return makeFor1(enums[0].pos, flatmapName, pat, rhs,
-				makeFor(newenums, mapName, flatmapName, body));
+		return makeFor1(pos, flatmapName, pat, rhs,
+				makeFor(enums[1].pos, newenums, mapName, flatmapName, body));
 	    default:
 		System.arraycopy(enums, 2, newenums, 1, newenums.length - 1);
 		newenums[0] = make.PatDef(
 		    enums[0].pos, mods, pat,
-		    makeFor1(enums[0].pos, Names.filter, pat, rhs, enums[1]));
-		return makeFor(newenums, mapName, flatmapName, body);
+		    makeFor1(enums[1].pos, Names.filter, pat, rhs, enums[1]));
+		return makeFor(pos, newenums, mapName, flatmapName, body);
 	    }
 	default:
 	    throw new ApplicationError();
@@ -493,17 +456,17 @@ public class Parser implements Tokens {
 	    t = make.Ident(s.pos, Names.null_);
 	    break;
 	case SYMBOLLIT:
-	    Tree symt = scalaSymbol(s.pos);
+	    Tree symt = scalaDot(s.pos, Names.Symbol);
 	    if (isPattern) symt = convertToTypeId(symt);
 	    t = make.Apply(s.pos,
 		symt,
 		new Tree[]{make.Literal(s.pos, s.name.toString())});
 	    s.nextToken();
 	    if (s.token == LPAREN || s.token == LBRACE) {
-		Tree labt = scalaLabelled(s.pos);
+		Tree labt = scalaDot(s.pos, Names.Labelled);
 		if (isPattern) labt = convertToTypeId(labt);
-		Tree listt = isPattern ? scalaListType(s.pos)
-		    : scalaPredefList(s.pos);
+		Tree listt = isPattern ? scalaDot(s.pos, Names.List.toTypeName())
+		    : make.Select(s.pos, scalaDot(s.pos, Names.Predef), Names.List);
 		t = make.Apply(s.pos,
 		    labt,
 		    new Tree[]{t, make.Apply(s.pos, listt, argumentExprs())});
@@ -707,11 +670,9 @@ public class Parser implements Tokens {
 	    Tree[] enums = enumerators();
 	    accept(RPAREN);
 	    if (s.token == DO) {
-		s.nextToken();
-		return makeFor(enums, Names.foreach, Names.foreach, expr());
+		return makeFor(s.skipToken(), enums, Names.foreach, Names.foreach, expr());
 	    } else if (s.token == YIELD) {
-		s.nextToken();
-		return makeFor(enums, Names.map, Names.flatmap, expr());
+		return makeFor(s.skipToken(), enums, Names.map, Names.flatmap, expr());
 	    } else {
 		return syntaxError("`do' or `yield' expected", true);
 	    }
@@ -962,9 +923,26 @@ public class Parser implements Tokens {
      */
     Tree generator() {
 	int pos = accept(VAL);
-	Tree p = pattern();
+	Tree pat = pattern();
 	accept(LARROW);
-	return make.PatDef(pos, 0, p, expr());
+	Tree rhs = expr();
+	if (!TreeInfo.isVarPattern(pat))
+	    rhs = make.Apply(
+		rhs.pos,
+		make.Select(rhs.pos, rhs, Names.filter),
+		new Tree[]{
+		    make.Visitor(
+			rhs.pos,
+			new Tree.CaseDef[]{
+			    (CaseDef)make.CaseDef(
+				rhs.pos, pat, Tree.Empty,
+				make.Select(rhs.pos,
+				    scalaDot(rhs.pos, Names.Boolean), Names.True)),
+			    (CaseDef)make.CaseDef(
+				rhs.pos, make.Ident(rhs.pos, Names.WILDCARD), Tree.Empty,
+				make.Select(rhs.pos,
+				    scalaDot(rhs.pos, Names.Boolean), Names.False))})});
+	return make.PatDef(pos, 0, pat, rhs);
     }
 
 //////// PATTERNS ////////////////////////////////////////////////////////////
@@ -989,11 +967,8 @@ public class Parser implements Tokens {
         int base = sp;
 	Tree top = simplePattern();
 	if (s.token == COLON) {
-	    switch (top) {
-	    case Ident(Name name):
-		if (name.isVariable())
-		    return make.Typed(s.skipToken(), top, type1());
-	    }
+	    if (TreeInfo.isVarPattern(top))
+		return make.Typed(s.skipToken(), top, type1());
 	}
         while (s.token == IDENTIFIER) {
 	    top = reduceStack(
@@ -1159,7 +1134,9 @@ public class Parser implements Tokens {
 	if (s.token == IDENTIFIER && s.name == STAR) {
 	    s.nextToken();
 	    mods |= Modifiers.REPEATED;
-	    tp = make.AppliedType(tp.pos, scalaSeqType(tp.pos), new Tree[]{tp});
+	    tp = make.AppliedType(tp.pos,
+		scalaDot(tp.pos, Names.Seq.toTypeName()),
+		new Tree[]{tp});
 	}
         return (ValDef)make.ValDef(pos, mods, name, tp, Tree.Empty);
     }
@@ -1190,7 +1167,7 @@ public class Parser implements Tokens {
 	    s.nextToken();
 	    tp = type();
 	} else {
-	    tp = scalaAnyType(pos);
+	    tp = scalaDot(pos, Names.Any.toTypeName());
 	}
 	return make.TypeDef(pos, Modifiers.PARAM, name.toTypeName(),
 			    Tree.ExtTypeDef.EMPTY_ARRAY, tp);
@@ -1390,7 +1367,7 @@ public class Parser implements Tokens {
 	    if (tp == Tree.Empty || s.token == EQUALS)
 		return make.ValDef(pos, mods, name, tp, equalsExpr());
 	    else
-		return make.ValDef(pos, mods | Modifiers.ABSTRACT, name, tp, Tree.Empty);
+		return make.ValDef(pos, mods | Modifiers.DEFERRED, name, tp, Tree.Empty);
 	default:
 	    return make.PatDef(pos, mods, pat, equalsExpr());
         }
@@ -1415,7 +1392,7 @@ public class Parser implements Tokens {
 	    }
             return make.ValDef(pos, mods | Modifiers.MUTABLE, name, type, rhs);
         } else {
-            return make.ValDef(pos, mods | Modifiers.MUTABLE | Modifiers.ABSTRACT,
+            return make.ValDef(pos, mods | Modifiers.MUTABLE | Modifiers.DEFERRED,
 			       name, type, Tree.Empty);
 	}
     }
@@ -1437,7 +1414,7 @@ public class Parser implements Tokens {
             return make.DefDef(pos, mods, name, tparams, vparams,
                                restype, equalsExpr());
         else
-            return make.DefDef(pos, mods | Modifiers.ABSTRACT, name,
+            return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
                                tparams, vparams, restype, Tree.Empty);
     }
 
@@ -1458,7 +1435,7 @@ public class Parser implements Tokens {
             return make.DefDef(pos, mods, name, tparams, vparams,
                                restype, (s.token == LBRACE) ? blockConstr() : constr());
         } else
-            return make.DefDef(pos, mods | Modifiers.ABSTRACT, name,
+            return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
                                tparams, vparams, restype, Tree.Empty);
     }
 
@@ -1470,7 +1447,7 @@ public class Parser implements Tokens {
         Name name = ident().toTypeName();
 	if (s.token == SUBTYPE) {
 	    s.nextToken();
-	    return make.TypeDef(pos, mods | Modifiers.ABSTRACT, name,
+	    return make.TypeDef(pos, mods | Modifiers.DEFERRED, name,
 				Tree.ExtTypeDef.EMPTY_ARRAY, type());
 	} else if (s.token == LBRACKET) {
 	    TypeDef[] tparams = typeParamClauseOpt();
@@ -1482,8 +1459,8 @@ public class Parser implements Tokens {
 				Tree.ExtTypeDef.EMPTY_ARRAY, type());
 	} else if (s.token == SEMI || s.token == COMMA) {
 	    return make.TypeDef(
-		pos, mods | Modifiers.ABSTRACT, name,
-		Tree.ExtTypeDef.EMPTY_ARRAY, scalaAnyType(pos));
+		pos, mods | Modifiers.DEFERRED, name,
+		Tree.ExtTypeDef.EMPTY_ARRAY, scalaDot(pos, Names.Any.toTypeName()));
 	} else {
 	    return syntaxError("`=' or `<:' expected", true);
 	}
@@ -1519,12 +1496,14 @@ public class Parser implements Tokens {
 	    s.nextToken();
 	    return template();
 	} else if (s.token == LBRACE) {
-	    return (Template)make.Template(
-		pos, new Tree[]{scalaObjectConstr(pos)}, templateBody());
+	    return (Template)make.Template(pos,
+		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
+		templateBody());
 	} else {
 	    syntaxError("`extends' or `{' expected", true);
-	    return (Template)make.Template(
-		pos, new Tree[]{scalaObjectConstr(pos)}, Tree.EMPTY_ARRAY);
+	    return (Template)make.Template(pos,
+		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
+		Tree.EMPTY_ARRAY);
 	}
     }
 

@@ -11,7 +11,7 @@ package scalac.symtab;
 public interface Modifiers {
 
     // modifiers
-    int ABSTRACT      = 0x00000001;
+    int DEFERRED      = 0x00000001;   // was `abstract' for members
     int FINAL         = 0x00000002;
     int PRIVATE       = 0x00000004;
     int PROTECTED     = 0x00000008;
@@ -60,7 +60,7 @@ public interface Modifiers {
     public static class Helper {
 
         public static boolean isAbstract(int flags) {
-            return (flags & (ABSTRACT | ABSTRACTCLASS))  != 0;
+            return (flags & (DEFERRED | ABSTRACTCLASS))  != 0;
         }
 
         public static boolean isFinal(int flags) {

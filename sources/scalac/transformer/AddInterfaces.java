@@ -716,7 +716,7 @@ class AddInterfaces extends SubstTransformer {
                             ifaceToClass.put(iSym, cSym);
                             ifaceToClass.put(iSym.constructor(), cSym.constructor());
                         } else {
-                            iSym.flags |= Modifiers.ABSTRACT;
+                            iSym.flags |= Modifiers.DEFERRED;
                             ifaceMemberToClass.put(iSym, cSym);
                         }
                     }

@@ -564,6 +564,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	if (diff > 0) return true;
 	if (diff < 0) return false;
 
+	diff = that.hashCode() - this.hashCode();
+	if (diff > 0) return true;
+	if (diff < 0) return false;
+
+	if (owner().isLess(that.owner())) return true;
+	if (that.owner().isLess(owner())) return false;
+
 	throw new ApplicationError(
 	    "Giving up: can't order two incarnations of class " +
 	    this.mangledFullName());
@@ -638,10 +645,10 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public String toString() {
 	if (isRoot()) return "<root package>";
-	if (isAnonymousClass()) return "<template>";
 	String kstr = kindString();
 	String str;
-	if (kstr.length() == 0) str = fullNameString();
+	if (isAnonymousClass()) str = "<template>";
+	else if (kstr.length() == 0) str = fullNameString();
 	else str = kstr + " " + fullNameString();
 	return str + idString();
     }
@@ -878,7 +885,8 @@ public class TermSymbol extends Symbol {
     }
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
-	if ((flags & MODUL) != 0) return moduleClass().fullName();
+	if (isModule()) return moduleClass().fullName();
+	else if (isPrimaryConstructor()) return primaryConstructorClass().fullName();
 	else return super.fullName();
     }
 

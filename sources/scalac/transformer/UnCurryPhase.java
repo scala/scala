@@ -66,8 +66,6 @@ public class UnCurryPhase extends PhaseDescriptor implements Modifiers {
 		else return Type.MethodType(uncurriedParams, uncurriedTp1);
 	    }
 	case PolyType(Symbol[] tparams, Type tp1):
-	    if (tp instanceof Infer.VirtualPolyType)
-		return uncurry(tp1);
 	    switch (tp1) {
 	    case MethodType(_, _):
 		Type newtp1 = uncurry(tp1);

@@ -14,10 +14,7 @@ package scala {
       mkList(x.elements);
     }
 
-    def error[a](x: String):a = (new java.lang.RuntimeException(x)).throw;
-
-    def ConsStream[a](hd: a, def tl: Stream[a]): Stream[a] =
-      new ConsStreamClass(hd, () => tl);
+    def error[err](x: String):err = (new java.lang.RuntimeException(x)).throw;
 
     def range(lo: Int, hi: Int): List[Int] =
       if (lo > hi) List() else lo :: range(lo + 1, hi);

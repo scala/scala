@@ -104,6 +104,11 @@ public class LambdaLift extends OwnerTransformer
 	 */
 	private SymSet renamable;
 
+	/** The set of symbols that bound by polytypes
+	 *  and therefore are not free type variables.
+	 */
+	private SymSet excluded;
+
 	/** A flag to indicate whether new free variables have been found
 	 */
 	private boolean changedFreeVars;
@@ -142,7 +147,7 @@ public class LambdaLift extends OwnerTransformer
 	 *  the owner of sym.
 	 */
 	private boolean markFree(Symbol sym, Symbol owner) {
-	    //if (global.debug) global.log("mark " + sym + " free in " + owner);//DEBUG
+	    if (global.debug) global.log("mark " + sym + " free in " + owner);//debug
 	    if (owner.kind == NONE) {
 		assert propagatePhase : sym + " in " + sym.owner();
 		return false;
@@ -175,15 +180,23 @@ public class LambdaLift extends OwnerTransformer
 	    public Type apply(Type tp) {
 	        switch (tp) {
 		case TypeRef(ThisType(_), Symbol sym, Type[] targs):
-		    if (sym.isLocal() && sym.kind == TYPE)
+		    if (sym.isLocal() && sym.kind == TYPE && !excluded.contains(sym))
 			markFree(sym, currentOwner);
+		    break;
+		case PolyType(Symbol[] tparams, Type restp):
+		    for (int i = 0; i < tparams.length; i++)
+			excluded = excluded.incl(tparams[i]);
+		    Type tp1 = super.map(tp);
+		    for (int i = 0; i < tparams.length; i++)
+			excluded = excluded.excl(tparams[i]);
+		    return tp1;
 		}
 		return map(tp);
 	    }
         };
 
 	public Tree transform(Tree tree) {
-	    //global.debugPrinter.print("free ").print(tree).println().end();//DEBUG
+	    //if (global.debug) global.debugPrinter.print("free ").print(tree).println().end();//DEBUG
 	    traverseTypeMap.apply(tree.type.widen());
 	    Symbol sym = tree.symbol();
 	    switch(tree) {
@@ -194,8 +207,16 @@ public class LambdaLift extends OwnerTransformer
 		}
 		return super.transform(tree);
 
+	    case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs):
+		// ignore type definition as owner.
+		// reason: it might be in a refinement
+		// todo: handle type parameters?
+		return copy.TypeDef(
+		    tree, mods, name,
+		    transform(tparams, currentOwner),
+		    transform(rhs, currentOwner));
+
 	    case Ident(Name name):
-		assert sym.owner() != null : sym + " " + name;//debug
 		if (sym.isLocal()) {
 		    if (sym.isMethod()) {
 			Symbol f = enclFun(currentOwner);
@@ -254,6 +275,7 @@ public class LambdaLift extends OwnerTransformer
 	    ftvs = new HashMap();
 	    called = new HashMap();
 	    renamable = SymSet.EMPTY;
+	    excluded = SymSet.EMPTY;
 	    apply(unit);
 
 	    propagatePhase = true;
@@ -300,14 +322,14 @@ public class LambdaLift extends OwnerTransformer
 		    tree, mods, sym.name,
 		    addTypeParams(transform(tparams, sym), newtparams),
 		    new ValDef[][]{addParams(transform(vparams, sym)[0], newparams)},
-		    transform(tpe),
+		    transform(tpe, sym),
 		    transform(impl, sym));
 		liftedDefs.append(tree1);
 		return Tree.Empty;
 	    } else {
 		return copy.ClassDef(
 		    tree, mods, sym.name,
-		    transform(tparams, sym), transform(vparams, sym), transform(tpe),
+		    transform(tparams, sym), transform(vparams, sym), transform(tpe, sym),
 		    transform(impl, sym));
 	    }
 
@@ -321,16 +343,25 @@ public class LambdaLift extends OwnerTransformer
 		    tree, mods, sym.name,
 		    addTypeParams(transform(tparams, sym), newtparams),
 		    new ValDef[][]{addParams(transform(vparams, sym)[0], newparams)},
-		    transform(tpe),
+		    transform(tpe, sym),
 		    transform(rhs, sym));
 		liftedDefs.append(tree1);
 		return Tree.Empty;
 	    } else {
 		return copy.DefDef(
 		    tree, mods, sym.name,
-		    transform(tparams, sym), transform(vparams, sym), transform(tpe),
+		    transform(tparams, sym), transform(vparams, sym), transform(tpe, sym),
 		    transform(rhs, sym));
 	    }
+
+	case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs):
+	    // ignore type definition as owner.
+	    // reason: it might be in a refinement
+	    // todo: handle type parameters?
+	    return copy.TypeDef(
+		tree, mods, name,
+		transform(tparams, currentOwner),
+		transform(rhs, currentOwner));
 
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
@@ -393,8 +424,9 @@ public class LambdaLift extends OwnerTransformer
 	    params[i].pos = owner.pos;
 	    params[i].flags = PARAM | SYNTHETIC;
 	    params[i].setOwner(owner);
-	    params[i].setInfo(freevars[i].type());
 	}
+	for (int i = 0; i < params.length; i++)
+	    params[i].setInfo(freevars[i].info().subst(freevars, params));
 	return params;
     }
 

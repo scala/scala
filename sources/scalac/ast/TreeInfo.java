@@ -120,6 +120,15 @@ public class TreeInfo {
 	}
     }
 
+    public static boolean isVarPattern(Tree pat) {
+	switch (pat) {
+	case Ident(Name name):
+	    return name.isVariable();
+	default:
+	    return false;
+	}
+    }
+
     /** The method symbol of an application node, or Symbol.NONE, if none exists.
      */
     public static Symbol methSymbol(Tree tree) {

@@ -512,12 +512,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    // take precedence over abstract ones.
 	    int i = parts.length;
 	    sym = Symbol.NONE;
-	    while (i > start && (sym.kind == NONE || (sym.flags & ABSTRACT) != 0)) {
+	    while (i > start && (sym.kind == NONE || (sym.flags & DEFERRED) != 0)) {
 		i--;
 		Symbol sym1 = parts[i].lookupNonPrivate(name, i == 0 ? 0 : 1);
 		if (sym1.kind != NONE &&
 		    (sym1.flags & PRIVATE) == 0 &&
-		    (sym.kind == NONE || (sym1.flags & ABSTRACT) == 0))
+		    (sym.kind == NONE || (sym1.flags & DEFERRED) == 0))
 		    sym = sym1;
 	    }
 	    return sym;

@@ -99,10 +99,25 @@ public class Infer implements Modifiers, Kinds {
 	    return transform(tree);
 	}
 
+	Type.Map elimInferredPolyMap = new Type.Map() {
+    	    public Type apply(Type t) {
+		switch (t) {
+		case PolyType(Symbol[] tparams1, Type restp):
+		    if (tparams1.length == tparams.length &&
+			tparams1[0] == tparams[0]) {
+			for (int i = 1; i < tparams.length; i++)
+			    assert tparams1[i] == tparams[i];
+			return apply(restp);
+		    }
+		}
+		return map(t);
+	    }
+	};
+
 	public Tree transform(Tree tree) {
 //	    System.out.println("[" + ArrayApply.toString(targs,"",",","") + "/" + ArrayApply.toString(tparams,"",",","") + "]" + tree + "@" + tree.symbol());//DEBUG
 	    if (tree.type == null) return tree;
-	    tree.type = tree.type.subst(tparams, targs);
+	    tree.type = elimInferredPolyMap.apply(tree.type).subst(tparams, targs);
 	    switch (tree) {
 	    case Ident(Name name):
 		if (name.isTypeName()) {
@@ -126,17 +141,6 @@ public class Infer implements Modifiers, Kinds {
     private static class NoInstance extends RuntimeException {
 	NoInstance(String msg) {
 	    super(msg);
-	}
-    }
-
-    public static class VirtualPolyType extends Type.PolyType {
-	VirtualPolyType(Symbol[] tparams, Type result) {
-	    super(tparams, result);
-	}
-	public String toString() {
-	    return
-		ArrayApply.toString(Symbol.defString(tparams), "[ ", ",", " ]") +
-		result;
 	}
     }
 
@@ -639,7 +643,7 @@ public class Infer implements Modifiers, Kinds {
 	    checkBounds(tparams, targs, "inferred ");
 	    Type restype1 = (uninstantiated.length == 0) ? restype
 		: Type.MethodType(params,
-				  new VirtualPolyType(uninstantiated, restpe));
+				  Type.PolyType(uninstantiated, restpe));
 	    return mkTypeApply(tree, tparams, restype1, targs);
 	default:
 	    return tree;

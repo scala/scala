@@ -4,11 +4,11 @@ module test {
 
   abstract trait F { type If; }
 
-  def f[Jf](h: Jf):F with { type If = Jf } = f@[Jf](h);
+  def f[Jf](h: Jf):F with { type If = Jf } = f[Jf](h);
 
   abstract trait G { type Ig; }
 
-  def g[Jg](h: Jg):G with { type Ig = Jg } = g@[Jg](h);
+  def g[Jg](h: Jg):G with { type Ig = Jg } = g[Jg](h);
 
   abstract class M() {
       type P;
@@ -27,7 +27,7 @@ module test {
 
       // Values with types P and i.X as seen from instances of M
       def val_mp: P = val_mp;
-      def val_mix: G with { type Ig = P } = g@[P](val_mp);
+      def val_mix: G with { type Ig = P } = g[P](val_mp);
   }
 
   abstract class N() extends M() {
@@ -40,7 +40,7 @@ module test {
 	  type X = G with { type Ig = Y; };
 	  // Values with types Y and X as seen from instances of J
 	  def val_jy: Y = val_jy;
-	  def val_jx: G with { type Ig = Y; } = g@[Y](val_jy);
+	  def val_jx: G with { type Ig = Y; } = g[Y](val_jy);
 
 	  // Check type P
 	  chk_ip(val_mp);
@@ -49,10 +49,10 @@ module test {
 
       // Values with types Q, X.P, i.X, j.Y and j.X as seen from instances of N
       def val_nq: Q = val_nq;
-      def val_np: F with { type If = Q } = f@[Q](val_nq);
-      def val_nix: G with { type Ig = F with { type If = Q } } = g@[F with { type If = Q }](val_np);
-      def val_njy: G with { type Ig = Q; } = g@[Q](val_nq);
-      def val_njx: G with { type Ig = G with { type Ig = Q }} = g@[G with { type Ig = Q; }](val_njy);
+      def val_np: F with { type If = Q } = f[Q](val_nq);
+      def val_nix: G with { type Ig = F with { type If = Q } } = g[F with { type If = Q }](val_np);
+      def val_njy: G with { type Ig = Q; } = g[Q](val_nq);
+      def val_njx: G with { type Ig = G with { type Ig = Q }} = g[G with { type Ig = Q; }](val_njy);
 
       // Check type i.P
       i.chk_ip(val_mp);

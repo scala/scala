@@ -35,6 +35,30 @@ public class SymSet {
 	}
     }
 
+    public SymSet excl(Symbol sym) {
+	if (sym == this.sym) {
+	    if (l == EMPTY) return r;
+	    if (r == EMPTY) return l;
+	    SymSet m = r;
+	    if (m.l != EMPTY) {
+		SymSet p;
+		do {
+		    p = m;
+		    m = m.l;
+		} while (m.l != EMPTY);
+		p.l = m.r;
+		m.r = r;
+	    }
+	    m.l = l;
+	    return m;
+	} else if (sym.isLess(this.sym)) {
+	    return new SymSet(this.sym, l.excl(sym), r);
+	} else {
+	    assert this.sym.isLess(sym);
+	    return new SymSet(this.sym, l, r.excl(sym));
+	}
+    }
+
     /** Is `sym' an element of this set?
      */
     public boolean contains(Symbol sym) {

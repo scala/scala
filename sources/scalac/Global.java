@@ -15,7 +15,7 @@ import scalac.ast.*;
 import scalac.ast.parser.*;
 import scalac.symtab.Definitions;
 import scalac.ast.printer.*;
-import scalac.backend.Primitives;
+//import scalac.backend.Primitives;
 
 
 /** The global environment of a compiler run
@@ -90,7 +90,7 @@ public class  Global {
 
     /** the global primitives
      */
-    public Primitives primitives;
+    //public Primitives primitives;
 
     /** compilation phases.
      */
@@ -165,7 +165,7 @@ public class  Global {
         this.make = new TreeCreator();
         this.currentPhase = PhaseDescriptor.INITIAL;
         this.definitions = new Definitions(this);
-        this.primitives = new Primitives(this);
+        //this.primitives = new Primitives(this);
         this.treeGen = new TreeGen(this, make);
         this.PHASE = args.phases;
         List phases = new ArrayList();
@@ -179,8 +179,7 @@ public class  Global {
             phases.add(PHASE.OPTIMIZE);
         } */
         phases.add(PHASE.TRANSMATCH);
-
-        //phases.add(PHASE.LAMBDALIFT);
+        phases.add(PHASE.LAMBDALIFT);
         phases.add(PHASE.EXPLICITOUTER);
         phases.add(PHASE.ADDACCESSORS);
         phases.add(PHASE.ADDINTERFACES);
@@ -192,8 +191,8 @@ public class  Global {
         }
         if (target == TARGET_JAVA) phases.add(PHASE.GENJAVA);
         if (target == TARGET_MSIL) phases.add(PHASE.GENMSIL);
-	*/
         if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
+	*/
         phases.add(PHASE.TERMINAL);
         this.phases = new PhaseDescriptor[phases.size()];
         for (int i = 0; i < phases.size(); i++) {

@@ -275,7 +275,11 @@ public class TextTreePrinter implements TreePrinter {
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
             printOpt(TXT_COLON, tpe, false);
-            printOpt(TXT_EQUAL, rhs, true);
+	    if ((mods & Modifiers.DEFERRED) == 0) {
+		print(Text.Space); print(TXT_EQUAL); print(Text.Space);
+		if (rhs == Tree.Empty) print("_");
+		else print(rhs);
+	    }
             break;
 
         case PatDef(int mods, Tree pat, Tree rhs):
@@ -311,7 +315,7 @@ public class TextTreePrinter implements TreePrinter {
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
 	    printParams(tparams);
-	    if ((mods & (Modifiers.ABSTRACT | Modifiers.PARAM)) != 0) printOpt(TXT_SUBTYPE, rhs, true);
+	    if ((mods & (Modifiers.DEFERRED | Modifiers.PARAM)) != 0) printOpt(TXT_SUBTYPE, rhs, true);
             else printOpt(TXT_EQUAL, rhs, true);
             break;
 
@@ -514,6 +518,7 @@ public class TextTreePrinter implements TreePrinter {
             print(TXT_UNKNOWN);
             break;
         }
+	//print("{" + tree.type + "}");//DEBUG
 	return this;
     }
 
@@ -575,7 +580,7 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     protected void printModifiers(int flags) {
-        if ((flags & Modifiers.ABSTRACT) != 0) {
+        if ((flags & Modifiers.ABSTRACTCLASS) != 0) {
             print(KW_ABSTRACT);
             print(Text.Space);
         }

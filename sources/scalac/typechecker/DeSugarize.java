@@ -424,7 +424,8 @@ public class DeSugarize implements Kinds, Modifiers {
 		Tree.ExtTypeDef.EMPTY_ARRAY,
 		Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
 		tpe,
-		(rhs == Tree.Empty) ? Tree.Empty : make.Ident(tree.pos, varname));
+		((mods & DEFERRED) != 0) ? Tree.Empty
+		    : make.Ident(tree.pos, varname));
 	    Tree setter = make.DefDef(
 		tree.pos, mods | ACCESSOR, setterName(name),
 		Tree.ExtTypeDef.EMPTY_ARRAY,
@@ -432,12 +433,12 @@ public class DeSugarize implements Kinds, Modifiers {
 		    (ValDef) make.ValDef(
 			tree.pos, SYNTHETIC, parameterName(0), tpe, Tree.Empty)}},
 		gen.mkType(tree.pos, global.definitions.UNIT_TYPE),
-		(rhs == Tree.Empty) ? Tree.Empty
+		((mods & DEFERRED) != 0) ? Tree.Empty
 		    : make.Assign(
 			tree.pos,
 			make.Ident(tree.pos, varname),
 			make.Ident(tree.pos, parameterName(0))));
-	    if (rhs == Tree.Empty) return new Tree[]{getter, setter};
+	    if ((mods & DEFERRED) != 0) return new Tree[]{getter, setter};
 	    else return new Tree[]{vardef1, getter, setter};
 	default:
 	    throw new ApplicationError();
