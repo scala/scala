@@ -37,32 +37,44 @@ object fors {
   type Lst = List[Any];
 
   val books = List(
-    'book('title("Structure and Interpretation of Computer Programs"),
-          'author("Abelson, Harald"),
-          'author("Sussman, Gerald J.")),
-    'book('title("Principles of Compiler Design"),
-          'author("Aho, Alfred"),
-          'author("Ullman, Jeffrey")),
-    'book('title("Programming in Modula-2"),
-	  'author("Wirth, Niklaus")));
+    Elem("book",
+         Elem("title",
+              Text("Structure and Interpretation of Computer Programs")),
+         Elem("author",
+              Text("Abelson, Harald")),
+         Elem("author",
+              Text("Sussman, Gerald J."))),
+    Elem("book",
+         Elem("title",
+              Text("Principles of Compiler Design")),
+         Elem("author",
+              Text("Aho, Alfred")),
+         Elem("author",
+              Text("Ullman, Jeffrey"))),
+    Elem("book",
+         Elem("title",
+              Text("Programming in Modula-2")),
+	 Elem("author",
+              Text("Wirth, Niklaus")))
+  );
 
   def findAuthor(books: Lst) =
-    for (val 'book(book: Lst) <- books;
-         val 'title(title: String) <- book;
+    for (val Elem("book",book @ _*) <- books;
+         val Elem("title",Text( title )) <- book;
          (title indexOf "Program") >= 0;
-         val 'author(author: String) <- book) yield author;
+         val Elem("author",Text( author )) <- book) yield author;
 
-  for (val 'book(b: Lst) <- books;
-       val 'author(author: String) <- b;
+  for (val Elem("book", b @ _*) <- books;
+       val Elem("author", Text( author )) <- b;
        author startsWith "Ullman";
-       val 'title(title: String) <- b) yield title;
+       val Elem("title",Text( title )) <- b) yield title;
 
   removeDuplicates(
-    for (val 'book(b1: Lst) <- books;
-       val 'book(b2: Lst) <- books;
+    for (val Elem("book", b1 @ _* ) <- books;
+         val Elem("book", b2 @ _*) <- books;
 	 b1 != b2;
-	 val 'author(a1: String) <- b1;
-	 val 'author(a2: String) <- b2;
+	 val Elem("author",Text( a1 )) <- b1;
+	 val Elem("author",Text( a2 )) <- b2;
 	 a1 == a2) yield Pair(a1, a2));
 
   def removeDuplicates[a](xs: List[a]): List[a] =
