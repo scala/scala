@@ -83,6 +83,7 @@ public class GenerateAll extends AbstractMain {
                 TextExpander expander = new TextExpander(writer, expanders[i]);
                 expander.expandText(source);
                 errors += expander.getErrorCount();
+                target.delete();
                 FileWriter output = new FileWriter(target);
                 output.write(writer.toString());
                 output.close();
