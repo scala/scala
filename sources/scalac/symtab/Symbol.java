@@ -406,7 +406,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Symbol was preloaded from package
      */
     public boolean isPreloaded() {
-	return owner.isPackage() && pos == Position.NOPOS;
+	return pos == Position.NOPOS;
     }
 
     /** Is this symbol an overloaded symbol? */
