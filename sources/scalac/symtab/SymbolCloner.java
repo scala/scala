@@ -19,7 +19,6 @@ import scalac.util.Debug;
  * the new owner of cloned symbols, clones their type and keeps track
  * of all cloned symbols. Clone a type means clone all symbol declared
  * in that type (for example parameters of a MethodType).
- * !!! The type cloning is not yet enabled.
  */
 public class SymbolCloner {
 
@@ -92,7 +91,7 @@ public class SymbolCloner {
 	    clone.name = renamer.newName(symbol.name);
 	}
         clones.put(symbol, clone);
-        // !!! clone.setType(cloneType(clone.info()));
+        clone.setType(cloneType(symbol.info()));
         return clone;
     }
 
