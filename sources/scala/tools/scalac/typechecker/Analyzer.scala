@@ -2139,7 +2139,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	else {
           error(tree.pos, "" + tree +
 		" can be used only in a class, object, or template");
-	  Symbol.ERROR
+	  Symbol.NONE
 	}
       } else {
 	var i: Context = context;
@@ -2150,7 +2150,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  i.owner
 	else {
           error(tree.pos, "" + name + " is not an enclosing class");
-	  Symbol.ERROR
+	  Symbol.NONE
 	}
       }
     }
@@ -2681,10 +2681,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree$Super(qualifier, mixin) =>
 	  val clazz: Symbol = qualifyingClass(tree, qualifier);
-          tree.setSymbol(clazz);
-          if (clazz.isError()) {
+          if (clazz.isNone()) {
 	    tree.setType(Type.ErrorType);
 	  } else {
+            tree.setSymbol(clazz);
 	    val parents = clazz.parents();
 	    if (mixin == TypeNames.EMPTY) {
 	      tree.setType(parents(0).instanceType());
@@ -2702,13 +2702,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree$This(name) =>
 	  val clazz: Symbol = qualifyingClass(tree, name);
-          tree.setSymbol(clazz);
-          if (clazz.isError())
+          if (clazz.isNone())
 	    tree.setType(Type.ErrorType);
-	  else
+	  else {
+            tree.setSymbol(clazz);
  	    tree.setType(
 	      if (pt != null && pt.isStable() || (mode & QUALmode) != 0) clazz.thisType()
 	      else clazz.typeOfThis());
+          }
 
 	case Tree$Select(qual, name) =>
 	  val qualmode: int = EXPRmode | POLYmode | QUALmode;
