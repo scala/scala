@@ -56,6 +56,7 @@ atree/ARepository.java
 atree/AShiftOp.java
 atree/ATestOp.java
 atree/ATreePrinter.java
+atree/ATreeTyper.java
 atree/ATypeKind.java
 
 backend/Primitive.java
