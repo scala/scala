@@ -9,11 +9,10 @@
 
 package scala.xml.parsing;
 
-import scala.collection.mutable;
+import scala.collection.{ mutable, Map };
 import scala.collection.immutable.ListMap;
 
 abstract class MarkupParser[MarkupType, AVType] {
-
 
   /** the handler of the markup */
   val handle: MarkupHandler[MarkupType, AVType];
@@ -36,8 +35,7 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c);
 
-
-  var xEmbeddedBlock = false;
+  //var xEmbeddedBlock = false;
 
   /** this method assign the next character to ch and advances in input */
   def nextch: Unit;
@@ -45,7 +43,7 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** this method should assign the first character of the input to ch */
   def init: Unit;
 
-  val enableEmbeddedExpressions: Boolean;
+  //final val enableEmbeddedExpressions: Boolean = false;
 
   /** report a syntax error */
   def reportSyntaxError(str: String): Unit;
@@ -61,12 +59,12 @@ abstract class MarkupParser[MarkupType, AVType] {
 
   /** checks whether next character starts a Scala block, if yes, skip it.
    * @return true if next character starts a scala block
-   */
   def xCheckEmbeddedBlock:Boolean = {
     xEmbeddedBlock =
       enableEmbeddedExpressions && (ch == '{') && { nextch; ch != '{' };
     return xEmbeddedBlock;
   }
+   */
 
   /** parse attribute and add it to listmap
    *  [41] Attributes    ::= { S Name Eq AttValue }
@@ -86,10 +84,10 @@ abstract class MarkupParser[MarkupType, AVType] {
           nextch;
           val tmp = xAttributeValue(delim);
           nextch;
-          handle.attributeCDataValue(pos1, tmp);
-        case '{' if enableEmbeddedExpressions =>
+          handle.attributeCDataValue( pos1, tmp );
+        /*case '{' if enableEmbeddedExpressions =>
           nextch;
-          handle.attributeEmbedded(pos1, xEmbeddedExpr);
+          handle.attributeEmbedded(pos1, xEmbeddedExpr);*/
         case _ =>
           reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
           handle.attributeCDataValue( pos1, "<syntax-error>" )
@@ -236,10 +234,17 @@ abstract class MarkupParser[MarkupType, AVType] {
   def content: mutable.Buffer[MarkupType] = {
     var ts = new mutable.ArrayBuffer[MarkupType];
     var exit = false;
+<<<<<<< MarkupParser.scala
+    while( !exit ) {
+      /*      if( xEmbeddedBlock ) {
+       ts.append( xEmbeddedExpr );
+       } else {*/
+=======
     while (!exit) {
       if (xEmbeddedBlock) {
         ts.append(xEmbeddedExpr);
       } else {
+>>>>>>> 1.4
         tmppos = pos;
         ch match {
           case '<' => // another tag
@@ -261,14 +266,22 @@ abstract class MarkupParser[MarkupType, AVType] {
             }
 
           case '{' =>
+<<<<<<< MarkupParser.scala
+/*            if( xCheckEmbeddedBlock ) {
+=======
             if (xCheckEmbeddedBlock) {
+>>>>>>> 1.4
               ts.append(xEmbeddedExpr);
+<<<<<<< MarkupParser.scala
+            } else {*/
+=======
             }
             else {
+>>>>>>> 1.4
               val str = new StringBuffer("{");
               str.append(xText);
               appendText(tmppos, ts, str.toString());
-            }
+            /*}*/
           // postcond: xEmbeddedBlock == false!
           case '&' => // EntityRef or CharRef
             nextch;
@@ -287,15 +300,15 @@ abstract class MarkupParser[MarkupType, AVType] {
             appendText(tmppos, ts, xText);
           // here xEmbeddedBlock might be true
         }
-      }
-    }
-    ts
-  } /* end content */
+    /*}*/
+  }
+  ts
+} /* end content */
 
   /** '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
    *               | xmlTag1 '/' '&gt;'
    */
-  def element: MarkupType = {
+def element: MarkupType = {
     var pos1 = pos;
     val Tuple2(qname, attrMap) = xTag;
     if (ch == '/') { // empty element
@@ -311,7 +324,7 @@ abstract class MarkupParser[MarkupType, AVType] {
     }
   }
 
-  def xEmbeddedExpr: MarkupType;
+  //def xEmbeddedExpr: MarkupType;
 
   /** Name ::= (Letter | '_' | ':') (NameChar)*
    *
@@ -378,21 +391,36 @@ abstract class MarkupParser[MarkupType, AVType] {
    *   precondition: xEmbeddedBlock == false (we are not in a scala block)
    */
   def xText: String = {
+<<<<<<< MarkupParser.scala
+    //if( xEmbeddedBlock ) throw FatalError("internal error: encountered embedded block"); // assert
+=======
     if (xEmbeddedBlock)
       throw FatalError("internal error: encountered embedded block"); // assert
+>>>>>>> 1.4
 
+<<<<<<< MarkupParser.scala
+    /*if( xCheckEmbeddedBlock )
+=======
     if (xCheckEmbeddedBlock)
+>>>>>>> 1.4
       return ""
-    else {
+    else {*/
       var exit = false;
+<<<<<<< MarkupParser.scala
+      while( !exit ) {
+        putChar( ch );
+        nextch;
+        exit = /*{ nextch; xCheckEmbeddedBlock }||*/( ch == '<' ) || ( ch == '&' );
+=======
       while (!exit) {
         putChar(ch);
         exit = { nextch; xCheckEmbeddedBlock } || (ch == '<') || (ch == '&');
+>>>>>>> 1.4
       }
       val str = cbuf.toString();
       cbuf.setLength(0);
       str
-    }
+    /*}*/
   }
 
 }
