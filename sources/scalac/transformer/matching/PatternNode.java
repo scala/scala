@@ -160,8 +160,8 @@ public class PatternNode {
             switch (q) {
             case VariablePat(Tree other):
                 return (tree.symbol() != null) &&
-                    (tree.symbol().kind != Kinds.NONE) &&
-                    (tree.symbol().kind != Kinds.ERROR) &&
+                    (!tree.symbol().isNone()) &&
+                    (!tree.symbol().isError()) &&
                     (tree.symbol() == other.symbol());
             }
             return false;

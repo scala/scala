@@ -335,7 +335,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     tp.unalias() match {
       case Type$TypeRef(_, sym, _) =>
 	if (sym.kind == CLASS) return true;
-	else if (sym.kind == ERROR) return false;
+	else if (sym.isError()) return false;
       case Type.ErrorType =>
 	return false;
       case _ =>
@@ -826,7 +826,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    tree.asInstanceOf[Tree$PackageDef].packaged = packaged;
 	    popContext();
 	    val pkg: Symbol = checkStable(packaged).symbol();
-	    if (pkg != null && pkg.kind != ERROR) {
+	    if (pkg != null && !pkg.isError()) {
 	      if (pkg.isPackage()) {
 		pushContext(templ, pkg.moduleClass(), pkg.members());
 		enterSyms(body);
@@ -1415,7 +1415,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
         tree match {
           case Tree$Ident(_) | Tree$Select(_, _) =>
             val sym: Symbol = tree.symbol();
-            if (sym != null && sym.kind != ERROR && !sym.isValue()) {
+            if (sym != null && !sym.isError() && !sym.isValue()) {
               return error(tree.pos, "" + tree.symbol() + " is not a value");
             }
 	  case _ =>
@@ -1744,7 +1744,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     //System.out.println(owner.info());//DEBUG
     val parents = templ.parents;
     transformConstrInvocationArgs(parents);
-    if (owner.kind != ERROR) {
+    if (!owner.isError()) {
       validateParentClasses(parents, owner.info().parents(), owner.typeOfThis());
     }
     pushContext(templ, owner, owner.members());
@@ -2457,7 +2457,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	    // convert type to constructor
 	    val tsym: Symbol = TreeInfo.methSymbol(fn1);
-	    if (tsym.kind != ERROR) {
+	    if (!tsym.isError()) {
 	      assert(tsym.isType(), tsym);
 	      fn1.getType().withDefaultArgs().unalias() match {
 		case Type$TypeRef(pre, c, argtypes) =>
@@ -2682,7 +2682,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$Super(qualifier, mixin) =>
 	  val clazz: Symbol = qualifyingClass(tree, qualifier);
           tree.setSymbol(clazz);
-          if (clazz == Symbol.ERROR) {
+          if (clazz.isError()) {
 	    tree.setType(Type.ErrorType);
 	  } else {
 	    val parents = clazz.parents();
@@ -2703,7 +2703,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$This(name) =>
 	  val clazz: Symbol = qualifyingClass(tree, name);
           tree.setSymbol(clazz);
-          if (clazz == Symbol.ERROR)
+          if (clazz.isError())
 	    tree.setType(Type.ErrorType);
 	  else
  	    tree.setType(

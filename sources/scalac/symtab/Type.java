@@ -2703,7 +2703,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         int lubKind = syms[0].kind;
         for (int i = 1; i < syms.length; i++) {
             Symbol sym = syms[i];
-            if (sym.kind == ERROR) return Symbol.NONE;
+            if (sym.isError()) return Symbol.NONE;
             if (sym.isType() && sym.kind != lubKind) lubKind = TYPE;
         }
         if (lubKind == syms[0].kind && tps[0].isSameAsAll(tps)) {
@@ -3132,7 +3132,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     public int hashCode() {
         switch (this) {
         case ErrorType:
-            return ERROR;
+            return ERRORtpe;
         case NoType:
             return NOtpe;
         case NoPrefix:
