@@ -33,16 +33,31 @@ package scala.tools.scala4ant {
     final val VERSION = System.getProperty("scala.version", "unknown version");
 
     def runCompiler( args:Array[String] ) = {
+      var ex:Throwable = _;
       //Console.println("runCompiler");
       var result = true;
       try {
         scala.tools.scalac.Main.main1( false, args );
       } catch {
         case e:Throwable => {
-          /* e.printStackTrace(); */
+          ex = e;
           result = false;
-          e.printStackTrace();
-          throw new BuildException(e.getMessage());
+          try {                             // fall back on exec
+            val commands = new Array[String](args.length+2) ;
+	    commands(0) = "java";
+	    commands(1) = "scala.tools.scalac.Main";
+	    System.arraycopy(args,0,commands,2,args.length);
+	    val exe = new Execute();
+	    exe.setCommandline(commands);
+	    //result = exe.execute() == 0;
+            result = true;
+          } catch {
+            case e:Throwable => {
+              result = false;
+              ex = e;
+            }
+          }
+          if( !result ) throw new BuildException( ex.getMessage() );
         }
       }
       result;
