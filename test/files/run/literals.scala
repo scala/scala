@@ -115,6 +115,9 @@ object Test {
     check_success("1e137 == 1.0e137", 1e137, 1.0e137);
     check_success("1.asInstanceOf[double] == 1.0", 1.asInstanceOf[double], 1.0);
     check_success("1l.asInstanceOf[double] == 1.0", 1l.asInstanceOf[double], 1.0);
+
+    out.println();
+    check_success("\"\\u001a\".length()", "\u001a".length(), 1);
   }
 }
 

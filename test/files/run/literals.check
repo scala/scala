@@ -59,3 +59,5 @@ test 1e-9d == 1.0e-9 was successful
 test 1e137 == 1.0e137 was successful
 test 1.asInstanceOf[double] == 1.0 was successful
 test 1l.asInstanceOf[double] == 1.0 was successful
+
+test "\u001a".length() was successful
