@@ -14,17 +14,19 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 
-/** The clase <code>Code</code> provides <code>apply</code> methods
+/** The class <code>Code</code> provides <code>apply</code> methods
  *  with different arities (actually up to 9 parameters) to invoke
- *  a function simply by specifying its name and argument types.
+ *  a function simply by specifying its name and argument types.<p/>
  *
  *  Example:<pre>
- *    val url = new URL("http://scala.epfl.ch/classes/examples.jar");
- *    val obj = new Location(url) create "examples.sort";
- *    val ar = Array(6, 2, 8, 5, 1);
+ *    <b>val</b> url = <b>new</b> URL("http://scala.epfl.ch/classes/examples.jar");
+ *    <b>val</b> obj = <b>new</b> Location(url) create "examples.sort";
+ *    <b>val</b> ar = Array(6, 2, 8, 5, 1);
  *    obj[Array[Int], Unit]("println")(ar);
  *    obj[Array[Int], Unit]("sort")(ar);
  *    obj[Array[Int], Unit]("println")(ar);</pre>
+ *
+ *  @see class <a href="Location-class.html">Code</a>
  *
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004
