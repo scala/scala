@@ -1298,14 +1298,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return NoType;
     }
 
-    /** Return overriding instance of `sym' in this type,
-     *  or `sym' itself if none exists.
-     */
-    // !!! remove !
-    public Symbol rebind(Symbol sym) {
-        return sym;
-    }
-
     /** A map to implement `asSeenFrom'.
      */
     static class AsSeenFromMap extends Map {
@@ -1318,39 +1310,27 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             this.clazz = clazz;
         }
 
-        public Type apply(Type t) {
-            //System.out.println(t + " as seen from " + pre + "," + clazz);//DEBUG
-            if (pre == NoType || clazz.kind != CLASS) return t;
-            switch (t) {
+        public Type apply(Type type) {
+            //System.out.println(type + " as seen from " + pre + "," + clazz);//DEBUG
+            if (pre == NoType || clazz.kind != CLASS) return type;
+            switch (type) {
             case ThisType(Symbol sym):
-                return t.toPrefix(sym, pre, clazz);
+                return type.toPrefix(sym, pre, clazz);
             case TypeRef(Type prefix, Symbol sym, Type[] args):
-                if (sym.kind == ALIAS && sym.typeParams().length == args.length) {
-                    return apply(sym.info().subst(sym.typeParams(), args)
-                        .asSeenFrom(prefix, sym.owner()));
-                } else if (sym.owner().isPrimaryConstructor()) {
+                if (sym.owner().isPrimaryConstructor()) {
                     assert sym.kind == TYPE;
-                    return t.toInstance(sym, pre, clazz);
-                } else {
-                    Type prefix1 = apply(prefix);
-                    Type[] args1 = map(args);
-                    if (prefix1 == prefix && args1 == args) return t;
-                    Symbol sym1 = prefix1.rebind(sym);
-                    Type t1 = typeRef(prefix1, sym1, args1);
-                    if (sym1 != sym) t1 = apply(t1.unalias());
-                    return t1;
+                    return type.toInstance(sym, pre, clazz);
                 }
+                return map(type);
 
             case SingleType(Type prefix, Symbol sym):
                 try {
-                    Type prefix1 = apply(prefix);
-                    if (prefix1 == prefix) return t;
-                    else return singleType(prefix1, prefix1.rebind(sym));
+                    return map(type);
                 } catch (Type.Malformed ex) {}
-                return apply(t.singleDeref());
+                return apply(type.singleDeref());
 
             default:
-                return map(t);
+                return map(type);
             }
         }
     }
@@ -1757,18 +1737,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         public SubstThisMap(Symbol oldSym, Symbol newSym) {
             this(oldSym, newSym.thisType());
         }
-        public Type apply(Type t) {
-            switch (t) {
+        public Type apply(Type type) {
+            switch (type) {
             case ThisType(Symbol sym):
-                if (sym == from) return to;
-                else return t;
-	    case TypeRef(Type pre, Symbol sym, Type[] args):
-                Type pre1 = apply(pre);
-                Type[] args1 = map(args);
-                if (pre1 == pre && args1 == args) return t;
-                else return typeRef(pre1, pre1.rebind(sym), args1);
+                return sym == from ? to : type;
             default:
-                return map(t);
+                return map(type);
             }
         }
     }
@@ -2007,8 +1981,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case TypeRef(Type pre1, Symbol sym1, Type[] args1):
             switch (this) {
             case TypeRef(Type pre, Symbol sym, Type[] args):
-                if (pre.isSubType(pre1) &&
-                     (sym == sym1 || sym == pre.rebind(sym1)) &&
+                if (sym == sym1 && pre.isSubType(pre1) &&
                     isSubArgs(args, args1, sym.typeParams())
                     ||
                     sym.kind == TYPE && pre.memberInfo(sym).isSubType(that))
