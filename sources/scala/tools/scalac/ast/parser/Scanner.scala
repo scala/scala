@@ -125,7 +125,7 @@ class Scanner(_unit: Unit) extends TokenData {
       }
     } else {
       if (next.token == EMPTY) {
-        fetchToken()
+        fetchToken();
       } else {
         copyFrom(next);
         next.token = EMPTY
@@ -348,7 +348,7 @@ class Scanner(_unit: Unit) extends TokenData {
                 nextch(); addCharToDoc(ch);
                 openComments = openComments + 1;
               }
-            } else {
+            } else if (ch != SU) {
               nextch(); addCharToDoc(ch);
             }
           } while ((ch != '*') && (ch != SU));
@@ -356,13 +356,9 @@ class Scanner(_unit: Unit) extends TokenData {
             nextch(); addCharToDoc(ch);
           }
         } while (ch != '/' && ch != SU);
-        if (ch == '/') {
-          nextch();
-          openComments = openComments - 1;
-        } else {
-          syntaxError("unclosed comment");
-          true;
-        }
+        if (ch == '/') nextch();
+	else syntaxError("unclosed comment");
+        openComments = openComments - 1;
       }
       true
     } else {
