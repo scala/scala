@@ -345,7 +345,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         global.nextPhase();
         Symbol constr = clazz.primaryConstructor();
         global.prevPhase();
-        return mkApply(mkRef(pos, constr), targs, vargs);
+        return mkApply(pos, mkRef(pos, constr), targs, vargs);
     }
     public Tree mkPrimaryConstr(int pos, Symbol clazz,Type[]targs,Tree[]vargs){
         return mkPrimaryConstr(pos,clazz.owner().thisType(),clazz,targs,vargs);
