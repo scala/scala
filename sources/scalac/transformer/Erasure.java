@@ -446,28 +446,6 @@ public class Erasure extends Transformer implements Modifiers {
 
     }
 
-    public void addBridges(Symbol sym) {
-        Symbol c = sym.owner();
-	if (c.isClass() && !c.isInterface()) {
-            //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
-	    Type[] basetypes = c.parents();
-	    for (int i = 0; i < basetypes.length; i++) {
-                addBridges(basetypes[i], sym);
-	    }
-        }
-    }
-
-    public void addBridges(Type basetype, Symbol sym) {
-        Symbol sym1 = sym.overriddenSymbol(basetype);
-        //global.nextPhase();  System.out.println("!!!     " + Debug.show(sym) + " @ " + basetype + " -> " + Debug.show(sym1) + (sym1.kind == Kinds.NONE ? "" : " : " + sym1.type().erasure() + " => " + (isSameAs(sym1.type().erasure(), sym.type().erasure()) ? "ok" : "ADD BRIDGE"))); global.prevPhase();
-
-        if (sym1.kind != Kinds.NONE &&
-            !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
-            //System.out.println("!!! " + Debug.show(sym) + " adding bridge for " + Debug.show(sym1));
-            addBridge(sym.owner(), sym, sym1);
-        }
-    }
-
     public void addInterfaceBridges(Symbol c, Symbol sym) {
 	assert c.isClass() && !c.isInterface(): Debug.show(c);
         //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
@@ -498,6 +476,20 @@ public class Erasure extends Transformer implements Modifiers {
 // Transformer
 /////////////////////////////////////////////////////////////////////////////////
 
+
+    private Symbol getOverriddenMethod(Symbol method) {
+        Type[] parents = method.owner().parents();
+        if (parents.length == 0) return Symbol.NONE;
+        return method.overriddenSymbol(parents[0]);
+    }
+
+    public void addBridgeMethodsTo(Symbol method) {
+        assert method.owner().isClass() && !method.owner().isInterface();
+        Symbol overridden = getOverriddenMethod(method);
+        if (overridden != Symbol.NONE && !isSameAs(overridden.nextType(), method.nextType()))
+            addBridge(method.owner(), method, overridden);
+    }
+
     private void addBridges(Symbol clasz, TreeList members) {
         TreeList savedBridges = bridges;
         HashMap savedBridgeSyms = bridgeSyms;
@@ -505,14 +497,16 @@ public class Erasure extends Transformer implements Modifiers {
         bridgeSyms = new HashMap();
 
         int length = members.length();
-        for (int i = 0; i < length; i++) {
-            switch (members.get(i)) {
-            case DefDef(_, _, _, _, _, Tree rhs):
-                addBridges(members.get(i).symbol());
+        if (!clasz.isInterface()) {
+            for (int i = 0; i < length; i++) {
+                switch (members.get(i)) {
+                case DefDef(_, _, _, _, _, Tree rhs):
+                    addBridgeMethodsTo(members.get(i).symbol());
+                }
             }
+            addInterfaceBridges(clasz);
         }
 
-        if (!clasz.isInterface()) addInterfaceBridges(clasz);
         members.append(bridges);
         if (bridges.length() > 0) {
             Type info = clasz.nextInfo();
