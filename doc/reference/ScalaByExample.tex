@@ -6161,10 +6161,10 @@ And here is a program using a bounded buffer to communicate between a
 producer and a consumer process.
 \begin{lstlisting}
 import concurrent.ops._;
-object testBoundedBuffer {
-  val buf = new BoundedBuffer[String](10)
-  spawn { while (true) { val s = produceString ; buf.put(s) } }
-  spawn { while (true) { val s = buf.get ; consumeString(s) } }
+...
+val buf = new BoundedBuffer[String](10)
+spawn { while (true) { val s = produceString ; buf.put(s) } }
+spawn { while (true) { val s = buf.get ; consumeString(s) } }
 }
 \end{lstlisting}
 The \code{spawn} method spawns a new thread which executes the
@@ -6321,15 +6321,17 @@ A common mechanism for process synchronization is a {\em lock} (or:
 \prog{release}. Here's the implementation of a lock in Scala:
 
 \begin{lstlisting}
-class Lock extends Monitor with Signal {
+package scala.concurrent;
+
+class Lock with Monitor {
   var available = true;
-  def acquire = {
-    if (!available) wait;
+  def acquire = synchronized {
+    if (!available) wait();
     available = false
   }
-  def release = {
+  def release = synchronized {
     available = true;
-    notify
+    notify()
   }
 }
 \end{lstlisting}
@@ -6348,11 +6350,13 @@ and writers we need to implement operations \prog{startRead}, \prog{startWrite},
 but don't preempt ongoing read operations.
 \end{itemize}
 The following implementation of a readers/writers lock is based on the
-{\em message space} concept (see Section~\ref{sec:messagespace}).
+{\em mailbox} concept (see Section~\ref{sec:mailbox}).
 
 \begin{lstlisting}
+import scala.concurrent._;
+
 class ReadersWriters {
-  val m = new MessageSpace;
+  val m = new MailBox;
   private case class Writers(n: int), Readers(n: int);
   Writers(0); Readers(0);
   def startRead = m receive {
@@ -6365,12 +6369,10 @@ class ReadersWriters {
       Writers(n+1);
       m receive { case Readers(n) if n == 0 => }
   }
-\end{lstlisting}
-\begin{lstlisting}
-  def endRead = receive {
+  def endRead = m receive {
     case Readers(n) => Readers(n-1)
   }
-  def endWrite = receive {
+  def endWrite = m receive {
     case Writers(n) => Writers(n-1) ; if (n == 0) Readers(0)
   }
 }
@@ -6519,19 +6521,20 @@ between different jobs. Without abstract types it would be impossible
 to implement the same class to the user in a statically type-safe
 way, without relying on dynamic type tests and type casts.
 
-\section{Message Spaces}
-\label{sec:messagespace}
+\section{Mailboxes}
+\label{sec:mailbox}
 
-Message spaces are high-level, flexible constructs for process
-synchronization and communication. A {\em message} in this context is
-an arbitrary object.  There is a special message \code{TIMEOUT} which
-is used to signal a time-out.
+Mailboxes are high-level, flexible constructs for process
+synchronization and communication. They allow sending and receiving of
+messages. A {\em message} in this context is an arbitrary object.
+There is a special message \code{TIMEOUT} which is used to signal a
+time-out.
 \begin{lstlisting}
 case class TIMEOUT;
 \end{lstlisting}
-Message spaces implement the following signature.
+Mailboxes implement the following signature.
 \begin{lstlisting}
-class MessageSpace {
+class MailBox {
   def send(msg: Any): unit;
   def receive[a](f: PartialFunction[Any, a]): a;
   def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a;

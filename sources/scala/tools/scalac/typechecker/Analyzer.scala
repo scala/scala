@@ -2454,20 +2454,16 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    val constr: Symbol = c.allConstructors();
 		    val fn0: Tree = fn1;
 		    fn1 = gen.mkRef(fn1.pos, pre, constr);
+		    var enclClassOrConstructorContext = Context.NONE;
 		    if (constr.owner().isPackage()) {
 		      var c = context;
 		      while (c != Context.NONE &&
 			     !c.tree.isInstanceOf[Tree$ClassDef] &&
 			     !c.tree.isInstanceOf[Tree$Template])
 			c = c.outer;
-		      if (c.owner.isConstructor())
-			// we are in a superclass constructor call
-			fn1.setType(checkAccessible(
-			  fn1.pos, constr, fn1.getType(), make.Super(tree.pos, Names.EMPTY.toTypeName(), Names.EMPTY.toTypeName()), c.owner.constructorClass().typeConstructor()));
-		      else
-			fn1.setType(checkAccessible(
-			  fn1.pos, constr, fn1.getType(), c.tree, c.owner.typeConstructor()));
-		    } else {
+		      enclClassOrConstructorContext = c
+		    }
+		    if (enclClassOrConstructorContext == Context.NONE) {
 		      fn1 match {
 			case Tree$Select(fn1qual, _) =>
 			  fn1.setType(checkAccessible(
@@ -2477,6 +2473,22 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 			    fn1.setType(checkAccessible(
 			      fn1.pos, constr, fn1.getType(), Tree.Empty, constr.owner().getType()));
 		      }
+		    } else {
+		      val cowner = enclClassOrConstructorContext.owner;
+		      if (cowner.isConstructor())
+			// we are in a superclass constructor call
+			fn1.setType(
+			  checkAccessible(
+			    fn1.pos, constr, fn1.getType(),
+			    make.Super(tree.pos,
+				       Names.EMPTY.toTypeName(),
+				       Names.EMPTY.toTypeName()),
+			    cowner.constructorClass().typeConstructor()));
+		      else
+			fn1.setType(checkAccessible(
+			  fn1.pos, constr, fn1.getType(),
+			  enclClassOrConstructorContext.tree,
+			  cowner.typeConstructor()));
 		    }
 		    if (tsym == c) {
 		      fn0 match {
