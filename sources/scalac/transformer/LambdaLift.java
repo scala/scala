@@ -554,7 +554,7 @@ public class LambdaLift extends OwnerTransformer
 	TypeDef[] tparams1 = new TypeDef[tparams.length + newtparams.length];
 	System.arraycopy(tparams, 0, tparams1, 0, tparams.length);
 	for (int i = 0; i < newtparams.length; i++) {
-	    tparams1[tparams.length + i] = (Tree.TypeDef)gen.TypeDef(newtparams[i]);
+	    tparams1[tparams.length + i] = gen.mkTypeParam(newtparams[i]);
 	}
 	return tparams1;
     }
@@ -564,7 +564,7 @@ public class LambdaLift extends OwnerTransformer
 	ValDef[] params1 = new ValDef[params.length + newparams.length];
 	System.arraycopy(params, 0, params1, 0, params.length);
 	for (int i = 0; i < newparams.length; i++) {
-	    params1[params.length + i] = gen.Param(newparams[i]);
+	    params1[params.length + i] = gen.mkParam(newparams[i]);
 	}
 	return params1;
     }

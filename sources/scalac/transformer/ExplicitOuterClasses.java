@@ -155,10 +155,10 @@ public class ExplicitOuterClasses extends Transformer {
                 ValDef[][] vparams = classDef.vparams;
                 ValDef[] newVParamsI;
                 if (vparams.length == 0)
-                    newVParamsI = new ValDef[] { gen.ValDef(outerSym) };
+                    newVParamsI = new ValDef[] { gen.mkParam(outerSym) };
                 else {
                     newVParamsI = new ValDef[vparams[0].length + 1];
-                    newVParamsI[0] = gen.ValDef(outerSym);
+                    newVParamsI[0] = gen.mkParam(outerSym);
                     System.arraycopy(vparams[0], 0, newVParamsI, 1, vparams[0].length);
                 }
                 newVParams = new ValDef[][] { newVParamsI };

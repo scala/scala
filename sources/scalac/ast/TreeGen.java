@@ -29,19 +29,19 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** the global environment
      */
-    protected Global global;
+    protected final Global global;
 
     /** the global definitions
      */
-    protected Definitions definitions;
+    protected final Definitions definitions;
 
     /** the tree factory
      */
-    public TreeFactory make;
+    public final TreeFactory make;
 
     /** the type inferencer
      */
-    Infer infer;
+    final Infer infer;
 
     /************************************************************************/
     /************************************************************************/
@@ -143,12 +143,12 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree mkDef(int pos, Symbol sym) {
 	switch (sym.kind) {
 	case ERROR:
-	    return make.Bad(pos).setSymbol(Symbol.ERROR).setType(Type.ErrorType);
+	    return make.Bad(pos, Symbol.ERROR).setType(Type.ErrorType);
 	case TYPE: case ALIAS:
 	    return TypeDef(pos, sym);
 	case VAL:
 	    if (sym.isMethod()) return DefDef(pos, sym, Tree.Empty);
-	    else return Param(pos, sym);
+	    else return ValDef(pos, sym, Tree.Empty);
 	default:
 	    throw new ApplicationError();
 	}
@@ -243,9 +243,19 @@ public class TreeGen implements Kinds, Modifiers {
     public ValDef[] mkParams(int pos, Symbol[] symbols) {
         ValDef[] res = new ValDef[symbols.length];
         for (int i = 0; i < symbols.length; i++) {
-	    res[i] = Param(pos, symbols[i]);
+	    res[i] = mkParam(pos, symbols[i]);
         }
 	return res;
+    }
+
+    /** Build parameter corresponding to given symbol .
+     */
+    public ValDef mkParam(int pos, Symbol sym) {
+	return ValDef(pos, sym, Tree.Empty);
+    }
+
+    public ValDef mkParam(Symbol sym) {
+	return mkParam(sym.pos, sym);
     }
 
     /** Build type parameter section corresponding to given array of symbols .
@@ -253,9 +263,19 @@ public class TreeGen implements Kinds, Modifiers {
     public TypeDef[] mkTypeParams(int pos, Symbol[] symbols) {
         TypeDef[] res = new TypeDef[symbols.length];
         for (int i = 0; i < symbols.length; i++) {
-	    res[i] = (TypeDef)TypeDef(pos, symbols[i]);
+	    res[i] = mkTypeParam(pos, symbols[i]);
         }
         return res;
+    }
+
+    /** Build type parameter corresponding to given symbol .
+     */
+    public TypeDef mkTypeParam(int pos, Symbol sym) {
+	return TypeDef(pos, sym);
+    }
+
+    public TypeDef mkTypeParam(Symbol sym) {
+	return mkTypeParam(sym.pos, sym);
     }
 
     /** Build type definition corresponding to given symbol .
@@ -264,37 +284,14 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type symtype = sym.info();
 	Global.instance.prevPhase();
-	return (TypeDef) make.TypeDef(
-	    pos,
-	    sym.flags & SOURCEFLAGS,
-	    sym.name,
-	    TypeTerm(pos, symtype),
-	    TypeTerm(pos, sym.loBound()))
-	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
+	TypeDef res = make.TypeDef(
+	    pos, sym, TypeTerm(pos, symtype), TypeTerm(pos, sym.loBound()));
+        res.setType(definitions.UNIT_TYPE);
+        return res;
     }
 
     public TypeDef TypeDef(Symbol sym) {
 	return TypeDef(sym.pos, sym);
-    }
-
-    /** Build parameter
-     */
-    public ValDef Param(int pos, Symbol sym) {
-        global.log("use of obsolete Param method in TreeGen");
-	return (ValDef)ValDef(pos, sym, Tree.Empty);
-    }
-
-    public ValDef Param(Symbol sym) {
-        global.log("use of obsolete Param method in TreeGen");
-	return Param(sym.pos, sym);
-    }
-
-    public ValDef ValDef(int pos, Symbol sym) {
-	return (ValDef)ValDef(pos, sym, Tree.Empty);
-    }
-
-    public ValDef ValDef(Symbol sym) {
-	return Param(sym.pos, sym);
     }
 
     /** Build and attribute block with given statements, starting
@@ -330,10 +327,10 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute new B, given constructor expression B.
      */
     public Tree New(int pos, Tree constr) {
+        Symbol local = localDummy(pos, Symbol.NONE);
 	Template templ = make.Template(
-            pos, new Tree[]{constr}, Tree.EMPTY_ARRAY);
+            pos, local, new Tree[]{constr}, Tree.EMPTY_ARRAY);
 	templ.setType(constr.type);
-        templ.setSymbol(localDummy(pos, Symbol.NONE));
 	return make.New(pos, templ).setType(constr.type);
     }
 
@@ -436,8 +433,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type symtype = qual.type.memberType(sym);
 	Global.instance.prevPhase();
-	return make.Select(pos, qual, sym.name)
-	    .setSymbol(sym).setType(deref(symtype));
+	return make.Select(pos, sym, qual).setType(deref(symtype));
     }
 
     public Tree Select(Tree qual, Symbol sym) {
@@ -456,8 +452,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
-	return make.Ident(pos, sym.name)
-	    .setSymbol(sym).setType(deref(symtype));
+	return make.Ident(pos, sym).setType(deref(symtype));
     }
 
     public Tree Ident(Symbol sym) {
@@ -480,19 +475,16 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute value/variable/let definition node whose signature
      *  corresponds to given symbol and which has given rhs.
      */
-    public Tree ValDef(int pos, Symbol sym, Tree rhs) {
+    public ValDef ValDef(int pos, Symbol sym, Tree rhs) {
 	Global.instance.nextPhase();
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
-	return make.ValDef(pos,
-			   sym.flags & SOURCEFLAGS,
-			   sym.name,
-			   TypeTerm(pos, symtype),
-			   rhs)
-	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
+	ValDef res = make.ValDef(pos, sym, TypeTerm(pos, symtype), rhs);
+        res.setType(definitions.UNIT_TYPE);
+        return res;
     }
 
-    public Tree ValDef(Symbol sym, Tree rhs) {
+    public ValDef ValDef(Symbol sym, Tree rhs) {
 	return ValDef(sym.pos, sym, rhs);
     }
 
@@ -504,13 +496,12 @@ public class TreeGen implements Kinds, Modifiers {
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
         return make.DefDef(pos,
-                           sym.flags & SOURCEFLAGS,
-                           sym.name,
+                           sym,
                            mkTypeParams(pos, symtype.typeParams()),
                            mkParams(pos, symtype),
                            TypeTerm(pos, symtype.resultType()),
                            body)
-            .setSymbol(sym).setType(definitions.UNIT_TYPE);
+            .setType(definitions.UNIT_TYPE);
     }
 
     public Tree DefDef(Symbol sym, Tree rhs) {
@@ -525,13 +516,12 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.prevPhase();
         return make.ClassDef(
             pos,
-            clazz.flags & SOURCEFLAGS,
-            clazz.name,
+            clazz,
             mkTypeParams(pos, constrtype.typeParams()),
             mkParams(pos, constrtype),
             Tree.Empty,
             template)
-            .setSymbol(clazz).setType(definitions.UNIT_TYPE);
+            .setType(definitions.UNIT_TYPE);
     }
 
     public Tree ClassDef(Symbol clazz, Template template) {
@@ -546,9 +536,8 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.prevPhase();
 	switch (clazzinfo) {
 	case CompoundType(Type[] parents, Scope members):
-	    Template templ = make.Template(pos, constrs, body);
+	    Template templ = make.Template(pos, local, constrs, body);
 	    templ.setType(clazzinfo);
-	    templ.setSymbol(local);
 	    return ClassDef(pos, clazz, templ);
 	default:
 	    throw new ApplicationError();
