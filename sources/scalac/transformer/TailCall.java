@@ -110,7 +110,7 @@ public class TailCall extends Transformer {
 
 	    /* Create a new symbol for the LabelDef */
 	    Symbol newLabel = new TermSymbol(tree.pos, name, tree.symbol(), Modifiers.LABEL);
-	    newLabel.setInfo(tree.symbol().type());
+	    newLabel.setInfo(tree.symbol().type().cloneType(tree.symbol(), newLabel));
 
 	    /* Push information about the label on the state stack. */
 	    push_label(newLabel);
