@@ -66,7 +66,7 @@ class JVMGenerator {
     protected final static String CONSTRUCTOR_STRING =
         Constants.CONSTRUCTOR_NAME;
     protected final static Name CONSTRUCTOR_NAME =
-        Name.fromString(CONSTRUCTOR_STRING);
+        Name.fromString(CONSTRUCTOR_STRING).toConstrName();
 
     protected Unit unit = null;
     protected String sourceFileName = null;
@@ -562,7 +562,7 @@ class JVMGenerator {
         Scope.SymbolIterator memberIt = cSym.members().iterator();
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
-            if (!member.isMethod()) {
+            if (member.isTerm() && !member.isMethod()) {
                 FieldGen fGen = new FieldGen(modifiersStoJ(member.flags),
                                              typeStoJ(member.info()),
                                              member.name.toString(),
@@ -1328,7 +1328,7 @@ class JVMGenerator {
         default: {
             Symbol sym = tp.symbol();
             if (sym == Symbol.NONE)
-                return null;
+                throw global.fail("invalid type ", tp);
             else if (typeMap.containsKey(sym))
                 return (Type)typeMap.get(sym);
             else {
