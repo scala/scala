@@ -60,16 +60,19 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** The infos of the symbol */
     private TypeIntervalList infos;
 
+    /** The attributes of the symbol */
+    private final int attrs;
+
 // Constructors -----------------------------------------------------------
 
     /** Generic symbol constructor */
-    public Symbol(int kind, int pos, Name name, Symbol owner, int flags) {
+    public Symbol(int kind, int pos, Name name, Symbol owner, int flags, int attrs) {
         this.kind = kind;
         this.pos = pos;
         this.name = name;
         this.owner = owner == null ? this : owner;
         this.flags = flags & ~(INITIALIZED | LOCKED); // safety first
-        assert owner != null || isError() || isNone(): this;
+        this.attrs = attrs;
     }
 
     protected void update(int pos, int flags) {
@@ -1318,7 +1321,10 @@ public class TermSymbol extends Symbol {
 
     /** Constructor */
     public TermSymbol(int pos, Name name, Symbol owner, int flags) {
-        super(VAL, pos, name, owner, flags);
+        this(pos, name, owner, flags, 0);
+    }
+    public TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+        super(VAL, pos, name, owner, flags, attrs);
         assert !name.isTypeName() : this;
     }
 
@@ -1480,8 +1486,8 @@ public abstract class TypeSymbol extends Symbol {
     private Symbol constructor;
 
     /** Constructor */
-    public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags) {
-        super(kind, pos, name, owner, flags);
+    public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags, int attrs) {
+        super(kind, pos, name, owner, flags, attrs);
         assert name.isTypeName() : this;
         this.constructor = TermSymbol.newConstructor(this, flags & CONSTRFLAGS);
     }
@@ -1674,7 +1680,10 @@ public class AliasTypeSymbol extends TypeSymbol {
 
     /** Constructor */
     public AliasTypeSymbol(int pos, Name name, Symbol owner, int flags) {
-        super(ALIAS, pos, name, owner, flags);
+        this(pos, name, owner, flags, 0);
+    }
+    public AliasTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+        super(ALIAS, pos, name, owner, flags, attrs);
     }
 
     public static AliasTypeSymbol define(
@@ -1705,7 +1714,10 @@ public class AbsTypeSymbol extends TypeSymbol {
 
     /** Constructor */
     public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags) {
-        super(TYPE, pos, name, owner, flags);
+        this(pos, name, owner, flags, 0);
+    }
+    public AbsTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+        super(TYPE, pos, name, owner, flags, attrs);
         allConstructors().setFirstInfo(Type.MethodType(EMPTY_ARRAY, Type.typeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
     }
 
@@ -1777,7 +1789,10 @@ public class ClassSymbol extends TypeSymbol {
     /** Principal Constructor
      */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
-        super(CLASS, pos, name, owner, flags);
+        this(pos, name, owner, flags, 0);
+    }
+    public ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+        super(CLASS, pos, name, owner, flags, attrs);
         this.mangled = name;
         this.rebindSym = new AliasTypeSymbol(pos, Names.ALIAS(this), owner, 0);
         Type rebindType = new ClassAliasLazyType();
@@ -1951,7 +1966,7 @@ public final class ErrorSymbol extends Symbol {
 
     /** Constructor */
     public ErrorSymbol() {
-        super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null, INITIALIZED);
+        super(Kinds.ERROR, Position.NOPOS, Name.ERROR, null, 0, 0);
         super.setInfo(Type.ErrorType);
     }
 
@@ -2000,7 +2015,7 @@ public final class NoSymbol extends Symbol {
 
     /** Constructor */
     public NoSymbol() {
-        super(Kinds.NONE, Position.NOPOS, Names.NOSYMBOL, null, INITIALIZED);
+        super(Kinds.NONE, Position.NOPOS, Names.NOSYMBOL, null, 0, 0);
         super.setInfo(Type.NoType);
     }
 
