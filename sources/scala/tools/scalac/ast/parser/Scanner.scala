@@ -63,7 +63,7 @@ class Scanner(_unit: Unit) extends TokenData {
   /** the input buffer:
   */
   var buf: Array[byte] = unit.source.bytes();
-  private var bp: int = -1;
+  var bp: int = -1;
 
   /** the current character
   */

@@ -509,7 +509,6 @@ trait List[+a] extends Seq[a] {
           sort_1(x::small, y::sort_1(z::large, acc))
         }
       }
-
     match {
       case Nil =>
         this
@@ -632,20 +631,6 @@ trait List[+a] extends Seq[a] {
   def reverse: List[a] =
     foldLeft(Nil : List[a])((xs, x) => x :: xs);
 
-  /** Fills the given array <code>xs</code> with the elements of
-   *  this list starting at position <code>start</code>. Does not
-   *  work with empty lists.
-   *
-   *  @param xs the array to fill.
-   *  @param start starting index.
-   *  @return the given array <code>xs</code> filled with this list.
-   *  @throws error if the list is empty.
-   */
-  def copyToArray[b >: a](xs: Array[b], start: Int): Array[b] = match {
-    case Nil => xs
-    case y :: ys => xs(start) = y; ys.copyToArray(xs, start + 1)
-  }
-
   /** Returns a string representation of this list. The resulting string
    *  begins with the string <code>start</code> and is finished by the string
    *  <code>end</code>. Inside, the string representations of elements (w.r.t.
@@ -675,7 +660,6 @@ trait List[+a] extends Seq[a] {
    *  @param that must have the same length as the self list.
    *  @return <code>[(a0,b0), ..., (an,bn)]</code> when
    *  <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
-   *  @throws java.lang.RuntimeException if lists have different lengths.
    */
   def zip[b](that: List[b]): List[Pair[a,b]] =
     if (this.isEmpty || that.isEmpty) Nil

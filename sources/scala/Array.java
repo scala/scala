@@ -25,6 +25,10 @@ public abstract class Array
      */
     public abstract int length();
 
+    public boolean isDefinedAt(int x) {
+        return (x >= 0) && (x < length());
+    }
+
     /** @meta method (scala.Int, ?T) scala.Unit;
      */
     public abstract void update(int i, java.lang.Object x);

@@ -109,8 +109,8 @@ trait Stream[+a] extends Seq[a] {
   //         xs
   //       }
 
-  def copyToArray[b >: a](xs: Array[b], start: int): int =
-    if (isEmpty) start
+  override def copyToArray[b >: a](xs: Array[b], start: int): Array[b] =
+    if (isEmpty) xs
     else { xs(start) = head; tail.copyToArray(xs, start + 1) }
 
   def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
