@@ -2,7 +2,7 @@
 # scala examples (paths are relative to ./sources/examples)
 ##############################################################################
 
-ComputeServer.scala
+computeserver.scala
 auction.scala
 boundedbuffer.scala
 oneplacebuffer.scala
