@@ -309,10 +309,12 @@ public class PatternMatcher extends PatternTool {
 					}
 				return node;
 			case Ident(Name name):                  // pattern without args or variable
-				if (tree.symbol().isPrimaryConstructor())
+				if (name == Names.WILDCARD)
+					return mk.DefaultPat(tree.pos, header.type);
+				else if (tree.symbol().isPrimaryConstructor())
 					return mk.ConstrPat(tree.pos, tree.type);
 				else if (name.isVariable()) {
-					if ((env != null) && (name != Names.WILDCARD))
+					if (env != null)
 						env.newBoundVar(tree.pos,
 										tree.symbol(),
 										tree.type,
