@@ -442,9 +442,9 @@ final class TypeCreator {
 	return moreThanOneEntryPoint;
     }
 
-    private SourceFile mainSourceFile;
+    private Unit entryPointUnit;
 
-    private int mainLineNum;
+    private int entryPointPos;
 
     /** - collects the symbols of all classes defined in the program
      *  - collects all entry points
@@ -463,7 +463,7 @@ final class TypeCreator {
 	    // source file if not supplied with the -o option
 	    assemName = aname;
 	    if (assemName == null) {
-		assemName = mainSourceFile.getFile().getName();
+		assemName = entryPointUnit.source.getFile().getName();
 		assert assemName.endsWith(".scala") : assemName;
 		assemName = assemName.substring(0, assemName.length() - 6);
 	    }
@@ -494,6 +494,8 @@ final class TypeCreator {
 	private Unit currUnit;
 	public void traverse(Unit unit) {
 	    currUnit = unit;
+	    if (entryPointUnit == null)
+		entryPointUnit = unit;
 	    super.traverse(unit);
 	}
 	public void traverse(Tree tree) {
@@ -507,8 +509,8 @@ final class TypeCreator {
 		if (isEntryPoint(sym)) {
 		    if (entryPoint == null) {
 			entryPoint = sym;
- 			mainSourceFile = currUnit.source;
-			mainLineNum = Position.line(tree.pos);
+ 			entryPointUnit = currUnit;
+			entryPointPos = tree.pos;
 		    } else
 			moreThanOneEntryPoint = true;
 		}
@@ -562,8 +564,8 @@ final class TypeCreator {
 	    ILGenerator code = main.GetILGenerator();
  	    if (global.args.debuginfo.value) {
 		String fname = SourceRepresentation
-		    .escape(mainSourceFile.getFile().getPath());
-		code.setPosition(mainLineNum, fname);
+		    .escape(entryPointUnit.source.getFile().getPath());
+		code.setPosition(Position.line(entryPointPos), fname);
 	    }
 
 	    code.Emit(OpCodes.Ldsfld, moduleField);
