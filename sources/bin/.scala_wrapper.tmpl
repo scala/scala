@@ -919,7 +919,6 @@ test_main() {
             --flags=*    ) FLAGS=`expr "$1" : "--flags=\(.*\)"`; shift 1;;
             --color=     ) abort "illegal empty argument for option --color";;
             --color=*    ) COLOR=`expr "$1" : "--color=\(.*\)"`; shift 1;;
-            --objdir=    ) abort "illegal empty argument for option --objdir";;
             --objdir=*   ) OBJDIR=`expr "$1" : "--objdir=\(.*\)"`; shift 1;;
             --help| -?   ) print_help; exit 0;;
             --version    ) print_version; exit 0;;
