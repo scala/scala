@@ -45,7 +45,7 @@ import scalac.symtab.Scope.SymbolIterator;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.symtab.Type.*;
-//import scalac.symtab.SymbolTablePrinter;
+import scalac.symtab.SymbolTablePrinter;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -197,7 +197,7 @@ public abstract class HTMLGenerator {
     /**
      * The underlying symbol table printer.
      */
-    protected SymbolTablePrinter symtab;
+    protected MySymbolTablePrinter symtab;
 
     /**
      * The underlying document representation of the generated documentation.
@@ -341,7 +341,7 @@ public abstract class HTMLGenerator {
      */
     protected void closePrinters() {
         page.close();
-        symtab = (SymbolTablePrinter) stack.pop();
+        symtab = (MySymbolTablePrinter) stack.pop();
         page = (Page) stack.pop();
     }
 
@@ -1464,7 +1464,7 @@ public abstract class HTMLGenerator {
      *
      * @param symbol
      */
-    protected void addIndexEntry(Symbol symbol, Page page, SymbolTablePrinter symtab) {
+    protected void addIndexEntry(Symbol symbol, Page page, MySymbolTablePrinter symtab) {
 	// kind
 	String keyword = symtab.getSymbolKeywordForDoc(symbol);
 
@@ -1758,7 +1758,7 @@ public abstract class HTMLGenerator {
 	return Symbol.NONE;
     }
 
-    protected void addCategory(Symbol[] symbols, String title, Page page, SymbolTablePrinter symtab) {
+    protected void addCategory(Symbol[] symbols, String title, Page page, MySymbolTablePrinter symtab) {
         if (symbols.length > 0) {
             page.printlnTag("h3", title);
             page.printlnOTag("dl").indent();
@@ -1772,7 +1772,7 @@ public abstract class HTMLGenerator {
         }
     }
 
-    protected void addFoundSymbols(List symbols, Page page, SymbolTablePrinter symtab) {
+    protected void addFoundSymbols(List symbols, Page page, MySymbolTablePrinter symtab) {
         // partition and sort
         List fields = new LinkedList();
         List modules = new LinkedList();
@@ -1820,7 +1820,7 @@ public abstract class HTMLGenerator {
             page.printlnHLine();
 
             // create symbol printer
-            final SymbolTablePrinter symtab =
+            final MySymbolTablePrinter symtab =
                 SymbolTablePrinterFactory.makeHTML(page, isDocumented);
 
             // analyze the request

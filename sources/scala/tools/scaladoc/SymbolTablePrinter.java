@@ -27,7 +27,7 @@ import scalac.util.NameTransformer;
 /**
  * This class provides methods to print symbols and types.
  */
-public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
+public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 
     //########################################################################
     // Private Fields
@@ -43,7 +43,7 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
      *
      * @param page
      */
-    public SymbolTablePrinter(CodePrinter printer) {
+    public MySymbolTablePrinter(CodePrinter printer) {
         super(printer);
         this.global = Global.instance;
     }

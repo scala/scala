@@ -17,7 +17,7 @@ import scalac.symtab.Scope.SymbolIterator;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.symtab.Type.*;
-//import scalac.symtab.SymbolTablePrinter;
+import scalac.symtab.SymbolTablePrinter;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -26,9 +26,9 @@ import SymbolBooleanFunction;
 
 class SymbolTablePrinterFactory {
 
-    public static SymbolTablePrinter makeHTML(final Page page, final SymbolBooleanFunction isDocumented) {
+    public static MySymbolTablePrinter makeHTML(final Page page, final SymbolBooleanFunction isDocumented) {
 
-	return new SymbolTablePrinter(page.getCodePrinter()) {
+	return new MySymbolTablePrinter(page.getCodePrinter()) {
 
 		public void printSymbol(Symbol sym, boolean addLink) {
 		    String name = sym.nameString();
