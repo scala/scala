@@ -196,8 +196,8 @@ xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala
 
 xml/path/Expression.scala
-xml/path/Tokens.scala
-xml/path/Scanner.scala
-xml/path/Parser.scala
+#xml/path/Tokens.scala
+#xml/path/Scanner.scala
+#xml/path/Parser.scala
 
 ##############################################################################
