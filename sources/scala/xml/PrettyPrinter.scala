@@ -108,6 +108,7 @@ class PrettyPrinter( width:Int, step:Int ) {
   /* serializes an instance of Node to a string that contains well-formed XML
   **/
   def toPrettyXML( n:Node ):String = {
+    reset();
     traverse( n, 0 );
     val sb = new StringBuffer();
     var cur = 0;
