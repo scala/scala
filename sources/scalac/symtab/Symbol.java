@@ -1280,6 +1280,13 @@ public class TermSymbol extends Symbol {
 	return sym;
     }
 
+    /** Dummy symbol for template of given class
+     */
+    public static Symbol newLocalDummy(Symbol clazz) {
+        return new TermSymbol(clazz.pos, Names.LOCAL(clazz), clazz, 0)
+            .setInfo(Type.NoType);
+    }
+
     /** Get this.type corresponding to this class or module
      */
     public Type thisType() {
