@@ -2541,6 +2541,15 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    val formals = infer.formalTypes(params, args.length);
 		    var i = 0; while (i < args.length) {
 		      args(i) = adapt(args(i), argMode, formals(i));
+                      args(i) match {
+                        case Tree$Typed( arg, Tree$Ident( TypeNames.WILDCARD_STAR ) ) =>
+                          if( i != args.length - 1 ) {
+                            error( arg.pos, "escape only allowed in last position");
+                          } else if ( args.length > params.length ) {
+                            error( arg.pos, "escaping cannot be mixed with values");
+                          }
+                        case _ => /* nop */
+                      }
 		      i = i + 1
 		    }
 		    return constfold.tryToFold(

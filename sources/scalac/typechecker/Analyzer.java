@@ -2432,6 +2432,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 		// type arguments with formals as prototypes if they exist.
 		fn1.type = infer.freshInstance(fn1.type);
+
 		Type[] argtypes = transformArgs(
 		    tree.pos, fn1.symbol(), Symbol.EMPTY_ARRAY, fn1.type, argMode, args, pt);
 
@@ -2475,11 +2476,20 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    } catch (Type.Error ex) {
 			reportTypeError(tree.pos, ex);
 		    }
+
 		    switch (fn1.type) {
 		    case MethodType(Symbol[] params, Type restp1):
 			Type[] formals = infer.formalTypes(params, args.length);
 			for (int i = 0; i < args.length; i++) {
 			    args[i] = adapt(args[i], argMode, formals[i]);
+                            switch( args[ i ] ) {
+                            case Typed(Tree arg, Ident(TypeNames.WILDCARD_STAR)):
+                                if( i != args.length - 1 ) {
+                                    error( arg.pos, "escape only allowed in last position");
+                                } else if ( args.length > params.length ) {
+                                    error( arg.pos, "escaping cannot be mixed with values");
+                                }
+                            }
 			}
 			return constfold.tryToFold(
 			    copy.Apply(tree, fn1, args)
@@ -2494,6 +2504,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    copy.Apply(tree, fn1, args)
 			    .setType(restp));
 		    }
+
+                    // if method signature contains iterated type,
+                    // check that possible escaping of sequences happens in the right place
+                    if (params.length > 0 &&
+                        args.length >= params.length - 1 &&
+                        (params[params.length-1].flags & REPEATED) != 0) {
+                        System.err.println(" method sign contains iterated type! ");
+                    }
+
 		}
 
 		if (fn1.type == Type.ErrorType)
