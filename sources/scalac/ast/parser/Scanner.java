@@ -92,6 +92,11 @@ public class Scanner extends TokenData {
         nextToken();
     }
 
+    /** only used to determine keywords. used in dtd2scala tool */
+    public Scanner() {
+	initKeywords();
+    }
+
     private void nextch() {
 	ch = buf[++bp]; ccol++;
     }
@@ -477,6 +482,12 @@ public class Scanner extends TokenData {
 	    treatIdent(index, bp);
 	    return;
 	}
+    }
+
+    /** returns true if argument corresponds to a keyword. used in dtd2scala tool */
+    public boolean isKeyword( String str ) {
+	Name name = Name.fromString( str );
+	return (name.index <= maxKey) ;
     }
 
     void treatIdent(int start, int end) {
