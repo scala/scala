@@ -319,6 +319,10 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (clasz == Symbol.NONE) return type;
                 if (clasz == context.clasz) return type;
                 if (clasz.isPackage()) return Type.localThisType;
+                if (clasz.isModuleClass()) {
+                    Type prefix = clasz.owner().thisType();
+                    return Type.singleType(apply(prefix), clasz.module());
+                }
                 for (int i = 0; i < context.outers.length; i++)
                     if (clasz == context.outers[i].clasz)
                         return context.getTypeLink(i);
