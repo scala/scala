@@ -211,26 +211,24 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
 
   /** parse attribute and add it to listmap
    *  [41] Attributes    ::= { S Name Eq AttValue }
-   *       AttValue     ::= `'` { _ | `{` scalablock `}` } `'`
-   *                    ::= `"` { _ | `{` scalablock `}` } `"`
+   *       AttValue     ::= `'` { _  } `'`
+   *                      | `"` { _ } `"`
+   *                      | `{` scalablock `}`
   */
   def xAttributes = {
     var aMap = ListMap.Empty[Name,Tree];
     while( s.xIsNameStart ) {
       val key = s.xName; s.xEQ;
-      val endch = s.ch;
-      val value = endch match {
+      val delim = s.ch;
+      val value = delim match {
         case '"' | '\'' =>
           val pos = s.pos;
-          s.xNext; val tmp = s.xAttributeValue( endch );
+          s.xNext; val tmp = s.xAttributeValue( delim );
           s.xNext; s.xSpaceOpt;
           gen.mkStringLit( pos, tmp )
         case '{' =>
-          Console.println("LBRACE, s.pos = " + s.pos);
-          s.nextToken(); // = LBRACE
-          Console.println("(2), s.pos = " + s.pos);
+          s.xNext;
           s.nextToken();
-          Console.println("(3), is LBRACE ?"+s.token == LBRACE+" s.pos = " + s.pos);
           val tmp = p.expr(false,false);
           if( s.token != RBRACE ) {
             s.xSyntaxError("expected end of Scala block");
@@ -286,33 +284,41 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       val ts = new myTreeList();
       var exit = false;
       while( !exit ) {
-        /* Console.println("read '"+s.ch.asInstanceOf[char]+"'"); */
+        //Console.println("in loop, ch='"+s.ch.asInstanceOf[char]+"'");
         s.ch match {
+
           case '<' => // another tag
+            //Console.println("case <");
+
             s.xNext; s.ch match {
               case '/' => exit = true;            // end tag
               case '!' => s.xComment;
               case _   => ts.append( xExpr ); // parse child
             }
-          case '{' => // Scala block(s)
-            while( s.ch == '{' ) {
-              var lastbp = s.bp;
-              s.nextToken(); // = LBRACE
-              lastbp = s.bp - lastbp;
+
+          case '{' =>
+            //Console.print("case {");
+            if( s.xCheckScalaBlock ) {
+              //Console.println(" isBlock");
               s.nextToken();
-              if(( s.token == LBRACE )&&( 1 == lastbp )) { // {{ => "{"
-                ts.append( makeText( s.pos, "{" ));
-              } else {
-                val bs = new myTreeList();
-                val b = p.expr(true,false); //block( s.pos );
-                if( s.token != RBRACE ) {
-                  s.xSyntaxError(" expected end of Scala block");
-                }
-                ts.append( b );
+              s.xScalaBlock = false;
+              val b = p.expr(true,false);
+              if( s.token != RBRACE ) {
+                s.xSyntaxError(" expected end of Scala block");
               }
+              ts.append( b );
+              //Console.println(" RETURN isBlock, b = "+b);
+            } else {
+              //Console.println(" isText");
+
+              val str = new StringBuffer("{");
+              str.append( s.xText );
+              ts.append( makeText( s.pos, str.toString() ));
             }
           case _ => // text content
-            ts.append( makeText( s.pos, s.xText ));
+              //Console.println("case_");
+              ts.append( makeText( s.pos, s.xText ));
+            //Console.println("parser Text, ts="+ts);
         }
       }
       xEndTag( elemName );

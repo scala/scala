@@ -680,8 +680,11 @@ class Scanner(_unit: Unit) extends TokenData {
   /* methods for XML tokenizing, see XML 1.0 rec http://www.w3.org/xml  */
 
   def xSyntaxError(s:String) = {
+    //throw new ApplicationError();
     syntaxError("in XML literal: "+s); xNext;
   }
+
+  var xScalaBlock = false;
 
   /** read the next character. do not skip whitespace.
   *   treat CR LF as single LF. update ccol and cline
@@ -704,7 +707,7 @@ class Scanner(_unit: Unit) extends TokenData {
 	} else {
 	  bp = bp - 1; ch = CR
 	}
-      case _ =>
+      case _ => //Console.print(ch.asInstanceOf[char]);
     }
     pos = Position.encode(cline, ccol);
   }
@@ -811,9 +814,40 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  /** character data. WRONG
+  /* move forward one char, return true if next character  starts a scala block */
+  def xxNext:boolean = {
+    xNext;
+    xCheckScalaBlock
+  }
+  /* return true if next character  starts a scala block */
+  def xCheckScalaBlock:boolean = {
+    if( ch == '{' ) {
+      xNext;
+      xScalaBlock = ( ch != '{' );
+      //xSyntaxError("block detected, xScalaBlock = "+xScalaBlock);
+    }
+    return xScalaBlock;
+  }
+
+  /** character data.
   */
-  def xText:String = xSkipToNext( '<' );
+  def xText:String = {
+
+    //Console.println( "xScalaBlock="+xScalaBlock+" bp="+bp+" + ch="+ch);
+    if( xCheckScalaBlock )
+      return ""
+    else {
+      val sb = new StringBuffer();
+      lastpos = pos;
+      val index = bp;
+      var exit = false;
+      while( !exit ) {
+        sb.append( ch );
+        exit = xxNext || ( ch == '<' );
+      }
+      sb.toString();
+    }
+  }
 
   /** scan XML comment.
   */
