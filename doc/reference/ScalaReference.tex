@@ -1,4 +1,47 @@
 % $Id$
+
+%%% ------------- how to edit this file: -----------------------------------------------------
+
+%%% o Do not use tabs, but spaces in grammars !
+
+%%% ------------- how to compile this file: --------------------------------------------------
+
+%%% you need to enable TeX to use the files ``ul9.map'' and ``fourier_v03.map''. Otherwise, the
+%%% resulting output will not include necessary font information. 
+
+%%% o how to make a TeX installation use these fonts
+
+%%% (1) Get root, go to /usr/share/texmf/dvips/config
+%%% (2) Edit the file ./updmap by adding two new lines to the
+%%%    extra_modules section. Initially it is empty, and should
+%%%    look like this after the modifications:
+%%%
+%%%    extra_modules="
+%%%      /<full-path-to>/ul9.map
+%%%      /<full-path-to>/fourier_v03.map
+%%%    "
+%%%
+%%% (3) Execute ./updmap (still as root) to integrate the new fonts into
+%%%    "hundreds" of messy tex config files.
+%%% (4) Execute texhash (still as root) so that the kpsetools can find
+%%%    the new files. From now on, you do not have to be root anymore.
+%%%
+%%% in LAMP, you can find those files here 
+%%% /home/linuxsoft/share/texmf/dvips/config/ul9.map
+%%% /home/linuxsoft/share/texmf/dvips/fourier/fourier_v03.map
+
+%%% o last step: get normal user again and enable your tex tools to find the fonts as well
+
+%%% Adjust your environment varables. In LAMP: 
+%%% (5)         setenv HOMETEXMF /home/linuxsoft/share/texmf
+
+%%% or, if you have a local texmf structure use
+
+%%% (5')        setenv TEXMF /home/myname/texmf,/home/linuxsoft/share/texmf,/usr/share/texmf
+
+%%% Please note that whenever you redefine TEXMF it will ignore HOMETEXMF
+%%% unless you specify it explicitly in the TEXMF initialization.
+
 \documentclass[a4paper,12pt,twoside,titlepage]{book}
 
 \usepackage{scaladoc}
@@ -3312,25 +3355,25 @@ written.
 \section{Patterns}
 
 % 2003 July - changed to new pattern syntax + semantic Burak
-
+%      Nov  - incorporated changes to grammar, avoiding empty patterns
+%             definitions for value and sequence patterns
 \label{sec:patterns}
 
 \syntax\begin{lstlisting}
-Pattern        ::=  Pattern1 { `|' Pattern1 }
-Pattern1       ::=  varid `:' Type
-                 |  `_' `:' Type
-Pattern2       ::=  SimplePattern [ '*'  |'?' | '+' ]
-                 |  SimplePattern { id SimplePattern }
-SimplePattern  ::=  varid [ '@' SimplePattern ]
-                 |  `_'
-                 |  Literal
-                 |  StableId [ `(' [Patterns] `)' ]
-                 |  `(' Patterns `)'
-                 |   
- Patterns      ::=  Pattern {`,' Pattern}
+  Pattern         ::=  Pattern1 { `|' Pattern1 }
+  Pattern1        ::=  varid `:' Type
+                    |  `_' `:' Type
+                    |  Pattern2
+  Pattern2        ::=  [varid `@'] Pattern3
+  Pattern3        ::=  SimplePattern [ '*' | '?' | '+' ]
+                    |  SimplePattern { id SimplePattern }
+  SimplePattern   ::=  `_'
+                    |  varid
+                    |  Literal
+                    |  StableId [ `(' [Patterns] `)' ]
+                    |  `(' [Patterns] `)'
+  Patterns        ::=  Pattern {`,' Pattern}
 \end{lstlisting}
-
-\todo{Why can patterns be empty?}
 
 A pattern is built from constants, constructors, variables and regular
 operators. Pattern matching tests whether a given value (or sequence
@@ -3339,28 +3382,25 @@ the variables in the pattern to the corresponding components of the
 value (or sequence of values).  The same variable name may not be
 bound more than once in a pattern.
 
-The type of a pattern and the expected types of variables within the
-pattern are determined by the context, except for patterns
-that employ regular operators. In the latter case  the missing 
-information is provided by the structure of the pattern. 
-We distinguish the following kinds of patterns.
+\subsection{Value and Sequence Patterns}
+
+On an abstract level, we distinguish between value patterns and sequence patterns, which are defined in a 
+mutually inductive manner. A {\em value pattern} describes a set of matching values. A 
+{\em sequence pattern} describes a set of matching of sequences of values. Both sorts of patterns may 
+contain {\em variable bindings} which serve to extract constituents of a value or sequence,
+and may consist of patterns of the respective other sort.
+
+The type of a patterns and the expected types of variables 
+within patterns are determined by the context. 
+
+Concretely, we distinguish the following kinds of patterns.
 
 A {\em wild-card pattern} \_ matches any value. 
 
-A {\em variable-binding pattern} $x @ p$ is a simple identifier $x$
-which starts with a lower case letter, together with a pattern $p$. It
-matches a value or a sequence of values whenever $p$ does, and in
-addition binds the variable name to that value or to that sequence of
-values. The type of $x$ is either $T$ as determined from the context, or
-\lstinline@List[$T\,$]@ \todo{really?}, if $p$ matches sequences of values. A
-special case is a {\em variable pattern} $x$ which is treated as $x @ \_$. 
-
-A {\em typed pattern} $x: T$ consists of a pattern variable $x$ and a
-simple type $T$. The type $T$ may be a class type or a compound type;
-it may not contain a refinement (\sref{sec:refinements}).  This
-pattern matches any non-null value of type $T$ and binds the variable
-name to that value.  $T$ must conform to the pattern's expected
-type. The type of $x$ is $T$.
+A {\em typed pattern} $\_: T$ matches values of type $T$. The type $T$ may be
+ a class type or a compound type; it may not contain a refinement (\sref{sec:refinements}).  
+This pattern matches any non-null value of type $T$. $T$ must conform to the pattern's expected
+type. A pattern $x:T$ is treated the same way as $x @ (_:T)$
 
 A {\em pattern literal} $l$ matches any value that is equal (in terms
 of $==$) to it. It's type must conform to the expected type of the
@@ -3377,33 +3417,30 @@ matches any value $v$ such that ~\lstinline@$r$ == $v$@~
 A {\em sequence pattern} $p_1 \commadots p_n$ where $n \geq 0$ is a
 sequence of patterns separated by commas and matching the sequence of
 values that are matched by the components. Sequence pattern may only
-appear under constructor applications. Note that empty sequence
-patterns are allowed. The type of the value patterns \todo{where defined?}
-that appear in
-the pattern is the expected type as determined from the context.
+appear under constructor applications, or nested within a another sequence pattern. 
+Note that empty sequence patterns are allowed. The type of value patterns that appear in
+a sequence pattern is the expected type as determined from the constructor.
+A {\em fixed-length argument pattern} is a special sequence pattern where 
+where all $p_i$ are value patterns.
 
 A {\em choice pattern} $p_1 | \ldots | p_n$ is a choice among several
 alternatives, which may not contain variable-binding patterns. It
-matches every value matched by at least one of its alternatives. Note
-that the empty sequence may appear as an alternative.  An {\em option
-pattern} $p?$ is an abbreviation for $(p| )$. If the alternatives
-are value patterns, then the whole choice pattern is a value pattern,
-whose type is the least upper bound of the types of the alternatives.
+matches every value and every sequence matched by at least one of its alternatives. 
+Note that the empty sequence may appear as an alternative.  An {\em option
+pattern} $p?$ is an abbreviation for $(p| )$. A choice is a value pattern if all its branches
+are value patterns. In this case, all branches must conform to the expected type and the type 
+of the choice is the least upper bound of the branches. Otherwise, it has the same type as the
+sequence pattern it is part of.
 
-An {\em iterated pattern} $p*$ matches the sequence of values
+An {\em iterated pattern} $p*$ matches sequence of values
 consisting of zero, one or more occurrences of values matched by $p$,
 where $p$ may not contain a variable-binding pattern. A {\em non-empty
 iterated pattern} $p+$ is an abbreviation for $(p,p*)$. 
 
-A non-regular sequence \todo{find other term?}
-pattern is a sequence pattern $p_1 \commadots p_n$ 
-where $n \geq 1$ with no component pattern containing iterated or nested
-sequence patterns.
-
 A {\em constructor pattern} $c ( p )$ consists of a simple type $c$
 followed by a pattern $p$.  If $c$ designates a monomorphic case
 class, then it must conform to the expected type of the pattern, the
-pattern must be a non-regular sequence pattern $p_1 \commadots p_n$
+pattern must be a fixed length argument pattern $p_1 \commadots p_n$
 whose length corresponds to the number of arguments of $c$'s primary
 constructor. The expected types of the component patterns are then
 taken from the formal parameter types of (said) constructor.  If $c$
@@ -3416,7 +3453,7 @@ the pattern matches all objects created from constructor invocations
 $c(v_1 \commadots v_n)$ where each component pattern $p_i$ matches the
 corresponding value $v_i$. If $c$ does not designate a case class, it
 must be a subclass of \lstinline@Seq[$T\,$]@. In that case $p$ may be an
-arbitrary pattern. Value patterns in $p$ are expected to conform to
+arbitrary sequence pattern. Value patterns in $p$ are expected to conform to
 type $T$, and the pattern matches all objects whose \lstinline@elements()@
 method returns a sequence that matches $p$.
 
@@ -3430,11 +3467,23 @@ associativity of operators in patterns is the same as in expressions
 (\sref{sec:infix-operations}). The operands may not be empty sequence
 patterns.
 
+\subsection{Variable Binding}
+
+A {\em variable-binding pattern} $x @ p$ is a simple identifier $x$
+which starts with a lower case letter, together with a pattern $p$. It
+matches a value or a sequence of values whenever $p$ does, and in
+addition binds the variable name to that value or to that sequence of
+values. If $p$ is a value pattern of type $T$, the type of $x$ is also $T$.
+If $p$ is a sequence pattern and appears under a constructor $c <: $\lstinline@Seq[$T\,$]@,
+then the type of $x$ is \lstinline@List[$T\,$]@. %%\todo{really?} burak:yes 
+where $T$ is the expected type as dictated by the constructor. A pattern
+consisting of only a variable $x$ is treated as the bound value pattern $x @ \_$. 
+
 Regular expressions that contain variable bindings may be ambiguous,
 i.e. there might be several ways to match a sequence against the
-pattern. In these cases, the \emph{shortest-match policy} applies:
-patterns that appear before other, overlapping patterns match
-as little as possible.
+pattern. In these cases, the \emph{right-longest policy} applies:
+patterns that appear more to the right than others in a sequence take precedence in case
+of overlaps.
 
 \example Some examples of patterns are:
 \begin{enumerate}
@@ -3464,7 +3513,7 @@ The pattern \code{List( x@( 'a'+ ), 'a'* )} also matches a non-empty list of
 the sequence containing one \code{'a'}
 \end{enumerate}
 
-\subsection{Pattern Matching Expressions}
+\section{Pattern Matching Expressions}
 \label{sec:pattern-match}
 
 \syntax\begin{lstlisting}
