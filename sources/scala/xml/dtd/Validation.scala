@@ -3,7 +3,7 @@ package scala.xml.dtd ;
 import scala.collection.mutable;
 import scala.collection.Set;
 import scala.collection.Map;
-
+import ContentModel._ ;
 
 class ElementValidator(namespace$$: String, elemSpec: RegExp) {
   final val namespace = namespace$$.intern();
@@ -56,7 +56,7 @@ class ElementValidator(namespace$$: String, elemSpec: RegExp) {
     case Star(z:Alt) if(( z.rs.length == 1 )&& (z.rs(0) match {
       case PCDATA_   => true
       case _         => false
-    })) => new MixedModeAutom( elemSpec.getLabels );
+    })) => new MixedModeAutom(getLabels( elemSpec ));
     case _    => TrivialAutom;
   }
   def validate( nodes:Seq[Node] ):Unit = autom.run( nodes );

@@ -21,9 +21,9 @@ case class ElemDecl( name:String ,
                      attribs:Map[String,AttrDecl] )
      extends MarkupDecl {
 
-       final val parsedContentModel:RegExp = {
+       final val parsedContentModel:ContentModel.RegExp = {
          try {
-           RegExp.parse( contentModel );
+           ContentModel.parse( contentModel );
          } catch {
            case _:Error =>
              Console.println( "error parsing declaration of " + name );

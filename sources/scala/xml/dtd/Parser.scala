@@ -3,6 +3,7 @@ package scala.xml.dtd ;
 /** Parser for regexps (content models in DTD element declarations) */
 
 object Parser with Scanner { // a bit too permissive concerning #PCDATA
+  import ContentModel._ ;
 
   /** parses the argument to a regexp */
   def parse(s:String):RegExp = { initScanner( s ); contentspec }
@@ -61,7 +62,7 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
       PCDATA_
     else {
       val t = choiceRest( PCDATA_ );
-      if( !t.mixed )
+      if( !isMixed( t ) )
         error("mixed content models must be like (#PCDATA.|.|.|.)*");
       accept( RPAREN );
       // lax: (workaround for buggy Java XML parser in JDK1.4.2)
@@ -115,14 +116,14 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
     //Console.println("particle, token="+token2string(token));
     token match {
     case LPAREN => nextToken; sOpt; regexp;
-    case NAME   => val a = RNode( value ); nextToken; maybeSuffix( a )
+    case NAME   => val a = Letter(ElemName(value)); nextToken; maybeSuffix( a )
     case _      => error("expected '(' or Name, got:"+token2string( token ));
     }
   }
 
   //                                     atom ::= name
   def atom = token match {
-    case NAME   => val a = RNode( value ); nextToken; a
+    case NAME   => val a = Letter(ElemName(value)); nextToken; a
     case _      => error("expected Name, got:"+token2string( token ));
   }
 }
