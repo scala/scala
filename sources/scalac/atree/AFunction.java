@@ -8,6 +8,7 @@
 
 package scalac.atree;
 
+import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 
 /** This class represents an attributed function reference. */
@@ -18,6 +19,7 @@ public class AFunction {
 
     public case Method(ACode object, Symbol method, AInvokeStyle style);
     public case Primitive(APrimitive primitive);
+    public case NewArray(Type element);
 
     //########################################################################
     // Public Methods

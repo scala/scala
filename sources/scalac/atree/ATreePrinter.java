@@ -443,19 +443,21 @@ public class ATreePrinter {
     /** Prints the function. */
     public ATreePrinter printFunction(AFunction function) {
         switch (function) {
-        case Method(Void, Symbol method, InvokeStyle.New):
+        case Method(Void, Symbol method, AInvokeStyle.New):
             return print("new").space().printSymbol(method);
-        case Method(Void, Symbol method, InvokeStyle.Static):
+        case Method(Void, Symbol method, AInvokeStyle.Static):
             return printSymbol(method.owner()).print('.').printSymbol(method);
-        case Method(This(Symbol clasz), Symbol method, InvokeStyle.Static):
+        case Method(This(Symbol clasz), Symbol method, AInvokeStyle.Static):
             printSymbol(clasz).print('.').print("super").print('.');
             return printSymbol(method);
-        case Method(ACode object, Symbol method, InvokeStyle style):
+        case Method(ACode object, Symbol method, AInvokeStyle style):
             printCode(object).print('.');
-            if (style != InvokeStyle.Dynamic) print("<" + style + ">").space();
+            if (style != AInvokeStyle.Dynamic) print("<" +style+ ">").space();
             return printSymbol(method);
         case Primitive(APrimitive primitive):
             return printPrimitive(primitive);
+        case NewArray(Type element):
+            return print("new").space().printType(element).print("[]");
         default:
             throw Debug.abort("unknown case", function);
         }
