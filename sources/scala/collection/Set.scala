@@ -23,7 +23,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Set[A] with Iterable[A] {
+trait Set[A] with Function1[A, Boolean] with Iterable[A] {
 
 	/** Returns the number of elements in this set.
 	 *
@@ -37,6 +37,14 @@ trait Set[A] with Iterable[A] {
      *  @return true, iff <code>elem</code> is contained in this set.
      */
     def contains(elem: A): Boolean;
+
+    /** This method allows sets to be interpreted as predicates.
+     *  It returns true, iff this set contains element <code>elem</code>.
+     *
+     *  @param  elem    the element to check for membership.
+     *  @return true, iff <code>elem</code> is contained in this set.
+     */
+    def apply(elem: A): Boolean = contains(elem);
 
     /** Checks if this set is empty.
      *
