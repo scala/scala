@@ -150,13 +150,14 @@ clean		:
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
-	$(RM) -r $(PROJECT_OUTPUTDIR)
+	$(RM) -r $(PROJECT_OUTPUTDIR)/*
 
 distclean	: clean
 	$(RM) .latest-*
 	$(RM) $(TUPLE_FILES)
 	$(RM) $(FUNCTION_FILES)
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
+	$(RM) -r $(PROJECT_OUTPUTDIR)
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 runtime		: .latest-runtime
