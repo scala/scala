@@ -172,7 +172,8 @@ test_xmlParse() {
     fi;
     rm -rf "$output";
     case "$source" in
-        *neg* ) mkdir -p "$output" &&
+        *neg* ) echo "Warning: negative tests work only from directory scala/test" && 
+                mkdir -p "$output" &&
                 if( $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS -Xmarkup "$source" ) then \
                     false; else rm -rf "$output"; fi ;;
         *     ) mkdir -p "$output" &&
