@@ -148,14 +148,14 @@ object LispCaseClasses with Lisp {
     val prevexp = curexp;
     curexp = x;
     if (trace) {
-      for (val x <- range(1, indent)) do System.out.print(" ");
+      for (val x <- range(1, indent)) System.out.print(" ");
       System.out.println("===> " + x);
       indent = indent + 1;
     }
     val result = eval1(x, env);
     if (trace) {
       indent = indent - 1;
-      for (val x <- range(1, indent)) do System.out.print(" ");
+      for (val x <- range(1, indent)) System.out.print(" ");
       System.out.println("<=== " + result);
     }
     curexp = prevexp;
@@ -329,14 +329,14 @@ object LispAny with Lisp {
     val prevexp = curexp;
     curexp = x;
     if (trace) {
-      for (val x <- range(1, indent)) do System.out.print(" ");
+      for (val x <- range(1, indent)) System.out.print(" ");
       System.out.println("===> " + x);
       indent = indent + 1;
     }
     val result = eval1(x, env);
     if (trace) {
       indent = indent - 1;
-      for (val x <- range(1, indent)) do System.out.print(" ");
+      for (val x <- range(1, indent)) System.out.print(" ");
       System.out.println("<=== " + result);
     }
     curexp = prevexp;

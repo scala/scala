@@ -166,7 +166,7 @@ object Programs {
       (lhs.tyvars ::: (rhs flatMap (t => t.tyvars))).removeDuplicates;
     def newInstance = {
       var s: Subst = List();
-      for (val a <- tyvars) do { s = Binding(a, newVar(a)) :: s }
+      for (val a <- tyvars) { s = Binding(a, newVar(a)) :: s }
       Clause(lhs map s, rhs map (t => t map s))
     }
     override def toString() =

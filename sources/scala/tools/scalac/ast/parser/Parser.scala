@@ -338,18 +338,16 @@ class Parser(unit: Unit) {
 
   /** Convert tree to formal parameter list
   */
-  def convertToParams(t: Tree): Array[Tree$ValDef] = {
-    t match {
-      case Tree$Function(params, Tree.Empty) =>
-        params
-      case Tree$Ident(_) | Tree$Typed(Tree$Ident(_), _) =>
-        NewArray.ValDef(convertToParam(t));
-      case Tree$Block(stats) =>
-        if (stats.length == 0) Tree.ValDef_EMPTY_ARRAY;
-      case _ =>
-    }
-    syntaxError(t.pos, "malformed formal parameter list", false);
-    Tree.ValDef_EMPTY_ARRAY;
+  def convertToParams(t: Tree): Array[Tree$ValDef] = t match {
+    case Tree$Function(params, Tree.Empty) =>
+      params
+    case Tree$Ident(_) | Tree$Typed(Tree$Ident(_), _) =>
+      NewArray.ValDef(convertToParam(t));
+    case Tree$Block(stats) if (stats.length == 0) =>
+      Tree.ValDef_EMPTY_ARRAY;
+    case _ =>
+      syntaxError(t.pos, "malformed formal parameter list", false);
+      Tree.ValDef_EMPTY_ARRAY;
   }
 
   /** Convert list of trees to formal parameter list
@@ -634,15 +632,16 @@ class Parser(unit: Unit) {
   *         | `(' [Types] `)' `=>' Type
   *         | Type1
   */
-  def typ(): Tree =
+  def typ(): Tree = {
+    var t: Tree = _;
     if (s.token == LPAREN) {
       s.nextToken();
       if (s.token == RPAREN) {
         s.nextToken();
         val pos = accept(ARROW);
-        make.FunType(pos, Tree.EMPTY_ARRAY, typ());
+        return make.FunType(pos, Tree.EMPTY_ARRAY, typ());
       } else {
-        val t = typ();
+        t = typ();
         if (s.token == COMMA) {
           s.nextToken();
           val ts = new TreeList();
@@ -650,19 +649,19 @@ class Parser(unit: Unit) {
           ts.append(types());
           accept(RPAREN);
           val pos = accept(ARROW);
-          make.FunType(pos, ts.toArray(), typ());
+          return make.FunType(pos, ts.toArray(), typ());
         } else {
           accept(RPAREN);
-	  t
 	}
       }
     } else {
-      val t = type1();
-      if (s.token == ARROW)
-	make.FunType(s.skipToken(), NewArray.Tree(t), typ())
-      else
-        t
+      t = type1()
     }
+    if (s.token == ARROW)
+      make.FunType(s.skipToken(), NewArray.Tree(t), typ())
+    else
+      t
+  }
 
   /** Type1 ::= SimpleType {with SimpleType} [Refinement]
   */
