@@ -106,6 +106,46 @@ public class ScalaSearch {
             !isPhantom(sym);
     }
 
+    ////////////////////////// SCOPE ITERATOR ///////////////////////////////
+
+    static class LazySymbolIterator extends SymbolIterator {
+        private Symbol[] alternatives = Symbol.EMPTY_ARRAY;
+        private int altindex = 0;
+	private int elemindex = 0;
+
+        private Scope scope;
+
+        public LazySymbolIterator(Scope scope) {
+            this.scope = scope;
+	    scope.elements();
+        }
+
+        public boolean hasNext() {
+            return altindex < alternatives.length ||
+                elemindex < scope.getElemsCache().length;
+	}
+
+        public Symbol next() {
+            if (altindex < alternatives.length)
+                return alternatives[altindex++];
+            else {
+                Symbol sym = scope.getElemsCache()[elemindex++];
+                if (isLazy(sym))
+		    return sym;
+                else {
+                    switch (sym.type()) {
+                    case OverloadedType(Symbol[] alts, _):
+                        alternatives = alts;
+                        altindex = 0;
+                        return next();
+                    default:
+                        return sym;
+                    }
+                }
+            }
+        }
+    }
+
     ////////////////////////// TRAVERSER ///////////////////////////////
 
     /** Function from Symbol to void.
@@ -132,7 +172,8 @@ public class ScalaSearch {
 	if (isContainer(sym) && !isLazy(sym)) {
 	    List memberList = new LinkedList();
 	    SymbolIterator i =
-                sym.members().iterator();
+                new LazySymbolIterator(sym.members());
+                //sym.members().iterator();
 	    while (i.hasNext()) {
 		Symbol member = i.next();
 		if (isRelevant(member))
@@ -164,7 +205,8 @@ public class ScalaSearch {
 	if (isContainer(sym) && !isLazy(sym)) {
 	    List memberList = new LinkedList();
 	    SymbolIterator i =
-                sym.members().iterator();
+                new LazySymbolIterator(sym.members());
+            //sym.members().iterator();
 	    while (i.hasNext()) {
 		Symbol member = i.next();
 		if (isDocumented.apply(member) && isRelevant(sym))
@@ -435,7 +477,8 @@ public class ScalaSearch {
     protected static void collectNames(Type tpe, List/*<Name>*/ names) {
 	// local members
         SymbolIterator it =
-            tpe.members().iterator();
+            new LazySymbolIterator(tpe.members());
+        //tpe.members().iterator();
 	while (it.hasNext()) {
 	    Name name = ((Symbol) it.next()).name;
 	    if (!names.contains(name))

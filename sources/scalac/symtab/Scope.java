@@ -80,6 +80,10 @@ public class Scope {
      */
     private Symbol[] elemsCache = null;
 
+    public Symbol[] getElemsCache() {
+        return elemsCache;
+    }
+
     /** size and mask of hash tables
      *  todo: make hashtables grow?
      */
