@@ -43,7 +43,7 @@ abstract class Parsers {
   }
 
   def succeed[a](x: a) = new Parser[a] {
-    def apply(in: intype) = Some(Pair(x, in))
+    def apply(in: intype): Result = Some(Pair(x, in))
   }
 
   def rep[a](p: Parser[a]): Parser[List[a]] =
