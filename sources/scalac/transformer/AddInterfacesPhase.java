@@ -226,10 +226,17 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         } else
             symMap = map;
 
-        Type.SubstThisMap thisTypeMap = new Type.SubstThisMap(oldOwner, newOwner);
-        Type newTp = thisTypeMap.apply(substParams(clone.info(), symMap));
-        clone.updateInfo(newTp);
+        updateMemberInfo(clone, oldOwner, newOwner, symMap);
         return clone;
+    }
+
+    protected void updateMemberInfo(Symbol member,
+                                    Symbol oldOwner,
+                                    Symbol newOwner,
+                                    SymbolSubstTypeMap map) {
+        Type.SubstThisMap thisTypeMap = new Type.SubstThisMap(oldOwner, newOwner);
+        Type newTp = thisTypeMap.apply(substParams(member.info(), map));
+        member.updateInfo(newTp);
     }
 
     protected HashMap ifaceToClass = new HashMap();
@@ -275,8 +282,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             // modified anymore.
             classSubst = Collections.unmodifiableMap(classSubst);
 
-            Type.SubstThisMap thisTpMap = new Type.SubstThisMap(ifaceSym, classSym);
-
             Symbol[] vparams = classConstrSym.valueParams();
             for (int i = 0; i < vparams.length; ++i) {
                 vparams[i].setOwner(classConstrSym);
@@ -309,13 +314,13 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                                                      paramsSubst);
                     ifaceMemberSym.flags |= Modifiers.DEFERRED;
 
-                    classMemberSym.updateInfo(thisTpMap.apply(classMemberSym.info()));
                     classMembersMap.put(ifaceMemberSym, classMemberSym);
                 } else {
                     // Member doesn't go in interface, we just make it
                     // owned by the class.
                     classMemberSym = ifaceMemberSym;
                     classMemberSym.setOwner(classSym);
+                    updateMemberInfo(classMemberSym, ifaceSym, classSym, paramsSubst);
                 }
                 Type nextMemberTp = classMemberSym.nextInfo();
                 classMemberSym.updateInfo(paramsSubst.apply(nextMemberTp));
