@@ -7,7 +7,6 @@ DeclToScala.scala
 DeclToSQL.scala
 Main.scala
 MainHandler.scala
-XMLDecl.scala
 
 regexp/Tokens.scala
 regexp/Scanner.scala
