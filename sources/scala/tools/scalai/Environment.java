@@ -53,7 +53,7 @@ public class Environment {
         assert symbol.isType() : Debug.show(symbol);
         assert Debug.log("insert classdef: ", symbol);
         Object value = classdefs.put(symbol, classdef);
-        assert value == null : Debug.show(symbol);
+        assert value == null : Debug.show(symbol) + " -> " + value;
         assert !templates.containsKey(symbol) : Debug.show(symbol);
         return classdef;
     }
@@ -63,7 +63,7 @@ public class Environment {
         assert Debug.log("insert template: ", symbol);
         Object value = templates.put(symbol, template);
         assert !classdefs.containsKey(symbol) : Debug.show(symbol);
-        assert value == null : Debug.show(symbol);
+        assert value == null : Debug.show(symbol) + " -> " + value;
         return template;
     }
 
@@ -71,7 +71,7 @@ public class Environment {
         assert symbol.isTerm() : Debug.show(symbol);
         assert Debug.log("insert function: ", symbol);
         Object value = functions.put(symbol, function);
-        assert value == null : Debug.show(symbol);
+        assert value == null : Debug.show(symbol) + " -> " + value;
         return function;
     }
 
@@ -79,7 +79,7 @@ public class Environment {
         assert symbol.isTerm() : Debug.show(symbol);
         assert Debug.log("insert variable: ", symbol);
         Object value = variables.put(symbol, variable);
-        assert value == null : Debug.show(symbol);
+        assert value == null : Debug.show(symbol) + " -> " + value;
         return variable;
     }
 
@@ -87,7 +87,7 @@ public class Environment {
         assert symbol.isTerm() : Debug.show(symbol);
         assert Debug.log("insert override: ", symbol);
         Object value = overrides.put(symbol, override);
-        assert value == null : Debug.show(symbol);
+        assert value == null : Debug.show(symbol) + " -> " + value;
         return override;
     }
 
@@ -145,13 +145,13 @@ public class Environment {
     private Object loadOwnerThenGet(String what, Symbol symbol, Map table) {
         loadOwner(what, symbol);
         Object value = table.get(symbol);
-        assert value != null : Debug.show(symbol);
+        assert value != null : Debug.show(symbol) + " -> " + value;
         return value;
     }
 
     private void loadOwner(String what, Symbol symbol) {
         assert Debug.log("search ", what, ": ", symbol);
-        assert symbol.owner().isType() : Debug.show(symbol) + " " + symbol.owner();
+        assert symbol.owner().isType() : Debug.show(symbol);
         assert!symbol.owner().isJava() : Debug.show(symbol);
         loadTemplate(symbol.owner());
     }
@@ -163,7 +163,7 @@ public class Environment {
         Object test2 = classdefs.remove(symbol);
         if (test2 != null) return loadTemplate(symbol, (ClassDef)test2);
         Object value = templates.get(symbol);
-        assert value != null : Debug.show(symbol);
+        assert value != null : Debug.show(symbol) + " -> " + value;
         return (Template)value;
     }
 
@@ -180,7 +180,7 @@ public class Environment {
         assert symbol.owner().isType() : Debug.show(symbol);
         loadTemplateOverrides(symbol.owner());
         Object value = overrides.get(symbol);
-        assert value != null : Debug.show(symbol);
+        assert value != null : Debug.show(symbol) + " -> " + value;
         return (Override)value;
     }
 
