@@ -196,6 +196,7 @@ public class ATreeTyper {
         case LONG(_)   : return definitions.long_TYPE();
         case FLOAT(_)  : return definitions.float_TYPE();
         case DOUBLE(_) : return definitions.double_TYPE();
+        case SYMBOL_NAME(_):
         case STRING(_) : return definitions.STRING_TYPE();
         case NULL      : return definitions.ALLREF_TYPE();
         case ZERO      : return definitions.ALL_TYPE();

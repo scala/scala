@@ -534,6 +534,8 @@ public class ATreePrinter {
             return print(value);
         case STRING(String value):
             return print('\"').print(SourceRepresentation.escape(value)).print('\"');
+        case SYMBOL_NAME(Symbol value):
+            return print('\"').print(SourceRepresentation.escape(value.name.toString())).print('\"');
         case NULL:
             return print("null");
         case ZERO:

@@ -650,6 +650,9 @@ public class GenJVM {
         case STRING(String value):
             ctx.code.emitPUSH(value);
             return JAVA_LANG_STRING_T;
+        case SYMBOL_NAME(Symbol value):
+            ctx.code.emitPUSH(javaName(value));
+            return JAVA_LANG_STRING_T;
         case NULL:
             if (type != JType.VOID) ctx.code.emitACONST_NULL();
             return type;

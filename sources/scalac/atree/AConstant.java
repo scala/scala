@@ -9,6 +9,7 @@
 package scalac.atree;
 
 import scalac.util.Debug;
+import scalac.symtab.Symbol;
 
 /** This class represents a constant. */
 public class AConstant {
@@ -26,6 +27,7 @@ public class AConstant {
     public case FLOAT(float value);
     public case DOUBLE(double value);
     public case STRING(String value);
+    public case SYMBOL_NAME(Symbol value);
     public case NULL;
     public case ZERO;
 
@@ -54,6 +56,7 @@ public class AConstant {
         case DOUBLE(_):
             return ATypeKind.R8;
         case STRING(_):
+        case SYMBOL_NAME(_):
             return ATypeKind.STR;
         case NULL:
             return ATypeKind.NULL;
@@ -252,6 +255,8 @@ public class AConstant {
             return String.valueOf(value);
         case STRING(String value):
             return value;
+        case SYMBOL_NAME(Symbol value):
+            return value.name.toString();
         case NULL:
             return String.valueOf(null);
         default:
@@ -335,6 +340,13 @@ public class AConstant {
             default:
                 return false;
             }
+        case SYMBOL_NAME(Symbol ivalue):
+            switch (that) {
+            case SYMBOL_NAME(Symbol avalue):
+                return ivalue == avalue;
+            default:
+                return false;
+            }
         case NULL:
             return false;
         case ZERO:
@@ -369,6 +381,8 @@ public class AConstant {
             long bits = java.lang.Double.doubleToLongBits(value);
             return (int)(bits ^ (bits >>> 32));
         case STRING(String value):
+            return value.hashCode();
+        case SYMBOL_NAME(Symbol value):
             return value.hashCode();
         case NULL:
             return 0;
