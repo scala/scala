@@ -656,11 +656,11 @@ public class LambdaLift extends OwnerTransformer
     }
 
     Tree mkList(int pos, Type elemtpe, Tree[] args, int start) {
-	if (start == args.length) return mkNil(pos);
-	else return mkCons(pos, elemtpe, args[start],
-			   mkList(pos, elemtpe, args, start + 1));
+	if (start == args.length) return gen.Nil(pos);
+	else return gen.Cons(pos, elemtpe, args[start],
+				       mkList(pos, elemtpe, args, start + 1));
     }
-
+    /*
     Tree mkNil(int pos) {
 	return gen.mkRef(pos, global.definitions.getModule(Names.scala_Nil));
     }
@@ -675,4 +675,5 @@ public class LambdaLift extends OwnerTransformer
 		    new Tree[]{gen.mkType(pos, elemtpe)}),
 		new Tree[]{hd, tl}));
     }
+    */
 }
