@@ -39,14 +39,12 @@ import scala.collection.mutable.HashMap ;<br/>
       override def attributes : Map[String,String] = attrs; <br/>   
       <attributeAssign>    
       override val &cAttributeName; = attrs.get(&qAttributeName;); <br/>
+      val attribHashCode: int = attrs.hashCode() ;<br/>
       </attributeAssign>
     };<dec/><br/>
-      case class &ccElementName;( ch:Node* ) extends scala.xml.Node {<inc/><br/>
+      case class &ccElementName;( ch:Node* ) extends scala.xml.AttributedNode {<inc/><br/>
           def label = &qElementName;; <br/>
           def children = ch;<br/>
-          /* these methods are overridden at parse time */<br/>
-          def attributes : Map[String,String] = new HashMap[String,String](); <br/>
-          val attribHashCode: int = 0 ;<br/>
       <attributeBinding>
         val &cAttributeName; : scala.Option[String] = scala.None;  
         /*     overridden at parse time */

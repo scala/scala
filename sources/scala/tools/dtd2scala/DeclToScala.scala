@@ -28,70 +28,68 @@ class DeclToScala(fOut:PrintWriter,
     var curAttribs: Map[String,AttrDecl] = null ;  /* of current elem */
 
     def write:Unit = {
-      def writeNode( n:Node ):Unit = {
-        n.label match {
-          case "template" => {
-            lookup.update("objectName", objectName);
-            lookup.update("compressDefault", compress.toString());
-            n.children.elements.foreach { n => writeNode(n) }
-          }
-          case "elementBinding" => {
-            for( val decl <- elemMap.values.elements ) {
-              fOut.println();
-              printIndent();
-              lookup += "elementName" -> decl.name;
-              lookup += "elementContainsText" -> decl.containsText.toString();
-              lookup += "elementContentModel" -> decl.contentModel;
-              curAttribs = decl.attribs;
-              n.children.elements.foreach{ n => writeNode( n ) }
+      def writeNode( x:Node ):Unit = x match {
+        case Text(text) =>
+          fOut.print( text );
+        case n:AttributedNode =>
+          n.label match {
+            case "template" => {
+              lookup.update("objectName", objectName);
+              lookup.update("compressDefault", compress.toString());
+              n.children.elements.foreach { n => writeNode(n) }
             }
-            curAttribs = null;
-            lookup -= "elementName";
-            lookup -= "elementContainsText";
-          }
-
-          case "attributeAssign" => {
-            for( val aDecl <- curAttribs.keys.elements ) {
-              lookup += "attributeName" -> aDecl;
-              n.children.elements.foreach{ n => writeNode( n ) }
+            case "elementBinding" => {
+              for( val decl <- elemMap.values.elements ) {
+                fOut.println();
+                printIndent();
+                lookup += "elementName" -> decl.name;
+                lookup += "elementContainsText" -> decl.containsText.toString();
+                lookup += "elementContentModel" -> decl.contentModel;
+                curAttribs = decl.attribs;
+                n.children.elements.foreach{ n => writeNode( n ) }
+              }
+              curAttribs = null;
+              lookup -= "elementName";
+              lookup -= "elementContainsText";
             }
-            lookup -= "attributeName";
-          }
 
-          case "attributeBinding" => {
-            for( val aDecl <- curAttribs.keys.elements ) {
-              lookup += "attributeName" -> aDecl;
-              //Console.println("attributeName is "+aDecl+" = "+lookup("attributeName"));
-              n.children.elements.foreach{ n => writeNode( n ) }
+            case "attributeAssign" => {
+              for( val aDecl <- curAttribs.keys.elements ) {
+                lookup += "attributeName" -> aDecl;
+                n.children.elements.foreach{ n => writeNode( n ) }
+              }
+              lookup -= "attributeName";
             }
-            lookup -= "attributeName";
-          }
-          case "ccstring" => {
-              //Console.println("ccstring ref=\""+n.attributes("ref")+"\"");
-            fOut.print( cookedCap( lookup( n.attributes("ref") ) ));
-          }
-          case "cstring" => {
-              //Console.println("ccstring ref=\""+n.attributes("ref")+"\"");
-            fOut.print( cooked( lookup( n.attributes("ref") ) ));
-          }
-          case "string" => {
-              //Console.println("string ref=\""+n.attributes("ref")+"\"");
-            fOut.print( lookup( n.attributes("ref") ) );
-          }
-          case "qstring" =>  {
-              //Console.println("qstring ref=\""+n.attributes("ref")+"\"");
 
-            fOut.print("\"");
-            fOut.print( lookup( n.attributes("ref") ) );
-            fOut.print("\"");
+            case "attributeBinding" => {
+              for( val aDecl <- curAttribs.keys.elements ) {
+                lookup += "attributeName" -> aDecl;
+                n.children.elements.foreach{ n => writeNode( n ) }
+              }
+              lookup -= "attributeName";
+            }
+            case "ccstring" => {
+              fOut.print( cookedCap( lookup( n("ref").get ) ));
+            }
+            case "cstring" => {
+              fOut.print( cooked( lookup( n("ref").get ) ));
+            }
+            case "string" => {
+              fOut.print( lookup( n("ref").get ) );
+            }
+            case "qstring" =>  {
+
+              fOut.print("\"");
+              fOut.print( lookup( n("ref").get ) );
+              fOut.print("\"");
+            }
+            case "br" => { fOut.println(); printIndent() }
+            case "inc" => fIndent = fIndent + IND_STEP
+            case "dec" => fIndent = fIndent - IND_STEP
+            case _ => error("what shall I do with a \""+n.label+"\" node ?")
           }
-          case "br" => { fOut.println(); printIndent() }
-          case "inc" => fIndent = fIndent + IND_STEP
-          case "dec" => fIndent = fIndent - IND_STEP
-          case "#PCDATA" => fOut.print( n.asInstanceOf[Text].text )
-          case _ => error("what shall I do with a \""+n.label+"\" node ?")
-        }
       }
+
       writeNode( tmpl )
     }
   }
