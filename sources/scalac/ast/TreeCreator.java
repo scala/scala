@@ -12,7 +12,7 @@ import Tree.*;
 import scalac.util.Name;
 
 
-public class TreeCreator implements TreeFactory {
+public class DefaultTreeFactory implements TreeFactory {
 
     public Tree Bad(int pos) {
         Tree t = new ExtBad();

@@ -166,7 +166,7 @@ public class  Global {
             this.printer = new HTMLTreePrinter(printStream);
         this.debugPrinter = new TextTreePrinter(System.err, true);
         this.freshNameCreator = new FreshNameCreator();
-        this.make = new TreeCreator();
+        this.make = new DefaultTreeFactory();
         this.currentPhase = PhaseDescriptor.INITIAL;
         this.definitions = new Definitions(this);
         this.primitives = new Primitives(this);
