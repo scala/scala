@@ -895,7 +895,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	Type toPrefix(Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    else if (symbol().isSubClass(clazz) && pre.widen().symbol().isSubClass(symbol()))
+	    else if (pre.widen().symbol().isSubClass(symbol()))
 		return pre;
 	    else
 		return toPrefix(pre.baseType(clazz).prefix(), clazz.owner());
