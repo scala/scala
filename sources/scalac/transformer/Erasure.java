@@ -222,6 +222,7 @@ public class Erasure extends Transformer implements Modifiers {
             Symbol symbol = tree.symbol();
             qualifier = transform(qualifier);
             qualifier = coerce(qualifier, symbol.owner().type().erasure());
+            // Might end up with "box(unbox(...))". That's needed by backend.
             if (isUnboxedType(qualifier.type())) qualifier = box(qualifier);
 	    return gen.Select(tree.pos, qualifier, symbol);
 
@@ -269,6 +270,20 @@ public class Erasure extends Transformer implements Modifiers {
 
     //########################################################################
     // Private Methods - Tree transformation
+
+    /** Transforms the given trees with given prototype. */
+    private Tree[] transform(Tree[] trees, Type pt) {
+        for (int i = 0; i < trees.length; i++) {
+            Tree tree = transform(trees[i], pt);
+            if (tree == trees[i]) continue;
+            Tree[] array = new Tree[trees.length];
+            for (int j = 0; j < i ; j++) array[j] = trees[j];
+            array[i] = tree;
+            while (++i < trees.length) array[i] = transform(trees[i], pt);
+            return array;
+        }
+        return trees;
+    }
 
     /** Transforms the given tree with given prototype. */
     private Tree transform(Tree tree, Type pt) {
@@ -353,6 +368,34 @@ public class Erasure extends Transformer implements Modifiers {
         return coerce(unit, pt);
     }
 
+    /** Coerces the given tree to the given type. */
+    private Tree coerce(Tree tree, Type pt) {
+        if (isSubType(tree.type(), pt)) return tree;
+        if (isUnboxedType(tree.type())) {
+            if (!isUnboxedType(pt)) return coerce(box(tree), pt);
+        } else if (isUnboxedType(pt)) {
+            if (tree.type.symbol() == definitions.ARRAY_CLASS
+                || isUnboxedSimpleType(pt)) return unbox(tree, pt);
+        }
+        return gen.mkAsInstanceOf(tree, pt);
+    }
+
+    /** Boxes the given tree. */
+    private Tree box(Tree tree) {
+        Symbol symbol = primitives.getBoxValueSymbol(tree.type());
+	Tree boxtree = gen.mkRef(tree.pos, symbol);
+        return tree.type().equals(UNBOXED_UNIT)
+            ? gen.Block(new Tree[]{tree, gen.mkApply__(boxtree)})
+            : gen.mkApply_V(boxtree, new Tree[]{tree});
+    }
+
+    /** Unboxes the given tree to the given type. */
+    private Tree unbox(Tree tree, Type pt) {
+        Symbol symbol = primitives.getUnboxValueSymbol(pt);
+        tree = coerce(tree, symbol.owner().nextType());
+        return gen.mkApply__(gen.Select(tree, symbol));
+    }
+
     //########################################################################
     // Private Methods - Tree generation
 
@@ -416,7 +459,7 @@ public class Erasure extends Transformer implements Modifiers {
 
     /** Generates an unboxed array length operation. */
     private Tree genUnboxedArrayLength(int pos, Tree array) {
-        assert isUnboxedArray(array.type()): array;
+        assert isUnboxedArrayType(array.type()): array;
         Symbol symbol = primitives.getArrayLengthSymbol(array.type());
         Tree[] args = { array };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
@@ -424,7 +467,7 @@ public class Erasure extends Transformer implements Modifiers {
 
     /** Generates an unboxed array get operation. */
     private Tree genUnboxedArrayGet(int pos, Tree array, Tree index) {
-        assert isUnboxedArray(array.type()): array;
+        assert isUnboxedArrayType(array.type()): array;
         Symbol symbol = primitives.getArrayGetSymbol(array.type());
         index = coerce(index, UNBOXED_INT);
         Tree[] args = { array, index };
@@ -433,12 +476,79 @@ public class Erasure extends Transformer implements Modifiers {
 
     /** Generates an unboxed array set operation. */
     private Tree genUnboxedArraySet(int pos, Tree array,Tree index,Tree value){
-        assert isUnboxedArray(array.type()): array;
+        assert isUnboxedArrayType(array.type()): array;
         Symbol symbol = primitives.getArraySetSymbol(array.type());
         index = coerce(index, UNBOXED_INT);
         value = coerce(value, getArrayElementType(array.type()));
         Tree[] args = { array, index, value };
         return gen.mkApply_V(gen.mkRef(pos, symbol), args);
+    }
+
+    //########################################################################
+    // Private Methods - Queries
+
+    /** Returns the qualifier of the given tree. */
+    private Tree getQualifier(Tree tree) {
+        switch (tree) {
+        case Select(Tree qualifier, _):
+            return qualifier;
+        default:
+            throw Debug.abort("no qualifier for tree", tree);
+        }
+    }
+
+    /** Are the given erased types in a subtyping relation? */
+    private boolean isSubType(Type tp1, Type tp2) {
+        global.nextPhase();
+        boolean result = tp1.isSubType(tp2);
+        global.prevPhase();
+        return result;
+    }
+
+    /** Are the given erased types in an equality relation? */
+    private boolean isSameAs(Type tp1, Type tp2) {
+        global.nextPhase();
+        boolean result = tp1.isSameAs(tp2);
+        global.prevPhase();
+        return result;
+    }
+
+    /** Is the given type an unboxed type? */
+    private boolean isUnboxedType(Type type) {
+	switch (type) {
+	case UnboxedType(_)     : return true;
+	case UnboxedArrayType(_): return true;
+	default                 : return false;
+	}
+    }
+
+    /** Is the given type an unboxed simple type? */
+    private boolean isUnboxedSimpleType(Type type) {
+	switch (type) {
+	case UnboxedType(_)     : return true;
+	default                 : return false;
+	}
+    }
+
+    /** Is the given type an unboxed array type? */
+    private boolean isUnboxedArrayType(Type type) {
+	switch (type) {
+	case UnboxedArrayType(_): return true;
+	default                 : return false;
+	}
+    }
+
+    /** Returns the element type of the given array type. */
+    private Type getArrayElementType(Type type) {
+        switch (type) {
+        case TypeRef(_, Symbol symbol, Type[] args):
+            if (symbol != definitions.ARRAY_CLASS) break;
+            assert args.length == 1: type;
+            return args[0];
+        case UnboxedArrayType(Type element):
+            return element;
+        }
+        throw Debug.abort("non-array type", type);
     }
 
     //########################################################################
@@ -491,140 +601,6 @@ public class Erasure extends Transformer implements Modifiers {
     //########################################################################
 
 //////////////////////////////////////////////////////////////////////////////////
-// Box/Unbox and Coercions
-/////////////////////////////////////////////////////////////////////////////////
-
-    private boolean isUnboxedType(Type type) {
-	switch (type) {
-	case UnboxedType(_)     : return true;
-	case UnboxedArrayType(_): return true;
-	default                 : return false;
-	}
-    }
-
-    private boolean isUnboxedSimpleType(Type type) {
-	switch (type) {
-	case UnboxedType(_)     : return true;
-	default                 : return false;
-	}
-    }
-
-    private boolean isUnboxedArrayType(Type type) {
-	switch (type) {
-	case UnboxedArrayType(_): return true;
-	default                 : return false;
-	}
-    }
-
-    boolean isUnboxed(Type type) {
-	switch (type) {
-	case UnboxedType(_): case UnboxedArrayType(_): return true;
-	default: return false;
-	}
-    }
-
-    boolean isUnboxedArray(Type type) {
-	switch (type) {
-	case UnboxedArrayType(_): return true;
-	default: return false;
-	}
-    }
-
-    boolean isBoxed(Type type) {
-	return type.unbox() != type || type.symbol() == definitions.ARRAY_CLASS;
-    }
-
-    Type boxedType(Type tp) {
-	switch (tp) {
-	case UnboxedType(int kind):
-	    return definitions.getType(Type.boxedFullName(kind));
-	case UnboxedArrayType(Type elemtp):
-            return definitions.arrayType(boxedType(elemtp));
-	default:
-	    return tp;
-	}
-    }
-
-    Symbol boxSym(Type unboxedtp) {
-        return primitives.getBoxValueSymbol(unboxedtp);
-    }
-
-    /** Emit `scala.RunTime.box(tree)' or
-     *  `{ tree ; scala.RunTime.box() }' if type of `tree' is `void'.
-     */
-    Tree box(Tree tree) {
-	Tree boxtree = gen.mkRef(tree.pos, boxSym(tree.type()));
-        return tree.type().equals(UNBOXED_UNIT)
-            ? gen.Block(new Tree[]{tree, gen.mkApply__(boxtree)})
-            : gen.mkApply_V(boxtree, new Tree[]{tree});
-    }
-
-    /** The symbol of the unbox method corresponding to unboxed type`unboxedtp'
-     */
-    Symbol unboxSym(Type unboxedtp) {
-        return primitives.getUnboxValueSymbol(unboxedtp);
-    }
-
-    /** Emit tree.asType() or tree.asTypeArray(), where pt = Type or pt = Type[].
-     */
-    Tree unbox(Tree tree, Type pt) {
-	return gen.mkApply__(gen.Select(tree, unboxSym(pt)));
-    }
-
-    /** Generate a select from an unboxed type.
-     */
-    public Tree unboxedSelect(Tree qual, Symbol sym) {
-	return gen.Select(qual, sym);
-    }
-
-    /** Subtyping relation on erased types.
-     */
-    boolean isSubType(Type tp1, Type tp2) {
-        global.nextPhase();
-        boolean test = tp1.isSubType(tp2);
-        global.prevPhase();
-        return test;
-    }
-
-    /** Equality relation on erased types.
-     */
-    boolean isSameAs(Type tp1, Type tp2) {
-        global.nextPhase();
-        boolean result = tp1.isSameAs(tp2);
-        global.prevPhase();
-        return result;
-    }
-
-    Tree coerce(Tree tree, Type pt) {
-        if (isSubType(tree.type(), pt)) {
-	    return tree;
-	} else if (isUnboxed(tree.type) && !isUnboxed(pt)) {
-	    return coerce(box(tree), pt);
-	} else if ((isUnboxedArray(tree.type)
-                    || (tree.type.symbol() == definitions.ANY_CLASS))
-                   && isUnboxedArray(pt)) {
-	    return gen.mkAsInstanceOf(tree, pt);
-	} else if (!isUnboxed(tree.type) && isUnboxed(pt)) {
-	    if (isBoxed(tree.type)) {
-		return coerce(unbox(tree, pt), pt);
-	    } else {
-		Type bt = boxedType(pt);
-		while (isBoxed(bt.parents()[0])) {
-		    bt = bt.parents()[0];
-		}
-		return coerce(coerce(tree, bt), pt);
-	    }
-	} else if (isUnboxed(tree.type) && isUnboxed(pt)) {
-	    return gen.mkApply__(gen.Select(box(tree), unboxSym(pt)));
-	} else if (!isUnboxed(tree.type) && !isUnboxed(pt) ||
-		   isUnboxedArray(tree.type) && isUnboxedArray(pt)) {
-	    return gen.mkAsInstanceOf(tree, pt);
-	} else {
-	    throw Debug.abort("cannot coerce " + tree.type + " to " + pt);
-	}
-    }
-
-//////////////////////////////////////////////////////////////////////////////////
 // Bridge Building
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -634,7 +610,7 @@ public class Erasure extends Transformer implements Modifiers {
     /** Add bridge which Java-overrides `sym1' and which forwards to `sym'
      */
     public void addBridge(Symbol owner, Symbol sym, Symbol sym1) {
-	Type bridgeType = sym1.type().erasure();
+	Type bridgeType = sym1.nextType();
 
 	// create bridge symbol and add to bridgeSyms(sym)
 	// or return if bridge with required type already exists for sym.
@@ -654,10 +630,10 @@ public class Erasure extends Transformer implements Modifiers {
 	// check that there is no overloaded symbol with same erasure as bridge
 	// todo: why only check for overloaded?
 	Symbol overSym = owner.members().lookup(sym.name);
-	switch (overSym.type()) {
+	switch (overSym.nextType()) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    for (int i = 0; i < alts.length; i++) {
-		if (sym != alts[i] && isSameAs(bridgeType, alttypes[i].erasure())) {
+		if (sym != alts[i] && isSameAs(bridgeType, alttypes[i])) {
 		    unit.error(sym.pos, "overlapping overloaded alternatives; " +
 			       "overridden " + sym1 + sym1.locationString() +
 			       " has same erasure as " + alts[i] +
@@ -680,10 +656,6 @@ public class Erasure extends Transformer implements Modifiers {
         }
 
     }
-
-//////////////////////////////////////////////////////////////////////////////////
-// Transformer
-/////////////////////////////////////////////////////////////////////////////////
 
     private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
 
@@ -785,40 +757,6 @@ public class Erasure extends Transformer implements Modifiers {
         bridges = savedBridges;
     }
 
-    Tree[] transform(Tree[] exprs, Type pt) {
-        for (int i = 0; i < exprs.length; i++) {
-            Tree tree = transform(exprs[i], pt);
-            if (tree == exprs[i]) continue;
-            Tree[] trees = new Tree[exprs.length];
-            for (int j = 0; j < i ; j++) trees[j] = exprs[j];
-            trees[i] = tree;
-            while (++i < exprs.length) trees[i] = transform(exprs[i], pt);
-            return trees;
-        }
-        return exprs;
-    }
-
-    private Tree getQualifier(Tree tree) {
-        switch (tree) {
-        case Select(Tree qual, _):
-            return qual;
-        default:
-            throw Debug.abort("no qualifier for tree", tree);
-        }
-    }
-
-
-    private Type getArrayElementType(Type type) {
-        switch (type) {
-        case TypeRef(_, Symbol symbol, Type[] args):
-            if (symbol != definitions.ARRAY_CLASS) break;
-            assert args.length == 1: type;
-            return args[0];
-        case UnboxedArrayType(Type element):
-            return element;
-        }
-        throw Debug.abort("non-array type", type);
-    }
 
 }
 
