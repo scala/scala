@@ -18,9 +18,9 @@ import scalac.transformer.TransMatchPhase;
 import scalac.transformer.LambdaLiftPhase;
 import scalac.transformer.ExplicitOuterClassesPhase;
 import scalac.transformer.AddAccessorsPhase;
-/*
 import scalac.transformer.AddInterfacesPhase;
 import scalac.transformer.ExpandMixinsPhase;
+/*
 import scalac.transformer.ErasurePhase;
 import scalac.optimizer.OptimizePhase;
 import scalac.backend.AddConstructorsPhase;
@@ -53,9 +53,9 @@ public class PhaseRepository {
             LAMBDALIFT = new LambdaLiftPhase(),
             EXPLICITOUTER = new ExplicitOuterClassesPhase(),
             ADDACCESSORS = new AddAccessorsPhase(),
-	    /*
             ADDINTERFACES = new AddInterfacesPhase(),
             EXPANDMIXIN = new ExpandMixinsPhase(),
+	    /*
             ERASURE = new ErasurePhase(),
             ADDCONSTRUCTORS = new AddConstructorsPhase(),
             GENMSIL = new GenMSILPhase(),
@@ -81,9 +81,9 @@ public class PhaseRepository {
     public final LambdaLiftPhase LAMBDALIFT;
     public final ExplicitOuterClassesPhase EXPLICITOUTER;
     public final AddAccessorsPhase ADDACCESSORS;
-    /*
     public final AddInterfacesPhase ADDINTERFACES;
     public final ExpandMixinsPhase EXPANDMIXIN;
+    /*
     public final ErasurePhase ERASURE;
     public final AddConstructorsPhase ADDCONSTRUCTORS;
     public final GenMSILPhase GENMSIL;

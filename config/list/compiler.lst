@@ -21,9 +21,12 @@ ast/parser/TokenData.java
 ast/parser/Tokens.java
 ast/AbstractTreeCopyFactory.java
 ast/LazyTreeFactory.java
+ast/StrictTreeFactory.java
+ast/SubstTransformer.java
 ast/Transformer.java
 ast/Traverser.java
 ast/Tree.java
+ast/TreeCopier.java
 ast/TreeCopyFactory.java
 ast/TreeCreator.java
 ast/TreeFactory.java
@@ -56,13 +59,18 @@ symtab/Scope.java
 symtab/SourceCompleter.java
 symtab/SymSet.java
 symtab/Symbol.java
+symtab/SymbolMapApplier.java
 symtab/Type.java
 symtab/TypeTags.java
 
 transformer/AddAccessors.java
 transformer/AddAccessorsPhase.java
+transformer/AddInterfaces.java
+transformer/AddInterfacesPhase.java
 transformer/ExplicitOuterClasses.java
 transformer/ExplicitOuterClassesPhase.java
+transformer/ExpandMixins.java
+transformer/ExpandMixinsPhase.java
 transformer/LambdaLift.java
 transformer/LambdaLiftPhase.java
 transformer/OwnerTransformer.java
