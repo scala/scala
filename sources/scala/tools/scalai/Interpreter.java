@@ -70,9 +70,15 @@ public class Interpreter {
     }
 
     public EvaluatorResult interpret(String input, boolean interactive) {
+        return interpret("<console>", input, interactive);
+    }
+
+    public EvaluatorResult interpret(String file, String input,
+        boolean interactive)
+    {
         if (input.trim().length() == 0) return EvaluatorResult.Void;
         return interpret(
-            global.compile("<console>", input + ";", interactive),
+            global.compile(file, input + ";", interactive),
             interactive);
     }
 

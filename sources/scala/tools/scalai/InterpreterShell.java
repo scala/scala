@@ -8,6 +8,7 @@
 
 package scala.tools.scalai;
 
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.PushbackReader;
@@ -193,8 +194,7 @@ public class InterpreterShell {
 
         case USE:
             if (args.length != 0) ufiles = args;
-            eval(ufiles);
-            return true;
+            return exec(ufiles);
 
         case GC:
             System.gc();
@@ -220,6 +220,36 @@ public class InterpreterShell {
         }
     }
 
+    public boolean exec(String[] files) {
+        for (int i = 0; i < files.length; i++) {
+            String file = files[i];
+            StringBuffer blank = new StringBuffer();
+            StringBuffer input = new StringBuffer();
+            try {
+                BufferedReader reader =
+                    new BufferedReader(new FileReader(file));
+                while (true) {
+                    String line = reader.readLine();
+                    if (line == null || line.trim().startsWith(":")) {
+                        String code = input.toString();
+                        if (code.trim().length() > 0) eval(file, code);
+                        if (line == null) break;
+                        if (!exec(line.trim())) return false;
+                        blank.append('\n');
+                        input.setLength(0);
+                        input.append(blank);
+                    } else {
+                        blank.append('\n');
+                        input.append(line).append('\n');
+                    }
+                }
+            } catch (IOException exception) {
+                error(exception.getMessage());
+            }
+        }
+        return true;
+    }
+
     //########################################################################
     // Public Methods - interpretation
 
@@ -237,6 +267,10 @@ public class InterpreterShell {
 
     public void eval(String input) {
         show(interpreter.interpret(input, true), true);
+    }
+
+    public void eval(String file, String input) {
+        show(interpreter.interpret(file, input, true), true);
     }
 
     public void eval(String[] files) {
