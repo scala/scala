@@ -1453,6 +1453,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    switch (that) {
 	    case SingleType(Type pre1, Symbol sym1):
 		return sym == sym1 && pre.isSameAs(pre1);
+		//|| sym.type.isStable() && sym.type.isSameAs(that)
+		//|| sym1.type.isStable() && this.isSameAs(sym1.type);
 	    case ThisType(Symbol sym1):
 		return sym.isModule()
 		    && sym.moduleClass() == sym1
