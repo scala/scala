@@ -770,7 +770,7 @@ class Scanner(_unit: Unit) extends TokenData {
   def xSkipToNext( endch:char, keep:boolean ):String = {
     lastpos = pos;
     val index = bp;
-    while ( ch != endch ) { xNext; };
+    while (( ch != endch )&&( ch != '{' )) { xNext; };
     if( keep )
       new String( buf, index, bp-index );
     else

@@ -43,7 +43,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   // create scala xml tree
 
   def mkXML(pos:int, isPattern:boolean, t:Tree, args:Array[Tree]):Tree = {
-    var symt = scalaDot(s.pos, Names.Symbol);
+    var symt = scalaDot( pos, Names.Symbol );
     if( isPattern ) symt = convertToTypeId(symt);
     val ts = new myTreeList();
     ts.append(t);
@@ -61,28 +61,24 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     make.Apply(pos, scalaDot(s.pos, Names.List), args);
   }
 
-  def makeXML(pos:int,n:Name,args:Array[Tree],attrMap:ListMap[Name,String]):Tree = {
+  def makeXML(pos:int,n:Name,args:Array[Tree],attrMap:ListMap[Name,Tree]):Tree = {
     var t = makeXML( pos, n, args );
     if( attrMap.isEmpty ) {
       t
     } else {
       val attrs = new Array[Tree]( attrMap.size );
-      val it = attrMap.elements ;
-      var i = 0; while( i < attrs.length ) {
-	val Pair( key, value ) = it.next;
-	attrs( i ) = make.Apply(pos, scalaDot(s.pos, Names.Tuple2), {
-	  val x = new Array[Tree](2);
-          x( 0 ) = gen.mkStringLit( pos, key.toString() );
-          x( 1 ) = gen.mkStringLit( pos, value.toString() );
-          x });
+      var i = 0;
+      for( val Pair( key, value ) <- attrMap.elements ) {
+	attrs( i ) = make.Apply(pos,
+                                scalaDot(s.pos, Names.Tuple2),
+                                Predef.Array(gen.mkStringLit( pos, key.toString() ),
+                                             value));
 	i = i + 1;
       };
-      make.Apply(pos, make.Select( pos, t, Names.PERCENT ), {
-	val x = new Array[Tree](1);
-	x( 0 ) = make.Apply(pos,
-                            scalaDot(s.pos, Names.List),
-                            attrs);
-	x })
+      make.Apply(pos,
+                 make.Select( pos, t, Names.PERCENT ),
+	         Predef.Array( make.Apply(pos, scalaDot(s.pos, Names.List),
+                            attrs)));
     }
   }
 
@@ -101,34 +97,55 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     tree
   }
 
-  /** parse a start or empty tag.
-   *  [40] STag         ::= '<' Name { S Attribute } [S]
-   *  [41] Attribute    ::= Name Eq AttValue
-   *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
-   */
-  def xTag:Tuple2[Name, ListMap[Name,String]] = {
-    val elemName = s.xName;
-    s.xSpaceOpt;
-    var attrMap = ListMap.Empty[Name,String];
+  /** parse attribute and add it to listmap
+   *  [41] Attributes    ::= { S Name Eq AttValue }
+   *       AttValue     ::= `'` { _ | `{` scalablock `}` } `'`
+   *                    ::= `"` { _ | `{` scalablock `}` } `"`
+  */
+  def xAttributes = {
+    var aMap = ListMap.Empty[Name,Tree];
     while( s.xIsNameStart ) {
-      val attrName = s.xName;
-      s.xEQ;
+      val key = s.xName; s.xEQ;
       val endch = s.ch.asInstanceOf[char];
-      val attrValue = endch match {
+      val value = endch match {
         case '"' | '\'' =>
+          val pos = s.pos;
           s.xNext; val tmp = s.xAttributeValue( endch );
-	  s.xNext; s.xSpaceOpt; tmp
+          s.xNext; s.xSpaceOpt;
+          gen.mkStringLit( pos, tmp )
+        case '{' =>
+          s.nextToken(); // = LBRACE
+          s.nextToken();
+          val tmp = p.expr(false,false);
+          if( s.token != RBRACE ) {
+            s.xSyntaxError("expected end of Scala block");
+          };
+          tmp
         case _ =>
-	  s.xSyntaxError( "' or \" delimited attribute value expected" );
-	""
+	  s.xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
+          make.Bad(s.pos)
       }
       // well-formedness constraint: unique attribute names
-      if( attrMap.contains( attrName ))
-        s.xSyntaxError( "attribute "+attrName+" may only be defined once" );
+      if( aMap.contains( key ))
+        s.xSyntaxError( "attribute "+key+" may only be defined once" );
+      aMap = aMap.update( key, value );
+    };
+   aMap
+  }
 
-      attrMap = attrMap.update( attrName, attrValue );
+  /** parse a start or empty tag.
+   *  [40] STag         ::= '<' Name { S Attribute } [S]
+   *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
+   */
+  def xTag = {
+    val elemName = s.xName;
+    s.xSpaceOpt;
+    val aMap = if( s.xIsNameStart ) {
+      xAttributes;
+    } else {
+      ListMap.Empty[Name,Tree];
     }
-    Tuple2( elemName, attrMap );
+    Tuple2( elemName, aMap );
   }
 
   /* [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'                 */
@@ -147,10 +164,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     val pos = s.pos;
     val Tuple2( elemName, attrMap ) = xTag;
     if( s.ch == '/' ) { // empty element
-      s.xToken('/'); s.xToken('>'); makeXML( pos, elemName, Tree.EMPTY_ARRAY );
+      s.xToken('/'); s.xToken('>');
+      makeXML( pos, elemName, Tree.EMPTY_ARRAY, attrMap );
     } else { // handle content
-      s.xToken('>'); s.xSpaceOpt;
-
+      s.xToken('>');
       val ts = new myTreeList();
       var exit = false;
       while( !exit ) {
@@ -178,7 +195,9 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
         }
       }
       xEndTag( elemName );
-      makeXML( pos, elemName, ts.toArray(), attrMap );
+      val t2 = makeXML( pos, elemName, ts.toArray(), attrMap );
+        Console.println("parsed:"+t2);
+        t2
     }
   }
 
