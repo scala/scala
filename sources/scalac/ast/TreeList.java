@@ -3,11 +3,14 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
-** $Id
 \*                                                                      */
+
+// $Id$
 
 package scalac.ast;
 
+/** List of trees.
+ */
 
 public final class TreeList {
     Tree[] trees;
