@@ -1172,6 +1172,9 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  `sub' must be a subclass of this.owner().
      */
     public Symbol overridingSymbol(Type sub) {
+        return overridingSymbol(sub, false);
+    }
+    public Symbol overridingSymbol(Type sub, boolean exact) {
         assert !isOverloaded() : this;
         Symbol sym1 = sub.lookup(name);
         if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
@@ -1185,13 +1188,18 @@ public abstract class Symbol implements Modifiers, Kinds {
             switch (sym1type) {
             case OverloadedType(Symbol[] alts, Type[] alttypes):
                 for (int i = 0; i < alts.length; i++) {
-                    if (alttypes[i].derefDef().isSubType(symtype)) return alts[i];
+                    if (exact
+                        ? alttypes[i].derefDef().isSameAs(symtype)
+                        : alttypes[i].derefDef().isSubType(symtype))
+                        return alts[i];
                 }
                 return Symbol.NONE;
             default:
-                if (sym1type.isSubType(symtype)) return sym1;
+                if (exact
+                    ? sym1type.isSameAs(symtype)
+                    : sym1type.isSubType(symtype)) return sym1;
                 else {
-                    if (Global.instance.debug) System.out.println(this + locationString() + " is not overridden by " + sym1 + sym1.locationString() + ", since " + sym1type + " !<= " + symtype);//DEBUG
+                    if (Global.instance.debug) System.out.println(this + locationString() + " is not overridden by " + sym1 + sym1.locationString() + ", since " + sym1type + (exact ? " != " : " !<= ") + symtype);//DEBUG
                     return Symbol.NONE;
                 }
             }
