@@ -178,6 +178,28 @@ object Bug213Test {
 }
 
 //############################################################################
+// Bug 217
+
+object Bug217Test {
+  def foo[t](fun: Function0[t]): t = fun();
+  def bar(x: Int): Unit = {
+    foo(() => 0);
+    ()
+  }
+  def main(args: Array[String]): Unit = bar(32);
+}
+
+//############################################################################
+// Bug 222
+
+object Bug222Test {
+  def main(args:Array[String]): Unit = {
+    val array: Array[String] = new Array(16);
+    ()
+  }
+}
+
+//############################################################################
 // Bug 225
 
 case class Bug225C();
@@ -206,6 +228,15 @@ object Bug226Test {
     ()
   }
 
+}
+
+//############################################################################
+// Bug 233
+
+object Bug233Test {
+  val b: Array[String] = null;
+  def main(args: Array[String]): Unit =
+    System.out.println(b == null);
 }
 
 //############################################################################
@@ -240,8 +271,11 @@ object Test  {
     test(174, Bug174Test.main(args));
     test(176, Bug176Test.main(args));
     test(213, Bug213Test.main(args));
+    test(217, Bug217Test.main(args));
+    test(222, Bug222Test.main(args));
     test(225, Bug225Test.main(args));
     test(226, Bug226Test.main(args));
+      test(233, Bug233Test.main(args));
 
     if (errors > 0) {
       System.out.println();
