@@ -850,7 +850,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	var modul: TermSymbol = TermSymbol.lookup(
 	  tree.pos, name, owner, mods | MODUL | FINAL, context.scope);
         if (modul == null) {
-          modul = new TermSymbol(tree.pos, name, owner, mods).makeModule();
+          modul = owner.newModule(tree.pos, mods, name);
         } else {
           // The symbol has already been created by some symbol
           // loader. It must be a real module.

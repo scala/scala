@@ -239,15 +239,16 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			break;
 
 		    case CLASSsym:
-			entries[n] = sym = new ClassSymbol(
-			    Position.NOPOS, name, owner, flags);
 			Symbol clr = ((flags & MODUL) == 0) ? classroot
 			    : moduleroot.moduleClass();
 			if (name == clr.name && owner == clr.owner()) {
 			    if (global.debug) global.log("overwriting " + clr);
-			    sym.copyTo(clr);
 			    entries[n] = sym = clr;
-			}
+			    sym.flags = flags;
+			} else {
+                            entries[n] = sym = owner.newClass(
+                                Position.NOPOS, flags, name);
+                        }
 			sym.setInfo(getType(inforef));
 			sym.setTypeOfThis(readTypeRef());
 			Symbol constr = readSymbolRef();
@@ -258,27 +259,25 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			break;
 
 		    case VALsym:
-			if (bp < end) {
-			    Symbol tsym = readSymbolRef();
-			    if (name == Names.CONSTRUCTOR) {
-				entries[n] = sym = tsym.allConstructors();
-				sym.flags = flags;
-			    } else {
-				assert (flags & MODUL) != 0 : name;
-				entries[n] = sym = new TermSymbol(
-				    Position.NOPOS, name, owner, flags)
-				    .makeModule((ClassSymbol) tsym);
-			    }
-			} else {
-			    entries[n] = sym = new TermSymbol(
-				Position.NOPOS, name, owner, flags);
-			}
+                        Symbol tsym = bp < end ? readSymbolRef() : null;
 			if (name == moduleroot.name && owner == moduleroot.owner()) {
 			    if (global.debug)
 				global.log("overwriting " + moduleroot);
-			    sym.copyTo(moduleroot);
 			    entries[n] = sym = moduleroot;
-			}
+                            sym.flags = flags;
+			} else if (tsym == null) {
+			    entries[n] = sym = new TermSymbol(
+				Position.NOPOS, name, owner, flags);
+                        } else {
+                            if (name == Names.CONSTRUCTOR) {
+                                entries[n] = sym = tsym.allConstructors();
+                            } else {
+                                assert (flags & MODUL) != 0: name;
+                                assert tsym.isModuleClass(): Debug.show(tsym);
+                                entries[n] = sym = tsym.module();
+                            }
+                            sym.flags = flags;
+                        }
 			Type tp = getType(inforef);
 			sym.setInfo(tp.setOwner(sym));
 			break;
