@@ -28,7 +28,8 @@ function website-print-xml-distributions-get-archive() {
     if [ -f "$archive" ]; then
         local name=`basename $archive`;
         local size=`stat -l -c%s $archive`;
-        echo "<archive name=\"$name\" size=\"$size\"/>";
+        local checksum=`sed -e's/\([0-9a-fA-F]*\).*/\1/' $archive.md5`;
+        echo "<archive name=\"$name\" size=\"$size\" checksum=\"$checksum\"/>";
     fi;
 }
 
