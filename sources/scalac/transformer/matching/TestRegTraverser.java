@@ -17,30 +17,44 @@ import java.util.*;
 
 public class TestRegTraverser extends Traverser {
     boolean result = false;
-	Set variables = new HashSet();
+    Set variables = new HashSet();
+    static Set nilVariables = new HashSet();
 
     public void traverse(Tree tree) {
     	if (!result)
-			switch (tree) {
-				case Alternative(_):
-					result = true;
-					break;
-				case Bind(_, Tree pat):
-					variables.add(tree.symbol());
-					traverse(pat);
-					break;
-				case Ident(_):
-					Symbol symbol = tree.symbol();
-					if ((symbol != Global.instance.definitions.PATTERN_WILDCARD) &&
-					    variables.contains(symbol))
-						result = true;
-					break;
-				 case CaseDef(Tree pat, _, _):
-				     traverse(pat);
-            		break;
-				default:
-					super.traverse( tree );
-			}
+	    switch (tree) {
+	    case Alternative(_):
+		result = true;
+		break;
+	    case Bind(_, Tree pat):
+		if( TreeInfo.isEmptySequence( pat ) ) {
+		    // annoying special case: b@() [or b@(()|()) after normalization]
+		    //System.err.println("bindin empty "+tree.symbol());
+		    nilVariables.add(tree.symbol());
+		} else {
+		    variables.add(tree.symbol());
+		}
+		traverse(pat);
+		break;
+	    case Ident(_):
+		Symbol symbol = tree.symbol();
+		if ((symbol != Global.instance.definitions.PATTERN_WILDCARD) &&
+		    variables.contains(symbol))
+		    result = true;
+		break;
+	    case CaseDef(Tree pat, _, _):
+		traverse(pat);
+		break;
+
+	    case Sequence( Tree[] trees):
+		//result = true;
+		traverse( trees );
+		result = true;
+		break;
+
+	    default:
+		super.traverse( tree );
+	    }
     }
 
     public static boolean apply(Tree t) {
@@ -48,5 +62,9 @@ public class TestRegTraverser extends Traverser {
         trt.traverse(t);
         //System.err.println("TestRegTraverser says "+t+" -> "+trt.result);
         return trt.result;
+    }
+
+    public static Set getNilVariables() {
+	return nilVariables;
     }
 }
