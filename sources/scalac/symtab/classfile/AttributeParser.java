@@ -201,6 +201,11 @@ public class AttributeParser implements ClassfileConstants {
                 sym.flags |= Modifiers.CASE | Modifiers.JAVA;
             in.skip(attrLen - 4);
             return;
+        case SOURCEFILE_ATTR:
+            String name = pool.getString(in.nextChar());
+            parser.c.getOrigin().setSourceFileAttribute(name);
+            parser.m.moduleClass().getOrigin().setSourceFileAttribute(name);
+            return;
         default:
             in.skip(attrLen);
             return;
