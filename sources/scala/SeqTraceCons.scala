@@ -1,22 +1,30 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2003, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala;
 
-  /** nonempty SeqTrace
-   */
-  final case class SeqTraceCons[ b ]( hdI:Int, hdb:b, tl: SeqTrace[ b ] )
-    extends SeqTrace[ b ]  {
+/** nonempty SeqTrace
+  */
+final case class SeqTraceCons[A](hdI: Int, hdb: A, tl: SeqTrace[A])
+    extends SeqTrace[A] {
 
-	  def isEmpty = false;
+    def isEmpty = false;
 
-	  def head = Tuple2( hdI, hdb );
+    def head = Pair(hdI, hdb);
 
-	  def headState = hdI;
+    def headState = hdI;
 
-	  def headElem  = hdb;
+    def headElem  = hdb;
 
-	  def tail:SeqTrace[ b ] = tl;
+    def tail:SeqTrace[A] = tl;
 
-	  //override def toString(): String = mkString2("[ ", "; ", " ]");
+    //override def toString(): String = mkString2("[ ", "; ", " ]");
 
-    }
-
-
+}
