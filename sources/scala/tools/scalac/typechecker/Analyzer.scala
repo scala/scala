@@ -14,6 +14,7 @@
 // todo: empty package
 
 import ch.epfl.lamp.util.Position;
+import ch.epfl.lamp.util.Pair;
 import scalac._;
 import scalac.util._;
 import scalac.ast._;
@@ -768,7 +769,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       // set the comment associated with a symbol
       val comment: String = global.mapTreeComment.get(tree).asInstanceOf[String];
       if (comment != null)
-	global.mapSymbolComment.put(sym, comment);
+	global.mapSymbolComment.put(sym, new Pair(comment, unit));
 
       sym
     }
