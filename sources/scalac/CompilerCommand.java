@@ -42,6 +42,7 @@ public class CompilerCommand extends CommandParser {
 
     public final CompilerPhases phases;
 
+    public final BooleanOptionParser debuginfo;
     public final BooleanOptionParser nowarn;
     public final BooleanOptionParser verbose;
     public final BooleanOptionParser debug;
@@ -58,6 +59,7 @@ public class CompilerCommand extends CommandParser {
     public final StringOptionParser outpath;
     public final StringOptionParser encoding;
     public final StringOptionParser assemrefs;
+    public final StringOptionParser assemname;
     public final ChoiceOptionParser target;
     public final BooleanOptionParser noimports;
     public final BooleanOptionParser nopredefs;
@@ -107,6 +109,9 @@ public class CompilerCommand extends CommandParser {
 
         ArgumentParser[] parsers = new ArgumentParser[] {
 
+	this.debuginfo = new BooleanOptionParser(this,
+	    "g", "Generate debugging info", false),
+
         this.nowarn = new BooleanOptionParser(this,
             "nowarn", "Generate no warnings",
             false),
@@ -114,30 +119,6 @@ public class CompilerCommand extends CommandParser {
         this.verbose = new BooleanOptionParser(this,
             "verbose", "Output messages about what the compiler is doing",
             false),
-
-        this.debug = new BooleanOptionParser(this,
-            "debug", "Output debugging messages",
-            false),
-
-        this.explaintypes = new BooleanOptionParser(this,
-            "explaintypes", "Explain type errors in more detail",
-            false),
-
-        this.uniqid = new BooleanOptionParser(this,
-            "uniqid", "Print identifiers with unique names (debugging option)",
-            false),
-
-        this.types = new BooleanOptionParser(this,
-            "types", "Print tree types (debugging option)",
-            false),
-
-        this.prompt = new BooleanOptionParser(this,
-            "prompt", "Display a prompt after each error (debugging option)",
-            false),
-
-        this.separate = new ChoiceOptionParser(this,
-            "separate", "read symbol files for separate compilation: (yes, no)",
-            "separate", new String[]{"yes", "no"}, "default"),
 
         //this.optimize = new OptimizeOptionParser(this,
         //    "optimize", "optimize bytecode (-optimize:help for option list)",
@@ -168,13 +149,41 @@ public class CompilerCommand extends CommandParser {
             // !!! is there a way to get the platform default charset name
             "encoding", "ISO-8859-1"),
 
-        this.assemrefs = new StringOptionParser(this,
-            "r", "Assemblies referenced by the source program",
-            "assembly files", "."),
+        this.separate = new ChoiceOptionParser(this,
+            "separate", "Read symbol files for separate compilation: (yes, no)",
+            "separate", new String[]{"yes", "no"}, "default"),
 
         this.target = new ChoiceOptionParser(this,
-            "target", "Specify which bakend to use (jvm, msil)",
+            "target", "Specify which backend to use (jvm, msil)",
             "target", Global.TARGETS, Global.TARGET_JVM),
+
+        this.assemrefs = new StringOptionParser(this, "r",
+	    "Assemblies referenced by the source program (only relevant with '-target:msil')",
+            "assembly files", "."),
+
+        this.assemname = new StringOptionParser(this, "o",
+            "Name of the output assembly (only relevant with '-target:msil')",
+            "assembly name", null),
+
+        this.debug = new BooleanOptionParser(this,
+            "debug", "Output debugging messages",
+            false),
+
+        this.explaintypes = new BooleanOptionParser(this,
+            "explaintypes", "Explain type errors in more detail",
+            false),
+
+        this.uniqid = new BooleanOptionParser(this,
+            "uniqid", "Print identifiers with unique names (debugging option)",
+            false),
+
+        this.types = new BooleanOptionParser(this,
+            "types", "Print tree types (debugging option)",
+            false),
+
+        this.prompt = new BooleanOptionParser(this,
+            "prompt", "Display a prompt after each error (debugging option)",
+            false),
 
         this.noimports = new BooleanOptionParser(this,
             "noimports", "Compile without any implicit imports",
