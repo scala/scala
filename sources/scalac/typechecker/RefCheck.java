@@ -93,7 +93,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 			   sym.overriddenSymbol(parents[0]).kind == NONE) {
 		    unit.error(sym.pos,
 			sym + " does not override a superclass member in " +
-			       parents);
+			       parents[0]);
 		}
 	    }
 	}
