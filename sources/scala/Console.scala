@@ -50,9 +50,9 @@ object Console {
     final val REVERSED   = "\033[7m";
     final val INVISIBLE  = "\033[8m";
 
-    private var out: PrintStream = System.out;
+    private var out: PrintStream = java.lang.System.out;
     private var in: BufferedReader =
-        new BufferedReader(new InputStreamReader(System.in));
+        new BufferedReader(new InputStreamReader(java.lang.System.in));
 
     /** Set the default output stream.
      *

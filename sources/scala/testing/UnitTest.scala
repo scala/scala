@@ -1,74 +1,70 @@
-package scala.testing ;
+// $Id$
+
+package scala.testing;
 
 object UnitTest {
 
-	    def message_passedOK:Unit = {
-		  System.out.println("passed ok")
-	    }
+  import java.lang.System;
 
-	    def message_failed( actual:String, expected:String ):Unit = {
-   		  System.out.print("failed! we got");
-		  System.out.print( "\""+ actual +"\"" );
-                  System.out.println(" but expected " + expected)
-	    }
+  def message_passedOK:Unit = {
+    System.out.println("passed ok")
+  }
 
-	    def testEquals[a]( actual: a, expected: a ):Unit = {
+  def message_failed( actual:String, expected:String ):Unit = {
+    System.out.print("failed! we got");
+    System.out.print( "\""+ actual +"\"" );
+    System.out.println(" but expected " + expected)
+  }
 
-	      if( actual == expected )
-                        {
-                         message_passedOK
-                        }
-                else
-                        {
-			 message_failed( actual.toString(), expected.toString() )
-                        }
+  def testEquals[a]( actual: a, expected: a ):Unit = {
 
-	    } // testEquals
+    if( actual == expected )
+      {
+        message_passedOK
+      }
+    else
+      {
+	message_failed( actual.toString(), expected.toString() )
+      }
 
-	    def testNotEquals[a]( actual: a, expected: a ):Unit = {
+  } // testEquals
 
-	      if( actual != expected )
-                        {
-                         message_passedOK
-                        }
-                else
-                        {
-			 message_failed( actual.toString(), "something != "+expected.toString() )
-                        }
+  def testNotEquals[a]( actual: a, expected: a ):Unit = {
 
-	    } // testNotEquals
+    if( actual != expected )
+      {
+        message_passedOK
+      }
+    else
+      {
+	message_failed( actual.toString(), "something != "+expected.toString() )
+      }
 
-            def test[b,a]( doit:b => a,
-                              input: b,
-                              expected:a ):Unit = {
-		val actual = doit( input );
-                if( actual == expected )
-                        {
-                         message_passedOK
-                        }
-                else
-                        {
-			 message_failed( actual.toString(), expected.toString() )
-                        }
+  } // testNotEquals
 
-            } // test
+  def test[b,a]( doit:b => a, input: b, expected:a ):Unit = {
+    val actual = doit( input );
+    if( actual == expected )
+      {
+        message_passedOK
+      }
+    else
+      {
+	message_failed( actual.toString(), expected.toString() )
+      }
+  } // test
 
-            def test2[c,b,a]( doit:(c,b) => a,
-                              in1: c,
-                              in2: b,
-                              expected:a ):Unit = {
-		val actual = doit( in1, in2 );
-                if( actual == expected )
-                        {
-                         message_passedOK;
-                        }
-                else
-                        {
-			 message_failed( actual.toString(), expected.toString() )
-                        }
+  def test2[c,b,a]( doit:(c,b) => a, in1: c, in2: b, expected:a ): Unit = {
+    val actual = doit( in1, in2 );
+    if( actual == expected )
+      {
+        message_passedOK;
+      }
+    else
+      {
+	message_failed( actual.toString(), expected.toString() )
+      }
 
-            } // test2
+  } // test2
 
 } // unitTest
-
-

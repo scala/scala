@@ -31,7 +31,7 @@ object Predef {
 
     def error(message: String): All = throw new Error(message);
 
-    def exit: scala.Unit = System.exit(0);
+    def exit: scala.Unit = java.lang.System.exit(0);
 
     def synchronized[A](obj: AnyRef)(def body: A): A =
       scala.runtime.NativeMonitor.synchronised(obj, body);

@@ -37,13 +37,14 @@ class Executable {
 
     /** The time when execution of this program started.
      */
-    val executionStart: Long = System.currentTimeMillis();
+    val executionStart: Long = java.lang.System.currentTimeMillis();
 
     /** The default main method.
      */
     def main(args: Array[String]) = {
-        if (System.getProperty("scala.time") != null)
-          System.out.println("[total " +
-                             (System.currentTimeMillis() - executionStart) + "ms]");
+        if (java.lang.System.getProperty("scala.time") != null)
+          java.lang.System.out.println("[total " +
+				       (java.lang.System.currentTimeMillis()
+					- executionStart) + "ms]");
     }
 }
