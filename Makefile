@@ -19,7 +19,7 @@ PROJECT_SOURCES		+= $(META_SOURCES)
 PROJECT_SOURCES		+= $(UTIL_SOURCES)
 PROJECT_SOURCES		+= $(SCALAC_SOURCES)
 PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
-PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
+PROJECT_SOURCES		+= $(SCALAI_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(SCALAP_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
@@ -108,10 +108,10 @@ LIBRARY_JAR_FILES	+= scala
 LIBRARY_SCALAC		 = $(PROJECT_BOOTSTRAPDIR)/bin/scalac
 
 # scala interpreter
-INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scala/tools/scalai
-INTERPRETER_LIST	+= $(call READLIST,$(PROJECT_LISTDIR)/scalai.lst)
-INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
-INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
+SCALAI_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalai
+SCALAI_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scalai.lst)
+SCALAI_SOURCES		+= $(SCALAI_LIST:%=$(SCALAI_ROOT)/%)
+SCALAI_JC_FILES		 = $(SCALAI_SOURCES)
 
 # scaladoc
 SCALADOC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scaladoc
@@ -196,7 +196,7 @@ SC_CLASSPATH		 = $(PROJECT_OUTPUTDIR)
 all		: sources
 all		: bootstrap
 all		: system
-all		: interpreter
+all		: scalai
 all		: scaladoc
 all		: scalap
 all		: dtd2scala
@@ -246,7 +246,7 @@ util		: .latest-$(boot)util-jc
 util		: .latest-$(boot)util-sc
 scalac		: .latest-$(boot)scalac-jc
 scalac		: .latest-$(boot)scalac-sc
-interpreter	: .latest-interpreter-jc
+scalai		: .latest-scalai-jc
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-sc
 scaladoc	: .latest-scaladoc-rsrc
@@ -269,7 +269,7 @@ library-doc	: .latest-library-sdc
 .PHONY		: util
 .PHONY		: scalac
 .PHONY		: library
-.PHONY		: interpreter
+.PHONY		: scalai
 .PHONY		: scaladoc
 .PHONY		: scalap
 .PHONY		: dtd2scala
@@ -394,8 +394,8 @@ cvs-fix-perms		:
 	@$(make) sdc target=LIBRARY
 	touch $@
 
-.latest-interpreter-jc	: $(INTERPRETER_JC_FILES)
-	@$(make) jc target=INTERPRETER INTERPRETER_JC_FILES='$?'
+.latest-scalai-jc	: $(SCALAI_JC_FILES)
+	@$(make) jc target=SCALAI SCALAI_JC_FILES='$?'
 	touch $@
 
 .latest-scaladoc-jc	: $(SCALADOC_JC_FILES)
@@ -500,7 +500,7 @@ $(TOOLS_JAR_ARCHIVE)	: .latest-util-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-util-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalac-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalac-sc
-$(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalai-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-rsrc
