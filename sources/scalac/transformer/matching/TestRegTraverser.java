@@ -27,7 +27,10 @@ public class TestRegTraverser extends Traverser {
 	    case Alternative(_):
 		result = true;
 		break;
-	    case Bind(_, Tree pat):
+	    case Bind(Name n, Tree pat):
+                if( TreeInfo.isNameOfStarPattern( n ) ) {
+                    result = true;
+                }
 		if( TreeInfo.isEmptySequence( pat ) ) {
 		    // annoying special case: b@() [or b@(()|()) after normalization]
 		    //System.err.println("bindin empty "+tree.symbol());
@@ -67,17 +70,12 @@ public class TestRegTraverser extends Traverser {
                             case Sequence( Tree[] trees3 ):
                                 result = true;
                                 break;
-                            default:
-                                super.traverse( tree );
-                            };
+                            }
                             //System.out.println( fn );
                             //System.out.println( tree.type() );
-                        } else if( trees.length > 0 )
-                            super.traverse( tree );
-                        break;
-                    default:
-                        super.traverse( tree );
+                        }
                     }
+                if( !result ) super.traverse( tree );
 		break;
 	    default:
 		super.traverse( tree );

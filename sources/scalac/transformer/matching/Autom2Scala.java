@@ -187,10 +187,7 @@ public class Autom2Scala  {
     /** some error happened which is due to bug in translation/automaton
      */
     final Tree code_error() {
-        return gen.mkBlock(
-            gen.Console_print( pos, "System error during pattern matching. Please file bug report\n"),
-            cf.ThrowMatchError( pos, funRetType() )
-        );
+        return cf.ThrowMatchError( pos, funRetType() );
     }
 
     Tree code_fail() {
