@@ -154,7 +154,7 @@ io/Position.scala
 #runtime/IOMap.java
 #runtime/InterpreterSupport.java
 runtime/RunTime.java
-../msil/scala/runtime/ScalaRunTime.scala
+runtime/ScalaRunTime.scala
 
 ../msil/scala/runtime/compat/Platform.scala
 
