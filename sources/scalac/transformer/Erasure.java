@@ -443,7 +443,7 @@ public class Erasure extends Transformer implements Modifiers {
 		return coerce(copy.Apply(tree, fun1, args1).setType(restpe), owntype);
 	    default:
 		global.debugPrinter.print(fun1);
-		throw Debug.abort("bad method type: " + fun1.type + " " + fun1.symbol());
+		throw Debug.abort("bad method type: " + Debug.show(fun1.type) + " " + Debug.show(fun1.symbol()));
 	    }
 
 	case Select(_, _):
@@ -453,11 +453,34 @@ public class Erasure extends Transformer implements Modifiers {
 	    return (tree1.type instanceof Type.MethodType) ? tree1
 		: coerce(tree1, owntype);
 
-	case AppliedType(_, _):
-	    return gen.mkType(tree.pos, owntype);
+        case Empty:
+        case PackageDef(_,_):
+        case Template(_,_):
+        case Tuple(_): // !!! ?
+        case Super(_):
+        case This(_):
+        case Literal(_):
+        case TypeTerm():
+	    return super.transform(tree).setType(owntype);
+
+        case Bad():
+        case ModuleDef(_,_,_,_):
+        case PatDef(_,_,_):
+        case Import(_,_):
+        case CaseDef(_,_,_):
+        case LabelDef(_,_):
+        case Visitor(_):
+        case Function(_,_):
+        case SingletonType(_):
+        case SelectFromType(_,_):
+        case FunType(_,_):
+        case CompoundType(_,_):
+        case AppliedType(_, _):
+        case CovariantType(_):
+            throw Debug.abort("illegal case", tree);
 
 	default:
-	    return super.transform(tree).setType(owntype);
+            throw Debug.abort("unknown case", tree);
 	}
     }
 
