@@ -257,6 +257,7 @@ public class ExpressionCompiler {
                 break;
 
             case JavaClass(Class clasz):
+                if (symbol.isInitializer()) break;
                 throw Debug.abort("!!! illegal super on java class", symbol);
 
             default:

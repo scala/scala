@@ -198,12 +198,14 @@ public class Environment {
     private void loadMethodOverride(Type[] bases, Symbol symbol) {
         if (!symbol.isMethod()) return;
         Override override = Override.empty().insert(symbol);
-        if (symbol.isExternal()) override.insert(mirror.getMethod(symbol));
-        for (int i = 0; i < bases.length; i++) {
-            Symbol overridden = symbol.overriddenSymbol(bases[i], true);
-            if (overridden == Symbol.NONE) continue;
-            assert Debug.log("update override: ", symbol, " <- ", overridden);
-            override.insert(lookupOverride(overridden));
+        if (!symbol.isInitializer()) {
+            if (symbol.isExternal()) override.insert(mirror.getMethod(symbol));
+            for (int i = 0; i < bases.length; i++) {
+                Symbol overridden = symbol.overriddenSymbol(bases[i], true);
+                if (overridden == Symbol.NONE) continue;
+                assert Debug.log("update override: ",symbol," <- ",overridden);
+                override.insert(lookupOverride(overridden));
+            }
         }
         insertOverride(symbol, override);
     }
