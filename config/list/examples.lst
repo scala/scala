@@ -11,7 +11,7 @@ futures.scala
 iterators.scala
 maps.scala
 parsers.scala
-# parsers1.scala
+parsers1.scala
 patterns.scala
 sort.scala
 sort1.scala
