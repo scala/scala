@@ -18,7 +18,7 @@ package scala.collection.immutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 19/07/2003
  */
-trait Set[A, This <: Set[A, This]]: This with scala.collection.Set[A] {
+trait Set[A, +This <: Set[A, This]]: This with scala.collection.Set[A] {
 
     def +(elem: A): This;
 

@@ -10,7 +10,7 @@
 package scala.collection.immutable;
 
 
-trait Map[A, B, This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
+trait Map[A, B, +This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
 
     def update(key: A, value: B): This;
 
