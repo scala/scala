@@ -9,7 +9,11 @@
 
 package scalac.transformer;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 import scalac.Global;
 import scalac.Unit;
@@ -450,6 +454,43 @@ public class Erasure extends Transformer implements Modifiers {
 // Transformer
 /////////////////////////////////////////////////////////////////////////////////
 
+    private final Map interfaces/*<Symbol,Set<Symbol>>*/ = new HashMap();
+
+    private Set getInterfacesOf(Symbol clasz) {
+        assert clasz.isClass(): Debug.show(clasz);
+        Set set = (Set)interfaces.get(clasz);
+        if (set == null) {
+            set = new HashSet();
+            interfaces.put(clasz, set);
+            Type parents[] = clasz.parents();
+            for (int i = 0; i < parents.length; i++)
+                set.addAll(getInterfacesOf(parents[i].symbol()));
+            if (clasz.isInterface()) set.add(clasz);
+        }
+        return set;
+    }
+
+    private void addInterfaceBridges_(Symbol clasz) {
+        assert clasz.isClass() && !clasz.isInterface(): Debug.show(clasz);
+        assert clasz.parents().length > 0: Debug.show(clasz)+": "+clasz.info();
+        Symbol svper = clasz.parents()[0].symbol();
+        assert svper.isClass() && !svper.isInterface(): Debug.show(clasz);
+        Set interfaces = new HashSet(getInterfacesOf(clasz));
+        interfaces.removeAll(getInterfacesOf(svper));
+        for (Iterator i = interfaces.iterator(); i.hasNext(); ) {
+            Symbol inter = (Symbol)i.next();
+            addInterfaceBridgesAux(clasz, inter.members());
+        }
+    }
+
+    private void addInterfaceBridgesAux(Symbol owner, Scope symbols) {
+        for (Scope.SymbolIterator i = symbols.iterator(true); i.hasNext();) {
+            Symbol member = i.next();
+            if (!member.isTerm() || !member.isDeferred()) continue;
+            addInterfaceBridges(owner, member);
+        }
+    }
+
 
     private Symbol getOverriddenMethod(Symbol method) {
         Type[] parents = method.owner().parents();
@@ -467,7 +508,11 @@ public class Erasure extends Transformer implements Modifiers {
     public void addInterfaceBridges(Symbol owner, Symbol method) {
 	assert owner.isClass() && !owner.isInterface(): Debug.show(owner);
         Symbol overriding = method.overridingSymbol(owner.thisType());
-        if (overriding != Symbol.NONE && !isSameAs(overriding.nextType(), method.nextType()))
+        if (overriding == method) {
+            Symbol overridden = method.overriddenSymbol(owner.thisType().parents()[0], owner);
+            if (overridden != Symbol.NONE && !isSameAs(overridden.nextType(), method.nextType()))
+                addBridge(owner, method, overridden);
+        } else if (overriding != Symbol.NONE && !isSameAs(overriding.nextType(), method.nextType()))
             addBridge(owner, overriding, method);
     }
 
@@ -485,7 +530,7 @@ public class Erasure extends Transformer implements Modifiers {
                     addBridgeMethodsTo(members.get(i).symbol());
                 }
             }
-            addInterfaceBridges(clasz);
+            addInterfaceBridges_(clasz);
         }
 
         members.append(bridges);
@@ -690,28 +735,6 @@ public class Erasure extends Transformer implements Modifiers {
 
     public Tree transform(Tree tree) {
         return transform(tree, false);
-    }
-
-    // !!! This is just rapid fix. Needs to be reviewed.
-    private void addInterfaceBridges(Symbol owner) {
-        Type[] parents = owner.info().parents();
-        for (int i = 1; i < parents.length; i++)
-            addInterfaceBridgesRec(owner, parents[i].symbol());
-    }
-    private void addInterfaceBridgesRec(Symbol owner, Symbol interfase) {
-        addInterfaceBridgesAux(owner, interfase.nextInfo().members());
-        Type[] parents = interfase.parents();
-        for (int i = 0; i < parents.length; i++) {
-            Symbol clasz = parents[i].symbol();
-            if (clasz.isInterface()) addInterfaceBridgesRec(owner, clasz);
-        }
-    }
-    private void addInterfaceBridgesAux(Symbol owner, Scope symbols) {
-        for (Scope.SymbolIterator i = symbols.iterator(true); i.hasNext();) {
-            Symbol member = i.next();
-            if (!member.isTerm() || !member.isDeferred()) continue;
-            addInterfaceBridges(owner, member);
-        }
     }
 
     /** Transform with prototype
