@@ -147,6 +147,26 @@ public class PatternNormalizer {
        */
       public boolean check( Tree pat ) {
             this.boundVars = new HashMap();
+
+            //reject top-level sequence patterns
+            switch( pat ) {
+                case Sequence( _ ):
+                    unit.error( pat.pos,
+                                "sequences not allowed here");
+                    return false;
+                case Alternative( Tree args[] ):
+                    for( int i = 0; i < args.length; i++ )
+                        switch( args[i] ) {
+                        case Sequence( _ ):
+                            unit.error( args[i].pos,
+                                        "sequences not allowed here");
+                            return false;
+                        }
+            }
+
+
+
+            // reject deep binding
             if( TreeInfo.isRegularPattern( pat ) )
                   seqDepth = 0;
             else
