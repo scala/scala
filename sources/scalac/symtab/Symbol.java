@@ -552,7 +552,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** get info at phase #id, without forcing lazy types.
      */
-    private Type rawInfoAt(int id) {
+    public Type rawInfoAt(int id) {
 	int nextid = infos.limit;
 	assert infos != TypeIntervalList.EMPTY : this;
 	if (nextid < id) {
