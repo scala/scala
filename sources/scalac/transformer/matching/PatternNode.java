@@ -15,7 +15,7 @@ import scalac.symtab.*;
 import scalac.typechecker.*;
 
 
-/** Intermediate data structure for algebraic matcher
+/** Intermediate data structure for algebraic + pattern matcher
  */
 public class PatternNode {
     public int pos = Position.FIRSTPOS;
