@@ -8,6 +8,8 @@
 
 package scalac.atree;
 
+import scalac.symtab.Symbol;
+
 /** This class represents attributed code. */
 public class ACode {
 
@@ -15,6 +17,8 @@ public class ACode {
     // Public Cases
 
     public case Void;
+    public case This(Symbol clasz);
+    public case Constant(AConstant constant);
 
     //########################################################################
     // Public Fields

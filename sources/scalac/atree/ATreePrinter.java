@@ -339,6 +339,10 @@ public class ATreePrinter {
         switch (code) {
         case Void:
             return print("<void>");
+        case This(Symbol clasz):
+            return printSymbol(clasz).print('.').print("this");
+        case Constant(AConstant constant):
+            return printConstant(constant);
         default:
             throw Debug.abort("unknown case", code);
         }
