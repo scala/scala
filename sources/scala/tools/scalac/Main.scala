@@ -8,7 +8,7 @@
 
 import scala.tools.util.Reporter;
 import scalac.{CompilerCommand, Global => scalac_Global};
-import scalac.symtab.classfile.CLRPackageParser;
+import scalac.symtab.classfile.CLRTypes;
 
 package scala.tools.scalac {
 
@@ -34,8 +34,11 @@ object Main {
     var ok = true;
     if (command.parse(args) && command.files.list.size() > 0) {
       if (command.target.value == scalac_Global.TARGET_MSIL) {
-	try { CLRPackageParser.init(command); }
-	catch { case e: Error => ok = false; }
+	try { CLRTypes.init(command); }
+	catch { case e: Error =>
+          e.printStackTrace();
+          ok = false;
+        }
       }
       if (ok) {
 	val global = new Global(command);
