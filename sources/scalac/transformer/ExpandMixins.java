@@ -115,8 +115,6 @@ public class ExpandMixins extends Transformer {
         List/*<Tree>*/ newBody = new ArrayList();
 	Scope newMembers = new Scope();
 
-        Map mixedInSymbols/*<Symbol,Symbol>*/ = new HashMap();
-
         Symbol newTemplSymbol = tree.symbol().cloneSymbol();
 
         // Start by copying the statement sequence.
@@ -140,8 +138,6 @@ public class ExpandMixins extends Transformer {
             SymbolCloner symbolCloner =
                 new SymbolCloner(global.freshNameCreator);
             SymbolSubstTypeMap typeCloner = new SymbolSubstTypeMap();
-            TreeCloner treeCloner = new TreeCloner(
-                global, symbolCloner.clones, typeCloner);
             Tree bc = tree.parents[bcIndex];
 
             final Symbol bcSym = baseTypes[bcIndex].symbol();
@@ -217,12 +213,13 @@ public class ExpandMixins extends Transformer {
                     newNames.put(symbol.name, clone.name);
                 typeCloner.insertSymbol(symbol, clone);
                 newMembers.enterOrOverload(clone);
-                mixedInSymbols.put(symbol, clone);
             }
 
             // Pass 2: copy members
             TreeSymbolCloner treeSymbolCloner =
                 new TreeSymbolCloner(symbolCloner);
+            TreeCloner treeCloner = new MyTreeCloner(
+                global, symbolCloner.clones, typeCloner, owner);
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
                 if (symbolCloner.clones.containsKey(member.symbol())) {
@@ -254,10 +251,7 @@ public class ExpandMixins extends Transformer {
 	    }
 	}
 
-        // Use correct symbols for mixed-in members.
-        SymbolFixer symbolFixer = new SymbolFixer(global, mixedInSymbols);
-        Tree[] fixedBody =
-            symbolFixer.transform((Tree[])newBody.toArray(new Tree[newBody.size()]));
+        Tree[] fixedBody = (Tree[])newBody.toArray(new Tree[newBody.size()]);
         Template newTree = make.Template(tree.pos, newBaseClasses, fixedBody);
         newTree.setSymbol(newTemplSymbol);
 	newTree.setType(Type.compoundType(newBaseTypes, newMembers, owner));
@@ -318,38 +312,28 @@ public class ExpandMixins extends Transformer {
     }
 
     //########################################################################
+    // Private Class - MyTreeCloner
 
-    protected static class SymbolFixer extends Transformer {
-        protected final Map/*<Symbol,Symbol>*/ mixedInSymbols;
+    private static class MyTreeCloner extends TreeCloner {
 
-        public SymbolFixer(Global global, Map mixedInSymbols) {
-            super(global);
-            this.mixedInSymbols = mixedInSymbols;
+        private final Symbol clasz;
+
+        public MyTreeCloner(Global global, Map symbols, Type.Map types,
+            Symbol clasz)
+        {
+            super(global, symbols, types);
+            this.clasz = clasz;
         }
 
         public Tree transform(Tree tree) {
             switch (tree) {
-            case Ident(_): {
-                Symbol sym = tree.symbol();
-                if (mixedInSymbols.containsKey(sym))
-                    return gen.Ident((Symbol)mixedInSymbols.get(sym));
-                else
-                    return super.transform(tree);
-            }
-
-            case Select(This(_), _):
-            case Select(Super(_), _): {
-                Symbol sym = tree.symbol();
-                if (mixedInSymbols.containsKey(sym))
-                    // TODO generate this.ident instead of just ident
-                    return gen.Ident((Symbol)mixedInSymbols.get(sym));
-                else
-                    return super.transform(tree);
-            }
-
+            case Super(Tree qualifier):
+                return gen.This(tree.pos, clasz);
             default:
                 return super.transform(tree);
             }
         }
     }
+
+    //########################################################################
 }
