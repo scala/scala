@@ -4,8 +4,20 @@
 # $Id$
 
 DeclToScala.scala
+DeclToSQL.scala
 Main.scala
 MainHandler.scala
 XMLDecl.scala
+
+regexp/Tokens.scala
+regexp/Scanner.scala
+regexp/Parser.scala
+regexp/RegExp.scala
+regexp/Node.scala
+regexp/Seq.scala
+regexp/Alt.scala
+regexp/Star.scala
+regexp/Eps.scala
+regexp/PCDATA_.scala
 
 ##############################################################################
