@@ -168,16 +168,13 @@ public class NondetWordAutom  {
        */
       TreeSet getSide ( TreeSet Qsrc, Object label ) {
             TreeSet Qdest = new TreeSet();
-            for( Iterator it = Qsrc.iterator(); it.hasNext(); ) {
-                  // state
-                  int q1 = ((Integer) it.next()).intValue();
-                  Vector ps = (Vector) deltaq[ q1 ].get( label );
-
-                  //System.out.println( "q1 "+q1+" targ:"+ps.toString() );
-                  if( ps!=null )
-                        Qdest.addAll( ps );
-
-                  Qdest.addAll( defaultq( q1 ) );
+            for( Iterator it = Qsrc.iterator(); it.hasNext(); ) {// state
+                  int q = ((Integer) it.next()).intValue();
+                  Vector ps = (Vector) deltaq[ q ].get( label );
+                  if( ps!=null ) {
+		      Qdest.addAll( ps );
+                  }
+                  Qdest.addAll( defaultq( q ) );
             }
             return Qdest;
       }
