@@ -551,18 +551,18 @@ public class PatternMatcher {
             } else {
                 Symbol ts = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
+//                 target.and = curHeader = makeHeader(
+//                     pat.pos,
+//                     getHeaderType(typeOf0(ts)),
+//                     make.Select(
+//                             pat.pos,
+//                             make.Ident(pat.pos, casted.name)
+//                                 .setType(typeOf(casted))
+//                                 .setSymbol(casted),
+//                             ts.name)
+//                             .setType(getHeaderType(typeOf0(ts)))
+//                             .setSymbol(ts));
                 target.and = curHeader = makeHeader(
-                    pat.pos,
-                    getHeaderType(typeOf0(ts)),
-                    make.Select(
-                            pat.pos,
-                            make.Ident(pat.pos, casted.name)
-                                .setType(typeOf(casted))
-                                .setSymbol(casted),
-                            ts.name)
-                            .setType(getHeaderType(typeOf0(ts)))
-                            .setSymbol(ts));
-                /* target.and = curHeader = makeHeader(
                     pat.pos,
                     getHeaderType(typeOf0(ts)),
                     make.Apply(
@@ -577,7 +577,7 @@ public class PatternMatcher {
                                       Symbol.EMPTY_ARRAY,
                                       getHeaderType(typeOf0(ts))))
                             .setSymbol(ts),
-                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts)))); */
+                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts))));
             }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);
