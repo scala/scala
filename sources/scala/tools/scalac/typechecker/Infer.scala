@@ -61,32 +61,34 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   private def companionObjViews(tp: Type, clazz: Symbol): List[View] = {
     if (clazz.kind == CLASS && !clazz.isModuleClass() && !clazz.isCaseClass()) {
       var obj = clazz.owner().info().lookupNonPrivate(clazz.name.toTermName());
-      //System.out.println("comp obj view " + tp + " " + obj);//DEBUG
-      obj.getType() match {
-	case Type$OverloadedType(alts, alttypes) =>
-	  var i = 0; while (i < alts.length) {
-	    if (alts(i).isModule()) obj = alts(i);
-	    i = i + 1
-	  }
-	case _ =>
-      }
-      if (obj.isModule()) {
-	val qual = if (tp.prefix() == Type.NoType) Tree.Empty
-		   else gen.mkRef(Position.NOPOS, tp.prefix(), obj);
-	val viewsym = obj.info().lookupNonPrivate(Names.view);
-	if (viewsym.kind == VAL) {
-	  obj.getType().memberType(viewsym) match {
-	    case Type$OverloadedType(alts, alttypes) =>
-	      var i = alttypes.length - 1;
-	      var vs: List[View] = List();
-	      while (i >= 0) {
-		vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
-		i = i - 1
-	      }
-	      vs
-	    case viewtype =>
-	      List(View(viewsym, viewtype, qual, Context.NONE))
-	  }
+      if (obj.isExternal() == clazz.isExternal()) {
+	//System.out.println("comp obj view " + tp + " " + obj);//DEBUG
+	obj.getType() match {
+	  case Type$OverloadedType(alts, alttypes) =>
+	    var i = 0; while (i < alts.length) {
+	      if (alts(i).isModule()) obj = alts(i);
+	      i = i + 1
+	    }
+	  case _ =>
+	}
+	if (obj.isModule()) {
+	  val qual = if (tp.prefix() == Type.NoType) Tree.Empty
+		     else gen.mkRef(Position.NOPOS, tp.prefix(), obj);
+	  val viewsym = obj.info().lookupNonPrivate(Names.view);
+	  if (viewsym.kind == VAL) {
+	    obj.getType().memberType(viewsym) match {
+	      case Type$OverloadedType(alts, alttypes) =>
+		var i = alttypes.length - 1;
+		var vs: List[View] = List();
+		while (i >= 0) {
+		  vs = View(alts(i), alttypes(i), qual, Context.NONE) :: vs;
+		  i = i - 1
+		}
+		vs
+	      case viewtype =>
+		List(View(viewsym, viewtype, qual, Context.NONE))
+	    }
+	  } else List()
 	} else List()
       } else List()
     } else List()
