@@ -87,6 +87,8 @@ LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
 LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
 LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
+LIBRARY_SDC_FILES	+= $(LIBRARY_SC_FILES)
+LIBRARY_SDC_OUTPUTDIR	 = $(PROJECT_APIDIR)
 
 # scala interpreter
 INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scalai
@@ -162,6 +164,7 @@ generate	: .latest-generate
 compiler	: .latest-compiler
 library		: .latest-library-jc
 library		: .latest-library-sc
+library		: .latest-library-sdc
 interpreter	: .latest-interpreter
 scaladoc	: .latest-scaladoc
 dtd2scala	: .latest-dtd2scala
@@ -207,6 +210,10 @@ dtd2scala	: .latest-dtd2scala
 
 .latest-library-sc	: $(LIBRARY_SC_FILES)
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,\$$$$,$?)'
+	touch $@
+
+.latest-library-sdc	: $(LIBRARY_SDC_FILES)
+	@$(make) sdc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,\$$$$,$(LIBRARY_SC_FILES))'
 	touch $@
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
@@ -292,5 +299,6 @@ $(PROJECT_JAR_ARCHIVE)	:
 include $(PROJECT_SUPPORTDIR)/make/jc.mk
 include $(PROJECT_SUPPORTDIR)/make/jar.mk
 include $(PROJECT_SUPPORTDIR)/make/sc.mk
+include $(PROJECT_SUPPORTDIR)/make/sdc.mk
 
 ##############################################################################
