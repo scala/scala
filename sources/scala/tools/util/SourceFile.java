@@ -115,7 +115,7 @@ public class SourceFile {
             }
             lineLength = index - lineStart;
             if (index < bytes.length)
-            	index++;
+                index++;
             if (index < bytes.length)
                 if (bytes[index - 1] == CR && bytes[index] == LF) index++;
         }
@@ -155,7 +155,7 @@ public class SourceFile {
             byte[] bytes = new byte[input.available() + 1];
             int numread = input.read(bytes);
             if ((numread >= 0) && (numread != bytes.length - 1))
-            	throw new IOException();
+                throw new IOException();
             bytes[bytes.length - 1] = SU;
             return bytes;
         } catch (IOException exception) {
@@ -166,7 +166,7 @@ public class SourceFile {
     /** Ensures that the last byte of the array is SU. */
     private static byte[] normalize(byte[] input) {
         if (input.length > 0 && input[input.length - 1] == SU)
-        	return input;
+                return input;
         byte[] bytes = new byte[input.length + 1];
         System.arraycopy(input, 0, bytes, 0, input.length);
         bytes[input.length] = SU;
