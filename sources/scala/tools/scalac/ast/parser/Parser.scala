@@ -38,7 +38,7 @@ class Parser(unit: Unit) {
 
   /** the markup parser
   */
-  val xmlp = new MarkupParser( unit, s, this );
+  val xmlp = new MarkupParser( unit, s, this, unit.global.xmlPreserveWS );
 
   /** the tree factory
    */

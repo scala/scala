@@ -19,7 +19,7 @@ import scala.collection.mutable.Buffer;
 import scalac.symtab.Modifiers;
 package scala.tools.scalac.ast.parser {
 
-class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
+class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
 
   import Tokens.{EMPTY, LBRACE, RBRACE} ;
   import scala.tools.scalac.ast.{TreeList => myTreeList}
@@ -160,7 +160,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
         Predef.Array[Tree]( t, _emptyMap( pos ) )
       } else {
         Predef.Array[Tree]( t, _emptyMap( pos ), make.Typed(
-          pos, makeXMLseq(pos, args), make.Ident(pos, TypeNames.WILDCARD_STAR)))
+          pos, makeXMLseq(pos, args ), make.Ident(pos, TypeNames.WILDCARD_STAR)))
       };
       make.Apply( pos, _scala_xml_Elem( pos ), constrArgs )
     }
@@ -174,9 +174,9 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     make.New( pos, constr );
   };
   // create scala.xml.Text here <: scala.xml.Node
-  def makeText( pos: int, txt:String ):Tree =
+  def makeText( pos: int, txt:String ):Tree = {
     makeText( pos, gen.mkStringLit( pos, txt ));
-
+  }
   // create
   def makeComment( pos: int, comment:scala.xml.Comment ):Tree =
     makeComment( pos, gen.mkStringLit( pos, comment.text ));
@@ -265,30 +265,40 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     if( null == res ) ts else res;
   }
 
+  def isEmptyText(t:Tree) = t match {
+    case Tree$Literal(atree.AConstant.STRING("")) => true;
+    case _                   => false;
+  }
   def makeXMLseq( pos:int, args:Array[Tree] ) = {
-    val blocArr = new Array[Tree] ( 1 + args.length );
+    val ts = new TreeList();
+    //val blocArr = new Array[Tree] ( 1 + args.length );
     val constr = _scala_collection_mutable_ArrayBuffer( pos );
     val n = p.fresh();
     val nIdent = make.Ident(pos, n);
-    blocArr( 0 ) = make.ValDef(pos, Modifiers.MUTABLE, n, Tree.Empty,
-                               make.New( pos, constr ));
+    //blocArr( 0 )
+    ts.append( make.ValDef(pos, Modifiers.MUTABLE, n, Tree.Empty,
+                               make.New( pos, constr )));
 
     var i = 0; while( i < args.length ) {
       val ipos = args(i).pos;
-      val t = make.Apply( ipos,
-                          make.Select( ipos, nIdent, _append ),
-                          Predef.Array[Tree]( convertToText( args( i ) )));
+      if( !isEmptyText( args( i ))) {
+        ts.append(
+          make.Apply( ipos,
+                     make.Select( ipos, nIdent, _append ),
+                     Predef.Array[Tree]( convertToText( args( i ) )))
+        )
+      }
       i = i + 1;
-      blocArr( i ) = t
     }
-    make.Block( pos, blocArr, nIdent );
+    make.Block( pos, ts.toArray(), nIdent );
   }
 
   def makeXMLseqPat( pos:int, args:Array[Tree] ) = {
     make.Apply( pos, _scala_Seq( pos ), args );
   }
 
-  def makeXML(pos:int,n:Name,args:Array[Tree],attrMap:ListMap[Name,Tree]):Tree = {
+  /** @todo: create map here directly */
+  def makeXML(pos:int,n:Name,args:Array[Tree],attrMap:ListMap[Name,Tree]):Tree={
     var t = makeXML( pos, n, args );
     if( attrMap.isEmpty ) {
       t
@@ -309,6 +319,29 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     }
   }
 
+  def trimWS( str:String ) = {
+    val sb = new StringBuffer();
+    val z:Seq[Char] = str;
+    var ws = false;
+    for( val c <- z ) {
+      if( s.xIsSpace( c ) ) {
+        if( !ws ) {
+          ws = true; sb.append( ' ' )
+        }
+      } else {
+        ws = false;
+        sb.append( c );
+      }
+    }
+    if( ' ' == sb.charAt( 0 ) ) {
+      sb.deleteCharAt( 0 )
+    }
+    val len = sb.length();
+    if( len > 0 && s.xIsSpace( sb.charAt( len-1 ) )) {
+      sb.setLength( len - 1 )
+    }
+    sb.toString();
+  }
 
   /** xLiteral = xExpr { xExpr }
    * @return Scala representation of this xml literal
@@ -452,7 +485,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
                   ts.append( makeEntityRef( s.pos, n ));
               }
             case _ => // text content
-              ts.append( makeText( s.pos, s.xText ));
+              var text = s.xText;
+              if( !preserveWS ) text = trimWS( text );
+              if( text.length() > 0 )
+                ts.append( makeText( s.pos, text ));
           }
         }
       }

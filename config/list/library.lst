@@ -163,6 +163,7 @@ xml/EntityRef.scala
 xml/FactoryAdapter.scala
 xml/Node.scala
 xml/NodeSeq.scala
+xml/PrettyPrinter.scala
 xml/ProcInstr.scala
 xml/Text.scala
 xml/Utility.scala

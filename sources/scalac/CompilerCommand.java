@@ -84,6 +84,7 @@ public class CompilerCommand extends CommandParser {
     public final BooleanOptionParser Xshortname;
     public final BooleanOptionParser Xmarkup;
     public final BooleanOptionParser Xnewmatch;
+    public final BooleanOptionParser XpreserveWS;
 
     //########################################################################
     // Public Constructors
@@ -243,6 +244,10 @@ public class CompilerCommand extends CommandParser {
 
         this.Xnewmatch = new BooleanOptionParser(this,
             "Xnewmatch", "new pattern matching",
+            false),
+
+        this.XpreserveWS = new BooleanOptionParser(this,
+            "XpreserveWS", "don't trim whitespace in XML literals",
             false),
 
         this.unknown_options = new UnknownOptionParser(this),

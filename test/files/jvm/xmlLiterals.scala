@@ -219,7 +219,9 @@ object Test03Servlet {
   }
 
   def main( args:Array[String] ) = {
-    Console.println( doGetXML() );
+    val x = doGetXML();
+    Console.println( x );
+    Console.println( new PrettyPrinter( 80, 2 ).toPrettyXML( x ));
   }
 
 }

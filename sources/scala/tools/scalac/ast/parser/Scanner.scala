@@ -942,7 +942,7 @@ class Scanner(_unit: Unit) extends TokenData {
     /* unit.global.xmlMarkup && */ ( token == IDENTIFIER )&&( name == LT );
   }
 
-  def xIsSpace = ch match {
+  def xIsSpace( ch:char ) = ch match {
     case ' ' | '\t' | CR | LF => true
     case _ => false;
   }
@@ -950,13 +950,13 @@ class Scanner(_unit: Unit) extends TokenData {
   /** skip optional space S?
   */
   def xSpaceOpt = {
-    while( xIsSpace ) { xNext; }
+    while( xIsSpace( ch ) ) { xNext; }
   }
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+
   */
   def xSpace = {
-    if( xIsSpace ) {
+    if( xIsSpace( ch ) ) {
       xNext; xSpaceOpt
     } else {
       xSyntaxError("whitespace expected");
@@ -1168,7 +1168,7 @@ class Scanner(_unit: Unit) extends TokenData {
   def xProcInstr:scala.xml.ProcInstr = {
     val sb:StringBuffer = new StringBuffer();
     val n = xName;
-    if( xIsSpace ) {
+    if( xIsSpace( ch ) ) {
       xSpace;
       while( true ) {
         if( ch=='?' && { sb.append( ch ); xNext; ch == '>' } ) {

@@ -72,63 +72,22 @@ object Utility {
     }
   }
 
-  /* serializes an instance of Node to a string that contains well-formed XML
-  **/
-/*
-  def toPrettyXML( n:Node, indent:int ):String = { n match {
-    case Text( t ) =>
-      escape( t );
-    case x:AttributedNode =>
-      val s = new StringBuffer();
-      for( val i<-List.range(0,indent) ) {
-        val _  = s.append(" ");
-        {}
-      }
-      val spaces = s.toString();
-      s.append('<');
-      s.append( x.label );
-      if( null != x.attributes ) {
-        s.append( attr2xml( x.attributes.elements ) );{}
-      }
-      s.append('>');
-    val childrenString = toXML( x.children.elements, 0 );
-    if( indent + 2 * x.label.length() + 4 + childrenString.length() < COLS ) {
-      s.append( childrenString );
-      s.append("</");
-      s.append( x.label );
-      s.append('>');
-      s.append('\n');
-    } else {
-      s.append('\n');
-      val childrenString = toXML( x.children.elements, indent+1 ) ;
-      s.append( childrenString );
-      s.append('\n');
-      s.append( spaces );
-      s.append("</");
-      s.append( x.label );
-      s.append('>');
-    }
-    s.toString()
-  }}
-  def toXML( ch:Iterator[Node], ind:int ):String = {
-    ch.foldLeft ("") { (s:String,n:Node) => {
-      val t:String = toPrettyXML( n, ind ); s + t
-    }}
-  }
-todo: better pretty printing */
-
+  /*
   def toXML( ch:Iterator[Node] ):String = {
     ch.foldLeft ("") { (s:String,n:Node) => s + n.toString() }
   }
+*/
 
   /** for a Node n, returns string representation of n.attributes **/
   def attr2xml( attrib:Iterator[Pair[String, String]], sb:StringBuffer ):Unit = {
     for( val x <- attrib ) {
       sb.append( " " );
       sb.append( x._1 );
-      sb.append("=\"");
+      sb.append("=");
+      val sep = { if( x._2.indexOf('"') != -1 ) '\'' else '"' };
+      sb.append( sep );
       sb.append( x._2 );
-      sb.append("\"");
+      sb.append( sep );
     }
   }
 

@@ -130,6 +130,7 @@ public class Names {
     public static final Name Short = Name.fromString("Short");
     public static final Name String = Name.fromString("String");
     public static final Name Symbol = Name.fromString("Symbol");
+    public static final Name Text = Name.fromString("Text");
     public static final Name Throwable = Name.fromString("Throwable");
     public static final Name Try = Name.fromString("Try");
     public static final Name Tuple = Name.fromString("Tuple");
