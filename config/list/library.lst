@@ -141,6 +141,9 @@ concurrent/pilib.scala
 concurrent/Process.scala
 concurrent/NameServer.scala
 
+io/Source.scala
+io/Position.scala
+
 mobile/Location.scala
 mobile/Code.scala
 
@@ -221,7 +224,6 @@ xml/parsing/ConstructingParser.scala
 xml/parsing/FatalError.scala
 xml/parsing/MarkupParser.scala
 xml/parsing/MarkupHandler.scala
-xml/parsing/ParserFactory.scala
 xml/parsing/XSDHandler.scala
 xml/path/Expression.scala
 #xml/path/Tokens.scala
