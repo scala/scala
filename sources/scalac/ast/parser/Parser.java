@@ -168,7 +168,7 @@ public class Parser implements Tokens {
      */
     Tree makeBinop(boolean isExpr, int pos, Tree left, Name op, Tree right) {
 	if (isExpr) {
-	    if (op.leftAssoc()) {
+	    if (op.isLeftAssoc()) {
 		return make.Apply(pos,
 		    make.Select(pos, left, NameTransformer.encode(op)),
 		    new Tree[]{right});
@@ -339,7 +339,7 @@ public class Parser implements Tokens {
 		     int prec, boolean leftAssoc) {
 	if (sp != base &&
 	    operators[sp-1].precedence() == prec &&
-	    operators[sp-1].leftAssoc() != leftAssoc) {
+	    operators[sp-1].isLeftAssoc() != leftAssoc) {
 	    syntaxError(
 		positions[sp-1],
 		"left- and right-associative operators with same precedence may not be mixed",
@@ -666,9 +666,16 @@ public class Parser implements Tokens {
 	    return make.If(pos, cond, thenp, elsep) ;
 	} else if (s.token == FOR) {
 	    s.nextToken();
-	    accept(LPAREN);
-	    Tree[] enums = enumerators();
-	    accept(RPAREN);
+	    Tree[] enums;
+	    if (s.token == LBRACE) {
+		accept(LBRACE);
+		enums = enumerators();
+		accept(RBRACE);
+	    } else {
+		accept(LPAREN);
+		enums = enumerators();
+		accept(RPAREN);
+	    }
 	    if (s.token == DO) {
 		return makeFor(s.skipToken(), enums, Names.foreach, Names.foreach, expr());
 	    } else if (s.token == YIELD) {
@@ -712,7 +719,7 @@ public class Parser implements Tokens {
 	Tree top = prefixExpr();
         while (s.token == IDENTIFIER) {
 	    top = reduceStack(
-		true, base, top, s.name.precedence(), s.name.leftAssoc());
+		true, base, top, s.name.precedence(), s.name.isLeftAssoc());
 	    push(top, s.pos, s.name);
 	    ident();
 	    if (isExprIntro()) {
@@ -972,7 +979,7 @@ public class Parser implements Tokens {
 	}
         while (s.token == IDENTIFIER) {
 	    top = reduceStack(
-		false, base, top, s.name.precedence(), s.name.leftAssoc());
+		false, base, top, s.name.precedence(), s.name.isLeftAssoc());
 	    push(top, s.pos, s.name);
 	    ident();
 	    top = simplePattern();
@@ -1439,7 +1446,7 @@ public class Parser implements Tokens {
                                tparams, vparams, restype, Tree.Empty);
     }
 
-    /** TypeDef ::= Id [TypeParamClause] `=' Type
+    /** TypeDef ::= Id `=' Type
      *  TypeSig ::= Id [`<:' Type]
      */
     Tree typeDefOrSig(int mods) {
@@ -1449,10 +1456,6 @@ public class Parser implements Tokens {
 	    s.nextToken();
 	    return make.TypeDef(pos, mods | Modifiers.DEFERRED, name,
 				Tree.ExtTypeDef.EMPTY_ARRAY, type());
-	} else if (s.token == LBRACKET) {
-	    TypeDef[] tparams = typeParamClauseOpt();
-	    accept(EQUALS);
-            return make.TypeDef(pos, mods, name, tparams, type());
 	} else if (s.token == EQUALS) {
 	    s.nextToken();
             return make.TypeDef(pos, mods, name,

@@ -534,9 +534,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
 	clazz.setInfo(Type.compoundType(new Type[]{f0t}, new Scope(), clazz));
 	clazz.constructor().setInfo(
-	    Type.MethodType(
-		Symbol.EMPTY_ARRAY,
-		Type.TypeRef(owner.thisType(), clazz, Type.EMPTY_ARRAY)));
+	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
 	Symbol applyMeth = new TermSymbol(pos, Names.apply, clazz, FINAL)
 	    .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, tp));

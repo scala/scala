@@ -113,8 +113,15 @@ public abstract class Symbol implements Modifiers, Kinds {
         return this;
     }
 
-    /** Set type -- this is an alias for setInfo(Type info) */
+    /** Set type -- this is an alias for setInfo(Type info)
+     */
     public Symbol setType(Type info) { return setInfo(info); }
+
+    /** Set type of `this' in current class
+     */
+    public Symbol setTypeOfThis(Type tp) {
+	throw new ApplicationError(this + ".setTypeOfThis");
+    }
 
     public Symbol updateInfo(Type info) {
 	// Global.instance.currentPhase.setInfo(this, info);
@@ -481,9 +488,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 	int nextid = infos.limit;
 	assert infos != TypeIntervalList.EMPTY : this;
 	if (nextid < id) {
+	    PhaseDescriptor curphase = Global.instance.currentPhase;
 	    do {
+		Global.instance.currentPhase = Global.instance.phases[nextid];
 		Type newInfo =
-		    Global.instance.phases[nextid].transformInfo(this, infos.info);
+		    Global.instance.currentPhase.transformInfo(this, infos.info);
 		if (newInfo != infos.info) {
 		    infos = new TypeIntervalList(infos);
 		    infos.info = newInfo;
@@ -491,6 +500,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 		nextid++;
 		infos.limit = nextid;
 	    } while (nextid < id);
+	    Global.instance.currentPhase = curphase;
 	    return infos.info;
 	} else {
 	    TypeIntervalList infos1 = infos;
@@ -528,14 +538,25 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return tps;
     }
 
+    /** The type constructor of a symbol is:
+     *  For a type symbol, the type corresponding to the symbol itself, excluding
+     *  parameters.
+     *  Not applicable for term symbols.
+     */
+    public Type typeConstructor() {
+	throw new ApplicationError("typeConstructor inapplicable for " + this);
+    }
+
     /** Get this.type corresponding to this symbol
      */
     public Type thisType() {
 	return Type.localThisType;
     }
 
+    /** Get type of `this' in current class.
+     */
     public Type typeOfThis() {
-	return Type.localThisType;
+	return type();
     }
 
     /** A total ordering between symbols that refines the class
@@ -857,10 +878,10 @@ public class TermSymbol extends Symbol {
 	TermSymbol sym = new TermSymbol(pos, name, owner, flags | MODUL | FINAL);
         Symbol clazz = new ClassSymbol(
 	    pos, name.toTypeName(), owner, flags | MODUL | FINAL, sym);
-	Type clazztype = Type.TypeRef(owner.thisType(), clazz, Type.EMPTY_ARRAY);
-        clazz.constructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, clazztype));
+        clazz.constructor().setInfo(
+	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 	sym.clazz = clazz;
-	sym.setInfo(clazztype);
+	sym.setInfo(clazz.typeConstructor());
 	return sym;
     }
 
@@ -910,6 +931,10 @@ public class TermSymbol extends Symbol {
         return other;
     }
 
+    public Symbol[] typeParams() {
+	return type().typeParams();
+    }
+
     public Symbol primaryConstructorClass() {
 	return isConstructor() && clazz != null ? clazz : this;
     }
@@ -927,21 +952,15 @@ public class TypeSymbol extends Symbol {
      */
     private ClosureIntervalList closures = ClosureIntervalList.EMPTY;
 
-    /** The symbol's type template */
-    private Type template;
-
-    /** The primary constructor of this type */
-    public final Symbol constructor;
+    /** A cache for type constructors
+     */
+    private Type tycon = null;
 
     /** Constructor */
     public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags) {
         super(kind, pos, name, owner, flags);
-        this.constructor = TermSymbol.newConstructor(this, flags);
-	if (kind == TYPE) { // provide a constructor type
-	    this.constructor().setInfo(
-		Type.PolyType(Symbol.EMPTY_ARRAY, Type.NoType));
-	}
     }
+
 
     /** Return a fresh symbol with the same fields as this one.
      */
@@ -949,32 +968,24 @@ public class TypeSymbol extends Symbol {
 	if (Global.instance.debug) System.out.println("cloning " + this + this.locationString());
         TypeSymbol other = new TypeSymbol(kind, pos, name, owner(), flags);
         other.setInfo(info());
-	other.constructor.setInfo(constructor.info());
         return other;
     }
 
-    /** Get self type */
-    public Type type() {
-	if (template == null || template.typeArgs().length != typeParams().length) {
-	    template = Type.TypeRef(
-		owner().thisType(), this, type(typeParams()));
-	}
-	return template;
+    /** Get type constructor */
+    public Type typeConstructor() {
+	if (tycon == null)
+	    tycon = Type.TypeRef(owner().thisType(), this, Type.EMPTY_ARRAY);
+	return tycon;
     }
 
-    //todo: needed?
+    /** Get type */
+    public Type type() {
+	return typeConstructor();
+    }
+
+    /** Get type at phase id */
     public Type typeAt(int id) {
 	return type();
-    }
-
-    /** Get type parameters */
-    public Symbol[] typeParams() {
-	return constructor.info().typeParams();
-    }
-
-    /** Get primary constructor */
-    public Symbol constructor() {
-        return constructor;
     }
 
     public Type[] closure() {
@@ -1069,6 +1080,12 @@ public class ClassSymbol extends TypeSymbol {
     /** The mangled class name */
     private Name mangled;
 
+    /** The symbol's type template */
+    private Type template;
+
+    /** The primary constructor of this type */
+    public final Symbol constructor;
+
     /** The module belonging to the class. This means:
      *  For Java classes, its statics parts.
      *  For module classes, the corresponding module.
@@ -1076,10 +1093,19 @@ public class ClassSymbol extends TypeSymbol {
      */
     private Symbol module = NONE;
 
+    /** The given type of self, or NoType, if no explicit type was given.
+     */
+    private Symbol thisSym = this;
+
+    /** A cache for this.thisType()
+     */
+    private Type thistp = Type.ThisType(this);
+
     /** Principal Constructor for module classes and classes with static members.
      */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
         super(CLASS, pos, name, owner, flags);
+        this.constructor = TermSymbol.newConstructor(this, flags);
         this.mangled = name;
     }
 
@@ -1103,6 +1129,7 @@ public class ClassSymbol extends TypeSymbol {
      */
     public ClassSymbol(Name name, Symbol owner, ClassParser parser) {
 	super(CLASS, Position.NOPOS, name, owner, JAVA);
+        this.constructor = TermSymbol.newConstructor(this, flags);
 	this.module = TermSymbol.newCompanionModule(this, JAVA, parser.staticsParser(this));
         this.mangled = name;
         this.setInfo(parser);
@@ -1116,7 +1143,15 @@ public class ClassSymbol extends TypeSymbol {
 	other.constructor.setInfo(constructor.info());
 	other.mangled = mangled;
 	other.module = module;
+	other.thisSym = thisSym;
         return other;
+    }
+
+    /** copy all fields to `sym'
+     */
+    public void copyTo(Symbol sym) {
+	super.copyTo(sym);
+	if (thisSym != this) sym.setTypeOfThis(typeOfThis());
     }
 
    /** Get module */
@@ -1153,10 +1188,37 @@ public class ClassSymbol extends TypeSymbol {
 	}
     }
 
-    private Type thistp = Type.ThisType(this);
+    /** Get type parameters */
+    public Symbol[] typeParams() {
+	return constructor.info().typeParams();
+    }
+
+    /** Get type */
+    public Type type() {
+	if (template == null || template.typeArgs().length != typeParams().length) {
+	    template = Type.TypeRef(
+		owner().thisType(), this, type(typeParams()));
+	}
+	return template;
+    }
 
     public Type thisType() {
 	return thistp;
+    }
+
+    public Type typeOfThis() {
+	return thisSym.type();
+    }
+
+    public Symbol setTypeOfThis(Type tp) {
+	thisSym = new TermSymbol(this.pos, Names.this_, this, SYNTHETIC);
+	thisSym.setInfo(tp);
+	return this;
+    }
+
+    /** Get primary constructor */
+    public Symbol constructor() {
+        return constructor;
     }
 
     /** Return the next enclosing class */

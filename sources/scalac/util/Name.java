@@ -385,7 +385,7 @@ public final class Name {
 
 /** is this operator left associative
  */
-    public boolean leftAssoc() {
-        return names[index] != ':';
+    public boolean isLeftAssoc() {
+        return names[index + len -1] != ':';
     }
 }

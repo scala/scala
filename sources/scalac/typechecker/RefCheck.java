@@ -97,7 +97,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	case ValDef(_, _, _, _):
 	    sym = stat.symbol();
 	}
-	if (sym != null) {
+	if (sym != null && sym.isLocal()) {
 	    scopes[level].enter(sym);
 	    symIndex.put(sym, new Integer(index));
 	}
@@ -163,7 +163,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Symbol sym = tree.symbol();
 	    resultTree = transform(tree);
 	    //todo: handle variables
-	    if (index <= maxindex[level]) {
+	    if (sym.isLocal() && index <= maxindex[level]) {
 		if (Global.instance.debug)
 		    System.out.println(refsym[level] + ":" + refsym[level].type());
 		unit.error(
@@ -189,7 +189,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return copy.Block(tree, stats1);
 	case Ident(Name name):
 	    Scope.Entry e = scopes[level].lookupEntry(name);
-	    if (tree.symbol() == e.sym) {
+	    Symbol sym = tree.symbol();
+	    if (sym.isLocal() && sym == e.sym) {
 		int i = level;
 		while (scopes[i] != e.owner) i--;
 		int symindex = ((Integer) symIndex.get(tree.symbol())).intValue();

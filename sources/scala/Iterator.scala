@@ -25,7 +25,7 @@ trait Iterator[a] {
   }
 
   def filter(p: a => Boolean): Iterator[a] = new BufferedIterator[a] {
-    private val source: BufferedIterator[a] =
+    private val source =
       Iterator.this.buffered;
     private def skip: Unit =
       while (source.hasNext && !p(source.head)) { source.next; () }

@@ -8,7 +8,7 @@ module lists {
   }
 
   def Nil[a] = new List[a] {
-    def isEmpty = True;
+    def isEmpty: True.type = True;
     def head = error[a]("head of Nil");
     def tail = error[List[a]]("tail of Nil");
   }

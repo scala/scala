@@ -176,13 +176,13 @@ trait List[a] extends Seq[a] {
   * operator <code>op</code>, from left to right, and starting with
   * the value <code>z</code>. Similar to <code>fold</code> but with
   * a different order of the arguments, allowing to use nice constructions like
-  * <code>(z :_foldl l) { ... }</code>.
+  * <code>(z foldl_: l) { ... }</code>.
   * @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
   * is <code>[a0, a1, ..., an]</code>.
   */
-  def :_foldl[b](z: b)(f: (b, a) => b): b = match {
+  def foldl_:[b](z: b)(f: (b, a) => b): b = match {
     case Nil() => z
-    case x :: xs => (xs.:_foldl[b](f(z, x)))(f)
+    case x :: xs => (xs.foldl_:[b](f(z, x)))(f)
   }
 
   def foldr[b](z: b)(f: (a, b) => b): b = match {
@@ -192,7 +192,7 @@ trait List[a] extends Seq[a] {
 
   def foldl1(f: (a, a) => a): a = this match {
     case Nil() => error("foldl1 of empty list")
-    case x :: xs => (x :_foldl xs)(f)
+    case x :: xs => (x foldl_: xs)(f)
   }
 
   def foldr1(f: (a, a) => a): a = match {
@@ -218,7 +218,7 @@ trait List[a] extends Seq[a] {
   * @return the elements of this list in reverse order.
   */
   def reverse: List[a] = {
-    ((Nil(): List[a]) :_foldl this)((xs: List[a], x: a) => x :: xs)
+    ((Nil(): List[a]) foldl_: this)((xs: List[a], x: a) => x :: xs)
   }
 
   /** Prints on standard output a raw textual representation of this list.

@@ -45,6 +45,10 @@ public class Definitions {
     public final Symbol SCALARUNTIME_CLASS;
     public final Type   SCALARUNTIME_TYPE;
 
+    /** the partial function class
+     */
+    public final Symbol PARTIALFUNCTION_CLASS;
+
     /** the null value
      */
     public final Symbol NULL;
@@ -191,61 +195,61 @@ public class Definitions {
         ANY_CLASS = new ClassSymbol(
 	    Position.NOPOS, Names.Any.toTypeName(), SCALA_CLASS, Modifiers.JAVA);
         SCALA_CLASS.members().enter(ANY_CLASS);
-        ANY_TYPE = monoType(ANY_CLASS);
+        ANY_TYPE = ANY_CLASS.typeConstructor();
         ANY_CLASS.setInfo(Type.compoundType(Type.EMPTY_ARRAY, new Scope(), ANY_CLASS));
         ANY_CLASS.constructor().setInfo(
 	    Type.PolyType(Symbol.EMPTY_ARRAY, ANY_TYPE));
 
         // the java.lang.OBJECT class
         JAVA_OBJECT_CLASS = getClass(Names.java_lang_Object);
-        JAVA_OBJECT_TYPE = monoType(JAVA_OBJECT_CLASS);
+        JAVA_OBJECT_TYPE = JAVA_OBJECT_CLASS.typeConstructor();
         JAVA_OBJECT_CLASS.setInfo(pparser.classCompletion);
+
+	// the scala.PartialFunction class
+	PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
 
         // the scala.ANYREF class
 	ANYREF_CLASS = new TypeSymbol(
 	    Kinds.ALIAS, Position.NOPOS, Names.AnyRef.toTypeName(),
 	    SCALA_CLASS, Modifiers.JAVA)
 	    .setInfo(JAVA_OBJECT_TYPE);
-	ANYREF_CLASS.constructor().setInfo(
-	    Type.PolyType(Symbol.EMPTY_ARRAY, Type.NoType));
-
-	ANYREF_TYPE = monoType(ANYREF_CLASS);
+	ANYREF_TYPE = ANYREF_CLASS.typeConstructor();
         SCALA.members().enter(ANYREF_CLASS);
 
         // the scala.OBJECT class
 	OBJECT_CLASS = getClass(Names.scala_Object);
-        OBJECT_TYPE = monoType(OBJECT_CLASS);
+        OBJECT_TYPE = OBJECT_CLASS.typeConstructor();
 
         // the scala.ANYVAL class
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
-        ANYVAL_TYPE = monoType(ANYVAL_CLASS);
+        ANYVAL_TYPE = ANYVAL_CLASS.typeConstructor();
 
         // the primitive types
         DOUBLE_CLASS = getClass(Names.scala_Double);
-        DOUBLE_TYPE = monoType(DOUBLE_CLASS);
+        DOUBLE_TYPE = DOUBLE_CLASS.typeConstructor();
         FLOAT_CLASS = getClass(Names.scala_Float);
-        FLOAT_TYPE = monoType(FLOAT_CLASS);
+        FLOAT_TYPE = FLOAT_CLASS.typeConstructor();
         LONG_CLASS = getClass(Names.scala_Long);
-        LONG_TYPE = monoType(LONG_CLASS);
+        LONG_TYPE = LONG_CLASS.typeConstructor();
         INT_CLASS = getClass(Names.scala_Int);
-        INT_TYPE = monoType(INT_CLASS);
+        INT_TYPE = INT_CLASS.typeConstructor();
         CHAR_CLASS = getClass(Names.scala_Char);
-        CHAR_TYPE = monoType(CHAR_CLASS);
+        CHAR_TYPE = CHAR_CLASS.typeConstructor();
         SHORT_CLASS = getClass(Names.scala_Short);
-        SHORT_TYPE = monoType(SHORT_CLASS);
+        SHORT_TYPE = SHORT_CLASS.typeConstructor();
         BYTE_CLASS = getClass(Names.scala_Byte);
-        BYTE_TYPE = monoType(BYTE_CLASS);
+        BYTE_TYPE = BYTE_CLASS.typeConstructor();
         BOOLEAN_CLASS = getClass(Names.scala_Boolean);
-        BOOLEAN_TYPE = monoType(BOOLEAN_CLASS);
+        BOOLEAN_TYPE = BOOLEAN_CLASS.typeConstructor();
         UNIT_CLASS = getClass(Names.scala_Unit);
-        UNIT_TYPE = monoType(UNIT_CLASS);
+        UNIT_TYPE = UNIT_CLASS.typeConstructor();
 
         // the array class
         ARRAY_CLASS = getClass(Names.scala_Array);
 
         // add members to java.lang.Throwable
         JAVA_THROWABLE_CLASS = getClass(Names.java_lang_Throwable);
-        JAVA_THROWABLE_TYPE = monoType(JAVA_THROWABLE_CLASS);
+        JAVA_THROWABLE_TYPE = JAVA_THROWABLE_CLASS.typeConstructor();
         THROW = new TermSymbol(
 	    Position.NOPOS, Names.throw_, JAVA_THROWABLE_CLASS, Modifiers.FINAL);
         Symbol tvar = newTypeParameter(THROW, ANY_TYPE);
@@ -254,13 +258,11 @@ public class Definitions {
 
         // add the java.lang.String class to the scala package
         JAVA_STRING_CLASS = getClass(Names.java_lang_String);
-        JAVA_STRING_TYPE = monoType(JAVA_STRING_CLASS);
+        JAVA_STRING_TYPE = JAVA_STRING_CLASS.typeConstructor();
         STRING_CLASS = new TypeSymbol(
 	    Kinds.ALIAS, Position.NOPOS, Names.String.toTypeName(), SCALA_CLASS, 0)
 	    .setInfo(JAVA_STRING_TYPE);
-	STRING_CLASS.constructor().setInfo(
-	    Type.PolyType(Symbol.EMPTY_ARRAY, Type.NoType));
-	STRING_TYPE = monoType(STRING_CLASS);
+	STRING_TYPE = STRING_CLASS.typeConstructor();
         SCALA.members().enter(STRING_CLASS);
 
 	SEQ_CLASS = getClass(Names.scala_Seq);
@@ -384,12 +386,8 @@ public class Definitions {
 	return getClass(fullname).type();
     }
 
-    public Type monoType(Symbol c) {
-	return Type.TypeRef(c.owner().thisType(), c, Type.EMPTY_ARRAY);
-    }
-
     public Type getJavaType(Name fullname) {
-	return monoType(getClass(fullname));
+	return getClass(fullname).typeConstructor();
     }
 
     private void loadBooleanMembers() {
@@ -402,7 +400,7 @@ public class Definitions {
     }
 
     public Type arrayType(Type elemtpe) {
-        return Type.appliedType(monoType(ARRAY_CLASS), new Type[]{elemtpe});
+        return Type.appliedType(ARRAY_CLASS.typeConstructor(), new Type[]{elemtpe});
     }
 
     public Type functionType(Type[] argtps, Type restp) {
@@ -412,6 +410,13 @@ public class Definitions {
 	return Type.appliedType(
 	    getType(Name.fromString("scala.Function" + argtps.length)),
 	    argtps1);
+    }
+
+    public Type partialFunctionType(Type argtpe, Type restpe) {
+	Type[] argtps1 = new Type[2];
+	argtps1[0] = argtpe;
+	argtps1[1] = Type.covarType(restpe);
+	return Type.appliedType(PARTIALFUNCTION_CLASS.typeConstructor(), argtps1);
     }
 
     public Type seqType(Type argtpe) {

@@ -144,5 +144,3 @@ module Stream {
     else empty;
   }
 }
-
-case class Foo()

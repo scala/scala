@@ -53,7 +53,7 @@ public class ClassfileParser implements ClassfileConstants {
         this.global = global;
         this.in = in;
         this.c = c;
-	this.ctype = Type.TypeRef(c.owner().thisType(), c, Type.EMPTY_ARRAY);
+	this.ctype = c.typeConstructor();
         this.make = new JavaTypeCreator(global);
         this.sigs = new Signatures(global, make);
         this.pool = new ConstantPool(in, sigs);

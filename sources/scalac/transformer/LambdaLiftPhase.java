@@ -64,7 +64,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 	    case TypeRef(Type pre, Symbol sym, Type[] targs):
 		switch (pre) {
 		case ThisType(_):
-		    if (sym.constructor().isUpdated(nextPhase)) {
+		    if (sym.kind == CLASS && sym.constructor().isUpdated(nextPhase)) {
 			Symbol[] tparams =
 			    sym.constructor().infoAt(nextPhase).typeParams();
 			int i = tparams.length;

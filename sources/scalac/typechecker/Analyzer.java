@@ -27,6 +27,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private final DeSugarize desugarize;
     private final AnalyzerPhase descr;
     final Infer infer;
+    final Transformer duplicator;
 
     public Analyzer(Global global, AnalyzerPhase descr) {
         super(global, descr);
@@ -34,6 +35,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	this.descr = descr;
 	this.infer = new Infer(this);
 	this.desugarize = new DeSugarize(this, global);
+	this.duplicator = new Transformer(
+	    global, descr, make, new StrictTreeFactory(make));
     }
 
     /** Phase variables, used and set in transformers;
@@ -150,19 +153,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    break;
 	}
 	return fn.type == Type.ErrorType ? Type.ErrorType : Type.NoType;
-    }
-
-    private Tree deepCopy(Tree tree) {
-	switch (tree) {
-	case Ident(Name name):
-	    return make.Ident(tree.pos, name)
-		.setSymbol(tree.symbol()).setType(tree.type);
-	case Select(Tree qual, Name name):
-	    return make.Select(tree.pos, deepCopy(qual), name)
-		.setSymbol(tree.symbol()).setType(tree.type);
-	default:
-	    return tree;
-	}
     }
 
     static Name value2TypeName(Object value) {
@@ -293,15 +283,19 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *  - final classes are only inherited by classes which are
      *    nested within definition of base class, or that occur within same
      *    statement sequence.
+     *  - self-type of current class is a subtype of self-type of each parent class.
      */
-    void validateParentClasses(Tree[] constrs, Type[] parents) {
+    void validateParentClasses(Tree[] constrs, Type[] parents, Type selfType) {
 	if (parents.length == 0 || !checkClassType(constrs[0].pos, parents[0])) return;
-	for (int i = 1; i < parents.length; i++) {
+	for (int i = 0; i < parents.length; i++) {
 	    if (!checkClassType(constrs[i].pos, parents[i])) return;
-	    Type[] grandparents = parents[i].parents();
-	    if (grandparents.length > 0 && !parents[0].isSubType(grandparents[0]))
-		error(constrs[i].pos, "illegal inheritance;\n " + parents[0] +
-		      " does not conform to " + parents[i] + "'s supertype");
+	    if (1 <= i) {
+		Type[] grandparents = parents[i].parents();
+		if (grandparents.length > 0 &&
+		    !parents[0].isSubType(grandparents[0]))
+		    error(constrs[i].pos, "illegal inheritance;\n " + parents[0] +
+			  " does not conform to " + parents[i] + "'s supertype");
+	    }
 	    Symbol bsym = parents[i].symbol();
 	    if ((bsym.flags & FINAL) != 0) {
 		// are we in same scope as base type definition?
@@ -315,6 +309,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			error(constrs[i].pos, "illegal inheritance from final class");
 		    }
 		}
+	    }
+	    if (!selfType.isSubType(parents[i].instanceType())) {
+		error(constrs[i].pos, "illegal inheritance;\n self-type " +
+		      selfType + " does not conform to " + parents[i] +
+		      "'s selftype " + parents[i].instanceType());
 	    }
 	}
     }
@@ -444,7 +443,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	try {
 	    return checkNoEscapeMap.apply(tp);
 	} catch (Type.Error ex) {
-	    error(pos, tp + "///" + ex.msg);
+	    error(pos, ex.msg);
 	    return Type.ErrorType;
 	}
     }
@@ -494,6 +493,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	new TextTreePrinter().print(tree).end();//debug
 	System.out.println(" " + tree.type);//debug
 	return error(tree, "stable identifier required");
+    }
+
+    /** Check that (abstract) type can be instantiated.
+     */
+    void checkInstantiatable(int pos, Type tp) {
+	error(pos, tp.symbol() + " is abstract; cannot be instantiated");
     }
 
     /** Check all members of class `clazz' for overriding conditions.
@@ -628,7 +633,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (clazz.isLocalClass()) unit.mangler.setMangledName(clazz);
 
 	    enterSym(tree, clazz.constructor());
-	    if ((mods & CASE) != 0) {
+	    if ((mods & (ABSTRACTCLASS | CASE)) == CASE) {
 		// enter case constructor method.
 		enterInScope(
 		    new TermSymbol(
@@ -652,10 +657,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	case TypeDef(int mods, Name name, _, _):
 	    int kind = (mods & (DEFERRED | PARAM)) != 0 ? TYPE : ALIAS;
-	     TypeSymbol tsym = new TypeSymbol(kind, tree.pos, name, owner, mods);
-	     if (kind == ALIAS)
-		 tsym.constructor().setInfo(new LazyTreeType(tree));
-	    return enterSym(tree, tsym);
+	    return enterSym(tree, new TypeSymbol(kind, tree.pos, name, owner, mods));
 
 	case Import(Tree expr, Name[] selectors):
 	    return enterImport(tree,
@@ -700,7 +702,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (other.isPreloaded()) {
 		    // symbol was preloaded from package;
 		    // need to overwrite definition.
-		    if (global.debug) System.out.println("overwriting " + other);//debug
+		    if (global.debug) System.out.println(sym + " overwrites " + other);//debug
 		    sym.copyTo(other);
 		    if (sym.isModule()) {
 			sym.moduleClass().copyTo(
@@ -742,11 +744,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     /** Define symbol associated with `tree' using given `context'.
      */
-    void defineSym(Tree tree, Unit unit, Infer infer, Context context) {
+    void defineSym(Tree tree, Unit unit, Infer infer, Context curcontext) {
         Unit savedUnit = this.unit;
         this.unit = unit;
 	Context savedContext = this.context;
-	this.context = context;
+	this.context = curcontext;
 	int savedMode = this.mode;
 	this.mode = EXPRmode;
 	Type savedPt = this.pt;
@@ -756,7 +758,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (global.debug) System.out.println("defining " + sym);//debug
 	Type owntype;
 	switch (tree) {
-	case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, _, Tree.Template templ):
+	case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
 	    assert (mods & LOCKED) == 0 || sym.isAnonymousClass(): sym; // to catch repeated evaluations
 	    ((ClassDef) tree).mods |= LOCKED;
 
@@ -766,6 +768,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    pushContext(tree, sym.constructor(), new Scope(context.scope));
 	    Symbol[] tparamSyms = enterParams(tparams);
 	    Symbol[][] vparamSyms = enterParams(vparams);
+	    for (int i = 0; i < vparamSyms.length; i++)
+		for (int j = 0; j < vparamSyms[i].length; j++)
+		    context.scope.unlink(
+			context.scope.lookupEntry(vparamSyms[i][j].name));
 	    Type constrtype = makeMethodType(
 		tparamSyms,
 		vparamSyms,
@@ -773,7 +779,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    sym.constructor().setInfo(constrtype);
 	    // necessary so that we can access tparams
 	    sym.constructor().flags |= INITIALIZED;
+	    if (tpe != Tree.Empty)
+		sym.setTypeOfThis(transform(tpe, TYPEmode).type);
 
+	    reenterParams(vparams);
 	    defineTemplate(templ, sym);
 	    owntype = templ.type;
 	    popContext();
@@ -812,31 +821,31 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	case DefDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
 	    pushContext(tree, sym, new Scope(context.scope));
 	    Symbol[] tparamSyms = enterParams(tparams);
+	    Type restpe = null;
+	    if (tpe != Tree.Empty) {
+		restpe = transform(tpe, TYPEmode).type;
+	    }
 	    Symbol[][] vparamSyms = enterParams(vparams);
-	    Type restpe;
 	    if (tpe == Tree.Empty) {
 		int rhsmode = name.isConstrName() ? CONSTRmode : EXPRmode;
 		((DefDef) tree).rhs = rhs = transform(rhs, rhsmode);
 		restpe = rhs.type.widen();
-	    } else {
-		restpe = transform(tpe, TYPEmode).type;
 	    }
 	    popContext();
 	    owntype = makeMethodType(tparamSyms, vparamSyms, restpe);
 	    break;
 
 	case TypeDef(int mods, Name name, Tree.TypeDef[] tparams, Tree rhs):
+	    //todo: alwyas have context.owner as owner.
 	    if (sym.kind == TYPE) {
 		pushContext(rhs, context.owner, context.scope);
-		this.context.delayArgs = true;
+		context.delayArgs = true;
 		owntype = transform(rhs, TYPEmode).type;
 		owntype.symbol().initialize();//to detect cycles
 		popContext();
 	    } else { // sym.kind == ALIAS
 		pushContext(tree, sym, new Scope(context.scope));
-		Symbol[] tparamSyms = enterParams(tparams);
-		sym.constructor().setInfo(Type.PolyType(tparamSyms, Type.NoType));
-		owntype = transform(rhs, TYPEmode).type;
+		owntype = transform(rhs, TYPEmode | FUNmode).type;
 		popContext();
 	    }
 	    break;
@@ -921,8 +930,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** Re-enter type parameters in current scope.
      */
     void reenterParams(Tree[] params) {
-	for (int i = 0; i < params.length; i++)
+	for (int i = 0; i < params.length; i++) {
 	    context.scope.enter(params[i].symbol());
+	}
     }
 
     /** Re-enter value parameters in current scope.
@@ -1014,7 +1024,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    sym = sym1;
 	    sym.flags |= (ACCESSED | SELECTOR);
-	    Tree qual = checkStable(deepCopy(lastimports.importPrefix()));
+	    Tree qual = checkStable(duplicator.transform(lastimports.importPrefix()));
 	    pre = qual.type;
 	    //new TextTreePrinter().print(name + " => ").print(lastimports.tree).print("." + name).println().end();//DEBUG
 	    tree = make.Select(tree.pos, qual, name);
@@ -1048,7 +1058,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	} else {
 	    sym.flags |= (ACCESSED | SELECTOR);
 	    Type symtype = qual.type.memberType(sym);
-	    //System.out.println(sym.name + ":" + symtype);//debug
+	    //System.out.println(sym.name + ":" + symtype);//DEBUG
 	    if (uninst.length != 0) {
 		switch (symtype) {
 		case PolyType(Symbol[] tparams, Type restype):
@@ -1156,7 +1166,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	Tree[] parents1 = transformConstrInvocations(
 	    templ.pos, templ.parents, false, Type.AnyType);
 	if (owner.kind != ERROR) {
-	    validateParentClasses(templ.parents, owner.info().parents());
+	    validateParentClasses(
+		templ.parents, owner.info().parents(), owner.typeOfThis());
 	    validateBaseTypes(owner);
 	}
 	pushContext(templ, owner, owner.members());
@@ -1358,12 +1369,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *  Insert `apply' function if needed.
      */
     Tree transform(Tree tree, int mode, Type pt) {
-	//new TextTreePrinter().print("transforming ").print(tree).println().end();//DEBUG
 	int savedMode = this.mode;
 	Type savedPt = this.pt;
 	this.mode = mode;
 	this.pt = pt;
 	Tree tree1 = adapt(transform(tree), mode, pt);
+
 	this.mode = savedMode;
 	this.pt = savedPt;
 	return tree1;
@@ -1562,11 +1573,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case ClassDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
 		pushContext(tree, sym.constructor(), new Scope(context.scope));
 		reenterParams(tparams);
-		reenterParams(vparams);
 		Tree.TypeDef[] tparams1 = transform(tparams);
-		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree tpe1 = transform(tpe);
+		reenterParams(vparams);
+		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree.Template templ1 = transformTemplate(templ, sym);
+		if ((sym.flags & ABSTRACTCLASS) == 0 &&
+		    !sym.type().isSubType(sym.typeOfThis()))
+		    error(sym.pos, sym +
+			  " needs to be abstract; it does not conform to its self-type " +
+			  sym.typeOfThis());
 		popContext();
 		return copy.ClassDef(tree, mods, name, tparams1, vparams1, tpe1, templ1)
 		    .setType(definitions.UNIT_TYPE);
@@ -1592,10 +1608,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case DefDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
 		pushContext(tree, sym, new Scope(context.scope));
 		reenterParams(tparams);
-		reenterParams(vparams);
 		Tree.TypeDef[] tparams1 = transform(tparams);
-		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree tpe1 = transform(tpe, TYPEmode);
+		reenterParams(vparams);
+		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree rhs1 = rhs;
 		if (tpe1 == Tree.Empty) {
 		    tpe1 = gen.mkType(rhs1.pos, rhs1.type.widen());
@@ -1612,7 +1628,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		pushContext(tree, sym, new Scope(context.scope));
 		reenterParams(tparams);
 		Tree.TypeDef[] tparams1 = transform(tparams);
-		Tree rhs1 = transform(rhs, TYPEmode);
+		int mode = TYPEmode;
+		if (sym.kind == ALIAS) mode |= FUNmode;
+		Tree rhs1 = transform(rhs, mode);
 		popContext();
 		return copy.TypeDef(tree, mods, name, tparams1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
@@ -1642,6 +1660,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    .setType(tp);
 
 	    case Visitor(Tree.CaseDef[] cases):
+		if (infer.isFullyDefined(pt)) {
+		    Type pt1 = pt.baseType(definitions.PARTIALFUNCTION_CLASS);
+		    if (pt1.symbol() == definitions.PARTIALFUNCTION_CLASS)
+			return transform(
+			    desugarize.partialFunction(tree, pt1.typeArgs()));
+		}
 		return transform(desugarize.Visitor(tree));
 
 	    case Assign(Apply(Tree funarray, Tree[] vparam), Tree rhs):
@@ -1685,13 +1709,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    copy.Template(templ, new Tree[]{parent1}, body)
 			    .setType(parent1.type).setSymbol(Symbol.NONE);
 			Type owntype = parent1.type;
-			if ((owntype.symbol().constructor().flags &
-			     ABSTRACTCLASS) != 0) {
-			    error(tree.pos, owntype.symbol() +
-				  " is abstract; cannot be instantiated");
-			}
+			if ((owntype.symbol().constructor().flags & ABSTRACTCLASS) != 0)
+			    checkInstantiatable(tree.pos, owntype);
 			return copy.New(tree, templ1)
-			    .setType(owntype);
+			    .setType(owntype.instanceType());
 		    } else {
 			pushContext(tree, context.owner, new Scope(context.scope));
 			Tree cd = make.ClassDef(
@@ -1718,7 +1739,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			while (it.hasNext()) {
 			    Symbol sym1 = it.next();
 			    Symbol basesym1 = base.lookupNonPrivate(sym1.name);
-			    if (basesym1.kind != NONE && !basesym1.info().isSameAs(sym1.info()))
+			    if (basesym1.kind != NONE &&
+				!base.symbol().thisType().memberType(basesym1)
+				    .isSameAs(sym1.type()))
 				refinement.enter(sym1);
 			}
 			if (refinement.elems == Scope.Entry.NONE &&
@@ -1806,14 +1829,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Symbol fsym = TreeInfo.methSymbol(tree1);
 		if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
 		    fsym != null && (fsym.flags & CASE) != 0) {
-		    Symbol constr = fsym.type().resultType().symbol().constructor();
+		    Symbol constr = fsym.owner().info()
+			.lookup(fsym.name.toTypeName()).constructor();
 		    Template templ = make.Template(
 			tree1.pos,
 			new Tree[]{desugarize.toConstructor(tree1, constr)},
 			Tree.EMPTY_ARRAY);
 		    templ.setSymbol(Symbol.NONE).setType(tree1.type);
 		    return adapt(
-			make.New(tree1.pos, templ).setType(tree1.type), mode, pt);
+			make.New(tree1.pos, templ).setType(tree1.type.instanceType()), mode, pt);
 		} else {
 		    return tree1;
 		}
@@ -1919,8 +1943,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tpe1 = transform(tpe, TYPEmode | FUNmode);
 		Tree[] args1 = transform(args, TYPEmode);
 		Type[] argtypes = Tree.typeOf(args);
-		Symbol clazz = tpe1.type.unalias().symbol();
-		Symbol[] tparams = clazz.typeParams();
+		Symbol[] tparams = tpe1.type.typeParams();
 		if (tpe1.type != Type.ErrorType) {
 		    if (tparams.length != args.length) {
 			if (tparams.length == 0)
@@ -1968,7 +1991,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 	    }
-	    return error(tree, ex.msg);
+	    throw ex;//debug
+	    //return error(tree, ex.msg);
 	}
     }
 
@@ -2005,6 +2029,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    this.c = context;
 	}
 	public void complete(Symbol sym) {
+	    //System.out.println("completing " + sym);//debug
 	    //if (sym.isConstructor()) sym.constructorClass().initialize();
 	    //else if (sym.isModule()) sym.moduleClass().initialize();
 	    defineSym(tree, u, i, c);
@@ -2019,7 +2044,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    super(tree);
 	}
 	public void complete(Symbol sym) {
-	    sym.setInfo(tree.symbol().constructor().type());
+	    sym.setInfo(tree.symbol().constructor().type().instanceType());
 	}
     }
 }

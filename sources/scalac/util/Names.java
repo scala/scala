@@ -44,6 +44,7 @@ public class Names {
     public static final Name Long = Name.fromString("Long");
     public static final Name Nil = Name.fromString("Nil");
     public static final Name Object = Name.fromString("Object");
+    public static final Name PartialFunction = Name.fromString("PartialFunction");
     public static final Name Predef = Name.fromString("Predef");
     public static final Name Seq = Name.fromString("Seq");
     public static final Name Short = Name.fromString("Short");
@@ -61,6 +62,7 @@ public class Names {
     public static final Name foreach = Name.fromString("foreach");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name is = Name.fromString("is");
+    public static final Name isDefinedAt = Name.fromString("isDefinedAt");
     public static final Name java = Name.fromString("java");
     public static final Name java_lang = Name.fromString("java.lang");
     public static final Name java_lang_Object = Name.fromString("java.lang.Object");
@@ -89,6 +91,7 @@ public class Names {
     public static final Name scala_Long = Name.fromString("scala.Long");
     public static final Name scala_Nil = Name.fromString("scala.Nil");
     public static final Name scala_Object = Name.fromString("scala.Object");
+    public static final Name scala_PartialFunction = Name.fromString("scala.PartialFunction");
     public static final Name scala_Predef = Name.fromString("scala.Predef");
     public static final Name scala_Ref = Name.fromString("scala.Ref");
     public static final Name scala_Seq = Name.fromString("scala.Seq");

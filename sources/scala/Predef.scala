@@ -38,10 +38,10 @@ package scala {
 	}
       }
 
-    type Pair[a, b] = Tuple2[a, b];
+    type Pair = Tuple2;
     def Pair[a, b](x: a, y: b) = Tuple2(x, y);
 
-    type Triple[a, b, c] = Tuple3[a, b, c];
+    type Triple = Tuple3;
     def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
   }
 }

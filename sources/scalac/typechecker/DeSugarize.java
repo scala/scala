@@ -5,7 +5,6 @@
 **                                                                      **
 ** $Id$
 \*                                                                      */
-
 package scalac.typechecker;
 
 import java.io.*;
@@ -49,6 +48,10 @@ public class DeSugarize implements Kinds, Modifiers {
      */
     protected final FreshNameCreator freshNameCreator;
 
+    /** the tree duplicator
+     */
+    final Transformer duplicator;
+
     /** the constructor
      */
     public DeSugarize(Analyzer analyzer, Global global) {
@@ -58,8 +61,8 @@ public class DeSugarize implements Kinds, Modifiers {
 	this.gen = analyzer.gen;
 	this.infer = analyzer.infer;
         this.freshNameCreator = global.freshNameCreator;
+	this.duplicator = analyzer.duplicator;
     }
-
 
 // Auxiliary definitions and functions -------------------------------------------
 
@@ -217,7 +220,83 @@ public class DeSugarize implements Kinds, Modifiers {
 		global.definitions.functionType(targs1, targs[targs1.length]));
 	    print(tree, "postfun", result);
 	    return result;
-	} else return tree;
+	} else {
+	    print(tree, "postfun", tree);
+	    return tree;
+	}
+    }
+
+    /** Cases, Argtpe, Restpe ==>
+     *     (new scala.PartialFunction[Argtpe, Restpe] {
+     *        def apply(x: Argtpe): Restpe = x match {Cases}
+     *        def isDefinedAt(x: Argtpe): scala.Boolean = x match {Cases'}
+     *      }: scala.PartialFunction[Argtpe, +Restpe])
+     *  WHERE
+     *    case P1 if G1 => E1, ..., Pn if Gn => En) = Cases
+     *    Cases' = case P1 if G1 => True, ..., Pn if Gn => True, _ => False
+     *    Argtpe = targs[0]
+     *    Restpe = targs[1]
+     */
+    public Tree partialFunction(Tree tree, Type[] targs) {
+	Type argtpe = targs[0];
+	Type restpe = targs[1].dropVariance();
+	Tree constr = make.TypeApply(tree.pos,
+	    make.Select(tree.pos,
+		make.Ident(tree.pos, Names.scala),
+		Names.PartialFunction.toConstrName()),
+		new Tree[]{gen.mkType(tree.pos, argtpe), gen.mkType(tree.pos, restpe)});
+	Name x = getvar();
+	ValDef param = (ValDef) make.ValDef(
+	    tree.pos, PARAM, x, gen.mkType(tree.pos, argtpe), Tree.Empty);
+	ValDef[][] vparams = new ValDef[][]{new ValDef[]{param}};
+	Tree body = make.Apply(tree.pos,
+	    make.Select(tree.pos,
+		make.Ident(tree.pos, x), Names.match), new Tree[]{tree});
+	Tree applyDef = make.DefDef(
+	    tree.pos, 0, Names.apply, Tree.ExtTypeDef.EMPTY_ARRAY, vparams,
+	    gen.mkType(tree.pos, restpe), body);
+	Tree tree1 = isDefinedAtVisitor(tree);
+	Tree body1 = make.Apply(tree.pos,
+	    make.Select(tree.pos,
+		make.Ident(tree.pos, x), Names.match), new Tree[]{tree1});
+	Tree isDefinedAtDef = make.DefDef(
+	    tree.pos, 0, Names.isDefinedAt, Tree.ExtTypeDef.EMPTY_ARRAY,
+	    duplicator.transform(vparams),
+	    gen.mkType(tree.pos, global.definitions.BOOLEAN_TYPE), body1);
+	Tree newTree = make.New(tree.pos,
+	    make.Template(
+		tree.pos, new Tree[]{constr}, new Tree[]{applyDef, isDefinedAtDef}));
+	Tree result = make.Typed(tree.pos,
+	    tree,
+	    gen.mkType(tree.pos,
+                global.definitions.partialFunctionType(targs[0], targs[1])));
+	print(tree, "partialfun", result);
+	return result;
+    }
+
+    private Tree isDefinedAtVisitor(Tree tree) {
+	switch (tree) {
+	case Visitor(CaseDef[] cases):
+	    CaseDef[] cases1 = new CaseDef[cases.length + 1];
+	    for (int i = 0; i < cases.length; i++) {
+		switch (cases[i]) {
+		case CaseDef(Tree pat, Tree guard, _):
+		    cases1[i] = (CaseDef) make.CaseDef(cases[i].pos,
+			duplicator.transform(pat),
+			duplicator.transform(guard),
+			make.Select(tree.pos,
+			    make.Ident(tree.pos, Names.scala), Names.True));
+		}
+	    }
+	    cases1[cases.length] = (CaseDef) make.CaseDef(tree.pos,
+		make.Ident(tree.pos, Names.WILDCARD),
+   	        Tree.Empty,
+		make.Select(tree.pos,
+		    make.Ident(tree.pos, Names.scala), Names.False));
+	    return make.Visitor(tree.pos, cases1);
+	default:
+	    throw new ApplicationError("visitor expected", tree);
+	}
     }
 
     /** match => this.match
@@ -247,7 +326,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	case Visitor(CaseDef[] cases):
 	    Name x = getvar();
 	    ValDef param = (ValDef) make.ValDef(
-		tree.pos, 0, x, Tree.Empty, Tree.Empty);
+		tree.pos, PARAM, x, Tree.Empty, Tree.Empty);
 	    Tree xuse = make.Ident(tree.pos, x);
 	    // x.match {cases}
 	    Tree body = make.Apply(tree.pos,

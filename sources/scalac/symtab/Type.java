@@ -186,7 +186,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public Type widen() {
 	switch (this) {
 	case ThisType(Symbol sym):
-	    return sym.type();
+	    return sym.typeOfThis();
 	case SingleType(Type pre, Symbol sym):
 	    // overridden in ExtSingleType
 	    throw new ApplicationError();
@@ -249,6 +249,30 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
+    /** Get type of `this' symbol corresponding to this type, extend
+     *  homomorphically to function types and method types.
+     */
+    public Type instanceType() {
+	switch (unalias()) {
+	case TypeRef(Type pre, Symbol sym, Type[] args):
+	    Type tp1 = sym.typeOfThis();
+	    if (tp1 != sym.type())
+		return tp1.asSeenFrom(pre, sym.owner()).subst(sym.typeParams(), args);
+	    break;
+	case MethodType(Symbol[] params, Type restp):
+	    Type restp1 = restp.instanceType();
+	    if (restp1 != restp)
+		return MethodType(params, restp1);
+	    break;
+	case PolyType(Symbol[] tparams, Type restp):
+	    Type restp1 = restp.instanceType();
+	    if (restp1 != restp)
+		return PolyType(tparams, restp1);
+	    break;
+	}
+	return this;
+    }
+
     /** Remove all aliases
      */
     public Type unalias() {
@@ -261,9 +285,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	if (n == 20) throw new Type.Error("recursive type alias: " + this);
 	switch (this) {
         case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.kind == ALIAS) {
-		return pre.memberInfo(sym).subst(sym.typeParams(), args).unalias(n + 1);
-	    }
+	    if (sym.kind == ALIAS) return pre.memberInfo(sym).unalias(n + 1);
 	    break;
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) return constr.inst.unalias(n + 1);
@@ -303,8 +325,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case PolyType(Symbol[] tparams, _):
 	    return tparams;
 	case TypeRef(_, Symbol sym, _):
-	    if (sym.kind == CLASS || sym.kind == ALIAS) return sym.typeParams();
-	    break;
+	    if (sym.kind == CLASS) return sym.typeParams();
+	    else return sym.info().typeParams();
 	}
 	return Symbol.EMPTY_ARRAY;
     }
@@ -433,7 +455,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public boolean isFunctionType() {
 	switch (this) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.fullName().startsWith(Names.Function)) {
+	    if (sym.fullName().startsWith(Names.scala_Function)) {
 		for (int i = 0; i < args.length - 1; i++)
 		    if (args[i].isCovarType()) return false;
 		return args.length > 0 && args[args.length - 1].isCovarType();
@@ -693,11 +715,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    if (sym == clazz)
 		return this;
-	    else if (sym.kind == TYPE)
+	    else if (sym.kind == TYPE || sym.kind == ALIAS)
 		return pre.memberInfo(sym).baseType(clazz);
-	    else if (sym.kind == ALIAS)
-		return pre.memberInfo(sym).baseType(clazz)
-		    .subst(sym.typeParams(), args);
 	    else if (clazz.isCompoundSym())
 		return NoType;
 	    else
@@ -811,14 +830,15 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		switch (pre.baseType(ownclass)) {
 		case TypeRef(_, Symbol basesym, Type[] baseargs):
 		    Symbol[] baseparams = basesym.typeParams();
-		    for (int i = 0; i < baseparams.length; i++)
-			if (sym == baseparams[i]) return baseargs[i];//???
+		    for (int i = 0; i < baseparams.length; i++) {
+			if (sym == baseparams[i]) return baseargs[i];
+		    }
 		    break;
 		case ErrorType:
 		    return ErrorType;
 		}
 		throw new ApplicationError(
-		    this + " cannot be instantiated from " + pre);
+		    this + " in " + ownclass + " cannot be instantiated from " + pre);
 	    } else {
 		return toInstance(
 		    pre.baseType(clazz).prefix(), clazz.owner());
@@ -1115,8 +1135,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
      */
     public boolean containsSome(Symbol[] syms) {
 	for (int i = 0; i < syms.length; i++)
-	    if (contains(syms[i])) return false;
-	return true;
+	    if (contains(syms[i])) return true;
+	return false;
     }
 
 // Comparisons ------------------------------------------------------------------
@@ -1789,6 +1809,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		 e = e.next) {
 		Name name = e.sym.name;
 		if ((e.sym.flags & PRIVATE) == 0 && lubType.lookup(name) == e.sym) {
+		    //todo: not memberType?
 		    Type symType = lubThisType.memberInfo(e.sym);
 		    int j = 0;
 		    while (j < tps.length) {
@@ -2025,6 +2046,11 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    System.arraycopy(args, 0, params, 0, params.length);
 		    return ArrayApply.toString(params, "(", ",", ") => ") +
 			args[params.length].dropVariance();
+		} else if (sym.isAnonymousClass()) {
+		    return "<template: " +
+			ArrayApply.toString(
+			    pre.memberInfo(sym).parents(), "", "", " with ") +
+			"{...}>";
 		}
 	    }
 	    Type pre1 = (Global.instance.debug) ? pre : pre.expandModuleThis();

@@ -210,18 +210,21 @@ public class Scope {
     /** remove entry
      */
     public void unlink(Entry e) {
-	Entry e1 = hashtable[e.sym.name.index & HASHMASK];
-	if (e1 == e) {
-	    hashtable[e.sym.name.index & HASHMASK] = e.tail;
-	} else {
-	    while (e1.tail != e) e1 = e1.tail;
-	}
 	if (elems == e) {
 	    elems = e.next;
 	} else {
-	    e1 = elems;
+	    Entry e1 = elems;
 	    while (e1.next != e) e1 = e1.next;
 	    e1.next = e.next;
+	}
+	if (hashtable != null) {
+	    Entry e1 = hashtable[e.sym.name.index & HASHMASK];
+	    if (e1 == e) {
+		hashtable[e.sym.name.index & HASHMASK] = e.tail;
+	    } else {
+		while (e1.tail != e) e1 = e1.tail;
+		e1.tail = e.tail;
+	    }
 	}
 	elemsCache = null;
     }

@@ -322,7 +322,7 @@ public class AttributeParser implements ClassfileConstants {
 		types.toArray(args);
 		return Type.TypeRef(clazz.owner().thisType(), clazz, args);
 	    } else {
-		return parser.defs.monoType(clazz);
+		return clazz.typeConstructor();
 	    }
 	}
 
