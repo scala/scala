@@ -208,25 +208,9 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
      */
     public SymbolTablePrinter printCommonPart(Type type) {
         switch (type) {
-	case ErrorType:
-	    print("<error>");
-            return this;
-
-	case AnyType:
-	    print("<any type>");
-            return this;
-
-	case NoType:
-	    print("<notype>");
-            return this;
-
-	case NoPrefix:
-	    print("<noprefix>");
-            return this;
-
 	case ThisType(Symbol sym):
             if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
-		print("this");
+		return print("this");
             printUsedSymbolName(sym);
             print(".this"); // vincent
             return this;
@@ -261,44 +245,8 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 // 	    print(")");
 	    return this;
 
-	case CompoundType(Type[] parts, Scope members):
-	    printTypes(parts," with ");
-            space();
-            return printScope(members, true); // vincent
-
-	case MethodType(_, _):
-	    return printType0(type);
-
-	case PolyType(_, _):
-	    return printType0(type);
-
-	case OverloadedType(Symbol[] alts, Type[] alttypes):
-            return printTypes(alttypes, " <and> ");
-
-	case TypeVar(Type origin, Constraint constr):
-            printType(origin);
-            print("?");
-            return this;
-
-	case UnboxedType(int kind):
-	    print(type.unboxedName(kind).toString());
-            return this;
-
-	case UnboxedArrayType(Type elemtp):
-	    printType(elemtp);
-            print("[]");
-            return this;
-
-	case LazyType():
-            if (!global.debug) print("?");
-            String classname = type.getClass().getName();
-            print("<lazy type ").print(classname).print(">");
-            return this;
-
 	default:
-            String classname = type.getClass().getName();
-	    print("<unknown type ").print(classname).print(">");
-            return this;
+            return super.printCommonPart(type);
         }
     }
 
