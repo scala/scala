@@ -442,7 +442,9 @@ $(TUPLE_FILES)		: .latest-meta-jc $(TUPLE_TEMPLATE)
 $(LIBRARY_JAR_ARCHIVE)	: .latest-library-jc
 $(LIBRARY_JAR_ARCHIVE)	: .latest-library-sc
 $(LIBRARY_JAR_ARCHIVE)	:
+	$(MV) $(PROJECT_OUTPUTDIR)/scala/tools $(PROJECT_OUTPUTDIR)/scala.tools
 	@$(MAKE) jar target=LIBRARY
+	$(MV) $(PROJECT_OUTPUTDIR)/scala.tools $(PROJECT_OUTPUTDIR)/scala/tools
 
 $(TOOLS_JAR_ARCHIVE)	: .latest-lamplib-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scalac-jc
