@@ -997,6 +997,116 @@ public class Primitives {
     }
 
     //########################################################################
+    // Primitives interface - conversion primitives
+
+    /** Return conversion method for given types. */
+    public Symbol getConvertSymbol(Type from, Type to) {
+        switch (from) {
+        case UnboxedType(int kind):
+            return getConvertSymbol(kind, to);
+        default:
+            throw Debug.abort("illegal case", from);
+        }
+    }
+
+    /** Return conversion method for given type and type kind. */
+    public Symbol getConvertSymbol(Type from, int to) {
+        switch (from) {
+        case UnboxedType(int kind):
+            return getConvertSymbol(kind, to);
+        default:
+            throw Debug.abort("illegal case", from);
+        }
+    }
+
+    /** Return conversion method for given type kind and type. */
+    public Symbol getConvertSymbol(int from, Type to) {
+        switch (to) {
+        case UnboxedType(int kind):
+            return getConvertSymbol(from, kind);
+        default:
+            throw Debug.abort("illegal case", to);
+        }
+    }
+
+    /** Return conversion method for given kind types. */
+    public Symbol getConvertSymbol(int from, int to) {
+        switch (from) {
+        case TypeTags.BYTE   :
+            switch (to) {
+            case TypeTags.BYTE   : return B2B;
+            case TypeTags.SHORT  : return B2S;
+            case TypeTags.CHAR   : return B2C;
+            case TypeTags.INT    : return B2I;
+            case TypeTags.LONG   : return B2L;
+            case TypeTags.FLOAT  : return B2F;
+            case TypeTags.DOUBLE : return B2D;
+            } break;
+        case TypeTags.SHORT  :
+            switch (to) {
+            case TypeTags.BYTE   : return S2B;
+            case TypeTags.SHORT  : return S2S;
+            case TypeTags.CHAR   : return S2C;
+            case TypeTags.INT    : return S2I;
+            case TypeTags.LONG   : return S2L;
+            case TypeTags.FLOAT  : return S2F;
+            case TypeTags.DOUBLE : return S2D;
+            } break;
+        case TypeTags.CHAR   :
+            switch (to) {
+            case TypeTags.BYTE   : return C2B;
+            case TypeTags.SHORT  : return C2S;
+            case TypeTags.CHAR   : return C2C;
+            case TypeTags.INT    : return C2I;
+            case TypeTags.LONG   : return C2L;
+            case TypeTags.FLOAT  : return C2F;
+            case TypeTags.DOUBLE : return C2D;
+            } break;
+        case TypeTags.INT    :
+            switch (to) {
+            case TypeTags.BYTE   : return I2B;
+            case TypeTags.SHORT  : return I2S;
+            case TypeTags.CHAR   : return I2C;
+            case TypeTags.INT    : return I2I;
+            case TypeTags.LONG   : return I2L;
+            case TypeTags.FLOAT  : return I2F;
+            case TypeTags.DOUBLE : return I2D;
+            } break;
+        case TypeTags.LONG   :
+            switch (to) {
+            case TypeTags.BYTE   : return L2B;
+            case TypeTags.SHORT  : return L2S;
+            case TypeTags.CHAR   : return L2C;
+            case TypeTags.INT    : return L2I;
+            case TypeTags.LONG   : return L2L;
+            case TypeTags.FLOAT  : return L2F;
+            case TypeTags.DOUBLE : return L2D;
+            } break;
+        case TypeTags.FLOAT  :
+            switch (to) {
+            case TypeTags.BYTE   : return F2B;
+            case TypeTags.SHORT  : return F2S;
+            case TypeTags.CHAR   : return F2C;
+            case TypeTags.INT    : return F2I;
+            case TypeTags.LONG   : return F2L;
+            case TypeTags.FLOAT  : return F2F;
+            case TypeTags.DOUBLE : return F2D;
+            } break;
+        case TypeTags.DOUBLE :
+            switch (to) {
+            case TypeTags.BYTE   : return D2B;
+            case TypeTags.SHORT  : return D2S;
+            case TypeTags.CHAR   : return D2C;
+            case TypeTags.INT    : return D2I;
+            case TypeTags.LONG   : return D2L;
+            case TypeTags.FLOAT  : return D2F;
+            case TypeTags.DOUBLE : return D2D;
+            } break;
+        }
+        throw Debug.abort("illegal case: " + from + " -> " + to);
+    }
+
+    //########################################################################
     // Primitives interface - array get and set primitives
 
     /** Return length method for arrays of the given type. */
