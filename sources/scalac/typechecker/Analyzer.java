@@ -2202,7 +2202,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree tpe1 = transform(tpe, TYPEmode | FUNmode);
 		Tree[] args1 = transform(args, TYPEmode);
 		Type[] argtypes = Tree.typeOf(args);
-		//todo: this needs to be refined.
+		//todo: this needs to be refined. (same code in RefCheck.transform)
 		Symbol[] tparams =
 		    (Type.isSameAs(tpe1.type.typeArgs(), Symbol.type(tpe1.type.unalias().symbol().typeParams())))
 		    ? tpe1.type.unalias().symbol().typeParams()
