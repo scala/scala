@@ -2207,21 +2207,26 @@ which appear in the same statement sequence as the definition of
 A class definition which starts with the reserved word \code{trait}
 instead of \code{class} defines a trait. A trait is a specific
 instance of an abstract class, so the \code{abstract} modifier is
-redundant for it.  The template of a trait must satisfy the following
+redundant for it.  The trait definition must satisfy the following
 four restrictions.
 \begin{enumerate}
-\item All base classes of the trait are traits.
-\item All parent class constructors of a template
-      must be primary constructors with empty value
+\item There are no value parameters in the trait's primary constructor, nor
+      are there secondary constructors.
+\item All mixin base classes of the trait are traits.
+\item All parent class constructors of the trait
+      are primary constructors with empty value
       parameter lists. 
-\item All non-empty statements in the template are either imports or pure definitions.
-\item A trait may not have secondary constructors.
+\item All non-empty statements in the trait's template are either
+      imports or pure definitions.
 \end{enumerate}
 A {\em pure} definition can be evaluated without any side effect.
 Function, type, class, or object definitions are always pure. A value
-definition is pure if its right-hand side expression is pure. Pure
-expressions are paths, literals, and typed expressions
-$e: T$ where $e$ is pure.
+definition is pure if its right-hand side expression is pure. A
+secondary constructor definition is pure if its right-hand side 
+consists only
+Pure
+expressions are paths, literals, and typed expressions $e: T$ where
+$e$ is pure.
 
 These restrictions ensure that the evaluation of the mixin constructor
 of a trait has no effect. Therefore, traits may appear several times 

@@ -481,25 +481,52 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     }
   }
 
-  /** Check that tree represents a pure definition.
+  /** Check that tree represents a legal trait definition.
   */
-  def checkPureDef(tree: Tree, clazz: Symbol): unit = {
-    if (!TreeInfo.isPureDef(tree) && !tree.getType().isError())
-      error(tree.pos, "" + clazz + " may contain only pure definitions");
-  }
+  def checkTraitDef(pos: int, clazz: Symbol, templ: Tree$Template) = {
 
-  /** Check that tree represents a pure constructor.
-  */
-  def checkPureConstr(tree: Tree, clazz: Symbol): unit = {
-    if (!TreeInfo.isPureConstr(tree) && !tree.getType().isError())
-      error(tree.pos, "" + clazz + " may invoke only pure superclass constructors");
-  }
+    /** Check that type does not have value parameters
+     */
+    def checkNoParams(tpe: Type): unit = tpe match {
+      case Type$MethodType(vparams, _) =>
+	if (vparams.length > 0)
+	  error(pos, "trait may not have value parameters")
+      case Type$PolyType(tparams, restpe) =>
+	checkNoParams(infer.skipViewParams(tparams, restpe))
+      case _ =>
+    }
 
-  /** Check that tree represents a trait constructor.
-  */
-  def checkTrait(tree: Tree, clazz: Symbol): unit = {
-    if (!tree.getType().symbol().isTrait() && !tree.getType().isError())
-      error(tree.pos, " " + clazz + " may inherit only traits as mixins");
+    /** Check that tree represents a pure constructor.
+     */
+    def checkPureConstr(tree: Tree): unit = {
+      if (!TreeInfo.isPureConstr(tree) && !tree.getType().isError())
+	error(tree.pos, "" + clazz + " may invoke only pure superclass constructors");
+    }
+
+    /** Check that tree refers to a trait
+     */
+    def checkTraitRef(tree: Tree): unit = {
+      if (!tree.getType().symbol().isTrait() && !tree.getType().isError())
+	error(tree.pos, " " + clazz + " may inherit only traits as mixins");
+    }
+
+    /** Check that tree represents a pure definition.
+    */
+    def checkPureDef(tree: Tree): unit = {
+      if (!TreeInfo.isPureDef(tree) && !tree.getType().isError())
+	error(tree.pos, "" + clazz + " may contain only pure definitions");
+    }
+
+    checkNoParams(clazz.primaryConstructor().getType());
+    var i = 0; while (i < templ.parents.length) {
+      checkPureConstr(templ.parents(i));
+      if (i >= 1) checkTraitRef(templ.parents(i));
+      i = i + 1
+    }
+    var j = 0; while (j < templ.body.length) {
+      checkPureDef(templ.body(j));
+      j = j + 1
+    }
   }
 
   /** Check that tree is a stable expression .p
@@ -1082,7 +1109,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$ModuleDef(mods, name, _tpe, templ) =>
 	  var tpe = _tpe;
 	  val clazz: Symbol = sym.moduleClass();
+	  pushContext(
+	    tree, clazz.primaryConstructor(), context.scope);
 	  defineTemplate(templ, clazz, new Scope());
+	  popContext();
 	  clazz.setInfo(templ.getType());
 	  tpe = transform(tpe, TYPEmode);
 	  (tree.asInstanceOf[Tree$ModuleDef]).tpe = tpe;
@@ -1390,7 +1420,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    (infer.isCompatible(tree.getType(), pt) ||
 	     pt.symbol() == definitions.UNIT_CLASS)) {
 	  checkEtaExpandable(tree.pos, tree.getType());
-	  return transform(desugarize.etaExpand(tree, tree.getType()), mode, pt);
+	  if (TreeInfo.methPart(tree).symbol() == definitions.ANY_MATCH) {
+	    error(tree.pos, "`match' needs to be applied fully");
+	    return errorTree(tree)
+	  } else {
+	    return transform(desugarize.etaExpand(tree, tree.getType()), mode, pt);
+	  }
 	} else if ((mode & (CONSTRmode | FUNmode)) == CONSTRmode) {
           error(tree.pos, "missing arguments for class constructor");
           return errorTermTree(tree);
@@ -1584,7 +1619,28 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     while (nextimports != null && nextimports.tree.pos >= tree.pos) {
       nextimports = nextimports.prev;
     }
-    while (sym1.kind == NONE && nextimports != null && nextimports.tree.pos > stopPos) {
+
+    if (stopPos > tree.pos) {
+      // set stopPos to beginning of block enclosed in the scope which defines the
+      // referenced symbol.
+      var lastc = Context.NONE;
+      var c = nextcontext;
+      while (c.outer.scope != null && c.outer.scope.lookup(name) == sym) {
+	c.tree match {
+	  case Tree$Block(_, _) | Tree$CaseDef(_, _, _) | Tree$ClassDef(_, _, _, _, _, _) | Tree$ModuleDef(_, _, _, _) =>
+	    lastc = c;
+	  case _ =>
+	}
+	c = c.outer
+      }
+      if (lastc != Context.NONE) {
+	//System.out.println("revising stop to [" + lastc.tree + "]; symbol = " + sym + ", context = " + nextcontext);//debug
+	stopPos = lastc.tree.pos;
+      }
+    }
+
+    while (sym1.kind == NONE &&
+	   nextimports != null && nextimports.tree.pos > stopPos) {
       sym1 = nextimports.importedSymbol(name);
       lastimports = nextimports;
       nextimports = nextimports.prev;
@@ -1842,17 +1898,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     popContext();
     */
     popContext();
-    if (owner.isTrait()) {
-      var i = 0; while (i < parents.length) {
-	checkPureConstr(parents(i), owner);
-	if (i >= 1) checkTrait(parents(i), owner);
-	i = i + 1
-      }
-      var j = 0; while (j < templ.body.length) {
-	checkPureDef(body1(j), owner);
-	j = j + 1
-      }
-    }
     val templ1: Tree$Template = copy.Template(templ, parents, body1);
     templ1.setType(owner.getType());
     templ1
@@ -2098,14 +2143,19 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      templ.body, vparams(vparams.length - 1));
 
 	  val templ1: Tree$Template = transformTemplate(templ, sym);
+	  if (sym.isTrait()) checkTraitDef(tree.pos, sym, templ1);
 	  checkNoEscape(tree.pos, sym.info());
 	  popContext();
 	  copy.ClassDef(tree, sym, tparams1, vparams1, tpe1, templ1)
   	    .setType(Type.NoType);
 
 	case Tree$ModuleDef(_, _, tpe, templ) =>
-	  sym.moduleClass().initialize();
+	  val clazz = sym.moduleClass();
+	  clazz.initialize();
+	  pushContext(
+	    tree, clazz.primaryConstructor(), context.scope);
 	  val tpe1: Tree = transform(tpe, TYPEmode);
+	  popContext();
 	  val templ1: Tree$Template = transformTemplate(templ, sym.moduleClass());
 	  if (tpe1 != Tree.Empty && !templ1.getType().isSubType(tpe1.getType()))
 	    error(tree.pos, "" + sym + " does not implement " + tpe1.getType());
@@ -2417,6 +2467,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  val body1: Tree = transform(body, EXPRmode, restype);
 	  if (!infer.isFullyDefined(restype))
 	    restype = body1.getType().deconst();
+	  restype = checkNoEscape(tree.pos, restype);
 	  popContext();
 	  gen.mkFunction(tree.pos, vparams1, body1, restype, context.owner);
 
@@ -2506,6 +2557,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		      var c = context;
 		      while (c != Context.NONE &&
 			     !c.tree.isInstanceOf[Tree$ClassDef] &&
+			     !c.tree.isInstanceOf[Tree$ModuleDef] &&
 			     !c.tree.isInstanceOf[Tree$Template])
 			c = c.outer;
 		      enclClassOrConstructorContext = c

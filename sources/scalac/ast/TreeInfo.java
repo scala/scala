@@ -77,13 +77,16 @@ public class TreeInfo {
 	case Tree.Empty:
 	case ClassDef(_, _, _, _, _, _):
 	case ModuleDef(_, _, _, _):
-	case DefDef(_, _, _, _, _, _):
 	case AbsTypeDef(_, _, _, _):
 	case AliasTypeDef(_, _, _, _):
 	case Import(_, _):
 	    return true;
+	case DefDef(_, Name name, _, _, _, _):
+	    return name != Names.CONSTRUCTOR;
 	case ValDef(int mods, _, _, Tree rhs):
 	    return (mods & Modifiers.MUTABLE) == 0 && isPureExpr(rhs);
+	case DocDef(_, Tree definition):
+	    return isPureDef(definition);
 	default:
 	    return false;
 	}

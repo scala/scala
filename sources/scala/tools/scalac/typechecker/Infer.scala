@@ -249,7 +249,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     (sym.flags & (PRIVATE | PROTECTED)) == 0
     ||
     {val owner = if (sym.isConstructor()) sym.constructorClass()
-		  else sym.owner();
+		 else sym.owner();
      accessWithin(owner)
      ||
      ((sym.flags & PRIVATE) == 0) &&

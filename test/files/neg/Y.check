@@ -1,0 +1,4 @@
+/home/odersky/scala/test/files/neg/Y.scala:3: `match' needs to be applied fully
+  def f(x: Object): java.lang.Object /* !!! Object */ = x.match;
+                                                         ^
+one error found
