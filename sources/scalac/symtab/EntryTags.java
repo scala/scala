@@ -65,8 +65,5 @@ public interface EntryTags {
 
 // flag encodings
 
-    int COVARflag = 1,
-	CONTRAVARflag = 2,
-	REPEATEDflag = 4,
-	DEFflag = 8;
+    int REPEATEDflag = 4, DEFflag = 8;
 }

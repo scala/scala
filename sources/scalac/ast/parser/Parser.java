@@ -423,26 +423,6 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** Convert this(...) application to constructor invocation
-     */
-    Tree convertToSelfConstr(Tree t) {
-	switch (t) {
-	case Block(Tree[] stats):
-	    if (stats.length > 0) {
-		stats[stats.length - 1] = convertToSelfConstr(stats[stats.length - 1]);
-		return t;
-	    }
-	    break;
-	case Apply(Tree fn, Tree[] args):
-	    switch (fn) {
-	    case This(TypeNames.EMPTY):
-		return make.Apply(
-		    t.pos, make.Ident(t.pos, Names.CONSTRUCTOR), args);
-	    }
-	}
-	return syntaxError(t.pos, "class constructor expected", false);
-    }
-
     /** Complete unapplied constructor with `()' arguments
      */
     Tree applyConstr(Tree t) {
@@ -1779,7 +1759,7 @@ public class Parser implements Tokens {
 	    return make.DefDef(
 		pos, mods, Names.CONSTRUCTOR,
 		Tree.AbsTypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
-		convertToSelfConstr(expr()));
+		constrExpr());
 	} else {
 	    Name name = ident();
 	    AbsTypeDef[] tparams = typeParamClauseOpt(false);
@@ -1792,6 +1772,35 @@ public class Parser implements Tokens {
 		return make.DefDef(pos, mods | Modifiers.DEFERRED, name,
 				   tparams, vparams, restype, Tree.Empty);
 	}
+    }
+
+    /** ConstrExpr      ::=  SelfInvocation
+     *                    |  `{' SelfInvocation {`;' BlockStat} `}'
+     *  SelfInvocation  ::= this ArgumentExpr
+     */
+    Tree constrExpr() {
+	if (s.token == LBRACE) {
+	    int pos = s.skipToken();
+	    TreeList stats = new TreeList();
+	    stats.append(selfInvocation());
+	    if (s.token == SEMI) {
+		s.nextToken();
+		stats = blockStatSeq(stats);
+	    }
+	    accept(RBRACE);
+	    return make.Block(pos, stats);
+	} else {
+	    return selfInvocation();
+	}
+    }
+
+    /** SelfInvocation  ::= this ArgumentExprs
+     */
+    Tree selfInvocation() {
+	int pos = s.pos;
+	accept(THIS);
+	return make.Apply(
+	    s.pos, make.Ident(pos, Names.CONSTRUCTOR, argumentExprs()));
     }
 
     /** TypeDef ::= Id `=' Type

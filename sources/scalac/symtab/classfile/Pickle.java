@@ -183,7 +183,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    Type ptype = vparams[i].type();
 		    putType(ptype);
 		    int pflags = vparams[i].flags;
-		    if ((pflags & (COVARIANT | CONTRAVARIANT | REPEATED | DEF)) != 0)
+		    if ((pflags & (REPEATED | DEF)) != 0)
 			putEntry(new FlagsAndType(encodeFlags(pflags), ptype));
 		}
 		break;
@@ -388,7 +388,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    for (int i = 0; i < vparams.length; i++) {
 		Type ptype = vparams[i].type();
 		int pflags = vparams[i].flags;
-		if ((pflags & (COVARIANT | CONTRAVARIANT | REPEATED | DEF)) != 0)
+		if ((pflags & (REPEATED | DEF)) != 0)
 		    writeRef(new FlagsAndType(encodeFlags(pflags), ptype));
 		else
 		    writeRef(ptype);
@@ -443,8 +443,6 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 
     private static int encodeFlags(int flags) {
 	int n = 0;
-	if ((flags & COVARIANT) != 0) n |= COVARflag;
-	if ((flags & CONTRAVARIANT) != 0) n |= CONTRAVARflag;
 	if ((flags & REPEATED) != 0) n |= REPEATEDflag;
 	if ((flags & DEF) != 0) n |= DEFflag;
 	return n;

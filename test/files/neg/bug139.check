@@ -1,5 +1,0 @@
-bug139.scala:5: error overriding type T in class A;
- type T in class B may not be parameterized
-  type T[A] = Int;
-       ^
-one error found

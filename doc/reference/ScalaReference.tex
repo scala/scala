@@ -1885,24 +1885,21 @@ $t$.
 \syntax\begin{lstlisting}
   FunDef          ::=  this ParamClause `=' ConstrExpr
   ConstrExpr      ::=  this ArgumentExpr
-                    |  `{' {BlockStat `;'} ConstrExpr `}'
+                    |  `{' this ArgumentExpr {`;' BlockStat} `}'
 \end{lstlisting}
 
 A class may have additional constructors besides the primary
 constructor.  These are defined by constructor definitions of the form
-~\lstinline@def this($ps\,$) = $e$@.  Such a definition introduces an additional
-constructor for the enclosing class, with parameters as given in the
-formal parameter list $ps$, and whose evaluation is defined by
-the constructor expression $e$.  The scope of each formal
-parameter is the constructor expression $e$.  A constructor
-expression is either a self constructor invocation \lstinline@this($\args\,$)@
-or a block which ends in a constructor expression.  In terms of
-visibility rules, constructor definitions are conceptually outside
-their enclosing class.  Hence, they can access neither value
-parameters nor members of the enclosing class by simple name, and the
-value \code{this} refers to an object of the class enclosing the class
-of the object being constructed. However, constructor definitions can
-access type parameters of the enclosing class.
+~\lstinline@def this($ps\,$) = $e$@.  Such a definition introduces an
+additional constructor for the enclosing class, with parameters as
+given in the formal parameter list $ps$, and whose evaluation is
+defined by the constructor expression $e$.  The scope of each formal
+parameter is the constructor expression $e$.  A constructor expression
+is either a self constructor invocation \lstinline@this($\args\,$)@ or
+a block which begins with a self constructor invocation.  Neither the
+signature, nor the self constructor invocation of a constructor
+definition may refer to \verb@this@, or refer to `value parameters or
+members of the enclosing class by simple name.
 
 If there are auxiliary constructors of a class $C$, they define
 together with $C$'s primary constructor an overloaded constructor
@@ -1923,22 +1920,22 @@ type parameters.
 \example Consider the class definition
 
 \begin{lstlisting}
-class LinkedList[a <: AnyRef](x: a, xs: LinkedList[a]) {
-  var head = x;
-  var tail = xs;
+class LinkedList[a]() {
+  var head = _;
+  var tail = null;
   def isEmpty = tail != null;  
-  def this() = this(null, null);
-  def this(x: a) = { val empty = new LinkedList(); this(x, empty) }
+  def this(head: a) = { this(); this.head = head; }
+  def this(head: a, tail: List[a]) = { this(head); this.tail = tail }
 }
 \end{lstlisting}
 This defines a class \code{LinkedList} with an overloaded constructor of type
 \begin{lstlisting}
-[a <: AnyRef](x: a, xs: LinkList[a]): LinkedList[a]   $\overload$
 [a <: AnyRef](): LinkedList[a]   $\overload$
-[a <: AnyRef](x: a): LinkedList[a] .
+[a <: AnyRef](x: a): LinkedList[a]    $\overload$
+[a <: AnyRef](x: a, xs: LinkList[a]): LinkedList[a]  .
 \end{lstlisting}
-The second constructor alternative constructs an empty list, while the
-third one constructs a list with one element.
+The second constructor alternative constructs an singleton list, while the
+third one constructs a list with a given head and tail.
 
 \subsection{Case Classes}
 \label{sec:case-classes}
@@ -4258,7 +4255,7 @@ grammar.
                     |  TemplateBody
                     |
   ConstrExpr      ::=  this ArgumentExpr
-                    |  `{' {BlockStat `;'} ConstrExpr `}'
+                    |  `{' this ArgumentExpr {`;' BlockStat} `}'
 
   CompilationUnit ::=  [package QualId `;'] {TopStat `;'} TopStat
   TopStat         ::=  {Modifier} ClsDef

@@ -426,8 +426,6 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 
     private static int decodeFlags(int n) {
 	int flags = 0;
-	if ((n & COVARflag) != 0) flags |= COVARIANT;
-	if ((n & CONTRAVARflag) != 0) flags |= CONTRAVARIANT;
 	if ((n & REPEATEDflag) != 0) flags |= REPEATED;
 	if ((n & DEFflag) != 0) flags |= DEF;
 	return flags;

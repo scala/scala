@@ -1,4 +1,0 @@
-bug143.scala:7: illegal cyclic reference involving type Inner
-  override type Inner = Alias;
-                        ^
-one error found

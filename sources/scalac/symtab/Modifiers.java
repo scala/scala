@@ -42,7 +42,9 @@ public interface Modifiers {
     int STABLE        = 0x00800000;   // functions that are assumed to be stable
                                     // (typically, access methods for valdefs)
 
-    int CAPTURED      = 0x01000000;   // variables is accessed from nested function.
+    int CAPTURED      = 0x01000000;   // variables is accessed from
+                                      // nested function. Set by LambdaLift
+    int INCONSTRUCTOR = 0x01000000;   // transient flag for Analyzer
     int CASEACCESSOR  = 0x02000000;   // function is a case constructor
 
     int ACCESSOR      = 0x04000000;   // function is an access function for a

@@ -473,7 +473,7 @@ public class LambdaLift extends OwnerTransformer
 	for (int i = 0; i < params.length; i++) {
 	    params[i] = freevars[i].cloneSymbol(owner);
 	    params[i].pos = owner.pos;
-	    params[i].flags &= CAPTURED;
+	    params[i].flags &= ~CAPTURED;
 	    params[i].flags |= PARAM | SYNTHETIC;
 	    params[i].setInfo(freevars[i].type());
 	}

@@ -213,6 +213,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** Check that `sym' is accessible as a member of tree `site' in current context.
      */
     Type checkAccessible(int pos, Symbol sym, Type symtype, Tree site) {
+	if ((sym.owner().flags & INCONSTRUCTOR) != 0 &&
+	    !(sym.kind == TYPE && sym.isParameter())) {
+	    error(pos, sym + " cannot be accessed from constructor");
+	    return Type.ErrorType;
+	}
 	switch (symtype) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    int nacc = 0;
@@ -1006,30 +1011,24 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Symbol[] tparamSyms;
 		Symbol[][] vparamSyms;
 		Type restype;
-		if (name == Names.CONSTRUCTOR) {
-		    Context prevContext = context;
-		    Symbol clazz = context.enclClass.owner;
-		    context = context.enclClass.outer.outer;
-		    pushContext(tree, sym, new Scope(context.scope));
-		    tparamSyms = enterParams(tparams);
-		    vparamSyms = enterParams(vparams);
-		    restype = clazz.type().subst(
-			clazz.typeParams(), tparamSyms);
-		    context = prevContext;
+		pushContext(tree, sym, new Scope(context.scope));
+		if (name == Names.CONSTRUCTOR)
+		    context.enclClass.owner.flags |= INCONSTRUCTOR;
+		tparamSyms = enterParams(tparams);
+		vparamSyms = enterParams(vparams);
+		if (tpe != Tree.Empty) {
+		    ((DefDef) tree).tpe = tpe = transform(tpe, TYPEmode);
+		    restype = tpe.type;
+		} else if (name == Names.CONSTRUCTOR) {
+		    restype = context.enclClass.owner.type().subst(
+			context.enclClass.owner.typeParams(), tparamSyms);
+		    context.enclClass.owner.flags &= ~INCONSTRUCTOR;
 		} else {
-		    pushContext(tree, sym, new Scope(context.scope));
-		    tparamSyms = enterParams(tparams);
-		    vparamSyms = enterParams(vparams);
-		    if (tpe != Tree.Empty) {
-			((DefDef) tree).tpe = tpe = transform(tpe, TYPEmode);
-			restype = tpe.type;
-		    } else {
-			((DefDef) tree).rhs = rhs = transform(rhs, EXPRmode);
-			restype = rhs.type;
-		    }
-		    restype = checkNoEscape(tpe.pos, restype);
-		    popContext();
+		    ((DefDef) tree).rhs = rhs = transform(rhs, EXPRmode);
+		    restype = rhs.type;
 		}
+		restype = checkNoEscape(tpe.pos, restype);
+		popContext();
 		owntype = makeMethodType(tparamSyms, vparamSyms, restype);
 		//System.out.println("methtype " + name + ":" + owntype);//DEBUG
 		break;
@@ -1657,10 +1656,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    argpts[i] = formals[i].subst(tparams, targs);
 
  		// transform arguments with [targs/tparams]formals as prototypes
-		for (int i = 0; i < args.length; i++) {
+		for (int i = 0; i < args.length; i++)
 		    args[i] = transform(
 			args[i], argMode | POLYmode, formals[i].subst(tparams, targs));
-		}
 
 		// targs1: same as targs except that every AnyType is mapped to
 		// formal parameter type.
@@ -1827,26 +1825,20 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    .setType(definitions.UNIT_TYPE);
 
 	    case DefDef(_, Name name, Tree.AbsTypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
-		Context prevContext = context;
-		Symbol enclClass = context.enclClass.owner;
-		if (name == Names.CONSTRUCTOR) {
-		    context = context.enclClass.outer.outer;
-		}
 		pushContext(tree, sym, new Scope(context.scope));
 		reenterParams(tparams, vparams, sym.type());
+		if (name == Names.CONSTRUCTOR)
+		    context.enclClass.owner.flags |= INCONSTRUCTOR;
 		Tree.AbsTypeDef[] tparams1 = transform(tparams);
 		Tree.ValDef[][] vparams1 = transform(vparams);
 		Tree tpe1 = (tpe == Tree.Empty)
 		    ? gen.mkType(tree.pos, sym.type().resultType())
 		    : transform(tpe, TYPEmode);
-		Tree rhs1 = rhs;
-		if (name == Names.CONSTRUCTOR) {
-		    context.constructorClass = enclClass;
-		    rhs1 = transform(rhs, CONSTRmode, tpe1.type);
-		}
-		else if (rhs != Tree.Empty)
-		    rhs1 = transform(rhs, EXPRmode, tpe1.type);
-		context = prevContext;
+		Tree rhs1 = transform(
+		    rhs,
+		    (name == Names.CONSTRUCTOR) ? CONSTRmode : EXPRmode,
+		    tpe1.type);
+		context.enclClass.owner.flags &= ~INCONSTRUCTOR;
 		sym.flags |= LOCKED;
 		checkNonCyclic(tree.pos, tpe1.type);
 		sym.flags &= ~LOCKED;
@@ -1894,19 +1886,26 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 	    case Block(Tree[] stats):
 		pushContext(tree, context.owner, new Scope(context.scope));
-		int lastmode = mode & ~FUNmode;
 		Tree[] stats1 = desugarize.Statements(stats, true);
 		enterSyms(stats1);
 		context.imports = context.outer.imports;
-		for (int i = 0; i < stats1.length - 1; i++)
-		    stats1[i] = transform(stats1[i], EXPRmode);
-		Type owntype;
-		if (stats1.length > 0) {
-		    stats1[stats1.length - 1] =
-			transform(stats1[stats1.length - 1], lastmode, pt);
-		    owntype = checkNoEscape(tree.pos, stats1[stats1.length - 1].type);
+		if (mode == CONSTRmode) {
+		    stats1[0] = transform(stats1[0], mode, pt);
+		    context.enclClass.owner.flags &= ~INCONSTRUCTOR;
+		    for (int i = 1; i < stats1.length; i++)
+			stats1[i] = transform(stats1[i], EXPRmode);
+		    owntype = stats1[0].type;
 		} else {
-		    owntype = definitions.UNIT_TYPE;
+		    for (int i = 0; i < stats1.length - 1; i++)
+			stats1[i] = transform(stats1[i], EXPRmode);
+		    Type owntype;
+		    if (stats1.length > start) {
+			stats1[stats1.length - 1] =
+			    transform(stats1[stats1.length - 1], EXPRmode, pt);
+			owntype = checkNoEscape(tree.pos, stats1[stats1.length - 1].type);
+		    } else {
+			owntype = definitions.UNIT_TYPE;
+		    }
 		}
 		popContext();
 		return copy.Block(tree, stats1)
@@ -2219,7 +2218,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 					fn1.type = Type.PolyType(
 					    tsym.typeParams(), fn1.type);
 				}
-				//System.out.println(TreeInfo.methSymbol(fn1) + " --> " + fn1.type + " of " + fn1);//DEBUG
+				//System.out.println(TreeInfo.methSymbol(fn1) + ":" + tp + " --> " + fn1.type + " of " + fn1);//DEBUG
 				selfcc = TreeInfo.isSelfConstrCall(fn0);
 			    }
 			    break;
@@ -2386,10 +2385,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Ident(Name name):
 		if (name == Names.CONSTRUCTOR) {
 		    assert (mode & CONSTRmode) != 0 : tree;
-		    return copy.Ident(tree, context.constructorClass)
-                        .setType(context.constructorClass.nextType());
-		    /*
-		    */
+		    return copy.Ident(tree, context.enclClass.owner)
+                        .setType(context.enclClass.owner.type());
 		} else if (((mode & (PATTERNmode | FUNmode)) == PATTERNmode) &&
 			     name.isVariable()) {
 
