@@ -25,7 +25,7 @@ public class ClassParser extends SymbolLoader {
         AbstractFile file = global.classPath.openFile(
             SourceRepresentation.externalizeFileName(clasz, ".class"));
         ClassfileParser.parse(global, new AbstractFileReader(file), clasz);
-        return "class file '" + file.getPath() + "'";
+        return "class file '" + file + "'";
     }
 
 }

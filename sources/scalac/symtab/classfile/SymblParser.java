@@ -27,6 +27,6 @@ public class SymblParser extends ClassParser {
         AbstractFile file = global.classPath.openFile(
             SourceRepresentation.externalizeFileName(clasz, ".symbl"));
         UnPickle.parse(global, file, clasz);
-        return "symbol file '" + file.getPath() + "'";
+        return "symbol file '" + file + "'";
     }
 }

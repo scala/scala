@@ -93,7 +93,7 @@ public class SourceFile {
 
     /** Returns the path of the underlying file. */
     public String toString() {
-        return file.getPath();
+        return file.toString();
     }
 
     //########################################################################

@@ -61,6 +61,11 @@ public abstract class AbstractFile {
         return new ByteArrayInputStream(read());
     }
 
+    /** Returns the path of this file. */
+    public String toString() {
+        return getPath();
+    }
+
     /** open file 'name' in directory 'dirname'
      */
     public static AbstractFile open(String dirname, String name) {

@@ -42,7 +42,7 @@ public class SourceCompleter extends SymbolLoader {
         global.currentPhase = global.PHASE.ANALYZER.phase();
         ((AnalyzerPhase)global.PHASE.ANALYZER.phase()).lateEnter(global, unit, clasz);
         global.currentPhase = phase;
-        return "source file '" + source.getFile() + "'";
+        return "source file '" + source + "'";
     }
 
 }
