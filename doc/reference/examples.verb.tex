@@ -2713,7 +2713,7 @@ def sumPrimes(start: int, end: int): int = {
 \end{verbatim}
 Note that the variable \verb@i@ ``steps through'' all values of the interval
 \verb@[start .. end-1]@.
-\es\bs
+%\es\bs
 A more functional way is to represent the list of values of variable \verb@i@ directly as \verb@range(start, end)@. Then the function can be rewritten as follows.
 \begin{verbatim}
 def sumPrimes(start: int, end: int) =
@@ -2736,7 +2736,8 @@ constructed.  But most of that list is never inspected!
 However, we can obtain efficient execution for examples like these by
 a trick:
 \begin{quote}
-\red Avoid computing the tail of a sequence unless that tail is actually
+%\red
+ Avoid computing the tail of a sequence unless that tail is actually
      necessary for the computation.
 \end{quote}
 We define a new class for such sequences, which is called \verb@Stream@.
@@ -2797,7 +2798,8 @@ constructing a stream with first element \verb@x@ and (unevaluated)
 rest \verb@xs@.  Instead of \verb@xs ::: ys@, one uses the operation
 \verb@xs append ys@.  
 
-\redtext{Is there another way?}
+%\redtext
+{Is there another way?}
 
 
 
