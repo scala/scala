@@ -420,9 +420,7 @@ object Test  {
     } catch {
       case exception => {
         val name: String = Thread.currentThread().getName();
-        System.out.print("Exception in thread \"" + name + "\" ");
-        exception.printStackTrace();
-        //Console.println(exception.StackTrace); // with -target:msil
+        System.out.print("Exception in thread \"" + name + "\" " + exception);
         System.out.println();
         errors = errors + 1;
       }

@@ -3592,8 +3592,7 @@ object Test {
       }
     } catch {
       case exception => {
-        System.out.print(name + " raised exception ");
-        exception.printStackTrace();
+        System.out.print(name + " raised exception " + exception);
         System.out.println();
         errors = errors + 1;
       }
