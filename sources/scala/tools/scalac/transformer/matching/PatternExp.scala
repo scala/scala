@@ -28,17 +28,17 @@ package scala.tools.scalac.transformer.matching {
           Alt( fromTrees(choices):_* )
 
         case Apply(s:Ident, args) if (s.symbol() == defs.PATTERN_WILDCARD) =>
-          Node(WildcardTest, Sequ(fromTrees( args ):_*))
+          Node(WildcardTest, mkSequ(fromTrees( args ):_*))
 
         case x @ Apply(_, args) =>
           if (isSeqApply( x ))          // List(1,2,3)
-            Node(TypeTest( x.getType() ), Sequ(fromTrees( args ):_*))
+            Node(TypeTest( x.getType() ), mkSequ(fromTrees( args ):_*))
 
           else if (isObjectRef( x ))  // uncurry: foo.bar => foo.bar()
             Node(EqualsValue( t ), Eps);
 
            else                        // case class constructor
-             Node(Constructor( t.getType() ), Sequ(fromTrees( args ):_*));
+             Node(Constructor( t.getType() ), mkSequ(fromTrees( args ):_*));
 
         case Bind(n: Name, t:Tree) =>
           if( TreeInfo.isNameOfStarPattern( n ) )
@@ -60,7 +60,7 @@ package scala.tools.scalac.transformer.matching {
           Node(EqualsValue( t ), Star(Wildcard))
 
         case Sequence( trees ) =>
-          Sequ(fromTrees( trees ):_*);
+          mkSequ(fromTrees( trees ):_*);
 
         case Typed(_,_) =>
           Node(TypeTest( t.getType() ), Eps)

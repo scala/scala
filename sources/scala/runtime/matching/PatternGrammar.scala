@@ -15,4 +15,5 @@ abstract class PatternGrammar extends scala.util.grammar.ImmutableTreeHedgeGramm
   def test(test:Int, inp:Any): Boolean;
 
   def isSequenceType: Boolean = { treeInitials.toSet(true).isEmpty };
+
 }

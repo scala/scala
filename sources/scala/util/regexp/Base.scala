@@ -52,4 +52,10 @@ trait Base {
     def r = r1;
   }
 
+  final def mkSequ(rs: regexp*): RegExp =
+    if(!rs.elements.hasNext)
+      Eps
+    else
+      Sequ(rs:_*);
+
 }

@@ -77,18 +77,20 @@ class FullRegularTranslator(global: scalac_Global) {
   /**
     * precondition: p.length > 0
     */
-  def MakeGrammar( it:Iterator[Tree$CaseDef] ):Grammar = {
+  def MakeGrammar( it:Iterator[Tree$CaseDef] ):PatternGrammar = {
+    DEBUGPRINT("MakeGrammar");
     var k = 0;
     cur = InitialGrammar.make;
     while( it.hasNext )
       translate( pe.fromTree(it.next.pat), { k = k + 1; k } );
+    DEBUGPRINT(cur.toString());
     cur.toGrammar;
   }
 
   /** p must be a pattern
   */
   protected def translate( p:RegExp, k:Int ):unit = {
-
+    DEBUGPRINT("translate");
     this.varCounter = 0;
     this.isSequenceType = isSequenceValued( p );
     if( this.isSequenceType ) {
@@ -105,13 +107,13 @@ class FullRegularTranslator(global: scalac_Global) {
 
     if( global.debug ) {
       for( val rule <- cur.treeRules ) {
-        global.log( rule.toString() );
+        DEBUGPRINT( rule.toString() );
       }
       for( val rule <- cur.hedgeRules ) {
-        global.log( rule.toString() );
+        DEBUGPRINT( rule.toString() );
       }
-      global.log("=== Now Removing Chain Rules ===");
-    } ;
+      DEBUGPRINT("=== Now Removing Chain Rules ===");
+    };
 
     RemoveChainRules;
 
@@ -252,6 +254,9 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
   */
   def MakeHedgeRule( in:HedgeNT, nt:HedgeNT, vset:immutable.Set[Int], pat:RegExp):unit =
     pat match {
+
+      case Eps =>
+        cur.hedgeRules += new HedgeChainRule( in, nt );
       /*
       case Point() =>
 	cur.hedgeRules += new HedgeChainRule(in, iteration);
@@ -301,8 +306,11 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
         if (isSequenceValued( p )) {
 	  MakeHedgeRule( in, nt, vset + newVar( vble ), p );
         } else {
+          Console.println(p);
+          Console.println(isSequenceValued( p ));
           try {
  	    val trNT = cur.make.TreeNT( vset );
+            Console.println("made treeNT:"+trNT);
 	    MakeTreeRule( trNT, vset, pat );
 	    cur.hedgeRules += new HedgeRule( in, trNT, nt );
           } catch {
@@ -311,8 +319,11 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
           }
         }
       case _ =>
+        Console.println(pat);
+        Console.println(isSequenceValued( pat ));
         try {
 	  val trNT = cur.make.TreeNT( vset );
+            Console.println("made treeNT:"+trNT);
 	  MakeTreeRule( trNT, vset, pat );
 	  cur.hedgeRules += new HedgeRule( in, trNT, nt );
         } catch {
@@ -329,9 +340,10 @@ Afterwards: Chain rules need not be applied anymore. They only exist with
       case Wildcard =>
       // WildcardTree()
       // case Tree$Ident( Names.PATTERN_WILDCARD ) =>
-        if( vset.isEmpty )
+        if( vset.isEmpty ) {
+          DEBUGPRINT("WILDCARD! discarding "+in);
           throw new WildcardException(); // OPTIMIZATION to collapse _ rules
-        else
+        } else
           cur.treeRules += new AnyTreeRule( in );
       // WildcardNode( x @ _* )
       case Node(WildcardTest, sequ) =>
