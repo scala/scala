@@ -2381,7 +2381,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    stats1(i) = transform(stats1(i), EXPRmode);
 	    i = i + 1
 	  }
-	  val value1: Tree = transform(value, valuemode & ~FUNmode, pt);
+	  val value1: Tree = transform(value, valuemode & ~(FUNmode | QUALmode), pt);
 	  val owntype: Type =
 	    checkNoEscape(tree.pos, value1.getType().deconst());
 	  context = prevContext;
