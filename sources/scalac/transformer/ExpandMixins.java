@@ -183,6 +183,7 @@ public class ExpandMixins extends Transformer {
 
                     Symbol memberSymbol =
                         symbolCloner.cloneSymbol(formal.symbol(), true);
+                    memberSymbol.flags &= ~Modifiers.PARAM;
                     Type memberType = typeMap.apply(formal.tpe.type());
                     memberSymbol.updateInfo(memberType);
 
