@@ -25,6 +25,7 @@ object Names {
     operatorName('|') = "$bar";
     operatorName('*') = "$times";
     operatorName('/') = "$div";
+    operatorName('\\') = "$bslash";
     operatorName('+') = "$plus";
     operatorName('-') = "$minus";
     operatorName(':') = "$colon";

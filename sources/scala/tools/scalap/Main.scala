@@ -20,7 +20,7 @@ object Main {
 
     /** The version number.
      */
-    val VERSION = "1.0.1";
+    val VERSION = "1.1.0";
 
     /** Verbose program run?
      */

@@ -33,7 +33,12 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 
     def nameToClass(str: String) = {
         val res = Names.decode(str.replace('/', '.'));
-        if (res == "java.lang.Object") "scala.AnyRef" else res
+        if (res == "java.lang.Object") "scala.Any" else res
+    }
+
+    def nameToClass0(str: String) = {
+    	val res = Names.decode(str.replace('/', '.'));
+    	if (res == "java.lang.Object") "scala.AnyRef" else res
     }
 
     def nameToSimpleClass(str: String) =
@@ -148,7 +153,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
         } else {
             print("class " + getSimpleClassName(cf.classname));
             if (cf.pool(cf.superclass) != null)
-                print(" extends " + getClassName(cf.superclass));
+                print(" extends " + nameToClass0(getName(cf.superclass)));
         }
         cf.interfaces foreach {
             n => print(" with " + getClassName(n));

@@ -31,11 +31,13 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
                 print("/*deferred*/ ");
             if (Flags.is(Flags.OBJECT, s.flags))
                 print("object " + s.name);
-            else if (Flags.is(Flags.TRAIT, s.flags))
+            else if (Flags.is(Flags.TRAIT, s.flags)) {
                 print("trait " + s.name);
-            else
+                printConstr(s.constr);
+            } else {
                 print("class " + s.name);
-            printConstr(s.constr);
+            	printConstr(s.constr);
+            }
             print(" extends ");
             printType(s.tpe);
         case s: ValSymbol =>
@@ -74,9 +76,9 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
                         }
                     }
                     print("]");
-                    printTypes(argtpes, "(", ", ", ")");
+                    printParameterTypes(argtpes, "(", ", ", ")", false);
                 case MethodType(argtpes, _) =>
-                    printTypes(argtpes, "(", ", ", ")");
+                    printParameterTypes(argtpes, "(", ", ", ")", false);
                 case _ =>
             }
     }
@@ -99,6 +101,37 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             }});
         if (!first)
             newline.undent.print("}")
+    }
+
+    def printParameterType(tpe: Type, basic: Boolean): Unit = tpe match {
+        case TypeRef(SingletonType(ThisType(root), top), sym, args) =>
+            if ((root.name.equals("<root>") || root.name.equals("")) &&
+            	top.name.equals("scala") &&
+            	sym.name.startsWith("Function")) {
+            	if ((args.length == 2) && !isFunctionType(args.head)) {
+            		printType(args.head);
+            		print(" => ");
+            		printParameterType(args.tail.head, basic);
+            	} else {
+            		printParameterTypes(args.take(args.length - 1), "(", ", ", ")", basic);
+            		print(" => ");
+            		printParameterType(args.last, basic);
+            	}
+            } else if (basic)
+            	printType0(tpe);
+            else
+            	printType(tpe);
+        case _ => if (basic) printType0(tpe); else printType(tpe);
+    }
+
+    def printParameterTypes(tpes: List[Type], begin: String, infix: String,
+                            end: String, basic: Boolean): Unit = {
+        print(begin);
+        if (!tpes.isEmpty) {
+            printParameterType(tpes.head, basic);
+            tpes.tail foreach (t => { print(infix); printParameterType(t, basic) });
+        }
+        print(end);
     }
 
     def printType(tpe: Type): Unit = {
@@ -125,10 +158,14 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
         case SingletonType(tpe, sym) =>
             printPrefix(tpe);
             print(sym.name)
-        case TypeRef(tpe, sym, args) =>
-            printPrefix(tpe);
-            print(sym.name);
-            printTypes(args, "[", ", ", "]");
+        case TypeRef(pre, sym, args) =>
+        	if (isJavaRoot(tpe))
+        		print("scala.AnyRef");
+        	else {
+            	printPrefix(pre);
+            	print(sym.name);
+            	printTypes(args, "[", ", ", "]");
+            }
         case CompoundType(clazz, components) =>
             printTypes(components, "", " with ", "");
             if (clazz != NoSymbol)
@@ -138,7 +175,7 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             while (tpe0.isInstanceOf[MethodType]) {
                 tpe0 match {
                     case MethodType(argtpes, restpe) =>
-                        printTypes0(argtpes, "(", ", ", ")");
+                        printParameterTypes(argtpes, "(", ", ", ")", true);
                         tpe0 = restpe;
                 }
             }
@@ -212,11 +249,14 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
             else
             	print(sym.name);
             if (!isExternalType(sym.tpe, "Any")) {
-                print(" <: ")*;
+            	if (Flags.is(Flags.VIEWBOUND, sym.flags))
+            		print(" <% ");
+            	else
+                	print(" <: ");
                 printType(sym.tpe);
             }
             if (!isExternalType(sym.lower, "All")) {
-                print(" >: ")*;
+                print(" >: ");
                 printType(sym.lower);
             }
     }
@@ -231,9 +271,31 @@ class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
         case _ => false
     }
 
+    def isJavaRoot(tpe: Type): Boolean = tpe match {
+        case TypeRef(SingletonType(SingletonType(ThisType(root), top), mid), sym, Nil) =>
+            (root.name.equals("<root>") || root.name.equals("")) &&
+            top.name.equals("java") &&
+            mid.name.equals("lang") &&
+            sym.name.equals("Object")
+        case _ => false
+    }
+
+    def isFunctionType(tpe: Type): Boolean = tpe match {
+        case TypeRef(SingletonType(ThisType(root), top), sym, Nil) =>
+            (root.name.equals("<root>") || root.name.equals("")) &&
+            top.name.equals("scala") &&
+            sym.name.startsWith("Function")
+        case _ => false
+    }
+
     def ignoreDef(s: Symbol) =
         (Flags.is(Flags.PRIVATE, s.flags) &&
          !((args != null) && (args contains "-private"))) ||
         (s.name == "<init>") ||
-        Flags.is(Flags.CASEACCESSOR, s.flags);
+        Flags.is(Flags.CASEACCESSOR, s.flags) ||
+        (Flags.is(Flags.CASE, s.flags) &&
+         (s match {
+         	case sym: ValSymbol => true
+         	case _ => false
+         }))
 }

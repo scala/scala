@@ -121,7 +121,7 @@ class EntityTable(attrib: ScalaAttribute) {
     def getSymbol(i: Int): Symbol =
         if (i < 0) NoSymbol else table(i).asInstanceOf[Symbol];
 
-    def getSymbols(is: List[Int]): List[Symbol] = is map {i => getSymbol(i)};
+    def getSymbols(is: List[Int]): List[Symbol] = is map getSymbol;
 
     def getType(i: Int): Type = {
         if (i < 0)

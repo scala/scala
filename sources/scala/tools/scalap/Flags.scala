@@ -34,6 +34,7 @@ object Flags {
     final val JAVA         = 0x00001000; // defined by a Java class
     final val OBJECT       = 0x00002000; // a singleton object
     final val MUTABLE      = 0x00004000; // a mutable variable
+    final val VIEWBOUND    = 0x00004000; // a type variable is bound by a view
     final val PARAM        = 0x00008000; // a (type) parameter of a method
     final val PACKAGE      = 0x00100000; // a java package
 

@@ -63,7 +63,7 @@ class ScalaAttribute(in: ByteArrayReader) {
 
     def readTableEntry: AttribEntry = {
         val tag = in.nextByte;
-        // Console.println("tag = " + tag);
+        //Console.println("tag = " + tag);
         val len = in.nextNat;
         val end = in.bp + len;
         tag match {
@@ -124,7 +124,7 @@ class ScalaAttribute(in: ByteArrayReader) {
                  LONG_LIT |
                  FLOAT_LIT |
                  DOUBLE_LIT =>
-            	Literal(tag, in.nextLong)
+            	Literal(tag, in.nextNum(len))
            	case _ =>
            		error("unknown meta data tag: " + tag);
         }

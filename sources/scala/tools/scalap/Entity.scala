@@ -152,7 +152,7 @@ class ClassSymbol(name: String, flags: Int) extends Symbol(name, flags) {
     override def fix(sym: Symbol): Unit = {
         constr = sym;
     }
-    override def enter(sym: Symbol): Unit = scope += sym;
+    override def enter(sym: Symbol): Unit = scope.prepend(sym);
     override def members: Buffer[Symbol] = scope;
 }
 
