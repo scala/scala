@@ -136,7 +136,4 @@ xml/Generic.scala
 xml/PCDATA.scala
 xml/ScalaFactoryAdapter.scala
 
-xml/javaAdapter/HashMap.scala
-xml/javaAdapter/Map.scala
-
 ##############################################################################
