@@ -235,7 +235,7 @@ library		: .latest-library
 # Targets
 
 .latest-meta		: $(META_JC_FILES)
-	@$(MAKE) jc target=META META_JC_FILES='$?'
+	@$(make) jc target=META META_JC_FILES='$?'
 	$(RM) .latest-runtime
 	$(RM) .latest-compiler
 	touch $@
@@ -247,11 +247,11 @@ library		: .latest-library
 	touch $@
 
 .latest-runtime		: $(RUNTIME_JC_FILES)
-	@$(MAKE) jc target=RUNTIME RUNTIME_JC_FILES='$(filter %.java,$?)'
+	@$(make) jc target=RUNTIME RUNTIME_JC_FILES='$?'
 	touch $@
 
 .latest-compiler	: $(COMPILER_JC_FILES)
-	@$(make) jc target=COMPILER COMPILER_JC_FILES='$(filter %.java,$?)'
+	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
 	touch $@
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
