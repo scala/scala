@@ -57,6 +57,8 @@ object List extends java.lang.Object with scala.ScalaObject {
     final def flatten[a](scala.List[scala.List[a]]): scala.List[a];
     final def tabulate[a](scala.Int, scala.Function1[scala.Int, a]): scala.List[a];
     final def make[a](scala.Int, a): scala.List[a];
+    final def range(scala.Int, scala.Int, scala.Function1[scala.Int, scala.Int]): scala.List[scala.Int];
+    final def range(scala.Int, scala.Int, scala.Int): scala.List[scala.Int];
     final def range(scala.Int, scala.Int): scala.List[scala.Int];
     final def apply[A](A*): scala.List[A]
 }

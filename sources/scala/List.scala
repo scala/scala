@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-04, LAMP/EPFL               **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -29,11 +29,34 @@ object List {
 
   /** Create a sorted list of all integers in a range.
    *
+   *  @param from the start value of the list
+   *  @param end the end value of the list
    *  @return the sorted list of all integers in range [from;end).
    */
   def range(from: Int, end: Int): List[Int] =
+    range(from, end, 1);
+
+  /** Create a sorted list of all integers in a range.
+   *
+   *  @param from the start value of the list
+   *  @param end the end value of the list
+   *  @param step the increment value of the list
+   *  @return the sorted list of all integers in range [from;end).
+   */
+  def range(from: Int, end: Int, step: Int): List[Int] =
     if (from >= end) Nil
-    else from :: range(from + 1, end);
+    else from :: range(from + step, end, step);
+
+  /** Create a sorted list of all integers in a range.
+   *
+   *  @param from the start value of the list
+   *  @param end the end value of the list
+   *  @param step the increment function of the list
+   *  @return the sorted list of all integers in range [from;end).
+   */
+  def range(from: Int, end: Int, step: Int => Int): List[Int] =
+    if (from >= end) Nil
+    else from :: range(step(from), end, step);
 
   /** Create a list containing several copies of an element.
    *
