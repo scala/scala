@@ -405,7 +405,10 @@ class Scanner(_unit: Unit) extends TokenData {
 	      nextch(); token = RBRACKET;
 	      return;
 	    case SU =>
-	      token = EOF;
+              if( !srcIterator.hasNext )
+	        token = EOF;
+              else
+	        syntaxError("illegal character");
 	      return;
 	    case _ =>
 	      nextch();
@@ -566,7 +569,7 @@ class Scanner(_unit: Unit) extends TokenData {
 
   private def getStringLit(delimiter: char): unit = {
     nextch();
-    while (ch != delimiter && ch != CR && ch != LF && ch != SU) {
+    while (srcIterator.hasNext && ch != delimiter && ch != CR && ch != LF ) {
       getlitch();
     }
     if (ch == delimiter) {
@@ -679,7 +682,7 @@ class Scanner(_unit: Unit) extends TokenData {
           nextch();
         }
       /* } */
-    } else if (ch != SU) {
+    } else  {
       putChar(ch);
       nextch();
     }
