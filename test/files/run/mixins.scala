@@ -2,6 +2,8 @@
 
 // Test 1: "super" coming from mixins
 
+import java.lang.System.out.println;
+
 object Test1 {
   class A {
     def f = "A::f";
@@ -21,7 +23,7 @@ object Test1 {
 
   def main(args: Array[String]): Unit = {
     val c = new C;
-    System.out.println(c.f);
+    println(c.f);
   }
 }
 
@@ -46,14 +48,13 @@ object Test2 {
 
   def main(args: Array[String]): Unit = {
     val h = new Host;
-    System.out.println(h.f)
+    println(h.f)
   }
 }
 
 // Test 3: mixin evaluation order (bug 120)
 
 object Test3 {
-  import System.out.println;
 
   class A(x: Unit, y: Unit) {
     println("A");
@@ -65,7 +66,7 @@ object Test3 {
 
   class C with A({ println("one"); }, { println("two"); })
           with B({ println("three"); }) {
-    System.out.println("C");
+    println("C");
   }
 
   def main(args: Array[String]) = {
