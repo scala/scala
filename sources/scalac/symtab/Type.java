@@ -1139,6 +1139,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
 
 	Type toPrefix(Symbol sym, Type pre, Symbol clazz) {
+	    //System.out.println(this + ".toPrefix(" + sym + "," + pre + "," + clazz + ")");//DEBUG
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
 	    else if (sym.isSubClass(clazz) &&
@@ -1793,6 +1794,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
 	    for (int i = 0; i < alttypes.length; i++) {
 		if (alttypes[i].isSubType(that)) return true;
+	    }
+	    break;
+
+	case CompoundType(Type[] parts, Scope members):
+	    int i = 0;
+	    while (i < parts.length) {
+		if (parts[i].isSubType(that)) return true;
+		i++;
 	    }
 	    break;
 	}

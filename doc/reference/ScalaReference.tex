@@ -91,7 +91,7 @@ Unicode encodings \lstinline@`\uXXXX'@ are also as in Java.
 \section{Identifiers}
 
 \syntax\begin{lstlisting}
-op        ::=  special {special} [`_' [id]]
+op        ::=  special {special}
 varid     ::=  lower {letter $|$ digit} [`_' [id]]
 id        ::=  upper {letter $|$ digit} [`_' [id]]
             |  varid
@@ -101,11 +101,11 @@ id        ::=  upper {letter $|$ digit} [`_' [id]]
 There are two ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
 letters and digits. Second, an identifier can be start with a special
-character followed by an arbitrary sequence of special characters.
-In both cases, the identifier prefix may be immediately followed
-by an underscore `\lstinline@_@' character and another string of characters
-that by themselves make up an identifier.  As usual, a longest match
-rule applies. For instance, the string
+character followed by an arbitrary sequence of special characters.  In
+the first case, the identifier prefix may be immediately followed by
+an underscore `\lstinline@_@' character and another string of
+characters that by themselves make up an identifier.  As usual, a
+longest match rule applies. For instance, the string
 
 \begin{lstlisting}
 big_bob++=z3
@@ -155,7 +155,7 @@ statement.
 The tokens which cannot legally start a statement
 are the following delimiters and reserved words:
 \begin{lstlisting}
-else    extends    with    yield    do
+catch    else    extends    finally    with    yield
 ,    .    ;    :    =    =>    <-    <:    >:    #    @    )    ]    }
 \end{lstlisting}
 
@@ -607,7 +607,8 @@ The base classes of an aliased type are the base classes of its alias.
 \item
 The base classes of an abstract type are the base classes of its upper bound.
 \item
-The base classes of a parameterized type ~\lstinline@$C$[$T_1 \commadots T_n$]@~ are the base classes
+The base classes of a parameterized type 
+~\lstinline@$C$[$T_1 \commadots T_n$]@~ are the base classes
 of type $C$, where every occurrence of a type parameter $a_i$ 
 of $C$ has been replaced by the corresponding parameter type $T_i$.
 \item
@@ -618,6 +619,14 @@ The base classes of a compound type
 ~\lstinline@$T_1$ with $\ldots$ with $T_n$ with {$R\,$}@~ is the concatenation of the
 base classes of all $T_i$'s, except that later base classes replace
 earlier base classes which are instances of the same class.
+\item
+The base classes of a type selection \lstinline@$S$#$T$@ are
+determined as follows. If $T$ is an alias or abstract type, the
+previous clauses apply. Otherwise, $T$ must be a (possibly
+parameterized) class type, which is defined in some class $B$.  Then
+the base classes of \lstinline@$S$#$T$@ are the base classes of $T$
+seen as members of $B$ from the prefix type $S$.
+
 \end{itemize}
 
 2. The notion of a type $T$
@@ -1049,7 +1058,7 @@ definition also introduce a getter function $x$ which returns the
 value currently assigned to the variable, as well as a setter function
 \lstinline@$x$_=@ which changes the value currently assigned to the variable.
 The functions have the same signatures as for a variable declaration.
-The getter and setter functions, are then members of the template
+The getter and setter functions are then members of the template
 instead of the variable accessed by them.
 
 \example The following example shows how {\em properties} can be
@@ -2801,16 +2810,17 @@ the expression is the value of $e$ converted to type $T$.
                  |  SimpleExpr ArgumentExpr `=' Expr
 \end{lstlisting}
 
-An assignment to a simple variable ~\lstinline@$x$ = $e$@~ is interpreted
-depending on whether $x$ is defined in a block or in a
-template. If $x$ is a variable defined in a block, then the
-assignment changes the current value of $x$ to be the result of
-evaluating the expression $e$. The type of $e$ is expected
-to conform to the type of $x$.  If $x$ is a member
-of a template, the assignment ~\lstinline@$x$ = $e$@~ is interpreted as the
-invocation ~\lstinline@$x$_=($e\,$)@~ of the setter function for variable $x$
-(\sref{sec:vardef}).  Analogously, an assignment ~\lstinline@$f$.$x$ = $e$@~ to a
-field $x$ is interpreted as the invocation ~\lstinline@$f$.$x$_=($e\,$)@.
+The interpretation of assignment to a simple variable ~\lstinline@$x$
+= $e$@~ depends on the definition of $x$. If $x$ denotes a mutable
+variable, then the assignment changes the current value of $x$ to be
+the result of evaluating the expression $e$. The type of $e$ is
+expected to conform to the type of $x$. If $x$ is a parameterless
+function defined in some a template, and the same template contains a
+setter function \lstinline@$x$_=@ as member, then the assignment
+~\lstinline@$x$ = $e$@~ is interpreted as the invocation
+~\lstinline@$x$_=($e\,$)@~ of that setter function.  Analogously, an
+assignment ~\lstinline@$f$.$x$ = $e$@~ to a parameterless function $x$
+is interpreted as the invocation ~\lstinline@$f$.$x$_=($e\,$)@.
 
 An assignment ~\lstinline@$f$($\args\,$) = $e$@~ with a function application to the
 left of the ``\lstinline@=@' operator is interpreted as 
@@ -3608,7 +3618,7 @@ abstract class Any {
   def asInstanceOf[a]: a = match {
     case x: a => x
     case _ => if (this eq null) this
-              else else new ClassCastException().throw
+              else throw new ClassCastException()
   }
 
   /** Pattern match */
@@ -3618,6 +3628,16 @@ final class AnyVal extends Any;
 class AnyRef extends Any;
 class Object extends AnyRef;
 \end{lstlisting}
+
+The type cast operation \verb@asInstanceOf@ has a special meaning (not
+expressed in the code above) when its type parameter is a numeric
+type.  For any type \lstinline@T <: Double@, and any numeric value
+\verb@v@ \lstinline@v.asInstanceIf[T]@ converts \code{v} to type
+\code{T} using the rules of Java's numeric type cast operation.  The
+conversion might truncate the numeric value (as when going from
+\code{Long} to \code{Int} or from \code{Int} to \code{Byte}) or it
+might lose precision (as when going from \code{Double} to \code{Float}
+or when converting between \code{Long} and \code{Float}).
 
 \section{Value Classes}
 \label{sec:cls-value}
@@ -4109,7 +4129,7 @@ form.
   digit          ::=  `0' | $\ldots$ | `9'
   special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
 
-  op             ::=  special {special} [`_' [id]]
+  op             ::=  special {special} 
   varid          ::=  lower {letter | digit} [`_' [id]]
   id             ::=  upper {letter | digit} [`_' [id]]
                    | varid

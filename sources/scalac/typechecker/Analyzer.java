@@ -606,6 +606,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	else throw new ApplicationError();
     }
 
+    private boolean isSetterMethod(Symbol sym) {
+	return sym != null &&
+	    !sym.isLocal() &&
+	    !sym.isStable() &&
+	    sym.type() instanceof Type.PolyType &&
+	    sym.typeParams().length == 0;
+    }
+
 // Contexts -------------------------------------------------------------------
 
     /** Push new context associated with given tree, owner, and scope on stack.
@@ -661,11 +669,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** A lazy type for self types
      */
     class LazySelfType extends LazyTreeType {
-	LazySelfType(Tree tree) {
+	Symbol clazz;
+	LazySelfType(Symbol clazz, Tree tree) {
 	    super(tree);
+	    this.clazz = clazz;
 	}
 	public void complete(Symbol sym) {
-	    defineSelfType(sym, tree, u, c);
+	    defineSelfType(sym, clazz, tree, u, c);
 	}
     }
 
@@ -1004,7 +1014,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		sym.primaryConstructor().flags |= INITIALIZED;
 
 		if (tpe != Tree.Empty)
-		    sym.setTypeOfThis(new LazySelfType(tpe));
+		    sym.setTypeOfThis(new LazySelfType(sym, tpe));
 
 		defineTemplate(templ, sym, new Scope());
 		owntype = templ.type;
@@ -1017,7 +1027,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		clazz.setInfo(templ.type);
 		((ModuleDef) tree).tpe = tpe = transform(tpe, TYPEmode);
 		if (tpe != Tree.Empty)
-		    clazz.setTypeOfThis(new LazySelfType(tpe));
+		    clazz.setTypeOfThis(new LazySelfType(sym, tpe));
 		owntype = (tpe == Tree.Empty) ? clazz.type() : tpe.type;
 		break;
 
@@ -1171,13 +1181,17 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** Define self type of class or module `sym'
      *  associated with `tree' using given `unit' and `context'.
      */
-    void defineSelfType(Symbol sym, Tree tree, Unit unit, Context curcontext) {
+    void defineSelfType(Symbol sym, Symbol clazz, Tree tree, Unit unit, Context curcontext) {
         Unit savedUnit = this.unit;
         this.unit = unit;
 	Context savedContext = this.context;
 	this.context = curcontext;
 
-	sym.setInfo(transform(tree, TYPEmode).type);
+	Type selftype = transform(tree, TYPEmode).type;
+
+	sym.setInfo(
+	    Type.compoundType(
+		new Type[]{selftype, clazz.type()}, Scope.EMPTY));
 
 	this.unit = savedUnit;
 	this.context= savedContext;
@@ -1352,18 +1366,20 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	      owntype.isSubType(pt))) {
 	    switch (tree) {
 	    case Literal(Object value):
-		if (value instanceof Integer) {
-		    int n = ((Integer) value).intValue();
-		    if (pt.symbol() == definitions.BYTE_CLASS &&
-			-128 <= n && n <= 127)
-			return copy.Literal(tree, new Byte((byte) n)).setType(pt);
-		    else if (pt.symbol() == definitions.SHORT_CLASS &&
-			     -32768 <= n && n <= 32767)
-			return copy.Literal(tree, new Short((short) n)).setType(pt);
-		    else if (pt.symbol() == definitions.CHAR_CLASS &&
-			     0 <= n && n <= 65535)
-			return copy.Literal(tree, new Character((char) n)).setType(pt);
-		}
+		int n = Integer.MAX_VALUE;
+		if (value instanceof Integer)
+		    n = ((Integer) value).intValue();
+		else if (value instanceof Character)
+		    n = ((Character) value).charValue();
+		if (pt.symbol() == definitions.BYTE_CLASS &&
+		    -128 <= n && n <= 127)
+		    return copy.Literal(tree, new Byte((byte) n)).setType(pt);
+		else if (pt.symbol() == definitions.SHORT_CLASS &&
+			 -32768 <= n && n <= 32767)
+		    return copy.Literal(tree, new Short((short) n)).setType(pt);
+		else if (pt.symbol() == definitions.CHAR_CLASS &&
+			 0 <= n && n <= 65535)
+		    return copy.Literal(tree, new Character((char) n)).setType(pt);
 	    }
 	    typeError(tree.pos, owntype, pt);
 	    Type.explainTypes(owntype, pt);
@@ -2039,14 +2055,15 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Assign(Tree lhs, Tree rhs):
 		Tree lhs1 = transform(lhs, EXPRmode);
 		Symbol varsym = lhs1.symbol();
-		if (varsym != null && (varsym.flags & ACCESSOR) != 0) {
+		if (isSetterMethod(varsym)) {
+		    // todo: change this to require setters in same template
 		    return transform(desugarize.Assign(tree.pos, lhs, rhs));
-		} else if (varsym == null || (varsym.flags & MUTABLE) == 0) {
-		    return error(tree.pos, "assignment to non-variable");
-		} else {
+		} else if (varsym != null && (varsym.flags & MUTABLE) != 0) {
 		    Tree rhs1 = transform(rhs, EXPRmode, lhs1.type);
 		    return copy.Assign(tree, lhs1, rhs1)
 			.setType(definitions.UNIT_TYPE);
+		} else {
+		    return error(tree.pos, "assignment to non-variable");
 		}
 
 	    case If(Tree cond, Tree thenp, Tree elsep):

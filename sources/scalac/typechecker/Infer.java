@@ -958,7 +958,9 @@ public class Infer implements Modifiers, Kinds {
      *  If several applicable alternatives exist, take the
      *  most specialized one, or throw an error if no
      *  most specialized applicable alternative exists.
-     *  If no alternative matches, leave `tree' unchanged.
+     *  If no alternative matches, leave `tree' unchanged,
+     *  try to select method with pt = AnyType.
+     *  If pt is AnyType, leave tree unchanged.
      */
     public void methodAlternative(Tree tree, Symbol[] alts, Type[] alttypes,
 				  Type[] argtypes, Type pt)
@@ -988,6 +990,8 @@ public class Infer implements Modifiers, Kinds {
 		}
 	    }
 	    tree.setSymbol(alts[best]).setType(alttypes[best]);
+	} else if (pt != Type.AnyType) {
+	    methodAlternative(tree, alts, alttypes, argtypes, Type.AnyType);
 	}
     }
 
