@@ -47,6 +47,84 @@ import scalac.util.Debug;
  */
 public class Erasure extends Transformer implements Modifiers {
 
+    //########################################################################
+    // Private Constants
+
+    private static final Type
+        UNBOXED_BOOLEAN = Type.unboxedType(TypeTags.BOOLEAN),
+        UNBOXED_BYTE    = Type.unboxedType(TypeTags.BYTE),
+        UNBOXED_SHORT   = Type.unboxedType(TypeTags.SHORT),
+        UNBOXED_CHAR    = Type.unboxedType(TypeTags.CHAR),
+        UNBOXED_INT     = Type.unboxedType(TypeTags.INT),
+        UNBOXED_LONG    = Type.unboxedType(TypeTags.LONG),
+        UNBOXED_FLOAT   = Type.unboxedType(TypeTags.FLOAT),
+        UNBOXED_DOUBLE  = Type.unboxedType(TypeTags.DOUBLE);
+
+    //########################################################################
+    // Private Methods - Tree generation
+
+    /**
+     * Generates a new unboxed array of given size and with elements
+     * of given type.
+     */
+    private Tree genNewUnboxedArray(int pos, Type element, Tree size) {
+        switch (element) {
+        case UnboxedType(int kind): return genNewUnboxedArray(pos, kind, size);
+        }
+        if (global.target == global.TARGET_INT) {
+            global.nextPhase();
+            while (!element.symbol().isJava()) element = element.parents()[0];
+            global.prevPhase();
+        }
+        String classname = primitives.getNameForClassForName(element);
+        return
+            gen.mkAsInstanceOf(
+                gen.mkApply_V(
+                    gen.mkRef(pos, primitives.NEW_OARRAY),
+                    new Tree[] { size, gen.mkStringLit(pos, classname) }),
+                Type.UnboxedArrayType(element));
+    }
+
+    /**
+     * Generates a new unboxed array of given size and with elements
+     * of given unboxed type kind.
+     */
+    private Tree genNewUnboxedArray(int pos, int kind, Tree size) {
+        return
+            gen.mkApply_V(
+                gen.mkRef(pos, primitives.getNewArraySymbol(kind)),
+                new Tree[] {size});
+    }
+
+    /** Generates an unboxed array length operation. */
+    private Tree genUnboxedArrayLength(int pos, Tree array) {
+        Symbol symbol = primitives.getArrayLengthSymbol(array.type());
+        Tree[] args = new Tree[] { array };
+        return gen.mkApply_V(gen.mkRef(pos, symbol), args);
+    }
+
+    /** Generates an unboxed array get operation. */
+    private Tree genUnboxedArrayGet(int pos, Tree array, Tree index) {
+        Symbol symbol = primitives.getArrayGetSymbol(array.type());
+        index = coerce(index, UNBOXED_INT);
+        Tree[] args = new Tree[] { array, index };
+        return gen.mkApply_V(gen.mkRef(pos, symbol), args);
+    }
+
+    /** Generates an unboxed array set operation. */
+    private Tree genUnboxedArraySet(int pos, Tree array,Tree index,Tree value){
+        Symbol symbol = primitives.getArraySetSymbol(array.type());
+        index = coerce(index, UNBOXED_INT);
+        // !!! value = coerce(value, <element type>);
+        Tree[] args = new Tree[] { array, index, value };
+        return gen.mkApply_V(gen.mkRef(pos, symbol), args);
+    }
+
+    //########################################################################
+    //########################################################################
+    //########################################################################
+    //########################################################################
+
     private final Definitions definitions;
     private final Primitives primitives;
 
@@ -446,13 +524,8 @@ public class Erasure extends Transformer implements Modifiers {
                 case Apply(_, Tree[] args):
                     args = transform(args);
                     switch (owntype) {
-                    case UnboxedArrayType(Type elemtp):
-                        switch (elemtp) {
-                        case UnboxedType(int kind):
-                            return genNewArray(tree.pos,args[0],kind);
-                        default:
-                            return genNewArray(tree.pos,args[0],elemtp);
-                        }
+                    case UnboxedArrayType(Type element):
+                        return genNewUnboxedArray(tree.pos, element, args[0]);
                     default:
                         throw Debug.abort("illegal case", owntype);
                     }
@@ -494,9 +567,21 @@ public class Erasure extends Transformer implements Modifiers {
             case Select(Tree array, _):
                 if (isUnboxedArray(array.type().erasure())) {
                     switch (primitives.getPrimitive(fun.symbol())) {
-                    case LENGTH: return transformLength(tree);
-                    case APPLY: return transformApply(tree);
-                    case UPDATE: return transformUpdate(tree);
+                    case LENGTH:
+                        assert args.length == 0: tree;
+                        array = transform(array);
+                        return genUnboxedArrayLength(tree.pos, array);
+                    case APPLY:
+                        assert args.length == 1: tree;
+                        array = transform(array);
+                        Tree index = transform(args[0]);
+                        return genUnboxedArrayGet(tree.pos, array, index);
+                    case UPDATE:
+                        assert args.length == 2: tree;
+                        array = transform(array);
+                        Tree index = transform(args[0]);
+                        Tree value = transform(args[1]);
+                        return genUnboxedArraySet(tree.pos,array,index,value);
                     }
                 }
 		break;
@@ -679,53 +764,6 @@ public class Erasure extends Transformer implements Modifiers {
         return exprs;
     }
 
-    /** Transform an array length */
-    Tree transformLength(Tree tree) {
-        switch (tree) {
-        case Apply(Select(Tree array, _), Tree[] args):
-            assert args.length == 0 : Debug.show(args);
-            Type finalType = tree.type().erasure();
-            array = transform(array);
-            Symbol symbol = primitives.getArrayLengthSymbol(array.type());
-            Tree method = gen.mkRef(tree.pos,primitives.RUNTIME_TYPE,symbol);
-            args = new Tree[] { array };
-            return coerce(gen.Apply(tree.pos, method, args), finalType);
-        default:
-            throw Debug.abort("illegal case", tree);
-        }
-    }
-
-    /** Transform an array apply */
-    Tree transformApply(Tree tree) {
-        switch (tree) {
-        case Apply(Select(Tree array, _), Tree[] args):
-            assert args.length == 1 : Debug.show(args);
-            Type finalType = tree.type().erasure();
-            array = transform(array);
-            Symbol symbol = primitives.getArrayGetSymbol(array.type());
-            Tree method = gen.mkRef(tree.pos,primitives.RUNTIME_TYPE,symbol);
-            args = new Tree[] { array, transform(args[0]) };
-            return coerce(gen.Apply(tree.pos, method, args), finalType);
-        default:
-            throw Debug.abort("illegal case", tree);
-        }
-    }
-
-    /** Transform an array update */
-    Tree transformUpdate(Tree tree) {
-        switch (tree) {
-        case Apply(Select(Tree array, _), Tree[] args):
-            assert args.length == 2 : Debug.show(args);
-            array = transform(array);
-            Symbol symbol = primitives.getArraySetSymbol(array.type());
-            Tree method = gen.mkRef(tree.pos,primitives.RUNTIME_TYPE,symbol);
-            args = new Tree[] { array, transform(args[0]),transform(args[1]) };
-            return gen.Apply(tree.pos, method, args);
-        default:
-            throw Debug.abort("illegal case", tree);
-        }
-    }
-
     private Tree getQualifier(Symbol currentClass, Tree tree) {
         switch (tree) {
         case Select(Tree qual, _):
@@ -739,29 +777,5 @@ public class Erasure extends Transformer implements Modifiers {
         default:
             throw Debug.abort("no qualifier for tree", tree);
         }
-    }
-
-    private Tree genNewArray(int pos, Tree size, Type elemtp) {
-        if (global.target == global.TARGET_INT) {
-            global.nextPhase();
-            while (!elemtp.symbol().isJava()) elemtp = elemtp.parents()[0];
-            global.prevPhase();
-        }
-        Tree classname = make.Literal(pos,
-            primitives.getNameForClassForName(elemtp))
-            .setType(definitions.JAVA_STRING_TYPE);
-        Tree array = gen.Apply(pos,
-            gen.mkRef(pos, primitives.RUNTIME_TYPE, primitives.NEW_OARRAY),
-            new Tree[] {size, classname});
-        Tree cast = gen.TypeApply(pos, gen.Select(pos, array, definitions.AS),
-            new Tree[] {gen.mkType(pos, Type.UnboxedArrayType(elemtp))});
-        return gen.Apply(cast, new Tree[0]);
-    }
-
-    private Tree genNewArray(int pos, Tree size, int kind) {
-        return gen.Apply(pos,
-            gen.mkRef(pos,
-                primitives.RUNTIME_TYPE, primitives.getNewArraySymbol(kind)),
-            new Tree[] {size});
     }
 }
