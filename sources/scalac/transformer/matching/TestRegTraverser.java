@@ -59,6 +59,7 @@ public class TestRegTraverser extends Traverser {
 
     public static boolean apply(Tree t) {
         TestRegTraverser trt = new TestRegTraverser();
+        nilVariables.clear();
         trt.traverse(t);
         //System.err.println("TestRegTraverser says "+t+" -> "+trt.result);
         return trt.result;
