@@ -790,6 +790,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  of this type; return Symbol.NONE if not found.
      */
     public Symbol lookup(Name name) {
+        // The code below does the same as the following line but is
+        // slightly faster
+        // return lookup(new NameSearch(name, false));
+
         switch (this) {
         case ErrorType:
             return new ErrorScope(Symbol.NONE).lookup(name);
@@ -812,6 +816,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      *  inherited members of this type; return Symbol.NONE if not found.
      */
     public Symbol lookupNonPrivate(Name name) {
+        // The code below does the same as the following line but is
+        // slightly faster
+        // return lookup(new NameSearch(name, true));
+
         switch (this) {
         case ErrorType:
             return new ErrorScope(Symbol.NONE).lookup(name);
@@ -831,6 +839,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     public static Symbol lookupNonPrivate(Type[] parts, Name name) {
+        // The code below does the same as the following line but is
+        // slightly faster
+        // return lookup(parts, new NameSearch(name, true));
+
 	// search base types in reverse; non-abstract members
 	// take precedence over abstract ones.
 	int i = parts.length;
@@ -860,81 +872,224 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      * be equal to the given one. The main purpose of this method is
      * look up overridden and overriding symbols.
      */
-    public Symbol lookup(Symbol sym, Type pre, Relation relation) {
-        assert !sym.isOverloaded(): Debug.show(sym);
-        if (sym.isPrivate() || sym.isInitializer())
-            return symbol().isSubClass(sym.owner()) ? sym : Symbol.NONE;
-        Type symtype = pre.memberType(sym).derefDef();
-        Symbol[] classes = classes();
-        Symbol deferred = null;
-        for (int i = 0; i < classes.length; i++) {
-            if (deferred != null && deferred.isSubClass(classes[i])) continue;
-            Symbol sym1 = classes[i].members().lookup(sym.name);
-            switch (sym1.type()) {
-            case NoType:
+    public Symbol lookup(Symbol symbol, Type prefix, Relation relation) {
+        assert !symbol.isOverloaded(): Debug.show(symbol);
+        if (symbol.isPrivate() || symbol.isInitializer())
+            return symbol().isSubClass(symbol.owner()) ? symbol : Symbol.NONE;
+        Symbol best = search(new SymbolSearch(symbol, prefix, relation));
+        return best == null ? Symbol.NONE : best;
+    }
+
+    /**
+     * Applies the given search to this type. Returns NONE on failure.
+     */
+    public Symbol lookup(Search search) {
+        Symbol symbol = search(search);
+        return symbol == null ? Symbol.NONE : symbol;
+    }
+
+    /**
+     * Applies the given search to the given types. Returns NONE on
+     * failure.
+     */
+    public static Symbol lookup(Type[] parents, Search search) {
+        Symbol symbol = search(parents, search);
+        return symbol == null ? Symbol.NONE : symbol;
+    }
+
+    /**
+     * Applies the given search to this type. Returns null on failure.
+     */
+    public Symbol search(Search search) {
+        return search(this, search, null, false);
+    }
+
+    /**
+     * Applies the given search to the given types. Returns null on
+     * failure.
+     */
+    public static Symbol search(Type[] parents, Search search) {
+        Symbol best = null;
+        for (int i = parents.length - 1; 0 <= i; i--)
+            best = search(parents[i], search, best, true);
+        return best;
+    }
+
+    /**
+     * Applies the given search to the given type. The symbol "best"
+     * is the best symbol found until now. It may be null. If no
+     * better symbol is found, the method returns this symbol. The
+     * flag "inherited" indicates whether the given type is the
+     * initial type (false) or is a type inherited by it (true).
+     */
+    private static Symbol search(Type type, Search search, Symbol best,
+        boolean inherited)
+    {
+        while (true) {
+            switch (type) {
             case ErrorType:
+                return best != null ? best : search.error();
+            case ThisType(_):
+            case SingleType(_, _):
+            case ConstantType(_, _):
+                type = type.singleDeref();
                 continue;
-            case OverloadedType(Symbol[] alts, _):
-                for (int j = 0; j < alts.length; j++)
-                    if (areRelated(sym, symtype, relation, pre,alts[j],false)){
-                        if (!alts[j].isDeferred()) return alts[j];
-                        if (deferred == null) deferred = alts[j];
-                    }
+            case TypeRef(_, Symbol symbol, _):
+                type = symbol.info();
                 continue;
-            default:
-                if (areRelated(sym, symtype, relation, pre, sym1, true)) {
-                    if (!sym1.isDeferred()) return sym1;
-                    if (deferred == null) deferred = sym1;
+            case CompoundType(Type[] parents, Scope members):
+                // The following code could be used to cut the search, but
+                // it is unclear whether it is faster
+                // if (best != null && !best.isDeferred())
+                //   if (!type.symbol().isSubClass(best.owner())) return best;
+                Symbol symbol = search.apply(members, inherited);
+                if (symbol != null) {
+                    // !!! This assertion fails for "pos/clsrefine".
+                    // There might be a bug in the analyzer.
+                    // assert type.symbol().isSubClass(symbol.owner()):
+                    //     Debug.show(type, type.symbol(), symbol);
+                    if ((best == null)
+                        ||
+                        (best.isDeferred() && !symbol.isDeferred())
+                        ||
+                        ((best.isDeferred() == symbol.isDeferred()) &&
+                            symbol.owner().isSubClass(best.owner())))
+                        return symbol;
                 }
-                continue;
+                for (int i = parents.length - 1; 0 <= i; i--)
+                    best = search(parents[i], search, best, true);
+                return best;
+            default:
+                return null;
             }
         }
-        return deferred == null ? Symbol.NONE : deferred;
     }
-    //where
-    private static boolean areRelated(
-        Symbol sym, Type symtype, Relation relation, Type pre, Symbol sym1,
-        boolean warn)
-    {
-        if (sym == sym1) return true;
-        if (sym1.isPrivate() || sym1.isInitializer()) return false;
-//         System.out.println("Is 'sym1' " + relation + " 'sym' in 'pre' ?"
-//             + "\n  sym      : " + Debug.show(sym)
-//             + "\n  sym1     : " + Debug.show(sym1)
-//             + "\n  sym .type: " + sym.type()
-//             + "\n  sym1.type: " + sym1.type()
-//             + "\n  pre      : " + pre
-//         );//DEBUG
-        Type sym1type = pre.memberType(sym1).derefDef();
-        if (sym1.isJava()) symtype = symtype.objParamToAny();
-        if (sym1type.compareTo(symtype, relation)) return true;
-        if (warn && Global.instance.debug) System.out.println(
-            "'sym1' is not " + relation + " 'sym' in 'pre'"
-            + "\n  sym      : " + Debug.show(sym)
-            + "\n  sym1     : " + Debug.show(sym1)
-            + "\n  sym .type: " + sym.type()
-            + "\n  sym1.type: " + sym1.type()
-            + "\n  pre      : " + pre
-            + "\nsince 'sym1type' " + relation.toString(true) + " 'symtype'"
-            + "\n  symtype  : " + symtype
-            + "\n  sym1type : " + sym1type
-        );//DEBUG
-        return false;
+
+    public static abstract class Search {
+        /**
+         * This method is applied to each encountered scope. The flag
+         * "inherited" indicates whether the scope is part of the
+         * initial type (false) or if it is inherited by it (true).
+         */
+        public abstract Symbol apply(Scope members, boolean inherited);
+        /** This method is applied to each encountered error type. */
+        public abstract Symbol error();
     }
-    private Symbol[] classes() {
-        switch (this) {
-        case ThisType(_):
-        case SingleType(_, _):
-        case ConstantType(_, _):
-            return singleDeref().classes();
-        case TypeRef(_, Symbol sym, _):
-            return sym.info().classes();
-        case CompoundType(Type[] parts, Scope members):
-            return symbol(symbol().closure());
-        default:
-            return Symbol.EMPTY_ARRAY;
+
+    /** Seaches a symbol with the given name. */
+    public static class NameSearch extends Search {
+        public final Name name;
+        public final boolean nonPrivate;
+        public NameSearch(Name name, boolean nonPrivate) {
+            this.name = name;
+            this.nonPrivate = nonPrivate;
+        }
+        public Symbol apply(Scope members, boolean inherited) {
+            Symbol symbol = members.lookup(name);
+            if (!symbol.isNone())
+                if (!inherited || !nonPrivate || (symbol.flags & PRIVATE) == 0)
+                    return symbol;
+            return null;
+        }
+        public Symbol error() {
+            return name.isTermName()
+                ? Symbol.NONE.newErrorValue(name)
+                : Symbol.NONE.newErrorClass(name);
         }
     }
+
+    /**
+     * Searches a symbol with the same name as the given source symbol
+     * and whose type (as seen from the given prefix) is in the given
+     * relation to the type (as seen from the given prefix) of the
+     * source symbol. Note that in some cases, the returned symbol may
+     * be equal to the source one. This search is useful to find
+     * overridden and overriding symbols.
+     */
+    public static class SymbolSearch extends Search {
+
+        /** The type which the symbols are seen from */
+        public final Type prefix;
+        /** The source symbol */
+        public final Symbol srcsym;
+        /** The source symbol's type as seen from the prefix */
+        public final Type srctype;
+        /** The java version of the previous type */
+        public Type srcjavatype;
+        /** The type relation between returned and source symbols. */
+        public final Relation relation;
+
+        public SymbolSearch(Symbol srcsym, Type prefix, Relation relation) {
+            this.prefix = prefix;
+            this.srcsym = srcsym;
+            this.srctype = getSeenTypeOf(srcsym);
+            this.relation = relation;
+            assert !srcsym.isOverloaded(): Debug.show(srcsym);
+        }
+
+        public Symbol apply(Scope members, boolean inherited) {
+            Symbol objsym = members.lookup(srcsym.name);
+            if (objsym.isNone()) return null;
+            switch (objsym.type()) {
+            case NoType:
+            case ErrorType:
+                return null;
+            case OverloadedType(Symbol[] alts, _):
+                for (int j = 0; j < alts.length; j++)
+                    if (areRelated(alts[j], false)) return alts[j];
+                return null;
+            default:
+                return areRelated(objsym, true) ? objsym : null;
+            }
+        }
+
+        public Symbol error() {
+            return null;
+        }
+
+        private Type getSeenTypeOf(Symbol symbol) {
+            return prefix.memberType(symbol).derefDef();
+        }
+
+        private Type getSrcTypeFor(Symbol objsym) {
+            if (!objsym.isJava()) return srctype;
+            if (srcjavatype == null) srcjavatype = srctype.objParamToAny();
+            return srcjavatype;
+        }
+
+        private boolean areRelated(Symbol objsym, boolean warn) {
+            if (objsym == srcsym) return true;
+            if (objsym.isPrivate() || objsym.isInitializer()) return false;
+            Type srctype = getSrcTypeFor(objsym);
+            Type objtype = getSeenTypeOf(objsym);
+//             System.out.println(""
+//                 +   "Is 'objsym' " + relation + " 'srcsym' in 'prefix' ?"
+//                 + "\n  srcsym     : " + Debug.show(srcsym)
+//                 + "\n  objsym     : " + Debug.show(objsym)
+//                 + "\n  srcsym.type: " + srcsym.type()
+//                 + "\n  objsym.type: " + objsym.type()
+//                 + "\n  prefix     : " + prefix
+//                 + "\n  srctype    : " + srctype
+//                 + "\n  objtype    : " + objtype
+//                 + "\n  result     : " + objtype.compareTo(srctype, relation)
+//             );//DEBUG
+            if (objtype.compareTo(srctype, relation)) return true;
+            if (warn && Global.instance.debug) System.out.println(""
+                +   "'objsym' is not " + relation + " 'srcsym' in 'prefix'"
+                + "\n  srcsym     : " + Debug.show(srcsym)
+                + "\n  objsym     : " + Debug.show(objsym)
+                + "\n  srcsym.type: " + srcsym.type()
+                + "\n  objsym.type: " + objsym.type()
+                + "\n  prefix     : " + prefix
+                + "\nsince 'objtype' " + relation.toString(true) + " 'srctype'"
+                + "\n  srctype    : " + srctype
+                + "\n  objtype    : " + objtype
+            );//DEBUG
+            return false;
+        }
+
+    }
+    //where
     static private Map objToAnyMap = new Map() {
 	public Type apply(Type t) {
 	    if (t.symbol() == Global.instance.definitions.OBJECT_CLASS)
