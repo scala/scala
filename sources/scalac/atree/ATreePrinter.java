@@ -466,22 +466,22 @@ public class ATreePrinter {
     /** Prints the primitive. */
     public ATreePrinter printPrimitive(APrimitive primitive) {
         switch (primitive) {
-        case Negation(ATypeKind type):
-            return printPrimitiveOp("NEG", type);
-        case Test(ATestOp op, ATypeKind type, boolean zero):
-            return printPrimitiveOp(op.toString() + (zero ? "Z" : ""), type);
-        case Comparison(AComparisonOp op, ATypeKind type):
-            return printPrimitiveOp(op.toString(), type);
-        case Arithmetic(AArithmeticOp op, ATypeKind type):
-            return printPrimitiveOp(op.toString(), type);
-        case Logical(ALogicalOp op, ATypeKind type):
-            return printPrimitiveOp(op.toString(), type);
-        case Shift(AShiftOp op, ATypeKind type):
-            return printPrimitiveOp(op.toString(), type);
+        case Negation(ATypeKind kind):
+            return printPrimitiveOp("NEG", kind);
+        case Test(ATestOp op, ATypeKind kind, boolean zero):
+            return printPrimitiveOp(op.toString() + (zero ? "Z" : ""), kind);
+        case Comparison(AComparisonOp op, ATypeKind kind):
+            return printPrimitiveOp(op.toString(), kind);
+        case Arithmetic(AArithmeticOp op, ATypeKind kind):
+            return printPrimitiveOp(op.toString(), kind);
+        case Logical(ALogicalOp op, ATypeKind kind):
+            return printPrimitiveOp(op.toString(), kind);
+        case Shift(AShiftOp op, ATypeKind kind):
+            return printPrimitiveOp(op.toString(), kind);
         case Conversion(ATypeKind src, ATypeKind dst):
             return printPrimitiveOp("CONV", src, dst);
-        case ArrayLength(ATypeKind type):
-            return printPrimitiveOp("LENGTH", type);
+        case ArrayLength(ATypeKind kind):
+            return printPrimitiveOp("LENGTH", kind);
         case StringConcat(ATypeKind lf, ATypeKind rg):
             return printPrimitiveOp("CONCAT", lf, rg);
         default:
@@ -489,16 +489,16 @@ public class ATreePrinter {
         }
     }
 
-    /** Prints the primitive operation of given type. */
-    public ATreePrinter printPrimitiveOp(String op, ATypeKind type) {
-        return printPrimitiveOp(op, type, null);
+    /** Prints the primitive operation of given type kind. */
+    public ATreePrinter printPrimitiveOp(String op, ATypeKind kind) {
+        return printPrimitiveOp(op, kind, null);
     }
 
     /** Prints the primitive operation of given types. */
-    public ATreePrinter printPrimitiveOp(String op, ATypeKind t1,ATypeKind t2){
+    public ATreePrinter printPrimitiveOp(String op, ATypeKind k1,ATypeKind k2){
         print('<').print(op).print('>');
-        if (t1 != null && global.uniqid) print('#').print(t1.toString());
-        if (t2 != null && global.uniqid) print(',').print(t2.toString());
+        if (k1 != null && global.uniqid) print('#').print(k1.toString());
+        if (k2 != null && global.uniqid) print(',').print(k2.toString());
         return this;
     }
 
