@@ -351,8 +351,6 @@ public class PatternMatcher extends PatternTool {
                 switch (q) {
                     case DefaultPat():
                         return true;
-                    //case ConstantPat(_, _):
-                    //    return q.type.isSubType(p.type);
                 }
                 return false;
             case ConstrPat(_):
@@ -384,6 +382,25 @@ public class PatternMatcher extends PatternTool {
            		return false;
         }
         return false;
+    }
+
+    protected boolean samePat(PatternNode p, PatternNode q) {
+        switch (p) {
+            case ConstrPat(_):
+                switch (q) {
+                    case ConstrPat(_):
+                        return q.type.isSameAs(p.type);
+                }
+                return false;
+            case SequencePat(_, int plen):
+                switch (q) {
+                    case SequencePat(_, int qlen):
+                        return (plen == qlen) && q.type.isSameAs(p.type);
+                }
+                return false;
+            default:
+            	return superPat(p, q);
+        }
     }
 
     protected boolean isDefaultPat(PatternNode p) {
@@ -494,10 +511,11 @@ public class PatternMatcher extends PatternTool {
         PatternNode next = curHeader;
         // enter node
         while (true)
-            if (superPat(next, patNode))
+            if (samePat(next, patNode))
                 return enter(patArgs, next, casted, env);
             else if (isDefaultPat(next) ||
-                     ((next.or == null) && isDefaultPat(patNode)))
+                     ((next.or == null) &&
+                     	(isDefaultPat(patNode) || superPat(next, patNode))))
                 return enter(
                     patArgs,
                     (curHeader = (curHeader.next =
@@ -511,8 +529,8 @@ public class PatternMatcher extends PatternTool {
                 next = next.or;
     }
 
-      /** calls enter for an array of patterns, see enter
-       */
+	/** calls enter for an array of patterns, see enter
+	 */
     public PatternNode enter(Tree[] pats, PatternNode target, Symbol casted, CaseEnv env) {
         switch (target) {
             case ConstrPat(Symbol newCasted):

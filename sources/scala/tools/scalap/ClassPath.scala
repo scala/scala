@@ -24,11 +24,15 @@ class ClassPath {
 
     /** the default class path
      */
-    val classPath = System.getProperty("java.class.path");
+    val classPath = System.getProperty("scala.class.path");
 
     /** the default boot class path
      */
     val bootPath = System.getProperty("sun.boot.class.path");
+
+    /** the default boot class path
+     */
+    val scalaBootPath = System.getProperty("scala.boot.class.path");
 
     /** the default extension path
      */
@@ -42,6 +46,7 @@ class ClassPath {
     /** the various class path roots
      */
     protected var root: List[String] = decompose(bootPath) :::
+                                       decompose(scalaBootPath) :::
                                        expand(extensionPath) :::
                                        decompose(classPath);
 

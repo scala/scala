@@ -245,28 +245,28 @@ public class SymbolTablePrinter {
      * symbol or null if there is no such representation.
      */
     public String getSymbolKind(Symbol symbol) {
-	switch (symbol.kind) {
+        switch (symbol.kind) {
         case Kinds.ERROR:
         case Kinds.NONE:
             return null;
         case Kinds.CLASS:
-	    if (symbol.isTrait()) return "trait";
-	    if (symbol.isModuleClass() && global.debug) return "object class";
+            if (symbol.isTrait()) return "trait";
+            if (symbol.isModuleClass() && global.debug) return "object class";
             return "class";
-	case Kinds.TYPE:
+        case Kinds.TYPE:
         case Kinds.ALIAS:
-	    return "type";
+            return "type";
         case Kinds.VAL:
-	    if (symbol.isVariable()) return "variable";
-	    if (symbol.isModule()) return "object";
-	    if (symbol.isConstructor()) return "constructor";
-	    if (symbol.isInitializedMethod())
+            if (symbol.isVariable()) return "variable";
+            if (symbol.isModule()) return "object";
+            if (symbol.isConstructor()) return "constructor";
+            if (symbol.isInitializedMethod())
                 if (global.debug || (symbol.flags & Modifiers.STABLE) == 0)
-		    return "method";
-	    return "value";
-	default:
+                    return "method";
+            return "value";
+        default:
             throw Debug.abort("unknown kind " + symbol.kind);
-	}
+        }
     }
 
     /**
@@ -275,24 +275,24 @@ public class SymbolTablePrinter {
      */
     public String getSymbolKeyword(Symbol symbol) {
         if (symbol.isParameter()) return null;
-	switch (symbol.kind) {
+        switch (symbol.kind) {
         case Kinds.ERROR:
         case Kinds.NONE:
             return null;
         case Kinds.CLASS:
             if (symbol.isTrait()) return "trait";
             return "class";
-	case Kinds.TYPE:
+        case Kinds.TYPE:
         case Kinds.ALIAS:
             return "type";
         case Kinds.VAL:
-	    if (symbol.isVariable()) return "var";
-	    if (symbol.isModule()) return "object";
-	    if (symbol.isInitializedMethod()) return "def";
-	    return "val";
-	default:
+            if (symbol.isVariable()) return "var";
+            if (symbol.isModule()) return "object";
+            if (symbol.isInitializedMethod()) return "def";
+            return "val";
+        default:
             throw Debug.abort("unknown kind " + symbol.kind);
-	}
+        }
     }
 
     /** Returns the name of the given symbol. */
@@ -337,7 +337,7 @@ public class SymbolTablePrinter {
     /** Prints the full name of the given symbol */
     public SymbolTablePrinter printSymbolFullName(Symbol symbol) {
         print(getSymbolFullName(symbol));
-	//print("{" + symbol.owner() + "}");//DEBUG
+        //print("{" + symbol.owner() + "}");//DEBUG
         return printSymbolUniqueId(symbol);
     }
 
@@ -353,15 +353,15 @@ public class SymbolTablePrinter {
             type = type.typeArgs()[0];
             star = true;
         }
-	printType(type, inner);
+        printType(type, inner);
         if (star) print("*");
         return this;
     }
 
     /** Prints the given symbol */
     public SymbolTablePrinter printSymbol(Symbol symbol) {
-	if (symbol.isRoot()) return print("<root package>");
-	if (symbol.isAnonymousClass()) {
+        if (symbol.isRoot()) return print("<root package>");
+        if (symbol.isAnonymousClass()) {
             print("<template>");
             return printSymbolUniqueId(symbol);
         } else {
@@ -377,8 +377,8 @@ public class SymbolTablePrinter {
         if (keyword != null) print(keyword).space();
         String inner = getSymbolInnerString(symbol);
         return printSymbolName(symbol)
-	    .printType(symbol.loBound(), ">:")
-	    .printSymbolType(symbol, inner);
+            .printType(symbol.loBound(), ">:")
+            .printSymbolType(symbol, inner);
     }
 
     //########################################################################
@@ -396,22 +396,22 @@ public class SymbolTablePrinter {
     /** Returns the type to print for the given type (non-transitive). */
     public Type getTypeToPrintForType0(Type type) {
         switch (type) {
-	case ThisType(_):
+        case ThisType(_):
             if (global.debug) return type;
             return type.expandModuleThis();
-	case SingleType(_, Symbol sym):
+        case SingleType(_, Symbol sym):
             if (global.debug) return type;
-	    if (sym.isSynthetic()) return type.widen();
-	    return type;
-	case CompoundType(Type[] parts, Scope members):
-	    if (global.debug) return type;
+            if (sym.isSynthetic()) return type.widen();
+            return type;
+        case CompoundType(Type[] parts, Scope members):
+            if (global.debug) return type;
             if (type.isFunctionType()) return parts[1];
             return type;
-	case TypeVar(Type origin, Constraint constr):
+        case TypeVar(Type origin, Constraint constr):
             if (constr.inst != Type.NoType) return constr.inst;
             return type;
-	default:
-	    return type;
+        default:
+            return type;
         }
     }
 
@@ -441,11 +441,11 @@ public class SymbolTablePrinter {
 
     /** Prints the given type with the given inner string. */
     public SymbolTablePrinter printType(Type type, String inner) {
-	if ("<:".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
-	    ">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
-	    return this;
-	else
-	    return printType0(getTypeToPrintForType(type), inner);
+        if ("<:".equals(inner) && type.symbol() == global.definitions.ANY_CLASS ||
+            ">:".equals(inner) && type.symbol() == global.definitions.ALL_CLASS)
+            return this;
+        else
+            return printType0(getTypeToPrintForType(type), inner);
     }
     public SymbolTablePrinter printType0(Type type, String inner) {
         switch (type) {
@@ -453,8 +453,8 @@ public class SymbolTablePrinter {
             print('(');
             for (int i = 0; i < vparams.length; i++) {
                 if (i > 0) print(",");
-		if ((vparams[i].flags & Modifiers.DEF) != 0)
-		    print("def ");
+                if ((vparams[i].flags & Modifiers.DEF) != 0)
+                    print("def ");
                 printSymbolType(vparams[i], null);
             }
             print(')');
@@ -496,56 +496,56 @@ public class SymbolTablePrinter {
     /** Prints the type and prefix common part of the given type. */
     public SymbolTablePrinter printCommonPart(Type type) {
         switch (type) {
-	case ErrorType:
-	    return print("<error>");
-	case AnyType:
-	    return print("<any type>");
-	case NoType:
-	    return print("<notype>");
-	case ThisType(Symbol sym):
+        case ErrorType:
+            return print("<error>");
+        case AnyType:
+            return print("<any type>");
+        case NoType:
+            return print("<notype>");
+        case ThisType(Symbol sym):
             if (sym == Symbol.NONE) return print("<local>.this");
             if (sym.isRoot()) return print("<root>.this");
             if ((sym.isAnonymousClass() || sym.isCompoundSym()) && !global.debug)
-		return print("this");
+                return print("this");
             return printSymbolName(sym).print(".this");
-	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (sym.isRoot()) return print("<root>");
-	    if (!global.debug) {
+        case TypeRef(Type pre, Symbol sym, Type[] args):
+            if (sym.isRoot()) return print("<root>");
+            if (!global.debug) {
                 if (type.isFunctionType())
                     return printFunctionType(args);
-		if (sym.isAnonymousClass() || sym.isCompoundSym())
+                if (sym.isAnonymousClass() || sym.isCompoundSym())
                     return printTemplateType(pre.memberInfo(sym).parents());
             }
             printPrefix(pre).printSymbolName(sym);
-	    //print("{" + sym.owner() + "}");//DEBUG
-	    if (args.length != 0) print('[').printTypes(args, ",").print(']');
-	    return this;
-	case SingleType(Type pre, Symbol sym):
-	    if (sym.isRoot()) return print("<root>");
+            //print("{" + sym.owner() + "}");//DEBUG
+            if (args.length != 0) print('[').printTypes(args, ",").print(']');
+            return this;
+        case SingleType(Type pre, Symbol sym):
+            if (sym.isRoot()) return print("<root>");
             return printPrefix(pre).printSymbolName(sym);
-	case CompoundType(Type[] parts, Scope members):
+        case CompoundType(Type[] parts, Scope members):
             return printTypes(parts," with ").space()
-		.printScope(members,true)
-		.printSymbolUniqueId(type.symbol());
-	case MethodType(_, _):
-	    return printType0(type, null);
-	case PolyType(_, _):
-	    return printType0(type, null);
-	case OverloadedType(Symbol[] alts, Type[] alttypes):
+                .printScope(members,true)
+                .printSymbolUniqueId(type.symbol());
+        case MethodType(_, _):
+            return printType0(type, null);
+        case PolyType(_, _):
+            return printType0(type, null);
+        case OverloadedType(Symbol[] alts, Type[] alttypes):
             return printTypes(alttypes, " <and> ");
-	case TypeVar(Type origin, Constraint constr):
+        case TypeVar(Type origin, Constraint constr):
             return printType(origin).print("?");
-	case UnboxedType(int kind):
-	    return print(type.unboxedName(kind).toString());
-	case UnboxedArrayType(Type elemtp):
-	    return printType(elemtp).print("[]");
-	case LazyType():
+        case UnboxedType(int kind):
+            return print(type.unboxedName(kind).toString());
+        case UnboxedArrayType(Type elemtp):
+            return printType(elemtp).print("[]");
+        case LazyType():
             if (!global.debug) return print("?");
             String classname = type.getClass().getName();
             return print("<lazy type ").print(classname).print(">");
-	default:
+        default:
             String classname = type.getClass().getName();
-	    return print("<unknown type ").print(classname).print(">");
+            return print("<unknown type ").print(classname).print(">");
         }
     }
 

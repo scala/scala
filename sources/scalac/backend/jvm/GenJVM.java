@@ -492,6 +492,8 @@ class GenJVM {
             break;
 
         case Literal(Object value):
+        	// MZ: I added the missing cases, but I am not sure if this
+        	// is a good idea (in particular the way generatedType is set)
             if (value instanceof Integer) {
                 generatedType = JType.INT;
                 ctx.code.emitPUSH((Integer)value);
@@ -757,8 +759,17 @@ class GenJVM {
         int arity = args.length;
         int resTypeIdx = getTypeIndex(resType);
 
-        for (int i = 0; i < arity; ++i)
-            genLoad(ctx, args[i], resType);
+		// MZ: This code looks very dangerous; why are arguments
+		// loaded with an expected type that corresponds to resType?
+		// At least for the long shift instructions this is wrong.
+		if ((prim == Primitive.LSL) ||
+		    (prim == Primitive.LSR) ||
+		    (prim == Primitive.ASR)) {
+		    genLoad(ctx, args[0], resType);
+		    genLoad(ctx, args[1], JType.INT);
+		} else
+			for (int i = 0; i < arity; ++i)
+            	genLoad(ctx, args[i], resType);
 
         if (prim == Primitive.NOT) {
             if (resType == JType.LONG) {
