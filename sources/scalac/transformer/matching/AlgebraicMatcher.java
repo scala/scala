@@ -67,46 +67,7 @@ public class AlgebraicMatcher extends PatternMatcher {
       }
        */
 
-
-      /** returns true if p and q are pattern nodes of the same kind and p matches
-       *  whenever q matches, possibly even more often
-       */
-    protected boolean superPat(PatternNode p, PatternNode q) {
-        switch (p) {
-            case DefaultPat():
-                switch (q) {
-                    case DefaultPat():
-                        return true;
-                    //case ConstantPat(_, _):
-                    //    return q.type.isSubType(p.type);
-                }
-                return false;
-           case ConstrPat(_):
-                switch (q) {
-                    case ConstrPat(_):
-                        return q.type.isSubType(p.type);
-                }
-                return false;
-           case ConstantPat( AConstant pval ):
-                switch (q) {
-                    case ConstantPat( AConstant qval ):
-                        return pval.equals(qval);
-                }
-                return false;
-        }
-        return false;
-    }
-
-    protected boolean isDefaultPat(PatternNode p) {
-        switch (p) {
-            case DefaultPat():
-                return true;
-            default:
-                return false;
-        }
-    }
-
-        boolean isStarApply( Tree.Apply tree ) {
+    boolean isStarApply( Tree.Apply tree ) {
 	Symbol params[] = tree.fun.type.valueParams();
 	//System.err.println( tree.fun.type.resultType().symbol() );
 	return  (tree.args.length == 1)
