@@ -1276,13 +1276,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (value instanceof Integer) {
 		    int n = ((Integer) value).intValue();
 		    if (pt.symbol() == definitions.BYTE_CLASS &&
-			-128 <= n && n <= 127 ||
-			pt.symbol() == definitions.SHORT_CLASS &&
-			-32768 <= n && n <= 32767 ||
-			pt.symbol() == definitions.CHAR_CLASS &&
-			0 <= n && n <= 65535) {
-			return tree.setType(pt);
-		    }
+			-128 <= n && n <= 127)
+			return copy.Literal(tree, new Byte((byte) n)).setType(pt);
+		    else if (pt.symbol() == definitions.SHORT_CLASS &&
+			     -32768 <= n && n <= 32767)
+			return copy.Literal(tree, new Short((short) n)).setType(pt);
+		    else if (pt.symbol() == definitions.CHAR_CLASS &&
+			     0 <= n && n <= 65535)
+			return copy.Literal(tree, new Character((char) n)).setType(pt);
 		}
 	    }
 	    typeError(tree.pos, owntype, pt);
