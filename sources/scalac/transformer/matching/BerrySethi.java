@@ -583,6 +583,8 @@ class BerrySethi {
 
                   collectTransitions();
 
+                  if( nullable( subexpr )) // initial state is final
+		      finals.put( new Integer(0), finalTag );
 
                   //TreeSet initials = new TreeSet();
                   //initials.add( new Integer( 0 ) );

@@ -221,7 +221,7 @@ public class SequenceMatcher extends PatternTool {
                              Tree[] body,
                              Tree defaultCase,
                              boolean doBinding ) {
-
+	  //System.err.println("SequenceMatcher::construct");
             this.pat  = pat;
             this.body = body;
             assert body.length == pat.length;
@@ -248,6 +248,8 @@ public class SequenceMatcher extends PatternTool {
             NondetWordAutom nfa =
                   (pat.length > 1) ? new NondetWordAutom( manyNfa )
                   : manyNfa[ 0 ];
+
+	    //nfa.print();
 
             DetWordAutom dfa = new DetWordAutom( nfa );
 

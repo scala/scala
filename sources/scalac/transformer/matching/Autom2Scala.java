@@ -160,6 +160,7 @@ public class Autom2Scala  {
       Symbol curSym;
       Symbol hasnSym;
 
+    // overridden in TracerInScala
       Tree loadCurrentElem( Tree body ) {
 	  return cf.Block( Position.FIRSTPOS, new Tree[] {
 	      cf.gen.ValDef( Position.FIRSTPOS,

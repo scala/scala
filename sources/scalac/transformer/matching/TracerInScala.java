@@ -52,4 +52,6 @@ public class TracerInScala extends Autom2Scala {
                   return gen.ValDef( realVar, hv);
 
       }
+
 }
+

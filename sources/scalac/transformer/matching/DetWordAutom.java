@@ -252,7 +252,7 @@ public class DetWordAutom  {
             }
 
             // <DEBUG>
-            // printBefore( states, deftrans );
+            //printBefore( states, deftrans );
 
             // </DEBUG> do not call printBefore after this point
             // //System.out.println("indexMap: "+indexMap);
