@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,7 +11,7 @@
 package scala;
 
 /** @meta class [{#ClassScalaTParams#}] extends java.lang.Object; */
-public interface Function{#n#} {
+public interface Function{#n#} extends java.io.Serializable {
     /** @meta method {#ApplyScalaSignature#}; */
     public abstract java.lang.Object apply({#ApplyJavaVParams#});
 }

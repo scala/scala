@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
-abstract class ResizableArray[A] with Iterable[A] {
+abstract class ResizableArray[A] with Iterable[A] with java.io.Serializable {
     import java.lang.System.arraycopy;
 
     protected val initialSize: Int = 16;
