@@ -43,6 +43,10 @@ object UnitTest {
     else
 	report.fail( actual.toString(), expected.toString() );
 
+  def assertTrue( actual: Boolean ):Unit = assertEquals(actual, true);
+  def assertFalse( actual: Boolean ):Unit = assertEquals(actual, false);
+
+
   def assertNotEquals[a]( actual: a, expected: a ):Unit =
     if( actual != expected )
         report.ok

@@ -43,10 +43,10 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet {
     that.isInstanceOf[BitSet] &&
     { val other = that.asInstanceOf[BitSet];
       (size == other.size) && ( size == 0 || {
-        var len = size>>>5;
+        var len = memsize( size );
         var i = 0;
         var res=true;
-        while(( i<= len ) && res ) {        // 32 x faster equality check
+        while(( i< len ) && res ) {        // 32 x faster equality check
           res = array(i) == other.array(i);
           i = i + 1;
         }

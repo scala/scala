@@ -17,16 +17,14 @@ package scala.collection.mutable ;
 class BitSet(initSize: Int) extends scala.collection.BitSet {
 
   /** default constructor, initial size of 16 bits */
-  def this() = this( 16 );
-
-  final def intSize(size:Int) = { (size >>> 5) + (if( (size & 0x1F)!= 0 ) 1 else 0) };
+  def this() = this( 32 );
 
   class ByteArray with ResizableArray[Int] {
-    override protected val initialSize: Int = intSize( initSize );
+    override protected val initialSize: Int = memsize( initSize );
     override protected var array: Array[Int] = new Array[Int](initialSize);
 
     /** size of this bitset in nbits */
-    def ensureBits(nbits: Int): Unit = ensureSize( intSize( nbits ));
+    def ensureBits(nbits: Int): Unit = ensureSize(memsize( nbits ));
 
     final def and(j: Int, mask:Int): Unit = {
       array.update( j, array(j) & mask );
@@ -56,8 +54,10 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
     if( size < nbits ) size = nbits;
   }
 
+  /** calls set or clear for i-th bit */
   final def set(i: Int, b: Boolean): Unit = if( b ) set(i) else clear(i);
 
+  /** sets i-th bit to true. Grows to size i+1 if needed. */
   final def set(i: Int): Unit = {
     ensureSize(i+1);
     val j         = (i >>> 5);
@@ -65,6 +65,7 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
     internal.or(j, mask);
   }
 
+  /** clears i-th bit. Grows to size i+1 if needed. */
   def clear(i: Int): Unit = {
     ensureSize(i+1);
     val j    = (i >>> 5);
@@ -72,6 +73,7 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
     internal.and(j, ~mask);
   }
 
+  /** gets i-th bit. Grows to size i+1 if needed. */
   def apply(i: Int):Boolean = {
     val j    = (i >>> 5);
     val mask = (1 << (i & 0x1F));
