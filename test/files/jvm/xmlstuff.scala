@@ -2,7 +2,7 @@ import java.io.StringReader;
 import org.xml.sax.InputSource;
 import scala.xml.nobinding.XML;
 import scala.testing.UnitTest._ ;
-import scala.xml.{Node,NodeSeq,Text};
+import scala.xml.{Node,NodeSeq,Elem,Text};
 
 object Test with Application {
 /*
@@ -25,7 +25,7 @@ object Test with Application {
 
   val c = new Node {
     def label = "hello";
-    def child = List('world());
+    def child = List(Elem("world"));
     def attribute = List();
   };
 
@@ -42,9 +42,10 @@ object Test with Application {
   val i = new InputSource( new StringReader( x2 ));
   val x2p = XML.load( i );
 
-  assertSimilar(x2p, 'book('author(Text("Peter Buneman")),
-                         'author(Text("Dan Suciu")),
-                         'title(Text("Data on ze web"))));
+  assertSimilar(x2p, Elem("book",
+                          Elem("author",Text("Peter Buneman")),
+                          Elem("author",Text("Dan Suciu")),
+                          Elem("title",Text("Data on ze web"))));
 
   val xmlFile2 = "<bib><book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book><book><author>John Mitchell</author><title>Foundations of Programming Languages</title></book></bib>";
   val isrc2 = new InputSource( new StringReader( xmlFile2 ) );
@@ -54,9 +55,11 @@ object Test with Application {
   Console.println("xpath \\");
 
 
-  assertSimilar( parsedxml1 \ '_ ,    List( 'world() ) );
+  //assertSimilar( parsedxml1 \ '_ ,    List( 'world() ) );
+  assertSimilar( parsedxml1 \ '_ ,    List( Elem("world") ) );
 
-  assertSimilar( parsedxml1 \ 'world, List( 'world() ) );
+  //assertSimilar( parsedxml1 \ 'world, List( 'world() ) );
+  assertSimilar( parsedxml1 \ 'world, List( Elem("world") ) );
 
 /*
   Console.println( parsedxml2 \ '_ );
@@ -69,11 +72,13 @@ object Test with Application {
       parsedxml2 \ '_ ,
 
       List(
-        'book('author(Text("Peter Buneman")),
-              'author(Text("Dan Suciu")),
-              'title(Text("Data on ze web"))),
-        'book('author(Text("John Mitchell")),
-              'title(Text("Foundations of Programming Languages"))))
+        Elem("book",
+             Elem("author",Text("Peter Buneman")),
+             Elem("author",Text("Dan Suciu")),
+             Elem("title",Text("Data on ze web"))),
+        Elem("book",
+             Elem("author",Text("John Mitchell")),
+             Elem("title",Text("Foundations of Programming Languages"))))
   );
   assertEquals( (parsedxml2 \ 'author).length, 0 );
 
@@ -81,32 +86,38 @@ object Test with Application {
       parsedxml2 \ 'book,
 
       List(
-        'book('author(Text("Peter Buneman")),
-              'author(Text("Dan Suciu")),
-              'title(Text("Data on ze web"))),
-        'book('author(Text("John Mitchell")),
-              'title(Text("Foundations of Programming Languages"))))
+        Elem("book",
+             Elem("author",Text("Peter Buneman")),
+             Elem("author",Text("Dan Suciu")),
+             Elem("title",Text("Data on ze web"))),
+        Elem("book",
+             Elem("author",Text("John Mitchell")),
+             Elem("title",Text("Foundations of Programming Languages")))
+      )
   );
 
   assertSimilar(
 
       parsedxml2 \ '_ \ '_,
 
-      List('author(Text("Peter Buneman")),
-           'author(Text("Dan Suciu")),
-           'title(Text("Data on ze web")),
-           'author(Text("John Mitchell")),
-           'title(Text("Foundations of Programming Languages")))
-
-    );
+    List(
+      Elem("author",Text("Peter Buneman")),
+      Elem("author",Text("Dan Suciu")),
+      Elem("title",Text("Data on ze web")),
+      Elem("author",Text("John Mitchell")),
+      Elem("title",Text("Foundations of Programming Languages"))
+    )
+  );
 
   assertSimilar(
 
       parsedxml2 \ '_ \ 'author,
 
-      List('author(Text("Peter Buneman")),
-           'author(Text("Dan Suciu")),
-           'author(Text("John Mitchell")))
+      List(
+        Elem("author",Text("Peter Buneman")),
+        Elem("author",Text("Dan Suciu")),
+        Elem("author",Text("John Mitchell"))
+      )
 
   );
 
@@ -118,9 +129,11 @@ object Test with Application {
 
       parsedxml2 \\ 'author,
 
-      List('author(Text("Peter Buneman")),
-           'author(Text("Dan Suciu")),
-           'author(Text("John Mitchell")))
+      List(
+        Elem("author",Text("Peter Buneman")),
+        Elem("author",Text("Dan Suciu")),
+        Elem("author",Text("John Mitchell"))
+      )
 
  );
 
@@ -129,29 +142,32 @@ object Test with Application {
       new NodeSeq(List( parsedxml2 ))\\ '_,
 
       List(
-        'bib(
-          'book(
-            'author(Text("Peter Buneman")),
-            'author(Text("Dan Suciu")),
-            'title(Text("Data on ze web"))),
-          'book('author(Text("John Mitchell")),
-                'title(Text("Foundations of Programming Languages")))),
-        'book(
-          'author(Text("Peter Buneman")),
-          'author(Text("Dan Suciu")),
-          'title(Text("Data on ze web"))),
-        'author(Text("Peter Buneman")),
+        Elem("bib",
+             Elem("book",
+                  Elem("author",Text("Peter Buneman")),
+                  Elem("author",Text("Dan Suciu")),
+                  Elem("title",Text("Data on ze web"))),
+             Elem("book",
+                  Elem("author",Text("John Mitchell")),
+                  Elem("title",Text("Foundations of Programming Languages")))),
+        Elem("book",
+             Elem("author",Text("Peter Buneman")),
+             Elem("author",Text("Dan Suciu")),
+             Elem("title",Text("Data on ze web"))),
+        Elem("author",Text("Peter Buneman")),
         Text("Peter Buneman"),
-        'author(Text("Dan Suciu")),
+        Elem("author",Text("Dan Suciu")),
         Text("Dan Suciu"),
-        'title(Text("Data on ze web")),
+        Elem("title",Text("Data on ze web")),
         Text("Data on ze web"),
-        'book('author(Text("John Mitchell")),
-              'title(Text("Foundations of Programming Languages"))),
-        'author(Text("John Mitchell")),
+        Elem("book",
+             Elem("author",Text("John Mitchell")),
+             Elem("title",Text("Foundations of Programming Languages"))),
+        Elem("author",Text("John Mitchell")),
         Text("John Mitchell"),
-        'title(Text("Foundations of Programming Languages")),
-        Text("Foundations of Programming Languages"))
+        Elem("title",Text("Foundations of Programming Languages")),
+        Text("Foundations of Programming Languages")
+      )
   );
 
 
@@ -160,7 +176,7 @@ object Test with Application {
       parsedxml2 \\ 'title,
 
       List(
-        'title(Text("Data on ze web")),
-        'title(Text("Foundations of Programming Languages")))
+        Elem("title",Text("Data on ze web")),
+        Elem("title",Text("Foundations of Programming Languages")))
 );
 }
