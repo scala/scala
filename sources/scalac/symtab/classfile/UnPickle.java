@@ -174,7 +174,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 		    assert bp < end;
 		    owner = readSymbolRef();
 		}
-		if (name.length() == 0 && owner == Symbol.NONE) {
+		if (name == Names.ROOT && owner == Symbol.NONE) {
 		    sym = Global.instance.definitions.ROOT_CLASS;
 		} else {
 		    sym = owner.info().lookup(name);
