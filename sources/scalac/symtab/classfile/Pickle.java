@@ -73,6 +73,12 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	return bp;
     }
 
+    public void writeToFile(String filename) throws IOException {
+        OutputStream stream = new FileOutputStream(filename);
+        stream.write(bytes, 0, size());
+        stream.close();
+    }
+
 /* **************************************************
  * Phase 1: Build entry table
  ************************************************* */
