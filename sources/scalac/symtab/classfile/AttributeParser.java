@@ -116,15 +116,15 @@ public class AttributeParser implements ClassfileConstants {
                 //System.out.println(sym + " has " + n + " innerclass entries");
                 for (int i = 0; i < n; i++) {
                     int inner = in.nextChar();
-                    if (inner == 0) { in.skip(6); return; }
+                    if (inner == 0) { in.skip(6); continue; }
                     int outer = in.nextChar();
-                    if (outer == 0) { in.skip(4); return; }
+                    if (outer == 0) { in.skip(4); continue; }
                     int name = in.nextChar();
-                    if (name == 0) { in.skip(2); return; }
+                    if (name == 0) { in.skip(2); continue; }
                     int flags = in.nextChar();
-                    if ((flags & JAVA_ACC_STATIC) == 0) return;
-                    if ((flags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) == 0) return;
-                    if (pool.getClass(outer) != sym) return;
+                    if ((flags & JAVA_ACC_STATIC) == 0) continue;
+                    if ((flags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) == 0) continue;
+                    if (pool.getClass(outer) != sym) continue;
                     Symbol alias = sym.linkedModule().moduleClass().newTypeAlias(
                         Position.NOPOS,
                         0,
