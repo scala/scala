@@ -120,7 +120,7 @@ public class TextTreePrinter implements TreePrinter {
         public case Simple(String str);
         public case Literal(String str);
         public case Keyword(String name);
-        public case Identifier(Symbol symbol, String name, SymbolUsage usage);
+        public case Identifier(Symbol symbol, Name name, SymbolUsage usage);
         public case Sequence(Text[] elements);
     }
 
@@ -132,10 +132,17 @@ public class TextTreePrinter implements TreePrinter {
         case Simple(String str) : printString(str); break;
         case Literal(String str) : printString(str); break;
         case Keyword(String name) : printString(name); break;
-        case Identifier(Symbol sym, String name, _) :
-            printString(name);
-            if (sym != null && Global.instance.uniqid)
-                printString("#" + Global.instance.uniqueID.id(sym));
+        case Identifier(Symbol sym, Name name, SymbolUsage usage) :
+            if (sym != null) {
+                if (usage == SymbolUsage.Use)
+                    printString(sym.simpleName().toString());
+                else
+                    printString(sym.name.toString());
+                if (Global.instance.uniqid)
+                    printString("#" + Global.instance.uniqueID.id(sym));
+            } else {
+                printString(name.toString());
+            }
             break;
         case Sequence(Text[] elements) : print(elements); break;
         }
@@ -644,23 +651,12 @@ public class TextTreePrinter implements TreePrinter {
 
     // Printing of symbols
 
-    protected String symbolString(Symbol symbol, Name name) {
-        if (symbol != null)
-            return symbol.simpleName().toString();
-        else
-            return name.toString();
-    }
-
     protected void printSymbolDefinition(Symbol symbol, Name name) {
-        print(Text.Identifier(symbol,
-                              symbolString(symbol, name),
-                              SymbolUsage.Definition));
+        print(Text.Identifier(symbol, name, SymbolUsage.Definition));
     }
 
     protected void printSymbolUse(Symbol symbol, Name name) {
-        print(Text.Identifier(symbol,
-                              symbolString(symbol, name),
-                              SymbolUsage.Use));
+        print(Text.Identifier(symbol, name, SymbolUsage.Use));
     }
 
     // Printing of trees

@@ -114,10 +114,18 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
     case Simple(str) => printString(str)
     case Literal(str) => printString(str)
     case Keyword(name) => printString(name)
-    case Identifier(sym, name, _) =>
-      printString(name);
-      if (sym != null && scalac_Global.instance.uniqid)
-	printString("#" + scalac_Global.instance.uniqueID.id(sym))
+    case Identifier(sym, name, usage) =>
+
+      if (sym != null) {
+        if (usage == SymbolUsage.Use)
+          printString(sym.simpleName().toString());
+        else
+          printString(sym.name.toString());
+        if (scalac_Global.instance.uniqid)
+	  printString("#" + scalac_Global.instance.uniqueID.id(sym))
+      } else {
+        printString(name);
+      }
     case Sequence(elements) => print(elements)
   }
 
@@ -543,15 +551,11 @@ class TextTreePrinter(_out: PrintWriter, autoFlush: boolean) with TreePrinter {
 
   // Printing of symbols
 
-  protected def symbolString(symbol: Symbol, name: Name): String =
-    if (symbol != null) symbol.simpleName().toString()
-    else name.toString();
-
   protected def printSymbolDefinition(symbol: Symbol, name: Name): unit =
-    print(Identifier(symbol, symbolString(symbol, name), Definition));
+    print(Identifier(symbol, name, Definition));
 
   protected def printSymbolUse(symbol: Symbol, name: Name): unit =
-    print(Identifier(symbol, symbolString(symbol, name), Use));
+    print(Identifier(symbol, name, Use));
 
   // Printing of trees
 
