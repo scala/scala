@@ -718,6 +718,25 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     p
   }
 
+  def classSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+    val entry = scope.lookupEntry(name);
+    val clazz = entry.sym;
+    if (entry.owner == scope && clazz.isExternal() && clazz.isClassType()) {
+      updateFlags(clazz, flags);
+      clazz.pos = pos;
+      clazz.allConstructors().pos = pos;
+      clazz
+    } else {
+      owner.newClass(pos, flags, name)
+    }
+  }
+
+  def updateFlags(symbol: Symbol, flags: int): unit = {
+    val oldflags = symbol.flags & (INITIALIZED | LOCKED);
+    val newflags = flags & ~(INITIALIZED | LOCKED);
+    symbol.flags = oldflags | newflags;
+  }
+
   /** Enter symbol `sym' in current scope. Check for double definitions.
   *  Handle overloading.
   */
@@ -843,8 +862,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
         sym
 
       case Tree$ClassDef(mods, name, tparams, vparams, _, templ) =>
-	val clazz: ClassSymbol = ClassSymbol.define(
-	  tree.pos, name, owner, mods, context.scope);
+	val clazz = classSymbol(tree.pos, name, owner, mods, context.scope);
 	if (!clazz.primaryConstructor().isInitialized())
 	  clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
 	if ((mods & CASE) != 0) {

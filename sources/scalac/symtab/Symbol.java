@@ -1705,9 +1705,8 @@ public class AbsTypeSymbol extends TypeSymbol {
 
 }
 
-/** A class for class symbols. It has JavaClassSymbol as a subclass.
- */
-public class ClassSymbol extends TypeSymbol {
+/** A class for class symbols. */
+public final class ClassSymbol extends TypeSymbol {
 
     /**
      * The dual class of this class or NONE. The dual class is:
@@ -1716,12 +1715,8 @@ public class ClassSymbol extends TypeSymbol {
      */
     private final Symbol dual;
 
-    /** The module belonging to the class. This means:
-     *  For Java classes, its statics parts.
-     *  For module classes, the corresponding module.
-     *  For other classes, null.
-     */
-    private Symbol module = NONE;
+    /** The module belonging to the class or NONE. */
+    private final Symbol module;
 
     /** The given type of self, or NoType, if no explicit type was given.
      */
@@ -1735,14 +1730,7 @@ public class ClassSymbol extends TypeSymbol {
 
     private final Symbol rebindSym;
 
-    /** Principal Constructor
-     */
-    public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
-        this(pos, name, owner, flags, 0);
-    }
-    public ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
-        this(pos, name, owner, flags, attrs, NONE);
-    }
+    /** Initializes this instance. */
     ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol dual) {
         super(CLASS, pos, name, owner, flags, attrs);
         this.rebindSym = new AliasTypeSymbol(pos, Names.ALIAS(this), owner, 0);
@@ -1768,18 +1756,6 @@ public class ClassSymbol extends TypeSymbol {
         }
     }
 
-    public static ClassSymbol define(
-        int pos, Name name, Symbol owner, int flags, Scope scope) {
-        Scope.Entry e = scope.lookupEntry(name);
-        if (e.owner == scope && e.sym.isExternal() && e.sym.kind == CLASS) {
-            ClassSymbol sym = (ClassSymbol) e.sym;
-            sym.update(pos, flags);
-            return sym;
-        } else {
-            return new ClassSymbol(pos, name, owner, flags);
-        }
-    }
-
     /** Creates the root class. */
     public static Symbol newRootClass(PackageParser parser) {
         int pos = Position.NOPOS;
@@ -1787,7 +1763,7 @@ public class ClassSymbol extends TypeSymbol {
         Symbol owner = Symbol.NONE;
         int flags = JAVA | PACKAGE | FINAL | SYNTHETIC;
         int attrs = IS_ROOT;
-        Symbol clasz = new ClassSymbol(pos, name, owner, flags, attrs);
+        Symbol clasz = new ClassSymbol(pos, name, owner, flags, attrs, NONE);
         clasz.setInfo(parser);
         clasz.primaryConstructor().setInfo(
             Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
@@ -1881,8 +1857,8 @@ public class ClassSymbol extends TypeSymbol {
     }
 
     protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
-        ClassSymbol clone = new ClassSymbol(pos, name, owner, flags, attrs);
-        clone.module = module;
+        assert !isModuleClass(): Debug.show(this);
+        ClassSymbol clone = new ClassSymbol(pos, name, owner,flags,attrs,NONE);
         if (thisSym != this) clone.setTypeOfThis(typeOfThis());
         return clone;
     }
