@@ -421,6 +421,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return name == Names.COMPOUND_NAME.toTypeName();
     }
 
+    /** Does this symbol denote a this symbol? */
+    public final boolean isThisSym() {
+        return owner.isClass() && owner.thisSym() == this;
+    }
+
     /** Does this symbol denote an interface? */
     public final boolean isInterface() {
         info(); // force delayed transformInfos that may change this flag
@@ -1856,7 +1861,6 @@ public class ClassSymbol extends TypeSymbol {
     }
 
     public Symbol setTypeOfThis(Type tp) {
-        if (tp == Type.NoType) { thisSym = this; return this; }
         thisSym = new TermSymbol(this.pos, Names.this_, this, SYNTHETIC);
         thisSym.setInfo(tp);
         return this;
