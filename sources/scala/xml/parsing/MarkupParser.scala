@@ -234,17 +234,10 @@ abstract class MarkupParser[MarkupType, AVType] {
   def content: mutable.Buffer[MarkupType] = {
     var ts = new mutable.ArrayBuffer[MarkupType];
     var exit = false;
-<<<<<<< MarkupParser.scala
     while( !exit ) {
       /*      if( xEmbeddedBlock ) {
        ts.append( xEmbeddedExpr );
        } else {*/
-=======
-    while (!exit) {
-      if (xEmbeddedBlock) {
-        ts.append(xEmbeddedExpr);
-      } else {
->>>>>>> 1.4
         tmppos = pos;
         ch match {
           case '<' => // another tag
@@ -266,18 +259,9 @@ abstract class MarkupParser[MarkupType, AVType] {
             }
 
           case '{' =>
-<<<<<<< MarkupParser.scala
 /*            if( xCheckEmbeddedBlock ) {
-=======
-            if (xCheckEmbeddedBlock) {
->>>>>>> 1.4
               ts.append(xEmbeddedExpr);
-<<<<<<< MarkupParser.scala
             } else {*/
-=======
-            }
-            else {
->>>>>>> 1.4
               val str = new StringBuffer("{");
               str.append(xText);
               appendText(tmppos, ts, str.toString());
