@@ -1,6 +1,6 @@
 package scala.xml.dtd ;
 
-abstract class ElemNames          extends scala.util.regexp.Alphabet;
+abstract class ElemNames          extends scala.util.alphabet.Alphabet;
 case class ElemName(name: String) extends ElemNames {
   override def toString() = "ElemName(\""+name+"\")";
 }
@@ -9,10 +9,12 @@ object ContentModel extends scala.util.regexp.WordExp[ElemNames] {
   type regexp = RegExp;
 
   case object PCDATA_ extends RegExp {
+    final val isNullable = false;
     override def toString() = "PCDATA_";
   }
 
   case object ANY_    extends RegExp {
+    final val isNullable = true;
     override def toString() = "ANY_";
   }
 

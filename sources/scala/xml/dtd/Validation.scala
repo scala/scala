@@ -129,6 +129,6 @@ class AttributeValidator( namespace$$:String, attrSpec1: Seq[dtd.AttrDecl]) {
         allKeys -= a.key;
       MakeValidationException.fromMissingAttribute( allKeys )
     }
-    new AttributeSeq( (attribsTemplate:::attribs):_* )
+    AttributeSeq.fromAttrs( (attribsTemplate:::attribs):_* )
   }
 }

@@ -13,17 +13,17 @@ import scala.collection.mutable.HashMap ;
 import scala.collection.immutable.TreeSet ;
 
 object AttributeSeq {
-  final val Empty = new AttributeSeq();
+  final val Empty = new AttributeSeq { final def sortedSeq = new TreeSet[Attribute] }
 
   final def fromHashMap(as:HashMap[Pair[String,String],String]) = {
-    new AttributeSeq( {
+    AttributeSeq.fromAttrs( {
       for( val a <- as.keys.toList )
       yield Attribute(a._1,a._2.intern(), as(a))
     }:_* )
   }
 
   final def fromHashMap(ns:String, as:HashMap[Pair[String,String],String]) = {
-    new AttributeSeq( {
+    AttributeSeq.fromAttrs( {
       for( val a <- as.keys.toList )
       yield {
         val res =
@@ -35,7 +35,15 @@ object AttributeSeq {
       }
     }:_*)
   }
-
+  final def fromAttrs(as: Attribute*) = {
+    var ts = new TreeSet[Attribute];
+    for( val a <- as ) {
+      if( a.key != "xmlns" ) {
+        ts = ts + a ;
+      }
+    }
+    new AttributeSeq { final def sortedSeq = ts };
+  }
 }
 
 /** Sorted linear list of XML attributes.
@@ -43,21 +51,16 @@ object AttributeSeq {
  *  like xmlns or xmlns:pref
  *  @author  Burak Emir
  */
-class AttributeSeq( as:Attribute* ) with Seq[Attribute] {
+abstract class AttributeSeq with Seq[Attribute] {
 
-  private var treeSet:TreeSet[Attribute] = new TreeSet[Attribute];
+  def sortedSeq:TreeSet[Attribute];
 
-  for( val a <- as ) {
-    if( a.key != "xmlns" ) {
-      treeSet = treeSet + a ;
-    }
-  }
-  final def length = treeSet.size;
-  final def elements = treeSet.elements;
-  final def apply(i:Int) = treeSet.elements.drop(i).next;
+  final def length = sortedSeq.size;
+  final def elements = sortedSeq.elements;
+  final def apply(i:Int) = sortedSeq.elements.drop(i).next;
 
   def lookup(ns:String, key:String):Option[Attribute] = {
-    val it = treeSet.elements;
+    val it = sortedSeq.elements;
     while( it.hasNext ) {
       val a = it.next;
       if( a.key > key ) return None
@@ -75,12 +78,12 @@ class AttributeSeq( as:Attribute* ) with Seq[Attribute] {
    *  @return a new symbol with updated attributes
    */
   final def %(attrs: Attribute*) =
-    new AttributeSeq((elements.toList ::: attrs.elements.toList):_*);
+    AttributeSeq.fromAttrs((elements.toList ::: attrs.elements.toList):_*);
 
   final def map(f: Attribute => Attribute): AttributeSeq = {
-    new AttributeSeq( elements.map( f ).toList:_* )
+    AttributeSeq.fromAttrs( elements.map( f ).toList:_* )
   }
 
-  override def hashCode():Int = treeSet.hashCode();
+  override def hashCode():Int = sortedSeq.hashCode();
 }
 

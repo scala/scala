@@ -92,11 +92,21 @@ class TransMatch( global:scalac_Global )
     }
 
 
+    val pe  = new matching.PatternExp( global.definitions );
+    //val bsf = new scala.util.automaton.BerrySethi[ matching.PatternTest ]( pe );
+
   def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
     if( global.newMatch ) {
       val fm = new FullRegularTranslator( global );
       val gram = fm.MakeGrammar( scala.Iterator.fromArray( cases ) );
       Console.println( GrammarPrinter.toString( gram ));
+
+      for( val p <- cases ) {
+        val aPe = pe.fromTree( p.pat ) ;
+        Console.println( aPe );
+        //val na = bsf.automatonFrom( aPe ) ;
+        //Console.println( na );
+      }
       throw new ApplicationError("not impl.");
     };
     var containsReg = false;

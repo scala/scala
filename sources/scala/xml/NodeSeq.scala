@@ -10,8 +10,9 @@
 package scala.xml ;
 
 /** a wrapper around Seq[Node] that adds XPath and comprehension methods */
-class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
+abstract class NodeSeq extends Seq[Node] {
 
+  def theSeq: Seq[Node];
   def length = theSeq.length;
   def elements = theSeq.elements ;
   def apply( i:int ) = theSeq.apply( i );
@@ -27,12 +28,12 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
    *  of all elements of this sequence that are labelled with "foo".
    *  Use \ "_" as a wildcard. The document order is preserved.
    */
-  def \ (that: String):NodeSeq = that match {
+  def \(that: String):NodeSeq = that match {
     case "_" => for( val x <- this;
-                     val y <- new NodeSeq( x.child ) )
+                     val y <- new NodeSeq { val theSeq = x.child; })
                 yield y
     case _   => for( val x <- this;
-                     val y <- new NodeSeq( x.child );
+                     val y <- new NodeSeq { val theSeq = x.child; };
                      y.label == that )
                 yield { y }
   }
@@ -44,15 +45,15 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
 
   def \\ ( that:String ):NodeSeq = that match {
       case "_" => for( val x <- this;
-                       val y <- new NodeSeq( x.descendant_or_self ))
+                       val y <- new NodeSeq { val theSeq = x.descendant_or_self })
                   yield { y }
       case _ => for( val x <- this;
-                     val y <- new NodeSeq( x.descendant_or_self );
+                     val y <- new NodeSeq { val theSeq =  x.descendant_or_self  };
                      y.label == that)
                   yield { y }
   }
 
-  override def toString() = theSeq.elements.foldLeft ("") {
+  override def toString():String = theSeq.elements.foldLeft ("") {
     (s:String,x:Node) => s + x.toString()
   }
 
@@ -63,15 +64,15 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
   }
 
   def map( f:Node => Node ):NodeSeq = {
-    new NodeSeq( asList map f )
+    new NodeSeq{ final def theSeq = NodeSeq.this.asList map f }
   }
 
   def flatMap( f:Node => NodeSeq ):NodeSeq = {
-    new NodeSeq( asList flatMap { x => f(x).asList })
+    new NodeSeq{ final def theSeq = NodeSeq.this.asList flatMap { x => f(x).asList }}
   }
 
   def filter( f:Node => boolean ):NodeSeq = {
-    new NodeSeq( asList filter f )
+    new NodeSeq{ val theSeq = NodeSeq.this.asList filter f  }
   }
 
 }

@@ -24,7 +24,18 @@ object Node {
 /** Trait for representing XML using nodes of a labelled tree.
  *  This trait contains an implementation of a subset of XPath for navigation.
  */
-trait Node {
+trait Node extends NodeSeq {
+
+  final def theSeq = this :: Nil;
+  /*
+  final def length = 1;
+  final def elements = new Iterator[Node] {
+    var notAccessed = true;
+    final def hasNext = notAccessed;
+    final def next = {notAccessed = false; Node.this}
+  }
+  final def apply(i: Int) = if( i==0 ) this else error("singleton sequence");
+  */
 
   /** used internally. Text = -1 PI = -2 Comment = -3 CDATA = -4 EntityRef = -5 */
   def typeTag$:Int = 0;
@@ -76,26 +87,21 @@ trait Node {
  /** projection function. Similar to XPath, use this \ 'foo to get a list
    *  of all children of this node that are labelled with "foo".
    *  The document order is preserved.
-   */
-    def \( that:String ): NodeSeq = {
-      new NodeSeq({
-        that match {
+    def \( that:String ): NodeSeq = that match {
 
-          case "_" => child.toList;
-          case _ =>
-            var res:List[Node] = Nil;
-            for( val x <- child.elements; x.label == that ) {
-              res = x::res;
-            }
-            res.reverse
+      case "_" => new NodeSeq { val theSeq = child; }
+      case _   =>
+        var res:List[Node] = Nil;
+        for( val x <- child.elements; x.label == that ) {
+          res = x::res;
         }
-      });
+        new NodeSeq { val theSeq = res.reverse }
     }
+   */
 
  /** projection function. Similar to XPath, use this \\ 'foo to filter
    *  all nodes labelled with "foo" from the descendant_or_self axis.
    *  The document order is preserved.
-   */
   def \\( that:String ): NodeSeq = {
     val z = this.descendant_or_self;
     new NodeSeq(
@@ -104,6 +110,7 @@ trait Node {
         case _ => z.filter( x => x.label == that );
       })
   }
+   */
 
   override def hashCode() = Utility.hashCode(namespace, label, attribute.toList.hashCode(), child);
   /** string representation of this node */

@@ -41,19 +41,21 @@ case class Elem( namespace$$:String, label$$: String, attributes: AttributeSeq, 
    *  @param attrs
    *  @return a new symbol with updated attributes
    */
-  final def %(attrs: Seq[Attribute]): Elem = {
-    val aseq = new AttributeSeq((attributes.toList ::: attrs.toList):_*);
-    Elem(namespace, label, aseq, child:_*)
-  }
+  final def %(attrs: Seq[Attribute]): Elem =
+    Elem(namespace,
+         label,
+         AttributeSeq.fromAttrs((attributes.toList ::: attrs.toList):_*),
+         child:_*) ;
 
   /** Return a new symbol with updated attribute
    *
    *  @param attr
    *  @return a new symbol with updated attribute
    */
-  final def %(attr: Attribute): Elem = {
-    val aseq = new AttributeSeq((attributes.toList ::: attr :: Nil):_*);
-    Elem(namespace, label, aseq, child:_*)
-  }
+  final def %(attr: Attribute): Elem =
+    Elem(namespace,
+         label,
+         AttributeSeq.fromAttrs((attributes.toList ::: attr :: Nil):_*),
+         child:_*) ;
 
 }

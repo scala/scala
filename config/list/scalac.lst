@@ -28,6 +28,7 @@ transformer/UnCurryPhase.scala
 transformer/matching/FullRegularTranslator.scala 
 transformer/matching/GrammarPrinter.scala 
 transformer/matching/MutableGrammar.scala 
+transformer/matching/PatternExp.scala 
 transformer/matching/PatternTest.scala 
 transformer/matching/PatternInfo.scala 
 

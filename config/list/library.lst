@@ -155,11 +155,14 @@ runtime/matching/Rule.scala
 
 testing/UnitTest.scala
 
-util/regexp/Alphabet.scala
+util/alphabet/Alphabet.scala
+util/automata/NondetWordAutom.scala
+util/automata/BaseBerrySethi.scala
+util/automata/WordBerrySethi.scala
 util/regexp/Base.scala
 util/regexp/WordExp.scala
 util/regexp/PointedHedgeExp.scala
-util/regexp/SyntaxErrorException.scala
+util/regexp/SyntaxError.scala
 
 xml/Attribute.scala
 xml/AttributeSeq.scala
