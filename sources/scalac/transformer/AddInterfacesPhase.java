@@ -228,6 +228,10 @@ public class AddInterfacesPhase extends Phase {
                 classMemberMap.put(iConstr, cConstr);
             }
 
+            // Remove type of this
+            if (classSym.thisSym() != classSym)
+                classSym.setTypeOfThis(Type.NoType);
+
             // Clone all members, entering them in the class scope.
             Scope classMembers = new Scope();
             Scope.SymbolIterator ifaceMembersIt =
