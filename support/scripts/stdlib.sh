@@ -11,8 +11,12 @@ function print() {
 }
 
 function abort() {
-    print "${program:-error}: ""$@" 1>&2;
+    print "${program:-$0}: ""$@" 1>&2;
     exit 1;
+}
+
+function warning() {
+    print "${program:-$0}: warning: ""$@" 1>&2;
 }
 
 function run_() {
