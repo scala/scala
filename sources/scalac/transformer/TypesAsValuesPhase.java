@@ -69,7 +69,7 @@ public class TypesAsValuesPhase extends Phase {
      * The list of members to add to a given class (either type
      * accessors or instantiation methods).
      */
-    private final HashMap/*<Symbol,NewMember[]>*/ membersToAdd =
+    private final HashMap/*<Symbol,Symbol[]>*/ membersToAdd =
         new HashMap();
 
     /** The list of parameters to add to a given method. */
@@ -126,7 +126,7 @@ public class TypesAsValuesPhase extends Phase {
         predefTypes.put(defs.ALLREF_CLASS,  defs.RTT_ALLREF());
         predefTypes.put(defs.ALL_CLASS,     defs.RTT_ALL());
 
-        membersToAdd.put(defs.ARRAY_CLASS, new NewMember[0]);
+        membersToAdd.put(defs.ARRAY_CLASS, new Symbol[0]);
         paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
 
         ancestorCache.put(defs.OBJECT_CLASS,
@@ -217,8 +217,8 @@ public class TypesAsValuesPhase extends Phase {
         return ciSym;
     }
 
-    private NewMember[] membersToAdd(Symbol classSym) {
-        NewMember[] toAdd = (NewMember[])membersToAdd.get(classSym);
+    private Symbol[] membersToAdd(Symbol classSym) {
+        Symbol[] toAdd = (Symbol[])membersToAdd.get(classSym);
         if (toAdd == null) {
             HashSet seenMembers = new HashSet(); // [HACK]
             ArrayList toAddL = new ArrayList();
@@ -232,26 +232,19 @@ public class TypesAsValuesPhase extends Phase {
                 if (!seenMembers.add(member))
                     continue;
                 if (member.isClass()) {
-                    Symbol tcSym = getTConstructorSym(member);
-                    toAddL.add(NewMember.TypeConstructor(member, tcSym));
-                    Symbol imSym = getInstMethSym(member);
-                    toAddL.add(NewMember.Instantiator(member, imSym));
-                } else if (member.isType()) {
-                    Symbol accSym = getInstMethSym(member);
-                    toAddL.add(NewMember.TypeAccessor(member, accSym));
-                }
+                    toAddL.add(getTConstructorSym(member));
+                    toAddL.add(getInstMethSym(member));
+                } else if (member.isType())
+                    toAddL.add(getInstMethSym(member));
             }
 
             if (!isNestedClass(classSym)) {
-                Symbol tcSym = getTConstructorSym(classSym);
-                toAddL.add(NewMember.TypeConstructor(classSym, tcSym));
-                Symbol ciSym = getClassInitSym(classSym);
-                toAddL.add(NewMember.ClassInitialiser(classSym, ciSym, tcSym));
-                Symbol imSym = getInstMethSym(classSym);
-                toAddL.add(NewMember.Instantiator(classSym, imSym));
+                toAddL.add(getTConstructorSym(classSym));
+                toAddL.add(getClassInitSym(classSym));
+                toAddL.add(getInstMethSym(classSym));
             }
 
-            toAdd = (NewMember[])toAddL.toArray(new NewMember[toAddL.size()]);
+            toAdd = (Symbol[])toAddL.toArray(new Symbol[toAddL.size()]);
             membersToAdd.put(classSym, toAdd);
         }
         return toAdd;
@@ -288,7 +281,7 @@ public class TypesAsValuesPhase extends Phase {
 
     public Type transformInfo(Symbol symbol, Type type) {
         if (symbol.isClass()) {
-            NewMember[] toAdd = membersToAdd(symbol);
+            Symbol[] toAdd = membersToAdd(symbol);
 
             if (toAdd.length == 0)
                 return type;
@@ -296,7 +289,7 @@ public class TypesAsValuesPhase extends Phase {
                 Scope newMembers = new Scope(symbol.members());
 
                 for (int i = 0; i < toAdd.length; ++i)
-                    newMembers.enterOrOverload(toAdd[i].symbolToAdd());
+                    newMembers.enterOrOverload(toAdd[i]);
 
                 return Type.compoundType(type.parents(), newMembers, symbol);
             }
@@ -1074,28 +1067,6 @@ public class TypesAsValuesPhase extends Phase {
         public Tree treeForVar(Symbol sym) {
             throw Debug.abort("no tree for variable " + sym);
         }
-    }
-
-    private static class NewMember {
-        public Symbol symbolToAdd() {
-            switch (this) {
-            case TypeAccessor(_, Symbol accSym):
-                return accSym;
-            case TypeConstructor(_, Symbol tcSym):
-                return tcSym;
-            case Instantiator(_, Symbol insSym):
-                return insSym;
-            case ClassInitialiser(_, Symbol ciSym, _):
-                return ciSym;
-            default:
-                throw Debug.abort("unexpected case");
-            }
-        }
-
-        public case TypeAccessor(Symbol memSym, Symbol accSym);
-        public case TypeConstructor(Symbol memSym, Symbol tcSym);
-        public case Instantiator(Symbol memSym, Symbol insSym);
-        public case ClassInitialiser(Symbol memSym, Symbol ciSym, Symbol tcSym);
     }
 
     private static class Ancestor {
