@@ -14,6 +14,7 @@ include $(ROOT)/Makefile.config
 # Variables
 
 # project
+PROJECT_VERSION		 = $(shell $(TAIL) -1 $(VERSION_FILE))
 PROJECT_SOURCES		+= $(LAMPLIB_SOURCES)
 PROJECT_SOURCES		+= $(META_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
@@ -23,6 +24,10 @@ PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_SOURCES		+= $(SCALAP_SOURCES)
 PROJECT_SOURCES		+= $(SCALATEST_SOURCES)
+
+# version management
+VERSION_FILE		 = $(PROJECT_ROOT)/VERSION
+VERSION_SCRIPT		 = $(PROJECT_SUPPORTDIR)/scripts/version-manager
 
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
@@ -245,6 +250,22 @@ scalac4ant	:
 .PHONY		: scala4ant
 
 ##############################################################################
+# Commands - Version management
+
+set-project-version	:
+	@if [ -z "$(VERSION)" ]; then \
+	    echo "Usage: $(MAKE) set-version VERSION=<version>"; \
+	    exit 1; \
+	else \
+	    $(call RUN,$(VERSION_SCRIPT) $(VERSION_FILE) set $(VERSION)); \
+	    $(make) scripts; \
+	fi
+
+update-project-version	:
+	$(VERSION_SCRIPT) $(VERSION_FILE) update
+	@$(make) scripts
+
+##############################################################################
 # Targets
 
 .latest-bootstrap		:
@@ -336,6 +357,7 @@ $(SCRIPTS_WRAPPER)	: MACRO_BCEL_CLASSES      ?= $(BCEL_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
 $(SCRIPTS_WRAPPER)	: MACRO_JAVA_ARGS         ?= -enableassertions
+$(SCRIPTS_WRAPPER)	: $(VERSION_FILE)
 $(SCRIPTS_WRAPPER)	: $(PROJECT_ROOT)/Makefile
 $(SCRIPTS_WRAPPER)	: $(PROJECT_ROOT)/Makefile.config
 $(SCRIPTS_WRAPPER)	: $(PROJECT_ROOT)/Makefile.private
