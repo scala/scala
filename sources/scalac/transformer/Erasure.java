@@ -417,7 +417,22 @@ public class Erasure extends Transformer implements Modifiers {
                         ? primitives.getUnboxValueSymbol(tp)
                         : primitives.getInstanceTestSymbol(tp);
                     qual1 = coerce(qual1, primSym.owner().type());
-                    return gen.Select(qual1, primSym);
+                    Tree t = gen.Select(qual1, primSym);
+		    if (sym == definitions.AS) {
+			return t;
+		    } else {
+			Tree test =
+			    gen.TypeApply(
+				tree.pos,
+				transform(fun),
+				new Tree[]{
+				    gen.mkType(tree.pos, primSym.owner().type())
+				});
+			return
+			    gen.Apply(
+				gen.Select(test, definitions.AMPAMP()),
+				new Tree[]{t});
+		    }
                 } else
                     return copy.TypeApply(tree, transform(fun), transform(args))
                         .setType(owntype);
