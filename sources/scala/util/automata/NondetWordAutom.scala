@@ -14,7 +14,6 @@ abstract class NondetWordAutom {
   type T_label;
 
   val nstates:  Int;
-  val labels:   Set[T_label] ;
   val finals:   PartialFunction[Int,Int] ;
   val delta:    Function1[Int,Map[T_label,List[Int]]];
   val default:  Array[List[Int]];
@@ -48,10 +47,13 @@ abstract class NondetWordAutom {
     val sb = new StringBuffer();
     sb.append("[nfa nstates=");
     sb.append(nstates);
-    sb.append(" labels=");
-    sb.append(labels.toString());
     sb.append(" finals=");
-    sb.append(finals.toString());
+    var map = new scala.collection.immutable.ListMap[Int,Int];
+    var j = 0; while( j < nstates ) {
+      if(finals.isDefinedAt(j))
+        map = map.update(j,finals(j))
+    }
+    sb.append(map.toString());
     sb.append(" delta=\n");
     for( val i <- Iterator.range(0,nstates)) {
       sb.append( i );

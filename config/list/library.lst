@@ -191,6 +191,7 @@ testing/SUnit.scala
 testing/Benchmark.scala
 
 util/automata/BaseBerrySethi.scala
+util/automata/DetWordAutom.scala
 util/automata/NondetWordAutom.scala
 util/automata/WordBerrySethi.scala
 util/grammar/HedgeRHS.scala
