@@ -8,10 +8,14 @@
 
 package scalac.atree;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
 import scalac.symtab.Definitions;
+import scalac.symtab.Symbol;
 import scalac.util.Debug;
 
 /** This class translates syntax trees into attributed trees. */
@@ -104,11 +108,58 @@ public class ATreeFromSTree {
         case DefDef(_, _, _, _, _, Tree rhs):
             AMethod method = new AMethod(tree.symbol(), false);
             clasz.addMethod(method);
+            if (!method.isAbstract()) method.setCode(expression(rhs));
             return;
 
         default:
             throw Debug.abort("illegal case", tree);
         }
+    }
+
+    //########################################################################
+    // Private Methods - Translating statements
+
+     /** Translates the statements. */
+    private ACode[] statement(List locals, Tree[] trees, int start, int count){
+        List codes = new ArrayList();
+        for (int i = start; i < count; i++) {
+            ACode code = statement(locals, trees[i]);
+            if (code != ACode.Void) codes.add(code);
+        }
+        return (ACode[])codes.toArray(new ACode[codes.size()]);
+    }
+
+    /** Translates the statement. */
+    private ACode statement(List locals, Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return make.Void;
+
+        case ValDef(_, _, _, Tree rhs):
+            Symbol symbol = tree.symbol();
+            locals.add(symbol);
+            ALocation location = ALocation.Local(symbol, false);
+            return make.Store(tree, location, expression(rhs));
+
+        default:
+            return ACode.Drop(expression(tree), tree.type());
+        }
+    }
+
+    //########################################################################
+    // Private Methods - Translating expressions
+
+    /** Translates the expressions. */
+    private ACode[] expression(Tree[] trees) {
+        ACode[] codes = new ACode[trees.length];
+        for (int i = 0; i < codes.length; i++) codes[i] = expression(trees[i]);
+        return codes;
+    }
+
+    /** Translates the expression. */
+    private ACode expression(Tree tree) {
+        return ACode.Void;
     }
 
     //########################################################################
