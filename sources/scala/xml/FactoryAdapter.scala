@@ -8,8 +8,7 @@
 \*                                                                      */
 package scala.xml ;
 
-import java.io.{OutputStream,OutputStreamWriter,PrintWriter,Writer};
-import java.io.UnsupportedEncodingException;
+import java.io._ ;
 import scala.collection.mutable.{HashMap,Stack};
 
 import org.xml.sax.Attributes;
@@ -336,17 +335,17 @@ abstract class FactoryAdapter
 
   /** loads XML from given file */
   def loadFile( file:File ):Node = loadXML( new InputSource(
-      FileInputStream( file )
+      new FileInputStream( file )
   ));
 
   /** loads XML from given file descriptor */
   def loadFile( fileDesc:FileDescriptor ):Node = loadXML( new InputSource(
-      FileInputStream( fileDesc )
+      new FileInputStream( fileDesc )
   ));
 
   /** loads XML from given file */
   def loadFile( fileName:String ):Node = loadXML( new InputSource(
-    FileInputStream( fileName )
+    new FileInputStream( fileName )
   ));
 
   /** loads XML from given InputStream */
