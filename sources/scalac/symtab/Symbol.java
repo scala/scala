@@ -423,7 +423,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote an interface? */
     public final boolean isInterface() {
-        preInitialize();
+        info(); // force delayed transformInfos that may change this flag
         return (flags & INTERFACE) != 0;
     }
 
