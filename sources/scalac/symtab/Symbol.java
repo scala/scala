@@ -557,6 +557,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & LABEL) != 0;
     }
 
+    /** Is this symbol accessed? */
+    public final boolean isAccessed() {
+        return (flags & ACCESSED) != 0;
+    }
+
     /** The variance of this symbol as an integer
      */
     public int variance() {
