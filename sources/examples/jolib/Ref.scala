@@ -8,7 +8,7 @@
 \*                                                                      */
 
 package examples.jolib;
-
+/*
 import concurrent.SyncVar;
 import concurrent.jolib._;
 
@@ -30,11 +30,12 @@ class Ref[a](init: a) extends Join {
   def Get: a = get(get.C());
   def Set(x: a): unit = set(set.C(x));
 }
-
+*/
 object RefTest {
 
   def main(args: Array[String]) = {
     System.out.println("Started.");
+/*
     concurrent.ops.spawn({
       val r1 = new Ref(0);
       System.out.println("Reference r1 created.");
@@ -49,6 +50,7 @@ object RefTest {
       r2.Set(89);
       System.out.println("Value r2 (second time) = " + r2.Get);
     });
+*/
   }
 
 }

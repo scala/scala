@@ -8,7 +8,7 @@
 \*                                                                  */
 
 package examples.jolib;
-
+/*
 import concurrent.jolib._;
 import concurrent.SyncVar;
 
@@ -41,17 +41,19 @@ object or extends Join {
     res(res.C())
   }
 }
-
+*/
 object parallelOr {
 
   def main(args: Array[String]): unit = {
     def loop: boolean = { while (true) {}; true };
+/*
     System.out.println("true || true = " + or(true, true));
     System.out.println("false || false = " + or(false, false));
     System.out.println("false || true = " + or(false, true));
     System.out.println("true || false = " + or(true, false));
     System.out.println("true || loop = " + or(true, loop));
     System.out.println("loop || true = " + or(loop, true));
+*/
   }
 
 }
