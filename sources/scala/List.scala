@@ -748,7 +748,7 @@ sealed trait List[+a] extends Seq[a] {
   def flatMap[b](f: a => List[b]): List[b] = match {
     case Nil => Nil
     case head :: tail => f(head) ::: (tail flatMap f)
-  };
+  }
 
   /** Reverses the elements of this list.
    *  <p/>

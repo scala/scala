@@ -22,7 +22,7 @@ abstract class Symbols: SymbolTable {
     var name = initName;
     var pos = initPos;
     val id = { ids = ids + 1; ids }
-    var rawflags: long = 0;
+    private var rawflags: long = 0;
 
 // Creators -------------------------------------------------------------------
 
@@ -51,8 +51,9 @@ abstract class Symbols: SymbolTable {
       m.moduleClass.setFlag(JAVA | PACKAGE);
       m
     }
-    final def newThisSym(pos: int) =
+    final def newThisSym(pos: int) = {
       newValue(pos, nme.this_).setFlag(SYNTHETIC);
+    }
     final def newImport(pos: int) =
       newValue(pos, nme.IMPORT).setFlag(SYNTHETIC);
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
@@ -88,33 +89,33 @@ abstract class Symbols: SymbolTable {
     def isType = false;        //to be overridden
     def isClass = false;       //to be overridden
 
-    final def isValue = isTerm && !(isModule && ((rawflags & (PACKAGE | JAVA)) != 0));
-    final def isVariable = isTerm && (rawflags & MUTABLE) != 0;
-    final def isGetter = isTerm && (rawflags & ACCESSOR) != 0 && !name.endsWith(nme._EQ);
-    final def isSetter = isTerm && (rawflags & ACCESSOR) != 0 && name.endsWith(nme._EQ);
-    final def isValueParameter = isTerm && (rawflags & PARAM) != 0;
+    final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA));
+    final def isVariable = isTerm && hasFlag(MUTABLE);
+    final def isGetter = isTerm && hasFlag(ACCESSOR) && !name.endsWith(nme._EQ);
+    final def isSetter = isTerm && hasFlag(ACCESSOR) && name.endsWith(nme._EQ);
+    final def isValueParameter = isTerm && hasFlag(PARAM);
     final def isLocalDummy = isTerm && (name startsWith nme.LOCAL_PREFIX);
-    final def isMethod = isTerm && (rawflags & (METHOD | STABLE)) == METHOD;
-    final def isLabel = isTerm && (rawflags & LABEL) != 0;
+    final def isMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD;
+    final def isLabel = isTerm && hasFlag(LABEL);
     final def isConstructor = isTerm && name == nme.CONSTRUCTOR;
-    final def isModule = isTerm && (rawflags & MODULE) != 0;
-    final def isPackage = isModule && (rawflags & PACKAGE) != 0;
+    final def isModule = isTerm && hasFlag(MODULE);
+    final def isPackage = isModule && hasFlag(PACKAGE);
     final def isThisSym = isTerm && name == nme.this_;
-    final def isError = (rawflags & IS_ERROR) != 0;
-    final def isAliasType = isType && !isClass && (rawflags & DEFERRED) == 0;
-    final def isAbstractType = isType && !isClass && (rawflags & DEFERRED) != 0;
-    final def isTypeParameter = isType && (rawflags & PARAM) != 0;
+    final def isError = hasFlag(IS_ERROR);
+    final def isTrait = isClass & hasFlag(TRAIT);
+    final def isAliasType = isType && !isClass && !hasFlag(DEFERRED);
+    final def isAbstractType = isType && !isClass && hasFlag(DEFERRED);
+    final def isTypeParameter = isType && hasFlag(PARAM);
     final def isAnonymousClass = isClass && (name startsWith nme.ANON_CLASS_NAME); // startsWith necessary because name may grow when lifted
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME; // no lifting for refinement classes
-    final def isModuleClass = isClass && (rawflags & MODULE) != 0;
-    final def isPackageClass = isClass && (rawflags & PACKAGE) != 0;
+    final def isModuleClass = isClass && hasFlag(MODULE);
+    final def isPackageClass = isClass && hasFlag(PACKAGE);
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName;
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName;
 
     /** Does this symbol denote a stable value? */
     final def isStable =
-      isTerm && (rawflags & MUTABLE) == 0 &&
-      ((rawflags & METHOD) == 0 || (rawflags & STABLE) != 0);
+      isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD) || hasFlag(STABLE));
 
     /** Does this symbol denote the primary constructor
      * of its enclosing class? */
@@ -155,21 +156,18 @@ abstract class Symbols: SymbolTable {
 
     /** The variance of this symbol as an integer */
     final def variance: int =
-      if ((rawflags & COVARIANT) != 0) 1
-      else if ((rawflags & CONTRAVARIANT) != 0) -1
+      if (hasFlag(COVARIANT)) 1
+      else if (hasFlag(CONTRAVARIANT)) -1
       else 0;
 
 // Flags ----------------------------------------------------------------------------
 
-    final def flags = {
-      initialize; rawflags & phase.flagMask
-    }
+    final def flags = rawflags;
+    final def flags_=(fs: long) = rawflags = fs;
     final def setFlag(mask: long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: long): this.type = { rawflags = rawflags & ~mask; this }
-    final def getFlag(mask: long): long =
-      (if ((mask & ~CREATIONFLAGS) == 0) rawflags else flags) & mask;
-    final def hasFlag(mask: long): boolean =
-      ((if ((mask & ~CREATIONFLAGS) == 0) rawflags else flags) & mask) != 0;
+    final def getFlag(mask: long): long = rawflags & mask;
+    final def hasFlag(mask: long): boolean = (rawflags & mask) != 0;
     final def resetFlags: unit = { rawflags = rawflags & SOURCEFLAGS }
 
 // Info and Type -------------------------------------------------------------------
@@ -200,8 +198,8 @@ abstract class Symbols: SymbolTable {
 	phase = infos.start;
         //System.out.println("completing " + this);//DEBUG
         tp.complete(this);
-	phase = current;
         rawflags = rawflags & ~LOCKED;
+	phase = current;
 	cnt = cnt + 1;
 	// allow for two completions:
 	//   one: sourceCompleter to LazyType, two: LazyType to completed type
@@ -215,10 +213,10 @@ abstract class Symbols: SymbolTable {
       infos = new TypeHistory(phase, info, null);
       limit = phase;
       assert(info != null, "setInfo(null) for " + name + " at phase " + phase);//debug
-      rawflags = if (info.isComplete) rawflags | INITIALIZED
-		 else rawflags & ~INITIALIZED;
+      rawflags = if (info.isComplete) rawflags | INITIALIZED & ~LOCKED;
+		 else rawflags & ~INITIALIZED & ~LOCKED;
       if (info.isInstanceOf[MethodType] || info.isInstanceOf[PolyType])
-	assert(isClass || (rawflags & METHOD) != 0);
+	assert(isClass || hasFlag(METHOD));
       this
     }
 
@@ -351,7 +349,7 @@ abstract class Symbols: SymbolTable {
 
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol =
-      cloneSymbolImpl(owner).setInfo(info.cloneInfo(owner)).setFlag(rawflags);
+      cloneSymbolImpl(owner).setInfo(info.cloneInfo(owner)).setFlag(flags);
 
     /** Internal method to clone a symbol's implementation without flags or type
      */
@@ -390,7 +388,7 @@ abstract class Symbols: SymbolTable {
     /** The symbol accessed by this accessor function.
      */
     final def accessed: Symbol = {
-      assert((rawflags & ACCESSOR) != 0);
+      assert(hasFlag(ACCESSOR));
       val name1 = if (name.endsWith(nme._EQ)) name.subName(0, name.length - nme._EQ.length)
 	          else name;
       owner.info.decl(name1.toString() + "$")
@@ -423,7 +421,7 @@ abstract class Symbols: SymbolTable {
     /** The module corresponding to this module class (note that this
      *  is not updated when a module is cloned).
      */
-    //def sourceModule: Symbol = NoSymbol;
+    def sourceModule: Symbol = NoSymbol;
 
     /** The module class corresponding to this module.
      */
@@ -450,10 +448,9 @@ abstract class Symbols: SymbolTable {
 
     /** String representation of symbol's definition key word */
     final def keyString: String =
-      if (isClass)
-        if ((rawflags & TRAIT) != 0)
-          if ((rawflags & JAVA) != 0) "interface" else "trait"
-        else "class"
+      if (isTrait)
+        if (hasFlag(JAVA)) "interface" else "trait"
+      else if (isClass) "class"
       else if (isType && !hasFlag(PARAM)) "type"
       else if (isVariable) "var"
       else if (isPackage) "package"
@@ -469,8 +466,8 @@ abstract class Symbols: SymbolTable {
       else if (isAnonymousClass) "<template>"
       else if (isRefinementClass) ""
       else if (isModuleClass) "singleton class"
-      else if (isClass)
-        if ((rawflags & TRAIT) != 0) "trait" else "class"
+      else if (isTrait) "trait"
+      else if (isClass) "class"
       else if (isType) "type"
       else if (isVariable) "variable"
       else if (isPackage) "package"
@@ -557,7 +554,7 @@ abstract class Symbols: SymbolTable {
 
     /** String representation of symbol's definition */
     final def defString: String =
-      compose(List(flagsToString(rawflags & EXPLICITFLAGS),
+      compose(List(flagsToString(flags & EXPLICITFLAGS),
 		   keyString,
 		   varianceString + nameString,
 		   infoString(rawInfo)));
@@ -593,16 +590,26 @@ abstract class Symbols: SymbolTable {
     private var tpeCache: Type = _;
     private var valid: Phase = null;
     override def tpe: Type = {
+      assert(tpeCache != NoType, this);
       if (valid != phase) {
         valid = phase;
-        tpeCache = typeRef(owner.thisType, this, typeParams map (.tpe));
+        tpeCache = NoType;
+        tpeCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
+                           this, typeParams map (.tpe));
       }
+      assert(tpeCache != null, "" + this + " " + phase);
       tpeCache
     }
     override def typeConstructor: Type = {
       if (tyconCache == null)
-	tyconCache = typeRef(owner.thisType, this, List());
+	tyconCache = typeRef(if (isTypeParameter) NoPrefix else owner.thisType,
+			     this, List());
       tyconCache;
+    }
+    override def setInfo(tp: Type): this.type = {
+      valid = null;
+      tyconCache = null;
+      super.setInfo(tp)
     }
     override def reset(completer: Type): unit = {
       super.reset(completer);
@@ -624,8 +631,19 @@ abstract class Symbols: SymbolTable {
       thissym = this;
     }
 
+    private var thisTypeCache: Type = null;
+
     /** the type this.type in this class */
-    override val thisType: Type = ThisType(this);
+    override def thisType: Type = {
+      if (thisTypeCache == null) {
+	thisTypeCache =
+	  if (isModuleClass && !isRoot) {
+	    assert(sourceModule != NoSymbol);
+	    singleType(owner.thisType, sourceModule);
+	  } else ThisType(this);
+      }
+      thisTypeCache
+    }
 
     /** A symbol carrying the self type of the class as its type */
     override def thisSym: Symbol = thissym;
@@ -640,13 +658,16 @@ abstract class Symbols: SymbolTable {
       if (thisSym != this) clone.typeOfThis = typeOfThis;
       clone
     }
+
+    override def sourceModule = if (isModuleClass) owner.linkedModule else NoSymbol;
   }
 
-  /** A class for module class symbols */
-  class ModuleClassSymbol(module: ModuleSymbol)
-   extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
+  /** A class for module class symbols
+   *  Note: Not all module classes are of this type; when unpickled, we get plain class symbols!
+   */
+  class ModuleClassSymbol(module: ModuleSymbol) extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
     setFlag(module.getFlag(MODULE2CLASSFLAGS) | MODULE | FINAL);
-    //override def sourceModule = module;
+    override def sourceModule = module;
   }
 
   /** An object repreesenting a missing symbol */

@@ -220,7 +220,7 @@ class Trees: Global {
 
   /** General type term, introduced by RefCheck. */
   case class TypeTree() extends TypTree {
-    override def isEmpty = tpe == null;
+    override def isEmpty = tpe == null || tpe == NoType;
   }
 
   /** Singleton type, eliminated by RefCheck */

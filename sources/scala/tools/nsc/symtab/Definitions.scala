@@ -133,7 +133,7 @@ abstract class Definitions: SymbolTable {
     }
 
     private def newMethod(owner: Symbol, name: Name): Symbol = {
-      val msym = owner.newMethod(Position.NOPOS, name);
+      val msym = owner.newMethod(Position.NOPOS, name.encode);
       owner.info.decls.enter(msym);
       msym
     }
@@ -145,13 +145,15 @@ abstract class Definitions: SymbolTable {
     def init = {
       RootClass =
 	NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
-	  .setFlag(FINAL | PACKAGE | JAVA).setInfo(rootLoader);
+	  .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader);
 
       EmptyPackage =
 	RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
       EmptyPackageClass = EmptyPackage.moduleClass;
       EmptyPackageClass.setInfo(ClassInfoType(List(), new Scope(), EmptyPackageClass));
-      EmptyPackage.setInfo(EmptyPackageClass.typeConstructor);
+
+
+      EmptyPackage.setInfo(EmptyPackageClass.tpe);
       RootClass.info.decls.enter(EmptyPackage);
 
       JavaPackage = getModule("java");

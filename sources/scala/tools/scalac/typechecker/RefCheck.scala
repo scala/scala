@@ -978,18 +978,30 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
 
 // Tree node simplification---------------------------------------------------
 
-  private def elimTypeNode(tree: Tree): Tree =
+  private def elimTypeNode(tree: Tree): Tree = {
+    def checkLegal(tp: Type): unit = tp match {
+      case Type.TypeRef(pre, sym, args) =>
+        sym.kind match {
+          case ALIAS | TYPE =>
+            checkLegal(sym.info().asSeenFrom(pre, sym.owner()));
+          case CLASS =>
+            if (sym == defs.ANY_CLASS)
+              unit.error(tree.pos, "Array[Any] not supported");
+            else if (sym == defs.ANYVAL_CLASS)
+              unit.error(tree.pos, "Array[AnyVal] not supported");
+          case _ =>
+        }
+      case _ =>
+    }
     if (tree.isType()) {
       val resultType = tree.getType().deconst();
       val resultArgs = resultType.typeArgs();
-      if (resultType.symbol() == defs.ARRAY_CLASS && resultArgs.length == 1) {
-        if (resultArgs(0).symbol() == defs.ANY_CLASS)
-          unit.error(tree.pos, "Array[Any] not supported");
-        else if (resultArgs(0).symbol() == defs.ANYVAL_CLASS)
-          unit.error(tree.pos, "Array[AnyVal] not supported");
+      if (resultType.symbol() == defs.ARRAY_CLASS && resultArgs.length == 1 && global.runTimeTypes) {
+        checkLegal(resultArgs(0))
       }
       gen.mkType(tree.pos, resultType);
-    } else tree;
+    } else tree
+  }
 
 // Transformation ------------------------------------------------------------
 

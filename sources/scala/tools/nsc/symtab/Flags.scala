@@ -63,11 +63,12 @@ object Flags {
   val TRANS_FLAG    = 0x800000000l; // transient flag guaranteed to be reset after each phase.
   val LIFTED        = TRANS_FLAG;    // transient flag for lambdalift
   val INCONSTRUCTOR = TRANS_FLAG;    // transient flag for analyzer
-  val INITIALFLAGS  = 0x777777777l;
 
   // masks
   val SOURCEFLAGS   = 0x00077777;    // these modifiers can be set in source programs.
-  val EXPLICITFLAGS =                // these modifiers can be explcitly in source programs.
+  val GENFLAGS      =                // these modifiers can be in generated trees
+    SOURCEFLAGS | SYNTHETIC | STABLE | ACCESSOR | ACCESS_METHOD | PARAMACCESSOR | LABEL | BRIDGE;
+  val EXPLICITFLAGS =                // these modifiers can be set explicitly in source programs.
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED | OVERRIDE | CASE;
 
   val ACCESSFLAGS   = PRIVATE | PROTECTED;
@@ -75,13 +76,10 @@ object Flags {
   val CONSTRFLAGS   = JAVA;
   val PICKLEDFLAGS  = 0x77777777 & ~LOCKED & ~INITIALIZED;
 
-  /** Flags already set by object creation and never set afterwards */
-  val CREATIONFLAGS = ACCESSFLAGS | METHOD | MODULE | MUTABLE | PARAM | PACKAGE |
-    COVARIANT | CONTRAVARIANT | SYNTHETIC | STABLE | ACCESSOR | PARAMACCESSOR | LOCAL |
-    IS_ERROR | OVERLOADED | INCONSTRUCTOR;
-
   /** Module flags inherited by their module-class */
   val MODULE2CLASSFLAGS = ACCESSFLAGS | PACKAGE;
+
+  def flags2mods(flags: long): int = flags.asInstanceOf[int] & GENFLAGS;
 
   def flagsToString(flags: long): String =
     List.range(0, 63)

@@ -176,9 +176,12 @@ abstract class ClassfileParser {
   private def sigToType(name: Name): Type = {
     var index = 0;
     val end = name.length;
+    def objToAny(tp: Type): Type =
+      if (tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe
+      else tp;
     def paramsigs2types: List[Type] =
       if (name(index) == ')') { index = index + 1; List() }
-      else sig2type :: paramsigs2types;
+      else objToAny(sig2type) :: paramsigs2types;
     def sig2type: Type = {
       val tag = name(index); index = index + 1;
       tag match {
@@ -240,6 +243,12 @@ abstract class ClassfileParser {
       for (val i <- Iterator.range(0, fieldCount)) parseField();
       val methodCount = in.nextChar();
       for (val i <- Iterator.range(0, methodCount)) parseMethod();
+      if (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol && (sflags & INTERFACE) == 0) {
+        System.out.println("adding constructor to " + clazz);//debug
+        instanceDefs enter
+          clazz.newConstructor(Position.NOPOS)
+            .setFlag(clazz.flags & CONSTRFLAGS).setInfo(MethodType(List(), clazz.tpe));
+      }
     }
   }
 

@@ -11,7 +11,7 @@ import scala.tools.util._;
 import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
 import symtab._;
-import symtab.pickles.{PickleBuffer, Pickles};
+import symtab.classfile.{PickleBuffer, Pickler};
 import util._;
 import ast._;
 import ast.parser._;
@@ -38,7 +38,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object pickles extends Pickles {
+  object pickler extends Pickler {
     val global: Global.this.type = Global.this
   }
 
@@ -132,7 +132,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val namerPhase = new analyzer.NamerPhase(parserPhase);
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
-  val picklePhase = new pickles.PicklePhase(typeCheckPhase);
+  val picklePhase = new pickler.PicklePhase(typeCheckPhase);
 
   val terminalPhase = new StdPhase(picklePhase) {
     def name = "terminal";

@@ -49,21 +49,14 @@ trait Typers: Analyzer {
 
     def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol): unit = {
-        sym.setInfo(typechecker.transformType(tree, sym).tpe);
+        sym.setInfo(typechecker.transformType(tree).tpe);
       }
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
-      if (sym.isVariable || (sym.rawflags & FINAL) == 0) tpe.deconst else tpe;
+      if (sym.isVariable || sym.hasFlag(FINAL)) tpe.deconst else tpe;
 
-
-    private def enterTypeParams(owner: Symbol, tparams: List[AbsTypeDef]): List[Symbol] = {
-      List.map2(owner.typeParams, tparams)
-        { (tpsym, tptree) => tptree.symbol = tpsym; context.scope enter tpsym; tpsym }
-    }
-
-    private def enterValueParams(owner: Symbol,
-				 vparamss: List[List[ValDef]]): List[List[Symbol]] = {
+    def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
 	param.symbol = owner.newValueParameter(param.pos, param.name)
 	  .setInfo(typeCompleter(param));
@@ -87,27 +80,26 @@ trait Typers: Analyzer {
       val parents = typechecker.parentTypes(templ) map (.tpe);
       val decls = new Scope();
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
-      ClassInfoType(parents, decls, clazz)
-    }
+      ClassInfoType(parents, decls, clazz)    }
 
     private def classSig(tparams: List[AbsTypeDef], tpt: Tree, impl: Template): Type = {
-      val clazz = context.owner;
-      val tparamSyms = enterTypeParams(clazz, tparams);
-      if (!tpt.isEmpty) clazz.typeOfThis = selfTypeCompleter(tpt);
+      val tparamSyms = typechecker.reenterTypeParams(tparams);
+      if (!tpt.isEmpty)
+        context.owner.typeOfThis = selfTypeCompleter(tpt);
       else tpt.tpe = NoType;
       makePolyType(tparamSyms, templateSig(impl))
     }
 
     private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): Type = {
       val meth = context.owner;
-      val tparamSyms = enterTypeParams(meth, tparams);
+      val tparamSyms = typechecker.reenterTypeParams(tparams);
       val vparamSymss = enterValueParams(meth, vparamss);
       val restype = deconstIfNotFinal(meth,
 	if (tpt.isEmpty) {
 	  tpt.tpe = if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
 		    else typechecker.transformExpr(rhs).tpe;
 	  tpt.tpe
-	} else typechecker.transformType(tpt, meth).tpe);
+	} else typechecker.transformType(tpt).tpe);
       def mkMethodType(vparams: List[Symbol], restpe: Type) =
 	MethodType(vparams map (.tpe), restpe);
       makePolyType(
@@ -117,7 +109,7 @@ trait Typers: Analyzer {
     }
 
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
-      makePolyType(enterTypeParams(tpsym, tparams), typechecker.transformType(rhs, tpsym).tpe);
+      makePolyType(typechecker.reenterTypeParams(tparams), typechecker.transformType(rhs).tpe);
 
     private def typeSig(tree: Tree): Type =
       try {
@@ -129,7 +121,7 @@ trait Typers: Analyzer {
 	  case ModuleDef(_, _, impl) =>
 	    val clazz = sym.moduleClass;
             clazz.setInfo(new Typer(context.make(tree, clazz)).templateSig(impl));
-            clazz.tpe
+            clazz.tpe;
 
 	  case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
 	    new Typer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs)
@@ -145,14 +137,13 @@ trait Typers: Analyzer {
                     .transformExpr(rhs).tpe;
                   tpt.tpe
                 }
-              else typechecker.transformType(tpt, sym).tpe)
+              else typechecker.transformType(tpt).tpe)
 
 	  case AliasTypeDef(_, _, tparams, rhs) =>
             new Typer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
 
 	  case AbsTypeDef(_, _, lo, hi) =>
-            TypeBounds(typechecker.transformType(lo, sym).tpe,
-                       typechecker.transformType(hi, sym).tpe);
+            TypeBounds(typechecker.transformType(lo).tpe, typechecker.transformType(hi).tpe);
 
           case Import(expr, selectors) =>
             val expr1 = typechecker.transformQualExpr(expr);
@@ -168,7 +159,7 @@ trait Typers: Analyzer {
                 checkSelectors(rest)
               case Nil =>
 	    }
-            expr1.tpe
+            ImportType(expr1)
         }
       } catch {
         case ex: TypeError =>

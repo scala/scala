@@ -21,8 +21,9 @@ class Contexts: Analyzer {
       definitions.RootClass,
       definitions.RootClass.info.decls);
     def addImport(pkg: Symbol): unit = {
-      val impTree = Import(gen.mkGlobalRef(pkg), List(Pair(nme.WILDCARD, null)))
-        setSymbol NoSymbol.newImport(Position.NOPOS).setInfo(pkg.tpe)
+      val qual = gen.mkStableRef(pkg);
+      val impTree = Import(qual, List(Pair(nme.WILDCARD, null)))
+        setSymbol NoSymbol.newImport(Position.NOPOS).setInfo(ImportType(qual))
         setType NoType;
       sc = sc.make(
 	Template(List(), List(impTree)) setSymbol NoSymbol setType NoType, sc.owner, sc.scope)
@@ -123,7 +124,13 @@ class Contexts: Analyzer {
     }
   }
 
-  class ImportInfo(val tree: Import, val depth: int) {
+  class ImportInfo(tree: Import, val depth: int) {
+
+    /** The prefix expression */
+    def qual: Tree = tree.symbol.info match {
+      case ImportType(expr) => expr
+      case _ => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info);//debug
+    }
 
     /** Is name imported explicitly, not via wildcard? */
     def isExplicitImport(name: Name): boolean =
@@ -150,6 +157,8 @@ class Contexts: Analyzer {
 
     override def toString() = tree.toString();
   }
+
+  case class ImportType(expr: Tree) extends Type;
 }
 
 

@@ -26,14 +26,14 @@ trait Namers: Analyzer {
     private def doubleDefError(pos: int, sym: Symbol): unit =
       context.unit.error(pos,
         sym.name.toString() + " is already defined as " +
-        (if ((sym.rawflags & CASE) != 0) "case class " + sym.name else sym.toString()));
+        (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()));
 
     private def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
       if (settings.debug.value) System.out.println("overwriting " + sym);
       sym.pos = pos;
-      val oldflags = sym.rawflags & (INITIALIZED | LOCKED);
+      val oldflags = sym.flags & (INITIALIZED | LOCKED);
       val newflags = mods & ~(INITIALIZED | LOCKED);
-      sym.rawflags = oldflags | newflags;
+      sym.flags = oldflags | newflags;
       if (sym.isModule)
         updatePosFlags(sym.moduleClass, pos, (mods & MODULE2CLASSFLAGS) | MODULE | FINAL);
       sym
@@ -54,7 +54,10 @@ trait Namers: Analyzer {
       if (p.isPackage && context.scope == p.owner.info.decls) {
         p.pos = pos; p.moduleClass.pos = pos; p
       } else {
-        enterInScope(context.owner.newPackage(pos, name))
+        val pkg = context.owner.newPackage(pos, name);
+        pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope(), pkg));
+        pkg.setInfo(pkg.moduleClass.tpe);
+        enterInScope(pkg)
       }
     }
 
@@ -94,14 +97,13 @@ trait Namers: Analyzer {
     def enterSym(tree: Tree): Symbol = {
 
       def finishWith(tparams: List[AbsTypeDef]) = {
-	if (settings.debug.value) log("entered " + tree.symbol);
-	val ltype = typer.typeCompleter(tree);
-	def makeParam(tparam: AbsTypeDef): Symbol =
-	  tree.symbol.newTypeParameter(tparam.pos, tparam.name)
-	    .setInfo(typer.typeCompleter(tparam));
-	tree.symbol.setInfo(
-	  if (tparams.isEmpty) ltype
-	  else new LazyPolyType(tparams map makeParam, ltype))
+        if (settings.debug.value) log("entered " + tree.symbol);
+	var ltype: LazyType = typer.typeCompleter(tree);
+        if (!tparams.isEmpty) {
+	  new Namer(context.makeNewScope(tree, tree.symbol)).enterSyms(tparams);
+	  ltype = new LazyPolyType(tparams map (.symbol), ltype);
+	}
+	tree.symbol.setInfo(ltype)
       }
       def finish = finishWith(List());
 
@@ -119,7 +121,7 @@ trait Namers: Analyzer {
 	    if ((mods & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
 		tree.pos, mods & ACCESSFLAGS | CASE, name.toTermName);
-	      finishWith(tparams);
+	      finishWith(tparams map (.duplicate.asInstanceOf[AbsTypeDef]));
 	    }
 	    tree.symbol = enterClassSymbol(tree.pos, mods, name);
 	    finishWith(tparams)
@@ -135,7 +137,7 @@ trait Namers: Analyzer {
 	        .setFlag(accmods).setInfo(typer.getterTypeCompleter(tree));
 	      enterInScope(getter);
 	      if ((mods & MUTABLE) != 0) {
-	        val setter = owner.newMethod(tree.pos, name)
+	        val setter = owner.newMethod(tree.pos, nme.SETTER_NAME(name))
 		  .setFlag(accmods).setInfo(typer.setterTypeCompleter(tree));
 	        enterInScope(setter)
 	      }
@@ -152,16 +154,16 @@ trait Namers: Analyzer {
             }
 	  case DefDef(mods, nme.CONSTRUCTOR, tparams, vparams, tp, rhs) =>
 	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
-	      .setFlag(mods | owner.rawflags & CONSTRFLAGS);
+	      .setFlag(mods | owner.getFlag(CONSTRFLAGS));
 	    finishWith(tparams)
 	  case DefDef(mods, name, tparams, _, _, _) =>
 	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name)).setFlag(mods);
 	    finishWith(tparams)
 	  case AbsTypeDef(mods, name, _, _) =>
-	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name));
+	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name)).setFlag(mods);
 	    finish
 	  case AliasTypeDef(mods, name, tparams, _) =>
-	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name));
+	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name)).setFlag(mods);
 	    finishWith(tparams)
 	  case Attributed(_, defn) =>
 	    enterSym(defn)

@@ -146,9 +146,10 @@ abstract class MetaParser{
     def parse(): Type = {
       nextToken();
       if (token == "(") MethodType(parseParams(), parse())
-      else definitions.UnitClass.tpe
+      else owner.owner.tpe
     }
     owner.setInfo(parse());
+    System.out.println("constr " + owner + " = " + owner.info);
     assert(token == ";")
   }
 }

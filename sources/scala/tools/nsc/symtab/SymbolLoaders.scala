@@ -9,7 +9,7 @@ import java.io.IOException;
 import scala.tools.util.{AbstractFile, Position}
 import scala.tools.nsc.util.NameTransformer;
 import scala.collection.mutable.HashMap;
-import classfile.ClassfileParser;
+import classfile.{ClassfileParser, SymblfileParser};
 import Flags._;
 
 
@@ -80,12 +80,11 @@ abstract class SymbolLoaders {
         module.moduleClass.setInfo(errorLoader);
         owner.info.decls.enter(clazz);
         owner.info.decls.enter(module);
-	assert(clazz.linkedModule == module);
+	assert(clazz.linkedModule == module, "" + module + module.hasFlag(MODULE));
 	assert(module.linkedClass == clazz);
       }
 
       val sources  = new HashMap[String, AbstractFile];
-      val symbols  = new HashMap[String, AbstractFile];
       val classes  = new HashMap[String, AbstractFile];
       val packages = new HashMap[String, AbstractFile];
       val it = directory.list();
@@ -96,8 +95,8 @@ abstract class SymbolLoaders {
           if (filename != "META_INF" && !packages.isDefinedAt(filename)) packages(filename) = file;
         } else if (filename.endsWith(".symbl")) {
           val name = filename.substring(0, filename.length() - 6);
-          if (!symbols.isDefinedAt(name) ||
-	      symbols(name).getName().endsWith(".class")) symbols(name) = file;
+          if (!classes.isDefinedAt(name) ||
+	      classes(name).getName().endsWith(".class")) classes(name) = file;
         } else if (filename.endsWith(".class")) {
           val name = filename.substring(0, filename.length() - 6);
           if (!classes.isDefinedAt(name)) classes(name) = file;
@@ -115,7 +114,10 @@ abstract class SymbolLoaders {
       for (val Pair(name, cfile) <- classes.elements) {
         sources.get(name) match {
           case Some(sfile) if (sfile.lastModified() > cfile.lastModified()) => {}
-          case _ => enterClassAndModule(name, classfileLoader(cfile));
+          case _ =>
+            val loader = if (cfile.getName().endsWith(".symbl")) symblfileLoader(cfile)
+                         else classfileLoader(cfile);
+            enterClassAndModule(name, loader)
         }
       }
       for (val Pair(name, file) <- packages.elements) {
@@ -130,10 +132,20 @@ abstract class SymbolLoaders {
     val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
   }
 
+  private object symblfileParser extends SymblfileParser {
+    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
+  }
+
   def classfileLoader(file: AbstractFile) =
     new SymbolLoader(root => {
       classfileParser.parse(file, root);
       "class file '" + file + "'";
+    });
+
+  def symblfileLoader(file: AbstractFile) =
+    new SymbolLoader(root => {
+      symblfileParser.parse(file, root);
+      "symbl file '" + file + "'";
     });
 
   def sourcefileLoader(file: AbstractFile) =

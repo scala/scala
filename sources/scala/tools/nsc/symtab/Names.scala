@@ -254,8 +254,8 @@ class Names {
       val str = toString();
       val res = NameTransformer.encode(str);
       if (res == str) this
-      else if (isTypeName) newTypeName(str)
-      else newTermName(str)
+      else if (isTypeName) newTypeName(res)
+      else newTermName(res)
     }
 
     /** Replace $op_name by corresponding operator symbol */

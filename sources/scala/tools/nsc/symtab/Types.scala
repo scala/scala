@@ -159,8 +159,10 @@ abstract class Types: SymbolTable {
       sym.info.asSeenFrom(this, sym.owner);
 
     /** The type of `sym', seen as a member of this type. */
-    def memberType(sym: Symbol): Type =
+    def memberType(sym: Symbol): Type = {
+      assert(sym.tpe != null, sym);//debug
       sym.tpe.asSeenFrom(this, sym.owner);
+    }
 
     /** Substitute types `to' for occurrences of references to symbols `from'
      *  in this type. */
@@ -291,7 +293,7 @@ abstract class Types: SymbolTable {
       var sym: Symbol = NoSymbol;
       var e: ScopeEntry = decls.lookupEntry(name);
       while (e != null) {
-	if ((e.sym.rawflags & excludedFlags) == 0) {
+	if (!e.sym.hasFlag(excludedFlags)) {
 	  if (sym == NoSymbol) sym = e.sym
 	  else {
 	    if (alts.isEmpty) alts = List(sym);
@@ -315,11 +317,11 @@ abstract class Types: SymbolTable {
 	var bcs = baseClasses;
 	while (!bcs.isEmpty) {
 	  val decls = bcs.head.info.decls;
-	  bcs = bcs.tail;
+	  bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail;
 	  var entry = if (name == nme.ANYNAME) decls.elems else decls lookupEntry name;
 	  while (entry != null) {
 	    val sym = entry.sym;
-	    val excl = sym.rawflags & excluded;
+	    val excl = sym.getFlag(excluded);
 	    if (excl == 0) {
 	      if (name.isTypeName) {
 		return sym
@@ -407,6 +409,7 @@ abstract class Types: SymbolTable {
   /** A class for this-types of the form <sym>.this.type
    */
   case class ThisType(sym: Symbol) extends SingletonType {
+    assert(!sym.isModuleClass || sym.isRoot, sym);
     override def symbol = sym;
     override def singleDeref: Type = sym.typeOfThis;
     override def prefixString =
@@ -585,7 +588,13 @@ abstract class Types: SymbolTable {
 
     override def closure: Array[Type] =
       if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
-      else transform(sym.info.closure);
+      else {
+        val result = transform(sym.info.closure);
+        System.out.println("closure[" + this + "] = " +
+                           List.fromArray(sym.info.closure) + " => " + result);
+        result
+      }
+
 
     override def baseClasses: List[Symbol] = sym.info.baseClasses;
 
@@ -691,7 +700,7 @@ abstract class Types: SymbolTable {
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner;
     if (owner.isClass && owner != pre.symbol && !sym.isFinal) {
-      val rebind = pre.nonPrivateMember(sym.name).suchThat(.isStable);
+      val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable);
       if (rebind == NoSymbol) sym else rebind
     } else sym
   }
@@ -988,9 +997,11 @@ abstract class Types: SymbolTable {
       case _ =>
         mapOver(tp)
     }
-    private def register(sym: Symbol) =
-      if (result == NoSymbol || (result isNestedIn sym)) result = sym
-      else assert(result == sym || (sym isNestedIn result));
+    private def register(sym: Symbol) = {
+      while (result != NoSymbol && sym != result && !(sym isNestedIn result))
+        result = result.owner;
+      result
+    }
   }
 
 // Helper Methods  -------------------------------------------------------------
@@ -998,21 +1009,22 @@ abstract class Types: SymbolTable {
   /** Do tp1 and tp2 denote equivalent types? */
   def isSameType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {
     Pair(tp1, tp2) match {
-      case Pair(ErrorType, _)
-	 | Pair(WildcardType, _)
-         | Pair(_, ErrorType)
-         | Pair(_, WildcardType) =>
-	true
-      case Pair(NoType, _)
-	 | Pair(NoPrefix, _)
-         | Pair(_, NoType)
-         | Pair(_, NoPrefix) =>
-	false
+      case Pair(ErrorType, _) => true
+      case Pair(WildcardType, _) => true
+      case Pair(_, ErrorType) => true
+      case Pair(_, WildcardType) => true
+
+      case Pair(NoType, _) => false
+      case Pair(NoPrefix, _) => false
+      case Pair(_, NoType) => false
+      case Pair(_, NoPrefix) => false
+
       case Pair(ThisType(sym1), ThisType(sym2)) =>
         sym1 == sym2
       case Pair(SingleType(pre1, sym1), SingleType(pre2, sym2))
       if (sym1 == sym2 && pre1 =:= pre2) =>
         true
+      /*
       case Pair(SingleType(pre1, sym1), ThisType(sym2))
       if (sym1.isModule &&
 	  sym1.moduleClass == sym2 &&
@@ -1023,6 +1035,7 @@ abstract class Types: SymbolTable {
 	  sym2.moduleClass == sym1 &&
 	  pre2 =:= sym1.owner.thisType) =>
         true
+        */
       case Pair(ConstantType(base1, value1), ConstantType(base2, value2)) =>
 	base1 =:= base2 && value1 == value2
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
@@ -1070,22 +1083,22 @@ abstract class Types: SymbolTable {
   /** Does tp1 conform to tp2? */
   def isSubType(tp1: Type, tp2: Type): boolean = (tp1 eq tp2) || {
     Pair(tp1, tp2) match {
-      case Pair(ErrorType, _)
-         | Pair(WildcardType, _)
-         | Pair(_, ErrorType)
-         | Pair(_, WildcardType) =>
-        true
-      case Pair(NoType, _)
-         | Pair(NoPrefix, _)
-         | Pair(_, NoType)
-         | Pair(_, NoPrefix) =>
-        false
-      case Pair(ThisType(_), ThisType(_))
-         | Pair(ThisType(_), SingleType(_, _))
-         | Pair(SingleType(_, _), ThisType(_))
-         | Pair(SingleType(_, _), SingleType(_, _))
-         | Pair(ConstantType(_, _), ConstantType(_, _)) =>
-        tp1 =:= tp2
+      case Pair(ErrorType, _)    => true
+      case Pair(WildcardType, _) => true
+      case Pair(_, ErrorType)    => true
+      case Pair(_, WildcardType) => true
+
+      case Pair(NoType, _)   => false
+      case Pair(NoPrefix, _) => false
+      case Pair(_, NoType)   => false
+      case Pair(_, NoPrefix) => false
+
+      case Pair(ThisType(_), ThisType(_))               => tp1 =:= tp2
+      case Pair(ThisType(_), SingleType(_, _))          => tp1 =:= tp2
+      case Pair(SingleType(_, _), ThisType(_))          => tp1 =:= tp2
+      case Pair(SingleType(_, _), SingleType(_, _))     => tp1 =:= tp2
+      case Pair(ConstantType(_, _), ConstantType(_, _)) => tp1 =:= tp2
+
       case Pair(TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         def isSubArgs(tps1: List[Type], tps2: List[Type],
                       tparams: List[Symbol]): boolean = {
@@ -1105,9 +1118,7 @@ abstract class Types: SymbolTable {
         sym2.isAbstractType && (tp1 <:< tp2.bounds.lo)
         ||
         sym2.isClass &&
-          ({ val base = tp1 baseType sym2;
-	     System.out.println("" + tp1 + " baseType " + sym2 + " = " + base);
-	    !(base eq tp1) && (base <:< tp2) })//debug
+          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })//debug
         ||
         sym1 == AllClass
         ||
@@ -1193,6 +1204,7 @@ abstract class Types: SymbolTable {
   /** Prepend type `tp' to closure `cl' */
   private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {
     val cl1 = new Array[Type](cl.length + 1);
+    assert(!tp.isInstanceOf[CompoundType], tp);//debug
     cl1(0) = tp;
     System.arraycopy(cl, 0, cl1, 1, cl.length);
     cl1
@@ -1446,6 +1458,7 @@ abstract class Types: SymbolTable {
   /** The most deeply nested owner that contains all the symbols
    *  of thistype or prefixless typerefs/singletype occurrences in given list of types */
   private def commonOwner(tps: List[Type]): Symbol = {
+    System.out.println("computing common owner of types " + tps);//debug
     commonOwnerMap.init;
     tps mapConserve commonOwnerMap;
     commonOwnerMap.result

@@ -1,19 +1,19 @@
 object lists {
 
-  trait List[a] {
+  abstract class List[a] {
       def isEmpty: Boolean;
       def head: a;
       def tail: List[a];
       def prepend(x: a) = Cons[a](x, this);
   }
 
-  def Nil[a] = new List[a] {
+  def Nil[b] = new List[b] {
     def isEmpty: Boolean = true;
     def head = error("head of Nil");
     def tail = error("tail of Nil");
   }
 
-  def Cons[a](x: a, xs: List[a]): List[a] = new List[a] {
+  def Cons[c](x: c, xs: List[c]): List[c] = new List[c] {
     def isEmpty = false;
     def head = x;
     def tail = xs;

@@ -5,8 +5,6 @@
 // $Id$
 package scala.tools.nsc;
 
-import symtab.Flags.INITIALFLAGS;
-
 abstract class Phase(val prev: Phase) {
   val id: int = if (prev == null) 0 else prev.id + 1;
 
@@ -17,8 +15,6 @@ abstract class Phase(val prev: Phase) {
 
   def name: String;
   def description: String = name;
-
-  val flagMask: long = if (prev == null) INITIALFLAGS else prev.flagMask;
   def exactMatch: boolean = false;
 
   def run: unit;

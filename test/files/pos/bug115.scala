@@ -1,8 +1,9 @@
 class S[A](f: A => A, x: A) {
   System.out.println(f(x));
 }
-class T[A](f: A => A, y: A) extends S(x: A => f(x), y) {
+class T[B](f: B => B, y: B) extends S(x: B => f(x), y) {
 }
 object Test with Application {
-  new T[int](x: int => x * 2, 1);
+  new T[Int](x => x * 2, 1);
+  val f = new S(x: Int => x, 1);
 }

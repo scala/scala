@@ -1283,15 +1283,15 @@ abstract class Syntactic: ParserPhase {
         false
       }
 
-    /** Def    ::= val PatDef
-     *           | var VarDef
-     *           | def FunDef
-     *           | type TypeDef
+    /** Def    ::= val PatDef {`,' PatDef}
+     *           | var VarDef {`,' VatDef}
+     *           | def FunDef {`,' FunDef}
+     *           | type TypeDef {`,' TypeDef}
      *           | TmplDef
-     *  Dcl    ::= val ValDcl
-     *           | var ValDcl
-     *           | def FunDcl
-     *           | type TypeDcl
+     *  Dcl    ::= val ValDcl {`,' ValDcl}
+     *           | var ValDcl {`,' ValDcl}
+     *           | def FunDcl {`,' FunDcl}
+     *           | type TypeDcl {`,' TypeDcl}
      */
     def defOrDcl(mods: int): List[Tree] = {
       in.token match {
@@ -1300,12 +1300,12 @@ abstract class Syntactic: ParserPhase {
         case VAR =>
           varDefOrDcl(mods);
         case DEF =>
-          funDefOrDcl(mods);
+          List(funDefOrDcl(mods));
         case TYPE =>
           in.nextToken();
           List(typeDefOrDcl(mods))
         case _ =>
-          tmplDef(mods)
+          List(tmplDef(mods))
       }
     }
 
@@ -1367,43 +1367,33 @@ abstract class Syntactic: ParserPhase {
 	atPos(pos) { ValDef(newmods, name, tp.duplicate, rhs.duplicate) }
     }
 
-    /** FunDef ::= FunSig {`,' FunSig} `:' Type `=' Expr
+    /** FunDef ::= FunSig `:' Type `=' Expr
      *           | this ParamClause `=' ConstrExpr
-     *  FunDcl ::= FunSig {`,' FunSig} `:' Type
+     *  FunDcl ::= FunSig `:' Type
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      */
-    def funDefOrDcl(mods: int): List[Tree] = {
-      in.nextToken();
-      if (in.token == THIS)
-        List(
-          atPos(in.skipToken()) {
-            val vparams = List(paramClause(false));
-            accept(EQUALS);
-      	    DefDef(
-              mods, nme.CONSTRUCTOR, List(), vparams, TypeTree(), constrExpr())
-          })
-      else {
-	var newmods = mods;
-	val lhs = new ListBuffer[Tuple4[Int, Name, List[AbsTypeDef], List[List[ValDef]]]]
-	  + Tuple4(
-            in.pos, ident(), typeParamClauseOpt(false), paramClauses(false));
-        while (in.token == COMMA)
-	  lhs += Tuple4(
-            in.skipToken(), ident(), typeParamClauseOpt(false), paramClauses(false));
-	val restype = typedOpt();
-	val rhs =
-          if (restype == EmptyTree || in.token == EQUALS) equalsExpr();
-          else {
-	    newmods = newmods | Flags.DEFERRED;
-	    EmptyTree
-	  }
-	for (val Tuple4(pos, name, tparams, vparams) <- lhs.toList) yield
-          atPos(pos) {
-	    DefDef(newmods, name, tparams, vparams,
-		   restype.duplicate, rhs.duplicate)
-	  }
+    def funDefOrDcl(mods: int): Tree =
+      atPos(in.skipToken()) {
+	if (in.token == THIS) {
+	  in.nextToken();
+	  val vparams = List(paramClause(false));
+	  accept(EQUALS);
+	  DefDef(mods, nme.CONSTRUCTOR, List(), vparams, TypeTree(), constrExpr())
+	} else {
+	  var newmods = mods;
+	  val name = ident();
+	  val tparams = typeParamClauseOpt(false);
+	  val vparamss = paramClauses(false);
+	  val restype = typedOpt();
+	  val rhs =
+	    if (restype == EmptyTree || in.token == EQUALS) equalsExpr();
+	    else {
+	      newmods = newmods | Flags.DEFERRED;
+	      EmptyTree
+	    }
+	  DefDef(newmods, name, tparams, vparamss, restype, rhs)
+	}
       }
-    }
 
     /** ConstrExpr      ::=  SelfInvocation
      *                    |  `{' SelfInvocation {`;' BlockStat} `}'
@@ -1452,9 +1442,9 @@ abstract class Syntactic: ParserPhase {
       /**  TmplDef ::= ([case] class | trait) ClassDef
        *            | [case] object ObjectDef
        */
-      def tmplDef(mods: int): List[Tree] = in.token match {
+      def tmplDef(mods: int): Tree = in.token match {
         case TRAIT =>
-          classDef(mods | Flags.TRAIT | Flags.ABSTRACT);
+          classDef(mods | Flags.ABSTRACT);
         case CLASS =>
           classDef(mods);
         case CASECLASS =>
@@ -1465,48 +1455,36 @@ abstract class Syntactic: ParserPhase {
           objectDef(mods | Flags.CASE);
         case _ =>
           syntaxError("illegal start of definition", true);
-	List()
+	  EmptyTree
       }
 
-    /** ClassDef ::= ClassSig {`,' ClassSig} [`:' SimpleType] ClassTemplate
+    /** ClassDef ::= ClassSig [`:' SimpleType] ClassTemplate
      *  ClassSig ::= Id [TypeParamClause] [ClassParamClause]
      */
-    def classDef(mods: int): List[Tree] = {
-      val lhs = new ListBuffer[Tuple4[Int, Name, List[AbsTypeDef], List[List[ValDef]]]];
-      do {
-        lhs += Tuple4(in.skipToken(),
-	             ident().toTypeName,
-		     typeParamClauseOpt(true),
-		     if ((mods & Flags.TRAIT) != 0) List() else paramClauses(true))
-      } while (in.token == COMMA);
-      val thistpe = simpleTypedOpt();
-      val template = classTemplate(mods);
-      for (val Tuple4(pos, name, tparams, vparamss) <- lhs.toList) yield
-	atPos(pos) {
-	  val template1 = if ((mods & Flags.TRAIT) != 0) template
-			  else addConstructor(mods, vparamss, template);
-	  ClassDef(mods, name, tparams, thistpe.duplicate, template1.duplicate.asInstanceOf[Template])
-	}
-    }
+    def classDef(mods: int): Tree =
+      atPos(in.skipToken()) {
+	val name = ident().toTypeName;
+	val tparams = typeParamClauseOpt(true);
+	if ((mods & Flags.CASE) != 0 && in.token != LPAREN) accept(LPAREN);
+	val vparamss = paramClauses(true);
+	val thistpe = simpleTypedOpt();
+	val mods1 = if (vparamss.isEmpty && (mods & ABSTRACT) != 0) mods | Flags.TRAIT else mods;
+	val template = classTemplate(mods1, vparamss);
+	ClassDef(mods1, name, tparams, thistpe, template)
+      }
 
-    /** ObjectDef       ::= Id { , Id } ClassTemplate
+    /** ObjectDef       ::= Id ClassTemplate
      */
-    def objectDef(mods: int): List[Tree] = {
-      val lhs = new ListBuffer[Pair[Int, Name]];
-      do {
-	lhs += Pair(in.skipToken(), ident());
-      } while (in.token == COMMA);
-      val template = classTemplate(mods);
-      for (val Pair(pos, name) <- lhs.toList) yield
-	atPos(pos) {
-	  val template1 = addConstructor(mods, List(), template);
-	  ModuleDef(mods, name, template1.duplicate.asInstanceOf[Template])
-	}
-    }
+    def objectDef(mods: int): Tree =
+      atPos(in.skipToken()) {
+	val name = ident();
+	val template = classTemplate(mods, List());
+	ModuleDef(mods, name, template)
+      }
 
-    /** ClassTemplate ::= [`extends' SimpleType [`(' [Exprs] `)']] {`with' SimpleType} [TemplateBody]
+    /** ClassTemplate ::= [`extends' TemplateParents] [TemplateBody]
      */
-    def classTemplate(mods: int): Template =
+    def classTemplate(mods: int, vparamss: List[List[ValDef]]): Template =
       atPos(in.pos) {
         val parents = new ListBuffer[Tree];
         var args: List[Tree] = List();
@@ -1514,14 +1492,13 @@ abstract class Syntactic: ParserPhase {
           in.nextToken();
           parents += simpleType();
           if (in.token == LPAREN) args = argumentExprs();
-        } else {
-          parents += scalaAnyRefConstr
+          while (in.token == WITH) {
+	    in.nextToken();
+	    parents += simpleType()
+          }
         }
-	parents += scalaScalaObjectConstr;
+        parents += scalaScalaObjectConstr;
 	if ((mods & Flags.CASE)!= 0) parents += caseClassConstr;
-        while (in.token == WITH) {
-          in.nextToken(); parents += simpleType();
-        }
         val ps = parents.toList;
 	var body =
 	  if (in.token == LBRACE) {
@@ -1531,7 +1508,8 @@ abstract class Syntactic: ParserPhase {
               syntaxError("`extends' or `{' expected", true);
             List()
 	  }
-	if ((mods & Flags.TRAIT) == 0) body = makeSuperCall(args) :: body;
+	if ((mods & Flags.TRAIT) == 0)
+	  body = makeConstructorPart(mods, vparamss, args) ::: body;
 	Template(ps, body)
       }
 
@@ -1591,7 +1569,7 @@ abstract class Syntactic: ParserPhase {
                    in.token == LBRACKET ||
                    isModifier) {
           stats ++
-            joinAttributes(attributeClauses(), joinComment(tmplDef(modifiers())))
+            joinAttributes(attributeClauses(), joinComment(List(tmplDef(modifiers()))))
         } else if (in.token != SEMI) {
           syntaxError("illegal start of class or object definition", true);
         }
@@ -1696,7 +1674,7 @@ abstract class Syntactic: ParserPhase {
             stats += Literal(()).setPos(in.pos)
           }
         } else if (isLocalModifier) {
-          stats ++= tmplDef(localClassModifiers());
+          stats += tmplDef(localClassModifiers());
           accept(SEMI);
           if (in.token == RBRACE || in.token == CASE) {
             stats += Literal(()).setPos(in.pos)
