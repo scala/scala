@@ -30,8 +30,8 @@ public class TextTreePrinter implements TreePrinter {
 
     protected int indent = 0;
     protected final int INDENT_STEP = 2;
-    protected final String INDENT_STRING =
-        "                                                            ";
+    protected String INDENT_STRING =
+        "                                        ";
     protected final int MAX_INDENT = INDENT_STRING.length();
 
     public TextTreePrinter(OutputStream stream) {
@@ -81,6 +81,9 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printNewLine() {
         out.println();
+	while (indent > INDENT_STRING.length()) {
+	    INDENT_STRING = INDENT_STRING + INDENT_STRING;
+	}
         if (indent > 0)
             out.write(INDENT_STRING, 0, indent);
     }

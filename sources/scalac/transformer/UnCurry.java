@@ -105,6 +105,7 @@ public class UnCurry extends OwnerTransformer
 	    // argument to parameterless function e => ( => e)
 	    Type ftype = fn.type;
 	    Tree fn1 = transform(fn);
+	    System.out.println("transforming args of " + fn.symbol());//debug
 	    Tree[] args1 = transformArgs(tree.pos, args, ftype);
 	    switch (fn1) {
 	    case Apply(Tree fn2, Tree[] args2):
@@ -147,13 +148,21 @@ public class UnCurry extends OwnerTransformer
 	switch (methtype) {
 	case MethodType(Symbol[] params, _):
 	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
+		assert (args.length != 1 || !(args[0] instanceof Tree.Tuple));
 		args = new Tree[]{
 		    make.Tuple(pos, args).setType(params[0].type())};
 	    }
+	    Tree[] args1 = args;
 	    for (int i = 0; i < args.length; i++) {
-		args[i] = transformArg(args[i], params[i]);
+		Tree arg = args[i];
+		Tree arg1 = transform(arg, params[i]);
+		if (arg1 != arg && args1 == args) {
+		    args1 = new Tree[args.length];
+		    System.arraycopy(args, 0, args1, 0, i);
+		}
+		args1[i] = arg1;
 	    }
-	    return args;
+	    return args1;
 	case PolyType(_, Type restp):
 	    return transformArgs(pos, args, restp);
 	default:

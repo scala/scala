@@ -147,7 +147,7 @@ public class LambdaLift extends OwnerTransformer
 	 *  the owner of sym.
 	 */
 	private boolean markFree(Symbol sym, Symbol owner) {
-	    if (global.debug) global.log("mark " + sym + " free in " + owner);//debug
+	    if (global.debug) global.log("mark " + sym + " of " + sym.owner() + " free in " + owner);//debug
 	    if (owner.kind == NONE) {
 		assert propagatePhase : sym + " in " + sym.owner();
 		return false;
