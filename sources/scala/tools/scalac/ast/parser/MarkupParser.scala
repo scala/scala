@@ -18,7 +18,6 @@ import scala.collection.immutable.ListMap ;
 import scala.collection.mutable;
 import scala.xml.{Text,TextBuffer};
 
-import scala.xml.parsing.AttribValue ;
 package scala.tools.scalac.ast.parser {
 
 class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean ) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
@@ -72,24 +71,24 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *                      | `{` scalablock `}`
   */
   /*[Duplicate]*/ def xAttributes = {
-    var aMap = new mutable.HashMap[String, AttribValue[Tree]];
+    var aMap = new mutable.HashMap[String, Tree]();
     while( xml.Parsing.isNameStart( ch )) {
       val key = xName;
       xEQ;
       val delim = ch;
       val pos1 = pos;
-      val value:AttribValue[Tree] = ch match {
+      val value: /* AttribValue[*/Tree/*]*/ = ch match {
         case '"' | '\'' =>
           nextch;
           val tmp = xAttributeValue( delim );
           nextch;
-          handle.attributeCDataValue( pos1, tmp );
+          gen.mkStringLit(pos1, tmp);
         case '{' if enableEmbeddedExpressions =>
           nextch;
-          handle.attributeEmbedded(pos1, xEmbeddedExpr);
+          xEmbeddedExpr;
         case _ =>
 	  reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
-          handle.attributeCDataValue( pos1, "<syntax-error>" )
+          gen.mkStringLit(pos1, "<syntax-error>" )
       };
       // well-formedness constraint: unique attribute names
       if( aMap.contains( key ))
@@ -124,13 +123,13 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, presWS: boolean
    *  [40] STag         ::= '<' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
    */
-  /*[Duplicate]*/ def xTag: Pair[String, mutable.Map[String,AttribValue[Tree]]] = {
+  /*[Duplicate]*/ def xTag: Pair[String, mutable.Map[String, Tree]] = {
     val elemName = xName;
     xSpaceOpt;
     val aMap = if(xml.Parsing.isNameStart( ch )) {
       xAttributes;
     } else {
-      new mutable.HashMap[String,AttribValue[Tree]]();
+      new mutable.HashMap[String, Tree]();
     }
     Tuple2( elemName, aMap );
   }

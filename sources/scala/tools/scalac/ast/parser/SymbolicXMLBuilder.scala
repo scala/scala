@@ -27,17 +27,6 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
 
   import scala.tools.scalac.ast.{TreeList => myTreeList}
 
-  def attributeCDataValue(pos: int, str:String): AttribValue[Tree] = {
-    val v = gen.mkStringLit(pos, str);
-    new AttribValue[Tree] {
-      def value = v;
-    }
-  }
-  def attributeEmbedded(pos: int, v:Tree): AttribValue[Tree] = {
-    new AttribValue[Tree] {
-      def value = v;
-    }
-  }
   var isPattern:Boolean = _;
 
   val  _ArrayBuffer = Name.fromString("ArrayBuffer");
@@ -402,7 +391,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     }
 
   /** makes an element */
-  def element(pos: int, label: String, attrMap: mutable.Map[String,AttribValue[Tree]], args: mutable.Buffer[Tree]): Tree = {
+  def element(pos: int, label: String, attrMap: mutable.Map[String,Tree], args: mutable.Buffer[Tree]): Tree = {
     var setNS = new mutable.HashMap[String, Tree];
     /* DEBUG */
     val attrIt = attrMap.keys;
@@ -411,10 +400,10 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
       if( z.startsWith("xmlns") ) {
         val i = z.indexOf(':');
         if( i == -1 )
-          setNS.update("default", attrMap( z ).value );
+          setNS.update("default", attrMap( z ) );
         else {
           val zz = z.substring( i+1, z.length() );
-          setNS.update( zz, attrMap( z ).value );
+          setNS.update( zz, attrMap( z ) );
         }
         attrMap -= z;
       }
@@ -434,7 +423,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
         while( it.hasNext ) {
           val ansk = it.next;
           val Pair( ns, aname ) = qualifiedAttr( pos, namespace, ansk._1 );
-          attrs( k ) = makeAttribute( pos, ns, aname, ansk._2.value );
+          attrs( k ) = makeAttribute( pos, ns, aname, ansk._2 );
           k = k + 1;
         }
         /* */
