@@ -688,12 +688,10 @@ Design a different version \code{isGoodEnough} which does not have these problem
 
 The functional programming style encourages the construction of many
 small helper functions. In the last example, the implementation
-of \code{sqrt} made use of the helper functions
-\code{sqrtIter}, \code{improve} and
-\code{isGoodEnough}. The names of these functions 
-are relevant only for the implementation of
-\code{sqrt}. We normally do not want users of \code{sqrt} to acess these functions
-directly.
+of \code{sqrt} made use of the helper functions \code{sqrtIter},
+\code{improve} and \code{isGoodEnough}. The names of these functions
+are relevant only for the implementation of \code{sqrt}. We normally
+do not want users of \code{sqrt} to access these functions directly.
 
 We can enforce this (and avoid name-space pollution) by including
 the helper functions within the calling function itself:
@@ -1067,11 +1065,11 @@ tail-recursive one by filling in the ??'s?
 
 \begin{lstlisting}
 def sum(f: int => double)(a: int, b: int): double = {
-  def iter (a, result) = {
+  def iter(a, result) = {
     if (??) ??
-    else iter (??, ??)
+    else iter(??, ??)
   }
-  iter (??, ??)
+  iter(??, ??)
 }
 \end{lstlisting}
 
@@ -1186,8 +1184,8 @@ This expresses the elements of the algorithm as clearly as possible.
 We have seen in the previous chapter that functions are essential
 abstractions, because they permit us to introduce general methods of
 computing as explicit, named elements in our programming language.
-The current chapter has shown that these abstractions can be combined by
-higher-order functions to create further abstractions.  As
+The present chapter has shown that these abstractions can be combined
+by higher-order functions to create further abstractions.  As
 programmers, we should look out for opportunities to abstract and to
 reuse. The highest possible level of abstraction is not always the
 best, but it is important to know abstraction techniques, so that one
@@ -1200,8 +1198,8 @@ covered Scala's language elements to express expressions and types
 comprising of primitive data and functions.  The context-free syntax
 of these language elements is given below in extended Backus-Naur
 form, where `\code{|}' denotes alternatives, \code{[...]} denotes
-option (0 or 1 occurrences), and \lstinline@{...}@ denotes repetition (0 or
-more occurrences).
+option (0 or 1 occurrence), and \lstinline@{...}@ denotes repetition
+(0 or more occurrences).
 
 \subsection*{Characters}
 
@@ -1506,7 +1504,7 @@ implements the deferred members.
 
 \paragraph{Traits}
 
-Instead of ``\code{abstract class} one also often uses the keyword
+Instead of \code{abstract class} one also often uses the keyword
 \code{trait} in Scala. A trait is an abstract class with no state, no
 constructor arguments, and no side effects during object
 initialization.  Since \code{IntSet}'s fall in this category, one can
@@ -2030,7 +2028,7 @@ expression tree the way it was constructed. So,
 \begin{lstlisting}
 Sum(Sum(Number(1), Number(2)), Number(3))
 \end{lstlisting} 
-would be converted to exactly that string, whereas he default
+would be converted to exactly that string, whereas the default
 implementation in class \code{Object} would return a string consisting
 of the outermost constructor name \code{Sum} and a number.  The
 \code{equals} methods treats two case members of a case class as equal
@@ -2293,7 +2291,7 @@ lists support a much richer set of operations than arrays usually do.
 \paragraph{The List type}
 Like arrays, lists are {\em homogeneous}. That is, the elements of a
 list all have the same type.  The type of a list with elements of type
-\code{T} is written \code{List[T]}. (Compare to \code{[]T} for the
+\code{T} is written \code{List[T]}. (Compare to \code{T[]} for the
 type of arrays of type \code{T} in C or Java.). Therefore, the 
 definitions of list values above can be annotated with types as
 follows.
@@ -2366,11 +2364,11 @@ def isort(xs: List[int]): List[int] =
 \exercise Provide an implementation of the missing function
 \code{insert}.
 
-\paragraph{List patterns} In fact, \code{::} is
-defined defined as a case class in Scala's standard library. Hence, it
-is possible to decompose lists by pattern matching, using patterns
-composed from the \code{Nil} and \code{::} constructors. For instance,
-\code{isort} can be written alternatively as follows.
+\paragraph{List patterns} In fact, \code{::} is defined as a case
+class in Scala's standard library. Hence, it is possible to decompose
+lists by pattern matching, using patterns composed from the \code{Nil}
+and \code{::} constructors. For instance, \code{isort} can be written
+alternatively as follows.
 \begin{lstlisting}
 def isort(xs: List[int]): List[int] = xs match {
   case List() => List()
@@ -2630,7 +2628,7 @@ of its first operand. Therefore, the complexity of \code{reverse(xs)} is
 n + (n - 1) + ... + 1 = n(n+1)/2
 \]
 where $n$ is the length of \code{xs}. Can \code{reverse} be
-implemented more efficiently? We will see later that there is exists
+implemented more efficiently? We will see later that there exists
 another implementation which has only linear complexity.
 
 \paragraph{Example: Merge sort}
