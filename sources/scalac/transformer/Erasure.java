@@ -318,7 +318,7 @@ public class Erasure extends GenTransformer implements Modifiers {
             else
                 return coerce(convert(tree, to), pt);
         } else if (isUnboxedArrayType(tree.type())) {
-            if (!isUnboxedArrayType(pt)) return coerce(box(tree), pt);
+            if (!isUnboxedArrayType(pt)) return check(box(tree), pt);
         } else if (isUnboxedSimpleType(pt)) {
             Type from = tree.type().erasure();
             if (isUnboxedSimpleType(from))
@@ -334,6 +334,13 @@ public class Erasure extends GenTransformer implements Modifiers {
         }
         return gen.mkAsInstanceOf(tree, pt);
     }
+
+    /** Checks that the given tree is of the given type. */
+    private Tree check(Tree tree, Type pt) {
+        assert isSubType(tree.type(), pt): tree +" - "+ tree.type() +" -  "+pt;
+        return tree;
+    }
+
 
     /** Boxes the given tree. */
     private Tree box(Tree tree) {
