@@ -120,7 +120,7 @@ public class AddAccessors extends Transformer {
             // Do not go into RHS of value definitions which reference
             // case class constructor arguments, to avoid creating
             // another accessor.
-            if (Modifiers.Helper.isCase(tree.symbol().flags)) {
+            if (Modifiers.Helper.isCaseAccessor(tree.symbol().flags)) {
                 return tree;
             } else
                 return super.transform(tree);
@@ -128,6 +128,7 @@ public class AddAccessors extends Transformer {
 
         case Select(Tree qualifier, Name selector): {
             Symbol sym = tree.symbol();
+	    assert sym.kind != Kinds.NONE : tree;
             if (sym.owner().isPrimaryConstructor())
                 return gen.Apply(gen.Select(transform(qualifier), accessor(sym)),
                                  Tree.EMPTY_ARRAY);

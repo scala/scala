@@ -534,11 +534,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     /** Check that tree represents a pure definition.
      */
     void checkTrait(Tree tree, Symbol clazz) {
-	if (!TreeInfo.isPureConstr(tree) && tree.type != Type.ErrorType)
+	if (!TreeInfo.isPureConstr(tree) &&
+	    tree.type != Type.ErrorType /*&&
+					  !tree.type.symbol().isTrait()*/)
 	    error(tree.pos, " " + clazz + " may inherit only from stable trait constructors");
     }
 
-    /** Check that tree is a stable expression .
+    /** Check that tree is a stable expression .p
      */
     Tree checkStable(Tree tree) {
 	if (TreeInfo.isPureExpr(tree) || tree.type == Type.ErrorType) return tree;
@@ -918,7 +920,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			}
 			owntype = tpe.type;
 		    } else {
-			if ((mods & CASE) != 0) {
+			if ((mods & CASEACCESSOR) != 0) {
 			    //rhs was already attributed
 			} else {
 			    ((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
@@ -1644,12 +1646,32 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    return adapt(tree, mode, pt);
 		}
 	    }
-	} else if ((mode & (QUALmode | EXPRmode)) == EXPRmode) {
-	    // check that packages and static modules are not used as values
-	    Symbol sym = tree.symbol();
-	    if (sym != null && sym.kind != ERROR && !sym.isValue() && tree.isTerm()) {
-		new TextTreePrinter().print(tree).println().end();//debug
-		error(tree.pos, tree.symbol() + " is not a value");
+	} else if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
+	    Symbol fsym = TreeInfo.methSymbol(tree);
+	    if (fsym != null && fsym.isMethod() && (fsym.flags & CASE) != 0) {
+		Symbol constr = fsym.owner().info()
+		    .lookup(fsym.name.toTypeName()).constructor();
+		Template templ = make.Template(
+		    tree.pos,
+		    new Tree[]{desugarize.toConstructor(tree, constr)},
+		    Tree.EMPTY_ARRAY);
+		//templ.setSymbol(Symbol.NONE).setType(tree.type);
+		return transform(
+		    make.New(tree.pos, templ).setType(tree.type.instanceType()), mode, pt);
+	    } else if ((mode & QUALmode) == 0) {
+		// check that packages and static modules are not used as values
+		Symbol sym = tree.symbol();
+		if (sym != null && sym.kind != ERROR && !sym.isValue() && tree.isTerm()) {
+		    new TextTreePrinter().print(tree).println().end();//debug
+		    error(tree.pos, tree.symbol() + " is not a value");
+		}
+	    }
+	} else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode) {
+	    switch (tree) {
+	    case Ident(_):
+	    case Select(_, _):
+		if (!tree.type.unalias().symbol().isCaseClass())
+		    checkStable(tree);
 	    }
 	}
 
@@ -1772,7 +1794,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tpe1 = gen.mkType(rhs.pos, rhs.type);
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
-		    if ((mods & CASE) != 0) {
+		    if ((mods & CASEACCESSOR) != 0) {
 			//rhs was already attribute
 		    } else {
 			pushContext(tree, sym, context.scope);
@@ -2010,24 +2032,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    ArrayApply.toString(argtypes, "[", ",", "]"));
 
 	    case Apply(Tree fn, Tree[] args):
-		Tree tree1 = transformApply(tree, fn, args);
-
-		// handle the case of a case method call specially.
-		Symbol fsym = TreeInfo.methSymbol(tree1);
-		if ((mode & (EXPRmode | FUNmode)) == EXPRmode &&
-		    fsym != null && (fsym.flags & CASE) != 0) {
-		    Symbol constr = fsym.owner().info()
-			.lookup(fsym.name.toTypeName()).constructor();
-		    Template templ = make.Template(
-			tree1.pos,
-			new Tree[]{desugarize.toConstructor(tree1, constr)},
-			Tree.EMPTY_ARRAY);
-		    templ.setSymbol(Symbol.NONE).setType(tree1.type);
-		    return adapt(
-			make.New(tree1.pos, templ).setType(tree1.type.instanceType()), mode, pt);
-		} else {
-		    return tree1;
-		}
+		return transformApply(tree, fn, args);
 
 	    case Super(Tree tpe):
 		Symbol enclClazz = context.enclClass.owner;

@@ -105,7 +105,6 @@ public class TreeInfo {
     }
 
     /** Is tree a pure constructor?
-     *  //todo: update
      */
     public static boolean isPureConstr(Tree tree) {
 	switch (tree) {

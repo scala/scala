@@ -1340,11 +1340,9 @@ public class Parser implements Tokens {
 	}
     }
 
-    /**  TopDef ::= ([case] class) ClassDef {`,' ClassDef}
-     *            | trait TraitDef {`,' TraitDef}
+    /**  TopDef ::= ([case] class | trait) ClassDef {`,' ClassDef}
      *            | module ModuleDef {`,' ModuleDef}
-     *   LocalTopDef ::= class ClassDef {`,' ClassDef}
-     *            | trait TraitDef {`,' TraitDef}
+     *   LocalTopDef ::= class ClassDef {`,' ClassDef}//todo: keep?
      *            | module ModuleDef {`,' ModuleDef}
      */
     Tree[] topDef(int mods) {
@@ -1480,16 +1478,15 @@ public class Parser implements Tokens {
 	}
     }
 
-    /** ClassDef ::= Id [TypeParamClause] ParamClause [`:' Type] ClassTemplate
-     *  TraitDef ::= Id [TypeParamClause] [`:' Type] ClassTemplate
+    /** ClassDef ::= Id [TypeParamClause] [`:' Type] ClassTemplate
      */
     Tree classDef(int mods) {
 	int pos = s.pos;
 	Name name = ident();
 	TypeDef[] tparams = typeParamClauseOpt();
 	ValDef[][] params;
-	if ((mods & Modifiers.TRAIT) == 0) params = new ValDef[][]{paramClause()};
-	else params = new ValDef[][]{};
+	if (s.token == LPAREN) params = new ValDef[][]{paramClause()};
+	else params = Tree.ExtValDef.EMPTY_ARRAY_ARRAY;
         return make.ClassDef(pos, mods, name.toTypeName(), tparams, params,
 			     typedOpt(), classTemplate());
     }

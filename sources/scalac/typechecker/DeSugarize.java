@@ -506,7 +506,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
 	    Name valname = Name.fromString(name + "$");
 	    Tree valdef1 = copy.ValDef(
-		tree, (mods & (DEFERRED | MUTABLE | CASE | MODUL)) | PRIVATE,
+		tree, (mods & (DEFERRED | MUTABLE | CASEACCESSOR | MODUL)) | PRIVATE,
 		valname, tpe, rhs);
 	    int mods1 = mods | ACCESSOR;
 	    if ((mods1 & MUTABLE) == 0) mods1 |= STABLE;
@@ -687,7 +687,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	//System.out.println("add case for " + vparam.name);//DEBUG
 	ts.append(
 	    make.ValDef(
-		vparam.pos, CASE, vparam.name, vparam.tpe,
+		vparam.pos, CASEACCESSOR, vparam.name, vparam.tpe,
 		make.Ident(vparam.pos, vparam.name)
 		.setSymbol(vparam.symbol()).setType(vparam.symbol().type())));
     }

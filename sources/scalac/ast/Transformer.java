@@ -64,6 +64,7 @@ public class Transformer extends Phase {
     }
 
     public void apply(Unit unit) {
+	global.log("transforming " + unit);
         unit.body = transform(unit.body);
     }
 

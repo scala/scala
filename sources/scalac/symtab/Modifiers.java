@@ -43,6 +43,7 @@ public interface Modifiers {
                                     // (typically, access methods for valdefs)
 
     int CAPTURED      = 0x01000000;   // variables is accessed from nested function.
+    int CASEACCESSOR  = 0x02000000;   // function is a case constructor
 
     int ACCESSOR      = 0x04000000;   // function is an access function for a
                                       // value or variable
@@ -85,6 +86,10 @@ public interface Modifiers {
 
         public static boolean isCase(int flags) {
             return (flags & CASE)      != 0;
+        }
+
+        public static boolean isCaseAccessor(int flags) {
+            return (flags & CASEACCESSOR) != 0;
         }
 
         public static boolean isInterface(int flags) {
