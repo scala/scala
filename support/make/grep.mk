@@ -1,24 +1,24 @@
 ############################################################-*-Makefile-*-####
-# GREP - search regular expressions
+# GREP - Search Regular Expressions
 ##############################################################################
 # $Id$
 
 ##############################################################################
 # Usage
 #
-#   make grep [FLAGS=<flags>] REGEXP=<regexp> [FILES=<files>]"
+#   make grep [FLAGS=<flags>] REGEX=<regex> [FILES=<files>]"
 #
 ##############################################################################
 # Examples
 #
 # Search for "runtime" in all source files:
 #
-#   make grep REGEXP=runtime
+#   make grep REGEX=runtime
 #
 #
 # Search for "runtime" in the compiler source files:
 #
-#   make grep REGEXP=runtime FILES=\$\(COMPILER_SOURCES\)
+#   make grep REGEX=runtime FILES='$(COMPILER_SOURCES)'
 #
 ##############################################################################
 
@@ -27,19 +27,19 @@
 
 GREP_BINARY		?= $(GREP)
 GREP_FLAGS		?= $(FLAGS)
-GREP_REGEXP		?= $(REGEXP)
+GREP_REGEX		?= $(REGEX)
 GREP_FILES		?= $(if $(FILES),$(FILES),$(PROJECT_SOURCES))
 
 ##############################################################################
 # Rules
 
 grep		:
-	@if [ -z '$(GREP_REGEXP)' ]; then \
+	@if [ -z '$(GREP_REGEX)' ]; then \
 	    $(ECHO) "Usage:" \
-	       "$(MAKE) grep [FLAGS=<flags>] REGEXP=<regexp> [FILES=<files>]";\
+	       "$(MAKE) $@ [FLAGS=<flags>] REGEX=<regex> [FILES=<files>]";\
 	    exit 1; \
 	fi
-	@$(GREP_BINARY) $(GREP_FLAGS) '$(GREP_REGEXP)' $(GREP_FILES)
+	@$(GREP_BINARY) $(GREP_FLAGS) '$(GREP_REGEX)' $(GREP_FILES)
 
 .PHONY		: grep
 
