@@ -40,8 +40,9 @@ object Utility {
   /** returns a set of all namespaces appearing in a node and all its
   *   descendants, including the empty namespaces
   */
-  def collectNamespaces(node: Node): mutable.Set[String] =
+  def collectNamespaces(node: Node): mutable.Set[String] = {
     collectNamespaces(node, new mutable.HashSet[String]());
+  }
 
   /** returns a set of all namespaces appearing in a sequence of nodes
   *   and all their descendants, including the empty namespaces
@@ -58,7 +59,8 @@ object Utility {
       if( n.typeTag$ >= 0 ) {
         set += n.namespace; /* namespaces are interned, so hashing is fast */
         for( val a <- n.attributes )
-          set += a.namespace;
+          if(a.namespace.length() > 0)  // == 0 should not happen, but safer.
+            set += a.namespace;
         for( val i <- n.child )
           collect(i);
       }
@@ -75,6 +77,8 @@ object Utility {
   */
   def defaultPrefixes(rootns:String,nset:mutable.Set[String]):Map[String,String] = {
     val map = new mutable.HashMap[String,String]();
+    if( nset.contains("http://www.w3.org/XML/1998/namespace"))
+       map.update("http://www.w3.org/XML/1998/namespace","xml");
     if( nset.contains("") )
       map.update( "", "" );
     var i = 0;
@@ -144,7 +148,7 @@ object Utility {
           attr2xml( x.namespace, x.attributes.elements, pmap, sb )
         }
         if( (pmap.size != 1)||pmap.get("").isEmpty) {
-          for( val Pair(ns,pref) <- pmap.elements ) {
+          for( val Pair(ns,pref) <- pmap.elements; pref!="xml" ) {
             sb.append(' ');
             sb.append("xmlns");
             if( pref.length() > 0 ) sb.append(':');
