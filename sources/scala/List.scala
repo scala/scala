@@ -251,9 +251,9 @@ trait List[a] extends Seq[a] {
   * @return the given array <code>xs</code> filled with this list.
   * @throws error if the list is empty.
   */
-  def copyToArray(xs: Array[a], start: Int): Int = {
-    xs(start) = head;
-    tail.copyToArray(xs, start + 1)
+  def copyToArray(xs: Array[a], start: Int): Array[a] = match {
+    case Nil => xs
+    case y :: ys => xs(start) = y; ys.copyToArray(xs, start + 1)
   }
 
   /** Returns a string representation of this list. The resulting string
