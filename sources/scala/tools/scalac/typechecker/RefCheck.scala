@@ -866,7 +866,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
   private def isTrueSubClassOfCaseClass(clazz: Symbol): boolean = {
     val cl = clazz.closure();
     var i = 1; while (i < cl.length) {
-      if (cl(i).symbol().isCaseClass()) return true;
+      if (cl(i).symbol().isCaseClass() && !cl(i).symbol().isJava()) return true;
       i = i + 1
     }
     false
