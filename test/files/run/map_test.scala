@@ -23,7 +23,7 @@ object Test with Executable {
 	test_map(myMap);
     }
 
-    def test_map[This <: Map[int,String,This]](myMap:Map[int,String,This]) = {
+    def test_map(myMap:Map[int,String]) = {
 	val map1 = myMap.update(42,"The answer");
 	val map2 = map1.update(17,"A small random number");
 	val map3 = map2.update(666,"A bigger random number");
