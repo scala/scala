@@ -44,8 +44,8 @@ public class AddAccessors extends Transformer {
             accessor = new TermSymbol(sym.pos,
                                       sym.name,
                                       sym.classOwner(),
-                                      /* !!! Modifiers.STABLE
-                                      | */ Modifiers.ACCESSOR
+                                      Modifiers.STABLE
+                                      | Modifiers.ACCESSOR
                                       | Modifiers.PRIVATE);
             accessor.setType(Type.MethodType(Symbol.EMPTY_ARRAY, sym.type()));
             accessorMap.put(sym, accessor);
