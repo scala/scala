@@ -4,5 +4,7 @@
 # $Id$
 
 util/CodePrinter.java
+util/Pair.java
+util/StackedMap.java
 
 ##############################################################################
