@@ -123,7 +123,7 @@ public class ATreeFromSTree {
      /** Translates the statements. */
     private ACode[] statement(List locals, Tree[] trees, int start, int count){
         List codes = new ArrayList();
-        for (int i = start; i < count; i++) {
+        for (int i = start; i < start + count; i++) {
             ACode code = statement(locals, trees[i]);
             if (code != ACode.Void) codes.add(code);
         }
