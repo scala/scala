@@ -45,10 +45,14 @@ import scalac.util.Names;
  * - Adds all missing qualifiers.
  */
 // !!! needs to be cleaned
+// !!! create outer fields lazyly
 public class ExplicitOuterClassesPhase extends Phase {
 
     //########################################################################
     // Private Fields
+
+    /** A map from class symbols to class contexts */
+    private final Map/*<Symbol,ClassContext>*/ classes = new HashMap();
 
     /** A map from constructor symbols to type contexts */
     private final Map/*<Symbol,TypeContext>*/ contexts = new HashMap();
@@ -112,6 +116,32 @@ public class ExplicitOuterClassesPhase extends Phase {
     //########################################################################
     // Private Methods
 
+    /** Returns the class context for the given symbol. */
+    private ClassContext getClassContext(Symbol clasz, TypeContext[] outers) {
+        assert clasz.isClassType(): Debug.show(clasz);
+        ClassContext context = (ClassContext)classes.get(clasz);
+        if (context == null) {
+            context = createClassContext(clasz, outers);
+            classes.put(clasz, context);
+        }
+        return context;
+    }
+
+    /** Creates the context for the given class. */
+    private ClassContext createClassContext(Symbol clasz, TypeContext[] outers) {
+        // create outer value link
+        Symbol vfield = null;
+        if (outers.length > 0 && (outers[0].vlink != null || !outers[0].isStable)) {
+            int index = 0;
+            while (outers[index].isStable) index++;
+            int vflags = Modifiers.SYNTHETIC | Modifiers.PRIVATE | Modifiers.STABLE;
+            vfield = clasz.newField(clasz.pos, vflags, Names.OUTER(clasz));
+            vfield.setInfo(outers[index].clasz.thisType());
+            clasz.members().enter(vfield);
+        }
+        return new ClassContext(vfield);
+    }
+
     /** Returns the type context for the given symbol. */
     private TypeContext getTypeContextFor(Symbol symbol) {
         while (!symbol.isClassType() && !(symbol.isConstructor() && symbol.constructorClass().isClassType())) // !!! isClassType -> isClass ?
@@ -154,6 +184,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         // create outer value link
         Symbol vlink = null;
+        ClassContext context = null;
         if (outers.length > 0 && (outers[0].vlink != null || !outers[0].isStable)) {
             int index = 0;
             while (outers[index].isStable) index++;
@@ -161,6 +192,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             Name vname = Names.OUTER(constructor);
             vlink = constructor.newVParam(constructor.pos, vflags, vname);
             vlink.setInfo(outers[index].clasz.thisType());
+            context = getClassContext(clasz, outers);
         }
 
         // create new type parameters
@@ -182,7 +214,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             tparams.put(oldtparam, newtparam.type());
         }
 
-        return new TypeContext(clasz, outers, tlinks, vlink, constructor.typeParams(), tparams);
+        return new TypeContext(clasz, outers, tlinks, vlink, context, constructor.typeParams(), tparams);
     }
 
 
@@ -223,6 +255,21 @@ public class ExplicitOuterClassesPhase extends Phase {
     }
 
     //########################################################################
+    // Private Class - Class context
+
+    private class ClassContext {
+
+        /** The outer value field (null if all outer contexts are stable) */
+        private final Symbol vfield;
+
+        /** !!! */
+        public ClassContext(Symbol vfield) {
+            this.vfield = vfield;
+        }
+
+    }
+
+    //########################################################################
     // Private Class - Type transformer context
 
     private class TypeContext {
@@ -237,6 +284,8 @@ public class ExplicitOuterClassesPhase extends Phase {
         private final Symbol[] tlinks;
         /** The outer value link (null if all outer contexts are stable) */
         private final Symbol vlink;
+        /** !!! */
+        private final ClassContext context;
         /** The old type parameters of the context class */
         private Symbol[] oldtparams;
 
@@ -244,12 +293,13 @@ public class ExplicitOuterClassesPhase extends Phase {
         private TypeTransformer transformer; // !!! type
 
         /** !!! */
-        public TypeContext(Symbol clasz, TypeContext[] outers, Symbol[] tlinks, Symbol vlink, Symbol[] oldtparams, Map tparams) {
+        public TypeContext(Symbol clasz, TypeContext[] outers, Symbol[] tlinks, Symbol vlink, ClassContext context, Symbol[] oldtparams, Map tparams) {
             this.clasz = clasz;
             this.isStable = clasz.isPackageClass();
             this.outers = outers;
             this.tlinks = tlinks;
             this.vlink = vlink;
+            this.context = context;
             this.oldtparams = oldtparams;
             this.transformer = new TypeTransformer(this, tparams);
         }
@@ -336,9 +386,6 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** The current context */
         private Context context;
 
-        /**  True if currently in a method */
-        public boolean inMethod;
-
         /** Transforms the given tree. */
         public Tree transform(Tree tree) {
             switch (tree) {
@@ -350,6 +397,14 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Tree[] body = transform(impl.body);
                 body = Tree.concat(body, genAccessMethods(false));
                 body = Tree.concat(body, genAccessMethods(true));
+                if (context.context.vlink != null) {
+                    body = Tree.cloneArray(1, body);
+                    body[0] = gen.ValDef(
+                        context.context.context.vfield,
+                        gen.Ident(
+                            context.context.context.vfield.pos,
+                            context.context.vlink));
+                }
                 context = context.outer;
                 return gen.ClassDef(clasz, parents, impl.symbol(), body);
 
@@ -358,10 +413,9 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Context backup = context;
                 if (method.isConstructor())
                     context = context.getConstructorContext(method);
-                else
-                    inMethod = true;
+                context.method = method;
                 rhs = transform(rhs);
-                inMethod = false;
+                context.method = null;
                 context = backup;
                 return gen.DefDef(method, rhs);
 
@@ -428,7 +482,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 }
                 if (owner.isPrimaryConstructor()) {
                     Symbol clasz = owner.constructorClass();
-                    if (clasz != context.clasz || inMethod) {
+                    if (clasz != context.clasz) {
                         Tree qualifier = genOuterRef(tree.pos, clasz);
                         return gen.Select(qualifier, symbol);
                     }
@@ -490,6 +544,9 @@ public class ExplicitOuterClassesPhase extends Phase {
             for (; context != null; context = context.outer)
                 if (svper != null
                     ? context.clasz == svper
+                    : member.isPrivate()
+                    ? context.clasz == member.owner()
+                    // !!! This is incorrect without static access methods
                     : context.clasz.isSubClass(member.owner())) break;
             assert context != null: Debug.show(this.context, " - ", member);
             if (context == this.context) return member;
@@ -559,9 +616,9 @@ public class ExplicitOuterClassesPhase extends Phase {
             } else {
                 assert context.context.vlink != null:
                     Debug.show(clasz, " -- ", context.clasz);
-                Tree tree = inMethod
-                    ? gen.Select(gen.This(pos, context.clasz), context.context.vlink)
-                    : gen.Ident(pos, context.context.vlink);
+                Tree tree = context.method == null || context.method.isConstructor()
+                    ? gen.Ident(pos, context.context.vlink)
+                    : gen.Select(gen.This(pos, context.clasz), context.context.context.vfield);
                 Context context = this.context;
                 while (true) {
                     context = context.outer;
@@ -573,7 +630,9 @@ public class ExplicitOuterClassesPhase extends Phase {
                             Debug.show(clasz, " -- ", this.context.clasz);
                     }
                     if (context.clasz == clasz) return tree;
-                    tree = gen.Select(tree, context.context.vlink);
+                    Symbol access = getAccessSymbol(context.context.context.vfield, null);
+                    assert access != context.context.context.vfield: Debug.show(access) + " - " + Debug.show(this.context.clasz);
+                    tree = gen.Apply(gen.Select(tree, access));
                 }
             }
         }
@@ -595,6 +654,9 @@ public class ExplicitOuterClassesPhase extends Phase {
         public final Map/*<Symbol,Symbol>*/ supers;
 
         public final TypeContext context;
+
+        /** !!! The current method */
+        public Symbol method;
 
         /** Initializes this instance. */
         public Context(Context outer, Symbol symbol, Map selfs, Map supers){

@@ -59,6 +59,9 @@ public class AddAccessorsPhase extends Phase {
         /** The parameter to accessor method map */
         private final Map/*<Symbol,Symbol>*/ methods = new HashMap();
 
+        /** The current method */
+        private Symbol method;
+
         /** Creates an accessor field symbol for given parameter. */
         private Symbol createAccessorField(Symbol param) {
             int flags = Modifiers.PRIVATE | Modifiers.STABLE;
@@ -88,8 +91,11 @@ public class AddAccessorsPhase extends Phase {
             case ClassDef(_, _, _, _, _, Template impl): {
                 Symbol clasz = tree.symbol();
                 // transform parents and body
+                Symbol backup = this.method;
+                this.method = clasz.primaryConstructor();
                 Tree[] parents = transform(impl.parents);
                 Tree[] body = transform(impl.body);
+                this.method = backup;
                 // create accessor field & method trees
                 TreeList accessors = new TreeList();
                 Symbol[] params = clasz.valueParams();
@@ -111,12 +117,19 @@ public class AddAccessorsPhase extends Phase {
                 impl = gen.Template(clasz.pos, impl.symbol(), parents, body);
                 return gen.ClassDef(clasz, impl);
             }
-            case Select(Tree qualifier, _):
-                if (!tree.symbol().owner().isPrimaryConstructor()) break;
-                qualifier = transform(qualifier);
-                Symbol method = (Symbol)methods.get(tree.symbol());
-                if (method == null)
-                    method = createAccessorMethod(tree.symbol());
+            case DefDef(_, _, _, _, _, _):
+                Symbol backup = this.method;
+                this.method = tree.symbol();
+                tree = super.transform(tree);
+                this.method = backup;
+                return tree;
+            case Ident(_):
+                Symbol symbol = tree.symbol();
+                if (!symbol.owner().isPrimaryConstructor()) break;
+                if (symbol.owner() == this.method) break;
+                Symbol method = (Symbol)methods.get(symbol);
+                if (method == null) method = createAccessorMethod(symbol);
+                Tree qualifier = gen.This(tree.pos, method.owner());
                 return gen.Apply(gen.Select(tree.pos, qualifier, method));
             }
             return super.transform(tree);

@@ -29,8 +29,8 @@ public abstract class CompilerPhases {
     // public final PhaseDescriptor OPTIMIZE;
     public final PhaseDescriptor TRANSMATCH;
     public final PhaseDescriptor LAMBDALIFT;
-    public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDACCESSORS;
+    public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDCONSTRUCTORS;
     public final PhaseDescriptor TAILCALL;
     public final PhaseDescriptor ADDINTERFACES;
@@ -116,16 +116,16 @@ public abstract class CompilerPhases {
                 "lambda lifter",
                 "lambda lifting",
                 LAMBDALIFT_PHASE()),
-            this.EXPLICITOUTER = new PhaseDescriptor(
-                "explicitouterclasses",
-                "make links from inner classes to enclosing one explicit",
-                "made outer links explicit",
-                EXPLICITOUTER_PHASE()),
             this.ADDACCESSORS = new PhaseDescriptor(
                 "addaccessors",
                 "add accessors for constructor arguments",
                 "added accessors",
                 ADDACCESSORS_PHASE()),
+            this.EXPLICITOUTER = new PhaseDescriptor(
+                "explicitouterclasses",
+                "make links from inner classes to enclosing one explicit",
+                "made outer links explicit",
+                EXPLICITOUTER_PHASE()),
             this.ADDCONSTRUCTORS = new PhaseDescriptor(
                 "addconstructors",
                 "add explicit constructor for each class",
