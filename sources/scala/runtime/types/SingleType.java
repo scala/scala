@@ -13,7 +13,7 @@ package scala.runtime.types;
 import scala.Type;
 import scala.Array;
 
-class SingleType extends Type {
+public class SingleType extends Type {
     private final Object instance;
 
     public SingleType(Object instance) {
@@ -29,11 +29,11 @@ class SingleType extends Type {
     }
 
     public boolean isInstance(Object o) {
-        throw new Error("not implemented yet"); // TODO
+        return o == instance;
     }
 
     public boolean isSubType(Type that) {
-        throw new Error("not implemented yet"); // TODO
+        return that.isInstance(instance);
     }
 
     public boolean isSameAs(Type that) {
