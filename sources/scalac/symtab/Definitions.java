@@ -433,6 +433,14 @@ public class Definitions {
         return MATCHERROR_FAIL;
     }
 
+    private Symbol MATCHERROR_REPORT;
+
+    public Symbol MATCHERROR_REPORT() {
+        if (MATCHERROR_REPORT == null)
+            MATCHERROR_REPORT = loadTerm(MATCHERROR, Names.report);
+        return MATCHERROR_REPORT;
+    }
+
     //########################################################################
     // Public Fields - Global values
 

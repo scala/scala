@@ -139,6 +139,7 @@ public class Names {
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
     public static final Name fail = Name.fromString("fail");
+    public static final Name report = Name.fromString("report");
     public static final Name false_ = Name.fromString("false");
     public static final Name filter = Name.fromString("filter");
     public static final Name flatmap = Name.fromString("flatMap");
