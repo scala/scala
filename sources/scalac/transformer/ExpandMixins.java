@@ -36,11 +36,6 @@ public class ExpandMixins extends Transformer {
     // Mapping from (class) symbols to their definition.
     protected final Map/*<Symbol,Tree>*/ classDefs;
 
-    protected final FreshNameCreator freshNameCreator;
-
-    protected final static int PRIVATE_FINAL = Modifiers.FINAL | Modifiers.PRIVATE;
-
-    protected final AttributedTreeCopier treeCopier;
     protected final Definitions defs;
 
     protected final AddInterfacesPhase addInterfaces;
@@ -50,22 +45,6 @@ public class ExpandMixins extends Transformer {
         defs = global.definitions;
 
         classDefs = descr.classDefs;
-
-        freshNameCreator = global.freshNameCreator;
-
-        treeCopier = new AttributedTreeCopier(global, global.make) {
-                // Substitute symbols refering to this class only.
-                public boolean mustSubstituteSymbol(Tree tree) {
-                    switch (tree) {
-                    case Ident(_):
-                    case Select(This(_), _):
-                        return true;
-
-                    default:
-                        return mustCopySymbol(tree);
-                    }
-                }
-            };
 
         addInterfaces = global.PHASE.ADDINTERFACES;
     }
@@ -122,17 +101,6 @@ public class ExpandMixins extends Transformer {
         return (Tree[][])s.toArray(new Tree[s.size()][]);
     }
 
-    protected Symbol renameSymbol(Map symbolMap, Symbol oldSymbol, Symbol newOwner) {
-        Name newName = freshNameCreator.newName(oldSymbol.name);
-        if (oldSymbol.name.isTypeName()) newName = newName.toTypeName();
-        else if (oldSymbol.name.isConstrName()) newName = newName.toConstrName();
-        Symbol newSymbol = oldSymbol.cloneSymbol(newOwner);
-        newSymbol.name = newName;
-        symbolMap.put(oldSymbol, newSymbol);
-
-        return newSymbol;
-    }
-
     protected Map/*<Template,Template>*/ expansions = new HashMap();
 
     protected Template getMixinExpandedTemplate(Template tree, Symbol owner) {
@@ -169,17 +137,22 @@ public class ExpandMixins extends Transformer {
 
         // Then go over the mixins and mix them in.
         for (int bcIndex = tree.parents.length - 1; bcIndex > 0; --bcIndex) {
+            SymbolCloner symbolCloner =
+                new SymbolCloner(global.freshNameCreator);
+            SymbolSubstTypeMap typeCloner = new SymbolSubstTypeMap();
+            TreeCloner treeCloner = new TreeCloner(
+                global, symbolCloner.clones, typeCloner);
             Tree bc = tree.parents[bcIndex];
 
             final Symbol bcSym = baseTypes[bcIndex].symbol();
+            symbolCloner.owners.put(bcSym, owner);
+            symbolCloner.owners.put(bcSym.constructor(), owner);
 
             if ((bcSym.flags & Modifiers.INTERFACE) != 0)
                 continue;
 
             assert classDefs.containsKey(bcSym) : bcSym;
             ClassDef bcDef = (ClassDef)classDefs.get(bcSym);
-
-            Map symbolMap/*<Symbol,Symbol>*/ = new HashMap();
 
             // Create substitution for mixin's type parameters.
             Object[] ts = typeSubst(baseTypes[bcIndex]);
@@ -194,6 +167,7 @@ public class ExpandMixins extends Transformer {
                         return t2;
                     }
                 };
+            typeCloner.insertType(tpFormals, tpActuals);
 
             // Create private fields for mixin's value parameters.
             Tree[][] actuals = getArgsSection(bc);
@@ -212,69 +186,49 @@ public class ExpandMixins extends Transformer {
                     Tree actual = sectionA[p];
 
                     Symbol memberSymbol =
-                        renameSymbol(symbolMap, formal.symbol(), owner);
+                        symbolCloner.cloneSymbol(formal.symbol(), true);
                     Type memberType = typeMap.apply(formal.tpe.type());
                     memberSymbol.updateInfo(memberType);
 
                     Tree memberDef = gen.ValDef(memberSymbol, actual);
                     newBody.add(memberDef);
+                    typeCloner.insertSymbol(formal.symbol(), memberSymbol);
                 }
             }
 
             Template mixin = getMixinExpandedTemplate(bcDef.impl, bcSym);
             Type bcType = mixin.type();
             Tree[] mixinBody = mixin.body;
-            Set/*<Tree>*/ leftOutMembers = new HashSet();
+            Map newNames = new HashMap();
 
             // Pass 1: compute members to rename.
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
-
-                if (!member.definesSymbol())
-                    continue;
-
-                Symbol memSym = member.symbol();
-                Name memName = memSym.name;
-
-                // Check if we have to import this member. To do this,
-                // we lookup the member both in the template and in
-                // the mixin, and if the result is the same, we import
-                // the member (otherwise it means it's shadowed).
-
-                Symbol memSymT = templType.lookupNonPrivate(memName);
-                Symbol memSymM = bcType.lookupNonPrivate(memName);
-
-                if (memSymT != memSymM) {
-                    if ((memSym.flags & Modifiers.DEFERRED) != 0)
-                        leftOutMembers.add(member);
-                    else
-                        renameSymbol(symbolMap, memSym, owner);
-                }
+                if (!member.definesSymbol()) continue;
+                Symbol symbol = member.symbol();
+                Name newName = (Name)newNames.get(symbol.name);
+                boolean shadowed = newName == null &&
+                    newMembers.lookup(symbol.name) != Symbol.NONE;
+                if (shadowed && symbol.isDeferred()) continue;
+                Symbol clone = symbolCloner.cloneSymbol(symbol, shadowed);
+                if (newName != null)
+                    clone.name = newName;
+                else
+                    newNames.put(symbol.name, clone.name);
+                typeCloner.insertSymbol(symbol, clone);
+                newMembers.enterOrOverload(clone);
+                mixedInSymbols.put(symbol, clone);
             }
 
             // Pass 2: copy members
+            TreeSymbolCloner treeSymbolCloner =
+                new TreeSymbolCloner(symbolCloner);
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
-
-                if (leftOutMembers.contains(member))
-                    continue;
-
-                treeCopier.pushSymbolSubst(symbolMap);
-                treeCopier.setTypeMap(typeMap);
-                Tree newMember = treeCopier.copy(member);
-                treeCopier.clearTypeMap();
-                treeCopier.popSymbolSubst();
-
-                newBody.add(newMember);
-
-                if (newMember.definesSymbol()) {
-		    Symbol sym = newMember.symbol();
-
-                    sym.setOwner(owner);
-                    newMembers.enterOrOverload(sym);
-
-                    mixedInSymbols.put(member.symbol(), newMember.symbol());
-		}
+                if (symbolCloner.clones.containsKey(member.symbol())) {
+                    treeSymbolCloner.traverse(member);
+                    newBody.add(treeCloner.transform(member));
+                }
             }
         }
 
