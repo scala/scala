@@ -19,11 +19,11 @@ object M0 {
 
   val x = new Rational(1, 2);
   val y = new Rational(1, 3);
-  System.out.println(x.numer);
-  System.out.println(x.denom);
-  System.out.println(makeString(x));
-  System.out.println(makeString(addRational(x,y)));
-  System.out.println();
+  java.lang.System.out.println(x.numer);
+  java.lang.System.out.println(x.denom);
+  java.lang.System.out.println(makeString(x));
+  java.lang.System.out.println(makeString(addRational(x,y)));
+  java.lang.System.out.println();
 }
 
 //############################################################################
@@ -46,11 +46,11 @@ object M1 {
   val x = new Rational(1, 3);
   val y = new Rational(5, 7);
   val z = new Rational(3, 2);
-  System.out.println(x);
-  System.out.println(y);
-  System.out.println(z);
-  System.out.println(x.add(y).mul(z));
-  System.out.println();
+  java.lang.System.out.println(x);
+  java.lang.System.out.println(y);
+  java.lang.System.out.println(z);
+  java.lang.System.out.println(x.add(y).mul(z));
+  java.lang.System.out.println();
 }
 
 //############################################################################
@@ -83,11 +83,11 @@ object M2 {
   val x = new Rational(1, 3);
   val y = new Rational(5, 7);
   val z = new Rational(3, 2);
-  System.out.println(x);
-  System.out.println(y);
-  System.out.println(z);
-  System.out.println(x.add(y).mul(z));
-  System.out.println();
+  java.lang.System.out.println(x);
+  java.lang.System.out.println(y);
+  java.lang.System.out.println(z);
+  java.lang.System.out.println(x.add(y).mul(z));
+  java.lang.System.out.println();
 }
 
 //############################################################################
@@ -105,11 +105,11 @@ object M3 {
 
   val x = new Rational(66, 42);
   val y = new Rational(42, 66);
-  System.out.println(x);
-  System.out.println(y);
-  System.out.println(x.max(y));
-  System.out.println(y.max(x));
-  System.out.println();
+  java.lang.System.out.println(x);
+  java.lang.System.out.println(y);
+  java.lang.System.out.println(x.max(y));
+  java.lang.System.out.println(y.max(x));
+  java.lang.System.out.println();
 }
 
 //############################################################################
@@ -141,8 +141,8 @@ object M4 {
 
   val x = new Rational(1, 2);
   val y = new Rational(1, 3);
-  System.out.println(x * x + y * y);
-  System.out.println();
+  java.lang.System.out.println(x * x + y * y);
+  java.lang.System.out.println();
 }
 
 //############################################################################
@@ -170,11 +170,11 @@ object M5 {
   }
 
   val x = new Empty incl 1 incl 2;
-  System.out.println(x contains 0);
-  System.out.println(x contains 1);
-  System.out.println(x contains 2);
-  System.out.println(x contains 3);
-  System.out.println();
+  java.lang.System.out.println(x contains 0);
+  java.lang.System.out.println(x contains 1);
+  java.lang.System.out.println(x contains 2);
+  java.lang.System.out.println(x contains 3);
+  java.lang.System.out.println();
 }
 
 //############################################################################
