@@ -472,20 +472,10 @@ public class PatternMatcher extends PatternTool {
             } else {
                 Symbol ts = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
-//                 target.and = curHeader = mk.Header(
-//                     pat.pos,
-//                     getHeaderType(typeOf0(ts)),
-//                     make.Select(
-//                             pat.pos,
-//                             make.Ident(pat.pos, casted.name)
-//                                 .setType(typeOf(casted))
-//                                 .setSymbol(casted),
-//                             ts.name)
-//                             .setType(getHeaderType(typeOf0(ts)))
-//                             .setSymbol(ts));
+				Type accType = casted.type().memberType(ts);
                 target.and = curHeader = mk.Header(
                     pat.pos,
-                    ts.type().resultType(),
+                    accType.resultType(),
                     make.Apply(
                         pat.pos,
                         make.Select(
@@ -496,9 +486,9 @@ public class PatternMatcher extends PatternTool {
                             ts.name)
                             .setType(Type.MethodType(
                                       Symbol.EMPTY_ARRAY,
-                                      ts.type().resultType()))
+                                      accType.resultType()))
                             .setSymbol(ts),
-                        Tree.EMPTY_ARRAY).setType(ts.type().resultType().asSeenFrom(casted.type(), ts.owner())));
+                        Tree.EMPTY_ARRAY).setType(accType.resultType()));
             }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);
