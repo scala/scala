@@ -8,7 +8,9 @@
 \*                                                                      */
 package scala.xml ;
 
-abstract class NodeFactory( config:NodeFactoryConfig ) {
+abstract class NodeFactory {
+
+  val config:NodeFactoryConfig ;
 
   def makeNode( elemName:String, attribs:Map[String,String], chIter:Seq[Node] ):Node;
 

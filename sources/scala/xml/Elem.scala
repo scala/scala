@@ -31,7 +31,7 @@ case class Elem( nsCode:Int, label: String, attribute:immutable.Map[String,Strin
     this(nsCode, label, Node.NoAttributes, child:_*);
 
   def this(label: String, child: Node*) =
-    this(Node.EmptyNamespace, label, Node.NoAttributes, child:_*);
+    this(Node.EmptyNamespace.code, label, Node.NoAttributes, child:_*);
 
   /** Return a new element with updated attributes
    *
