@@ -187,8 +187,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     }
 
     Tree reportTypeError(int pos, Type.Error ex) {
+	if (global.debug) ex.printStackTrace();
 	if (ex instanceof CyclicReference) {
-	    if (global.debug) ex.printStackTrace();
 	    CyclicReference cyc = (CyclicReference) ex;
 	    if (cyc.info instanceof LazyTreeType) {
 		switch (((LazyTreeType) cyc.info).tree) {
@@ -199,7 +199,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 	    }
 	}
-	//throw ex;//DEBUG
 	return error(pos, ex.msg);
     }
 
@@ -1399,7 +1398,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (sym1.kind == NONE) {
 	    if (sym.kind == NONE) {
 		//System.out.println(name);//DEBUG
-		return error(tree.pos, "not found: " + decode(name));
+		error(tree.pos, "not found: " + decode(name));
+		return tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType);
 	    } else {
 		if (sym.owner().kind == CLASS) {
 		    pre = nextcontext.enclClass.owner.thisType();
