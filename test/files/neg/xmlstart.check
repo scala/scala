@@ -1,0 +1,4 @@
+xmlstart.scala:3: ';' expected but $XML< found.
+    val aTest = 3 <hello ; //XML start!
+                  ^
+one error found
