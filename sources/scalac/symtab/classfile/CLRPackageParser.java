@@ -92,6 +92,7 @@ public final class CLRPackageParser {
             assemrefs, args.assemrefs.value);
 	Assembly mscorlib = findAssembly("mscorlib.dll");
 	Type.initMSCORLIB(mscorlib);
+        findAssembly("vjscor.dll");
 	findAssembly("vjslib.dll");
 	findAssembly("scala.dll");
 	findAllAssemblies();
@@ -258,9 +259,8 @@ public final class CLRPackageParser {
 	"scala.Long", "scala.MatchError", "scala.Ref", "scala.ScalaObject",
 	"scala.Short", "scala.Type", "scala.Unit", "scala.runtime.NativeLoop",
 	"scala.runtime.ResultOrException", "scala.runtime.RunTime",
-	"java.lang.String", "java.lang.CharSequence",
-	"java.lang.StringBuffer", "java.lang.Byte", "java.lang.Float",
-	"java.lang.Double", "java.lang.Cloneable"
+	"java.lang.CharSequence", "java.lang.StringBuffer", "java.lang.Byte",
+        "java.lang.Float", "java.lang.Double", "java.lang.Cloneable"
     };
     private static final Set BANNED_TYPES = new HashSet();
     static {
@@ -300,7 +300,9 @@ public final class CLRPackageParser {
 	     i++)
 	{
 	    Type type = types[i];
- 	    if (BANNED_TYPES.contains(type.FullName)) {
+ 	    if (BANNED_TYPES.contains(type.FullName)
+		|| type.FullName.equals("java.lang.Object")
+		|| type.FullName.equals("java.lang.String")) {
  		continue;
  	    }
 	    int k = type.FullName.indexOf(".", nl);
