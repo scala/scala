@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -19,7 +19,7 @@ object TreeMap {
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
- class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] {
+class TreeMap[A <% Ordered[A], B] extends Tree[A, Pair[A, B]] with Map[A, B] {
 
     override type This = TreeMap[A, B];
 
