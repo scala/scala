@@ -1280,6 +1280,13 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
 // Cloning ---------------------------------------------------------------
 
+    /** Returns a shallow copy of the given array. */
+    public static Type[] cloneArray(Type[] array) {
+        Type[] clone = new Type[array.length];
+        for (int i = 0; i < clone.length; i++) clone[i] = array[i];
+        return clone;
+    }
+
     /**
      * Clones a type i.e. returns a new type where all symbols in
      * MethodTypes and PolyTypes have been cloned.
