@@ -50,9 +50,29 @@ public class AddInterfacesPhase extends Phase {
                     Debug.show(sym) + " <: " + Debug.show(oldSym);
             }
 
+            boolean ifaceReqrd = needInterface(sym);
             Type[] newParents;
-            Scope newMembers;
-            if (needInterface(sym)) {
+            Scope newMembers = new Scope();
+
+            Scope.SymbolIterator oldMembersIt =
+                new Scope.UnloadIterator(tp.members().iterator());
+            while (oldMembersIt.hasNext()) {
+                Symbol member = oldMembersIt.next();
+
+                if (ifaceReqrd
+                    && (member.isInitializer() || !memberGoesInInterface(member)))
+                    continue;
+
+                if (member.isPrivate()) {
+                    member.name = uniqueName(member);
+                    member.flags ^= Modifiers.PRIVATE;
+                } else if (member.isProtected())
+                    member.flags ^= Modifiers.PROTECTED;
+
+                newMembers.enterOrOverload(member);
+            }
+
+            if (ifaceReqrd) {
                 // Before this phase, the symbol is a class, but after
                 // it will be an interface. Its type has to be changed
                 // so that:
@@ -63,31 +83,11 @@ public class AddInterfacesPhase extends Phase {
                 //      interface are kept, and private ones are made
                 //      public and renamed.
                 sym.flags |= Modifiers.INTERFACE;
-
-                Scope.SymbolIterator oldMembersIt =
-                    new Scope.UnloadIterator(tp.members().iterator());
-                newMembers = new Scope();
-                while (oldMembersIt.hasNext()) {
-                    Symbol member = oldMembersIt.next();
-
-                    if (!memberGoesInInterface(member) || member.isInitializer())
-                        continue;
-
-                    if (member.isPrivate()) {
-                        member.name = uniqueName(member);
-                        member.flags ^= Modifiers.PRIVATE;
-                    } else if (member.isProtected())
-                        member.flags ^= Modifiers.PROTECTED;
-
-                    newMembers.enterOrOverload(member);
-                }
-
                 newParents = oldParents;
             } else {
                 // The symbol is the one of a class which doesn't need
                 // an interface. We need to fix its parents to use
                 // class symbols instead of interface symbols.
-                newMembers = tp.members();
                 newParents = new Type[oldParents.length];
                 for (int i = 0; i < oldParents.length; ++i) {
                     switch (oldParents[i]) {
