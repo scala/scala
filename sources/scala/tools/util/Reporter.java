@@ -217,7 +217,7 @@ public class Reporter {
                 if ("resume".startsWith(line)) return;
             }
         } catch (IOException e) {
-            throw Debug.abort("input read error");
+            Debug.abort("input read error");
         }
     }
 

@@ -9,6 +9,7 @@
 package scalac.symtab.classfile;
 
 import scala.tools.util.Position;
+import scala.tools.util.AbstractFileReader;
 import scalac.*;
 import scalac.atree.AConstant;
 import scalac.symtab.*;

@@ -16,10 +16,10 @@ public class SourceFile {
     // Public Constants
 
     /** Constants used for source parsing */
-    public static final char LF = '\u000A';
-    public static final char FF = '\u000C';
-    public static final char CR = '\u000D';
-    public static final char SU = '\u001A';
+    public static final char LF = 0x0A;
+    public static final char FF = 0x0C;
+    public static final char CR = 0x0D;
+    public static final char SU = 0x1A;
 
     //########################################################################
     // Private Fields

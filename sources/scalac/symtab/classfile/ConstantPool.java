@@ -11,7 +11,7 @@ package scalac.symtab.classfile;
 import scalac.atree.AConstant;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.util.AbstractFileReader;
+import scala.tools.util.AbstractFileReader;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.SourceRepresentation;

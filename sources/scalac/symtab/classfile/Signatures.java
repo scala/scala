@@ -9,10 +9,10 @@
 package scalac.symtab.classfile;
 
 import scala.tools.util.Position;
+import scala.tools.util.AbstractFileReader;
 import scalac.Global;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.util.AbstractFileReader;
 import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.SourceRepresentation;

@@ -119,7 +119,7 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
   private def checkOverride(pos: int, clazz: Symbol, other: Symbol): unit = {
 
     def abstractClassError(msg: String) = {
-      if (clazz.isAnonymousClass())
+      if (clazz.isAnonymousClass() || clazz.isModuleClass())
 	unit.error(clazz.pos, "object creation impossible, since " + msg);
       else
 	unit.error(clazz.pos,

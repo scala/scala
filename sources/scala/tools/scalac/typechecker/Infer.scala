@@ -945,20 +945,20 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     // Then define remaining type variables from argument types.
     var i = 0;
     while (i < argtypes.length) {
-      if (!isCompatible(argtypes(i).widen().subst(tparams, tvars),
+      if (!isCompatible(argtypes(i).deconst()/*!!!*/.subst(tparams, tvars),
 			formals(i).subst(tparams, tvars),
 		        regularValue)) {
 	if (needToSucceed) {
 	  if (global.explaintypes) {
 	    Type.explainSwitch = true;
-	    argtypes(i).widen().subst(tparams, tvars).isSubType(
+	    argtypes(i).deconst()/*!!!*/.subst(tparams, tvars).isSubType(
 	      formals(i).subst(tparams, tvars));
 	    Type.explainSwitch = false;
 	  }
 	  throw new NoInstance(
 	    typeErrorMsg(
 	      "argument expression's type is not compatible with formal parameter type",
-	      argtypes(i).widen().subst(tparams, tvars),
+	      argtypes(i).deconst()/*!!!*/.subst(tparams, tvars),
 	      formals(i).subst(tparams, tvars)));
 	}
 	return null;

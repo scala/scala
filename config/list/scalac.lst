@@ -148,7 +148,6 @@
 # ../../../scalac/typechecker/RefCheck.java
 # ../../../scalac/typechecker/RefCheckPhase.java
 
-../../../scalac/util/AbstractFileReader.java
 ../../../scalac/util/ArrayApply.java
 ../../../scalac/util/Debug.java
 ../../../scalac/util/EmptyPhase.java
