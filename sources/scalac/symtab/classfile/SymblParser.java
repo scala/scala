@@ -38,8 +38,8 @@ public class SymblParser extends SymbolLoader {
     // Protected Methods
 
     /** Completes the specified symbol by reading the symbol file. */
-    public String doComplete(Symbol clasz) throws IOException {
-        UnPickle.parse(global, file, clasz);
+    public String doComplete(Symbol root) throws IOException {
+        UnPickle.parse(global, file, root);
         return "symbol file '" + file + "'";
     }
 

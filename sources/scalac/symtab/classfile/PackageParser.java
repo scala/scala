@@ -21,6 +21,7 @@ import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.Type;
 import scalac.util.Name;
+import scalac.util.Debug;
 
 /**
  * This class implements a package member loader. It can be used to
@@ -47,7 +48,9 @@ public class PackageParser extends SymbolLoader {
     // Protected Methods
 
     /** Completes the package symbol by loading all its members. */
-    protected String doComplete(Symbol peckage) {
+    protected String doComplete(Symbol root) {
+        assert root.isRoot() || root.isPackage(): Debug.show(root);
+        Symbol peckage = root.isRoot() ? root : root.moduleClass();
         // collect JVM and source members
 	boolean isRoot = peckage.isRoot();
         HashMap sources = new HashMap();

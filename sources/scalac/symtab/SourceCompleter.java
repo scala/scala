@@ -37,7 +37,7 @@ public class SourceCompleter extends SymbolLoader {
     // Protected Methods
 
     /** Completes the specified symbol by reading the source file. */
-    protected String doComplete(Symbol clasz) throws IOException {
+    protected String doComplete(Symbol root) throws IOException {
         global.compileLate(global.getSourceFile(file), false);
         return "source file '" + file + "'";
     }

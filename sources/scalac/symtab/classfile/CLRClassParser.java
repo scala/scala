@@ -39,10 +39,14 @@ public class CLRClassParser extends SymbolLoader {
     private static Name[] ENUM_BIT_LOG_NAMES = new Name[]
 	{ Names.OR, Names.AND, Names.XOR };
 
-    protected String doComplete(Symbol clazz) {
-	try { return doComplete0(clazz); }
+    protected String doComplete(Symbol root) {
+        assert root.isClassType(): Debug.show(root);
+	try { return doComplete0(root); }
 	catch (Throwable e) {
-	    System.err.println("\nWhile processing " + Debug.show(clazz));
+            // !!! doComplete may throw an IOException which is then
+            // caught by SymbolLoader and reported to the user as
+            // normal error message
+	    System.err.println("\nWhile processing " + Debug.show(root));
 	    e.printStackTrace();
 	    System.exit(1);
             return null; // !!!

@@ -677,9 +677,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   def moduleSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
     val symbol = termSymbolOrNone(scope, pos, name, flags | MODUL | FINAL);
     if (symbol.isNone()) owner.newModule(pos, flags, name) else {
-      // The symbol has already been created by some symbol
-      // loader. It must be a real module (or package).
-      assert(symbol.moduleClass() != symbol, Debug.show(symbol));
       val clasz = symbol.moduleClass();
       updateFlagsAndPos(clasz, pos, clasz.flags & ~(JAVA | PACKAGE));
       val constr = clasz.primaryConstructor();

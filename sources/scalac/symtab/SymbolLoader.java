@@ -40,36 +40,37 @@ public abstract class SymbolLoader extends Type.LazyType {
     // Public Methods
 
     /**
-     * Completes the symbol. More precisely, it completes all related
-     * symbols of the main class of the symbol. It is guaranteed that
-     * after this method call all these symbols are initialized (or at
-     * least that their info does not contain this lazy type).
+     * Completes the specified symbol. More precisely, it completes
+     * all symbols related to the root symbol of the specified
+     * symbol. It is guaranteed that after this method call all these
+     * symbols are initialized (or at least that their info does no
+     * longer contain this lazy type).
      *
-     * The main class of a symbol is:
-     * - the main class of the constructed class, if it's a
+     * The root symbol of a symbol is:
+     * - the root symbol of the constructed class, if it's a
      *   constructor,
-     * - the main class of the module class, if it's a module,
-     * - the linked class, if it's a linked module class,
-     * - itself if it's a non-linked class or a non-module class,
+     * - the root symbol of the source module, if it's a module class,
+     * - the linked class, if it's a module with a linked class,
+     * - itself if it's a class or a module with no linked class,
      * - undefined otherwise.
      *
-     * The related symbols of a class include:
-     * - the class itself,
-     * - its constructor (symbol returned by allConstructors()),
-     * - its linked module, if it has one,
-     * - the related symbols of its linked module class, if it has one
+     * The symbols related to a symbol include:
+     * - the symbol itself,
+     * - its constructor (allConstructors()), if it's a class,
+     * - the symbols related to its linked module, if there is one.
+     * - the symbols related to its module class, if it's a module,
      */
     public final void complete(Symbol symbol) {
-        Symbol clasz = getMainClass(symbol);
+        Symbol root = getRootSymbol(symbol);
         try {
             long start = System.currentTimeMillis();
             Phase phase = global.currentPhase;
             global.currentPhase = global.PHASE.ANALYZER.phase();
-            String source = doComplete(clasz);
+            String source = doComplete(root);
             global.currentPhase = phase;
             long end = System.currentTimeMillis();
             global.operation("loaded " + source + " in " + (end-start) + "ms");
-            checkValidity(clasz, source);
+            checkValidity(root, source);
         } catch (IOException exception) {
 	    if (global.debug) exception.printStackTrace();
             String error = "error while loading " + symbol;
@@ -77,7 +78,7 @@ public abstract class SymbolLoader extends Type.LazyType {
             error = message != null ? error + ", " + message : "i/o " + error;
             global.error(error);
         }
-        initializeAll(clasz);
+        initializeRoot(root);
     }
 
     //########################################################################
@@ -86,56 +87,78 @@ public abstract class SymbolLoader extends Type.LazyType {
     /**
      * Performs the actual loading and returns the name of the
      * external source. It is guaranteed that the argument of this
-     * method is always a main class (see also method complete).
+     * method is always a root symbol
+     *
+     * @see complete(Symbol)
      */
-    protected abstract String doComplete(Symbol clasz) throws IOException;
+    protected abstract String doComplete(Symbol root) throws IOException;
 
     //########################################################################
     // Private Methods
 
-    /** Returns the main class of the symbol (see method complete). */
-    private Symbol getMainClass(Symbol symbol) {
+    /**
+     * Returns the root symbol of the specified symbol.
+     *
+     * @see complete(Symbol)
+     */
+    private Symbol getRootSymbol(Symbol symbol) {
         if (symbol.isConstructor())
-            return getMainClass(symbol.constructorClass());
-        if (symbol.isModule())
-            return getMainClass(symbol.moduleClass());
-        if (symbol.isModuleClass() && !symbol.linkedClass().isNone())
+            return getRootSymbol(symbol.constructorClass());
+        if (symbol.isModuleClass())
+            return getRootSymbol(symbol.sourceModule());
+        if (symbol.isModule() && symbol.linkedClass() != null)
             return symbol.linkedClass();
-        assert symbol.isClassType(): Debug.show(symbol);
+        assert symbol.isClassType() || symbol.isModule(): Debug.show(symbol);
         return symbol;
     }
 
     /**
-     * Checks that at least the class or its dual class have been
-     * initialized and signals an error otherwise.
+     * Checks that at least the specified root symbol or its linked
+     * module, if any, has been initialized and signals an error
+     * otherwise.
+     *
+     * @see complete(Symbol)
      */
-    private void checkValidity(Symbol clasz, String source) {
-        if (clasz.rawInfo() != this) return;
+    private void checkValidity(Symbol root, String source) {
+        if (root.rawInfo() != this) return;
         String what;
-        if (clasz.linkedClass().isNone()) {
-            what = "does not define " + clasz.linkedModule();
+        if (!root.isClassType() || root.linkedModule() == null) {
+            what = "does not define " + root;
         } else {
-            if (clasz.linkedModule().moduleClass().rawInfo() != this) return;
-            what = "defines neither " + clasz + " nor " + clasz.linkedModule();
+            if (root.linkedModule().moduleClass().rawInfo() != this) return;
+            what = "defines neither " + root + " nor " + root.linkedModule();
         }
         global.error(source + " " + what);
     }
 
     /**
-     * Initializes all related symbols of the class whose info is this
-     * instance (see also method complete).
+     * Initializes all symbols related to the specified root symbol
+     * and whose info is this instance.
+     *
+     * @see complete(Symbol)
      */
-    private void initializeAll(Symbol clasz) {
-        initializeOne(clasz);
-        initializeOne(clasz.allConstructors());
-        if (clasz.isModuleClass()) initializeOne(clasz.linkedModule());
-        Symbol module = clasz.linkedModule();
-        if (!module.isNone() && module.moduleClass() != clasz)
-            initializeAll(module.moduleClass());
+    private void initializeRoot(Symbol root) {
+        if (root.isClassType()) {
+            initializeClass(root);
+            if (root.linkedModule() != null)
+                initializeRoot(root.linkedModule());
+        } else {
+            initializeSymbol(root);
+            if (root.isModule()) initializeClass(root.moduleClass());
+        }
+    }
+
+    /**
+     * Initializes the specified class and its constructor if their
+     * info is this instance.
+     */
+    private void initializeClass(Symbol clasz) {
+        initializeSymbol(clasz);
+        initializeSymbol(clasz.allConstructors());
     }
 
     /** Initializes the symbol if its info is this instance. */
-    private void initializeOne(Symbol symbol) {
+    private void initializeSymbol(Symbol symbol) {
         if (symbol.rawInfo() != this) return;
         symbol.setInfo(symbol.isModule() ? Type.NoType : Type.ErrorType);
         if (symbol.isConstructor()) symbol.flags |= Modifiers.PRIVATE;

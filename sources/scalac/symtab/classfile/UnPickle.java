@@ -38,6 +38,11 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
         }
     }
 
+    /**
+     * The root symbol must be either a module or a non-module
+     * class. The unpickler initializes it. If it has a linked module
+     * or class, it will also be initialized.
+     */
     public static void parse(Global global, byte[] data, Symbol root)
         throws BadSignature
     {
@@ -55,17 +60,16 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 
     private UnPickle(Global global, byte[] data, Symbol root) {
 	this.global = global;
-        this.classroot = root.linkedClass();
-        this.moduleroot = root.linkedModule();
-        assert !classroot.isNone(): Debug.show(root);
-        assert !moduleroot.isNone(): Debug.show(root);
-	if (root != moduleroot && moduleroot.isModule()) {
+        this.classroot = root.isModule() ? root.linkedClass() : root;
+        this.moduleroot = root.isClassType() ? root.linkedModule() : root;
+        assert classroot == null || classroot.isClassType(): Debug.show(root);
+        assert moduleroot == null || moduleroot.isModule(): Debug.show(root);
+	if (root != moduleroot && moduleroot != null) {
 	    moduleroot.moduleClass().setInfo(Type.NoType);
 	}
-	if (global.debug)
-	    global.log(
-		"unpickle " + root + " " + classroot + " " + moduleroot + " " +
-		moduleroot.moduleClass() + " " + moduleroot.moduleClass().primaryConstructor());
+	if (global.debug) global.log(
+            "unpickle " + root + " " + classroot + " " + moduleroot
+            + (moduleroot != null ? " " + moduleroot.moduleClass() : ""));
 	this.bytes = data;
 	this.bp = 0;
 	index = new int[readNat()];
@@ -84,7 +88,9 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	if (global.debug) global.log("unpickled " + root + ":" + root.rawInfo());//debug
 	if (!root.isInitialized())
 	    throw new BadSignature(this, "it does not define " + root);
-	if (moduleroot.isModule() && moduleroot.moduleClass().type() == Type.NoType) {
+        // the isModule test is needed because moduleroot may become
+        // the case class factory method of classroot
+	if (moduleroot != null && moduleroot.isModule() && moduleroot.moduleClass().type() == Type.NoType) {
 	    moduleroot.setInfo(Type.NoType);
 	}
     }
@@ -259,7 +265,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
                             Symbol modulesym = readSymbolRef();
                             entries[n] = sym = modulesym.moduleClass();
                             sym.flags = flags;
-                        } else if (name == classroot.name && owner == classroot.owner()) {
+                        } else if (classroot != null && name == classroot.name && owner == classroot.owner()) {
 			    if (global.debug)
                                 global.log("overwriting " + classroot);
 			    entries[n] = sym = classroot;
@@ -275,7 +281,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 			break;
 
 		    case VALsym:
-			if (name == moduleroot.name && owner == moduleroot.owner()) {
+			if (moduleroot != null && name == moduleroot.name && owner == moduleroot.owner()) {
 			    if (global.debug)
 				global.log("overwriting " + moduleroot);
 			    entries[n] = sym = moduleroot;

@@ -376,7 +376,7 @@ public class ScalaSearch {
 	final Map subs = new HashMap();
 	foreach(root, new SymFun() { public void apply(Symbol sym) {
 	    if (sym.isClass() || sym.isModule()) {
-		Type[] parents = sym.moduleClass().parents();
+		Type[] parents = (sym.isModule() ? sym.moduleClass(): sym).parents();
 		for (int i = 0; i < parents.length; i++) {
 		    Symbol parentSymbol = parents[i].symbol();
 		    List subList = (List) subs.get(parentSymbol);

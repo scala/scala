@@ -15,6 +15,7 @@ import scala.tools.util.AbstractFile;
 import scalac.Global;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
+import scalac.util.Debug;
 
 /** This class implements a SymbolLoader that reads a class file. */
 public class ClassParser extends SymbolLoader {
@@ -38,8 +39,9 @@ public class ClassParser extends SymbolLoader {
     // Protected Methods
 
     /** Completes the specified symbol by reading the class file. */
-    protected String doComplete(Symbol clasz) throws IOException {
-        ClassfileParser.parse(global, file, clasz);
+    protected String doComplete(Symbol root) throws IOException {
+        assert root.isClassType(): Debug.show(root);
+        ClassfileParser.parse(global, file, root);
         return "class file '" + file + "'";
     }
 

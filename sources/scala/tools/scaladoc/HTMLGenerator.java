@@ -978,7 +978,7 @@ public abstract class HTMLGenerator {
 	Symbol[] owners = (Symbol[]) grouped.fst;
 	Map/*<Symbol, Symbol[]>*/ group = (Map) grouped.snd;
 	for (int i = 0; i < owners.length; i++) {
-	    if (owners[i] != sym.moduleClass()) {
+	    if (owners[i] != (sym.isModule() ? sym.moduleClass() : sym)) {
                 page.printlnOTag("table", ATTRS_MEMBER).indent();
 
 		// owner
@@ -1053,7 +1053,7 @@ public abstract class HTMLGenerator {
 	}
 
         // parents
-        Type[] parts = symbol.moduleClass().parents();
+        Type[] parts = (symbol.isModule() ? symbol.moduleClass() : symbol).parents();
         page.printlnCTag("dt");
         for (int i = 0; i < parts.length; i++) {
             page.printOTag("dd");

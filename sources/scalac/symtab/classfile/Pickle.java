@@ -34,7 +34,6 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     private HashMap index;
     private Object[] entries;
     private int ep;
-    private final HashMap modules; // maps module-classes to modules
 
     /** Write symbol table info for root.
      *  root must be either a module or a class.
@@ -43,7 +42,6 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	index = new HashMap();
 	entries = new Object[256];
 	ep = 0;
-        modules = new HashMap();
     }
 
     /** Pickle all symbols descending from `root'.
@@ -132,6 +130,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    break;
 		case CLASS:
 		    putType(sym.info());
+                    if (sym.isModuleClass()) putSymbol(sym.sourceModule());
 		    putType(sym.typeOfThis());
 		    putSymbol(sym.allConstructors());
 		    for (Scope.SymbolIterator it = sym.members().iterator();
@@ -143,12 +142,8 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    if (sym.isConstructor() &&
 			sym == sym.constructorClass().allConstructors())
 			putSymbol(sym.constructorClass());
-		    else if (sym.isModule()) {
-                        Symbol clasz = sym.moduleClass();
+		    else if (sym.isModule())
 			putSymbol(sym.moduleClass());
-                        assert !modules.containsKey(clasz): Debug.show(sym);
-                        modules.put(clasz, sym);
-                    }
 		    break;
 		default:
 		    throw new ApplicationError();
@@ -358,11 +353,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		break;
 	    case CLASS:
 		writeRef(sym.info());
-                if (sym.isModuleClass()) {
-                    Symbol module = (Symbol)modules.remove(sym);
-                    assert module != null: Debug.show(sym);
-                    writeRef(module);
-                }
+                if (sym.isModuleClass()) writeRef(sym.sourceModule());
 		writeRef(sym.typeOfThis());
 		writeRef(sym.allConstructors());
 		break;

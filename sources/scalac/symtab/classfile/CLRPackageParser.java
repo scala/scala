@@ -221,7 +221,9 @@ public class CLRPackageParser extends SymbolLoader {
     //##########################################################################
     // main functionality
 
-    protected String doComplete(Symbol p) {
+    protected String doComplete(Symbol root) {
+        assert root.isRoot() || root.isPackage(): Debug.show(root);
+        Symbol p = root.isRoot() ? root : root.moduleClass();
 	Scope members = new Scope();
 	importCLRTypes(p, members);
         p.setInfo(scalac.symtab.Type.compoundType

@@ -78,7 +78,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 // Constructors -----------------------------------------------------------
 
     /** Generic symbol constructor */
-    public Symbol(int kind, int pos, Name name, Symbol owner, int flags, int attrs) {
+    public Symbol(int kind, Symbol owner, int pos, int flags, Name name, int attrs) {
         this.kind = kind;
         this.pos = pos;
         this.name = name;
@@ -98,7 +98,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Creates a new constructor of this symbol. */
     public final Symbol newConstructor(int pos, int flags) {
         assert isType(): Debug.show(this);
-        return new TermSymbol(pos, Names.CONSTRUCTOR, owner(), flags, 0, this);
+        return new ConstructorSymbol(this, pos, flags);
     }
 
     /** Creates a new method owned by this symbol. */
@@ -184,7 +184,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Creates a new module owned by this symbol. */
     public final Symbol newModule(int pos, int flags, Name name) {
-        return newTerm(pos, flags | MODUL | FINAL | STABLE, name, 0);
+        return new ModuleSymbol(this, pos, flags, name);
     }
 
     /**
@@ -220,12 +220,12 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Creates a new type alias owned by this symbol. */
     public final Symbol newTypeAlias(int pos, int flags, Name name) {
-        return new AliasTypeSymbol(pos, name, this, flags, 0);
+        return new AliasTypeSymbol(this, pos, flags, name, 0);
     }
 
     /** Creates a new abstract type owned by this symbol. */
     public final Symbol newAbstractType(int pos, int flags, Name name) {
-        return new AbsTypeSymbol(pos, name, this, flags, 0);
+        return new AbsTypeSymbol(this, pos, flags, name, 0);
     }
 
     /** Creates a new type parameter owned by this symbol. */
@@ -276,7 +276,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     {
         assert isPackageClass(): Debug.show(this);
         assert loader != null: Debug.show(this) + " - " + name;
-        ClassSymbol clasz = new LinkedClassSymbol(name, this, flags);
+        ClassSymbol clasz = new LinkedClassSymbol(this, flags, name);
         clasz.setInfo(loader);
         clasz.allConstructors().setInfo(loader);
         clasz.linkedModule().setInfo(loader);
@@ -300,7 +300,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Creates a new term owned by this symbol. */
     final Symbol newTerm(int pos, int flags, Name name, int attrs) {
-        return new TermSymbol(pos, name, this, flags, attrs, null);
+        return new TermSymbol(this, pos, flags, name, attrs);
     }
 
     /** Creates a new package owned by this symbol. */
@@ -315,7 +315,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Creates a new class owned by this symbol. */
     final ClassSymbol newClass(int pos, int flags, Name name, int attrs) {
-        return new ClassSymbol(pos, name, this, flags, attrs);
+        return new ClassSymbol(this, pos, flags, name, attrs);
     }
 
     /** Creates a new compound class owned by this symbol. */
@@ -434,7 +434,6 @@ public abstract class Symbol implements Modifiers, Kinds {
             || info instanceof Type.OverloadedType
             || info instanceof Type.PolyType
             : "illegal type for " + this + ": " + info;
-        // !!! if (phase.prev != null) phase = phase.prev;
         infos = new TypeIntervalList(null, info, phase);
         if (info instanceof Type.LazyType) flags &= ~INITIALIZED;
         else flags |= INITIALIZED;
@@ -447,7 +446,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      * "nextInfo". It will not be transformed by the current phase.
      */
     public final Symbol updateInfo(Type info) {
-        return updateInfoAt_(info, Global.instance.currentPhase.next);
+        return updateInfoAt(info, Global.instance.currentPhase.next);
     }
 
     /**
@@ -456,7 +455,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      * which is also the first phase that will transform this
      * information.
      */
-    private final Symbol updateInfoAt_(Type info, Phase phase) {
+    private final Symbol updateInfoAt(Type info, Phase phase) {
         assert info != null: Debug.show(this);
         assert phase != null: Debug.show(this);
         assert infos != null: Debug.show(this);
@@ -889,23 +888,64 @@ public abstract class Symbol implements Modifiers, Kinds {
         return NONE;
     }
 
-    /** Get module associated with class */
-    public Symbol module() {
-        return NONE;
+    /**
+     * Returns the class linked to this module or null if there is no
+     * such class. The returned value remains the same for the whole
+     * life of the symbol.
+     *
+     * See method "linkedModule" to learn more about linked modules
+     * and classes.
+     */
+    public ClassSymbol linkedClass() {
+        assert isModule(): "not a module: " + Debug.show(this);
+        return null;
     }
 
     /**
-     * Returns the linked class if there is one and NONE otherwise.
+     * Returns the module linked to this class or null if there is no
+     * such module. The returned value remains the same for the whole
+     * life of the symbol.
+     *
+     * Linked modules and classes are intended to be used by the
+     * symbol table loader. They are needed because it is impossible
+     * to know from the name of a class or source file if it defines a
+     * class or a module. For that reason a class and a module (each
+     * linked to the other) are created for each of those files. Once
+     * the file is read the class, the module or both are initialized
+     * depending on what the file defines.
+     *
+     * It is guaranteed that if a class "c" has a linked module then
+     * "c.linkedModule().linkedClasss() == c" and that if a module "m"
+     * has a linked class then "m.linkedClasss().linkedModule() == m".
+     *
+     * The linked module of a Java class, is the module that contains
+     * the static members of that class. A Java class has always a
+     * linked module.
+     *
+     * The linked module of a Scala class, is the module with the same
+     * name declared in the same scope. A Scala class may or may not
+     * have a linked module. However, this does not depend on the
+     * presence or absence of a module with the same name but on how
+     * the class is created. Therefore a Scala class may have no
+     * linked module even though there exists a module with the same
+     * name in the same scope. A Scala class may also have a linked
+     * module even though there exists no module with the same name in
+     * the same scope. In the latter case, the linked would be
+     * initialized to NoType (which prevents accesses to it).
+     *
+     * There is a last catch about linked modules. It may happen that
+     * the symbol returned by "linkedModule" is not a module (and that
+     * method "linkedClass" works on a non-module symbol). At creation
+     * time, linked modules are always modules, but at initialization
+     * time, it may be discovered that the module is in fact a case
+     * class factory method. In that case, the module is downgraded to
+     * a non-module term. This implies that from then on calls to its
+     * method "moduleClass" will fail, but the links defined by the
+     * methods "linkedModule" and "linkedClass" remain unchanged.
      */
-    public Symbol linkedClass() {
-        return NONE;
-    }
-
-    /**
-     * Returns the linked module if there is one and NONE otherwise.
-     */
-    public Symbol linkedModule() {
-        return NONE;
+    public ModuleSymbol linkedModule() {
+        assert isClassType(): "not a class: " + Debug.show(this);
+        return null;
     }
 
     /** Get owner */
@@ -957,11 +997,50 @@ public abstract class Symbol implements Modifiers, Kinds {
             return this;
     }
 
-     /* If this is a module, return its class.
-     *  Otherwise return the symbol itself.
+    /**
+     * Returns the class of this module. This method may be invoked
+     * only on module symbols. It returns always a non-null module
+     * class symbol whose identity never changes.
      */
-    public Symbol moduleClass() {
-        return this;
+    public ModuleClassSymbol moduleClass() {
+        throw Debug.abort("not a module", this);
+    }
+
+    /**
+     * Returns the source module of this module class. This method may
+     * be invoked only on module class symbols. It returns always a
+     * non-null module symbol whose identity never changes.
+     *
+     * This method should be used with great care. If possible, one
+     * should always use moduleClass instead. For example, one should
+     * write "m.moduleClass()==c" rather than "m==c.sourceModule()".
+     *
+     * This method is problematic because the module - module-class
+     * relation is not a one - one relation. There might be more than
+     * one module that share the same module class. In that case, the
+     * source module of the module class is the module that created
+     * the class. This implies that "m.moduleClass().sourceModule()"
+     * may be different of "m". However, its is guaranteed that
+     * "c.sourceModule().moduleClass()" always returns "c".
+     *
+     * Phases like "AddInterfaces" and "ExpandMixins" are two examples
+     * of phases that create additional modules referring the same
+     * module class.
+     *
+     * Even if a module class is related to only one module, the use
+     * of this method may still be dangerous. The problem is that
+     * modules and module classes are not always as related as one
+     * might expect. For example, modules declared in a function are
+     * lifted out of the function by phase "LambdaLift". During this
+     * process, the module value is transformed into a module method
+     * with a "Ref" argument. If the "sourceModule" method is used to
+     * replace references to module classes by references to their
+     * source modules and this is done it naively with the class of a
+     * lifted module, it will yield wrong code because the the "Ref"
+     * argument will be missing.
+     */
+    public ModuleSymbol sourceModule() {
+        throw Debug.abort("not a module class", this);
     }
 
     /** if type is a (possibly lazy) overloaded type, return its alternatves
@@ -1138,7 +1217,6 @@ public abstract class Symbol implements Modifiers, Kinds {
             return infos.info;
         } else {
             TypeIntervalList infos = this.infos;
-            // !!! && infos.prev != null
             while (phase.id < infos.start.id && infos.prev != null)
                 infos = infos.prev;
             return infos.info;
@@ -1262,7 +1340,9 @@ public abstract class Symbol implements Modifiers, Kinds {
         if (global.PHASE.EXPLICITOUTER.id() < global.currentPhase.id)
             return Type.NoPrefix;
         if (isRoot()) return thisType();
-        return Type.singleType(owner.staticPrefix(), module());
+        assert sourceModule().owner() == owner(): Debug.show(this);
+        assert sourceModule().type().isObjectType(): Debug.show(this);
+        return Type.singleType(owner.staticPrefix(), sourceModule());
     }
 
     /** The type constructor of a symbol is:
@@ -1396,8 +1476,10 @@ public abstract class Symbol implements Modifiers, Kinds {
         if (owner.kind == CLASS &&
             !owner.isAnonymousClass() && !owner.isCompoundSym() ||
             Global.instance.debug)
-            return " in " +
+            return " in " + owner;
+        /*
 		(owner.isModuleClass() ? ((ClassSymbol) owner).module() : owner);
+        */
         else
             return "";
     }
@@ -1563,34 +1645,14 @@ public abstract class Symbol implements Modifiers, Kinds {
  */
 class TermSymbol extends Symbol {
 
-    /**
-     * The module class if this is a module, the constructed class if
-     * this is a constructor and null otherwise
-     */
-    private final Symbol clasz;
-
     /** Constructor */
-    TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol clasz) {
-        super(VAL, pos, name, owner, flags, attrs);
-        this.clasz = clasz == null && isModule() ? newModuleClass() : clasz;
-        if (isModule()) setType(this.clasz.typeConstructor());
+    TermSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
+        super(VAL, owner, pos, flags, name, attrs);
         assert name.isTermName(): Debug.show(this);
-        assert (isModule() || isConstructor()) == (this.clasz != null): this;
     }
 
-    /** Creates the module class associated to this module. */
-    ClassSymbol newModuleClass() {
-        return new ClassSymbol(this);
-    }
-
-    /** Is this symbol an instance initializer? */
     public boolean isInitializer() {
-        return clasz == null && name == Names.INITIALIZER;
-    }
-
-    /** Is this symbol a constructor? */
-    public boolean isConstructor() {
-        return clasz != null && name == Names.CONSTRUCTOR;
+        return name == Names.INITIALIZER;
     }
 
     public Symbol[] typeParams() {
@@ -1601,43 +1663,95 @@ class TermSymbol extends Symbol {
         return type().valueParams();
     }
 
-    public Symbol constructorClass() {
-        return isConstructor() ? clasz : this;
-    }
-
-    public Symbol moduleClass() {
-        return isModule() ? clasz : this;
-    }
-
-    protected final Symbol cloneSymbolImpl(Symbol owner, int attrs) {
-        assert !isPrimaryConstructor() : Debug.show(this);
-        return new TermSymbol(pos, name, owner, flags, attrs, clasz);
+    protected Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        return new TermSymbol(owner, pos, flags, name, attrs);
     }
 
 }
 
-final class LinkedModuleSymbol extends TermSymbol {
+/** A class for constructor symbols */
+final class ConstructorSymbol extends TermSymbol {
+
+    /** The constructed class */
+    private final Symbol clasz;
+
+    /** Initializes this instance. */
+    ConstructorSymbol(Symbol clasz, int pos, int flags) {
+        super(clasz.owner(), pos, flags, Names.CONSTRUCTOR, 0);
+        this.clasz = clasz;
+    }
+
+    public boolean isInitializer() {
+        return false;
+    }
+
+    public boolean isConstructor() {
+        return true;
+    }
+
+    public Symbol constructorClass() {
+        return clasz;
+    }
+
+    protected final Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        throw Debug.abort("illegal clone of constructor", this);
+    }
+
+}
+
+/** A class for module symbols */
+public class ModuleSymbol extends TermSymbol {
+
+    /** The module class */
+    private final ModuleClassSymbol clasz;
+
+    /** Initializes this instance. */
+    private ModuleSymbol(Symbol owner, int pos, int flags, Name name,
+        int attrs, ModuleClassSymbol clasz)
+    {
+        super(owner, pos, flags | MODUL | FINAL | STABLE, name, attrs);
+        this.clasz = clasz != null ? clasz : new ModuleClassSymbol(this);
+        setType(Type.typeRef(owner().thisType(), this.clasz,Type.EMPTY_ARRAY));
+    }
+
+    /** Initializes this instance. */
+    ModuleSymbol(Symbol owner, int pos, int flags, Name name) {
+        this(owner, pos, flags, name, 0, null);
+    }
+
+    public ModuleClassSymbol moduleClass() {
+        // test may fail because loaded modules may be downgraded to
+        // case class factory methods (see Symbol#linkedModule())
+
+        assert isModule(): Debug.show(this);
+        return clasz;
+    }
+
+    protected final Symbol cloneSymbolImpl(Symbol owner, int attrs) {
+        return new ModuleSymbol(owner, pos, flags, name, attrs, clasz);
+    }
+
+}
+
+/**
+ * A class for linked module symbols
+ *
+ * @see Symbol#linkedModule()
+ */
+final class LinkedModuleSymbol extends ModuleSymbol {
 
     /** The linked class */
     private final LinkedClassSymbol clasz;
 
-    /** Inistializes this instance. */
+    /** Initializes this instance. */
     LinkedModuleSymbol(LinkedClassSymbol clasz) {
-        super(clasz.pos, clasz.name.toTermName(), clasz.owner(),
-            (clasz.flags & JAVA) | MODUL | FINAL | STABLE, 0, null);
+        super(clasz.owner(), clasz.pos, clasz.flags & JAVA,
+            clasz.name.toTermName());
         this.clasz = clasz;
     }
 
-    final ClassSymbol newModuleClass() {
-        return new LinkedModuleClassSymbol(this);
-    }
-
-    public Symbol linkedClass() {
+    public ClassSymbol linkedClass() {
         return clasz;
-    }
-
-    public Symbol linkedModule() {
-        return this;
     }
 
 }
@@ -1658,8 +1772,8 @@ abstract class TypeSymbol extends Symbol {
     private Symbol constructor;
 
     /** Constructor */
-    public TypeSymbol(int kind, int pos, Name name, Symbol owner, int flags, int attrs) {
-        super(kind, pos, name, owner, flags, attrs);
+    public TypeSymbol(int kind, Symbol owner, int pos, int flags, Name name, int attrs) {
+        super(kind, owner, pos, flags, name, attrs);
         this.closures = new ClosureHistory();
         assert name.isTypeName() : this;
         this.constructor = newConstructor(pos, flags & CONSTRFLAGS);
@@ -1785,12 +1899,12 @@ abstract class TypeSymbol extends Symbol {
 final class AliasTypeSymbol extends TypeSymbol {
 
     /** Initializes this instance. */
-    AliasTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
-        super(ALIAS, pos, name, owner, flags, attrs);
+    AliasTypeSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
+        super(ALIAS, owner, pos, flags, name, attrs);
     }
 
     protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
-        return new AliasTypeSymbol(pos, name, owner, flags, attrs);
+        return new AliasTypeSymbol(owner, pos, flags, name, attrs);
     }
 
 }
@@ -1801,8 +1915,8 @@ final class AbsTypeSymbol extends TypeSymbol {
     private Type vubound = null;
 
     /** Initializes this instance. */
-    AbsTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
-        super(TYPE, pos, name, owner, flags, attrs);
+    AbsTypeSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
+        super(TYPE, owner, pos, flags, name, attrs);
         allConstructors().setInfo(Type.MethodType(EMPTY_ARRAY, Type.typeRef(owner.thisType(), this, Type.EMPTY_ARRAY)));
     }
 
@@ -1828,7 +1942,7 @@ final class AbsTypeSymbol extends TypeSymbol {
     }
 
     protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
-        TypeSymbol clone = new AbsTypeSymbol(pos, name, owner, flags, attrs);
+        TypeSymbol clone = new AbsTypeSymbol(owner, pos, flags, name, attrs);
         clone.setLoBound(loBound());
         clone.setVuBound(vuBound());
         return clone;
@@ -1838,9 +1952,6 @@ final class AbsTypeSymbol extends TypeSymbol {
 
 /** A class for class symbols. */
 public class ClassSymbol extends TypeSymbol {
-
-    /** The module belonging to the class or NONE. */
-    private final Symbol module;
 
     /** The given type of self, or NoType, if no explicit type was given.
      */
@@ -1855,29 +1966,12 @@ public class ClassSymbol extends TypeSymbol {
     private final Symbol rebindSym;
 
     /** Initializes this instance. */
-    private ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol module) {
-        super(CLASS, pos, name, owner, flags, attrs);
+    ClassSymbol(Symbol owner, int pos, int flags, Name name, int attrs) {
+        super(CLASS, owner, pos, flags, name, attrs);
         this.rebindSym = owner.newTypeAlias(pos, 0, Names.ALIAS(this));
         Type rebindType = new ClassAliasLazyType();
         this.rebindSym.setInfo(rebindType);
         this.rebindSym.primaryConstructor().setInfo(rebindType);
-        this.module = module;
-        assert isModuleClass() == !module.isNone(): Debug.show(this);
-    }
-
-    /** Initializes this instance. */
-    ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
-        this(pos, name, owner, flags, attrs, Symbol.NONE);
-    }
-
-    /** Initializes this instance. */
-    ClassSymbol(TermSymbol module) {
-        this(module.pos, module.name.toTypeName(), module.owner(),
-            (module.flags & MODULE2CLASSFLAGS) | MODUL | FINAL, 0,
-            module);
-        primaryConstructor().flags |= PRIVATE;
-        primaryConstructor().setInfo(
-            Type.MethodType(Symbol.EMPTY_ARRAY, typeConstructor()));
     }
 
     private class ClassAliasLazyType extends Type.LazyType {
@@ -1902,7 +1996,7 @@ public class ClassSymbol extends TypeSymbol {
         Symbol owner = Symbol.NONE;
         int flags = JAVA | PACKAGE | FINAL;
         int attrs = IS_ROOT;
-        Symbol clasz = new ClassSymbol(pos, name, owner, flags, attrs, NONE);
+        Symbol clasz = new ClassSymbol(owner, pos, flags, name, attrs);
         clasz.setInfo(global.getRootLoader());
         clasz.primaryConstructor().setInfo(
             Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
@@ -1913,12 +2007,6 @@ public class ClassSymbol extends TypeSymbol {
     /** Creates the this-type symbol associated to this class. */
     private final Symbol newThisType() {
         return newTerm(pos, SYNTHETIC, Names.this_, IS_THISTYPE);
-    }
-
-   /** Get module */
-    public Symbol module() {
-        assert !isRoot(): this + ".module()";
-        return module;
     }
 
     public Type thisType() {
@@ -1973,57 +2061,66 @@ public class ClassSymbol extends TypeSymbol {
 
     public void reset(Type completer) {
         super.reset(completer);
-        module().reset(completer);
         thisSym = this;
     }
 
-    protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
+    protected final TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
         assert !isModuleClass(): Debug.show(this);
-        ClassSymbol clone = new ClassSymbol(pos, name, owner,flags,attrs,NONE);
+        ClassSymbol clone = new ClassSymbol(owner, pos, flags, name, attrs);
         if (thisSym != this) clone.setTypeOfThis(typeOfThis());
         return clone;
     }
 
 }
 
+/**
+ * A class for module class symbols
+ *
+ * @see Symbol#sourceModule()
+ */
+public final class ModuleClassSymbol extends ClassSymbol {
+
+    /** The source module */
+    private final ModuleSymbol module;
+
+    /** Initializes this instance. */
+    ModuleClassSymbol(ModuleSymbol module) {
+        super(module.owner(), module.pos,
+            (module.flags & MODULE2CLASSFLAGS) | MODUL | FINAL,
+            module.name.toTypeName(), 0);
+        primaryConstructor().flags |= PRIVATE;
+        primaryConstructor().setInfo(
+            Type.MethodType(Symbol.EMPTY_ARRAY, typeConstructor()));
+        this.module = module;
+    }
+
+    public ModuleSymbol sourceModule() {
+        return module;
+    }
+
+}
+
+/**
+ * A class for linked class symbols
+ *
+ * @see Symbol#linkedModule()
+ */
 final class LinkedClassSymbol extends ClassSymbol {
 
     /** The linked module */
     private final LinkedModuleSymbol module;
 
     /** Initializes this instance. */
-    LinkedClassSymbol(Name name, Symbol owner, int flags) {
-        super(Position.NOPOS, name, owner, flags, 0);
+    LinkedClassSymbol(Symbol owner, int flags, Name name) {
+        super(owner, Position.NOPOS, flags, name, 0);
         this.module = new LinkedModuleSymbol(this);
     }
 
-    public Symbol linkedClass() {
-        return this;
-    }
-
-    public Symbol linkedModule() {
+    public ModuleSymbol linkedModule() {
         return module;
     }
 
 }
-
-final class LinkedModuleClassSymbol extends ClassSymbol {
-
-    /** Initializes this instance. */
-    LinkedModuleClassSymbol(LinkedModuleSymbol module) {
-        super(module);
-    }
-
-    public Symbol linkedClass() {
-        return linkedModule().linkedClass();
-    }
-
-    public Symbol linkedModule() {
-        return module();
-    }
-
-}
-
 
 /** The class of Symbol.NONE
  */
@@ -2031,7 +2128,7 @@ final class NoSymbol extends Symbol {
 
     /** Constructor */
     public NoSymbol() {
-        super(Kinds.NONE, Position.NOPOS, Names.NOSYMBOL, null, 0, 0);
+        super(Kinds.NONE, null, Position.NOPOS, 0, Names.NOSYMBOL, 0);
         super.setInfo(Type.NoType);
     }
 
