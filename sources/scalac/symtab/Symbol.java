@@ -1101,7 +1101,7 @@ public class ClassSymbol extends TypeSymbol {
      */
     private Type thistp = Type.ThisType(this);
 
-    /** Principal Constructor for module classes and classes with static members.
+    /** Principal Constructor
      */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
         super(CLASS, pos, name, owner, flags);

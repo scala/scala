@@ -27,7 +27,6 @@ public class ResultOrException {
 	this.exc = exc;
     }
 
-
     /** @meta method [?A] (def ?A) scala.runtime.ResultOrException[?A];
      */
     public static ResultOrException tryBlock(scala.Function0 block) {

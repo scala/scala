@@ -47,7 +47,7 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
 	    global.log("transform info for " + sym + sym.locationString());
 	Type tp1 = tp;
 	if (sym != Symbol.NONE) {
-	    switch (sym.type()) {
+	    switch (tp) {
 	    case MethodType(_, _):
 	    case PolyType(_, _):
 		tp1 = transform(tp, sym);

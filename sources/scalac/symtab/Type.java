@@ -585,9 +585,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    return tp;
 		} else {
 		    Scope members2 = new Scope();
-		    Type tp1 = compoundType(parts1, members2);
-		    //Type tp1 = (tp.symbol().isCompoundSym()) ? compoundType(parts1, members2)
-		    //	: compoundType(parts1, members2, tp.symbol());
+		    //Type tp1 = compoundType(parts1, members2);
+		    Type tp1 = (tp.symbol().isCompoundSym()) ? compoundType(parts1, members2)
+		    	: compoundType(parts1, members2, tp.symbol());
 		    Symbol[] syms1 = members1.elements();
 		    Symbol[] syms2 = new Symbol[syms1.length];
 		    for (int i = 0; i < syms2.length; i++) {
@@ -695,6 +695,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
         public Symbol map(Symbol sym) { return sym; }
         public Symbol[] map(Symbol[] syms) { return syms; }
         public Scope map(Scope s) { return s; }
+	public Type map(Type tp) {
+	    switch (tp) {
+	    case CompoundType(Type[] parts, Scope members):
+		if (!tp.symbol().isCompoundSym()) {
+		    Type[] parts1 = map(parts);
+		    if (parts1 == parts) return tp;
+		    else return compoundType(parts1, members, tp.symbol());
+		}
+	    }
+	    return super.map(tp);
+	}
     }
 
 // baseType and asSeenFrom --------------------------------------------------------
