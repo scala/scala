@@ -371,7 +371,7 @@ public class TreeChecker {
             return selection(tree);
 
         case Ident(_):
-            if (symbol.owner().isStaticOwner()) return true;
+            if (symbol.isStatic()) return true;
             assert vvars.contains(symbol): show(tree);
             assert symbol.owner() == currentMember(): show(tree);
             return true;
