@@ -13,16 +13,18 @@ source ${0%/*}/install.sh;
 
 function mirror-args() {
     case "$1" in
-#        --version   ) echo "install (bash script) $version"; exit 0;;
-        -C          ) args-option-value prefix "$@";;
-        -o          ) args-option-value owner  "$@";;
-        --owner=*   ) args-inline-value owner  "$@";;
-        -g          ) args-option-value group  "$@";;
-        --group=*   ) args-inline-value group  "$@";;
-        -m          ) args-option-value mode   "$@";;
-        --mode=*    ) args-inline-value mode   "$@";;
-        -*          ) args-option-unknown      "$@";;
-        *           ) args-append-array files  "$@";;
+        --version             ) echo "install (bash script) $version"; exit 0;;
+        -C                    ) args-option-value prefix "$@";;
+        -o                    ) args-option-value owner  "$@";;
+        --owner=*             ) args-inline-value owner  "$@";;
+        -g                    ) args-option-value group  "$@";;
+        --group=*             ) args-inline-value group  "$@";;
+        -m                    ) args-option-value mode   "$@";;
+        --mode=*              ) args-inline-value mode   "$@";;
+        -p                    ) preserve="true"; return 1;;
+        --preserve-timestamps ) preserve="true"; return 1;;
+        -*                    ) args-option-unknown      "$@";;
+        *                     ) args-append-array files  "$@";;
     esac;
 }
 
@@ -37,11 +39,12 @@ function mirror-files() {
 }
 
 function mirror() {
-#    local version="1.00";
+    local version='$Revision$';
     local prefix=".";
     local owner="";
     local group="";
     local mode="";
+    local preserve="false";
     local -a files;
 
     args-loop "$FUNCNAME" "$@";
@@ -65,6 +68,9 @@ function mirror() {
     fi;
     if [ -n "$mode" ]; then
         instargs[${#instargs[@]}]="--mode=$mode";
+    fi;
+    if [ "$preserve" == "true" ]; then
+        instargs[${#instargs[@]}]="--preserve-timestamps";
     fi;
 
     local dstpath="${files[$(($count-1))]}";
