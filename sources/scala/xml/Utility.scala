@@ -23,12 +23,12 @@ object Utility {
   */
   def escape( text:String ) = {
     val s = new StringBuffer();
-    for( val c <- new IterableString(text).elements ) c match {
-      case '<' => val _ = s.append("&lt;");
-      case '>' => val _ = s.append("&gt;");
-      case '&' => val _ = s.append("&amp;");
-      case '"' => val _ = s.append("&quot;");
-      case _   => val _ = s.append( c );
+    for (val c <- Iterator.fromString(text)) c match {
+      case '<' => s.append("&lt;");
+      case '>' => s.append("&gt;");
+      case '&' => s.append("&amp;");
+      case '"' => s.append("&quot;");
+      case _   => s.append( c );
     }
     s.toString();
   }

@@ -25,7 +25,7 @@ object Main {
   def main(argv:Array[String]):Unit = {
     //import scala.Seq ; // to shadow case class Seq RegExp
 
-    new IterableArray( argv ) match {
+    List.fromArray(argv, 0, argv.length) match {
       case Seq( "-d", outdir, sysID, objName ) =>
         continue( new File( outdir ), sysID, objName );
       case Seq( "-sql", sysID ) => dosql( sysID );

@@ -17,8 +17,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class MapWrapper[A, B](m: Map[A, B]) extends Map[A, B]
-                                     with scala.collection.MapWrapper[A, B](m) {
+class MapProxy[A, B](m: Map[A, B]) extends Map[A, B]
+                                   with scala.collection.MapProxy[A, B](m) {
 
     def update(key: A, value: B): Unit = m.update(key, value);
 

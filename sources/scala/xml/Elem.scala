@@ -2,7 +2,7 @@ package scala.xml ;
 
 import scala.collection.mutable.HashMap ;
 
-case class Elem( label:String, child:Node* ) extends Node with Similarity {
+case class Elem( label:String, child:Node* ) extends Node {
 
   def similar( x:Any ) = {
     x match {

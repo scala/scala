@@ -24,10 +24,8 @@ class GenJVMFromICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) e
   /* Apply this phase to all units */
   def apply(units: Array[scalac_Unit]) = {
     val generator = new GenJVMFromICode(global); // !!! super global
-    val units_it = new IterableArray(units).elements;
-
-    units_it.foreach(generator.translate);
+    Iterator.fromArray(units).foreach(generator.translate);
   }
-
 }
+
 }

@@ -17,7 +17,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class MapWrapper[A, +B](map: Map[A, B]) extends Map[A, B] {
+class MapProxy[A, +B](map: Map[A, B]) extends Map[A, B] {
 
     def size: Int = map.size;
 

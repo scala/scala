@@ -28,7 +28,7 @@ class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePri
     val phase = global.currentPhase;
 
     printer.println("[[ICode at "+phase+" (after "+phase.prev+")]]");
-    val units_it = new IterableArray(global.units).elements;
+    val units_it = Iterator.fromArray(global.units);
     units_it.foreach(printAnUnit);
 
     this;
@@ -37,11 +37,11 @@ class ICodePrinter (printer: CodePrinter) extends ATreePrinter (printer: CodePri
   /* This method print a single unit. */
   def printAnUnit(unit: Unit) = { // ??? Private
     printer.println ("// Scala source: "+unit.source);
-    val classes_it = new IterableArray(unit.repository.classes()).elements;
+    val classes_it = Iterator.fromArray(unit.repository.classes());
     classes_it.foreach((c: AClass) => {
       printer.println ("");
       printer.println ("// ICode for class <"+c.symbol().name+">");
-      val methods_it = new IterableArray(c.methods()).elements;
+      val methods_it = Iterator.fromArray(c.methods());
       methods_it.foreach((m: AMethod) => {
 	val icode : ICode = m.icode.asInstanceOf[ICode];
 	printer.println ("// ::"+m.symbol().name);

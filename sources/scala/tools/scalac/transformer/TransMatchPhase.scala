@@ -21,7 +21,7 @@ class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
 
     /** Applies this phase to the given compilation units. */
     def apply( units:Array[Unit] ):unit =
-      for( val u <- new IterableArray( units ).elements ) {
+      for(val u <- units) {
         new TransMatch(global).apply( u );
       }
 

@@ -16,7 +16,7 @@ class Scanner with Tokens {
 
   /** initializes the scanner on input s */
   def initScanner( s:String ) = {
-    it = new IterableString( s ).elements ;
+    it = Iterator.fromString(s);
     next;
     token = 0;
     nextToken;

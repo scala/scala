@@ -201,7 +201,7 @@ class ICode(label: String, global: scalac_Global) {
       }
 
       case ACode$Apply(AFunction$Method(_,sym,AInvokeStyle.New),_,vargs) => {
-	val vargs_it = new IterableArray(vargs).elements;
+	val vargs_it = Iterator.fromArray(vargs);
 	// !!! Depend the backend in use
 	ctx.emit(NEW(sym.owner()));
 	ctx.emit(DUP(sym.owner().getType()));
@@ -211,7 +211,7 @@ class ICode(label: String, global: scalac_Global) {
       }
 
       case ACode$Apply(AFunction$Method(obj,sym,style),_,vargs) => {
-	val vargs_it = new IterableArray(vargs).elements;
+	val vargs_it = Iterator.fromArray(vargs);
 	var ctx1 = ctx;
 	style match {
 	  case AInvokeStyle.StaticClass =>
@@ -224,7 +224,7 @@ class ICode(label: String, global: scalac_Global) {
       }
 
       case ACode$Apply(AFunction$Primitive(p),_,vargs) => {
-	val vargs_it = new IterableArray(vargs).elements;
+	val vargs_it = Iterator.fromArray(vargs);
 	var ctx1 = ctx;
 
 	vargs_it.foreach((varg: ACode) => ctx1 = gen(varg, ctx1));
@@ -283,7 +283,7 @@ class ICode(label: String, global: scalac_Global) {
       }
 
       case ACode$Block(_,statements,value) => {
-	val statements_it = new IterableArray(statements).elements;
+	val statements_it = Iterator.fromArray(statements);
 	var ctx1 = ctx;
 	statements_it.foreach((st: ACode) => ctx1 = gen(st, ctx1));
 	ctx1 = gen(value, ctx1);
@@ -300,13 +300,13 @@ class ICode(label: String, global: scalac_Global) {
 
 	aTreeLabels += label -> loopBlock;
 
-	loopBlock.substituteVars = List.fromIterator((new IterableArray(locals)).elements);
+	loopBlock.substituteVars = List.fromIterator(Iterator.fromArray(locals));
 	gen(value, ctx1);
       }
 
       case ACode$Goto(label,vargs) => {
 
-	val vargs_it = new IterableArray(vargs).elements;
+	val vargs_it = Iterator.fromArray(vargs);
 	global.log("Current label mapping: "+aTreeLabels.keys.foreach((s: Symbol) => global.log(s.toString())));
 	global.log("Looking for sym: "+label);
 	val gotoBlock = aTreeLabels(label);

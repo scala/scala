@@ -60,7 +60,7 @@ package scala.tools.scala4ant {
     def inferScalaPath( paths:Array[String] ) = {
       //Console.println("inferScalaPath");
       var x:List[String] = Nil;
-      for( val p <- new IterableArray( paths ).elements ) {
+      for (val p <- paths) {
         val z = p.lastIndexOf("lib/scala.jar");
         if( z > -1 ) {
           val p1 = new StringBuffer( p.substring( 0, z ) );

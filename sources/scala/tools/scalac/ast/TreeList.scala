@@ -72,7 +72,7 @@ final class TreeList(ts: Array[Tree]) {
   }
 
   override def toString() = {
-    new IterableArray(this.toArray()).toList.toString();
+    Iterator.fromArray(this.toArray()).toList.toString();
   }
 }
 }

@@ -17,7 +17,7 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class SetWrapper[A](set: Set[A]) extends Set[A] {
+class SetProxy[A](set: Set[A]) extends Set[A] {
 
     def size: Int = set.size;
 

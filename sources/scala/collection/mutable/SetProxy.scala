@@ -17,8 +17,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class SetWrapper[A](set: Set[A]) extends Set[A]
-                                 with scala.collection.SetWrapper[A](set) {
+class SetProxy[A](set: Set[A]) extends Set[A]
+                               with scala.collection.SetProxy[A](set) {
 
     def +=(elem: A): Unit = set.+=(elem);
 

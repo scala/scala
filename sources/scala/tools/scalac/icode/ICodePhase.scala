@@ -31,7 +31,7 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
 
   /* Apply the icode phase to the given units */
   override def apply(units: Array[scalac_Unit]) = {
-    val units_it = new IterableArray(units).elements;
+    val units_it = Iterator.fromArray(units);
 
     units_it.foreach(translate);
   }
@@ -48,7 +48,7 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
     def genClass(c: AClass) : unit = {
       val nestedClasses_it = Iterator.fromArray(c.classes());
       nestedClasses_it.foreach(genClass);
-      val methods_it = new IterableArray(c.methods()).elements;
+      val methods_it = Iterator.fromArray(c.methods());
       methods_it.foreach((m: AMethod) => {
 	val label : String = m.symbol().name.toString();
 
@@ -60,7 +60,7 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
 
       });
     }
-    val classes_it = new IterableArray(u.repository.classes()).elements;
+    val classes_it = Iterator.fromArray(u.repository.classes());
     classes_it.foreach(genClass);
   }
 

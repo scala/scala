@@ -56,7 +56,7 @@ class GenJVMFromICode(global: scalac_Global) {
     global.log("Jvm.translate() called");
     currentSrcFileName = unit.source.toString();
     // 1. ##### Generate the structure
-    val classes_it = new IterableArray(unit.repository.classes()).elements;
+    val classes_it = Iterator.fromArray(unit.repository.classes());
     classes_it.foreach(genClass(null));
     dumpStructure;
     // 2. ##### Generate the code & Save the classes
@@ -98,10 +98,10 @@ class GenJVMFromICode(global: scalac_Global) {
 		      (if (aClass.isInterface()) JAccessFlags.ACC_INTERFACE else 0);
 
     global.log("genClass: parents(): ");
-    val prnt_it = new IterableArray(aClass.parents()).elements; // debug
+    val prnt_it = Iterator.fromArray(aClass.parents()); // debug
     prnt_it.foreach((t: Type) => {global.log("  "+t.toString())}); // debug
 
-    val baseTps = new IterableArray(aClass.parents()).elements;
+    val baseTps = Iterator.fromArray(aClass.parents());
     assert (baseTps.hasNext, "Jvm::genClass: Invalid number of parents. "+Debug.show(sym));
 
     var superClassName : String = null;
@@ -138,15 +138,15 @@ class GenJVMFromICode(global: scalac_Global) {
     //classFields = new HashMap[Symbol, JField]();
 
     // 2.1 ##### Access the inner classes
-      val classes_it = new IterableArray(aClass.classes()).elements;
+      val classes_it = Iterator.fromArray(aClass.classes());
     classes_it.foreach(genClass(jvmClass));
 
     // 2.2. ##### Add fields of the class
-       val fields_it = new IterableArray(aClass.fields()).elements;
+       val fields_it = Iterator.fromArray(aClass.fields());
     fields_it.foreach(genField(jvmClass));
 
     // 2.3 ##### Setup the stucture, records methods
-    val methods_it = new IterableArray(aClass.methods()).elements;
+    val methods_it = Iterator.fromArray(aClass.methods());
     global.log("  number of methods: "+aClass.methods().length); // Debug
     methods_it.foreach(genMethod(jvmClass));
   }
@@ -182,7 +182,7 @@ class GenJVMFromICode(global: scalac_Global) {
     var argTypes_l : List[JType] = Nil;
     var argNames_l : List[String] = Nil;
 
-    val vparams_it = new IterableArray(aMethod.vparams()).elements;
+    val vparams_it = Iterator.fromArray(aMethod.vparams());
     vparams_it.foreach((sym: Symbol) => {
       argTypes_l = typeStoJ(sym.info())::argTypes_l;
       argNames_l = sym.name.toString()::argNames_l;
@@ -491,7 +491,7 @@ class GenJVMFromICode(global: scalac_Global) {
 	tagsAndLabels.foreach ((p: Pair[Array[Int], IBasicBlock]) => {
 	  val tags = p._1;
 	  val label = jvmMethod.labels(p._2);
-	  val tag_it = new IterableArray(tags).elements;
+	  val tag_it = Iterator.fromArray(tags);
 	  tag_it.foreach((tag: int) => {
 	    keys_l = tag::keys_l;
 	    branches_l = label::branches_l;
@@ -687,7 +687,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
     case Type$MethodType(vparams: Array[Symbol], result: Type) => {
       val argTypes_a = new Array[JType](vparams.length);
-      val vparams_it = new IterableArray(vparams).elements;
+      val vparams_it = Iterator.fromArray(vparams);
       //val argTypes_it = vparams_it.map((s: Symbol) => typeStoJ(s.info()));
       var argTypes_l : List[JType] = Nil;
       vparams_it.foreach((s: Symbol) => argTypes_l = typeStoJ(s.info())::argTypes_l);
