@@ -68,7 +68,6 @@ public abstract class Phase {
     /** Prints all compilation units. */
     public void print(Global global) {
         TreePrinter printer = global.printer;
-        printer.beginSection(1, "Trees after phase " + this);
         for (int i = 0; i < global.units.length; i++)
             printer.print(global.units[i]);
     }

@@ -293,6 +293,7 @@ public class Global {
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
             if (currentPhase.descriptor.hasPrintFlag()) {
+                printer.beginSection(1, "Trees after phase " + currentPhase);
                 // go to next phase to print symbols with their new type
                 boolean next = currentPhase.next != null;
                 if (next) currentPhase = currentPhase.next;
@@ -328,6 +329,7 @@ public class Global {
             currentPhase.apply(new Unit[] {unit}); // !!! pb with Analyzer
             stop(currentPhase.descriptor.taskDescription());
             if (currentPhase.descriptor.hasPrintFlag()) {
+                printer.beginSection(1, "Trees after phase " + currentPhase);
                 // go to next phase to print symbols with their new type
                 boolean next = currentPhase.next != null;
                 if (next) currentPhase = currentPhase.next;
