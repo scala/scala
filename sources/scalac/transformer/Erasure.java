@@ -375,6 +375,12 @@ public class Erasure extends Transformer implements Modifiers {
 	    Tree elsep1 = (elsep == Tree.Empty) ? elsep : transform(elsep, owntype);
 	    return copy.If(tree, cond1, thenp1, elsep1).setType(owntype);
 
+        case Switch(Tree test, int[] tags, Tree[] bodies, Tree otherwise):
+	    test = transform(test, Type.unboxedType(TypeTags.INT));
+            bodies = transform(bodies, owntype);
+            otherwise = transform(otherwise, owntype);
+            return copy.Switch(tree, test, tags, bodies, otherwise).setType(owntype);
+
         case New(Template templ):
             if (tree.type.symbol() == definitions.UNIT_CLASS)
                 // !!! return Tree.Literal(UNIT, null).setType(owntype);
@@ -522,7 +528,6 @@ public class Erasure extends Transformer implements Modifiers {
         case This(_):
         case Literal(_):
         case TypeTerm():
-        case Switch(_, _, _, _):  // MZ: this this right?
 	    return super.transform(tree).setType(owntype);
 
         case Bad():
@@ -605,6 +610,18 @@ public class Erasure extends Transformer implements Modifiers {
      */
     Tree transform(Tree expr, Type pt) {
 	return coerce(transform(expr), pt);
+    }
+    Tree[] transform(Tree[] exprs, Type pt) {
+        for (int i = 0; i < exprs.length; i++) {
+            Tree tree = transform(exprs[i], pt);
+            if (tree == exprs[i]) continue;
+            Tree[] trees = new Tree[exprs.length];
+            for (int j = 0; j < i ; j++) trees[j] = exprs[j];
+            trees[i] = tree;
+            while (++i < exprs.length) trees[i] = transform(exprs[i], pt);
+            return trees;
+        }
+        return exprs;
     }
 
     /** Transform an array length */
