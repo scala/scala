@@ -10,25 +10,13 @@
 package scala;
 
 
-public class NativeMonitor  {
+public class NativeLoop {
 
-    /** @meta method [?A] (def ?A) ?A;
+    /** @meta method [?A] (def scala.Boolean, def ?A) scala.Unit;
      */
-    public java.lang.Object synchronised(scala.Function0 p) {
-		java.lang.Object result;
-		synchronized(this) {
-	    	result = p.apply();
-		}
-		return result;
-    }
-
-    /** @meta method [?A] (scala.AnyRef, def ?A) ?A;
-     */
-    public static java.lang.Object synchronised(java.lang.Object any, scala.Function0 p) {
-    	java.lang.Object result;
-		synchronized(any) {
-	    	result = p.apply();
-		}
-		return result;
+    public static void loopWhile(scala.Function0 cond, scala.Function0 body) {
+    	while (((scala.Boolean)cond.apply()).asBoolean()) {
+    		body.apply();
+    	}
     }
 }
