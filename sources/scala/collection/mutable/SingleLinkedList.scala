@@ -40,8 +40,6 @@ abstract class SingleLinkedList[A, This <: SingleLinkedList[A, This]]: This with
         else next.apply(n - 1);
     }
 
-    def at(n: Int): A = apply(n);
-
     def get(n: Int): Option[A] = {
         if (n == 0) Some(elem)
         else if (next == null) None

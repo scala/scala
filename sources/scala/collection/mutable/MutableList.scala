@@ -34,8 +34,6 @@ class MutableList[A] with Seq[A] with PartialFunction[Int, A] {
 
     def get(n: Int): Option[A] = first.get(n);
 
-    def at(n: Int): A = apply(n);
-
     protected def prependElem(elem: A): Unit = {
     	first = new LinkedList[A](elem, first);
         if (len == 0)
