@@ -52,7 +52,7 @@ class ListMap[A, B] with Map[A, B, ListMap[A, B]] {
 
     protected class Node(key: A, value: B) extends ListMap[A, B] {
         override def size: Int = ListMap.this.size + 1;
-        override def isEmpty: Boolean = true;
+        override def isEmpty: Boolean = false;
         override def apply(k: A): B = if (k == key) value else ListMap.this(k);
         override def get(k: A): Option[B] =
             if (k == key) Some(value) else ListMap.this.get(k);
