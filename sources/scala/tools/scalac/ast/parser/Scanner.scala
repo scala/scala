@@ -891,6 +891,14 @@ class Scanner(_unit: Unit) extends TokenData {
   // start XML tokenizing.
   // prod. [i] refers to productions in http://www.w3.org/TR/REC-xml
 
+  def xSync = {
+    token = SEMI; // last token might have been RBRACE, avoid SEMI
+    pos = Position.encode( cline,ccol );
+    nextch();
+    nextToken();
+    xScalaBlock = false;
+  }
+
   def xSyntaxError(s:String) = {
     syntaxError("in XML literal: "+s);
     xNext;
@@ -931,7 +939,7 @@ class Scanner(_unit: Unit) extends TokenData {
   final val LT   = Name.fromString("<");
 
   def xStartsXML = {
-    unit.global.xmlMarkup && ( token == IDENTIFIER )&&( name == LT );
+    /* unit.global.xmlMarkup && */ ( token == IDENTIFIER )&&( name == LT );
   }
 
   def xIsSpace = ch match {

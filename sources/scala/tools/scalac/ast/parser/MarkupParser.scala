@@ -242,13 +242,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
           s.xNext;
           gen.mkStringLit( pos, tmp )
         case '{' =>
-          s.xNext;
-          s.nextToken();
-          val tmp = p.expr(false,false);
-          if( s.token != RBRACE ) {
-            s.xSyntaxError("expected end of Scala block");
-          };
-          tmp
+          xScalaExpr;
         case _ =>
 	  s.xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
           gen.mkStringLit( s.pos, "<syntax-error>" )
@@ -286,14 +280,12 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     s.xToken('>')
   }
 
-  def xScalaExpr( ts:myTreeList ) = {
-    s.nextToken();
-    s.xScalaBlock = false;
+  def xScalaExpr:Tree = {
+    s.xSync;
     val b = p.expr(true,false);
-    if( s.token != RBRACE ) {
+    if( s.token != RBRACE )
       s.xSyntaxError(" expected end of Scala block");
-    }
-    ts.append( b );
+    return b
   }
 
   /** '<' xExpr ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
@@ -312,7 +304,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       var exit = false;
       while( !exit ) {
         if( s.xScalaBlock ) {
-          xScalaExpr( ts );
+          ts.append( xScalaExpr );
         } else {
           s.ch match {
 
@@ -326,7 +318,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
 
             case '{' =>
               if( s.xCheckScalaBlock ) {
-                xScalaExpr( ts );
+                ts.append( xScalaExpr );
               } else {
                 val str = new StringBuffer("{");
                 str.append( s.xText );
