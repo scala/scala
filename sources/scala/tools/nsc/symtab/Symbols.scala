@@ -17,7 +17,7 @@ abstract class Symbols: SymbolTable {
     var name = initName;
     var pos = initPos;
     val id = { ids = ids + 1; ids }
-    private var rawflags: long = 0;
+    var rawflags: long = 0;
 
 // Creators -------------------------------------------------------------------
 
@@ -112,7 +112,11 @@ abstract class Symbols: SymbolTable {
     final def isStaticOwner: boolean = isPackageClass || isStatic && isModuleClass;
 
     /** Is this symbol final?*/
-    final def isFinal: boolean = hasFlag(FINAL | PRIVATE) || isLocal || owner.isModuleClass;
+    final def isFinal: boolean =
+      hasFlag(FINAL) ||
+      isTerm && (
+        hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE));
+
 
     /** Is this symbol locally defined? I.e. not a member of a class or module */
     final def isLocal: boolean = owner.isTerm;

@@ -1,168 +1,589 @@
-/*     ____ ____  ____ ____  ______                                     *\
-**    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
-** /_____/\____/\___/\____/____/                                        **
-\*                                                                      */
+package scala.tools.nsc.typechecker;
 
-// $Id$
-
-// todo: eliminate Typed nodes.
-// todo: use SELECTOR flag to avoid access methods for privates
-// todo: use mangled name or drop.
-// todo: emit warnings for unchecked.
-// todo: synchronize on module instantiation.
-// todo: empty package
-
-import ch.epfl.lamp.util.Pair;
 import scala.tools.util.Position;
-import scalac._;
-import scalac.util._;
-import scalac.ast._;
-import scalac.atree.AConstant;
-import scalac.atree.AConstant$CHAR;
-import scalac.atree.AConstant$INT;
-import scalac.symtab.classfile._;
-import scalac.symtab._;
+import nsc._;
+import nsc.util._;
+import nsc.ast._;
+import nsc.symtab._;
+import nsc.symtab._;
 import Tree._;
 import java.util.HashMap;
 import scala.tools.scalac.util.NewArray;
-import scalac.{Global => scalac_Global}
-
-package scala.tools.scalac.typechecker {
-
 import java.lang.{Boolean, Byte, Short, Character, Integer, Object}
 
 /** The main attribution phase.
  */
-class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(global) {
+abstract class Enter(c: Context): Analyzer {
 
-  import Modifiers._;
-  import Kinds._;
+  import Flags._;
 
-  private var context: Context = _;
-  private var pt: Type = _;
-  private var mode: int = _;
+  val contexts = new HashMap[CompilationUnit,Context];
 
-  private var inAlternative: boolean = _;
-  private val patternVars = new HashMap();   // for pattern matching; maps x to {true,false}
-
-  val definitions = global.definitions;
-  val infer = new scala.tools.scalac.typechecker.Infer(this) {
-    override def getContext = context;
-    override def error(pos: int, msg: String) = Analyzer.this.error(pos, msg);
-  }
-  val desugarize = new DeSugarize(make, copy, gen, infer, global);
-  val constfold = new ConstantFolder(global);
-
-  var unit: CompilationUnit = _;
-
-  type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/ ;
-
-  def enterUnit(unit: CompilationUnit): unit =
-    enter(
-      new Context(
-	Tree.Empty,
-	if (unit.console) descr.consoleContext else descr.startContext),
-      unit);
-
-  def enter(context: Context, unit: CompilationUnit): unit = {
-    assert(this.unit == null, "start unit non null for " + unit);
-    context.infer = infer;
-    this.unit = unit;
-    this.context = context;
-    descr.contexts.put(unit, context);
+  class Enter(startcontext: Context, unit: CompilationUnit) {
+    var context =  new Context(Tree.Empty, startContext);
+    contexts(unit) = context;
     enterSyms(unit.body);
-    this.unit = null;
-    this.context = null;
-  }
 
-  def lateEnter(unit: CompilationUnit): unit = {
-    enterUnit(unit);
-  }
+    def doubleDefError(pos: int, sym: Symbol): unit =
+      error(pos,
+            sym.name + " is already defined as " +
+            (if ((sym.rawflags & CASE) != 0) "case class " + sym.name else sym.toString()));
 
-  def loadMixinCode(pos: Int, clasz: Symbol): unit = {
-    assert(clasz.isClass() && !clasz.isModuleClass(), Debug.show(clasz));
-    if (clasz.isExternal()) {
-      var c: Symbol = clasz;
-      try {
-        while (!c.owner().isPackageClass()) c = c.owner();
-        global.compileLate(global.getSourceFile(c), true);
-      } catch {
-        case exception: java.io.IOException =>
-          if (global.debug) exception.printStackTrace();
-          unit.error(pos, exception.getMessage() + "; source file for "
-                     + c + " is needed because it is used as a mixin");
+    def updatePosFlags(sym: Symbol, pos: int, mods: int): Symbol = {
+      val sym1 = if (sym.isExternal && !sym.isPackage) sym
+                 else { doubleDefError(pos, sym); sym.cloneSymbol }
+      sym1.pos = pos;
+      val oldflags = sym1.rawflags & (INITIALIZED | LOCKED);
+      val newflags = mods & ~(INITIALIZED | LOCKED);
+      sym1.rawflags = oldflags | newflags;
+      if (sym1.isModule)
+        updatePosFlags(sym1.moduleClass, pos, (mods & MODULE2CLASSFLAGS) | MODULE | FINAL)
+    }
+
+    def enterPackageSymbol(pos: int, name: Name): Symbol = {
+      val p: Symbol = context.scope.lookup(name);
+      if (p.isPackage) {
+        p.pos = pos; p.moduleClass.pos = pos; p
+      } else {
+        val newp = context.owner.newPackage(pos, name);
+        if (p == NoSymbol) context.scope.enter(newp)
+        else doubleDefError(pos, p);
+        newp
       }
     }
-  }
 
-  override def apply(unit: CompilationUnit): unit = {
-    global.log("checking " + unit);
-    assert(this.unit == null, "start unit non null for " + unit);
-    this.unit = unit;
-    this.context = descr.contexts.remove(unit).asInstanceOf[Context];
-    assert(this.context != null, "could not find context for " + unit);
-    unit.body = transformStatSeq(unit.body, Symbol.NONE);
-    if (global.target != scalac_Global.TARGET_INT && global.reporter.errors() == 0) {
-      genSymData(unit.body);
+    def enterClassSymbol(pos: int, mods: int, name: Name): Symbol = {
+      val c: Symbol = context.scope.lookup(name);
+      if (c.isType) {
+        updatePosFlags(c, pos, mods)
+      } else {
+        val newc = context.owner.newClass(pos, name).setFlags(mods);
+        context.scope.enter(newc);
+        newc
+      }
     }
-    this.unit = null;
-    this.context = null;
-    global.operation("checked " + unit);
-  }
 
-  def genSymData(stats: Array[Tree]): unit = {
-    var i = 0; while (i < stats.length) {
-      stats(i) match {
-	case Tree.ClassDef(_, _, _, _, _, _) | Tree.ModuleDef(_, _, _, _) =>
-	  val sym = stats(i).symbol();
-          val key = if (sym.isModule()) sym.moduleClass() else sym;
-          var termSym = sym.owner().info().lookup(sym.name.toTermName());
-          var typeSym = sym.owner().info().lookup(sym.name.toTypeName());
-          if (termSym.isExternal()) termSym = Symbol.NONE;
-          if (typeSym.isExternal()) typeSym = Symbol.NONE;
-          if (sym.isClass() || (sym.isModule() && typeSym.isNone())) {
-	    val pickle: Pickle = new Pickle();
-	    if (!termSym.isNone()) pickle.add(termSym);
-	    if (!typeSym.isNone()) pickle.add(typeSym);
-	    pickle.pickle();
-            global.symdata.put(key, pickle);
+    def enterModuleSymbol(pos: int, mods: int, name: Name): Symbol = {
+      val m: Symbol = context.scope.lookup(name);
+      if (m.isModule) {
+        updatePosFlags(m, pos, mods)
+      } else {
+        val newm = context.owner.newModule(pos, name);
+        newm.setFlags(mods);
+        newm.moduleClass.setFlags(mods);
+        context.scope.enter(newm);
+        newm
+      }
+    }
+
+    def enterCaseFactorySymbol(pos: int, mods: int, name: Name): Symbol = {
+      val m: Symbol = context.scope.lookup(name);
+      if (m.isModule) {
+        updatePosFlags(m, pos, mods)
+      } else {
+        val newm = context.owner.newMethod(pos, name).setFlags(mods);
+        context.scope.enter(newm);
+        newm
+      }
+    }
+
+    def enterSym(tree: Tree): Symbol = {
+      def finish = tree.symbol.setInfo(new LazyTreeType(tree));
+      def enterAndFinish = { context.scope enter tree.symbol; finish }
+      def enterUniqueAndFinish = {
+        val prev = context.scope.lookup(tree.symbol.name);
+        if (prev != NoSymbol) doubleDefError(tree.pos, prev);
+        enterAndFinish
+      }
+      tree match {
+        case PackageDef(name, stats) =>
+          tree.symbol = enterPackageSymbol(tree.pos, name);
+          val prevContext = pushContext(tree, p.moduleClass, p.info.members);
+          enterSyms(stats);
+          context = prevContext;
+          tree.symbol
+        case ClassDef(mods, name, tparams, vparams, tp, impl) =>
+          tree.symbol = enterClassSymbol(tree.pos, mods, name);
+          if ((mods & (CASE | ABSTRACT)) == CASE) // enter case factory method.
+            enterCaseFactorySymbol(tree.pos, mods & ACCESSFLAGS | CASE, name.toTermName())
+            .setInfo(new LazyCaseFactory(tree));]
+          val constr = tree.symbol.newConstructor(tree.pos)
+            .setFlag(tree.symbol.rawflags & CONSTRFLAGS)
+            .setInfo(new LazyTreeType(tree));
+          finish
+        case ModuleDef(mods, name, tp, impl) =>
+          tree.symbol = enterModuleSymbol(tree.pos, mods, name);
+          tree.symbol.moduleClass.setInfo(new LazyTreeType(tree));
+	  finish
+        case ValDef(mods, name, tp, rhs) =>
+          tree.symbol = context.owner.newValue(tree.pos, name).setFlag(mods);
+          enterAndFinish
+        case DefDef(mods, nme.CONSTRNAME, tparams, vparams, tp, rhs) =>
+          val owner = context.owner;
+          if (owner.isClass &&
+              constext.scope == owner.members &&
+              !owner.isModuleClass &&
+              !owner.isAnonymousClass &&
+              !owner.isRefinementClass)
+            error(tree.pos, "constructor definition not allowed here");
+          tree.symbol = owner.newConstructor(tree.pos)
+            .setFlag(mods | owner.rawflags & CONSTRFLAGS);
+          enterAndFinish
+        case DefDef(mods, name, tparams, vparams, tp, rhs) =>
+          tree.symbol = context.owner.newMethod(tree.pos, name).setFlag(mods);
+          enterAndFinish
+        case AbsTypeDef(mods, name, lo, hi, vu) =>
+          tree.symbol = context.owner.newAbstractType(pos, name);
+          enterUniqueAndFinish
+        case AliasTypeDef(mods, name, tparams, rhs) =>
+          tree.symbol = context.owner.newAlias(pos, name);
+          enterUniqueAndFinish
+        case Attributed(_, defn) =>
+          sym = enterSym(defn)
+        case DocDef(_, defn) =>
+          sym = enterSym(defn)
+
+
+
+
+          val clazz =
+            if (mods == SYNTHETIC && name == Names.ANON_CLASS_NAME.toTypeName())
+              context.owner.newAnonymousClass(templ.pos, name)
+            else
+
+          if (!clazz.primaryConstructor().isInitialized())
+            clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
+          if ((mods & CASE) != 0) {
+            if ((mods & ABSTRACT) == 0) {
+              // enter case constructor method.
+              val cf: Symbol = termSymbol(
+                tree.pos, name.toTermName(), owner,
+                mods & ACCESSFLAGS | CASE, context.scope);
+              enterInScope(cf);
+              if (!cf.isInitialized() || cf.info().symbol().isModuleClass()) {
+                cf.setInfo(new LazyConstrMethodType(tree));
+              }
+            }
           }
-	case Tree.PackageDef(packaged, templ) =>
-	  genSymData(templ.body);
+          enterSym(tree, clazz)
+      }
+
+    }
+
+
+
+    def transformPackageId(tree: Tree): Tree = {
+      if (tree.getType() != null) return tree;
+      tree match {
+        case Tree.Ident(name) =>
+          tree
+          .setSymbol(packageSymbol(tree.pos, context.owner, name))
+          .setType(tree.symbol().getType())
+
+        case Tree.Select(qual, name) =>
+          val qual1: Tree = transformPackageId(qual);
+          val sym: Symbol = packageSymbol(tree.pos, qual1.symbol().moduleClass(), name);
+          copy.Select(tree, sym, qual1).setType(sym.getType())
+
+        case _ =>
+          transform(tree);
+      }
+    }
+
+    def packageSymbol(pos: int, base: Symbol, name: Name): Symbol = {
+      var p: Symbol = base.members().lookup(name);
+      if (p.isNone()) {
+        p = base.newPackage(pos, name);
+        base.members().enterNoHide(p);
+      } else if (p.isPackage()) {
+        // as the package is used, we change its position to make sure
+        // its symbol is not reused for a module definition with the
+        // same name
+        p.pos = Position.FIRSTPOS;
+        p.moduleClass().pos = Position.FIRSTPOS;
+      } else {
+        val dst = if ((p.flags & CASE) != 0) "case class " + name;
+                  else "" + p;
+        error(pos, "package " + name + " has the same name as existing " + dst);
+        p = base.newPackage(pos, name);
+      }
+      p
+    }
+
+    def moduleSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+      val symbol = termSymbolOrNone(scope, pos, name, flags | MODUL | FINAL);
+      if (symbol.isNone()) owner.newModule(pos, flags, name) else symbol;
+    }
+
+    def termSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+      val symbol = termSymbolOrNone(scope, pos, name, flags);
+      if (symbol.isNone()) owner.newTerm(pos, flags, name) else symbol
+    }
+
+    def classSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+      val symbol = typeSymbolOrNone(scope, pos, CLASS, name, flags);
+      if (symbol.isNone()) owner.newClass(pos, flags, name) else symbol
+    }
+
+    def typeAliasSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+      val symbol = typeSymbolOrNone(scope, pos, ALIAS, name, flags);
+      if (symbol.isNone()) owner.newTypeAlias(pos, flags, name) else symbol
+    }
+
+    def absTypeSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+      val symbol = typeSymbolOrNone(scope, pos, TYPE, name, flags);
+      if (symbol.isNone()) owner.newAbstractType(pos, flags, name) else symbol
+    }
+
+    def termSymbolOrNone(scope: Scope, pos: int, name: Name, flags: int): Symbol = {
+      var symbol = getDefinedSymbol(scope, VAL, name);
+      if (!symbol.isNone()) {
+        if (symbol.isInitialized()) {
+          symbol.getType() match {
+            case Type$OverloadedType(alts, _) =>
+              var i = 0;
+              while (i < alts.length && !alts(i).isExternal()) i = i + 1;
+              if (i == alts.length)
+                throw Debug.abort("missing alternative", Debug.show(symbol));
+              if (i == alts.length - 1) symbol.pos = pos;
+              symbol = alts(i);
+            case _ =>
+          }
+        }
+        updateFlagsAndPos(symbol, pos, flags);
+      }
+      symbol
+    }
+
+    def typeSymbolOrNone(scope: Scope, pos: int, kind: int, name: Name, flags: int): Symbol = {
+      val symbol = getDefinedSymbol(scope, kind, name);
+      if (!symbol.isNone()) {
+        updateFlagsAndPos(symbol, pos, flags);
+        symbol.allConstructors().pos = pos;
+      }
+      symbol
+    }
+
+    def getDefinedSymbol(scope: Scope, kind: int, name: Name): Symbol = {
+      val entry = scope.lookupEntry(name);
+      val symbol = entry.sym;
+      if (entry.owner == scope && symbol.isExternal() && symbol.kind == kind) {
+        symbol
+      } else {
+        Symbol.NONE;
+      }
+    }
+
+    def updateFlagsAndPos(symbol: Symbol, pos: int, flags: int): unit = {
+      symbol.pos = pos;
+      val oldflags = symbol.flags & (INITIALIZED | LOCKED);
+      val newflags = flags & ~(INITIALIZED | LOCKED);
+      symbol.flags = oldflags | newflags;
+      if (symbol.isModule()) {
+        // here we repeat what is done in the constructor of ModuleClassSymbol
+        val clasz = symbol.moduleClass();
+        val classFlags = (flags & MODULE2CLASSFLAGS) | MODUL | FINAL;
+        updateFlagsAndPos(clasz, pos, classFlags);
+        clasz.primaryConstructor().flags =
+          clasz.primaryConstructor().flags | PRIVATE;
+      }
+      if (symbol.isType()) {
+        // here we repeat what is done in the constructor of TypeSymbol
+        val constr = symbol.primaryConstructor();
+        val constrFlags = flags & CONSTRFLAGS;
+        updateFlagsAndPos(constr, pos, constrFlags);
+      }
+    }
+
+    /** Enter symbol `sym' in current scope. Check for double definitions.
+    *  Handle overloading.
+    */
+    def enterInScope(sym: Symbol): unit = {
+
+      def covers(presym: Symbol, newsym: Symbol) = {
+        if (presym == newsym) true
+        else if (!presym.isInitialized()) false
+        else presym.getType() match {
+          case Type$OverloadedType(alts, _) =>
+            var i = 0;
+            while (i < alts.length && alts(i) != newsym) i = i + 1;
+            i < alts.length
+          case _ =>
+            false
+        }
+      }
+
+      // handle double and overloaded definitions
+      val e: Scope$Entry = context.scope.lookupEntry(sym.name);
+      val other: Symbol = e.sym;
+      if (covers(other, sym)) {
+        if (global.debug) global.log("redefined: " + sym + ":" + sym.rawInfo());
+      } else if (e.owner == context.scope) {
+        assert(!other.isExternal(), other);
+        if (sym.owner().isPackageClass()) {
+          if (other.isPackage()) {
+            val src = if ((sym.flags & CASE) != 0) "case class " + sym.name;
+                      else "" + sym;
+            error(sym.pos, "" + src + " has the same name as existing " + other);
+          } else {
+            if (global.compiledNow.get(other) != null) {
+              error(sym.pos, "" + sym + " is compiled twice");
+            }
+            context.scope.unlink(e);
+            context.scope.enter(sym);
+          }
+        } else if (context.owner.kind == CLASS &&
+                   sym.kind == VAL && other.kind == VAL &&
+                   ((sym.flags & ACCESSOR) == 0 || (other.flags & ACCESSOR) == 0)
+                   ||
+                   (sym.name == Names.view &&
+                    (sym.flags & (PARAM | SYNTHETIC)) == (PARAM | SYNTHETIC))) {
+          e.setSymbol(other.overloadWith(sym));
+        } else if (context.owner.kind == CLASS)
+          error(sym.pos,
+                sym.nameString() + " is already defined as " +
+                other + other.locationString());
+        else
+          error(sym.pos,
+                sym.nameString() +
+                " is already defined in local scope");
+      } else {
+        context.scope.enter(sym);
+      }
+      if (sym.owner().isPackageClass())
+        global.compiledNow.put(sym, unit.source);
+    }
+
+    def outerEnterSym(tree: Tree): Symbol = enterSym(tree);
+
+    /** If `tree' is a definition, create a symbol for it with a lazily
+    *  constructed type, and enter into current scope.
+    */
+    def enterSym(tree: Tree): Symbol = {
+
+      /** Enter `sym' in current scope and make it the symbol of `tree'.
+      */
+      def enterSym(tree: Tree, sym: Symbol): Symbol = {
+        //if (global.debug) System.out.println("entering " + sym);//DEBUG
+        if (!sym.isInitialized()) {
+          sym.setInfo(new LazyTreeType(tree));
+        }
+        if (!sym.isConstructor()) {
+          val owner: Symbol = sym.owner();
+          if (sym.kind == VAL && (sym.flags & (PRIVATE | SEALED)) == 0 &&
+              owner != null && owner.kind == CLASS &&
+              (owner.flags & FINAL) != 0)
+                sym.flags =  sym.flags | FINAL;
+          enterInScope(sym);
+        }
+        tree.setSymbol(sym);
+        sym
+      }
+
+      /** Make `sym' the symbol of import `tree' and push an
+       *  import context.
+       */
+      def enterImport(tree: Tree, sym: Symbol): Symbol = {
+        sym.setInfo(new LazyTreeType(tree));
+        tree.setSymbol(sym);
+        pushContext(tree, context.owner, context.scope);
+        sym
+      }
+
+      val owner: Symbol = context.owner;
+      tree match {
+        case Tree.PackageDef(_packaged, templ) =>
+          var packaged = _packaged;
+          templ match {
+            case Tree.Template(_, body) =>
+              val prevContext = pushContext(tree, context.owner, context.scope);
+              packaged = transformPackageId(packaged);
+              tree.asInstanceOf[Tree.PackageDef].packaged = packaged;
+              context = prevContext;
+              val pkg: Symbol = checkStable(packaged).symbol();
+              if (pkg != null && !pkg.isError()) {
+                if (pkg.isPackage()) {
+                  val prevContext = pushContext(templ, pkg.moduleClass(), pkg.members());
+                  enterSyms(body);
+                  context = prevContext;
+                } else {
+                  error(tree.pos, "only Java packages allowed for now");
+                }
+              }
+              templ.setSymbol(Symbol.NONE);
+              null
+            case _ =>
+              throw new ApplicationError();
+          }
+
+        case Tree.Attributed(attr, definition) =>
+          outerEnterSym(definition);
+
+        case Tree.DocDef(comment, definition) =>
+          val sym = outerEnterSym(definition);
+          global.mapSymbolComment.put(sym, new Pair(comment, unit));
+          sym
+
+        case Tree.ClassDef(mods, name, tparams, vparams, _, templ) =>
+          val clazz =
+            if (mods == SYNTHETIC && name == Names.ANON_CLASS_NAME.toTypeName())
+              context.owner.newAnonymousClass(templ.pos, name)
+            else
+              classSymbol(tree.pos, name, owner, mods, context.scope);
+          if (!clazz.primaryConstructor().isInitialized())
+            clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
+          if ((mods & CASE) != 0) {
+            if ((mods & ABSTRACT) == 0) {
+              // enter case constructor method.
+              val cf: Symbol = termSymbol(
+                tree.pos, name.toTermName(), owner,
+                mods & ACCESSFLAGS | CASE, context.scope);
+              enterInScope(cf);
+              if (!cf.isInitialized() || cf.info().symbol().isModuleClass()) {
+                cf.setInfo(new LazyConstrMethodType(tree));
+              }
+            }
+          }
+          enterSym(tree, clazz)
+
+        case Tree.ModuleDef(mods, name, _, _) =>
+          var modul = moduleSymbol(tree.pos, name, owner, mods, context.scope);
+          val clazz: Symbol = modul.moduleClass();
+          if (!clazz.isInitialized()) {
+            val info = new LazyTreeType(tree);
+            clazz.setInfo(info);
+            modul.setInfo(info);
+          }
+          enterSym(tree, modul)
+
+        case Tree.ValDef(mods, name, _, _) =>
+          enterSym(tree, termSymbol(tree.pos, name, owner, mods, context.scope))
+
+        case Tree.DefDef(mods, name, _, _, _, _) =>
+          var sym: Symbol = null;
+          if (name == Names.CONSTRUCTOR) {
+            var c = context;
+            while (c.isImportContext) c = c.outer;
+            val clazz: Symbol = c.enclClass.owner;
+            if (!(c.tree.isInstanceOf[Tree.Template]) ||
+                clazz.isModuleClass() ||
+                clazz.isAnonymousClass() ||
+                clazz.isCompoundSym() ||
+                clazz.isPackageClass())
+                  error(tree.pos, "constructor definition not allowed here");
+            sym = clazz.newConstructor(tree.pos, clazz.flags & CONSTRFLAGS);
+            clazz.addConstructor(sym);
+            sym.flags = sym.flags | mods;
+          } else {
+            sym = termSymbol(tree.pos, name, owner, mods, context.scope);
+          }
+          enterSym(tree, sym);
+
+        case Tree.AliasTypeDef(mods, name, _, _) =>
+          val tsym: Symbol = typeAliasSymbol(tree.pos, name, owner, mods, context.scope);
+          if (!tsym.primaryConstructor().isInitialized())
+            tsym.primaryConstructor().setInfo(new LazyTreeType(tree));
+          enterSym(tree, tsym)
+
+        case Tree.AbsTypeDef(mods, name, _, _) =>
+          enterSym(
+            tree,
+            absTypeSymbol(tree.pos, name, owner, mods, context.scope))
+
+        case Tree.Import(expr, selectors) =>
+          enterImport(tree,
+                      Symbol.NONE.newTerm(
+                        tree.pos, SYNTHETIC, Name.fromString("import " + expr)))
+
+        case _ =>
+          null
+      }
+    }
+
+    /** Enter all symbols in statement list
+     */
+    def enterSyms(stats: Array[Tree]): unit = {
+      var i = 0; while (i < stats.length) {
+        stats(i) = desugarize.Definition(stats(i));
+        enterSym(stats(i));
+        i = i + 1
+      }
+    }
+
+  def enterParams[t <: Tree](params: Array[t]): Array[Symbol] = {
+    var i = 0; while (i < params.length) {
+      enterSym(params(i));
+      (params(i) : Tree) match {
+	case Tree.ValDef(mods, _, _, _) =>
+	  if ((mods & REPEATED) != 0 && i != params.length - 1)
+	    error(params(i).pos,
+		  "`*' parameter must be the last parameter of a `('...`)' section");
 	case _ =>
       }
       i = i + 1
     }
+    Tree.symbolOf(params.asInstanceOf[Array[Tree]])
   }
 
-  /** Mode constants
+  def enterParams(vparams: Array[Array[Tree.ValDef]]): Array[Array[Symbol]] = {
+    val vparamSyms = new Array[Array[Symbol]](vparams.length);
+    var i = 0; while (i < vparams.length) {
+      vparamSyms(i) = enterParams(vparams(i));
+      i = i + 1
+    }
+    vparamSyms
+  }
+
+  /** Re-enter type parameters in current scope.
   */
-  val NOmode        = 0x000;
-  val EXPRmode      = 0x001;  // these 4 modes are mutually exclusive.
-  val PATTERNmode   = 0x002;
-  val CONSTRmode    = 0x004;
-  val TYPEmode      = 0x008;
+  def reenterParams(tparams: Array[Tree.AbsTypeDef], tsyms: Array[Symbol]): unit = {
+    var i = 0; while (i < tparams.length) {
+      tsyms(i).pos = tparams(i).pos;
+      tsyms(i).name = tparams(i).name;
+      //necessary since tsyms might have been unpickled
+      tparams(i).setSymbol(tsyms(i));
+      context.scope.enter(tsyms(i));
+      i = i + 1
+    }
+  }
 
-  val FUNmode       = 0x10;   // orthogonal to above. When set
-                              // we are looking for a method or constructor
+  /** Re-enter type and value parameters in current scope.
+  */
+  def reenterParams(tparams: Array[Tree.AbsTypeDef], vparamss: Array[Array[Tree.ValDef]], mt: Type): unit = {
+    var rest: Type = mt;
+    rest match {
+      case Type$PolyType(tsyms, restp) =>
+	reenterParams(tparams, tsyms);
+	rest = restp;
+      case _ =>
+    }
+    var j = 0; while (j < vparamss.length) {
+      val vparams = vparamss(j);
+      rest match {
+	case Type$MethodType(vsyms, restp) =>
+	  var i = 0; while (i < vparams.length) {
+	    vsyms(i).pos = vparams(i).pos;
+	    vsyms(i).name = vparams(i).name;
+            //necessary since vsyms might have been unpickled
+	    vparams(i).setSymbol(vsyms(i));
+	    //potential overload in case this is a view parameter
+	    context.scope.enterOrOverload(vsyms(i));
+	    i = i + 1
+	  }
+	  rest = restp;
+	case _ =>
+      }
+      j = j + 1
+    }
+  }
 
-  val POLYmode      = 0x020;  // orthogonal to above. When set
-                              // expression types can be polymorphic.
+  def addInheritedOverloaded(sym: Symbol, tp: Type): unit =
+    if (sym.owner().kind == CLASS &&
+        !sym.isConstructor() &&
+        sym.owner().lookup(sym.name) == sym)
+      // it's a class member which is not an overloaded alternative
+      sym.addInheritedOverloaded(tp);
 
-  val QUALmode      = 0x040;  // orthogonal to above. When set
-			      // expressions may be packages and
-                              // Java statics modules.
-
-  val SUPERmode     = 0x080;  // Goes with CONSTRmode. When set
-                              // we are checking a superclass
-                              // constructor invocation.
-
-  val baseModes     = EXPRmode | PATTERNmode | CONSTRmode;
-
-  val SEQUENCEmode  = 0x1000;  // orthogonal to above. When set
-                               // we turn "x" into "x@_"
-                               // and allow args to be of type Seq( a) instead of a
 
 // Diagnostics ----------------------------------------------------------------
 
@@ -642,420 +1063,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       defineSelfType(sym, clazz, tree, u, c);
     }
   }
-
-// Entering Symbols ----------------------------------------------------------
-
-  def transformPackageId(tree: Tree): Tree = {
-    if (tree.getType() != null) return tree;
-    tree match {
-      case Tree.Ident(name) =>
-	tree
-	.setSymbol(packageSymbol(tree.pos, context.owner, name))
-	.setType(tree.symbol().getType())
-
-      case Tree.Select(qual, name) =>
-	val qual1: Tree = transformPackageId(qual);
-	val sym: Symbol = packageSymbol(tree.pos, qual1.symbol().moduleClass(), name);
-	copy.Select(tree, sym, qual1).setType(sym.getType())
-
-      case _ =>
-	transform(tree);
-    }
-  }
-
-  def packageSymbol(pos: int, base: Symbol, name: Name): Symbol = {
-    var p: Symbol = base.members().lookup(name);
-    if (p.isNone()) {
-      p = base.newPackage(pos, name);
-      base.members().enterNoHide(p);
-    } else if (p.isPackage()) {
-      // as the package is used, we change its position to make sure
-      // its symbol is not reused for a module definition with the
-      // same name
-      p.pos = Position.FIRSTPOS;
-      p.moduleClass().pos = Position.FIRSTPOS;
-    } else {
-      val dst = if ((p.flags & CASE) != 0) "case class " + name;
-                else "" + p;
-      error(pos, "package " + name + " has the same name as existing " + dst);
-      p = base.newPackage(pos, name);
-    }
-    p
-  }
-
-  def moduleSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = termSymbolOrNone(scope, pos, name, flags | MODUL | FINAL);
-    if (symbol.isNone()) owner.newModule(pos, flags, name) else symbol;
-  }
-
-  def termSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = termSymbolOrNone(scope, pos, name, flags);
-    if (symbol.isNone()) owner.newTerm(pos, flags, name) else symbol
-  }
-
-  def classSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = typeSymbolOrNone(scope, pos, CLASS, name, flags);
-    if (symbol.isNone()) owner.newClass(pos, flags, name) else symbol
-  }
-
-  def typeAliasSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = typeSymbolOrNone(scope, pos, ALIAS, name, flags);
-    if (symbol.isNone()) owner.newTypeAlias(pos, flags, name) else symbol
-  }
-
-  def absTypeSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = typeSymbolOrNone(scope, pos, TYPE, name, flags);
-    if (symbol.isNone()) owner.newAbstractType(pos, flags, name) else symbol
-  }
-
-  def termSymbolOrNone(scope: Scope, pos: int, name: Name, flags: int): Symbol = {
-    var symbol = getDefinedSymbol(scope, VAL, name);
-    if (!symbol.isNone()) {
-      if (symbol.isInitialized()) {
-	symbol.getType() match {
-	  case Type$OverloadedType(alts, _) =>
-	    var i = 0;
-	    while (i < alts.length && !alts(i).isExternal()) i = i + 1;
-	    if (i == alts.length)
-              throw Debug.abort("missing alternative", Debug.show(symbol));
-	    if (i == alts.length - 1) symbol.pos = pos;
-	    symbol = alts(i);
-          case _ =>
-	}
-      }
-      updateFlagsAndPos(symbol, pos, flags);
-    }
-    symbol
-  }
-
-  def typeSymbolOrNone(scope: Scope, pos: int, kind: int, name: Name, flags: int): Symbol = {
-    val symbol = getDefinedSymbol(scope, kind, name);
-    if (!symbol.isNone()) {
-      updateFlagsAndPos(symbol, pos, flags);
-      symbol.allConstructors().pos = pos;
-    }
-    symbol
-  }
-
-  def getDefinedSymbol(scope: Scope, kind: int, name: Name): Symbol = {
-    val entry = scope.lookupEntry(name);
-    val symbol = entry.sym;
-    if (entry.owner == scope && symbol.isExternal() && symbol.kind == kind) {
-      symbol
-    } else {
-      Symbol.NONE;
-    }
-  }
-
-  def updateFlagsAndPos(symbol: Symbol, pos: int, flags: int): unit = {
-    symbol.pos = pos;
-    val oldflags = symbol.flags & (INITIALIZED | LOCKED);
-    val newflags = flags & ~(INITIALIZED | LOCKED);
-    symbol.flags = oldflags | newflags;
-    if (symbol.isModule()) {
-      // here we repeat what is done in the constructor of ModuleClassSymbol
-      val clasz = symbol.moduleClass();
-      val classFlags = (flags & MODULE2CLASSFLAGS) | MODUL | FINAL;
-      updateFlagsAndPos(clasz, pos, classFlags);
-      clasz.primaryConstructor().flags =
-        clasz.primaryConstructor().flags | PRIVATE;
-    }
-    if (symbol.isType()) {
-      // here we repeat what is done in the constructor of TypeSymbol
-      val constr = symbol.primaryConstructor();
-      val constrFlags = flags & CONSTRFLAGS;
-      updateFlagsAndPos(constr, pos, constrFlags);
-    }
-  }
-
-  /** Enter symbol `sym' in current scope. Check for double definitions.
-  *  Handle overloading.
-  */
-  def enterInScope(sym: Symbol): unit = {
-
-    def covers(presym: Symbol, newsym: Symbol) = {
-      if (presym == newsym) true
-      else if (!presym.isInitialized()) false
-      else presym.getType() match {
-	case Type$OverloadedType(alts, _) =>
-	  var i = 0;
-	  while (i < alts.length && alts(i) != newsym) i = i + 1;
-	  i < alts.length
-	case _ =>
-	  false
-      }
-    }
-
-    // handle double and overloaded definitions
-    val e: Scope$Entry = context.scope.lookupEntry(sym.name);
-    val other: Symbol = e.sym;
-    if (covers(other, sym)) {
-      if (global.debug) global.log("redefined: " + sym + ":" + sym.rawInfo());
-    } else if (e.owner == context.scope) {
-      assert(!other.isExternal(), other);
-      if (sym.owner().isPackageClass()) {
-        if (other.isPackage()) {
-          val src = if ((sym.flags & CASE) != 0) "case class " + sym.name;
-                    else "" + sym;
-          error(sym.pos, "" + src + " has the same name as existing " + other);
-        } else {
-	  if (global.compiledNow.get(other) != null) {
-	    error(sym.pos, "" + sym + " is compiled twice");
-	  }
-	  context.scope.unlink(e);
-	  context.scope.enter(sym);
-        }
-      } else if (context.owner.kind == CLASS &&
-		 sym.kind == VAL && other.kind == VAL &&
-		 ((sym.flags & ACCESSOR) == 0 || (other.flags & ACCESSOR) == 0)
-		 ||
-		 (sym.name == Names.view &&
-		  (sym.flags & (PARAM | SYNTHETIC)) == (PARAM | SYNTHETIC))) {
-	e.setSymbol(other.overloadWith(sym));
-      } else if (context.owner.kind == CLASS)
-	error(sym.pos,
-	      sym.nameString() + " is already defined as " +
-	      other + other.locationString());
-      else
-	error(sym.pos,
-	      sym.nameString() +
-	      " is already defined in local scope");
-    } else {
-      context.scope.enter(sym);
-    }
-    if (sym.owner().isPackageClass())
-      global.compiledNow.put(sym, unit.source);
-  }
-
-  def outerEnterSym(tree: Tree): Symbol = enterSym(tree);
-
-  /** If `tree' is a definition, create a symbol for it with a lazily
-  *  constructed type, and enter into current scope.
-  */
-  def enterSym(tree: Tree): Symbol = {
-
-    /** Enter `sym' in current scope and make it the symbol of `tree'.
-    */
-    def enterSym(tree: Tree, sym: Symbol): Symbol = {
-      //if (global.debug) System.out.println("entering " + sym);//DEBUG
-      if (!sym.isInitialized()) {
-	sym.setInfo(new LazyTreeType(tree));
-      }
-      if (!sym.isConstructor()) {
-	val owner: Symbol = sym.owner();
-	if (sym.kind == VAL && (sym.flags & (PRIVATE | SEALED)) == 0 &&
-	    owner != null && owner.kind == CLASS &&
-	    (owner.flags & FINAL) != 0)
-	      sym.flags =  sym.flags | FINAL;
-	enterInScope(sym);
-      }
-      tree.setSymbol(sym);
-      sym
-    }
-
-    /** Make `sym' the symbol of import `tree' and push an
-     *  import context.
-     */
-    def enterImport(tree: Tree, sym: Symbol): Symbol = {
-      sym.setInfo(new LazyTreeType(tree));
-      tree.setSymbol(sym);
-      pushContext(tree, context.owner, context.scope);
-      sym
-    }
-
-    val owner: Symbol = context.owner;
-    tree match {
-      case Tree.PackageDef(_packaged, templ) =>
-	var packaged = _packaged;
-	templ match {
-	  case Tree.Template(_, body) =>
-	    val prevContext = pushContext(tree, context.owner, context.scope);
-	    packaged = transformPackageId(packaged);
-	    tree.asInstanceOf[Tree.PackageDef].packaged = packaged;
-	    context = prevContext;
-	    val pkg: Symbol = checkStable(packaged).symbol();
-	    if (pkg != null && !pkg.isError()) {
-	      if (pkg.isPackage()) {
-		val prevContext = pushContext(templ, pkg.moduleClass(), pkg.members());
-		enterSyms(body);
-		context = prevContext;
-	      } else {
-		error(tree.pos, "only Java packages allowed for now");
-	      }
-	    }
-	    templ.setSymbol(Symbol.NONE);
-	    null
-	  case _ =>
-	    throw new ApplicationError();
-	}
-
-      case Tree.Attributed(attr, definition) =>
-        outerEnterSym(definition);
-
-      case Tree.DocDef(comment, definition) =>
-        val sym = outerEnterSym(definition);
-        global.mapSymbolComment.put(sym, new Pair(comment, unit));
-        sym
-
-      case Tree.ClassDef(mods, name, tparams, vparams, _, templ) =>
-	val clazz =
-          if (mods == SYNTHETIC && name == Names.ANON_CLASS_NAME.toTypeName())
-            context.owner.newAnonymousClass(templ.pos, name)
-          else
-            classSymbol(tree.pos, name, owner, mods, context.scope);
-	if (!clazz.primaryConstructor().isInitialized())
-	  clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
-	if ((mods & CASE) != 0) {
-	  if ((mods & ABSTRACT) == 0) {
-	    // enter case constructor method.
-	    val cf: Symbol = termSymbol(
-	      tree.pos, name.toTermName(), owner,
-	      mods & ACCESSFLAGS | CASE, context.scope);
-	    enterInScope(cf);
-	    if (!cf.isInitialized() || cf.info().symbol().isModuleClass()) {
-	      cf.setInfo(new LazyConstrMethodType(tree));
-	    }
-	  }
-	}
-	enterSym(tree, clazz)
-
-      case Tree.ModuleDef(mods, name, _, _) =>
-	var modul = moduleSymbol(tree.pos, name, owner, mods, context.scope);
-	val clazz: Symbol = modul.moduleClass();
-	if (!clazz.isInitialized()) {
-          val info = new LazyTreeType(tree);
-	  clazz.setInfo(info);
-          modul.setInfo(info);
-        }
-	enterSym(tree, modul)
-
-      case Tree.ValDef(mods, name, _, _) =>
-	enterSym(tree, termSymbol(tree.pos, name, owner, mods, context.scope))
-
-      case Tree.DefDef(mods, name, _, _, _, _) =>
-	var sym: Symbol = null;
-	if (name == Names.CONSTRUCTOR) {
-          var c = context;
-          while (c.isImportContext) c = c.outer;
-	  val clazz: Symbol = c.enclClass.owner;
-	  if (!(c.tree.isInstanceOf[Tree.Template]) ||
-	      clazz.isModuleClass() ||
-	      clazz.isAnonymousClass() ||
-	      clazz.isCompoundSym() ||
-	      clazz.isPackageClass())
-	        error(tree.pos, "constructor definition not allowed here");
-          sym = clazz.newConstructor(tree.pos, clazz.flags & CONSTRFLAGS);
-	  clazz.addConstructor(sym);
-	  sym.flags = sym.flags | mods;
-	} else {
-	  sym = termSymbol(tree.pos, name, owner, mods, context.scope);
-	}
-	enterSym(tree, sym);
-
-      case Tree.AliasTypeDef(mods, name, _, _) =>
-	val tsym: Symbol = typeAliasSymbol(tree.pos, name, owner, mods, context.scope);
-	if (!tsym.primaryConstructor().isInitialized())
-	  tsym.primaryConstructor().setInfo(new LazyTreeType(tree));
-	enterSym(tree, tsym)
-
-      case Tree.AbsTypeDef(mods, name, _, _) =>
-	enterSym(
-	  tree,
-	  absTypeSymbol(tree.pos, name, owner, mods, context.scope))
-
-      case Tree.Import(expr, selectors) =>
-	enterImport(tree,
-		    Symbol.NONE.newTerm(
-		      tree.pos, SYNTHETIC, Name.fromString("import " + expr)))
-
-      case _ =>
-	null
-    }
-  }
-
-  /** Enter all symbols in statement list
-  */
-  def enterSyms(stats: Array[Tree]): unit = {
-    var i = 0; while (i < stats.length) {
-      stats(i) = desugarize.Definition(stats(i));
-      enterSym(stats(i));
-      i = i + 1
-    }
-  }
-
-  def enterParams[t <: Tree](params: Array[t]): Array[Symbol] = {
-    var i = 0; while (i < params.length) {
-      enterSym(params(i));
-      (params(i) : Tree) match {
-	case Tree.ValDef(mods, _, _, _) =>
-	  if ((mods & REPEATED) != 0 && i != params.length - 1)
-	    error(params(i).pos,
-		  "`*' parameter must be the last parameter of a `('...`)' section");
-	case _ =>
-      }
-      i = i + 1
-    }
-    Tree.symbolOf(params.asInstanceOf[Array[Tree]])
-  }
-
-  def enterParams(vparams: Array[Array[Tree.ValDef]]): Array[Array[Symbol]] = {
-    val vparamSyms = new Array[Array[Symbol]](vparams.length);
-    var i = 0; while (i < vparams.length) {
-      vparamSyms(i) = enterParams(vparams(i));
-      i = i + 1
-    }
-    vparamSyms
-  }
-
-  /** Re-enter type parameters in current scope.
-  */
-  def reenterParams(tparams: Array[Tree.AbsTypeDef], tsyms: Array[Symbol]): unit = {
-    var i = 0; while (i < tparams.length) {
-      tsyms(i).pos = tparams(i).pos;
-      tsyms(i).name = tparams(i).name;
-      //necessary since tsyms might have been unpickled
-      tparams(i).setSymbol(tsyms(i));
-      context.scope.enter(tsyms(i));
-      i = i + 1
-    }
-  }
-
-  /** Re-enter type and value parameters in current scope.
-  */
-  def reenterParams(tparams: Array[Tree.AbsTypeDef], vparamss: Array[Array[Tree.ValDef]], mt: Type): unit = {
-    var rest: Type = mt;
-    rest match {
-      case Type$PolyType(tsyms, restp) =>
-	reenterParams(tparams, tsyms);
-	rest = restp;
-      case _ =>
-    }
-    var j = 0; while (j < vparamss.length) {
-      val vparams = vparamss(j);
-      rest match {
-	case Type$MethodType(vsyms, restp) =>
-	  var i = 0; while (i < vparams.length) {
-	    vsyms(i).pos = vparams(i).pos;
-	    vsyms(i).name = vparams(i).name;
-            //necessary since vsyms might have been unpickled
-	    vparams(i).setSymbol(vsyms(i));
-	    //potential overload in case this is a view parameter
-	    context.scope.enterOrOverload(vsyms(i));
-	    i = i + 1
-	  }
-	  rest = restp;
-	case _ =>
-      }
-      j = j + 1
-    }
-  }
-
-  def addInheritedOverloaded(sym: Symbol, tp: Type): unit =
-    if (sym.owner().kind == CLASS &&
-        !sym.isConstructor() &&
-        sym.owner().lookup(sym.name) == sym)
-      // it's a class member which is not an overloaded alternative
-      sym.addInheritedOverloaded(tp);
 
 // Definining Symbols -------------------------------------------------------
 

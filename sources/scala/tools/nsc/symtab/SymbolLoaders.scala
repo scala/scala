@@ -131,7 +131,7 @@ abstract class SymbolLoaders {
 
   def sourcefileLoader(file: AbstractFile) =
     new SymbolLoader(root => {
-      global.compileLate(file, false);
+      global.compileLate(file);
       "source file '" + file + "'";
     });
 

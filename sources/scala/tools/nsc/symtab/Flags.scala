@@ -54,7 +54,7 @@ object Flags {
   val SOURCEFLAGS   = 0x00037777;    // these modifiers can be set in source programs.
   val ACCESSFLAGS   = PRIVATE | PROTECTED;
   val VARIANCES     = COVARIANT | CONTRAVARIANT;
-  val CONSTRFLAGS   = CASE | JAVA;
+  val CONSTRFLAGS   = JAVA;
 
   /** Flags already set by object creation and never set afterwards */
   val CREATIONFLAGS = ACCESSFLAGS | METHOD | MODULE | MUTABLE | PARAM | PACKAGE |

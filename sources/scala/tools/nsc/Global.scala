@@ -159,9 +159,9 @@ class Global(val settings: Settings, val reporter: Reporter)
     informTime("total", startTime);
   }
 
-  def compileLate(file: AbstractFile, mixinOnly: boolean): unit = {
+  def compileLate(file: AbstractFile): unit = {
     if (!(fileset contains file)) {
-      val unit = new CompilationUnit(getSourceFile(file), mixinOnly);
+      val unit = new CompilationUnit(getSourceFile(file));
       addUnit(unit);
       atPhase(parserPhase) { parserPhase.apply(unit) }
       //atPhase(analyzerPhase) { analyzerPhase.lateEnter(unit) }

@@ -137,9 +137,9 @@ abstract class Syntactic: ParserPhase {
       atPos(in.pos) {
 	pkg match {
 	  case Ident(name) =>
-	    PackageDef(pkg, stats)
+	    PackageDef(name, stats)
 	  case Select(qual, name) =>
-	    makePackaging(qual, List(PackageDef(Ident(name), stats)))
+	    makePackaging(qual, List(PackageDef(name, stats)))
 	}
       }
 

@@ -65,7 +65,7 @@ class Trees: Global {
        extends DefTree;
 
   /** Package clause */
-  case class PackageDef(pkg: Tree, stats: List[Tree])
+  case class PackageDef(name: Name, stats: List[Tree])
        extends DefTree;
 
   /** Singleton object definition */
@@ -247,7 +247,7 @@ class Trees: Global {
 /* A standard pattern match
   case EmptyTree =>
   case ClassDef(mods, name, tparams, vparams, tp, impl) =>
-  case PackageDef(pkg, stats) =>
+  case PackageDef(name, stats) =>
   case ModuleDef(mods, name, tp, impl) =>
   case ValDef(mods, name, tp, rhs) =>
   case DefDef(mods, name, tparams, vparams, tp, rhs) =>
@@ -293,7 +293,7 @@ class Trees: Global {
 
   trait TreeCopier {
     def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparams: List[List[ValDef]], tp: Tree, impl: Template): ClassDef;
-    def PackageDef(tree: Tree, pkg: Tree, stats: List[Tree]): PackageDef;
+    def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef;
     def ModuleDef(tree: Tree, mods: int, name: Name, tp: Tree, impl: Template): ModuleDef;
     def ValDef(tree: Tree, mods: int, name: Name, tp: Tree, rhs: Tree): ValDef;
     def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparams: List[List[ValDef]], tp: Tree, rhs: Tree): DefDef;
@@ -340,8 +340,8 @@ class Trees: Global {
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparams: List[List[ValDef]], tp: Tree, impl: Template) =
       { val t = new ClassDef(mods, name, tparams, vparams, tp, impl); t.setPos(tree.pos); t }
-    def PackageDef(tree: Tree, pkg: Tree, stats: List[Tree]) =
-      { val t = new PackageDef(pkg, stats); t.setPos(tree.pos); t }
+    def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
+      { val t = new PackageDef(name, stats); t.setPos(tree.pos); t }
     def ModuleDef(tree: Tree, mods: int, name: Name, tp: Tree, impl: Template) =
       { val t = new ModuleDef(mods, name, tp, impl); t.setPos(tree.pos); t }
     def ValDef(tree: Tree, mods: int, name: Name, tp: Tree, rhs: Tree) =
@@ -433,10 +433,10 @@ class Trees: Global {
       if (mods0 == mods && name0 == name && tparams0 == tparams && vparams0 == vparams && tp0 == tp && impl0 == impl) => t
       case _ => copy.ClassDef(tree, mods, name, tparams, vparams, tp, impl)
     }
-    def PackageDef(tree: Tree, pkg: Tree, stats: List[Tree]) = tree match {
-      case t @ PackageDef(pkg0, stats0)
-      if (pkg0 == pkg && stats0 == stats) => t
-      case _ => copy.PackageDef(tree, pkg, stats)
+    def PackageDef(tree: Tree, name: Tree, stats: List[Tree]) = tree match {
+      case t @ PackageDef(name0, stats0)
+      if (name0 == name && stats0 == stats) => t
+      case _ => copy.PackageDef(tree, name, stats)
     }
     def ModuleDef(tree: Tree, mods: int, name: Name, tp: Tree, impl: Template) = tree match {
       case t @ ModuleDef(mods0, name0, tp0, impl0)
@@ -651,8 +651,8 @@ class Trees: Global {
         tree
       case ClassDef(mods, name, tparams, vparams, tp, impl) =>
         copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparams), transform(tp), transformTemplate(impl))
-      case PackageDef(pkg, stats) =>
-        copy.PackageDef(tree, transform(pkg), transform(stats))
+      case PackageDef(name, stats) =>
+        copy.PackageDef(tree, name, transform(stats))
       case ModuleDef(mods, name, tp, impl) =>
         copy.ModuleDef(tree, mods, name, transform(tp), transformTemplate(impl))
       case ValDef(mods, name, tp, rhs) =>
@@ -757,8 +757,8 @@ class Trees: Global {
     def traverse(tree: Tree): unit = tree match {
       case ClassDef(mods, name, tparams, vparams, tp, impl) =>
         traverse(tparams); traverseTreess(vparams); traverse(tp); traverse(impl)
-      case PackageDef(pkg, stats) =>
-        traverse(pkg); traverse(stats)
+      case PackageDef(name, stats) =>
+        traverse(stats)
       case ModuleDef(mods, name, tp, impl) =>
         traverse(tp); traverse(impl)
       case ValDef(mods, name, tp, rhs) =>
