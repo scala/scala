@@ -368,6 +368,25 @@ public class ATreePrinter {
         }
     }
 
+    /** Prints the function. */
+    public ATreePrinter printFunction(AFunction function) {
+        switch (function) {
+        case Method(This(Symbol clasz), Symbol method, true):
+            printSymbol(clasz).print('.').print("super").print('.');
+            return printSymbol(method);
+        case Method(Void, Symbol method, true):
+            return printSymbol(method.owner()).print('.').printSymbol(method);
+        case Method(ACode object, Symbol method, boolean isStatic):
+            printCode(object).print('.');
+            if (isStatic) print("<static>").space();
+            return printSymbol(method);
+        case Primitive(APrimitive primitive):
+            return printPrimitive(primitive);
+        default:
+            throw Debug.abort("unknown case", function);
+        }
+    }
+
     /** Prints the primitive. */
     public ATreePrinter printPrimitive(APrimitive primitive) {
         switch (primitive) {
