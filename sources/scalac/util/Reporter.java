@@ -148,7 +148,7 @@ public class Reporter {
 
     /** Prints the message with the given position indication. */
     public void printMessage(Position position, String message) {
-        if (position != null && position.file().id() != 0) {
+        if (position != null) {
             message = " " + message;
             if (position.line() != 0)
                 message = position.line() + ":" + message;
@@ -160,8 +160,7 @@ public class Reporter {
 
     /** Prints the error message. */
     public void printError(Position position, String message) {
-        if (position != null && position.file().id() == 0)
-            message = "error: " + message;
+        if (position == null) message = "error: " + message;
         printMessage(position, message);
     }
 
@@ -179,8 +178,7 @@ public class Reporter {
 
     /** Prints the source line of the given position. */
     public void printSourceLine(Position position) {
-        if (position == null || position.file().id() == 0) return;
-        if (position.line() == 0) return;
+        if (position == null || position.line() == 0) return;
         printMessage(position.file().getLine(position.line()));
         printColumnMarker(position);
     }
@@ -226,8 +224,6 @@ public class Reporter {
     private boolean testAndLog(Position position) {
         if (position == null) return false;
         if (position.column() == 0) return false;
-        if (position.line() == 0) return false;
-        if (position.file().id() == 0) return false;
         if (positions.contains(position)) return true;
         positions.add(position);
         return false;

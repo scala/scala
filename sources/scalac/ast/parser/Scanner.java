@@ -66,10 +66,6 @@ public class Scanner extends TokenData {
     public int          cline;
     public int          ccol;
 
-    /** the current sourcefile
-     */
-    public SourceFile   currentSource;
-
     /** a buffer for character and string literals
      */
     protected byte[]    lit = new byte[64];
@@ -84,7 +80,7 @@ public class Scanner extends TokenData {
      */
     public Scanner(Unit unit) {
         this.unit = unit;
-        buf = (currentSource = unit.source).bytes();
+        buf = unit.source.bytes();
         cline = 1;
         bp = -1;
         ccol = 0;
@@ -167,7 +163,7 @@ public class Scanner extends TokenData {
      */
     public void fetchToken() {
         if (token == EOF) return;
-        lastpos = Position.encode(currentSource, cline, ccol);
+        lastpos = Position.encode(cline, ccol);
 	int index = bp;
 	while(true) {
 	    switch (ch) {
@@ -194,7 +190,7 @@ public class Scanner extends TokenData {
 		nextch();
 		break;
 	    default:
-		pos = Position.encode(currentSource, cline, ccol);
+		pos = Position.encode(cline, ccol);
 		index = bp;
 		switch (ch) {
 		case 'A': case 'B': case 'C': case 'D': case 'E':
@@ -574,7 +570,7 @@ public class Scanner extends TokenData {
                             putch(ch);
                             break;
                         default:
-                            syntaxError(Position.encode(currentSource, cline, ccol) - 1, "invalid escape character");
+                            syntaxError(Position.encode(cline, ccol) - 1, "invalid escape character");
                             putch(ch);
                     }
                     nextch();

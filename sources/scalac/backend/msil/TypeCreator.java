@@ -754,7 +754,7 @@ public final class TypeCreator
     }
 
     void logErr(String message) {
-        global.reporter.printMessage(new Position(pos), message);
+        global.reporter.printMessage(unit.position(pos), message);
     }
 
 } // class TypeCreator

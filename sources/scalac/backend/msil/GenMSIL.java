@@ -1641,7 +1641,7 @@ public class GenMSIL /*implements Modifiers */ {
     }
 
     void logErr(int pos, String message) {
-        global.reporter.printMessage(new Position(pos), message);
+        global.reporter.printMessage(currUnit.position(pos), message);
     }
 
     void logErr(String message) {

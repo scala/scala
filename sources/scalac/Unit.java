@@ -52,31 +52,28 @@ public class Unit {
         this.console = console;
     }
 
+    /** return the position representing the given encoded position
+     */
+    public Position position(int pos) {
+        return new Position(source, pos);
+    }
+
     /** issue an error in this compilation unit at a specific location
      */
     public void error(int pos, String message) {
-        global.reporter.error(decode(pos), message);
+        global.reporter.error(position(pos), message);
     }
 
     /** issue a warning in this compilation unit at a specific location
      */
     public void warning(int pos, String message) {
-        global.reporter.warning(decode(pos), message);
+        global.reporter.warning(position(pos), message);
     }
 
     /** return a string representation
      */
     public String toString() {
         return source.toString();
-    }
-
-
-    private Position decode(int pos) {
-        Position position = new Position(pos);
-        if (position.file().id() == 0)
-            if (/* !!! source.id() > Position.FILE_MASK && */ position.line() != 0)
-                return source.getPosition(position.line(), position.column());
-        return position;
     }
 
 }

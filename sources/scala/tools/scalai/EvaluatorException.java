@@ -54,7 +54,7 @@ public class EvaluatorException extends RuntimeException {
         buffer.append('.');
         buffer.append(method.nameString());
         buffer.append('(');
-        buffer.append(Position.file(pos));
+        // !!! buffer.append(Position.file(pos));
         buffer.append(':');
         buffer.append(Position.line(pos));
         buffer.append(")");

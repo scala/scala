@@ -30,29 +30,6 @@ public class SourceFile {
     public static final byte SU = 0x1A;
 
     //########################################################################
-    // Public Functions
-
-    /** Returns the source file with the given id. */
-    public static SourceFile fromId(int id) {
-        if (id <= 0 || files.size() < id) return UNKNOWN;
-        return (SourceFile)files.get(id - 1);
-    }
-
-    /** Releases all source file. */
-    public static void releaseAll() {
-        files.clear();
-    }
-
-    //########################################################################
-    // Private Variables
-
-    /** The unknown source file */
-    private static final SourceFile UNKNOWN = new SourceFile();
-
-    /** The list containing all source files */
-    private static final ArrayList files = new ArrayList();
-
-    //########################################################################
     // Private Fields
 
     /** The name of this source file */
@@ -60,9 +37,6 @@ public class SourceFile {
 
     /** The content of source this file */
     private final byte[] bytes;
-
-    /** The id of this source file */
-    private final int id;
 
     /** The encoding of this source file or null if unspecified */
     private String encoding;
@@ -72,16 +46,6 @@ public class SourceFile {
     private int lineStart  = 0;
     private int lineLength = 0;
     private int nextIndex  = 0;
-
-    //########################################################################
-    // Private Constructors
-
-    /** Initializes a new instance. */
-    private SourceFile() {
-        this.name = "<<unknown source file>>";
-        this.bytes = normalize(new byte[0]);
-        this.id = 0;
-    }
 
     //########################################################################
     // Public Constructors
@@ -105,8 +69,6 @@ public class SourceFile {
     public SourceFile(String name, byte[] bytes) {
         this.name = name;
         this.bytes = normalize(bytes);
-        this.id = files.size() + 1;
-        files.add(this);
     }
 
     //########################################################################
@@ -120,11 +82,6 @@ public class SourceFile {
     /** Returns the content of this source file. */
     public byte[] bytes() {
         return bytes;
-    }
-
-    /** Returns the id of this source file. */
-    public int id() {
-        return id;
     }
 
     /** Sets the encoding of the file. */
@@ -165,14 +122,7 @@ public class SourceFile {
         return new Position(this, line, column);
     }
 
-    /**
-     * Returns the integer encoding the position of the given line and
-     * column of this source file.
-     */
-    public int getEncodedPosition(int line, int column) {
-        return Position.encode(this, line, column);
-    }
-
+    /** Returns the name of this source file. */
     public String toString() {
         return name;
     }
