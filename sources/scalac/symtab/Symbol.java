@@ -765,8 +765,8 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & ACCESSOR) != 0;
     }
 
-    /** Does this symbol denote an accessor to a val parameter? */
-    public final boolean isParamAccessor() {
+    /** Has this symbol the PARAMACCESSOR flag? */
+    public final boolean hasParamAccessorFlag() {
         return (flags & PARAMACCESSOR) != 0;
     }
 
@@ -2159,7 +2159,7 @@ public class ClassSymbol extends TypeSymbol {
             for (int i = 0; i <= index; i++) {
                 do {
                     sym = it.next();
-                } while (sym != NONE && sym.kind != VAL || !sym.isParamAccessor() || !sym.isMethod());
+                } while (sym != NONE && sym.kind != VAL || !sym.hasParamAccessorFlag() || !sym.isMethod());
             }
             //System.out.println(this + ", case field[" + index + "] = " + sym);//DEBUG
         } else {
