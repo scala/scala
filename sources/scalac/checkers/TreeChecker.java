@@ -266,7 +266,7 @@ public class TreeChecker {
         case Return(Tree value):
             Symbol symbol = tree.symbol();
             assert symbol != null && symbol.isMethod(): show(tree);
-            // !!! assert currentMember() == symbol: show(tree);
+            assert currentMember() == symbol: show(tree);
             return expression(value, currentMember().resultType());
 
         case Throw(Tree value):
