@@ -123,7 +123,7 @@ esac;
 # select script-specific program arguments
 case "$SCRIPT" in
     socos* )
-        JAVA_MAIN="scala.compiler.Main";
+        JAVA_MAIN="scalac.Main";
         ;;
     surus* )
         JAVA_MAIN="scala.interpreter.Main";
