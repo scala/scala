@@ -1249,7 +1249,7 @@ public class Primitives {
             clasz == definitions.ANYREF_CLASS)
             return getJREClassName(definitions.OBJECT_CLASS);
         String suffix = clasz.isModuleClass() && !clasz.isJava() ? "$" : "";
-        String name = jreNameWriter.appendSymbol(clasz, suffix).toString();
+        String name = jreNameWriter.toString(clasz, suffix);
         jreNameWriter.setStringBuffer(null);
         return name;
     }
@@ -1257,7 +1257,7 @@ public class Primitives {
     /** Return the CLR name of given class. */
     public String getCLRClassName(Symbol clasz) {
         assert clasz.isClassType(): Debug.show(clasz);
-        String name = clrNameWriter.appendSymbol(clasz).toString();
+        String name = clrNameWriter.toString(clasz);
         clrNameWriter.setStringBuffer(null);
         return name;
     }

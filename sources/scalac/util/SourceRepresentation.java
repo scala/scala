@@ -221,7 +221,7 @@ public final class SourceRepresentation {
      */
     public static String externalizeFileName(Symbol clasz, String suffix) {
         assert clasz.isClassType(): Debug.show(clasz);
-        String name = fileNameWriter.appendSymbol(clasz, suffix).toString();
+        String name = fileNameWriter.toString(clasz, suffix);
         fileNameWriter.setStringBuffer(null);
         return name;
     }

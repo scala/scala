@@ -548,7 +548,7 @@ public class Evaluator {
     // !!! public
     public String getClassName(Symbol clasz) {
         SymbolNameWriter writer = new SymbolNameWriter().setNameDecoding(true);
-        return writer.appendSymbol(clasz).toString();
+        return writer.toString(clasz);
     }
 
     private String getClassName(Class clasz) {

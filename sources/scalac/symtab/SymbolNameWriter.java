@@ -77,6 +77,9 @@ public class SymbolNameWriter {
     /** The number of pending characters */
     private int pending;
 
+    /** The prefix for the current operation (null if none) */
+    private String prefix;
+
     //########################################################################
     // Public Constructors
 
@@ -181,6 +184,29 @@ public class SymbolNameWriter {
     }
 
     //########################################################################
+    // Public Method - To string operations
+
+    /** Returns the string formed by the symbol. */
+    public String toString(Symbol symbol) {
+        return appendSymbol(symbol).toString();
+    }
+
+    /** Returns the string formed by the prefix and symbol. */
+    public String toString(String prefix, Symbol symbol) {
+        return appendSymbol(prefix, symbol).toString();
+    }
+
+    /** Returns the string formed by the symbol and suffix. */
+    public String toString(Symbol symbol, String suffix) {
+        return appendSymbol(symbol, suffix).toString();
+    }
+
+    /** Returns the string formed by the prefix, symbol and suffix. */
+    public String toString(String prefix, Symbol symbol, String suffix) {
+        return appendSymbol(prefix, symbol, suffix).toString();
+    }
+
+    //########################################################################
     // Public Method - Append operations
 
     /** Appends given symbol. */
@@ -191,8 +217,25 @@ public class SymbolNameWriter {
         return appendPrefix(symbol.owner(), separator).append(name);;
     }
 
+    /** Appends given prefix and symbol. */
+    public StringBuffer appendSymbol(String prefix, Symbol symbol) {
+        assert this.prefix == null && prefix != null;
+        this.prefix = prefix;
+        return appendSymbol(symbol);
+    }
+
     /** Appends given symbol and suffix. */
     public StringBuffer appendSymbol(Symbol symbol, String suffix) {
+        this.pending += suffix.length();
+        return appendSymbol(symbol).append(suffix);
+    }
+
+    /** Appends given prefix, symbol and suffix. */
+    public StringBuffer appendSymbol(String prefix, Symbol symbol,
+        String suffix)
+    {
+        assert this.prefix == null && prefix != null;
+        this.prefix = prefix;
         this.pending += suffix.length();
         return appendSymbol(symbol).append(suffix);
     }
@@ -230,12 +273,15 @@ public class SymbolNameWriter {
 
     /** Returns the string buffer. */
     public StringBuffer getStringBuffer() {
+        if (prefix != null) pending += prefix.length();
         if (buffer == null) {
             this.buffer = new StringBuffer(pending);
         } else {
             buffer.ensureCapacity(buffer.length() + pending);
         }
+        if (prefix != null) buffer.append(prefix);
         this.pending = 0;
+        this.prefix = null;
         return buffer;
     }
 
