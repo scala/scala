@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
 
-import scala.tools.util.Position;
+import scala.tools.util.debug.Debug;
 
 public class Reporter {
 
@@ -217,7 +217,7 @@ public class Reporter {
                 if ("resume".startsWith(line)) return;
             }
         } catch (IOException e) {
-            throw new Error("input read error");
+            throw Debug.abort("input read error");
         }
     }
 
