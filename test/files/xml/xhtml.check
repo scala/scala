@@ -1,3 +1,3 @@
 <html><head><title>a basic xhtml page</title></head><body><h1>Welcome to xhtml in scala</h1><p>a paragraph</p><p>another one, with a <a>link</a> to the LAMP homepage.</p></body></html>
-html(List(head(List(title(List(PCDATA(a basic xhtml page))))),body(List(h1(List(PCDATA(Welcome to xhtml in scala))),p(List(PCDATA(a paragraph))),p(List(PCDATA(another, with a ),a(List(PCDATA(example link))),PCDATA( to lamp homepage)))))))
+html(List(head(List(title(List(Text(a basic xhtml page))))),body(List(h1(List(Text(Welcome to xhtml in scala))),p(List(Text(a paragraph))),p(List(Text(another, with a ),a(List(Text(example link))),Text( to lamp homepage)))))))
 <html version="-//W3C//DTD XHTML Basic 1.0//EN"><head profile=""><title>a basic xhtml page</title></head><body><h1>Welcome to xhtml in scala</h1><p>a paragraph</p><p>another, with a <a href="http://lampwww.epfl.ch">example link</a> to lamp homepage</p></body></html>
