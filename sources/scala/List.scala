@@ -8,7 +8,7 @@ package scala {
   *
   * @arg a the type of the elements contained in the list.
   */
-  trait List[a] {
+  trait List[a] extends Seq[a] {
 
     /** Tests if this list is empty.
     * @return True iff the list contains no element.
@@ -26,13 +26,6 @@ package scala {
     * @throws java.lang.RuntimeException if the list is empty.
     */
     def tail: List[a];
-
-    /** Throws a runtime exception with output message <code>x</code>. This method
-     * is used to signal an error.
-     * @param x message to be displayed.
-     * @throws java.lang.RuntimeException with the given message <code>x</code>.
-     */
-    protected def error[a](x: String):a = (new java.lang.RuntimeException(x)).throw;
 
     /** Add an element <code>x</code> at the beginning of this list.
     * <p>
@@ -59,10 +52,17 @@ package scala {
     /** Returns the number of elements in the list.
     * @return the number of elements in the list.
     */
-    def length: Int = {
-      this match {
-	case Nil() => 0
-        case _ :: xs => xs.length + 1}
+    def length: Int = this match {
+      case Nil() => 0
+      case _ :: xs => xs.length + 1
+    }
+
+    /** Returns the elements in the list as an iterator
+     */
+    def elements: Iterator[a] = new Iterator[a] {
+      var current = List.this;
+      def hasNext: Boolean = !current.isEmpty;
+      def next: a = { val result = current.head; current = current.tail; result }
     }
 
     /** Returns the list without its last element.
@@ -182,7 +182,7 @@ package scala {
     */
     def :_foldl[b](z: b)(f: (b, a) => b): b = match {
       case Nil() => z
-      case x :: xs => (xs.:_foldl@[b](f(z, x)))(f)
+      case x :: xs => (xs.:_foldl[b](f(z, x)))(f)
     }
 
     def foldr[b](z: b)(f: (a, b) => b): b = match {
@@ -281,9 +281,9 @@ package scala {
     * <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
     * @throws java.lang.RuntimeException if lists have different lengths.
     */
-    def zip[b](that: List[b]): List[[a,b]] =
+    def zip[b](that: List[b]): List[Tuple2[a,b]] =
       if (this.isEmpty || that.isEmpty) Nil()
-      else [this.head, that.head] :: this.tail.zip(that.tail);
+      else Tuple2(this.head, that.head) :: this.tail.zip(that.tail);
 
     /** Tests if the given value <code>elem</code> is a member of
     * this list.

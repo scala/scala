@@ -103,9 +103,9 @@ trait Stream[a] {
     tail.copyToArray(xs, start + 1)
   }
 
-  def zip[b](that: Stream[b]): Stream[[a, b]] =
-    if (this.isEmpty || that.isEmpty) new EmptyStream[[a, b]]()
-    else ConsStream([this.head, that.head], this.tail.zip(that.tail));
+  def zip[b](that: Stream[b]): Stream[Tuple2[a, b]] =
+    if (this.isEmpty || that.isEmpty) new EmptyStream[Tuple2[a, b]]()
+    else ConsStream(Tuple2(this.head, that.head), this.tail.zip(that.tail));
 
   def print: Unit =
     if (isEmpty) System.out.println("EmptyStream")
