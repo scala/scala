@@ -30,6 +30,12 @@ import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.NameTransformer;
 
+import java.io.*;
+import scalac.ast.printer.*;
+import ch.epfl.lamp.util.SourceFile;
+import scalac.ast.parser.Parser;
+import scalac.Unit;
+
 /**
  * This class contains functions to retrieve information from a Scala
  * library.
@@ -469,6 +475,43 @@ public class ScalaSearch {
                                       Scope.EMPTY);
         return sym.overriddenSymbol(base);
     }
+
+    ////////////////////////// POST TYPECHECKING ////////////////////////
+
+    public static int queryCounter = 0;
+
+    /**
+     * Parse a string representing a Scala type and resolve its
+     * symbols. This function must be called after the typechecking
+     * phase. If parsing or type checking fails, return Type.NoType.
+     */
+    public static Type typeOfString(String typeString, Global global) {
+        int errorNumber = global.reporter.errors();
+        String unitString = "trait tmp$" + queryCounter +
+            " extends Option[unit] { def f" + typeString + "; }";
+        // Rem: we use a dummy extends clause, otherwise the compiler
+        // complains.
+        queryCounter = queryCounter + 1;
+        InputStream in =
+            new BufferedInputStream(new StringBufferInputStream(unitString));
+        SourceFile sourceFile = null;
+        try {
+            sourceFile = new SourceFile("tmp.scala", in);
+        } catch(IOException e) { }
+        Unit tmpUnit = new Unit(global, sourceFile, false);
+        tmpUnit.body = new Parser(tmpUnit).parse();
+        //TreePrinter treePrinter = new TextTreePrinter(System.out);
+        //treePrinter.print(tmpUnit);
+        global.PHASE.ANALYZER.phase().apply(new Unit[]{ tmpUnit });
+        if (global.reporter.errors() == errorNumber) {
+            Scope tmpScope = tmpUnit.body[0].symbol().members();
+            Type res = tmpScope.lookup(Name.fromString("f")).type();
+            return res;
+        }
+        else
+            return Type.NoType;
+    }
+
 }
 
 //////////////////////////// DOCUMENTED SYMBOLS //////////////////////////////

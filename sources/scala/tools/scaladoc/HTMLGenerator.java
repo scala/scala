@@ -1098,8 +1098,10 @@ public class HTMLGenerator {
 		addSymbolTable(members[i], "All " + titles[i], true);
 	} else {
 	    Symbol[][] members = ScalaSearch.splitMembers(ScalaSearch.members(sym, isDocumented));
-	    for (int i = 0; i < titles.length; i++)
+	    for (int i = 0; i < titles.length; i++) {
+                Arrays.sort(members[i + 2], ScalaSearch.symAlphaOrder);
 		addSymbolTable(members[i + 2], titles[i], false);
+            }
 	}
 
         if (validate)
