@@ -933,6 +933,15 @@ public abstract class Symbol implements Modifiers, Kinds {
         return type;
     }
 
+    /** The infos of these symbols as an array.
+     */
+    static public Type[] info(Symbol[] syms) {
+        Type[] tps = new Type[syms.length];
+        for (int i = 0; i < syms.length; i++)
+            tps[i] = syms[i].info();
+        return tps;
+    }
+
     /** The types of these symbols as an array.
      */
     static public Type[] type(Symbol[] syms) {
