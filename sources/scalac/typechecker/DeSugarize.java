@@ -675,12 +675,11 @@ public class DeSugarize implements Kinds, Modifiers {
      */
     void addCaseElement(TreeList ts, ValDef vparam) {
 	//System.out.println("add case for " + vparam.name);//DEBUG
-	Name name = vparam.name;
-	vparam.name = Name.fromString(name + "$");
 	ts.append(
 	    make.ValDef(
-		vparam.pos, CASE, name, vparam.tpe,
-		make.Ident(vparam.pos, vparam.name)));
+		vparam.pos, CASE, vparam.name, vparam.tpe,
+		make.Ident(vparam.pos, vparam.name)
+		.setSymbol(vparam.symbol()).setType(vparam.symbol().type())));
     }
 
     /** add case constructor, value defintiions and access functions.

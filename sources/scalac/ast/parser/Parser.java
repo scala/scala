@@ -1457,7 +1457,7 @@ public class Parser implements Tokens {
 	} else if (s.token == EQUALS) {
 	    s.nextToken();
             return make.TypeDef(pos, mods, name, type());
-	} else if (s.token == SEMI || s.token == COMMA) {
+	} else if (s.token == SEMI || s.token == COMMA || s.token == RBRACE) {
 	    return make.TypeDef(
 		pos, mods | Modifiers.DEFERRED, name,
 		scalaDot(pos, Names.Any.toTypeName()));
@@ -1488,7 +1488,7 @@ public class Parser implements Tokens {
     }
 
     /** ClassTemplate ::= extends Template
-     *                  | TemplateBody
+     *                  | [TemplateBody]
      */
     Template classTemplate() {
         int pos = s.pos;
@@ -1499,6 +1499,10 @@ public class Parser implements Tokens {
 	    return (Template)make.Template(pos,
 		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
 		templateBody());
+	} else if (s.token == SEMI || s.token == COMMA || s.token == RBRACE) {
+	    return (Template)make.Template(pos,
+		new Tree[]{scalaDot(pos, Names.Object.toConstrName())},
+		Tree.EMPTY_ARRAY);
 	} else {
 	    syntaxError("`extends' or `{' expected", true);
 	    return (Template)make.Template(pos,

@@ -345,11 +345,16 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *  3. Check that case classes do not inherit from case classes.
      */
     void validateBaseTypes(Symbol clazz) {
-	if (clazz.type().parents().length > 1)
-	    validateBaseTypes(clazz, clazz.type(),
-			      new boolean[clazz.closure().length], 0);
+	validateBaseTypes(clazz, clazz.type().parents(),
+			  new boolean[clazz.closure().length], 0);
     }
     //where
+        void validateBaseTypes(Symbol clazz, Type[] tps, boolean[] seen, int start) {
+	    for (int i = tps.length - 1; i >= start; i--) {
+		validateBaseTypes(clazz, tps[i].unalias(), seen, i == 0 ? 0 : 1);
+	    }
+	}
+
 	void validateBaseTypes(Symbol clazz, Type tp, boolean[] seen, int start) {
 	    Symbol baseclazz = tp.symbol();
 	    if (baseclazz.kind == CLASS) {
@@ -378,13 +383,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		// check that case classes do not inherit from case classes
 		if (clazz.isCaseClass() && baseclazz.isCaseClass())
 		    error(clazz.pos, "illegal inheritance;\n " + "case " + clazz +
-			  "inherits from other case " + baseclazz);
+			  " inherits from other case " + baseclazz);
 
 		seen[index] = true;
-		Type[] parents = tp.parents();
-		for (int i = parents.length - 1; i >= start; i--) {
-		    validateBaseTypes(clazz, parents[i].unalias(), seen, i == 0 ? 0 : 1);
-		}
+		validateBaseTypes(clazz, tp.parents(), seen, start);
 	    }
 	}
 
@@ -761,12 +763,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    assert (mods & LOCKED) == 0 || sym.isAnonymousClass(): sym; // to catch repeated evaluations
 	    ((ClassDef) tree).mods |= LOCKED;
 
-	    if ((mods & CASE) != 0 && vparams.length > 0)
-		templ.body = desugarize.addCaseElements(templ.body, vparams[0]);
-
 	    pushContext(tree, sym.constructor(), new Scope(context.scope));
 	    Symbol[] tparamSyms = enterParams(tparams);
 	    Symbol[][] vparamSyms = enterParams(vparams);
+
+	    if ((mods & CASE) != 0 && vparams.length > 0)
+		templ.body = desugarize.addCaseElements(templ.body, vparams[0]);
+
 	    for (int i = 0; i < vparamSyms.length; i++)
 		for (int j = 0; j < vparamSyms[i].length; j++)
 		    context.scope.unlink(
@@ -810,7 +813,11 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		    owntype = tpe.type;
 		} else {
-		    ((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
+		    if ((mods & CASE) != 0) {
+			//rhs was already attributed
+		    } else {
+			((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
+		    }
 		    owntype = rhs.type;
 		}
 		popContext();
@@ -1609,9 +1616,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tpe1 = gen.mkType(rhs1.pos, rhs.type);
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
-		    pushContext(tree, sym, context.scope);
-		    rhs1 = transform(rhs1, EXPRmode, sym.type());
-		    popContext();
+		    if ((mods & CASE) != 0) {
+			rhs1 = rhs; //rhs was already attributed
+		    } else {
+			pushContext(tree, sym, context.scope);
+			rhs1 = transform(rhs1, EXPRmode, sym.type());
+			popContext();
+		    }
 		}
 		return copy.ValDef(tree, mods, name, tpe1, rhs1)
 		    .setType(definitions.UNIT_TYPE);
