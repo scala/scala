@@ -515,10 +515,15 @@ public class ScalaSearch {
     //////////////////////////// OVERRIDEN SYMBOL //////////////////////////////
 
     public static Symbol overridenBySymbol(Symbol sym) {
-        Type base = Type.compoundTypeWithOwner(sym.owner(),
-                                      sym.owner().info().parents(),
-                                      Scope.EMPTY);
-        return sym.overriddenSymbol(base);
+        Symbol owner = sym.owner();
+        if (owner.isRoot() || owner.isPackageClass())
+            return Symbol.NONE;
+        else {
+            Type base = Type.compoundTypeWithOwner(owner,
+                                                   sym.owner().info().parents(),
+                                                   Scope.EMPTY);
+            return sym.overriddenSymbol(base);
+        }
     }
 
     ////////////////////////// POST TYPECHECKING ////////////////////////

@@ -123,6 +123,9 @@ public class HTTPServer extends Thread {
         while (true) {
             try {
                 Socket request = server.accept();
+                InetSocketAddress addr = (InetSocketAddress) request.getRemoteSocketAddress();
+                if (addr != null)
+                    System.out.println("Connection from: " + addr.getAddress().getCanonicalHostName());
                 RequestProcessor.processRequest(request);
             }
             catch (IOException e) {
