@@ -16,6 +16,7 @@ object Test1 {
   }
 
   class C extends B with M1 {
+    override def f = super[M1].f;
   }
 
   def main(args: Array[String]): Unit = {
