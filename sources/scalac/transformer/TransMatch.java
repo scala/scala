@@ -29,6 +29,53 @@ public class TransMatch extends OwnerTransformer {
 
     public static final Name MATCH_N = Name.fromString("match");
 
+      /** container. classes AlgebraicMatcher and SequenceMatcher get input and store their results in here.
+       *  resembles the 'Memento' design pattern, could also be named 'Liaison'
+       */
+      public static class Matcher {
+
+	  /** owner of the code we create (input)
+	   */
+	  public Symbol owner;
+
+	  /** the selector value (input)
+	   */
+	  public Tree   selector;
+
+	  /** type of the result of the whole match (input)
+	   */
+	  public Type   resultType;
+
+	  /** tree representing the matcher (output)
+	   */
+	  public Tree   tree;
+
+	  public int pos;
+
+	  //public HashMap varMap;
+	  //public Tree[]  stms;
+
+	  public Matcher(Symbol owner,
+			 Tree root,
+			 Type resultType) {
+
+	      assert( owner != null ) : "owner is null";
+	      assert owner != Symbol.NONE ;
+	      this.owner      = owner;
+
+	      assert root != null;
+	      assert root.type != null;
+	      this.selector   = root;
+
+	      assert this.resultType != Type.NoType;
+	      this.resultType = resultType;
+
+	      this.pos        = root.pos; // for convenience only
+
+	  }
+
+      }
+
     Unit unit;
 
     /** type inference engine
@@ -46,14 +93,15 @@ public class TransMatch extends OwnerTransformer {
     }
 
     protected Tree transform(Tree root, CaseDef[] cases, Type restpe) {
-        PatternMatcher pm = new PatternMatcher(unit, infer, currentOwner, root, restpe);
-        for (int i = 0; i < cases.length; i++)
-            pm.enter(cases[i]);
+        PatternMatcher pm = new PatternMatcher( unit, infer );
+	Matcher matcher = new Matcher( currentOwner, root, restpe );
+
+	pm.construct( matcher, cases );
         if (global.log()) {
             global.log("internal pattern matching structure");
             pm.print();
         }
-        return pm.toTree();
+        return matcher.tree;
     }
 
     public Tree transform(Tree tree) {
