@@ -105,7 +105,7 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
   */
   def subseq(from: Int, len: Int): Seq[A] =
     if ((from + len) <= length) new Seq[A] {
-      def apply(n: Int): A = Seq.this.apply(n - from);
+      def apply(n: Int): A = Seq.this.apply(n + from);
       def length: Int = len;
       def elements: Iterator[A] = new Iterator[A] {
         var i = from;
