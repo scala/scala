@@ -353,7 +353,6 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Tree[] body = transform(impl.body);
                 body = Tree.concat(body, genSuperMethods());
                 context = context.outer;
-                if (context != null) clasz.flags |= Modifiers.STATIC;
                 return gen.ClassDef(clasz, parents, impl.symbol(), body);
 
             case DefDef(_, _, _, _, _, Tree rhs):

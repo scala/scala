@@ -40,7 +40,6 @@ public interface Modifiers {
 
     int PACKAGE       = 0x00100000;   // symbol is a java package.
     int LABEL         = 0x00200000;   // symbol is a label symbol
-    int STATIC        = 0x00400000;   // "static" inner classes (i.e. after class norm.)
     int STABLE        = 0x00800000;   // functions that are assumed to be stable
                                     // (typically, access methods for valdefs)
 
@@ -66,7 +65,7 @@ public interface Modifiers {
     int SOURCEFLAGS   = 0x00000077 | DEF | REPEATED | MODUL | MUTABLE | PACKAGE | PARAM | TRAIT | COVARIANT | CONTRAVARIANT;  // these modifiers can be set in source programs.
     int ACCESSFLAGS   = PRIVATE | PROTECTED;
     int VARIANCES     = COVARIANT | CONTRAVARIANT;
-    int CONSTRFLAGS   = CASE | JAVA | STATIC;
+    int CONSTRFLAGS   = CASE | JAVA;
 
     public static class Helper {
 
@@ -114,10 +113,6 @@ public interface Modifiers {
 
         public static boolean isModClass(int flags) {
             return (flags & MODUL)  != 0;
-        }
-
-        public static boolean isStatic(int flags) {
-            return (flags & STATIC)  != 0;
         }
 
         public static boolean isJava(int flags) {

@@ -847,7 +847,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public Symbol lookup(Symbol sym, Type pre, Relation relation) {
         assert !sym.isOverloaded(): Debug.show(sym);
-        if (sym.isPrivate() || sym.isStatic() || sym.isInitializer())
+        if (sym.isPrivate() || sym.isInitializer())
             return symbol().isSubClass(sym.owner()) ? sym : Symbol.NONE;
         Type symtype = pre.memberType(sym).derefDef();
         Symbol[] classes = classes();
@@ -882,8 +882,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         boolean warn)
     {
         if (sym == sym1) return true;
-        if (sym1.isPrivate() || sym1.isStatic() || sym1.isInitializer())
-            return false;
+        if (sym1.isPrivate() || sym1.isInitializer()) return false;
 //         System.out.println("Is 'sym1' " + relation + " 'sym' in 'pre' ?"
 //             + "\n  sym      : " + Debug.show(sym)
 //             + "\n  sym1     : " + Debug.show(sym1)

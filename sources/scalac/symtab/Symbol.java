@@ -482,11 +482,6 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & SYNTHETIC) != 0;
     }
 
-    /** Does this symbol denote a static member? */
-    public final boolean isStatic() {
-        return (flags & STATIC) != 0;
-    }
-
     /** Does this symbol denote an accessor? */
     public final boolean isAccessor() {
         return (flags & ACCESSOR) != 0;
@@ -1279,7 +1274,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public boolean overrides(Symbol that) {
         return
-            ((this.flags | that.flags) & (PRIVATE | STATIC)) == 0 &&
+            ((this.flags | that.flags) & PRIVATE) == 0 &&
             this.name == that.name &&
             owner.thisType().memberType(this).derefDef().isSubType(
                 owner.thisType().memberType(that).derefDef());

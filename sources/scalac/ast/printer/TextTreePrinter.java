@@ -695,10 +695,6 @@ public class TextTreePrinter implements TreePrinter {
             print(KW_DEF);
             print(Text.Space);
         }
-        if ((flags & Modifiers.STATIC) != 0) {
-            print(KW_STATIC);
-            print(Text.Space);
-        }
     }
 
     protected void printTemplate(Symbol symbol,

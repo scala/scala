@@ -590,10 +590,6 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
       print(KW_DEF);
       print(Space);
     }
-    if ((flags & Modifiers.STATIC) != 0) {
-      print(KW_STATIC);
-      print(Space);
-    }
   }
 
   protected def printTemplate(symbol: Symbol,

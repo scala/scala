@@ -636,27 +636,14 @@ final class TypeCreator {
     /** create the method corresponding to the symbol
      */
     MethodBase createMethod(Symbol sym) {
-	final Symbol owner = sym.owner();
 	MethodBase method = null;
 	//log("createMethod: " + dumpSym(sym));
 	//log("createMethod: sym.owner() = " + dumpSym(sym.owner()));
 	switch (sym.info()) {
 	case MethodType(Symbol[] vparams, scalac.symtab.Type result):
-	    if (sym.isInitializer()) {
-		//log("constructor symbol: " + dumpSym(sym));
-		//TypeBuilder type = (TypeBuilder) getType(result);
-		TypeBuilder type = (TypeBuilder) getType(sym.owner());
-		method = createMethod(type, sym.name, sym.info(), sym.flags);
-	    } else {
-		int flags = ( owner.isJava() && owner.isModuleClass() ) ?
-		    sym.flags | Modifiers.STATIC :
-		    sym.flags;
-		if (owner.isInterface())
-		    flags |= Modifiers.DEFERRED;
-
-		TypeBuilder type = (TypeBuilder)getType(owner);
-		method = createMethod(type, sym.name, sym.info(), flags);
-	    }
+            TypeBuilder type = (TypeBuilder)getType(sym.owner());
+            method = createMethod
+                (type, sym.name, sym.info(), translateMethodAttributes(sym));
 	    break;
 	default:
 	    assert false : "Symbol doesn't have a method type: " + dumpSym(sym);
@@ -670,7 +657,7 @@ final class TypeCreator {
     /**
      */
     MethodBase createMethod(TypeBuilder type, Name name,
-			    scalac.symtab.Type symType, int flags)
+			    scalac.symtab.Type symType, short attr)
     {
 	MethodBase method = null;
 	switch (symType) {
@@ -681,8 +668,7 @@ final class TypeCreator {
 
 	    if (name == Names.CONSTRUCTOR) {
 		ConstructorBuilder constructor = type.DefineConstructor
-		    (translateMethodAttributes(flags, true),
-		     CallingConventions.Standard, params);
+		    (attr, CallingConventions.Standard, params);
 
 		for (int i = 0; i < vparams.length; i++)
 		    constructor.DefineParameter
@@ -696,8 +682,7 @@ final class TypeCreator {
 		else  sname = name.toString();
 
 		MethodBuilder methodBuilder = type.DefineMethod
-		    (sname, translateMethodAttributes(flags, false),
-		     getType(result), params);
+		    (sname, attr, getType(result), params);
 
 		for (int i = 0; i < vparams.length; i++)
 		    methodBuilder.DefineParameter
@@ -755,10 +740,8 @@ final class TypeCreator {
 	    assert field instanceof FieldBuilder;
 	    return field;
 	}
-	int flags = ( sym.owner().isJava() && sym.owner().isModuleClass() ) ?
-	    sym.flags | Modifiers.STATIC : sym.flags;
 	field = owner.DefineField(sym.name.toString(), getType(sym.type()),
-				  translateFieldAttributes(flags));
+				  translateFieldAttributes(sym));
 	Object o = symbols2fields.put(sym, field);
 	assert o == null : "Cannot re-define field: " + dumpSym(sym);
 	return field;
@@ -859,7 +842,8 @@ final class TypeCreator {
 
     /** Translates Scala modifiers into FieldAttributes
      */
-    public static short translateFieldAttributes(int mods) {
+    public static short translateFieldAttributes(Symbol field) {
+	int mods = field.flags;
 	int attr = 0;
 
 	if (Modifiers.Helper.isFinal(mods))
@@ -871,7 +855,7 @@ final class TypeCreator {
 	else
 	    attr |= FieldAttributes.Public;
 
-	if (Modifiers.Helper.isStatic(mods))
+	if (field.owner().isJava() && field.owner().isModuleClass())
 	    attr |= FieldAttributes.Static;
 
 	return (short)attr;
@@ -880,10 +864,13 @@ final class TypeCreator {
 
     /** Translates Scala modifiers into MethodAttributes
      */
-    public static short translateMethodAttributes(int mods, boolean constructor)
+    public static short translateMethodAttributes(Symbol method)
     {
+        int mods = method.flags;
+        if (method.owner().isInterface())
+            mods |= Modifiers.DEFERRED;
 	int attr = MethodAttributes.HideBySig;
-	if (!constructor) {
+	if (!method.isInitializer()) {
 	    attr |= MethodAttributes.Virtual;
  	    if (Modifiers.Helper.isFinal(mods))
  		attr |= MethodAttributes.Final;
