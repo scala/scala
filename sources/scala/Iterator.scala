@@ -48,7 +48,7 @@ object Iterator {
    *
    *  @param lo the start value of the iterator
    *  @param end the end value of the iterator
-   *  @return the iterator starting at value <code>lo</code>.
+   *  @return the iterator with values in range [lo;end).
    */
   def range(lo: Int, end: Int): Iterator[Int] =
     range(lo, end, 1);
@@ -61,7 +61,7 @@ object Iterator {
    *  @param lo the start value of the iterator
    *  @param end the end value of the iterator
    *  @param step the increment value of the iterator
-   *  @return the iterator starting at value <code>lo</code>.
+   *  @return the iterator with values in range [lo;end).
    */
   def range(lo: Int, end: Int, step: Int) = new Iterator[Int] {
     private var i = lo;
@@ -80,7 +80,7 @@ object Iterator {
    *  @param lo the start value of the iterator
    *  @param end the end value of the iterator
    *  @param step the increment function of the iterator
-   *  @return the iterator starting at value <code>lo</code>.
+   *  @return the iterator with values in range [lo;end).
    */
   def range(lo: Int, end: Int, step: Int => Int) = new Iterator[Int] {
     private var i = lo;
