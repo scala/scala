@@ -95,7 +95,7 @@
   (let ((classes-dir (get-temp-dir prog-name)))
     (message "Running program ~a" prog-name)
     (with-env (("CLASSPATH" . ,(string-append classes-dir ":" (getenv "CLASSPATH"))))
-      (write-string (run/string (java ,prog-name)) out-port))))
+      (write-string (run/string (scala ,prog-name)) out-port))))
 
 
 ;; Main iteration
