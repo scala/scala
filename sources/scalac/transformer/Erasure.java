@@ -417,22 +417,7 @@ public class Erasure extends Transformer implements Modifiers {
                         ? primitives.getUnboxValueSymbol(tp)
                         : primitives.getInstanceTestSymbol(tp);
                     qual1 = coerce(qual1, primSym.owner().type());
-                    Tree t = gen.Select(qual1, primSym);
-		    if (sym == definitions.AS) {
-			return t;
-		    } else {
-			Tree test =
-			    gen.TypeApply(
-				tree.pos,
-				transform(fun),
-				new Tree[]{
-				    gen.mkType(tree.pos, primSym.owner().type())
-				});
-			return
-			    gen.Apply(
-				gen.Select(test, definitions.AMPAMP()),
-				new Tree[]{t});
-		    }
+                    return gen.Select(qual1, primSym);
                 } else
                     return copy.TypeApply(tree, transform(fun), transform(args))
                         .setType(owntype);
@@ -440,6 +425,8 @@ public class Erasure extends Transformer implements Modifiers {
                 return transform(fun);
 
 	case Apply(Tree fun, Tree[] args):
+	    Type isSelectorType = Type.NoType;
+	    Tree isQualTree = Tree.Empty;
             switch (fun) {
             case Select(Tree array, _):
                 if (isUnboxedArray(array.type().erasure())) {
@@ -449,8 +436,15 @@ public class Erasure extends Transformer implements Modifiers {
                     case UPDATE: return transformUpdate(tree);
                     }
                 }
-            }
+		break;
+	    case TypeApply(Tree poly, Tree[] targs):
+		if (poly.symbol() == definitions.IS) {
+		    isSelectorType = targs[0].type.erasure();
+		    isQualTree = poly;
+		}
+	    }
 	    Tree fun1 = transform(fun);
+
             if (fun1.symbol() == definitions.NULL) return fun1.setType(owntype);
 	    if (global.debug) global.log("fn: " + fun1.symbol() + ":" + fun1.type);//debug
 	    switch (fun1.type) {
@@ -466,7 +460,35 @@ public class Erasure extends Transformer implements Modifiers {
 		    }
 		    args1[i] = arg1;
 		}
-		return coerce(copy.Apply(tree, fun1, args1).setType(restpe), owntype);
+		Tree result = coerce(copy.Apply(tree, fun1, args1).setType(restpe), owntype);
+		if (isUnboxed(isSelectorType)) {
+		    Symbol primSym = primitives.getInstanceTestSymbol(isSelectorType);
+		    Symbol ampAmpSym = definitions.AMPAMP();
+		    result = make.Apply(
+			result.pos,
+			make.Select(
+			    result.pos,
+			    box(
+				make.Apply(
+				    fun.pos,
+				    make.TypeApply(
+					fun.pos,
+					transform(isQualTree),
+					new Tree[]{
+					    gen.mkType(tree.pos, primSym.owner().type())}
+					).setType(Type.MethodType(Symbol.EMPTY_ARRAY, result.type)),
+				    Tree.EMPTY_ARRAY
+				    ).setType(result.type)),
+			    ampAmpSym.name
+			    ).setSymbol(ampAmpSym)
+			.setType(ampAmpSym.type().erasure()),
+			new Tree[]{result}
+			).setType(result.type);
+		    //new scalac.ast.printer.TextTreePrinter().print("IS: ").print(result).println().end();//debug
+		}
+
+		return result;
+
 	    default:
 		global.debugPrinter.print(fun1);
 		throw Debug.abort("bad method type: " + Debug.show(fun1.type) + " " + Debug.show(fun1.symbol()));
