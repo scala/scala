@@ -1165,7 +1165,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    argtypes[i] = params[i].type();
 	}
         Type[] parentTypes = {
-            definitions.OBJECT_TYPE(),
+            definitions.ANYREF_TYPE(),
             definitions.FUNCTION_TYPE(argtypes, restype) };
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
@@ -1196,7 +1196,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	ClassSymbol clazz = new ClassSymbol(
 	    pos, Names.ANON_CLASS_NAME.toTypeName(), owner, 0);
         Type[] parentTypes = {
-            definitions.OBJECT_TYPE(),
+            definitions.ANYREF_TYPE(),
             definitions.PARTIALFUNCTION_TYPE(pattype, restype)};
 	clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(

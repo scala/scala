@@ -491,7 +491,7 @@ public class Definitions {
         DOUBLE_CLASS = getClass(Names.scala_Double);
 
         // the scala reference classes
-	OBJECT_CLASS = getClass(Names.scala_Object);
+	OBJECT_CLASS = getClass(Names.scala_ScalaObject);
         STRING_CLASS = newAlias(SCALA_PACKAGE, Names.String, 0);
         REF_CLASS = getClass(Names.scala_Ref);
         for (int i = 1; i < TUPLE_COUNT; i++) {

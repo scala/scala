@@ -10,7 +10,7 @@
 
 package scala.runtime;
 
-/** @meta class [?A] extends scala.Object;
+/** @meta class [?A] extends java.lang.Object;
  */
 public class ResultOrException {
 

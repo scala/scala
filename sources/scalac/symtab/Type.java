@@ -754,7 +754,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     /** Is this type of the form scala.FunctionN[T_1, ..., T_n, +T] or
-     *  scala.Object with scala.FunctionN[T_1, ..., T_n, +T]?
+     *  scala.AnyRef with scala.FunctionN[T_1, ..., T_n, +T] or
+     *  java.lang.Object with scala.FunctionN[T_1, ..., T_n, +T]?
      */
     public boolean isFunctionType() {
         switch (this) {
@@ -764,7 +765,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         case CompoundType(Type[] parents, Scope members):
             return members.isEmpty() &&
                 parents.length == 2 &&
-                parents[0].symbol().fullName() == Names.scala_Object &&
+                (parents[0].symbol().fullName() == Names.java_lang_Object ||
+		 parents[0].symbol().fullName() == Names.scala_AnyRef) &&
                 parents[1].isFunctionType();
         }
         return false;
@@ -850,13 +852,17 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             // take precedence over abstract ones.
             int i = parts.length;
             sym = Symbol.NONE;
-            while (i > 0 && (sym.kind == NONE || (sym.flags & DEFERRED) != 0)) {
+            while (i > 0) {
                 i--;
                 Symbol sym1 = parts[i].lookupNonPrivate(name);
                 if (sym1.kind != NONE &&
                     (sym1.flags & PRIVATE) == 0 &&
-                    (sym.kind == NONE ||
-		     (sym1.flags & DEFERRED) == 0 ||
+                    (sym.kind == NONE
+		     ||
+		     (sym.flags & DEFERRED) != 0 &&
+		     (sym1.flags & DEFERRED) == 0
+		     ||
+		     (sym.flags & DEFERRED) == (sym1.flags & DEFERRED) &&
 		     sym1.owner().isSubClass(sym.owner())))
                     sym = sym1;
             }

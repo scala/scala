@@ -246,7 +246,6 @@ public class CLRPackageParser extends MetadataParser {
 		clazz.allConstructors().setInfo(completer.staticsParser(clazz));
 		clazz.module().setInfo(completer.staticsParser(clazz));
 		members.enter(clazz);
-		// ATTENTION: only if not scala.Object!
 		Scope.Entry e = members.lookupEntry(clazz.module().name);
 		if (e != Scope.Entry.NONE)
 		    members.unlink(e);

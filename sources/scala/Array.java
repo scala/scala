@@ -14,7 +14,7 @@ package scala;
 /** @meta class [?T] extends scala.Function1[scala.Int, ?T];
  */
 public abstract class Array
-    extends scala.Object
+    extends java.lang.Object
     implements Function1, Cloneable, java.io.Serializable {
 
     /** @meta constr (scala.Int);

@@ -1194,7 +1194,7 @@ type Abs = Comparable[Abs];       // recursive type alias
 type S <: T;                      // S, T are bounded by themselves.
 type T <: S;
 
-type T <: Object with T;          // T is abstract, may not be part of
+type T <: AnyRef with T;          // T is abstract, may not be part of
                                   // compound type
 
 type T >: Comparable[T.That];     // Cannot select from T.
@@ -1310,7 +1310,7 @@ class P[a, b] {
 }\end{lstlisting}
 With this variance annotation, elements
 of type $P$ subtype covariantly with respect to their arguments. 
-For instance, ~\lstinline@P[IOExeption, String] <: P[Throwable, Object]@.
+For instance, ~\lstinline@P[IOExeption, String] <: P[Throwable, AnyRef]@.
 
 If we make the elements of $P$ mutable, 
 the variance annotation becomes illegal. 
@@ -1348,7 +1348,7 @@ trait OutputChannel[-a] {
 }
 \end{lstlisting}
 With that annotation, we have that
-\lstinline@OutputChannel[Object]@ conforms to \lstinline@OutputChannel[String]@.  
+\lstinline@OutputChannel[AnyRef]@ conforms to \lstinline@OutputChannel[String]@.  
 That is, a
 channel on which one can write any object can substitute for a channel
 on which one can write only strings.
@@ -1965,7 +1965,7 @@ $sc$ with $mc_1$ with $\ldots$ with $mc_n$ { $stats$ }
 which defines the base classes, behavior and initial state of objects of
 the class. The extends clause ~\lstinline@extends $sc$ with $\ldots$ with $mc_n$@~ 
 can be omitted, in which case
-~\lstinline@extends scala.Object@~ is assumed.  The class body
+~\lstinline@extends scala.AnyRef@~ is assumed.  The class body
 ~\lstinline@{$stats\,$}@~ may also be omitted, in which case the empty body
 \lstinline@{}@ is assumed.
 \end{itemize}
@@ -2077,10 +2077,10 @@ $x$ that defines $x$ to be an alias of the parameter.
 %parameters.
 
 Every case class implicitly overrides some method definitions of class
-\lstinline@scala.Object@ (\sref{sec:cls-object}) unless a definition of the same
+\lstinline@scala.AnyRef@ (\sref{sec:cls-object}) unless a definition of the same
 method is already given in the case class itself or a concrete
 definition of the same method is given in some base class of the case
-class different from \code{Object}. In particular:
+class different from \code{AnyRef}. In particular:
 \begin{itemize}
 \item[] Method ~\lstinline@equals: (Any)boolean@~ is structural equality, where two
 instances are equal if they belong to the same class and
@@ -2211,7 +2211,7 @@ $sc$ with $mc_1$ with $\ldots$ with $mc_n$ { $stats$ }
 which defines the base classes, behavior and initial state of $m$.
 The extends clause ~\lstinline@extends $sc$ with $\ldots$ with $mc_n$@~
 can be omitted, in which case
-~\lstinline@extends scala.Object@~ is assumed.  The class body
+~\lstinline@extends scala.AnyRef@~ is assumed.  The class body
 ~\lstinline@{$stats\,$}@~ may also be omitted, in which case the empty body
 \lstinline@{}@ is assumed.
 \end{itemize}
@@ -2711,7 +2711,7 @@ object, which is initialized by evaluating the expression template.
 \example Consider the class
 \begin{lstlisting}
 abstract class C {
-  type T; val x: T; def f(x: T): Object
+  type T; val x: T; def f(x: T): AnyRef
 }
 \end{lstlisting}
 and the instance creation expression
@@ -3637,11 +3637,12 @@ indirectly from this class.  Class \code{Any} has two direct
 subclasses: \code{AnyRef} and\code{AnyVal}.
 
 The subclass \code{AnyRef} represents all values which are represented
-as objects in the underlying host system. A subclass of \code{AnyRef}
-is class \code{Object}. Every user-defined Scala class inherits
-directly or indirectly from this class. Classes written in other
-languages still inherit from \code{scala.AnyRef}, but not necessarily
-from \code{scala.Object}. 
+as objects in the underlying host system. Every user-defined Scala
+class inherits directly or indirectly from this class. Furthermore,
+every user-defined Scala class also inherits the trait
+\code{scala.ScalaObject}.  Classes written in other languages still
+inherit from \code{scala.AnyRef}, but not from
+\code{scala.ScalaObject}.
 
 The class \code{AnyVal} has a fixed number subclasses, which describe
 values which are not implemented as objects in the underlying host
@@ -3695,7 +3696,7 @@ abstract class Any {
 }
 final class AnyVal extends Any;
 class AnyRef extends Any;
-class Object extends AnyRef;
+trait ScalaObject extends AnyRef;
 \end{lstlisting}
 
 The type cast operation \verb@asInstanceOf@ has a special meaning (not

@@ -726,12 +726,16 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 
 	private Tree tagMethod(ClassSymbol clazz) {
-        Symbol tagSym = new TermSymbol(
-            clazz.pos, Names.tag, clazz,
-            clazz.isSubClass(defs.OBJECT_CLASS) ? OVERRIDE : 0)
-            .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE()));
-        clazz.info().members().enter(tagSym);
-        return gen.DefDef(tagSym, gen.mkIntLit(clazz.pos, clazz.tag()));
+	    Symbol tagSym = new TermSymbol(
+		clazz.pos, Names.tag, clazz,
+		clazz.isSubClass(defs.OBJECT_CLASS) ? OVERRIDE : 0)
+		.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE()));
+	    clazz.info().members().enter(tagSym);
+	    return gen.DefDef(
+		tagSym,
+		gen.mkIntLit(
+		    clazz.pos,
+		    clazz.isCaseClass() ? clazz.tag() : 0));
 	}
 
     private Tree hashCodeMethod(ClassSymbol clazz) {
@@ -772,18 +776,23 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
     // where
 
-    private Template addCaseMethods(Template templ, Symbol sym) {
-	if (sym.kind == CLASS && (sym.flags & CASE) != 0) {
-	    Tree[] body1 = addCaseMethods(templ.body, (ClassSymbol) sym);
-	    return copy.Template(templ, templ.parents, body1);
+    private Template addCaseMethods(Template templ, ClassSymbol sym) {
+	Tree[] body1;
+	if (sym.isCaseClass()) {
+	    body1 = addCaseMethods(templ.body, sym);
+	} else {
+	    body1 = new Tree[templ.body.length + 1];
+	    System.arraycopy(templ.body, 0, body1, 0, templ.body.length);
+	    body1[templ.body.length] = tagMethod(sym);
 	}
-	return templ;
+	return copy.Template(templ, templ.parents, body1);
     }
 
     private Tree[] addCaseMethods(Tree[] stats, ClassSymbol clazz) {
 	TreeList ts = new TreeList();
-	if (!hasImplementation(clazz, Names.toString))
+	if (!hasImplementation(clazz, Names.toString)) {
 	    ts.append(toStringMethod(clazz));
+	}
 	if (!hasImplementation(clazz, Names.equals))
 	    ts.append(equalsMethod(clazz));
 	if (!hasImplementation(clazz, Names.hashCode))
@@ -934,7 +943,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    validateVariance(sym, sym.info(), CoVariance);
 	    validateVariance(sym, sym.typeOfThis(), CoVariance);
 	    Tree tree1 = super.transform(
-		copy.ClassDef(tree, tree.symbol(), tparams, vparams, tpe, addCaseMethods(templ, tree.symbol())));
+		copy.ClassDef(tree, tree.symbol(), tparams, vparams, tpe, addCaseMethods(templ, (ClassSymbol) tree.symbol())));
 	    enclClass = enclClassPrev;
 	    return tree1;
 

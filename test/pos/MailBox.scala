@@ -8,7 +8,7 @@ class MailBox with Monitor {
     var next: LinkedList[a] = null;
   }
 
-  def insert(l: LinkedList[a], x: a): LinkedList[a] {
+  def insert[a](l: LinkedList[a], x: a): LinkedList[a] = {
     l.next = new LinkedList[a];
     l.next.elem = x;
     l.next.next = l.next;

@@ -11,9 +11,9 @@
 
 package scala;
 
-/** @meta class [?T] extends scala.Object;
+/** @meta class [?T] extends java.lang.Object;
  */
-public class Ref extends scala.Object {
+public class Ref extends java.lang.Object {
 
     /** @meta field ?T;
      */

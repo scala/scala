@@ -1409,17 +1409,18 @@ Every class in Scala has a superclass which it extends.
 only the root class \code{Object}, which does not have a superclass,
 and which is indirectly extended by every other class.  }
 If a class
-does not mention a superclass in its definition, the root class
-\code{scala.Object} is implicitly assumed. For instance, class
+does not mention a superclass in its definition, the root type
+\code{scala.AnyRef} is implicitly assumed (for Java implementations,
+this type is an alias for \code{java.lang.Object}. For instance, class
 \code{Rational} could equivalently be defined as
 \begin{lstlisting}
-class Rational(n: int, d: int) extends Object {
+class Rational(n: int, d: int) extends AnyRef {
   ... // as before
 }
 \end{lstlisting}
 A class inherits all members from its superclass. It may also redefine
 (or: {\em override}) some inherited members. For instance, class
-\code{Object} defines
+\code{java.lang.Object} defines
 a method
 \code{toString} which returns a representation of the object as a string:
 \begin{lstlisting}
@@ -1433,7 +1434,7 @@ forms a string consisting of the object's class name and a number. It
 makes sense to redefine this method for objects that are rational
 numbers:
 \begin{lstlisting}
-class Rational(n: int, d: int) extends Object {
+class Rational(n: int, d: int) extends AnyRef {
   ... // as before
   override def toString() = "" + numer + "/" + denom;
 }
@@ -1444,10 +1445,10 @@ by an \code{override} modifier.
 If class $A$ extends class $B$, then objects of type $A$ may be used
 wherever objects of type $B$ are expected. We say in this case that
 type $A$ {\em conforms} to type $B$.  For instance, \code{Rational}
-conforms to \code{Object}, so it is legal to assign a \code{Rational}
-value to a variable of type \code{Object}:
+conforms to \code{AnyRef}, so it is legal to assign a \code{Rational}
+value to a variable of type \code{AnyRef}:
 \begin{lstlisting}
-var x: Object = new Rational(1,2);
+var x: AnyRef = new Rational(1,2);
 \end{lstlisting}
 
 \paragraph{Parameterless Methods}
@@ -1462,7 +1463,7 @@ Unlike in Java, methods in Scala do not necessarily take a
 parameter list. An example is the \code{square} method below. This
 method is invoked by simply mentioning its name. 
 \begin{lstlisting}
-class Rational(n: int, d: int) extends Object {
+class Rational(n: int, d: int) extends AnyRef {
   ... // as before
   def square = Rational(numer*numer, denom*denom);
 }
@@ -1665,8 +1666,8 @@ For efficiency, the compiler usually represents values of type
 \code{scala.Int} by 32 bit integers, values of type
 \code{scala.Boolean} by Java's booleans, etc.  But it converts these
 specialized representations to objects when required, for instance
-when a primitive \code{int} value is passed to a function that with a
-parameter of type \code{Object}.  Hence, the special representation of
+when a primitive \code{int} value is passed to a function with a
+parameter of type \code{AnyRef}.  Hence, the special representation of
 primitive values is just an optimization, it does not change the
 meaning of a program.
 
@@ -2032,7 +2033,7 @@ Sum(Sum(Number(1), Number(2)), Number(3))
 \item Case classes and case objects 
 implicity come with implementations of methods
 \code{toString}, \code{equals} and \code{hashCode}, which override the
-methods with the same name in class \code{Object}. The implementation
+methods with the same name in class \code{AnyRef}. The implementation
 of these methods takes in each case the structure of a member of a
 case class into account. The \code{toString} method represents an
 expression tree the way it was constructed. So,
@@ -2040,7 +2041,7 @@ expression tree the way it was constructed. So,
 Sum(Sum(Number(1), Number(2)), Number(3))
 \end{lstlisting} 
 would be converted to exactly that string, whereas the default
-implementation in class \code{Object} would return a string consisting
+implementation in class \code{AnyRef} would return a string consisting
 of the outermost constructor name \code{Sum} and a number.  The
 \code{equals} methods treats two case members of a case class as equal
 if they have been constructed with the same constructor and with
@@ -2052,7 +2053,7 @@ Sum(Number(1), Number(2)) == Sum(Number(1), Number(2))
 \end{lstlisting}
 will yield \code{true}. If \code{Sum} or \code{Number} were not case
 classes, the same expression would be \code{false}, since the standard
-implementation of \code{equals} in class \code{Object} always treats
+implementation of \code{equals} in class \code{AnyRef} always treats
 objects created by different constructor calls as being different.
 The \code{hashCode} method follows the same principle as other two
 methods. It computes a hash code from the case class constructor name
@@ -2435,9 +2436,9 @@ trait Ord[t <: Ord[t]]: t {
 
 The combination of type parameters and subtyping poses some
 interesting questions. For instance, should \code{Stack[String]} be a
-subtype of \code{Stack[Object]}? Intuitively, this seems OK, since a
+subtype of \code{Stack[AnyRef]}? Intuitively, this seems OK, since a
 stack of \code{String}s is a special case of a stack of
-\code{Object}s.  More generally, if \code{T} is a subtype of type \code{S}
+\code{AnyRef}s.  More generally, if \code{T} is a subtype of type \code{S}
 then \code{Stack[T]} should be a subtype of \code{Stack[S]}. 
 This property is called {\em co-variant} subtyping.
 
@@ -2568,9 +2569,9 @@ also have generalized the definition of \code{push}.  Before, we were
 required to push only elements with types that conform to the declared
 element type of the stack. Now, we can push also elements of a
 supertype of this type, but the type of the returned stack will change
-accordingly. For instance, we can now push an \code{Object} onto a
+accordingly. For instance, we can now push an \code{AnyRef} onto a
 stack of \code{String}s, but the resulting stack will be a stack of
-\code{Object}s instead of a stack of \code{String}s!
+\code{AnyRef}s instead of a stack of \code{String}s!
 
 In summary, one should not hesitate to add variance annotations to
 your data structures, as this yields rich natural subtyping
@@ -2594,7 +2595,7 @@ which is a subtype of all other types. Hence, for co-variant stacks,
 \code{T}. This makes it possible to use a single empty stack object
 in user code. For instance:
 \begin{lstlisting}
-val s = EmptyStack.push("abc").push(new Object());
+val s = EmptyStack.push("abc").push(new AnyRef());
 \end{lstlisting}
 Let's analyze the type assignment for this expression in detail.  The
 \code{EmptyStack} object is of type \code{Stack[All]}, which has a
@@ -2610,10 +2611,10 @@ should be instantiated to \code{String} in the application
 push[b >: String](elem: b): Stack[b] .
 \end{lstlisting}
 The final part of the value definition above is the application of
-this method to \code{new Object()}. Local type inference will
+this method to \code{new AnyRef()}. Local type inference will
 determine that the type parameter \code{b} should this time be
-instantiated to \code{Object}, with result type \code{Stack[Object]}.
-Hence, the type assigned to value \code{s} is \code{Stack[Object]}.
+instantiated to \code{AnyRef}, with result type \code{Stack[AnyRef]}.
+Hence, the type assigned to value \code{s} is \code{Stack[AnyRef]}.
 
 Besides \code{scala.All}, which is a subtype of every other type,
 there is also the type \code{scala.AllRef}, which is a subtype of
@@ -2733,12 +2734,12 @@ shorthand for \code{a.apply(i)}.
 Functions are an example where a contra-variant type parameter
 declaration is useful. For example, consider the following code:
 \begin{lstlisting} 
-val f: (Object => int)  =  x => x.hashCode();
+val f: (AnyRef => int)  =  x => x.hashCode();
 val g: (String => int)  =  f
 g("abc")
 \end{lstlisting}
 It's sound to bind the value \code{g} of type \code{String => int} to
-\code{f}, which is of type \code{Object => int}. Indeed, all one can
+\code{f}, which is of type \code{AnyRef => int}. Indeed, all one can
 do with function of type \code{String => int} is pass it a string in
 order to obtain an integer. Clearly, the same works for function
 \code{f}: If we pass it a string (or any other object), we obtain an
@@ -5714,7 +5715,7 @@ TypeScheme(List(TyVar("a"), TyVar("b")), Arrow(Tyvar("a"), Tyvar("b"))) .
 \end{lstlisting}
 The class definition of type schemes does not carry an extends
 clause; this means that type schemes extend directly class
-\code{Object}.  Even though there is only one possible way to
+\code{AnyRef}.  Even though there is only one possible way to
 construct a type scheme, a case class representation was chosen
 since it offers convenient ways to decompose an instance of this type into its
 parts.
@@ -6101,7 +6102,7 @@ time, only one thread can execute a \code{synchronized} argument of a
 given monitor.
 
 Threads can suspend inside a monitor by waiting on a signal.  The
-standard \code{java.lang.Object} class offers for this prupose methods
+standard \code{java.lang.Object} class offers for this purpose methods
 \code{send} and \code{notify}.  Threads that call the \code{wait}
 method wait until a \code{notify} method of the same object is called
 subsequently by some other thread. Calls to \code{notify} with no
@@ -6629,7 +6630,7 @@ one for sent but unconsumed messages, the other for waiting receivers.
     if (r1 != null) {
       r.next = r1.next; r1.elem.msg = msg; r1.elem.notify;
     } else {
-      lastSent = lastSent.insert(msg);
+      lastSent = insert(lastSent, msg);
     }
   }
 \end{lstlisting}
@@ -6646,7 +6647,7 @@ Otherwise, the message is appended to the linked list of sent messages.
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-	val r = lastReceiver.insert(new Receiver {
+	val r = insert(lastReceiver, new Receiver {
           def isDefined(msg: Any) = f.isDefinedAt(msg);
         });
 	lastReceiver = r;
@@ -6663,8 +6664,16 @@ was not yet consumed. If yes, the thread continues immediately by
 applying \code{f} to the message. Otherwise, a new receiver is created
 and linked into the \code{receivers} list, and the thread waits for a
 notification on this receiver. Once the thread is woken up again, it
-continues by applying \code{f} to the message that was stored in the receiver.
-
+continues by applying \code{f} to the message that was stored in the
+receiver. The insert method on linked lists is defined as follows.
+\begin{lstlisting}
+  def insert(l: LinkedList[a], x: a): LinkedList[a] = {
+    l.next = new LinkedList[a];
+    l.next.elem = x;
+    l.next.next = l.next;
+    l
+  }
+\end{lstlisting}
 The mailbox class also offers a method \code{receiveWithin}
 which blocks for only a specified maximal amount of time.  If no
 message is received within the specified time interval (given in
@@ -6681,7 +6690,7 @@ with the special \code{TIMEOUT} message.  The implementation of
       if (s1 != null) {
         s.next = s1.next; s1.elem
       } else {
-        val r = lastReceiver.insert(new Receiver {
+        val r = insert(lastReceiver, new Receiver {
             def isDefined(msg: Any) = f.isDefinedAt(msg);
         });
         lastReceiver = r;
@@ -6877,6 +6886,7 @@ class Bidder (auction: Process, minBid: int, maxBid: int)
   def transferPayment(seller: Process, amount: int)
 }
 \end{lstlisting}
+}
 
 \bibliographystyle{alpha}
 \bibliography{Scala}

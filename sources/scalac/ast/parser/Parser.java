@@ -275,9 +275,14 @@ public class Parser implements Tokens {
         return make.Select(pos, scalaXmlDot(pos, Names.nobinding), name);
     }
 
+    Tree scalaAnyRefConstr(int pos) {
+	return make.Apply(
+	    pos, scalaDot(pos, Names.AnyRef.toTypeName()), Tree.EMPTY_ARRAY);
+    }
+
     Tree scalaObjectConstr(int pos) {
         return make.Apply(
-            pos, scalaDot(pos, Names.Object.toTypeName()), Tree.EMPTY_ARRAY);
+            pos, scalaDot(pos, Names.ScalaObject.toTypeName()), Tree.EMPTY_ARRAY);
     }
 
     /** Create tree for for-comprehension <for (enums) do body> or
@@ -1885,22 +1890,25 @@ public class Parser implements Tokens {
      */
     Template classTemplate() {
         int pos = s.pos;
+	TreeList parents = new TreeList();
         if (s.token == EXTENDS) {
             s.nextToken();
-            return template();
-        } else if (s.token == WITH) {
+	    parents.append(constr());
+	} else {
+	    parents.append(scalaAnyRefConstr(pos));
+	}
+        parents.append(scalaObjectConstr(pos));
+        if (s.token == WITH) {
             s.nextToken();
-            TreeList parents = new TreeList();
-            parents.append(scalaObjectConstr(pos));
-            return template(parents);
+	    return template(parents);
         } else if (s.token == LBRACE) {
             return (Template)make.Template(
-                pos, new Tree[]{scalaObjectConstr(pos)}, templateBody());
+                pos, parents.toArray(), templateBody());
         } else {
             if (!(s.token == SEMI || s.token == COMMA || s.token == RBRACE))
                 syntaxError("`extends' or `{' expected", true);
             return (Template)make.Template(
-                pos, new Tree[]{scalaObjectConstr(pos)}, Tree.EMPTY_ARRAY);
+                pos, parents.toArray(), Tree.EMPTY_ARRAY);
         }
     }
 

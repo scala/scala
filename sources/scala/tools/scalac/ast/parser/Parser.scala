@@ -247,9 +247,13 @@ class Parser(unit: Unit) {
   def scalaBooleanDot(pos: int, name: Name): Tree =
     make.Select(pos, scalaDot(pos, Names.Boolean), name);
 
+  def scalaAnyRefConstr(pos: int): Tree =
+    make.Apply(
+      pos, scalaDot(pos, Names.AnyRef.toTypeName()), Tree.EMPTY_ARRAY);
+
   def scalaObjectConstr(pos: int): Tree =
     make.Apply(
-      pos, scalaDot(pos, Names.Object.toTypeName()), Tree.EMPTY_ARRAY);
+      pos, scalaDot(pos, Names.ScalaObject.toTypeName()), Tree.EMPTY_ARRAY);
 
   /** Create tree for for-comprehension <for (enums) do body> or
   *   <for (enums) yield body> where mapName and flatmapName are chosen
@@ -1737,22 +1741,24 @@ class Parser(unit: Unit) {
   */
   def classTemplate(): Tree$Template = {
     val pos = s.pos;
+    val parents = new myTreeList();
     if (s.token == EXTENDS) {
       s.nextToken();
-      template()
-    } else if (s.token == WITH) {
+      parents.append(constr());
+    } else {
+      parents.append(scalaAnyRefConstr(pos));
+    }
+    parents.append(scalaObjectConstr(pos));
+    if (s.token == WITH) {
       s.nextToken();
-      val parents = new myTreeList();
-      parents.append(scalaObjectConstr(pos));
       template(parents)
     } else if (s.token == LBRACE) {
-      make.Template(
-        pos, NewArray.Tree(scalaObjectConstr(pos)), templateBody());
+      make.Template(pos, parents.toArray(), templateBody());
     } else {
       if (!(s.token == SEMI || s.token == COMMA || s.token == RBRACE))
         syntaxError("`extends' or `{' expected", true);
       make.Template(
-        pos, NewArray.Tree(scalaObjectConstr(pos)), Tree.EMPTY_ARRAY);
+        pos, parents.toArray(), Tree.EMPTY_ARRAY);
     }
   }
 
