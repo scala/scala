@@ -536,10 +536,6 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
-    boolean isLocal() {
-	return currentOwner.kind == VAL && currentOwner.name != Names.EMPTY;
-    }
-
     Type addParams(Type tp, Symbol[] newparams) {
 	if (newparams.length == 0) return tp;
 	switch (tp) {

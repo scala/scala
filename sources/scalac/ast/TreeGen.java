@@ -606,7 +606,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Tree applyDef = DefDef(applyMeth, body);
 	Tree classDef = ClassDef(clazz, new Tree[]{applyDef});
 	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY);
-	return Block(new Tree[]{classDef, alloc});
+	return Block(new Tree[]{classDef, alloc}).setType(ft);
     }
 
     public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
@@ -625,7 +625,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
 			      pattype, definitions.BOOLEAN_TYPE, clazz, owner)});
 	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY);
-	return Block(new Tree[]{classDef, alloc});
+	return Block(new Tree[]{classDef, alloc}).setType(pft);
     }
     //where
 	private Tree makeVisitorMethod(int pos, Name name, Tree visitor,

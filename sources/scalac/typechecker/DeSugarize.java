@@ -631,9 +631,9 @@ public class DeSugarize implements Kinds, Modifiers {
     Tree toFunction(Tree tree, Type type) {
 	switch(type) {
 	case MethodType(Symbol[] vparams, Type restpe):
-	    return this.Function(
-		make.Function(tree.pos, toVparams(vparams), toFunction(tree, restpe)),
-		restpe);
+	    return //this.Function(
+		make.Function(tree.pos, toVparams(vparams), toFunction(tree, restpe));
+	    //restpe);
 	default:
 	    return tree;
 	}
