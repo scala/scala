@@ -125,7 +125,8 @@ class GenJVM {
                 gen(Context.EMPTY.withSourceFileName(unit.source.getFile().getName()),
                     unit.body[i]);
         } catch (JCode.OffsetTooBigException e) {
-            throw global.fail(e);
+            if (global.debug) e.printStackTrace();
+            global.error(e.getMessage());
         }
     }
 
@@ -290,7 +291,7 @@ class GenJVM {
                 ctx.code.emitCHECKCAST((JReferenceType)type);
                 generatedType = type;
             } else
-                global.fail("unexpected type application");
+                throw Debug.abort("unexpected type application", tree);
         } break;
 
         case Apply(Tree fun, Tree[] args): {
@@ -415,7 +416,7 @@ class GenJVM {
                     break;
 
                 default:
-                    throw Debug.abort("unknown primitive ", prim);
+                    throw Debug.abort("unknown primitive", prim);
                 }
             } else {
                 JMethodType funType = (JMethodType)typeStoJ(funSym.info());
@@ -564,9 +565,9 @@ class GenJVM {
         case CaseDef(_, _, _):
         case Visitor(_):
         case Function(_, _):
-            throw global.fail("unexpected node", tree);
+            throw Debug.abort("unexpected node", tree);
         default:
-            throw global.fail("unknown node", tree);
+            throw Debug.abort("unknown node", tree);
         }
 
         // Pop unneeded result from stack, or widen it if needed.
@@ -599,7 +600,7 @@ class GenJVM {
             genLoad(ctx, qualifier, JAVA_LANG_OBJECT_T);
             break;
         default:
-            throw global.fail("unknown qualifier");
+            throw Debug.abort("unknown qualifier", tree);
         }
     }
 
@@ -948,7 +949,7 @@ class GenJVM {
             case NE: ctx.code.emitIF_ICMPNE(target); break;
             case GE: ctx.code.emitIF_ICMPGE(target); break;
             case GT: ctx.code.emitIF_ICMPGT(target); break;
-            default: throw global.fail("unknown primitive " + prim);
+            default: throw Debug.abort("unknown primitive", prim);
             }
         } else {
             // Comparison between longs, floats or double, or between
@@ -967,7 +968,7 @@ class GenJVM {
             case NE: ctx.code.emitIFNE(target); break;
             case GE: ctx.code.emitIFGE(target); break;
             case GT: ctx.code.emitIFGT(target); break;
-            default: throw global.fail("unknown primitive " + prim);
+            default: throw Debug.abort("unknown primitive", prim);
             }
         }
     }
@@ -1050,7 +1051,7 @@ class GenJVM {
         String className;
         switch (classNameLit) {
         case Literal(STRING(String name)): className = name; break;
-        default: throw global.fail("invalid argument for oarray " + classNameLit);
+        default: throw Debug.abort("invalid argument for oarray", classNameLit);
         }
 
         JReferenceType elemType;
