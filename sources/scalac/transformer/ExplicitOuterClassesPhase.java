@@ -70,8 +70,9 @@ public class ExplicitOuterClassesPhase extends Phase {
             Type result = type.resultType();
             // Add outer value link
             if (hasOuterValueLink(symbol)) {
+                int flags = Modifiers.PARAM | Modifiers.SYNTHETIC;
                 Name name = Names.OUTER(symbol);
-                Symbol vlink = new TermSymbol(symbol.pos, name, symbol, 0);
+                Symbol vlink = new TermSymbol(symbol.pos, name, symbol, flags);
                 vlink.setInfo(getOuterClass(symbol).typeOfThis()); // !!!
                 vparams = Symbol.cloneArray(1, vparams);
                 vparams[0] = vlink;
