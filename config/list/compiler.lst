@@ -118,6 +118,7 @@ transformer/ExpandMixinsPhase.java
 transformer/ExplicitOuterClassesPhase.java
 transformer/LambdaLift.java
 transformer/LambdaLiftPhase.java
+transformer/MakeBoxingExplicitPhase.java
 transformer/OwnerTransformer.java
 transformer/TailCall.java
 transformer/TailCallPhase.java
