@@ -17,7 +17,7 @@ object Test {
         try {
             System.out.println(map.lookup(key));
         } except {
-            case e => System.out.println(e);
+            case e => System.out.println(e.getMessage());
         }
     }
 
