@@ -18,6 +18,7 @@ trait Entity {
     def isText: Boolean = false;
     def isType: Boolean = false;
     def isSymbol: Boolean = false;
+    def isValue: Boolean = false;
     def toSource: String = toString();
 }
 
@@ -28,12 +29,19 @@ case class Text(str: String) extends Entity {
     override def toString(): String = str;
 }
 
+/** Value refers to a constant integer.
+ */
+case class Value(value: Long) extends Entity {
+    override def isValue: Boolean = true;
+    override def toString(): String = value.toString();
+}
+
 /** Types
  */
 trait Type extends Entity {
     override def isType: Boolean = true;
     override def toSource: String = {
-        val writer = new ScalaWriter(new StringWriter());
+        val writer = new ScalaWriter(null, new StringWriter());
         writer.setIndentString(null)*;
         writer.printType(this);
         writer.toString()
@@ -55,6 +63,8 @@ case class MethodType(argtpe: List[Type], restpe: Type) extends Type;
 case class PolyType(tpe: Type, tvars: List[Symbol]) extends Type;
 
 case class OverloadedType(members: List[Symbol], tpes: List[Type]) extends Type;
+
+case class ConstantType(base: Type, value: Long) extends Type;
 
 case class TypeFlag(tpe: Type, flags: Int) extends Type;
 

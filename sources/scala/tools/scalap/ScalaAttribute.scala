@@ -13,6 +13,28 @@ import scala.collection.mutable._;
 
 class ScalaAttribute(in: ByteArrayReader) {
 
+    final val TERM_NAME = 1;
+    final val TYPE_NAME = 2;
+    final val NUMBER = 3;
+    final val NONE_SYM = 4;
+    final val TYPE_SYM = 5;
+    final val ALIAS_SYM = 6;
+    final val CLASS_SYM = 7;
+    final val VAL_SYM = 8;
+    final val EXT_REF = 9;
+    final val EXTMODCLASS_REF = 10;
+    final val NO_TYPE = 11;
+    final val THIS_TYPE = 12;
+    final val SINGLE_TYPE = 13;
+    final val CONSTANT_TYPE = 14;
+    final val REF_TYPE = 15;
+    final val COMPOUND_TYPE = 16;
+    final val METHOD_TYPE = 17;
+    final val POLY_TYPE = 18;
+    final val OVERLOADED_TYPE = 19;
+    final val FLAGGED_TYPE = 20;
+
+
     val table = readTable;
 
     def readTable: Array[AttribEntry] = {
@@ -31,41 +53,45 @@ class ScalaAttribute(in: ByteArrayReader) {
         //Console.println("" + tag + ": " + len);
         val end = in.bp + len;
         tag match {
-            case 1 /* TERMname */ =>
+            case TERM_NAME =>
                 TermName(in.nextUTF8(len))
-            case 2 /* TYPEname */ =>
+            case TYPE_NAME =>
                 TypeName(in.nextUTF8(len))
-            case 3 /* NONEsym */ =>
+            case NUMBER =>
+                Number(in.nextNum(len))
+            case NONE_SYM =>
                 NoneSym()
-            case 4 /* TYPEsym */ =>
+            case TYPE_SYM =>
                 TypeSym(readSymInfo, in.nextNat)
-            case 5 /* ALIASsym */ =>
+            case ALIAS_SYM =>
                 AliasSym(readSymInfo, in.nextNat)
-            case 6 /* CLASSsym */ =>
+            case CLASS_SYM =>
                 ClassSym(readSymInfo, in.nextNat, in.nextNat)
-            case 7 /* VALsym */ =>
+            case VAL_SYM =>
                 ValSym(readSymInfo, if (in.bp < end) in.nextNat else -1)
-            case 8 /* EXTref */ =>
+            case EXT_REF =>
                 ExtRef(false, in.nextNat, if (in.bp < end) in.nextNat else -1)
-            case 9 /* EXTMODCLASSref */ =>
+            case EXTMODCLASS_REF =>
                 ExtRef(true, in.nextNat, if (in.bp < end) in.nextNat else -1)
-            case 10 /* NOtpe */ =>
+            case NO_TYPE =>
                 NoneType()
-            case 11 /* THIStpe */ =>
+            case THIS_TYPE =>
                 SelfType(in.nextNat)
-            case 12 /* SINGLEtpe */ =>
+            case SINGLE_TYPE =>
                 SingleType(in.nextNat, in.nextNat)
-            case 13 /* TYPEREFtpe */ =>
+            case CONSTANT_TYPE =>
+                ConstantTypeRef(in.nextNat, in.nextNat)
+            case REF_TYPE =>
                 TypeReference(in.nextNat, in.nextNat, readRefs(end))
-            case 14 /* COMPOUNDtpe */ =>
+            case COMPOUND_TYPE =>
                 CompoundTypeRef(in.nextNat, readRefs(end))
-            case 15 /* METHODtpe */ =>
+            case METHOD_TYPE =>
                 MethodTypeRef(in.nextNat, readRefs(end))
-            case 16 /* POLYtpe */ =>
+            case POLY_TYPE =>
                 PolyTypeRef(in.nextNat, readRefs(end))
-            case 17 /* OVERLOADEDtpe */ =>
+            case OVERLOADED_TYPE =>
                 OverloadedTypeRef(readRefs(end))
-            case 20 /* FLAGGEDtpe */ =>
+            case FLAGGED_TYPE =>
                 FlaggedType(in.nextNat, in.nextNat)
         }
     }
@@ -83,6 +109,7 @@ class ScalaAttribute(in: ByteArrayReader) {
     class AttribEntry;
     case class TermName(name: String) extends AttribEntry;
     case class TypeName(name: String) extends AttribEntry;
+    case class Number(value: Long) extends AttribEntry;
     case class NoneSym() extends AttribEntry;
     case class TypeSym(info: SymbolInfo, lobound: Int) extends AttribEntry;
     case class AliasSym(info: SymbolInfo, constr: Int) extends AttribEntry;
@@ -97,6 +124,7 @@ class ScalaAttribute(in: ByteArrayReader) {
     case class MethodTypeRef(res: Int, args: List[Int]) extends AttribEntry;
     case class PolyTypeRef(tpe: Int, sym: List[Int]) extends AttribEntry;
     case class OverloadedTypeRef(symandtpe: List[Int]) extends AttribEntry;
+    case class ConstantTypeRef(baseref: Int, numref: Int) extends AttribEntry;
     case class FlaggedType(flags: Int, tpe: Int) extends AttribEntry;
 
     case class SymbolInfo(name: Int, owner: Int, flags: Int, info: Int);

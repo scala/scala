@@ -79,6 +79,8 @@ object Flags {
 
     def isCase(flags: Int): Boolean = (flags & CASE) != 0;
 
+	def isAccessor(flags: Int): Boolean = (flags & ACCESSOR) != 0;
+
     def isCaseAccessor(flags: Int): Boolean = (flags & CASEACCESSOR) != 0;
 
     def isInterface(flags: Int): Boolean = (flags & INTERFACE) != 0;

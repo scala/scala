@@ -24,6 +24,7 @@ class EntityTable(attrib: ScalaAttribute) {
             table(i) = attrib.table(i) match {
                 case TermName(str) => Text(Names.decode(str));
                 case TypeName(str) => Text(Names.decode(str));
+                case Number(x) => Value(x);
                 case _ => null;
             }
             i = i + 1;
@@ -93,6 +94,10 @@ class EntityTable(attrib: ScalaAttribute) {
         case Text(str) => str;
     }
 
+    def getValue(i: Int): Long = table(i) match {
+        case Value(x) => x;
+    }
+
     def getSymbol(i: Int): Symbol =
         if (i < 0) NoSymbol else table(i).asInstanceOf[Symbol];
 
@@ -127,6 +132,8 @@ class EntityTable(attrib: ScalaAttribute) {
                         i => (table(i) != null) && table(i).isSymbol
                     }
                     OverloadedType(getSymbols(symIds), getTypes(typeIds))
+                case ConstantTypeRef(baseId, valId) =>
+                    ConstantType(getType(baseId), getValue(valId))
                 case FlaggedType(flags, typeId) =>
                     TypeFlag(getType(typeId), flags)
             }

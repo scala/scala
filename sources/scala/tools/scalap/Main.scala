@@ -21,6 +21,7 @@ object Main {
     def usage: Unit = {
         Console.println("usage: scalap {<option>} <name>");
         Console.println("where <option> is");
+        Console.println("  -private               print private definitions");
         Console.println("  -verbose               print out additional information");
         Console.println("  -version               print out the version number of scalap");
         Console.println("  -help                  display this usage message");
@@ -28,7 +29,7 @@ object Main {
         Console.println("  -cp <pathlist>         specify where to find user class files");
     }
 
-    def process(path: ClassPath)(classname: String): Unit = {
+    def process(args: Arguments, path: ClassPath)(classname: String): Unit = {
 		val file = path.openClass(Names.encode(classname));
 		if (file.exists) {
 			if (verbose)
@@ -45,7 +46,7 @@ object Main {
 					//Console.println("read entities");
 					//symtab.print;
 					val out = new OutputStreamWriter(System.out);
-					val writer = new ScalaWriter(out);
+					val writer = new ScalaWriter(args, out);
 					symtab.root.elements foreach (
 						sym => { writer.printSymbol(sym);
 								 writer.println*; });
@@ -62,6 +63,7 @@ object Main {
             usage;
         else {
         	val arguments = Arguments.Parser('-')
+        	                         .withOption("-private")
         		                     .withOption("-verbose")
         		                     .withOption("-version")
         		                     .withOption("-help")
@@ -83,7 +85,7 @@ object Main {
             if (verbose)
             	Console.println(Console.BOLD + "CLASSPATH" + Console.RESET +
             	                " = " + path);
-           	arguments.getOthers.foreach(process(path));
+           	arguments.getOthers.foreach(process(arguments, path));
         }
     }
 }

@@ -12,7 +12,7 @@ import java.io._;
 import scala.collection.mutable._;
 
 
-class ScalaWriter(writer: Writer) extends CodeWriter(writer) {
+class ScalaWriter(args: Arguments, writer: Writer) extends CodeWriter(writer) {
 
     def printFlags(flags: Int): Unit = {
         val buffer = new StringBuffer();
@@ -98,6 +98,9 @@ class ScalaWriter(writer: Writer) extends CodeWriter(writer) {
             printType(tpe);
         case OverloadedType(_, tpes) =>
             printTypes(tpes, "", " <and> ", "");
+        case ConstantType(base, num) =>
+            printType(base);
+            print("(" + num + ")");
         case TypeFlag(TypeRef(_, _, List(tpe0)), flags) =>
             if ((flags & 8) != 0)
                 print("def ")*;
@@ -115,7 +118,8 @@ class ScalaWriter(writer: Writer) extends CodeWriter(writer) {
         case NoType =>
         case ThisType(NoSymbol) =>
         case ThisType(sym) =>
-            if (sym.name.length() != 0) {
+            if ((sym.name.length() != 0) &&
+                ("<root>" != sym.name)) {
                 printType0(tpe);
                 print(".")*
             }
@@ -174,15 +178,19 @@ class ScalaWriter(writer: Writer) extends CodeWriter(writer) {
         case s: ValSymbol =>
             s.tpe match {
                 case PolyType(tpe, Nil) =>
+                    print(Flags.toString(s.flags))*;
                     print("def " + s.name + ": ")*;
                     printType(tpe);
                 case PolyType(_, _) =>
+                    print(Flags.toString(s.flags))*;
                     print("def " + s.name)*;
                     printType(s.tpe);
                 case MethodType(_, _) =>
+                    print(Flags.toString(s.flags))*;
                     print("def " + s.name)*;
                     printType(s.tpe);
                 case _ =>
+                    print(Flags.toString(s.flags))*;
                     print("val " + s.name + ": ")*;
                     printType(s.tpe);
             }
@@ -207,6 +215,13 @@ class ScalaWriter(writer: Writer) extends CodeWriter(writer) {
             }
     }
 
+    def ignoreDef(s: Symbol) = {
+        (Flags.isPrivate(s.flags) &&
+         !((args != null) && (args contains "-private"))) ||
+        (s.name == "<init>") ||
+        Flags.isCaseAccessor(s.flags)
+    }
+
     def printScope(scope: Buffer[Symbol]): Unit = {
         var first = true;
         scope.elements foreach (
@@ -216,10 +231,12 @@ class ScalaWriter(writer: Writer) extends CodeWriter(writer) {
                              (Flags.isCaseAccessor(s.flags) &&
                               !s.tpe.isInstanceOf[PolyType])) =>
                          case _ =>
-                            if (first) print(" {").indent* else print(";")*;
-                            first = false;
-                            newline*;
-                            printSymbol(sym);
+                         	if (!ignoreDef(sym)) {
+								if (first) print(" {").indent* else print(";")*;
+								first = false;
+								newline*;
+								printSymbol(sym);
+							}
                      }});
         if (!first)
             newline.undent.print("}")*
