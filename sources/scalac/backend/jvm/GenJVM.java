@@ -86,14 +86,15 @@ class GenJVM {
     protected final Definitions defs;
     protected final Primitives prims;
 
-    static {
-        JFactory.setInstance(new JFactory());
-    }
+    protected final FJBGContext fjbgContext;
 
     public GenJVM(Global global) {
         this.global = global;
         this.defs = global.definitions;
         this.prims = global.primitives;
+
+        this.fjbgContext = new FJBGContext();
+
         initTypeMap();
         initArithPrimMap();
     }
@@ -1169,13 +1170,13 @@ class GenJVM {
         String mirrorName = modClass.getName();
         String mainClassName = mirrorName.substring(0, mirrorName.length() - 1);
 
-        JClass mainClass = new JClass(JAccessFlags.ACC_SUPER
-                                      | JAccessFlags.ACC_PUBLIC
-                                      | JAccessFlags.ACC_FINAL,
-                                      mainClassName,
-                                      JAVA_LANG_OBJECT,
-                                      JClass.NO_INTERFACES,
-                                      ctx.sourceFileName);
+        JClass mainClass = fjbgContext.JClass(JAccessFlags.ACC_SUPER
+                                              | JAccessFlags.ACC_PUBLIC
+                                              | JAccessFlags.ACC_FINAL,
+                                              mainClassName,
+                                              JAVA_LANG_OBJECT,
+                                              JClass.NO_INTERFACES,
+                                              ctx.sourceFileName);
 
         JMethod[] methods = modClass.getMethods();
         for (int i = 0; i < methods.length; ++i) {
@@ -1226,10 +1227,12 @@ class GenJVM {
 
         if (global.symdata.containsKey(className)) {
             Pickle pickle = (Pickle)global.symdata.get(className);
-            JOtherAttribute scalaAttr = new JOtherAttribute(cls,
-                                                            SCALA_ATTR,
-                                                            pickle.bytes,
-                                                            pickle.size());
+            JOtherAttribute scalaAttr =
+                fjbgContext.JOtherAttribute(cls,
+                                            cls,
+                                            SCALA_ATTR,
+                                            pickle.bytes,
+                                            pickle.size());
             cls.addAttribute(scalaAttr);
         }
     }
@@ -1456,12 +1459,12 @@ class GenJVM {
             interfaceNames[i - offset] = javaName(baseSym);
         }
 
-        JClass cls = new JClass(modifiersStoJ(cSym.flags)
-                                | JAccessFlags.ACC_SUPER,
-                                javaName,
-                                superClassName,
-                                interfaceNames,
-                                ctx.sourceFileName);
+        JClass cls = fjbgContext.JClass(modifiersStoJ(cSym.flags)
+                                        | JAccessFlags.ACC_SUPER,
+                                        javaName,
+                                        superClassName,
+                                        interfaceNames,
+                                        ctx.sourceFileName);
 
         return ctx.withClass(cls, cSym.isModuleClass());
     }
