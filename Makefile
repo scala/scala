@@ -16,12 +16,13 @@ include $(ROOT)/Makefile.import
 # project sources
 PROJECT_SOURCES		+= $(LAMPLIB_SOURCES)
 PROJECT_SOURCES		+= $(META_SOURCES)
-PROJECT_SOURCES		+= $(COMPILER_SOURCES)
+PROJECT_SOURCES		+= $(SCALACBOOT_SOURCES)
+PROJECT_SOURCES		+= $(SCALAC_SOURCES)
 PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
 PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
-PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_SOURCES		+= $(SCALAP_SOURCES)
+PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
 PROJECT_SOURCES		+= $(SCALATEST_SOURCES)
 
 # scala scripts wrapper
@@ -29,7 +30,10 @@ SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
 SCRIPTS_WRAPPER		 = $(SCRIPTS_PREFIX)/.scala_wrapper
 SCRIPTS_WRAPPER_LINKS	+= $(SCRIPTS_WRAPPER_ALIASES:%=$(SCRIPTS_PREFIX)/%)
 SCRIPTS_WRAPPER_ALIASES	+= scala
+SCRIPTS_WRAPPER_ALIASES	+= scala-debug
 SCRIPTS_WRAPPER_ALIASES	+= scala-info
+SCRIPTS_WRAPPER_ALIASES	+= scalacboot
+SCRIPTS_WRAPPER_ALIASES	+= scalacboot-debug
 SCRIPTS_WRAPPER_ALIASES	+= scalac
 SCRIPTS_WRAPPER_ALIASES	+= scalac-debug
 SCRIPTS_WRAPPER_ALIASES	+= scaladoc
@@ -38,12 +42,6 @@ SCRIPTS_WRAPPER_ALIASES	+= scalarun
 SCRIPTS_WRAPPER_ALIASES	+= scalarun-debug
 SCRIPTS_WRAPPER_ALIASES	+= scalaint
 SCRIPTS_WRAPPER_ALIASES	+= scalaint-debug
-SCRIPTS_WRAPPER_ALIASES	+= socos
-SCRIPTS_WRAPPER_ALIASES	+= socos-debug
-SCRIPTS_WRAPPER_ALIASES	+= siris
-SCRIPTS_WRAPPER_ALIASES	+= siris-debug
-SCRIPTS_WRAPPER_ALIASES	+= surus
-SCRIPTS_WRAPPER_ALIASES	+= surus-debug
 SCRIPTS_WRAPPER_ALIASES	+= dtd2scala
 SCRIPTS_WRAPPER_ALIASES += scalap
 SCRIPTS_WRAPPER_ALIASES += scalatest
@@ -60,29 +58,34 @@ TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.scala.tmpl
 
 # lamp library
 LAMPLIB_ROOT		 = $(PROJECT_SOURCEDIR)/ch/epfl/lamp
-LAMPLIB_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/lamplib.lst)
+LAMPLIB_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/lamplib.lst)
 LAMPLIB_SOURCES		+= $(LAMPLIB_LIST:%=$(LAMPLIB_ROOT)/%)
 LAMPLIB_JC_FILES	+= $(LAMPLIB_SOURCES)
 
 # meta programming
 META_ROOT		 = $(PROJECT_SOURCEDIR)/meta
-META_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
+META_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
 META_SOURCES		+= $(META_LIST:%=$(META_ROOT)/%)
 META_JC_FILES		+= $(META_SOURCES)
 
+# scala boot compiler
+SCALACBOOT_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
+SCALACBOOT_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
+SCALACBOOT_SOURCES	+= $(SCALACBOOT_LIST:%=$(SCALACBOOT_ROOT)/%)
+
 # scala compiler
-COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
-COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
-COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
-COMPILER_JC_FILES	 = $(filter %.java,$(COMPILER_SOURCES))
-COMPILER_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(MSIL_JARFILE):$(FJBG_JARFILE)
-COMPILER_SC_FILES	 = $(filter %.scala,$(COMPILER_SOURCES))
-COMPILER_SC_CLASSPATH	 = $(COMPILER_JC_CLASSPATH)
-COMPILER_SCALAC		 = $(PROJECT_BOOTSTRAPDIR)/bin/scalac
+SCALAC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalac
+SCALAC_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scalac.lst)
+SCALAC_SOURCES		+= $(SCALAC_LIST:%=$(SCALAC_ROOT)/%)
+SCALAC_JC_FILES		+= $(SCALACBOOT_SOURCES)
+SCALAC_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(MSIL_JARFILE):$(FJBG_JARFILE)
+SCALAC_SC_FILES		+= $(SCALAC_SOURCES)
+SCALAC_SC_CLASSPATH	 = $(SCALAC_JC_CLASSPATH)
+SCALAC_SCALAC		 = $(SCALAC:$(PROJECT_ROOT)%=$(PROJECT_BOOTSTRAPDIR)%)boot
 
 # scala library
 LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
-LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
+LIBRARY_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
 LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
 LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
 LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
@@ -96,40 +99,40 @@ LIBRARY_JAR_FILES	+= scala
 
 # scala interpreter
 INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scala/tools/scalai
-INTERPRETER_LIST	 = $(call READLIST,$(PROJECT_LISTDIR)/interpreter.lst)
+INTERPRETER_LIST	+= $(call READLIST,$(PROJECT_LISTDIR)/interpreter.lst)
 INTERPRETER_SOURCES	+= $(INTERPRETER_LIST:%=$(INTERPRETER_ROOT)/%)
 INTERPRETER_JC_FILES	 = $(INTERPRETER_SOURCES)
 
 # scaladoc
 SCALADOC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scaladoc
-SCALADOC_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scaladoc.lst)
+SCALADOC_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scaladoc.lst)
 SCALADOC_SOURCES	+= $(SCALADOC_LIST:%=$(SCALADOC_ROOT)/%)
-SCALADOC_JC_FILES	 = $(filter %.java,$(SCALADOC_SOURCES))
-SCALADOC_SC_FILES	 = $(filter %.scala,$(SCALADOC_SOURCES))
-SCALADOC_RSRC_LIST	 = resources/style.css resources/script.js
+SCALADOC_JC_FILES	+= $(filter %.java,$(SCALADOC_SOURCES))
+SCALADOC_SC_FILES	+= $(filter %.scala,$(SCALADOC_SOURCES))
+SCALADOC_RSRC_LIST	+= resources/style.css resources/script.js
 SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
-SCALADOC_RSRC_OUTPUTDIR = $(SCALADOC_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
-
-# dtd2scala
-DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
-DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
-DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
-DTD2SCALA_SC_FILES	 = $(filter %.scala,$(DTD2SCALA_SOURCES))
-DTD2SCALA_RSRC_LIST	 = $(filter %.xml,$(DTD2SCALA_LIST))
-DTD2SCALA_RSRC_FILES	 = $(filter %.xml,$(DTD2SCALA_SOURCES))
-DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
+SCALADOC_RSRC_OUTPUTDIR	 = $(SCALADOC_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 
 # scalap
 SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalap
-SCALAP_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalap.lst)
+SCALAP_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scalap.lst)
 SCALAP_SOURCES		+= $(SCALAP_LIST:%=$(SCALAP_ROOT)/%)
-SCALAP_SC_FILES	 	 = $(SCALAP_SOURCES)
+SCALAP_SC_FILES	 	+= $(SCALAP_SOURCES)
+
+# dtd2scala
+DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
+DTD2SCALA_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
+DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
+DTD2SCALA_SC_FILES	+= $(filter %.scala,$(DTD2SCALA_SOURCES))
+DTD2SCALA_RSRC_LIST	+= $(filter %.xml,$(DTD2SCALA_LIST))
+DTD2SCALA_RSRC_FILES	+= $(filter %.xml,$(DTD2SCALA_SOURCES))
+DTD2SCALA_RSRC_OUTPUTDIR = $(DTD2SCALA_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 
 # scalatest
 SCALATEST_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalatest
-SCALATEST_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/scalatest.lst)
+SCALATEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scalatest.lst)
 SCALATEST_SOURCES	+= $(SCALATEST_LIST:%=$(SCALATEST_ROOT)/%)
-SCALATEST_JC_FILES	 = $(SCALATEST_SOURCES)
+SCALATEST_JC_FILES	+= $(SCALATEST_SOURCES)
 
 # tools archive
 TOOLS_NAME		 = tools
@@ -157,12 +160,12 @@ SC_CLASSPATH		 = $(PROJECT_OUTPUTDIR)
 # Commands
 
 all		: sources
-#all		: bootstrap
+all		: bootstrap
 all		: system
 all		: interpreter
 all		: scaladoc
-all		: dtd2scala
 all		: scalap
+all		: dtd2scala
 all		: scalatest
 all		: library-doc
 
@@ -170,36 +173,21 @@ force		: fastclean
 	@$(make) all
 
 fastclean	:
+	$(RM) .latest-*
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
-	$(RM) .latest-scalatest-jc
-	$(RM) .latest-dtd2scala-sc
-	$(RM) .latest-dtd2scala-rsrc
-	$(RM) .latest-scalap-sc
-	$(RM) .latest-scaladoc-jc
-	$(RM) .latest-scaladoc-sc
-	$(RM) .latest-scaladoc-rsrc
-	$(RM) .latest-interpreter-jc
-	$(RM) .latest-library-sc
-	$(RM) .latest-library-jc
-	$(RM) .latest-compiler-sc
-	$(RM) .latest-compiler-jc
-	$(RM) .latest-generate
-	$(RM) .latest-meta-jc
-	$(RM) .latest-lamplib-jc
 
 clean		: fastclean
+	$(RM) -r $(PROJECT_APIDOCDIR)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
+	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
 
 distclean	: clean
-	$(RM) .latest-*
-	$(RM) $(SCRIPTS_WRAPPER_LINKS)
-	$(RM) $(SCRIPTS_WRAPPER)
 	$(RM) $(LIBRARY_JAR_ARCHIVE)
 	$(RM) $(TOOLS_JAR_ARCHIVE)
+	$(RM) $(SCRIPTS_WRAPPER_LINKS)
+	$(RM) $(SCRIPTS_WRAPPER)
 	$(RM) $(ROOT)/support/latex/*.class
-	$(RM) -r $(PROJECT_APIDOCDIR)
-	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
 
 sources		: lamplib
 sources		: meta
@@ -207,44 +195,44 @@ sources		: generate
 
 system		: scripts
 system		: lamplib
-system		: compiler
+system		: scalac
 system		: library
 
-bootstrap	: .latest-bootstrap
-scripts		: $(SCRIPTS_WRAPPER_LINKS)
 lamplib		: .latest-$(boot)lamplib-jc
 meta		: .latest-meta-jc
 generate	: .latest-generate
-compiler	: .latest-$(boot)compiler-jc
-compiler	: .latest-$(boot)compiler-sc
+bootstrap	: .latest-bootstrap
+scripts		: $(SCRIPTS_WRAPPER_LINKS)
+scalac		: .latest-$(boot)scalac-jc
+scalac		: .latest-$(boot)scalac-sc
 library		: .latest-$(boot)library-jc
 library		: .latest-$(boot)library-sc
 interpreter	: .latest-interpreter-jc
 scaladoc	: .latest-scaladoc-jc
 scaladoc	: .latest-scaladoc-sc
 scaladoc	: .latest-scaladoc-rsrc
+scalap		: .latest-scalap-sc
 dtd2scala	: .latest-dtd2scala-sc
 dtd2scala	: .latest-dtd2scala-rsrc
-scalap		: .latest-scalap-sc
 scalatest	: .latest-scalatest-jc
 library-doc	: .latest-library-sdc
 scalac4ant	:
 	cd support/ant && ant
 
+.PHONY		: fastclean
 .PHONY		: sources
 .PHONY		: system
-.PHONY		: fastclean
-.PHONY		: bootstrap
-.PHONY		: scripts
 .PHONY		: lamplib
 .PHONY		: meta
 .PHONY		: generate
-.PHONY		: compiler
+.PHONY		: bootstrap
+.PHONY		: scripts
+.PHONY		: scalac
 .PHONY		: library
 .PHONY		: interpreter
 .PHONY		: scaladoc
-.PHONY		: dtd2scala
 .PHONY		: scalap
+.PHONY		: dtd2scala
 .PHONY		: scalatest
 .PHONY		: library-doc
 .PHONY		: scala4ant
@@ -286,27 +274,14 @@ cvs-fix-perms		:
 
 ##############################################################################
 # Targets
-
-.latest-bootstrap		:
-	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
-	$(MKDIR) $(PROJECT_BOOTSTRAPDIR)
-	$(MKDIR) $(PROJECT_BOOTSTRAPDIR)/bin
-	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_BOOTSTRAPDIR)/bin/
-	@$(make) \
-	    INSTALL_PREFIX=$(PROJECT_BOOTSTRAPDIR) \
-	    PROJECT_BINARYDIR=$(PROJECT_BOOTSTRAPDIR)/bin \
-	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTSTRAPDIR)/classes \
-	    boot="bootstrap-" system
-	touch $@
-
 .latest-$(boot)lamplib-jc	: $(LAMPLIB_JC_FILES)
 	@$(make) jc target=LAMPLIB LAMPLIB_JC_FILES='$?'
 	touch $@
 
 .latest-meta-jc			: $(META_JC_FILES)
 	@$(make) jc target=META META_JC_FILES='$?'
-	$(RM) .latest-*compiler-jc
-	$(RM) .latest-*compiler-sc
+	$(RM) .latest-*scalac-jc
+	$(RM) .latest-*scalac-sc
 	$(RM) .latest-*library-jc
 	$(RM) .latest-*library-sc
 	touch $@
@@ -317,13 +292,24 @@ cvs-fix-perms		:
 	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
 
-.latest-$(boot)compiler-jc	: $(COMPILER_JC_FILES)
-	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
+.latest-bootstrap		:
+	$(MKDIR) -p $(PROJECT_BOOTSTRAPDIR)
+	$(MKDIR) -p $(PROJECT_BOOTSTRAPDIR)/bin
+	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_BOOTSTRAPDIR)/bin/
+	@$(make) \
+	    INSTALL_PREFIX=$(PROJECT_BOOTSTRAPDIR) \
+	    PROJECT_BINARYDIR=$(PROJECT_BOOTSTRAPDIR)/bin \
+	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTSTRAPDIR)/classes \
+	    boot="bootstrap-" system
 	touch $@
 
-.latest-$(boot)compiler-sc	: $(COMPILER_SC_FILES)
+.latest-$(boot)scalac-jc	: $(SCALAC_JC_FILES)
+	@$(make) jc target=SCALAC SCALAC_JC_FILES='$?'
+	touch $@
+
+.latest-$(boot)scalac-sc	: $(SCALAC_SC_FILES)
 	@if [ -d $(PROJECT_BOOTSTRAPDIR) -a -z "$(boot)" ]; then \
-	    $(make) sc target=COMPILER COMPILER_SC_FILES='$?'; \
+	    $(make) sc target=SCALAC SCALAC_SC_FILES='$?'; \
 	fi;
 	touch $@
 
@@ -356,6 +342,10 @@ cvs-fix-perms		:
 	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
+.latest-scalap-sc		: $(SCALAP_SC_FILES)
+	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
+	touch $@
+
 .latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES)
 	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
 	touch $@
@@ -363,10 +353,6 @@ cvs-fix-perms		:
 .latest-dtd2scala-rsrc		: $(DTD2SCALA_RSRC_FILES)
 	$(strip $(MIRROR) -m 644 -C $(DTD2SCALA_ROOT) $(DTD2SCALA_RSRC_LIST) \
 	    $(DTD2SCALA_RSRC_OUTPUTDIR))
-	touch $@
-
-.latest-scalap-sc		: $(SCALAP_SC_FILES)
-	@$(make) sc target=SCALAP SCALAP_SC_FILES='$?'
 	touch $@
 
 .latest-scalatest-jc		: $(SCALATEST_JC_FILES)
@@ -431,8 +417,8 @@ $(LIBRARY_JAR_ARCHIVE)	:
 	@$(MAKE) jar target=LIBRARY
 
 $(TOOLS_JAR_ARCHIVE)	: .latest-lamplib-jc
-$(TOOLS_JAR_ARCHIVE)	: .latest-compiler-jc
-$(TOOLS_JAR_ARCHIVE)	: .latest-compiler-sc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalac-jc
+$(TOOLS_JAR_ARCHIVE)	: .latest-scalac-sc
 $(TOOLS_JAR_ARCHIVE)	: .latest-interpreter-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-jc
 $(TOOLS_JAR_ARCHIVE)	: .latest-scaladoc-sc
