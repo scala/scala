@@ -201,7 +201,7 @@ public class DeSugarize implements Kinds, Modifiers {
 
 	    Tree applyDef = make.DefDef(
 		tree.pos, 0, Names.apply,
-		Tree.ExtTypeDef.EMPTY_ARRAY, new ValDef[][]{vparams},
+		Tree.TypeDef_EMPTY_ARRAY, new ValDef[][]{vparams},
 		restpe, body);
 
 	    Tree result = make.New(tree.pos,
@@ -264,14 +264,14 @@ public class DeSugarize implements Kinds, Modifiers {
 	    make.Select(tree.pos,
 		make.Ident(tree.pos, x), Names.match), new Tree[]{tree});
 	Tree applyDef = make.DefDef(
-	    tree.pos, 0, Names.apply, Tree.ExtTypeDef.EMPTY_ARRAY, vparams,
+	    tree.pos, 0, Names.apply, Tree.TypeDef_EMPTY_ARRAY, vparams,
 	    gen.mkType(tree.pos, restpe), body);
 	Tree tree1 = isDefinedAtVisitor(tree);
 	Tree body1 = make.Apply(tree.pos,
 	    make.Select(tree.pos,
 		make.Ident(tree.pos, x), Names.match), new Tree[]{tree1});
 	Tree isDefinedAtDef = make.DefDef(
-	    tree.pos, 0, Names.isDefinedAt, Tree.ExtTypeDef.EMPTY_ARRAY,
+	    tree.pos, 0, Names.isDefinedAt, Tree.TypeDef_EMPTY_ARRAY,
 	    Tree.duplicator.transform(vparams),
 	    gen.mkType(tree.pos, global.definitions.BOOLEAN_TYPE), body1);
 	Tree result = make.New(tree.pos,
@@ -526,7 +526,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	    if ((mods1 & MUTABLE) == 0) mods1 |= STABLE;
 	    Tree getter = make.DefDef(
 		tree.pos, mods1, name,
-		Tree.ExtTypeDef.EMPTY_ARRAY, Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
+		Tree.TypeDef_EMPTY_ARRAY, Tree.ValDef_EMPTY_ARRAY_ARRAY,
 		tpe,
 		((mods & DEFERRED) != 0) ? Tree.Empty
 		    : make.Ident(tree.pos, valname));
@@ -536,7 +536,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	    } else {
 		Tree setter = make.DefDef(
 		    tree.pos, mods1, setterName(name),
-		    Tree.ExtTypeDef.EMPTY_ARRAY,
+		    Tree.TypeDef_EMPTY_ARRAY,
 		    new ValDef[][]{{
 			(ValDef) make.ValDef(
 			    tree.pos, SYNTHETIC, parameterName(0), tpe, Tree.Empty)}},

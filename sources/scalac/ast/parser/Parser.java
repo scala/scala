@@ -257,10 +257,10 @@ public class Parser implements Tokens {
 	case Typed(Ident(_), _):
 	    return new ValDef[]{convertToParam(t)};
 	case Block(Tree[] stats):
-	    if (stats.length == 0) return Tree.ExtValDef.EMPTY_ARRAY;
+	    if (stats.length == 0) return Tree.ValDef_EMPTY_ARRAY;
 	}
 	syntaxError(t.pos, "malformed formal parameter list", false);
-	return Tree.ExtValDef.EMPTY_ARRAY;
+	return Tree.ValDef_EMPTY_ARRAY;
     }
 
     /** Convert list of trees to formal parameter list
@@ -1512,7 +1512,7 @@ public class Parser implements Tokens {
 	Name name = ident();
 	TypeDef[] tparams = typeParamClauseOpt();
 	ValDef[][] params = (s.token == LPAREN) ? new ValDef[][]{paramClause()}
-	    : Tree.ExtValDef.EMPTY_ARRAY_ARRAY;
+	    : Tree.ValDef_EMPTY_ARRAY_ARRAY;
         return make.ClassDef(pos, mods, name.toTypeName(), tparams, params,
 			     simpleTypedOpt(), classTemplate());
     }

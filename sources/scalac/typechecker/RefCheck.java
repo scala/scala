@@ -136,8 +136,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    tree.pos,
 	    mods | FINAL | MODUL,
 	    name.toTypeName(),
-	    Tree.ExtTypeDef.EMPTY_ARRAY,
-	    Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
+	    Tree.TypeDef_EMPTY_ARRAY,
+	    Tree.ValDef_EMPTY_ARRAY_ARRAY,
 	    Tree.Empty,
 	    templ)
 	    .setSymbol(sym.moduleClass()).setType(tree.type);

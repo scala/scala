@@ -29,6 +29,10 @@ public class Tree {
 
     /** Empty tree array */
     public static final Tree[] EMPTY_ARRAY = new Tree[0];
+    public static final ValDef[] ValDef_EMPTY_ARRAY = new ValDef[0];
+    public static final ValDef[][] ValDef_EMPTY_ARRAY_ARRAY = new ValDef[0][];
+    public static final TypeDef[] TypeDef_EMPTY_ARRAY = new TypeDef[0];
+    public static final CaseDef[] CaseDef_EMPTY_ARRAY = new CaseDef[0];
 
     //########################################################################
     // Public Cases
@@ -691,10 +695,6 @@ public class Tree {
     }
 
     public static class ExtValDef extends ValDef {
-
-	public static final ValDef[] EMPTY_ARRAY = new ValDef[0];
-	public static final ValDef[][] EMPTY_ARRAY_ARRAY = new ValDef[0][0];
-
         private Symbol symbol;
 
         public ExtValDef(int mods, Name name, Tree tpe, Tree rhs)
@@ -749,8 +749,6 @@ public class Tree {
 
     public static class ExtTypeDef extends TypeDef {
         private Symbol symbol;
-
-	public static final TypeDef[] EMPTY_ARRAY = new TypeDef[0];
 
         public ExtTypeDef(int mods, Name name, Tree rhs)
         {

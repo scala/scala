@@ -1981,8 +1981,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    templ.pos,
 			    0,
 			    Names.ANON_CLASS_NAME.toTypeName(),
-			    Tree.ExtTypeDef.EMPTY_ARRAY,
-			    new ValDef[][]{Tree.ExtValDef.EMPTY_ARRAY},
+			    Tree.TypeDef_EMPTY_ARRAY,
+			    new ValDef[][]{Tree.ValDef_EMPTY_ARRAY},
 			    Tree.Empty,
 			    templ);
 			//new TextTreePrinter().print(cd).println().end();//DEBUG
