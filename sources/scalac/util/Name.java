@@ -75,10 +75,6 @@ public final class Name {
         return i == len;
     }
 
-/** the empty name
- */
-    public static final Name EMPTY = fromString("");
-
 /** create a term name from the bytes in cs[offset..offset+len-1].
  *  assume that bytes are in ascii format.
  */
