@@ -1,0 +1,18 @@
+################################################################-*-text-*-####
+# negative compilation test files (paths are relative to ./test)
+##############################################################################
+# $Id$
+
+neg/S2.scala
+neg/S4.scala
+neg/S6.scala
+neg/S7.scala
+neg/altherr1.scala
+neg/altherr2.scala
+neg/altherr3.scala
+neg/constrparams.scala
+neg/matthias2.scala
+neg/vincent.scala
+neg/vincent1.scala
+
+##############################################################################
