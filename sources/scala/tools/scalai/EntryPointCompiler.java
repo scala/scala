@@ -15,6 +15,7 @@ import scalac.ast.Tree;
 import scalac.ast.parser.Sourcefile;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
+import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Position;
 
@@ -38,7 +39,7 @@ public class EntryPointCompiler {
         Name ARGS_N = Name.fromString("args");
         Symbol args = new TermSymbol(0, ARGS_N, null, 0);
         args.setInfo(global.definitions.arrayType(global.definitions.STRING_TYPE));
-        this.MAIN_TYPE = Type.MethodType(new Symbol[] {args}, global.definitions.UNIT_TYPE);
+        this.MAIN_TYPE = Type.MethodType(new Symbol[] {args}, global.definitions.UNIT_TYPE).erasure();
     }
 
     //########################################################################
@@ -54,6 +55,7 @@ public class EntryPointCompiler {
         Symbol module = global.definitions.ROOT;
         for (int i = 0, j; (j = names.indexOf('.', i)) >= 0; i = j + 1) {
             Name name = Name.fromString(names.substring(i, j));
+            module = getModule(module, name);
             if (module == Symbol.NONE) {
                 error("could not find module '" + main.substring(0, j) + "'");
                 return;

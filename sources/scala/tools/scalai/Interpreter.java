@@ -240,7 +240,9 @@ public class Interpreter {
     }
 
     public boolean call(String main, String[] args) {
+        global.prevPhase(); // !!!
         new EntryPointCompiler(PRODUCT, global).compile(main, args);
+        global.nextPhase(); // !!!
         return interpret(false);
     }
 
