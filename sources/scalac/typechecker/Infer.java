@@ -510,14 +510,16 @@ public class Infer implements Modifiers, Kinds {
 	}
     }
 
-    /** Return inferred type arguments, given type parameters, formal parameters and
-     *  argument types.
+    /** Return inferred type arguments, given type parameters, formal parameters,
+     *  argument types, result type and expected result type.
      *  If this is not possible, throw a `NoInstance' exception, or, if
      *  `needToSucceed' is false alternatively return `null'.
      *  Undetermined type arguments are represented by `NoType'.
      *  No check that inferred parameters conform to their bounds is made here.
      */
-    private Type[] methTypeArgs(Symbol[] tparams, Symbol[] params, Type[] argtypes,
+    private Type[] methTypeArgs(Symbol[] tparams,
+				Symbol[] params, Type[] argtypes,
+				Type restp, Type pt,
 				boolean needToSucceed) throws NoInstance {
 	//System.out.println("methTypeArgs, tparams = " + ArrayApply.toString(tparams) + ", params = " + ArrayApply.toString(params) + ", type(params) = " + ArrayApply.toString(Symbol.type(params)) + ", argtypes = " + ArrayApply.toString(argtypes));//DEBUG
 
@@ -528,6 +530,21 @@ public class Infer implements Modifiers, Kinds {
 		throw new NoInstance("parameter lists differ in length");
 	    return null;
 	}
+
+	// check first whether type variables can be fully defined from
+	// expected result type.
+	if (!isCompatible(restp.subst(tparams, tvars), pt)) {
+	    if (needToSucceed)
+		throw new NoInstance("result type " + restp +
+				     " is incompatible with expected type " + pt);
+	    return null;
+	}
+	for (int i = 0; i < tvars.length; i++) {
+	    Type.TypeVar tvar = (Type.TypeVar) tvars[i];
+	    if (!isFullyDefined(tvar)) tvar.constr.inst = Type.NoType;
+	}
+
+	// Then define remaining type variables from argument types.
 	for (int i = 0; i < argtypes.length; i++) {
 	    if (!isCompatible(argtypes[i].subst(tparams, tvars),
 			      formals[i].subst(tparams, tvars))) {
@@ -636,29 +653,32 @@ public class Infer implements Modifiers, Kinds {
 
     /** Instantiate method `tree' of polymorphic type with given `tparams' and
      *  `restype', so that resulting method type can be applied to
-     *  arguments with types `argtypes'.
+     *  arguments with types `argtypes' and its result type is compatible with `pt'.
      */
     public Tree methodInstance(Tree tree,
-			       Symbol[] tparams, Type restype, Type[] argtypes)
+			       Symbol[] tparams, Type restype, Type[] argtypes, Type pt)
 	                       throws Type.Error {
 	switch (restype) {
 	case PolyType(Symbol[] tparams1, Type restype1):
 	    Symbol[] tparams2 = new Symbol[tparams.length + tparams1.length];
 	    System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
 	    System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
-	    return methodInstance(tree, tparams2, restype1, argtypes);
+	    return methodInstance(tree, tparams2, restype1, argtypes, pt);
 	case MethodType(Symbol[] params, Type restpe):
 	    Type[] argtypes1 = Type.widen(argtypes);
 	    Type[] targs;
 	    try {
-		targs = methTypeArgs(tparams, params, argtypes1, true);
+		targs = methTypeArgs(tparams, params, argtypes1, restpe, pt, true);
 	    } catch (NoInstance ex) {
+		throw ex;
+/*
 		throw new Type.Error(
 		    applyErrorMsg(
 			"no type parameters for ", tree,
 			" exist so that it can be applied to arguments ",
 			argtypes1, Type.AnyType) +
 		    "\n --- because ---\n" + ex.getMessage());
+*/
 	    }
 	    Symbol[] uninstantiated = normalizeArgs(targs, tparams);
 	    checkBounds(tparams, targs, "inferred ");
@@ -730,7 +750,7 @@ public class Infer implements Modifiers, Kinds {
 	case PolyType(Symbol[] tparams, MethodType(Symbol[] params, Type restpe)):
 	    try {
 		Type[] targs = methTypeArgs(
-		    tparams, params, Type.widen(argtypes), false);
+		    tparams, params, Type.widen(argtypes), restpe, pt, false);
 		if (targs != null) {
 		    Symbol[] uninstantiated = normalizeArgs(targs, tparams);
 		    return

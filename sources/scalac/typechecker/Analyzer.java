@@ -1452,7 +1452,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    // if method is polymorphic,
 	    // infer instance, and adapt arguments to instantiated formals
 	    try {
-		fn1 = infer.methodInstance(fn1, tparams, restp, argtypes);
+		fn1 = infer.methodInstance(fn1, tparams, restp, argtypes, pt);
 	    } catch (Type.Error ex) {
 		error(tree.pos, ex.msg);
 	    }
@@ -1619,9 +1619,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    tree = error(tree.pos, ex.msg);
 		}
 		return adapt(tree, mode, pt);
-//	    } else if ((mode & EXPRmode) != 0) {
-//		// will be instantiated later
-//		return tree;
 	    }
 	    break;
 
