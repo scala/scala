@@ -7,7 +7,7 @@
 > 5.0: scala.Double(5.0)
 > null: scala.AllRef(null)
 > hello: java.lang.String("hello")
-> List(): scala.Nil
+> List(): scala.Nil.type
 > List(1,2,3): scala.List[scala.Int]
 > > Exception in thread "main" java.lang.Error: error
         at $console$15.<init>(<console>:1)
