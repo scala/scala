@@ -79,6 +79,7 @@ sealed class Sealed {
 object Test {
 
   def check_success(name: String, def closure: Int, expected: Int): Unit = {
+    import java.lang.System;
     System.out.print("test " + name);
     try {
       val actual: Int = closure;
