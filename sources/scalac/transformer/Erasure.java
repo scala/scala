@@ -182,6 +182,10 @@ public class Erasure extends GenTransformer implements Modifiers {
                 if (primitives.getPrimitive(bsym) != Primitive.BOX) break;
                 assert bargs.length == 1: fun;
                 switch (primitives.getPrimitive(fun.symbol())) {
+                case COERCE:
+                    assert vargs.length == 0: tree;
+                    Tree value = bargs[0];
+                    return coerce(value, fun.type().resultType());
                 case LENGTH:
                     assert vargs.length == 0: tree;
                     Tree array = bargs[0];
