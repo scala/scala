@@ -245,6 +245,7 @@ ia-build		:
 DISTRIB_ROOT		 = $(PROJECT_DISTRIBDIR)
 DISTRIB_PACKAGE		 = $(INSTALL_PACKAGE)
 DISTRIB_ARCHIVE		 = $(DISTRIB_ROOT)/$(DISTRIB_PACKAGE)
+DISTRIB_GENMD5		 = cd $(dir $(1)); $(MD5SUM) $(notdir $(1)) > $(notdir $(1)).md5
 
 distrib			: distrib-build-all
 	$(RM) -rf $(INSTALL_PREFIX)
@@ -262,6 +263,8 @@ distrib-build-unix	: install
 	    $(notdir $(INSTALL_PREFIX)))
 	$(BZIP2) --best -c $(DISTRIB_ARCHIVE).tar > $(DISTRIB_ARCHIVE).tar.bz2
 	$(GZIP) --best -c $(DISTRIB_ARCHIVE).tar > $(DISTRIB_ARCHIVE).tar.gz
+	$(call DISTRIB_GENMD5,$(DISTRIB_ARCHIVE).tar.bz2)
+	$(call DISTRIB_GENMD5,$(DISTRIB_ARCHIVE).tar.gz)
 	$(RM) $(DISTRIB_ARCHIVE).tar
 
 distrib-build-windows	: install-windows
@@ -275,6 +278,7 @@ distrib-build-windows	: install-windows
 	    $(call RUN,$(CP) $(dir $(INSTALL_PREFIX))/$(DISTRIB_PACKAGE).zip \
 	        $(DISTRIB_ARCHIVE).zip); \
 	fi
+	$(call DISTRIB_GENMD5,$(DISTRIB_ARCHIVE).zip)
 
 distrib-build-ia	: ia-build
 
