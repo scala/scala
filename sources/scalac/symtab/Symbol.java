@@ -402,6 +402,16 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & INTERFACE) != 0;
     }
 
+    /** Does this symbol denote a type alias? */
+    public final boolean isTypeAlias() {
+        return kind == ALIAS;
+    }
+
+    /** Does this symbol denote an abstract type? */
+    public final boolean isAbstractType() {
+        return kind == TYPE;
+    }
+
     /** Does this symbol denote a public symbol? */
     public final boolean isPublic() {
         return !isProtected() && !isPrivate();
@@ -1751,7 +1761,7 @@ public class ClassSymbol extends TypeSymbol {
 
     /** Get the fully qualified name of this Symbol */
     public Name fullName() {
-        if (owner().kind == CLASS && owner().name.length() != 0)
+        if (owner().kind == CLASS && !owner().isRoot())
             return Name.fromString(owner().fullName() + "." + name);
         else
             return name.toTermName();
