@@ -47,7 +47,7 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
   final def hedgeRulesToString:String = {
     hedgeRules.foldLeft ("") {
       (s:String,r:Rule) => s + (r match {
-        case HedgeRule( h, _ ) if ( make.hedgeInitials contains h ) => "*"
+        case HedgeRule( h, _, _ ) if ( make.hedgeInitials contains h ) => "*"
         case _ => " "
       }) + r.toString() + "\n"
     } ;
@@ -56,7 +56,7 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
   final def treeRulesToString:String = {
     treeRules.foldLeft ("") {
       (s:String,r:Rule) => s + (r match {
-        case TreeRule( t, _ ) if ( make.treeInitials contains t ) => "*"
+        case TreeRule( t, _, _ ) if ( make.treeInitials contains t ) => "*"
         case _ => " "
       }) + r.toString() + "\n"
     } ;
@@ -76,10 +76,10 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
     sb.toString()
   }
 
-  protected def add( i:Int, r:Rule, m:immutable.TreeMap[Int,immutable.Set[Rule]] ) =
+  protected def add[A]( i:Int, r:A, m:immutable.TreeMap[Int,immutable.Set[A]] ):immutable.TreeMap[Int,immutable.Set[A]] =
     m.update( i, m.get( i ) match {
       case Some( s ) => s + r;
-      case None => immutable.ListSet.Empty[Rule] + r;
+      case None => immutable.ListSet.Empty[A] + r;
     });
 
 
@@ -87,25 +87,25 @@ case class MutableGrammar( treeRules:mutable.Set[TRule],
   /** converts this grammar in a immutable grammar
   */
   def toGrammar:Grammar = {
-    val treeTransitions:immutable.TreeMap[Int,immutable.Set[Rule]] = {
+    val treeTransitions:immutable.TreeMap[Int,immutable.Set[TRule]] = {
       var tmp =
-        immutable.TreeMap.Empty[Int,immutable.Set[Rule]];
+        immutable.TreeMap.Empty[Int,immutable.Set[TRule]];
       treeRules.foreach { treeRule => treeRule match {
         case AnyTreeRule( t ) => tmp = add( t.i, treeRule, tmp );
         case AnyNodeRule( t, _ ) => tmp = add( t.i, treeRule, tmp )
-        case TreeRule( t, _ ) => tmp = add( t.i, treeRule, tmp )
+        case TreeRule( t, _, _ ) => tmp = add( t.i, treeRule, tmp )
       }};
       tmp
     };
-    val hedgeTransitions:immutable.TreeMap[Int,immutable.Set[Rule]] = {
+    val hedgeTransitions:immutable.TreeMap[Int,immutable.Set[HRule]] = {
       var tmp =
-        immutable.TreeMap.Empty[Int,immutable.Set[Rule]];
+        immutable.TreeMap.Empty[Int,immutable.Set[HRule]];
       hedgeRules.foreach { hedgeRule => hedgeRule match {
-        case HedgeRule( h, _ ) => tmp = add( h.i, hedgeRule, tmp );
+        case HedgeRule( h, _, _ ) => tmp = add( h.i, hedgeRule, tmp );
         case HedgeChainRule( h, _ ) => tmp = add( h.i, hedgeRule, tmp );
       }};
       // to maintain assumption that every hedge nt is present
-      tmp.update( 0, immutable.ListSet.Empty[Rule] );
+      tmp.update( 0, immutable.ListSet.Empty[HRule] );
     };
     val theCaseVars = new Array[Int]( caseVars.size );
     for( val k <- caseVars.keys ) {
