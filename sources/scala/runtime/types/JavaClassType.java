@@ -11,7 +11,10 @@
 package scala.runtime.types;
 
 public class JavaClassType extends ClassType {
-    public JavaClassType(Class clazz) {
-        super(clazz, true);
+    private static final ClassLoader loader =
+        ClassLoader.getSystemClassLoader();
+
+    public JavaClassType(String fullName) throws ClassNotFoundException {
+        super(Class.forName(fullName, false, loader), true);
     }
 }
