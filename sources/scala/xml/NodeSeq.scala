@@ -42,4 +42,19 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
   override def toString() = theSeq.elements.foldLeft ("") {
     (s:String,x:Node) => s + x.toString()
   }
+
+  private var _asList:List[Node] = null;
+  def asList = {
+    if (_asList == null ) _asList = elements.toList;
+    _asList
+  }
+
+  def map( f:Node => Node ):NodeSeq = {
+    new NodeSeq( asList map f )
+  }
+
+  def flatMap( f:Node => NodeSeq ):NodeSeq = {
+    new NodeSeq( asList flatMap { x => f(x).asList })
+  }
+
 }

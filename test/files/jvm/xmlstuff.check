@@ -18,3 +18,5 @@ xpath \\ DESCENDANTS
 passed ok
 passed ok
 passed ok
+NodeSeq
+passed ok

@@ -180,4 +180,18 @@ object Test with Application {
         Elem("title",e,Text("Data on ze web")),
         Elem("title",e,Text("Foundations of Programming Languages")))
   );
+
+
+  Console.println("NodeSeq");
+  import scala.xml.Utility.view ;
+
+  val p = <foo><bar value="3"/><baz bazValue="8"/><bar value="5"/></foo>;
+
+  assertSameElements(
+    for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
+      x.attribute("value") + y.attribute("bazValue")+ "!"
+    },
+    new NodeSeq(List(Text("38!"),Text("58!")))
+  )
+
 }
