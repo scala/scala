@@ -243,7 +243,7 @@ public abstract class Symbol implements Modifiers, Kinds {
         return kind == CLASS && (flags & MODUL) != 0;
     }
 
-    /** Does this symbol denote a module? */
+    /** Does this symbol denote a class? */
     public final boolean isClass() {
         return kind == CLASS;
     }
@@ -392,6 +392,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Get type parameters */
     public Symbol[] typeParams() {
+	return EMPTY_ARRAY;
+    }
+
+    /** Get value parameters */
+    public Symbol[] valueParams() {
 	return EMPTY_ARRAY;
     }
 
@@ -957,6 +962,10 @@ public class TermSymbol extends Symbol {
 	return type().typeParams();
     }
 
+    public Symbol[] valueParams() {
+	return type().valueParams();
+    }
+
     public Symbol primaryConstructorClass() {
 	return isConstructor() && clazz != null ? clazz : this;
     }
@@ -998,6 +1007,11 @@ public class TypeSymbol extends Symbol {
 	if (tycon == null)
 	    tycon = Type.TypeRef(owner().thisType(), this, Type.EMPTY_ARRAY);
 	return tycon;
+    }
+
+    public Symbol setOwner(Symbol owner) {
+        tycon = null;
+        return super.setOwner(owner);
     }
 
     /** Get type */
@@ -1258,6 +1272,10 @@ public class ClassSymbol extends TypeSymbol {
 	return constructor.info().typeParams();
     }
 
+    public Symbol[] valueParams() {
+	return constructor.info().valueParams();
+    }
+
     /** Get type */
     public Type type() {
 	if (template == null || template.typeArgs().length != typeParams().length) {
@@ -1265,6 +1283,11 @@ public class ClassSymbol extends TypeSymbol {
 		owner().thisType(), this, type(typeParams()));
 	}
 	return template;
+    }
+
+    public Symbol setOwner(Symbol owner) {
+        template = null;
+        return super.setOwner(owner);
     }
 
     public Type thisType() {

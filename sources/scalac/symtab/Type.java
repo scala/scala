@@ -369,6 +369,23 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return Symbol.EMPTY_ARRAY;
     }
 
+    /** Get value parameters of method or EMPTY_ARRAY if not
+     * applicable.
+     */
+    public Symbol[] valueParams() {
+        switch (this) {
+	case PolyType(_, Type result):
+	    return result.valueParams();
+        case MethodType(Symbol[] vparams, _):
+            return vparams;
+	case TypeRef(_, Symbol sym, _):
+	    if (sym.kind == CLASS) return sym.valueParams();
+	    else return sym.info().valueParams();
+        default:
+            return Symbol.EMPTY_ARRAY;
+	}
+    }
+
     /** If this type is a (possibly polymorphic) method type, its result type
      *  after applying all method argument sections,
      *  otherwise the type itself.
