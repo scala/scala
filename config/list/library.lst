@@ -148,6 +148,9 @@ io/Source.scala
 mobile/Code.scala
 mobile/Location.scala
 
+runtime/AtomicReference.java
+runtime/FNV_Hash.java
+runtime/IOMap.java
 runtime/InterpreterSupport.java
 runtime/NativeLoop.java
 runtime/ResultOrException.java
@@ -163,6 +166,21 @@ runtime/matching/Rule.scala
 runtime/matching/TestAlphabet.scala
 
 text/Document.scala
+
+runtime/types/ClassType.java
+runtime/types/JavaClassType.java
+runtime/types/ScalaClassType.java
+runtime/types/SingleType.java
+runtime/types/TypeBoolean.java
+runtime/types/TypeByte.java
+runtime/types/TypeChar.java
+runtime/types/TypeConstructor.java
+runtime/types/TypeDouble.java
+runtime/types/TypeFloat.java
+runtime/types/TypeInt.java
+runtime/types/TypeLong.java
+runtime/types/TypeShort.java
+runtime/types/JavaTypeRepository.java
 
 testing/UnitTest.scala
 testing/SUnit.scala
