@@ -92,8 +92,7 @@ class SymbolTablePrinterFactory {
 	if (prefix.symbol().isRoot()) return null;
 
 	// Next line should be removed in theory.
-        if (prefix.symbol().moduleClass() ==
-	    global.definitions.getClass(Names.java_lang))
+        if (prefix.symbol() == global.definitions.JAVA_CLASS.module())
             return null;
 
 	switch(prefix) {
