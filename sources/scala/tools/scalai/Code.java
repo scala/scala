@@ -21,7 +21,7 @@ public class Code {
 
     public case Label(Symbol symbol, Variable[] variables, Code expression);
 
-    public case Create(ScalaTemplate template); // !!! remove ?
+    public case Create(ScalaTemplate template);
     public case Invoke(Code target, Function function, Code[] arguments, int pos);
     public case Load(Code target, Variable variable);
     public case Store(Code target, Variable variable, Code expression);

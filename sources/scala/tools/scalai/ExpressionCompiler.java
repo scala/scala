@@ -133,6 +133,8 @@ public class ExpressionCompiler {
         case New(Tree.Template(Tree[] bases, Tree[] body)): // !!!
             assert bases.length == 1 : Debug.show(tree);
             assert body.length == 0 : Debug.show(tree);
+            Symbol symbol = new scalac.symtab.TermSymbol(tree.pos, Name.fromString("new"), Symbol.NONE, 0); // !!!
+            Variable variable = Variable.Local(context.push());
             Code code = compute(bases[0]);
             switch (context.lookupTemplate(tree.type().symbol())) {
             case Global(ScalaTemplate template):
@@ -140,7 +142,13 @@ public class ExpressionCompiler {
                 Code.Invoke invoke = (Code.Invoke)code;
                 // !!! correct ?
                 assert invoke.target == Code.Self | invoke.target == Code.Null : Debug.show(code);
-                invoke.target = Code.Create(template);
+                invoke.target = Code.Load(Code.Null, variable);
+                context.insertVariable(symbol, variable);
+                code = Code.Block(
+                    new Code[] {
+                        Code.Store(Code.Null, variable, Code.Create(template)),
+                        invoke},
+                    Code.Load(Code.Null, variable));
             }
             return code;
 

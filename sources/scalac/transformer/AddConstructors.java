@@ -84,8 +84,7 @@ public class AddConstructors extends Transformer {
                 new TermSymbol(classConstr.pos, classConstr.name, owner, flags);
 
 	    Type constrType = Type.MethodType
-		(paramSyms, forINT ? owner.type()
-		 : global.definitions.UNIT_TYPE());
+		(paramSyms, global.definitions.UNIT_TYPE());
             if (tparamSyms.length != 0)
                 constrType = Type.PolyType(tparamSyms, constrType);
 
@@ -234,10 +233,7 @@ public class AddConstructors extends Transformer {
             rhs = transform(rhs);
             subst.removeSymbol(constr.valueParams());
             subst.removeSymbol(constr.typeParams());
-            Tree result = forINT
-                ? gen.This(rhs.pos, constr.constructorClass())
-                : gen.mkUnitLit(rhs.pos);
-            rhs = gen.mkBlock(new Tree[] { rhs, result });
+            rhs = gen.mkBlock(new Tree[] { rhs, gen.mkUnitLit(rhs.pos) });
             return gen.DefDef(init, rhs);
 
 	// Substitute the constructor into the 'new' expressions
