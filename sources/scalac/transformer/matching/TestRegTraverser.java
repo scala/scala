@@ -36,7 +36,7 @@ public class TestRegTraverser extends Traverser {
 						result = true;
 					break;
 				 case CaseDef(Tree pat, _, _):
-            		traverse(pat);
+				     traverse(pat);
             		break;
 				default:
 					super.traverse( tree );
