@@ -100,6 +100,9 @@ class GenJVM {
         public case If(InstructionHandle target, boolean when);
     }
 
+    // Line numbers attribution
+    protected HashMap/*<InstructionHandle,Integer>*/ lineAttributedInstrs;
+
     protected void gen(Tree tree) {
         gen(tree, cst.T_VOID, InstrContext.Empty);
     }
@@ -135,6 +138,14 @@ class GenJVM {
     protected void gen(Tree tree, byte expectedType, InstrContext ctx) {
         Symbol sym = tree.symbol();
         byte generatedType = cst.T_VOID;
+
+        // Remember first instruction associated to this tree, to
+        // generate line numbers.
+        InstructionHandle startHandle;
+        if (currIL != null)
+            startHandle = currIL.getEnd();
+        else
+            startHandle = null;
 
         switch (tree) {
         case PackageDef(_, Tree.Template impl):
@@ -499,6 +510,26 @@ class GenJVM {
                       || (generatedType == cst.T_ARRAY
                           && expectedType == cst.T_OBJECT)))
             genWidenConversion(generatedType, expectedType);
+
+        // Associate line numbers to instructions we just generated.
+        if (currIL != null) {
+            InstructionHandle ih =
+                (startHandle == null ? currIL.getStart() : startHandle);
+            int prevLine = -1;
+            while (ih != null) {
+                if (lineAttributedInstrs.containsKey(ih))
+                    prevLine = ((Integer)lineAttributedInstrs.get(ih)).intValue();
+                else {
+                    int line = Position.line(tree.pos);
+                    lineAttributedInstrs.put(ih, new Integer(line));
+                    if (line != prevLine) {
+                        currMethod.addLineNumber(ih, line);
+                        prevLine = line;
+                    }
+                }
+                ih = ih.getNext();
+            }
+        }
     }
 
     protected Tree unbox(Tree tree) {
@@ -1274,6 +1305,8 @@ class GenJVM {
         currMethod = mGen;
         currLocals = locals;
         currIL = currMethod.getInstructionList();
+
+        lineAttributedInstrs = new HashMap();
     }
 
     protected void leaveMethod() {
@@ -1286,6 +1319,8 @@ class GenJVM {
         currMethod = null;
         currLocals = null;
         currIL = null;
+
+        lineAttributedInstrs = null;
     }
 
     protected int modifiersStoJ(int flags) {
