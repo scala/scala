@@ -2459,7 +2459,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case MethodType(Symbol[] vparams, Type result):
 	    int h = METHODtpe;
 	    for (int i = 0; i < vparams.length; i++)
-		h = (h << 4) ^ vparams[i].flags;
+		h = (h << 4) ^ (vparams[i].flags & SOURCEFLAGS);
 	    return h
 		^ (hashCode(Symbol.type(vparams)) * 41)
 		^ (result.hashCode() * (41 * 41));
@@ -2541,7 +2541,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	 	    if (vparams.length != vparams1.length)
 			return false;
 		    for (int i = 0; i < vparams.length; i++)
-			if (vparams[i].flags != vparams1[i].flags)
+			if ((vparams[i].flags & SOURCEFLAGS) !=
+			    (vparams1[i].flags & SOURCEFLAGS))
 			    return false;
 		    return
 			equals(Symbol.type(vparams), Symbol.type(vparams1)) &&
