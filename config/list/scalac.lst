@@ -9,6 +9,7 @@ Main.scala
 
 ast/TreeList.scala
 
+ast/parser/MarkupParser.scala
 ast/parser/Parser.scala
 ast/parser/ParserPhase.scala
 ast/parser/Scanner.scala
