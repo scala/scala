@@ -15,36 +15,47 @@ package scala;
  *  object <code>None</code>.
  *
  *  @author  Martin Odersky
+ *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Option[+a] {
+trait Option[+A] extends Iterable[A] {
 
-    def get: a = this match {
+	def isEmpty: Boolean = this match {
+		case None => true
+		case _ => false
+	}
+
+    def get: A = this match {
       case None => error("None.get")
       case Some(x) => x
     }
 
-    def map[b](f: a => b): Option[b] = this match {
+    def map[B](f: A => B): Option[B] = this match {
       case None => None
       case Some(x) => Some(f(x))
     }
 
-    def flatMap[b](f: a => Option[b]): Option[b] = this match {
+    def flatMap[B](f: A => Option[B]): Option[B] = this match {
       case None => None
       case Some(x) => f(x)
     }
 
-    def filter(p: a => boolean): Option[a] = this match {
+    def filter(p: A => Boolean): Option[A] = this match {
       case None => None
       case Some(x) => if (p(x)) Some(x) else None
     }
 
-    def foreach(f: a => Unit): Unit = this match {
+    def foreach(f: A => Unit): Unit = this match {
       case None => ()
       case Some(x) => f(x)
     }
 
-    def toList: List[a] = this match {
+	def elements: Iterator[A] = this match {
+		case None => Iterator.empty
+		case Some(x) => Iterator.fromSeq(x)
+	}
+
+    def toList: List[A] = this match {
       case None => Predef.List()
       case Some(x) => Predef.List(x)
     }

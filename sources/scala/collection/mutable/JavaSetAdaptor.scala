@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 19/09/2003
  */
-class JavaSetAdaptor[A, B](jset: java.util.Set) extends Set[A] {
+class JavaSetAdaptor[A](jset: java.util.Set) extends Set[A] {
 
     def size: Int = jset.size();
 

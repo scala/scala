@@ -70,7 +70,52 @@ object List {
       val Pair(fs, ss) = unzip(tail);
       Pair(f :: fs, s :: ss)
   }
+
+  /** Converts an array into a list.
+   *  @param arr the array to convert
+   *  @returns a list that contains the same elements than <code>arr</code>
+   *           in the same order
+   */
+  def fromArray[a](arr: Array[a]): List[a] = fromArray(arr, 0, arr.length);
+
+  /** Converts a range of an array into a list.
+   *  @param arr the array to convert
+   *  @param start the first index to consider
+   *  @param len the lenght of the range to convert
+   *  @returns a list that contains the same elements than <code>arr</code>
+   *           in the same order
+   */
+  def fromArray[a](arr: Array[a], start: Int, len: Int): List[a] = {
+    var res: List[a] = Nil;
+    var i = start + len;
+    while (i > start) {
+      i = i - 1;
+      res = arr(i) :: res;
+    }
+    res
+  }
+
+  /** Parses a string which contains substrings separated by a
+   *  separator character and returns a list of all substrings.
+   *  @param str the string to parse
+   *  @param separator the separator character
+   *  @return the list of substrings
+   */
+  def fromString(str: String, separator: Char): List[String] = {
+    var res: List[String] = Nil;
+    var start = 0;
+    var end = str.indexOf(separator);
+    while (end >= 0) {
+      if (end > start)
+        res = str.substring(start, end) :: res;
+      end = end + 1;
+      start = end;
+      end = str.indexOf(separator, end);
+    }
+	res.reverse
+  }
 }
+
 
 /** A trait representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -441,14 +486,6 @@ trait List[+a] extends Seq[a] {
   def reverse: List[a] =
     foldLeft(Nil : List[a])((xs, x) => x :: xs);
 
-  /*
-  def toArray: Array[a] = {
-    val xs = new Array[a](length);
-  copyToArray(xs, 0);
-  xs
-  }
-  */
-
   /** Fills the given array <code>xs</code> with the elements of
    *  this list starting at position <code>start</code>. Does not
    *  work with empty lists.
@@ -457,8 +494,8 @@ trait List[+a] extends Seq[a] {
    *  @return the given array <code>xs</code> filled with this list.
    *  @throws error if the list is empty.
    */
-  def copyToArray[b >: a](xs: Array[b], start: Int): int = match {
-    case Nil => start
+  def copyToArray[b >: a](xs: Array[b], start: Int): Array[b] = match {
+    case Nil => xs
     case y :: ys => xs(start) = y; ys.copyToArray(xs, start + 1)
   }
 

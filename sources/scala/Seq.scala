@@ -14,6 +14,7 @@ package scala;
  *  of type <code>A</code>.
  *
  *  @author  Martin Odersky
+ *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
 trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
@@ -35,17 +36,13 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
      *  @return a string representation of this sequence.
      */
     override def toString() = {
-        def toString1(it: Iterator[A]):String = {
-            if (it.hasNext) {
-               ",".concat(it.next.toString())
-                  .concat(toString1(it))
-            } else
-                ")"
+        val iter = elements;
+        var res = "Seq(";
+        if (iter.hasNext) {
+        	res = res + iter.next;
+        	while (iter.hasNext)
+        		res = res + ", " + iter.next;
         }
-        val it = elements;
-        if (it.hasNext)
-            "Seq(" + it.next.toString() + toString1(it)
-        else
-            "Seq()"
+        res + ")"
     }
 }
