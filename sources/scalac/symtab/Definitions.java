@@ -607,8 +607,9 @@ public class Definitions {
             Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
 
         // create global values
-        PATTERN_WILDCARD = newTerm(ROOT_CLASS, Names.PATTERN_WILDCARD, 0)
-            .setType(ALL_TYPE());
+        PATTERN_WILDCARD = new TermSymbol(
+            Position.NOPOS, Names.PATTERN_WILDCARD, Symbol.NONE, 0);
+        PATTERN_WILDCARD.setInfo(ALL_TYPE());
     }
 
     //########################################################################
@@ -679,9 +680,9 @@ public class Definitions {
     private Symbol newTerm(Symbol owner, Name name, int flags) {
         if (owner.isTypeAlias()) owner = owner.type().unalias().symbol();
         assert owner.isClassType(): Debug.show(owner) + " -- " + name;
-        Symbol method = new TermSymbol(Position.NOPOS, name, owner, flags);
-        if (owner != Symbol.NONE) owner.members().enterOrOverload(method);
-        return method;
+        Symbol term = new TermSymbol(Position.NOPOS, name, owner, flags);
+        owner.members().enterOrOverload(term);
+        return term;
     }
 
     /** Creates a new type parameter */
