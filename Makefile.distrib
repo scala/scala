@@ -30,11 +30,11 @@ ULTRAEDIT_LIST		+= scala.txt
 ULTRAEDIT_FILES		 = $(ULTRAEDIT_LIST:%=$(ULTRAEDIT_ROOT)/%)
 
 # scala test
-TEST_ROOT		 = $(PROJECT_ROOT)/test
+TEST_ROOT		 = $(PROJECT_TESTDIR)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-pos.lst)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-neg.lst)
 TEST_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/test-run.lst)
-TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/files/%)
+TEST_FILES		 = $(TEST_LIST:%=$(TEST_ROOT)/%)
 
 ##############################################################################
 # beta versions
@@ -122,28 +122,26 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(strip $(MIRROR) -m 644 -p -C $(ULTRAEDIT_ROOT) $(ULTRAEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/ultraedit)
 	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)
-	$(INSTALL) -m 755 -d $(INSTALL_TESTDIR)/bin
-	$(INSTALL) -m 755 $(TEST_ROOT)/bin/scala-test $(INSTALL_TESTDIR)/bin
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files $(TEST_LIST) \
-	    $(INSTALL_TESTDIR)/files)
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
-	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.check) 2>/dev/null) \
-	    $(INSTALL_TESTDIR)/files)
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
-	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.flags) 2>/dev/null) \
-	    $(INSTALL_TESTDIR)/files)
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
-	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.args) 2>/dev/null) \
-	    $(INSTALL_TESTDIR)/files)
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
-	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.dtd) 2>/dev/null) \
-	    $(INSTALL_TESTDIR)/files)
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
-	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.namespace) 2>/dev/null) \
-	    $(INSTALL_TESTDIR)/files)
-	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT)/files \
-	    $(shell cd $(TEST_ROOT)/files; ls $(TEST_LIST:%.scala=%.xml) 2>/dev/null) \
-	    $(INSTALL_TESTDIR)/files)
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) $(TEST_LIST) \
+	    $(INSTALL_TESTDIR))
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) \
+	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.check) 2>/dev/null) \
+	    $(INSTALL_TESTDIR))
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) \
+	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.flags) 2>/dev/null) \
+	    $(INSTALL_TESTDIR))
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) \
+	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.args) 2>/dev/null) \
+	    $(INSTALL_TESTDIR))
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) \
+	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.dtd) 2>/dev/null) \
+	    $(INSTALL_TESTDIR))
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) \
+	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.namespace) 2>/dev/null) \
+	    $(INSTALL_TESTDIR))
+	$(strip $(MIRROR) -m 644 -p -C $(TEST_ROOT) \
+	    $(shell cd $(TEST_ROOT); ls $(TEST_LIST:%.scala=%.xml) 2>/dev/null) \
+	    $(INSTALL_TESTDIR))
 
 install-windows		: install
 	@if [ ! -d "$(INSTALL_PREFIX)" ]; then \
