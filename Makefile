@@ -16,8 +16,8 @@ include $(ROOT)/Makefile.config
 # project
 PROJECT_SOURCES		+= $(LAMPLIB_SOURCES)
 PROJECT_SOURCES		+= $(META_SOURCES)
-PROJECT_SOURCES		+= $(RUNTIME_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
+PROJECT_SOURCES		+= $(LIBRARY_SOURCES)
 PROJECT_SOURCES		+= $(INTERPRETER_SOURCES)
 PROJECT_SOURCES		+= $(SCALADOC_SOURCES)
 PROJECT_SOURCES		+= $(DTD2SCALA_SOURCES)
@@ -32,7 +32,7 @@ PROJECT_JAR_FILES	+= scalac
 PROJECT_JAR_FILES	+= scalai
 
 # scala scripts wrapper
-SCRIPTS_PREFIX		 = $(PROJECT_ROOT)/bin
+SCRIPTS_PREFIX		 = $(PROJECT_BINARYDIR)
 SCRIPTS_WRAPPER		 = $(SCRIPTS_PREFIX)/.scala_wrapper
 SCRIPTS_WRAPPER_LINKS	+= $(SCRIPTS_WRAPPER_ALIASES:%=$(SCRIPTS_PREFIX)/%)
 SCRIPTS_WRAPPER_ALIASES	+= scala-info
@@ -46,12 +46,12 @@ SCRIPTS_WRAPPER_ALIASES	+= dtd2scala
 SCRIPTS_WRAPPER_MACRO	 = -es@{\#$(1)\#}@'"$(MACRO_$(1):$(INSTALL_PREFIX)/%=$$PREFIX/%)"'@g
 
 # automatic generation of Function<n>.java and Tuple<n>.scala files
-FUNCTION_PREFIX		 = $(RUNTIME_ROOT)
-FUNCTION_FILES		+= $(filter $(FUNCTION_PREFIX)/Function%.java,$(RUNTIME_SOURCES))
+FUNCTION_PREFIX		 = $(LIBRARY_ROOT)
+FUNCTION_FILES		+= $(filter $(FUNCTION_PREFIX)/Function%.java,$(LIBRARY_SOURCES))
 FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.java.tmpl
 
 TUPLE_PREFIX		 = $(LIBRARY_ROOT)
-TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_FILES))
+TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_SOURCES))
 TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.scala.tmpl
 
 # lamp library
@@ -66,18 +66,19 @@ META_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
 META_SOURCES		+= $(META_LIST:%=$(META_ROOT)/%)
 META_JC_FILES		+= $(META_SOURCES)
 
-# scala runtime
-RUNTIME_ROOT		 = $(PROJECT_SOURCEDIR)/scala
-RUNTIME_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/runtime.lst)
-RUNTIME_SOURCES		+= $(RUNTIME_LIST:%=$(RUNTIME_ROOT)/%)
-RUNTIME_JC_FILES	+= $(RUNTIME_SOURCES)
-
 # scala compiler
 COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
 COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
 COMPILER_SOURCES	+= $(COMPILER_LIST:%=$(COMPILER_ROOT)/%)
 COMPILER_JC_FILES	 = $(COMPILER_SOURCES)
 COMPILER_JC_CLASSPATH	 = $(PROJECT_CLASSPATH):$(BCEL_JARFILE):$(MSIL_JARFILE):$(FJBG_JARFILE)
+
+# scala library
+LIBRARY_ROOT		 = $(PROJECT_SOURCEDIR)/scala
+LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
+LIBRARY_SOURCES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
+LIBRARY_JC_FILES	+= $(filter %.java,$(LIBRARY_SOURCES))
+LIBRARY_SC_FILES	+= $(filter %.scala,$(LIBRARY_SOURCES))
 
 # scala interpreter
 INTERPRETER_ROOT	 = $(PROJECT_SOURCEDIR)/scalai
@@ -97,30 +98,28 @@ DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
 DTD2SCALA_JC_FILES	 = $(DTD2SCALA_SOURCES)
 
-# scala library
-LIBRARY_ROOT		 = $(RUNTIME_ROOT)
-LIBRARY_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/library.lst)
-LIBRARY_FILES		+= $(LIBRARY_LIST:%=$(LIBRARY_ROOT)/%)
-
 # java compilation
 JC_COMPILER		 = PICO
 JC_OUTPUTDIR		 = $(PROJECT_OUTPUTDIR)
 JC_CLASSPATH		 = $(PROJECT_CLASSPATH)
 
+# scala compilation
+SC_COMPILER		 = SCALAC
+SC_OUTPUTDIR		 = $(PROJECT_OUTPUTDIR)
+SC_CLASSPATH		 = $(PROJECT_OUTPUTDIR)
+
 ##############################################################################
 # Commands
-
 
 all		: scripts
 all		: lamplib
 all		: meta
 all		: generate
-all		: runtime
 all		: compiler
+all		: library
 all		: interpreter
 all		: scaladoc
 all		: dtd2scala
-all		: library
 
 force		: fastclean
 	@$(make) all
@@ -129,10 +128,11 @@ fastclean	:
 	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
 	$(RM) .generated
 	$(RM) .latest-dtd2scala
-	$(RM) .latest-interpreter
-	$(RM) .latest-compiler
-	$(RM) .latest-runtime
 	$(RM) .latest-scaladoc
+	$(RM) .latest-interpreter
+	$(RM) .latest-library-sc
+	$(RM) .latest-library-jc
+	$(RM) .latest-compiler
 	$(RM) .latest-generate
 	$(RM) .latest-meta
 	$(RM) .latest-lamplib
@@ -151,24 +151,23 @@ scripts		: $(SCRIPTS_WRAPPER_LINKS)
 lamplib		: .latest-lamplib
 meta		: .latest-meta
 generate	: .latest-generate
-runtime		: .latest-runtime
 compiler	: .latest-compiler
+library		: .latest-library-jc
+library		: .latest-library-sc
 interpreter	: .latest-interpreter
 scaladoc	: .latest-scaladoc
 dtd2scala	: .latest-dtd2scala
-library		: .latest-library
 
 .PHONY		: fastclean
 .PHONY		: scripts
 .PHONY		: lamplib
 .PHONY		: meta
 .PHONY		: generate
-.PHONY		: runtime
 .PHONY		: compiler
+.PHONY		: library
 .PHONY		: interpreter
 .PHONY		: scaladoc
 .PHONY		: dtd2scala
-.PHONY		: library
 
 ##############################################################################
 # Targets
@@ -179,8 +178,9 @@ library		: .latest-library
 
 .latest-meta		: $(META_JC_FILES)
 	@$(make) jc target=META META_JC_FILES='$?'
-	$(RM) .latest-runtime
 	$(RM) .latest-compiler
+	$(RM) .latest-library-jc
+	$(RM) .latest-library-sc
 	touch $@
 
 .latest-generate	: .latest-meta
@@ -189,12 +189,16 @@ library		: .latest-library
 	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
 
-.latest-runtime		: $(RUNTIME_JC_FILES)
-	@$(make) jc target=RUNTIME RUNTIME_JC_FILES='$?'
-	touch $@
-
 .latest-compiler	: $(COMPILER_JC_FILES)
 	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
+	touch $@
+
+.latest-library-jc	: $(LIBRARY_JC_FILES)
+	@$(make) jc target=LIBRARY LIBRARY_JC_FILES='$?'
+	touch $@
+
+.latest-library-sc	: $(LIBRARY_SC_FILES)
+	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,\$$$$,$?)'
 	touch $@
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
@@ -207,9 +211,6 @@ library		: .latest-library
 
 .latest-dtd2scala	: $(DTD2SCALA_JC_FILES)
 	@$(make) jc target=DTD2SCALA DTD2SCALA_JC_FILES='$?'
-	touch $@
-
-.latest-library		: $(LIBRARY_FILES)
 	touch $@
 
 ##############################################################################
@@ -268,8 +269,9 @@ $(TUPLE_FILES)		: .latest-meta $(TUPLE_TEMPLATE)
 	@$(make) generate
 
 $(PROJECT_JAR_ARCHIVE)	: .latest-lamplib
-$(PROJECT_JAR_ARCHIVE)	: .latest-runtime
 $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
+$(PROJECT_JAR_ARCHIVE)	: .latest-library-jc
+$(PROJECT_JAR_ARCHIVE)	: .latest-library-sc
 $(PROJECT_JAR_ARCHIVE)	: .latest-interpreter
 $(PROJECT_JAR_ARCHIVE)	: .latest-scaladoc
 $(PROJECT_JAR_ARCHIVE)	: .latest-dtd2scala
@@ -281,5 +283,6 @@ $(PROJECT_JAR_ARCHIVE)	:
 
 include $(PROJECT_SUPPORTDIR)/make/jc.mk
 include $(PROJECT_SUPPORTDIR)/make/jar.mk
+include $(PROJECT_SUPPORTDIR)/make/sc.mk
 
 ##############################################################################

@@ -1,23 +1,46 @@
-################################################################-*-text-*-####
+############################################################-*-Makefile-*-####
 # scala library files (paths are relative to ./sources/scala)
 ##############################################################################
 # $Id$
 
 $colon$colon.scala
+AnyVal.java
+Array.java
+Boolean.java
 BufferedIterator.scala
+Byte.java
 Cell.scala
+Char.java
+Double.java
+Float.java
+Function0.java
+Function1.java
+Function2.java
+Function3.java
+Function4.java
+Function5.java
+Function6.java
+Function7.java
+Function8.java
+Function9.java
+Int.java
 Iterable.scala
 Iterator.scala
 Labelled.scala
 List.scala
+Long.java
+MatchError.java
 Monitor.scala
 Nil.scala
 None.scala
+Object.java
 Option.scala
 Ord.scala
 PartialFunction.scala
 Predef.scala
+Ref.java
 Seq.scala
+Short.java
 Some.scala
 Stream.scala
 Symbol.scala
@@ -30,6 +53,7 @@ Tuple6.scala
 Tuple7.scala
 Tuple8.scala
 Tuple9.scala
+Unit.java
 
 collection/Map.scala
 collection/Set.scala
@@ -47,8 +71,8 @@ collection/mutable/MutableList.scala
 collection/mutable/Map.scala
 collection/mutable/Modification.scala
 collection/mutable/MultiMap.scala
-collection/mutable/ObservableMap.scala
-collection/mutable/ObservableSet.scala
+# collection/mutable/ObservableMap.scala
+# collection/mutable/ObservableSet.scala
 collection/mutable/ObservableUpdate.scala
 collection/mutable/Publisher.scala
 collection/mutable/Queue.scala
@@ -59,8 +83,8 @@ collection/mutable/Set.scala
 collection/mutable/SingleLinkedList.scala
 collection/mutable/Stack.scala
 collection/mutable/Subscriber.scala
-collection/mutable/SynchronizedMap.scala
-collection/mutable/SynchronizedSet.scala
+# collection/mutable/SynchronizedMap.scala
+# collection/mutable/SynchronizedSet.scala
 collection/mutable/Undo.scala
 
 collection/immutable/ListMap.scala
@@ -70,15 +94,20 @@ collection/immutable/Set.scala
 collection/immutable/Queue.scala
 collection/immutable/GBTree.scala
 
-concurrent/Actor.scala
+# concurrent/Actor.scala
 concurrent/Channel.scala
 concurrent/Lock.scala
-concurrent/MailBox.scala
+# concurrent/MailBox.scala
 concurrent/SyncChannel.scala
 concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
-concurrent/ops.scala
+# concurrent/ops.scala
 
+runtime/InterpreterSupport.java
+runtime/NativeLoop.java
+runtime/NativeMonitor.java
+runtime/ResultOrException.java
+runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
 xml/Element.scala
