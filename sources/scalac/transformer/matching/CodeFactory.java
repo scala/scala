@@ -20,12 +20,40 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
+    private int pos = Position.NOPOS ;
+
+      static final Name HEAD_N       = Name.fromString("head");
+
+      static final Name TAIL_N       = Name.fromString("tail");
+
+      static final Name SEQ_TRACE_N      = Name.fromString("scala.SeqTrace");
+
+      static final Name HEADSTATE_N       = Name.fromString("headState");
+
+      static final Name HEADELEM_N        = Name.fromString("headElem");
+
+      static final Name ISEMPTY_N        = Name.fromString("isEmpty");
+
+
+
+    Symbol seqListSym() {
+	return defs.getType( Name.fromString("scala.List") ).symbol() ;
+    }
+
     Symbol seqConsSym() {
 	return defs.getType( Name.fromString("scala.::") ).symbol() ;
     }
 
     Symbol seqNilSym() {
 	return defs.getType( Name.fromString( "scala.Nil" ) ).symbol(); // no need for TypeApply anymore!x
+    }
+
+    Symbol seqIterSym() {
+	return defs.getType( Name.fromString( "scala.Iterator" ) ).symbol();
+    }
+
+    Symbol seqTraceSym() {
+	return defs.getType( Name.fromString( "scala.SeqTrace" ) ).symbol();
     }
 
     Symbol seqTraceConsSym() {
@@ -77,13 +105,27 @@ class CodeFactory extends PatternTool {
 	return result ;
     }
 
+      //                       `SeqList[ elemType ]'
+      Type SeqListType( Type elemType ) {
+            return Type.TypeRef( defs.SCALA_TYPE,
+                                 seqListSym(),
+                                 new Type[] { elemType });
+      }
+
+      //                       `SeqTrace[ elemType ]'
+      Type SeqTraceType( Type elemType ) {
+            return Type.TypeRef( defs.SCALA_TYPE,
+                                 seqTraceSym(),
+                                 new Type[] { elemType });
+      }
+
     /**                       `SequenceIterator[ elemType ]' // TODO: Move to TypeFactory
      */
     Type _seqIterType( Type elemType ) {
 	Symbol seqIterSym = defs.getType( Names.scala_Iterator ).symbol();
 
 	return Type.TypeRef( defs.SCALA_TYPE/*PREFIX*/,
-			     seqIterSym,
+			     seqIterSym(),
 			     new Type[] { elemType });
     }
 
@@ -267,6 +309,53 @@ class CodeFactory extends PatternTool {
 	return _applyNone( gen.Select( _hasNext( iter ), notSym ))
 	    .setType( defs.BOOLEAN_TYPE );
     }
+
+      /** `trace.isEmpty'
+       */
+      public Tree isEmpty( Tree iter ) {
+            Scope scp = seqTraceSym().members();
+            Symbol isEmptySym = scp.lookup ( ISEMPTY_N );
+            return _applyNone( gen.Select( iter, isEmptySym ))
+                  .setType( defs.BOOLEAN_TYPE );
+      }
+
+      Tree SeqTrace_headElem( Tree arg ) {
+            Scope scp = seqTraceSym().members();
+            Symbol headSym = scp.lookup ( HEADELEM_N );
+            assert headSym != Symbol.NONE;
+            return gen.Apply( gen.Select( pos, arg, headSym ),
+                              Tree.EMPTY_ARRAY );
+      }
+
+      Tree SeqTrace_headState( Tree arg ) {
+            Scope scp = seqTraceSym().members();
+            Symbol headSym = scp.lookup ( HEADSTATE_N );
+            assert headSym != Symbol.NONE;
+            return gen.Apply( gen.Select( pos, arg, headSym ),
+                              Tree.EMPTY_ARRAY );
+      }
+
+      Tree SeqTrace_tail( Tree arg ) {
+            Scope scp = seqTraceSym().members();
+            Symbol tailSym = scp.lookup ( TAIL_N );
+            assert tailSym != Symbol.NONE;
+            return gen.Apply( gen.Select( pos, arg, tailSym ),
+                              Tree.EMPTY_ARRAY );
+      }
+
+      /** `<seqlist>.head()'
+       */
+      Tree SeqList_head( Tree arg ) {
+            Scope scp = seqListSym().members();
+            Symbol headSym = scp.lookup ( HEAD_N );
+            assert headSym != Symbol.NONE;
+            return gen.Apply( make.Select( pos,
+                                           arg,
+                                           HEAD_N )
+                              .setType( headSym.type() )
+                              .setSymbol( headSym ),
+                              Tree.EMPTY_ARRAY);
+      }
 
     /** return the analyzed type
      */
