@@ -71,8 +71,8 @@ public class ScalaSearch {
 	return
 	    (sym.isSynthetic() && !sym.isRoot()) ||
 	    (sym.isGenerated() &&
-	     NameTransformer.decode(sym.name).toString().equals(sym.name.toString())) ||
-	    NameTransformer.decode(sym.name).toString().endsWith("_=");
+	     NameTransformer.decode(sym.name).equals(sym.name.toString())) ||
+	    NameTransformer.decode(sym.name).endsWith("_=");
     }
 
     /** Test if the given symbol is an empty java module generated to

@@ -636,10 +636,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	Tree body;
 	if (fields.length == 0) {
 	    body = gen.mkStringLit(
-		clazz.pos, NameTransformer.decode(clazz.name).toString());
+		clazz.pos, NameTransformer.decode(clazz.name));
 	} else {
 	    body = gen.mkStringLit(
-		clazz.pos, NameTransformer.decode(clazz.name).toString() + "(");
+		clazz.pos, NameTransformer.decode(clazz.name) + "(");
 	    for (int i = 0; i < fields.length; i++) {
 		String str = (i == fields.length - 1) ? ")" : ",";
 		body = gen.Apply(

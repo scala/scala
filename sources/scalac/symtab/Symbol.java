@@ -1088,7 +1088,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  $eq => =.
      */
     public String nameString() {
-        return NameTransformer.decode(simpleName()).toString();
+        return NameTransformer.decode(simpleName());
     }
 
     /** String representation of symbol's full name.
@@ -1096,7 +1096,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      *  $eq => =.
      */
     public String fullNameString() {
-        return NameTransformer.decode(fullName()).toString();
+        return NameTransformer.decode(fullName());
     }
 
     /** String representation, including symbol's kind

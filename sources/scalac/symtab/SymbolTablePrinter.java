@@ -298,16 +298,16 @@ public class SymbolTablePrinter {
 
     /** Returns the name of the given symbol. */
     public String getSymbolName(Symbol symbol) {
-        Name name = symbol.simpleName();
+        String name = symbol.simpleName().toString();
         if (!global.debug) name = NameTransformer.decode(name);
-        return name.toString();
+        return name;
     }
 
     /** Returns the full name of the given symbol. */
     public String getSymbolFullName(Symbol symbol) {
-        Name name = symbol.fullName();
+        String name = symbol.fullName().toString();
         if (!global.debug) name = NameTransformer.decode(name);
-        return name.toString();
+        return name;
     }
 
     /** Returns the inner string of the given symbol. */
