@@ -84,7 +84,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-trait List[+a] extends Seq[a] with StructuralEquality[List[a]] {
+trait List[+a] extends Seq[a]/* with StructuralEquality[List[a]]*/ {
 
   /** Tests if this list is empty.
    *  @return true, iff the list contains no element.

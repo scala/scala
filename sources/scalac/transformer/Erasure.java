@@ -15,7 +15,8 @@ import scalac.Global;
 import scalac.Unit;
 import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
-import scalac.ast.Tree.TypeDef;
+import scalac.ast.Tree.AbsTypeDef;
+import scalac.ast.Tree.AliasTypeDef;
 import scalac.ast.Tree.ValDef;
 import scalac.ast.TreeList;
 import scalac.ast.Transformer;
@@ -329,22 +330,22 @@ public class Erasure extends Transformer implements Modifiers {
 	assert tree.type != null : tree;
 	Type owntype = eraseFully ? tree.type.fullErasure() : tree.type.erasure();
 	switch (tree) {
-	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
             Symbol oldCurrentClass = currentClass;
             currentClass = tree.symbol();
             Tree newTree =
-                copy.ClassDef(tree, new TypeDef[0],
+                copy.ClassDef(tree, new AbsTypeDef[0],
                               transform(vparams), tpe, transform(impl, tree.symbol()))
 		.setType(owntype);
             currentClass = oldCurrentClass;
             return newTree;
 
-	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    addBridges(tree.symbol());
 	    Tree tpe1 = gen.mkType(tpe.pos, tpe.type.fullErasure());
 	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
 	    return copy.DefDef(
-		tree, new TypeDef[0], transform(vparams), tpe1, rhs1)
+		tree, new AbsTypeDef[0], transform(vparams), tpe1, rhs1)
 		.setType(owntype);
 
 	case ValDef(_, _, Tree tpe, Tree rhs):
@@ -352,7 +353,8 @@ public class Erasure extends Transformer implements Modifiers {
 	    Tree rhs1 = (rhs == Tree.Empty) ? rhs : transform(rhs, tpe1.type);
 	    return copy.ValDef(tree, tpe1, rhs1).setType(owntype);
 
-	case TypeDef(_, _, _, _):
+	case AbsTypeDef(_, _, _, _):
+	case AliasTypeDef(_, _, _, _):
 	    // eliminate
 	    return Tree.Empty;
 

@@ -190,7 +190,8 @@ class GenJVM {
             break;
 
         case Empty:
-        case TypeDef(_, _, _, _):
+        case AbsTypeDef(_, _, _, _):
+        case AliasTypeDef(_, _, _, _):
         case TypeApply(_, _):
         case FunType(_, _):
         case CompoundType(_, _):
@@ -513,7 +514,8 @@ class GenJVM {
             break;
 
         case Empty:
-        case TypeDef(_, _, _, _):
+        case AbsTypeDef(_, _, _, _):
+        case AliasTypeDef(_, _, _, _):
         case TypeApply(_, _):
         case FunType(_, _):
         case CompoundType(_, _):

@@ -38,14 +38,14 @@ object Predef {
     def synchronized[A](obj: AnyRef)(def body: A) =
       scala.runtime.NativeMonitor.synchronised(obj, body);
 
-    type Pair = Tuple2;
+    type Pair[p, q] = Tuple2[p, q];
     def Pair[a, b](x: a, y: b) = Tuple2(x, y);
 
-    type Triple = Tuple3;
+    type Triple[a, b, c] = Tuple3[a, b, c];
     def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
 
   // temporary
-    type Trace = SeqTrace;
-    type consTrace = SeqTraceCons;
-    type emptyTrace = SeqTraceNil;
+    type Trace[a] = SeqTrace[a];
+    type consTrace[a] = SeqTraceCons[a];
+    type emptyTrace[a] = SeqTraceNil[a];
 }

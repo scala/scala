@@ -67,7 +67,8 @@ public class CheckOwners extends Checker {
             case ModuleDef(_,_,_,_):
             case DefDef(_,_,_,_,_,_):
             case ValDef(_,_,_,_):
-            case TypeDef(_,_,_, _):
+            case AbsTypeDef(_,_,_, _):
+            case AliasTypeDef(_,_,_, _):
                 traverse(body[i], owner);
                 break;
             default:
@@ -98,7 +99,7 @@ public class CheckOwners extends Checker {
 
         case ClassDef(int mods,
                       Name name,
-                      TypeDef[] tparams,
+                      AbsTypeDef[] tparams,
                       ValDef[][] vparams,
 		      Tree tpe,
                       Template impl): {
@@ -117,7 +118,7 @@ public class CheckOwners extends Checker {
 
         case DefDef(int mods,
                     Name name,
-                    TypeDef[] tparams,
+                    AbsTypeDef[] tparams,
                     ValDef[][] vparams,
                     Tree tpe,
                     Tree rhs): {
@@ -134,10 +135,16 @@ public class CheckOwners extends Checker {
             traverse(rhs, tree.symbol());
         } break;
 
-        case TypeDef(int mods, Name name, Tree rhs, Tree lobound): {
+        case AbsTypeDef(int mods, Name name, Tree rhs, Tree lobound): {
             check(tree);
             traverse(rhs, tree.symbol());
-	    // todo: we should do something about lobound here.
+	    traverse(lobound, tree.symbol());
+        } break;
+
+        case AliasTypeDef(int mods, Name name, AbsTypeDef[] tparams, Tree rhs): {
+            check(tree);
+            traverse(tparams, tree.symbol());
+            traverse(rhs, tree.symbol());
         } break;
 
 	default:

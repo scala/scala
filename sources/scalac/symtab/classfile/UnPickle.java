@@ -235,9 +235,10 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 			break;
 
 		    case ALIASsym:
-			entries[n] = sym = new TypeSymbol(
-			    ALIAS, Position.NOPOS, name, owner, flags);
+			entries[n] = sym = new AliasTypeSymbol(
+			    Position.NOPOS, name, owner, flags);
 			sym.setInfo(getType(inforef), Symbol.FIRST_ID);
+			Symbol constr = readSymbolRef();
 			break;
 
 		    case CLASSsym:
@@ -262,15 +263,15 @@ public class UnPickle implements Kinds, Modifiers, EntryTags {
 
 		    case VALsym:
 			if (bp < end) {
-			    ClassSymbol clazz = (ClassSymbol) readSymbolRef();
+			    Symbol tsym = readSymbolRef();
 			    if (name.isTypeName()) {
-				entries[n] = sym = clazz.primaryConstructor();
+				entries[n] = sym = tsym.primaryConstructor();
 				sym.flags = flags;
 			    } else {
 				assert (flags & MODUL) != 0 : name;
 				entries[n] = sym = new TermSymbol(
 				    Position.NOPOS, name, owner, flags)
-				    .makeModule(clazz);
+				    .makeModule((ClassSymbol) tsym);
 			    }
 			} else {
 			    entries[n] = sym = new TermSymbol(

@@ -57,7 +57,7 @@ public class AddAccessors extends Transformer {
         switch (tree) {
         case ClassDef(_, // :
                       _,
-                      Tree.TypeDef[] tparams,
+                      Tree.AbsTypeDef[] tparams,
                       Tree.ValDef[][] vparams,
                       Tree tpe,
                       Tree.Template impl): {

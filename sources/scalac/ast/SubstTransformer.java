@@ -181,7 +181,7 @@ public class SubstTransformer extends Transformer {
         switch (tree) {
         case ClassDef(_, // fix Emacs :
                       _,
-                      Tree.TypeDef[] tparams,
+                      Tree.AbsTypeDef[] tparams,
                       Tree.ValDef[][] vparams,
                       Tree tpe,
                       Tree.Template impl) :
@@ -202,7 +202,7 @@ public class SubstTransformer extends Transformer {
 
         case DefDef(_,          // fix for Emacs :
                     Name name,
-                    Tree.TypeDef[] tparams,
+                    Tree.AbsTypeDef[] tparams,
                     Tree.ValDef[][] vparams,
                     Tree tpe,
                     Tree rhs):

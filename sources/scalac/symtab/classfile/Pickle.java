@@ -121,6 +121,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		    putType(sym.loBound());
 		    break;
 		case ALIAS:
+		    putSymbol(sym.allConstructors());
 		    break;
 		case CLASS:
 		    putType(sym.typeOfThis());
@@ -308,6 +309,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 		writeRef(sym.loBound());
 		break;
 	    case ALIAS:
+		writeRef(sym.allConstructors());
 		break;
 	    case CLASS:
 		writeRef(sym.typeOfThis());

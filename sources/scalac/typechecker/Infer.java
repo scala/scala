@@ -449,8 +449,8 @@ public class Infer implements Modifiers, Kinds {
 			: !upper;
 		    tvars[i] = Type.NoType;
 		    Type bound = up ? tparams[i].info() : tparams[i].loBound();
-		    if (up && bound != Global.instance.definitions.ANY_TYPE ||
-			!up && bound != Global.instance.definitions.ALL_TYPE) {
+		    if (up && bound.symbol() != Global.instance.definitions.ANY_CLASS ||
+			!up && bound.symbol() != Global.instance.definitions.ALL_CLASS) {
 			boolean cyclic = false;
 			for (int j = 0; j < tvars.length; j++) {
 			    if (bound.contains(tparams[j]) ||

@@ -72,14 +72,14 @@ public class UnCurry extends OwnerTransformer
 	//uncurry type and symbol
 	if (tree.type != null) tree.type = descr.uncurry(tree.type);
         switch (tree) {
-	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(
 		tree, tree.symbol(), tparams,
 		uncurry(transform(vparams, tree.symbol())),
 		tpe,
 		transform(impl, tree.symbol()));
 
-	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Tree rhs1 = transform(rhs, tree.symbol());
 	    return copy.DefDef(
 		tree, tree.symbol(), tparams,

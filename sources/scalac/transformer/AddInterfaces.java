@@ -114,7 +114,7 @@ class AddInterfaces extends Transformer {
 
         case DefDef(int mods,
                     Name name,
-                    TypeDef[] tparams,
+                    AbsTypeDef[] tparams,
                     ValDef[][] vparams,
                     Tree tpe,
                     Tree rhs): {

@@ -47,7 +47,8 @@ public class TreeInfo {
 	case ModuleDef(_, _, _, _):
 	case DefDef(_, _, _, _, _, _):
 	case ValDef(_, _, _, _):
-	case TypeDef(_, _, _, _):
+	case AbsTypeDef(_, _, _, _):
+	case AliasTypeDef(_, _, _, _):
 	case Import(_, _):
 	    return true;
 	default:
@@ -61,7 +62,8 @@ public class TreeInfo {
 	    return rhs == Tree.Empty;
 	case ValDef(_, _, _, Tree rhs):
 	    return rhs == Tree.Empty;
-	case TypeDef(_, _, _, _):
+	case AbsTypeDef(_, _, _, _):
+	case AliasTypeDef(_, _, _, _):
 	    return true;
 	default:
 	    return false;
@@ -76,7 +78,8 @@ public class TreeInfo {
 	case ClassDef(_, _, _, _, _, _):
 	case ModuleDef(_, _, _, _):
 	case DefDef(_, _, _, _, _, _):
-	case TypeDef(_, _, _, _):
+	case AbsTypeDef(_, _, _, _):
+	case AliasTypeDef(_, _, _, _):
 	case Import(_, _):
 	    return true;
 	case ValDef(int mods, _, _, Tree rhs):
@@ -153,6 +156,8 @@ public class TreeInfo {
 	case Apply(Tree fn, _):
 	    return methSymbol(fn);
 	case TypeApply(Tree fn, _):
+	    return methSymbol(fn);
+	case AppliedType(Tree fn, _):
 	    return methSymbol(fn);
 	default:
 	    if (tree.hasSymbol()) return tree.symbol();

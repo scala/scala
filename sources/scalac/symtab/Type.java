@@ -988,7 +988,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		    for (int i = 0; i < baseparams.length; i++) {
 			if (sym == baseparams[i]) return baseargs[i];
 		    }
-		    //System.out.println(sym + " " + basesym + " " + ArrayApply.toString(baseparams));//DEBUG
+		    System.out.println(sym + " " + basesym + " " + ArrayApply.toString(baseparams));//debug
 		    break;
 		case ErrorType:
 		    return ErrorType;

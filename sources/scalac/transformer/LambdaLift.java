@@ -209,14 +209,23 @@ public class LambdaLift extends OwnerTransformer
 		}
 		return super.transform(tree);
 
-	    case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
+	    case AbsTypeDef(int mods, Name name, Tree rhs, Tree lobound):
 		// ignore type definition as owner.
 		// reason: it might be in a refinement
 		// todo: handle type parameters?
-		return copy.TypeDef(
+		return copy.AbsTypeDef(
 		    tree, sym,
 		    transform(rhs, currentOwner),
 		    transform(lobound, currentOwner));
+
+	    case AliasTypeDef(int mods, Name name, AbsTypeDef[] tparams, Tree rhs):
+		// ignore type definition as owner.
+		// reason: it might be in a refinement
+		// todo: handle type parameters?
+		return copy.AliasTypeDef(
+		    tree, sym,
+		    transform(tparams, currentOwner),
+		    transform(rhs, currentOwner));
 
 	    case Ident(_):
 		if (sym.isLocal()) {
@@ -321,7 +330,7 @@ public class LambdaLift extends OwnerTransformer
 		liftSymbol(stats[i]);
 	    return copy.Block(tree, transform(stats));
 
-	case ClassDef(int mods, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(int mods, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    Symbol sym = tree.symbol();
 	    if ((mods & LIFTED) != 0) {
 		((ClassDef) tree).mods &= ~LIFTED;
@@ -344,7 +353,7 @@ public class LambdaLift extends OwnerTransformer
 		    transform(impl, sym));
 	    }
 
-	case DefDef(int mods, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(int mods, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
 	    if ((mods & LIFTED) != 0) {
 		((DefDef) tree).mods &= ~LIFTED;
@@ -365,14 +374,23 @@ public class LambdaLift extends OwnerTransformer
 		    transform(rhs, sym));
 	    }
 
-	case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
+	case AbsTypeDef(int mods, Name name, Tree rhs, Tree lobound):
 	    // ignore type definition as owner.
 	    // reason: it might be in a refinement
 	    // todo: handle type parameters?
-	    return copy.TypeDef(
+	    return copy.AbsTypeDef(
 		tree, tree.symbol(),
 		transform(rhs, currentOwner),
 		transform(lobound, currentOwner));
+
+	case AliasTypeDef(int mods, Name name, AbsTypeDef[] tparams, Tree rhs):
+	    // ignore type definition as owner.
+	    // reason: it might be in a refinement
+	    // todo: handle type parameters?
+	    return copy.AliasTypeDef(
+		tree, tree.symbol(),
+		transform(tparams, currentOwner),
+		transform(rhs, currentOwner));
 
 	case ValDef(_, _, Tree tpe, Tree rhs):
 	    Symbol sym = tree.symbol();
@@ -587,9 +605,9 @@ public class LambdaLift extends OwnerTransformer
 	}
     }
 
-    TypeDef[] addTypeParams(TypeDef[] tparams, Symbol[] newtparams) {
+    AbsTypeDef[] addTypeParams(AbsTypeDef[] tparams, Symbol[] newtparams) {
 	if (newtparams.length == 0) return tparams;
-	TypeDef[] tparams1 = new TypeDef[tparams.length + newtparams.length];
+	AbsTypeDef[] tparams1 = new AbsTypeDef[tparams.length + newtparams.length];
 	System.arraycopy(tparams, 0, tparams1, 0, tparams.length);
 	for (int i = 0; i < newtparams.length; i++) {
 	    tparams1[tparams.length + i] = gen.mkTypeParam(newtparams[i]);

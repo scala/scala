@@ -75,7 +75,8 @@ public class Tree {
         n_ValDef         = node("ValDef"        , None, DefSym),
         n_PatDef         = node("PatDef"        , None, NoSym),
         n_DefDef         = node("DefDef"        , None, DefSym),
-        n_TypeDef        = node("TypeDef"       , None, DefSym),
+        n_AbsTypeDef     = node("AbsTypeDef"    , None, DefSym),
+        n_AliasTypeDef   = node("AliasTypeDef"  , None, DefSym),
         n_Import         = node("Import"        , None, HasSym),
         n_CaseDef        = node("CaseDef"       , None, NoSym),
         n_Template       = node("Template"      , None, HasSym),
@@ -128,7 +129,7 @@ public class Tree {
             setRange(Phase.PARSER, Phase.END).
             addField(t_int, "mods", SymFlags).
             addField(t_TypeName, "name", SymName).
-            addField(n_TypeDef.getType(1), "tparams").
+            addField(n_AbsTypeDef.getType(1), "tparams").
             addField(n_ValDef.getType(2), "vparams").
             addField(t_TypeTree, "tpe").
             addField(n_Template.getType(0), "impl");
@@ -168,18 +169,26 @@ public class Tree {
             setRange(Phase.PARSER, Phase.END).
             addField(t_int, "mods", SymFlags).
             addField(t_TermName, "name", SymName).
-            addField(n_TypeDef.getType(1), "tparams").
+            addField(n_AbsTypeDef.getType(1), "tparams").
             addField(n_ValDef.getType(2), "vparams").
             addField(t_TypeTree, "tpe").
             addField(t_TermTree, "rhs");
 
-        n_TypeDef.
+        n_AbsTypeDef.
             setDescription("Type declaration").
             setRange(Phase.PARSER, Phase.ERASURE). // !!! could/should be removed earlier?)
             addField(t_int, "mods", SymFlags).
             addField(t_TypeName, "name", SymName).
             addField(t_TypeTree, "rhs").
 	    addField(t_TypeTree, "lobound");
+
+        n_AliasTypeDef.
+            setDescription("Type alias").
+            setRange(Phase.PARSER, Phase.ERASURE). // !!! could/should be removed earlier?)
+            addField(t_int, "mods", SymFlags).
+            addField(t_TypeName, "name", SymName).
+            addField(n_AbsTypeDef.getType(1), "tparams").
+            addField(t_TypeTree, "rhs");
 
         n_Import.
             setDescription("Import declaration").

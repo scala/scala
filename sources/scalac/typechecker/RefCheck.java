@@ -424,7 +424,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    tree.pos,
 	    mods | FINAL | MODUL,
 	    name.toTypeName(),
-	    Tree.TypeDef_EMPTY_ARRAY,
+	    Tree.AbsTypeDef_EMPTY_ARRAY,
 	    Tree.ValDef_EMPTY_ARRAY_ARRAY,
 	    Tree.Empty,
 	    templ)
@@ -828,7 +828,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     public Tree transform(Tree tree) {
 	Symbol sym = tree.symbol();
 	switch (tree) {
-	case ClassDef(_, _, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
+	case ClassDef(_, _, Tree.AbsTypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree.Template templ):
 	    validateVariance(sym, sym.info(), CoVariance);
 	    validateVariance(sym, sym.typeOfThis(), CoVariance);
 	    return super.transform(
@@ -844,13 +844,13 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		((sym.flags & MUTABLE) != 0) ? NoVariance : CoVariance);
 	    return super.transform(tree);
 
-	case TypeDef(_, _, _, _):
-	    if (sym.kind == ALIAS) {
-		validateVariance(sym, sym.info(), NoVariance);
-	    } else {
-		validateVariance(sym, sym.info(), CoVariance);
-		validateVariance(sym, sym.loBound(), ContraVariance);
-	    }
+	case AbsTypeDef(_, _, _, _):
+	    validateVariance(sym, sym.info(), CoVariance);
+	    validateVariance(sym, sym.loBound(), ContraVariance);
+	    return super.transform(tree);
+
+	case AliasTypeDef(_, _, _, _):
+	    validateVariance(sym, sym.info(), NoVariance);
 	    return super.transform(tree);
 
 	case Template(Tree[] bases, Tree[] body):
@@ -894,13 +894,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	case AppliedType(Tree tpe, Tree[] args):
 	    Symbol[] tparams = tpe.type.symbol().typeParams();
-	    /*
-	    //todo: this needs to be refined. (same code in Analyzer.transform)
-	    Symbol[] tparams =
-		(Type.isSameAs(
-		    tpe.type.typeArgs(), Symbol.type(tpe.type.unalias().symbol().typeParams())))
-		? tpe.type.unalias().symbol().typeParams() : Symbol.EMPTY_ARRAY;
-	    */
 	    checkBounds(tree.pos, tparams, Tree.typeOf(args));
 	    return elimTypeNode(super.transform(tree));
 

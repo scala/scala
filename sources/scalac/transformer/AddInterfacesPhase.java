@@ -42,7 +42,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
     public Type transformInfo(Symbol sym, Type tp) {
         if (sym.isPrimaryConstructor()) {
             Symbol clazz = sym.primaryConstructorClass();
-            if (clazz.isPackage() || !needInterface(clazz)) return tp;
+            if (!(clazz.isClass() && needInterface(clazz))) return tp;
             // The symbol is a constructor of a class which needs
             // an interface. All its value arguments have to be
             // removed.

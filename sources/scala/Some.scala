@@ -16,4 +16,4 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-final case class Some[+A](x: A) extends Option[A];
+final case class Some[+A1](x: A1) extends Option[A1];

@@ -20,11 +20,11 @@
 Martin Odersky \\
 Philippe Altherr \\
 Vincent Cremet \\
-Burak Emir \\
+Burak Emir \\ \\
+St\'ephane Micheloud
 Nikolay Mihaylov \\
 Michel Schinz \\
-Matthias Zenger \\
-St\'ephane Micheloud
+Matthias Zenger
 \\ \ 
 \\
 EPFL}
@@ -293,19 +293,6 @@ Here are examples of identifiers:
     +   \> +_field
 \end{verbatim}
 
-\section{Symbols}
-
-\syntax\begin{verbatim}
-symbolLit ::= `\'` id
-\end{verbatim}
-
-A symbol literal has the form \verb@'x@ where $x$ is an identifier.
-Such a symbol literal is a  shorthand for the application
-\begin{verbatim}
-scala.Symbol("x")
-\end{verbatim}
-of the facotry method for the standard case class \verb@Symbol@ to the string "x".
-
 \section{Braces and Semicolons}
 
 A semicolon `\verb@;@' is implicitly inserted after every closing brace
@@ -336,7 +323,15 @@ intLit       \>::= \> ``as in Java''
 floatLit     \>::= \> ``as in Java''
 charLit      \>::= \> ``as in Java''
 stringLit    \>::= \> ``as in Java''
+symbolLit ::= `\'` id
 \end{verbatim}
+
+A symbol literal has the form \verb@'x@ where \verb@x@ is an identifier.
+Such a symbol literal is a  shorthand for the application
+\begin{verbatim}
+scala.Symbol("x")
+\end{verbatim}
+of the facotry method for the standard case class \verb@Symbol@ to the string "x".
 
 \section{Whitespace and Comments}
 
@@ -351,11 +346,6 @@ A multi-line comment is a sequence of characters between \verb@/*@ and
 
 
 \chapter{\label{sec:names}Identifiers, Names and Scopes}
-
-\syntax\begin{verbatim}
-  Id              \=::= \= id  |  `+'  |  `-'  |  `!'
-  QualId          \>::> \= Id {`.' Id}
-\end{verbatim}
 
 Names in Scala identify types, values, functions, and classes which
 are collectively called {\em entities}.  Names are introduced by
@@ -375,8 +365,6 @@ introduced by a preceding import clause, even if the import clause is
 in the same block. Import clauses, on the other hand, only shadow
 bindings introduced by other import clauses in outer blocks.
 
-\todo{Examples}
-
 A reference to an unqualified (type- or term-) identifier $x$ is bound
 by the unique binder, which
 \begin{itemize}
@@ -390,6 +378,25 @@ qualified name to which $x$ is mapped by the import clause. If $x$ is bound by a
 then $x$ refers to the entity introduced by that
 binder. In that case, the type of $x$ is the type of the referenced
 entity.
+
+\example Consider the following nested definitions and imports:
+
+\begin{verbatim}
+object m1 {
+  object m2 { val x: int = 1; val y: int = 2 }
+  object m3 { val x: boolean = true; val y: String = "" }
+  val x: int = 3;              
+  { import m2._;               \= // shadows nothing
+                               \> // reference to `x' is ambiguous here
+    val x: String = "abc";     \> // shadows preceding import and val
+                               \> // `x' refers to latest val definition
+    { import m3._              \> // shadows only preceding import m2
+                               \> // reference to `x' is ambiguous here
+			       \> // `y' refers to latest import clause
+    }
+  }
+} 
+\end{verbatim}
 
 A reference to a qualified (type- or term-) identifier $e.x$ refers to
 the member of the type $T$ of $e$ which has the name $x$ in the same
@@ -405,7 +412,7 @@ referenced entity in $T$.
 	        \>   |\> Type1
   Type1         \>::= \> SimpleType {with SimpleType} [Refinement]
   SimpleType   	\>::= \> StableId
-	        \>   |\> SimpleType `#' Id
+	        \>   |\> SimpleType `#' id
 	        \>   |\> Path `.' type
                 \>   |\> SimpleType TypeArgs
 		\>   |\> `(' Type ')'
@@ -439,11 +446,10 @@ types directly in Scala.
 \section{Paths}\label{sec:paths}
 
 \syntax\begin{verbatim}
-  StableId             \=::= \= Id
-                  \>  |\> Path `.' Id
-                  \>  |\> [Ident '.'] super `.' Id
+  StableId             \=::= \= id
+                  \>  |\> Path `.' id \>  |\> [id '.'] super `.' id
   Path            \>::=\> StableId
-                  \>  |\> [Ident `.'] this
+                  \>  |\> [id `.'] this
 \end{verbatim}
 
 Paths are not types themselves, but they can be a part of named types
@@ -487,7 +493,7 @@ exactly the value denoted by \verb@p@.
 \label{sec:type-project}
 
 \syntax\begin{verbatim} 
-SimpleType ::=  SimpleType `#' Id
+SimpleType ::=  SimpleType `#' id
 \end{verbatim}
 
 A type projection \verb@T#x@ references the type member named 
@@ -633,14 +639,14 @@ report as the internal types of defined identifiers.
 \subsection{Method Types}
 \label{sec:method-types}
 
-A method type is denoted internally as $(ps)U$, where $(ps)$ is a
-parameter section $(x_1: T_1 \commadots x_n: T_n)$ for some $n \geq 0$
+A method type is denoted internally as $(Ts)U$, where $(Ts)$ is a
+sequence of types $(T_1 \commadots T_n)$ for some $n \geq 0$
 and $U$ is a (value or method) type.  This type represents named
-methods that take arguments $x_1 \commadots x_n$ of types $T_1
-\commadots T_n$ and that return a result of type $U$.
+methods that take arguments of types $T_1 \commadots T_n$ 
+and that return a result of type $U$.
 
-Method types associate to the right: $(ps_1)(ps_2)U$ is treated as
-$(ps_1)((ps_2)U)$.
+Method types associate to the right: $(Ts_1)(Ts_2)U$ is treated as
+$(Ts_1)((Ts_2)U)$.
 
 A special case are types of methods without any parameters. They are
 written here $[]T$, following the syntax for polymorphic method types
@@ -661,8 +667,8 @@ def c (x: Int) (y: String, z: String): String
 produce the typings
 \begin{verbatim}
 a: [] Int
-b: (x: Int) Boolean
-c: (x: Int) (y: String, z: String) String
+b: (Int) Boolean
+c: (Int) (String, String) String
 \end{verbatim}
 
 \subsection{Polymorphic Method Types}
@@ -703,20 +709,20 @@ T_n$ $(n \geq 2)$ is denoted internally $T_1 \overload \ldots
 
 \example The definitions
 \begin{verbatim}
-def println: Unit;
-def println(s: String): Unit = ...;
-def println(x: Float): Unit = ...;
-def println(x: Float, width: Int): Unit = ...;
-def println[a](x: a)(tostring: a => String): Unit = ...
+def println: unit;
+def println(s: string): unit = ...;
+def println(x: float): unit = ...;
+def println(x: float, width: int): unit = ...;
+def println[a](x: a)(tostring: a => String): unit = ...
 \end{verbatim}
 define a single function \verb@println@ which has an overloaded
 type.
 \begin{verbatim}
-println: \= [] Unit $\overload$
-	 \> (s: String) Unit $\overload$
-	 \> (x: Float) Unit $\overload$
-	 \> (x: Float, width: Int) Unit $\overload$
-	 \> [a] (x: a) (tostring: a => String) Unit
+println: \= [] unit $\overload$
+	 \> (String) unit $\overload$
+	 \> (float) unit $\overload$
+	 \> (float, int) unit $\overload$
+	 \> [a] (a) (a => String) unit
 \end{verbatim}
 
 \example The definitions
@@ -904,8 +910,8 @@ transitive relation that satisfies the following conditions.
       the compound type \verb@T$_1$ with ... with T$_n$ {R}@.  
 \item If
 	$T'_i$ conforms to $T_i$ for $i = 1 \commadots n$ and $U$ conforms to $U'$ 
-        then the method type $(x_1: T_1 \commadots x_n: T_n) U$ conforms to
-	$(x_1: T'_1 \commadots x_n: T'_n) U'$.
+        then the method type $(T_1 \commadots T_n) U$ conforms to
+	$(T'_1 \commadots T'_n) U'$.
 \item If, assuming 
 $L'_1 \conforms a_1 \conforms U'_1 \commadots L'_n \conforms a_n \conforms U'_n$ 
 one has $L_i \conforms L'_i$ and $U'_i \conforms U_i$
@@ -966,11 +972,11 @@ The erasure mapping is defined as follows.
 
 If $S \conforms T$, then values of type $S$ are implicitly {\em
 converted} to values type of $T$ in situations where a value of type
-$T$ is required. A conversion between two number types in \verb@Int@,
-\verb@Long@, \verb@Float@, \verb@Double@ creates a value of the target
+$T$ is required. A conversion between two number types in \verb@int@,
+\verb@long@, \verb@float@, \verb@double@ creates a value of the target
 type representing the same number as the source.  When used in an
-expression, a value of type \verb@Byte@, \verb@Char@, \verb@Short@ is
-always implicitly converted to a value of type \verb@Int@.
+expression, a value of type \verb@byte@, \verb@char@, \verb@short@ is
+always implicitly converted to a value of type \verb@int@.
 
 The following implicit conversions are applied to expressions of
 method type that are used as values, rather than being applied to some
@@ -991,10 +997,11 @@ implicitly embedding \verb@e@ in the type application
 \verb@e[U$_1$, ..., U$_n$]@ (\sref{sec:type-app}).
 \item
 An expression \verb@e@ of monomorphic method type
-$(ps_1) \ldots (ps_n) U$ of arity $n > 0$
+$(Ts_1) \ldots (Ts_n) U$ of arity $n > 0$
 which does not appear as the function part of an application is
 converted to a function type by implicitly embedding $e$ in
-the following term, where $x$ is a fresh variable:
+the following term, where $x$ is a fresh variable and each $ps_i$ is a
+parameter section with fresh parameter names of types $Ts_i$.
 \begin{verbatim}
 (val $x$ = $e$ ; $(ps_1) \ldots \Arrow \ldots \Arrow (ps_n) \Arrow x;(ps_1);\ldots;(ps_n)$)
 \end{verbatim}
@@ -1035,14 +1042,9 @@ The scope of a name introduced by a declaration or definition is the
 whole statement sequence containing the binding.  However, there is a
 restriction on forward references: In a statement sequence $s_1 \ldots
 s_n$, if a simple name in $s_i$ refers to an entity defined by $s_j$
-where $j \geq i$, then all non-empty statements between and including
-$s_i$ and $s_j$ must be imports or pure definitions (\sref{sec:statements}).
-
-A {\em pure} definition can be evaluated without any side effect.
-Function, type, class, or object definitions are always pure. A value
-definition is pure if its right-hand side expression is pure. Pure
-expressions are paths, literals, as well as typed expressions
-\verb@e: T@ where \verb@e@ is pure.
+where $j \geq i$, then every non-empty statement between and including
+$s_i$ and $s_j$ must be an import clause,
+or a function, type, class, or object definition.
 
 \comment{
 Every basic definition may introduce several defined names, separated
@@ -1081,7 +1083,7 @@ the type definition
 
 \syntax\begin{verbatim}
   Dcl             \=::= \= val ValDcl {`,' ValDcl}
-  ValDcl       \>::= \> Id `:' Type
+  ValDcl       \>::= \> id `:' Type
   Def          \>::= \> val PatDef {`,' PatDef}
   PatDef       \>::= \> Pattern `=' Expr
 \end{verbatim}
@@ -1089,11 +1091,11 @@ the type definition
 A value declaration \verb@val x: T@ introduces \verb@x@ as a name of a value of
 type \verb@T@.  
 
-A value definition \verb@val x: T = e@ defines $x$ as a name of the value
-that results from the evaluation of $e$. The type $T$ may be omitted
-if it can be determined using local type inference
-(\sref{sec:local-type-inf}).  The type of the expression $e$ must
-conform to type $T$.
+A value definition \verb@val x: T = e@ defines $x$ as a name of the
+value that results from the evaluation of $e$. The type $T$ may be
+omitted, in which case the type of expression $e$ is assumed.
+If a type $T$ is given, then $e$ is expected to conform to it.
+\todo{explain is expected to conform}
 
 Evaluation of the value definition implies evaluation of its
 right-hand side $e$.  The effect of the value definition is to bind
@@ -1150,9 +1152,9 @@ val xs = x$\Dollar$._2;
 \syntax\begin{verbatim}
   Dcl            \=::= \= var VarDcl {`,' VarDcl}
   Def            \>::= \> var ValDef {`,' ValDef}
-  VarDcl         \>::=\> Id `:' Type
-  VarDef          \>::=\> Id [`:' Type] `=' Expr
-                  \>  |\> Id `:' Type `=' `_'
+  VarDcl         \>::=\> id `:' Type
+  VarDef          \>::=\> id [`:' Type] `=' Expr
+                  \>  |\> id `:' Type `=' `_'
 \end{verbatim}
 
 A variable declaration \verb@var x: T@ is equivalent to declarations
@@ -1160,7 +1162,7 @@ of a {\em getter function} \verb@x@ and a {\em setter function}
 \verb@x_=@, defined as follows:
 
 \begin{verbatim}
-  def x: T
+  def x: T;
   def x_= (y: T): unit
 \end{verbatim}
 
@@ -1171,7 +1173,8 @@ define setter and getter functions directly.
 A variable definition \verb@var x: T = e@ introduces a mutable
 variable with type \verb@T@ and initial value as given by the
 expression \verb@e@. The type $T$ can be omitted, 
-in which case the type of $e$ is assumed.
+in which case the type of $e$ is assumed. If $T$ is given, then \verb@e@ 
+is expected to conform to it.
 
 A variable definition \verb@var x: T = _@ introduces a mutable
 variable with type \verb@T@ and a default initial value. 
@@ -1179,7 +1182,7 @@ The default value depends on the type \verb@T@ as follows:
 \begin{quote}\begin{tabular}{ll}
 \verb@0@ & if $T$ is \verb@int@ or one of its subrange types, \\
 \verb@0L@ & if $T$ is \verb@long@,\\
-\verb@0.0f@ & if $T$ is \verb@Float@,\\
+\verb@0.0f@ & if $T$ is \verb@float@,\\
 \verb@0.0d@ & if $T$ is \verb@double@,\\
 \verb@false@ & if $T$ is \verb@boolean@,\\
 \verb@()@ & if $T$ is \verb@unit@, \\
@@ -1191,6 +1194,8 @@ defintion also introduce a getter function \verb@x@ which returns the
 value currently assigned to the variable, as well as a setter function
 \verb@x_=@ which changes the value currently assigned to the variable.
 The functions have the same signatures as for a variable declaration.
+The getter and setter functions, are then members of the template
+instead of the variable accessed by them.
 
 \example The following example shows how {\em properties} can be
 simulated in Scala. It defines a class \verb@TimeOfDayVar@ of time
@@ -1223,9 +1228,9 @@ d.hours = 25;                 \=// throws a DateError exception
 
 \syntax\begin{verbatim}
   Dcl             \=::= \= type TypeDcl {`,' TypeDcl}
-  TypeDcl         \>::= \> Id [>: Type] [<: Type]
+  TypeDcl         \>::= \> id [>: Type] [<: Type]
   Def             \>::= \> type TypeDef {`,' TypeDef}
-  TypeDef         \>::= \> Id `=' Type
+  TypeDef         \>::= \> id  [TypeParamClause] `=' Type
 \end{verbatim}
 
 A {\em type declaration} \verb@type t >: L <: U@ declares \verb@t@ to
@@ -1244,15 +1249,16 @@ collectively called {\em type bindings}.
 The scope rules for definitions (\sref{sec:defs}) and type parameters
 (\sref{sec:funsigs}) make it possible that a type name appears in its
 own bound or in its right-hand side.  However, it is a static error if
-a type alias refers recursively to the defined type itself.  That is,
-the type \verb@T@ in a type alias \verb@type t = T@ may not refer
+a type alias refers recursively to the defined type constructor itself.  
+That is, the type \verb@T@ in a type alias \verb@type t[tps] = T@ may not refer
 directly or indirectly to the name \verb@t@.  It is also an error if
 an abstract type is directly or indirectly its own bound.
 
 \example The following are legal type declarations and definitions:
 \begin{verbatim}
 type IntList = List[Integer];
-type T extends Comparable[T];
+type T <: Comparable[T];
+type Two[a] = Tuple2[a, a];
 \end{verbatim}
 
 The following are illegal:
@@ -1269,14 +1275,14 @@ type T >: Comparable[T.That];       \>// Cannot select from T.
 			            \>// T is a type, not a value
 \end{verbatim}
 
-Neither type declarations nor type aliases may carry type
-parameters. However, it is possible to alias a type constructor of a
-parameterized type, as is shown in the following example.
+If a type alias \verb@type t[tps] = S@ refers to a class type
+\verb@S@, the name \verb@t@ can also be used as a constructor for
+objects of type \verb@S@.
 
 \example The \verb@Predef@ module contains a definition which establishes \verb@Pair@ 
 as an alias of the parameterized class \verb@Tuple2@:
 \begin{verbatim}
-type Pair = Tuple2;
+type Pair[+a, +b] = Tuple2[a, b];
 \end{verbatim}
 As a consequence, for any two types \verb@S@ and \verb@T@, the type
 \verb@Pair[S, T]@ is equivalent to the type \verb@Tuple2[S, T]@.
@@ -1285,19 +1291,146 @@ As a consequence, for any two types \verb@S@ and \verb@T@, the type
 new Pair[Int, Int](1, 2) .
 \end{verbatim}
 
+\section{Type Parameters}
+
+\syntax\begin{verbatim}
+  TypeParamClause    \>::=\> `[' TypeParam {`,' TypeParam} `]'
+  TypeParam       \>::=\>  [`+' | `-'] TypeDcl
+\end{verbatim}
+
+Type parameters appear in type definitions, class definitions, and
+function definitions.  The most general for of a type parameter is
+\verb@$\plusminus$ t >: L <: U@.  Here, \verb@L@, and \verb@U@ are lower
+and upper bounds that constrain possible type arguments for the
+parameter. $\plusminus$ is a {\em variance}, i.e.\ an optional prefix 
+of either \verb@+@, or \verb@-@.
+
+The names of all type parameters in one type parameter clause must be
+pairwise different.  The scope of a type parameter includes in each
+case the whole type parameter clause. Therefore it is possible that a
+type parameter appears as part of its own bounds or the bounds of
+other type parameters in the same clause.  However, a type parameter
+may not be bounded directly or indirectly by itself.
+
+\example Here are some well-formed type parameter clauses:
+\begin{verbatim}
+[s, t]
+[ex <: Throwable]
+[a <: Ord[b], b <: a]
+[a, b, c >: a <: b]
+\end{verbatim}
+The following type parameter clauses since some type parameter is bounded by itself.
+\begin{verbatim}
+[a >: a]                 
+[a <: b, b <: c, c <: a]
+\end{verbatim}
+
+Variance annotations indicate how type instances with the given type
+parameters vary with respect to subtyping (\sref{sec:subtyping}).  A
+\verb@+@ variance indicates a covariant dependency, a \verb@-@
+variance indicates a contravariant dependency, and a missing variance
+indication indicates a nonvariant dependency.
+
+A variance annotation constrains the way the annotated type variable
+may appear in the type or class which binds the type parameter.  In a
+type definition \verb@type t[tps] = S@, type parameters labelled
+\verb@+@ must only appear in covariant position in \verb@S@ whereas
+type parameters labelled \verb@-@ must only appear in contravariant
+position. Analogously, for a class definition
+\verb@class c[tps](ps): s extends t@, type parameters labelled
+\verb@+@ must only appear in covariant position in the self type
+\verb@s@ and the type of the template \verb@t@, whereas type
+parameters labelled \verb@-@ must only appear in contravariant
+position. 
+
+The variance position of a type parameter of a type is defined as
+follows.  Let the opposite of covariance be contravariance, and the
+opposite of novariance be itself.  The top-level of a type is always
+in covariant position. The variance position changes at for following
+constructs.
+\item
+The variance position of method parameter is the opposite of the 
+variance position of the enclosing parameter clause.
+\item
+The variance position of a type parameter is the opposite of the
+variance position of the enclosing type parameter clause.
+\item
+The variance position of the lower bound of a type declaration or type parameter 
+is the opposite of the variance position of the type declaration or parameter.  
+\item
+The right hand side \verb@S@ of a type alias \verb@type t[tps] = S@ 
+is always in nonvariant position.
+\item
+The type of a mutable variable is always in nonvariant position.
+\item 
+The prefix verb@S@ of a type selection \verb@S#T@ is always in nonvariant position.
+\item
+For a type argument \verb@T@ of a type \verb@S[... T ... ]@: If the
+corresponding type parameter is nonvariant, then \verb@T@ is in
+nonvariant position.  If the corresponding type parameter is
+contravariant, the variance position of \verb@T@ is the opposite of
+the variance position of the enclosing type \verb@S[... T ... ]@.
+\end{itemize}
+
+\example The following variance annotation is legal. 
+\begin{verbatim}
+class P[+a, +b] { 
+  val fst: a, snd: b 
+}
+\end{verbatim}
+With this variance annotation, elements
+of type \verb@P@ subtype covariantly with respect to their arguments. 
+For instance, \verb@P[IOExeption, String] <: P[Throwable, Object]@.
+
+If we make the elements of \verb@P@ mutable, the variance annotation becomes illegal. 
+\begin{verbatim}
+class Q[+a, +b] { 
+  var fst: a, snd: b    // illegal variance: a, b occur in non-variant position.
+}
+\end{verbatim}
+
+\example The following variance annotation is illegal, since \verb@a@ appears
+in contravariant position in the parameter of \verb@append@:
+
+\begin{verbatim}
+class Vector[+a] {
+  def append(x: Vector[a]): Vector[a];
+}
+\end{verbatim} 
+The problem can be avoided by generalizing the type of \verb@append@
+by means of a lower bound:
+
+\begin{verbatim}
+class Vector[+a] {
+  def append[b >: a](x: Vector[b]): Vector[b];
+}
+\end{verbatim}
+
+\example Here is a case where a contravariant type parameter is useful.
+
+\begin{verbatim}
+class OutputChannel[-a] {
+  def write(x: a): unit
+}
+\end{verbatim}
+With that annotation, we have
+\verb@OutputChannel[Object] <: OutputChannel[String]@.  That is, a
+channel on which one can write any object can substitute for a channel
+on which one can write only strings.
+
 \section{Function Declarations and Definitions}
 \label{sec:defdef}
 \label{sec:funsigs}
 
-\syntax\begin{verbatim}
-  Dcl                             \=::= \= def FunDcl {`,' FunDcl}
-  FunDcl      \>::= \> Id [FunTypeParamClause] {ParamClause} `:' Type
-  Def         \>::= \> def FunDef {`,' FunDef}
-  FunDef     \>::= \> Id [FunTypeParamClause] {ParamClause} [`:' Type] 
-                 \>\> `=' Expr
-  FunTypeParamClause \>::=\> `[' TypeDcl {`,' TypeDcl} `]'
-  ParamClause     \>::=\> `(' [Param {`,' Param}] `)'
-  Param        	  \>::= \> [def] Id `:' Type [*]
+\syntax\begin{verbatim} 
+Dcl                     \=::= \= def FunDcl {`,' FunDcl} 
+FunDcl       \>::= \> id [FunTypeParamClause] {ParamClause} `:' Type 
+Def          \>::= \> def FunDef {`,' FunDef} 
+FunDef       \>::= \> id [FunTypeParamClause] {ParamClause} [`:' Type] 
+             \>    \> `=' Expr 
+FunTypeParamClause \>::=\> `[' TypeDcl {`,' TypeDcl} `]' 
+ParamClause  \>::=\> `(' [Param {`,' Param}] `)' 
+Param        \>::= \> [def] id `:' Type [*]
 \end{verbatim}
 
 A function declaration has the form \verb@def f psig: T@, where
@@ -1309,7 +1442,7 @@ signature consists of an optional type parameter clause \verb@[tps]@,
 followed by zero or more value parameter clauses
 \verb@(ps_1) \ldots (ps_n)@.  Such a declaration or definition
 introduces a value with a (possibly polymorphic) method type whose
-parameters and result type are as given.
+parameter types and result type are as given.
 
 A type parameter clause \verb@tps@ consists of one or more type
 declarations (\sref{sec:typedcl}), which introduce type parameters,
@@ -1347,7 +1480,6 @@ result type, if one is given. If the function definition is not
 recursive, the result type may be omitted, in which case it is
 determined from the type of the function body.
 
-
 \section{Overloaded Definitions}
 \label{sec:overloaded-defs}
 \todo{change}
@@ -1370,9 +1502,9 @@ entity, of type \verb@T_1 $\overload$ ... $\overload$ T_n@
 
 \syntax\begin{verbatim}
   Import                  \=::=\= import ImportExpr {`,' ImportExpr}
-  ImportExpr      \>::=\> StableId `.' (Id | `_' | ImportSelectors)
+  ImportExpr      \>::=\> StableId `.' (id | `_' | ImportSelectors)
   ImportSelectors \>::=\> `{' {ImportSelector `,'} (ImportSelector | `_') `}'
-  ImportSelector  \>::=\> Id [`=>' Id | `=>' `_']
+  ImportSelector  \>::=\> id [`=>' id | `=>' `_']
 \end{verbatim}
 
 An import clause has the form \verb@import p.I@ where \verb@p@ is a stable
@@ -1820,7 +1952,7 @@ object; it is not possible for clients to create objects of class
 
 \syntax\begin{verbatim}
   ClsDef          \=::=\= class ClassDef {`,' ClassDef}
-  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] 
+  ClassDef        \>::=\> id [TypeParamClause] [ParamClause] [`:' SimpleType] 
                   \>   \> ClassTemplate
   ClassTemplate   \>::=\> extends Template
 	          \>  |\> TemplateBody
@@ -1867,7 +1999,7 @@ can be omitted, in which case
 \verb@{}@ is assumed.
 \end{itemize}
 This class definition defines a type \verb@c[tps]@ and a constructor
-which when applied to parameters conforming to typles \verb@ps@
+which when applied to parameters conforming to types \verb@ps@
 initializes instances of type \verb@c[tps]@ by evaluating the template
 \verb@t@.
 
@@ -2045,6 +2177,11 @@ three restrictions.
 \item All non-empty statements in the template are either imports or pure definitions
 \sref{sec:defs}
 \end{enumerate}
+A {\em pure} definition can be evaluated without any side effect.
+Function, type, class, or object definitions are always pure. A value
+definition is pure if its right-hand side expression is pure. Pure
+expressions are paths, literals, as well as typed expressions
+\verb@e: T@ where \verb@e@ is pure.
 
 These restrictions ensure that the evaluation of the mixin constructor
 of a trait has no effect. Therefore, traits may appear several times 
@@ -2072,7 +2209,7 @@ trait Ord[t <: Ord[t]]: t {
 \label{sec:object-defs}
 
 \syntax\begin{verbatim}
-  ObjectDef       \=::=\= Id [`:' SimpleType] ClassTemplate
+  ObjectDef       \=::=\= id [`:' SimpleType] ClassTemplate
 \end{verbatim}
 
 An object definition defines a single object of a new class. Its 
@@ -2173,20 +2310,20 @@ module FileSystem with {
 		  \>  |\> while '(' Expr ')' Expr
 		  \>  |\> do Expr [`;'] while `(' Expr ')'
 		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
-                  \>  |\> [SimpleExpr `.'] Id `=' Expr
+                  \>  |\> [SimpleExpr `.'] id `=' Expr
 		  \>  |\> SimpleExpr ArgumentExpr `=' Expr
                   \>  |\> PostfixExpr [`:' Type1]
-  PostfixExpr     \>::=\> InfixExpr [Id]
+  PostfixExpr     \>::=\> InfixExpr [id]
   InfixExpr       \>::=\> PrefixExpr
-		  \>  |\> InfixExpr Id InfixExpr
+		  \>  |\> InfixExpr id InfixExpr
   PrefixExpr      \>::=\> [`-' | `+' | `~' | `!'] SimpleExpr 
   SimpleExpr      \>::=\> literal
 		  \>  |\> Path
 		  \>  |\> `(' [Expr] `)'
 		  \>  |\> BlockExpr
 		  \>  |\> new Template 
-		  \>  |\> SimpleExpr `.' Id 
-		  \>  |\> Id `#' Id 
+		  \>  |\> SimpleExpr `.' id 
+		  \>  |\> id `#' id 
 		  \>  |\> SimpleExpr TypeArgs
 		  \>  |\> SimpleExpr ArgumentExpr
   ArgumentExpr    \>::=\> `(' Expr ')'
@@ -2266,7 +2403,7 @@ A reference to any other member of the ``null'' object causes a
 
 \syntax\begin{verbatim}
   Designator    \=::= \= Path
-	\>  | \> SimpleExpr `.' Id
+	\>  | \> SimpleExpr `.' id
 \end{verbatim}
 
 A designator refers to a named term. It can be a {\em simple name} or
@@ -2291,8 +2428,8 @@ selector identifier is bound in the selected object designated by $e$.
 \label{sec:this-super}
 
 \syntax\begin{verbatim}
-  SimpleExpr    \=::= \= [Ident `.'] $\This$
-                \>  | \> [Ident `.'] super `.' Id
+  SimpleExpr    \=::= \= [id `.'] $\This$
+                \>  | \> [id `.'] super `.' id
 \end{verbatim}
 
 The expression \verb@this@ can appear in the statement part of a
@@ -2347,7 +2484,7 @@ depending on whether \verb@B@ is used as defining class or as a mixin class.
 \label{sec:this-mxin-super}
 
 \syntax\begin{verbatim}
-  SimpleExpr    \=::= \= Id `#' Id
+  SimpleExpr    \=::= \= id `#' id
 \end{verbatim}
 
 In the statement part of a template
@@ -2400,7 +2537,7 @@ class BorderedColoredShape extends Shape with Bordered with Colored {
 
 An application \verb@f(e$_1$, ..., e$_n$)@ applies the function \verb@f@ to the
 argument expressions \verb@e$_1$, ..., e$_n$@. If \verb@f@ has a method type
-\verb@(x$_1$: T$_1$, ..., x$_n$: T$_n$)U@, the type of each argument
+\verb@(T$_1$, ..., T$_n$)U@, the type of each argument
 expression \verb@e$_i$@ must conform to the corresponding parameter type
 \verb@T$_i$@. If \verb@f@ has some value type, the application is taken to be
 equivalent to \verb@f.apply(e$_1$, ..., e$_n$)@, i.e.\ the
@@ -2487,7 +2624,7 @@ following three clauses applies:
 \verb@T@ is a parameterless method type \verb@[]T'@ and \verb@T'@
 conforms to \verb@U@.
 \item 
-\verb@T@ is a monomorphic method type \verb@(ps$_1$) ... (ps$_n$)S@ which
+\verb@T@ is a monomorphic method type \verb@(Ts$_1$) ... (Ts$_n$)S@ which
 can be converted to a function type \verb@T'@ by using the rules for
 implicit conversions \sref{sec:impl-conv} and \verb@T'@ conforms to
 \verb@U@.
@@ -2499,12 +2636,13 @@ alternative among the alternatives in $\BB$, according to the
 following definition of being ``more specific''.
 \begin{itemize} 
 \item
-A method type \verb@(ps)T@ is more specific than some other
-type \verb@S@ if \verb@S@ is applicable to arguments \verb@(ps)@.
+A method type \verb@(Ts)U@ is more specific than some other
+type \verb@S@ if \verb@S@ is applicable to arguments \verb@(ps)@ of
+types \verb@Ts@.
 \item
 A polymorphic method type
-\verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$](ps)T@ is
-more specific than some other type \verb@S@ if \verb@(ps)T@ is more
+\verb@[a$_1$ >: L$_1$ <: U$_1$, ..., a$_n$ >: L$_n$ <: U$_n$]T@ is
+more specific than some other type \verb@S@ if \verb@T@ is more
 specific than \verb@S@ under the assumption that for
 \verb@i = 1, ..., n@ each \verb@a$_i$@ is an abstract type name
 bounded from below by \verb@L$_i$@ and from above by \verb@U$_i$@.
@@ -2643,9 +2781,9 @@ replaced by the expected type \verb@B@.
 \label{sec:infix-operations}
 
 \syntax\begin{verbatim}
-  PostfixExpr     \=::=\= InfixExpr [Id]
+  PostfixExpr     \=::=\= InfixExpr [id]
   InfixExpr       \>::=\> PrefixExpr
-		  \>  |\> InfixExpr Id InfixExpr
+		  \>  |\> InfixExpr id InfixExpr
   PrefixExpr      \>::=\> [`-' | `+' | `!' | `~'] SimpleExpr 
 \end{verbatim}
 
@@ -3088,8 +3226,8 @@ for  \verb@try { try { b } catch e$_1$ } finally e$_2$@.
 \syntax\begin{verbatim}
   Expr            \=::= \= [Bindings `=>'] Expr
   Bindings        \>::=\> `(' Binding {`,' Binding `)'
-                  \>  |\> Id [`:' Type1]
-  Binding         \>::= \> Id [`:' Type]
+                  \>  |\> id [`:' Type1]
+  Binding         \>::= \> id [`:' Type]
 \end{verbatim}
 
 The anonymous function \verb@(x$_1$: T$_1$, ..., x$_n$: T$_n$) => e@
@@ -3182,7 +3320,7 @@ Pattern        \=::=  \= TreePattern { `|' TreePattern }
 TreePattern    \>::=  \> varid `:' Type
                \> |   \> `_' `:' Type
                \> |   \> SimplePattern [ '*' | '?' | '+' ]
-               \> |   \> SimplePattern { Id SimplePattern }
+               \> |   \> SimplePattern { id SimplePattern }
 
 SimplePattern  \=::= \> varid [ '@' SimplePattern ]
                \> |  \> `_'
@@ -3417,6 +3555,7 @@ that order hide members of an earlier import.
 
 \syntax\begin{verbatim}
   Packaging     \=::= \= package QualId `{' {TopStat `;'} TopStat `}'
+  QualId          \>::=\> id {`.' id}
 \end{verbatim}
 
 A package is a special object which defines a set of member classes,
@@ -4275,25 +4414,21 @@ grammar.
                   \>  |\> charLit
                   \>  |\> stringLit
 		  \>  |\> symbolLit
-
-  Id              \>::=\> id  |  `+'  |  `-'  |  `!'
-  QualId          \>::=\> Id {`.' Id}
-  Ids             \>::=\> Id {`,' Id}
 \end{verbatim}
 
 \begin{verbatim}
-  StableId                   \=::= \= Id
-                  \>  |\> Path `.' Id
-                  \>  |\> [Ident '.'] super `.' Id
+  StableId                   \=::= \= id
+                  \>  |\> Path `.' id
+                  \>  |\> [id '.'] super `.' id
   Path            \>::=\> StableId
-                  \>  |\> [Ident `.'] this
+                  \>  |\> [id `.'] this
 
   Type          \>::= \> Type1 `=>' Type
                 \>   |\> `(' [Types] `)' `=>' Type
 	        \>   |\> Type1
   Type1         \>::= \> SimpleType {with SimpleType} [Refinement]
   SimpleType   	\>::= \> SimpleType TypeArgs
-	        \>   |\> SimpleType `#' Id
+	        \>   |\> SimpleType `#' id
 	        \>   |\> StableId
                 \>   |\> Path `.' type
 		\>   |\> `(' Type ')'
@@ -4310,12 +4445,12 @@ grammar.
 		  \>  |\> try `{' block `}' [catch Expr] [finally Expr]
 		  \>  |\> do Expr [`;'] while `(' Expr ')'
 		  \>  |\> for `(' Enumerators `)' (do | yield) Expr
-                  \>  |\> [SimpleExpr `.'] Id `=' Expr
+                  \>  |\> [SimpleExpr `.'] id `=' Expr
 		  \>  |\> SimpleExpr ArgumentExpr `=' Expr
                   \>  |\> PostfixExpr [`:' Type1]
-  PostfixExpr     \>::=\> InfixExpr [Id]
+  PostfixExpr     \>::=\> InfixExpr [id]
   InfixExpr       \>::=\> PrefixExpr
-		  \>  |\> InfixExpr Id InfixExpr
+		  \>  |\> InfixExpr id InfixExpr
   PrefixExpr      \>::=\> [`-' | `+' | `~' | `!'] SimpleExpr 
   SimpleExpr      \>::=\> literal
 		  \>  |\> true
@@ -4325,8 +4460,8 @@ grammar.
 		  \>  |\> `(' [Expr] `)'
 		  \>  |\> BlockExpr
 		  \>  |\> new Template 
-		  \>  |\> SimpleExpr `.' Id 
-		  \>  |\> Id `#' Id 
+		  \>  |\> SimpleExpr `.' id 
+		  \>  |\> id `#' id 
 		  \>  |\> SimpleExpr TypeArgs
 		  \>  |\> SimpleExpr ArgumentExpr
   ArgumentExpr    \>::=\> `(' Expr ')'
@@ -4357,7 +4492,7 @@ grammar.
   TreePattern     \>::=  \> varid `:' Type
                   \> |   \> `_' `:' Type
                   \> |   \> SimplePattern [ '*' | '?' | '+' ]
-                  \> |   \> SimplePattern { Id SimplePattern }
+                  \> |   \> SimplePattern { id SimplePattern }
 
   SimplePattern   \>::= \> varid [ '@' SimplePattern ]
                   \> |  \> `_'
@@ -4372,10 +4507,10 @@ grammar.
   FunTypeParamClause \>::=\> `[' TypeDcl {`,' TypeDcl} `]'
   TypeParam       \>::=\>  [`+' | `-'] TypeDcl
   ParamClause     \>::=\> `(' [Param {`,' Param}] `)'
-  Param           \>::=\> [def] Id `:' Type [`*']
-  Bindings        \>::=\> Id [`:' Type1]
+  Param           \>::=\> [def] id `:' Type [`*']
+  Bindings        \>::=\> id [`:' Type1]
                   \>  |\> `(' Binding {`,' Binding `)'
-  Binding         \>::=\> Id [`:' Type]
+  Binding         \>::=\> id [`:' Type]
 
   Modifier        \>::=\> LocalModifier
 		  \>  |\> private
@@ -4396,18 +4531,18 @@ grammar.
                   \>  |\>
 
   Import          \>::=\> import ImportExpr {`,' ImportExpr}
-  ImportExpr      \>::=\> StableId `.' (Id | `_' | ImportSelectors)
+  ImportExpr      \>::=\> StableId `.' (id | `_' | ImportSelectors)
   ImportSelectors \>::=\> `{' {ImportSelector `,'} (ImportSelector | `_') `}'
-  ImportSelector  \>::=\> Id [`=>' Id | `=>' `_']
+  ImportSelector  \>::=\> id [`=>' id | `=>' `_']
 
   Dcl             \>::=\> val ValDcl {`,' ValDcl}
                   \>  |\> var VarDcl {`,' VarDcl}
                   \>  |\> def FunDcl {`,' FunDcl}
                   \>  |\> type TypeDcl {`,' TypeDcl}
-  ValDcl          \>::=\> Id `:' Type
-  VarDcl          \>::=\> Id `:' Type
-  FunDcl          \>::=\> Id [FunTypeParamClause] {ParamClause} `:' Type
-  TypeDcl         \>::=\> Id [`>:' Type] [`<:' Type]
+  ValDcl          \>::=\> id `:' Type
+  VarDcl          \>::=\> id `:' Type
+  FunDcl          \>::=\> id [FunTypeParamClause] {ParamClause} `:' Type
+  TypeDcl         \>::=\> id [`>:' Type] [`<:' Type]
 
   Def             \>::=\> val PatDef {`,' PatDef}
 		  \>  |\> var VarDef {`,' VarDef}
@@ -4415,15 +4550,15 @@ grammar.
                   \>  |\> type TypeDef {`,' TypeDef}
 	          \>  |\> ClsDef
   PatDef          \>::=\> Pattern `=' Expr
-  VarDef          \>::=\> Id [`:' Type] `=' Expr
-                  \>  |\> Id `:' Type `=' `_'
-  FunDef          \>::=\> Id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
+  VarDef          \>::=\> id [`:' Type] `=' Expr
+                  \>  |\> id `:' Type `=' `_'
+  FunDef          \>::=\> id [FunTypeParamClause] {ParamClause} [`:' Type] `=' Expr
                       |   this ParamClause `=' ConstrExpr
-  TypeDef         \>::=\> Id `=' Type
+  TypeDef         \>::=\> id [TypeParamClause] `=' Type
   ClsDef          \>::=\> ([case] class | trait) ClassDef {`,' ClassDef}
                   \>  |\> [case] object ObjectDef {`,' ObjectDef}
-  ClassDef        \>::=\> Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
-  ObjectDef       \>::=\> Id [`:' SimpleType] ClassTemplate
+  ClassDef        \>::=\> id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
+  ObjectDef       \>::=\> id [`:' SimpleType] ClassTemplate
   ClassTemplate   \>::=\> extends Template
 	          \>  |\> TemplateBody
 		  \>  |\>
@@ -4436,6 +4571,7 @@ grammar.
 	          \>  |\> Import
 		  \>  |\>
   Packaging       \>::=\> package QualId `{' {TopStat `;'} TopStat `}'
+  QualId          \>::=\> id {`.' id}
 \end{verbatim}
 
 case class extends { ... }
@@ -4483,7 +4619,7 @@ class Cons
 \syntax\begin{verbatim}
   ClassDef         \=::= \= ClassAlias
   InterfaceDef     \>::= \> ClassAlias
-  ClassAlias   \>::= \> Id [TypeParamClause] `=' SimpleType
+  ClassAlias   \>::= \> id [TypeParamClause] `=' SimpleType
 \end{verbatim}
 
 Classes may also be defined to be aliases for other classes.  A class
@@ -4738,7 +4874,7 @@ if it were permitted to execute in spite of being not well-typed.
 
 \syntax\begin{verbatim}
   PureDef      \=::= \= $\LET$ ValDef {`,' ValDef}
-  ValDef       \>::= \> Id [`:' Type] `=' Expr
+  ValDef       \>::= \> id [`:' Type] `=' Expr
 \end{verbatim}
 
 A let definition $\LET;x: T = e$ defines $x$ as a name of the value

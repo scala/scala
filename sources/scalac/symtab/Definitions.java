@@ -218,12 +218,13 @@ public class Definitions {
 	PARTIALFUNCTION_CLASS = getClass(Names.scala_PartialFunction);
 
         // the scala.ANYREF class
-	ANYREF_CLASS = new TypeSymbol(
-	    Kinds.ALIAS, Position.NOPOS, Names.AnyRef.toTypeName(),
+	ANYREF_CLASS = new AliasTypeSymbol(
+	    Position.NOPOS, Names.AnyRef.toTypeName(),
 	    SCALA_CLASS, Modifiers.JAVA)
 	    .setInfo(JAVA_OBJECT_TYPE);
+        SCALA_CLASS.members().enter(ANYREF_CLASS);
 	ANYREF_TYPE = ANYREF_CLASS.typeConstructor().unalias();
-        SCALA.members().enter(ANYREF_CLASS);
+	ANYREF_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, ANYREF_TYPE));
 
         // the scala.OBJECT class
 	OBJECT_CLASS = getClass(Names.scala_Object);
@@ -284,11 +285,12 @@ public class Definitions {
         // add the java.lang.String class to the scala package
         JAVA_STRING_CLASS = getClass(Names.java_lang_String);
         JAVA_STRING_TYPE = JAVA_STRING_CLASS.typeConstructor();
-        STRING_CLASS = new TypeSymbol(
-	    Kinds.ALIAS, Position.NOPOS, Names.String.toTypeName(), SCALA_CLASS, 0)
+        STRING_CLASS = new AliasTypeSymbol(
+	    Position.NOPOS, Names.String.toTypeName(), SCALA_CLASS, 0)
 	    .setInfo(JAVA_STRING_TYPE);
+        SCALA_CLASS.members().enter(STRING_CLASS);
 	STRING_TYPE = STRING_CLASS.typeConstructor();
-        SCALA.members().enter(STRING_CLASS);
+	STRING_CLASS.primaryConstructor().setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, STRING_TYPE));
 
 	SEQ_CLASS = getClass(Names.scala_Seq);
 

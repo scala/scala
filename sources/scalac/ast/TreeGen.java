@@ -112,7 +112,7 @@ public class TreeGen implements Kinds, Modifiers {
         case SingleType(Type pre1, Symbol sym):
 	    return mkStable(mkRef(pos, pre1, sym));
         default:
-            throw new ApplicationError();
+            throw new ApplicationError(pre);
         }
     }
 
@@ -144,8 +144,10 @@ public class TreeGen implements Kinds, Modifiers {
 	switch (sym.kind) {
 	case ERROR:
 	    return make.Bad(pos, Symbol.ERROR).setType(Type.ErrorType);
-	case TYPE: case ALIAS:
-	    return TypeDef(pos, sym);
+	case TYPE:
+	    return AbsTypeDef(pos, sym);
+	case ALIAS:
+	    return AliasTypeDef(pos, sym);
 	case VAL:
 	    if (sym.isMethod()) return DefDef(pos, sym, Tree.Empty);
 	    else return ValDef(pos, sym, Tree.Empty);
@@ -265,8 +267,8 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build type parameter section corresponding to given array of symbols .
      */
-    public TypeDef[] mkTypeParams(int pos, Symbol[] symbols) {
-        TypeDef[] res = new TypeDef[symbols.length];
+    public AbsTypeDef[] mkTypeParams(int pos, Symbol[] symbols) {
+        AbsTypeDef[] res = new AbsTypeDef[symbols.length];
         for (int i = 0; i < symbols.length; i++) {
 	    res[i] = mkTypeParam(pos, symbols[i]);
         }
@@ -275,28 +277,47 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build type parameter corresponding to given symbol .
      */
-    public TypeDef mkTypeParam(int pos, Symbol sym) {
-	return TypeDef(pos, sym);
+    public AbsTypeDef mkTypeParam(int pos, Symbol sym) {
+	return AbsTypeDef(pos, sym);
     }
 
-    public TypeDef mkTypeParam(Symbol sym) {
+    public AbsTypeDef mkTypeParam(Symbol sym) {
 	return mkTypeParam(sym.pos, sym);
     }
 
-    /** Build type definition corresponding to given symbol .
+    /** Build abstract type definition corresponding to given symbol .
      */
-    public TypeDef TypeDef(int pos, Symbol sym) {
+    public AbsTypeDef AbsTypeDef(int pos, Symbol sym) {
 	Global.instance.nextPhase();
 	Type symtype = sym.info();
 	Global.instance.prevPhase();
-	TypeDef res = make.TypeDef(
+	AbsTypeDef res = make.AbsTypeDef(
 	    pos, sym, TypeTerm(pos, symtype), TypeTerm(pos, sym.loBound()));
         res.setType(definitions.UNIT_TYPE);
         return res;
     }
 
-    public TypeDef TypeDef(Symbol sym) {
-	return TypeDef(sym.pos, sym);
+    public AbsTypeDef AbsTypeDef(Symbol sym) {
+	return AbsTypeDef(sym.pos, sym);
+    }
+
+    /** Build type definition corresponding to given symbol .
+     */
+    public AliasTypeDef AliasTypeDef(int pos, Symbol sym) {
+	Global.instance.nextPhase();
+	Type symtype = sym.info();
+	Global.instance.prevPhase();
+	AliasTypeDef res = make.AliasTypeDef(
+	    pos,
+	    sym,
+            mkTypeParams(pos, sym.typeParams()),
+	    TypeTerm(pos, symtype));
+        res.setType(definitions.UNIT_TYPE);
+        return res;
+    }
+
+    public AliasTypeDef AliasTypeDef(Symbol sym) {
+	return AliasTypeDef(sym.pos, sym);
     }
 
     /** Build and attribute block with given statements, starting
@@ -633,8 +654,9 @@ public class TreeGen implements Kinds, Modifiers {
 	changeOwner(body, owner, applyMeth);
 	Tree applyDef = DefDef(applyMeth, body);
 	Tree classDef = ClassDef(clazz, new Tree[]{applyDef});
-	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY);
-	return Block(new Tree[]{classDef, alloc}).setType(ft);
+	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY)
+	    .setType(ft);
+	return Block(new Tree[]{classDef, alloc});
     }
 
     public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
@@ -652,8 +674,9 @@ public class TreeGen implements Kinds, Modifiers {
 			      pattype, restype, clazz, owner),
 	    makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
 			      pattype, definitions.BOOLEAN_TYPE, clazz, owner)});
-	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY);
-	return Block(new Tree[]{classDef, alloc}).setType(pft);
+	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY)
+	    .setType(pft);
+	return Block(new Tree[]{classDef, alloc});
     }
     //where
 	private Tree makeVisitorMethod(int pos, Name name, Tree visitor,

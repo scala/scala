@@ -254,7 +254,7 @@ public class TextTreePrinter implements TreePrinter {
 
         case ClassDef(int mods, // :
                       Name name,
-                      Tree.TypeDef[] tparams,
+                      Tree.AbsTypeDef[] tparams,
                       Tree.ValDef[][] vparams,
 		      Tree tpe,
                       Tree.Template impl):
@@ -316,7 +316,7 @@ public class TextTreePrinter implements TreePrinter {
 
         case DefDef(int mods,
                     Name name,
-                    Tree.TypeDef[] tparams,
+                    Tree.AbsTypeDef[] tparams,
                     Tree.ValDef[][] vparams,
                     Tree tpe,
                     Tree rhs):
@@ -331,19 +331,27 @@ public class TextTreePrinter implements TreePrinter {
             printOpt(TXT_EQUAL, rhs, true);
             break;
 
-        case TypeDef(int mods,
-                     Name name,
-                     Tree rhs,
-		     Tree lobound):
+        case AbsTypeDef(int mods,
+			Name name,
+			Tree rhs,
+			Tree lobound):
             printModifiers(mods);
             print(KW_TYPE);
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
-	    if ((mods & (Modifiers.DEFERRED | Modifiers.PARAM)) != 0) {
-		printBounds(lobound, rhs);
-	    } else {
-		printOpt(TXT_EQUAL, rhs, true);
-	    }
+	    printBounds(lobound, rhs);
+            break;
+
+        case AliasTypeDef(int mods,
+			  Name name,
+			  Tree.AbsTypeDef[] tparams,
+			  Tree rhs):
+            printModifiers(mods);
+            print(KW_TYPE);
+            print(Text.Space);
+            printSymbolDefinition(tree.symbol(), name);
+	    printParams(tparams);
+	    printOpt(TXT_EQUAL, rhs, true);
             break;
 
         case Import(Tree expr, Name[] selectors):
@@ -688,7 +696,7 @@ public class TextTreePrinter implements TreePrinter {
 	}
     }
 
-    protected void printParams(Tree.TypeDef[] tparams) {
+    protected void printParams(Tree.AbsTypeDef[] tparams) {
         if (tparams.length > 0) {
 	    print(TXT_LEFT_BRACKET);
 	    for (int i = 0; i < tparams.length; i++) {
@@ -715,7 +723,7 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printParam(Tree tree) {
 	switch (tree) {
-	case TypeDef(int mods, Name name, Tree bound, Tree lobound):
+	case AbsTypeDef(int mods, Name name, Tree bound, Tree lobound):
             printModifiers(mods);
             printSymbolDefinition(tree.symbol(), name);
 	    printBounds(lobound, bound);

@@ -1441,7 +1441,7 @@ public class Parser implements Tokens {
     /** TypeParamClauseOpt ::= [`[' TypeParam {`,' TypeParam} `]']
      *  FunTypeParamClauseOpt ::= [`[' FunTypeParam {`,' FunTypeParam} `]']
      */
-    TypeDef[] typeParamClauseOpt(boolean variant) {
+    AbsTypeDef[] typeParamClauseOpt(boolean variant) {
         TreeList params = new TreeList();
 	if (s.token == LBRACKET) {
 	    s.nextToken();
@@ -1452,7 +1452,7 @@ public class Parser implements Tokens {
 	    }
 	    accept(RBRACKET);
 	}
-        return (TypeDef[])params.copyTo(new TypeDef[params.length()]);
+        return (AbsTypeDef[])params.copyTo(new AbsTypeDef[params.length()]);
     }
 
     /** TypeParam   ::= [`+' | `-'] FunTypeParam
@@ -1491,7 +1491,7 @@ public class Parser implements Tokens {
 	} else {
 	    hibound = scalaDot(pos, Names.Any.toTypeName());
 	}
-	return make.TypeDef(pos, mods, name.toTypeName(), hibound, lobound);
+	return make.AbsTypeDef(pos, mods, name.toTypeName(), hibound, lobound);
     }
 
 //////// DEFS ////////////////////////////////////////////////////////////////
@@ -1726,11 +1726,11 @@ public class Parser implements Tokens {
 	    accept(EQUALS);
 	    return make.DefDef(
 		pos, mods, Names.this_.toTypeName(),
-		Tree.TypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
+		Tree.AbsTypeDef_EMPTY_ARRAY, vparams, Tree.Empty,
 		convertToSelfConstr(expr()));
 	} else {
 	    Name name = ident();
-	    TypeDef[] tparams = typeParamClauseOpt(false);
+	    AbsTypeDef[] tparams = typeParamClauseOpt(false);
 	    ValDef[][] vparams = paramClauses();
 	    Tree restype = typedOpt();
 	    if (s.token == EQUALS || restype == Tree.Empty)
@@ -1749,9 +1749,13 @@ public class Parser implements Tokens {
         int pos = s.pos;
         Name name = ident().toTypeName();
 	switch (s.token) {
+	case LBRACKET:
+	    AbsTypeDef[] tparams = typeParamClauseOpt(true);
+	    accept(EQUALS);
+            return make.AliasTypeDef(pos, mods, name, tparams, type());
 	case EQUALS:
 	    s.nextToken();
-            return make.TypeDef(pos, mods, name, type(), Tree.Empty);
+            return make.AliasTypeDef(pos, mods, name, Tree.AbsTypeDef_EMPTY_ARRAY, type());
 	case SUPERTYPE:
 	case SUBTYPE:
 	case SEMI:
@@ -1768,7 +1772,7 @@ public class Parser implements Tokens {
     Tree classDef(int mods) {
 	int pos = s.pos;
 	Name clazzname = ident().toTypeName();
-	TypeDef[] tparams = typeParamClauseOpt(true);
+	AbsTypeDef[] tparams = typeParamClauseOpt(true);
 	ValDef[][] params = paramClauseOpt();
 	TreeList result = new TreeList();
 	return popComment(make.ClassDef(pos, mods, clazzname, tparams, params,
@@ -1830,7 +1834,7 @@ public class Parser implements Tokens {
     Tree constr() {
         Tree t = convertToConstr(stableId());
 	if (s.token == LBRACKET)
-	    t = make.TypeApply(s.pos, t, typeArgs());
+	    t = make.AppliedType(s.pos, t, typeArgs());
 	if (s.token == LPAREN)
 	    t = make.Apply(s.pos, t, argumentExprs());
 	return applyConstr(t);

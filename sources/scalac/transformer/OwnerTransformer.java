@@ -43,10 +43,10 @@ public class OwnerTransformer extends Transformer {
 	return tree1;
     }
 
-    public TypeDef[] transform(TypeDef[] params, Symbol owner) {
+    public AbsTypeDef[] transform(AbsTypeDef[] params, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	currentOwner = owner;
-	TypeDef[] res = transform(params);
+	AbsTypeDef[] res = transform(params);
 	currentOwner = prevOwner;
 	return res;
     }
@@ -95,7 +95,7 @@ public class OwnerTransformer extends Transformer {
                 transform(packaged),
                 transform(impl, packaged.symbol()));
 
-	case ClassDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
+	case ClassDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
             Symbol symbol = tree.symbol();
 	    return copy.ClassDef(
 		tree, symbol,
@@ -111,7 +111,7 @@ public class OwnerTransformer extends Transformer {
                 transform(tpe),
 		transform(impl, symbol.moduleClass()));
 
-	case DefDef(_, _, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
+	case DefDef(_, _, AbsTypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
             Symbol symbol = tree.symbol();
 	    return copy.DefDef(
 		tree, symbol,
@@ -127,12 +127,19 @@ public class OwnerTransformer extends Transformer {
                 transform(tpe),
 		transform(rhs, symbol));
 
-	case TypeDef(int mods, Name name, Tree rhs, Tree lobound):
-	    Symbol sym = tree.symbol();
-	    return copy.TypeDef(
-		tree, sym,
-		transform(rhs, sym),
-		transform(lobound, sym));
+	case AbsTypeDef(int mods, Name name, Tree rhs, Tree lobound):
+	    Symbol symbol = tree.symbol();
+	    return copy.AbsTypeDef(
+		tree, symbol,
+		transform(rhs, symbol),
+		transform(lobound, symbol));
+
+	case AliasTypeDef(int mods, Name name, AbsTypeDef[] tparams, Tree rhs):
+	    Symbol symbol = tree.symbol();
+	    return copy.AliasTypeDef(
+		tree, symbol,
+		transform(tparams, symbol),
+		transform(rhs, symbol));
 
 	default:
 	    return super.transform(tree);
