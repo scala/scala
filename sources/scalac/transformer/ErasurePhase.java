@@ -88,6 +88,7 @@ public class ErasurePhase extends Phase {
             }
         }
         if (sym.isType()) return tp;
+        if (sym.isThisSym()) return sym.owner().nextType();
         // if (sym == definitions.NULL) return tp.resultType().erasure();
         switch (primitives.getPrimitive(sym)) {
         case Primitive.IS : return Type.PolyType(tp.typeParams(), Type.MethodType(tp.valueParams(), tp.resultType().erasure()));
