@@ -236,8 +236,6 @@ public class Definitions {
 
         // the scala.ANYVAL class
 	ANYVAL_CLASS = getClass(Names.scala_AnyVal);
-	ANYVAL_CLASS.initialize();
-	ANYVAL_CLASS.flags |= Modifiers.SEALED;
         ANYVAL_TYPE = ANYVAL_CLASS.typeConstructor();
 
         // the scala.ALL class

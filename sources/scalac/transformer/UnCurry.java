@@ -53,7 +53,8 @@ public class UnCurry extends OwnerTransformer
 	case MethodType(_, _):
 	    return tree;
 	default:
-	    return tree.setType(Type.MethodType(Symbol.EMPTY_ARRAY, tree.type));
+	    return tree.setType(
+		Type.MethodType(Symbol.EMPTY_ARRAY, tree.type.widen()));
 	}
     }
 
@@ -145,7 +146,7 @@ public class UnCurry extends OwnerTransformer
 	    default:
 		if (tree1.symbol().isDefParameter()) {
 		    tree1.type = global.definitions.functionType(
-								 Type.EMPTY_ARRAY, tree1.type);
+			Type.EMPTY_ARRAY, tree1.type.widen());
 		    return gen.Apply(gen.Select(tree1, Names.apply), new Tree[0]);
 		} else {
 		    return tree1;
@@ -214,7 +215,7 @@ public class UnCurry extends OwnerTransformer
 		}
 	    }
 	    return transform(
-		gen.mkUnitFunction(arg, descr.uncurry(arg.type), currentOwner));
+		gen.mkUnitFunction(arg, descr.uncurry(arg.type.widen()), currentOwner));
 	} else {
 	    return transform(arg);
 	}

@@ -1,0 +1,4 @@
+bug87.scala:2: type C is not a member of foo
+  new foo.C;
+         ^
+one error found

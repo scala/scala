@@ -255,6 +255,11 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & FINAL) != 0;
     }
 
+    /** Does this symbol denote a sealed class symbol? */
+    public final boolean isSealed() {
+        return (flags & SEALED) != 0;
+    }
+
     /** Does this symbol denote a method?
      */
     public final boolean isInitializedMethod() {

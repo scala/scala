@@ -1671,6 +1671,7 @@ public class Parser implements Tokens {
 	    return ts.toArray();
 	case OBJECT:
 	case CASEOBJECT:
+	    if (s.token == CASEOBJECT) mods |= Modifiers.CASE;
 	    do {
 		s.nextToken();
 		ts.append(objectDef(mods));

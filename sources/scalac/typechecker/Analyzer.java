@@ -368,7 +368,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    if ((bsym.flags & FINAL) != 0) {
 		error(constrs[i].pos, "illegal inheritance from final class");
-	    } else if ((bsym.flags & SEALED) != 0) {
+	    } else if (bsym.isSealed() ||
+		       bsym.isSubClass(definitions.ANYVAL_CLASS)) {
 		// are we in same scope as base type definition?
 		Scope.Entry e = context.scope.lookupEntry(bsym.name);
 		if (e.sym != bsym || e.owner != context.scope) {
@@ -1248,12 +1249,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    if (seqtp != Type.NoType) {
 			tree.type = seqConstructorType(seqtp, pt);
 		    } else {
-			error(tree.pos, "expected pattern type " + pt +
-			      " does not conform to sequence " + clazz);
+			return error(tree.pos, "expected pattern type " + pt +
+				     " does not conform to sequence " + clazz);
 		    }
 		} else if (tree.type != Type.ErrorType) {
-		    error(tree.pos, tree.type.symbol() +
-			  " is neither a case class constructor nor a sequence class constructor");
+		    return error(tree.pos, tree.type.symbol() +
+				 " is neither a case class constructor nor a sequence class constructor");
 		}
 	    }
 	    if ((mode & FUNmode) != 0) {

@@ -1,0 +1,4 @@
+test/neg/bug97.scala:3: expected pattern type scala.Any does not conform to sequence trait scala.List
+    case List(y) => "zero"
+         ^
+one error found

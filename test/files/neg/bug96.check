@@ -1,0 +1,5 @@
+bug96.scala:5: method foo in class B of type (def scala.Any)scala.Object
+ cannot override method foo in class A of type (scala.Any)scala.Object
+    override def foo(def x: Any): Object = null;
+                 ^
+one error found
