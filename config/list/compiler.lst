@@ -97,6 +97,7 @@ symtab/SymSet.java
 symtab/Symbol.java
 symtab/SymbolCloner.java
 symtab/SymbolComparator.java
+symtab/SymbolNameWriter.java
 symtab/SymbolSubstTypeMap.java
 symtab/SymbolTablePrinter.java
 symtab/Type.java
