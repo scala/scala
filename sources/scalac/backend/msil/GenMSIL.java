@@ -25,6 +25,7 @@ import scalac.symtab.Kinds;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Definitions;
+import scalac.symtab.classfile.Pickle;
 import Scope.SymbolIterator;
 
 import scalac.backend.Primitive;
@@ -72,8 +73,6 @@ public final class GenMSIL {
     final Primitives primitives;
     final ItemFactory items;
 
-    Symbol currentPackage;
-
     static final Item TRUE_ITEM  = Item.CondItem(Test.True, null, null);
     static final Item FALSE_ITEM = Item.CondItem(Test.False, null, null);
 
@@ -81,14 +80,11 @@ public final class GenMSIL {
      */
     public GenMSIL(Global global, GenMSILPhase phase) {
         this.global = global;
-	defs = global.definitions;
-	primitives = global.primitives;
-	assemblies = phase.assemblies;
-
-	tc = new TypeCreator(this, phase);
-	items = new ItemFactory(this);
-
-	currentPackage = defs.ROOT_CLASS; /// ???
+	this.defs = global.definitions;
+	this.primitives = global.primitives;
+	this.assemblies = phase.assemblies;
+	this.tc = new TypeCreator(this, phase);
+	this.items = new ItemFactory(this);
     }
 
 
@@ -109,13 +105,15 @@ public final class GenMSIL {
     }
 
 
-    /**
+    /** Initialize the code generator
      */
     public void initGen() {
 	tc.init();
 	currModule = getPackage("prog");
     }
 
+    /** Finilize the code generation
+     */
     public void finalizeGen() {
 	if (mainObjectField != null && mainMethod != null) {
 	    MethodBuilder main = currModule.DefineGlobalMethod
@@ -152,6 +150,8 @@ public final class GenMSIL {
     FieldInfo mainObjectField = null;
     MethodInfo mainMethod = null;
 
+    /** Check if the given method is a main function
+     */
     void checkMain(MethodBase method) {
 	//log("checking method: " + method);
 	if ( ! currentClass.isModuleClass() )
@@ -242,7 +242,23 @@ public final class GenMSIL {
     /** The method that is currently being compiled. */
     MethodBase currentMethod;
 
-    /** Generate the code for a class
+
+    protected void emitSymtab(Symbol clazz) {
+	TypeBuilder type = (TypeBuilder) tc.getType(clazz);
+	Pickle pickle = (Pickle)global.symdata.get(clazz.fullName());
+        if (pickle != null) {
+	    byte[] symtab = new byte[pickle.size() + 8];
+	    symtab[0] = 1;
+	    for (int size = pickle.size(), i = 2; i < 6; i++) {
+		symtab[i] = (byte)(size & 0xff);
+		size >>= 8;
+	    }
+	    System.arraycopy(pickle.bytes, 0, symtab, 6, pickle.size());
+	    type.SetCustomAttribute(tc.SCALA_SYMTAB_ATTR_CONSTR, symtab);
+	}
+    }
+
+    /** Generate the code for a class definition
      */
     void genClass(Symbol clazz, Tree[] body) {
 	//log("genClass: " + dumpSym(clazz));
@@ -250,13 +266,13 @@ public final class GenMSIL {
 	//log("\tfullName = " + clazz.fullName());
 	//log("\tqualifier = " + Debug.show(clazz.qualifier()));
 	//log("class members: " + clazz.members());
-	tc.getType(clazz);
 	Symbol outerClass = currentClass;
 	currentClass = clazz;
 	if ( clazz.isModule() || clazz.isModuleClass() ) {
 	    //log("genClass: initializing module field for module " + dumpSym(clazz));
 	    tc.getModuleField(clazz);
 	}
+	emitSymtab(clazz);
 	for (int i = 0; i < body.length; i++) {
 	    Symbol sym = body[i].symbol();
 	    switch (body[i]) {
@@ -266,7 +282,7 @@ public final class GenMSIL {
 	    case ValDef(_, _, _, _):
 		// just to generate the field declaration
 		// the rhs should've been moved to the constructor body
- 		tc.getField(sym);
+ 		tc.createField(sym);
 		break;
 
 	    case ClassDef(_, _, _, _, _, Template impl):
@@ -284,7 +300,8 @@ public final class GenMSIL {
 		break;
 
 	    default:
-		assert false : "Illegal class body definition: " + body[i];
+		assert false : "Illegal class body definition: "
+		    + Debug.show(body[i]);
 	    }
 	}
 	currentClass = outerClass;
@@ -592,7 +609,7 @@ public final class GenMSIL {
 	    return gen(rhs, toType);
 
 	default:
-	    throw new ApplicationError("Dunno what to do: " + tree);
+	    throw new ApplicationError("Dunno what to do: " + tree.getClass());
 	}
 	throw new ApplicationError
 	    ("Dunno what to do with tree node: " + Debug.show(tree));
@@ -739,10 +756,17 @@ public final class GenMSIL {
 //    	    log("\tqualifier: " + Debug.show(qualifier));
 //    	    log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
 //  	    log("\tqualifier.type: " + Debug.show(qualifier.type));
-	    if (sym == primitives.BOX_UVALUE) {
-		return items.StaticItem(MSILType.REF(tc.SCALA_UNIT),
-					tc.RUNTIME_UNIT_VAL);
-	    }
+
+// 	    if (sym == primitives.BOX_UVALUE) {
+// 		return items.StaticItem(MSILType.REF(tc.SCALA_UNIT),
+// 					tc.RUNTIME_UNIT_VAL);
+// 	    }
+
+// removed by philippe (next 3 lines):
+// 	    if (sym == primitives.AS_UVALUE) {
+// 		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
+// 	    }
+
 	    if (sym == defs.ANY_EQEQ) {
 		return genEq(qualifier, args[0]);
 	    }
