@@ -669,6 +669,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
+    public abstract static class MapOnlyTypes extends Map {
+        public Symbol map(Symbol sym) { return sym; }
+        public Symbol[] map(Symbol[] syms) { return syms; }
+        public Scope map(Scope s) { return s; }
+    }
+
 // baseType and asSeenFrom --------------------------------------------------------
 
     /** Return the base type of this type whose symbol is `clazz', or NoType, if
@@ -1845,7 +1851,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 // Erasure --------------------------------------------------------------------------
 
-    public static Map erasureMap = new Map() {
+    public static Map erasureMap = new MapOnlyTypes() {
 	public Type apply(Type t) { return t.erasure(); }
     };
 
