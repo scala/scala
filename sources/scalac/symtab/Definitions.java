@@ -186,8 +186,6 @@ public class Definitions {
         return getType(LIST_CLASS, element);
     }
 
-    public final Symbol CONSOLE;
-
     /** The scala.Array class */
     public final Symbol ARRAY_CLASS;
     public final Type   ARRAY_TYPE(Type element) {
@@ -201,6 +199,9 @@ public class Definitions {
             throw Debug.abort("illegal case", type);
         }
     }
+
+    /** The scala.Console module */
+    public final Symbol CONSOLE;
 
     /** The scala.MatchError module */
     public final Symbol MATCHERROR;
@@ -358,7 +359,9 @@ public class Definitions {
         return LIST_TAIL;
     }
 
+    /** Some scala.Console methods */
     private Symbol CONSOLE_PRINT;
+
     public Symbol CONSOLE_PRINT() {
         if( CONSOLE_PRINT == null )
             CONSOLE_PRINT = loadTerm( CONSOLE, Names.print );
@@ -456,8 +459,8 @@ public class Definitions {
 	ITERATOR_CLASS = getClass(Names.scala_Iterator);
 	SEQ_CLASS = getClass(Names.scala_Seq);
 	LIST_CLASS = getClass(Names.scala_List);
-        CONSOLE = getModule(Names.scala_Console);
         ARRAY_CLASS = getClass(Names.scala_Array);
+        CONSOLE = getModule(Names.scala_Console);
 	MATCHERROR = getModule(Names.scala_MatchError);
 
         // initialize generated classes and aliases
