@@ -41,7 +41,7 @@ object iq {
     /* Test apply
      * Expected: q5[5]: 5
      */
-    java.lang.System.out.println("q5[5]: " + q5.apply(5));
+    java.lang.System.out.println("q5[5]: " + q5(5));
 
     val q5c:Queue[char] = Queue.Empty.enqueue(0 as char, 1 as char,
 					     2 as char, 3 as char,
