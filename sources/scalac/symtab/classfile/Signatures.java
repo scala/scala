@@ -14,7 +14,9 @@ import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.AbstractFileReader;
 import scalac.util.Name;
+import scalac.util.Names;
 import scalac.util.SourceRepresentation;
+import scalac.util.Debug;
 
 /** This class implements the parsing of class file signatures. */
 public class Signatures {
@@ -91,11 +93,23 @@ public class Signatures {
             owner = module.moduleClass();
             start = current + 1;
         }
-        Name name = Name.fromAscii(in.buf, start, current-start).toTypeName();
-        Symbol clasz = owner.members().lookup(name);
+
+	Symbol clasz = null;
+        Name name = Name.fromAscii(in.buf, start, current-start);
+	if (owner == global.definitions.JAVALANG.moduleClass()) {
+	    if (name == Names.String)
+		clasz = global.definitions.STRING_CLASS;
+	    else if (name == Names.Object)
+		clasz = global.definitions.OBJECT_CLASS;
+	}
+	if (clasz == null) {
+	    name = name.toTypeName();
+	    clasz = owner.members().lookup(name);
+	}
+
         if (!clasz.isClass()) {
             Symbol symbol = owner.newErrorClass(name);
-            error("could not find class " + symbol.staticType());
+            error("could not find class " + symbol.staticType() + "(found " + Debug.show(clasz) + ")");
             if (clasz.isNone()) owner.members().enterNoHide(symbol);
             clasz = symbol;
         }
