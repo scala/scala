@@ -41,8 +41,15 @@ public class ScalaObject implements InvocationHandler {
     //########################################################################
     // Public Methods - InvocationHandler interface
 
-    public Object invoke(Object self, Method method, Object[] args) {
-        return template.invoke(self, method, args);
+    public Object invoke(Object self, Method method, Object[] args)
+        throws Throwable
+    {
+        try {
+            return template.invoke(self, method, args);
+        } catch (EvaluatorException exception) {
+            exception.addScalaEntryPoint();
+            throw exception.getCause();
+        }
     }
 
     //########################################################################

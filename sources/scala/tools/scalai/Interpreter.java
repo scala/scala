@@ -287,7 +287,7 @@ public class Interpreter {
             if (interactive) writer.println(value + ": " + type);
             return;
         case Error(EvaluatorException exception):
-            writer.println(exception.mkString(global));
+            writer.println(exception.getScalaErrorMessage(true));
             return;
         }
     }

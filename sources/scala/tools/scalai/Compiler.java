@@ -30,6 +30,7 @@ import scalac.symtab.Symbol;
 import scalac.symtab.TermSymbol;
 import scalac.util.Debug;
 import scalac.util.Name;
+import scalac.util.Names;
 import scalac.util.Position;
 
 public class Compiler {
@@ -83,22 +84,25 @@ public class Compiler {
         } catch (Exception exception) {
             throw Debug.abort("equals", exception);
         }
+        // !!! should we have a symbol Any.equals as for hashcode and toString?
+        Symbol equals_symbol =
+            definitions.JAVA_OBJECT_CLASS.lookup(Names.equals);
+        assert equals_symbol != Symbol.NONE;
         CodePromise equals_code = new CodePromise(
             new CodeContainer(
-                null, // !!!
+                equals_symbol,
                 Code.Invoke(
                     Code.Invoke(
                         Code.Null,
                         Function.JavaMethod(getInvocationHandler_method),
                         new Code[] {
                             Code.Self},
-                        Position.NOPOS, null // !!!
-                    ),
+                        Position.NOPOS),
                     Function.JavaMethod(equals_method),
                     new Code[] {
                         Code.Load(
-                            Code.Null, Variable.Context(Evaluator.Levels.ARGS, 0))},
-                    Position.NOPOS, null), // !!!
+                            Code.Null, Variable.Argument(0))},
+                    Position.NOPOS),
                 0));
         // !!! any_methods.put(_, equals_code);
         any_methods.put(equals_method, equals_code);
@@ -118,7 +122,7 @@ public class Compiler {
                 definitions.HASHCODE,
                 Code.Invoke(
                     Code.Self, Function.HashCode, new Code[0],
-                    Position.NOPOS, definitions.HASHCODE),
+                    Position.NOPOS),
                 0));
         any_methods.put(definitions.HASHCODE, hashCode_code);
         any_methods.put(hashCode_method, hashCode_code);
@@ -142,7 +146,7 @@ public class Compiler {
                 definitions.TOSTRING,
                 Code.Invoke(
                     Code.Self, Function.ToString, new Code[0],
-                    Position.NOPOS, definitions.TOSTRING),
+                    Position.NOPOS),
                 0));
         any_methods.put(definitions.TOSTRING, toString_code);
         any_methods.put(toString_method, toString_code);
@@ -171,8 +175,8 @@ public class Compiler {
                     Code.Self, Function.JavaMethod(equals_method), new Code[] {
                         Code.Load(
                             Code.Null,
-                            Variable.Context(Evaluator.Levels.ARGS, 0)) },
-                    Position.NOPOS, definitions.EQEQ),
+                            Variable.Argument(0)) },
+                    Position.NOPOS),
                 0));
         any_methods.put(definitions.EQEQ, eqeq_code);
         environment.insertFunction(definitions.EQEQ, Function.EqEq);
@@ -188,11 +192,11 @@ public class Compiler {
                             Code.Self, Function.EqEq, new Code[] {
                                 Code.Load(
                                     Code.Null,
-                                    Variable.Context(Evaluator.Levels.ARGS, 0)) },
-                            Position.NOPOS, definitions.BANGEQ)),
+                                    Variable.Argument(0)) },
+                            Position.NOPOS)),
                     Function.JavaMethod(bang_method),
                     new Code[0],
-                    Position.NOPOS, definitions.BANGEQ),
+                    Position.NOPOS),
                 0));
         any_methods.put(definitions.BANGEQ, bangeq_code);
         environment.insertFunction(definitions.BANGEQ, Function.BangEq);

@@ -17,22 +17,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
 import scala.runtime.RunTime;
-import scala.MatchError;
 
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
 
 public class Evaluator {
-
-    //########################################################################
-    // Public Interfaces
-
-    // !!! remove
-    public static interface Levels {
-        public static final int CLASS = 0;
-        public static final int ARGS = 1; // !!! use PARAM ?
-        public static final int BODY = 2;
-    }
 
     //########################################################################
     // Private Classes
@@ -50,33 +39,44 @@ public class Evaluator {
         }
     }
 
+    public static class EvaluationStack {
+
+        public final EvaluationStack stack;
+        public final Symbol symbol;
+        public final Object self;
+        public final Object[] args;
+        public final Object[] vars;
+
+        public EvaluationStack(EvaluationStack stack, CodeContainer code,
+            Object self, Object[] args)
+        {
+            this.stack = stack;
+            this.symbol = code.symbol;
+            this.self = self;
+            this.args = args;
+            this.vars = new Object[code.stacksize];
+        }
+
+    }
+
     //########################################################################
     // Private Fields
 
-    private final Object[][] variables;
-    private Object self;
+    private EvaluationStack stack;
+    private EvaluatorException trace;
 
     //########################################################################
     // Public Constructors
 
     public Evaluator() {
-        this.variables = new Object[3][];
-        this.variables[Levels.CLASS] = null;
-        this.variables[Levels.ARGS] = null;
-        this.variables[Levels.BODY] = null;
-        this.self = null;
+        this.stack = null;
+        this.trace = null;
     }
 
     //########################################################################
     // Public Methods
 
     public Object evaluate(CodeContainer code) {
-        // !!! System.out.println("!!! EVALUATE");
-        // !!! System.out.println("!!! size           = " + size);
-        // !!! System.out.println("!!! code.symbol    = " +Debug.show(code.symbol));
-        // !!! System.out.println("!!! code.stacksize = " + code.stacksize);
-        // !!! System.out.println("!!! code.code      = " + code.code);
-        // !!! System.out.println("!!! ");
         return evaluate(code, null, new Object[0]);
     }
 
@@ -86,37 +86,10 @@ public class Evaluator {
 
     public Object evaluate(CodeContainer code, Object object, Object[] args) {
         try {
-        // !!! System.out.println("!!! EVALUATE");
-        // !!! System.out.println("!!! code.symbol    = " +Debug.show(code.symbol));
-        // !!! for (int i = 0; i < args.length; i++) {
-        // !!!     System.out.println("!!! arg" + i + "           = " + Debug.show(args[i]));
-        // !!! }
-        // !!! System.out.println("!!! code.stacksize = " + code.stacksize);
-        // !!! System.out.println("!!! code.code      = " + code.code);
-        // !!! System.out.println("!!! ");
-
-        Object backup_self = self;
-        Object[] backup_args = variables[Levels.ARGS];
-        Object[] backup_body = variables[Levels.BODY];
-        self = object;
-        variables[Levels.ARGS] = args;
-        variables[Levels.BODY] = new Object[code.stacksize];
-        Object result = evaluate(code.code);
-        self = backup_self;
-        variables[Levels.ARGS] = backup_args;
-        variables[Levels.BODY] = backup_body;
-
-        // !!! System.out.println("!!! RETURN");
-        // !!! System.out.println("!!! code.symbol    = " +Debug.show(code.symbol));
-        // !!! System.out.println("!!! result.class   = " + Debug.show(result));
-
-        return result;
-        } catch (EvaluatorException exception) {
-            throw exception;
-        } catch (Error exception) {
-            throw exception;
-        } catch (Throwable exception) {
-            throw Debug.abort(exception);
+            stack = new EvaluationStack(stack, code, object, args);
+            return evaluate(code.code);
+        } finally {
+            stack = stack.stack;
         }
     }
 
@@ -157,16 +130,15 @@ public class Evaluator {
             store(evaluate(target), variable, evaluate(expression));
             return RunTime.box();
 
-        case Invoke(Code target, Function function, Code[] parameters, int pos, Symbol method):
+        case Invoke(Code target, Function function, Code[] arguments, int pos):
             Object object = evaluate(target);
-            Object[] args = new Object[parameters.length];
-            for (int i = 0; i < args.length; i++) {
-                args[i] = evaluate(parameters[i]);
-            }
-            try { // !!! indent
+            Object[] args = new Object[arguments.length];
+            for (int i = 0; i < args.length; i++)
+                args[i] = evaluate(arguments[i]);
+            try {
                 return invoke(object, function, args);
             } catch (EvaluatorException exception) {
-                exception.addCall(pos, method);
+                if (stack.symbol != null) exception.addScalaCall(stack.symbol, pos); // !!! remove test
                 throw exception;
             }
 
@@ -205,8 +177,7 @@ public class Evaluator {
             return null;
 
         case Self:
-            // !!! System.out.println("!!! Self: " + Debug.show(self));
-            return self;
+            return stack.self;
 
         default:
             throw Debug.abort("illegal code", code);
@@ -223,7 +194,6 @@ public class Evaluator {
             return evaluate(code, object, args);
 
         case Member(Symbol symbol):
-            // !!! handle case where object is null
             return getScalaObject(object).invoke(object, symbol, args);
 
         case Label(Symbol symbol):
@@ -268,7 +238,7 @@ public class Evaluator {
         case Throw:
             assert args.length == 0 : Debug.show(args);
             assert object instanceof Throwable : object.getClass();
-            throw new EvaluatorException((Throwable)object);
+            return throw_((Throwable)object);
 
         case StringPlus:
             assert args.length == 1 : Debug.show(args);
@@ -285,11 +255,11 @@ public class Evaluator {
 
         case HashCode:
             assert args.length == 0 : Debug.show(args);
-            return new Integer(getScalaObject(object).hashCode());
+            return new Integer(getHandlerObject(object).hashCode());
 
         case ToString:
             assert args.length == 0 : Debug.show(args);
-            return getScalaObject(object).toString();
+            return getHandlerObject(object).toString();
 
         default:
             throw Debug.abort("illegal function", function);
@@ -298,16 +268,11 @@ public class Evaluator {
 
     private Object invoke(Object object, Constructor constructor,Object[]args){
         try {
-            // !!! System.out.println("!!! object " + (object == null ? "null" : object.getClass().getName()));
-            // !!! System.out.println("!!! constr " + constructor);
-            // !!! System.out.println("!!! nbargs " + args.length);
             return constructor.newInstance(args);
-        } catch (MatchError exception) {
-            return exception(exception);
         } catch (ExceptionInInitializerError exception) {
-            return exception(exception.getException());
+            return throw_(exception);
         } catch (InvocationTargetException exception) {
-            return exception(exception.getTargetException());
+            return throw_(exception);
         } catch (InstantiationException exception) {
             String msg1 = "\n  object = " + Debug.show(object);
             String msg2 = "\n  constr = " + Debug.show(constructor);
@@ -329,14 +294,12 @@ public class Evaluator {
     private Object invoke(Object object, Method method, Object[] args) {
         try {
             return method.invoke(object, args);
-        } catch (MatchError exception) {
-            return exception(exception);
         } catch (NullPointerException exception) {
-            return exception(exception);
+            return throw_(exception);
         } catch (ExceptionInInitializerError exception) {
-            return exception(exception.getException());
+            return throw_(exception);
         } catch (InvocationTargetException exception) {
-            return exception(exception.getTargetException());
+            return throw_(exception);
         } catch (IllegalAccessException exception) {
             String msg1 = "\n  object = " + Debug.show(object);
             String msg2 = "\n  method = " + Debug.show(method);
@@ -353,24 +316,23 @@ public class Evaluator {
     //########################################################################
     // Private Methods - store
 
-    // !!! return void ?
     private Object store(Object object, Variable variable, Object value) {
         switch (variable) {
 
         case Global(_):
             return ((Variable.Global)variable).value = value;
 
-        case Context(int level, int index):
-            // !!! System.out.println("!!! store Context: level = " + level + ", index = " + index);
-            return variables[level][index] = value;
-
         case Module(_, _):
             return ((Variable.Module)variable).value = value;
 
         case Member(int index):
-            // !!! handle case where object is null
-            // !!! System.out.println("!!! store Member: index = " + index + ", length = " + getScalaObject(object).variables.length);
             return getScalaObject(object).variables[index] = value;
+
+        case Argument(int index):
+            return stack.args[index] = value;
+
+        case Local(int index):
+            return stack.vars[index] = value;
 
         case JavaField(Field field):
             return store(object, field, value);
@@ -385,9 +347,9 @@ public class Evaluator {
             field.set(object, value);
             return value;
         } catch (NullPointerException exception) {
-            return exception(exception);
+            return throw_(exception);
         } catch (ExceptionInInitializerError exception) {
-            return exception(exception.getException());
+            return throw_(exception);
         } catch (IllegalAccessException exception) {
             String msg1 = "\n  object = " + Debug.show(object);
             String msg2 = "\n  field  = " + Debug.show(field);
@@ -410,9 +372,6 @@ public class Evaluator {
         case Global(Object value):
             return value;
 
-        case Context(int level, int index):
-            return variables[level][index];
-
         case Module(CodePromise body, Object value):
             if (value != null) return value;
             ((Variable.Module)variable).body = null;
@@ -420,10 +379,13 @@ public class Evaluator {
             return load(object, variable);
 
         case Member(int index):
-            // !!! handle case where object is null
-            // !!! System.out.println("!!! loadScala: self  = " + Debug.show(object) + ", index = " + index);
-            // !!! System.out.println("!!! loadScala: value = " + Debug.show(getScalaObject(object).variables[index]));
             return getScalaObject(object).variables[index];
+
+        case Argument(int index):
+            return stack.args[index];
+
+        case Local(int index):
+            return stack.vars[index];
 
         case JavaField(Field field):
             return load(object, field);
@@ -437,9 +399,9 @@ public class Evaluator {
         try {
             return field.get(object);
         } catch (NullPointerException exception) {
-            return exception(exception);
+            return throw_(exception);
         } catch (ExceptionInInitializerError exception) {
-            return exception(exception.getException());
+            return throw_(exception);
         } catch (IllegalAccessException exception) {
             String msg1 = "\n  object = " + Debug.show(object);
             String msg2 = "\n  field  = " + Debug.show(field);
@@ -449,6 +411,20 @@ public class Evaluator {
             String msg2 = "\n  field  = " + Debug.show(field);
             throw Debug.abort(msg1 + msg2, exception);
         }
+    }
+
+    //########################################################################
+    // Private Methods - throw
+
+    private Object throw_(Throwable exception) {
+        if (exception.getCause() != null && (
+                exception instanceof ExceptionInInitializerError ||
+                exception instanceof InvocationTargetException))
+            exception = exception.getCause();
+        if (trace == null || trace.getCause() != exception)
+            trace = new EvaluatorException(exception);
+        trace.addScalaLeavePoint();
+        throw trace;
     }
 
     //########################################################################
@@ -518,30 +494,15 @@ public class Evaluator {
     }
 
     private ScalaObject getScalaObject(Object object) {
-        if (object == null)
-            return (ScalaObject)exception(new NullPointerException()); // !!!
+        Object handler = getHandlerObject(object);
+        assert handler instanceof ScalaObject : handler.getClass();
+        return (ScalaObject)handler;
+    }
+
+    private Object getHandlerObject(Object object) {
+        if (object == null) return throw_(new NullPointerException());
         assert object instanceof Proxy : object.getClass();
-        return (ScalaObject)Proxy.getInvocationHandler(object);
-    }
-
-    private Object exception(Throwable exception) {
-        // !!! return an exception result
-        if (exception instanceof EvaluatorException) {
-            throw (EvaluatorException)exception;
-        }
-        if (exception instanceof MatchError) {
-            throw new EvaluatorException(exception, new Error());
-        }
-        if (exception instanceof Error) {
-            throw (Error)exception;
-        }
-        throw new EvaluatorException(exception, new Error());
-    }
-
-    // !!! remove ?
-    private Error abort(Exception exception) {
-        // !!! return an abort result ?
-        return Debug.abort(exception);
+        return Proxy.getInvocationHandler(object);
     }
 
     //########################################################################

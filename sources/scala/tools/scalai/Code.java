@@ -22,7 +22,7 @@ public class Code {
     public case Label(Symbol symbol, Variable[] variables, Code expression);
 
     public case Create(ScalaTemplate template); // !!! remove ?
-    public case Invoke(Code target, Function function, Code[] parameters, int pos, Symbol method);
+    public case Invoke(Code target, Function function, Code[] arguments, int pos);
     public case Load(Code target, Variable variable);
     public case Store(Code target, Variable variable, Code expression);
 
@@ -68,12 +68,12 @@ public class Code {
         case Create(ScalaTemplate template):
             return "Create(" + template + ")";
 
-        case Invoke(Code target, Function function, Code[] parameters, int pos, Symbol method):
+        case Invoke(Code target, Function function, Code[] arguments, int pos):
             StringBuffer buffer = new StringBuffer();
             buffer.append("Invoke(" + target + "," + function + "," + "[\n");
-            for (int i = 0; i < parameters.length; i++) {
+            for (int i = 0; i < arguments.length; i++) {
                 if (i > 0) buffer.append(",\n");
-                buffer.append(parameters[i]);
+                buffer.append(arguments[i]);
             }
             buffer.append("])");
             return buffer.toString();

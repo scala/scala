@@ -18,15 +18,11 @@ public class Variable {
     //########################################################################
     // Public Cases
 
-    // !!! Object/Field(int index)
-    // !!! Frame/Local(int index)
-    // !!! Stack(int index)
-    // !!! Java(Field field)
-
     public case Global(Object value);
     public case Module(CodePromise body, Object value);
-    public case Context(int level, int index);
     public case Member(int index);
+    public case Argument(int index);
+    public case Local(int index);
     public case JavaField(Field field);
 
     //########################################################################
@@ -41,11 +37,14 @@ public class Variable {
         case Module(CodePromise body, Object value):
             return "Module(" + body + "," + Debug.show(value) + ")";
 
-        case Context(int level, int index):
-            return "Context(" + level + "," + index + ")";
-
         case Member(int index):
             return "Member(" + index + ")";
+
+        case Argument(int index):
+            return "Context(" + index + ")";
+
+        case Local(int index):
+            return "Variable(" + index + ")";
 
         case JavaField(Field field):
             return "Java(" + field + ")";

@@ -34,9 +34,8 @@ public class ExpressionCompiler {
         this.definitions = definitions;
         this.constants = constants;
         this.context = context;
-        for (int i = 0; i < params.length; i++) {
-            context.insertVariable(params[i], Variable.Context(Evaluator.Levels.ARGS,i));
-        }
+        for (int i = 0; i < params.length; i++)
+            context.insertVariable(params[i], Variable.Argument(i));
     }
 
     //########################################################################
@@ -70,7 +69,7 @@ public class ExpressionCompiler {
 
         case ValDef(_, _, _, Tree body):
             Symbol symbol = tree.symbol();
-            Variable variable = Variable.Context(Evaluator.Levels.BODY, context.push());
+            Variable variable = Variable.Local(context.push());
             context.insertVariable(symbol, variable);
             // !!! this should be done in an earlier phase
             Code value = body != Tree.Empty ?
@@ -102,7 +101,10 @@ public class ExpressionCompiler {
             for (int i = 0; i < params.length; i++) {
                 vars[i] = context.lookupVariable(params[i].symbol());
                 // !!!
-                assert vars[i] instanceof Variable.Context:Debug.show(vars[i]);
+                assert
+                    vars[i] instanceof Variable.Argument ||
+                    vars[i] instanceof Variable.Local :
+                    Debug.show(vars[i]);
             }
             context.insertLabel(symbol);
             return Code.Label(symbol, vars, compute(body));
@@ -252,7 +254,7 @@ public class ExpressionCompiler {
             }
         }
         Code[] args = compute(trees);
-        return Code.Invoke(object, function, args, target.pos,context.owner());
+        return Code.Invoke(object, function, args, target.pos);
     }
 
     //########################################################################
