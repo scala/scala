@@ -349,6 +349,22 @@ exec_scalap() {
         "$@";
 }
 
+# Starts a program using scalatest. The given arguments are passed to
+# exec_java. They must, at least, contain the name of the main class.
+exec_scalatest() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # compute Java classpath
+    append_path JAVA_CLASSPATH TOOLS_CLASSES;
+
+    # invoke Java
+    exec_java \
+        -Dscala.runtime=`get_os_pathlist "$RUNTIME_CLASSES"` \
+        -Dscala.binpath=`get_os_pathlist "$PREFIX/bin"` \
+        -Dscala.testpath=`get_os_pathlist "$PREFIX/test"` \
+        "$@";
+}
+
 ##############################################################################
 # Implementation of scala-info
 
@@ -489,6 +505,7 @@ case "$SCRIPT" in
     scalaint*  ) exec_interpret scalai.Main -interactive "$@";;
     dtd2scala* ) exec_dtd2scala scala.tools.dtd2scala.Main "$@";;
     scalap*    ) exec_scalap scalap.Main "$@";;
+    scalatest* ) exec_scalatest scala.tools.scalatest.Main "$@";;
     socos*     )
         warning "Deprecated command, use scalac${SCRIPT#socos} instead.";
         exec_compile scalac.Main "$@";;
