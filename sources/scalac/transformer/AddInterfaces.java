@@ -97,7 +97,8 @@ public class AddInterfaces extends GenTransformer {
         case Ident(_):
             Symbol symbol = tree.symbol();
             if (symbol.isInitializer()) return getClassMember(symbol);
-            if (symbol.isParameter()) return getClassVParam(symbol);
+            if (symbol.isParameter() && !symbol.owner().isStatic())
+                return getClassVParam(symbol);
             return symbol;
         default:
             return tree.symbol();

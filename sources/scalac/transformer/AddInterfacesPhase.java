@@ -102,7 +102,7 @@ public class AddInterfacesPhase extends Phase {
     }
 
     protected boolean memberGoesInInterface(Symbol member) {
-        return member.isType() || member.isMethod();
+        return !member.isStatic() && (member.isType() || member.isMethod());
     }
 
     protected final SymbolNameWriter uniqueNameWriter = new SymbolNameWriter()
