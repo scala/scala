@@ -31,17 +31,20 @@ import scalac.util.Debug;
 
 /**
  * 1. For each class add a single method (DefDef) designated as
- * constructor whose parameters are the class parameters. The
- * constructor contains:
+ * constructor whose parameters are the class parameters and the
+ * owner is the constructed class. The constructor contains:
+ *
  *   - call to the constructor of the supertype with the appropriate arguments
  *   - initialize the fields corresponding to the class ValDefs
  *   - the bodies of the class level expressions;
  *     they are also removed from the ClassDef body
  *
- * 2. The right hand sides of the ValDefs are left empty
+ * 2. Additional constructors are assigned new symbols owned by the class
  *
- * 3. Substitute the appropriate constructor symbol into the
- * 'new' expressions
+ * 3. The right hand sides of the ValDefs are left empty
+ *
+ * 4. Substitute the appropriate constructor symbol into the
+ * 'new' expressions and constructor applications
  *
  * @author Nikolay Mihaylov
  * @version 1.2
@@ -57,7 +60,8 @@ public class AddConstructors extends Transformer {
     // True iff we generate code for MSIL backend.
     protected final boolean forMSIL;
 
-    final HashMap constructors;
+
+    protected final HashMap/*<Symbol, Symbol>*/ constructors;
 
     public AddConstructors(Global global, HashMap constructors) {
 	super(global);
@@ -77,13 +81,13 @@ public class AddConstructors extends Transformer {
     }
 
     Symbol getConstructor(Symbol classConstr, Symbol[] paramSyms, Symbol owner) {
-  	assert classConstr.isConstructor() :
-  	    "Class constructor expected: " + Debug.show(classConstr);
+   	assert classConstr.isConstructor() :
+   	    "Class constructor expected: " + Debug.show(classConstr);
 
 	Symbol constr = (Symbol) constructors.get(classConstr);
 	if (constr == null) {
 	    assert !owner.isInterface() : Debug.show(owner) + " is interface";
-            int flags = forJVM
+            int flags = forJVM || forMSIL
                 ? classConstr.flags & (Modifiers.PRIVATE | Modifiers.PROTECTED)
                 : classConstr.flags;
 	    constr =
@@ -101,10 +105,20 @@ public class AddConstructors extends Transformer {
 	return constr;
     }
 
+    /** Return an array of symbols corresponding to the
+     *  parameters definitions.
+     */
+    Symbol[] getParamsSymbols(ValDef[] vparams) {
+	Symbol[] paramSyms = new Symbol[vparams.length];
+	for (int i = 0; i < paramSyms.length; i++)
+	    paramSyms[i] = vparams[i].symbol();
+	return paramSyms;
+    }
+
     /** process the tree
      */
     public Tree transform(Tree tree) {
-	Symbol treeSym = tree.symbol();
+	final Symbol treeSym = tree.symbol();
 	switch (tree) {
 	case ClassDef(_, _, _, ValDef[][] vparams, _, //:
 		      Template(Tree[] baseClasses, Tree[] body)):
@@ -114,29 +128,38 @@ public class AddConstructors extends Transformer {
 	    if (treeSym.isInterface())
 		return super.transform(tree);
 
-	    Symbol[] paramSyms = new Symbol[vparams[0].length];
-	    for (int i = 0; i < paramSyms.length; i++)
-		paramSyms[i] = vparams[0][i].symbol();
+	    // expressions that go before the call to the super constructor
+	    final ArrayList constrBody = new ArrayList();
 
-	    ArrayList constrBody = new ArrayList();
-	    ArrayList constrBody2 = new ArrayList();
-	    ArrayList classBody = new ArrayList();
-	    Symbol constrSym =
+	    // expressions that go after the call to the super constructor
+	    final ArrayList constrBody2 = new ArrayList();
+
+	    // the body of the class after the transformation
+	    final ArrayList classBody = new ArrayList();
+
+	    // the symbols of the parameters of the primary class constructor
+	    final Symbol[] paramSyms = getParamsSymbols(vparams[0]);
+
+	    // the Symbol of the new primary constructor
+	    final Symbol constrSym =
 		getConstructor(treeSym.primaryConstructor(), paramSyms, treeSym);
-	    Scope classScope = new Scope();
-	    classScope.enter(constrSym);
+
+	    // the scope of the class after the transformation
+	    final Scope classScope = new Scope();
+
+	    classScope.enterOrOverload(constrSym);
 
 	    assert constrSym.owner() == treeSym :
 		"Wrong owner of the constructor: \n\tfound: " +
 		Debug.show(constrSym.owner()) + "\n\texpected: " +
 		Debug.show(treeSym);
 
-	    // for every ValDef move the initialization code into the constructor
 	    for (int i = 0; i < body.length; i++) {
 		Tree t = body[i];
 		if (t.definesSymbol()) {
 		    Symbol sym = t.symbol();
 		    switch (t) {
+		    // for ValDefs move the initialization code to the constructor
 		    case ValDef(_, _, _, Tree rhs):
 			if (rhs != Tree.Empty) {
 			    Tree lhs =
@@ -151,8 +174,20 @@ public class AddConstructors extends Transformer {
 			    }
 			}
 			break;
+
+		    // assign new symbols to the alternative constructors
+		    case DefDef(_, Name name, _,
+				ValDef[][] defvparams, _, Tree rhs):
+			assert sym.name == name;
+			if (sym.isConstructor()) {
+			    sym = getConstructor
+				(sym, getParamsSymbols(defvparams[0]), treeSym);
+			    t = gen.DefDef(sym, rhs);
+			}
+			break;
 		    }
-		    classBody.add(transform(t));
+		    // do not transform(t). It will be done at the end
+		    classBody.add(t);
 		    classScope.enterOrOverload(sym);
 		} else {
 		    // move class-level expressions into the constructor
@@ -228,6 +263,12 @@ public class AddConstructors extends Transformer {
 		Type.compoundType(treeSym.parents(), classScope, treeSym);
 	    Symbol classSym = treeSym.updateInfo(classType);
 	    Tree[] newBody = (Tree[]) classBody.toArray(Tree.EMPTY_ARRAY);
+
+	    // transform the bodies of all members in order to substitute
+	    // the constructor references with the new ones
+	    for (int i = 0; i < newBody.length - 1; i ++)
+		newBody[i] = transform(newBody[i]);
+
 	    return gen.ClassDef(classSym, baseClasses, newBody);
 
 	// Substitute the constructor into the 'new' expressions
@@ -235,14 +276,27 @@ public class AddConstructors extends Transformer {
 	    Tree base = baseClasses[0];
 	    switch (base) {
 	    case Apply(Tree fun, Tree[] args):
-		//System.out.println(tree + " new " + fun.symbol());//DEBUG
                 return gen.New(copy.Apply
 			       (base,
-				gen.Ident(base.pos, getConstructor(fun.symbol())),
+				gen.Ident(base.pos,
+					  getConstructor(fun.symbol())),
 				transform(args)));
 	    default:
 		assert false;
 	    }
+	    break;
+
+	// Substitute the constructor aplication;
+	// this only occurs within constructors that terminate
+	// by a call to another constructor of the same class
+	case Apply(Tree fun, Tree[] args):
+	    Symbol constr = (Symbol)constructors.get(fun.symbol());
+	    if (constr != null)
+		return gen.Apply(tree.pos,
+				 gen.Select(fun.pos,
+					    gen.This(fun.pos, constr.owner()),
+					    constr),
+				 transform(args));
 	    break;
 
 	} // switch(tree)
