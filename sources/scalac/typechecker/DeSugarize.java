@@ -48,10 +48,6 @@ public class DeSugarize implements Kinds, Modifiers {
      */
     protected final FreshNameCreator freshNameCreator;
 
-    /** the tree duplicator
-     */
-    final Transformer duplicator;
-
     /** the constructor
      */
     public DeSugarize(Analyzer analyzer, Global global) {
@@ -61,7 +57,6 @@ public class DeSugarize implements Kinds, Modifiers {
 	this.gen = analyzer.gen;
 	this.infer = analyzer.infer;
         this.freshNameCreator = global.freshNameCreator;
-	this.duplicator = analyzer.duplicator;
     }
 
 // Auxiliary definitions and functions -------------------------------------------
@@ -260,7 +255,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		make.Ident(tree.pos, x), Names.match), new Tree[]{tree1});
 	Tree isDefinedAtDef = make.DefDef(
 	    tree.pos, 0, Names.isDefinedAt, Tree.ExtTypeDef.EMPTY_ARRAY,
-	    duplicator.transform(vparams),
+	    Tree.duplicator.transform(vparams),
 	    gen.mkType(tree.pos, global.definitions.BOOLEAN_TYPE), body1);
 	Tree result = make.New(tree.pos,
 	    make.Template(
@@ -284,7 +279,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		    return make.Visitor(tree.pos,
 			new CaseDef[]{
 			    make.CaseDef(lastCase.pos,
-				duplicator.transform(lastCase.pat),
+				lastCase.pat.duplicate(),
 				Tree.Empty,
 				gen.mkBoolean(lastCase.body.pos, true))});
 	    }
@@ -294,8 +289,8 @@ public class DeSugarize implements Kinds, Modifiers {
 		case CaseDef(Tree pat, Tree guard, _):
 		    cases1[i] = (CaseDef) make.CaseDef(
 			cases[i].pos,
-			duplicator.transform(pat),
-			duplicator.transform(guard),
+			pat.duplicate(),
+			guard.duplicate(),
 			gen.mkBoolean(tree.pos, true));
 		}
 	    }

@@ -32,13 +32,9 @@ public class Parser implements Tokens {
      */
     TreeFactory make;
 
-    final Transformer duplicator;
-
     public Parser(Unit unit) {
         s = new Scanner(unit);
         make = unit.global.make;
-	this.duplicator = new Transformer(
-	    unit.global, null, make, new StrictTreeFactory(make));
     }
 
     /** this is the general parse method
@@ -216,7 +212,7 @@ public class Parser implements Tokens {
 		System.arraycopy(enums, 2, newenums, 1, newenums.length - 1);
 		newenums[0] = make.PatDef(
 		    enums[0].pos, mods, pat,
-		    makeFor1(enums[1].pos, Names.filter, duplicator.transform(pat), rhs, enums[1]));
+		    makeFor1(enums[1].pos, Names.filter, pat.duplicate(), rhs, enums[1]));
 		return makeFor(pos, newenums, mapName, flatmapName, body);
 	    }
 	default:
@@ -946,7 +942,7 @@ public class Parser implements Tokens {
 			rhs.pos,
 			new Tree.CaseDef[]{
 			    (CaseDef)make.CaseDef(
-				rhs.pos, duplicator.transform(pat), Tree.Empty,
+				rhs.pos, pat.duplicate(), Tree.Empty,
 				make.Select(rhs.pos,
 				    scalaDot(rhs.pos, Names.Boolean), Names.True)),
 			    (CaseDef)make.CaseDef(

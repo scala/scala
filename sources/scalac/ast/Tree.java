@@ -9,6 +9,7 @@
 package scalac.ast;
 
 import scalac.ast.printer.*;
+import scalac.Global;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Position;
@@ -888,4 +889,14 @@ public class Tree {
     }
 
     //########################################################################
+    // duplication
+
+    public static Transformer duplicator =
+       new Transformer(
+	    Global.instance, null, Global.instance.make,
+	    new StrictTreeFactory(Global.instance.make));
+
+    public Tree duplicate() {
+	return duplicator.transform(this);
+    }
 }

@@ -27,12 +27,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     private final DeSugarize desugarize;
     private final AnalyzerPhase descr;
     final Infer infer;
-    final Transformer duplicator;
 
     public Analyzer(Global global, AnalyzerPhase descr) {
         super(global, descr);
-	this.duplicator = new Transformer(
-	    global, descr, make, new StrictTreeFactory(make));
         this.definitions = global.definitions;
 	this.descr = descr;
 	this.infer = new Infer(this);
@@ -1028,7 +1025,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	    sym = sym1;
 	    sym.flags |= (ACCESSED | SELECTOR);
-	    Tree qual = duplicator.transform(lastimports.importPrefix());
+	    Tree qual = lastimports.importPrefix().duplicate();
 	    pre = qual.type;
 	    //new TextTreePrinter().print(name + " => ").print(lastimports.tree).print("." + name).println().end();//DEBUG
 	    tree = make.Select(tree.pos, qual, name);
