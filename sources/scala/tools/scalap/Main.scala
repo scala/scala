@@ -30,7 +30,8 @@ object Main {
     }
 
     def process(args: Arguments, path: ClassPath)(classname: String): Unit = {
-		val file = path.openClass(Names.encode(classname));
+		val file = path.openClass(Names.encode(
+			if (classname == "scala.AnyRef") "java.lang.Object" else classname));
 		if (file.exists) {
 			if (verbose)
 				Console.println(Console.BOLD + "FILENAME" + Console.RESET +
@@ -41,10 +42,7 @@ object Main {
 			attrib match {
 				case Some(a) =>
 					val info = new ScalaAttribute(a.reader);
-					//Console.println("read attribute");
 					val symtab = new EntityTable(info);
-					//Console.println("read entities");
-					//symtab.print;
 					val out = new OutputStreamWriter(System.out);
 					val writer = new ScalaWriter(args, out);
 					symtab.root.elements foreach (
@@ -52,8 +50,28 @@ object Main {
 								 writer.println*; });
 					out.flush();
 				case None =>
-					Console.println("Java classes not supported yet.");
+				    val out = new OutputStreamWriter(System.out);
+				    val writer = new JavaWriter(clazz, out);
+				    writer.printClass;
+				    out.flush();
 			}
+		} else if (classname == "scala.Any") {
+			Console.println("package scala;");
+			Console.println("class Any {");
+			Console.println("    def eq(scala.Any): scala.Boolean;");
+			Console.println("    final def ==(scala.Any): scala.Boolean;");
+			Console.println("    final def !=(scala.Any): scala.Boolean;");
+			Console.println("    def equals(scala.Any): scala.Boolean;");
+			Console.println("    def hashCode(): scala.Int;");
+			Console.println("    def toString(): java.lang.String;");
+			Console.println("    final def isInstanceOf[T]: scala.Boolean;");
+			Console.println("    final def asInstanceOf[T]: T;");
+			Console.println("    def match[S, T](f: S => T): T;");
+			Console.println("}");
+		} else if (classname == "scala.All") {
+			Console.println("Type scala.All is artificial; it is a subtype of all types.");
+		} else if (classname == "scala.AllRef") {
+			Console.println("Type scala.AllRef is artificial; it is a subtype of all subtypes of scala.AnyRef.");
 		} else
 			Console.println("class/object not found.");
     }

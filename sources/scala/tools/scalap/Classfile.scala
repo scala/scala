@@ -63,32 +63,32 @@ class Classfile(in: ByteArrayReader) {
         while (i < pool.length) {
             val tag: Int = in.nextByte;
             tag match {
-                case 1 => // CONSTANT_UTF8
+                case CONSTANT_UTF8 =>
                     pool(i) = UTF8(in.nextUTF8(in.nextChar));
-                case 2 => // CONSTANT_UNICODE
+                case CONSTANT_UNICODE =>
                     in.skip(in.nextChar);
                     pool(i) = Empty();
-                case 7 => // CONSTANT_CLASS
+                case CONSTANT_CLASS =>
                     pool(i) = ClassRef(in.nextChar);
-                case 8 => // CONSTANT_STRING
+                case CONSTANT_STRING =>
                     pool(i) = StringConst(in.nextChar);
-                case 9 => // CONSTANT_FIELDREF
+                case CONSTANT_FIELDREF =>
                     pool(i) = FieldRef(in.nextChar, in.nextChar);
-                case 10 => // CONSTANT_METHODREF
+                case CONSTANT_METHODREF =>
                     pool(i) = MethodRef(in.nextChar, in.nextChar);
-                case 11 => // CONSTANT_INTFMETHODREF
+                case CONSTANT_INTFMETHODREF =>
                     pool(i) = IntfMethodRef(in.nextChar, in.nextChar);
-                case 12 => // CONSTANT_NAMEANDTYPE
+                case CONSTANT_NAMEANDTYPE =>
                     pool(i) = NameAndType(in.nextChar, in.nextChar);
-                case 3 => // CONSTANT_INTEGER
+                case CONSTANT_INTEGER =>
                     pool(i) = IntegerConst(in.nextInt);
-                case 4 => // CONSTANT_FLOAT
+                case CONSTANT_FLOAT =>
                     pool(i) = FloatConst(in.nextFloat);
-                case 5 => // CONSTANT_LONG
+                case CONSTANT_LONG =>
                     pool(i) = LongConst(in.nextLong);
                     i = i + 1;
                     pool(i) = Empty();
-                case 6 => // CONSTANT_DOUBLE
+                case CONSTANT_DOUBLE =>
                     pool(i) = DoubleConst(in.nextDouble);
                     i = i + 1;
                     pool(i) = Empty();
