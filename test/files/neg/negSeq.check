@@ -1,0 +1,4 @@
+negSeq.scala:6: expected pattern type scala.Seq[scala.Int] does not conform to sequence trait List
+    case List(1,2,3) => true // type error: type Seq will not work
+         ^
+one error found
