@@ -12,6 +12,13 @@
 (defconst scala-bug-e-mail "Michel.Schinz@epfl.ch")
 (defconst scala-web-url "http://lamp.epfl.ch/scala/")
 
+;; XEmacs compatibility
+
+(defun scala-regexp-opt-charset (cset)
+  (regexp-opt-charset (if (integerp ?a)
+                          cset
+                        (mapcar #'char-to-string cset))))
+
 ;; Customization
 
 (defgroup scala
@@ -52,11 +59,11 @@ reserved keywords when used alone.")
   "List of all Scala special characters.")
 
 (defconst scala-most-special-char-re
-  (regexp-opt-charset scala-most-special-chars)
+  (scala-regexp-opt-charset scala-most-special-chars)
   "Regular expression matching a single Scala special character")
 
 (defconst scala-all-special-char-re
-  (regexp-opt-charset scala-all-special-chars)
+  (scala-regexp-opt-charset scala-all-special-chars)
   "Regular expression matching a single Scala special character")
 
 (defconst scala-keywords-re
@@ -478,7 +485,7 @@ When called repeatedly, indent each time one stop further on the right."
 (defvar scala-font-lock-keywords
   `(;; keywords
     (,scala-keywords-re
-     1 font-lock-keyword-face nil)
+     0 font-lock-keyword-face nil)
 
     ;; constants
     (,scala-constants-re
