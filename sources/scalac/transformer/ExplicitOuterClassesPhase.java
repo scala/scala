@@ -60,6 +60,7 @@ public class ExplicitOuterClassesPhase extends Phase {
     /** Applies this phase to the given type for the given symbol. */
     public Type transformInfo(Symbol symbol, Type type) {
         if (symbol.isPackage()) return type;
+        // if (!symbol.isJava() && symbol.isConstructor()) // !!!
         //System.out.println("!!! " + Debug.show(symbol) + ": " + type + " -> " + typeTransformer.apply(type));
         type = typeTransformer.apply(type);
         if (symbol.isJava()) return type;
@@ -77,7 +78,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             }
             // Add outer type links
             if (hasOuterTypeLinks(symbol)) {
-                Symbol[] oldtparams = getOuterTypeParams(symbol);
+                Symbol[] oldtparams = nextTypeParams(getOuterClass(symbol));
                 Symbol[] tlinks = Symbol.cloneArray(oldtparams);
                 for (int i = 0; i < tlinks.length; i++) {
                     tlinks[i] = oldtparams[i].cloneSymbol(symbol);
