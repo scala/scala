@@ -4,6 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
+
 // $Id$
 
 import scalac.symtab.Symbol;
@@ -32,17 +33,23 @@ class IBasicBlock (theLabel: int) {
   /* The stack at the end of the block */
   var endStack : ICTypeStack = null;
 
+
+
   /* The successors of this block */
-  var successors : List[IBasicBlock] = Nil;
+  //var successors : List[IBasicBlock] = Nil;
 
   /* Is the block closed*/
-  var isClosedBlock  : boolean = false;
+  //var isClosedBlock  : boolean = false;
 
   //##################################################
   // Private fields
 
   /* ICode instructions */
   private var instructions : List[ICInstruction] = Nil;
+
+  private var lastInstruction : ICInstruction = null;
+
+  private var closed : boolean = false;
 
   //##################################################
   // Public methods
@@ -51,40 +58,64 @@ class IBasicBlock (theLabel: int) {
   override def hashCode() = label;
 
   /* Apply a function to all the instructions of the block*/
-  def bbTraverse(f: ICInstruction => unit) = instructions.reverse.foreach(f);
+  def bbTraverse(f: ICInstruction => unit) =
+    instructions.reverse.foreach(f);
+
 
   /* Initialize the stack of the block, must be done before evaluing
   *  the type stack  */
   def initStack(stack : ICTypeStack) = {
     if (initialStack == null) {
       initialStack = stack;
-      endStack = stack;
+      endStack = null;
     }
   }
 
   /* Add a new instruction at the end of the block */
   def emit(instr: ICInstruction) = {
-    assert (!isClosedBlock, "IBasicBlock closed.");
+    assert (!closed, "IBasicBlock closed.");
     instructions = instr::instructions;
+    lastInstruction = instr;
   }
 
   /* Compute the type stack of the block */
   def typeBlock = {
     assert(initialStack != null, "Stack not initialized");
+    endStack = initialStack;
     bbTraverse((ic : ICInstruction) => endStack = endStack.eval(ic));
   }
 
   /* Add a successor to the block */
-  def addSuccessor(s: IBasicBlock) =
-    if (!successors.contains(s))
-      successors = s::successors;
+  //def addSuccessor(s: IBasicBlock) =
+  //  if (!successors.contains(s))
+  //    successors = s::successors;
 
   /* Add a list of successors to the block */
-  def addSuccessors(ss: List[IBasicBlock]) =
-    ss.foreach(addSuccessor);
+  //def addSuccessors(ss: List[IBasicBlock]) =
+  //  ss.reverse.foreach(addSuccessor);
 
   /* Close the block */
-  def close = isClosedBlock = true;;
+  def close = {
+    //successors; // assertion
+    closed = true;
+  }
+
+  def isClosedBlock = closed;
+
+  def getLastInstruction = lastInstruction;
+
+  def successors : List[IBasicBlock] = // here order will count
+    lastInstruction match {
+      case JUMP (where) => List(where);
+      case CJUMP(success, failure, _) => failure::success::Nil;
+      case CZJUMP(success, failure, _) => failure::success::Nil;
+      case SWITCH(_,labels) => labels;
+      case _ => {
+	assert ((lastInstruction.isInstanceOf[RETURN]), "The last instruction is not a control flow instruction");
+	Nil;
+      }
+    }
+
 
   //##################################################
   // Public methods - printing (used for debbuging)

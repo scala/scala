@@ -411,7 +411,7 @@ public class ATreeFactory {
 
     /** Builds a LSL primitive. */
     public APrimitive LSL(ATypeKind kind) {
-        return APrimitive.Shift(AShiftOp.ASL, kind);
+        return APrimitive.Shift(AShiftOp.LSL, kind);
     }
 
     /** Builds a LSR primitive. */

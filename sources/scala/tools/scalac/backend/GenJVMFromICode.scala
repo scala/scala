@@ -255,10 +255,29 @@ class GenJVMFromICode(global: scalac_Global) {
     val icode : ICode = jvmMethod.aMethod.icode.asInstanceOf[ICode];
     var stack : ICTypeStack = new ICTypeStack();
     val jCode = jvmMethod.jCode;
-    icode.icTraverse((bb: IBasicBlock) => {
+    icode.icTraverseFeedBack((bb: IBasicBlock, hm: HashMap[IBasicBlock, boolean]) => {
       val blockLabel = jvmMethod.labels.apply(bb);
       blockLabel.anchorToNext();
       bb.bbTraverse((ic : ICInstruction) => stack = emitICInstruction(jvmMethod, stack)(ic));
+
+      bb.getLastInstruction match {
+	case CJUMP(_,failure,_) =>
+	  if (hm(failure))
+	    jCode.emitGOTO(jvmMethod.labels(failure));
+	case CZJUMP(_,failure,_) =>
+	  if (hm(failure))
+	    jCode.emitGOTO(jvmMethod.labels(failure));
+	case JUMP(where) =>
+	  if (hm(where))
+	    jCode.emitGOTO(jvmMethod.labels(where));
+	case _ =>
+	  ;
+      }
+
+
+    //if (bb.successors != Nil) // !!! Dont work with switch. TO DO QUICKLY
+//	if (hm(bb.successors.head))
+//	  jCode.emitGOTO(jvmMethod.labels(bb.successors.head));
     });
   }
 
@@ -291,9 +310,9 @@ class GenJVMFromICode(global: scalac_Global) {
       case CONSTANT(AConstant.NULL) =>
 	jcode.emitACONST_NULL();
       case CONSTANT(AConstant.UNIT) =>
-	; // ??
+	throw(Debug.abort("Illegal constant type: UNIT"));
       case CONSTANT(AConstant.ZERO) =>
-	; // ??
+	throw(Debug.abort("Illegal constant type: ZERO"));
 
       case LOAD_ARRAY_ITEM() => {
 	// depend the type of the elements of the array
@@ -305,7 +324,7 @@ class GenJVMFromICode(global: scalac_Global) {
 	jcode.emitLOAD(jvmMethod.locals.apply(local));
 
       case LOAD_LOCAL(local, true) =>
-	jcode.emitLOAD(jvmMethod.args.apply(local), typeStoJ(local.getType()));
+	jcode.emitLOAD(jvmMethod.args(local), typeStoJ(local.getType()));
 
       case LOAD_FIELD(field, static) => {
 	val className = javaName(field.owner());
@@ -345,11 +364,31 @@ class GenJVMFromICode(global: scalac_Global) {
       case CALL_PRIMITIVE(APrimitive$Negation(ATypeKind.R4)) => jcode.emitFNEG();
       case CALL_PRIMITIVE(APrimitive$Negation(ATypeKind.R8)) => jcode.emitDNEG();
 
-      //case CALL_PRIMITIVE(APrimitive$Test(*))
-      // !! Regarder les Test
+      case CALL_PRIMITIVE(APrimitive$Test(op, typ, false)) => {
+	// !!! ne traite pas tous les types
 
-      //case CALL_PRIMITIVE(AComparisonOp(*))
-      // !! Regarder les comparison
+	val condTag = condAtoJ(op);
+	val thenLabel : JCode$Label = jvmMethod.jCode.newLabel();
+	val contLabel : JCode$Label = jvmMethod.jCode.newLabel();
+
+	typ match {
+	  case ATypeKind.REF =>	jcode.emitIF_ACMP(condTag, thenLabel);
+	  case ATypeKind.I4  => jcode.emitIF_ICMP(condTag, thenLabel);
+	  case _ => throw(Debug.abort("Unexpected type for the Test primitive.")); // !!!
+	}
+	jcode.emitPUSH(false);
+	jcode.emitGOTO(contLabel);
+	thenLabel.anchorToNext();
+	jcode.emitPUSH(true);
+	contLabel.anchorToNext();
+      }
+
+      case CALL_PRIMITIVE(APrimitive$Comparison(AComparisonOp.CMPL, ATypeKind.R4)) => jcode.emitFCMPL();
+      case CALL_PRIMITIVE(APrimitive$Comparison(AComparisonOp.CMPG, ATypeKind.R4)) => jcode.emitFCMPG();
+      case CALL_PRIMITIVE(APrimitive$Comparison(AComparisonOp.CMP, ATypeKind.R4)) => jcode.emitFCMPG(); // Default is 1
+      case CALL_PRIMITIVE(APrimitive$Comparison(AComparisonOp.CMPL, ATypeKind.R8)) => jcode.emitDCMPL();
+      case CALL_PRIMITIVE(APrimitive$Comparison(AComparisonOp.CMPG, ATypeKind.R8)) => jcode.emitDCMPG();
+      case CALL_PRIMITIVE(APrimitive$Comparison(AComparisonOp.CMP, ATypeKind.R8)) => jcode.emitDCMPG(); // Default is 1
 
       case CALL_PRIMITIVE(APrimitive$Arithmetic(AArithmeticOp.ADD, ATypeKind.I4)) => jcode.emitIADD();
       case CALL_PRIMITIVE(APrimitive$Arithmetic(AArithmeticOp.ADD, ATypeKind.I8)) => jcode.emitLADD();
@@ -388,8 +427,8 @@ class GenJVMFromICode(global: scalac_Global) {
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.XOR, ATypeKind.BOOL)) => jcode.emitIXOR(); // ??? is that true
       case CALL_PRIMITIVE(APrimitive$Logical(ALogicalOp.XOR, ATypeKind.I8)) => jcode.emitLXOR();
 
-      case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.ASL, ATypeKind.I4)) => jcode.emitISHL();
-      case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.ASL, ATypeKind.I8)) => jcode.emitLSHL();
+      case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.LSL, ATypeKind.I4)) => jcode.emitISHL();
+      case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.LSL, ATypeKind.I8)) => jcode.emitLSHL();
 
       case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.ASR, ATypeKind.I4)) => jcode.emitISHR();
       case CALL_PRIMITIVE(APrimitive$Shift(AShiftOp.ASR, ATypeKind.I8)) => jcode.emitLSHR();
@@ -415,8 +454,8 @@ class GenJVMFromICode(global: scalac_Global) {
 
       case CALL_PRIMITIVE(APrimitive$ArrayLength(_)) => jcode.emitARRAYLENGTH();
 
-      case CALL_PRIMITIVE(APrimitive$StringConcat(_,_)) =>
-	; // !!!
+      //case CALL_PRIMITIVE(APrimitive$StringConcat(ATypeKind.REF,ATypeKind.REF)) =>
+      //	jcode.emitINVOKEVIRTUAL("String","concat",?);
 
       case CALL_METHOD(method, style) => {
 	var calledMethod : JMethod = null;
@@ -492,21 +531,21 @@ class GenJVMFromICode(global: scalac_Global) {
 	keys_l.copyToArray(keys_a,0);
 	branches_l.copyToArray(branches_a,0);
 
-	jcode.emitSWITCH(keys_a, branches_a, defaultBranch, 15); // Min density = 15 ??? !!!
+	jcode.emitSWITCH(keys_a, branches_a, defaultBranch, 0.65);
       }
 
       case JUMP(basicBlock) =>
-	jcode.emitGOTO(jvmMethod.labels(basicBlock));
+	; //jcode.emitGOTO(jvmMethod.labels(basicBlock));
 
       case CJUMP(success, failure, cond) => {
+	// !!! Type cases are missing
 	val condTag : int = condAtoJ(cond);
 	val typ = typeStoJ(stack.head);
 	if (typ.getTag() == JType.T_REFERENCE)
 	  jcode.emitIF_ACMP(condTag, jvmMethod.labels(success));
 	else if (typ.getTag() == JType.T_INT)
 	  jcode.emitIF_ICMP(condTag, jvmMethod.labels(success));
-	// Tres tres bizarre !!! Et les autres cas ???
-	jcode.emitGOTO(jvmMethod.labels.apply(failure)); // HA ha ha !
+
       }
 
       case CZJUMP(success, failure, cond) => {
@@ -517,8 +556,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
       case RETURN() => {
 	if (stack.isEmpty)
-	  //jcode.emitRETURN(); malheureusement ca ne marche pas
-	  jcode.emitRETURN(JType.VOID); // mais ca oui
+	  jcode.emitRETURN(JType.VOID);
 	else
 	  jcode.emitRETURN(typeStoJ(stack.head));
       }
@@ -574,6 +612,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
       case MONITOR_EXIT()  => jcode.emitMONITOREXIT();
 
+      case _ => throw(Debug.abort("Invalid ICInstruction for the JVMBackend", instruction));
     }
     return stack.eval(instruction);
   }

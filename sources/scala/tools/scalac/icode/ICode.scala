@@ -58,8 +58,10 @@ class ICode(label: String, global: scalac_Global) {
     producedStack = ctx.currentBlock.endStack;
   }
 
+  def icTraverse(f: IBasicBlock => unit) = icTraverseFeedBack((bb: IBasicBlock, hm: HashMap[IBasicBlock, boolean]) => f(bb));
+
   /* This method applies the given function to all the block */
-  def icTraverse(f: IBasicBlock => unit) = {
+  def icTraverseFeedBack(f: (IBasicBlock, HashMap[IBasicBlock, boolean])  => unit) = {
     // ?? Define order (actually preorder)
     val visited : HashMap[IBasicBlock, boolean] = new HashMap;
     visited.incl(blocks.elements.map((x: IBasicBlock) => Pair(x, false)));
@@ -70,7 +72,7 @@ class ICode(label: String, global: scalac_Global) {
       blockToVisit match {
 	case b::xs => {
 	  if (!visited(b)) {
-	    f(b);
+	    f(b, visited);
 	    blockToVisit = b.successors:::xs;
 	    visited += b -> true;
 	  } else
@@ -259,7 +261,7 @@ class ICode(label: String, global: scalac_Global) {
 
 	var ctx1 = gen(test, ctx);
 	ctx1.emit(SWITCH(tags, switchBlocks));
-	ctx1.currentBlock.addSuccessors(switchBlocks);
+	//ctx1.currentBlock.addSuccessors(switchBlocks);
 
 	switchPairs.foreach((p: Pair[ACode, IBasicBlock]) => {
 	  val code = p._1;
@@ -289,6 +291,7 @@ class ICode(label: String, global: scalac_Global) {
       }
 
       case ACode$Label(label, locals, value) => {
+	global.log("Add new label: "+label);
 
 	val loopBlock = newBlock;
 	var ctx1 = ctx.changeBlock(loopBlock);
@@ -406,7 +409,7 @@ class ICode(label: String, global: scalac_Global) {
 	  ctx1 = gen(vargs(1), ctx1);
 	  ctx1.emit(CJUMP(successBlock, failureBlock, op));
 	}
-	ctx1.currentBlock.addSuccessors(successBlock::failureBlock::Nil);
+	//ctx1.currentBlock.addSuccessors(failureBlock::successBlock::Nil);
       }
 
       case ACode$Apply(AFunction$Primitive(APrimitive$Negation(_)),_,vargs) =>
@@ -414,9 +417,10 @@ class ICode(label: String, global: scalac_Global) {
       // ??? Test with TestOp opposite ?
       case _ => {
 	ctx1 = gen(cond, ctx1);
-	ctx1.emit(CONSTANT(AConstant.INT(1)));
-	ctx1.emit(CJUMP(successBlock, failureBlock, ATestOp.EQ));
-	ctx1.currentBlock.addSuccessors(successBlock::failureBlock::Nil);
+	//ctx1.emit(CONSTANT(AConstant.INT(1)));
+	// We have a boolean value
+	ctx1.emit(CZJUMP(successBlock, failureBlock, ATestOp.NE));
+	//ctx1.currentBlock.addSuccessors(failureBlock::successBlock::Nil);
       }
     }
     ctx1;
@@ -476,7 +480,7 @@ class ICode(label: String, global: scalac_Global) {
       if (!currentBlock.isClosedBlock) {
 	if (nextBlock != null) {
 	  emit(JUMP(nextBlock));
-	  currentBlock.addSuccessor(nextBlock);
+	  //currentBlock.addSuccessor(nextBlock);
 	}
 	currentBlock.close;
       }

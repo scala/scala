@@ -42,11 +42,12 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
   // ##################################################
   // Private methods
 
-  /** This method translate a single unit, it traverses all methods and
-    * generate ICode for each of them */
+  /** This method translates a single unit, it traverses all methods and
+    * generates ICode for each of them */
   private def translate(u: scalac_Unit) : unit = {
-    val classes_it = new IterableArray(u.repository.classes()).elements;
-    classes_it.foreach((c: AClass) => {
+    def genClass(c: AClass) : unit = {
+      val nestedClasses_it = Iterator.fromArray(c.classes());
+      nestedClasses_it.foreach(genClass);
       val methods_it = new IterableArray(c.methods()).elements;
       methods_it.foreach((m: AMethod) => {
 	val label : String = m.symbol().name.toString();
@@ -58,7 +59,9 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
 	m.icode = ic;
 
       });
-    });
+    }
+    val classes_it = new IterableArray(u.repository.classes()).elements;
+    classes_it.foreach(genClass);
   }
 
 }
