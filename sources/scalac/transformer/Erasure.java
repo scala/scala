@@ -46,7 +46,6 @@ import scalac.util.Debug;
  */
 public class Erasure extends Transformer implements Modifiers {
 
-    private final Global global;
     private final Definitions definitions;
     private final Primitives primitives;
     private final boolean noTyped;
@@ -55,7 +54,6 @@ public class Erasure extends Transformer implements Modifiers {
 
     public Erasure(Global global) {
         super(global);
-	this.global = global;
 	this.definitions = global.definitions;
         this.primitives = global.primitives;
         this.noTyped = global.target != global.TARGET_JAVA;
