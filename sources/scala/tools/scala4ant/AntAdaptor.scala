@@ -26,6 +26,9 @@ package scala.tools.scala4ant {
 
   class AntAdaptor extends DefaultCompilerAdapter {
 
+    final val FSEP = java.io.File.separator;
+    final val PSEP = java.io.File.pathSeparator;
+
     final val PRODUCT = System.getProperty("scala.product", "scalac");
     final val VERSION = System.getProperty("scala.version", "unknown version");
 
@@ -58,18 +61,21 @@ package scala.tools.scala4ant {
     }
 
     def inferScalaPath( paths:Array[String] ) = {
+
       //Console.println("inferScalaPath");
       var x:List[String] = Nil;
       for (val p <- paths) {
-        val z = p.lastIndexOf("lib/scala.jar");
-        if( z > -1 ) {
+        val z = p.lastIndexOf("lib"+FSEP+"scala.jar");
+        if( z > -1 ) {                            // distribution
           val p1 = new StringBuffer( p.substring( 0, z ) );
           x = p1.append("src").toString() :: p :: x ;
           x = p::x;
         } else {
-          val z2 = p.lastIndexOf("scala/classes");
-          if( z2 > -1 ) {
-            val p1 = new StringBuffer( p.substring( 0, z2 + 6 ) );
+          val z2 = p.lastIndexOf("scala"+FSEP+"classes");
+          if( z2 > -1 ) {                         // developer version
+            val p1 = new StringBuffer(
+              p.substring( 0, z2 + 6  /* length of "scala"+SEP */ )
+            );
             x = p :: p1.append("sources").toString() :: x ;
           }
         }
@@ -111,8 +117,11 @@ package scala.tools.scala4ant {
       */
 
       var bcp = inferScalaPath(Path.systemClasspath.list());
-      val bcps = (bcp./: (":") { (x:String,y:String) => x+":"+y });
+      val bcps = (bcp./: (PSEP) { (x:String,y:String) => x+PSEP+y });
 
+      /* scala.tools.util.ClassPath replaces "::" / ";;" at the beginning
+         with something meaningful
+      */
       cmd.createArgument().setValue("-bootclasspath");
       cmd.createArgument().setValue( bcps );
 
