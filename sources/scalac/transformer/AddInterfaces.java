@@ -126,8 +126,8 @@ public class AddInterfaces extends GenTransformer {
         case LabelDef(_, _, _):
             Symbol symbol = tree.symbol();
             if (symbol.owner() != member) {
-                symbol.setOwner(member);
                 symbol.updateInfo(transform(symbol.info()));
+                symbol.setOwner(member);
             }
             return super.transform(tree);
         case Select(Tree qualifier, _):
