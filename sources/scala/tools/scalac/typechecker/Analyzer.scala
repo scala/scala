@@ -1095,10 +1095,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  var rhs = _rhs;
 	  var restype: Type = null;
 	  pushContext(tree, sym, new Scope(context.scope));
-	  if (name == Names.CONSTRUCTOR) {
-	    context.enclClass.owner.flags =
-	      context.enclClass.owner.flags | INCONSTRUCTOR;
-	  }
 	  val tparamSyms = enterParams(tparams);
 	  val vparamSyms = enterParams(vparams);
 	  if (tpe != Tree.Empty) {
@@ -1110,8 +1106,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      error(tree.pos, "secondary constructors for parameterized classes not yet implemented");
 	    restype = context.enclClass.owner.getType();/*.subst(
 	      context.enclClass.owner.typeParams(), tparamSyms)*/;
-	      context.enclClass.owner.flags =
-		context.enclClass.owner.flags & ~INCONSTRUCTOR;
 	  } else {
 	    rhs = transform(rhs, EXPRmode);
 	    (tree.asInstanceOf[Tree$DefDef]).rhs = rhs;
@@ -1321,6 +1315,32 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       }
     }
     tree
+  }
+
+  /** The qualifying class of a this or super
+  */
+  def qualifyingClass(tree: Tree, name: Name): Symbol = {
+    if (name == TypeNames.EMPTY) {
+      val clazz: Symbol = context.enclClass.owner;
+      if (clazz != null)
+	clazz
+      else {
+        error(tree.pos, "" + tree +
+	      " can be used only in a class, object, or template");
+	Symbol.NONE
+      }
+    } else {
+      var i: Context = context;
+      while (i != Context.NONE &&
+	     !(i.owner.kind == CLASS && i.owner.name == name))
+      i = i.outer;
+      if (i != Context.NONE)
+	i.owner
+      else {
+        error(tree.pos, "" + name + " is not an enclosing class");
+	Symbol.NONE
+      }
+    }
   }
 
   /** Adapt tree to given mode and given prototype
@@ -1616,10 +1636,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     var symtype: Type =
       (if (sym.isType()) sym.typeConstructor() else sym.getType())
       .asSeenFrom(pre, sym.owner());
-    if (qual != Tree.Empty)
-      symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, qual.getType());
-    else if (sym.owner().isPackageClass())
-      symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, sym.owner().getType());
+    symtype = infer.checkAccessible(
+      tree.pos, sym, symtype, qual,
+      if (qual == Tree.Empty && sym.owner().isPackageClass()) sym.owner().getType()
+      else qual.getType());
     if (symtype == Type.NoType) {
       error(tree.pos, "not found: " + decode(name));
       return errorTree(tree);
@@ -2041,16 +2061,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     if (sym != null && !sym.isInitialized()) sym.initialize();
     if (global.debug && TreeInfo.isDefinition(tree)) global.log("transforming definition of " + sym);
     try {
-      transform0(tree, sym);
-    } catch {
-      case ex: Type$Error =>
-	reportTypeError(tree.pos, ex);
-        errorTree(tree)
-    }
-  }
-
-  // extracted from transform to avoid overflows in GenJVM
-  private def transform0(tree: Tree, sym: Symbol): Tree = {
       tree match {
 	case Tree.Empty =>
 	  tree.setType(Type.NoType)
@@ -2105,8 +2115,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$DefDef(_, name, tparams, vparams, tpe, rhs) =>
 	  pushContext(tree, sym, new Scope(context.scope));
 	  reenterParams(tparams, vparams, sym.getType());
-	  if (name == Names.CONSTRUCTOR)
-	    context.enclClass.owner.flags = context.enclClass.owner.flags | INCONSTRUCTOR;
+	  if (name == Names.CONSTRUCTOR) {
+	    val enclClass = context.enclClass.owner;
+	    enclClass.flags =
+	      enclClass.flags | INCONSTRUCTOR;
+	    enclClass.primaryConstructor().flags =
+	      enclClass.primaryConstructor().flags | INCONSTRUCTOR;
+	  }
 	  val tparams1 = transform(tparams);
 	  val vparams1 = transform(vparams);
 	  checkNoEscapeParams(vparams1);
@@ -2120,7 +2135,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      if (name == Names.CONSTRUCTOR) CONSTRmode else EXPRmode,
 	      if (name == Names.CONSTRUCTOR) definitions.UNIT_TYPE() else tpe1.getType());
 	  popContext();
-	  context.enclClass.owner.flags = context.enclClass.owner.flags & ~INCONSTRUCTOR;
+	  if (name == Names.CONSTRUCTOR) {
+	    val enclClass = context.enclClass.owner;
+	    enclClass.flags =
+	      enclClass.flags & ~ INCONSTRUCTOR;
+	    enclClass.primaryConstructor().flags =
+	      enclClass.primaryConstructor().flags & ~ INCONSTRUCTOR;
+	  }
 	  sym.flags = sym.flags | LOCKED;
 	  checkNonCyclic(tree.pos, tpe1.getType());
 	  sym.flags = sym.flags & ~LOCKED;
@@ -2166,6 +2187,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$Import(expr, selectors) =>
 	  context.imports = new ImportList(tree, context.scope, context.imports);
 	  Tree.Empty
+/*
 
         case _ =>
           transform1(tree, sym)
@@ -2175,31 +2197,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   // extracted from transform0 to avoid overflows in GenJVM
   private def transform1(tree: Tree, sym: Symbol): Tree = {
 
-    def qualifyingClass(tree: Tree, name: Name): Symbol = {
-      if (name == TypeNames.EMPTY) {
-        val clazz: Symbol = context.enclClass.owner;
-        if (clazz != null)
-	  clazz
-	else {
-          error(tree.pos, "" + tree +
-		" can be used only in a class, object, or template");
-	  Symbol.NONE
-	}
-      } else {
-	var i: Context = context;
-	while (i != Context.NONE &&
-	       !(i.owner.kind == CLASS && i.owner.name == name))
-	  i = i.outer;
-	if (i != Context.NONE)
-	  i.owner
-	else {
-          error(tree.pos, "" + name + " is not an enclosing class");
-	  Symbol.NONE
-	}
-      }
-    }
-
       tree match {
+*/
 	case Tree$Block(stats, value) =>
 	  pushContext(tree, context.owner, new Scope(context.scope));
 	  val stats1 = desugarize.Statements(unit, stats, true);
@@ -2366,6 +2365,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      val sym1: Symbol = it.next();
 	      val basesym1: Symbol = base.lookupNonPrivate(sym1.name);
 	      if (!basesym1.isNone() &&
+		  sym1.kind != VAL && // todo: remove once refinements work!
                   !base.symbol().thisType().memberType(basesym1)
 		  .isSameAs(sym1.getType()))
 		refinement.enter(sym1);
@@ -2804,9 +2804,10 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  tree
 
 	case Tree$SingletonType(ref) =>
-	  val ref1: Tree = transform(ref, EXPRmode | QUALmode, Type.AnyType);
+	  val ref1: Tree = checkStable(
+	    transform(ref, EXPRmode | QUALmode, definitions.ANYREF_TYPE()));
 	  copy.SingletonType(tree, ref1)
-	    .setType(checkObjectType(tree.pos, ref1.getType().resultType()));
+	    .setType(ref1.getType().resultType());
 
 	case Tree$SelectFromType(qual, name) =>
 	  val qual1: Tree = transform(qual, TYPEmode);
@@ -2823,7 +2824,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    i = i + 1
 	  }}
 	  val members: Scope = new Scope();
-	  val self: Type = Type.compoundTypeWithOwner(context.enclClass.owner, ptypes, members);
+	  val cowner = if (context.owner.isPrimaryConstructor()) context.owner.constructorClass()
+		       else context.enclClass.owner;
+	  val self: Type = Type.compoundTypeWithOwner(cowner, ptypes, members);
 	  val clazz: Symbol = self.symbol();
 	  pushContext(tree, clazz, members);
 	  { var i = 0; while (i < refinements.length) {
@@ -2859,6 +2862,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case _ =>
 	  throw new ApplicationError("illegal tree: " + tree)
       }
+    } catch {
+      case ex: Type$Error =>
+	reportTypeError(tree.pos, ex);
+        errorTree(tree)
+    }
   }
 }
 }

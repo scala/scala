@@ -387,10 +387,9 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    readTypeRef(owner), readSymbolRef(), readTypeRefs(end, owner));
 		break;
 	    case COMPOUNDtpe:
-		Symbol[] clazzs = readSymbolRefs(end);
-                assert clazzs.length == 1;
+		Symbol clazz = readSymbolRef();
 		Type[] parents = readTypeRefs(end, owner);
-                tpe = Type.compoundType(parents, new Scope(), clazzs[0]);
+                tpe = Type.compoundType(parents, new Scope(), clazz);
 		break;
 	    case METHODtpe:
 		Type restype = readTypeRef(owner);

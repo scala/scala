@@ -279,8 +279,9 @@ A {\em stable identifier} is a path which ends in an identifier.
 \end{lstlisting}
 
 A singleton type is of the form \lstinline@$p$.type@, where $p$ is a
-path.  The type denotes the set of values consisting of
-exactly the value denoted by $p$.
+path pointing to a value expected to conform to
+\lstinline@scala.AnyRef@.  The type denotes the set of values
+consisting of the value denoted by $p$ and \lstinline@null@.
 
 \subsection{Type Projection}
 \label{sec:type-project}

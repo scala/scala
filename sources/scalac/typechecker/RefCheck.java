@@ -158,7 +158,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		     : "\n(Note that variables need to be initialized to be defined)"));
 	    } else if (member.isAbstractOverride()) {
 		Type superclazz = clazz.parents()[0];
-		Symbol sup = member.overriddenSymbol(superclazz);
+		Symbol sup = member.overriddenSymbol(superclazz, clazz);
 		if (clazz.kind == CLASS && (clazz.flags & ABSTRACT) == 0 &&
 		    isIncomplete(sup)) {
 		    abstractClassError(

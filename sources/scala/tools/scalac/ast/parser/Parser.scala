@@ -1998,8 +1998,6 @@ class Parser(unit: Unit) {
                  isModifier()) {
         stats.append(joinComment(clsDef(modifiers())));
       } else if (s.token != SEMI) {
-	System.out.println(s.token);
-	System.out.println(s.name);
         syntaxError("illegal start of class or object definition", true);
       }
       if (s.token != RBRACE && s.token != EOF) accept(SEMI);

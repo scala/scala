@@ -180,7 +180,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     //System.out.println("check acc " + sym);//DEBUG
     if ((sym.owner().flags & INCONSTRUCTOR) != 0 &&
 	!(sym.kind == TYPE && sym.isParameter()) &&
-	site.isInstanceOf[Tree$This]) {
+	(site == Tree.Empty || site.isInstanceOf[Tree$This])) {
       error(pos, "" + sym + " cannot be accessed from constructor");
       Type.ErrorType;
     } else {
@@ -244,6 +244,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       c != Context.NONE;
     }
 
+    site == Tree.Empty
+    ||
     (sym.flags & (PRIVATE | PROTECTED)) == 0
     ||
     {val owner = if (sym.isConstructor()) sym.constructorClass()
