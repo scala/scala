@@ -616,7 +616,8 @@ public class DeSugarize implements Kinds, Modifiers {
 
     /**  x  => x @ _
      *   only within sequence patterns, for now. BE
-     *   precondition: name != '_'
+     *   precondition:  name != '_'
+     *   post: returns *unattributed* Bind tree
      */
 
       public Tree IdentPattern( Tree tree ) {
@@ -625,7 +626,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		if( name == Names.WILDCARD ) throw new ApplicationError("nothing to desugarize");
 		return make.Bind( tree.pos,
 				  name,
-				  make.Ident( tree.pos, Name.fromString("_") )).setType( tree.type );
+				  make.Ident( tree.pos, Names.WILDCARD ).setType( tree.type )).setType( tree.type );
             default:
 		throw new ApplicationError("ident expected");
             }

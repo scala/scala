@@ -1551,6 +1551,12 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		}
 	    }
+	    //   desugarizing ident patterns
+	    if (params.length == 1 && (params[0].flags & REPEATED) != 0) {
+		assert (args.length != 1 || !(args[0] instanceof Tree.Sequence));
+		if (( mode & PATTERNmode ) != 0 )
+		    desug_allIdentPatterns( args, context.owner );
+	    }
 	    return argtypes;
 
 	case PolyType(Symbol[] tparams1, Type restp):
@@ -1732,42 +1738,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    .setType(owntype);
 
             case Sequence( Tree[] trees ):
-		//System.err.println("sequence with pt  "+pt);
-                /*
-		Symbol seqSym = definitions.getType( Name.fromString("scala.Seq") ).symbol();
-		assert seqSym != Symbol.NONE : "did not find Seq";
-
-                Type seqType = pt.baseType( seqSym );
-                Type elemType;
-                switch( seqType ) {
-                case TypeRef(_, _, Type[] args):
-		    assert args.length == 1;
-		    elemType = args[ 0 ];
-		    break;
-                default:
-		    // make a sequence type
-		    elemType = pt;
-		    seqType = new Type.TypeRef(definitions.SCALA_TYPE, seqSym, new Type[] { pt });
-		    break;
-                }
-		*/
-
                 for( int i = 0; i < trees.length; i++ ) {
-                    /*
-		    Type tpe = revealSeqOrElemType( trees[ i ],
-						    pt,
-						    pt,
-						    elemType);
-                    */
-		    //System.err.println("subtree ["+i+"] has tpe "+tpe);
 		    trees[ i ] = transform( trees[ i ],
 					    this.mode | SEQUENCEmode,
-					    pt/*tpe*/);
+					    pt);
                 }
                 return copy.Sequence( tree, trees ).setType( pt );
 
 	    case Alternative(Tree[] choices):
-		//System.err.println("alternative with pt  "+pt);
 		boolean save = this.inAlternative;
 		this.inAlternative = true;
 
@@ -1780,7 +1758,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		this.inAlternative = save;
 
 		return copy.Alternative( tree, newts )
-		    .setType( pt /*tpe*/ );
+		    .setType( pt );
 
 	    case Bind( Name name, Tree body ):
 		Symbol vble = new TermSymbol(tree.pos,
@@ -2178,12 +2156,13 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                                                   context.owner,
                                                   0).setType( pt );
 
-			    if((( mode & SEQUENCEmode) != 0)&&( name != Names.WILDCARD )) {// x => x @ _ in sequence patterns
+			    if((( mode & SEQUENCEmode) != 0)&&( name != Names.WILDCARD )) {
+				// x => x @ _ in sequence patterns
 				tree = desugarize.IdentPattern( tree );
 			    }
 
 		      }
-		      if (name != Names.WILDCARD) enterInScope(vble);
+		      if ( name != Names.WILDCARD ) enterInScope(vble);
 		      return tree.setSymbol(vble).setType(pt);
 		} else {
 		    return transformIdent(tree, name);
@@ -2256,6 +2235,32 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     // ///////////////
     // sequence helper function
     // ///////////////
+
+    /**  calls IdentPattern for every Ident(x) with x != _ in trees.
+     *   does *not* recurse through the trees
+     *   pre:  Ident nodes are already attributed, symbol is in scope
+     *   post: all variables in trees are replaced by (attributed) binds.
+     */
+
+    public void desug_allIdentPatterns( Tree trees[], Symbol currentOwner ) {
+	for( int i = 0; i < trees.length; i ++ )
+	    switch( trees[ i ] ) {
+	    case Ident( Name name ):
+		if( name != Names.WILDCARD )
+		    {
+			Symbol vble = context.scope.lookup( name );
+			/*
+			Symbol vble = new TermSymbol( trees[ i ].pos, name, currentOwner, 0)
+			    .setType( trees[ i ].type() );
+
+			vble = enterInScope( vble );
+			*/
+			trees[ i ] = desugarize.IdentPattern( trees[ i ] ).setSymbol( vble )
+			    .setType( vble.type() );
+		    }
+	    }
+    }
+
 
     // get first elementary type in a sequence
     // precondition: tree is successor of a sequence node
