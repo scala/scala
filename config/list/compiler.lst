@@ -113,7 +113,6 @@ transformer/matching/CaseEnv.java
 transformer/matching/CodeFactory.java
 transformer/matching/CollectVariableTraverser.java
 transformer/matching/DetWordAutom.java
-transformer/matching/FiniteAutom.java
 transformer/matching/FreshVariableTraverser.java
 transformer/matching/Label.java
 transformer/matching/TracerInScala.java
