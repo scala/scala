@@ -1156,10 +1156,13 @@ public class Type implements Modifiers, Kinds, TypeTags {
     public static class SubstThisMap extends Map {
 	Symbol from;
 	Type to;
-	protected SubstThisMap(Symbol from, Type to) {
+	public SubstThisMap(Symbol from, Type to) {
 	    this.from = from;
 	    this.to = to;
 	}
+        public SubstThisMap(Symbol oldSym, Symbol newSym) {
+            this(oldSym, newSym.thisType());
+        }
 	public Type apply(Type t) {
 	    switch (t) {
 	    case ThisType(Symbol sym):
