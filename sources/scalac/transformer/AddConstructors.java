@@ -10,6 +10,7 @@ package scalac.transformer;
 
 import scalac.Global;
 import scalac.util.Name;
+import scalac.util.Names;
 
 import scalac.ast.Tree;
 import Tree.*;
@@ -47,7 +48,7 @@ import scalac.util.Debug;
 */
 
 public class AddConstructors extends Transformer {
-    public final static Name CTOR_N = Name.fromString("<init>").toConstrName();
+    public final static Name CTOR_N = Names.CONSTRUCTOR;
 
     // True iff we generate code for INT backend.
     protected final boolean forINT;
@@ -80,7 +81,7 @@ public class AddConstructors extends Transformer {
 
 	Symbol constr = (Symbol) constructors.get(classConstr);
 	if (constr == null) {
-	    assert !owner.isInterface();
+	    assert !owner.isInterface() : Debug.show(owner) + " is interface";
             int flags = forJVM
                 ? classConstr.flags & (Modifiers.PRIVATE | Modifiers.PROTECTED)
                 : classConstr.flags;
@@ -110,7 +111,7 @@ public class AddConstructors extends Transformer {
 	    assert treeSym.name.isTypeName();
 
 	    if (treeSym.isInterface())
-		return tree;
+		return super.transform(tree);
 
 	    Symbol[] paramSyms = new Symbol[vparams[0].length];
 	    for (int i = 0; i < paramSyms.length; i++)
@@ -209,7 +210,7 @@ public class AddConstructors extends Transformer {
 	    Tree base = baseClasses[0];
 	    switch (base) {
 	    case Apply(Tree fun, Tree[] args):
-		return gen.New(copy.Apply
+                return gen.New(copy.Apply
 			       (base,
 				gen.Ident(base.pos, getConstructor(fun.symbol())),
 				transform(args)));
