@@ -50,7 +50,7 @@ public class RightTracerInScala extends TracerInScala  {
                                Type elementType ) {
         super( dfa, elementType, owner, cf );
 
-        this.seqVars = seqVars;
+        this.seqVars = seqVars; // HANDLE THESE GLOBALLY INSTEAD OF LOCALLY
         this.allVars = CollectVariableTraverser.collectVars( pat );
 
         this.varsToExport = new HashSet();
@@ -73,6 +73,9 @@ public class RightTracerInScala extends TracerInScala  {
                 makeHelpVar( varSym, true );
             }
         }
+        //System.out.println("allVars: "+allVars);
+        //System.out.println("seqVars: "+seqVars);
+        //System.out.println("helpVarDefs now: "+helpVarDefs);
 
         initializeSyms();
     }
@@ -282,28 +285,6 @@ public class RightTracerInScala extends TracerInScala  {
             return code_error();
     }
 
-    /** returns a Tree whose type is boolean.
-     *  now we care about free vars
-     */
-    Tree handleBody1( HashMap helpMap3  ) {
-        //System.out.println("Rtis.handleBody ... helpMap3 = " + helpMap );
-        // todo: change helpMap s.t. symbols are not reused.
-
-        Tree res[] = new Tree[ helpMap3.keySet().size() + 1 ];
-        int j = 0;
-        for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
-            Symbol vsym = (Symbol) it.next();
-            Symbol hv   = (Symbol) helpMap3.get( vsym );
-            //hv.setType( defs.LIST_TYPE( elementType ) ) ; DEBUG ALARM ?
-            Tree refv   = gen.Ident(cf.pos, vsym);
-            Tree refhv  = gen.Ident(cf.pos, hv);
-            res[ j++ ] = gen.Assign( refhv, refv );
-        }
-
-        res[ j ] = gen.mkBooleanLit( Position.FIRSTPOS, true ); // just `true'
-       return gen.mkBlock(res);
-    }
-
     // calling the AlgebraicMatcher here
     Tree _cur_match( Tree pat ) {
 
@@ -326,7 +307,7 @@ public class RightTracerInScala extends TracerInScala  {
             if( key.name.toString().indexOf("$") == -1 ) {
                 this.helpMap2.put( key, helpMap.get( key ));
                 // "freshening" by appending string ( a bit dangerous )
-                Symbol newSym = key.cloneSymbol().setOwner( funSym );
+                Symbol newSym = key.cloneSymbol().setOwner( owner /*funSym*/ );
                 newSym.name = key.name.append( Name.fromString("%") );
                 freshenMap.put( key, newSym );
                 helpMap3.put( newSym, helpMap.get( key ));
@@ -367,12 +348,30 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
 
         //System.out.println("RightTracerInScala:: -pat( after subst ) :"+pat);
 
+
         // val match { case <pat> => { <do binding>; true }
         //             case _     => false
 
+
+        Tree res[] = new Tree[ helpMap3.keySet().size() + 1 ];
+        int j = 0;
+        for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
+            Symbol vsym = (Symbol) it.next();
+            Symbol hv   = (Symbol) helpMap3.get( vsym );
+            //hv.setType( defs.LIST_TYPE( elementType ) ) ; DEBUG ALARM ?
+            Tree refv   = gen.Ident(cf.pos, vsym);
+            Tree refhv  = gen.Ident(cf.pos, hv);
+            res[ j++ ] = gen.Assign( refhv, refv );
+        }
+
+        res[ j ] = gen.mkBooleanLit( Position.FIRSTPOS, true ); // just `true'
+        Tree theBody =  gen.mkBlock(res);
+
         am.construct( m, new CaseDef[] {
+
+
             cf.gen.CaseDef( pat,           // if tree val matches pat -> update vars, return true
-                            handleBody1( helpMap3 )/* "freshening */),
+                            theBody/* "freshening */),
             cf.gen.CaseDef( cf.gen.Ident( pat.pos, defs.PATTERN_WILDCARD ),
                             gen.mkBooleanLit( pat.pos, false )) }, // else return false
                       true // do binding please
