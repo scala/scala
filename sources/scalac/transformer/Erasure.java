@@ -382,7 +382,8 @@ public class Erasure extends Transformer implements Modifiers {
             return copy.Switch(tree, test1, tags, bodies1, otherwise1).setType(owntype);
 
 	case Return(Tree expr):
-	    Tree expr1 = transform(expr, tree.symbol().type().resultType());
+	    Tree expr1 = transform(expr,
+                                   tree.symbol().type().resultType().fullErasure());
 	    return copy.Return(tree, expr1).setType(owntype);
 
         case New(Template templ):
