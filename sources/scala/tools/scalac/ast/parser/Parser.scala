@@ -183,15 +183,7 @@ class Parser(unit: CompilationUnit) {
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
 
-  /** Name supply
-  */
-  var freshCnt = 0;
-
-  def fresh(): Name = {
-    val n = Name.fromString("x$" + freshCnt);
-    freshCnt = freshCnt + 1;
-    n
-  }
+  def fresh(): Name = unit.fresh.newName("x");
 
   /** Create a tree representing a packaging
   */
