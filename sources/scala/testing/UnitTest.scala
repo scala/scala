@@ -31,8 +31,8 @@ object UnitTest {
     this.report = r;
   }
 
-  def assertSimilar( actual:Similarity , expected: Similarity ):Unit =
-    if( actual.similar( expected ) )
+  def assertSameElements[a]( actual:Seq[a] , expected: Seq[a] ):Unit =
+    if( actual.sameElements( expected ) )
         report.ok
     else
 	report.fail( actual.toString(), expected.toString() );
