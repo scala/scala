@@ -32,6 +32,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   val  _xml = Name.fromString("xml");
   val  _Node = Name.fromString("Node");
   val  _Text = Name.fromString("Text");
+  val  _EntityRef = Name.fromString("EntityRef");
 
   /** the tree factory
    */
@@ -52,7 +53,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     _scala_xml( pos, _Node );
 
   private def _scala_xml_Text( pos: int ) =
-    p.convertToConstr(_scala_xml( pos, _Text ));
+    p.convertToConstr( _scala_xml( pos, _Text ));
+
+  private def _scala_xml_EntityRef( pos: int ) =
+    p.convertToConstr( _scala_xml( pos, _EntityRef ));
 
   private def _scala_collection( pos: int, name: Name ) =
     make.Select( pos, _scala( pos, _collection ), name );
@@ -108,6 +112,16 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
     }
   }
 
+  def makeEntityRef( pos:int, n:Name ) = {
+    val constr = make.Apply( pos,
+                            _scala_xml_EntityRef( pos ),
+                            Predef.Array[Tree]( gen.mkStringLit( pos, n.toString() )));
+
+    make.New( pos,
+             make.Template( pos,
+                           Predef.Array[Tree] ( constr ),
+                           Tree.EMPTY_ARRAY ));
+  };
   // create scala.xml.Text here <: scala.xml.Node
   def makeText( pos: int, txt:String ):Tree =
     makeText( pos, gen.mkStringLit( pos, txt ));
@@ -323,6 +337,23 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
                 val str = new StringBuffer("{");
                 str.append( s.xText );
                 ts.append( makeText( s.pos, str.toString() ));
+              }
+
+            case '&' => // EntityRef or CharRef
+              //Console.println("case &");
+              s.xNext;
+              s.ch match {
+                case '#' => // CharacterRef
+                  s.xNext;
+                  val theChar = makeText( s.pos, s.xCharRef );
+                  s.xToken(';');
+                  ts.append( theChar);
+                case _ => // entityRef
+                  //Console.println("ENTITY REF");
+                  val pos = s.pos;
+                  val n = s.xName ;
+                  s.xToken(';');
+                  ts.append( makeEntityRef( s.pos, n ));
               }
             case _ => // text content
               //Console.println("case_");

@@ -841,10 +841,35 @@ class Scanner(_unit: Unit) extends TokenData {
       var exit = false;
       while( !exit ) {
         sb.append( ch );
-        exit = xxNext || ( ch == '<' );
+        exit = xxNext || ( ch == '<' ) || ( ch == '&' );
       }
       sb.toString();
     }
+  }
+
+  def xCharRef:String = {
+    //Console.println("scanner::xCHARREF");
+    val hex  = ( ch == 'x' ) && { xNext; true };
+    val base = if (hex) 16 else 10;
+    var i = 0;
+    while( ch != ';' ) {
+      ch match {
+        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+          i = i * base + Character.digit( ch, base );
+        case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+           | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
+          if( !hex )
+            xSyntaxError("hex char not allowed in decimal char ref\n"
+                         +"Did you mean to writer &#x ?");
+          else
+            i = i * base + Character.digit( ch, base );
+        case _ =>
+          xSyntaxError("character '"+ch+" not allowed in char ref\n");
+      }
+      xNext;
+    }
+    //Console.println("parsed i = "+i+" in hex:"+Integer.toString(i,16));
+    new String( Predef.Array[char]( i.asInstanceOf[char] ))
   }
 
   /** scan XML comment.
