@@ -526,7 +526,8 @@ public class Parser implements Tokens {
 	    if (!thisOK || s.token == DOT)
 		t = selectors(accept(DOT), t, typeOK);
 	} else if (s.token == SUPER) {
-	    t = make.Super(s.skipToken(), TypeNames.EMPTY);
+	    t = make.Super(
+		s.skipToken(), TypeNames.EMPTY, mixinQualifierOpt());
 	    t = make.Select(accept(DOT), t, ident());
 	    if (s.token == DOT)
 		t = selectors(s.skipToken(), t, typeOK);
@@ -542,7 +543,8 @@ public class Parser implements Tokens {
 			t = selectors(accept(DOT), t, typeOK);
 		} else if (s.token == SUPER) {
 		    s.nextToken();
-		    t = make.Super(i.pos, i.name.toTypeName());
+		    t = make.Super(
+			i.pos, i.name.toTypeName(), mixinQualifierOpt());
 		    t = make.Select(accept(DOT), t, ident());
 		    if (s.token == DOT)
 			t = selectors(s.skipToken(), t, typeOK);
@@ -567,9 +569,22 @@ public class Parser implements Tokens {
 	}
     }
 
+    /** MixinQualifier ::= `(' Id `)'
+     */
+    Name mixinQualifierOpt() {
+	if (s.token == LBRACKET) {
+	    s.nextToken();
+	    Name name = ident().toTypeName();
+	    accept(RBRACKET);
+	    return name;
+	} else {
+	    return TypeNames.EMPTY;
+	}
+    }
+
     /** StableId ::= Id
      *            |  StableRef `.' Id
-     *            |  [Ident '.'] super `.' Id
+     *            |  [Id '.'] super [MixinQualifier] ` `.' Id
      */
     Tree stableId() {
 	return stableRef(false, false);
@@ -937,7 +952,6 @@ public class Parser implements Tokens {
      *                 | BlockExpr
      *                 | new Template
      *                 | SimpleExpr `.' Id
-     *                 | Id `#' Id
      *                 | SimpleExpr TypeArgs
      *                 | SimpleExpr ArgumentExprs
      */
@@ -998,16 +1012,6 @@ public class Parser implements Tokens {
             switch (s.token) {
 	    case DOT:
 		t = make.Select(s.skipToken(), t, ident());
-		break;
-	    case HASH:
-		switch (t) {
-		case Ident(Name name):
-		    t = make.SelectFromType(
-			s.skipToken(), convertToTypeId(t), ident());
-		    break;
-		default:
-		    return t;
-		}
 		break;
 	    case LBRACKET:
 		switch (t) {

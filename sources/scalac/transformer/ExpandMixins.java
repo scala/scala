@@ -114,7 +114,7 @@ public class ClassExpander {
         Transformer superFixer = new Transformer(global) {
             public Tree transform(Tree tree) {
                 switch (tree) {
-                case Select(Super(_), _):
+                case Select(Super(_, _), _):
                     Symbol symbol = map.lookupSymbol(tree.symbol());
                     if (symbol != null)
                         return gen.Select(gen.This(tree.pos, clasz), symbol);

@@ -77,7 +77,7 @@ class Stack[A] with MutableList[A] with StructuralEquality[Stack[A]] {
      *
      *  @returns the created list.
      */
-    override def toList: List[A] = super.toList.reverse;
+    override def toList: List[A] = super[MutableList].toList.reverse;
 
     /** Checks if two stacks are structurally identical.
      *

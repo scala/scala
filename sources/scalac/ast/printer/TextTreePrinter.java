@@ -487,12 +487,17 @@ public class TextTreePrinter implements TreePrinter {
             printType(tree);
             break;
 
-        case Super(Name name):
-	    if (name != TypeNames.EMPTY) {
-                printSymbolUse(tree.symbol(), name);
+        case Super(Name qualifier, Name mixin):
+	    if (qualifier != TypeNames.EMPTY) {
+                printSymbolUse(tree.symbol(), qualifier);
 		print(TXT_DOT);
 	    }
             print(KW_SUPER);
+	    if (mixin != TypeNames.EMPTY) {
+		print(TXT_LEFT_PAREN);
+		print(mixin.toString());
+		print(TXT_RIGHT_PAREN);
+	    }
             printType(tree);
             break;
 

@@ -291,7 +291,8 @@ public class Tree {
         n_Super.
             setDescription("Super reference").
             setRange(Phase.PARSER, Phase.END).
-            addField(t_TypeName, "qualifier", SymName);
+            addField(t_TypeName, "qualifier", SymName).
+            addField(t_TypeName, "mixin");
 
         n_This.
             setDescription("Self reference").
@@ -327,7 +328,7 @@ public class Tree {
             setDescription("Type selection").
             setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_TypeTree, "qualifier").
-            addField(t_TestName, "selector", SymName);
+            addField(t_TypeName, "selector", SymName);
 
         n_FunType.
             setDescription("Function type").

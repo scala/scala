@@ -8,7 +8,7 @@ trait B extends Object {
 }
 
 trait C extends Object with A with B {
-  override def f = super.f;
+  override def f = super[B].f;
   val a: A;
   val x: a.type = a;
 }

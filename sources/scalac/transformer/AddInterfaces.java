@@ -152,7 +152,7 @@ class AddInterfaces extends Transformer {
             return gen.This(tree.pos, classThisSym);
         }
 
-        case Select(Super(_), _): {
+        case Select(Super(_, _), _): {
             // Use class member symbols for references to "super".
 
             Symbol sym = tree.symbol();

@@ -378,7 +378,7 @@ class GenJVM {
                 boolean isConstrCall = (funSym.name == CONSTRUCTOR_NAME);
                 boolean isSuperCall;
                 switch (fun) {
-                case Select(Super(_), _): isSuperCall = true; break;
+                case Select(Super(_, _), _): isSuperCall = true; break;
                 default: isSuperCall = false; break;
                 }
 
@@ -482,7 +482,7 @@ class GenJVM {
         } break;
 
         case This(_):
-        case Super(_):
+        case Super(_, _):
             ctx.code.emitALOAD_0();
             generatedType = JAVA_LANG_OBJECT_T;
             break;

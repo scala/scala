@@ -586,7 +586,7 @@ public class GenMSIL /*implements Modifiers */ {
 	case This(_):
 	    return items.SelfItem(tc.getType(currentClass));
 
-	case Super(_):
+	case Super(_, _):
 	    //logErr("Not implemented yet: Super(" + Debug.show(sym) + ")");
 	    //log("gen.Super(_): Super.symbol() = " + dumpSym(sym));
 	    //log("gen.Super(tpe): tpe.symbol() = " + dumpSym(tpe.symbol()));
@@ -831,7 +831,7 @@ public class GenMSIL /*implements Modifiers */ {
 		    //Debug.show(qualifier.type()));
 		    /// FIXME after the Super attribution is correct
 		    switch (qualifier) {
-		    case Super(_):
+		    case Super(_, _):
 			load(items.SelfItem(tc.getType(currentClass)));
 			break;
 		    default:

@@ -494,7 +494,7 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build and attribute super node with given type.
      */
     public Tree Super(int pos, Symbol sym) {
-        return make.Super(pos, sym).setType(sym.thisType());
+        return make.Super(pos, sym, TypeNames.EMPTY).setType(sym.thisType());
     }
 
     /** Build and attribute value/variable/let definition node whose signature

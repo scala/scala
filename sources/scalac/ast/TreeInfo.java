@@ -95,7 +95,7 @@ public class TreeInfo {
 	switch (tree) {
 	case Empty:
 	case This(_):
-	case Super(_):
+	case Super(_, _):
 	    return true;
 	case Ident(_):
 	    assert tree.type != null : tree.toString();

@@ -319,7 +319,7 @@ class GenJVMBCEL {
                     boolean isConstrCall = (funSym.name == CONSTRUCTOR_NAME);
                     boolean isSuperCall;
                     switch (fun) {
-                    case Select(Super(_), _): isSuperCall = true; break;
+                    case Select(Super(_, _), _): isSuperCall = true; break;
                     default: isSuperCall = false; break;
                     }
 
@@ -479,7 +479,7 @@ class GenJVMBCEL {
             break;
 
         case Sequence(_):
-        case Super(_):
+        case Super(_, _):
         case ModuleDef(_,_,_,_):
         case PatDef(_,_,_):
         case Import(_, _):
@@ -628,7 +628,7 @@ class GenJVMBCEL {
 
     protected void genLoadQualifier(Tree tree) {
         switch (tree) {
-        case Select(Super(_), _):
+        case Select(Super(_, _), _):
         case Ident(_):
             currIL.append(ic.THIS);
             break;

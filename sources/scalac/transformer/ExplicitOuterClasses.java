@@ -203,7 +203,7 @@ public class ExplicitOuterClasses extends Transformer {
                 return super.transform(tree);
         }
 
-        case Select(Super(_), Name selector): {
+        case Select(Super(_, _), Name selector): {
             // If "super" refers to an outer class, access the value
             // (a method) through outer link(s).
             int level = outerLevel(((Select)tree).qualifier.symbol());
