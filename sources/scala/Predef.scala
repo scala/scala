@@ -284,7 +284,7 @@ object Predef {
     def elements = Iterator.fromArray(xs);
     def apply(n: Int) = xs(n);
     override def hashCode(): Int = xs.hashCode();
-    override def equals(y: Any): Boolean = xs.equals(y);
+    override def equals(y: Any): Boolean = (xs == y);
     override protected def stringPrefix: String = "Array";
   }
 
@@ -293,7 +293,7 @@ object Predef {
     def elements = Iterator.fromString(str);
     def apply(n: Int) = str.charAt(n);
     override def hashCode(): Int = str.hashCode();
-    override def equals(y: Any): Boolean = str.equals(y);
+    override def equals(y: Any): Boolean = (str == y);
     override protected def stringPrefix: String = "String";
   }
 }
