@@ -398,14 +398,9 @@ public class LambdaLift extends OwnerTransformer
 	    if ((sym.flags & CAPTURED) != 0) {
 		assert sym.isLocal();
 		Type boxedType = sym.nextType();
-		Type unboxedType = boxedType.typeArgs()[0];
 		tpe1 = gen.mkType(tpe.pos, boxedType);
 		rhs1 = gen.New(
-		    rhs.pos,
-		    definitions.SCALA_TYPE,
-		    boxedType.symbol(),
-		    new Type[]{unboxedType},
-		    new Tree[]{rhs1});
+                    gen.mkPrimaryConstr(rhs.pos, boxedType, new Tree[]{rhs1}));
 	    }
 	    return copy.ValDef(tree, sym, tpe1, rhs1);
 
@@ -451,7 +446,7 @@ public class LambdaLift extends OwnerTransformer
 		if (tree1 instanceof Ident) ((Ident)tree1).name = sym.name;
 		else ((Select)tree1).selector = sym.name;
 	    }
-	    if ((sym.flags & CAPTURED) != 0) return gen.Select(tree1, Names.elem);
+	    if ((sym.flags & CAPTURED) != 0) return gen.Select__(tree1, Names.elem);
 	    else return tree1;
 
 	default:
@@ -621,7 +616,7 @@ public class LambdaLift extends OwnerTransformer
 	    for (int i = 0; i < fparams.length; i++) {
 		Symbol farg = descr.proxy(fparams[i], currentOwner);
 		args1[args.length + i] =
-                    types ? gen.mkTypeIdent(pos, farg) : gen.Ident(pos, farg);
+                    types ? gen.mkTypeRef(pos, farg) : gen.Ident(pos, farg);
 	    }
 	    return args1;
 	} else {

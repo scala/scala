@@ -44,8 +44,8 @@ public class AddAccessors extends Transformer {
             accessor = new TermSymbol(sym.pos,
                                       sym.name,
                                       sym.classOwner(),
-                                      Modifiers.STABLE
-                                      | Modifiers.ACCESSOR
+                                      /* !!! Modifiers.STABLE
+                                      | */ Modifiers.ACCESSOR
                                       | Modifiers.PRIVATE);
             accessor.setType(Type.MethodType(Symbol.EMPTY_ARRAY, sym.type()));
             accessorMap.put(sym, accessor);
@@ -82,18 +82,19 @@ public class AddAccessors extends Transformer {
             for (int i = 0; i < params.length; ++i) {
                 Symbol paramSym = params[i].symbol();
                 if (accessorMap.containsKey(paramSym)) {
+                    int pos = paramSym.pos;
                     Symbol accessorSym = (Symbol)accessorMap.get(paramSym);
 
-                    Symbol valSym = new TermSymbol(paramSym.pos,
+                    Symbol valSym = new TermSymbol(pos,
                                                    valName(paramSym),
                                                    clsSym,
                                                    Modifiers.PRIVATE);
                     valSym.setType(paramSym.type());
 
-                    newBody.addFirst(gen.DefDef(accessorSym, gen.Ident(valSym)));
+                    newBody.addFirst(gen.DefDef(accessorSym, gen.Ident(pos, valSym)));
                     newMembers.enter(accessorSym);
 
-                    newBody.addFirst(gen.ValDef(valSym, gen.Ident(paramSym)));
+                    newBody.addFirst(gen.ValDef(valSym, gen.Ident(pos, paramSym)));
                     newMembers.enter(valSym);
                 }
             }
@@ -120,8 +121,7 @@ public class AddAccessors extends Transformer {
             Symbol sym = tree.symbol();
 	    assert sym.kind != Kinds.NONE : tree;
             if (sym.owner().isPrimaryConstructor())
-                return gen.Apply(gen.Select(transform(qualifier), accessor(sym)),
-                                 Tree.EMPTY_ARRAY);
+                return gen.Apply(gen.Select(tree.pos, transform(qualifier), accessor(sym)));
             else
                 return copy.Select(tree, sym, transform(qualifier));
         }
@@ -131,7 +131,7 @@ public class AddAccessors extends Transformer {
             if (inClassContext
                 && sym.name.isTermName()
                 && sym.owner().isPrimaryConstructor())
-                return gen.Apply(gen.Ident(accessor(sym)), Tree.EMPTY_ARRAY);
+                return gen.Apply(gen.Ident(tree.pos, accessor(sym)));
             else
                 return copy.Ident(tree, sym);
         }

@@ -281,21 +281,21 @@ class CodeFactory extends PatternTool {
       }
 
     Tree newSeqNil( Type tpe ) {
-	return gen.Select(gen.Ident(pos, defs.SCALA), Names.Nil/*seqNilSym()*/);
+	return gen.Select__(gen.Ident(pos, defs.SCALA), Names.Nil/*seqNilSym()*/);
     }
 
     // EXPERIMENTAL
     Tree newRef( Tree init ) {
 	//System.out.println( "hello:"+refSym().type() );
-	return gen.New( pos, defs.SCALA_TYPE, refSym(),
-			new Type[] { init.type() },
-			new Tree[] { init } );
+	return gen.New(gen.mkPrimaryConstr(pos, refSym(),
+			                    new Type[] { init.type() },
+			                    new Tree[] { init } ));
     }
 
     Tree newSeqCons( Tree head, Tree tail ) {
-	return gen.New( pos, defs.SCALA_TYPE, seqConsSym(),
-			new Type[] { head.type() },
-			new Tree[] { head, tail });
+	return gen.New(gen.mkPrimaryConstr(pos, seqConsSym(),
+			                   new Type[] { head.type() },
+			                   new Tree[] { head, tail }));
     }
 
     /** returns A for T <: Sequence[ A ]
@@ -440,7 +440,7 @@ class CodeFactory extends PatternTool {
        }
        return make.Apply(
        tree.pos,
-       gen.Select(tree, NOT_N),
+       gen.Select__(tree, NOT_N),
        Tree.EMPTY_ARRAY).setType(defs.BOOLEAN_TYPE);
        }
 
@@ -579,9 +579,9 @@ class CodeFactory extends PatternTool {
     }
 
     Tree newPair( Tree left, Tree right ) {
- 	return gen.New( pos, defs.SCALA_TYPE, tuple2Sym(),
-			new Type[] { left.type(), right.type() },
-			new Tree[] { left, right });
+ 	return gen.New(gen.mkPrimaryConstr(pos, tuple2Sym(),
+			                   new Type[] { left.type(), right.type() },
+			                   new Tree[] { left, right }));
 
     }
 

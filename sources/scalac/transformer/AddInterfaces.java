@@ -183,7 +183,7 @@ class AddInterfaces extends Transformer {
                     Map memMap = phase.getClassMemberMap(realClsSym);
                     assert memMap != null
                         : Debug.show(clsSym) + " " + Debug.show(realClsSym);
-                    return gen.Select(qualifier, (Symbol)memMap.get(sym));
+                    return gen.Select(tree.pos, qualifier, (Symbol)memMap.get(sym));
                 } else
                     return super.transform(tree);
             } else {
@@ -197,13 +197,7 @@ class AddInterfaces extends Transformer {
                     Type qualifierType = qualifier.type().bound();
                     if (phase.needInterface(qualifierType.symbol())) {
                         Type castType = qualifierType.baseType(owner);
-                        qualifier =
-                            gen.Apply(
-                                gen.TypeApply(
-                                    gen.Select(qualifier, defs.AS),
-                                    new Tree[] {
-                                        gen.mkType(tree.pos, castType)}),
-                                Tree.EMPTY_ARRAY);
+                        qualifier = gen.mkAsInstanceOf(qualifier, castType);
                     }
                 }
                 return copy.Select(tree, sym, qualifier);
@@ -223,13 +217,13 @@ class AddInterfaces extends Transformer {
                         : Debug.show(clsSym) + " " + Debug.show(realClsSym);
                     assert memMap.containsKey(sym)
                         : Debug.show(sym) + " not in " + memMap;
-                    return gen.Ident((Symbol)memMap.get(sym));
+                    return gen.Ident(tree.pos, (Symbol)memMap.get(sym));
                 } else
                     return super.transform(tree);
             } else if (typeSubst != null) {
                 Symbol newSym = (Symbol)typeSubst.lookupSymbol(tree.symbol());
                 if (newSym != null)
-                    return gen.Ident(newSym);
+                    return gen.Ident(tree.pos, newSym);
                 else
                     return super.transform(tree);
             } else {

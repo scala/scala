@@ -358,9 +358,8 @@ public class AlgebraicMatcher extends PatternMatcher {
 
     public Tree toTree() {
         TreeList ts = new TreeList();
-        ts.append( gen.ValDef(_m.pos, root.symbol(), _m.selector ));
-        ts.append( gen.ValDef(_m.pos,
-                              resultVar,
+        ts.append( gen.ValDef(root.symbol(), _m.selector ));
+        ts.append( gen.ValDef(resultVar,
                               gen.mkDefaultValue(_m.pos, resultVar.info()) ));
         ts.append( cf.If( toTree(root.and),
                           gen.Ident( _m.pos, resultVar ),

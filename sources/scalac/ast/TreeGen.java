@@ -8,67 +8,675 @@
 
 package scalac.ast;
 
-import java.io.*;
-import java.util.*;
 import scalac.*;
 import scalac.symtab.*;
-import scalac.typechecker.Infer;
 import scalac.util.*;
 import Tree.*;
 
-/** A helper class for building trees
+/**
+ * This class provides method to build attributed trees.
  *
- *  @author     Martin Odersky, Christine Roeckl
- *  @version    1.0
+ * @author     Martin Odersky, Christine Roeckl
+ * @version    1.0
  */
 public class TreeGen implements Kinds, Modifiers, TypeTags {
 
-    /********************************************************************************/
-    /********************************************************************************/
-    /** VARIABLES **/
+    //########################################################################
+    // Private Fields
 
-    /** the global environment
-     */
-    protected final Global global;
+    /** The global environment */
+    private final Global global;
 
-    /** the global definitions
-     */
-    protected final Definitions definitions;
+    /** The global definitions */
+    private final Definitions definitions;
 
-    /** the tree factory
-     */
+    /** The tree factory */
     public final TreeFactory make;
 
-    /** the type inferencer
-     */
-    final Infer infer;
+    //########################################################################
+    // Public Constructors
 
-    /************************************************************************/
-    /************************************************************************/
-    /** CONSTRUCTORS **/
-
-    public TreeGen(Global global, TreeFactory make) {
-        this.global = global;
-	this.definitions = global.definitions;
-        this.make = make;
-	this.infer = new Infer(global, this, make);
-    }
-
+    /** Initializes this instance. */
     public TreeGen(Global global) {
 	this(global, global.make);
     }
 
-    /*************************************************************************/
-    /*************************************************************************/
-    /** METHODS **/
-
-    public Type deref(Type tp) {
-	switch (tp) {
-	case PolyType(Symbol[] tparams, Type restp):
-	    if (tparams.length == 0) return restp;
-	}
-	return tp;
+    /** Initializes this instance. */
+    public TreeGen(Global global, TreeFactory make) {
+        this.global = global;
+	this.definitions = global.definitions;
+        this.make = make;
     }
+
+    //########################################################################
+    // Public Methods - Building types
+
+    /** Builds type references corresponding to given symbols. */
+    public Tree[] mkTypeRefs(int pos, Symbol[] syms) {
+        if (syms.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[syms.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkTypeRef(pos, syms[i]);
+	return trees;
+    }
+
+    /** Builds a type reference corresponding to given symbol. */
+    public Tree mkTypeRef(int pos, Symbol sym) {
+        assert sym.kind == TYPE: Debug.show(sym);
+	sym.flags |= ACCESSED;
+	return mkType(pos, sym.nextType());
+    }
+
+    /** Builds trees corresponding to given types. */
+    public Tree[] mkTypes(int pos, Type[] types) {
+        if (types.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[types.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkType(pos, types[i]);
+        return trees;
+    }
+
+    /** Builds a tree corresponding to given type. */
+    public Tree mkType(int pos, Type type) {
+	return TypeTerm(pos, type);
+    }
+
+    /** Builds a TypeTerm node corresponding to given type. */
+    public TypeTerm TypeTerm(int pos, Type type) {
+        TypeTerm tree = make.TypeTerm(pos);
+        tree.setType(type);
+        return tree;
+    }
+
+    //########################################################################
+    // Public Methods - Building constants
+
+    /** Builds a unit literal. */
+    public Tree mkUnitLit(int pos) {
+        return make.Block(pos, Tree.EMPTY_ARRAY).
+            setType(definitions.UNIT_TYPE);
+    }
+
+    /** Builds a boolean literal. */
+    public Tree mkBooleanLit(int pos, boolean value) {
+        return make.Literal(pos, value ? Boolean.TRUE : Boolean.FALSE).
+            setType(definitions.BOOLEAN_TYPE);
+    }
+
+    /** Builds a byte literal. */
+    public Tree mkByteLit(int pos, byte value) {
+        return make.Literal(pos, new Byte(value)).
+            setType(definitions.BYTE_TYPE);
+    }
+
+    /** Builds a short literal. */
+    public Tree mkShortLit(int pos, short value) {
+        return make.Literal(pos, new Short(value)).
+            setType(definitions.SHORT_TYPE);
+    }
+
+    /** Builds a character literal. */
+    public Tree mkCharLit(int pos, char value) {
+        return make.Literal(pos, new Character(value)).
+            setType(definitions.CHAR_TYPE);
+    }
+
+    /** Builds an integer literal */
+    public Tree mkIntLit(int pos, int value) {
+        return make.Literal(pos, new Integer(value)).
+            setType(definitions.INT_TYPE);
+    }
+
+    /** Builds a long literal. */
+    public Tree mkLongLit(int pos, long value) {
+        return make.Literal(pos, new Long(value)).
+            setType(definitions.LONG_TYPE);
+    }
+
+    /** Builds a float literal. */
+    public Tree mkFloatLit(int pos, float value) {
+        return make.Literal(pos, new Float(value)).
+            setType(definitions.FLOAT_TYPE);
+    }
+
+    /** Builds a double literal. */
+    public Tree mkDoubleLit(int pos, double value) {
+        return make.Literal(pos, new Double(value)).
+            setType(definitions.DOUBLE_TYPE);
+    }
+
+    /** Builds a string literal. */
+    public Tree mkStringLit(int pos, String value) {
+        return make.Literal(pos, value).setType(definitions.JAVA_STRING_TYPE);
+    }
+
+    /** Builds a null literal. */
+    public Tree mkNullLit(int pos) {
+        return Ident(pos, definitions.NULL);
+    }
+
+    /** Builds a zero literal. */
+    public Tree mkZeroLit(int pos) {
+        return Ident(pos, definitions.ZERO);
+    }
+
+    /** Builds a default zero value according to given type tag. */
+    public Tree mkDefaultValue(int pos, int tag) {
+        switch (tag) {
+        case UNIT   : return mkUnitLit(pos);
+        case BOOLEAN: return mkBooleanLit(pos, false);
+        case BYTE   : return mkByteLit(pos, (byte)0);
+        case SHORT  : return mkShortLit(pos, (short)0);
+        case CHAR   : return mkCharLit(pos, '\0');
+        case INT    : return mkIntLit(pos, 0);
+        case LONG   : return mkLongLit(pos, 0l);
+        case FLOAT  : return mkFloatLit(pos, 0f);
+        case DOUBLE : return mkDoubleLit(pos, 0d);
+        default     : throw Debug.abort("unknown type tag: " + tag);
+        }
+    }
+
+    /** Builds a default zero value according to given type. */
+    public Tree mkDefaultValue(int pos, Type type) {
+	if (type.isSubType(definitions.ANYREF_TYPE)) return mkNullLit(pos);
+        switch (type.unbox()) {
+        case UnboxedType(int tag): return mkDefaultValue(pos, tag);
+        }
+        return mkZeroLit(pos);
+    }
+
+    //########################################################################
+    // Public Methods - Building references
+
+    /** Builds references corresponding to given symbols. */
+    public Tree[] mkRefs(int pos, Symbol[] syms) {
+        if (syms.length == 0) return Tree.EMPTY_ARRAY;
+        Tree[] trees = new Tree[syms.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkRef(pos, syms[i]);
+	return trees;
+    }
+
+    /** Builds a reference corresponding to given symbol. */
+    public Tree mkRef(int pos, Symbol sym) {
+	return mkRef(pos, sym.owner().thisType(), sym);
+    }
+
+    /** Builds a reference corresponding to given prefix & symbol. */
+    public Tree mkRef(int pos, Type pre, Symbol sym) {
+	if (pre.isSameAs(Type.localThisType) || pre.symbol().isRoot())
+	    return Ident(pos, sym);
+	else
+	    return Select(pos, mkStableId(pos, pre), sym);
+    }
+
+    /** Builds a reference corresponding to given stable prefix. */
+    public Tree mkStableId(int pos, Type pre) {
+        switch (pre.expandModuleThis()) {
+	case ThisType(Symbol sym):
+	    return This(pos, sym);
+        case SingleType(Type pre1, Symbol sym):
+	    return mkRef(pos, pre1, sym);
+        default:
+            throw Debug.abort("illegal case", pre);
+        }
+    }
+
+    /** Builds a This node corresponding to given class. */
+    public This This(int pos, Symbol clazz) {
+        assert clazz.isClass(): Debug.show(clazz);
+        This tree = make.This(pos, clazz);
+        global.nextPhase();
+        tree.setType(clazz.thisType());
+        global.prevPhase();
+        return tree;
+    }
+
+    /** Builds a Super node corresponding to given class. */
+    public Super Super(int pos, Symbol clazz) {
+        assert clazz.isClass(): Debug.show(clazz);
+        Super tree = make.Super(pos, clazz, TypeNames.EMPTY);
+        global.nextPhase();
+        tree.setType(clazz.thisType());
+        global.prevPhase();
+        return tree;
+    }
+
+    /** Builds an Ident node corresponding to given symbol. */
+    public Ident Ident(int pos, Symbol sym) {
+        assert sym.isTerm(): Debug.show(sym);
+	sym.flags |= ACCESSED;
+	Ident tree = make.Ident(pos, sym);
+        global.nextPhase();
+	if (sym.isStable())
+            tree.setType(Type.singleType(sym.owner().thisType(), sym));
+        else
+            tree.setType(sym.type());
+        global.prevPhase();
+        return tree;
+    }
+
+    /**
+     * Builds a Select node corresponding to given symbol selected
+     * from given qualifier.
+     */
+    public Select Select(int pos, Tree qual, Symbol sym) {
+	assert sym.isTerm(): Debug.show(sym);
+	sym.flags |= ACCESSED | SELECTOR;
+	Select tree = make.Select(pos, sym, qual);
+        global.nextPhase();
+	if (sym.isStable() && qual.type.isStable())
+            tree.setType(Type.singleType(qual.type, sym));
+        else
+            tree.setType(qual.type.memberType(sym));
+        global.prevPhase();
+        return tree;
+    }
+    public Select Select(Tree qual, Symbol sym) {
+	return Select(qual.pos, qual, sym);
+    }
+
+    //########################################################################
+    // Public Methods - Building applications
+
+    /**
+     * Builds calls to primary constructors of given types with given
+     * value arguments.
+     */
+    public Tree[] mkPrimaryConstrs(int pos, Type[] types, Tree[][] vargs) {
+        assert types.length == vargs.length: Debug.show(types, " -- ", vargs);
+        Tree[] trees = new Tree[types.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkPrimaryConstr(pos, types[i], vargs[i]);
+        return trees;
+    }
+
+    /**
+     * Builds calls to primary constructors of given types with no
+     * value arguments.
+     */
+    public Tree[] mkPrimaryConstrs(int pos, Type[] types) {
+        Tree[] trees = new Tree[types.length];
+        for (int i = 0; i < trees.length; i++)
+            trees[i] = mkPrimaryConstr(pos, types[i]);
+        return trees;
+    }
+
+    /**
+     * Builds a call to the primary constructor of given type with
+     * given value arguments. Missing type arguments are extracted
+     * from the given type.
+     */
+    public Tree mkPrimaryConstr(int pos, Type type, Tree[] vargs) {
+	switch (type) {
+	case TypeRef(Type pre, Symbol clazz, Type[] targs):
+            return mkPrimaryConstr(pos, pre, clazz, targs, vargs);
+	default:
+	    throw Debug.abort("invalid type", type);
+	}
+    }
+
+    /**
+     * Builds a call to the primary constructor of given type with no
+     * value arguments. Missing type arguments are extracted from the
+     * given type.
+     */
+    public Tree mkPrimaryConstr(int pos, Type type) {
+        return mkPrimaryConstr(pos, type, Tree.EMPTY_ARRAY);
+    }
+
+    /**
+     * Builds a call to the primary constructor of given class with
+     * given type and value arguments.
+     */
+    public Tree mkPrimaryConstr(int pos, Type pre, Symbol clazz, Type[] targs,
+        Tree[] vargs)
+    {
+        global.nextPhase();
+        Symbol constr = clazz.primaryConstructor();
+        global.prevPhase();
+        return mkApply(mkRef(pos, constr), targs, vargs);
+    }
+    public Tree mkPrimaryConstr(int pos, Symbol clazz,Type[]targs,Tree[]vargs){
+        return mkPrimaryConstr(pos,clazz.owner().thisType(),clazz,targs,vargs);
+    }
+
+    /**
+     * Builds a call to the primary constructor of given class with
+     * given type arguments and no value arguments.
+     */
+    public Tree mkPrimaryConstr(int pos, Type pre, Symbol clazz, Type[] targs){
+        return mkPrimaryConstr(pos, pre, clazz, targs, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkPrimaryConstr(int pos, Symbol clazz, Type[] targs) {
+        return mkPrimaryConstr(pos, clazz.owner().thisType(), clazz, targs);
+    }
+
+    /**
+     * Builds a call to the primary constructor of given class with no
+     * type and value arguments.
+     */
+    public Tree mkPrimaryConstr(int pos, Type pre, Symbol clazz) {
+        return mkPrimaryConstr(pos, pre, clazz, Type.EMPTY_ARRAY);
+    }
+    public Tree mkPrimaryConstr(int pos, Symbol clazz) {
+        return mkPrimaryConstr(pos, clazz.owner().thisType(), clazz);
+    }
+
+    /** Builds an application with given function and arguments. */
+    public Tree mkApply(int pos, Tree fn, Type[] targs, Tree[] vargs) {
+        if (targs.length != 0) fn = TypeApply(pos, fn, mkTypes(pos, targs));
+        return Apply(pos, fn, vargs);
+    }
+    public Tree mkApply(Tree fn, Type[] targs, Tree[] vargs) {
+        return mkApply(fn.pos, fn, targs, vargs);
+    }
+    public Tree mkApply(int pos, Tree fn, Tree[] targs, Tree[] vargs) {
+        if (targs.length != 0) fn = TypeApply(pos, fn, targs);
+        return Apply(pos, fn, vargs);
+    }
+    public Tree mkApply(Tree fn, Tree[] targs, Tree[] vargs) {
+        return mkApply(fn.pos, fn, targs, vargs);
+    }
+
+    /**
+     * Builds an application with given function and type arguments
+     * and with no value arguments.
+     */
+    public Tree mkApply(int pos, Tree fn, Type[] targs) {
+        return mkApply(pos, fn, targs, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkApply(Tree fn, Type[] targs) {
+        return mkApply(fn.pos, fn, targs);
+    }
+    public Tree mkApply(int pos, Tree fn, Tree[] targs) {
+        return mkApply(pos, fn, targs, Tree.EMPTY_ARRAY);
+    }
+    public Tree mkApply(Tree fn, Tree[] targs) {
+        return mkApply(fn.pos, fn, targs);
+    }
+
+    /** Builds a TypeApply node with given function and arguments. */
+    public TypeApply TypeApply(int pos, Tree fn, Tree[] targs) {
+        switch (fn.type) {
+        case PolyType(Symbol[] tparams, Type result):
+            TypeApply tree = make.TypeApply(pos, fn, targs);
+            assert tparams.length == targs.length: tree;
+            global.nextPhase();
+            tree.setType(result.subst(tparams, Tree.typeOf(targs)));
+            global.prevPhase();
+            return tree;
+        default:
+            throw Debug.abort("illegal case", fn.type);
+        }
+    }
+    public TypeApply TypeApply(Tree fn, Tree[] targs) {
+      return TypeApply(fn.pos, fn, targs);
+    }
+
+    /** Builds an Apply node with given function and arguments. */
+    public Apply Apply(int pos, Tree fn, Tree[] vargs) {
+        switch (fn.type) {
+        case Type.MethodType(Symbol[] vparams, Type result):
+            Apply tree = make.Apply(pos, fn, vargs);
+            // !!! assert vparams.length == vargs.length: tree + " --- " + Debug.show(vparams) + " --- " + Debug.show(vargs);
+            tree.setType(result);
+            return tree;
+        default:
+            throw Debug.abort("illegal case", fn);
+        }
+    }
+    public Apply Apply(Tree fn, Tree[] vargs) {
+        return Apply(fn.pos, fn, vargs);
+    }
+
+    /** Builds an Apply node with given function and no arguments. */
+    public Apply Apply(int pos, Tree fn) {
+        return Apply(pos, fn, Tree.EMPTY_ARRAY);
+    }
+    public Apply Apply(Tree fn) {
+        return Apply(fn.pos, fn);
+    }
+
+    //########################################################################
+    // Public Methods - Building expressions
+
+    /** Builds a cast with given value and type. */
+    public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
+        return mkApply(pos, Select(value, definitions.AS), new Type[] {type});
+    }
+    public Tree mkAsInstanceOf(Tree value, Type type) {
+        return mkAsInstanceOf(value.pos, value, type);
+    }
+
+    /** Builds a Block node with given statements. */
+    public Tree Block(int pos, Tree[] stats) {
+        Block tree = make.Block(pos, stats);
+        tree.setType(stats.length == 0
+            ? definitions.UNIT_TYPE
+            : stats[stats.length - 1].type);
+	return tree;
+    }
+
+    /** Builds a Block node with given non-empty statements list. */
+    public Tree Block(Tree[] stats) {
+	return Block(stats[0].pos, stats);
+    }
+
+    /** Builds an Assign node corresponding to "<lhs> = <rhs>". */
+    public Assign Assign(int pos, Tree lhs, Tree rhs) {
+        Assign tree = make.Assign(pos, lhs, rhs);
+        tree.setType(definitions.UNIT_TYPE);
+        return tree;
+    }
+    public Assign Assign(Tree lhs, Tree rhs) {
+        return Assign(lhs.pos, lhs, rhs);
+    }
+
+    /** Builds an If node with given condition and branches. */
+    public If If(int pos, Tree cond, Tree thenpart, Tree elsepart) {
+	If tree = make.If(pos, cond, thenpart, elsepart);
+        global.nextPhase();
+        if (thenpart.type.isSameAs(elsepart.type))
+            tree.setType(thenpart.type);
+        else
+            tree.setType(Type.lub(new Type[] {thenpart.type, elsepart.type}));
+        global.prevPhase();
+        return tree;
+    }
+    public If If(Tree cond, Tree thenpart, Tree elsepart) {
+	return If(cond.pos, cond, thenpart, elsepart);
+    }
+
+    /** Builds a New node corresponding to "new <constr>". */
+    public Tree New(int pos, Tree constr) {
+        Symbol local = localDummy(pos, Symbol.NONE); // !!!
+	Template templ = make.Template(
+            pos, local, new Tree[]{constr}, Tree.EMPTY_ARRAY); // !!!
+	templ.setType(constr.type);
+	New tree = make.New(pos, templ);
+        tree.setType(constr.type);
+        return tree;
+    }
+    public Tree New(Tree constr) {
+        return New(constr.pos, constr);
+    }
+
+    /** Builds a Typed nodes with given value and type. */
+    public Typed Typed(int pos, Tree value, Type type) {
+        Typed tree = make.Typed(pos, value, TypeTerm(pos, type));
+        tree.setType(type);
+        return tree;
+    }
+    public Typed Typed(Tree value, Type type) {
+        return Typed(value.pos, value, type);
+    }
+
+    //########################################################################
+    // Public Methods - Building definitions
+
+    /** Builds the type parameter section of given symbol. */
+    public AbsTypeDef[] mkTypeParamsOf(Symbol sym) {
+        Symbol[] tparams = sym.nextTypeParams();
+        AbsTypeDef[] trees = new AbsTypeDef[tparams.length];
+        for (int i = 0; i < tparams.length; i++)
+            trees[i] = mkTypeParam(tparams[i]);
+        return trees;
+    }
+
+    /** Builds the value parameter section of given symbol. */
+    public ValDef[][] mkParamsOf(Symbol sym) {
+        global.nextPhase();
+        if (sym.isClass()) sym = sym.primaryConstructor();
+        Type type = sym.type();
+        global.prevPhase();
+        ValDef[][] treess = Tree.ValDef_EMPTY_ARRAY_ARRAY;
+        while (true) {
+            switch (type) {
+            case PolyType(_, Type result):
+                type = result;
+                continue;
+            case MethodType(Symbol[] vparams, Type result):
+                ValDef[] trees = new ValDef[vparams.length];
+                for (int i = 0; i < vparams.length; i++)
+                    trees[i] = mkParam(vparams[i]);
+                ValDef[][] array = new ValDef[treess.length + 1][];
+                for (int i = 0; i < treess.length; i++) array[i] = treess[i];
+                array[treess.length] = trees;
+                treess = array;
+                type = result;
+                continue;
+            default:
+                return treess;
+            }
+        }
+    }
+
+    /** Builds the type parameter corresponding to given symbol. */
+    public AbsTypeDef mkTypeParam(Symbol sym) {
+	return AbsTypeDef(sym);
+    }
+
+    /** Builds the value parameter corresponding to given symbol. */
+    public ValDef mkParam(Symbol sym) {
+	return ValDef(sym, Tree.Empty);
+    }
+
+    /** Builds a definition for given interface with given body. */
+    public Tree mkInterfaceDef(Symbol clazz, Tree[] body) {
+	Global.instance.nextPhase();
+        clazz.info(); // needed until isInterface() triggers flag updates
+        assert clazz.isInterface(): Debug.show(clazz);
+	Type[] parents = clazz.parents();
+	Global.instance.prevPhase();
+        return ClassDef_(clazz, mkPrimaryConstrs(clazz.pos, parents), body);
+    }
+
+    /** Builds a ClassDef node for given class with given template. */
+    public ClassDef ClassDef(Symbol clazz, Template template) {
+        ClassDef tree = make.ClassDef(
+            clazz.pos,
+            clazz,
+            mkTypeParamsOf(clazz),
+            mkParamsOf(clazz),
+            Tree.Empty,
+            template);
+        tree.setType(definitions.UNIT_TYPE);
+        return tree;
+    }
+
+    /**
+     * Builds a ClassDef node for given class with given parent
+     * constructors, local symbol and body.
+     */
+    public ClassDef ClassDef(Symbol clazz, Tree[] constrs, Symbol local,
+        Tree[] body)
+    {
+        Template templ = make.Template(local.pos, local, constrs, body);
+        templ.setType(clazz.nextInfo()); // !!!
+        return ClassDef(clazz, templ);
+    }
+
+    /** Builds a ValDef node for given symbol and with given rhs. */
+    public ValDef ValDef(Symbol sym, Tree rhs) {
+	ValDef tree = make.ValDef(
+            sym.pos,
+            sym,
+            TypeTerm(sym.pos, sym.nextType()),
+            rhs);
+        tree.setType(definitions.UNIT_TYPE);
+        return tree;
+    }
+
+    /** Builds a DefDef node for given symbol with given body. */
+    public DefDef DefDef(Symbol sym, Tree body) {
+        DefDef tree = make.DefDef(
+            sym.pos,
+            sym,
+            mkTypeParamsOf(sym),
+            mkParamsOf(sym),
+            TypeTerm(sym.pos, sym.nextType().resultType()),
+            body);
+        tree.setType(definitions.UNIT_TYPE);
+        return tree;
+    }
+
+    /** Builds an AbsTypeDef node for given symbol. */
+    public AbsTypeDef AbsTypeDef(Symbol sym) {
+	AbsTypeDef tree = make.AbsTypeDef(
+	    sym.pos,
+            sym,
+            TypeTerm(sym.pos, sym.nextInfo()),
+            TypeTerm(sym.pos, sym.loBound()));
+        tree.setType(definitions.UNIT_TYPE);
+        return tree;
+    }
+
+    /** Builds an AliasTypeDef node for given symbol. */
+    public AliasTypeDef AliasTypeDef(Symbol sym) {
+	AliasTypeDef tree = make.AliasTypeDef(
+	    sym.pos,
+	    sym,
+            mkTypeParamsOf(sym),
+	    TypeTerm(sym.pos, sym.nextInfo()));
+        tree.setType(definitions.UNIT_TYPE);
+        return tree;
+    }
+
+    //########################################################################
+    //########################################################################
+    //########################################################################
+
+    //########################################################################
+    // !!! to add
+
+    /** Builds a Template node with given symbol, parents and body. */
+    public Template Template(int pos, Symbol local, Tree[]parents, Tree[]body){
+        Template tree = make.Template(pos, local, parents, body);
+        tree.setType(Type.NoType);
+        return tree;
+    }
+    public Template Template(Symbol local, Tree[] parents, Tree[] body) {
+        return Template(local.pos, local, parents, body);
+    }
+
+
+    //########################################################################
+    // !!! to remove
+
+    public ClassDef ClassDef_(Symbol clazz, Tree[] constrs, Tree[] body) {
+	return ClassDef(clazz, constrs, localDummy(clazz.pos, clazz), body);
+    }
+
+
+    public Tree Select__(Tree qual, Name name) {
+	Symbol sym = qual.type.lookup(name);
+	assert (sym.kind != NONE && sym != Symbol.ERROR) : name + " from " + qual.type;
+	return Select(qual, sym);
+    }
+
+    //########################################################################
+    // !!! not yet reviewed
 
     /** Create a dummy symbol to be used for templates.
      */
@@ -77,596 +685,10 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    .setInfo(Type.NoType);
     }
 
-    public Tree mkStable(Tree tree) {
-	Symbol sym = tree.symbol();
-	if (sym.isStable()) {
-	    switch (tree) {
-	    case Ident(_):
-		tree.setType(Type.singleType(sym.owner().thisType(), sym));
-		break;
-	    case Select(Tree qual, _):
-		if (qual.type.isStable())
-		    tree.setType(Type.singleType(qual.type, sym));
-	    }
-	}
-	return tree;
-    }
-
-    public Tree mkRef(int pos, Type pre, Symbol sym) {
-	if (pre.isSameAs(Type.localThisType) || pre.symbol().isRoot())
-	    return Ident(pos, sym);
-	else
-	    return Select(pos, mkStableId(pos, pre), sym);
-    }
-
-    public Tree mkRef(int pos, Symbol sym) {
-	return mkRef(pos, sym.owner().thisType(), sym);
-    }
-
-    /** Build and attribute stable identifier tree corresponding to given prefix.
-     */
-    public Tree mkStableId(int pos, Type pre) {
-        switch (pre.expandModuleThis()) {
-	case ThisType(Symbol sym):
-	    return This(pos, sym);
-        case SingleType(Type pre1, Symbol sym):
-	    return mkStable(mkRef(pos, pre1, sym));
-        default:
-            throw new ApplicationError(pre);
-        }
-    }
-
-    /** Build and attribute ident nodes with given symbols.
-     */
-    public Tree[] mkIdents(int pos, Symbol[] syms) {
-        if (syms.length == 0) return Tree.EMPTY_ARRAY;
-        Tree[] trees = new Tree[syms.length];
-        for (int i = 0; i < trees.length; i++)
-            trees[i] = Ident(pos, syms[i]);
-	return trees;
-    }
-
-    /** Build and attribute type idents with given symbols.
-     */
-    public Tree[] mkTypeIdents(int pos, Symbol[] syms) {
-        if (syms.length == 0) return Tree.EMPTY_ARRAY;
-        Tree[] trees = new Tree[syms.length];
-        for (int i = 0; i < trees.length; i++)
-            trees[i] = mkTypeIdent(pos, syms[i]);
-	return trees;
-    }
-
-    /** Build and attribute type ident with given symbol.
-     */
-    public Tree mkTypeIdent(int pos, Symbol sym) {
-        assert sym.kind == TYPE: Debug.show(sym);
-	sym.flags |= ACCESSED;
-	return mkType(pos, sym.nextType());
-    }
-
-    /** Build and attribute tree corresponding to given type.
-     */
-    public Tree mkType(int pos, Type type) {
-	return TypeTerm(pos, type);
-    }
-
-    /** Build and attribute tree array corresponding to given type array.
-     */
-    public Tree[] mkTypes(int pos, Type[] types) {
-        Tree[] res = new Tree[types.length];
-        for (int i = 0; i < types.length; i++) {
-          res[i] = mkType(pos, types[i]);
-        }
-        return res;
-    }
-
-    /** Build and attribute tree corresponding to given type.
-     */
-    public Tree TypeTerm(int pos, Type type) {
-	return make.TypeTerm(pos).setType(type);
-    }
-
-    /** Build and attribute tree corresponding to symbol's declaration.
-     */
-    public Tree mkDef(int pos, Symbol sym) {
-	switch (sym.kind) {
-	case ERROR:
-	    return make.Bad(pos, Symbol.ERROR).setType(Type.ErrorType);
-	case TYPE:
-	    return AbsTypeDef(pos, sym);
-	case ALIAS:
-	    return AliasTypeDef(pos, sym);
-	case VAL:
-	    if (sym.isMethod()) return DefDef(pos, sym, Tree.Empty);
-	    else return ValDef(pos, sym, Tree.Empty);
-	default:
-	    throw new ApplicationError();
-	}
-    }
-
-    /** Build and attribute tree array corresponding to given symbol's declarations.
-     */
-    public Tree[] mkDefs(int pos, Symbol[] syms) {
-        Tree[] res = new Tree[syms.length];
-        for (int i = 0; i < syms.length; i++) {
-	    res[i] = mkDef(pos, syms[i]);
-        }
-        return res;
-    }
-
-    /** Build a boolean constant tree.
-     */
-    public Tree mkBooleanLit(int pos, boolean bool) {
-        return make.Literal(pos, bool ? Boolean.TRUE : Boolean.FALSE).
-            setType(definitions.BOOLEAN_TYPE);
-    }
-
-    /** Build a string literal
-     */
-    public Tree mkStringLit(int pos, String str) {
-        return make.Literal(pos, str).setType(definitions.JAVA_STRING_TYPE);
-    }
-
-    /** Build an integer literal
-     */
-    public Tree mkIntLit(int pos, int value) {
-        return make.Literal(pos, new Integer(value)).setType(definitions.INT_TYPE);
-    }
-
-    /** Build a default zero value according to type
-     */
-    public Tree mkDefaultValue(int pos, Type tp) {
-	if (tp.isSubType(definitions.ANYREF_TYPE)) {
-	    return Ident(pos, definitions.NULL);
-	} else {
-	    switch (tp.unbox()) {
-	    case UnboxedType(BOOLEAN):
-		return mkBooleanLit(pos, false);
-	    case UnboxedType(BYTE):
-	    case UnboxedType(SHORT):
-	    case UnboxedType(CHAR):
-	    case UnboxedType(INT):
-		return mkIntLit(pos, 0);
-	    case UnboxedType(LONG):
-		return make.Literal(pos, new Long(0)).setType(definitions.LONG_TYPE);
-	    case UnboxedType(FLOAT):
-		return make.Literal(pos, new Float(0)).setType(definitions.FLOAT_TYPE);
-	    case UnboxedType(DOUBLE):
-		return make.Literal(pos, new Double(0)).setType(definitions.DOUBLE_TYPE);
-	    case UnboxedType(UNIT):
-		return Block(pos, Tree.EMPTY_ARRAY);
-	    default:
-		return Ident(pos, definitions.ZERO);
-	    }
-	}
-    }
-
-
-    /** Build a call to a primary constructor.
-     */
-    public Tree mkPrimaryConstr(int pos, Type type) {
-        return mkPrimaryConstr(pos, type, Tree.EMPTY_ARRAY);
-    }
-
-    public Tree mkPrimaryConstr(int pos, Type type, Tree[] args) {
-	switch (type) {
-	case TypeRef(Type prefix, Symbol clazz, Type[] targs):
-            global.nextPhase();
-            Symbol constr = clazz.primaryConstructor();
-            global.prevPhase();
-	    return mkApply(mkRef(pos, prefix, constr), targs, args);
-	default:
-	    throw Debug.abort("invalid type", type);
-	}
-    }
-
-    /** Build an array of calls to primary constructors.
-     */
-    public Tree[] mkPrimaryConstrs(int pos, Type[] types, Tree[][] args) {
-        assert types.length == args.length: Debug.show(types, " -- ", args);
-        Tree[] trees = new Tree[types.length];
-        for (int i = 0; i < trees.length; i++)
-            trees[i] = mkPrimaryConstr(pos, types[i], args[i]);
-        return trees;
-    }
-
-    public Tree[] mkPrimaryConstrs(int pos, Type[] types) {
-        Tree[] trees = new Tree[types.length];
-        for (int i = 0; i < trees.length; i++)
-            trees[i] = mkPrimaryConstr(pos, types[i]);
-        return trees;
-    }
-
-
-    /** Build parameter sections corresponding to type.
-     */
-    public ValDef[][] mkParams(Type type) {
-	switch (type) {
-        case PolyType(Symbol[] tparams, Type restype):
-	    return mkParams(restype);
-        case MethodType(Symbol[] vparams, Type restype):
-             ValDef[] params1 = mkParams(vparams);
-	     ValDef[][] paramss = mkParams(restype);
-	     if (paramss.length == 0) {
-		 return new ValDef[][]{params1};
-	     } else {
-		 ValDef[][] paramss1 = new ValDef[paramss.length + 1][];
-		 paramss1[0] = params1;
-		 System.arraycopy(paramss, 0, paramss1, 1, paramss.length);
-		 return paramss1;
-	     }
-        default:
-             return new ValDef[][]{};
-        }
-    }
-
-    /** Build parameter section corresponding to given array of symbols .
-     */
-    public ValDef[] mkParams(Symbol[] symbols) {
-        ValDef[] res = new ValDef[symbols.length];
-        for (int i = 0; i < symbols.length; i++) {
-	    res[i] = mkParam(symbols[i]);
-        }
-	return res;
-    }
-
-    /** Build parameter corresponding to given symbol .
-     */
-    public ValDef mkParam(Symbol sym) {
-	return ValDef(sym.pos, sym, Tree.Empty);
-    }
-
-    /** Build type parameter section corresponding to given array of symbols .
-     */
-    public AbsTypeDef[] mkTypeParams(Symbol[] symbols) {
-        AbsTypeDef[] res = new AbsTypeDef[symbols.length];
-        for (int i = 0; i < symbols.length; i++) {
-	    res[i] = mkTypeParam(symbols[i]);
-        }
-        return res;
-    }
-
-    /** Build type parameter corresponding to given symbol .
-     */
-    public AbsTypeDef mkTypeParam(Symbol sym) {
-	return AbsTypeDef(sym.pos, sym);
-    }
-
-    /** Build abstract type definition corresponding to given symbol .
-     */
-    public AbsTypeDef AbsTypeDef(int pos, Symbol sym) {
-	Global.instance.nextPhase();
-	Type symtype = sym.info();
-	Global.instance.prevPhase();
-	AbsTypeDef res = make.AbsTypeDef(
-	    pos, sym, TypeTerm(pos, symtype), TypeTerm(pos, sym.loBound()));
-        res.setType(definitions.UNIT_TYPE);
-        return res;
-    }
-
-    public AbsTypeDef AbsTypeDef(Symbol sym) {
-	return AbsTypeDef(sym.pos, sym);
-    }
-
-    /** Build type definition corresponding to given symbol .
-     */
-    public AliasTypeDef AliasTypeDef(int pos, Symbol sym) {
-	Global.instance.nextPhase();
-	Type symtype = sym.info();
-	Global.instance.prevPhase();
-	AliasTypeDef res = make.AliasTypeDef(
-	    pos,
-	    sym,
-            mkTypeParams(sym.typeParams()),
-	    TypeTerm(pos, symtype));
-        res.setType(definitions.UNIT_TYPE);
-        return res;
-    }
-
-    public AliasTypeDef AliasTypeDef(Symbol sym) {
-	return AliasTypeDef(sym.pos, sym);
-    }
-
-    /** Build and attribute block with given statements, starting
-     *  at given position. The type is the type of the last
-     *  statement in the block.
-     */
-    public Tree Block(int pos, Tree[] stats) {
-	Type tp = (stats.length == 0) ? definitions.UNIT_TYPE
-	    : stats[stats.length - 1].type;
-	return make.Block(pos, stats).setType(tp);
-    }
-
-    /** Build and attribute non-empty block with given statements.
-     */
-    public Tree Block(Tree[] stats) {
-	return Block(stats[0].pos, stats);
-    }
-
-    public Tree Typed(Tree tree, Type tp) {
-	return make.Typed(tree.pos, tree, TypeTerm(tree.pos, tp)).setType(tp);
-    }
-
-    /** Build and attribute the assignment lhs = rhs
-     */
-    public Tree Assign(int pos, Tree lhs, Tree rhs) {
-        return make.Assign(pos, lhs, rhs).setType(definitions.UNIT_TYPE);
-    }
-
-    public Tree Assign(Tree lhs, Tree rhs) {
-        return Assign(lhs.pos, lhs, rhs);
-    }
-
-    /** Build and attribute new B, given constructor expression B.
-     */
-    public Tree New(int pos, Tree constr) {
-        Symbol local = localDummy(pos, Symbol.NONE);
-	Template templ = make.Template(
-            pos, local, new Tree[]{constr}, Tree.EMPTY_ARRAY);
-	templ.setType(constr.type);
-	return make.New(pos, templ).setType(constr.type);
-    }
-
-    public Tree New(Tree constr) {
-        return New(constr.pos, constr);
-    }
-
-
-    /** Build an allocation   new P.C[TARGS](ARGS)
-     *  given a (singleton) type P, class C, type arguments TARGS and arguments ARGS
-     */
-    public Tree New(int pos, Type pre, Symbol clazz,
-		    Type[] targs, Tree[] args) {
-	Tree constr = mkRef(pos, pre, clazz.primaryConstructor());
-	return New(mkApply(constr, mkTypes(pos, targs), args));
-    }
-
-    /** Build a monomorphic allocation   new P.C(ARGS)
-     *  given a prefix P, class C and arguments ARGS
-     */
-    public Tree New(int pos, Type pre, Symbol clazz, Tree[] args) {
-	return New(pos, pre, clazz, Type.EMPTY_ARRAY, args);
-    }
-
-    /** Build application with given function, type args and value
-     * args.
-     */
-    public Tree mkApply(int pos, Tree fn, Type[] targs, Tree[] args) {
-        if (targs.length != 0) fn = TypeApply(pos, fn, mkTypes(pos, targs));
-        return Apply(pos, fn, args);
-    }
-
-    public Tree mkApply(Tree fn, Type[] targs, Tree[] args) {
-        return mkApply(fn.pos, fn, targs, args);
-    }
-
-    public Tree mkApply(int pos, Tree fn, Tree[] targs, Tree[] args) {
-        if (targs.length != 0) fn = TypeApply(pos, fn, targs);
-        return Apply(pos, fn, args);
-    }
-
-    public Tree mkApply(Tree fn, Tree[] targs, Tree[] args) {
-        return mkApply(fn.pos, fn, targs, args);
-    }
-
-    /** Build and attribute application node with given function
-     *  and argument trees.
-     */
-    public Tree Apply(int pos, Tree fn, Tree[] args) {
- 	try {
-	    switch (fn.type) {
-	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
-                global.nextPhase();
-		infer.methodAlternative(fn, alts, alttypes,
-					Tree.typeOf(args), Type.AnyType);
-                global.prevPhase();
-	    }
-	    switch (fn.type) {
-	    case Type.MethodType(Symbol[] vparams, Type restpe):
-		return make.Apply(pos, fn, args).setType(restpe);
-	    }
-	} catch (Type.Error ex) {
-	}
-	throw new ApplicationError("method type required", fn.type);
-    }
-
-    public Tree Apply(Tree fn, Tree[] args) {
-      return Apply(fn.pos, fn, args);
-    }
-
-    /** Build and attribute type application node with given function
-     *  and argument trees.
-     */
-    public Tree TypeApply(int pos, Tree fn, Tree[] args) {
-	try {
-	    switch (fn.type) {
-	    case Type.OverloadedType(Symbol[] alts, Type[] alttypes):
-                global.nextPhase();
-		infer.polyAlternative(fn, alts, alttypes, args.length);
-                global.prevPhase();
-	    }
-	    switch (fn.type) {
-	    case Type.PolyType(Symbol[] tparams, Type restpe):
-                global.nextPhase();
-                restpe = restpe.subst(tparams, Tree.typeOf(args));
-                global.prevPhase();
-		return make.TypeApply(pos, fn, args).setType(restpe);
-	    }
-	} catch (Type.Error ex) {
-	}
-	throw new ApplicationError("poly type required", fn.type);
-    }
-
-    public Tree TypeApply(Tree fn, Tree[] args) {
-      return TypeApply(fn.pos, fn, args);
-    }
-
-    public Tree If(int pos, Tree cond, Tree thenpart, Tree elsepart) {
-	return
-	    make.If(pos, cond, thenpart, elsepart).setType(thenpart.type);
-    }
-
-    public Tree If(Tree cond, Tree thenpart, Tree elsepart) {
-	return If(cond.pos, cond, thenpart, elsepart);
-    }
-
-    /** Build and applied type node with given function
-     *  and argument trees.
-    public Tree AppliedType(int pos, Tree fn, Tree[] args) {
-	return make.AppliedType(pos, fn, args)
-	    .setType(Type.appliedType(fn.type, Tree.typeOf(args)));
-    }
-
-    public Tree AppliedType(Tree fn, Tree[] args) {
-	return AppliedType(fn.pos, fn, args);
-    }
-     */
-
-    /** Build and attribute select node of given symbol.
-     *  It is assumed that the prefix is not empty.
-     */
-    public Tree Select(int pos, Tree qual, Symbol sym) {
-	assert sym.kind != NONE;
-	Global.instance.nextPhase();
-	Type symtype = qual.type.memberType(sym);
-	Global.instance.prevPhase();
-	sym.flags |= ACCESSED | SELECTOR;
-	return make.Select(pos, sym, qual).setType(deref(symtype));
-    }
-
-    public Tree Select(Tree qual, Symbol sym) {
-	return Select(qual.pos, qual, sym);
-    }
-
-    public Tree Select(Tree qual, Name name) {
-	Symbol sym = qual.type.lookup(name);
-	assert (sym.kind != NONE && sym != Symbol.ERROR) : name + " from " + qual.type;
-	return Select(qual, sym);
-    }
-
-    /** Build and attribute ident node with given symbol.
-     */
-    public Tree Ident(int pos, Symbol sym) {
-        assert sym.isTerm(): Debug.show(sym);
-	sym.flags |= ACCESSED;
-	return make.Ident(pos, sym).setType(deref(sym.nextType()));
-    }
-
-    public Tree Ident(Symbol sym) {
-        return Ident(sym.pos, sym);
-    }
-
-    /** Build and attribute this node with given symbol.
-     */
-    public Tree This(int pos, Symbol sym) {
-        return make.This(pos, sym).setType(sym.thisType());
-    }
-
-    /** Build and attribute super node with given type.
-     */
-    public Tree Super(int pos, Symbol sym) {
-        return make.Super(pos, sym, TypeNames.EMPTY).setType(sym.thisType());
-    }
-
-    /** Build and attribute value/variable/let definition node whose signature
-     *  corresponds to given symbol and which has given rhs.
-     */
-    public ValDef ValDef(int pos, Symbol sym, Tree rhs) {
-	Global.instance.nextPhase();
-	Type symtype = sym.type();
-	Global.instance.prevPhase();
-	ValDef res = make.ValDef(pos, sym, TypeTerm(pos, symtype), rhs);
-        res.setType(definitions.UNIT_TYPE);
-        return res;
-    }
-
-    public ValDef ValDef(Symbol sym, Tree rhs) {
-	return ValDef(sym.pos, sym, rhs);
-    }
-
-    /** Build and attribute value/variable/let definition node whose signature
-     *  corresponds to given symbol and which has given body.
-     */
-    public Tree DefDef(int pos, Symbol sym, Tree body) {
-	Global.instance.nextPhase();
-	Type symtype = sym.type();
-	Global.instance.prevPhase();
-        return make.DefDef(pos,
-                           sym,
-                           mkTypeParams(symtype.typeParams()),
-                           mkParams(symtype),
-                           TypeTerm(pos, symtype.resultType()),
-                           body)
-            .setType(definitions.UNIT_TYPE);
-    }
-
-    public Tree DefDef(Symbol sym, Tree rhs) {
-	return DefDef(sym.pos, sym, rhs);
-    }
-
-    /** Generate class definition from class symbol, and template.
-     */
-    public Tree ClassDef(int pos, Symbol clazz, Template template) {
-	Global.instance.nextPhase();
-	Type constrtype = clazz.primaryConstructor().info();
-	Global.instance.prevPhase();
-        return make.ClassDef(
-            pos,
-            clazz,
-            mkTypeParams(constrtype.typeParams()),
-            mkParams(constrtype),
-            Tree.Empty,
-            template)
-            .setType(definitions.UNIT_TYPE);
-    }
-
-    public Tree ClassDef(Symbol clazz, Template template) {
-        return ClassDef(clazz.pos, clazz, template);
-    }
-
-    /** Generate class definition from class symbol, parent constructors, and body.
-     */
-    public Tree ClassDef(int pos, Symbol clazz, Tree[] constrs, Symbol local, Tree[] body) {
-	Global.instance.nextPhase();
-	Type clazzinfo = clazz.info();
-	Global.instance.prevPhase();
-	switch (clazzinfo) {
-	case CompoundType(Type[] parents, Scope members):
-	    Template templ = make.Template(pos, local, constrs, body);
-	    templ.setType(clazzinfo);
-	    return ClassDef(pos, clazz, templ);
-	default:
-	    throw Debug.abort("illegal case", clazzinfo);
-	}
-    }
-
-    public Tree ClassDef(int pos, Symbol clazz, Tree[] constrs, Tree[] body) {
-	return ClassDef(pos, clazz, constrs, localDummy(pos, clazz), body);
-    }
-
-    public Tree ClassDef(Symbol clazz, Tree[] constrs, Symbol local, Tree[] body) {
-	return ClassDef(clazz.pos, clazz, constrs, local, body);
-    }
-
-    public Tree ClassDef(Symbol clazz, Tree[] constrs, Tree[] body) {
-	return ClassDef(clazz.pos, clazz, constrs, body);
-    }
-
-
-    /** Generate class definition from interface symbol */
-    public Tree mkInterfaceDef(Symbol clazz, Tree[] body) {
-	Global.instance.nextPhase();
-	Type[] parents = clazz.parents();
-        assert clazz.isInterface(): Debug.show(clazz);
-	Global.instance.prevPhase();
-        return ClassDef(clazz, mkPrimaryConstrs(clazz.pos, parents), body);
-    }
-
-
     /** Build the expansion of (() => expr)
      */
-    public Tree mkUnitFunction(Tree expr, Type tp, Symbol owner) {
-	return mkFunction(expr.pos, Tree.ValDef_EMPTY_ARRAY, expr, tp, owner);
+    public Tree mkUnitFunction(Tree expr, Type type, Symbol owner) {
+	return mkFunction(expr.pos, Tree.ValDef_EMPTY_ARRAY, expr, type, owner);
     }
 
     /** Build the expansion of ((vparams_1, ..., vparams_n) => body)
@@ -712,9 +734,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	changeOwner(body, owner, applyMeth);
         Tree[] parentTrees = mkPrimaryConstrs(pos, parentTypes);
         Tree[] memberTrees = { DefDef(applyMeth, body) };
-        Tree classDef = ClassDef(clazz, parentTrees, memberTrees);
-	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY)
-            .setType(parentTypes[1]);
+        Tree classDef = ClassDef_(clazz, parentTrees, memberTrees);
+	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))
+            .setType(parentTypes[1]); // !!!
 	return Block(new Tree[]{classDef, alloc});
     }
 
@@ -735,9 +757,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
                               pattype, restype, clazz, owner),
             makeVisitorMethod(pos, Names.isDefinedAt, isDefinedAtVisitor,
                               pattype, definitions.BOOLEAN_TYPE, clazz, owner)};
-        Tree classDef = ClassDef(clazz, parentTrees, memberTrees);
-	Tree alloc = New(pos, Type.localThisType, clazz, Tree.EMPTY_ARRAY)
-	    .setType(parentTypes[1]);
+        Tree classDef = ClassDef_(clazz, parentTrees, memberTrees);
+	Tree alloc = New(pos, mkPrimaryConstr(pos, clazz))
+	    .setType(parentTypes[1]); // !!!
 	return Block(new Tree[]{classDef, alloc});
     }
     //where
@@ -752,7 +774,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    changeOwner(visitor, prevOwner, meth);
 	    Tree body =
 		mkApply(
-                    Select(Ident(param), definitions.MATCH),
+                    Select(Ident(pos, param), definitions.MATCH),
                     new Tree[]{mkType(pos, pattype), mkType(pos, restype)},
                     new Tree[]{visitor});
 	    return DefDef(meth, body);
@@ -779,14 +801,14 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      */
     public Tree postfixApply(Tree obj, Tree fn, Symbol owner) {
 	if (TreeInfo.isPureExpr(obj) || TreeInfo.isPureExpr(fn)) {
-	    return Apply(Select(fn, Names.apply), new Tree[]{obj});
+	    return Apply(Select__(fn, Names.apply), new Tree[]{obj});
 	} else {
 	    Name tmpname = global.freshNameCreator.newName("tmp", '$');
 	    Symbol tmp = new TermSymbol(
 		obj.pos, tmpname, owner, SYNTHETIC | FINAL)
 		.setInfo(obj.type);
 	    Tree tmpdef = ValDef(tmp, obj);
-	    Tree expr = postfixApply(Ident(tmp), fn, owner);
+	    Tree expr = postfixApply(Ident(obj.pos, tmp), fn, owner);
 	    return Block(new Tree[]{tmpdef, expr});
 	}
     }

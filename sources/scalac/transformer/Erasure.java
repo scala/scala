@@ -283,9 +283,9 @@ public class Erasure extends Transformer implements Modifiers {
 		assert params1.length == symparams.length;
 		Tree[] args = new Tree[params1.length];
 		for (int i = 0; i < args.length; i++) {
-		    args[i] = cast(gen.Ident(params1[i]), symparams[i].type().erasure());
+		    args[i] = cast(gen.Ident(sym.pos, params1[i]), symparams[i].type().erasure());
 		}
-		Tree fwd = make.Apply(sym.pos, gen.Ident(sym).setType(symtype), args)
+		Tree fwd = make.Apply(sym.pos, gen.Ident(sym.pos, sym).setType(symtype), args)
 		    .setType(symrestp);
 		bridges.append(gen.DefDef(bridgeSym, coerce(fwd, restp)));
 		return;
@@ -518,7 +518,7 @@ public class Erasure extends Transformer implements Modifiers {
         case LabelDef(Name name, Tree.Ident[] params,Tree body):
 	    Tree.Ident[] new_params = new Tree.Ident[params.length];
 	    for (int i = 0; i < params.length; i++) {
-		new_params[i] = (Tree.Ident)gen.Ident(params[i].symbol());
+		new_params[i] = (Tree.Ident)gen.Ident(params[i].pos, params[i].symbol());
 	    }
 
 	    return copy.LabelDef(tree, new_params, transform(body)).setType(owntype);
@@ -595,7 +595,7 @@ public class Erasure extends Transformer implements Modifiers {
 	Tree tree1;
 	switch (tree) {
 	case Ident(Name name):
-	    if (name == Names.ZERO) tree1 = gen.Ident(definitions.NULL);
+	    if (name == Names.ZERO) tree1 = gen.mkNullLit(tree.pos);
 	    else tree1 = tree;
 	    break;
 	case Select(Tree qual, _):

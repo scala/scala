@@ -154,11 +154,9 @@ public class Autom2Scala  {
     // overridden in TracerInScala
     Tree loadCurrentElem( Tree body ) {
 	return cf.Block( Position.FIRSTPOS, new Tree[] {
-	    cf.gen.ValDef( Position.FIRSTPOS,
-			   this.hasnSym,
+	    cf.gen.ValDef( this.hasnSym,
 			   cf._hasNext( _iter() ) ),
-	    cf.gen.ValDef( Position.FIRSTPOS,
-			   this.curSym,
+	    cf.gen.ValDef( this.curSym,
 			   cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
 				  cf._next( _iter() ),
 				  cf.ignoreValue( curSym.type() ))),
@@ -182,7 +180,7 @@ public class Autom2Scala  {
       /** creates an int variable
        */
       Tree _intvar( Symbol sym, Tree init ) {
-	  return gen.ValDef( pos, sym, init );
+	  return gen.ValDef( sym, init );
       }
 
       // the caller needs to set the type !

@@ -455,20 +455,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     private Tree[] transformModule(Tree tree, int mods, Name name, Tree tpe, Tree.Template templ) {
 	Symbol sym = tree.symbol();
-	Tree cdef = make.ClassDef(
-	    tree.pos,
-	    mods | FINAL | MODUL,
-	    name.toTypeName(),
-	    Tree.AbsTypeDef_EMPTY_ARRAY,
-	    Tree.ValDef_EMPTY_ARRAY_ARRAY,
-	    Tree.Empty,
-	    templ)
-	    .setSymbol(sym.moduleClass()).setType(tree.type);
-	Tree alloc = gen.New(
-	    tree.pos,
-	    sym.type().prefix(),
-	    sym.moduleClass(),
-	    Tree.EMPTY_ARRAY);
+	Tree cdef = gen.ClassDef(sym.moduleClass(), templ);
+	Tree alloc = gen.New(gen.mkPrimaryConstr(tree.pos, sym.moduleClass()));
 	if (sym.isGlobalModule()) {
 	    Tree vdef = gen.ValDef(sym, alloc);
 	    return new Tree[]{cdef, vdef};
@@ -506,7 +494,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
             m_eq.setInfo(
                 Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE));
             Tree m_eqdef = gen.DefDef(m_eq,
-                gen.Assign(gen.mkRef(tree.pos, mvar), gen.Ident(m_eqarg)));
+                gen.Assign(gen.mkRef(tree.pos, mvar), gen.Ident(tree.pos, m_eqarg)));
             sym.owner().members().enterOrOverload(m_eq);
 
 	    return new Tree[]{cdef, vdef, ddef, m_eqdef};
@@ -597,7 +585,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    new Tree[]{gen.mkStringLit(clazz.pos, str)});
 	    }
 	}
-	return gen.DefDef(clazz.pos, toStringSym, body);
+	return gen.DefDef(toStringSym, body);
     }
 
     private Tree equalsMethod(ClassSymbol clazz) {
@@ -675,7 +663,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
             clazz.isSubClass(defs.OBJECT_CLASS) ? OVERRIDE : 0)
             .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE));
         clazz.info().members().enter(tagSym);
-        return gen.DefDef(clazz.pos, tagSym, gen.mkIntLit(clazz.pos, clazz.tag()));
+        return gen.DefDef(tagSym, gen.mkIntLit(clazz.pos, clazz.tag()));
 	}
 
     private Tree hashCodeMethod(ClassSymbol clazz) {
@@ -712,7 +700,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 			addMethod),
 		    new Tree[]{operand});
 	}
-	return gen.DefDef(clazz.pos, hashCodeSym, body);
+	return gen.DefDef(hashCodeSym, body);
     }
     // where
 

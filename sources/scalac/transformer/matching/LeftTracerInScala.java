@@ -213,14 +213,14 @@ public class LeftTracerInScala extends TracerInScala {
 	    .setType( _accumType( elementType ) ) ;
 
 	// `val acc = SeqNil[ elementType ]'                 init accumulator
-	v.add( gen.ValDef( pos, emptyAccSym, emptyAcc) );
+	v.add( gen.ValDef( emptyAccSym, emptyAcc) );
 
 	Tree run = callFun( new Tree[] {
 	    gen.Ident( pos, emptyAccSym ),
 	    cf.newIterator( selector, selector.type() ),
 	    cf.Int( 0 )  });
 
-	run = gen.ValDef( Position.FIRSTPOS, resultSym, run );
+	run = gen.ValDef( resultSym, run );
 
 	v.add( run );
 

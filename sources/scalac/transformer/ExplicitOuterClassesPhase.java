@@ -250,7 +250,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 context = context.getConstructorContext(symbol);
                 rhs = transform(rhs);
                 context = backup;
-                return gen.DefDef(tree.pos, symbol, rhs);
+                return gen.DefDef(symbol, rhs);
 
             case This(_):
                 return genOuterRef(tree.pos, tree.symbol());
@@ -262,13 +262,13 @@ public class ExplicitOuterClassesPhase extends Phase {
                     // !!! A this node is missing here. This should
                     // never happen if all trees were correct.
                     Tree qualifier = genOuterRef(tree.pos, owner);
-                    return gen.mkStable(gen.Select(qualifier, symbol));
+                    return gen.Select(qualifier, symbol);
                 }
                 if (!owner.isConstructor()) break;
                 Symbol clasz = owner.constructorClass();
                 if (clasz == context.clasz) break;
                 Tree qualifier = genOuterRef(tree.pos, clasz);
-                return gen.mkStable(gen.Select(qualifier, symbol));
+                return gen.Select(qualifier, symbol);
 
             case Select(Super(_, _), _):
                 Tree qualifier = ((Tree.Select)tree).qualifier;
@@ -276,7 +276,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (clasz == context.clasz) break;
                 Symbol symbol = getSuperMethod(clasz, tree.symbol());
                 qualifier = genOuterRef(qualifier.pos, clasz);
-                return gen.mkStable(gen.Select(tree.pos, qualifier, symbol));
+                return gen.Select(tree.pos, qualifier, symbol);
 
             case Apply(Tree vfun, Tree[] vargs):
                 switch (vfun) {
@@ -351,8 +351,8 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Symbol method = (Symbol)entry.getKey();
                 Symbol forward = (Symbol)entry.getValue();
                 int pos = forward.pos;
-                Tree[] targs = gen.mkTypeIdents(pos, nextTypeParams(forward));
-                Tree[] vargs = gen.mkIdents(pos, nextValueParams(forward));
+                Tree[] targs = gen.mkTypeRefs(pos, nextTypeParams(forward));
+                Tree[] vargs = gen.mkRefs(pos, nextValueParams(forward));
                 Tree fun = gen.Select(gen.Super(pos, context.clasz), method);
                 trees[i] = gen.DefDef(forward, gen.mkApply(fun, targs, vargs));
             }
@@ -362,11 +362,11 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** Returns a tree referencing the given outer class. */
         private Tree genOuterRef(int pos, Symbol clasz) {
             if (context.clasz == clasz) return gen.This(pos, clasz);
-            Tree tree = gen.mkStable(gen.Ident(pos, context.link));
+            Tree tree = gen.Ident(pos, context.link);
             for (Context context = this.context.outer;;context =context.outer){
                 assert context != null: Debug.show(clasz);
                 if (context.clasz == clasz) return tree;
-                tree = gen.mkStable(gen.Select(tree, context.link));
+                tree = gen.Select(tree, context.link);
             }
         }
 

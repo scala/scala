@@ -151,7 +151,7 @@ public class ExpandMixinsPhase extends Phase {
             case ClassDef(_, _, _, _, _, _):
                 Symbol clasz = tree.symbol();
                 if (clasz.isInterface()) return super.transform(tree);
-                return gen.ClassDef(tree.pos,clasz,getExpandedTemplate(clasz));
+                return gen.ClassDef(clasz, getExpandedTemplate(clasz));
             case PackageDef(_, _):
                 return super.transform(tree);
             case Template(_, _):

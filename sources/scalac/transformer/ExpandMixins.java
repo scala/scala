@@ -157,7 +157,7 @@ public class ClassExpander {
         for (int i = 0; i < params.length; i++) {
             Symbol member = map.lookupSymbol(params[i]);
             member.setType(map.apply(member.type()));
-            body.append(gen.ValDef(args[i].pos, member, args[i]));
+            body.append(gen.ValDef(member, args[i]));
         }
     }
 

@@ -902,7 +902,7 @@ public class PatternMatcher extends PatternTool {
 			cases = cases.next;
 		}
 		return cf.Switch(
-			gen.Apply(gen.Select(selector.duplicate(), Names.tag), new Tree[0]),
+			gen.Apply(gen.Select__(selector.duplicate(), Names.tag), new Tree[0]),
 			tags,
 			bodies,
 			(defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)

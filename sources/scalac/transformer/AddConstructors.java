@@ -120,8 +120,7 @@ public class AddConstructors extends Transformer {
     public Tree transform(Tree tree) {
 	final Symbol treeSym = tree.symbol();
 	switch (tree) {
-	case ClassDef(_, _, _, ValDef[][] vparams, _, //:
-		      Template(Tree[] baseClasses, Tree[] body)):
+	case ClassDef(_, _, _, ValDef[][] vparams, _, Template impl):
 
 	    assert treeSym.name.isTypeName();
 
@@ -154,8 +153,8 @@ public class AddConstructors extends Transformer {
 		Debug.show(constrSym.owner()) + "\n\texpected: " +
 		Debug.show(treeSym);
 
-	    for (int i = 0; i < body.length; i++) {
-		Tree t = body[i];
+	    for (int i = 0; i < impl.body.length; i++) {
+		Tree t = impl.body[i];
 		if (t.definesSymbol()) {
 		    Symbol sym = t.symbol();
 		    switch (t) {
@@ -191,24 +190,22 @@ public class AddConstructors extends Transformer {
 		    classScope.enterOrOverload(sym);
 		} else {
 		    // move class-level expressions into the constructor
-		    constrBody2.add(transform(body[i]));
+		    constrBody2.add(transform(impl.body[i]));
 		}
 	    }
 
 	    // inline the call to the super constructor
             if ( !forINT || !treeSym.parents()[0].symbol().isJava()) {
-		switch (baseClasses[0]) {
+		switch (impl.parents[0]) {
 		case Apply(Tree fun, Tree[] args):
-		    int pos = baseClasses[0].pos;
+		    int pos = impl.parents[0].pos;
 		    Tree superConstr = gen.Select
 			(gen.Super(pos, treeSym),
 			 getConstructor(fun.symbol()));
 		    constrBody.add(gen.Apply(superConstr, transform(args)));
 		    break;
 		default:
-		    new scalac.ast.printer.TextTreePrinter().
-			print(baseClasses[0]).println().end();
-		    assert false;
+                    throw Debug.abort("illegal case", impl.parents[0]);
 		}
 	    }
 
@@ -248,7 +245,7 @@ public class AddConstructors extends Transformer {
 			  toArray(new Tree[constrBody.size()])):
                 (Tree) constrBody.get(0);
 
-	    classBody.add(gen.DefDef(tree.pos, constrSym, constrTree));
+	    classBody.add(gen.DefDef(constrSym, constrTree));
 
 	    // strip off the class constructor from parameters
 	    switch (treeSym.primaryConstructor().info()) {
@@ -269,7 +266,7 @@ public class AddConstructors extends Transformer {
 	    for (int i = 0; i < newBody.length - 1; i ++)
 		newBody[i] = transform(newBody[i]);
 
-	    return gen.ClassDef(classSym, baseClasses, newBody);
+	    return gen.ClassDef(classSym, impl.parents, impl.symbol(), newBody);
 
 	// Substitute the constructor into the 'new' expressions
 	case New(Template(Tree[] baseClasses, _)):
