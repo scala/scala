@@ -7,27 +7,33 @@
 ** $Id$
 \*                                                                      */
 
-
 package scala.collection.immutable;
 
-/** I promise, there will be some documentation soon! :-) Matthias
- */
-class ListSet[A] extends Set[A] {
 
-    protected var elems: List[A] = Nil;
+class ListSet[A] with Set[A, ListSet[A]] {
 
-    def size: Int = elems.length;
+	def size: Int = 0;
 
-    def contains(elem: A): Boolean = elems.contains(elem);
+    override def isEmpty: Boolean = true;
 
-    def add(elem: A): Unit = if (!elems.contains(elem)) elems = elem :: elems;
+	def contains(elem: A): Boolean = false;
 
-    def remove(elem: A): Unit = { elems = elems.filter(e => e != elem); }
+	def +(elem: A): ListSet[A] = new Node(elem);
 
-    def clear: Unit = { elems = Nil; }
+	def -(elem: A): ListSet[A] = this;
 
-    def elements: Iterator[A] = elems.elements;
+	def elements: Iterator[A] = toList.elements;
 
-    override def toList: List[A] = elems;
+	override def toList: List[A] = Nil;
 
+	protected class Node(elem: A) extends ListSet[A] {
+		override def size = ListSet.this.size + 1;
+		override def isEmpty: Boolean = false;
+		override def contains(e: A) = (e == elem) || ListSet.this.contains(e);
+		override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e);
+		override def -(e: A): ListSet[A] = if (e == elem) ListSet.this else {
+			val y = ListSet.this - e; (new y.Node(e)) : ListSet[A]
+		}
+		override def toList: List[A] = elem :: ListSet.this.toList;
+	}
 }
