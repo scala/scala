@@ -37,7 +37,7 @@ public class Constants {
     // Public Methods - literal
 
     // !!! remove ?
-    public Object literal(             ) { return RunTime.box  (     ); }
+    public Object literal(             ) { return RunTime.box_uvalue(); }
     public Object literal(boolean value) { return new Boolean  (value); }
     public Object literal(byte    value) { return new Byte     (value); }
     public Object literal(short   value) { return new Short    (value); }

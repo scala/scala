@@ -102,8 +102,8 @@ public class Primitive {
     public case THROW           { tag = 51; } // throw x
 
     // RunTime operations
-    public case BOX             { tag = 52; } // RunTime.box(x)
-    public case UNBOX           { tag = 53; } // RunTime.<X>_unbox(x)
+    public case BOX             { tag = 52; } // RunTime.box_<X>(x)
+    public case UNBOX           { tag = 53; } // RunTime.unbox_<X>(x)
     public case NEW_ZARRAY      { tag = 54; } // RunTime.zarray(x)
     public case NEW_BARRAY      { tag = 55; } // RunTime.barray(x)
     public case NEW_SARRAY      { tag = 56; } // RunTime.sarray(x)

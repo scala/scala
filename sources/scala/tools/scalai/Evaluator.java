@@ -174,7 +174,7 @@ public class Evaluator {
 
         case Store(Code target, Variable variable, Code expression):
             store(evaluate(target), variable, evaluate(expression));
-            return RunTime.box();
+            return RunTime.box_uvalue();
 
         case Invoke(Code target, Function function, Code[] arguments, int pos):
             Object object = evaluate(target);

@@ -75,7 +75,26 @@ public class Primitives {
     private static final Name DARRAY_SET_N = Name.fromString("darray_set");
     private static final Name OARRAY_SET_N = Name.fromString("oarray_set");
 
-    private static final Name BOX_N       = Name.fromString("box");
+    private static final Name BOX_UVALUE_N = Name.fromString("box_uvalue");
+    private static final Name BOX_ZVALUE_N = Name.fromString("box_zvalue");
+    private static final Name BOX_BVALUE_N = Name.fromString("box_bvalue");
+    private static final Name BOX_SVALUE_N = Name.fromString("box_svalue");
+    private static final Name BOX_CVALUE_N = Name.fromString("box_cvalue");
+    private static final Name BOX_IVALUE_N = Name.fromString("box_ivalue");
+    private static final Name BOX_LVALUE_N = Name.fromString("box_lvalue");
+    private static final Name BOX_FVALUE_N = Name.fromString("box_fvalue");
+    private static final Name BOX_DVALUE_N = Name.fromString("box_dvalue");
+
+    private static final Name BOX_ZARRAY_N = Name.fromString("box_zarray");
+    private static final Name BOX_BARRAY_N = Name.fromString("box_barray");
+    private static final Name BOX_SARRAY_N = Name.fromString("box_sarray");
+    private static final Name BOX_CARRAY_N = Name.fromString("box_carray");
+    private static final Name BOX_IARRAY_N = Name.fromString("box_iarray");
+    private static final Name BOX_LARRAY_N = Name.fromString("box_larray");
+    private static final Name BOX_FARRAY_N = Name.fromString("box_farray");
+    private static final Name BOX_DARRAY_N = Name.fromString("box_darray");
+    private static final Name BOX_OARRAY_N = Name.fromString("box_oarray");
+    private static final Name BOX__ARRAY_N = Name.fromString("box__array");
 
     private static final Name UNBOX_UVALUE_N = Name.fromString("unbox_uvalue");
     private static final Name UNBOX_ZVALUE_N = Name.fromString("unbox_zvalue");
@@ -375,26 +394,25 @@ public class Primitives {
         this.FARRAY_SET = getUniqueTerm(RUNTIME, FARRAY_SET_N);
         this.DARRAY_SET = getUniqueTerm(RUNTIME, DARRAY_SET_N);
         this.OARRAY_SET = getUniqueTerm(RUNTIME, OARRAY_SET_N);
-        Symbol[] boxes = getTerm(RUNTIME, BOX_N).alternativeSymbols();
-        this.BOX_UVALUE = getBoxUnit(boxes);
-        this.BOX_ZVALUE = getBoxValue(boxes, definitions.BOOLEAN_TYPE());
-        this.BOX_BVALUE = getBoxValue(boxes, definitions.BYTE_TYPE());
-        this.BOX_SVALUE = getBoxValue(boxes, definitions.SHORT_TYPE());
-        this.BOX_CVALUE = getBoxValue(boxes, definitions.CHAR_TYPE());
-        this.BOX_IVALUE = getBoxValue(boxes, definitions.INT_TYPE());
-        this.BOX_LVALUE = getBoxValue(boxes, definitions.LONG_TYPE());
-        this.BOX_FVALUE = getBoxValue(boxes, definitions.FLOAT_TYPE());
-        this.BOX_DVALUE = getBoxValue(boxes, definitions.DOUBLE_TYPE());
-        this.BOX_ZARRAY = getBoxArray(boxes, definitions.BOOLEAN_TYPE());
-        this.BOX_BARRAY = getBoxArray(boxes, definitions.BYTE_TYPE());
-        this.BOX_SARRAY = getBoxArray(boxes, definitions.SHORT_TYPE());
-        this.BOX_CARRAY = getBoxArray(boxes, definitions.CHAR_TYPE());
-        this.BOX_IARRAY = getBoxArray(boxes, definitions.INT_TYPE());
-        this.BOX_LARRAY = getBoxArray(boxes, definitions.LONG_TYPE());
-        this.BOX_FARRAY = getBoxArray(boxes, definitions.FLOAT_TYPE());
-        this.BOX_DARRAY = getBoxArray(boxes, definitions.DOUBLE_TYPE());
-        this.BOX_OARRAY = getBoxArray(boxes, definitions.JAVA_OBJECT_TYPE());
-        this.BOX__ARRAY = getBoxArray(boxes, definitions.ANY_TYPE());
+        this.BOX_UVALUE = getUniqueTerm(RUNTIME, BOX_UVALUE_N);
+        this.BOX_ZVALUE = getUniqueTerm(RUNTIME, BOX_ZVALUE_N);
+        this.BOX_BVALUE = getUniqueTerm(RUNTIME, BOX_BVALUE_N);
+        this.BOX_SVALUE = getUniqueTerm(RUNTIME, BOX_SVALUE_N);
+        this.BOX_CVALUE = getUniqueTerm(RUNTIME, BOX_CVALUE_N);
+        this.BOX_IVALUE = getUniqueTerm(RUNTIME, BOX_IVALUE_N);
+        this.BOX_LVALUE = getUniqueTerm(RUNTIME, BOX_LVALUE_N);
+        this.BOX_FVALUE = getUniqueTerm(RUNTIME, BOX_FVALUE_N);
+        this.BOX_DVALUE = getUniqueTerm(RUNTIME, BOX_DVALUE_N);
+        this.BOX_ZARRAY = getUniqueTerm(RUNTIME, BOX_ZARRAY_N);
+        this.BOX_BARRAY = getUniqueTerm(RUNTIME, BOX_BARRAY_N);
+        this.BOX_SARRAY = getUniqueTerm(RUNTIME, BOX_SARRAY_N);
+        this.BOX_CARRAY = getUniqueTerm(RUNTIME, BOX_CARRAY_N);
+        this.BOX_IARRAY = getUniqueTerm(RUNTIME, BOX_IARRAY_N);
+        this.BOX_LARRAY = getUniqueTerm(RUNTIME, BOX_LARRAY_N);
+        this.BOX_FARRAY = getUniqueTerm(RUNTIME, BOX_FARRAY_N);
+        this.BOX_DARRAY = getUniqueTerm(RUNTIME, BOX_DARRAY_N);
+        this.BOX_OARRAY = getUniqueTerm(RUNTIME, BOX_OARRAY_N);
+        this.BOX__ARRAY = getUniqueTerm(RUNTIME, BOX__ARRAY_N);
         this.UNBOX_UVALUE = getUniqueTerm(RUNTIME, UNBOX_UVALUE_N);
         this.UNBOX_ZVALUE = getUniqueTerm(RUNTIME, UNBOX_ZVALUE_N);
         this.UNBOX_BVALUE = getUniqueTerm(RUNTIME, UNBOX_BVALUE_N);
@@ -487,34 +505,6 @@ public class Primitives {
 
     //########################################################################
     // Private interface
-
-    private Symbol getBoxUnit(Symbol[] alts) {
-        for (int i = 0; i < alts.length; i++) {
-            switch (alts[i].type()) {
-            case MethodType(Symbol[] vparams, _):
-                if (vparams.length == 0)
-                    return alts[i];
-            }
-        }
-        throw Debug.abort("not found:" + BOX_N + "()");
-    }
-
-    private Symbol getBoxValue(Symbol[] alts, Type type) {
-        for (int i = 0; i < alts.length; i++) {
-            Type result = alts[i].type().resultType();
-            switch (alts[i].type()) {
-            case PolyType(Symbol[] tparams, _):
-                result = result.subst(tparams, Symbol.info(tparams));
-            }
-            if (result.equals(type)) return alts[i];
-        }
-        throw Debug.abort("not found: def " +BOX_N+ "(" +type+ "): " +type);
-    }
-
-    private Symbol getBoxArray(Symbol[] alts, Type type) {
-        Type array = definitions.ARRAY_CLASS.type();
-        return getBoxValue(alts, Type.appliedType(array, new Type[]{type}));
-    }
 
     private Symbol getUniqueTerm(Symbol owner, Name name) {
         Symbol symbol = getTerm(owner, name);
