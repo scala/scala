@@ -159,7 +159,6 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text KW_IF        = Text.Keyword("if");
     protected static final Text KW_IMPORT    = Text.Keyword("import");
     protected static final Text KW_INTERFACE = Text.Keyword("interface");
-    protected static final Text KW_LET       = Text.Keyword("let");
     protected static final Text KW_OBJECT    = Text.Keyword("object");
     protected static final Text KW_NEW       = Text.Keyword("new");
     protected static final Text KW_NULL      = Text.Keyword("null");
@@ -168,7 +167,7 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text KW_PACKAGE   = Text.Keyword("package");
     protected static final Text KW_PRIVATE   = Text.Keyword("private");
     protected static final Text KW_PROTECTED = Text.Keyword("protected");
-    protected static final Text KW_QUALIFIED = Text.Keyword("qualified");
+    protected static final Text KW_RETURN    = Text.Keyword("return");
     protected static final Text KW_STATIC    = Text.Keyword("static");
     protected static final Text KW_SUPER     = Text.Keyword("super");
     protected static final Text KW_THIS      = Text.Keyword("this");
@@ -479,6 +478,12 @@ public class TextTreePrinter implements TreePrinter {
             print(defaultBody);
             undent();
             print(TXT_BLOCK_END);
+            break;
+
+        case Return(Tree expr):
+            print(KW_RETURN);
+            print(Text.Space);
+            print(expr);
             break;
 
         case New(Tree.Template templ):

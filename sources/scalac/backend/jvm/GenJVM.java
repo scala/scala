@@ -168,6 +168,12 @@ class GenJVM {
             leaveMethod(ctx1);
         } break;
 
+        case Return(Tree expr): {
+            JType retType = ctx.method.getReturnType();
+            genLoad(ctx, expr, retType);
+            ctx.code.emitRETURN(retType);
+        } break;
+
         case Typed(Tree expr, _):
             gen(ctx, expr);
             break;
