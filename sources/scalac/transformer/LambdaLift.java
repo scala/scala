@@ -581,10 +581,20 @@ public class LambdaLift extends OwnerTransformer
         case LabelDef(_, _, _):
             Symbol sym = tree.symbol();
 	    assert sym.isLocal() : sym;
+            // This is to fix the owner of y from x to f in this example:
+            //   class C { def f = { val x = { val y = ...; y } } }
+            if (!isClassMember(sym.owner())) {
+                assert isClassMember(sym.owner().owner()): Debug.show(tree, sym);
+                sym.setOwner(sym.owner().owner());
+            }
             break;
 
 	}
     }
+    // where
+        private boolean isClassMember(Symbol sym) {
+            return sym.isConstructor() || sym.owner().isClass();
+        }
 
     void liftSymbol(Symbol sym, Symbol[] oldtparams,
 		    Symbol[] newtparams, Symbol[] newparams) {
