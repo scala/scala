@@ -96,8 +96,12 @@ transformer/TransMatchPhase.java
 transformer/AddConstructors.java
 transformer/AddConstructorsPhase.java
 
+transformer/matching/CaseEnv.java
+transformer/matching/CodeFactory.java
 transformer/matching/PatternMatcher.java
 transformer/matching/PatternNode.java
+transformer/matching/PatternNodeCreator.java
+transformer/matching/PatternTool.java
 
 typechecker/Analyzer.java
 typechecker/AnalyzerPhase.java
