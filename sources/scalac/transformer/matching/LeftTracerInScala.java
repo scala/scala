@@ -52,7 +52,7 @@ public class LeftTracerInScala extends TracerInScala {
 
 	helpMap.put( realVar, helpVar );
 
-	Tree varDef = gen.ValDef(helpVar, cf.newSeqNil( elementType ));
+	Tree varDef = gen.ValDef(helpVar, gen.Nil(cf.pos /*cf.newSeqNil elementType*/ ));
 	// set mutable flag of symbol helpVar ??
 	helpVarDefs.add( varDef );
 	return helpVar;
@@ -121,11 +121,20 @@ public class LeftTracerInScala extends TracerInScala {
 	  if( target == dfa.nstates - 1 )
 	  return code_fail();
 	*/
+
+	/*
 	Tree newAcc = cf.newSeqTraceCons(new Integer(i),
 					 currentElem(),
 					 _ref( accumSym ));
+	*/
+	Tree hd = cf.newPair( gen.mkIntLit(cf.pos, i), currentElem() );
 
-	return callFun( new Tree[] { newAcc , _iter(), cf.Int( target )} );
+	Tree newAcc = gen.Cons(cf.pos,
+			       hd.type,
+			       hd,
+			       _ref( accumSym ));
+
+	return callFun( new Tree[] { newAcc , _iter(), gen.mkIntLit( cf.pos, target )} );
     }
 
 
@@ -201,7 +210,7 @@ public class LeftTracerInScala extends TracerInScala {
 	// `def leftTracer(...) = ...'                 the function definition
 	v.add( theDefDef );
 
-	Tree emptyAcc    = cf._seqTraceNil( elementType );
+	Tree emptyAcc    = gen.Nil( cf.pos ); //cf._seqTraceNil( elementType );
 
 	// the valdef is needed, because passing emptyAcc as a parameter
 	//   results in a ClassCastException at runtime (?!)
@@ -218,7 +227,7 @@ public class LeftTracerInScala extends TracerInScala {
 	Tree run = callFun( new Tree[] {
 	    gen.Ident( pos, emptyAccSym ),
 	    cf.newIterator( selector, selector.type() ),
-	    cf.Int( 0 )  });
+	    gen.mkIntLit( cf.pos, 0 )  });
 
 	run = gen.ValDef( resultSym, run );
 
@@ -298,9 +307,11 @@ public class LeftTracerInScala extends TracerInScala {
     /** return the accumulator + last state
      */
     Tree run_finished( int state ) {
-	return cf.newSeqTraceCons(new Integer( state ),
-				  cf.ignoreValue( elementType ),
-				  _ref( accumSym ));
+	Tree hd = cf.newPair( gen.mkIntLit( cf.pos, state ), cf.ignoreValue( elementType ));
+	return gen.Cons(  cf.pos,
+			  hd.type(),
+			  hd,
+			  _ref( accumSym ));
     }
 
 }

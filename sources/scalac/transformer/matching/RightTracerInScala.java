@@ -113,7 +113,7 @@ public class RightTracerInScala extends TracerInScala  {
 	if( keepType )
 	    rhs = cf.ignoreValue( realVar.type() );
 	else
-	    rhs = /* cf.newRef( */ cf.newSeqNil( elementType )
+	    rhs = /* cf.newRef(  cf.newSeqNil( */ gen.Nil( cf.pos )
 		.setType( cf.SeqListType( elementType ));
  /* ) */;
 	helpVar.flags |= Modifiers.MUTABLE;
@@ -125,7 +125,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     Tree prependToHelpVar( Symbol realVar, Tree elem ) {
 	Tree hv = refHelpVar( realVar );
-	return gen.Assign( hv, cf.newSeqCons( elem, hv ));
+	return gen.Assign( hv, gen.Cons(cf.pos, elem.type(), elem, hv));//cf.newSeqCons( elem, hv ));
 	/*
 	  return cf.Block(pos,
 	  new Tree [] {
@@ -228,14 +228,14 @@ public class RightTracerInScala extends TracerInScala  {
 	    Integer targetR  = (Integer) hmap.get( targetL );
 
 	    stateBody = cf.If( cf.Equals( gen.Ident( pos, targetSym ),
-					  cf.Int( targetL )),
+					  gen.mkIntLit( cf.pos, targetL )),
 			       callFun( new Tree[] {
 				   cf.SeqTrace_tail( _iter() ),
-				   cf.Int( targetR ) }),
+				   gen.mkIntLit( cf.pos, targetR ) }),
 			       stateBody );
 	}
 
-	return cf.If( cf.Equals( _state(), cf.Int( 0 )),
+	return cf.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, 0 )),
 		      stateBody ,
 		      elseBody );
 
@@ -415,7 +415,7 @@ public class RightTracerInScala extends TracerInScala  {
 	    stms[ j++ ] = algMatchTree ;
 
 	stms[ j ] = callFun( new Tree[] { cf.SeqTrace_tail( _iter() ),
-					  cf.Int( ntarget ) } );
+					  gen.mkIntLit( cf.pos, ntarget ) } );
 
 	return cf.Block( pos, stms, funRetType() );
     }
@@ -432,7 +432,7 @@ public class RightTracerInScala extends TracerInScala  {
 	    v.add( (Tree) it.next() );
 
 	v.add( gen.DefDef( this.funSym, code_body() )  );
-	v.add( callFun( new Tree[] {  trace, cf.Int( 0 )  }  )  );
+	v.add( callFun( new Tree[] {  trace, gen.mkIntLit( cf.pos, 0 )  }  )  );
 
 	/*
 	  for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
@@ -478,7 +478,7 @@ public class RightTracerInScala extends TracerInScala  {
 	//System.out.println("_cur_eq, thelab: "+label);
 	switch( label ) {
 	case Pair( Integer target, Label theLab ):
-	    return cf.Equals( cf.Int( target ),
+	    return cf.Equals( gen.mkIntLit( cf.pos, target ),
 			      current() );
 	}
 	throw new ApplicationError("expected Pair label");

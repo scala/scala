@@ -224,7 +224,8 @@ public class Autom2Scala  {
 	    return loadCurrentElem( cf.Switch( _state(),
 					       tags,
 					       bodies,
-					       cf.Int( -1 )).setType( funRetType() ) );
+					       gen.mkIntLit(cf.pos, -1 ))
+				    .setType( funRetType() ) );
 
 	Tree res = code_fail();
 	for( int i = dfa.nstates-2; i>= 0; i-- )
