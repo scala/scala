@@ -8,8 +8,9 @@
 
 package scalac;
 
-import java.util.List;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import scalac.util.ClassPath;
 import scalac.util.Reporter;
@@ -29,7 +30,14 @@ import scalac.util.ScalaFileArgumentParser;
 import scalac.util.UnknownArgumentParser;
 import scalac.util.Strings;
 
+/*
+ * Class <code>CompilerCommand</code> describes the options
+ * passed as arguments to the compiler command.
+ */
 public class CompilerCommand extends CommandParser {
+
+    //########################################################################
+    // Public Fields
 
     public final CompilerPhases phases;
 
@@ -56,9 +64,6 @@ public class CompilerCommand extends CommandParser {
     public final ChoiceOptionParser printer;
     public final StringOptionParser printfile;
     public final PhaseSetOptionParser graph;
-    public final BooleanOptionParser doc;
-    public final StringOptionParser docmodule;
-    public final StringOptionParser docmodulePath;
     public final PhaseSetOptionParser stop;
     public final PhaseSetOptionParser log;
     public final VersionOptionParser version;
@@ -67,6 +72,16 @@ public class CompilerCommand extends CommandParser {
     public final ScalaFileArgumentParser files;
     public final UnknownArgumentParser unknown_arguments;
 
+    //########################################################################
+    // Public Constructors
+    /*
+     * Creates an instance variable.
+     *
+     * @param product
+     * @param version
+     * @param reporter
+     * @param phases
+     */
     public CompilerCommand(String product, String version,
         Reporter reporter, CompilerPhases phases)
     {
@@ -173,18 +188,6 @@ public class CompilerCommand extends CommandParser {
             "graph", "Graph the program after <phases> (see below)",
             phases.phases(), PhaseDescriptor.GRAPH),
 
-        this.doc = new BooleanOptionParser(this,
-            "doc", "Generate documentation",
-            false),
-
-        this.docmodule = new StringOptionParser(this,
-	    "docmodule", "Specify module used by scaladoc",
-            "class", "scaladoc.StandardDocModule"),
-
-        this.docmodulePath = new StringOptionParser(this,
-            "docmodulepath", "Specify where to find doc module class files",
-            "path", ClassPath.CLASS_PATH),
-
         this.stop = new PhaseSetOptionParser(this,
             "stop", "Stop after first phase in <phases> (see below)",
             phases.phases(), PhaseDescriptor.STOP),
@@ -211,6 +214,14 @@ public class CompilerCommand extends CommandParser {
         for (int i = 0; i < parsers.length; i++) add(parsers[i]);
     }
 
+    //########################################################################
+    // Public Methods
+
+    /*
+     * ..
+     *
+     * @param args
+     */
     public boolean parse(String[] args) {
         boolean result = super.parse(args);
         reporter().nowarn = nowarn.value;
@@ -219,29 +230,57 @@ public class CompilerCommand extends CommandParser {
         return result;
     }
 
+    private boolean containsPhaseOptions() {
+        List parsers = parsers();
+        for (int i = 0; i < parsers.size(); i++) {
+            if (parsers.get(i) instanceof PhaseSetOptionParser) return true;
+        }
+        return false;
+    }
+
+    /*
+     * Returns the help message for this compiler command.
+     *
+     * @return a formatted string containing the help message.
+     */
     public String getHelpMessage() {
         StringBuffer buffer = new StringBuffer(super.getHelpMessage());
-        buffer.append(Strings.EOL);
-        buffer.append("and possible compilation phases include:");
-        buffer.append(Strings.EOL);
-        PhaseDescriptor[] array = phases.phases();
-        List lines = new ArrayList(array.length);
-        for (int i = 0; i < array.length; i++) {
-            PhaseDescriptor phase = array[i];
-            lines.add("  " + phase.name() + "\t  " + phase.description());
+        if (containsPhaseOptions()) {
+            buffer.append(Strings.EOL);
+            buffer.append("and possible compilation phases include:");
+            buffer.append(Strings.EOL);
+            PhaseDescriptor[] array = phases.phases();
+            List lines = new ArrayList(array.length);
+            for (int i = 0; i < array.length; i++) {
+                PhaseDescriptor phase = array[i];
+                lines.add("  " + phase.name() + "\t  " + phase.description());
+            }
+            lines.add("  " + "all" + "\t  " + "matches all phases");
+            buffer.append(Strings.format(lines));
         }
-        lines.add("  " + "all" + "\t  " + "matches all phases");
-        buffer.append(Strings.format(lines));
         return buffer.toString();
     }
 
+    /*
+     * Returns the class path for this compiler command.
+     *
+     * @return the class path.
+     */
     public ClassPath classpath() {
         return new ClassPath(classpath.value, sourcepath.value,
             bootclasspath.value, extdirs.value);
     }
 
+    /*
+     * Returns the output path for this compiler command.
+     *
+     * @return the output path terminated by .
+     */
     public String outpath() {
-        return outpath.value + (outpath.value.endsWith("/") ? "" : "/");
+        return outpath.value + (
+            outpath.value.endsWith(File.separator) ? "" : File.separator
+        );
     }
 
+    //########################################################################
 }
