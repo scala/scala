@@ -10,7 +10,7 @@
 
 (defconst scala-mode-version "0.3 ($Revision$)")
 (defconst scala-bug-e-mail "Michel.Schinz@epfl.ch")
-(defconst scala-web-url "http://lampwww.epfl.ch/scala/")
+(defconst scala-web-url "http://lamp.epfl.ch/scala/")
 
 ;; Customization
 
@@ -514,7 +514,7 @@ When called repeatedly, indent each time one stop further on the right."
                                        (0 font-lock-type-face nil)))
 
     ;; class definitions
-    ("\\<class\\|trait\\>"
+    ("\\<\\(class\\|trait\\)\\>"
      (scala-match-and-skip-ident (goto-char (match-end 0)) nil
                                  (1 font-lock-type-face nil))
      (scala-match-and-skip-type-param nil nil
@@ -524,7 +524,7 @@ When called repeatedly, indent each time one stop further on the right."
                                    (2 font-lock-type-face nil t)))
 
     ;; "extends" and "with" clauses
-    ("\\<extends\\|with\\>\\s *[^{]"
+    ("\\<\\(extends\\|with\\)\\>\\s *[^{]"
      (scala-match-and-skip-ident (goto-char (1- (match-end 0))) nil
                                  (0 font-lock-type-face nil))
      (scala-match-and-skip-type-param nil nil
