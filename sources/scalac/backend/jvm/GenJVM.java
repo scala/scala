@@ -1357,13 +1357,7 @@ class GenJVM {
         }
         addScalaAttr(mirrorClass, pickle);
 
-        try {
-            String fileName = javaFileName(mirrorName);
-            mirrorClass.writeTo(fileName);
-            global.operation("wrote " + fileName);
-        } catch (java.io.IOException e) {
-            throw global.fail(e.getMessage());
-        }
+        writeClassFile(mirrorClass);
     }
 
     /**
@@ -1650,13 +1644,7 @@ class GenJVM {
             else
                 addScalaAttr(clazz, pickle);
 
-        try {
-            String fileName = javaFileName(clazz.getName());
-            clazz.writeTo(fileName);
-            global.operation("wrote " + fileName);
-        } catch (java.io.IOException e) {
-            throw global.fail(e.getMessage());
-        }
+        writeClassFile(clazz);
     }
 
     /**
@@ -1716,6 +1704,21 @@ class GenJVM {
     protected void leaveMethod(Context ctx) {
         genLocalVariableTable(ctx);
         global.log("leaving method");
+    }
+
+    /// I/O
+    //////////////////////////////////////////////////////////////////////
+
+    /** Writes the given class to a file. */
+    protected void writeClassFile(JClass clazz) {
+        String fileName = javaFileName(clazz.getName());
+        try {
+            clazz.writeTo(fileName);
+            global.operation("wrote " + fileName);
+        } catch (IOException exception) {
+            if (global.debug) exception.printStackTrace();
+            global.error("could not write file " + fileName);
+        }
     }
 
     /// Misc.
