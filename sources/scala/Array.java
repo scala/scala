@@ -52,7 +52,7 @@ public abstract class Array implements Function1 {
         throw new ClassCastException();
     }
 
-    /** @meta method () scala.Array[scala.Any];
+    /** @meta method () scala.Array[scala.AnyRef];
      */
     public java.lang.Object[] asObjectArray() {
         throw new ClassCastException();
