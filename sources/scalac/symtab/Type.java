@@ -2308,7 +2308,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
     //where
 
-        Type deAlias(Type tp) {
+        static Type deAlias(Type tp) {
             switch (tp) {
             case SingleType(_, _):
                 Type tp1 = tp.singleDeref();
