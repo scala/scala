@@ -41,6 +41,14 @@ object Iterator {
     def next = { val c = str charAt i; i = i + 1; c };
   }
 
+  def fromCaseClass(n:CaseClass): Iterator[Any] = new Iterator[Any] {
+    private var c:Int = 0;
+    private val cmax = n.numberOfElements;
+    def hasNext = c < cmax;
+    def next = { val a = n.selectElement( c ); c = c + 1; a }
+
+  }
+
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
    *  where <code>e<sub>0</sub> = lo</code>

@@ -89,14 +89,7 @@ class Matcher( pgram:Grammar )  {
 
   def getChildren( t:Any ):Iterator[Any] = t match {
     //case n:scala.xml.Node => n.child;
-    case n:CaseClass => new Iterator[Any] {
-      var c:Int = 0;
-      final val cmax = n.numberOfElements();
-      def hasNext = c < cmax;
-      def next = {
-        c = c + 1; n.selectElement( c );
-      }
-    }
+    case n:CaseClass => Iterator.fromCaseClass( n );
     case _ => Iterator.empty[Any];
   }
 // ------------------------------------------------------------------------

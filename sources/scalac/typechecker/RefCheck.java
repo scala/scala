@@ -699,7 +699,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
         Tree body;
         if( fields.length > 0) {        // switch< n >
             int tags[] = new int[ fields.length ];
-            int i = 0; while( i < fields.length ) { tags[i] = ++i; };
+            int i = 0; while( i < fields.length ) { tags[i] = i; ++i; };
             body = gen.Switch( gen.mkLocalRef( clazz.pos, seParam ),
                                tags,
                                fields,
@@ -714,7 +714,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     private Tree numberOfElementsMethod( ClassSymbol clazz ) {
 	Symbol seSym = clazz.newMethod( clazz.pos, OVERRIDE, Names.numberOfElements );
         seSym.setInfo(
-            Type.MethodType( Symbol.EMPTY_ARRAY, defs.INT_TYPE() ));
+            Type.PolyType( Symbol.EMPTY_ARRAY, defs.INT_TYPE() ));
 	clazz.info().members().enter( seSym );
 	Tree[] fields = caseFields( clazz );
 	return gen.DefDef(seSym, gen.mkIntLit( clazz.pos, fields.length ));

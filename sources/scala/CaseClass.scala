@@ -15,12 +15,12 @@ package scala;
  */
 trait CaseClass {
 
-  /** for a case class A(x1,...,xk), returns x_i for 1<= i <= k, null otherwise
+  /** for a case class A(x_0,...,x_(k-1)), returns x_i, null otherwise
   */
   def selectElement(n:int):Any ;
 
-  /** for a case class A(x1,...,xk), returns k
+  /** for a case class A(x_0,...,x_(k-1)), returns k
   */
-  def numberOfElements(): int ;
+  def numberOfElements: int ;
 
 }
