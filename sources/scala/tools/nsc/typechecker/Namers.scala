@@ -40,11 +40,11 @@ trait Namers: Analyzer {
       sym1
     }
 
-    private def enterInScope(pos: int, sym: Symbol): Symbol = {
+    def enterInScope(sym: Symbol): Symbol = {
       if (!(sym.isMethod && sym.owner.isClass)) {
 	val prev = context.scope.lookupEntry(sym.name);
 	if (prev != null && prev.owner == context.scope && !prev.sym.isMethod)
-	  doubleDefError(pos, prev.sym);
+	  doubleDefError(sym.pos, prev.sym);
       }
       context.scope enter sym;
       sym
@@ -55,7 +55,7 @@ trait Namers: Analyzer {
       if (p.isPackage && context.scope == p.owner.info.decls) {
         p.pos = pos; p.moduleClass.pos = pos; p
       } else {
-        enterInScope(pos, context.owner.newPackage(pos, name))
+        enterInScope(context.owner.newPackage(pos, name))
       }
     }
 
@@ -64,7 +64,7 @@ trait Namers: Analyzer {
       if (c.isType && context.scope == c.owner.info.decls) {
         updatePosFlags(c, pos, mods)
       } else {
-	enterInScope(pos, context.owner.newClass(pos, name).setFlag(mods))
+	enterInScope(context.owner.newClass(pos, name).setFlag(mods))
       }
     }
 
@@ -76,7 +76,7 @@ trait Namers: Analyzer {
         val newm = context.owner.newModule(pos, name);
         newm.setFlag(mods);
         newm.moduleClass.setFlag(mods);
-	enterInScope(pos, newm)
+	enterInScope(newm)
       }
     }
 
@@ -85,7 +85,7 @@ trait Namers: Analyzer {
       if (m.isModule && context.scope == m.owner.info.decls) {
         updatePosFlags(m, pos, mods)
       } else {
-        enterInScope(pos, context.owner.newMethod(pos, name).setFlag(mods))
+        enterInScope(context.owner.newMethod(pos, name).setFlag(mods))
       }
     }
 
@@ -113,7 +113,7 @@ trait Namers: Analyzer {
 	    val namer = new Namer(
 	      context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls));
 	    stats map namer.enterSym;
-	    tree.symbol
+            tree.symbol
 	  case ClassDef(mods, name, tparams, _, _) =>
 	    if ((mods & (CASE | ABSTRACT)) == CASE) { // enter case factory method.
 	      tree.symbol = enterCaseFactorySymbol(
@@ -126,28 +126,48 @@ trait Namers: Analyzer {
 	      .setInfo(typer.typeCompleter(tree));
 	    tree.symbol.info.decls enter constr;
 	    finishWith(tparams)
-	  case ModuleDef(mods, name, _, _) =>
+	  case ModuleDef(mods, name, _) =>
 	    tree.symbol = enterModuleSymbol(tree.pos, mods, name);
 	    tree.symbol.moduleClass.setInfo(typer.typeCompleter(tree));
 	    finish
 	  case ValDef(mods, name, tp, rhs) =>
-	    tree.symbol = enterInScope(tree.pos, owner.newValue(tree.pos, name).setFlag(mods));
-	    finish
+            if (context.owner.isClass & (mods & PRIVATE) == 0) {
+	      val accmods = ACCESSOR | (if ((mods & MUTABLE) != 0) mods & ~MUTABLE
+                                        else mods | STABLE);
+	      val getter = owner.newMethod(tree.pos, name)
+	        .setFlag(accmods).setInfo(typer.getterTypeCompleter(tree));
+	      enterInScope(getter);
+	      if ((mods & MUTABLE) != 0) {
+	        val setter = owner.newMethod(tree.pos, name)
+		  .setFlag(accmods).setInfo(typer.setterTypeCompleter(tree));
+	        enterInScope(setter)
+	      }
+	      tree.symbol =
+	        if ((mods & DEFERRED) == 0)
+		  owner.newValue(tree.pos, name)
+	            .setFlag(mods | PRIVATE | LOCAL).setInfo(typer.typeCompleter(tree))
+	        else getter;
+              tree.symbol
+            } else {
+              tree.symbol =
+                enterInScope(owner.newValue(tree.pos, name).setFlag(mods));
+	      finish
+            }
 	  case DefDef(mods, nme.CONSTRUCTOR, tparams, vparams, tp, rhs) =>
 	    if (!(owner.isClass && context.scope == owner.info.decls) ||
 		owner.isModuleClass || owner.isAnonymousClass || owner.isRefinementClass)
 	      context.unit.error(tree.pos, "constructor definition not allowed here");
-	    tree.symbol = enterInScope(tree.pos, owner.newConstructor(tree.pos))
+	    tree.symbol = enterInScope(owner.newConstructor(tree.pos))
 	      .setFlag(mods | owner.rawflags & CONSTRFLAGS);
 	    finishWith(tparams)
 	  case DefDef(mods, name, tparams, _, _, _) =>
-	    tree.symbol = enterInScope(tree.pos, owner.newMethod(tree.pos, name)).setFlag(mods);
+	    tree.symbol = enterInScope(owner.newMethod(tree.pos, name)).setFlag(mods);
 	    finishWith(tparams)
 	  case AbsTypeDef(mods, name, _, _) =>
-	    tree.symbol = enterInScope(tree.pos, owner.newAbstractType(tree.pos, name));
+	    tree.symbol = enterInScope(owner.newAbstractType(tree.pos, name));
 	    finish
 	  case AliasTypeDef(mods, name, tparams, _) =>
-	    tree.symbol = enterInScope(tree.pos, owner.newAliasType(tree.pos, name));
+	    tree.symbol = enterInScope(owner.newAliasType(tree.pos, name));
 	    finishWith(tparams)
 	  case Attributed(_, defn) =>
 	    enterSym(defn)
@@ -157,7 +177,7 @@ trait Namers: Analyzer {
 	    tree.symbol = NoSymbol.newImport(tree.pos);
 	    finish
 	  case _ =>
-	    NoSymbol
+            tree.symbol
 	}
       }
     }

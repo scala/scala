@@ -729,6 +729,7 @@ abstract class Lexical: ParserPhase {
       enterKeyword("for", FOR);
       enterKeyword("if", IF);
       enterKeyword("import", IMPORT);
+      enterKeyword("match", MATCH);
       enterKeyword("new", NEW);
       enterKeyword("null", NULL);
       enterKeyword("object", OBJECT);

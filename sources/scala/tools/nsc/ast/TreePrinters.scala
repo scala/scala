@@ -71,7 +71,7 @@ abstract class TreePrinters {
     }
 
     def printBlock(tree: Tree): unit = tree match {
-      case Block(_, _) | Visitor(_) => print(tree)
+      case Block(_, _) => print(tree)
       case _ => printColumn(List(tree), "{", ";", "}")
     }
 
@@ -103,9 +103,9 @@ abstract class TreePrinters {
         case PackageDef(packaged, stats) =>
           print("package "); print(packaged); printColumn(stats, " {", ";", "}")
 
-        case ModuleDef(mods, name, tpe, impl) =>
+        case ModuleDef(mods, name, impl) =>
           printModifiers(mods); print("object " + symName(tree, name));
-          printOpt(": ", tpe); print(" extends "); print(impl);
+          print(" extends "); print(impl);
 
         case ValDef(mods, name, tp, rhs) =>
           printModifiers(mods);
@@ -152,8 +152,8 @@ abstract class TreePrinters {
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
 
-        case Visitor(cases) =>
-          printColumn(cases, "{", "", "}");
+        case Match(selector, cases) =>
+          print(selector); printColumn(cases, " match {", "", "}")
 
         case CaseDef(pat, guard, body) =>
           print("case "); print(pat); printOpt(" if ", guard);
@@ -181,18 +181,12 @@ abstract class TreePrinters {
             println; print("else"); indent; println; print(elsep); undent
           }
 
-        case Switch(expr, tags, bodies, defaultBody) =>
-          print("<switch> ("); print(expr); print(") {"); indent;
-          printSeq(tags zip bodies)
-            {case Pair(tag, body) => print("case " + tag + " => "); print(body)} {println}
-          print("<default> => "); print(defaultBody); print(" }"); undent
-
         case Return(expr) =>
           print("return "); print(expr)
 
-        case Try(block, catcher, finalizer) =>
+        case Try(block, catches, finalizer) =>
           print("try "); printBlock(block);
-	  printOpt(" catch ", catcher);
+          if (!catches.isEmpty) printColumn(catches, " catch {", "", "}");
           printOpt(" finally ", finalizer)
 
         case Throw(expr) =>
@@ -236,7 +230,7 @@ abstract class TreePrinters {
             case _ => obj.toString()
           })
 
-        case EmptyTypeTree() =>
+        case TypeTree() =>
           print(tree.tpe.toString());
 
         case SingletonTypeTree(ref) =>
@@ -245,11 +239,9 @@ abstract class TreePrinters {
         case SelectFromTypeTree(qualifier, selector) =>
           print(qualifier); print("#"); print(symName(tree, selector))
 
-        case IntersectionTypeTree(parents) =>
-          printRow(parents, " with ")
-
-        case RefinementTypeTree(base, decls) =>
-          print(base); printColumn(decls, "{", ";", "}")
+        case CompoundTypeTree(parents, decls) =>
+          printRow(parents, " with ");
+          if (!decls.isEmpty) printColumn(decls, "{", ";", "}")
 
         case AppliedTypeTree(tp, args) =>
           print(tp); printRow(args, "[", ", ", "]")

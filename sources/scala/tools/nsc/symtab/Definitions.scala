@@ -73,6 +73,9 @@ abstract class Definitions: SymbolTable {
       typeRef(sym.info.prefix, sym, formals ::: List(restpe))
     }
 
+    def seqType(arg: Type) =
+      typeRef(SeqClass.info.prefix, SeqClass, List(arg));
+
     // members of class scala.Any
     var Any_==          : Symbol = _;
     var Any_!=          : Symbol = _;
@@ -81,7 +84,6 @@ abstract class Definitions: SymbolTable {
     var Any_toString    : Symbol = _;
     var Any_isInstanceOf: Symbol = _;
     var Any_asInstanceOf: Symbol = _;
-    var Any_match       : Symbol = _;
 
     // members of class java.lang.{Object, String}
     var Object_eq          : Symbol = _;
@@ -145,7 +147,7 @@ abstract class Definitions: SymbolTable {
       JavaPackage = getModule("java");
       JavaLangPackage = getModule("java.lang");
       ScalaPackage = getModule("scala");
-      ScalaPackageClass = ScalaPackage.moduleClass;
+      ScalaPackageClass = ScalaPackage.tpe.symbol;
 
       AnyClass = newClass(ScalaPackageClass, "Any", List());
       AnyValClass = getClass("scala.AnyVal");
@@ -220,15 +222,6 @@ abstract class Definitions: SymbolTable {
 	{ val tparam = newTypeParam(Any_asInstanceOf, 0);
 	  Any_asInstanceOf.setInfo(PolyType(List(tparam), tparam.typeConstructor));
 	}
-      Any_match        = newMethod(AnyClass, "match")
-			     .setFlag(FINAL);
-	{ val tparam0 = newTypeParam(Any_match, 0);
-	  val tparam1 = newTypeParam(Any_match, 1);
-	  Any_match.setInfo(
-	    PolyType(
-	      List(tparam0, tparam1),
-	      MethodType(List(tparam0.typeConstructor), tparam1.typeConstructor)));
-       }
 
       // members of class java.lang.{Object, String}
       Object_eq           = newMethod(ObjectClass, "eq")

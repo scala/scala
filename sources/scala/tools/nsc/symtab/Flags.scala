@@ -39,14 +39,14 @@ object Flags {
   val SYNTHETIC     = 0x00100000;   // symbol is compiler-generated
   val STABLE        = 0x00200000;   // functions that are assumed to be stable
 				    // (typically, access methods for valdefs)
-  val INITIALIZED   = 0x00300000;   // symbol's definition is complete
-  val LOCKED        = 0x00400000;   // temporary flag to catch cyclic dependencies
+  val INITIALIZED   = 0x00400000;   // symbol's definition is complete
+  val LOCKED        = 0x00800000;   // temporary flag to catch cyclic dependencies
 
   val ACCESSED      = 0x01000000;   // symbol was accessed at least once
   val SELECTOR      = 0x02000000;   // symbol was used as selector in Select
 
-  val CAPTURED      = 0x04000000;   // variables is accessed from nested function. Set by LambdaLift
-  val ACCESSOR      = 0x08000000;   // function is an access function for a value or variable
+  val CAPTURED      = 0x04000000;   // variable is accessed from nested function. Set by LambdaLift
+  val ACCESSOR      = 0x08000000;   // a value or variable accessor
 
   val ACCESS_METHOD = 0x10000000;   // function is an access function for a method in some
                                     // outer class; set by ExplicitOuter
@@ -60,9 +60,9 @@ object Flags {
   val IS_ERROR      = 0x200000000l; // symbol is an error symbol
   val OVERLOADED    = 0x400000000l; // symbol is overloaded
 
-  val TRANS_FLAG    = 0x1000000000l;   // transient flag guaranteed to be reset after each phase.
-  val LIFTED        = TRANS_FLAG;   // transient flag for lambdalift
-  val INCONSTRUCTOR = TRANS_FLAG;   // transient flag for analyzer
+  val TRANS_FLAG    = 0x1000000000l; // transient flag guaranteed to be reset after each phase.
+  val LIFTED        = TRANS_FLAG;    // transient flag for lambdalift
+  val INCONSTRUCTOR = TRANS_FLAG;    // transient flag for analyzer
 
   // masks
   val SOURCEFLAGS   = 0x00077777;    // these modifiers can be set in source programs.

@@ -18,7 +18,7 @@ abstract class TreeInfo {
   def isOwnerDefinition(tree: Tree): boolean = tree match {
     case PackageDef(_, _)
        | ClassDef(_, _, _, _, _)
-       | ModuleDef(_, _, _, _)
+       | ModuleDef(_, _, _)
        | DefDef(_, _, _, _, _, _)
        | Import(_, _) => true
     case _ => false
@@ -39,7 +39,7 @@ abstract class TreeInfo {
   def isPureDef(tree: Tree): boolean = tree match {
     case EmptyTree
        | ClassDef(_, _, _, _, _)
-       | ModuleDef(_, _, _, _)
+       | ModuleDef(_, _, _)
        | AbsTypeDef(_, _, _, _)
        | AliasTypeDef(_, _, _, _)
        | Import(_, _)
@@ -108,9 +108,9 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** The first constructor in a list of statements */
+  /** The longest statement suffix that starts with a constructor */
   def firstConstructor(stats: List[Tree]): Tree = stats.head match {
-    case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => stats.head
+    case constr @ DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => constr
     case _ => firstConstructor(stats.tail)
   }
 
@@ -130,6 +130,14 @@ abstract class TreeInfo {
   /** Is tree a this node which belongs to `enclClass'? */
   def isSelf(tree: Tree, enclClass: Symbol): boolean = tree match {
     case This(_) => tree.symbol == enclClass
+    case _ => false
+  }
+
+  /** Is this pattern node a sequence-valued pattern? */
+  def isSequenceValued(tree: Tree): boolean = tree match {
+    case Bind(_, body) => isSequenceValued(body)
+    case Sequence(_) => true
+    case Alternative(ts) => ts exists isSequenceValued
     case _ => false
   }
 

@@ -15,7 +15,8 @@ abstract class Analyzer
 	 with Typers
 	 with TypeCheckers
 	 with Infer
-	 with Variances {
+	 with Variances
+         with EtaExpansion {
   val global: Global;
   import global._;
 

@@ -188,16 +188,6 @@ object List {
     sb.toString()
   }
 
-  /** Like (xs map f), but returns xs unchanged if function `f' maps all elements to themselves
-   */
-  def transform[a](xs: List[a])(f: a => a): List[a] = xs match {
-    case Nil => Nil
-    case head :: tail =>
-      val head1 = f(head);
-      val tail1 = transform(tail)(f);
-      if (head1 == head && (tail1 eq tail)) xs else head1 :: tail1
-  }
-
   /** Returns the list resulting from applying the given function <code>f</code> to
    *  corresponding elements of the argument lists.
    *
@@ -518,6 +508,16 @@ sealed trait List[+a] extends Seq[a] {
   def map[b](f: a => b): List[b] = match {
     case Nil => Nil
     case head :: tail => f(head) :: (tail map f)
+  }
+
+  /** Like xs map f, but returns xs unchanged if function `f' maps all elements to themselves
+   */
+  def mapConserve[b >: a](f: a => b): List[b] = match {
+    case Nil => Nil
+    case head :: tail =>
+      val head1 = f(head);
+      val tail1 = tail mapConserve f;
+      if (head1 == head && (tail1 eq tail)) this else head1 :: tail1
   }
 
   /** Apply a function to all the elements of the list, and return the

@@ -51,7 +51,7 @@ class Contexts: Analyzer {
       c.owner = owner;
       c.scope = scope;
       c.enclClass = if ((tree.isInstanceOf[Template] ||
-			 tree.isInstanceOf[IntersectionTypeTree]) &&
+			 tree.isInstanceOf[CompoundTypeTree]) &&
 			tree != this.tree) c
 		    else this.enclClass;
       c.variance = this.variance;

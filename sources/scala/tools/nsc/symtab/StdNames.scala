@@ -126,7 +126,6 @@ abstract class StdNames: SymbolTable {
     val java = newTermName("java");
     val lang = newTermName("lang");
     val length = newTermName("length");
-    val _match = newTermName("match");
     val map = newTermName("map");
     val n = newTermName("n");
     val nobinding = newTermName("nobinding");

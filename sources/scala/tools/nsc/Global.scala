@@ -34,6 +34,15 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object constfold extends ConstantFolder {
+    val global: Global.this.type = Global.this
+  }
+
+  val copy = new LazyTreeCopier();
+
+  type AttrInfo = Pair[Type, List[Any]];
+  val attributes = new HashMap[Symbol, List[AttrInfo]];
+
 // reporting -------------------------------------------------------
 
   def informTime(msg: String, start: long) = {
@@ -213,6 +222,6 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
     val sym = getSym(name, module);
     System.err.println("" + sym.name + ":" +
-		       (if (module) sym.moduleClass.info else sym.info))
+		       (if (module) sym.tpe.symbol.info else sym.info))
   }
 }

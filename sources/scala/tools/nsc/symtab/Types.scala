@@ -48,6 +48,10 @@ abstract class Types: SymbolTable {
      *  identity for all other types */
     def widen: Type = this;
 
+    /** The type of `this' of a class type or reference type
+     */
+    def typeOfThis = symbol.typeOfThis;
+
     /** Map to a this type which is a subtype of this type.
      */
     def narrow: Type =
@@ -561,6 +565,8 @@ abstract class Types: SymbolTable {
 
     override def parents: List[Type] = sym.info.parents map transform;
 
+    override def typeOfThis = transform(sym.typeOfThis);
+
     override def prefix: Type = pre;
 
     override def typeArgs: List[Type] = args;
@@ -604,7 +610,7 @@ abstract class Types: SymbolTable {
     override def paramSectionCount: int = resultType.paramSectionCount + 1;
 
     override def erasure = {
-      val pts = List.transform(paramTypes)(.erasure);
+      val pts = paramTypes mapConserve (.erasure);
       val res = resultType.erasure;
       if ((pts eq paramTypes) && (res eq resultType)) this
       else MethodType(pts, res)
@@ -767,7 +773,7 @@ abstract class Types: SymbolTable {
         else ConstantType(base1, value)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre);
-	val args1 = List.transform(args)(this);
+	val args1 = args mapConserve this;
         if ((pre1 eq pre) && (args1 eq args)) tp
         else typeRef(pre1, sym, args1)
       case TypeBounds(lo, hi) =>
@@ -776,7 +782,7 @@ abstract class Types: SymbolTable {
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
       case RefinedType(parents, refinement) =>
-        val parents1 = List.transform(parents)(this);
+        val parents1 = parents mapConserve this;
         val refinement1 = mapOver(refinement);
         if ((parents1 eq parents) && (refinement1 eq refinement)) tp
         else {
@@ -791,7 +797,7 @@ abstract class Types: SymbolTable {
           result
         }
       case MethodType(paramtypes, result) =>
-        val paramtypes1 = List.transform(paramtypes)(this);
+        val paramtypes1 = paramtypes mapConserve this;
         val result1 = this(result);
         if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
         else MethodType(paramtypes1, result1)
@@ -822,7 +828,7 @@ abstract class Types: SymbolTable {
     /** Map this function over given list of symbols */
     private def mapOver(syms: List[Symbol]): List[Symbol] = {
       val infos = syms map (.info);
-      val infos1 = List.transform(infos)(this);
+      val infos1 = infos mapConserve this;
       if (infos1 eq infos) syms
       else {
         val syms1 = syms map (.cloneSymbol);
@@ -1414,7 +1420,7 @@ abstract class Types: SymbolTable {
    *  of thistype or prefixless typerefs/singletype occurrences in given list of types */
   private def commonOwner(tps: List[Type]): Symbol = {
     commonOwnerMap.init;
-    List.transform(tps)(commonOwnerMap);
+    tps mapConserve commonOwnerMap;
     commonOwnerMap.result
   }
 

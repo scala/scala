@@ -18,7 +18,7 @@ abstract class ClassfileParser {
 
   private var in: AbstractFileReader = _;  // the class file
   private var clazz: Symbol = _;           // the class symbol containing dynamic members
-  private var statics: Symbol = _;         // the module class symbol containing static members
+  private var staticModule: Symbol = _;    // the module symbol containing static members
   private var instanceDefs: Scope = _;     // the scope of all instance definitions
   private var staticDefs: Scope = _;       // the scope of all static definitions
   private var pool: ConstantPool = _;      // the classfile's constant pool
@@ -40,10 +40,10 @@ abstract class ClassfileParser {
     this.in = new AbstractFileReader(file);
     if (root.isModule) {
       this.clazz = root.linkedClass;
-      this.statics = root.moduleClass
+      this.staticModule = root
     } else {
       this.clazz = root;
-      this.statics = root.linkedModule.moduleClass;
+      this.staticModule = root.linkedModule
     }
     this.isScala = false;
     this.hasMeta = false;
@@ -58,6 +58,8 @@ abstract class ClassfileParser {
     }
     busy = false
   }
+
+  private def statics: Symbol = staticModule.moduleClass;
 
   private def parseHeader: unit = {
     val magic = in.nextInt();
@@ -239,7 +241,7 @@ abstract class ClassfileParser {
 	clazz.setInfo(classInfo);
 	statics.setInfo(staticInfo);
       }
-      statics.sourceModule.setInfo(statics.tpe);
+      staticModule.setInfo(statics.tpe);
       in.bp = curbp;
       val fieldCount = in.nextChar();
       for (val i <- Iterator.range(0, fieldCount)) parseField();

@@ -16,13 +16,13 @@ class Trees: Global {
     var pos: int = Position.NOPOS;
     var tpe: Type = _;
 
-    def setPos(p: int): Tree = { pos = p; this }
-    def setType(tp: Type): Tree = { tpe = tp; this }
+    def setPos(p: int): this.type = { pos = p; this }
+    def setType(tp: Type): this.type = { tpe = tp; this }
 
     def symbol: Symbol = null;
     def symbol_=(sym: Symbol): unit =
       throw new Error("symbol_= inapplicable for " + this);
-    def setSymbol(sym: Symbol): Tree = { symbol = sym; this }
+    def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
 
     def hasSymbol = false;
     def isDef = false;
@@ -35,6 +35,11 @@ class Trees: Global {
       val printer = treePrinters.create(new PrintWriter(buffer));
       printer.print(this); printer.flush;
       buffer.toString()
+    }
+
+    override def equals(that: Any): boolean = that match {
+      case t: Tree => this eq t
+      case _ => false
     }
 
     def duplicate: Tree =
@@ -54,7 +59,7 @@ class Trees: Global {
     override def isTerm = true;
   }
 
-  abstract class TypeTree extends Tree {
+  abstract class TypTree extends Tree {
     override def isType = true;
   }
 
@@ -64,25 +69,25 @@ class Trees: Global {
     override def isEmpty = true;
   }
 
-  /** Class definition */
-  case class ClassDef(mods: int, name: Name, tparams: List[AbsTypeDef], tp: Tree, impl: Template)
-       extends DefTree;
-
   /** Package clause */
   case class PackageDef(name: Name, stats: List[Tree])
        extends DefTree;
 
+  /** Class definition */
+  case class ClassDef(mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template)
+       extends DefTree;
+
   /** Singleton object definition */
-  case class ModuleDef(mods: int, name: Name, tp: Tree, impl: Template)
+  case class ModuleDef(mods: int, name: Name, impl: Template)
        extends DefTree;
 
   /** Value definition */
-  case class ValDef(mods: int, name: Name, tp: Tree, rhs: Tree)
+  case class ValDef(mods: int, name: Name, tpt: Tree, rhs: Tree)
        extends DefTree;
 
   /** Method definition */
   case class DefDef(mods: int, name: Name, tparams: List[AbsTypeDef],
-		    vparams: List[List[ValDef]], tp: Tree, rhs: Tree)
+		    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends DefTree;
 
   /** Abstract type or type parameter */
@@ -119,10 +124,6 @@ class Trees: Global {
   case class Block(stats: List[Tree], expr: Tree)
        extends TermTree;
 
-  /** Visitor (a sequence of cases), eliminated by TransMatch */
-  case class Visitor(cases: List[CaseDef])
-       extends TermTree;
-
   /** Case clause in a pattern match, eliminated by TransMatch */
   case class CaseDef(pat: Tree, guard: Tree, body: Tree)
        extends Tree;
@@ -137,7 +138,7 @@ class Trees: Global {
        extends TermTree;
 
   /** Bind of a variable to a rhs pattern, eliminated by TransMatch */
-  case class Bind(name: Name, rhs: Tree)
+  case class Bind(name: Name, body: Tree)
        extends TermTree;
 
   /** Anonymous function, eliminated by analyzer */
@@ -152,16 +153,14 @@ class Trees: Global {
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree;
 
-  /** Switch, introduced by refcheck */
-  case class Switch(test: Tree, tags: List[int], bodies: List[Tree],
-		    default: Tree)
-       extends TermTree;
+  /** Pattern matching expression */
+  case class Match(selector: Tree, cases: List[CaseDef]) extends TermTree;
 
   /** Return expression */
   case class Return(expr: Tree)
-       extends TermTree;
+       extends SymTree;
 
-  case class Try(block: Tree, catcher: Tree, finalizer: Tree)
+  case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
        extends TermTree;
 
   /** Throw expression */
@@ -175,7 +174,7 @@ class Trees: Global {
        extends TermTree;
 
   /** Type annotation, eliminated by explicit outer */
-  case class Typed(expr: Tree, tp: Tree)
+  case class Typed(expr: Tree, tpt: Tree)
        extends TermTree;
 
   /** Type application */
@@ -213,37 +212,33 @@ class Trees: Global {
        extends TermTree;
 
   /** General type term, introduced by RefCheck. */
-  case class EmptyTypeTree() extends TypeTree {
+  case class TypeTree() extends TypTree {
     override def isEmpty = tpe == null;
   }
 
   /** Singleton type, eliminated by RefCheck */
   case class SingletonTypeTree(ref: Tree)
-        extends TypeTree;
+        extends TypTree;
 
   /** Type selection, eliminated by RefCheck */
   case class SelectFromTypeTree(qualifier: Tree, selector: Name)
-       extends TypeTree with SymTree;
+       extends TypTree with SymTree;
 
   /** Intersection type, eliminated by RefCheck */
-  case class IntersectionTypeTree(parents: List[Tree])
-       extends TypeTree;
-
-  /** Refinement type, eliminated by RefCheck */
-  case class RefinementTypeTree(base: Tree, decls: List[Tree])
-       extends TypeTree;
+  case class CompoundTypeTree(parents: List[Tree], decls: List[Tree])
+       extends TypTree;
 
   /** Applied type, eliminated by RefCheck */
-  case class AppliedTypeTree(tp: Tree, args: List[Tree])
-       extends TypeTree;
+  case class AppliedTypeTree(tpt: Tree, args: List[Tree])
+       extends TypTree;
 
 /* A standard pattern match
   case EmptyTree =>
-  case ClassDef(mods, name, tparams, tp, impl) =>
   case PackageDef(name, stats) =>
-  case ModuleDef(mods, name, tp, impl) =>                         (eliminated by refcheck)
-  case ValDef(mods, name, tp, rhs) =>
-  case DefDef(mods, name, tparams, vparams, tp, rhs) =>
+  case ClassDef(mods, name, tparams, tpt, impl) =>
+  case ModuleDef(mods, name, impl) =>                         (eliminated by refcheck)
+  case ValDef(mods, name, tpt, rhs) =>
+  case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
   case AbsTypeDef(mods, name, lo, hi) =>                          (eliminated by erasure)
   case AliasTypeDef(mods, name, tparams, rhs) =>                  (eliminated by erasure)
   case LabelDef(name, params, rhs) =>
@@ -252,20 +247,19 @@ class Trees: Global {
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
   case Template(parents, body) =>
   case Block(stats, expr) =>
-  case Visitor(cases) =>                                          (eliminated by transmatch)
   case CaseDef(pat, guard, body) =>                               (eliminated by transmatch)
   case Sequence(trees) =>                                         (eliminated by transmatch)
   case Alternative(trees) =>                                      (eliminated by transmatch)
-  case Bind(name, rhs) =>                                         (eliminated by transmatch)
+  case Bind(name, body) =>                                        (eliminated by transmatch)
   case Function(vparams, body) =>                                 (eliminated by typecheck)
   case Assign(lhs, rhs) =>
   case If(cond, thenp, elsep) =>
-  case Switch(test, tags, bodies, default) =>                     (introduced by refcheck, transmatch)
+  case Match(selector, cases) =>
   case Return(expr) =>
-  case Try(block, catcher, finalizer) =>
+  case Try(block, catches, finalizer) =>
   case Throw(expr) =>
-  case New(typeOrTempl) =>
-  case Typed(expr, tp) =>                                         (eliminated by erasure)
+  case New(tpt) =>
+  case Typed(expr, tpt) =>                                         (eliminated by erasure)
   case TypeApply(fun, args) =>
   case Apply(fun, args) =>
   case Super(qual, mixin) =>
@@ -273,20 +267,19 @@ class Trees: Global {
   case Select(qualifier, selector) =>
   case Ident(name) =>
   case Literal(value) =>
-  case EmptyTypeTree() =>                                         (eliminated by typecheck)
+  case TypeTree() =>
   case SingletonTypeTree(ref) =>                                  (eliminated by typecheck)
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by typecheck)
-  case IntersectionTypeTree(parents) =>                           (eliminated by typecheck)
-  case RefinementTypeTree(base, decls) =>                         (eliminated by typecheck)
-  case AppliedTypeTree(tp, args) =>                               (eliminated by typecheck)
+  case CompoundTypeTree(parents, decls) =>                        (eliminated by typecheck)
+  case AppliedTypeTree(tpt, args) =>                               (eliminated by typecheck)
 */
 
   trait TreeCopier {
-    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tp: Tree, impl: Template): ClassDef;
+    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template): ClassDef;
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef;
-    def ModuleDef(tree: Tree, mods: int, name: Name, tp: Tree, impl: Template): ModuleDef;
-    def ValDef(tree: Tree, mods: int, name: Name, tp: Tree, rhs: Tree): ValDef;
-    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparams: List[List[ValDef]], tp: Tree, rhs: Tree): DefDef;
+    def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template): ModuleDef;
+    def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree): ValDef;
+    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef;
     def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree): AbsTypeDef;
     def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree): AliasTypeDef;
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef;
@@ -295,20 +288,19 @@ class Trees: Global {
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef;
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]): Template;
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block;
-    def Visitor(tree: Tree, cases: List[CaseDef]): Visitor;
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef;
     def Sequence(tree: Tree, trees: List[Tree]): Sequence;
     def Alternative(tree: Tree, trees: List[Tree]): Alternative;
-    def Bind(tree: Tree, name: Name, rhs: Tree): Bind;
+    def Bind(tree: Tree, name: Name, body: Tree): Bind;
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function;
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign;
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If;
-    def Switch(tree: Tree, test: Tree, tags: List[int], bodies: List[Tree], default: Tree): Switch;
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match;
     def Return(tree: Tree, expr: Tree): Return;
-    def Try(tree: Tree, block: Tree, catcher: Tree, finalizer: Tree): Try;
+    def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree): Try;
     def Throw(tree: Tree, expr: Tree): Throw;
-    def New(tree: Tree, typeOrTempl: Tree): New;
-    def Typed(tree: Tree, expr: Tree, tp: Tree): Typed;
+    def New(tree: Tree, tpt: Tree): New;
+    def Typed(tree: Tree, expr: Tree, tpt: Tree): Typed;
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply;
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply;
     def Super(tree: Tree, qual: Name, mixin: Name): Super;
@@ -316,25 +308,24 @@ class Trees: Global {
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select;
     def Ident(tree: Tree, name: Name): Ident;
     def Literal(tree: Tree, value: Any): Literal;
-    def EmptyTypeTree(tree: Tree): EmptyTypeTree;
+    def TypeTree(tree: Tree): TypeTree;
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree;
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree;
-    def IntersectionTypeTree(tree: Tree, parents: List[Tree]): IntersectionTypeTree;
-    def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]): RefinementTypeTree;
-    def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]): AppliedTypeTree;
+    def CompoundTypeTree(tree: Tree, parents: List[Tree], decls: List[Tree]): CompoundTypeTree;
+    def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree;
   }
 
   class StrictTreeCopier extends TreeCopier {
-    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tp: Tree, impl: Template) =
-      { val t = new ClassDef(mods, name, tparams, tp, impl); t.setPos(tree.pos); t }
+    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
+      { new ClassDef(mods, name, tparams, tpt, impl).setPos(tree.pos) }
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
       { val t = new PackageDef(name, stats); t.setPos(tree.pos); t }
-    def ModuleDef(tree: Tree, mods: int, name: Name, tp: Tree, impl: Template) =
-      { val t = new ModuleDef(mods, name, tp, impl); t.setPos(tree.pos); t }
-    def ValDef(tree: Tree, mods: int, name: Name, tp: Tree, rhs: Tree) =
-      { val t = new ValDef(mods, name, tp, rhs); t.setPos(tree.pos); t }
-    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparams: List[List[ValDef]], tp: Tree, rhs: Tree) =
-      { val t = new DefDef(mods, name, tparams, vparams, tp, rhs); t.setPos(tree.pos); t }
+    def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template) =
+      { val t = new ModuleDef(mods, name, impl); t.setPos(tree.pos); t }
+    def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree) =
+      { val t = new ValDef(mods, name, tpt, rhs); t.setPos(tree.pos); t }
+    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
+      { val t = new DefDef(mods, name, tparams, vparamss, tpt, rhs); t.setPos(tree.pos); t }
     def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree) =
       { val t = new AbsTypeDef(mods, name, lo, hi); t.setPos(tree.pos); t }
     def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
@@ -351,34 +342,32 @@ class Trees: Global {
       { val t = new Template(parents, body); t.setPos(tree.pos); t }
     def Block(tree: Tree, stats: List[Tree], expr: Tree) =
       { val t = new Block(stats, expr); t.setPos(tree.pos); t }
-    def Visitor(tree: Tree, cases: List[CaseDef]) =
-      { val t = new Visitor(cases); t.setPos(tree.pos); t }
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) =
       { val t = new CaseDef(pat, guard, body); t.setPos(tree.pos); t }
     def Sequence(tree: Tree, trees: List[Tree]) =
       { val t = new Sequence(trees); t.setPos(tree.pos); t }
     def Alternative(tree: Tree, trees: List[Tree]) =
       { val t = new Alternative(trees); t.setPos(tree.pos); t }
-    def Bind(tree: Tree, name: Name, rhs: Tree) =
-      { val t = new Bind(name, rhs); t.setPos(tree.pos); t }
+    def Bind(tree: Tree, name: Name, body: Tree) =
+      { val t = new Bind(name, body); t.setPos(tree.pos); t }
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
       { val t = new Function(vparams, body); t.setPos(tree.pos); t }
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
       { val t = new Assign(lhs, rhs); t.setPos(tree.pos); t }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       { val t = new If(cond, thenp, elsep); t.setPos(tree.pos); t }
-    def Switch(tree: Tree, test: Tree, tags: List[int], bodies: List[Tree], default: Tree) =
-      { val t = new Switch(test, tags, bodies, default); t.setPos(tree.pos); t }
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
+      { val t = new Match(selector, cases); t.setPos(tree.pos); t }
     def Return(tree: Tree, expr: Tree) =
       { val t = new Return(expr); t.setPos(tree.pos); t }
-    def Try(tree: Tree, block: Tree, catcher: Tree, finalizer: Tree) =
-      { val t = new Try(block, catcher, finalizer); t.setPos(tree.pos); t }
+    def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) =
+      { val t = new Try(block, catches, finalizer); t.setPos(tree.pos); t }
     def Throw(tree: Tree, expr: Tree) =
       { val t = new Throw(expr); t.setPos(tree.pos); t }
-    def New(tree: Tree, typeOrTempl: Tree) =
-      { val t = new New(typeOrTempl); t.setPos(tree.pos); t }
-    def Typed(tree: Tree, expr: Tree, tp: Tree) =
-      { val t = new Typed(expr, tp); t.setPos(tree.pos); t }
+    def New(tree: Tree, tpt: Tree) =
+      { val t = new New(tpt); t.setPos(tree.pos); t }
+    def Typed(tree: Tree, expr: Tree, tpt: Tree) =
+      { val t = new Typed(expr, tpt); t.setPos(tree.pos); t }
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
       { val t = new TypeApply(fun, args); t.setPos(tree.pos); t }
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
@@ -393,185 +382,178 @@ class Trees: Global {
       { val t = new Ident(name); t.setPos(tree.pos); t }
     def Literal(tree: Tree, value: Any) =
       { val t = new Literal(value); t.setPos(tree.pos); t }
-    def EmptyTypeTree(tree: Tree) =
-      { val t = new EmptyTypeTree(); t.setPos(tree.pos); t }
+    def TypeTree(tree: Tree) =
+      { val t = new TypeTree(); t.setPos(tree.pos); t }
     def SingletonTypeTree(tree: Tree, ref: Tree) =
       { val t = new SingletonTypeTree(ref); t.setPos(tree.pos); t }
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
       { val t = new SelectFromTypeTree(qualifier, selector); t.setPos(tree.pos); t }
-    def IntersectionTypeTree(tree: Tree, parents: List[Tree]) =
-      { val t = new IntersectionTypeTree(parents); t.setPos(tree.pos); t }
-    def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]) =
-      { val t = new RefinementTypeTree(base, decls); t.setPos(tree.pos); t }
-    def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]) =
-      { val t = new AppliedTypeTree(tp, args); t.setPos(tree.pos); t }
+    def CompoundTypeTree(tree: Tree, parents: List[Tree], decls: List[Tree]) =
+      { val t = new CompoundTypeTree(parents, decls); t.setPos(tree.pos); t }
+    def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =
+      { val t = new AppliedTypeTree(tpt, args); t.setPos(tree.pos); t }
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
     def this() = this(new StrictTreeCopier);
-    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tp: Tree, impl: Template) = tree match {
-      case t @ ClassDef(mods0, name0, tparams0, tp0, impl0)
-      if (mods0 == mods && name0 == name && tparams0 == tparams && tp0 == tp && impl0 == impl) => t
-      case _ => copy.ClassDef(tree, mods, name, tparams, tp, impl)
+    def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) = tree match {
+      case t @ ClassDef(mods0, name0, tparams0, tpt0, impl0)
+      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (tpt0 == tpt) && (impl0 == impl)) => t
+      case _ => copy.ClassDef(tree, mods, name, tparams, tpt, impl)
     }
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
       case t @ PackageDef(name0, stats0)
-      if (name0 == name && stats0 == stats) => t
+      if ((name0 == name) && (stats0 == stats)) => t
       case _ => copy.PackageDef(tree, name, stats)
     }
-    def ModuleDef(tree: Tree, mods: int, name: Name, tp: Tree, impl: Template) = tree match {
-      case t @ ModuleDef(mods0, name0, tp0, impl0)
-      if (mods0 == mods && name0 == name && tp0 == tp && impl0 == impl) => t
-      case _ => copy.ModuleDef(tree, mods, name, tp, impl)
+    def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template) = tree match {
+      case t @ ModuleDef(mods0, name0, impl0)
+      if (mods0 == mods && (name0 == name) && (impl0 == impl)) => t
+      case _ => copy.ModuleDef(tree, mods, name, impl)
     }
-    def ValDef(tree: Tree, mods: int, name: Name, tp: Tree, rhs: Tree) = tree match {
-      case t @ ValDef(mods0, name0, tp0, rhs0)
-      if (mods0 == mods && name0 == name && tp0 == tp && rhs0 == rhs) => t
-      case _ => copy.ValDef(tree, mods, name, tp, rhs)
+    def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree) = tree match {
+      case t @ ValDef(mods0, name0, tpt0, rhs0)
+      if (mods0 == mods && (name0 == name) && (tpt0 == tpt) && (rhs0 == rhs)) => t
+      case _ => copy.ValDef(tree, mods, name, tpt, rhs)
     }
-    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparams: List[List[ValDef]], tp: Tree, rhs: Tree) = tree match {
-      case t @ DefDef(mods0, name0, tparams0, vparams0, tp0, rhs0)
-      if (mods0 == mods && name0 == name && tparams0 == tparams && vparams0 == vparams && tp0 == tp && rhs == rhs0) => t
-      case _ => copy.DefDef(tree, mods, name, tparams, vparams, tp, rhs)
+    def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) = tree match {
+      case t @ DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0)
+      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (vparamss0 == vparamss) && (tpt0 == tpt) && (rhs == rhs0)) => t
+      case _ => copy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
     }
     def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree) = tree match {
       case t @ AbsTypeDef(mods0, name0, lo0, hi0)
-      if (mods0 == mods && name0 == name && lo0 == lo && hi0 == hi) => t
+      if (mods0 == mods && (name0 == name) && (lo0 == lo) && (hi0 == hi)) => t
       case _ => copy.AbsTypeDef(tree, mods, name, lo, hi)
     }
     def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree) = tree match {
       case t @ AliasTypeDef(mods0, name0, tparams0, rhs0)
-      if (mods0 == mods && name0 == name && tparams0 == tparams && rhs0 == rhs) => t
+      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (rhs0 == rhs)) => t
       case _ => copy.AliasTypeDef(tree, mods, name, tparams, rhs)
     }
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) = tree match {
       case t @ LabelDef(name0, params0, rhs0)
-      if (name0 == name && params0 == params && rhs0 == rhs) => t
+      if ((name0 == name) && (params0 == params) && (rhs0 == rhs)) => t
       case _ => copy.LabelDef(tree, name, params, rhs)
     }
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) = tree match {
       case t @ Import(expr0, selectors0)
-      if (expr0 == expr && selectors0 == selectors) => t
+      if ((expr0 == expr) && (selectors0 == selectors)) => t
       case _ => copy.Import(tree, expr, selectors)
     }
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) = tree match {
       case t @ Attributed(attribute0, definition0)
-      if (attribute0 == attribute && definition0 == definition) => t
+      if ((attribute0 == attribute) && (definition0 == definition)) => t
       case _ => copy.Attributed(tree, attribute, definition)
     }
     def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
-      if (comment0 == comment && definition0 == definition) => t
+      if ((comment0 == comment) && (definition0 == definition)) => t
       case _ => copy.DocDef(tree, comment, definition)
     }
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) = tree match {
       case t @ Template(parents0, body0)
-      if (parents0 == parents && body0 == body) => t
+      if ((parents0 == parents) && (body0 == body)) => t
       case _ => copy.Template(tree, parents, body)
     }
     def Block(tree: Tree, stats: List[Tree], expr: Tree) = tree match {
       case t @ Block(stats0, expr0)
-      if (stats0 == stats && expr0 == expr) => t
+      if ((stats0 == stats) && (expr0 == expr)) => t
       case _ => copy.Block(tree, stats, expr)
-    }
-    def Visitor(tree: Tree, cases: List[CaseDef]) = tree match {
-      case t @ Visitor(cases0)
-      if (cases == cases0) => t
-      case _ => copy.Visitor(tree, cases)
     }
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) = tree match {
       case t @ CaseDef(pat0, guard0, body0)
-      if (pat0 == pat && guard0 == guard && body0 == body) => t
+      if ((pat0 == pat) && (guard0 == guard) && (body0 == body)) => t
       case _ => copy.CaseDef(tree, pat, guard, body)
     }
     def Sequence(tree: Tree, trees: List[Tree]) = tree match {
       case t @ Sequence(trees0)
-      if (trees0 == trees) => t
+      if ((trees0 == trees)) => t
       case _ => copy.Sequence(tree, trees)
     }
     def Alternative(tree: Tree, trees: List[Tree]) = tree match {
       case t @ Alternative(trees0)
-      if (trees0 == trees) => t
+      if ((trees0 == trees)) => t
       case _ => copy.Alternative(tree, trees)
     }
-    def Bind(tree: Tree, name: Name, rhs: Tree) = tree match {
-      case t @ Bind(name0, rhs0)
-      if (name0 == name && rhs0 == rhs) => t
-      case _ => copy.Bind(tree, name, rhs)
+    def Bind(tree: Tree, name: Name, body: Tree) = tree match {
+      case t @ Bind(name0, body0)
+      if ((name0 == name) && (body0 == body)) => t
+      case _ => copy.Bind(tree, name, body)
     }
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) = tree match {
       case t @ Function(vparams0, body0)
-      if (vparams0 == vparams && body0 == body) => t
+      if ((vparams0 == vparams) && (body0 == body)) => t
       case _ => copy.Function(tree, vparams, body)
     }
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
       case t @ Assign(lhs0, rhs0)
-      if (lhs0 == lhs && rhs0 == rhs) => t
+      if ((lhs0 == lhs) && (rhs0 == rhs)) => t
       case _ => copy.Assign(tree, lhs, rhs)
     }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) = tree match {
       case t @ If(cond0, thenp0, elsep0)
-      if (cond0 == cond && thenp0 == thenp && elsep0 == elsep) => t
+      if ((cond0 == cond) && (thenp0 == thenp) && (elsep0 == elsep)) => t
       case _ => copy.If(tree, cond, thenp, elsep)
     }
-    def Switch(tree: Tree, test: Tree, tags: List[int], bodies: List[Tree], default: Tree) = tree match {
-      case t @ Switch(test0, tags0, bodies0, default0)
-      if (test0 == test && tags0 == tags && bodies0 == bodies && default0 == default) => t
-      case _ => copy.Switch(tree, test, tags, bodies, default)
+    def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =  tree match {
+      case t @ Match(selector0, cases0)
+      if ((selector0 == selector) && (cases0 == cases)) => t
+      case _ => copy.Match(tree, selector, cases)
     }
     def Return(tree: Tree, expr: Tree) = tree match {
       case t @ Return(expr0)
-      if (expr0 == expr) => t
+      if ((expr0 == expr)) => t
       case _ => copy.Return(tree, expr)
     }
-    def Try(tree: Tree, block: Tree, catcher: Tree, finalizer: Tree) = tree match {
-      case t @ Try(block0, catcher0, finalizer0)
-      if (block0 == block && catcher0 == catcher && finalizer0 == finalizer) => t
-      case _ => copy.Try(tree, block, catcher, finalizer)
+    def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) = tree match {
+      case t @ Try(block0, catches0, finalizer0)
+      if ((block0 == block) && (catches0 == catches) && (finalizer0 == finalizer)) => t
+      case _ => copy.Try(tree, block, catches, finalizer)
     }
     def Throw(tree: Tree, expr: Tree) = tree match {
       case t @ Throw(expr0)
-      if (expr0 == expr) => t
+      if ((expr0 == expr)) => t
       case _ => copy.Throw(tree, expr)
     }
-    def New(tree: Tree, typeOrTempl: Tree) = tree match {
-      case t @ New(typeOrTempl0)
-      if (typeOrTempl0 == typeOrTempl) => t
-      case _ => copy.New(tree, typeOrTempl)
+    def New(tree: Tree, tpt: Tree) = tree match {
+      case t @ New(tpt0)
+      if ((tpt0 == tpt)) => t
+      case _ => copy.New(tree, tpt)
     }
-    def Typed(tree: Tree, expr: Tree, tp: Tree) = tree match {
-      case t @ Typed(expr0, tp0)
-      if (expr0 == expr && tp0 == tp) => t
-      case _ => copy.Typed(tree, expr, tp)
+    def Typed(tree: Tree, expr: Tree, tpt: Tree) = tree match {
+      case t @ Typed(expr0, tpt0)
+      if ((expr0 == expr) && (tpt0 == tpt)) => t
+      case _ => copy.Typed(tree, expr, tpt)
     }
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ TypeApply(fun0, args0)
-      if (fun0 == fun && args0 == args) => t
+      if ((fun0 == fun) && (args0 == args)) => t
       case _ => copy.TypeApply(tree, fun, args)
     }
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) = tree match {
       case t @ Apply(fun0, args0)
-      if (fun0 == fun && args0 == args) => t
+      if ((fun0 == fun) && (args0 == args)) => t
       case _ => copy.Apply(tree, fun, args)
     }
     def Super(tree: Tree, qual: Name, mixin: Name) = tree match {
       case t @ Super(qual0, mixin0)
-      if (qual0 == qual && mixin0 == mixin) => t
+      if ((qual0 == qual) && (mixin0 == mixin)) => t
       case _ => copy.Super(tree, qual, mixin)
     }
     def This(tree: Tree, qual: Name) = tree match {
       case t @ This(qual0)
-      if (qual0 == qual) => t
+      if ((qual0 == qual)) => t
       case _ => copy.This(tree, qual)
     }
     def Select(tree: Tree, qualifier: Tree, selector: Name) = tree match {
       case t @ Select(qualifier0, selector0)
-      if (qualifier0 == qualifier && selector0 == selector) => t
+      if ((qualifier0 == qualifier) && (selector0 == selector)) => t
       case _ => copy.Select(tree, qualifier, selector)
     }
     def Ident(tree: Tree, name: Name) = tree match {
       case t @ Ident(name0)
-      if (name0 == name) => t
+      if ((name0 == name)) => t
       case _ => copy.Ident(tree, name)
     }
     def Literal(tree: Tree, value: Any) = tree match {
@@ -579,34 +561,29 @@ class Trees: Global {
       if (value0 == value) => t
       case _ => copy.Literal(tree, value)
     }
-    def EmptyTypeTree(tree: Tree) = tree match {
-      case t @ EmptyTypeTree() => t
-      case _ => copy.EmptyTypeTree(tree)
+    def TypeTree(tree: Tree) = tree match {
+      case t @ TypeTree() => t
+      case _ => copy.TypeTree(tree)
     }
     def SingletonTypeTree(tree: Tree, ref: Tree) = tree match {
       case t @ SingletonTypeTree(ref0)
-      if (ref0 == ref) => t
+      if ((ref0 == ref)) => t
       case _ => copy.SingletonTypeTree(tree, ref)
     }
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) = tree match {
       case t @ SelectFromTypeTree(qualifier0, selector0)
-      if (qualifier0 == qualifier && selector0 == selector) => t
+      if ((qualifier0 == qualifier) && (selector0 == selector)) => t
       case _ => copy.SelectFromTypeTree(tree, qualifier, selector)
     }
-    def IntersectionTypeTree(tree: Tree, parents: List[Tree]) = tree match {
-      case t @ IntersectionTypeTree(parents0)
-      if (parents0 == parents) => t
-      case _ => copy.IntersectionTypeTree(tree, parents)
+    def CompoundTypeTree(tree: Tree, parents: List[Tree], decls: List[Tree]) = tree match {
+      case t @ CompoundTypeTree(parents0, decls0)
+      if ((parents0 == parents) && (decls0 == decls)) => t
+      case _ => copy.CompoundTypeTree(tree, parents, decls)
     }
-    def RefinementTypeTree(tree: Tree, base: Tree, decls: List[Tree]) = tree match {
-      case t @ RefinementTypeTree(base0, decls0)
-      if (base0 == base && decls0 == decls) => t
-      case _ => copy.RefinementTypeTree(tree, base, decls)
-    }
-    def AppliedTypeTree(tree: Tree, tp: Tree, args: List[Tree]) = tree match {
-      case t @ AppliedTypeTree(tp0, args0)
-      if (tp0 == tp && args0 == args) => t
-      case _ => copy.AppliedTypeTree(tree, tp, args)
+    def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) = tree match {
+      case t @ AppliedTypeTree(tpt0, args0)
+      if ((tpt0 == tpt) && (args0 == args)) => t
+      case _ => copy.AppliedTypeTree(tree, tpt, args)
     }
   }
 
@@ -615,16 +592,16 @@ class Trees: Global {
     def transform(tree: Tree): Tree = tree match {
       case EmptyTree =>
         tree
-      case ClassDef(mods, name, tparams, tp, impl) =>
-        copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(tp), transformTemplate(impl))
+      case ClassDef(mods, name, tparams, tpt, impl) =>
+        copy.ClassDef(tree, mods, name, transformAbsTypeDefs(tparams), transform(tpt), transformTemplate(impl))
       case PackageDef(name, stats) =>
         copy.PackageDef(tree, name, transformTrees(stats))
-      case ModuleDef(mods, name, tp, impl) =>
-        copy.ModuleDef(tree, mods, name, transform(tp), transformTemplate(impl))
-      case ValDef(mods, name, tp, rhs) =>
-        copy.ValDef(tree, mods, name, transform(tp), transform(rhs))
-      case DefDef(mods, name, tparams, vparams, tp, rhs) =>
-        copy.DefDef(tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparams), transform(tp), transform(rhs))
+      case ModuleDef(mods, name, impl) =>
+        copy.ModuleDef(tree, mods, name, transformTemplate(impl))
+      case ValDef(mods, name, tpt, rhs) =>
+        copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
+      case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        copy.DefDef(tree, mods, name, transformAbsTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
       case AbsTypeDef(mods, name, lo, hi) =>
         copy.AbsTypeDef(tree, mods, name, transform(lo), transform(hi))
       case AliasTypeDef(mods, name, tparams, rhs) =>
@@ -641,34 +618,32 @@ class Trees: Global {
         copy.Template(tree, transformTrees(parents), transformTrees(body))
       case Block(stats, expr) =>
         copy.Block(tree, transformTrees(stats), transform(expr))
-      case Visitor(cases) =>
-        copy.Visitor(tree, transformCaseDefs(cases))
       case CaseDef(pat, guard, body) =>
         copy.CaseDef(tree, transform(pat), transform(guard), transform(body))
       case Sequence(trees) =>
         copy.Sequence(tree, transformTrees(trees))
       case Alternative(trees) =>
         copy.Alternative(tree, transformTrees(trees))
-      case Bind(name, rhs) =>
-        copy.Bind(tree, name, transform(rhs))
+      case Bind(name, body) =>
+        copy.Bind(tree, name, transform(body))
       case Function(vparams, body) =>
         copy.Function(tree, transformValDefs(vparams), transform(body))
       case Assign(lhs, rhs) =>
         copy.Assign(tree, transform(lhs), transform(rhs))
       case If(cond, thenp, elsep) =>
         copy.If(tree, transform(cond), transform(thenp), transform(elsep))
-      case Switch(test, tags, bodies, default) =>
-	copy.Switch(tree, transform(test), tags, transformTrees(bodies), transform(default))
+      case Match(selector, cases) =>
+	copy.Match(tree, transform(selector), transformCaseDefs(cases))
       case Return(expr) =>
 	copy.Return(tree, transform(expr))
-      case Try(block, catcher, finalizer) =>
-        copy.Try(tree, transform(block), transform(catcher), transform(finalizer))
+      case Try(block, catches, finalizer) =>
+        copy.Try(tree, transform(block), transformCaseDefs(catches), transform(finalizer))
       case Throw(expr) =>
         copy.Throw(tree, transform(expr))
-      case New(typeOrTempl) =>
-        copy.New(tree, transform(typeOrTempl))
-      case Typed(expr, tp) =>
-        copy.Typed(tree, transform(expr), transform(tp))
+      case New(tpt) =>
+        copy.New(tree, transform(tpt))
+      case Typed(expr, tpt) =>
+        copy.Typed(tree, transform(expr), transform(tpt))
       case TypeApply(fun, args) =>
         copy.TypeApply(tree, transform(fun), transformTrees(args))
       case Apply(fun, args) =>
@@ -683,48 +658,46 @@ class Trees: Global {
         copy.Ident(tree, name)
       case Literal(value) =>
         copy.Literal(tree, value)
-      case EmptyTypeTree() =>
-        copy.EmptyTypeTree(tree)
+      case TypeTree() =>
+        copy.TypeTree(tree)
       case SingletonTypeTree(ref) =>
         copy.SingletonTypeTree(tree, transform(ref))
       case SelectFromTypeTree(qualifier, selector) =>
         copy.SelectFromTypeTree(tree, transform(qualifier), selector)
-      case IntersectionTypeTree(parents) =>
-        copy.IntersectionTypeTree(tree, transformTrees(parents))
-      case RefinementTypeTree(base, decls) =>
-        copy.RefinementTypeTree(tree, transform(base), transformTrees(decls))
-      case AppliedTypeTree(tp, args) =>
-        copy.AppliedTypeTree(tree, transform(tp), transformTrees(args))
+      case CompoundTypeTree(parents, decls) =>
+        copy.CompoundTypeTree(tree, transformTrees(parents), transformTrees(decls))
+      case AppliedTypeTree(tpt, args) =>
+        copy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
-      List.transform(trees)(tree => transform(tree));
+      trees mapConserve (tree => transform(tree));
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template];
     def transformAbsTypeDefs(trees: List[AbsTypeDef]): List[AbsTypeDef] =
-      List.transform(trees)(tree => transform(tree).asInstanceOf[AbsTypeDef]);
+      trees mapConserve (tree => transform(tree).asInstanceOf[AbsTypeDef]);
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
-      List.transform(trees)(tree => transform(tree).asInstanceOf[ValDef]);
+      trees mapConserve (tree => transform(tree).asInstanceOf[ValDef]);
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
-      List.transform(treess)(tree => transformValDefs(tree));
+      treess mapConserve (tree => transformValDefs(tree));
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
-      List.transform(trees)(tree => transform(tree).asInstanceOf[CaseDef]);
+      trees mapConserve (tree => transform(tree).asInstanceOf[CaseDef]);
     def transformIdents(trees: List[Ident]): List[Ident] =
-      List.transform(trees)(tree => transform(tree).asInstanceOf[Ident]);
+      trees mapConserve (tree => transform(tree).asInstanceOf[Ident]);
   }
 
   class Traverser {
     def traverse(tree: Tree): unit = tree match {
-      case ClassDef(mods, name, tparams, tp, impl) =>
-        traverseTrees(tparams); traverse(tp); traverse(impl)
+      case ClassDef(mods, name, tparams, tpt, impl) =>
+        traverseTrees(tparams); traverse(tpt); traverse(impl)
       case PackageDef(name, stats) =>
         traverseTrees(stats)
-      case ModuleDef(mods, name, tp, impl) =>
-        traverse(tp); traverse(impl)
-      case ValDef(mods, name, tp, rhs) =>
-        traverse(tp); traverse(rhs)
-      case DefDef(mods, name, tparams, vparams, tp, rhs) =>
-        traverseTrees(tparams); traverseTreess(vparams); traverse(tp); traverse(rhs)
+      case ModuleDef(mods, name, impl) =>
+        traverse(impl)
+      case ValDef(mods, name, tpt, rhs) =>
+        traverse(tpt); traverse(rhs)
+      case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
       case AbsTypeDef(mods, name, lo, hi) =>
         traverse(lo); traverse(hi);
       case AliasTypeDef(mods, name, tparams, rhs) =>
@@ -741,34 +714,32 @@ class Trees: Global {
         traverseTrees(parents); traverseTrees(body)
       case Block(stats, expr) =>
         traverseTrees(stats); traverse(expr)
-      case Visitor(cases) =>
-        traverseTrees(cases)
       case CaseDef(pat, guard, body) =>
         traverse(pat); traverse(guard); traverse(body)
       case Sequence(trees) =>
         traverseTrees(trees)
       case Alternative(trees) =>
         traverseTrees(trees)
-      case Bind(name, rhs) =>
-        traverse(rhs)
+      case Bind(name, body) =>
+        traverse(body)
       case Function(vparams, body) =>
         traverseTrees(vparams); traverse(body)
       case Assign(lhs, rhs) =>
         traverse(lhs); traverse(rhs)
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
-      case Switch(test, tags, bodies, default) =>
-	traverse(test); traverseTrees(bodies); traverse(default)
+      case Match(selector, cases) =>
+	traverse(selector); traverseTrees(cases)
       case Return(expr) =>
 	traverse(expr)
-      case Try(block, catcher, finalizer) =>
-        traverse(block); traverse(catcher); traverse(finalizer)
+      case Try(block, catches, finalizer) =>
+        traverse(block); traverseTrees(catches); traverse(finalizer)
       case Throw(expr) =>
         traverse(expr)
-      case New(typeOrTempl) =>
-        traverse(typeOrTempl)
-      case Typed(expr, tp) =>
-        traverse(expr); traverse(tp)
+      case New(tpt) =>
+        traverse(tpt)
+      case Typed(expr, tpt) =>
+        traverse(expr); traverse(tpt)
       case TypeApply(fun, args) =>
         traverse(fun); traverseTrees(args)
       case Apply(fun, args) =>
@@ -779,13 +750,11 @@ class Trees: Global {
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>
         traverse(qualifier)
-      case IntersectionTypeTree(parents) =>
-        traverseTrees(parents)
-      case RefinementTypeTree(base, decls) =>
-        traverse(base); traverseTrees(decls)
-      case AppliedTypeTree(tp, args) =>
-        traverse(tp); traverseTrees(args)
-      case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | EmptyTypeTree() =>
+      case CompoundTypeTree(parents, decls) =>
+        traverseTrees(parents); traverseTrees(decls)
+      case AppliedTypeTree(tpt, args) =>
+        traverse(tpt); traverseTrees(args)
+      case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | TypeTree() =>
 	{}
     }
 

@@ -22,20 +22,40 @@ trait Typers: Analyzer {
 
     def typeCompleter(tree: Tree) = new TypeCompleter(tree) {
       override def complete(sym: Symbol): unit = {
-	if (settings.debug.value) log("defining " + sym);
-	sym.setInfo(typeSig(tree));
+        if (settings.debug.value) log("defining " + sym);
+        sym.setInfo(typeSig(tree));
+        if (settings.debug.value) log("defined " + sym);
+        validate(sym);
+      }
+    }
+
+    def getterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
+      override def complete(sym: Symbol): unit = {
+        if (settings.debug.value) log("defining " + sym);
+        sym.setInfo(PolyType(List(), typeSig(tree)));
+        if (settings.debug.value) log("defined " + sym);
+        validate(sym);
+      }
+    }
+
+    def setterTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
+      override def complete(sym: Symbol): unit = {
+        if (settings.debug.value) log("defining " + sym);
+        sym.setInfo(MethodType(List(typeSig(tree)), definitions.UnitClass.tpe));
         if (settings.debug.value) log("defined " + sym);
         validate(sym);
       }
     }
 
     def selfTypeCompleter(tree: Tree) = new TypeCompleter(tree) {
-      override def complete(sym: Symbol): unit =
-	sym.setInfo(typechecker.transformType(tree).tpe)
+      override def complete(sym: Symbol): unit = {
+        sym.setInfo(typechecker.transformType(tree, sym).tpe);
+      }
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
       if (sym.isVariable || !sym.hasFlag(FINAL)) tpe.deconst else tpe;
+
 
     private def enterTypeParams(owner: Symbol, tparams: List[AbsTypeDef]): List[Symbol] = {
       List.map2(owner.typeParams, tparams)
@@ -62,45 +82,29 @@ trait Typers: Analyzer {
 	  case _ => tpe
 	});
 
-    private def templateSig(clazz: Symbol, templ: Template): Type = {
-      // determine parent types
-      val parents =
-        if (templ.parents.isEmpty) List()
-        else
-          typechecker.transformSuperType(templ.parents.head).tpe ::
-          (templ.parents.tail map (p => typechecker.transformType(p).tpe));
-      if (!parents.isEmpty && parents.head.symbol.hasFlag(INTERFACE)
-			   && parents.head.symbol.hasFlag(JAVA))
-	unit.error(templ.parents.head.pos, "cannot extend a Java interface");
-
-      // enter all members
+    private def templateSig(templ: Template): Type = {
+      val clazz = context.owner;
+      val parents = typechecker.parentTypes(templ) map (.tpe);
       val decls = new Scope();
       new Namer(context.make(templ, clazz, decls)).enterSyms(templ.body);
       ClassInfoType(parents, decls, clazz)
     }
 
-    private def classSig(clazz: Symbol,
-			 tparams: List[AbsTypeDef],
-			 tpt: Tree, impl: Template): Type = {
+    private def classSig(tparams: List[AbsTypeDef], tpt: Tree, impl: Template): Type = {
+      val clazz = context.owner;
       val tparamSyms = enterTypeParams(clazz, tparams);
       if (!tpt.isEmpty) clazz.typeOfThis = selfTypeCompleter(tpt);
-      val constrTree = treeInfo.firstConstructor(impl.body);
-      val constr = new Namer(context).enterSym(constrTree).initialize;
-      typechecker.reenterValueParams(constrTree);
-      makePolyType(tparamSyms, templateSig(clazz, impl))
+      makePolyType(tparamSyms, templateSig(impl))
     }
 
-    private def methodSig(meth: Symbol,
-			  tparams: List[AbsTypeDef], vparamss: List[List[ValDef]],
-			  tpt: Tree, rhs: Tree): Type = {
+    private def methodSig(tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): Type = {
+      val meth = context.owner;
       val tparamSyms = enterTypeParams(meth, tparams);
       val vparamSymss = enterValueParams(meth, vparamss);
-      val restype =
-        typechecker.checkNoEscape(tpt.pos,
-	  deconstIfNotFinal(meth,
-	    if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-	    else if (tpt.isEmpty) { tpt.tpe = typechecker.transformExpr(rhs).tpe; tpt.tpe }
-	    else typechecker.transformType(tpt).tpe));
+      val restype = deconstIfNotFinal(meth,
+	if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
+	else if (tpt.isEmpty) { tpt.tpe = typechecker.transformExpr(rhs).tpe; tpt.tpe }
+	else typechecker.transformType(tpt, meth).tpe);
       def mkMethodType(vparams: List[Symbol], restpe: Type) =
 	MethodType(vparams map (.tpe), restpe);
       makePolyType(
@@ -110,24 +114,22 @@ trait Typers: Analyzer {
     }
 
     private def aliasTypeSig(tpsym: Symbol, tparams: List[AbsTypeDef], rhs: Tree): Type =
-      makePolyType(enterTypeParams(tpsym, tparams), typechecker.transformType(rhs).tpe);
+      makePolyType(enterTypeParams(tpsym, tparams), typechecker.transformType(rhs, tpsym).tpe);
 
     private def typeSig(tree: Tree): Type =
       try {
 	val sym: Symbol = tree.symbol;
 	tree match {
 	  case ClassDef(_, _, tparams, tpt, impl) =>
-	    new Typer(context.makeNewScope(tree, sym)).classSig(sym, tparams, tpt, impl)
+	    new Typer(context.makeNewScope(tree, sym)).classSig(tparams, tpt, impl)
 
-	  case ModuleDef(_, _, tpt, impl) =>
+	  case ModuleDef(_, _, impl) =>
 	    val clazz = sym.moduleClass;
-            clazz.setInfo(new Typer(context.make(tree, clazz)).templateSig(clazz, impl));
-	    if (tpt.isEmpty) { tpt.tpe = clazz.tpe; tpt.tpe }
-	    else typechecker.transformType(tpt).tpe
+            clazz.setInfo(new Typer(context.make(tree, clazz)).templateSig(impl));
+            clazz.tpe
 
 	  case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-	    new Typer(context.makeNewScope(tree, sym))
-	      .methodSig(sym, tparams, vparamss, tpt, rhs)
+	    new Typer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs)
 
 	  case ValDef(_, _, tpt, rhs) =>
             deconstIfNotFinal(sym,
@@ -140,13 +142,14 @@ trait Typers: Analyzer {
                     .transformExpr(rhs).tpe;
                   tpt.tpe
                 }
-              else typechecker.transformType(tpt).tpe)
+              else typechecker.transformType(tpt, sym).tpe)
 
 	  case AliasTypeDef(_, _, tparams, rhs) =>
             new Typer(context.makeNewScope(tree, sym)).aliasTypeSig(sym, tparams, rhs)
 
 	  case AbsTypeDef(_, _, lo, hi) =>
-            TypeBounds(typechecker.transformType(lo).tpe, typechecker.transformType(hi).tpe);
+            TypeBounds(typechecker.transformType(lo, sym).tpe,
+                       typechecker.transformType(hi, sym).tpe);
 
 	  case imptree @ Import(expr, selectors) =>
             val expr1 = typechecker.transformExpr(expr);

@@ -90,9 +90,11 @@ abstract class Symbols: SymbolTable {
 
     final def isValue = isTerm && !(isModule && ((rawflags & (PACKAGE | JAVA)) != 0));
     final def isVariable = isTerm && (rawflags & MUTABLE) != 0;
+    final def isGetter = isTerm && (rawflags & ACCESSOR) != 0 && !name.endsWith(nme._EQ);
+    final def isSetter = isTerm && (rawflags & ACCESSOR) != 0 && name.endsWith(nme._EQ);
     final def isValueParameter = isTerm && (rawflags & PARAM) != 0;
     final def isLocalDummy = isTerm && (name startsWith nme.LOCAL_PREFIX);
-    final def isMethod = isTerm && (rawflags & METHOD) != 0;
+    final def isMethod = isTerm && (rawflags & (METHOD | STABLE)) == METHOD;
     final def isLabel = isTerm && (rawflags & LABEL) != 0;
     final def isConstructor = isTerm && name == nme.CONSTRUCTOR;
     final def isModule = isTerm && (rawflags & MODULE) != 0;
@@ -130,6 +132,9 @@ abstract class Symbols: SymbolTable {
       isTerm && (
         hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE));
 
+    /** Is this symbol a sealed class?*/
+    final def isSealed: boolean =
+      isClass && (hasFlag(SEALED) || isSubClass(AnyValClass) || isSubClass(ArrayClass));
 
     /** Is this symbol locally defined? I.e. not a member of a class or module */
     final def isLocal: boolean = owner.isTerm || hasFlag(LOCAL);
@@ -158,18 +163,13 @@ abstract class Symbols: SymbolTable {
     final def flags = {
       initialize; rawflags & phase.flagMask
     }
-    final def setFlag(mask: long): Symbol = {
-      rawflags = rawflags | mask; this
-    }
-    final def resetFlag(mask: long): Symbol = {
-      rawflags = rawflags & ~mask; this
-    }
+    final def setFlag(mask: long): this.type = { rawflags = rawflags | mask; this }
+    final def resetFlag(mask: long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: long): long =
       (if ((mask & ~CREATIONFLAGS) == 0) rawflags else flags) & mask;
     final def hasFlag(mask: long): boolean =
       ((if ((mask & ~CREATIONFLAGS) == 0) rawflags else flags) & mask) != 0;
-    final def resetFlags =
-      rawflags = rawflags & SOURCEFLAGS;
+    final def resetFlags: unit = { rawflags = rawflags & SOURCEFLAGS }
 
 // Info and Type -------------------------------------------------------------------
 
@@ -210,7 +210,7 @@ abstract class Symbols: SymbolTable {
     }
 
     /** Set initial info. */
-    def setInfo(info: Type): Symbol = {
+    def setInfo(info: Type): this.type = {
       infos = new TypeHistory(phase, info, null);
       limit = phase;
       assert(info != null, "setInfo(null) for " + name + " at phase " + phase);//debug
@@ -383,7 +383,7 @@ abstract class Symbols: SymbolTable {
     /** Return every accessor of a primary constructor parameter in this case class */
     final def caseFieldAccessors: List[Symbol] = {
       assert(isClass && hasFlag(CASE));
-      info.decls.toList.filter(sym => sym.isMethod && sym.hasFlag(PARAMACCESSOR))
+      info.decls.toList.filter(sym => !sym.hasFlag(PARAM) && sym.hasFlag(PARAMACCESSOR))
     }
 
     /** The symbol accessed by this accessor function.
@@ -416,7 +416,7 @@ abstract class Symbols: SymbolTable {
     /** The module corresponding to this module class (note that this
      *  is not updated when a module is cloned).
      */
-    def sourceModule: Symbol = NoSymbol;
+    //def sourceModule: Symbol = NoSymbol;
 
     /** The module class corresponding to this module.
      */
@@ -506,7 +506,7 @@ abstract class Symbols: SymbolTable {
     final def locationString: String =
       if (owner.isClass &&
           (!owner.isAnonymousClass && !owner.isRefinementClass || settings.debug.value))
-	" in " + (if (owner.isModuleClass) owner.sourceModule else owner)
+	" in " + (if (owner.isModuleClass) "object " + owner.nameString  else owner)
       else "";
 
     /** String representation of symbol's definition following its name */
@@ -639,13 +639,13 @@ abstract class Symbols: SymbolTable {
   class ModuleClassSymbol(module: ModuleSymbol)
    extends ClassSymbol(module.owner, module.pos, module.name.toTypeName) {
     setFlag(module.getFlag(MODULE2CLASSFLAGS) | MODULE | FINAL);
-    override def sourceModule = module;
+    //override def sourceModule = module;
   }
 
   /** An object repreesenting a missing symbol */
   object NoSymbol extends Symbol(null, Position.NOPOS, nme.NOSYMBOL) {
     super.setInfo(NoType);
-    override def setInfo(info: Type): Symbol = { assert(info == NoType); this }
+    override def setInfo(info: Type): this.type = { assert(info == NoType); this }
     override def enclClass: Symbol = this;
     override def enclMethod: Symbol = this;
     override def owner: Symbol = throw new Error();

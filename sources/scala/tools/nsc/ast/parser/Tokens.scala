@@ -64,6 +64,7 @@ object Tokens {
   val FINALLY = 55;
   val WHILE = 56;
   val RETURN = 57;
+  val MATCH = 58;
 
   /** special symbols */
   val COMMA = 61;

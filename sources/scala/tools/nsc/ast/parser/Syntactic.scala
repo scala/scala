@@ -57,9 +57,11 @@ abstract class Syntactic: ParserPhase {
 
     object treeBuilder extends TreeBuilder {
       val global: Syntactic.this.global.type = Syntactic.this.global;
-      def freshName(): Name = unit.fresh.newName("x$");
+      def freshName(prefix: String): Name = unit.fresh.newName(prefix);
     }
     import treeBuilder._;
+
+
 
     /** this is the general parse method
      */
@@ -119,7 +121,7 @@ abstract class Syntactic: ParserPhase {
       pos
     }
 
-    def errorTypeTree = EmptyTypeTree().setType(ErrorType).setPos(in.pos);
+    def errorTypeTree = TypeTree().setType(ErrorType).setPos(in.pos);
     def errorTermTree = Literal(null).setPos(in.pos);
     def errorPatternTree = Ident(nme.WILDCARD).setPos(in.pos);
 
@@ -180,7 +182,7 @@ abstract class Syntactic: ParserPhase {
     /** Convert tree to formal parameter list
     */
     def convertToParams(t: Tree): List[ValDef] = t match {
-      case Function(params, EmptyTypeTree()) =>
+      case Function(params, TypeTree()) =>
 	params
       case Ident(_) | Typed(Ident(_), _) =>
 	List(convertToParam(t));
@@ -197,7 +199,7 @@ abstract class Syntactic: ParserPhase {
       atPos(tree.pos) {
 	tree match {
 	  case Ident(name) =>
-	    ValDef(Flags.PARAM, name, EmptyTypeTree(), EmptyTree)
+	    ValDef(Flags.PARAM, name, TypeTree(), EmptyTree)
 	  case Typed(Ident(name), tpe) =>
 	    ValDef(Flags.PARAM, name, tpe, EmptyTree)
 	  case _ =>
@@ -219,16 +221,9 @@ abstract class Syntactic: ParserPhase {
 	errorTypeTree
     }
 
-    /** Complete unapplied constructor with `()' arguments
-     */
-    def applyConstr(t: Tree): Tree = t match {
-      case Apply(_, _) => t
-      case _ => Apply(t, List()) setPos t.pos
-    }
-
     /** make closure from tree */
     def makeClosure(tree: Tree): Tree = {
-      val pname = freshName();
+      val pname: Name = unit.fresh.newName("x$");
       def insertParam(tree: Tree): Tree = tree match {
 	case Ident(name) =>
 	  Select(Ident(pname), name)
@@ -243,7 +238,7 @@ abstract class Syntactic: ParserPhase {
 	  errorTermTree
       }
       Function(
-	List(ValDef(Flags.PARAM, pname, EmptyTypeTree(), EmptyTree)),
+	List(ValDef(Flags.PARAM, pname, TypeTree(), EmptyTree)),
 	insertParam(tree))
     }
 
@@ -445,13 +440,13 @@ abstract class Syntactic: ParserPhase {
     */
     def typedOpt(): Tree =
       if (in.token == COLON) { in.nextToken(); typ() }
-      else EmptyTypeTree();
+      else TypeTree();
 
     /** SimpleTypedOpt ::= [`:' SimpleType]
     */
     def simpleTypedOpt(): Tree =
       if (in.token == COLON) { in.nextToken(); simpleType() }
-      else EmptyTypeTree();
+      else TypeTree();
 
     /** Types ::= Type {`,' Type}
     */
@@ -498,17 +493,14 @@ abstract class Syntactic: ParserPhase {
      */
     def type1(): Tree = {
       val pos = in.pos;
-      var t = simpleType();
-      if (in.token == WITH) {
-	val ts = new ListBuffer[Tree] + t;
-	while (in.token == WITH) {
-	  in.nextToken(); ts += simpleType()
-	}
-	t = atPos(pos) { IntersectionTypeTree(ts.toList) }
+      var ts = new ListBuffer[Tree] + simpleType();
+      while (in.token == WITH) {
+	in.nextToken(); ts += simpleType()
       }
-      if (in.token == LBRACE)
-	t = atPos(pos) { RefinementTypeTree(t, refinement()) }
-      t
+      atPos(pos) {
+        if (in.token == LBRACE) CompoundTypeTree(ts.toList, refinement())
+        else makeIntersectionTypeTree(ts.toList)
+      }
     }
 
     /** SimpleType ::= SimpleType TypeArgs
@@ -578,7 +570,7 @@ abstract class Syntactic: ParserPhase {
      *  ResultExpr ::= Bindings `=>' Block
      *               | Expr1
      *  Expr1      ::= (' Expr `)' Expr [[`;'] else Expr]
-     *               | try `{' block `}' [catch Expr] [finally Expr]
+     *               | try `{' block `}' [catch `{' caseClauses `}'] [finally Expr]
      *               | while `(' Expr `)' Expr
      *               | do Expr [`;'] while `(' Expr `)'
      *               | for `(' Enumerators `)' (do | yield) Expr
@@ -588,6 +580,7 @@ abstract class Syntactic: ParserPhase {
      *               | SimpleExpr ArgumentExprs `=' Expr
      *               | `.' SimpleExpr
      *               | PostfixExpr [`:' Type1]
+     *               | PostfixExpr match `{' caseClauses `}'
      *  Bindings   ::= Id [`:' Type1]
      *               | `(' [Binding {`,' Binding}] `)'
      *  Binding    ::= Id [`:' Type]
@@ -611,13 +604,18 @@ abstract class Syntactic: ParserPhase {
 	  accept(LBRACE);
 	  val body = block();
 	  accept(RBRACE);
-	  val catcher =
-	    if (in.token == CATCH) { in.nextToken(); expr() }
-	    else EmptyTree;
+	  val catches =
+	    if (in.token == CATCH) {
+              in.nextToken();
+              accept(LBRACE);
+              val cases = caseClauses();
+              accept(RBRACE);
+              cases
+            } else List();
 	  val finalizer =
 	    if (in.token == FINALLY) { in.nextToken(); expr() }
 	    else EmptyTree;
-	  Try(body, catcher, finalizer)
+	  Try(body, catches, finalizer)
 	}
       } else if (in.token == WHILE) {
 	val lname: Name = "label$" + loopNestingDepth;
@@ -668,7 +666,7 @@ abstract class Syntactic: ParserPhase {
 	if (in.token == EQUALS) {
 	  t match {
 	    case Ident(_) | Select(_, _) | Apply(_, _) =>
-	      t = atPos(in.skipToken()) { Assign(t, expr()) }
+	      t = atPos(in.skipToken()) { makeAssign(t, expr()) }
 	    case _ =>
 	  }
 	} else if (in.token == COLON) {
@@ -686,7 +684,14 @@ abstract class Syntactic: ParserPhase {
 	  } else {
 	    t = atPos(pos) { Typed(t, type1()) }
 	  }
-	}
+	} else if (in.token == MATCH) {
+          t = atPos(in.skipToken()) {
+            accept(LBRACE);
+            val cases = caseClauses();
+            accept(RBRACE);
+            Match(t, cases): Tree
+          }
+        }
 	if (in.token == ARROW) {
 	  t = atPos(in.skipToken()) {
 	    Function(convertToParams(t), if (isInBlock) block() else expr())
@@ -769,7 +774,7 @@ abstract class Syntactic: ParserPhase {
 	      accept(RPAREN);
 	      if (in.token == ARROW) {
 		t = atPos(pos) {
-		  Function(ts.toList map convertToParam, EmptyTypeTree())
+		  Function(ts.toList map convertToParam, TypeTree())
 		}
 	      } else {
 		syntaxError(commapos, "`)' expected", false);
@@ -790,11 +795,7 @@ abstract class Syntactic: ParserPhase {
 	      parents += simpleType()
             }
             val stats = if (in.token == LBRACE) templateBody() else List();
-            val ps = parents.toList;
-            if (ps.length == 1 && stats.isEmpty)
-              Apply(Select(New(ps.head), nme.CONSTRUCTOR), args)
-            else
-              New(Template(ps, makeSuperCall(args) :: stats))
+            makeNew(parents.toList, stats, args)
           }
 	case _ =>
 	  syntaxError("illegal start of simple expression", true);
@@ -834,22 +835,13 @@ abstract class Syntactic: ParserPhase {
       }
     }
 
-    /** BlockExpr ::= `{' CaseClause {CaseClause} `}'
-     *              | `{' Block `}'
+    /** BlockExpr ::= `{' CaseClauses | Block `}'
      */
     def blockExpr(): Tree = {
-      val res =
-	atPos(accept(LBRACE)) {
-	  if (in.token == CASE) {
-	    var stats: List[CaseDef] = List();
-	    do {
-	      stats = caseClause() :: stats;
-	    } while (in.token == CASE);
-	    Visitor(stats.reverse)
-	  } else {
-	    block()
-	  }
-	}
+      val res = atPos(accept(LBRACE)) {
+	if (in.token == CASE) makeVisitor(caseClauses())
+        else block()
+      }
       accept(RBRACE);
       res
     }
@@ -857,6 +849,15 @@ abstract class Syntactic: ParserPhase {
     /** Block ::= BlockStatSeq
     */
     def block(): Tree = makeBlock(blockStatSeq(new ListBuffer[Tree]));
+
+   /** CaseClauses ::= CaseClause {CaseClause}
+    */
+    def caseClauses(): List[CaseDef] = {
+      val ts = new ListBuffer[CaseDef];
+      do { ts += caseClause();
+      } while (in.token == CASE);
+      ts.toList
+    }
 
     /** caseClause : =>= case Pattern [if PostfixExpr] `=>' Block
      */
@@ -1381,7 +1382,7 @@ abstract class Syntactic: ParserPhase {
             val vparams = List(paramClause(false));
             accept(EQUALS);
       	    DefDef(
-              mods, nme.CONSTRUCTOR, List(), vparams, EmptyTypeTree(), constrExpr())
+              mods, nme.CONSTRUCTOR, List(), vparams, TypeTree(), constrExpr())
           })
       else {
 	var newmods = mods;
@@ -1481,39 +1482,27 @@ abstract class Syntactic: ParserPhase {
 		     if ((mods & Flags.TRAIT) != 0) List() else paramClauses(true))
       } while (in.token == COMMA);
       val thistpe = simpleTypedOpt();
-      val Template(parents, body) = classTemplate(mods);
+      val template = classTemplate(mods);
       for (val Tuple4(pos, name, tparams, vparamss) <- lhs.toList) yield
 	atPos(pos) {
-	  val body1 =
-	    if ((mods & Flags.TRAIT) != 0) body
-	    else {
-	      val vparamss1 = vparamss map (.map (vd =>
-		ValDef(Flags.PARAM, vd.name, vd.tp.duplicate, EmptyTree)));
-	      val constr: Tree = DefDef(
-		mods & Flags.CONSTRFLAGS | Flags.SYNTHETIC, nme.CONSTRUCTOR, List(),
-		if (vparamss1.isEmpty) List(List()) else vparamss1,
-		EmptyTypeTree(), EmptyTree);
-	      val vparams: List[Tree] =
-		for (val vparams <- vparamss; val vparam <- vparams) yield vparam;
-	      vparams ::: constr :: body
-	    }
-	  ClassDef(mods, name, tparams, thistpe.duplicate, Template(parents, body1))
+	  val template1 = if ((mods & Flags.TRAIT) != 0) template
+			  else addConstructor(mods, vparamss, template);
+	  ClassDef(mods, name, tparams, thistpe.duplicate, template1.duplicate.asInstanceOf[Template])
 	}
     }
 
-    /** ObjectDef       ::= Id { , Id } [`:' SimpleType] ClassTemplate
+    /** ObjectDef       ::= Id { , Id } ClassTemplate
      */
     def objectDef(mods: int): List[Tree] = {
       val lhs = new ListBuffer[Pair[Int, Name]];
       do {
 	lhs += Pair(in.skipToken(), ident());
       } while (in.token == COMMA);
-      val thistpe = simpleTypedOpt();
       val template = classTemplate(mods);
       for (val Pair(pos, name) <- lhs.toList) yield
 	atPos(pos) {
-	  ModuleDef(mods, name, thistpe.duplicate,
-      		    template.duplicate.asInstanceOf[Template])
+	  val template1 = addConstructor(mods, List(), template);
+	  ModuleDef(mods, name, template1.duplicate.asInstanceOf[Template])
 	}
     }
 
@@ -1547,17 +1536,6 @@ abstract class Syntactic: ParserPhase {
       }
 
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
-
-    /** Constr ::= StableId [TypeArgs] [`(' [Exprs] `)']
-     */
-    def constr(): Tree = {
-      var t: Tree = convertToTypeId(stableId());
-      if (in.token == LBRACKET)
-        t = AppliedTypeTree(t, typeArgs()) setPos in.pos;
-      if (in.token == LPAREN)
-        t = Apply(t, argumentExprs()) setPos in.pos;
-      applyConstr(t)
-    }
 
     /** TemplateBody ::= `{' [TemplateStat {`;' TemplateStat}] `}'
      */
@@ -1649,20 +1627,29 @@ abstract class Syntactic: ParserPhase {
 
     /** AttributeClauses   ::= {AttributeClause}
      *  AttributeClause    ::= `[' Attribute {`,' Attribute} `]'
-     *  Attribute          ::= Constr
      */
     def attributeClauses(): List[Tree] = {
       var attrs = new ListBuffer[Tree];
       while (in.token == LBRACKET) {
         in.nextToken();
-        attrs += constr();
+        attrs += attribute();
         while (in.token == COMMA) {
           in.nextToken();
-          attrs += constr()
+          attrs += attribute()
         }
         accept(RBRACKET);
       }
       attrs.toList
+    }
+
+    /** Attribute          ::= StableId [TypeArgs] [`(' [Exprs] `)']
+     */
+    def attribute(): Tree = {
+      var t: Tree = convertToTypeId(stableId());
+      if (in.token == LBRACKET)
+        t = atPos(in.pos)(AppliedTypeTree(t, typeArgs()));
+      val args = if (in.token == LPAREN) argumentExprs() else List();
+      makeNew(List(t), List(), args)
     }
 
     def joinAttributes(attrs: List[Tree], defs: List[Tree]): List[Tree] =
