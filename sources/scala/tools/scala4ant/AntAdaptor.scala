@@ -30,6 +30,7 @@ package scala.tools.scala4ant {
     final val VERSION = System.getProperty("scala.version", "unknown version");
 
     def runCompiler( args:Array[String] ) = {
+      //Console.println("runCompiler");
       var result = true;
       try {
         scala.tools.scalac.Main.main1( false, args );
@@ -37,6 +38,7 @@ package scala.tools.scala4ant {
         case e:Throwable => {
           /* e.printStackTrace(); */
           result = false;
+          e.printStackTrace();
           throw new BuildException(e.getMessage());
         }
       }
@@ -56,6 +58,7 @@ package scala.tools.scala4ant {
     }
 
     def inferScalaPath( paths:Array[String] ) = {
+      //Console.println("inferScalaPath");
       var x:List[String] = Nil;
       for( val p <- new IterableArray( paths ).elements ) {
         val z = p.lastIndexOf("lib/scala.jar");
@@ -71,13 +74,15 @@ package scala.tools.scala4ant {
           }
         }
       }
+      //Console.println("DONE inferScalaPath");
       x
     };
 
     def setupScalacCommand() = {
+      //Console.println("setupScalaCommand");
       val cmd = new Commandline();
       val cp = new Path( this.project );
-      if( attributes.asInstanceOf[AntTask].xmarkup ) {
+      if( attributes.asInstanceOf[AntTask].getXmarkup() ) {
         cmd.createArgument().setValue("-Xmarkup");
       }
 
@@ -132,6 +137,7 @@ package scala.tools.scala4ant {
       }
 
       logAndAddFilesToCompile(cmd);
+      //Console.println("DONE setupScalaCommand");
       cmd
     }
   }

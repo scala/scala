@@ -23,18 +23,30 @@ class AntTask extends Javac {
   var force : boolean = false;
   var xmarkup : boolean = false;
 
-  override def execute():unit = try {
+  override def execute():unit = {
 
-    Class.forName("ch.epfl.lamp.fjbg.JFieldOrMethod"); /* sanity check */
+    try {
+
+      Class.forName("ch.epfl.lamp.fjbg.JFieldOrMethod"); /* sanity check */
+
+    } catch {
+      case e:ClassNotFoundException =>
+        throw new BuildException("Cannot run scala4ant.\nIt seems fjbg.jar is not in your CLASSPATH.");
+    };
+
+    try {
+
+      Class.forName("scala.tools.scala4ant.AntAdaptor$class"); /* sanity check */
+
+    } catch {
+      case e:ClassNotFoundException =>
+        throw new BuildException("Cannot run scala4ant.\nIt seems ant cannot load the AntAdaptor$class.\n Put tools.jar in your classpath.");
+    };
 
     getProject().setProperty("build.compiler",
                              "scala.tools.scala4ant.AntAdaptor$class");
     super.execute();
-
-  } catch {
-    case e:ClassNotFoundException =>
-    throw new BuildException("Cannot run scala4ant. It seems fjbg.jar is not in your CLASSPATH.");
-  };
+  }
 
   def setForce( b:boolean ) = this.force = b;
   def getForce() = force;
