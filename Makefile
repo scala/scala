@@ -252,18 +252,26 @@ scalac4ant	:
 ##############################################################################
 # Commands - Version management
 
-set-project-version	:
+version-set		:
 	@if [ -z "$(VERSION)" ]; then \
-	    echo "Usage: $(MAKE) set-version VERSION=<version>"; \
+	    echo "Usage: $(MAKE) version-set VERSION=<version>"; \
 	    exit 1; \
 	else \
 	    $(call RUN,$(VERSION_SCRIPT) $(VERSION_FILE) set $(VERSION)); \
 	    $(make) scripts; \
 	fi
 
-update-project-version	:
+version-update		:
 	$(VERSION_SCRIPT) $(VERSION_FILE) update
 	@$(make) scripts
+
+version-increment	:
+	$(VERSION_SCRIPT) $(VERSION_FILE) increment
+	@$(make) scripts
+
+.PHONY			: version-set
+.PHONY			: version-update
+.PHONY			: version-increment
 
 ##############################################################################
 # Targets
