@@ -923,7 +923,7 @@ test_main() {
             --help| -?   ) print_help; exit 0;;
             --version    ) print_version; exit 0;;
             -*           ) abort "unknown option $1";;
-            *            ) add_file "$1"; shift 1;;
+            *            ) test_add_file "$1"; shift 1;;
         esac;
     done;
 
