@@ -1,5 +1,7 @@
 package examples;
 
+object typeinf {
+
 trait Term {}
 
 case class Var(x: String)                   extends Term {
@@ -122,92 +124,99 @@ object typeInfer {
   }
 }
 
-object predefined {
-  val booleanType = Tycon("Boolean", List());
-  val intType = Tycon("Int", List());
-  def listType(t: Type) = Tycon("List", List(t));
+  object predefined {
+    val booleanType = Tycon("Boolean", List());
+    val intType = Tycon("Int", List());
+    def listType(t: Type) = Tycon("List", List(t));
 
-  private def gen(t: Type): typeInfer.TypeScheme = typeInfer.gen(List(), t);
-  private val a = typeInfer.newTyvar();
-  val env = List(
+    private def gen(t: Type): typeInfer.TypeScheme = typeInfer.gen(List(), t);
+    private val a = typeInfer.newTyvar();
+    val env = List(
 /*
-    Pair("true", gen(booleanType)),
-    Pair("false", gen(booleanType)),
-    Pair("if", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
-    Pair("zero", gen(intType)),
-    Pair("succ", gen(Arrow(intType, intType))),
-    Pair("nil", gen(listType(a))),
-    Pair("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
-    Pair("isEmpty", gen(Arrow(listType(a), booleanType))),
-    Pair("head", gen(Arrow(listType(a), a))),
-    Pair("tail", gen(Arrow(listType(a), listType(a)))),
+      Pair("true", gen(booleanType)),
+      Pair("false", gen(booleanType)),
+      Pair("if", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
+      Pair("zero", gen(intType)),
+      Pair("succ", gen(Arrow(intType, intType))),
+      Pair("nil", gen(listType(a))),
+      Pair("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
+      Pair("isEmpty", gen(Arrow(listType(a), booleanType))),
+      Pair("head", gen(Arrow(listType(a), a))),
+      Pair("tail", gen(Arrow(listType(a), listType(a)))),
 */
-    Pair("fix", gen(Arrow(Arrow(a, a), a)))
-  )
-}
+      Pair("fix", gen(Arrow(Arrow(a, a), a)))
+    )
+  }
 
-abstract class MiniMLParsers[intype] extends CharParsers[intype] {
+  abstract class MiniMLParsers extends CharParsers {
 
-  /** whitespace */
-  def whitespace = rep{chr(' ') ||| chr('\t') ||| chr('\n')};
+    /** whitespace */
+    def whitespace = rep{chr(' ') ||| chr('\t') ||| chr('\n')};
 
-  /** A given character, possible preceded by whitespace */
-  def wschr(ch: char) = whitespace &&& chr(ch);
+    /** A given character, possible preceded by whitespace */
+    def wschr(ch: char) = whitespace &&& chr(ch);
 
-  /** identifiers or keywords */
-  def id: Parser[String] =
-    for (
-      val c: char <- rep(chr(' ')) &&& chr(Character.isLetter);
-      val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
-    ) yield (c :: cs).mkString("", "", "");
+    /** identifiers or keywords */
+    def id: Parser[String] =
+      for (
+        val c: char <- rep(chr(' ')) &&& chr(Character.isLetter);
+        val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
+      ) yield (c :: cs).mkString("", "", "");
 
-  /** Non-keyword identifiers */
-  def ident: Parser[String] =
-    for (val s <- id; s != "let" && s != "in") yield s;
+    /** Non-keyword identifiers */
+    def ident: Parser[String] =
+      for (val s <- id; s != "let" && s != "in") yield s;
 
-  /** term = '\' ident '.' term | term1 {term1} | let ident "=" term in term */
-  def term: Parser[Term] =
-    ( for (
-	val _ <- wschr('\\');
-	val x <- ident;
-	val _ <- wschr('.');
-	val t <- term)
-      yield Lam(x, t): Term )
-    |||
-    ( for (
-        val letid <- id; letid == "let";
-        val x <- ident;
-	val _ <- wschr('=');
+    /** term = '\' ident '.' term | term1 {term1} | let ident "=" term in term */
+    def term: Parser[Term] =
+      ( for (
+          val _ <- wschr('\\');
+          val x <- ident;
+          val _ <- wschr('.');
+          val t <- term)
+        yield Lam(x, t): Term )
+      |||
+      ( for (
+          val letid <- id; letid == "let";
+          val x <- ident;
+          val _ <- wschr('=');
+          val t <- term;
+          val inid <- id; inid == "in";
+          val c <- term)
+        yield Let(x, t, c) )
+      |||
+      ( for (
+          val t <- term1;
+          val ts <- rep(term1))
+        yield (t /: ts)((f, arg) => App(f, arg)) );
+
+    /** term1 = ident | '(' term ')' */
+    def term1: Parser[Term] =
+      ( for (val s <- ident)
+        yield Var(s): Term )
+      |||
+      ( for (
+          val _ <- wschr('(');
+          val t <- term;
+          val _ <- wschr(')'))
+        yield t );
+
+    /** all = term ';' */
+    def all: Parser[Term] =
+      for (
         val t <- term;
-	val inid <- id; inid == "in";
-	val c <- term)
-      yield Let(x, t, c) )
-    |||
-    ( for (
-	val t <- term1;
-	val ts <- rep(term1))
-      yield (t /: ts)((f, arg) => App(f, arg)) );
+        val _ <- wschr(';'))
+      yield t;
+  }
 
-  /** term1 = ident | '(' term ')' */
-  def term1: Parser[Term] =
-    ( for (val s <- ident)
-      yield Var(s): Term )
-    |||
-    ( for (
-	val _ <- wschr('(');
-	val t <- term;
-	val _ <- wschr(')'))
-      yield t );
-
-  /** all = term ';' */
-  def all: Parser[Term] =
-    for (
-      val t <- term;
-      val _ <- wschr(';'))
-    yield t;
-}
-
-object testInfer {
+  class ParseString(s: String) extends Parsers {
+    type intype = int;
+    val input = 0;
+    def any = new Parser[char] {
+      def apply(in: int): Parser[char]#Result =
+        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None;
+    }
+  }
 
   def showType(e: Term): String =
     try {
@@ -218,14 +227,18 @@ object testInfer {
 	"\n reason: " + msg;
     }
 
-  def main(args: Array[String]): unit = {
-    val ps = new MiniMLParsers[int] with ParseString(args(0));
-    ps.all(ps.input) match {
-      case Some(Pair(term, _)) =>
-	System.out.println("" + term + ": " + showType(term));
-      case None =>
-	System.out.println("syntax error");
-    }
-  }
+  def main(args: Array[String]): unit =
+    Console.println(
+      if (args.length == 1) {
+        val ps = new MiniMLParsers with ParseString(args(0));
+        ps.all(ps.input) match {
+          case Some(Pair(term, _)) =>
+            "" + term + ": " + showType(term)
+          case None =>
+	        "syntax error"
+        }
+      } else "usage: java examples.typeinf <expr-string>"
+    );
+
 }
 
