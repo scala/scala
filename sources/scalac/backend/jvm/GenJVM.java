@@ -622,7 +622,7 @@ class GenJVM {
      * symbol.
      */
     protected JType genLoadModule(Context ctx, Symbol sym) {
-        String javaSymName = javaName(sym);
+        String javaSymName = javaName(sym.moduleClass());
         JType type = typeStoJ(sym.info());
         if (javaSymName.equals(ctx.clazz.getName()))
             ctx.code.emitALOAD_0();
@@ -1417,12 +1417,9 @@ class GenJVM {
     protected String javaName(Symbol sym) {
         Object value = nameMap.get(sym);
         if (value != null) return (String)value;
-        assert sym.isClass() || sym.isModule() : Debug.show(sym);
-        String signature = prims.getJavaSignature(sym);
-        if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
-            signature = signature + '$';
-        nameMap.put(sym, signature);
-        return signature;
+        String name = prims.getJREClassName(sym);
+        nameMap.put(sym, name);
+        return name;
     }
 
     /**

@@ -309,7 +309,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
       case LOAD_FIELD(field, static) => {
 	val className = javaName(field.owner());
-	val fieldName = javaName(field);
+	val fieldName = field.name.toString();
 	if (static)
 	  jcode.emitGETSTATIC(className, fieldName, typeStoJ(field.getType()));
 	else
@@ -324,7 +324,7 @@ class GenJVMFromICode(global: scalac_Global) {
 	  if (jvmMethod.locals.contains(local))
 	    jvmMethod.locals.apply(local);
 	  else {
-	    val newLocal = jvmMethod.jMethod.addNewLocalVariable(typeStoJ(local.getType()), javaName(local));
+	    val newLocal = jvmMethod.jMethod.addNewLocalVariable(typeStoJ(local.getType()), local.name.toString());
 	    jvmMethod.locals += local -> newLocal;
 	    newLocal;
 	  }
@@ -333,7 +333,7 @@ class GenJVMFromICode(global: scalac_Global) {
 
       case STORE_FIELD(field, static) => {
 	val className = javaName(field.owner());
-	val fieldName = javaName(field);
+	val fieldName = field.name.toString();
 	if (static)
 	  jcode.emitPUTSTATIC(className, fieldName, typeStoJ(field.getType()));
 	else
@@ -592,23 +592,23 @@ class GenJVMFromICode(global: scalac_Global) {
   // Private methods - Debugging
 
   private def dumpStructure = {
-    global.log("### Dumping structure ###");
+    Debug.log("### Dumping structure ###");
     val sym_it = clasz.keys;
     sym_it.foreach((sym: Symbol) => {
       val jvmClass = clasz.apply(sym);
-      global.log ("Classfile: "+javaName(sym));
-      global.log ("/fileds:");
+      Debug.log ("Classfile: ", sym);
+      Debug.log ("/fileds:");
       val fields_it = jvmClass.fields.keys;
       fields_it.foreach((f: Symbol) => {
-	global.log("  "+javaName(f));
+	Debug.log("  ", f);
       });
-      global.log ("/methods:");
+      Debug.log ("/methods:");
       val methods_it = jvmClass.methods.keys;
       methods_it.foreach((m: Symbol) => {
-	global.log("  "+javaName(m));
+	Debug.log("  ", m);
       });
     });
-    global.log("#########################");
+    Debug.log("#########################");
   }
 
   //##################################################
@@ -629,14 +629,11 @@ class GenJVMFromICode(global: scalac_Global) {
   */
   private def javaName(sym: Symbol) =
     nameMap.get(sym) match {
-      case Some(signature) => signature;
+      case Some(name) => name;
       case None => {
-        assert(sym.isClass() || sym.isModule(), Debug.show(sym));
-        var signature = global.primitives.getJavaSignature(sym);
-        if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
-          signature = signature + '$';
-        nameMap += sym -> signature;
-        signature;
+        val name = global.primitives.getJREClassName(sym);
+        nameMap += sym -> name;
+        name;
       }
     }
 

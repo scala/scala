@@ -174,7 +174,8 @@ public class Primitives {
     private final Global global;
     private final Definitions definitions;
     private final Map/*<Symbol,Primitive>*/ primitives;
-    private final SymbolNameWriter javaNameWriter;
+    private final SymbolNameWriter jreNameWriter;
+    private final SymbolNameWriter clrNameWriter;
 
     public final Symbol RUNTIME;
 
@@ -317,7 +318,8 @@ public class Primitives {
         this.global = global;
         this.definitions = global.definitions;
         this.primitives = new HashMap();
-        this.javaNameWriter = new SymbolNameWriter().setClassSeparator('$');
+        this.jreNameWriter = new SymbolNameWriter().setClassSeparator('$');
+        this.clrNameWriter = new SymbolNameWriter().setNameDecoding(true);
         this.RUNTIME = definitions.getModule(Names.scala_runtime_RunTime);
         this.NEW_ZARRAY = getUniqueTerm(RUNTIME, ZARRAY_N);
         this.NEW_BARRAY = getUniqueTerm(RUNTIME, BARRAY_N);
@@ -1233,7 +1235,7 @@ public class Primitives {
 
     /* Return name to use in "Class.forName(<name>)" for the given symbol. */
     public String getNameForClassForName(Symbol symbol) {
-        return getJavaSignature(symbol);
+        return getJREClassName(symbol);
     }
 
     /* Return name to use in "Class.forName(<name>)" for the given kind. */
@@ -1251,14 +1253,24 @@ public class Primitives {
         }
     }
 
-    /** Return the Java signature of given symbol. */
-    public String getJavaSignature(Symbol symbol) {
-        if (symbol == definitions.ANY_CLASS ||
-            symbol == definitions.ANYREF_CLASS)
-            return getJavaSignature(definitions.JAVA_OBJECT_CLASS);
-        String signature = javaNameWriter.appendSymbol(symbol).toString();
-        javaNameWriter.setStringBuffer(null);
-        return signature;
+    /** Return the JRE name of given class. */
+    public String getJREClassName(Symbol clasz) {
+        assert clasz.isClassType(): Debug.show(clasz);
+        if (clasz == definitions.ANY_CLASS ||
+            clasz == definitions.ANYREF_CLASS)
+            return getJREClassName(definitions.JAVA_OBJECT_CLASS);
+        String suffix = clasz.isModuleClass() && !clasz.isJava() ? "$" : "";
+        String name = jreNameWriter.appendSymbol(clasz, suffix).toString();
+        jreNameWriter.setStringBuffer(null);
+        return name;
+    }
+
+    /** Return the CLR name of given class. */
+    public String getCLRClassName(Symbol clasz) {
+        assert clasz.isClassType(): Debug.show(clasz);
+        String name = clrNameWriter.appendSymbol(clasz).toString();
+        clrNameWriter.setStringBuffer(null);
+        return name;
     }
 
     //########################################################################
