@@ -446,32 +446,6 @@ public class Erasure extends Transformer implements Modifiers {
 
     }
 
-    public void addInterfaceBridges(Symbol c, Symbol sym) {
-	assert c.isClass() && !c.isInterface(): Debug.show(c);
-        //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
-        Symbol member = sym;
-
-        // !!! create a clone to make overriddenSymbol return the right symbol
-        Symbol clone = sym.cloneSymbol();
-        clone.setOwner(c);
-        clone.setType(c.thisType().memberType(sym));
-
-        sym = clone;
-        //global.nextPhase(); System.out.println("!!! " + Debug.show(sym) + " : " + sym.type().erasure() + " @ " + Debug.show(c)); global.prevPhase();
-
-        Type basetype = c.thisType();
-        Symbol sym1 = sym.overriddenSymbol(basetype);
-        sym = member;
-        //global.nextPhase();  System.out.println("!!!     " + Debug.show(sym) + " @ " + basetype + " -> " + Debug.show(sym1) + (sym1.kind == Kinds.NONE ? "" : " : " + sym1.type().erasure() + " => " + (isSameAs(sym1.type().erasure(), sym.type().erasure()) ? "ok" : "ADD BRIDGE"))); global.prevPhase();
-
-        if (sym1.kind != Kinds.NONE &&
-            !isSameAs(sym1.type().erasure(), sym.type().erasure())) {
-            //System.out.println("!!! " + Debug.show(sym) + " adding bridge for " + Debug.show(sym1));
-            addBridge(c, sym1, member);
-        }
-
-    }
-
 //////////////////////////////////////////////////////////////////////////////////
 // Transformer
 /////////////////////////////////////////////////////////////////////////////////
@@ -488,6 +462,13 @@ public class Erasure extends Transformer implements Modifiers {
         Symbol overridden = getOverriddenMethod(method);
         if (overridden != Symbol.NONE && !isSameAs(overridden.nextType(), method.nextType()))
             addBridge(method.owner(), method, overridden);
+    }
+
+    public void addInterfaceBridges(Symbol owner, Symbol method) {
+	assert owner.isClass() && !owner.isInterface(): Debug.show(owner);
+        Symbol overriding = method.overridingSymbol(owner.thisType());
+        if (overriding != Symbol.NONE && !isSameAs(overriding.nextType(), method.nextType()))
+            addBridge(owner, overriding, method);
     }
 
     private void addBridges(Symbol clasz, TreeList members) {
