@@ -19,6 +19,11 @@ EMACS_ROOT		 = $(PROJECT_SUPPORTDIR)/emacs
 EMACS_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/emacs.lst)
 EMACS_FILES		 = $(EMACS_LIST:%=$(EMACS_ROOT)/%)
 
+# jedit scala-mode
+JEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/jedit
+JEDIT_LIST		+= scala.xml
+JEDIT_FILES		 = $(JEDIT_LIST:%=$(JEDIT_ROOT)/%)
+
 # ultraedit scala-mode
 ULTRAEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/ultraedit
 ULTRAEDIT_LIST		+= scala.txt
@@ -102,6 +107,9 @@ install			: $(TOOLS_JAR_ARCHIVE)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/emacs
 	$(strip $(MIRROR) -m 644 -p -C $(EMACS_ROOT) $(EMACS_LIST) \
 	    $(INSTALL_SUPPORTDIR)/emacs)
+	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/jedit
+	$(strip $(MIRROR) -m 644 -p -C $(JEDIT_ROOT) $(JEDIT_LIST) \
+	    $(INSTALL_SUPPORTDIR)/jedit)
 	$(INSTALL) -m 755 -d $(INSTALL_SUPPORTDIR)/ultraedit
 	$(strip $(MIRROR) -m 644 -p -C $(ULTRAEDIT_ROOT) $(ULTRAEDIT_LIST) \
 	    $(INSTALL_SUPPORTDIR)/ultraedit)
