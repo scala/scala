@@ -679,7 +679,6 @@ final class TypeCreator {
 	default:
 	    assert false : "Symbol doesn't have a method type: " + Debug.show(sym);
 	}
-	System.out.println(method);
 	assert method != null;
 	symbols2methods.put(sym, method);
 	return method;
