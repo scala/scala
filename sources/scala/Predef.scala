@@ -53,13 +53,14 @@ object Predef {
    *  @param xs the elements to put in the array
    *  @return the array containing elements xs.
    */
-  def Array[A](xs: A*): Array[A] = {
+/*
+   def Array[A](xs: A*): Array[A] = {
     val array = new Array[A](xs.length);
     var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-/*
+*/
   def Array[A <: AnyRef](xs: A*): Array[A] = {
     val array = new Array[A](xs.length);
     var i = 0;
@@ -67,63 +68,61 @@ object Predef {
     array;
   }
 
-  def Array(x: boolean, xs: boolean*): Array[boolean] = {
-    val array = new Array[boolean](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: boolean*): Array[boolean] = {
+    val array = new Array[boolean](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: byte, xs: byte*): Array[byte] = {
-    val array = new Array[byte](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: byte*): Array[byte] = {
+    val array = new Array[byte](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: short, xs: short*): Array[short] = {
-    val array = new Array[short](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: short*): Array[short] = {
+    val array = new Array[short](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: char, xs: char*): Array[char] = {
-    val array = new Array[char](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: char*): Array[char] = {
+    val array = new Array[char](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: int, xs: int*): Array[int] = {
-    val array = new Array[int](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: int*): Array[int] = {
+    val array = new Array[int](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: long, xs: long*): Array[long] = {
-    val array = new Array[long](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: long*): Array[long] = {
+    val array = new Array[long](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: float, xs: float*): Array[float] = {
-    val array = new Array[float](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: float*): Array[float] = {
+    val array = new Array[float](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-  def Array(x: double, xs: double*): Array[double] = {
-    val array = new Array[double](xs.length + 1);
-    array(0) = x;
-    var i = 1;
+  def Array(xs: double*): Array[double] = {
+    val array = new Array[double](xs.length);
+    var i = 0;
     for (val x <- xs.elements) { array(i) = x; i = i + 1; }
     array;
   }
-*/
+  def Array(xs: unit*): Array[unit] = {
+    val array = new Array[unit](xs.length);
+    var i = 0;
+    for (val x <- xs.elements) { array(i) = x; i = i + 1; }
+    array;
+  }
+
   // errors and asserts -------------------------------------------------
 
   def error(message: String): All = throw new Error(message);

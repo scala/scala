@@ -367,8 +367,8 @@ abstract class ClassfileParser {
   private def getScope(flags: int): Scope =
     if ((flags & JAVA_ACC_STATIC) != 0) staticMembers else classMembers;
 
-  private def transFlags(flags: int): int = {
-    var res = 0;
+  private def transFlags(flags: int): long = {
+    var res = 0l;
     if ((flags & JAVA_ACC_PRIVATE) != 0)
       res = res | PRIVATE
     else if ((flags & JAVA_ACC_PROTECTED) != 0)
@@ -380,7 +380,7 @@ abstract class ClassfileParser {
     if ((flags & JAVA_ACC_FINAL) != 0)
       res = res | FINAL;
     if ((flags & JAVA_ACC_INTERFACE) != 0)
-      res = res | TRAIT | ABSTRACT;
+      res = res | TRAIT | INTERFACE | ABSTRACT;
     if ((flags & JAVA_ACC_SYNTHETIC) != 0)
       res = res | SYNTHETIC;
     res | JAVA;

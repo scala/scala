@@ -73,7 +73,6 @@ object Tokens {
   val SUPERTYPE = 70;
   val HASH = 71;
   val AT = 72;
-  val VIEWBOUND = 73;
 
   /** parenthesis */
   val LPAREN = 90;

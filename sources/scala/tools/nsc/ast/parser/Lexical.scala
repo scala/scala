@@ -753,7 +753,6 @@ abstract class Lexical: ParserPhase {
       enterKeyword("<-", LARROW);
       enterKeyword("<:", SUBTYPE);
       enterKeyword(">:", SUPERTYPE);
-      enterKeyword("<%", VIEWBOUND);
       enterKeyword("#", HASH);
       enterKeyword("@", AT);
 

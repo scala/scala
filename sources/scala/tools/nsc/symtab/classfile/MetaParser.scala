@@ -66,7 +66,6 @@ abstract class MetaParser{
       .setFlag(vflag)
       .setInfo(TypeBounds(
 	definitions.AllClass.tpe,
-	definitions.AnyClass.tpe,
 	definitions.AnyClass.tpe));
     locals enter sym;
     nextToken();

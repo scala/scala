@@ -301,29 +301,6 @@ object Test {
     check(xs(2) == d2, xs(2), d2);
   }
 
-  def acheck(xs: Array[Any    ]): Unit = {
-    check(xs.length == 9, xs.length, 9);
-    check(xs(0) == a0, xs(0), a0);
-    check(xs(1) == a1, xs(1), a1);
-    check(xs(2) == a2, xs(2), a2);
-    check(xs(3) == a3, xs(3), a3);
-    check(xs(4) == a4, xs(4), a4);
-    check(xs(5) == a5, xs(5), a5);
-    check(xs(6) == a6, xs(6), a6);
-    check(xs(7) == a7, xs(7), a7);
-    check(xs(8) == a8, xs(8), a8);
-  }
-
-  def vcheck(xs: Array[AnyVal ]): Unit = {
-    check(xs.length == 6, xs.length, 6);
-    check(xs(0) == v0, xs(0), v0);
-    check(xs(1) == v1, xs(1), v1);
-    check(xs(2) == v2, xs(2), v2);
-    check(xs(3) == v3, xs(3), v3);
-    check(xs(4) == v4, xs(4), v4);
-    check(xs(5) == v5, xs(5), v5);
-  }
-
   def rcheck(xs: Array[AnyRef ]): Unit = {
     check(xs.length == 6, xs.length, 6);
     check(xs(0) == r0, xs(0), r0);
@@ -370,8 +347,6 @@ object Test {
   val larray: Array[Long   ] = Array(l0, l1, l2);
   val farray: Array[Float  ] = Array(f0, f1, f2);
   val darray: Array[Double ] = Array(d0, d1, d2);
-  val aarray: Array[Any    ] = Array(a0, a1, a2, a3, a4, a5, a6, a7, a8);
-  val varray: Array[AnyVal ] = Array(v0, v1, v2, v3, v4, v5);
   val rarray: Array[AnyRef ] = Array(r0, r1, r2, r4, r4, r5);
   val oarray: Array[Object ] = Array(o0, o1, o2, o4, o4, o5);
   val marray: Array[Map    ] = Array(m0, m1, m2);
@@ -393,8 +368,6 @@ object Test {
     lcheck(larray);
     fcheck(farray);
     dcheck(darray);
-    acheck(aarray);
-    vcheck(varray);
     rcheck(rarray);
     ocheck(oarray);
     mcheck(marray);
@@ -411,8 +384,6 @@ object Test {
     lcheck(id_Ta_T(larray));
     fcheck(id_Ta_T(farray));
     dcheck(id_Ta_T(darray));
-    acheck(id_Ta_T(aarray));
-    vcheck(id_Ta_T(varray));
     rcheck(id_Ta_T(rarray));
     ocheck(id_Ta_T(oarray));
     mcheck(id_Ta_T(marray));
@@ -427,8 +398,6 @@ object Test {
     lcheck(id_Tr_T(larray));
     fcheck(id_Tr_T(farray));
     dcheck(id_Tr_T(darray));
-    acheck(id_Tr_T(aarray));
-    vcheck(id_Tr_T(varray));
     rcheck(id_Tr_T(rarray));
     ocheck(id_Tr_T(oarray));
     mcheck(id_Tr_T(marray));
@@ -443,8 +412,6 @@ object Test {
     lcheck(id_To_T(larray));
     fcheck(id_To_T(farray));
     dcheck(id_To_T(darray));
-    acheck(id_To_T(aarray));
-    vcheck(id_To_T(varray));
     rcheck(id_To_T(rarray));
     ocheck(id_To_T(oarray));
     mcheck(id_To_T(marray));
@@ -459,8 +426,6 @@ object Test {
     lcheck(id_Ta_a(larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_Ta_a(farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_Ta_a(darray).asInstanceOf[Array[Double ]]);
-    acheck(id_Ta_a(aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_Ta_a(varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_Ta_a(rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_Ta_a(oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_Ta_a(marray).asInstanceOf[Array[Map    ]]);
@@ -475,8 +440,6 @@ object Test {
     lcheck(id_Tr_a(larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_Tr_a(farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_Tr_a(darray).asInstanceOf[Array[Double ]]);
-    acheck(id_Tr_a(aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_Tr_a(varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_Tr_a(rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_Tr_a(oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_Tr_a(marray).asInstanceOf[Array[Map    ]]);
@@ -491,8 +454,6 @@ object Test {
     lcheck(id_To_a(larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_To_a(farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_To_a(darray).asInstanceOf[Array[Double ]]);
-    acheck(id_To_a(aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_To_a(varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_To_a(rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_To_a(oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_To_a(marray).asInstanceOf[Array[Map    ]]);
@@ -507,8 +468,6 @@ object Test {
     lcheck(id_Tr_r(larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_Tr_r(farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_Tr_r(darray).asInstanceOf[Array[Double ]]);
-    acheck(id_Tr_r(aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_Tr_r(varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_Tr_r(rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_Tr_r(oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_Tr_r(marray).asInstanceOf[Array[Map    ]]);
@@ -523,8 +482,6 @@ object Test {
     lcheck(id_To_r(larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_To_r(farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_To_r(darray).asInstanceOf[Array[Double ]]);
-    acheck(id_To_r(aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_To_r(varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_To_r(rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_To_r(oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_To_r(marray).asInstanceOf[Array[Map    ]]);
@@ -539,8 +496,6 @@ object Test {
     lcheck(id_To_o(larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_To_o(farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_To_o(darray).asInstanceOf[Array[Double ]]);
-    acheck(id_To_o(aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_To_o(varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_To_o(rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_To_o(oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_To_o(marray).asInstanceOf[Array[Map    ]]);
@@ -557,8 +512,6 @@ object Test {
     lcheck(id_TSa_T [Long   , Array[Long   ]](larray));
     fcheck(id_TSa_T [Float  , Array[Float  ]](farray));
     dcheck(id_TSa_T [Double , Array[Double ]](darray));
-    acheck(id_TSa_T [Any    , Array[Any    ]](aarray));
-    vcheck(id_TSa_T [AnyVal , Array[AnyVal ]](varray));
     rcheck(id_TSa_T [AnyRef , Array[AnyRef ]](rarray));
     ocheck(id_TSa_T [Object , Array[Object ]](oarray));
     mcheck(id_TSa_T [Map    , Array[Map    ]](marray));
@@ -573,7 +526,6 @@ object Test {
     lcheck(id_TSv_T [Long   , Array[Long   ]](larray));
     fcheck(id_TSv_T [Float  , Array[Float  ]](farray));
     dcheck(id_TSv_T [Double , Array[Double ]](darray));
-    vcheck(id_TSv_T [AnyVal , Array[AnyVal ]](varray));
 
     rcheck(id_TSr_T [AnyRef , Array[AnyRef ]](rarray));
     ocheck(id_TSr_T [Object , Array[Object ]](oarray));
@@ -600,8 +552,6 @@ object Test {
     lcheck(id_TSa_Ss[Long   , Array[Long   ]](larray));
     fcheck(id_TSa_Ss[Float  , Array[Float  ]](farray));
     dcheck(id_TSa_Ss[Double , Array[Double ]](darray));
-    acheck(id_TSa_Ss[Any    , Array[Any    ]](aarray));
-    vcheck(id_TSa_Ss[AnyVal , Array[AnyVal ]](varray));
     rcheck(id_TSa_Ss[AnyRef , Array[AnyRef ]](rarray));
     ocheck(id_TSa_Ss[Object , Array[Object ]](oarray));
     mcheck(id_TSa_Ss[Map    , Array[Map    ]](marray));
@@ -616,7 +566,6 @@ object Test {
     lcheck(id_TSv_Ss[Long   , Array[Long   ]](larray));
     fcheck(id_TSv_Ss[Float  , Array[Float  ]](farray));
     dcheck(id_TSv_Ss[Double , Array[Double ]](darray));
-    vcheck(id_TSv_Ss[AnyVal , Array[AnyVal ]](varray));
 
     rcheck(id_TSr_Ss[AnyRef , Array[AnyRef ]](rarray));
     ocheck(id_TSr_Ss[Object , Array[Object ]](oarray));
@@ -643,8 +592,6 @@ object Test {
     lcheck(id_TSa_a [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSa_a [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSa_a [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    acheck(id_TSa_a [Any    , Array[Any    ]](aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_TSa_a [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_TSa_a [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSa_a [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_TSa_a [Map    , Array[Map    ]](marray).asInstanceOf[Array[Map    ]]);
@@ -659,7 +606,6 @@ object Test {
     lcheck(id_TSv_a [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSv_a [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSv_a [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    vcheck(id_TSv_a [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
 
     rcheck(id_TSr_a [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSr_a [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
@@ -686,8 +632,6 @@ object Test {
     lcheck(id_TSa_r [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSa_r [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSa_r [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    acheck(id_TSa_r [Any    , Array[Any    ]](aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_TSa_r [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_TSa_r [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSa_r [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_TSa_r [Map    , Array[Map    ]](marray).asInstanceOf[Array[Map    ]]);
@@ -702,7 +646,6 @@ object Test {
     lcheck(id_TSv_r [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSv_r [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSv_r [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    vcheck(id_TSv_r [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
 
     rcheck(id_TSr_r [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSr_r [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
@@ -729,8 +672,6 @@ object Test {
     lcheck(id_TSa_o [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSa_o [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSa_o [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    acheck(id_TSa_o [Any    , Array[Any    ]](aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_TSa_o [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_TSa_o [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSa_o [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_TSa_o [Map    , Array[Map    ]](marray).asInstanceOf[Array[Map    ]]);
@@ -745,7 +686,6 @@ object Test {
     lcheck(id_TSv_o [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSv_o [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSv_o [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    vcheck(id_TSv_o [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
 
     rcheck(id_TSr_o [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSr_o [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
@@ -772,8 +712,6 @@ object Test {
     lcheck(id_Sas_Ss[Long   ](larray));
     fcheck(id_Sas_Ss[Float  ](farray));
     dcheck(id_Sas_Ss[Double ](darray));
-    acheck(id_Sas_Ss[Any    ](aarray));
-    vcheck(id_Sas_Ss[AnyVal ](varray));
     rcheck(id_Sas_Ss[AnyRef ](rarray));
     ocheck(id_Sas_Ss[Object ](oarray));
     mcheck(id_Sas_Ss[Map    ](marray));
@@ -788,7 +726,6 @@ object Test {
     lcheck(id_Svs_Ss[Long   ](larray));
     fcheck(id_Svs_Ss[Float  ](farray));
     dcheck(id_Svs_Ss[Double ](darray));
-    vcheck(id_Svs_Ss[AnyVal ](varray));
 
     rcheck(id_Srs_Ss[AnyRef ](rarray));
     ocheck(id_Srs_Ss[Object ](oarray));
@@ -815,8 +752,6 @@ object Test {
     lcheck(id_TSa_a [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSa_a [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSa_a [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    acheck(id_TSa_a [Any    , Array[Any    ]](aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_TSa_a [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_TSa_a [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSa_a [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_TSa_a [Map    , Array[Map    ]](marray).asInstanceOf[Array[Map    ]]);
@@ -831,7 +766,6 @@ object Test {
     lcheck(id_TSv_a [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSv_a [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSv_a [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    vcheck(id_TSv_a [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
 
     rcheck(id_TSr_a [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSr_a [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
@@ -858,8 +792,6 @@ object Test {
     lcheck(id_TSa_r [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSa_r [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSa_r [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    acheck(id_TSa_r [Any    , Array[Any    ]](aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_TSa_r [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_TSa_r [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSa_r [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_TSa_r [Map    , Array[Map    ]](marray).asInstanceOf[Array[Map    ]]);
@@ -874,7 +806,6 @@ object Test {
     lcheck(id_TSv_r [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSv_r [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSv_r [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    vcheck(id_TSv_r [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
 
     rcheck(id_TSr_r [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSr_r [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
@@ -901,8 +832,6 @@ object Test {
     lcheck(id_TSa_o [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSa_o [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSa_o [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    acheck(id_TSa_o [Any    , Array[Any    ]](aarray).asInstanceOf[Array[Any    ]]);
-    vcheck(id_TSa_o [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
     rcheck(id_TSa_o [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSa_o [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
     mcheck(id_TSa_o [Map    , Array[Map    ]](marray).asInstanceOf[Array[Map    ]]);
@@ -917,7 +846,6 @@ object Test {
     lcheck(id_TSv_o [Long   , Array[Long   ]](larray).asInstanceOf[Array[Long   ]]);
     fcheck(id_TSv_o [Float  , Array[Float  ]](farray).asInstanceOf[Array[Float  ]]);
     dcheck(id_TSv_o [Double , Array[Double ]](darray).asInstanceOf[Array[Double ]]);
-    vcheck(id_TSv_o [AnyVal , Array[AnyVal ]](varray).asInstanceOf[Array[AnyVal ]]);
 
     rcheck(id_TSr_o [AnyRef , Array[AnyRef ]](rarray).asInstanceOf[Array[AnyRef ]]);
     ocheck(id_TSr_o [Object , Array[Object ]](oarray).asInstanceOf[Array[Object ]]);
@@ -944,8 +872,6 @@ object Test {
     check_Ta(larray, 3, l0, lcheck);
     check_Ta(farray, 3, f0, fcheck);
     check_Ta(darray, 3, d0, dcheck);
-    check_Ta(aarray, 9, a0, acheck);
-    check_Ta(varray, 6, v0, vcheck);
     check_Ta(rarray, 6, r0, rcheck);
     check_Ta(oarray, 6, o0, ocheck);
     check_Ta(marray, 3, m0, mcheck);
@@ -960,7 +886,6 @@ object Test {
     check_Tv(larray, 3, l0, lcheck);
     check_Tv(farray, 3, f0, fcheck);
     check_Tv(darray, 3, d0, dcheck);
-    check_Tv(varray, 6, v0, vcheck);
 
     check_Tr(rarray, 6, r0, rcheck);
     check_Tr(oarray, 6, o0, ocheck);

@@ -968,12 +968,12 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     if (tree.isType()) {
       val resultType = tree.getType().deconst();
       val resultArgs = resultType.typeArgs();
-      if (resultType.symbol() == defs.ARRAY_CLASS &&
-          resultArgs.length == 1 &&
-          resultArgs(0).symbol() == defs.ANY_CLASS)
-        {
-          //unit.warning(tree.pos, "Array[Any] not supported");
-        }
+      if (resultType.symbol() == defs.ARRAY_CLASS && resultArgs.length == 1) {
+        if (resultArgs(0).symbol() == defs.ANY_CLASS)
+          unit.error(tree.pos, "Array[Any] not supported");
+        else if (resultArgs(0).symbol() == defs.ANYVAL_CLASS)
+          unit.error(tree.pos, "Array[AnyVal] not supported");
+      }
       gen.mkType(tree.pos, resultType);
     } else tree;
 

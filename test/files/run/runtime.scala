@@ -39,10 +39,7 @@ object Test0Test {
     val ls: Array[Long   ] = Array(9l, 10l, 11l);
     val fs: Array[Float  ] = Array(12.0f, 13.0f);
     val ds: Array[Double ] = Array(14.0d, 15.0d);
-    val vs: Array[AnyVal ] = Array(6, 7l, 8f, 9d);
     val os: Array[AnyRef ] = Array("string");
-    val as: Array[Any    ] = Array(0, "bye");
-    println({ System.out.println("hello"); Predef}.Array());
     println(zs);
     println(bs);
     println(ss);
@@ -51,9 +48,7 @@ object Test0Test {
     println(ls);
     println(fs);
     println(ds);
-    println(vs);
     println(os);
-    println(as);
   }
 }
 

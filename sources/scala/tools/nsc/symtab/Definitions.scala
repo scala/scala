@@ -122,7 +122,7 @@ abstract class Definitions: SymbolTable {
 
     private def newTypeParam(owner: Symbol, index: int): Symbol =
       owner.newTypeParameter(Position.NOPOS, "T" + index)
-        .setInfo(TypeBounds(AllClass.tpe, AnyClass.tpe, AnyClass.tpe));
+        .setInfo(TypeBounds(AllClass.tpe, AnyClass.tpe));
 
     def init = {
       RootClass =
