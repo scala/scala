@@ -335,6 +335,9 @@ public class  Global {
                         SHOW_VALUE_N),
                     new Tree[] {
                         unit.body[unit.body.length - 1]});
+        } else if (module == 0) {
+            // !!! make sure that Interpreter.scala is compiled
+            SHOW_DEFINITION();
         }
         unit.body = new Tree[] {
             make.ModuleDef(0, 0, Name.fromString(CONSOLE_S+module), Tree.Empty,
