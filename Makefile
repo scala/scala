@@ -26,7 +26,6 @@ meta_SCALAC		 = $(SCALAC)
 
 boot_PREFIX		 = boot
 boot_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(boot_PREFIX)
-boot_INSTALLDIR		 = $(boot_OBJECTDIR)
 boot_LIBRARY_CLASSDIR	 = $(main_LIBRARY_CLASSDIR)
 boot_TOOLS_CLASSDIR	 = $(boot_OBJECTDIR)/lib/$(TOOLS_NAME)
 boot_JC_OUTPUTDIR	 = $(boot_TOOLS_CLASSDIR)
@@ -38,7 +37,6 @@ boot_SCALA_CMD		 = $(SCALA)
 
 main_PREFIX		 = main
 main_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(main_PREFIX)
-main_INSTALLDIR		 = $(PROJECT_ROOT)
 main_LIBRARY_CLASSDIR	 = $(main_OBJECTDIR)/lib/$(LIBRARY_NAME)
 main_TOOLS_CLASSDIR	 = $(main_OBJECTDIR)/lib/$(TOOLS_NAME)
 main_JC_OUTPUTDIR	 = $(main_TOOLS_CLASSDIR)
@@ -50,7 +48,6 @@ main_SCALA_CMD		 = $(main_OBJECTDIR)/bin/scala
 
 test_PREFIX		 = test
 test_OBJECTDIR		 = $(PROJECT_OBJECTDIR)/$(test_PREFIX)
-test_INSTALLDIR		 = $(test_OBJECTDIR)
 test_LIBRARY_CLASSDIR	 = $(test_OBJECTDIR)/lib/$(LIBRARY_NAME)
 test_TOOLS_CLASSDIR	 = $(test_OBJECTDIR)/lib/$(TOOLS_NAME)
 test_JC_OUTPUTDIR	 = $(test_TOOLS_CLASSDIR)
@@ -292,8 +289,6 @@ SCRIPTS_ALIASES_NAMES	+= scalap
 SCRIPTS_ALIASES_NAMES	+= scalatest
 SCRIPTS_ALIASES_FILES	+= $(SCRIPTS_ALIASES_NAMES:%=$(SCRIPTS_BINARYDIR)/%)
 SCRIPTS_MACRO		 = -es@{\#$(1)\#}@'"$(MACRO_$(1):$(SCRIPTS_PREFIX)/%=$$PREFIX/%)"'@g
-
-
 
 $(latest)scripts	: $(SCRIPTS_ALIASES_FILES)
 	$(TOUCH) $@
