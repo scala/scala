@@ -25,7 +25,7 @@ import scalac.ast.Tree.AbsTypeDef;
 import scalac.ast.Tree.AliasTypeDef;
 import scalac.ast.Tree.ValDef;
 import scalac.ast.TreeList;
-import scalac.ast.Transformer;
+import scalac.ast.GenTransformer;
 import scalac.symtab.Definitions;
 import scalac.symtab.Kinds;
 import scalac.symtab.Type;
@@ -54,7 +54,7 @@ import scalac.util.Debug;
  *      add a bridge method with the same name as A,B, with signature ETB
  *      which calls A after casting parameters.
  */
-public class Erasure extends Transformer implements Modifiers {
+public class Erasure extends GenTransformer implements Modifiers {
 
     //########################################################################
     // Private Constants
@@ -106,18 +106,12 @@ public class Erasure extends Transformer implements Modifiers {
     public Tree transform(Tree tree) {
         switch (tree) {
 
-        case Empty:
-            return tree;
-
 	case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
             Symbol clasz = tree.symbol();
             TreeList members = new TreeList(transform(body));
             checkOverloadedTermsOf(clasz);
             addBridges(clasz, members);
             return gen.ClassDef(clasz, members.toArray());
-
-        case PackageDef(Tree packaged, Template(_, Tree[] body)):
-            return gen.PackageDef(packaged.symbol(), transform(body));
 
 	case ValDef(_, _, _, Tree rhs):
             Symbol field = tree.symbol();
@@ -129,11 +123,6 @@ public class Erasure extends Transformer implements Modifiers {
             if (rhs != Tree.Empty)
                 rhs = transform(rhs, method.nextType().resultType());
 	    return gen.DefDef(method, rhs);
-
-	case AbsTypeDef(_, _, _, _):
-	case AliasTypeDef(_, _, _, _):
-	    // eliminate // !!!
-	    return Tree.Empty;
 
         case LabelDef(_, Ident[] params, Tree body):
             Symbol label = tree.symbol();
@@ -164,9 +153,6 @@ public class Erasure extends Transformer implements Modifiers {
                 }
             }
 	    return gen.New(tree.pos, transform(base[0]));
-
-	case Typed(Tree expr, _): // !!!
-            return transform(expr);
 
 	case Apply(TypeApply(Tree fun, Tree[] targs), Tree[] vargs):
             fun = transform(fun);
@@ -212,12 +198,6 @@ public class Erasure extends Transformer implements Modifiers {
             }
             return genApply(tree.pos, fun, vargs);
 
-        case Super(_, _):
-	    return gen.Super(tree.pos, tree.symbol());
-
-        case This(_):
-	    return gen.This(tree.pos, tree.symbol());
-
 	case Select(Tree qualifier, _):
             Symbol symbol = tree.symbol();
             qualifier = transform(qualifier);
@@ -231,41 +211,13 @@ public class Erasure extends Transformer implements Modifiers {
 	    if (symbol == definitions.ZERO) return gen.mkNullLit(tree.pos);
             return gen.Ident(tree.pos, symbol);
 
-        case Literal(Object value):
-	    return tree.setType(tree.type.erasure());
-	    //return gen.mkLit(tree.pos, value);
-
         case Block(_):
 	case If(_, _, _):
         case Switch(_, _, _, _):
             return transform(tree, tree.type().fullErasure());
 
-        case Bad():
-        case ModuleDef(_, _, _, _):
-        case PatDef(_, _, _):
-        case Import(_, _):
-        case CaseDef(_, _, _):
-        case Template(_, _):
-        case Sequence(_):
-        case Alternative(_):
-        case Bind(_, _):
-        case Visitor(_):
-        case Function(_, _):
-        case Throw(_):
-        case TypeApply(_, _):
-
-        case TypeTerm():
-        case SingletonType(_):
-        case SelectFromType(_, _):
-        case FunType(_, _):
-        case CompoundType(_, _):
-        case AppliedType(_, _):
-        case Try(_, _, _): // !!!
-            throw Debug.abort("illegal case", tree);
-
         default:
-            throw Debug.abort("illegal case", tree);
-
+            return super.transform(tree);
         }
     }
 
@@ -328,34 +280,6 @@ public class Erasure extends Transformer implements Modifiers {
         case Literal(_):
             return coerce(transform(tree), pt);
 
-        case Bad():
-        case Empty:
-	case ClassDef(_, _, _, _, _, _):
-        case PackageDef(_, _):
-        case ModuleDef(_, _, _, _):
-	case ValDef(_, _, _, _):
-        case PatDef(_, _, _):
-	case DefDef(_, _, _, _, _, _):
-	case AbsTypeDef(_, _, _, _):
-	case AliasTypeDef(_, _, _, _):
-        case Import(_, _):
-        case CaseDef(_, _, _):
-        case Template(_, _):
-        case Sequence(_):
-        case Alternative(_):
-        case Bind(_, _):
-        case Visitor(_):
-        case Function(_, _):
-        case Throw(_):
-        case TypeApply(_, _):
-        case TypeTerm():
-        case SingletonType(_):
-        case SelectFromType(_, _):
-        case FunType(_, _):
-        case CompoundType(_, _):
-        case AppliedType(_, _):
-        case Try(_, _, _): // !!!
-            throw Debug.abort("illegal case", tree);
         default:
             throw Debug.abort("illegal case", tree);
         }
@@ -760,4 +684,3 @@ public class Erasure extends Transformer implements Modifiers {
 
 
 }
-
