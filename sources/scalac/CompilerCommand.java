@@ -30,7 +30,7 @@ import scalac.util.ScalaFileArgumentParser;
 import scalac.util.UnknownArgumentParser;
 import scalac.util.Strings;
 
-/*
+/**
  * Class <code>CompilerCommand</code> describes the options
  * passed as arguments to the compiler command.
  */
@@ -72,9 +72,16 @@ public class CompilerCommand extends CommandParser {
     public final ScalaFileArgumentParser files;
     public final UnknownArgumentParser unknown_arguments;
 
+    /*
+     * Non-standard options (starting with prefix "-X")
+     * are subject to change without notice.
+     */
+    public final BooleanOptionParser Xshortname;
+
     //########################################################################
     // Public Constructors
-    /*
+
+    /**
      * Creates an instance variable.
      *
      * @param product
@@ -198,10 +205,14 @@ public class CompilerCommand extends CommandParser {
 
         this.version = new VersionOptionParser(this,
             "version", "Print product version and exit",
-            product() + " " + version() + " -- (c) 2002 LAMP/EPFL"),
+            product() + " " + version() + " -- (c) 2002-03 LAMP/EPFL"),
 
         this.help = new HelpOptionParser(this,
             "help", "Print a synopsis of standard options"),
+
+        this.Xshortname = new BooleanOptionParser(this,
+            "Xshortname", "Display short file names in error reports",
+            false),
 
         this.unknown_options = new UnknownOptionParser(this),
 
@@ -217,7 +228,7 @@ public class CompilerCommand extends CommandParser {
     //########################################################################
     // Public Methods
 
-    /*
+    /**
      * ..
      *
      * @param args
@@ -227,6 +238,7 @@ public class CompilerCommand extends CommandParser {
         reporter().nowarn = nowarn.value;
         reporter().verbose = verbose.value;
         reporter().prompt = prompt.value;
+        reporter().shortname = Xshortname.value;
         return result;
     }
 
@@ -238,7 +250,7 @@ public class CompilerCommand extends CommandParser {
         return false;
     }
 
-    /*
+    /**
      * Returns the help message for this compiler command.
      *
      * @return a formatted string containing the help message.
@@ -261,7 +273,7 @@ public class CompilerCommand extends CommandParser {
         return buffer.toString();
     }
 
-    /*
+    /**
      * Returns the class path for this compiler command.
      *
      * @return the class path.
@@ -271,7 +283,7 @@ public class CompilerCommand extends CommandParser {
             bootclasspath.value, extdirs.value);
     }
 
-    /*
+    /**
      * Returns the output path for this compiler command.
      *
      * @return the output path terminated by .
