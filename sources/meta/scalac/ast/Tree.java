@@ -238,7 +238,7 @@ public class Tree {
 
         n_Sequence.
             setDescription("Sequence of expressions (comma separated expressions)").
-            setRange(Phase.PARSER, Phase.LAMBDALIFT).
+            setRange(Phase.PARSER, Phase.TRANSMATCH).
             addField(t_TermTrees, "trees");
 
         n_Alternative.
