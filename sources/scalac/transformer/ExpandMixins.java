@@ -160,9 +160,9 @@ public class ExpandMixins extends Transformer {
             Tree stat = body[i];
             newBody.add(transform(stat));
 
-            if (stat.hasSymbol()) {
+            if (stat.definesSymbol()) {
 		Symbol sym = stat.symbol();
-		newMembers.enter(sym);
+		newMembers.enterOrOverload(sym);
             }
         }
 
@@ -174,7 +174,6 @@ public class ExpandMixins extends Transformer {
             Tree bc = tree.parents[bcIndex];
 
             Symbol bcSym = baseTypes[bcIndex].symbol();
-            Type bcType = bcSym.type();
 
             if ((bcSym.flags & Modifiers.INTERFACE) != 0)
                 continue;
@@ -224,6 +223,7 @@ public class ExpandMixins extends Transformer {
             }
 
             Template mixin = getMixinExpandedTemplate(bcDef.impl, bcSym);
+            Type bcType = mixin.type();
             Tree[] mixinBody = mixin.body;
             Set/*<Tree>*/ leftOutMembers = new HashSet();
 
@@ -231,7 +231,7 @@ public class ExpandMixins extends Transformer {
             for (int m = 0; m < mixinBody.length; ++m) {
                 Tree member = mixinBody[m];
 
-                if (!member.hasSymbol())
+                if (!member.definesSymbol())
                     continue;
 
                 Symbol memSym = member.symbol();
@@ -268,11 +268,11 @@ public class ExpandMixins extends Transformer {
 
                 newBody.add(newMember);
 
-                if (newMember.hasSymbol()) {
+                if (newMember.definesSymbol()) {
 		    Symbol sym = newMember.symbol();
 
                     sym.setOwner(owner);
-                    newMembers.enter(sym);
+                    newMembers.enterOrOverload(sym);
 
                     mixedInSymbols.put(member.symbol(), newMember.symbol());
 		}
