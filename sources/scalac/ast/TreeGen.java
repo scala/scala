@@ -528,6 +528,39 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
     // Public Methods - Building expressions
 
+    /** Flattens the given tree array by inlining Block nodes. */
+    public Tree[] flatten(Tree[] trees) {
+        boolean copy = false;
+        int length = trees.length;
+        for (int i = 0; i < trees.length; i++) {
+            switch (trees[i]) {
+            case Empty:
+                copy = true;
+                length -= 1;
+                continue;
+            case Block(Tree[] stats):
+                if (stats.length == 0) continue; // preserve unit literals
+                copy = true;
+                length += stats.length;
+                continue;
+            }
+        }
+        if (!copy) return trees;
+        Tree[] clone = new Tree[length];
+        for (int i = 0, o = 0; i < trees.length; i++) {
+            switch (trees[i]) {
+            case Empty:
+                continue;
+            case Block(Tree[] stats):
+                if (stats.length == 0) break; // preserve unit literals
+                for (int j = 0; j < stats.length; j++) clone[o++] = stats[j];
+                continue;
+            }
+            clone[o++] = trees[i];
+        }
+        return clone;
+    }
+
     /** Builds an instance test with given value and type. */
     public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
         return mkApplyT_(pos, Select(value, definitions.IS), new Type[]{type});
@@ -542,6 +575,18 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
     public Tree mkAsInstanceOf(Tree value, Type type) {
         return mkAsInstanceOf(value.pos, value, type);
+    }
+
+    /** Builds an expression with given non-empty tree array. */
+    public Tree mkBlock(int pos, Tree[] trees) {
+        assert trees.length != 0;
+        Tree[] flatten = flatten(trees);
+        assert flatten.length != 0: Debug.show(trees);
+        return Block(pos, flatten);
+    }
+    public Tree mkBlock(Tree[] trees) {
+        assert trees.length != 0;
+        return mkBlock(trees[0].pos, trees);
     }
 
     /** Builds a Template node with given symbol, parents and body. */
