@@ -207,6 +207,7 @@ IA_INSTALL_PREFIX	 = $(INSTALL_PREFIX).ia
 ia-build		:
 	$(RM) -r $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_PREFIX)
+	$(UNZIP) -q $(IA_CONFIG_PREFIX)/unzip.zip -d $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 644 -p $(IA_PROJECTFILE) $(IA_BUILD_PREFIX)
 	$(INSTALL) -m 755 -d $(IA_BUILD_CUSTOMCODEDIR)
 	@for file in "" `$(FIND) $(IA_CONFIG_CUSTOMCODEDIR)/*.jar -type f`; do \
