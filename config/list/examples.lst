@@ -1,15 +1,16 @@
 ############################################################-*-Makefile-*-####
 # scala examples (paths are relative to ./sources/examples)
 ##############################################################################
+# $Id$
 
-computeserver.scala
 auction.scala
 boundedbuffer.scala
-oneplacebuffer.scala
+computeserver.scala
 fors.scala
 futures.scala
 iterators.scala
 maps.scala
+oneplacebuffer.scala
 Parsers.scala
 parsers1.scala
 parsers2.scala
@@ -25,6 +26,12 @@ expressions/expressions-current.scala
 # jolib/parallelOr.scala
 
 mobile/sort.scala
+
+monads/callccInterpreter.scala
+monads/directInterpreter.scala
+monads/errorInterpreter.scala
+monads/simpleInterpreter.scala
+monads/stateInterpreter.scala
 
 pilib/elasticBuffer.scala
 pilib/handover.scala
