@@ -98,7 +98,7 @@ function version-manager() {
 
     # update version file
     run rm -f "$file";
-    runO /dev/null cvs update "$file";
+    run cvs -Q update "$file";
 
     # get old value
     local old_value=`tail -1 "$file"`;
@@ -139,7 +139,7 @@ function version-manager() {
     run mv "$file~" "$file";
 
     # commit version file
-    runO /dev/null cvs commit -m "Set version to $new_value" "$file";
+    runO /dev/null cvs -Q commit -m "Set version to $new_value" "$file";
 
     if [ "$command" = "set" ]; then
         echo "Successfully changed version to $new_value";
