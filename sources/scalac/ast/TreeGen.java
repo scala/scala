@@ -531,7 +531,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     /** Flattens the given tree array by inlining Block nodes. */
     public Tree[] flatten(Tree[] trees) {
         boolean copy = false;
-        int length = trees.length;
+        int length = 0;
         for (int i = 0; i < trees.length; i++) {
             switch (trees[i]) {
             case Empty:
@@ -539,11 +539,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
                 length -= 1;
                 continue;
             case Block(Tree[] stats):
-                if (stats.length == 0) continue; // preserve unit literals
+                if (stats.length == 0) break; // preserve unit literals
                 copy = true;
                 length += stats.length;
                 continue;
             }
+            length += 1;
         }
         if (!copy) return trees;
         Tree[] clone = new Tree[length];
