@@ -310,7 +310,7 @@ public class Compiler {
 
     private Symbol newGlobalVariable(Type type, Object value) {
         Symbol symbol = new TermSymbol(
-            0, Name.fromString(value.toString()), definitions.ROOT, 0);
+            0, Name.fromString(value.toString()), definitions.ROOT_CLASS, 0);
         symbol.setInfo(type);
         environment.insertVariable(symbol, Variable.Global(value));
         return symbol;

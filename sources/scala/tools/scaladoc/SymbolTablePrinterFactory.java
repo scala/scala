@@ -109,7 +109,7 @@ class SymbolTablePrinterFactory {
 	    if (pre1 == null && args.length == 0 && isDocumented.apply(sym))
 		return null;
 	    else {
-		pre1 = pre1 == null ? global.definitions.ROOT.thisType() : pre1;
+		pre1 = pre1 == null ? global.definitions.ROOT_CLASS.thisType() : pre1;
 		return Type.typeRef(pre1, sym, args);
 	    }
 	case SingleType(Type pre, Symbol sym):
@@ -120,9 +120,9 @@ class SymbolTablePrinterFactory {
 			return null;
 		    }
 		    else
-			return Type.singleType(global.definitions.ROOT.thisType(), sym);
+			return Type.singleType(global.definitions.ROOT_CLASS.thisType(), sym);
 		else
-		    return Type.singleType(global.definitions.ROOT.thisType(), sym);
+		    return Type.singleType(global.definitions.ROOT_CLASS.thisType(), sym);
 	    }
 	    else
 		return Type.singleType(pre1, sym);

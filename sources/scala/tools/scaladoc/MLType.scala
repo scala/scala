@@ -600,7 +600,7 @@ package scala.tools.scaladoc {
       searchIso(t) match {
         case None => {}
         case Some(test) => {
-          val rootNode: node.T = node.make(isDocumented)(global.definitions.ROOT).head;
+          val rootNode: node.T = node.make(isDocumented)(global.definitions.ROOT_CLASS).head;
           def searchInModule(m: node.T): unit = m.members foreach {
             member =>
               if (member.symbol.isClass())

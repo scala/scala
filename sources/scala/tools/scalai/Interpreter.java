@@ -116,7 +116,7 @@ public class Interpreter {
             error("illegal module name '" + main + "'");
             return Symbol.NONE;
         }
-        Symbol module = global.definitions.ROOT;
+        Symbol module = global.definitions.ROOT_CLASS;
         for (int i = 0, j; (j = names.indexOf('.', i)) >= 0; i = j + 1) {
             Name name = Name.fromString(names.substring(i, j));
             module = getModule(module, name);

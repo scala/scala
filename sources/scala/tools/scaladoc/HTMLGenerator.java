@@ -254,7 +254,7 @@ public abstract class HTMLGenerator {
      */
     protected HTMLGenerator(Global global) {
 	this.global = global;
-	this.root = global.definitions.ROOT;
+	this.root = global.definitions.ROOT_CLASS;
 	this.uri = Location.makeURI(".");
 
         assert global.args instanceof HTMLGeneratorCommand;
@@ -1139,7 +1139,7 @@ public abstract class HTMLGenerator {
                     if (sym.isPackage())
                         page.printAhref(definitionURL(sym), CLASSES_FRAME, name);
                     else {
-                        Symbol user = (useFullName) ? global.definitions.ROOT : Symbol.NONE;
+                        Symbol user = (useFullName) ? global.definitions.ROOT_CLASS : Symbol.NONE;
                         page.printAhref(definitionURL(sym), ROOT_FRAME, name);
                     }
 	            page.printlnSTag("br");
@@ -1850,7 +1850,7 @@ public abstract class HTMLGenerator {
 
                 final List found = new LinkedList();
                 //collect
-                ScalaSearch.foreach(global.definitions.ROOT,
+                ScalaSearch.foreach(global.definitions.ROOT_CLASS,
                                     new ScalaSearch.SymFun() {
                                         public void apply(Symbol sym) {
                                             String name = sym.nameString();
@@ -1869,7 +1869,7 @@ public abstract class HTMLGenerator {
                 final Pattern p = Pattern.compile(regexp);
 
                 final List found = new LinkedList();
-                ScalaSearch.foreach(global.definitions.ROOT,
+                ScalaSearch.foreach(global.definitions.ROOT_CLASS,
                                     new ScalaSearch.SymFun() {
                                         public void apply(Symbol sym) {
                                             Pair c = (Pair) global.mapSymbolComment.get(sym);
