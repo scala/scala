@@ -97,17 +97,6 @@ public class AddInterfacesPhase extends Phase {
             }
 
             return Type.compoundType(newParents, newMembers, sym);
-        } else if (sym.isThisSym() && hasInterfaceSymbol(sym.owner())) {
-            switch (tp) {
-            case TypeRef(_, _, _):
-                return sym.owner().nextType();
-            case CompoundType(Type[] parents, Scope members):
-                parents = Type.cloneArray(parents);
-                parents[parents.length - 1] = sym.owner().nextType();
-                return Type.compoundTypeWithOwner(sym.owner(), parents, members);
-            default:
-                throw Debug.abort("illegal case", tp +" -- "+ Debug.show(sym));
-            }
         } else
             return tp;
     }

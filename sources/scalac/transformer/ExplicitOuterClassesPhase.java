@@ -81,7 +81,7 @@ public class ExplicitOuterClassesPhase extends Phase {
         if (show && !symbol.isPackageClass()) System.out.println("!!! <<< transformInfo - type  : " + Debug.show(type));
         if (symbol.isPackageClass()) return type; // !!!
         TypeContext context = getTypeContextFor(symbol);
-        if (symbol.isConstructor() && symbol.constructorClass().isClassType()) { // !!! isClassType -> isClass ?
+        if (symbol.isConstructor() && symbol.constructorClass().isClassType() && !symbol.constructorClass().isCompoundSym()) { // !!! isClassType -> isClass ?
             Symbol clasz = symbol.constructorClass();
             Symbol[] tparams = type.typeParams();
             Symbol[] vparams = type.valueParams();
@@ -144,8 +144,16 @@ public class ExplicitOuterClassesPhase extends Phase {
 
     /** Returns the type context for the given symbol. */
     private TypeContext getTypeContextFor(Symbol symbol) {
-        while (!symbol.isClassType() && !(symbol.isConstructor() && symbol.constructorClass().isClassType())) // !!! isClassType -> isClass ?
+        while (true) {
+            Symbol test = symbol;
+            if (test.isConstructor()) test = test.constructorClass();
+            // !!! isClassType -> isClass ?
+            if (test.isClassType() && !test.isCompoundSym()) break;
             symbol = symbol.owner();
+        }
+// !!!
+//         while (!symbol.isClassType() && !(symbol.isConstructor() && symbol.constructorClass().isClassType())) // !!! isClassType -> isClass ?
+//             symbol = symbol.owner();
         if (symbol.isClassType())
             symbol = symbol.primaryConstructor();
         TypeContext context = (TypeContext)contexts.get(symbol);
@@ -349,7 +357,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     Object value = tparams.get(symbol);
                     return value != null ? (Type)value : type;
                 }
-                if (symbol.isClass()) {
+                if (symbol.isClass() && !symbol.isCompoundSym()) {
                     args = map(getNewArgsOf(context, prefix, symbol, args));
                     prefix = Type.NoPrefix;
                     return Type.typeRef(prefix, symbol, args);
@@ -363,11 +371,12 @@ public class ExplicitOuterClassesPhase extends Phase {
             case SingleType(Type prefix, Symbol symbol):
                 return Type.singleType(apply(prefix), symbol);
             case ThisType(Symbol clasz):
-                if (clasz == context.clasz) return type;
+                // !!! || clasz.isCompoundSym()
+                if (clasz == context.clasz || clasz.isCompoundSym()) return type;
                 for (int i = 0; i < context.outers.length; i++)
                     if (clasz == context.outers[i].clasz)
                         return context.getTypeLink(i);
-                throw Debug.abort("illegal ThisType", type);
+                throw Debug.abort("illegal ThisType", clasz);
             case CompoundType(Type[] parents, Scope members):
                 // !!! this case should not be needed
                 return Type.compoundType(map(parents), members, type.symbol());

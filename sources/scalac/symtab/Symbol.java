@@ -2153,8 +2153,60 @@ public class ClassSymbol extends TypeSymbol {
     protected final TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
         assert !isModuleClass(): Debug.show(this);
         ClassSymbol clone = new ClassSymbol(owner, pos, flags, name, attrs);
-        if (thisSym != this) clone.setTypeOfThis(typeOfThis());
+        if (thisSym != this) clone.setTypeOfThis(new ClonedThisSymLazyType());
         return clone;
+    }
+
+    private final class ClonedThisSymLazyType extends Type.LazyType {
+
+        public Type fix(Type type, Symbol clasz, Symbol clone, Type.Map map) {
+            switch (type) {
+            case ThisType(_):
+                return type;
+            case SingleType(_, _):
+                return map.apply(type);
+            case TypeRef(Type prefix, Symbol symbol, Type[] args):
+                if (symbol == clasz) type = Type.typeRef(prefix, clone, args);
+                return map.apply(type);
+            default:
+                throw Debug.abortIllegalCase(type);
+            }
+        }
+
+        public Type getTypeFor(Symbol symbol) {
+            Symbol clasz = ClassSymbol.this;
+            Symbol clone = symbol.owner();
+            Type.Map map =
+                Type.getSubst(clasz.typeParams(), clone.typeParams());
+            Type type = clasz.typeOfThis();
+            Type self = clone.type();
+            switch (type) {
+            case CompoundType(Type[] parents1, Scope members):
+                assert members.isEmpty(): Debug.show(clasz, type);
+                int length = parents1.length;
+                Type[] parents2 = new Type[parents1.length];
+                for (int i = 0; i < parents2.length; i++) {
+                    parents2[i] = fix(parents1[i], clasz, clone, map);
+                    if (i != parents2.length - 1)
+                        assert  !self.isSubType(parents2[i]):
+                            Debug.show(clasz, clone, type, ""+i, parents2[i]);
+                }
+                if (!self.isSubType(parents2[parents2.length - 1]))
+                    parents2 = Type.cloneArray(parents2, 1);
+                parents2[parents2.length - 1] = self;
+                return Type.compoundTypeWithOwner(clone, parents2, members);
+            default:
+                type = fix(type, clasz, clone, map);
+                if (self.isSubType(type)) return self;
+                Type[] parents = new Type[]{type, self};
+                return Type.compoundTypeWithOwner(clone, parents, new Scope());
+            }
+        }
+
+        public void complete(Symbol symbol) {
+            symbol.setInfo(getTypeFor(symbol));
+        }
+
     }
 
 }
