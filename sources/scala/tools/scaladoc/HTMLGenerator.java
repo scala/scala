@@ -8,6 +8,7 @@
 
 package scala.tools.scaladoc;
 
+import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,6 +35,7 @@ import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.XHTMLPrinter;
 
 import scalac.Global;
+import scalac.Unit;
 import scalac.symtab.Kinds;
 import scalac.symtab.Modifiers;
 import scalac.symtab.NoSymbol;
@@ -73,6 +75,19 @@ public class HTMLGenerator {
     protected final String PACKAGES_FRAME = "packagesFrame";
     protected final String CLASSES_FRAME  = "classesFrame";
     protected final String SELF_FRAME     = "_self";
+
+    /**
+     * HTML DTD
+     */
+    protected final String[] HTML_DTD = new String[] { "xhtml1-transitional.dtd",
+                                                        "xhtml-lat1.ent",
+                                                        "xhtml-special.ent",
+                                                        "xhtml-symbol.ent" };
+
+    /**
+     * HTML validator.
+     */
+    protected HTMLValidator xhtml;
 
     /*
      * XML attributes.
@@ -249,7 +264,8 @@ public class HTMLGenerator {
 	final DocSyms docSyms = new DocSyms(global, packages);
 	this.isDocumented = new SymbolBooleanFunction() {
 		public boolean apply(Symbol sym) {
-		    return docSyms.contains(sym) && ScalaSearch.isRelevant(sym);
+		    return docSyms.contains(sym) && ScalaSearch.isRelevant(sym)
+                        && !getComment(sym).containsTag("@ignore");
 // 			(ScalaSearch.isRelevant(sym) ||
 // 			 ((sym.isModuleClass() && !sym.isPackage()*/)
 // 			  && ScalaSearch.isRelevant(sym.module())));
@@ -277,6 +293,16 @@ public class HTMLGenerator {
 	    return new Symbol[] { root };
     }
 
+    /** Get a file writer to a page.
+     */
+    protected static Writer fileWriter(File rootDirectory, URI uri) {
+	try {
+	    File f = new File(rootDirectory, uri.toString());
+	    f.getParentFile().mkdirs();
+	    return new BufferedWriter(new FileWriter(f));
+	} catch(IOException e) { throw Debug.abort(e); }
+    }
+
     /**
      * Open a new documentation page and make it the current page.
      * @param uri   URL of the page
@@ -286,7 +312,7 @@ public class HTMLGenerator {
 	stack.push(page);
 	stack.push(symtab);
 	// Create a new page.
-	page = new Page(directory, uri, destinationFrame,
+	page = new Page(fileWriter(directory, uri), uri, destinationFrame,
 			title, representation,
 			stylesheet/*, script*/);
 	// Create a printer to print symbols and types.
@@ -331,6 +357,16 @@ public class HTMLGenerator {
     protected void apply() {
         if (! checkOutpath())
             return;
+        /*
+        // xhtml DTD for validating comments (could be removed after).
+        for(int i = 0; i < HTML_DTD.length; i++)
+            createResource(HTML_DTD[i], "resources");
+        // HTML validator creation
+        String dtdFile =
+            directory.getAbsolutePath() + File.separator +
+            "resources" + File.separator + HTML_DTD[0];
+        */
+        this.xhtml = new HTMLValidator(getResourceURL(HTML_DTD[0]));
 
         // page with list of packages
 	createPackageIndexPage();
@@ -360,10 +396,10 @@ public class HTMLGenerator {
 	createFramePage();
 
         // style sheet
-        createResource(HTMLPrinter.DEFAULT_STYLESHEET);
+        createResource(HTMLPrinter.DEFAULT_STYLESHEET, null);
 
         // script
-        createResource(HTMLPrinter.DEFAULT_JAVASCRIPT);
+        createResource(HTMLPrinter.DEFAULT_JAVASCRIPT, null);
     }
 
     /**
@@ -381,15 +417,21 @@ public class HTMLGenerator {
     protected Comment getComment(Symbol sym) {
 	Comment comment = (Comment) comments.get(sym);
 	if (comment == null) {
-	    String s = (String) global.mapSymbolComment.get(sym);
-            // comment inheritance
-            if (s == null) {
-                Symbol overriden = ScalaSearch.overridenBySymbol(sym);
-                if (overriden != Symbol.NONE)
-                    s = "/** (Inherited comment) " + getComment(overriden).rawText + "*/";
+            Pair p = (Pair) global.mapSymbolComment.get(sym);
+            if (p != null) {
+                String s = (String) p.fst;
+                Unit unit = (Unit) p.snd;
+                comment = new Comment(s, sym, unit, xhtml);
             }
-	    comment = new Comment(sym, s);
-	    comments.put(sym, comment);
+            else { // comment inheritance
+                Symbol overriden = ScalaSearch.overridenBySymbol(sym);
+                if (overriden == Symbol.NONE)
+                    comment = new Comment(null, sym, null, xhtml);
+                else
+                    comment = getComment(overriden);
+                //s = "/** (Inherited comment) " + getComment(overriden).rawText + "*/";
+            }
+            comments.put(sym, comment);
 	}
 	return comment;
     }
@@ -882,18 +924,37 @@ public class HTMLGenerator {
     }
 
     /**
+     * Get the URL (as a string) of a resource located in the
+     * directory "resources" relative to the classfile of this class.
+     */
+    protected String getResourceURL(String name) {
+        String rsc = HTMLGenerator.class
+            .getResource("resources/" + name)
+            .toString();
+        //        System.out.println("Some used resource: " + rsc);
+        return rsc;
+    }
+
+    /**
      * Generates a resource file.
      *
      * @param name The name of the resource file
      */
-    protected void createResource(String name) {
+    protected void createResource(String name, String dir) {
+        File dest;
+        if (dir == null)
+            dest = new File(directory, name);
+        else {
+            File f = new File(directory, dir);
+            f.mkdirs();
+            dest = new File(f, name);
+        }
         String rsrcName = "resources/" + name;
         InputStream in = HTMLGenerator.class.getResourceAsStream(rsrcName);
         if (in == null)
 	    throw Debug.abort("Resource file \"" + rsrcName + "\" not found");
         try {
-            FileOutputStream out = new FileOutputStream(
-                directory.getPath() + File.separator + name);
+            FileOutputStream out = new FileOutputStream(dest);
 
             byte[] buf = new byte[1024];
             int len;

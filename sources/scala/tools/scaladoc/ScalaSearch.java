@@ -76,6 +76,11 @@ public class ScalaSearch {
         return sym.isModule() && sym.isJava() && !sym.isPackage() && (members(sym).length == 0);
     }
 
+    /** Test if the given symbol is access method for a val.
+     */
+    public static boolean isValMethod(Symbol sym) {
+        return  (sym.isInitializedMethod() && (sym.flags & Modifiers.STABLE) != 0);
+    }
 
     /** Test if the given symbol is relevant for the documentation.
      */
@@ -293,7 +298,7 @@ public class ScalaSearch {
 	    else if (sym.isClass()) classes.add(sym);
 	    else if (sym.isPackage()) packages.add(sym);
 	    else if (sym.isModule()) objects.add(sym);
-	    else if (sym.isMethod()) methods.add(sym);
+	    else if (sym.isMethod() && !isValMethod(sym)) methods.add(sym);
 	    else fields.add(sym);
         }
         return new Symbol[][] {

@@ -12,18 +12,31 @@ import java.util.*;
 import java.util.regex.*;
 import ch.epfl.lamp.util.Pair;
 import scalac.symtab.Symbol;
+import scalac.Unit;
+
+import java.io.StringReader;
+import org.xml.sax.*;
+import org.xml.sax.helpers.DefaultHandler;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
 
 /**
  * Class <code>Comment</code> contains all information in comment part.
  * It allows users to get first sentence of this comment, get comment
  * for different tags...
  */
-public class Comment {
+public class Comment extends DefaultHandler {
 
     /**
      * Holder of the comment.
      */
     public final Symbol holder;
+
+    /**
+     * Unit of the symbol associated with this comment.
+     */
+    Unit unit;
 
     /**
      * Raw text of the comment.
@@ -46,9 +59,12 @@ public class Comment {
      * @param holder
      * @param rawText
      */
-    public Comment(Symbol holder, String rawText) {
+    public Comment(String rawText, Symbol holder, Unit unit, HTMLValidator html) {
 	this.holder = holder;
 	this.rawText = cleanComment(rawText);
+        this.unit = unit;
+        if (!isEmpty())
+            html.validate(this.rawText, this);
 	parseComment();
     }
 
@@ -57,6 +73,17 @@ public class Comment {
      */
     public boolean isEmpty() {
 	return "".equals(rawText);
+    }
+
+    /**
+     * Tests if the comment contains a specified tag.
+     */
+    public boolean containsTag(String name) {
+        name = name.startsWith("@") ? name : "@" + name;
+        for(int i = 0; i < tags.length; i++)
+            if (tags[i].name.equals(name))
+                return true;
+        return false;
     }
 
     /**
@@ -158,4 +185,74 @@ public class Comment {
 	    return text;
     }
 
+    // Implementation methods for the SAX error handler.
+
+    public void warning(SAXParseException e) {
+        //showHtmlError(e);
+    }
+
+    public void error(SAXParseException e) {
+        showHtmlError(e);
+    }
+
+    public void fatalError(SAXParseException e) {
+        showHtmlError(e);
+    }
+
+    void showHtmlError(SAXParseException e) {
+        String msg = "";
+        msg += "documentation comments should be written in HTML" + "\n";
+        msg += e.getMessage() + "\n";
+        if (unit != null)
+            unit.warning(holder.pos, msg);
+    }
+
 }
+
+public class HTMLValidator {
+
+    /** The URL of the file containing the DTD. */
+    String dtd;
+
+    /** HTML parser. */
+    XMLReader xmlReader;
+
+    public HTMLValidator(String dtd) {
+        this.dtd = dtd;
+        // parser
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            factory.setValidating(true);
+            factory.setNamespaceAware(true);
+            SAXParser saxParser = factory.newSAXParser();
+            xmlReader = saxParser.getXMLReader();
+        }
+        catch(ParserConfigurationException e) { System.err.println(e.toString()); }
+        catch(SAXException e) { System.err.println(e.toString()); }
+    }
+
+    public String makeDoc(String s) {
+        String doc = "";
+        // specify the DTD
+        doc += "<?xml version=\"1.0\"?>" + "\n";
+        doc += "<!DOCTYPE html SYSTEM \"" + dtd + "\">" + "\n";
+        // enclose the string into a valid HTML skeletton
+        doc += "<html><head><title>notitle</title></head><body>" + "\n";
+        doc += s + "\n";
+        doc += "</body></html>" + "\n";
+        return doc;
+    }
+
+    public void validate(String s, ErrorHandler errorHandler) {
+        // source to parse
+        String doc = makeDoc(s);
+        InputSource source = new InputSource(new StringReader(doc));
+        try {
+            xmlReader.setErrorHandler(errorHandler);
+            xmlReader.parse(source);
+        }
+        catch(SAXException e) { }
+        catch(Exception e) { System.err.println(e.toString()); }
+    }
+}
+

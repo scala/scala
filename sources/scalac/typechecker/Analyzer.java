@@ -16,6 +16,7 @@
 package scalac.typechecker;
 
 import ch.epfl.lamp.util.Position;
+import ch.epfl.lamp.util.Pair;
 import scalac.*;
 import scalac.util.*;
 import scalac.ast.*;
@@ -830,7 +831,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    // set the comment associated with a symbol
 	    String comment = (String) global.mapTreeComment.get(tree);
 	    if (comment != null)
-		global.mapSymbolComment.put(sym, comment);
+		global.mapSymbolComment.put(sym, new Pair(comment, unit));
 
 	    return sym;
 	}

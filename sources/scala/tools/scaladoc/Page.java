@@ -28,10 +28,6 @@ import scalac.util.Debug;
  */
 class Page extends HTMLPrinter {
 
-    /** Root directory.
-     */
-    protected File rootDirectory;
-
     /** Page URL relative to the root directory.
      */
     protected URI uri;
@@ -43,26 +39,13 @@ class Page extends HTMLPrinter {
 
     /** Build a page.
      */
-    public Page(File rootDirectory, URI uri, String destinationFrame,
+    public Page(Writer writer, URI uri, String destinationFrame,
 		String title, HTMLRepresentation representation,
 		String stylesheet/*, String script*/) {
-	super(getWriter(rootDirectory, uri), title, representation,
+	super(writer, title, representation,
 	      asSeenFrom(mkURI(stylesheet), uri).toString()/*, script*/);
-	this.rootDirectory = rootDirectory;
 	this.uri = uri;
 	this.destinationFrame = destinationFrame;
-    }
-
-    /** Get a writer to the page.
-     */
-    protected static Writer getWriter(File rootDirectory, URI uri) {
-	try {
-	    File f = new File(rootDirectory, uri.toString());
-	    f.getParentFile().mkdirs();
-	    return new BufferedWriter(new FileWriter(f));
-	} catch(IOException e) {
-	    throw Debug.abort(e);
-	}
     }
 
     /** Open the page.

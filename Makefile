@@ -114,7 +114,9 @@ SCALADOC_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/scaladoc.lst)
 SCALADOC_SOURCES	+= $(SCALADOC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_JC_FILES	+= $(filter %.java,$(SCALADOC_SOURCES))
 SCALADOC_SC_FILES	+= $(filter %.scala,$(SCALADOC_SOURCES))
-SCALADOC_RSRC_LIST	+= resources/style.css resources/script.js
+SCALADOC_RSRC_LIST	+= resources/style.css resources/script.js \
+                           resources/xhtml1-transitional.dtd resources/xhtml-lat1.ent \
+                           resources/xhtml-special.ent resources/xhtml-symbol.ent
 SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_RSRC_OUTPUTDIR	 = $(SCALADOC_ROOT:$(PROJECT_SOURCEDIR)/%=$(PROJECT_OUTPUTDIR)/%)
 

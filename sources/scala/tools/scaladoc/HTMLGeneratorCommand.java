@@ -59,7 +59,7 @@ public class HTMLGeneratorCommand extends CompilerCommand {
     public HTMLGeneratorCommand(String product, String version,
         Reporter reporter, HTMLGeneratorPhases phases)
     {
-        this(product, version, "<source files>", reporter, phases);
+        this(product, version, "<source files> [-- <packages>]", reporter, phases);
     }
 
     /**
