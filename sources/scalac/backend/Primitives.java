@@ -16,6 +16,7 @@ import scalac.Global;
 import scalac.symtab.Definitions;
 import scalac.symtab.TypeTags;
 import scalac.symtab.Symbol;
+import scalac.symtab.SymbolNameWriter;
 import scalac.symtab.Type;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -173,6 +174,7 @@ public class Primitives {
     private final Global global;
     private final Definitions definitions;
     private final Map/*<Symbol,Primitive>*/ primitives;
+    private final SymbolNameWriter javaNameWriter;
 
     public final Symbol RUNTIME;
 
@@ -315,6 +317,7 @@ public class Primitives {
         this.global = global;
         this.definitions = global.definitions;
         this.primitives = new HashMap();
+        this.javaNameWriter = new SymbolNameWriter().setClassSeparator('$');
         this.RUNTIME = definitions.getModule(Names.scala_runtime_RunTime);
         this.NEW_ZARRAY = getUniqueTerm(RUNTIME, ZARRAY_N);
         this.NEW_BARRAY = getUniqueTerm(RUNTIME, BARRAY_N);
@@ -1253,17 +1256,9 @@ public class Primitives {
         if (symbol == definitions.ANY_CLASS ||
             symbol == definitions.ANYREF_CLASS)
             return getJavaSignature(definitions.JAVA_OBJECT_CLASS);
-        String name = symbol.name.toString();
-        return getJavaPrefix(symbol.owner(), name.length())
-            .append(name).toString();
-    }
-
-    /** Return the Java prefix of given symbol. */
-    private StringBuffer getJavaPrefix(Symbol symbol, int length) {
-        if (symbol.isRoot()) return new StringBuffer(length);
-        String name = symbol.name.toString();
-        return getJavaPrefix(symbol.owner(), name.length() + 1 + length)
-            .append(name).append(symbol.isPackage() ? '.' : '$');
+        String signature = javaNameWriter.appendSymbol(symbol).toString();
+        javaNameWriter.setStringBuffer(null);
+        return signature;
     }
 
     //########################################################################
