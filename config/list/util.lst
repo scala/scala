@@ -13,8 +13,17 @@ PlainFile.java
 Position.java
 SourceFile.java
 SourceReader.java
-VirtualFile.java
+StringBufferWriter.java
 VirtualDirectory.java
+VirtualFile.java
 ZipArchive.java
+
+debug/AbortError.java
+debug/ArrayDebugger.java
+debug/Debug.java
+debug/Debugger.java
+debug/ObjectDebugger.java
+debug/ThrowableDebugger.java
+debug/ToStringDebugger.java
 
 ##############################################################################
