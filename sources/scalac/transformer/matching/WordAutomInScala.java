@@ -15,6 +15,8 @@ import scalac.ast.Tree;
 import scalac.ast.TreeGen;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
+import scalac.symtab.TermSymbol; // test
+import scalac.symtab.Modifiers; // test
 import scalac.transformer.TransMatch.Matcher;
 //import scalac.typechecker.*;
 import Tree.*;
@@ -33,14 +35,6 @@ public class WordAutomInScala extends Autom2Scala {
                           Tree body[],
                           Type resultType) {
 
-        Tree run = callFun( new Tree[] {
-            cf.newIterator( selector ),
-            gen.mkIntLit( cf.pos, 0 ) } );
-
-        /* return code `var <swres>: scala.Int = <init>' */
-
-        run = gen.ValDef( resultSym, run );
-
         Tree result;
 
         // conditions
@@ -51,21 +45,103 @@ public class WordAutomInScala extends Autom2Scala {
             //tags[i] = i;
             cond[i] = cf.Equals(_swres(), gen.mkIntLit( cf.pos, i ));
         }
-        result = cf.Switch( selector, cond, body, failTree );
+        result = cf.Switch( cond, body, failTree );
 
         //result = gen.Switch( _swres(), tags, body, failTree );
 
-        result = cf.gen.mkBlock( cf.pos, new Tree[] { theDefDef, run, result } );
+        result = cf.gen.mkBlock( cf.pos, new Tree[] { gen.ValDef( iterSym, cf.newIterator( selector )),  // test
+                                                      gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),  // test
+                                                      //theDefDef,
+                                                      gen.ValDef( resultSym, theDefDef ),
+                                                      //run,
+                                                      result } );
         //unit.global.debugPrinter.print( result );
         return result;
     }
+
+    protected void initializeSyms() { // TEST
+        if( funSymName == null )
+            funSymName = "matcher";
+        // the function that does the matching
+
+        this.funSym = new TermSymbol( pos,
+                               cf.fresh.newName( "matcher" ),
+                               owner,
+                               Modifiers.LABEL );
+
+        this.iterSym = new TermSymbol( pos,
+                                       cf.fresh.newName("iter"),
+                                       owner,
+                                       Modifiers.MUTABLE /*| NOT : Modifiers.PARAM*/ )
+            .setType( cf._seqIterType( elementType ) ) ;
+
+        this.stateSym = new TermSymbol( pos,
+                                        cf.fresh.newName("q"),
+                                        owner,
+                                        Modifiers.MUTABLE )
+            .setType( defs.INT_TYPE() ) ;
+
+        this.resultSym = new TermSymbol( pos,
+                                         cf.fresh.newName("swRes"),
+                                         owner,
+                                         0 )
+            .setType( defs.INT_TYPE() ) ;
+
+        this.funSym
+            .setType( new Type.MethodType( new Symbol[] {
+                new TermSymbol( pos,
+                                cf.fresh.newName("q"),
+                                funSym,
+                                Modifiers.PARAM ).setType( defs.INT_TYPE() )
+            }, defs.INT_TYPE() ));
+
+        this.curSym = new TermSymbol( pos,
+                                      CURRENT_ELEM,
+                                      owner,
+                                      0)
+            .setType( elementType );
+
+        this.hasnSym = new TermSymbol( pos,
+                                       HASNEXT,
+                                       owner,
+                                       0)
+            .setType( defs.BOOLEAN_TYPE() );
+
+    }
+
+    /** code for the return value of the automaton translation
+     */
+    Tree run_finished( int state ) { // T E S T
+        if( dfa.isFinal( state )) {
+            return gen.mkIntLit(Position.FIRSTPOS, ((Integer) dfa.finals.get( new Integer( state ) )).intValue() );
+        }
+        return gen.mkIntLit( Position.FIRSTPOS, FAIL );
+    }
+
+
+    // calling the /*AlgebraicMatcher*/PatternMatcher here
+    Tree _cur_match( Tree pat ) { // TE ST
+        Matcher m = new Matcher( this.owner,   /* owner*/
+                                 currentElem(), /* root */
+                                 defs.BOOLEAN_TYPE() /* restype */);
+
+        am.construct( m, new CaseDef[] {
+            cf.gen.CaseDef( pat,
+                            gen.mkBooleanLit( pat.pos, true )),
+            cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
+                            gen.mkBooleanLit( pat.pos, false )) },
+                      false);
+        return am.toTree();
+    }
+
 
     /** do the translation
      */
     public void translate() {
         initializeSyms();
         Tree tb = code_body_NEW();
-        theDefDef = gen.DefDef(this.funSym, tb);
+        //theDefDef = gen.DefDef(this.funSym, tb);
+        theDefDef = gen.LabelDef(this.funSym, new Ident[] { /*(Ident)_iter(),*/ (Ident)_state() }, tb);
     }
 
     /** ...
@@ -86,7 +162,7 @@ public class WordAutomInScala extends Autom2Scala {
         else if (target.intValue() == dfa.nstates - 1) // that one is a dead state
             return code_fail();
 
-        return callFun(new Tree[] { _iter(),
+        return callFun(new Tree[] { /*_iter(),*/
                                     gen.mkIntLit( cf.pos, target.intValue() )} );
     }
 

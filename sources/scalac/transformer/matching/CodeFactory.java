@@ -30,11 +30,9 @@ class CodeFactory extends PatternTool {
 
     /** a faked switch statement
      */
-    Tree Switch( Tree selector,
-		 Tree condition[],
+    Tree Switch( Tree condition[],
 		 Tree body[],
 		 Tree defaultBody ) {
-	assert selector != null:"selector is null";
 	assert condition != null:"cond is null";
 	assert body != null:"body is null";
 	assert defaultBody != null:"defaultBody is null";
