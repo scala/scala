@@ -94,9 +94,7 @@ public class Signatures {
         Name name = Name.fromAscii(in.buf, start, current-start).toTypeName();
         Symbol clasz = owner.members().lookup(name);
         if (!clasz.isClass()) {
-            Symbol symbol = owner.newClass(Position.NOPOS, 0, name);
-            symbol.setInfo(Type.ErrorType);
-            symbol.allConstructors().setInfo(Type.ErrorType);
+            Symbol symbol = owner.newErrorClass(name);
             error("could not find class " + symbol.staticType());
             if (clasz.isNone()) owner.members().enterNoHide(symbol);
             clasz = symbol;
