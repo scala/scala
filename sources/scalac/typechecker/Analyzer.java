@@ -1599,7 +1599,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	Type[] argtypes = new Type[args.length];
 	switch (methtype) {
 	case MethodType(Symbol[] params, Type restp):
-	    if (meth.isConstructor() &&
+	    if (meth != null && meth.isConstructor() &&
 		params.length == 1 && params[0] == Symbol.NONE) {
 		error(pos, meth + " is inaccessible");
 		return null;
