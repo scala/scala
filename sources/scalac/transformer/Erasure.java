@@ -374,6 +374,11 @@ public class Erasure extends GenTransformer implements Modifiers {
         case UnboxedType(int kind): return genNewUnboxedArray(pos, kind, size);
         }
         if (global.target == global.TARGET_INT) {
+            int levels = 0;
+            while (isUnboxedArrayType(element)) {
+                element = getArrayElementType(element);
+                levels++;
+            }
             global.nextPhase();
             while (true) {
                 Symbol clasz = element.symbol();
@@ -382,6 +387,10 @@ public class Erasure extends GenTransformer implements Modifiers {
                 element = element.parents()[0];
             }
             global.prevPhase();
+            while (levels > 0) {
+                element = Type.UnboxedArrayType(element);
+                levels--;
+            }
         }
         String name = primitives.getNameForClassForName(element);
         Tree[] args = { coerce(size, UNBOXED_INT), gen.mkStringLit(pos,name) };
