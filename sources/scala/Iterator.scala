@@ -7,6 +7,16 @@ trait Iterator[a] {
   def foreach(f: a => Unit): Unit =
     while (hasNext) { f(next) }
 
+  def take(n: Int) = new Iterator[a] {
+    var remaining = n;
+    def hasNext = remaining > 0 && Iterator.this.hasNext;
+    def next: a =
+      if (hasNext) { remaining = remaining - 1; Iterator.this.next }
+      else error("next on empty iterator");
+  }
+
+  def drop(n: Int): Iterator[a] = if (n > 0) { next; drop(n - 1); } else this;
+
   def map[b](f: a => b): Iterator[b] = new Iterator[b] {
     def hasNext = Iterator.this.hasNext;
     def next = f(Iterator.this.next)
