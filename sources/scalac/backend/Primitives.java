@@ -917,7 +917,6 @@ public class Primitives {
             symbol = definitions.JAVA_OBJECT_CLASS;
         StringBuffer buffer = new StringBuffer(symbol.name.toString());
         for (symbol = symbol.owner();
-             // !!! isPackage was isJavaPackageClass
              symbol != definitions.ROOT_CLASS && !symbol.isPackage();
              symbol = symbol.owner()) {
             buffer.insert(0, '$');
