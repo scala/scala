@@ -33,7 +33,9 @@ object Utility {
     s.toString();
   }
 
-  /** serializes an instance of Node to a string that contains well-formed XML **/
+  /** serializes an instance of Node to a string that contains well-formed XML
+   *  @todo define a way to escape literal characters to &#xxx; references
+  */
   def toXML( n:Node ):String = n match {
     case Text( t ) =>
       escape( t );
