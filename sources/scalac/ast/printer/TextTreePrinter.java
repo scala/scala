@@ -192,6 +192,8 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text TXT_RIGHT_BRACE   = Text.Simple("}");
     protected static final Text TXT_LEFT_BRACKET  = Text.Simple("[");
     protected static final Text TXT_RIGHT_BRACKET = Text.Simple("]");
+    protected static final Text TXT_BAR           = Text.Simple("|");
+    protected static final Text TXT_AT            = Text.Simple("@");
 
     protected static final Text TXT_WITH_SP =
         Text.Sequence(new Text[]{ Text.Space, KW_WITH, Text.Space });
@@ -205,6 +207,8 @@ public class TextTreePrinter implements TreePrinter {
         Text.Sequence(new Text[]{ TXT_COMMA, Text.Space });
     protected static final Text TXT_ELSE_NL =
         Text.Sequence(new Text[]{ KW_ELSE, Text.Newline });
+    protected static final Text TXT_BAR_SP =
+        Text.Sequence(new Text[]{ Text.Space, TXT_BAR, Text.Space });
 
     public void print(Unit unit) {
         printUnitHeader(unit);
@@ -373,6 +377,29 @@ public class TextTreePrinter implements TreePrinter {
         case Sequence(Tree[] trees): // sure ? was Tuple before...
             printArray(trees, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
             break;
+
+	case Subsequence(Tree[] trees):
+	    if( trees.length > 0 )
+		printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
+	    else
+		{
+		    print( TXT_LEFT_PAREN );
+		    print( TXT_COMMA );
+		    print( TXT_RIGHT_PAREN );
+		}
+	    break;
+
+	case Alternative(Tree[] trees):
+	    printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_BAR_SP);
+	    break;
+
+	case Bind(Name name, Tree t):
+            printSymbolDefinition(tree.symbol(), name);
+	    print(Text.Space);
+	    print(TXT_AT);
+	    print(Text.Space);
+	    print( t );
+	    break;
 
         case Visitor(Tree.CaseDef[] cases):
             printArray(cases, TXT_BLOCK_BEGIN, TXT_BLOCK_END, Text.Newline);
