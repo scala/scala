@@ -152,7 +152,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Tree vdef = gen.ValDef(mvar, gen.Ident(tree.pos, defs.NULL));
 
 	    // { if (null == m$) m$ = new m$class; m$ }
-	    Symbol eqMethod = getMemberMethod(
+	    Symbol eqMethod = getUnaryMemberMethod(
 		sym.type(), Names.EQEQ, defs.ANY_TYPE);
 	    Tree body = gen.Block(new Tree[]{
 		gen.If(
@@ -185,7 +185,20 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return sym;
     }
 
-    private Symbol getMemberMethod(Type site, Name name, Type paramtype) {
+    private Symbol getNullaryMemberMethod(Type site, Name name) {
+	Symbol sym = getMember(site, name);
+	switch (sym.type()) {
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    for (int i = 0; i < alts.length; i++) {
+		if (alttypes[i].firstParams().length == 0) return alts[i];
+	    }
+	}
+	assert sym.type().firstParams().length == 0
+	    : "no nullary method " + name + " among " + sym.type() + " at " + site;
+	return sym;
+    }
+
+    private Symbol getUnaryMemberMethod(Type site, Name name, Type paramtype) {
 	Symbol sym = getMember(site, name);
 	switch (sym.type()) {
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
@@ -306,7 +319,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 
 	private Tree eqOp(Tree l, Tree r) {
-	    Symbol eqMethod = getMemberMethod(l.type, Names.EQEQ, r.type);
+	    Symbol eqMethod = getUnaryMemberMethod(l.type, Names.EQEQ, r.type);
 	    return gen.Apply(gen.Select(l, eqMethod), new Tree[]{r});
 	}
 
@@ -316,10 +329,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    .setInfo(defs.HASHCODE.type());
 	clazz.info().members().enter(hashCodeSym);
 	Tree[] fields = caseFields(clazz);
-	Symbol getClassMethod = getMember(clazz.type(), Names.getClass);
-	Symbol addMethod = getMemberMethod(
+	Symbol getClassMethod = getNullaryMemberMethod(clazz.type(), Names.getClass);
+	Symbol addMethod = getUnaryMemberMethod(
 	    defs.INT_TYPE, Names.ADD, defs.INT_TYPE);
-	Symbol mulMethod = getMemberMethod(
+	Symbol mulMethod = getUnaryMemberMethod(
 	    defs.INT_TYPE, Names.MUL, defs.INT_TYPE);
 	Tree body =
 	    gen.Apply(
@@ -327,13 +340,13 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    gen.Apply(
 			gen.mkRef(clazz.pos, clazz.thisType(), getClassMethod),
 			Tree.EMPTY_ARRAY),
-		    getMember(getClassMethod.type().resultType(), Names.hashCode)),
+		    getNullaryMemberMethod(getClassMethod.type().resultType(), Names.hashCode)),
 		Tree.EMPTY_ARRAY);
 	for (int i = 0; i < fields.length; i++) {
 	    Tree operand = gen.Apply(
 		gen.Select(
 		    fields[i],
-		    getMember(fields[i].type, Names.hashCode)),
+		    getNullaryMemberMethod(fields[i].type, Names.hashCode)),
 		Tree.EMPTY_ARRAY);
 	    body =
 		gen.Apply(

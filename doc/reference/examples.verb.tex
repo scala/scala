@@ -2196,7 +2196,7 @@ result types is very tedious. It should also be unneccessary because
 all such classes have exactly the same structure. In Scala, the
 repetition can be avoided by defining a {\em generic class}:
 \begin{verbatim}
-case class Pair[a, b](first: a, second: b);
+case class Pair[+a, +b](first: a, second: b);
 
 def divmod(x: int, y: int): Pair[int, int] = new Pair[Int, Int](x / y, x % y)
 \end{verbatim}
@@ -2220,12 +2220,27 @@ divmod(x, y) match {
   case Pair(n, d) => System.out.println("quotient: " + n + ", rest: " + d);
 }
 \end{verbatim}
+The type parameters in class \verb@Pair@ are each prefixed by a
+\verb@+@ sign.  This indicates that \verb@Pair@s are {\em
+covariant}. That is, if types \verb@T$_1$@ and \verb@T$_2$@ are
+subtypes of types \verb@S$_1$@ and \verb@S$_2$@, then
+\verb@Pair[T$_1$, T$_2$]@ is a subtype of
+\verb@Pair[S$_1$, S$_2$]@. For instance, \verb@Pair[String, int]@ is a
+subtype of \verb@Pair[Object, long]@. If the \verb@+@-annotation was
+missing, the type constructor would be treated as being
+non-variant. That is, pairs with different element types would never
+be in a subtype relation. 
+Besides, \verb@+@, there is also a prefix
+\verb@-@ for contra-variant type constructors. 
+The precise rules that
+for variance annotations are given in Chapter~\ref{sec:variance}.
+
 The idea of pairs is generalized in Scala to tuples of greater arity.
 There is a predefined case class \verb@Tuple$_n$@ for every \verb@n@
 from \verb@2@ to \verb@9@ in Scala's standard library. The
 definitions all follow the template
 \begin{verbatim}
-case class Tuple$_n$[a$_1$, ..., a$_n$](_1: a$_1$, ..., _n: a$_n$);
+case class Tuple$_n$[+a$_1$, ..., +a$_n$](_1: a$_1$, ..., _n: a$_n$);
 \end{verbatim}
 Class \verb@Pair@ (as well as class \verb@Triple@) are also
 predefined, but not as classes of their own. Instead 
@@ -2325,11 +2340,11 @@ def isort(xs: List[int]): List[int] =
 \exercise Provide an implementation of the missing function
 \verb@insert@.
 
-\paragraph{List patterns.} In fact, both \verb@Nil@ and \verb@::@ are
-defined as case classes in Scala's standard library. Hence, it is
-possible to decompose lists by pattern matching, using patterns
-composed from the \verb@Nil@ and \verb@::@ constructors. For instance, \verb@isort@ can
-be written alternatively as follows.
+\paragraph{List patterns.} In fact, \verb@::@ is
+defined defined as a case class in Scala's standard library. Hence, it
+is possible to decompose lists by pattern matching, using patterns
+composed from the \verb@Nil@ and \verb@::@ constructors. For instance,
+\verb@isort@ can be written alternatively as follows.
 \begin{verbatim}
 def isort(xs: List[int]): List[int] = xs match {
   case List() => List()
@@ -2408,13 +2423,16 @@ Lists are not built in in Scala; they are defined by an abstract class
 In the following we present a tour through class \verb@List@.
 \begin{verbatim}
 package scala;
-abstract class List[a] {
+abstract class List[+a] {
 \end{verbatim}
 \verb@List@ is an abstract class, so one cannot define elements by
-calling the empty \verb@List@ constructor (e.g. by \verb@new List).
-The class is situated in the package \verb@scala@. This is a package
-containing the most important standard classes of Scala. \verb@List@
-defines a number of methods, which are explained in the following.
+calling the empty \verb@List@ constructor (e.g. by
+\verb@new List).  The class has a type parameter \verb@a@. It is
+co-variant in this parameter, which means \verb@T <: S@ implies that
+\verb@List[T] <: List[S]@.  The class is situated in the package
+\verb@scala@. This is a package containing the most important standard
+classes of Scala. \verb@List@ defines a number of methods, which are
+explained in the following.
 
 First, there are the three basic functions \verb@isEmpty@, 
 \verb@head@, \verb@tail@. Their implementation in terms of pattern
@@ -2536,10 +2554,10 @@ left-associative.  E.g.,
 \begin{verbatim}
     x :: y :: z = x :: (y :: z)      \=$\mbox{\rm whereas}$       x + y + z = (x + y) + z
 \end{verbatim}
-With these conventions, the definition of \verb@::@ as a method in
-class \verb@List@ is straightforward:
+The definition of \verb@::@ as a method in
+class \verb@List@ is as follows:
 \begin{verbatim}
-def ::(x: a): List[a] = new scala.::(x, this);
+def ::[b >: a](x: a): List[a] = new scala.::(x, this);
 \end{verbatim}
 An operation similar to \verb@::@ is list concatenation, written
 `\verb@:::@'. The result of \verb@(xs ::: ys)@ is a list consisting of
@@ -2643,6 +2661,9 @@ comparison functions. For instance,
 val intSort = msort(iless)
 val reverseSort = msort(x: int, y: int => x > y)
 \end{verbatim}
+
+\section*{Higher-Order Methods}
+
 
 \bibliography{examples}
 \end{document}
@@ -3486,8 +3507,8 @@ l = Branch(Leaf(1), Leaf(2)), r = Branch(Leaf(3), Leaf(4)).
 \end{verbatim}
 As another example, consider the following class
 \begin{verbatim}
-abstract final class Option[a];
-case class None[a] extends Option[a];
+abstract final class Option[+a];
+case object None extends Option[All];
 case class Some[a](item: a) extends Option[a];
 \end{verbatim}
 ...

@@ -1771,29 +1771,24 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	return result;
     }
 
-    /** Return the least upper bound of non-empty array of types `tps'.
+    /** remove types that are subtypes of some other type.
      */
-    public static Type lub(Type[] tps) {
-	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
-
-	// remove types that are subtypes of some other type.
+    static private Type[] elimRedundant(Type[] tps, boolean elimLower) {
 	Type.List tl = Type.List.EMPTY;
 	int nredundant = 0;
 	boolean[] redundant = new boolean[tps.length];
 	for (int i = 0; i < tps.length; i++) {
-	    if (tps[i] == ErrorType)
-		return ErrorType;
-	    else if (!tps[i].isObjectType()) {
-		System.out.println("not an object type");
-		return Type.NoType;//todo: change
+	    if (tps[i] == ErrorType) {
+		return new Type[]{ErrorType};
 	    } else {
+		assert tps[i].isObjectType() : tps[i];
 		for (int j = 0; j < i && !redundant[i]; j++) {
 		    if (!redundant[j]) {
 			if (tps[i].isSubType(tps[j])) {
-			    redundant[i] = true;
+			    redundant[elimLower ? i : j] = true;
 			    nredundant++;
 			} else if (tps[j].isSubType(tps[i])) {
-			    redundant[j] = true;
+			    redundant[elimLower ? j : i] = true;
 			    nredundant++;
 			}
 		    }
@@ -1807,9 +1802,21 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    for (int i = 0; i < tps.length; i++) {
 		if (!redundant[i]) tps1[n++] = tps[i];
 	    }
-	    tps = tps1;
+	    return tps1;
+	} else {
+	    return tps;
 	}
+    }
 
+    /** Return the least upper bound of non-empty array of types `tps'.
+     *  todo: treat types with refinements
+     */
+    public static Type lub(Type[] tps) {
+	//System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
+
+	// remove types that are subtypes of some other type.
+
+	tps = elimRedundant(tps, true);
 	if (tps.length == 1) return tps[0];
 
 	// intersect closures and build frontier.
@@ -1866,9 +1873,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     private static Type commonType(Type[] tps) {
 	Type tp = tps[0];
 	if (tp.isSameAsAll(tps)) return tp;
-	//tp = tp.widen();
-	//if (tp.isSameAsAll(widen(tps))) return tp;
-	return NoType;
+	else return NoType;
     }
 
     private static Symbol lub(Symbol[] syms, Type[] tps, Symbol owner) {
@@ -1897,6 +1902,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
 	lubSym.setInfo(lubType);
 	return lubSym;
+    }
+
+    private static Type glb(Type[] tps) {
+	tps = elimRedundant(tps, false);
+	if (tps.length == 1) return tps[0];
+	else return NoType;
     }
 
 // Erasure --------------------------------------------------------------------------
