@@ -276,8 +276,7 @@ final class TypeCreator {
 	    STRING.GetMethod("Compare", new Type[]{STRING, STRING, BOOLEAN});
 	initialized = true;
 
-	Type scalaSymtab = Type.GetType("scala.support.SymtabAttribute");
-	SCALA_SYMTAB_ATTR_CONSTR = scalaSymtab.GetConstructors()[0];
+	SCALA_SYMTAB_ATTR_CONSTR = ti.SCALA_SYMTAB_ATTR.GetConstructors()[0];
 
     } // init()
 
@@ -608,7 +607,10 @@ final class TypeCreator {
 	}
 	typeBuilders.add(type);
 	map(clazz, type);
-
+	if (clazz.isModuleClass() && staticType != null) {
+	    //System.out.println(Debug.show(clazz) + " -> " + Debug.show(staticType));
+	    syms2staticTypes.put(clazz, staticType);
+	}
 	for (Scope.SymbolIterator syms = clazz.members().iterator(true);
 	     syms.hasNext(); )
 	    {
@@ -699,6 +701,7 @@ final class TypeCreator {
 	} else {
 	    // force the creation of the declaring type
 	    Type owner = getType(sym.owner());
+	    assert owner != null : Debug.show(sym);
 	    method = (MethodBase) symbols2methods.get(sym);
 	    if (method != null)
 		return method;
@@ -711,10 +714,8 @@ final class TypeCreator {
 		    // The owner of a constructor is the outer class
 		    // so get the result type of the constructor
 		    method = owner.GetConstructor(params);
-		    if (method == null) {
-			System.out.println("cannot find " + owner + "::.ctor"
-					 + methodSignature(params));
-		    }
+		    assert method != null : "cannot find " + owner
+			+ "::.ctor" + methodSignature(params);
 		} else {
 		    String name = sym.name.toString();
 		    if (sym.name == Names.toString) name = "ToString";
@@ -753,8 +754,9 @@ final class TypeCreator {
 	case MethodType(Symbol[] vparams, scalac.symtab.Type result):
 	    short attr = translateMethodAttributes(sym);
 	    if (isStatic)
-		attr = (short)((attr & ~MethodAttributes.Virtual)
-		    | MethodAttributes.Static);
+		attr = (short)((attr & ~MethodAttributes.Virtual
+				& ~MethodAttributes.Final)
+			       | MethodAttributes.Static);
             return createMethod(type, sym.name, sym.info(), attr);
 	default:
 	    throw Debug.abort("Symbol doesn't have a method type: "
@@ -867,6 +869,13 @@ final class TypeCreator {
 	return method;
     }
 
+    private Map syms2staticTypes = new HashMap();
+
+    public TypeBuilder getStaticType(Symbol moduleClass) {
+	TypeBuilder staticType = (TypeBuilder)syms2staticTypes.get(moduleClass);
+	assert staticType != null : Debug.show(moduleClass);
+	return staticType;
+    }
     /*
      *
      */
