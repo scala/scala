@@ -17,7 +17,7 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
+trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] {
 
     /** Returns the length of the sequence.
      *
@@ -112,8 +112,7 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
 
     /** Returns true if the elements in this sequence are equal
      *  to the elements in another sequence
-     */
-    def similar(x: Any): Boolean = {
+    def similar(x: Any): Boolean = { // WEG
         x.match {
           case that: Seq[A] =>
             (that.length == this.length) && sameElements(that)
@@ -121,6 +120,7 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
             false
         }
     }
+     */
 
     /** Customizes the <code>toString</code> method.
      *
