@@ -464,7 +464,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < vars.length; i++) {
 		vtree[i] = make.Ident(pos, vars[i]);
 	    }
-	    Tree tuple = mkTuple(tree.pos, vtree);
+	    Tree tuple = vars.length == 1 ? vtree[0] : mkTuple(tree.pos, vtree);
 
 	    // e.match (case p => Tuple_N(x_1, ..., x_N))
 	    CaseDef[] cases = {make.CaseDef(pos, pat, Tree.Empty, tuple)};
@@ -476,7 +476,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		// e.match (case p => ())
 		return new Tree[]{match};
 	    } else if (vars.length == 1) {
-		// val x_1 = e.match (case p => (x_1))
+		// val x_1 = e.match (case p => x_1)
 		return new Tree[]{
 		    make.ValDef(pos, mods, vars[0], Tree.Empty, match)};
 	    } else {
