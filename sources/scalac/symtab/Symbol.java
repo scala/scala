@@ -1356,7 +1356,7 @@ public abstract class Symbol implements Modifiers, Kinds {
      */
     public boolean isSubClass(Symbol c) {
         return this == c ||
-            c.kind == Kinds.ERROR ||
+            c.isError() ||
             closurePos(c) >= 0 ||
             this == Global.instance.definitions.ALL_CLASS ||
             (this == Global.instance.definitions.ALLREF_CLASS &&
