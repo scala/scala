@@ -17,6 +17,11 @@ object Predef {
 
   def error[err](x: String):err = new java.lang.RuntimeException(x).throw;
 
+  def abs(x: int): int = if (x < 0) -x else x;
+  def abs(x: long): long = if (x < 0) -x else x;
+  def abs(x: float): float = if (x < 0) -x else x;
+  def abs(x: double): double = if (x < 0) -x else x;
+
   def try[a](def block: a): Except[a] =
     new Except(scala.runtime.ResultOrException.tryBlock(block));
 
