@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This script was automatically generated using Zero G's InstallAnywhere 5.5.1 Standard, Build 2032
      STATUS: Fully Functional LICENSED Edition
-     DATE:   Fri Jan 23 18:33:49 CET 2004 -->
+     DATE:   Fri Jan 23 19:19:34 CET 2004 -->
 <InstallAnywhere_Deployment_Project increments="1587">
 	<!-- ** DO NOT EDIT ** Essential authorization and configuration data ** DO NOT EDIT ** -->
 	<essentialScriptInfo>
@@ -10,7 +10,7 @@
 		<scriptID>12,42,11,90,77,49,48,53,53,85,78,57,55,55,50,65</scriptID>
 		<buildID>3,13,71,76,105,110,117,120,44,32,50,46,52,46,50,48,45,50,56,46,56,44,32,105,51,56,54,59,32,74,97,118,97,32,49,46,51,46,49,95,48,56,44,32,83,117,110,32,77,105,99,114,111,115,121,115,116,101,109,115,32,73,110,99,46,44,32,104,116,116,112,58,47,47,106,97,118,97,46,115,117,110,46,99,111,109,47,59,32,101,110,44,32,85,83,59,32,85,84,70,45,56</buildID>
 		<!-- The authorizationID may change between project saves and builds.  This does not effect the integrity of the project, nor do changes in this value represent changes in the actual InstallAnywhere project. -->
-		<authorizationID>1,0,0,-16,67,-63,96,-112,80,112,112,97,87,98,113,97,113,65,83,67,74,65,74,67,89,70,64,69,66,69,48,79,87,5,2,4,14,27,115,10,0,0,0</authorizationID>
+		<authorizationID>1,0,0,-16,67,-15,80,-128,80,112,112,97,87,98,113,97,113,65,83,67,74,65,74,67,89,70,64,69,66,69,48,79,87,5,2,14,1,21,115,10,0,0,0</authorizationID>
 	</essentialScriptInfo>
 	<installationObjects uniqueObjects="66">
 		<object class="com.zerog.ia.installer.Installer" objectID="3c471adea52a">
@@ -344,7 +344,7 @@ You may cancel this installation at any time by clicking the 'Cancel' button.]]>
 								<boolean>true</boolean>
 							</property>
 							<property name="script">
-								<string><![CDATA[cd $USER_INSTALL_DIR$ && gunzip -c $INSTALLER_TEMP_DIR$/scala.tar.gz | tar xfBp -;
+								<string><![CDATA[cd "$USER_INSTALL_DIR$" && gunzip -c "$INSTALLER_TEMP_DIR$/scala.tar.gz" | tar xfBp -;
 ]]></string>
 							</property>
 							<property name="showIndeterminateDialog">
@@ -701,7 +701,7 @@ Press "Done" to quit the installer.]]></string>
 				<object class="java.util.Properties">
 					<method name="put">
 						<string><![CDATA[com.zerog.ia.project.save.last.date]]></string>
-						<string><![CDATA[Fri Jan 23 18:33:49 CET 2004]]></string>
+						<string><![CDATA[Fri Jan 23 19:19:34 CET 2004]]></string>
 					</method>
 					<method name="put">
 						<string><![CDATA[com.zerog.ia.build.options.optimization.platform.merge]]></string>
