@@ -22,6 +22,17 @@ PROJECT_CLASSPATH	 = $(PROJECT_OUTPUTDIR)
 PROJECT_LISTDIR		 = $(PROJECT_ROOT)/config/list
 PROJECT_SOURCEDIR	 = $(PROJECT_ROOT)/sources
 
+# scala scripts wrapper
+SCRIPTS_PREFIX		 = $(PROJECT_ROOT)/bin
+SCRIPTS_WRAPPER_NAME	 = .scala_wrapper
+SCRIPTS_WRAPPER_LINKS	+= $(SCRIPTS_WRAPPER_ALIASES:%=$(SCRIPTS_PREFIX)/%)
+SCRIPTS_WRAPPER_ALIASES	+= socos
+SCRIPTS_WRAPPER_ALIASES	+= socos-debug
+SCRIPTS_WRAPPER_ALIASES	+= siris
+SCRIPTS_WRAPPER_ALIASES	+= siris-debug
+SCRIPTS_WRAPPER_ALIASES	+= surus
+SCRIPTS_WRAPPER_ALIASES	+= surus-debug
+
 # scala compiler
 COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
 COMPILER_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/compiler.lst)
@@ -90,6 +101,7 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 ##############################################################################
 # Commands
 
+all		: scripts
 all		: compiler
 
 force		:
@@ -102,13 +114,16 @@ clean		:
 
 distclean	: clean
 	$(RM) -f .latest-*
+	$(RM) -f $(SCRIPTS_WRAPPER_LINKS)
 
+scripts		: $(SCRIPTS_WRAPPER_LINKS)
 compiler	: .latest-compiler
 
 .PHONY		: all
 .PHONY		: force
 .PHONY		: clean
 .PHONY		: distclean
+.PHONY		: scripts
 .PHONY		: compiler
 
 ##############################################################################
@@ -117,6 +132,13 @@ compiler	: .latest-compiler
 .latest-compiler	: $(COMPILER_SOURCES)
 	@$(make) .do-jc source=COMPILER JC_FILES='$?'
 	touch $@
+
+##############################################################################
+# Rules
+
+$(SCRIPTS_WRAPPER_LINKS):
+	$(LN) -s $(SCRIPTS_WRAPPER_NAME) $@;
+
 
 ##############################################################################
 
