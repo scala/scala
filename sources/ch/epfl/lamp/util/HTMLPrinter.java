@@ -36,17 +36,28 @@ public class HTMLPrinter {
     //########################################################################
     // Private Fields
 
-    /** The underlying code printer */
+    /**
+     * The underlying code printer.
+     */
     private final CodePrinter printer;
 
-    /** The document title */
+    /**
+     * The document title.
+     */
     private final String title;
 
     //########################################################################
     // Protected Fields
 
-    /** The document representation */
+    /**
+     * The document representation.
+     */
     protected final HTMLRepresentation representation;
+
+    /**
+     * The document stylesheet.
+     */
+    protected final String stylesheet;
 
     //########################################################################
     // Public Constructors
@@ -57,11 +68,26 @@ public class HTMLPrinter {
      * @param writer
      * @param title
      * @param representation
+     * @param stylesheet
      */
-    public HTMLPrinter(Writer writer, String title, HTMLRepresentation representation) {
+    public HTMLPrinter(Writer writer, String title, HTMLRepresentation representation,
+        String stylesheet)
+    {
         this.printer = new CodePrinter(writer, "  ");
         this.title = title;
         this.representation = representation;
+        this.stylesheet = stylesheet;
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param writer
+     * @param title
+     * @param representation
+     */
+    public HTMLPrinter(Writer writer, String title, HTMLRepresentation representation) {
+        this(writer, title, representation, DEFAULT_STYLESHEET);
     }
 
     /**
@@ -71,10 +97,12 @@ public class HTMLPrinter {
      * @param title
      * @param encoding
      */
-    public HTMLPrinter(Writer writer, String title, String encoding) {
-        this.printer = new CodePrinter(writer, "  ");
-        this.title = title;
-        this.representation = new HTMLRepresentation("HTML 4.01 Transitional", encoding);
+    public HTMLPrinter(Writer writer, String title, String docencoding) {
+        this(
+           writer,
+           title,
+           new HTMLRepresentation(HTMLRepresentation.DEFAULT_DOCTYPE, docencoding)
+        );
     }
 
     /**
@@ -84,7 +112,7 @@ public class HTMLPrinter {
      * @param title
      */
     public HTMLPrinter(Writer writer, String title) {
-        this(writer, title,  "iso-8859-1");
+        this(writer, title, HTMLRepresentation.DEFAULT_DOCENCODING);
     }
 
     //########################################################################
@@ -630,9 +658,9 @@ public class HTMLPrinter {
      * Prints the HTML preamble of the current page.
      */
     protected void printPreamble() {
-	println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
-            representation.getType() + "//" + representation.getLanguage() + "\">");
-	printlnOTag("html").line();
+        println("<!DOCTYPE html PUBLIC \"-//W3C//DTD " +
+           representation.getType() + "//" + representation.getLanguage() + "\">");
+        printlnOTag("html").line();
     }
 
     /**
@@ -715,7 +743,7 @@ public class HTMLPrinter {
      * @param generator
      */
     public void printHeader(XMLAttribute[] metaAttrs, String generator) {
-	printHeader(metaAttrs, generator, DEFAULT_STYLESHEET);
+	printHeader(metaAttrs, generator, stylesheet);
     }
 
     /**

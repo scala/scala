@@ -26,10 +26,24 @@ public class XHTMLPrinter extends HTMLPrinter {
      *
      * @param writer
      * @param title
+     * @param representation
+     * @param stylesheet
+     */
+    public XHTMLPrinter(Writer writer, String title, HTMLRepresentation representation,
+        String stylesheet)
+    {
+        super(writer, title, representation, stylesheet);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param writer
+     * @param title
      * @param repr
      */
-    public XHTMLPrinter(Writer writer, String title, HTMLRepresentation repr) {
-        super(writer, title, repr);
+    public XHTMLPrinter(Writer writer, String title, HTMLRepresentation representation) {
+        this(writer, title, representation, DEFAULT_STYLESHEET);
     }
 
     /**
@@ -37,10 +51,10 @@ public class XHTMLPrinter extends HTMLPrinter {
      *
      * @param writer
      * @param title
-     * @param encoding
+     * @param docencoding
      */
-    public XHTMLPrinter(Writer writer, String title, String encoding) {
-        this(writer, title, new HTMLRepresentation("XHTML 1.0 Transitional", encoding));
+    public XHTMLPrinter(Writer writer, String title, String docencoding) {
+        this(writer, title, new HTMLRepresentation("XHTML 1.0 Transitional", docencoding));
     }
 
     /**
@@ -60,6 +74,7 @@ public class XHTMLPrinter extends HTMLPrinter {
      * Prints text <code>text</code> in bold followed by a new line.
      *
      * @param text
+     * @return the current HTML printer
      */
     public HTMLPrinter printlnBold(String text) {
         return printlnTag("span",
@@ -69,6 +84,8 @@ public class XHTMLPrinter extends HTMLPrinter {
 
     /**
      * Prints an horizontal line separator followed by a new line.
+     *
+     * @return the current HTML printer
      */
     public HTMLPrinter printlnHLine() {
         printOTag("div", new XMLAttribute[] {
@@ -84,6 +101,7 @@ public class XHTMLPrinter extends HTMLPrinter {
      * Prints text <code>text</code> in bold.
      *
      * @param text
+     * @return the current HTML printer
      */
     public HTMLPrinter printBold(String text) {
         return printTag("span",
@@ -93,6 +111,8 @@ public class XHTMLPrinter extends HTMLPrinter {
 
     /**
      * Prints an horizontal line separator
+     *
+     * @return the current HTML printer
      */
     public HTMLPrinter printHLine() {
         printOTag("div", new XMLAttribute[] {
@@ -105,6 +125,7 @@ public class XHTMLPrinter extends HTMLPrinter {
      * Prints an horizontal line separator with attributes <code>attrs</code>.
      *
      * @param attrs
+     * @return the current HTML printer
      */
     public HTMLPrinter printHLine(XMLAttribute[] attrs) {
         return printHLine();
@@ -115,6 +136,7 @@ public class XHTMLPrinter extends HTMLPrinter {
      * followed by a new line.
      *
      * @param attrs
+     * @return the current HTML printer
      */
     public HTMLPrinter printlnMeta(XMLAttribute[] attrs) {
 	return printlnSTag("meta", attrs);
@@ -125,6 +147,7 @@ public class XHTMLPrinter extends HTMLPrinter {
      * followed by a new line.
      *
      * @param attrs
+     * @return the current HTML printer
      */
     public HTMLPrinter printlnLink(XMLAttribute[] attrs) {
 	return printlnSTag("link", attrs);
