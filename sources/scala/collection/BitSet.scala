@@ -60,33 +60,20 @@ abstract class BitSet with Function1[Int,Boolean] {
 
   /**
    * Returns a string representation of this bitset in hexadecimal form,
-   * e.g. the bitset 001000001100 (12 bits) is represented as "20c" and
-   * the bitset 00100000110 (11 bits) as "106".
+   * e.g. the bitset 001100000001 (12 bits) is represented as "{0, 8, 9}".
    *
    * @return the string representation for this bitset
    */
-  override def toString() = {
-    val sb = new StringBuffer();
-    val n = size % 4;
-    if (n > 0) {
-      val x = (if (apply(0))          4 else 0)
-            + (if (n > 1 && apply(1)) 2 else 0)
-            + (if (n > 2 && apply(2)) 1 else 0);
-      sb.append(Integer.toHexString(x));
-    }
-    var i = n;
-    while (i < size) {
-      val x = (if (apply(i))   8 else 0)
-            + (if (apply(i+1)) 4 else 0)
-            + (if (apply(i+2)) 2 else 0)
-            + (if (apply(i+3)) 1 else 0);
-      sb.append(Integer.toHexString(x));
-      i = i + 4
-    }
-    sb.toString()
-  }
+  override def toString() =
+    toSet(true).toString();
 
-  /** returns number of Int cells needed to store n bits */
-  protected def memsize(n:Int) = (size >>> 5) + { if(size < 32) 1 else 0 };
+  /**
+   * Returns the number of <code>Int</code> cells needed to store
+   * <code>n</code> bits.
+   *
+   * @param n
+   */
+  protected def memsize(n: Int) =
+    (size >>> 5) + { if (size < 32) 1 else 0 };
 
 }
