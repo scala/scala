@@ -13,6 +13,8 @@ import java.util._;
  * adapted from package jaco.framework.ant.AntCompilerTask
  *  (part of Matthias Zenger's jaco framework)
  *
+ * @todo deduce path to scala sources using path to tools.jar (brittle)
+ *
  * @author  Burak Emir
  * @version 1.5
  * $Id$
@@ -27,14 +29,22 @@ class AntTask extends Javac {
     private val fileUtils:FileUtils  = FileUtils.newFileUtils();
 
     override def execute():unit = {
-          val project = getProject();
-          //val old = project.getProperty("build.compiler");
-          project.setProperty("build.compiler", "scala.tools.scala4ant.AntAdaptor$class");
-          super.execute();
-          //if (old == null)
-          //     project.setProperty("build.compiler", "modern");
-          //else
-          //      project.setProperty("build.compiler", old);
+      try{
+        Class.forName("ch.epfl.lamp.fjbg.JFieldOrMethod"); // simple check
+
+        val project = getProject();
+        //val old = project.getProperty("build.compiler");
+        project.setProperty("build.compiler", "scala.tools.scala4ant.AntAdaptor$class");
+        super.execute();
+        //if (old == null)
+        //     project.setProperty("build.compiler", "modern");
+        //else
+        //      project.setProperty("build.compiler", old);
+      } catch {
+        case e:ClassNotFoundException =>
+          throw new BuildException("Cannot run scala4ant. It seems fjbg.jar is not in your CLASSPATH.");
+      }
+
     }
 
     def setForce( fc:boolean ) = {
