@@ -116,6 +116,7 @@ concurrent/Lock.scala
 concurrent/SyncChannel.scala
 concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
+# concurrent/jolib.scala
 concurrent/ops.scala
 concurrent/pilib.scala
 concurrent/Process.scala
