@@ -110,7 +110,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     /** Check that all conditions for overriding `other' by `member' are met.
      *  That is for overriding member M and overridden member O:
      *
-     *    1. M must have the same or stronger access priviliges as O.
+     *    1. M must have the same or stronger access privileges as O.
      *    2. O must not be final.
      *    3. O is deferred, or M has `override' modifier.
      *    4. O is not a class, nor a class constructor.

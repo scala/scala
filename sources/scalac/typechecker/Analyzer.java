@@ -444,6 +444,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	try {
 	    return checkNoEscapeMap.apply(tp);
 	} catch (Type.Error ex) {
+	    if (infer.isFullyDefined(pt)) return pt;
 	    error(pos, ex.msg + " as part of " + tp.unalias());
 	    return Type.ErrorType;
 	}
