@@ -413,11 +413,11 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Bind(Name name, Tree t):
-            print(TXT_LEFT_PAREN);
             printSymbolDefinition(tree.symbol(), name);
             print(Text.Space);
             print(TXT_AT);
             print(Text.Space);
+            print(TXT_LEFT_PAREN);
             print( t );
             print(TXT_RIGHT_PAREN);
             printType(tree);
