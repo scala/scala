@@ -91,7 +91,7 @@ sc			+= $(sc_OUTPUTDIR:%=-d $(call CYGWIN_FILE,%))
 sc			+= $(sc_ENCODING:%=-encoding %)
 sc			+= $(sc_SOURCE:%=-source %)
 sc			+= $(sc_TARGET:%=-target %)
-sc			+= $(sc_FILES:%=$(call CYGWIN_FILE,%))
+sc			+= $(sc_FILES:%=$(call CYGWIN_FILE,'%'))
 
 ##############################################################################
 # Functions

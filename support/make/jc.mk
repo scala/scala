@@ -91,7 +91,7 @@ jc			+= $(jc_OUTPUTDIR:%=-d $(call CYGWIN_FILE,%))
 jc			+= $(jc_ENCODING:%=-encoding %)
 jc			+= $(jc_SOURCE:%=-source %)
 jc			+= $(jc_TARGET:%=-target %)
-jc			+= $(jc_FILES:%=$(call CYGWIN_FILE,%))
+jc			+= $(jc_FILES:%=$(call CYGWIN_FILE,'%'))
 
 ##############################################################################
 # Functions

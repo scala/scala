@@ -38,7 +38,7 @@ WC_FILES		?= $(if $(FILES),$(FILES),$(PROJECT_SOURCES))
 # Rules
 
 wc		:
-	@$(WC_BINARY) $(WC_FLAGS) $(WC_FILES)
+	@$(WC_BINARY) $(WC_FLAGS) $(WC_FILES:%='%')
 
 .PHONY		: wc
 

@@ -44,7 +44,7 @@ grep		:
 	       "$(MAKE) $@ [FLAGS=<flags>] REGEX=<regex> [FILES=<files>]";\
 	    exit 1; \
 	fi
-	@$(GREP_BINARY) $(GREP_FLAGS) '$(GREP_REGEX)' $(GREP_FILES)
+	@$(GREP_BINARY) $(GREP_FLAGS) '$(GREP_REGEX)' $(GREP_FILES:%='%')
 
 .PHONY		: grep
 

@@ -130,7 +130,7 @@ all		: library
 all		: interpreter
 all		: scaladoc
 all		: dtd2scala
-#all		: library-doc
+all		: library-doc
 
 force		: fastclean
 	@$(make) all
@@ -208,15 +208,15 @@ library-doc	: .latest-library-sdc
 	touch $@
 
 .latest-library-jc	: $(LIBRARY_JC_FILES)
-	@$(make) jc target=LIBRARY LIBRARY_JC_FILES='$?'
+	@$(make) jc target=LIBRARY LIBRARY_JC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
 .latest-library-sc	: $(LIBRARY_SC_FILES)
-	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,\$$$$,$?)'
+	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
 .latest-library-sdc	: $(LIBRARY_SDC_FILES)
-	@$(make) sdc target=LIBRARY LIBRARY_SDC_FILES='$(subst $$,\$$$$,$(LIBRARY_SDC_FILES))'
+	@$(make) sdc target=LIBRARY
 	touch $@
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
