@@ -605,8 +605,17 @@ object testMZ {
     case _ => "default";
   }
 
+  def mat(xs: List[Any]) = xs match { // bug#196
+    case List(b@(()|())) =>
+    	"case, b = " + b;
+
+	case _ =>"default";
+
+  }
+
+
   def main:Unit = {
-                System.out.println("testMZ - bugs #132 #133b #180");
+                System.out.println("testMZ - bugs #132 #133b #180 #196");
     test[List[Expr],String](testFoo, List(Two(),Two(),Two(),Two()), "b = Two");
     test[List[Expr],String](testFoo, List(Two(),Two(),Two()), "a = Two");
     test[List[Expr],String](testFoo, List(Two(),Two()), "a = Two");
@@ -619,6 +628,8 @@ object testMZ {
     test[List[Any],String](testBar, List(On(), On(), On()), "case");
     test[List[Any],String](testBar, List(On(), On(), On(), On()), "default");
     test[List[Any],String](testBar, List(On(), On(), On(), On(), On()), "default");
+    test[List[Any], String](mat, List(1), "default");
+    test[List[Any], String](mat, List(), "case, b = List()");
 
     ()
   }
