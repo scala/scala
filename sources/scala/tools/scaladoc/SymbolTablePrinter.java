@@ -490,9 +490,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
             return this;
 
 	case ConstantType(Type base, Object value):
-	    System.out.println("CONSTANT" + type);
 	    print("(");
-	    printType(base);
+	    printType(base, user);
 	    print(value.toString());
 	    print(")");
 	    return this;
@@ -587,6 +586,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
 
     /**
      * ..
+     *
+     * @param prefix
      */
     public SymbolTablePrinter printPrefix0(Type prefix) {
         printCommonPart(prefix, Symbol.NONE);
