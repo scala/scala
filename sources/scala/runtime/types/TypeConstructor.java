@@ -79,7 +79,6 @@ public class TypeConstructor implements java.io.Serializable {
                            int zCount,
                            int mCount,
                            int pCount,
-                           boolean inheritsFromJavaClass,
                            int[] ancestorCode) {
         this.level = level;
         this.outer = outer;
