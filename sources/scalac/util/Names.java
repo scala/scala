@@ -24,6 +24,8 @@ public class Names {
     private static final String ACCESS_PREFIX = "access$";
     private static final String TUPLE_FIELD_PREFIX = "_";
     private static final String TYPE_PREFIX = "type$";
+    private static final String INSTANTIATE_PREFIX = "instantiate$";
+    private static final String TYPECONSTRUCTOR_PREFIX = "tConstructor$";
 
     public static Name ALIAS(ClassSymbol clasz) {
         return Name.fromString(ALIAS_PREFIX + clasz.name).toTypeName();
@@ -72,6 +74,14 @@ public class Names {
         return Name.fromString(TYPE_PREFIX + sym.name);
     }
 
+    public static Name INSTANTIATE(Symbol sym) {
+        return Name.fromString(INSTANTIATE_PREFIX + sym.name);
+    }
+
+    public static Name TYPECONSTRUCTOR(Symbol sym) {
+        return Name.fromString(TYPECONSTRUCTOR_PREFIX + sym.name);
+    }
+
     public static final Name ERROR = Name.fromString("<error>");
     public static final Name NOSYMBOL = Name.fromString("<none>");
     public static final Name EMPTY = Name.fromString("");
@@ -84,6 +94,7 @@ public class Names {
     public static final Name ROOT = Name.fromString("<root>");
 
     public static final Name CONSTRUCTOR = Name.fromString("<init>");
+    public static final Name CLASS_CONSTRUCTOR = Name.fromString("<clinit>");
     public static final Name INITIALIZER = Name.fromString("<init>");
     public static final Name INLINED_INITIALIZER = Name.fromString("$init$");
 
@@ -158,14 +169,18 @@ public class Names {
     public static final Name finalize = Name.fromString("finalize");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
+    public static final Name get = Name.fromString("get");
     public static final Name getClass = Name.fromString("getClass");
-    public static final Name hasAsInstance = Name.fromString("hasAsInstance");
+    public static final Name getInstantiation = Name.fromString("getInstantiation");
+    public static final Name getType = Name.fromString("getType");
+    public static final Name isInstance = Name.fromString("isInstance");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name hasNext = Name.fromString("hasNext");
     public static final Name head = Name.fromString("head");
     public static final Name isInstanceOf = Name.fromString("isInstanceOf");
     public static final Name isDefinedAt = Name.fromString("isDefinedAt");
     public static final Name isEmpty = Name.fromString("isEmpty");
+    public static final Name instantiate = Name.fromString("instantiate");
     public static final Name java = Name.fromString("java");
     public static final Name lang = Name.fromString("lang");
     public static final Name length = Name.fromString("length");
