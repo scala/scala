@@ -170,7 +170,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     Name.fromString("<error: " + tree + ">");
 
   private def errorTree(tree: Tree): Tree =
-    if (tree.isType()) errorTypeTree(tree) else errorTermTree(tree);
+    try {
+      if (tree.isType()) errorTypeTree(tree) else errorTermTree(tree);
+    } catch {
+      case ex: Type$Error =>
+        Tree.Empty;
+    }
 
   private def errorTypeTree(tree: Tree): Tree = {
     val symbol = context.owner.newErrorClass(errorName(tree).toTypeName());
@@ -2726,8 +2731,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		}
                 i = i + 1;
 	      }}
-	      if (matching1 >= 0 && matching2 < 0)
+	      if (matching1 >= 0 && matching2 < 0) {
 		fn1.setSymbol(alts(matching1)).setType(alttypes(matching1));
+              }
 	    case _ =>
 	  }
 

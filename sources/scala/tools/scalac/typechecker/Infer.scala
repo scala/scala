@@ -1205,6 +1205,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	} catch {
 	  case ex: NoInstance => false
 	}
+    case Type.ErrorType =>
+      true
     case _ =>
       if (!regularValue) {
 	val ftpe1 = applyType(ftpe);
@@ -1245,6 +1247,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	case _ =>
 	  false
       }
+    case Type.ErrorType =>
+      true
     case _ =>
       false
   }
