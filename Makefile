@@ -183,7 +183,6 @@ all		: scalap
 all		: dtd2scala
 all		: scala4ant
 all		: scalatest
-all		: library-doc
 
 force		: fastclean
 	@$(make) all
