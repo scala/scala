@@ -60,7 +60,6 @@ public abstract class Global {
     public final boolean debug;
     public final boolean explaintypes;
     public final boolean uniqid;
-    public final boolean xmlMarkup;
     public final boolean newMatch;
 
     public final boolean printtypes;
@@ -215,7 +214,6 @@ public abstract class Global {
         //this.optimize = args.optimize.optimize;
         this.debug = args.debug.value;
         this.uniqid = args.uniqid.value;
-        this.xmlMarkup = args.Xmarkup.value;
         this.newMatch = args.Xnewmatch.value;
         this.explaintypes = args.explaintypes.value;
         this.printtypes = args.types.value;

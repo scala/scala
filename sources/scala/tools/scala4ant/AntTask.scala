@@ -51,6 +51,7 @@ class AntTask extends Javac {
   def setForce( b:boolean ) = this.force = b;
   def getForce() = force;
 
+  /** only for compatibility, has no effect */
   def setXmarkup( b:boolean ) = this.xmarkup = b;
   def getXmarkup() = xmarkup;
 

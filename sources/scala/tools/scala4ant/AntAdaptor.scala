@@ -88,9 +88,6 @@ package scala.tools.scala4ant {
       //Console.println("setupScalaCommand");
       val cmd = new Commandline();
       val cp = new Path( this.project );
-      if( attributes.asInstanceOf[AntTask].getXmarkup() ) {
-        cmd.createArgument().setValue("-Xmarkup");
-      }
 
       if( destDir != null ) {
         cmd.createArgument().setValue( "-d" );
@@ -107,14 +104,6 @@ package scala.tools.scala4ant {
 
       cmd.createArgument().setValue("-classpath");
       cmd.createArgument().setPath( cp );
-
-      /*
-      var bcp = inferScalaPath(Path.systemClasspath.list());
-      val bcps:String = (bcp./: ("") { (x:String,y:String) => x+":"+y })
-        + ":" + System.getProperty("sun.boot.class.path");
-        + { val z = System.getProperty("scala.boot.class.path");
-           if( z != null ) z else "" };
-      */
 
       var bcp = inferScalaPath(Path.systemClasspath.list());
       val bcps = (bcp./: (PSEP) { (x:String,y:String) => x+PSEP+y });

@@ -238,7 +238,7 @@ public class CompilerCommand extends CommandParser {
             false),
 
         this.Xmarkup = new BooleanOptionParser(this,
-            "Xmarkup", "Allow XML markup in expressions and patterns",
+            "Xmarkup", "no effect, only for compatibility",
             false),
 
         this.Xnewmatch = new BooleanOptionParser(this,
