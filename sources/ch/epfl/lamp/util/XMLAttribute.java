@@ -10,7 +10,7 @@ package ch.epfl.lamp.util;
 
 /** An XML attribute.
  */
-public class Attr {
+public class XMLAttribute {
 
     /** Name of the attribute.
      */
@@ -20,7 +20,7 @@ public class Attr {
      */
     public String value;
 
-    public Attr(String name, String value) {
+    public XMLAttribute(String name, String value) {
 	this.name = name;
 	this.value = value;
     }
