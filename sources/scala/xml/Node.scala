@@ -37,7 +37,7 @@ trait Node {
   def child: Seq[Node];
 
   /** descendant axis (all descendants of this node) */
-  def descendant: List[Node] = child.toList.flatMap {
+  def descendant:List[Node] = child.toList.flatMap {
     x => x::x.descendant
   } ;
 

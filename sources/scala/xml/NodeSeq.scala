@@ -9,34 +9,47 @@
 
 package scala.xml ;
 
-/* a wrapper that adds some XPath navigation method */
+/** a wrapper around Seq[Node] that adds XPath and comprehension methods */
 class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
+
   def length = theSeq.length;
   def elements = theSeq.elements ;
   def apply( i:int ) = theSeq.apply( i );
 
-  /** projection function. Similar to XPath, use this./'foo to get a list
-   *  of all elements of this sequence that are labelled with "foo".
-   *  Use /'_ as a wildcard. The document order is preserved.
-   */
-  def \ (that: String):NodeSeq = {
-    that match {
-      case "_" =>
-        val it = elements.flatMap { x:Node => x.child.elements };
-        new NodeSeq( it.toList );
-    case _   =>
-        val list = elements.flatMap( y =>
-          y.child.elements.filter{ z:Node => z.label == that }).toList;
-      new NodeSeq( list );
-    }
+  /** structural equality */
+  override def equals( x:Any ) = x match {
+    case z:Node      => ( length == 1 ) && z == apply( 0 )
+    case z:Seq[Node] => sameElements( z )
+    case _           => false;
   }
 
-  def \\ ( that:String ):NodeSeq = {
-    val list = (elements.flatMap { x:Node => x.descendant_or_self.elements }).toList;
-    that match {
-      case "_" => new NodeSeq( list );
-      case _ => new NodeSeq( list.filter { z:Node => z.label == that });
-    }
+  /** projection function. Similar to XPath, use this \ "foo" to get a list
+   *  of all elements of this sequence that are labelled with "foo".
+   *  Use \ "_" as a wildcard. The document order is preserved.
+   */
+  def \ (that: String):NodeSeq = that match {
+    case "_" => for( val x <- this;
+                     val y <- new NodeSeq( x.child ) )
+                yield y
+    case _   => for( val x <- this;
+                     val y <- new NodeSeq( x.child );
+                     y.label == that )
+                yield { y }
+  }
+
+  /** projection function. Similar to XPath, use this \\ 'foo to get a list
+   *  of all elements of this sequence that are labelled with "foo".
+   *  Use \ "_" as a wildcard. The document order is preserved.
+   */
+
+  def \\ ( that:String ):NodeSeq = that match {
+      case "_" => for( val x <- this;
+                       val y <- new NodeSeq( x.descendant_or_self ))
+                  yield { y }
+      case _ => for( val x <- this;
+                     val y <- new NodeSeq( x.descendant_or_self );
+                     y.label == that)
+                  yield { y }
   }
 
   override def toString() = theSeq.elements.foldLeft ("") {
@@ -55,6 +68,10 @@ class NodeSeq( theSeq:Seq[Node] ) extends Seq[Node] {
 
   def flatMap( f:Node => NodeSeq ):NodeSeq = {
     new NodeSeq( asList flatMap { x => f(x).asList })
+  }
+
+  def filter( f:Node => boolean ):NodeSeq = {
+    new NodeSeq( asList filter f )
   }
 
 }

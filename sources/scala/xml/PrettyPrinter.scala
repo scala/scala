@@ -111,7 +111,7 @@ class PrettyPrinter( width:Int, step:Int ) {
 
   /* returns a formatted string containing well-formed XML
   **/
-  def toPrettyXML( n:Node ):String = {
+  def format( n:Node ):String = {
     reset();
     traverse( n, 0 );
     val sb = new StringBuffer();
@@ -135,10 +135,10 @@ class PrettyPrinter( width:Int, step:Int ) {
 
   /* returns a formatted string containing well-formed XML nodes.
   **/
-  def toPrettyXML( ns:Seq[Node] ):String = {
+  def format( ns:Seq[Node] ):String = {
     var sb2 = new StringBuffer();
     for( val n <- ns.elements ) {
-      sb2.append( toPrettyXML( n ))
+      sb2.append( format( n ))
     }
     sb2.toString();
   }

@@ -138,7 +138,7 @@ object Test with Application {
 
  );
 
-  assertSameElements(
+  assertEquals(
 
       new NodeSeq(List( parsedxml2 )) \\ "_",
 
@@ -192,6 +192,41 @@ object Test with Application {
       x.attribute("value") + y.attribute("bazValue")+ "!"
     },
     new NodeSeq(List(Text("38!"),Text("58!")))
-  )
+  );
+
+  val books =
+    <bks>
+      <book><title>Blabla</title></book>
+      <book><title>Blubabla</title></book>
+      <book><title>Baaaaaaalabla</title></book>
+    </bks>;
+
+  val reviews =
+    <reviews>
+      <entry><title>Blabla</title>
+      <remarks>
+        Hallo Welt.
+      </remarks>
+    </entry>
+      <entry><title>Blubabla</title>
+      <remarks>
+        Hello Blu
+      </remarks>
+  </entry>
+      <entry><title>Blubabla</title>
+      <remarks>
+        rem 2
+      </remarks>
+  </entry>
+    </reviews>;
+
+  Console.println( new scala.xml.PrettyPrinter(80, 5).format (
+    for( val t <- books \\ "title";
+         val r <- reviews \\ "entry"; r \ "title" == t  ) yield
+          <result>
+    { t }
+    { r }
+    </result>
+  ));
 
 }
