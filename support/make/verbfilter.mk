@@ -6,19 +6,25 @@
 ##############################################################################
 # Usage
 #
-#   make [VERBFILTER=<java-file>] <*.tex>
+#   make [VERBFILTER=<verbfilter-basename>] <*.tex>
 #
 ##############################################################################
 # Variables
 #
-# VERBFILTER		 = Verb filter source file
+# VERBFILTER		 = Verb filter base name
 #
 ##############################################################################
 # Examples
 #
-# Generate reference.tex by verbfiltering reference.verb.tex
+# Generate all .tex files produced by verbfiltering a .verb.tex file
 #
-#   make VERBFILTER=../../support/latex/verbfilterScala.java reference.tex
+#   make verbfilter
+#
+#
+# Generate reference.tex by verbfiltering reference.verb.tex with the
+# specified verbfilter
+#
+#   make VERBFILTER=../../support/latex/verbfilterScala reference.tex
 #
 ##############################################################################
 
@@ -29,12 +35,33 @@ JAVA			?= java
 JAVAC			?= javac
 
 ##############################################################################
+# Commands
+
+all			: verbfilter
+distclean		: verbfilter.distclean
+
+verbfilter		: $(patsubst %.verb.tex,%.tex,$(wildcard *.verb.tex))
+
+verbfilter.distclean	:
+	@for file in *.verb.tex; do \
+	    [ "$$file" = "*.verb.tex" ] || ( \
+	        echo $(RM) "$${file%.verb.tex}.tex"; \
+	        $(RM) "$${file%.verb.tex}.tex" ); \
+	done
+	$(RM) $(VERBFILTER:%=%.class)
+
+.PHONY			: verbfilter.distclean
+
+##############################################################################
 # Rules
 
-%.tex			: %.verb.tex $(VERBFILTER:%.java=%.class)
-	$(JAVA) -cp $(dir $(VERBFILTER)) $(notdir $(VERBFILTER:%.java=%)) $< $@
+%.tex			: %.verb.tex $(VERBFILTER:%=%.class)
+	$(JAVA) -cp $(dir $(VERBFILTER)) $(notdir $(VERBFILTER)) $< $@
 
-$(VERBFILTER:%.java=%.class): $(VERBFILTER)
+$(VERBFILTER:%=%.class)	: $(VERBFILTER:%=%.java)
 	$(JAVAC) $?
+
+.PRECIOUS		: %.tex
+.PRECIOUS		: $(VERBFILTER:%=%.class)
 
 ##############################################################################
