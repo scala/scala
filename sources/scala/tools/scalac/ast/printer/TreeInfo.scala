@@ -327,7 +327,26 @@ object TreeInfo {
       Nil;
   }
 
+  /** Return a textual representation of this t's symbol */
+  def symbolText(t: Tree): String = {
+    var prefix = "";
 
+    if (t.hasSymbol())
+      prefix = "[has] ";
+    if (t.definesSymbol())
+      prefix = "[defines] ";
+
+    prefix + t.symbol()
+  }
+
+  /** Return t's symbol type  */
+  def symbolTypeText(t: Tree): String = {
+    val s = t.symbol();
+    if (s != null)
+      s.`type`().toString();
+    else
+      "";
+  }
 }
 
 } // package

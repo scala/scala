@@ -140,12 +140,13 @@ class ASTTreeModel extends TreeModel {
 class WindowFrame {
   val frame = new JFrame("Scala AST");
   val topPane = new JPanel(new BorderLayout());
-  val topRightPane = new JPanel();
+  val topRightPane = new JPanel(new BorderLayout());
   val bottomPane = new JPanel(new BorderLayout());
   var splitPane: JSplitPane = _;
   var treeModel: TreeModel = _;
 
   val textArea: JTextArea = new JTextArea(20, 50);
+  val infoPanel = new InfoPanel();
 
 
   /** Create a frame that displays the AST.
@@ -165,11 +166,6 @@ class WindowFrame {
       /** Release the lock, so compilation may resume after the window is closed. */
       override def windowClosed(e: WindowEvent): Unit = lock.release;
     });
-
-    topPane.setMinimumSize(new java.awt.Dimension(150, 200));
-    bottomPane.setMinimumSize(new java.awt.Dimension(150, 200));
-
-    splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, topPane, bottomPane);
 
     val tree = new JTree(treeModel) {
       /** Return the string for a tree node. */
@@ -193,18 +189,20 @@ class WindowFrame {
     tree.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
       def valueChanged(e: javax.swing.event.TreeSelectionEvent): Unit = {
 	textArea.setText(e.getPath().getLastPathComponent().toString());
+	infoPanel.update(e.getPath().getLastPathComponent());
       }
     });
 
+    val topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, topPane, topRightPane);
     topPane.add(new JScrollPane(tree), BorderLayout.CENTER);
-    topPane.add(topRightPane, BorderLayout.EAST);
 
-    topRightPane.add(new InfoPanel());
+    topRightPane.add(infoPanel, BorderLayout.CENTER);
 
     bottomPane.add(new JScrollPane(textArea), BorderLayout.CENTER);
     textArea.setFont(new Font("monospaced", Font.PLAIN, 14));
     textArea.setEditable(false);
 
+    splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, topSplitPane, bottomPane);
     frame.getContentPane().add(splitPane);
     frame.pack();
     frame.setVisible(true);
@@ -213,17 +211,18 @@ class WindowFrame {
   def setTreeModel(tm: TreeModel): Unit = treeModel = tm;
 }
 
-
+/** Pannel that shows some information about the selected
+  * tree node (like symbol, type, etc) */
 class InfoPanel extends JPanel() {
   val symbolLine = Box.createHorizontalBox();
   val symbolAttLine = Box.createHorizontalBox();
   val symbolTypeLine = Box.createHorizontalBox();
   val treeTypeLine = Box.createHorizontalBox();
 
-  val symLabel = new JLabel("some");
-  val attLabel = new JLabel("[private, final, synthetic]");
-  val stypeLabel = new JLabel("...");
-  val ttypeLabel = new JLabel(".......");
+  val symLabel = new JLabel("");
+  val attLabel = new JLabel("");
+  val stypeLabel = new JLabel("");
+  val ttypeLabel = new JLabel("");
 
   setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
@@ -247,6 +246,23 @@ class InfoPanel extends JPanel() {
   add(symbolAttLine);
   add(symbolTypeLine);
   add(treeTypeLine);
+
+  def update(v: AnyRef): Unit =
+    if (v.isInstanceOf[Tree]) {
+      val t = v.asInstanceOf[Tree];
+
+      symLabel.setText(TreeInfo.symbolText(t));
+      stypeLabel.setText(TreeInfo.symbolTypeText(t));
+      ttypeLabel.setText(t.`type`().toString());
+    } else
+      reset;
+
+  def reset: Unit = {
+    symLabel.setText("");
+    stypeLabel.setText("");
+    ttypeLabel.setText("");
+    attLabel.setText("");
+  }
 }
 
 }  // package
