@@ -16,7 +16,7 @@ package scala.xml;
  * @param  text   text contained in this node, may not contain "?>"
 **/
 
-case class ProcInstr( target:String, text:Option[String] ) extends SpecialNode {
+case class ProcInstr(target:String, text:String) extends SpecialNode {
 
   final override def typeTag$:Int = -2;
 
@@ -27,11 +27,8 @@ case class ProcInstr( target:String, text:Option[String] ) extends SpecialNode {
   }
   if( !Parsing.isName( target ) )
     throw new IllegalArgumentException(target+" must be an XML Name");
-  else text match {
-    case Some(txt) => if( txt.indexOf("?>" ) != -1 )
-      throw new IllegalArgumentException(txt+" may not contain \"?>\"");
-    case _ =>
-  }
+  else if( text.indexOf("?>" ) != -1 )
+    throw new IllegalArgumentException(text+" may not contain \"?>\"");
 
   final override def equals(x:Any) = x match {
     case x @ ProcInstr( t2, s2 ) => target.equals( t2 ) && text.equals( s2 );
@@ -48,11 +45,9 @@ case class ProcInstr( target:String, text:Option[String] ) extends SpecialNode {
   final override def toString() = {
     val sb = new StringBuffer("<?");
     sb.append(target);
-    text match {
-      case Some(txt) =>
+    if( text.length() > 0 ) {
         sb.append(' ');
-        sb.append(txt);
-      case _ =>
+        sb.append(text);
     };
     sb.append("?>");
     sb.toString()

@@ -144,9 +144,9 @@ object Test  {
     val rows3 = <tr> a <!-- an XML comment --> b <?pinotext?> c <?pi text?> d </tr>;
 
     // these are not equal as comments are valid XML Info items.
-    assertEquals( rows2, Elem("","tr",e,Comment(" an XML comment "),ProcInstr("pinotext",None),ProcInstr("pi",Some("text"))));
+    assertEquals( rows2, Elem("","tr",e,Comment(" an XML comment "),ProcInstr("pinotext",""),ProcInstr("pi","text")));
 
-    assertEquals( rows3, Elem("","tr",e,Text("a"),Comment(" an XML comment "),Text("b"),ProcInstr("pinotext",None),Text("c"),ProcInstr("pi",Some("text")),Text("d")));
+    assertEquals( rows3, Elem("","tr",e,Text("a"),Comment(" an XML comment "),Text("b"),ProcInstr("pinotext",""),Text("c"),ProcInstr("pi","text"),Text("d")));
 
   }
 

@@ -5,7 +5,21 @@ import scala.collection.immutable.ListMap;
 
 abstract class MarkupParser[MarkupType, AVType] {
 
+
+  /** the handler of the markup */
   val handle: MarkupHandler[MarkupType, AVType];
+
+  /** if true, does not remove surplus whitespace */
+  val preserveWS: Boolean;
+
+  /** holds the position in the source file */
+  var pos: Int = _;
+
+  /** holds temporary values of pos */
+  var tmppos: Int = _;
+
+  /** holds the next character */
+  var ch: Char = _;
 
   /** character buffer, for names */
   protected val cbuf = new StringBuffer();
@@ -13,14 +27,6 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** append Unicode character to name buffer*/
   protected def putChar(c: char) = cbuf.append( c );
 
-  /** holds the next character */
-  var ch: Char = _;
-
-  /** holds the position in the source file */
-  var pos: Int = _;
-
-  /** whether to remove surplus whitespace or not */
-  val preserveWS: Boolean;
 
   var xEmbeddedBlock = false;
 
@@ -30,8 +36,10 @@ abstract class MarkupParser[MarkupType, AVType] {
   /** this method should assign the first character of the input to ch */
   def init: Unit;
 
+  val enableEmbeddedExpressions: Boolean;
+
   /** report a syntax error */
-  def xSyntaxError(str:String): Unit;
+  def reportSyntaxError(str:String): Unit;
 
   /** munch expected XML token, report syntax error for unexpected
   */
@@ -39,14 +47,15 @@ abstract class MarkupParser[MarkupType, AVType] {
     if( ch == that )
       nextch;
     else
-      xSyntaxError("'" + that + "' expected instead of '" + ch + "'");
+      reportSyntaxError("'" + that + "' expected instead of '" + ch + "'");
   }
 
   /** checks whether next character starts a Scala block, if yes, skip it.
    * @return true if next character starts a scala block
    */
   def xCheckEmbeddedBlock:Boolean = {
-    xEmbeddedBlock = ( ch == '{' ) && { nextch;( ch != '{' ) };
+    xEmbeddedBlock =
+      enableEmbeddedExpressions && ( ch == '{' ) && { nextch;( ch != '{' ) };
     return xEmbeddedBlock;
   }
 
@@ -69,16 +78,16 @@ abstract class MarkupParser[MarkupType, AVType] {
           val tmp = xAttributeValue( delim );
           nextch;
           handle.attributeCDataValue( pos1, tmp );
-        case '{' =>
+        case '{' if enableEmbeddedExpressions =>
           nextch;
           handle.attributeEmbedded(pos1, xEmbeddedExpr);
         case _ =>
-	  xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
+	  reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
           handle.attributeCDataValue( pos1, "<syntax-error>" )
       };
       // well-formedness constraint: unique attribute names
       if( aMap.contains( key ))
-        xSyntaxError( "attribute "+key+" may only be defined once" );
+        reportSyntaxError( "attribute "+key+" may only be defined once" );
       aMap.update( key, value );
       if(( ch != '/' )&&( ch != '>' ))
         xSpace;
@@ -99,7 +108,7 @@ abstract class MarkupParser[MarkupType, AVType] {
     // @todo: normalize attribute value
     // well-formedness constraint
     if( str.indexOf('<') != -1 ) {
-      xSyntaxError( "'<' not allowed in attrib value" ); ""
+      reportSyntaxError( "'<' not allowed in attrib value" ); ""
     } else {
       str
     }
@@ -124,7 +133,7 @@ abstract class MarkupParser[MarkupType, AVType] {
   def xEndTag(n: String) = {
     xToken('/');
     val m = xName;
-    if(n != m) xSyntaxError( "expected closing tag of " + n/* +", not "+m*/);
+    if(n != m) reportSyntaxError( "expected closing tag of " + n/* +", not "+m*/);
     xSpaceOpt;
     xToken('>')
   }
@@ -133,7 +142,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    *
    * see [15]
    */
-  def xCharData:scala.xml.CharData = {
+  def xCharData: MarkupType = {
     xToken('[');
     xToken('C');
     xToken('D');
@@ -141,6 +150,7 @@ abstract class MarkupParser[MarkupType, AVType] {
     xToken('T');
     xToken('A');
     xToken('[');
+    val pos1 = pos;
     val sb:StringBuffer = new StringBuffer();
     while (true) {
       if( ch==']'  &&
@@ -148,11 +158,11 @@ abstract class MarkupParser[MarkupType, AVType] {
          { sb.append( ch ); nextch; ch == '>' } ) {
         sb.setLength( sb.length() - 2 );
         nextch;
-        return scala.xml.CharData( sb.toString() );
+        return handle.charData( pos1, sb.toString() );
       } else sb.append( ch );
       nextch;
     }
-    return null; // this cannot happen;
+    throw FatalError("this cannot happen");
   };
 
   /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"
@@ -171,12 +181,12 @@ abstract class MarkupParser[MarkupType, AVType] {
         case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
           if( !hex )
-            xSyntaxError("hex char not allowed in decimal char ref\n"
+            reportSyntaxError("hex char not allowed in decimal char ref\n"
                          +"Did you mean to write &#x ?");
           else
             i = i * base + Character.digit( ch, base );
         case _ =>
-          xSyntaxError("character '"+ch+" not allowed in char ref\n");
+          reportSyntaxError("character '"+ch+" not allowed in char ref\n");
       }
       nextch;
     }
@@ -188,7 +198,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    *
    * see [15]
    */
-  def xComment:scala.xml.Comment = {
+  def xComment: MarkupType = {
     val sb:StringBuffer = new StringBuffer();
     xToken('-');
     xToken('-');
@@ -197,11 +207,11 @@ abstract class MarkupParser[MarkupType, AVType] {
         sb.setLength( sb.length() - 1 );
         nextch;
         xToken('>');
-        return scala.xml.Comment( sb.toString() );
+        return handle.comment( pos, sb.toString() );
       } else sb.append( ch );
       nextch;
     }
-    return null; // this cannot happen;
+    throw FatalError("this cannot happen");
   };
 
   def appendText(pos: int, ts:mutable.Buffer[MarkupType], txt:String):Unit = {
@@ -221,21 +231,22 @@ abstract class MarkupParser[MarkupType, AVType] {
       if( xEmbeddedBlock ) {
         ts.append( xEmbeddedExpr );
       } else {
-        val pos2 = pos;
+        tmppos = pos;
         ch match {
           case '<' => // another tag
             nextch;
             ch match {
-              case '/' => exit = true;            // end tag
+              case '/' =>
+                exit = true;                    // end tag
               case '!' =>
                 nextch;
                 if( '[' == ch )                 // CDATA
-                  ts.append(handle.charData( pos2, xCharData ));
-                else                              // comment
-                  ts.append(handle.comment( pos2, xComment ));
-              case '?' =>                         // PI
+                  ts.append( xCharData );
+                else                            // comment
+                  ts.append( xComment );
+              case '?' =>                       // PI
                 nextch;
-                ts.append(handle.procInstr( pos2, xProcInstr ));
+                ts.append( xProcInstr );
               case _   =>
                 ts.append( element );     // child
             }
@@ -246,8 +257,7 @@ abstract class MarkupParser[MarkupType, AVType] {
             } else {
               val str = new StringBuffer("{");
               str.append( xText );
-              appendText(pos2, ts, str.toString());
-              //@todo
+              appendText(tmppos, ts, str.toString());
             }
           // postcond: xEmbeddedBlock == false!
           case '&' => // EntityRef or CharRef
@@ -255,16 +265,16 @@ abstract class MarkupParser[MarkupType, AVType] {
             ch match {
               case '#' => // CharacterRef
                 nextch;
-              val theChar = handle.text( pos2, xCharRef );
+              val theChar = handle.text( tmppos, xCharRef );
               xToken(';');
               ts.append( theChar );
               case _ => // EntityRef
                 val n = xName ;
                 xToken(';');
-                ts.append( handle.entityRef( pos2, n ) );
+                ts.append( handle.entityRef( tmppos, n ) );
             }
           case _ => // text content
-            appendText(pos2, ts, xText);
+            appendText(tmppos, ts, xText);
           // here xEmbeddedBlock might be true
         }
       }
@@ -306,7 +316,7 @@ abstract class MarkupParser[MarkupType, AVType] {
       cbuf.setLength( 0 );
       n
     } else {
-      xSyntaxError( "name expected" );
+      reportSyntaxError( "name expected" );
       new String();
     }
   }
@@ -323,7 +333,7 @@ abstract class MarkupParser[MarkupType, AVType] {
     if( xml.Parsing.isSpace( ch ) ) {
       nextch; xSpaceOpt
     } else {
-      xSyntaxError("whitespace expected");
+      reportSyntaxError("whitespace expected");
     }
   }
 
@@ -331,7 +341,7 @@ abstract class MarkupParser[MarkupType, AVType] {
    *
    * see [15]
    */
-  def xProcInstr:scala.xml.ProcInstr = {
+  def xProcInstr: MarkupType = {
     val sb:StringBuffer = new StringBuffer();
     val n = xName;
     if( xml.Parsing.isSpace( ch ) ) {
@@ -340,7 +350,7 @@ abstract class MarkupParser[MarkupType, AVType] {
         if( ch=='?' && { sb.append( ch ); nextch; ch == '>' } ) {
           sb.setLength( sb.length() - 1 );
           nextch;
-          return scala.xml.ProcInstr( n.toString(), Some(sb.toString()) );
+          return handle.procInstr(tmppos, n.toString(), sb.toString());
         } else
           sb.append( ch );
         nextch;
@@ -348,13 +358,13 @@ abstract class MarkupParser[MarkupType, AVType] {
     };
     xToken('?');
     xToken('>');
-   scala.xml.ProcInstr( n.toString(), None );
+    return handle.procInstr(tmppos, n.toString(), sb.toString());
   }
 
   /** parse character data.
   *   precondition: xEmbeddedBlock == false (we are not in a scala block)
   */
-  def xText:String = {
+  def xText: String = {
     if( xEmbeddedBlock ) throw FatalError("internal error: encountered embedded block"); // assert
 
     if( xCheckEmbeddedBlock )

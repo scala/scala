@@ -214,6 +214,7 @@ xml/nobinding/NoBindingFactoryAdapter.scala
 xml/nobinding/XML.scala
 
 xml/parsing/AttribValue.scala
+xml/parsing/ConstructingHandler.scala
 xml/parsing/FatalError.scala
 xml/parsing/MarkupParser.scala
 xml/parsing/MarkupHandler.scala
