@@ -7,6 +7,7 @@
 \usepackage{modefs}
 \usepackage{math}
 \usepackage{scaladefs}
+\renewcommand{\todo}[1]{}
 
 \ifpdf
     \pdfinfo {
@@ -19,7 +20,7 @@
     }
 \fi
 
-\newcommand{\exercise}{\paragraph{Exercise}}
+%\newenvironment{exercise}{\paragraph{Exercise}}{}
 \newcommand{\rewriteby}[1]{\mbox{\tab\tab\rm(#1)}}
 
 \renewcommand{\doctitle}{Scala By Example\\[33mm]\ }
@@ -36,7 +37,7 @@
 
 \chapter{\label{chap:intro}Introduction}
 
-\input{Rationale}
+\input{ScalaRationale}
 
 The rest of this document is structured as
 follows. Chapters~\ref{chap:example-one} and
@@ -418,38 +419,39 @@ functions.
 
 \section{Expressions And Simple Functions}
 
-A Scala system comes with an interpreter which can be seen as a
-fancy calculator. A user interacts with the calculator by typing in
-expressions and obtaining the results of their evaluation. Example:
+A Scala system comes with an interpreter which can be seen as a fancy
+calculator. A user interacts with the calculator by typing in
+expressions. The calculator returns the evaluation results and their
+types. Example:
 
 \begin{lstlisting}
-? 87 + 145
-232
+> 87 + 145
+232: scala.Int
 
-? 1000 - 333
-667
+> 5 + 2 * 3
+11: scala.Int
 
-? 5 + 2 * 3
-11
+> "hello" + " world!"
+hello world: scala.String
 \end{lstlisting}
 It is also possible to name a sub-expression and use the name instead
 of the expression afterwards:
 \begin{lstlisting}
-? def size = 2
-def size: int
+> def scale = 5
+def scale: int
 
-? 5 * size
-10
+> 7 * scale
+35: scala.Int
 \end{lstlisting}
 \begin{lstlisting}
-? def pi = 3.14159
-def pi: double
+> def pi = 3.14159
+def pi: scala.Double
 
-? def radius = 10
-def radius: int
+> def radius = 10
+def radius: scala.Int
 
-? 2 * pi * radius
-62.8318
+> 2 * pi * radius
+62.8318: scala.Double
 \end{lstlisting}
 Definitions start with the reserved word \code{def}; they introduce a
 name which stands for the expression following the \code{=} sign.  The
@@ -494,27 +496,30 @@ called {\em reduction}.
 
 Using \code{def}, one can also define functions with parameters. Example:
 \begin{lstlisting}
-? def square(x: double) = x * x
-def square(x: double): double
+> def square(x: double) = x * x
+def square(x: double): scala.Double
 
-? square(2)
-4.0
+> square(2)
+4.0: scala.Double
 
-? square(5 + 4)
-81.0
+> square(5 + 4)
+81.0: scala.Double
 
-? square(square(4))
-256.0
+> square(square(4))
+256.0: scala.Double
 
-? def sumOfSquares(x: double, y: double) = square(x) + square(y)
-def sumOfSquares(x: double, y: double): double
+> def sumOfSquares(x: double, y: double) = square(x) + square(y)
+def sumOfSquares(x: scala.Double, y: scala.Double): scala.Double
 \end{lstlisting}
 
 Function parameters follow the function name and are always enclosed
 in parentheses.  Every parameter comes with a type, which is indicated
-following the parameter name and a colon. At the present time, we only
-need basic numeric types such as the type \code{double} of double
-precision numbers. These are written as in Java.
+following the parameter name and a colon.  At the present time, we
+only need basic numeric types such as the type \code{scala.Double} of
+double precision numbers. Scala defines {\em type aliases} for some
+standard types, so we can write numeric types as in Java. For instance
+\code{double} is a type alias of \code{scala.Double} and \code{int} is
+a type alias for \code{scala.Int}.
 
 Functions with parameters are evaluated analogously to operators in
 expressions. First, the arguments of the function are evaluated (in
@@ -565,11 +570,11 @@ Call-by-value is usually more efficient than call-by-name, but a
 call-by-value evaluation might loop where a call-by-name evaluation
 would terminate. Consider:
 \begin{lstlisting}
-? def loop: int = loop
-def loop: int
+> def loop: int = loop
+def loop: scala.Int
 
-? def first(x: int, y: int) = x
-def first(x: int, y: int): int
+> def first(x: int, y: int) = x
+def first(x: scala.Int, y: scala.Int): scala.Int
 \end{lstlisting}
 Then \code{first(1, loop)} reduces with call-by-name to \code{1},
 whereas the same term reduces with call-by-value repeatedly to itself,
@@ -586,13 +591,13 @@ if the parameter is preceded by \code{def}.
 \example\ 
  
 \begin{lstlisting}
-? def constOne(x: int, def y: int) = 1
-constOne(x: int, def y: int): int
+> def constOne(x: int, def y: int) = 1
+constOne(x: scala.Int, def y: scala.Int): scala.Int
 
-? constOne(1, loop)
-1
+> constOne(1, loop)
+1: scala.Int
 
-? constOne(loop, 2)                    // gives an infinite loop.
+> constOne(loop, 2)                    // gives an infinite loop.
 ^C
 \end{lstlisting}
 
@@ -608,7 +613,7 @@ expression \code{ ... ? ... : ...}.
 \example\ 
 
 \begin{lstlisting}
-? def abs(x: double) = if (x >= 0) x else -x
+> def abs(x: double) = if (x >= 0) x else -x
 abs(x: double): double
 \end{lstlisting}
 Scala's boolean expressions are similar to Java's; they are formed
@@ -665,7 +670,7 @@ return type for better documentation.
 
 As a second step, we define the two functions called by
 \code{sqrtIter}: a function to \code{improve} the guess and a
-termination test \code{isGoodEnough}. Here's their definition.
+termination test \code{isGoodEnough}. Here is their definition.
 \begin{lstlisting}
 def improve(guess: double, x: double) = 
   (guess + x / guess) / 2;
@@ -680,11 +685,14 @@ of \code{sqrtIter}.
 def sqrt(x: double) = sqrtIter(1.0, x);
 \end{lstlisting}
 
-\exercise The \code{isGoodEnough} test is not very precise for small numbers
-and might lead to non-termination for very large ones (why?).
-Design a different version \code{isGoodEnough} which does not have these problems.
+\begin{exercise} The \code{isGoodEnough} test is not very precise for small
+numbers and might lead to non-termination for very large ones (why?).
+Design a different version of \code{isGoodEnough} which does not have
+these problems.
+\end{exercise}
 
-\exercise Trace the execution of the \code{sqrt(4)} expression.
+\begin{exercise} Trace the execution of the \code{sqrt(4)} expression.
+\end{exercise}
 
 \section{Nested Functions}
 
@@ -833,8 +841,9 @@ re-use the stack frame of a directly tail-recursive function whose
 last action is a call to itself.  Other tail calls might be optimized
 also, but one should not rely on this across implementations.
 
-\exercise Design a tail-recursive version of
+\begin{exercise} Design a tail-recursive version of
 \code{factorial}.
+\end{exercise}
 
 \chapter{\label{chap:first-class-funs}First-Class Functions}
 
@@ -993,8 +1002,8 @@ val sumReciprocals = sum(x => 1.0/x);
 \end{lstlisting}
 These functions can be applied like other functions. For instance,
 \begin{lstlisting}
-? sumCubes(1, 10) + sumReciprocals(10, 20)
-3025.7687714031754
+> sumCubes(1, 10) + sumReciprocals(10, 20)
+3025.7687714031754: scala.Double
 \end{lstlisting}
 How are function-returning functions applied? As an example, in the expression
 \begin{lstlisting}
@@ -1057,8 +1066,8 @@ This is possible because function types associate to the right. I.e.
 T$_1$ => T$_2$ => T$_3$       $\mbox{is equivalent to}$     T$_1$ => (T$_2$ => T$_3$)
 \end{lstlisting}
 
-\subsection*{Exercises:}
 
+\begin{exercise}
 1. The \code{sum} function uses a linear recursion. Can you write a
 tail-recursive one by filling in the ??'s?
 
@@ -1071,14 +1080,21 @@ def sum(f: int => double)(a: int, b: int): double = {
   iter(??, ??)
 }
 \end{lstlisting}
+\end{exercise}
 
-2. Write a function \code{product} that computes the product of the
+\begin{exercise}
+Write a function \code{product} that computes the product of the
 values of functions at points over a given range.
+\end{exercise}
 
-3. Write \code{factorial} in terms of \code{product}.
+\begin{exercise}
+Write \code{factorial} in terms of \code{product}.
+\end{exercise}
 
-4. Can you write an even more general function which generalizes both
+\begin{exercise}
+Can you write an even more general function which generalizes both
 \code{sum} and \code{product}?
+\end{exercise}
 
 \section{Example: Finding Fixed Points of Functions}
 
@@ -1145,6 +1161,7 @@ One way to control such oscillations is to prevent the guess from changing too m
 This can be achieved by {\em averaging} successive values of the original sequence:
 \begin{lstlisting}
 > def sqrt(x: double) = fixedPoint(y => (y + x/y) / 2)(1.0)
+def sqrt(x: scala.Double): scala.Double
 > sqrt(2.0)
   1.5
   1.4166666666666665
@@ -1175,8 +1192,9 @@ def sqrt(x: double) = fixedPoint(averageDamp(y => x/y))(1.0)
 \end{lstlisting}
 This expresses the elements of the algorithm as clearly as possible.
 
-\exercise Write a function for cube roots using \code{fixedPoint} and 
+\begin{exercise} Write a function for cube roots using \code{fixedPoint} and 
 \code{averageDamp}.
+\end{exercise}
 
 \section{Summary}
 
@@ -1551,10 +1569,11 @@ Both \code{EmptySet} and \code{NonEmptySet} extend class
 \code{IntSet}.  This implies that types \code{EmptySet} and
 \code{NonEmptySet} conform to type \code{IntSet} -- a value of type \code{EmptySet} or \code{NonEmptySet} may be used wherever a value of type \code{IntSet} is required.
 
-\exercise Write methods \code{union} and \code{intersection} to form
+\begin{exercise} Write methods \code{union} and \code{intersection} to form
 the union and intersection between two sets.
+\end{exercise}
 
-\exercise Add a method 
+\begin{exercise} Add a method 
 \begin{lstlisting}
 def excl(x: int)
 \end{lstlisting}
@@ -1564,6 +1583,7 @@ it is useful to also implement a test method
 def isEmpty: boolean
 \end{lstlisting}
 for sets.
+\end{exercise}
 
 \paragraph{Dynamic Binding}
 
@@ -1606,7 +1626,7 @@ Dynamic method dispatch is analogous to higher-order function
 calls. In both cases, the identity of code to be executed is known
 only at run-time. This similarity is not just superficial. Indeed,
 Scala represents every function value as an object (see
-Section~\ref{sec:funs-are-objects}).
+Section~\ref{sec:functions}).
 
 
 \paragraph{Objects}
@@ -1798,7 +1818,7 @@ call with the constructor argument as receiver. The recursion will
 terminate once the receiver is the \code{Zero} object (which is
 guaranteed to happen eventually because of the way numbers are formed).
 
-\exercise Write an implementation \code{Integer} of integer numbers
+\begin{exercise} Write an implementation \code{Integer} of integer numbers
 The implementation should support all operations of class \code{Nat}
 while adding two methods
 \begin{lstlisting}
@@ -1813,6 +1833,7 @@ implementation. (Hint: There are two possible ways to implement
 Or one can generalize the given implementation of \code{Nat} to
 \code{Integer}, using the three subclasses \code{Zero} for 0, 
 \code{Succ} for positive numbers and \code{Pred} for negative numbers.)
+\end{exercise}
 
 
 
@@ -2195,7 +2216,7 @@ trait Expr {
 }
 \end{lstlisting}
 
-\exercise Consider the following definitions representing trees
+\begin{exercise} Consider the following definitions representing trees
 of integers.  These definitions can be seen as an alternative
 representation of \code{IntSet}:
 \begin{lstlisting}
@@ -2213,6 +2234,7 @@ def insert(t: IntTree, v: int): IntTree = t match { ...
   ...
 }
 \end{lstlisting}
+\end{exercise}
 
 \paragraph{Pattern Matching Anonymous Functions}
 
@@ -2697,7 +2719,7 @@ divmod(x, y) match {
 Note that type parameters are never used in patterns; it would have
 been illegal to write case \code{Pair[int, int](n, d)}.
 
-\section{Functions}
+\section{Functions}\label{sec:functions}
 
 Scala is a functional language in that functions are first-class
 values.  Scala is also an object-oriented language in that every value
@@ -2864,8 +2886,9 @@ def isort(xs: List[int]): List[int] =
   else insert(xs.head, isort(xs.tail))
 \end{lstlisting}
 
-\exercise Provide an implementation of the missing function
+\begin{exercise} Provide an implementation of the missing function
 \code{insert}.
+\end{exercise}
 
 \paragraph{List patterns} In fact, \code{::} is defined as a case
 class in Scala's standard library. Hence, it is possible to decompose
@@ -2933,7 +2956,8 @@ def length = match {
   case x :: xs => 1 + xs.length
 }
 \end{lstlisting}
-\exercise Design a tail-recursive version of \code{length}.
+\begin{exercise} Design a tail-recursive version of \code{length}.
+\end{exercise}
 
 The next two functions are the complements of \code{head} and
 \code{tail}.
@@ -3207,7 +3231,7 @@ This function can be used for printing all elements of a list, for instance:
   xs foreach (x => System.out.println(x))
 \end{lstlisting} 
 
-\exercise Consider a function which squares all elements of a list and
+\begin{exercise} Consider a function which squares all elements of a list and
 returns a list with the results. Complete the following two equivalent
 definitions of \code{squareList}.
 
@@ -3219,6 +3243,7 @@ def squareList(xs: List[int]): List[int] = xs match {
 def squareList(xs: List[int]): List[int] = 
   xs map ??
 \end{lstlisting}
+\end{exercise}
 
 \paragraph{Filtering Lists}
 Another common operation selects from a list all elements fulfilling a
@@ -3382,7 +3407,7 @@ For associative and commutative operators, \code{/:} and
 in efficiency).  But sometimes, only one of the two operators is
 appropriate or has the right type:
 
-\exercise Consider the problem of writing a function \code{flatten},
+\begin{exercise} Consider the problem of writing a function \code{flatten},
 which takes a list of element lists as arguments. The result of
 \code{flatten} should be the concatenation of all element lists into a
 single list. Here is the an implementation of this method in terms of 
@@ -3400,6 +3425,7 @@ library. It can be accessed from user program by calling
 \code{List.flatten}. Note that \code{flatten} is not a method of class
 \code{List} -- it would not make sense there, since it applies only
 to lists of lists, not to all lists in general.
+\end{exercise}
 
 \paragraph{List Reversal Again} We have seen in 
 Section~\ref{sec:list-first-order} an implementation of method
@@ -3440,7 +3466,7 @@ def reverse: List[a] =
 (Remark: The type annotation of \code{Nil} is necessary 
 to make the type inferencer work.)
 
-\exercise Fill in the missing expressions to complete the following
+\begin{exercise} Fill in the missing expressions to complete the following
 definitions of some basic list-manipulation operations as fold
 operations.
 \begin{lstlisting}
@@ -3450,6 +3476,7 @@ def mapFun[a, b](xs: List[a], f: a => b): List[b] =
 def lengthFun[a](xs: List[a]): int =
   (0 /: xs){ ?? }
 \end{lstlisting}
+\end{exercise}
 
 \paragraph{Nested Mappings}
 
@@ -3663,10 +3690,11 @@ For the right-hand side, we have:
 \end{lstlisting}
 So the case (and with it the property) is established.
 
-\exercise
+\begin{exercise}
 Show by induction on \code{xs} that \code{xs ::: List()  =  xs}.
 \es
 \bsh{Example (2)}
+\end{exercise}
 
 As a more difficult example, consider function
 \begin{lstlisting}
@@ -3718,9 +3746,10 @@ Instead we have to {\em generalize} the equation to:
 This equation can be proved by a second induction argument over \code{ys}.
 (See blackboard).
 
-\exercise
+\begin{exercise}
 Is it the case that \code{(xs drop m) at n  =  xs at (m + n)} for all 
 natural numbers \code{m}, \code{n} and all lists \code{xs}?
+\end{exercise}
 
 \es
 \bsh{Structural Induction on Trees}
@@ -4015,13 +4044,14 @@ def queens(n: int): List[List[int]] = {
 }
 \end{lstlisting}
 
-\exercise Write the function
+\begin{exercise} Write the function
 \begin{lstlisting}
   def isSafe(col: int, queens: List[int], delta: int): boolean
 \end{lstlisting}
 which tests whether a queen in the given column \verb@col@ is safe with 
 respect to the \verb@queens@ already placed. Here, \verb@delta@ is the difference between the row of the queen to be
 placed and the row of the first queen in the list.
+\end{exercise}
 
 \section{Querying with For-Comprehensions}
 
@@ -4156,20 +4186,22 @@ Not surprisingly, the translation of the for-comprehension in the body of
 Similarly, \code{Demo.flatMap} and \code{Demo.filter} translate to
 \code{flatMap} and \code{filter} in class \code{List}.
 
-\exercise
+\begin{exercise}
 Define the following function in terms of \code{for}.
 \begin{lstlisting}
 def flatten(xss: List[List[a]]): List[a] =
   (xss :\ List()) ((xs, ys) => xs ::: ys)
 \end{lstlisting}
+\end{exercise}
 
-\exercise
+\begin{exercise}
 Translate
 \begin{lstlisting}
 for { val b <- books; val a <- b.authors; a startsWith "Bird" } yield b.title
 for { val b <- books; (b.title indexOf "Program") >= 0 } yield b.title
 \end{lstlisting}
 to higher-order functions.
+\end{exercise}
 
 \section{For-Loops}\label{sec:for-loops}
 
@@ -4502,7 +4534,7 @@ def whileLoop(def condition: boolean)(def command: unit): unit =
 Note that \code{whileLoop} is tail recursive, so it operates in
 constant stack space.
 
-\exercise Write a function \code{repeatLoop}, which should be 
+\begin{exercise} Write a function \code{repeatLoop}, which should be 
 applied as follows:
 \begin{lstlisting}
 repeatLoop { command } ( condition )
@@ -4511,6 +4543,8 @@ Is there also a way to obtain a loop syntax like the following?
 \begin{lstlisting}
 repeatLoop { command } until ( condition )
 \end{lstlisting}
+\end{exercise}
+
 Some other control constructs known from C and Java are missing in
 Scala: There are no \code{break} and \code{continue} jumps for loops.
 There are also no for-loops in the Java sense -- these have been
@@ -4694,11 +4728,13 @@ def andGate(a1: Wire, a2: Wire, output: Wire) = {
 }
 \end{lstlisting}
 
-\exercise Write the implementation of \code{orGate}.
+\begin{exercise} Write the implementation of \code{orGate}.
+\end{exercise}
 
-\exercise Another way is to define an or-gate by a combination of
+\begin{exercise} Another way is to define an or-gate by a combination of
 inverters and and gates. Define a function \code{orGate} in terms of
 \code{andGate} and \code{inverter}. What is the delay time of this function?
+\end{exercise}
 
 \paragraph{The Simulation Class}
 
@@ -5043,7 +5079,7 @@ for (val i <- Iterator.range(1, 100))
   System.out.println(i * i);
 \end{lstlisting}
 
-\paragraph{Zip}. Method \code{zip} takes another iterator and
+\paragraph{Zip} Method \code{zip} takes another iterator and
 returns an iterator consisting of pairs of corresponding elements
 returned by the two iterators.
 \begin{lstlisting}
@@ -5151,7 +5187,7 @@ yield i
 In this chapter we describe how to write combinator parsers in
 Scala. Such parsers are constructed from predefined higher-order
 functions, so called {\em parser combinators}, that closely model the
-constructions of an EBNF grammar \cite{ebnf}.
+constructions of an EBNF grammar \cite{wirth:ebnf}.
 
 As running example, we consider parsers for possibly nested
 lists of identifiers and numbers, which
@@ -5594,19 +5630,21 @@ object Test {
 }
 \end{lstlisting}
 
-\exercise\label{exercise:end-marker} The parsers we have defined so
+\begin{exercise}\label{exercise:end-marker} The parsers we have defined so
 far can succeed even if there is some input beyond the parsed text. To
 prevent this, one needs a parser which recognizes the end of input.
 Redesign the parser library so that such a parser can be introduced.
 Which classes need to be modified?
+\end{exercise}
 
 \chapter{\label{sec:hm}Hindley/Milner Type Inference}
 
 This chapter demonstrates Scala's data types and pattern matching by
-developing a type inference system in the Hindley/Milner style. The
-source language for the type inferencer is lambda calculus with a let
-construct called Mini-ML. Abstract syntax trees for the Mini-ML are
-represented by the following data type of \code{Terms}.
+developing a type inference system in the Hindley/Milner style
+\cite{milner:polymorphism}. The source language for the type inferencer is
+lambda calculus with a let construct called Mini-ML. Abstract syntax
+trees for the Mini-ML are represented by the following data type of
+\code{Terms}.
 \begin{lstlisting}
 trait Term {}
 case class Var(x: String) extends Term {
@@ -5826,7 +5864,7 @@ term $e$, a proto-type $t$, and a
 pre-existing substitution $s$.  The function yields a substitution
 $s'$ that extends $s$ and that
 turns $s'(env) \ts e: s'(t)$ into a derivable type judgment according
-to the derivation rules of the Hindley/Milner type system \cite{hindley-milner}.  A
+to the derivation rules of the Hindley/Milner type system \cite{milner:polymorphism}.  A
 \code{TypeError} exception is thrown if no such substitution exists.
 \begin{lstlisting}
   def tp(env: Env, e: Term, t: Type, s: Subst): Subst = {
@@ -6060,11 +6098,12 @@ let id = (\x.x) in (((if (id true)) (id nil)) zero):
  reason: cannot unify Int with List[a14]
 \end{lstlisting}
 
-\exercise\label{exercise:hm-parse} Using the parser library constructed in
+\begin{exercise}\label{exercise:hm-parse} Using the parser library constructed in
 Exercise~\ref{exercise:end-marker}, modify the MiniML parser library
 so that no marker ``;'' is necessary for indicating the end of input.
+\end{exercise}
 
-\exercise\label{execcise:hm-extend} Extend the Mini-ML parser and type
+\begin{exercise}\label{execcise:hm-extend} Extend the Mini-ML parser and type
 inferencer with a \code{letrec} construct which allows the definition of
 recursive functions. Syntax:
 \begin{lstlisting}
@@ -6079,6 +6118,7 @@ letrec length = \xs.
     (succ (length (tail xs)))
 in ...
 \end{lstlisting}
+\end{exercise}
 
 \chapter{Abstractions for Concurrency}\label{sec:ex-concurrency}
 
@@ -6709,7 +6749,7 @@ statement following it.
 \section{Actors}
 \label{sec:actors}
 
-Chapter~\ref{sec:ex-auction} sketched as a program example the
+Chapter~\ref{chap:example-auction} sketched as a program example the
 implementation of an electronic auction service. This service was
 based on high-level actor processes, that work by inspecting messages
 in their mailbox using pattern matching. An actor is simply a thread

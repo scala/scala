@@ -2,8 +2,8 @@
 
 There are hundreds of programming languages in active use, and many more are
 being designed each year. It is therefore very hard to justify the development
-of yet another language. Nevertheless, this is what I attempt to do here. My
-argument rests on two claims:
+of yet another language. Nevertheless, this is what we attempt to do here. 
+Our effort is based on two claims:
 \begin{itemize}
 \item[] {\em Claim 1:} The raise in importance of web services and
 other distributed software is a fundamental paradigm
@@ -13,6 +13,20 @@ from character-oriented to graphical user interfaces.
 for new programming languages, just as graphical user interfaces
 promoted the adoption of object-oriented languages.
 \end{itemize}
+For the last 20 years, the most common programming model is the
+object-oriented one: System components are objects, and computation is
+done by method calls.  Methods themselves take object references as
+parameters. Remote method calls let one extend this programming model
+to distributed systems. The problem of this model with respect to wide
+scale distribution is that it does not scale up very well to networks
+where messages can be delayed and components may fail. Web services
+address the message delay problem by increasing granularity, using
+method calls with larger, structured arguments, such as XML trees.
+They address the failure problem by avoiding server state and
+transparent replication. Conceptually, they are {\em tree
+transformers} that consume incoming message documents and produce outgoing
+ones.
+\comment{
 To back up the first claim, one observes that web services and other
 distributed software increasingly tend to communicate using structured or
 semi-structured data. A typical example is the use of XML to describe data
@@ -27,45 +41,60 @@ each other by transmitting asynchronous messages that carry structured
 documents, usually in XML format. Programs then conceptually become {\em tree
 transformers} that consume incoming message documents and produce outgoing
 ones.
+}
 
-To back up the second claim, one notes that today's object-oriented languages
-are not very good tools for analyzing and transforming the trees which
-conceptually model XML data. Because these trees usually contain data but no
-methods, they have to be decomposed and constructed from the ``outside'', that is
-from code which is external to the tree definition itself. In an
-object-oriented language, the ways of doing so are limited. The most common
-solution is to represent trees in a generic way, where all tree nodes are
-values of a common type.  This approach is used in DOM, for instance. It
-facilitates the implementation of generic traversal functions, but forces
-applications to operate on a very low conceptual level, which often loses
-important semantic distinctions that are present in the XML data. A
-semantically more precise alternative would be to use different internal types
-to model different kinds of nodes.  But then tree decompositions require the use
-of run-time type tests and type casts to adapt the treatment to the kind of
-node encountered. Such type tests and type casts are generally not considered
-good object-oriented style. They are rarely efficient, nor easy to use.  By
-contrast, tree transformation is the natural domain of functional
-languages. Their algebraic data types, pattern matching and higher-order
-functions make these languages ideal for the task. It's no wonder, then, that
-specialized languages for transforming XML data such as XSLT are
-functional.
+Why should this change in system architecture have an effect on
+programming languages? There are at least two reasons: First, today's
+object-oriented languages are not very good tools for analyzing and
+transforming XML trees. Because such trees usually contain data but no
+methods, they have to be decomposed and constructed from the
+``outside'', that is from code which is external to the tree
+definition itself. In an object-oriented language, the ways of doing
+so are limited. The most common solution \cite{dom} is to represent
+trees in a generic way, where all tree nodes are values of a common
+type.  This makes it easy to write generic traversal functions, but
+forces applications to operate on a very low conceptual level, which
+often loses important semantic distinctions present in the XML data.
+Semantically more precise is to use different internal types to model
+different kinds of nodes.  But then tree decompositions require the
+use of run-time type tests and type casts to adapt the treatment to
+the kind of node encountered. Such type tests and type casts are
+generally not considered good object-oriented style. They are rarely
+efficient, nor easy to use.  
 
-Web services can be constructed using such a transformation language
-together with some middleware framework such as Corba to handle
-distribution and an object-oriented language for the ``application
-logic''.  The downside of this approach is that the necessary amount
-of cross-language glue can make applications cumbersome to write,
-verify, and maintain.  Better productivity and trustworthiness is
-achievable using a single notation and conceptual framework that would
-express object-oriented, concurrent, as well as functional aspects of
-an application.  Hence, a case for so called ``multi-paradigm''
-languages can be made. But one needs to be careful not to simply
-replace cross-language glue by awkward interfaces between different
-paradigms within the language itself. The benefits of integration are
-realized fully only if the common language achieves a meaningful
-unification of concepts rather than being merely an agglutination of
-different programming paradigms.  This is what we try to achieve with
-Scala\footnote{Scala stands for ``Scalable Language''.}.
+By contrast, tree transformation is the natural domain of functional
+languages. Their algebraic data types, pattern matching and
+higher-order functions make these languages ideal for the task. It's
+no wonder, then, that specialized languages for transforming XML data
+such as XSLT are functional.
+
+Another reason why functional language constructs are attractive for
+web-services is that mutable state is problematic in this setting.
+Components with mutable state are harder to replicate or to restore
+after a failure. Data with mutable state is harder to cache than
+immutable data. Functional language constructs make it relatively easy
+to construct components without mutable state.
+
+Many Web services are constructed by combining different languages.
+For instance, a service might use XSLT to handle document
+transformation, XQuery for database access, and Java for the
+``business logic''.  The downside of this approach is that the
+necessary amount of cross-language glue can make applications
+cumbersome to write, verify, and maintain. A particular problem is
+that cross-language interfaces are usually not statically typed.
+Hence, the benefits of a static type system are missing where they are
+needed most -- at the join points of components written in different
+paradigms.  
+
+The glue problem could be addressed by a ``multi-paradigm'' language
+and that would express object-oriented, concurrent, as well as
+functional aspects of an application.  But one needs to be careful not
+to simply replace cross-language glue by awkward interfaces between
+different paradigms within the language itself.  Ideally, one would
+hope for a fusion which unifies concepts found in different paradigms
+instead of an agglutination, which merely includes them side by side.
+This is what we try to achieve with Scala\footnote{Scala stands for
+``Scalable Language''.}.
 
 Scala is both an an object-oriented and functional language.  It is a
 pure object-oriented language in the sense that every value is an
