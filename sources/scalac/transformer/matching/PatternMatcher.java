@@ -687,14 +687,6 @@ public class PatternMatcher extends PatternTool {
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
             case SequencePat(Symbol casted, int len, Tree tree):
-		//return callSequenceMatcher( node, selector );
-
-		if( TestRegTraverser.apply( tree ) )
-		    {
-			//System.err.println("calling sequence matcher");
-			return callSequenceMatcher( node, selector );
-		    }
-
                 Symbol lenSym = casted.type().lookup(LENGTH_N);
                 Tree t = make.Select(selector.pos, cf.As(selector.duplicate(), node.type), LENGTH_N);
                 switch (typeOf(lenSym)) {

@@ -8,7 +8,7 @@ import scalac.ast.Traverser ;
 import Tree.Ident;
 import Tree.Bind;
 
- class TestRegTraverser extends Traverser {
+public class TestRegTraverser extends Traverser {
 
     boolean result;
 
@@ -28,7 +28,7 @@ import Tree.Bind;
 	}
     }
 
-    static boolean apply( Tree t ) {
+    public static boolean apply( Tree t ) {
 	TestRegTraverser trt = new TestRegTraverser();
 	trt.traverse( t );
 	//System.err.println("TestRegTraverser says "+t+" -> "+trt.result);

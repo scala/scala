@@ -18,6 +18,8 @@ import scalac.util.*;       // Names
 import Tree.*;
 
 import scalac.transformer.matching.PatternMatcher ;
+import scalac.transformer.matching.TestRegTraverser ;
+import scalac.transformer.matching.AlgebraicMatcher ;
 
 /** A transformer for expanding match expressions into
  *  flat sequences of .is and .as method calls
@@ -91,14 +93,30 @@ public class TransMatch extends OwnerTransformer {
     }
 
     protected Tree transform(Tree root, CaseDef[] cases, Type restpe) {
-        PatternMatcher pm = new PatternMatcher( unit, infer );
-	Matcher matcher = new Matcher( currentOwner, root, restpe );
+	boolean containsReg = false;
+	int     i = 0;
+	Matcher matcher;
 
-	pm.construct( matcher, cases );
-        if (global.log()) {
-            global.log("internal pattern matching structure");
-            pm.print();
-        }
+	while(( !containsReg )&&( i < cases.length ))
+	    containsReg |=  TestRegTraverser.apply( cases[ i++ ] );
+
+	if( containsReg )
+	    {
+		AlgebraicMatcher am = new AlgebraicMatcher( unit, infer );
+		matcher = new Matcher( currentOwner, root, restpe );
+		am.construct( matcher, cases );
+	    }
+	else
+	    {
+		PatternMatcher pm = new PatternMatcher( unit, infer );
+		matcher = new Matcher( currentOwner, root, restpe );
+
+		pm.construct( matcher, cases );
+		if (global.log()) {
+		    global.log("internal pattern matching structure");
+		    pm.print();
+		}
+	    }
         return matcher.tree;
     }
 

@@ -177,7 +177,7 @@ public class Autom2Scala  {
             return gen.ValDef( pos, sym, init );
             /*
                                 Kinds.VAR,
-                                new ModifierSet(),
+                                0,
                                 sym.name,
                                 gen.mkType(pos, defs.INT_TYPE),
                                 init)
