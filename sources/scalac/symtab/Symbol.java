@@ -241,6 +241,21 @@ public abstract class Symbol implements Modifiers, Kinds {
         return (flags & INTERFACE) != 0;
     }
 
+    /** Does this symbol denote a public symbol? */
+    public final boolean isPublic() {
+        return !isProtected() && !isPrivate();
+    }
+
+    /** Does this symbol denote a protected symbol? */
+    public final boolean isProtected() {
+        return (flags & PROTECTED) != 0;
+    }
+
+    /** Does this symbol denote a private symbol? */
+    public final boolean isPrivate() {
+        return (flags & PRIVATE) != 0;
+    }
+
     /** Does this symbol denote a synthetic symbol? */
     public final boolean isSynthetic() {
         return (flags & SYNTHETIC) != 0;
@@ -249,6 +264,11 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote a static member? */
     public final boolean isStatic() {
         return (flags & STATIC) != 0;
+    }
+
+    /** Does this symbol denote an accessor? */
+    public final boolean isAccessor() {
+        return (flags & ACCESSOR) != 0;
     }
 
     /** Is this symbol locally defined? I.e. not a member of a class or module */
