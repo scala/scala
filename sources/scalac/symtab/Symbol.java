@@ -84,6 +84,39 @@ public abstract class Symbol implements Modifiers, Kinds {
         this.id = ids++;
     }
 
+// Factories --------------------------------------------------------------
+
+    /** Creates a new class owned by this symbol. */
+    public final ClassSymbol newClass(int pos, int flags, Name name) {
+        return newClass(pos, flags, name, 0, NONE);
+    }
+
+    /** Creates a new module-class owned by this symbol. */
+    public final ClassSymbol newModuleClass(int pos, int flags, Name name) {
+        return newModuleClass(pos, flags, name, 0, NONE);
+    }
+
+    /** Creates a new class owned by this symbol. */
+    final ClassSymbol newClass(int pos, int flags, Name name, int attrs,
+        Symbol dual)
+    {
+        return new ClassSymbol(pos, name, this, flags, attrs, dual);
+    }
+
+    /** Creates a new module-class owned by this symbol. */
+    final ClassSymbol newModuleClass(int pos, int flags, Name name, int attrs,
+        Symbol dual)
+    {
+        flags |= MODUL | FINAL | SYNTHETIC;
+        ClassSymbol clasz = newClass(pos, flags, name, attrs, dual);
+        clasz.primaryConstructor().flags |= PRIVATE;
+        clasz.primaryConstructor().setInfo(
+            Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
+        return clasz;
+    }
+
+// Copying & cloning ------------------------------------------------------
+
     protected void update(int pos, int flags) {
         this.pos = pos;
         this.flags = (flags & ~(INITIALIZED | LOCKED)) |
@@ -1306,8 +1339,12 @@ public class TermSymbol extends Symbol {
         this(pos, name, owner, flags, 0);
     }
     public TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+        this(pos, name, owner, flags, attrs, null);
+    }
+    TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol clasz) {
         super(VAL, pos, name, owner, flags, attrs);
-        assert !name.isTypeName() : this;
+        this.clazz = clasz;
+        assert name.isTermName(): Debug.show(this);
     }
 
     public static TermSymbol define(
@@ -1674,6 +1711,13 @@ public class AbsTypeSymbol extends TypeSymbol {
  */
 public class ClassSymbol extends TypeSymbol {
 
+    /**
+     * The dual class of this class or NONE. The dual class is:
+     * - the corresponding module class if this is a value class
+     * - the corresponding value class if this is a module class
+     */
+    private final Symbol dual;
+
     /** The module belonging to the class. This means:
      *  For Java classes, its statics parts.
      *  For module classes, the corresponding module.
@@ -1699,11 +1743,16 @@ public class ClassSymbol extends TypeSymbol {
         this(pos, name, owner, flags, 0);
     }
     public ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
+        this(pos, name, owner, flags, attrs, NONE);
+    }
+    ClassSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol dual) {
         super(CLASS, pos, name, owner, flags, attrs);
         this.rebindSym = new AliasTypeSymbol(pos, Names.ALIAS(this), owner, 0);
         Type rebindType = new ClassAliasLazyType();
         this.rebindSym.setInfo(rebindType);
         this.rebindSym.primaryConstructor().setInfo(rebindType);
+        this.module = isModuleClass() ? newModule() : NONE;
+        this.dual = dual == null ? newModuleClass() : dual;
     }
 
     private class ClassAliasLazyType extends Type.LazyType {
@@ -1762,6 +1811,22 @@ public class ClassSymbol extends TypeSymbol {
             Type.MethodType(Symbol.EMPTY_ARRAY, clasz.typeConstructor()));
         // !!! Type.MethodType(Symbol.EMPTY_ARRAY, clasz.thisType()));
         return clasz;
+    }
+
+    /** Creates the module associated to this module class. */
+    final TermSymbol newModule() {
+        assert isModuleClass(): Debug.show(this);
+        int flags = (this.flags & CLASS2MODULEFLAGS) | MODUL | FINAL | STABLE;
+        Name name = this.name.toTermName();
+        TermSymbol module = new TermSymbol(pos, name, owner(), flags, 0, this);
+        module.setType(typeConstructor());
+        return module;
+    }
+
+    /** Creates the dual module class associated to this class. */
+    final ClassSymbol newModuleClass() {
+        assert !isModuleClass(): Debug.show(this);
+        return owner().newModuleClass(pos, flags, name, 0, this);
     }
 
     /** Return a fresh symbol with the same fields as this one.
