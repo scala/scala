@@ -118,8 +118,7 @@ public class RightTracerInScala extends TracerInScala  {
 	    rhs = gen.mkDefaultValue(cf.pos,
 				     realVar.type()); //cf.ignoreValue( realVar.type() );
 	else
-	    rhs = /* cf.newRef(  cf.newSeqNil( */ gen.Nil( cf.pos )
-		.setType( cf.SeqListType( elementType ));
+	    rhs = /* cf.newRef(  cf.newSeqNil( */ gen.Nil( cf.pos );
  /* ) */;
 	helpVar.flags |= Modifiers.MUTABLE;
 	Tree varDef = gen.ValDef( helpVar, rhs );
@@ -351,18 +350,14 @@ public class RightTracerInScala extends TracerInScala  {
 	//             case _     => false
 
 	am.construct( m, new CaseDef[] {
-	    (CaseDef) cf.make.CaseDef( pat.pos,
-				       pat,           // if tree val matches pat -> update vars, return true
-				       Tree.Empty,
-				       handleBody1( helpMap3 )/* "freshening */),
-	    (CaseDef) cf.make.CaseDef( pat.pos,
-				       cf.gen.Ident( pat.pos, defs.PATTERN_WILDCARD ),
-				       Tree.Empty,
-				       gen.mkBooleanLit( pat.pos, false )) }, // else return false
-		      true // do binding please
-		      );
+	    cf.gen.CaseDef( pat,           // if tree val matches pat -> update vars, return true
+                            handleBody1( helpMap3 )/* "freshening */),
+	    cf.gen.CaseDef( cf.gen.Ident( pat.pos, defs.PATTERN_WILDCARD ),
+			    gen.mkBooleanLit( pat.pos, false )) }, // else return false
+            true // do binding please
+        );
 
-	return  am.toTree().setType( defs.BOOLEAN_TYPE );
+	return  am.toTree();
     }
 
 
@@ -466,7 +461,7 @@ public class RightTracerInScala extends TracerInScala  {
      *  todo: move tree generation of Unit somewhere else
      */
     Tree run_finished( int state ) {
-	return gen.Block(Position.FIRSTPOS, Tree.EMPTY_ARRAY).setType( defs.UNIT_TYPE );
+	return gen.Block(Position.FIRSTPOS, Tree.EMPTY_ARRAY);
     }
 
     Tree current() {

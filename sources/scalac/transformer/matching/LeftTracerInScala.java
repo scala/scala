@@ -134,7 +134,7 @@ public class LeftTracerInScala extends TracerInScala {
 	Tree newAcc = gen.Cons(cf.pos,
 			       hd.type,
 			       hd,
-			       _ref( accumSym ));
+			       gen.Ident( cf.pos, accumSym ));
 
 	return callFun( new Tree[] { newAcc , _iter(), gen.mkIntLit( cf.pos, target )} );
     }
@@ -189,7 +189,7 @@ public class LeftTracerInScala extends TracerInScala {
 				   stateBody);
 	    }
 	}
-	stateBody = cf.If( cf.Negate( _ref( hasnSym )),
+	stateBody = cf.If( cf.Negate( gen.Ident( cf.pos, hasnSym )),
 			   runFinished,
 			   stateBody );
 	return cf.If( cf.Equals( _state(), gen.mkIntLit(cf.pos, i )),
@@ -289,17 +289,12 @@ public class LeftTracerInScala extends TracerInScala {
 	//replaceVars( pat );
 
 	am.construct( m, new CaseDef[] {
-	    (CaseDef) cf.make.CaseDef( pat.pos,
-				       pat,
-				       Tree.Empty,
-				       gen.mkBooleanLit( cf.pos, true )),
-	    (CaseDef) cf.make.CaseDef( pat.pos,
-				       cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
-				       Tree.Empty,
-				       gen.mkBooleanLit( cf.pos, false)) },
-		      false
-		      );
-	Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
+	    cf.gen.CaseDef( pat,
+                            gen.mkBooleanLit( cf.pos, true )),
+	    cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
+                            gen.mkBooleanLit( cf.pos, false)) },
+            false);
+	Tree res = am.toTree();
 	return res;
     }
 
@@ -315,7 +310,7 @@ public class LeftTracerInScala extends TracerInScala {
 	return gen.Cons(  cf.pos,
 			  hd.type(),
 			  hd,
-			  _ref( accumSym ));
+			  gen.Ident( cf.pos, accumSym ));
     }
 
 }

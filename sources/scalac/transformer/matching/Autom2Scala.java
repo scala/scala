@@ -81,9 +81,7 @@ public class Autom2Scala  {
 
 
       Tree callFun( Tree[] args ) {
-            return gen.Apply( pos,
-                              gen.Ident( pos, funSym ),
-                              args).setType( funRetType() );
+            return gen.mkApply_V(gen.Ident(pos, funSym), args);
       }
 
 
@@ -157,7 +155,7 @@ public class Autom2Scala  {
 	    cf.gen.ValDef( this.hasnSym,
 			   cf._hasNext( _iter() ) ),
 	    cf.gen.ValDef( this.curSym,
-			   cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
+			   cf.If( gen.Ident( pos, hasnSym ),//cf._hasNext( _iter() ),
 				  cf._next( _iter() ),
 				  gen.mkDefaultValue(cf.pos,curSym.type()))),
 						 //cf.ignoreValue( curSym.type() )
@@ -212,7 +210,7 @@ public class Autom2Scala  {
 	    if( dfa.isSink( i ))
 		bodies[ i ] = run_finished( i ); // state won't change!
 	    else
-		bodies[ i ] = cf.If( cf.Negate( _ref( hasnSym )),//cf._not_hasNext( _iter() ),
+		bodies[ i ] = cf.If( cf.Negate( gen.Ident( pos, hasnSym )),//cf._not_hasNext( _iter() ),
 				     run_finished( i ),
 				     code_state_NEW( i ));
 	}
@@ -256,18 +254,12 @@ public class Autom2Scala  {
                                      defs.BOOLEAN_TYPE );
 
             am.construct( m, new CaseDef[] {
-                  (CaseDef) cf.make.CaseDef( pat.pos,
-                                             pat,
-                                             Tree.Empty,
-                                             gen.mkBooleanLit( Position.FIRSTPOS, true )),
-                        (CaseDef) cf.make.CaseDef( pat.pos,
-                                                   cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
-                                                   Tree.Empty,
-                                                   gen.mkBooleanLit( pat.pos, false )) },
-			  false
-                          );
-            Tree res = am.toTree().setType( defs.BOOLEAN_TYPE );
-            return res;
+                cf.gen.CaseDef( pat,
+                                gen.mkBooleanLit( pat.pos, true )),
+                cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
+                                gen.mkBooleanLit( pat.pos, false )) },
+                false);
+            return am.toTree();
       }
 
       Tree code_delta( int i, Label label ) {
@@ -318,12 +310,4 @@ public class Autom2Scala  {
 	}
 	return stateBody;
     }
-
-    /** code to reference a variable
-     */
-    Tree _ref( Symbol sym ) {
-	return gen.Ident( pos, sym );
-    }
-
-
 }

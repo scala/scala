@@ -43,10 +43,6 @@ abstract class PatternTool {
      */
     FreshNameCreator fresh;
 
-    /** the global tree factory
-     */
-    TreeFactory make;
-
     /** the global definitions component
      */
     Definitions defs;
@@ -77,7 +73,6 @@ abstract class PatternTool {
 	this.unit = unit;
 	this.infer = infer;
 	this.fresh = unit.global.freshNameCreator;
-	this.make = unit.global.make;
 	this.gen = unit.global.treeGen;
 	this.defs = unit.global.definitions;
 
