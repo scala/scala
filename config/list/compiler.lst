@@ -100,12 +100,11 @@ transformer/ExpandMixinsPhase.java
 transformer/LambdaLift.java
 transformer/LambdaLiftPhase.java
 transformer/OwnerTransformer.java
+transformer/TailCall.java
 transformer/TransMatch.java
 transformer/TransMatchPhase.java
 transformer/UnCurry.java
 transformer/UnCurryPhase.java
-transformer/TailCall.java
-transformer/TailCallPhase.java
 
 transformer/matching/AlgebraicMatcher.java
 transformer/matching/Autom2Scala.java
