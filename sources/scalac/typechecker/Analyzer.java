@@ -1615,7 +1615,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    validateParentClasses(parents, owner.info().parents(), owner.typeOfThis());
 	}
 	pushContext(templ, owner, owner.members());
-	templ.setSymbol(gen.localDummy(templ.pos, owner));
+	templ.setSymbol(TermSymbol.newLocalDummy(owner));
 	Tree[] body1 = transformStatSeq(templ.body, templ.symbol());
 	popContext();
 	if (owner.isTrait()) {
