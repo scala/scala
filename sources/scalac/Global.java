@@ -438,11 +438,33 @@ public class  Global {
     }
 
     private String show(Symbol symbol) {
-        return new SymbolTablePrinter("  ").printSignature(symbol).toString();
+        return new InterpreterPrinter().printSignature(symbol).toString();
     }
 
     private String show(Type type) {
-        return new SymbolTablePrinter("  ").printType(type).toString();
+        return new InterpreterPrinter().printType(type).toString();
+    }
+
+    private class InterpreterPrinter extends SymbolTablePrinter {
+        public InterpreterPrinter() {
+            super("  ");
+        }
+        public String getSymbolName(Symbol symbol) {
+            String string = super.getSymbolName(symbol);
+            if (!debug) {
+                int index = string.indexOf('$');
+                if (index > 0) string = string.substring(0, index);
+            }
+            return string;
+        }
+        public String getSymbolFullName(Symbol symbol) {
+            String string = super.getSymbolFullName(symbol);
+            if (!debug) {
+                int index = string.indexOf('$');
+                if (index > 0) string = string.substring(0, index);
+            }
+            return string;
+        }
     }
 
     // !!! >>> Interpreter stuff

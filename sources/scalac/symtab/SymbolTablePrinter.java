@@ -298,26 +298,14 @@ public class SymbolTablePrinter {
     public String getSymbolName(Symbol symbol) {
         Name name = symbol.name;
         if (!global.debug) name = NameTransformer.decode(name);
-        String string = name.toString();
-        // !!! move into InterpreterPrinter ?
-        if (!global.debug) {
-            int index = string.indexOf('$');
-            if (index > 0) string = string.substring(0, index);
-        }
-        return string;
+        return name.toString();
     }
 
     /** Returns the full name of the given symbol. */
     public String getSymbolFullName(Symbol symbol) {
         Name name = symbol.fullName();
         if (!global.debug) name = NameTransformer.decode(name);
-        String string = name.toString();
-        // !!! move into InterpreterPrinter ?
-        if (!global.debug) {
-            int index = string.indexOf('$');
-            if (index > 0) string = string.substring(0, index);
-        }
-        return string;
+        return name.toString();
     }
 
     /** Returns the inner string of the given symbol. */
