@@ -2,8 +2,8 @@
 # DO NOT EDIT. Automatically generated file!
 #
 # To modify the current version use the following command:
-#     make set-project-version VERSION=<version>
+#     make version-set VERSION=<version>
 #
 # DO NOT EDIT. Automatically generated file!
 ##############################################################################
-0.8.1-b4
+0.8.2-b0
