@@ -258,8 +258,8 @@ exec_compile() {
 
     # compute Scala boot classpath
     if [ -z "$SCALA_BOOTCLASSPATH" ]; then
-        append_path SCALA_BOOTCLASSPATH RUNTIME_SOURCES;
         append_path SCALA_BOOTCLASSPATH RUNTIME_CLASSES;
+        append_path SCALA_BOOTCLASSPATH RUNTIME_SOURCES;
     fi;
 
     # invoke Java
