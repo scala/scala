@@ -27,13 +27,13 @@ public class Evaluator {
     // Private Classes
 
     // !!! remove ?
+    // !!! is it correct to extend EvaluatorException?
     private static class LabelException extends EvaluatorException {
 
         public final Symbol symbol;
         public final Object[] args;
 
         public LabelException(Symbol symbol, Object[] args) {
-            super(null);
             this.symbol = symbol;
             this.args = args;
         }
@@ -62,15 +62,15 @@ public class Evaluator {
     //########################################################################
     // Private Fields
 
+    private final EvaluatorException trace;
     private EvaluationStack stack;
-    private EvaluatorException trace;
 
     //########################################################################
     // Public Constructors
 
     public Evaluator() {
+        this.trace = new EvaluatorException();
         this.stack = null;
-        this.trace = null;
     }
 
     //########################################################################
@@ -154,7 +154,7 @@ public class Evaluator {
             try {
                 return invoke(object, function, args);
             } catch (EvaluatorException exception) {
-                if (stack.symbol != null) exception.addScalaCall(stack.symbol, pos); // !!! remove test
+                exception.addScalaCall(stack.symbol, pos);
                 throw exception;
             }
 
@@ -285,6 +285,8 @@ public class Evaluator {
     private Object invoke(Object object, Constructor constructor,Object[]args){
         try {
             return constructor.newInstance(args);
+        } catch (StackOverflowError exception) {
+            return throw_(exception);
         } catch (ExceptionInInitializerError exception) {
             return throw_(exception);
         } catch (InvocationTargetException exception) {
@@ -310,6 +312,8 @@ public class Evaluator {
     private Object invoke(Object object, Method method, Object[] args) {
         try {
             return method.invoke(object, args);
+        } catch (StackOverflowError exception) {
+            return throw_(exception);
         } catch (NullPointerException exception) {
             return throw_(exception);
         } catch (ExceptionInInitializerError exception) {
@@ -437,8 +441,7 @@ public class Evaluator {
                 exception instanceof ExceptionInInitializerError ||
                 exception instanceof InvocationTargetException))
             exception = exception.getCause();
-        if (trace == null || trace.getCause() != exception)
-            trace = new EvaluatorException(exception);
+        if (trace.getCause() != exception) trace.reset(exception);
         trace.addScalaLeavePoint();
         throw trace;
     }

@@ -21,23 +21,32 @@ public class EvaluatorException extends RuntimeException {
     //########################################################################
     // Private Fields
 
-    private final StackTraceElement[] trace;
     private final List stack;
 
-    private int stop;
+    private Throwable cause;
+    private StackTraceElement[] trace;
+    private int entry;
 
     //########################################################################
     // Public Constructors
 
-    public EvaluatorException(Throwable cause) {
-        super(cause);
-        this.trace = getTraceOf(cause);
+    public EvaluatorException() {
         this.stack = new ArrayList();
-        this.stop = trace.length;
     }
 
     //########################################################################
     // Public Methods
+
+    public void reset(Throwable cause) {
+        this.stack.clear();
+        this.cause = cause;
+        this.trace = cause.getStackTrace();
+        this.entry = 0;
+    }
+
+    public Throwable getCause() {
+        return cause;
+    }
 
     public void addScalaCall(Symbol method, int pos) {
         StringBuffer buffer = new StringBuffer();
@@ -49,37 +58,34 @@ public class EvaluatorException extends RuntimeException {
         buffer.append(':');
         buffer.append(Position.line(pos));
         buffer.append(")");
-        stack.add(buffer.toString());
+        stack.add(buffer);
     }
 
     public void addScalaEntryPoint() {
-        StackTraceElement[] current = getCurrentTrace();
-        // find entry point
-        int length = Math.min(trace.length, current.length);
-        int entry = 0;
-        while (entry < length && trace[entry].equals(current[entry])) entry++;
-        assert entry <= stop : "entry = " + entry + " > " + stop + " = stop";
+        // save new stack trace elements
+        this.trace = getCurrentTrace();
+        // skip calls through interpreter
+        while (traceAtStartsWith(entry, "scalai.")) entry++;
         // skip calls through proxy class
-        while (entry > 0 && traceAtStartsWith(entry - 1, "$Proxy")) entry--;
-        // save new trace end
-        stop = entry;
+        while (traceAtStartsWith(entry, "$Proxy")) entry++;
     }
 
     public void addScalaLeavePoint() {
-        StackTraceElement[] current = getCurrentTrace();
         // find leave point
-        int length = Math.min(trace.length, current.length);
-        int leave = 0;
-        while (leave < length && trace[leave].equals(current[leave])) leave++;
-        // skip calls through interpreter & reflection
-        int start = leave;
-        while (traceAtStartsWith(start, "scalai.")) start++;
-        while (traceAtStartsWith(start, "java.lang.reflect.")) start++;
-        while (traceAtStartsWith(start, "sun.reflect.")) start++;
+        int leave = entry;
+        while (leave < trace.length && !traceAtStartsWith(leave, "scalai."))
+            leave++;
+        if (leave < trace.length) {
+            // skip calls through reflection
+            while (traceAtStartsWith(leave - 1, "java.lang.reflect.")) leave--;
+            while (traceAtStartsWith(leave - 1, "sun.reflect.")) leave--;
+        }
         // complete stack with java trace
-        for (int i = stop - 1; start <= i; i--) stack.add(trace[i]);
-        // save new trace end
-        stop = leave;
+        for (int i = entry; i < leave; i++) stack.add(trace[i]);
+        if (leave == trace.length) stack.add("...");
+        // free memory
+        this.trace = null;
+        this.entry = 0;
     }
 
     public Object[] getScalaStackTrace() {
@@ -100,22 +106,12 @@ public class EvaluatorException extends RuntimeException {
     // Private Methods
 
     private boolean traceAtStartsWith(int index, String prefix) {
-        if (trace.length <= index) return false;
+        if (index < 0 || trace.length <= index) return false;
         return trace[index].getClassName().startsWith(prefix);
     }
 
     private StackTraceElement[] getCurrentTrace() {
-        return getTraceOf(new Error());
-    }
-
-    private StackTraceElement[] getTraceOf(Throwable exception) {
-        StackTraceElement[] trace = exception.getStackTrace();
-        for (int i = 0; i < trace.length / 2; i++) {
-            StackTraceElement element = trace[i];
-            trace[i] = trace[trace.length - i - 1];
-            trace[trace.length - i - 1] = element;
-        }
-        return trace;
+        return new RuntimeException().getStackTrace();
     }
 
     //########################################################################
