@@ -227,14 +227,14 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    case TYPEsym:
 			entries[n] = sym = owner.newAbstractType(
 			    Position.NOPOS, flags, name);
-			sym.setInfo(getType(inforef));
-			sym.setLoBound(readTypeRef());
+			sym.setInfo(getType(inforef, sym));
+			sym.setLoBound(readTypeRef(sym));
 			break;
 
 		    case ALIASsym:
 			entries[n] = sym = owner.newTypeAlias(
 			    Position.NOPOS, flags, name);
-			sym.setInfo(getType(inforef));
+			sym.setInfo(getType(inforef, sym));
 			Symbol constr = readSymbolRef();
 			break;
 
@@ -249,8 +249,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
                             entries[n] = sym = owner.newClass(
                                 Position.NOPOS, flags, name);
                         }
-			sym.setInfo(getType(inforef));
-			sym.setTypeOfThis(readTypeRef());
+			sym.setInfo(getType(inforef, sym));
+			sym.setTypeOfThis(readTypeRef(sym));
 			Symbol constr = readSymbolRef();
 			assert constr == sym.allConstructors();
 			break;
@@ -267,8 +267,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
                                 entries[n] = sym = owner.newConstructor(
                                     Position.NOPOS, flags);
                             } else {
-                                entries[n] = sym = new TermSymbol(
-                                    Position.NOPOS, name, owner, flags);
+                                entries[n] = sym = owner.newTerm(
+                                    Position.NOPOS, flags, name);
                             }
                         } else {
                             if (name == Names.CONSTRUCTOR) {
@@ -280,8 +280,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
                             }
                             sym.flags = flags;
                         }
-			Type tp = getType(inforef);
-			sym.setInfo(tp.setOwner(sym));
+			sym.setInfo(getType(inforef, sym));
 			break;
 
 		    default:
@@ -323,13 +322,13 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	}
     }
 
-    Type getType(int n) {
-	if (entries[n] == null) {
+    Type getType(int n, Symbol owner) {
+        Type tpe = (Type)entries[n];
+	if (tpe == null) {
 	    int savedBp = bp;
 	    bp = index[n];
 	    int tag = bytes[bp++];
 	    int end = readNat() + bp;
-	    Type tpe;
 	    switch (tag) {
 	    case NOtpe:
 		tpe = Type.NoType;
@@ -345,7 +344,7 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		// !!! tpe = Type.ThisType(readSymbolRef());
 		break;
 	    case SINGLEtpe:
-                Type prefix = readTypeRef();
+                Type prefix = readTypeRef(owner);
                 Symbol symbol = readSymbolRef();
 		tpe = symbol.isRoot() ? symbol.thisType() : Type.singleType(prefix, symbol);
                 // !!! code above is usefull for the transition
@@ -353,74 +352,76 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		// !!! tpe = Type.singleType(readTypeRef(), readSymbolRef());
 		break;
 	    case CONSTANTtpe:
-		Type base = readTypeRef();
+		Type base = readTypeRef(owner);
 		AConstant value = readConstantRef();
 		tpe = new Type.ConstantType(base, value);
 		break;
 	    case TYPEREFtpe:
 		tpe = Type.newTypeRefUnsafe( // !!!
-		    readTypeRef(), readSymbolRef(), readTypeRefs(end));
+		    readTypeRef(owner), readSymbolRef(), readTypeRefs(end, owner));
 		break;
 	    case COMPOUNDtpe:
 		Symbol[] clazzs = readSymbolRefs(end);
                 assert clazzs.length == 1;
-		Type[] parents = readTypeRefs(end);
+		Type[] parents = readTypeRefs(end, owner);
                 tpe = Type.compoundType(parents, new Scope(), clazzs[0]);
 		break;
 	    case METHODtpe:
-		Type restype = readTypeRef();
+		Type restype = readTypeRef(owner);
 		int bp1 = bp;
-		Type[] argtypes = readTypeRefs(end);
+		Type[] argtypes = readTypeRefs(end, owner);
 		int[] flags = new int[argtypes.length];
 		bp = bp1;
 		readFlags(flags);
 		Symbol[] params = new Symbol[argtypes.length];
 		for (int i = 0; i < argtypes.length; i++) {
-		    params[i] = new TermSymbol(
-			Position.NOPOS, Name.fromString("$" + i),
-			Symbol.NONE, PARAM | flags[i]);
-		    params[i].setInfo(argtypes[i]);
+                    Name name = Name.fromString("$" + i);
+		    params[i] = owner.newVParam(
+                        Position.NOPOS, flags[i], name, argtypes[i]);
 		}
 		tpe = Type.MethodType(params, restype);
 		break;
 	    case POLYtpe:
-		Type restype = readTypeRef();
+		Type restype = readTypeRef(owner);
 		tpe = Type.PolyType(readSymbolRefs(end), restype);
 		break;
 	    case OVERLOADEDtpe:
 		int bp0 = bp;
 		Symbol[] alts = readSymbolRefs(end);
 		int bp1 = bp;
-		Type[] alttypes = readTypeRefs(end);
+		Type[] alttypes = readTypeRefs(end, alts);
 		assert alts.length == alttypes.length
 		    : alts.length + "!=" + alttypes.length +
 		    " at " + bp0 + "/" + bp1 + "/" + bp;
-		for (int i = 0; i < alts.length; i++)
-		    alttypes[i] = alttypes[i].setOwner(alts[i]);
 		tpe = Type.OverloadedType(alts, alttypes);
 		break;
 	    case FLAGGEDtpe:
 		readNat(); // skip flags
-		tpe = readTypeRef();
+		tpe = readTypeRef(owner);
 		break;
 	    default:
 		throw new BadSignature(this);
 	    }
-	    entries[n] = tpe;
+	    if (tag != METHODtpe) entries[n] = tpe;
 	    bp = savedBp;
 	}
-	return (Type) entries[n];
+	return tpe;
     }
 
-    Type readTypeRef() {
-	return getType(readNat());
+    Type readTypeRef(Symbol owner) {
+	return getType(readNat(), owner);
     }
 
-    Type[] readTypeRefs(int end) {
-	return readTypeRefs(0, end);
+    Type[] readTypeRefs(int end, Symbol owner) {
+	return readTypeRefs(0, end, owner, null);
     }
 
-    Type[] readTypeRefs(int nread, int end) {
+    Type[] readTypeRefs(int end, Symbol[] owners) {
+	return readTypeRefs(0, end, null, owners);
+    }
+
+    Type[] readTypeRefs(int nread, int end, Symbol owner, Symbol[] owners) {
+        assert (owner != null) ^ (owners != null);
 	if (bp == end) {
 	    return new Type[nread];
 	} else {
@@ -428,8 +429,8 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	    int bp0 = bp;
 	    int ref = readNat();
 	    if (isTypeEntry(ref)) {
-		Type t = getType(ref);
-		Type[] ts = readTypeRefs(nread + 1, end);
+		Type t = getType(ref, owner != null ? owner : owners[nread]);
+		Type[] ts = readTypeRefs(nread + 1, end, owner, owners);
 		ts[nread] = t;
 		return ts;
 	    } else {

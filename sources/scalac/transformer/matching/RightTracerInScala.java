@@ -87,11 +87,10 @@ public class RightTracerInScala extends TracerInScala  {
      */
 
     void makeHelpVar( Symbol realVar, boolean keepType ) {
-        Symbol helpVar = new TermSymbol( cf.pos,
-                                         cf.fresh.newName( realVar.name
-                                                           .toString()+"RTIS" ),
-                                         owner,
-                                         0);
+        Symbol helpVar = owner.newVariable( cf.pos,
+                                            0,
+                                            cf.fresh.newName( realVar.name
+                                                              .toString()+"RTIS" ));
         Tree rhs;
 
         //System.out.println("RTiS making helpvar : "+realVar+" -> "+helpVar);
@@ -129,41 +128,29 @@ public class RightTracerInScala extends TracerInScala  {
         this.funSym = owner.newLabel( pos,
                                       cf.fresh.newName( "right" ));
 
-        this.iterSym = new TermSymbol( pos,
-                                       cf.fresh.newName("iter"),
-                                       owner,
-                                       Modifiers.MUTABLE )
+        this.iterSym = owner.newVariable( pos,
+                                          Modifiers.MUTABLE,
+                                          cf.fresh.newName("iter"))
             .setType( cf.SeqTraceType( elementType ));
 
-        this.stateSym = new TermSymbol( pos,
-                                        cf.fresh.newName("q"),
-                                        owner,
-                                        Modifiers.MUTABLE )
+        this.stateSym = owner.newVariable ( pos,
+                                            Modifiers.MUTABLE,
+                                            cf.fresh.newName("q"))
             .setType( defs.INT_TYPE() ) ;
 
-        this.curSym = new TermSymbol( pos,
-                                      cf.fresh.newName("cur"),
-                                      owner,
-                                      0)
+        this.curSym = owner.newVariable( pos,
+                                         Modifiers.MUTABLE,
+                                         cf.fresh.newName("cur"))
             .setType( elementType ) ;
 
-        this.targetSym = new TermSymbol( pos,
-                                         cf.fresh.newName("p"),
-                                         owner,
-                                         0)
+        this.targetSym = owner.newVariable( pos,
+                                         Modifiers.MUTABLE,
+                                         cf.fresh.newName("p"))
             .setType( defs.INT_TYPE() ) ;
 
         funSym.setType( new Type.MethodType( new Symbol[] {  // dummy symbol MethodType
-            new TermSymbol( pos,
-                            cf.fresh.newName("iter"),    // iter:List[Pair[int,T]]
-                            funSym,
-                            Modifiers.PARAM )
-            .setType( cf.SeqTraceType( elementType )) ,
-            new TermSymbol( pos,
-                            cf.fresh.newName( "q" ),     // q:int
-                            funSym,
-                            Modifiers.PARAM )
-            .setType( defs.INT_TYPE() ) },
+            funSym.newVParam( pos, 0, cf.fresh.newName("iter"), cf.SeqTraceType( elementType )),
+            funSym.newVParam( pos, 0, cf.fresh.newName( "q" ), defs.INT_TYPE()) },
                                              defs.UNIT_TYPE() )); // result
 
     }

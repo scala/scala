@@ -14,7 +14,6 @@ import scalac.Global;
 import scalac.symtab.Definitions;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
 import scalac.util.Name;
@@ -303,8 +302,8 @@ public class ATreeTyper {
         Symbol[] tparams = new Symbol[targs.length];
         for (int i = 0; i < tparams.length; i++) {
             Name name = Name.fromString("v" + i);
-            tparams[i] = new TermSymbol(
-                Position.NOPOS, name, Symbol.NONE, Modifiers.PARAM);
+            tparams[i] = Symbol.NONE.newTerm( // !!! should be newVParam
+                Position.NOPOS, Modifiers.PARAM, name);
             tparams[i].setType(targs[i]);
         }
         return Type.MethodType(tparams, result);

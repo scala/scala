@@ -3,7 +3,6 @@ package scalac.transformer.matching ;
 import scalac.* ;
 import scalac.symtab.Symbol ;
 import scalac.symtab.Type ;
-import scalac.symtab.TermSymbol ;
 import scalac.symtab.Definitions ;
 import scalac.symtab.Modifiers;
 import scalac.ast.Tree;

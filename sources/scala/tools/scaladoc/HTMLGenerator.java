@@ -39,7 +39,6 @@ import scalac.Global;
 import scalac.Unit;
 import scalac.symtab.Kinds;
 import scalac.symtab.Modifiers;
-import scalac.symtab.NoSymbol;
 import scalac.symtab.Scope;
 import scalac.symtab.Scope.SymbolIterator;
 import scalac.symtab.Symbol;

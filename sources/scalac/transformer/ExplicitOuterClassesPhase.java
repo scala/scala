@@ -23,7 +23,6 @@ import scalac.ast.Tree.Template;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
 import scalac.util.Name;
@@ -158,9 +157,9 @@ public class ExplicitOuterClassesPhase extends Phase {
         if (outers.length > 0 && (outers[0].vlink != null || !outers[0].isStable)) {
             int index = 0;
             while (outers[index].isStable) index++;
-            int vflags = Modifiers.PARAM | Modifiers.SYNTHETIC;
+            int vflags = Modifiers.SYNTHETIC;
             Name vname = Names.OUTER(constructor);
-            vlink = new TermSymbol(constructor.pos, vname, constructor, vflags);
+            vlink = constructor.newVParam(constructor.pos, vflags, vname);
             vlink.setInfo(outers[index].clasz.thisType());
         }
 
@@ -488,7 +487,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             if (forward == null) {
                 Name name = Names.SUPER(method);
                 int flags = Modifiers.PRIVATE | Modifiers.FINAL;
-                forward = new TermSymbol(method.pos, name, clasz, flags);
+                forward = clasz.newMethod(method.pos, flags, name);
                 forward.setInfo(method.nextType().cloneType(method, forward));
                 context.supers.put(method, forward);
                 clasz.nextInfo().members().enter(forward);

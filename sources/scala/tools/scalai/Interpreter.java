@@ -12,11 +12,12 @@ package scala.tools.scalai;
 import java.util.Map;
 import java.util.HashMap;
 
+import ch.epfl.lamp.util.Position;
+
 import scalac.Global;
 import scalac.Phase;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
 import scalac.symtab.Modifiers;
 import scalac.util.Name;
@@ -152,7 +153,8 @@ public class Interpreter {
         Definitions definitions = global.definitions;
         Type argument = definitions.ARRAY_TYPE(definitions.STRING_TYPE());
         Type result = definitions.UNIT_TYPE();
-        Symbol formal = new TermSymbol(0, ARGS_N, Symbol.NONE,Modifiers.PARAM);
+        Symbol formal = Symbol.NONE.newTerm( // !!! should be newVParam
+            Position.NOPOS, Modifiers.PARAM, ARGS_N);
         formal.setInfo(argument);
         global.currentPhase = current;
         return Type.MethodType(new Symbol[] {formal}, result);

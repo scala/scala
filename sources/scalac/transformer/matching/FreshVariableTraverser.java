@@ -63,10 +63,9 @@ class FreshVariableTraverser extends VariableTraverser {
      */
     void handleVariableSymbol(Symbol sym) {
         Symbol helpVar =
-            new TermSymbol(pos,
-                           fresh.newName(sym.name.toString()),
-                           owner,
-                           0);
+            owner.newVariable(pos,
+                              0,
+                           fresh.newName(sym.name.toString()));
         helpVar.setType(sym.type());
 
         helpMap.put(sym, helpVar);

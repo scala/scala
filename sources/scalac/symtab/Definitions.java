@@ -642,30 +642,30 @@ public class Definitions {
         initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
 
         // create type symbols
-        UNIT_TYPE    = newTypeSymbol(Names.Unit   ,UNIT_CLASS   .staticType());
-        BOOLEAN_TYPE = newTypeSymbol(Names.Boolean,BOOLEAN_CLASS.staticType());
-        BYTE_TYPE    = newTypeSymbol(Names.Byte   ,BYTE_CLASS   .staticType());
-        SHORT_TYPE   = newTypeSymbol(Names.Short  ,SHORT_CLASS  .staticType());
-        CHAR_TYPE    = newTypeSymbol(Names.Char   ,CHAR_CLASS   .staticType());
-        INT_TYPE     = newTypeSymbol(Names.Int    ,INT_CLASS    .staticType());
-        LONG_TYPE    = newTypeSymbol(Names.Long   ,LONG_CLASS   .staticType());
-        FLOAT_TYPE   = newTypeSymbol(Names.Float  ,FLOAT_CLASS  .staticType());
-        DOUBLE_TYPE  = newTypeSymbol(Names.Double ,DOUBLE_CLASS .staticType());
-        ARRAY_TYPE   = newTypeSymbol(Names.Array  ,
+        UNIT_TYPE    = newTypeMethod(Names.Unit   ,UNIT_CLASS   .staticType());
+        BOOLEAN_TYPE = newTypeMethod(Names.Boolean,BOOLEAN_CLASS.staticType());
+        BYTE_TYPE    = newTypeMethod(Names.Byte   ,BYTE_CLASS   .staticType());
+        SHORT_TYPE   = newTypeMethod(Names.Short  ,SHORT_CLASS  .staticType());
+        CHAR_TYPE    = newTypeMethod(Names.Char   ,CHAR_CLASS   .staticType());
+        INT_TYPE     = newTypeMethod(Names.Int    ,INT_CLASS    .staticType());
+        LONG_TYPE    = newTypeMethod(Names.Long   ,LONG_CLASS   .staticType());
+        FLOAT_TYPE   = newTypeMethod(Names.Float  ,FLOAT_CLASS  .staticType());
+        DOUBLE_TYPE  = newTypeMethod(Names.Double ,DOUBLE_CLASS .staticType());
+        ARRAY_TYPE   = newTypeMethod(Names.Array  ,
             ARRAY_CLASS.staticType(new Type[]{ANYREF_TYPE()}));
-        TYPE_TYPE    = newTypeSymbol(Names.Type   , TYPE_CLASS.type   ());
+        TYPE_TYPE    = newTypeMethod(Names.Type   , TYPE_CLASS.type   ());
 
         // add members to scala.Any
-        ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
-        ANY_EQEQ     = newTerm(ANY_CLASS, Names.EQEQ        , Modifiers.FINAL);
-        ANY_BANGEQ   = newTerm(ANY_CLASS, Names.BANGEQ      , Modifiers.FINAL);
-        ANY_EQUALS   = newTerm(ANY_CLASS, Names.equals      , 0);
-        ANY_HASHCODE = newTerm(ANY_CLASS, Names.hashCode    , 0);
-        ANY_TOSTRING = newTerm(ANY_CLASS, Names.toString    , 0);
-        // ANY_PLUS  = newTerm(ANY_CLASS, Names.PLUS        , Modifiers.FINAL);
-        ANY_IS       = newTerm(ANY_CLASS, Names.isInstanceOf, Modifiers.FINAL);
-        ANY_AS       = newTerm(ANY_CLASS, Names.asInstanceOf, Modifiers.FINAL);
-        ANY_MATCH    = newTerm(ANY_CLASS, Names.match       , Modifiers.FINAL);
+        ANY_EQ       = newMethod(ANY_CLASS,Names.eq          , 0);
+        ANY_EQEQ     = newMethod(ANY_CLASS,Names.EQEQ        ,Modifiers.FINAL);
+        ANY_BANGEQ   = newMethod(ANY_CLASS,Names.BANGEQ      ,Modifiers.FINAL);
+        ANY_EQUALS   = newMethod(ANY_CLASS,Names.equals      ,0);
+        ANY_HASHCODE = newMethod(ANY_CLASS,Names.hashCode    ,0);
+        ANY_TOSTRING = newMethod(ANY_CLASS,Names.toString    ,0);
+        // ANY_PLUS  = newMethod(ANY_CLASS,Names.PLUS        ,Modifiers.FINAL);
+        ANY_IS       = newMethod(ANY_CLASS,Names.isInstanceOf,Modifiers.FINAL);
+        ANY_AS       = newMethod(ANY_CLASS,Names.asInstanceOf,Modifiers.FINAL);
+        ANY_MATCH    = newMethod(ANY_CLASS,Names.match       ,Modifiers.FINAL);
 
         initMethod(ANY_EQ      , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
         initMethod(ANY_EQEQ    , new Type[]{ANY_TYPE()}   , BOOLEAN_TYPE());
@@ -697,7 +697,7 @@ public class Definitions {
 
         // add members to java.lang.Object
         OBJECT_SYNCHRONIZED =
-            newTerm(OBJECT_CLASS, Names.synchronized_, Modifiers.FINAL);
+            newMethod(OBJECT_CLASS, Names.synchronized_, Modifiers.FINAL);
 
         Symbol OBJECT_SYNCHRONIZED_TPARAM =
             newTParam(OBJECT_SYNCHRONIZED,0,ANY_TYPE());
@@ -711,16 +711,17 @@ public class Definitions {
                     OBJECT_SYNCHRONIZED_TPARAM.type())));
 
         // add members to java.lang.String
-        STRING_PLUS = newTerm(STRING_CLASS, Names.PLUS, Modifiers.FINAL);
+        STRING_PLUS = newMethod(STRING_CLASS, Names.PLUS, Modifiers.FINAL);
         initMethod(STRING_PLUS, new Type[]{ANY_TYPE()}, STRING_TYPE());
 
         // add members to java.lang.Throwable
-        THROWABLE_THROW =newTerm(THROWABLE_CLASS,Names.throw_,Modifiers.FINAL);
+        THROWABLE_THROW =
+            newMethod(THROWABLE_CLASS, Names.throw_, Modifiers.FINAL);
         THROWABLE_THROW.setInfo(Type.PolyType(Symbol.EMPTY_ARRAY, ALL_TYPE()));
 
         // create global values
-        PATTERN_WILDCARD = new TermSymbol(
-            Position.NOPOS, Names.PATTERN_WILDCARD, Symbol.NONE, 0);
+        PATTERN_WILDCARD = Symbol.NONE.newTerm(
+            Position.NOPOS, 0, Names.PATTERN_WILDCARD);
         PATTERN_WILDCARD.setInfo(ALL_TYPE());
 
         // initialize unboxed types in class Type
@@ -792,10 +793,10 @@ public class Definitions {
         return alias;
     }
 
-    /** Creates a new term */
-    private Symbol newTerm(Symbol owner, Name name, int flags) {
+    /** Creates a new method */
+    private Symbol newMethod(Symbol owner, Name name, int flags) {
         assert owner.isClassType(): Debug.show(owner) + " -- " + name;
-        Symbol term = new TermSymbol(Position.NOPOS, name, owner, flags);
+        Symbol term = owner.newMethod(Position.NOPOS, flags, name);
         owner.members().enterOrOverload(term);
         return term;
     }
@@ -809,13 +810,12 @@ public class Definitions {
     /** Creates a new value parameter */
     private Symbol newVParam(Symbol owner, int index, Type type) {
         Name name = Name.fromString("v" + index);
-        return new TermSymbol(Position.NOPOS, name, owner, Modifiers.PARAM)
-            .setInfo(type);
+        return owner.newVParam(Position.NOPOS, 0, name, type);
     }
 
-    /** Creates a new type symbol */
-    private Symbol newTypeSymbol(Name name, Type type) {
-        Symbol symbol = new TermSymbol(Position.NOPOS, name, ROOT_CLASS, 0);
+    /** Creates a new type method */
+    private Symbol newTypeMethod(Name name, Type type) {
+        Symbol symbol = ANY_CLASS.newMethod(Position.NOPOS, 0, name);
         initMethod(symbol, Type.EMPTY_ARRAY, type);
         return symbol;
     }

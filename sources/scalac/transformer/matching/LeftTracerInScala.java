@@ -41,24 +41,21 @@ public class LeftTracerInScala extends TracerInScala {
         this.funSym =  owner.newLabel( pos,
                                        cf.fresh.newName( "left" ));
 
-        this.iterSym = new TermSymbol( pos,
-                                        cf.fresh.newName( "iter" ),
-                                       owner,
-                                       Modifiers.MUTABLE )
+        this.iterSym = owner.newVariable( pos,
+                                          Modifiers.MUTABLE,
+                                          cf.fresh.newName( "iter" ))
             .setType( cf._seqIterType( elementType ) ) ;
 
-        this.stateSym = new TermSymbol( pos,
-                                        cf.fresh.newName( "q" ),
-                                        owner,
-                                        Modifiers.MUTABLE )
+        this.stateSym = owner.newVariable( pos,
+                                           Modifiers.MUTABLE,
+                                          cf.fresh.newName( "q" ))
             .setType( defs.INT_TYPE() ) ;
 
         this.accumType = _accumType( elementType );
         this.accumTypeArg = accumType.typeArgs()[0];
-        this.accumSym = new TermSymbol( pos,                  // accumulator
-                                        cf.fresh.newName( "acc" ),
-                                        owner,
-                                        Modifiers.MUTABLE )
+        this.accumSym = owner.newVariable( pos,                  // accumulator
+                                           Modifiers.MUTABLE,
+                                           cf.fresh.newName( "acc" ))
             .setType( accumType );
 
         //this.funSym
@@ -68,29 +65,19 @@ public class LeftTracerInScala extends TracerInScala {
 
         this.funSym
             .setType( new Type.MethodType( new Symbol[] {  // dummy symbol MethodType
-                new TermSymbol( pos,
-                                cf.fresh.newName( "q" ),   // q:int
-                                funSym,
-                                Modifiers.PARAM )
-                .setType( defs.INT_TYPE() ),
-                new TermSymbol( pos,       // acc:List[T] accumulator
-                                cf.fresh.newName( "acc" ),
-                                funSym,
-                                Modifiers.PARAM )
-                .setType( accumType )
-            },
+                funSym.newVParam( pos, 0, cf.fresh.newName( "q" ), defs.INT_TYPE()),
+                funSym.newVParam( pos, 0, cf.fresh.newName( "acc" ), accumType ) },
                                            accumType)); // result type = List[T]
 
-        this.resultSym = new TermSymbol(pos,
-                                        cf.fresh.newName("trace"),
-                                        owner,
-                                        0 )
+        this.resultSym = owner.newVariable(pos,
+                                           0,
+                                           cf.fresh.newName("trace"))
             .setType( accumType ) ;
 
-        this.curSym = new TermSymbol( pos, CURRENT_ELEM, owner, 0)
+        this.curSym = owner.newVariable( pos, 0, CURRENT_ELEM )
             .setType( elementType );
 
-        this.hasnSym = new TermSymbol( pos, HASNEXT, owner, 0)
+        this.hasnSym = owner.newVariable( pos, 0, HASNEXT )
             .setType( defs.BOOLEAN_TYPE() );
 
     }

@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import ch.epfl.lamp.util.Position;
 import ch.epfl.lamp.util.SourceFile;
 
 import scalac.Unit;
@@ -29,7 +30,6 @@ import scalac.ast.TreeGen;
 import scalac.symtab.Definitions;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -313,8 +313,8 @@ public class Compiler {
     // Private Methods -
 
     private Symbol newGlobalVariable(Type type, Object value) {
-        Symbol symbol = new TermSymbol(
-            0, Name.fromString(value.toString()), definitions.ROOT_CLASS, 0);
+        Symbol symbol = definitions.ROOT_CLASS.newField(
+            Position.NOPOS, 0, Name.fromString(value.toString()));
         symbol.setInfo(type);
         environment.insertVariable(symbol, Variable.Global(value));
         return symbol;

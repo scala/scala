@@ -18,7 +18,6 @@ import scalac.ast.GenTransformer;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolSubstTypeMap;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Modifiers;
 import scalac.util.Debug;
 
@@ -89,11 +88,10 @@ public class AddConstructors extends GenTransformer {
 	    int flags = constructor.isPrivate()
 		? (constructor.flags & ~Modifiers.PRIVATE) | Modifiers.PROTECTED
 		: constructor.flags;
-	    initializer = new TermSymbol(
+	    initializer = constructor.constructorClass().newMethod(
                 constructor.pos,
-                constructor.name,
-                constructor.constructorClass(),
-                flags & Modifiers.ACCESSFLAGS);
+                flags & Modifiers.ACCESSFLAGS,
+                constructor.name);
 	    initializer.setInfo(
                 Type.MethodType(
                     constructor.valueParams(),

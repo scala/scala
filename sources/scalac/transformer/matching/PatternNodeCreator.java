@@ -99,15 +99,15 @@ public class PatternNodeCreator extends PatternTool {
         return node;
     }
 
-    public TermSymbol newVar(int pos, Name name, Type type) {
-        TermSymbol sym = new TermSymbol(pos, name, owner, 0);
+    public Symbol newVar(int pos, Name name, Type type) {
+        Symbol sym = owner.newVariable(pos, 0, name);
         sym.setType(type);
         //System.out.println("PatternNodeCreator::newVar creates symbol "+sym);
         //System.out.println("owner: "+sym.owner());
         return sym;
     }
 
-    public TermSymbol newVar(int pos, Type type) {
+    public Symbol newVar(int pos, Type type) {
         return newVar(pos, fresh.newName("temp"), type);
     }
 }

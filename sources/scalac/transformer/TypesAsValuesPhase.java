@@ -19,7 +19,6 @@ import scalac.Unit;
 import scalac.symtab.Definitions;
 import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
 import scalac.atree.AConstant;
 import scalac.ast.Transformer;
@@ -140,10 +139,9 @@ public class TypesAsValuesPhase extends Phase {
         assert typeSym.isType();
         Symbol accessorSym = (Symbol)accessors.get(typeSym);
         if (accessorSym == null) {
-            accessorSym = new TermSymbol(typeSym.pos,
-                                         Names.TYPE(typeSym),
-                                         typeSym.owner(),
-                                         typeSym.flags);
+            accessorSym = typeSym.owner().newVariable(typeSym.pos,
+                                                      typeSym.flags,
+                                                      Names.TYPE(typeSym));
             accessorSym.setInfo(typeSym.owner().isClass()
                                 ? typeAccessorType
                                 : typeType);

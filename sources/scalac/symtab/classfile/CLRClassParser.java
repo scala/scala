@@ -12,8 +12,6 @@ import scalac.Global;
 import scalac.atree.AConstant;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
-import scalac.symtab.TermSymbol;
-import scalac.symtab.ClassSymbol;
 import scalac.symtab.Scope;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Type.*;
@@ -114,7 +112,7 @@ public class CLRClassParser extends SymbolLoader {
 		fieldType = make.constantType(
                     getConstant(fieldType.symbol(), fields[i].getValue()));
 	    Symbol owner = fields[i].IsStatic() ? staticsClass : clazz;
-	    Symbol field = new TermSymbol(Position.NOPOS, name, owner, mods);
+	    Symbol field = owner.newField(Position.NOPOS, mods, name);
 	    field.setInfo(fieldType);
 	    (fields[i].IsStatic() ? statics : members).enterOrOverload(field);
 	    importer.map(field, fields[i]);
@@ -135,7 +133,7 @@ public class CLRClassParser extends SymbolLoader {
 		scalac.symtab.Type.PolyType(Symbol.EMPTY_ARRAY, proptype);
 	    int mods = translateAttributes(getter);
 	    Symbol owner = getter.IsStatic() ? staticsClass : clazz;
-	    Symbol method = new TermSymbol(Position.NOPOS, n, owner, mods);
+	    Symbol method = owner.newMethod(Position.NOPOS, mods, n);
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
 	    (getter.IsStatic() ? statics : members).enterOrOverload(method);
@@ -150,7 +148,7 @@ public class CLRClassParser extends SymbolLoader {
 		continue;
 	    n = n.append(Names._EQ);
 	    mods = translateAttributes(setter);
-	    method = new TermSymbol(Position.NOPOS, n, owner, mods);
+	    method = owner.newMethod(Position.NOPOS, mods, n);
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
 	    (setter.IsStatic() ? statics : members).enterOrOverload(method);
@@ -178,7 +176,7 @@ public class CLRClassParser extends SymbolLoader {
 	    else n = Name.fromString(name);
 	    int mods = translateAttributes(methods[i]);
 	    Symbol owner = methods[i].IsStatic() ? staticsClass : clazz;
-	    Symbol method = new TermSymbol(Position.NOPOS, n, owner, mods);
+	    Symbol method = owner.newMethod(Position.NOPOS, mods, n);
 	    setParamOwners(mtype, method);
 	    method.setInfo(mtype);
 	    (methods[i].IsStatic() ? statics : members).enterOrOverload(method);
@@ -196,8 +194,8 @@ public class CLRClassParser extends SymbolLoader {
 		    make.methodType(argTypes,
 				    global.definitions.BOOLEAN_TYPE(),
 				    scalac.symtab.Type.EMPTY_ARRAY);
-		Symbol enumCmp = new TermSymbol
-		    (Position.NOPOS, ENUM_CMP_NAMES[i], clazz, mods);
+		Symbol enumCmp = clazz.newMethod
+		    (Position.NOPOS, mods, ENUM_CMP_NAMES[i]);
 		setParamOwners(enumCmpType, enumCmp);
 		enumCmp.setInfo(enumCmpType);
 		members.enterOrOverload(enumCmp);

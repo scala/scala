@@ -19,7 +19,6 @@ import scalac.ast.Tree.Ident;
 import scalac.ast.Tree.Template;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
 import scalac.util.Name;
@@ -437,7 +436,7 @@ public class ATreeFromSTree {
     private Symbol newLocal(Tree tree, Type type) {
         Symbol owner = Symbol.NONE; // !!!
         Name name = Name.fromString("local"); // !!!
-        return new TermSymbol(tree.pos, name, owner, 0).setType(type);
+        return owner.newTerm(tree.pos, 0, name).setType(type);
     }
 
     /** Returns the type kind of given type. */

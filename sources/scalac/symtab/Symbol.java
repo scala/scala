@@ -32,16 +32,18 @@ public abstract class Symbol implements Modifiers, Kinds {
     public static final Symbol[][] EMPTY_ARRAY_ARRAY = new Symbol[0][];
 
     /** The error symbol */
-    public static final ErrorSymbol ERROR = new ErrorSymbol();
+    public static final Symbol ERROR = new ErrorSymbol();
 
     /** The absent symbol */
-    public static final NoSymbol NONE = new NoSymbol();
+    public static final Symbol NONE = new NoSymbol();
 
 // Attribues -------------------------------------------------------------
 
-    public static final int IS_ROOT     = 0x00000001;
-    public static final int IS_LABEL    = 0x00000010;
-    public static final int IS_COMPOUND = 0x80000000;
+    public static final int IS_ROOT        = 0x00000001;
+    public static final int IS_LABEL       = 0x00000010;
+    public static final int IS_THISTYPE    = 0x20000000;
+    public static final int IS_LOCALDUMMY  = 0x40000000;
+    public static final int IS_COMPOUND    = 0x80000000;
 
 // Fields -------------------------------------------------------------
 
@@ -88,25 +90,66 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 // Factories --------------------------------------------------------------
 
-    /** Creates a new constructor of this symbol. */
-    public final TermSymbol newTerm(int pos, int flags, Name name) {
-        return new TermSymbol(pos, name, this, flags, 0);
+    /** Creates a new term owned by this symbol. */
+    public final Symbol newTerm(int pos, int flags, Name name) {
+        return newTerm(pos, flags, name, 0);
     }
 
     /** Creates a new constructor of this symbol. */
-    public final TermSymbol newConstructor(int pos, int flags) {
+    public final Symbol newConstructor(int pos, int flags) {
         assert isType(): Debug.show(this);
         return new TermSymbol(pos, Names.CONSTRUCTOR, owner(), flags, 0, this);
     }
 
-    /** Creates a new Label owned by this symbol. */
-    public final TermSymbol newLabel(int pos, Name name) {
+    /** Creates a new method owned by this symbol. */
+    public final Symbol newMethod(int pos, int flags, Name name) {
+        assert isClass(): Debug.show(this);
+        return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new function owned by this symbol. */
+    public final Symbol newFunction(int pos, int flags, Name name) {
         assert isTerm(): Debug.show(this);
-        return new TermSymbol(pos, name, this, 0, IS_LABEL);
+        return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new method or function owned by this symbol. */
+    public final Symbol newMethodOrFunction(int pos, int flags, Name name){
+        assert isClass() || isTerm(): Debug.show(this);
+        return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new label owned by this symbol. */
+    public final Symbol newLabel(int pos, Name name) {
+        assert isTerm(): Debug.show(this);
+        return newTerm(pos, 0, name, IS_LABEL);
+    }
+
+    /** Creates a new field owned by this symbol. */
+    public final Symbol newField(int pos, int flags, Name name) {
+        assert isClass(): Debug.show(this);
+        return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new variable owned by this symbol. */
+    public final Symbol newVariable(int pos, int flags, Name name) {
+        assert isTerm(): Debug.show(this);
+        return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new variable owned by this symbol. */
+    public final Symbol newFieldOrVariable(int pos, int flags, Name name) {
+        assert isClass() || isTerm(): Debug.show(this);
+        return newTerm(pos, flags, name, 0);
+    }
+
+    /** Creates a new pattern variable owned by this symbol. */
+    public final Symbol newPatternVariable(int pos, Name name) {
+        return newVariable(pos, 0, name);
     }
 
     /** Creates a new value parameter owned by this symbol. */
-    public final TermSymbol newVParam(int pos, int flags, Name name) {
+    public final Symbol newVParam(int pos, int flags, Name name) {
         assert isTerm(): Debug.show(this);
         return newTerm(pos, flags | PARAM, name);
     }
@@ -115,8 +158,8 @@ public abstract class Symbol implements Modifiers, Kinds {
      * Creates a new value parameter owned by this symbol and
      * initializes it with the type.
      */
-    public final TermSymbol newVParam(int pos, int flags, Name name,Type type){
-        TermSymbol tparam = newVParam(pos, flags, name);
+    public final Symbol newVParam(int pos, int flags, Name name, Type type) {
+        Symbol tparam = newVParam(pos, flags, name);
         tparam.setInfo(type);
         return tparam;
     }
@@ -125,24 +168,24 @@ public abstract class Symbol implements Modifiers, Kinds {
      * Creates a new initialized dummy symbol for template of this
      * class.
      */
-    public final TermSymbol newLocalDummy() {
+    public final Symbol newLocalDummy() {
         assert isClass(): Debug.show(this);
-        TermSymbol local = new TermSymbol(pos, Names.LOCAL(this), this, 0);
+        Symbol local = newTerm(pos, 0, Names.LOCAL(this), IS_LOCALDUMMY);
         local.setInfo(Type.NoType);
         return local;
     }
 
     /** Creates a new module owned by this symbol. */
-    public final TermSymbol newModule(int pos, int flags, Name name) {
+    public final Symbol newModule(int pos, int flags, Name name) {
         ClassSymbol clasz = newModuleClass(pos, flags, name.toTypeName());
-        return (TermSymbol)clasz.module();
+        return clasz.module();
     }
 
     /**
      * Creates a new package owned by this symbol and initializes it
      * with an empty scope.
      */
-    public final TermSymbol newPackage(int pos, Name name) {
+    public final Symbol newPackage(int pos, Name name) {
         return newPackage(pos, name, null);
     }
 
@@ -150,27 +193,27 @@ public abstract class Symbol implements Modifiers, Kinds {
      * Creates a new package owned by this symbol, initializes it with
      * the loader and enters it in the scope if it's non-null.
      */
-    public final TermSymbol newLoadedPackage(Name name, SymbolLoader loader,
+    public final Symbol newLoadedPackage(Name name, SymbolLoader loader,
         Scope scope)
     {
         assert loader != null: Debug.show(this) + " - " + name;
-        TermSymbol peckage = newPackage(Position.NOPOS, name, loader);
+        Symbol peckage = newPackage(Position.NOPOS, name, loader);
         if (scope != null) scope.enterNoHide(peckage);
         return peckage;
     }
 
     /** Creates a new type alias owned by this symbol. */
-    public final AliasTypeSymbol newTypeAlias(int pos, int flags, Name name) {
+    public final Symbol newTypeAlias(int pos, int flags, Name name) {
         return new AliasTypeSymbol(pos, name, this, flags, 0);
     }
 
     /** Creates a new abstract type owned by this symbol. */
-    public final AbsTypeSymbol newAbstractType(int pos, int flags, Name name) {
+    public final Symbol newAbstractType(int pos, int flags, Name name) {
         return new AbsTypeSymbol(pos, name, this, flags, 0);
     }
 
     /** Creates a new type parameter owned by this symbol. */
-    public final AbsTypeSymbol newTParam(int pos, int flags, Name name) {
+    public final Symbol newTParam(int pos, int flags, Name name) {
         assert isTerm(): Debug.show(this);
         return newAbstractType(pos, flags | PARAM, name);
     }
@@ -179,8 +222,8 @@ public abstract class Symbol implements Modifiers, Kinds {
      * Creates a new type parameter owned by this symbol and
      * initializes it with the type.
      */
-    public final AbsTypeSymbol newTParam(int pos, int flags, Name name, Type type) {
-        AbsTypeSymbol tparam = newTParam(pos, flags, name);
+    public final Symbol newTParam(int pos, int flags, Name name, Type type) {
+        Symbol tparam = newTParam(pos, flags, name);
         tparam.setInfo(type);
         return tparam;
     }
@@ -189,10 +232,8 @@ public abstract class Symbol implements Modifiers, Kinds {
      * Creates a new type alias owned by this symbol and initializes
      * it with the info.
      */
-    public final AliasTypeSymbol newTypeAlias(int pos, int flags, Name name,
-        Type info)
-    {
-        AliasTypeSymbol alias = newTypeAlias(pos, flags, name);
+    public final Symbol newTypeAlias(int pos, int flags, Name name, Type info){
+        Symbol alias = newTypeAlias(pos, flags, name);
         alias.setInfo(info);
         alias.allConstructors().setInfo(Type.MethodType(EMPTY_ARRAY, info));
         return alias;
@@ -228,10 +269,15 @@ public abstract class Symbol implements Modifiers, Kinds {
         return clasz;
     }
 
+    /** Creates a new term owned by this symbol. */
+    final Symbol newTerm(int pos, int flags, Name name, int attrs) {
+        return new TermSymbol(pos, name, this, flags, attrs, null);
+    }
+
     /** Creates a new package owned by this symbol. */
-    final TermSymbol newPackage(int pos, Name name, Type info) {
+    final Symbol newPackage(int pos, Name name, Type info) {
         assert isPackageClass(): Debug.show(this);
-        TermSymbol peckage = newModule(pos, JAVA | PACKAGE, name);
+        Symbol peckage = newModule(pos, JAVA | PACKAGE, name);
         if (info == null) info = Type.compoundType(
             Type.EMPTY_ARRAY, new Scope(), peckage.moduleClass());
         peckage.moduleClass().setInfo(info);
@@ -1331,9 +1377,9 @@ public abstract class Symbol implements Modifiers, Kinds {
         assert this.isConstructor() == that.isConstructor();
         int overflags = (this.flags & that.flags & (JAVA | ACCESSFLAGS | DEFERRED)) |
             ((this.flags | that.flags) & ACCESSOR);
-        TermSymbol overloaded = (this.isConstructor())
+        Symbol overloaded = (this.isConstructor())
             ? this.constructorClass().newConstructor(this.constructorClass().pos, overflags)
-            : new TermSymbol(pos, name, owner, overflags);
+            : owner.newTerm(pos, overflags, name, 0);
         overloaded.setInfo(new LazyOverloadedType(this, that));
         return overloaded;
     }
@@ -1466,7 +1512,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
 /** A class for term symbols
  */
-public class TermSymbol extends Symbol {
+final class TermSymbol extends Symbol {
 
     /**
      * The module class if this is a module, the constructed class if
@@ -1475,12 +1521,6 @@ public class TermSymbol extends Symbol {
     private final Symbol clasz;
 
     /** Constructor */
-    public TermSymbol(int pos, Name name, Symbol owner, int flags) {
-        this(pos, name, owner, flags, 0);
-    }
-    public TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
-        this(pos, name, owner, flags, attrs, null);
-    }
     TermSymbol(int pos, Name name, Symbol owner, int flags, int attrs, Symbol clasz) {
         super(VAL, pos, name, owner, flags, attrs);
         this.clasz = clasz;
@@ -1523,7 +1563,7 @@ public class TermSymbol extends Symbol {
 /** A base class for all type symbols.
  *  It has AliasTypeSymbol, AbsTypeSymbol, ClassSymbol as subclasses.
  */
-public abstract class TypeSymbol extends Symbol {
+abstract class TypeSymbol extends Symbol {
 
      /** The history of closures of this symbol */
     private final History/*<Type[]>*/ closures;
@@ -1660,7 +1700,7 @@ public abstract class TypeSymbol extends Symbol {
     protected abstract TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs);
 }
 
-public final class AliasTypeSymbol extends TypeSymbol {
+final class AliasTypeSymbol extends TypeSymbol {
 
     /** Initializes this instance. */
     AliasTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
@@ -1673,7 +1713,7 @@ public final class AliasTypeSymbol extends TypeSymbol {
 
 }
 
-public final class AbsTypeSymbol extends TypeSymbol {
+final class AbsTypeSymbol extends TypeSymbol {
 
     private Type lobound = null;
 
@@ -1767,12 +1807,17 @@ public final class ClassSymbol extends TypeSymbol {
         return clasz;
     }
 
+    /** Creates the this-type symbol associated to this class. */
+    private final Symbol newThisType() {
+        return newTerm(pos, SYNTHETIC, Names.this_, IS_THISTYPE);
+    }
+
     /** Creates the module associated to this module class. */
-    final TermSymbol newModule() {
+    final Symbol newModule() {
         assert isModuleClass(): Debug.show(this);
         int flags = (this.flags & CLASS2MODULEFLAGS) | MODUL | FINAL | STABLE;
         Name name = this.name.toTermName();
-        TermSymbol module = new TermSymbol(pos, name, owner(), flags, 0, this);
+        Symbol module = new TermSymbol(pos, name, owner(), flags, 0, this);
         module.setType(typeConstructor());
         return module;
     }
@@ -1805,7 +1850,7 @@ public final class ClassSymbol extends TypeSymbol {
     }
 
     public Symbol setTypeOfThis(Type tp) {
-        thisSym = new TermSymbol(this.pos, Names.this_, this, SYNTHETIC);
+        thisSym = newThisType();
         thisSym.setInfo(tp);
         return this;
     }
@@ -1861,7 +1906,7 @@ public final class ClassSymbol extends TypeSymbol {
 
 /** A class for error symbols.
  */
-public final class ErrorSymbol extends Symbol {
+final class ErrorSymbol extends Symbol {
 
     /** Constructor */
     public ErrorSymbol() {
@@ -1905,7 +1950,7 @@ public final class ErrorSymbol extends Symbol {
 
 /** The class of Symbol.NONE
  */
-public final class NoSymbol extends Symbol {
+final class NoSymbol extends Symbol {
 
     /** Constructor */
     public NoSymbol() {

@@ -114,8 +114,8 @@ public class JavaTypeCreator implements JavaTypeFactory {
     public Type methodType(Type[] argtpes, Type restpe, Type[] thrown) {
         Symbol[] args = new Symbol[argtpes.length];
         for (int i = 0; i < args.length; i++) {
-            args[i] = new TermSymbol(
-                Position.NOPOS, Name.fromString("x" + i), Symbol.NONE, Modifiers.PARAM);
+            args[i] = Symbol.NONE.newTerm( // !!! should be newVParam
+                Position.NOPOS, Modifiers.PARAM, Name.fromString("x" + i));
             args[i].setInfo(objToAny(argtpes[i]));
         }
         return new MethodType(args, restpe);

@@ -140,7 +140,7 @@ public class ExpressionCompiler {
         case New(Tree.Template(Tree[] bases, Tree[] body)): // !!!
             assert bases.length == 1 : Debug.show(tree);
             assert body.length == 0 : Debug.show(tree);
-            Symbol symbol = new scalac.symtab.TermSymbol(tree.pos, Name.fromString("new"), Symbol.NONE, 0); // !!!
+            Symbol symbol = Symbol.NONE.newTerm(tree.pos, 0, Name.fromString("new")); // !!! should be newVariable
             Variable variable = Variable.Local(context.push());
             Code code = compute(bases[0]);
             switch (context.lookupTemplate(tree.getType().symbol())) {

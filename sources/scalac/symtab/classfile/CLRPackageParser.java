@@ -19,8 +19,6 @@ import java.io.File;
 import ch.epfl.lamp.compiler.msil.*;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
-import scalac.symtab.TermSymbol;
-import scalac.symtab.ClassSymbol;
 import scalac.symtab.Scope;
 import scalac.util.Debug;
 import scalac.util.Name;

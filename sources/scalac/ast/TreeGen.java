@@ -785,8 +785,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public Tree mkNewArray(int pos, Type element, Tree[] values, Symbol owner){
         if (values.length == 0) return mkNewArray(pos, element, 0);
         Tree[] trees = new Tree[1 + values.length];
-        Symbol array =
-            newLocal(pos, Names.array, owner, definitions.ARRAY_TYPE(element));
+        Symbol array = newLocal(
+            owner, pos, FINAL, "array", definitions.ARRAY_TYPE(element));
         trees[0] = ValDef(array, mkNewArray(pos, element, values.length));
         for (int i = 0; i < values.length; i++)
             trees[1 + i] = mkArraySet(Ident(pos, array), i, values[i]);
@@ -1046,10 +1046,13 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         return true;
     }
 
-    /** Creates a local variable with given prefix, owner and type. */
-    private Symbol newLocal(int pos, Name prefix, Symbol owner, Type type) {
+    /** Creates a new local variable and initializes it. */
+    private Symbol newLocal(Symbol owner, int pos, int flags, String prefix,
+        Type type)
+    {
         Name name = global.freshNameCreator.newName(prefix);
-        Symbol local = new TermSymbol(pos, name, owner, Modifiers.SYNTHETIC);
+        flags |= Modifiers.SYNTHETIC;
+        Symbol local = owner.newVariable(pos, flags, name);
         global.nextPhase();
         local.setType(type);
         global.prevPhase();
@@ -1110,7 +1113,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
 
-	Symbol applyMeth = new TermSymbol(pos, Names.apply, clazz, FINAL)
+	Symbol applyMeth = clazz.newMethod(pos, FINAL, Names.apply)
 	    .setInfo(Type.MethodType(params, restype));
 	clazz.info().members().enter(applyMeth);
 
@@ -1150,9 +1153,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	private Tree makeVisitorMethod(int pos, Name name, Tree visitor,
 				       Type pattype, Type restype,
 				       Symbol clazz, Symbol prevOwner) {
-	    Symbol meth = new TermSymbol(pos, name, clazz, FINAL);
-	    Symbol param = new TermSymbol(pos, Name.fromString("x$"), meth, PARAM)
-		.setInfo(pattype);
+	    Symbol meth = clazz.newMethod(pos, FINAL, name);
+	    Symbol param = meth.newVParam(pos, 0, Name.fromString("x$"), pattype);
 	    meth.setInfo(Type.MethodType(new Symbol[]{param}, restype));
 	    clazz.info().members().enter(meth);
 	    changeOwner(visitor, prevOwner, meth);
@@ -1187,13 +1189,9 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	if (TreeInfo.isPureExpr(obj) || TreeInfo.isPureExpr(fn)) {
 	    return Apply(Select(fn, definitions.FUNCTION_APPLY(1)), new Tree[]{obj});
 	} else {
-	    Name tmpname = global.freshNameCreator.newName("tmp", '$');
-	    Symbol tmp = new TermSymbol(
-		obj.pos, tmpname, owner, SYNTHETIC | FINAL)
-		.setInfo(obj.type);
-	    Tree tmpdef = ValDef(tmp, obj);
+	    Symbol tmp = newLocal(owner, obj.pos, FINAL, "postfix", obj.type);
 	    Tree expr = postfixApply(Ident(obj.pos, tmp), fn, owner);
-	    return mkBlock(tmpdef, expr);
+	    return mkBlock(ValDef(tmp, obj), expr);
 	}
     }
 

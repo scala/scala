@@ -530,8 +530,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	{
 	    // var m$: T = null;
 	    Name varname = Name.fromString(name + "$");
-	    Symbol mvar = new TermSymbol(
-		tree.pos, varname, sym.owner(), PRIVATE | MUTABLE | SYNTHETIC)
+	    Symbol mvar = sym.owner().newFieldOrVariable(
+		tree.pos, PRIVATE | MUTABLE | SYNTHETIC, varname)
 		.setInfo(sym.type());
 	    sym.owner().members().enterOrOverload(mvar);
 	    Tree vdef = gen.ValDef(mvar, gen.mkNullLit(tree.pos));
@@ -554,10 +554,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 	    // def m_eq(m: T): Unit = { m$ = m }
             Name m_eqname = name.append(Names._EQ);
-	    Symbol m_eq = new TermSymbol(
-		tree.pos, m_eqname, sym.owner(), PRIVATE | SYNTHETIC);
-            Symbol m_eqarg = new TermSymbol(tree.pos, name, m_eq, PARAM | SYNTHETIC)
-                .setType(sym.type());
+	    Symbol m_eq = sym.owner().newMethodOrFunction(
+		tree.pos, PRIVATE | SYNTHETIC, m_eqname);
+            Symbol m_eqarg = m_eq.newVParam(tree.pos, SYNTHETIC, name, sym.type());
             m_eq.setInfo(
                 Type.MethodType(new Symbol[] {m_eqarg}, defs.UNIT_TYPE()));
             Tree m_eqdef = gen.DefDef(m_eq,
@@ -629,8 +628,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private Tree toStringMethod(ClassSymbol clazz) {
-	Symbol toStringSym = new TermSymbol(
-	    clazz.pos, Names.toString, clazz, OVERRIDE)
+	Symbol toStringSym = clazz.newMethod(
+	    clazz.pos, OVERRIDE, Names.toString)
 	    .setInfo(defs.ANY_TOSTRING.type());
 	clazz.info().members().enter(toStringSym);
 	Tree[] fields = caseFields(clazz);
@@ -655,10 +654,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     private Tree equalsMethod(ClassSymbol clazz) {
-	Symbol equalsSym = new TermSymbol(clazz.pos, Names.equals, clazz, OVERRIDE);
-	Symbol equalsParam =
-	    new TermSymbol(clazz.pos, Names.that, equalsSym, PARAM)
-	    .setInfo(defs.ANY_TYPE());
+	Symbol equalsSym = clazz.newMethod(clazz.pos, OVERRIDE, Names.equals);
+	Symbol equalsParam = equalsSym.newVParam(
+            clazz.pos, 0, Names.that, defs.ANY_TYPE());
 	equalsSym.setInfo(
 	    Type.MethodType(new Symbol[]{equalsParam}, defs.BOOLEAN_TYPE()));
 	clazz.info().members().enter(equalsSym);
@@ -688,7 +686,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    gen.mkLocalRef(clazz.pos, equalsParam),
 		    defs.ANY_AS),
 		new Tree[]{gen.mkType(clazz.pos, testtp)});
-	    Symbol that1sym = new TermSymbol(clazz.pos, Names.that1, equalsSym, 0)
+	    Symbol that1sym = equalsSym.newVariable(clazz.pos, 0, Names.that1)
 		.setType(testtp);
 	    Tree that1def = gen.ValDef(that1sym, cast);
 
@@ -721,9 +719,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 
 	private Tree tagMethod(ClassSymbol clazz) {
-	    Symbol tagSym = new TermSymbol(
-		clazz.pos, Names.tag, clazz,
-		clazz.isSubClass(defs.SCALAOBJECT_CLASS) ? OVERRIDE : 0)
+            int flags =clazz.isSubClass(defs.SCALAOBJECT_CLASS) ? OVERRIDE : 0;
+	    Symbol tagSym = clazz.newMethod(clazz.pos, flags, Names.tag)
 		.setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE()));
 	    clazz.info().members().enter(tagSym);
 	    return gen.DefDef(
@@ -734,8 +731,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	}
 
     private Tree hashCodeMethod(ClassSymbol clazz) {
-	Symbol hashCodeSym = new TermSymbol(
-	    clazz.pos, Names.hashCode, clazz, OVERRIDE)
+	Symbol hashCodeSym = clazz.newMethod(
+	    clazz.pos, OVERRIDE, Names.hashCode)
 	    .setInfo(defs.ANY_HASHCODE.type());
 	clazz.info().members().enter(hashCodeSym);
 	Tree[] fields = caseFields(clazz);

@@ -988,10 +988,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
       case Tree$Import(expr, selectors) =>
 	enterImport(tree,
-		    new TermSymbol(
-		      tree.pos,
-		      Name.fromString("import " + expr),
-		      Symbol.NONE, SYNTHETIC))
+		    Symbol.NONE.newTerm(
+		      tree.pos, SYNTHETIC, Name.fromString("import " + expr)))
 
       case _ =>
 	null
@@ -1444,9 +1442,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  if (seqtp != Type.NoType) {
 	    def seqConstructorType(paramtp: Type, resulttp: Type) = {
 	      val constr: Symbol = resulttp.symbol().primaryConstructor();
-	      val param: Symbol = new TermSymbol(
-		Position.NOPOS, Names.PATTERN_WILDCARD, constr, PARAM | REPEATED).setInfo(
-		  paramtp.baseType(definitions.SEQ_CLASS));
+	      val param: Symbol = constr.newVParam(
+                tree.pos, REPEATED, Names.PATTERN_WILDCARD,
+                paramtp.baseType(definitions.SEQ_CLASS));
 	      new Type$MethodType(NewArray.Symbol(param), resulttp);
 	    }
 	    tree.setType(seqConstructorType(seqtp, pt));
@@ -2285,10 +2283,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	case Tree$Bind(name, body) =>
           var vble: Symbol = null;
           if(name != Names.PATTERN_WILDCARD) {
-            vble = new TermSymbol(tree.pos,
-                                  name,
-                                  context.owner,
-                                  0x00000000).setType(pt);
+            vble = context.owner.newPatternVariable(tree.pos, name).setType(pt);
             enterInScope(vble);
             //System.out.println("Bind("+name+",...) enters in scope:"+Debug.show(vble));
 
@@ -2853,10 +2848,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
               vble =
 		if (name == Names.PATTERN_WILDCARD)
                   definitions.PATTERN_WILDCARD
-		else new TermSymbol(tree.pos,
-                                    name,
-                                    context.owner,
-                                    0).setType(pt);
+		else context.owner.newPatternVariable(tree.pos, name).setType(pt);
 	      //if(((mode & SEQUENCEmode) != 0)&&(name != Names.PATTERN_WILDCARD)) {
 	      if(name != Names.PATTERN_WILDCARD) {
 		// x => x @ _ in sequence patterns

@@ -397,16 +397,15 @@ public class AttributeParser implements ClassfileConstants {
                         nextToken();
                         if (")".equals(token))
                             break;
-                        int flags = Modifiers.PARAM;
+                        int flags = 0;
                         if ("def".equals(token)) {
                             nextToken();
                             flags |= Modifiers.DEF;
                         }
-                        params.add(new TermSymbol(
+                        params.add(owner.newVParam(
                             Position.NOPOS,
-                            Name.fromString("x" + (i++)),
-                            owner,
-                            flags).setInfo(parseType()));
+                            flags,
+                            Name.fromString("x" + (i++))).setInfo(parseType()));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);
@@ -455,11 +454,10 @@ public class AttributeParser implements ClassfileConstants {
                         nextToken();
                         if (")".equals(token))
                             break;
-                        params.add(new TermSymbol(
+                        params.add(owner.newVParam(
                             Position.NOPOS,
-                            Name.fromString("x" + (i++)),
-                            owner,
-                            Modifiers.PARAM).setInfo(parseType()));
+                            0,
+                            Name.fromString("x" + (i++))).setInfo(parseType()));
                         //System.out.println("  + " + token);
                     } while (token.equals(","));
                     assert ")".equals(token);

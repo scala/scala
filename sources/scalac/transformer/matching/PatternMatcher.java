@@ -71,10 +71,9 @@ public class PatternMatcher extends PatternTool {
         this.root.and = mk.Header(selector.pos,
                                   selector.type.widen(),
                                   gen.Ident(selector.pos, root.symbol()));
-        this.resultVar = new TermSymbol(selector.pos,
-                                        fresh.newName(RESULT_N),
-                                        owner,
-                                        Modifiers.MUTABLE);
+        this.resultVar = owner.newVariable(selector.pos,
+                                           Modifiers.MUTABLE,
+                                           fresh.newName(RESULT_N));
         this.resultVar.setType(resultType);
         this.owner = owner;
         this.selector = selector;

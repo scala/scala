@@ -22,7 +22,6 @@ import scalac.ast.Tree.Template;
 import scalac.ast.TreeList;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol;
 import scalac.symtab.Type;
 import scalac.util.Name;
 import scalac.util.Debug;
@@ -65,7 +64,7 @@ public class AddAccessorsPhase extends Phase {
             int flags = Modifiers.PRIVATE | Modifiers.STABLE;
             Name name = Name.fromString(param.name + "$");
             Symbol owner = param.owner().constructorClass();
-            Symbol field = new TermSymbol(param.pos, name, owner, flags);
+            Symbol field = owner.newField(param.pos, flags, name);
             field.setType(param.type());
             owner.members().enterOrOverload(field);
             return field;
@@ -76,7 +75,7 @@ public class AddAccessorsPhase extends Phase {
             int flags = Modifiers.PRIVATE | Modifiers.STABLE | Modifiers.ACCESSOR;
             Name name = param.name;
             Symbol owner = param.owner().constructorClass();
-            Symbol method = new TermSymbol(param.pos, name, owner, flags);
+            Symbol method = owner.newMethod(param.pos, flags, name);
             method.setType(Type.MethodType(Symbol.EMPTY_ARRAY, param.type()));
             owner.members().enterOrOverload(method);
             methods.put(param, method);

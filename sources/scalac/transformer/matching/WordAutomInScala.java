@@ -15,7 +15,6 @@ import scalac.ast.Tree;
 import scalac.ast.TreeGen;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
-import scalac.symtab.TermSymbol; // test
 import scalac.symtab.Modifiers; // test
 import scalac.transformer.TransMatch.Matcher;
 //import scalac.typechecker.*;
@@ -71,42 +70,30 @@ public class WordAutomInScala extends Autom2Scala {
         this.funSym = owner.newLabel( pos,
                                       cf.fresh.newName( "matcher" ));
 
-        this.iterSym = new TermSymbol( pos,
-                                       cf.fresh.newName("iter"),
-                                       owner,
-                                       Modifiers.MUTABLE /*| NOT : Modifiers.PARAM*/ )
+        this.iterSym = owner.newVariable( pos,
+                                          Modifiers.MUTABLE,
+                                          cf.fresh.newName("iter"))
             .setType( cf._seqIterType( elementType ) ) ;
 
-        this.stateSym = new TermSymbol( pos,
-                                        cf.fresh.newName("q"),
-                                        owner,
-                                        Modifiers.MUTABLE )
+        this.stateSym = owner.newVariable( pos,
+                                           Modifiers.MUTABLE,
+                                        cf.fresh.newName("q"))
             .setType( defs.INT_TYPE() ) ;
 
-        this.resultSym = new TermSymbol( pos,
-                                         cf.fresh.newName("swRes"),
-                                         owner,
-                                         0 )
+        this.resultSym = owner.newVariable( pos,
+                                            Modifiers.MUTABLE,
+                                            cf.fresh.newName("swRes"))
             .setType( defs.INT_TYPE() ) ;
 
         this.funSym
             .setType( new Type.MethodType( new Symbol[] {
-                new TermSymbol( pos,
-                                cf.fresh.newName("q"),
-                                funSym,
-                                Modifiers.PARAM ).setType( defs.INT_TYPE() )
+                funSym.newVParam( pos, 0, cf.fresh.newName("q"), defs.INT_TYPE())
             }, defs.INT_TYPE() ));
 
-        this.curSym = new TermSymbol( pos,
-                                      CURRENT_ELEM,
-                                      owner,
-                                      0)
+        this.curSym = owner.newVariable( pos, 0, CURRENT_ELEM )
             .setType( elementType );
 
-        this.hasnSym = new TermSymbol( pos,
-                                       HASNEXT,
-                                       owner,
-                                       0)
+        this.hasnSym = owner.newVariable( pos, 0, HASNEXT )
             .setType( defs.BOOLEAN_TYPE() );
 
     }
