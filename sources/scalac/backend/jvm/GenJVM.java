@@ -1381,15 +1381,19 @@ public class GenJVM {
      * symbol table is saved.
      */
     protected void addScalaAttr(JClass cls, Pickle pickle) {
-        pickles.add(cls);
-        pickles.add(pickle);
-//         JOtherAttribute scalaAttr =
-//             fjbgContext.JOtherAttribute(cls,
-//                                         cls,
-//                                         SCALA_ATTR,
-//                                         pickle.bytes,
-//                                         pickle.size());
-//         cls.addAttribute(scalaAttr);
+        // change this to true to enable .symbl file generation
+        if (false) {
+            pickles.add(cls);
+            pickles.add(pickle);
+        } else {
+            JOtherAttribute scalaAttr =
+                fjbgContext.JOtherAttribute(cls,
+                                            cls,
+                                            SCALA_ATTR,
+                                            pickle.bytes,
+                                            pickle.size());
+            cls.addAttribute(scalaAttr);
+        }
     }
 
     /// Names
