@@ -24,7 +24,9 @@ object Main {
   val VERSION: String =
     System.getProperty("scala.version", "unknown version");
 
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]): unit = main1( true, args );
+
+  def main1( exitOnError:boolean, args: Array[String] ):unit = {
     val reporter = new Reporter();
     val command = new CompilerCommand(
       PRODUCT, VERSION, reporter, new CompilerPhases());
@@ -34,7 +36,9 @@ object Main {
       global.stop("total");
       global.reporter.printSummary();
     }
-    System.exit(if (reporter.errors() > 0) 1 else 0);
+    if( exitOnError ) {
+      System.exit(if (reporter.errors() > 0) 1 else 0);
+    }
   }
 }
 }
