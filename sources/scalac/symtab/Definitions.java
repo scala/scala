@@ -1,6 +1,6 @@
 /*     ____ ____  ____ ____  ______                                     *\
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
-**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
+**  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002-2004, LAMP/EPFL         **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
 ** $Id$
@@ -76,6 +76,10 @@ public class Definitions {
     /** The java.lang.Throwable class */
     public final Symbol THROWABLE_CLASS;
     public final Type   THROWABLE_TYPE() {return THROWABLE_CLASS.staticType();}
+
+    /** The java.io.Serializable class */
+    public final Symbol SERIALIZABLE_CLASS;
+    public final Type   SERIALIZABLE_TYPE() {return SERIALIZABLE_CLASS.staticType();}
 
     //########################################################################
     // Public Fields & Methods - Scala value classes
@@ -652,6 +656,7 @@ public class Definitions {
 	STRING_CLASS = getClass(forMSIL ? "System.String" : "java.lang.String");
         THROWABLE_CLASS =
             getClass(forMSIL ? "System.Exception" : "java.lang.Throwable");
+	SERIALIZABLE_CLASS = getClass(forMSIL ? "System.Serializable" : "java.io.Serializable");
 
         // the scala value classes
         UNIT_CLASS = getClass("scala.Unit");
