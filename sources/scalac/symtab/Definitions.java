@@ -620,11 +620,11 @@ public class Definitions {
     public Symbol getModule(Name fullname, boolean fail) {
         Scope scope = ROOT_CLASS.members();
         int i = 0;
-        int j = fullname.pos((byte)'.', i);
-        while (j < fullname.length()) {
+        int j = fullname.indexOf('.', i);
+        while (j >= 0) {
             scope = scope.lookup(fullname.subName(i, j)).members();
             i = j + 1;
-            j = fullname.pos((byte)'.', i);
+            j = fullname.indexOf('.', i);
         }
         Symbol sym = scope.lookup(fullname.subName(i, fullname.length()));
         if (!sym.isModule()) {
@@ -648,11 +648,11 @@ public class Definitions {
     public Symbol getClass(Name fullname) {
         Scope scope = ROOT_CLASS.members();
         int i = 0;
-        int j = fullname.pos((byte)'.', i);
-        while (j < fullname.length()) {
+        int j = fullname.indexOf('.', i);
+        while (j >= 0) {
             scope = scope.lookup(fullname.subName(i, j)).members();
             i = j + 1;
-            j = fullname.pos((byte)'.', i);
+            j = fullname.indexOf('.', i);
         }
         Symbol sym = scope.lookup(fullname.subName(i, fullname.length()).toTypeName());
         assert sym.kind != Kinds.NONE : "no class '" + fullname + "'";

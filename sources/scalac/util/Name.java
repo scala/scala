@@ -201,30 +201,30 @@ public final class Name {
         return len;
     }
 
-/** returns i'th byte of this name
+/** returns i'th char of this name
  */
-    public byte sub(int i) {
-        return names[index + i];
+    public char charAt(int i) {
+        return (char)names[index + i];
     }
 
-/** returns first occurrence of byte b in this name, len if not found
+/** returns first occurrence of char c in this name, -1 if not found
  */
-    public int pos(byte b) {
-	return pos(b, 0);
+    public int indexOf(char c) {
+	return indexOf(c, 0);
     }
 
-/** returns first occurrence of byte b in this name from `start', len if not found
+/** returns first occurrence of char c in this name from `start', -1 if not found
  */
-    public int pos(byte b, int start) {
-        int i = start;
-        while (i < len && names[index + i] != b)
-            i++;
-        return i;
+    public int indexOf(char c, int start) {
+        byte b = (byte)c;
+        for (int i = start; i < len; i++) if (names[index + i] == b) return i;
+        return -1;
     }
 
-/** returns last occurrence of byte b in this name, -1 if not found.
+/** returns last occurrence of char c in this name, -1 if not found.
  */
-    public int lastPos(byte b) {
+    public int lastIndexOf(byte c) {
+        byte b = (byte)c;
         int i = len - 1;
         while (i >= 0 && names[index + i] != b)
             i--;

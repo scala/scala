@@ -95,7 +95,7 @@ package scala.tools.scalac.ast.parser {
 
 	case Tree$Ident( vble ) =>
 	  if (inAlt && vble.isVariable() && vble != Names.PATTERN_WILDCARD &&
-	      vble.lastPos('$') == -1) {
+	      vble.lastIndexOf('$') == -1) {
 		unit.error( t.pos, "variable not allowed under alternative");
 		return false;
 	      } else if(( this.boundVars.containsKey( vble /*t.symbol()*/ ))

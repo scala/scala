@@ -78,7 +78,7 @@ public class ConstantPool implements ClassfileConstants {
      *  corresponding type; otherwise return a class definition with given name
      */
     protected Object classOrType(Name name) {
-        if ((name.sub(0) == '[') || (name.sub(name.length() - 1) == ';')) {
+        if ((name.charAt(0) == '[') || (name.charAt(name.length() - 1) == ';')) {
             byte[] ascii = name.toAscii();
             return sigparser.sigToType(ascii, 0, ascii.length);
         } else
