@@ -10,6 +10,7 @@ package scalac.util;
 public class Names {
 
     public static final Name ERROR = Name.ERROR;
+    public static final Name NOSYMBOL = Name.fromString("<none>");
     public static final Name EMPTY = Name.fromString("");
     public static final Name WILDCARD = Name.fromString("_");
     public static final Name COMPOUND_NAME = Name.fromString("<ct>");
