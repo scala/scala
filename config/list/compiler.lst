@@ -113,8 +113,8 @@ transformer/MakeBoxingExplicitPhase.java
 transformer/OwnerTransformer.java
 transformer/TailCallPhase.java
 transformer/TypesAsValuesPhase.java
-transformer/UnCurry.java
-transformer/UnCurryPhase.java
+# transformer/UnCurry.java
+# transformer/UnCurryPhase.java
 
 transformer/matching/AlgebraicMatcher.java
 transformer/matching/Autom2Scala.java
@@ -143,8 +143,8 @@ transformer/matching/WordAutomInScala.java
 
 typechecker/AnalyzerPhase.java
 typechecker/Infer.java
-typechecker/RefCheck.java
-typechecker/RefCheckPhase.java
+# typechecker/RefCheck.java
+# typechecker/RefCheckPhase.java
 
 util/AbstractFileReader.java
 util/ArrayApply.java

@@ -57,19 +57,20 @@ which are in none of the sets above, mathematical symbols(Sm) and other symbols(
 
 \syntax\begin{lstlisting}
 op        ::=  special {special}
-varid     ::=  lower {letter $|$ digit} [`_' {digit} [id]]
-id        ::=  upper {letter $|$ digit} [`_' {digit} [id]]
+varid     ::=  lower idrest
+id        ::=  upper idrest
             |  varid
             |  op
             |  ```string chars`''
+idrest    ::= {letter $|$ digit} {'_' (op | idrest)}
 \end{lstlisting}
 
 There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
-letters and digits. This may be followed by an underscore
-`\lstinline@_@' character and another string of characters that by
-themselves make up an identifier.  Second, an identifier can start
-with a special character followed by an arbitrary sequence of special
+letters and digits. This may be followed by underscore `\lstinline@_@'
+characters and other string composed of either letters and digits or
+of special characeters.  Second, an identifier can start with a
+special character followed by an arbitrary sequence of special
 characters.  Finally, an identifier may also be formed by an arbitrary
 string between back-quotes (host systems may impose some restrictions
 on which strings are legal for identifiers).  As usual, a longest
@@ -767,8 +768,8 @@ transitive relation that satisfies the following conditions.
         $(T'_1 \commadots T'_n) U'$.
 \item If, assuming 
 $L'_1 \conforms a_1 \conforms U'_1 \commadots L'_n \conforms a_n \conforms U'_n$ 
-one has $L'_i \equiv L'_i$ and $U_i \equiv U'_i$
-for $i = 1 \commadots n$, as well as $T \conforms T'$ then the polymorphic type
+one has $L_i \conforms L'_i$ and $U'_i \conforms U_i$
+for $i = 1 \commadots n$, as well as $T \conforms T'$, then the polymorphic type
 $[a_1 >: L_1 <: U_1 \commadots a_n >: L_n <: U_n] T$ conforms to the polymorphic type
 $[a_1 >: L'_1 <: U'_1 \commadots a_n >: L'_n <: U'_n] T'$.
 \item 

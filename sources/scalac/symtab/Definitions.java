@@ -116,12 +116,17 @@ public class Definitions {
     public final Symbol DOUBLE_CLASS;
     public final Type   DOUBLE_TYPE() {return DOUBLE_CLASS.staticType();}
 
+
     //########################################################################
     // Public Fields & Methods - Scala reference classes
 
     /** The scala.ScalaObject class */
     public final Symbol SCALAOBJECT_CLASS;
     public final Type   SCALAOBJECT_TYPE() {return SCALAOBJECT_CLASS.staticType();}
+
+    /** The scala.Attribute class */
+    public final Symbol ATTRIBUTE_CLASS;
+    public final Type   ATTRIBUTE_TYPE() {return ATTRIBUTE_CLASS.staticType();}
 
     /** The scala.Ref class */
     public final Symbol REF_CLASS;
@@ -660,6 +665,7 @@ public class Definitions {
 
         // the scala reference classes
         SCALAOBJECT_CLASS = getClass("scala.ScalaObject");
+        ATTRIBUTE_CLASS = getClass("scala.Attribute");
         REF_CLASS = getClass("scala.Ref");
         for (int i = 1; i < TUPLE_COUNT; i++) {
             TUPLE_CLASS[i] = getClass("scala.Tuple" + i);

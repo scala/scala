@@ -226,6 +226,13 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
       case Tree.Empty =>
 	print(TXT_EMPTY);
 
+      case Tree$Attributed(attr, definition) =>
+	print(TXT_LEFT_BRACKET);
+	print(attr);
+	print(TXT_RIGHT_BRACKET);
+        printNewLine();
+        print(definition);
+
       case Tree$DocDef(comment, definition) =>
         print(comment);
         printNewLine();

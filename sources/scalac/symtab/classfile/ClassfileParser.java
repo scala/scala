@@ -147,7 +147,9 @@ public class ClassfileParser implements ClassfileConstants {
             int savedFlags = c.flags;
             c.flags |= Modifiers.INITIALIZED;
             // hack to make memberType in addInheritedOverloaded work
-	    addInheritedOverloaded();
+            if (global.currentPhase.id <= global.PHASE.REFCHECK.id() &&
+                !c.name.toString().endsWith("$class"))
+                addInheritedOverloaded();
 
             //if (global.debug) {
             //    Symbol[] elems = c.members().elements();

@@ -71,6 +71,7 @@ public class Tree {
 
     public final TreeNode
         n_Empty          = node("Empty"         , Any , NoSym),
+        n_Attributed     = node("Attributed"    , None, NoSym),
         n_DocDef         = node("DocDef"        , None, NoSym),
         n_ClassDef       = node("ClassDef"      , None, DefSym),
         n_PackageDef     = node("PackageDef"    , None, NoSym),
@@ -126,6 +127,12 @@ public class Tree {
             setDescription("A tree node for the absence of a tree").
             setRange(Phase.PARSER, Phase.UNKNOWN).
             noFields();
+
+        n_Attributed.
+            setDescription("Attributed definition").
+            setRange(Phase.PARSER, Phase.ANALYZER).
+            addField(t_Tree, "attribute").
+            addField(t_Tree, "definition");
 
         n_DocDef.
             setDescription("Documented definition").

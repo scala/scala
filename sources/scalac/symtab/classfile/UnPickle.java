@@ -154,6 +154,17 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 	else return "value " + NameTransformer.decode(name);
     }
 
+    /*
+    void enterSymbol(Symbol sym) {
+	Symbol owner = sym.owner();
+	if (owner.kind == CLASS &&
+	    !sym.isConstructor() && !sym.isModuleClass()) {
+	    Scope scope = owner.info().members();
+	    scope.enterOrOverload(sym);
+	}
+    }
+    */
+
     void enterSymbol(Symbol sym) {
 	/*
 	if (global.debug) {

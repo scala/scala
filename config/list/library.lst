@@ -5,6 +5,7 @@
 
 AnyVal.java
 Array.java
+Attribute.scala
 Boolean.java
 BufferedIterator.scala
 Byte.java
@@ -44,6 +45,8 @@ Ref.java
 ScalaObject.java
 Seq.scala
 SeqProxy.scala
+Serializable.scala
+SerialVersionUID.scala
 Short.java
 Some.scala
 Stream.scala
@@ -59,6 +62,8 @@ Tuple8.scala
 Tuple9.scala
 Type.java
 Unit.java
+transient.scala
+volatile.scala
 
 collection/Map.scala
 collection/MapProxy.scala

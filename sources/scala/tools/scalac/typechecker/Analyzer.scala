@@ -57,6 +57,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   var unit: CompilationUnit = _;
 
+  type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/;
+
   override def apply(units: Array[CompilationUnit]): unit = {
     var i = 0; while (i <  units.length) {
       enterUnit(units(i));
@@ -839,6 +841,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   }
 
   def outerEnterSym(tree: Tree): Symbol = enterSym(tree);
+
   /** If `tree' is a definition, create a symbol for it with a lazily
   *  constructed type, and enter into current scope.
   */
@@ -898,6 +901,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  case _ =>
 	    throw new ApplicationError();
 	}
+
+      case Tree$Attributed(attr, definition) =>
+        outerEnterSym(definition);
 
       case Tree$DocDef(comment, definition) =>
         val sym = outerEnterSym(definition);
@@ -1581,6 +1587,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (pt.symbol() == definitions.UNIT_CLASS) {
 	  return gen.mkUnitBlock(tree);
 	} else if (infer.isCompatible(tree.getType(), pt)) {
+          tree match {
+            case Tree$Literal(value) =>
+              val value1 = constfold.cast(value, pt);
+              if (value1 != null)
+                return adapt(gen.Literal(tree.pos, value1), mode, pt);
+            case _ =>
+          }
 	  val v = infer.bestView(tree.getType(), pt, Names.EMPTY);
 	  if (v != null) return applyView(v, tree, mode, pt);
 	  // todo: remove
@@ -2152,6 +2165,38 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       tree match {
 	case Tree.Empty =>
 	  tree.setType(Type.NoType)
+
+   	case Tree$Attributed(attr, definition) =>
+
+	  def attrInfo(attr: Tree): AttrInfo = attr match {
+            case Tree$Ident(_) | Tree$Select(_, _) =>
+	      new Pair(attr.symbol(), new Array[AConstant](0))
+            case Tree$Apply(fn, args) =>
+	      new Pair(attrInfo(fn).fst, attrArgInfos(args))
+            case _ =>
+              unit.error(attr.pos, "malformed attribute");
+              new Pair(Symbol.NONE.newErrorClass(errorName(attr).toTypeName()),
+                       new Array[AConstant](0))
+          }
+
+	  def attrArgInfos(args: Array[Tree]): Array[AConstant] = {
+            val infos = new Array[AConstant](args.length);
+            var i = 0; while (i < args.length) {
+	      args(i) match {
+	        case Tree$Literal(value) => infos(i) = value;
+		case _ => unit.error(args(i).pos,
+			    "attribute argument needs to be a constant; found: " + args(i) + " " + args(i).getClass());
+	      }
+	      i = i + 1
+            }
+	    infos
+          }
+
+	  val attr1 = transform(attr, CONSTRmode, definitions.ATTRIBUTE_TYPE());
+	  var attrs = global.mapSymbolAttr.get(sym).asInstanceOf[List[AttrInfo]];
+	  if (attrs == null) attrs = List();
+	  global.mapSymbolAttr.put(sym, attrInfo(attr1) :: attrs);
+          transform(definition)
 
    	case Tree$DocDef(comment, definition) =>
           transform(definition)

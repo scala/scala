@@ -157,7 +157,7 @@ class Parser(unit: CompilationUnit) {
       false;
   }
 
-/////// COMMENT COLLECTION ///////////////////////////////////////////////////
+/////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
 
   /** Stack of comments
   */
@@ -2006,8 +2006,12 @@ class Parser(unit: CompilationUnit) {
                  s.token == TRAIT ||
                  s.token == OBJECT ||
                  s.token == CASEOBJECT ||
+                 s.token == LBRACKET ||
                  isModifier()) {
-        stats.append(joinComment(clsDef(modifiers())));
+        stats.append(
+            joinAttributes(
+              attributes(),
+              joinComment(clsDef(modifiers()))));
       } else if (s.token != SEMI) {
         syntaxError("illegal start of class or object definition", true);
       }
@@ -2030,14 +2034,42 @@ class Parser(unit: CompilationUnit) {
         stats.append(importClause());
       } else if (isExprIntro()) {
         stats.append(expr());
-      } else if (isDefIntro() || isModifier()) {
-        stats.append(joinComment(defOrDcl(modifiers())));
+      } else if (isDefIntro() || isModifier() || s.token == LBRACKET) {
+        stats.append(
+          joinAttributes(
+            attributes(),
+            joinComment(defOrDcl(modifiers()))))
       } else if (s.token != SEMI) {
         syntaxError("illegal start of definition", true);
       }
       if (s.token != RBRACE) accept(SEMI);
     }
     stats.toArray()
+  }
+
+  def attributes(): List[Tree] = {
+    var attrs: List[Tree] = List();
+    while (s.token == LBRACKET) {
+      s.nextToken();
+      attrs = constr() :: attrs;
+      while (s.token == COMMA) {
+        s.nextToken();
+        attrs = constr() :: attrs;
+      }
+      accept(RBRACKET);
+    }
+    attrs
+  }
+
+  def joinAttributes(attrs: List[Tree], defs: Array[Tree]): Array[Tree] = attrs match {
+    case List() =>
+      defs
+    case attr :: attrs1 =>
+      var i = 0; while (i < defs.length) {
+        defs(i) = make.Attributed(attr.pos, attr, defs(i));
+        i = i + 1;
+      }
+      joinAttributes(attrs1, defs)
   }
 
   /** RefineStatSeq    ::= RefineStat {`;' RefineStat}

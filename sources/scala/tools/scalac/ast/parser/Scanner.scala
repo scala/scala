@@ -628,8 +628,12 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
 
   def treatIdent = {
     name = Name.fromString( cbuf.toString() );
-    token = name2token( name );
-    cbuf.setLength( 0 );;
+/* not yet!
+    if (name.length() > 1 && name.charAt(name.length() - 1) == '_')
+      syntaxError("identifier may not end in a '_'");
+*/
+    token = name2token(name);
+    cbuf.setLength(0);
   }
 
   /** generate an error at the given position

@@ -119,6 +119,10 @@ public abstract class Global {
      */
     public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
 
+    /** attributes of symbols
+     */
+    public final Map/*<Symbol, Pair<Symbol, AConstant[]>>*/ mapSymbolAttr = new HashMap();
+
     /** views associated with (upper-bounded) type parameters
      */
     public final Map/*<Symbol, Symbol>*/ viewOfTypeParam = new HashMap();
