@@ -11,6 +11,8 @@ case class ElemDecl( name:String ,
                      attribs:Map[String,AttrDecl] )
      extends MarkupDecl {
 
+       //final val parsedContentModel = RegExp.parse( contentModel );
+
        def containsText = contentModel.indexOf("#PCDATA") != -1 ;
 };
 
