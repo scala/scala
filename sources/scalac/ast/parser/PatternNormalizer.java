@@ -88,7 +88,7 @@ public class PatternNormalizer {
 
 	case Ident( Name var ):
 	    if(( inAlt )
-	       &&( var != Names.WILDCARD )
+	       &&( var != Names.PATTERN_WILDCARD )
 	       &&( var.toString().lastIndexOf("$") == -1))
 		{
 		unit.error( t.pos,

@@ -272,7 +272,7 @@ public class PatternMatcher extends PatternTool {
         switch (tree) {
             case Bind(Name name, Tree pat):
             	PatternNode node = patternNode(pat, header, env);
-            	if ((env != null) && (name != Names.WILDCARD))
+            	if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD))
 					env.newBoundVar(		tree.symbol(),
 									tree.type,
 									header.selector);
@@ -284,12 +284,12 @@ public class PatternMatcher extends PatternTool {
 							return mk.SequencePat( tree.pos, tree.type, ts.length );
 					}
 				return mk.ConstrPat(tree.pos, tree.type);
-			case Typed(Ident(Name name), Tree tpe):       // variable pattern
+			case Typed(Ident ident, Tree tpe):       // variable pattern
 				PatternNode node =
 					(header.type.isSubType(tpe.type)) ?
 					mk.DefaultPat(tree.pos, tpe.type)
 					: mk.ConstrPat(tree.pos, tpe.type);
-				if ((env != null) && (name != Names.WILDCARD))
+				if ((env != null) && (ident.symbol() != defs.PATTERN_WILDCARD))
 					switch (node) {
 						case ConstrPat(Symbol casted):
 							env.newBoundVar(
@@ -305,7 +305,7 @@ public class PatternMatcher extends PatternTool {
 					}
 				return node;
 			case Ident(Name name):                  // pattern without args or variable
-				if (name == Names.WILDCARD)
+				if (tree.symbol() == defs.PATTERN_WILDCARD)
 					return mk.DefaultPat(tree.pos, header.type);
 				else if (tree.symbol().isPrimaryConstructor())
 					return mk.ConstrPat(tree.pos, tree.type);

@@ -8,6 +8,7 @@
 
 package scalac.transformer.matching;
 
+import scalac.Global;
 import scalac.ast.*;
 import scalac.util.*;
 import scalac.symtab.*;
@@ -28,9 +29,10 @@ public class TestRegTraverser extends Traverser {
 					variables.add(tree.symbol());
 					traverse(pat);
 					break;
-				case Ident(Name name):
-					if ((name != Names.WILDCARD) &&
-					    variables.contains(tree.symbol()))
+				case Ident(_):
+					Symbol symbol = tree.symbol();
+					if ((symbol != Global.instance.definitions.PATTERN_WILDCARD) &&
+					    variables.contains(symbol))
 						result = true;
 					break;
 				 case CaseDef(Tree pat, _, _):

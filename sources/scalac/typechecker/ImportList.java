@@ -62,7 +62,7 @@ class ImportList {
 			return t.lookupNonPrivate(selectors[i]);
 		} else if (name.toTermName() == selectors[i]) {
 		    renamed = true;
-		} else if (selectors[i] == Names.WILDCARD && !renamed) {
+		} else if (selectors[i] == Names.IMPORT_WILDCARD && !renamed) {
 		    return t.lookupNonPrivate(name);
 		}
 	    }

@@ -987,7 +987,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    if (name == TypeNames.WILDCARD_STAR)
 		return tree;
 
-	    if( TreeInfo.isWildcardPattern( tree ) )
+	    if( sym == defs.PATTERN_WILDCARD )
 		return elimTypeNode(tree);
 
 	    //System.out.println("name: "+name);

@@ -356,9 +356,7 @@ public class RightTracerInScala extends TracerInScala  {
 				       Tree.Empty,
 				       handleBody1( helpMap3 )/* "freshening */),
 	    (CaseDef) cf.make.CaseDef( pat.pos,
-				       cf.make.Ident( pat.pos, Names.WILDCARD )
-				       //DON'T .setSymbol( Symbol.NONE ) !!FIXED
-				       .setType( pat.type() ),
+				       cf.gen.Ident( pat.pos, defs.PATTERN_WILDCARD ),
 				       Tree.Empty,
 				       gen.mkBooleanLit( pat.pos, false )) }, // else return false
 		      true // do binding please

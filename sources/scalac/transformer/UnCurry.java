@@ -177,7 +177,7 @@ public class UnCurry extends OwnerTransformer
 	    if (name == TypeNames.WILDCARD_STAR) {
 		unit.error(tree.pos, " argument does not correspond to `*'-parameter");
 		return tree;
-	    } else if (TreeInfo.isWildcardPattern(tree)) {
+	    } else if (tree.symbol() == global.definitions.PATTERN_WILDCARD) {
 		return tree;
 	    } else {
 		return applyDef(super.transform(tree));

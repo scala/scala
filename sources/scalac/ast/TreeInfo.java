@@ -239,15 +239,4 @@ public class TreeInfo {
 	    return false;
 	}
     }
-
-    /** returns true if the argument is a wildcard pattern
-     */
-    public static boolean isWildcardPattern( Tree tree ) {
-	switch( tree ) {
-	case Ident( Name n ):
-	    return ( n == Names.WILDCARD ) && ( tree.symbol() == null );
-	default:
-	    return false;
-	}
-    }
 }

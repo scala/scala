@@ -193,6 +193,8 @@ public class Definitions {
     public Symbol BARBAR() { loadBooleanMembers(); return BARBAR; }
     public Symbol AMPAMP() { loadBooleanMembers(); return AMPAMP; }
 
+    public final Symbol PATTERN_WILDCARD;
+
     public Definitions(Global global) {
         // a hack to make definitions accessible earlier to other
         // components
@@ -427,6 +429,10 @@ public class Definitions {
 	    Position.NOPOS, Names.ZERO, ROOT_CLASS, 0);
         ZERO.setInfo(ALL_TYPE);
         ROOT.members().enter(ZERO);
+
+        PATTERN_WILDCARD = new TermSymbol(
+            Position.NOPOS, Names.PATTERN_WILDCARD, Symbol.NONE, 0);
+        PATTERN_WILDCARD.setType(ALL_TYPE);
     }
 
     private Symbol newParameter(Symbol owner, Type tp) {

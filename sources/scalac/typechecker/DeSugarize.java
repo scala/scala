@@ -84,7 +84,7 @@ public class DeSugarize implements Kinds, Modifiers {
     void getVariables(Tree tree, ArrayList vars) {
 	switch(tree) {
 	case Ident(Name name):
-	    if (name.isVariable() && name != Names.WILDCARD) vars.add(name);
+	    if (name.isVariable() && name != Names.PATTERN_WILDCARD) vars.add(name);
 	    break;
 	case Typed(Tree expr, Tree type):
 	    getVariables(expr, vars);
@@ -103,7 +103,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	case Literal( _ ):
 	    break;
 	case Bind( Name name, Tree t ):
-	    if (name.isVariable() && name != Names.WILDCARD) vars.add(name);
+	    if (name.isVariable() && name != Names.PATTERN_WILDCARD) vars.add(name);
 	    getVariables( t, vars );
 	    break;
 	case Alternative( Tree ts[] ):
@@ -207,7 +207,7 @@ public class DeSugarize implements Kinds, Modifiers {
 	    }
 	    cases1[cases.length] = (CaseDef) make.CaseDef(
 		tree.pos,
-		make.Ident(tree.pos, Names.WILDCARD),
+		gen.Ident(tree.pos, global.definitions.PATTERN_WILDCARD),
 		Tree.Empty,
 		gen.mkBooleanLit(tree.pos, false));
 	    return make.Visitor(tree.pos, cases1);
@@ -544,10 +544,10 @@ public class DeSugarize implements Kinds, Modifiers {
       public Tree IdentPattern( Tree tree ) {
             switch( tree ) {
             case Ident( Name name ):
-		if( name == Names.WILDCARD ) throw new ApplicationError("nothing to desugarize");
+		if( name == Names.PATTERN_WILDCARD ) throw new ApplicationError("nothing to desugarize");
 		return make.Bind( tree.pos,
 				  name,
-				  make.Ident( tree.pos, Names.WILDCARD ).setType( tree.type )).setType( tree.type );
+				  gen.Ident( tree.pos, global.definitions.PATTERN_WILDCARD )).setType( tree.type );
             default:
 		throw new ApplicationError("ident expected");
             }

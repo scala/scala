@@ -44,7 +44,7 @@ public class AnalyzerPhase extends Phase {
                 .setSymbol(definitions.JAVALANG)
                 .setType(Type.singleType(java.type, definitions.JAVALANG));
             Tree importjavalang = make.Import(
-                Position.NOPOS, javalang, new Name[]{Names.WILDCARD})
+                Position.NOPOS, javalang, new Name[]{Names.IMPORT_WILDCARD})
                 .setSymbol(definitions.JAVALANG)
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
@@ -54,7 +54,7 @@ public class AnalyzerPhase extends Phase {
                 .setSymbol(definitions.SCALA)
                 .setType(Type.singleType(definitions.ROOT_TYPE, definitions.SCALA));
             Tree importscala = make.Import(
-                Position.NOPOS, scala, new Name[]{Names.WILDCARD})
+                Position.NOPOS, scala, new Name[]{Names.IMPORT_WILDCARD})
                 .setSymbol(definitions.SCALA)
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
@@ -73,7 +73,7 @@ public class AnalyzerPhase extends Phase {
                 .setType(Type.singleType(scala.type, scalaPredefSym));
 
             Tree importscalaPredef = make.Import(
-                Position.NOPOS, scalaPredef, new Name[]{Names.WILDCARD})
+                Position.NOPOS, scalaPredef, new Name[]{Names.IMPORT_WILDCARD})
                 .setSymbol(scalaPredefSym)
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
@@ -96,7 +96,7 @@ public class AnalyzerPhase extends Phase {
             .setType(Type.singleType(definitions.ROOT_TYPE, module));
 
         Tree importConsole = make.Import(
-            Position.NOPOS, console, new Name[]{Names.WILDCARD})
+            Position.NOPOS, console, new Name[]{Names.IMPORT_WILDCARD})
             .setSymbol(module)
             .setType(definitions.UNIT_TYPE);
         consoleContext.imports = new ImportList(

@@ -1136,7 +1136,7 @@ public class Parser implements Tokens {
 				rhs.pos, pat.duplicate(), Tree.Empty,
 				make.Literal(s.pos, Boolean.TRUE)),
 			    (CaseDef)make.CaseDef(
-				rhs.pos, make.Ident(rhs.pos, Names.WILDCARD), Tree.Empty,
+				rhs.pos, make.Ident(rhs.pos, Names.PATTERN_WILDCARD), Tree.Empty,
 				make.Literal(s.pos, Boolean.FALSE))})});
 	return make.PatDef(pos, 0, pat, rhs);
     }
@@ -1222,10 +1222,11 @@ public class Parser implements Tokens {
     Tree pattern2() {
 	Tree p = pattern3();
 	if (s.token == AT && TreeInfo.isVarPattern(p)) {
-	    if( !TreeInfo.isWildcardPattern(p) )
-		return make.Bind(s.skipToken(), ((Ident)p).name, pattern3());
-	    else
-		return pattern3();
+            switch (p) {
+            case Ident(Name name):
+                if (name == Names.PATTERN_WILDCARD) return pattern3();
+            }
+            return make.Bind(s.skipToken(), ((Ident)p).name, pattern3());
 	}
 	return p;
     }
@@ -1316,7 +1317,7 @@ public class Parser implements Tokens {
             }
             return t;
         case USCORE:
-            return make.Ident(s.skipToken(), Names.WILDCARD);
+            return make.Ident(s.skipToken(), Names.PATTERN_WILDCARD);
 	case CHARLIT:
 	case INTLIT:
 	case LONGLIT:
@@ -1571,7 +1572,7 @@ public class Parser implements Tokens {
 	while (true) {
 	    if (s.token == USCORE) {
 		s.nextToken();
-		return make.Import(startpos, t, new Name[]{Names.WILDCARD});
+		return make.Import(startpos, t, new Name[]{Names.IMPORT_WILDCARD});
 	    } else if (s.token == LBRACE) {
 		return make.Import(startpos, t, importSelectors());
 	    } else {
@@ -1610,7 +1611,7 @@ public class Parser implements Tokens {
     boolean importSelector(LinkedList/*<Name>*/ names) {
 	if (s.token == USCORE) {
 	    s.nextToken();
-	    names.add(Names.WILDCARD);
+	    names.add(Names.IMPORT_WILDCARD);
 	    return true;
 	} else {
 	    Name name = ident();
@@ -1619,7 +1620,7 @@ public class Parser implements Tokens {
 		s.nextToken();
 		if (s.token == USCORE) {
 		    s.nextToken();
-		    names.add(Names.WILDCARD);
+		    names.add(Names.IMPORT_WILDCARD);
 		} else {
 		    names.add(ident());
 		}

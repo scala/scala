@@ -47,7 +47,8 @@ public class Names {
     public static final Name ERROR = Name.ERROR;
     public static final Name NOSYMBOL = Name.fromString("<none>");
     public static final Name EMPTY = Name.fromString("");
-    public static final Name WILDCARD = Name.fromString("_");
+    public static final Name IMPORT_WILDCARD = Name.fromString("_");
+    public static final Name PATTERN_WILDCARD = Name.fromString("_");
     public static final Name COMPOUND_NAME = Name.fromString("<ct>");
     public static final Name ANON_CLASS_NAME = Name.fromString("$anon");
     public static final Name ZERO = Name.fromString("<zero>");

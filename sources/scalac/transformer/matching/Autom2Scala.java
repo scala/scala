@@ -261,9 +261,7 @@ public class Autom2Scala  {
                                              Tree.Empty,
                                              gen.mkBooleanLit( Position.FIRSTPOS, true )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
-                                                   cf.make.Ident(pat.pos, Names.WILDCARD)
-                                                   //.setSymbol( Symbol.NONE )
-                                                   .setType(pat.type()),
+                                                   cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
                                                    Tree.Empty,
                                                    gen.mkBooleanLit( pat.pos, false )) },
 			  false

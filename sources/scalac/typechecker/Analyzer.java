@@ -1040,6 +1040,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		} else {
 		    ((DefDef) tree).rhs = rhs = transform(rhs, EXPRmode);
 		    restype = rhs.type;
+		    // !!! restype = rhs.type.widen(); // !!!
 		}
 		restype = checkNoEscape(tpe.pos, restype);
 		popContext();
@@ -1069,6 +1070,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			    ((ValDef) tree).rhs = rhs = transform(rhs, EXPRmode);
 			}
 			owntype = rhs.type;
+			// !!! owntype = rhs.type.widen(); // !!!
 		    }
 		    popContext();
 		}
@@ -1102,7 +1104,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		owntype = expr.type;
 		Type tp = owntype.widen();
 		for (int i = 0; i < selectors.length; i = i + 2) {
-		    if (selectors[i] != Names.WILDCARD &&
+		    if (selectors[i] != Names.IMPORT_WILDCARD &&
 			tp.lookup(selectors[i]) == Symbol.NONE &&
 			tp.lookup(selectors[i].toTypeName()) == Symbol.NONE)
 			error(tree.pos, NameTransformer.decode(selectors[i]) + " is not a member of " + expr + " of type " + expr.type);
@@ -1373,7 +1375,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	Type seqConstructorType(Type paramtp, Type resulttp) {
 	    Symbol constr = resulttp.symbol().primaryConstructor();
 	    Symbol param = new TermSymbol(
-		Position.NOPOS, Names.WILDCARD, constr, PARAM | REPEATED).setInfo(
+		Position.NOPOS, Names.PATTERN_WILDCARD, constr, PARAM | REPEATED).setInfo(
 		    paramtp.baseType(definitions.SEQ_CLASS));
 	    return Type.MethodType(new Symbol[]{param}, resulttp);
 	}
@@ -2438,25 +2440,27 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
                       Symbol vble, vble2 = null;
 
 		      // if vble is bound with @, there is already a symbol
-                      if( name != Names.WILDCARD ) {
+                      if( name != Names.PATTERN_WILDCARD ) {
                             vble2 = context.scope.lookup( name );
 		      }
                       if ( patternVars.containsKey( vble2 ) )
                             vble = vble2;
                       else {
 
-                            vble = new TermSymbol(tree.pos,
+                            vble = name == Names.PATTERN_WILDCARD
+                                ? definitions.PATTERN_WILDCARD
+                                : new TermSymbol(tree.pos,
                                                   name,
                                                   context.owner,
                                                   0).setType( pt );
 
-			    if((( mode & SEQUENCEmode) != 0)&&( name != Names.WILDCARD )) {
+			    if((( mode & SEQUENCEmode) != 0)&&( name != Names.PATTERN_WILDCARD )) {
 				// x => x @ _ in sequence patterns
 				tree = desugarize.IdentPattern( tree );
 			    }
 
 		      }
-		      if ( name != Names.WILDCARD ) enterInScope(vble);
+		      if ( name != Names.PATTERN_WILDCARD ) enterInScope(vble);
 		      return tree.setSymbol(vble).setType(pt);
 		} else {
 		    return transformIdent(tree, name);
@@ -2567,7 +2571,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	for( int i = 0; i < trees.length; i ++ )
 	    switch(trees[i]) {
 	    case Ident( Name name ):
-		if( name != Names.WILDCARD ) {
+		if( name != Names.PATTERN_WILDCARD ) {
 		    Symbol vble = context.scope.lookup( name );
 		    /*
 		      Symbol vble = new TermSymbol( trees[ i ].pos, name, currentOwner, 0)
@@ -2577,7 +2581,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    */
 		    trees[i] = desugarize.IdentPattern(trees[i]).setSymbol(vble)
 			.setType(vble.type());
-		}
+		} else {
+                    trees[i] = gen.Ident(trees[i].pos, definitions.PATTERN_WILDCARD);
+                }
 	    }
     }
 

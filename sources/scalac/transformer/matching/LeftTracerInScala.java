@@ -294,9 +294,7 @@ public class LeftTracerInScala extends TracerInScala {
 				       Tree.Empty,
 				       gen.mkBooleanLit( cf.pos, true )),
 	    (CaseDef) cf.make.CaseDef( pat.pos,
-				       cf.make.Ident(pat.pos, Names.WILDCARD)
-				       //DON'T .setSymbol( Symbol.NONE ) !
-				       .setType(pat.type()),
+				       cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
 				       Tree.Empty,
 				       gen.mkBooleanLit( cf.pos, false)) },
 		      false

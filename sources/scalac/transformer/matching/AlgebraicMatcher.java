@@ -189,10 +189,10 @@ public class AlgebraicMatcher extends PatternMatcher {
 	      	  return res;
 	      }
 	      return mk.ConstrPat(tree.pos, theType);
-          case Typed(Ident(Name name), Tree tpe):       // typed pattern
+          case Typed(Ident ident, Tree tpe):       // typed pattern
                 theType = getConstrType( tpe.type );
                 assert (env != null ) : "env is null";
-                if (/*(env != null) &&*/ (name != Names.WILDCARD))
+                if (/*(env != null) &&*/ (ident.symbol() != defs.PATTERN_WILDCARD))
                       env.newBoundVar(
                                       ((Tree.Typed)tree).expr.symbol(),
                                       theType,
@@ -202,8 +202,8 @@ public class AlgebraicMatcher extends PatternMatcher {
                       return mk.DefaultPat( tree.pos, theType );
                 else
                       return mk.ConstrPat( tree.pos, theType );
-          case Bind(Name name, Ident(Name id)): // x @ _
-                if( id == Names.WILDCARD ) {
+          case Bind(Name name, Ident ident): // x @ _
+                if( ident.symbol() == defs.PATTERN_WILDCARD ) {
                       env.newBoundVar(
                                       tree.symbol(),
                                       theType,
@@ -212,11 +212,13 @@ public class AlgebraicMatcher extends PatternMatcher {
                 }
                 throw new ApplicationError("cannot handle "+tree);
           case Ident(Name name):        // pattern without args or variable
-                if ((tree.symbol() != null) && tree.symbol().isPrimaryConstructor())
+              Symbol symbol = tree.symbol();
+              assert symbol != null: tree;
+                if (symbol.isPrimaryConstructor())
                       return mk.ConstrPat(tree.pos, theType);
                 else if (name.isVariable()) {
                       assert (env != null ) : "env is null";
-                      if (/*(env != null) &&*/ (name != Names.WILDCARD))
+                      if (/*(env != null) &&*/ (symbol != defs.PATTERN_WILDCARD))
                             env.newBoundVar(
                                             tree.symbol(),
                                             theType,

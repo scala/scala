@@ -1,5 +1,6 @@
 package scalac.transformer.matching ;
 
+import scalac.Global ;
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
 import scalac.util.Name ;
@@ -58,11 +59,11 @@ public class BindingBerrySethi extends BerrySethi {
                   this.varAt.put( i, activeBinders.clone() ); // below @ ?
                   break;
             case Ident( Name name ):
-                  assert ( name == Names.WILDCARD )||( name.toString().indexOf("$") > -1 ) : "found variable label "+name;
+                  assert ( pat.symbol() == Global.instance.definitions.PATTERN_WILDCARD )||( name.toString().indexOf("$") > -1 ) : "found variable label "+name;
 
                   Vector binders = (Vector) activeBinders.clone();
                   /*
-                  if( name != Names.WILDCARD) {
+                  if( pat.symbol() != Global.instance.definitions.PATTERN_WILDCARD) {
                         binders.add( pat.symbol() );
                   }
                   */
