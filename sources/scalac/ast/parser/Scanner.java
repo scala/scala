@@ -491,7 +491,6 @@ public class Scanner extends TokenData {
 	name = Name.fromAscii(buf, start, end - start);
 	if (name.index <= maxKey) {
 	    token = key[name.index];
-	    if (token == OBJECT1) token = OBJECT; //todo: elim
 	}
 	else
 	    token = IDENTIFIER;

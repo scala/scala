@@ -1,4 +1,4 @@
-module test {
+object test {
   class List[+a] {
     def ::[b >: a](x: b): List[b] = new Cons(x, this);
   }

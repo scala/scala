@@ -258,7 +258,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		    if (caseSeen.isCaseClass())
 			unit.error(
 			    clazz.pos, "illegal combination of case " +
-			    caseSeen + "and case " + baseClazz + " in one object");
+			    caseSeen + "and case " + baseclazz + " in one object");
 		    else
 			caseSeen = baseclazz;
 
@@ -804,7 +804,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    if (sym.isLocal() && !sym.isModule() && index <= maxindex[level]) {
 		if (Global.instance.debug)
 		    System.out.println(refsym[level] + ":" + refsym[level].type());
-		String kind == ((sym.flags & MUTABLE) != 0) ? "variable" : "value";
+		String kind = ((sym.flags & MUTABLE) != 0) ? "variable" : "value";
 		unit.error(
 		    refpos[level],
 		    "forward reference extends over definition of " + kind + " " +

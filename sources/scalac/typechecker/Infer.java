@@ -981,7 +981,8 @@ public class Infer implements Modifiers, Kinds {
 			alts[best], alttypes[best], alts[i], alttypes[i]) +
 			" argument types " +
 			ArrayApply.toString(argtypes, "(", ",", ")") +
-			" and expected result type " + pt);
+			((pt == Type.AnyType) ? ""
+			 : " and expected result type " + pt));
 		}
 	    }
 	    tree.setSymbol(alts[best]).setType(alttypes[best]);

@@ -3,7 +3,7 @@
 //############################################################################
 // $Id$
 
-module M0 {
+object M0 {
   def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
     if (xs.isEmpty)
       Pair(List(),List())
@@ -49,7 +49,7 @@ module M0 {
 
 //############################################################################
 
-module M1 {
+object M1 {
   def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
     xs.foldRight[Pair[List[a], List[a]]](Pair(List(), List())) {
       (x, p) => if (pred (x)) Pair(x :: p._1, p._2) else Pair(p._1, x :: p._2)
@@ -89,7 +89,7 @@ module M1 {
 
 //############################################################################
 
-module M2 {
+object M2 {
 
   def powerset[a] (s : List[a]) : List[List[a]] = {
     if (s.isEmpty)
@@ -113,7 +113,7 @@ module M2 {
 
 //############################################################################
 
-module M3 {
+object M3 {
 
   type Placement = List[Pair[int,int]];
 
@@ -156,7 +156,7 @@ module M3 {
 
 //############################################################################
 
-module Test {
+object Test {
   def main(args: Array[String]): unit = {
     M0.test;
     M1.test;

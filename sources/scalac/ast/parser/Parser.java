@@ -1637,26 +1637,22 @@ public class Parser implements Tokens {
     /** ObjectDef       ::= Id [`:' SimpleType] ClassTemplate
      */
     Tree objectDef(int mods) {
-        return make.ObjectDef(
+        return make.ModuleDef(
 	    s.pos, mods, ident(), simpleTypedOpt(), classTemplate());
     }
 
-    /** ClassTemplate ::= `extends' Template
-     *                 |  TemplateBody
-     *                 |
+    /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
      */
     Template classTemplate() {
         int pos = s.pos;
 	if (s.token == EXTENDS) {
 	    s.nextToken();
 	    return template();
-/*
 	} else if (s.token == WITH) {
 	    s.nextToken();
 	    TreeList parents = new TreeList();
 	    parents.append(scalaObjectConstr(pos));
 	    return template(parents);
-*/
 	} else if (s.token == LBRACE) {
 	    return (Template)make.Template(
 		pos, new Tree[]{scalaObjectConstr(pos)}, templateBody());

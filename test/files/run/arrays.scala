@@ -5,7 +5,7 @@
 
 //############################################################################
 
-module arrays {
+object arrays {
 
   type JObject = java.lang.Object;
   type JSet    = java.util.Set;
@@ -146,7 +146,7 @@ module arrays {
 
 //############################################################################
 
-module Test {
+object Test {
 
   def main(args: Array[String]): Unit = {
     arrays.test;

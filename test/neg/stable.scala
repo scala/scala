@@ -1,6 +1,6 @@
 abstract class C { type T; val next: C = this }
 
-module test {
+object test {
 
     val x: C = new C { type T = int };
     var y: C = x;
