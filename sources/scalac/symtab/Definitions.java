@@ -642,9 +642,10 @@ public class Definitions {
         ALL_CLASS = newClass(SCALA_CLASS, Names.All, 0);
 
         // the java classes
-        OBJECT_CLASS = getClass("java.lang.Object");
+        OBJECT_CLASS = getClass(global.target != Global.TARGET_MSIL ?
+				"java.lang.Object" : "System.Object");
         THROWABLE_CLASS = getClass("java.lang.Throwable");
-        STRING_CLASS = getClass("java.lang.String");
+	STRING_CLASS = getClass("java.lang.String");
 
         // the scala value classes
         UNIT_CLASS = getClass("scala.Unit");
@@ -752,6 +753,25 @@ public class Definitions {
                 Type.MethodType(
                     new Symbol[] {OBJECT_SYNCHRONIZED_VPARAM},
                     OBJECT_SYNCHRONIZED_TPARAM.type())));
+
+	if (global.target == Global.TARGET_MSIL) {
+	    Symbol WAIT0 = newMethod(OBJECT_CLASS, Names.wait, Modifiers.FINAL);
+	    initMethod(WAIT0, Type.EMPTY_ARRAY, UNIT_TYPE());
+
+	    Symbol WAIT1 = newMethod(OBJECT_CLASS, Names.wait, Modifiers.FINAL);
+	    initMethod(WAIT1, new Type[]{LONG_TYPE()}, UNIT_TYPE());
+
+	    Symbol WAIT2 = newMethod(OBJECT_CLASS, Names.wait, Modifiers.FINAL);
+	    initMethod(WAIT2, new Type[]{LONG_TYPE(), INT_TYPE()}, UNIT_TYPE());
+
+	    Symbol NOTIFY =
+		newMethod(OBJECT_CLASS, Names.notify, Modifiers.FINAL);
+	    initMethod(NOTIFY, Type.EMPTY_ARRAY, UNIT_TYPE());
+
+	    Symbol NOTIFY_ALL =
+		newMethod(OBJECT_CLASS, Names.notifyAll, Modifiers.FINAL);
+	    initMethod(NOTIFY_ALL, Type.EMPTY_ARRAY, UNIT_TYPE());
+	}
 
         // add members to java.lang.String
         STRING_PLUS = newMethod(STRING_CLASS, Names.PLUS, Modifiers.FINAL);
