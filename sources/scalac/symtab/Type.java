@@ -136,6 +136,27 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	}
     }
 
+    public static Type singleTypeMethod(Type pre, Symbol sym) {
+        Global global = Global.instance;
+        if (global.currentPhase.id <= global.PHASE.UNCURRY.id())
+	    return singleType(pre, sym);
+        else if (global.currentPhase.id <= global.PHASE.ERASURE.id())
+            return sym.type().singleTypeMethod0(pre, sym);
+        else
+            return pre.memberType(sym);
+    }
+
+    private Type singleTypeMethod0(Type pre, Symbol sym) {
+        switch (this) {
+        case PolyType(Symbol[] args, Type result):
+            return PolyType(args, result.singleTypeMethod0(pre, sym));
+        case MethodType(Symbol[] args, Type result):
+            return MethodType(args, result.singleTypeMethod0(pre, sym));
+        default:
+	    return singleType(pre, sym);
+        }
+    }
+
     public static TypeRef appliedType(Type tycon, Type[] args) {
 	switch (tycon) {
 	case TypeRef(Type pre, Symbol sym, Type[] args1):
