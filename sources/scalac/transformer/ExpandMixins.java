@@ -22,6 +22,7 @@ import scalac.ast.Tree;
 import scalac.ast.Tree.Template;
 import scalac.ast.TreeList;
 import scalac.ast.TreeGen;
+import scalac.ast.TreeInfo;
 import scalac.ast.GenTreeCloner;
 import scalac.ast.TreeSymbolCloner;
 import scalac.ast.Transformer;
@@ -173,6 +174,9 @@ superFixer.transform(template.body))));
             boolean shadowed = name == null &&
                 members.lookup(member.name) != Symbol.NONE;
             Symbol clone = cloner.cloneSymbol(member, shadowed);
+            if (member.isInitializer() && name == null)
+                clone.name = Name.fromString(
+                    "$init$" + clone.name.toString().substring(6));
             if (name != null)
                 clone.name = name;
             else
@@ -206,6 +210,8 @@ superFixer.transform(template.body))));
     private final GenTreeCloner mixinMemberCloner;
 
     private class MixinMemberCloner extends GenTreeCloner {
+        private boolean initializer;
+
         public MixinMemberCloner(ClassExpander expander) {
             super(expander.global, expander.map, expander.cloner);
         }
@@ -213,6 +219,7 @@ superFixer.transform(template.body))));
         public Symbol getSymbolFor(Tree tree) {
             switch (tree) {
             case Select(Super(_, _), _):
+                if (tree.symbol().isInitializer()) return tree.symbol();
                 // !!! check
                 global.nextPhase();
                 Symbol symbol = tree.symbol().overridingSymbol(parents[0]);
@@ -228,6 +235,17 @@ superFixer.transform(template.body))));
         }
 
         public Tree transform(Tree tree) {
+            switch (tree) {
+            case DefDef(_, _, _, _, _, _):
+                if (getSymbolFor(tree).isInitializer()) initializer = true;
+                tree = super.transform(tree);
+                initializer = false;
+                return tree;
+            case Apply(Select(Super(_, _), _), _):
+                if (TreeInfo.methSymbol(tree).isInitializer() && !initializer)
+                    return Tree.Empty;
+                break;
+            }
             if (tree.hasSymbol() && tree.symbol().isParameter()) {
                 Symbol symbol = getSymbolFor(tree);
                 if (!symbol.isParameter()) {
