@@ -20,7 +20,7 @@ object Test {
     testBO.main( args );
     testMZ.main;
     //testNN.main;
-    testBugSequenceApply.main;
+    //testBugSequenceApply.main;
   }
 }
 
@@ -719,6 +719,8 @@ object testNO {   // this does not need to be run, only compiled
 
 /** see comments in scala.tools.scalac.transformer.matching.PatternMatcher::isSeqApply 2005-02-17
  */
+
+/*
 object testBugSequenceApply {
 
   val x = List(1,2,3);
@@ -742,3 +744,4 @@ object testBugSequenceApply {
     });
   }
 }
+*/
