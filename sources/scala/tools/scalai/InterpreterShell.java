@@ -93,10 +93,7 @@ public class InterpreterShell {
         if (files.length > 0) load(lfiles = files);
         if (global.reporter.errors() == 0 && script != null) eval(script);
         if (global.reporter.errors() == 0 && main != null) call(main, args);
-        if (interactive)
-            loop();
-        else
-            global.reporter.printSummary();
+        if (interactive) loop();
     }
 
     public void loop() {

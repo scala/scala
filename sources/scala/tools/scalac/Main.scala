@@ -6,7 +6,7 @@
 ** $Id$
 \*                                                                      */
 
-import scala.tools.util.Reporter;
+import scala.tools.util.ConsoleReporter;
 import scalac.{CompilerCommand, Global => scalac_Global};
 import scalac.symtab.classfile.CLRTypes;
 
@@ -28,7 +28,7 @@ object Main {
   def main(args: Array[String]): unit = main1( true, args );
 
   def main1( exitOnError:boolean, args: Array[String] ):unit = {
-    val reporter = new Reporter();
+    val reporter = new ConsoleReporter();
     val command = new CompilerCommand(
       PRODUCT, VERSION, reporter, new CompilerPhases());
     var ok = true;
@@ -48,7 +48,7 @@ object Main {
 	if (reporter.errors() == 0)
           if (!global.PHASE.CODEGEN.hasSkipFlag()) global.dump(units);
         timer.stop("total");
-	global.reporter.printSummary();
+	reporter.printSummary();
       }
     }
     if( exitOnError ) {

@@ -32,7 +32,7 @@ public class ReporterTimer extends AbstractTimer {
 
     /** Issues a timing information (duration in milliseconds). */
     public void issue(String message, long duration) {
-        reporter.inform("[" + message + " in " + duration + "ms]");
+        reporter.info(null, "[" + message + " in " + duration + "ms]", false);
     }
 
     //########################################################################

@@ -14,6 +14,7 @@ import java.util.List;
 
 import scala.tools.util.ClassPath;
 import scala.tools.util.Reporter;
+import scala.tools.util.ConsoleReporter;
 
 import scalac.util.CommandParser;
 import scalac.util.ArgumentParser;
@@ -305,10 +306,11 @@ public class CompilerCommand extends CommandParser {
      */
     public boolean parse(String[] args) {
         boolean result = super.parse(args);
-        reporter().nowarn = nowarn.value;
-        reporter().verbose = verbose.value;
-        reporter().prompt = prompt.value;
-        reporter().shortname = Xshortname.value;
+        reporter().verbose(verbose.value);
+        reporter().nowarn(nowarn.value);
+        reporter().prompt(prompt.value);
+        if (reporter() instanceof ConsoleReporter)
+            ((ConsoleReporter)reporter()).shortname = Xshortname.value;
         return result;
     }
 

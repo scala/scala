@@ -8,7 +8,7 @@
 
 import scalac.{Global => scalac_Global};
 import scala.tools.scalac.{Global, CompilerPhases};
-import scala.tools.util.Reporter;
+import scala.tools.util.ConsoleReporter;
 
 package scala.tools.scaladoc {
 
@@ -27,7 +27,7 @@ object Main {
     System.getProperty("scala.version", "1.0");
 
   def main(args: Array[String]): Unit = {
-    val reporter = new Reporter();
+    val reporter = new ConsoleReporter();
     val phases = new CompilerPhases(); {
       // we skip all phases between ANALYZER and TERMINAL.
       val array = phases.phases();
@@ -52,7 +52,7 @@ object Main {
         }
         generator.apply();
       }
-      global.reporter.printSummary();
+      reporter.printSummary();
     }
     // System.exit(if (reporter.errors() > 0) 1 else 0);
   }

@@ -190,7 +190,7 @@ public abstract class Global {
     };
 
     public static Timer getTimer(Reporter reporter) {
-        return reporter.verbose
+        return reporter.verbose()
             ? (Timer)new ReporterTimer(reporter)
             : (Timer)DummyTimer.object;
     }
@@ -229,7 +229,7 @@ public abstract class Global {
         this.printtypes = args.types.value;
         this.printtokens = args.print.tokens;
         this.classPath = args.classpath();
-	if (reporter.verbose) reporter.inform("classpath = " + classPath);
+	reporter.info(null, "classpath = " + classPath, false);
         this.outpath = args.outpath();
         String encoding = args.encoding.value;
         Charset charset = null;
@@ -632,7 +632,7 @@ public abstract class Global {
     /** issue an operation note
      */
     public void operation(String message) {
-        reporter.inform("[" + message + "]");
+        reporter.info(null, "[" + message + "]", false);
     }
 
     /** issue a debug message from currentPhase
@@ -640,7 +640,7 @@ public abstract class Global {
     // the boolean return value is here to let one write "assert log( ... )"
     public boolean log(String message) {
         if (log()) {
-            reporter.report("[log " + currentPhase + "] " + message);
+            reporter.info(null, "[log " + currentPhase + "] " + message, true);
         }
         return true;
     }

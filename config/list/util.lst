@@ -5,10 +5,12 @@
 
 AbstractFile.java
 AbstractFileReader.java
+AbstractReporter.java
 AbstractTimer.java
 ByteArrayFile.java
 CharArrayFile.java
 ClassPath.java
+ConsoleReporter.java
 DirectoryPath.java
 DummyTimer.java
 EmptyIterator.java

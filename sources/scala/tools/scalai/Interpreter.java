@@ -95,9 +95,11 @@ public class Interpreter {
     private EvaluatorResult interpret(CompilationUnit[] units,
         boolean interactive)
     {
+        compiler.compile(units);
+        int errors = global.reporter.errors();
+        global.reporter.resetCounters();
+        if (errors != 0) return EvaluatorResult.Void;
         try {
-            if (global.reporter.errors() != 0) return EvaluatorResult.Void;
-            compiler.compile(units);
             if (interactive) {
                 Variable console = compiler.getModule(global.console);
                 evaluator.evaluate(console);

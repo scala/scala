@@ -10,7 +10,7 @@
 package scala.tools.scalai;
 
 import scala.tools.scalac.CompilerPhases$class;
-import scala.tools.util.Reporter;
+import scala.tools.util.ConsoleReporter;
 
 public class Main {
 
@@ -26,13 +26,14 @@ public class Main {
     // Public Methods
 
     public static void main(String[] args) {
-        Reporter reporter = new Reporter();
+        ConsoleReporter reporter = new ConsoleReporter();
         InterpreterCommand command = new InterpreterCommand(
             PRODUCT, VERSION, reporter, new CompilerPhases$class());
         if (command.parse(args)) {
             InterpreterShell shell = new InterpreterShell(command);
             shell.main(command.files.toArray(), command.script.value,
                 command.program.main, command.program.args);
+            reporter.printSummary();
         }
         System.exit((reporter.errors() > 0) ? 1 : 0);
     }
