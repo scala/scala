@@ -44,7 +44,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
                    attribs:HashMap[String,String],
                    children:List[Node] ):Node = {
 
-      val ncode = NamespaceRegistry.getCode( uri );
+      val uri$ = uri.intern();
 
       // 2do:optimize
       if( !compress ) {
@@ -54,7 +54,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
       } else { // do hash-consing
 
         val ahc = attribs.toList.hashCode();
-	val h = Utility.hashCode( ncode, elemName, ahc, children );
+	val h = Utility.hashCode( uri$, elemName, ahc, children );
         cache.get( h ).match {
 
             case Some(cachedElem) =>
