@@ -61,6 +61,7 @@ symtab/classfile/JavaTypeCreator.java
 symtab/classfile/JavaTypeFactory.java
 symtab/classfile/PackageParser.java
 symtab/classfile/Signatures.java
+
 symtab/Definitions.java
 symtab/Kinds.java
 symtab/Modifiers.java
@@ -70,6 +71,7 @@ symtab/SourceCompleter.java
 symtab/SymSet.java
 symtab/Symbol.java
 symtab/SymbolMapApplier.java
+symtab/SymbolTablePrinter.java
 symtab/Type.java
 symtab/TypeTags.java
 
