@@ -11,7 +11,10 @@ package scala.collection.immutable;
 
 
 object ListSet {
+    /** constructs an empty ListSet
+     */
     def Empty[A] = new ListSet[A];
+
 }
 
 /** This class implements immutable sets using a list-based data
