@@ -20,29 +20,51 @@ package scala.collection.immutable;
  */
 trait Set[A] with scala.collection.Set[A] {
 
+    /** This method creates a new set with an additional element.
+     */
     def +(elem: A): Set[A];
 
-    def incl(elems: A*): Set[A] = incl(elems);
+    /** <code>incl</code> can be used to add many elements to the set
+     *  at the same time.
+     */
+     def incl(elems: A*): Set[A] = incl(elems);
 
-    def incl(that: Iterable[A]): Set[A] = {
+     /** This method will add all the elements provided by an iterator
+     *  of the iterable object <code>that</code> to the set.
+     */
+   def incl(that: Iterable[A]): Set[A] = {
         var res = this;
         that.elements.foreach(elem => res = res + elem);
         res;
     }
 
-    def -(elem: A): Set[A];
+    /** <code>-=</code> can be used to remove a single element from
+     *  a set.
+     */
+     def -(elem: A): Set[A];
 
+    /** <code>excl</code> removes many elements from the set.
+     */
     def excl(elems: A*): Set[A] = excl(elems);
 
-    def excl(that: Iterable[A]): Set[A] = {
+    /** This method removes all the elements provided by an iterator
+     *  of the iterable object <code>that</code> from the set.
+     */
+     def excl(that: Iterable[A]): Set[A] = {
         var res = this;
         that.elements.foreach(elem => res = res - elem);
         res;
     }
 
+    /** This method computes an intersection with set <code>that</code>.
+     *  It removes all the elements that are not present in <code>that</code>.
+     */
     def intersect(that: scala.collection.Set[A]): Set[A] = filter(that.contains);
 
-    def filter(p: A => Boolean): Set[A] = {
+     /** Method <code>filter</code> removes all elements from the set for
+     *  which the predicate <code>p</code> yields the value <code>false</code>.
+     */
+   def filter(p: A => Boolean): Set[A] = {
         var res = this;
         toList foreach {
             elem => if (p(elem)) { res = res - elem; }
