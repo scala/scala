@@ -109,7 +109,7 @@ public class Signatures {
 
         if (!clasz.isClass()) {
             Symbol symbol = owner.newErrorClass(name);
-            error("could not find class " + symbol.staticType() + "(found " + Debug.show(clasz) + ")");
+            error("could not find class " + symbol.staticType());
             if (clasz.isNone()) owner.members().enterNoHide(symbol);
             clasz = symbol;
         }
