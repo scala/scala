@@ -188,6 +188,15 @@ public class Definitions {
         return getType(LIST_CLASS, element);
     }
 
+    /** The scala.Nil module */
+    public final Symbol NIL;
+
+    /** The scala.:: class */
+    public final Symbol CONS_CLASS;
+    public final Type   CONS_TYPE(Type element) {
+        return getType(CONS_CLASS, element);
+    }
+
     /** The scala.Array class */
     public final Symbol ARRAY_CLASS;
     public final Type   ARRAY_TYPE(Type element) {
@@ -201,6 +210,9 @@ public class Definitions {
             throw Debug.abort("illegal case", type);
         }
     }
+
+    /** The scala.Predef module */
+    public final Symbol PREDEF;
 
     /** The scala.Console module */
     public final Symbol CONSOLE;
@@ -361,12 +373,44 @@ public class Definitions {
         return LIST_TAIL;
     }
 
+    /** The scala.Array class */
+    private Symbol ARRAY_LENGTH;
+    private Symbol ARRAY_GET;
+    private Symbol ARRAY_SET;
+
+    public Symbol ARRAY_LENGTH() {
+        if (ARRAY_LENGTH == null)
+            ARRAY_LENGTH = loadTerm(ARRAY_CLASS, Names.length);
+        return ARRAY_LENGTH;
+    }
+
+    public Symbol ARRAY_GET() {
+        if (ARRAY_GET == null)
+            ARRAY_GET = loadTerm(ARRAY_CLASS, Names.apply, new Type[]{INT_TYPE()});
+        return ARRAY_GET;
+    }
+
+    public Symbol ARRAY_SET() {
+        if (ARRAY_SET == null)
+            ARRAY_SET = loadTerm(ARRAY_CLASS, Names.update);
+        return ARRAY_SET;
+    }
+
+    /** Some scala.Predef methods */
+    private Symbol PREDEF_ARRAY;
+
+    public Symbol PREDEF_ARRAY() {
+        if (PREDEF_ARRAY == null)
+            PREDEF_ARRAY = loadTerm(PREDEF, Names.Array);
+        return PREDEF_ARRAY;
+    }
+
     /** Some scala.Console methods */
     private Symbol CONSOLE_PRINT;
 
     public Symbol CONSOLE_PRINT() {
-        if( CONSOLE_PRINT == null )
-            CONSOLE_PRINT = loadTerm( CONSOLE, Names.print );
+        if (CONSOLE_PRINT == null)
+            CONSOLE_PRINT = loadTerm(CONSOLE, Names.print);
         return CONSOLE_PRINT;
     }
 
@@ -461,7 +505,10 @@ public class Definitions {
 	ITERATOR_CLASS = getClass(Names.scala_Iterator);
 	SEQ_CLASS = getClass(Names.scala_Seq);
 	LIST_CLASS = getClass(Names.scala_List);
+        NIL = getModule(Names.scala_Nil);
+        CONS_CLASS = getModule(Names.scala_COLONCOLON);
         ARRAY_CLASS = getClass(Names.scala_Array);
+        PREDEF = getModule(Names.scala_Predef);
         CONSOLE = getModule(Names.scala_Console);
 	MATCHERROR = getModule(Names.scala_MatchError);
 
@@ -663,6 +710,28 @@ public class Definitions {
         assert sym.isTerm() && !sym.isOverloaded(): clasz+"."+name+" -> "+sym;
         return sym;
     }
+
+    /**
+     * Returns the term member of given class with given name and
+     * value argument types.
+     */
+    private Symbol loadTerm(Symbol clasz, Name name, Type[] vargs) {
+        Symbol sym = clasz.lookup(name);
+        assert sym.isTerm(): Debug.show(clasz,"."+name+" - ",vargs," -> ",sym);
+        Symbol[] alts = sym.alternativeSymbols();
+        for (int i = 0; i < alts.length; i++) {
+            switch (alts[i].type()) {
+            case PolyType(_, MethodType(Symbol[] vparams, _)):
+                if (Type.isSameAs(Symbol.type(vparams), vargs)) return alts[i];
+                continue;
+            case MethodType(Symbol[] vparams, _):
+                if (Type.isSameAs(Symbol.type(vparams), vargs)) return alts[i];
+                continue;
+            }
+        }
+        throw Debug.abort(Debug.show(clasz,"."+name+" - ",vargs," -> ",alts));
+    }
+
 
     /** Returns the type of given class applied to given type argument. */
     private Type getType(Symbol clasz, Type arg) {
