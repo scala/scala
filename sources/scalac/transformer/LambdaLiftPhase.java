@@ -126,15 +126,15 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
      */
     Symbol proxy(Symbol fv, Symbol owner) {
         if (global.debug)
-            global.log("proxy " + fv + " of " + fv.owner() + " in " + LambdaLift.asFunction(owner));
+            global.log("proxy " + fv + " of " + fv.owner() + " in " + LambdaLift.enclFun(owner));
         Symbol o = owner;
         while (o.kind != NONE) {
             if (global.debug)
-                global.log("looking in " +  LambdaLift.asFunction(o) + " " +
+                global.log("looking in " +  LambdaLift.enclFun(o) + " " +
                     ArrayApply.toString(o.typeParams()));
-            Symbol fowner = LambdaLift.asFunction(o);
+            Symbol fowner = LambdaLift.enclFun(o);
             if (fowner.isMethod()) {
-                if (fv.owner() == fowner) return fv;
+                if (LambdaLift.enclFun(fv.owner()) == fowner) return fv;
                 Type ft = (fowner.isUpdatedAt(this)) ? fowner.nextType()
                     : fowner.type();
                 Symbol[] ownerparams = fv.isType() ? ft.typeParams()
