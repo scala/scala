@@ -443,14 +443,16 @@ public class ATreePrinter {
     /** Prints the function. */
     public ATreePrinter printFunction(AFunction function) {
         switch (function) {
-        case Method(This(Symbol clasz), Symbol method, true):
+        case Method(Void, Symbol method, InvokeStyle.New):
+            return print("new").space().printSymbol(method);
+        case Method(Void, Symbol method, InvokeStyle.Static):
+            return printSymbol(method.owner()).print('.').printSymbol(method);
+        case Method(This(Symbol clasz), Symbol method, InvokeStyle.Static):
             printSymbol(clasz).print('.').print("super").print('.');
             return printSymbol(method);
-        case Method(Void, Symbol method, true):
-            return printSymbol(method.owner()).print('.').printSymbol(method);
-        case Method(ACode object, Symbol method, boolean isStatic):
+        case Method(ACode object, Symbol method, InvokeStyle style):
             printCode(object).print('.');
-            if (isStatic) print("<static>").space();
+            if (style != InvokeStyle.Dynamic) print("<" + style + ">").space();
             return printSymbol(method);
         case Primitive(APrimitive primitive):
             return printPrimitive(primitive);

@@ -16,7 +16,7 @@ public class AFunction {
     //########################################################################
     // Public Cases
 
-    public case Method(ACode object, Symbol method, boolean isStatic);
+    public case Method(ACode object, Symbol method, AInvokeStyle style);
     public case Primitive(APrimitive primitive);
 
     //########################################################################
