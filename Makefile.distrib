@@ -28,6 +28,7 @@ GEDIT_FILES		 = $(GEDIT_LIST:%=$(GEDIT_ROOT)/%)
 # jedit scala-mode
 JEDIT_ROOT		 = $(PROJECT_SUPPORTDIR)/jedit
 JEDIT_LIST		+= scala.xml
+JEDIT_LIST		+= README
 JEDIT_FILES		 = $(JEDIT_LIST:%=$(JEDIT_ROOT)/%)
 
 # ultraedit scala-mode
