@@ -59,13 +59,17 @@ import scalac.util.*;
 class GenJVM {
     protected final static String JAVA_LANG_OBJECT = "java.lang.Object";
     protected final static String JAVA_LANG_STRING = "java.lang.String";
-    protected final static String JAVA_LANG_STRINGBUFFER = "java.lang.StringBuffer";
+    protected final static String JAVA_LANG_STRINGBUFFER =
+        "java.lang.StringBuffer";
     protected final static String JAVA_RMI_REMOTE = "java.rmi.Remote";
-    protected final static String JAVA_RMI_REMOTEEXCEPTION = "java.rmi.RemoteException";
+    protected final static String JAVA_RMI_REMOTEEXCEPTION =
+        "java.rmi.RemoteException";
 
-    protected final static String SCALA_RUNTIME_RUNTIME = "scala.runtime.RunTime";
+    protected final static String SCALA_RUNTIME_RUNTIME =
+        "scala.runtime.RunTime";
 
-    protected final static String SCALA_ATTR = ClassfileConstants.SCALA_N.toString();
+    protected final static String SCALA_ATTR =
+        ClassfileConstants.SCALA_N.toString();
 
     protected final static String MODULE_INSTANCE_FIELD_NAME = "MODULE$";
 
@@ -146,15 +150,16 @@ class GenJVM {
             Context ctx1 = enterClass(ctx, sym);
 
             addValueClassMembers(ctx1, classDef);
-            addStaticClassMembers(ctx1, classDef);
-            if (ctx1.isModuleClass)
-                addModuleInstanceField(ctx1);
-
-            JMethod clinit = getClassConstructorMethod(ctx1, false);
-            if (clinit != null)
-                clinit.getCode().emitRETURN();
-
             gen(ctx1, impl);
+
+            JMethod clinit = getClassConstructorMethod(ctx1);
+            if (clinit.getCode().getSize() == 0) {
+                Context ctx2 =
+                    ctx1.withMethod(clinit, Collections.EMPTY_MAP, false);
+                completeClassConstructor(ctx2, sym);
+                ctx2.code.emitRETURN();
+            }
+
             leaveClass(ctx1, sym);
         } break;
 
@@ -185,6 +190,8 @@ class GenJVM {
                     if (! Modifiers.Helper.isAbstract(sym.flags)) {
                         JType retType = ctx1.method.getReturnType();
                         genLoad(ctx1, rhs, retType);
+                        if (sym.name == Names.CLASS_CONSTRUCTOR)
+                            completeClassConstructor(ctx1, sym.owner());
                         ctx1.code.emitRETURN(retType);
                         ctx1.method.freeze();
                     }
@@ -462,7 +469,7 @@ class GenJVM {
                                        MODULE_INSTANCE_FIELD_NAME,
                                        type);
                 generatedType = type;
-            } else if (sym.owner().isClass()) {
+            } else if (sym.isStatic()) {
                 JType fieldType = typeStoJ(sym.info());
                 String className = javaName(sym.owner());
                 String fieldName = sym.name.toString();
@@ -481,8 +488,12 @@ class GenJVM {
             JType fieldType = typeStoJ(sym.info());
             String className = javaName(sym.owner());
             String fieldName = sym.name.toString();
-            genLoadQualifier(ctx, tree);
-            ctx.code.emitGETFIELD(className, fieldName, fieldType);
+            if (sym.isStatic()) {
+                ctx.code.emitGETSTATIC(className, fieldName, fieldType);
+            } else {
+                genLoadQualifier(ctx, tree);
+                ctx.code.emitGETFIELD(className, fieldName, fieldType);
+            }
             generatedType = fieldType;
             break;
 
@@ -1271,13 +1282,10 @@ class GenJVM {
                               MODULE_INSTANCE_FIELD_NAME,
                               ctx.clazz.getType());
 
-        JMethod initMethod = getClassConstructorMethod(ctx, true);
-        JExtendedCode code = (JExtendedCode)initMethod.getCode();
-
-        code.emitNEW(ctx.clazz.getName());
-        code.emitINVOKESPECIAL(ctx.clazz.getName(),
-                               CONSTRUCTOR_STRING,
-                               JMethodType.ARGLESS_VOID_FUNCTION);
+        ctx.code.emitNEW(ctx.clazz.getName());
+        ctx.code.emitINVOKESPECIAL(ctx.clazz.getName(),
+                                   CONSTRUCTOR_STRING,
+                                   JMethodType.ARGLESS_VOID_FUNCTION);
         // The field is initialised by the constructor, so we don't
         // need to do it here, creating the instance is sufficient.
     }
@@ -1293,7 +1301,7 @@ class GenJVM {
         for (int i = 0; i < argNames.length; ++i)
             argNames[i] = params[i].name.toString();
 
-        return clazz.addNewMethod(modifiersStoJ(method.flags) | addFlags,
+        return clazz.addNewMethod(javaModifiers(method) | addFlags,
                                   method.name.toString(),
                                   methodType.getReturnType(),
                                   methodType.getArgumentTypes(),
@@ -1320,7 +1328,9 @@ class GenJVM {
             cSym.members().iterator();
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
-            if (!member.isMethod() || member.isInitializer())
+            if (!member.isMethod()
+                || member.isInitializer()
+                || member.isStatic())
                 continue;
 
             JMethod mirrorMeth =
@@ -1403,10 +1413,10 @@ class GenJVM {
     //////////////////////////////////////////////////////////////////////
 
     /**
-     * Return the Java modifiers corresponding to the given Scala
-     * modifiers.
+     * Return the Java modifiers for the given Scala symbol.
      */
-    protected int modifiersStoJ(int flags) {
+    protected int javaModifiers(Symbol sym) {
+        int flags = sym.flags;
         int jFlags = 0;
 
         if (Modifiers.Helper.isPrivate(flags))
@@ -1423,6 +1433,9 @@ class GenJVM {
             && !(Modifiers.Helper.isAbstract(flags)
                  || Modifiers.Helper.isInterface(flags)))
             jFlags |= JAccessFlags.ACC_FINAL;
+
+        if (sym.isStatic())
+            jFlags |= JAccessFlags.ACC_STATIC;
 
         return jFlags;
     }
@@ -1583,7 +1596,7 @@ class GenJVM {
             interfaceNames[i - offset] = javaName(baseSym);
         }
 
-        JClass cls = fjbgContext.JClass(modifiersStoJ(cSym.flags)
+        JClass cls = fjbgContext.JClass(javaModifiers(cSym)
                                         | JAccessFlags.ACC_SUPER,
                                         javaName,
                                         superClassName,
@@ -1596,16 +1609,18 @@ class GenJVM {
     }
 
     protected void leaveClass(Context ctx, Symbol cSym) {
+        JClass clazz = ctx.clazz;
+
         Pickle pickle = (Pickle)global.symdata.get(cSym);
         if (pickle != null)
             if (ctx.isModuleClass)
                 dumpModuleMirrorClass(ctx, cSym, pickle);
             else
-                addScalaAttr(ctx.clazz, pickle);
+                addScalaAttr(clazz, pickle);
 
         try {
-            String fileName = javaFileName(ctx.clazz.getName());
-            ctx.clazz.writeTo(fileName);
+            String fileName = javaFileName(clazz.getName());
+            clazz.writeTo(fileName);
             global.operation("wrote " + fileName);
         } catch (java.io.IOException e) {
             throw global.fail(e.getMessage());
@@ -1631,7 +1646,8 @@ class GenJVM {
         Symbol[] args = mSym.valueParams();
         JType[] argTypes = method.getArgumentTypes();
 
-        for (int i = 0, pos = 1; i < argTypes.length; ++i) {
+        int firstPos = mSym.isStatic() ? 0 : 1;
+        for (int i = 0, pos = firstPos; i < argTypes.length; ++i) {
             locals.put(args[i], new Integer(pos));
             pos += argTypes[i].getSize();
         }
@@ -1672,10 +1688,16 @@ class GenJVM {
     /// Misc.
     //////////////////////////////////////////////////////////////////////
 
+    private void completeClassConstructor(Context ctx, Symbol classSym) {
+        if (ctx.isModuleClass)
+            addModuleInstanceField(ctx);
+        addStaticClassMembers(ctx, classSym);
+    }
+
     /**
      * Return the class constructor method of the given class.
      */
-    private JMethod getClassConstructorMethod(Context ctx, boolean create) {
+    private JMethod getClassConstructorMethod(Context ctx) {
         JMethod[] methods = ctx.clazz.getMethods();
         JMethod clinit = null;
         for (int i = 0; i < methods.length; ++i) {
@@ -1684,15 +1706,14 @@ class GenJVM {
                 break;
             }
         }
-        if (clinit == null && create) {
-            clinit = ctx.clazz.addNewMethod(JAccessFlags.ACC_PUBLIC
-                                            | JAccessFlags.ACC_STATIC,
-                                            "<clinit>",
-                                            JType.VOID,
-                                            JType.EMPTY_ARRAY,
-                                            Strings.EMPTY_ARRAY);
-        }
-        return clinit;
+        return clinit != null
+            ? clinit
+            : ctx.clazz.addNewMethod(JAccessFlags.ACC_PUBLIC
+                                     | JAccessFlags.ACC_STATIC,
+                                     "<clinit>",
+                                     JType.VOID,
+                                     JType.EMPTY_ARRAY,
+                                     Strings.EMPTY_ARRAY);
     }
 
     /**
@@ -1705,15 +1726,14 @@ class GenJVM {
         while (memberIt.hasNext()) {
             Symbol member = memberIt.next();
             if (member.isTerm() && !member.isMethod())
-                ctx.clazz.addNewField(modifiersStoJ(member.flags),
+                ctx.clazz.addNewField(javaModifiers(member),
                                       member.name.toString(),
                                       typeStoJ(member.info()));
         }
     }
 
     // The following function is a single big hack.
-    protected void addStaticClassMembers(Context ctx, Tree.ClassDef cDef) {
-        Symbol cSym = cDef.symbol();
+    protected void addStaticClassMembers(Context ctx, Symbol cSym) {
         HashMap/*<Symbol, AConstant>*/ staticMembers = new HashMap();
         Symbol iSym = ctx.isModuleClass
             ? cSym : addInterfacesPhase.getInterfaceSymbol(cSym);
@@ -1734,27 +1754,23 @@ class GenJVM {
             global.currentPhase = bkpCurrent;
 
             // Add them and initialize them.
-            JMethod classInitMeth = getClassConstructorMethod(ctx, true);
-            Context ctx1 =
-                ctx.withMethod(classInitMeth, Collections.EMPTY_MAP, false);
-
             Iterator smIt = staticMembers.keySet().iterator();
             while (smIt.hasNext()) {
                 Symbol sm = (Symbol)smIt.next();
                 String smName = sm.name.toString();
                 JType tp = typeStoJ(sm.info());
                 JField field =
-                    ctx1.clazz.addNewField((modifiersStoJ(sm.flags)
+                    ctx.clazz.addNewField((javaModifiers(sm)
                                             | JAccessFlags.ACC_STATIC
                                             | JAccessFlags.ACC_PUBLIC)
                                            & ~JAccessFlags.ACC_PRIVATE,
                                            smName.substring(0,
                                                             smName.length()-1),
                                            tp);
-                genLoadLiteral(ctx1, (AConstant)staticMembers.get(sm), tp);
-                ctx1.code.emitPUTSTATIC(ctx1.clazz.getName(),
-                                        field.getName(),
-                                        tp);
+                genLoadLiteral(ctx, (AConstant)staticMembers.get(sm), tp);
+                ctx.code.emitPUTSTATIC(ctx.clazz.getName(),
+                                       field.getName(),
+                                       tp);
             }
         }
     }
@@ -1764,9 +1780,7 @@ class GenJVM {
      * sense) member of its owner.
      */
     protected boolean isStaticMember(Symbol sym) {
-        return !sym.isInitializer()
-            && sym.owner().isModuleClass()
-            && sym.owner().isJava();
+        return sym.isStatic();
     }
 }
 
