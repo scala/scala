@@ -292,6 +292,7 @@ public class  Global {
     // !!! <<< Interpreter stuff
     public static final String CONSOLE_S = "$console$";
     private static final Name
+        CONSOLE_N               = Name.fromString(CONSOLE_S),
         INTERPRETER_N           = Name.fromString("Interpreter"),
         SCALA_INTERPRETER_N     = Name.fromString("scala.Interpreter"),
         SHOW_DEFINITION_N       = Name.fromString("showDefinition"),
@@ -361,7 +362,7 @@ public class  Global {
         for (int i = 0; i < unit.body.length; i++) {
             switch (unit.body[i]) {
             case ModuleDef(_, Name name, _, Tree.Template impl):
-                if (!name.toString().startsWith(CONSOLE_S)) break;
+                if (!name.startsWith(CONSOLE_N)) break;
                 if (impl.body.length <= 0) break;
                 imports.add(unit.body[i].symbol());
                 Tree last = impl.body[impl.body.length - 1];
@@ -477,6 +478,7 @@ public class  Global {
     private StringBuffer appendPrefix(StringBuffer buffer, Type prefix) {
         if (prefix.isSameAs(definitions.ROOT_TYPE)) return buffer;
         if (prefix.isSameAs(definitions.SCALA_TYPE)) return buffer;
+        if (prefix.symbol().name.startsWith(CONSOLE_N)) return buffer;
         return append(buffer, prefix).append('.');
     }
 
