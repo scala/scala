@@ -318,7 +318,7 @@ public class SymbolTablePrinter {
 
     /** Prints the unique identifier of the given symbol */
     public SymbolTablePrinter printSymbolUniqueId(Symbol symbol) {
-        if (global.uniqid) print('#').print(global.uniqueID.id(symbol));
+        if (global.uniqid) print('#').print(symbol.id);
         return this;
     }
 

@@ -266,7 +266,7 @@ public class SymbolNameWriter {
     public String getSymbolName(Symbol symbol) {
         String name = symbol.name.toString();
         if (decode) name = NameTransformer.decode(name);
-        if (unique != 0) name =name+unique+Global.instance.uniqueID.id(symbol);
+        if (unique != 0) name = name + unique + symbol.id;
         return name;
     }
 

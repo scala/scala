@@ -111,7 +111,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
         else
           printString(sym.name.toString());
         if (scalac_Global.instance.uniqid)
-	  printString("#" + scalac_Global.instance.uniqueID.id(sym))
+	  printString("#" + sym.id)
       } else {
         printString(name.toString());
       }

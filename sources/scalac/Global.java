@@ -109,10 +109,6 @@ public abstract class Global {
      */
     public final TreeGen treeGen;
 
-    /** the unique-id generator
-     */
-    public final UniqueID uniqueID;
-
     /** the global tree printer
      */
     public final PrintWriter writer;
@@ -253,7 +249,6 @@ public abstract class Global {
         this.target = interpret ? TARGET_INT : args.target.value.intern();
         this.separate = args.separate.value.equals("yes") ||
             args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
-        this.uniqueID = new UniqueID();
         String printFile = args.printfile.value;
         OutputStream stream;
         try {

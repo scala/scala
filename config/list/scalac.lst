@@ -162,7 +162,6 @@
 ../../../scalac/util/TermName.java
 ../../../scalac/util/TypeName.java
 ../../../scalac/util/TypeNames.java
-../../../scalac/util/UniqueID.java
 
 ../../../scalac/transformer/ICodePhase.java
 ../../../scalac/transformer/WholeProgPhase.java
