@@ -1,11 +1,12 @@
-package scala.tools.dtd2scala ;
+import scalac.util.Name ;
+import scalac.ast.parser.Scanner ; /* for keywords */
+
+package scala.tools.dtd2scala {
 
 import java.io.PrintWriter ;
 
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
-import scalac.util.Name ;
-import scalac.ast.parser.Scanner ; /* for keywords */
 
 import scala.xml._ ;
 import scala.xml.nobinding.{Element,XML} ;
@@ -185,5 +186,7 @@ private def cookedCap( raw:String ):String = {
 }
 
   private val toy:Scanner = new Scanner();
+
+}
 
 }

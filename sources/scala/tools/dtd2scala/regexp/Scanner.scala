@@ -52,7 +52,7 @@ class Scanner with Tokens {
   }
 
   private def readValue = {
-    var buf = List( c ); next; while ( isIdentChar ) { buf = c::buf; next }
+    var buf = c :: Nil; next; while ( isIdentChar ) { buf = c::buf; next }
     value = buf.foldLeft ("") { ( s, c ) => c+s };
   }
 

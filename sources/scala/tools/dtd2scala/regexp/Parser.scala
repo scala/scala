@@ -31,7 +31,7 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
   private def seq = {
     val f = factor;
     if( token != COMMA ) f else {
-      var fs:List[ RegExp ] = List( f );
+      var fs:List[ RegExp ] = f :: Nil;
       while( token == COMMA ) { nextToken; fs = factor :: fs }
       Seq( fs.reverse:_* );
     }
@@ -41,7 +41,7 @@ object Parser with Scanner { // a bit too permissive concerning #PCDATA
   private def factor:RegExp = {
     var a = atomSuffix;
     if( token != CHOICE ) a else {
-      var as:List[ RegExp ] = List( a );
+      var as:List[ RegExp ] = a :: Nil;
       while( token == CHOICE ) { nextToken; as = atomSuffix :: as; }
       Alt( as.reverse:_* );
     }
