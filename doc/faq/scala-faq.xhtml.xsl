@@ -22,7 +22,7 @@
         <td>
           <a>
             <xsl:attribute name="href">
-              <xsl:value-of select="generate-id(.)"/>
+              <xsl:value-of select="concat('#',generate-id(.))"/>
             </xsl:attribute>
             <xsl:number/>. <xsl:value-of select="@title"/>
             
@@ -34,7 +34,7 @@
         <td>
           <a>
             <xsl:attribute name="href">
-              <xsl:call-template name="entry.getId"/> 
+              #<xsl:call-template name="entry.getId"/> 
             </xsl:attribute>
             <xsl:call-template name="entry.fullName"/>
           </a>
