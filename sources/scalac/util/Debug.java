@@ -440,7 +440,6 @@ public class DebugSymbol extends DebugAbstractHandler {
 
     public void append1(StringBuffer buffer, Symbol that) {
         if (that != Symbol.NONE && that != Symbol.ERROR) {
-            buffer.append(that.kindString()).append(' ');
             if (that.owner() != Global.instance.definitions.ROOT_CLASS) {
                 Debug.append(buffer, that.owner());
                 buffer.append(".");
