@@ -174,7 +174,8 @@ fastclean	:
 	$(RM) .latest-interpreter
 	$(RM) .latest-library-sc
 	$(RM) .latest-library-jc
-	$(RM) .latest-compiler
+	$(RM) .latest-compiler-sc
+	$(RM) .latest-compiler-jc
 	$(RM) .latest-generate
 	$(RM) .latest-meta
 	$(RM) .latest-lamplib
