@@ -1227,7 +1227,7 @@ As a consequence, for any two types $S$ and $T$, the type
 new Pair[Int, Int](1, 2) .
 \end{lstlisting}
 
-\section{Type Parameters}
+\section{Type Parameters}\label{sec:type-params}
 
 \syntax\begin{lstlisting}
   TypeParamClause  ::=  `[' VarTypeParam {`,' VarTypeParam} `]'
@@ -3765,6 +3765,7 @@ type of all patterns is the type of the qualifier of \code{match}.
 In the example above, the expected type of the patterns \code{Nil} and
 \code{x :: xs1} would be \code{List[a]}, the type of \code{xs}.
 
+
 \chapter{Views}\label{sec:views}
 
 Views are user-defined, implicit coercions that are automatically
@@ -3889,8 +3890,8 @@ val x: C = B.view(new B)
   TypeParam       ::=  id [>: Type] [<% Type]
 \end{lstlisting}
 
-A type parameter \code{a} may have a view bound \lstlisting@a <% T@
-instead of a regular upper bound \lstlisting@a <: T@. In that case the
+A type parameter \code{a} may have a view bound \lstinline@a <% T@
+instead of a regular upper bound \lstinline@a <: T@. In that case the
 type parameter may be instantiated to any type \code{S} which is
 convertible by application of a view method to the view bound
 \code{T}. Here, we assume there exists an always available identity
@@ -3901,6 +3902,10 @@ def view[a](x: a): a = x .
 Hence, the type parameter \code{a} can always be instantiated to
 subtypes of the view bound \code{T}, just as if \code{T} was a regular
 upper bound.
+
+View bounds for type parameters behave analogously to upper bounds wrt
+to type conformance (\sref{sec:subtyping}), variance checking
+(\sref{sec:type-params}), and overriding (\sref{sec:overriding}).
 
 Methods or classes with view-bounded type parameters implicitly take
 view functions as parameters. For every view-bounded type parameter
@@ -3914,34 +3919,153 @@ actual argument to the corresponding view parameter.
 Implicit view parameters of a method or class are then taken as
 available view methods in its body.
 
-\example
+\example Consider the following definition of a trait
+\code{Comparable} and a view from strings to that trait..
+
+\begin{lstlisting}
 trait Comparable[a] {
-  def < (x: a)
-}
-def view(x: String): Comparable[String] {
+  def less (x: a): boolean
 }
 
+object StringsAreComparable {
+  def view(x: String): Comparable[String] = new Comparable[String] {
+    def less (y: String) = x.compareTo(y) < 0
+  }
+}
+\end{lstlisting}
+
+Now, define a binary tree with a method \code{insert} which inserts an
+element in the tree and a method \code{elements} which returns a
+sorted list of all elements of the tree. The tree is defined for all
+types of elements \code{a} that are viewable as \code{Comparable[a]}.
+
+\begin{lstlisting}
+trait Tree[a <% Comparable[a]] {
+  def insert(x: a): Tree[a] = this match {
+    case Empty() => new Node(x, Empty(), Empty())
+    case Node(elem, l, r) => 
+      if (x == elem) this
+      else if (x less elem) Node(elem, l insert x, r)
+      else Node(elem, l, r insert x);
+  }
+  def elements: List[a] = this match {
+    case Empty() => List()
+    case Node(elem, l, r) => 
+      l.elements ::: List(elem) ::: r.elements
+  }
+}
+case class Empty[a <% Comparable[a]]() 
+  extends Tree[a];
+case class Node[a <% Comparable[a]](elem: a, l: Tree[a], r: Tree[a])
+  extends Tree[a];
+\end{lstlisting}
+
+Finally, define a test program which builds a tree from all command
+line argument strings and then prints out the elements as a sorted
+sequence. 
+
+\begin{lstlisting}
+object Test {
+  import StringsAreComparable.view;
+
+  def main(args: Array[String]) = {
+    var t: Tree[String] = Empty();
+    for (val s <- args) { t = t insert s }
+    System.out.println(t.elements)
+  }
+}
+\end{lstlisting}
+Note that the definition ~\lstinline@var t: Tree[String] = Empty();@~
+is legal because at that point a view method from \code{String} to
+\code{Comparable[String]} has been imported and is therefore
+accessible without a prefix. The imported view method is passed as an
+implicit argument to the \code{Empty} constructor. 
 
 
+Here is the \code{Test} program again, this time with implicit views
+made visible:
+\begin{lstlisting}
+object Test {
+  import StringsAreComparable.view;
 
+  def main(args: Array[String]) = {
+    var t: Tree[String] = Empty($\mbox{\bf StringsAreComparable.view}$);
+    for (val s <- args) { t = t insert s }
+    System.out.println(t.elements)
+  }
+}
+\end{lstlisting}
 
+And here are the tree classes with implicit views added:
 
+\begin{lstlisting}
+trait Tree[a <% Comparable[a]]($\mbox{\bf view}$: a => Comparable[a]) {
+  def insert(x: a): Tree[a] = this match {
+    case Empty(_) => new Node(x, Empty($\mbox{\bf view}$), Empty($\mbox{\bf view}$))
+    case Node(_, elem, l, r) => 
+      if (x == elem) this
+      else if ($\mbox{\bf view}$(x) less elem) Node($\mbox{\bf view}$, elem, l insert x, r)
+      else Node($\mbox{\bf view}$, elem, l, r insert x);
+  }
+  def elements: List[a] = this match {
+    case Empty(_) => List()
+    case Node(_, elem, l, r) => 
+      l.elements ::: List(elem) ::: r.elements
+  }
+}
+case class Empty[a <% Comparable[a]]($\mbox{\bf view}$: a => Comparable[a]) 
+  extends Tree[a];
+case class Node[a <% Comparable[a]]($\mbox{\bf view}$: a => Comparable[a], 
+                                    elem: a, l: Tree[a], r: Tree[a])
+  extends Tree[a];
+\end{lstlisting}
 
+Note that views entail a certain run-time overhead because they need
+to be passed as additional arguments to view-bounded methods and
+classes. Furthermore, every application of a view entails the
+construction of an object which is often immediately discarded
+afterwards -- see for instance with the translation of \code{(x less elem)} 
+in the implementation of method \code{insert} above. It is
+expected that the latter cost can be absorbed largely or completely by
+compiler optimizations (which are, however, not yet implemented at the
+present stage).
 
+\section{Conditional Views}
 
-There is one such view function
-parameter for every view bounded type parameter. 
+View methods might themselves have view-bounded type parameters; this
+allows the definition of conditional views.
 
+\example The following view makes lists comparable, {\em provided} the
+list element type is also comparable.
 
+\begin{lstlisting}
+def view[a <% Comparable[a]](x: List[a]): Comparable[List[a]] = 
+  new Comparable[List[a]] {
+    def less (ys: List[a]): boolean = 
+      !ys.isEmpty 
+      && 
+      (xs.isEmpty || 
+       (xs.head less ys.head) || 
+       (xs.head == ys.head) && (xs.tail less ys.tail))
+  }
+\end{lstlisting}
 
-In that case, the regular upper
-bound of the
+Note that the condition \code{(xs.head less ys.head)} invokes the
+\code{less} method of the list element type, which is unknown at the
+point of the definition of the view method. As usual, view-bounded
+type parameters are translated to implicit \code{view} arguments. In
+this case, the \code{view} method over lists would receive the
+\code{view} method over list elements as implicit parameter.
 
-
-
-If $C$ is a base class of $T$ and there exists
-
-
+This opens up the risk that view methods might be passed themselves as
+parameters, thus leading to an infinite instantiation. For instance,
+one might try to define the following ``magic'' universal converter:
+\begin{lstlisting}
+def view[b, a <% b](x: a): b = x // illegal!
+\end{lstlisting}
+Application of this view would entail an inifinite expansion with view
+parameters. To prevent this sitauation, we require that all defined
+views are {\em contractive}, according to the following definition:
 
 \chapter{Top-Level Definitions}
 \label{sec:topdefs}
