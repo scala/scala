@@ -105,7 +105,7 @@ public class TypesAsValuesPhase extends Phase {
 
     private final Map/*<Symbol, Symbol>*/ predefTypes;
 
-    private HashMap/*<Symbol, Ancestor[][]>*/ displayCache = new HashMap();
+    private HashMap/*<Symbol, Ancestor[][]>*/ ancestorCache = new HashMap();
 
     public TypesAsValuesPhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
@@ -130,7 +130,7 @@ public class TypesAsValuesPhase extends Phase {
         membersToAdd.put(defs.ARRAY_CLASS, new NewMember[0]);
         paramsToAdd.put(ARRAY_CONSTRUCTOR, new Symbol[0]);
 
-        displayCache.put(defs.OBJECT_CLASS,
+        ancestorCache.put(defs.OBJECT_CLASS,
                          new Ancestor[][] {
                              new Ancestor[] {
                                  new Ancestor(defs.OBJECT_CLASS, -1, -1)
@@ -448,7 +448,7 @@ public class TypesAsValuesPhase extends Phase {
                     // Transform instance tests:
                     //   e.asInstanceOf[T]
                     // becomes:
-                    //   asValue(T).checkCastability(e).asInstanceOf[T]
+                    //   asValue(T).cast(e).asInstanceOf[T]
                     // unless T is a "simple" type for which a Java
                     // instance test is sufficient, in which case the
                     // expression is left as is.
@@ -580,8 +580,8 @@ public class TypesAsValuesPhase extends Phase {
                     ++zCount;
             }
 
-            Ancestor[][] disp = computeDisplay(clsSym);
-            int[] displayCode = getDisplayCode(computeDisplay(clsSym));
+            Ancestor[][] disp = computeAncestors(clsSym);
+            int[] ancestorCode = getAncestorCode(computeAncestors(clsSym));
 
             Tree[] tcArgs = new Tree[] {
                 gen.mkIntLit(pos, level(clsSym)),
@@ -593,7 +593,7 @@ public class TypesAsValuesPhase extends Phase {
                 gen.mkIntLit(pos, mCount),
                 gen.mkIntLit(pos, pCount),
                 gen.mkBooleanLit(pos, clsSym.parents()[0].symbol().isJava()),
-                mkNewIntLitArray(pos, displayCode, owner)
+                mkNewIntLitArray(pos, ancestorCode, owner)
             };
 
             Symbol tcConst = defs.TYPECONSTRUCTOR_CLASS.primaryConstructor();
@@ -722,9 +722,9 @@ public class TypesAsValuesPhase extends Phase {
          */
         private Tree genTypeCast(int pos, Tree expr, Type tp) {
             Tree tpVal = typeAsValue(pos, tp, currentOwner, EENV);
-            Tree fun = gen.Select(pos, tpVal, defs.TYPE_CHECKCASTABILITY());
-            Tree checkCastCall = gen.mkApply_V(pos, fun, new Tree[] { expr });
-            return gen.mkAsInstanceOf(pos, checkCastCall, tp);
+            Tree fun = gen.Select(pos, tpVal, defs.TYPE_CAST());
+            Tree castCall = gen.mkApply_V(pos, fun, new Tree[] { expr });
+            return gen.mkAsInstanceOf(pos, castCall, tp);
         }
 
         /**
@@ -927,29 +927,29 @@ public class TypesAsValuesPhase extends Phase {
             }
         }
 
-        private Ancestor[][] computeDisplay0(Symbol classSym) {
+        private Ancestor[][] computeAncestors0(Symbol classSym) {
             Symbol[] scalaParents = scalaParents(classSym);
             int level = level(classSym);
-            ArrayList/*<Ancestor>*/[] display = new ArrayList[level + 1];
+            ArrayList/*<Ancestor>*/[] ancestor = new ArrayList[level + 1];
 
-            for (int l = 0; l < display.length; ++l)
-                display[l] = new ArrayList();
+            for (int l = 0; l < ancestor.length; ++l)
+                ancestor[l] = new ArrayList();
 
-            display[level].add(new Ancestor(classSym, -1, -1));
+            ancestor[level].add(new Ancestor(classSym, -1, -1));
 
             // Go over parents from left to right and add missing
-            // ancestors to the display, remembering where they come
+            // ancestors to the ancestor, remembering where they come
             // from.
             for (int p = 0; p < scalaParents.length; ++p) {
                 Symbol parentSymbol = scalaParents[p];
                 assert parentSymbol != Symbol.NONE;
 
-                Ancestor[][] parentDisplay = computeDisplay(parentSymbol);
-                assert parentDisplay.length <= display.length;
+                Ancestor[][] parentAncestor = computeAncestors(parentSymbol);
+                assert parentAncestor.length <= ancestor.length;
 
-                for (int l = 0; l < parentDisplay.length; ++l) {
-                    ArrayList/*<Ancestor>*/ myRow = display[l];
-                    Ancestor[] parentRow = parentDisplay[l];
+                for (int l = 0; l < parentAncestor.length; ++l) {
+                    ArrayList/*<Ancestor>*/ myRow = ancestor[l];
+                    Ancestor[] parentRow = parentAncestor[l];
                     for (int i = 0; i < parentRow.length; ++i) {
                         Symbol sym = parentRow[i].symbol;
 
@@ -967,23 +967,23 @@ public class TypesAsValuesPhase extends Phase {
                 }
             }
 
-            Ancestor[][] finalDisplay = new Ancestor[level + 1][];
-            for (int i = 0; i < finalDisplay.length; ++i) {
-                finalDisplay[i] = (Ancestor[])
-                    display[i].toArray(new Ancestor[display[i].size()]);
+            Ancestor[][] finalAncestor = new Ancestor[level + 1][];
+            for (int i = 0; i < finalAncestor.length; ++i) {
+                finalAncestor[i] = (Ancestor[])
+                    ancestor[i].toArray(new Ancestor[ancestor[i].size()]);
             }
 
-            return finalDisplay;
+            return finalAncestor;
         }
 
-        private Ancestor[][] computeDisplay(Symbol classSym) {
-            Ancestor[][] display = (Ancestor[][])displayCache.get(classSym);
-            if (display == null) {
-                display = computeDisplay0(classSym);
-                displayCache.put(classSym, display);
-//                 debugPrintDisplay(classSym, display);
+        private Ancestor[][] computeAncestors(Symbol classSym) {
+            Ancestor[][] ancestor = (Ancestor[][])ancestorCache.get(classSym);
+            if (ancestor == null) {
+                ancestor = computeAncestors0(classSym);
+                ancestorCache.put(classSym, ancestor);
+//                 debugPrintAncestor(classSym, ancestor);
             }
-            return display;
+            return ancestor;
         }
 
         private Symbol[] scalaParents(Symbol classSym) {
@@ -998,12 +998,12 @@ public class TypesAsValuesPhase extends Phase {
                 scalaParents.toArray(new Symbol[scalaParents.size()]);
         }
 
-        private int[] getDisplayCode(Ancestor[][] display) {
+        private int[] getAncestorCode(Ancestor[][] ancestor) {
             ArrayList/*<List<Ancestor>>*/ prunedRows = new ArrayList();
 
             int totalSize = 0;
-            for (int l = 0; l < display.length; ++l) {
-                Ancestor[] row = display[l];
+            for (int l = 0; l < ancestor.length; ++l) {
+                Ancestor[] row = ancestor[l];
                 ArrayList/*<Ancestor>*/ prunedRow = new ArrayList(row.length);
                 for (int i = 0; i < row.length; ++i) {
                     if (row[i].parentIndex > 0)
@@ -1033,16 +1033,16 @@ public class TypesAsValuesPhase extends Phase {
     }
 
     // Debugging function
-    private void debugPrintDisplay(Symbol sym, Ancestor[][] display) {
-        System.out.println("display for " + Debug.show(sym));
-        for (int l = 0; l < display.length; ++l) {
+    private void debugPrintAncestor(Symbol sym, Ancestor[][] ancestor) {
+        System.out.println("ancestor for " + Debug.show(sym));
+        for (int l = 0; l < ancestor.length; ++l) {
             System.out.print("  [" + l + "] ");
-            for (int i = 0; i < display[l].length; ++i) {
+            for (int i = 0; i < ancestor[l].length; ++i) {
                 if (i > 0)
                     System.out.print("      ");
-                System.out.println(" " + Debug.show(display[l][i].symbol)
-                                   + "/par" + display[l][i].parentIndex
-                                   + "/pos" + display[l][i].position);
+                System.out.println(" " + Debug.show(ancestor[l][i].symbol)
+                                   + "/par" + ancestor[l][i].parentIndex
+                                   + "/pos" + ancestor[l][i].position);
             }
         }
     }

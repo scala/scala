@@ -20,7 +20,7 @@ public class TypeInt extends ValueType {
     public Array newArray(int size) {
         return RunTime.box_iarray(new int[size]);
     }
-    public Object checkCastability(Object o) {
+    public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Int))
             throw new ClassCastException(); // TODO error message

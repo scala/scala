@@ -20,7 +20,7 @@ public class TypeChar extends ValueType {
     public Array newArray(int size) {
         return RunTime.box_carray(new char[size]);
     }
-    public Object checkCastability(Object o) {
+    public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Char))
             throw new ClassCastException(); // TODO error message

@@ -34,8 +34,8 @@ public class Statistics {
     private static long instanceOfCount = 0;
     private static long typeCastCount = 0;
 
-    private static long displaySearchIterations = 0;
-    private static long displaySearches = 0;
+    private static long ancestorSearchIterations = 0;
+    private static long ancestorSearches = 0;
 
     private static HashMap instances = new HashMap();
 
@@ -69,9 +69,9 @@ public class Statistics {
         return true;
     }
 
-    public static synchronized boolean addDisplaySearchIterations(int n) {
-        displaySearchIterations += n;
-        displaySearches++;
+    public static synchronized boolean addAncestorSearchIterations(int n) {
+        ancestorSearchIterations += n;
+        ancestorSearches++;
         return true;
     }
 
@@ -93,11 +93,11 @@ public class Statistics {
                            + instanceOfCount + ")");
             stream.println("(type-cast . "
                            + typeCastCount + ")");
-            if (displaySearches > 0) {
-                stream.println("(display-searches . "
-                               + displaySearches + ")");
-                stream.println("(display-search-iterations . "
-                               + displaySearchIterations + ")");
+            if (ancestorSearches > 0) {
+                stream.println("(ancestor-searches . "
+                               + ancestorSearches + ")");
+                stream.println("(ancestor-search-iterations . "
+                               + ancestorSearchIterations + ")");
             }
             stream.println("(instances . (");
             Iterator instIt = instances.entrySet().iterator();

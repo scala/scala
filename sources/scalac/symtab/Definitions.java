@@ -554,11 +554,11 @@ public class Definitions {
         return TYPE_ISINSTANCE;
     }
 
-    private Symbol TYPE_CHECKCASTABILITY;
-    public Symbol TYPE_CHECKCASTABILITY() {
-        if (TYPE_CHECKCASTABILITY == null)
-            TYPE_CHECKCASTABILITY = loadTerm(TYPE_CLASS, Names.checkCastability);
-        return TYPE_CHECKCASTABILITY;
+    private Symbol TYPE_CAST;
+    public Symbol TYPE_CAST() {
+        if (TYPE_CAST == null)
+            TYPE_CAST = loadTerm(TYPE_CLASS, Names.cast);
+        return TYPE_CAST;
     }
 
     private Symbol RTT_DOUBLE;

@@ -52,19 +52,19 @@ public class TypeConstructor implements java.io.Serializable {
     public final boolean isTrivial;
 
     /**
-     * "Code" to compute the display for an instance of this
-     * constructor, based on the display of its parents. This code is
+     * "Code" to compute the ancestors for an instance of this
+     * constructor, based on the ancestors of its parents. This code is
      * structured as follows:
      *
      * n1 p1,1 o1,1 p1,2 o1,2 ... p1,n o1,n  n2 p2,1 ...  nl pl,1 ol,2 ...
      *
      * where all n, p and o are integers, and l is the level of this
      * constructor. ni gives the number of additional entries to add
-     * to the display of the super-class at level i. pi gives the
+     * to the ancestors of the super-class at level i. pi gives the
      * index of the parent in which to pick this additional entry, and
-     * oi gives the offset of this entry in the parent's display.
+     * oi gives the offset of this entry in the parent's ancestors.
      */
-    public final int[] displayCode;
+    public final int[] ancestorCode;
 
     private final InstantiationMap instMapModule = new InstantiationMap();
     private final AtomicReference/*<InstantiationMap.T>*/ instances =
@@ -80,7 +80,7 @@ public class TypeConstructor implements java.io.Serializable {
                            int mCount,
                            int pCount,
                            boolean inheritsFromJavaClass,
-                           int[] displayCode) {
+                           int[] ancestorCode) {
         this.level = level;
         this.outer = outer;
         this.zCount = zCount;
@@ -89,7 +89,7 @@ public class TypeConstructor implements java.io.Serializable {
 
         this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
 
-        this.displayCode = displayCode;
+        this.ancestorCode = ancestorCode;
 
         try {
             this.clazz = Class.forName(fullName, false, loader);

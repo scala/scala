@@ -19,7 +19,7 @@ public public class TypeDouble extends ValueType {
     public Array newArray(int size) {
         return RunTime.box_darray(new double[size]);
     }
-    public Object checkCastability(Object o) {
+    public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Double))
             throw new ClassCastException(); // TODO error message

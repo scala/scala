@@ -161,7 +161,7 @@ public class Names {
     public static final Name caseArity = Name.fromString("caseArity");
     public static final Name caseElement = Name.fromString("caseElement");
     public static final Name cur = Name.fromString("cur"); // used in translation of automata
-    public static final Name checkCastability = Name.fromString("checkCastability");
+    public static final Name cast = Name.fromString("cast");
     public static final Name coerce = Name.fromString("coerce");
     public static final Name defaultValue = Name.fromString("defaultValue");
     public static final Name elem = Name.fromString("elem");

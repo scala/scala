@@ -21,14 +21,14 @@ public class ScalaClassType extends ClassType {
     public static final ScalaClassType[] EMPTY_ARRAY =
         new ScalaClassType[0];
 
-    private static final ScalaClassType[][] EMPTY_DISPLAY =
+    private static final ScalaClassType[][] EMPTY_ANCESTOR =
         new ScalaClassType[0][];
 
     private final TypeConstructor constr;
     private final Type[] inst;
 
     private ScalaClassType[] parents = null;
-    private ScalaClassType[][] display = null;
+    private ScalaClassType[][] ancestor = null;
 
     private final int hashCode;
 
@@ -127,15 +127,15 @@ public class ScalaClassType extends ClassType {
 
     private ScalaClassType myInstantiationFor(ScalaClassType that) {
         // Find our instantiation for the other type, if any.
-        ScalaClassType[] thisSlice = getDisplay()[that.constr.level];
+        ScalaClassType[] thisSlice = getAncestors()[that.constr.level];
 
         for (int i = 0; i < thisSlice.length; ++i) {
             if (thisSlice[i].constr == that.constr) {
-                assert Statistics.addDisplaySearchIterations(i + 1);
+                assert Statistics.addAncestorSearchIterations(i + 1);
                 return thisSlice[i];
             }
         }
-        assert Statistics.addDisplaySearchIterations(thisSlice.length);
+        assert Statistics.addAncestorSearchIterations(thisSlice.length);
 
         return null;
     }
@@ -185,35 +185,35 @@ public class ScalaClassType extends ClassType {
         return parents;
     }
 
-    private ScalaClassType[][] getDisplay() {
-        if (display == null)
-            computeDisplay();
-        return display;
+    private ScalaClassType[][] getAncestors() {
+        if (ancestor == null)
+            computeAncestors();
+        return ancestor;
     }
 
-    private void computeDisplay() {
+    private void computeAncestors() {
         final int level = constr.level;
-        final int[] displayCode = constr.displayCode;
+        final int[] ancestorCode = constr.ancestorCode;
         ScalaClassType[] parents = getParents();
 
-        display = new ScalaClassType[level + 1][];
-        ScalaClassType[][] initialDisplay = parents.length > 0
-            ? parents[0].getDisplay()
-            : EMPTY_DISPLAY;
+        ancestor = new ScalaClassType[level + 1][];
+        ScalaClassType[][] initialAncestor = parents.length > 0
+            ? parents[0].getAncestors()
+            : EMPTY_ANCESTOR;
 
         for (int l = 0, dci = 0; l <= level; ++l) {
-            int toAddParents = displayCode[dci++];
+            int toAddParents = ancestorCode[dci++];
             int toAddSelf = (l == level) ? 1 : 0;
             int toAdd = toAddParents + toAddSelf;
             ScalaClassType[] initialRow;
 
-            if (l < initialDisplay.length)
-                initialRow = initialDisplay[l];
+            if (l < initialAncestor.length)
+                initialRow = initialAncestor[l];
             else
                 initialRow = ScalaClassType.EMPTY_ARRAY;
 
             if (toAdd == 0) {
-                display[l] = initialRow;
+                ancestor[l] = initialRow;
             } else {
                 int initialLen = initialRow.length;
                 ScalaClassType[] newRow =
@@ -224,12 +224,12 @@ public class ScalaClassType extends ClassType {
 
                 System.arraycopy(initialRow, 0, newRow, toAddSelf, initialLen);
                 for (int i = 0; i < toAddParents; ++i) {
-                    int p = displayCode[dci++];
-                    int o = displayCode[dci++];
+                    int p = ancestorCode[dci++];
+                    int o = ancestorCode[dci++];
                     newRow[toAddSelf + initialLen + i] =
-                        parents[p].getDisplay()[l][o];
+                        parents[p].getAncestors()[l][o];
                 }
-                display[l] = newRow;
+                ancestor[l] = newRow;
             }
         }
     }

@@ -20,7 +20,7 @@ public class TypeBoolean extends ValueType {
     public Array newArray(int size) {
         return RunTime.box_zarray(new boolean[size]);
     }
-    public Object checkCastability(Object o) {
+    public Object cast(Object o) {
         assert scala.runtime.types.Statistics.incTypeCast();
         if (! (o == null || o instanceof scala.Boolean))
             throw new ClassCastException(); // TODO error message

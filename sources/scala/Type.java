@@ -66,7 +66,7 @@ abstract public class Type implements java.io.Serializable {
      * an exception if this is not possible (implement Scala's
      * asInstanceOf operation).
      */
-    public Object checkCastability(Object o) {
+    public Object cast(Object o) {
         if (! (o == null || isInstance(o)))
             throw new ClassCastException("\n" + ((ScalaObject)o).getType() + "\n" + this.toString());
         return o;
