@@ -603,7 +603,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return sym;
     }
 
-     /* If this is a primary constructor, return the class it constructs.
+    /** If this is a constructor, return the class it constructs.
      *  Otherwise return the symbol itself.
      */
     public Symbol constructorClass() {
