@@ -219,7 +219,7 @@ class GenJVMBCEL {
             leaveMethod();
         } break;
 
-        case LabelDef(_, _):
+        case LabelDef(_, _, _):
             global.fail("not implemented yet " + tree);
             break;
 

@@ -509,6 +509,7 @@ public class Erasure extends Transformer implements Modifiers {
         case This(_):
         case Literal(_):
         case TypeTerm():
+        case LabelDef(_, _,_):
 	    return super.transform(tree).setType(owntype);
 
         case Bad():
@@ -516,7 +517,6 @@ public class Erasure extends Transformer implements Modifiers {
         case PatDef(_,_,_):
         case Import(_,_):
         case CaseDef(_,_,_):
-        case LabelDef(_,_):
         case Visitor(_):
         case Function(_,_):
         case SingletonType(_):

@@ -97,7 +97,7 @@ public class ExpressionCompiler {
     private Code compute(Tree tree) {
         switch (tree) {
 
-        case LabelDef(Tree.Ident[] params, Tree body):
+        case LabelDef(_, Tree.Ident[] params, Tree body):
             Symbol symbol = tree.symbol();
             Variable[] vars = new Variable[params.length];
             for (int i = 0; i < params.length; i++) {

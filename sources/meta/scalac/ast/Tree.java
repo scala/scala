@@ -103,9 +103,7 @@ public class Tree {
         n_FunType        = node("FunType"       , Type, NoSym),
         n_CompoundType   = node("CompoundType"  , Type, NoSym),
         n_AppliedType    = node("AppliedType"   , Type, NoSym),
-	n_Try            = node("Try"           , Term, NoSym),
-	n_While          = node("While"         , Term, NoSym),
-	n_DoUntil        = node("DoUntil"       , Term, NoSym);
+	n_Try            = node("Try"           , Term, NoSym);
 
     public final TreeNode[] nodes;
     public int arrays;
@@ -204,7 +202,8 @@ public class Tree {
 
         n_LabelDef.
             setDescription("Labelled expression - the symbols in the array (must be Idents!) are those the label takes as argument").
-            setRange(Phase.OPTIMIZER, Phase.END).
+            setRange(Phase.PARSER, Phase.END).
+	    addField(t_TermName, "name", SymName).
             addField(n_Ident.getType(1), "params").
             addField(t_TermTree, "rhs");
 
@@ -345,18 +344,6 @@ public class Tree {
 	    addField(t_TermTree, "block").
 	    addField(t_TermTree, "catcher").
 	    addField(t_TermTree, "finalizer");
-
-	n_While.
-	    setDescription("While Loop").
-	    setRange(Phase.PARSER, Phase.END).
-	    addField(t_TermTree, "cond").
-	    addField(t_TermTree, "block");
-
-	n_DoUntil.
-	    setDescription("Do-Until Loop").
-	    setRange(Phase.PARSER, Phase.END).
-	    addField(t_TermTree, "block").
-	    addField(t_TermTree, "cond");
     }
 
     //########################################################################

@@ -2290,6 +2290,18 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case Literal(Object value):
 		return tree.setType(value2Type(value));
 
+	    case LabelDef(Name name, Ident[] params, Tree body):
+		assert params.length == 0;
+		pushContext(tree, context.owner, new Scope(context.scope));
+		Symbol lsym = new TermSymbol(tree.pos, name, context.owner, LABEL);
+		lsym.setInfo(
+		    Type.MethodType(Symbol.EMPTY_ARRAY, definitions.UNIT_TYPE));
+		context.scope.enter(lsym);
+		Tree body1 = transform(body, mode, pt);
+		popContext();
+		return copy.LabelDef(tree, lsym, params, body1)
+		    .setSymbol(lsym).setType(definitions.UNIT_TYPE);
+
 	    case TypeTerm():
 		return tree;
 

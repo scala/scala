@@ -220,7 +220,7 @@ class GenJVM {
         Symbol sym = tree.symbol();
 
         switch (tree) {
-        case LabelDef(Tree.Ident[] params, Tree rhs): {
+        case LabelDef(_, Tree.Ident[] params, Tree rhs): {
             JLabel label = new JLabel();
             ctx.code.anchorLabelToNext(label);
             ctx.labels.put(sym, new Pair(label, params));

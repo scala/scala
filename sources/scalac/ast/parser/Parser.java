@@ -36,11 +36,16 @@ public class Parser implements Tokens {
      */
     PatternNormalizer pN;
 
+    /** The current nesting depths of while and do loops.
+     */
+    int loopNestingDepth;
+
     public Parser(Unit unit) {
         s = new Scanner(unit);
         make = unit.global.make;
 	pN = new PatternNormalizer( unit );
 	mapTreeComment = unit.global.mapTreeComment;
+	loopNestingDepth = 0;
     }
 
     /** this is the general parse method
@@ -320,27 +325,53 @@ public class Parser implements Tokens {
 	return t;
     }
 
-    Tree makeWhile(int pos, Tree cond, Tree body) {
-	return
-	    make.Apply(
-		pos,
-		make.Apply(
-		    pos, ScalaRunTimeDot(pos, Names.While), new Tree[]{cond}),
-		new Tree[]{body});
+     Tree makeWhile(int pos, Tree cond, Tree body) {
+ 	return
+ 	    make.Apply(
+ 		pos,
+ 		make.Apply(
+ 		    pos, ScalaRunTimeDot(pos, Names.While), new Tree[]{cond}),
+ 		new Tree[]{body});
+     }
+
+     Tree makeDoWhile(int pos, Tree body, Tree cond) {
+ 	return
+ 	    make.Apply(
+ 		    pos,
+ 		    make.Select(
+ 			pos,
+ 			make.Apply(
+ 			    pos,
+ 			    ScalaRunTimeDot(pos, Names.Do),
+ 			    new Tree[]{body}),
+ 			Names.While),
+ 		    new Tree[]{cond});
+      }
+
+      Tree makeWhile(int pos, Name lname, Tree cond, Tree body) {
+	Tree continu = make.Apply(
+	    pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
+	Tree rhs = make.If(
+	    pos,
+	    cond,
+	    make.Block(body.pos, new Tree[]{body, continu}),
+	    make.Block(pos, Tree.EMPTY_ARRAY));
+	return make.LabelDef(pos, lname, new Ident[0], rhs);
     }
 
-    Tree makeDoWhile(int pos, Tree body, Tree cond) {
-	return
-	    make.Apply(
-		    pos,
-		    make.Select(
-			pos,
-			make.Apply(
-			    pos,
-			    ScalaRunTimeDot(pos, Names.Do),
-			    new Tree[]{body}),
-			Names.While),
-		    new Tree[]{cond});
+    Tree makeDoWhile(int pos, Name lname, Tree body, Tree cond) {
+	Tree continu = make.Apply(
+	    pos, make.Ident(pos, lname), Tree.EMPTY_ARRAY);
+	Tree rhs = make.Block(
+	    body.pos,
+	    new Tree[]{
+		body,
+		make.If(
+		    cond.pos,
+		    cond,
+		    continu,
+		    make.Block(pos, Tree.EMPTY_ARRAY))});
+	return make.LabelDef(pos, lname, new Ident[0], rhs);
     }
 
     /** Convert tree to formal parameter list
@@ -824,13 +855,18 @@ public class Parser implements Tokens {
 	    }
 	    return makeTry(pos, body, catcher, finalizer);
 	} else if (s.token == WHILE) {
+	    Name lname = Name.fromString("label$" + loopNestingDepth);
+	    loopNestingDepth++;
 	    int pos = s.skipToken();
 	    accept(LPAREN);
 	    Tree cond = expr();
 	    accept(RPAREN);
 	    Tree body = expr();
-	    return makeWhile(pos, cond, body);
+	    loopNestingDepth--;
+	    return makeWhile(pos/*, lname*/, cond, body);
 	} else if (s.token == DO) {
+	    Name lname = Name.fromString("label$" + loopNestingDepth);
+	    loopNestingDepth++;
 	    int pos = s.skipToken();
 	    Tree body = expr();
 	    if (s.token == SEMI) s.nextToken();
@@ -838,7 +874,8 @@ public class Parser implements Tokens {
 	    accept(LPAREN);
 	    Tree cond = expr();
 	    accept(RPAREN);
-	    return makeDoWhile(pos, body, cond);
+	    loopNestingDepth--;
+	    return makeDoWhile(pos, lname, body, cond);
 	} else if (s.token == FOR) {
 	    s.nextToken();
 	    Tree[] enums;
