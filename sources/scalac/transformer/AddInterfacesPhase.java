@@ -200,15 +200,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
         else return className;
     }
 
-    protected void updateMemberInfo(Symbol member,
-                                    Symbol oldOwner,
-                                    Symbol newOwner,
-                                    SymbolSubstTypeMap map) {
-        Type.SubstThisMap thisTypeMap = new Type.SubstThisMap(oldOwner, newOwner);
-        Type newTp = thisTypeMap.apply(substParams(member.info(), map));
-        member.updateInfo(newTp);
-    }
-
     protected HashMap ifaceToClass = new HashMap();
     protected HashMap classToIFace = new HashMap();
 
@@ -237,6 +228,9 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             Scope ifaceOwnerMembers = ifaceSym.owner().members();
             ifaceOwnerMembers.enter(classSym);
             ifaceOwnerMembers.enter(classConstrSym);
+
+            Type.SubstThisMap thisTypeMap =
+                new Type.SubstThisMap(ifaceSym, classSym);
 
             // Clone type and value parameters of constructor.
             Map classSubst = newClassSubst(classSym);
@@ -279,20 +273,24 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                         ifaceMemberSym.flags ^= Modifiers.PROTECTED;
 
                     classMemberSym = ifaceMemberSym.cloneSymbol(classSym);
-                    classMemberSym.setInfo(classMemberSym.info().cloneType(ifaceMemberSym, classMemberSym));
-                    updateMemberInfo(classMemberSym, ifaceSym, classSym, paramsSubst);
-                    ifaceMemberSym.flags |= Modifiers.DEFERRED;
-
+                    classMemberSym.setInfo(
+                        thisTypeMap.applyParams(
+                            paramsSubst.applyParams(
+                                classMemberSym.info().cloneType(
+                                    ifaceMemberSym, classMemberSym))));
                     classMembersMap.put(ifaceMemberSym, classMemberSym);
+
+                    ifaceMemberSym.flags |= Modifiers.DEFERRED;
                 } else {
                     // Member doesn't go in interface, we just make it
                     // owned by the class.
                     classMemberSym = ifaceMemberSym;
                     classMemberSym.setOwner(classSym);
-                    updateMemberInfo(classMemberSym, ifaceSym, classSym, paramsSubst);
+                    classMemberSym.updateInfo(
+                        thisTypeMap.apply(
+                            paramsSubst.apply(
+                                classMemberSym.info())));
                 }
-                Type nextMemberTp = classMemberSym.nextInfo();
-                classMemberSym.updateInfo(paramsSubst.apply(nextMemberTp));
 
                 classMembers.enterOrOverload(classMemberSym);
                 if (classMemberSym.isClass())
