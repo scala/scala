@@ -9,11 +9,10 @@
 
 package scalac.transformer;
 
-//import scala.compiler.parser.Kinds;
-//import scala.compiler.typechecker.*;
-
 import scalac.Global;
 import scalac.PhaseDescriptor;
+import scalac.backend.Primitive;
+import scalac.backend.Primitives;
 import scalac.checkers.Checker;
 import scalac.checkers.CheckOwners;
 import scalac.checkers.CheckSymbols;
@@ -22,13 +21,12 @@ import scalac.checkers.CheckNames;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.util.Name;
-import scalac.util.Names;
 import scalac.util.Debug;
 
 public class ErasurePhase extends PhaseDescriptor {
 
     public Definitions definitions;
+    public Primitives primitives;
 
     public String name () {
         return "erasure";
@@ -44,6 +42,7 @@ public class ErasurePhase extends PhaseDescriptor {
 
     public void apply(Global global) {
 	this.definitions = global.definitions;
+	this.primitives = global.primitives;
         new Erasure(global).apply();
     }
 
@@ -61,20 +60,15 @@ public class ErasurePhase extends PhaseDescriptor {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-	if ((sym.name == Names.is || sym.name == Names.as) &&
-	    sym.owner() == definitions.ANY_CLASS)
-	    return tp;
-	else if (sym.name == Names.box &&
-		 sym.owner().fullName() == Names.scala_runtime_RunTime)
-	    return eraseParams(tp);
-	else if (sym.isClass())
-	    return Type.erasureMap.map(tp);
-        else if (sym.isType())
-            return tp;
-	else if (sym == definitions.NULL)
-	    return tp.resultType().erasure();
-	else
-	    return tp.erasure();
+        if (sym.isClass()) return Type.erasureMap.map(tp);
+        if (sym.isType()) return tp;
+        if (sym == definitions.NULL) return tp.resultType().erasure();
+        switch (primitives.getPrimitive(sym)) {
+        case Primitive.IS : return tp;
+        case Primitive.AS : return tp;
+        case Primitive.BOX: return eraseParams(tp);
+        default           : return tp.erasure();
+        }
     }
 
     public Checker[] postCheckers(Global global) {
