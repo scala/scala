@@ -109,6 +109,7 @@ transformer/matching/DetWordAutom.java
 transformer/matching/FiniteAutom.java
 transformer/matching/FreshVariableTraverser.java
 transformer/matching/Label.java
+transformer/matching/TracerInScala.java
 transformer/matching/LeftTracerInScala.java
 transformer/matching/NondetWordAutom.java
 transformer/matching/NoSeqVariableTraverser.java
