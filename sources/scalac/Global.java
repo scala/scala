@@ -382,6 +382,7 @@ public class  Global {
         case ModuleDef(_, _, _, _):
         case DefDef(_, _, _, _, _, _):
         case TypeDef(_, _,_ ):
+            if (!mustShow(tree.symbol())) return;
             body.append(
                 treeGen.Apply(
                     treeGen.Select(
@@ -392,6 +393,7 @@ public class  Global {
                             definitions.JAVA_STRING_TYPE)}));
             return;
         case ValDef(_, _, _, _):
+            if (!mustShow(tree.symbol())) return;
             body.append(
                 treeGen.Apply(
                     treeGen.Select(
@@ -405,6 +407,10 @@ public class  Global {
         default:
             return;
         }
+    }
+
+    private boolean mustShow(Symbol symbol) {
+        return !symbol.isAccessor();
     }
     // !!! >>> Interpreter stuff
 
