@@ -147,7 +147,8 @@ abstract class AttributeSeq with Seq[Attribute] {
     AttributeSeq.fromAttrs( elements.map( f ).toList:_* )
   }
 
-  override def hashCode():Int = sortedSeq.hashCode();
+  override def hashCode():Int =
+    sortedSeq.hashCode();
 
   def toMap:Map[Pair[String,String],Attribute] =
     new Map[Pair[String,String],Attribute] {

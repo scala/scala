@@ -71,4 +71,10 @@ trait Set[A] with scala.collection.Set[A] {
         }
         res;
     }
+
+  /** hashcode for this set */
+  override def hashCode() = {
+    elements.foldLeft(0)((hash: Int, e: A) => hash + e.hashCode());
+  }
+
 }

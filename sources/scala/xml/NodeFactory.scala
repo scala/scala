@@ -20,8 +20,6 @@ abstract class NodeFactory[A <: Node] {
   /* default behaviour is to use hash-consing */
   val cache = new mutable.HashMap[int,List[A]]();
 
-
-
   protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): A;
 
   def makeNode(uname: UName, attrSeq:AttributeSeq, children:Seq[Node]): A = {
@@ -33,18 +31,39 @@ abstract class NodeFactory[A <: Node] {
         el
     }
 
+    /** faster equality, because */
+    def eqElements(ch1:Seq[Node], ch2:Seq[Node]): Boolean = {
+      (ch1.length == ch2.length) && {
+        val it1 = ch1.elements;
+        val it2 = ch2.elements;
+        var res = true;
+        while(res && it1.hasNext) {
+          res = it1.next.eq(it2.next);
+        }
+        res
+      }
+    }
+
     def nodeEquals(n: Node) =
       (n.namespace == uname.uri)
       &&(n.label == uname.label)
       &&(n.attributes == attrSeq)
-      &&(n.child.sameElements(children));
+      &&(eqElements(n.child,children));
 
+    /*
+    Console.println("[makeNode called, hash: ]"+hash);
+    Console.println("[elem name: ]"+uname+" hash "+(41 * uname.uri.hashCode() % 7 + uname.label.hashCode());
+    Console.println("[attrs : ]"+attrSeq+" hash "+attrSeq.hashCode());
+    Console.println("[children name: ]"+children+" hash "+children.hashCode());
+    */
     cache.get( hash ) match {
       case Some(list) => // find structurally equal
         val it     = list.elements;
         val lookup = it.find { x => nodeEquals(x) };
         lookup match {
-          case Some(x) => x; // return cached elem
+          case Some(x) =>
+            //Console.println("[cache hit !]"+x);
+            x; // return cached elem
           case _       => construct;
         }
       case _          => construct

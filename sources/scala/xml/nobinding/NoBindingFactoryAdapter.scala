@@ -26,12 +26,12 @@ class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
   def nodeContainsText( label:java.lang.String ):boolean = true;
 
 
+  // methods for NodeFactory[Elem]
   protected def create(uname: UName, attrs: AttributeSeq, children:Seq[Node]): Elem = {
      Elem( uname.uri, uname.label, attrs, children:_* );
   }
 
-  /* default behaviour is to use hash-consing */
-  //val cache = new mutable.HashMap[int,Elem]();
+  // methods for FactoryAdapter
 
   /** creates a node. never creates the same node twice, using hash-consing
   */
@@ -49,18 +49,7 @@ class NoBindingFactoryAdapter extends FactoryAdapter with NodeFactory[Elem] {
     val elHashCode =
       Utility.hashCode( uri$, label, attrSeq.hashCode(), children ) ;
     makeNode(UName(uri$,label),attrSeq, children);
-    /*
-    cache.get( elHashCode ).match{
-      case Some(cachedElem) =>
-        //System.err.println("[using cached elem +"+cachedElem.toXML+"!]"); //DEBUG
-        cachedElem
-      case None =>
-      val el = Elem( uri$, label, attrSeq, children:_* );
-      cache.update( elHashCode, el );
-      el
-    }
-    */
-                 }
+  }
 
   /** creates a text node
   */

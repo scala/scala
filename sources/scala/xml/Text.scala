@@ -13,10 +13,13 @@ import scala.collection.immutable ;
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML
  *  representations
  * @author Burak Emir
- * @param text the text contained in this node
+ * @param text the text contained in this node, may not be null.
 **/
 
 case class Text( text:String ) extends SpecialNode {
+
+  if(null == text)
+    throw new java.lang.NullPointerException("tried to construct Text with null");
 
   final override def typeTag$:Int = -1;
 
