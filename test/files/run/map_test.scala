@@ -4,12 +4,15 @@ import scala.collection.immutable.ListMap;
 import scala.collection.immutable.Order;
 
 object Test with Executable {
-    //    test1();
-    test2();
-    Console.println("OK");
-
     val intOrder =
 	new Order((x:int,y:int) => x < y, (x:int,y:int) => x == y);
+
+    test1();
+    test2();
+
+    Console.println("OK");
+
+
 
     def test1() = {
 	val myMap:TreeMap[int,String] = new TreeMap(intOrder);
