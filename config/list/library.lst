@@ -34,7 +34,6 @@ Long.java
 MatchError.java
 None.scala
 Option.scala
-Ord.scala
 Ordered.scala
 PartiallyOrdered.scala
 PartialFunction.scala
