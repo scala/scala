@@ -17,3 +17,16 @@ object Test0Test {
 }
 
 //############################################################################
+// Test 1 - Single types in lambda lift
+
+object Test {
+  def main(args: Array[String]): Unit = {
+    List[args.type](args);
+  }
+  def foo[X]: Any = {
+    def bar(x: X) = List(x);
+    0
+  }
+}
+
+//############################################################################
