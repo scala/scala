@@ -2,7 +2,7 @@ package test;
 
 import scala.concurrent._;
 
-class MailBox with Monitor {
+class MailBox {
   private class LinkedList[a] {
     var elem: a = _;
     var next: LinkedList[a] = null;

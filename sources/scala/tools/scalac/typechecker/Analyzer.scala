@@ -2283,7 +2283,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  val parentTypes = clazz.info().parents();
 		  val refinement: Scope = new Scope();
 		  val base: Type = Type.compoundTypeWithOwner(context.enclClass.owner, parentTypes, Scope.EMPTY);
-		  /*
 		  val it: Scope$SymbolIterator = clazz.members().iterator();
 		  while (it.hasNext()) {
 		    val sym1: Symbol = it.next();
@@ -2293,7 +2292,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 			.isSameAs(sym1.getType()))
 		      refinement.enter(sym1);
 		  }
-		  */
 		  val owntype =
 		    if (refinement.isEmpty() && parentTypes.length == 1)
 		      parentTypes(0)
@@ -2764,16 +2762,23 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree$CompoundType(parents, refinements) =>
 	  val parents1 = transform(parents, TYPEmode);
-	  val ptypes = Tree.typeOf(parents);
+	  val ptypes = new Array[Type](parents1.length);
+	  { var i = 0; while (i < parents1.length) {
+	    val tp = parents(i).getType();
+	    if (i > 0 || tp.unalias().symbol().kind != TYPE)
+	      checkClassType(parents(i).pos, tp);
+	    ptypes(i) = tp;
+	    i = i + 1
+	  }}
 	  val members: Scope = new Scope();
 	  val self: Type = Type.compoundTypeWithOwner(context.enclClass.owner, ptypes, members);
 	  val clazz: Symbol = self.symbol();
 	  pushContext(tree, clazz, members);
-	  var i = 0; while (i < refinements.length) {
+	  { var i = 0; while (i < refinements.length) {
 	    val m = enterSym(refinements(i));
 	    m.flags = m.flags | OVERRIDE;
 	    i = i + 1
-	  }
+	  }}
 	  val refinements1 = transformStatSeq(refinements, Symbol.NONE);
 	  popContext();
 	  copy.CompoundType(tree, parents1, refinements1)

@@ -1658,6 +1658,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             case ThisType(Symbol sym):
                 if (sym == from) return to;
                 else return t;
+	    case TypeRef(Type pre, Symbol sym, Type[] args):
+                Type pre1 = apply(pre);
+                Type[] args1 = map(args);
+                if (pre1 == pre && args1 == args) return t;
+                else return typeRef(pre1, pre1.rebind(sym), args1);
             default:
                 return map(t);
             }
@@ -2579,9 +2584,36 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
+    static int recCount = 0;
+    static boolean giveUp = false;
+    static int recLimit = 10;
+
+    public static Type lub(Type[] tps) {
+	if (recCount == recLimit) {
+	    giveUp = true;
+	    return Global.instance.definitions.ANY_TYPE();
+	} else {
+	    recCount++;
+	    Type result = lub0(tps);
+	    recCount--;
+	    if (recCount == 0) {
+		if (giveUp) {
+		    giveUp = false;
+		    throw new Error("failure to compute least upper bound of types " +
+				    ArrayApply.toString(tps, "", " and ", ";\n") +
+				    "an approximation is: " + result + ";\n" +
+				    "additional type annotations are needed");
+		} else {
+		    giveUp = false;
+		}
+	    }
+	    return result;
+	}
+    }
+
     /** Return the least upper bound of non-empty array of types `tps'.
      */
-    public static Type lub(Type[] tps) {
+    public static Type lub0(Type[] tps) {
         //System.out.println("lub" + ArrayApply.toString(tps));//DEBUG
 
         if (tps.length == 0) return Global.instance.definitions.ALL_TYPE();
@@ -2754,6 +2786,29 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     public static Type glb(Type[] tps) {
+	if (recCount == recLimit) {
+	    giveUp = true;
+	    return Global.instance.definitions.ALL_TYPE();
+	} else {
+	    recCount++;
+	    Type result = glb0(tps);
+	    recCount--;
+	    if (recCount == 0) {
+		if (giveUp) {
+		    giveUp = false;
+		    throw new Error("failure to compute greatest lower bound of types " +
+				    ArrayApply.toString(tps, "", " and ", ";\n") +
+				    "an approximation is: " + result + ";\n" +
+				    "additional type annotations are needed");
+		} else {
+		    giveUp = false;
+		}
+	    }
+	    return result;
+	}
+    }
+
+    public static Type glb0(Type[] tps) {
         if (tps.length == 0) return Global.instance.definitions.ANY_TYPE();
 
         // step one: eliminate redunandant types; return if one one is left
@@ -2769,10 +2824,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 treftl = new Type.List(tps[i], treftl);
                 break;
             case CompoundType(Type[] parents, Scope members):
-		/*
                 if (!members.isEmpty())
                     comptl = new Type.List(tps[i], comptl);
-		*/
                 for (int j = 0; j < parents.length; j++)
                     treftl = new Type.List(parents[j], treftl);
                 break;
@@ -2787,7 +2840,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         Type glbThisType = glbType.narrow();
 
         // step 3: compute glb of all refinements.
-	/*
+        Scope members = Scope.EMPTY;
         if (comptl != List.EMPTY) {
             Type[] comptypes = comptl.toArrayReverse();
             Scope[] refinements = new Scope[comptypes.length];
@@ -2801,7 +2854,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     Global.instance.definitions.ALLREF_TYPE(), treftl);
             }
         }
-	*/
 
         // eliminate redudant typerefs
         Type[] treftypes = elimRedundant(treftl.toArrayReverse(), false);
