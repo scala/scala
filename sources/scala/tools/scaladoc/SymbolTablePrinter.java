@@ -143,6 +143,21 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
         return this;
     }
 
+    public SymbolTablePrinter printSeqType(Symbol symbol, Type t, String inner) {
+        Type type = t;
+        boolean star = false;
+        if ((symbol.flags & Modifiers.REPEATED) != 0 &&
+            type.symbol() == global.definitions.SEQ_CLASS &&
+            type.typeArgs().length == 1)
+            {
+                type = type.typeArgs()[0];
+                star = true;
+            }
+	printType(type, inner);
+        if (star) print("*");
+        return this;
+    }
+
     /**
      * Writes the string representation of the signature of a definition.
      *

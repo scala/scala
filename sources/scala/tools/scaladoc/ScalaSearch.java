@@ -317,6 +317,25 @@ public class ScalaSearch {
 	};
     }
 
+    public static void categorizeSymbols(List symbols, List fields, List modules, List types) {
+        Iterator i = symbols.iterator();
+        while (i.hasNext()) {
+            Symbol sym = (Symbol) i.next();
+            if (sym.isPackage() || sym.isModule())
+                modules.add(sym);
+            else if (sym.isTerm())
+                fields.add(sym);
+            else
+                types.add(sym);
+        }
+    }
+
+    public static Symbol[] sortList(List symbols) {
+	Symbol[] array = (Symbol[]) symbols.toArray(new Symbol[symbols.size()]);
+        Arrays.sort(array, symAlphaOrder);
+        return array;
+    }
+
     /////////////////// IMPLEMENTING CLASSES OR OBJECTS //////////////////////
 
     /**
@@ -493,7 +512,6 @@ public class ScalaSearch {
         // complains.
         queryCounter = queryCounter + 1;
         InputStream in = new ByteArrayInputStream(unitString.getBytes());
-        //            new BufferedInputStream(new StringBufferInputStream(unitString));
         SourceFile sourceFile = null;
         try {
             sourceFile = new SourceFile("tmp.scala", in);

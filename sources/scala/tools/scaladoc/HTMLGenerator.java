@@ -66,6 +66,7 @@ public abstract class HTMLGenerator {
     protected final String ROOT_PAGE             = Location.ROOT_NAME + ".html";
     protected final String PACKAGE_LIST_PAGE     = "package-list-page.html";
     protected final String HELP_PAGE             = "help-page.html";
+    protected final String SEARCH_SECTION        = "search-section";
     protected final String INDEX_PAGE            = "index-page.html";
     protected final String PACKAGE_PAGE          = "package-page.html";
 
@@ -545,57 +546,64 @@ public abstract class HTMLGenerator {
         addDocumentationTitle(attrs, page);
     }
 
-    /**
-     * Add a text field for searching symbols to the current page.
-     */
     protected void addSearchSection(Page page) {
-        page.printlnOTag("table").indent();
-        page.printlnOTag("tr").indent();
 	page.printlnOTag("form", new XMLAttribute[] {
-                             new XMLAttribute("action", "/" + SERVLET_NAME),
-                             new XMLAttribute("method", "get") }).indent();
-        // by name
-	page.printlnSTag("input", new XMLAttribute[] {
-                             new XMLAttribute("type", "radio"),
-                             new XMLAttribute("checked", "true"),
-                             new XMLAttribute("name", "searchKind"),
-                             new XMLAttribute("id", "byName"),
-                             new XMLAttribute("value", "byName")
-                         });
-        page.println("by name");
-        // by comment
-	page.printlnSTag("input", new XMLAttribute[] {
-                             new XMLAttribute("type", "radio"),
-                             new XMLAttribute("name", "searchKind"),
-                             new XMLAttribute("id", "byComment"),
-                             new XMLAttribute("value", "byComment")
-                         });
-        page.println("by comment");
-        // by type
-	page.printlnSTag("input", new XMLAttribute[] {
-                             new XMLAttribute("type", "radio"),
-                             new XMLAttribute("name", "searchKind"),
-                             new XMLAttribute("id", "byType"),
-                             new XMLAttribute("value", "byType")
-                         });
-        page.println("by type");
+            new XMLAttribute("action", "/" + SERVLET_NAME),
+            new XMLAttribute("method", "get") }).indent();
+
+        page.printlnOTag("table", new XMLAttribute[] {
+            new XMLAttribute("border", "0") }).indent();
+
         // Text field
-	page.printlnSTag("input", new XMLAttribute[] {
-                             new XMLAttribute("name", "searchString"),
-                             new XMLAttribute("id", "word"),
-                             new XMLAttribute("size", "25"),
-                             //                             new XMLAttribute("maxlength", "30"),
-                             new XMLAttribute("type", "text"),
-                         });
+        page.printlnOTag("tr").indent();
+        page.printlnOTag("td").indent();
+        page.printlnSTag("input", new XMLAttribute[] {
+            new XMLAttribute("name", "searchString"),
+            new XMLAttribute("id", "word"),
+            new XMLAttribute("size", "100%"),
+            // new XMLAttribute("maxlength", "30"),
+            new XMLAttribute("type", "text"),
+        });
         // Button
 	page.printlnSTag("input", new XMLAttribute[] {
-                             new XMLAttribute("type", "submit"),
-                             new XMLAttribute("value", "submit"),
-                         });
-        page.undent();
-	page.printlnCTag("form").undent();
+            new XMLAttribute("type", "submit"),
+            new XMLAttribute("value", "Search"),
+        }).undent();
+        page.printlnCTag("td").undent();
+	page.printlnCTag("tr");
+
+        page.printlnOTag("tr").indent();
+        page.printlnOTag("td", new XMLAttribute[] {
+            new XMLAttribute("align", "center") }).indent();
+        // by name
+	page.printlnSTag("input", new XMLAttribute[] {
+            new XMLAttribute("type", "radio"),
+            new XMLAttribute("checked", "true"),
+            new XMLAttribute("name", "searchKind"),
+            new XMLAttribute("id", "byName"),
+            new XMLAttribute("value", "byName")
+        });
+        page.println("By name");
+        // by comment
+	page.printlnSTag("input", new XMLAttribute[] {
+            new XMLAttribute("type", "radio"),
+            new XMLAttribute("name", "searchKind"),
+            new XMLAttribute("id", "byComment"),
+            new XMLAttribute("value", "byComment")
+        });
+        page.println("By comment");
+        // by type
+	page.printlnSTag("input", new XMLAttribute[] {
+            new XMLAttribute("type", "radio"),
+            new XMLAttribute("name", "searchKind"),
+            new XMLAttribute("id", "byType"),
+            new XMLAttribute("value", "byType")
+        });
+        page.println("By type").undent();
+        page.printlnCTag("td").undent();
 	page.printlnCTag("tr").undent();
-	page.printlnCTag("table");
+	page.printlnCTag("table").undent();
+	page.printlnCTag("form");
     }
 
     protected void addSearchSection() {
@@ -646,12 +654,6 @@ public abstract class HTMLGenerator {
 
 	    page.undent();
 	    page.printlnCTag("tr").undent();
-            if (launchServer) {
-                page.printlnOTag("tr").indent();
-                addSearchSection(page);
-                page.undent();
-                page.printlnCTag("tr");
-            }
 	    page.printlnCTag("table").undent();
 	    page.printlnCTag("td");
 
@@ -667,6 +669,12 @@ public abstract class HTMLGenerator {
 	    page.printlnOTag("tr").indent();
 	    page.printlnTag("td", "&nbsp;").undent();
 	    page.printlnCTag("tr").undent();
+            if (launchServer) {
+                page.printlnOTag("tr").indent();
+                addSearchSection(page);
+                page.undent();
+                page.printlnCTag("tr");
+            }
 	    page.printlnCTag("table");
 	} catch(Exception e) { throw Debug.abort(e); }
     }
@@ -811,7 +819,6 @@ public abstract class HTMLGenerator {
 
 	// modifiers
         String mods = filterModifiers(sym);
-        //	String mods = Modifiers.Helper.toString(sym.flags);
 	page.printlnOTag("td", ATTRS_MODIFIERS).indent();
 	if (mods.length() > 0)
 	    page.printlnTag("code", mods);
@@ -1352,6 +1359,73 @@ public abstract class HTMLGenerator {
             + "constructors, methods, and fields.");
         page.printlnCTag("blockquote");
 
+        if (launchServer) {
+            page.printlnTag("div", h3, "Searching a definition");
+            page.printlnOTag("blockquote").indent();
+            page.printlnSTag("a",
+                             new XMLAttribute[] {
+                                 new XMLAttribute("name", SEARCH_SECTION) });
+            page.printlnOTag("p");
+            page.println("At the top and and at the bottom of each page, there is a form that "
+                         + "allows to search the definition of a <em>symbol</em> (field, method, "
+                         + "package, object, type, trait or class).");
+            page.printlnCTag("p");
+
+            page.printlnOTag("p");
+            page.println("There are three ways of specifying the symbols of interest:");
+            page.printlnOTag("dl");
+            page.printOTag("dt");
+            page.printlnTag("b", "By name");
+            page.printOTag("dd");
+            page.println("The search string must be a ");
+            page.printlnTag("a",
+                           new XMLAttribute[] {
+                               new XMLAttribute("href",
+                                                "http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/Pattern.html") },
+                           "regular expression");
+            page.print(" that has to match a substring in the name of the searched symbol.");
+            page.printOTag("dt");
+            page.printlnTag("b", "By comment");
+            page.printOTag("dd");
+            page.println("The search string must be a ");
+            page.printlnTag("a",
+                           new XMLAttribute[] {
+                               new XMLAttribute("href",
+                                                "http://java.sun.com/j2se/1.4.2/docs/api/java/util/regex/Pattern.html") },
+                           "regular expression");
+            page.print(" that has to match a substring in the comments associated to the searched symbol.");
+            page.printOTag("dt");
+            page.printlnTag("b", "By type");
+            page.printOTag("dd");
+            page.println("The search string must represent a Scala type. Any string ");
+            page.printlnTag("code", "S");
+            page.println(" such that ");
+            page.printlnTag("pre", "def foo S;");
+            page.println(" is a valid function definition is accepted. Here are some examples:");
+            page.printlnOTag("ul");
+            page.printOTag("li");
+            page.printlnTag("code", ": int => int");
+            page.printOTag("li");
+            page.printlnTag("code", "[a,b]: List[a] => (a => b) => List[b]");
+            page.printOTag("li");
+            page.printlnTag("code", "(x: int, y: int): unit");
+            page.printlnCTag("ul");
+            page.println("The searched symbols must conform to the entered type modulo ");
+            page.printlnTag("a",
+                           new XMLAttribute[] {
+                               new XMLAttribute("href",
+                                                "http://www.pps.jussieu.fr/~dicosmo/Publications/ISObook.html") },
+                           "type isomorphism");
+            page.println(". This concept allows to unify types that differ by their exact "
+                         + "representation but not by their meaning.  The order of parameters is "
+                         + "for instance irrelevant when looking for a function. Note finally that "
+                         + "methods of classes are interpreted as functions that would take an "
+                         + "extra argument of the type of the class.");
+            page.printlnCTag("dl");
+            page.printlnCTag("p");
+            page.printlnCTag("blockquote");
+        }
+
         page.printlnOTag("div", em);
         page.println("This help file applies to API documentation generated "
             + "using the standard doclet.");
@@ -1684,6 +1758,43 @@ public abstract class HTMLGenerator {
 	return Symbol.NONE;
     }
 
+    protected void addCategory(Symbol[] symbols, String title, Page page, SymbolTablePrinter symtab) {
+        if (symbols.length > 0) {
+            page.printlnTag("h3", title);
+            page.printlnOTag("dl").indent();
+            for(int i = 0; i < symbols.length; i++) {
+                page.printOTag("dt");
+                addIndexEntry(symbols[i], page, symtab);
+                page.printlnCTag("dt");
+                page.printlnTag("dd", firstSentence(getComment(symbols[i])));
+            }
+            page.undent().printlnCTag("dl");
+        }
+    }
+
+    protected void addFoundSymbols(List symbols, Page page, SymbolTablePrinter symtab) {
+        // partition and sort
+        List fields = new LinkedList();
+        List modules = new LinkedList();
+        List types = new LinkedList();
+        ScalaSearch.categorizeSymbols(symbols, fields, modules, types);
+        Symbol[] sortedFields = ScalaSearch.sortList(fields);
+        Symbol[] sortedModules = ScalaSearch.sortList(modules);
+        Symbol[] sortedTypes = ScalaSearch.sortList(types);
+
+        addCategory(sortedFields, "val/def", page, symtab);
+        addCategory(sortedModules, "package/object", page, symtab);
+        addCategory(sortedTypes, "type/trait/class", page, symtab);
+    }
+
+    protected void addResultNumber(int number, Page page) {
+        page.printOTag("p");
+        page.printOTag("b");
+        page.print("" + number + " result(s).");
+        page.printCTag("b");
+        page.printCTag("p");
+    }
+
     public static String SERVLET_NAME = "scaladocServlet";
 
     public class ScaladocServlet extends Servlet {
@@ -1694,7 +1805,7 @@ public abstract class HTMLGenerator {
 
         public void apply(Map req, Writer out) {
             // create page
-            String pagename = "query-page";
+            String pagename = "search-page";
             URI uri = Location.makeURI(pagename + ".html");
             String destinationFrame = SELF_FRAME;
             String title = pagename;
@@ -1705,7 +1816,7 @@ public abstract class HTMLGenerator {
             page.open();
             page.printHeader(ATTRS_META, getGenerator());
             page.printOpenBody();
-            addNavigationBar(INDEX_NAV_CONTEXT, page);
+            addNavigationBar(CONTAINER_NAV_CONTEXT, page);
             page.printlnHLine();
 
             // create symbol printer
@@ -1716,32 +1827,48 @@ public abstract class HTMLGenerator {
             String searchKind = (String) req.get("searchKind");
             String searchString = (String) req.get("searchString");
 
+            // search summary
+            String searchKindSummary = null;
+            if (searchKind.equals("byName"))
+                searchKindSummary = "in defined names";
+            else if (searchKind.equals("byComment"))
+                searchKindSummary = "in comments";
+            else if (searchKind.equals("byType"))
+                searchKindSummary = "by type";
+            String searchSummary =
+                "Scaladoc searched for the string (" + searchString + ") " + searchKindSummary + ".";
+            page.printOTag("p");
+            page.printOTag("b");
+            page.print(searchSummary);
+            page.printCTag("b");
+            page.printCTag("p");
+
+            // Search by name.
             if (searchKind.equals("byName")) {
                 String regexp = searchString;
                 final Pattern p = Pattern.compile(regexp);
 
-                page.printlnOTag("dl").indent();
+                final List found = new LinkedList();
+                //collect
                 ScalaSearch.foreach(global.definitions.ROOT,
                                     new ScalaSearch.SymFun() {
                                         public void apply(Symbol sym) {
                                             String name = sym.nameString();
                                             Matcher m = p.matcher(name);
-                                            if (m.find()) {
-                                                page.printOTag("dt");
-                                                addIndexEntry(sym, page, symtab);
-                                                page.printlnCTag("dt");
-                                                page.printlnTag("dd", firstSentence(getComment(sym)));
-                                            }
+                                            if (m.find())
+                                                found.add(sym);
                                         }
                                     },
                                     isDocumented);
-                page.undent().printlnCTag("dl");
+                addResultNumber(found.size(), page);
+                addFoundSymbols(found, page, symtab);
             }
+            // Search by comment.
             else if (searchKind.equals("byComment")) {
                 String regexp = searchString;
                 final Pattern p = Pattern.compile(regexp);
 
-                page.printlnOTag("dl").indent();
+                final List found = new LinkedList();
                 ScalaSearch.foreach(global.definitions.ROOT,
                                     new ScalaSearch.SymFun() {
                                         public void apply(Symbol sym) {
@@ -1749,44 +1876,102 @@ public abstract class HTMLGenerator {
                                             if (c != null) {
                                                 String comment = (String) c.fst;
                                                 Matcher m = p.matcher(comment);
-                                                if (m.find()) {
-                                                    page.printOTag("dt");
-                                                    addIndexEntry(sym, page, symtab);
-                                                    page.printlnCTag("dt");
-                                                    page.printlnTag("dd", firstSentence(getComment(sym)));
-                                                }
+                                                if (m.find())
+                                                    found.add(sym);
                                             }
                                         }
                                     },
                                     isDocumented);
-                page.undent().printlnCTag("dl");
+                addResultNumber(found.size(), page);
+                addFoundSymbols(found, page, symtab);
             }
+            // Search by type.
             else if (searchKind.equals("byType")) {
-                page.println("You are searching for symbols with type: ");
                 Type t = ScalaSearch.typeOfString(searchString, global);
-                page.println(t.toString());
-                page.printlnSTag("br");
-                //                page.println("ML traduction of this type: ");
                 TypeIsomorphism ml = newTypeIso(global);
+
+                List found = new LinkedList();
+                Map searchResults = new HashMap();
                 Iterator it = ml.searchType(t, isDocumented);
                 while (it.hasNext()) {
-                    Pair p = (Pair) it.next();
-                    Symbol sym = (Symbol) p.fst;
-                    Type type = (Type) p.snd;
-                    page.printOTag("dt");
-                    addIndexEntry(sym, page, symtab);
-                    page.printlnCTag("dt");
-                    page.printlnTag("dd", firstSentence(getComment(sym)));
+                    SearchResult result = (SearchResult) it.next();
+                    found.add(result.symbol);
+                    searchResults.put(result.symbol, result);
                 }
-                //                page.println(ml.translateAndPrint(t));
-            }
+                if (t == Type.NoType) {
+                    page.printOTag("p");
+                    page.println("Scaladoc could not recognize your search string as a type, "
+                                 + "see the ");
+                    page.printlnTag("a",
+                                    new XMLAttribute[] {
+                                        new XMLAttribute("href", HELP_PAGE + "#" + SEARCH_SECTION) },
+                                    "help page");
+                    page.println(" to know which syntax to use.");
+                    page.printCTag("p");
+                }
+                else {
+                    page.printOTag("p");
+                    page.print("You are searching for symbols with type: ");
+                    page.print(t.toString());
+                    page.printCTag("p");
 
+                    addResultNumber(found.size(), page);
+
+                    Symbol[] sortedSymbols = ScalaSearch.sortList(found);
+
+                    for(int i = 0; i < sortedSymbols.length; i++) {
+                        Symbol sym = sortedSymbols[i];
+                        SearchResult result = (SearchResult) searchResults.get(sym);
+                        Type adaptedType = result.getType;
+                        page.printOTag("dt");
+                        //page.printOTag("code");
+                        symtab.printShortSignature(sym, true);
+                        symtab.printSeqType(sym, adaptedType, symtab.getSymbolInnerString(sym));
+                        page.printlnCTag("dt");
+                        if (!sym.isRoot()) {
+                            page.printOTag("dd");
+                            page.print("in ");
+                            printPath(sym.owner(), SELF_FRAME, page);
+                            if (result.isInClass && (result.tparams.length > 0)) {
+                                page.print("[");
+                                for(int j = 0; j < result.tparams.length; j++) {
+                                    if (j != 0) page.print(",");
+                                    page.print(result.tparams[j].nameString());
+                                }
+                                page.print("]");
+                            }
+                            page.printCTag("dd");
+                        }
+                        String firstSent = firstSentence(getComment(sym));
+                        if (!firstSent.equals(""))
+                            page.printlnTag("dd", firstSent);
+                        //page.printlnCTag("code");
+                    }
+                }
+            }
             // close page
             page.printlnHLine();
-            addNavigationBar(INDEX_NAV_CONTEXT, page);
+            addNavigationBar(CONTAINER_NAV_CONTEXT, page);
             page.printFootpage();
-            page.close();
+            // page.close();
+            // already done by the HTTP server when closing connection
         }
     }
-
 }
+
+public class SearchResult {
+    Symbol symbol;
+    Type getType;
+    boolean isInClass;
+    Symbol[] tparams;
+    public SearchResult(Symbol symbol,
+                        Type getType,
+                        boolean isInClass,
+                        Symbol[] tparams) {
+        this.symbol = symbol;
+        this.getType = getType;
+        this.isInClass = isInClass;
+        this.tparams = tparams;
+    }
+}
+

@@ -491,12 +491,39 @@ package scala.tools.scaladoc {
       a
     }
 
-    def searchIso(search: Type): Option[Type => Option[Type]] =
+    def stringOfArray(a: Array[Symbol]): String = {
+      val buf = new StringBuffer();
+      for(val i <- List.range(0, a.length)) buf.append(a(i).toString() + ", ");
+      buf.toString()
+    }
+
+    def foreach(a: Array[Symbol])(def f: Symbol => Symbol): Array[Symbol] = {
+      val b = new Array[Symbol](a.length);
+      for(val i <- List.range(0, a.length)) b(i) = f(a(i));
+      b
+    }
+
+    def subst(t: Type, ren: Map[Symbol, Symbol]): Type = {
+      val Pair(from, to) = List.unzip(ren.toList);
+      val from_array = arrayOfList(from);
+      val to_array = arrayOfList(to);
+      def subst_aux(t: Type): Type = t match {
+        case Type$PolyType(tparams, result) => {
+          val substTparams = foreach(tparams) { sym => ren(sym) };
+          new Type$PolyType(substTparams, subst_aux(result))
+        }
+        case _ => t.subst(from_array, to_array)
+      }
+      val substType = subst_aux(t);
+      substType
+    }
+
+    def searchIso(search: Type): Option[Type => Option[Map[Symbol, Symbol]]] =
       translate(search) match {
         case None => None
         case Some(Pair(search_ml, ren_search)) => {
           val iso_search = iso(search_ml);
-          def comp(found: Type): Option[Type] = translate(found) match {
+          def comp(found: Type): Option[Map[Symbol, Symbol]] = translate(found) match {
             case None => None
             case Some(Pair(found_ml, ren_found)) =>
               iso_search(found_ml) match {
@@ -504,12 +531,7 @@ package scala.tools.scaladoc {
                 case Triple(Some(ren_unif), ren_a, ren_b) => {
                   val ren_ml = build_renaming(ren_unif, ren_a, ren_b);
                   val ren = scalaRenaming(ren_ml, ren_search, ren_found);
-                  val Pair(from, to) = List.unzip(ren.toList);
-                  //val from_array = from.copyToArray(new Array[Symbol](from.length), 0); // => verify error
-                  //val to_array = to.copyToArray(new Array[Symbol](to.length), 0);
-                  val from_array = arrayOfList(from);
-                  val to_array = arrayOfList(to);
-                  Some(found.subst(from_array, to_array))
+                  Some(ren)
                 }
               }
           }
@@ -580,7 +602,15 @@ package scala.tools.scaladoc {
               else if (member.symbol.isTerm()) {
                 test(member.symbol.getType()) match {
                   case None => {}
-                  case Some(u) => found.add(new ch.epfl.lamp.util.Pair(member.symbol, u))
+                  case Some(ren) => {
+                    val adaptedType = subst(member.symbol.getType(), ren);
+                    val result = new SearchResult(member.symbol,
+                                                  adaptedType,
+                                                  false,
+                                                  null);
+
+                    found.add(result)
+                  }
                 }
                 if (member.symbol.isPackage() || member.symbol.isModule())
                   searchInModule(member)
@@ -592,7 +622,15 @@ package scala.tools.scaladoc {
                 val extended_type = addClassContext(m.symbol, member.symbol.getType());
                 test(extended_type) match {
                   case None => {}
-                  case Some(u) => found.add(new ch.epfl.lamp.util.Pair(member.symbol, u))
+                  case Some(ren) => {
+                    val adaptedType = subst(member.symbol.getType(), ren);
+                    val adaptedTparams = foreach(m.symbol.typeParams()) { sym => ren(sym) };
+                    val result = new SearchResult(member.symbol,
+                                                  adaptedType,
+                                                  true,
+                                                  adaptedTparams);
+                    found.add(result)
+                  }
                 }
               }
           }
@@ -602,24 +640,6 @@ package scala.tools.scaladoc {
       found.iterator()
     }
   }
-
-  /*
-  object stringML extends ML with Application {
-
-    class StringTC(s: String) extends TypeConstructor[StringTC] {
-      val name: String = s;
-      def sameAs(that: StringTC): boolean = name.equals(that.name);
-      override def toString(): String = name;
-    }
-
-    type TC = StringTC;
-
-    val list = new TC("List");
-    val t = (at(list, x(11)) * (x(11) -> x(12))) -> at(list, x(12));
-    val u = (x(13) -> x(14)) -> (at(list, x(13)) -> at(list, x(14)));
-    printIso(t, u);
-  }
-  */
 
   object node {
 
@@ -644,4 +664,22 @@ package scala.tools.scaladoc {
   }
 
 }
+
+  /*
+  object stringML extends ML with Application {
+
+    class StringTC(s: String) extends TypeConstructor[StringTC] {
+      val name: String = s;
+      def sameAs(that: StringTC): boolean = name.equals(that.name);
+      override def toString(): String = name;
+    }
+
+    type TC = StringTC;
+
+    val list = new TC("List");
+    val t = (at(list, x(11)) * (x(11) -> x(12))) -> at(list, x(12));
+    val u = (x(13) -> x(14)) -> (at(list, x(13)) -> at(list, x(14)));
+    printIso(t, u);
+  }
+  */
 
