@@ -16,6 +16,7 @@ ROOT			 = .
 # project
 PROJECT_NAME		 = scala
 PROJECT_ROOT		 = $(ROOT)
+PROJECT_SOURCES		+= $(RUNTIME_SOURCES)
 PROJECT_SOURCES		+= $(COMPILER_SOURCES)
 PROJECT_OUTPUTDIR	 = $(PROJECT_ROOT)/classes
 PROJECT_CLASSPATH	 = $(PROJECT_OUTPUTDIR)
@@ -32,6 +33,20 @@ SCRIPTS_WRAPPER_ALIASES	+= siris
 SCRIPTS_WRAPPER_ALIASES	+= siris-debug
 SCRIPTS_WRAPPER_ALIASES	+= surus
 SCRIPTS_WRAPPER_ALIASES	+= surus-debug
+
+# automatic generation of Function<n>.java and Tuple<n>.scala files
+TEMPLATE_EXPANDER	 = ./bin/expand-template
+
+FUNCTION_PREFIX		 = $(RUNTIME_ROOT)
+FUNCTION_FILES		+= $(filter $(FUNCTION_PREFIX)/Function%.java,$(RUNTIME_SOURCES))
+FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.tmpl
+FUNCTION_RULES		 = $(FUNCTION_PREFIX)/Function.scm
+
+# scala runtime
+RUNTIME_ROOT		 = $(PROJECT_SOURCEDIR)/scala
+RUNTIME_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/runtime.lst)
+RUNTIME_SOURCES		+= $(RUNTIME_LIST:%=$(RUNTIME_ROOT)/%)
+RUNTIME_JC_COMPILER	+= PICO
 
 # scala compiler
 COMPILER_ROOT		 = $(PROJECT_SOURCEDIR)/scalac
@@ -102,6 +117,7 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 # Commands
 
 all		: scripts
+all		: runtime
 all		: compiler
 
 force		:
@@ -110,13 +126,16 @@ force		:
 
 clean		:
 	$(RM) -f .latest-compiler
+	$(RM) -f .latest-runtime
 	$(RM) -rf $(PROJECT_OUTPUTDIR)
+	$(RM) -f $(FUNCTION_FILES)
 
 distclean	: clean
 	$(RM) -f .latest-*
 	$(RM) -f $(SCRIPTS_WRAPPER_LINKS)
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
+runtime		: .latest-runtime
 compiler	: .latest-compiler
 
 .PHONY		: all
@@ -124,10 +143,15 @@ compiler	: .latest-compiler
 .PHONY		: clean
 .PHONY		: distclean
 .PHONY		: scripts
+.PHONY		: runtime
 .PHONY		: compiler
 
 ##############################################################################
 # Targets
+
+.latest-runtime		: $(RUNTIME_SOURCES)
+	@$(MAKE) .do-jc source=RUNTIME JC_FILES='$?'
+	touch $@
 
 .latest-compiler	: $(COMPILER_SOURCES)
 	@$(make) .do-jc source=COMPILER JC_FILES='$?'
@@ -139,6 +163,8 @@ compiler	: .latest-compiler
 $(SCRIPTS_WRAPPER_LINKS):
 	$(LN) -s $(SCRIPTS_WRAPPER_NAME) $@;
 
+$(FUNCTION_FILES): $(FUNCTION_TEMPLATE) $(FUNCTION_RULES)
+	$(TEMPLATE_EXPANDER) $(FUNCTION_RULES) $(FUNCTION_TEMPLATE) $@
 
 ##############################################################################
 
