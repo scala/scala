@@ -1,0 +1,47 @@
+############################################################-*-Makefile-*-####
+# new scalac source files (paths are relative to ./sources/scala/tools/nsc)
+##############################################################################
+# $Id$
+
+CompilationUnits.scala
+CompilerCommand.scala
+FatalError.scala
+Global.scala
+Main.scala
+NoPhase.scala
+Phase.scala
+Settings.scala
+StdPhase.scala
+
+ast/TreeInfo.scala
+ast/TreePrinters.scala
+ast/Trees.scala
+ast/parser/Lexical.scala
+ast/parser/ParserPhase.scala
+ast/parser/Syntactic.scala
+ast/parser/Tokens.scala
+
+symtab/Definitions.scala
+symtab/Flags.scala
+symtab/InfoTransformers.scala
+symtab/Names.scala
+symtab/Scopes.scala
+symtab/StdNames.scala
+symtab/SymbolLoaders.scala
+symtab/SymbolTable.scala
+symtab/Symbols.scala
+symtab/Types.scala
+symtab/classfile/ClassfileConstants.scala
+symtab/classfile/ClassfileParser.scala
+symtab/classfile/MetaParser.scala
+symtab/classfile/Pickle.scala
+symtab/classfile/UnPickle.scala
+
+# typechecker/Analyzer.scala
+# typechecker/AnalyzerPhase.scala
+
+util/CharArrayReader.scala
+util/FreshNameCreator.scala
+util/NameTransformer.scala
+
+##############################################################################

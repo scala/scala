@@ -108,6 +108,7 @@ library-msil		: main.library-msil
 library-doc		: main.library-doc
 util			: main.util
 scalac			: main.scalac
+nsc			: main.nsc
 scalai			: main.scalai
 scaladoc		: main.scaladoc
 scalap			: main.scalap
@@ -126,6 +127,7 @@ $(prefix).library-msil	: $(latest)library-msil
 $(prefix).library-doc	: $(latest)library-sdc
 $(prefix).util		: $(latest)util
 $(prefix).scalac	: $(latest)scalac
+$(prefix).nsc		: $(latest)nsc
 $(prefix).scalai	: $(latest)scalai
 $(prefix).scaladoc	: $(latest)scaladoc
 $(prefix).scalap	: $(latest)scalap
@@ -152,6 +154,7 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: library-doc
 .PHONY			: util
 .PHONY			: scalac
+.PHONY			: nsc
 .PHONY			: scalai
 .PHONY			: scaladoc
 .PHONY			: scalap
@@ -170,6 +173,7 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: $(prefix).library-doc
 .PHONY			: $(prefix).util
 .PHONY			: $(prefix).scalac
+.PHONY			: $(prefix).nsc
 .PHONY			: $(prefix).scalai
 .PHONY			: $(prefix).scaladoc
 .PHONY			: $(prefix).scalap
@@ -278,6 +282,8 @@ SCRIPTS_ALIASES_NAMES	+= scala-debug
 SCRIPTS_ALIASES_NAMES	+= scala-info
 SCRIPTS_ALIASES_NAMES	+= scalac
 SCRIPTS_ALIASES_NAMES	+= scalac-debug
+SCRIPTS_ALIASES_NAMES	+= scalansc
+SCRIPTS_ALIASES_NAMES	+= scalansc-debug
 SCRIPTS_ALIASES_NAMES	+= scaladoc
 SCRIPTS_ALIASES_NAMES	+= scaladoc-debug
 SCRIPTS_ALIASES_NAMES	+= scalarun
@@ -496,6 +502,31 @@ $(latest)scalac-sc	: $(SCALAC_SC_FILES)
 	$(TOUCH) $@
 
 ##############################################################################
+# Targets - scala tools - new compiler
+
+PROJECT_SOURCES		+= $(NSC_SOURCES)
+NSC_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/nsc
+NSC_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/nsc.lst)
+NSC_SOURCES		+= $(NSC_LIST:%=$(NSC_ROOT)/%)
+NSC_JC_FILES		+= $(filter %.java,$(NSC_SOURCES))
+NSC_JC_CLASSPATH	 = $(JC_CLASSPATH):$(MSIL_JARFILE):$(FJBG_JARFILE)
+NSC_SC_FILES		+= $(filter %.scala,$(NSC_SOURCES))
+NSC_SC_CLASSPATH	 = $(NSC_JC_CLASSPATH):$(PROJECT_SOURCEDIR)
+
+$(latest)nsc		: $(latest)nsc-jc
+$(latest)nsc		: $(latest)nsc-sc
+$(latest)nsc		:
+	$(TOUCH) $@
+
+$(latest)nsc-jc		: $(NSC_JC_FILES)
+	@$(make) jc target=NSC NSC_JC_FILES='$?'
+	$(TOUCH) $@
+
+$(latest)nsc-sc		: $(NSC_SC_FILES)
+	@$(make) sc target=NSC NSC_SC_FILES='$?'
+	$(TOUCH) $@
+
+##############################################################################
 # Targets - scala tools - interpreter
 
 PROJECT_SOURCES		+= $(SCALAI_SOURCES)
@@ -656,6 +687,7 @@ TOOLS_JAR_FILES		+= .
 $(latest)tools		: $(latest)lamplib
 $(latest)tools		: $(latest)util
 $(latest)tools		: $(latest)scalac
+$(latest)tools		: $(latest)nsc
 $(latest)tools		: $(latest)scalai
 $(latest)tools		: $(latest)scaladoc
 $(latest)tools		: $(latest)scalap
