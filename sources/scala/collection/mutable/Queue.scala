@@ -15,7 +15,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Queue[A] with scala.collection.mutable.List[A] {
+class Queue[A] with MutableList[A] {
 
     /** Checks if the queue is empty.
      *
@@ -63,7 +63,7 @@ class Queue[A] with scala.collection.mutable.List[A] {
      *
      *  @returns the first element.
      */
-    def first: A = first.elem;
+    def front: A = first.elem;
 
     /** Removes all elements from the queue. After this operation is completed,
      *  the queue will be empty.

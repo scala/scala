@@ -62,7 +62,7 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
         super.clear;
     }
 
-    override def subsetOf(that: Set[A]) = synchronized {
+    override def subsetOf(that: scala.collection.Set[A]) = synchronized {
         super.subsetOf(that);
     }
 

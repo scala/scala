@@ -37,7 +37,7 @@ trait Set[A] with scala.collection.Set[A] {
     def removeSet(that: Iterable[A]): Unit =
         that.elements.foreach(elem => remove(elem));
 
-    def intersect(that: scala.collection.Set[A]): Unit = filter(that.contains);
+    def intersect(that: Set[A]): Unit = filter(that.contains);
 
     def clear: Unit;
 

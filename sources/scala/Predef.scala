@@ -15,7 +15,8 @@ object Predef {
     def List[A](x: A*): List[A] = x as List[A];
     val List = scala.List;
 
-    def Set[A](es: A*): MutableSet[A] = {
+/*
+    def Set[A](es: A*): scala.Set[A] = {
         val set = new HashSet[A];
         set.addSet(es);
         set;
@@ -26,6 +27,7 @@ object Predef {
         map.putMap(mappings);
         map;
     }
+*/
 
     def error(x: String): All = new java.lang.RuntimeException(x).throw;
 

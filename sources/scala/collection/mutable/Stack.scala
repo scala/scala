@@ -16,7 +16,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Stack[A] with scala.collection.mutable.List[A] with Iterable[A] {
+class Stack[A] with MutableList[A] {
 
     /** Checks if the stack is empty.
      *

@@ -36,7 +36,7 @@ abstract class SingleLinkedList[A, This <: SingleLinkedList[A, This]]: This with
 
     def apply(n: Int): A = {
         if (n == 0) elem
-        else if (next == null) null
+        else if (next == null) error("unknown element")
         else next.apply(n - 1);
     }
 

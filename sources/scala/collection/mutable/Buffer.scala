@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-class Buffer[A] with scala.collection.mutable.List[A] {
+class Buffer[A] with MutableList[A] {
 
     def prepend(elem: A) = prependElem(elem);
 
@@ -55,9 +55,7 @@ class Buffer[A] with scala.collection.mutable.List[A] {
                 i = i - 1;
             }
             val old = elem.next;
-            elem.next = new LinkedList[A];
-            elem.next.elem = newelem;
-            elem.next.next = old;
+            elem.next = new LinkedList[A](newelem, old);
         }
     }
 
