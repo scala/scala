@@ -57,6 +57,12 @@ TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_FILES))
 TUPLE_TEMPLATE		 = $(TUPLE_PREFIX)/Tuple.tmpl
 TUPLE_RULES		 = $(TUPLE_PREFIX)/Tuple.scm
 
+# meta programming
+META_ROOT		 = $(PROJECT_SOURCEDIR)/meta
+META_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/meta.lst)
+META_SOURCES		+= $(META_LIST:%=$(META_ROOT)/%)
+META_JC_FILES		+= $(META_SOURCES)
+
 # scala runtime
 RUNTIME_ROOT		 = $(PROJECT_SOURCEDIR)/scala
 RUNTIME_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/runtime.lst)
@@ -168,6 +174,7 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 
 all		: $(PROJECT_OUTPUTDIR)
 all		: scripts
+all		: meta
 all		: runtime
 all		: compiler
 all		: interpreter
@@ -183,6 +190,7 @@ clean		:
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
+	$(RM) .latest-meta
 	$(RM) -r $(PROJECT_OUTPUTDIR)/*
 
 distclean	: clean
@@ -195,6 +203,7 @@ distclean	: clean
 	$(RM) $(ROOT)/support/latex/*.class
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
+meta		: .latest-meta
 runtime		: .latest-runtime
 compiler	: .latest-compiler
 interpreter	: .latest-interpreter
@@ -205,6 +214,7 @@ library		: .latest-library
 .PHONY		: clean
 .PHONY		: distclean
 .PHONY		: scripts
+.PHONY		: meta
 .PHONY		: runtime
 .PHONY		: compiler
 .PHONY		: interpreter
@@ -212,6 +222,10 @@ library		: .latest-library
 
 ##############################################################################
 # Targets
+
+.latest-meta		: $(META_JC_FILES)
+	@$(MAKE) jc target=META META_JC_FILES='$?'
+	touch $@
 
 .latest-runtime		: $(RUNTIME_JC_FILES)
 	@$(MAKE) jc target=RUNTIME RUNTIME_JC_FILES='$?'
