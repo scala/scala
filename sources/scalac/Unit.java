@@ -11,12 +11,8 @@ package scalac;
 import ch.epfl.lamp.util.SourceFile;
 import ch.epfl.lamp.util.Position;
 
-import scalac.util.*;
 import scalac.symtab.NameMangler;
 import scalac.ast.Tree;
-import scala.compiler.typechecker.*;
-import java.io.*;
-import java.util.*;
 
 
 /** A representation for a compilation unit in scala
@@ -50,36 +46,11 @@ public class Unit {
      */
     public NameMangler mangler = new NameMangler();
 
-    /** number of errors issued for this compilation unit
-     */
-    public int errors;
-
-    /** number of warnings issued for this compilation unit
-     */
-    public int warnings;
-
-    /** number of notes issued for this compilation unit
-     */
-    public int notes;
-
     public Unit(Global global, SourceFile source, boolean console) {
         this.global = global;
         this.source = source;
         this.console = console;
     }
-
-    /*
-    public void print(String message) {
-        print(System.out, message);
-    }
-
-    public void print(PrintStream out, String message) {
-        out.println("[[begin " + message + "]]");
-        new Printer(out).printCompilationUnit(this);
-        out.println();
-        out.println("[[end " + message + "]]");
-    }
-    */
 
     /** issue an error in this compilation unit at a specific location
      */
