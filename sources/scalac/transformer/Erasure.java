@@ -272,7 +272,7 @@ public class Erasure extends Transformer implements Modifiers {
 		assert params1.length == symparams.length;
 		Tree[] args = new Tree[params1.length];
 		for (int i = 0; i < args.length; i++) {
-		    args[i] = cast(gen.Ident(params1[i]), symparams[i].type());
+		    args[i] = cast(gen.Ident(params1[i]), symparams[i].type().erasure());
 		}
 		Tree fwd = make.Apply(sym.pos, gen.Ident(sym).setType(symtype), args)
 		    .setType(symrestp);
