@@ -90,6 +90,7 @@ public class Tree {
         n_Function       = node("Function"      , Term, NoSym),
         n_Assign         = node("Assign"        , Term, NoSym),
         n_If             = node("If"            , Term, NoSym),
+        n_Switch         = node("Switch"        , Term, NoSym),
         n_New            = node("New"           , Term, NoSym),
         n_Typed          = node("Typed"         , Term, NoSym),
         n_TypeApply      = node("TypeApply"     , Term, NoSym),
@@ -99,7 +100,6 @@ public class Tree {
         n_Select         = node("Select"        , Test, HasSym),
         n_Ident          = node("Ident"         , Test, HasSym),
         n_Literal        = node("Literal"       , Term, NoSym),
-        n_Switch         = node("Switch"        , Term, NoSym),
         n_TypeTerm       = node("TypeTerm"      , Type, NoSym),
         n_SingletonType  = node("SingletonType" , Type, NoSym),
         n_SelectFromType = node("SelectFromType", Type, HasSym),
@@ -266,6 +266,14 @@ public class Tree {
             addField(t_TermTree, "thenp").
             addField(t_TermTree, "elsep");
 
+        n_Switch.
+            setDescription("Switch").
+            setRange(Phase.TRANSMATCH, Phase.END).
+            addField(t_TermTree, "test").
+            addField(t_ints, "tags").
+            addField(t_TermTrees, "bodies").
+            addField(t_TermTree, "otherwise");
+
         n_New.
             setDescription("Instantiation").
             setRange(Phase.PARSER, Phase.END).
@@ -316,14 +324,6 @@ public class Tree {
             setDescription("Literal").
             setRange(Phase.PARSER, Phase.END).
             addField(t_Object, "value");
-
-        n_Switch.
-            setDescription("Switch").
-            setRange(Phase.TRANSMATCH, Phase.END).
-            addField(t_TermTree, "test").
-            addField(t_ints, "tags").
-            addField(t_TermTrees, "bodies").
-            addField(t_TermTree, "otherwise");
 
         n_TypeTerm.
             setDescription("TypeTerm").
