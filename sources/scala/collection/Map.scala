@@ -22,7 +22,7 @@ package scala.collection;
  *  immutable data structures.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @version 1.1, 02/05/2004
  */
 trait Map[A, +B] with PartialFunction[A, B]
                  with Iterable[Pair[A, B]] {

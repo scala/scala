@@ -14,7 +14,7 @@ package scala.collection.mutable;
  *  objects in a last-in-first-out (LIFO) fashion.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @version 1.1, 03/05/2004
  */
 class Stack[A] extends MutableList[A] {
 
@@ -36,14 +36,14 @@ class Stack[A] extends MutableList[A] {
      *
      *  @param  iter        an iterable object
      */
-    def +=(iter: Iterable[A]): Unit = iter.elements.foreach(e => prependElem(e));
+    def ++=(iter: Iterable[A]): Unit = iter.elements.foreach(e => prependElem(e));
 
     /** Pushes a sequence of elements on top of the stack. The first element
      *  is pushed first, etc.
      *
      *  @param  elems       a sequence of elements
      */
-    def push(elems: A*): Unit = (this += elems);
+    def push(elems: A*): Unit = (this ++= elems);
 
     /** Returns the top element of the stack. This method will not remove
      *  the element from the stack. An error is signaled if there is no
@@ -55,7 +55,13 @@ class Stack[A] extends MutableList[A] {
 
     /** Removes the top element from the stack.
      */
-    def pop: Unit = if (first != null) { first = first.next; }
+    def pop: A =
+    	if (first != null) {
+    		val res = first.elem;
+    		first = first.next;
+    		res
+    	} else
+    		error("stack empty");
 
     /**
      * Removes all elements from the stack. After this operation completed,

@@ -14,7 +14,7 @@ package scala.collection.mutable;
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @version 1.1, 03/05/2004
  */
 class Queue[A] extends MutableList[A] {
 
@@ -28,7 +28,7 @@ class Queue[A] extends MutableList[A] {
      *
      *  @param  elem        the element to insert
      */
-    def +=(elem: A) = appendElem(elem);
+    def +=(elem: A): Unit = appendElem(elem);
 
     /** Adds all elements provided by an <code>Iterable</code> object
      *  at the end of the queue. The elements are prepended in the order they
@@ -36,13 +36,13 @@ class Queue[A] extends MutableList[A] {
      *
      *  @param  iter        an iterable object
      */
-    def +=(iter: Iterable[A]) = iter.elements.foreach(e => appendElem(e));
+    def ++=(iter: Iterable[A]): Unit = iter.elements.foreach(e => appendElem(e));
 
     /** Adds all elements to the queue.
      *
      *  @param  elems       the elements to add.
      */
-    def enqueue(elems: A*): Unit = (this += elems);
+    def enqueue(elems: A*): Unit = (this ++= elems);
 
     /** Returns the first element in the queue, and removes this element
      *  from the queue.

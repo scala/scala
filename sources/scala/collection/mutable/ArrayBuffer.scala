@@ -16,29 +16,13 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.0, 15/03/2004
  */
-class ArrayBuffer[A] extends Buffer[A] {
-	import java.lang.System.arraycopy;
-
-	protected def initialCapacity: Int = 8;
-
-	private var buf: Array[A] = new Array(initialCapacity);
-	private var size: Int = 0;
-
-	def length: Int = size;
+class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
 	def apply(n: Int): A = {
 	    if ((n < 0) || (n >= size))
 	    	error("cannot access element " + n + " in ArrayBuffer");
 	    else
-	    	buf(n);
-	}
-
-	protected def ensureCapacity(n: Int): Unit = {
-	    if ((size + n) >= buf.length) {
-	        val newbuf: Array[A] = new Array(buf.length * 2);
-	        arraycopy(buf, 0, newbuf, 0, size);
-	        buf = newbuf;
-	    }
+	    	array(n);
 	}
 
     /** Append a single element to this buffer and return
@@ -47,8 +31,8 @@ class ArrayBuffer[A] extends Buffer[A] {
      *  @param elem  the element to append.
      */
     def +(elem: A): Buffer[A] = {
-    	ensureCapacity(1);
-    	buf(size) = elem;
+    	ensureSize(1);
+    	array(size) = elem;
     	size = size + 1;
     	this
     }
@@ -67,9 +51,9 @@ class ArrayBuffer[A] extends Buffer[A] {
      *  @param elem  the element to append.
      */
     def +:(elem: A): Buffer[A] = {
-        ensureCapacity(1);
-        arraycopy(buf, 0, buf, 1, size);
-        buf(0) = elem;
+        ensureSize(1);
+        copy(0, 1, size);
+        array(0) = elem;
         size = size + 1;
         this
     }
@@ -94,9 +78,9 @@ class ArrayBuffer[A] extends Buffer[A] {
         	error("cannot insert element " + n + " in ListBuffer");
     	val xs = iter.elements.toList;
     	val len = xs.length;
-    	ensureCapacity(len);
-    	arraycopy(buf, n, buf, n + len, size - n);
-    	xs.copyToArray(buf, n);
+    	ensureSize(len);
+    	copy(n, n + len, size - n);
+    	xs.copyToArray(array, n);
     	size = size + len;
     }
 
@@ -110,8 +94,8 @@ class ArrayBuffer[A] extends Buffer[A] {
     	if ((n < 0) || (n >= size))
     		error("cannot update element " + n + " in ArrayBuffer");
     	else {
-    		val res = buf(n);
-    		buf(n) = newelem;
+    		val res = array(n);
+    		array(n) = newelem;
     		res
     	}
     }
@@ -123,8 +107,8 @@ class ArrayBuffer[A] extends Buffer[A] {
     def remove(n: Int): A = {
     	if ((n < 0) || (n >= size))
     		error("cannot remove element " + n + " in Buffer");
-        val res = buf(n);
-        arraycopy(buf, n + 1, buf, n, size - n - 1);
+        val res = array(n);
+        copy(n + 1, n, size - n - 1);
         size = size - 1;
         res
     }
@@ -135,12 +119,14 @@ class ArrayBuffer[A] extends Buffer[A] {
         size = 0;
     }
 
-    /** Returns a new iterator over all elements of this buffer.
+    /** Return a clone of this buffer.
+     *
+     *  @return an <code>ArrayBuffer</code> with the same elements.
      */
-    def elements: Iterator[A] = new Iterator[A] {
-        var i = 0;
-        def hasNext: Boolean = i < size;
-        def next: A = { i = i + 1; buf(i - 1) }
+    override def clone(): Buffer[A] = {
+    	val res = new ArrayBuffer[A];
+    	res ++= this;
+    	res
     }
 
     /** Checks if two buffers are structurally identical.

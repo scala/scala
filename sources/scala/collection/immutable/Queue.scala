@@ -27,13 +27,13 @@ class Queue[+A](elem: A*) extends Seq[A] {
     protected def itToList[B >: A](elems:Iterator[B]): List[B] =
        if (elems.hasNext) { val hd = elems.next;
                             hd::itToList(elems)}
-	else Nil;
+        else Nil;
 
     protected def mkQueue[A](i:List[A], o:List[A]):Queue[A] = {
-	new Queue[A](){
-	    override protected val in = i;
-	    override protected val out = o
-	};
+        new Queue[A](){
+            override protected val in = i;
+            override protected val out = o
+        };
     }
 
     /** Returns the <code>n</code>-th element of this queue.
@@ -100,8 +100,8 @@ class Queue[+A](elem: A*) extends Seq[A] {
              newOut = in.reverse;
              newIn = Nil;
            } else {
-	     newOut = out;
-	     newIn = in;
+             newOut = out;
+             newIn = in;
            }
            if (newOut.isEmpty) error("queue empty");
            else Pair(newOut.head, mkQueue(newIn, newOut.tail));
@@ -168,9 +168,9 @@ class Queue[+A](elem: A*) extends Seq[A] {
     }
 
   override def hashCode():Int =
-	if (isEmpty) 0
-	else {
-	  val q:Pair[A,Queue[A]] = dequeue;
+        if (isEmpty) 0
+        else {
+          val q:Pair[A,Queue[A]] = dequeue;
           q._1.hashCode()+q._2.hashCode();
         }
 }

@@ -130,4 +130,10 @@ class BufferProxy[A](buf: Buffer[A]) extends Buffer[A] with Proxy(buf) {
     /** Clears the buffer contents.
      */
     def clear: Unit = buf.clear;
+
+    /** Return a clone of this buffer.
+     *
+     *  @return a <code>Buffer</code> with the same elements.
+     */
+    override def clone(): Buffer[A] = buf.clone();
 }

@@ -14,8 +14,8 @@ object ListSet {
     /** constructs an empty ListSet
      */
     def Empty[A] = new ListSet[A];
-
 }
+
 
 /** This class implements immutable sets using a list-based data
  *  structure. Instances of <code>ListSet</code> represent
@@ -28,16 +28,16 @@ object ListSet {
 class ListSet[A] with Set[A] {
 
     /** Returns the number of elements in this set.
-    *
-    *  @return number of set elements.
-    */
+     *
+     *  @return number of set elements.
+     */
     def size: Int = 0;
 
     /** Checks if this set contains element <code>elem</code>.
-    *
-    *  @param  elem    the element to check for membership.
-    *  @return true, iff <code>elem</code> is contained in this set.
-    */
+     *
+     *  @param  elem    the element to check for membership.
+     *  @return true, iff <code>elem</code> is contained in this set.
+     */
     def contains(elem: A): Boolean = false;
 
     /** This method creates a new set with an additional element.
@@ -63,8 +63,8 @@ class ListSet[A] with Set[A] {
     override def toList: List[A] = Nil;
 
     /** Compares two sets for equality.
-    *   Two set are equal iff they contain the same elements.
-    */
+     *   Two set are equal iff they contain the same elements.
+     */
     override def equals(obj: Any): Boolean =
         if (obj.isInstanceOf[scala.collection.Set[A]]) {
             val that = obj.asInstanceOf[scala.collection.Set[A]];
@@ -75,39 +75,42 @@ class ListSet[A] with Set[A] {
     override def hashCode(): Int = 0;
 
     protected class Node(elem: A) extends ListSet[A] {
-      /** Returns the number of elements in this set.
-      *
-      *  @return number of set elements.
-      */
-      override def size = ListSet.this.size + 1;
-      /** Checks if this set is empty.
-      *
-      *  @return true, iff there is no element in the set.
-      */
-      override def isEmpty: Boolean = false;
+        /** Returns the number of elements in this set.
+         *
+         *  @return number of set elements.
+         */
+        override def size = ListSet.this.size + 1;
 
-      /** Checks if this set contains element <code>elem</code>.
-      *
-      *  @param  elem    the element to check for membership.
-      *  @return true, iff <code>elem</code> is contained in this set.
-      */
-      override def contains(e: A) = (e == elem) || ListSet.this.contains(e);
+        /** Checks if this set is empty.
+         *
+         *  @return true, iff there is no element in the set.
+         */
+        override def isEmpty: Boolean = false;
 
-      /** This method creates a new set with an additional element.
-      */
-      override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e);
-      /** <code>-</code> can be used to remove a single element from
-      *  a set.
-      */
-      override def -(e: A): ListSet[A] = if (e == elem) ListSet.this else {
-        val tail = ListSet.this - e; new tail.Node(elem)
-      }
+        /** Checks if this set contains element <code>elem</code>.
+         *
+         *  @param  elem    the element to check for membership.
+         *  @return true, iff <code>elem</code> is contained in this set.
+         */
+        override def contains(e: A) = (e == elem) || ListSet.this.contains(e);
 
-      /** Transform this set into a list of all elements.
-      *
-      *  @return  a list which enumerates all elements of this set.
-      */
-      override def toList: List[A] = elem :: ListSet.this.toList;
-      override def hashCode(): Int = elem.hashCode() + ListSet.this.hashCode();
+        /** This method creates a new set with an additional element.
+         */
+        override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e);
+
+        /** <code>-</code> can be used to remove a single element from
+         *  a set.
+         */
+        override def -(e: A): ListSet[A] = if (e == elem) ListSet.this else {
+          val tail = ListSet.this - e; new tail.Node(elem)
+        }
+
+        /** Transform this set into a list of all elements.
+         *
+         *  @return  a list which enumerates all elements of this set.
+         */
+        override def toList: List[A] = elem :: ListSet.this.toList;
+
+        override def hashCode(): Int = elem.hashCode() + ListSet.this.hashCode();
     }
 }

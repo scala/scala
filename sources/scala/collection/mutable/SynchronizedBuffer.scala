@@ -166,6 +166,14 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
         super.clear;
     }
 
+    /** Return a clone of this buffer.
+     *
+     *  @return an <code>ArrayBuffer</code> with the same elements.
+     */
+    override def clone(): Buffer[A] = synchronized {
+    	super.clone();
+    }
+
     /** The hashCode method always yields an error, since it is not
      *  safe to use buffers as keys in hash tables.
      *

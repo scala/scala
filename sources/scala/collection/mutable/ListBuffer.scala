@@ -115,6 +115,16 @@ class ListBuffer[A] extends Buffer[A] with MutableList[A] {
      */
     def clear: Unit = reset;
 
+    /** Return a clone of this buffer.
+     *
+     *  @return an <code>ArrayBuffer</code> with the same elements.
+     */
+    override def clone(): Buffer[A] = {
+        val res = new ListBuffer[A];
+        res ++= this;
+        res
+    }
+
     /** Checks if two buffers are structurally identical.
      *
      *  @return true, iff both buffers contain the same sequence of elements.

@@ -1,66 +1,68 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003, LAMP/EPFL                  **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
 package scala.collection.immutable;
 
-/** A set that uses TreeMap.
-*/
 
-class TreeSet[A](order: Order[A]) with Set[A] {
+/** This class implements immutable sets using a tree.
+ *
+ *  @author  Matthias Zenger
+ *  @author  Burak Emir
+ *  @version 1.1, 03/05/2004
+ */
+class TreeSet[A <% Ordered[A]] extends Tree[A, A] with Set[A] {
 
-  protected val map = new TreeMap[ A, boolean ]( order );
+    type This = TreeSet[A];
 
-  /** Returns the number of elements in this set.
-  *
-  *  @return number of set elements.
-  */
-  def size: Int = map.size;
+    def entryKey(entry: A) = entry;
 
-  /** Checks if this set contains element <code>elem</code>.
-  *
-  *  @param  elem    the element to check for membership.
-  *  @return true, iff <code>elem</code> is contained in this set.
-  */
-  def contains(elem: A): Boolean = map.get(elem) match {
-    case Some(_) => true;
-    case _ => false;
-  }
+    protected def New(sz: Int, t: aNode): This = new TreeSet[A] {
+        override def size = sz;
+        override protected val tree: aNode = t;
+    }
 
-  /** This method creates a new set with an additional element.
-  */
-  def +(elem: A): TreeSet[A] = new TreeSet(order) {
-    override val map = TreeSet.this.map.update( elem, true );
-  }
+    /** Checks if this set contains element <code>elem</code>.
+     *
+     *  @param  elem    the element to check for membership.
+     *  @return true, iff <code>elem</code> is contained in this set.
+     */
+    def contains(elem: A): Boolean = !findValue(elem).isEmpty;
 
-  /** <code>-</code> can be used to remove a single element from
-  *  a set.
-  */
-  def -(elem: A): TreeSet[A] = new TreeSet(order) {
-    override val map = TreeSet.this.map - elem ;
-  }
+    /** This method creates a new set with an additional element.
+     */
+    def +(elem: A): TreeSet[A] = update_or_add(elem, elem);
 
-  /** Creates a new iterator over all elements contained in this
-  *  object.
-  *
-  *  @return the new iterator
-  */
-  def elements: Iterator[A] = map.elements.map {
-    x:Pair[A,boolean] => x._1
-  };
+    /** <code>-</code> can be used to remove a single element from
+     *  a set.
+     */
+    def -(elem: A): TreeSet[A] = delete_any(elem);
 
-  /** Transform this set into a list of all elements.
-  *
-  *  @return  a list which enumerates all elements of this set.
-  */
-  override def toList: List[A] = elements.toList;
+    /** Creates a new iterator over all elements contained in this
+     *  object.
+     *
+     *  @return the new iterator
+     */
+    def elements: Iterator[A] = entries;
 
-  /** Compares two sets for equality.
-  *   Two set are equal iff they contain the same elements.
-  */
-  override def equals(obj: Any): Boolean =
-    if (obj.isInstanceOf[scala.collection.Set[A]]) {
-      val that = obj.asInstanceOf[scala.collection.Set[A]];
-      if (size != that.size) false else toList.forall(that.contains);
-    } else
-      false;
+    /** Transform this set into a list of all elements.
+     *
+     *  @return  a list which enumerates all elements of this set.
+     */
+    override def toList: List[A] = tree.toList(scala.Nil);
 
-  override def hashCode(): Int = map.hashCode();
-
+    /** Compares two sets for equality.
+     *  Two set are equal iff they contain the same elements.
+     */
+    override def equals(obj: Any): Boolean =
+		if (obj.isInstanceOf[scala.collection.Set[A]]) {
+		  val that = obj.asInstanceOf[scala.collection.Set[A]];
+		  if (size != that.size) false else toList.forall(that.contains);
+		} else
+		  false;
 }

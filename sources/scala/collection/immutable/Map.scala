@@ -9,6 +9,7 @@
 
 package scala.collection.immutable;
 
+
 /** This trait extends the Map interface of collections that unambiguously map
  *  keys to values (i.e. a key is mapped to at least one value).
  *  This trait defines the interface for functional map implementations
@@ -17,8 +18,9 @@ package scala.collection.immutable;
  *  abstract methods in scala.collection.Map as well as for
  *  <code>factory</code>, <code>update</code>, and -.
  *
- *  @author  Matthias Zenger, Erik Stenman
- *  @version 1.0, 03/12/2003
+ *  @author  Matthias Zenger
+ *  @author  Erik Stenman
+ *  @version 1.1, 22/03/2004
  */
 trait Map[A, B] with scala.collection.Map[A, B] {
 
@@ -125,25 +127,6 @@ trait Map[A, B] with scala.collection.Map[A, B] {
                 }
                 res;
             } + "}";
-
-    /** Compares two maps for equality.
-     *  Two maps are equal iff they contain exactly the
-     *  same key-value pairs.
-     */
-    override def equals(obj: Any): Boolean =
-        if (obj.isInstanceOf[scala.collection.Map[A, B]]) {
-            val that = obj.asInstanceOf[scala.collection.Map[A, B]];
-            if (size != that.size)
-                false
-            else
-                elements forall {
-                    case Pair(key, value) => that.get(key) match {
-                        case None => false;
-                        case Some(v) => v == value;
-                    }
-                }
-        } else
-            false;
 
     override def hashCode() = {
       elements.foldLeft(0)((hash:Int,pair:Object) => hash + pair.hashCode());

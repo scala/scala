@@ -18,7 +18,7 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 02/03/2004
  */
-trait Buffer[A] with Seq[A] {
+trait Buffer[A] with Seq[A] with Cloneable {
 
     /** Append a single element to this buffer and return
      *  the identity of the buffer.
@@ -131,6 +131,12 @@ trait Buffer[A] with Seq[A] {
     /** Clears the buffer contents.
      */
     def clear: Unit;
+
+    /** Return a clone of this buffer.
+     *
+     *  @return an <code>ArrayBuffer</code> with the same elements.
+     */
+    override def clone(): Buffer[A] = super.clone().asInstanceOf[Buffer[A]];
 
     /** The hashCode method always yields an error, since it is not
      *  safe to use buffers as keys in hash tables.
