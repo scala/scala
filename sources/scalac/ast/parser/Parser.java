@@ -144,7 +144,7 @@ public class Parser implements Tokens {
 	switch (s.token) {
 	case CHARLIT: case INTLIT: case LONGLIT:
 	case FLOATLIT: case DOUBLELIT: case STRINGLIT:
-	case SYMBOLLIT: case NULL: case IDENTIFIER:
+	case SYMBOLLIT: case TRUE: case FALSE: case NULL: case IDENTIFIER:
 	case THIS: case SUPER: case IF:
 	case FOR: case NEW: case USCORE:
 	case LPAREN: case LBRACE:
@@ -191,6 +191,10 @@ public class Parser implements Tokens {
 
     Tree scalaDot(int pos, Name name) {
 	return make.Select(pos, make.Ident(pos, Names.scala), name);
+    }
+
+    Tree scalaBooleanDot(int pos, Name name) {
+	return make.Select(pos, scalaDot(pos, Names.Boolean), name);
     }
 
     /** Create tree for for-comprehension <for (enums) do body> or
@@ -451,6 +455,12 @@ public class Parser implements Tokens {
 	    break;
 	case STRINGLIT:
 	    t = make.Literal(s.pos, s.name.toString());
+	    break;
+	case TRUE:
+	    t = scalaBooleanDot(s.pos, Names.True);
+	    break;
+	case FALSE:
+	    t = scalaBooleanDot(s.pos, Names.False);
 	    break;
 	case NULL:
 	    t = make.Ident(s.pos, Names.null_);
@@ -774,6 +784,8 @@ public class Parser implements Tokens {
 	case DOUBLELIT:
 	case STRINGLIT:
 	case SYMBOLLIT:
+	case TRUE:
+	case FALSE:
 	case NULL:
 	    t = literal(false);
 	    break;
@@ -943,12 +955,10 @@ public class Parser implements Tokens {
 			new Tree.CaseDef[]{
 			    (CaseDef)make.CaseDef(
 				rhs.pos, pat.duplicate(), Tree.Empty,
-				make.Select(rhs.pos,
-				    scalaDot(rhs.pos, Names.Boolean), Names.True)),
+				scalaBooleanDot(rhs.pos, Names.True)),
 			    (CaseDef)make.CaseDef(
 				rhs.pos, make.Ident(rhs.pos, Names.WILDCARD), Tree.Empty,
-				make.Select(rhs.pos,
-				    scalaDot(rhs.pos, Names.Boolean), Names.False))})});
+				scalaBooleanDot(rhs.pos, Names.False))})});
 	return make.PatDef(pos, 0, pat, rhs);
     }
 
@@ -1012,6 +1022,8 @@ public class Parser implements Tokens {
 	case DOUBLELIT:
 	case STRINGLIT:
 	case SYMBOLLIT:
+	case TRUE:
+	case FALSE:
 	case NULL:
 	    return literal(true);
 	case LPAREN:

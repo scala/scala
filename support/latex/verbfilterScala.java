@@ -6,10 +6,10 @@ public class verbfilterScala {
 
     static String[] reserved = {
       "abstract", "case", "class", "def", "do", "else",
-      "extends", "final", "for", "if", "import",
-      "let", "module", "new", "null", "outer", "override",
-      "package", "private", "protected", "qualified", "super",
-      "this", "type", "val", "var", "with", "yield"};
+      "extends", "false", "final", "for", "if", "import",
+      "module", "new", "null", "outer", "override", "package",
+      "private", "protected", "super", "this", "true", "type",
+      "val", "var", "with", "yield"};
 
     static final int TABINC = 8;
 
