@@ -3,10 +3,8 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
+** $Id$
 \*                                                                      */
-
-// $Id$
-
 
 package scalac.ast.parser;
 
@@ -15,6 +13,7 @@ import ch.epfl.lamp.util.SourceFile;
 
 import scalac.*;
 import scalac.util.Name;
+
 
 /** A scanner for the programming language Scala.
  *
@@ -30,7 +29,7 @@ public class Scanner extends TokenData {
     /** add the given character to the documentation buffer
      */
     protected void addCharToDoc(byte ch) {
-	if (docBuffer != null) docBuffer.append((char) ch);
+        if (docBuffer != null) docBuffer.append((char) ch);
     }
 
     /** layout & character constants
@@ -96,7 +95,7 @@ public class Scanner extends TokenData {
         cline = 1;
         bp = -1;
         ccol = 0;
-	nextch();
+        nextch();
         token = EMPTY;
         init();
         nextToken();
@@ -104,11 +103,11 @@ public class Scanner extends TokenData {
 
     /** only used to determine keywords. used in dtd2scala tool */
     public Scanner() {
-	initKeywords();
+        initKeywords();
     }
 
     private void nextch() {
-	ch = buf[++bp]; ccol++;
+        ch = buf[++bp]; ccol++;
     }
 
     /** read next token and return last position
@@ -120,55 +119,55 @@ public class Scanner extends TokenData {
     }
 
     public void nextToken() {
-	if (token == RBRACE) {
-	    int prevpos = pos;
-	    fetchToken();
-	    switch (token) {
-	    case ELSE:   case EXTENDS:  case WITH:
-	    case YIELD:  case CATCH:    case FINALLY:
-	    case COMMA:  case SEMI:     case DOT:
-	    case COLON:  case EQUALS:   case ARROW:
+        if (token == RBRACE) {
+            int prevpos = pos;
+            fetchToken();
+            switch (token) {
+            case ELSE:   case EXTENDS:  case WITH:
+            case YIELD:  case CATCH:    case FINALLY:
+            case COMMA:  case SEMI:     case DOT:
+            case COLON:  case EQUALS:   case ARROW:
             case LARROW: case SUBTYPE:  case SUPERTYPE:
             case HASH:   case AT:
-	    case RPAREN: case RBRACKET: case RBRACE:
-		break;
-	    default:
-		if (token == EOF ||
-		    ((pos >>> Position.COLUMN_BITS) >
-		     (prevpos >>> Position.COLUMN_BITS))) {
-		    next.copyFrom(this);
-		    this.token = SEMI;
-		    this.pos = prevpos;
-		}
-	    }
-	} else {
-	    if (next.token == EMPTY) {
-		fetchToken();
-	    } else {
-		copyFrom(next);
-		next.token = EMPTY;
-	    }
-	    if (token == CASE) {
-		prev.copyFrom(this);
-		fetchToken();
-		if (token == CLASS) {
-		    token = CASECLASS;
-		} else if (token == OBJECT) {
-		    token = CASEOBJECT;
-		} else {
-		    next.copyFrom(this);
-		    this.copyFrom(prev);
-		}
-	    } else if (token == SEMI) {
-		prev.copyFrom(this);
-		fetchToken();
-		if (token != ELSE) {
-		    next.copyFrom(this);
-		    this.copyFrom(prev);
-		}
-	    }
-	}
-	//System.out.println("<" + token2string(token) + ">");//DEBUG
+            case RPAREN: case RBRACKET: case RBRACE:
+                break;
+            default:
+                if (token == EOF ||
+                    ((pos >>> Position.COLUMN_BITS) >
+                     (prevpos >>> Position.COLUMN_BITS))) {
+                    next.copyFrom(this);
+                    this.token = SEMI;
+                    this.pos = prevpos;
+                }
+            }
+        } else {
+            if (next.token == EMPTY) {
+                fetchToken();
+            } else {
+                copyFrom(next);
+                next.token = EMPTY;
+            }
+            if (token == CASE) {
+                prev.copyFrom(this);
+                fetchToken();
+                if (token == CLASS) {
+                    token = CASECLASS;
+                } else if (token == OBJECT) {
+                    token = CASEOBJECT;
+                } else {
+                    next.copyFrom(this);
+                    this.copyFrom(prev);
+                }
+            } else if (token == SEMI) {
+                prev.copyFrom(this);
+                fetchToken();
+                if (token != ELSE) {
+                    next.copyFrom(this);
+                    this.copyFrom(prev);
+                }
+            }
+        }
+        //System.out.println("<" + token2string(token) + ">");//DEBUG
     }
 
     /** read next token
@@ -176,343 +175,343 @@ public class Scanner extends TokenData {
     public void fetchToken() {
         if (token == EOF) return;
         lastpos = Position.encode(cline, ccol);
-	int index = bp;
-	while(true) {
-	    switch (ch) {
-	    case ' ':
-		nextch();
-		break;
-	    case '\t':
-		ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
-		nextch();
-		break;
-	    case CR:
-		cline++;
-		ccol = 0;
-		nextch();
-		if (ch == LF) {
-		    ccol = 0;
-		    nextch();
-		}
-		break;
-	    case LF:
-	    case FF:
-		cline++;
-		ccol = 0;
-		nextch();
-		break;
-	    default:
-		pos = Position.encode(cline, ccol);
-		index = bp;
-		switch (ch) {
-		case 'A': case 'B': case 'C': case 'D': case 'E':
-		case 'F': case 'G': case 'H': case 'I': case 'J':
-		case 'K': case 'L': case 'M': case 'N': case 'O':
-		case 'P': case 'Q': case 'R': case 'S': case 'T':
-		case 'U': case 'V': case 'W': case 'X': case 'Y':
-		case 'Z': case '$':
-		case 'a': case 'b': case 'c': case 'd': case 'e':
-		case 'f': case 'g': case 'h': case 'i': case 'j':
-		case 'k': case 'l': case 'm': case 'n': case 'o':
-		case 'p': case 'q': case 'r': case 's': case 't':
-		case 'u': case 'v': case 'w': case 'x': case 'y':
-		case 'z':
-		    nextch();
-		    getIdentRest(index);
-		    return;
-		case '~': case '!': case '@': case '#': case '%':
-		case '^': case '*': case '+': case '-': case '<':
-		case '>': case '?': case ':':
-		case '=': case '&': case '|':
-		    nextch();
-		    getOperatorRest(index);
-		    return;
-		case '/':
-		    nextch();
-		    if (!skipComment()) {
-			getOperatorRest(index);
-			return;
-		    }
-		    break;
-		case '_':
-		    nextch();
-		    getIdentRest(index);
-		    return;
-		case '0':
-		    nextch();
-		    if (ch == 'x' || ch == 'X') {
-			nextch();
-			getNumber(index + 2, 16);
-		    } else
-			getNumber(index, 8);
-		    return;
-		case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-		    getNumber(index, 10);
-		    return;
-		case '\"':
-		    nextch();
-		    litlen = 0;
-		    while (ch != '\"' && ch != CR && ch != LF && ch != SU)
-			getlitch();
-		    if (ch == '\"') {
-			token = STRINGLIT;
-			name = Name.fromSource(lit, 0, litlen);
-			nextch();
-		    }
-		    else
-			syntaxError("unclosed character literal");
-		    return;
-		case '\'':
-		    nextch();
-		    litlen = 0;
-		    switch (ch) {
-		    case 'A': case 'B': case 'C': case 'D': case 'E':
-		    case 'F': case 'G': case 'H': case 'I': case 'J':
-		    case 'K': case 'L': case 'M': case 'N': case 'O':
-		    case 'P': case 'Q': case 'R': case 'S': case 'T':
-		    case 'U': case 'V': case 'W': case 'X': case 'Y':
-		    case 'Z': case '$':
-		    case 'a': case 'b': case 'c': case 'd': case 'e':
-		    case 'f': case 'g': case 'h': case 'i': case 'j':
-		    case 'k': case 'l': case 'm': case 'n': case 'o':
-		    case 'p': case 'q': case 'r': case 's': case 't':
-		    case 'u': case 'v': case 'w': case 'x': case 'y':
-		    case 'z':
-			index = bp;
-			putch(ch);
-			nextch();
-			if (ch != '\'') {
-			    getIdentRest(index);
-			    token = SYMBOLLIT;
-			    return;
-			}
-			break;
-		    default:
-			getlitch();
-		    }
-		    if (ch == '\'') {
-			nextch();
-			token = CHARLIT;
-			byte[] ascii = new byte[litlen * 2];
-			int alen = SourceRepresentation.source2ascii(lit, 0, litlen, ascii);
-			if (alen > 0)
-			    intVal = SourceRepresentation.ascii2string(ascii, 0, alen).charAt(0);
-			else
-			    intVal = 0;
-		    } else
-			syntaxError("unclosed character literal");
-		    return;
-		case '.':
-		    nextch();
-		    if (('0' <= ch) && (ch <= '9')) getFraction(index);
-		    else token = DOT;
-		    return;
-		case ';':
-		    nextch(); token = SEMI;
-		    return;
-		case ',':
-		    nextch(); token = COMMA;
-		    return;
-		case '(':
-		    nextch(); token = LPAREN;
-		    return;
-		case '{':
-		    nextch(); token = LBRACE;
-		    return;
-		case ')':
-		    nextch(); token = RPAREN;
-		    return;
-		case '}':
-		    nextch(); token = RBRACE;
-		    return;
-		case '[':
-		    nextch(); token = LBRACKET;
-		    return;
-		case ']':
-		    nextch(); token = RBRACKET;
-		    return;
-		case SU:
-		    token = EOF;
-		    return;
-		default:
-		    nextch();
-		    syntaxError("illegal character");
-		    return;
-		}
-	    }
+        int index = bp;
+        while(true) {
+            switch (ch) {
+            case ' ':
+                nextch();
+                break;
+            case '\t':
+                ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
+                nextch();
+                break;
+            case CR:
+                cline++;
+                ccol = 0;
+                nextch();
+                if (ch == LF) {
+                    ccol = 0;
+                    nextch();
+                }
+                break;
+            case LF:
+            case FF:
+                cline++;
+                ccol = 0;
+                nextch();
+                break;
+            default:
+                pos = Position.encode(cline, ccol);
+                index = bp;
+                switch (ch) {
+                case 'A': case 'B': case 'C': case 'D': case 'E':
+                case 'F': case 'G': case 'H': case 'I': case 'J':
+                case 'K': case 'L': case 'M': case 'N': case 'O':
+                case 'P': case 'Q': case 'R': case 'S': case 'T':
+                case 'U': case 'V': case 'W': case 'X': case 'Y':
+                case 'Z': case '$':
+                case 'a': case 'b': case 'c': case 'd': case 'e':
+                case 'f': case 'g': case 'h': case 'i': case 'j':
+                case 'k': case 'l': case 'm': case 'n': case 'o':
+                case 'p': case 'q': case 'r': case 's': case 't':
+                case 'u': case 'v': case 'w': case 'x': case 'y':
+                case 'z':
+                    nextch();
+                    getIdentRest(index);
+                    return;
+                case '~': case '!': case '@': case '#': case '%':
+                case '^': case '*': case '+': case '-': case '<':
+                case '>': case '?': case ':':
+                case '=': case '&': case '|':
+                    nextch();
+                    getOperatorRest(index);
+                    return;
+                case '/':
+                    nextch();
+                    if (!skipComment()) {
+                        getOperatorRest(index);
+                        return;
+                    }
+                    break;
+                case '_':
+                    nextch();
+                    getIdentRest(index);
+                    return;
+                case '0':
+                    nextch();
+                    if (ch == 'x' || ch == 'X') {
+                        nextch();
+                        getNumber(index + 2, 16);
+                    } else
+                        getNumber(index, 8);
+                    return;
+                case '1': case '2': case '3': case '4':
+                case '5': case '6': case '7': case '8': case '9':
+                    getNumber(index, 10);
+                    return;
+                case '\"':
+                    nextch();
+                    litlen = 0;
+                    while (ch != '\"' && ch != CR && ch != LF && ch != SU)
+                        getlitch();
+                    if (ch == '\"') {
+                        token = STRINGLIT;
+                        name = Name.fromSource(lit, 0, litlen);
+                        nextch();
+                    }
+                    else
+                        syntaxError("unclosed character literal");
+                    return;
+                case '\'':
+                    nextch();
+                    litlen = 0;
+                    switch (ch) {
+                    case 'A': case 'B': case 'C': case 'D': case 'E':
+                    case 'F': case 'G': case 'H': case 'I': case 'J':
+                    case 'K': case 'L': case 'M': case 'N': case 'O':
+                    case 'P': case 'Q': case 'R': case 'S': case 'T':
+                    case 'U': case 'V': case 'W': case 'X': case 'Y':
+                    case 'Z': case '$':
+                    case 'a': case 'b': case 'c': case 'd': case 'e':
+                    case 'f': case 'g': case 'h': case 'i': case 'j':
+                    case 'k': case 'l': case 'm': case 'n': case 'o':
+                    case 'p': case 'q': case 'r': case 's': case 't':
+                    case 'u': case 'v': case 'w': case 'x': case 'y':
+                    case 'z':
+                        index = bp;
+                        putch(ch);
+                        nextch();
+                        if (ch != '\'') {
+                            getIdentRest(index);
+                            token = SYMBOLLIT;
+                            return;
+                        }
+                        break;
+                    default:
+                        getlitch();
+                    }
+                    if (ch == '\'') {
+                        nextch();
+                        token = CHARLIT;
+                        byte[] ascii = new byte[litlen * 2];
+                        int alen = SourceRepresentation.source2ascii(lit, 0, litlen, ascii);
+                        if (alen > 0)
+                            intVal = SourceRepresentation.ascii2string(ascii, 0, alen).charAt(0);
+                        else
+                            intVal = 0;
+                    } else
+                        syntaxError("unclosed character literal");
+                    return;
+                case '.':
+                    nextch();
+                    if (('0' <= ch) && (ch <= '9')) getFraction(index);
+                    else token = DOT;
+                    return;
+                case ';':
+                    nextch(); token = SEMI;
+                    return;
+                case ',':
+                    nextch(); token = COMMA;
+                    return;
+                case '(':
+                    nextch(); token = LPAREN;
+                    return;
+                case '{':
+                    nextch(); token = LBRACE;
+                    return;
+                case ')':
+                    nextch(); token = RPAREN;
+                    return;
+                case '}':
+                    nextch(); token = RBRACE;
+                    return;
+                case '[':
+                    nextch(); token = LBRACKET;
+                    return;
+                case ']':
+                    nextch(); token = RBRACKET;
+                    return;
+                case SU:
+                    token = EOF;
+                    return;
+                default:
+                    nextch();
+                    syntaxError("illegal character");
+                    return;
+                }
+            }
         }
     }
 
     private boolean skipComment() {
-	if (ch == '/') {
-	    do {
-		nextch();
-	    } while ((ch != CR) && (ch != LF) && (ch != SU));
-	    return true;
-	} else if (ch == '*') {
-	    docBuffer = null;
-	    int openComments = 1;
-	    nextch();
-	    if (ch == '*') {
-		docBuffer = new StringBuffer("/**");
-	    }
-	    while (openComments > 0) {
-		do {
-		    do {
-			if (ch == CR) {
-			    cline++;
-			    ccol = 0;
-			    nextch(); addCharToDoc(ch);
-			    if (ch == LF) {
-				ccol = 0;
-				nextch(); addCharToDoc(ch);
-			    }
-			} else if (ch == LF) {
-			    cline++;
-			    ccol = 0;
-			    nextch(); addCharToDoc(ch);
-			}
-			else if (ch == '\t') {
-			    ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
-			    nextch(); addCharToDoc(ch);
-			} else if (ch == '/') {
-			    nextch(); addCharToDoc(ch);
-			    if (ch == '*') {
-				nextch(); addCharToDoc(ch);
-				openComments++;
-			    }
-			} else {
-			    nextch(); addCharToDoc(ch);
-			}
-		    } while ((ch != '*') && (ch != SU));
-		    while (ch == '*') {
-			nextch(); addCharToDoc(ch);
-		    }
-		} while (ch != '/' && ch != SU);
-		if (ch == '/') {
-		    nextch();
-		    openComments--;
-		} else {
-		    syntaxError("unclosed comment");
-		    return true;
-		}
-	    }
-	    return true;
-	} else {
-	    return false;
-	}
+        if (ch == '/') {
+            do {
+                nextch();
+            } while ((ch != CR) && (ch != LF) && (ch != SU));
+            return true;
+        } else if (ch == '*') {
+            docBuffer = null;
+            int openComments = 1;
+            nextch();
+            if (ch == '*') {
+                docBuffer = new StringBuffer("/**");
+            }
+            while (openComments > 0) {
+                do {
+                    do {
+                        if (ch == CR) {
+                            cline++;
+                            ccol = 0;
+                            nextch(); addCharToDoc(ch);
+                            if (ch == LF) {
+                                ccol = 0;
+                                nextch(); addCharToDoc(ch);
+                            }
+                        } else if (ch == LF) {
+                            cline++;
+                            ccol = 0;
+                            nextch(); addCharToDoc(ch);
+                        }
+                        else if (ch == '\t') {
+                            ccol = ((ccol - 1) / tabinc * tabinc) + tabinc;
+                            nextch(); addCharToDoc(ch);
+                        } else if (ch == '/') {
+                            nextch(); addCharToDoc(ch);
+                            if (ch == '*') {
+                                nextch(); addCharToDoc(ch);
+                                openComments++;
+                            }
+                        } else {
+                            nextch(); addCharToDoc(ch);
+                        }
+                    } while ((ch != '*') && (ch != SU));
+                    while (ch == '*') {
+                        nextch(); addCharToDoc(ch);
+                    }
+                } while (ch != '/' && ch != SU);
+                if (ch == '/') {
+                    nextch();
+                    openComments--;
+                } else {
+                    syntaxError("unclosed comment");
+                    return true;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private void getIdentRest(int index) {
-	while (true) {
-	    switch (ch) {
-	    case 'A': case 'B': case 'C': case 'D': case 'E':
-	    case 'F': case 'G': case 'H': case 'I': case 'J':
-	    case 'K': case 'L': case 'M': case 'N': case 'O':
-	    case 'P': case 'Q': case 'R': case 'S': case 'T':
-	    case 'U': case 'V': case 'W': case 'X': case 'Y':
-	    case 'Z': case '$':
-	    case 'a': case 'b': case 'c': case 'd': case 'e':
-	    case 'f': case 'g': case 'h': case 'i': case 'j':
-	    case 'k': case 'l': case 'm': case 'n': case 'o':
-	    case 'p': case 'q': case 'r': case 's': case 't':
-	    case 'u': case 'v': case 'w': case 'x': case 'y':
-	    case 'z':
-	    case '0': case '1': case '2': case '3': case '4':
-	    case '5': case '6': case '7': case '8': case '9':
-		nextch();
-		break;
-	    case '_':
-		nextch();
-		getIdentOrOperatorRest(index);
-		return;
-	    default:
-		treatIdent(index, bp);
-		return;
-	    }
-	}
+        while (true) {
+            switch (ch) {
+            case 'A': case 'B': case 'C': case 'D': case 'E':
+            case 'F': case 'G': case 'H': case 'I': case 'J':
+            case 'K': case 'L': case 'M': case 'N': case 'O':
+            case 'P': case 'Q': case 'R': case 'S': case 'T':
+            case 'U': case 'V': case 'W': case 'X': case 'Y':
+            case 'Z': case '$':
+            case 'a': case 'b': case 'c': case 'd': case 'e':
+            case 'f': case 'g': case 'h': case 'i': case 'j':
+            case 'k': case 'l': case 'm': case 'n': case 'o':
+            case 'p': case 'q': case 'r': case 's': case 't':
+            case 'u': case 'v': case 'w': case 'x': case 'y':
+            case 'z':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+                nextch();
+                break;
+            case '_':
+                nextch();
+                getIdentOrOperatorRest(index);
+                return;
+            default:
+                treatIdent(index, bp);
+                return;
+            }
+        }
     }
 
     private void getOperatorRest(int index) {
-	while (true) {
-	    switch (ch) {
-	    case '~': case '!': case '@': case '#': case '%':
-	    case '^': case '*': case '+': case '-': case '<':
-	    case '>': case '?': case ':':
-	    case '=': case '&': case '|':
-		nextch();
-		break;
-	    case '/':
-		int lastbp = bp;
-		nextch();
-		if (skipComment()) {
-		    treatIdent(index, lastbp);
-		    return;
-		} else {
-		    break;
-		}
-	    case '_':
-		nextch();
-		getIdentOrOperatorRest(index);
-		return;
-	    default:
-		treatIdent(index, bp);
-		return;
-	    }
-	}
+        while (true) {
+            switch (ch) {
+            case '~': case '!': case '@': case '#': case '%':
+            case '^': case '*': case '+': case '-': case '<':
+            case '>': case '?': case ':':
+            case '=': case '&': case '|':
+                nextch();
+                break;
+            case '/':
+                int lastbp = bp;
+                nextch();
+                if (skipComment()) {
+                    treatIdent(index, lastbp);
+                    return;
+                } else {
+                    break;
+                }
+            /* case '_':
+                nextch();
+                getIdentOrOperatorRest(index);
+                return; */
+            default:
+                treatIdent(index, bp);
+                return;
+            }
+        }
     }
 
     private void getIdentOrOperatorRest(int index) {
-	switch (ch) {
-	case 'A': case 'B': case 'C': case 'D': case 'E':
-	case 'F': case 'G': case 'H': case 'I': case 'J':
-	case 'K': case 'L': case 'M': case 'N': case 'O':
-	case 'P': case 'Q': case 'R': case 'S': case 'T':
-	case 'U': case 'V': case 'W': case 'X': case 'Y':
-	case 'Z': case '$':
-	case 'a': case 'b': case 'c': case 'd': case 'e':
-	case 'f': case 'g': case 'h': case 'i': case 'j':
-	case 'k': case 'l': case 'm': case 'n': case 'o':
-	case 'p': case 'q': case 'r': case 's': case 't':
-	case 'u': case 'v': case 'w': case 'x': case 'y':
-	case 'z':
-	case '0': case '1': case '2': case '3': case '4':
-	case '5': case '6': case '7': case '8': case '9':
-	    getIdentRest(index);
-	    return;
-	case '~': case '!': case '@': case '#': case '%':
-	case '^': case '*': case '+': case '-': case '<':
-	case '>': case '?': case ':':
-	case '=': case '&': case '|':
-	case '/':
-	    getOperatorRest(index);
-	    return;
-	case '_':
-	    nextch();
-	    getIdentOrOperatorRest(index);
-	    return;
-	default:
-	    treatIdent(index, bp);
-	    return;
-	}
+        switch (ch) {
+        case 'A': case 'B': case 'C': case 'D': case 'E':
+        case 'F': case 'G': case 'H': case 'I': case 'J':
+        case 'K': case 'L': case 'M': case 'N': case 'O':
+        case 'P': case 'Q': case 'R': case 'S': case 'T':
+        case 'U': case 'V': case 'W': case 'X': case 'Y':
+       	case 'Z': case '$':
+        case 'a': case 'b': case 'c': case 'd': case 'e':
+        case 'f': case 'g': case 'h': case 'i': case 'j':
+        case 'k': case 'l': case 'm': case 'n': case 'o':
+        case 'p': case 'q': case 'r': case 's': case 't':
+        case 'u': case 'v': case 'w': case 'x': case 'y':
+        case 'z':
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+            getIdentRest(index);
+            return;
+        case '~': case '!': case '@': case '#': case '%':
+        case '^': case '*': case '+': case '-': case '<':
+        case '>': case '?': case ':':
+        case '=': case '&': case '|':
+        case '/':
+            getOperatorRest(index);
+            return;
+        case '_':
+            nextch();
+            getIdentOrOperatorRest(index);
+            return;
+        default:
+            treatIdent(index, bp);
+            return;
+        }
     }
 
     /** returns true if argument corresponds to a keyword.
      *  Used in dtd2scala tool.
      */
     public boolean isKeyword(String str) {
-	Name name = Name.fromString(str);
-	return (name.index <= maxKey);
+        Name name = Name.fromString(str);
+        return (name.index <= maxKey);
     }
 
     void treatIdent(int start, int end) {
-	name = Name.fromAscii(buf, start, end - start);
-	if (name.index <= maxKey) {
-	    token = key[name.index];
-	}
-	else
-	    token = IDENTIFIER;
+        name = Name.fromAscii(buf, start, end - start);
+        if (name.index <= maxKey) {
+            token = key[name.index];
+        }
+        else
+            token = IDENTIFIER;
     }
 
     /** generate an error at the given position
@@ -744,10 +743,10 @@ public class Scanner extends TokenData {
                 return "';'";
             case COMMA:
                 return "','";
-	    case CASECLASS:
-		return "case class";
-	    case CASEOBJECT:
-		return "case object";
+            case CASECLASS:
+                return "case class";
+            case CASEOBJECT:
+                return "case object";
             default:
                 try {
                     return "'" + tokenName[token].toString() + "'";
@@ -817,7 +816,7 @@ public class Scanner extends TokenData {
         enterKeyword("do", DO);
         enterKeyword("else", ELSE);
         enterKeyword("extends", EXTENDS);
-	enterKeyword("false", FALSE);
+        enterKeyword("false", FALSE);
         enterKeyword("final", FINAL);
         enterKeyword("finally", FINALLY);
         enterKeyword("for", FOR);
@@ -836,8 +835,8 @@ public class Scanner extends TokenData {
         enterKeyword("this", THIS);
         enterKeyword("throw", THROW);
         enterKeyword("trait", TRAIT);
-	enterKeyword("true", TRUE);
-	enterKeyword("try", TRY);
+        enterKeyword("true", TRUE);
+        enterKeyword("try", TRY);
         enterKeyword("type", TYPE);
         enterKeyword("val", VAL);
         enterKeyword("var", VAR);
@@ -853,7 +852,7 @@ public class Scanner extends TokenData {
         enterKeyword("<:", SUBTYPE);
         enterKeyword(">:", SUPERTYPE);
         enterKeyword("#", HASH);
-	enterKeyword("@", AT);
+        enterKeyword("@", AT);
     }
 }
 
