@@ -43,6 +43,7 @@ atree/AComparisonOp.java
 atree/ALogicalOp.java
 atree/AShiftOp.java
 atree/ATestOp.java
+atree/ATreePrinter.java
 atree/ATypeKind.java
 
 backend/Primitive.java
