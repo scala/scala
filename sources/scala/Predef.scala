@@ -12,13 +12,31 @@ object Predef {
   type boolean = scala.Boolean;
   type unit = scala.Unit;
 
-  def List[a](x: a*): List[a] = x as List[a];
+  def List[A](x: A*): List[A] = x as List[A];
   val List = scala.List;
 
-  def Set[a](es: a*): Set[a] = {
-    val set = new HashSet[a];
+  def Set[A](es: A*): Set[A] = {
+    val set = new HashSet[A];
     set.addSet(es);
     set;
+  }
+
+  def ListSet[A](es: A*): Set[A] = {
+    val set = new ListSet[A];
+    set.addSet(es);
+    set;
+  }
+
+  def HashSet[A](es: A*): Set[A] = {
+    val set = new HashSet[A];
+    set.addSet(es);
+    set;
+  }
+
+  def Map[A, B](mappings: Pair[A, B]*): Map[A, B] = {
+    val map = new HashMap[A, B];
+    map.putMap(mappings);
+    map;
   }
 
   def error(x: String): All = new java.lang.RuntimeException(x).throw;
