@@ -1205,29 +1205,22 @@ class GenJVM {
         String javaName = javaName(cSym);
 
         scalac.symtab.Type[] baseTps = cSym.info().parents();
+        assert baseTps.length > 0 : Debug.show(cSym);
 
+        int offset;
         String superClassName;
-        String[] interfaceNames;
         if (cSym.isInterface()) {
+            offset = baseTps[0].isSameAs(defs.ANY_TYPE) ? 1 : 0;
             superClassName = JAVA_LANG_OBJECT;
-            if (baseTps.length == 1 && baseTps[0] == defs.ANY_TYPE)
-                interfaceNames = EMPTY_STRING_ARRAY;
-            else {
-                interfaceNames = new String[baseTps.length];
-                for (int i = 0; i < baseTps.length; ++i) {
-                    Symbol baseSym = baseTps[i].symbol();
-                    assert baseSym.isInterface() : cSym + " implements " + baseSym;
-                    interfaceNames[i] = javaName(baseSym);
-                }
-            }
         } else {
+            offset = 1;
             superClassName = javaName(baseTps[0].symbol());
-            interfaceNames = new String[Math.max(0, baseTps.length - 1)];
-            for (int i = 1; i < baseTps.length; ++i) {
-                Symbol baseSym = baseTps[i].symbol();
-                assert baseSym.isInterface() : cSym + " implements " + baseSym;
-                interfaceNames[i-1] = javaName(baseSym);
-            }
+        }
+        String[] interfaceNames = new String[baseTps.length - offset];
+        for (int i = offset; i < baseTps.length; ++i) {
+            Symbol baseSym = baseTps[i].symbol();
+            assert baseSym.isInterface() : cSym + " implements " + baseSym;
+            interfaceNames[i - offset] = javaName(baseSym);
         }
 
         ClassGen cGen = new ClassGen(javaName,

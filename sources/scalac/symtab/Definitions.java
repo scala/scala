@@ -221,7 +221,7 @@ public class Definitions {
 	    Kinds.ALIAS, Position.NOPOS, Names.AnyRef.toTypeName(),
 	    SCALA_CLASS, Modifiers.JAVA)
 	    .setInfo(JAVA_OBJECT_TYPE);
-	ANYREF_TYPE = ANYREF_CLASS.typeConstructor();
+	ANYREF_TYPE = ANYREF_CLASS.typeConstructor().unalias();
         SCALA.members().enter(ANYREF_CLASS);
 
         // the scala.OBJECT class

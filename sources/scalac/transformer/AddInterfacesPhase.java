@@ -46,7 +46,18 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             // an interface. All its value arguments have to be
             // removed.
             return removeValueParams(tp);
-        } else if (sym.isClass() && !sym.isPackage()) {
+        } else if (sym.isClass() && !sym.isJava()) {
+            Definitions definitions = Global.instance.definitions;
+            Type[] oldParents = tp.parents();
+            assert oldParents.length > 0 : Debug.show(sym);
+            for (int i = 1; i < oldParents.length; ++i) {
+                Symbol oldSym = oldParents[i].symbol();
+                assert !oldSym.isJava() || oldSym.isInterface() :
+                    Debug.show(sym) + " <: " + Debug.show(oldSym);
+            }
+
+            Type[] newParents;
+            Scope newMembers;
             if (needInterface(sym)) {
                 // Before this phase, the symbol is a class, but after
                 // it will be an interface. Its type has to be changed
@@ -61,7 +72,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
 
                 Scope.SymbolIterator oldMembersIt =
                     new Scope.UnloadIterator(tp.members().iterator());
-                Scope newMembers = new Scope();
+                newMembers = new Scope();
                 while (oldMembersIt.hasNext()) {
                     Symbol member = oldMembersIt.next();
 
@@ -77,44 +88,37 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                     newMembers.enterOrOverload(member);
                 }
 
-                LinkedList/*<Type>*/ newParentsLst = new LinkedList();
-                Type[] oldParents = tp.parents();
-                for (int i = 0; i < oldParents.length; ++i) {
-                    if (! oldParents[i].symbol().isJava())
-                        newParentsLst.addLast(oldParents[i]);
-                }
-                Type[] newParents;
-                if (newParentsLst.size() == oldParents.length)
+                Symbol oldSym = oldParents[0].symbol();
+                if (oldSym.isJava() && !oldSym.isInterface() &&
+                    oldSym != definitions.ANY_CLASS &&
+                    oldSym != definitions.ANYREF_CLASS)
+                {
+                    newParents = new Type[oldParents.length];
+                    newParents[0] = definitions.ANYREF_TYPE;
+                    for (int i = 1; i < oldParents.length; ++i)
+                        newParents[i] = oldParents[i];
+                } else {
                     newParents = oldParents;
-                else
-                    newParents = (Type[])
-                        newParentsLst.toArray(new Type[newParentsLst.size()]);
-                return Type.compoundType(newParents, newMembers, sym);
+                }
             } else {
                 // The symbol is the one of a class which doesn't need
                 // an interface. We need to fix its parents to use
                 // class symbols instead of interface symbols.
-                LinkedList/*<Type>*/ newParentsLst = new LinkedList();
-                Type[] oldParents = tp.parents();
+                newMembers = tp.members();
+                newParents = new Type[oldParents.length];
                 for (int i = 0; i < oldParents.length; ++i) {
                     switch (oldParents[i]) {
                     case TypeRef(Type pre, Symbol oldSym, Type[] args):
-                        if (needInterface(oldSym)) {
-                            newParentsLst.addLast(
-                                Type.typeRef(
-                                    pre, getClassSymbol(oldSym), args));
-                        }
-                        else
-                            newParentsLst.addLast(oldParents[i]);
+                        newParents[i] = !needInterface(oldSym) ? oldParents[i]:
+                            Type.typeRef(pre, getClassSymbol(oldSym), args);
                         break;
                     default:
                         throw Debug.abort("illegal case", oldParents[i]);
                     }
                 }
-                Type[] newParents = (Type[])
-                    newParentsLst.toArray(new Type[newParentsLst.size()]);
-                return Type.compoundType(newParents, tp.members(), sym);
             }
+
+            return Type.compoundType(newParents, newMembers, sym);
         } else
             return tp;
     }
@@ -179,7 +183,11 @@ public class AddInterfacesPhase extends PhaseDescriptor {
             : Debug.toString(classSym) + " is not a class (kind " + classSym.kind + ")";
         return !(classSym.isJava()
                  || classSym.isModuleClass()
-                 || hasInterfaceSymbol(classSym));
+                 || hasInterfaceSymbol(classSym)
+                 || classSym == Global.instance.definitions.ANY_CLASS
+                 || classSym == Global.instance.definitions.ANYREF_CLASS
+                 || classSym == Global.instance.definitions.ALL_CLASS
+                 || classSym == Global.instance.definitions.ALLREF_CLASS);
     }
 
     protected final static String CLASS_SUFFIX = "$class";
