@@ -652,20 +652,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
     }
 
-    /** If type is a this type of a module class, transform to singletype of
-     *  module.
-     */
-    public Type expandModuleThis() {
-        switch (this) {
-        case ThisType(Symbol sym):
-            if ((sym.flags & MODUL) != 0 && sym.module() != Symbol.NONE) {
-                return singleType(
-                    sym.owner().thisType().expandModuleThis(), sym.module());
-            }
-        }
-        return this;
-    }
-
 // Tests --------------------------------------------------------------------
 
     /** Is this type a this type or singleton type?
