@@ -34,6 +34,8 @@ import matching.FullRegularTranslator ;
 class TransMatch( global:scalac_Global )
   extends scalac_transformer_OwnerTransformer( global ) {
 
+    import Tree._ ;
+
   var cunit:CompilationUnit = null;
 
   override def apply( cunit:CompilationUnit ):unit = {
@@ -50,20 +52,20 @@ class TransMatch( global:scalac_Global )
     }
 
     def isRegular(pat:Tree):Boolean = pat match {
-      case Tree$Alternative(_)          =>  true
-      case Tree$Bind( n, pat1 )              =>
+      case Alternative(_)          =>  true
+      case Bind( n, pat1 )              =>
         TreeInfo.isNameOfStarPattern( n )
       || TreeInfo.isEmptySequence( pat1 )
       || isRegular( pat1 )
-      case Tree$Ident(n)                =>  false
-      case Tree$Sequence( trees )       =>
+      case Ident(n)                =>  false
+      case Sequence( trees )       =>
         ( trees.length == 0 ) || isRegular( trees );
-      case Tree$Apply( fn, trees )      =>
+      case Apply( fn, trees )      =>
         isRegular( trees ) &&
       !((trees.length == 1) && TreeInfo.isEmptySequence( trees( 0 )))
-      case Tree$Literal(_)              => false;
-      case Tree$Select(_,_)             => false;
-      case Tree$Typed(_,_)              => false;
+      case Literal(_)              => false;
+      case Select(_,_)             => false;
+      case Typed(_,_)              => false;
       case _ => error("in TransMatch.isRegular phase: unknown node"+pat.getClass());
     }
 
@@ -73,17 +75,17 @@ class TransMatch( global:scalac_Global )
         val z:Seq[Tree] = ps; z.elements.foreach( x => getNilVars( x ));
       }
       def getNilVars( p:Tree ):scala.Unit = p match {
-        case Tree$Alternative( _ )  =>  /* no bind allowed! */
-        case Tree$Bind( _, pat )    =>
+        case Alternative( _ )  =>  /* no bind allowed! */
+        case Bind( _, pat )    =>
 	  getNilVars(pat);
 	  if( TreeInfo.isEmptySequence( pat ) )
 	    res = p.symbol() :: res;
-	case Tree$Ident(_)          =>
-	case Tree$Sequence( trees ) => getNilVars1( trees )
-        case Tree$Apply( _,  args ) => getNilVars1( args )
-        case Tree$Literal(_)        =>
-        case Tree$Select(_,_)       =>
-        case Tree$Typed(_,_)        =>
+	case Ident(_)          =>
+	case Sequence( trees ) => getNilVars1( trees )
+        case Apply( _,  args ) => getNilVars1( args )
+        case Literal(_)        =>
+        case Select(_,_)       =>
+        case Typed(_,_)        =>
         case _ => error("in TransMatch.nilVariables: unknown node"+pat.getClass());
       }
       getNilVars( pat );
@@ -91,7 +93,7 @@ class TransMatch( global:scalac_Global )
     }
 
     // 2do: remove binds from pattern
-    def handleNilVariables( cse: Tree$CaseDef ): Unit = {
+    def handleNilVariables( cse: CaseDef ): Unit = {
       val nilvars = nilVariables(cse.pat);
       if( !nilvars.isEmpty ) {
         val newBody = new Array[Tree]( nilvars.length );
@@ -107,7 +109,7 @@ class TransMatch( global:scalac_Global )
 
     //val bsf = new scala.util.automaton.BerrySethi[ matching.PatternTest ]( pe );
 
-  def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
+  def  transform( root:Tree, cases:Array[CaseDef], restpe:Type ):Tree = {
 
     if( global.newMatch ) {
       val fm = new FullRegularTranslator( global );
@@ -161,17 +163,17 @@ class TransMatch( global:scalac_Global )
     }
   }
     /** evil hack. OwnerTransformer should have this function */
-    def transform1(ts:Array[Tree$CaseDef]):Array[Tree$CaseDef] =  {
+    def transform1(ts:Array[CaseDef]):Array[CaseDef] =  {
       var i = 0;
       while( i < ts.length ) {
         val t = transform(ts( i ));
         if (t != ts( i )) {
-          val res = new Array[Tree$CaseDef](ts.length);
+          val res = new Array[CaseDef](ts.length);
           System.arraycopy(ts, 0, res, 0, i);
-          res( i ) = t.asInstanceOf[Tree$CaseDef];
+          res( i ) = t.asInstanceOf[CaseDef];
           i = i + 1;
           while(i < ts.length) {
-            res( i ) = transform(ts( i )).asInstanceOf[Tree$CaseDef];
+            res( i ) = transform(ts( i )).asInstanceOf[CaseDef];
             i = i + 1
           };
           return res;
@@ -186,18 +188,18 @@ class TransMatch( global:scalac_Global )
        return null;
      else
        tree match {
-         case Tree$Apply(Tree$Select( receiver, Names._match ), args) =>
+         case Apply(Select( receiver, Names._match ), args) =>
            if ((args != null) && (args.length == 1))
              args( 0 ) match {
-               case Tree$Visitor( cases ) =>
+               case Visitor( cases ) =>
                  return transform(transform(receiver), transform1(cases), tree.getType());
              }
            return tree;
 
-         case Tree$Apply(Tree$TypeApply(Tree$Select( receiver, Names._match ), targs), args) =>
+         case Apply(TypeApply(Select( receiver, Names._match ), targs), args) =>
            if ((args != null) && (args.length == 1))
              args( 0 ) match {
-               case Tree$Visitor( cases ) =>
+               case Visitor( cases ) =>
                  return transform(transform(receiver), transform1(cases), tree.getType());
              }
            return tree;

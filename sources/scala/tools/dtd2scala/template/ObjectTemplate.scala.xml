@@ -148,5 +148,26 @@
       };
       fAdapter.loadXML( new org.xml.sax.InputSource(filename) );
     };    
+
+    def main(args: Array[String]) = {
+      val s: Seq[String] = args;
+      s match {
+        case Seq(sysID) =>
+          try {
+            val source = scala.io.Source.fromFile(sysID);
+            val cparse = scala.xml.parsing.ConstructingParser.fromSource(source);
+            cparse.element;
+            val n = load(sysID);
+            Console.println(sysID+" is a valid &lt;"+n.label+"&gt; element");
+          } catch {
+            case e:Exception => 
+              Console.println(sysID+" is not valid:"+e.getMessage());
+              //e.printStackTrace
+          }
+
+        case _          =>
+          Console.println("to validate, give exactly one argument");
+      }
+    }
 }
 </template>

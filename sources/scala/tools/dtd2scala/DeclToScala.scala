@@ -21,7 +21,7 @@ import scala.xml.nobinding.XML ;
 /** transforms a set of DTD declaraion to a scala source file.
  *  2do: parameterize with destination package.
  */
-class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elemMap:Map[String, MyElemDecl] ) {
+class DeclToScala(fOut: PrintWriter, objectName: String, namespace: String, elemMap:Map[String, MyElemDecl]) {
 
   class ObjectTemplate {
     val package_ : String = "";

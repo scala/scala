@@ -57,7 +57,7 @@ object Main {
 
     val p = new PrintWriter(new FileWriter(new File(outdir,
                                                     objName+".scala" )));
-    new DeclToScala( p, objName, ns, myH.elemMap ).run;
+    new DeclToScala(p, objName, ns, myH.elemMap).run;
   }
 
   /*
