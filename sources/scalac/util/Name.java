@@ -265,16 +265,6 @@ public final class Name {
         return fromAscii(ascii, 0, ascii.length);
     }
 
-/** replace all `from' characters with `to'
- */
-    public Name replace(byte from, byte to) {
-        byte[] ascii = new byte[len];
-        copyAscii(ascii, 0);
-        for (int i = 0; i < len; i++)
-            if (ascii[i] == from) ascii[i] = to;
-        return fromAscii(ascii, 0, len);
-    }
-
 /** returns the concatenation of this name and n
  */
     public Name append(Name n) {
@@ -282,21 +272,6 @@ public final class Name {
         copyAscii(ascii, 0);
         n.copyAscii(ascii, len);
         return fromAscii(ascii, 0, ascii.length);
-    }
-
-/** returns the concatenation of all names in ns
- */
-    public static Name concat(Name ns[]) {
-        int len = 0;
-        for (int i = 0; i < ns.length; i++)
-            len = len + ns[i].len;
-        byte[] ascii = new byte[len];
-        len = 0;
-        for (int i = 0; i < ns.length; i++) {
-            ns[i].copyAscii(ascii, len);
-            len = len + ns[i].len;
-        }
-        return fromAscii(ascii, 0, len);
     }
 
 /** is this name an operator?
@@ -355,8 +330,6 @@ public final class Name {
                 return 10;
         }
     }
-
-    public static final int TOP_PRECEDENCE = 11;
 
 /** is this operator left associative
  */
