@@ -14,32 +14,30 @@ trait Set[A, This <: Set[A, This]]: This with scala.collection.Set[A] {
 
     def +(elem: A): This;
 
-    def add(elems: A*): This = addElems(elems);
+    def incl(elems: A*): This = incl(elems);
 
-    def addElems(that: Iterable[A]): This = {
+    def incl(that: Iterable[A]): This = {
         var res = this;
-        that.elements.foreach(elem => res = res.add(elem));
+        that.elements.foreach(elem => res = res + elem);
         res;
     }
 
     def -(elem: A): This;
 
-    def remove(elems: A*): This = removeElems(elems);
+    def excl(elems: A*): This = excl(elems);
 
-    def removeElems(that: Iterable[A]): This = {
+    def excl(that: Iterable[A]): This = {
         var res = this;
-        that.elements.foreach(elem => res = res.remove(elem));
+        that.elements.foreach(elem => res = res - elem);
         res;
     }
 
     def intersect(that: scala.collection.Set[A]): This = filter(that.contains);
 
-    def clear: This;
-
     def filter(p: A => Boolean): This = {
         var res = this;
         toList foreach {
-            elem => if (p(elem)) { res = res.remove(elem); }
+            elem => if (p(elem)) { res = res - elem; }
         }
         res;
     }

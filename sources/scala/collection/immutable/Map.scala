@@ -16,27 +16,27 @@ trait Map[A, B, This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
 
     def -(key: A): This;
 
-    def remove(keys: A*): This = removeElems(keys);
-
-    def removeElems(keys: Iterable[A]): This = {
-    	val iter = keys.elements;
-        var res = this;
-        while (iter.hasNext) {
-            res = res - iter.next;
-        }
-        res;
-    }
-
     def +(key: A): MapTo = new MapTo(key);
 
-    def add(mappings: Pair[A, B]*): This = addElems(mappings);
+    def incl(mappings: Pair[A, B]*): This = incl(mappings);
 
-    def addElems(map: Iterable[Pair[A, B]]): This = {
+    def incl(map: Iterable[Pair[A, B]]): This = {
         val iter = map.elements;
         var res = this;
         while (iter.hasNext) {
             val Pair(key, value) = iter.next;
             res = res.update(key, value);
+        }
+        res;
+    }
+
+    def excl(keys: A*): This = excl(keys);
+
+    def excl(keys: Iterable[A]): This = {
+    	val iter = keys.elements;
+        var res = this;
+        while (iter.hasNext) {
+            res = res - iter.next;
         }
         res;
     }
@@ -52,7 +52,7 @@ trait Map[A, B, This <: Map[A, B, This]]: This with scala.collection.Map[A, B] {
     def filter(p: (A, B) => Boolean): This = {
         var res = this;
         toList foreach {
-            case Pair(key, value) => if (p(key, value)) { res = res.remove(key); }
+            case Pair(key, value) => if (p(key, value)) { res = res.excl(key); }
         }
         res;
     }
