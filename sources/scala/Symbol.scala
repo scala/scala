@@ -11,7 +11,7 @@ package scala;
 
 import org.xml.sax.InputSource;
 
-import scala.xml.{AttributedNode,Node, Text,Utility};
+import scala.xml.{AttributedNode,Node,NodeList, Text,Utility};
 import scala.collection.immutable.Map;
 import scala.collection.immutable.ListMap;
 
@@ -35,10 +35,11 @@ case class Symbol(name: String, elems: Any*) extends AttributedNode {
 
     /** Returns the list of children of this symbol.
      */
-    def children: Seq[Node] = List.fromIterator(elems.elements map ( x => x match {
+    def children: NodeList = new NodeList( List.fromIterator(
+      elems.elements map ( x => x match {
         case n:Node => n;
         case _      => Text(x.toString());
-    }));
+      })));
 
     //private val attrMap: ListMap[String, String] = ListMap.Empty[String,String];
 
