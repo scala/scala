@@ -27,6 +27,8 @@ Function8.java
 Function9.java
 Int.java
 Iterable.scala
+IterableArray.scala
+IterableString.scala
 Iterator.scala
 Labelled.scala
 List.scala
