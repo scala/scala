@@ -1418,9 +1418,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
        	case TypeRef(Type pre1, Symbol sym1, Type[] args1):
 	    switch (this) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args):
-		boolean samepre = pre.isSameAs(pre1);
-		if ((samepre && sym == sym1 /* fast case */ ||
-		     !samepre && pre.isSubType(pre1) && sym == pre.rebind(sym1)) &&
+		if (pre.isSubType(pre1) &&
+		     (sym == sym1 || sym == pre.rebind(sym1)) &&
 		    isSubArgs(args, args1, sym.typeParams())
 		    ||
 		    sym.kind == TYPE && pre.memberInfo(sym).isSubType(that))
@@ -1630,8 +1629,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    ||
 	    (sym.kind == sym1.kind || sym1.kind == TYPE) &&
 	    self.memberInfo(sym).subst(tparams, targs)
-	    .isSubType(sym1.info().substThis(sym.owner(), self)) &&
-	    sym1.loBound().substThis(sym.owner(), self)
+	    .isSubType(sym1.info().substThis(sym1.owner(), self)) &&
+	    sym1.loBound().substThis(sym1.owner(), self)
 	    .isSubType(self.memberLoBound(sym).subst(tparams, targs))
 	    ||
 	    (sym.kind == TYPE && sym1.kind == ALIAS &&

@@ -1079,7 +1079,7 @@ public class TermSymbol extends Symbol {
 
     public static TermSymbol newConstructor(Symbol clazz, int flags) {
         TermSymbol sym = new TermSymbol(
-	    clazz.pos, Names.CONSTRUCTOR, clazz.owner(), flags | FINAL);
+	    clazz.pos, Names.CONSTRUCTOR, clazz.owner(), flags);
 	sym.clazz = clazz;
 	return sym;
     }

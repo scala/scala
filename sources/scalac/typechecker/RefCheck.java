@@ -9,6 +9,7 @@
 package scalac.typechecker;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import scalac.*;
 import scalac.util.*;
 import scalac.ast.*;
@@ -62,6 +63,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      */
     void checkAllOverrides(int pos, Symbol clazz) {
 	Type[] closure = clazz.closure();
+	HashMap/*<Symbol,Symbol>*/ overrides = null;
 	for (int i = 0; i < closure.length; i++) {
 	    for (Scope.SymbolIterator it = closure[i].members().iterator();
 		 it.hasNext();) {
@@ -77,23 +79,25 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 			    member + member.locationString() + " is not defined" +
 			    (((member.flags & MUTABLE) == 0) ? ""
 			     : "\n(Note that variables need to be initialized to be defined)"));
+		    } else if ((member.flags & OVERRIDE) != 0) {
+			if (overrides == null)
+			    overrides = new HashMap();
+			if ((other.flags & DEFERRED) == 0 ||
+			    overrides.get(member) == null)
+			    overrides.put(member, other);
 		    }
-		    if ((other.flags & OVERRIDE) != 0) {
-			Type[] clparents = closure[i].parents();
-			Symbol sym1 = null;
-			for (int j = clparents.length - 1; sym1 == null && j > 0; j--)
-			    sym1 = clparents[j].lookup(other.name);
-			if (sym1 == null) {
-			    Symbol superclazz = clazz.info().parents()[0].symbol();
-			    if (superclazz.isSubClass(closure[i].symbol()))
-				superclazz = clparents[0].symbol();
-			    sym1 = superclazz.lookup(other.name);
-			}
-			if (sym1 != null && (sym1.flags & DEFERRED) != 0)
-			    abstractClassError(
-				clazz, other + other.locationString() +
-				" is marked `override' and overrides an abstract member" + sym1.locationString());
-		    }
+		}
+	    }
+	}
+	if (overrides != null) {
+	    for (Iterator/*<Symbol>*/ it = overrides.keySet().iterator();
+		 it.hasNext();) {
+		Symbol member = (Symbol) it.next();
+		Symbol other = (Symbol) overrides.get(member);
+		if ((other.flags & DEFERRED) != 0) {
+		    abstractClassError(
+			clazz, member + member.locationString() +
+			" is marked `override' and overrides only abstract members");
 		}
 	    }
 	}

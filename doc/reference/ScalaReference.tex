@@ -3525,34 +3525,31 @@ abstract class Any {
   final def != (that: Any): boolean  =  !(this == that)
 
   /** Hash code */
-  def hashCode: Int = $\ldots$
+  def hashCode(): Int = $\ldots$
 
   /** Textual representation */
   def toString(): String = $\ldots$
 
   /** Type test */
-  def isInstanceOf[a]: Boolean = $\ldots$
+  def isInstanceOf[a]: Boolean = match {
+    case x: a => true
+    case _ => false
+  }
 
   /** Type cast */
-  def asInstanceOf[a]: a = 
-    if (isInstanceOf[a]) $\ldots$ 
-    else if (this eq null) this
-    else new ClassCastException().throw
+  def asInstanceOf[a]: a = match {
+    case x: a => x
+    case _ => if (this eq null) this
+              else else new ClassCastException().throw
+  }
 
   /** Pattern match */
-  def match[a](cases: Any => a): a = cases(this);
-
-  /** Representation as string */
-  def toString(): String  = $\ldots$
+  def match[a, b](cases: a => b): b = cases(this);
 }
-final class AnyVal extends Any
-class AnyRef extends Any
-class Object extends AnyRef
+final class AnyVal extends Any;
+class AnyRef extends Any;
+class Object extends AnyRef;
 \end{lstlisting}
-
-\section{Class String}
-
-
 
 \section{Value Classes}
 \label{sec:cls-value}
@@ -3563,15 +3560,15 @@ class \code{AnyVal}. Scala implementations need to provide the
 following value classes (but are free to provide others as well).
 
 \begin{lstlisting}
-final class Unit extends AnyVal with { $\ldots$ }
-final class Boolean extends AnyVal with { $\ldots$ }
-final class Double extends AnyVal with { $\ldots$ }
-final class Float extends Double with { $\ldots$ }
-final class Long extends Float with { $\ldots$ }
-final class Int extends Long with { $\ldots$ }
-final class Char extends Int with { $\ldots$ }
-final class Short extends Int with { $\ldots$ }
-final class Byte extends Short with { $\ldots$ }
+final class Unit extends AnyVal { $\ldots$ }
+final class Boolean extends AnyVal { $\ldots$ }
+final class Double extends AnyVal { $\ldots$ }
+final class Float extends Double { $\ldots$ }
+final class Long extends Float { $\ldots$ }
+final class Int extends Long { $\ldots$ }
+final class Char extends Int { $\ldots$ }
+final class Short extends Int { $\ldots$ }
+final class Byte extends Short { $\ldots$ }
 \end{lstlisting}
 
 These classes are defined in the following.
@@ -3579,7 +3576,7 @@ These classes are defined in the following.
 \subsection{Class \prog{Double}}
 
 \begin{lstlisting}
-final class Double extends AnyVal with Ord with {
+final class Double extends AnyVal with Ord {
   def asDouble: Double                          // convert to Double
   def asFloat: Float   // convert to Float
   def asLong: Long     // convert to Long
@@ -3594,8 +3591,11 @@ final class Double extends AnyVal with Ord with {
   def / (that: Double): Double // double division
   def % (that: Double): Double // double remainder
 
-  def == (that: Double): Boolean // double equality
-  def != (that: Double): Boolean // double inequality
+  def equals(that: Double): Boolean //double equality
+  def equals(that: Any) = that match {
+    case x: Double => equals(x)
+    case _ => false
+  }
   def < (that: Double): Boolean  // double less
   def > (that: Double): Boolean  // double greater
   def <= (that: Double): Boolean // double less or equals
@@ -3604,7 +3604,7 @@ final class Double extends AnyVal with Ord with {
   def - : Double = 0.0 - this    // double negation
   def + : Double = this
 }
-\end{lstlisting}
+
 
 \subsection{Class \prog{Float}}
 
@@ -3619,10 +3619,12 @@ final class Float extends Double with {
   def asByte: Byte     \>// convert to Byte
 
   def + (that: Double): Double = asDouble + that
-  def + (that: Float): Double \>// float addition
+  def + (that: Float): Double // float addition
   /* analogous for -, *, /, % */
 
-  def == (that: Double): Boolean = asDouble == that
+  def equals(that: Double): Boolean = asDouble equals that
+  def equals(that: Float): Boolean  = // float equality
+  def equals(that: Any): Boolean    = super equals that
   def == (that: Float): Boolean    \>// float equality
   /* analogous for !=, <, >, <=, >= */
 
@@ -3725,6 +3727,16 @@ case class True extends Boolean with { def ifThenElse(t)(e) = t }
 case class False extends Boolean with { def ifThenElse(t)(e) = e }
 \end{lstlisting}
 
+\section{Class String}
+
+The class \verb@scala.String@ is usually derived from the standard
+String class of the undrelying host system (and may be identified with
+it). For Scala clients the class supports in each case a method
+\begin{lstlisting}
+def + (that: Any): String 
+\end{lstlisting}
+which concatenates its left operand with the textual representation of its
+right operand.
 
 \comment{
 \section{Reflection}
