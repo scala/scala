@@ -254,8 +254,6 @@ public class Autom2Scala  {
     */
       // calling the /*AlgebraicMatcher*/PatternMatcher here
       Tree _cur_match( Tree pat ) {
-            //System.out.println("calling algebraic matcher on type:"+pat.type);
-
             Matcher m = new Matcher( funSym,//this.funSym,
                                      currentElem(),
                                      defs.BOOLEAN_TYPE );

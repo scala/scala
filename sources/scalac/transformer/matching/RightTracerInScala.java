@@ -304,7 +304,7 @@ public class RightTracerInScala extends TracerInScala  {
     // calling the AlgebraicMatcher here
     Tree _cur_match( Tree pat ) {
 
-	//System.out.println("RTiS._cur_match("+TextTreePrinter.toString(pat)+")");
+	//System.out.println("RTiS._cur_match("+pat.toString()+")");
 
 	//System.out.println("calling algebraic matcher on type:"+pat.type);
 
