@@ -105,3 +105,9 @@ object TestExpr {
       }
     } else System.out.println("usage: java examples.Test <expr-string>");
 }
+
+object parsers with Application {
+  val args = Array("a(2)");
+  TestList.main(args);
+  TestExpr.main(args)
+}
