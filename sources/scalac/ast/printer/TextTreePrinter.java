@@ -27,6 +27,7 @@ import java.util.*;
  */
 public class TextTreePrinter implements TreePrinter {
     protected PrintWriter out;
+    protected final boolean autoFlush;
 
     protected int indent = 0;
     protected final int INDENT_STEP = 2;
@@ -35,7 +36,12 @@ public class TextTreePrinter implements TreePrinter {
     protected final int MAX_INDENT = INDENT_STRING.length();
 
     public TextTreePrinter(OutputStream stream) {
-        out = new PrintWriter(stream);
+        this(stream, false);
+    }
+
+    public TextTreePrinter(OutputStream stream, boolean autoFlush) {
+        this.autoFlush = autoFlush;
+        this.out = new PrintWriter(stream);
     }
 
     public TextTreePrinter() {
@@ -45,7 +51,7 @@ public class TextTreePrinter implements TreePrinter {
     public void begin() { }
 
     public void end() {
-        out.flush();
+        flush();
     }
 
     public void flush() {
@@ -54,17 +60,19 @@ public class TextTreePrinter implements TreePrinter {
 
     public TreePrinter print(String str) {
 	out.print(str);
+        if (autoFlush) flush();
 	return this;
     }
 
     public TreePrinter println() {
 	out.println();
+        if (autoFlush) flush();
 	return this;
     }
 
     public void beginSection(int level, String title) {
         out.println("[[" + title + "]]");
-        out.flush();
+        flush();
     }
 
     protected void indent() {
@@ -77,6 +85,7 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printString(String str) {
         out.print(str);
+        if (autoFlush) flush();
     }
 
     protected void printNewLine() {
@@ -86,6 +95,7 @@ public class TextTreePrinter implements TreePrinter {
 	}
         if (indent > 0)
             out.write(INDENT_STRING, 0, indent);
+        if (autoFlush) flush();
     }
 
     public static class SymbolUsage {
@@ -210,7 +220,7 @@ public class TextTreePrinter implements TreePrinter {
             print(TXT_NULL);
         printUnitFooter(unit);
 
-        out.flush();
+        flush();
     }
 
     protected void printUnitHeader(Unit unit) {
@@ -525,6 +535,8 @@ public class TextTreePrinter implements TreePrinter {
             break;
         }
 	//print("{" + tree.type + "}");//DEBUG
+        if (autoFlush)
+            flush();
 	return this;
     }
 
