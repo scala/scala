@@ -590,6 +590,23 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	return If(cond.pos, cond, thenpart, elsepart);
     }
 
+    /** Builds a Switch node with given components and type. */
+    public Switch Switch(int pos, Tree test, int[] tags, Tree[] bodies,
+        Tree defavlt, Type type)
+    {
+        for (int i = 0; i < bodies.length; i++)
+            assert assertTreeSubTypeOf(bodies[i], type);
+        assert assertTreeSubTypeOf(defavlt, type);
+        Switch tree = make.Switch(pos, test, tags, bodies, defavlt);
+        tree.setType(type);
+        return tree;
+    }
+    public Switch Switch(Tree test, int[] tags, Tree[] bodies, Tree defavlt,
+        Type type)
+    {
+        return Switch(test.pos, test, tags, bodies, defavlt, type);
+    }
+
     /** Builds a New node corresponding to "new <constr>". */
     public Tree New(int pos, Tree constr) {
         Tree[] constrs = { constr };
@@ -740,6 +757,20 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    TypeTerm(sym.pos, sym.nextInfo()));
         tree.setType(definitions.UNIT_TYPE);
         return tree;
+    }
+
+    //########################################################################
+    // Private Methods
+
+    /** Asserts type of given tree is a subtype of given type. */
+    private boolean assertTreeSubTypeOf(Tree tree, Type expected) {
+        global.nextPhase();
+        assert tree.type().isSubType(expected):
+            "\ntree    : " + tree +
+            "\ntype    : " + tree.type() +
+            "\nexpected: " + expected;
+        global.prevPhase();
+        return true;
     }
 
     //########################################################################
