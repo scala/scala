@@ -101,17 +101,13 @@ public class PackageParser extends MetadataParser {
 			    classCompletion.staticsParser(clazz));
 		        // enter class
 		        locals.enter(clazz);
-		        // enter module, except for scala.Object class
-		        // todo: why not there also?.
-		        if (!(n == Names.Object.toTypeName() &&
-			      p.fullName().toTermName() == Names.scala)) {
-			    Scope.Entry e = locals.lookupEntry(clazz.module().name);
-			    if (e != Scope.Entry.NONE) {
-			        // we already have a package of the same name; delete it
-			        locals.unlink(e);
-			    }
-			    locals.enter(clazz.module());
-		        }
+		        // enter module
+                        Scope.Entry e = locals.lookupEntry(clazz.module().name);
+                        if (e != Scope.Entry.NONE) {
+                            // we already have a package of the same name; delete it
+                            locals.unlink(e);
+                        }
+                        locals.enter(clazz.module());
 			symFile.put(clazz, f);
                     }
                 } else if (inclClasses && fname.endsWith(".scala")) {
