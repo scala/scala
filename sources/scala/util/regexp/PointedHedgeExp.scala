@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.util.regexp ;
 
 /** pointed regular hedge expressions, a useful subclass of full rhe */

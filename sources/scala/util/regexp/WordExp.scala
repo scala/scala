@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.util.regexp ;
 
 /** regular word expressions. use them with an alphabet: <pre>

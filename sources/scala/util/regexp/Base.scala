@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.util.regexp ;
 
 /** basic regular expressions */
