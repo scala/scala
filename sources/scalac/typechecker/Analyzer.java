@@ -389,6 +389,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    Symbol baseclazz = tp.symbol();
 	    if (baseclazz.kind == CLASS) {
 		int index = clazz.closurePos(baseclazz);
+                if (index < 0) return;
 		if (seen[index]) {
 		    // check that only uniform classes are inherited several times.
 		    if (!clazz.isCompoundSym() && !baseclazz.isTrait()) {
