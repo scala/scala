@@ -44,7 +44,7 @@ class Parser( it:Iterator[char] ) with Scanner( it ) {
   def conds = token match  {
     case LBRACKET =>
       nextToken;
-      var cond :List[List[Expression]] = Predef.List( expr );
+      var cond :List[List[Expression]] = List( expr );
       while( COMMA == token ) { cond = expr :: cond }
       acc( RBRACKET );
       Some( cond.reverse )

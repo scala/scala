@@ -61,7 +61,7 @@ trait Option[+A] extends Iterable[A] {
 	}
 
     def toList: List[A] = match {
-      case None => Predef.List()
-      case Some(x) => Predef.List(x)
+      case None => List()
+      case Some(x) => List(x)
     }
 }

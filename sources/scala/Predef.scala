@@ -38,14 +38,6 @@ object Predef {
       array;
     }
 
-    /** Create a list with given elements.
-     *
-     *  @param xs the elements to put in the list
-     *  @return the list containing elements xs.
-     */
-    def List[A](xs: A*): List[A] = xs.asInstanceOf[List[A]];
-    val List = scala.List;
-
     def error(message: String): All = throw new Error(message);
 
     def exit: scala.Unit = java.lang.System.exit(0);

@@ -178,19 +178,19 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
   protected final val TXT_AT            = Simple("@");
 
   protected final val TXT_WITH_SP =
-    Sequence(Predef.List(Space, KW_WITH, Space));
+    Sequence(List(Space, KW_WITH, Space));
   protected final val TXT_BLOCK_BEGIN =
-    Sequence(Predef.List(TXT_LEFT_BRACE, Newline));
+    Sequence(List(TXT_LEFT_BRACE, Newline));
   protected final val TXT_BLOCK_END =
-    Sequence(Predef.List(Newline, TXT_RIGHT_BRACE));
+    Sequence(List(Newline, TXT_RIGHT_BRACE));
   protected final val TXT_BLOCK_SEP =
-    Sequence(Predef.List(TXT_SEMICOLON, Newline));
+    Sequence(List(TXT_SEMICOLON, Newline));
   protected final val TXT_COMMA_SP =
-    Sequence(Predef.List(TXT_COMMA, Space));
+    Sequence(List(TXT_COMMA, Space));
   protected final val TXT_ELSE_NL =
-    Sequence(Predef.List(KW_ELSE, Newline));
+    Sequence(List(KW_ELSE, Newline));
   protected final val TXT_BAR_SP =
-    Sequence(Predef.List(Space, TXT_BAR, Space));
+    Sequence(List(Space, TXT_BAR, Space));
 
   def print(global: scalac_Global): unit = {
     val phase: Phase = global.currentPhase;
