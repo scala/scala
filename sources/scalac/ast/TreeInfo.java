@@ -219,12 +219,12 @@ public class TreeInfo {
                               return true;
                   }
                   return false;
-            case Apply( _, _ ):
-            case Literal( _ ):
-                  return false;
             case Ident(Name n): // if Ident is a recursive var, then true
                   return recVars.contains( tree.symbol() );
+            case Apply( _, _ ):
+            case Literal( _ ):
 	    case Select(_,_):
+            case Typed(_,_):
 		return false;
             default:
                   throw new scalac.ApplicationError("Unexpected pattern "+tree.getClass());
