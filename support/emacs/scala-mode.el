@@ -8,7 +8,7 @@
 (require 'cl)
 (require 'regexp-opt)
 
-(defconst scala-mode-version "0.2 ($Revision$)")
+(defconst scala-mode-version "0.3 ($Revision$)")
 (defconst scala-bug-e-mail "Michel.Schinz@epfl.ch")
 (defconst scala-web-url "http://lampwww.epfl.ch/scala/")
 
@@ -60,20 +60,19 @@ reserved keywords when used alone.")
   "Regular expression matching a single Scala special character")
 
 (defconst scala-keywords-re
-  (regexp-opt '("abstract" "as" "case" "class" "def" "do" "else"
-                "extends" "final" "for" "if" "import" "is"
-                "let" "module" "new" "override" "object" "outer"
-                "package" "private" "protected" "qualified"
-                "trait" "type" "val" "var" "with" "yield"
-                "null" "this" "super")
+  (regexp-opt '("abstract" "case" "catch" "class" "def" "do" "else"
+                "extends" "final" "for" "if" "import" "new" "object"
+                "override" "package" "private" "protected"
+                "sealed" "super" "this" "trait" "try" "val" "var"
+                "while" "with" "yield")
 	      'words))
 
 (defconst scala-constants-re
-  (regexp-opt '("true" "false" ) 'words))
+  (regexp-opt '("true" "false" "null") 'words))
 
 (defconst scala-special-ident-re
-  (concat "\\(" scala-most-special-char-re "+"
-          "\\|" scala-all-special-char-re "\\{2,\\}"
+  (concat "\\(" scala-all-special-char-re "\\{2,\\}"
+          "\\|" scala-most-special-char-re "+"
           "\\)"))
 
 (defconst scala-ident-re
@@ -134,6 +133,20 @@ reserved keywords when used alone.")
     t))
 
 ;; Movement
+
+(defun scala-when-looking-at* (regexp &optional thunk)
+  (let ((saved-match-data (match-data)))
+    (if (looking-at regexp)
+        (progn (goto-char (match-end 0))
+               (set-match-data saved-match-data)
+               (or (not thunk) (funcall thunk)))
+      (set-match-data saved-match-data)
+      nil)))
+
+(defmacro scala-when-looking-at (regexp &rest body)
+  (if body
+      `(scala-when-looking-at* ,regexp (lambda () ,@body))
+    `(scala-when-looking-at* ,regexp)))
 
 (defun scala-forward-spaces (&optional limit)
   (if limit
@@ -223,10 +236,10 @@ reserved keywords when used alone.")
   ;; Works only when point is at the beginning of a type (modulo
   ;; initial spaces/comments).
   (scala-forward-spaces)
-  (when (looking-at "\\<class\\>") (forward-word 1) (scala-forward-spaces))
+  (scala-when-looking-at "\\<class\\>"
+                         (forward-word 1) (scala-forward-spaces))
   (scala-forward-simple-type)
-  (while (looking-at "\\s *\\<with\\>\\s *")
-    (goto-char (match-end 0))
+  (while (scala-when-looking-at "\\s *\\<with\\>\\s *")
     (if (and (not (eobp)) (= (char-after) ?\{))
         (forward-sexp)                       ;skip refinement
       (scala-forward-simple-type)))
@@ -238,23 +251,28 @@ reserved keywords when used alone.")
         ((= (char-after) ?\()
          ;; Function type (several arguments)
          (forward-sexp)
-         (when (looking-at "\\s *=>\\s *")
-           (goto-char (match-end 0))
-           (scala-forward-type))
+         (scala-when-looking-at "\\s *=>\\s *" (scala-forward-type))
          t)
         (t
          ;; Type1 or function type with one argument
          (scala-forward-type1)
-         (when (looking-at "\\s *=>\\s *")
-           (goto-char (match-end 0))
-           (scala-forward-type))
+         (scala-when-looking-at "\\s *=>\\s *" (scala-forward-type))
          t)))
+
+(defun scala-forward-type-param ()
+  ;; Move over a type parameter
+  ;; variance
+  (scala-when-looking-at "\\s *[-+]\\s *")
+  (scala-forward-ident)
+  ;; bounds
+  (while (scala-when-looking-at "\\s *[<>]:\\s *")
+    (scala-forward-type))
+  t)
 
 (defun scala-forward-literal ()
   ;; Move forward over an integer, float, character or string literal.
   (scala-forward-spaces)
-  (when (looking-at scala-literal-re)
-    (goto-char (match-end 0)))
+  (scala-when-looking-at scala-literal-re)
   t)
 
 ;;; Indentation
@@ -408,10 +426,13 @@ When called repeatedly, indent each time one stop further on the right."
                                   (forward-char)
                                   (scala-forward-spaces)
                                   t)) . nil)
-                             (scala-forward-type . t)))))
-             (when (looking-at "\\s *,") (goto-char (match-end 0)))
-             (set-match-data matches)
-             t)))))
+                             ((lambda ()
+                                (scala-forward-type)
+                                (scala-when-looking-at "\\s *\\*")
+                                t) . t)))))
+             (scala-when-looking-at "\\s *,")
+             (set-match-data matches)))
+         t)))
 
 (defun scala-match-and-skip-ident (limit)
   (scala-forward-spaces)
@@ -420,14 +441,15 @@ When called repeatedly, indent each time one stop further on the right."
     (goto-char (match-end 0))
     t))
 
-(defun scala-match-and-skip-type-args (limit)
-  (when (looking-at (concat "[[,]\\s *\\(" scala-ident-re "\\)?\\]?"))
-    (goto-char (match-end 0))
-    t))
+(defun scala-match-and-skip-type-param (limit)
+  (scala-when-looking-at "\\s *[[,]\\s *"
+    (let ((matches (scala-make-match '((scala-forward-type-param . t)))))
+      (scala-when-looking-at "\\s *\\]")
+      (set-match-data matches)
+      t)))
 
 (defun scala-match-and-skip-result-type (limit)
-  (when (looking-at "\\s *:\\s *")
-    (goto-char (match-end 0))
+  (scala-when-looking-at "\\s *:\\s *"
     (set-match-data (list (point-marker)
                           (progn (scala-forward-type) (point-marker))))
     t))
@@ -483,8 +505,8 @@ When called repeatedly, indent each time one stop further on the right."
     ;; functions
     (,(concat "\\(^\\|[^(,]\\)\\s *\\<def\\>" "\\s *" "\\(" scala-ident-re "\\)\\s *")
      (2 font-lock-function-name-face nil)
-     (scala-match-and-skip-type-args (goto-char (match-end 0)) nil
-                                     (1 font-lock-type-face nil t))
+     (scala-match-and-skip-type-param (goto-char (match-end 0)) nil
+                                      (1 font-lock-type-face nil t))
      (scala-match-and-skip-binding nil nil
                                    (1 font-lock-variable-name-face nil)
                                    (2 font-lock-type-face nil t))
@@ -495,8 +517,8 @@ When called repeatedly, indent each time one stop further on the right."
     ("\\<class\\|trait\\>"
      (scala-match-and-skip-ident (goto-char (match-end 0)) nil
                                  (1 font-lock-type-face nil))
-     (scala-match-and-skip-type-args nil nil
-                                     (1 font-lock-type-face nil t))
+     (scala-match-and-skip-type-param nil nil
+                                      (1 font-lock-type-face nil t))
      (scala-match-and-skip-binding nil nil
                                    (1 font-lock-variable-name-face nil)
                                    (2 font-lock-type-face nil t)))
@@ -505,8 +527,8 @@ When called repeatedly, indent each time one stop further on the right."
     ("\\<extends\\|with\\>\\s *[^{]"
      (scala-match-and-skip-ident (goto-char (1- (match-end 0))) nil
                                  (0 font-lock-type-face nil))
-     (scala-match-and-skip-type-args nil nil
-                                     (1 font-lock-type-face nil t)))
+     (scala-match-and-skip-type-param nil nil
+                                      (1 font-lock-type-face nil t)))
 
     ;; patterns
     ("\\<\\(case\\|val\\)\\>\\s *"
@@ -612,6 +634,8 @@ When started, run `scala-mode-hook'.
 (define-key scala-mode-map [(control c)(control l)] 'scala-load-file)
 (define-key scala-mode-map [(control c)(control r)] 'scala-eval-region)
 (define-key scala-mode-map [(control c)(control b)] 'scala-eval-buffer)
+
+(define-key scala-mode-map [(control c)(control c)] 'comment-region)
 
 (define-key scala-mode-map "}" 'scala-electric-brace)
 
