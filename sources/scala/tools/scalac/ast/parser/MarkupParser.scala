@@ -211,11 +211,8 @@ class MarkupParser(unit: CompilationUnit, s: Scanner, p: Parser, trimWS: boolean
   }
 
   def xSyntaxError(str:String) = {
-    throw new RuntimeException();
-    /* //DEBUG
     s.syntaxError("in XML literal: "+str);
     nextch;
-    */
   }
 
   def sync: Unit = {
