@@ -175,6 +175,7 @@ public class Names {
     public static final Name finalize = Name.fromString("finalize");
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
+    public static final Name functionOuter = Name.fromString("FUNCTION_OUTER");
     public static final Name get = Name.fromString("get");
     public static final Name getClass = Name.fromString("getClass");
     public static final Name getInstantiation = Name.fromString("getInstantiation");

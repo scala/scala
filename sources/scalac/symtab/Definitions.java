@@ -669,6 +669,14 @@ public class Definitions {
         return TYPECONSTRUCTOR_INSTANTIATE;
     }
 
+    private Symbol TYPECONSTRUCTOR_FUNCTIONOUTER;
+    public Symbol TYPECONSTRUCTOR_FUNCTIONOUTER() {
+        if (TYPECONSTRUCTOR_FUNCTIONOUTER == null)
+            TYPECONSTRUCTOR_FUNCTIONOUTER =
+                loadTerm(TYPECONSTRUCTOR_CLASS.linkedModule().moduleClass(), Names.functionOuter);
+        return TYPECONSTRUCTOR_FUNCTIONOUTER;
+    }
+
     private Symbol SCALACLASSTYPE_SETPARENTS;
     public Symbol SCALACLASSTYPE_SETPARENTS() {
         if (SCALACLASSTYPE_SETPARENTS == null)

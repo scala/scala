@@ -592,8 +592,7 @@ public class TypesAsValuesPhase extends Phase {
             Tree outer = isNestedClass(clsSym)
                 ? (clsSym.owner().isClass()
                    ? gen.This(pos, clsSym.owner())
-                   : gen.New(gen.mkApply__(gen.mkPrimaryConstructorGlobalRef(pos,
-                                                                             defs.OBJECT_CLASS))))
+                   : gen.mkGlobalRef(pos, defs.TYPECONSTRUCTOR_FUNCTIONOUTER()))
                 : gen.mkNullLit(pos);
 
             Tree[] tcArgs = new Tree[] {
@@ -794,8 +793,6 @@ public class TypesAsValuesPhase extends Phase {
                     return javaType(pos, sym);
                 } else if (!sym.isParameter()) {
                     // Reference to a "global" type.
-                    if (owner == null)
-                        throw new Error("null owner for " + Debug.show(tp));
                     return scalaClassType(pos, tp, owner, env);
                 } else {
                     assert !isValuePrefix(pre) : tp;
