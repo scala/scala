@@ -204,7 +204,6 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
    * precondition: s.xStartsXML == true
   */
   def xLiteral:Tree = {
-    //Console.println("xLiteral");
     val pos = s.pos;
     var tree = xExpr; s.token = EMPTY; s.nextToken();
     if( s.xStartsXML )  {
@@ -224,9 +223,10 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   def xAttributes = {
     var aMap = ListMap.Empty[Name,Tree];
     while( s.xIsNameStart ) {
-      val key = s.xName; s.xEQ;
+      val key = s.xName;
+      s.xEQ;
       val delim = s.ch;
-      val value:Tree = delim match {
+      val value:Tree = s.ch match {
         case '"' | '\'' =>
           val pos = s.pos;
           s.xNext;
@@ -244,7 +244,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
         case _ =>
 	  s.xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
           gen.mkStringLit( s.pos, "<syntax-error>" )
-      }
+      };
       // well-formedness constraint: unique attribute names
       if( aMap.contains( key ))
         s.xSyntaxError( "attribute "+key+" may only be defined once" );
@@ -279,7 +279,6 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
   }
 
   def xScalaExpr( ts:myTreeList ) = {
-    //Console.println(" isBlock"); // DEBUG
     s.nextToken();
     s.xScalaBlock = false;
     val b = p.expr(true,false);
@@ -287,7 +286,6 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       s.xSyntaxError(" expected end of Scala block");
     }
     ts.append( b );
-    //Console.println("[RETURN isBlock, b = "+b+"]"); // DEBUG
   }
 
   /** '<' xExpr ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
@@ -295,7 +293,6 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
    *  the caller has to resynchronize with s.token = EMPTY; s.nextToken;
    */
   def xExpr:Tree = {
-    //Console.println("[xExpr]");
     val pos = s.pos;
     val Tuple2( elemName, attrMap ) = xTag;
     if( s.ch == '/' ) { // empty element
@@ -309,32 +306,26 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
         if( s.xScalaBlock ) {
           xScalaExpr( ts );
         } else {
-          //Console.println("[in xExpr loop, ch='"+s.ch.asInstanceOf[char]+"']"); // DEBUG
           s.ch match {
 
             case '<' => // another tag
-              //Console.println("case <");
-
-            s.xNext; s.ch match {
-              case '/' => exit = true;            // end tag
-              case '!' => s.xComment;
-              case _   => ts.append( xExpr ); // parse child
-            }
+              s.xNext;
+              s.ch match {
+                case '/' => exit = true;            // end tag
+                case '!' => val _ = s.xComment;
+                case _   => ts.append( xExpr ); // parse child
+              }
 
             case '{' =>
-              //Console.print("case {"); // DEBUG
               if( s.xCheckScalaBlock ) {
                 xScalaExpr( ts );
               } else {
-                //Console.println(" isText");
-
                 val str = new StringBuffer("{");
                 str.append( s.xText );
                 ts.append( makeText( s.pos, str.toString() ));
               }
 
             case '&' => // EntityRef or CharRef
-              //Console.println("case &");
               s.xNext;
               s.ch match {
                 case '#' => // CharacterRef
@@ -342,25 +333,19 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
                   val theChar = makeText( s.pos, s.xCharRef );
                   s.xToken(';');
                   ts.append( theChar);
-                case _ => // entityRef
-                  //Console.println("ENTITY REF");
+                case _ => // EntityRef
                   val pos = s.pos;
                   val n = s.xName ;
                   s.xToken(';');
                   ts.append( makeEntityRef( s.pos, n ));
               }
             case _ => // text content
-              //Console.println("case_");
               ts.append( makeText( s.pos, s.xText ));
-            //Console.println("parser Text, ts="+ts);
           }
         }
       }
       xEndTag( elemName );
-      val t2 = makeXML( pos, elemName, ts.toArray(), attrMap );
-        //Console.println("parsed:"+t2);
-    //Console.println("[xExpr DONE]"); // DEBUG
-        t2
+      makeXML( pos, elemName, ts.toArray(), attrMap );
     }
   }
 
@@ -384,7 +369,6 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
       val ts = new myTreeList();
       var exit = false;
       while( !exit ) {
-        //Console.print("["+s.ch.asInstanceOf[char]+"]");
         s.ch match {
           case '<' => { // tag
             s.xNext;

@@ -83,13 +83,14 @@ class Scanner(_unit: Unit) extends TokenData {
       val ch = buf( bp );
       odd = ( ch == '\\' ) && !odd;
       if( odd && hasNext && 'u' == buf( bp + 1 )) {
-        //Console.println("bp before "+bp+"["+buf(bp)+"]");
         val Pair( newch, offset ) = nextUnicode( bp + 1 );
         bp = bp + offset;
-        //Console.println("bp "+bp+"["+buf(bp)+"]");
+        ccol = ccol + offset;
+        odd = false;
         newch
-      } else
+      } else {
         ch
+      }
     }
     def raw:char = { bp = bp + 1; buf( bp ) }
 
@@ -141,16 +142,13 @@ class Scanner(_unit: Unit) extends TokenData {
     /** returns unicode and offset of next character */
     def nextUnicode( p:int ):Pair[char,int] = {
       var j = p;
-      //Console.print("nextUnicode["+p+"]="+buf( j ));
       while ( buf( j ) == 'u' ) { j = j + 1 };
-      //Console.println("j now ["+j+"]="+buf( j ));
       if ( j + 4 >= buf.length ) syntaxError("incomplete unicode escape");
       def munch = {
         val i = digit2int( buf( j ), 16 );
         if( i == -1 ) {
           syntaxError("error in unicode escape");
-          //error("bla");
-        }
+        };
         j = j + 1;
         i
       }
@@ -245,7 +243,7 @@ class Scanner(_unit: Unit) extends TokenData {
           this.copyFrom(prev);
         }
       }
-      //System.out.println("<" + token2string(token) + ":" + name + ">");//DEBUG
+      //Console.println("<" + token2string(token) + ":" + name + ">");//DEBUG
     }
   }
 
@@ -297,6 +295,11 @@ class Scanner(_unit: Unit) extends TokenData {
 	      nextch();
 	      getIdentRest;  // scala-mode: wrong indent for multi-line case blocks
 	      return;
+            case _ if (java.lang.Character.isUnicodeIdentifierStart(ch)) =>
+              putChar( ch );
+	      nextch();
+	      getIdentRest;
+              return;
 	    case '~' | '!' | '@' | '#' | '%' |
 		 '^' | '*' | '+' | '-' | '<' |
 		 '>' | '?' | ':' | '=' | '&' |
@@ -359,6 +362,16 @@ class Scanner(_unit: Unit) extends TokenData {
 		    token = SYMBOLLIT;
 		    return;
 		  }
+                case _ if(java.lang.Character.isUnicodeIdentifierStart(ch)) =>
+                  cbuf.setLength( 0 );
+		  putChar( ch );
+		  nextch();
+		  if (ch != '\'') {
+		    getIdentRest;
+		    token = SYMBOLLIT;
+		    return;
+		  }
+
 		case _ =>
 		  getlitch();
 		}
@@ -366,8 +379,6 @@ class Scanner(_unit: Unit) extends TokenData {
 		nextch();
 		token = CHARLIT;
                 name = Name.fromString( cbuf.toString() );
-                //Console.println("charlit:"+name);
-                //Console.println("intval:"+intVal(false));
                 cbuf.setLength( 0 );
 	      } else {
 		syntaxError("unclosed character literal");
@@ -486,18 +497,23 @@ class Scanner(_unit: Unit) extends TokenData {
     'k' | 'l' | 'm' | 'n' | 'o' |
     'p' | 'q' | 'r' | 's' | 't' |
     'u' | 'v' | 'w' | 'x' | 'y' |
-    'z'  => true
+    'z'  =>
+      true
+    case _ if(java.lang.Character.isUnicodeIdentifierStart(c)) =>
+      true;
     case _ => false;
   }
 
-  def isIdentChar( c:char ) = isIdentStart( c ) || c.match {
+  def isIdentPart( c:char ) = isIdentStart( c ) || c.match {
     case '0' | '1' | '2' | '3' | '4' |
-         '5' | '6' | '7' | '8' | '9' => true
+         '5' | '6' | '7' | '8' | '9' =>
+           true
+    case _ if(java.lang.Character.isUnicodeIdentifierPart(c)) =>
+      true;
     case _ => false } ;
 
 
   private def getIdentRest: unit = {
-    //Console.println("getIdentRest, cbuf="+cbuf.toString());
     while (true) {
       ch match {
         case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -521,6 +537,9 @@ class Scanner(_unit: Unit) extends TokenData {
           nextch();
           getIdentOrOperatorRest;
           return;
+        case _ if(java.lang.Character.isUnicodeIdentifierPart(ch)) =>
+          putChar( ch );
+          nextch();
         case _ =>
           treatIdent;
 	  return;
@@ -529,7 +548,6 @@ class Scanner(_unit: Unit) extends TokenData {
   }
 
   private def getOperatorRest: unit = {
-    //Console.println("getOp");
     while (true) {
       ch match {
         case '~' | '!' | '@' | '#' | '%' |
@@ -554,7 +572,7 @@ class Scanner(_unit: Unit) extends TokenData {
   }
 
   private def getIdentOrOperatorRest: unit = {
-    if( isIdentChar( ch ) )
+    if( isIdentPart( ch ) )
       getIdentRest
     else ch match {
       case '~' | '!' | '@' | '#' | '%' |
@@ -728,26 +746,22 @@ class Scanner(_unit: Unit) extends TokenData {
   def intVal(negated: boolean): long = {
     import SourceRepresentation.digit2int;
 
-    //Console.println("intVal:: name="+name+" name.length="+name.length());
     if (token == CHARLIT && !negated) {
       if (name.length() > 0)
         name.charAt( 0 )
       else
 	0
     } else {
-    //Console.println("hello");
 
       var value: long = 0;
       val divider = if (base == 10) 1 else 2;
       val limit: long = if (token == LONGLIT) Long.MAX_VALUE else Integer.MAX_VALUE;
       var i = 0;
       val len = name.length();
-    //Console.println("i "+i+" len "+len+" limit" + limit + " divider "+divider);
       while (i < len) {
 	val d = digit2int( name.charAt(i), base );
 	if (d < 0) {
-          //syntaxError("malformed integer number");
-          syntaxError("malformed integer number:\'"+name+"\'"+" length="+name.length()); //DEBUG
+          syntaxError("malformed integer number");
           return 0;
 	}
 	if (value < 0 ||
@@ -800,12 +814,10 @@ class Scanner(_unit: Unit) extends TokenData {
   */
   protected def getNumber:unit = {
     import SourceRepresentation.digit2int;
-    //Console.println("getNumber::start, cbuf="+cbuf.toString());
     while (digit2int(ch, if (base == 8) 10 else base) >= 0) {
       putChar( ch );
       nextch();
     }
-    //Console.println("getNumber::. ch = "+ch+" cbuf="+cbuf.toString());
     if (base <= 10 && ch == '.') { // '.' c1 c2
       val c1 = srcIterator.lookahead1;
       if (c1 >= '0' && c1 <= '9') {
@@ -819,35 +831,16 @@ class Scanner(_unit: Unit) extends TokenData {
           getFraction;
           return;
         }
-        if(isIdentStart(c1)&&isIdentChar(c2)) { // is select
-	name = Name.fromString( cbuf.toString() );
-        cbuf.setLength( 0 );
-        token = INTLIT;
-        return;
-      } else /*{
-        val c2 = srcIterator.lookahead2;
-        if(exponentPart(c1,c2) ||
-           || (floatTypeSuffix(c1) && !isIdentChar( c2 ))
-           || !isIdentStart( c1 )) {
+        if(isIdentStart(c1)&&isIdentPart(c2)) { // is select
+	  name = Name.fromString( cbuf.toString() );
+          cbuf.setLength( 0 );
+          token = INTLIT;
+          return;
+        } else {
           putChar(ch);
           nextch();
           getFraction;
         }
-      }else if(isIdentStart(c1)) { // is select
-        //Console.println("is select");
-        //Console.println("c1 = "+c1);
-        //Console.println("floatTypeSuffix(c1) = "+floatTypeSuffix(c1));
-        //Console.println("c2 = "+c2);
-        //Console.println("!isIdentChar( c2 ) = "+ !isIdentChar( c2 ));
-
-	name = Name.fromString( cbuf.toString() );
-        cbuf.setLength( 0 );
-        token = INTLIT;
-      } else */{
-        putChar(ch);
-        nextch();
-        getFraction;
-      }
       }
     } else if (base <= 10 &&
                (ch == 'e' || ch == 'E' ||
@@ -868,14 +861,12 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  /*       X               M                 L
-  */
-
-  /* methods for XML tokenizing, see XML 1.0 rec http://www.w3.org/xml  */
+  // start XML tokenizing.
+  // prod. [i] refers to productions in http://www.w3.org/TR/REC-xml
 
   def xSyntaxError(s:String) = {
-    //throw new ApplicationError();
-    syntaxError("in XML literal: "+s); xNext;
+    syntaxError("in XML literal: "+s);
+    xNext;
   }
 
   var xScalaBlock = false;
@@ -937,37 +928,50 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  /** scan [4] NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'
-   *                      | CombiningChar | Extender
-   * partial implementation
-   * @todo: add unicode letters, add CombiningChar Extender
-  **/
-  def xIsNameChar = ch match {
-    case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' |
-    'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
-    'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b' | 'c' | 'd' | 'e' |
-    'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' |
-    'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' |
-    '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' |
-    '.' | '-' | '_' | ':'  => true;
-    case _ => false
-  }
-
-  /** scan (Letter | '_' | ':') */
-  def xIsNameStart = ch match {
-    case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' |
-    'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
-    'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b' | 'c' | 'd' | 'e' |
-    'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' |
-    'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' |
-    '_' | ':'  => true;
-    case _ => false
-  }
-  /** scan [5] Name ::= (Letter | '_' | ':') (NameChar)*
+  /** NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'
+   *             | CombiningChar | Extender
+   *
+   * see [4] and Appendix B of XML 1.0 specification
   */
+  def xIsNameChar = xIsNameStart || (ch match {
+    case '.' | '-' => true;
+    case _ => java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
+      case java.lang.Character.COMBINING_SPACING_MARK => true; // Mc
+      case java.lang.Character.ENCLOSING_MARK => true;         // Me
+      case java.lang.Character.NON_SPACING_MARK => true;       // Mn
+      case java.lang.Character.MODIFIER_LETTER => true;        // Lm
+      case java.lang.Character.DECIMAL_DIGIT_NUMBER => true;   // Nd
+      case _ => false;
+    }
+  });
+
+  /** NameStart == Unicode general category in { Ll, Lu, Lo, Lt, Nl }
+   *
+   *  see [3] and Appendix B of XML 1.0 specification
+   */
+  def xIsNameStart =
+    java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
+      case  java.lang.Character.LOWERCASE_LETTER => true;
+      case  java.lang.Character.UPPERCASE_LETTER => true;
+      case  java.lang.Character.OTHER_LETTER     => true;
+      case  java.lang.Character.TITLECASE_LETTER => true;
+      case  java.lang.Character.LETTER_NUMBER    => true;
+      case _ => ch match {
+        case '_' | ':' => true
+        case _ => false;
+      }
+    }
+
+  /** Name ::= (Letter | '_' | ':') (NameChar)*
+   *
+   *  see  [5] of XML 1.0 specification
+   */
   def xName:Name = {
     if( xIsNameStart ) {
-      while( xIsNameChar ) { putChar( ch ); xNext;  }
+      do {
+        putChar( ch );
+        xNext;
+      } while( xIsNameChar );
       val n = Name.fromString( cbuf.toString() );
       cbuf.setLength( 0 );
       n
@@ -978,12 +982,16 @@ class Scanner(_unit: Unit) extends TokenData {
   }
 
 
-  /** move forward to next endch. returns a string if needed.
+  /** returns string up to next character endch.
+   *
    *  @param endch the character to which we skip
    */
   def xSkipToNext( endch:char ):String = {
     lastpos = pos;
-    while (( ch != endch )&&( ch != '{' )) { putChar( ch ); xNext; };
+    while (( ch != endch )&&( ch != '{' )) {
+      putChar( ch );
+      xNext;
+    };
     val s = cbuf.toString();
     cbuf.setLength( 0 );
     s
@@ -1002,23 +1010,30 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  /* move forward one char, return true if next character  starts a scala block */
+  /* move forward one char
+   *
+   * @return true if next character  starts a scala block
+   */
   def xxNext:boolean = {
     xNext;
     xCheckScalaBlock
   }
-  /* return true and moves forward if next character starts a scala block */
+
+  /* checks whether next character starts a Scala block, if yes, skip it.
+   *
+   * @return true if next character starts a scala block
+   */
   def xCheckScalaBlock:boolean = {
     xScalaBlock = ( ch == '{' ) && { xNext;( ch != '{' ) };
     return xScalaBlock;
   }
 
   /** parse character data.
-  *   precondition: xScalaBlock == false
+  *   precondition: xScalaBlock == false (we are not in a scala block)
   */
   def xText:String = {
-    if( xScalaBlock ) throw new ApplicationError();
-    //Console.println( "xScalaBlock="+xScalaBlock+" bp="+bp+" + ch="+ch);
+    if( xScalaBlock ) throw new ApplicationError(); // assert
+
     if( xCheckScalaBlock )
       return ""
     else {
@@ -1034,8 +1049,13 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
+
+  /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"
+   *            | "&#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
+   *
+   * see [66]
+   */
   def xCharRef:String = {
-    //Console.println("scanner::xCHARREF");
     val hex  = ( ch == 'x' ) && { xNext; true };
     val base = if (hex) 16 else 10;
     var i = 0;
@@ -1047,7 +1067,7 @@ class Scanner(_unit: Unit) extends TokenData {
            | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
           if( !hex )
             xSyntaxError("hex char not allowed in decimal char ref\n"
-                         +"Did you mean to writer &#x ?");
+                         +"Did you mean to write &#x ?");
           else
             i = i * base + Character.digit( ch, base );
         case _ =>
@@ -1055,32 +1075,41 @@ class Scanner(_unit: Unit) extends TokenData {
       }
       xNext;
     }
-    //Console.println("parsed i = "+i+" in hex:"+Integer.toString(i,16));
     new String( Predef.Array[char]( i.asInstanceOf[char] ))
   }
 
-  /** scan XML comment.
-  */
-  def xComment = {
+  /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
+   *
+   * see [15]
+   */
+  def xComment:String = {
+    val sb:StringBuffer = new StringBuffer();
     xToken('!');
     xToken('-');
     xToken('-');
-    while ( ch != '-' ) { xNext; };
-    xToken('-');
-    xToken('-');
-    xToken('>');
+    while (true) {
+      xNext;
+      if( ch=='-'  && { sb.append( ch ); xNext; ch == '-' } ) {
+        sb.setLength( sb.length() - 1 );
+        xNext;
+        xToken('>');
+        return sb.toString();
+      } else sb.append( ch );
+    }
+    return ""; // this cannot happen;
   };
 
-  /** scan an exected XML token
+  /** munch expected XML token, report syntax error for unexpected
   */
   def xToken(that:char):unit = {
-    if( ch == that ) {
+    if( ch == that )
       xNext;
-    } else {
+    else
       xSyntaxError("'" + that + "' expected instead of '" + ch + "'");
-    }
   }
-  /* end XML tokenizing */
+
+  // end XML tokenizing
+
 
   override def toString() = token match {
     case IDENTIFIER =>
