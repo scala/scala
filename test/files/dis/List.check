@@ -1,4 +1,4 @@
-trait List[+a] extends scala.Seq[a] with scala.ScalaObject {
+sealed trait List[+a] extends scala.Seq[a] with scala.ScalaObject {
     def removeDuplicates: scala.List[a];
     def intersect[b >: a](scala.List[b]): scala.List[b];
     def diff[b >: a](scala.List[b]): scala.List[b];
