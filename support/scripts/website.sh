@@ -368,6 +368,16 @@ function website-build() {
     run cp -a "$resourcesdir/doc/ScalaOverview.pdf" "$websitedir/doc/";
     run cp -a "$resourcesdir/doc/ScalaOverview.ps.gz" "$websitedir/doc/";
 
+    # copy old PDF and PostScript version of Scala related documents
+    run cp -a "$resourcesdir/doc/IC_TECH_REPORT_200433.pdf" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/IC_TECH_REPORT_200433.ps.gz" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/PiLib.pdf" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/PiLib.ps.gz" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/ScalaAsmL.pdf" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/ScalaAsmL.ps.gz" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/MetaScala.pdf" "$websitedir/doc/";
+    run cp -a "$resourcesdir/doc/MetaScala.ps.gz" "$websitedir/doc/";
+
     # copy old Scala examples
     run cp -a "$resourcesdir/examples/fors.html" "$websitedir/examples/";
     run cp -a "$resourcesdir/examples/patterns.html" "$websitedir/examples/";
