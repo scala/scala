@@ -264,7 +264,10 @@ public abstract class Global {
 
     /** Reads and returns the source file in file with given name. */
     public SourceFile getSourceFile(String filename) throws IOException {
-        return getSourceFile(AbstractFile.open(null, filename));
+        AbstractFile file = AbstractFile.open(null, filename);
+        if (file == null) throw new FileNotFoundException(
+            "source file '" + filename + "' could not be found");
+        return getSourceFile(file);
     }
 
     /** Reads and returns the source file in given abstract file. */
