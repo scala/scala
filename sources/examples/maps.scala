@@ -72,7 +72,7 @@ module maps {
       def domain: Stream[kt];
       def range: Stream[vt];
     }
-    module empty extends OOMap with {
+    val empty: OOMap = new OOMap {
       def apply(key: kt): vt = null;
       def extend(key: kt, value: vt) = new Node(key, value, empty, empty);
       def remove(key: kt) = empty;

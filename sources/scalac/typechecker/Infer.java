@@ -398,13 +398,16 @@ public class Infer implements Modifiers, Kinds {
 	Type insttype = restype.subst(tparams, tvars);
 	Type[] targs = new Type[tvars.length];
 	if (isCompatible(insttype, pt)) {
-	    for (int i = 0; i < tvars.length; i++) {
-		targs[i] = instantiateUpper(tvars[i], isCovariant(tparams[i], params));
+	    try {
+		for (int i = 0; i < tvars.length; i++) {
+		    targs[i] = instantiateUpper(tvars[i], isCovariant(tparams[i], params));
+		}
+		return targs;
+	    } catch (NoInstance ex) {
 	    }
-	} else {
-	    for (int i = 0; i < tvars.length; i++) {
-		targs[i] = Type.AnyType;
-	    }
+	}
+	for (int i = 0; i < tvars.length; i++) {
+	    targs[i] = Type.AnyType;
 	}
 	return targs;
     }
@@ -824,7 +827,7 @@ public class Infer implements Modifiers, Kinds {
 	}
 	if (i < alttypes.length) {
 	    for (int j = i + 1; j < alttypes.length; j++) {
-		if (alts[i].isValue() && alttypes[i].typeParams().length == nparams)
+		if (alts[j].isValue() && alttypes[j].typeParams().length == nparams)
 		    throw new Type.Error(overloadResolveErrorMsg(
 			alts[i], alttypes[i], alts[j], alttypes[j]));
 	    }

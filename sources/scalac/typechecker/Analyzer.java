@@ -184,7 +184,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
     void reportTypeError(int pos, Type.Error ex) {
 	if (ex instanceof CyclicReference) {
-	    if (global.debug) ex.printStackTrace();//DEBUG
+	    if (global.debug) ex.printStackTrace();
 	    CyclicReference cyc = (CyclicReference) ex;
 	    if (cyc.info instanceof LazyTreeType) {
 		switch (((LazyTreeType) cyc.info).tree) {
@@ -547,7 +547,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		 it.hasNext();) {
 		Symbol other = it.next();
 		Symbol member = clazz.info().lookup(other.name);
-		if (other != member && member.kind != NONE)
+		if (other != member && (other.flags & PRIVATE) == 0 &&
+		    member.kind != NONE)
 		    checkOverride(clazz, member, other);
 		if ((member.flags & DEFERRED) != 0 &&
 		    clazz.kind == CLASS &&
@@ -582,7 +583,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    overrideError(pos, member, other, "cannot override final member");
 	} else if ((other.flags & DEFERRED) == 0 && ((member.flags & OVERRIDE) == 0)) {
 	    overrideError(pos, member, other, "needs `override' modifier");
-	} else if ((other.flags & STABLE) != 0 && ((member.flags & STABLE) == 0)) {
+	} else if (other.isStable() && !member.isStable()) {
 	    overrideError(pos, member, other, "needs to be an immutable value");
 	} else {
 	    Type self = clazz.thisType();
@@ -803,7 +804,6 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    sym.setInfo(Type.ErrorType);
 		    throw new CyclicReference(sym, Type.NoType);
 		}
-
 		((ClassDef) tree).mods |= LOCKED;
 
 		pushContext(tree, sym.constructor(), new Scope(context.scope));
@@ -881,6 +881,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 		popContext();
 		owntype = makeMethodType(tparamSyms, vparamSyms, restpe);
+		//System.out.println("methtype " + name + ":" + owntype);//DEBUG
 		break;
 
 	    case TypeDef(int mods, Name name, Tree rhs):
@@ -914,6 +915,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (global.debug) System.out.println("defined " + sym);//debug
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
+	    tree.type = Type.ErrorType;
 	}
 
         this.unit = savedUnit;
@@ -1033,7 +1035,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 
 //	System.out.println("name = " + name + ", pos = " + tree.pos + ", importlist = ");//DEBUG
 //	for (ImportList imp = nextimports; imp != null; imp = imp.prev) {
-//	    new TextTreePrinter().print("    ").print(imp.tree).println().end();//debug
+//	    new TextTreePrinter().print("    ").print(imp.tree).println().end();//DEBUG
 //	}
 
 	while (nextimports != null && nextimports.tree.pos >= tree.pos) {
@@ -1083,8 +1085,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    tree = make.Select(tree.pos, qual, name);
 	}
 	symtype = pre.memberType(sym);
-	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0)
-	    && sym.isStable()) {
+	if ((pt != null && pt.isStable() || (mode & QUALmode) != 0) && sym.isStable()) {
 	    //System.out.println("making single " + sym + ":" + symtype);//DEBUG
 	    symtype = Type.singleType(pre, sym);
 	}
@@ -1259,6 +1260,30 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    argMode = PATTERNmode;
 	}
 
+	// if function is overloaded with one alternative whose arity matches
+	// argument length, preselect this alternative.
+	switch (fn1.type) {
+	case OverloadedType(Symbol[] alts, Type[] alttypes):
+	    int matching1 = -1;
+	    int matching2 = -1;
+	    for (int i = 0; i < alttypes.length; i++) {
+		Type alttp = alttypes[i];
+		switch (alttp) {
+		case PolyType(_, Type restp): alttp = restp;
+		}
+		switch (alttp) {
+		case MethodType(Symbol[] params, _):
+		    if (params.length == args.length ||
+			params.length == 1 && (params[0].flags & REPEATED) != 0) {
+			matching2 = matching1;
+			matching1 = i;
+		    }
+		}
+	    }
+	    if (matching1 >= 0 && matching2 < 0)
+		fn1.setSymbol(alts[matching1]).setType(alttypes[matching1]);
+	}
+
 	// handle the case of application of match to a visitor specially
 	if (args.length == 1 && args[0] instanceof Visitor) {
 	    Type pattp = matchQualType(fn1);
@@ -1337,7 +1362,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	if (fn1.type == Type.ErrorType)
 	    return tree.setType(Type.ErrorType);
 
-	new TextTreePrinter().print(tree).println().end();//debug
+	//new TextTreePrinter().print(tree).println().end();//DEBUG
 	return error(tree,
 	    infer.applyErrorMsg(
 		"", fn1, " cannot be applied to ", argtypes, pt));
@@ -1420,8 +1445,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		args[i] = transform(args[i], argMode, Type.AnyType);
 		argtypes[i] = args[i].type;
 	    }
+	    return argtypes;
 	}
-	return argtypes;
     }
 
     /** Atribute an expression or pattern with prototype `pt'.
@@ -1662,6 +1687,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree rhs1 = rhs;
 		if (tpe1 == Tree.Empty) {
 		    tpe1 = gen.mkType(rhs1.pos, rhs.type);
+		    //System.out.println("infer " + sym + ":" + rhs.type);//DEBUG
 		    // rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
 		    if ((mods & CASE) != 0) {
@@ -1685,7 +1711,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		Tree rhs1 = rhs;
 		if (tpe1 == Tree.Empty) {
 		    tpe1 = gen.mkType(rhs1.pos, rhs1.type);
-		    // rhs already attributed by defineSym in this case
+		    //System.out.println("infer " + sym + ":" + rhs.type);//DEBUG
+		    //rhs already attributed by defineSym in this case
 		} else if (rhs != Tree.Empty) {
 		    rhs1 = transform(rhs, EXPRmode,
 			tpe1.type == Type.NoType ? Type.AnyType : tpe1.type);
@@ -2000,7 +2027,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    case SingletonType(Tree ref):
 		Tree ref1 = transform(ref, EXPRmode, Type.AnyType);
 		return make.TypeTerm(tree.pos)
-		    .setType(checkObjectType(tree.pos, ref1.type));
+		    .setType(checkObjectType(tree.pos, ref1.type.resultType()));
 
 	    case SelectFromType(Tree qual, Name name):
 		Tree qual1 = transform(qual, TYPEmode);
@@ -2067,6 +2094,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    }
 	} catch (Type.Error ex) {
 	    reportTypeError(tree.pos, ex);
+	    tree.type = Type.ErrorType;
 	    return tree;
 	}
     }
@@ -2104,7 +2132,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    this.c = context;
 	}
 	public void complete(Symbol sym) {
-	    //System.out.println("completing " + sym);//debug
+	    //System.out.println("completing " + sym);//DEBUG
 	    //if (sym.isConstructor()) sym.constructorClass().initialize();
 	    //else if (sym.isModule()) sym.moduleClass().initialize();
 	    defineSym(tree, u, i, c);

@@ -387,7 +387,7 @@ public class DeSugarize implements Kinds, Modifiers {
 		change = true;
 		break;
 	    case ValDef(int mods, _, _, _):
-		change = !isLocal && (mods & MUTABLE) != 0;
+		change = !isLocal;
 	    }
 	}
 	if (change) {
@@ -395,12 +395,12 @@ public class DeSugarize implements Kinds, Modifiers {
 	    for (int i = 0; i < stats.length; i++) {
 		switch (stats[i]) {
 		case PatDef(_, _, _):
-		    ts.append(this.PatDef(stats[i]));
+		    ts.append(Statements(this.PatDef(stats[i]), isLocal));
 		    break;
-		case ValDef(int mods, _, _, _):
-		    if (!isLocal && (mods & MUTABLE) != 0)
-			ts.append(this.VarDef(stats[i]));
-		    else
+		case ValDef(_, _, _, _):
+		    if (!isLocal) {
+			ts.append(this.ValDef(stats[i]));
+		    } else
 			ts.append(stats[i]);
 		    break;
 		default:
@@ -498,33 +498,40 @@ public class DeSugarize implements Kinds, Modifiers {
 	}
     }
 
-    public Tree[] VarDef(Tree tree) {
+    public Tree[] ValDef(Tree tree) {
 	switch (tree) {
 	case ValDef(int mods, Name name, Tree tpe, Tree rhs):
-	    Name varname = Name.fromString(name + "$");
-	    Tree vardef1 = copy.ValDef(
-		tree, PRIVATE | MUTABLE | SYNTHETIC, varname, tpe, rhs);
+	    Name valname = Name.fromString(name + "$");
+	    Tree valdef1 = copy.ValDef(
+		tree, (mods & (DEFERRED | MUTABLE | CASE | MODUL)) | PRIVATE,
+		valname, tpe, rhs);
+	    int mods1 = mods | ACCESSOR;
+	    if ((mods1 & MUTABLE) == 0) mods1 |= STABLE;
 	    Tree getter = make.DefDef(
-		tree.pos, mods | ACCESSOR, name,
-		Tree.ExtTypeDef.EMPTY_ARRAY,
-		Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
+		tree.pos, mods1, name,
+		Tree.ExtTypeDef.EMPTY_ARRAY, Tree.ExtValDef.EMPTY_ARRAY_ARRAY,
 		tpe,
 		((mods & DEFERRED) != 0) ? Tree.Empty
-		    : make.Ident(tree.pos, varname));
-	    Tree setter = make.DefDef(
-		tree.pos, mods | ACCESSOR, setterName(name),
-		Tree.ExtTypeDef.EMPTY_ARRAY,
-		new ValDef[][]{{
-		    (ValDef) make.ValDef(
-			tree.pos, SYNTHETIC, parameterName(0), tpe, Tree.Empty)}},
-		gen.mkType(tree.pos, global.definitions.UNIT_TYPE),
-		((mods & DEFERRED) != 0) ? Tree.Empty
-		    : make.Assign(
-			tree.pos,
-			make.Ident(tree.pos, varname),
-			make.Ident(tree.pos, parameterName(0))));
-	    if ((mods & DEFERRED) != 0) return new Tree[]{getter, setter};
-	    else return new Tree[]{vardef1, getter, setter};
+		    : make.Ident(tree.pos, valname));
+	    if ((mods1 & MUTABLE) == 0) {
+		if ((mods1 & DEFERRED) != 0) return new Tree[]{getter};
+		else return new Tree[]{valdef1, getter};
+	    } else {
+		Tree setter = make.DefDef(
+		    tree.pos, mods1, setterName(name),
+		    Tree.ExtTypeDef.EMPTY_ARRAY,
+		    new ValDef[][]{{
+			(ValDef) make.ValDef(
+			    tree.pos, SYNTHETIC, parameterName(0), tpe, Tree.Empty)}},
+		    gen.mkType(tree.pos, global.definitions.UNIT_TYPE),
+		    ((mods1 & DEFERRED) != 0) ? Tree.Empty
+		        : make.Assign(
+			    tree.pos,
+			    make.Ident(tree.pos, valname),
+			    make.Ident(tree.pos, parameterName(0))));
+		if ((mods1 & DEFERRED) != 0) return new Tree[]{getter, setter};
+		else return new Tree[]{valdef1, getter, setter};
+	    }
 	default:
 	    throw new ApplicationError();
 	}

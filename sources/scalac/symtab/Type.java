@@ -139,7 +139,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	public Type widen() {
 	    if (definedId != Global.instance.currentPhase.id) {
 		definedId = Global.instance.currentPhase.id;
-		tp = pre.memberType(sym).widen();
+		tp = pre.memberType(sym).resultType().widen();
 	    }
 	    return tp;
 	}
@@ -372,7 +372,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    /** The arity of the first parameter section of this type.
+    /** The first parameter section of this type.
      */
     public Symbol[] firstParams() {
 	switch (this) {
@@ -852,7 +852,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    Symbol sym = symbol();
 	    Symbol ownclass = sym.owner().primaryConstructorClass();
 	    if (ownclass.isSubClass(clazz) &&
-		pre.symbol().isSubClass(ownclass)) {
+		pre.widen().symbol().isSubClass(ownclass)) {
 		switch (pre.baseType(ownclass)) {
 		case TypeRef(_, Symbol basesym, Type[] baseargs):
 		    Symbol[] baseparams = basesym.typeParams();
@@ -874,7 +874,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	Type toPrefix(Type pre, Symbol clazz) {
 	    if (pre == NoType || clazz.kind != CLASS)
 		return this;
-	    else if (symbol().isSubClass(clazz) && pre.symbol().isSubClass(symbol()))
+	    else if (symbol().isSubClass(clazz) && pre.widen().symbol().isSubClass(symbol()))
 		return pre;
 	    else
 		return toPrefix(pre.baseType(clazz).prefix(), clazz.owner());
@@ -916,7 +916,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
     private Type memberTransform(Symbol sym, Type tp) {
 	Type tp1 = tp.asSeenFrom(this, sym.owner());
-	//if (Global.instance.debug) System.out.println(this + ".memberType(" + sym + ":" + tp + ") = " + tp1);//debug
+	//if (Global.instance.debug) System.out.println(this + ".memberType(" + sym + ":" + tp + ") = " + tp1);//DEBUG
 	return tp1;
     }
 
@@ -2111,7 +2111,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	case CovarType(Type tp):
 	    return "+" + tp;
 	case OverloadedType(Symbol[] alts, Type[] alttypes):
-	    return "<overloaded> " + ArrayApply.toString(alttypes, "", " <and> ", "");//debug
+	    return ArrayApply.toString(alttypes, "", " <and> ", "");
 	case TypeVar(Type origin, Constraint constr):
 	    if (constr.inst != NoType) return constr.inst.toString();
 	    else return origin + "?";

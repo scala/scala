@@ -1,5 +1,5 @@
 package scala;
 
-trait BufferedIterator[a] extends Iterator[a] {
-  def head: a;
+trait BufferedIterator[b] extends Iterator[b] {
+  def head: b;
 }

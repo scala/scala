@@ -154,7 +154,9 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a stable value? */
     public final boolean isStable() {
-	return kind == VAL && (flags & MUTABLE) == 0 && type().isObjectType();
+	return kind == VAL &&
+	    ((flags & STABLE) != 0 ||
+	     (flags & MUTABLE) == 0 && type().isObjectType());
     }
 
     /** Does this symbol denote a variable? */
