@@ -1,0 +1,12 @@
+In C_ico, v_ico .toString() returns C_ico -> ok
+In C_ico, field .toString() returns C_ico -> ok
+In C_ico, method.toString() returns C_ico -> ok
+
+In C_ioc, v_ioc .toString() returns C_ioc -> ok
+In C_ioc, field .toString() returns C_ioc -> ok
+In C_ioc, method.toString() returns C_ioc -> ok
+
+In C_oic, v_oic .toString() returns C_oic -> ok
+In C_oic, field .toString() returns C_oic -> ok
+In C_oic, method.toString() returns C_oic -> ok
+
