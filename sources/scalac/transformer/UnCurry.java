@@ -154,7 +154,7 @@ public class UnCurry extends OwnerTransformer
 	    Tree[] args1 = args;
 	    for (int i = 0; i < args.length; i++) {
 		Tree arg = args[i];
-		Tree arg1 = transform(arg, params[i]);
+		Tree arg1 = transformArg(arg, params[i]);
 		if (arg1 != arg && args1 == args) {
 		    args1 = new Tree[args.length];
 		    System.arraycopy(args, 0, args1, 0, i);
