@@ -922,7 +922,7 @@ def sumReciprocals(a: int, b: int): double = sum(x: int => 1.0/x, a, b);
 Often, the Scala compiler can deduce the parameter type(s) from the
 context of the anonymous function. In this case, they can be omitted.
 For instance, in the case of \verb@sumInts@, \verb@sumCubes@ and
-verb@sumReciprocals@, one knows from the type of
+\verb@sumReciprocals@, one knows from the type of
 \verb@sum@ that the first parameter must be a function of type
 \verb@int => double@.  Hence, the parameter type \verb@int@ is
 redundant and may be omitted:
@@ -2427,7 +2427,7 @@ abstract class List[+a] {
 \end{verbatim}
 \verb@List@ is an abstract class, so one cannot define elements by
 calling the empty \verb@List@ constructor (e.g. by
-\verb@new List).  The class has a type parameter \verb@a@. It is
+\verb@new List@).  The class has a type parameter \verb@a@. It is
 co-variant in this parameter, which means that
 \verb@List[S] <: List[T]@ for all types \verb@S@ and \verb@T@ such that
 \verb@S <: T@.  The class is situated in the package
