@@ -18,6 +18,8 @@ import scala.collection.mutable.HashMap ;
 
 abstract class BindingFactoryAdapter extends FactoryAdapter() {
 
+  var errors = 0;
+
   /** mapping from element names to an element constructor
     *  (constr:Seq[Node],HashMap[String,String] => Node)
     */
@@ -32,24 +34,41 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
   val compress: boolean ;
 
   /** looks up whether an element may have text children */
-  def nodeContainsText( name:java.lang.String ):boolean = g( name );
+  def nodeContainsText( name:java.lang.String ):boolean = {
+    g.get( name ) match {
+      case Some(x) => x;
+      case _       =>
+        errors = errors + 1;
+        java.lang.System.err.println(
+          "[unrecognized element \""+name+"\"]"
+        );true
+    }
+  }
 
   // if compress is set, used for hash-consing
   val cache = new HashMap[int,Node];
   //var cacheCount = 0;
+
+
+  def getConstructor(elemName: String) =
+    f.get( elemName ) match {
+      case Some(d) => d
+      case _       => {
+        throw new IllegalArgumentException("unrecognized:elemNamehello");
+      }
+    }
 
   /** creates an element. see also compress */
   def   createNode(uri:String,
                    elemName:String,
                    attribs:HashMap[Pair[String,String],String],
                    children:List[Node] ):Node = {
-
       val uri$ = uri.intern();
       val attribs1 = AttributeSeq.fromMap(attribs);
       // 2do:optimize
       if( !compress ) {
         // get constructor
-        val c = f( elemName );
+        val c = getConstructor(elemName);
         c( attribs1, children );
       } else { // do hash-consing
 
@@ -64,7 +83,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
 
             case None =>
               // get constructor
-              val c = f( elemName );
+              val c = getConstructor( elemName );
               val el = c( attribs1, children );
               cache.update( h, el );
               el
