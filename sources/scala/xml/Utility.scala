@@ -34,7 +34,7 @@ object Utility {
   }
 
   /** serializes an instance of Node to a string that contains well-formed XML
-   *  @todo define a way to escape literal characters to &#xxx; references
+   *  @todo define a way to escape literal characters to &amp;xx; references
   */
   def toXML( n:Node ):String = n match {
     case Text( t ) =>
@@ -55,7 +55,8 @@ object Utility {
     }
   }
 
-  /** serializes an instance of Node to a string that contains well-formed XML **/
+  /* serializes an instance of Node to a string that contains well-formed XML
+  **/
 /*
   def toPrettyXML( n:Node, indent:int ):String = { n match {
     case Text( t ) =>
