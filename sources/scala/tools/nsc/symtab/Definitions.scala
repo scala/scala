@@ -13,6 +13,8 @@ abstract class Definitions: SymbolTable {
 
     // root packages and classes
     var RootClass: Symbol = _;
+    var EmptyPackage: Symbol = _;
+    var EmptyPackageClass: Symbol = _;
 
     var JavaPackage: Symbol = _;
     var JavaLangPackage: Symbol = _;
@@ -144,6 +146,13 @@ abstract class Definitions: SymbolTable {
 	NoSymbol.newClass(Position.NOPOS, nme.ROOT.toTypeName)
 	  .setFlag(FINAL | PACKAGE | JAVA).setInfo(rootLoader);
 
+      EmptyPackage =
+	RootClass.newPackage(Position.NOPOS, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL);
+      EmptyPackageClass = EmptyPackage.moduleClass;
+      EmptyPackageClass.setInfo(ClassInfoType(List(), new Scope(), EmptyPackageClass));
+      EmptyPackage.setInfo(EmptyPackageClass.typeConstructor);
+      RootClass.info.decls.enter(EmptyPackage);
+
       JavaPackage = getModule("java");
       JavaLangPackage = getModule("java.lang");
       ScalaPackage = getModule("scala");
@@ -182,6 +191,7 @@ abstract class Definitions: SymbolTable {
       SeqClass = getClass("scala.Seq");
       ListClass = getClass("scala.List");
       ArrayClass = getClass("scala.Array");
+      System.out.println("array class: " + ArrayClass.tpe);//debug
       TypeClass = getClass("scala.Type");
       PredefModule = getModule("scala.Predef");
       ConsoleModule = getModule("scala.Console");

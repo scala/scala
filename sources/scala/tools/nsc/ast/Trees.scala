@@ -225,7 +225,7 @@ class Trees: Global {
        extends TypTree with SymTree;
 
   /** Intersection type, eliminated by RefCheck */
-  case class CompoundTypeTree(parents: List[Tree], decls: List[Tree])
+  case class CompoundTypeTree(templ: Template)
        extends TypTree;
 
   /** Applied type, eliminated by RefCheck */
@@ -270,7 +270,7 @@ class Trees: Global {
   case TypeTree() =>
   case SingletonTypeTree(ref) =>                                  (eliminated by typecheck)
   case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by typecheck)
-  case CompoundTypeTree(parents, decls) =>                        (eliminated by typecheck)
+  case CompoundTypeTree(templ: Template) =>                        (eliminated by typecheck)
   case AppliedTypeTree(tpt, args) =>                               (eliminated by typecheck)
 */
 
@@ -311,87 +311,87 @@ class Trees: Global {
     def TypeTree(tree: Tree): TypeTree;
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree;
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree;
-    def CompoundTypeTree(tree: Tree, parents: List[Tree], decls: List[Tree]): CompoundTypeTree;
+    def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree;
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree;
   }
 
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], tpt: Tree, impl: Template) =
-      { new ClassDef(mods, name, tparams, tpt, impl).setPos(tree.pos) }
+      new ClassDef(mods, name, tparams, tpt, impl).setPos(tree.pos);
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
-      { val t = new PackageDef(name, stats); t.setPos(tree.pos); t }
+      new PackageDef(name, stats).setPos(tree.pos);
     def ModuleDef(tree: Tree, mods: int, name: Name, impl: Template) =
-      { val t = new ModuleDef(mods, name, impl); t.setPos(tree.pos); t }
+      new ModuleDef(mods, name, impl).setPos(tree.pos);
     def ValDef(tree: Tree, mods: int, name: Name, tpt: Tree, rhs: Tree) =
-      { val t = new ValDef(mods, name, tpt, rhs); t.setPos(tree.pos); t }
+      new ValDef(mods, name, tpt, rhs).setPos(tree.pos);
     def DefDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
-      { val t = new DefDef(mods, name, tparams, vparamss, tpt, rhs); t.setPos(tree.pos); t }
+      new DefDef(mods, name, tparams, vparamss, tpt, rhs).setPos(tree.pos);
     def AbsTypeDef(tree: Tree, mods: int, name: Name, lo: Tree, hi: Tree) =
-      { val t = new AbsTypeDef(mods, name, lo, hi); t.setPos(tree.pos); t }
+      new AbsTypeDef(mods, name, lo, hi).setPos(tree.pos);
     def AliasTypeDef(tree: Tree, mods: int, name: Name, tparams: List[AbsTypeDef], rhs: Tree) =
-      { val t = new AliasTypeDef(mods, name, tparams, rhs); t.setPos(tree.pos); t }
+      new AliasTypeDef(mods, name, tparams, rhs).setPos(tree.pos);
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
-      { val t = new LabelDef(name, params, rhs); t.setPos(tree.pos); t }
+      new LabelDef(name, params, rhs).setPos(tree.pos);
     def Import(tree: Tree, expr: Tree, selectors: List[Pair[Name, Name]]) =
-      { val t = new Import(expr, selectors); t.setPos(tree.pos); t }
+      new Import(expr, selectors).setPos(tree.pos);
     def Attributed(tree: Tree, attribute: Tree, definition: Tree) =
-      { val t = new Attributed(attribute, definition); t.setPos(tree.pos); t }
+      new Attributed(attribute, definition).setPos(tree.pos);
     def DocDef(tree: Tree, comment: String, definition: Tree) =
-      { val t = new DocDef(comment, definition); t.setPos(tree.pos); t }
+      new DocDef(comment, definition).setPos(tree.pos);
     def Template(tree: Tree, parents: List[Tree], body: List[Tree]) =
-      { val t = new Template(parents, body); t.setPos(tree.pos); t }
+      new Template(parents, body).setPos(tree.pos);
     def Block(tree: Tree, stats: List[Tree], expr: Tree) =
-      { val t = new Block(stats, expr); t.setPos(tree.pos); t }
+      new Block(stats, expr).setPos(tree.pos);
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) =
-      { val t = new CaseDef(pat, guard, body); t.setPos(tree.pos); t }
+      new CaseDef(pat, guard, body).setPos(tree.pos);
     def Sequence(tree: Tree, trees: List[Tree]) =
-      { val t = new Sequence(trees); t.setPos(tree.pos); t }
+      new Sequence(trees).setPos(tree.pos);
     def Alternative(tree: Tree, trees: List[Tree]) =
-      { val t = new Alternative(trees); t.setPos(tree.pos); t }
+      new Alternative(trees).setPos(tree.pos);
     def Bind(tree: Tree, name: Name, body: Tree) =
-      { val t = new Bind(name, body); t.setPos(tree.pos); t }
+      new Bind(name, body).setPos(tree.pos);
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
-      { val t = new Function(vparams, body); t.setPos(tree.pos); t }
+      new Function(vparams, body).setPos(tree.pos);
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
-      { val t = new Assign(lhs, rhs); t.setPos(tree.pos); t }
+      new Assign(lhs, rhs).setPos(tree.pos);
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
-      { val t = new If(cond, thenp, elsep); t.setPos(tree.pos); t }
+      new If(cond, thenp, elsep).setPos(tree.pos);
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
-      { val t = new Match(selector, cases); t.setPos(tree.pos); t }
+      new Match(selector, cases).setPos(tree.pos);
     def Return(tree: Tree, expr: Tree) =
-      { val t = new Return(expr); t.setPos(tree.pos); t }
+      new Return(expr).setPos(tree.pos);
     def Try(tree: Tree, block: Tree, catches: List[CaseDef], finalizer: Tree) =
-      { val t = new Try(block, catches, finalizer); t.setPos(tree.pos); t }
+      new Try(block, catches, finalizer).setPos(tree.pos);
     def Throw(tree: Tree, expr: Tree) =
-      { val t = new Throw(expr); t.setPos(tree.pos); t }
+      new Throw(expr).setPos(tree.pos);
     def New(tree: Tree, tpt: Tree) =
-      { val t = new New(tpt); t.setPos(tree.pos); t }
+      new New(tpt).setPos(tree.pos);
     def Typed(tree: Tree, expr: Tree, tpt: Tree) =
-      { val t = new Typed(expr, tpt); t.setPos(tree.pos); t }
+      new Typed(expr, tpt).setPos(tree.pos);
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
-      { val t = new TypeApply(fun, args); t.setPos(tree.pos); t }
+      new TypeApply(fun, args).setPos(tree.pos);
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
-      { val t = new Apply(fun, args); t.setPos(tree.pos); t }
+      new Apply(fun, args).setPos(tree.pos);
     def Super(tree: Tree, qual: Name, mixin: Name) =
-      { val t = new Super(qual, mixin); t.setPos(tree.pos); t }
+      new Super(qual, mixin).setPos(tree.pos);
     def This(tree: Tree, qual: Name) =
-      { val t = new This(qual); t.setPos(tree.pos); t }
+      new This(qual).setPos(tree.pos);
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
-      { val t = new Select(qualifier, selector); t.setPos(tree.pos); t }
+      new Select(qualifier, selector).setPos(tree.pos);
     def Ident(tree: Tree, name: Name) =
-      { val t = new Ident(name); t.setPos(tree.pos); t }
+      new Ident(name).setPos(tree.pos);
     def Literal(tree: Tree, value: Any) =
-      { val t = new Literal(value); t.setPos(tree.pos); t }
+      new Literal(value).setPos(tree.pos);
     def TypeTree(tree: Tree) =
-      { val t = new TypeTree(); t.setPos(tree.pos); t }
+      new TypeTree().setPos(tree.pos);
     def SingletonTypeTree(tree: Tree, ref: Tree) =
-      { val t = new SingletonTypeTree(ref); t.setPos(tree.pos); t }
+      new SingletonTypeTree(ref).setPos(tree.pos);
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
-      { val t = new SelectFromTypeTree(qualifier, selector); t.setPos(tree.pos); t }
-    def CompoundTypeTree(tree: Tree, parents: List[Tree], decls: List[Tree]) =
-      { val t = new CompoundTypeTree(parents, decls); t.setPos(tree.pos); t }
+      new SelectFromTypeTree(qualifier, selector).setPos(tree.pos);
+    def CompoundTypeTree(tree: Tree, templ: Template) =
+      new CompoundTypeTree(templ).setPos(tree.pos);
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =
-      { val t = new AppliedTypeTree(tpt, args); t.setPos(tree.pos); t }
+      new AppliedTypeTree(tpt, args).setPos(tree.pos)
   }
 
   class LazyTreeCopier(copy: TreeCopier) extends TreeCopier {
@@ -575,10 +575,10 @@ class Trees: Global {
       if ((qualifier0 == qualifier) && (selector0 == selector)) => t
       case _ => copy.SelectFromTypeTree(tree, qualifier, selector)
     }
-    def CompoundTypeTree(tree: Tree, parents: List[Tree], decls: List[Tree]) = tree match {
-      case t @ CompoundTypeTree(parents0, decls0)
-      if ((parents0 == parents) && (decls0 == decls)) => t
-      case _ => copy.CompoundTypeTree(tree, parents, decls)
+    def CompoundTypeTree(tree: Tree, templ: Template) = tree match {
+      case t @ CompoundTypeTree(templ0)
+      if (templ0 == templ) => t
+      case _ => copy.CompoundTypeTree(tree, templ)
     }
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) = tree match {
       case t @ AppliedTypeTree(tpt0, args0)
@@ -664,8 +664,8 @@ class Trees: Global {
         copy.SingletonTypeTree(tree, transform(ref))
       case SelectFromTypeTree(qualifier, selector) =>
         copy.SelectFromTypeTree(tree, transform(qualifier), selector)
-      case CompoundTypeTree(parents, decls) =>
-        copy.CompoundTypeTree(tree, transformTrees(parents), transformTrees(decls))
+      case CompoundTypeTree(templ) =>
+        copy.CompoundTypeTree(tree, transformTemplate(templ))
       case AppliedTypeTree(tpt, args) =>
         copy.AppliedTypeTree(tree, transform(tpt), transformTrees(args))
     }
@@ -750,8 +750,8 @@ class Trees: Global {
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>
         traverse(qualifier)
-      case CompoundTypeTree(parents, decls) =>
-        traverseTrees(parents); traverseTrees(decls)
+      case CompoundTypeTree(templ) =>
+        traverse(templ)
       case AppliedTypeTree(tpt, args) =>
         traverse(tpt); traverseTrees(args)
       case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | TypeTree() =>

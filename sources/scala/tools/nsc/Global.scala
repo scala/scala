@@ -11,7 +11,7 @@ import scala.tools.util._;
 import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
 import symtab._;
-import symtab.classfile.Pickle;
+import symtab.pickles.{PickleBuffer, Pickles};
 import util._;
 import ast._;
 import ast.parser._;
@@ -38,6 +38,10 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object pickles extends Pickles {
+    val global: Global.this.type = Global.this
+  }
+
   val copy = new LazyTreeCopier();
 
   type AttrInfo = Pair[Type, List[Any]];
@@ -45,15 +49,16 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
 // reporting -------------------------------------------------------
 
-  def informTime(msg: String, start: long) = {
-    val end = System.currentTimeMillis();
-    reporter.info(null, "[" + msg + " in " + (end - start) + "ms]", false);
-  }
 
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);
-  def inform(msg: String) = reporter.info(null, msg, true);
+  private def inform(msg: String) = reporter.info(null, msg, true);
 
+  def informProgress(msg: String) =
+    if (settings.verbose.value) inform("[" + msg + "]");
+
+  def informTime(msg: String, start: long) =
+    informProgress(msg + " in " + (System.currentTimeMillis() - start) + "ms");
 
   def log(msg: String) =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
@@ -127,6 +132,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
   val namerPhase = new analyzer.NamerPhase(parserPhase);
   val typeCheckPhase = new analyzer.TypeCheckPhase(namerPhase);
+  val picklePhase = new pickles.PicklePhase(typeCheckPhase);
 
   val terminalPhase = new StdPhase(typeCheckPhase) {
     def name = "terminal";
@@ -150,7 +156,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   val symSource = new HashMap[Symbol, AbstractFile];
 
   /** A map from compiled top-level symbols to their picklers */
-  val symData = new HashMap[Symbol, Pickle];
+  val symData = new HashMap[Symbol, PickleBuffer];
 
   def compileSources(sources: List[SourceFile]): unit = {
     val startTime = System.currentTimeMillis();
@@ -164,19 +170,25 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     phase = NoPhase.next;
     while (phase != terminalPhase && reporter.errors() == 0) {
-      val startTime = System.currentTimeMillis();
-      if (!(settings.skip contains phase.name)) phase.run;
-      if (settings.print contains phase.name) treePrinter.printAll();
-      if (settings.check contains phase.name) checkTrees;
-      informTime(phase.description, startTime);
+      if (!(settings.skip contains phase.name)) {
+	val startTime = System.currentTimeMillis();
+	phase.run;
+	if (settings.print contains phase.name) treePrinter.printAll();
+	if (settings.check contains phase.name) checkTrees;
+	informTime(phase.description, startTime);
+      }
       phase = if (settings.stop contains phase.name) terminalPhase else phase.next;
     }
     if (settings.Xshowcls.value != "") showDef(newTermName(settings.Xshowcls.value), false);
     if (settings.Xshowobj.value != "") showDef(newTermName(settings.Xshowobj.value), true);
 
-    if (reporter.errors() != 0)
+    if (reporter.errors() == 0) {
+      for (val Pair(sym, pickled) <- symData.elements)
+	writeSymblFile(sym, pickled)
+    } else {
       for (val Pair(sym, file) <- symSource.elements)
 	sym.reset(loaders.sourcefileLoader(file));
+    }
     informTime("total", startTime);
   }
 
@@ -204,8 +216,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     }
 
   def checkTrees: unit =
-    for (val unit <- units; val tree <- unit.body)
-      treeChecker.traverse(tree);
+    for (val unit <- units) treeChecker.traverse(unit.body);
 
   def showDef(name: Name, module: boolean): unit = {
     def getSym(name: Name, module: boolean): Symbol = {
@@ -223,5 +234,25 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     val sym = getSym(name, module);
     System.err.println("" + sym.name + ":" +
 		       (if (module) sym.tpe.symbol.info else sym.info))
+  }
+
+  /** Returns the file with the given suffix for the given class. */
+  private def getFile(clazz: Symbol, suffix: String) =
+    new File(
+      settings.outdir.value + File.separatorChar +
+      clazz.fullNameString(File.separatorChar) + suffix);
+
+  private def writeSymblFile(clazz: Symbol, pickled: PickleBuffer) = {
+    val file = getFile(clazz, ".symbl");
+    try {
+      val stream = new FileOutputStream(file);
+      stream.write(pickled.bytes, 0, pickled.writeIndex);
+      stream.close();
+      informProgress("wrote " + file);
+    } catch {
+      case ex: IOException =>
+      if (settings.debug.value) ex.printStackTrace();
+      error("could not write file " + file);
+    }
   }
 }

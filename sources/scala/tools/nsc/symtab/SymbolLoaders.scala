@@ -62,30 +62,31 @@ abstract class SymbolLoaders {
     new SymbolLoader(root => {
       System.out.println("loading " + root);//debug
       assert(root.isPackageClass, root);
-      val members = new Scope();
-      root.setInfo(new PackageClassInfoType(members, root));
+      root.setInfo(new PackageClassInfoType(new Scope(), root));
 
       def enterPackage(str: String, completer: SymbolLoader): unit = {
         val pkg = root.newPackage(Position.NOPOS, newTermName(str));
         pkg.moduleClass.setInfo(completer);
         pkg.setInfo(pkg.moduleClass.tpe);
-        members.enter(pkg)
+        root.info.decls.enter(pkg)
       }
 
       def enterClassAndModule(str: String, completer: SymbolLoader): unit = {
+	val owner = if (root.isRoot) definitions.EmptyPackageClass else root;
 	val name = newTermName(str);
-        val clazz = root.newClass(Position.NOPOS, name.toTypeName);
-        val module = root.newModule(Position.NOPOS, name);
+        val clazz = owner.newClass(Position.NOPOS, name.toTypeName);
+        val module = owner.newModule(Position.NOPOS, name);
         clazz.setInfo(completer);
 	module.setInfo(completer);
         module.moduleClass.setInfo(errorLoader);
-        members.enter(clazz);
-        members.enter(module);
+        owner.info.decls.enter(clazz);
+        owner.info.decls.enter(module);
 	assert(clazz.linkedModule == module);
 	assert(module.linkedClass == clazz);
       }
 
       val sources  = new HashMap[String, AbstractFile];
+      val symbols  = new HashMap[String, AbstractFile];
       val classes  = new HashMap[String, AbstractFile];
       val packages = new HashMap[String, AbstractFile];
       val it = directory.list();
@@ -93,13 +94,15 @@ abstract class SymbolLoaders {
         val file = it.next().asInstanceOf[AbstractFile];
         val filename = file.getName();
         if (file.isDirectory()) {
-          if (filename != "META_INF") {
-            if (!packages.isDefinedAt(filename)) packages(filename) = file;
-          }
-        } else if (!root.isRoot && filename.endsWith(".class")) {
+          if (filename != "META_INF" && !packages.isDefinedAt(filename)) packages(filename) = file;
+        } else if (filename.endsWith(".symbl")) {
+          val name = filename.substring(0, filename.length() - 6);
+          if (!symbols.isDefinedAt(name) ||
+	      symbols(name).getName().endsWith(".class")) symbols(name) = file;
+        } else if (filename.endsWith(".class")) {
           val name = filename.substring(0, filename.length() - 6);
           if (!classes.isDefinedAt(name)) classes(name) = file;
-        } else if (!root.isRoot && filename.endsWith(".scala")) {
+        } else if (filename.endsWith(".scala")) {
           val name = filename.substring(0, filename.length() - 6);
           if (!sources.isDefinedAt(name)) sources(name) = file;
         }

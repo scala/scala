@@ -19,7 +19,7 @@ class CompilationUnits: Global {
     val fresh = new FreshNameCreator;
 
     /** the content of the compilation unit in tree form */
-    var body: List[Tree] = List();
+    var body: Tree = EmptyTree;
 
     def position(pos: int) = new Position(source, pos);
 

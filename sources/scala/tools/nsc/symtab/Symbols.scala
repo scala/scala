@@ -109,6 +109,7 @@ abstract class Symbols: SymbolTable {
     final def isModuleClass = isClass && (rawflags & MODULE) != 0;
     final def isPackageClass = isClass && (rawflags & PACKAGE) != 0;
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName;
+    final def isEmptyPackage = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName;
 
     /** Does this symbol denote a stable value? */
     final def isStable =
@@ -188,7 +189,7 @@ abstract class Symbols: SymbolTable {
     final def info: Type = {
       var cnt = 0;
       while ((rawflags & INITIALIZED) == 0) {
-        assert(infos != null, "infos null for " + this.name);//debug
+        assert(infos != null, "infos null for " + this.name + " " + (this == definitions.EmptyPackageClass));//debug
 	val tp = infos.info;
         if ((rawflags & LOCKED) != 0) {
           setInfo(ErrorType);
@@ -588,7 +589,9 @@ abstract class Symbols: SymbolTable {
     override def tpe: Type = {
       if (valid != phase) {
         valid = phase;
-        tpeCache = typeRef(owner.thisType, this, typeParams map (.tpe))
+        val tparams = typeParams;
+        tpeCache = typeRef(owner.thisType, this, tparams map (.tpe));
+        if (!tparams.isEmpty) tpeCache = PolyType(tparams, tpeCache);
       }
       tpeCache
     }

@@ -18,7 +18,4 @@ abstract class Analyzer
 	 with Variances
          with EtaExpansion {
   val global: Global;
-  import global._;
-
-  case class ImportType(tree: Import) extends Type;
 }

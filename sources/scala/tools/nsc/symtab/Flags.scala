@@ -69,6 +69,7 @@ object Flags {
   val ACCESSFLAGS   = PRIVATE | PROTECTED;
   val VARIANCES     = COVARIANT | CONTRAVARIANT;
   val CONSTRFLAGS   = JAVA;
+  val PICKLEDFLAGS  = 0x77777777 & ~LOCKED & ~INITIALIZED;
 
   /** Flags already set by object creation and never set afterwards */
   val CREATIONFLAGS = ACCESSFLAGS | METHOD | MODULE | MUTABLE | PARAM | PACKAGE |

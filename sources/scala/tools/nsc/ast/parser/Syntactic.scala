@@ -61,14 +61,12 @@ abstract class Syntactic: ParserPhase {
     }
     import treeBuilder._;
 
-
-
     /** this is the general parse method
      */
-    def parse(): List[Tree] = {
-      val ts = compilationUnit();
+    def parse(): Tree = {
+      val t = compilationUnit();
       accept(EOF);
-      ts
+      t
     }
 
 /////// ERROR HANDLING //////////////////////////////////////////////////////
@@ -498,7 +496,7 @@ abstract class Syntactic: ParserPhase {
 	in.nextToken(); ts += simpleType()
       }
       atPos(pos) {
-        if (in.token == LBRACE) CompoundTypeTree(ts.toList, refinement())
+        if (in.token == LBRACE) CompoundTypeTree(Template(ts.toList, refinement()))
         else makeIntersectionTypeTree(ts.toList)
       }
     }
@@ -1710,25 +1708,25 @@ abstract class Syntactic: ParserPhase {
       stats.toList
     }
 
-    /** CompilationUnit ::= [ package QualId ( `;' | `{' TopStatSeq `}' ) ] TopStatSeq .
+    /** CompilationUnit ::= package QualId `;' TopStatSeq
+     *                    | package QualId `{' TopStatSeq `}'
+     *                    | TopStatSeq
      */
-    def compilationUnit(): List[Tree] = {
+    def compilationUnit(): Tree = {
       if (in.token == PACKAGE) {
         val pos = in.skipToken();
         val pkg = qualId();
         if (in.token == SEMI) {
           in.nextToken();
-          List(makePackaging(pkg, topStatSeq()) setPos pos);
+          makePackaging(pkg, topStatSeq()) setPos pos;
         } else {
-          val stats = new ListBuffer[Tree];
           accept(LBRACE);
-          stats += atPos(pos) { makePackaging(pkg, topStatSeq()) }
+          val t =  makePackaging(pkg, topStatSeq());
           accept(RBRACE);
-          stats ++= topStatSeq();
-          stats.toList
+	  t
         }
       } else {
-        topStatSeq()
+        makePackaging(Ident(nme.EMPTY_PACKAGE_NAME), topStatSeq())
       }
     }
   }

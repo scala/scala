@@ -863,6 +863,15 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
     gen.DefDef(hashCodeSym, body)
   }
 
+  private def isTrueSubClassOfCaseClass(clazz: Symbol): boolean = {
+    val cl = clazz.closure();
+    var i = 1; while (i < cl.length) {
+      if (cl(i).symbol().isCaseClass()) return true;
+      i = i + 1
+    }
+    false
+  }
+
   private def addSyntheticMethods(templ: Template, clazz: ClassSymbol): Template = {
     val ts = new TreeList();
     if (clazz.isCaseClass()) {
@@ -883,7 +892,10 @@ class RefCheck(globl: scalac.Global) extends Transformer(globl) {
       if (global.target != Global.TARGET_MSIL)
         ts.append(getTypeMethod(clazz));
     } else if ((clazz.flags & ABSTRACT) == 0) {
-      ts.append(gen.mkTagMethod(clazz));
+      if (!isTrueSubClassOfCaseClass(clazz)) {
+        System.out.println("" + clazz + " gets tag method");
+        ts.append(gen.mkTagMethod(clazz));
+      }
       if (global.target != Global.TARGET_MSIL)
         ts.append(getTypeMethod(clazz));
     }

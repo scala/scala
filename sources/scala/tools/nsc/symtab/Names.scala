@@ -5,6 +5,7 @@
 // $Id$
 package scala.tools.nsc.symtab;
 
+import scala.tools.util.UTF8Codec;
 import scala.tools.nsc.util.NameTransformer;
 
 class Names {
@@ -84,6 +85,14 @@ class Names {
   def newTermName(s: String): Name =
     newTermName(s.toCharArray(), 0, s.length());
 
+  /** create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
+   */
+  def newTermName(bs: Array[byte], offset: int, len: int): Name = {
+    val cs = new Array[char](bs.length);
+    val nchrs = UTF8Codec.decode(bs, offset, cs, 0, len);
+    newTermName(cs, 0, nchrs)
+  }
+
   /** create a type name from the characters in cs[offset..offset+len-1].
    */
   def newTypeName(cs: Array[char], offset: int, len: int): Name = {
@@ -102,6 +111,14 @@ class Names {
    */
   def newTypeName(s: String): Name =
     newTypeName(s.toCharArray(), 0, s.length());
+
+  /** create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1].
+   */
+  def newTypeName(bs: Array[byte], offset: int, len: int): Name = {
+    val cs = new Array[char](bs.length);
+    val nchrs = UTF8Codec.decode(bs, offset, cs, 0, len);
+    newTypeName(cs, 0, nchrs)
+  }
 
   def nameChars: Array[char] = chrs;
 
@@ -145,6 +162,14 @@ class Names {
     /** return the string representation of this name
      */
     final override def toString(): String = new String(chrs, index, len);
+
+    /** Write to UTF8 representation of this name to given character array.
+     *  Start copying to index `to'. Return index of next free byte in array.
+     *  Array must have enough remaining space for all bytes
+     *  (i.e. maximally 3*length bytes).
+     */
+    final def copyUTF8(bs: Array[byte], offset: int): int =
+      UTF8Codec.encode(chrs, index, bs, offset, len);
 
     /** return the hash value of this name
      */

@@ -270,7 +270,7 @@ abstract class Types: SymbolTable {
     def cloneInfo(owner: Symbol) = this;
 
     /** The string representation of this type used as a prefix */
-    def prefixString = toString() + ".";
+    def prefixString = toString() + "#";
 
     /** The string representation of this type, with singletypes explained */
     def toLongString = {
@@ -375,6 +375,7 @@ abstract class Types: SymbolTable {
     override def isStable: boolean = true;
     override def widen: Type = singleDeref.widen;
     override def closure: Array[Type] = addClosure(this, supertype.closure);
+    override def toString(): String = prefixString + "type";
   }
 
   /** An object representing an erroneous type */
@@ -409,10 +410,12 @@ abstract class Types: SymbolTable {
   case class ThisType(sym: Symbol) extends SingletonType {
     override def symbol = sym;
     override def singleDeref: Type = sym.typeOfThis;
-    override def toString(): String =
-      if (!settings.debug.value &&
-	  (sym.isAnonymousClass || sym.isRefinementClass)) "this.type"
-      else sym.nameString + ".this.type";
+    override def prefixString =
+      if (settings.debug.value) sym.nameString + ".this.";
+      else if (sym.isRoot) ""
+      else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
+      else if (sym.isPackageClass) sym.fullNameString('.') + "."
+      else sym.nameString + ".this.";
     override def narrow: Type = this;
   }
 
@@ -432,8 +435,7 @@ abstract class Types: SymbolTable {
     }
     override def symbol = sym;
     override def prefix: Type = pre;
-    override def toString(): String =
-      pre.prefixString + sym.nameString + ".type";
+    override def prefixString: String = pre.prefixString + sym.nameString + ".";
   }
 
   /** A class for the bounds of abstract types and type parameters
@@ -469,6 +471,7 @@ abstract class Types: SymbolTable {
         validClosure = phase;
         closureCache = null;
         closureCache = computeClosure;
+	System.out.println("closure(" + symbol + ") = " + List.fromArray(closureCache));//debug
       }
       if (closureCache == null)
         throw new TypeError("illegal cyclic reference involving " + symbol);
@@ -541,10 +544,12 @@ abstract class Types: SymbolTable {
     override def toString(): String = base.toString() + "(" + value + ")";
   }
 
+  class ExtTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends TypeRef(pre, sym, args);
+
   /** A class for named types of the form <prefix>.<sym.name>[args]
    *  Cannot be created directly; one should always use `typeRef' for creation.
    */
-  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
+  case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
     assert(!sym.isAbstractType || pre.isStable || pre.isError);
 
     def transform(tp: Type): Type =
@@ -707,7 +712,7 @@ abstract class Types: SymbolTable {
       sym1.resetFlag(LOCKED);
       result
     } else {
-      new TypeRef(pre, sym1, args) {}
+      new ExtTypeRef(pre, sym1, args) {}
     }
   }
 
@@ -734,8 +739,8 @@ abstract class Types: SymbolTable {
 
   /** A creator for type applications */
   def appliedType(tycon: Type, args: List[Type]): Type = tycon match {
-    case TypeRef(pre, sym, args1) =>
-      if (args eq args1) tycon else typeRef(pre, sym, args)
+    case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
+    case PolyType(tparams, restpe) => restpe.subst(tparams, args)
     case ErrorType => tycon
   }
 
@@ -841,11 +846,11 @@ abstract class Types: SymbolTable {
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     def apply(tp: Type): Type =
-      if (pre == NoType || !clazz.isClass) tp
+      if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
       else tp match {
         case ThisType(sym) =>
           def toPrefix(pre: Type, clazz: Symbol): Type =
-            if (pre == NoType || !clazz.isClass) tp
+            if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
             else if ((sym isSubClass clazz) && (pre.widen.symbol isSubClass sym)) pre
             else toPrefix(pre.baseType(clazz).prefix, clazz.owner);
           toPrefix(pre, clazz)
@@ -857,7 +862,7 @@ abstract class Types: SymbolTable {
           }
 	case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
 	  def toInstance(pre: Type, clazz: Symbol): Type =
-	    if (pre == NoType || !clazz.isClass) tp
+	    if (pre == NoType || pre == NoPrefix || !clazz.isClass) tp
 	    else {
 	      val symclazz = sym.owner;
 	      def throwError =
@@ -1093,7 +1098,7 @@ abstract class Types: SymbolTable {
         sym2.isAbstractType && (tp1 <:< tp2.bounds.lo)
         ||
         sym2.isClass &&
-          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
+          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })//debug
         ||
         sym1 == AllClass
         ||
@@ -1118,10 +1123,15 @@ abstract class Types: SymbolTable {
         (parents2 forall tp1.<:<) && (ref2.toList forall tp1.specializes)
       case Pair(RefinedType(parents1, ref1), _) =>
         parents1 exists (.<:<(tp2))
+      /* todo: replace following with
       case Pair(ThisType(_), _)
          | Pair(SingleType(_, _), _)
          | Pair(ConstantType(_, _), _) =>
-        tp1.singleDeref <:< tp2
+	 once patern matching bug is fixed */
+      case Pair(ThisType(_), _) => tp1.singleDeref <:< tp2
+      case Pair(SingleType(_, _), _) => tp1.singleDeref <:< tp2
+      case Pair(ConstantType(_, _), _) => tp1.singleDeref <:< tp2
+
       case Pair(TypeRef(pre1, sym1, args1), _) =>
         sym1 == AllClass && tp2 <:< AnyClass.tpe
         ||
@@ -1176,7 +1186,7 @@ abstract class Types: SymbolTable {
     val cl1 = new Array[Type](cl.length + 1);
     cl1(0) = tp;
     System.arraycopy(cl, 0, cl1, 1, cl.length);
-    cl
+    cl1
   }
 
 // Lubs and Glbs ---------------------------------------------------------

@@ -11,6 +11,7 @@ abstract class ParserPhase(prev: Phase)
 	    with Syntactic {
     def name = "parser";
     def apply(unit: global.CompilationUnit): unit = {
+      global.informProgress("parsing " + unit);
       unit.body = new Parser(unit).parse();
     }
 }

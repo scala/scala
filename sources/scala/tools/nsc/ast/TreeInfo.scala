@@ -156,27 +156,4 @@ abstract class TreeInfo {
     case AppliedTypeTree(fn, _) => methPart(fn)
     case _ => tree
   }
-
-  /** Is name imported explicitly, not via wildcard? */
-  def isExplicitImport(tree: Import, name: Name): boolean =
-    tree.selectors exists (._2.==(name.toTermName));
-
-  /** The symbol with name `name' imported from import clause `tree'.
-   */
-  def importedSymbol(tree: Import, name: Name): Symbol = {
-    var result: Symbol = NoSymbol;
-    var renamed = false;
-    var selectors = tree.selectors;
-    while (selectors != Nil && result == NoSymbol) {
-      if (selectors.head._2 == name.toTermName)
-	result = tree.expr.tpe.member(
-          if (name.isTypeName) selectors.head._1.toTypeName else selectors.head._1);
-      else if (selectors.head._1 == name.toTermName)
-        renamed = true
-      else if (selectors.head._1 == nme.WILDCARD && !renamed)
-        result = tree.expr.tpe.member(name);
-      selectors = selectors.tail
-    }
-    result
-  }
 }

@@ -54,7 +54,7 @@ trait Typers: Analyzer {
     }
 
     private def deconstIfNotFinal(sym: Symbol, tpe: Type): Type =
-      if (sym.isVariable || !sym.hasFlag(FINAL)) tpe.deconst else tpe;
+      if (sym.isVariable || (sym.rawflags & FINAL) == 0) tpe.deconst else tpe;
 
 
     private def enterTypeParams(owner: Symbol, tparams: List[AbsTypeDef]): List[Symbol] = {
@@ -102,9 +102,11 @@ trait Typers: Analyzer {
       val tparamSyms = enterTypeParams(meth, tparams);
       val vparamSymss = enterValueParams(meth, vparamss);
       val restype = deconstIfNotFinal(meth,
-	if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
-	else if (tpt.isEmpty) { tpt.tpe = typechecker.transformExpr(rhs).tpe; tpt.tpe }
-	else typechecker.transformType(tpt, meth).tpe);
+	if (tpt.isEmpty) {
+	  tpt.tpe = if (meth.name == nme.CONSTRUCTOR) context.enclClass.owner.tpe
+		    else typechecker.transformExpr(rhs).tpe;
+	  tpt.tpe
+	} else typechecker.transformType(tpt, meth).tpe);
       def mkMethodType(vparams: List[Symbol], restpe: Type) =
 	MethodType(vparams map (.tpe), restpe);
       makePolyType(
@@ -151,18 +153,21 @@ trait Typers: Analyzer {
             TypeBounds(typechecker.transformType(lo, sym).tpe,
                        typechecker.transformType(hi, sym).tpe);
 
-	  case imptree @ Import(expr, selectors) =>
-            val expr1 = typechecker.transformExpr(expr);
+          case Import(expr, selectors) =>
+            val expr1 = typechecker.transformQualExpr(expr);
 	    val base = expr1.tpe;
             typechecker.checkStable(expr1);
-            for (val Pair(from, to) <- selectors) {
-	      if (from != nme.WILDCARD && base != ErrorType &&
-		  base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
-	        unit.error(tree.pos, from.decode + " is not a member of " + expr);
-	      if (to != null && to != nme.WILDCARD &&  (selectors exists (p => p._2 == to)))
-		unit.error(tree.pos, to.decode + " appears twice as a target of a renaming");
+            def checkSelectors(selectors: List[Pair[Name, Name]]): unit = selectors match {
+              case Pair(from, to) :: rest =>
+                if (from != nme.WILDCARD && base != ErrorType &&
+		    base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
+	          unit.error(tree.pos, from.decode + " is not a member of " + expr);
+	        if (to != null && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
+		  unit.error(tree.pos, to.decode + " appears twice as a target of a renaming");
+                checkSelectors(rest)
+              case Nil =>
 	    }
-            ImportType(imptree)
+            expr1.tpe
         }
       } catch {
         case ex: TypeError =>

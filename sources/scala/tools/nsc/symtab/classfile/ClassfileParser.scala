@@ -30,10 +30,6 @@ abstract class ClassfileParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
-  private object unpickle extends UnPickle {
-    val global: ClassfileParser.this.global.type = ClassfileParser.this.global
-  }
-
   def parse(file: AbstractFile, root: Symbol): unit = {
     assert(!busy);
     busy = true;
@@ -111,10 +107,7 @@ abstract class ClassfileParser {
       if (name == null) {
         val start = starts(index);
         if (in.buf(start) != CONSTANT_UTF8) errorBadTag(start);
-        val len = in.getChar(start + 1);
-        val cs = new Array[char](len);
-        val defined = UTF8Codec.decode(in.buf, start + 3, cs, 0, len);
-        name = newTermName(cs, 0, defined);
+        name = newTermName(in.buf, start + 3, in.getChar(start + 1));
         values(index) = name;
       }
       name

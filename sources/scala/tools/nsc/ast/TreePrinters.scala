@@ -119,7 +119,7 @@ abstract class TreePrinters {
 
         case DefDef(mods, name, tparams, vparams, tp, rhs) =>
           printModifiers(mods);
-          print("def " + (if (name == nme.CONSTRUCTOR) "this" else symName(tree, name)));
+          print("def " + symName(tree, name));
           printTypeParams(tparams); vparams foreach printValueParams;
           printOpt(": ", tp); printOpt(" = ", rhs);
 
@@ -147,7 +147,8 @@ abstract class TreePrinters {
           print(comment); println; print(definition);
 
         case Template(parents, body) =>
-          printRow(parents, " with "); printColumn(body, " {", ";", "}");
+          printRow(parents, " with ");
+          if (!body.isEmpty) printColumn(body, "{", ";", "}")
 
         case Block(stats, expr) =>
           printColumn(stats ::: List(expr), "{", ";", "}")
@@ -231,7 +232,8 @@ abstract class TreePrinters {
           })
 
         case TypeTree() =>
-          print(tree.tpe.toString());
+	  if (tree.tpe == null) print("<type ?>")
+          else print(tree.tpe.toString());
 
         case SingletonTypeTree(ref) =>
           print(ref); print(".type")
@@ -239,9 +241,8 @@ abstract class TreePrinters {
         case SelectFromTypeTree(qualifier, selector) =>
           print(qualifier); print("#"); print(symName(tree, selector))
 
-        case CompoundTypeTree(parents, decls) =>
-          printRow(parents, " with ");
-          if (!decls.isEmpty) printColumn(decls, "{", ";", "}")
+        case CompoundTypeTree(templ) =>
+          print(templ)
 
         case AppliedTypeTree(tp, args) =>
           print(tp); printRow(args, "[", ", ", "]")
@@ -254,7 +255,7 @@ abstract class TreePrinters {
     def print(unit: CompilationUnit): unit = {
       print("// Scala source: " + unit.source + "\n");
       if (unit.body != null) {
-        unit.body foreach { tree => print(tree); print(";"); println }
+        print(unit.body); println
       } else {
         print("<null>")
       }

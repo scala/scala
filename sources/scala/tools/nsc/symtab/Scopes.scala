@@ -32,6 +32,10 @@ abstract class Scopes: SymbolTable {
 
     var elems: ScopeEntry = initElems;
 
+    /** The number of times this scope is neted in another
+     */
+    private var nestinglevel = 0;
+
     /** the hash table
      */
     private var hashtable: Array[ScopeEntry] = null;
@@ -60,6 +64,7 @@ abstract class Scopes: SymbolTable {
 	this.hashtable = new Array[ScopeEntry](HASHSIZE);
         System.arraycopy(base.hashtable, 0, this.hashtable, 0, HASHSIZE);
       }
+      nestinglevel = base.nestinglevel + 1
     }
 
     def this(decls: List[Symbol]) = {
@@ -204,6 +209,10 @@ abstract class Scopes: SymbolTable {
 
     override def toString(): String =
       toList.map(.defString).mkString("{\n  ", ";\n  ", "\n}");
+
+    /** Return the nesting level of this scope, i.e. the number of times this scope
+     *  was nested in another */
+    def nestingLevel = nestinglevel;
   }
 
   /** The empty scope (immutable).

@@ -42,7 +42,7 @@ object Main {
 	    ex.printStackTrace();
 	  System.out.println("fatal error: " + msg);
       }
-      reporter.printSummary
+      reporter.printSummary()
     }
   }
 
