@@ -8,8 +8,12 @@
 
 package scalac.util;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import scala.tools.util.AbstractFile;
 
@@ -41,6 +45,52 @@ public class ClassPath {
     /** The default extension directory path */
     public static final String EXTDIRS =
         System.getProperty("java.ext.dirs", "");
+
+    //########################################################################
+    // Public Functions
+
+    /**
+     * Adds all zip and jar archives found in the specified extension
+     * directory path to the specified file set. See also remark about
+     * file order in method "addFilesFromPath".
+     */
+    public static void addArchivesInExtDirPath(Set/*<File>*/files,String path){
+        Set extdirs = new LinkedHashSet();
+        addFilesInPath(extdirs, path);
+        for (Iterator i = extdirs.iterator(); i.hasNext(); )
+            addArchivesInExtDir(files, (File)i.next());
+    }
+
+    /**
+     * Adds all zip and jar archives found in the specified extension
+     * directory to the specified file set. See also remark about file
+     * order in method "addFilesFromPath".
+     */
+    public static void addArchivesInExtDir(Set/*<File>*/ files, File extdir) {
+        String[] names = extdir.list();
+        if (names == null) return;
+        for (int i = 0; i < names.length; i++) {
+            if (names[i].endsWith(".jar") || names[i].endsWith(".zip")) {
+                File archive = new File(extdir, names[i]);
+                if (archive.isFile()) files.add(archive);
+            }
+        }
+    }
+
+    /**
+     * Parses the specified path and adds all files that exist to the
+     * specified file set. If order needs to be preserved, one should
+     * pass in an order preserving implementation of Set.
+     */
+    public static void addFilesInPath(Set/*<File>*/ files, String path) {
+        path += PATH_SEPARATOR;
+        for (int i = 0; i < path.length(); ) {
+            int j = path.indexOf(PATH_SEPARATOR, i);
+            File file = new File(path.substring(i, j));
+            if (file.exists()) files.add(file);
+            i = j + 1;
+        }
+    }
 
     //########################################################################
     // Private Functions
@@ -92,67 +142,21 @@ public class ClassPath {
                     path.substring(1, index + 1) + BOOTCLASSPATH +
                     path.substring(index + 1, path.length() - 1);
         }
-        String path = "";
-        path = appendPath(path, bootclasspath);
-        path = appendExtDirs(path, extdirs);
-        path = appendPath(path, classpath);
-        path = appendPath(path, sourcepath);
-        root = parse(path.substring(1));
-    }
-
-    /** append an additional path
-     */
-    protected static String appendPath(String path, String addpath) {
-        return addpath == null ? path : path + PATH_SEPARATOR + addpath;
-    }
-
-    /** append files from the extension directories
-     */
-    protected String appendExtDirs(String path, String extdirs) {
-        if (extdirs != null) {
-            extdirs += PATH_SEPARATOR;
-            int length = extdirs.length();
-            int i = 0;
-            while (i < length) {
-                int k = extdirs.indexOf(PATH_SEPARATOR, i);
-                String dirname = extdirs.substring(i, k);
-                String[] ext;
-                if ((dirname != null) &&
-                    (dirname.length() > 0) &&
-                    ((ext = new File(dirname).list()) != null)) {
-                    if (!dirname.endsWith(FILE_SEPARATOR))
-                        dirname += FILE_SEPARATOR;
-                    for (int j = 0; j < ext.length; j++)
-                        if (ext[j].endsWith(".jar") ||
-                            ext[j].endsWith(".zip"))
-                            path = appendPath(path, dirname + ext[j]);
-                }
-                i = k + 1;
-            }
+        Set files = new LinkedHashSet();
+        addFilesInPath(files, bootclasspath);
+        addArchivesInExtDirPath(files, extdirs);
+        addFilesInPath(files, classpath);
+        addFilesInPath(files, sourcepath);
+        ArrayList dirs = new ArrayList(files.size());
+        for (Iterator i = files.iterator(); i.hasNext(); ) {
+            File file = (File)i.next();
+            if (file.exists()) dirs.add(file.getPath());
         }
-        return path;
+        this.root = (String[])dirs.toArray(new String[dirs.size()]);
     }
 
     //########################################################################
     // Public Methods
-
-    /** parse a class path specification and return an array
-     *  of existing class file locations
-     */
-    public static String[] parse(String path) {
-        path += PATH_SEPARATOR;
-        Vector components = new Vector();
-        int i = 0;
-        while (i < path.length()) {
-            int j = path.indexOf(PATH_SEPARATOR, i);
-            String subpath = path.substring(i, j);
-            if (new File(subpath).exists())
-                components.add(subpath);
-            i = j + 1;
-        }
-        return (String[])components.toArray(
-            new String[components.size()]);
-    }
 
     /** find file with given name in class path and return an abstract
      *  file representation

@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 import java.io.File;
 
@@ -73,9 +75,8 @@ public class CLRPackageParser extends SymbolLoader {
     private boolean initialized = false;
     public void init() {
 	if (initialized) return;
-	String[] asnames = scalac.util.ClassPath.parse(global.args.assemrefs.value);
-	for (int i = 0; i < asnames.length; i++)
-	    assemrefs.add(asnames[i]);
+	scalac.util.ClassPath.addFilesInPath(
+            assemrefs, global.args.assemrefs.value);
 	Assembly mscorlib = findAssembly("mscorlib.dll");
 	Type.initMSCORLIB(mscorlib);
 
@@ -155,20 +156,17 @@ public class CLRPackageParser extends SymbolLoader {
 
     protected final java.util.List assemblies = new LinkedList();
 
-    protected final java.util.List assemrefs = new LinkedList();
+    protected final java.util.Set/*<File>*/ assemrefs = new LinkedHashSet();
 
     /** Load the assembly with the given name
      */
     private Assembly findAssembly(String name) {
 	// see if the assembly is referenced directly
-	File file = null;
-	Assembly assem = null;
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
-	    String assemname = (String)assems.next();
-	    file = new File(assemname);
+	    File file = (File)assems.next();
 	    if (!file.getName().equals(name))
 		continue;
-	    assem = Assembly.LoadFrom(file.getPath());
+	    Assembly assem = Assembly.LoadFrom(file.getPath());
 	    if (assem != null) {
 		assems.remove();
 		assemblies.add(assem);
@@ -177,12 +175,12 @@ public class CLRPackageParser extends SymbolLoader {
 	}
 	// look in directories specified with the '-r' option
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
-	    File d = new File((String)assems.next());
+	    File d = (File)assems.next();
 	    if (!d.isDirectory())
 		continue;
-	    file = new File(d, name);
+	    File file = new File(d, name);
 	    if (file.exists()) {
-		assem = Assembly.LoadFrom(file.getPath());
+		Assembly assem = Assembly.LoadFrom(file.getPath());
 		if (assem != null) {
 		    assemblies.add(assem);
 		    return assem;
@@ -190,9 +188,9 @@ public class CLRPackageParser extends SymbolLoader {
 	    }
 	}
 	// try in the current directory
-	file = new File(".", name);
+	File file = new File(".", name);
 	if (file.exists()) {
-	    assem = Assembly.LoadFrom(file.getPath());
+	    Assembly assem = Assembly.LoadFrom(file.getPath());
 	    if (assem != null) {
 		assemblies.add(assem);
 		return assem;
@@ -208,7 +206,7 @@ public class CLRPackageParser extends SymbolLoader {
     private void findAllAssemblies() {
 	//System.out.println("assembly references left: " + assemrefs);
 	for (Iterator assems = assemrefs.iterator(); assems.hasNext();) {
-	    File f = new File((String)assems.next());
+	    File f = (File)assems.next();
 	    if (f.isFile()) {
 		Assembly assem = Assembly.LoadFrom(f.getPath());
 		if (assem != null) {
