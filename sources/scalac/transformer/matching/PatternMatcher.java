@@ -291,106 +291,107 @@ public class PatternMatcher extends PatternTool {
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
         switch (tree) {
-			case Bind(Name name, Typed( Ident( Names.PATTERN_WILDCARD ), Tree tpe)): // little opt. for x@_:Type
-				if(header.type.isSubType(tpe.type)) {
-					PatternNode node = mk.DefaultPat(tree.pos, tpe.type);
-					env.newBoundVar( tree.symbol(), tree.type, header.selector );
-					return node;
-				} else {
-					ConstrPat node = mk.ConstrPat(tree.pos, tpe.type);
-					env.newBoundVar( tree.symbol(), tree.type, gen.Ident(tree.pos, node.casted));
-					return node;
-				}
-			case Bind(Name name, Ident( Names.PATTERN_WILDCARD )): // little opt. for x@_
-					PatternNode node = mk.DefaultPat(tree.pos, header.type);
-					if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD))
-						env.newBoundVar(tree.symbol(),tree.type, header.selector);
-					return node;
+        case Bind(Name name, Typed( Ident( Names.PATTERN_WILDCARD ), Tree tpe)): // little opt. for x@_:Type
+            if(header.type.isSubType(tpe.type)) {
+                PatternNode node = mk.DefaultPat(tree.pos, tpe.type);
+                env.newBoundVar( tree.symbol(), tree.type, header.selector );
+                return node;
+            } else {
+                ConstrPat node = mk.ConstrPat(tree.pos, tpe.type);
+                env.newBoundVar( tree.symbol(), tree.type, gen.Ident(tree.pos, node.casted));
+                return node;
+            }
+        case Bind(Name name, Ident( Names.PATTERN_WILDCARD )): // little opt. for x@_
+            PatternNode node = mk.DefaultPat(tree.pos, header.type);
+            if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD))
+                env.newBoundVar( tree.symbol(), tree.type, header.selector);
+            return node;
 
-				case Bind(Name name, Tree pat):
-					PatternNode node = patternNode(pat, header, env);
-					if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD))
-						env.newBoundVar(		tree.symbol(),
-										tree.type,
-										header.selector);
-					return node;
-			case Apply(Tree fn, Tree[] args):             // pattern with args
-				if(isSeqApply((Apply)tree)) {
-					if (!delegateSequenceMatching) {
-						switch (args[0]) {
-							case Sequence(Tree[] ts):
-								return mk.SequencePat( tree.pos, tree.type, ts.length );
-						}
-					} else {
-						PatternNode res = mk.ConstrPat(tree.pos, tree.type);
-						res.and = mk.Header(tree.pos, header.type, header.selector);
-						res.and.and = mk.SeqContainerPat( tree.pos, tree.type, args[ 0 ] );
-						return res;
-					}
-				} else if ((fn.symbol() != null) && fn.symbol().isStable())
-					return mk.VariablePat(tree.pos, tree);
-				return mk.ConstrPat(tree.pos, tree.type);
-			case Typed(Ident ident, Tree tpe):       // variable pattern
-				boolean doTest = header.type.isSubType(tpe.type);
-				PatternNode node = doTest ?
-					mk.DefaultPat(tree.pos, tpe.type)
-					: mk.ConstrPat(tree.pos, tpe.type);
-				if ((env != null) && (ident.symbol() != defs.PATTERN_WILDCARD))
-					switch (node) {
-					case ConstrPat(Symbol casted):
-						env.newBoundVar(
-										((Tree.Typed)tree).expr.symbol(),
-										tpe.type,
-										gen.Ident(tree.pos, casted));
-						break;
-					default:
-						env.newBoundVar(
-										((Tree.Typed)tree).expr.symbol(),
-										tpe.type,
-										doTest ? header.selector : gen.Ident(tree.pos, ((ConstrPat) node).casted));
-					}
-				return node;
-			case Ident(Name name):                  // pattern without args or variable
-				if (tree.symbol() == defs.PATTERN_WILDCARD)
-					return mk.DefaultPat(tree.pos, header.type);
-				else if (tree.symbol().isPrimaryConstructor()) {
-					assert false; // this may not happen ??  ----------------- Burak
-					return mk.ConstrPat(tree.pos, tree.type);
-				} else if (name.isVariable()) {// should be Bind  ------------ Burak
-				    assert false;
-					if (env != null)
-						env.newBoundVar(tree.symbol(),
-										tree.type,
-										header.selector);
-					return mk.DefaultPat(tree.pos, header.type);
-				} else
-					return mk.VariablePat(tree.pos, tree);
-			case Select(_, Name name):                                    // variable
-				if (tree.symbol().isPrimaryConstructor())
-					return mk.ConstrPat(tree.pos, tree.type);
-				else
-					return mk.VariablePat(tree.pos, tree);
-			case Literal(Object value):
-				return mk.ConstantPat(tree.pos, tree.type, value);
-			case Sequence(Tree[] ts):
-				if ( !delegateSequenceMatching ) {
-				    return mk.SequencePat(tree.pos, tree.type, ts.length);
-				} else {
-				    return mk.SeqContainerPat(tree.pos, tree.type, tree);
-				}
-			case Alternative(Tree[] ts):
-				assert ts.length > 1;
-				PatternNode subroot = mk.ConstrPat(header.pos, header.type);
-        		subroot.and = mk.Header(header.pos, header.type, header.selector.duplicate());
-              	CaseEnv subenv = new CaseEnv(owner, unit);
-             	for (int i = 0; i < ts.length; i++) {
-					PatternNode target = enter1(ts[i], -1, subroot, subroot.symbol(), subenv);
-					target.and = mk.Body(tree.pos);
-				}
-				return mk.AltPat(tree.pos, (Header)subroot.and);
-			default:
-				new scalac.ast.printer.TextTreePrinter().print(tree).flush();
-				throw new ApplicationError("unit = " + unit + "; tree = "+tree);
+        case Bind(Name name, Tree pat):
+            PatternNode node = patternNode(pat, header, env);
+            if ((env != null) && (tree.symbol() != defs.PATTERN_WILDCARD)) {
+                Symbol casted = node.symbol();
+                Tree theValue =  (casted == Symbol.NONE) ? header.selector : gen.Ident(tree.pos, casted);
+                env.newBoundVar( tree.symbol(), tree.type, theValue );
+            }
+            return node;
+        case Apply(Tree fn, Tree[] args):             // pattern with args
+            if(isSeqApply((Apply)tree)) {
+                if (!delegateSequenceMatching) {
+                    switch (args[0]) {
+                    case Sequence(Tree[] ts):
+                        return mk.SequencePat( tree.pos, tree.type, ts.length );
+                    }
+                } else {
+                    PatternNode res = mk.ConstrPat(tree.pos, tree.type);
+                    res.and = mk.Header(tree.pos, header.type, header.selector);
+                    res.and.and = mk.SeqContainerPat( tree.pos, tree.type, args[ 0 ] );
+                    return res;
+                }
+            } else if ((fn.symbol() != null) && fn.symbol().isStable())
+                return mk.VariablePat(tree.pos, tree);
+            return mk.ConstrPat(tree.pos, tree.type);
+        case Typed(Ident ident, Tree tpe):       // variable pattern
+            boolean doTest = header.type.isSubType(tpe.type);
+            PatternNode node = doTest ?
+                mk.DefaultPat(tree.pos, tpe.type)
+                : mk.ConstrPat(tree.pos, tpe.type);
+            if ((env != null) && (ident.symbol() != defs.PATTERN_WILDCARD))
+                switch (node) {
+                case ConstrPat(Symbol casted):
+                    env.newBoundVar(
+                                    ((Tree.Typed)tree).expr.symbol(),
+                                    tpe.type,
+                                    gen.Ident(tree.pos, casted));
+                    break;
+                default:
+                    env.newBoundVar(
+                                    ((Tree.Typed)tree).expr.symbol(),
+                                    tpe.type,
+                                    doTest ? header.selector : gen.Ident(tree.pos, ((ConstrPat) node).casted));
+                }
+            return node;
+        case Ident(Name name):                  // pattern without args or variable
+            if (tree.symbol() == defs.PATTERN_WILDCARD)
+                return mk.DefaultPat(tree.pos, header.type);
+            else if (tree.symbol().isPrimaryConstructor()) {
+                assert false; // this may not happen ??  ----------------- Burak
+                return mk.ConstrPat(tree.pos, tree.type);
+            } else if (name.isVariable()) {// should be Bind  ------------ Burak
+                assert false;
+                if (env != null)
+                    env.newBoundVar(tree.symbol(),
+                                    tree.type,
+                                    header.selector);
+                return mk.DefaultPat(tree.pos, header.type);
+            } else
+                return mk.VariablePat(tree.pos, tree);
+        case Select(_, Name name):                                    // variable
+            if (tree.symbol().isPrimaryConstructor())
+                return mk.ConstrPat(tree.pos, tree.type);
+            else
+                return mk.VariablePat(tree.pos, tree);
+        case Literal(Object value):
+            return mk.ConstantPat(tree.pos, tree.type, value);
+        case Sequence(Tree[] ts):
+            if ( !delegateSequenceMatching ) {
+                return mk.SequencePat(tree.pos, tree.type, ts.length);
+            } else {
+                return mk.SeqContainerPat(tree.pos, tree.type, tree);
+            }
+        case Alternative(Tree[] ts):
+            assert ts.length > 1;
+            PatternNode subroot = mk.ConstrPat(header.pos, header.type);
+            subroot.and = mk.Header(header.pos, header.type, header.selector.duplicate());
+            CaseEnv subenv = new CaseEnv(owner, unit);
+            for (int i = 0; i < ts.length; i++) {
+                PatternNode target = enter1(ts[i], -1, subroot, subroot.symbol(), subenv);
+                target.and = mk.Body(tree.pos);
+            }
+            return mk.AltPat(tree.pos, (Header)subroot.and);
+        default:
+            new scalac.ast.printer.TextTreePrinter().print(tree).flush();
+            throw new ApplicationError("unit = " + unit + "; tree = "+tree);
         }
     }
 
