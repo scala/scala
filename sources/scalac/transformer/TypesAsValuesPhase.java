@@ -419,7 +419,7 @@ public class TypesAsValuesPhase extends Phase {
                     assert targs.length == 1 && vargs.length == 0;
                     Type type = targs[0].type;
                     Tree expr = transform(qualifierOf(fun));
-                    return isTrivialType(type)
+                    return isTrivial(type)
                         ? super.transform(tree)
                         : genInstanceTest(tree.pos, expr, type);
                 } else if (funSym == defs.ANY_AS) {
@@ -433,7 +433,7 @@ public class TypesAsValuesPhase extends Phase {
                     assert targs.length == 1 && vargs.length == 0;
                     Type type = targs[0].type;
                     Tree expr = transform(qualifierOf(fun));
-                    return isTrivialType(type)
+                    return isTrivial(type)
                         ? super.transform(tree)
                         : genTypeCast(tree.pos, expr, type);
                 } else if (!monoPrimitive(funSym)) {
@@ -592,8 +592,7 @@ public class TypesAsValuesPhase extends Phase {
                     ++zCount;
             }
 
-            Ancestor[][] disp = computeAncestors(clsSym);
-            int[] ancestorCode = getAncestorCode(computeAncestors(clsSym));
+            Ancestor[][] ancestors = computeAncestors(clsSym);
 
             Tree outer = isNestedClass(clsSym)
                 ? (clsSym.owner().isClass()
@@ -609,7 +608,8 @@ public class TypesAsValuesPhase extends Phase {
                 gen.mkIntLit(pos, zCount),
                 gen.mkIntLit(pos, mCount),
                 gen.mkIntLit(pos, pCount),
-                mkNewIntLitArray(pos, ancestorCode, owner)
+                gen.mkIntLit(pos, ancestors.length),
+                mkNewIntLitArray(pos, getAncestorCode(ancestors), owner)
             };
 
             Symbol tcConst = defs.TYPECONSTRUCTOR_CLASS.primaryConstructor();
@@ -686,7 +686,7 @@ public class TypesAsValuesPhase extends Phase {
             TreeList parentTypes = new TreeList();
             for (int i = 0; i < parents.length; ++i) {
                 Type parent = parents[i];
-                if (!parent.symbol().isJava())
+                if (!isStronglyTrivial(parent))
                     parentTypes.append(typeAsValue(pos, parent, insSym, tEnv));
             }
             boolean emptyParents = (parentTypes.length() == 0);
@@ -744,23 +744,32 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         /**
-         * Return true iff the given type is "trivial", that is if it
-         * is representable as a Java type without loss of
-         * information.
+         * Return true iff the given type is trivial, that is if it
+         * has neither a prefix, nor type parameters.
          */
-        private boolean isTrivialType(Type tp) {
+        private boolean isTrivial(Type tp) {
             switch (tp) {
-            case ConstantType(Type base, _):
-                return isTrivialType(base);
             case TypeRef(_, Symbol sym, Type[] args):
                 return sym.isStatic() && args.length == 0;
             case SingleType(_, _):
-            case ThisType(_):   // TODO check
-            case CompoundType(_, _): // TODO check
+            case ThisType(_):
+            case CompoundType(_, _):
                 return false;
             default:
                 throw Debug.abort("unexpected type", tp);
             }
+        }
+
+        private boolean isStronglyTrivial(Type tp) {
+            if (isTrivial(tp)) {
+                Type[] parents = tp.parents();
+                for (int i = 0; i < parents.length; ++i) {
+                    if (!isStronglyTrivial(parents[i]))
+                        return false;
+                }
+                return true;
+            } else
+                return false;
         }
 
         /**
@@ -939,30 +948,31 @@ public class TypesAsValuesPhase extends Phase {
         }
 
         private Ancestor[][] computeAncestors0(Symbol classSym) {
-            Symbol[] scalaParents = scalaParents(classSym);
+            Symbol[] nstParents = notStronglyTrivialParents(classSym);
             int level = level(classSym);
             ArrayList/*<Ancestor>*/[] ancestor = new ArrayList[level + 1];
 
             for (int l = 0; l < ancestor.length; ++l)
                 ancestor[l] = new ArrayList();
 
-            ancestor[level].add(new Ancestor(classSym, -1, -1));
+            if (!isTrivial(classSym.type()))
+                ancestor[level].add(new Ancestor(classSym, -1, -1));
 
             // Go over parents from left to right and add missing
-            // ancestors to the ancestor, remembering where they come
-            // from.
-            for (int p = 0; p < scalaParents.length; ++p) {
-                Symbol parentSymbol = scalaParents[p];
-                assert parentSymbol != Symbol.NONE;
+            // ancestors to the set, remembering where they come from.
+            for (int p = 0; p < nstParents.length; ++p) {
+                Symbol parentSymbol = nstParents[p];
+                Ancestor[][] parentAncestors = computeAncestors(parentSymbol);
+                assert parentAncestors.length <= ancestor.length;
 
-                Ancestor[][] parentAncestor = computeAncestors(parentSymbol);
-                assert parentAncestor.length <= ancestor.length;
-
-                for (int l = 0; l < parentAncestor.length; ++l) {
+                for (int l = 0; l < parentAncestors.length; ++l) {
                     ArrayList/*<Ancestor>*/ myRow = ancestor[l];
-                    Ancestor[] parentRow = parentAncestor[l];
+                    Ancestor[] parentRow = parentAncestors[l];
                     for (int i = 0; i < parentRow.length; ++i) {
                         Symbol sym = parentRow[i].symbol;
+
+                        if (isTrivial(sym.type()))
+                            continue;
 
                         Iterator myRowIt = myRow.iterator();
                         boolean alreadyExists = false;
@@ -978,7 +988,11 @@ public class TypesAsValuesPhase extends Phase {
                 }
             }
 
-            Ancestor[][] finalAncestor = new Ancestor[level + 1][];
+            int ancestorsLen = ancestor.length;
+            while (ancestorsLen > 0 && ancestor[ancestorsLen - 1].isEmpty())
+                --ancestorsLen;
+
+            Ancestor[][] finalAncestor = new Ancestor[ancestorsLen][];
             for (int i = 0; i < finalAncestor.length; ++i) {
                 finalAncestor[i] = (Ancestor[])
                     ancestor[i].toArray(new Ancestor[ancestor[i].size()]);
@@ -987,6 +1001,7 @@ public class TypesAsValuesPhase extends Phase {
             return finalAncestor;
         }
 
+        /** Return the non-trivial ancestors of the class */
         private Ancestor[][] computeAncestors(Symbol classSym) {
             Ancestor[][] ancestor = (Ancestor[][])ancestorCache.get(classSym);
             if (ancestor == null) {
@@ -997,20 +1012,21 @@ public class TypesAsValuesPhase extends Phase {
             return ancestor;
         }
 
-        private Symbol[] scalaParents(Symbol classSym) {
+        /** Return the parents which are not strongly trivial. */
+        private Symbol[] notStronglyTrivialParents(Symbol classSym) {
             Type[] parentTypes = classSym.parents();
-            ArrayList scalaParents = new ArrayList();
+            ArrayList nstParents = new ArrayList();
             for (int i = 0; i < parentTypes.length; ++i) {
-                Symbol parentSym = parentTypes[i].symbol();
-                if (!parentSym.isJava())
-                    scalaParents.add(parentSym);
+                if (!isStronglyTrivial(parentTypes[i]))
+                    nstParents.add(parentTypes[i].symbol());
             }
             return (Symbol[])
-                scalaParents.toArray(new Symbol[scalaParents.size()]);
+                nstParents.toArray(new Symbol[nstParents.size()]);
         }
 
         private int[] getAncestorCode(Ancestor[][] ancestor) {
-            ArrayList/*<List<Ancestor>>*/ prunedRows = new ArrayList();
+            ArrayList/*<Ancestor>*/[] prunedRows =
+                new ArrayList[ancestor.length];
 
             int totalSize = 0;
             for (int l = 0; l < ancestor.length; ++l) {
@@ -1020,22 +1036,24 @@ public class TypesAsValuesPhase extends Phase {
                     if (row[i].parentIndex > 0)
                         prunedRow.add(row[i]);
                 }
-
-                prunedRows.add(prunedRow);
-                totalSize += 1 + 2 * prunedRow.size();
+                prunedRows[l] = prunedRow;
+                if (!prunedRow.isEmpty())
+                    totalSize += 2 + 2 * prunedRow.size();
             }
 
             int[] res = new int[totalSize];
             int i = 0;
-            Iterator rowsIt = prunedRows.iterator();
-            while (rowsIt.hasNext()) {
-                ArrayList row = (ArrayList)rowsIt.next();
-                res[i++] = row.size();
-                Iterator ancIt = row.iterator();
-                while (ancIt.hasNext()) {
-                    Ancestor anc = (Ancestor)ancIt.next();
-                    res[i++] = anc.parentIndex;
-                    res[i++] = anc.position;
+            for (int l = 0; l < prunedRows.length; ++l) {
+                ArrayList row = prunedRows[l];
+                if (!row.isEmpty()) {
+                    res[i++] = l;
+                    res[i++] = row.size();
+                    Iterator ancIt = row.iterator();
+                    while (ancIt.hasNext()) {
+                        Ancestor anc = (Ancestor)ancIt.next();
+                        res[i++] = anc.parentIndex;
+                        res[i++] = anc.position;
+                    }
                 }
             }
             assert i == totalSize;
@@ -1055,6 +1073,8 @@ public class TypesAsValuesPhase extends Phase {
                                    + "/par" + ancestor[l][i].parentIndex
                                    + "/pos" + ancestor[l][i].position);
             }
+            if (ancestor[l].length == 0)
+                System.out.println("<empty>");
         }
     }
 

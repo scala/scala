@@ -21,14 +21,14 @@ public class ScalaClassType extends ClassType {
     public static final ScalaClassType[] EMPTY_ARRAY =
         new ScalaClassType[0];
 
-    private static final ScalaClassType[][] EMPTY_ANCESTOR =
+    private static final ScalaClassType[][] EMPTY_ANCESTORS =
         new ScalaClassType[0][];
 
     private final TypeConstructor constr;
     private final Type[] inst;
 
-    private ScalaClassType[] parents = null;
-    private ScalaClassType[][] ancestor = null;
+    private ScalaClassType[] parents;
+    private ScalaClassType[][] ancestors = null;
 
     private final int hashCode;
 
@@ -48,17 +48,20 @@ public class ScalaClassType extends ClassType {
         }
         this.hashCode = hash;
         this.parents = parents;
+        this.ancestors = constr.isStronglyTrivial ? EMPTY_ANCESTORS : null;
     }
 
     public boolean isInstance(Object o) {
         return super.isInstance(o)
-            && ((ScalaObject)o).getType().weakIsSubScalaClassType(this);
+            && (isTrivial
+                || ((ScalaObject)o).getType().weakIsSubScalaClassType(this));
     }
 
     protected boolean isSubClassType(ClassType that) {
-        return super.isSubClassType(that)
-            && (that.isTrivial
-                || weakIsSubScalaClassType((ScalaClassType)that));
+        return (this == that)
+            || (super.isSubClassType(that)
+                && (that.isTrivial
+                    || weakIsSubScalaClassType((ScalaClassType)that)));
     }
 
     private boolean weakIsSubScalaClassType(ScalaClassType that) {
@@ -83,21 +86,24 @@ public class ScalaClassType extends ClassType {
         // invariant parameters
         final int firstM = this.constr.zCount;
         while (i < firstM) {
-            if (!thisInst[i].isSameType(thatInst[i]))
+            Type thisTp = thisInst[i], thatTp = thatInst[i];
+            if (!(thisTp == thatTp || thisTp.isSameType(thatTp)))
                 return false;
             ++i;
         }
         // contravariant parameters
         final int firstP = firstM + this.constr.mCount;
         while (i < firstP) {
-            if (!thatInst[i].isSubType(thisInst[i]))
+            Type thisTp = thisInst[i], thatTp = thatInst[i];
+            if (!(thisTp == thatTp || thatTp.isSubType(thisTp)))
                 return false;
             ++i;
         }
         // covariant parameters
         final int firstOutside = firstP + this.constr.pCount;
         while (i < firstOutside) {
-            if (!thisInst[i].isSubType(thatInst[i]))
+            Type thisTp = thisInst[i], thatTp = thatInst[i];
+            if (!(thisTp == thatTp || thisTp.isSubType(thatTp)))
                 return false;
             ++i;
         }
@@ -105,24 +111,7 @@ public class ScalaClassType extends ClassType {
     }
 
     public boolean isSameType(Type that) {
-        if (super.isSameType(that)) {
-            ScalaClassType thatCT = (ScalaClassType)that;
-            ScalaClassType parentCT = myInstantiationFor(thatCT);
-            return (parentCT != null)
-                && (parentCT.hasSameInstantiation(thatCT));
-        } else
-            return false;
-    }
-
-    private boolean hasSameInstantiation(ScalaClassType that) {
-        final Type[] thisInst = this.inst;
-        final Type[] thatInst = that.inst;
-
-        for (int i = 0; i < thisInst.length; ++i) {
-            if (!thisInst[i].isSameType(thatInst[i]))
-                return false;
-        }
-        return true;
+        return this == that;
     }
 
     private ScalaClassType myInstantiationFor(ScalaClassType that) {
@@ -186,34 +175,39 @@ public class ScalaClassType extends ClassType {
     }
 
     private ScalaClassType[][] getAncestors() {
-        if (ancestor == null)
+        if (ancestors == null)
             computeAncestors();
-        return ancestor;
+        return ancestors;
     }
 
     private void computeAncestors() {
         final int level = constr.level;
+        final int ancestorDepth = constr.ancestorCacheDepth;
         final int[] ancestorCode = constr.ancestorCode;
         ScalaClassType[] parents = getParents();
 
-        ancestor = new ScalaClassType[level + 1][];
-        ScalaClassType[][] initialAncestor = parents.length > 0
+        ancestors = new ScalaClassType[ancestorDepth][];
+        ScalaClassType[][] initialAncestors = parents.length > 0
             ? parents[0].getAncestors()
-            : EMPTY_ANCESTOR;
+            : EMPTY_ANCESTORS;
 
-        for (int l = 0, dci = 0; l <= level; ++l) {
-            int toAddParents = ancestorCode[dci++];
-            int toAddSelf = (l == level) ? 1 : 0;
+        for (int l = 0, dci = 0; l < ancestorDepth; ++l) {
+            int toAddParents = 0;
+            if (dci < ancestorCode.length && ancestorCode[dci] == l) {
+                dci++;
+                toAddParents = ancestorCode[dci++];
+            }
+            int toAddSelf = (!constr.isTrivial) && (l == level) ? 1 : 0;
             int toAdd = toAddParents + toAddSelf;
             ScalaClassType[] initialRow;
 
-            if (l < initialAncestor.length)
-                initialRow = initialAncestor[l];
+            if (l < initialAncestors.length)
+                initialRow = initialAncestors[l];
             else
                 initialRow = ScalaClassType.EMPTY_ARRAY;
 
             if (toAdd == 0) {
-                ancestor[l] = initialRow;
+                ancestors[l] = initialRow;
             } else {
                 int initialLen = initialRow.length;
                 ScalaClassType[] newRow =
@@ -229,7 +223,7 @@ public class ScalaClassType extends ClassType {
                     newRow[toAddSelf + initialLen + i] =
                         parents[p].getAncestors()[l][o];
                 }
-                ancestor[l] = newRow;
+                ancestors[l] = newRow;
             }
         }
     }

@@ -50,19 +50,21 @@ public class TypeConstructor implements java.io.Serializable {
      * no enclosing class, and no type arguments.
      */
     public final boolean isTrivial;
+    public final boolean isStronglyTrivial;
 
+    public final int ancestorCacheDepth;
     /**
      * "Code" to compute the ancestors for an instance of this
-     * constructor, based on the ancestors of its parents. This code is
-     * structured as follows:
+     * constructor, based on the ancestors of its not-strongly-trivial
+     * parents. This code is structured as follows:
      *
-     * n1 p1,1 o1,1 p1,2 o1,2 ... p1,n o1,n  n2 p2,1 ...  nl pl,1 ol,2 ...
+     * l1 n1 p1,0 o1,0 p1,1 o1,1 ... l2 n2 p2,0 o2,0 ...
      *
-     * where all n, p and o are integers, and l is the level of this
-     * constructor. ni gives the number of additional entries to add
-     * to the ancestors of the super-class at level i. pi gives the
-     * index of the parent in which to pick this additional entry, and
-     * oi gives the offset of this entry in the parent's ancestors.
+     * where all l, n, p and o are integers. ni gives the number of
+     * additional entries to add to the ancestors of the super-class
+     * at level li. pi gives the index of the parent in which to pick
+     * this additional entry, and oi gives the offset of this entry in
+     * the parent's ancestors.
      */
     public final int[] ancestorCode;
 
@@ -79,6 +81,7 @@ public class TypeConstructor implements java.io.Serializable {
                            int zCount,
                            int mCount,
                            int pCount,
+                           int ancestorCacheDepth,
                            int[] ancestorCode) {
         this.level = level;
         this.outer = outer;
@@ -86,9 +89,11 @@ public class TypeConstructor implements java.io.Serializable {
         this.mCount = mCount;
         this.pCount = pCount;
 
-        this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
-
+        this.ancestorCacheDepth = ancestorCacheDepth;
         this.ancestorCode = ancestorCode;
+
+        this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
+        this.isStronglyTrivial = (ancestorCacheDepth == 0);
 
         try {
             this.clazz = Class.forName(fullName, false, loader);
