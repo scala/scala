@@ -288,7 +288,7 @@ public class Compiler {
         case ClassDef(_, _, _, _, _, _):
             sources.put(tree, source);
             environment.insertClassDef(symbol, (Tree.ClassDef)tree);
-            if (symbol.isModuleClass() && symbol.module().isGlobalModule()) {
+            if (symbol.isModuleClass() && symbol.isStatic()) {
                 environment.insertVariable(symbol.module(), Variable.Module(new CodePromise(new ModuleBuilder(this, source, symbol.module())), null));
             }
             return;
