@@ -20,73 +20,75 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import java.io.File;
+
 import scala.tools.util.AbstractFile;
 import scala.tools.util.ByteArrayFile;
 
-import ch.epfl.lamp.compiler.msil.*;
+import scalac.Global;
+import scalac.CompilerCommand;
+import scalac.util.Debug;
+import scalac.util.Name;
+import scalac.util.NameTransformer;
+import scalac.symtab.Modifiers;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolLoader;
 import scalac.symtab.Scope;
 import scalac.symtab.SymbolNameWriter;
-import scalac.util.Debug;
-import scalac.util.Name;
-import scalac.util.NameTransformer;
-import scalac.Global;
 
+import ch.epfl.lamp.compiler.msil.*;
 /**
  */
-public class CLRPackageParser extends SymbolLoader {
+public class CLRPackageParser {
 
     //##########################################################################
 
-    public Type BYTE;
-    public Type UBYTE;
-    public Type CHAR;
-    public Type SHORT;
-    public Type USHORT;
-    public Type INT;
-    public Type UINT;
-    public Type LONG;
-    public Type ULONG;
-    public Type FLOAT;
-    public Type DOUBLE;
-    public Type BOOLEAN;
-    public Type VOID;
-    public Type ENUM;
+    private static CLRPackageParser instance;
 
-    public Type OBJECT;
-    public Type STRING;
-    public Type STRING_ARRAY;
-
-    public Type SCALA_SYMTAB_ATTR;
-
-    protected CLRClassParser completer;
-
-    private final SymbolNameWriter snw = new SymbolNameWriter();
-
-    private CLRPackageParser(Global global) {
-	super(global);
-    }
-
-    public static CLRPackageParser instance;
-    public static CLRPackageParser instance(Global global) {
-	if (instance == null) {
-	    instance = new CLRPackageParser(global);
-	    instance.completer = new CLRClassParser(global, instance);
-	    instance.init();
-	}
+    /** Return the unique instance of the CLRPackageParser class */
+    public static CLRPackageParser instance() {
+	assert instance != null;
 	return instance;
     }
 
+    /** Initialize the CLRPackageParser */
+    public static void init(CompilerCommand args) {
+	instance = new CLRPackageParser(args);
+    }
+
+    //##########################################################################
+
+    public final Type BYTE;
+    public final Type UBYTE;
+    public final Type CHAR;
+    public final Type SHORT;
+    public final Type USHORT;
+    public final Type INT;
+    public final Type UINT;
+    public final Type LONG;
+    public final Type ULONG;
+    public final Type FLOAT;
+    public final Type DOUBLE;
+    public final Type BOOLEAN;
+    public final Type VOID;
+    public final Type ENUM;
+
+    public final Type OBJECT;
+    public final Type STRING;
+    public final Type STRING_ARRAY;
+
+    public final Type SCALA_SYMTAB_ATTR;
+
+    private final SymbolNameWriter snw = new SymbolNameWriter();
+
     private Type[] types;
 
-    private boolean initialized = false;
-    public void init() {
-	if (initialized) return;
+    private CLRPackageParser(CompilerCommand args) {
 	scala.tools.util.ClassPath.addFilesInPath(
-            assemrefs, global.args.assemrefs.value);
+            assemrefs, args.assemrefs.value);
 	Assembly mscorlib = findAssembly("mscorlib.dll");
 	Type.initMSCORLIB(mscorlib);
+	findAssembly("vjslib.dll");
+	findAssembly("scala.dll");
 
 	BYTE    = getType("System.SByte");
 	UBYTE   = getType("System.Byte");
@@ -107,9 +109,6 @@ public class CLRPackageParser extends SymbolLoader {
 	STRING = getType("System.String");
 	STRING_ARRAY = getType("System.String[]");
 
- 	findAssembly("vjslib.dll");
-   	findAssembly("scala.dll");
-
 	SCALA_SYMTAB_ATTR = Type.GetType("scala.support.SymtabAttribute");
 
 	Type[] types = Type.EmptyTypes;
@@ -119,7 +118,7 @@ public class CLRPackageParser extends SymbolLoader {
 	    int j = 0;
 	    for (int i = 0; i < atypes.length; i++)
 		// skip nested types
-		if (/*atypes[i].IsPublic && */atypes[i].DeclaringType == null)
+		if (!atypes[i].IsNotPublic() && atypes[i].DeclaringType == null)
 		    atypes[j++] = atypes[i];
 	    Type[] btypes = new Type[types.length + j];
 	    System.arraycopy(types, 0, btypes, 0, types.length);
@@ -136,7 +135,6 @@ public class CLRPackageParser extends SymbolLoader {
 
 	Arrays.sort(types, typeNameComparator);
 	this.types = types;
-	initialized = true;
     }
 
     //##########################################################################
@@ -216,9 +214,9 @@ public class CLRPackageParser extends SymbolLoader {
 		return assem;
 	    }
 	}
-	global.fail("Cannot find assembly " + name
-		    + "; use the -r option to specify its location");
-	return null;
+	System.err.println("Cannot find assembly " + name
+			   + "; use the -r option to specify its location");
+	throw Debug.abort();
     }
 
     /** Load the rest of the assemblies specified with the '-r' option
@@ -329,31 +327,6 @@ public class CLRPackageParser extends SymbolLoader {
 	return BANNED_TYPES.contains(fullname);
     }
 
-    //##########################################################################
-    // main functionality
-
-    protected String doComplete(Symbol root) {
-        assert !root.isRoot() && root.isPackage() : Debug.show(root);
-        Symbol pakage = root.isRoot() ? root : root.moduleClass();
-	Scope members = new Scope();
-
-	// import the types contained in the namespace
-	for (Iterator i = getTypes(pakage).values().iterator(); i.hasNext(); ) {
-	    Type type = (Type)i.next();
-	    importType(type, pakage, members);
-	}
-
-	// import the namespaces contained in the namespace
-	for (Iterator i = getNamespaces(pakage).iterator(); i.hasNext(); ) {
-	    String namespace = (String)i.next();
-	    importNamespace(namespace, pakage, members);
-	}
-
-        pakage.setInfo(scalac.symtab.Type.compoundType
-		       (scalac.symtab.Type.EMPTY_ARRAY, members, pakage));
-        return "namespace " + Debug.show(pakage);
-    }
-
     /** Imports a CLR type in a scala package (only called from PackageParser)
      */
     void importType(Type type, Symbol pakage, Scope members) {
@@ -375,27 +348,24 @@ public class CLRPackageParser extends SymbolLoader {
 		break;
 	    }
 	}
-	SymbolLoader loader = symtab == null ? this.completer
-	    : new SymblParser(global, symtab);
+	SymbolLoader loader = symtab == null ? completer()
+	    : new SymblParser(Global.instance, symtab);
 
 	Name classname = Name.fromString(type.Name).toTypeName();
-	Symbol clazz = pakage.newLoadedClass(JAVA, classname, loader, members);
+	Symbol clazz =
+	    pakage.newLoadedClass(Modifiers.JAVA, classname, loader, members);
 	Type moduleType = getType(type.FullName + "$");
-// 	if (moduleType != null)
-// 	    System.out.println("Module implementation class: " + moduleType);
 	map(clazz, type);
 // 	map(clazz, moduleType != null ? moduleType : type);
     }
 
-    /** Imports a CLR namespace as a scala package
-     *  (only called from PackageParser)
-     */
-    void importNamespace(String namespace, Symbol p, Scope members) {
-	Name name = Name.fromString(namespace);
-	if (members.lookup(name) == Symbol.NONE) {
-	    p.newLoadedPackage(name, this, members);
-	}
+    private CLRClassParser completer;
+    private CLRClassParser completer() {
+	if (completer == null)
+	    completer = new CLRClassParser(Global.instance, this);
+	return completer;
     }
+
 
     //##########################################################################
 } // CLRPackageParser
