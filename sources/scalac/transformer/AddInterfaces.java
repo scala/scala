@@ -67,7 +67,7 @@ class AddInterfaces extends SubstTransformer {
 
     public void apply() {
         // Phase 1: create all new symbols
-        ClassSymCreator creator = new ClassSymCreator(global);
+        ClassSymCreator creator = new ClassSymCreator();
 
         for (int i = 0; i < global.units.length; ++i)
             creator.traverse(global.units[i].body);
@@ -617,10 +617,6 @@ class AddInterfaces extends SubstTransformer {
         // Mapping from interface type parameters to class type
         // parameters.
         final HashMap/*<Symbol,Symbol>*/ tparamsMap = new HashMap();
-
-        public ClassSymCreator(Global global) {
-            super(global);
-        }
 
         protected Symbol cloneAndMaybeRenameSymbol(Symbol sym) {
             assert !sym.isPrimaryConstructor() : sym;

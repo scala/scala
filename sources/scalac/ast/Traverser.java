@@ -9,11 +9,10 @@
 
 package scalac.ast;
 
-import java.io.*;
-import java.util.*;
-import scalac.*;
-import scalac.util.*;
-import Tree.*;
+import scalac.Unit;
+import scalac.ast.Tree.*;
+import scalac.util.Name;
+import scalac.util.Debug;
 
 
 /** Class to traverse a tree without modifying it.
@@ -22,10 +21,6 @@ import Tree.*;
  */
 
 public class Traverser {
-    public Traverser() {}
-
-    // this should be removed in the future
-    public Traverser(Global global) {}
 
     public void traverse(Unit unit) {
         traverse(unit.body);
@@ -197,7 +192,7 @@ public class Traverser {
             return;
 
         default:
-            throw new ApplicationError("unknown node " + tree);
+            throw Debug.abort("unknown node", tree);
         }
     }
 
