@@ -19,5 +19,6 @@ files/run/arrays.scala
 files/run/imports.scala
 files/run/misc.scala
 files/run/queens.scala
+files/run/iq.scala
 
 ##############################################################################
