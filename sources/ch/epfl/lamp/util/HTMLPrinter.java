@@ -28,8 +28,10 @@ public class HTMLPrinter {
     /*
      * The characters which must be HTML encoded
      */
-    private static final Character LT = new Character('<');
-    private static final Character GT = new Character('>');
+    private static final Character AMP  = new Character('&');
+    private static final Character GT   = new Character('>');
+    private static final Character LT   = new Character('<');
+    private static final Character QUOT = new Character('"');
 
     //########################################################################
     // Private Fields
@@ -112,8 +114,10 @@ public class HTMLPrinter {
      * @param ch
      */
     public static String encode(Character ch) {
-	if      (LT.compareTo(ch) == 0) return "&lt;";
-        else if (GT.compareTo(ch) == 0) return "&gt;";
+        if (AMP.compareTo(ch) == 0) return "&amp;";
+	else if (GT.compareTo(ch) == 0) return "&gt;";
+	else if (LT.compareTo(ch) == 0) return "&lt;";
+	else if (QUOT.compareTo(ch) == 0) return "&quot;";
         else return ch.toString();
     }
 
