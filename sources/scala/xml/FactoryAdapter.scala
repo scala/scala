@@ -1,16 +1,15 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 package scala.xml ;
-
 
 import java.io.{OutputStream,OutputStreamWriter,PrintWriter,Writer};
 import java.io.UnsupportedEncodingException;
-
-
-/*import java.util.Map;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Stack;
-import java.util.Iterator;
-*/
 import scala.collection.mutable.{HashMap,Stack};
 
 import org.xml.sax.Attributes;
@@ -31,6 +30,8 @@ import org.xml.sax.helpers.ParserAdapter;
 
 import org.xml.sax.helpers.XMLReaderFactory;
 
+/** SAX adapter class, for use with Java SAX parser
+**/
 abstract class FactoryAdapter
 	 extends DefaultHandler()
 	 // with ContentHandler
@@ -84,16 +85,6 @@ abstract class FactoryAdapter
   // ContentHandler methods
   //
 
-  /** Set document locator.
-   * @param locator
-  def setDocumentLocator( locator:Locator ):Unit = {}
-   */
-
-  /** Start document.
-  * @throws org.xml.sax.SAXException if ..
-  def startDocument():Unit = {}
-  */
-
   val normalizeWhitespace = false;
 
   /** Characters.
@@ -125,18 +116,7 @@ abstract class FactoryAdapter
 
           }
 	}
-        //System.err.println( "after \""+buffer+"\"" );
-        //System.err.println();
-
-    }
-
-    /** Ignorable whitespace.
-    def ignorableWhitespace(ch:Array[char] , offset:int , length:int ):Unit = {}
-     */
-
-    /** End document.
-     */
-    //def endDocument():Unit = {}
+   }
 
     //var elemCount = 0; //STATISTICS
 
@@ -163,17 +143,16 @@ abstract class FactoryAdapter
         var map:HashMap[String,String] = null:HashMap[String,String];
 
         if (attributes == null) {
-              //fOut.println("null");
+          // may not happen
         }
         else {
               map = new HashMap[String,String];
 
 	      for( val i <- List.range( 0, attributes.getLength() )) {
                 val attrLocalName = attributes.getLocalName(i);
-                //String attrQName = attributes.getQName(i);
-                //String attrURI = attributes.getURI(i);
                 val attrType = attributes.getType(i);
                 val attrValue = attributes.getValue(i);
+                // we only handle string attributes
                 if( attrType.equals("CDATA") ) {
 		  map.update( attrLocalName, attrValue );
 		}
@@ -185,8 +164,7 @@ abstract class FactoryAdapter
     } // startElement(String,String,String,Attributes)
 
 
-    /** this way to deal with whitespace is quite nonstandard, but useful
-     *
+    /** captures text, possibly normalizing whitespace
      */
     def captureText():Unit = {
         if (capture == true) {
@@ -232,14 +210,6 @@ abstract class FactoryAdapter
             capture = false;
 
     } // endElement(String,String,String)
-
-    /** End prefix mapping.
-     def endPrefixMapping(prefix:String ):Unit  = {}
-     */
-
-    /** Skipped entity.
-     def skippedEntity(name:String ):Unit /*throws SAXException*/ = {}
-     */
 
     //
     // ErrorHandler methods

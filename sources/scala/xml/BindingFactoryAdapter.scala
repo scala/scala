@@ -1,9 +1,17 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 package scala.xml ;
 
 import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
-/** a FactoryAdapter that creates instances of classes that bind XML types.
+/** a FactoryAdapter that creates instances of classes binding XML types.
 **   DTDs imported with the dtd2scala tool all use this class as interface
 **   to the SAX XML parser, by giving concrete values for the factory maps f and g.
 */

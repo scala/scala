@@ -1,3 +1,11 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 package scala.xml.nobinding;
 
 import scala.collection.mutable.HashMap ;
@@ -10,11 +18,17 @@ import org.xml.sax.InputSource;
 */
 class NoBindingFactoryAdapter extends FactoryAdapter  {
 
+  // FactoryAdpater methods
+
+  /** returns true. Every XML node may contain text that the application needs
+  **/
   def nodeContainsText( label:java.lang.String ):boolean = true;
 
-  /* default behaviour is hash-consing */
+  /* default behaviour is to use hash-consing */
   val cache = new HashMap[int,Symbol]();
 
+  /** creates a node. never creates the same node twice, using hash-consing
+  */
   def createNode( label: String, attrs: HashMap[String,String], children: List[Node] ):Symbol = {
 
     val elHashCode = Utility.hashCode( label, attrs, children ) ;
@@ -41,8 +55,12 @@ class NoBindingFactoryAdapter extends FactoryAdapter  {
     }
   }
 
+  /** creates a text node
+  */
   def createText( text:String ) = Text( text );
 
+  /** loads an XML document, returning a Symbol node.
+  */
   override def loadXML( source:InputSource ):Symbol =
     super.loadXML( source ).asInstanceOf[ Symbol ]
 }

@@ -1,9 +1,19 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
+
 package scala.xml ;
 
 import java.lang.StringBuffer ; /* Java dependency! */
 import scala.collection.Map ;
 
-/** Utility functions for processing instances of bound and not bound XML classes.
+/** Utility functions for processing instances of bound and not bound XML classes,
+** as well as escaping text nodes
 **/
 
 object Utility {

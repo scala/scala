@@ -1,10 +1,17 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+** $Id$
+\*                                                                      */
 package scala.xml ;
 
 import scala.collection.Map;
 
 
-/** Superclass for specific representation of XML elements. These are created by
- *  a xxx2scala binding tool
+/** an XML node that may have attributes
  */
 trait AttributedNode extends Node {
 
@@ -30,14 +37,5 @@ trait AttributedNode extends Node {
 
     override def toXML:String = Utility.toXML(this);
 
-    override def toString() = toXML /*{
-        var s = new StringBuffer( "AttributedNode('"+label );
-        val as = attributes;
-        if( as != null )
-            s.append( Utility.attr2xml( as.elements ) );
-        s.append("(");
-        s.append( children.toString() );
-        s.append(")");
-        s.toString();
-    }*/
+    override def toString() = Utility.toXML(this);
 }
