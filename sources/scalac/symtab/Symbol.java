@@ -95,8 +95,18 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Set owner */
     public Symbol setOwner(Symbol owner) {
-        this.owner = owner;
+        assert !isModuleClass() : Debug.show(this);
+        assert !isPrimaryConstructor() : Debug.show(this);
+        setOwner(this, owner);
         return this;
+    }
+    private static void setOwner(Symbol symbol, Symbol owner) {
+        assert symbol != null;
+        assert symbol != Symbol.NONE;
+        assert symbol != Symbol.ERROR;
+        if (symbol.isModule()) setOwner(symbol.moduleClass(), owner);
+        if (symbol.isClass()) setOwner(symbol.constructor(), owner);
+        symbol.owner = owner;
     }
 
     /** Set information, except if symbol is both initialized and locked.
@@ -1237,7 +1247,7 @@ public class ClassSymbol extends TypeSymbol {
      */
     public ClassSymbol(int pos, Name name, Symbol owner, int flags) {
         super(CLASS, pos, name, owner, flags);
-        this.constructor = TermSymbol.newConstructor(this, flags);
+        this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
         this.mangled = name;
     }
 
@@ -1261,7 +1271,7 @@ public class ClassSymbol extends TypeSymbol {
      */
     public ClassSymbol(Name name, Symbol owner, ClassParser parser) {
 	super(CLASS, Position.NOPOS, name, owner, JAVA);
-        this.constructor = TermSymbol.newConstructor(this, flags);
+        this.constructor = TermSymbol.newConstructor(this, flags & ~MODUL);
 	this.module = TermSymbol.newCompanionModule(this, JAVA, parser.staticsParser(this));
         this.mangled = name;
         this.setInfo(parser);

@@ -559,8 +559,6 @@ public class TreeGen implements Kinds, Modifiers {
 		    Symbol sym = tree.symbol();
                     if (sym != null && sym.owner() == prevOwner) {
 			sym.setOwner(newOwner);
-			if (sym.kind == Kinds.CLASS)
-                            sym.constructor().setOwner(newOwner);
                     }
 		}
 		return super.transform(tree);

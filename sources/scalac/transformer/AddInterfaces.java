@@ -663,7 +663,6 @@ class AddInterfaces extends SubstTransformer {
                 if (ifaceToClass.containsKey(classSym.owner())) {
                     Symbol newOwner = (Symbol)ifaceToClass.get(classSym.owner());
                     classSym.setOwner(newOwner);
-                    classConstrSym.setOwner(newOwner);
                 }
 
                 Symbol[] ifaceTParams = ifaceSym.typeParams();
@@ -698,7 +697,7 @@ class AddInterfaces extends SubstTransformer {
                     ifaceMemberSym.updateInfo(tparamsSM.apply(ifaceMemberSym.info()));
 
                     if (! memberGoesInInterface(ifaceMemberSym)) {
-                        ifaceMemberSym.setOwner(classSym);
+                        if (!ifaceMemberSym.isPrimaryConstructor()) ifaceMemberSym.setOwner(classSym);
                         classMembers.enterOrOverload(ifaceMemberSym);
                         continue;
                     }
