@@ -34,6 +34,26 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet {
     else
       ba;
 
+  /**
+   * Checks if two bitsets are structurally identical.
+   *
+   *  @return true, iff both bitsets contain the same sequence of elements.
+   */
+  override def equals(that: Any): Boolean =
+    that.isInstanceOf[BitSet] &&
+    { val other = that.asInstanceOf[BitSet];
+      (size == other.size) && ( size == 0 || {
+        var len = size>>>5;
+        var i = 0;
+        var res=true;
+        while(( i<= len ) && res ) {        // 32 x faster equality check
+          res = array(i) == other.array(i);
+          i = i + 1;
+        }
+        res
+      })
+   } || super.equals(that);
+
   def this(rbs: mutable.BitSet) = {
     this(rbs.size, rbs.toArray, false);
   }
