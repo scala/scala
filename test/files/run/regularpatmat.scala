@@ -676,7 +676,7 @@ object testMZ {
     assertEquals(mat195( Two() ),"default");
     assertEquals(mat196( List(1) ),"default");
     assertEquals(mat196( List() ),"case, b = List()");
-    assertEquals(mat398( List() ),"two");
+    assertEquals(mat398( List(2) ),"two");
 
     ()
   }
