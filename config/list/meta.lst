@@ -11,4 +11,13 @@ java/AbstractJavaExpander.java
 java/JavaWriter.java
 java/Type.java
 
+scalac/Phase.java
+
+scalac/ast/Tree.java
+scalac/ast/TreeKind.java
+scalac/ast/TreeSymbol.java
+scalac/ast/TreeType.java
+scalac/ast/TreeField.java
+scalac/ast/TreeNode.java
+
 ##############################################################################
