@@ -71,8 +71,8 @@ collection/mutable/MutableList.scala
 collection/mutable/Map.scala
 collection/mutable/Modification.scala
 collection/mutable/MultiMap.scala
-# collection/mutable/ObservableMap.scala
-# collection/mutable/ObservableSet.scala
+collection/mutable/ObservableMap.scala
+collection/mutable/ObservableSet.scala
 collection/mutable/ObservableUpdate.scala
 collection/mutable/Publisher.scala
 collection/mutable/Queue.scala
@@ -83,8 +83,8 @@ collection/mutable/Set.scala
 collection/mutable/SingleLinkedList.scala
 collection/mutable/Stack.scala
 collection/mutable/Subscriber.scala
-# collection/mutable/SynchronizedMap.scala
-# collection/mutable/SynchronizedSet.scala
+collection/mutable/SynchronizedMap.scala
+collection/mutable/SynchronizedSet.scala
 collection/mutable/Undo.scala
 
 collection/immutable/ListMap.scala
