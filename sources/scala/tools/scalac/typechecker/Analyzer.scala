@@ -718,35 +718,81 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     p
   }
 
+  def moduleSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+    val symbol = termSymbolOrNone(scope, pos, name, flags | MODUL | FINAL);
+    if (symbol.isNone()) owner.newModule(pos, flags, name) else {
+      // The symbol has already been created by some symbol
+      // loader. It must be a real module (or package).
+      assert(symbol.moduleClass() != symbol, Debug.show(symbol));
+      val clasz = symbol.moduleClass();
+      updateFlagsAndPos(clasz, pos, clasz.flags & ~(JAVA | PACKAGE));
+      val constr = clasz.primaryConstructor();
+      updateFlagsAndPos(constr, pos, constr.flags & ~JAVA);
+      symbol
+    }
+  }
+
+  def termSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
+    val symbol = termSymbolOrNone(scope, pos, name, flags);
+    if (symbol.isNone()) owner.newTerm(pos, flags, name) else symbol
+  }
+
   def classSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = findTypeSymbol(scope, pos, CLASS, name, flags);
+    val symbol = typeSymbolOrNone(scope, pos, CLASS, name, flags);
     if (symbol.isNone()) owner.newClass(pos, flags, name) else symbol
   }
 
   def typeAliasSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = findTypeSymbol(scope, pos, ALIAS, name, flags);
+    val symbol = typeSymbolOrNone(scope, pos, ALIAS, name, flags);
     if (symbol.isNone()) owner.newTypeAlias(pos, flags, name) else symbol
   }
 
   def absTypeSymbol(pos: int, name: Name, owner: Symbol, flags: int, scope: Scope): Symbol = {
-    val symbol = findTypeSymbol(scope, pos, TYPE, name, flags);
+    val symbol = typeSymbolOrNone(scope, pos, TYPE, name, flags);
     if (symbol.isNone()) owner.newAbstractType(pos, flags, name) else symbol
   }
 
-  def findTypeSymbol(scope: Scope, pos: int, kind: int, name: Name, flags: int): Symbol = {
+  def termSymbolOrNone(scope: Scope, pos: int, name: Name, flags: int): Symbol = {
+    var symbol = getDefinedSymbol(scope, VAL, name);
+    if (!symbol.isNone()) {
+      if (symbol.isInitialized()) {
+	symbol.getType() match {
+	  case Type$OverloadedType(alts, _) =>
+	    var i = 0;
+	    while (i < alts.length && !alts(i).isExternal()) i = i + 1;
+	    if (i == alts.length)
+              throw Debug.abort("missing alternative", Debug.show(symbol));
+	    if (i == alts.length - 1) symbol.pos = pos;
+	    symbol = alts(i);
+          case _ =>
+	}
+      }
+      updateFlagsAndPos(symbol, pos, flags);
+    }
+    symbol
+  }
+
+  def typeSymbolOrNone(scope: Scope, pos: int, kind: int, name: Name, flags: int): Symbol = {
+    val symbol = getDefinedSymbol(scope, kind, name);
+    if (!symbol.isNone()) {
+      updateFlagsAndPos(symbol, pos, flags);
+      symbol.allConstructors().pos = pos;
+    }
+    symbol
+  }
+
+  def getDefinedSymbol(scope: Scope, kind: int, name: Name): Symbol = {
     val entry = scope.lookupEntry(name);
     val symbol = entry.sym;
     if (entry.owner == scope && symbol.isExternal() && symbol.kind == kind) {
-      updateFlags(symbol, flags);
-      symbol.pos = pos;
-      symbol.allConstructors().pos = pos;
       symbol
     } else {
       Symbol.NONE;
     }
   }
 
-  def updateFlags(symbol: Symbol, flags: int): unit = {
+  def updateFlagsAndPos(symbol: Symbol, pos: int, flags: int): unit = {
+    symbol.pos = pos;
     val oldflags = symbol.flags & (INITIALIZED | LOCKED);
     val newflags = flags & ~(INITIALIZED | LOCKED);
     symbol.flags = oldflags | newflags;
@@ -883,7 +929,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if ((mods & CASE) != 0) {
 	  if ((mods & ABSTRACT) == 0) {
 	    // enter case constructor method.
-	    val cf: Symbol = TermSymbol.define(
+	    val cf: Symbol = termSymbol(
 	      tree.pos, name.toTermName(), owner,
 	      mods & ACCESSFLAGS | CASE, context.scope);
 	    enterInScope(cf);
@@ -895,21 +941,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	enterSym(tree, clazz)
 
       case Tree$ModuleDef(mods, name, _, _) =>
-	var modul: TermSymbol = TermSymbol.lookup(
-	  tree.pos, name, owner, mods | MODUL | FINAL, context.scope);
-        if (modul == null) {
-          modul = owner.newModule(tree.pos, mods, name);
-        } else {
-          // The symbol has already been created by some symbol
-          // loader. It must be a real module (or package).
-          assert(modul.moduleClass() != modul, Debug.show(modul));
-          val clasz = modul.moduleClass();
-          clasz.flags = clasz.flags & ~(JAVA | PACKAGE);
-          clasz.pos = tree.pos;
-          val constr = clasz.primaryConstructor();
-          constr.flags = constr.flags & ~JAVA;
-          constr.pos = tree.pos;
-        }
+	var modul = moduleSymbol(tree.pos, name, owner, mods, context.scope);
 	val clazz: Symbol = modul.moduleClass();
 	if (!clazz.isInitialized()) {
           val info = new LazyTreeType(tree);
@@ -919,9 +951,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	enterSym(tree, modul)
 
       case Tree$ValDef(mods, name, _, _) =>
-	enterSym(
-	  tree,
-	  TermSymbol.define(tree.pos, name, owner, mods, context.scope))
+	enterSym(tree, termSymbol(tree.pos, name, owner, mods, context.scope))
 
       case Tree$DefDef(mods, name, _, _, _, _) =>
 	var sym: Symbol = null;
@@ -938,7 +968,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    clazz.addConstructor(sym);
 	    sym.flags = sym.flags | mods;
 	} else {
-	  sym = TermSymbol.define(tree.pos, name, owner, mods, context.scope);
+	  sym = termSymbol(tree.pos, name, owner, mods, context.scope);
 	}
 	enterSym(tree, sym);
 

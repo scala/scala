@@ -89,6 +89,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 // Factories --------------------------------------------------------------
 
     /** Creates a new constructor of this symbol. */
+    public final TermSymbol newTerm(int pos, int flags, Name name) {
+        return new TermSymbol(pos, name, this, flags, 0);
+    }
+
+    /** Creates a new constructor of this symbol. */
     public final TermSymbol newConstructor(int pos, int flags) {
         assert isType(): Debug.show(this);
         return new TermSymbol(pos, Names.CONSTRUCTOR, owner(), flags, 0, this);
@@ -1459,40 +1464,6 @@ public class TermSymbol extends Symbol {
         super(VAL, pos, name, owner, flags, attrs);
         this.clazz = clasz;
         assert name.isTermName(): Debug.show(this);
-    }
-
-    public static TermSymbol define(
-        int pos, Name name, Symbol owner, int flags, Scope scope) {
-        TermSymbol symbol = lookup(pos, name, owner, flags, scope);
-        if (symbol != null) return symbol;
-        return new TermSymbol(pos, name, owner, flags);
-    }
-    public static TermSymbol lookup(
-        int pos, Name name, Symbol owner, int flags, Scope scope) {
-        Scope.Entry e = scope.lookupEntry(name);
-        if (e.owner == scope && e.sym.isExternal() && e.sym.kind == VAL) {
-            TermSymbol sym = (TermSymbol) e.sym;
-	    if (sym.isInitialized()) {
-		switch (sym.type()) {
-		case OverloadedType(Symbol[] alts, Type[] alttypes):
-		    int i = 0;
-		    while (i < alts.length && !alts[i].isExternal())
-			i++;
-		    if (i < alts.length) {
-			//System.out.println("PATCH: " + alts[i] + ":" + alttypes[i]);//DEBUG
-			alts[i].update(pos, flags);
-			if (i == alts.length - 1)
-			    sym.update(pos, sym.flags);
-			return (TermSymbol) alts[i];
-		    }
-		    throw new ApplicationError("TermSymbol.define " + sym);
-		}
-	    }
-	    sym.update(pos, flags);
-            return sym;
-        } else {
-            return null;
-        }
     }
 
     /** Dummy symbol for template of given class
