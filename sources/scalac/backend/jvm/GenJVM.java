@@ -223,7 +223,10 @@ class JVMGenerator {
             int statsNum = stats.length;
             for (int i = 0; i < statsNum - 1; ++i)
                 gen(stats[i], cst.T_VOID);
-            gen(stats[stats.length - 1], expectedType, ctx);
+            if (statsNum == 0)
+                maybeLoadUnit(expectedType);
+            else
+                gen(stats[stats.length - 1], expectedType, ctx);
             generatedType = expectedType;
         } break;
 
@@ -602,7 +605,9 @@ class JVMGenerator {
     }
 
     protected boolean isStaticMember(Symbol sym) {
-        return (sym.name != CONSTRUCTOR_NAME) && (sym.owner().isPackage());
+        return (sym.name != CONSTRUCTOR_NAME)
+            && sym.owner().isModuleClass()
+            && sym.owner().isJava();
     }
 
     protected boolean isPrimitive(Symbol sym) {
@@ -1361,8 +1366,7 @@ class JVMGenerator {
             return JAVA_LANG_OBJECT;
         else {
             StringBuffer buf = new StringBuffer(sym.name.toString());
-            if ((sym.isModule() || Modifiers.Helper.isModClass(sym.flags))
-                && !sym.isPackage())
+            if ((sym.isModule() || sym.isModuleClass()) && !sym.isJava())
                 buf.append('$');
             for (sym = sym.owner();
                  !(sym.isAnonymousClass() || sym.isPackage());
