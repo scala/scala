@@ -378,6 +378,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
           s.xNext;
           gen.mkStringLit( pos, tmp )
         case '{' =>
+          s.xNext;
           xScalaExpr;
         case _ =>
 	  s.xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
@@ -411,7 +412,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   /* [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'                 */
   def xEndTag( n:Name ) = {
     s.xToken('/');
-    if( n != s.xName ) s.xSyntaxError( "expected closing tag of " + n );
+    if(n != s.xName) s.xSyntaxError( "expected closing tag of " + n );
     s.xSpaceOpt;
     s.xToken('>')
   }
@@ -419,7 +420,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   def xScalaExpr:Tree = {
     s.xSync;
     val b = p.expr(true,false);
-    if( s.token != RBRACE )
+    if(s.token != RBRACE)
       s.xSyntaxError(" expected end of Scala block");
     return b
   }
@@ -430,8 +431,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
    */
   def xExpr:Tree = {
     var pos = s.pos;
-    val Tuple2( elemName, attrMap ) = xTag;
-    if( s.ch == '/' ) { // empty element
+    val Tuple2(elemName, attrMap) = xTag;
+    if(s.ch == '/') { // empty element
       s.xToken('/');
       s.xToken('>');
       makeXML( pos, elemName, Tree.EMPTY_ARRAY, attrMap );
@@ -523,6 +524,8 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
   }
 
 
+  /** xScalaPatterns  ::= patterns
+   */
   def xScalaPatterns:Array[Tree] = {
     s.xSync;
     val b = p.patterns();
@@ -565,6 +568,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser, preserveWS:boolean ) {
           }
           case '{' => // embedded Scala patterns
             while( s.ch == '{' ) {
+              s.nextch();
               ts.append( xScalaPatterns );
             }
             // postcond: s.xScalaBlock = false;

@@ -888,15 +888,18 @@ class Scanner(_unit: Unit) extends TokenData {
     }
   }
 
-  // start XML tokenizing.
+  // start XML tokenizing methods
   // prod. [i] refers to productions in http://www.w3.org/TR/REC-xml
 
+  /** calls nextToken, starting the scanning of Scala tokens,
+  *   after XML tokens.
+  */
+
   def xSync = {
-    token = SEMI; // last token might have been RBRACE, avoid SEMI
-    pos = Position.encode( cline,ccol );
-    nextch();
-    nextToken();
+    token = SEMI; // avoid getting SEMI from nextToken if last was RBRACE
     xScalaBlock = false;
+    //nextch();
+    nextToken();
   }
 
   def xSyntaxError(s:String) = {

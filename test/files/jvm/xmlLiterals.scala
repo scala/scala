@@ -157,14 +157,14 @@ object Test03Servlet {
       <body>
         <h2>Welcome</h2>
         <p>
-          { headerMsg }
+          {headerMsg }
         </p>
         <p>
           { ns:_* }
         </p>
         <hr/>
         <p>
-          { footerMsg }
+          {footerMsg}
         </p>
         <h2>Bye!</h2>
       </body>
@@ -178,11 +178,11 @@ object Test03Servlet {
   /** this is a recursive procedure that adds some attributes to the tree
    */
   def beautify( n:Node ):Node = n match {
-    case <td>{ xs @ _* }</td> =>
+    case <td>{xs @ _* }</td> =>
           <td bgcolor="#AAAAFF" color="#222255">{ xs:_* }</td>
 
     case <table>{ xs @ _* }</table> =>
-          <table align="center">{ beautify( xs ):_* }</table>
+          <table align="center">{ beautify( xs ):_*}</table>
 
     case Elem( label, _, xs @ _* ) =>
           new Elem( label, beautify( xs ):_*)
@@ -241,7 +241,7 @@ object Test03Servlet {
     val tryBrace = <try>Now escaped {{ braces } </try>;
     assertEquals( tryBrace, Elem("try",e,Text("Now escaped { braces }")));
 
-    val tryBrace2 = <try myAttrib={ (3+4).toString() }> cool ?</try>;
+    val tryBrace2 = <try myAttrib={(3+4).toString() }> cool ?</try>;
     assertEquals( tryBrace2.attribute("myAttrib"), "7" );
 
     /* Scala comments are not allowed in XML literals. see neg(2) */
