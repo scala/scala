@@ -497,11 +497,12 @@ trait List[+a] extends Seq[a] {
   };
 
   /** Sort the list according to the comparison function
-   *  <code>&lt;(e1: a, e2: a) =&gt; Booleani</code>,
+   *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
    *  which should be true iff e1 is smaller than e2.
    *  Note: The current implementation is inefficent for
    *  already sorted lists.
    *
+   *  @param lt the comparison function
    *  @return a list sorted according to the comparison function
    *          <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
    */
