@@ -48,7 +48,7 @@ import java.io.IOException;
  * @author Nikolay Mihaylov
  */
 
-public class GenMSIL /*implements Modifiers */ {
+public class GenMSIL {
 
     final Map assemblies;
 
@@ -71,14 +71,13 @@ public class GenMSIL /*implements Modifiers */ {
 
     Symbol currentPackage;
 
-
     static final Item TRUE_ITEM  = Item.CondItem(Test.True, null, null);
     static final Item FALSE_ITEM = Item.CondItem(Test.False, null, null);
 
     final Symbol STRING_CONCAT;
-    static final Type SCALA_UNIT = TypeCreator.getJavaType("scala.Unit");
-    static final FieldInfo RUNTIME_UNIT_VAL =
-	TypeCreator.getJavaType("scala.runtime.RunTime").GetField("UNIT_VAL");
+    final FieldInfo RUNTIME_UNIT_VAL;
+
+
 
     /**
      */
@@ -96,6 +95,8 @@ public class GenMSIL /*implements Modifiers */ {
 
 	STRING_CONCAT = defs.STRING_CLASS.members().
 	    lookup(Name.fromString("concat"));
+
+	RUNTIME_UNIT_VAL = tc.getType("scala.runtime.RunTime").GetField("UNIT_VAL");
 
     }
 
@@ -122,14 +123,14 @@ public class GenMSIL /*implements Modifiers */ {
      */
     public void initGen() {
 	currModule = getPackage("prog", true);
-	main = (MethodBuilder) currModule.GetMethod("Main", Type.EmptyTypes);
-	if (main == null) {
+	//main = (MethodBuilder) currModule.GetMethod("Main", Type.EmptyTypes);
+	//if (main == null) {
 	    main = currModule.DefineGlobalMethod
-		("Main", MethodAttributes.Static,
+		("Main", MethodAttributes.Public | MethodAttributes.Static,
 		 Type.GetType("System.Void"),
-		 new Type[] {Type.GetType("System.String[]")} );
-	    main.DefineParameter(0, 0L, "args");
-	}
+		 new Type[] {TypeCreator.STRING_ARRAY} );
+	    main.DefineParameter(0, 0, "args");
+	    //}
     }
 
     public void finalizeGen() {
@@ -144,7 +145,7 @@ public class GenMSIL /*implements Modifiers */ {
 // 		Type[] types = assem.GetTypes();
 // 		for (int i = 0; i < types.length; i++)
 // 		    log("\t" + types[i]);
-		assem.Save(assem.FullName + ".il");
+		assem.Save(assem.GetName().Name + ".il");
 	    }
 	}
 	catch (IOException e) {
@@ -153,8 +154,6 @@ public class GenMSIL /*implements Modifiers */ {
     }
 
     MethodBuilder main;
-
-    static final Type STRING_ARRAY = Type.GetType("System.String[]");
 
     final Map mains = new HashMap();
 
@@ -169,7 +168,7 @@ public class GenMSIL /*implements Modifiers */ {
 	ParameterInfo[] params = method.GetParameters();
 	if (params.length != 1)
 	    return;
-	if (params[0].ParameterType != STRING_ARRAY)
+	if (params[0].ParameterType != TypeCreator.STRING_ARRAY)
 	    return;
 
 	//log("'main' method found: " + method);
@@ -336,8 +335,8 @@ public class GenMSIL /*implements Modifiers */ {
 		}
 
 		ConstructorBuilder cctor = ((TypeBuilder)(method.DeclaringType)).
-		    DefineConstructor(MethodAttributes.Static |
-				      MethodAttributes.Public,
+		    DefineConstructor((short)(MethodAttributes.Static
+					      | MethodAttributes.Public),
 				      CallingConventions.Standard,
 				      Type.EmptyTypes);
 		currentMethod = cctor;
@@ -358,8 +357,7 @@ public class GenMSIL /*implements Modifiers */ {
 		code = ctorCode;
 	    } else
 		drop(gen(rhs, MSILType.VOID));
-	}
-	else {
+	} else {
 	    lastStatement = true;
 	    code = ((MethodBuilder)method).GetILGenerator();
 	    Item item = gen(rhs, toType);
@@ -650,7 +648,7 @@ public class GenMSIL /*implements Modifiers */ {
 	    resolve(fail);
 	    Item iElse= null;
 	    if (elsep == Tree.Empty) {
-		iElse = items.StaticItem(MSILType.REF(SCALA_UNIT), RUNTIME_UNIT_VAL);
+		iElse = items.StaticItem(MSILType.REF(tc.SCALA_UNIT), RUNTIME_UNIT_VAL);
 		iElse = coerce(iElse, toType);
 	    } else
 		iElse = load(coerce(gen(elsep, toType), toType));
@@ -733,11 +731,11 @@ public class GenMSIL /*implements Modifiers */ {
 //  	    log("\tqualifier.type: " + Debug.show(qualifier.type));
 
 	    if (sym == primitives.BOX_UVALUE) {
-		return items.StaticItem(MSILType.REF(SCALA_UNIT), RUNTIME_UNIT_VAL);
+		return items.StaticItem(MSILType.REF(tc.SCALA_UNIT), RUNTIME_UNIT_VAL);
 	    }
-// 	    if (sym == global.primitives.AS_UVALUE) {
-// 		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
-// 	    }
+ 	    if (sym == primitives.AS_UVALUE) {
+ 		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
+ 	    }
 
 	    if (sym == defs.EQEQ) {
 		return genEq(qualifier, args[0]);
@@ -1211,14 +1209,14 @@ public class GenMSIL /*implements Modifiers */ {
 	MSILType mtype = type2MSILType(type);
 	switch (mtype) {
 	case REF(Type t):
-	    if (t == TypeCreator.SCALA_BYTE)    return MSILType.I1;
-	    if (t == TypeCreator.SCALA_SHORT)   return MSILType.I2;
-	    if (t == TypeCreator.SCALA_INT)     return MSILType.I4;
-	    if (t == TypeCreator.SCALA_LONG)    return MSILType.I8;
-	    if (t == TypeCreator.SCALA_FLOAT)   return MSILType.R4;
-	    if (t == TypeCreator.SCALA_DOUBLE)  return MSILType.R8;
-	    if (t == TypeCreator.SCALA_CHAR)    return MSILType.CHAR;
-	    if (t == TypeCreator.SCALA_BOOLEAN) return MSILType.BOOL;
+	    if (t == tc.SCALA_BYTE)    return MSILType.I1;
+	    if (t == tc.SCALA_SHORT)   return MSILType.I2;
+	    if (t == tc.SCALA_INT)     return MSILType.I4;
+	    if (t == tc.SCALA_LONG)    return MSILType.I8;
+	    if (t == tc.SCALA_FLOAT)   return MSILType.R4;
+	    if (t == tc.SCALA_DOUBLE)  return MSILType.R8;
+	    if (t == tc.SCALA_CHAR)    return MSILType.CHAR;
+	    if (t == tc.SCALA_BOOLEAN) return MSILType.BOOL;
 	    return type2MSILType(t);
 	case ARRAY(_): log("primitiveType: cannot convert " + mtype); return null;
 	default: return mtype;
