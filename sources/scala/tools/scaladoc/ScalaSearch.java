@@ -236,8 +236,18 @@ public class ScalaSearch {
 	    public int compare(Object o1, Object o2) {
 		Symbol symbol1 = (Symbol) o1;
 		Symbol symbol2 = (Symbol) o2;
-		String name1 = symbol1.fullName().toString();
- 		String name2 = symbol2.fullName().toString();
+                if (symbol1 == symbol2) return 0;
+                if (symbol1.isRoot()) return -1;
+                if (symbol2.isRoot()) return +1;
+                if (symbol1.isNone()) return -1;
+                if (symbol2.isNone()) return +1;
+                if (symbol1.isError()) return -1;
+                if (symbol2.isError()) return +1;
+                int owners = compare(symbol1.owner(), symbol2.owner());
+                if (owners < 0) return -1;
+                if (owners > 0) return +1;
+		String name1 = symbol1.nameString();
+ 		String name2 = symbol2.nameString();
 		return name1.compareTo(name2);
 	    }
 	    public boolean equals(Object o) {
