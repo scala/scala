@@ -548,11 +548,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         if (n == 100)
             throw new Type.Error("alias chain too long (recursive type alias?): " + this);
         switch (this) {
-        case TypeRef(Type pre, Symbol sym, Type[] args):
-            if (sym.kind == ALIAS && sym.typeParams().length == args.length)
-                return sym.info().subst(sym.typeParams(), args)
-                    .asSeenFrom(pre, sym.owner()).unalias(n + 1);
-            break;
         case TypeVar(Type origin, Constraint constr):
             if (constr.inst != NoType) return constr.inst.unalias(n + 1);
             else return this;
@@ -1271,10 +1266,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return sym.info()
                     .asSeenFrom(pre, sym.owner()).baseType(clazz);
             else if (sym.kind == ALIAS)
-                if (sym.typeParams().length == args.length)
-                    return sym.info().subst(sym.typeParams(), args)
-                        .asSeenFrom(pre, sym.owner()).baseType(clazz);
-                else return Type.NoType;
+                return Type.NoType;
             else if (clazz.isCompoundSym())
                 return NoType;
             else {
@@ -2087,9 +2079,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (sym1.kind == TYPE && this.isSubType(that.loBound()))
                     return true;
             }
-            if (sym.kind == ALIAS && sym.typeParams().length == args.length)
-                return this.unalias().isSubType(that);
-            else if (sym == Global.instance.definitions.ALL_CLASS)
+            if (sym == Global.instance.definitions.ALL_CLASS)
                 return that.isSubType(Global.instance.definitions.ANY_TYPE());
             else if (sym == Global.instance.definitions.ALLREF_CLASS)
                 return
@@ -2116,13 +2106,6 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
             if (Global.instance.definitions.JAVA_OBJECT_TYPE().isSubType(that))
                 return true;
             // !!! we should probably also test for Clonable, Serializable, ...
-        }
-
-        switch (that) {
-        case TypeRef(_, Symbol sym1, Type[] args):
-            if (sym1.kind == ALIAS && sym1.typeParams().length == args.length)
-                return this.isSubType(that.unalias());
-            break;
         }
 
         return false;
@@ -2357,19 +2340,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         switch (this) {
         case NoType:
             return false;
-        case TypeRef(_, Symbol sym, Type[] args):
-            if (sym.kind == ALIAS && sym.typeParams().length == args.length)
-                return this.unalias().isSameAs(that);
-            break;
         case TypeVar(Type origin, Constraint constr):
             if (constr.inst != NoType) return constr.inst.isSameAs(that);
             else return constr.instantiate(that.any2typevar());
-        }
-
-        switch (that) {
-        case TypeRef(_, Symbol sym, Type[] args):
-            if (sym.kind == ALIAS && sym.typeParams().length == args.length)
-                return this.isSameAs(that.unalias());
         }
 
         return false;
@@ -3207,8 +3180,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         private Type upperBound() {
             switch (this) {
             case TypeRef(Type pre, Symbol sym, Type[] args):
-                if (sym.kind == ALIAS && sym.typeParams().length == args.length
-                    || sym.kind == TYPE)
+                if (sym.kind == TYPE)
                     return pre.memberInfo(sym).upperBound();
             }
             return this;

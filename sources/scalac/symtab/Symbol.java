@@ -1639,7 +1639,6 @@ public abstract class TypeSymbol extends Symbol {
     }
     //where
         private static Map inclClosure(Map closure, Type type) {
-            type = type.unalias();
             switch (type) {
             case ErrorType:
                 return closure;
@@ -1791,7 +1790,7 @@ public class ClassSymbol extends TypeSymbol {
             Symbol clasz = ClassSymbol.this;
             Symbol alias = rebindSym;
             Type prefix = clasz.owner().thisType();
-            Type constrtype = clasz.type(); // !!!
+            Type constrtype = clasz.type();
             constrtype = Type.MethodType(Symbol.EMPTY_ARRAY, constrtype);
             constrtype = Type.PolyType(clasz.typeParams(), constrtype);
             constrtype = constrtype.cloneType(
