@@ -10,7 +10,7 @@ package scala;
 
         abstract class SeqTrace[ a ] extends List[ Tuple2[ Int, a ] ] {
 
-             /*abstract*/ def isEmpty:Boolean ;
+             /*abstract*/ def isEmpty:boolean ;
 
              /*abstract*/ def head:Tuple2[ Int, a ];
 
