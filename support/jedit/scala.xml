@@ -6,6 +6,7 @@
 	<PROPS>
 		<PROPERTY NAME="indentOpenBrackets" VALUE="{" />
 		<PROPERTY NAME="indentCloseBrackets" VALUE="}" />
+                <PROPERTY NAME="lineUpClosingBracket" VALUE="true" />
 		<PROPERTY NAME="indentPrevLine"
 			VALUE="\s*(((if|while)\s*\(|else\s*(\{|$)|else\s+if\s*\(|case\s+.+:|default:)[^;]*|for\s*\(.*)" />
 		<PROPERTY NAME="indentSize" VALUE="2" />
