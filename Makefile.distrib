@@ -148,7 +148,7 @@ install-windows		: install
 	    srcfile="$(PROJECT_SUPPORTDIR)/windows/scala_wrapper"; \
 	    nixfile="$(INSTALL_PREFIX)/bin/$$file"; \
 	    winfile="$(INSTALL_PREFIX)/bin/$$file.bat"; \
-	    nixexec=`SCALA_EXEC=echo $$nixfile`; \
+	    nixexec=`SCALA_EXEC=echo SCALA_CLASSPATH=\"%CLASSPATH%\" $$nixfile`; \
 	    winexec="$$nixexec"; \
 	    winexec=`echo "$$winexec" | sed -es"#$$root#\"%SCALA_HOME%\"#g"`; \
 	    winexec=`echo "$$winexec" | tr '/' '\\\\' | tr ':' ';'`; \
