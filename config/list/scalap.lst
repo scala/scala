@@ -15,6 +15,7 @@ FileCache.scala
 Flags.scala
 JavaWriter.scala
 Main.scala
+MetaAttribute.scala
 Names.scala
 ScalaAttribute.scala
 ScalaWriter.scala
