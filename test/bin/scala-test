@@ -447,7 +447,7 @@ main() {
                    int ) FILES_INT="$FILES_INT $SRCDIR/run";;
         esac;
         case "$TEST_TYPE" in
-                   jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run";;
+                   jvm ) FILES_JVM="$FILES_JVM $SRCDIR/run $SRCDIR/jvm";;
         esac;
         case "$TEST_TYPE" in
             auto | pos ) FILES_POS="$FILES_POS $PREFIX/pos $PREFIX/cours";;
