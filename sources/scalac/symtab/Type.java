@@ -1982,6 +1982,17 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
+    /** Return the full erasure of the type. Full erasure is the same
+     * as "normal" erasure, except that the "Unit" type is erased to
+     * the "void" type.
+     */
+    public Type fullErasure() {
+        if (Global.instance.definitions.UNIT_TYPE.equals(this))
+            return unbox();
+        else
+            return erasure();
+    }
+
 // Object Interface -----------------------------------------------------------------
 
     public String toString() {
