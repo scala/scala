@@ -1,18 +1,29 @@
-Distributions
--------------
+
+Scala Software Distributions
+----------------------------
 
 - scala-YYYYMMDD-hhmmss.tar.gz            Unix distribution
 - scala-YYYYMMDD-hhmmss.zip               Windows distribution
 
-The standard distributions require java 1.4.x or above. If you don't
-know which version of java you have, run the command "java -version".
+The standard distributions require Java 1.4.x or above. If you don't
+know which version of Java you have, run the command "java -version".
 
-Scala tools
+
+Scala Tools
 -----------
 
-- socos    Scala compiler
-- surus    Scala interpreter
-- siris    Scala interactive interpreter
+- scalac      Scala compiler
+- scaladoc    Scala API documentation generator
+- scalaint    Scala interactive interpreter
+- scalarun    Scala interpreter
+
+Run the command "scalac -help" to display the list of available
+compiler options.
+
+NB. socos, siris and surus are deprecated commands starting from
+version 20030811-115735 of the Scala distribution, please use
+respectively scalac, scalaint and scalarun instead.
+
 
 Install on Unix
 ---------------
@@ -22,10 +33,11 @@ Untar the archive. All scala tools are located in the directory "bin".
 You may test the distribution by running the script "scala-test"
 located in the subdirectory "share/scala/test/bin".
 
+
 Install on Windows
 ------------------
 
-Unzip the archive. All scala tools are located in the bin
+Unzip the archive. All scala tools are located in the "bin"
 directory. Before running any of these tools, you must define the
 environment variable SCALA_HOME to point to the home directory of the
 scala distribution.
@@ -33,16 +45,28 @@ scala distribution.
 On Windows 95/98/Me, this can be done by adding the following command
 to your AUTOEXEC.BAT file and then rebooting your machine.
 
-set SCALA_HOME=<unzip directory>\scala-YYYYMMDD-hhmmss
+set SCALA_HOME=<install-directory>\scala-YYYYMMDD-hhmmss
 
 On Windows NT/2000/XP, open the "Control Panel", open the "System"
-applet, select the "Advenced" tab, click on "Environment Variables",
+applet, select the "Advanced" tab, click on "Environment Variables",
 click on "New..." in the user variable section and enter the following
 informations:
 
 Variable Name : SCALA_HOME
-Variable Value: <unzip directory>\scala-YYYYMMDD-hhmmss
+Variable Value: <install-directory>\scala-YYYYMMDD-hhmmss
 
 If you have Administrator privileges, you may install the tools for
 all users of your machine by creating a new system variable instead of
 a new user variable.
+
+
+______________________________________________________________________
+
+Java, J2EE, J2SE, J2ME, and all Java-based marks are trademarks or
+registered trademarks of Sun Microsystems, Inc. in the United States
+and other countries.
+
+Windows 95, Windows 98, Windows ME, Windows NT, Windows 2000,
+Windows XP are registered trademarks of Microsoft Corporation in the
+United States and other countries
+______________________________________________________________________
