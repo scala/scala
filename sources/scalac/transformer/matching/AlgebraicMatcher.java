@@ -167,7 +167,7 @@ public class AlgebraicMatcher extends PatternTool {
         CaseEnv env = new CaseEnv( _m.owner, unit );
 
         //PatternNode matched = match(pat, root);
-        PatternNode target = enter1(pat, null /*-1*/, root, root.symbol(), env, case_index);
+        PatternNode target = enter1(pat, /*null*/ -1, root, root.symbol(), env, case_index);
         //if (target.and != null)
         //    unit.error(pat.pos, "duplicate case");
 
@@ -190,8 +190,14 @@ public class AlgebraicMatcher extends PatternTool {
 
 
     protected Tree[] patternArgs(Tree tree) {
+	System.err.println("patternArgs("+tree+")");
         switch (tree) {
             case Apply(_, Tree[] args):
+		if( isSeqApply( (Apply) tree )) {
+		    System.err.println("patternArgs: is seq apply !");
+		    return Tree.EMPTY_ARRAY;// let sequence matcher handle this
+
+		}
                 return args;
             default:
                 return Tree.EMPTY_ARRAY;
@@ -226,13 +232,8 @@ public class AlgebraicMatcher extends PatternTool {
           Type theType = getConstrType( tree.type );
           switch (tree) {
 	  case Apply(Tree fn, Tree[] args):             // pattern with args
-	      if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
-		  switch (args[0]) {
-		  case Sequence(Tree[] ts):
-		      PatternNode res = mk.ConstrPat( tree.pos, theType );
-		      res.and = mk.SequencePat(tree.pos, tree.type, ts.length, args[0]);
-		      return res;
-		  }
+	      if( isSeqApply( (Apply) tree ))
+		  return mk.SeqContainerPat( tree.pos, theType, args[ 0 ] );
 	      return mk.ConstrPat(tree.pos, theType);
           case Typed(Ident(Name name), Tree tpe):       // typed pattern
                 theType = getConstrType( tpe.type );
@@ -279,8 +280,8 @@ public class AlgebraicMatcher extends PatternTool {
 
 	      case Sequence( _ ):
 		  throw new ApplicationError("Illegal pattern");
-	      //return mk.SequencePat(tree.pos, tree, case_index);
-	      //return mk.SequencePat(tree.pos, null, 0, tree);
+	      //return mk.SeqContainerPat(tree.pos, tree, case_index);
+	      //return mk.SeqContainerPat(tree.pos, null, 0, tree);
 
 	      //case Subsequence( _ ): // this may not appear here.
                 /*case Bind( Name n, Tree t ): // ignore for now, treat as var x
@@ -359,17 +360,17 @@ public class AlgebraicMatcher extends PatternTool {
        *                possibly creating a new header.
        */
     public PatternNode enter1(Tree pat,
-                              //int index,
-                              Symbol typeSym,
+                              int index,
+                              //Symbol typeSym,
                               PatternNode target,
                               Symbol casted,
                               CaseEnv env,
                               int case_index) {
-          //System.out.println("enter(" + pat + ", " + typeSym /*index*/ + ", " + target + ", " + casted + ")");
+	System.out.println("enter(" + pat + ", " + /*typeSym*/ index + ", " + target + ", " + casted + ")");
         // get pattern arguments (if applicable)
         Tree[] patArgs = patternArgs(pat);
         // get case fields
-        assert patArgs.length == nCaseComponents(pat);
+        //assert patArgs.length == nCaseComponents(pat); // commented out also in new matcher
         // advance one step in pattern
         Header curHeader = (Header)target.and;
         // check if we have to add a new header
@@ -377,11 +378,11 @@ public class AlgebraicMatcher extends PatternTool {
               //assert index >= 0 : casted;
               // <casted>.as[ <caseFieldAccessor[ index ]> ]
 
-              assert typeSym != null;
-              /*
+              //assert typeSym != null;
+
               Symbol typeSym = ((ClassSymbol) casted.type().symbol())
                     .caseFieldAccessor(index);
-              */
+
               Type castType = getHeaderType( typeOf0( typeSym ));
               target.and = curHeader =
                     mk.Header(pat.pos,
@@ -429,10 +430,20 @@ public class AlgebraicMatcher extends PatternTool {
                                env,
                                case_index);
                   }
-            else if (next.or == null)
-                return enter(patArgs, next.or = patNode, casted, env, case_index);
-            else
+            else if (next.or == null) {
+		next.or = patNode;
+
+		if (patArgs.length == 1  && (casted.flags & Modifiers.CASE) == 0) {
+		    return enter( patArgs, patNode, casted, env, case_index );	 // FIX
+		}
+
+		return enter( patArgs, patNode, casted, env, case_index );
+            } else
                 next = next.or;
+    }
+
+    boolean isSeqApply( Tree.Apply tree ) {
+	return (tree.args.length == 1  && (tree.type.symbol().flags & Modifiers.CASE) == 0);
     }
 
       /** calls enter for an array of patterns, see enter
@@ -441,11 +452,15 @@ public class AlgebraicMatcher extends PatternTool {
         switch (target) {
             case ConstrPat(Symbol newCasted):
                 casted = newCasted;
+		break;
+            case SeqContainerPat(Symbol newCasted, _):
+		casted = newCasted;
+		//target = enter(pats, target.or, casted, env, case_index);
         }
         for (int i = 0; i < pats.length; i++) {
-              Symbol typeSym = ((ClassSymbol) casted.type().symbol())
-                    .caseFieldAccessor( i );
-              target = enter1(pats[i], typeSym /*i*/, target, casted, env, case_index);
+	    //Symbol typeSym = ((ClassSymbol) casted.type().symbol())
+	    //      .caseFieldAccessor( i );
+	    target = enter1(pats[i], /*typeSym*/ i, target, casted, env, case_index);
         }
         return target;
     }
@@ -574,7 +589,7 @@ public class AlgebraicMatcher extends PatternTool {
                               cf.Equals(selector, tree),
                               toTree(node.and),
                               toTree(node.or, selector)).setType(defs.BOOLEAN_TYPE);
-        case SequencePat( _, _, _ ):
+        case SeqContainerPat( _, _ ):
               return  callSequenceMatcher( node,
                                            selector );
         default:
@@ -595,7 +610,7 @@ public class AlgebraicMatcher extends PatternTool {
                           break;// defaultNode = node;
                     else
                           switch( node ) {
-                    case SequencePat( _, _, _ ):
+                    case SeqContainerPat( _, _ ):
                           seqPatNodes.add( node );
                           bodies.add( toTree( node.and ) );
                           node = node.or;
@@ -617,7 +632,7 @@ public class AlgebraicMatcher extends PatternTool {
                              ...
               */
 
-              // translate the _.and subtree of this SequencePat
+              // translate the _.and subtree of this SeqContainerPat
 
               Vector seqPatNodes = new Vector();
               Vector bodies      = new Vector();
@@ -641,7 +656,7 @@ public class AlgebraicMatcher extends PatternTool {
               int j = 0;
               for( Iterator it = seqPatNodes.iterator();
                    it.hasNext();) {
-                    pats[ j ]  = ((SequencePat) it.next()).seqpat;
+                    pats[ j ]  = ((SeqContainerPat) it.next()).seqpat;
                     body[ j ] = (Tree) tmp[j];
                           j++;
               }

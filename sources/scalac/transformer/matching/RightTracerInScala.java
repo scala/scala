@@ -121,7 +121,6 @@ public class RightTracerInScala extends Autom2Scala  {
                   rhs = cf.ignoreValue( realVar.type() );
             else
                   rhs = cf.newSeqNil( elementType );
-
             Tree varDef = gen.ValDef(helpVar, rhs);
             //((ValDef) varDef).kind = Kinds.VAR;
             helpVarDefs.add( varDef );
@@ -471,9 +470,11 @@ public class RightTracerInScala extends Autom2Scala  {
        */
       Tree run_finished( int state ) {
             //return gen.Ident( accumSym.pos, accumSym );
-            return gen.New( pos, defs.SCALA_TYPE, defs.UNIT_CLASS,
+	  return gen.Block(0, Tree.EMPTY_ARRAY).setType( defs.UNIT_TYPE );
+	      /* gen.Ident(0, defs.NULL); */
+	  /*gen.New( pos, defs.SCALA_TYPE, defs.NULL, //UNIT_CLASS,
                             Type.EMPTY_ARRAY,
-                            Tree.EMPTY_ARRAY);
+                            Tree.EMPTY_ARRAY);                             */
 
 
       }

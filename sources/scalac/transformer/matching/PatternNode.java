@@ -23,20 +23,23 @@ public class PatternNode {
     public PatternNode or;
     public PatternNode and;
 
-    public case Header(Tree selector, Header next);
-    public case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body);
+    public case Header( Tree selector, Header next );
+    public case Body( Tree.ValDef[][] bound, Tree[] guard, Tree[] body );
     public case DefaultPat();
-    public case ConstrPat(Symbol casted);
-    public case SequencePat(Symbol casted, int len, Tree seqpat);
-    public case ConstantPat(Object value);
-    public case VariablePat(Tree tree);
+    public case ConstrPat( Symbol casted );
+    public case SequencePat( Symbol casted, int len ); // only used in PatternMatcher
+    public case SeqContainerPat( Symbol casted, Tree seqpat ); //   in AlgebraicMatcher
+    public case ConstantPat( Object value );
+    public case VariablePat( Tree tree );
 
 
     public Symbol symbol() {
         switch (this) {
-            case ConstrPat(Symbol casted):
+            case ConstrPat( Symbol casted ):
                 return casted;
-            case SequencePat(Symbol casted, _, _):
+            case SequencePat( Symbol casted, _ ):
+                return casted;
+            case SeqContainerPat( Symbol casted, _ ):
                 return casted;
             default:
                 return Symbol.NONE;
@@ -45,19 +48,21 @@ public class PatternNode {
 
     public String toString() {
         switch (this) {
-            case Header(Tree selector, Header next):
+            case Header( Tree selector, Header next ):
                 return "Header(" + selector + ")";
-            case Body(_, _, _):
+            case Body( _, _, _ ):
                 return "Body";
             case DefaultPat():
                 return "DefaultPat";
-            case ConstrPat(Symbol casted):
+            case ConstrPat( Symbol casted ):
                 return "ConstrPat(" + casted + ")";
-            case SequencePat(Symbol casted, int len, Tree seqpat):
+            case SequencePat( Symbol casted, int len ):
                 return "SequencePat(" + casted + ", " + len + "...)";
-            case ConstantPat(Object value):
+            case SeqContainerPat( Symbol casted, Tree seqpat ):
+                return "SeqContainerPat(" + casted + ", " + seqpat + ")";
+            case ConstantPat( Object value ):
                 return "ConstantPat(" + value + ")";
-            case VariablePat(Tree tree):
+            case VariablePat( Tree tree ):
                 return "VariablePat";
             default:
                 return "<unknown pat>";

@@ -99,7 +99,8 @@ class BerrySethi {
             //DEBUG.print( pat );
             //System.out.println("</compFirst>");
             switch( pat ) {
-            case Sequence( _ ):
+            case Sequence( Tree[] trees ):
+		return compFirst( trees );
             case Typed(_,_):
             case Select(_,_):
             case Apply(_, _):
@@ -249,8 +250,9 @@ class BerrySethi {
        *  the way
        */
       TreeSet compFollow1( TreeSet fol, Tree pat ) {
+	  System.out.println("compFollow1("+fol+","+pat+")");
             switch( pat ) {
-            case Sequence(Tree[] trees):
+            case Sequence( Tree[] trees ):
                   TreeSet first = null;
                   int i = trees.length;
                   if( i > 0 ) { // is nonempty
@@ -266,7 +268,7 @@ class BerrySethi {
                   if( null == first ) first = new TreeSet();
                   return first;
 
-            case Alternative(Tree[] choices):
+            case Alternative( Tree[] choices ):
                   TreeSet first = new TreeSet();
                   for( int i = choices.length - 1; i >= 0; --i ) {
                         first.addAll( compFollow1( fol, choices[ i ] ));
@@ -278,7 +280,7 @@ class BerrySethi {
                   Integer p = (Integer) this.posMap.get( pat );
 
                   TreeSet first = compFirst( t );
-                  //System.out.print("BIND" + first);
+                  System.out.print("BIND" + first);
                   recVars.put( pat.symbol(), first );
 
                   // if( appearsRightmost( n, t ))
@@ -543,7 +545,7 @@ class BerrySethi {
 
             this.finalTag = finalTag;
 
-            //System.out.println( "enter automatonFrom(...)"); // UNIT TEST
+            System.out.println( "enter automatonFrom("+pat+","+finalTag+")"); // UNIT TEST
             //System.out.println( TextTreePrinter.toString(pat) );
             /*DEBUG = new TextTreePrinter( System.out );
             DEBUG.begin();
@@ -552,8 +554,6 @@ class BerrySethi {
             */
             //System.out.println( nullableSequence( pat )); // UNIT TEST
             switch( pat ) {
-		//case Subsequence( Tree[] subexpr ): // NEW VERSION
-		//return automatonFrom( new Tree.Sequence( subexpr ), finalTag ); // NEW VERSION
             case Sequence( Tree[] subexpr ):
                   initialize( subexpr );
 

@@ -37,19 +37,27 @@ class CodeFactory extends PatternTool {
 
 
     Symbol seqListSym() {
-	return defs.getType( Name.fromString("scala.List") ).symbol() ;
+	return defs.getType( Names.scala_List ).symbol() ;
     }
 
     Symbol seqConsSym() {
-	return defs.getType( Name.fromString("scala.::") ).symbol() ;
+	return defs.getType( Names.scala_COLONCOLON ).symbol() ;
     }
 
     Symbol seqNilSym() {
-	return defs.getType( Name.fromString( "scala.Nil" ) ).symbol(); // no need for TypeApply anymore!x
+	return defs.getType( Names.scala_Nil ).symbol(); // no need for TypeApply anymore!x
     }
 
     Symbol seqIterSym() {
-	return defs.getType( Name.fromString( "scala.Iterator" ) ).symbol();
+	return defs.getType( Names.scala_Iterator ).symbol();
+    }
+
+    Symbol seqIterSym_next() {
+	Scope scp = seqIterSym().members(); return scp.lookup( Names.next );
+    }
+
+    Symbol seqIterSym_hasNext() {
+	Scope scp = seqIterSym().members(); return scp.lookup( Names.hasNext );
     }
 
     Symbol seqTraceSym() {
@@ -254,10 +262,13 @@ class CodeFactory extends PatternTool {
       }
 
     Tree newSeqNil( Type tpe ) {
+	/*
 	assert tpe != null :"tpe = null !?";
 	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqNilSym(),
 			new Type[] { tpe },
 			new Tree[] {});
+	*/
+	return gen.Select(gen.Ident(0, defs.SCALA), Names.Nil/*seqNilSym()*/);
     }
 
     Tree newSeqCons( Tree head, Tree tail ) {
@@ -266,19 +277,22 @@ class CodeFactory extends PatternTool {
 			new Tree[] { head, tail });
     }
 
+    /** gets first arg of typeref ( can be Seq, Iterator, whatever )
+     */
     Type getElemType( Type seqType ) {
 	//System.err.println("getElemType("+seqType+")");
-	Symbol seqClass = defs.getType( Name.fromString("scala.Seq") ).symbol();
-	assert seqClass != Symbol.NONE : "did not find Seq";
+	//Symbol seqClass = defs.getType( Name.fromString("scala.Seq") ).symbol();
+	//assert seqClass != Symbol.NONE : "did not find Seq";
 
-	Type seqType1 = seqType.baseType( seqClass );
+	//Type seqType1 = seqType.baseType( seqClass );
 
-	switch( seqType1 ) {
+	switch( seqType ) {
 	case TypeRef(_,_,Type[] args):
-	    assert (args.length==1) : "weird type:"+seqType;
+	    assert( args.length==1 ) : "weird type:"+seqType;
 	    return args[ 0 ];
 	default:
-	    return seqType;
+	    //System.err.println("somethings wrong: "+seqType);
+	    return seqType.widen();
 	}
     }
 
@@ -286,27 +300,19 @@ class CodeFactory extends PatternTool {
      */
     public Tree _next( Tree iter ) {
 	Type elemType = getElemType( iter.type() );
+	System.err.println("elemType of next *** "+elemType);
+	Symbol nextSym = seqIterSym_next();
 
-	Scope scp = defs.getType( Names.scala_Iterator ).symbol() /* seqIterSym */
-	    .members();
-
-	Symbol nextSym = scp.lookup( Names.next );
-
-	return _applyNone( gen.Select( iter, nextSym )) /* todo: nextSym() */
-	    .setType( iter.type() );
+	return _applyNone( gen.Select( iter, nextSym )).setType( elemType );
     }
 
     /** `it.hasNext()'
      */
     public Tree _hasNext( Tree iter ) {
 
-	Scope scp = defs.getType( Names.scala_Iterator ).symbol() /* seqIterSym */
-	    .members();
+	Symbol hasNextSym = seqIterSym_hasNext();
 
-	Symbol hasNextSym = scp.lookup( Names.hasNext );
-
-	return _applyNone( gen.Select( iter, hasNextSym )) /* todo: hasNextSym() */
-	    .setType( defs.BOOLEAN_TYPE );
+	return _applyNone( gen.Select( iter, hasNextSym )).setType( defs.BOOLEAN_TYPE );
     }
 
     /** `!it.hasCur()'
