@@ -8,13 +8,31 @@ neg/S4.scala
 neg/S6.scala
 neg/S7.scala
 neg/abstract.scala
-# neg/altherr1.scala
 neg/altherr2.scala
 neg/altherr3.scala
+neg/bounds.scala
+neg/bug25.scala
+neg/bug38.scala
+neg/bug40.scala
+neg/bug43.scala
+neg/bug44.scala
+neg/bug45.scala
+neg/bug52.scala
+neg/bug58.scala
+neg/bug63.scala
+neg/bug67.scala
+neg/bug72.scala
+neg/bug74.scala
+neg/bug75.scala
 neg/constrparams.scala
+neg/cyclic.scala
 neg/imports.scala
 neg/matthias2.scala
 neg/michel2.scala
+neg/protected.scala
+neg/refine.scala
+neg/seqtest.scala
+neg/stable.scala
 neg/vincent1.scala
 
 ##############################################################################

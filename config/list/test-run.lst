@@ -3,6 +3,8 @@
 ##############################################################################
 # $Id$
 
+files/jvm/JavaInteraction.scala
+
 files/run/Course-2002-01.scala
 files/run/Course-2002-02.scala
 files/run/Course-2002-03.scala
@@ -14,9 +16,17 @@ files/run/Course-2002-08.scala
 files/run/Course-2002-09.scala
 files/run/Course-2002-10.scala
 files/run/Course-2002-13.scala
+files/run/NestedClasses.scala
 files/run/arrays.scala
+files/run/exceptions.scala
 files/run/imports.scala
-files/run/misc.scala
 files/run/iq.scala
+files/run/lisp.scala
+files/run/misc.scala
+files/run/overloads.scala
+files/run/regularpatmat.scala
+
+files/xml/lnk.scala
+files/xml/xhtml.scala
 
 ##############################################################################
