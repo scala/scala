@@ -23,7 +23,6 @@ public class AntTask extends Javac {
     private String target = null;
     private FileUtils fileUtils = FileUtils.newFileUtils();
 
-
     public void execute() {
         String old = project.getProperty("build.compiler");
         project.setProperty("build.compiler", "scala.tools.scalac4ant.AntAdaptor");
@@ -64,6 +63,19 @@ public class AntTask extends Javac {
 
     public String getSuffixes() {
         return suffixes;
+    }
+
+    public void setScalaClasspath(String s) {
+	System.setProperty("scala.class.path",s);
+    }
+    public String getScalaClasspath() {
+	return System.getProperty("scala.class.path");
+    }
+    public void setScalaBootClasspath(String s) {
+	System.setProperty("scala.boot.class.path",s);
+    }
+    public String getScalaBootClasspath() {
+	return System.getProperty("scala.boot.class.path");
     }
 
     protected String[] parseSuffixes() {
