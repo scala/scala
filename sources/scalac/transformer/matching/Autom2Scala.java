@@ -142,13 +142,13 @@ public class Autom2Scala  {
             tags[ i ]   = i;
             bodies[ i ] = stateWrap( i );
         }
-        if( optimize )
+        //if( optimize )
             return loadCurrentElem( gen.Switch( _state(),
                                                 tags,
                                                 bodies,
                                                 code_error(), // cannot happen
                                                 funRetType()));
-
+            /*
         Tree res = code_error();
         for( int i = dfa.nstates-2; i>= 0; i-- )
             res = gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )),
@@ -156,7 +156,7 @@ public class Autom2Scala  {
                           res );
 
         return loadCurrentElem( res );
-
+            */
     }
 
     AlgebraicMatcher am;

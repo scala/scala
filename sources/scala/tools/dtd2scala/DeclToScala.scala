@@ -76,7 +76,7 @@ class DeclToScala(fOut:PrintWriter,
       }
       val sb = new StringBuffer();
       for( val key <- curAttribs.keys ) {
-        sb.append(" case Seq(");
+        sb.append(" case Seq((),");
         curAttribs( key ) match {
           case AttrDecl( key, tpe, df ) =>
           appendKey( key, sb );
@@ -118,7 +118,7 @@ class DeclToScala(fOut:PrintWriter,
       /*Console.println("sCM:"+ r.getClass() + " r:"+r );*/
       r match {
         case Eps   => ""
-        case RNode(name) => "$TagOf" + cookedCap( name );
+        case RNode(name) => refTag( name ).toString();
         case Star(r) => "("+shallowContentModel( r ) +") *"
         case Alt( rs @ _* )  => shallowContentModel1( rs, '|' )
         case Sequ( rs @ _* ) =>  shallowContentModel1( rs, ',' )
@@ -136,28 +136,31 @@ class DeclToScala(fOut:PrintWriter,
       case Star(Alt(PCDATA_, alts @ _*)) => {
         val sb = new StringBuffer("tagIterator( ch ).forall( x:Int => x match {");
         for( val alt <- alts.elements ) {
-          sb.append("                          case $TagOf");
-          alt match { case RNode( name ) => sb.append( cookedCap( name ));}
+          sb.append("                          case ");
+          alt match { case RNode( name ) => sb.append( refTag( name ).toString() )}
           sb.append(" => true \n");
         }
         sb.append("case _ => false })");
         sb.toString();
       }
       case _ =>  val sb = new StringBuffer("tagIterator( ch ).toList.match {");
-        sb.append("         case Seq( ");
+        sb.append("         case Seq(");
         sb.append( shallowContentModel( r ) );
         sb.append( ") => true \n");
-        sb.append( "case _ => false }\n");
+        sb.append( "case _ => Console.println( tagIterator( ch ).toList);false }\n");
         sb.toString();
       }
     }
 
     var tagCounter = 0;
-    def newTag = {
+    val refTag = new HashMap[String,Int]();
+    def newTag(elemName:String) = {
       val i = tagCounter;
       tagCounter = tagCounter + 1;
+      refTag.update( elemName, i );
       i
     }
+
     def write:Unit = {
       def writeNode( x:Node ):Unit = {
         //Console.println("visiting "+x);
@@ -177,8 +180,10 @@ class DeclToScala(fOut:PrintWriter,
                 fOut.print(  validateAttributes( curAttribs ) );
               case "shallowContentRegExp" =>
                 fOut.print(  shallowValidate( curModel ) );
-              case "elementTag" =>
-                fOut.print( newTag.toString() );
+              case "makeTag" =>
+                fOut.print( newTag( lookup("elementName") ).toString() );
+              case "refTag" =>
+                fOut.print( refTag( lookup("elementName") ).toString() );
               case "elementBinding" => {
                 for( val decl <- elemMap.values ) {
                   lookup += "elementName" -> decl.name;

@@ -1,5 +1,6 @@
 package scalac.transformer.matching ;
 
+import scalac.Unit;
 import scalac.Global ;
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
@@ -18,6 +19,10 @@ import java.util.* ;
  */
 
 public class BindingBerrySethi extends BerrySethi {
+
+    public BindingBerrySethi(Unit unit) {
+        super(unit);
+    }
 
       HashMap deltaqRev[];    // delta of Rev
       Vector  defaultqRev[];  // default transitions of Rev

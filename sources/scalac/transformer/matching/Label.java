@@ -30,11 +30,9 @@ public class Label {
             case SimpleLabel( Literal lit ):
                   return lit.value.hashCode();
             case TreeLabel( Tree pat ):
-		switch( pat ) {
-		    case Apply( Tree fun, Tree[] args ):
-			return pat.getType().hashCode() + args.hashCode();
-		}
-		return pat.hashCode();
+                // if pat is an  Apply, than this case can only be correctly
+                // handled if it has no arguments...or there are no collisions
+                return pat.type().hashCode();
             case TypeLabel( Type type ):
                   return type.hashCode();
             default:

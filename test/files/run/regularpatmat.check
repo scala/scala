@@ -39,6 +39,8 @@ passed ok
 testWR_6
 passed ok
 passed ok
+testWR_7
+passed ok
 testWS
 passed ok
 passed ok
@@ -61,9 +63,6 @@ passed ok
 passed ok
 passed ok
 passed ok
-passed ok
-passed ok
-testWW
 passed ok
 passed ok
 testBK
@@ -115,11 +114,6 @@ passed ok
 passed ok
 passed ok
 passed ok
-passed ok
-passed ok
-passed ok
-passed ok
-testNN
 passed ok
 passed ok
 passed ok

@@ -281,6 +281,7 @@ package scala.tools.scalac.ast.parser {
 
     /** (2) nested `Sequence' nodes are flattened (( clique elimination ))
      *      nested empty subsequences get deleted
+     *       for Apply nodes, sequence arguments are removed
      */
 
     // apply `flattenSequence' to each tree in trees
@@ -295,6 +296,25 @@ package scala.tools.scalac.ast.parser {
     // main algo for (2)
     def flattenSequence( tree:Tree  ):Tree = {
       tree match {
+	case Tree$Apply( fn, trees:Array[Tree] ) =>
+          var li:List[Tree] = Nil;
+          var i = 0; while( i < trees.length ) {
+            trees(i) match {
+              case  Tree$Sequence( trees2:Array[Tree] ) =>
+                Iterator.fromArray( flattenSequenceChildren( trees2 ).toArray() ).foreach {
+                  x:Tree => li = x::li;
+                }
+              case z => li = z::li;
+            }
+            i = i + 1;
+          }
+        val newtrees:Array[Tree] = new Array[Tree]( li.length );
+        i = 0;
+        for( val nt <- li.reverse.elements ) {
+          newtrees( i ) = nt;
+          i = i + 1;
+        }
+        make.Apply( tree.pos, fn, newtrees )
 	/*
 	case Sequence( Tree[] trees ):
 	trees = flattenSequences( trees );
@@ -321,8 +341,8 @@ package scala.tools.scalac.ast.parser {
 	    }
 	    System.out.println();
 	    */
-	val t = treeListToSequence( tree.pos, ts ) ;
-	t
+	    val t = treeListToSequence( tree.pos, ts ) ;
+	    t
 	  case Tree$Alternative( choices ) =>
 	    make.Alternative( tree.pos, flattenSequences( choices ));
 	  case Tree$Bind( vble, body ) =>

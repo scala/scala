@@ -48,8 +48,10 @@ public class TestRegTraverser extends Traverser {
 		break;
 
 	    case Sequence( Tree[] trees):
-		//result = true;
-		traverse( trees );
+                if( trees.length == 0 ) {
+                    result = true;
+                    break;
+                } else traverse( trees );
 		//result = true;
 		break;
 

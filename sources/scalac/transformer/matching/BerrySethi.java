@@ -1,5 +1,6 @@
 package scalac.transformer.matching ;
 
+import scalac.Unit ;
 import scalac.ApplicationError ;
 import scalac.ast.Tree ;
 import scalac.ast.TreeInfo ;
@@ -17,9 +18,17 @@ import java.util.* ;
 
 class BerrySethi {
 
-      boolean isStar( Name n ) {
-          return TreeInfo.isNameOfStarPattern( n );
-      }
+    Unit unit;
+
+    public BerrySethi(Unit unit) {
+        this.unit = unit;
+    }
+
+    boolean isStar( Name n ) {
+        boolean res =  TreeInfo.isNameOfStarPattern( n );
+        //System.out.println("berry-sethi isStar?"+n.toString()+res);
+        return res;
+    }
     /*
 
             String s = n.toString();
@@ -355,8 +364,17 @@ class BerrySethi {
       void seenLabel( Tree pat, Integer i, Label label ) {
             this.posMap.put( pat, i );
             this.labelAt.put( i, label );
-            if( label != Label.DefaultLabel )
-                  this.labels.add( label );
+            if( label != Label.DefaultLabel ) {
+                if( this.labels.contains( label ) ) {
+                    switch(label) {
+                    case TreeLabel(Apply(_, Tree[] args)):
+                        if( args.length > 0 ) {
+                            unit.error(pat.pos, "sorry, this version of scalac cannot handle this pattern correctly");
+                        }
+                    }
+                }
+                this.labels.add( label );
+            }
       }
 
       /** overriden in BindingBerrySethi

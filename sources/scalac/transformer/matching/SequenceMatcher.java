@@ -37,7 +37,7 @@ public class SequenceMatcher extends PatternTool {
      */
     Tree addBinderToBody( Tree pat, Tree body ) {
         if( bbuild == null )
-            bbuild = new BindingBerrySethi();
+            bbuild = new BindingBerrySethi(unit);
 
         Type elementType = cf.getElemType_Sequence( pat.getType() );
 
@@ -71,7 +71,7 @@ public class SequenceMatcher extends PatternTool {
     }
 
     private NondetWordAutom[] buildNfas( Tree[] pat ) {
-        BerrySethi build = new BerrySethi();
+        BerrySethi build = new BerrySethi(unit);
         NondetWordAutom manyNfa[] = new NondetWordAutom[ pat.length ];
 
         for( int i = 0; i < pat.length; i++ ) {

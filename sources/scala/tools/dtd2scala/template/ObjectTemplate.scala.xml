@@ -42,6 +42,12 @@
                  +(map.keys.filter { x => map(x) == "&lt;R" })
                    .toList.mkString("",",",""));
 
+
+    def error_InvalidChildren( elName:String, ch:cT, cM:String ) =
+      error("trying to construct invalid "+elName+",\n children labels were: "
+            +ch.elements.map( x => x.label ).toList.mkString("",",","")
+            +"\n content model was "+cM);
+
     abstract class <string ref="objectName"/>Node$ extends scala.xml.Node;
 
     def tagIterator(ch:Seq[scala.xml.Node]):Iterator[Int] = new Iterator[Int] {
@@ -55,9 +61,10 @@
           val n = it.next;
           val i = n.typeTag$;
           if( i > 0 ) i else $tagMap.get( n.label ) match {
-            case Some( j ) => j
-            case None      => 0
-          }
+              case Some( j ) => j
+              case _         => 0
+            }
+          
         } else {
           error("internal error");
         }
@@ -65,14 +72,16 @@
     }
     private val $tagMap = new mutable.HashMap[String,Int];
     <elementBinding>
-     val $TagOf&ccElementName;:int = <elementTag/>;
-     $tagMap.update( &qElementName;, $TagOf&ccElementName; );
+     $tagMap.update( &qElementName;, <makeTag/> );
+    </elementBinding>
+    <elementBinding>
+
      def constr_&ccElementName;( attrs:aT, ch:cT ) = &ccElementName;(attrs,ch:_*);
 
      case class &ccElementName;( attrs:Map[String,String], ch:scala.xml.Node* ) extends <string ref="objectName"/>Node$ {
 
 
-    final override def typeTag$ = $TagOf&ccElementName;;
+    final override def typeTag$ = <refTag/>;
 
     final def shallowValidate&ccElementName;Children( ch:Seq[scala.xml.Node] ) = 
       <shallowContentRegExp/>;
@@ -94,7 +103,7 @@
     }
 
     if( !shallowValidate&ccElementName;Children( ch ) )
-       error("trying to construct invalid &elementName;");
+       error_InvalidChildren( &qElementName;, ch, <qstring ref="elementContentModel"/> );
 
      final def label = &qElementName;;
      final def child = ch;
@@ -104,7 +113,7 @@
         hmap = validateAttributes( attrs );
         } catch {
         case e:java.lang.Error => 
-          error("trying to construct invalid &elementName;\n"+e.getMessage());
+          error("invalid attributes for &elementName;\n"+e.getMessage());
       }
       final def attribute:aT = hmap;
 

@@ -35,8 +35,9 @@ public class WordAutomInScala extends Autom2Scala {
 
         Tree result;
 
+        /*
         boolean insane = true; // if you set this to false, you get some VerifyErrors
-
+        // seems fixed
         if( insane ) { // cascading ifs
 
             Tree cond[] = new Tree[body.length];
@@ -46,14 +47,14 @@ public class WordAutomInScala extends Autom2Scala {
             result = cf.Switch( cond, body, failTree );
 
         } else {        // real switch
-
+        */
             int tags[] = new int[body.length];
             for( int i = body.length - 1; i >= 0; i-- ) {
                 tags[i] = i;
             }
             result = gen.Switch( _swres(), tags, body, failTree );
 
-        }
+            //}
 
         result = cf.gen.mkBlock( cf.pos, new Tree[] {
             gen.ValDef( iterSym, cf.newIterator( selector )),
