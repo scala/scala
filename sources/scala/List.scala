@@ -16,9 +16,50 @@ package scala;
  *  @version 1.0, 15/07/2003
  */
 object List {
+  /**
+   * Create a sorted list of all integers in a range.
+   * @return the sorted list of all integers in range [from;end).
+   */
   def range(from: Int, end: Int): List[Int] =
-    if (from >= end) scala.Predef.List()
+    if (from >= end) Nil
     else from :: range(from + 1, end);
+
+  /**
+   * Create a list containing several copies of an element.
+   * @param n the length of the resulting list
+   * @param elem the element composing the resulting list
+   * @return a list composed of n elements all equal to elem
+   */
+  def make[a](n: int, elem: a): List[a] =
+    if (n == 0) Nil
+    else elem :: make(n - 1, elem);
+
+  /**
+   * Create a list by applying a function to successive integers.
+   * @param n the length of the resulting list
+   * @param maker the procedure which, given an integer n, returns the
+   * nth element of the resulting list, where n is in [0;n).
+   * @return the list obtained by applying the maker function to successive
+   * integers from 0 to n (exclusive).
+   */
+  def tabulate[a](n: int, maker: int => a): List[a] = {
+    def loop(i: int): List[a] =
+      if (i == n) Nil
+      else maker(i) :: loop(i+1);
+    loop(0)
+  }
+
+  def flatten[a](l: List[List[a]]): List[a] = l match {
+    case Nil => Nil
+    case head :: tail => head ::: flatten(tail)
+  }
+
+  def unzip[a](l: List[Pair[a,a]]): Pair[List[a], List[a]] = l match {
+    case Nil => Pair(Nil, Nil)
+    case Pair(f, s) :: tail =>
+      val Pair(fs, ss) = unzip(tail);
+      Pair(f :: fs, s :: ss)
+  }
 }
 
 /** A trait representing an ordered collection of elements of type
@@ -33,7 +74,7 @@ object List {
 trait List[+a] extends Seq[a] {
 
   /** Tests if this list is empty.
-   *  @returns true, iff the list contains no element.
+   *  @return true, iff the list contains no element.
    */
   def isEmpty: Boolean;
 
@@ -67,46 +108,56 @@ trait List[+a] extends Seq[a] {
   * @param prefix the list to concatenate at the beginning of this list.
   * @return the concatenation of the two lists.
   */
-  def :::[b >: a](prefix: List[b]): List[b] =
-    if (prefix.isEmpty) this
-    else prefix.head :: prefix.tail ::: this;
+  def :::[b >: a](prefix: List[b]): List[b] = prefix match {
+    case Nil => this
+    case head :: tail => head :: (tail ::: this);
+  };
+
+  def reverse_:::[b >: a](prefix: List[b]): List[b] = prefix match {
+    case Nil => this
+    case head :: tail => tail reverse_::: (head :: this)
+  };
 
   /** Returns the number of elements in the list.
   * @return the number of elements in the list.
   */
-  def length: Int = this match {
+  def length: Int = match {
     case Nil => 0
     case _ :: xs => xs.length + 1
-  }
+  };
 
   /** Returns the elements in the list as an iterator
    */
   def elements: Iterator[a] = new Iterator[a] {
     var current = List.this;
     def hasNext: Boolean = !current.isEmpty;
-    def next: a = { if( !hasNext )
-		      { error( "next on empty Iterator" ) }
-		    else
-                      { val result = current.head; current = current.tail; result } }
-  }
+    def next: a =
+      if (!hasNext)
+	error("next on empty Iterator")
+      else {
+        val result = current.head; current = current.tail; result
+      };
+  };
 
   /** Returns the list without its last element.
    * @return the list without its last element.
    * @throws java.lang.RuntimeException if the list is empty.
    */
-  def init: List[a] =
-    if (isEmpty) error("Nil.init")
-    else if (tail.isEmpty) Nil
-    else head :: tail.init;
+  def init: List[a] = match {
+    case Nil => error("Nil.init")
+    case _ :: Nil => Nil
+    case head :: tail => head :: tail.init
+  };
 
   /** Returns the last element of this list.
   * @return the last element of the list.
   * @throws java.lang.RuntimeException if the list is empty.
   */
-  def last: a =
-    if (isEmpty) error("Nil.last")
-    else if (tail.isEmpty) head
-    else tail.last;
+  def last: a = match {
+    case Nil => error("Nil.last")
+    case last :: Nil => last
+    case _ :: tail => tail.last
+  }
 
   /** Returns the <code>n</code> first elements of this list.
   * @param n the number of elements to take.
@@ -115,7 +166,7 @@ trait List[+a] extends Seq[a] {
   */
   def take(n: Int): List[a] =
     if (n == 0) Nil
-    else head :: tail.take(n-1);
+    else head :: (tail take (n-1));
 
   /** Returns the list without its <code>n</code> first elements.
   * @param n the number of elements to drop.
@@ -124,7 +175,30 @@ trait List[+a] extends Seq[a] {
   */
   def drop(n: Int): List[a] =
     if (n == 0) this
-    else tail.drop(n-1);
+    else (tail drop (n-1));
+
+  def takeRight(n: Int): List[a] = {
+    def loop(lead: List[a], lag: List[a]): List[a] = lead match {
+      case Nil => lag
+      case _ :: tail => loop(tail, lag.tail)
+    };
+    loop(drop(n), this)
+  };
+
+  def dropRight(n: Int): List[a] = {
+    def loop(lead: List[a], lag: List[a]): List[a] = lead match {
+      case Nil => Nil
+      case _ :: tail => lag.head :: loop(tail, lag.tail)
+    }
+    loop(drop(n), this)
+  }
+
+  def splitAt(n: Int): Pair[List[a], List[a]] =
+    if (n == 0) Pair(Nil, this)
+    else {
+      val Pair(tail1, tail2) = tail splitAt (n-1);
+      Pair(head :: tail1, tail2)
+    };
 
   /** Returns the longest prefix of this list whose elements satisfy
   * the predicate <code>p</code>.
@@ -134,7 +208,7 @@ trait List[+a] extends Seq[a] {
   */
   def takeWhile(p: a => Boolean): List[a] =
     if (isEmpty || !p(head)) Nil
-    else head :: tail.takeWhile(p);
+    else head :: (tail takeWhile p);
 
   /** Returns the longest suffix of this list whose first element does not satisfy
   * the predicate <code>p</code>.
@@ -144,7 +218,19 @@ trait List[+a] extends Seq[a] {
   */
   def dropWhile(p: a => Boolean): List[a] =
     if (isEmpty || !p(head)) this
-    else tail.dropWhile(p);
+    else tail dropWhile p;
+
+  def span(p: a => Boolean): Pair[List[a], List[a]] = match {
+    case Nil => Pair(Nil, Nil)
+    case head :: tail =>
+      if (p(head)) {
+        val Pair(tail1, tail2) = tail span p;
+        Pair(head :: tail1, tail2)
+      } else
+        Pair(Nil, this)
+  };
+
+  def break(p: a => Boolean): Pair[List[a], List[a]] = span { x => !p(x) };
 
   /** Returns the <code>n</code>-th element of this list. The first element
    * (head of the list) is at position 0.
@@ -159,34 +245,65 @@ trait List[+a] extends Seq[a] {
   * @param f function to apply to each element.
   * @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
   */
-  def map[b](f: a => b): List[b] =
-    if (isEmpty) Nil
-    else f(head) :: tail.map(f);
+  def map[b](f: a => b): List[b] = match {
+    case Nil => Nil
+    case head :: tail => f(head) :: (tail map f)
+  };
 
-  /** Apply the given function <code>f</code> to each element of this list (while respecting
-  * the order of the elements).
+  def reverseMap[b](f: a => b): List[b] = {
+    def loop(l: List[a], res: List[b]): List[b] = l match {
+      case Nil => res
+      case head :: tail => loop(tail, f(head) :: res)
+    }
+    loop(this, Nil)
+  };
+
+  /** Apply the given function <code>f</code> to each element of this list
+  * (while respecting the order of the elements).
   * @param f the treatment to apply to each element.
   */
-  def foreach(f: a => Unit): Unit =
-    if (isEmpty) {} else { f(head); tail.foreach(f) };
+  def foreach(f: a => Unit): Unit = match {
+    case Nil => ()
+    case head :: tail => f(head); tail foreach f
+  };
 
   /** Returns all the elements of this list that satisfy the
    * predicate <code>p</code>. The order of the elements is preserved.
    * @param p the redicate used to filter the list.
    * @return the elements of this list satisfying <code>p</code>.
    */
-  def filter(p: a => Boolean): List[a] =
-    if (isEmpty) this
-    else if (p(head)) head :: tail.filter(p)
-    else tail.filter(p);
+  def filter(p: a => Boolean): List[a] = match {
+    case Nil => this
+    case head :: tail =>
+      if (p(head)) head :: (tail filter p) else tail filter p
+  };
+
+  def remove(p: a => Boolean): List[a] = match {
+    case Nil => this
+    case head :: tail =>
+      if (p(head)) tail remove p else head :: (tail remove p)
+  };
+
+  def partition(p: a => Boolean): Pair[List[a], List[a]] = match {
+    case Nil => Pair(Nil, Nil)
+    case head :: tail =>
+      val Pair(taily, tailn) = tail partition p;
+      if (p(head)) Pair(head :: taily, tailn)
+      else Pair(taily, head :: tailn)
+  };
+
+  def count(p: a => Boolean): Int = match {
+    case Nil => 0
+    case head :: tail => if (p(head)) 1 + (tail count p) else (tail count p)
+  };
 
   /** Tests if the predicate <code>p</code> is satisfied by all elements in this
   * list.
   * @param p the test predicate.
   * @return True iff all elements of this list satisfy the predicate <code>p</code>.
   */
-  def forall(p: a => Boolean): Boolean = isEmpty || (p(head) &&
-  tail.forall(p));
+  def forall(p: a => Boolean): Boolean =
+    isEmpty || (p(head) && (tail forall p));
 
   /** Tests the existence in this list of an element that satisfies the predicate
   * <code>p</code>.
@@ -195,12 +312,12 @@ trait List[+a] extends Seq[a] {
   * the predicate <code>p</code>.
   */
   def exists(p: a => Boolean): Boolean =
-    !isEmpty && (p(head) || tail.exists(p));
+    !isEmpty && (p(head) || (tail exists p));
 
   def find(p: a => Boolean): Option[a] = match {
     case Nil => None
-    case x :: xs => if (p(x)) Some(x) else xs.find(p)
-  }
+    case head :: tail => if (p(head)) Some(head) else tail find p
+  };
 
   /** Combines the elements of this list together using the binary
   * operator <code>op</code>, from left to right, and starting with
@@ -213,12 +330,12 @@ trait List[+a] extends Seq[a] {
   def foldLeft[b](z: b)(f: (b, a) => b): b = match {
     case Nil => z
     case x :: xs => xs.foldLeft[b](f(z, x))(f)
-  }
+  };
 
   def foldRight[b](z: b)(f: (a, b) => b): b = match {
     case Nil => z
     case x :: xs => f(x, xs.foldRight(z)(f))
-  }
+  };
 
   def /:[b](z: b)(f: (b, a) => b): b = foldLeft(z)(f);
   def :/[b](z: b)(f: (a, b) => b): b = foldRight(z)(f);
@@ -226,13 +343,13 @@ trait List[+a] extends Seq[a] {
   def reduceLeft[b >: a](f: (b, b) => b): b = this match {
     case Nil => error("Nil.reduceLeft")
     case x :: xs => ((xs: List[b]) foldLeft (x: b))(f)
-  }
+  };
 
   def reduceRight[b >: a](f: (b, b) => b): b = match {
     case Nil => error("Nil.reduceRight")
     case x :: Nil => x: b
-    case x :: xs => f(x, xs.reduceRight(f))
-  }
+    case x :: xs => f(x, xs reduceRight f)
+  };
 
   /**
   * Applies the given function <code>f</code> to each element of
@@ -241,9 +358,10 @@ trait List[+a] extends Seq[a] {
   * @return <code>f(a0) ::: ... ::: f(an)</code> if this list is
   * <code>[a0, ..., an]</code>.
   */
-  def flatMap[b](f: a => List[b]): List[b] =
-    if (isEmpty) Nil
-    else f(head) ::: tail.flatMap(f);
+  def flatMap[b](f: a => List[b]): List[b] = match {
+    case Nil => Nil
+    case head :: tail => f(head) ::: (tail flatMap f)
+  };
 
   /** Reverses the elements of this list.
   * <p>
@@ -251,22 +369,9 @@ trait List[+a] extends Seq[a] {
   * <code>[1, 2, 3] reverse = [3, 2, 1]</code>.
   * @return the elements of this list in reverse order.
   */
-  def reverse: List[a] = {
-    foldLeft(Nil: List[a])((xs, x) => x :: xs)
-  }
+  def reverse: List[a] =
+    foldLeft(Nil : List[a])((xs, x) => x :: xs);
 
-  /** Prints on standard output a raw textual representation of this list.
-  * <p>
-  * Ex: <br>
-  * <code>[1, 2, 3] print</code> will display <code>1 :: 2 :: 3 :: []</code>.
-  */
-  def print: Unit =
-    if (isEmpty) java.lang.System.out.println("Nil")
-    else {
-      java.lang.System.out.print(head.asInstanceOf[java.lang.Object]);
-      java.lang.System.out.print(" :: ");
-      tail.print
-    }
   /*
   def toArray: Array[a] = {
     val xs = new Array[a](length);
@@ -301,15 +406,11 @@ trait List[+a] extends Seq[a] {
   * @param end ending string.
   * @return a string representation of this list.
   */
-  def mkString(start: String, sep: String, end: String): String =
-    start +
-   (if (isEmpty)
-       { end }
-   else
-       { if (tail.isEmpty)
-	   { head.toString() + end }
-	 else
-	   { head.toString().concat(sep).concat(tail.mkString("", sep, end)) }});
+  def mkString(start: String, sep: String, end: String): String = match {
+    case Nil => start + end
+    case last :: Nil => start + last + end
+    case fst :: tail => start + fst + sep + tail.mkString("", sep, end)
+  }
 
   override def toString() = mkString("List(", ",", ")");
 
@@ -321,9 +422,9 @@ trait List[+a] extends Seq[a] {
   * <code>[a0, ..., an] zip [b0, ..., bn]</code> is invoked.
   * @throws java.lang.RuntimeException if lists have different lengths.
   */
-  def zip[b](that: List[b]): List[Tuple2[a,b]] =
+  def zip[b](that: List[b]): List[Pair[a,b]] =
     if (this.isEmpty || that.isEmpty) Nil
-    else Tuple2(this.head, that.head) :: this.tail.zip(that.tail);
+    else Pair(this.head, that.head) :: this.tail.zip(that.tail);
 
   /** Tests if the given value <code>elem</code> is a member of
   * this list.
@@ -331,10 +432,7 @@ trait List[+a] extends Seq[a] {
   * @return True iff there is an element of this list which is
   * equal (w.r.t. <code>==</code>) to <code>elem</code>.
   */
-  def contains(elem: Any): boolean = exists(
-     new Object with Function1[a, Boolean] {
-       def apply(x: a): Boolean = x == elem;
-     });
+  def contains(elem: Any): boolean = exists { x => x == elem };
 
   /** Computes the union of this list and the given list
   * <code>that</code>.
@@ -342,26 +440,24 @@ trait List[+a] extends Seq[a] {
   * @return a list without doubles containing the elements of this
   * list and those of the given list <code>that</code>.
   */
-  def union[b >: a](that: List[b]): List[b] =
-    if (this.isEmpty) that
-    else {
-      val result = this.tail union that;
-      if (that contains this.head) result
-      else this.head :: result
-    }
+  def union[b >: a](that: List[b]): List[b] = match {
+    case Nil => that
+    case head :: tail =>
+      if (that contains head) tail union that
+      else head :: (tail union that)
+  }
 
   /** Computes the difference between this list and the given list
   * <code>that</code>.
   * @param that the list of elements to remove from this list.
   * @return this list without the elements of the given list <code>that</code>.
   */
-  def diff[b >: a](that: List[b]): List[b] =
-    if (this.isEmpty || that.isEmpty) this: List[b]
-    else {
-      val result = this.tail diff that;
-      if (that contains this.head) result: List[b]
-      else this.head :: result: List[b]
-    }
+  def diff[b >: a](that: List[b]): List[b] = match {
+    case Nil => Nil
+    case head :: tail =>
+      if (that contains head) tail diff that
+      else head :: (tail diff that)
+  }
 
   /** Computes the intersection between this list and the given list
   * <code>that</code>.
@@ -375,11 +471,11 @@ trait List[+a] extends Seq[a] {
   * to decide if two elements are identical.
   * @return the list without doubles.
   */
-  def removeDuplicates: List[a] =
-    if (isEmpty) this
-    else {
-      val rest = tail.removeDuplicates;
-      if (rest contains head) rest else head :: rest
-    }
+  def removeDuplicates: List[a] = match {
+    case Nil => this
+    case head :: tail =>
+      if (tail contains head) tail.removeDuplicates
+      else head :: tail.removeDuplicates
+  }
 }
 
