@@ -47,6 +47,7 @@ trait List[+a] extends scala.Seq[a] with scala.ScalaObject {
     def isEmpty: scala.Boolean
 }
 object List extends java.lang.Object with scala.ScalaObject {
+    final def view[a <: scala.Ordered[a]](scala.Function1[a, scala.Ordered[a]])(scala.List[a]): scala.Ordered[scala.List[a]];
     final def toString(scala.List[scala.Char]): java.lang.String;
     final def fromString(java.lang.String): scala.List[scala.Char];
     final def fromString(java.lang.String, scala.Char): scala.List[java.lang.String];
