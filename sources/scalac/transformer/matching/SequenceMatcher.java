@@ -53,7 +53,7 @@ public class SequenceMatcher extends PatternTool {
         LeftTracerInScala ltis =
             new LeftTracerInScala( dLeft, elementType, _m.owner, _m.selector, cf);
 
-        Tree stms[] = ltis.getTrace();
+        Tree trace = ltis.getTrace();
 
         Tree theTrace = gen.Ident( cf.pos, ltis.resultSym );
 
@@ -70,10 +70,10 @@ public class SequenceMatcher extends PatternTool {
 
         // paste statements together
 
-        Tree items[] = new Tree[ stms.length + stms2.length ];
+        Tree items[] = new Tree[ 1 + stms2.length ];
 
-        System.arraycopy( stms, 0, items, 0, stms.length );
-        System.arraycopy( stms2, 0, items, stms.length, stms2.length );
+        items[ 0 ] = trace;
+        System.arraycopy( stms2, 0, items, 1, stms2.length );
 
         return gen.mkBlock( body.pos, items );
     }

@@ -37,37 +37,41 @@ public class WordAutomInScala extends Autom2Scala {
 
         Tree result;
 
-        // conditions
-        //int tags[] = new int[body.length];
-        Tree cond[] = new Tree[body.length];
-        //Tree bbody[] = new Tree[body.length];
-        for( int i = body.length - 1; i >= 0; i-- ) {
-            //tags[i] = i;
-            cond[i] = cf.Equals(_swres(), gen.mkIntLit( cf.pos, i ));
+        boolean insane = true; // if you set this to false, you get some VerifyErrors
+
+        if( insane ) { // cascading ifs
+
+            Tree cond[] = new Tree[body.length];
+            for( int i = body.length - 1; i >= 0; i-- ) {
+                cond[i] = cf.Equals(_swres(), gen.mkIntLit( cf.pos, i ));
+            }
+            result = cf.Switch( cond, body, failTree );
+
+        } else {        // real switch
+
+            int tags[] = new int[body.length];
+            for( int i = body.length - 1; i >= 0; i-- ) {
+                tags[i] = i;
+            }
+            result = gen.Switch( _swres(), tags, body, failTree );
+
         }
-        result = cf.Switch( cond, body, failTree );
 
-        //result = gen.Switch( _swres(), tags, body, failTree );
-
-        result = cf.gen.mkBlock( cf.pos, new Tree[] { gen.ValDef( iterSym, cf.newIterator( selector )),  // test
-                                                      gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),  // test
-                                                      //theDefDef,
-                                                      gen.ValDef( resultSym, theDefDef ),
-                                                      //run,
-                                                      result } );
+        result = cf.gen.mkBlock( cf.pos, new Tree[] {
+            gen.ValDef( iterSym, cf.newIterator( selector )),
+            gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),
+            gen.ValDef( resultSym, theDefDef ),
+            result } );
         //unit.global.debugPrinter.print( result );
         return result;
     }
 
     protected void initializeSyms() { // TEST
-        if( funSymName == null )
-            funSymName = "matcher";
-        // the function that does the matching
 
         this.funSym = new TermSymbol( pos,
-                               cf.fresh.newName( "matcher" ),
-                               owner,
-                               Modifiers.LABEL );
+                                      cf.fresh.newName( "matcher" ),
+                                      owner,
+                                      Modifiers.LABEL );
 
         this.iterSym = new TermSymbol( pos,
                                        cf.fresh.newName("iter"),
@@ -162,8 +166,7 @@ public class WordAutomInScala extends Autom2Scala {
         else if (target.intValue() == dfa.nstates - 1) // that one is a dead state
             return code_fail();
 
-        return callFun(new Tree[] { /*_iter(),*/
-                                    gen.mkIntLit( cf.pos, target.intValue() )} );
+        return callFun(new Tree[] { gen.mkIntLit( cf.pos, target.intValue() )} );
     }
 
     /** constructor

@@ -90,21 +90,19 @@ public class RightTracerInScala extends TracerInScala  {
                                                            .toString()+"RTIS" ),
                                          owner,
                                          0);
+        Tree rhs;
 
         //System.out.println("RTiS making helpvar : "+realVar+" -> "+helpVar);
 
-        if( keepType )
+        if( keepType ) {
             helpVar.setType( realVar.type() );
-        else
+            rhs = gen.mkDefaultValue( cf.pos, realVar.type() );
+        } else {
             helpVar.setType( defs.LIST_TYPE(elementType) );
+            rhs = gen.mkNil( cf.pos );
+        }
 
         helpMap.put( realVar, helpVar );
-
-        Tree rhs;
-        if( keepType )
-            rhs = gen.mkDefaultValue( cf.pos, realVar.type() );
-        else
-            rhs = gen.mkNil( cf.pos );
         helpVar.flags |= Modifiers.MUTABLE;
         Tree varDef = gen.ValDef( helpVar, rhs );
         //((ValDef) varDef).kind = Kinds.VAR;
@@ -126,34 +124,47 @@ public class RightTracerInScala extends TracerInScala  {
 
     protected void initializeSyms() {
 
-        this.funSym = newFunSym( "binder" );
+        this.funSym = new TermSymbol( pos,
+                                      cf.fresh.newName( "right" ),
+                                      owner,
+                                      Modifiers.LABEL );
 
         this.iterSym = new TermSymbol( pos,
                                        cf.fresh.newName("iter"),
-                                       funSym,
-                                       Modifiers.PARAM )
+                                       owner,
+                                       Modifiers.MUTABLE )
             .setType( cf.SeqTraceType( elementType ));
 
         this.stateSym = new TermSymbol( pos,
                                         cf.fresh.newName("q"),
-                                        funSym,
-                                        Modifiers.PARAM )
+                                        owner,
+                                        Modifiers.MUTABLE )
             .setType( defs.INT_TYPE() ) ;
 
         this.curSym = new TermSymbol( pos,
-                                      cf.fresh.newName("currentElement"),
-                                      funSym,
+                                      cf.fresh.newName("cur"),
+                                      owner,
                                       0)
             .setType( elementType ) ;
 
         this.targetSym = new TermSymbol( pos,
-                                         cf.fresh.newName("targetState"),
-                                         funSym,
+                                         cf.fresh.newName("p"),
+                                         owner,
                                          0)
             .setType( defs.INT_TYPE() ) ;
 
-        funSym.setType( new Type.MethodType( new Symbol[] {
-            iterSym, stateSym },  defs.UNIT_TYPE() ));
+        funSym.setType( new Type.MethodType( new Symbol[] {  // dummy symbol MethodType
+            new TermSymbol( pos,
+                            cf.fresh.newName("iter"),    // iter:List[Pair[int,T]]
+                            funSym,
+                            Modifiers.PARAM )
+            .setType( cf.SeqTraceType( elementType )) ,
+            new TermSymbol( pos,
+                            cf.fresh.newName( "q" ),     // q:int
+                            funSym,
+                            Modifiers.PARAM )
+            .setType( defs.INT_TYPE() ) },
+                                             defs.UNIT_TYPE() )); // result
 
     }
 
@@ -203,7 +214,6 @@ public class RightTracerInScala extends TracerInScala  {
             tmapBody.put( I, callFun( new Tree[] {
                 cf.SeqTrace_tail( _iter() ),
                 gen.mkIntLit( cf.pos, targetR ) }));
-
         }
         i = 0;
         int[]  tags    = new int[ n ];
@@ -267,8 +277,7 @@ public class RightTracerInScala extends TracerInScala  {
             targets[ j ] = (Tree) tmapBody.get( J );
         }
         if( n > 0 ) {
-            actionsPresent = true;
-            return gen.Switch( gen.Ident( pos, targetSym ), tags, targets, code_error()/*cannot happen*/ );
+            return gen.Switch( gen.Ident( pos, targetSym ), tags, targets, code_error() );
         } else
             return code_error();
     }
@@ -285,7 +294,7 @@ public class RightTracerInScala extends TracerInScala  {
         for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
             Symbol vsym = (Symbol) it.next();
             Symbol hv   = (Symbol) helpMap3.get( vsym );
-            hv.setType( defs.LIST_TYPE( elementType ) ) ;
+            //hv.setType( defs.LIST_TYPE( elementType ) ) ; DEBUG ALARM ?
             Tree refv   = gen.Ident(cf.pos, vsym);
             Tree refhv  = gen.Ident(cf.pos, hv);
             res[ j++ ] = gen.Assign( refhv, refv );
@@ -301,7 +310,8 @@ public class RightTracerInScala extends TracerInScala  {
         //System.out.println("RTiS._cur_match("+pat.toString()+")");
         //System.out.println("calling algebraic matcher on type:"+pat.type);
 
-        Matcher m = new Matcher( funSym,//this.funSym,
+        //System.err.println( "curT"+currentElem().type().widen() );
+        Matcher m = new Matcher( owner,//funSym,//this.funSym,
                                  currentElem(),
                                  defs.BOOLEAN_TYPE() );
 
@@ -432,28 +442,26 @@ System.out.println("RightTracerInScala - the seqVars"+seqVars);
         return code_state_NEW( i );
     }
 
-    boolean actionsPresent = false;
-
     /* returns statements that do the work of the right-transducer
      */
     Tree[] getStms( Tree trace, Unit unit, Tree body ) {
 
         Vector v = new Vector();
+        Tree loopbody = code_body_NEW();
 
-        Tree binderFunDef = gen.DefDef( this.funSym, code_body_NEW() );
-        if( actionsPresent ) {
-            //System.out.println( "!!getStms.helpVarDefs: "+helpVarDefs);
-            v.addAll( helpVarDefs );
+        v.add( gen.ValDef( iterSym, trace ) );
+        v.add( gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0 ) ) );
+        v.addAll( helpVarDefs );
+        v.add( gen.LabelDef( this.funSym,
+                             new Ident[] {
+                                 gen.Ident( pos, iterSym ),
+                                 gen.Ident( pos, stateSym )
+                             }, loopbody ));
 
-            v.add( binderFunDef );
-            v.add( callFun( new Tree[] {  trace, gen.mkIntLit( cf.pos, 0 )  }  )  );
-
-            // bind variables handled by this righttracer
-            for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
-                v.add( bindVar( (Symbol) it.next() ) );
-            }
-
-        };
+        // bind variables handled by this righttracer
+        for( Iterator it = seqVars.iterator(); it.hasNext(); ) {
+            v.add( bindVar( (Symbol) it.next() ) );
+        }
 
         Transformer treeCloner = new Transformer(unit.global) {
                 public Tree transform(Tree tree) {

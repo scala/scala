@@ -38,26 +38,63 @@ public class LeftTracerInScala extends TracerInScala {
     }
 
     protected void initializeSyms() {
-        funSymName = "leftTracer";
+        this.funSym =  new TermSymbol( pos,
+                                       cf.fresh.newName( "left" ),
+                                       owner,
+                                       Modifiers.LABEL );
 
-        super.initializeSyms();
+        this.iterSym = new TermSymbol( pos,
+                                        cf.fresh.newName( "iter" ),
+                                       owner,
+                                       Modifiers.MUTABLE )
+            .setType( cf._seqIterType( elementType ) ) ;
+
+        this.stateSym = new TermSymbol( pos,
+                                        cf.fresh.newName( "q" ),
+                                        owner,
+                                        Modifiers.MUTABLE )
+            .setType( defs.INT_TYPE() ) ;
+
         this.accumType = _accumType( elementType );
         this.accumTypeArg = accumType.typeArgs()[0];
-        this.accumSym = newParam("accum")                    // accumulator
+        this.accumSym = new TermSymbol( pos,                  // accumulator
+                                        cf.fresh.newName( "acc" ),
+                                        owner,
+                                        Modifiers.MUTABLE )
             .setType( accumType );
 
-        this.funSym
-            .setType( new Type.MethodType( new Symbol[] {
-                accumSym, iterSym, stateSym},
-                                           accumType));
+        //this.funSym
+        //    .setType( new Type.MethodType( new Symbol[] {
+        //        accumSym, iterSym, stateSym},
+        //                                   accumType));
 
-        // 2 do: rename switchresultsym to something else...
+        this.funSym
+            .setType( new Type.MethodType( new Symbol[] {  // dummy symbol MethodType
+                new TermSymbol( pos,
+                                cf.fresh.newName( "q" ),   // q:int
+                                funSym,
+                                Modifiers.PARAM )
+                .setType( defs.INT_TYPE() ),
+                new TermSymbol( pos,       // acc:List[T] accumulator
+                                cf.fresh.newName( "acc" ),
+                                funSym,
+                                Modifiers.PARAM )
+                .setType( accumType )
+            },
+                                           accumType)); // result type = List[T]
 
         this.resultSym = new TermSymbol(pos,
                                         cf.fresh.newName("trace"),
                                         owner,
                                         0 )
             .setType( accumType ) ;
+
+        this.curSym = new TermSymbol( pos, CURRENT_ELEM, owner, 0)
+            .setType( elementType );
+
+        this.hasnSym = new TermSymbol( pos, HASNEXT, owner, 0)
+            .setType( defs.BOOLEAN_TYPE() );
+
     }
 
     /* should throw an exception here really, e.g. MatchError
@@ -96,7 +133,8 @@ public class LeftTracerInScala extends TracerInScala {
                                      hd,
                                      gen.Ident( cf.pos, accumSym ));
 
-        return callFun( new Tree[] { newAcc , _iter(), gen.mkIntLit( cf.pos, target )} );
+        //return callFun( new Tree[] { newAcc , _iter(), gen.mkIntLit( cf.pos, target )} );
+        return callFun( new Tree[] { gen.mkIntLit( cf.pos, target ), newAcc } );
     }
 
 
@@ -157,50 +195,20 @@ public class LeftTracerInScala extends TracerInScala {
                        elseBody );
     }
 
-    Tree[] getTrace() {
+    Tree getTrace() {
 
         initializeSyms();
-        Tree tb = code_body();
-        //Tree tb = code_body_NEW(); BUG! ONLY FIRST ELEMENT GETS BOUND ?!!?
-        Tree theDefDef = gen.DefDef( this.funSym,
-                                     tb );
 
-        Vector v = new Vector();
-
-        //
-        // `def leftTracer(...) = ...'                 the function definition
-        v.add( theDefDef );
-
-        Tree emptyAcc    = gen.mkNil( cf.pos ); //cf._seqTraceNil( elementType );
-
-        // the valdef is needed, because passing emptyAcc as a parameter
-        //   results in a ClassCastException at runtime (?!)
-
-        Symbol emptyAccSym = new TermSymbol( pos,
-                                             cf.fresh.newName("acc"),
-                                             owner,
-                                             0 )
-            .setType( accumType ) ;
-
-        // `val acc = SeqNil[ elementType ]'                 init accumulator
-        v.add( gen.ValDef( emptyAccSym, emptyAcc) );
-
-        Tree run = callFun( new Tree[] {
-            gen.Ident( pos, emptyAccSym ),
-            cf.newIterator( selector, selector.getType() ),
-            gen.mkIntLit( cf.pos, 0 )  });
-
-        run = gen.ValDef( resultSym, run );
-
-        v.add( run );
-
-        Tree res[] = new Tree[ v.size() ];
-        int j = 0;
-        for( Iterator it = v.iterator(); it.hasNext(); )
-            res[ j++ ] = (Tree) it.next();
-
-        return res;
-
+        return cf.gen.mkBlock( cf.pos, new Tree[] {
+            gen.ValDef( iterSym, cf.newIterator( selector, selector.getType() )),
+            gen.ValDef( stateSym, gen.mkIntLit( cf.pos, 0) ),
+            gen.ValDef( accumSym, gen.mkNil( cf.pos )),
+            gen.ValDef( resultSym,
+                        gen.LabelDef( this.funSym,
+                                      new Ident[] {
+                                          gen.Ident( pos, stateSym ),
+                                          gen.Ident( pos, accumSym )
+                                      }, code_body() /* code_body_new ? */ ))});
     }
 
     // calling the AlgebraicMatcher here
@@ -209,7 +217,7 @@ public class LeftTracerInScala extends TracerInScala {
 
         //System.out.println("calling algebraic matcher on type:"+pat.type);
 
-        Matcher m = new Matcher( funSym,
+        Matcher m = new Matcher( owner,
                                  currentElem(),
                                  defs.BOOLEAN_TYPE() );
 

@@ -35,7 +35,7 @@ public class Autom2Scala  {
     /** owner of the pattern matching expression */
     protected Symbol owner;
 
-    /** symbol of the matcher fun */
+    /** symbol of the matcher DefDef or Label */
     Symbol funSym;
 
     /** symbol of the iterator ( scala.SequenceIterator ) */
@@ -57,22 +57,6 @@ public class Autom2Scala  {
 
     public int pos;
 
-    String funSymName;
-
-    Symbol newFunSym( String prefix ) {
-        return new TermSymbol( pos,
-                               cf.fresh.newName( prefix ),
-                               owner,
-                               Modifiers.FINAL );
-    }
-
-    Symbol newParam( String prefix ) {
-        return new TermSymbol( pos,
-                               cf.fresh.newName( prefix ),
-                               funSym,
-                               Modifiers.PARAM );
-    }
-
     Type funRetType() {
         switch( funSym.type() ) {
         case MethodType( _, Type retType ):
@@ -85,49 +69,6 @@ public class Autom2Scala  {
     Tree callFun( Tree[] args ) {
         return gen.mkApply_V(gen.Ident(pos, funSym), args);
     }
-
-
-    /** init funSym, iterSym, stateSym, resultSym
-     *  a subclass overriding initializeSyms may change these
-     *   (esp. funSym)
-     */
-    protected void initializeSyms() {
-        if( funSymName == null )
-            funSymName = "matcher";
-        // the function that does the matching
-
-        this.funSym = newFunSym( funSymName );
-
-        this.iterSym = newParam("iter")
-            .setType( cf._seqIterType( elementType ) ) ;
-
-        this.stateSym = newParam("q")
-            .setType( defs.INT_TYPE() ) ;
-
-        this.resultSym = new TermSymbol( pos,
-                                         cf.fresh.newName("swRes"),
-                                         owner,
-                                         0 )
-            .setType( defs.INT_TYPE() ) ;
-
-        this.funSym
-            .setType( new Type.MethodType( new Symbol[] {
-                iterSym, stateSym },  defs.INT_TYPE() ));
-
-        this.curSym = new TermSymbol( pos,
-                                      CURRENT_ELEM,
-                                      funSym,
-                                      0)
-            .setType( elementType );
-
-        this.hasnSym = new TermSymbol( pos,
-                                       HASNEXT,
-                                       funSym,
-                                       0)
-            .setType( defs.BOOLEAN_TYPE() );
-
-    }
-
 
     public Autom2Scala( DetWordAutom dfa,
                         Type elementType,
@@ -156,7 +97,8 @@ public class Autom2Scala  {
             body });
     }
 
-    Tree currentElem() { return gen.Ident( Position.FIRSTPOS, curSym ); }
+    /** bug ?? */
+    Tree currentElem() { return gen.Ident( cf.pos, curSym ).setType( curSym.type() ); }
 
     Tree currentMatches( Label label ) {
         switch( label ) {
