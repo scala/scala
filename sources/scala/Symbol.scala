@@ -9,6 +9,7 @@
 
 package scala;
 
+
 /** Instances of <code>Symbol</code> can be created easily with
  *  Scala's built-in quote mechanism. For instance, the Scala term
  *  <code>'mysym</code> will invoke the constructor of the
@@ -18,14 +19,11 @@ package scala;
  *  @author  Martin Odersky
  *  @version 1.7, 08/12/2003
  */
-case class Symbol( name: String ) {
+final case class Symbol(name: String) {
 
-    /** Converts this symbol to a string
+    /** Converts this symbol to a string.
      */
     override def toString(): String = {
       "'" + name
     }
-
-    final def <=(value: String) = new Pair(name, value);
-
 }

@@ -20,11 +20,13 @@ trait Ord[t <: Ord[t]]: t {
 
 */
 
-trait Ord[+T <: Ord[T]] {
+trait Ord[+T <: Ord[T]]: T {
   def < [S >: T <: Ord[S]](that: S): Boolean;
   def <=[S >: T <: Ord[S]](that: S): Boolean = this < that || this == that;
   def > [S >: T <: Ord[S]](that: S): Boolean = that < this;
   def >=[S >: T <: Ord[S]](that: S): Boolean = that <= this;
+  def min[S >: T <: Ord[S]](that: S): S = if (this < that) this else that;
+  def max[S >: T <: Ord[S]](that: S): S = if (this < that) that else this;
 }
 
 /*
