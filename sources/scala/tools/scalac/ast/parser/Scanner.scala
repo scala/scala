@@ -8,7 +8,6 @@
 
 import scalac._;
 import scalac.util.Name;
-import scalac.util.Names;
 import scalac.util.SourceRepresentation;
 
 package scala.tools.scalac.ast.parser {
@@ -897,20 +896,15 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
   /** calls nextToken, starting the scanning of Scala tokens,
   *   after XML tokens.
   */
-
   def xSync = {
     token = SEMI; // avoid getting SEMI from nextToken if last was RBRACE
-    xScalaBlock = false;
     //nextch();
     nextToken();
   }
 
-  def xSyntaxError(s:String) = {
-    syntaxError("in XML literal: "+s);
-    xNext;
-  }
+  def xSync2 = fetchToken();
 
-  var xScalaBlock = false;
+  def xLookahead = srcIterator.lookahead1;
 
   /** read the next character. do not skip whitespace.
   *   treat CR LF as single LF. update ccol and cline
@@ -934,234 +928,13 @@ class Scanner(_unit: CompilationUnit) extends TokenData {
         //Console.print(ch.asInstanceOf[char]); // DEBUG
     }
     pos = Position.encode(cline, ccol);
-  }
-
-  /** scan [S] '=' [S]
-  */
-  def xEQ = {
-    xSpaceOpt; xToken('='); xSpaceOpt
+    //Console.print(ch);
   }
 
   final val LT   = Name.fromString("<");
 
   def xStartsXML = {
     /* unit.global.xmlMarkup && */ ( token == IDENTIFIER )&&( name == LT );
-  }
-
-  /** skip optional space S? */
-  def xSpaceOpt = {
-    while( xml.Parsing.isSpace( ch ) ) { xNext; }
-  }
-
-  /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
-  def xSpace = {
-    if( xml.Parsing.isSpace( ch ) ) {
-      xNext; xSpaceOpt
-    } else {
-      xSyntaxError("whitespace expected");
-    }
-  }
-
-  /** Name ::= (Letter | '_' | ':') (NameChar)*
-   *
-   *  see  [5] of XML 1.0 specification
-   */
-  def xName:Name = {
-    if( xml.Parsing.isNameStart( ch ) ) {
-      do {
-        putChar( ch );
-        xNext;
-      } while( xml.Parsing.isNameChar( ch ) );
-      val n = Name.fromString( cbuf.toString() );
-      cbuf.setLength( 0 );
-      n
-    } else {
-      xSyntaxError( "name expected" );
-      Names.EMPTY
-    }
-  }
-
-
-  /** returns string up to next character endch.
-   *
-   *  @param endch the character to which we skip
-   */
-  def xSkipToNext( endch:char ):String = {
-    lastpos = pos;
-    while (( ch != endch )&&( ch != '{' )) {
-      putChar( ch );
-      xNext;
-    };
-    val s = cbuf.toString();
-    cbuf.setLength( 0 );
-    s
-  }
-
-  /** attribute value, terminated by either ' or ". value may not contain <.
-   *  @param endch either ' or "
-   */
-  def xAttributeValue( endch:char ):String = {
-    while ( ch != endch ) {
-      putChar( ch );
-      xNext;
-    };
-    val s = cbuf.toString();
-    cbuf.setLength( 0 );
-    // @todo: normalize attribute value
-    // well-formedness constraint
-    if( s.indexOf('<') != -1 ) {
-      xSyntaxError( "'<' not allowed in attrib value" ); ""
-    } else {
-      s
-    }
-  }
-
-  /* move forward one char
-   *
-   * @return true if next character  starts a scala block
-   */
-  def xxNext:boolean = {
-    xNext;
-    xCheckScalaBlock
-  }
-
-  /* checks whether next character starts a Scala block, if yes, skip it.
-   *
-   * @return true if next character starts a scala block
-   */
-  def xCheckScalaBlock:boolean = {
-    xScalaBlock = ( ch == '{' ) && { xNext;( ch != '{' ) };
-    return xScalaBlock;
-  }
-
-  /** parse character data.
-  *   precondition: xScalaBlock == false (we are not in a scala block)
-  */
-  def xText:String = {
-    if( xScalaBlock ) throw new ApplicationError(); // assert
-
-    if( xCheckScalaBlock )
-      return ""
-    else {
-      lastpos = pos;
-      var exit = false;
-      while( !exit ) {
-        putChar( ch );
-        exit = xxNext || ( ch == '<' ) || ( ch == '&' );
-      }
-      val s = cbuf.toString();
-      cbuf.setLength( 0 );
-      s
-    }
-  }
-
-
-  /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"
-   *            | "&#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
-   *
-   * see [66]
-   */
-  def xCharRef:String = {
-    val hex  = ( ch == 'x' ) && { xNext; true };
-    val base = if (hex) 16 else 10;
-    var i = 0;
-    while( ch != ';' ) {
-      ch match {
-        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          i = i * base + Character.digit( ch, base );
-        case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
-           | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
-          if( !hex )
-            xSyntaxError("hex char not allowed in decimal char ref\n"
-                         +"Did you mean to write &#x ?");
-          else
-            i = i * base + Character.digit( ch, base );
-        case _ =>
-          xSyntaxError("character '"+ch+" not allowed in char ref\n");
-      }
-      xNext;
-    }
-    new String( Predef.Array[char]( i.asInstanceOf[char] ))
-  }
-
-  /** '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
-   *
-   * see [15]
-   */
-  def xCharData:scala.xml.CharData = {
-    xToken('[');
-    xToken('C');
-    xToken('D');
-    xToken('A');
-    xToken('T');
-    xToken('A');
-    xToken('[');
-    val sb:StringBuffer = new StringBuffer();
-    while (true) {
-      if( ch==']'  &&
-         { sb.append( ch ); xNext; ch == ']' } &&
-         { sb.append( ch ); xNext; ch == '>' } ) {
-        sb.setLength( sb.length() - 2 );
-        xNext;
-        return scala.xml.CharData( sb.toString() );
-      } else sb.append( ch );
-      xNext;
-    }
-    return null; // this cannot happen;
-  };
-
-
-  /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
-   *
-   * see [15]
-   */
-  def xComment:scala.xml.Comment = {
-    val sb:StringBuffer = new StringBuffer();
-    xToken('-');
-    xToken('-');
-    while (true) {
-      if( ch=='-'  && { sb.append( ch ); xNext; ch == '-' } ) {
-        sb.setLength( sb.length() - 1 );
-        xNext;
-        xToken('>');
-        return scala.xml.Comment( sb.toString() );
-      } else sb.append( ch );
-      xNext;
-    }
-    return null; // this cannot happen;
-  };
-
-  /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
-   *
-   * see [15]
-   */
-  def xProcInstr:scala.xml.ProcInstr = {
-    val sb:StringBuffer = new StringBuffer();
-    val n = xName;
-    if( xml.Parsing.isSpace( ch ) ) {
-      xSpace;
-      while( true ) {
-        if( ch=='?' && { sb.append( ch ); xNext; ch == '>' } ) {
-          sb.setLength( sb.length() - 1 );
-          xNext;
-          return scala.xml.ProcInstr( n.toString(), Some(sb.toString()) );
-        } else
-          sb.append( ch );
-        xNext;
-      }
-    };
-    xToken('?');
-    xToken('>');
-   scala.xml.ProcInstr( n.toString(), None );
-  }
-
-  /** munch expected XML token, report syntax error for unexpected
-  */
-  def xToken(that:char):unit = {
-    if( ch == that )
-      xNext;
-    else
-      xSyntaxError("'" + that + "' expected instead of '" + ch + "'");
   }
 
   // end XML tokenizing

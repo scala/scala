@@ -191,10 +191,10 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     }
   }
 
-  final def EntityRef( pos:int, n:Name ) = {
+  final def EntityRef( pos:int, n: String ) = {
     val constr = make.Apply( pos,
                             _scala_xml_EntityRef( pos ),
-                            Predef.Array[Tree]( gen.mkStringLit( pos, n.toString() )));
+                            Predef.Array[Tree]( gen.mkStringLit( pos, n )));
 
     make.New( pos, constr );
   };
@@ -312,11 +312,11 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
   }
 
   /** @todo: attributes */
-  def makeXMLpat(pos: int, n: Name, args: Array[Tree]): Tree =
+  def makeXMLpat(pos: int, n: String, args: Array[Tree]): Tree =
     mkXML(pos,
           true,
           new Tree$Ident( Names.PATTERN_WILDCARD ):Tree,
-          gen.mkStringLit( pos, n.toString() ):Tree,
+          gen.mkStringLit( pos, n ):Tree,
           Tree.EMPTY_ARRAY:Array[Tree],
           args:Array[Tree]);
 
@@ -404,8 +404,7 @@ class SymbolicXMLBuilder(make: TreeFactory, gen: TreeGen, p: Parser, preserveWS:
     }
 
   /** makes an element */
-  def makeXML(pos: int, labeln: Name, attrMap1: ListMap[String,Tree], args: Array[Tree]): Tree={
-    var label = labeln.toString();
+  def makeXML(pos: int, label: String, attrMap1: ListMap[String,Tree], args: Array[Tree]): Tree={
     var setNS = ListMap.Empty[String, Tree];
     var attrMap = attrMap1;
 
