@@ -442,7 +442,7 @@ public abstract class Global {
                 if (impl.body.length <= 0) break;
                 imports.add(unit.body[i].symbol());
                 Tree last = impl.body[impl.body.length - 1];
-                if (last.isTerm()) {
+                if (last != Tree.Empty && last.isTerm()) {
                     impl.body[impl.body.length - 1] =
                         treeGen.Apply(last.pos,
                             treeGen.Select(last.pos,
