@@ -141,7 +141,7 @@ public class Tree {
 
         n_ModuleDef.
             setDescription("Module declaration").
-            setRange(Phase.PARSER, Phase.UNKNOWN).
+            setRange(Phase.PARSER, Phase.REFCHECK).
             addField(t_int, "mods", SymFlags).
             addField(t_TermName, "name", SymName).
             addField(t_TypeTree, "tpe").
