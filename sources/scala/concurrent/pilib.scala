@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.concurrent;
 
 /**
