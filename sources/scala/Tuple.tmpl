@@ -8,14 +8,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala with {
-  case class Tuple[#n#][#type-params#]([#value-params#]) extends scala.Object with {
+package scala {
+  case class Tuple[#n#][#type-params#]([#value-params#]) extends scala.Object {
 
     override def hashCode() = [#hash-code#];
 
     override def == (other: Any) =
-      if (other.is[Tuple[#n#][#type-params#]]) {
-	val that = other.as[Tuple[#n#][#type-params#]];
+      if (other is Tuple[#n#][#type-params#]) {
+	val that = other as Tuple[#n#][#type-params#];
 	[#equal#]
       } else Boolean.False;
 
