@@ -287,6 +287,11 @@ public abstract class Symbol implements Modifiers, Kinds {
              (flags & MUTABLE) == 0 && type().isObjectType());
     }
 
+    /** Does this symbol have the STABLE flag? */
+    public final boolean hasStableFlag() {
+        return (flags & STABLE) != 0;
+    }
+
     /** Is this symbol final?
      */
     public final boolean isFinal() {
