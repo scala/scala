@@ -9,6 +9,7 @@
 ../../../scalac/Global.java
 ../../../scalac/Phase.java
 ../../../scalac/PhaseDescriptor.java
+../../../scalac/CompilationLoop.java
 ../../../scalac/CompilationUnit.java
 
 ../../../scalac/ast/DefaultTreeFactory.java

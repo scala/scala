@@ -10,6 +10,8 @@ import scalac.{CompilationUnit, CompilerCommand, Global => scalac_Global};
 import scalac.ast.printer.TreePrinter;
 import scalac.backend.jvm.GenJVM;
 import scalac.backend.msil.GenMSIL;
+import scalac.symtab.Symbol;
+import scalac.util.Debug;
 import scala.tools.scalac.backend.GenJVMFromICode;
 
 package scala.tools.scalac {
@@ -43,6 +45,27 @@ class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(ar
       GenJVMFromICode.translate(this, units);
     }
     symdata.clear();
+  }
+
+
+  protected override def loadFunctions(): Unit = {
+    val mixinOnly = target != scalac_Global.TARGET_INT;
+    List.range(0, definitions.FUNCTION_COUNT).foreach(
+      i => loadCode(definitions.FUNCTION_CLASS(i), mixinOnly));
+  }
+
+  private def loadCode(clasz: Symbol, mixinOnly: boolean): unit = {
+    assert(clasz.isClass() && !clasz.isModuleClass(), Debug.show(clasz));
+    if (clasz.isExternal()) {
+      try {
+        compileLate(getSourceFile(clasz), mixinOnly);
+      } catch {
+        case exception: java.io.IOException =>
+          if (debug) exception.printStackTrace();
+          error(exception.getMessage() + "; source file for "
+                + clasz + " is needed");
+      }
+    }
   }
 
 }

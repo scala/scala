@@ -29,6 +29,4 @@ public abstract class AnalyzerPhase extends Phase {
 
     public abstract void addConsoleImport(Symbol module);
 
-    public abstract CompilationUnit[] getUnits();
-
 }

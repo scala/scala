@@ -157,6 +157,9 @@ public abstract class Global {
      */
     public final CompilerPhases PHASE;
 
+    /** The current compilation loop or null */
+    private CompilationLoop loop;
+
     /** compilation targets
      */
     public static final String TARGET_INT;
@@ -381,26 +384,12 @@ public abstract class Global {
     /** compile all compilation units
      */
     private CompilationUnit[] compile(CompilationUnit[] units) {
+        this.currentPhase = PHASE.INITIAL.phase();
         treePrinter.begin();
-
-        currentPhase = PHASE.INITIAL.phase();
-        // apply successive phases and pray that it works
-        // !!! remove NAMER test ?
-        while (currentPhase.next != null && ((currentPhase == PHASE.NAMER.phase()) || (reporter.errors() == 0))) {
-            currentPhase = currentPhase.next;
-            start();
-            // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
-            for (int i = 0; i < units.length; i++)
-                currentPhase.apply(units[i]);
-            if (currentPhase == PHASE.ANALYZER.phase())
-                units = ((AnalyzerPhase)currentPhase).getUnits();
-            stop(currentPhase.descriptor.taskDescription());
-            if (currentPhase.descriptor.hasPrintFlag()) print(units);
-            // if (currentPhase.descriptor.hasGraphFlag()) // !!!
-            // if (currentPhase.descriptor.hasCheckFlag()) // !!!
-            if (currentPhase == PHASE.PARSER.phase()) fix1(units);
-            if (currentPhase == PHASE.ANALYZER.phase()) fix2(units);
-        }
+        this.loop = new CompilationLoop(this);
+        loadFunctions();
+        units = loop.compile(units);
+        this.loop = null;
         if (reporter.errors() != 0) {
             imports.clear();
             for (Iterator i = compiledNow.entrySet().iterator(); i.hasNext();) {
@@ -412,28 +401,25 @@ public abstract class Global {
         }
         compiledNow.clear();
         treePrinter.end();
+        this.currentPhase = PHASE.TERMINAL.phase();
         return units;
     }
 
+    protected abstract void loadFunctions();
+
     /** Compiles an additional source file. */
     public void compileLate(SourceFile source, boolean mixinOnly) {
+        assert loop != null: source;
 	if (!compiledUnits.contains(source)) {
 	    compiledUnits.add(source);
 	    CompilationUnit unit = new CompilationUnit(this, source, false, mixinOnly);
-	    Phase backup = currentPhase;
-	    // !!! add code to print/skip/graph as in compile
-	    currentPhase = PHASE.PARSER.phase();
-	    PHASE.PARSER.phase().apply(unit);
-	    currentPhase = PHASE.NAMER.phase();
-	    PHASE.NAMER.phase().apply(unit);
-	    // !!! add code for later phases?
-	    currentPhase = backup;
+            loop.insert(unit);
 	}
     }
 
     public abstract void dump(CompilationUnit[] units);
 
-    private void print(CompilationUnit[] units) {
+    void print(CompilationUnit[] units) {
         if (currentPhase.id == PHASE.MAKEBOXINGEXPLICIT.id()) {
             boolean html = args.printer.value.equals(PRINTER_HTML);
             if (html) writer.println("<pre>");
@@ -503,7 +489,7 @@ public abstract class Global {
     private List imports = new ArrayList();
     public Symbol console;
 
-    private void fix1(CompilationUnit[] units) {
+    void fix1(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix1(units[i]);
         }
@@ -529,7 +515,7 @@ public abstract class Global {
         module++;
     }
 
-    private void fix2(CompilationUnit[] units) {
+    void fix2(CompilationUnit[] units) {
         for (int i = 0; i < units.length; i++) {
             if (units[i].console) fix2(units[i]);
         }

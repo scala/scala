@@ -78,7 +78,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   def lateEnter(unit: CompilationUnit): unit = {
     enterUnit(unit);
-    descr.newSources.add(unit);
   }
 
   def loadMixinCode(pos: Int, clasz: Symbol): unit = {
@@ -91,20 +90,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           if (global.debug) exception.printStackTrace();
           unit.error(pos, exception.getMessage() + "; source file for "
                      + clasz + " is needed because it is used as a mixin");
-      }
-    }
-  }
-
-  def loadCode(clasz: Symbol, mixinOnly: boolean): unit = {
-    assert(clasz.isClass() && !clasz.isModuleClass(), Debug.show(clasz));
-    if (clasz.isExternal()) {
-      try {
-        global.compileLate(global.getSourceFile(clasz), mixinOnly);
-      } catch {
-        case exception: java.io.IOException =>
-          if (global.debug) exception.printStackTrace();
-          global.error(exception.getMessage() + "; source file for "
-                     + clasz + " is needed");
       }
     }
   }
