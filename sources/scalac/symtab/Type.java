@@ -1305,6 +1305,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 
     /** Returns a shallow copy of the given array. */
     public static Type[] cloneArray(Type[] array) {
+        if (array.length == 0) return array;
         Type[] clone = new Type[array.length];
         for (int i = 0; i < clone.length; i++) clone[i] = array[i];
         return clone;

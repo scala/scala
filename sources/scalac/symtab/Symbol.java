@@ -86,6 +86,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Returns a shallow copy of the given array. */
     public static Symbol[] cloneArray(Symbol[] array) {
+        if (array.length == 0) return array;
         Symbol[] clone = new Symbol[array.length];
         for (int i = 0; i < clone.length; i++) clone[i] = array[i];
         return clone;

@@ -133,6 +133,7 @@ public class Tree {
 
     /** Returns a shallow copy of the given array. */
     public static Tree[] cloneArray(Tree[] array) {
+        if (array.length == 0) return array;
         Tree[] clone = new Tree[array.length];
         for (int i = 0; i < clone.length; i++) clone[i] = array[i];
         return clone;
