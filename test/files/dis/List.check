@@ -32,8 +32,8 @@ sealed trait List[+a] extends scala.Seq[a] with scala.ScalaObject {
     def splitAt(scala.Int): scala.Tuple2[scala.List[a], scala.List[a]];
     def dropRight(scala.Int): scala.List[a];
     def takeRight(scala.Int): scala.List[a];
-    def drop(scala.Int): scala.List[a];
-    def take(scala.Int): scala.List[a];
+    override def drop(scala.Int): scala.List[a];
+    override def take(scala.Int): scala.List[a];
     def last: a;
     def init: scala.List[a];
     def elements: scala.Iterator[a];
