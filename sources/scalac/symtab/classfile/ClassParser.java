@@ -19,7 +19,7 @@ public class ClassParser extends Type.LazyType {
     /** the global compilation environment
      */
     protected Global global;
-    private boolean completed = false;
+    protected boolean completed = false;
 
     public ClassParser(Global global) {
         this.global = global;
@@ -28,42 +28,27 @@ public class ClassParser extends Type.LazyType {
     /** complete class symbol c by loading the class
      */
     public void complete(Symbol c) {
-        if (completed) {
-            c.setInfo(Type.NoType);
-        } else {
-	    //System.out.println("loading " + c);//DEBUG
-	    try {
-		long msec = System.currentTimeMillis();
-		String filename = externalizeFileName(c.fullName()) + ".class";
-		AbstractFile f = global.classPath.openFile(filename);
-		if (f == null)
-		    global.error("could not read class " + c);
-		else {
-		    new ClassfileParser(global, new AbstractFileReader(f), c).parse();
-		    global.operation("loaded " + f.getPath() + " in " +
-				     (System.currentTimeMillis() - msec) + "ms");
-		    //for (Definition e = c.locals().elems; e != null; e = e.sibling)
-		    //  if (e.def.kind == TYP)
+	//System.out.println("loading " + c);//DEBUG
+	try {
+	    long msec = System.currentTimeMillis();
+	    String filename = SourceRepresentation.externalizeFileName(
+		c.fullName()) + ".class";
+	    AbstractFile f = global.classPath.openFile(filename);
+	    if (f == null)
+		global.error("could not read class " + c);
+	    else {
+		new ClassfileParser(global, new AbstractFileReader(f), c).parse();
+		global.operation("loaded " + f.getPath() + " in " +
+				 (System.currentTimeMillis() - msec) + "ms");
+		//for (Definition e = c.locals().elems; e != null; e = e.sibling)
+		//  if (e.def.kind == TYP)
                 //      e.def.complete();
-		}
-	    } catch (IOException e) {
-		e.printStackTrace();
-		global.error("i/o error while loading " + c);
-		c.setInfo(Type.ErrorType);
 	    }
+	} catch (IOException e) {
+	    e.printStackTrace();
+	    global.error("i/o error while loading " + c);
+	    c.setInfo(Type.ErrorType);
 	}
-    }
-
-    /** return external representation of file name s,
-     *  converting '.' to File.separatorChar
-     */
-    public String externalizeFileName(Name n) {
-        if ((n == null) || (n.length() == 0))
-            return ".";
-        byte[] ascii = n.toAscii();
-        String s = SourceRepresentation.ascii2string(
-            ascii, 0, ascii.length);
-        return s.replace('.', File.separatorChar);
     }
 
     public Type.LazyType staticsParser(Symbol clazz) {
@@ -100,7 +85,8 @@ public class ClassParser extends Type.LazyType {
         public void complete(Symbol c) {
             try {
                 long msec = System.currentTimeMillis();
-                String filename = externalizeFileName(alias.fullName()) + ".class";
+                String filename = SourceRepresentation.externalizeFileName(
+		    alias.fullName()) + ".class";
                 AbstractFile f = global.classPath.openFile(filename);
                 if (f == null)
                     global.error("could not read class " + c);

@@ -29,7 +29,7 @@ trait _a extends Object with _b {
         def setX(x: B.X): Unit;
     }
 }
-abstract class a() extends Object with _a with _b {
+abstract class a123() extends Object with _a with _b {
     val a: this.type = this;
     val A: A = new A();
     class A() extends AObject {
@@ -67,7 +67,7 @@ trait _m {
 abstract class m() extends Object with _m with _b {
     val m: this.type = this;
     val M: M = new M();
-    class M() extends MObject with a() with Linker() {
+    class M() extends MObject with a123() with Linker() {
         def test() = {
             val x: B.X = B.getX();
             A.setX(x);

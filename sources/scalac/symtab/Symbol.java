@@ -226,6 +226,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
     public final boolean isAbstractClass() {
+	preInitialize();
 	return (flags & ABSTRACTCLASS) != 0 &&
 	    this != Global.instance.definitions.ARRAY_CLASS;
     }
@@ -243,6 +244,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote something loaded from a Java class? */
     public final boolean isJava() {
+	preInitialize();
         return (flags & JAVA) != 0;
     }
 
@@ -276,11 +278,14 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote a case class?
      */
     public final boolean isCaseClass() {
+	preInitialize();
 	return kind == CLASS && (flags & CASE) != 0;
     }
 
     /** Does this symbol denote a uniform (i.e. parameterless) class? */
     public final boolean isTrait() {
+	//preInitialize(); todo: enable, problem is that then we cannot print
+	// during unpickle
 	return kind == CLASS && (flags & TRAIT) != 0;
     }
 
@@ -292,6 +297,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote an interface? */
     public final boolean isInterface() {
+	preInitialize();
         return (flags & INTERFACE) != 0;
     }
 
@@ -302,11 +308,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a protected symbol? */
     public final boolean isProtected() {
+	preInitialize();
         return (flags & PROTECTED) != 0;
     }
 
     /** Does this symbol denote a private symbol? */
     public final boolean isPrivate() {
+	preInitialize();
         return (flags & PRIVATE) != 0;
     }
 
@@ -402,8 +410,9 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Get the fully qualified name of this Symbol
      *  (this is always a normal name, never a type name)
      */
+    /** Get the fully qualified name of this Symbol */
     public Name fullName() {
-        return name.toTermName();
+	return name.toTermName();
     }
 
     /** Get the mangled name of this Symbol
@@ -539,6 +548,15 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final Symbol initialize() {
 	info();
         return this;
+    }
+
+    /** Make sure symbol is entered
+     */
+    public final void preInitialize() {
+	//todo: clean up
+	if (infos.info instanceof ClassParser ||
+	    infos.info instanceof SourceCompleter)
+	    infos.info.complete(this);
     }
 
     /** Get info; This is:
@@ -825,11 +843,11 @@ public abstract class Symbol implements Modifiers, Kinds {
 	assert this.name == that.name : Debug.show(this) + " <> " + Debug.show(that);
 	assert this.owner == that.owner : Debug.show(this) + " != " + Debug.show(that);
 	assert (this.flags & that.flags & JAVA) != 0 ||
-	    (this.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) ==
-	    (that.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) : Integer.toHexString(this.flags) + "@" + Debug.show(this) + " <> " + Integer.toHexString(that.flags) + "@" + Debug.show(that);
+	    (this.flags & OVERLOADFLAGS) == (that.flags & OVERLOADFLAGS)
+	    : Integer.toHexString(this.flags) + "@" + Debug.show(this) + " <> " + Integer.toHexString(that.flags) + "@" + Debug.show(that);
         TermSymbol overloaded = new TermSymbol(
             pos, name, owner,
-	    ((this.flags | that.flags) & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) |
+	    ((this.flags | that.flags) & (JAVA | OVERLOADFLAGS)) |
 	    (this.flags & that.flags & ACCESSFLAGS));
         overloaded.setInfo(new LazyOverloadedType(this, that));
         return overloaded;
@@ -1095,6 +1113,10 @@ public class TypeSymbol extends Symbol {
 	return type();
     }
 
+    public Symbol[] typeParams() {
+	return type().unalias().typeParams();
+    }
+
     public Type[] closure() {
 	if (kind == ALIAS) return info().symbol().closure();
 	int id = currentPhaseId();
@@ -1217,6 +1239,10 @@ public class AbsTypeSymbol extends TypeSymbol {
         other.setInfo(info());
 	other.setLoBound(loBound());
         return other;
+    }
+
+    public Symbol[] typeParams() {
+	return Symbol.EMPTY_ARRAY;
     }
 
     public Type loBound() {

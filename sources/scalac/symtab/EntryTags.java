@@ -10,6 +10,35 @@ package scalac.symtab;
 
 public interface EntryTags {
 
+/***************************************************
+ * Symbol table attribute format:
+ *   Symtab         = nentries_Nat {Entry}
+ *   Entry          = 1 TERMNAME len_Nat NameInfo
+ *                  | 2 CONSTRNAME len_Nat NameInfo
+ *                  | 3 TYPENAME len_Nat NameInfo
+ *                  | 4 NONEsym len_Nat
+ *                  | 5 TYPEsym len_Nat SymbolInfo lobound_Ref
+ *                  | 6 ALIASsym len_Nat SymbolInfo
+ *                  | 7 CLASSsym len_Nat SymbolInfo thistype_Ref constrsym_Ref
+ *                  | 8 VALsym len_Nat SymbolInfo [classsym_Ref]
+ *                  | 9 EXTsym len_Nat name_Ref [owner_Ref]
+ *                  | 10 EXTMODCLASSsym len_Nat name_Ref [owner_Ref]
+ *                  | 11 NOtpe len_Nat
+ *                  | 12 THIStpe len_Nat sym_Ref
+ *                  | 13 SINGLEtpe len_Nat type_Ref sym_Ref
+ *                  | 14 TYPEREFtpe len_Nat type_Ref sym_Ref {targ_Ref}
+ *                  | 15 COMPOUNDtpe len_Nat classsym_Ref {tpe_Ref}
+ *                  | 16 METHODtpe len_Nat tpe_Ref {tpe_Ref}
+ *                  | 17 POLYTtpe len_Nat tpe_Ref {sym_Ref}
+ *                  | 18 OVERLOADEDtpe len_Nat {sym_Ref} {tpe_Ref}
+ *                  | 21 FLAGGEDtype len_Nat flags_Nat tpe_Ref
+ *   SymbolInfo     = name_Ref owner_Ref flags_Nat info_Ref
+ *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
+ *   Ref            = Nat
+ *
+ *   len is remaining length after `len'.
+ */
+
     int TERMname = 1,
 	CONSTRname = 2,
 	TYPEname = 3,
@@ -17,9 +46,9 @@ public interface EntryTags {
 	TYPEsym = 5,
 	ALIASsym = 6,
 	CLASSsym = 7,
-	MODULEsym = 8,
-	VALsym = 9,
-	EXTsym = 10,
+	VALsym = 8,
+	EXTsym = 9,
+	EXTMODCLASSsym = 10,
 	NOtpe = 11,
 	THIStpe = 12,
 	SINGLEtpe = 13,

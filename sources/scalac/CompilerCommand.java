@@ -40,6 +40,7 @@ public class CompilerCommand extends CommandParser {
     public final BooleanOptionParser uniqid;
     public final BooleanOptionParser types;
     public final BooleanOptionParser prompt;
+    public final BooleanOptionParser separate;
     //public final OptimizeOptionParser optimize;
     public final StringOptionParser classpath;
     public final StringOptionParser sourcepath;
@@ -103,6 +104,10 @@ public class CompilerCommand extends CommandParser {
 
         this.prompt = new BooleanOptionParser(this,
             "prompt", "Display a prompt after each error (debugging option)",
+            false),
+
+        this.separate = new BooleanOptionParser(this,
+            "separate", "read symbol files for separate compilation",
             false),
 
         //this.optimize = new OptimizeOptionParser(this,

@@ -883,11 +883,14 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    return super.transform(tree);
 
 	case AppliedType(Tree tpe, Tree[] args):
+	    Symbol[] tparams = tpe.type.symbol().typeParams();
+	    /*
 	    //todo: this needs to be refined. (same code in Analyzer.transform)
 	    Symbol[] tparams =
 		(Type.isSameAs(
 		    tpe.type.typeArgs(), Symbol.type(tpe.type.unalias().symbol().typeParams())))
 		? tpe.type.unalias().symbol().typeParams() : Symbol.EMPTY_ARRAY;
+	    */
 	    checkBounds(tree.pos, tparams, Tree.typeOf(args));
 	    return elimTypeNode(super.transform(tree));
 

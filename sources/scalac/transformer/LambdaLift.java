@@ -380,8 +380,8 @@ public class LambdaLift extends OwnerTransformer
 	    Tree rhs1 = transform(rhs, sym);
 	    if ((sym.flags & CAPTURED) != 0) {
 		assert sym.isLocal();
-		Type unboxedType = sym.typeAt(descr.nextPhase);
-		Type boxedType = descr.refType(unboxedType);
+		Type boxedType = sym.typeAt(descr.nextPhase);
+		Type unboxedType = boxedType.typeArgs()[0];
 		tpe1 = gen.mkType(tpe.pos, boxedType);
 		rhs1 = gen.New(
 		    rhs.pos,

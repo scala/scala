@@ -420,8 +420,11 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    return tparams;
         case MethodType(Symbol[] vparams, _):
             return Symbol.EMPTY_ARRAY;
+	case TypeRef(_, Symbol sym, Type[] args):
+	    if (args.length == 0) return sym.typeParams();
+	    else return Symbol.EMPTY_ARRAY;
         default:
-            throw Debug.abort("illegal case", this);
+            return Symbol.EMPTY_ARRAY;
 	}
     }
 
@@ -1148,39 +1151,39 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     /** Substitute symbols `to' for occurrences of symbols `from' in this type.
      */
     public Type subst(Symbol[] from, Symbol[] to) {
-	assert from.length == to.length
-	    : this + ": " + from.length + " != " + to.length;
-	if (from.length != 0 && from != to)
+	if (to.length != 0 && from != to) {//!!!
+	    assert from.length == to.length
+		: this + ": " + from.length + " != " + to.length;
 	    return new SubstSymMap(from, to).apply(this);
-	else return this;
+	} else return this;
     }
 
     /** Substitute symbols `to' for occurrences of symbols `from' in these types.
      */
     public static Type[] subst(Type[] these, Symbol[] from, Symbol[] to) {
-	assert from.length == to.length;
-	if (these.length != 0 && from.length != 0 && from != to)
+	if (these.length != 0 && to.length != 0 && from != to) {
+	    assert from.length == to.length;
 	    return new SubstSymMap(from, to).map(these);
-	else return these;
+	} else return these;
     }
 
     /** Substitute types `to' for occurrences of symbols `from' in this type.
      */
     public Type subst(Symbol[] from, Type[] to) {
-	assert from.length == to.length
-	    : this + ": " + Debug.show(from) + " <> " + ArrayApply.toString(to);
-	if (from.length != 0)
+	if (to.length != 0) {
+	    assert from.length == to.length
+		: this + ": " + Debug.show(from) + " <> " + ArrayApply.toString(to);
 	    return new SubstTypeMap(from, to).apply(this);
-	else return this;
+	} else return this;
     }
 
     /** Substitute types `to' for occurrences of symbols `from' in these types.
      */
     public static Type[] subst(Type[] these, Symbol[] from, Type[] to) {
-	assert from.length == to.length;
-	if (these.length != 0 && from.length != 0)
+	if (these.length != 0 && to.length != 0) {
+	    assert from.length == to.length;
 	    return new SubstTypeMap(from, to).map(these);
-	else return these;
+	} else return these;
     }
 
     /** A map for substitutions of thistypes.
@@ -2453,9 +2456,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 		^ (pre.hashCode() * 41)
 		^ (sym.hashCode() * (41*41));
 	case CompoundType(Type[] parts, Scope members):
-	    return COMPOUNDtpe
-		^ (hashCode(parts) * 41)
-		^ (members.hashCode() * (41 * 41));
+	    return symbol().hashCode();
+	    //return COMPOUNDtpe
+	    //	^ (hashCode(parts) * 41)
+	    //	^ (members.hashCode() * (41 * 41));
 	case MethodType(Symbol[] vparams, Type result):
 	    int h = METHODtpe;
 	    for (int i = 0; i < vparams.length; i++)
@@ -2532,7 +2536,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	    case CompoundType(Type[] parts, Scope members):
 		switch (that) {
 		case CompoundType(Type[] parts1, Scope members1):
-		    return parts.equals(parts1) && members.equals(members1);
+		    return this.symbol() == that.symbol();
+		    //return parts.equals(parts1) && members.equals(members1);
 		default: return false;
 		}
 	    case MethodType(Symbol[] vparams, Type result):

@@ -13,6 +13,7 @@ import ch.epfl.lamp.util.Position;
 
 import scalac.symtab.NameMangler;
 import scalac.ast.Tree;
+import java.util.HashMap;
 
 
 /** A representation for a compilation unit in scala
@@ -39,8 +40,8 @@ public class Unit {
     public Tree[] body;
 
     /** the generated symbol data; Symbol -> byte[]
-    public SymData symdata;
      */
+    public HashMap/*<Name,Pickle>*/ symdata = new HashMap();
 
     /** the name mangler
      */

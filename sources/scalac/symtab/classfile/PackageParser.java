@@ -22,10 +22,14 @@ public class PackageParser extends Type.LazyType {
     /** the class parser
      */
     public ClassParser classCompletion;
+    public SymblParser symblCompletion; // provisional
 
     public PackageParser(Global global) {
         this.global = global;
         this.classCompletion = new ClassParser(global);
+	this.symblCompletion = new SymblParser(global); // provisional
+	if (global.reporter.verbose)
+	    System.out.println("classpath = " + global.classPath);//debug
     }
 
     /** complete package type symbol p by loading all package members
@@ -38,7 +42,7 @@ public class PackageParser extends Type.LazyType {
         if (name.length() == 0) {
             // includeMembers(AbstractFile.open(null, "."), p, members, false);
         } else {
-            dirname = externalizeFileName(name);
+            dirname = SourceRepresentation.externalizeFileName(name);
 	    assert !dirname.startsWith("com") : p;//debug
             if (!dirname.endsWith("/"))
                 dirname += "/";
@@ -95,11 +99,30 @@ public class PackageParser extends Type.LazyType {
                     if (locals.lookup(n) == Symbol.NONE) {
                         TermSymbol module = TermSymbol.newJavaPackageModule(n, p, this);
                         locals.enter(module);
+			locals.enter(module.moduleClass());
                     }
-                } else if (fname.endsWith(".scala")) {
+		} else if (inclClasses && global.separate && fname.endsWith(".symbl")) {
+		    //todo: compare dates between symbl and scala.
                     Name n = Name.fromString(fname.substring(0, fname.length() - 6))
 			.toTypeName();
-                    //if (locals.lookup(n) == Symbol.NONE) {
+		    Symbol sym = locals.lookup(n);
+		    if (sym == Symbol.NONE ||
+			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
+			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
+			ClassSymbol clazz = new ClassSymbol(n, p, symblCompletion);
+			clazz.constructor().setInfo(symblCompletion);
+			clazz.module().setInfo(symblCompletion);
+			locals.enter(clazz);
+			locals.enter(clazz.constructor());
+			locals.enter(clazz.module());
+		    }
+                } else if (inclClasses && fname.endsWith(".scala")) {
+                    Name n = Name.fromString(fname.substring(0, fname.length() - 6))
+			.toTypeName();
+		    Symbol sym = locals.lookup(n);
+		    if (sym == Symbol.NONE ||
+			sym.rawInfoAt(Symbol.FIRST_ID) instanceof ClassParser &&
+			!(sym.rawInfoAt(Symbol.FIRST_ID) instanceof SymblParser)) {
                         SourceCompleter completer = new SourceCompleter(global,
                             dir.getPath() + File.separatorChar + fname);
                         ClassSymbol clazz = new ClassSymbol(n, p, completer);
@@ -109,23 +132,10 @@ public class PackageParser extends Type.LazyType {
                         locals.enter(clazz);
 			locals.enter(clazz.constructor());
 			locals.enter(clazz.module());
-                    //}
+                    }
                 }
             }
         } catch (IOException e) {
         }
-    }
-
-    /** return external representation of file name s,
-     *  converting '.' to File.separatorChar
-     */
-
-    public String externalizeFileName(Name n) {
-        if ((n == null) || (n.length() == 0))
-            return ".";
-        byte[] ascii = n.toAscii();
-        String s = SourceRepresentation.ascii2string(
-            ascii, 0, ascii.length);
-        return s.replace('.', File.separatorChar);
     }
 }

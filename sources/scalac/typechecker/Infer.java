@@ -261,6 +261,10 @@ public class Infer implements Modifiers, Kinds {
 	    return cut(variance(tparam, pre));
 	case CompoundType(Type[] parts, Scope members):
 	    return variance(tparam, parts) & variance(tparam, members.elements());
+	case MethodType(Symbol[] params, Type restype):
+	    return flip(variance(tparam, params)) & variance(tparam, restype);
+	case PolyType(Symbol[] tparams, Type restype):
+	    return flip(variance(tparam, tparams)) & variance(tparam, restype);
 	default:
 	    throw new ApplicationError(tp.toString());
 	}
