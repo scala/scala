@@ -735,7 +735,7 @@ public abstract class Symbol implements Modifiers, Kinds {
     public Symbol overloadWith(Symbol that) {
         assert isTerm() : this;
 	assert this.name == that.name : this + " " + that;
-	assert this.owner == that.owner : this + " " + that;
+	assert this.owner == that.owner : Debug.show(this) + " " + Debug.show(that);
 	assert (this.flags & that.flags & JAVA) != 0 ||
 	    (this.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) ==
 	    (that.flags & (SOURCEFLAGS | JAVA) & ~ACCESSFLAGS) : this + " " + that;
