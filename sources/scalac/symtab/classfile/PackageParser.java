@@ -9,8 +9,8 @@
 package scalac.symtab.classfile;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.HashMap;
-import java.util.Set;
 
 import scala.tools.util.AbstractFile;
 import scala.tools.util.Position;
@@ -36,12 +36,7 @@ public class PackageParser extends SymbolLoader {
     // Private Fields
 
     /** The directory to read */
-    private final AbstractFile directory;
-
-    /** Are we targeting the MSIL? */
-    private boolean forMSIL;
-
-    private final CLRPackageParser clrParser;
+    protected final AbstractFile directory;
 
     //########################################################################
     // Public Constructors
@@ -50,22 +45,18 @@ public class PackageParser extends SymbolLoader {
     public PackageParser(Global global, AbstractFile directory) {
         super(global);
         this.directory = directory;
-	this.forMSIL = global.target == global.TARGET_MSIL;
-	this.clrParser = forMSIL ? CLRPackageParser.instance() : null;
     }
 
     //########################################################################
     // Protected Methods
 
-    /** Completes the package symbol by loading all its members. */
-    protected String doComplete(Symbol root) {
-        assert root.isRoot() || root.isPackage(): Debug.show(root);
-        Symbol peckage = root.isRoot() ? root : root.moduleClass();
-        // collect JVM and source members
-	boolean isRoot = peckage.isRoot();
-        HashMap sources = new HashMap();
-        HashMap classes = new HashMap();
-        HashMap packages = new HashMap();
+    protected java.util.Map sources = new HashMap();
+    protected java.util.Map classes = new HashMap();
+    protected java.util.Map packages = new HashMap();
+
+    // collect JVM and source members
+    protected void preInitialize(Symbol root, boolean loadClassfiles) {
+	boolean isRoot = root.isRoot();
         for (Iterator i = directory.list(); i.hasNext(); ) {
             AbstractFile file = (AbstractFile)i.next();
             String filename = file.getName();
@@ -74,7 +65,7 @@ public class PackageParser extends SymbolLoader {
                 packages.put(filename, file);
                 continue;
             }
-            if (!isRoot && filename.endsWith(".class")) {
+            if (!isRoot && loadClassfiles && filename.endsWith(".class")) {
                 String name = filename.substring(0, filename.length() - 6);
                 if (!classes.containsKey(name)) classes.put(name, file);
                 continue;
@@ -85,14 +76,13 @@ public class PackageParser extends SymbolLoader {
                 continue;
             }
 	}
+    }
 
-	HashMap types = null;
-	Set namespaces = null;
-	ch.epfl.lamp.compiler.msil.Type type = null;
-	if (forMSIL) {
-	    types = clrParser.getTypes(peckage);
-	    namespaces = clrParser.getNamespaces(peckage);
-	}
+    /** Completes the package symbol by loading all its members. */
+    protected String doComplete(Symbol root) {
+        assert root.isRoot() || root.isPackage(): Debug.show(root);
+        Symbol peckage = root.isRoot() ? root : root.moduleClass();
+        preInitialize(peckage, true);
 
         // create JVM and source members
         Scope members = new Scope();
@@ -101,16 +91,7 @@ public class PackageParser extends SymbolLoader {
             String name = (String)entry.getKey();
             AbstractFile sfile = (AbstractFile)entry.getValue();
             AbstractFile cfile = (AbstractFile)classes.remove(name);
-	    if (forMSIL) {
-		type = (ch.epfl.lamp.compiler.msil.Type)types.remove(name);
-		if (global.separate && forMSIL && type != null) {
-// 		    if (type.Assembly.getFile().lastModified()
-// 			> sfile.lastModified()) {
-			types.put(name, type);
- 			continue;
-// 		    }
-		}
-	    } else if (global.separate && cfile != null) {
+	    if (global.separate && cfile != null) {
                 if (cfile.lastModified() > sfile.lastModified()) {
 		    classes.put(name, cfile);
 		    continue;
@@ -126,22 +107,12 @@ public class PackageParser extends SymbolLoader {
             HashMap.Entry entry = (HashMap.Entry)i.next();
             String name = (String)entry.getKey();
 	    //assert !types.containsKey(name) : types.get(name);
-	    if (!forMSIL || clrParser.shouldLoadClassfile(peckage, name)) {
-		AbstractFile cfile = (AbstractFile)entry.getValue();
-		packages.remove(name);
-		Name classname = Name.fromString(name).toTypeName();
-		SymbolLoader loader = new ClassParser(global, cfile);
-		peckage.newLoadedClass(JAVA, classname, loader, members);
-	    }
+            AbstractFile cfile = (AbstractFile)entry.getValue();
+            packages.remove(name);
+            Name classname = Name.fromString(name).toTypeName();
+            SymbolLoader loader = new ClassParser(global, cfile);
+            peckage.newLoadedClass(JAVA, classname, loader, members);
         }
-
-	if (forMSIL) {
-	    // import the CLR types contained in the package (namespace)
-	    for (Iterator i = types.values().iterator(); i.hasNext(); ) {
-		type = (ch.epfl.lamp.compiler.msil.Type)i.next();
-		clrParser.importType(type, peckage, members);
-	    }
-	}
 
         for (Iterator i = packages.entrySet().iterator(); i.hasNext(); ) {
             HashMap.Entry entry = (HashMap.Entry)i.next();
@@ -149,20 +120,7 @@ public class PackageParser extends SymbolLoader {
             AbstractFile dfile = (AbstractFile)entry.getValue();
             SymbolLoader loader = new PackageParser(global, dfile);
             peckage.newLoadedPackage(Name.fromString(name), loader, members);
-	    if (forMSIL)
-		namespaces.remove(name);
         }
-
-	if (forMSIL) {
- 	    // import the CLR namespaces contained in the package (namespace)
- 	    for (Iterator i = namespaces.iterator(); i.hasNext(); ) {
- 		String namespace = (String)i.next();
-		Name name = Name.fromString(namespace);
-		if (members.lookup(name) == Symbol.NONE) {
-		    peckage.newLoadedPackage(name, this, members);
-		}
- 	    }
-	}
 
         // initialize package
         peckage.setInfo(Type.compoundType(Type.EMPTY_ARRAY, members, peckage));
