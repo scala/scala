@@ -10,7 +10,6 @@
 
 package scala;
 
-// !!! Just a stub to make things compile.
 trait Similarity {
-  def similar(that: Similarity): boolean = false;
+  def similar(that: Any): boolean;
 }
