@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml-stylesheet type="text/xsl" href="scala-faq.xhtml.xsl"?>
+<!DOCTYPE faq PUBLIC "-//lamp.epfl.ch//DTD Scala FAQ//EN"
+	             "scala-faq.dtd">
+
+<faq>
+
+  <section title="General">
+    <entry id="why">
+      <question>Why another programming language </question>
+      <answer>Read the rational on the <a
+      href="http://scala.epfl.ch">Scala homepage</a></answer>
+    </entry>
+  </section>
+
+  <section title="Less General">
+    <entry>
+      <question>Why is feature XYZ not integrated</question>
+      <answer>Convince us that it is useful. Make sure you read 
+           <seealso ref="why"/> before </answer>
+    </entry>
+  </section> 
+
+</faq>
