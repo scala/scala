@@ -52,12 +52,11 @@ public final class TermName extends Name {
         int index = hashValue(bytes, start, count) & (asciis.length - 1);
         for (TermName name = asciis[index]; name != null; name = name.next)
             if (name.equals(bytes, start, count)) return name;
-        TermName name = fromString(toString(bytes, start, count));
-        assert name.ascii == null: name;
-        byte[] ascii = name.ascii = new byte[count];
+        TermName name = fromString(
+            SourceRepresentation.ascii2string(bytes, start, count));
+        byte[] ascii = new byte[count];
         for (int i = 0; i < ascii.length; i++) ascii[i] = bytes[start + i];
-        name.next = asciis[index];
-        asciis[index] = name;
+        name.setAscii(ascii, index);
         return name;
     }
 
@@ -75,8 +74,29 @@ public final class TermName extends Name {
         return string;
     }
 
+    /**
+     * Returns the ASCII representation of this name. The returned
+     * array is not a copy. Therefore, it is forbidden to modify it.
+     */
+    public byte[] toAsciiUnsafe() {
+        if (ascii == null) {
+            byte[] ascii = SourceRepresentation.string2ascii(string);
+            int index = hashValue(ascii, 0, ascii.length) & (asciis.length-1);
+            setAscii(ascii, index);
+        }
+        return ascii;
+    }
+
     //########################################################################
     // Private Methods & Functions
+
+    /** Sets the ASCII representation to given one. */
+    private void setAscii(byte[] ascii, int index) {
+        assert this.ascii == null: this;
+        this.ascii = ascii;
+        this.next = asciis[index];
+        asciis[index] = this;
+    }
 
     /** Is this name's ASCII representations equal to given one? */
     private boolean equals(byte[] bytes, int start, int count) {
@@ -93,11 +113,6 @@ public final class TermName extends Name {
             + bytes[start] * (41 * 41)
             + bytes[start + count - 1] * 41
             + bytes[start + (count >> 1)];
-    }
-
-    /** Turns the ASCII representation into a string. */
-    private static String toString(byte[] bytes, int start, int count) {
-        return SourceRepresentation.ascii2string(bytes, start, count);
     }
 
     //########################################################################

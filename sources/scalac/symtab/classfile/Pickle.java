@@ -304,7 +304,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
     private void writeName(Name name) {
 	writeByte(name.isTermName() ? TERMname : TYPEname);
 	writeByte(0); // space for length
-        byte[] ascii = SourceRepresentation.string2ascii(name.toString());
+        byte[] ascii = name.toAsciiUnsafe();
 	while (bp + ascii.length > bytes.length) resizeTo(bytes.length * 2);
         System.arraycopy(ascii, 0, bytes, bp, ascii.length);
 	if (debug) System.out.print(name);

@@ -121,5 +121,13 @@ public abstract class Name {
         return term.toString();
     }
 
+    /**
+     * Returns the ASCII representation of this name. The returned
+     * array is not a copy. Therefore, it is forbidden to modify it.
+     */
+    public byte[] toAsciiUnsafe() {
+        return term.toAsciiUnsafe();
+    }
+
     //########################################################################
 }
