@@ -114,6 +114,7 @@ transformer/OwnerTransformer.java
 transformer/TailCallPhase.java
 transformer/TransMatch.java
 transformer/TransMatchPhase.java
+transformer/TypesAsValuesPhase.java
 transformer/UnCurry.java
 transformer/UnCurryPhase.java
 
