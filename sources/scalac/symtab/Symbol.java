@@ -328,8 +328,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     public final boolean isAbstractClass() {
         preInitialize();
-        return (flags & ABSTRACTCLASS) != 0 &&
+        return kind == CLASS && (flags & ABSTRACT) != 0 &&
             this != Global.instance.definitions.ARRAY_CLASS;
+    }
+
+    public final boolean isAbstractOverride() {
+        preInitialize();
+        return (flags & (ABSTRACT | OVERRIDE)) == (ABSTRACT | OVERRIDE);
     }
 
     /* Does this symbol denote an anonymous class? */

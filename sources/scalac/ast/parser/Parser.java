@@ -1367,7 +1367,7 @@ public class Parser implements Tokens {
 	    int mod;
             switch (s.token) {
 	    case ABSTRACT:
-		mod = Modifiers.ABSTRACTCLASS;
+		mod = Modifiers.ABSTRACT;
 		break;
 	    case FINAL:
 		mod = Modifiers.FINAL;
@@ -1404,7 +1404,7 @@ public class Parser implements Tokens {
 	    int mod;
             switch (s.token) {
 	    case ABSTRACT:
-		mod = Modifiers.ABSTRACTCLASS;
+		mod = Modifiers.ABSTRACT;
 		break;
 	    case FINAL:
 		mod = Modifiers.FINAL;
@@ -1685,7 +1685,7 @@ public class Parser implements Tokens {
 	case CASECLASS:
 	case TRAIT:
 	    if (s.token == CASECLASS) mods |= Modifiers.CASE;
-	    else if (s.token == TRAIT) mods |= Modifiers.TRAIT | Modifiers.ABSTRACTCLASS;
+	    else if (s.token == TRAIT) mods |= Modifiers.TRAIT | Modifiers.ABSTRACT;
 	    do {
 		s.nextToken();
 		ts.append(classDef(mods));

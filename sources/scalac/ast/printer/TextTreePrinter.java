@@ -674,7 +674,7 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     protected void printModifiers(int flags) {
-        if ((flags & Modifiers.ABSTRACTCLASS) != 0) {
+        if ((flags & Modifiers.ABSTRACT) != 0) {
             print(KW_ABSTRACT);
             print(Text.Space);
         }

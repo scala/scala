@@ -22,7 +22,7 @@ abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
                     extends scala.collection.mutable.Map[A, B]
                     with Publisher[ObservableUpdate[Pair[A, B]] with Undo, This] {
 
-    override def update(key: A, value: B): Unit = get(key) match {
+    abstract override def update(key: A, value: B): Unit = get(key) match {
         case None => super.update(key, value);
                      publish(new Inclusion(Pair(key, value)) with Undo {
                                  def undo = -=(key);
@@ -33,7 +33,7 @@ abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
                                   });
     }
 
-    override def -=(key: A): Unit = get(key) match {
+    abstract override def -=(key: A): Unit = get(key) match {
         case None =>
         case Some(old) => super.-=(key);
                           publish(new Removal(Pair(key, old)) with Undo {
@@ -41,7 +41,7 @@ abstract class ObservableMap[A, B, This <: ObservableMap[A, B, This]]: This
                                   });
     }
 
-    override def clear: Unit = {
+    abstract override def clear: Unit = {
         super.clear;
         publish(new Reset() with Undo { def undo = error("cannot undo"); });
     }

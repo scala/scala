@@ -57,6 +57,12 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 // Override checking ------------------------------------------------------------
 
+    static boolean isIncomplete(Symbol sym) {
+	return sym.isDeferred() ||
+	    sym.isAbstractOverride() &&
+	    isIncomplete(sym.overriddenSymbol(sym.owner().parents()[0]));
+    }
+
     /** 1. Check all members of class `clazz' for overriding conditions.
      *  2. Check that only abstract classes have deferred members*
      *  3. Check that every member with an `override' modifier
@@ -82,13 +88,16 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (i < 0) {
 		    unit.error(sym.pos, sym + " overrides nothing");
 		    sym.flags &= ~OVERRIDE;
-		} else if (clazz.kind == CLASS &&
-			   (clazz.flags & ABSTRACTCLASS) == 0) {
+		} else if (sym.isAbstractOverride()) {
 		    Symbol sup = sym.overriddenSymbol(parents[0]);
-		    if (sup.kind != NONE && (sup.flags & DEFERRED) != 0) {
+		    if (sup.kind == NONE) {
+			unit.error(sym.pos, sym + " does not override a superclass member");
+		    } else if (clazz.kind == CLASS &&
+			       (clazz.flags & ABSTRACT) == 0 &&
+			       isIncomplete(sup)) {
 			abstractClassError(
 			    clazz, sym + sym.locationString() +
-			    " is marked `override', but overrides an abstract member of the superclass " + parents[0]);
+			    " is marked `abstract' and `override' and overrides an incomplete superclass member in " + parents[0]);
 		    }
 		}
 	    }
@@ -134,7 +143,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		checkOverride(pos, clazz, member, other);
 	    }
 	}
-	if (clazz.kind == CLASS && (clazz.flags & ABSTRACTCLASS) == 0) {
+	if (clazz.kind == CLASS && (clazz.flags & ABSTRACT) == 0) {
 	    if ((member.flags & DEFERRED) != 0) {
 		abstractClassError(
 		    clazz,
@@ -160,7 +169,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		unit.error(clazz.pos, "object creation impossible, since " + msg);
 	    else
 		unit.error(clazz.pos, clazz + " needs to be abstract, since " + msg);
-	    clazz.flags |= ABSTRACTCLASS;
+	    clazz.flags |= ABSTRACT;
 	}
 
 
@@ -177,6 +186,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *         or M is a type alias or class which conforms to O's bounds.
      *    7. If O and M are values, then M's type is a subtype of O's type.
      *    8. If O is an immutable value, then so is M.
+     *    9. If O is a member of the static superclass of the class in which
+     *       M is defined, and O is labelled `abstract override', then
+     *       M must be labelled `abstract override'.
      */
     void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
 	if (member.owner() == clazz)
@@ -190,8 +202,15 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    overrideError(pos, member, other, "has weaker access privileges; it should not be protected");
 	} else if ((other.flags & FINAL) != 0) {
 	    overrideError(pos, member, other, "cannot override final member");
+	} else if (other.kind == CLASS) {
+	    overrideError(pos, member, other, "cannot override a class");
 	} else if ((other.flags & DEFERRED) == 0 && ((member.flags & OVERRIDE) == 0)) {
 	    overrideError(pos, member, other, "needs `override' modifier");
+	} else if (other.isAbstractOverride() &&
+		   !member.isAbstractOverride() &&
+		   member.owner() == clazz &&
+		   clazz.parents()[0].symbol().isSubClass(other.owner())) {
+	    overrideError(pos, member, other, "needs `abstract' and `override' modifiers");
 	} else if (other.isStable() && !member.isStable()) {
 	    overrideError(pos, member, other, "needs to be an immutable value");
 	} else if ((member.flags & DEFERRED) == 0 && (other.flags & DEFERRED) == 0 &&
@@ -206,9 +225,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    Type self = clazz.thisType();
 
 	    switch (other.kind) {
-	    case CLASS:
- 		overrideError(pos, member, other, "cannot override a class");
-		break;
 	    case ALIAS:
 		if (member.typeParams().length != 0)
 		    overrideError(pos, member, other, "may not be parameterized");
@@ -994,11 +1010,15 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    sym.flags |= ACCESSED;
 	    if (!TreeInfo.isSelf(qual, enclClass))
 		sym.flags |= SELECTOR;
-	    if (qual instanceof Tree.Super && (sym.flags & DEFERRED) != 0) {
-		Symbol sym1 = enclClass.thisSym().info().lookup(sym.name);
-		if ((sym1.flags & OVERRIDE) == 0 || (sym1.flags & DEFERRED) != 0)
-		    unit.error(tree.pos,
-		        "symbol accessed from super may not be abstract");
+	    if ((sym.flags & DEFERRED) != 0) {
+		switch (qual) {
+		case Super(Name qualifier, Name mixin):
+		    Symbol sym1 = enclClass.thisSym().info().lookup(sym.name);
+		    if (mixin != TypeNames.EMPTY || !isIncomplete(sym1))
+			unit.error(
+			    tree.pos,
+			    "symbol accessed from super may not be abstract");
+		}
 	    }
 	    return elimTypeNode(super.transform(tree));
 

@@ -157,7 +157,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	ExtCompoundType res = new ExtCompoundType(parts, members);
 	res.tsym = new ClassSymbol(
 	    Position.FIRSTPOS, Names.COMPOUND_NAME.toTypeName(), Symbol.NONE,
-	    SYNTHETIC | ABSTRACTCLASS);
+	    SYNTHETIC | ABSTRACT);
 	res.tsym.setInfo(res);
 	res.tsym.primaryConstructor().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, Type.NoType));
@@ -590,7 +590,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	case TypeRef(_, Symbol sym, _):
 	    return sym.kind == CLASS &&
 		((sym.flags & JAVA) != 0 ||
-		 (sym.flags & (TRAIT | ABSTRACTCLASS)) == 0);
+		 (sym.flags & (TRAIT | ABSTRACT)) == 0);
 	default:
 	    return false;
 	}

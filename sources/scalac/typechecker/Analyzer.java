@@ -297,7 +297,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *   - symbols with `override' modifier override some other symbol.
      */
     void validate(Symbol sym) {
-	if ((sym.flags & ABSTRACTCLASS) != 0 && sym.kind != CLASS) {
+	if ((sym.flags & (ABSTRACT | OVERRIDE)) == ABSTRACT &&
+	    sym.kind != CLASS) {
 	    error(sym.pos, "`abstract' modifier can be used only for classes; " +
 		  "\nit should be omitted for abstract members");
 	}
@@ -340,6 +341,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
      *    statement sequence.
      *  - self-type of current class is a subtype of self-type of each parent class.
      *  - parent constructors do not refer to value parameters of class.
+     *  - no two parents define same symbol.
      */
     void validateParentClasses(Tree[] constrs, Type[] parents, Type selfType) {
 	for (int i = 0; i < parents.length; i++) {
@@ -378,6 +380,10 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		error(constrs[i].pos, "illegal inheritance;\n self-type " +
 		      selfType + " does not conform to " + parents[i] +
 		      "'s selftype " + parents[i].instanceType());
+	    }
+	    for (int j = 0; j < i; j++) {
+		if (parents[i].symbol() == parents[j].symbol())
+		    error(constrs[i].pos, parents[i].symbol() + " is inherited twice");
 	    }
 	}
     }
@@ -721,7 +727,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	    if (!clazz.primaryConstructor().isInitialized())
 		clazz.primaryConstructor().setInfo(new LazyTreeType(tree));
 	    if ((mods & CASE) != 0) {
-		if ((mods & ABSTRACTCLASS) == 0) {
+		if ((mods & ABSTRACT) == 0) {
 		    // enter case constructor method.
 		    Symbol cf = TermSymbol.define(
 			tree.pos, name.toTermName(), owner,

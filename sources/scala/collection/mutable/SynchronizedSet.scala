@@ -18,7 +18,7 @@ package scala.collection.mutable;
  */
 trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
 
-    override def size: Int = synchronized {
+    abstract override def size: Int = synchronized {
         super.size
     }
 
@@ -26,11 +26,11 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
         super.isEmpty
     }
 
-    override def contains(elem: A) = synchronized {
+    abstract override def contains(elem: A) = synchronized {
         super.contains(elem);
     }
 
-    override def +=(elem: A): Unit = synchronized {
+    abstract override def +=(elem: A): Unit = synchronized {
         super.+=(elem);
     }
 
@@ -42,7 +42,7 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
         super.incl(that);
     }
 
-    override def -=(elem: A): Unit = synchronized {
+    abstract override def -=(elem: A): Unit = synchronized {
         super.-=(elem);
     }
 
@@ -58,7 +58,7 @@ trait SynchronizedSet[A] extends scala.collection.mutable.Set[A] with Monitor {
         super.intersect(that);
     }
 
-    override def clear: Unit = synchronized {
+    abstract override def clear: Unit = synchronized {
         super.clear;
     }
 

@@ -86,7 +86,7 @@ public class ClassfileParser implements ClassfileConstants {
             // todo: correct flag transition
             c.flags = transFlags(flags);
             if ((c.flags & Modifiers.DEFERRED) != 0)
-                c.flags = c.flags & ~Modifiers.DEFERRED | Modifiers.ABSTRACTCLASS;
+                c.flags = c.flags & ~Modifiers.DEFERRED | Modifiers.ABSTRACT;
             Type supertpe = readClassType(in.nextChar());
             Type[] basetpes = new Type[in.nextChar() + 1];
             this.locals = new Scope();
@@ -145,7 +145,7 @@ public class ClassfileParser implements ClassfileConstants {
         if ((flags & 0x0010) != 0)
             res |= Modifiers.FINAL;
         if ((flags & 0x0200) != 0)
-            res |= Modifiers.INTERFACE | Modifiers.TRAIT | Modifiers.ABSTRACTCLASS;
+            res |= Modifiers.INTERFACE | Modifiers.TRAIT | Modifiers.ABSTRACT;
         return res | Modifiers.JAVA;
     }
 

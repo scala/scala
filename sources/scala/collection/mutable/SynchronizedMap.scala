@@ -18,11 +18,11 @@ package scala.collection.mutable;
  */
 trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] with Monitor {
 
-    override def size: Int = synchronized {
+    abstract override def size: Int = synchronized {
         super.size;
     }
 
-    override def get(key: A): Option[B] = synchronized {
+    abstract override def get(key: A): Option[B] = synchronized {
         super.get(key);
     }
 
@@ -58,11 +58,11 @@ trait SynchronizedMap[A, B] extends scala.collection.mutable.Map[A, B] with Moni
         super.toList;
     }
 
-    override def update(key: A, value: B): Unit = synchronized {
+    abstract override def update(key: A, value: B): Unit = synchronized {
         super.update(key, value);
     }
 
-    override def -=(key: A): Unit = synchronized {
+    abstract override def -=(key: A): Unit = synchronized {
         super.-=(key);
     }
 

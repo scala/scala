@@ -1459,17 +1459,18 @@ Classes (\sref{sec:classes}) and objects
 A template defines the type signature, behavior and initial state of a
 class of objects or of a single object. Templates form part of
 instance creation expressions, class definitions, and object
-definitions.  A template
-~\lstinline@$sc$ with $mc_1$ with $\ldots$ with $mc_n$ {$stats\,$}@~ consists of a
-constructor invocation $sc$ which defines the template's {\em
-superclass}, constructor invocations ~\lstinline@$mc_1 \commadots mc_n$@~ 
-$(n \geq 0)$, which define the template's {\em mixin classes}, and a
-statement sequence $stats$ which contains additional member
-definitions for the template.  Superclass and mixin classes together
-are called the {\em parent classes} of a template.  The superclass of
-a template must be a subtype of the superclass of each mixin class.
-The {\em least proper supertype} of a template is the class type or
-compound type (\sref{sec:compound-types}) consisting of the its parent classes.
+definitions.  A template ~\lstinline@$sc$ with $mc_1$ with $\ldots$
+with $mc_n$ {$stats\,$}@~ consists of a constructor invocation $sc$
+which defines the template's {\em superclass}, constructor invocations
+~\lstinline@$mc_1 \commadots mc_n$@~ $(n \geq 0)$, which define the
+template's {\em mixin classes}, and a statement sequence $stats$ which
+contains additional member definitions for the template.  Superclass
+and mixin classes together are called the {\em parent classes} of a
+template.  They must be pairwise different.  The superclass of a
+template must be a subtype of the superclass of each mixin class.  The
+{\em least proper supertype} of a template is the class type or
+compound type (\sref{sec:compound-types}) consisting of the its parent
+classes.
 
 Member definitions define new members or overwrite members in the
 parent classes.  If the template forms part of a class definition,
@@ -1696,6 +1697,11 @@ labeled \code{protected}.
 \item
 If $M'$ is not an abstract member, then
 $M$ must be labeled \code{override}.
+\item
+If $M'$ is labelled \code{abstract} and \code{override}, and $M'$ is a
+member of the static superclass of the class containing the definition
+of $M$, then $M$ must also be labelled \code{abstract} and
+\code{override}.
 \end{itemize}
 
 \example\label{ex:compound-a}
@@ -1766,18 +1772,34 @@ The \code{override} modifier applies to class member definitions.  It
 is mandatory for member definitions that override some other concrete
 member definition in a super- or mixin-class. If an \code{override}
 modifier is given, there must be at least one overridden member
-definition.  Furthermore, if the class containing the overriding
-member is not abstract, and one of the overridden definitions is a
-member of its superclass, that definition must be concrete
-(\sref{sec:members}).
+definition.  
+
+The \code{override} modifier has an additional significance when
+combined with the \code{abstract} modifier.  That modifier combination
+is only allowed in abstract classes.  A member
+labelled \code{abstract} and \code{override} must override some
+member of the superclass of the class containing the definition.
+
+We call a member of a template {\em incomplete} if it is either
+abstract (i.e.\ defined by a declaration), or it is labelled
+\code{abstract} and \code{override} and it overrides an incomplete
+member of the template's superclass.
+
+Note that the \code{abstract override} modifier combination does not
+influence the concept whether a member is concrete or
+abstract. A member for which only a declaration is given is abstract,
+whereas a member for which a full definition is given is concrete.
+
 \item
 The \code{abstract} modifier is used in class definitions. It is
-mandatory if the class has abstract members, or if the class has
-members labeled \code{override} which override only abstract members
-in a parent class.  Classes with \code{abstract} members
+mandatory if the class has incomplete members.  Abstract classes
 cannot be instantiated (\sref{sec:inst-creation}) with a constructor
 invocation unless followed by mixin constructors or statements which
 override all abstract members of the class.
+
+The \code{abstract} modifier can also be used in conjunction with
+\code{override} for class member definitions. In that case the meaning
+of the previous discussion applies.
 \item
 The \code{final} modifier applies to class member definitions and to
 class definitions. A \code{final} class member definition may not be
@@ -2345,21 +2367,20 @@ If the expression's expected type is a singleton type, or
 \lstinline@$C$.this@ occurs as the prefix of a selection, its type is
 \lstinline@$C$.this.type@, otherwise it is the self type of class $C$.
 
-A reference \lstinline@super.$m$@ in a template refers to the definition of
-$m$ in the actual superclass (\sref{sec:base-classes}) of the
-template.  A reference \lstinline@$C$.super.$m$@ refers to the definition of
-$m$ in the actual superclass of the innermost enclosing class or
-object definition named $C$ which encloses the reference. The
-definition referred to by \code{super} or \lstinline@$C$.super@ must be
-concrete, or the template containing the reference must contain a
-definition which has an \code{override} modifier and which overrides
-$m$.
+A reference \lstinline@super.$m$@ in a template refers to the
+definition of $m$ in the actual superclass (\sref{sec:base-classes})
+of the template.  A reference \lstinline@$C$.super.$m$@ refers to the
+definition of $m$ in the actual superclass of the innermost enclosing
+class or object definition named $C$ which encloses the reference. The
+definition $m$ referred to via \code{super} or \lstinline@$C$.super@
+must be concrete, or the template containing the reference must have an
+incomplete (\sref{sec:modifiers}) member $m'$ which overrides $m$.
 
 The \code{super} prefix may be followed by a mixin qualifier
 \lstinline@[$M\,$]@, as in \lstinline@$C$.super[$M\,$].$x$@. This is called a {\em mixin
 super reference}.  In this case, the reference is to the member of
 $x$ in the (first) mixin class of $C$ whose simple name
-is $M$.
+is $M$. That member may not be abstract.
 
 \example\label{ex:super}
 Consider the following class definitions

@@ -19,7 +19,9 @@ public interface Modifiers {
     int SEALED        = 0x00000010;
     int OVERRIDE      = 0x00000020;
     int CASE          = 0x00000040;
-    int ABSTRACTCLASS = 0x00000080;   // abstract class
+    int ABSTRACT      = 0x00000080;   // abstract class, or used in conjunction
+                                      // with abstract override.
+                                      // Note difference to DEFERRED!
 
     int DEF           = 0x00000100;   // a def parameter
     int REPEATED      = 0x00000200;   // a repeated parameter
@@ -69,7 +71,9 @@ public interface Modifiers {
     public static class Helper {
 
         public static boolean isAbstract(int flags) {
-            return (flags & (DEFERRED | ABSTRACTCLASS))  != 0;
+	    // todo: ABSTRACT and DEFERRED should be separated.
+            return (flags & DEFERRED) != 0 ||
+		(flags & (ABSTRACT | OVERRIDE)) == ABSTRACT;
         }
 
         public static boolean isFinal(int flags) {
