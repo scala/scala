@@ -26,12 +26,12 @@ class SyncVar[a] {
     notifyAll()
   }
 
-  def isSet: Boolean =
+  def isSet: Boolean = synchronized {
     isDefined;
+  }
 
   def unset = synchronized {
     isDefined = false
   }
 
 }
-
