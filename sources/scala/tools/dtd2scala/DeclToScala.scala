@@ -15,6 +15,8 @@ import java.util.Iterator ;
 import scalac.util.Name ;
 import scalac.ast.parser.Scanner ;
 
+// 2do: remove setChildren, use escaped sequence in constructor call "Elem( x:_* )"
+
 class DeclToScala(fOut:PrintWriter, moduleName:String) {
 
   val DEFAULT_moduleName = "myXML";
@@ -35,7 +37,6 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
   final val RAW_NAME_DEF:String      = "def getName:String = ";
 
   final val GET_CHILDREN_DEF:String  = "def getChildren:scala.Seq[scala.xml.Element] = _ch ;";
-  final val SET_CHILDREN_DEF:String  = "def setChildren( l:scala.Seq[scala.xml.Element] ):Unit = {_ch = l};";
   final val GET_ATTRIBS_DEF:String  =  "def getAttribs:scala.xml.javaAdapter.Map[String,String] = _at ;";
   final val SET_ATTRIBS_DEF:String  =  "def setAttribs( m:scala.xml.javaAdapter.Map[String,String] ):Unit = {_at = m};";
 
@@ -119,7 +120,6 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
 
     printIndent(); fOut.println( CHILDREN_VALDEF );
     printIndent(); fOut.println( GET_CHILDREN_DEF );
-    printIndent(); fOut.println( SET_CHILDREN_DEF );
     printIndent(); fOut.println( ATTRIBS_VARDEF );
     printIndent(); fOut.println( GET_ATTRIBS_DEF );
     printIndent(); fOut.println( SET_ATTRIBS_DEF );
@@ -185,10 +185,10 @@ class DeclToScala(fOut:PrintWriter, moduleName:String) {
       val decl:ElemDecl = elemMap.get( it.next() ).asInstanceOf[ ElemDecl ];
       printIndent();
       fOut.print( "res.put(\"" );
-                 fOut.print( decl.name );
-                 fOut.print( "\",(x:scala.Seq[scala.xml.Element] => { val res = ");
+      fOut.print( decl.name );
+      fOut.print( "\",(x:scala.Seq[scala.xml.Element] => ");
       fOut.print( cookedCap( decl.name ));
-      fOut.println("(); res.setChildren(x); res }));");
+      fOut.println("( x:_* ) ));");
     }
     printIndent();
     fOut.println("res");
