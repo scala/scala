@@ -175,7 +175,7 @@ public class GenTransformer {
             return gen.Switch(tree.pos, test, tags, bodies, otherwise);
 
         case Return(Tree expr):
-            return gen.Return(tree.pos, tree.symbol(), expr);
+            return gen.Return(tree.pos, tree.symbol(), transform(expr));
 
         // case Throw(Tree expr):
 
