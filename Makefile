@@ -155,6 +155,7 @@ distclean	: clean
 	$(RM) $(FUNCTION_FILES)
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
+	$(RM) $(ROOT)/support/latex/*.class
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 runtime		: .latest-runtime
