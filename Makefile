@@ -115,7 +115,6 @@ scalap			: main.scalap
 dtd2scala		: main.dtd2scala
 scala4ant		: main.scala4ant
 scalatest		: main.scalatest
-servlet			: main.servlet
 tools			: main.tools
 
 $(prefix).all		: $(latest)all
@@ -134,7 +133,6 @@ $(prefix).scalap	: $(latest)scalap
 $(prefix).dtd2scala	: $(latest)dtd2scala
 $(prefix).scala4ant	: $(latest)scala4ant
 $(prefix).scalatest	: $(latest)scalatest
-$(prefix).servlet	: $(latest)servlet
 $(prefix).tools		: $(latest)tools
 
 meta.%			: ; @$(make) prefix="meta" $@;
@@ -161,7 +159,6 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: dtd2scala
 .PHONY			: scala4ant
 .PHONY			: scalatest
-.PHONY			: servlet
 .PHONY			: tools
 
 .PHONY			: $(prefix).all
@@ -180,7 +177,6 @@ test.%			: ; @$(make) prefix="test" $@;
 .PHONY			: $(prefix).dtd2scala
 .PHONY			: $(prefix).scala4ant
 .PHONY			: $(prefix).scalatest
-.PHONY			: $(prefix).servlet
 .PHONY			: $(prefix).tools
 
 ##############################################################################
@@ -659,23 +655,6 @@ $(latest)scalatest-jc	: $(SCALATEST_JC_FILES)
 	$(TOUCH) $@
 
 ##############################################################################
-# Targets - scala tools - servlet engine
-
-PROJECT_SOURCES		+= $(SERVLET_SOURCES)
-SERVLET_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/servlet
-SERVLET_LIST		+= $(call READLIST,$(PROJECT_LISTDIR)/servlet.lst)
-SERVLET_SOURCES		+= $(SERVLET_LIST:%=$(SERVLET_ROOT)/%)
-SERVLET_SC_FILES	+= $(SERVLET_SOURCES)
-
-$(latest)servlet	: $(latest)servlet-sc
-$(latest)servlet	:
-	$(TOUCH) $@
-
-$(latest)servlet-sc	: $(SERVLET_SC_FILES)
-	@$(make) sc target=SERVLET SERVLET_SC_FILES='$?'
-	$(TOUCH) $@
-
-##############################################################################
 # Targets - scala tools
 
 TOOLS_NAME		 = tools
@@ -694,7 +673,6 @@ $(latest)tools		: $(latest)scalap
 $(latest)tools		: $(latest)dtd2scala
 $(latest)tools		: $(latest)scala4ant
 $(latest)tools		: $(latest)scalatest
-$(latest)tools		: $(latest)servlet
 $(latest)tools		:
 	$(TOUCH) $@
 
