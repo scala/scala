@@ -109,24 +109,9 @@ public abstract class RunTime {
             public float asFloat() { return (float)x; }
             public long asLong() { return (long)x; }
             public int asInt() { return (int)x; }
-            public char asChar() {
-                if (isChar()) return (char)x;
-                else throw new ClassCastException();
-            }
+            public char asChar() { return (char)x; }
             public short asShort() { return (short)x; }
-            public byte asByte() {
-                if (isByte()) return (byte)x;
-                else throw new ClassCastException();
-            }
-
-	    public boolean isChar() {
-                return (java.lang.Character.MIN_VALUE <= x)
-                    && (java.lang.Character.MAX_VALUE >= x);
-            }
-	    public boolean isByte() {
-                return (java.lang.Byte.MIN_VALUE <= x)
-                    && (java.lang.Byte.MAX_VALUE >= x);
-            }
+            public byte asByte() { return (byte)x; }
         };
     }
 
@@ -142,23 +127,8 @@ public abstract class RunTime {
             public long asLong() { return (long)x; }
             public int asInt() { return (int)x; }
             public char asChar() { return (char)x; }
-            public short asShort() {
-                if (isShort()) return (short)x;
-                else throw new ClassCastException();
-            }
-            public byte asByte() {
-                if (isByte()) return (byte)x;
-                else throw new ClassCastException();
-            }
-
-	    public boolean isShort() {
-                return (java.lang.Short.MIN_VALUE <= x)
-                    && (java.lang.Short.MAX_VALUE >= x);
-            }
-	    public boolean isByte() {
-                return (java.lang.Byte.MIN_VALUE <= x)
-                    && (java.lang.Byte.MAX_VALUE >= x);
-            }
+            public short asShort() { return (short)x; }
+            public byte asByte() { return (byte)x; }
         };
     }
 
@@ -173,31 +143,9 @@ public abstract class RunTime {
             public float asFloat() { return (float)x; }
             public long asLong() { return (long)x; }
             public int asInt() { return (int)x; }
-            public char asChar() {
-                if (isChar()) return (char)x;
-                else throw new ClassCastException();
-            }
-            public short asShort() {
-                if (isShort()) return (short)x;
-                else throw new ClassCastException();
-            }
-            public byte asByte() {
-                if (isByte()) return (byte)x;
-                else throw new ClassCastException();
-            }
-
-	    public boolean isChar() {
-                return (java.lang.Character.MIN_VALUE <= x)
-                    && (java.lang.Character.MAX_VALUE >= x);
-            }
-	    public boolean isShort() {
-                return (java.lang.Short.MIN_VALUE <= x)
-                    && (java.lang.Short.MAX_VALUE >= x);
-            }
-	    public boolean isByte() {
-                return (java.lang.Byte.MIN_VALUE <= x)
-                    && (java.lang.Byte.MAX_VALUE >= x);
-            }
+            public char asChar() { return (char)x; }
+            public short asShort() { return (short)x; }
+            public byte asByte() { return (byte)x; }
 	};
     }
 
@@ -211,39 +159,10 @@ public abstract class RunTime {
             public double asDouble() { return (double)x; }
             public float asFloat() { return (float)x; }
             public long asLong() { return (long)x; }
-            public int asInt() {
-                if (isInt()) return (int)x;
-                else throw new ClassCastException();
-            }
-            public char asChar() {
-                if (isChar()) return (char)x;
-                else throw new ClassCastException();
-            }
-            public short asShort() {
-                if (isShort()) return (short)x;
-                else throw new ClassCastException();
-            }
-            public byte asByte() {
-                if (isByte()) return (byte)x;
-                else throw new ClassCastException();
-            }
-
-	    public boolean isInt() {
-                return (java.lang.Integer.MIN_VALUE <= x)
-                    && (java.lang.Integer.MAX_VALUE >= x);
-            }
-	    public boolean isChar() {
-                return (java.lang.Character.MIN_VALUE <= x)
-                    && (java.lang.Character.MAX_VALUE >= x);
-            }
-	    public boolean isShort() {
-                return (java.lang.Short.MIN_VALUE <= x)
-                    && (java.lang.Short.MAX_VALUE >= x);
-            }
-	    public boolean isByte() {
-                return (java.lang.Byte.MIN_VALUE <= x)
-                    && (java.lang.Byte.MAX_VALUE >= x);
-            }
+            public int asInt() { return (int)x; }
+            public char asChar() { return (char)x; }
+            public short asShort() { return (short)x; }
+            public byte asByte() { return (byte)x; }
         };
     }
 
@@ -251,102 +170,23 @@ public abstract class RunTime {
         return new Float() {
             public double asDouble() { return (double)x; }
             public float asFloat() { return (float)x; }
-            public long asLong() {
-                if (isLong()) return (long)x;
-                else throw new ClassCastException();
-            }
-            public int asInt() {
-                if (isInt()) return (int)x;
-                else throw new ClassCastException();
-            }
-            public char asChar() {
-                if (isChar()) return (char)x;
-                else throw new ClassCastException();
-            }
-            public short asShort() {
-                if (isShort()) return (short)x;
-                else throw new ClassCastException();
-            }
-            public byte asByte() {
-                if (isByte()) return (byte)x;
-                else throw new ClassCastException();
-            }
-
-	    public boolean isLong() {
-                return (java.lang.Long.MIN_VALUE <= x)
-                    && (java.lang.Long.MAX_VALUE >= x);
-            }
-	    public boolean isInt() {
-                return (java.lang.Integer.MIN_VALUE <= x)
-                    && (java.lang.Integer.MAX_VALUE >= x);
-            }
-	    public boolean isChar() {
-                return (java.lang.Character.MIN_VALUE <= x)
-                    && (java.lang.Character.MAX_VALUE >= x);
-            }
-	    public boolean isShort() {
-                return (java.lang.Short.MIN_VALUE <= x)
-                    && (java.lang.Short.MAX_VALUE >= x);
-            }
-	    public boolean isByte() {
-                return (java.lang.Byte.MIN_VALUE <= x)
-                    && (java.lang.Byte.MAX_VALUE >= x);
-            }
+            public long asLong() { return (long)x; }
+            public int asInt() { return (int)x; }
+            public char asChar() { return (char)x; }
+            public short asShort() { return (short)x; }
+            public byte asByte() { return (byte)x; }
         };
     }
 
     public static Double box(final double x) {
         return new Double() {
             public double asDouble() { return (double)x; }
-            public float asFloat() {
-                if (isFloat()) return (float)x;
-                else throw new ClassCastException();
-            }
-            public long asLong() {
-                if (isLong()) return (long)x;
-                else throw new ClassCastException();
-            }
-            public int asInt() {
-                if (isInt()) return (int)x;
-                else throw new ClassCastException();
-            }
-            public char asChar() {
-                if (isChar()) return (char)x;
-                else throw new ClassCastException();
-            }
-            public short asShort() {
-                if (isShort()) return (short)x;
-                else throw new ClassCastException();
-            }
-            public byte asByte() {
-                if (isByte()) return (byte)x;
-                else throw new ClassCastException();
-            }
-
-	    public boolean isFloat() {
-                return (java.lang.Float.MIN_VALUE <= x)
-                    && (java.lang.Float.MAX_VALUE >= x);
-            }
-	    public boolean isLong() {
-                return (java.lang.Long.MIN_VALUE <= x)
-                    && (java.lang.Long.MAX_VALUE >= x);
-            }
-	    public boolean isInt() {
-                return (java.lang.Integer.MIN_VALUE <= x)
-                    && (java.lang.Integer.MAX_VALUE >= x);
-            }
-	    public boolean isChar() {
-                return (java.lang.Character.MIN_VALUE <= x)
-                    && (java.lang.Character.MAX_VALUE >= x);
-            }
-	    public boolean isShort() {
-                return (java.lang.Short.MIN_VALUE <= x)
-                    && (java.lang.Short.MAX_VALUE >= x);
-            }
-	    public boolean isByte() {
-                return (java.lang.Byte.MIN_VALUE <= x)
-                    && (java.lang.Byte.MAX_VALUE >= x);
-            }
+            public float asFloat() { return (float)x; }
+            public long asLong() { return (long)x; }
+            public int asInt() { return (int)x; }
+            public char asChar() { return (char)x; }
+            public short asShort() { return (short)x; }
+            public byte asByte() { return (byte)x; }
         };
     }
 
