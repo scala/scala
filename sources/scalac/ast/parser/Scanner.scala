@@ -27,7 +27,7 @@ class Scanner(unit: Unit) extends TokenData {
 
   /** buffer for the documentation comment
   */
-  protected val docBuffer: StringBuffer = null;
+  protected var docBuffer: StringBuffer = null;
 
   /** add the given character to the documentation buffer
      */
@@ -320,7 +320,7 @@ class Scanner(unit: Unit) extends TokenData {
       true
     } else if (ch == '*') {
       docBuffer = null;
-      val openComments = 1;
+      var openComments = 1;
       nextch();
       if (ch == '*') {
         docBuffer = new StringBuffer("/**");
@@ -337,7 +337,7 @@ class Scanner(unit: Unit) extends TokenData {
                 nextch(); addCharToDoc(ch);
               }
             } else if (ch == LF) {
-              cline++;
+              cline = cline + 1;
               ccol = 0;
               nextch(); addCharToDoc(ch);
             } else if (ch == '\t') {
@@ -449,7 +449,7 @@ class Scanner(unit: Unit) extends TokenData {
   /** returns true if argument corresponds to a keyword.
   *  Used in dtd2scala tool.
   */
-  def isKeyword(str: String) = Name.fromString(str) <= maxKey;
+  def isKeyword(str: String) = Name.fromString(str).index <= maxKey;
 
   def treatIdent(start: int, end: int) = {
     name = Name.fromAscii(buf, start, end - start);
@@ -638,7 +638,7 @@ class Scanner(unit: Unit) extends TokenData {
   }
 
   def name2token(name: Name): int =
-    if (name.index <= maxKey) key[name.index] else IDENTIFIER;
+    if (name.index <= maxKey) key(name.index) else IDENTIFIER;
 
   def token2string(token: int): String = token match {
     case IDENTIFIER =>
@@ -683,7 +683,7 @@ class Scanner(unit: Unit) extends TokenData {
       "case object"
     case _ =>
       try {
-        "'" + tokenName[token].toString() + "'"
+        "'" + tokenName(token).toString() + "'"
       } catch {
 	case _: ArrayIndexOutOfBoundsException =>
           "'<" + token + ">'"
@@ -692,7 +692,7 @@ class Scanner(unit: Unit) extends TokenData {
       }
   }
 
-  def toString() = token match {
+  override def toString() = token match {
     case IDENTIFIER =>
       "id(" + name + ")"
     case CHARLIT =>

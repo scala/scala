@@ -241,11 +241,13 @@ class AddInterfaces extends Transformer {
         case New(Template templ): {
             Tree.New newTree = (Tree.New)super.transform(tree);
 	    Type tp = newTree.type;
+	    /*
 	    switch (tp) {
 	    case CompoundType(Type[] parts, _): tp = parts[0];
 		// gross hack to prevent crashing when selftypes are compound;
 		// should be fixed!
 	    }
+	    */
             Symbol ifaceSym = tp.unalias().symbol();
             if (phase.needInterface(ifaceSym)) {
                 Map clsMap = new HashMap();
