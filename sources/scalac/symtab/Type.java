@@ -662,6 +662,28 @@ public class Type implements Modifiers, Kinds, TypeTags {
 
 	public abstract Type apply(Type t);
 
+        /**
+         * This method assumes that all symbols in MethodTypes and
+         * PolyTypes have already been cloned.
+         */
+        public Type applyParams(Type type) {
+            switch (type) {
+
+            case MethodType(Symbol[] vparams, Type result):
+                map(vparams, true);
+                Type result1 = applyParams(result);
+                return result == result1 ? type : MethodType(vparams, result1);
+
+            case PolyType(Symbol[] tparams, Type result):
+                map(tparams, true);
+                Type result1 = applyParams(result);
+                return result == result1 ? type : PolyType(tparams, result1);
+
+            default:
+                return apply(type);
+            }
+        }
+
 	/** Apply map to all top-level components of this type.
 	 */
 	public Type map(Type tp) {
@@ -734,17 +756,26 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    }
 	}
 
-	public Symbol map(Symbol sym) {
+	public final Symbol map(Symbol sym) {
+            return map(sym, false);
+        }
+	public Symbol map(Symbol sym, boolean dontClone) {
 	    Type tp = sym.info();
 	    Type tp1 = apply(tp);
-	    Symbol sym1 = (tp == tp1) ? sym : sym.cloneSymbol().setInfo(tp1);
-	    if (sym1.kind == TYPE) {
+            if (tp != tp1) {
+                if (!dontClone) sym = sym.cloneSymbol();
+                sym.setInfo(tp1);
+                dontClone = true;
+            }
+	    if (sym.kind == TYPE) {
 		Type lb = sym.loBound();
 		Type lb1 = apply(lb);
-		if (lb != lb1)
-		    sym1 = sym1.cloneSymbol().setLoBound(lb1);
-	    }
-	    return sym1;
+		if (lb != lb1) {
+                    if (!dontClone) sym = sym.cloneSymbol();
+                    sym.setLoBound(lb1);
+                }
+            }
+	    return sym;
 	}
 
 	public Type[] map(Type[] tps) {
@@ -764,11 +795,14 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	/** Apply map to all elements of this array of symbols,
 	 *  preserving recursive references to symbols in the array.
 	 */
-	public Symbol[] map(Symbol[] syms) {
+	public final Symbol[] map(Symbol[] syms) {
+            return map(syms, false);
+        }
+	public Symbol[] map(Symbol[] syms, boolean dontClone) {
 	    Symbol[] syms1 = syms;
 	    for (int i = 0; i < syms.length; i++) {
 		Symbol sym = syms[i];
-		Symbol sym1 = map(sym);
+		Symbol sym1 = map(sym, dontClone);
 		if (sym != sym1 && syms1 == syms) {
 		    syms1 = new Symbol[syms.length];
 		    System.arraycopy(syms, 0, syms1, 0, i);
@@ -780,11 +814,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    if (syms1[i] == syms[i])
 			syms1[i] = syms[i].cloneSymbol();
 		}
-		for (int i = 0; i < syms1.length; i++) {
-		    syms1[i].setInfo(syms1[i].info().subst(syms, syms1));
-		    if (syms1[i].kind == TYPE)
-			syms1[i].setLoBound(syms1[i].loBound().subst(syms, syms1));
-		}
+                new SubstSymMap(syms, syms1).map(syms1, true);
 	    }
 	    return syms1;
 	}
@@ -800,8 +830,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     public abstract static class MapOnlyTypes extends Map {
-        public Symbol map(Symbol sym) { return sym; }
-        public Symbol[] map(Symbol[] syms) { return syms; }
+        public Symbol map(Symbol sym, boolean dontClone) { return sym; }
+        public Symbol[] map(Symbol[] syms, boolean dontClone) { return syms; }
         public Scope map(Scope s) { return s; }
     }
 
@@ -1222,6 +1252,52 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	for (int i = 0; i < syms.length; i++)
 	    if (contains(syms[i])) return true;
 	return false;
+    }
+
+// Cloning ---------------------------------------------------------------
+
+    /**
+     * Clones a type i.e. returns a new type "as seen from" the new
+     * owner and where all symbols in MethodTypes and PolyTypes have
+     * been cloned.
+     */
+    public Type cloneType(Symbol oldOwner, Symbol newOwner) {
+        Type clone = cloneType0(oldOwner, newOwner);
+        if (oldOwner.isClass())
+            clone = new SubstThisMap(oldOwner, newOwner).applyParams(clone);
+        return clone;
+    }
+
+    private Type cloneType0(Symbol oldOwner, Symbol newOwner) {
+        switch (this) {
+
+        case MethodType(Symbol[] vparams, Type result):
+            Symbol[] clones = new Symbol[vparams.length];
+            for (int i = 0; i < clones.length; i++) {
+                assert vparams[i].owner() == oldOwner : Debug.show(vparams[i]);
+                clones[i] = vparams[i].cloneSymbol(newOwner);
+            }
+            result = result.cloneType0(oldOwner, newOwner);
+            Type clone = Type.MethodType(clones, result);
+            if (vparams.length != 0)
+                clone = new SubstSymMap(vparams, clones).applyParams(clone);
+            return clone;
+
+        case PolyType(Symbol[] tparams, Type result):
+            Symbol[] clones = new Symbol[tparams.length];
+            for (int i = 0; i < clones.length; i++) {
+                assert tparams[i].owner() == oldOwner : Debug.show(tparams[i]);
+                clones[i] = tparams[i].cloneSymbol(newOwner);
+            }
+            result = result.cloneType0(oldOwner, newOwner);
+            Type clone = Type.PolyType(clones, result);
+            if (tparams.length != 0)
+                clone = new SubstSymMap(tparams, clones).applyParams(clone);
+            return clone;
+
+        default:
+            return this;
+        }
     }
 
 // Comparisons ------------------------------------------------------------------

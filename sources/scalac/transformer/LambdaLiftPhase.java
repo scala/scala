@@ -73,6 +73,8 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
         return transformTypeMap.setOwner(owner).apply(tp);
     }
 
+    /** MapOnlyTypes => All symbols are mapped to themselves.
+     */
     private class TransformTypeMap extends Type.MapOnlyTypes {
         Symbol owner;
 //      ArrayList/*<Symbol>*/ excluded = new ArrayList();
@@ -122,12 +124,6 @@ public class LambdaLiftPhase extends PhaseDescriptor implements Kinds, Modifiers
             }
             return map(tp);
         }
-
-        /** All symbols are mapped to themselves.
-         */
-        public Scope map(Scope s) { return s; }
-        public Symbol map(Symbol s) { return s; }
-        public Symbol[] map(Symbol[] ss) { return ss; }
     }
 
     private TransformTypeMap transformTypeMap = new TransformTypeMap();
