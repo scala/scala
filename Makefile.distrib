@@ -216,7 +216,10 @@ ia-build		:
 	    if [ -z "$$file" ]; then continue; fi; \
 	    $(INSTALL) -m 644 -p "$$file" $(IA_BUILD_IMAGESDIR); \
 	done
-	$(INSTALL) -m 644 -p $(INSTALL_PREFIX).tar.gz $(IA_BUILD_ARCHIVE_TGZ)
+	$(TAR) xzf $(INSTALL_PREFIX).tar.gz -C $(IA_BUILD_PREFIX)
+	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
+	    $(TAR) czf ../$(PROJECT_NAME).tar.gz .)
+	$(RM) -r $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION)
 	$(UNZIP) -q $(INSTALL_PREFIX).zip -d $(IA_BUILD_PREFIX)
 	$(strip cd $(IA_BUILD_PREFIX)/$(PROJECT_NAME)-$(INSTALL_VERSION); \
 	    $(ZIP) -q -r ../$(PROJECT_NAME).zip .)
