@@ -14,4 +14,11 @@ package scala;
 /** @meta class extends scala.AnyRef;
  */
 public class Object {
+
+    /** This method is needed for optimizing pattern matching expressions
+     *  which match on constructors of case classes.
+     */
+    public int $tag() {
+    	return 0;
+    }
 }

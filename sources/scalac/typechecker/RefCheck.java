@@ -588,7 +588,6 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		testtp = testtp.subst(tparams, targs);
 	    }
 	}
-
 	// if (that is C) {...
 	Tree cond = gen.TypeApply(
 	    gen.Select(
@@ -637,6 +636,15 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
         private Tree qualCaseField(ClassSymbol clazz, Tree qual, int i) {
 	    return gen.Select(qual, clazz.caseFieldAccessor(i));
+	}
+
+	private Tree tagMethod(ClassSymbol clazz) {
+        Symbol tagSym = new TermSymbol(
+            clazz.pos, Names.tag, clazz,
+            clazz.isSubClass(defs.OBJECT_CLASS) ? OVERRIDE : 0)
+            .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, defs.INT_TYPE));
+        clazz.info().members().enter(tagSym);
+        return gen.DefDef(clazz.pos, tagSym, gen.mkIntLit(clazz.pos, clazz.tag()));
 	}
 
     private Tree hashCodeMethod(ClassSymbol clazz) {
@@ -693,6 +701,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	    ts.append(equalsMethod(clazz));
 	if (!hasImplementation(clazz, Names.hashCode))
 	    ts.append(hashCodeMethod(clazz));
+	ts.append(tagMethod(clazz));
 	if (ts.length() > 0) {
 	    Tree[] stats1 = new Tree[stats.length + ts.length()];
 	    System.arraycopy(stats, 0, stats1, 0, stats.length);

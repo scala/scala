@@ -1051,6 +1051,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	this.infos = TypeIntervalList.EMPTY;
 	this.setInfo(completer);
     }
+
+    /** return a tag which (in the ideal case) uniquely identifies
+     *  class symbols
+     */
+  	public int tag() {
+  		return name.toString().hashCode();
+  	}
 }
 
 /** A class for term symbols
