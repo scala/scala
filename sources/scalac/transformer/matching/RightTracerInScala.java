@@ -17,7 +17,7 @@ import scalac.util.Names ;
 
 import ch.epfl.lamp.util.Position;
 
-public class RightTracerInScala extends Autom2Scala  {
+public class RightTracerInScala extends TracerInScala  {
 
       //Scope  scp;
       //Symbol vars[];
@@ -26,6 +26,15 @@ public class RightTracerInScala extends Autom2Scala  {
       Vector allVars;
 
       Matcher _m;
+
+      //      Symbol funSym;
+
+      Symbol elemSym;
+      Symbol targetSym;
+
+      HashMap helpMap2 ;
+      Vector  helpVarDefs;
+
 
       /** translate right tracer to code
        * @param dfa determinized left tracer
@@ -43,7 +52,6 @@ public class RightTracerInScala extends Autom2Scala  {
             super( dfa, elementType, m.owner, cf );
             this._m = m;
 
-
             Vector seqVars = new Vector();
 
             for( int j = 0; j < left.nstates; j++ ) {
@@ -60,7 +68,6 @@ public class RightTracerInScala extends Autom2Scala  {
             this.seqVars = seqVars;
             this.allVars = CollectVariableTraverser.collectVars( pat );
 
-            helpMap = new HashMap();
             helpMap2 = new HashMap();
             helpVarDefs = new Vector();
 
@@ -77,15 +84,6 @@ public class RightTracerInScala extends Autom2Scala  {
 
             initializeSyms();
       }
-
-      //      Symbol funSym;
-
-      Symbol elemSym;
-      Symbol targetSym;
-
-      HashMap helpMap ;
-      HashMap helpMap2 ;
-      Vector  helpVarDefs;
 
       void makeHelpVar( Symbol realVar ) {
             makeHelpVar( realVar, false );
@@ -121,12 +119,6 @@ public class RightTracerInScala extends Autom2Scala  {
 
       }
 
-      Tree refHelpVar( Symbol realVar ) {
-            Symbol hv = (Symbol)helpMap.get( realVar );
-            assert hv != null : realVar;
-            return gen.Ident(Position.NOPOS, hv);
-      }
-
       Tree prependToHelpVar( Symbol realVar, Tree elem ) {
             Tree hv = refHelpVar( realVar );
             return gen.Assign( hv, cf.newSeqCons( elem, hv ));
@@ -139,44 +131,29 @@ public class RightTracerInScala extends Autom2Scala  {
             */
       }
 
-      Tree bindVar(Symbol realVar) {
-            Tree hv = refHelpVar( realVar );
-            //System.out.println("binding realVar.name "+realVar.name+" type:"+realVar.type()+" to smth");
-            realVar.setOwner( owner );
-            if( realVar.type().isSameAs( elementType ))
-                  return gen.ValDef( realVar, cf.SeqList_head( hv ));
-            else
-                  return gen.ValDef( realVar, hv);
-
-      }
-
       protected void initializeSyms() {
 
             this.funSym = newFunSym( "binder" );
 
-            this.iterSym = new TermSymbol( //Kinds.VAL,
-                                           pos,
+            this.iterSym = new TermSymbol( pos,
                                            cf.fresh.newName("iter"),
                                            funSym,
                                            0)
                   .setType( cf.SeqTraceType( elementType ));
 
-            this.stateSym = new TermSymbol( //Kinds.VAL,
-                                            pos,
+            this.stateSym = new TermSymbol( pos,
                                             cf.fresh.newName("q"),
                                             funSym,
                                             0 )
                   .setType( defs.INT_TYPE ) ;
 
-            this.elemSym = new TermSymbol( //Kinds.VAL,
-                                           pos,
+            this.elemSym = new TermSymbol( pos,
                                            cf.fresh.newName("elem"),
                                            funSym,
                                            0)
                   .setType( elementType ) ;
 
-            this.targetSym = new TermSymbol( //Kinds.VAL,
-                                             pos,
+            this.targetSym = new TermSymbol( pos,
                                              cf.fresh.newName("trgt"),
                                              funSym,
                                              0)
@@ -340,9 +317,6 @@ public class RightTracerInScala extends Autom2Scala  {
                   this.helpMap2.put( key, helpMap.get( key ));
             }
 
-	    // find this weird ? pattern matcher expects var. symbol for _ pattern FIXME ?!! CANNOT BE TRUE
-	    //Symbol obfuscvble = new TermSymbol(0, Name.fromString("ga$ga$ga$"), _m.owner, 0).setType( pat.type() );
-
             am.construct( m, new CaseDef[] {
                   (CaseDef) cf.make.CaseDef( pat.pos,
                                              pat,
@@ -350,7 +324,7 @@ public class RightTracerInScala extends Autom2Scala  {
                                              handleBody( helpMap2 )),
                         (CaseDef) cf.make.CaseDef( pat.pos,
                                                    cf.make.Ident(pat.pos, Names.WILDCARD)
-                                                   //.setSymbol( Symbol.NONE ) FIXED
+                                                   //DON'T .setSymbol( Symbol.NONE ) !!FIXED
 						   .setType( pat.type() ),
                                                    Tree.Empty,
                                                    gen.mkBooleanLit( pat.pos, false )) },
@@ -405,11 +379,7 @@ public class RightTracerInScala extends Autom2Scala  {
             for( Iterator it = vars.iterator(); it.hasNext(); ) {
                   Symbol var = (Symbol) it.next();
 
-                  /*Tree field = gen.Select( gen.Ident( pos, accumSym ),
-                                           var.name ).setSymbol( var );
-                  */
-                  //Tree field = gen.Ident( pos, var );
-                  Tree rhs = gen.Ident( pos, elemSym ); //cf._cur( _iter() );
+                  Tree rhs = gen.Ident( pos, elemSym );
 
                   stms[ j++ ] = prependToHelpVar( var , rhs);
             }
@@ -437,7 +407,6 @@ public class RightTracerInScala extends Autom2Scala  {
             v.add( gen.DefDef( this.funSym, code_body() )  );
             v.add( callFun( new Tree[] {  trace, cf.Int( 0 )  }  )  );
 
-
             /*
             for(Iterator it = helpMap.keySet().iterator(); it.hasNext(); ) {
                   // DEBUG
@@ -464,16 +433,10 @@ public class RightTracerInScala extends Autom2Scala  {
       }
 
       /** return the accumulator. (same as in LeftTracerInScala)
+       *  todo: move tree generation of Unit somewhere else
        */
       Tree run_finished( int state ) {
-            //return gen.Ident( accumSym.pos, accumSym );
 	  return gen.Block(0, Tree.EMPTY_ARRAY).setType( defs.UNIT_TYPE );
-	      /* gen.Ident(0, defs.NULL); */
-	  /*gen.New( pos, defs.SCALA_TYPE, defs.NULL, //UNIT_CLASS,
-                            Type.EMPTY_ARRAY,
-                            Tree.EMPTY_ARRAY);                             */
-
-
       }
 
       Tree current() {

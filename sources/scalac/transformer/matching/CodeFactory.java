@@ -432,8 +432,8 @@ class CodeFactory extends PatternTool {
         return make.Block(pos, ts).setType(tpe);
     }
 
-    /* // unused
-       protected Tree Negate(Tree tree) {
+     // unused
+       public Tree Negate(Tree tree) {
        switch (tree) {
        case Literal(Object value):
        return gen.mkBooleanLit(tree.pos, !((Boolean)value).booleanValue());
@@ -443,7 +443,7 @@ class CodeFactory extends PatternTool {
        gen.Select(tree, NOT_N),
        Tree.EMPTY_ARRAY).setType(defs.BOOLEAN_TYPE);
        }
-    */
+
     protected Tree And(Tree left, Tree right) {
         switch (left) {
 	case Literal(Object value):

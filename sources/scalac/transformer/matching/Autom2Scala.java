@@ -19,6 +19,7 @@ import ch.epfl.lamp.util.Position;
 
 public class Autom2Scala  {
 
+      static final Name HASNEXT = Name.fromString("hasnext");
       static final Name CURRENT_ELEM = Name.fromString("cur");
 
       final int FAIL = -1;
@@ -126,6 +127,14 @@ public class Autom2Scala  {
                                           funSym,//clazzOwner,
                                           0)
                   .setType( elementType );
+
+            this.hasnSym = new TermSymbol( /*Kinds.VAL, */
+                                          pos,
+                                          HASNEXT,
+                                          funSym,//clazzOwner,
+                                          0)
+                  .setType( defs.BOOLEAN_TYPE );
+
       }
 
 
@@ -149,12 +158,20 @@ public class Autom2Scala  {
       public Tree theDefDef;
 
       Symbol curSym;
+      Symbol hasnSym;
 
-      Tree loadCurrentElem() {
-            return cf.Block( Position.NOPOS, new Tree[] {
-		cf.gen.ValDef( 0,
-			       this.curSym,
-			       cf._next( _iter() )) }, Type.NoType );
+      Tree loadCurrentElem( Tree body ) {
+	  return cf.Block( Position.NOPOS, new Tree[] {
+	      cf.gen.ValDef( 0,
+			     this.hasnSym,
+			     cf._hasNext( _iter() ) ),
+	      cf.gen.ValDef( 0,
+			     this.curSym,
+			     cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
+				    cf._next( _iter() ),
+				    cf.ignoreValue( curSym.type() ))),
+	      body },
+	      body.type() );
       }
 
       Tree currentElem() {
@@ -238,7 +255,9 @@ public class Autom2Scala  {
             for( int i = dfa.nstates-2; i >= 0; i-- ) {
                   body = code_state( i, body );
             }
-            return body;
+
+
+            return loadCurrentElem( body );
 
       }
 
@@ -305,6 +324,17 @@ public class Autom2Scala  {
             return gen.mkIntLit(Position.NOPOS, FAIL );
       }
 
+    /*
+    Tree ifInputHasNext() {
+	return cf.If( cf._hasNext( _iter() ),
+		      cf.Block( stateBody.pos,
+				new Tree[] {
+				    loadCurrentElem(),
+				    stateBody},
+				stateBody.type()) );
+    }
+    */
+
       Tree wrapStateBody0( Tree stateBody,
                            Tree elseBody,
                            int i ) {
@@ -313,78 +343,79 @@ public class Autom2Scala  {
                           elseBody );
       }
 
-      // val cur := iter.cur()
+      // `val cur := iter.next()'
 
-      Tree wrapStateBody( Tree stateBody,
-                          Tree elseBody,
-                          Tree runFinished, int i ) {
-            stateBody = cf.If( cf._not_hasNext( _iter() ),
-                               runFinished,
-                               cf.Block( stateBody.pos,
-                                         new Tree[] {
-                                               loadCurrentElem(),
-                                               stateBody},
-                                         stateBody.type()) );
+    Tree wrapStateBody( Tree stateBody,
+			Tree elseBody,
+			Tree runFinished, int i ) {
+	stateBody = cf.If( cf.Negate( _ref( hasnSym )),//cf._not_hasNext( _iter() ),
+			   runFinished,
+			   stateBody);/*
+			   cf.Block( stateBody.pos,
+				     new Tree[] {
+					 loadCurrentElem(),
+					 stateBody},
+					 stateBody.type()) );*/
 
-            return wrapStateBody0( stateBody , elseBody, i );
-      }
+	return wrapStateBody0( stateBody , elseBody, i );
+    }
 
-      /** return code for state i of the dfa
-       */
-      Tree code_state( int i, Tree elseBody ) {
+    /** return code for state i of the dfa
+     */
+    Tree code_state( int i, Tree elseBody ) {
 
-            Tree runFinished; // holds result of the run
-            int  finalSwRes;
+	Tree runFinished; // holds result of the run
+	int  finalSwRes;
 
-            runFinished = run_finished( i );
-
-
-            if( dfa.isSink( i ) )  // state won't change anymore (binding?)
-                  return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.NOPOS, i )),
-                              runFinished,
-                              elseBody );
+	runFinished = run_finished( i );
 
 
-            Tree stateBody ; // action(delta) for one particular label/test
-
-            // default action (fail if there is none)
-
-            stateBody = code_delta( i, Label.DefaultLabel);
-
-            /*
-            if( stateBody == null )
-                  stateBody = code_fail();
-            */
-
-            // transitions of state i
-
-            HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
-
-            for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
-                  Object label = labs.next();
-                  Integer next = (Integer) trans.get( label );
+	if( dfa.isSink( i ) )  // state won't change anymore (binding?)
+	    return cf.If( cf.Equals( _state(), gen.mkIntLit(Position.NOPOS, i )),
+			  runFinished,
+			  elseBody );
 
 
-                  Tree action = code_delta( i, (Label) label );
+	Tree stateBody ; // action(delta) for one particular label/test
 
-                  if( action != null ) {
+	// default action (fail if there is none)
 
-                        stateBody = cf.If( currentMatches((Label) label ),
-                                         action,
-                                         stateBody);
-                  }
-            }
-            return wrapStateBody( stateBody,
-                                  elseBody,
-                                  runFinished,
-                                  i );
-      }
+	stateBody = code_delta( i, Label.DefaultLabel);
 
-      /** code to reference a variable
-       */
-      Tree _ref( Symbol sym ) {
-            return gen.Ident( pos, sym );
-      }
+	/*
+	  if( stateBody == null )
+	  stateBody = code_fail();
+	*/
+
+	// transitions of state i
+
+	HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
+
+	for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
+	    Object label = labs.next();
+	    Integer next = (Integer) trans.get( label );
+
+
+	    Tree action = code_delta( i, (Label) label );
+
+	    if( action != null ) {
+
+		stateBody = cf.If( currentMatches((Label) label ),
+				   action,
+				   stateBody);
+	    }
+	}
+	return wrapStateBody( stateBody,
+			      elseBody,
+			       runFinished,
+			      i );
+    }
+
+    /** code to reference a variable
+     */
+    Tree _ref( Symbol sym ) {
+	return gen.Ident( pos, sym );
+    }
 
 
 }
