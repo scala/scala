@@ -46,14 +46,10 @@ import scalac.util.Names;
  * - Adds all missing qualifiers.
  */
 // !!! needs to be cleaned
-// !!! create outer fields lazyly
 public class ExplicitOuterClassesPhase extends Phase {
 
     //########################################################################
     // Private Fields
-
-    /** A map from class symbols to class contexts */
-    private final Map/*<Symbol,ClassContext>*/ classes = new HashMap();
 
     /** A map from constructor symbols to type contexts */
     private final Map/*<Symbol,TypeContext>*/ contexts = new HashMap();
@@ -119,30 +115,6 @@ public class ExplicitOuterClassesPhase extends Phase {
     //########################################################################
     // Private Methods
 
-    /** Returns the class context for the given symbol. */
-    private ClassContext getClassContext(Symbol clasz, TypeContext outer) {
-        assert clasz.isClassType(): Debug.show(clasz);
-        ClassContext context = (ClassContext)classes.get(clasz);
-        if (context == null) {
-            context = createClassContext(clasz, outer);
-            classes.put(clasz, context);
-        }
-        return context;
-    }
-
-    /** Creates the context for the given class. */
-    private ClassContext createClassContext(Symbol clasz, TypeContext outer) {
-        // create outer value link
-        Symbol vfield = null;
-        if (outer != null) {
-            int vflags = Modifiers.SYNTHETIC | Modifiers.PRIVATE | Modifiers.STABLE;
-            vfield = clasz.newField(clasz.pos, vflags, Names.OUTER(clasz));
-            vfield.setInfo(outer.clasz.thisType());
-            clasz.members().enter(vfield);
-        }
-        return new ClassContext(vfield);
-    }
-
     /** Returns the type context for the given symbol. */
     private TypeContext getTypeContextFor(Symbol symbol) {
         while (true) {
@@ -157,7 +129,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 //             symbol = symbol.owner();
         if (symbol.isClassType())
             symbol = symbol.primaryConstructor();
-        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, null, null, null, Collections.EMPTY_MAP); // !!!
+        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, null, null, Collections.EMPTY_MAP); // !!!
         TypeContext context = (TypeContext)contexts.get(symbol);
         if (context == null) {
             context = createTypeContext(symbol);
@@ -190,13 +162,11 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         // create outer value link
         Symbol vlink = null;
-        ClassContext context = null;
         if (outer != null) {
             int vflags = Modifiers.SYNTHETIC;
             Name vname = Names.OUTER(constructor);
             vlink = constructor.newVParam(constructor.pos, vflags, vname);
             vlink.setInfo(outer.clasz.thisType());
-            context = getClassContext(clasz, outer);
         }
 
         // create new type parameters
@@ -217,7 +187,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             tparams.put(oldtparam, newtparam.type());
         }
 
-        return new TypeContext(clasz, outer, tlinks, vlink, context, constructor.typeParams(), tparams);
+        return new TypeContext(clasz, outer, tlinks, vlink, constructor.typeParams(), tparams);
     }
 
     //########################################################################
@@ -288,21 +258,6 @@ public class ExplicitOuterClassesPhase extends Phase {
     }
 
     //########################################################################
-    // Private Class - Class context
-
-    private class ClassContext {
-
-        /** The outer value field (null if all outer contexts are stable) */
-        private final Symbol vfield;
-
-        /** !!! */
-        public ClassContext(Symbol vfield) {
-            this.vfield = vfield;
-        }
-
-    }
-
-    //########################################################################
     // Private Class - Type transformer context
 
     private class TypeContext {
@@ -315,8 +270,6 @@ public class ExplicitOuterClassesPhase extends Phase {
         private final Symbol[] tlinks;
         /** The outer value link (null if all outer contexts are stable) */
         private final Symbol vlink;
-        /** !!! */
-        private final ClassContext context;
 
         private final int depth;
 
@@ -328,12 +281,11 @@ public class ExplicitOuterClassesPhase extends Phase {
         private TypeTransformer transformer; // !!! type
 
         /** !!! */
-        public TypeContext(Symbol clasz, TypeContext outer, Symbol[] tlinks, Symbol vlink, ClassContext context, Symbol[] oldtparams, Map tparams) {
+        public TypeContext(Symbol clasz, TypeContext outer, Symbol[] tlinks, Symbol vlink, Symbol[] oldtparams, Map tparams) {
             this.clasz = clasz;
             this.outer = outer;
             this.tlinks = tlinks;
             this.vlink = vlink;
-            this.context = context;
             this.depth = outer == null ? 0 : outer.depth + 1;
             this.oldtparams = oldtparams;
             this.transformer = new TypeTransformer(tparams);
@@ -434,13 +386,11 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Tree[] body = transform(impl.body);
                 body = Tree.concat(body, genAccessMethods(false));
                 body = Tree.concat(body, genAccessMethods(true));
-                if (context.context.vlink != null) {
+                if (context.vfield != null) {
                     body = Tree.cloneArray(1, body);
                     body[0] = gen.ValDef(
-                        context.context.context.vfield,
-                        gen.Ident(
-                            context.context.context.vfield.pos,
-                            context.context.vlink));
+                        context.vfield,
+                        gen.Ident(context.vfield.pos, context.context.vlink));
                 }
                 context = context.outer;
                 return gen.ClassDef(clasz, parents, impl.symbol(), body);
@@ -632,15 +582,15 @@ public class ExplicitOuterClassesPhase extends Phase {
                     Debug.show(clasz, context.clasz);
                 Tree tree = context.method == null || context.method.isConstructor()
                     ? gen.Ident(pos, context.context.vlink)
-                    : gen.Select(gen.This(pos, context.clasz), context.context.context.vfield);
+                    : gen.Select(gen.This(pos, context.clasz), context.getVField());
                 Context context = this.context;
                 while (true) {
                     context = context.outer;
                     assert context != null:
                         Debug.show(clasz, this.context.clasz);
                     if (context.clasz == clasz) return tree;
-                    Symbol access = getAccessSymbol(context.context.context.vfield, null);
-                    assert access != context.context.context.vfield: Debug.show(access) + " - " + Debug.show(this.context.clasz);
+                    Symbol access = getAccessSymbol(context.getVField(), null);
+                    assert access != context.getVField(): Debug.show(access) + " - " + Debug.show(this.context.clasz);
                     tree = gen.Apply(gen.Select(tree, access));
                 }
             }
@@ -675,7 +625,11 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** The super access methods (maps members to accessors) */
         public final Map/*<Symbol,Symbol>*/ supers;
 
+        // !!!
         public final TypeContext context;
+
+        /** The outer value field (null if not yet created) */
+        private Symbol vfield;
 
         /** !!! The current method */
         public Symbol method;
@@ -693,6 +647,21 @@ public class ExplicitOuterClassesPhase extends Phase {
         public Context getConstructorContext(Symbol constructor) {
             assert constructor.constructorClass() == clasz;
             return new Context(outer, constructor, selfs, supers);
+        }
+
+        /**
+         * Returns the outer value field. The field is created on the
+         * fly if it does not yet exist.
+         */
+        private Symbol getVField() {
+            if (vfield == null) {
+                int flags =
+                    Modifiers.SYNTHETIC | Modifiers.PRIVATE | Modifiers.STABLE;
+                vfield = clasz.newField(clasz.pos, flags, Names.OUTER(clasz));
+                vfield.setInfo(outer.clasz.thisType());
+                clasz.members().enterNoHide(vfield);
+            }
+            return vfield;
         }
 
     }
