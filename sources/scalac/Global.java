@@ -489,6 +489,8 @@ public class  Global {
     }
 
     private StringBuffer append(StringBuffer buffer, Type type) {
+        return buffer.append(type);
+        /*
         switch (type) {
         case ErrorType:
             return buffer.append("<error>");
@@ -531,6 +533,7 @@ public class  Global {
         default:
             throw Debug.abort("illegal case", type);
         }
+        */
     }
 
     private StringBuffer append(StringBuffer buffer, Type[] types,
