@@ -360,7 +360,7 @@ install-windows		:
 ##############################################################################
 
 DISTRIB_REPOSITORY	 = $(ROOT)/distribs
-DISTRIB_VERSION		:= $(shell $(DATE) --utc "+%Y%m%d-%H%M%S")
+DISTRIB_VERSION		:= $(shell $(DATE) -u "+%Y%m%d-%H%M%S")
 DISTRIB_NAME		 = $(PROJECT_NAME)-$(DISTRIB_VERSION)
 DISTRIB_PREFIX		 = $(DISTRIB_REPOSITORY)/$(DISTRIB_NAME)
 DISTRIB_ARCHIVE		 = $(DISTRIB_REPOSITORY)/$(DISTRIB_NAME).tar.gz
