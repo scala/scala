@@ -18,13 +18,12 @@ package scala.collection.immutable;
  */
 class TreeSet[A <% Ordered[A]] extends Tree[A, A] with Set[A] {
 
-    type This = TreeSet[A];
-
-    def entryKey(entry: A) = entry;
+    override protected type This = TreeSet[A];
+    override protected def getThis: This = this;
 
     protected def New(sz: Int, t: aNode): This = new TreeSet[A] {
         override def size = sz;
-        override protected val tree: aNode = t;
+        override protected def tree: aNode = t;
     }
 
     /** Checks if this set contains element <code>elem</code>.
@@ -36,12 +35,12 @@ class TreeSet[A <% Ordered[A]] extends Tree[A, A] with Set[A] {
 
     /** This method creates a new set with an additional element.
      */
-    def +(elem: A): TreeSet[A] = update_or_add(elem, elem);
+    def +(elem: A): TreeSet[A] = updateOrAdd(elem, elem);
 
     /** <code>-</code> can be used to remove a single element from
      *  a set.
      */
-    def -(elem: A): TreeSet[A] = delete_any(elem);
+    def -(elem: A): TreeSet[A] = deleteAny(elem);
 
     /** Creates a new iterator over all elements contained in this
      *  object.
@@ -54,15 +53,15 @@ class TreeSet[A <% Ordered[A]] extends Tree[A, A] with Set[A] {
      *
      *  @return  a list which enumerates all elements of this set.
      */
-    override def toList: List[A] = tree.toList(scala.Nil);
+    override def toList: List[A] =
+      tree.toList(scala.Nil) map (._2);
 
     /** Compares two sets for equality.
      *  Two set are equal iff they contain the same elements.
      */
     override def equals(obj: Any): Boolean =
-        if (obj.isInstanceOf[scala.collection.Set[A]]) {
+        obj.isInstanceOf[scala.collection.Set[A]] && {
           val that = obj.asInstanceOf[scala.collection.Set[A]];
-          if (size != that.size) false else toList.forall(that.contains);
-        } else
-          false;
+          (size == that.size) && toList.forall(that.contains);
+        }
 }
