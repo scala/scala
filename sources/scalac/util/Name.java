@@ -142,6 +142,7 @@ public final class Name {
 /** is this name a term name?
  */
     public boolean isTermName() {
+        if (this == ERROR) return true;
 	int  h = hashValue(names, index, len) & HASH_MASK;
 	Name n = termHashtable[h];
         while (n != null && n != this)
@@ -152,6 +153,7 @@ public final class Name {
 /** is this name a type name?
  */
     public boolean isTypeName() {
+        if (this == ERROR) return true;
 	int  h = hashValue(names, index, len) & HASH_MASK;
 	Name n = typeHashtable[h];
         while (n != null && n != this)
@@ -162,6 +164,7 @@ public final class Name {
 /** create a term name corresponding to this name
  */
     public Name toTermName() {
+        if (this == ERROR) return this;
 	int  h = hashValue(names, index, len) & HASH_MASK;
         Name n = termHashtable[h];
         while (n != null && n.index != index)
@@ -175,6 +178,7 @@ public final class Name {
 /** create a type name corresponding to this name
  */
     public Name toTypeName() {
+        if (this == ERROR) return this;
 	int  h = hashValue(names, index, len) & HASH_MASK;
         Name n = typeHashtable[h];
         while (n != null && n.index != index)
