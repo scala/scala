@@ -4,20 +4,29 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id:
+// $Id$
 
 package scala.tools.scalac.util;
 
 import scalac.ast._;
-import scalac.util.Name;
+import scalac.checkers.Checker;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.checkers.Checker;
+import scalac.util.Name;
 
 object NewArray {
 
   def Tree(xs: Tree*): Array[Tree] = {
     val arr = new Array[Tree](xs.length);
+    var i = 0;
+    for (val t <- xs.elements) {
+      arr(i) = t; i = i + 1;
+    }
+    arr
+  }
+
+  def TreeArray(xs: Array[Tree]*): Array[Array[Tree]] = {
+    val arr = new Array[Array[Tree]](xs.length);
     var i = 0;
     for (val t <- xs.elements) {
       arr(i) = t; i = i + 1;
