@@ -390,15 +390,21 @@ package scala.tools.scaladoc {
 
     /** Test if this type is "scala.Unit". */
     def is_scala_Unit(t: Type): boolean =
-      t.symbol().fullName() == Names.scala_Unit;
+      t.symbol() == Global.instance.definitions.UNIT_CLASS;
 
     /** Test if this type is "scala.Tuple_n[T_1, ..., T_n]". */
-    def is_scala_Tuple(t: Type): boolean =
-      t.symbol().fullName().startsWith(Names.scala_Tuple);
+    def is_scala_Tuple(t: Type): boolean = {
+      val tuples = Global.instance.definitions.TUPLE_CLASS;
+      val arity = t.typeArgs().length;
+      arity < tuples.length && t.symbol() == tuples(arity);
+    }
 
     /** Test if this type is "scala.Function_n[T_1, ..., T_n, T]". */
-    def is_scala_Function(t: Type): boolean =
-      t.symbol().fullName().startsWith(Names.scala_Function);
+    def is_scala_Function(t: Type): boolean = {
+      val functions = Global.instance.definitions.FUNCTION_CLASS;
+      val arity = t.typeArgs().length - 1;
+      0 <= arity && arity < functions.length && t.symbol() == functions(arity);
+    }
 
     /** Test if this type is a local variable */
     def is_localVariable(t: Type): boolean =
