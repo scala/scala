@@ -27,11 +27,13 @@ ast/SubstTransformer.java
 ast/Transformer.java
 ast/Traverser.java
 ast/Tree.java
+ast/TreeCloner.java
 ast/TreeCopier.java
 ast/TreeFactory.java
 ast/TreeGen.java
 ast/TreeInfo.java
 ast/TreeList.java
+ast/TreeSymbolCloner.java
 
 ast/printer/HTMLTreePrinter.java
 ast/printer/TextTreePrinter.java
@@ -75,6 +77,7 @@ symtab/Scope.java
 symtab/SourceCompleter.java
 symtab/SymSet.java
 symtab/Symbol.java
+symtab/SymbolCloner.java
 symtab/SymbolMapApplier.java
 symtab/SymbolSubstTypeMap.java
 symtab/SymbolTablePrinter.java
