@@ -145,9 +145,8 @@ test_xml() {
     fi;
     rm -rf "$output";
     mkdir -p "$output" &&
-    cp "$dtdfile" "$output/" &&
-    cp "$xmlfile" "$output/dtd.xml" &&
-    ( cd "$output"; $DTD2SCALA dtd.xml dtd ) &&
+    cp "$dtdfile" "$output/dtd.dtd" &&
+    ( cd "$output"; $DTD2SCALA dtd.dtd dtd ) &&
     $SOCOS -d "$output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
     java -classpath "$classpath" Test "$xmlfile" &&
     rm -rf "$output";
@@ -254,7 +253,7 @@ test_all() {
         test_interpretation "int" $FILES_RUN $FILES_INT;
     test_one "Testing jvm backend" \
         test_compilation "jvm" $FILES_RUN $FILES_JVM;
-    test_one "Testing scala2xml tool" \
+    test_one "Testing dtd2scala tool" \
         test_xml "xml" $FILES_XML;
     test_one "Testing compiler (on files whose compilation should succeed)" \
         test_compilation_success "pos" $FILES_POS;
@@ -276,7 +275,7 @@ print_help() {
     echo "--run           next files test the interpreter and all backends";
     echo "--int           next files test the interpreter";
     echo "--jvm           next files test the jvm backend";
-    echo "--xml           next files test the scala2xml tool";
+    echo "--xml           next files test the dtd2scala tool";
     echo "--pos           next files test a compilation success";
     echo "--neg           next files test a compilation failure";
     echo "--no-run        run no test, use results of last run";
