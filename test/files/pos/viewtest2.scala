@@ -1,6 +1,29 @@
 package test;
 
+/** A trait for totally ordered data.
+ */
+trait Ordered[+a] {
+
+  /** Result of comparing `this' with operand `that'.
+   *  returns `x' where
+   *  x < 0    iff    this < that
+   *  x == 0   iff    this == that
+   *  x > 0    iff    this > that
+   */
+  def compareTo [b >: a <% Ordered[b]](that: b): int;
+
+  def <  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <  0;
+
+  def >  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >  0;
+
+  def <= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <= 0;
+
+  def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0;
+}
+
+
 object O {
+
   def view (x: String): Ordered[String] = new Ordered[String] {
     def compareTo [b >: String <% Ordered[b]](y: b): int = y match {
       case y1: String => x compareTo y1;
@@ -13,6 +36,7 @@ object O {
       case _ => -(y compareTo x)
     }
   }
+
   def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] =
     new Ordered[List[a]] {
       def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {

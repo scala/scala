@@ -575,13 +575,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     val vapp = transform(
       make.Apply(tree.pos, vexpr, NewArray.Tree(tree)), mode, pt);
     if (v.symtype.isObjectType()) {
+      val tree1 = transform(tree.duplicate(), mode, pt);
       gen.If(
 	gen.Apply(
 	  gen.Select(
 	    vexpr.duplicate(),
 	    definitions.ANY_EQEQ),
 	  NewArray.Tree(gen.mkNullLit(tree.pos))),
-	gen.mkNullLit(tree.pos),
+	tree1,
 	vapp)
     } else vapp
   }
@@ -1649,6 +1650,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	if (v != null) {
 	  qual = applyView(
 	    v, qual.setType(qual.getType().singleDeref()), EXPRmode, Type.AnyType);
+	  System.out.println("app view " + qual + ":" + qual.getType());//debug
 	  sym = qual.getType().lookup(name);
 	  assert(sym.kind != NONE);
 	} else {
