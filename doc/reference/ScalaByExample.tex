@@ -6714,24 +6714,10 @@ implementation of an electronic auction service. This service was
 based on high-level actor processes, that work by inspecting messages
 in their mailbox using pattern matching. An actor is simply a thread
 whose communication primitives are those of a mailbox.  Actors are
-defined as an extension of Java's standard \code{Thread} class which
-forwards all communication calls to an internal mailbox.
+hence defined as a mixin composition extension of Java's standard
+\code{Thread} class with the \code{MailBox} class.
 \begin{lstlisting}
-abstract class Actor extends Thread {
-
-  type Message = AnyRef;
-  
-  private val mb = new MailBox;
-  
-  def send(msg: Message): unit = 
-    mb.send(msg);
-
-  def receive[a](f: PartialFunction[Message, a]): a = 
-    mb.receive(f);
-  
-  def receiveWithin[a](msec: long)(f: PartialFunction[Message, a]): a = 
-    mb.receiveWithin(msec)(f);
-}
+abstract class Actor extends Thread with MailBox;
 \end{lstlisting}
 
 \comment{
