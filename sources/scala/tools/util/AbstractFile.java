@@ -662,3 +662,27 @@ public class ByteArrayFile extends VirtualFile {
     }
 
 }
+
+
+public class CharArrayFile extends VirtualFile {
+
+    private final char[] chars;
+
+    public CharArrayFile(String name, char[] chars) {
+        this(name, name, chars);
+    }
+
+    public CharArrayFile(String name, String path, char[] chars) {
+        super(name, path);
+        this.chars = chars;
+    }
+
+    public boolean exists() {
+        return true;
+    }
+
+    public byte[] read() {
+        return new String(chars).getBytes(); // !!!
+    }
+
+}
