@@ -997,7 +997,8 @@ public class HTMLGenerator {
                 page.printAhref(
                     packageSummaryPage(sym),
                     CLASSES_FRAME,
-                    sym.fullNameString());
+		    removeHtmlSuffix(Location.getURI(sym).toString()));
+		//                    sym.fullNameString());
 	        page.printlnSTag("br");
 	    }
             page.undent();
@@ -1077,23 +1078,25 @@ public class HTMLGenerator {
         page.printHeader(ATTRS_META, getGenerator());
 	page.printOpenBody();
 
+	page.printlnOTag("table", ATTRS_NAVIGATION).indent();
+	page.printlnOTag("tr").indent();
+	page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
+
+	printPath(sym);
+	//            page.printlnAhref(definitionURL(sym), ROOT_FRAME, sym.fullNameString());
+
+	page.printlnCTag("td");
+	page.printlnCTag("tr");
+	page.printlnCTag("table");
+	page.printlnSTag("p");
+
+
         String[] titles = new String[]{ "Objects", "Traits", "Classes" };
         if (sym.isRoot()) {
             Tree[][] members = ScalaSearch.getSortedPackageMemberList(tree);
             for (int i = 0; i < titles.length; i++)
                 addTreeTable(members[i], "All " + titles[i], true);
         } else {
-	    page.printlnOTag("table", ATTRS_NAVIGATION).indent();
-	    page.printlnOTag("tr").indent();
-	    page.printlnOTag("td", ATTRS_NAVIGATION_LINKS).indent();
-
-            page.printlnAhref(definitionURL(sym), ROOT_FRAME, sym.fullNameString());
-
-            page.printlnCTag("td");
-            page.printlnCTag("tr");
-            page.printlnCTag("table");
-
-            page.printlnSTag("p");
             Tree[][] members = members(tree);
             for (int i = 0; i < titles.length; i++)
                 addTreeTable(members[i + 2], titles[i], false);
@@ -1560,6 +1563,7 @@ public class HTMLGenerator {
      * @param label
      */
     protected Symbol findSymbolFromString(Symbol context, String classOrObject, String label) {
+	/*
 	String path;
 	// absolute path
 	if (classOrObject.startsWith(new Character(ScalaSearch.classChar).toString()) ||
@@ -1591,5 +1595,7 @@ public class HTMLGenerator {
 		return sym.moduleClass().lookup(Name.fromString(label).toTermName());
 	    }
 	}
+	*/
+	return Symbol.NONE;
     }
 }

@@ -166,12 +166,8 @@ public class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinter {
      * @param addLink
      */
     public SymbolTablePrinter printSignature(Symbol symbol, boolean addLink) {
-        String keyword = getSymbolKeyword(symbol);
-        if (keyword != null) print(keyword).space();
-        String inner = getSymbolInnerString(symbol);
-	htmlGenerator.printSymbol(symbol, addLink);
-        return printType(symbol.loBound(), ">:")
-	    .printSymbolType(symbol, inner);
+	return printShortSignature(symbol, addLink)
+	    .printSymbolType(symbol, getSymbolInnerString(symbol));
     }
 
     /**

@@ -36,68 +36,6 @@ import scalac.util.NameTransformer;
 public class ScalaSearch {
 
     /**
-     * Character which ends a name to indicates it is a class symbol
-     * name.
-     */
-    public static final char classChar = ',';
-
-    /**
-     * Character which ends a name to indicates it is an object symbol
-     * name.
-     */
-    public static final char objectChar = '.';
-
-    /**
-     * Returns the list of owners of a symbol (including itself).
-     *
-     * @param sym
-     */
-    public static Symbol[] getOwners(Symbol sym) {
-        List l = getOwnersAux(sym);
-        return (Symbol[]) l.toArray(new Symbol[l.size()]);
-    }
-
-    // where
-    private static List getOwnersAux(Symbol sym) {
-	if (sym == Symbol.NONE)
-	    return new LinkedList();
-	else {
-	    List ownerStaticPath = getOwnersAux(sym.owner());
-	    sym = sym.isModuleClass() ? sym.module() : sym;
-	    ownerStaticPath.add(sym);
-	    return ownerStaticPath;
-	}
-    }
-
-    /**
-     * Gives a string representation of this symbol.
-     *
-     * @param sym
-     * @param showOwners
-     */
-    public static String getSymbolName(Symbol sym, boolean showOwners) {
-        return (showOwners) ? getOwnersString(sym) : sym.nameString();
-    }
-
-    /**
-     * Returns a string representation of the path leading to this
-     * symbol.
-     *
-     * @param sym
-     * @return the string representation of this symbol
-     */
-    public static String getOwnersString(Symbol sym) {
-	Symbol[] elements = getOwners(sym);
-	StringBuffer buff = new StringBuffer();
-        // we ignore elements[0] which contains the root symbol
-	for (int i = 1; i < elements.length; i++) {
-            if (i > 1) buff.append(objectChar);
-	    buff.append(elements[i].nameString());
-	}
-	return buff.toString();
-    }
-
-    /**
      * Class representing functions on trees.
      */
     public static abstract class TreeFun {
@@ -475,35 +413,4 @@ public class ScalaSearch {
 	}
 	return new Pair(owners, groups);
     }
-
-    // where
-    public static Symbol lookup(Symbol root, String path) {
-	if (path.equals(""))
-	    return root;
-	else {
-	    int classEnd = path.indexOf(classChar);
-	    int objectEnd = path.indexOf(objectChar);
-	    if (classEnd > 0 && (objectEnd == -1 || objectEnd > classEnd)) {
-		String name = path.substring(0, classEnd);
-		String rest = path.substring(classEnd + 1);
-		Symbol member = root.moduleClass().lookup(Name.fromString(name).toTypeName());
-		if (member.isClass())
-		    return lookup(member, rest);
-		else
-		    return Symbol.NONE;
-	    }
-	    else if (objectEnd > 0 && (classEnd == -1 || classEnd > objectEnd)) {
-		String name = path.substring(0, objectEnd);
-		String rest = path.substring(objectEnd + 1);
-		Symbol member = root.moduleClass().lookup(Name.fromString(name).toTermName());
-		if (member.isModule())
-		    return lookup(member, rest);
-		else
-		    return Symbol.NONE;
-	    }
-	    else
-		throw Debug.abort("illegal path", path);
-	}
-    }
-
 }
