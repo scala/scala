@@ -7,21 +7,38 @@
 ** $Id$
 \*                                                                      */
 
-package scala.xml ;
+package scala.xml;
 
-/** this class acts as a Buffer for nodes. If it is used as a sequence
- *  of nodes Seq[Node], it must be ensured that no updates occur after
- *  that point, because scala.xml.Node is assumed to be immutable.
+/**
+ * This class acts as a Buffer for nodes. If it is used as a sequence
+ * of nodes <code>Seq[Node]</code>, it must be ensured that no updates
+ * occur after that point, because <code>scala.xml.Node</code> is assumed
+ * to be immutable.
  */
 class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
 
-  /** append a single node to this buffer, returns reference on this NodeBuffer for convenience. */
-  override def +(n:Node):NodeBuffer = { super.+( n ); this }
+  /**
+   * Append a single node to this buffer, returns reference on this
+   * NodeBuffer for convenience.
+   *
+   * @param n
+   */
+  override def +(n: Node): NodeBuffer = { super.+(n); this }
 
-  /** append a sequence of nodes to this buffer, returns reference on this NodeBuffer for convenience. */
-  def +(ns:Iterable[Node]):NodeBuffer = { super.++( ns ); this }
+  /**
+   * Append a sequence of nodes to this buffer, returns reference on
+   * this NodeBuffer for convenience.
+   *
+   * @param ns
+   */
+  def +(ns: Iterable[Node]): NodeBuffer = { super.++(ns); this }
 
-  /** append given string as a scala.xml.Text node to this buffer, returns reference on this NodeBuffer for convenience. */
-  def +(t:String):NodeBuffer = { super.+( Text( t ) ); this }
+  /**
+   * Append given string as a <code>scala.xml.Text</code> node to this
+   * buffer, returns reference on this NodeBuffer for convenience.
+   *
+   * @param t
+   */
+  def +(t :String): NodeBuffer = { super.+(Text(t)); this }
 
 }
