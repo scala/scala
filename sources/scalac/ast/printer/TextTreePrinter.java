@@ -359,7 +359,7 @@ public class TextTreePrinter implements TreePrinter {
             print(body);
             break;
 
-        case LabelDef(Tree[] params, Tree rhs):
+        case LabelDef(Tree.Ident[] params, Tree rhs):
             assert tree.symbol() != null;
             printSymbolDefinition(tree.symbol(), null);
             printArray(params, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);

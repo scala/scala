@@ -201,7 +201,7 @@ public class Tree {
         n_LabelDef.
             setDescription("Labelled expression - the symbols in the array (must be Idents!) are those the label takes as argument").
             setRange(Phase.OPTIMIZER, Phase.END).
-            addField(t_TermTrees, "params"). // !!! shoudl be t_Idents
+            addField(n_Ident.getType(1), "params").
             addField(t_TermTree, "rhs");
 
         n_Block.
