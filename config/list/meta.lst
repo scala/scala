@@ -7,4 +7,8 @@ util/AbstractFileExpander.java
 util/TextExpander.java
 util/TextWriter.java
 
+java/AbstractJavaExpander.java
+java/JavaWriter.java
+java/Type.java
+
 ##############################################################################
