@@ -27,6 +27,16 @@ public class GenerateAll extends AbstractMain {
     // Public Constants
 
     public static final AbstractFileExpander[] expanders = {
+        new meta.scala.MetaFunction(0),
+        new meta.scala.MetaFunction(1),
+        new meta.scala.MetaFunction(2),
+        new meta.scala.MetaFunction(3),
+        new meta.scala.MetaFunction(4),
+        new meta.scala.MetaFunction(5),
+        new meta.scala.MetaFunction(6),
+        new meta.scala.MetaFunction(7),
+        new meta.scala.MetaFunction(8),
+        new meta.scala.MetaFunction(9),
         new meta.scalac.ast.MetaTree(),
         new meta.scalac.ast.MetaTreeFactory(),
         new meta.scalac.ast.MetaDefaultTreeFactory(),

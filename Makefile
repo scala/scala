@@ -49,8 +49,7 @@ TEMPLATE_EXPANDER	 = ./bin/expand-template
 
 FUNCTION_PREFIX		 = $(RUNTIME_ROOT)
 FUNCTION_FILES		+= $(filter $(FUNCTION_PREFIX)/Function%.java,$(RUNTIME_SOURCES))
-FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.tmpl
-FUNCTION_RULES		 = $(FUNCTION_PREFIX)/Function.scm
+FUNCTION_TEMPLATE	 = $(FUNCTION_PREFIX)/Function.java.tmpl
 
 TUPLE_PREFIX		 = $(LIBRARY_ROOT)
 TUPLE_FILES		+= $(filter $(TUPLE_PREFIX)/Tuple%.scala,$(LIBRARY_FILES))
@@ -177,29 +176,35 @@ make			+= $(MAKE) MAKELEVEL=$(MAKELEVEL) --no-print-directory
 all		: $(PROJECT_OUTPUTDIR)
 all		: scripts
 all		: meta
+all		: generate
 all		: runtime
 all		: compiler
 all		: interpreter
 all		: library
 
 force		:
+	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
+	$(RM) .generated
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
+	$(RM) .latest-generate
+	$(RM) .latest-meta
 	@$(make) all
 
 clean		:
-	@if [ -f .latest-meta ];then $(call RUN,$(RM) `$(CAT) .latest-meta`);fi
+	@if [ -f .generated ]; then $(call RUN,$(RM) `$(CAT) .generated`); fi
+	$(RM) .generated
 	$(RM) .latest-interpreter
 	$(RM) .latest-compiler
 	$(RM) .latest-runtime
+	$(RM) .latest-generate
 	$(RM) .latest-meta
 	$(RM) -r $(PROJECT_OUTPUTDIR)/*
 
 distclean	: clean
 	$(RM) .latest-*
 	$(RM) $(TUPLE_FILES)
-	$(RM) $(FUNCTION_FILES)
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
 	$(RM) $(PROJECT_JAR_ARCHIVE)
@@ -213,6 +218,7 @@ fixcvs		:
 
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 meta		: .latest-meta
+generate	: .latest-generate
 runtime		: .latest-runtime
 compiler	: .latest-compiler
 interpreter	: .latest-interpreter
@@ -235,14 +241,21 @@ library		: .latest-library
 
 .latest-meta		: $(META_JC_FILES)
 	@$(MAKE) jc target=META META_JC_FILES='$?'
+	$(RM) .latest-runtime
+	$(RM) .latest-compiler
+	touch $@
+
+.latest-generate	: .latest-meta
+	$(strip $(JAVA) -cp $(JC_OUTPUTDIR) \
+	    meta.GenerateAll $(PROJECT_SOURCEDIR) .generated)
 	touch $@
 
 .latest-runtime		: $(RUNTIME_JC_FILES)
-	@$(MAKE) jc target=RUNTIME RUNTIME_JC_FILES='$?'
+	@$(MAKE) jc target=RUNTIME RUNTIME_JC_FILES='$(filter %.java,$?)'
 	touch $@
 
 .latest-compiler	: $(COMPILER_JC_FILES)
-	@$(make) jc target=COMPILER COMPILER_JC_FILES='$?'
+	@$(make) jc target=COMPILER COMPILER_JC_FILES='$(filter %.java,$?)'
 	touch $@
 
 .latest-interpreter	: $(INTERPRETER_JC_FILES)
@@ -264,15 +277,16 @@ $(PROJECT_OUTPUTDIR)	:
 $(SCRIPTS_WRAPPER_LINKS):
 	$(LN) -s $(SCRIPTS_WRAPPER_NAME) $@;
 
-$(FUNCTION_FILES): $(FUNCTION_TEMPLATE) $(FUNCTION_RULES)
-	$(TEMPLATE_EXPANDER) $(FUNCTION_RULES) $(FUNCTION_TEMPLATE) $@
+$(FUNCTION_FILES)	: .latest-meta $(FUNCTION_TEMPLATE)
+	$(RM) .latest-generate
+	@$(make) generate
 
 $(TUPLE_FILES): $(TUPLE_TEMPLATE) $(TUPLE_RULES)
 	$(TEMPLATE_EXPANDER) $(TUPLE_RULES) $(TUPLE_TEMPLATE) $@
 
-%			: %.tmpl .latest-meta
-	$(RM) .latest-compiler
-	$(JAVA) -cp $(JC_OUTPUTDIR) meta.GenerateAll $(PROJECT_SOURCEDIR) $@
+%			: .latest-meta %.tmpl
+	$(RM) .latest-generate
+	@$(make) generate
 
 $(PROJECT_JAR_ARCHIVE)	: .latest-runtime
 $(PROJECT_JAR_ARCHIVE)	: .latest-compiler
