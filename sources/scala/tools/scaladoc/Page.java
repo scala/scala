@@ -94,6 +94,7 @@ class Page extends HTMLPrinter {
      *   "A"      as seen from "A/B/C"  is  "../../A"
      *   "A/B#R"  as seen from "A"      is  "A/B#R"
     */
+
     static public URI asSeenFrom(URI u, URI v) {
 	File f_u = new File(u.getPath());
 	File f_v = new File(v.getPath());
@@ -105,16 +106,69 @@ class Page extends HTMLPrinter {
 	} catch(Exception e) { return null; }
     }
     // where
+    /** f must be of the form ('.' | ['.' '/' ] A/...) */
+    static private File pathToRoot(File f) {
+	if (f.equals(hereFile) || f.getParentFile() == null)
+	    return new File(".");
+	else
+	    return new File(pathToRoot(f.getParentFile()), "..");
+    }
+    // where
+    /*
+    // where
     static private File asSeenFrom(File f1, File f2) {
 	return new File(pathToRoot(f2), f1.getPath());
     }
+    */
+    /** Compute the minimal path from one file to another.
+     * f1 and f2 should be of the form (A/...)
+     */
+    static private File asSeenFrom(File f1, File f2) {
+	File lcp = longestCommonPrefix(f1, f2);
+	File relf1 = subtractPrefix(lcp, f1);
+	File relf2 = subtractPrefix(lcp, f2);
+	return new File(pathToRoot(relf2), relf1.getPath());
+    }
     // where
-    static private File pathToRoot(File f) {
-	File parent = f.getParentFile();
-	if (parent == null)
+    /** p and q should be of the form (A/...) */
+    static private File longestCommonPrefix(File p, File q) {
+	if (prefixes(p, q))
+	    return p;
+	else if (p.getParentFile() == null)
 	    return new File(".");
 	else
-	    return new File(pathToRoot(parent), "..");
+	    return longestCommonPrefix(p.getParentFile(), q);
+    }
+    // where
+    /** Test if p is a prefix of q.
+     * p and q should be of the form (A/...)
+     */
+    static private boolean prefixes(File p, File q) {
+	if (p.equals(q))
+	    return true;
+	else if (q.getParentFile() == null)
+	    return false;
+	else
+	    return prefixes(p, q.getParentFile());
+    }
+    // and
+    static private File hereFile = new File(".");
+    static private File subtractPrefix(File p, File f) {
+	if (p.equals(hereFile))
+	    return f;
+	else
+	    return subtractPrefix(p, f, hereFile);
+    }
+    static private File subtractPrefix(File p, File f, File acc) {
+	if (p.equals(f))
+	    return acc;
+	else if (f.getParentFile() == null)
+	    return null;
+	else
+	    return subtractPrefix(p, f.getParentFile(),
+			    (acc.equals(hereFile) ?
+			     new File(f.getName()) :
+			     new File(f.getName(), acc.getPath())));
     }
 
     static protected URI mkURI(String uri) {
@@ -123,4 +177,15 @@ class Page extends HTMLPrinter {
 	} catch(Exception e) { throw Debug.abort(e); }
     }
 
+    public static void main(String[] args) {
+	File p = new File("A", "B");
+	File q = new File("A", new File("B", "C").getPath());
+	File r = new File("C");
+	System.out.println("" + longestCommonPrefix(p, q));
+	System.out.println("" + longestCommonPrefix(p, r));
+	System.out.println("" + subtractPrefix(longestCommonPrefix(p, r), p));
+
+	System.out.println("" + asSeenFrom(q, p));
+	System.out.println("" + asSeenFrom(p, r));
+    }
 }
