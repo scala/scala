@@ -103,21 +103,10 @@ public class CLRClassParser extends SymbolLoader {
 	    nclazz.allConstructors().setInfo(this);
 	    nclazz.module().setInfo(this);
 	    //
-	    alias.setInfo(scalac.symtab.Type
-			  .typeRef(clazz.owner().thisType(),
-				   nclazz, scalac.symtab.Type.EMPTY_ARRAY));
+	    alias.setInfo(make.classType(nclazz));
 	    alias.allConstructors()
-		.setInfo(MethodType(Symbol.EMPTY_ARRAY, nclazz.info()));
-// 	    statics.enter(nclazz);
-// 	    Scope.Entry e = statics.lookupEntry(clazz.module().name);
-// 	    if (e != Scope.Entry.NONE)
-// 		statics.unlink(e);
-// 	    statics.enter(nclazz.module());
-
- 	    Scope.Entry e = statics.lookupEntry(alias.name); // Why is this ???
- 	    if (e != Scope.Entry.NONE)
- 		statics.unlink(e);
-	    statics.enter(alias);
+		.setInfo(MethodType(Symbol.EMPTY_ARRAY, alias.info()));
+	    statics.enterNoHide(alias);
 	}
 
 	// read field information

@@ -129,10 +129,7 @@ public class AttributeParser implements ClassfileConstants {
 					alias.setInfo(parser.make.classType(inner));
 					alias.allConstructors()
 						.setInfo(new Type.MethodType(Symbol.EMPTY_ARRAY, inner.info()));
-					Scope.Entry e = parser.statics.lookupEntry(alias.name); // Why is this ??????
- 	    			if (e != Scope.Entry.NONE)
- 						parser.statics.unlink(e);
-	    			parser.statics.enter(alias);
+	    			parser.statics.enterNoHide(alias);
                 }
                 //in.skip(attrLen);
                 return;
