@@ -38,7 +38,8 @@ abstract class FactoryAdapter
   // default settings
 
   /** Default parser name. */
-  val DEFAULT_PARSER_NAME   = "org.apache.xerces.parsers.SAXParser";
+  val DEFAULT_PARSER_NAME   = "org.apache.crimson.parser.XMLReaderImpl"; // included in JDK1.4
+  //val DEFAULT_PARSER_NAME   = "org.apache.xerces.parsers.SAXParser";
 
   /** Namespaces feature id (http://xml.org/sax/features/namespaces). */
   val NAMESPACES_FEATURE_ID = "http://xml.org/sax/features/namespaces";
@@ -245,7 +246,8 @@ abstract class FactoryAdapter
     /** Warning.*/
     override def warning(ex:SAXParseException ):Unit
       /*throws SAXException*/ = {
-        printError("Warning", ex);
+	// ignore warning, crimson warns even for entity resolution!
+        //printError("Warning", ex);
     }
     /** Error.     */
     override def error(ex:SAXParseException ):Unit
