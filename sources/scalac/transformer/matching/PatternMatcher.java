@@ -699,7 +699,7 @@ public class PatternMatcher extends PatternTool {
      *  on integers on the top level.
      */
     public Tree intSwitchToTree() {
-    	print();
+    	//print();
     	int ncases = numCases(root.and);
     	Tree matchError = cf.ThrowMatchError(selector.pos, typeOf(resultVar));
     	// without a case, we return a match error if there is no default case
