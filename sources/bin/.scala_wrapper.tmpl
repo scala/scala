@@ -321,6 +321,7 @@ exec_dtd2scala() {
     [ $# -gt 0 ] || abort "internal error";
 
     # compute Java classpath
+    append_path JAVA_CLASSPATH RUNTIME_CLASSES;
     append_path JAVA_CLASSPATH TOOLS_CLASSES;
 
     # invoke Java
@@ -328,12 +329,13 @@ exec_dtd2scala() {
         "$@";
 }
 
-# Starts a program using dtd2scala. The given arguments are passed to
+# Starts a program using scalap. The given arguments are passed to
 # exec_java. They must, at least, contain the name of the main class.
 exec_scalap() {
     [ $# -gt 0 ] || abort "internal error";
 
     # compute Java classpath
+    append_path JAVA_CLASSPATH RUNTIME_CLASSES;
     append_path JAVA_CLASSPATH TOOLS_CLASSES;
 
     # compute Scala classpath and bootclasspath
