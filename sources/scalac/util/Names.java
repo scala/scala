@@ -123,6 +123,7 @@ public class Names {
     public static final Name Unit = Name.fromString("Unit");
     public static final Name While = Name.fromString("While");
     public static final Name apply = Name.fromString("apply");
+    public static final Name array = Name.fromString("array");
     public static final Name asInstanceOf = Name.fromString("asInstanceOf");
     public static final Name box = Name.fromString("box");
     public static final Name coerce = Name.fromString("coerce");
