@@ -34,20 +34,17 @@ public class ExpandMixins extends Transformer {
     protected final Map/*<Symbol,Tree>*/ classDefs;
 
     protected final FreshNameCreator freshNameCreator;
-    protected final Map interfaceToClass;
-    protected final Map classToInterface;
 
     protected final static int PRIVATE_FINAL = Modifiers.FINAL | Modifiers.PRIVATE;
 
     protected final AttributedTreeCopier treeCopier;
     protected final Definitions defs;
 
+    protected final AddInterfacesPhase addInterfaces;
+
     public ExpandMixins(Global global, ExpandMixinsPhase descr) {
         super(global);
         defs = global.definitions;
-
-        classToInterface = global.PHASE.ADDINTERFACES.classToInterface;
-        interfaceToClass = global.PHASE.ADDINTERFACES.interfaceToClass;
 
         classDefs = descr.classDefs;
 
@@ -66,6 +63,8 @@ public class ExpandMixins extends Transformer {
                     }
                 }
             };
+
+        addInterfaces = global.PHASE.ADDINTERFACES;
     }
 
     public void apply() {
@@ -83,12 +82,7 @@ public class ExpandMixins extends Transformer {
     protected void typeSubst(Type type, ArrayList f, ArrayList a) {
         switch (type) {
         case TypeRef(Type pre, Symbol sym, Type[] args): {
-            Symbol s;
-            if (interfaceToClass.containsKey(sym))
-                s = (Symbol)interfaceToClass.get(sym);
-            else
-                s = sym;
-
+            Symbol s = addInterfaces.getClassSymbol(sym);
             f.addAll(Arrays.asList(s.typeParams()));
             a.addAll(Arrays.asList(args));
             typeSubst(pre, f, a);
@@ -145,7 +139,7 @@ public class ExpandMixins extends Transformer {
     }
 
     protected Template expandMixins(Template tree, Symbol owner) {
-        Type templType = tree.type;
+        Type templType = owner.info();
 
         List/*<Tree>*/ newBody = new ArrayList();
 	Scope newMembers = new Scope();
@@ -166,8 +160,9 @@ public class ExpandMixins extends Transformer {
             }
         }
 
-        Type[] baseTypes = tree.type.parents();
-        global.log("baseTypes = <" + ArrayApply.toString(baseTypes) + ">");
+        Type[] baseTypes = owner.parents();
+        global.log("baseTypes for " + Debug.show(owner)
+                   + " = <" + ArrayApply.toString(baseTypes) + ">");
 
         // Then go over the mixins and mix them in.
         for (int bcIndex = tree.parents.length - 1; bcIndex > 0; --bcIndex) {
@@ -288,10 +283,8 @@ public class ExpandMixins extends Transformer {
 	for (int i = 1; i < baseTypes.length; ++i) {
 	    switch (baseTypes[i]) {
 	    case TypeRef(Type pre, Symbol sym, Type[] args): {
-		if (!Modifiers.Helper.isInterface(sym.flags) && i > 0) {
-                    assert classToInterface.containsKey(sym) : sym;
-                    sym = (Symbol)classToInterface.get(sym);
-                }
+		if (!Modifiers.Helper.isInterface(sym.flags))
+                    sym = addInterfaces.getInterfaceSymbol(sym);
 
                 newBaseClasses[i] =
                     gen.mkParentConstr(tree.pos, new Type.TypeRef(pre, sym, args));
@@ -326,7 +319,7 @@ public class ExpandMixins extends Transformer {
             if (Modifiers.Helper.isInterface(sym.flags))
                 return super.transform(tree);
             else {
-                global.log("expanding " + sym);
+                global.log("expanding " + Debug.show(tree.symbol()));
 		Tree.ClassDef newClass = (Tree.ClassDef)
                     copy.ClassDef(tree,
                                   sym,
