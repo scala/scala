@@ -51,8 +51,8 @@ public class ExplicitOuterClassesPhase extends Phase {
     //########################################################################
     // Private Fields
 
-    /** A map from constructor symbols to type contexts */
-    private final Map/*<Symbol,TypeContext>*/ contexts = new HashMap();
+    /** A map from constructor symbols to type transformers */
+    private final Map/*<Symbol,TypeTransformer>*/ transformers = new HashMap();
 
     //########################################################################
     // Public Constructors
@@ -70,53 +70,87 @@ public class ExplicitOuterClassesPhase extends Phase {
         treeTransformer.apply(units);
     }
 
-    private boolean show = false; // !!!
-
     /** Applies this phase to the given type for the given symbol. */
     public Type transformInfo(Symbol symbol, Type type) {
-        if (show && !symbol.isPackageClass()) System.out.println("!!! <<< transformInfo - symbol: " + Debug.show(symbol));
-        if (show && !symbol.isPackageClass()) System.out.println("!!! <<< transformInfo - type  : " + Debug.show(type));
-        if (symbol.isPackage()) return type; // !!!
-        if (symbol.isPackageClass()) return type; // !!!
-        if (symbol.isConstructor() && symbol.constructorClass().isPackageClass()) return type; // !!!
-        TypeContext context = getTypeContextFor(symbol);
-        if (symbol.isConstructor() && symbol.constructorClass().isClassType() && !symbol.constructorClass().isCompoundSym()) { // !!! isClassType -> isClass ?
+        if (symbol.isConstructor()) {
             Symbol clasz = symbol.constructorClass();
-            Symbol[] tparams = type.typeParams();
-            Symbol[] vparams = type.valueParams();
-            Type result = type.resultType();
-            result = context.transformer.apply(result);
-            if (context.vlink != null) {
-                vparams = Symbol.cloneArray(1, vparams);
-                vparams[0] = context.vlink;
-            }
-            Type prefix = clasz.owner().thisType();
-            Type[] args = Symbol.type(tparams);
-            // !!! use getNewTypeArgs ?
-            Type self = Type.typeRef(prefix, clasz, args);
-            Type s = self;
-            self = context.transformer.apply(self);
-            tparams = Type.symbol(self.typeArgs());
-            for (int i = 0; i < tparams.length; i++)
-                assert tparams[i].isParameter() && tparams[i].owner() == symbol:
-                    Debug.show(symbol, clasz, self);
-            type = Type.MethodType(vparams, result);
-            if (tparams.length != 0) type = Type.PolyType(tparams, type);
-        } else {
-            Type t = type;
-            type = context.transformer.apply(type);
-            assert type != null: Debug.show(symbol) + " -- " + t;
+            if (clasz.isClass() && !clasz.isCompoundSym())
+                return transformInfo(clasz, symbol, type);
         }
-        if (show && !symbol.isPackageClass()) System.out.println("!!! >>> transformInfo - symbol: " + Debug.show(symbol));
-        if (show && !symbol.isPackageClass()) System.out.println("!!! >>> transformInfo - type  : " + Debug.show(type));
-        return type;
+        return getTypeTransformerFor(symbol).apply(type);
     }
 
     //########################################################################
     // Private Methods
 
-    /** Returns the type context for the given symbol. */
-    private TypeContext getTypeContextFor(Symbol symbol) {
+    /**
+     * Computes and returns the new type of the constructor. As a side
+     * effect, creates and stores the type transformer corresponding
+     * to this constructor.
+     */
+    private Type transformInfo(Symbol clasz, Symbol constructor, Type type) {
+        Symbol[] tparams = type.typeParams();
+        Symbol[] vparams = type.valueParams();
+        int depth = getClassDepth(clasz);
+
+        Map/*<Symbol,Type>*/ table = new HashMap();
+        table.put(clasz, clasz.thisType());
+        for (int i = 0; i < tparams.length; i++)
+            table.put(tparams[i], tparams[i].type());
+
+        Symbol[] owners = new Symbol[depth];
+        Symbol[][] tparamss = new Symbol[depth][];
+
+        Symbol vlink = null;
+        if (depth > 0) {
+            int count = depth;
+            Symbol owner = clasz.owner();
+            for (int i = depth - 1; i >= 0; i--) {
+                owners[i] = owner;
+                tparamss[i] = owner.typeParams();
+                count += tparamss[i].length;
+                owner = owner.owner();
+            }
+
+            // create outer value link
+            vparams = Symbol.cloneArray(1, vparams);
+            int vflags = Modifiers.SYNTHETIC;
+            Name vname = Names.OUTER(constructor);
+            vlink = constructor.newVParam(constructor.pos, vflags, vname);
+            vlink.setInfo(clasz.owner().thisType());
+            vparams[0] = vlink;
+
+            int o = 0;
+            tparams = Symbol.cloneArray(count, tparams);
+            for (int i = 0; i < depth; i++) {
+                // create new type parameters
+                for (int j = 0; j < tparamss[i].length; j++) {
+                    Symbol oldtparam = tparamss[i][j];
+                    Symbol newtparam = oldtparam.cloneSymbol(constructor);
+                    newtparam.name = Names.OUTER(constructor, oldtparam);
+                    table.put(oldtparam, newtparam.type());
+                    tparams[o++] = newtparam;
+                }
+                // create outer type links
+                int tflags = Modifiers.PARAM | Modifiers.COVARIANT | Modifiers.SYNTHETIC | Modifiers.STABLE;
+                Name tname = Names.OUTER(constructor, owners[i]);
+                Symbol tlink = constructor.newTParam(
+                    constructor.pos, tflags, tname, owners[i].typeOfThis());
+                table.put(owners[i], tlink.type());
+                tparams[o++] = tlink;
+            }
+
+        }
+
+        transformers.put(constructor, new TypeTransformer(table));
+        type = Type.typeRef(Type.NoPrefix, clasz, Symbol.type(tparams));
+        type = Type.MethodType(vparams, type);
+        if (tparams.length > 0) type = Type.PolyType(tparams, type);
+        return type;
+    }
+
+    /** Returns the type transformer for the given symbol. */
+    private TypeTransformer getTypeTransformerFor(Symbol symbol) {
         while (true) {
             Symbol test = symbol;
             if (test.isConstructor()) test = test.constructorClass();
@@ -129,64 +163,15 @@ public class ExplicitOuterClassesPhase extends Phase {
 //             symbol = symbol.owner();
         if (symbol.isClassType())
             symbol = symbol.primaryConstructor();
-        if (symbol.constructorClass().isPackageClass()) return new TypeContext(null, null, null, Collections.EMPTY_MAP); // !!!
-        TypeContext context = (TypeContext)contexts.get(symbol);
+        if (symbol.constructorClass().isPackageClass())
+            return topLevelTypeTransformer;
+        TypeTransformer context = (TypeTransformer)transformers.get(symbol);
         if (context == null) {
-            context = createTypeContext(symbol);
-            contexts.put(symbol, context);
+            symbol.nextInfo();
+            context = (TypeTransformer)transformers.get(symbol);
+            assert context != null: Debug.show(symbol);
         }
         return context;
-    }
-
-    /** Creates the context for the given constructor. */
-    private TypeContext createTypeContext(Symbol constructor) {
-        Symbol clasz = constructor.constructorClass();
-
-        Map/*<Symbol,Type>*/ tparams = new HashMap();
-        tparams.put(clasz, Type.ThisType(clasz));
-
-        // get outer contexts
-        TypeContext outer = clasz.owner().isPackageClass()
-            ? null
-            : getTypeContextFor(clasz.owner());
-
-        // create outer type links
-        int tflags = Modifiers.PARAM | Modifiers.COVARIANT | Modifiers.SYNTHETIC | Modifiers.STABLE;
-        for (TypeContext o = outer; o != null; o = o.outer) {
-            Name tname = Names.OUTER(constructor, o.clasz);
-            Symbol tlink = constructor.newTParam(
-                constructor.pos, tflags, tname, o.clasz.typeOfThis());
-            tparams.put(o.clasz, tlink.type());
-        }
-
-        // create outer value link
-        Symbol vlink = null;
-        if (outer != null) {
-            int vflags = Modifiers.SYNTHETIC;
-            Name vname = Names.OUTER(constructor);
-            vlink = constructor.newVParam(constructor.pos, vflags, vname);
-            vlink.setInfo(outer.clasz.thisType());
-        }
-
-        // create new type parameters
-        for (TypeContext o = outer; o != null; o = o.outer) {
-            Symbol[] oldtparams = o.clasz.typeParams();
-            for (int i = 0; i < oldtparams.length; i++) {
-                Symbol oldtparam = oldtparams[i];
-                Symbol newtparam = oldtparam.cloneSymbol(constructor);
-                newtparam.name = Names.OUTER(constructor, oldtparam);
-                tparams.put(oldtparam, newtparam.type());
-            }
-        }
-        // !!! duplicated code
-        Symbol[] oldtparams = constructor.typeParams();
-        for (int i = 0; i < oldtparams.length; i++) {
-            Symbol oldtparam = oldtparams[i];
-            Symbol newtparam = oldtparam;
-            tparams.put(oldtparam, newtparam.type());
-        }
-
-        return new TypeContext(clasz, outer, vlink, tparams);
     }
 
     //########################################################################
@@ -204,13 +189,6 @@ public class ExplicitOuterClassesPhase extends Phase {
         int depth = -1;
         while (!clasz.isPackageClass()) { clasz = clasz.owner(); depth++; }
         return depth;
-    }
-
-    /** Tests whether the class is enclosed in the specified class. */
-    private static boolean isEnclosedIn(Symbol clasz, Symbol outer) {
-        for (; !clasz.isRoot(); clasz = clasz.owner())
-            if (clasz == outer) return true;
-        return false;
     }
 
     /**
@@ -257,41 +235,11 @@ public class ExplicitOuterClassesPhase extends Phase {
     }
 
     //########################################################################
-    // Private Class - Type transformer context
-
-    private class TypeContext {
-
-        /** The context class */
-        private final Symbol clasz;
-        /** The outer context */
-        private final TypeContext outer;
-        /** The outer value link (null if all outer contexts are stable) */
-        private final Symbol vlink;
-
-
-        /** !!! */
-        private TypeTransformer transformer; // !!! type
-
-        /** !!! */
-        public TypeContext(Symbol clasz, TypeContext outer, Symbol vlink, Map tparams) {
-            this.clasz = clasz;
-            this.outer = outer;
-            this.vlink = vlink;
-            this.transformer = new TypeTransformer(tparams);
-        }
-
-        public String toString() {
-            return
-                "\nclasz    = " + Debug.show(clasz) +
-                "\nvlink    = " + Debug.show(vlink) +
-                "\ntparams  = " + Debug.show(transformer.tparams) +
-                "\nouter    : " + "\n" + outer;
-        }
-
-    }
-
-    //########################################################################
     // Private Class - Type transformer
+
+    /** The type transformer for top-level types */
+    private static final TypeTransformer topLevelTypeTransformer =
+        new TypeTransformer(Collections.EMPTY_MAP);
 
     /** The type transformer */
     private static final class TypeTransformer extends Type.MapOnlyTypes {
@@ -351,9 +299,12 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** The current context */
         private Context context;
 
+        /** The current method */
+        private Symbol method;
+
         /** Transforms the given type. */
         public Type transform(Type type) {
-            return context.context.transformer.apply(type);
+            return context.transformer.apply(type);
         }
 
         /** Transforms the given tree. */
@@ -371,7 +322,7 @@ public class ExplicitOuterClassesPhase extends Phase {
                     body = Tree.cloneArray(1, body);
                     body[0] = gen.ValDef(
                         context.vfield,
-                        gen.Ident(context.vfield.pos, context.context.vlink));
+                        gen.Ident(context.vfield.pos, context.vparam));
                 }
                 context = context.outer;
                 return gen.ClassDef(clasz, parents, impl.symbol(), body);
@@ -381,9 +332,9 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Context backup = context;
                 if (method.isConstructor())
                     context = context.getConstructorContext(method);
-                context.method = method;
+                this.method = method;
                 rhs = transform(rhs);
-                context.method = null;
+                this.method = null;
                 context = backup;
                 return gen.DefDef(method, rhs);
 
@@ -410,8 +361,6 @@ public class ExplicitOuterClassesPhase extends Phase {
 
             case This(_):
                 return genOuterRef(tree.pos, tree.symbol());
-//                 Symbol clasz = tree.symbol();
-//                 return clasz.isRoot() ? tree : genOuterRef(tree.pos, clasz);
 
             case Select(Tree qualifier, _):
                 Symbol symbol = tree.symbol();
@@ -438,24 +387,6 @@ public class ExplicitOuterClassesPhase extends Phase {
                 if (access != symbol && !symbol.isMethod())
                     tree = gen.mkApply__(tree);
                 return tree;
-
-            case Ident(_):
-                Symbol symbol = tree.symbol();
-                Symbol owner = symbol.owner();
-                if (owner.isClass()) {
-                    // !!! A this node is missing here. This should
-                    // never happen if all trees were correct.
-                    Tree qualifier = genOuterRef(tree.pos, owner);
-                    return gen.Select(qualifier, symbol);
-                }
-                if (owner.isPrimaryConstructor()) {
-                    Symbol clasz = owner.constructorClass();
-                    if (clasz != context.clasz) {
-                        Tree qualifier = genOuterRef(tree.pos, clasz);
-                        return gen.Select(qualifier, symbol);
-                    }
-                }
-                return gen.Ident(tree.pos, symbol);
 
             default:
                 return super.transform(tree);
@@ -553,27 +484,14 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** Returns a tree referencing the given outer class. */
         private Tree genOuterRef(int pos, Symbol clasz) {
             if (context.clasz == clasz) return gen.This(pos, clasz);
-            TypeContext tcontext = null;
-            for (TypeContext o = context.context; o != null; o = o.outer)
-                if (o.clasz == clasz)
-                    tcontext = o;
-            assert tcontext != null: Debug.show(clasz, context.clasz);
-            { // !!!
-                assert context.context.vlink != null:
-                    Debug.show(clasz, context.clasz);
-                Tree tree = context.method == null || context.method.isConstructor()
-                    ? gen.Ident(pos, context.context.vlink)
-                    : gen.Select(gen.This(pos, context.clasz), context.getVField());
-                Context context = this.context;
-                while (true) {
-                    context = context.outer;
-                    assert context != null:
-                        Debug.show(clasz, this.context.clasz);
-                    if (context.clasz == clasz) return tree;
-                    Symbol access = getAccessSymbol(context.getVField(), null);
-                    assert access != context.getVField(): Debug.show(access) + " - " + Debug.show(this.context.clasz);
-                    tree = gen.Apply(gen.Select(tree, access));
-                }
+            Tree tree = method == null || method.isConstructor()
+                ? gen.Ident(pos, context.vparam)
+                : gen.Select(gen.This(pos, context.clasz),context.getVField());
+            for (Context c = context.outer;; c = c.outer) {
+                assert c != null: Debug.show(clasz, context.clasz);
+                if (c.clasz == clasz) return tree;
+                Symbol access = getAccessSymbol(c.getVField(), null);
+                tree = gen.Apply(gen.Select(tree, access));
             }
         }
 
@@ -599,29 +517,27 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** The outer context */
         public final Context outer;
-        /** The current class symbol */
+        /** The context class */
         public final Symbol clasz;
+        /** The context type transformer */
+        public final TypeTransformer transformer;
         /** The self access methods (maps members to accessors) */
         public final Map/*<Symbol,Symbol>*/ selfs;
         /** The super access methods (maps members to accessors) */
         public final Map/*<Symbol,Symbol>*/ supers;
-
-        // !!!
-        public final TypeContext context;
-
-        /** The outer value field (null if not yet created) */
+        /** The context outer paramater (null if none) */
+        public final Symbol vparam;
+        /** The context outer field (null if none or not yet used) */
         private Symbol vfield;
 
-        /** !!! The current method */
-        public Symbol method;
-
         /** Initializes this instance. */
-        public Context(Context outer, Symbol symbol, Map selfs, Map supers){
-            this.context = getTypeContextFor(symbol);
+        public Context(Context outer, Symbol symbol, Map selfs, Map supers) {
             this.outer = outer;
             this.clasz = symbol.constructorClass();
+            this.transformer = getTypeTransformerFor(symbol);
             this.selfs = selfs;
             this.supers = supers;
+            this.vparam = outer != null ? symbol.nextValueParams()[0] : null;
         }
 
         /** Returns a context for the given constructor. */
@@ -635,6 +551,7 @@ public class ExplicitOuterClassesPhase extends Phase {
          * fly if it does not yet exist.
          */
         private Symbol getVField() {
+            assert outer != null: Debug.show(clasz);
             if (vfield == null) {
                 int flags =
                     Modifiers.SYNTHETIC | Modifiers.PRIVATE | Modifiers.STABLE;
