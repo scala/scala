@@ -652,6 +652,10 @@ object testMZ {
 
   }
 
+  def mat398(xs:List[Any]) = xs match { // bug#398
+    case List(1) => "one"
+    case x::xs   => "two"
+  }
 
   def main:Unit = {
                 Console.println("testMZ - bugs #132 #133b #180 #195 #196");
@@ -672,6 +676,7 @@ object testMZ {
     assertEquals(mat195( Two() ),"default");
     assertEquals(mat196( List(1) ),"default");
     assertEquals(mat196( List() ),"case, b = List()");
+    assertEquals(mat398( List() ),"two");
 
     ()
   }
