@@ -126,16 +126,20 @@ public class ExplicitOuterClasses extends Transformer {
     protected Tree outerRef(int level) {
         assert level >= 0 : level;
 
-        Symbol thisSym = (Symbol)classStack.getFirst();
-        Tree root = gen.This(thisSym.pos, thisSym);
+        if (level == 0) {
+            Symbol thisSym = (Symbol)classStack.getFirst();
+            return gen.This(thisSym.pos, thisSym);
+        } else {
+            Iterator outerIt = outerLinks.iterator();
+            Tree root = gen.Ident((Symbol)outerIt.next());
 
-        Iterator outerIt = outerLinks.iterator();
-        for (int l = 1; l <= level; ++l) {
-            Symbol outerSym = (Symbol)outerIt.next();
-            root = gen.mkStable(gen.Select(root, outerSym));
+            for (int l = 1; l < level; ++l) {
+                Symbol outerSym = (Symbol)outerIt.next();
+                root = gen.mkStable(gen.Select(root, outerSym));
+            }
+
+            return root;
         }
-
-        return root;
     }
 
     public Tree transform(Tree tree) {
