@@ -546,9 +546,10 @@ final class TypeCreator {
     void initAssembly() {
 	AssemblyName an = new AssemblyName();
 	an.Name = assemName;
+        String moduleName = assemName + (entryPoint == null ? ".dll" : ".exe");
 	msilAssembly = AssemblyBuilder.DefineDynamicAssembly(an);
 	msilModule = msilAssembly.DefineDynamicModule
-	    (an.Name, an.Name + (entryPoint == null ? ".dll" : ".exe"));
+	    (moduleName, new File(outDir, moduleName).getAbsolutePath());
 
 	for (Iterator classes = types2create.iterator(); classes.hasNext();) {
 	    Symbol clazz = (Symbol)classes.next();
