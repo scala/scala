@@ -44,8 +44,4 @@ object Predef {
     type Triple[a, b, c] = Tuple3[a, b, c];
     def Triple[a, b, c](x: a, y: b, z: c) = Tuple3(x, y, z);
 
-  // temporary
-    type Trace[a] = SeqTrace[a];
-    type consTrace[a] = SeqTraceCons[a];
-    type emptyTrace[a] = SeqTraceNil[a];
 }
