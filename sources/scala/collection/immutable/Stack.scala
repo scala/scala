@@ -22,7 +22,7 @@ object Stack {
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
  */
-class Stack[+A] with Seq[A] {
+class Stack[+A] with Seq[A] with StructuralEquality[Stack[A]] {
 
     /** Checks if this stack is empty.
      *
@@ -105,8 +105,10 @@ class Stack[+A] with Seq[A] {
      *           same elements in the same order.
      */
     override def equals(obj: Any): Boolean =
-        if (obj is Stack[A]) toList.equals((obj as Stack[A]).toList);
-        else false;
+        if (obj.isInstanceOf[Stack[A]])
+        	toList.equals((obj.asInstanceOf[Stack[A]]).toList);
+        else
+        	false;
 
     /** Returns the hash code for this stack.
      *

@@ -65,6 +65,18 @@ trait Iterator[+a] with Iterable[a] {
   def foreach(f: a => Unit): Unit =
     while (hasNext) { f(next) }
 
+  def forall(p: a => Boolean): Boolean = {
+    var res = true;
+    while (res && hasNext) { res = p(next); }
+    res;
+  }
+
+  def exists(p: a => Boolean): Boolean = {
+    var res = false;
+    while (!res && hasNext) { res = p(next); }
+    res;
+  }
+
   def take(n: Int) = new Iterator[a] {
     var remaining = n;
     def hasNext = remaining > 0 && Iterator.this.hasNext;

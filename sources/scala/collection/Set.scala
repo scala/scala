@@ -23,49 +23,36 @@ package scala.collection;
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Set[A] with Iterable[A] {
+trait Set[A] with Iterable[A]
+             with StructuralEquality[Set[A]] {
 
     def size: Int;
 
-    def isEmpty: Boolean = (size == 0);
-
     def contains(elem: A): Boolean;
 
-    def subsetOf(that: Set[A]): Boolean = {
-        val iter = elements;
-        var res = true;
-        while (res && iter.hasNext) {
-            res = that.contains(iter.next);
-        }
-        res
-    }
+    def isEmpty: Boolean = (size == 0);
 
-    def foreach(f: A => Unit): Unit = {
-        val iter = elements;
-        while (iter.hasNext) {
-            f(iter.next);
-        }
-    }
+    def subsetOf(that: Set[A]): Boolean = forall(that.contains);
 
-    def exists(p: A => Boolean): Boolean = {
-        val iter = elements;
-        var res = false;
-        while (!res && iter.hasNext) {
-            if (p(iter.next)) { res = true; }
-        }
-        res;
-    }
+    def foreach(f: A => Unit): Unit = elements.foreach(f);
+
+    def forall(p: A => Boolean): Boolean = elements.forall(p);
+
+    def exists(p: A => Boolean): Boolean = elements.exists(p);
 
     def toList: List[A] = {
         var res: List[A] = Nil;
-        val iter = elements;
-        while (iter.hasNext) {
-            res = iter.next :: res;
-        }
+        elements.foreach { elem => res = elem :: res; }
         res;
     }
 
-    override def toString() =
+    override def ===[B >: Set[A]](that: B): Boolean =
+    	that.isInstanceOf[Set[A]] &&
+    	{ val other = that.asInstanceOf[Set[A]];
+    	  this.size == other.size &&
+    	  this.elements.forall(other.contains) };
+
+    override def toString(): String =
         if (size == 0)
             "{}"
         else
