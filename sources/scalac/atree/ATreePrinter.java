@@ -237,6 +237,97 @@ public class ATreePrinter {
     //########################################################################
     // Public Methods - Printing trees
 
+    /** Prints the repository. */
+    public ATreePrinter printRepository(ARepository repository) {
+        AClass[] classes = repository.classes();
+        for (int i = 0; i < classes.length; i++) printClass(classes[i]);
+        return this;
+    }
+
+    /** Prints the class. */
+    public ATreePrinter printClass(AClass clasz) {
+        printClassModifiers(clasz);
+        print(clasz.isInterface() ? "interface" : "class").space();
+        printSymbol(clasz.symbol());
+        Symbol[] tparams = clasz.tparams();
+        if (tparams.length != 0) symtab.printTypeParams(tparams);
+        Symbol[] vparams = clasz.vparams();
+        if (vparams.length != 0) symtab.printValueParams(vparams);
+        if (clasz.symbol().typeOfThis() != clasz.symbol().thisType())
+            space().print(':').printType(clasz.symbol().typeOfThis());
+        space().print("extends").space();
+        symtab.printTypes(clasz.parents()," with ");
+        lbrace();
+        printRepository(clasz);
+        AField[] fields = clasz.fields();
+        for (int i = 0; i < fields.length; i++) printField(fields[i]);
+        AMethod[] methods = clasz.methods();
+        for (int i = 0; i < methods.length; i++) printMethod(methods[i]);
+        return rbrace();
+    }
+
+    /** Prints the class modifiers. */
+    public ATreePrinter printClassModifiers(AClass clasz) {
+        if (clasz.isDeprecated()) print("deprecated").space();
+        if (clasz.isSynthetic()) print("synthetic").space();
+        if (clasz.isPublic()) print("public").space();
+        if (clasz.isPrivate()) print("private").space();
+        if (clasz.isProtected()) print("protected").space();
+        if (clasz.isFinal()) print("final").space();
+        if (clasz.isAbstract()) print("abstract").space();
+        return this;
+    }
+
+    /** Prints the member modifiers. */
+    public ATreePrinter printMemberModifiers(AMember member) {
+        if (member.isDeprecated()) print("deprecated").space();
+        if (member.isSynthetic()) print("synthetic").space();
+        if (member.isPublic()) print("public").space();
+        if (member.isPrivate()) print("private").space();
+        if (member.isProtected()) print("protected").space();
+        if (member.isStatic()) print("static").space();
+        return this;
+    }
+
+    /** Prints the member code. */
+    public ATreePrinter printMemberCode(AMember member) {
+        if (member.code() == ACode.Void) return this;
+        return print('=').space().printCode(member.code());
+    }
+
+    /** Prints the field. */
+    public ATreePrinter printField(AField field) {
+        printFieldModifiers(field);
+        symtab.printSignature(field.symbol()).space();
+        return printMemberCode(field).line();
+    }
+
+    /** Prints the field modifiers. */
+    public ATreePrinter printFieldModifiers(AField field) {
+        printMemberModifiers(field);
+        if (field.isFinal()) print("final").space();
+        if (field.isVolatile()) print("volatile").space();
+        if (field.isTransient()) print("transient").space();
+        return this;
+    }
+
+    /** Prints the method. */
+    public ATreePrinter printMethod(AMethod method) {
+        printMethodModifiers(method);
+        symtab.printSignature(method.symbol()).space();
+        return printMemberCode(method).line();
+    }
+
+    /** Prints the method modifiers. */
+    public ATreePrinter printMethodModifiers(AMethod method) {
+        printMemberModifiers(method);
+        if (method.isFinal()) print("final").space();
+        if (method.isSynchronized()) print("synchronized").space();
+        if (method.isNative()) print("native").space();
+        if (method.isAbstract()) print("abstract").space();
+        return this;
+    }
+
     /** Prints the code. */
     public ATreePrinter printCode(ACode code) {
         switch (code) {
