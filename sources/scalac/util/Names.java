@@ -93,6 +93,7 @@ public class Names {
     public static final Name BARBAR = encode("||");
     public static final Name AMPAMP = encode("&&");
     public static final Name COLONCOLON = encode("::");
+    public static final Name PERCENT = encode("%");
 
     public static final Name All = Name.fromString("All");
     public static final Name AllRef = Name.fromString("AllRef");
@@ -127,6 +128,7 @@ public class Names {
     public static final Name Throwable = Name.fromString("Throwable");
     public static final Name Try = Name.fromString("Try");
     public static final Name Tuple = Name.fromString("Tuple");
+    public static final Name Tuple2 = Name.fromString("Tuple2");
     public static final Name Unit = Name.fromString("Unit");
     public static final Name While = Name.fromString("While");
     public static final Name apply = Name.fromString("apply");
