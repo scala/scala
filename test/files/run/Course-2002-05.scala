@@ -115,6 +115,12 @@ object M2 {
 
 object M3 {
 
+  def abs(x: int) = if (x < 0) 0 - x else x;
+
+  def range(lo: Int, hi: Int): List[Int] =
+    if (lo > hi) List()
+    else lo :: range(lo + 1, hi);
+
   type Placement = List[Pair[int,int]];
 
   def queens(n: int): List[Placement] = {
@@ -139,11 +145,50 @@ object M3 {
     placeQueens(n)
   }
 
-  def range(lo: int, hi: int): List[int] =
+  def test = {
+    System.out.println("queens(1) = " + queens(1));
+    System.out.println("queens(2) = " + queens(2));
+    System.out.println("queens(3) = " + queens(3));
+    System.out.println("queens(4) = " + queens(4));
+    System.out.println();
+  }
+}
+
+//############################################################################
+
+object M4 {
+
+  def abs(x: int) = if (x < 0) 0 - x else x;
+
+  def range(lo: Int, hi: Int): List[Int] =
     if (lo > hi) List()
     else lo :: range(lo + 1, hi);
 
-  def abs(x: int) = if (x < 0) 0 - x else x;
+  type Placement = List[Int];
+
+  def queens(n: Int): List[Placement] = {
+    val columns = range(1, n);
+    def placeQueens(row: Int): List[Placement] = {
+      if (row == 0)
+        List(List())
+      else {
+        def isSafe(col: Int, p: Placement, delta: Int): Boolean =
+          p.isEmpty ||
+          (col != p.head &&
+           abs(col - p.head) != delta &&
+           isSafe(col, p.tail, delta + 1));
+
+        for (
+          val placement <- placeQueens(row - 1);
+          val col <- columns;
+          isSafe(col, placement, 1)
+        ) yield {
+          col :: placement
+        }
+      }
+    }
+    placeQueens(n);
+  }
 
   def test = {
     System.out.println("queens(1) = " + queens(1));
@@ -162,6 +207,7 @@ object Test {
     M1.test;
     M2.test;
     M3.test;
+    M4.test;
     ()
   }
 }
