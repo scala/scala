@@ -1,0 +1,10 @@
+bug40.scala:2: 'val' expected but integer literal found.
+  val v = for (1 == 0) yield 1;
+               ^
+bug40.scala:3: illegal start of pattern
+}
+^
+bug40.scala:2: '<-' expected but '}' found.
+  val v = for (1 == 0) yield 1;
+                               ^
+three errors found

@@ -1,0 +1,4 @@
+bug43.scala:1: class C takes type parameters.
+case class C[A >: C](x: A) {}
+                  ^
+one error found
