@@ -40,9 +40,13 @@ PartialFunction.scala
 Predef.scala
 Ref.java
 Seq.scala
+SeqTrace.scala
+SeqTraceCons.scala
+SeqTraceNil.scala
 Short.java
 Some.scala
 Stream.scala
+StructuralEquality.scala
 Symbol.scala
 Tuple1.scala
 Tuple2.scala
@@ -56,7 +60,9 @@ Tuple9.scala
 Unit.java
 
 collection/Map.scala
+collection/MapWrapper.scala
 collection/Set.scala
+collection/SetWrapper.scala
 
 collection/mutable/Buffer.scala
 collection/mutable/DefaultMapModel.scala
@@ -65,12 +71,15 @@ collection/mutable/HashMap.scala
 collection/mutable/HashSet.scala
 collection/mutable/HashTable.scala
 collection/mutable/History.scala
+collection/mutable/ImmutableMapAdaptor.scala
+collection/mutable/ImmutableSetAdaptor.scala
 collection/mutable/Inclusion.scala
 collection/mutable/LinkedList.scala
-collection/mutable/MutableList.scala
 collection/mutable/Map.scala
+collection/mutable/MapWrapper.scala
 collection/mutable/Modification.scala
 collection/mutable/MultiMap.scala
+collection/mutable/MutableList.scala
 collection/mutable/ObservableMap.scala
 collection/mutable/ObservableSet.scala
 collection/mutable/ObservableUpdate.scala
@@ -80,6 +89,7 @@ collection/mutable/Removal.scala
 collection/mutable/Reset.scala
 collection/mutable/RevertableHistory.scala
 collection/mutable/Set.scala
+collection/mutable/SetWrapper.scala
 collection/mutable/SingleLinkedList.scala
 collection/mutable/Stack.scala
 collection/mutable/Subscriber.scala
@@ -87,12 +97,13 @@ collection/mutable/SynchronizedMap.scala
 collection/mutable/SynchronizedSet.scala
 collection/mutable/Undo.scala
 
+collection/immutable/GBTree.scala
 collection/immutable/ListMap.scala
 collection/immutable/ListSet.scala
 collection/immutable/Map.scala
-collection/immutable/Set.scala
 collection/immutable/Queue.scala
-collection/immutable/GBTree.scala
+collection/immutable/Set.scala
+collection/immutable/Stack.scala
 
 # concurrent/Actor.scala
 concurrent/Channel.scala
@@ -110,7 +121,12 @@ runtime/ResultOrException.java
 runtime/RunTime.java
 runtime/ScalaRunTime.scala
 
+testing/UnitTest.scala
+
 xml/Element.scala
+# xml/Generic.scala
+xml/PCDATA.scala
+# xml/ScalaFactoryAdapter.scala
 
 xml/javaAdapter/HashMap.scala
 xml/javaAdapter/Map.scala
