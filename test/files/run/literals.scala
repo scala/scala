@@ -6,23 +6,23 @@
 //############################################################################
 
 object Test {
+  import java.lang.System.out;
 
   def check_success[a](name: String, def closure: a, expected: a): Unit = {
-    import java.lang.System;
-    System.out.print("test " + name);
+    out.print("test " + name);
     try {
       val actual: a = closure;
       if (actual == expected) {
-        System.out.print(" was successful");
+        out.print(" was successful");
       } else {
-        System.out.print(" failed: expected "+ expected +", found "+ actual);
+        out.print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
       case exception: Throwable => {
-        System.out.print(" raised exception " + exception);
+        out.print(" raised exception " + exception);
       }
     }
-    System.out.println();
+    out.println();
   }
 
   def main(args: Array[String]) = {
@@ -31,7 +31,7 @@ object Test {
     check_success("'\\u005f' == '_'", '\u005f', '_');
     check_success("65.asInstanceOf[char] == 'A'", 65.asInstanceOf[char], 'A');
 
-    System.out.println();
+    out.println();
 
     // int
     check_success("01 == 1", 01, 1);
@@ -64,7 +64,7 @@ object Test {
     check_success("0x80000000 == -2147483648", 0x80000000, -2147483648);
     check_success("0xffffffff == -1", 0xffffffff, -1);
 
-    System.out.println();
+    out.println();
 
     // long
     check_success("1l == 1L", 1l, 1L);
@@ -85,7 +85,7 @@ object Test {
     check_success("0xffffffffffffffffL == -1L",
       0xffffffffffffffffL, -1L);
 
-    System.out.println();
+    out.println();
 
     // see JLS at address:
     // http://java.sun.com/docs/books/jls/second_edition/html/lexical.doc.html#230798
@@ -101,7 +101,7 @@ object Test {
     check_success("1.asInstanceOf[float] == 1.0", 1.asInstanceOf[float], 1.0f);
     check_success("1l.asInstanceOf[float] == 1.0", 1l.asInstanceOf[float], 1.0f);
 
-    System.out.println();
+    out.println();
 
     // double
     check_success("1e1 == 10.0", 1e1, 10.0);
