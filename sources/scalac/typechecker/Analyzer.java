@@ -9,12 +9,11 @@
 // todo: (0) propagate target type in cast.
 // todo: eliminate Typed nodes.
 // todo: use SELECTOR flag to avoid access methods for privates
-// todo: drop requirement that only abstract classes can have abstract
-//       type members.
 // todo: use mangled name or drop.
 // todo: emit warnings for unchecked.
 // todo: qualified super.
 // todo: pattern definitions with 0 or 1 bound variable.
+// todo: phase sync
 
 package scalac.typechecker;
 
@@ -259,6 +258,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
     void validate(Symbol sym) {
 	checkNoConflict(sym, DEFERRED, PRIVATE);
 	checkNoConflict(sym, FINAL, PRIVATE);
+	checkNoConflict(sym, FINAL, SEALED);
 	checkNoConflict(sym, PRIVATE, PROTECTED);
 	checkNoConflict(sym, PRIVATE, OVERRIDE);
 	checkNoConflict(sym, DEFERRED, FINAL);
@@ -331,6 +331,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 			  " does not conform to " + parents[i] + "'s supertype");
 	    }
 	    if ((bsym.flags & FINAL) != 0) {
+		error(constrs[i].pos, "illegal inheritance from final class");
+	    } else if ((bsym.flags & SEALED) != 0) {
 		// are we in same scope as base type definition?
 		Scope.Entry e = context.scope.lookupEntry(bsym.name);
 		if (e.sym != bsym || e.owner != context.scope) {
@@ -339,7 +341,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    while (c != Context.NONE && c.owner !=  bsym)
 			c = c.outer;
 		    if (c == Context.NONE) {
-			error(constrs[i].pos, "illegal inheritance from final class");
+			error(constrs[i].pos, "illegal inheritance from sealed class");
 		    }
 		}
 	    }
@@ -880,6 +882,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	this.mode = EXPRmode;
 	Type savedPt = this.pt;
 	this.pt = Type.AnyType;
+	int savedId = global.currentPhase.id;
+	global.currentPhase.id = descr.id;
 
 	try {
 	    Symbol sym = tree.symbol();
@@ -942,8 +946,8 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    }
 		    popContext();
 		}
+		//checkNonCyclic(tree.pos, tpe.type);
 		owntype = tpe.type;
-		checkNonCyclic(tree.pos, owntype);
 		break;
 
 	    case DefDef(int mods, Name name, Tree.TypeDef[] tparams, Tree.ValDef[][] vparams, Tree tpe, Tree rhs):
@@ -959,7 +963,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		}
 		Type restype = checkNoEscape(tpe.pos, tpe.type);
 		popContext();
-		checkNonCyclic(tree.pos, restype);
+		//checkNonCyclic(tree.pos, tpe.type);
 		owntype = makeMethodType(tparamSyms, vparamSyms, restype);
 		//System.out.println("methtype " + name + ":" + owntype);//DEBUG
 		break;
@@ -978,13 +982,21 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    owntype = rhs.type;
 		    popContext();
 		}
-		checkNonCyclic(tree.pos, owntype);
+		//checkNonCyclic(tree.pos, owntype);
 		break;
 
 	    case Import(Tree expr, Name[] selectors):
 		((Import) tree).expr = expr = transform(expr, EXPRmode | QUALmode);
 		checkStable(expr);
 		owntype = expr.type;
+		Type tp = owntype.widen();
+		for (int i = 0; i < selectors.length; i = i + 2) {
+		    if (selectors[i] != Names.WILDCARD &&
+			tp.lookup(selectors[i]) == Symbol.NONE &&
+			tp.lookup(selectors[i].toTypeName()) == Symbol.NONE &&
+			tp.lookup(selectors[i].toConstrName()) == Symbol.NONE)
+			error(tree.pos, selectors[i] + " is not a member of " + expr);
+		}
 		break;
 
 	    default:
@@ -1003,6 +1015,7 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 	this.context = savedContext;
 	this.mode = savedMode;
 	this.pt = savedPt;
+	global.currentPhase.id = savedId;
     }
 
     /** Definition phase for a template. This enters all symbols in template
@@ -1660,6 +1673,9 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    rhs1 = transform(rhs, EXPRmode, tpe.type);
 		    popContext();
 		}
+		sym.flags |= LOCKED;
+		checkNonCyclic(tree.pos, tpe.type);
+		sym.flags &= ~LOCKED;
 		return copy.ValDef(tree, sym, tpe, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
@@ -1673,10 +1689,14 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		if (rhs != Tree.Empty)
 		    rhs1 = transform(rhs, EXPRmode, tpe.type);
 		popContext();
+		sym.flags |= LOCKED;
+		checkNonCyclic(tree.pos, tpe.type);
+		sym.flags &= ~LOCKED;
 		return copy.DefDef(tree, sym, tparams1, vparams1, tpe, rhs1)
 		    .setType(definitions.UNIT_TYPE);
 
 	    case TypeDef(_, _, _, _):
+		checkNonCyclic(tree.pos, sym.type());
 		return tree
 		    .setType(definitions.UNIT_TYPE);
 
@@ -2073,23 +2093,30 @@ public class Analyzer extends Transformer implements Modifiers, Kinds {
 		    infer.applyErrorMsg(
 			"", fn1, " cannot be applied to ", argtypes, pt));
 
-	    case Super(Tree tpe):
-		Symbol enclClazz = context.enclClass.owner;
-		if (enclClazz != null) {
-                    // we are in a class or module
-		    Tree tpe1 = transform(tpe, TYPEmode); // ignored for now.
-		    switch (enclClazz.info()) {
-		    case CompoundType(Type[] parents, _):
-			return copy.Super(tree, tpe1)
-			    .setType(Type.compoundType(parents, Scope.EMPTY).symbol().thisType());
-		    case ErrorType:
-			return tree.setType(Type.ErrorType);
-		    default:
-			throw new ApplicationError();
+	    case Super(Tree qual):
+		Symbol clazz;
+		Tree qual1;
+		if (qual == Tree.Empty) {
+		    clazz = context.enclClass.owner;
+		    if (clazz != null) {
+			qual1 = gen.Ident(tree.pos, clazz);
+		    } else {
+			return error(
+			    tree.pos,
+			    "super can be used only in a class, object, or template");
 		    }
 		} else {
-		    return error(tree.pos,
-                        "super can be used only in a class, object, or template");
+		    qual1 = transform(qual, TYPEmode | FUNmode);
+		    clazz = qual1.symbol();
+		}
+		switch (clazz.info()) {
+		case CompoundType(Type[] parents, _):
+		    return copy.Super(tree, qual1)
+			.setType(Type.compoundType(parents, Scope.EMPTY).symbol().thisType());
+		case ErrorType:
+		    return tree.setType(Type.ErrorType);
+		default:
+		    return error(qual.pos, "class identifier expected");
 		}
 
 	    case This(Tree qual):

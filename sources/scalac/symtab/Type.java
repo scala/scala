@@ -305,6 +305,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		lb = pre.memberLoBound(sym);
 	    }
 	    if (lb.symbol() == Global.instance.definitions.ALL_CLASS &&
+		this.symbol() != Global.instance.definitions.ALL_CLASS &&
 		this.isSubType(Global.instance.definitions.ANYREF_TYPE)) {
 		lb = Global.instance.definitions.ALLREF_TYPE;
 	    }
@@ -1389,8 +1390,9 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		return that.isSubType(Global.instance.definitions.ANY_TYPE);
 	    else if (sym == Global.instance.definitions.ALLREF_CLASS)
 		return
-		    that.isSameAs(Global.instance.definitions.ANY_TYPE) ||
-		    that.isSubType(Global.instance.definitions.ANYREF_TYPE);
+		    that.symbol() == Global.instance.definitions.ANY_CLASS ||
+		    (that.symbol() != Global.instance.definitions.ALL_CLASS &&
+		     that.isSubType(Global.instance.definitions.ANYREF_TYPE));
 	    break;
 
 	case OverloadedType(Symbol[] alts, Type[] alttypes):

@@ -1,7 +1,5 @@
 package test;
 
-
-
 import java.lang.{System => S}
 
 object test {

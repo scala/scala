@@ -10,7 +10,7 @@
 \newcommand{\iffinaltype}[1]{}
 \newcommand{\ifpackaging}[1]{}
 \newcommand{\ifnewfor}[1]{}
-\renewcommand{\todo}[1]{#1}
+\renewcommand{\todo}[1]{{$\clubsuit$\bf todo: #1$\spadesuit$}}
 \newcommand{\notyet}{\footnote{not yet implemented.}}
 \title{Report on the Programming Language Scala}
 
@@ -256,9 +256,9 @@ abstract    as    case    class    constr
 def    do    else    extends    final    
 false    for    if    is    import
 new    null    object    override    package    
-private    protected    super    this    trait    
-true    type    val    var    with   
-yield
+private    protected    sealed    super    this    
+trait    true    type    val    var    
+with   yield
 _    :    =    =>    <-    <:    >:    #    @
 \end{verbatim}
 
@@ -1368,29 +1368,36 @@ entity, of type \verb@T_1 \overload \ldots \overload T_n@
 \label{sec:import}
 
 \syntax\begin{verbatim}
-  Import                  \=::=\> import ImportExpr {`,' ImportExpr}
+  Import                  \=::=\= import ImportExpr {`,' ImportExpr}
   ImportExpr      \>::=\> StableId `.' (Id | `_' | ImportSelectors)
   ImportSelectors \>::=\> `{' {ImportSelector `,'} (ImportSelector | `_') `}'
   ImportSelector  \>::=\> Id [`=>' Id | `=>' `_']
 \end{verbatim}
 
-An import clause has the form $import;e.I$ where \verb@e@ is a stable
+An import clause has the form \verb@import p.I@ where \verb@p@ is a stable
 identifier (\sref{sec:paths}) and \verb@I@ is an import expression.
-The import expression determines a set of names of members of \verb@e@
+The import expression determines a set of names of members of \verb@p@
 which are made available without qualification. The most general form
 of an import expression is a list of {\em import selectors}
 \begin{verbatim}
 { x$_1$ => y$_1$, ..., x$_n$ => y$_n$, _ }
 \end{verbatim}
 for $n \geq 0$, where the final wildcard `\verb@_@' may be absent.  It
-makes available each member \verb@e.x$_i$@ under the unqualified name
-\verb@y$_i$. I.e.\ every import selector \verb@x$_i$ => y$_i$@ renames
-\verb@e.x$_i$@ to
-\verb@y$_i$.  If a final wildcard is present, all members \verb@z@ of
-\verb@e@ other than \verb@x$_1$, ..., x$_n$@ are also made available
+makes available each member \verb@p.x$_i$@ under the unqualified name
+\verb@y$_i$@. I.e.\ every import selector \verb@x$_i$ => y$_i$@ renames
+\verb@p.x$_i$@ to
+\verb@y$_i$@.  If a final wildcard is present, all members \verb@z@ of
+\verb@p@ other than \verb@x$_1$, ..., x$_n$@ are also made available
 under their own unqualfied names.
 
-If destination in an import selector is a wildcard, the import
+Import selectors work in the same way for members in all three name
+spaces.  For instance, an import clause \verb@import p.{x => y}@
+renames the term name \verb@p.x@ to the term name \verb@y@, the type
+name \verb@p.x@ to the type name \verb@y@, and the constructor name
+\verb@p.x@ to the type name \verb@y@. At least one of these three
+names must reference a member of \verb@p@.
+
+If the destination in an import selector is a wildcard, the import
 selector hides access to the source member. For instance, the import
 selector \verb@x => _@ ``renames'' \verb@x@ to the wildcard symbol
 (which is unaccessible as a name in user programs), and thereby
@@ -1398,119 +1405,40 @@ effectively prevents unqualified access to \verb@x@. This is useful if
 there is a final wildcard in the same import selector list, which
 imports all members not mentioned in previous import selectors.
 
+Several shorthands exist. An import selector may be just a simple name
+\verb@x@. In this case, \verb@x@ is imported without renaming, so the
+import selector is equivalent to \verb@x => x@. Furthermore, it is
+possible to replace the whole import selector list by a single
+identifier or wildcard. The import clause \verb@import p.x@ is
+equivalent to \verb@import p.{x}@, i.e.\ it makes available without
+qualification the member \verb@x@ of \verb@p@. The import clause
+\verb@import p._@ is equivalent to
+\verb@import p.{_}@, 
+i.e.\ it makes available without qualification all members of \verb@p@
+(this is analogous to \verb@import p.*@ in Java).
 
+An import clause with multiple import expressions
+\verb@import p$_1$.I$_1$, ..., p$_n$.I$_n$@ is interpreted as a
+sequence of import clauses 
+\verb@import p$_1$.I$_1$; ..., import p$_n$.I$_n$@.
 
-The import selector \verb@x$_i$
-
-
-
-
-
-
-\begin{itemize}
-\item
-An import selet
-If the import selector is an identifier, as in \verb@import e.x@, then
-\verb@x@ can be accessed without qualification.
-\item
-If the import selector is 
-
-
- , an clause makes members
-
-expression $e$ available without qualification. The expression $e$
-must be a stable identifier $r$, possibly followed by an explicit type
-$T$. If no type is given, the type of $r$ is assumed.  For every
-simple name $x$ of a non-private member of $T$, the simple name $x$ is
-introduced as an alias for $r.x$ in the remainder of the block or
-template that follows the import clause.
-
-An import clause with multiple expressions $\IMPORT;e_1
-\commadots e_n$ is interpreted as a sequence of import clauses
-$\IMPORT;e_1 \ldots \IMPORT;e_n$.
-
-\example Consider the module definition:
+\example Consider the object definition:
 \begin{verbatim}
-module M with { def z = 0; def inc(x: Int): Int = x + 1 }
+object M { 
+  def z = 0, one = 1; 
+  def add(x: Int, y: Int): Int = x + y 
+}
 \end{verbatim}
 Then the block
-\verb@{ import M; inc(z) }@
-is equivalent to the block \verb@{ M.inc(M.z) }@.
-
-\comment{
-The compiler expands the import clause to a sequence of definitions as
-is described below. Assume first that the imported expression $e$ is a
-stable identifier $r$.  For every simple name $x$ of a member of $r$,
-the compiler generates an alias definition (\sref{sec:aliasing}) of
-$x$ for $r.x$.  If there are several members of $r$ that have the same
-simple name $x$ but different qualified names, only the member
-identified (\sref{sec:names}) by the simple name $x$ is imported.
-
-
-\subsection*{Alias Definitions}
-\label{sec:aliasing}
-
-With the exception of guards (which are never members of classes or
-objects) it is always possible to define aliases for defined
-entities. An alias definition of the \ifqualified{(possibly qualified)} name $X$ for
-the entity $Y$ takes one of the following forms.
-
-If $Y$ defines a type, then the alias definition is \verb@type X = Y@
-(or the parameterized analogue if $Y$ is a type constructor).
-
-If $Y$ defines a parameterless method of type $[]T$, then the alias definition is
-\bda{l}
-\DEF;X: T = Y \enspace.\eda
-
-If $Y$ defines a monomorpic method of type $(ps_1)\ldots(ps_n)T$,
-then the alias definition is
-\bda{l}
-\DEF;X(ps_1) \ldots (ps_n): T = Y(ps_1)\ldots (ps_n) \enspace.\eda
-
-If $Y$ defines a polymorphic method of type $[a_1 \extends S_1 \commadots a_m \extends S_m](ps_1)\ldots(ps_n) T$,
-then the alias definition is
-\bda{l}
-\DEF;X[a_1 \extends S_1 \commadots a_m \extends S_m](ps_1) \ldots (ps_n): T =
-Y[a_1 \commadots a_m](ps_1)\ldots (ps_n) \enspace.
-\eda
-
-If $Y$ defines an overloaded function of type $T_1 \overload \ldots
-\overload T_n$, then the alias definition consists of $n$ function
-definitions, which correspond to the alternatives $T_1 \commadots T_n$
-of the overloaded type.
-
-If $Y$ is defined by a value (\sref{sec:valdef}),
-let (\sref{sec:letdef}) or module (\sref{sec:modules}) definition, then the alias
-definition is $\VAL;X = Y$.
-
-If $Y$ defines a parameterless class, then the alias definition is
-$\CLASS;X = Y$. If $Y$ defines a class with parameters $[a_1
-\extends S_1 \commadots a_m \extends S_m](ps_1) \ldots (ps_n)$,
-then the alias definition is
-\bda{l}
-\CLASS;X;[a_1\extends S_1 \commadots a_m \extends S_m](ps_1) \ldots (ps_n) = Y[a_1 \commadots a_m](ps_1) \ldots (ps_n)
-\enspace.
-\eda
-
-\example Some alias definitions are:
-
-\begin{verbatim}
-module L = scala.lang;
-type T = L.List[Int];
-def println(s: String) = L.System.println(s);
-val out = L.System.out;
-class IntList = L.List[Int];
-class Nil[a] = L.Nil[a];
-\end{verbatim}
-}
-
+\verb@{ import M.{one, z => zero, _}; add(zero, one) }@
+is equivalent to the block \verb@{ M.add(M.z, M.one) }@.
 
 \chapter{Classes and Modules}
 \label{sec:globaldefs}
 
 \syntax\begin{verbatim}
-  PureDef     \=::= \= [case] class ClassDef {`,' ClassDef}
-	      \>  | \> module ModuleDef {`,' ModuleDef}
+  ClsDef          \>::=\> ([case] class | trait) ClassDef {`,' ClassDef}
+                  \>  |\> [case] object ObjectDef {`,' ObjectDef}
 \end{verbatim}
 
 Classes (\sref{sec:classes}) and modules
@@ -1520,28 +1448,34 @@ Classes (\sref{sec:classes}) and modules
 \label{sec:templates}
 
 \syntax\begin{verbatim}
-  Template     \=::= \= Constr {$\WITH$ Constr} [$\WITH$ `(' {TemplateStat `;'} `)']
+  Template        \=::=\= Constr {`with' Constr} [TemplateBody]
+  TemplateBody    \>::=\> `{' [TemplateStat {`;' TemplateStat}] `}'
 \end{verbatim}
 
-Templates define the type signature, behavior and initial state of a
-class of objects. They form part of instance creation expressions,
-class definitions, and module definitions.  A template
-$sc;\WITH;mc_1;\WITH;\ldots;\WITH;mc_n;\WITH;(stats)$ consists of a
-constructor invocation $sc$ which defines the template's {\em
-superclass}, constructor invocations $mc_1 \commadots mc_n$ $(n \geq
-0)$, which define the template's {\em mixin classes}, and a statement
-sequence $stats$ which contains additional member definitions for the
-template.  The {\em least proper supertype} of a template is the class
-type or compound type (\sref{sec:compound-types}) consisting of its
-superclass and mixin classes. The superclass of a template must be a
-subtype of the superclass of each mixin class.
+A template defines the type signature, behavior and initial state of a
+class of objects or of a single object. Templates form part of
+instance creation expressions, class definitions, and module
+definitions.  A template
+\verb@sc with mc$_1$ with ... with mc$_n$ {stats}@ consists of a
+constructor invocation \verb@sc@ which defines the template's {\em
+superclass}, constructor invocations \verb@mc$_1$ \commadots mc$_n$@
+$(n \geq 0)$, which define the template's {\em mixin classes}, and a
+statement sequence \verb@stats@ which contains additional member
+definitions for the template.  The superclass of a template must be a
+subtype of the superclass of each mixin class.  The {\em least proper
+supertype} of a template is the class type or compound type
+(\sref{sec:compound-types}) consisting of its superclass and mixin
+classes.
 
 Member definitions define new members or overwrite members in the
 superclass and the mixin classes.  If the template forms part of a
-class definition, $stats$ may also contain declarations of abstract
-members. The type of each non-private definition or declaration of a
-template must be equivalent to a type which does not refer to any
-private members of that template.
+class definition, \verb@stats@ may also contain declarations of abstract
+members. 
+%The type of each non-private definition or declaration of a
+%template must be equivalent to a type which does not refer to any
+%private members of that template.
+
+\paragraph{Connection with Java} 
 
 \subsection{Constructor Invocations}
 \label{sec:constr-invoke}
@@ -1564,18 +1498,18 @@ sequences of class types: the {\em base classes} and {\em mixin base
 classes}. Their definitions are as follows.
 
 The {\em mixin base classes} of a template
-$sc;\WITH;mc_1;\WITH;mc_n;\WITH;(stats)$ are obtained by
+\verb@sc;\WITH;mc_1;\WITH;mc_n;\WITH;(stats)@ are obtained by
 concatenating, for each $i = 1 \commadots n$, the mixin base classes
-of the mixin $mc_i$. The mixin base classes of a class type $C$ are
-the mixin base classes of the template represented by $C$, followed by
-$C$ itself. The mixin base classes of a constructor invocation of type
+of the mixin \verb@mc_i@. The mixin base classes of a class type \verb@C@ are
+the mixin base classes of the template represented by \verb@C@, followed by
+\verb@C@ itself. The mixin base classes of a constructor invocation of type
 \verb@class T@ are the mixin base classes of class \verb@T@.
 
 The {\em base classes} of a template consist of the base classes of
 its superclass, followed by the template's mixin base classes.  The
 base classes of class \verb@scala.Any@ consist of just the
-class itself. The base classes of some other class type $C$ are the
-base classes of the template represented by $C$, followed by $C$
+class itself. The base classes of some other class type \verb@C@ are the
+base classes of the template represented by \verb@C@, followed by \verb@C@
 itself.  The base classes of a constructor invocation of type \verb@class T@
 are the base classes of \verb@T@.
 
@@ -1597,25 +1531,25 @@ determination of the meaning of \verb@super@ (\sref{sec:this-super}).
 
 We therefore define two notions of template evaluation: (Plain)
 evaluation (as a defining template or superclass) and mixin evaluation
-with a given superclass $sc$. These notions are defined for templates
+with a given superclass \verb@sc@. These notions are defined for templates
 and constructor invocations as follows.
 
-A {\em mixin evaluation with superclass $sc$} of a template
-$sc';\WITH;mc_1;\WITH;mc_n;\WITH;(stats)$ consists of mixin
-evaluations with superclass $sc$ of the mixin constructor invocations
-$mc_1 \commadots mc_n$ in the order they are given, followed by an
-evaluation of the statement sequence $stats$.  Within $stats$ the
-actual superclass refers to $sc$.  A mixin evaluation with superclass
-$sc$ of a class constructor invocation $ci$ consists of an evaluation
+A {\em mixin evaluation with superclass \verb@sc@} of a template
+\verb@sc';\WITH;mc_1;\WITH;mc_n;\WITH;(stats)@ consists of mixin
+evaluations with superclass \verb@sc@ of the mixin constructor invocations
+\verb@mc_1 \commadots mc_n@ in the order they are given, followed by an
+evaluation of the statement sequence \verb@stats@.  Within \verb@stats@ the
+actual superclass refers to \verb@sc@.  A mixin evaluation with superclass
+\verb@sc@ of a class constructor invocation \verb@ci@ consists of an evaluation
 of the constructor function and its arguments in the order they are
-given, followed by a mixin evaluation with superclass $sc$ of the
+given, followed by a mixin evaluation with superclass \verb@sc@ of the
 template represented by the constructor invocation.
 
 An {\em evaluation} of a template
-$sc;\WITH;mc_1;\WITH;mc_n;\WITH;(stats)$ consists of an evaluation of
-the superclass constructor invocation $sc$ (of type $S$, say),
-followed by a mixin evaluation with superclass $sc$ of the template. An
-evaluation of a class constructor invocation $ci$ consists of an
+\verb@sc;\WITH;mc_1;\WITH;mc_n;\WITH;(stats)@ consists of an evaluation of
+the superclass constructor invocation \verb@sc@ (of type \verb@S@, say),
+followed by a mixin evaluation with superclass \verb@sc@ of the template. An
+evaluation of a class constructor invocation \verb@ci@ consists of an
 evaluation of the constructor function and its arguments in
 the order they are given, followed by an evaluation of the template
 represented by the constructor invocation.
@@ -1635,27 +1569,27 @@ member is called {\em abstract} if it is introduced by a declaration,
 {\em concrete} otherwise.
 \item
 A {\em concrete inherited} member is a non-private, concrete member of
-one of the template's base classes $B$, except if a member with the
+one of the template's base classes \verb@B@, except if a member with the
 same \ifqualified{qualified} name is already directly bound in the template, or is
 directly bound in a base class of the template which is a subclass of
-$B$, or is a directly bound, non-private, concrete member of a base
-class which succeeds $B$ in the base class sequence of the template.
+\verb@B@, or is a directly bound, non-private, concrete member of a base
+class which succeeds \verb@B@ in the base class sequence of the template.
 \item
 An {\em abstract inherited} member is a non-private, abstract member
-of one of the template's base classes $B$, except if a member with the
+of one of the template's base classes \verb@B@, except if a member with the
 same \ifqualified{qualified} name is already directly bound in the template, or is a
 concrete inherited member, or is a directly bound, non-private member
-of a base class which succeeds $b$ in the base class sequence of the
+of a base class which succeeds \verb@b@ in the base class sequence of the
 template.
 \end{enumerate}
 
-The type of a member $m$ is determined as follows: If $m$ is defined
-in $stats$, then its type is the type as given in the member's
-declaration or definition. Otherwise, if $m$ is inherited from the
-base class $B[T1 \commadots T_n]$, $B$'s class declaration has formal
-parameters $[a_1 \commadots a_n]$, and $M$'s type in $B$ is $U$, then
-$M$'s type in $C$ is $U[a_1 := T_1
-\commadots a_n := T_n]$.
+The type of a member \verb@m@ is determined as follows: If \verb@m@ is defined
+in \verb@stats@, then its type is the type as given in the member's
+declaration or definition. Otherwise, if \verb@m@ is inherited from the
+base class \verb@B[T1 \commadots T_n]@, \verb@B@'s class declaration has formal
+parameters \verb@[a_1 \commadots a_n]@, and \verb@M@'s type in \verb@B@ is \verb@U@, then
+\verb@M@'s type in \verb@C@ is \verb@U[a_1 := T_1
+\commadots a_n := T_n]@.
 
 \ifqualified{
 Members of templates have internally qualified names $Q\qex x$ where
@@ -1715,28 +1649,28 @@ in addition to the members inherited from class \verb@Any@.
 \subsection{Overriding}
 \label{sec:overriding}
 
-A template member $M$ that has the same \ifqualified{qualified} name as a
-non-private member $M'$ of a base class (and that belongs to the same
+A template member \verb@M$ that has the same \ifqualified{qualified} name as a
+non-private member \verb@M'$ of a base class (and that belongs to the same
 namespace) is said to {\em override} that member.  In this case the
-binding of the overriding member $M$ must be more specific
-(\sref{sec:subtyping}) than the binding of the overridden member $M'$.
+binding of the overriding member \verb@M$ must be more specific
+(\sref{sec:subtyping}) than the binding of the overridden member \verb@M'$.
 Furthermore, the overridden definition may not be a class or module
 definition or a type alias.  Method definitions may only override
 other method definitions (or the methods implicitly defined by a
 variable definition). They may not override value or let definitions.
-Finally, the following restrictions on modifiers apply to $M$ and
-$M'$:
+Finally, the following restrictions on modifiers apply to \verb@M$ and
+\verb@M'$:
 \begin{itemize}
 \item
-$M$ must not be labelled \verb@private@.
+\verb@M$ must not be labelled \verb@private@.
 \item
-If $M'$ is not abstract, then $M$ must be labelled \verb@override@.
+If \verb@M'$ is not abstract, then \verb@M$ must be labelled \verb@override@.
 \item
-If $M'$ is labelled \verb@protected@, then $M$ must also be
+If \verb@M'$ is labelled \verb@protected@, then \verb@M$ must also be
 labelled \verb@protected@.
 \iffinaltype{
 \item
-$M'$ may be labelled \verb@final@ only if it is an abstract type
+\verb@M'$ may be labelled \verb@final@ only if it is an abstract type
 binding.
 }
 \end{itemize}
@@ -1822,22 +1756,22 @@ Protected members can be accessed from within the template of the defining
 class as well as in all templates that have the defining class as a base class.
 Furthermore, accesses from the template of the defining class are not
 permitted in packagings other than the one
-containing the definition.  A protected identifier $x$ may be used as
-a member name in a selection $r.x$ only if $r$ is one of the reserved
+containing the definition.  A protected identifier \verb@x$ may be used as
+a member name in a selection \verb@r.x$ only if \verb@r$ is one of the reserved
 words \verb@this@ and
-\verb@super@, or if $r$'s type conforms to a type-instance of a class
+\verb@super@, or if \verb@r$'s type conforms to a type-instance of a class
 which contains the access.
 \item
 The \verb@override@ modifier applies to member definitions.  If a
-definition of a simple name $x$ is preceded by
+definition of a simple name \verb@x$ is preceded by
 \verb@override@, the definition is taken to override
 (\sref{sec:overriding}) a member in the least proper supertype
-(\sref{sec:templates}) which is identified by the simple name $x$.
+(\sref{sec:templates}) which is identified by the simple name \verb@x$.
 The \verb@override@ modifier may be followed by a qualified name.  If
-a definition of a simple name $x$ is preceded by
-\verb@override $Q$@, the definition is taken to override
-a member in the base class referenced by the qualified name $Q$ which
-is identified by the simple name $x$.  In both cases, there must exist
+a definition of a simple name \verb@x$ is preceded by
+\verb@override \verb@Q$@, the definition is taken to override
+a member in the base class referenced by the qualified name \verb@Q$ which
+is identified by the simple name \verb@x$.  In both cases, there must exist
 such a member according to the rules of (\sref{sec:names}).
 \verb@override@ may not be combined in one modifier list with
 \verb@private@.
@@ -1845,8 +1779,8 @@ such a member according to the rules of (\sref{sec:names}).
 \item
 The \verb@qualified@ modifier applies to class or module
 definitions. When present, all non-overriding member definitions of
-the class or module (named $M$, say) introduce names which are
-qualified by $M$.  When absent, non-overriding member definitions of
+the class or module (named \verb@M$, say) introduce names which are
+qualified by \verb@M$.  When absent, non-overriding member definitions of
 the class or module introduce names which are qualified by the empty
 string $\epsilon$.
 }
@@ -1864,7 +1798,7 @@ abstract final class C (x: Int) with {
 val empty = new C(0) with {}
 \end{verbatim}
 For instance, in the code above clients can create instances of class
-$C$ only by calling the \verb@nextC@ method of an existing \verb@C@
+\verb@C$ only by calling the \verb@nextC@ method of an existing \verb@C@
 object; it is not possible for clients to create objects of class
 \verb@C@ directly. Indeed the following two lines are both in error:
 
@@ -4368,13 +4302,13 @@ grammar.
                   \>  |\>
   Binding         \>::=\> Id [`:' Type]
 
-  Modifier        \>::=\> abstract
-		  \>  |\> final
+  Modifier        \>::=\> LocalModifier
 		  \>  |\> private
                   \>  |\> protected
                   \>  |\> override 
   LocalModifier   \>::=\> abstract
                   \>  |\> final
+		  \>  |\> sealed
 
   Template        \>::=\> Constr {`with' Constr} [TemplateBody]
   TemplateBody    \>::=\> `{' [TemplateStat {`;' TemplateStat}] `}'

@@ -115,15 +115,16 @@ public class Parser implements Tokens {
     boolean isModifier() {
         return (s.token == ABSTRACT)
 	    || (s.token == FINAL)
+	    || (s.token == SEALED)
 	    || (s.token == PRIVATE)
 	    || (s.token == PROTECTED)
-//          || (s.token == QUALIFIED)
 	    || (s.token == OVERRIDE);
     }
 
     boolean isLocalModifier() {
         return (s.token == ABSTRACT)
-	    || (s.token == FINAL);
+	    || (s.token == FINAL)
+	    || (s.token == SEALED);
     }
 
     boolean isDefIntro() {
@@ -921,6 +922,9 @@ public class Parser implements Tokens {
 			convertToConstr(stats[stats.length - 1]));
 		else
 		    syntaxError(res.pos, "class constructor expected", false);
+		break;
+	    default:
+		res = applyConstr(convertToConstr(res));
 	    }
 	    accept(RBRACE);
 	    return res;
@@ -1190,6 +1194,9 @@ public class Parser implements Tokens {
 	    case FINAL:
 		mod = Modifiers.FINAL;
 		break;
+	    case SEALED:
+		mod = Modifiers.SEALED;
+		break;
 	    case PRIVATE:
 		mod = Modifiers.PRIVATE;
 		break;
@@ -1223,6 +1230,9 @@ public class Parser implements Tokens {
 		break;
 	    case FINAL:
 		mod = Modifiers.FINAL;
+		break;
+	    case SEALED:
+		mod = Modifiers.SEALED;
 		break;
 	    default:
 		return mods;
@@ -1386,9 +1396,11 @@ public class Parser implements Tokens {
 		    t = make.Select(pos, t, name);
 		    pos = accept(DOT);
 		} else {
+		    /*
 		    if (name == Names.ASTERISK)
 			s.unit.warning(
 			    pos, "this imports only the identifier `*';\nuse `import xyz._' to import all members of `xyz'.");
+		    */
 		    return make.Import(startpos, t, new Name[]{name, name});
 		}
 	    }

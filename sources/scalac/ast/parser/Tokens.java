@@ -60,6 +60,7 @@ public interface Tokens {
         YIELD = 50,
         DO = 51,
         TRAIT = 52,
+        SEALED = 53,
 
         /* special symbols */
         COMMA = 61,

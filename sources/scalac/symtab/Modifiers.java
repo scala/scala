@@ -16,7 +16,7 @@ public interface Modifiers {
     int PRIVATE       = 0x00000004;
     int PROTECTED     = 0x00000008;
 
-    int QUALIFIED     = 0x00000010;
+    int SEALED        = 0x00000010;
     int OVERRIDE      = 0x00000020;
     int CASE          = 0x00000040;
     int ABSTRACTCLASS = 0x00000080;   // abstract class
@@ -36,7 +36,7 @@ public interface Modifiers {
     int ACCESSED      = 0x00040000;   // symbol was accessed at least once
     int SELECTOR      = 0x00080000;   // symbol was used as selector in Select
 
-    int PACKAGE       = 0x00100000;   // symbol is a java packages.
+    int PACKAGE       = 0x00100000;   // symbol is a java package.
     int LABEL         = 0x00200000;   // symbol is a label symbol
     int STATIC        = 0x00400000;   // "static" inner classes (i.e. after class norm.)
     int STABLE        = 0x00800000;   // functions that are assumed to be stable
@@ -79,8 +79,8 @@ public interface Modifiers {
             return (flags & PROTECTED) != 0;
         }
 
-        public static boolean isQualified(int flags) {
-            return (flags & QUALIFIED) != 0;
+        public static boolean isSealed(int flags) {
+            return (flags & SEALED) != 0;
         }
 
         public static boolean isOverride(int flags) {
@@ -132,7 +132,7 @@ public interface Modifiers {
             if (isProtected(flags)) buffer.append("protected ");
             if (isAbstract(flags)) buffer.append("abstract ");
             if (isFinal(flags)) buffer.append("final ");
-            if (isQualified(flags)) buffer.append("qualified ");
+            if (isSealed(flags)) buffer.append("qualified ");
             if (isInterface(flags)) buffer.append("interface ");
             if (isCase(flags)) buffer.append("case ");
             if (isDef(flags)) buffer.append("def ");

@@ -154,6 +154,7 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text KW_ELSE      = Text.Keyword("else");
     protected static final Text KW_EXTENDS   = Text.Keyword("extends");
     protected static final Text KW_FINAL     = Text.Keyword("final");
+    protected static final Text KW_SEALED    = Text.Keyword("sealed");
     protected static final Text KW_FOR       = Text.Keyword("for");
     protected static final Text KW_IF        = Text.Keyword("if");
     protected static final Text KW_IMPORT    = Text.Keyword("import");
@@ -643,16 +644,16 @@ public class TextTreePrinter implements TreePrinter {
             print(KW_FINAL);
             print(Text.Space);
         }
+        if ((flags & Modifiers.SEALED) != 0) {
+            print(KW_SEALED);
+            print(Text.Space);
+        }
         if ((flags & Modifiers.PRIVATE) != 0) {
             print(KW_PRIVATE);
             print(Text.Space);
         }
         if ((flags & Modifiers.PROTECTED) != 0) {
             print(KW_PROTECTED);
-            print(Text.Space);
-        }
-        if ((flags & Modifiers.QUALIFIED) != 0) {
-            print(KW_QUALIFIED);
             print(Text.Space);
         }
         if ((flags & Modifiers.OVERRIDE) != 0) {

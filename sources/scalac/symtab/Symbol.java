@@ -211,6 +211,13 @@ public abstract class Symbol implements Modifiers, Kinds {
 	return isInitializedMethod();
     }
 
+    /*
+    public final boolean caseClassOfFactory() {
+	if (isMethod() && !isConstructor() && (flags & CASE) != 0)
+	    return owner.info().lookup(name.toTypeName()).constructor();
+    }
+    */
+
     public final boolean isAbstractClass() {
 	return (flags & ABSTRACTCLASS) != 0 &&
 	    this != Global.instance.definitions.ARRAY_CLASS;
@@ -542,7 +549,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 		throw new CyclicReference(this, info);
 	    }
 	    flags |= LOCKED;
-	    //System.out.println("completing " + this);//DEBUG
+	    //System.out.println("completing " + this.name);//DEBUG
 	    info.complete(this);
             flags = flags & ~LOCKED;
 	    if (info instanceof SourceCompleter && (flags & SNDTIME) == 0) {
@@ -553,7 +560,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 		assert !(rawInfoAt(id) instanceof Type.LazyType) : this;
 		flags |= INITIALIZED;
 	    }
-	    //System.out.println("done: " + this);//DEBUG
+	    //System.out.println("done: " + this.name);//DEBUG
 	}
 	return rawInfoAt(id);
     }
@@ -741,6 +748,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 	    closurePos(c) >= 0 ||
 	    this == Global.instance.definitions.ALL_CLASS ||
 	    (this == Global.instance.definitions.ALLREF_CLASS &&
+	     c != Global.instance.definitions.ALL_CLASS &&
 	     c.isSubClass(Global.instance.definitions.ANYREF_CLASS));
     }
 
@@ -914,8 +922,10 @@ public abstract class Symbol implements Modifiers, Kinds {
 		owner.thisType().memberType(that));
     }
 
+    /** Reset symbol to initial state
+     */
     public void reset(Type completer) {
-	this.flags &= (FINAL | MODUL);
+	this.flags &= SOURCEFLAGS;
 	this.pos = 0;
 	this.infos = TypeIntervalList.EMPTY;
 	this.setInfo(completer);
@@ -942,7 +952,7 @@ public class TermSymbol extends Symbol {
     }
 
     public static TermSymbol newJavaConstructor(Symbol clazz) {
-	return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | QUALIFIED | JAVA));
+	return newConstructor(clazz, clazz.flags & (ACCESSFLAGS | JAVA));
     }
 
     public static TermSymbol newModule(int pos, Name name, Symbol owner, int flags) {

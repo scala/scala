@@ -816,6 +816,7 @@ public class Scanner extends TokenData {
         enterKeyword("package", PACKAGE);
         enterKeyword("private", PRIVATE);
         enterKeyword("protected", PROTECTED);
+        enterKeyword("sealed", SEALED);
         enterKeyword("super", SUPER);
         enterKeyword("this", THIS);
         enterKeyword("trait", TRAIT);
