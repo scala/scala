@@ -13,13 +13,11 @@ import scalac._;
 import scalac.ast._;
 import scalac.symtab._;
 import scalac.util._;       // Names
-import Tree._;
 
 import scalac.transformer.{ OwnerTransformer => scalac_transformer_OwnerTransformer };
 
 import scalac.transformer.matching.PartialMatcher ;
 import scalac.transformer.matching.PatternMatcher ;
-import scalac.transformer.matching.TestRegTraverser ;
 import scalac.transformer.matching.AlgebraicMatcher ;
 
 /** A transformer for expanding match expressions into
@@ -43,25 +41,6 @@ class TransMatch( global:scalac_Global )
     super.apply( cunit );
   }
 
-    import Tree._ ;
-/*
-    def singleSeq(t:Array[Tree]) = {
-      t.length == 1 && t(0).isInstaceOf[Sequence] && val ts = Iterator.fromArray( t );
-
-      (( trees.length == 1 ) &&
-       ( trees( 0 ) match {
-         case Sequence( trees2 ) =>
-           (( trees2.length == 1 ) &&
-            ( trees2( 0 ) match {
-              case Sequence( trees3 )=>
-                true;
-              case _ => isRegular( trees2 );
-              }
-             })) || ( trees2.length != 0 ) && isRegular( trees2 )
-           case _ => false
-         })) ||
-    }
-*/
     def isRegular(ps:Array[Tree]):Boolean = {
       var res = false;
       val pats = scala.Iterator.fromArray( ps );
@@ -71,17 +50,46 @@ class TransMatch( global:scalac_Global )
     }
 
     def isRegular(pat:Tree):Boolean = pat match {
-      case Alternative(_)          => true;
-      case Bind( n, pat1 ) =>
-        TreeInfo.isNameOfStarPattern( n ) || TreeInfo.isEmptySequence( pat1 )
-      case Tree$Ident(n)                =>  TreeInfo.isNameOfStarPattern( n )
-      case Sequence( trees )       =>
-        true;//( trees.length != 0 )||isRegular( trees );
-      case Apply( fn, trees ) =>
+      case Tree$Alternative(_)          =>  true
+      case Tree$Bind( n, pat1 )              =>
+        TreeInfo.isNameOfStarPattern( n )
+      || TreeInfo.isEmptySequence( pat1 )
+      || isRegular( pat1 )
+      case Tree$Ident(n)                =>  false
+      case Tree$Sequence( trees )       =>
+        ( trees.length == 0 ) || isRegular( trees );
+      case Tree$Apply( fn, trees )      =>
         isRegular( trees ) &&
         !((trees.length == 1) && TreeInfo.isEmptySequence( trees( 0 )))
-      case _ => false;
+      case Tree$Literal(_)              => false;
+      case Tree$Select(_,_)             => false;
+      case Tree$Typed(_,_)              => false;
+      case _ => error("in TransMatch.isRegular phase: unknown node"+pat.getClass());
     }
+
+    def nilVariables( pat:Tree ) = {
+      var res:scala.List[Symbol] = Nil;
+      def getNilVars1( ps:Array[Tree] ):scala.Unit = {
+        val z:Seq[Tree] = ps; z.elements.foreach( x => getNilVars( x ));
+      }
+      def getNilVars( p:Tree ):scala.Unit = p match {
+        case Tree$Alternative( _ )  => /* no bind allowed! */
+        case Tree$Bind( _, pat )     =>
+	  if( TreeInfo.isEmptySequence( pat ) )
+	    res = p.symbol() :: res;
+	  getNilVars(pat);
+	case Tree$Ident(_)          =>
+	case Tree$Sequence( trees ) => getNilVars1( trees )
+        case Tree$Apply( _,  args ) => getNilVars1( args )
+        case Tree$Literal(_)        =>
+        case Tree$Select(_,_)       =>
+        case Tree$Typed(_,_)        =>
+        case _ => error("in TransMatch.nilVariables: unknown node"+pat.getClass());
+      }
+      getNilVars( pat );
+      res
+    }
+
 
   def  transform( root:Tree, cases:Array[Tree$CaseDef], restpe:Type ):Tree = {
     if( global.newMatch ) {
@@ -93,18 +101,15 @@ class TransMatch( global:scalac_Global )
     var containsReg = false;
     var i = 0;
     while (i < cases.length) {
-      containsReg = TestRegTraverser.apply(cases( i )) || containsReg;
-      //containsReg = isRegular(cases(i).pat) || containsReg;
-      //TestRegTraverser.apply(cases( i ));
-      var nilvars:Set  = TestRegTraverser.getNilVariables();
-      if( !nilvars.isEmpty() ) {
-        val newBody = new Array[Tree]( nilvars.size() );
+      containsReg = isRegular(cases( i ).pat) || containsReg;
+
+      var nilvars = nilVariables(cases( i ).pat);
+      if( !nilvars.isEmpty ) {
+        val newBody = new Array[Tree]( nilvars.length );
         var j=0;
-        var it:Iterator = nilvars.iterator();
-        while( it.hasNext() ) {
-          val v:Symbol = it.next().asInstanceOf[ Symbol ];
-          val n = gen.mkNil(cases(i).pos);
-          newBody( j ) = gen.ValDef(v, n);
+        for( val v <- nilvars.elements ) {
+          val n = gen.mkNil( cases( i ).pos );
+          newBody( j ) = gen.ValDef( v, n );
           j = j + 1;
         }
         cases(i).body = gen.mkBlock( newBody, cases(i).body );

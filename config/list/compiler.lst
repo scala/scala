@@ -138,7 +138,6 @@ transformer/matching/PatternTool.java
 transformer/matching/RightTracerInScala.java
 transformer/matching/SequenceMatcher.java
 transformer/matching/StateSetComparator.java
-transformer/matching/TestRegTraverser.java
 transformer/matching/VariableTraverser.java
 transformer/matching/WordAutomInScala.java
 

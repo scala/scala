@@ -40,25 +40,11 @@ package scala.tools.scala4ant {
         scala.tools.scalac.Main.main1( false, args );
       } catch {
         case e:Throwable => {
-          ex = e;
           result = false;
-          try {                             // fall back on exec
-            val commands = new Array[String](args.length+2) ;
-	    commands(0) = "java";
-	    commands(1) = "scala.tools.scalac.Main";
-	    System.arraycopy(args,0,commands,2,args.length);
-	    val exe = new Execute();
-	    exe.setCommandline(commands);
-	    //result = exe.execute() == 0;
-            result = true;
-          } catch {
-            case e:Throwable => {
-              result = false;
-              ex = e;
-            }
-          }
-          if( !result ) throw new BuildException( ex.getMessage() );
+          ex = e;
         }
+        ex.printStackTrace();
+        if( !result ) throw new BuildException("exception occurred:"+ex.getClass());
       }
       result;
     }
