@@ -1906,9 +1906,11 @@ class Parser(unit: Unit) {
       parents.append(scalaAnyRefConstr(pos));
     }
     parents.append(scalaObjectConstr(pos));
+    /* needs bootstrapping
     if( (mods & Modifiers.CASE) != 0 ) {
           parents.append(caseClassConstr(pos));
     }
+    */
     if (s.token == WITH) {
       s.nextToken();
       template(parents)

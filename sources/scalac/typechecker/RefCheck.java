@@ -858,8 +858,9 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	if (!hasImplementation(clazz, Names.hashCode))
 	    ts.append(hashCodeMethod(clazz));
 
-        ts.append(selectElementMethod(clazz));
-        ts.append(numberOfElementsMethod(clazz));
+        // needs bootstrapping
+        //ts.append(selectElementMethod(clazz));
+        //ts.append(numberOfElementsMethod(clazz));
 	ts.append(tagMethod(clazz));
 	if (ts.length() > 0) {
 	    Tree[] stats1 = new Tree[stats.length + ts.length()];
