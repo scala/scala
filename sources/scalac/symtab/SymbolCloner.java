@@ -70,7 +70,6 @@ public class SymbolCloner {
     public Symbol cloneSymbolWithoutType(Symbol symbol) {
         assert !symbol.isPrimaryConstructor(): Debug.show(symbol);
         assert !symbol.isClassType() || symbol.isCompoundSym(): Debug.show(symbol); // !!! isCompoundSym()
-        assert !symbol.isModule(): Debug.show(symbol);
         assert !owners.containsKey(symbol): Debug.show(symbol);
         assert !clones.containsKey(symbol):
             Debug.show(symbol) + " -> " + Debug.show(clones.get(symbol));
