@@ -15,12 +15,17 @@ import scala.collection.mutable._;
 
 
 /** The class <code>Location</code> provides a <code>create</code>
- *  method to instanciate objects from a network location by
- *  specifying its URL address.
+ *  method to instantiate objects from a network location by
+ *  specifying the URL address of the jar/class file.<p/>
+ *
+ *  An update of the jar/class file should not break your code as far
+ *  as the used class names and method signatures are the same.<p/>
  *
  *  Example:<pre>
- *    val url = new URL("http://scala.epfl.ch/classes/examples.jar");
- *    val obj = new Location(url) create "examples.sort";</pre>
+ *    <b>val</b> url = <b>new</b> URL("http://scala.epfl.ch/classes/examples.jar");
+ *    <b>val</b> obj = <b>new</b> Location(url) create "examples.sort";</pre>
+ *
+ *  @see class <a href="Code-class.html">Code</a>
  *
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004
@@ -49,10 +54,16 @@ class Location(url: URL) {
    */
   private var ccache: Map[String, java.lang.Class] = new HashMap;
 
-  def create(className: String): Code = {
-    val clazz = ccache.get(className) match {
-      case Some(x) =>
-        x
+  /** Return the code description for the string <code>className</code>
+   *  at this location.
+   *
+   * @param the name of the class
+   * @return the code description corresponding to <code>className</code>
+   */
+  def create(className: String) = new Code(
+    ccache.get(className) match {
+      case Some(clazz) =>
+        clazz
       case _ =>
         val clazz = if (loader.loadClass(className).isInterface()) {
           // Scala source: class A { ... };
@@ -66,10 +77,20 @@ class Location(url: URL) {
         }
         ccache(className) = clazz;
         clazz
-    };
-    new Code(clazz)
-  }
+    }
+  );
 
 }
 
+/** The object <code>Location</code> can be used to instantiate
+ *  objects on the same Java VM. It is just provided to illustrate
+ *  the special case where resources are available locally.<p/>
+ *
+ *  Example:<pre>
+ *    <b>val</b> obj = Location.create("xcode.Math");
+ *    <b>val</b> x = obj[Int, Int]("square")(5));</pre>
+ *
+ *  @author  Stephane Micheloud
+ *  @version 1.0, 04/05/2004
+ */
 object Location extends Location(null);
