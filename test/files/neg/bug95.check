@@ -1,7 +1,7 @@
-test/neg/bug95.scala:1: illegal inheritance from sealed class
+bug95.scala:1: illegal inheritance from sealed class
 class C extends AnyVal;
                 ^
-test/neg/bug95.scala:2: illegal inheritance from sealed class
+bug95.scala:2: illegal inheritance from sealed class
 class T extends Unit;
                 ^
 two errors found
