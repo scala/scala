@@ -87,7 +87,7 @@ class AntTask extends Javac {
     protected def parseSuffixes():Array[String] = {
         val st = new StringTokenizer(suffixes, " ,");
         val al = new ArrayList();
-        while (st.hasMoreTokens()) {
+        while( st.hasMoreTokens() ) {
             al.add("." + st.nextToken());
         }
         al.toArray((new Array[String]( al.size() )).asInstanceOf[Array[java.lang.Object]]).asInstanceOf[Array[String]];
