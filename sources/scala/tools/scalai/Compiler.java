@@ -19,6 +19,8 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import scalac.Unit;
 import scalac.Global;
 import scalac.ast.Tree;
@@ -45,6 +47,7 @@ public class Compiler {
     private final Environment environment;
     private final Evaluator evaluator; // !!! remove
     private final Map any_methods;
+    private final Map sources;
 
     public Compiler(Global global, Evaluator evaluator) {
         this.global = global;
@@ -56,6 +59,9 @@ public class Compiler {
         this.environment = new Environment(this, mirror);
         this.evaluator = evaluator;
         this.any_methods = new HashMap();
+        this.sources = new HashMap();
+
+        SourceFile compiled = new SourceFile("<<compiled code>>", new byte[0]);
 
         environment.insertFunction(definitions.STRING_PLUS_ANY, Function.StringPlus); // !!!
         // !!! ANY_PLUS_STRING is commented out in definitions
@@ -89,6 +95,7 @@ public class Compiler {
         assert equals_symbol != Symbol.NONE;
         CodePromise equals_code = new CodePromise(
             new CodeContainer(
+                compiled,
                 equals_symbol,
                 Code.Invoke(
                     Code.Invoke(
@@ -123,6 +130,7 @@ public class Compiler {
         }
         CodePromise hashCode_code = new CodePromise(
             new CodeContainer(
+                compiled,
                 definitions.HASHCODE,
                 Code.Invoke(
                     Code.Self, Function.HashCode, new Code[0],
@@ -147,6 +155,7 @@ public class Compiler {
         }
         CodePromise toString_code = new CodePromise(
             new CodeContainer(
+                compiled,
                 definitions.TOSTRING,
                 Code.Invoke(
                     Code.Self, Function.ToString, new Code[0],
@@ -176,13 +185,19 @@ public class Compiler {
     //########################################################################
 
     public ScalaTemplate load(Symbol symbol, Tree.ClassDef tree) {
+        SourceFile source = (SourceFile)sources.remove(tree);
+        assert tree != null : Debug.show(symbol);
+        return load(source, symbol, tree);
+    }
+
+    public ScalaTemplate load(SourceFile source, Symbol symbol, Tree.ClassDef tree) {
         assert tree.tparams   .length == 0 : Debug.show(tree);
         assert tree.vparams   .length == 1 : Debug.show(tree);
         assert tree.vparams[0].length == 0 : Debug.show(tree);
-        return compileTemplate(symbol, tree.impl.body);
+        return compileTemplate(source, symbol, tree.impl.body);
     }
 
-    public ScalaTemplate compileTemplate(Symbol symbol, Tree[] body) {
+    public ScalaTemplate compileTemplate(SourceFile source, Symbol symbol, Tree[] body) {
         Set supertypes = new HashSet();
         List interfaces = new ArrayList();
         getTypes(supertypes, interfaces, symbol);
@@ -215,7 +230,7 @@ public class Compiler {
             }
         }
         for (int i = 0; i < body.length; i++) {
-            addTemplateMember(methods, fields, body[i]);
+            addTemplateMember(source, methods, fields, body[i]);
         }
         return new ScalaTemplate(evaluator, symbol, constructor, methods, fields.toArray());
     }
@@ -230,21 +245,21 @@ public class Compiler {
         return environment.lookupFunction(symbol);
     }
 
-    public CodePromise compile(Symbol symbol, Tree.DefDef tree) {
+    public CodePromise compile(SourceFile source, Symbol symbol, Tree.DefDef tree) {
         assert tree.tparams.length == 0 : Debug.show(tree);
         assert tree.vparams.length == 1 : Debug.show(tree);
-        return new CodePromise(new ScalaFunction(this, symbol, tree.vparams[0],tree.rhs));
+        return new CodePromise(new ScalaFunction(this, source, symbol, tree.vparams[0],tree.rhs));
     }
 
     //########################################################################
     //
 
     public void compile(Unit[] units) {
-        for (int i = 0; i < units.length; i++) declare(units[i].body);
+        for (int i = 0; i < units.length; i++) declare(units[i].source, units[i].body);
     }
 
-    public CodeContainer compile(Symbol owner, Tree tree, Symbol[] params) {
-        ExpressionContext context = new ExpressionContext(environment, owner);
+    public CodeContainer compile(SourceFile source, Symbol owner, Tree tree, Symbol[] params) {
+        ExpressionContext context = new ExpressionContext(environment, source, owner);
         ExpressionCompiler worker = new ExpressionCompiler(definitions, constants, context, params);
         return worker.compile(tree);
     }
@@ -252,11 +267,11 @@ public class Compiler {
     //########################################################################
     // Private Methods -
 
-    private void declare(Tree[] trees) {
-        for (int i = 0; i < trees.length; i++) declare(trees[i]);
+    private void declare(SourceFile source, Tree[] trees) {
+        for (int i = 0; i < trees.length; i++) declare(source, trees[i]);
     }
 
-    private void declare(Tree tree) {
+    private void declare(SourceFile source, Tree tree) {
         Symbol symbol = tree.symbol();
         switch (tree) {
 
@@ -264,6 +279,7 @@ public class Compiler {
             return;
 
         case ClassDef(_, _, _, _, _, _):
+            sources.put(tree, source);
             environment.insertClassDef(symbol, (Tree.ClassDef)tree);
             return;
 
@@ -271,12 +287,12 @@ public class Compiler {
         case PackageDef(Tree packaged, Tree.Template(Tree[] bases, Tree[] body)):
             assert packaged.symbol().isPackage() : Debug.show(tree); // !!! was isJavaPackage
             assert bases.length == 0 : Debug.show(tree);
-            declare(body);
+            declare(source, body);
             return;
 
         case ValDef(_, _, _, Tree body):
             assert symbol.isModule() : Debug.show(symbol);
-            environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, symbol, body)), null));
+            environment.insertVariable(symbol, Variable.Module(new CodePromise(new ModuleBuilder(this, source, symbol, body)), null));
             return;
 
         default:
@@ -349,7 +365,7 @@ public class Compiler {
     //########################################################################
     // Private Methods - template members
 
-    private void addTemplateMember(Map methods, List fields, Tree tree) {
+    private void addTemplateMember(SourceFile source, Map methods, List fields, Tree tree) {
         Symbol symbol = tree.symbol();
         switch (tree) {
 
@@ -357,6 +373,7 @@ public class Compiler {
             return;
 
         case ClassDef(_, _, _, _, _, _):
+            sources.put(tree, source);
             environment.insertClassDef(symbol, (Tree.ClassDef)tree);
             return;
 
@@ -370,7 +387,7 @@ public class Compiler {
 
         case DefDef(_, _, _, _, _, _):
             assert !methods.containsKey(symbol) : Debug.show(symbol);
-            CodePromise function = compile(symbol, (Tree.DefDef)tree);
+            CodePromise function = compile(source, symbol, (Tree.DefDef)tree);
             Override override = environment.lookupOverride(symbol);
             for (Iterator i = override.iterator(); i.hasNext(); ) {
                 methods.put(i.next(), function);
@@ -389,17 +406,19 @@ public class Compiler {
     public static class ModuleBuilder extends CodeGenerator {
 
         private final Compiler compiler;
+        private final SourceFile source;
         private final Symbol symbol;
         private final Tree body;
 
-        public ModuleBuilder(Compiler compiler, Symbol symbol, Tree body) {
+        public ModuleBuilder(Compiler compiler, SourceFile source, Symbol symbol, Tree body) {
             this.compiler = compiler;
+            this.source = source;
             this.symbol = symbol;
             this.body = body;
         }
 
         public CodeContainer generate() {
-            return compiler.compile(symbol, body, Symbol.EMPTY_ARRAY);
+            return compiler.compile(source, symbol, body, Symbol.EMPTY_ARRAY);
         }
     }
 

@@ -9,6 +9,8 @@
 
 package scalai;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import scalac.symtab.Symbol;
 
 public class CodeContainer {
@@ -16,7 +18,10 @@ public class CodeContainer {
     //########################################################################
     // Public Constructors
 
-    public CodeContainer(Symbol symbol, Code code, int stacksize) {
+    public CodeContainer(
+        SourceFile source, Symbol symbol, Code code, int stacksize)
+    {
+        this.source = source;
         this.symbol = symbol;
         this.code = code;
         this.stacksize = stacksize;
@@ -25,6 +30,7 @@ public class CodeContainer {
     //########################################################################
     // Public Fields
 
+    public final SourceFile source;
     public final Symbol symbol;
     public final Code code;
     public final int stacksize;

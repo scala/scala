@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import ch.epfl.lamp.util.Position;
+import ch.epfl.lamp.util.SourceFile;
 
 import scalac.Global;
 import scalac.symtab.Symbol;
@@ -48,15 +49,15 @@ public class EvaluatorException extends RuntimeException {
         return cause;
     }
 
-    public void addScalaCall(Symbol method, int pos) {
+    public void addScalaCall(Symbol method, SourceFile source, int pos) {
         StringBuffer buffer = new StringBuffer();
         buffer.append(method.owner().fullNameString());
         buffer.append('.');
         buffer.append(method.nameString());
         buffer.append('(');
-        // !!! buffer.append(Position.file(pos));
-        buffer.append(':');
-        buffer.append(Position.line(pos));
+        buffer.append(source.getShortName());
+        int line = Position.line(pos);
+        if (line != 0) buffer.append(':').append(line);
         buffer.append(")");
         stack.add(buffer);
     }

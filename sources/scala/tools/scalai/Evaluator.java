@@ -16,6 +16,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import scala.runtime.RunTime;
 
 import scalac.symtab.Symbol;
@@ -42,6 +44,7 @@ public class Evaluator {
     public static class EvaluationStack {
 
         public final EvaluationStack stack;
+        public final SourceFile source;
         public final Symbol symbol;
         public final Object self;
         public final Object[] args;
@@ -51,6 +54,7 @@ public class Evaluator {
             Object self, Object[] args)
         {
             this.stack = stack;
+            this.source = code.source;
             this.symbol = code.symbol;
             this.self = self;
             this.args = args;
@@ -156,7 +160,8 @@ public class Evaluator {
             } catch (StackOverflowError exception) {
                 return throw_(exception);
             } catch (EvaluatorException exception) {
-                exception.addScalaCall(stack.symbol, pos);
+                if (stack != null)
+                    exception.addScalaCall(stack.symbol, stack.source, pos);
                 throw exception;
             }
 

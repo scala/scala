@@ -12,6 +12,8 @@ package scalai;
 import java.util.Map;
 import java.util.HashMap;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
 
@@ -23,6 +25,7 @@ public class ExpressionContext {
     private final Environment environment;
     private final Map functions;
     private final Map variables;
+    private final SourceFile source;
     private final Symbol owner;
 
     private int current;
@@ -31,10 +34,13 @@ public class ExpressionContext {
     //########################################################################
     // Public Constructors
 
-    public ExpressionContext(Environment environment, Symbol owner) {
+    public ExpressionContext(
+        Environment environment, SourceFile source, Symbol owner)
+    {
         this.environment = environment;
         this.functions = new HashMap();
         this.variables = new HashMap();
+        this.source = source;
         this.owner = owner;
         this.current = 0;
         this.maximum = 0;
@@ -78,7 +84,11 @@ public class ExpressionContext {
     }
 
     //########################################################################
-    // Public Methods - owner
+    // Public Methods - origin
+
+    public SourceFile source() {
+        return source;
+    }
 
     public Symbol owner() {
         return owner;

@@ -9,6 +9,8 @@
 
 package scalai;
 
+import ch.epfl.lamp.util.SourceFile;
+
 import scalac.ast.Tree;
 import scalac.ast.Tree.ValDef;
 import scalac.symtab.Symbol;
@@ -20,6 +22,7 @@ public class ScalaFunction extends CodeGenerator {
     // Private Fields
 
     private final Compiler compiler;
+    private final SourceFile source;
     private final Symbol symbol;
     private final ValDef[] params;
     private final Tree body;
@@ -27,8 +30,9 @@ public class ScalaFunction extends CodeGenerator {
     //########################################################################
     // Public Constructors
 
-    public ScalaFunction(Compiler compiler, Symbol symbol, ValDef[] params, Tree body) {
+    public ScalaFunction(Compiler compiler, SourceFile source, Symbol symbol, ValDef[] params, Tree body) {
         this.compiler = compiler;
+        this.source = source;
         this.symbol = symbol;
         this.params = params;
         this.body = body;
@@ -38,7 +42,7 @@ public class ScalaFunction extends CodeGenerator {
     // Public Methods - CodeGenerator interface
 
     public CodeContainer generate() {
-        return compiler.compile(symbol, body, Tree.symbolOf(params));
+        return compiler.compile(source, symbol, body, Tree.symbolOf(params));
     }
 
     //########################################################################

@@ -43,7 +43,8 @@ public class ExpressionCompiler {
 
     public CodeContainer compile(Tree tree) {
         Code code = compute(tree);
-        return new CodeContainer(context.owner(), code, context.stackmax());
+        return new CodeContainer(
+            context.source(), context.owner(), code, context.stackmax());
     }
 
     public CodeContainer compile(ArrayList items) {
@@ -55,7 +56,8 @@ public class ExpressionCompiler {
             value = compute((Tree)item);
         }
         Code code = buffer.code(value);
-        return new CodeContainer(context.owner(), code, context.stackmax());
+        return new CodeContainer(
+            context.source(), context.owner(), code, context.stackmax());
     }
 
     //########################################################################
