@@ -8,6 +8,7 @@ sealed trait List[+a]() extends scala.Seq[a] with scala.ScalaObject {
     def length: scala.Int;
     def indices: scala.List[scala.Int];
     def elements: scala.Iterator[a];
+    override def toList: scala.List[a];
     def init: scala.List[a];
     def last: a;
     override def take(scala.Int): scala.List[a];

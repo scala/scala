@@ -363,6 +363,12 @@ sealed trait List[+a] extends Seq[a] {
       };
   };
 
+  /** Transform this sequence into a list of all elements.
+  *
+  *  @return  a list which enumerates all elements of this sequence.
+  */
+  override def toList = this;
+
   /** Returns the list without its last element.
    *
    *  @return the list without its last element.
