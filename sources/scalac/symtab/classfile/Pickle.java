@@ -118,15 +118,18 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    if (isLocal(sym)) {
 		putEntry(sym.name);
 		putSymbol(sym.isConstructor() ? sym.constructorClass() : sym.owner());
-		putType(sym.info());
 		switch (sym.kind) {
 		case TYPE:
+		    if (sym.isViewBounded()) putType(sym.vuBound());
+		    else putType(sym.info());
 		    putType(sym.loBound());
 		    break;
 		case ALIAS:
+		    putType(sym.info());
 		    putSymbol(sym.allConstructors());
 		    break;
 		case CLASS:
+		    putType(sym.info());
 		    putType(sym.typeOfThis());
 		    putSymbol(sym.allConstructors());
 		    for (Scope.SymbolIterator it = sym.members().iterator();
@@ -134,6 +137,7 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 			putSymbol(it.next());
 		    break;
 		case VAL:
+		    putType(sym.info());
 		    if (sym.isConstructor() &&
 			sym == sym.constructorClass().allConstructors())
 			putSymbol(sym.constructorClass());
@@ -336,25 +340,31 @@ public class Pickle implements Kinds, Modifiers, EntryTags {
 	    writeRef(sym.name);
 	    writeRef(sym.isConstructor() ? sym.constructorClass() : sym.owner());
 	    writeNat(sym.flags);
-	    writeRef(sym.info());
 	    switch (sym.kind) {
 	    case TYPE:
+		if (sym.isViewBounded()) writeRef(sym.vuBound());
+		else writeRef(sym.info());
 		writeRef(sym.loBound());
 		break;
 	    case ALIAS:
+		writeRef(sym.info());
 		writeRef(sym.allConstructors());
 		break;
 	    case CLASS:
+		writeRef(sym.info());
 		writeRef(sym.typeOfThis());
 		writeRef(sym.allConstructors());
 		break;
 	    case VAL:
+		writeRef(sym.info());
 		if (sym.isConstructor() &&
 		    sym == sym.constructorClass().allConstructors())
 		    writeRef(sym.constructorClass());
 		else if (sym.isModule())
 		    writeRef(sym.moduleClass());
 		break;
+	    default:
+		throw new ApplicationError();
 	    }
 	} else if (sym.kind == NONE) {
 	    writeByte(NONEsym);

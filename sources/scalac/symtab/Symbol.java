@@ -504,6 +504,12 @@ public abstract class Symbol implements Modifiers, Kinds {
         throw new ApplicationError("setLoBound inapplicable for " + this);
     }
 
+    /** Set the view bound of this type variable
+     */
+    public Symbol setVuBound(Type lobound) {
+        throw new ApplicationError("setVuBound inapplicable for " + this);
+    }
+
     /** Add an auxiliary constructor to class.
      */
     public void addConstructor(Symbol constr) {
@@ -573,6 +579,13 @@ public abstract class Symbol implements Modifiers, Kinds {
     /** Does this symbol denote a variable? */
     public final boolean isVariable() {
         return kind == VAL && (flags & MUTABLE) != 0;
+    }
+
+    /** Does this symbol denote a view bounded type variable? */
+    public final boolean isViewBounded() {
+	Global global = Global.instance;
+        return kind == TYPE && (flags & VIEWBOUND) != 0 &&
+	    global.currentPhase.id <= global.PHASE.REFCHECK.id();
     }
 
     /**
@@ -1278,6 +1291,12 @@ public abstract class Symbol implements Modifiers, Kinds {
         return Global.instance.definitions.ALL_TYPE();
     }
 
+    /** The view bound of this type variable
+     */
+    public Type vuBound() {
+        return Global.instance.definitions.ANY_TYPE();
+    }
+
     /** Get this.type corresponding to this symbol
      */
     public Type thisType() {
@@ -1757,6 +1776,7 @@ final class AliasTypeSymbol extends TypeSymbol {
 final class AbsTypeSymbol extends TypeSymbol {
 
     private Type lobound = null;
+    private Type vubound = null;
 
     /** Initializes this instance. */
     AbsTypeSymbol(int pos, Name name, Symbol owner, int flags, int attrs) {
@@ -1769,14 +1789,25 @@ final class AbsTypeSymbol extends TypeSymbol {
         return lobound == null ? Global.instance.definitions.ALL_TYPE() : lobound;
     }
 
+    public Type vuBound() {
+        initialize();
+        return vubound == null ? Global.instance.definitions.ANY_TYPE() : vubound;
+    }
+
     public Symbol setLoBound(Type lobound) {
         this.lobound = lobound;
+        return this;
+    }
+
+    public Symbol setVuBound(Type vubound) {
+	this.vubound = vubound;
         return this;
     }
 
     protected TypeSymbol cloneTypeSymbolImpl(Symbol owner, int attrs) {
         TypeSymbol clone = new AbsTypeSymbol(pos, name, owner, flags, attrs);
         clone.setLoBound(loBound());
+        clone.setVuBound(vuBound());
         return clone;
     }
 

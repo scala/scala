@@ -408,9 +408,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	//System.out.println("checking " + sym);//DEBUG
 	checkNonCyclic(
 	  pos, pre.memberInfo(sym).subst(sym.typeParams(), args));
-	if (sym.kind == TYPE)
+	if (sym.kind == TYPE) {
 	  checkNonCyclic(
 	    pos, pre.memberLoBound(sym).subst(sym.typeParams(), args));
+	  checkNonCyclic(
+	    pos, pre.memberVuBound(sym).subst(sym.typeParams(), args));
+	}
 	sym.flags = sym.flags & ~LOCKED;
       }
 
@@ -567,10 +570,21 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 // Views -----------------------------------------------------------------------
 
-  private def applyView(v: View, tree: Tree, mode: int, pt: Type): Tree =
-    transform(
-      make.Apply(tree.pos, infer.viewExpr(tree.pos, v), NewArray.Tree(tree)),
-      mode, pt);
+  private def applyView(v: View, tree: Tree, mode: int, pt: Type): Tree = {
+    val vexpr = infer.viewExpr(tree.pos, v);
+    val vapp = transform(
+      make.Apply(tree.pos, vexpr, NewArray.Tree(tree)), mode, pt);
+    if (v.symtype.isObjectType()) {
+      gen.If(
+	gen.Apply(
+	  gen.Select(
+	    vexpr.duplicate(),
+	    definitions.ANY_EQEQ),
+	  NewArray.Tree(gen.mkNullLit(tree.pos))),
+	gen.mkNullLit(tree.pos),
+	vapp)
+    } else vapp
+  }
 
 // Contexts -------------------------------------------------------------------
 
@@ -1156,7 +1170,12 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  tree.asInstanceOf[Tree$AbsTypeDef].rhs = rhs;
 	  lobound = transform(lobound, TYPEmode);
 	  (tree.asInstanceOf[Tree$AbsTypeDef]).lobound = lobound;
-	  owntype = rhs.getType();
+	  if (sym.isViewBounded()) {
+	    sym.setVuBound(rhs.getType());
+	    owntype = definitions.ANY_TYPE();
+	  } else {
+	    owntype = rhs.getType();
+	  }
 	  sym.setLoBound(lobound.getType());
 	  owntype.symbol().initialize();//to detect cycles todo: needed?
 
@@ -1917,7 +1936,8 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  System.arraycopy(tparams, 0, tparams2, 0, tparams.length);
 	  System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	}
-	transformArgs(pos, meth, tparams2, restp, argMode, args, pt)
+	transformArgs(pos, meth, tparams2,
+		      infer.skipViewParams(tparams2, restp), argMode, args, pt)
 
       case Type.ErrorType =>
 	var i = 0; while (i < args.length) {
@@ -2425,28 +2445,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    // match against arguments
 	    fn1.getType() match {
 	      case Type$PolyType(tparams, restp) if (tparams.length == argtypes.length) =>
-		  /* constant fold asInstanceOf calls.
-		  fn1 match {
-		    case Tree$Select(qual, name) =>
-		      if (fn1.symbol() == definitions.ANY_AS &&
-			  qual.getType().isInstanceOf[Type$ConstantType]) {
-			val restp1: Type = constfold.foldAsInstanceOf(
-			  tree.pos,
-			  qual.getType().asInstanceOf[Type$ConstantType],
-			  argtypes(0));
-			restp1 match {
-			  case ConstantType(_, Object value) =>
-			    return make.Literal(tree.pos, value)
-			      .setType(restp1);
-			  case =>
-			}
-		      }
-		    case _ =>
-		  }
-		  */
 		constfold.tryToFold(
-		  copy.TypeApply(tree, fn1, args1)
-		  .setType(restp.subst(tparams, argtypes)));
+		  infer.completeTypeApply(
+		    copy.TypeApply(tree, fn1, args1)
+		    .setType(restp.subst(tparams, argtypes))));
+
+	      case Type.ErrorType =>
+		tree.setType(Type.ErrorType)
 
 	      case fn1tp =>
                 if (!fn1tp.isError()) error(tree.pos,
@@ -2531,7 +2536,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    if (tsym == c) {
 		      fn0 match {
 			case Tree$AppliedType(_, targs) =>
-			  fn1 = gen.TypeApply(fn1, targs);
+			  fn1 = infer.completeTypeApply(gen.TypeApply(fn1, targs));
 			case _ =>
 		      }
 		    } else {

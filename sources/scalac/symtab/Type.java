@@ -1035,8 +1035,10 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                     }
                     for (int i = 0; i < syms2.length; i++) {
                         syms2[i].setInfo(syms1[i].info().subst(syms1, syms2));
-                        if (syms2[i].kind == TYPE)
+                        if (syms2[i].kind == TYPE) {
                             syms2[i].setLoBound(syms1[i].loBound().subst(syms1, syms2));
+                            syms2[i].setVuBound(syms1[i].vuBound().subst(syms1, syms2));
+			}
                     }
                     for (int i = 0; i < syms2.length; i++) {
                         members2.enter(syms2[i]);
@@ -1085,6 +1087,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (lb != lb1) {
                     if (!dontClone) sym = sym.cloneSymbol();
                     sym.setLoBound(lb1);
+                }
+                Type vb = sym.vuBound();
+                Type vb1 = apply(vb);
+                if (vb != vb1) {
+                    if (!dontClone) sym = sym.cloneSymbol();
+                    sym.setVuBound(vb1);
                 }
             }
             return sym;
@@ -1317,6 +1325,12 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
      */
     public Type memberLoBound(Symbol sym) {
         return sym.loBound().asSeenFrom(this, sym.owner());
+    }
+
+    /** The view bound of `sym', seen as a member of this type.
+     */
+    public Type memberVuBound(Symbol sym) {
+        return sym.vuBound().asSeenFrom(this, sym.owner());
     }
 
 // Substitutions ---------------------------------------------------------------
@@ -1920,7 +1934,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (ps.length != ps1.length) return false;
                 for (int i = 0; i < ps.length; i++)
                     if (!ps1[i].info().subst(ps1, ps).isSameAs(ps[i].info()) ||
-                        !ps[i].loBound().isSameAs(ps1[i].loBound().subst(ps1, ps)))
+                        !ps[i].loBound().isSameAs(ps1[i].loBound().subst(ps1, ps)) ||
+                        !ps[i].vuBound().isSameAs(ps1[i].vuBound().subst(ps1, ps)))
                         return false;
                 return res.isSubType(res1.subst(ps1, ps));
             }
@@ -1979,9 +1994,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return true;
             }
 
-        case TypeRef(_, Symbol sym, Type[] args):
+        case TypeRef(_, Symbol sym, _):
             switch (that) {
-            case TypeRef(Type pre1, Symbol sym1, _):
+            case TypeRef(_, Symbol sym1, _):
                 if (sym1.kind == TYPE && this.isSubType(that.loBound()))
                     return true;
             }
@@ -2092,7 +2107,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
              self.memberInfo(sym).subst(tparams, targs)
              .isSubType(sym1.info().substThis(sym1.owner(), self)) &&
              sym1.loBound().substThis(sym1.owner(), self)
-             .isSubType(self.memberLoBound(sym).subst(tparams, targs))
+             .isSubType(self.memberLoBound(sym).subst(tparams, targs)) &&
+             self.memberVuBound(sym).subst(tparams, targs)
+             .isSubType(sym1.vuBound().substThis(sym1.owner(), self))
              ||
              (sym.kind == TYPE && sym1.kind == ALIAS &&
               sym1.info().unalias().isSameAs(sym.type())));
@@ -2203,7 +2220,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 if (ps.length != ps1.length) return false;
                 for (int i = 0; i < ps.length; i++)
                     if (!ps1[i].info().subst(ps1, ps).isSameAs(ps[i].info()) ||
-                        !ps1[i].loBound().subst(ps1, ps).isSameAs(ps[i].loBound()))
+                        !ps1[i].loBound().subst(ps1, ps).isSameAs(ps[i].loBound()) ||
+                        !ps1[i].vuBound().subst(ps1, ps).isSameAs(ps[i].vuBound()))
                         return false;
                 return res.isSameAs(res1.subst(ps1, ps));
             }
@@ -2293,6 +2311,9 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         sym2.owner(), sym1.owner().thisType())) ||
                 !sym1.loBound().isSameAs(
                     sym2.loBound().substThis(
+                        sym2.owner(), sym1.owner().thisType())) ||
+                !sym1.vuBound().isSameAs(
+                    sym2.vuBound().substThis(
                         sym2.owner(), sym1.owner().thisType())))
                 return false;
         }
@@ -2656,6 +2677,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     private static Type polyLub(Type[] tps, Symbol[] tparams0) {
         Type[][] hiboundss = new Type[tparams0.length][tps.length];
         Type[][] loboundss = new Type[tparams0.length][tps.length];
+        Type[][] vuboundss = new Type[tparams0.length][tps.length];
         Type[] restps   = new Type[tps.length];
         for (int i = 0; i < tps.length; i++) {
             switch (tps[i]) {
@@ -2665,6 +2687,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         hiboundss[j][i] = tparams[j].info()
                             .subst(tparams, tparams0);
                         loboundss[j][i] = tparams[j].loBound()
+                            .subst(tparams, tparams0);
+                        vuboundss[j][i] = tparams[j].vuBound()
                             .subst(tparams, tparams0);
                     }
                     restps[i] = restp.subst(tparams, tparams0);
@@ -2678,15 +2702,18 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
         Type[] hibounds = new Type[tparams0.length];
         Type[] lobounds = new Type[tparams0.length];
+        Type[] vubounds = new Type[tparams0.length];
         for (int j = 0; j < tparams0.length; j++) {
             hibounds[j] = glb(hiboundss[j]);
             lobounds[j] = lub(loboundss[j]);
+            vubounds[j] = glb(vuboundss[j]);
         }
         Symbol[] tparams = new Symbol[tparams0.length];
         for (int j = 0; j < tparams.length; j++) {
             tparams[j] = tparams0[j].cloneSymbol(Symbol.NONE)
                 .setInfo(hibounds[j].subst(tparams0, tparams))
-                .setLoBound(lobounds[j].subst(tparams0, tparams));
+                .setLoBound(lobounds[j].subst(tparams0, tparams))
+                .setVuBound(vubounds[j].subst(tparams0, tparams));
         }
         return Type.PolyType(tparams, lub(restps).subst(tparams0, tparams));
     }
@@ -2899,11 +2926,15 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     private static boolean addMember(Scope s, Symbol sym, Type glbThisType) {
         Type syminfo = sym.info().substThis(sym.owner(), glbThisType);
         Type symlb = sym.loBound().substThis(sym.owner(), glbThisType);
+        Type symvb = sym.vuBound().substThis(sym.owner(), glbThisType);
         Scope.Entry e = s.lookupEntry(sym.name);
         if (e == Scope.Entry.NONE) {
             Symbol sym1 = sym.cloneSymbol(glbThisType.symbol());
             sym1.setInfo(syminfo);
-            if (sym1.kind == TYPE) sym1.setLoBound(symlb);
+            if (sym1.kind == TYPE) {
+		sym1.setLoBound(symlb);
+		sym1.setVuBound(symvb);
+	    }
             s.enter(sym1);
         } else {
             Type einfo = e.sym.info();
@@ -2926,6 +2957,14 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 } else {
                     e.sym.setLoBound(lub(new Type[]{elb, symlb}));
                 }
+                Type evb = e.sym.vuBound();
+                if (evb.isSameAs(symvb)) {
+                } else if (evb.isSubType(symvb)) {
+                } else if (symvb.isSubType(evb)) {
+                    e.sym.setVuBound(symvb);
+                } else {
+                    e.sym.setVuBound(glb(new Type[]{evb, symvb}));
+                }
             }
         }
         return true;
@@ -2934,6 +2973,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     private static Type polyGlb(Type[] tps, Symbol[] tparams0) {
         Type[][] hiboundss = new Type[tparams0.length][tps.length];
         Type[][] loboundss = new Type[tparams0.length][tps.length];
+        Type[][] vuboundss = new Type[tparams0.length][tps.length];
         Type[] restps   = new Type[tps.length];
         for (int i = 0; i < tps.length; i++) {
             switch (tps[i]) {
@@ -2943,6 +2983,8 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                         hiboundss[j][i] = tparams[j].info()
                             .subst(tparams, tparams0);
                         loboundss[j][i] = tparams[j].loBound()
+                            .subst(tparams, tparams0);
+                        vuboundss[j][i] = tparams[j].vuBound()
                             .subst(tparams, tparams0);
                     }
                     restps[i] = restp.subst(tparams, tparams0);
@@ -2956,15 +2998,18 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         }
         Type[] hibounds = new Type[tparams0.length];
         Type[] lobounds = new Type[tparams0.length];
+        Type[] vubounds = new Type[tparams0.length];
         for (int j = 0; j < tparams0.length; j++) {
             hibounds[j] = lub(hiboundss[j]);
             lobounds[j] = glb(loboundss[j]);
+            vubounds[j] = lub(vuboundss[j]);
         }
         Symbol[] tparams = new Symbol[tparams0.length];
         for (int j = 0; j < tparams.length; j++) {
             tparams[j] = tparams0[j].cloneSymbol(Symbol.NONE)
                 .setInfo(hibounds[j].subst(tparams0, tparams))
-                .setLoBound(lobounds[j].subst(tparams0, tparams));
+                .setLoBound(lobounds[j].subst(tparams0, tparams))
+                .setVuBound(vubounds[j].subst(tparams0, tparams));
         }
         return Type.PolyType(tparams, glb(restps).subst(tparams0, tparams));
     }

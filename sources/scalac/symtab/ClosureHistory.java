@@ -14,6 +14,7 @@ import java.util.TreeMap;
 import scalac.Global;
 import scalac.framework.History;
 import scalac.util.Debug;
+import scalac.util.ArrayApply;
 
 /** This class implements a closure history. */
 public class ClosureHistory extends History {
@@ -43,6 +44,7 @@ public class ClosureHistory extends History {
         closure[0] = clasz.type();
         for (int i = 1; i < closure.length; i++)
             closure[i] = (Type)types.next();
+	//System.out.println("closure(" + owner + ") = " + ArrayApply.toString(closure));//DEBUG
         return closure;
     }
 

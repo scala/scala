@@ -1094,7 +1094,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	AbsTypeDef tree = make.AbsTypeDef(
 	    sym.pos,
             sym,
-            TypeTerm(sym.pos, sym.nextInfo()),
+            TypeTerm(sym.pos, sym.isViewBounded() ? sym.vuBound() : sym.nextInfo()),
             TypeTerm(sym.pos, sym.loBound()));
         tree.setType(Type.NoType);
         return tree;

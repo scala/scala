@@ -42,8 +42,8 @@ These sets are extended in the usual way to Unicode.
 
 \syntax\begin{lstlisting}
 op        ::=  special {special}
-varid     ::=  lower {letter $|$ digit} [`_' [id]]
-id        ::=  upper {letter $|$ digit} [`_' [id]]
+varid     ::=  lower {letter $|$ digit} [`_' {digit} [id]]
+id        ::=  upper {letter $|$ digit} [`_' {digit} [id]]
             |  varid
             |  op
             |  ```string chars`''
@@ -2206,13 +2206,14 @@ A class definition which starts with the reserved word \code{trait}
 instead of \code{class} defines a trait. A trait is a specific
 instance of an abstract class, so the \code{abstract} modifier is
 redundant for it.  The template of a trait must satisfy the following
-three restrictions.
+four restrictions.
 \begin{enumerate}
 \item All base classes of the trait are traits.
 \item All parent class constructors of a template
       must be primary constructors with empty value
       parameter lists. 
 \item All non-empty statements in the template are either imports or pure definitions.
+\item A trait may not have secondary constructors.
 \end{enumerate}
 A {\em pure} definition can be evaluated without any side effect.
 Function, type, class, or object definitions are always pure. A value

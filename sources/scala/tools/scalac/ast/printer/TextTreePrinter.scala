@@ -166,6 +166,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
   protected final val TXT_EQUAL         = Simple("=");
   protected final val TXT_SUPERTYPE     = Simple(">:");
   protected final val TXT_SUBTYPE       = Simple("<:");
+  protected final val TXT_VIEWBOUND     = Simple("<+");
   protected final val TXT_HASH          = Simple("#");
   protected final val TXT_RIGHT_ARROW   = Simple("=>");
   protected final val TXT_LEFT_PAREN    = Simple("(");
@@ -293,7 +294,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	print(KW_TYPE);
 	print(Space);
 	printSymbolDefinition(tree.symbol(), name);
-	printBounds(lobound, rhs);
+	printBounds(lobound, rhs, mods);
 
       case Tree$AliasTypeDef(mods, name, tparams, rhs) =>
 	printModifiers(mods);
@@ -697,7 +698,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
     case Tree$AbsTypeDef(mods, name, bound, lobound) =>
       printModifiers(mods);
       printSymbolDefinition(tree.symbol(), name);
-      printBounds(lobound, bound);
+      printBounds(lobound, bound, mods);
 
     case Tree$ValDef(mods, name, tpe, Tree.Empty) =>
       printModifiers(mods);
@@ -708,7 +709,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
       Debug.abort("bad parameter: " + tree);
   }
 
-  protected def printBounds(lobound: Tree, hibound: Tree): unit = {
+  protected def printBounds(lobound: Tree, hibound: Tree, mods: int): unit = {
     val definitions: Definitions = scalac_Global.instance.definitions;
     val printLoBound: Boolean =
       if (lobound.getType() != null)
@@ -721,7 +722,10 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
         hibound.getType().symbol() != definitions.ANY_CLASS
       else
         !"scala.Any".equals(hibound.toString());
-    if (printHiBound) printOpt(TXT_SUBTYPE, hibound, true);
+    if (printHiBound)
+      printOpt(
+	if ((mods & Modifiers.VIEWBOUND) != 0) TXT_VIEWBOUND else TXT_SUBTYPE,
+	hibound, true);
   }
 }
 }

@@ -293,17 +293,19 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 
   /** expands view-bounded class and method definitions
   */
-  def Definition(tree: Tree) =
+  def Definition(tree: Tree): Tree =
     tree match {
       case Tree$ClassDef(mods, name, tparams, vparams, tpe, templ) =>
+	//System.out.println("DEF " + make.ClassDef(tree.pos, mods, name, tparams, addViewParams(tparams, vparams), tpe, templ));//DEBUG
 	make.ClassDef(tree.pos, mods, name, tparams,
 		      addViewParams(tparams, vparams), tpe, templ);
+
       case Tree$DefDef(mods, name, tparams, vparams, tpe, rhs) =>
 	make.DefDef(tree.pos, mods, name, tparams,
 		    addViewParams(tparams, vparams), tpe, rhs)
 
       case _ =>
-	tree
+	return tree
     }
 
   def addViewParams(tparams: Array[Tree$AbsTypeDef], vparams: Array[Array[Tree$ValDef]]): Array[Array[Tree$ValDef]] = {
@@ -330,6 +332,7 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
       val vparams1 = new Array[Array[Tree$ValDef]](vparams.length + 1);
       vparams1(0) = new Array[Tree$ValDef](viewparams.length());
       viewparams.copyTo(vparams1(0));
+      //for (val t <- vparams1(0)) System.out.println("new view param: " + t);//DEBUG
       System.arraycopy(vparams, 0, vparams1, 1, vparams.length);
       vparams1
     } else vparams

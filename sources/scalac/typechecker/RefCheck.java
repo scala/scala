@@ -58,6 +58,8 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
 // Override checking ------------------------------------------------------------
 
+    static final int HIBOUND = 0, LOBOUND = 1, VUBOUND = 2;
+
     static boolean isIncomplete(Symbol sym) {
 	return sym.isDeferred() ||
 	    sym.isAbstractOverride() &&
@@ -255,15 +257,17 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 		if (other.typeParams().length != 0)
 		    overrideError(pos, member, other, "may not override parameterized type");
 		if (!self.memberType(member).isSameAs(self.memberType(other)))
-		    overrideTypeError(pos, member, other, self, false);
+		    overrideTypeError(pos, member, other, self, HIBOUND);
 		break;
 	    case TYPE:
 		if (member.typeParams().length != 0)
 		    overrideError(pos, member, other, "may not be parameterized");
 		if (!self.memberInfo(member).isSubType(self.memberInfo(other)))
-		    overrideTypeError(pos, member, other, self, false);
+		    overrideTypeError(pos, member, other, self, HIBOUND);
 		if (!self.memberLoBound(other).isSubType(self.memberLoBound(member)))
-		    overrideTypeError(pos, member, other, self, true);
+		    overrideTypeError(pos, member, other, self, LOBOUND);
+		if (!self.memberVuBound(member).isSubType(self.memberVuBound(other)))
+		    overrideTypeError(pos, member, other, self, VUBOUND);
 		break;
 	    default:
 		if (other.isConstructor())
@@ -271,7 +275,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 				  "cannot override a class constructor");
 		if (!normalizedInfo(self, member).isSubType(
 			normalizedInfo(self, other)))
-		    overrideTypeError(pos, member, other, self, false);
+		    overrideTypeError(pos, member, other, self, HIBOUND);
 	    }
 	}
     }
@@ -284,17 +288,25 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     void overrideTypeError(int pos, Symbol member, Symbol other, Type site,
-			   boolean lobound) {
+			   int boundkind) {
 	if (!other.type().isError() && !member.type().isError()) {
-	    Type memberInfo = lobound ? site.memberLoBound(member)
-		: normalizedInfo(site, member);
-	    Type otherInfo = lobound ? site.memberLoBound(other)
-		: normalizedInfo(site, other);
+	    Type memberInfo;
+	    Type otherInfo;
+	    if (boundkind == LOBOUND) {
+		memberInfo = site.memberLoBound(member);
+		otherInfo = site.memberLoBound(other);
+	    } else if (boundkind == VUBOUND) {
+		memberInfo = site.memberVuBound(member);
+		otherInfo = site.memberVuBound(other);
+	    } else {
+		memberInfo = normalizedInfo(site, member);
+		otherInfo = normalizedInfo(site, other);
+	    }
 	    unit.error(pos,
 		member + member.locationString() +
-		infoString(member, memberInfo, lobound) +
+		infoString(member, memberInfo, boundkind) +
 		"\n cannot override " + other + other.locationString() +
-		infoString(other, otherInfo, lobound));
+		infoString(other, otherInfo, boundkind));
 	    Type.explainTypes(memberInfo, otherInfo);
 	}
     }
@@ -303,10 +315,10 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	return site.memberInfo(sym).derefDef();
     }
 
-    String infoString(Symbol sym, Type symtype, boolean lobound) {
+    String infoString(Symbol sym, Type symtype, int boundkind) {
 	switch (sym.kind) {
 	case ALIAS: return ", which equals " + symtype;
-	case TYPE:  return " bounded" + (lobound ? " from below" : "") + " by " + symtype;
+	case TYPE:  return " bounded" + (boundkind == LOBOUND ? " from below" : "") + " by " + symtype;
 	case VAL:   return " of type " + symtype;
 	default:    return "";
 	}
@@ -956,6 +968,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 	case AbsTypeDef(_, _, _, _):
 	    validateVariance(sym, sym.info(), CoVariance);
 	    validateVariance(sym, sym.loBound(), ContraVariance);
+	    validateVariance(sym, sym.vuBound(), CoVariance);
 	    return super.transform(tree);
 
 	case AliasTypeDef(_, _, _, _):

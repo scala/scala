@@ -115,7 +115,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     case VAL =>
       variance(tparam, sym.info())
     case TYPE =>
-      variance(tparam, sym.info()) & flip(variance(tparam, sym.loBound()))
+      variance(tparam, sym.info()) &
+      flip(variance(tparam, sym.loBound())) &
+      variance(tparam, sym.vuBound())
     case ALIAS =>
       cut(variance(tparam, sym.info()))
     case _ =>
@@ -151,7 +153,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     v
   }
 
-  /** Does given `tparam' occur with variance `v' in type?
+  /** Compute variance of type parameter `tparam' in type `tp'.
   */
   private def variance(tparam: Symbol, tp: Type): int = tp match {
     case Type.ErrorType | Type.AnyType | Type.NoType | Type.NoPrefix |
@@ -318,36 +320,62 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   }
 
   def viewExpr(pos: int, v: View): Tree = {
-    val qual = v.qual.duplicate();
-    qual.pos = pos;
     val viewType = checkAccessible(
-      pos, v.sym, v.symtype, qual, qual.getType());
-    make.Select(pos, qual, v.sym.name)
-      .setSymbol(v.sym).setType(viewType)
-  }
-
-  def viewArg(pos: int, vtype: Type, targs: Array[Type]): Tree = {
-    val vargs = vtype.typeArgs();
-    val v = bestView(vargs(0), vargs(1), Names.EMPTY);
-    if (v != null) {
-      var vtree = viewExpr(pos, v);
-      vtree.getType() match {
-	case Type$PolyType(vtparams, vrestype) =>
-	  assert(vtparams.length != 0);
-	  vtree = exprInstance(vtree, vtparams, vrestype, vtype);
-	  assert(vtree.getType().isSubType(vtype));
-      }
-      vtree
-    } else {
-      error(pos,
-	    "type instantiation with [" +
-	    ArrayApply.toString(targs.asInstanceOf[Array[Object]], ",") +
-	    "] failed since " + vargs(0) + " is not viewable as " + vargs(1));
-      gen.mkDefaultValue(pos, vtype)
+      pos, v.sym, v.symtype, v.qual, v.qual.getType());
+    v.qual match {
+      case Tree.Empty =>
+	make.Ident(pos, v.sym.name)
+	  .setSymbol(v.sym).setType(viewType)
+      case _ =>
+	val qual = v.qual.duplicate();
+	qual.pos = pos;
+	make.Select(pos, qual, v.sym.name)
+	.setSymbol(v.sym).setType(viewType)
     }
   }
 
-  def addViewArgs(tree: Tree, tparams: Array[Symbol], restype: Type, targs: Array[Type]): Tree = {
+  private def viewObj(meth: Tree, msym: Symbol) = msym.getType() match {
+    case Type$MethodType(params: Array[Symbol], _) =>
+      assert(params.length == 1);
+      val paramsym = params(0).cloneSymbol(getContext.owner);
+      gen.mkFunction(
+	meth.pos,
+	NewArray.ValDef(gen.mkParam(paramsym)),
+	gen.Apply(meth, NewArray.Tree(gen.Ident(meth.pos, paramsym))),
+	meth.getType().resultType(),
+	getContext.owner)
+    case _ =>
+      meth
+  }
+
+  private def viewArg(pos: int, vtype: Type, targs: Array[Type]): Tree = {
+    val vargs = vtype.typeArgs();
+    if (vargs(0).isSubType(vargs(1))) {
+      gen.mkNullLit(pos)
+    } else {
+      val v = bestView(vargs(0), vargs(1), Names.EMPTY);
+      if (v != null) {
+	var vmeth = viewExpr(pos, v);
+	vmeth.getType() match {
+	  case Type$PolyType(vtparams, vrestype) =>
+	    assert(vtparams.length != 0);
+	    vmeth = exprInstance(vmeth, vtparams, vrestype, vtype);
+	    assert(vmeth.getType().isSubType(vtype));
+	  case _ =>
+	}
+	viewObj(vmeth, v.sym)
+      } else {
+	error(pos,
+	      "type instantiation with [" +
+	      ArrayApply.toString(targs.asInstanceOf[Array[Object]], ",") +
+	      "] failed since " + vargs(0) + " is not viewable as " + vargs(1));
+	gen.mkDefaultValue(pos, vtype)
+      }
+    }
+  }
+
+  private def passViewArgs(tree: Tree, tparams: Array[Symbol], restype: Type,
+			   targs: Array[Type]): Tree =
     restype match {
       case Type$MethodType(params, _) =>
 	val viewargs = new Array[Tree](params.length);
@@ -356,9 +384,41 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	    tree.pos, params(i).getType().subst(tparams, targs), targs);
 	  i = i + 1
 	}
+	//System.out.println("new view args: " + gen.Apply(tree, viewargs));//DEBUG
 	gen.Apply(tree, viewargs);
       case Type.ErrorType =>
 	tree
+    }
+
+  def isViewBounded(tparams: Array[Symbol]) = {
+    var viewbounded = false;
+    var j = 0; while (j < tparams.length) {
+      viewbounded = viewbounded | tparams(j).isViewBounded();
+      j = j + 1
+    }
+    viewbounded
+  }
+
+  def skipViewParams(tparams: Array[Symbol], tp: Type): Type = tp match {
+    case Type$MethodType(_, restp) if isViewBounded(tparams) =>
+      restp
+    case _ =>
+      tp
+  }
+
+  def completeTypeApply(tree: Tree): Tree = {
+    tree match {
+    case Tree$TypeApply(fn, targs) =>
+      fn.getType() match {
+	case Type$PolyType(tparams, restp) if tparams.length == targs.length =>
+	  if (isViewBounded(tparams)) {
+	    val result = passViewArgs(tree, tparams, restp, Tree.typeOf(targs));
+	    //System.out.println("completed type apply: " + result + ":" + result.getType());//DEBUG
+	    result
+	  } else tree
+	case _ => tree
+      }
+    case _ => tree
     }
   }
 
@@ -621,6 +681,10 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	    newparams(i).loBound()
 	    .subst(tparams, newparams)
 	    .subst(tparams1, newparams1));
+	  newparams(i).setVuBound(
+	    newparams(i).vuBound()
+	    .subst(tparams, newparams)
+	    .subst(tparams1, newparams1));
 	  i = i + 1
 	}}
 	new Type$PolyType(newparams, restp1.subst(tparams, newparams))
@@ -693,14 +757,18 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     true
   }
 
-  /** Type arguments mapped to `scala.All' are taken to be uninstantiated.
+  /** Type arguments mapped to `scala.All' and not covariant in `restype'
+  *  are taken to be uninstantiated.
   *  Map all those type arguments to their corresponding type parameters
   *  and return all these type parameters as result.
   */
-  private def normalizeArgs(targs: Array[Type], tparams: Array[Symbol]): Array[Symbol] = {
+  private def normalizeArgs(targs: Array[Type], tparams: Array[Symbol], restype: Type): Array[Symbol] = {
     var uninstantiated: Type$List = Type$List.EMPTY;
     { var i = 0; while (i < targs.length) {
-      if (targs(i).symbol() == definitions.ALL_CLASS) {
+      if (targs(i).symbol() == definitions.ALL_CLASS &&
+	  (variance(tparams(i), restype) & COVARIANT) == 0 &&
+	  !tparams(i).isViewBounded()) {
+	//System.out.println("normalizing " + tparams(i) + " / " + restype);//DEBUG
 	targs(i) = tparams(i).getType();
 	uninstantiated = Type$List.append(uninstantiated, targs(i));
       }
@@ -783,7 +851,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 			   argtypes: Array[Type], restp: Type,
 			   pt: Type,
 			   needToSucceed: boolean, regularValue: boolean): Array[Type] = {
-    //System.out.println("methTypeArgs, tparams = " + ArrayApply.toString(tparams) + ", params = " + ArrayApply.toString(params) + ", type(params) = " + ArrayApply.toString(Symbol.type(params)) + ", argtypes = " + ArrayApply.toString(argtypes));//DEBUG
+    //System.out.println("methTypeArgs, tparams = " + ArrayApply.toString(tparams.asInstanceOf[Array[Object]]) + ", params = " + ArrayApply.toString(params.asInstanceOf[Array[Object]]) + ", type(params) = " + ArrayApply.toString(Symbol.getType(params).asInstanceOf[Array[Object]]) + ", argtypes = " + ArrayApply.toString(argtypes.asInstanceOf[Array[Object]]) + ", restp = " + restp + ", pt = " + pt);//DEBUG
 
     val tvars: Array[Type] = freshVars(tparams);
     val formals: Array[Type] = formalTypes(params, argtypes.length);
@@ -834,7 +902,6 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       solve(tparams, false, variance(tparams, formals), tvars, i);
       i = i + 1
     }}
-    //System.out.println(" = " + ArrayApply.toString(tvars));//DEBUG
     tvars
   }
 
@@ -861,18 +928,16 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
     if (0 < i) {
       val argtrees: Array[Tree] = new Array[Tree](i);
-      var viewbounded = false;
       { var j = 0; while (j < i) {
 	argtrees(j) = gen.mkType(tree.pos, targs(j));
-	viewbounded = viewbounded | ((tparams(j).flags & VIEWBOUND) != 0);
 	j = j + 1
       }}
-      tree1 = make.TypeApply(tree.pos, tree1, argtrees)
-	.setType(restype.subst(tparams, targs));
-      if (viewbounded)
-	tree1 = addViewArgs(tree1, tparams, restype, targs);
+      completeTypeApply(
+	make.TypeApply(tree.pos, tree1, argtrees)
+	.setType(restype.subst(tparams, targs)))
+    } else {
+      tree1.setType(restype.subst(tparams, targs));
     }
-    tree1
   }
 
   /** Return the instantiated and normalized type of polymorphic expression
@@ -934,6 +999,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   *  types `argtypes' and its result type is compatible with `pt'.
   */
   def methodInstance(tree: Tree, tparams: Array[Symbol], restype: Type, argtypes: Array[Type], pt: Type): Tree = {
+    //System.out.println("methodinstance, tree = " + tree + ":" + tree.getType() + ", tparams = " + ArrayApply.toString(tparams.asInstanceOf[Array[Object]]) + ", restype = " + restype + ", argtypes = " + ArrayApply.toString(argtypes.asInstanceOf[Array[Object]]) + ", pt = " + pt);//DEBUG
     restype match {
       case Type$PolyType(tparams1, restype1) =>
 	val tparams2: Array[Symbol] = new Array[Symbol](tparams.length + tparams1.length);
@@ -944,7 +1010,14 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       case Type$MethodType(params, restpe) =>
 	var targs: Array[Type] = _;
 	try {
-	  targs = methTypeArgs(tparams, params, argtypes, restpe, pt, true, false);
+	  restpe match {
+	    case Type$MethodType(params1, restpe1) if isViewBounded(tparams) =>
+	      targs = methTypeArgs(
+		tparams, params1, argtypes, restpe1, pt, true, false);
+	    case _ =>
+	      targs = methTypeArgs(
+		tparams, params, argtypes, restpe, pt, true, false);
+	  }
 	} catch {
 	  case ex: NoInstance =>
 	    throw new Type$Error(
@@ -954,7 +1027,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 		Type.widen(argtypes), Type.AnyType) +
 	      "\n --- because ---\n" + ex.getMessage());
 	}
-	val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams);
+	val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams, restype);
 	checkBounds(tparams, targs, "inferred ");
 	val restype1: Type =
 	  if (uninstantiated.length == 0) restype
@@ -1032,7 +1105,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	val targs: Array[Type] = methTypeArgs(
 	  tparams, params, argtypes, restpe, pt, false, regularValue);
 	if (targs != null) {
-	  val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams);
+	  val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams, restpe);
 	  isWithinBounds(tparams, targs) &&
 	  exprTypeArgs(uninstantiated,
 		       restpe.subst(tparams, targs), pt,

@@ -12,8 +12,8 @@ form.
   special        ::=  $\mbox{\rm\em ``all other characters except parentheses ([{}]) and periods''}$
 
   op             ::=  special {special} 
-  varid          ::=  lower {letter | digit} [`_' [id]]
-  id             ::=  upper {letter | digit} [`_' [id]]
+  varid          ::=  lower {letter | digit} [`_' {digit} [id]]
+  id             ::=  upper {letter | digit} [`_' {digit} [id]]
                    | varid
                    | op
                    | `\'stringLit

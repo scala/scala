@@ -1849,15 +1849,15 @@ class Parser(unit: Unit) {
   /** ClassDef ::= Id [TypeParamClause] [ParamClause] [`:' SimpleType] ClassTemplate
    */
   def classDef(mods: int): Array[Tree] = {
-	val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
-	do {
-	  s.nextToken();
-	  lhs.append(Tuple4(s.pos,
-	                    ident().toTypeName(),
-		                typeParamClauseOpt(true),
-		                paramClauseOpt()));
+    val lhs = new ListBuffer[Tuple4[Int, Name, Array[Tree$AbsTypeDef], Array[Array[Tree$ValDef]]]];
+    do {
+      s.nextToken();
+      lhs.append(Tuple4(s.pos,
+	                ident().toTypeName(),
+		        typeParamClauseOpt(true),
+		        paramClauseOpt()));
     } while (s.token == COMMA);
-	val thistpe = simpleTypedOpt();
+    val thistpe = simpleTypedOpt();
     val template = classTemplate();
     val ts = new myTreeList();
 	lhs foreach { case Tuple4(p, n, tp, vp) =>

@@ -17,5 +17,4 @@ object Test {
       case ex => System.out.println(ex);
     }
   }
-
 }

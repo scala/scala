@@ -244,7 +244,12 @@ public class UnPickle implements Kinds, Modifiers, EntryTags, TypeTags {
 		    case TYPEsym:
 			entries[n] = sym = owner.newAbstractType(
 			    Position.NOPOS, flags, name);
-			sym.setInfo(getType(inforef, sym));
+			if ((flags & VIEWBOUND) != 0) {
+			    sym.setInfo(global.definitions.ANY_TYPE());
+			    sym.setVuBound(getType(inforef, sym));
+			} else {
+			    sym.setInfo(getType(inforef, sym));
+			}
 			sym.setLoBound(readTypeRef(sym));
 			break;
 
