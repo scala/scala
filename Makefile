@@ -218,6 +218,7 @@ bootstrap	: .latest-bootstrap
 scripts		: $(SCRIPTS_WRAPPER_LINKS)
 library		: .latest-$(boot)library-jc
 library		: .latest-$(boot)library-sc
+library-msil	: .latest-$(boot)library-sc-msil
 scalac		: .latest-$(boot)scalac-jc
 scalac		: .latest-$(boot)scalac-sc
 interpreter	: .latest-interpreter-jc
@@ -336,6 +337,11 @@ cvs-fix-perms		:
 
 .latest%library-sc	: $(LIBRARY_SC_FILES)
 	@$(make) sc target=LIBRARY LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
+	touch $@
+
+.latest-$(boot)library-sc-msil	: $(LIBRARY_SC_FILES)
+	@$(make) sc target=LIBRARY SC_TARGET="msil"\
+	SC_FLAGS="-r $(PROJECT_LIBRARYDIR)" LIBRARY_SC_FILES='$(subst $$,$$$$,$?)'
 	touch $@
 
 .latest-library-sdc	: $(LIBRARY_SDC_FILES)
