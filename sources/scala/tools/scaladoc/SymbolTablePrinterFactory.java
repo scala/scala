@@ -9,10 +9,6 @@
 package scala.tools.scaladoc;
 
 import scalac.Global;
-import scalac.ast.Tree;
-import scalac.ast.Tree.AbsTypeDef;
-import scalac.ast.Tree.Template;
-import scalac.ast.Tree.ValDef;
 import scalac.symtab.Kinds;
 import scalac.symtab.Modifiers;
 import scalac.symtab.NoSymbol;
@@ -21,6 +17,7 @@ import scalac.symtab.Scope.SymbolIterator;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.symtab.Type.*;
+//import scalac.symtab.SymbolTablePrinter;
 import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Names;
@@ -28,14 +25,14 @@ import scalac.util.Strings;
 
 class SymbolTablePrinterFactory {
 
-    public static SymbolTablePrinter makeHTML(final Page page, final TreeSymbols treeSymbols) {
+    public static SymbolTablePrinter makeHTML(final Page page) {
 
 	return new SymbolTablePrinter(page.getCodePrinter()) {
 
 		public void printSymbol(Symbol sym, boolean addLink) {
 		    String name = sym.nameString();
 		    if (global.debug) name = sym.name.toString();
-		    if (treeSymbols.contains(sym))
+		    if (ScalaSearch.isDocumented(sym))
 			if (addLink)
 			    page.printAhref(page.rel(Location.get(sym)),
 					    page.destinationFrame, name);
@@ -53,7 +50,7 @@ class SymbolTablePrinterFactory {
 			Type result = getTypeToPrintForPrefix0(prefix);
 			if (result == prefix || result == null) {
 			    return
-				cleanPrefix(result, treeSymbols, global);
+				cleanPrefix(result, global);
 			}
 			prefix = result;
 		    }
@@ -88,7 +85,7 @@ class SymbolTablePrinterFactory {
      *
      * @param prefix
      */
-    static protected Type cleanPrefix(Type prefix, TreeSymbols treeSymbols, Global global) {
+    static protected Type cleanPrefix(Type prefix, Global global) {
 	if (prefix == null) return null;
 	if (prefix.symbol().kind == Kinds.NONE) return null;
 	if (prefix.symbol().isRoot()) return null;
@@ -100,25 +97,25 @@ class SymbolTablePrinterFactory {
 
 	switch(prefix) {
 	case ThisType(Symbol sym):
-	    if (sym.isPackage() && treeSymbols.contains(sym.module()))
+	    if (sym.isPackage() && ScalaSearch.isDocumented(sym.module()))
 		return null;
-	    else if (treeSymbols.contains(sym))
+	    else if (ScalaSearch.isDocumented(sym))
 		return null;
 	    else
 		return prefix;
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    Type pre1 = cleanPrefix(pre, treeSymbols, global);
-	    if (pre1 == null && args.length == 0 && treeSymbols.contains(sym))
+	    Type pre1 = cleanPrefix(pre, global);
+	    if (pre1 == null && args.length == 0 && ScalaSearch.isDocumented(sym))
 		return null;
 	    else {
 		pre1 = pre1 == null ? global.definitions.ROOT.thisType() : pre1;
 		return Type.typeRef(pre1, sym, args);
 	    }
 	case SingleType(Type pre, Symbol sym):
-	    Type pre1 = cleanPrefix(pre, treeSymbols, global);
+	    Type pre1 = cleanPrefix(pre, global);
 	    if (pre1 == null) {
 		if (sym.isClass() || sym.isModule())
-		    if (treeSymbols.contains(sym)) {
+		    if (ScalaSearch.isDocumented(sym)) {
 			return null;
 		    }
 		    else
@@ -132,6 +129,7 @@ class SymbolTablePrinterFactory {
 	    return prefix;
 	}
     }
+
 
 
 }

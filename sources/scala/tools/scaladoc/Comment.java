@@ -10,13 +10,8 @@ package scala.tools.scaladoc;
 
 import java.util.*;
 import java.util.regex.*;
-
 import ch.epfl.lamp.util.Pair;
-
-import scalac.ast.Tree;
 import scalac.symtab.Symbol;
-
-import scaladoc.*;
 
 /**
  * Class <code>Comment</code> contains all information in comment part.

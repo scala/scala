@@ -10,14 +10,12 @@ HTMLGeneratorCommand.java
 HTMLGeneratorPhase.java
 HTMLGeneratorPhases.java
 Main.scala
-OneTree.java
 ScalaSearch.java
 StandardDocModule.java
-SymbolTablePrinter.java
 Tag.java
 Location.java
-TreeSymbols.java
 Page.java
+SymbolTablePrinter.java
 SymbolTablePrinterFactory.java
 
 ##############################################################################

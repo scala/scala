@@ -392,9 +392,9 @@ public abstract class SymbolTablePrinter extends scalac.symtab.SymbolTablePrinte
 
 	case ConstantType(Type base, Object value):
 	    printType(base);
-	    print("(");
-	    print(value.toString());
-	    print(")");
+// 	    print("(");
+// 	    print(value.toString());
+// 	    print(")");
 	    return this;
 
 	case CompoundType(Type[] parts, Scope members):

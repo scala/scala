@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 
 import scalac.Global;
 import scalac.Unit;
-import scalac.ast.Tree;
 import scalac.symtab.Symbol;
 import scalac.util.Debug;
 
@@ -40,8 +39,8 @@ public class StandardDocModule {
      * ..
      */
     public void apply() {
-	Tree tree = OneTree.apply(global);
-	HTMLGenerator.apply(tree, global);
+	HTMLGenerator.apply(global);
+	//Query.apply(global);
     }
 
     /**
