@@ -7,7 +7,6 @@ import Tree.*;
 //import scala.compiler.printer.TextTreePrinter ; // DEBUGGING\
     //import scala.compiler.printer.XMLAutomPrinter ; // DEBUGGING\
 
-    import scalac.transformer.TransMatch.Matcher ;
 import scalac.ast.* ;
 import scalac.symtab.* ;
 
@@ -26,7 +25,7 @@ public class SequenceMatcher extends PatternTool {
     final static Integer IGNORED = new Integer(42);
     CodeFactory cf;
 
-    Matcher _m;
+    PartialMatcher _m;
 
     //Tree pat[];
     //Tree body[];
@@ -93,7 +92,7 @@ public class SequenceMatcher extends PatternTool {
      *                     becomes a ThrowMatchError then
      *  @param doBinding   flasg that indicates whether variables should be bound
     */
-    public void construct( Matcher _m,
+    public void construct( PartialMatcher _m,
                            Tree[] pat,
                            Tree[] body,
                            Tree defaultCase,
@@ -151,7 +150,7 @@ public class SequenceMatcher extends PatternTool {
                                              defaultCase,
                                              newbody,
                                              _m.resultType );
-    } // construct (Matcher, Tree[], Tree[], Tree, boolean )
+    } // construct (PartialMatcher, Tree[], Tree[], Tree, boolean )
 
       /** constructor, invoked  by AlgebraicMatcher
        */

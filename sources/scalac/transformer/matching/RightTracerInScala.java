@@ -9,8 +9,6 @@ import scalac.ast.*;
 import scalac.symtab.*;
 import Tree.*;
 
-import scalac.transformer.TransMatch.Matcher ;
-
 import java.util.* ;
 import Scope.SymbolIterator;
 
@@ -276,9 +274,9 @@ public class RightTracerInScala extends TracerInScala  {
         //System.out.println("calling algebraic matcher on type:"+pat.type);
 
         //System.err.println( "curT"+currentElem().type().widen() );
-        Matcher m = new Matcher( owner,//funSym,//this.funSym,
-                                 currentElem(),
-                                 defs.BOOLEAN_TYPE() );
+        PartialMatcher m = new PartialMatcher( owner,//funSym,//this.funSym,
+                                               currentElem(),
+                                               defs.BOOLEAN_TYPE() );
 
         final HashMap freshenMap = new HashMap(); // sym2exp -> new sym
         HashMap helpMap3 = new HashMap();         // new sym -> original sym

@@ -16,7 +16,6 @@ import scalac.ast.TreeGen;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.Modifiers; // test
-import scalac.transformer.TransMatch.Matcher;
 //import scalac.typechecker.*;
 import Tree.*;
 
@@ -110,9 +109,9 @@ public class WordAutomInScala extends Autom2Scala {
 
     // calling the /*AlgebraicMatcher*/PatternMatcher here
     Tree _cur_match( Tree pat ) { // TE ST
-        Matcher m = new Matcher( this.owner,   /* owner*/
-                                 currentElem(), /* root */
-                                 defs.BOOLEAN_TYPE() /* restype */);
+        PartialMatcher m = new PartialMatcher( this.owner,   /* owner*/
+                                               currentElem(), /* root */
+                                               defs.BOOLEAN_TYPE() /* restype */);
 
         am.construct( m, new CaseDef[] {
             cf.gen.CaseDef( pat,

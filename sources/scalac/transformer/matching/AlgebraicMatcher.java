@@ -16,7 +16,6 @@ import scalac.symtab.*;
 import PatternNode.*;
 import Tree.*;
 
-import scalac.transformer.TransMatch.Matcher ;
 import scalac.util.Name ;
 import scalac.util.Names ;
 //import scalac.ast.printer.TextTreePrinter ;
@@ -30,7 +29,7 @@ import java.util.Iterator ;
 
 public class AlgebraicMatcher extends PatternMatcher {
 
-      Matcher _m;
+      PartialMatcher _m;
 
       /** constructor
        */
@@ -42,13 +41,13 @@ public class AlgebraicMatcher extends PatternMatcher {
 
       /** constructs an algebraic pattern matcher from cases
        */
-      public void construct( Matcher m, Tree[] cases) {
+      public void construct( PartialMatcher m, Tree[] cases) {
             construct(m, cases, true);
       }
 
       /** constructs an algebraic pattern matcher from cases
        */
-      public void construct( Matcher m, Tree[] cases, boolean doBinding) {
+      public void construct( PartialMatcher m, Tree[] cases, boolean doBinding) {
             this._m = m;
 	    super.initialize( _m.selector, _m.owner, _m.resultType, doBinding );
             for( int i = 0; i < cases.length; i++ ) {
@@ -157,9 +156,9 @@ public class AlgebraicMatcher extends PatternMatcher {
 
 	  SequenceMatcher wordRec = new SequenceMatcher(unit);
 
-	  Matcher m = new Matcher( _m.owner,
-				   selector,
-				   defs.BOOLEAN_TYPE() );
+	  PartialMatcher m = new PartialMatcher( _m.owner,
+                                                 selector,
+                                                 defs.BOOLEAN_TYPE() );
 
 	  Tree pats[] = new Tree[ seqPatNodes.size() ];
 	  Tree body[] = new Tree[ seqPatNodes.size() ];

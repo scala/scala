@@ -1,18 +1,7 @@
 package scalac.transformer.matching ;
 
-import scalac.*;
-import scalac.ast.*;
-import scalac.symtab.*;
-import Tree.*;
-import scalac.util.Name;
-import scalac.util.Names;
-
-import scalac.transformer.TransMatch.Matcher ;
-
-import java.util.* ;
-
-import scala.tools.util.Position;
-
+import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 
 /** 2do: factor common things of LeftTracerInScala and RightTracerInScala
  */

@@ -11,7 +11,6 @@ import scalac.util.Name;
 import scalac.util.Names;
 import Tree.*;
 
-import scalac.transformer.TransMatch.Matcher ;
 import java.util.* ;
 
 import scala.tools.util.Position;
@@ -168,9 +167,9 @@ public class Autom2Scala  {
     */
     // calling the /*AlgebraicMatcher*/PatternMatcher here
     Tree _cur_match( Tree pat ) {
-        Matcher m = new Matcher( this.funSym,   /* owner*/
-                                 currentElem(), /* root */
-                                 defs.BOOLEAN_TYPE() /* restype */);
+        PartialMatcher m = new PartialMatcher( this.funSym,   /* owner*/
+                                               currentElem(), /* root */
+                                               defs.BOOLEAN_TYPE() /* restype */);
 
         am.construct( m, new CaseDef[] {
             cf.gen.CaseDef( pat,

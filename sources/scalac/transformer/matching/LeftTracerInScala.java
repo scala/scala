@@ -7,8 +7,6 @@ import Tree.*;
 import scalac.util.Name;
 import scalac.util.Names;
 
-import scalac.transformer.TransMatch.Matcher ;
-
 import java.util.* ;
 
 import scala.tools.util.Position;
@@ -203,9 +201,9 @@ public class LeftTracerInScala extends TracerInScala {
 
         //System.out.println("calling algebraic matcher on type:"+pat.type);
 
-        Matcher m = new Matcher( owner,
-                                 currentElem(),
-                                 defs.BOOLEAN_TYPE() );
+        PartialMatcher m = new PartialMatcher( owner,
+                                               currentElem(),
+                                               defs.BOOLEAN_TYPE() );
 
         if( CollectVariableTraverser.containsBinding( pat )) {
             switch( pat ) {
