@@ -208,7 +208,6 @@ public class  Global {
             assert phase.id == i;
         }
 	assert PHASE.ANALYZER.id + 1 == POST_ANALYZER_PHASE_ID;
-        if (interpret) fixInit();
     }
 
     /** Move to next phase
@@ -294,6 +293,24 @@ public class  Global {
     private Symbol SHOW_DEFINITION;
     private Symbol SHOW_VALUE_DEFINITION;
 
+    private Symbol INTERPRETER() {
+        if (INTERPRETER == null)
+            INTERPRETER = definitions.getModule(SCALA_INTERPRETER_N);
+        return INTERPRETER;
+    }
+
+    private Symbol SHOW_DEFINITION() {
+        if (SHOW_DEFINITION == null)
+            SHOW_DEFINITION = INTERPRETER().lookup(SHOW_DEFINITION_N);
+        return SHOW_DEFINITION;
+    }
+
+    private Symbol SHOW_VALUE_DEFINITION() {
+        if (SHOW_VALUE_DEFINITION == null)
+            SHOW_VALUE_DEFINITION = INTERPRETER().lookup(SHOW_VALUE_DEFINITION_N);
+        return SHOW_VALUE_DEFINITION;
+    }
+
     private int module = 0;
     private List imports = new ArrayList();
 
@@ -365,8 +382,8 @@ public class  Global {
             body.append(
                 treeGen.Apply(
                     treeGen.Select(
-                        treeGen.mkRef(0, INTERPRETER),
-                        SHOW_DEFINITION),
+                        treeGen.mkRef(0, INTERPRETER()),
+                        SHOW_DEFINITION()),
                     new Tree[] {
                         make.Literal(0, tree.symbol().defString()).setType(
                             definitions.JAVA_STRING_TYPE)}));
@@ -375,8 +392,8 @@ public class  Global {
             body.append(
                 treeGen.Apply(
                     treeGen.Select(
-                        treeGen.mkRef(0, INTERPRETER),
-                        SHOW_VALUE_DEFINITION),
+                        treeGen.mkRef(0, INTERPRETER()),
+                        SHOW_VALUE_DEFINITION()),
                     new Tree[] {
                         make.Literal(0, tree.symbol().defString()).setType(
                             definitions.JAVA_STRING_TYPE),
@@ -385,13 +402,6 @@ public class  Global {
         default:
             return;
         }
-    }
-
-
-    private void fixInit() {
-        INTERPRETER = definitions.getModule(SCALA_INTERPRETER_N);
-        SHOW_DEFINITION = INTERPRETER.lookup(SHOW_DEFINITION_N);
-        SHOW_VALUE_DEFINITION = INTERPRETER.lookup(SHOW_VALUE_DEFINITION_N);
     }
     // !!! >>> Interpreter stuff
 
