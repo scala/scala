@@ -21,6 +21,7 @@ import scalac.ast.Tree.Template;
 import scalac.ast.Tree.ValDef;
 import scalac.symtab.Definitions;
 import scalac.symtab.Symbol;
+import scalac.symtab.Type;
 import scalac.util.Debug;
 
 /**
@@ -175,6 +176,39 @@ public class TreeChecker {
         default:
             throw Debug.abort("illegal case", tree);
         }
+    }
+
+    //########################################################################
+    // Private Methods - Checking statements
+
+    /** Checks the statement. Returns true. */
+    private boolean statement(Set locals, Tree tree) {
+        switch (tree) {
+
+        case Empty:
+            return true;
+
+        case ValDef(_, _, _, Tree rhs):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isTerm(): show(tree);
+            scopeInsertVVariable(symbol, false);
+            locals.add(symbol);
+            pushOwner(symbol);
+            expression(rhs, symbol.type());
+            popOwner();
+            return true;
+
+        default:
+            return expression(tree, tree.type());
+        }
+    }
+
+    //########################################################################
+    // Private Methods - Checking expressions
+
+    /** Checks the expression. Returns true. */
+    private boolean expression(Tree tree, Type expected) {
+        return true;
     }
 
     //########################################################################
