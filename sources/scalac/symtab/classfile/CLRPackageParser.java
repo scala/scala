@@ -98,7 +98,7 @@ public class CLRPackageParser extends MetadataParser {
 
  	findAssembly("vjslib.dll");
    	findAssembly("scala.dll");
-   	findAssembly("scala_sc.dll");
+   	findAssembly("scalalib.dll");
 	findAllAssemblies();
 
 	Type[] types = Type.EmptyTypes;

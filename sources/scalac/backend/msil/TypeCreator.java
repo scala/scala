@@ -81,6 +81,8 @@ final class TypeCreator {
     final MethodInfo MONITOR_PULSE_ALL;
     final MethodInfo MONITOR_WAIT;
     final MethodInfo MONITOR_WAIT_TIMEOUT;
+    final MethodInfo MONITOR_ENTER;
+    final MethodInfo MONITOR_EXIT;
 
     Type SCALA_BYTE;
     Type SCALA_SHORT;
@@ -134,16 +136,19 @@ final class TypeCreator {
 
 	MONITOR = Type.GetType("System.Threading.Monitor");
 
+	final Type[] sObject1 = new Type[] {OBJECT};
+
 	//CONCAT_OBJECT = STRING.GetMethod("Concat", new Type[] {OBJECT});
 	//CONCAT_STRING_STRING = STRING.GetMethod("Concat", new Type[] {STRING, STRING});
 	CONCAT_OBJECT_OBJECT =
 	    STRING.GetMethod("Concat", new Type[] {OBJECT, OBJECT});
-	OBJECT_EQUALS = OBJECT.GetMethod("Equals", new Type[] {OBJECT});
-	MONITOR_PULSE = MONITOR.GetMethod("Pulse", new Type[] {OBJECT});
-	MONITOR_PULSE_ALL = MONITOR.GetMethod("PulseAll", new Type[] {OBJECT});
-	MONITOR_WAIT = MONITOR.GetMethod("Wait", new Type[] {OBJECT});
+	OBJECT_EQUALS = OBJECT.GetMethod("Equals", sObject1);
+	MONITOR_PULSE = MONITOR.GetMethod("Pulse", sObject1);
+	MONITOR_PULSE_ALL = MONITOR.GetMethod("PulseAll", sObject1);
+	MONITOR_WAIT = MONITOR.GetMethod("Wait", sObject1);
 	MONITOR_WAIT_TIMEOUT = MONITOR.GetMethod("Wait", new Type[] {OBJECT, INT});
-
+	MONITOR_ENTER = MONITOR.GetMethod("Enter", sObject1);
+	MONITOR_EXIT = MONITOR.GetMethod("Exit", sObject1);
     }
 
     private boolean initialized = false;
