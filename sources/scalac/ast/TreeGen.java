@@ -1125,7 +1125,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     public void changeOwner(Tree tree, final Symbol prevOwner, final Symbol newOwner) {
 	Traverser lifter = new Traverser() {
 	    public void traverse(Tree tree) {
-		if (TreeInfo.isDefinition(tree)) {
+		if (tree.definesSymbol()) {
 		    Symbol sym = tree.symbol();
                     if (sym != null && sym.owner() == prevOwner) {
 			sym.setOwner(newOwner);
