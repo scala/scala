@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.tools.dtd2scala ;
 import org.xml.sax.{InputSource,SAXException,SAXParseException,XMLReader}
 //import org.xml.sax.helpers.XMLReaderFactory;
