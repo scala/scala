@@ -20,4 +20,6 @@ regexp/Star.scala
 regexp/Eps.scala
 regexp/PCDATA_.scala
 
+template/ObjectTemplate.scala.xml
+template/CommentTemplate.scala.xml
 ##############################################################################

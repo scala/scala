@@ -4,7 +4,7 @@
 ;;; TODO
 
 (require 'easymenu)
-(require 'newcomment)
+;;(require 'newcomment)
 (require 'cl)
 (require 'regexp-opt)
 

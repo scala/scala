@@ -110,10 +110,12 @@ SCALADOC_RSRC_FILES	+= $(SCALADOC_RSRC_LIST:%=$(SCALADOC_ROOT)/%)
 SCALADOC_RSRC_OUTPUTDIR	 = $(PROJECT_OUTPUTDIR)/scala/tools/scaladoc
 
 # dtd2scala
-DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/dtd2scala
+DTD2SCALA_PATH  	 = scala/tools/dtd2scala
+DTD2SCALA_ROOT		 = $(PROJECT_SOURCEDIR)/$(DTD2SCALA_PATH)
 DTD2SCALA_LIST		 = $(call READLIST,$(PROJECT_LISTDIR)/dtd2scala.lst)
 DTD2SCALA_SOURCES	+= $(DTD2SCALA_LIST:%=$(DTD2SCALA_ROOT)/%)
-DTD2SCALA_SC_FILES	 = $(DTD2SCALA_SOURCES)
+DTD2SCALA_SC_FILES	 = $(filter %.scala,$(DTD2SCALA_SOURCES))
+DTD2SCALA_XML_FILES	 = $(filter %.xml,$(DTD2SCALA_SOURCES))
 
 # scalap
 SCALAP_ROOT		 = $(PROJECT_SOURCEDIR)/scala/tools/scalap
@@ -344,8 +346,10 @@ cvs-fix-perms		:
 	    $(SCALADOC_RSRC_OUTPUTDIR))
 	touch $@
 
-.latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES)
-	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$?'
+.latest-dtd2scala-sc		: $(DTD2SCALA_SC_FILES) $(DTD2SCALA_XML_FILES)
+	@$(make) sc target=DTD2SCALA DTD2SCALA_SC_FILES='$(filter %.scala,$?)'	
+	@mkdir -p $(PROJECT_OUTPUTDIR)/$(DTD2SCALA_PATH)/template
+	cp $(DTD2SCALA_XML_FILES) $(PROJECT_OUTPUTDIR)/$(DTD2SCALA_PATH)/template/
 	touch $@
 
 .latest-scalap-sc		: $(SCALAP_SC_FILES)

@@ -22,9 +22,12 @@ class Parser( it:Iterator[char] ) with Scanner( it ) {
       case DOT =>
 	nextToken; acc( SLASH );
 
-      case IDENT =>
-	val label = value; nextToken; val cs = conds; es = Node( label, cs ) :: es ;
-
+      case IDENT => {
+	val label = value;
+        nextToken;
+        val cs = conds;
+        es = PathNode( label, cs ) :: es
+      }
       case SLASH =>
 	nextToken;
 

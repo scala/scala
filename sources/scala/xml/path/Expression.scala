@@ -1,9 +1,9 @@
 package scala.xml.path;
 
-import scala.xml.Element ;
+import scala.xml.Node ;
 
 object Expression {
-        def evaluate(expr:Expression):List[Element] = {
+        def evaluate(expr:Expression):List[Node] = {
                 Nil; // to do
         }
 }
@@ -19,7 +19,7 @@ case class Node[T<:Element]( conds:Condition* ) extends Expression {
         }
 };
 */
-case class Node( label:String, cond:Option[List[List[Expression]]] ) extends Expression ;
+case class PathNode( label:String, cond:Option[List[List[Expression]]] ) extends Expression ;
 
 case class Attribute( name:String ) extends Expression;
 

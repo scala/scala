@@ -131,11 +131,12 @@ runtime/ScalaRunTime.scala
 
 testing/UnitTest.scala
 
-xml/Element.scala
+xml/Node.scala
 xml/FactoryAdapter.scala
-xml/Generic.scala
-xml/PCDATA.scala
-xml/ScalaFactoryAdapter.scala
+xml/Text.scala
+xml/BindingFactoryAdapter.scala
+
+xml/nobinding/Element.scala
 
 xml/path/Expression.scala
 xml/path/Tokens.scala
