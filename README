@@ -16,6 +16,7 @@ Scala Tools
 - scaladoc    Scala API documentation generator
 - scalaint    Scala interactive interpreter
 - scalarun    Scala interpreter
+- scalap      Scala profiler
 
 Run the command "scalac -help" to display the list of available
 compiler options.
@@ -28,7 +29,7 @@ respectively scalac, scalaint and scalarun instead.
 Install on Unix
 ---------------
 
-Untar the archive. All scala tools are located in the directory "bin".
+Untar the archive. All Scala tools are located in the directory "bin".
 
 You may test the distribution by running the script "scala-test"
 located in the subdirectory "share/scala/test/bin".
@@ -37,7 +38,7 @@ located in the subdirectory "share/scala/test/bin".
 Install on Windows
 ------------------
 
-Unzip the archive. All scala tools are located in the "bin"
+Unzip the archive. All Scala tools are located in the "bin"
 directory. Before running any of these tools, you must define the
 environment variable SCALA_HOME to point to the home directory of the
 scala distribution.
@@ -59,14 +60,3 @@ If you have Administrator privileges, you may install the tools for
 all users of your machine by creating a new system variable instead of
 a new user variable.
 
-
-______________________________________________________________________
-
-Java, J2EE, J2SE, J2ME, and all Java-based marks are trademarks or
-registered trademarks of Sun Microsystems, Inc. in the United States
-and other countries.
-
-Windows 95, Windows 98, Windows ME, Windows NT, Windows 2000,
-Windows XP are registered trademarks of Microsoft Corporation in the
-United States and other countries
-______________________________________________________________________
