@@ -11,11 +11,9 @@ neg/abstract.scala
 neg/altherr2.scala
 neg/altherr3.scala
 neg/bounds.scala
-neg/bug25.scala
 neg/bug38.scala
 neg/bug40.scala
 neg/bug43.scala
-neg/bug44.scala
 neg/bug45.scala
 neg/bug52.scala
 neg/bug58.scala
@@ -31,9 +29,7 @@ neg/matthias2.scala
 neg/michel2.scala
 neg/overlapping.scala
 neg/protected.scala
-neg/refine.scala
 neg/seqtest.scala
 neg/stable.scala
-neg/vincent1.scala
 
 ##############################################################################

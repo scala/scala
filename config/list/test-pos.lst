@@ -4,7 +4,6 @@
 # $Id$
 
 pos/A.scala
-pos/List1.scala
 pos/S1.scala
 pos/S3.scala
 pos/S5.scala
@@ -43,7 +42,6 @@ pos/bug69.scala
 pos/bug76.scala
 pos/cls.scala
 pos/cls1.scala
-pos/clsrefine.scala
 pos/compile.scala
 pos/eta.scala
 pos/exceptions.scala
@@ -56,9 +54,7 @@ pos/lambdalift.scala
 pos/lambdalift1.scala
 pos/localmodules.scala
 pos/matthias1.scala
-pos/matthias3.scala
 pos/matthias4.scala
-pos/matthias5.scala
 pos/maxim1.scala
 pos/michel1.scala
 pos/michel2.scala
@@ -82,7 +78,6 @@ pos/philippe2.scala
 pos/philippe3.scala
 pos/philippe4.scala
 pos/propagate.scala
-pos/refine.scala
 pos/reftest.scala
 pos/scoping1.scala
 pos/scoping2.scala
@@ -95,11 +90,8 @@ pos/test1.scala
 pos/test2.scala
 pos/test4.scala
 pos/test4a.scala
-pos/test4refine.scala
 pos/test5.scala
-pos/test5refine.scala
 pos/thistypes.scala
 pos/valdefs.scala
-pos/vincent.scala
 
 ##############################################################################
