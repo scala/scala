@@ -1194,8 +1194,8 @@ public class Parser implements Tokens {
 	return first;
     }
 
-    /**   TreePattern  ::=  varid `:' Type
-     *                   |  `_' `:' Type
+    /**   TreePattern  ::=  varid `:' Type1
+     *                   |  `_' `:' Type1
      *                   |  SimplePattern [ '*' | '?' | '+' ]
      *                   |  SimplePattern {Id SimplePattern}    // op2 must not be empty
      */
