@@ -39,10 +39,10 @@ abstract class MarkupParser[MarkupType] {
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c);
 
-  protected var aMap: mutable.Map[String,AttribValue] =
-    new mutable.HashMap[String,AttribValue];
+  protected var aMap: mutable.Map[String,AttribValue] = _;
 
   final val noChildren = new mutable.ListBuffer[MarkupType];
+  final val noAttribs  = new mutable.HashMap[String, AttribValue];
 
   //var xEmbeddedBlock = false;
 
@@ -84,7 +84,7 @@ abstract class MarkupParser[MarkupType] {
    *                      | `{` scalablock `}`
   */
   def xAttributes = {
-    aMap.clear;
+    val aMap = new mutable.HashMap[String,AttribValue];
     while( xml.Parsing.isNameStart( ch )) {
       val key = xName;
       xEQ;
@@ -136,13 +136,17 @@ abstract class MarkupParser[MarkupType] {
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  protected def xTag: String = {
+  protected def xTag: Pair[String, mutable.Map[String,AttribValue]] = {
     val elemqName = xName;
+
     xSpaceOpt;
-    if(xml.Parsing.isNameStart( ch )) {
-      xAttributes;
-    }
-    elemqName;
+    val aMap: mutable.Map[String,AttribValue] =
+      if(xml.Parsing.isNameStart( ch )) {
+        xAttributes;
+      } else {
+        noAttribs
+      };
+    Pair(elemqName, aMap);
   }
 
   /** [42]  '&lt;' xmlEndTag ::=  '&lt;' '/' Name S? '&gt;'
@@ -264,7 +268,7 @@ abstract class MarkupParser[MarkupType] {
                 nextch;
                 ts.appendAll(xProcInstr);
               case _   =>
-                ts.appendAll(element);     // child
+                ts.appendAll(element1);     // child
             }
 
           case '{' =>
@@ -298,15 +302,18 @@ abstract class MarkupParser[MarkupType] {
   ts
 } /* end content */
 
+  def element: Iterable[MarkupType] = {
+    xToken('<');
+    element1
+  }
+
   /** '&lt;' element ::= xmlTag1 '&gt;'  { xmlExpr | '{' simpleExpr '}' } ETag
    *               | xmlTag1 '/' '&gt;'
    */
-  def element: Iterable[MarkupType] = {
-    xSpaceOpt; // @todo: move this to init
-    xToken('<');
+  def element1: Iterable[MarkupType] = {
     var pref: Map[String, String] = _;
     var pos1 = pos;
-    val qname = xTag;
+    val Pair(qname, aMap) = xTag;
     val ts: mutable.Buffer[MarkupType] = {
       if(ch == '/') {    // empty element
         xToken('/');
