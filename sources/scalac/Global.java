@@ -259,7 +259,7 @@ public class Global {
             } catch (FileNotFoundException e) {
                 error("file " + file + " not found");
             } catch (IOException e) {
-                error(e.toString());
+                error(e.getMessage());
             }
         }
         this.units = (Unit[])units.toArray(new Unit[units.size()]);
