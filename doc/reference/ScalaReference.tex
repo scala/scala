@@ -3366,13 +3366,14 @@ written.
                     |  Pattern2
   Pattern2        ::=  [varid `@'] Pattern3
   Pattern3        ::=  SimplePattern [ '*' | '?' | '+' ]
-                    |  SimplePattern { id SimplePattern }
+                    |  SimplePattern { id' SimplePattern }
   SimplePattern   ::=  `_'
                     |  varid
                     |  Literal
                     |  StableId [ `(' [Patterns] `)' ]
                     |  `(' [Patterns] `)'
   Patterns        ::=  Pattern {`,' Pattern}
+  id'             ::=  id $\textit{ but not }$ '*' | '?' | '+' | `@' | `|'
 \end{lstlisting}
 
 A pattern is built from constants, constructors, variables and regular
