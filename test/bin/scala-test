@@ -127,7 +127,7 @@ test_shell() {
 
 test_compilation() {
     output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
-    classpath="$SCALA:$output";
+    classpath="$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
 	os_output=`cygpath -w "$output"`;
@@ -137,7 +137,7 @@ test_compilation() {
     rm -rf "$output";
     mkdir -p "$output" &&
     $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$source" &&
-    java -classpath "$classpath" Test "jvm" &&
+    $SCALA -classpath "$classpath" Test "jvm" &&
     rm -rf "$output";
 }
 
@@ -146,8 +146,7 @@ test_xml() {
     dtdfile="`expr "$source" : "\(.*\)\\.scala"`.dtd";
     xmlfile="`expr "$source" : "\(.*\)\\.scala"`.xml";
     objfile="$output/dtd.scala";
-#    classpath="$SCALA:$output:`$SCALA_INFO --default XERCES_CLASSES`";
-    classpath="$SCALA:$output";
+    classpath="$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
 	os_output=`cygpath -w "$output"`;
@@ -158,7 +157,7 @@ test_xml() {
     mkdir -p "$output" &&
     $DTD2SCALA -d "$os_output" "$dtdfile" dtd &&
     $SOCOS -d "$os_output" $TEST_FLAGS $FLAGS "$objfile" "$source" &&
-    java -classpath "$classpath" Test "$xmlfile" &&
+    $SCALA -classpath "$classpath" Test "$xmlfile" &&
     rm -rf "$output";
 }
 
@@ -295,7 +294,7 @@ test_all() {
     printf_outline "Test configuration\\n";
     printf_outline "socos executable: "; echo "$SOCOS";
     printf_outline "surus executable: "; echo "$SURUS";
-    printf_outline "scala runtime   : "; echo "$SCALA";
+    printf_outline "scala executable: "; echo "$SCALA";
     echo "";
 
     test_one "Testing jvm backend" \
@@ -531,7 +530,7 @@ main() {
     color_initialization "${COLOR:-many}";
     find_program SOCOS scalac;
     find_program SURUS scalarun;
-    find_runtime SCALA $SOCOS;
+    find_program SCALA scala;
     find_program DTD2SCALA dtd2scala;
     find_program SCALA_INFO scala-info;
 
