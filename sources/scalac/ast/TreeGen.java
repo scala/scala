@@ -279,7 +279,13 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	case ThisType(Symbol sym):
 	    return This(pos, sym);
         case SingleType(Type pre1, Symbol sym):
-	    return mkRef(pos, pre1, sym);
+	    Tree id = mkRef(pos, pre1, sym);
+	    switch (sym.type()) {
+	    case MethodType(Symbol[] params, _):
+		assert params.length == 0 : sym;
+		id = this.Apply(id, Tree.EMPTY_ARRAY);
+	    }
+	    return id;
         default:
             throw Debug.abort("illegal case", pre);
         }
