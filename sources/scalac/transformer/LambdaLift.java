@@ -446,6 +446,26 @@ public class LambdaLift extends OwnerTransformer
 	    Tree fn1 = transform(fn);
 	    switch (fn1) {
 	    case TypeApply(Tree fn2, Tree[] targs):
+                if (args.length == 1 && fn2.symbol() == definitions.PREDEF_ARRAY()) {
+                    switch (args[0]) {
+                    case Sequence(Tree[] items):
+                        assert targs.length == 1: tree;
+                        Tree array = gen.mkNewArray(
+                            args[0].pos,
+                            targs[0].type(),
+                            transform(items),
+                            currentOwner);
+                        // fn2 may be like "{ println("hello"); Predef}.Array"
+                        switch (fn2) {
+                        case Select(Tree qualifier, _):
+                            return gen.Block(
+                                args[0].pos,
+                                new Tree[] {qualifier, array});
+                        default:
+                            throw Debug.abort("illegal case", fn2);
+                        }
+                    }
+                }
 		fn1 = copy.TypeApply(
 		    fn1, fn2, addFreeArgs(tree.pos, get(free.ftvs, fsym), targs, true));
 		break;
