@@ -56,7 +56,7 @@ public class PatternNormalizer {
 	    return true;
 
 	case Apply( _, Tree[] args ):
-	    return check( args, false ); // not in seq anymore
+	    return check( args, true ); // could be in sequence !
 
 	case Sequence( Tree[] trees ):
 	    return check( trees, true ); // in seq now
