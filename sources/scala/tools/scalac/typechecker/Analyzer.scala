@@ -191,13 +191,38 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 // Diagnostics ----------------------------------------------------------------
 
-  def errorTree(pos: int): Tree =
-    make.Bad(pos).setSymbol(Symbol.ERROR).setType(Type.ErrorType);
+  private def errorName(tree: Tree): Name =
+    Name.fromString("<error: " + tree + ">");
 
-  def error(pos: int, msg: String): Tree = {
-    unit.error(pos, msg);
-    errorTree(pos);
+  private def errorTree(tree: Tree): Tree =
+    if (tree.isType()) errorTypeTree(tree) else errorTermTree(tree);
+
+  private def errorTypeTree(tree: Tree): Tree = {
+    val symbol = context.owner.newErrorClass(errorName(tree).toTypeName());
+    tree match {
+      case Tree$Ident(_) =>
+        if (tree.symbol() == null) tree.setSymbol(symbol);
+        make.Ident(tree.pos, symbol).setType(Type.ErrorType);
+        errorTermTree(tree);
+      case Tree$Select(qualifier, _) =>
+        if (tree.symbol() == null) tree.setSymbol(symbol);
+        make.Select(tree.pos, symbol, qualifier).setType(Type.ErrorType);
+        errorTermTree(tree);
+      case _ =>
+        gen.mkType(tree.pos, Type.ErrorType);
+    }
   }
+
+  private def errorTermTree(tree: Tree): Tree =
+    gen.mkLocalRef(tree.pos, Symbol.NONE.newErrorValue(errorName(tree)));
+
+  def error(tree: Tree, msg: String): Tree = {
+    error(tree.pos, msg);
+    errorTree(tree);
+  }
+
+  def error(pos: int, msg: String): unit =
+    unit.error(pos, msg);
 
   def typeError(pos: int, found: Type, req: Type): unit = {
     var msg: String = infer.typeErrorMsg("type mismatch", found, req);
@@ -207,7 +232,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     error(pos, msg);
   }
 
-  def reportTypeError(pos: int, ex: Type$Error): Tree = {
+  def reportTypeError(pos: int, ex: Type$Error): unit = {
     if (global.debug) ex.printStackTrace();
     if (ex.isInstanceOf[CyclicReference]) {
       val cyc: CyclicReference = ex.asInstanceOf[CyclicReference];
@@ -486,7 +511,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   */
   def checkStable(tree: Tree): Tree =
     if (TreeInfo.isPureExpr(tree) || tree.getType().isError()) tree;
-    else error(tree.pos, "stable identifier required, but " + tree + " found.");
+    else error(tree, "stable identifier required, but " + tree + " found.");
 
   /** Check that class can be instantiated.
   */
@@ -1316,7 +1341,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    tree1 = infer.exprInstance(tree, tparams, restp, pt);
 	  } catch {
 	    case ex: Type$Error =>
-	      tree1 = error(tree.pos, ex.msg);
+              tree1 = error(tree, ex.msg);
 	  }
 	  return adapt(tree1, mode, pt);
 	}
@@ -1329,7 +1354,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  checkEtaExpandable(tree.pos, tree.getType());
 	  return transform(desugarize.etaExpand(tree, tree.getType()), mode, pt);
 	} else if ((mode & (CONSTRmode | FUNmode)) == CONSTRmode) {
-	  return error(tree.pos, "missing arguments for class constructor");
+          return error(tree, "missing arguments for class constructor");
 	}
 
       case _ =>
@@ -1373,11 +1398,11 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    }
 	    tree.setType(seqConstructorType(seqtp, pt));
 	  } else {
-	    return error(tree.pos, "expected pattern type " + pt +
+            return error(tree, "expected pattern type " + pt +
 			 " does not conform to sequence " + clazz);
 	  }
 	} else if (!tree.getType().isError()) {
-	  return error(tree.pos, "" + tree.getType().symbol() +
+          return error(tree, "" + tree.getType().symbol() +
 		       " is neither a case class constructor nor a sequence class constructor");
 	}
       }
@@ -1413,7 +1438,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
           case Tree$Ident(_) | Tree$Select(_, _) =>
             val sym: Symbol = tree.symbol();
             if (sym != null && !sym.isError() && !sym.isValue()) {
-              return error(tree.pos, "" + tree.symbol() + " is not a value");
+              return error(tree, "" + tree.symbol() + " is not a value");
             }
 	  case _ =>
         }
@@ -1542,7 +1567,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
       }
     } else if (sym.kind != NONE && !sym.isExternal()) {
-      return error(tree.pos,
+      return error(tree,
 		   "reference to " + name + " is ambiguous;\n" +
 		   "it is both defined in " + sym.owner() +
 		   " and imported subsequently by \n" + lastimports.tree);
@@ -1550,7 +1575,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       // check that there are no other applicable imports in same scope.
       while (nextimports != null && nextimports.enclScope == lastimports.enclScope) {
 	if (!nextimports.sameImport(lastimports) && nextimports.importedSymbol(name).kind != NONE) {
-	  return error(tree.pos,
+          return error(tree,
 		       "reference to " + name + " is ambiguous;\n" +
 		       "it is imported twice in the same scope by\n    " +
 		       lastimports.tree + "\nand " + nextimports.tree);
@@ -1572,7 +1597,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     else if (sym.owner().isPackageClass())
       symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, sym.owner().getType());
     if (symtype == Type.NoType)
-      return error(tree.pos, "not found: " + decode(name));
+      return error(tree, "not found: " + decode(name));
     //System.out.println(name + ":" + symtype);//DEBUG
     mkStable(tree.setSymbol(sym).setType(symtype), pre, mode, pt)
   }
@@ -1601,7 +1626,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	} else {
 	  //System.out.println(qual.getType() + " has members " + qual.getType().members());//DEBUG
 	  return error(
-	    tree.pos,
+            tree,
 	    decode(name) + " is not a member of " + qual.getType().widen());
 	}
       }
@@ -1613,7 +1638,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       (if (sym.isType()) sym.typeConstructor() else sym.getType())
       .asSeenFrom(qualtype, sym.owner());
     if (symtype == Type.NoType)
-      return error(tree.pos, "not found: " + decode(name));
+      return error(tree, "not found: " + decode(name));
     else
       symtype = infer.checkAccessible(tree.pos, sym, symtype, qual, qualtype);
     //System.out.println(sym.name + ":" + symtype);//DEBUG
@@ -1943,7 +1968,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     if ((mode & TYPEmode) != 0) {
       val sym: Symbol = tree1.symbol();
       if ((mode & FUNmode) == 0 && sym != null && sym.typeParams().length != 0)
-	return error(tree.pos, "" + sym + " takes type parameters.")
+        return error(tree, "" + sym + " takes type parameters.")
 //	else if (tree1.isType())
 //	    return gen.mkType(tree1.pos, tree1.getType());
     }
@@ -2002,9 +2027,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   // extracted from transform to avoid overflows in GenJVM
   private def transform0(tree: Tree, sym: Symbol): Tree = {
       tree match {
-	case Tree$Bad() =>
-	  tree.setSymbol(Symbol.ERROR).setType(Type.ErrorType)
-
 	case Tree.Empty =>
 	  tree.setType(Type.NoType)
 
@@ -2243,7 +2265,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		tree.pos, applyVisitor, isDefinedAtVisitor,
 		pattype, restype, context.owner);
 	    } else {
-	      error(tree.pos, "expected pattern type of cases could not be determined");
+              error(tree, "expected pattern type of cases could not be determined");
 	    }
 	  } else {
 	    transform(desugarize.Visitor(unit, tree))
@@ -2265,7 +2287,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  } else {
 	    if (!lhs1.getType().isError())
 	      error(tree.pos, "assignment to non-variable ");
-	    errorTree(tree.pos);
+            gen.mkUnitLit(tree.pos)
 	  }
 
 	case Tree$If(cond, thenp, elsep) =>
@@ -2289,7 +2311,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	case Tree$Return(expr) =>
 	  if (!context.owner.isInitialized()) {
-	    error(tree.pos, "method with return needs result type");
+            error(tree, "method with return needs result type");
 	  } else {
 	    val enclFun: Symbol = context.owner.enclMethod();
 	    if (enclFun.kind == VAL && !enclFun.isConstructor()) {
@@ -2298,7 +2320,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      copy.Return(tree, expr1)
 		.setSymbol(enclFun).setType(definitions.ALL_TYPE());
 	    } else {
-	      error(tree.pos, "return outside method definition");
+              error(tree, "return outside method definition");
 	    }
 	  }
 
@@ -2428,7 +2450,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		      " cannot be applied to " +
 		      ArrayApply.toString(
 			argtypes.asInstanceOf[Array[Object]], "(", ",", ")"));
-                errorTree(tree.pos)
+                errorTermTree(tree)
 	    }
 	  }
 
@@ -2574,7 +2596,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  return copy.Apply(tree, fn2, NewArray.Tree(arg1))
 			.setType(arg1.getType());
 		} else {
-		  return error(tree.pos, "expected pattern type of cases could not be determined") : Tree;
+                  return error(tree, "expected pattern type of cases could not be determined") : Tree;
 		}
 	      }
 	    }
@@ -2667,7 +2689,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      tree.pos,
 	      infer.applyErrorMsg(
 		"", fn1, " cannot be applied to ", argtypes, pt));
-            errorTree(tree.pos)
+            errorTermTree(tree)
 	  }
 
 	  handleApply
@@ -2688,7 +2710,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      if (i < parents.length)
 		tree.setType(parents(i).instanceType());
 	      else
-		error(tree.pos,
+                error(tree,
 		      "" + mixin + " does not name a mixin base class of " + clazz);
 	    }
 	  }

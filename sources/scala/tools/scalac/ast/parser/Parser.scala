@@ -7,6 +7,7 @@
 \*                                                                      */
 
 import scalac.symtab.Modifiers;
+import scalac.symtab.Type;
 import scalac.ast._;
 import scalac.atree.AConstant;
 import scalac._;
@@ -91,16 +92,15 @@ class Parser(unit: Unit) {
     }
   }
 
-  def syntaxError(msg: String, skipIt: boolean): Tree =
+  def syntaxError(msg: String, skipIt: boolean): unit =
     syntaxError(s.pos, msg, skipIt);
 
-  def syntaxError(pos: int, msg: String, skipIt: boolean): Tree = {
+  def syntaxError(pos: int, msg: String, skipIt: boolean): unit = {
     if (pos != s.errpos) {
       s.unit.error(pos, msg);
       s.errpos = pos;
     }
     if (skipIt) skip();
-    make.Bad(pos)
   }
 
   def accept(token: int): int = {
@@ -388,7 +388,8 @@ class Parser(unit: Unit) {
       make.ValDef(
         tree.pos, Modifiers.PARAM, name, tpe, Tree.Empty)
     case _ =>
-      val tpe = syntaxError(tree.pos, "not a legal formal parameter", false);
+      syntaxError(tree.pos, "not a legal formal parameter", false);
+      val tpe = gen.mkType(tree.pos, Type.ErrorType);
       make.ValDef(
         tree.pos, Modifiers.PARAM, Names.ERROR, tpe, Tree.Empty)
   }
@@ -413,7 +414,8 @@ class Parser(unit: Unit) {
       make.Select(t.pos, qual, name.toTypeName())
     case _ =>
       Console.println( "class instead "+t.getClass() );
-      syntaxError(t.pos, "class constructor expected", false)
+      syntaxError(t.pos, "class constructor expected", false);
+      gen.mkType(t.pos, Type.ErrorType)
   }
 
   /** Complete unapplied constructor with `()' arguments
@@ -617,7 +619,8 @@ class Parser(unit: Unit) {
       case NULL =>
         gen.mkNullLit(s.pos)
       case _ =>
-        syntaxError("illegal literal", true)
+        syntaxError("illegal literal", true);
+        gen.mkZeroLit(s.pos)
     }
 
     val isSymLit = s.token == SYMBOLLIT;
@@ -1003,7 +1006,8 @@ class Parser(unit: Unit) {
               t = make.Function(
                 pos, convertToParams(ts.toArray()), Tree.Empty);
             } else {
-              t = syntaxError(commapos, "`)' expected", false);
+              syntaxError(commapos, "`)' expected", false);
+              t = gen.mkZeroLit(pos)
             }
           } else {
             accept(RPAREN);
@@ -1033,7 +1037,8 @@ class Parser(unit: Unit) {
               pos, make.Apply(pos, make.Ident(pos, name), Tree.EMPTY_ARRAY)));
         }
       case _ =>
-        return syntaxError("illegal start of expression", true);
+        syntaxError("illegal start of expression", true);
+        return gen.mkZeroLit(s.pos);
     }
     while (true) {
       s.token match {
@@ -1172,7 +1177,7 @@ class Parser(unit: Unit) {
       // normalize
       pN.wrapAlternative(pN.elimSequence(pN.flattenSequence(pat)))
     } else {
-      make.Bad(pos)
+      make.Ident(pos, Names.PATTERN_WILDCARD)
     }
   }
 
@@ -1184,7 +1189,7 @@ class Parser(unit: Unit) {
     if(this.pN.check(pat)) { // reports syntax errors as side effect
       pN.wrapAlternative(pN.elimSequence(pN.flattenSequence(pat)))
     } else {
-      make.Bad(pos)
+      make.Ident(pos, Names.PATTERN_WILDCARD)
     }
   }
 
@@ -1350,7 +1355,8 @@ class Parser(unit: Unit) {
       accept(RPAREN);
       t
     case _ =>
-      syntaxError("illegal start of pattern", true)
+      syntaxError("illegal start of pattern", true);
+      make.Ident(s.pos, Names.PATTERN_WILDCARD)
   }
 
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
@@ -1668,7 +1674,8 @@ class Parser(unit: Unit) {
       case CASEOBJECT =>
         objectDef(mods | Modifiers.CASE);
       case _ =>
-        NewArray.Tree(syntaxError("illegal start of definition", true))
+        syntaxError("illegal start of definition", true);
+        Tree.EMPTY_ARRAY
     }
   }
 
@@ -1834,7 +1841,8 @@ class Parser(unit: Unit) {
       case SUPERTYPE | SUBTYPE | VIEWBOUND | SEMI | COMMA | RBRACE =>
         typeBounds(pos, mods | Modifiers.DEFERRED, name)
       case _ =>
-        syntaxError("`=', `>:', or `<:' expected", true)
+        syntaxError("`=', `>:', or `<:' expected", true);
+        Tree.Empty;
     }
   }
 

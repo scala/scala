@@ -70,7 +70,6 @@ public class Tree {
     // Public Fields
 
     public final TreeNode
-        n_Bad            = node("Bad"           , Any , HasSym),
         n_Empty          = node("Empty"         , Any , NoSym),
         n_DocDef         = node("DocDef"        , None, NoSym),
         n_ClassDef       = node("ClassDef"      , None, DefSym),
@@ -121,10 +120,6 @@ public class Tree {
 
     public Tree() {
         nodes = (TreeNode[])list.toArray(new TreeNode[list.size()]);
-
-        n_Bad.
-            setDescription("Representation for parser errors").
-            setRange(Phase.PARSER, Phase.END);
 
         n_Empty.
             setDescription("A tree node for the absence of a tree").

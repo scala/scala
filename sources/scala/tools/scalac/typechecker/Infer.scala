@@ -34,7 +34,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
   def getContext: Context = Context.NONE;
 
-  def error(pos: int, msg: String): Tree =
+  def error(pos: int, msg: String): unit =
     throw new Type$Error(msg);
 
 
@@ -345,6 +345,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	    "type instantiation with [" +
 	    ArrayApply.toString(targs.asInstanceOf[Array[Object]], ",") +
 	    "] failed since " + vargs(0) + " is not viewable as " + vargs(1));
+      gen.mkDefaultValue(pos, vtype)
     }
   }
 

@@ -560,8 +560,6 @@ class GenJVM {
         case Visitor(_):
         case Function(_, _):
             throw global.fail("unexpected node", tree);
-        case Bad():
-            throw global.fail("bad tree");
         default:
             throw global.fail("unknown node", tree);
         }

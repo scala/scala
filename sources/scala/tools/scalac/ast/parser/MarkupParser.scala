@@ -243,7 +243,7 @@ class MarkupParser( unit:Unit, s:Scanner, p:Parser ) {
           tmp
         case _ =>
 	  s.xSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
-          make.Bad(s.pos)
+          gen.mkStringLit( s.pos, "<syntax-error>" )
       }
       // well-formedness constraint: unique attribute names
       if( aMap.contains( key ))

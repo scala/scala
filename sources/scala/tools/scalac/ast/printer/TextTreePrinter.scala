@@ -221,9 +221,6 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 
   def print(tree: Tree): TreePrinter = {
     tree match {
-      case Tree$Bad() =>
-	print(TXT_ERROR);
-
       case Tree.Empty =>
 	print(TXT_EMPTY);
 
