@@ -476,6 +476,8 @@ public class TextTreePrinter implements TreePrinter {
             String str;
             if (obj instanceof String)
                 str = "\"" + obj + "\"";
+	    else if (obj instanceof Character)
+		str = "\'" + obj + "\'";
             else
                 str = String.valueOf(obj);
             print(Text.Literal(str));
