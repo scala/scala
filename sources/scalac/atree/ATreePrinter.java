@@ -376,8 +376,7 @@ public class ATreePrinter {
             print(')');
             return this;
         case IsAs(ACode value, Type type, boolean cast):
-            printCode(value).print('.');
-            print(cast ? "asInstanceOf" : "isInstanceOf");
+            printCode(value).print('.').print(cast ? "as" : "is");
             return print('[').printType(type).print(']');
         case If(ACode test, ACode success, ACode failure):
             print("if").space().print('(').printCode(test).print(')').lbrace();
