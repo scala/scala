@@ -24,7 +24,7 @@ import java.util.Iterator ;
 
 public class PatternMatcher extends PatternTool {
 
-    private static boolean OPTIMIZE = true;
+    private boolean optimize = true;
 
     /** the owner of the pattern matching expression
      */
@@ -60,48 +60,40 @@ public class PatternMatcher extends PatternTool {
 
     /** constructor
      */
-    public PatternMatcher( Unit unit, Infer infer ) {
-	super( unit, infer );
+    public PatternMatcher(Unit unit, Infer infer) {
+        super(unit, infer);
+        optimize &= (unit.global.target == Global.TARGET_JVM);
     }
-
 
     /** constructs an algebraic pattern matcher from cases
      */
     public void construct( Matcher m, Tree[] cases /*, boolean doBinding*/) {
-	//this.doBinding = doBinding;
-	this._m = m;
-	initialize();
-	for( int i = 0; i < cases.length; i++ ) {
-	    addCase( (CaseDef) cases[i]/*, i*/ );
-	}
-	_m.tree = toTree();
+        //this.doBinding = doBinding;
+        this._m = m;
+        initialize();
+        for( int i = 0; i < cases.length; i++ ) {
+            addCase((CaseDef) cases[i]);
+        }
+        _m.tree = toTree();
     }
 
     /** initializes this AlgebraicMatcher, see Matcher.initialize
      */
     protected void initialize() {
-
-	this.mk = new PatternNodeCreator( unit, infer, _m.owner );
-	this.cf = new CodeFactory( unit, infer/*, _m.pos*/ );
-	this.owner = _m.owner;
-	this.selector = _m.selector;
-
-	this.root = mk.ConstrPat( _m.pos,
-				  _m.selector.type.widen() );
-
-	this.root.and = mk.Header( _m.pos,
-				   _m.selector.type.widen(),
-				   gen.Ident( _m.pos, root.symbol() )
-				   .setType(_m.selector.type.widen()));
-
-	this.resultVar = new TermSymbol(_m.pos,
-					/*cf.*/fresh.newName( RESULT_N ),
-					_m.owner,
-					Modifiers.MUTABLE );
-	//this.resultType = resultType;
-	this.resultVar.setType( _m.resultType );
-
-	//System.out.println(" constructed matcherDefs ");
+        this.mk = new PatternNodeCreator(unit, infer, _m.owner);
+        this.cf = new CodeFactory(unit, infer);
+        this.owner = _m.owner;
+        this.selector = _m.selector;
+        this.root = mk.ConstrPat(_m.pos, _m.selector.type.widen());
+        this.root.and = mk.Header(_m.pos,
+                                  _m.selector.type.widen(),
+                                  gen.Ident( _m.pos, root.symbol())
+                                  .setType(_m.selector.type.widen()));
+        this.resultVar = new TermSymbol(_m.pos,
+                                        fresh.newName(RESULT_N),
+                                        _m.owner,
+                                        Modifiers.MUTABLE);
+        this.resultVar.setType(_m.resultType);
     }
 
 
@@ -328,12 +320,13 @@ public class PatternMatcher extends PatternTool {
     }
 
     protected Type getHeaderType(Type tpe) {
-        switch (tpe) {
-            case PolyType(_, Type res):
-                return res;
-            default:
-                return tpe;
-        }
+    	return tpe.resultType();
+//         switch (tpe) {
+//             case PolyType(_, Type res):
+//                 return res;
+//             default:
+//                 return tpe;
+//         }
     }
 
     protected PatternNode patternNode(Tree tree, Header header, CaseEnv env) {
@@ -531,7 +524,7 @@ public class PatternMatcher extends PatternTool {
 //                             .setSymbol(ts));
                 target.and = curHeader = mk.Header(
                     pat.pos,
-                    getHeaderType(typeOf0(ts)),
+                    getHeaderType(typeOf(ts)),
                     make.Apply(
                         pat.pos,
                         make.Select(
@@ -542,9 +535,9 @@ public class PatternMatcher extends PatternTool {
                             ts.name)
                             .setType(Type.MethodType(
                                       Symbol.EMPTY_ARRAY,
-                                      getHeaderType(typeOf0(ts))))
+                                      getHeaderType(typeOf(ts))))
                             .setSymbol(ts),
-                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf0(ts)).asSeenFrom(typeOf(casted), ts.owner())));
+                        Tree.EMPTY_ARRAY).setType(getHeaderType(typeOf(ts)).asSeenFrom(typeOf(casted), ts.owner())));
             }
             curHeader.or = patternNode(pat, curHeader, env);
             return enter(patArgs, curHeader.or, casted, env);
@@ -616,7 +609,7 @@ public class PatternMatcher extends PatternTool {
 //////////// generator methods
 
     public Tree toTree() {
-    	if (OPTIMIZE && isTopLevelIntSwitch())
+    	if (optimize && isTopLevelIntSwitch())
     		return intSwitchToTree();
     	else
     		return generalSwitchToTree();
@@ -809,7 +802,10 @@ public class PatternMatcher extends PatternTool {
                 case Header(Tree selector, Header next):
                     //res = cf.And(mkNegate(res), toTree(node.or, selector));
                     //System.out.println("HEADER TYPE = " + selector.type);
-                    res = cf.Or(res, toTree(node.or, selector));
+                    if (optimize(node.type, node.or))
+                    	res = cf.Or(res, toOptTree(node.or, selector));
+                    else
+                    	res = cf.Or(res, toTree(node.or, selector));
                     node = next;
                     break;
                 case Body(ValDef[][] bound, Tree[] guard, Tree[] body):
@@ -834,6 +830,97 @@ public class PatternMatcher extends PatternTool {
                     throw new ApplicationError();
             }
         return res;
+    }
+
+    protected boolean optimize(Type selType, PatternNode alternatives) {
+    	if (!optimize || !selType.isSubType(defs.OBJECT_TYPE))
+    		return false;
+    	int cases = 0;
+    	while (alternatives != null) {
+    		switch (alternatives) {
+    			case ConstrPat(_):
+    				if (alternatives.type.symbol().isCaseClass())
+    					cases++;
+    				else
+    					return false;
+    				break;
+    			case DefaultPat():
+    				break;
+    			default:
+    				return false;
+    		}
+    		alternatives = alternatives.or;
+    	}
+    	return cases > 2;
+    }
+
+    static class TagNodePair {
+    	int tag;
+    	PatternNode node;
+    	TagNodePair next;
+
+    	TagNodePair(int tag, PatternNode node, TagNodePair next) {
+    		this.tag = tag;
+    		this.node = node;
+    		this.next = next;
+    	}
+
+    	int length() {
+    		return (next == null) ? 1 : (next.length() + 1);
+    	}
+    }
+
+    static TagNodePair insert(int tag, PatternNode node, TagNodePair current) {
+    	if (current == null)
+    		return new TagNodePair(tag, node, null);
+    	else if (tag > current.tag)
+    		return new TagNodePair(current.tag, current.node, insert(tag, node, current.next));
+    	else if (tag == current.tag) {
+    		PatternNode old = current.node;
+    		(current.node = node).or = old;
+    		return current;
+    	} else
+    		return new TagNodePair(tag, node, current);
+    }
+
+    static TagNodePair insertNode(int tag, PatternNode node, TagNodePair current) {
+    	PatternNode newnode = node.dup();
+    	newnode.or = null;
+    	return insert(tag, newnode, current);
+    }
+
+    protected Tree toOptTree(PatternNode node, Tree selector) {
+    	TagNodePair cases = null;
+    	PatternNode defaultCase = null;
+    	while (node != null)
+    		switch (node) {
+    			case ConstrPat(Symbol casted):
+    				cases = insertNode(node.type.symbol().tag(), node, cases);
+    				node = node.or;
+    				break;
+    			case DefaultPat():
+    				defaultCase = node;
+    				node = node.or;
+    				break;
+    			default:
+    				throw new ApplicationError();
+    		}
+    	int n = cases.length();
+		int[] tags = new int[n];
+		Tree[] bodies = new Tree[n];
+		n = 0;
+		while (cases != null) {
+			tags[n] = cases.tag;
+			bodies[n++] = toTree(cases.node, selector);
+			cases = cases.next;
+		}
+		return cf.Switch(
+			gen.Apply(gen.Select(selector.duplicate(), Names.tag), new Tree[0]),
+			tags,
+			bodies,
+			(defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
+			                      : toTree(defaultCase.and))
+			.setType(defs.BOOLEAN_TYPE);
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {
