@@ -22,6 +22,12 @@ case class Text( text:String ) extends Node {
   */
   def label    = "#PCDATA";
 
+  final override def equals(x:Any) = x match {
+    case s:String => text.equals( s );
+    case Text( s ) => text.equals( s );
+    case _ => false;
+  }
+
   /** always empty */
   final def attribute = immutable.TreeMap.Empty[String,String];
 

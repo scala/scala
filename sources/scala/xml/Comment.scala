@@ -22,6 +22,11 @@ case class Comment( text:String ) extends Node {
   if( text.indexOf("--" ) != -1 )
     throw new IllegalArgumentException("text containts \"--\"");
 
+  final override def equals(x:Any) = x match {
+    case Comment( s ) => text.equals( s );
+    case _ => false;
+  }
+
   /** the constant "#REM" */
   def label    = "#REM";
 

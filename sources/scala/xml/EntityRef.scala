@@ -21,6 +21,11 @@ case class EntityRef( entityName:String ) extends Node {
   */
   def label    = "#ENTITY";
 
+  final override def equals(x:Any) = x match {
+    case EntityRef( s ) => entityName.equals( s );
+    case _ => false;
+  }
+
   /** always empty */
   final def attribute = immutable.TreeMap.Empty[String,String];
 

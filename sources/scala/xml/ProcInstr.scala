@@ -31,6 +31,11 @@ case class ProcInstr( target:String, text:Option[String] ) extends Node {
     case _ =>
   }
 
+  final override def equals(x:Any) = x match {
+    case x @ ProcInstr( t2, s2 ) => target.equals( t2 ) && text.equals( s2 );
+    case _ => false;
+  }
+
   /** the constant "#PI" */
   final def label    = "#PI";
 
