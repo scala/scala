@@ -1,20 +1,26 @@
 package scala.util.automata ;
 
-import scala.collection.{ Set, Map, mutable };
+import scala.collection.{ Set, Map };
 
-/** 0 is always the only initial state */
+/** A nondeterministic automaton. States are integers, where
+ *  0 is always the only initial state. Transitions are represented
+ *  in the delta function. Default transitions are transitions that
+ *  are taken when no other transitions can be applied.
+ *  All states are reachable. Accepting states are those for which
+ *  the partial function 'finals' is defined.
+ */
 abstract class NondetWordAutom {
 
   type T_label;
 
   val nstates:  Int;
   val labels:   Set[T_label] ;
-  val finals:   Map[Int,Int] ;
+  val finals:   PartialFunction[Int,Int] ;
   val delta:    Function1[Int,Map[T_label,List[Int]]];
   val default:  Array[List[Int]];
 
   /** returns true if the state is final */
-  final def isFinal(state: Int)  = finals.contains( state );
+  final def isFinal(state: Int)  = finals.isDefinedAt( state );
 
   /** returns tag of final state */
   final def finalTag(state: Int) = finals( state );
@@ -28,8 +34,15 @@ abstract class NondetWordAutom {
     return false;
   }
 
-  /** returns true if there are no finite states */
-  final def isEmpty = finals.isEmpty;
+  /** returns true if there are no accepting states */
+  final def isEmpty = {
+    var r = true;
+    var j = 0; while( r && ( j < nstates )) {
+      if(isFinal(j))
+        r = false;
+    }
+    r
+  }
 
   override def toString() = {
     val sb = new StringBuffer();
