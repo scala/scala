@@ -40,7 +40,8 @@ public class AddInterfacesPhase extends Phase {
             // removed.
             return removeValueParams(tp);
         } else if (sym.isClass() && !sym.isJava()) {
-            Definitions definitions = Global.instance.definitions;
+            Definitions definitions = global.definitions;
+            if (sym == definitions.ANY_CLASS) return tp;
             Type[] oldParents = tp.parents();
             assert oldParents.length > 0 : Debug.show(sym);
             for (int i = 1; i < oldParents.length; ++i) {
@@ -81,17 +82,7 @@ public class AddInterfacesPhase extends Phase {
                     newMembers.enterOrOverload(member);
                 }
 
-                Symbol oldSym = oldParents[0].symbol();
-                if (oldSym.isJava()
-                    && !oldSym.isInterface()
-                    && oldSym != definitions.ANY_CLASS
-                    && oldSym != definitions.ANYREF_CLASS) {
-                    newParents = new Type[oldParents.length];
-                    newParents[0] = definitions.ANYREF_TYPE();
-                    for (int i = 1; i < oldParents.length; ++i)
-                        newParents[i] = oldParents[i];
-                } else
-                    newParents = oldParents;
+                newParents = oldParents;
             } else {
                 // The symbol is the one of a class which doesn't need
                 // an interface. We need to fix its parents to use
@@ -161,10 +152,10 @@ public class AddInterfacesPhase extends Phase {
                  || classSym.isModuleClass()
                  || classSym.isAnonymousClass()
                  || hasInterfaceSymbol(classSym)
-                 || classSym == Global.instance.definitions.ANY_CLASS
-                 || classSym == Global.instance.definitions.ANYREF_CLASS
-                 || classSym == Global.instance.definitions.ALL_CLASS
-                 || classSym == Global.instance.definitions.ALLREF_CLASS);
+                 || classSym == global.definitions.ANY_CLASS
+                 || classSym == global.definitions.ANYREF_CLASS
+                 || classSym == global.definitions.ALL_CLASS
+                 || classSym == global.definitions.ALLREF_CLASS);
     }
 
     protected final static String CLASS_SUFFIX = "$class";

@@ -21,6 +21,7 @@ import scalac.checkers.CheckSymbols;
 import scalac.checkers.CheckTypes;
 import scalac.checkers.CheckNames;
 import scalac.symtab.Definitions;
+import scalac.symtab.Scope;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
 import scalac.util.Debug;
@@ -52,9 +53,30 @@ public class ErasurePhase extends Phase {
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
-        if (sym.isClass() && sym.isSubClass(definitions.ANYVAL_CLASS) && sym != definitions.ANYVAL_CLASS) return tp;
         if (sym.isConstructor() && sym.constructorClass().isSubClass(definitions.ANYVAL_CLASS)) return tp;
-        if (sym.isClass()) return Type.erasureMap.map(tp);
+        if (sym.isClass()) {
+            if (sym == definitions.ANY_CLASS) return tp;
+            if (sym.isJava() && sym.isModuleClass()) return tp;
+            if (sym.isSubClass(definitions.ANYVAL_CLASS))
+                if (sym != definitions.ANYVAL_CLASS) return tp;
+            switch (tp) {
+            case CompoundType(Type[] parents, Scope members):
+                assert parents.length != 0: Debug.show(sym) + " -- " + tp;
+                if (sym.isInterface()) {
+                    Symbol superclass = parents[0].symbol();
+                    if (superclass.isJava() && !superclass.isInterface()) {
+                        if (superclass != definitions.ANY_CLASS) {
+                            parents = Type.cloneArray(parents);
+                            parents[0] = definitions.ANYREF_TYPE();
+                            tp = Type.compoundType(parents, members, sym);
+                        }
+                    }
+                }
+                return Type.erasureMap.map(tp);
+            default:
+                throw Debug.abort("illegal case", tp);
+            }
+        }
         if (sym.isType()) return tp;
         // if (sym == definitions.NULL) return tp.resultType().erasure();
         switch (primitives.getPrimitive(sym)) {
