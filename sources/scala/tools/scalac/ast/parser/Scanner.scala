@@ -580,7 +580,7 @@ class Scanner(_unit: Unit) extends TokenData {
       var i = 0;
       val len = name.length();
       while (i < len) {
-	val d = SourceRepresentation.digit2int(name sub i, base);
+	val d = SourceRepresentation.digit2int(name.charAt(i).asInstanceOf[byte], base);
 	if (d < 0) {
           syntaxError("malformed integer number");
           return 0;
@@ -639,8 +639,7 @@ class Scanner(_unit: Unit) extends TokenData {
             (ch1 >= 'A' && ch1 <= 'Z') ||
             (ch1 >= '0' && ch1 <= '9') ||
              ch1 == '$' || ch1 == '_') {
-          makeInt(index, bp - index, base, Integer.MAX_VALUE);
-          intVal = intVal.asInstanceOf[int];
+	  name = Name.fromAscii(buf, index, bp - index);
           token = INTLIT;
         } else
           getFraction(index);
