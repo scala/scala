@@ -38,8 +38,9 @@ PROJECT_JAR_FILES	+= scalai
 
 # scala scripts wrapper
 SCRIPTS_PREFIX		 = $(PROJECT_ROOT)/bin
-SCRIPTS_WRAPPER_NAME	 = .scala_wrapper
+SCRIPTS_WRAPPER		 = $(SCRIPTS_PREFIX)/.scala_wrapper
 SCRIPTS_WRAPPER_LINKS	+= $(SCRIPTS_WRAPPER_ALIASES:%=$(SCRIPTS_PREFIX)/%)
+SCRIPTS_WRAPPER_ALIASES	+= scala-info
 SCRIPTS_WRAPPER_ALIASES	+= socos
 SCRIPTS_WRAPPER_ALIASES	+= socos-debug
 SCRIPTS_WRAPPER_ALIASES	+= siris
@@ -220,6 +221,7 @@ clean		: fastclean
 distclean	: clean
 	$(RM) .latest-*
 	$(RM) $(SCRIPTS_WRAPPER_LINKS)
+	$(RM) $(SCRIPTS_WRAPPER)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
 	$(RM) $(PROJECT_JAR_ARCHIVE)
 	$(RM) $(ROOT)/support/latex/*.class
@@ -303,8 +305,41 @@ $(PROJECT_OUTPUTDIR)	:
 	    $(LN) -s $(PROJECT_OUTPUTDIR_LINK) $(PROJECT_OUTPUTDIR),\
 	    $(MKDIR) $(PROJECT_OUTPUTDIR))
 
-$(SCRIPTS_WRAPPER_LINKS):
-	$(LN) -s $(SCRIPTS_WRAPPER_NAME) $@;
+$(SCRIPTS_WRAPPER)	: MACRO_VERSION           ?= "development version"
+$(SCRIPTS_WRAPPER)	: MACRO_RUNTIME_SOURCES   ?= $(PROJECT_SOURCEDIR:$(PROJECT_ROOT)%=$$PREFIX%)
+$(SCRIPTS_WRAPPER)	: MACRO_RUNTIME_CLASSES   ?= $(PROJECT_OUTPUTDIR:$(PROJECT_ROOT)%=$$PREFIX%)
+$(SCRIPTS_WRAPPER)	: MACRO_DTD2SCALA_CLASSES ?= $(PROJECT_OUTPUTDIR:$(PROJECT_ROOT)%=$$PREFIX%)
+$(SCRIPTS_WRAPPER)	: MACRO_BCEL_CLASSES      ?= $(BCEL_JARFILE)
+$(SCRIPTS_WRAPPER)	: MACRO_FJBG_CLASSES      ?= $(FJBG_JARFILE)
+$(SCRIPTS_WRAPPER)	: MACRO_MSIL_CLASSES      ?= $(MSIL_JARFILE)
+$(SCRIPTS_WRAPPER)	: MACRO_XERCES_CLASSES    ?= $(XERCES_JARFILE)
+$(SCRIPTS_WRAPPER)	: MACRO_JAVA_ARGS         ?= -enableassertions
+$(SCRIPTS_WRAPPER)	: $(SCRIPTS_WRAPPER).tmpl $(PROJECT_ROOT)/Makefile
+	$(RM) $@
+	@$(ECHO) "Generating file $@"
+	@$(SED) \
+	    -es@{#VERSION#}@'$(MACRO_VERSION)'@g \
+	    -es@{#RUNTIME_SOURCES#}@'$(MACRO_RUNTIME_SOURCES)'@g \
+	    -es@{#RUNTIME_CLASSES#}@'$(MACRO_RUNTIME_CLASSES)'@g \
+	    -es@{#DTD2SCALA_CLASSES#}@'$(MACRO_RUNTIME_CLASSES)'@g \
+	    -es@{#BCEL_CLASSES#}@'$(MACRO_BCEL_CLASSES)'@g \
+	    -es@{#FJBG_CLASSES#}@'$(MACRO_FJBG_CLASSES)'@g \
+	    -es@{#MSIL_CLASSES#}@'$(MACRO_MSIL_CLASSES)'@g \
+	    -es@{#XERCES_CLASSES#}@'$(MACRO_XERCES_CLASSES)'@g \
+	    -es@{#JAVA_ARGS#}@'$(MACRO_JAVA_ARGS)'@g \
+	    $@.tmpl > $@
+	@macros=`$(SED) -n -es'@.*{#\(.*\)#}.*@\1@p' < $@`; \
+	if [ -n "$$macros" ]; then \
+	    $(ECHO) "error: there are undefined macros: $$macros"; \
+	    $(RM) $@; \
+	    exit 1; \
+	fi;
+	$(CHMOD) 755 $@
+
+$(SCRIPTS_WRAPPER_LINKS): $(SCRIPTS_WRAPPER)
+	@if [ ! -h $@ ]; then \
+	    $(call RUN,$(LN) -s $(notdir $(SCRIPTS_WRAPPER)) $@); \
+	fi
 
 $(FUNCTION_FILES)	: .latest-meta $(FUNCTION_TEMPLATE)
 	$(RM) .latest-generate

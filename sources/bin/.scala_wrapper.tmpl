@@ -1,0 +1,338 @@
+#!/bin/sh
+##############################################################################
+#     ____ ____  ____ ____  ______                                           #
+#    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala                   #
+#  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL                    #
+# /_____/\____/\___/\____/____/                                              #
+#                                                                            #
+##############################################################################
+# Launch script for Scala tools                                              #
+##############################################################################
+
+# $Id$
+
+##############################################################################
+# Configuration
+
+# The configure function contains all the configurable variables of
+# this script. The content of these variables may be overridden by
+# defining an environment variable with the same name prefixed by
+# SCALA_. For example, to run socos with a big initial heap size, one
+# may run the command "env SCALA_JAVA_ARGS=-Xms1024m socos".
+#
+# The following environment variables are also read by this script:
+# - SCALA_BOOTCLASSPATH: if defined, it is used as the default
+#   bootclasspath by the Scala compiler.
+#
+# - SCALA_CLASSPATH: if defined, it is used as the default classpath
+#   by the scala compiler.
+#
+# - CLASSPATH: if defined and if SCALA_CLASSPATH is undefined, it is
+#   used as the default classpath by the Scala compiler.
+#
+# All paths and path lists must be in Unix form (i.e. use '/' as file
+# separator and ':' as path separator). There is only one exception to
+# this rule: CLASSPATH must be in Windows form (i.e. use '\' and ';')
+# on Windows platforms.
+
+configure() {
+
+    # Location of the Scala library sources. These sources are
+    # included in the Scala distribution.
+    # This variable must refer a directory.
+    RUNTIME_SOURCES={#RUNTIME_SOURCES#};
+
+    # Location of the compiled Scala library and Scala tools. This
+    # library and these tools are included in the Scala distribution.
+    # This variable must refer a directory or a zip or jar file.
+    RUNTIME_CLASSES={#RUNTIME_CLASSES#};
+
+    # Location of the compiled dtd2scala tool. This tool is included
+    # in the Scala distribution.
+    # This variable must refer a directory or a zip or jar file.
+    DTD2SCALA_CLASSES={#DTD2SCALA_CLASSES#};
+
+    # Location of the compiled fjbg library.  This library is included
+    # in the Scala distribution.
+    # This variable must refer a directory or a zip or jar file.
+    FJBG_CLASSES={#FJBG_CLASSES#};
+
+    # Location of the compiled msil library. This library is included
+    # in the Scala distribution.
+    # This variable must refer a directory or a zip or jar file.
+    MSIL_CLASSES={#MSIL_CLASSES#};
+
+    # Location of the compiled bcel library. This library may be found
+    # at http://jakarta.apache.org/bcel/.
+    # This variable must refer a directory or a zip or jar file.
+    BCEL_CLASSES={#BCEL_CLASSES#};
+
+    # Location of the compiled xerces library. This library may be
+    # found at http://xml.apache.org/xerces2-j/.
+    # This variable must refer a directory or a zip or jar file.
+    XERCES_CLASSES={#XERCES_CLASSES#};
+
+    # Command to start the Java VM.
+    JAVA_EXEC="java";
+
+    # Additional arguments to pass to the Java VM.
+    JAVA_ARGS={#JAVA_ARGS#};
+
+    # Command to start subprocesses. This is mainly for debugging
+    # purposes. One may, for example, display the Java command that is
+    # started by "socos", by running "env SCALA_EXEC=echo socos".
+    EXEC="exec";
+
+}
+
+##############################################################################
+# Error functions
+
+# Prints a warning message on stderr.
+warning() {
+    echo "$0: warning: " "$@" 1>&2;
+}
+
+# Prints an error message on stderr.
+error() {
+    echo "$0:" "$@" 1>&2;
+}
+
+# Prints an error message on stderr and exits with a non-zero status.
+abort() {
+    error "$@";
+    exit 1;
+}
+
+##############################################################################
+# File name and path list conversion functions
+
+# Prints the OS specific form of the given Unix form file name.
+get_os_filename() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --windows "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+# Prints the OS specific form of the given Unix form path list.
+get_unix_filename() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --unix "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+# Prints the Unix form of the given OS specific form file name.
+get_os_pathlist() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --window --path "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+# Prints the Unix form of the given OS specific form path list.
+get_unix_pathlist() {
+    [ $# = 1 ] || abort "internal error";
+    case "$UNAME" in
+        CYGWIN* ) cygpath --unix --path "$1";;
+        *       ) echo "$@";;
+    esac;
+}
+
+##############################################################################
+# Variable configuration functions
+
+# Configures the variable with the given name. If a variable named
+# SCALA_$1 is defined, assigns its value to the variable named $1,
+# otherwise does nothing.
+configure_variable() {
+    [ $# = 1 ] || abort "internal error";
+    name="$1"; shift 1;
+
+    if set | grep "^SCALA_$name=" > /dev/null; then
+        eval $name=\$SCALA_$name;
+    fi;
+}
+
+# Configures and tests the path variable with the given name. If a
+# variable named SCALA_$1 is defined and refers an existing directory
+# or file, assigns its value to the variable named $1. If, after that,
+# the variable $1 refers a non-existing path, exits with an error.
+configure_path_variable() {
+    [ $# = 1 ] || abort "internal error";
+    name="$1"; shift 1;
+
+    if set | grep "^SCALA_$name=" > /dev/null; then
+        path=`eval echo \\\$SCALA_\$name`;
+        if [ -f "$path" -o -d "$path" ]; then
+            eval $name=\$SCALA_$name;
+        else
+            warning "File refered by SCALA_$name ($path) does not exist.";
+            unset SCALA_$name;
+        fi;
+    fi;
+
+    path=`eval echo \\\$\$name`;
+    if [ ! -f "$path" -a ! -d "$path" ]; then
+        abort "File referred by $name ($path) does not exist." \
+            "Please, fix the definition of $name in file $SOURCE." \
+            "Alternatively you may also define the environment" \
+            "variable SCALA_$name.";
+    fi
+}
+
+##############################################################################
+# Path list construction functions
+
+# Appends a named path to a named path list. Configures the path
+# variable $2 and updates the path list in variable $1 by appending
+# the path from variable $2.
+append_path() {
+    [ $# = 2 ] || abort "internal error";
+    configure_path_variable "$2";
+
+    listname="$1"; shift 1;
+    pathname="$1"; shift 1;
+    list=`eval echo \\\$\$listname`;
+
+    if [ -z "$list" ]; then
+        eval $listname=\$$pathname;
+    else
+        eval $listname=\$$listname:\$$pathname;
+    fi;
+}
+
+##############################################################################
+# Java invocation functions
+
+# Invokes Java with the given arguments (which must, at least, contain
+# the name of the main class) and the following additional arguments:
+# - arguments specified by variable JAVA_ARGS
+# - script-suffix-specific arguments
+# - definition of Java properties scala.product and scala.version
+# - classpath set to $JAVA_CLASSPATH
+exec_java() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # configure variables
+    configure_variable EXEC;
+    configure_variable JAVA_EXEC;
+    configure_variable JAVA_ARGS;
+
+    # append script-suffix-specific arguments
+    case "$SCRIPT" in
+        *-debug* ) JAVA_ARGS="$JAVA_ARGS -Djava.compiler=NONE";;
+    esac;
+
+    # invoke Java
+    $EXEC $JAVA_EXEC $JAVA_ARGS  \
+        -classpath "`get_os_pathlist "$JAVA_CLASSPATH"`" \
+        -Dscala.product="$SCRIPT" \
+        -Dscala.version="$VERSION" \
+        "$@";
+}
+
+# Starts a Java program using the Scala compiler. The given arguments
+# are passed to exec_java. They must, at least, contain the name of
+# the main class.
+exec_compile() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # compute Java classpath
+    append_path JAVA_CLASSPATH RUNTIME_CLASSES;
+    append_path JAVA_CLASSPATH BCEL_CLASSES;
+    append_path JAVA_CLASSPATH FJBG_CLASSES;
+    append_path JAVA_CLASSPATH MSIL_CLASSES;
+
+    # compute Scala classpath
+    if [ -z "$SCALA_CLASSPATH" ]; then
+        if [ -n "$CLASSPATH" ]; then
+            SCALA_CLASSPATH=`get_unix_pathlist "$CLASSPATH"`;
+        else
+            SCALA_CLASSPATH=".";
+        fi;
+    fi;
+
+    # compute Scala boot classpath
+    if [ -z "$SCALA_BOOTCLASSPATH" ]; then
+        append_path SCALA_BOOTCLASSPATH RUNTIME_SOURCES;
+        append_path SCALA_BOOTCLASSPATH RUNTIME_CLASSES;
+    fi;
+
+    # invoke Java
+    exec_java \
+        -Dscala.class.path=`get_os_pathlist "$SCALA_CLASSPATH"` \
+        -Dscala.boot.class.path=`get_os_pathlist "$SCALA_BOOTCLASSPATH"` \
+        "$@";
+}
+
+# Starts a program using dtd2scala. The given arguments are passed to
+# exec_java. They must, at least, contain the name of the main class.
+exec_dtd2scala() {
+    [ $# -gt 0 ] || abort "internal error";
+
+    # compute Java classpath
+    append_path JAVA_CLASSPATH DTD2SCALA_CLASSES;
+    append_path JAVA_CLASSPATH XERCES_PATH;
+
+    # invoke Java
+    exec_java \
+        "$@";
+}
+
+##############################################################################
+# Implementation of scala-info
+
+scala_info() {
+    abort "!!! not yet implemented";
+}
+
+##############################################################################
+# Definition of UNAME, SOURCE, SCRIPT, PREFIX and VERSION
+
+unset SCRIPT;
+UNAME=`uname`;
+SOURCE=$0;
+while [ -h "$SOURCE" ]; do
+    SCRIPT=`basename "$SOURCE"`;
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+PREFIX=`dirname "$SOURCE"`/..;
+PREFIX=`cd "$PREFIX"; pwd`;
+
+VERSION={#VERSION#};
+VERSION=${VERSION:-"unknown version"};
+
+##############################################################################
+# Test of invocation method
+
+if [ -z "$SCRIPT" ]; then
+    abort "Illegal direct invocation; invoke me through a symbolic link.";
+fi;
+
+##############################################################################
+# Configuration and invocation of $SCRIPT
+
+unset JAVA_CLASSPATH;
+configure;
+
+case "$SCRIPT" in
+    scala-info ) scala_info "$@";;
+    socos*     ) exec_compile scalac.Main "$@";;
+    surus*     ) exec_compile scalai.Main "$@";;
+    siris*     ) exec_compile scalai.Main -interactive "$@";;
+    dtd2scala* ) exec_dtd2scala dtd2scala.Main "$@";;
+    *          ) abort "Don't know what to do for $SCRIPT.";;
+esac;
+
+##############################################################################
