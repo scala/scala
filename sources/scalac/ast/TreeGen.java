@@ -1186,8 +1186,11 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 
     /** Build the expansion of (() => expr)
      */
-    public Tree mkUnitFunction(Tree expr, Type type, Symbol owner) {
-	return mkFunction(expr.pos, Tree.ValDef_EMPTY_ARRAY, expr, type, owner);
+    public Tree mkUnitFunction(Tree expr, Type type, Symbol owner,
+                               boolean tagMethod)
+    {
+	return mkFunction
+            (expr.pos, Tree.ValDef_EMPTY_ARRAY, expr, type, owner, tagMethod);
     }
 
     /** Build the expansion of ((vparams_1, ..., vparams_n) => body)
@@ -1206,7 +1209,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
      *    symbols in `body' from `owner' to the apply method.
      */
     public Tree mkFunction(int pos, ValDef[] vparams, Tree body, Type restype,
-			   Symbol owner) {
+			   Symbol owner, boolean tagMethod)
+    {
 	int n = vparams.length;
 	Symbol[] params = new Symbol[n];
 	Type[] argtypes = new Type[n];
@@ -1218,7 +1222,7 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
             definitions.ANYREF_TYPE(),
             definitions.FUNCTION_TYPE(argtypes, restype) };
         Name name = Names.ANON_CLASS_NAME.toTypeName();
-	Symbol clazz = owner.newAnonymousClass(pos, name);
+	ClassSymbol clazz = owner.newAnonymousClass(pos, name);
         clazz.setInfo(Type.compoundType(parentTypes, new Scope(), clazz));
 	clazz.allConstructors().setInfo(
 	    Type.MethodType(Symbol.EMPTY_ARRAY, clazz.typeConstructor()));
@@ -1231,12 +1235,24 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
 	    params[i].setOwner(applyMeth);
 	}
 	changeOwner(body, owner, applyMeth);
-        Tree[] memberTrees = { DefDef(applyMeth, body) };
+        Tree[] memberTrees = new Tree[tagMethod ? 2 : 1];
+        memberTrees[0] = DefDef(applyMeth, body);
+        if (tagMethod)
+            memberTrees[1] = mkTagMethod(clazz);
         Tree classDef = ClassDef(clazz, memberTrees);
 	Tree alloc = New(mkApply__(mkPrimaryConstructorLocalRef(pos, clazz)));
 	return mkBlock(classDef, Typed(alloc, parentTypes[1])); // !!! Typed
     }
 
+    public Tree mkTagMethod(ClassSymbol clazz) {
+        int flags =
+            clazz.isSubClass(definitions.SCALAOBJECT_CLASS) ? OVERRIDE : 0;
+        Symbol tagSym = clazz.newMethod(clazz.pos, flags, Names.tag)
+            .setInfo(Type.MethodType(Symbol.EMPTY_ARRAY, definitions.int_TYPE()));
+        clazz.info().members().enter(tagSym);
+        int tagValue = clazz.isCaseClass() ? clazz.tag() : 0;
+        return DefDef(tagSym, mkIntLit(clazz.pos, tagValue));
+    }
 
     public Tree mkPartialFunction(int pos, Tree applyVisitor, Tree isDefinedAtVisitor,
 				  Type pattype, Type restype, Symbol owner) {
