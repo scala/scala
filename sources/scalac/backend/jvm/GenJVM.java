@@ -1340,7 +1340,7 @@ class GenJVM {
      * module class as static methods, to enable the use of the module
      * from Java.
      */
-    protected void dumpModuleMirrorClass(Context ctx, Symbol cSym) {
+    protected void dumpModuleMirrorClass(Context ctx, Symbol cSym, Pickle pickle) {
         String mainName = javaName(cSym);
         String mirrorName = mainName.substring(0, mainName.length() - 1);
 
@@ -1379,7 +1379,7 @@ class GenJVM {
                                      mirrorCode.getPC(),
                                      Position.line(member.pos));
         }
-        addScalaAttr(mirrorClass);
+        addScalaAttr(mirrorClass, pickle);
 
         try {
             String fileName = javaFileName(mirrorName);
@@ -1394,19 +1394,14 @@ class GenJVM {
      * Add the "Scala" attribute to the given class, in which the
      * symbol table is saved.
      */
-    protected void addScalaAttr(JClass cls) {
-        Name className = Name.fromString(cls.getName());
-
-        if (global.symdata.containsKey(className)) {
-            Pickle pickle = (Pickle)global.symdata.get(className);
-            JOtherAttribute scalaAttr =
-                fjbgContext.JOtherAttribute(cls,
-                                            cls,
-                                            SCALA_ATTR,
-                                            pickle.bytes,
-                                            pickle.size());
-            cls.addAttribute(scalaAttr);
-        }
+    protected void addScalaAttr(JClass cls, Pickle pickle) {
+        JOtherAttribute scalaAttr =
+            fjbgContext.JOtherAttribute(cls,
+                                        cls,
+                                        SCALA_ATTR,
+                                        pickle.bytes,
+                                        pickle.size());
+        cls.addAttribute(scalaAttr);
     }
 
     /// Names
@@ -1637,11 +1632,13 @@ class GenJVM {
     }
 
     protected void leaveClass(Context ctx, Symbol cSym) {
-        Symbol iSym = cSym.owner().lookup(cSym.name);
-        if (ctx.isModuleClass && (iSym.isNone() || iSym.isExternal()))
-            dumpModuleMirrorClass(ctx, cSym);
+        Pickle pickle = (Pickle)global.symdata.get(cSym);
+        if (pickle != null)
+            if (ctx.isModuleClass)
+                dumpModuleMirrorClass(ctx, cSym, pickle);
+            else
+                addScalaAttr(ctx.clazz, pickle);
 
-        addScalaAttr(ctx.clazz);
         try {
             String fileName = javaFileName(ctx.clazz.getName());
             ctx.clazz.writeTo(fileName);

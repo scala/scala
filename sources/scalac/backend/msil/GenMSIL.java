@@ -230,7 +230,7 @@ public final class GenMSIL {
      */
     private void emitSymtab(Symbol clazz) {
 	TypeBuilder type = (TypeBuilder) tc.getType(clazz);
-	Pickle pickle = (Pickle)global.symdata.get(clazz.fullName());
+	Pickle pickle = (Pickle)global.symdata.get(clazz);
         if (pickle != null) {
 	    byte[] symtab = new byte[pickle.size() + 8];
 	    symtab[0] = 1;

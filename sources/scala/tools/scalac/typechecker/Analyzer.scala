@@ -131,14 +131,18 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
       stats(i) match {
 	case Tree$ClassDef(_, _, _, _, _, _) | Tree$ModuleDef(_, _, _, _) =>
 	  val sym = stats(i).symbol();
-	  val fullname = sym.fullName();
-	  if (global.symdata.get(fullname) == null) {
+          val key = if (sym.isModule()) sym.moduleClass() else sym;
+          var termSym = sym.owner().info().lookup(sym.name.toTermName());
+          var typeSym = sym.owner().info().lookup(sym.name.toTypeName());
+          if (termSym.isExternal()) termSym = Symbol.NONE;
+          if (typeSym.isExternal()) typeSym = Symbol.NONE;
+          if (sym.isClass() || (sym.isModule() && typeSym.isNone())) {
 	    val pickle: Pickle = new Pickle();
-	    pickle.add(sym.owner().info().lookup(sym.name.toTermName()));
-	    pickle.add(sym.owner().info().lookup(sym.name.toTypeName()));
+	    if (!termSym.isNone()) pickle.add(termSym);
+	    if (!typeSym.isNone()) pickle.add(typeSym);
 	    pickle.pickle();
-	    global.symdata.put(fullname, pickle);
-	  }
+            global.symdata.put(key, pickle);
+          }
 	case Tree$PackageDef(packaged, templ) =>
 	  genSymData(templ.body);
 	case _ =>

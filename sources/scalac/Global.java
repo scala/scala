@@ -103,7 +103,7 @@ public abstract class Global {
      */
     public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
 
-    public final Map/*<FullName, Pickle>*/ symdata = new HashMap();
+    public final Map/*<Symbol, Pickle>*/ symdata = new HashMap();
 
     /** The compiler command arguments
      */
