@@ -597,14 +597,12 @@ test_print_version() {
 test_print_testing() {
     [ $# = 1 ] || abort "internal error";
     printf_outline "testing: ";
-    if [ -n "$BASH" ]; then
-        case "$1" in
-            "$TESTROOT"* )
-                printf "%-60s " "[...]${1#$TESTROOT}";
-                return 0;
-                ;;
-        esac;
-    fi;
+    case "$1" in
+        "$TESTROOT"* )
+            printf "%-60s " "[...]`expr "$1" : "$TESTROOT\(.*\)"`";
+            return 0;
+            ;;
+    esac;
     printf "%-60s " "$1";
 }
 
