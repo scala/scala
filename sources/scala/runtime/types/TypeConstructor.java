@@ -70,6 +70,20 @@ public class TypeConstructor {
      */
     public final int[] displayCode;
 
+    /**
+     * "Code" to compute the refinement for an instance of this
+     * constructor, based on the refinement of its parents. This code
+     * is structured as follows:
+     *
+     *   n  p1 i1  p2 i2  ...  pn in
+     *
+     * where n is the total number of refinements, pi is the index of
+     * the parent from which refinement i comes (with -1 indicating
+     * the current class) and ii is the index of this refinement in
+     * the given parent.
+     */
+    public final int[] refinementCode;
+
     private final InstantiationMap instMapModule = new InstantiationMap();
     private final AtomicReference/*<InstantiationMap.T>*/ instances =
         new AtomicReference(IOMap.EMPTY);
@@ -83,7 +97,8 @@ public class TypeConstructor {
                            int zCount,
                            int mCount,
                            int pCount,
-                           int[] displayCode) {
+                           int[] displayCode,
+                           int[] refinementCode) {
         this.level = level;
         this.fullName = fullName;
         this.outer = outer;
@@ -94,6 +109,7 @@ public class TypeConstructor {
         this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
 
         this.displayCode = displayCode;
+        this.refinementCode = refinementCode;
 
         try {
             this.clazz = Class.forName(fullName, false, loader);
@@ -112,8 +128,11 @@ public class TypeConstructor {
         return instMapModule.get((InstantiationMap.T)instances.get(), args);
     }
 
-    public ScalaClassType instantiate(Type[] args, ScalaClassType[] parents) {
-        ScalaClassType tp = new ScalaClassType(this, args, parents);
+    public ScalaClassType instantiate(Type[] args,
+                                      ScalaClassType[] parents,
+                                      Refinement[] refinement) {
+        ScalaClassType tp =
+            new ScalaClassType(this, args, parents, refinement);
 
         try {
             InstantiationMap.T oldMap, newMap;
@@ -133,52 +152,11 @@ public class TypeConstructor {
     private static class InstantiationMap extends IOMap {
         public T put(T map, Type[] inst, ScalaClassType value)
             throws ConflictException {
-            return super.put(map, hashInst(inst), value);
+            return super.put(map, Type.hashCode(inst), value);
         }
 
         public ScalaClassType get(T map, Type[] inst) {
-            return (ScalaClassType)super.get(map, hashInst(inst));
-        }
-
-        // Random permutation of [0;255], used for Pearson's hashing.
-        private int[] table = new int[] {
-            251, 117, 191, 48, 37, 199, 178, 157, 9, 50, 183, 197, 42, 40, 104,
-            83, 156, 250, 215, 14, 233, 33, 74, 253, 128, 10, 36, 73, 217, 224,
-            116, 86, 132, 204, 20, 2, 80, 55, 222, 5, 207, 201, 129, 216, 165,
-            155, 159, 236, 19, 146, 108, 124, 112, 0, 58, 92, 70, 152, 135, 88,
-            97, 122, 61, 255, 184, 211, 214, 141, 67, 79, 18, 62, 101, 173,
-            238, 154, 170, 164, 130, 229, 252, 205, 43, 81, 94, 149, 59, 151,
-            93, 45, 25, 166, 139, 44, 143, 16, 188, 30, 91, 218, 77, 60, 142,
-            168, 47, 176, 13, 49, 34, 102, 31, 65, 203, 76, 240, 78, 115, 84,
-            244, 32, 11, 175, 247, 209, 242, 71, 163, 167, 35, 136, 22, 237,
-            134, 56, 181, 17, 4, 24, 206, 192, 105, 63, 89, 239, 6, 72, 53,
-            219, 69, 227, 133, 15, 161, 68, 120, 12, 111, 179, 245, 100, 103,
-            8, 148, 107, 144, 127, 160, 26, 241, 162, 213, 1, 220, 150, 82,
-            190, 96, 98, 137, 174, 145, 46, 243, 125, 198, 231, 66, 234, 177,
-            212, 210, 226, 95, 228, 21, 254, 27, 28, 121, 196, 187, 54, 249,
-            109, 208, 153, 232, 194, 113, 23, 140, 235, 158, 248, 182, 202,
-            186, 147, 119, 225, 87, 126, 64, 221, 193, 246, 169, 189, 90, 180,
-            138, 57, 38, 75, 230, 41, 123, 110, 223, 118, 106, 7, 172, 114,
-            131, 99, 51, 185, 39, 171, 195, 52, 29, 200, 3, 85
-        };
-
-        // Pearson's algorithm, used to hash an integer into a single
-        // byte.
-        private int hashInt(int i) {
-            final int h1 = table[i & 0xFF];
-            final int h2 = table[h1 ^ ((i >>>  8) & 0xFF)];
-            final int h3 = table[h2 ^ ((i >>> 16) & 0xFF)];
-            return table[h3 ^ (i >>> 24)];
-        }
-
-        private int hashInst(Type[] inst) {
-            final int len = inst.length;
-
-            int h = FNV_Hash.INIT;
-            for (int i = 0; i < len; ++i)
-                h = FNV_Hash.hashStep(h, hashInt(inst[i].hashCode()));
-
-            return h;
+            return (ScalaClassType)super.get(map, Type.hashCode(inst));
         }
     }
 }
