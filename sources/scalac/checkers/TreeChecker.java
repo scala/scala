@@ -208,7 +208,7 @@ public class TreeChecker {
     /** Adds the value variable to the current scope. */
     private void scopeInsertVVariable(Symbol symbol, boolean isParameter) {
         assert !symbol.owner().isClass(): show(symbol);
-        // !!! assert symbol.isParameter() == isParameter: show(symbol);
+        assert symbol.isParameter() == isParameter: show(symbol);
         registerSymbol(symbol);
         vvars.add(symbol);
     }
