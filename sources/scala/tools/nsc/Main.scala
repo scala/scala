@@ -13,7 +13,7 @@ object Main {
     System.getProperty("scala.version", "unknown version");
   val versionMsg = PRODUCT + " " + VERSION + " -- (c) 2002-04 LAMP/EPFL";
 
-  private var reporter: Reporter = _;
+  private var reporter: ConsoleReporter = _;
 
   def error(msg: String): unit =
     reporter.error(new Position(PRODUCT),

@@ -59,7 +59,4 @@ public interface Reporter {
     public void error(Position position, String message);
 
     //########################################################################
-
-    /** Prints the number of errors and warnings if their are non-zero. */
-    public void printSummary();
 }
