@@ -32,8 +32,10 @@ class ScalaAttribute(in: ByteArrayReader) {
     final val METHOD_TYPE = 17;
     final val POLY_TYPE = 18;
     final val OVERLOADED_TYPE = 19;
-    final val FLAGGED_TYPE = 20;
-
+    final val UNBOXED_TYPE = 20;
+    final val UNBOXEDARRAY_TYPE = 21;
+    final val FLAGGED_TYPE = 22;
+    final val ERROR_TYPE = 23;
 
     val table = readTable;
 
