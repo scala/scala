@@ -94,6 +94,14 @@ trait Iterator[+a] with Iterable[a] {
     def next = f(Iterator.this.next)
   }
 
+  def foldLeft[b] ( z:b ) ( f: (b,a)=>b ): b = {
+    var acc = z;
+    while( hasNext ) {
+      acc = f( acc, next)
+    }
+    acc
+  }
+
   def flatMap[b](f: a => Iterator[b]): Iterator[b] = new Iterator[b] {
     private var cur: Iterator[b] = Iterator.empty;
     def hasNext: Boolean =
