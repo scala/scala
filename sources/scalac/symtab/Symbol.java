@@ -298,6 +298,13 @@ public abstract class Symbol implements Modifiers, Kinds {
         return owner.isPackage() || (owner.isJava() && owner.isModuleClass());
     }
 
+    /** Does this symbol denote a class that defines static symbols? */
+    public final boolean isStaticOwner() {
+        return isRoot() || (isStatic() && isModuleClass()
+            // !!! remove later? translation does not work (yet?)
+            && isJava());
+    }
+
     /** Is this symbol final?
      */
     public final boolean isFinal() {
@@ -983,6 +990,36 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
     static public Type[] getType(Symbol[] syms) {
 	return type(syms);
+    }
+
+    /** Get static type. */
+    public final Type staticType() {
+        return staticType(Type.EMPTY_ARRAY);
+    }
+    /** Get static type with given type argument. */
+    public final Type staticType(Type arg0) {
+        return staticType(new Type[]{arg0});
+    }
+    /** Get static type with given type arguments. */
+    public final Type staticType(Type arg0, Type arg1) {
+        return staticType(new Type[]{arg0, arg1});
+    }
+    /** Get static type with given type arguments. */
+    public final Type staticType(Type[] args) {
+        Type prefix = owner.staticPrefix();
+        if (isType()) return Type.typeRef(prefix, this, args);
+        assert args.length == 0: Debug.show(this, " - ", args);
+        return prefix.memberType(this);
+    }
+
+    /** Get static prefix. */
+    public final Type staticPrefix() {
+        assert isStaticOwner(): Debug.show(this);
+        Global global = Global.instance;
+        if (global.PHASE.EXPLICITOUTER.id() < global.currentPhase.id)
+            return Type.NoPrefix;
+        if (isRoot()) return thisType();
+        return Type.singleType(owner.staticPrefix(), module());
     }
 
     /** The type constructor of a symbol is:
