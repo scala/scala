@@ -114,7 +114,7 @@ public class TransMatch extends OwnerTransformer {
         } else {
             PatternMatcher pm = new PatternMatcher(unit, root,
                                                    currentOwner, restpe);
-            pm.enter(cases);
+            pm.construct(cases);
             if (global.log()) {
                 global.log("internal pattern matching structure");
                 pm.print();
