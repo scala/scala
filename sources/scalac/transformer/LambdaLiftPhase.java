@@ -21,10 +21,9 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
         super(global, descriptor);
     }
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        for (int i = 0; i < units.length; i++)
-            new LambdaLift(global, this).apply(units[i]);
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        new LambdaLift(global, this).apply(unit);
     }
 
     public Type transformInfo(Symbol sym, Type tp) {

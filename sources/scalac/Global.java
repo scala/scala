@@ -389,9 +389,9 @@ public abstract class Global {
             start();
             // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
             currentPhase.apply(units);
-            stop(currentPhase.descriptor.taskDescription());
             if (currentPhase == PHASE.ANALYZER.phase())
                 units = ((AnalyzerPhase)currentPhase).getUnits();
+            stop(currentPhase.descriptor.taskDescription());
             if (currentPhase.descriptor.hasPrintFlag()) print(units);
             // if (currentPhase.descriptor.hasGraphFlag()) // !!!
             // if (currentPhase.descriptor.hasCheckFlag()) // !!!
@@ -423,7 +423,7 @@ public abstract class Global {
 	    currentPhase = PHASE.PARSER.phase();
 	    PHASE.PARSER.phase().apply(new CompilationUnit[] {unit});
 	    currentPhase = PHASE.ANALYZER.phase();
-	    ((AnalyzerPhase)PHASE.ANALYZER.phase()).lateEnter(unit);
+	    ((AnalyzerPhase)PHASE.ANALYZER.phase()).apply(unit);
 	    // !!! add code for later phases?
 	    currentPhase = backup;
 	}

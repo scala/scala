@@ -68,9 +68,6 @@ public class ExpandMixinsPhase extends Phase {
     private final Map/*<Symbol,Tree[]>*/ bodies;
 
 
-    /** A traverser that collects class definitions */
-    private final Traverser collector;
-
     /** A transformer that expands classes that have mixins */
     private final GenTransformer expander;
 
@@ -84,18 +81,16 @@ public class ExpandMixinsPhase extends Phase {
         this.interfaces = ((AddInterfacesPhase)addinterfaces).classToIFace;
         this.transformers = new HashMap();
         this.expansions = new HashMap();
-        this.bodies = new HashMap();
-        this.collector = new TreeCollector();
+        this.bodies = ((AddInterfacesPhase)addinterfaces).classToBody;
         this.expander = new TreeExpander(global);
     }
 
     //########################################################################
     // Public Methods
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        collector.traverse(units);
-        expander.apply(units);
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        expander.apply(unit);
     }
 
     /** Applies this phase to the given type for the given symbol. */
@@ -115,25 +110,6 @@ public class ExpandMixinsPhase extends Phase {
 
     //########################################################################
     // Private Methods
-
-    //########################################################################
-    // Private Class - Tree collector
-
-    /** A tree traverser that collects class definitions. */
-    private class TreeCollector extends Traverser {
-        public void traverse(Tree tree) {
-            switch(tree) {
-            case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
-                Symbol clasz = tree.symbol();
-                if (!clasz.isInterface()) bodies.put(clasz, body);
-                traverse(body);
-                return;
-            case PackageDef(_, Template(_, Tree[] body)):
-                traverse(body);
-                return;
-            }
-        }
-    }
 
     //########################################################################
     // Private Class - Tree expander

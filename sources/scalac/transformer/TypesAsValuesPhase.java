@@ -300,8 +300,8 @@ public class TypesAsValuesPhase extends Phase {
         return !classSym.owner().isPackageClass();
     }
 
-    public void apply(CompilationUnit[] units) {
-        transformer.apply(units);
+    public void apply(CompilationUnit unit) {
+        transformer.apply(unit);
     }
 
     private class TV_Transformer extends GenTransformer {

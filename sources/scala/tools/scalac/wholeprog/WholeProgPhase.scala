@@ -13,12 +13,11 @@
 **
 ** [iuli]   3.03.2004                                                   */
 
-import scala.tools.scalac.{CompilerPhases => old_CompilerPhases}
 import scalac.{Global => scalac_Global}
 import scalac.transformer.{WholeProgPhase => scalac_WholeProgPhase}
 import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
-import scalac.util.Name;
+import scalac.util.Debug;
 
 package scala.tools.scalac.wholeprog {
 
@@ -50,6 +49,8 @@ class WholeProgPhase(global: scalac_Global, descriptor: PhaseDescriptor)
       dotFilePrinter.makeDotFile(global.args.XdotFile.value + "2");
     }
   }
+
+  override def apply(unit: CompilationUnit): Unit = throw Debug.abort("!!!");
 
 }
 

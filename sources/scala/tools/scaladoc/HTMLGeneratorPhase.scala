@@ -10,6 +10,7 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
+import scalac.util.Debug;
 
 package scala.tools.scaladoc {
 
@@ -17,10 +18,13 @@ class HTMLGeneratorPhase(global: Global, descriptor: PhaseDescriptor)
   extends Phase(global, descriptor)
 {
 
-  def apply(units: Array[CompilationUnit]): Unit =
+  override def apply(units: Array[CompilationUnit]): Unit =
     (new HTMLGenerator(global) {
       def newTypeIso(global: Global): TypeIsomorphism = new ScalaML(global);
     }).apply();
+
+  override def apply(unit: CompilationUnit): Unit =
+    throw Debug.abort("!!!");
 
 }
 

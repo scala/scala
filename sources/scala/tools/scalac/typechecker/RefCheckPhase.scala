@@ -18,13 +18,9 @@ import scalac.util.NewArray;
 class RefCheckPhase(global: scalac_Global, descriptor: PhaseDescriptor)
   extends Phase(global, descriptor) {
 
-    /** Applies this phase to the given compilation units. */
-    def apply(units: Array[CompilationUnit]) = {
-      var i = 0; while (i < units.length) {
-        new RefCheck(global.asInstanceOf[scalac.Global]).apply(units(i));
-        i = i + 1
-      }
-    }
+    /** Applies this phase to the given compilation unit. */
+    override def apply(unit: CompilationUnit): Unit =
+      new RefCheck(global.asInstanceOf[scalac.Global]).apply(unit);
 
     override def transformInfo(sym: Symbol, tp: Type): Type =
 	if (sym.isModule() && !sym.isStatic()) new Type$PolyType(Symbol.EMPTY_ARRAY, tp);

@@ -7,7 +7,7 @@
 // $Id$
 
 import scalac.{Global => scalac_Global}
-import scalac.{CompilationUnit => scalac_CompilationUnit}
+import scalac.CompilationUnit;
 import scalac.PhaseDescriptor;
 import scalac.Phase;
 
@@ -16,16 +16,19 @@ package scala.tools.scalac.backend {
 /* This class represents the JVMFromICode backend production
  * Phase. It uses the ICode to create class files using
  * the JVM's bytecode */
-class GenJVMFromICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
+class GenJVMFromICodePhase(global0: scalac_Global, descriptor0: PhaseDescriptor) extends Phase(global0, descriptor0) {
 
-  // ##################################################
-  // Public method
+  //##########################################################################
+  // Private Fields
 
-  /* Apply this phase to all units */
-  def apply(units: Array[scalac_CompilationUnit]) = {
-    val generator = new GenJVMFromICode(global); // !!! super global
-    Iterator.fromArray(units).foreach(generator.translate);
-  }
+  private val generator = new GenJVMFromICode(global);
+
+  //##########################################################################
+  // Public Methods
+
+  /** Applies this phase to the given compilation unit. */
+  override def apply(unit: CompilationUnit): Unit = generator.translate(unit);
+
+  //##########################################################################
 }
-
 }

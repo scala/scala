@@ -40,13 +40,10 @@ public class MakeBoxingExplicitPhase extends Phase {
     //########################################################################
     // Public Methods
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        for (int i = 0; i < units.length; i++) {
-            assert checker.check(units[i]);
-            new scalac.atree.ATreeFromSTree(global.definitions)
-                .translate(units[i]); // !!!
-        }
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        assert checker.check(unit);
+        new scalac.atree.ATreeFromSTree(definitions).translate(unit); // !!!
     }
 
     //########################################################################

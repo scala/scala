@@ -44,7 +44,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   private var mode: int = _;
 
   private var inAlternative: boolean = _;
-  private var patternVars: HashMap = _;   // for pattern matching; maps x to {true,false}
+  private val patternVars = new HashMap();   // for pattern matching; maps x to {true,false}
 
   val definitions = global.definitions;
   val infer = new scala.tools.scalac.typechecker.Infer(this) {
@@ -58,20 +58,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/ ;
 
-  override def apply(units: Array[CompilationUnit]): unit = {
-    {var i = 0; while (i <  units.length) { lateEnter(units(i)); i = i + 1; }}
-
-    val mixinOnly = global.target != Global.TARGET_INT;
-    List.range(0, definitions.FUNCTION_COUNT).foreach(
-      i => loadCode(definitions.FUNCTION_CLASS(i), mixinOnly));
-
-    var n = 0;
-    while (n < descr.newSources.size()) {
-      apply(descr.newSources.get(n).asInstanceOf[CompilationUnit]);
-      n = n + 1;
-    }
-  }
-
   def enterUnit(unit: CompilationUnit): unit =
     enter(
       new Context(
@@ -84,7 +70,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     context.infer = infer;
     this.unit = unit;
     this.context = context;
-    this.patternVars = new HashMap();
     descr.contexts.put(unit, context);
     enterSyms(unit.body);
     this.unit = null;

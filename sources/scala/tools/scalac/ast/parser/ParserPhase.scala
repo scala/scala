@@ -15,12 +15,10 @@ package scala.tools.scalac.ast.parser {
 
 class ParserPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends Phase(global, descriptor) {
 
-  def apply(units: Array[CompilationUnit]): unit = {
-    for (val i <- Iterator.range(0, units.length)) {
-      global.start();
-      units(i).body = new Parser(units(i)).parse();
-      global.stop("parsed " + units(i).source);
-    }
+  override def apply(unit: CompilationUnit): Unit = {
+    global.start();
+    unit.body = new Parser(unit).parse();
+    global.stop("parsed " + unit.source);
   }
 }
 }

@@ -24,7 +24,7 @@ public class AddConstructorsPhase extends Phase {
     //########################################################################
     // Private Fields
 
-    /** A maps from old constructor symbols to new ones */
+    /** A map from old constructor symbols to new ones */
     private final HashMap/*<Symbol,Symbol>*/ constructors = new HashMap();
 
     //########################################################################
@@ -54,10 +54,9 @@ public class AddConstructorsPhase extends Phase {
         return type;
     }
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        for (int i = 0; i < units.length; i++)
-            new AddConstructors(global, constructors).apply(units[i]);
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        new AddConstructors(global, constructors).apply(unit);
     }
 
     //########################################################################

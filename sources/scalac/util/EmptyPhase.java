@@ -27,8 +27,8 @@ public class EmptyPhase extends Phase {
     //########################################################################
     // Public Methods
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
         // do nothing
     }
 

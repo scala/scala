@@ -221,20 +221,21 @@ public class AddInterfaces extends GenTransformer {
     }
 
     /**
-     * Returns the tree of the given class whose body is built by
-     * adding to the given body the class members. Non-abstract
-     * methods are removed from the ngiven method map. All other
-     * members are generated from their symbol.
+     * Returns the tree of the given class. Its body is built by
+     * adding its members to the provided body. Non-abstract methods
+     * are removed from the provided method map. All other members are
+     * generated from their symbol.
      */
     private Tree getClassTree(Symbol clasz, TreeList body, Map methods) {
         Scope members = clasz.nextInfo().members();
-        for (Scope.SymbolIterator i = members.iterator();
-	     i.hasNext(); ) {
+        for (Scope.SymbolIterator i = members.iterator(); i.hasNext(); ) {
             Symbol member = i.next();
             if (!member.isTerm()) continue;
             body.append(getMemberTree(clasz, member, methods));
         }
-        return gen.ClassDef(clasz, body.toArray());
+        Tree[] array = body.toArray();
+        if (!clasz.isInterface()) phase.classToBody.put(clasz, array);
+        return gen.ClassDef(clasz, array);
     }
 
     /**

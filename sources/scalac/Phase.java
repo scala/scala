@@ -62,7 +62,12 @@ public abstract class Phase {
     }
 
     /** Applies this phase to the given compilation units. */
-    public abstract void apply(CompilationUnit[] units);
+    public void apply(CompilationUnit[] units) {
+        for (int i = 0; i < units.length; i++) apply(units[i]);
+    }
+
+    /** Applies this phase to the given compilation unit. */
+    public abstract void apply(CompilationUnit unit);
 
     /** Returns the name of this phase. */
     public final String toString() {

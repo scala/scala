@@ -31,9 +31,8 @@ class ICodePhase(global: scalac_Global, descriptor: PhaseDescriptor) extends sca
   // ##################################################
   // Public methods
 
-  /** Applies this phase to the given compilation units. */
-  override def apply(units: Array[CompilationUnit]): Unit =
-    Iterator.fromArray(units).foreach(translate);
+  /** Applies this phase to the given compilation unit. */
+  override def apply(unit: CompilationUnit): Unit = translate(unit);
 
   /** Prints the given compilation units. */
   override def print(units: Array[CompilationUnit], printer: CodePrinter):Unit=

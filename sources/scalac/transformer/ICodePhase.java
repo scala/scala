@@ -35,9 +35,6 @@ public abstract class ICodePhase extends Phase {
     //########################################################################
     // Public Methods
 
-    /** Applies this phase to the given compilation units. */
-    public abstract void apply(CompilationUnit[] units);
-
     /** Prints the given compilation units. */
     public abstract void print(CompilationUnit[] units, CodePrinter printer);
 

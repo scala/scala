@@ -24,10 +24,9 @@ public class AddInterfacesPhase extends Phase {
         super(global, descriptor);
     }
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        for (int i = 0; i < units.length; i++)
-            new AddInterfaces(global, this).apply(units[i]);
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        new AddInterfaces(global, this).apply(unit);
     }
 
     public Type transformInfo(Symbol sym, Type tp) {
@@ -139,8 +138,9 @@ public class AddInterfacesPhase extends Phase {
         else return className;
     }
 
-    protected HashMap ifaceToClass = new HashMap();
-    protected HashMap classToIFace = new HashMap();
+    protected final HashMap/*<Symbol,Symbol>*/ ifaceToClass = new HashMap();
+    protected final HashMap/*<Symbol,Symbol>*/ classToIFace = new HashMap();
+    protected final HashMap/*<Symbol,Tree[]>*/ classToBody = new HashMap();
 
     /** Return the class symbol corresponding to the given interface
      * symbol. If the class does not need an interface, return the

@@ -49,8 +49,13 @@ public class GenMSILPhase extends Phase {
 	tc.init();
 	tc.collectSymbols(units);
 	tc.initAssembly();
-        for (int i = 0; i < units.length; i++) translator.apply(units[i]);
+        super.apply(units);
 	tc.saveAssembly();
+    }
+
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        translator.apply(unit);
     }
 
     //########################################################################

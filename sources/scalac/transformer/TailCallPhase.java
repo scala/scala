@@ -60,9 +60,9 @@ public class TailCallPhase extends Phase {
    //########################################################################
     // Public Methods
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        treeTransformer.apply(units);
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        treeTransformer.apply(unit);
     }
 
    //########################################################################

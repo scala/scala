@@ -40,9 +40,9 @@ public class GenJVMPhase extends Phase {
     //########################################################################
     // Public Methods
 
-    /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-        for (int i = 0; i < units.length; i++) translator.translate(units[i]);
+    /** Applies this phase to the given compilation unit. */
+    public void apply(CompilationUnit unit) {
+        translator.translate(unit);
     }
 
     //########################################################################

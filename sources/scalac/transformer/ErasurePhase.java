@@ -45,8 +45,8 @@ public class ErasurePhase extends Phase {
     //########################################################################
     // Public Methods
 
-    public void apply(CompilationUnit[] units) {
-        erasure.apply(units);
+    public void apply(CompilationUnit unit) {
+        erasure.apply(unit);
     }
 
     public Type transformInfo(Symbol sym, Type tp) {

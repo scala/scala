@@ -16,12 +16,9 @@ package scala.tools.scalac.transformer {
 class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
   extends Phase(global, descriptor) {
 
-    /** Applies this phase to the given compilation units. */
-    def apply( units:Array[CompilationUnit] ):unit = {
-      for(val u <- units) {
-        new TransMatch( global ).apply( u );
-      }
-    }
+    /** Applies this phase to the given compilation unit. */
+    override def apply(unit: CompilationUnit): Unit =
+      new TransMatch(global).apply(unit);
 
   }
 }

@@ -17,13 +17,9 @@ class UnCurryPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends P
 
   import Modifiers._;
 
-  /** Applies this phase to the given compilation units. */
-  override def apply(units: Array[CompilationUnit]) = {
-    var i = 0; while (i < units.length) {
-      new UnCurry(global, this).apply(units(i));
-      i = i + 1
-    }
-  }
+  /** Applies this phase to the given compilation unit. */
+  override def apply(unit: CompilationUnit): Unit =
+    new UnCurry(global, this).apply(unit);
 
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T

@@ -53,6 +53,15 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
   val newSources = new ArrayList/*<CompilationUnit>*/();
 
   override def getUnits(): Array[CompilationUnit] = {
+    val analyzer = new Analyzer(global, this);
+    val mixinOnly = global.target != Global.TARGET_INT;
+    List.range(0, global.definitions.FUNCTION_COUNT).foreach(
+      i => analyzer.loadCode(global.definitions.FUNCTION_CLASS(i), mixinOnly));
+    var n = 0;
+    while (n < newSources.size()) {
+      analyzer.apply(newSources.get(n).asInstanceOf[CompilationUnit]);
+      n = n + 1;
+    }
     val array = new Array[CompilationUnit](newSources.size());
     newSources.toArray(array.asInstanceOf[Array[Object]]);
     newSources.clear();
@@ -71,12 +80,8 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
     c
   }
 
-  override def apply(units: Array[CompilationUnit]): unit =
-    new Analyzer(global, this).apply(units);
-
-  override def lateEnter(unit: CompilationUnit): unit = {
+  override def apply(unit: CompilationUnit): Unit =
     new Analyzer(global, this).lateEnter(unit);
-  }
 
 }
 }
