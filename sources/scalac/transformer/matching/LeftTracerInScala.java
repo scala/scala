@@ -68,7 +68,10 @@ public class LeftTracerInScala extends TracerInScala {
 	    .setType( cf.SeqListType( pat.type() )) ;
 
 	ValDef varDef = (ValDef) gen.ValDef( helpVar,
-					     cf.ignoreValue( cf.SeqListType( pat.type() )));
+					     gen.mkDefaultValue(cf.pos,
+								cf.SeqListType( pat.type() ))
+					     //cf.ignoreValue( )
+					     );
 	helpVarDefs.add( varDef );
 	return helpVar;
     }
@@ -128,7 +131,6 @@ public class LeftTracerInScala extends TracerInScala {
 					 _ref( accumSym ));
 	*/
 	Tree hd = cf.newPair( gen.mkIntLit(cf.pos, i), currentElem() );
-
 	Tree newAcc = gen.Cons(cf.pos,
 			       hd.type,
 			       hd,
@@ -307,7 +309,11 @@ public class LeftTracerInScala extends TracerInScala {
     /** return the accumulator + last state
      */
     Tree run_finished( int state ) {
-	Tree hd = cf.newPair( gen.mkIntLit( cf.pos, state ), cf.ignoreValue( elementType ));
+	Tree hd = cf.newPair( gen.mkIntLit( cf.pos, state ),
+			      gen.mkDefaultValue(cf.pos,
+						 elementType)
+			      /*cf.ignoreValue( elementType )*/);
+	//System.err.println(hd.type);
 	return gen.Cons(  cf.pos,
 			  hd.type(),
 			  hd,

@@ -159,7 +159,9 @@ public class Autom2Scala  {
 	    cf.gen.ValDef( this.curSym,
 			   cf.If( _ref( hasnSym ),//cf._hasNext( _iter() ),
 				  cf._next( _iter() ),
-				  cf.ignoreValue( curSym.type() ))),
+				  gen.mkDefaultValue(cf.pos,curSym.type()))),
+						 //cf.ignoreValue( curSym.type() )
+
 	    body },
 			 body.type() );
     }

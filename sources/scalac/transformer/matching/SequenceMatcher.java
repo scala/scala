@@ -31,86 +31,11 @@ public class SequenceMatcher extends PatternTool {
       Tree pat[];
       Tree body[];
 
-    /*
-      public Tree[] getNested( HashMap varMap ) {
-            Tree[][] stmsNest = new Tree[varMap.size()][];
-            int i = 0;
-            int k = 0;
-            for( Iterator it = varMap.keySet().iterator() ; it.hasNext(); ) {
-                  Tree pat = (Tree) it.next(); // contains variables
-                  Symbol v = (Symbol) varMap.get( pat );
-
-                  BindingBerrySethi build = new BindingBerrySethi();
-                  NondetWordAutom leftNest = build.automatonFrom( pat,
-                                                                  new Integer( 0 ));
-
-                  DetWordAutom dLeftNest  = new DetWordAutom( leftNest );
-
-                  NondetWordAutom rightNest = build.revnfa;
-
-                  Matcher mNest = new Matcher( _m.owner, _m.selector, null );
-
-                  LeftTracerInScala ltisNest =
-                        new LeftTracerInScala( dLeftNest,
-                                               cf.getElemType( pat.type() ),
-                                               mNest,
-                                               cf );
-                  Tree stmsLeftNest[] = ltisNest.getTrace();
-
-                  Tree selNest = gen.Ident( Position.FIRSTPOS, ltisNest.resultSym );
-
-                  DetWordAutom dRightNest =
-                        new DetWordAutom( rightNest, leftNest, dLeftNest);
-
-                  RightTracerInScala rtisNest =
-                        new RightTracerInScala( dRightNest, leftNest, mNest,
-                                                cf, pat, cf.getElemType(pat.type()));
-
-                  Tree stmsRightNest[] = rtisNest.getStms( gen.Ident( Position.FIRSTPOS, v ) );
-                  stmsNest[ i ] = new Tree[ stmsLeftNest.length
-                                            + stmsRightNest.length ];
-
-                  System.arraycopy( stmsLeftNest, 0,
-                                    stmsNest[ i ], 0, stmsLeftNest.length );
-                  System.arraycopy( stmsRightNest, 0, stmsNest[ i ],
-                                    stmsLeftNest.length, stmsRightNest.length );
-                  k += stmsNest[ i ].length;
-                  i++;
-            }
-            // flatten
-            Tree[] res = new Tree[ k ];
-            k = 0;
-            for( i = 0; i < varMap.size(); i++ ) {
-                  System.arraycopy( stmsNest[ i ], 0, res, k, stmsNest[ i ].length );
-                  k += stmsNest[ i ].length;
-            }
-            return res;
-      }
-    */
-
     /** translates the det/switching automaton to scala code
      *  precondition: pat.type() corresponds to element type
      */
       Tree addBinderToBody( Tree pat, Tree body ) {
-	  /*
-            SplitNested spn = new SplitNested( pat, _m.owner, cf );
 
-
-            pat = spn.flatPat; //
-
-            for( Iterator it = spn.nestedVarToPats.keySet().iterator();
-                 it.hasNext(); ){
-                  Symbol v = (Symbol) it.next();
-                  Tree nestPat = (Tree) spn.nestedVarToPats.get( v );
-                  Matcher mNest = new Matcher( _m.owner, gen.Ident(Position.FIRSTPOS, v), null );
-
-                  Matcher saveM = _m; _m = mNest;
-
-                  Tree nbody = addBinderToBody( nestPat, body );
-                  _m = saveM;
-                  body = nbody;
-            }
-	  */
             Type elementType = cf.getElemType_Sequence( pat.type() );
 
             BindingBerrySethi build = new BindingBerrySethi();

@@ -1,3 +1,7 @@
+/**
+ *  $Id$
+ */
+
 package scalac.transformer.matching ;
 
 import scalac.*;
@@ -111,7 +115,8 @@ public class RightTracerInScala extends TracerInScala  {
 
 	Tree rhs;
 	if( keepType )
-	    rhs = cf.ignoreValue( realVar.type() );
+	    rhs = gen.mkDefaultValue(cf.pos,
+				     realVar.type()); //cf.ignoreValue( realVar.type() );
 	else
 	    rhs = /* cf.newRef(  cf.newSeqNil( */ gen.Nil( cf.pos )
 		.setType( cf.SeqListType( elementType ));

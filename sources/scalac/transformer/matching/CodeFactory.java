@@ -193,8 +193,7 @@ class CodeFactory extends PatternTool {
     }
 
     /** FIXME - short type
-     */
-      Tree ignoreValue( Type asType ) {
+      Tree ignoreValue1( Type asType ) {
             if( asType.isSameAs(defs.BYTE_TYPE ))
                   return make.Literal(pos, new Integer( 0 ))
                         .setType( defs.INT_TYPE );
@@ -202,7 +201,7 @@ class CodeFactory extends PatternTool {
                   return make.Literal(pos, new Character( 'a' ))
                         .setType( defs.CHAR_TYPE );
             else if( asType.isSameAs(defs.SHORT_TYPE ))
-		return make.Literal(pos, new Integer/*Short?*/( 0 ))
+		return make.Literal(pos, new Integer( 0 ))//Short
                         .setType( defs.SHORT_TYPE );
             else if( asType.isSameAs(defs.INT_TYPE ))
                   return gen.mkIntLit( pos, 0 );
@@ -220,19 +219,17 @@ class CodeFactory extends PatternTool {
             else if( asType.isSameAs(defs.STRING_TYPE ))
                   return make.Literal(pos, "")
                         .setType( defs.STRING_TYPE );
-            /** FIX ME FOR THE NEW VERSION*/
 	    else
-		return /*gen.Apply( */Null( asType )/*,
-						      Tree.EMPTY_ARRAY)*/;
-
+		return Null( asType );
 	    //throw new ApplicationError("don't know how to handle "+asType);
       }
+     */
 
     /** code `null'
-     */
     Tree Null( Type asType ) {
 	return gen.Ident(pos, defs.NULL );
     }
+     */
 
     // the caller needs to set the type !
     Tree  _applyNone( Tree arg ) {

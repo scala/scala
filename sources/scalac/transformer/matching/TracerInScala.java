@@ -44,12 +44,20 @@ public class TracerInScala extends Autom2Scala {
 
       Tree bindVar(Symbol realVar) {
             Tree hv = refHelpVar( realVar );
-            //System.out.println("binding realVar.name "+realVar.name+" type:"+realVar.type()+" to smth");
+	    /*
+            System.out.println("binding realVar.name "+realVar.name+" type:"+realVar.type()+" to hv type:"+hv.type());
             realVar.setOwner( owner );
+            System.out.println("is same as realVar"+realVar.type().isSameAs( elementType ));
+            System.out.println("is same as hv"+realVar.type().isSameAs( hv.type() ));
             if( realVar.type().isSameAs( elementType ))
                   return gen.ValDef( realVar, cf.SeqList_head( hv ));
             else
-                  return gen.ValDef( realVar, hv);
+                  return gen.ValDef( realVar, hv );
+	    */
+	    if( realVar.type().isSameAs( hv.type())) {
+		return gen.ValDef( realVar, hv ); // e.g. x @ _*
+	    }
+	    return gen.ValDef( realVar, cf.SeqList_head( hv ));
 
       }
 
