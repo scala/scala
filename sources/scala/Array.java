@@ -10,8 +10,6 @@
 
 package scala;
 
-import scala.runtime.types.ScalaClassType;
-
 /** @meta class [?T] extends scala.AnyRef with java.lang.Cloneable with java.io.Serializable; */
 public abstract class Array implements Cloneable, java.io.Serializable {
 
