@@ -44,7 +44,9 @@ public class SourceCompleter extends Type.LazyType {
             try {
                 long msec = System.currentTimeMillis();
 		String filename = SourceRepresentation.externalizeFileName(
-		    c.fullName()) + ".scala";
+		    c.isConstructor() ? c.constructorClass() :
+                    c.isModule() ? c.moduleClass() :
+                    c, ".scala");
 		java.io.File f = global.classPath.openJavaFile(filename);
                 Unit unit = new Unit(global, new SourceFile(f), false, mixinOnly);
                 Phase phase = global.currentPhase;

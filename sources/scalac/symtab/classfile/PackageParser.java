@@ -42,9 +42,7 @@ public class PackageParser extends MetadataParser {
         String dirname = null;
 	HashMap/*<Symbol, AbstractFile>*/ symFile = new HashMap();
         if (!p.isRoot()) {
-            dirname = SourceRepresentation.externalizeFileName(p.fullName());
-            if (!dirname.endsWith("/"))
-                dirname += "/";
+            dirname = SourceRepresentation.externalizeFileName(p, "/");
         }
         String[] base = global.classPath.components();
         for (int i = 0; i < base.length; i++) {

@@ -2,15 +2,23 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id
 \*                                                                      */
+
+// $Id$
 
 package scalac.util;
 
 import java.io.File;
 
+import scalac.symtab.Symbol;
+import scalac.symtab.SymbolNameWriter;
+
 public final class SourceRepresentation {
+
+    /** The file name writer */
+    private static SymbolNameWriter fileNameWriter = new SymbolNameWriter()
+        .setAllSeparators(File.separatorChar)
+        .setRootSeparator('\0');
 
     public static int digit2int(byte ch, int base) {
         if ('0' <= ch && ch <= '9' && ch < '0' + base)
@@ -205,14 +213,16 @@ public final class SourceRepresentation {
         return escape(new String(s));
     }
 
-    /** return external representation of file name s,
-     *  converting '.' to File.separatorChar
+    /**
+     * Returns the external file name with given suffix associated to
+     * given class. The file name use File.separatorChar as file
+     * separator.
      */
-    public static String externalizeFileName(Name n) {
-        if ((n == null) || (n.length() == 0))
-            return ".";
-        byte[] ascii = n.toAscii();
-        String s = ascii2string(ascii, 0, ascii.length);
-        return s.replace('.', File.separatorChar);
+    public static String externalizeFileName(Symbol clasz, String suffix) {
+        assert clasz.isClassType(): Debug.show(clasz);
+        String name = fileNameWriter.appendSymbol(clasz, suffix).toString();
+        fileNameWriter.setStringBuffer(null);
+        return name;
     }
+
 }

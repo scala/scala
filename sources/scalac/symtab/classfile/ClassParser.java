@@ -26,7 +26,7 @@ public class ClassParser extends MetadataParser {
 	try {
 	    long msec = System.currentTimeMillis();
 	    String filename = SourceRepresentation.externalizeFileName(
-		c.fullName()) + ".class";
+		c, ".class");
 	    AbstractFile f = global.classPath.openFile(filename);
 	    if (f == null)
 		global.error("could not read class " + c);
@@ -82,7 +82,7 @@ public class ClassParser extends MetadataParser {
             try {
                 long msec = System.currentTimeMillis();
                 String filename = SourceRepresentation.externalizeFileName(
-		    alias.fullName()) + ".class";
+		    alias, ".class");
                 AbstractFile f = global.classPath.openFile(filename);
                 if (f == null)
                     global.error("could not read class " + c);

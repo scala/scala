@@ -27,7 +27,7 @@ public class SymblParser extends ClassParser {
 	try {
 	    long msec = System.currentTimeMillis();
 	    String filename = SourceRepresentation.externalizeFileName(
-		c.fullName()) + ".symbl";
+		c, ".symbl");
 	    AbstractFile f = global.classPath.openFile(filename);
 	    if (f == null)
 		global.error("could not read class " + c);
