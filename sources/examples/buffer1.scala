@@ -1,16 +1,46 @@
 package examples;
 
-import scala.concurrent._;
+object buffer1 {
 
-class OnePlaceBuffer() {
-  private val m = new MailBox();             // An internal mailbox
-  private case class Empty(), Full(x: Int);  // Types of messages we deal with
+  import scala.concurrent._;
 
-  m send Empty();                            // Initialization
+  class OnePlaceBuffer {
+    private val m = new MailBox();             // An internal mailbox
+    private case class Empty(), Full(x: Int);  // Types of messages we deal with
 
-  def write(x: Int): Unit =
-    m receive { case Empty() => m send Full(x) }
+    m send Empty();                            // Initialization
 
-  def read: Int =
-    m receive { case Full(x) => m send Empty() ; x }
+    def write(x: Int): Unit = m receive {
+      case Empty() =>
+        Console.println("put " + x);
+        m send Full(x)
+    }
+
+    def read: Int = m receive {
+      case Full(x) =>
+        Console.println("get " + x);
+        m send Empty() ; x
+    }
+  }
+
+  def main(args: Array[String]) = {
+    val buf = new OnePlaceBuffer;
+    val random = new java.util.Random();
+
+    def producer(n: int): unit = {
+      Thread.sleep(random.nextInt(1000));
+      buf.write(n);
+      producer(n + 1)
+    }
+
+    def consumer: unit = {
+      Thread.sleep(random.nextInt(1000));
+      val n = buf.read;
+      consumer
+    }
+
+    ops.spawn(producer(0));
+    ops.spawn(consumer)
+  }
+
 }

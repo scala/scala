@@ -1,3 +1,5 @@
+package examples;
+
 object sorter {
 
   def sort(a: List[Int]): List[Int] = {
@@ -14,7 +16,7 @@ object sorter {
   def main(args: Array[String]) = {
     val xs = List(6, 2, 8, 5, 1);
     Console.println(xs);
-    Console.println(sort(xs));
+    Console.println(sort(xs))
   }
 
 }

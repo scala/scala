@@ -1,4 +1,8 @@
-module maps {
+package examples;
+
+object maps {
+
+  import scala.collection.immutable._;
 
   trait MapStruct[kt, vt] {
     trait Map with Function1[kt, vt] {
@@ -146,6 +150,28 @@ module maps {
     }
     val empty = new MutMap(null, null);
   }
+
+  class Date(y: Int, m: Int, d: Int) with Ord[Date] {
+    def year = y, month = m, day = d;
+
+    def <(that: Date): Boolean = {
+      (year < that.year) ||
+      (year == that.year && month < that.month) ||
+      (month == that.month && day < that.day)
+    }
+
+    override def equals(that: Any): Boolean =
+      that.isInstanceOf[Date] && {
+         val o = that.asInstanceOf[Date];
+         day == o.day && month == o.month && year == o.year
+      }
+  }
+
+  def main(args: Array[String]) = {
+    val t = new OOBinTree[Date, String]();
+    ()
+  }
+
 }
 
 

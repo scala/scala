@@ -1,3 +1,5 @@
+package examples;
+
 object fors {
 
   class Person(_name: String, _age: Int) {
@@ -80,11 +82,11 @@ object fors {
     findNums(15) foreach { x => Console.print(" " + x); };
     Console.println;
 
-    val xs = List(3.5, 5.2);
+    val xs = List(3.5, 5.0, 4.5);
     Console.println("average(" + xs + ") = "
       + sum(xs) / xs.length);
 
-    val ys = List(2.0, 1.0);
+    val ys = List(2.0, 1.0, 3.0);
     Console.println("scalProd(" + xs + ", " + ys +") = "
       + scalProd(xs, ys));
   }

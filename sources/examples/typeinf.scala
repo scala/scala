@@ -6,7 +6,7 @@ case class Lam(x: String, e: Term)          extends Term {}
 case class App(f: Term, e: Term)            extends Term {}
 case class Let(x: String, e: Term, f: Term) extends Term {}
 
-module types {
+object types {
   trait Type {}
   case class Tyvar(a: String) extends Type {}
   case class Arrow(t1: Type, t2: Type) extends Type {}
@@ -19,7 +19,7 @@ import types._;
 case class ListSet[a](elems: List[a]) {
 
   def contains(y: a): Boolean = elems match {
-    case List() => False
+    case List() => false
     case x :: xs => (x == y) || (xs contains y)
   }
 
@@ -38,7 +38,7 @@ case class ListSet[a](elems: List[a]) {
   }
 }
 
-module typeInfer {
+object typeInfer {
 
   trait Subst with Function1[Type,Type] {
     def lookup(x: Tyvar): Type;
@@ -73,7 +73,7 @@ module typeInfer {
 
   case class TypeScheme(vs: List[String], t: Type) {
     def newInstance: Type =
-      (emptySubst foldl_: vs) { (s, a) => s.extend(Tyvar(a), newTyvar) } (t);
+      vs.foldLeft(emptySubst) { (s, a) => s.extend(Tyvar(a), newTyvar) } (t);
   }
 
   type Env = List[Pair[String, TypeScheme]];
@@ -97,7 +97,7 @@ module typeInfer {
     case Pair(Arrow(t1, t2), Arrow(u1, u2)) =>
       mgu(t1, u1)(mgu(t2, u2)(s))
     case Pair(Tycon(k1, ts), Tycon(k2, us)) if (k1 == k2) =>
-      (s foldl_: ((ts zip us) map {case Pair(t,u) => mgu(t,u)})) { (s, f) => f(s) }
+      ((ts zip us) map {case Pair(t,u) => mgu(t,u)}).foldLeft(s) { (s, f) => f(s) }
     case _ => error("unification failure");
   }
 
@@ -131,7 +131,7 @@ module typeInfer {
   }
 }
 
-module predefined {
+object predefined {
   val booleanType = Tycon("Boolean", List());
   val intType = Tycon("Int", List());
   def listType(t: Type) = Tycon("List", List(t));
@@ -139,6 +139,7 @@ module predefined {
   private def gen(t: Type): typeInfer.TypeScheme = typeInfer.gen(List(), t);
   private val a = newTyvar;
   val env = List(
+/*
     Pair("true", gen(booleanType)),
     Pair("false", gen(booleanType)),
     Pair("if", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
@@ -149,14 +150,16 @@ module predefined {
     Pair("isEmpty", gen(Arrow(listType(a), booleanType))),
     Pair("head", gen(Arrow(listType(a), a))),
     Pair("tail", gen(Arrow(listType(a), listType(a)))),
+*/
     Pair("fix", gen(Arrow(Arrow(a, a), a)))
   )
 }
 
-module test {
+object test with Executable {
 
-  def showType(e: Term) = typeInfer.typeOf(predefined.env, e);
+// def showType(e: Term) = typeInfer.typeOf(predefined.env, e);
+  def showType(e: Term) = typeInfer.typeOf(Nil, e);
 
-  showType(Lam("x", App(App(Var("cons"), Var("x")), Var("nil"))));
-
+  Console.println(
+    showType(Lam("x", App(App(Var("cons"), Var("x")), Var("nil")))));
 }

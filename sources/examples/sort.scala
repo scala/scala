@@ -1,3 +1,5 @@
+package examples;
+
 object sorter {
 
   def sort(a: Array[Int]): Unit = {
@@ -40,7 +42,7 @@ object sorter {
     val ar = xs.copyToArray(new Array[Int](xs.length), 0);
     println(ar);
     sort(ar);
-    println(ar);
+    println(ar)
   }
 
 }
