@@ -122,7 +122,7 @@ test_interpretation() {
 }
 
 test_compilation() {
-    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`.obj;
+    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     classpath="$SCALA:$output";
     if $CYGWIN; then
         classpath=`cygpath -w -p "$classpath"`;
@@ -135,7 +135,7 @@ test_compilation() {
 }
 
 test_compilation_success() {
-    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`.obj;
+    output="$OBJDIR"/`expr "$source" : "\(.*\)\\.scala"`-$KIND.obj;
     rm -rf "$output";
     mkdir -p "$output" &&
     $SOCOS -d "$output" $FLAGS "$source" &&
@@ -156,9 +156,9 @@ test_output() {
 
 test_file() {
     source="$FILE";
-    expect="`expr "$source" : "\(.*\)\\.scala"`.check";
-    actual="`expr "$source" : "\(.*\)\\.scala"`.log";
     flags="`expr "$source" : "\(.*\)\\.scala"`.flags";
+    expect="`expr "$source" : "\(.*\)\\.scala"`.check";
+    actual="`expr "$source" : "\(.*\)\\.scala"`-$KIND.log";
     if [ -f "$flags" ]; then
         FLAGS=`cat $flags`;
     else
@@ -200,6 +200,7 @@ test_one() {
     HEAD="false";
     TEXT="$1"; shift 1;
     TEST="$1"; shift 1;
+    KIND="$1"; shift 1;
 
     for FROM do
         if [ -d "$FROM" -o -f "$FROM" ]; then
@@ -224,13 +225,13 @@ test_all() {
     echo "";
 
     test_one "Testing interpreter" \
-        test_interpretation $FILES_RUN $FILES_INT;
+        test_interpretation "int" $FILES_RUN $FILES_INT;
     test_one "Testing jvm backend" \
-        test_compilation $FILES_RUN $FILES_JVM;
+        test_compilation "jvm" $FILES_RUN $FILES_JVM;
     test_one "Testing compiler (on files whose compilation should succeed)" \
-        test_compilation_success $FILES_POS;
+        test_compilation_success "pos" $FILES_POS;
     test_one "Testing compiler (on files whose compilation should fail)" \
-        test_compilation_failure $FILES_NEG;
+        test_compilation_failure "neg" $FILES_NEG;
 }
 
 ##############################################################################
