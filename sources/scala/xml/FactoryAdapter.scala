@@ -30,7 +30,7 @@ import org.xml.sax.helpers.ParserAdapter;
 
 import org.xml.sax.helpers.XMLReaderFactory;
 
-abstract class NewFactoryAdapter
+abstract class FactoryAdapter
 	 extends DefaultHandler()
 	 // with ContentHandler
 	 // with ErrorHandler  // SAX2
