@@ -253,6 +253,7 @@ class InfoPanel extends JPanel() {
 
       symLabel.setText(TreeInfo.symbolText(t));
       stypeLabel.setText(TreeInfo.symbolTypeText(t));
+      attLabel.setText(TreeInfo.symbolAttributes(t));
       ttypeLabel.setText(t.`type`().toString());
     } else
       reset;

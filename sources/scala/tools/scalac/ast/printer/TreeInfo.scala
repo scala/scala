@@ -347,6 +347,27 @@ object TreeInfo {
     else
       "";
   }
+
+  /** Return a textual representation of (some of) the symbol's
+    * attributes */
+  def symbolAttributes(t: Tree): String = {
+    val s = t.symbol();
+    var att = "";
+
+    if (s != null) {
+      if (s.isType())
+	att = att + "type ";
+      if (s.isFinal())
+	att = att + "final ";
+      if (s.isSynthetic())
+	att = att + "synth ";
+      if (s.isExternal())
+	att = att + "external ";
+
+      att
+    }
+    else "";
+  }
 }
 
 } // package
