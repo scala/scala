@@ -243,7 +243,7 @@ public class ATreeFromSTree {
     private ACode apply(Tree tree, Tree fun, Tree[] targs, Tree[] vargs) {
         switch (fun) {
         case Ident(_):
-            return make.Goto(tree, tree.symbol(), expression(vargs));
+            return make.Goto(tree, fun.symbol(), expression(vargs));
         default:
             return apply(tree, method(fun), targs, vargs);
         }
