@@ -130,7 +130,7 @@ all		: library
 all		: interpreter
 all		: scaladoc
 all		: dtd2scala
-all		: library-doc
+#all		: library-doc
 
 force		: fastclean
 	@$(make) all

@@ -12,10 +12,10 @@
 // todo: use mangled name or drop.
 // todo: emit warnings for unchecked.
 // todo: synchronize on module instantiation.
-// todo: type select operator for superclass term access.
 // todo: implement EQ
 // todo: for (Tuplen(...) <- ...)
 // todo: empty package
+// todo: this for package?
 
 package scalac.typechecker;
 

@@ -26,7 +26,7 @@ CYGWIN_TEST		 = $(filter CYGWIN%,$(shell $(UNAME)))
 ##############################################################################
 # Functions
 
-CYGWIN_PATH		 = $(if $(CYGWIN_TEST),`$(CYGPATH) -w -p $(1)`,$(1))
-CYGWIN_FILE		 = $(if $(CYGWIN_TEST),`$(CYGPATH) -w    $(1)`,$(1))
+CYGWIN_PATH		 = $(if $(CYGWIN_TEST),`$(CYGPATH) -w -p '$(1)'`,$(1))
+CYGWIN_FILE		 = $(if $(CYGWIN_TEST),`$(CYGPATH) -w    '$(1)'`,$(1))
 
 ##############################################################################
