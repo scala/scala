@@ -191,7 +191,7 @@ public class LeftTracerInScala extends TracerInScala {
             Tree action = code_delta( i, (Label) label );
 
             if( action != null ) {
-                stateBody = gen.If( _cur_eq( _iter(), (Label) label ),
+                stateBody = gen.If( currentMatches((Label) label),// _cur_eq( _iter(), (Label) label ),
                                     action,
                                     stateBody);
             }
