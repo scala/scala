@@ -122,7 +122,8 @@ class PostScript (filename: String, _width: Double, _height: Double)
   /** File where to print.*/
   import java.io._;
   val out : PrintStream = new PrintStream(
-    if (filename == "-") System.out else new FileOutputStream(filename));
+    if (filename == "-") java.lang.System.out
+    else new FileOutputStream(filename));
 
   def plotLine(x1: Double, y1: Double, x2: Double, y2: Double): Unit = {
     out.println(x1 + " " + y1 + " m " + x2 + " " + y2 + " l");
