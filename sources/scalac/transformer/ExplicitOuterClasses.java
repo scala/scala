@@ -177,6 +177,16 @@ public class ExplicitOuterClasses extends Transformer {
             }
         }
 
+        case This(Tree qualifier): {
+            // If "this" refers to some outer class, replace it by
+            // explicit reference to it.
+            int level = qualifier.hasSymbol() ? outerLevel(qualifier.symbol()) : 0;
+            if (level > 0)
+                return outerRef(level);
+            else
+                return super.transform(tree);
+        }
+
         case Apply(Tree fun, Tree[] args): {
             // Add outer parameter to constructor calls.
             Tree realFun;
