@@ -36,7 +36,7 @@ public class MetaTuple extends AbstractScalaExpander {
     public void printTParams() {
         for (int i = 1; i <= arity; i++) {
             if (i > 1) writer.print(", ");
-            writer.print("+ T").print(i);
+            writer.print("+T").print(i);
         }
     }
 
