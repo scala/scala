@@ -15,9 +15,6 @@ import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
 import scalac.backend.Primitive;
 import scalac.backend.Primitives;
-import scalac.checkers.Checker;
-import scalac.checkers.CheckSymbols;
-import scalac.checkers.CheckTypes;
 import scalac.symtab.Definitions;
 import scalac.symtab.Modifiers;
 import scalac.symtab.Scope;
@@ -97,13 +94,6 @@ public class ErasurePhase extends Phase {
         case Primitive.UNBOX: return eraseUnboxMethodType(tp);
         default           : return tp.erasure();
         }
-    }
-
-    public Checker[] postCheckers(Global global) {
-        return new Checker[] {
-            new CheckSymbols(global),
-            new CheckTypes(global),
-        };
     }
 
     //########################################################################

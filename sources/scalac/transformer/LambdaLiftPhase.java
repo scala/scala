@@ -12,7 +12,6 @@ import scalac.*;
 import scalac.util.*;
 import scalac.parser.*;
 import scalac.symtab.*;
-import scalac.checkers.*;
 import java.util.ArrayList;
 
 public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
@@ -153,10 +152,4 @@ public class LambdaLiftPhase extends Phase implements Kinds, Modifiers {
         //throw new ApplicationError("proxy " + fv + " in " + owner);
     }
 
-    public Checker[] postCheckers(Global global) {
-        return new Checker[] {
-            new CheckSymbols(global),
-            new CheckTypes(global),
-        };
-    }
 }

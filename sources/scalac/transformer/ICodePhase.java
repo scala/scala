@@ -12,7 +12,6 @@ import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
-import scalac.checkers.TreeChecker;
 import scalac.symtab.Definitions;
 
 import ch.epfl.lamp.util.CodePrinter;

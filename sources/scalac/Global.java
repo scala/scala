@@ -391,14 +391,12 @@ public abstract class Global {
             currentPhase = currentPhase.next;
             start();
             // System.out.println("*** " + currentPhase.descriptor.description() + " ***");
-            // !!! new scalac.checkers.SymbolChecker(this).check();
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
             if (currentPhase.descriptor.hasPrintFlag()) print();
             if (currentPhase.descriptor.hasGraphFlag())
                 currentPhase.graph(this);
-            if (currentPhase.descriptor.hasCheckFlag())
-                currentPhase.check(this);
+            // if (currentPhase.descriptor.hasCheckFlag()) // !!!
             if (currentPhase == PHASE.PARSER.phase()) fix1();
             if (currentPhase == PHASE.ANALYZER.phase()) fix2();
         }

@@ -7,7 +7,6 @@
 // $Id$
 
 import scalac.ast._;
-import scalac.checkers.Checker;
 import scalac.symtab._;
 import scalac.util.Name;
 
@@ -96,13 +95,5 @@ object NewArray {
     arr
   }
 
-  def Checker(xs: Checker*): Array[Checker] = {
-    val arr = new Array[Checker](xs.length);
-    var i = 0;
-    for (val t <- xs.elements) {
-      arr(i) = t; i = i + 1;
-    }
-    arr
-  }
 }
 }

@@ -10,7 +10,6 @@ import scalac.{Global => scalac_Global}
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
-import scalac.checkers._;
 
 package scala.tools.scalac.transformer {
 
@@ -23,12 +22,7 @@ class TransMatchPhase(global:scalac_Global, descriptor:PhaseDescriptor )
         new TransMatch( global ).apply( u );
       }
     }
-    override def postCheckers( global:scalac_Global ):Array[Checker] = {
-      val a = new Array[Checker](2);
-      a.update(0, new CheckSymbols(global) );
-      a.update(1, new CheckTypes(global) );
-      a
-    }
+
   }
 }
 

@@ -8,7 +8,6 @@
 
 import scalac.{Global => scalac_Global, _};
 import scalac.symtab._;
-import scalac.checkers._;
 
 package scala.tools.scalac.transformer {
 
@@ -96,7 +95,5 @@ class UnCurryPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends P
         false
     });
 
-  override def postCheckers(global: scalac_Global): Array[Checker] =
-    NewArray.Checker(new CheckSymbols(global), new CheckTypes(global));
 }
 }

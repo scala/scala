@@ -9,7 +9,6 @@
 import scalac._;
 import scalac.ast._;
 import scalac.symtab._;
-import scalac.checkers._;
 import scalac.{Global => scalac_Global}
 
 package scala.tools.scalac.typechecker {
@@ -31,7 +30,5 @@ class RefCheckPhase(global: scalac_Global, descriptor: PhaseDescriptor)
 	if (sym.isModule() && !sym.isStatic()) new Type$PolyType(Symbol.EMPTY_ARRAY, tp);
 	else tp;
 
-    override def postCheckers(global: scalac_Global): Array[Checker] =
-      NewArray.Checker(new CheckSymbols(global), new CheckTypes(global));
 }
 }

@@ -11,7 +11,6 @@ import scalac._;
 import scalac.symtab._;
 import scalac.util._;
 import scalac.ast._;
-import scalac.checkers._;
 import java.util.HashMap;
 import java.util.ArrayList;
 import scala.tools.scalac.util.NewArray;
@@ -72,10 +71,5 @@ class AnalyzerPhase(global: scalac_Global, descriptor: PhaseDescriptor) extends 
     new Analyzer(global, this).lateEnter(unit);
   }
 
-  override def postCheckers(global: scalac_Global): Array[Checker] =
-    NewArray.Checker(
-      new CheckSymbols(global),
-      new CheckTypes(global)
-    );
 }
 }

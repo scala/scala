@@ -11,7 +11,6 @@ package scalac;
 import scalac.ast.printer.TreePrinter;
 import scalac.symtab.Symbol;
 import scalac.symtab.Type;
-import scalac.checkers.Checker;
 
 public abstract class Phase {
 
@@ -75,22 +74,6 @@ public abstract class Phase {
     public void graph(CompilationUnit unit) {
         // !!! new scala.compiler.gdl.TreePrinter().printInFile(
         // !!!     unit, unit.source + "-" + name() + ".gdl");
-    }
-
-    /** Checks all compilation units. */
-    public void check(Global global) {
-        for (int i = 0; i < global.units.length; i++) check(global.units[i]);
-    }
-
-    /** Check the result of this phase for the given compilation unit. */
-    public void check(CompilationUnit unit) {
-        Checker[] checkers = postCheckers(unit.global);
-        for (int i = 0; i < checkers.length; i++) checkers[i].traverse(unit);
-    }
-
-    /** Returns an array of checkers which can be applied after the phase. */
-    public Checker[] postCheckers(Global global) {
-        return new Checker[0];
     }
 
     /** Returns the name of this phase. */

@@ -56,10 +56,7 @@
 ../../../scalac/backend/msil/GenMSILPhase.java
 ../../../scalac/backend/msil/TypeCreator.java
 
-../../../scalac/checkers/CheckSymbols.java
 ../../../scalac/checkers/CheckTreeNodes.java
-../../../scalac/checkers/CheckTypes.java
-../../../scalac/checkers/Checker.java
 ../../../scalac/checkers/TreeChecker.java
 
 ../../../scalac/framework/History.java
@@ -115,8 +112,6 @@
 ../../../scalac/transformer/OwnerTransformer.java
 ../../../scalac/transformer/TailCallPhase.java
 ../../../scalac/transformer/TypesAsValuesPhase.java
-# ../../../scalac/transformer/UnCurry.java
-# ../../../scalac/transformer/UnCurryPhase.java
 
 ../../../scalac/transformer/matching/AlgebraicMatcher.java
 ../../../scalac/transformer/matching/Autom2Scala.java
@@ -145,8 +140,6 @@
 
 ../../../scalac/typechecker/AnalyzerPhase.java
 ../../../scalac/typechecker/Infer.java
-# ../../../scalac/typechecker/RefCheck.java
-# ../../../scalac/typechecker/RefCheckPhase.java
 
 ../../../scalac/util/ArrayApply.java
 ../../../scalac/util/Debug.java
