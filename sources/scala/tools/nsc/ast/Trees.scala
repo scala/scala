@@ -433,7 +433,7 @@ class Trees: Global {
       if (mods0 == mods && name0 == name && tparams0 == tparams && vparams0 == vparams && tp0 == tp && impl0 == impl) => t
       case _ => copy.ClassDef(tree, mods, name, tparams, vparams, tp, impl)
     }
-    def PackageDef(tree: Tree, name: Tree, stats: List[Tree]) = tree match {
+    def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
       case t @ PackageDef(name0, stats0)
       if (name0 == name && stats0 == stats) => t
       case _ => copy.PackageDef(tree, name, stats)
