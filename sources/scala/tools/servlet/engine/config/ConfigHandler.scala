@@ -15,18 +15,18 @@ class ConfigHandler extends MarkupHandler[Config] {
 
   def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
 
-  override def attribute(pos: int, key: String, value:String): AttribValue =
+  override def attribute(pos: int, uri:String, key: String, value:String): AttribValue =
     if( key == "port" )
       attributeIntValue(pos, Integer.parseInt(value));
     else
-      super.attribute(pos,key,value);
+      super.attribute(pos, uri, key, value);
 
   var hmap = new mutable.HashMap[String,String];
 
   /** be careful to copy everything from attrMap1, as it will change
    *  @param attrMap1 the attribute map.
    */
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[String,AttribValue], args: mutable.Buffer[Config]): Option[Config] = {
+  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],AttribValue], args: mutable.Buffer[Config]): Option[Config] = {
     if( uri == config_namespace ) {
       label match {
 
@@ -39,13 +39,13 @@ class ConfigHandler extends MarkupHandler[Config] {
           }
           Some(EngineConfig( list ));
 
-        case "connector" if attrMap1("protocol").asString == "http" =>
-          val res = HttpConnectorConfig( attrMap1("port").asInt, hmap );
+        case "connector" if attrMap1(Pair(config_namespace,"protocol")).asString == "http" =>
+          val res = HttpConnectorConfig( attrMap1(Pair(config_namespace,"port")).asInt, hmap );
           hmap = new mutable.HashMap[String,String];
           Some(res)
 
         case "map"       =>
-          hmap.update(attrMap1("url").asString, attrMap1("to").asString);
+          hmap.update(attrMap1(Pair(config_namespace,"url")).asString, attrMap1(Pair(config_namespace,"to")).asString);
           None
       }
     } else None

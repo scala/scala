@@ -10,16 +10,16 @@ class ConstructingHandler extends MarkupHandler[Node] {
 
   def attributeNamespaceDecl(pos: int, uri: String) = NamespaceDecl(uri);
 
-  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[String,AttribValue], args: mutable.Buffer[Node]) = {
+  def element(pos: int, uri: String, label: String, attrMap1: mutable.Map[Pair[String,String],AttribValue], args: mutable.Buffer[Node]) = {
 
     var attrs = new Array[Attribute](attrMap1.size);
     {
       var i = 0;
       val it = attrMap1.elements;
       while( it.hasNext ) {
-        val Pair(ke:String, va: AttribValue) = it.next;
+        val Pair(Pair(uri:String, key:String), va: AttribValue) = it.next;
         va match {
-          case CDataValue(str) => attrs( i ) = Attribute("",ke,str);
+          case CDataValue(str) => attrs( i ) = Attribute(uri, key, str);
         }
         i = i + 1;
       }

@@ -42,7 +42,7 @@ abstract class MarkupParser[MarkupType] {
   protected var aMap: mutable.Map[String,AttribValue] = _;
 
   final val noChildren = new mutable.ListBuffer[MarkupType];
-  final val noAttribs  = new mutable.HashMap[String, AttribValue];
+  final val noAttribs  = new mutable.HashMap[Pair[String,String], AttribValue];
 
   //var xEmbeddedBlock = false;
 
@@ -84,33 +84,66 @@ abstract class MarkupParser[MarkupType] {
    *                      | `{` scalablock `}`
   */
   def xAttributes = {
-    val aMap = new mutable.HashMap[String,AttribValue];
+    val aMap = new mutable.HashMap[Pair[String,String],Pair[Int,String]];
     while( xml.Parsing.isNameStart( ch )) {
-      val key = xName;
+      val pos = this.pos;
+      val key1 = xName;
+      var prefix: String = _;
+      var key: String    = _;
+
+      handle.namespacePrefix(key1) match {
+        case Some(x @ "xmlns") =>
+          prefix = null;
+          key    = key1.substring(x.length()+1, key1.length());
+        case Some(x)       =>
+          prefix = x;
+          key    = key1.substring(x.length()+1, key1.length());
+        case _             =>
+          if( key1 == "xmlns" ) {
+            prefix= null;
+            key   = "";
+          } else {
+            prefix = "";
+            key    = key1
+          }
+      }
       xEQ;
       val delim = ch;
       val pos1 = pos;
-      val value:AttribValue = ch match {
+      val value:String = ch match {
         case '"' | '\'' =>
           nextch;
           val tmp = xAttributeValue(delim);
           nextch;
-          handle.attribute( pos1, key, tmp );
-        /*case '{' if enableEmbeddedExpressions =>
-          nextch;
-          handle.attributeEmbedded(pos1, xEmbeddedExpr);*/
+          tmp;
         case _ =>
-          reportSyntaxError( "' or \" delimited attribute value or '{' scala-expr '}' expected" );
-          handle.attribute( pos1, key, "<syntax-error>" )
+          reportSyntaxError( "' or \" delimited attribute value expected" );
+          "<syntax-error>"
       };
-      // well-formedness constraint: unique attribute names
-      if (aMap.contains(key))
-        reportSyntaxError( "attribute " + key + " may only be defined once" );
-      aMap.update( key, value );
+
+      if(prefix == null) {
+         handle.internal_namespaceDecl(key, value);
+      } else {
+        aMap.update( Pair(prefix,key), Pair(pos,value) );
+      }
+
       if ((ch != '/') && (ch != '>'))
         xSpace;
-    };
-   aMap
+    }
+    // @todo, iterate over attributes, replace prefix, call handleAttribute.
+    handle.internal_startPrefixMapping;
+    val aMap1 = new mutable.HashMap[Pair[String,String],AttribValue];
+    val it = aMap.elements;
+    while( it.hasNext ) {
+      val x @ Pair(Pair(pref,key),Pair(pos,value)) = it.next;
+      val uri = handle.namespace(pref);
+      val qkey = Pair(uri, key);
+      // well-formedness constraint: unique attribute names
+      if (aMap.contains(qkey))
+        reportSyntaxError( "attribute " + key + " may only be defined once" );
+      aMap1.update(qkey,  handle.attribute(pos, uri, key, value));
+    }
+    aMap1
   }
 
   /** attribute value, terminated by either ' or ". value may not contain &lt;.
@@ -136,15 +169,16 @@ abstract class MarkupParser[MarkupType] {
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  protected def xTag: Pair[String, mutable.Map[String,AttribValue]] = {
+  protected def xTag: Pair[String, mutable.Map[Pair[String,String],AttribValue]] = {
     val elemqName = xName;
 
     xSpaceOpt;
-    val aMap: mutable.Map[String,AttribValue] =
+    val aMap: mutable.Map[Pair[String,String],AttribValue] =
       if(xml.Parsing.isNameStart( ch )) {
         xAttributes;
       } else {
-        noAttribs
+        handle.internal_startPrefixMapping;
+        noAttribs;
       };
     Pair(elemqName, aMap);
   }
@@ -318,13 +352,13 @@ abstract class MarkupParser[MarkupType] {
       if(ch == '/') {    // empty element
         xToken('/');
         xToken('>');
-        pref = handle.namespaceDecl( aMap );
-        handle.internal_startPrefixMapping( pref );
+        //pref = handle.namespaceDecl( aMap );
+        //handle.internal_startPrefixMapping( pref );
         noChildren;
       } else {          // element with  content
         xToken('>');
-        pref = handle.namespaceDecl( aMap );
-        handle.internal_startPrefixMapping( pref );
+        //pref = handle.namespaceDecl( aMap );
+        //handle.internal_startPrefixMapping( pref );
         val tmp = content;
         xEndTag( qname );
         tmp;
@@ -339,7 +373,7 @@ abstract class MarkupParser[MarkupType] {
         handle.namespace("");
     }
     val res = handle.element(pos1, uri, name, aMap, ts );
-    handle.internal_endPrefixMapping( pref );
+    handle.internal_endPrefixMapping;
     res
   }
 
