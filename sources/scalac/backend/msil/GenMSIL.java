@@ -51,8 +51,11 @@ public class GenMSIL /*implements Modifiers */ {
 
     final Map assemblies;
 
-    // tells which symbols are functions arguments or locals
-    Map params, locals;
+    // The position of the paramater in the parameter list
+    final Map/*<Symbol, Integer>*/ params = new HashMap();
+
+    // The LocalBuilder corresponding to the local variable symbol
+    final Map/*<Symbol, LocalBuilder>*/ locals = new HashMap();
 
     AssemblyBuilder defaultAssembly, currAssembly;
     ModuleBuilder currModule, scalaModule;
@@ -92,7 +95,6 @@ public class GenMSIL /*implements Modifiers */ {
 
     static final Item TRUE_ITEM  = Item.CondItem(Test.True, null, null);
     static final Item FALSE_ITEM = Item.CondItem(Test.False, null, null);
-
 
     final Symbol STRING_CONCAT;
     static final Type SCALA_UNIT = TypeCreator.getJavaType("scala.Unit");
@@ -186,22 +188,11 @@ public class GenMSIL /*implements Modifiers */ {
 	}
     }
 
-    static String dumpSym(Symbol sym) {
-	if (sym == null) return "<null>";
-	if (sym == Symbol.NONE) return "NoSymbol";
-	return "symbol = " + Debug.show(sym) +
-	    "; owner = " + Debug.show(sym.owner()) +
-	    //"; info = " + Debug.show(sym.info()) +
-	    "; kind = " + sym.kind +
-	    "; flags = " + Integer.toHexString(sym.flags);
-    }
-
-
     MethodBuilder main;
 
     static final Type STRING_ARRAY = Type.GetType("System.String[]");
 
-    final HashMap mains = new HashMap();
+    final Map mains = new HashMap();
 
     void checkMain(MethodBase method) {
 	//log("checking method: " + method);
@@ -353,10 +344,9 @@ public class GenMSIL /*implements Modifiers */ {
     public void genDef(Symbol sym, ValDef[] parameters, Tree rhs, MSILType toType) {
 	MethodBase method = tc.getMethod(sym);
 	//log("genDef: " + method.getSignature());
-	assert params == null && locals == null : "No nested function definitions";
 
-	params = new HashMap();
-	locals = new HashMap();
+	params.clear();
+	locals.clear();
 	int argOffset = method.IsStatic ? 0 : 1;
 	for (int i = 0; i < parameters.length; i++) {
 	    params.put(parameters[i].symbol(), new Integer(i + argOffset));
@@ -367,7 +357,8 @@ public class GenMSIL /*implements Modifiers */ {
 	    code = ((ConstructorBuilder)ctor).GetILGenerator();
 	    FieldInfo moduleField = tc.getModuleField(currentClass);
 	    if (moduleField != null) {
-		//log("genDef: initializing " + MODULE_S + " for class " + method.DeclaringType);
+// 		log("genDef: initializing " + moduleField +
+// 		    " for class " + method.DeclaringType);
 
 		// emit the call to the superconstructor
 		switch (rhs) {
@@ -415,10 +406,8 @@ public class GenMSIL /*implements Modifiers */ {
 	code.Emit(OpCodes.Ret);
 
 	lastStatement = false;
-	params = null;
-	locals = null;
 	code = null;
-    }
+    } // genDef();
 
 
     /** check if the result type of a method is void
@@ -510,9 +499,10 @@ public class GenMSIL /*implements Modifiers */ {
 	    return check(store(items.LocalItem(type, local)));
 
 	case Ident(Name name):
-	    //log("Ident: " + dumpSym(sym));
+	    //log("Ident: " + Debug.show(tree));
 	    if (sym == defs.NULL)
-		return items.LiteralItem(NULL_TAG, null);
+		//return items.LiteralItem(MSILType.NULL_REF, null);
+		return items.LiteralItem(MSILType.OBJECT, null);
 	    MSILType type = type2MSILType(sym.type());
 	    if ( sym.isModule() ) // ???
  		return load(items.StaticItem
@@ -530,34 +520,14 @@ public class GenMSIL /*implements Modifiers */ {
 					items.SelfItem(tc.getType(currentClass)),
 					tc.getField(sym));
 	    }
-// 	    switch (sym.kind) {
-// 	    case Kinds.VAL:
-// 	    case Kinds.VAR:
-// 		Integer slot = (Integer) params.get(sym);
-// 		if (slot != null) {
-// 		    return items.ArgItem(type, slot.intValue());
-// 		} else {
-// 		    LocalBuilder local = (LocalBuilder) locals.get(sym);
-// 		    if (local != null)
-// 			return items.LocalItem(type, local);
-// 		}
-// 		return items.SelectItem(type,
-// 					items.SelfItem(tc.getType(currentClass)),
-// 					tc.getField(sym));
-// 	    case Kinds.MODULE:
-// 		return load(items.StaticItem(type2MSILType(tree.type),
-// 					     tc.getModuleField(sym)));
-// 	    default:
-// 		log("gen.Ident: Dunno what to do with: " + dumpSym(sym));
-// 	    }
-// 	    break;
 
 	case Select(Tree qualifier, Name selector):
 	    if (sym.isModule()) {
 		//log("gen: Select from a module: " + sym);
 		if (sym.isJava())
 		    logErr("gen.Select: Cannot treat Java class '" +
-			   sym.fullNameString() + "' as value:\n\t" + dumpSym(sym));
+			   sym.fullNameString() + "' as value:\n\t" +
+			   dumpSym(sym));
 		else { // scala module
 		    Type module = tc.getType(sym);
 		    return items.StaticItem(MSILType.REF(module),
@@ -575,11 +545,13 @@ public class GenMSIL /*implements Modifiers */ {
 	    // check if the tree corresponds to a static Java field
 	    if (qualifier.symbol().isModule() && sym.isJava()) {
 		//log("gen.Select: static Java field");
-		return items.StaticItem(type2MSILType(tree.type), tc.getField(sym));
+		return items.StaticItem
+		    (type2MSILType(tree.type), tc.getField(sym));
 	    }
 	    if ( qualifier.symbol().isModule() ) { // ?????
 		//log("gen: Select from a non-Java module: " + qualifier.symbol() + "::" + selector);
-		return items.SelectItem(type2MSILType(tree.type), gen(qualifier), tc.getField(sym));
+		return items.SelectItem
+		    (type2MSILType(tree.type), gen(qualifier), tc.getField(sym));
 	    }
 
 	    if ( sym.isValue() || sym.isVariable() ) {
@@ -617,18 +589,8 @@ public class GenMSIL /*implements Modifiers */ {
 	    return check(store(var));
 
 	case Typed(Literal(Object value), Tree tpe):
-	    int kind = 0;// ?????
-	    int newKind = kind;
-	    switch (tpe.type()) {
-	    case UnboxedType(int _kind):
-		newKind = _kind;
-		break;
-	    default:
-		if (kind != TypeTags.STRING)
-		    throw new ApplicationError("Bad type: " +
-					       Debug.show(tpe.type()));
-	    }
-	    return items.LiteralItem(newKind, value);
+	    log("Typed.Literal: " + Debug.show(tree));
+	    return items.LiteralItem(type2MSILType(tpe.type), value);
 
 	case Typed(Tree expr, Tree tpe):
 	    //log("gen.Typed: processing node: " + Debug.show(tree));
@@ -638,6 +600,9 @@ public class GenMSIL /*implements Modifiers */ {
 	    assert body.length == 0 : "Template should not have a body!";
 	    switch (baseClasses[0]) {
 	    case Apply(Tree fun, Tree[] args):
+		//MethodBase mctor = tc.getMethod(fun.symbol());
+		//log("GenMSIL.New: " + dumpSym(fun.symbol()));
+		//log("\t" + mctor);
 		ConstructorInfo ctor = (ConstructorInfo) tc.getMethod(fun.symbol());
 		loadArgs(args, ctor.GetParameters());
 		code.Emit(OpCodes.Newobj, ctor);
@@ -654,7 +619,11 @@ public class GenMSIL /*implements Modifiers */ {
 	    return items.VoidItem();
 
 	case Literal(Object value):
-	    return items.LiteralItem(0/*kind*/, value); // ?????????
+	    //log("Literal: " + Debug.show(tree));
+	    //log("\ttype = " + Debug.show(tree.type));
+	    MSILType t = type2MSILType(tree.type);
+	    //log("\tmsil type = " + t);
+	    return items.LiteralItem(t, value);
 
 	case If(Tree cond, Tree thenp, Tree elsep):
 	    //log("gen.If: cond = " + Debug.show(cond));
@@ -741,27 +710,21 @@ public class GenMSIL /*implements Modifiers */ {
 	case SelfItem():
 	    return item;
 	case StackItem():
-	    if (item.type == MSILType.BOOL && toType == MSILType.I4 )
+	    if (item.type == MSILType.BOOL && toType == MSILType.I4) //?????????
 		return items.StackItem(toType);
 	    if (item.type != toType) {
 		emitConvert(toType);
 		return items.StackItem(toType);
 	    }
 	    return item;
-	case LiteralItem(int kind, Object value):
-	    int newKind = kind;
-	    switch (toType) {
-	    case I1: newKind = TypeTags.BYTE;   break;
-	    case I2: newKind = TypeTags.SHORT;  break;
-	    case I4: newKind = TypeTags.INT;    break;
-	    case I8: newKind = TypeTags.LONG;   break;
-	    case R4: newKind = TypeTags.FLOAT;  break;
-	    case R8: newKind = TypeTags.DOUBLE; break;
+	case LiteralItem(MSILType type, Object value):
+	    //log("coercing Literal " + type + " -> " + toType);
+	    switch (type) {
+	    case REF(_): return item;
+	    default:
+		return (type == toType) ? item : items.LiteralItem(toType, value);
 	    }
-	    if (newKind == kind)
-		return item;
-	    else
-		return items.LiteralItem(newKind, value);
+	    //return (type == toType) ? item : items.LiteralItem(toType, value);
 
 	default:
 	    return coerce(load(item), toType);
@@ -776,6 +739,7 @@ public class GenMSIL /*implements Modifiers */ {
 	case I8: code.Emit(OpCodes.Conv_I8); break;
 	case R4: code.Emit(OpCodes.Conv_R4); break;
 	case R8: code.Emit(OpCodes.Conv_R8); break;
+	case CHAR: code.Emit(OpCodes.Conv_U2); break;
 	case REF(_): break;
 	case ARRAY(_): break;
 	default:
@@ -784,19 +748,7 @@ public class GenMSIL /*implements Modifiers */ {
     }
 
 
-    /*static final HashMap conv = new HashMap();
-    {
-	conv.put(Name.fromString("asDouble"), OpCodes.Conv_R8);
-	conv.put(Name.fromString("asFloat"), OpCodes.Conv_R4);
-	conv.put(Name.fromString("asLong"), OpCodes.Conv_I8);
-	conv.put(Name.fromString("asInt"), OpCodes.Conv_I4);
-	conv.put(Name.fromString("asShort"), OpCodes.Conv_I2);
-	conv.put(Name.fromString("asByte"), OpCodes.Conv_I1);
-    }
-    */
-
-    /** Generate the code for an Apply node
-     */
+    /** Generate the code for an Apply node */
     Item genApply(Tree fun, Tree[] args, MSILType resType) {
 	boolean tmpLastStatement = lastStatement; lastStatement = false;
 	Symbol sym = fun.symbol();
@@ -807,9 +759,20 @@ public class GenMSIL /*implements Modifiers */ {
 	    return check(invokeMethod(sym, args, resType));
 
 	case Select(Tree qualifier, Name selector):
-	    if (sym == global.primitives.AS_UVALUE) {
-		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
-	    }
+//  	    log("genApply.Select: " + dumpSym(sym));
+//  	    log("\tfun: " + Debug.show(fun));
+//  	    log("\tqualifier: " + Debug.show(qualifier));
+//  	    log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
+//  	    log("\tqualifier.type: " + Debug.show(qualifier.type));
+
+//  	    if (primitives.isPrimitive(sym)) {
+// 		log("genApply: TypeRef: " + primitives.getPrimitiveIndex(sym));
+// 		log("\t" + dumpSym(sym));
+// 	    }
+
+// 	    if (sym == global.primitives.AS_UVALUE) {
+// 		return coerce(gen(qualifier, MSILType.VOID), MSILType.VOID);
+// 	    }
 	    if (sym == global.primitives.BOX_UVALUE) {
 		return items.StaticItem(MSILType.REF(SCALA_UNIT), RUNTIME_UNIT_VAL);
 	    }
@@ -830,6 +793,14 @@ public class GenMSIL /*implements Modifiers */ {
 	    }
 	    switch (qualifier.type) {
 	    case TypeRef(_, _, _):
+	    case SingleType(_, _):
+
+// 		log("genApply.Select: " + dumpSym(sym));
+// 		log("\tfun: " + Debug.show(fun));
+// 		log("\tqualifier: " + Debug.show(qualifier));
+// 		log("\tqualifier.symbol(): " + Debug.show(qualifier.symbol()));
+// 		log("\tqualifier.type: " + Debug.show(qualifier.type));
+
 		//log("genApply: qualifier " + dumpSym(qualifier.symbol()) + "; selector = " + selector);
 		switch (qualifier) {
 		case Apply(Select(Tree qual, Name sel), Tree[] boxArgs):
@@ -880,7 +851,8 @@ public class GenMSIL /*implements Modifiers */ {
 		    load(gen(qualifier));
 		    code.Emit(OpCodes.Throw);
 		    code.Emit(OpCode.Ldnull);
-		    return items.StackItem(MSILType.NULL_REF);
+		    //return items.StackItem(MSILType.NULL_REF);
+		    return items.StackItem(MSILType.OBJECT);
 		}
 		if (sym == defs.STRING_PLUS_ANY || sym == STRING_CONCAT) {
 		    load(gen(qualifier));
@@ -893,10 +865,6 @@ public class GenMSIL /*implements Modifiers */ {
 		    load(gen(qualifier));
 		}
 		lastStatement = tmpLastStatement;
-		if (primitives.isPrimitive(sym)) {
-		    log("genApply: TypeRef" + primitives.getPrimitiveIndex(sym));
-		    log("\t" + dumpSym(sym));
-		}
 		return check(invokeMethod(sym, args, resType));
 
 	    case UnboxedArrayType(_):
@@ -961,31 +929,44 @@ public class GenMSIL /*implements Modifiers */ {
 
 	    default:
 		throw new ApplicationError();
-	    }
+	    } // switch(qualifier.type)
 
-	case TypeApply(Select(Tree qualifier,_), Tree[] targs):
-// 	case TypeApply(Tree fun, Tree[] targs):
-	    //final Symbol sym = fun.symbol();
-	    final Type type = tc.getType(targs[0].symbol());
-	    log("genApply.TypeApply: " + dumpSym(sym));
-	    Item i = load(gen(qualifier));
-	    if (sym == defs.IS) {
-		code.Emit(OpCodes.Isinst, type);
-		return mkCond(items.StackItem(MSILType.REF(type)));
-	    }
-	    if (sym == defs.AS) {
-		if (type != TypeCreator.SYSTEM_OBJECT) {
-		    log("genApply: casting item: " + i + " to type: " + type);
-		    code.Emit(OpCodes.Castclass, type);
+// 	case TypeApply(Select(Tree qualifier,_), Tree[] targs):
+ 	case TypeApply(Tree tfun, Tree[] targs):
+	    final Symbol tsym = tfun.symbol();
+	    switch (tfun) {
+	    case Select(Tree qualifier, _):
+		Item i = load(gen(qualifier));
+		final Type type = tc.getTypeFromType(targs[0].type);
+		if (tsym == defs.IS) {
+		    code.Emit(OpCodes.Isinst, type);
+		    return mkCond(items.StackItem(MSILType.REF(type)));
 		}
-		return items.StackItem(MSILType.REF(type));
-	    }
-	    throw new ApplicationError
-		("genApply: Dunno how to process TypeApply");
+		if (tsym == defs.AS) {
+		    if (!i.type.isType(type) && type != TypeCreator.SYSTEM_OBJECT) {
+			//log("genApply: casting item: " + i + " to type: " + type);
+			code.Emit(OpCodes.Castclass, type);
+		    }
+		    return items.StackItem(MSILType.REF(type));
+		}
 
-	default: throw new ApplicationError
-		     ("genApply: Unknown function node: " + fun);
-	}
+		log("genApply.TypeApply.Select: Dunno how to process TypeApply: "
+		    + Debug.show(fun));
+		log("\tTypeApply.fun: " + Debug.show(tfun));
+		log("\tTypeApply.fun.symbol(): " + tsym);
+		throw new ApplicationError();
+	    default:
+		log("default: genApply.TypeApply: Dunno how to process TypeApply: "
+		    + Debug.show(fun));
+		log("\tTypeApply.fun: " + Debug.show(tfun));
+		log("\tTypeApply.fun.symbol(): " + tsym);
+		throw new ApplicationError();
+	    }
+
+	default:
+	    throw new ApplicationError
+		("genApply: Unknown function node: " + Debug.show(fun));
+	} // switch (fun)
     } //genApply()
 
 
@@ -1112,9 +1093,19 @@ public class GenMSIL /*implements Modifiers */ {
 	lastStatement = tmpLastStatement;
     }
 
+    protected boolean isStaticMember(Symbol sym) {
+	return sym.owner().isModuleClass() && sym.owner().isJava();
+    }
+
     private boolean becomesStatic(Symbol sym) {
 	MethodBase method = tc.getMethod(sym);
-	return method.IsStatic && method.DeclaringType == TypeCreator.MONITOR;
+	//return method.IsStatic && method.DeclaringType == TypeCreator.MONITOR;
+	boolean becomesStatic = !isStaticMember(sym) && method.IsStatic;
+// 	if (becomesStatic) {
+// 	    log("method becomes static from: " + dumpSym(sym));
+// 	    log("the new method is " + method);
+// 	}
+	return becomesStatic;
     }
 
     /** Generate code for method invocation
@@ -1123,6 +1114,7 @@ public class GenMSIL /*implements Modifiers */ {
 	//log("invokeMethod: " + dumpSym(fun));
 	MethodBase method = tc.getMethod(fun);
 	assert method != null : "Coudn't resolve method: " + dumpSym(fun);
+	//log("\tmethod found: " + method);
 	Item res = null;
 	if (method.IsStatic) {
 	    ParameterInfo[] params = method.GetParameters();
@@ -1163,7 +1155,9 @@ public class GenMSIL /*implements Modifiers */ {
 	case UnboxedArrayType(scalac.symtab.Type t):
 	    return MSILType.ARRAY(type2MSILType(t));
 	default:
-	    return MSILType.NULL_REF;
+	    log("type2MSILType: don't know how to convert type " + type);
+	    //return MSILType.NULL_REF;
+	    return MSILType.OBJECT;
 	    //logErr("type2MSILType: " + Debug.show(type));
 	    //throw new ApplicationError();
 	}
@@ -1176,46 +1170,14 @@ public class GenMSIL /*implements Modifiers */ {
 	if (type == TypeCreator.LONG)   return MSILType.I8;
 	if (type == TypeCreator.FLOAT)  return MSILType.R4;
 	if (type == TypeCreator.DOUBLE) return MSILType.R8;
-	//log("type2MSILType: Dont know how to convert " + type);
-	return MSILType.REF(type);
+	if (type == TypeCreator.CHAR)   return MSILType.CHAR;
+	if (type == TypeCreator.BOOLEAN)return MSILType.BOOL;
+	if (type == TypeCreator.SYSTEM_STRING) return MSILType.STRING_REF;
+	MSILType mtype =  MSILType.REF(type);
+	//log("type2MSILType: convert " + type + " to " + mtype);
+	return mtype;
     }
 
-//     static final Type SCALA_RUNTIME;
-//     static final FieldInfo RUNTIME_UNIT_VAL;
-//     static final MethodInfo BOX_UNIT    = SCALA_RUNTIME.GetMethod("box", Type.EmptyTypes);
-//     static final MethodInfo BOX_BYTE    = SCALA_RUNTIME.GetMethod("box", new Type[]{BYTE});
-//     static final MethodInfo BOX_INT     = SCALA_RUNTIME.GetMethod("box", new Type[]{INT});
-//     static final MethodInfo BOX_SHORT   = SCALA_RUNTIME.GetMethod("box", new Type[]{SHORT});
-//     static final MethodInfo BOX_CHAR    = SCALA_RUNTIME.GetMethod("box", new Type[]{CHAR});
-//     static final MethodInfo BOX_LONG    = SCALA_RUNTIME.GetMethod("box", new Type[]{LONG});
-//     static final MethodInfo BOX_FLOAT   = SCALA_RUNTIME.GetMethod("box", new Type[]{FLOAT});
-//     static final MethodInfo BOX_DOUBLE  = SCALA_RUNTIME.GetMethod("box", new Type[]{DOUBLE});
-//     static final MethodInfo BOX_BOOLEAN = SCALA_RUNTIME.GetMethod("box", new Type[]{BOOLEAN});
-
-//     public void box(Item that) {
-// 	MethodInfo box = null;
-// 	switch (that.type) {
-// 	case I1: box = BOX_BYTE; break;
-// 	case I2: box = BOX_SHORT; break;
-// 	case I4: box = BOX_INT; break;
-// 	case I8: box = BOX_LONG; break;
-// 	case R4: box = BOX_FLOAT; break;
-// 	case R8: box = BOX_DOUBLE; break;
-// 	case BOOL: box = BOX_BOOLEAN; break;
-// 	case CHAR: box = BOX_CHAR; break;
-// 	case VOID:
-// 	    log("box: boxing Unit");
-// 	    drop(that);
-// 	    box = BOX_UNIT;
-// 	    break;
-// 	case REF(_):
-// 	case ARRAY(_):
-// 	    return;
-// 	default:
-// 	    logErr("box(Item) -> Dunno how to box item: " + that);
-// 	}
-// 	code.Emit(OpCodes.Call, box);
-//     }
 
 
     /** load an item onto the stack
@@ -1228,8 +1190,8 @@ public class GenMSIL /*implements Modifiers */ {
 	case StackItem():
 	    return (StackItem) that;
 
-	case LiteralItem(int kind, Object value):
-	    return loadLiteral(kind, value);
+	case LiteralItem(MSILType type, Object value):
+	    return loadLiteral(type, value);
 
 	case SelfItem():
 	    emitThis();
@@ -1341,21 +1303,18 @@ public class GenMSIL /*implements Modifiers */ {
 	}
     }
 
-    static final int NULL_TAG = TypeTags.LastUnboxedTag + 42;
-
     /**
      * Generate the code for a literal
      */
-    protected Item.StackItem loadLiteral(int kind, Object obj) {
-	switch (kind) {
-	case TypeTags.STRING:
-	    code.Emit(OpCodes.Ldstr, obj.toString());
-	    break;
-	case TypeTags.BYTE:
-	case TypeTags.SHORT:
-	case TypeTags.INT:
-	case TypeTags.CHAR:
-	    int i = ((Number)obj).intValue();
+    protected Item.StackItem loadLiteral(MSILType type, Object obj) {
+	switch (type) {
+	case I1:
+	case I2:
+	case I4:
+	case CHAR:
+	    int i = (type == MSILType.CHAR) ?
+		(int)((Character) obj).charValue() :
+		((Number)obj).intValue();
 	    switch (i) {
 	    case -1:code.Emit(OpCodes.Ldc_I4_M1); break;
 	    case 0: code.Emit(OpCodes.Ldc_I4_0); break;
@@ -1374,32 +1333,40 @@ public class GenMSIL /*implements Modifiers */ {
 		    code.Emit(OpCodes.Ldc_I4, i);
 	    }
 	    break;
-	case TypeTags.LONG:
+	case I8:
 	    code.Emit(OpCodes.Ldc_I8, ((Number)obj).longValue());
 	    break;
-	case TypeTags.FLOAT:
+	case R4:
 	    code.Emit(OpCodes.Ldc_R4, ((Number)obj).floatValue());
 	    break;
-	case TypeTags.DOUBLE:
+	case R8:
 	    code.Emit(OpCodes.Ldc_R8, ((Number)obj).doubleValue());
 	    break;
- 	case TypeTags.BOOLEAN:
+ 	case BOOL:
 	    if (((Boolean)obj).booleanValue())
 		code.Emit(OpCodes.Ldc_I4_1);
 	    else
 		code.Emit(OpCodes.Ldc_I4_0);
 	    break;
-	case TypeTags.UNIT:
+	case VOID:
 	    code.Emit(OpCodes.Ldsfld, RUNTIME_UNIT_VAL);
 	    break;
-	case NULL_TAG:
-	    code.Emit(OpCodes.Ldnull);
+	case REF(Type refType):
+	    if (obj == null) {
+		code.Emit(OpCodes.Ldnull);
+	    } else if (refType == TypeCreator.SYSTEM_STRING) {
+		code.Emit(OpCodes.Ldstr, obj.toString());
+	    } else {
+		throw new ApplicationError
+		    ("loadLiteral(): unexpected literal type: " + refType +
+		     "; value = " + obj);
+	    }
 	    break;
 	default:
-	    throw new ApplicationError("loadLiteral(): Unknown literal kind: "+
-				       kind);
+	    throw new ApplicationError
+		("loadLiteral(): Unknown literal type: " + type);
 	}
-	return items.StackItem(MSILType.fromKind(kind));
+	return items.StackItem(type);
     } // genLiteral()
 
 
@@ -1657,6 +1624,16 @@ public class GenMSIL /*implements Modifiers */ {
 
     ///////////////////////////////////////////////////////////////////////////
 
+    public static String dumpSym(Symbol sym) {
+	if (sym == null) return "<null>";
+	if (sym == Symbol.NONE) return "NoSymbol";
+	return "symbol = " + Debug.show(sym) +
+	    "; owner = " + Debug.show(sym.owner()) +
+	    "; info = " + Debug.show(sym.info()) +
+	    "; kind = " + sym.kind +
+	    "; flags = " + Integer.toHexString(sym.flags);
+    }
+
     /**
      */
     void log(String message) {
@@ -1709,6 +1686,8 @@ public class MSILType {
     public case VOID;
 
     public static final MSILType NULL_REF = REF(null);
+    public static final MSILType OBJECT = REF(TypeCreator.SYSTEM_OBJECT);
+    public static final MSILType STRING_REF = REF(TypeCreator.SYSTEM_STRING);
     public static final MSILType [] ARITHM_PRECISION =
 	new MSILType[] {I1, I2, I4, I8, R4, R8};
 
@@ -1723,8 +1702,7 @@ public class MSILType {
 	case TypeTags.DOUBLE: return R8;
 	case TypeTags.BOOLEAN: return BOOL;
 	case TypeTags.UNIT: return VOID;
-	case GenMSIL.NULL_TAG: return NULL_REF;
-	case TypeTags.STRING: return REF(TypeCreator.SYSTEM_STRING);
+	case TypeTags.STRING: return STRING_REF;
 	default:
 	    throw new ApplicationError("Unknown kind: " + kind);
 
@@ -1768,7 +1746,7 @@ class Item {
     public case VoidItem();
     public case StackItem();
     public case SelfItem();
-    public case LiteralItem(int kind, Object value);
+    public case LiteralItem(MSILType type, Object value);
     public case ArgItem(int slot);
     public case LocalItem(LocalBuilder local);
     public case StaticItem(FieldInfo field);
@@ -1823,9 +1801,9 @@ class ItemFactory {
 	item.type = MSILType.REF(t);
 	return item;
     }
-    public Item.LiteralItem LiteralItem(int kind, Object value) {
-	Item.LiteralItem item = Item.LiteralItem(kind, value);
-	item.type = MSILType.fromKind(kind);
+    public Item.LiteralItem LiteralItem(MSILType type, Object value) {
+	Item.LiteralItem item = Item.LiteralItem(type, value);
+	item.type = type;
 	return item;
     }
     public Item.ArgItem ArgItem(MSILType type, int slot) {
