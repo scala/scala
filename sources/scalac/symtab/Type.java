@@ -238,6 +238,26 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
 	return syms;
     }
 
+    /** The upper bound of this type. Returns always a TypeRef whose
+     * symbol is a class.
+     */
+    public Type bound() {
+	switch (this) {
+        case TypeRef(Type pre, Symbol sym, _):
+            if (sym.kind == ALIAS) return unalias().bound();
+            if (sym.kind == TYPE) return pre.memberInfo(sym).bound();
+            assert sym.isClass() : Debug.show(sym) + " -- " + this;
+            return this;
+	case ThisType(_):
+	case SingleType(_, _):
+            return singleDeref().bound();
+	case TypeVar(_, _):
+            return unalias().bound();
+        default:
+            throw Debug.abort("illegal case", this);
+        }
+    }
+
     /** If this type is a thistype or singleton type, its type,
      *  otherwise the type itself.
      */
