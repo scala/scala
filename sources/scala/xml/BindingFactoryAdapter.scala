@@ -21,7 +21,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
   /** mapping from element names to an element constructor
     *  (constr:Seq[Node],HashMap[String,String] => Node)
     */
-  val f: Map[ String, (Seq[Node],HashMap[String,String]) => Node ];
+  val f: Map[ String, (HashMap[String,String],Seq[Node]) => Node ];
 
   /** mapping from element names to a truth value indicating
   * whether the corresponding element may have text children
@@ -46,7 +46,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
       if( !compress ) {
         // get constructor
         val c = f( elemName );
-        c( children, attribs );
+        c( attribs, children );
       } else { // do hash-consing
 
         val ahc = attribs.toList.hashCode();
@@ -61,7 +61,7 @@ abstract class BindingFactoryAdapter extends FactoryAdapter() {
             case None =>
               // get constructor
               val c = f( elemName );
-              val el = c( children, attribs );
+              val el = c( attribs, children );
               cache.update( h, el );
               el
         }

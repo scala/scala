@@ -91,6 +91,7 @@ object Utility {
     }
   }
 
+
   /** for a Node n, returns string representation of n.attributes **/
   def attr2xml( attrib:Iterator[Pair[String, String]] ):String = {
     val t = new StringBuffer();

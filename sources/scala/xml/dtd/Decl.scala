@@ -25,15 +25,16 @@ case class ElemDecl( name:String ,
        def containsText = contentModel.indexOf("#PCDATA") != -1 ;
 };
 
-/* ignore default values 4 now */
+/** an attribute declaration */
 case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) extends MarkupDecl;
 
-/* ignore default values 4 now */
+/** an entity declaration */
 case class EntityDecl( name:String, tpe:String ) extends MarkupDecl;
 
-/* ignore default values 4 now */
+/** a notation declaration */
 case class NotationDecl( name:String, tpe:String ) extends MarkupDecl;
 
+/** a parsed entity reference */
 case class PEReference(ent:String) extends Decl {
   if( !Utility.isName( ent ))
     throw new IllegalArgumentException("ent must be an XML Name");

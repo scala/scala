@@ -10,7 +10,8 @@ import scala.collection.Map ;
 import scala.collection.mutable.HashMap ;
 
 import scala.xml._ ;
-import scala.xml.dtd.{AttrDecl,RegExp,ANY_,PCDATA_,Eps,Star,RNode,Sequ,Alt};
+import scala.xml.dtd.{AttrDecl,RegExp,ANY_,PCDATA_,Eps,Star,RNode,Sequ,Alt}
+import scala.xml.dtd.{REQUIRED,IMPLIED,DEFAULT};
 import scala.xml.nobinding.XML ;
 
 /** transforms a set of DTD declaraion to a scala source file.
@@ -31,6 +32,71 @@ class DeclToScala(fOut:PrintWriter,
     var curAttribs: Map[String,AttrDecl] = null ;  /* of current elem */
     var curModel : RegExp = null;
 
+    /** 1.populate with special "<R" and default
+    **/
+    def initAttributes( curAttribs:Map[String,AttrDecl] ):String = {
+        val sb = new StringBuffer();
+        for( val key <- curAttribs.keys ) {
+          curAttribs( key ).default match {
+            case REQUIRED =>
+              sb.append("map = map.update(\"");
+              sb.append( key );
+              sb.append("\", ");
+              sb.append("\"<R\"); req=req+1; // REQUIRED");
+            case IMPLIED  =>
+              /* no default value */
+            case DEFAULT( _, attValue ) =>
+              sb.append("map = map.update(\"");
+              sb.append( key );
+              sb.append("\", \"");
+              sb.append(attValue); /* quotes??? */
+              sb.append("\")");
+          }
+          sb.append('\n');
+        }
+        sb.toString();
+    }
+    /** 1.populate with actual values: throw error if FIXED is wrong
+    **  2.throw error if a REQUIRED one is missing*/
+    def validateAttributes( curAttribs:Map[String,AttrDecl] ):String = {
+      def appendKey( key:String, sb:StringBuffer ) = {
+        val it = Iterator.fromString( key );
+        sb.append('\'');
+        sb.append( it.next );
+        sb.append('\'');
+        it.foreach {
+          c =>
+          sb.append(',');
+          sb.append('\'');
+          sb.append( c );
+          sb.append('\'')
+        }
+      }
+      val sb = new StringBuffer();
+      for( val key <- curAttribs.keys ) {
+        sb.append(" case Seq(");
+        curAttribs( key ) match {
+          case AttrDecl( key, tpe, df ) =>
+          appendKey( key, sb );
+          sb.append(") =>");
+          df match {
+            case DEFAULT( true, attValue ) =>
+              sb.append("if( b._2 != \"+");
+              sb.append( attValue );
+              sb.append("+\" ) error_FixedAttribute(b._1,");
+              sb.append( attValue );
+              sb.append(")");
+            case REQUIRED =>
+              sb.append(" req = req - 1; map = map.update( b._1, b._2 )");
+            case _ =>
+              sb.append(" map = map.update( b._1, b._2 )");
+          }
+        }
+        sb.append('\n');
+      }
+      sb.toString();
+    }
+
     def shallowValidate( r:RegExp ):String = {
 
     def shallowContentModel1(rs:List[RegExp],sep:Char):String = {
@@ -47,7 +113,7 @@ class DeclToScala(fOut:PrintWriter,
     }
 
     def shallowContentModel(r:RegExp):String = {
-      //Console.println("sCM:"+ r.getClass() + " r:"+r );
+      /*Console.println("sCM:"+ r.getClass() + " r:"+r );*/
       r match {
         case Eps   => ""
         case RNode(name) => "$TagOf" + cookedCap( name );
@@ -58,7 +124,7 @@ class DeclToScala(fOut:PrintWriter,
       }
     }
 
-      //Console.println("shallowValid:"+ r.getClass() + " r:"+r );
+      /*Console.println("shallowValid:"+ r.getClass() + " r:"+r );*/
       r match {
       case ANY_ => "true";
       case Eps  => "ch.length == 0"
@@ -124,6 +190,10 @@ class DeclToScala(fOut:PrintWriter,
                 lookup.update("compressDefault", compress.toString());
                 n.child.elements.foreach { n => writeNode(n) }
               }
+              case "initAttributes" =>
+                fOut.print(  initAttributes( curAttribs ) );
+              case "validateAttributes" =>
+                fOut.print(  validateAttributes( curAttribs ) );
               case "shallowContentRegExp" =>
                 fOut.print(  shallowValidate( curModel ) );
               case "elementTag" =>
