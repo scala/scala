@@ -20,6 +20,21 @@ import Tree.*;
 
 class CodeFactory extends PatternTool {
 
+    Symbol seqConsSym() {
+	return defs.getType( Name.fromString("scala.::") ).symbol() ;
+    }
+
+    Symbol seqNilSym() {
+	return defs.getType( Name.fromString( "scala.Nil" ) ).symbol(); // no need for TypeApply anymore!x
+    }
+
+    Symbol seqTraceConsSym() {
+	return defs.getType( Name.fromString( "scala.SeqTraceCons" ) ).symbol();
+    }
+    Symbol seqTraceNilSym() {
+	return defs.getType( Name.fromString( "scala.SeqTraceNil" ) ).symbol();
+    }
+
     public CodeFactory( Unit unit, Infer infer ) {
 	super( unit, infer );
     }
@@ -105,9 +120,110 @@ class CodeFactory extends PatternTool {
 
     }
 
+      Tree ignoreValue( Type asType ) {
+            if( asType.isSameAs(defs.BYTE_TYPE ))
+                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                        .setType( defs.INT_TYPE );
+            else if( asType.isSameAs( defs.CHAR_TYPE ))
+                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                        .setType( defs.CHAR_TYPE );
+            else if( asType.isSameAs(defs.SHORT_TYPE ))
+                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                        .setType( defs.SHORT_TYPE );
+            else if( asType.isSameAs(defs.INT_TYPE ))
+                  return Int( 0 );
+            else if( asType.isSameAs(defs.LONG_TYPE ))
+                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                        .setType( defs.LONG_TYPE );
+            else if( asType.isSameAs(defs.FLOAT_TYPE ))
+                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                        .setType( defs.FLOAT_TYPE );
+            else if( asType.isSameAs(defs.DOUBLE_TYPE ))
+                  return make.Literal(Position.NOPOS, new Long( 0 ))
+                        .setType( defs.DOUBLE_TYPE );
+            else if( asType.isSameAs(defs.BOOLEAN_TYPE ))
+                  return gen.mkBooleanLit(Position.NOPOS, false);
+            else if( asType.isSameAs(defs.STRING_TYPE ))
+                  return make.Literal(Position.NOPOS, "")
+                        .setType( defs.STRING_TYPE );
+            /** FIX ME FOR THE NEW VERSION
+		else
+                  return gen.Apply( Null( asType ),
+                                    Tree.EMPTY_ARRAY);
+	    */
+	    return null;  // should not happen FIXME
+      }
+
+    /** FIX ME FOR THE NEW VERSION
+      Tree Null( Type asType ) {
+            return gen.TypeApply(pos, gen.mkId(pos, defs.NULL ),
+                                 new Tree[] { gen.mkType(pos, asType) } );
+      }
+    */
+
     // the caller needs to set the type !
     Tree  _applyNone( Tree arg ) {
 	return make.Apply(Position.NOPOS, arg, Tree.EMPTY_ARRAY );
+    }
+
+    /** code `new SeqTraceNil[ elemType ]()'
+     */
+
+    Tree _seqTraceNil( Type elemType ) {
+	assert elemType != null : "elemType = null??";
+	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqTraceNilSym(),
+			new Type[] { elemType },
+			new Tree[] {});
+    }
+
+
+      /** creates an scala.Int constant
+       */
+      Tree Int( int val ) {
+            return make.Literal(Position.NOPOS, new Long((long)val))
+                  .setType( defs.INT_TYPE );
+      }
+
+      Tree Int( Integer valI ) {
+            return Int( valI.intValue() );
+      }
+
+      /** code `new SeqTraceCons[ elemType ]( state, head, tail )'
+       */
+      Tree newSeqTraceCons(  Integer state, Tree head, Tree tail ) {
+            return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqTraceConsSym(),
+                            new Type[] { head.type() },
+                            new Tree[] { Int( state ), head, tail });
+      }
+
+
+      /*
+      Type _seqTraceConsType( Type elemType ) {
+            return Type.TypeRef( defs.SCALA_TYPE,
+                                 seqTraceConsSym,
+                                 new Type[] { elemType });
+      }
+      */
+
+      //                       `SeqCons[ elemType ]'
+
+      Type _seqConsType( Type elemType ) {
+            return Type.TypeRef( defs.SCALA_TYPE,
+                                 seqConsSym(),
+                                 new Type[] { elemType });
+      }
+
+    Tree newSeqNil( Type tpe ) {
+	assert tpe != null :"tpe = null !?";
+	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqNilSym(),
+			new Type[] { tpe },
+			new Tree[] {});
+    }
+
+    Tree newSeqCons( Tree head, Tree tail ) {
+	return gen.New( Position.NOPOS, defs.SCALA_TYPE, seqConsSym(),
+			new Type[] { head.type() },
+			new Tree[] { head, tail });
     }
 
     // todo: more defensive checking

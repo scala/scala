@@ -27,7 +27,7 @@ public class PatternNode {
     public case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body);
     public case DefaultPat();
     public case ConstrPat(Symbol casted);
-    public case SequencePat(Symbol casted, int len);
+    public case SequencePat(Symbol casted, int len, Tree seqpat);
     public case ConstantPat(Object value);
     public case VariablePat(Tree tree);
 
@@ -36,7 +36,7 @@ public class PatternNode {
         switch (this) {
             case ConstrPat(Symbol casted):
                 return casted;
-            case SequencePat(Symbol casted, _):
+            case SequencePat(Symbol casted, _, _):
                 return casted;
             default:
                 return Symbol.NONE;
@@ -53,8 +53,8 @@ public class PatternNode {
                 return "DefaultPat";
             case ConstrPat(Symbol casted):
                 return "ConstrPat(" + casted + ")";
-            case SequencePat(Symbol casted, int len):
-                return "SequencePat(" + casted + ", " + len + ")";
+            case SequencePat(Symbol casted, int len, Tree seqpat):
+                return "SequencePat(" + casted + ", " + len + "...)";
             case ConstantPat(Object value):
                 return "ConstantPat(" + value + ")";
             case VariablePat(Tree tree):

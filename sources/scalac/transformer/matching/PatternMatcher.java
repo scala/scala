@@ -19,6 +19,8 @@ import PatternNode.*;
 import Tree.*;
 
 import scalac.transformer.TransMatch.Matcher ;
+import java.util.Vector ;
+import java.util.Iterator ;
 
 public class PatternMatcher extends PatternTool {
 
@@ -82,10 +84,10 @@ public class PatternMatcher extends PatternTool {
 	this.owner = _m.owner;
 	this.selector = _m.selector;
 
-	this.root = mk.ConstrPat/*mk.ConstrPat*/( _m.pos,
+	this.root = mk.ConstrPat( _m.pos,
 				  _m.selector.type.widen() );
 
-	this.root.and = mk.Header/*mk.Header*/( _m.pos,
+	this.root.and = mk.Header( _m.pos,
 				   _m.selector.type.widen(),
 				   gen.Ident( _m.pos, root.symbol() )
 				   .setType(_m.selector.type.widen()));
@@ -179,7 +181,7 @@ public class PatternMatcher extends PatternTool {
                     if (patNode.or != null)
                         print(patNode.or, ind);
                     break;
-                case SequencePat(Symbol casted, int plen):
+                case SequencePat(Symbol casted, int plen, _):
                     String s = "-- " + patNode.type.symbol().name + "(" + patNode.type +
                                ", " + casted + ", " + plen + ") -> ";
                     String ind = indent;
@@ -331,7 +333,7 @@ public class PatternMatcher extends PatternTool {
 	    		if (args.length == 1 && (tree.type.symbol().flags & Modifiers.CASE) == 0)
 					switch (args[0]) {
 						case Sequence(Tree[] ts):
-		    				return mk.SequencePat(tree.pos, tree.type, ts.length);
+		    				return mk.SequencePat(tree.pos, tree.type, ts.length, args[0]);
 					}
 	    		return mk.ConstrPat(tree.pos, getConstrType(tree.type));
 			case Typed(Ident(Name name), Tree tpe):       // variable pattern
@@ -379,7 +381,7 @@ public class PatternMatcher extends PatternTool {
 			case Literal(Object value):
 				return mk.ConstantPat(tree.pos, getConstrType(tree.type), value);
 			case Sequence(Tree[] ts):
-				return mk.SequencePat(tree.pos, tree.type, ts.length);
+				return mk.SequencePat(tree.pos, tree.type, ts.length, tree);
 			default:
 				new scalac.ast.printer.TextTreePrinter().print(tree).flush();
 				throw new ApplicationError(tree);
@@ -402,9 +404,9 @@ public class PatternMatcher extends PatternTool {
                         return q.type.isSubType(p.type);
                 }
                 return false;
-            case SequencePat(_, int plen):
+            case SequencePat(_, int plen, _):
                 switch (q) {
-                    case SequencePat(_, int qlen):
+                    case SequencePat(_, int qlen, _):
                         return (plen == qlen) && q.type.isSubType(p.type);
                 }
                 return false;
@@ -444,7 +446,7 @@ public class PatternMatcher extends PatternTool {
         switch (target) {
             case ConstrPat(Symbol newCasted):
                 return enter1(pat, index, target, newCasted, env);
-            case SequencePat(Symbol newCasted, int len):
+            case SequencePat(Symbol newCasted, int len, _):
                 return enter1(pat, index, target, newCasted, env);
             default:
                 return enter1(pat, index, target, casted, env);
@@ -560,7 +562,7 @@ public class PatternMatcher extends PatternTool {
             case ConstrPat(Symbol newCasted):
                 casted = newCasted;
                 break;
-            case SequencePat(Symbol newCasted, int len):
+            case SequencePat(Symbol newCasted, int len, _):
                 casted = newCasted;
                 break;
         }
@@ -674,7 +676,7 @@ public class PatternMatcher extends PatternTool {
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
-            case SequencePat(Symbol casted, int len):
+            case SequencePat(Symbol casted, int len, _):
                 Symbol lenSym = casted.type().lookup(LENGTH_N);
                 Tree t = make.Select(selector.pos, cf.As(selector.duplicate(), node.type), LENGTH_N);
                 switch (typeOf(lenSym)) {
@@ -725,4 +727,73 @@ public class PatternMatcher extends PatternTool {
         }
     }
 
+    /** collects all sequence patterns and returns the default
+     */
+    PatternNode collectSeqPats( PatternNode node,
+				Vector seqPatNodes,
+				Vector bodies ) {
+
+	PatternNode defaultNode = null;
+
+	do {
+	    if( node == null )
+		break;// defaultNode = node;
+	    else
+		switch( node ) {
+		case SequencePat( _, _, _ ):
+		    seqPatNodes.add( node );
+		    bodies.add( toTree( node.and ) );
+		    node = node.or;
+		    break;
+		default:
+		    defaultNode = node;
+		}
+	} while (defaultNode == null) ;
+
+	return defaultNode;
+    }
+
+    Tree callSequenceMatcher( PatternNode node,
+			      Tree selector) {
+
+	/*    ???????????????????????? necessary to test whether is a Seq?
+	      make.If(selector.pos,
+	      maybe cf.And( cf.Is(selector, seqpat.type())
+	      ...
+	*/
+
+	// translate the _.and subtree of this SequencePat
+
+	Vector seqPatNodes = new Vector();
+	Vector bodies      = new Vector();
+
+	PatternNode defaultNode = collectSeqPats( node,
+						  seqPatNodes,
+						  bodies );
+
+	Tree defaultCase = toTree( defaultNode, selector );
+
+	// SequenceMatcher wordRec = new SequenceMatcher(unit, infer); FIX ME FOR THE NEW VERSION
+
+	Matcher m = new Matcher( _m.owner,
+				 selector,
+				 defs.BOOLEAN_TYPE );
+
+	Tree pats[] = new Tree[ seqPatNodes.size() ];
+	Tree body[] = new Tree[ seqPatNodes.size() ];
+
+	Object tmp[] = bodies.toArray();
+	int j = 0;
+	for( Iterator it = seqPatNodes.iterator();
+	     it.hasNext();) {
+	    pats[ j ]  = ((SequencePat) it.next()).seqpat;
+	    body[ j ] = (Tree) tmp[j];
+	    j++;
+	}
+
+	// wordRec.construct( m, pats, body, defaultCase /*, doBinding*/ ); FIX ME FOR THE NEW VERSION
+
+	return m.tree;
+
+    }
 }
