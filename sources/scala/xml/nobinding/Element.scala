@@ -12,5 +12,13 @@ class Element( name:String, ch: Seq[Node] ) extends AttributedNode with Symbol( 
 
   override def attributes : Map[String,String] = ListMap.Empty[String,String] ;
   override val attribHashCode:int = 0;
+
+  override def toString() = super.toString() + "(" + {
+    val it = ch.elements;
+    if( it.hasNext )
+      it.next.toString() + it.foldLeft ("") { (x:String,c:Node) => x+c.toString() }
+    else
+      ""
+  }+")";
 }
 
