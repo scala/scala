@@ -318,7 +318,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   }
 
   private def getViews(tp: Type): List[View] = {
-    memberViews(tp) ::: getContext.viewMeths;
+    //System.out.println("view for " + tp + " = " + (memberViews(tp) ::: getContext.viewMeths));//DEBUG
+    memberViews(tp) ::: getContext.viewMeths
   }
 
   def viewExpr(pos: int, v: View): Tree = {

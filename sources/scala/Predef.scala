@@ -74,11 +74,19 @@ object Predef {
   }
 
 // views -------------------------------------------------------------
-/* not yet compilable with bootstrap
 
   def view(x: int): Ordered[int] = new Ordered[int] {
     def compareTo [b >: int <% Ordered[b]](y: b): int = y match {
       case y1: int =>
+	if (x < y1) -1
+	else if (x > y1) 1
+	else 0
+      case _ => -(y compareTo x)
+    }
+  }
+  def view(x: char): Ordered[char] = new Ordered[char] {
+    def compareTo [b >: char <% Ordered[b]](y: b): int = y match {
+      case y1: char =>
 	if (x < y1) -1
 	else if (x > y1) 1
 	else 0
@@ -127,7 +135,5 @@ object Predef {
       case _ => -(y compareTo x)
     }
   }
-
-*/
 }
 

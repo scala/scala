@@ -3298,7 +3298,7 @@ def product(xs: List[int])  =  (1 :: xs) reduceLeft {(x, y) => x * y}
 Here is the implementation of \code{reduceLeft}.
 \begin{lstlisting}
   def reduceLeft(op: (a, a) => a): a = this match {
-    case Nil     => error("Nil.reduceLeft")
+    case Nil     => throw new Error("Nil.reduceLeft")
     case x :: xs => (xs foldLeft x)(op)
   }
   def foldLeft[b](z: b)(op: (b, a) => b): b = this match {
@@ -3333,7 +3333,7 @@ List(x$_1$, ..., x$_n$).reduceRight(op)     =  x$_1$ op ( ... (x$_{n-1}$ op x$_n
 These are defined as follows.
 \begin{lstlisting}
   def reduceRight(op: (a, a) => a): a = match 
-    case Nil => error("Nil.reduceRight")
+    case Nil => throw new Error("Nil.reduceRight")
     case x :: Nil => x
     case x :: xs => op(x, xs.reduceRight(op))
   }
@@ -4108,10 +4108,10 @@ and then translation continues with the latter expression.
 \end{itemize}
 For instance, taking our "pairs of integers whose sum is prime" example:
 \begin{lstlisting}
-for { val i <- range(1, n);
+for ( val i <- range(1, n);
       val j <- range(1, i);
       isPrime(i+j)
-} yield (i, j)
+) yield (i, j)
 \end{lstlisting}
 Here is what we get when we translate this expression:
 \begin{lstlisting}
@@ -4153,8 +4153,8 @@ def flatten(xss: List[List[a]]): List[a] =
 \begin{exercise}
 Translate
 \begin{lstlisting}
-for { val b <- books; val a <- b.authors; a startsWith "Bird" } yield b.title
-for { val b <- books; (b.title indexOf "Program") >= 0 } yield b.title
+for ( val b <- books; val a <- b.authors; a startsWith "Bird" ) yield b.title
+for ( val b <- books; (b.title indexOf "Program") >= 0 ) yield b.title
 \end{lstlisting}
 to higher-order functions.
 \end{exercise}
@@ -4314,7 +4314,7 @@ class BankAccount {
     if (0 < amount && amount <= balance) {
       balance = balance - amount;
       balance
-    } else error("insufficient funds");
+    } else throw new Error("insufficient funds");
 }
 \end{lstlisting}
 The class defines a variable \code{balance} which contains the current
@@ -4344,7 +4344,6 @@ val account : BankAccount = BankAccount$\Dollar$class@1797795
 10: scala.Int
 > account withdraw 15
 java.lang.RuntimeException: insufficient funds
-        at error(Predef.scala:3)
         at BankAccount$\Dollar$class.withdraw(bankaccount.scala:13)
         at <top-level>(console:1)
 > 
@@ -4986,7 +4985,7 @@ together all iterators returned from successive calls of \code{f}.
     def next: b = 
       if (cur.hasNext) cur.next
       else if (Iterator.this.hasNext) { cur = f(Iterator.this.next); next }
-      else error("next on empty iterator");
+      else throw new Error("next on empty iterator");
   }
 \end{lstlisting}
 Closely related to \code{map} is the \code{foreach} method, which
@@ -5056,7 +5055,7 @@ always returns an empty sequence:
 object Iterator {
   object empty extends Iterator[All] {
     def hasNext = false;
-    def next: a = error("next on empty iterator");
+    def next: a = throw new Error("next on empty iterator");
   }
 \end{lstlisting}
 A more interesting iterator enumerates all elements of an array. This
@@ -5068,7 +5067,7 @@ iterator is constructed by the \code{fromArray} method, which is also defined in
       i < xs.length;
     def next: a = 
       if (i < xs.length) { val x = xs(i) ; i = i + 1 ; x }
-      else error("next on empty iterator");
+      else throw new Error("next on empty iterator");
   }
 \end{lstlisting}
 Another iterator enumerates an integer interval.  The
@@ -6065,7 +6064,7 @@ recursive functions. Syntax:
 \begin{lstlisting}
 letrec ident "=" term in term .
 \end{lstlisting}
-The typing of \code{letrec} is as for {let}, 
+The typing of \code{letrec} is as for \code{let}, 
 except that the defined identifier is visible in the defining expression. Using \code{letrec}, the \code{length} function for lists can now be defined as follows.
 \begin{lstlisting}
 letrec length = \xs.

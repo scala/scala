@@ -160,6 +160,7 @@ object List {
 
   /** Lists with ordered elements are ordered
    *  not yet since not compilable with bootstrap
+   */
   def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
     def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
       case y1: List[a] => compareLists(x, y1);
@@ -176,7 +177,6 @@ object List {
       }
     }
   }
-   */
 }
 
 /** A trait representing an ordered collection of elements of type
