@@ -65,19 +65,19 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     public void flush() {
-	out.flush();
+        out.flush();
     }
 
     public TreePrinter print(String str) {
-	out.print(str);
+        out.print(str);
         if (autoFlush) flush();
-	return this;
+        return this;
     }
 
     public TreePrinter println() {
-	out.println();
+        out.println();
         if (autoFlush) flush();
-	return this;
+        return this;
     }
 
     public void beginSection(int level, String title) {
@@ -100,9 +100,9 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printNewLine() {
         out.println();
-	while (indent > INDENT_STRING.length()) {
-	    INDENT_STRING = INDENT_STRING + INDENT_STRING;
-	}
+        while (indent > INDENT_STRING.length()) {
+            INDENT_STRING = INDENT_STRING + INDENT_STRING;
+        }
         if (indent > 0)
             out.write(INDENT_STRING, 0, indent);
         if (autoFlush) flush();
@@ -182,7 +182,7 @@ public class TextTreePrinter implements TreePrinter {
     protected static final Text TXT_UNKNOWN = Text.Simple("<unknown>");
     protected static final Text TXT_NULL    = Text.Simple("<null>");
     protected static final Text TXT_OBJECT_COMMENT
-                                            = Text.Simple("/*object*/ ");
+        = Text.Simple("/*object*/ ");
     protected static final Text TXT_EMPTY   = Text.Simple("<empty>");
 
     protected static final Text TXT_QUOTE         = Text.Simple("\"");
@@ -256,7 +256,7 @@ public class TextTreePrinter implements TreePrinter {
                       Name name,
                       Tree.AbsTypeDef[] tparams,
                       Tree.ValDef[][] vparams,
-		      Tree tpe,
+                      Tree tpe,
                       Tree.Template impl):
             printModifiers(mods);
             print((mods & Modifiers.INTERFACE) != 0
@@ -291,19 +291,19 @@ public class TextTreePrinter implements TreePrinter {
 
         case ValDef(int mods, Name name, Tree tpe, Tree rhs):
             printModifiers(mods);
-	    if ((mods & Modifiers.MUTABLE) != 0) print(KW_VAR);
-	    else {
-		if ((mods & Modifiers.MODUL) != 0) print(TXT_OBJECT_COMMENT);
-		print(KW_VAL);
-	    }
+            if ((mods & Modifiers.MUTABLE) != 0) print(KW_VAR);
+            else {
+                if ((mods & Modifiers.MODUL) != 0) print(TXT_OBJECT_COMMENT);
+                print(KW_VAL);
+            }
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
             printOpt(TXT_COLON, tpe, false);
-	    if ((mods & Modifiers.DEFERRED) == 0) {
-		print(Text.Space); print(TXT_EQUAL); print(Text.Space);
-		if (rhs == Tree.Empty) print("_");
-		else print(rhs);
-	    }
+            if ((mods & Modifiers.DEFERRED) == 0) {
+                print(Text.Space); print(TXT_EQUAL); print(Text.Space);
+                if (rhs == Tree.Empty) print("_");
+                else print(rhs);
+            }
             break;
 
         case PatDef(int mods, Tree pat, Tree rhs):
@@ -314,16 +314,16 @@ public class TextTreePrinter implements TreePrinter {
             printOpt(TXT_EQUAL, rhs, true);
             break;
 
-        case DefDef(int mods,
-                    Name name,
-                    Tree.AbsTypeDef[] tparams,
-                    Tree.ValDef[][] vparams,
-                    Tree tpe,
-                    Tree rhs):
-            printModifiers(mods);
+            case DefDef(int mods,
+                        Name name,
+                        Tree.AbsTypeDef[] tparams,
+                        Tree.ValDef[][] vparams,
+                        Tree tpe,
+                        Tree rhs):
+                printModifiers(mods);
             print(KW_DEF);
             print(Text.Space);
-	    if (name.isTypeName()) print(KW_THIS);
+            if (name.isTypeName()) print(KW_THIS);
             else printSymbolDefinition(tree.symbol(), name);
             printParams(tparams);
             printParams(vparams);
@@ -331,44 +331,44 @@ public class TextTreePrinter implements TreePrinter {
             printOpt(TXT_EQUAL, rhs, true);
             break;
 
-        case AbsTypeDef(int mods,
-			Name name,
-			Tree rhs,
-			Tree lobound):
-            printModifiers(mods);
+            case AbsTypeDef(int mods,
+                            Name name,
+                            Tree rhs,
+                            Tree lobound):
+                printModifiers(mods);
             print(KW_TYPE);
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
-	    printBounds(lobound, rhs);
+            printBounds(lobound, rhs);
             break;
 
-        case AliasTypeDef(int mods,
-			  Name name,
-			  Tree.AbsTypeDef[] tparams,
-			  Tree rhs):
-            printModifiers(mods);
+            case AliasTypeDef(int mods,
+                              Name name,
+                              Tree.AbsTypeDef[] tparams,
+                              Tree rhs):
+                printModifiers(mods);
             print(KW_TYPE);
             print(Text.Space);
             printSymbolDefinition(tree.symbol(), name);
-	    printParams(tparams);
-	    printOpt(TXT_EQUAL, rhs, true);
+            printParams(tparams);
+            printOpt(TXT_EQUAL, rhs, true);
             break;
 
         case Import(Tree expr, Name[] selectors):
             print(KW_IMPORT);
             print(Text.Space);
             print(expr);
-	    print(TXT_DOT);
-	    print(TXT_LEFT_BRACE);
-	    for (int i = 0; i < selectors.length; i = i + 2) {
-		if (i > 0) print(TXT_COMMA_SP);
-		print(selectors[i].toString());
-		if (i + 1 < selectors.length && selectors[i] != selectors[i+1]) {
-		    print(TXT_RIGHT_ARROW);
-		    print(selectors[i+1].toString());
-		}
-	    }
-	    print(TXT_RIGHT_BRACE);
+            print(TXT_DOT);
+            print(TXT_LEFT_BRACE);
+            for (int i = 0; i < selectors.length; i = i + 2) {
+                if (i > 0) print(TXT_COMMA_SP);
+                print(selectors[i].toString());
+                if (i + 1 < selectors.length && selectors[i] != selectors[i+1]) {
+                    print(TXT_RIGHT_ARROW);
+                    print(selectors[i+1].toString());
+                }
+            }
+            print(TXT_RIGHT_BRACE);
             break;
 
         case CaseDef(Tree pat, Tree guard, Tree body):
@@ -397,29 +397,29 @@ public class TextTreePrinter implements TreePrinter {
             printArray(trees, TXT_LEFT_BRACKET, TXT_RIGHT_BRACKET, TXT_COMMA_SP);
             break;
 
-	    /*
-	case Subsequence(Tree[] trees):
-	    if( trees.length > 0 )
-		printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
-	    else
-		{
-		    print( TXT_LEFT_PAREN );
-		    print( TXT_COMMA );
-		    print( TXT_RIGHT_PAREN );
-		}
-	    break;
-	    */
-	case Alternative(Tree[] trees):
-	    printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_BAR_SP);
-	    break;
+            /*
+              case Subsequence(Tree[] trees):
+              if( trees.length > 0 )
+              printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
+              else
+              {
+              print( TXT_LEFT_PAREN );
+              print( TXT_COMMA );
+              print( TXT_RIGHT_PAREN );
+              }
+              break;
+            */
+        case Alternative(Tree[] trees):
+            printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_BAR_SP);
+            break;
 
-	case Bind(Name name, Tree t):
+        case Bind(Name name, Tree t):
             printSymbolDefinition(tree.symbol(), name);
-	    print(Text.Space);
-	    print(TXT_AT);
-	    print(Text.Space);
-	    print( t );
-	    break;
+            print(Text.Space);
+            print(TXT_AT);
+            print(Text.Space);
+            print( t );
+            break;
 
         case Visitor(Tree.CaseDef[] cases):
             printArray(cases, TXT_BLOCK_BEGIN, TXT_BLOCK_END, Text.Newline);
@@ -427,11 +427,11 @@ public class TextTreePrinter implements TreePrinter {
 
         case Function(Tree.ValDef[] vparams, Tree body):
             print(TXT_LEFT_PAREN);
-	    printParams(vparams);
-	    print(Text.Space);
+            printParams(vparams);
+            print(Text.Space);
             print(TXT_RIGHT_ARROW);
             print(Text.Space);
-	    print(body);
+            print(body);
             print(TXT_RIGHT_PAREN);
             break;
 
@@ -456,29 +456,30 @@ public class TextTreePrinter implements TreePrinter {
             printType(tree);
             break;
 
-		case Switch(Tree expr, int[] tags, Tree[] bodies, Tree defaultBody):
-			print("<switch>");
-			print(Text.Space);
+        case Switch(Tree expr, int[] tags, Tree[] bodies, Tree defaultBody):
+            print("<switch>");
+            print(Text.Space);
             print(TXT_LEFT_PAREN);
             print(expr);
             print(TXT_RIGHT_PAREN);
             print(Text.Space);
             indent();
             print(TXT_BLOCK_BEGIN);
-			for (int i = 0; i < tags.length; i++) {
-				print(KW_CASE);
-				print("" + i);
-				print(Text.Space);
-            	print(TXT_RIGHT_ARROW);
-            	print(Text.Space);
-            	print(bodies[i]);
-            	print(Text.Newline);
+            for (int i = 0; i < tags.length; i++) {
+                print(KW_CASE);
+                print(Text.Space);
+                print("" + i);
+                print(Text.Space);
+                print(TXT_RIGHT_ARROW);
+                print(Text.Space);
+                print(bodies[i]);
+                print(Text.Newline);
             }
             print("<default> => ");
             print(defaultBody);
             undent();
-        	print(TXT_BLOCK_END);
-			break;
+            print(TXT_BLOCK_END);
+            break;
 
         case New(Tree.Template templ):
             printTemplate(KW_NEW, templ, false);
@@ -503,36 +504,36 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Apply(Tree fun, Tree[] vargs):
-	    if (fun instanceof Tree.TypeTerm)
-		print(fun.type.resultType().symbol().fullName().toString());
-	    else
-		print(fun);
+            if (fun instanceof Tree.TypeTerm)
+                print(fun.type.resultType().symbol().fullName().toString());
+            else
+                print(fun);
             printArray(vargs, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
             printType(tree);
             break;
 
         case Super(Name qualifier, Name mixin):
-	    if (qualifier != TypeNames.EMPTY) {
+            if (qualifier != TypeNames.EMPTY) {
                 printSymbolUse(tree.symbol(), qualifier);
-		print(TXT_DOT);
-	    }
+                print(TXT_DOT);
+            }
             print(KW_SUPER);
-	    if (mixin != TypeNames.EMPTY) {
-		print(TXT_LEFT_PAREN);
-		print(mixin.toString());
-		print(TXT_RIGHT_PAREN);
-	    }
+            if (mixin != TypeNames.EMPTY) {
+                print(TXT_LEFT_PAREN);
+                print(mixin.toString());
+                print(TXT_RIGHT_PAREN);
+            }
             printType(tree);
             break;
 
-	case This(Name name):
-	    if (name != TypeNames.EMPTY) {
+        case This(Name name):
+            if (name != TypeNames.EMPTY) {
                 printSymbolUse(tree.symbol(), name);
-		print(TXT_DOT);
-	    }
-	    print(KW_THIS);
+                print(TXT_DOT);
+            }
+            print(KW_THIS);
             printType(tree);
-	    break;
+            break;
 
         case Select(Tree qualifier, Name name):
             print(qualifier);
@@ -550,32 +551,32 @@ public class TextTreePrinter implements TreePrinter {
             String str;
             if (obj instanceof String)
                 str = "\"" + obj + "\"";
-	    else if (obj instanceof Character)
-		str = "\'" + obj + "\'";
+            else if (obj instanceof Character)
+                str = "\'" + obj + "\'";
             else
                 str = String.valueOf(obj);
             print(Text.Literal(str));
             printType(tree);
             break;
 
-	case TypeTerm():
-	    print(tree.type.toString());
-	    break;
+        case TypeTerm():
+            print(tree.type.toString());
+            break;
 
-	case SingletonType(Tree ref):
-	    print(ref);
-	    print(TXT_DOT); print(KW_TYPE);
-	    break;
+        case SingletonType(Tree ref):
+            print(ref);
+            print(TXT_DOT); print(KW_TYPE);
+            break;
 
-	case SelectFromType(Tree qualifier, Name selector):
-	    print(qualifier);
-	    print(Text.Space); print(TXT_HASH); print(Text.Space);
-	    printSymbolUse(tree.symbol(), selector);
-	    break;
+        case SelectFromType(Tree qualifier, Name selector):
+            print(qualifier);
+            print(Text.Space); print(TXT_HASH); print(Text.Space);
+            printSymbolUse(tree.symbol(), selector);
+            break;
 
         case FunType(Tree[] argtpes, Tree restpe):
             printArray(argtpes, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
-	    print(TXT_RIGHT_ARROW);
+            print(TXT_RIGHT_ARROW);
             print(restpe);
             break;
 
@@ -586,14 +587,14 @@ public class TextTreePrinter implements TreePrinter {
 
         case AppliedType(Tree tpe, Tree[] args):
             print(tpe);
-	    indent();
-	    print(TXT_LEFT_BRACKET);
-	    for (int i = 0; i < args.length; ++i) {
-		if (i > 0) print(TXT_COMMA_SP);
-		print(args[i]);
-	    }
-	    undent();
-	    print(TXT_RIGHT_BRACKET);
+            indent();
+            print(TXT_LEFT_BRACKET);
+            for (int i = 0; i < args.length; ++i) {
+                if (i > 0) print(TXT_COMMA_SP);
+                print(args[i]);
+            }
+            undent();
+            print(TXT_RIGHT_BRACKET);
             break;
 
         case Template(Tree[] parents, Tree[] body):
@@ -604,10 +605,10 @@ public class TextTreePrinter implements TreePrinter {
             print(TXT_UNKNOWN);
             break;
         }
-	//print("{" + tree.type + "}");//DEBUG
+        //print("{" + tree.type + "}");//DEBUG
         if (autoFlush)
             flush();
-	return this;
+        return this;
     }
 
     // Printing helpers
@@ -658,13 +659,13 @@ public class TextTreePrinter implements TreePrinter {
 
     protected void printType(Tree tree) {
         if (Global.instance.printtypes) {
-	    print(TXT_LEFT_BRACE);
+            print(TXT_LEFT_BRACE);
             if (tree.type != null)
                 print(Text.Simple(tree.type.toString()));
             else
                 print(TXT_NULL);
             print(TXT_RIGHT_BRACE);
-	}
+        }
     }
 
     protected void printModifiers(int flags) {
@@ -720,20 +721,20 @@ public class TextTreePrinter implements TreePrinter {
         }
 
         if (templ.body.length > 0) {
-	    print(Text.Space);
+            print(Text.Space);
             printArray(templ.body, TXT_BLOCK_BEGIN, TXT_BLOCK_END, TXT_BLOCK_SEP);
-	}
+        }
     }
 
     protected void printParams(Tree.AbsTypeDef[] tparams) {
         if (tparams.length > 0) {
-	    print(TXT_LEFT_BRACKET);
-	    for (int i = 0; i < tparams.length; i++) {
-		if (i > 0) print(TXT_COMMA_SP);
-		printParam(tparams[i]);
-	    }
-	    print(TXT_RIGHT_BRACKET);
-	}
+            print(TXT_LEFT_BRACKET);
+            for (int i = 0; i < tparams.length; i++) {
+                if (i > 0) print(TXT_COMMA_SP);
+                printParam(tparams[i]);
+            }
+            print(TXT_RIGHT_BRACKET);
+        }
     }
 
     protected void printParams(Tree.ValDef[][] vparamss) {
@@ -742,20 +743,20 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     protected void printParams(Tree.ValDef[] vparams) {
-	print(TXT_LEFT_PAREN);
+        print(TXT_LEFT_PAREN);
         for (int i = 0; i < vparams.length; ++i) {
-	    if (i > 0) print(TXT_COMMA_SP);
+            if (i > 0) print(TXT_COMMA_SP);
             printParam(vparams[i]);
-	}
-	print(TXT_RIGHT_PAREN);
+        }
+        print(TXT_RIGHT_PAREN);
     }
 
     protected void printParam(Tree tree) {
-	switch (tree) {
-	case AbsTypeDef(int mods, Name name, Tree bound, Tree lobound):
+        switch (tree) {
+        case AbsTypeDef(int mods, Name name, Tree bound, Tree lobound):
             printModifiers(mods);
             printSymbolDefinition(tree.symbol(), name);
-	    printBounds(lobound, bound);
+            printBounds(lobound, bound);
             break;
 
         case ValDef(int mods, Name name, Tree tpe, Tree.Empty):
@@ -764,15 +765,15 @@ public class TextTreePrinter implements TreePrinter {
             printOpt(TXT_COLON, tpe, false);
             break;
 
-	default:
-	    Debug.abort("bad parameter: " + tree);
-	}
+        default:
+            Debug.abort("bad parameter: " + tree);
+        }
     }
 
     protected void printBounds(Tree lobound, Tree hibound) {
-	if (!"scala.All".equals(lobound.toString()))
-	    printOpt(TXT_SUPERTYPE, lobound, true);
-	if (!"scala.Any".equals(hibound.toString()))
+        if (!"scala.All".equals(lobound.toString()))
+            printOpt(TXT_SUPERTYPE, lobound, true);
+        if (!"scala.Any".equals(hibound.toString()))
             printOpt(TXT_SUBTYPE, hibound, true);
     }
 
