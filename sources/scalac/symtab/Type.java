@@ -523,7 +523,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    if (sym.fullName().startsWith(Names.scala_Function)) {
 		for (int i = 0; i < args.length - 1; i++)
 		    if (args[i].isCovarType()) return false;
-		return args.length > 0 && args[args.length - 1].isCovarType();
+		return args.length > 0; // !!! && args[args.length - 1].isCovarType();
 	    }
 	    break;
 	case CompoundType(Type[] parents, Scope members):
@@ -2148,6 +2148,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	    return pre1.prefixString() + sym.nameString() + sym.idString() + ".type";
 	case CompoundType(Type[] parts, Scope members):
 	    validate();//debug
+	    if (!Global.instance.debug && isFunctionType())
+                return parts[1].toString();
 	    StringBuffer buf = new StringBuffer();
 	    if (parts.length > 0) {
 		buf.append(parts[0].toString());
