@@ -7,11 +7,21 @@ $colon$colon.scala
 BufferedIterator.scala
 Cell.scala
 Except.scala
+HashMap.scala
+HashSet.scala
+HashTable.scala
+Iterable.scala
 Iterator.scala
 Labelled.scala
 LinkedList.scala
 List.scala
+ListBuffer.scala
+ListMap.scala
+ListSet.scala
+Map.scala
+MapImpl.scala
 Monitor.scala
+MutableMap.scala
 Nil.scala
 None.scala
 Option.scala
@@ -19,9 +29,11 @@ Ord.scala
 PartialFunction.scala
 Predef.scala
 Seq.scala
+Set.scala
 Some.scala
 Stream.scala
 Symbol.scala
+SynchronizedSet.scala
 Tuple1.scala
 Tuple2.scala
 Tuple3.scala
@@ -31,6 +43,7 @@ Tuple6.scala
 Tuple7.scala
 Tuple8.scala
 Tuple9.scala
+UnitTest.scala
 
 concurrent/Actor.scala
 concurrent/Channel.scala
@@ -40,5 +53,10 @@ concurrent/SyncChannel.scala
 concurrent/SyncVar.scala
 concurrent/TIMEOUT.scala
 concurrent/ops.scala
+
+xml/Element.scala
+
+xml/java/HashMap.scala
+xml/java/Map.scala
 
 ##############################################################################
