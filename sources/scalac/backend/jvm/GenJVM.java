@@ -386,6 +386,8 @@ class GenJVM {
                     : javaName(funSym.owner());
                 String mthName = funSym.name.toString();
 
+                funSym.owner().info(); // [HACK] ensure that flags are
+                                       // transformed.
                 if (funSym.owner().isInterface())
                     ctx.code.emitINVOKEINTERFACE(clsName, mthName, funType);
                 else {
