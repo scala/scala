@@ -39,6 +39,8 @@ ast/printer/TreePrinter.java
 
 backend/Primitive.java
 backend/Primitives.java
+backend/jvm/GenJVMPhase.java
+backend/jvm/GenJVM.java
 
 checkers/CheckOwners.java
 checkers/CheckSymbols.java

@@ -192,8 +192,8 @@ public class  Global {
         }
         if (target == TARGET_JAVA) phases.add(PHASE.GENJAVA);
         if (target == TARGET_MSIL) phases.add(PHASE.GENMSIL);
-        if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
 	*/
+        if (target == TARGET_JVM) phases.add(PHASE.GENJVM);
         phases.add(PHASE.TERMINAL);
         this.phases = new PhaseDescriptor[phases.size()];
         for (int i = 0; i < phases.size(); i++) {
