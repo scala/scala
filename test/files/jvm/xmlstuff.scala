@@ -5,6 +5,9 @@ import scala.testing.UnitTest._ ;
 import scala.xml.{Node,NodeSeq,Elem,Text};
 
 object Test with Application {
+
+  val e = scala.collection.immutable.TreeMap.Empty[String,String];
+
 /*
   def eq( a:Seq[Node], b:Seq[Node] ):boolean = {
     (a.length == b.length) && eq(a.elements,b.elements)
@@ -25,8 +28,8 @@ object Test with Application {
 
   val c = new Node {
     def label = "hello";
-    def child = List(Elem("world"));
-    def attribute = List();
+    def child = List(Elem("world",e));
+    def attribute = e;
   };
 
   assertSameElements( List( 3 ), List( 3 ));
@@ -42,10 +45,10 @@ object Test with Application {
   val i = new InputSource( new StringReader( x2 ));
   val x2p = XML.load( i );
 
-  assertEquals(x2p, Elem("book",
-                          Elem("author",Text("Peter Buneman")),
-                          Elem("author",Text("Dan Suciu")),
-                          Elem("title",Text("Data on ze web"))));
+  assertEquals(x2p, Elem("book",e,
+                          Elem("author",e,Text("Peter Buneman")),
+                          Elem("author",e,Text("Dan Suciu")),
+                          Elem("title",e,Text("Data on ze web"))));
 
   val xmlFile2 = "<bib><book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book><book><author>John Mitchell</author><title>Foundations of Programming Languages</title></book></bib>";
   val isrc2 = new InputSource( new StringReader( xmlFile2 ) );
@@ -55,117 +58,115 @@ object Test with Application {
   Console.println("xpath \\");
 
 
-  //assertSameElements( parsedxml1 \ '_ ,    List( 'world() ) );
-  assertSameElements( parsedxml1 \ '_ ,    List( Elem("world") ) );
+  assertSameElements( parsedxml1 \ "_" ,    List( Elem("world",e) ) );
 
-  //assertSameElements( parsedxml1 \ 'world, List( 'world() ) );
-  assertSameElements( parsedxml1 \ 'world, List( Elem("world") ) );
+  assertSameElements( parsedxml1 \ "world", List( Elem("world",e) ) );
 
 /*
-  Console.println( parsedxml2 \ '_ );
-  Console.println( (parsedxml2 \ '_).elements);
-  for( val i <- (parsedxml2 \ '_).elements) {
+  Console.println( parsedxml2 \ "_" );
+  Console.println( (parsedxml2 \ "_" ).elements);
+  for( val i <- (parsedxml2 \ "_" ).elements) {
     Console.println( i );
     };
   */
   assertSameElements(
-      parsedxml2 \ '_ ,
+      parsedxml2 \ "_" ,
 
       List(
-        Elem("book",
-             Elem("author",Text("Peter Buneman")),
-             Elem("author",Text("Dan Suciu")),
-             Elem("title",Text("Data on ze web"))),
-        Elem("book",
-             Elem("author",Text("John Mitchell")),
-             Elem("title",Text("Foundations of Programming Languages"))))
+        Elem("book", e,
+             Elem("author",e,Text("Peter Buneman")),
+             Elem("author",e,Text("Dan Suciu")),
+             Elem("title",e,Text("Data on ze web"))),
+        Elem("book",e,
+             Elem("author",e,Text("John Mitchell")),
+             Elem("title",e,Text("Foundations of Programming Languages"))))
   );
-  assertEquals( (parsedxml2 \ 'author).length, 0 );
+  assertEquals( (parsedxml2 \ "author").length, 0 );
 
   assertSameElements(
-      parsedxml2 \ 'book,
+      parsedxml2 \ "book",
 
       List(
-        Elem("book",
-             Elem("author",Text("Peter Buneman")),
-             Elem("author",Text("Dan Suciu")),
-             Elem("title",Text("Data on ze web"))),
-        Elem("book",
-             Elem("author",Text("John Mitchell")),
-             Elem("title",Text("Foundations of Programming Languages")))
+        Elem("book",e,
+             Elem("author",e,Text("Peter Buneman")),
+             Elem("author",e,Text("Dan Suciu")),
+             Elem("title",e,Text("Data on ze web"))),
+        Elem("book",e,
+             Elem("author",e,Text("John Mitchell")),
+             Elem("title",e,Text("Foundations of Programming Languages")))
       )
   );
 
   assertSameElements(
 
-      parsedxml2 \ '_ \ '_,
+      parsedxml2 \ "_" \ "_",
 
     List(
-      Elem("author",Text("Peter Buneman")),
-      Elem("author",Text("Dan Suciu")),
-      Elem("title",Text("Data on ze web")),
-      Elem("author",Text("John Mitchell")),
-      Elem("title",Text("Foundations of Programming Languages"))
+      Elem("author",e,Text("Peter Buneman")),
+      Elem("author",e,Text("Dan Suciu")),
+      Elem("title",e,Text("Data on ze web")),
+      Elem("author",e,Text("John Mitchell")),
+      Elem("title",e,Text("Foundations of Programming Languages"))
     )
   );
 
   assertSameElements(
 
-      parsedxml2 \ '_ \ 'author,
+      parsedxml2 \ "_" \ "author",
 
       List(
-        Elem("author",Text("Peter Buneman")),
-        Elem("author",Text("Dan Suciu")),
-        Elem("author",Text("John Mitchell"))
+        Elem("author",e,Text("Peter Buneman")),
+        Elem("author",e,Text("Dan Suciu")),
+        Elem("author",e,Text("John Mitchell"))
       )
 
   );
 
-  assertSameElements( (parsedxml2 \ '_ \ '_ \ 'author), List() );
+  assertSameElements( (parsedxml2 \ "_" \ "_" \ "author"), List() );
 
   Console.println("xpath \\\\ DESCENDANTS");
 
   assertSameElements(
 
-      parsedxml2 \\ 'author,
+      parsedxml2 \\ "author",
 
       List(
-        Elem("author",Text("Peter Buneman")),
-        Elem("author",Text("Dan Suciu")),
-        Elem("author",Text("John Mitchell"))
+        Elem("author",e,Text("Peter Buneman")),
+        Elem("author",e,Text("Dan Suciu")),
+        Elem("author",e,Text("John Mitchell"))
       )
 
  );
 
   assertSameElements(
 
-      new NodeSeq(List( parsedxml2 ))\\ '_,
+      new NodeSeq(List( parsedxml2 )) \\ "_",
 
       List(
-        Elem("bib",
-             Elem("book",
-                  Elem("author",Text("Peter Buneman")),
-                  Elem("author",Text("Dan Suciu")),
-                  Elem("title",Text("Data on ze web"))),
-             Elem("book",
-                  Elem("author",Text("John Mitchell")),
-                  Elem("title",Text("Foundations of Programming Languages")))),
-        Elem("book",
-             Elem("author",Text("Peter Buneman")),
-             Elem("author",Text("Dan Suciu")),
-             Elem("title",Text("Data on ze web"))),
-        Elem("author",Text("Peter Buneman")),
+        Elem("bib",e,
+             Elem("book",e,
+                  Elem("author",e,Text("Peter Buneman")),
+                  Elem("author",e,Text("Dan Suciu")),
+                  Elem("title",e,Text("Data on ze web"))),
+             Elem("book",e,
+                  Elem("author",e,Text("John Mitchell")),
+                  Elem("title",e,Text("Foundations of Programming Languages")))),
+        Elem("book",e,
+             Elem("author",e,Text("Peter Buneman")),
+             Elem("author",e,Text("Dan Suciu")),
+             Elem("title",e,Text("Data on ze web"))),
+        Elem("author",e,Text("Peter Buneman")),
         Text("Peter Buneman"),
-        Elem("author",Text("Dan Suciu")),
+        Elem("author",e,Text("Dan Suciu")),
         Text("Dan Suciu"),
-        Elem("title",Text("Data on ze web")),
+        Elem("title",e,Text("Data on ze web")),
         Text("Data on ze web"),
-        Elem("book",
-             Elem("author",Text("John Mitchell")),
-             Elem("title",Text("Foundations of Programming Languages"))),
-        Elem("author",Text("John Mitchell")),
+        Elem("book",e,
+             Elem("author",e,Text("John Mitchell")),
+             Elem("title",e,Text("Foundations of Programming Languages"))),
+        Elem("author",e,Text("John Mitchell")),
         Text("John Mitchell"),
-        Elem("title",Text("Foundations of Programming Languages")),
+        Elem("title",e,Text("Foundations of Programming Languages")),
         Text("Foundations of Programming Languages")
       )
   );
@@ -173,10 +174,10 @@ object Test with Application {
 
   assertSameElements(
 
-      parsedxml2 \\ 'title,
+      parsedxml2 \\ "title",
 
       List(
-        Elem("title",Text("Data on ze web")),
-        Elem("title",Text("Foundations of Programming Languages")))
-);
+        Elem("title",e,Text("Data on ze web")),
+        Elem("title",e,Text("Foundations of Programming Languages")))
+  );
 }
