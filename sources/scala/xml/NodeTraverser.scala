@@ -17,7 +17,6 @@ class NodeTraverser[A <: AnyRef](handle: parsing.MarkupHandler[A]) {
     case Text(t)          => handle.text(0,t);
     case ProcInstr(ta,te) => handle.procInstr(0,ta,te);
     case Comment(t)       => handle.comment(0,t);
-    case CharData(cd)     => handle.charData(0,cd);
     case EntityRef(n)     => handle.entityRef(0,n);
     case _ =>
       val nb = new mutable.ArrayBuffer[A]();

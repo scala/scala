@@ -41,9 +41,6 @@ class ConstructingHandler extends MarkupHandler[Node] {
     Some(Elem(uri, label, AttributeSeq.fromAttrs(uri,attrSeq:_*), ch:_*));
   };
 
-  def charData(pos: Int, txt: String ) =
-    CharData( txt );
-
   def procInstr(pos: Int, target: String, txt: String ) =
     ProcInstr(target, txt);
 

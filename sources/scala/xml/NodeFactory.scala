@@ -72,9 +72,4 @@ abstract class NodeFactory[A <: Node] {
   def makeProcInstr(t: String, s: String): Seq[ProcInstr] =
     if(ignoreProcInstr) Nil else List(ProcInstr(t, s));
 
-  /*
-  def makeCharData(s: String) =
-    CharData( s );
-  */
-
 }

@@ -49,7 +49,6 @@ abstract class MarkupHandler[A <: AnyRef] {
    */
   def element(pos: int, uri: String, label: String, attrMap1: Map[Pair[String,String],Attribute], args: mutable.Buffer[A]): Iterable[A];
 
-  def charData(pos: Int, txt: String ): Iterable[A];
   def procInstr(pos: Int, target: String, txt: String): Iterable[A];
   def comment(pos: Int, comment: String ): Iterable[A];
   def entityRef(pos: Int, n: String): Iterable[A];

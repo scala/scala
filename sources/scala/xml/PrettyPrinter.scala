@@ -163,7 +163,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     val it = n.child.elements;
     while( it.hasNext )
       it.next match {
-        case _:Text | _:CharData | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Text | _:Comment | _:EntityRef | _:ProcInstr =>
         case _:Node => return true;
       }
     return false
@@ -172,7 +172,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     protected def traverse( node:Node, ind:int ):Unit = {
       node match {
 
-        case _:Text | _:CharData | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Text | _:Comment | _:EntityRef | _:ProcInstr =>
           makeBox( ind, node.toString() );
 
         case _:Node =>
@@ -222,7 +222,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     protected def traverse1( node:Node, ind:int ):Unit = {
       node match {
 
-        case _:Text | _:CharData | _:Comment | _:EntityRef | _:ProcInstr =>
+        case _:Text | _:Comment | _:EntityRef | _:ProcInstr =>
           makeBox( ind, node.toString() );
 
         case _:Node => {

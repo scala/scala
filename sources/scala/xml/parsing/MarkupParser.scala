@@ -211,7 +211,7 @@ abstract class MarkupParser[MarkupType <: AnyRef] {
          { sb.append(ch); nextch; ch == '>' } ) {
         sb.setLength(sb.length() - 2);
         nextch;
-        return handle.charData( pos1, sb.toString() );
+        return handle.text( pos1, sb.toString() );
       } else sb.append( ch );
       nextch;
     }

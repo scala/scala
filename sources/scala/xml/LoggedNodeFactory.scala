@@ -27,7 +27,6 @@ with scala.util.logging.Logged {
   val logText      = false;
   val logComment   = false;
   val logProcInstr = false;
-  val logCharData  = false;
 
   final val NONE  = 0;
   final val CACHE = 1;
@@ -74,9 +73,5 @@ with scala.util.logging.Logged {
       log("[makeProcInstr:\""+t+" "+ s+"\"]");
     super.makeProcInstr(t,s);
   }
-
-  /* 2 be removed
-  override def makeCharData(s: String) = {}
-  */
 
 }
