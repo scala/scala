@@ -123,6 +123,7 @@ public class TreeChecker {
             Symbol symbol = tree.symbol();
             assert symbol != null && symbol.isModule(): show(tree);
             pushOwner(symbol);
+            expression(rhs, symbol.type());
             popOwner();
             return true;
 
@@ -169,6 +170,7 @@ public class TreeChecker {
             registerSymbol(symbol);
             scopeInsertParametersOf(symbol);
             pushMember(symbol);
+            if (!symbol.isDeferred()) expression(rhs, symbol.resultType());
             popMember();
             scopeRemoveParametersOf(symbol);
             return true;
