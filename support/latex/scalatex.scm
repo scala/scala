@@ -25,6 +25,8 @@
 ;; Diagnostics
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fast? #f)
+
 (define verbose? #t)
 
 (define (message str . args)
@@ -77,7 +79,7 @@
   (open-output-file (scala-file-name name)))
 
 (define (close-scala-program name port)
-  (compile-scala-program name)
+  (unless fast? (compile-scala-program name))
   (close-output-port port))
 
 ;; Compiling and running Scala programs
@@ -100,8 +102,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (begin-scala-code port)
-  (format port "\\begin{verbatim}\n"))
+  (format port "\\begin{lstlisting}\n"))
 (define (end-scala-code port)
+  (format port "\\end{lstlisting}\n"))
+
+(define (begin-program-output port)
+  (format port "\\begin{verbatim}\n"))
+(define (end-program-output port)
   (format port "\\end{verbatim}\n"))
 
 (define (scala-rx contents)
@@ -159,9 +166,11 @@
                            line)
             => (lambda (match)
                  (let ((prog-name (match:substring match 1)))
-                   (begin-scala-code out-port)
-                   (append-scala-program-output prog-name out-port)
-                   (end-scala-code out-port))
+                   (begin-program-output out-port)
+                   (if fast?
+                       (format out-port "!!! NO OUTPUT !!!")
+                       (append-scala-program-output prog-name out-port))
+                   (end-program-output out-port))
                  (values prog-name prog-port #f in-fragment? copy?)))
 
            ;; Visible code fragment.
@@ -194,12 +203,12 @@
                     copy?))))))
 
 (define (display-usage-and-exit prog)
-  (format #t "Usage: ~a <in-file> <out-file>\n" prog))
+  (format #t "Usage: ~a [--no-compile] <in-file> <out-file>\n" prog))
 
 (define (main cmd-line)
   (let ((prog (car cmd-line))
         (args (cdr cmd-line)))
-    (if (= 2 (length args))
+    (if (>= 2 (length args))
         (call-with-input-file (first args)
           (lambda (in-port)
             (call-with-output-file (second args)
