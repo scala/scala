@@ -562,14 +562,14 @@ public class LambdaLift extends OwnerTransformer
 	case MethodType(_, _):
 	    return Type.PolyType(
 		newtparams,
-		Type.getUpdateSubst(oldtparams, newtparams).apply(tp));
+		Type.getSubst(oldtparams, newtparams, true).apply(tp));
 	case PolyType(Symbol[] tparams, Type restpe):
 	    Symbol[] tparams1 = new Symbol[tparams.length + newtparams.length];
 	    System.arraycopy(tparams, 0, tparams1, 0, tparams.length);
 	    System.arraycopy(newtparams, 0, tparams1, tparams.length, newtparams.length);
 	    return Type.PolyType(
 		tparams1,
-		Type.getUpdateSubst(oldtparams, newtparams).apply(restpe));
+		Type.getSubst(oldtparams, newtparams, true).apply(restpe));
 	default:
 	    throw new ApplicationError("illegal type: " + tp);
 	}

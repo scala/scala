@@ -1239,12 +1239,27 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 return super.apply(t);
             }
         }
+        public Symbol map(Symbol sym, boolean dontClone) { return sym; }
+        public Symbol[] map(Symbol[] syms, boolean dontClone) { return syms; }
+        public Scope map(Scope s) { return s; }
     }
 
-    /** Returns an updating substitution map for given arguments. */
-    public static Map getUpdateSubst(Symbol[] from, Symbol[] to) {
+    /** Returns the given non-updating symbol/symbol substitution. */
+    public static Map getSubst(Symbol[] from, Symbol[] to) {
+        return getSubst(from, to, false);
+    }
+
+    /** Returns the given (updating?) symbol/symbol substitution. */
+    public static Map getSubst(Symbol[] from, Symbol[] to, boolean update) {
         if (from.length == 0 && to.length == 0) return IdMap;
-        return new UpdateSubstSymMap(from, to);
+        if (update) return new UpdateSubstSymMap(from, to);
+        return new SubstSymMap(from, to);
+    }
+
+    /** Returns the given non-updating symbol/type substitution. */
+    public static Map getSubst(Symbol[] from, Type[] to) {
+        if (from.length == 0 && to.length == 0) return IdMap;
+        return new SubstTypeMap(from, to);
     }
 
     /** Substitute symbols `to' for occurrences of symbols `from' in this type.
