@@ -154,7 +154,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
                 "illegal cyclic reference involving " + rebind);
             sym = rebind.rebindSym();
         }
-        if (pre.isStable() || pre == ErrorType) {
+        if (pre.isStable() || pre.isError()) {
             return new ExtSingleType(pre, sym);
         } else {
             throw new Type.Malformed(pre, sym.nameString() + ".type");
@@ -197,7 +197,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
     public static Type typeRef(Type pre, Symbol sym, Type[] args) {
-        if (!pre.isLegalPrefix() && pre != ErrorType)
+        if (!pre.isLegalPrefix() && !pre.isError())
             throw new Type.Malformed(pre, sym.nameString());
         rebind:
         if (sym.isAbstractType()) {
@@ -225,7 +225,7 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
         return new ExtTypeRef(pre, sym, args);
     }
     private static boolean isLegalTypeRef(Type pre, Symbol sym, Type[] args) {
-        if (!pre.isLegalPrefix() && pre != ErrorType) return false;
+        if (!pre.isLegalPrefix() && !pre.isError()) return false;
         if (!sym.isType() && !sym.isError()) return false;
         // !!! return args.length == 0 || args.length == sym.typeParams().length;
         return true;
@@ -641,6 +641,25 @@ public class Type implements Modifiers, Kinds, TypeTags, EntryTags {
     }
 
 // Tests --------------------------------------------------------------------
+
+    /** Is this type a an error type?
+     */
+    public boolean isError() {
+        switch (this) {
+        case ErrorType:
+            return true;
+        case ThisType(Symbol clasz):
+            return clasz.isError();
+        case SingleType(_, Symbol symbol):
+            return symbol.isError();
+        case TypeRef(_, Symbol symbol, _):
+            return symbol.isError();
+        case CompoundType(Type[] parts, Scope members):
+            return symbol().isError();
+        default:
+            return false;
+        }
+    }
 
     /** Is this type a this type or singleton type?
      */

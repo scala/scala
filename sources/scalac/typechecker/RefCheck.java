@@ -277,7 +277,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
     }
 
     void overrideError(int pos, Symbol member, Symbol other, String msg) {
-	if (other.type() != Type.ErrorType && member.type() != Type.ErrorType)
+	if (!other.type().isError() && !member.type().isError())
 	    unit.error(pos,
 		"error overriding " + other + other.locationString() +
 		";\n " + member + member.locationString() + " " + msg);
@@ -285,7 +285,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     void overrideTypeError(int pos, Symbol member, Symbol other, Type site,
 			   boolean lobound) {
-	if (other.type() != Type.ErrorType && member.type() != Type.ErrorType) {
+	if (!other.type().isError() && !member.type().isError()) {
 	    Type memberInfo = lobound ? site.memberLoBound(member)
 		: normalizedInfo(site, member);
 	    Type otherInfo = lobound ? site.memberLoBound(other)

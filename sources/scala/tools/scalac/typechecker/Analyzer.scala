@@ -335,12 +335,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     tp.unalias() match {
       case Type$TypeRef(_, sym, _) =>
 	if (sym.kind == CLASS) return true;
-	else if (sym.isError()) return false;
-      case Type.ErrorType =>
-	return false;
       case _ =>
     }
-    error(pos, "class type expected");
+    if (!tp.isError()) error(pos, "class type expected");
     false
   }
 
@@ -349,7 +346,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   private def checkObjectType(pos: int, tp: Type): Type =
     if (tp.isObjectType()) tp
     else {
-      if (tp != Type.ErrorType) error(pos, "object type expected");
+      if (!tp.isError()) error(pos, "object type expected");
       Type.ErrorType
     }
 
@@ -467,28 +464,28 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
   /** Check that tree represents a pure definition.
   */
   def checkPureDef(tree: Tree, clazz: Symbol): unit = {
-    if (!TreeInfo.isPureDef(tree) && tree.getType() != Type.ErrorType)
+    if (!TreeInfo.isPureDef(tree) && !tree.getType().isError())
       error(tree.pos, "" + clazz + " may contain only pure definitions");
   }
 
   /** Check that tree represents a pure constructor.
   */
   def checkPureConstr(tree: Tree, clazz: Symbol): unit = {
-    if (!TreeInfo.isPureConstr(tree) && tree.getType() != Type.ErrorType)
+    if (!TreeInfo.isPureConstr(tree) && !tree.getType().isError())
       error(tree.pos, "" + clazz + " may invoke only pure superclass constructors");
   }
 
   /** Check that tree represents a trait constructor.
   */
   def checkTrait(tree: Tree, clazz: Symbol): unit = {
-    if (!tree.getType().symbol().isTrait() && tree.getType() != Type.ErrorType)
+    if (!tree.getType().symbol().isTrait() && !tree.getType().isError())
       error(tree.pos, " " + clazz + " may inherit only traits as mixins");
   }
 
   /** Check that tree is a stable expression .p
   */
   def checkStable(tree: Tree): Tree =
-    if (TreeInfo.isPureExpr(tree) || tree.getType() == Type.ErrorType) tree;
+    if (TreeInfo.isPureExpr(tree) || tree.getType().isError()) tree;
     else error(tree.pos, "stable identifier required, but " + tree + " found.");
 
   /** Check that class can be instantiated.
@@ -511,7 +508,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
     var all: Tree = null;
     override def traverse(tree: Tree): unit = {
       if (tree.getType() == null) assert(false, "" + tree + " in " + all);
-      if (tree.getType() != Type.ErrorType)
+      if (!tree.getType().isError())
 	super.traverse(tree);
     }
   }
@@ -538,7 +535,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
       case _ =>
     }
-    if (fn.getType() == Type.ErrorType) Type.ErrorType else Type.NoType
+    if (fn.getType().isError()) Type.ErrorType else Type.NoType
   }
 
   private def isSetterMethod(sym: Symbol): boolean =
@@ -1357,7 +1354,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		//System.out.println("constr inst " + ArrayApply.toString(tparams) + restp + " against " + pt + " = " + tree.getType());//DEBUG
 	      } catch {
 		case ex: Type$Error =>
-		  if (pt != Type.ErrorType) error(tree.pos, ex.msg);
+		  if (!pt.isError()) error(tree.pos, ex.msg);
 		  tree.setType(Type.ErrorType);
 	      }
 	    case _ =>
@@ -1379,7 +1376,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    return error(tree.pos, "expected pattern type " + pt +
 			 " does not conform to sequence " + clazz);
 	  }
-	} else if (tree.getType() != Type.ErrorType) {
+	} else if (!tree.getType().isError()) {
 	  return error(tree.pos, "" + tree.getType().symbol() +
 		       " is neither a case class constructor nor a sequence class constructor");
 	}
@@ -2266,7 +2263,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    copy.Assign(tree, lhs1, rhs1)
 	      .setType(definitions.UNIT_TYPE());
 	  } else {
-	    if (lhs1.getType() != Type.ErrorType)
+	    if (!lhs1.getType().isError())
 	      error(tree.pos, "assignment to non-variable ");
 	    errorTree(tree.pos);
 	  }
@@ -2382,7 +2379,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
 	  // propagate errors in arguments
 	  var i = 0;
-	  while (i < argtypes.length && argtypes(i) != Type.ErrorType)
+	  while (i < argtypes.length && !argtypes(i).isError())
 	    i = i + 1;
 	  if (i < argtypes.length)
 	    tree.setType(Type.ErrorType);
@@ -2425,15 +2422,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  copy.TypeApply(tree, fn1, args1)
 		  .setType(restp.subst(tparams, argtypes)));
 
-	      case Type.ErrorType =>
-		tree.setType(Type.ErrorType)
-
-	      case _ =>
-		error(tree.pos,
+	      case fn1tp =>
+                if (!fn1tp.isError()) error(tree.pos,
 		      infer.toString(fn1.symbol(), fn1.getType()) +
 		      " cannot be applied to " +
 		      ArrayApply.toString(
 			argtypes.asInstanceOf[Array[Object]], "(", ",", ")"));
+                errorTree(tree.pos)
 	    }
 	  }
 
@@ -2568,7 +2563,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    // handle the case of application of match to a visitor specially
 	    if (args.length == 1 && args(0).isInstanceOf[Tree$Visitor]) {
 	      val pattp: Type = matchQualType(fn1);
-	      if (pattp == Type.ErrorType) {
+	      if (pattp.isError()) {
 		return tree.setType(Type.ErrorType)
 	      } else if (pattp != Type.NoType) {
 		if (infer.isFullyDefined(pattp) &&
@@ -2599,7 +2594,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      return tree.setType(Type.ErrorType)
 	    else {
 	      var i: int = 0;
-	      while (i < argtypes.length && argtypes(i) != Type.ErrorType)
+	      while (i < argtypes.length && !argtypes(i).isError())
 		i = i + 1;
 	      if (i < argtypes.length) return tree.setType(Type.ErrorType);
 	    }
@@ -2666,15 +2661,13 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		    .setType(restp));
 		}
 
-	      case Type.ErrorType =>
-		return tree.setType(Type.ErrorType);
-
 	      case _ =>
 	    }
-	    error(
+	    if (!fn1.getType().isError()) error(
 	      tree.pos,
 	      infer.applyErrorMsg(
 		"", fn1, " cannot be applied to ", argtypes, pt));
+            errorTree(tree.pos)
 	  }
 
 	  handleApply
@@ -2809,7 +2802,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  val argtypes = Tree.typeOf(args);
 	  val tparams = tpe1.getType().symbol().typeParams();
 	  var owntype: Type = Type.ErrorType;
-	  if (tpe1.getType() != Type.ErrorType) {
+	  if (!tpe1.getType().isError()) {
 	    if (tparams.length == args.length)
 	      owntype = Type.appliedType(tpe1.getType(), argtypes);
 	    else if (tparams.length == 0)

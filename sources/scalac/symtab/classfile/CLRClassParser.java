@@ -275,7 +275,7 @@ public class CLRClassParser extends SymbolLoader {
 	assert type != null;
 	scalac.symtab.Type res =
 	    make.classType(type.FullName.replace('+', '.'));
-	if (res == scalac.symtab.Type.ErrorType)
+	if (res.isError())
 	    global.error("unknown class reference " + type.FullName);
 	return res;
     }
