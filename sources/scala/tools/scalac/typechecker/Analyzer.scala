@@ -57,7 +57,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 
   var unit: CompilationUnit = _;
 
-  type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/;
+  type AttrInfo = Pair/*<Symbol, Array[AConstant]>*/ ;
 
   override def apply(units: Array[CompilationUnit]): unit = {
     var i = 0; while (i <  units.length) {
