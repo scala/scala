@@ -25,9 +25,9 @@ class Global(args: CompilerCommand, interpret: boolean) extends scalac_Global(ar
   override def newInfer(): Infer =
     new Infer(this, treeGen, make);
   override def newTextTreePrinter(writer: PrintWriter): TreePrinter =
-    new TextTreePrinter(writer);
+    new TextTreePrinter(this, writer);
   override def newHTMLTreePrinter(writer: PrintWriter): TreePrinter =
-    new HTMLTreePrinter(writer);
+    new HTMLTreePrinter(this, writer);
   override def newSwingTreePrinter(writer: PrintWriter): TreePrinter =
     new SwingTreePrinter;
 

@@ -27,18 +27,22 @@ import java.io._;
  * @author Michel Schinz, Matthias Zenger
  * @version 1.0
  */
-class TextTreePrinter(writer: PrintWriter) with TreePrinter {
+class TextTreePrinter(global0: scalac_Global, out0: PrintWriter)
+  with TreePrinter
+{
+  val global = global0;
+  val out = out0;
 
-  val out = writer;
-
-  def this(writer: Writer) = this(new PrintWriter(writer));
-  def this(stream: OutputStream) = this(new PrintWriter(stream));
-  def this() = this(System.out);
+  def this(global0: scalac_Global, out0: Writer) =
+    this(global0, new PrintWriter(out0));
+  def this(global0: scalac_Global, stream: OutputStream) =
+    this(global0, new PrintWriter(stream));
+  def this(global0: scalac_Global) =
+    this(global0, System.out);
 
   protected var indentMargin = 0;
   protected val INDENT_STEP = 2;
-  protected var INDENT_STRING =
-        "                                        ";
+  protected var INDENT_STRING = "                                        ";
   protected val MAX_INDENT = INDENT_STRING.length();
 
   def begin() = ();
@@ -110,7 +114,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
           printString(sym.simpleName().toString());
         else
           printString(sym.name.toString());
-        if (scalac_Global.instance.uniqid)
+        if (global.uniqid)
 	  printString("#" + sym.id)
       } else {
         printString(name.toString());
@@ -495,7 +499,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 	printType(tree);
 
       case Tree$Select(qualifier, name) =>
-        if (scalac_Global.instance.debug || qualifier.symbol() == null || !qualifier.symbol().isRoot()) {
+        if (global.debug || qualifier.symbol() == null || !qualifier.symbol().isRoot()) {
 	  print(qualifier);
 	  print(TXT_DOT);
         }
@@ -584,7 +588,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
   // Printing of trees
 
   protected def printType(tree: Tree): unit =
-    if (scalac_Global.instance.printtypes) {
+    if (global.printtypes) {
       print(TXT_LEFT_BRACE);
       print(if (tree.`type` != null) Simple(tree.`type`.toString())
 	    else TXT_NULL);
@@ -643,7 +647,6 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
 
     val types: java.util.List  = new java.util.ArrayList();
     if (symbol != null) {
-      val global: scalac_Global  = scalac_Global.instance;
       if (global.currentPhase.id > global.PHASE.ADDACCESSORS.id()) {
         val i: Scope$SymbolIterator = symbol.members().iterator();
         while (i.hasNext()) {
@@ -725,7 +728,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
   }
 
   protected def printBounds(lobound: Tree, hibound: Tree, mods: int): unit = {
-    val definitions: Definitions = scalac_Global.instance.definitions;
+    val definitions: Definitions = global.definitions;
     val printLoBound: Boolean =
       if (lobound.getType() != null)
         lobound.getType().symbol() != definitions.ALL_CLASS

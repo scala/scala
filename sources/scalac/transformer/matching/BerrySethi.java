@@ -11,7 +11,6 @@ import Tree.* ;
 
 import java.util.* ;
 
-//import scala.compiler.printer.TextTreePrinter ;
 //import scala.compiler.printer.XMLAutomPrinter ;
 
 /** a Berry-Sethi style construction for nfas.
@@ -568,12 +567,7 @@ class BerrySethi {
             this.finalTag = finalTag;
 
             //System.out.println( "enter automatonFrom("+pat+","+finalTag+")"); // UNIT TEST
-            //System.out.println( TextTreePrinter.toString(pat) );
-            /*DEBUG = new TextTreePrinter( System.out );
-            DEBUG.begin();
-            DEBUG.print( pat );
-            DEBUG.end();
-            */
+            //System.out.println( pat );
             //System.out.println( nullableSequence( pat )); // UNIT TEST
             switch( pat ) {
             case Sequence( Tree[] subexpr ):

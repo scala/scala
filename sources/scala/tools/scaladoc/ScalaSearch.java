@@ -552,7 +552,7 @@ public class ScalaSearch {
         SourceFile sourceFile = global.getSourceFile("tmp.scala", unitString);
         CompilationUnit tmpUnit = new CompilationUnit(global, sourceFile, false);
         tmpUnit.body = new Parser$class(tmpUnit).parse();
-        //TreePrinter treePrinter = new TextTreePrinter(System.out);
+        //TreePrinter treePrinter = new TextTreePrinter(global, System.out);
         //treePrinter.print(tmpUnit);
         global.PHASE.ANALYZER.phase().apply(new CompilationUnit[]{ tmpUnit });
         if (global.reporter.errors() == errorNumber) {

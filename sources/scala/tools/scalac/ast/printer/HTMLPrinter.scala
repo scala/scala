@@ -10,6 +10,7 @@
 import scalac.CompilationUnit;
 import scalac.symtab._;
 import scalac.ast.Tree;
+import scalac.{Global => scalac_Global, Phase};
 
 package scala.tools.scalac.ast.printer {
 
@@ -26,7 +27,9 @@ import java.util.HashMap;
  * @version 1.0
  */
 
-class HTMLTreePrinter(writer: PrintWriter) extends TextTreePrinter(writer) {
+class HTMLTreePrinter(global0: scalac_Global, out0: PrintWriter)
+  extends TextTreePrinter(global0, out0)
+{
   protected var outSectionLevel = 1;
   protected var started = false;
 
