@@ -32,9 +32,9 @@ public class CompilerPhases {
     public final PhaseDescriptor EXPLICITOUTER;
     public final PhaseDescriptor ADDACCESSORS;
     public final PhaseDescriptor TAILCALL;
+    public final PhaseDescriptor ADDCONSTRUCTORS;
     public final PhaseDescriptor ADDINTERFACES;
     public final PhaseDescriptor EXPANDMIXIN;
-    public final PhaseDescriptor ADDCONSTRUCTORS;
     public final PhaseDescriptor MAKEBOXINGEXPLICIT;
     public final PhaseDescriptor ERASURE;
     public final PhaseDescriptor GENMSIL;
@@ -58,9 +58,9 @@ public class CompilerPhases {
     protected Class EXPLICITOUTER_PHASE() { return scalac.transformer.ExplicitOuterClassesPhase.class; }
     protected Class ADDACCESSORS_PHASE() { return scalac.transformer.AddAccessorsPhase.class; }
     protected Class TAILCALL_PHASE() { return scalac.transformer.TailCallPhase.class; }
+    protected Class ADDCONSTRUCTORS_PHASE() { return scalac.transformer.AddConstructorsPhase.class; }
     protected Class ADDINTERFACES_PHASE() { return scalac.transformer.AddInterfacesPhase.class; }
     protected Class EXPANDMIXIN_PHASE() { return scalac.transformer.ExpandMixinsPhase.class; }
-    protected Class ADDCONSTRUCTORS_PHASE() { return scalac.transformer.AddConstructorsPhase.class; }
     protected Class ERASURE_PHASE() { return scalac.transformer.ErasurePhase.class; }
     protected Class GENMSIL_PHASE() { return scalac.backend.msil.GenMSILPhase.class; }
     protected Class GENJVM_PHASE() { return scalac.backend.jvm.GenJVMPhase.class; }
@@ -127,6 +127,11 @@ public class CompilerPhases {
                 "add tail-calls",
                 "added tail-calls",
                 TAILCALL_PHASE()),
+            this.ADDCONSTRUCTORS = new PhaseDescriptor(
+                "addconstructors",
+                "add explicit constructor for each class",
+                "added constructors",
+                ADDCONSTRUCTORS_PHASE()),
             this.ADDINTERFACES = new PhaseDescriptor(
                 "addinterfaces",
                 "add one interface per class",
@@ -137,11 +142,6 @@ public class CompilerPhases {
                 "expand mixins by code copying",
                 "expanded mixins",
                 EXPANDMIXIN_PHASE()),
-            this.ADDCONSTRUCTORS = new PhaseDescriptor(
-                "addconstructors",
-                "add explicit constructor for each class",
-                "added constructors",
-                ADDCONSTRUCTORS_PHASE()),
             this.MAKEBOXINGEXPLICIT = new PhaseDescriptor(
                 "boxing",
                 "makes boxing explicit",

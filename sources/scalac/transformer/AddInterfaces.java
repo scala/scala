@@ -13,14 +13,20 @@
 
 package scalac.transformer;
 
-import scalac.*;
-import ch.epfl.lamp.util.*;
-import scalac.ast.*;
-import scalac.symtab.*;
-import scalac.util.*;
-import Tree.*;
+import java.util.Map;
+import java.util.HashMap;
 
-import java.util.*;
+import scalac.Global;
+import scalac.ast.GenTransformer;
+import scalac.ast.Tree;
+import scalac.ast.Tree.Template;
+import scalac.ast.TreeGen;
+import scalac.ast.TreeList;
+import scalac.symtab.Type;
+import scalac.symtab.Scope;
+import scalac.symtab.Symbol;
+import scalac.symtab.SymbolSubstTypeMap;
+import scalac.util.Debug;
 
 /**
  * Add, for each class, an interface with the same name, to be used
@@ -38,344 +44,233 @@ import java.util.*;
  * @author Michel Schinz
  * @version 1.0
  */
+public class AddInterfaces extends GenTransformer {
 
-class AddInterfaces extends Transformer {
-    protected AddInterfacesPhase phase;
-    protected Definitions defs;
+    //#########################################################################
+    // Private Fields
 
+    /** The AddInterface phase */
+    private final AddInterfacesPhase phase;
+
+    /** The current class (null is none) */
+    private Symbol clasz;
+
+    /** The current member (null is none) */
+    private Symbol member;
+
+    /** The current class substitution (null is none) */
+    private Type.Map classSubst;
+
+    /** The current parameter substitution (null is none) */
+    private SymbolSubstTypeMap paramSubst;
+
+    //#########################################################################
+    // Public Constructors
+
+    /** Initializes this instance. */
     public AddInterfaces(Global global, AddInterfacesPhase phase) {
         super(global);
         this.phase = phase;
-        this.defs = global.definitions;
     }
 
-    protected LinkedList/*<Pair<Symbol,Symbol>>*/ ownerSubstStack =
-        new LinkedList();
-    protected Pair/*<Symbol,Symbol>*/ ownerSubst = null;
-    protected SymbolSubstTypeMap typeSubst = null;
-    protected Type.SubstThisMap thisTypeSubst = null;
+    //#########################################################################
+    // Public Methods
 
-    protected LinkedList/*<List<Tree>>*/ bodyStack = new LinkedList();
-
-    public Tree[] transform(Tree[] trees) {
-        List newTrees = new ArrayList();
-
-        bodyStack.addFirst(newTrees);
-
-        for (int i = 0; i < trees.length; ++i)
-            newTrees.add(transform(trees[i]));
-
-        bodyStack.removeFirst();
-
-        return (Tree[]) newTrees.toArray(new Tree[newTrees.size()]);
-    }
-
-    public Tree transform(Tree tree) {
-        // Update tree type, to take into account the new (type)
-        // symbols of enclosing classes / methods.
-        Type newTp = tree.getType();
-        if (typeSubst != null) newTp = typeSubst.apply(newTp);
-        if (thisTypeSubst != null) newTp = thisTypeSubst.apply(newTp);
-        tree.setType(newTp);
-
-        if (tree.definesSymbol() && !(tree instanceof ClassDef)) {
-            // Update symbol's owner, if needed.
-            Symbol sym = tree.symbol();
-            if (ownerSubst != null && ownerSubst.fst == sym.owner())
-                sym.setOwner((Symbol)ownerSubst.snd);
-
-            // Update symbol's type. Do that only for symbols which do
-            // not belong to a class, since the type of these (i.e.
-            // class members) has been changed during cloning
-            // operation.
-            if (! (sym.owner().isClass() || thisTypeSubst == null))
-                sym.updateInfo(typeSubst.apply(sym.info()));
-        }
-
+    /** Transforms the given symbol. */
+    public Symbol getSymbolFor(Tree tree) {
         switch (tree) {
-        case ClassDef(_,_,_,_,_,_): {
-            Symbol sym = tree.symbol();
-            if (phase.needInterface(sym)) {
-                ClassDef classDef = (ClassDef)tree;
-                Symbol ifaceSym = sym;
-                Symbol classSym = phase.getClassSymbol(ifaceSym);
-
-                List/*<Tree>*/ enclosingBody = (List)bodyStack.getFirst();
-                enclosingBody.add(makeInterface(classDef));
-
-                typeSubst = phase.getClassSubst(classSym);
-                Tree newTree = makeClass(classDef);
-                typeSubst = null;
-
-                return newTree;
-            } else
-                return super.transform(tree);
+        case Return(_):
+            return member;
+        case This(_):
+        case Super(_, _):
+            return clasz;
+        case Select(Super(_, _), _):
+            Symbol symbol = tree.symbol();
+            if (symbol.isInitializer()) return getClassMember(symbol);
+            return getClassMember(symbol, true);
+        case Select(_, _):
+            Symbol symbol = tree.symbol();
+            if (symbol.isInitializer()) return getClassMember(symbol);
+            return symbol;
+        case Ident(_):
+            Symbol symbol = tree.symbol();
+            if (symbol.isInitializer()) return getClassMember(symbol);
+            if (symbol.isParameter()) return getClassVParam(symbol);
+            return symbol;
+        default:
+            return tree.symbol();
         }
+    }
 
-        case DefDef(int mods,
-                    Name name,
-                    AbsTypeDef[] tparams,
-                    ValDef[][] vparams,
-                    Tree tpe,
-                    Tree rhs): {
-            Symbol sym = tree.symbol();
-            Tree newTree;
+    /** Transforms the given type. */
+    public Type transform(Type type) {
+        if (classSubst != null) type = classSubst.apply(type);
+        if (paramSubst != null) type = paramSubst.apply(type);
+        return type;
+    }
 
-            Symbol owner;
-            if (sym.isConstructor())
-                owner = sym.constructorClass();
-            else
-                owner = sym.owner();
+    /** Transforms the given trees. */
+    public Tree[] transform(Tree[] trees) {
+        if (member != null) return super.transform(trees);
+        TreeList list = new TreeList();
+        for (int i = 0; i < trees.length; i++) template(list, trees[i]);
+        return list.toArray();
+    }
 
-            if (owner.isClass() && phase.needInterface(owner)) {
-                Symbol classOwner = phase.getClassSymbol(owner);
-                Map ownerMemberMap = phase.getClassMemberMap(classOwner);
-                Symbol newSym = (Symbol)ownerMemberMap.get(sym);
-                assert newSym != null
-                    : Debug.show(sym) + " not in " + ownerMemberMap;
-
-                global.nextPhase();
-                typeSubst.insertSymbol(sym.typeParams(), newSym.typeParams());
-                if (!sym.isConstructor())
-                    typeSubst.insertSymbol(sym.valueParams(), newSym.valueParams());
-                global.prevPhase();
-
-                pushOwnerSubst(sym, newSym);
-
-                newTree = gen.DefDef(newSym, transform(rhs));
-
-                popOwnerSubst();
-
-                typeSubst.removeSymbol(sym.valueParams());
-                typeSubst.removeSymbol(sym.typeParams());
-            } else
-                newTree = super.transform(tree);
-            return newTree;
-        }
-
-        case Return(Tree expr): {
-            Symbol sym = tree.symbol();
-            Symbol owner = sym.owner();
-            if (owner.isClass() && phase.needInterface(owner)) {
-                Symbol classOwner = phase.getClassSymbol(owner);
-                Map ownerMemberMap = phase.getClassMemberMap(classOwner);
-                Symbol newSym = (Symbol)ownerMemberMap.get(sym);
-                assert newSym != null
-                    : Debug.show(sym) + " not in " + ownerMemberMap;
-                return gen.Return(tree.pos, newSym, transform(expr));
-            } else
-                return super.transform(tree);
-        }
-
-        case This(_): {
-            // Use class symbol for references to "this".
-            Symbol classThisSym = phase.getClassSymbol(tree.symbol());
-            return gen.This(tree.pos, classThisSym);
-        }
-
-        case Super(_, _): {
-            // Use class symbol for references to "super".
-            Symbol classSuperSym = phase.getClassSymbol(tree.symbol());
-            return gen.Super(tree.pos, classSuperSym);
-        }
-
-        case Select(Super(_, _), _): {
-            // Use class member symbols for references to "super".
-
-            Symbol sym = tree.symbol();
-            Symbol classOwner = phase.getClassSymbol(sym.owner());
-            Map ownerMemberMap = phase.getClassMemberMap(classOwner);
-            if (ownerMemberMap != null && ownerMemberMap.containsKey(sym)) {
-                Tree qualifier = transform(((Select)tree).qualifier);
-                Symbol newSym = (Symbol)ownerMemberMap.get(sym);
-                return gen.Select(tree.pos, qualifier, newSym);
-            } else
-                return super.transform(tree);
-        }
-
-        case Select(Tree qualifier, _): {
-            Symbol sym = tree.symbol();
-            if (sym.isConstructor()) {
-                // If the constructor now refers to the interface
-                // constructor, use the class constructor instead.
-                Symbol clsSym = sym.constructorClass();
-                if (phase.needInterface(clsSym)) {
-                    Symbol realClsSym = phase.getClassSymbol(clsSym);
-                    Map memMap = phase.getClassMemberMap(realClsSym);
-                    assert memMap != null
-                        : Debug.show(clsSym) + " " + Debug.show(realClsSym);
-                    return gen.Select(tree.pos, qualifier, (Symbol)memMap.get(sym));
-                } else
-                    return super.transform(tree);
-            } else {
-                qualifier = transform(qualifier);
-                Symbol owner = sym.owner();
-                if (owner.isClass()
-                    && owner.isJava() && !owner.isInterface()
-                    && owner != defs.ANY_CLASS
-                    && owner != defs.ANYREF_CLASS
-                    && owner != defs.JAVA_OBJECT_CLASS) {
-                    Type qualifierType = qualifier.getType().bound();
-                    if (phase.needInterface(qualifierType.symbol())) {
-                        Type castType = qualifierType.baseType(owner);
-                        qualifier = gen.mkAsInstanceOf(qualifier, castType);
-                    }
+    /** Transforms the given tree. */
+    public Tree transform(Tree tree) {
+        switch (tree) {
+        case ValDef(_, _, _, _):
+        case LabelDef(_, _, _):
+            Symbol symbol = tree.symbol();
+            if (symbol.owner() != member) {
+                symbol.setOwner(member);
+                symbol.updateInfo(transform(symbol.info()));
+            }
+            return super.transform(tree);
+        case Select(Tree qualifier, _):
+            Type prefix = qualifier.type();
+            qualifier = transform(qualifier);
+            Symbol symbol = getSymbolFor(tree);
+            if (symbol.isJava() && !symbol.owner().isInterface()) {
+                if (qualifier.type().widen().symbol().isInterface()) {
+                    Type baseType = prefix.baseType(symbol.owner());
+                    assert baseType != Type.NoType: tree;
+                    qualifier = gen.mkAsInstanceOf(qualifier, baseType);
                 }
-                return copy.Select(tree, sym, qualifier);
             }
-        }
-
-        case Ident(_): {
-            Symbol sym = tree.symbol();
-            if (sym.isConstructor()) {
-                // If the constructor now refers to the interface
-                // constructor, use the class constructor instead.
-                Symbol clsSym = sym.constructorClass();
-                if (phase.needInterface(clsSym)) {
-                    Symbol realClsSym = phase.getClassSymbol(clsSym);
-                    Map memMap = phase.getClassMemberMap(realClsSym);
-                    assert memMap != null
-                        : Debug.show(clsSym) + " " + Debug.show(realClsSym);
-                    assert memMap.containsKey(sym)
-                        : Debug.show(sym) + " not in " + memMap;
-                    return gen.Ident(tree.pos, (Symbol)memMap.get(sym));
-                } else
-                    return super.transform(tree);
-            } else if (typeSubst != null) {
-                Symbol newSym = (Symbol)typeSubst.lookupSymbol(tree.symbol());
-                if (newSym != null)
-                    return gen.Ident(tree.pos, newSym);
-                else
-                    return super.transform(tree);
-            } else {
-                return super.transform(tree);
-            }
-        }
-
-        case New(Template templ): {
-            Tree.New newTree = (Tree.New)super.transform(tree);
-            Tree.Apply parent = (Tree.Apply)newTree.templ.parents[0];
-            Symbol ifaceSym = TreeInfo.methSymbol(parent).type().resultType().symbol();
-            if (phase.needInterface(ifaceSym)) {
-                Map clsMap = new HashMap();
-                Symbol classSym = phase.getClassSymbol(ifaceSym);
-                clsMap.put(ifaceSym, classSym);
-                clsMap.put(ifaceSym.primaryConstructor(), classSym.primaryConstructor());
-
-                SymbolSubstTypeMap clsSubst =
-                    new SymbolSubstTypeMap(clsMap, Collections.EMPTY_MAP);
-
-                newTree.setType(clsSubst.apply(newTree.type));
-                newTree.templ.setType(clsSubst.apply(newTree.templ.type));
-                parent.setType(clsSubst.apply(parent.type));
-                parent.fun.setType(clsSubst.apply(parent.fun.type));
-            }
-            return newTree;
-        }
-
-        case Template(_,_): {
-            Symbol sym = tree.symbol();
-            if (sym != Symbol.NONE) {
-                Symbol newDummySymbol = sym.cloneSymbol();
-                pushOwnerSubst(sym, newDummySymbol);
-                Tree newTemplate = super.transform(tree);
-                popOwnerSubst();
-                return newTemplate;
-            } else
-                return super.transform(tree);
-        }
-
+            return gen.Select(tree.pos, qualifier, symbol);
         default:
             return super.transform(tree);
         }
     }
 
-    protected Tree makeInterface(ClassDef classDef) {
-        Template classImpl = classDef.impl;
-        Tree[] classBody = classImpl.body;
-        TreeList ifaceBody = new TreeList();
+    //#########################################################################
+    // Private Methods
 
-        for (int i = 0; i < classBody.length; ++i) {
-            Tree t = classBody[i];
-            Symbol tSym = t.symbol();
-
-            if (!t.definesSymbol() || !phase.memberGoesInInterface(tSym))
-                continue;
-
-            if (tSym.isClass())
-                ifaceBody.append(transform(new Tree[] { t }));
-            else if (tSym.isType())
-                ifaceBody.append(t);
-            else if (tSym.isMethod())
-                ifaceBody.append(gen.DefDef(tSym, Tree.Empty));
-            else
-                throw Debug.abort("don't know what to do with this ", t);
-        }
-
-        return gen.ClassDef(classDef.symbol(), ifaceBody.toArray());
-    }
-
-    protected Tree makeClass(ClassDef classDef) {
-        Symbol ifaceSym = classDef.symbol();
-        Symbol classSym = phase.getClassSymbol(ifaceSym);
-
-        TreeList newClassBody = new TreeList();
-        Template classImpl = classDef.impl;
-        Tree[] classBody = classImpl.body;
-
-        Map classMemberMap = phase.getClassMemberMap(classSym);
-
-        assert thisTypeSubst == null;
-        thisTypeSubst = new Type.SubstThisMap(ifaceSym, classSym);
-
-        for (int i = 0; i < classBody.length; ++i) {
-            Tree t = classBody[i];
-            Symbol tSym = t.symbol();
-
-            if (t.definesSymbol() && !(classMemberMap.containsKey(tSym)
-                                       || tSym.isConstructor()))
-                continue;
-
-            Tree newT = transform(t);
-
-            if (t.definesSymbol() && classMemberMap.containsKey(tSym))
-                newT.setSymbol((Symbol)classMemberMap.get(tSym));
-
-            newClassBody.append(newT);
-        }
-
-        thisTypeSubst = null;
-
-        Tree[] newParents = Tree.cloneArray(transform(classImpl.parents), 1);
-        global.nextPhase();
-        Type ifaceType = classSym.parents()[newParents.length - 1];
-        global.prevPhase();
-        newParents[newParents.length - 1] =
-            gen.mkPrimaryConstr(classDef.pos, ifaceType);
-
-        Symbol local = classDef.impl.symbol();
-        local.setOwner(classSym);
-        return gen.ClassDef(classSym, newParents, local, newClassBody.toArray());
-    }
-
-    protected Tree[][] extractParentArgs(Tree[] parents) {
-        Tree[][] pArgs = new Tree[parents.length][];
-        for (int i = 0; i < parents.length; ++i) {
-            switch(parents[i]) {
-            case Apply(_, Tree[] args): pArgs[i] = transform(args); break;
-            default: throw Debug.abort("unexpected parent constr. ", parents[i]);
+    /** Transforms the given template and adds it to given list. */
+    private void template(TreeList trees, Tree tree) {
+        switch (tree) {
+        case Empty:
+            return;
+        case PackageDef(_, _):
+            trees.append(super.transform(tree));
+            return;
+        case ClassDef(_, _, _, _, _, Template(_, Tree[] body)):
+            TreeList list = new TreeList(transform(body));
+            this.clasz = tree.symbol();
+            Map methods = new HashMap();
+            if (phase.needInterface(clasz)) {
+                Symbol clone = phase.getClassSymbol(clasz);
+                trees.append(getClassTree(clasz, list, methods));
+                list = new TreeList();
+                this.classSubst = new Type.SubstThisMap(clasz, clone);
+                this.paramSubst = phase.getClassSubst(clone);
+                this.clasz = clone;
             }
+            for (int i = 0; i < body.length; i++) member(methods, body[i]);
+            trees.append(getClassTree(clasz, list, methods));
+            assert methods.isEmpty(): Debug.show(methods.keySet().toArray());
+            this.paramSubst = null;
+            this.classSubst = null;
+            this.clasz = null;
+            return;
+        case DefDef(_, _, _, _, _, _):
+            return;
+        case ValDef(_, _, _, _):
+            if (tree.symbol().owner().isPackage()) trees.append(tree);
+            return;
+        default:
+            throw Debug.abort("illegal tree", tree);
         }
-        return pArgs;
     }
 
-    protected void pushOwnerSubst(Symbol from, Symbol to) {
-        ownerSubstStack.addFirst(ownerSubst);
-        ownerSubst = new Pair(from, to);
+    /**
+     * Transforms the given class member. Methods with a non-empty
+     * body are added to the given method map. All other members are
+     * dropped.
+     */
+    private void member(Map methods, Tree tree) {
+        switch (tree) {
+        case ClassDef(_, _, _, _, _, _):
+            return;
+        case DefDef(_, _, _, _, _, Tree rhs):
+            if (rhs == Tree.Empty) return;
+            Symbol symbol = tree.symbol();
+            this.member = getClassMember(symbol);
+            if (member != symbol) {
+                paramSubst.insertSymbol(
+                    symbol.typeParams(), member.nextTypeParams());
+                paramSubst.insertSymbol(
+                    symbol.valueParams(), member.nextValueParams());
+            }
+            methods.put(member, gen.DefDef(member, transform(rhs)));
+            if (member != symbol) {
+                paramSubst.removeSymbol(symbol.valueParams());
+                paramSubst.removeSymbol(symbol.typeParams());
+            }
+            this.member = null;
+            return;
+        case ValDef(_, _, _, Tree rhs):
+            assert rhs == Tree.Empty: tree;
+            return;
+        default:
+            throw Debug.abort("illegal tree", tree);
+        }
     }
 
-    protected void popOwnerSubst() {
-        ownerSubst = (Pair)ownerSubstStack.removeFirst();
+    /**
+     * Returns the tree of the given class whose body is built by
+     * adding to the given body the class members. Non-abstract
+     * methods are removed from the given method map. All other
+     * members are generated from their symbol.
+     */
+    private Tree getClassTree(Symbol clasz, TreeList body, Map methods) {
+        Scope members = clasz.nextInfo().members();
+        for (Scope.SymbolIterator i = members.iterator(true); i.hasNext(); ) {
+            Symbol member = i.next();
+            if (!member.isTerm()) continue;
+            body.append(getMemberTree(member, methods));
+        }
+        return gen.ClassDef(clasz, body.toArray());
     }
 
+    /**
+     * Returns the tree of the given member. Non-abstract methods are
+     * removed from the given method map. All other members are
+     * generated from their symbol.
+     */
+    private Tree getMemberTree(Symbol member, Map methods) {
+        if (!member.isMethod()) return gen.ValDef(member, Tree.Empty);
+        if (member.isDeferred()) return gen.DefDef(member, Tree.Empty);
+        Tree method = (Tree)methods.remove(member);
+        assert method != null: Debug.show(member);
+        return method;
+    }
+
+    /** Returns the symbol of given parameter in current class. */
+    private Symbol getClassVParam(Symbol vparam) {
+        if (paramSubst == null) return vparam;
+        Symbol clone = (Symbol)paramSubst.lookupSymbol(vparam);
+        assert clone != null: Debug.show(vparam, " - ", clasz, " - ", member);
+        return clone;
+    }
+
+    /** Returns the symbol of given member in current class. */
+    private Symbol getClassMember(Symbol member) {
+        return getClassMember(member, false);
+    }
+    // !!! Try to remove version with lazy argument. It is currently
+    // needed for super calls to abstract method (possible in mixins).
+    private Symbol getClassMember(Symbol member, boolean lazy) {
+        Symbol owner = member.owner();
+        assert owner.isClass(): Debug.show(member);
+        if (!phase.needInterface(owner)) return member;
+        Symbol clasz = phase.getClassSymbol(owner);
+        Symbol clone = (Symbol)phase.getClassMemberMap(clasz).get(member);
+        assert clone != null || lazy: Debug.show(member, " not in ", clasz);
+        return clone != null ? clone : member;
+    }
+
+    //#########################################################################
 }

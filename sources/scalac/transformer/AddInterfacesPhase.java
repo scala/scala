@@ -70,7 +70,7 @@ public class AddInterfacesPhase extends Phase {
                 while (oldMembersIt.hasNext()) {
                     Symbol member = oldMembersIt.next();
 
-                    if (!memberGoesInInterface(member))
+                    if (!memberGoesInInterface(member) || member.isInitializer())
                         continue;
 
                     if (member.isPrivate()) {
@@ -128,8 +128,7 @@ public class AddInterfacesPhase extends Phase {
     }
 
     protected boolean memberGoesInInterface(Symbol member) {
-        return member.isType()
-            || (member.isMethod() && !member.isConstructor());
+        return member.isType() || member.isMethod();
     }
 
     protected Type removeValueParams(Type tp) {
