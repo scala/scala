@@ -86,9 +86,35 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Returns a shallow copy of the given array. */
     public static Symbol[] cloneArray(Symbol[] array) {
-        if (array.length == 0) return array;
-        Symbol[] clone = new Symbol[array.length];
-        for (int i = 0; i < clone.length; i++) clone[i] = array[i];
+        return cloneArray(0, array, 0);
+    }
+
+    /**
+     * Returns a shallow copy of the given array prefixed by "prefix"
+     * null items.
+     */
+    public static Symbol[] cloneArray(int prefix, Symbol[] array) {
+        return cloneArray(prefix, array, 0);
+    }
+
+    /**
+     * Returns a shallow copy of the given array suffixed by "suffix"
+     * null items.
+     */
+    public static Symbol[] cloneArray(Symbol[] array, int suffix) {
+        return cloneArray(0, array, suffix);
+    }
+
+    /**
+     * Returns a shallow copy of the given array prefixed by "prefix"
+     * null items and suffixed by "suffix" null items.
+     */
+    public static Symbol[] cloneArray(int prefix, Symbol[] array, int suffix) {
+        assert prefix >= 0 && suffix >= 0: prefix + " - " + suffix;
+        int size = prefix + array.length + suffix;
+        if (size == 0) return EMPTY_ARRAY;
+        Symbol[] clone = new Symbol[size];
+        for (int i = 0; i < array.length; i++) clone[prefix + i] = array[i];
         return clone;
     }
 
