@@ -394,8 +394,13 @@ class AddInterfaces extends SubstTransformer {
     }
 
     public Tree transform(Tree tree) {
-        if (thisTypeSubst != null)
+        if (thisTypeSubst != null) {
+            if (tree.definesSymbol()) {
+                Symbol sym = tree.symbol();
+                sym.updateInfo(thisTypeSubst.apply(sym.nextInfo()));
+            }
             tree.setType(thisTypeSubst.apply(tree.type()));
+        }
 
         switch (tree) {
         case ClassDef(int mods,
@@ -470,7 +475,6 @@ class AddInterfaces extends SubstTransformer {
                         if (sym.kind != Kinds.CLASS
                             && ifaceMemberToClass.containsKey(sym)) {
                             Symbol cSym = (Symbol)ifaceMemberToClass.get(sym);
-                            cSym.updateInfo(thisTypeSubst.apply(cSym.info()));
                             member.setSymbol(cSym);
                         }
                     }
