@@ -78,6 +78,8 @@ public class TypeConstructor implements java.io.Serializable {
     private static final ClassLoader loader =
         ClassLoader.getSystemClassLoader();
 
+    private static final int[] EMPTY_ANCESTOR_CODE = new int[0];
+
     public TypeConstructor(int level,
                            String fullName,
                            Object outer,
@@ -93,7 +95,8 @@ public class TypeConstructor implements java.io.Serializable {
         this.pCount = pCount;
 
         this.ancestorCacheDepth = ancestorCacheDepth;
-        this.ancestorCode = ancestorCode;
+        this.ancestorCode =
+            (ancestorCode == null ? EMPTY_ANCESTOR_CODE : ancestorCode);
 
         this.isTrivial = (outer == null) && (zCount + pCount + mCount == 0);
         this.isStronglyTrivial = (ancestorCacheDepth == 0);

@@ -588,6 +588,7 @@ public class TypesAsValuesPhase extends Phase {
             }
 
             Ancestor[][] ancestors = computeAncestors(clsSym);
+            int[] ancestorCode = getAncestorCode(ancestors);
 
             Tree outer = isNestedClass(clsSym)
                 ? (clsSym.owner().isClass()
@@ -603,7 +604,9 @@ public class TypesAsValuesPhase extends Phase {
                 gen.mkIntLit(pos, mCount),
                 gen.mkIntLit(pos, pCount),
                 gen.mkIntLit(pos, ancestors.length),
-                mkNewIntLitArray(pos, getAncestorCode(ancestors), owner)
+                ancestorCode.length == 0
+                ? gen.mkNullLit(pos)
+                : mkNewIntLitArray(pos, getAncestorCode(ancestors), owner)
             };
 
             Symbol tcConst = defs.TYPECONSTRUCTOR_CLASS.primaryConstructor();
