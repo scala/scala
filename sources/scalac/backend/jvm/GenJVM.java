@@ -874,6 +874,8 @@ class GenJVM {
                         intVal = ((Number)val).intValue();
                     else if (val instanceof Character)
                         intVal = ((Character)val).charValue();
+                    else if (val instanceof Boolean)
+                        intVal = ((Boolean)val).booleanValue() ? 1 : 0;
                     else
                         throw Debug.abort("unknown literal", val);
                     if (intVal == 0) {
