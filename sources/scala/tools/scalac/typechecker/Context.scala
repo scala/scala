@@ -84,7 +84,7 @@ class Context {
         */
 	if (viewCache.forall(v => v.sym != sym)) {
 	  val v = View(sym, symtype, qual, this);
-	  System.out.println("VIEW " + sym + ":" + symtype + " " + qual);//debug
+	  //System.out.println("VIEW " + sym + ":" + symtype + " " + qual);//
 	  viewCache = v :: viewCache;//.filter(isUnShadowed);
 	}
     }

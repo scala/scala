@@ -71,7 +71,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	case _ =>
       }
       if (obj.isModule()) {
-	val qual = gen.mkRef(Position.NOPOS, tp.prefix(), obj);
+	val qual = if (tp.prefix() == Type.NoType) Tree.Empty
+		   else gen.mkRef(Position.NOPOS, tp.prefix(), obj);
 	val viewsym = obj.info().lookupNonPrivate(Names.view);
 	if (viewsym.kind == VAL) {
 	  obj.getType().memberType(viewsym) match {
