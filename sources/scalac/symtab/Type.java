@@ -514,7 +514,8 @@ public class Type implements Modifiers, Kinds, TypeTags {
 	}
     }
 
-    /** Is this type of the form scala.FunctionN[T_1, ..., T_n, +T]?
+    /** Is this type of the form scala.FunctionN[T_1, ..., T_n, +T] or
+     *  scala.Object with scala.FunctionN[T_1, ..., T_n, +T]?
      */
     public boolean isFunctionType() {
 	switch (this) {
@@ -524,6 +525,12 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		    if (args[i].isCovarType()) return false;
 		return args.length > 0 && args[args.length - 1].isCovarType();
 	    }
+	    break;
+	case CompoundType(Type[] parents, Scope members):
+	    return members.elems == Scope.Entry.NONE &&
+		parents.length == 2 &&
+		parents[0].symbol().fullName() == Names.scala_Object &&
+		parents[1].isFunctionType();
 	}
 	return false;
     }
@@ -2129,7 +2136,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
 		}
 	    }
 	    Type pre1 = (Global.instance.debug) ? pre : pre.expandModuleThis();
-	    String result = pre1.prefixString() + sym.nameString() + sym.idString();
+	    String result = pre1.prefixString()	+ sym.nameString() + sym.idString();
 	    if (args.length != 0)
 		result = result + ArrayApply.toString(args, "[", ",", "]");
 	    return result;
@@ -2190,7 +2197,7 @@ public class Type implements Modifiers, Kinds, TypeTags {
     }
 
     private String prefixString() {
-	if ((this == localThisType || symbol().isRoot()) && !Global.instance.debug) {
+	if ((symbol().kind == NONE || symbol().isRoot()) && !Global.instance.debug) {
 	    return "";
 	} else {
 	    String spre = toString();
