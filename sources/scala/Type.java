@@ -25,6 +25,7 @@ import scala.runtime.types.TypeAll;
 import scala.runtime.types.TypeAllRef;
 import scala.runtime.types.TypeAny;
 import scala.runtime.types.TypeAnyVal;
+import scala.runtime.types.Statistics;
 
 import scala.runtime.FNV_Hash;
 import scala.runtime.PearsonHash;
@@ -37,6 +38,10 @@ import scala.runtime.PearsonHash;
  */
 
 abstract public class Type implements java.io.Serializable {
+    public Type() {
+        assert Statistics.incInstances(getClass().getName());
+    }
+
     /** @meta method [?T](scala.Int) scala.Array[?T]; */
     abstract public Array newArray(int size);
 
@@ -67,6 +72,8 @@ abstract public class Type implements java.io.Serializable {
      * asInstanceOf operation).
      */
     public Object cast(Object o) {
+        assert Statistics.incTypeCast();
+        assert (o == null) || Statistics.decInstanceOf();
         if (! (o == null || isInstance(o)))
             throw new ClassCastException("\n" + ((ScalaObject)o).getType() + "\n" + this.toString());
         return o;
