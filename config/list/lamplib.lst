@@ -3,10 +3,13 @@
 ##############################################################################
 # $Id$
 
+util/Attr.java
 util/CodePrinter.java
 util/ForwardingMap.java
+util/HTMLPrinter.java
 util/Pair.java
 util/Position.java
 util/SourceFile.java
+util/XHTMLPrinter.java
 
 ##############################################################################
