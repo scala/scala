@@ -18,6 +18,7 @@ public class Names {
     private static final String OUTER_PREFIX = "outer$";
     private static final String SUPER_PREFIX = "super$";
     private static final String TUPLE_FIELD_PREFIX = "_";
+    private static final String TYPE_PREFIX = "type$";
     private static final String scala_Tuple_PREFIX = "scala.Tuple";
     private static final String scala_Function_PREFIX = "scala.Function";
 
@@ -58,6 +59,10 @@ public class Names {
 
     public static Name TUPLE_FIELD(int index) {
         return Name.fromString(TUPLE_FIELD_PREFIX + index);
+    }
+
+    public static Name TYPE(Symbol sym) {
+        return Name.fromString(TYPE_PREFIX + sym.name);
     }
 
     public static Name scala_Tuple(int arity) {
@@ -128,6 +133,7 @@ public class Names {
     public static final Name Throwable = Name.fromString("Throwable");
     public static final Name Try = Name.fromString("Try");
     public static final Name Tuple = Name.fromString("Tuple");
+    public static final Name Type = Name.fromString("Type");
     public static final Name Tuple2 = Name.fromString("Tuple2");
     public static final Name Unit = Name.fromString("Unit");
     public static final Name While = Name.fromString("While");
@@ -135,7 +141,9 @@ public class Names {
     public static final Name array = Name.fromString("array");
     public static final Name asInstanceOf = Name.fromString("asInstanceOf");
     public static final Name box = Name.fromString("box");
+    public static final Name checkCastability = Name.fromString("checkCastability");
     public static final Name coerce = Name.fromString("coerce");
+    public static final Name defaultValue = Name.fromString("defaultValue");
     public static final Name elem = Name.fromString("elem");
     public static final Name elements = Name.fromString("elements");
     public static final Name fail = Name.fromString("fail");
@@ -145,6 +153,7 @@ public class Names {
     public static final Name flatmap = Name.fromString("flatMap");
     public static final Name foreach = Name.fromString("foreach");
     public static final Name getClass = Name.fromString("getClass");
+    public static final Name hasAsInstance = Name.fromString("hasAsInstance");
     public static final Name hashCode = Name.fromString("hashCode");
     public static final Name hasNext = Name.fromString("hasNext");
     public static final Name head = Name.fromString("head");
@@ -162,6 +171,7 @@ public class Names {
     public static final Name map = Name.fromString("map");
     public static final Name nobinding = Name.fromString("nobinding");
     public static final Name next = Name.fromString("next");
+    public static final Name newArray = Name.fromString("newArray");
     public static final Name null_ = Name.fromString("null");
     public static final Name predef = Name.fromString("predef");
     public static final Name print = Name.fromString("print");
@@ -199,6 +209,9 @@ public class Names {
     public static final Name scala_Short = Name.fromString("scala.Short");
     public static final Name scala_Symbol = Name.fromString("scala.Symbol");
     public static final Name scala_Tuple = Name.fromString("scala.Tuple");
+    public static final Name scala_Type = Name.fromString("scala.Type");
+    public static final Name scala_ConstructedType = Name.fromString("scala.ConstructedType");
+    public static final Name scala_SingleType = Name.fromString("scala.SingleType");
     public static final Name scala_Unit = Name.fromString("scala.Unit");
     public static final Name scala_runtime = Name.fromString("scala.runtime");
     public static final Name scala_runtime_RunTime = Name.fromString("scala.runtime.RunTime");
@@ -214,8 +227,7 @@ public class Names {
     public static final Name true_ = Name.fromString("true");
     public static final Name update = Name.fromString("update");
     public static final Name view = Name.fromString("view");
-
-	public static final Name tag = Name.fromString("$tag");
+    public static final Name tag = Name.fromString("$tag");
 
     public static final Name
         ZNOT = encode("!"),
