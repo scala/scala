@@ -301,11 +301,15 @@ class DeSugarize(make: TreeFactory, copy: TreeCopier, gen: TreeGen, infer: scala
 		      addViewParams(tparams, vparams), tpe, templ);
 
       case Tree$DefDef(mods, name, tparams, vparams, tpe, rhs) =>
+	//System.out.println("DEF " + make.DefDef(tree.pos, mods, name, tparams, addViewParams(tparams, vparams), tpe, rhs));//DEBUG
 	make.DefDef(tree.pos, mods, name, tparams,
 		    addViewParams(tparams, vparams), tpe, rhs)
 
+      case Tree$DocDef(comment, definition) =>
+	make.DocDef(tree.pos, comment, Definition(definition))
+
       case _ =>
-	return tree
+	tree
     }
 
   def addViewParams(tparams: Array[Tree$AbsTypeDef], vparams: Array[Array[Tree$ValDef]]): Array[Array[Tree$ValDef]] = {

@@ -1516,7 +1516,7 @@ class Parser(unit: Unit) {
     typeBounds(s.pos, mods, ident())
   }
 
-  /** TypeBounds ::= [`>:' Type] [`<:' Type | `<+' Type]
+  /** TypeBounds ::= [`>:' Type] [`<:' Type | `<%' Type]
   */
   def typeBounds(pos: int, _mods: int, name: Name): Tree = {
     var mods = _mods;

@@ -157,8 +157,27 @@ object List {
     }
     sb.toString()
   }
-}
 
+  /** Lists with ordered elements are ordered
+   *  not yet since not compilable with bootstrap
+  def view[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
+    def compareTo [b >: List[a] <% Ordered[b]](y: b): int = y match {
+      case y1: List[a] => compareLists(x, y1);
+      case _ => -(y compareTo x)
+    }
+    private def compareLists(xs: List[a], ys: List[a]): int = {
+      if (xs.isEmpty && ys.isEmpty) 0
+      else if (xs.isEmpty) -1
+      else if (ys.isEmpty) 1
+      else {
+	val s = xs.head compareTo ys.head;
+	if (s != 0) s
+	else compareLists(xs.tail, ys.tail)
+      }
+    }
+  }
+   */
+}
 
 /** A trait representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case

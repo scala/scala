@@ -1791,7 +1791,8 @@ final class AbsTypeSymbol extends TypeSymbol {
 
     public Type vuBound() {
         initialize();
-        return vubound == null ? Global.instance.definitions.ANY_TYPE() : vubound;
+        return !isViewBounded() || vubound == null
+	    ? Global.instance.definitions.ANY_TYPE() : vubound;
     }
 
     public Symbol setLoBound(Type lobound) {

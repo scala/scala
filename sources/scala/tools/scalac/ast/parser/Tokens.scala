@@ -205,7 +205,7 @@ object Tokens {
   enterKeyword("<-", LARROW);
   enterKeyword("<:", SUBTYPE);
   enterKeyword(">:", SUPERTYPE);
-  enterKeyword("<+", VIEWBOUND);
+  enterKeyword("<%", VIEWBOUND);
   enterKeyword("#", HASH);
   enterKeyword("@", AT);
 

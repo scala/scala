@@ -1052,8 +1052,14 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	    tree, sym.primaryConstructor(), new Scope(context.scope));
 	  val tparamSyms = enterParams(tparams);
 	  var vparamSyms = enterParams(vparams);
-	  if (vparamSyms.length == 0)
+	  if (vparamSyms.length == 0) {
 	    vparamSyms = NewArray.SymbolArray{Symbol.EMPTY_ARRAY};
+	  } else if (infer.isViewBounded(tparamSyms) && vparamSyms.length == 1) {
+	    val vparamSyms1 = new Array[Array[Symbol]](2);
+	    vparamSyms1(0) = vparamSyms(0);
+	    vparamSyms1(1) = Symbol.EMPTY_ARRAY;
+	    vparamSyms = vparamSyms1
+	  }
 	  if ((mods & CASE) != 0 && vparams.length > 0)
 	    templ.body = desugarize.addCaseElements(
 	      templ.body, vparams(vparams.length - 1));
@@ -2660,7 +2666,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 		  fn1 = infer.methodInstance(fn1, tparams, restp, argtypes, pt);
 		  //System.out.println(fn1 + ":" + fn1.getType());//DEBUG
 		} catch {
-		  case ex: Type$Error => reportTypeError(tree.pos, ex);
+		  case ex: Type$Error =>
+		    //ex.printStackTrace();//DEBUG
+		    reportTypeError(tree.pos, ex);
 		}
 		fn1.getType() match {
 		  case Type$MethodType(params, restp1) =>

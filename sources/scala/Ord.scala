@@ -26,3 +26,13 @@ trait Ord[+T <: Ord[T]] {
   def > [S >: T <: Ord[S]](that: S): Boolean = that < this;
   def >=[S >: T <: Ord[S]](that: S): Boolean = that <= this;
 }
+
+/*
+trait Ord[+a] {
+  def compareTo [b >: a <% Ord[b]](that: b): int;
+  def <  [b >: a <% Ord[b]](that: b): boolean = (this compareTo that) <  0;
+  def >  [b >: a <% Ord[b]](that: b): boolean = (this compareTo that) >  0;
+  def <= [b >: a <% Ord[b]](that: b): boolean = (this compareTo that) <= 0;
+  def >= [b >: a <% Ord[b]](that: b): boolean = (this compareTo that) >= 0;
+}
+*/

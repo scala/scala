@@ -39,6 +39,8 @@ Nil.scala
 None.scala
 Option.scala
 Ord.scala
+#Ordered.scala
+#PartiallyOrdered.scala
 PartialFunction.scala
 Predef.scala
 Ref.java

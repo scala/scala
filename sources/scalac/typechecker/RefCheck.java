@@ -820,45 +820,54 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *  the case classe's primary constructor `constr'.
      */
     private Tree toConstructor(Tree tree, Symbol constr) {
-	switch (tree) {
-	case Apply(Tree fn, Tree[] args):
-	    return copy.Apply(tree, toConstructor1(fn, constr), args);
-	default:
-	    return gen.Apply(
-		tree.pos, toConstructor1(tree, constr), Tree.EMPTY_ARRAY);
-	}
+	int missing = constr.getType().paramSectionCount() - applyNesting(tree);
+	assert missing >= 0 && missing <= 1;
+	Tree tree1 = toConstructor1(tree, constr, missing > 0);
+	if (missing > 0) return gen.Apply(tree1, Tree.EMPTY_ARRAY);
+	else return tree1;
     }
     //where
-	private Tree toConstructor1(Tree tree, Symbol constr) {
+	private int applyNesting(Tree tree) {
 	    switch (tree) {
+	    case Apply(Tree fn, Tree[] args):
+		return applyNesting(fn) + 1;
+	    default:
+		return 0;
+	    }
+	}
+
+	private Tree toConstructor1(Tree tree, Symbol constr, boolean addEmpty) {
+	    Tree tree1 = toConstructor2(tree, constr, addEmpty);
+	    if (addEmpty)
+		return tree1.duplicate()
+		            .setType(addEmptyParams(tree1.getType()));
+	    else
+		return tree1;
+	}
+
+        private Tree toConstructor2(Tree tree, Symbol constr, boolean addEmpty) {
+	    switch (tree) {
+	    case Apply(Tree fn, Tree[] args):
+		return copy.Apply(
+		    tree, toConstructor1(fn, constr, addEmpty), args);
 	    case TypeApply(Tree fn, Tree[] args):
-		return toMethodType(
-		    copy.TypeApply(tree, toConstructor1(fn, constr), args));
+		return copy.TypeApply(
+		    tree, toConstructor1(fn, constr, addEmpty), args);
 	    case Ident(_):
-		return toMethodType(
-		    copy.Ident(tree, constr));
+		return copy.Ident(tree, constr);
 	    case Select(Tree qual, _):
-		return toMethodType(
-		    copy.Select(tree, constr, qual));
+		return copy.Select(tree, constr, qual);
 	    default:
 		throw new ApplicationError();
 	    }
 	}
 
-	private Tree toMethodType(Tree tree) {
-	    Type tp = toMethodType(tree.type);
-	    if (tp == tree.type) return tree;
-	    else return tree.duplicate().setType(tp);
-	}
-
-	private Type toMethodType(Type tp) {
+	private Type addEmptyParams(Type tp) {
 	    switch (tp) {
-	    case MethodType(_, _):
-		return tp;
+	    case MethodType(Symbol[] vparams, Type restp):
+		return Type.MethodType(vparams, addEmptyParams(restp));
 	    case PolyType(Symbol[] tparams, Type restp):
-		Type restp1 = toMethodType(restp);
-		if (restp == restp) return tp;
-		else return Type.PolyType(tparams, restp1);
+		return Type.PolyType(tparams, addEmptyParams(restp));
 	    default:
 		return Type.MethodType(Symbol.EMPTY_ARRAY, tp);
 	    }

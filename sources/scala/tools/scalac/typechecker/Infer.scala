@@ -334,7 +334,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     }
   }
 
-  private def viewObj(meth: Tree, msym: Symbol) = msym.getType() match {
+  private def viewObj(meth: Tree) = meth.getType() match {
     case Type$MethodType(params: Array[Symbol], _) =>
       assert(params.length == 1);
       val paramsym = params(0).cloneSymbol(getContext.owner);
@@ -360,10 +360,12 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	  case Type$PolyType(vtparams, vrestype) =>
 	    assert(vtparams.length != 0);
 	    vmeth = exprInstance(vmeth, vtparams, vrestype, vtype);
-	    assert(vmeth.getType().isSubType(vtype));
 	  case _ =>
 	}
-	viewObj(vmeth, v.sym)
+	val vobj = viewObj(vmeth);
+	if (!vobj.getType().isSubType(vtype))
+	  assert(false, "view argument " + vobj + ":" + vobj.getType() + " is not a subtype of view param type " + vtype);
+	vobj
       } else {
 	error(pos,
 	      "type instantiation with [" +
@@ -407,18 +409,19 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   }
 
   def completeTypeApply(tree: Tree): Tree = {
+    //System.out.println("complete type apply: " + tree + ":" + tree.getType());//DEBUG
     tree match {
-    case Tree$TypeApply(fn, targs) =>
-      fn.getType() match {
-	case Type$PolyType(tparams, restp) if tparams.length == targs.length =>
-	  if (isViewBounded(tparams)) {
-	    val result = passViewArgs(tree, tparams, restp, Tree.typeOf(targs));
-	    //System.out.println("completed type apply: " + result + ":" + result.getType());//DEBUG
-	    result
-	  } else tree
-	case _ => tree
-      }
-    case _ => tree
+      case Tree$TypeApply(fn, targs) =>
+	fn.getType() match {
+	  case Type$PolyType(tparams, restp) if tparams.length == targs.length =>
+	    if (isViewBounded(tparams)) {
+	      val result = passViewArgs(tree, tparams, restp, Tree.typeOf(targs));
+	      //System.out.println("completed type apply: " + result + ":" + result.getType());//DEBUG
+	      result
+	    } else tree
+	  case _ => tree
+	}
+      case _ => tree
     }
   }
 
@@ -905,6 +908,19 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     tvars
   }
 
+  private def methTypeArgsSkipViews(
+    tparams: Array[Symbol], params: Array[Symbol],
+    argtypes: Array[Type], restpe: Type,
+    pt: Type,
+    needToSucceed: boolean, regularValue: boolean): Array[Type] = restpe match {
+      case Type$MethodType(params1, restpe1) if isViewBounded(tparams) =>
+	methTypeArgs(
+	  tparams, params1, argtypes, restpe1, pt, needToSucceed, regularValue);
+      case _ =>
+	methTypeArgs(
+	  tparams, params, argtypes, restpe, pt, needToSucceed, regularValue);
+    }
+
   /** Create and attribute type application node. Pass arguments for that
   *  `tparams' prefix which is owned by the tree's symbol. If there are remaining
   *  type parameters, substitute corresponding type arguments for them in the
@@ -957,9 +973,10 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
       case _ =>
 	if (tparams.length != 0) {
-	  var targs: Array[Type] = exprTypeArgs(tparams, restype, pt1);
+	  val skippedRestype = skipViewParams(tparams, restype);
+	  var targs: Array[Type] = exprTypeArgs(tparams, skippedRestype, pt1);
 	  if (targs == null)
-	    targs = exprTypeArgs(tparams, restype, pt2);
+	    targs = exprTypeArgs(tparams, skippedRestype, pt2);
 	  if (targs == null)
 	    throw new Type$Error(
 	      typeErrorMsg(
@@ -984,7 +1001,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	System.arraycopy(tparams1, 0, tparams2, tparams.length, tparams1.length);
 	exprInstance(tree, tparams2, restype1, pt)
       case _ =>
-	val targs: Array[Type] = exprTypeArgs(tparams, restype, pt);
+	val targs: Array[Type] =
+	  exprTypeArgs(tparams, skipViewParams(tparams, restype), pt);
 	if (targs == null)
 	  throw new Type$Error(
 	    "polymorphic expression of type " + tree.getType() +
@@ -1010,14 +1028,8 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       case Type$MethodType(params, restpe) =>
 	var targs: Array[Type] = _;
 	try {
-	  restpe match {
-	    case Type$MethodType(params1, restpe1) if isViewBounded(tparams) =>
-	      targs = methTypeArgs(
-		tparams, params1, argtypes, restpe1, pt, true, false);
-	    case _ =>
-	      targs = methTypeArgs(
-		tparams, params, argtypes, restpe, pt, true, false);
-	  }
+	  targs = methTypeArgsSkipViews(
+	    tparams, params, argtypes, restpe, pt, true, false);
 	} catch {
 	  case ex: NoInstance =>
 	    throw new Type$Error(
@@ -1054,17 +1066,18 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 
       case _ =>
 	val tvars: Array[Type] = freshVars(tparams);
-	val restype1: Type = restype.subst(tparams, tvars);
+	val restype0: Type = skipViewParams(tparams, restype);
+	val restype1: Type = restype0.subst(tparams, tvars);
 	val ctpe1: Type = restype1.resultType();
 	if (ctpe1.isSubType(pt)) {
 	  try {
 	    { var i = 0; while (i < tvars.length) {
-	      solve(tparams, true, variance(tparams, restype.resultType()),
+	      solve(tparams, true, variance(tparams, restype0.resultType()),
 		    tvars, i);
 	      i = i + 1
 	    }}
 	    checkBounds(tparams, tvars, "inferred ");
-	    tree.setType(restype.subst(tparams, tvars));
+	    tree.setType(restype0.subst(tparams, tvars));
 	    //System.out.println("inferred constructor type: " + tree.getType());//DEBUG
 	  } catch {
 	    case ex: NoInstance =>
@@ -1092,7 +1105,9 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     isApplicable(ftpe, argtypes, pt, Names.EMPTY, true);
 
   def isApplicable(ftpe: Type, argtypes: Array[Type], pt: Type,
-		   fieldName: Name, regularValue: boolean): boolean = ftpe match {
+		   fieldName: Name, regularValue: boolean): boolean = {
+    //if (!regularValue) System.out.println("is app " + ftpe + " to " + ArrayApply.toString(argtypes.asInstanceOf[Array[Object]]));//DEBUG
+    ftpe match {
     case Type$MethodType(params, restpe) =>
       // sequences ? List( a* )
       val formals: Array[Type] = formalTypes(params, argtypes.length);
@@ -1102,16 +1117,17 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
       (fieldName == Names.EMPTY || restpe.lookup(fieldName).kind != NONE)
     case Type$PolyType(tparams, Type$MethodType(params, restpe)) =>
       try {
-	val targs: Array[Type] = methTypeArgs(
+	val targs: Array[Type] = methTypeArgsSkipViews(
 	  tparams, params, argtypes, restpe, pt, false, regularValue);
 	if (targs != null) {
 	  val uninstantiated: Array[Symbol] = normalizeArgs(targs, tparams, restpe);
+	  val restpe1 = skipViewParams(tparams, restpe);
 	  isWithinBounds(tparams, targs) &&
 	  exprTypeArgs(uninstantiated,
-		       restpe.subst(tparams, targs), pt,
+		       restpe1.subst(tparams, targs), pt,
 		       regularValue) != null &&
 	  (fieldName == Names.EMPTY ||
-	   restpe.subst(tparams, targs).lookup(fieldName).kind != NONE)
+	   restpe1.subst(tparams, targs).lookup(fieldName).kind != NONE)
 	} else {
 	  false
 	}
@@ -1124,7 +1140,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
 	ftpe1 != ftpe &&
 	isApplicable(ftpe1, argtypes, pt, fieldName, false);
       } else false
-  }
+  }}
 
   def applyType(tp: Type) =
     if (tp.isObjectType()) {
@@ -1274,6 +1290,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
   def bestView(tp: Type, pt: Type, name: Name): View = {
     var best: View = null;
     var viewMeths = getViews(tp);
+    //System.out.println("best view for " + tp + "/" + pt + " in " + viewMeths);//DEBUG
     val argtypes = NewArray.Type(tp);
     while (!viewMeths.isEmpty) {
       if (isApplicable(viewMeths.head.symtype, argtypes, pt, name, false) &&

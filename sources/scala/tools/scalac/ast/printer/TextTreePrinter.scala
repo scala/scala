@@ -166,7 +166,7 @@ class TextTreePrinter(writer: PrintWriter) with TreePrinter {
   protected final val TXT_EQUAL         = Simple("=");
   protected final val TXT_SUPERTYPE     = Simple(">:");
   protected final val TXT_SUBTYPE       = Simple("<:");
-  protected final val TXT_VIEWBOUND     = Simple("<+");
+  protected final val TXT_VIEWBOUND     = Simple("<%");
   protected final val TXT_HASH          = Simple("#");
   protected final val TXT_RIGHT_ARROW   = Simple("=>");
   protected final val TXT_LEFT_PAREN    = Simple("(");
