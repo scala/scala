@@ -842,7 +842,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
 
     private Tree elimTypeNode(Tree tree) {
 	if (tree.isType() && !tree.isMissing())
-	    return make.TypeTerm(tree.pos).setType(tree.type);
+	    return gen.mkType(tree.pos, tree.type);
 	else
 	    return tree;
     }
