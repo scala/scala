@@ -199,6 +199,7 @@ fastclean	:
 
 clean		: fastclean
 	$(RM) -r $(PROJECT_APIDOCDIR)
+	$(RM) -r $(PROJECT_BOOTTESTDIR)
 	$(RM) -r $(PROJECT_OUTPUTDIR)
 	$(RM) -r $(PROJECT_BOOTSTRAPDIR)
 
@@ -236,6 +237,7 @@ dtd2scala	: .latest-dtd2scala-sc
 dtd2scala	: .latest-dtd2scala-rsrc
 scala4ant	: .latest-scala4ant-sc
 scalatest	: .latest-scalatest-jc
+boottest	: .latest-boottest
 library-doc	: .latest-library-sdc
 
 .PHONY		: fastclean
@@ -254,6 +256,7 @@ library-doc	: .latest-library-sdc
 .PHONY		: dtd2scala
 .PHONY		: scala4ant
 .PHONY		: scalatest
+.PHONY		: boottest
 .PHONY		: library-doc
 
 ##############################################################################
@@ -326,6 +329,18 @@ cvs-fix-perms		:
 	    .latest-bootstrap-library-jc \
 	    .latest-bootstrap-library-sc \
 	    .latest-bootstrap-scalac-sc;
+	touch $@
+
+.latest-boottest	:
+	$(MKDIR) -p $(PROJECT_BOOTTESTDIR)
+	$(MKDIR) -p $(PROJECT_BOOTTESTDIR)/bin
+	$(CP) $(SCRIPTS_WRAPPER).tmpl $(PROJECT_BOOTTESTDIR)/bin/
+	@$(make) \
+	    INSTALL_PREFIX=$(PROJECT_BOOTTESTDIR) \
+	    PROJECT_BINARYDIR=$(PROJECT_BOOTTESTDIR)/bin \
+	    PROJECT_OUTPUTDIR=$(PROJECT_BOOTTESTDIR)/classes \
+	    LIBRARY_SCALAC=$(PROJECT_BINARYDIR)/scalac \
+	    boot="boottest-" system;
 	touch $@
 
 .latest%scalac-jc	: $(SCALAC_JC_FILES)
