@@ -799,19 +799,15 @@ public class Primitives {
     private void addAdd(Symbol clasz, int count) {
         Name name = Names.ADD;
         Symbol symbol = clasz.lookup(name);
-        assert symbol != Symbol.NONE : Debug.show(clasz) + "." + name;
+        assert !symbol.isNone(): Debug.show(clasz) + "." + name;
         Symbol[] alts = symbol.alternativeSymbols();
-        // !!! assert count + 2 == alts.length : (count + 2) + " != " + alts.length;
-        boolean pos = false;
+        boolean unary = false;
         boolean concat = false;
         for (int i = 0; i < alts.length; i++) {
             switch (alts[i].type()) {
             case MethodType(Symbol[] vparams, _):
-                if (vparams.length == 0) {
-                    // !!! System.out.println("!!! Ignoring pico bridge method " + Debug.show(clasz) + "." + name);
-                    break;
-                }
-                if (vparams[0].type().equals(definitions.STRING_TYPE())) {
+                assert vparams.length == 1: alts[i].type();
+                if (vparams[0].type().isSameAs(definitions.STRING_TYPE())) {
                     addPrimitive(alts[i], Primitive.CONCAT);
                     assert !concat;
                     concat = true;
@@ -822,45 +818,38 @@ public class Primitives {
                 break;
             case PolyType(Symbol[] tparams, _):
                 addPrimitive(alts[i], Primitive.POS);
-                assert !pos;
-                pos = true;
+                assert !unary;
+                unary = true;
                 break;
             default:
-                System.out.println("!!! symbol = " + Debug.show(alts[i]));
                 throw Debug.abort("illegal case" , alts[i].type());
             }
         }
-        assert pos && concat : pos + "," + concat;
+        assert count == 0 && unary && concat: count+" - "+unary+" - "+concat;
     }
 
     private void addSub(Symbol clasz, int count) {
         Name name = Names.SUB;
         Symbol symbol = clasz.lookup(name);
-        assert symbol != Symbol.NONE : Debug.show(clasz) + "." + name;
+        assert !symbol.isNone(): Debug.show(clasz) + "." + name;
         Symbol[] alts = symbol.alternativeSymbols();
-        // !!! assert count + 1 == alts.length : (count + 1) + " != " + alts.length;
-        boolean pos = false;
+        boolean unary = false;
         for (int i = 0; i < alts.length; i++) {
             switch (alts[i].type()) {
-            case MethodType(Symbol[] vparams, _):
-                if (vparams.length == 0) {
-                    // !!! System.out.println("!!! Ignoring pico bridge method " + Debug.show(clasz) + "." + name);
-                    break;
-                }
+            case MethodType(_, _):
                 addPrimitive(alts[i], Primitive.SUB);
                 count--;
                 break;
-            case PolyType(Symbol[] tparams, _):
+            case PolyType(_, _):
                 addPrimitive(alts[i], Primitive.NEG);
-                assert !pos;
-                pos = true;
+                assert !unary;
+                unary = true;
                 break;
             default:
-                System.out.println("!!! symbol = " + Debug.show(alts[i]));
                 throw Debug.abort("illegal case" , alts[i].type());
             }
         }
-        assert pos : pos;
+        assert count == 0 && unary: count + " - " + unary;
     }
 
     private void addAll(Symbol clasz,Name name,Primitive primitive,int count) {
