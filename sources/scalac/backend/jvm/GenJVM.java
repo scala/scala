@@ -18,6 +18,8 @@ import scalac.symtab.*;
 import scalac.symtab.classfile.ClassfileConstants;
 import scalac.transformer.*;
 
+import ch.epfl.lamp.util.Pair;
+
 import ch.epfl.lamp.fjbg.*;
 
 import java.util.*;
@@ -180,10 +182,6 @@ class GenJVM {
             leaveMethod(ctx1);
         } break;
 
-        case LabelDef(Tree.Ident[] params, Tree rhs):
-            global.fail("not implemented yet " + tree);
-            break;
-
         case Typed(Tree expr, _):
             gen(ctx, expr);
             break;
@@ -219,6 +217,14 @@ class GenJVM {
         Symbol sym = tree.symbol();
 
         switch (tree) {
+        case LabelDef(Tree.Ident[] params, Tree rhs): {
+            JLabel label = new JLabel();
+            ctx.code.anchorLabelToNext(label);
+            ctx.labels.put(sym, new Pair(label, params));
+            generatedType = genLoad(ctx, rhs, expectedType);
+            ctx.labels.remove(sym);
+        } break;
+
         case Block(Tree[] stats): {
             int statsNum = stats.length;
             for (int i = 0; i < statsNum - 1; ++i)
@@ -261,8 +267,23 @@ class GenJVM {
         } break;
 
         case Apply(Tree fun, Tree[] args): {
-            if (isKnownPrimitive(fun.symbol())) {
-                Primitive prim = prims.getPrimitive(fun.symbol());
+            Symbol funSym = fun.symbol();
+
+            if (funSym.isLabel()) {
+                Pair/*<JLabel, Tree[]>*/ labelAndIdents =
+                    (Pair)ctx.labels.get(funSym);
+                assert labelAndIdents != null : Debug.show(funSym);
+
+                JLabel label = (JLabel)labelAndIdents.fst;
+                Tree[] idents = (Tree[])labelAndIdents.snd;
+                assert idents.length == args.length;
+
+                for (int i = 0; i < args.length; ++i)
+                    genLoad(ctx, args[i], typeStoJ(args[i].type));
+                for (int i = idents.length; i > 0; --i)
+                    genStoreEpilogue(ctx, idents[i-1]);
+            } else if (isKnownPrimitive(funSym)) {
+                Primitive prim = prims.getPrimitive(funSym);
 
                 switch (prim) {
                 case CONCAT:
@@ -344,7 +365,6 @@ class GenJVM {
                     throw Debug.abort("unknown primitive ", prim);
                 }
             } else {
-                Symbol funSym = fun.symbol();
                 JMethodType funType = (JMethodType)typeStoJ(funSym.info());
                 JType[] argTypes = funType.getArgumentTypes();
 
@@ -1514,14 +1534,17 @@ class Context {
     public final JMethod method;
     public final JExtendedCode code;
     public final Map/*<Symbol,JLocalVariable>*/ locals;
+    public final Map/*<Symbol,Pair<JLabel,Tree[]>>*/ labels;
     public final boolean isModuleClass;
 
-    public final static Context EMPTY = new Context(null, null, null, null, false);
+    public final static Context EMPTY =
+        new Context(null, null, null, null, null, false);
 
     private Context(String sourceFileName,
                     JClass clazz,
                     JMethod method,
                     Map locals,
+                    Map labels,
                     boolean isModuleClass) {
         this.sourceFileName = sourceFileName;
         this.clazz = clazz;
@@ -1531,15 +1554,16 @@ class Context {
         else
             this.code = (JExtendedCode)method.getCode();
         this.locals = locals;
+        this.labels = labels;
         this.isModuleClass = isModuleClass;
     }
 
     public Context withSourceFileName(String sourceFileName) {
-        return new Context(sourceFileName, null, null, null, false);
+        return new Context(sourceFileName, null, null, null, null, false);
     }
 
     public Context withClass(JClass clazz, boolean isModuleClass) {
-        return new Context(this.sourceFileName, clazz, null, null, isModuleClass);
+        return new Context(this.sourceFileName, clazz, null, null, null, isModuleClass);
     }
 
     public Context withMethod(JMethod method, Map locals) {
@@ -1548,6 +1572,7 @@ class Context {
                            this.clazz,
                            method,
                            locals,
+                           new HashMap(),
                            this.isModuleClass);
     }
 }
