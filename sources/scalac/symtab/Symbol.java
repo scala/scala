@@ -1146,79 +1146,55 @@ public abstract class Symbol implements Modifiers, Kinds {
         }
     }
 
-    /** The symbol which is overridden by this symbol in base class `base'
-     *  `base' must be a superclass of this.owner().
+    /**
+     * Returns the symbol in type "base" which is overridden by this
+     * symbol in class "this.owner()". Returns "NONE" if no such
+     * symbol exists. The type "base" must be a supertype of class
+     * "this.owner()". If "exact" is true, overriding is restricted to
+     * symbols that have the same type. The method may return this
+     * symbol only if "base.symbol()" is equal to "this.owner()".
      */
-    public Symbol overriddenSymbol(Type base) {
+    public final Symbol overriddenSymbol(Type base, boolean exact) {
+        return overriddenSymbol(base, owner(), exact);
+    }
+    public final Symbol overriddenSymbol(Type base) {
         return overriddenSymbol(base, false);
     }
-    public Symbol overriddenSymbol(Type base, boolean exact) {
-        assert !isOverloaded() : this;
-        Symbol sym1 = base.lookupNonPrivate(name);
-        if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
-            return Symbol.NONE;
-        } else {
-            //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + ":" + owner.thisType().memberType(sym1) + sym1.locationString()); //DEBUG
 
-            Type symtype = this.type().derefDef();
-            Type sym1type = owner.thisType().memberType(sym1).derefDef();
-            switch (sym1type) {
-            case OverloadedType(Symbol[] alts, Type[] alttypes):
-                for (int i = 0; i < alts.length; i++) {
-                    if (exact
-                        ? symtype.isSameAs(alttypes[i].derefDef())
-                        : symtype.isSubType(alttypes[i].derefDef()))
-                        return alts[i];
-                }
-                return Symbol.NONE;
-            default:
-                if (exact
-                    ? symtype.isSameAs(sym1type)
-                    : symtype.isSubType(sym1type)) return sym1;
-                else {
-                    if (Global.instance.debug) System.out.println(this + locationString() + " does not override " + sym1 + sym1.locationString() + ", since " + symtype + (exact ? " != " : " !<= ") + sym1type);//DEBUG
-                    return Symbol.NONE;
-                }
-            }
-        }
-    }
-
-    /** The symbol which overrides this symbol in subclass `sub'
-     *  `sub' must be a subclass of this.owner().
+    /**
+     * Returns the symbol in type "base" which is overridden by this
+     * symbol in "clasz". Returns "NONE" if no such symbol exists. The
+     * type "base" must be a supertype of "clasz" and "this.owner()"
+     * must be a superclass of "clasz". If "exact" is true, overriding
+     * is restricted to symbols that have the same type.  The method
+     * may return this symbol if "base.symbol()" is a subclass of
+     * "this.owner()".
      */
-    public Symbol overridingSymbol(Type sub) {
-        return overridingSymbol(sub, false);
+    public final Symbol overriddenSymbol(Type base, Symbol clasz, boolean exact) {
+        Type.Relation relation = exact
+            ? Type.Relation.SameType
+            : Type.Relation.SuperType;
+        return base.lookup(this, clasz.thisType(), relation);
     }
-    public Symbol overridingSymbol(Type sub, boolean exact) {
-        assert !isOverloaded() : this;
-        Symbol sym1 = sub.lookup(name);
-        if (sym1.kind == Kinds.NONE || (sym1.flags & STATIC) != 0) {
-            return Symbol.NONE;
-        } else {
-            //System.out.println(this + ":" + this.type() + locationString() + " overrides? " + sym1 + sym1.type() + sym1.locationString()); //DEBUG
-            //System.out.println(owner.thisType());//DEBUG
+    public final Symbol overriddenSymbol(Type base, Symbol clasz) {
+        return overriddenSymbol(base, clasz, false);
+    }
 
-            Type symtype = sub.memberType(this).derefDef();
-            Type sym1type = sub.memberType(sym1).derefDef();
-            switch (sym1type) {
-            case OverloadedType(Symbol[] alts, Type[] alttypes):
-                for (int i = 0; i < alts.length; i++) {
-                    if (exact
-                        ? alttypes[i].derefDef().isSameAs(symtype)
-                        : alttypes[i].derefDef().isSubType(symtype))
-                        return alts[i];
-                }
-                return Symbol.NONE;
-            default:
-                if (exact
-                    ? sym1type.isSameAs(symtype)
-                    : sym1type.isSubType(symtype)) return sym1;
-                else {
-                    if (Global.instance.debug) System.out.println(this + locationString() + " is not overridden by " + sym1 + sym1.locationString() + ", since " + sym1type + (exact ? " != " : " !<= ") + symtype);//DEBUG
-                    return Symbol.NONE;
-                }
-            }
-        }
+    /**
+     * Returns the symbol in type "sub" which overrides this symbol in
+     * class "sub.symbol()". Returns this symbol if no such symbol
+     * exists. The class "sub.symbol()" must be a subclass of
+     * "this.owner()". If "exact" is true, overriding is restricted to
+     * symbols that have the same type.
+     */
+    public final Symbol overridingSymbol(Type sub, boolean exact) {
+        Type.Relation relation = exact
+            ? Type.Relation.SameType
+            : Type.Relation.SubType;
+        return sub.lookup(this, sub, relation);
+    }
+    public final Symbol overridingSymbol(Type sub) {
+        return overridingSymbol(sub, false);
     }
 
     /** Does this symbol override that symbol?
