@@ -54,6 +54,18 @@ class CodeFactory extends PatternTool {
 	return defs.getType( Names.scala_List ).symbol() ;
     }
 
+    Symbol seqListSym_isEmpty() {
+	return seqListSym().lookup( ISEMPTY_N );
+    }
+
+    Symbol seqListSym_head() {
+	return seqListSym().lookup( HEAD_N );
+    }
+
+    Symbol seqListSym_tail() {
+	return seqListSym().lookup( TAIL_N );
+    }
+
     /*
     Symbol seqConsSym() {
 	return defs.getType( Names.scala_COLONCOLON ).symbol() ;
@@ -95,6 +107,18 @@ class CodeFactory extends PatternTool {
 	Scope scp = iterableSym().members(); return scp.lookup( Names.elements );
     }
 
+    Symbol andSym() {
+        return defs.BOOLEAN_CLASS.lookup(AND_N);
+    }
+
+    Symbol orSym() {
+        return defs.BOOLEAN_CLASS.lookup(OR_N);
+    }
+
+    Symbol failSym() {
+        return defs.SCALA_CLASS.lookup(MATCHERROR_N).lookup(FAIL_N);
+    }
+
 
     public CodeFactory( Unit unit, Infer infer, int pos ) {
 	super( unit, infer );
@@ -109,10 +133,7 @@ class CodeFactory extends PatternTool {
 	assert cond != null:"cond is null";
 	assert thenBody != null:"thenBody is null";
 	assert elseBody != null:"elseBody is null";
-	return make.If( thenBody.pos,
-			cond,
-			thenBody,
-			elseBody ).setType( elseBody.type() );
+	return gen.If( thenBody.pos, cond, thenBody, elseBody );
     }
 
     /** a faked switch statement
@@ -135,15 +156,6 @@ class CodeFactory extends PatternTool {
 
 	return result ;
     }
-
-    /** code for a real switch statement
-     */
-	Tree Switch(Tree selector,
-	            int[] tags,
-	            Tree[] bodies,
-	            Tree defaultBody) {
-		return make.Switch(selector.pos, selector, tags, bodies, defaultBody);
-	}
 
     /** returns `List[ elemType ]' */
       Type SeqListType( Type elemType ) {
@@ -192,68 +204,11 @@ class CodeFactory extends PatternTool {
 	return newIterator( seqObj, getElemType_Sequence( seqObj.type() ));
     }
 
-    /** FIXME - short type
-      Tree ignoreValue1( Type asType ) {
-            if( asType.isSameAs(defs.BYTE_TYPE ))
-                  return make.Literal(pos, new Integer( 0 ))
-                        .setType( defs.INT_TYPE );
-            else if( asType.isSameAs( defs.CHAR_TYPE ))
-                  return make.Literal(pos, new Character( 'a' ))
-                        .setType( defs.CHAR_TYPE );
-            else if( asType.isSameAs(defs.SHORT_TYPE ))
-		return make.Literal(pos, new Integer( 0 ))//Short
-                        .setType( defs.SHORT_TYPE );
-            else if( asType.isSameAs(defs.INT_TYPE ))
-                  return gen.mkIntLit( pos, 0 );
-            else if( asType.isSameAs(defs.LONG_TYPE ))
-                  return make.Literal(pos, new Long( 0 ))
-                        .setType( defs.LONG_TYPE );
-            else if( asType.isSameAs(defs.FLOAT_TYPE ))
-                  return make.Literal(pos, new Float( 0 ))
-                        .setType( defs.FLOAT_TYPE );
-            else if( asType.isSameAs(defs.DOUBLE_TYPE ))
-                  return make.Literal(pos, new Double( 0 ))
-                        .setType( defs.DOUBLE_TYPE );
-            else if( asType.isSameAs(defs.BOOLEAN_TYPE ))
-                  return gen.mkBooleanLit(pos, false);
-            else if( asType.isSameAs(defs.STRING_TYPE ))
-                  return make.Literal(pos, "")
-                        .setType( defs.STRING_TYPE );
-	    else
-		return Null( asType );
-	    //throw new ApplicationError("don't know how to handle "+asType);
-      }
-     */
-
-    /** code `null'
-    Tree Null( Type asType ) {
-	return gen.Ident(pos, defs.NULL );
-    }
-     */
-
-    // the caller needs to set the type !
-    Tree  _applyNone( Tree arg ) {
-	return make.Apply(pos, arg, Tree.EMPTY_ARRAY );
-    }
-
     /** code `Nil'
         Tree _seqTraceNil( Type elemType ) {
 	return newSeqNil( null );
     }
      */
-
-
-      /** creates an scala.Int constant
-      Tree Int( int val ) {
-            return Int( new Integer( val ));
-      }
-
-      Tree Int( Integer valI ) {
-            return make.Literal( pos, valI )
-                  .setType( defs.INT_TYPE );
-
-      }
-       */
 
       //                       `SeqCons[ elemType ]'
     /*
@@ -308,34 +263,25 @@ class CodeFactory extends PatternTool {
     /** `it.next()'
      */
     public Tree _next( Tree iter ) {
-	Type elemType = getElemType_Iterator( iter.type() );
-	Symbol nextSym = seqIterSym_next();
-	return _applyNone( gen.Select( iter, nextSym )).setType( elemType );
+	return gen.mkApply__(gen.Select(iter, seqIterSym_next()));
     }
 
     /** `it.hasNext()'
      */
     public Tree _hasNext( Tree iter ) {
-
-	Symbol hasNextSym = seqIterSym_hasNext();
-
-	return _applyNone( gen.Select( iter, hasNextSym )).setType( defs.BOOLEAN_TYPE );
+	return gen.mkApply__(gen.Select(iter, seqIterSym_hasNext()));
     }
 
     /** `!it.hasCur()'
      */
     public Tree _not_hasNext( Tree iter ) {
-	return _applyNone( gen.Select( _hasNext( iter ), notSym ))
-	    .setType( defs.BOOLEAN_TYPE );
+	return gen.mkApply__(gen.Select(_hasNext(iter), notSym));
     }
 
       /** `trace.isEmpty'
        */
       public Tree isEmpty( Tree iter ) {
-	  Scope scp = seqListSym()/*TraceSym()*/.members();
-            Symbol isEmptySym = scp.lookup ( ISEMPTY_N );
-            return _applyNone( gen.Select( iter, isEmptySym ))
-                  .setType( defs.BOOLEAN_TYPE );
+          return gen.mkApply__(gen.Select(iter, seqListSym_isEmpty()));
       }
 
     Tree SeqTrace_headElem( Tree arg ) { // REMOVE SeqTrace
@@ -404,7 +350,7 @@ class CodeFactory extends PatternTool {
 		System.arraycopy(ts0, 0, ts1, ts.length - 1, ts0.length);
 		return Block(pos, ts1, tpe);
             }
-        return make.Block(pos, ts).setType(tpe);
+        return gen.Block(pos, ts);
     }
 
      // unused
@@ -425,14 +371,7 @@ class CodeFactory extends PatternTool {
 	case Literal(Object value):
 	    if (((Boolean)value).booleanValue()) return left;
         }
-        Symbol fun = left.type.lookup(AND_N);
-        return make.Apply(
-			  left.pos,
-			  make.Select(
-				      left.pos,
-				      left,
-				      AND_N).setType(typeOf(fun)).setSymbol(fun),
-			  new Tree[]{right}).setType(defs.BOOLEAN_TYPE);
+        return gen.mkApply_V(gen.Select(left, andSym()), new Tree[]{right});
     }
 
     protected Tree Or(Tree left, Tree right) {
@@ -444,103 +383,22 @@ class CodeFactory extends PatternTool {
 	case Literal(Object value):
 	    if (!((Boolean)value).booleanValue()) return left;
         }
-        Symbol fun = left.type.lookup(OR_N);
-        return make.Apply(
-			  left.pos,
-			  make.Select(
-				      left.pos,
-				      left,
-				      OR_N).setType(typeOf(fun)).setSymbol(fun),
-			  new Tree[]{right}).setType(defs.BOOLEAN_TYPE);
-    }
-
-    protected Tree Is(Tree tree, Type type) {
-        return
-            make.Apply(
-		       tree.pos,
-		       make.TypeApply(
-				      tree.pos,
-				      make.Select(
-						  tree.pos,
-						  tree,
-						  defs.IS.name).setType(typeOf(defs.IS)).setSymbol(defs.IS),
-				      new Tree[]{gen.mkType(tree.pos, type)})
-		       .setType(Type.MethodType(Symbol.EMPTY_ARRAY, defs.BOOLEAN_TYPE)),
-		       Tree.EMPTY_ARRAY).setType(defs.BOOLEAN_TYPE);
-    }
-
-    protected Tree As(Tree tree, Type type) {
-        return
-            make.Apply(
-		       tree.pos,
-		       make.TypeApply(
-				      tree.pos,
-				      make.Select(
-						  tree.pos,
-						  tree,
-						  defs.AS.name).setType(typeOf(defs.AS)).setSymbol(defs.AS),
-				      new Tree[]{gen.mkType(tree.pos, type)})
-		       .setType(Type.MethodType(Symbol.EMPTY_ARRAY, type)),
-		       Tree.EMPTY_ARRAY).setType(type);
+        return gen.Apply(gen.Select(left, orSym()), new Tree[]{right});
     }
 
     protected Tree Equals(Tree left, Tree right) {
-        Symbol fun = left.type.lookup(EQUALS_N);
-        switch (typeOf(fun)) {
-	case OverloadedType(Symbol[] alts, Type[] alttypes):
-	    //System.out.println("**** " + left.type);
-	    Tree t = make.Select(left.pos, left, EQUALS_N);
-	    //for (int i = 0; i < alttypes.length; i++)
-	    //    System.out.println(alts[i] + ": " + alttypes[i]);
-	    infer.methodAlternative(t, alts, alttypes,
-				    new Type[]{right.type}, defs.BOOLEAN_TYPE);
-	    return make.Apply(left.pos, t, new Tree[]{right}).setType(defs.BOOLEAN_TYPE);
-	default:
-	    //System.out.println("#### " + left.type + ": " + fun);
-	    return make.Apply(
-			      left.pos,
-			      make.Select(
-					  left.pos,
-					  left,
-					  EQUALS_N).setType(typeOf(fun)).setSymbol(fun),
-			      new Tree[]{right}).setType(defs.BOOLEAN_TYPE);
-        }
+        Symbol fun = unit.global.definitions.EQEQ;
+        return gen.mkApply_V(gen.Select(left, fun), new Tree[]{right});
     }
 
     protected Tree ThrowMatchError(int pos, Type type) {
-        Symbol matchErrorModule = defs.SCALA.members().lookup(MATCHERROR_N);
-        outer: switch (typeOf(matchErrorModule)) {
-	case OverloadedType(Symbol[] alts, Type[] alttypes):
-	    for (int i = 0; i < alts.length; i++)
-		switch (alttypes[i]) {
-		case TypeRef(_, _, _):
-		    matchErrorModule = alts[i];
-		    break outer;
-		}
-        }
-        Symbol failMethod = typeOf(matchErrorModule).lookup(FAIL_N);
-        return
-	    make.Apply(
-		       pos,
-		       make.TypeApply(
-				      pos,
-				      make.Select(
-						  pos,
-						  make.Select(
-							      pos,
-							      make.Ident(pos, Names.scala).setType(typeOf(defs.SCALA)).setSymbol(defs.SCALA),
-							      MATCHERROR_N)
-						  .setSymbol(matchErrorModule)
-						  .setType(typeOf(matchErrorModule)),
-						  FAIL_N).setType(typeOf(failMethod)).setSymbol(failMethod),
-				      new Tree[]{gen.mkType(pos, type)})
-		       .setType(((Type.PolyType) typeOf(failMethod)).result.subst(
-										  typeOf(failMethod).typeParams(),
-										  new Type[]{type})),
-		       new Tree[]{
-			   make.Literal(pos, unit.toString()).setType(defs.STRING_TYPE),
-			   make.Literal(pos, new Integer(Position.line(pos))).setType(defs.INT_TYPE)
-		       }).setType(type);
+        return gen.mkApplyTV(
+			     gen.mkRef(pos, failSym()),
+                             new Tree[]{gen.mkType(pos, type)},
+                             new Tree[]{
+                                 gen.mkStringLit(pos, unit.toString()),
+                                 gen.mkIntLit(pos, Position.line(pos))
+                             });
     }
 
 

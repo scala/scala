@@ -759,7 +759,7 @@ public class PatternMatcher extends PatternTool {
     			if (defaultBody == null)
     				defaultBody = cf.ThrowMatchError(selector.pos, resultVar.type());
     			if (mappings == null) {
-    				return cf.Switch(selector, new int[0], new Tree[0], defaultBody).setType(resultVar.type());
+    				return gen.Switch(selector, new int[0], new Tree[0], defaultBody, resultVar.type());
     			} else {
     				int n = mappings.length();
     				int[] tags = new int[n];
@@ -770,7 +770,7 @@ public class PatternMatcher extends PatternTool {
     					bodies[n++] = mappings.body;
     					mappings = mappings.next;
     				}
-    				return cf.Switch(selector, tags, bodies, defaultBody).setType(resultVar.type());;
+    				return gen.Switch(selector, tags, bodies, defaultBody, resultVar.type());
     			}
             default:
             	throw new ApplicationError();
@@ -935,13 +935,13 @@ public class PatternMatcher extends PatternTool {
 			bodies[n++] = toTree(cases.node, selector);
 			cases = cases.next;
 		}
-		return cf.Switch(
+		return gen.Switch(
 			gen.Apply(gen.Select(selector.duplicate(), defs.OBJECT_TAG())),
 			tags,
 			bodies,
 			(defaultCase == null) ? gen.mkBooleanLit(selector.pos, false)
-			                      : toTree(defaultCase.and))
-			.setType(defs.BOOLEAN_TYPE);
+			                      : toTree(defaultCase.and),
+                        defs.BOOLEAN_TYPE);
     }
 
     protected Tree toTree(PatternNode node, Tree selector) {
@@ -953,20 +953,20 @@ public class PatternMatcher extends PatternTool {
             case ConstrPat(Symbol casted):
                 return make.If(
                         selector.pos,
-                        cf.Is(selector.duplicate(), node.type),
+                        gen.mkIsInstanceOf(selector.duplicate(), node.type),
                         cf.Block(selector.pos,
                             new Tree[]{
                                 make.ValDef(selector.pos,
                                             0,
                                             casted.name,
                                             gen.mkType(selector.pos, node.type),
-                                            cf.As(selector.duplicate(), node.type))
+                                            gen.mkAsInstanceOf(selector.duplicate(), node.type))
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate())).setType(defs.BOOLEAN_TYPE);
             case SequencePat(Symbol casted, int len):
                 Symbol lenSym = casted.type().lookup(LENGTH_N);
-                Tree t = make.Select(selector.pos, cf.As(selector.duplicate(), node.type), LENGTH_N);
+                Tree t = make.Select(selector.pos, gen.mkAsInstanceOf(selector.duplicate(), node.type), LENGTH_N);
                 switch (lenSym.type()) {
                     case OverloadedType(Symbol[] alts, Type[] alttypes):
                         infer.methodAlternative(t, alts, alttypes, new Type[0], defs.INT_TYPE);
@@ -978,7 +978,7 @@ public class PatternMatcher extends PatternTool {
                 return make.If(
                         selector.pos,
                         cf.And(
-                            cf.Is(selector.duplicate(), node.type),
+                            gen.mkIsInstanceOf(selector.duplicate(), node.type),
                             cf.Equals(
                                 make.Apply(
                                     selector.pos, t,
@@ -991,7 +991,7 @@ public class PatternMatcher extends PatternTool {
                                             0,
                                             casted.name,
                                             gen.mkType(selector.pos, node.type),
-                                            cf.As(selector.duplicate(), node.type))
+                                            gen.mkAsInstanceOf(selector.duplicate(), node.type))
                                     .setType(defs.UNIT_TYPE).setSymbol(casted),
                                 toTree(node.and)}, defs.BOOLEAN_TYPE),
                         toTree(node.or, selector.duplicate()))

@@ -223,11 +223,11 @@ public class Autom2Scala  {
 				     code_state_NEW( i ));
 	}
 	if( optimize )
-	    return loadCurrentElem( cf.Switch( _state(),
+	    return loadCurrentElem( gen.Switch( _state(),
 					       tags,
 					       bodies,
-					       gen.mkIntLit(cf.pos, -1 ))
-				    .setType( funRetType() ) );
+					       gen.mkIntLit(cf.pos, -1 ),
+                                               funRetType()));
 
 	Tree res = code_fail();
 	for( int i = dfa.nstates-2; i>= 0; i-- )
