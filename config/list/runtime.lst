@@ -3,6 +3,7 @@
 ##############################################################################
 # $Id$
 
+Algebraic.java
 AnyVal.java
 Array.java
 Boolean.java
@@ -22,11 +23,11 @@ Function8.java
 Function9.java
 Int.java
 Long.java
+MatchError.java
 Object.java
+Ref.java
 Short.java
 Unit.java
-MatchError.java
-Algebraic.java
 
 runtime/RunTime.java
 
