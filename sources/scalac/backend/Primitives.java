@@ -319,7 +319,8 @@ public class Primitives {
     }
 
     private Symbol getBoxArray(Symbol[] alts, Type type) {
-        return getBoxValue(alts, definitions.ARRAY_TYPE(type));
+        Type array = definitions.ARRAY_CLASS.type();
+        return getBoxValue(alts, Type.appliedType(array, new Type[]{type}));
     }
 
     private Symbol getUniqueTerm(Symbol owner, Name name) {

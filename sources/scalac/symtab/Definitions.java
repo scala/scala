@@ -69,39 +69,57 @@ public class Definitions {
 
     /** The scala.Unit class */
     public final Symbol UNIT_CLASS;
-    public final Type   UNIT_TYPE() {return UNIT_CLASS.type();}
+    public final Type   UNIT_TYPE() {
+        return UNIT_TYPE.type().resultType();
+    }
 
     /** The scala.Boolean class */
     public final Symbol BOOLEAN_CLASS;
-    public final Type   BOOLEAN_TYPE() {return BOOLEAN_CLASS.type();}
+    public final Type   BOOLEAN_TYPE() {
+        return BOOLEAN_TYPE.type().resultType();
+    }
 
     /** The scala.Byte class */
     public final Symbol BYTE_CLASS;
-    public final Type   BYTE_TYPE() {return BYTE_CLASS.type();}
+    public final Type   BYTE_TYPE() {
+        return BYTE_TYPE.type().resultType();
+    }
 
     /** The scala.Short class */
     public final Symbol SHORT_CLASS;
-    public final Type   SHORT_TYPE() {return SHORT_CLASS.type();}
+    public final Type   SHORT_TYPE() {
+        return SHORT_TYPE.type().resultType();
+    }
 
     /** The scala.Char class */
     public final Symbol CHAR_CLASS;
-    public final Type   CHAR_TYPE() {return CHAR_CLASS.type();}
+    public final Type   CHAR_TYPE() {
+        return CHAR_TYPE.type().resultType();
+    }
 
     /** The scala.Int class */
     public final Symbol INT_CLASS;
-    public final Type   INT_TYPE() {return INT_CLASS.type();}
+    public final Type   INT_TYPE() {
+        return INT_TYPE.type().resultType();
+    }
 
     /** The scala.Long class */
     public final Symbol LONG_CLASS;
-    public final Type   LONG_TYPE() {return LONG_CLASS.type();}
+    public final Type   LONG_TYPE() {
+        return LONG_TYPE.type().resultType();
+    }
 
     /** The scala.Float class */
     public final Symbol FLOAT_CLASS;
-    public final Type   FLOAT_TYPE() {return FLOAT_CLASS.type();}
+    public final Type   FLOAT_TYPE() {
+        return FLOAT_TYPE.type().resultType();
+    }
 
     /** The scala.Double class */
     public final Symbol DOUBLE_CLASS;
-    public final Type   DOUBLE_TYPE() {return DOUBLE_CLASS.type();}
+    public final Type   DOUBLE_TYPE() {
+        return DOUBLE_TYPE.type().resultType();
+    }
 
     //########################################################################
     // Public Fields & Methods - Scala reference classes
@@ -171,7 +189,15 @@ public class Definitions {
     /** The scala.Array class */
     public final Symbol ARRAY_CLASS;
     public final Type   ARRAY_TYPE(Type element) {
-        return getType(ARRAY_CLASS, element);
+        Type type = ARRAY_TYPE.type().resultType();
+        switch (type) {
+        case TypeRef(Type prefix, Symbol clasz, _):
+            return Type.TypeRef(prefix, clasz, new Type[]{element});
+        case UnboxedArrayType(_):
+            return Type.UnboxedArrayType(element);
+        default:
+            throw Debug.abort("illegal case", type);
+        }
     }
 
     /** The scala.MatchError module */
@@ -352,6 +378,20 @@ public class Definitions {
     public final Symbol PATTERN_WILDCARD;
 
     //########################################################################
+    // Private Fields - Symbol
+
+    private final Symbol UNIT_TYPE;
+    private final Symbol BOOLEAN_TYPE;
+    private final Symbol BYTE_TYPE;
+    private final Symbol SHORT_TYPE;
+    private final Symbol CHAR_TYPE;
+    private final Symbol INT_TYPE;
+    private final Symbol LONG_TYPE;
+    private final Symbol FLOAT_TYPE;
+    private final Symbol DOUBLE_TYPE;
+    private final Symbol ARRAY_TYPE;
+
+    //########################################################################
     // Public Constructor
 
     /** Initializes this instance. */
@@ -416,6 +456,30 @@ public class Definitions {
         initClass(ALLREF_CLASS, new Type[]{ANYREF_TYPE()});
         initClass(ALL_CLASS, new Type[]{ANY_TYPE()});
         initAlias(STRING_CLASS, JAVA_STRING_TYPE());
+
+        // create type symbols
+        UNIT_TYPE    = newTerm(Symbol.NONE, Names.Unit   , 0);
+        BOOLEAN_TYPE = newTerm(Symbol.NONE, Names.Boolean, 0);
+        BYTE_TYPE    = newTerm(Symbol.NONE, Names.Byte   , 0);
+        SHORT_TYPE   = newTerm(Symbol.NONE, Names.Short  , 0);
+        CHAR_TYPE    = newTerm(Symbol.NONE, Names.Char   , 0);
+        INT_TYPE     = newTerm(Symbol.NONE, Names.Int    , 0);
+        LONG_TYPE    = newTerm(Symbol.NONE, Names.Long   , 0);
+        FLOAT_TYPE   = newTerm(Symbol.NONE, Names.Float  , 0);
+        DOUBLE_TYPE  = newTerm(Symbol.NONE, Names.Double , 0);
+        ARRAY_TYPE   = newTerm(Symbol.NONE, Names.Array  , 0);
+
+        initMethod(UNIT_TYPE   , Type.EMPTY_ARRAY, UNIT_CLASS.type());
+        initMethod(BOOLEAN_TYPE, Type.EMPTY_ARRAY, BOOLEAN_CLASS.type());
+        initMethod(BYTE_TYPE   , Type.EMPTY_ARRAY, BYTE_CLASS.type());
+        initMethod(SHORT_TYPE  , Type.EMPTY_ARRAY, SHORT_CLASS.type());
+        initMethod(CHAR_TYPE   , Type.EMPTY_ARRAY, CHAR_CLASS.type());
+        initMethod(INT_TYPE    , Type.EMPTY_ARRAY, INT_CLASS.type());
+        initMethod(LONG_TYPE   , Type.EMPTY_ARRAY, LONG_CLASS.type());
+        initMethod(FLOAT_TYPE  , Type.EMPTY_ARRAY, FLOAT_CLASS.type());
+        initMethod(DOUBLE_TYPE , Type.EMPTY_ARRAY, DOUBLE_CLASS.type());
+        initMethod(ARRAY_TYPE  , Type.EMPTY_ARRAY,
+            Type.appliedType(ARRAY_CLASS.type(), new Type[]{ANYREF_TYPE()}));
 
         // add members to scala.Any
 	ANY_EQ       = newTerm(ANY_CLASS, Names.eq          , 0);
@@ -596,7 +660,7 @@ public class Definitions {
 
     /** Returns the type of given class applied to given type arguments. */
     private Type getType(Symbol clasz, Type[] args) {
-        return Type.appliedType(clasz.typeConstructor(), args);
+        return Type.appliedType(clasz.type(), args);
     }
 
     //########################################################################

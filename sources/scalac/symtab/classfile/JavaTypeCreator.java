@@ -28,6 +28,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
     protected final Type BYTE_TYPE;
     protected final Type BOOLEAN_TYPE;
     protected final Type UNIT_TYPE;
+    protected final Type ARRAY_TYPE;
     protected final Type JAVA_OBJECT_TYPE;
 
     public JavaTypeCreator(Definitions definitions) {
@@ -42,6 +43,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
         this.BYTE_TYPE = definitions.BYTE_CLASS.typeConstructor();
         this.BOOLEAN_TYPE = definitions.BOOLEAN_CLASS.typeConstructor();
         this.UNIT_TYPE = definitions.UNIT_CLASS.typeConstructor();
+        this.ARRAY_TYPE = definitions.ARRAY_CLASS.typeConstructor();
         this.JAVA_OBJECT_TYPE =definitions.JAVA_OBJECT_CLASS.typeConstructor();
     }
 
@@ -90,7 +92,7 @@ public class JavaTypeCreator implements JavaTypeFactory {
     }
 
     public Type arrayType(Type elemtpe) {
-        return definitions.ARRAY_TYPE(elemtpe);
+        return Type.appliedType(ARRAY_TYPE, new Type[]{elemtpe});
     }
 
     public Type methodType(Type[] argtpes, Type restpe, Type[] thrown) {
