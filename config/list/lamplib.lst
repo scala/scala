@@ -3,6 +3,7 @@
 ##############################################################################
 # $Id$
 
+util/AbstractSourceFile.java
 util/CodePrinter.java
 util/ForwardingMap.java
 util/HTMLPrinter.java
@@ -10,6 +11,7 @@ util/HTMLRepresentation.java
 util/Pair.java
 util/Position.java
 util/SourceFile.java
+util/SourceFile2.java
 util/XHTMLPrinter.java
 util/XMLAttribute.java
 
