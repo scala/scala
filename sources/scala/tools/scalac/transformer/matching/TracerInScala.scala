@@ -10,15 +10,5 @@ extends Autom2Scala(dfa, elementType, owner, cf) {
 
   override var optimize = true;
 
-  final def collectVars(pat: Tree) = {
-    val c = new CollectVariableTraverser();
-    c.collectVars(pat)
-  }
-
-  final def containsBinding(pat: Tree) = {
-    val c = new CollectVariableTraverser();
-    c.containsBinding(pat);
-  }
-
 }
 }

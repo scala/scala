@@ -25,7 +25,7 @@ package scala.tools.scalac.transformer.matching {
 
   /**  @param owner owner of the pattern matching expression
    */
-  class Autom2Scala(val dfa: DetWordAutom, val elementType: Type, val owner: Symbol, val cf: CodeFactory)  {
+  class Autom2Scala(val dfa: DetWordAutom, val elementType: Type, val owner: Symbol, val cf: CodeFactory)  with PatternTool(cf.unit) {
 
     protected var optimize = true;
 
@@ -60,7 +60,6 @@ package scala.tools.scalac.transformer.matching {
         case _ => throw new RuntimeException();
       }
     }
-    final def gen = cf.gen;
 
     def callFun(args: Array[Tree]): Tree = {
       gen.mkApply_V(gen.Ident(pos, funSym), args);

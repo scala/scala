@@ -13,7 +13,7 @@ package scala.tools.scalac.transformer.matching {
 class LeftTracerInScala(dfa: DetWordAutom, elementType: Type, owner: Symbol, cf: CodeFactory, val selector: Tree )
 extends TracerInScala( dfa, elementType, owner, cf ) {
 
-  final def defs = cf.defs;
+  //final def defs = cf.defs;
 
     /** symbol of the accumulator ( scala.SequenceList )
      */

@@ -18,6 +18,7 @@ import java.lang.{Integer, Long, Float, Double};
 import scala.Iterator;
 import scala.tools.scalac.util.NewArray;
 import scala.collection.immutable.ListMap ;
+import scala.collection.mutable;
 import scala.collection.mutable.ListBuffer;
 
 package scala.tools.scalac.ast.parser {
@@ -1455,13 +1456,19 @@ class Parser(unit: CompilationUnit) {
 
 //////// PARAMETERS //////////////////////////////////////////////////////////
 
+  // invariant: only only activation record of paramClauses on stack
+  var paramClauses_buffer = new mutable.ArrayBuffer[Array[Tree.ValDef]]();
+
   /** ParamClauses ::= {ParamClause}
   */
-  def paramClauses(): Array[Array[Tree.ValDef]] = {
-    val ts = new ListBuffer[Array[Tree.ValDef]]();
+  def paramClauses(): Array[Array[Tree.ValDef]] = { //pre:  buffer empty
     while (s.token == LPAREN)
-      ts += paramClause(false);
-    ts.copyToArray(new Array[Array[Tree.ValDef]](ts.length), 0)
+      paramClauses_buffer += paramClause(false);
+
+    val res = new Array[Array[Tree.ValDef]](paramClauses_buffer.length);
+    paramClauses_buffer.elements.copyToArray(res, 0);
+    paramClauses_buffer.clear;                      //post: buffer empty
+    res
   }
 
   /** ParamClauseOpt ::= [ParamClause]
@@ -1494,17 +1501,18 @@ class Parser(unit: CompilationUnit) {
   def param(ofPrimaryConstructor: boolean): Tree.ValDef = {
     val pos = s.pos;
     var mods = if (ofPrimaryConstructor) modifiers() | Modifiers.PARAM else Modifiers.PARAM;
-    if (s.token == VAL) {
-      s.nextToken(); mods = mods | Modifiers.PARAMACCESSOR;
-    } else if (mods != Modifiers.PARAM) {
-      accept(VAL);
+    if(ofPrimaryConstructor) {
+      if (s.token == VAL) {
+        s.nextToken(); mods = mods | Modifiers.PARAMACCESSOR;
+      } else if (mods != Modifiers.PARAM) {
+        accept(VAL);
+      }
     }
     if (s.token == DEF) {
       mods = mods | Modifiers.DEF;
-      /* notyet
-      s.unit.warning(s.pos, "def-parameter syntax  `def x: T'  is deprecated \n" +
-                     "use `x: => T' instead");
-      */
+      if(ofPrimaryConstructor)
+        s.unit.warning(s.pos, "def-parameter syntax  `def x: T'  is deprecated \n" +
+                       "use `x: => T' instead");
       s.nextToken();
     }
     val name = ident();

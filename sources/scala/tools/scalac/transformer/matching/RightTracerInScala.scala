@@ -27,7 +27,59 @@ package scala.tools.scalac.transformer.matching {
 class RightTracerInScala(dfa: DetWordAutom, seqVars: Set, owner: Symbol, cf: CodeFactory, pat:Tree, elementType: Type)
 extends TracerInScala( dfa, elementType, owner, cf )  {
 
-  final def defs = cf.defs;
+
+  final def collectVars( pat:Tree  ): HashSet = {
+    var vars  = new HashSet();
+
+    def handleVariableSymbol(sym: Symbol): Unit  = {
+      vars.add( sym );
+    }
+    def isVariableName(name: Name): Boolean = {
+      ( name.isVariable() ) && ( name != Name.fromString("_") ) ;
+    }
+    def isVariableSymbol(sym: Symbol): Boolean = {
+      ( sym != null )&&( !sym.isPrimaryConstructor() );
+    }
+
+    def traverse1(trees: Array[Tree]): Unit = {
+      var i = 0; while(i < trees.length) {
+        traverse(trees(i));
+        i = i + 1
+      }
+    }
+    def traverse(tree: Tree): Unit = {
+      import Tree._ ;
+      tree.match {
+        case x @ Ident(name)=>
+          if(x.symbol() != cf.unit.global.definitions.PATTERN_WILDCARD)
+            throw new ApplicationError("shouldn't happen?!");
+        case Bind(name, subtree) =>
+          var sym: Symbol = _;
+          if( isVariableName( name )
+             && isVariableSymbol( {sym = tree.symbol(); tree.symbol()} ))
+            handleVariableSymbol( sym );
+
+          traverse( subtree );
+
+        case Select(_,_) => ;
+
+        // congruence cases
+        case Apply(fun, args) =>
+            traverse1(args);
+        case Sequence(trees) =>
+            traverse1(trees);
+        case Typed(expr, tpe) => // needed??
+            traverse(expr);
+        case _ : Alternative | _ : Select | _ : Literal =>  ; // no variables
+        case _ =>
+          throw new ApplicationError("unknown pattern node:"+tree+" = "+tree.getClass());
+      }
+    }
+    traverse( pat );
+    return vars;
+  }
+
+  //final def defs = cf.defs;
 
   val allVars: Set = collectVars( pat );
 

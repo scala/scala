@@ -148,7 +148,7 @@ class SequenceMatcher(unit: CompilationUnit) extends PatternTool(unit) {
       newbody = new Array[Tree](body.length);
       var i = 0;
       while(i < body.length) {
-        if( !new CollectVariableTraverser().containsBinding( pat( i ) ) )
+        if( !containsBinding( pat( i ) ) )
           newbody( i ) = body( i ); // no need for binding
         else
           newbody( i ) = addBinderToBody( pat( i ), body( i ) );

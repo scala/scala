@@ -13,9 +13,7 @@ import scala.tools.util.Position;
 import scalac._;
 import scalac.ast.Tree;
 import scalac.ast.TreeGen;
-import scalac.symtab.Type;
-import scalac.symtab.Symbol;
-import scalac.symtab.Modifiers; // test
+import scalac.symtab.{ Modifiers, Symbol, Type };
 import Tree._;
 
 import java.util._;
@@ -38,27 +36,13 @@ package scala.tools.scalac.transformer.matching {
   class WordAutomInScala(dfa: DetWordAutom, elementType: Type, owner: Symbol, cf: CodeFactory, optim: Boolean )
   extends Autom2Scala(dfa, elementType, owner, cf) {
 
-    final def defs = cf.defs;
     this.optimize = this.optimize && optim;
+
     var theDefDef: Tree = _ ;
 
     def getMatcherSwitch(selector: Tree, failTree: Tree, body: Array[Tree], resultType: Type ): Tree = {
 
       var result: Tree = _;
-
-      /*
-       boolean insane = true; // if you set this to false, you get some VerifyErrors
-       // seems fixed
-       if( insane ) { // cascading ifs
-
-       Tree cond[] = new Tree[body.length];
-       for( int i = body.length - 1; i >= 0; i-- ) {
-       cond[i] = cf.Equals(_swres(), gen.mkIntLit( cf.pos, i ));
-       }
-       result = cf.Switch( cond, body, failTree );
-
-       } else {        // real switch
-       */
       val tags = new Array[int](body.length);
       var i = body.length - 1;
       while( i >= 0 ) {
