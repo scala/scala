@@ -3,7 +3,10 @@
 ##############################################################################
 # $Id$
 
+GenerateAll.java
+
 util/AbstractFileExpander.java
+util/AbstractMain.java
 util/TextExpander.java
 util/TextWriter.java
 
