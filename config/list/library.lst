@@ -80,6 +80,7 @@ collection/mutable/JavaMapAdaptor.scala
 collection/mutable/JavaSetAdaptor.scala
 collection/mutable/LinkedList.scala
 collection/mutable/ListBuffer.scala
+collection/mutable/Location.scala
 collection/mutable/Map.scala
 collection/mutable/MapProxy.scala
 collection/mutable/Message.scala
