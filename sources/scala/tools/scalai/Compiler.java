@@ -33,6 +33,8 @@ import scalac.util.Name;
 import scalac.util.Names;
 import scalac.util.Position;
 
+import scala.runtime.RunTime;
+
 public class Compiler {
 
     //########################################################################
@@ -165,6 +167,13 @@ public class Compiler {
         } catch (Exception exception) {
             throw Debug.abort("$bang", exception);
         }
+        java.lang.reflect.Method box_boolean_method = null;
+        try {
+            box_boolean_method =
+                RunTime.class.getMethod("box", new Class[] { boolean.class });
+        } catch (Exception exception) {
+            throw Debug.abort("RunTime.box(boolean)", exception);
+        }
 
         CodePromise eqeq_code = new CodePromise(
             new CodeContainer(
@@ -185,13 +194,17 @@ public class Compiler {
             new CodeContainer(
                 definitions.BANGEQ,
                 Code.Invoke(
-                    Code.Box(
-                        Code.Invoke(
-                            Code.Self, Function.EqEq, new Code[] {
+                    Code.Invoke(
+                        Code.Null,
+                        Function.JavaMethod(box_boolean_method),
+                        new Code[] {
+                            Code.Invoke(
+                                Code.Self, Function.EqEq, new Code[] {
                                 Code.Load(
                                     Code.Null,
                                     Variable.Argument(0)) },
-                            Position.NOPOS)),
+                                Position.NOPOS)},
+                        Position.NOPOS),
                     Function.JavaMethod(bang_method),
                     new Code[0],
                     Position.NOPOS),
