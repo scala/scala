@@ -292,8 +292,13 @@ public class Global {
             start();
             currentPhase.apply(units);
             stop(currentPhase.descriptor.taskDescription());
-            if (currentPhase.descriptor.hasPrintFlag())
+            if (currentPhase.descriptor.hasPrintFlag()) {
+                // go to next phase to print symbols with their new type
+                boolean next = currentPhase.next != null;
+                if (next) currentPhase = currentPhase.next;
                 currentPhase.print(this);
+                if (next) currentPhase = currentPhase.prev;
+            }
             if (currentPhase.descriptor.hasGraphFlag())
                 currentPhase.graph(this);
             if (currentPhase.descriptor.hasCheckFlag())
@@ -322,8 +327,13 @@ public class Global {
             start();
             currentPhase.apply(new Unit[] {unit}); // !!! pb with Analyzer
             stop(currentPhase.descriptor.taskDescription());
-            if (currentPhase.descriptor.hasPrintFlag())
+            if (currentPhase.descriptor.hasPrintFlag()) {
+                // go to next phase to print symbols with their new type
+                boolean next = currentPhase.next != null;
+                if (next) currentPhase = currentPhase.next;
                 currentPhase.print(this);
+                if (next) currentPhase = currentPhase.prev;
+            }
             if (currentPhase.descriptor.hasGraphFlag())
                 currentPhase.graph(this);
             if (currentPhase.descriptor.hasCheckFlag())
