@@ -214,6 +214,52 @@ public class TreeChecker {
     }
 
     //########################################################################
+    // Private Methods - Checking locations
+
+    /** Checks the location. Returns true. */
+    public boolean location(Tree tree) {
+        switch (tree) {
+
+        case Select(_, _):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isTerm(): show(tree);
+            assert !symbol.isMethod(): show(tree);
+            return selection(tree);
+
+        case Ident(_):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isTerm(): show(tree);
+            if (symbol.isModule()) return true;
+            assert vvars.contains(symbol): show(tree);
+            return true;
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    //########################################################################
+    // Private Methods - Checking selection
+
+    /** Checks the selection. Returns true. */
+    public boolean selection(Tree tree) {
+        switch (tree) {
+
+        case Select(Tree qualifier, _):
+            Symbol symbol = tree.symbol();
+            assert symbol != null && symbol.isTerm(): show(tree);
+            Symbol owner = symbol.owner();
+            assert owner.isClassType(): show(tree);
+            Type prefix = qualifier.type();
+            assert prefix.baseType(owner) != Type.NoType: show(tree);
+            return expression(qualifier, prefix);
+
+        default:
+            throw Debug.abort("illegal case", tree);
+        }
+    }
+
+    //########################################################################
     // Private Methods - Declaring symbols
 
     /** Do the trees contain the given symbols? */
