@@ -493,7 +493,8 @@ public class ScalaSearch {
         // complains.
         queryCounter = queryCounter + 1;
         InputStream in =
-            new BufferedInputStream(new StringBufferInputStream(unitString));
+            new BufferedInputStream(new ByteArrayInputStream(unitString.getBytes()));
+        //            new BufferedInputStream(new StringBufferInputStream(unitString));
         SourceFile sourceFile = null;
         try {
             sourceFile = new SourceFile("tmp.scala", in);
