@@ -46,11 +46,6 @@ class CodeFactory extends PatternTool {
 	return result ;
     }
 
-    /** returns `List[ elemType ]' */
-      Type SeqListType( Type elemType ) {
-          return defs.listType(elemType);
-      }
-
     /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
       Type SeqTraceType( Type elemType ) {
           return defs.listType(pairType(defs.INT_TYPE, elemType));
@@ -72,26 +67,6 @@ class CodeFactory extends PatternTool {
     Tree newIterator( Tree seqObj ) {
 	return newIterator( seqObj, getElemType_Sequence( seqObj.type() ));
     }
-
-    /** code `Nil'
-        Tree _seqTraceNil( Type elemType ) {
-	return newSeqNil( null );
-    }
-     */
-
-      //                       `SeqCons[ elemType ]'
-    /*
-
-      Type _seqConsType( Type elemType ) {
-            return Type.TypeRef( defs.SCALA_TYPE,
-                                 seqConsSym(),
-                                 new Type[] { elemType });
-      }
-
-    Tree newSeqNil( Type tpe ) {
-	return gen.Select(gen.Ident(pos, defs.SCALA), seqNilSym());
-    }
-    */
 
     // EXPERIMENTAL
     Tree newRef( Tree init ) {

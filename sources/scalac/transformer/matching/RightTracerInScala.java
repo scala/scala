@@ -108,18 +108,16 @@ public class RightTracerInScala extends TracerInScala  {
 	if( keepType )
 	    helpVar.setType( realVar.type() );
 	else
-	    helpVar.setType( cf.SeqListType( elementType ) );
+	    helpVar.setType( defs.listType(elementType) );
 
 
 	helpMap.put( realVar, helpVar );
 
 	Tree rhs;
 	if( keepType )
-	    rhs = gen.mkDefaultValue(cf.pos,
-				     realVar.type()); //cf.ignoreValue( realVar.type() );
+	    rhs = gen.mkDefaultValue( cf.pos, realVar.type() );
 	else
-	    rhs = /* cf.newRef(  cf.newSeqNil( */ gen.Nil( cf.pos );
- /* ) */;
+	    rhs = gen.Nil( cf.pos );
 	helpVar.flags |= Modifiers.MUTABLE;
 	Tree varDef = gen.ValDef( helpVar, rhs );
 	//((ValDef) varDef).kind = Kinds.VAR;
@@ -129,7 +127,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     Tree prependToHelpVar( Symbol realVar, Tree elem ) {
 	Tree hv = refHelpVar( realVar );
-	return gen.Assign( hv, gen.Cons(cf.pos, elem.type(), elem, hv));//cf.newSeqCons( elem, hv ));
+	return gen.Assign( hv, gen.Cons( cf.pos, elem.type(), elem, hv ));
 	/*
 	  return cf.Block(pos,
 	  new Tree [] {
@@ -175,9 +173,7 @@ public class RightTracerInScala extends TracerInScala  {
 
     // same as in LeftTracer
     Tree code_fail() {
-
 	return cf.ThrowMatchError( _m.pos, defs.UNIT_TYPE );
-
     }
 
     public Tree code_body() {
@@ -190,7 +186,6 @@ public class RightTracerInScala extends TracerInScala  {
 	for( int i = dfa.nstates-1; i >= 0; i-- ) {
 	    body = code_state( i, body );
 	}
-
 
 	Tree t3 = gen.If( cf.isEmpty( _iter() ),
 			  run_finished( 0 ),
@@ -296,7 +291,7 @@ public class RightTracerInScala extends TracerInScala  {
 	for( Iterator it = helpMap3.keySet().iterator(); it.hasNext(); ) {
 	    Symbol vsym = (Symbol) it.next();
 	    Symbol hv   = (Symbol) helpMap3.get( vsym );
-	    hv.setType( cf.SeqListType( elementType ) ) ;
+	    hv.setType( defs.listType( elementType ) ) ;
 	    Tree refv   = gen.Ident(Position.FIRSTPOS, vsym);
 	    Tree refhv  = gen.Ident(Position.FIRSTPOS, hv);
 	    res[ j++ ] = gen.Assign( refhv, refv );
@@ -318,13 +313,15 @@ public class RightTracerInScala extends TracerInScala  {
 				 currentElem(),
 				 defs.BOOLEAN_TYPE );
 
-	// there could be regular expressions under Sequence node, export those later
+	// there could be variables in regular expressions under Sequence node,
+	// export those later
 	Vector varsToExport = NoSeqVariableTraverser.varsNoSeq( pat );
 	HashMap freshenMap = new HashMap();
 
 	HashMap helpMap3 = new HashMap();
 
-	// "freshening": never use the same symbol more than once (in later invocations of _cur_match)
+	// "freshening": never use the same symbol more than once
+	// (in later invocations of _cur_match)
 
 	for( Iterator it = varsToExport.iterator(); it.hasNext(); ) {
 	    Symbol key = (Symbol) it.next();
@@ -336,9 +333,9 @@ public class RightTracerInScala extends TracerInScala  {
 	    helpMap3.put( newSym, helpMap.get( key ));
 	}
 
-	//System.out.println("RightTracerInScala::freshenMap :"+freshenMap);
-	//System.out.println("RightTracerInScala:: -pat :"+pat.toString());
-	//System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
+	System.out.println("RightTracerInScala::freshenMap :"+freshenMap);
+	System.out.println("RightTracerInScala:: -pat :"+pat.toString());
+	System.out.println("RightTracerInScala::varsToExport :"+varsToExport);
 
 
 	// "freshening"
