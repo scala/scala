@@ -12,7 +12,6 @@ PhaseDescriptor.java
 Unit.java
 
 ast/parser/PatternNormalizer.java
-ast/parser/SourceRepresentation.java
 
 ast/DefaultTreeFactory.java
 ast/LazyTreeCopier.java

@@ -13,6 +13,7 @@ import ch.epfl.lamp.util.SourceFile;
 import scalac.*;
 import scalac.ast.parser.*;
 import scalac.typechecker.AnalyzerPhase;
+import scalac.util.SourceRepresentation;
 import java.io.*;
 
 

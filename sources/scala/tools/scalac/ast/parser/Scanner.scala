@@ -8,7 +8,7 @@
 
 import scalac._;
 import scalac.util.Name;
-import scalac.ast.parser.SourceRepresentation;
+import scalac.util.SourceRepresentation;
 
 package scala.tools.scalac.ast.parser {
 
