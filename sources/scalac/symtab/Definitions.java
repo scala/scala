@@ -458,16 +458,16 @@ public class Definitions {
         initAlias(STRING_CLASS, JAVA_STRING_TYPE());
 
         // create type symbols
-        UNIT_TYPE    = newTerm(Symbol.NONE, Names.Unit   , 0);
-        BOOLEAN_TYPE = newTerm(Symbol.NONE, Names.Boolean, 0);
-        BYTE_TYPE    = newTerm(Symbol.NONE, Names.Byte   , 0);
-        SHORT_TYPE   = newTerm(Symbol.NONE, Names.Short  , 0);
-        CHAR_TYPE    = newTerm(Symbol.NONE, Names.Char   , 0);
-        INT_TYPE     = newTerm(Symbol.NONE, Names.Int    , 0);
-        LONG_TYPE    = newTerm(Symbol.NONE, Names.Long   , 0);
-        FLOAT_TYPE   = newTerm(Symbol.NONE, Names.Float  , 0);
-        DOUBLE_TYPE  = newTerm(Symbol.NONE, Names.Double , 0);
-        ARRAY_TYPE   = newTerm(Symbol.NONE, Names.Array  , 0);
+        UNIT_TYPE    = newTerm(ROOT_CLASS, Names.Unit   , 0);
+        BOOLEAN_TYPE = newTerm(ROOT_CLASS, Names.Boolean, 0);
+        BYTE_TYPE    = newTerm(ROOT_CLASS, Names.Byte   , 0);
+        SHORT_TYPE   = newTerm(ROOT_CLASS, Names.Short  , 0);
+        CHAR_TYPE    = newTerm(ROOT_CLASS, Names.Char   , 0);
+        INT_TYPE     = newTerm(ROOT_CLASS, Names.Int    , 0);
+        LONG_TYPE    = newTerm(ROOT_CLASS, Names.Long   , 0);
+        FLOAT_TYPE   = newTerm(ROOT_CLASS, Names.Float  , 0);
+        DOUBLE_TYPE  = newTerm(ROOT_CLASS, Names.Double , 0);
+        ARRAY_TYPE   = newTerm(ROOT_CLASS, Names.Array  , 0);
 
         initMethod(UNIT_TYPE   , Type.EMPTY_ARRAY, UNIT_CLASS.type());
         initMethod(BOOLEAN_TYPE, Type.EMPTY_ARRAY, BOOLEAN_CLASS.type());
@@ -535,7 +535,7 @@ public class Definitions {
         // create global values
 	NULL = newTerm(ROOT_CLASS, Names.null_, 0).setInfo(ALLREF_TYPE());
 	ZERO = newTerm(ROOT_CLASS, Names.ZERO, 0).setInfo(ALL_TYPE());
-        PATTERN_WILDCARD = newTerm(Symbol.NONE, Names.PATTERN_WILDCARD, 0)
+        PATTERN_WILDCARD = newTerm(ROOT_CLASS, Names.PATTERN_WILDCARD, 0)
             .setType(ALL_TYPE());
     }
 
