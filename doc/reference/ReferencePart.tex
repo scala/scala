@@ -36,7 +36,7 @@ to the ASCII fragment \Urange{0000}{007F}.
 In Scala mode, \textit{Unicode escapes} are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 \begin{lstlisting}
-UnicodeEscape ::= \\{\\\\}u{u} HexDigit HexDigit HexDigit HexDigit
+UnicodeEscape ::= \{\\}u{u} HexDigit HexDigit HexDigit HexDigit
 HexDigit      ::= '0' | $\ldots$ | `9' | `A' | $\ldots$ | `F' | `a' | $\ldots$ | `f' |
 \end{lstlisting}
 To construct tokens, characters are distinguished according to the following classes 

@@ -9,6 +9,10 @@
 
 package scala.xml ;
 
+object NodeSeq {
+  final val Empty = new NodeSeq { def theSeq = Nil; }
+}
+
 /** a wrapper around Seq[Node] that adds XPath and comprehension methods */
 abstract class NodeSeq extends Seq[Node] {
 
