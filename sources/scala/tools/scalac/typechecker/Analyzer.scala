@@ -2213,8 +2213,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  if (tpe1 != Tree.Empty && !templ1.getType().isSubType(tpe1.getType()))
 	    error(tree.pos, "" + sym + " does not implement " + tpe1.getType());
 
-	/*
-          // !!! Unfortunately, this breaks separate compilation
  	  val lclass = sym.linkedClass();
  	  // Taken from SymbolLoader.initializeRoot()
  	  if (lclass != null) {
@@ -2225,7 +2223,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
  		allConstr.flags = allConstr.flags | Modifiers.PRIVATE;
  	    }
  	  }
-	*/
 
 	  copy.ModuleDef(tree, sym, tpe, templ1)
 	    .setType(Type.NoType);
