@@ -39,7 +39,8 @@ public class ClassType extends Type {
     }
 
     public boolean isSubType(Type that) {
-        return (that instanceof ClassType
+        return (that == Type.Any)
+            || (that instanceof ClassType
                 && isSubClassType((ClassType)that))
             || (that instanceof CompoundType
                 && isSubCompoundType((CompoundType)that));
@@ -50,16 +51,13 @@ public class ClassType extends Type {
     }
 
     protected final boolean isSubCompoundType(CompoundType that) {
+        // TODO? check refinement
         for (int i = 0; i < that.components.length; ++i) {
             if (!isSubType(that.components[i]))
                 return false;
         }
 
-        return hasSubRefinements(that.refinements);
-    }
-
-    protected boolean hasSubRefinements(Refinement[] thatRefinements) {
-        return thatRefinements.length == 0;
+        return true;
     }
 
     public boolean isSameAs(Type that) {
