@@ -1019,7 +1019,8 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
         for (int i = 0; i < body.length; i++) {
             assert body[i] == Tree.Empty
                 || body[i].definesSymbol() && body[i].symbol().owner() ==clazz:
-                "\nclass : " + clazz +
+                "\nclass : " + Debug.show(clazz) +
+                "\nmember: " + Debug.show(body[i].symbol()) +
                 "\nmember: " + body[i];
         }
 	Global.instance.nextPhase();
