@@ -18,6 +18,7 @@ package scala.collection.mutable;
  *  @version 1.0, 08/07/2003
  */
 trait DefaultMapModel[A, B] extends scala.collection.mutable.Map[A, B] {
+    protected type Entry = DefaultEntry[A,B];
 
     protected def findEntry(key: A): Option[Entry];
 
@@ -40,12 +41,11 @@ trait DefaultMapModel[A, B] extends scala.collection.mutable.Map[A, B] {
         def hasNext = iter.hasNext;
         def next = iter.next.toPair;
     }
+}
 
-    protected class Entry(k: A, v: B) with java.io.Serializable {
-        def key = k;
-        var value = v;
-        def toPair = Pair(k, value);
-        override def toString() = k.toString() + " -> " + value;
-    }
-
+protected class DefaultEntry[A,B](k: A, v: B) with java.io.Serializable {
+    def key = k;
+    var value = v;
+    def toPair = Pair(k, value);
+    override def toString() = k.toString() + " -> " + value;
 }
