@@ -25,7 +25,11 @@ object pilib with Monitor {
 
   //////////////////////// GUARDED PROCESSES /////////////////////////
 
-  type Name = AnyRef;
+  /** Untyped channel. */
+  class UChan {
+    /** Default log function. */
+    var log = (x: Any) => ();
+  }
 
   /** An untyped guarded process.
   * @param n         channel name
@@ -33,10 +37,10 @@ object pilib with Monitor {
   * @param v         transmitted value
   * @param c         continuation
   */
-  case class UGP(n: Name, polarity: boolean, v: Any, c: Any => Any);
+  case class UGP(n: UChan, polarity: boolean, v: Any, c: Any => Any);
 
   /** Typed guarded process. */
-  class GP[a](n: Name, polarity: boolean, v: Any, c: Any => a) {
+  class GP[a](n: UChan, polarity: boolean, v: Any, c: Any => a) {
     val untyped = UGP(n, polarity, v, c);
   }
 
@@ -46,7 +50,7 @@ object pilib with Monitor {
   * Name on which one can emit, receive or that can be emitted or received
   * during a communication.
     */
-  class Chan[a] with Function1[a, Product[a]] {
+  class Chan[a] extends UChan with Function1[a, Product[a]] {
 
     /** Creates an input guarded process. */
     def input[b](c: a => b) =
@@ -74,6 +78,12 @@ object pilib with Monitor {
     /** Syntactic sugar for output. */
     def apply(v: a) =
       new Product(this, v);
+
+    /** Attach a function to be evaluated at each communication event
+    * on this channel. Replace previous attached function.
+    */
+    def attach(f: a => unit) =
+      log = x => f(x.asInstanceOf[a]);
   }
 
   class Product[a](c: Chan[a], v: a) {
@@ -111,13 +121,13 @@ object pilib with Monitor {
   private var sums: List[Sum] = Nil;
 
   /** Test if two lists of guarded processes can communicate. */
-  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[Pair[() => Any, () => Any]] =
+  private def matches(gs1: List[UGP], gs2: List[UGP]): Option[Triple[() => unit, () => Any, () => Any]] =
     Pair(gs1, gs2) match {
       case Pair(Nil, _) => None
       case Pair(_, Nil) => None
       case Pair(UGP(a1, d1, v1, c1) :: rest1, UGP(a2, d2, v2, c2) :: rest2) =>
 	if (a1 == a2 && d1 == !d2)
-	  Some(Pair(() => c1(v2), () => c2(v1)))
+	  Some(Triple(() => if (d1) a1.log(v2) else a1.log(v1), () => c1(v2), () => c2(v1)))
 	else matches(gs1, rest2) match {
 	  case None => matches(rest1, gs2)
 	  case Some(t) => Some(t)
@@ -131,10 +141,11 @@ object pilib with Monitor {
   */
   private def compare(s1: Sum, ss: List[Sum]): List[Sum] =
     ss match {
-      case Nil => ss ::: s1 :: Nil
+      case Nil => ss ::: List(s1)
       case s2 :: rest => matches(s1.gs, s2.gs) match {
 	case None => s2 :: compare(s1, rest)
-	case Some(Pair(c1, c2)) => {
+	case Some(Triple(log, c1, c2)) => {
+	  log();
 	  s1.set(c1);
 	  s2.set(c2);
 	  rest
