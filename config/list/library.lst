@@ -73,6 +73,8 @@ collection/mutable/History.scala
 collection/mutable/ImmutableMapAdaptor.scala
 collection/mutable/ImmutableSetAdaptor.scala
 collection/mutable/Inclusion.scala
+collection/mutable/JavaMapAdaptor.scala
+collection/mutable/JavaSetAdaptor.scala
 collection/mutable/LinkedList.scala
 collection/mutable/Map.scala
 collection/mutable/MapWrapper.scala

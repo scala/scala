@@ -1,0 +1,21 @@
+############################################################-*-Makefile-*-####
+# scala dtd2scala source files (paths are relative to ./sources/dtd2scala)
+##############################################################################
+# $Id$
+
+AbstractFile.scala
+ByteArrayReader.scala
+ClassPath.scala
+Classfile.scala
+Classfiles.scala
+CodeWriter.scala
+Entity.scala
+EntityTable.scala
+FileCache.scala
+Flags.scala
+Main.scala
+Names.scala
+ScalaAttribute.scala
+ScalaWriter.scala
+
+##############################################################################
