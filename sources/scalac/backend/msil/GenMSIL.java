@@ -10,7 +10,6 @@ package scalac.backend.msil;
 
 import scalac.Global;
 import scalac.Unit;
-import scalac.ApplicationError;
 
 import scalac.util.Debug;
 
@@ -148,8 +147,7 @@ public final class GenMSIL {
 		break;
 
 	    default:
-		throw new ApplicationError("Class definition expected: " +
-					   Debug.show(sym));
+		throw Debug.abort("Class definition expected", Debug.show(sym));
 	    }
 	}
     }
@@ -591,7 +589,7 @@ public final class GenMSIL {
 	    return i;
 
 	default:
-	    throw new ApplicationError("Dunno what to do: " + tree.getClass());
+	    throw Debug.abort("Dunno what to do", tree);
 	}
 
     } //gen()
@@ -1175,7 +1173,7 @@ public final class GenMSIL {
 	    res = items.CondItem(Test.Binary(Test.GE_IS, toType), null, null);
 	    break;
 	default:
-	    throw new ApplicationError(Debug.show(op));
+	    throw Debug.abort(Debug.show(op));
 	}
 
 	return coerce(res, resType);
@@ -1458,7 +1456,7 @@ public final class GenMSIL {
 	    return items.StackItem(MSILType.BOOL);
 
 	default:
-	    throw new ApplicationError("load item: " + that);
+	    throw Debug.abort("load item: " + that);
 	}
     }
 
@@ -1488,7 +1486,7 @@ public final class GenMSIL {
 	    load(t);
 	    break;
 	default:
-	    throw new ApplicationError(test.getClass().getName());
+	    throw Debug.abort(test.getClass().getName());
 	}
     }
 
@@ -1666,7 +1664,7 @@ public final class GenMSIL {
 	    break;
 
 	default:
-	    throw new ApplicationError("Cannot store item: " + that);
+	    throw Debug.abort("Cannot store item: " + that);
 	}
 	return items.VoidItem();
     }
@@ -1707,7 +1705,7 @@ public final class GenMSIL {
 		code.Emit(OpCodes.Pop);
 		break;
 	    default :
-		throw new ApplicationError(that.getClass().getName());
+		throw Debug.abort(that.getClass().getName());
 	    }
  	    break;
 	default:
@@ -1770,7 +1768,7 @@ public final class GenMSIL {
             return Test.Binary(negate(opcode), type);
 
         default:
-            throw new ApplicationError(that.getClass().getName());
+            throw Debug.abort(that.getClass().getName());
         }
     }
 
@@ -1797,7 +1795,7 @@ public final class GenMSIL {
 	    code.Emit(branch(negate(opcode)), label);
 	    return label;
 	default:
-	    throw new ApplicationError();
+	    throw Debug.abort();
 	}
     }
 
@@ -1852,7 +1850,7 @@ public final class GenMSIL {
         case Test.GE_RU: return true;
         case Test.EQ   : return false;
         case Test.NE   : return true;
-        default        : throw new ApplicationError("" + opcode);
+        default        : throw Debug.abort("" + opcode);
         }
     }
 
@@ -1879,7 +1877,7 @@ public final class GenMSIL {
         case Test.GE_RU: return OpCodes.Clt;    // negate
         case Test.EQ   : return OpCodes.Ceq;
         case Test.NE   : return OpCodes.Ceq;    // negate
-        default        : throw new ApplicationError("" + opcode);
+        default        : throw Debug.abort("" + opcode);
         }
     }
 
@@ -1906,7 +1904,7 @@ public final class GenMSIL {
         case Test.GE_RU: return Test.LT_RO;
         case Test.EQ   : return Test.NE;
         case Test.NE   : return Test.EQ;
-        default        : throw new ApplicationError("" + opcode);
+        default        : throw Debug.abort("" + opcode);
         }
     }
 
@@ -1933,7 +1931,7 @@ public final class GenMSIL {
         case Test.GE_RU: return OpCodes.Bge_Un;
         case Test.EQ   : return OpCodes.Beq;
         case Test.NE   : return OpCodes.Bne_Un;
-        default        : throw new ApplicationError("" + opcode);
+        default        : throw Debug.abort("" + opcode);
         }
     }
 
@@ -1979,7 +1977,7 @@ final class MSILType {
 	case TypeTags.UNIT: return VOID;
 	case TypeTags.STRING: return STRING;
 	default:
-	    throw new ApplicationError("Unknown kind: " + kind);
+	    throw Debug.abort("Unknown kind: " + kind);
 
 	}
     }
@@ -2349,7 +2347,7 @@ class Test {
         case GE_RU: return "LT_RO";
         case EQ   : return "NE";
         case NE   : return "EQ";
-        default   : throw new InternalError("" + opcode);
+        default   : throw Debug.abort("" + opcode);
         }
     }
 
@@ -2370,7 +2368,7 @@ class Test {
 	    return "Binary(" + toString(opcode) +"," + type + ")";
 
         default:
-            throw new ApplicationError(getClass().getName());
+            throw Debug.abort(getClass().getName());
         }
     }
 } // class Test
