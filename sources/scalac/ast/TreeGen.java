@@ -472,6 +472,12 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     }
 
     /** Builds a TypeApply node with given function and arguments. */
+    public TypeApply TypeApply(int pos, Tree fn, Type[] targs) {
+        return TypeApply(pos, fn, mkTypes(pos, targs));
+    }
+    public TypeApply TypeApply(Tree fn, Type[] targs) {
+        return TypeApply(fn.pos, fn, targs);
+    }
     public TypeApply TypeApply(int pos, Tree fn, Tree[] targs) {
 	try {
 	    switch (fn.type) {
