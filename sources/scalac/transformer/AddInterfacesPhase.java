@@ -262,7 +262,6 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                             classSubst.applyParams(
                                 classMemberSym.info().cloneType(
                                     ifaceMemberSym, classMemberSym))));
-                    classMembersMap.put(ifaceMemberSym, classMemberSym);
 
                     ifaceMemberSym.flags |= Modifiers.DEFERRED;
                 } else {
@@ -276,6 +275,7 @@ public class AddInterfacesPhase extends PhaseDescriptor {
                                 classMemberSym.info())));
                 }
 
+                classMembersMap.put(ifaceMemberSym, classMemberSym);
                 classMembers.enterOrOverload(classMemberSym);
                 if (classMemberSym.isClass())
                     classMembers.enterOrOverload(classMemberSym.constructor());
