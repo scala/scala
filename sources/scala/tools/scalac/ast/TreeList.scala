@@ -38,7 +38,7 @@ final class TreeList(ts: Array[Tree]) {
   }
 
   def append(tl: TreeList): unit = {
-    for (val j <- Iterator.range(0, ts.length))
+    for (val j <- Iterator.range(0, tl.len)) // not ts.length !!
       append(tl.trees(j));
   }
 
@@ -69,6 +69,10 @@ final class TreeList(ts: Array[Tree]) {
   def copyTo[t <: Tree](ts: Array[t], from: int): Array[t] = {
     System.arraycopy(trees, 0, ts, from, len);
     ts;
+  }
+
+  override def toString() = {
+    new IterableArray(this.toArray()).toList.toString();
   }
 }
 }
