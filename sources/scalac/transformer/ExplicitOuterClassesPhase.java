@@ -260,7 +260,10 @@ public class ExplicitOuterClassesPhase extends Phase {
                 Context backup = context;
                 if (method.isConstructor())
                     context = context.getConstructorContext(method);
+                else
+                    context.inMethod = true;
                 rhs = transform(rhs);
+                context.inMethod = false;
                 context = backup;
                 return gen.DefDef(method, rhs);
 
@@ -314,9 +317,9 @@ public class ExplicitOuterClassesPhase extends Phase {
                     Tree qualifier = genOuterRef(tree.pos, owner);
                     return gen.Select(qualifier, symbol);
                 }
-                if (owner.isConstructor()) {
+                if (owner.isPrimaryConstructor()) {
                     Symbol clasz = owner.constructorClass();
-                    if (clasz != context.clasz) {
+                    if (clasz != context.clasz || context.inMethod) {
                         Tree qualifier = genOuterRef(tree.pos, clasz);
                         return gen.Select(qualifier, symbol);
                     }
@@ -401,7 +404,9 @@ public class ExplicitOuterClassesPhase extends Phase {
         /** Returns a tree referencing the given outer class. */
         private Tree genOuterRef(int pos, Symbol clasz) {
             if (context.clasz == clasz) return gen.This(pos, clasz);
-            Tree tree = gen.Ident(pos, context.link);
+            Tree tree = context.inMethod
+                ? gen.Select(gen.This(pos, context.clasz), context.link)
+                : gen.Ident(pos, context.link);
             for (Context context = this.context.outer;;context =context.outer){
                 assert context != null: Debug.show(clasz);
                 if (context.clasz == clasz) return tree;
@@ -419,7 +424,7 @@ public class ExplicitOuterClassesPhase extends Phase {
 
         /** The outer context */
         public final Context outer;
-        /** The class symbol */
+        /** The current class symbol */
         public final Symbol clasz;
         /** The super methods (maps invoked to forwarding methods) */
         public final Map/*<Symbol,Symbol>*/ supers;
@@ -427,6 +432,8 @@ public class ExplicitOuterClassesPhase extends Phase {
         public final Type.Map subst;
         /** The link to the outer class */
         public final Symbol link;
+        /**  True if in a method of current class */
+        public boolean inMethod;
 
         /** Initializes this instance. */
         public Context(Context outer, Symbol symbol, Map supers) {
@@ -435,6 +442,7 @@ public class ExplicitOuterClassesPhase extends Phase {
             this.supers = supers;
             this.subst = getOuterTypeSubst(symbol, false);
             this.link = getOuterValueLink(symbol);
+            this.inMethod = false;
         }
 
         /** Returns a context for the given constructor. */
