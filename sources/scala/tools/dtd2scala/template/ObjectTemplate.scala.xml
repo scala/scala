@@ -14,10 +14,6 @@
 <template>
   /* this file is generated from a DTD using ObjectTemplate.scala.xml */
   <!-- package/ -->
-import org.xml.sax.InputSource;
-import scala.xml._ ;&br;
-import scala.collection.Map ;
-import scala.collection.mutable.HashMap ;
   
   /** the following elements are bound
   <elementBinding>
@@ -28,52 +24,77 @@ import scala.collection.mutable.HashMap ;
   object <string ref="objectName"/> {
 
     type childrenT = scala.Seq[scala.xml.Node];
-    type attribMapT = HashMap[String,String];
+    type attribMap  = scala.collection.Map[String,String];
+    type attribMapT = scala.collection.mutable.HashMap[String,String];
     type NodeConstructorType = (childrenT,attribMapT) =&gt; scala.xml.Node;
 
     <elementBinding>
       def constr_&ccElementName;( ch:childrenT, attrs:attribMapT ) = 
     new &ccElementName;(ch:_*) { 
-      def attributes : Map[String,String] = attrs;    
-      <attributeAssign>    
+      def attributes : attribMap = attrs;    
+      <attributeBinding>    
       override val &cAttributeName; = attrs.get(&qAttributeName;); 
-      </attributeAssign>
+      </attributeBinding>
       val attribHashCode: int = attrs.toList.hashCode() ;
     };
-    def &ccElementName;( ch:Node* ) = new &ccElementName;(ch:_*){
-      def attributes = scala.collection.immutable.ListMap.Empty[String,String];
-      val attribHashCode = 0;
+    def &ccElementName;( ch:scala.xml.Node* ) = new &ccElementName;(ch:_*) {
+      def attributes : attribMap = {
+        var m = scala.collection.immutable.ListMap.Empty[String,String];
+      <attributeBinding>
+        this.&cAttributeName; match {
+          case scala.Some( x ) => m.update( &qAttributeName;, x ); 
+          case scala.None =>;  
+        };
+      </attributeBinding>
+        m
+      }
+
     };
-      abstract case class &ccElementName;( ch:Node* ) extends scala.xml.AttributedNode {
+      abstract case class &ccElementName;( ch:scala.xml.Node* ) extends scala.xml.AttributedNode {
           def label = &qElementName;; 
           def children = ch;
       <attributeBinding>
         val &cAttributeName; : scala.Option[String] = scala.None;  /* o'ridden at parse time */
       </attributeBinding>
+
+      def % (attrs:scala.List[scala.Symbol#AttrDef]) = new &ccElementName;( children:_* ) {
+
+        private var lmap = scala.collection.immutable.ListMap.Empty[String,String];
+
+        for( val a &lt;- attrs.elements ) {
+          lmap = lmap.update(a.key, a.value)
+        }
+
+        def attributes : attribMap = lmap;
+       
+        <attributeBinding>        
+        override val &cAttributeName; = lmap.get(&qAttributeName;);
+        </attributeBinding>        
+      }
       }
     </elementBinding>
     
 
-    def load( filename:String ):Node = load( filename, <string ref="compressDefault"/> );
+    def load( filename:String ):scala.xml.Node = load( filename, <string ref="compressDefault"/> );
 
     def load( filename:String, _compress:boolean ):scala.xml.Node = {
-      val fAdapter = new BindingFactoryAdapter  {
+      val fAdapter = new scala.xml.BindingFactoryAdapter  {
         val f = { 
-          val res = new HashMap[String, NodeConstructorType] ;
+          val res = new scala.collection.mutable.HashMap[String, NodeConstructorType] ;
           <elementBinding>
           res.update( &qElementName;, (x:childrenT,aMap:attribMapT) => constr_&ccElementName;(x,aMap));</elementBinding>
           res;
         }
 
         val g = { 
-          val res = new HashMap[scala.String, boolean] ;
+          val res = new scala.collection.mutable.HashMap[scala.String, boolean] ;
           <elementBinding>
           res.update( &qElementName;, <string ref="elementContainsText"/>);</elementBinding>
           res;
         }
         val compress = _compress ; 
       };
-      fAdapter.loadXML( new InputSource(filename) );
+      fAdapter.loadXML( new org.xml.sax.InputSource(filename) );
     };    
 }
 </template>
