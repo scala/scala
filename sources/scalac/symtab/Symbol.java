@@ -193,7 +193,8 @@ public abstract class Symbol implements Modifiers, Kinds {
      * phase).
      */
     private final Symbol setInfoAt(Type info, Phase phase) {
-        assert phase != null : this;
+        assert info != null: Debug.show(this);
+        assert phase != null: Debug.show(this);
         assert !isConstructor()
             || info instanceof Type.LazyType
             || info == Type.NoType
@@ -225,9 +226,11 @@ public abstract class Symbol implements Modifiers, Kinds {
      * given phase.
      */
     private final Symbol updateInfoAt(Type info, Phase phase) {
-        assert infos != null : this;
+        assert info != null: Debug.show(this);
+        assert phase != null: Debug.show(this);
+        assert infos != null: Debug.show(this);
         assert !phase.precedes(infos.limit()) :
-            this + " -- " + phase + " -- " + infos.limit();
+            Debug.show(this) + " -- " + phase + " -- " + infos.limit();
         if (infos.limit() == phase) {
             if (infos.start == phase)
                 infos = infos.prev;
@@ -257,6 +260,16 @@ public abstract class Symbol implements Modifiers, Kinds {
     }
 
 // Symbol classification ----------------------------------------------------
+
+    /** Does this symbol denote the error symbol? */
+    public final boolean isError() {
+        return kind == Kinds.ERROR;
+    }
+
+    /** Does this symbol denote the none symbol? */
+    public final boolean isNone() {
+        return kind == Kinds.NONE;
+    }
 
     /** Does this symbol denote a type? */
     public final boolean isType() {
@@ -859,6 +872,7 @@ public abstract class Symbol implements Modifiers, Kinds {
             while (infos.limit().next != phase) {
                 Phase next = infos.limit().next;
                 Type info = transformInfo(next, infos.info);
+                assert info != null: Debug.show(this) + " -- " + next;
                 if (info != infos.info) {
                     infos = new TypeIntervalList(infos, info, next);
                 } else {
@@ -2059,6 +2073,7 @@ class TypeIntervalList extends IntervalList {
         super(prev, start);
         this.prev = prev;
         this.info = info;
+        assert info != null;
     }
 
 }
@@ -2075,6 +2090,7 @@ class ClosureIntervalList extends IntervalList {
         super(prev, start);
         this.prev = prev;
         this.closure = closure;
+        assert closure != null;
     }
 
 }
