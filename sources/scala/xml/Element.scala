@@ -9,7 +9,6 @@ abstract class Element {
 
   def getName:     String;                // the real element name
   def getChildren: Seq[ Element ];         // the children
-  def setChildren( l:Seq[ Element ] ):Unit ;
   def getAttribs:  Map[ String, String ]; // disabled
   def setAttribs( m:Map[ String, String ] ):Unit ;
 
