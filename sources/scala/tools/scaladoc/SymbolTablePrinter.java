@@ -124,15 +124,6 @@ public abstract class MySymbolTablePrinter extends SymbolTablePrinter {
 	    .printSymbolType(symbol, getSymbolInnerString(symbol));
     }
 
-    public SymbolTablePrinter printTypeParams(Symbol[] tparams) {
-        print('[');
-        for (int i = 0; i < tparams.length; i++) {
-            if (i > 0) print(",");
-            printSignature(tparams[i], false);
-        }
-        return print(']');
-    }
-
     public SymbolTablePrinter printValueParams(Symbol[] vparams) {
         print('(');
         for (int i = 0; i < vparams.length; i++) {

@@ -383,7 +383,7 @@ public class SymbolTablePrinter {
         print('(');
         for (int i = 0; i < vparams.length; i++) {
             if (i > 0) print(",");
-            if ((vparams[i].flags & Modifiers.DEF) != 0) print("def ");
+            if (vparams[i].isDefParameter()) print("def ");
             printSymbolType(vparams[i], null);
         }
         return print(')');
