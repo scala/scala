@@ -28,6 +28,8 @@ public class ClassParser extends Type.LazyType {
     /** complete class symbol c by loading the class
      */
     public void complete(Symbol c) {
+        Phase phase = global.currentPhase;
+        global.currentPhase = global.PHASE.INITIAL.phase();
 	c.owner().initialize();
 	//System.out.println("loading " + c);//DEBUG
 	try {
@@ -50,6 +52,7 @@ public class ClassParser extends Type.LazyType {
 	    global.error("i/o error while loading " + c);
 	    c.setInfo(Type.ErrorType);
 	}
+        global.currentPhase = phase;
     }
 
     public Type.LazyType staticsParser(Symbol clazz) {
