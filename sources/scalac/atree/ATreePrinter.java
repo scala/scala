@@ -10,8 +10,9 @@ package scalac.atree;
 
 import ch.epfl.lamp.util.CodePrinter;
 
-import scalac.Unit;
 import scalac.Global;
+import scalac.Phase;
+import scalac.Unit;
 import scalac.symtab.Type;
 import scalac.symtab.Symbol;
 import scalac.symtab.SymbolTablePrinter;
@@ -236,6 +237,19 @@ public class ATreePrinter {
 
     //########################################################################
     // Public Methods - Printing trees
+
+    /** Prints all global units. */
+    public ATreePrinter printGlobal(Global global) {
+        Phase phase = global.currentPhase;
+        println("[[attributed trees at "+phase+" (after "+phase.prev+")]]");
+        return printUnits(global.units);
+    }
+
+    /** Prints the units. */
+    public ATreePrinter printUnits(Unit[] units) {
+        for (int i = 0; i < units.length; i++) printUnit(units[i]);
+        return this;
+    }
 
     /** Prints the unit. */
     public ATreePrinter printUnit(Unit unit) {
