@@ -528,6 +528,14 @@ public class TreeGen implements Kinds, Modifiers, TypeTags {
     //########################################################################
     // Public Methods - Building expressions
 
+    /** Builds an instance test with given value and type. */
+    public Tree mkIsInstanceOf(int pos, Tree value, Type type) {
+        return mkApplyT_(pos, Select(value, definitions.IS), new Type[]{type});
+    }
+    public Tree mkIsInstanceOf(Tree value, Type type) {
+        return mkIsInstanceOf(value.pos, value, type);
+    }
+
     /** Builds a cast with given value and type. */
     public Tree mkAsInstanceOf(int pos, Tree value, Type type) {
         return mkApplyT_(pos, Select(value, definitions.AS), new Type[]{type});
